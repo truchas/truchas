@@ -1,0 +1,11 @@
+# Mesh with 9-node hex that must be transformed.
+brick x 1 
+volume 1  move x .5 y .5 z 0 
+volume 1  interval 2
+volume 1  scheme Map
+mesh volume 1 
+block 1 volume 1 
+block 1 element type hex9
+set large exodus file off
+export Genesis  "bad-mesh-4.exo" dimension 3 
+

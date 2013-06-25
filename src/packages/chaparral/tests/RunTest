@@ -1,0 +1,241 @@
+#!/bin/csh -f
+
+# Command: RunTest -tst <test> [-np <num_procs>] [-debug <debugger>]
+setenv GMON_OUT_PREFIX gmon.out
+setenv PWD `pwd`
+set executable = ../tools/driver
+#
+# process input flags
+#
+process:
+if ($#argv > 0) then
+   if ( "-debug" == "$1" ) then
+      if ($#argv < 2) goto usage
+      set debugger = $2
+      shift 
+      shift
+   else if ( "-np" == "$1" ) then
+      if ($#argv < 2) goto usage
+      set num_procs = $2
+      shift 
+      shift
+   else if ( "-tst" == "$1" ) then
+      if ($#argv < 2) goto usage
+      set test = $2
+      shift 
+      shift
+   else 
+      goto usage
+   endif
+   goto process
+endif
+
+if (! $?test) then
+   goto usage
+endif
+
+#
+#  look for specified test directory -- if it is missing, error.
+#
+if ( ! -d $test ) then
+  echo ">> ERROR: specified test, $test, does not exist"
+  exit 1
+endif
+
+#
+#  print whether we are running in parallel or serial
+#
+if ($?num_procs) then
+   if ( $num_procs > 1) then 
+      echo "Running test $test in $num_procs way parallel"
+   else
+      echo "Running test $test in serial"
+   endif
+else
+   echo "Running test $test in serial"
+   set num_procs = 1
+endif
+
+set mach_name = `uname -n`
+set op_type   = `uname -s`
+set on_janus  = FALSE
+set on_icc    = FALSE
+switch ($mach_name)
+  case "sass3276a":
+  case "sass7000":
+  case "sass2153":
+    set mp_launcher = /opt/SUNWhpc/bin/mprun 
+    set par_command = "/opt/SUNWhpc/bin/mprun -np $num_procs $executable $test"
+    set ser_command = "/opt/SUNWhpc/bin/mprun -np 1 $executable $test"
+    breaksw
+  case "janus-s":
+  case "janus":
+  case "reddish":
+    set mp_launcher = "yod"
+    set par_command = "yod -sz $num_procs $executable $test"
+    set ser_command = "yod -sz 1 $executable $test"
+    set on_janus = TRUE
+    breaksw
+  case "blue*":
+    set mp_launcher = "poe"
+    set par_command = "poe $executable $test -procs $num_procs -rmpool 0"
+    set ser_command = "poe $executable $test -procs 1 -rmpool 0"
+    breaksw
+  case "sais028":
+    set mp_launcher = "poe"
+    set par_command = "poe $executable $test -procs $num_procs -euilib ip"
+    set ser_command = "poe $executable $test -procs 1 -euilib ip"
+    breaksw
+  case "q*":
+  case "qt0":
+  case "qt1":
+    set mp_launcher = "prun"
+    if ($?MPIOPTS) then
+      set par_command = "prun $MPIOPTS -n $num_procs $executable $test"
+      set ser_command = "prun $MPIOPTS -n 1 $executable $test"
+    else
+      set par_command = "prun -n $num_procs $executable $test"
+      set ser_command = "prun -n 1 $executable $test"
+    endif
+    breaksw
+  case "slogin":
+  case "liberty*":
+  case "shasta*":
+  case "ln*":
+  case "sn*":
+    set on_icc = TRUE
+    set mp_launcher = "/usr/bin/mpiexec -v"
+    if ($?MPIOPTS) then
+      set par_command = "$mp_launcher $MPIOPTS -n $num_procs $executable $test"
+      set ser_command = "$mp_launcher $MPIOPTS -n 1 $executable $test"
+    else
+      set par_command = "$mp_launcher -n $num_procs $executable $test"
+      set ser_command = "$mp_launcher -n 1 $executable $test"
+    endif
+    breaksw
+  default:
+    if (`which mpirun | grep -c 'Command not found' ` == 1 ) then
+      if ( $?num_procs ) then
+        if ( $num_procs > 1 ) then
+          echo "ERROR: must have mpirun in your path to run tests."
+          exit 1
+        endif
+      endif
+    endif
+    set mp_launcher = "mpirun"
+    if ($?MPIOPTS) then
+      set par_command = "mpirun $MPIOPTS -np $num_procs $executable $test"
+    else
+      set par_command = "mpirun -np $num_procs $executable $test"
+    endif
+    set ser_command = "$executable $test"
+    if ($op_type == "IRIX64") then
+      set ser_command = "mpirun -np 1 $executable $test"
+    endif
+    breaksw
+endsw
+
+#  clear out old results files if they exist -- NOTE: this does not
+#    correctly clear out the results files on janus
+#
+\rm -f $test/*output_matrix.vf  >& /dev/null
+\rm -f $test/*.gen >& /dev/null
+\rm -f $test/*.exo >& /dev/null
+
+#
+#  now run the test
+#
+if ( "$mach_name" == "snow01" ) then
+  setenv MP_PROCS $num_procs
+  setenv MP_RMPOOL 0
+endif
+if ( $num_procs <= 1 ) then
+  if ($?debugger) then
+    $debugger $ser_command
+  else
+    $ser_command
+  endif
+else
+  if ($num_procs > 1 && -e $test/mesh.g) then
+    cd test
+    if ( -d "keep_01") then
+       echo ">> Detected saved and split mesh files -- copying to 01"
+       \cp -r keep_01 01
+       \cp mesh.keep_pex mesh.pex
+       set keep_procs = `grep -i "Number of Processors" ${test}.pex | awk '{print $5}'`
+       if ($keep_procs != $num_procs) then
+          echo "NOTE: test $test must be run with $keep_procs processors."
+	  echo "  Aborting run for test $test"
+	  exit 1
+       endif
+    else
+      echo ">> Splitting mesh"
+      if ( "$on_janus" == TRUE ) then
+        # this stupid machine won't run the script correctly unless we
+        # give it the full path (sometimes????).
+        set LOADBAL = `which loadbal`
+        $LOADBAL -m tflop -p $num_procs mesh > /dev/null
+        # kludge for tflop to have nem_spread only run on one
+        # processor.  This is because nem_spread cores when it
+        # runs on more than one processor and it has to spread 
+        # element variables.
+        \mv mesh.spd mesh.spd.orig
+        echo "s/-sz $num_procs/-sz 1/g" > mesh.sed
+        sed -f mesh.sed mesh.spd.orig > mesh.spd
+        \rm mesh.sed mesh.spd.orig
+      else
+        loadbal -p $num_procs mesh > /dev/null
+      endif
+      if ( $status == 1) then
+	cd ..
+        echo "ERROR in using loadbal"
+        goto DONE
+      endif
+      grep fatal mesh.lbd.err > /dev/null
+      if ( $status == 0) then
+	cd ..
+        echo "ERROR in using loadbal"
+        goto DONE
+      endif
+      if ("$on_icc" == "TRUE" ) then
+         mesh.spd  > /dev/null
+      else
+         csh mesh.spd > /dev/null
+      endif
+      if ( $status == 1) then
+	cd ..
+        echo "ERROR in using mesh.spd"
+        goto DONE
+      endif
+      sed -e 's/\.e[ ]*$/\.exo/g' mesh.pex | sed -e 's/yes[ ]*$/no/g' > tmp.pex
+      mv -f tmp.pex mesh.pex
+    endif
+    cd ..
+  endif
+
+  if ( {( domainname >& /dev/null )} ) then
+    set domain = `domainname`
+  else
+    set domain = "unknown"
+  endif
+
+  echo ">> Running test"
+  if ($?debugger) then
+    setenv CHAPARRAL_BREAK
+    $par_command
+    unsetenv CHAPARRAL_BREAK
+  else
+    $par_command
+  endif
+endif
+
+DONE:
+echo ">> Finished"
+exit 0
+
+usage:
+      echo "usage: RunTest "
+      echo "        -tst <test>"
+      echo "        -debug <debugger> "
+      echo "        -np <num_procs>"
+      exit 1

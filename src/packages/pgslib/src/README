@@ -1,0 +1,92 @@
+======================================================================
+	Compiling PGSLib
+  $Id: README,v 1.5 2000/12/05 01:10:41 ferrell Exp $
+   PGSLib version 3.3.0
+======================================================================
+
+To make the interface and the libraries:
+
+0) You must use GNU Make (often called gmake).  
+
+1) Make sure there is a build-options.xxx file in the install directory for your system.
+   Check the README file in that directory for more information.  For
+   some systems a default build-options.<OperatingSystem> file is chosen, 
+   based on the operating system.  This may work for you.  In other
+   cases you will want to make a new one for your build. The name of the file
+   is not important, but it must be in the install directory.  For what follows,
+   assume the name is build-options.xxx.  If you are using the
+   default build-options file you can leave the BUILD_OPTIONS_FILE
+   argument off of the command line.
+
+> gmake BUILD_OPTIONS_FILE=build-options.xxx  package
+
+To make only the F90 interface (the compiled module files)
+
+> gmake BUILD_OPTIONS_FILE=build-options.xxx  pgslib-fe
+
+To make only the parallel library
+
+> gmake BUILD_OPTIONS_FILE=build-options.xxx  pgslib-par
+
+To make  only the serial library (does not require mpi for building or
+running)
+
+> gmake BUILD_OPTIONS_FILE=build-options.xxx  pgslib-ser
+
+To run the serial tests
+
+> gmake BUILD_OPTIONS_FILE=build-options.xxx  serial-tests
+
+To run the parallel tests, first check the parallel run command
+in testing/run-parallel-test, and set it appropriately for your system.
+Then
+
+> gmake BUILD_OPTIONS_FILE=build-options.xxx  parallel-tests
+
+
+
+
+***************
+*** OPTIONS ***
+***************
+
+** DEBUGGING **
+To build a version of the library with STABS for debugging, add
+	DEBUG=yes 
+to the gmake line.  The libraries built with this option on will have
+_g appended to the file name, e.g. libpgslib-par_g.a and
+libpgslib-ser_g.a.  The _g libraries print lots of information
+while running.
+
+** OPTIMIZING **
+To build an optimized version of the library, add
+	OPTIMIZE=yes
+to the gmake line.  Note that DEBUG=yes and OPTIMIZE=yes are not
+mutually exclusive.  You can modify the flags passed to the compilier
+by modifying the install/compile.<arch> file.
+
+You can also set the optimization flags by adding 
+	OPTIMIZATION_FLAGS= <flags to use>
+on the gmake line
+
+
+** MPI_ROOT **
+
+You must set MPI_ROOT and associated variables in build-options.xxx
+
+
+======================================================================
+	Installing PGSLib
+======================================================================
+
+The module files produced during compilation are placed in the
+directory interface/include.  To compile files which use PGSLib 
+you should install the module files in a standard location.  To
+install the module files and the libraries:
+
+> gmake INSTALL_ROOT=<root of location for installation> install
+
+For instance, if you use /home/pgslib as the INSTALL_ROOT then the
+compiled module files will be placed in /home/pgslib/include and the
+libraries will be placed in /home/pgslib/lib.
+

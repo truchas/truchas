@@ -1,0 +1,338 @@
+\documentclass[oneside,12pt]{amsart}
+
+%%% Widen the text width; don't know of a cleaner way to do this.
+\advance\textwidth6pc
+\advance\hoffset-3pc
+
+%\setlength{\parindent}{0pt}
+\setlength{\parskip}{\smallskipamount}
+
+%%% Without this the pdf page size is wrong (using pdflatex) :-/
+\usepackage[pdftex]{graphicx}
+
+\usepackage{url}        %%% Typesetting URLs
+\usepackage{calc}       %%% Used in ttlist definition.
+\usepackage{underscore} %%% Treat "_" as a normal character outside math mode.
+
+%%% Customized list environment for describing DDT components.
+\newenvironment{mydesc}%
+  {\begin{list}{}{%
+    \setlength{\labelsep}{0pt}%
+    \setlength{\itemindent}{-\leftmargin}%
+    \setlength{\itemsep}{\parskip}%
+    \setlength{\listparindent}{0pt}\setlength{\parsep}{\parskip}}}
+  {\end{list}}
+
+%%% Customized list environment for describing procedures.
+\newenvironment{ttlist}[1]%
+  {\begin{list}{}{\renewcommand{\makelabel}[1]{\hfil\ttfamily ##1}%
+    \settowidth{\labelsep}{\quad} \setlength{\itemsep}{\parskip}%
+    \settowidth{\labelwidth}{\ttfamily #1}%
+    \setlength{\leftmargin}{\labelwidth+2\labelsep}%
+    \setlength{\listparindent}{0pt}}}%
+  {\end{list}}
+  
+  
+\begin{document}
+
+\title{Programming Guide to the Exodus Module}
+\author{Neil N. Carlson}
+\dedicatory{The Telluride Project}
+\address{Los Alamos National Laboratory}
+\email{nnc@lanl.gov}
+\date{October 3, 2004. Last revised October 31, 2005.}
+\maketitle
+
+The \texttt{exodus} module provides procedures for reading and writing
+Exodus~II mesh files \cite{exodusII}, and derived data types for encapsulating the
+mesh data.  NetCDF \cite{netcdf-3.5} is the underlying storage mechanism for the
+Exodus~II data model, and the Fortran~90 interface to the freely-available
+netCDF library is used to access the files directly instead of using Sandia's
+proprietary Exodus~II library.  This allows application code to use Exodus~II
+mesh files, free from the licensing burden imposed by Sandia's library.
+However, there are a few optional Exodus~II mesh data objects that are not
+supported by this module; only those objects of direct relevance to
+\textsc{Truchas} are currently supported, which includes all the required
+data objects.
+
+The next section describes the derived types and procedures that are
+provided by the \texttt{exodus} module.  This is followed by a section
+that discusses some of the implementation issues, including some information
+about the netCDF library that this module depends on.
+
+\section{Facilities proved by the \texttt{exodus} module}
+
+\subsection{Derived types}\label{DDT}
+The \texttt{exodus} module provides the derived type \texttt{exodus_mesh} and
+subsidiary types \texttt{elem_blk}, \texttt{node_set}, and \texttt{side_set}
+for encapsulating the mesh data.  These were designed to closely emulate the
+structure of the data as it is stored in the Exodus II file (see 
+\cite[Appendix~A]{exodusII}).  This facilitates the reading, and especially, writing of
+mesh data, by ensuring an equivalence between the in-memory and on-disk
+information content.  The Exodus II model includes some data that is not
+currently supported by these types.  In particular, they do not support
+\begin{itemize}
+\item optional node and element number maps that specify a mapping from
+  the internal numbering to a user-space numbering;
+\item an optional element order map that specifies a `good' order to process
+  the elements;
+\item optional distribution factors for node sets and side sets;
+\item element attributes used for some esoteric element types, such as beam
+  and truss elements.
+\end{itemize}
+
+\subsubsection{\texttt{Exodus_mesh}}
+Type \texttt{exodus_mesh} encapsulates all the data that describes an
+Exodus II mesh.  It has the following public components.
+\begin{ttlist}{elem_type}
+\item[num_dim] The number of spatial coordinates per node (1, 2, or 3).
+\item[num_node] The number of nodes.
+\item[num_elem] The number of elements.
+\item[num_eblk] The number of element blocks.
+\item[num_nset] The number of node sets.
+\item[num_sset] The number of side sets.
+\item[eblk] A pointer to a rank-1 array of type \texttt{elem_blk} holding the
+  list of element blocks.  The size of the array equals \texttt{num_eblk}.
+\item[nset] A pointer to a rank-1 array of type \texttt{node_set} holding the
+  list of node sets.  The array size equals \texttt{num_nset} when this value
+  is positive; otherwise, when \texttt{num_nset} is 0, this pointer is
+  unassociated.
+\item[sset] A pointer to a rank-1 array of type \texttt{side_set} holding the
+  list of side sets.  The array size equals \texttt{num_sset} when this value
+  is positive; otherwise, when \texttt{num_sset} is 0, this pointer is
+  unassociated.
+\item[coord] A pointer to a rank-2, real array containing the coordinates
+  of the nodes.  The real kind corresponds to 64-bit IEEE floating point.
+  The first dimension is the coordinate index and has extent \texttt{num_dim}.
+  The second dimension is the node index and has extent \texttt{num_node}.
+\item[title] A character string holding the title for the dataset.
+\end{ttlist}
+
+\subsubsection{\texttt{Elem_blk}}
+Type \texttt{elem_blk} describes the data associated with an element block.
+It has the following public components.
+\begin{ttlist}{elem_type}
+\item[ID] An arbitrary, unique, positive integer which identifies the
+  particular element block.
+\item[num_elem] The number of elements in the element block.
+\item[elem_type] A character string that identifies the type of element
+  contained in the element block.  The interpretation of this value is
+  left to the application codes which use or produce the mesh data.
+\item[connect] A pointer to a rank-2 integer array holding the list of nodes
+  which define each element in the element block.  The first dimension is the
+  node index and its extent is the number of nodes per element, which will
+  depend on the element type.  The second dimension is the element index and
+  its extent is \texttt{num_elem}.
+\end{ttlist}
+
+
+\subsubsection{\texttt{Node_set}}
+Type \texttt{node_set} describes the data associated with a node set.
+It has the following public components.
+\begin{ttlist}{elem_type}
+\item[ID] An arbitrary, unique, positive integer which identifies the
+  particular node set.
+\item[num_node] The number of nodes in the node set.
+\item[node] A pointer to a rank-1, integer array holding the list of
+  nodes in the node set.  Its size equals \texttt{num_node}.
+\end{ttlist}
+
+\subsubsection{\texttt{Side_set}}
+Type \texttt{side_set} describes the data associated with a side set.
+It has the following public components.
+\begin{ttlist}{elem_type}
+\item[ID] An arbitrary, unique, positive integer which identifies the
+  particular side set.
+\item[num_side] The number of sides in the side set.
+\item[elem] A pointer to a rank-1, integer array holding the list of
+  elements in the side set.  Its size equals \texttt{num_side}.
+\item[face] A pointer to a rank-1, integer array holding the list of 
+  local face numbers for the elements in the side set.  Its size
+  equals \texttt{num_side}.
+\end{ttlist}
+
+\subsection{Relational operators}
+The relational operators \texttt{==} and \texttt{/=} (alternatively,
+\texttt{.eq.} and \texttt{.ne.}) are defined for all the types described
+in~\S\ref{DDT}.  They have the natural definition based on a direct
+comparison of the data contained in the operand structures.
+These are probably only useful in a testing or debugging situations. 
+
+\subsection{Reading and writing Exodus II mesh files}
+There are two subroutines used to read and write Exodus II mesh files.
+The intent-\texttt{in}, assumed-length string \texttt{path} specifies
+the path to the file, and the type \texttt{exodus_mesh} argument \texttt{mesh}
+holds the mesh data that is read from or written to the file.  
+If an error occurs, a nonzero value is returned in the optional integer
+argument \texttt{stat}, when present, otherwise an error message is written
+to unit 0 (usually stderr) and the program is halted.  The caller can use
+the function \texttt{exo_err_str} to retrieve the error string that
+corresponds to a nonzero \texttt{stat} value.
+\begin{mydesc}
+  \item \texttt{call read_exodus_mesh (path, mesh }[\texttt{, stat}]\texttt{)}
+  reads the mesh data from an Exodus II file.
+  \texttt{mesh} has intent \texttt{out}.
+  Any unsupported mesh data that may be present in the file is ignored.
+  
+\item \texttt{call write_exodus_mesh (path, mesh, creator, version }[%
+  \texttt{, stat}]\texttt{)} \\ writes mesh data to an Exodus II file.
+  Any existing file at \texttt{path} will be overwritten.
+  \texttt{mesh} has intent \texttt{in}.
+  The name and version of the program responsible for creating the mesh
+  should be provided in the intent-\texttt{in}, assumed-length strings
+  \texttt{creator} and \texttt{version}.
+    
+\item \texttt{exo_err_str(errno)} returns the error string that corresponds
+  to the integer error number \texttt{errno}.  This function should only be
+  called with a nonzero \texttt{stat} value returned by
+  \texttt{read_exodus_mesh} and \texttt{write_exodus_mesh}.
+\end{mydesc}
+
+
+\subsection{Miscellaneous Procedures}
+\begin{mydesc}
+\item \texttt{defined(this)} returns the value true if the argument is
+  defined; otherwise it returns the value false.  The argument may be of
+  any of the types described in~\S\ref{DDT}.  Defined means that the
+  components of the structure are properly defined and superficially
+  reasonable; e.g. that \texttt{coord} is associated and its shape is
+  consistent with \texttt{num_dim} and \texttt{num_node}.  It does not,
+  however, examine the topology or geometry of the mesh (in the case an
+  \texttt{exodus_mesh} type argument) to ensure it is valid.  Refer to
+  the code to see exactly what conditions are checked.
+  This function is elemental.
+  
+\item \texttt{call destroy (this)} deallocates the storage associated with
+  any allocated component of the argument, and assigns default values to the
+  remaining omponents, returning the argument to its default initialization
+  state.  The argument may be of any of the types described in \S\ref{DDT}.
+  This subroutine is elemental.  Note that it is permissible to call this
+  subroutine with an incompletely defined argument.
+    
+  N.B.  Be careful not to accidentally deallocate storage that you want to
+  keep.  For example, if you have associated a pointer with the \texttt{coord}
+  component of an instance of \texttt{exodus_mesh} (instead of copying the
+  data to a new array) be sure to nullify the \texttt{coord} pointer before
+  calling \texttt{destroy}.  If you don't, the storage you are pointing to
+  will be deallocated!
+  
+\item \texttt{call dump_type (this, unit)} writes the data encapsulated by
+  the derived type argument \texttt{this} to logical unit \texttt{unit}.
+  This may be used with any of the types described in~\S\ref{DDT}.
+  This routine is intended solely for use in debugging and may not be robust.
+\end{mydesc}
+
+\subsection{A special hack for \textsc{Truchas}}
+To accomodate the fragmented mesh reading design of \textsc{Truchas}, a 
+special subroutine is provided to read the number of nodes and elements
+from an Exodus II mesh file.  It is intended solely for use in
+\textsc{Truchas}; any other use is strongly discouraged.
+\begin{mydesc}
+\item \texttt{call read_exodus_mesh_size (path, num_node, num_elem, status)}
+  reads the number of nodes \texttt{num_node} and the number of elements
+  \texttt{num_elem} from the Exodus~II mesh file \texttt{path}.  If an error
+  occurs, a nonzero integer value is returned in \texttt{status}.  This value
+  originates with the netCDF library and not with the \texttt{exodus} module;
+  \texttt{exo_err_str} does \emph{not} handle these error numbers.  The
+  argument \texttt{path} is an intent-\texttt{in}, assumed-length character
+  string, and all the remaining arguments are intent-\texttt{out} default
+  integers.
+\end{mydesc}
+
+\subsection{Mesh utility procedures}
+Although the interpretation of the element type character string is left to
+application code, the Exodus II data model \cite{exodusII} does describe
+some specific element types that are commonly used.  The \texttt{exodus}
+module provides several high-level procedures for extracting data from an
+Exodus~II mesh when it is composed of certain types of these elements.  Those
+types are a 4-node tetrahedon, \texttt{"TETRA4"}, a 6-node wedge, \texttt{"WEDGE6"},
+and a 8-node hexahedron, \texttt{"HEX8"}.  The strings \texttt{"TETRA"},
+\texttt{"WEDGE"}, and \texttt{"HEX"} are synonyms for these lowest-order types.
+These routines are provisional/experimental, and are subject to change.
+
+
+\begin{mydesc}
+\item \texttt{side_node_list(mesh, elem, side }[\texttt{, reverse}]\texttt{)}
+  returns a pointer to a rank-1 integer array containing the nodes on one side
+  of an element in the mesh specified by the intent-in argument \texttt{mesh}
+  of type \texttt{exodus_mesh}.  The element and local side indices are
+  specified by the intent-in default integer arguments \texttt{elem} and
+  \texttt{side}.  The node list begins with the lowest numbered node, and
+  by default, continues counter-clockwise about the side with respect to the
+  outward orientation of the side.  If the intent-in optional argument
+  \texttt{reverse} is present with the value true, the nodes are ordered
+  instead with respect to the inward orientation of the side.  A null pointer
+  is returned if the \texttt{elem} or \texttt{side} values are out of range,
+  or if an element of unknown type is encountered.  If \texttt{mesh} is not
+  well-defined (as understood by the \texttt{defined()} function), the behavior
+  of this function will be unpredictable.\par
+  N.B. The only proper use of this function is as the target of a pointer
+  assignment; if used otherwise (in an expression, e.g.) a memory leak will
+  result.
+\item \texttt{side_size_list(elem_type)} returns a pointer to a rank-1 default
+  integer array containing the sizes of (i.e., the number of nodes on) the
+  sides of an element whose type is specified by the intent-in character string
+  \texttt{elem_type}.  The target of the result pointer is some static
+  storage, and consequently should \emph{never} be altered, nor should the
+  pointer be deallocated.
+\item \texttt{side_set_node_list(mesh, n)} returns a pointer to a rank-1
+  default integer array containing the side set node list for side set
+  \texttt{N} in the intent-in, \texttt{exodus_mesh} type \texttt{mesh}.
+  This function is similar to the procedure \texttt{EXGSSN} described in
+  section~3.11.4 of the Exodus~II reference manual \cite{exodusII}.
+  A null pointer is returned if anything not understood is encountered.\par
+  N.B. The only proper use of this function is as the target of a pointer
+  assignment; if used otherwise (in an expression, e.g.) a memory leak will
+  result.
+\end{mydesc} 
+
+\section{Implementation Notes}
+
+\subsection{Module dependencies}
+\texttt{Exodus} uses the Fortran~90 interface to the netCDF library as defined
+by the module \texttt{netcdf}, which is part of the netCDF distribution.  When
+appropriately built, the netCDF library \texttt{libnetcdf.a} incorporates this
+latter module, and the corresponding module information file (typically a
+\texttt{.mod} file), which is required when compiling code using that module,
+will have been installed in some location.
+
+The netCDF distribution can be downloaded from
+\url{ftp://ftp.unidata.ucar.edu/pub/netcdf}; \texttt{netcdf-3.5.1.tar.Z}
+is the version this module was tested against, though others may work as well.
+
+\texttt{Exodus} has no other dependencies. 
+
+\subsection{Exodus II format issues}
+
+The \texttt{exodus} module aims to be able to read the mesh from any
+Exodus~II file, and to be able to write a mesh to a valid Exodus~II
+file.  However there are a number of reasons why this may not always
+be possible:
+\begin{itemize}
+\item The out-of-date Exodus~II manual \cite{exodusII}, direct inspection of
+  Exodus~II mesh files produced by Cubit, and private communication with
+  maintainers have been used to determine what netCDF entities are required
+  to form a valid Exodus~II file, and what other optional entities may be
+  present.  This information may not be completely accurate.
+\item Sandia's proprietary Exodus~II library uses a nonstandard version of the
+  netCDF library where several dimensions have been increased over the
+  distributed version.  Some Exodus~II files may exceed the internal limits
+  of the standard netCDF library.
+\item Sandia's most recent customizations to netCDF include changes to
+  support the storage of larger models through a new 64-bit offset.  These
+  changes will be included in the next version of netCDF (3.6).  The current
+  version won't work with Exodus~II files that are using the large file
+  support.
+\end{itemize}
+That disclaimer aside, this module appear to work well with Exodus~II files
+produced by Cubit versions 8 and 9, and should work with version 9.1 as long
+as the ``large file'' option is not used.
+
+When writing files, \texttt{exodus} masquerades as version 3.04 (database
+version 2.03) of Sandia's library, which corresponds to the version of the
+library used in Cubit~8.
+
+\bibliographystyle{unsrt}
+\bibliography{exodus-prog-guide}
+
+\end{document}

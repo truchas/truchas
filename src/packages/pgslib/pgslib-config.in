@@ -1,0 +1,31 @@
+# ############################################################################ #
+#                                                                              #
+# PGSLib CMake configuration file                                              #
+#                                                                              #
+# ############################################################################ #
+
+# Define the directory this file resides in, need this for the targets file
+get_filename_component(SELF_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+# Version
+set(PGSLib_VERSION                   @PGSLib_VERSION@)
+
+# Build Configuration
+set(PGSLib_ENABLE_MPI                @ENABLE_MPI@)
+set(PGSLib_C_COMPILER                @CMAKE_C_COMPILER@)
+set(PGSLib_Fortran_COMPILER          @CMAKE_Fortran_COMPILER@)
+
+# Module directory
+set(PGSLib_MODULE_DIR          @PGSLib_MODULE_INSTALL_DIR@)
+
+# Include directories
+set(PGSLib_INCLUDE_DIRS        @PGSLib_MODULE_INSTALL_DIR@)
+if(PGSLib_ENABLE_MPI)
+  list(APPEND PGSLib_INCLUDE_DIRS @MPI_C_INCLUDE_PATH@)
+endif()
+
+# Library directory
+set(PGSLib_LIBRARY_DIR         @PGSLib_LIBRARY_INSTALL_DIR@)
+
+# Include the targets file
+include(${SELF_DIR}/pgslib-targets.cmake)

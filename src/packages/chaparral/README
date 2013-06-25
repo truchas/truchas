@@ -1,0 +1,51 @@
+##############################################################################
+# Chaparral Library for Thermal Enclosure Radiation Problems                 #
+# Copyright (c) 2000,2001,2002, Sandia National Laboratories.                #
+##############################################################################
+##############################################################################
+# CVS File Information
+#    $RCSfile: README,v $
+#    $Author: mwglass $
+#    $Date: 2005/09/08 16:45:19 $
+#    $Revision: 1.3 $
+##############################################################################
+
+Contacts:
+
+  Mike Glass
+  Parallel Computing Sciences Department
+  Sandia National Laboratories
+  P.O. Box 5800
+  Albuquerque, NM  8718
+
+  mwglass@sandia.gov
+
+##############################################################################
+
+License:
+
+Chaparral is released under the GNU Lesser General Public License. 
+A copy of the license is included in this distribution.  Contact  
+the developer listed above for more information.
+
+##############################################################################
+
+Important Notice:
+
+Neither Sandia, the government, the DOE, nor any of their employees, makes
+any warranty, express or implied, or assumes any legal liability or
+responsibility for the accuracy, completeness, or usefulness of any
+information, apparatus, product, or process disclosed, or represents that
+its use would not infringe privately owned rights. This information is made
+available on an "AS-IS" basis.
+ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+EXCLUDED HEREUNDER.
+Neither Sandia nor the Government, nor their agents, officers and employees
+shall be liable for any loss, damage (including, incidental, consequential
+and special), injury or other casualty of whatsoever kind, or by whomsoever
+caused, to the person or property of anyone arising out of or resulting from
+this information, or the accuracy and validity of this information. 
+
+##############################################################################
+

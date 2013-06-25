@@ -1,0 +1,23 @@
+brick x 2 y 4 z 6
+display
+webcut body 1 with plane zplane offset 0 
+imprint all 
+merge all 
+curve 27 7 6 19  interval 2
+surface 2  scheme Map
+mesh surface 2 
+volume 2 scheme sweep source surface 2 target surface 7
+mesh volume 2
+volume 1 scheme sweep source surface 7 target surface 1
+mesh volume 1
+htet volume all
+block 11 volume 1  
+block 12 volume 2  
+#block 11 12 element type tet4
+Sideset 21 surface 10 11 1 8 9  forward
+Sideset 22 surface 13 14 2 15 16  forward
+Sideset 23 surface 7  both
+nodeset 31 curve 5  
+nodeset 32 curve 27
+export mesh "cubit8-tet-mesh.exo"
+

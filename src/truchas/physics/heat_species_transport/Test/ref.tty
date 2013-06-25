@@ -1,0 +1,20 @@
+TTY output with linux.i386.nag.serial.debug (2.13 GHz processor)
+
+Initializing distributed mesh TESTMESH ...
+  Reading ExodusII mesh file cube16.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell                                    
+    ---+------------------------------------
+      1|     4913        0    13056     4096                                    
+  Mesh Communication Profile:
+              Nodes           Edges           Faces                             
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE                        
+    ---+------------------------------------------------
+      1|      0     4913      0        0      0    13056                        
+  Distributed mesh TESTMESH initialized.
+ Mesh initialization time =   1.6700000
+ Problem initialization time =   1.6100000
+ Problem integration time =  30.4499989
+
+STEP=   156, T=1.00413E+00, H=1.429E-02
+NFUN:NPC=0000521:00005, NPCF:NNR:NNF:NSR=0000:0001:0000:0000

@@ -1,0 +1,337 @@
+MODULE OVERWRITE_MODULE
+  !=======================================================================
+  ! Purpose(s):
+  !
+  !   Define procedures that overwrite the standard initialization of the
+  !   BC, Matl, and Zone derived types.  These are null routines.  If you
+  !   would like to see some examples, look in overwrite.F90.examples.
+  !
+  ! Public Interface:
+  !
+  !   * call OVERWRITE_BC (Zone, Mesh, Cell, Matl, Vertex)
+  !       Overwrite the standard initialization of the BC derived
+  !       type.
+  !
+  !   * call OVERWRITE_MATL (Zone, Mesh, Cell, Matl, Vertex)
+  !
+  !       Overwrite the standard initialization of the Matl derived
+  !       type.
+  !
+  !   * call OVERWRITE_VEL (Zone, Mesh, Cell, Matl, Vertex)
+  !
+  !       Overwrite the standard initialization of the velocity part of
+  !       the Zone derived type (Zone%Vc).
+  !
+  !   * call OVERWRITE_ZONE (Zone, Mesh, Cell, Matl, Vertex)
+  !
+  !       Overwrite the standard initialization of the Zone derived
+  !       type.
+  !
+  ! Contains: OVERWRITE_BC
+  !           OVERWRITE_MATL
+  !           OVERWRITE_VEL
+  !           OVERWRITE_ZONE
+  !
+  ! Author(s): Bryan Lally, (lally@lanl.gov)
+  !
+  !=======================================================================
+  implicit none
+
+  ! Private Module
+  private
+
+  ! Public Procedures
+  public :: OVERWRITE_BC,  OVERWRITE_MATL, &
+            OVERWRITE_VEL, OVERWRITE_ZONE
+  
+
+  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+CONTAINS
+
+  SUBROUTINE OVERWRITE_BC (Zone, Matl)
+    !=======================================================================
+    ! Purpose(s):
+    !
+    !   Overwrite the standard initialization of the BC derived type
+    !   as computed in BC_INIT
+    !
+    !=======================================================================
+    use bc_module,              only: BC_Prs, BOUNDARY_CONDITION, Prs,   &
+                                      SET_DIRICHLET,  SET_OUT_FLOW, Vel, &
+                                      BC
+    use constants_module,       only: zero
+    use cell_geometry_module,   only: FACE_CENTROID_PHYS
+    use kind_module,            only: int_kind, log_kind, real_kind
+    use matl_module,            only: MATL_SLOT
+    use mesh_module, only: Cell, Mesh, Vertex
+    use output_module,          only: blank_line, Output_String
+    use parameter_module,       only: max_slots, ncells, ndim, nfc, nnodes
+    use projection_data_module, only: dirichlet_pressure
+    use zone_module,            only: CELL_AVG
+    use truchas_logging_services
+
+    implicit none
+
+    ! Arguments
+    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
+
+    ! Local Variables
+    logical(KIND = log_kind), dimension(ncells)          :: Mask
+    integer(KIND = int_kind)                             :: f, faces
+    real(KIND = real_kind),   dimension(ncells)          :: Radius_XZ
+    real(KIND = real_kind),   dimension(ndim,nfc,ncells) :: Xf
+
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    ! Get face centroid physical coordinates.
+    call FACE_CENTROID_PHYS (Xf)
+
+    ! <><><><><><><> Example 1: Overwrite temperature BCs <><><><><><><><>
+    !
+    ! Set T boundary conditions on Z = 0.000
+    ! do f = 1, nfc
+    !    mask = ABS(Xf(3,f,:)) < small
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HNEUMANN)
+    ! end do
+    !
+    ! Set T boundary conditions on -Z = X tan(15)
+    ! do f = 1, nfc
+    !    mask = ABS((Xf(1,f,:) * TAN(3.1415926535/12.0)) + Xf(3,f,:)) < small
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HNEUMANN)
+    ! end do
+    !
+    ! Set T boundary conditions on Y = 0.000
+    ! do f = 1, nfc
+    !    mask = ABS(Xf(2,f,:)) < small
+    !    value = 298.0
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_DIRICHLET,value)
+    ! end do
+    !
+    ! Set T boundary conditions on Y = 0.625
+    ! do f = 1, nfc
+    !    mask = (ABS(Xf(2,f,:) - 0.625) < small) &
+    !         .and. ((Xf(1,f,:)**2 + Xf(3,f,:)**2 < 1.9**2) &
+    !         .or.   (Xf(1,f,:)**2 + Xf(3,f,:)**2 > 2.1**2))
+    !    value = HTC
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HTC, value)
+    ! end do
+    !
+    ! Set T boundary conditions on Y = 2.9802
+    ! do f = 1, nfc
+    !    mask = (ABS(Xf(2,f,:) - 2.9802) < small)
+    !    value = HTC
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HTC, value)
+    ! end do
+    !
+    ! Set T boundary conditions on R = 1.000
+    ! do f = 1, nfc
+    !    mask = ABS(SQRT(Xf(1,f,:)**2 + Xf(3,f,:)**2) - 1.0) < small
+    !    value = HTC
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HTC, value)
+    ! end do
+    !
+    ! Set T boundary conditions on R = 2.725
+    ! do f = 1, nfc
+    !    mask = ABS(SQRT(Xf(1,f,:)**2 + Xf(3,f,:)**2) - 2.725) < small
+    !    value = HTC
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HTC, value)
+    ! end do
+    !
+    ! Set T boundary conditions on R = 1.900
+    ! do f = 1, nfc
+    !    mask = (ABS(SQRT(Xf(1,f,:)**2 + Xf(3,f,:)**2) - 1.9) < small) &
+    !         .and. (Xf(2,f,:) > 0.625)
+    !    value = HTC
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HTC, value)
+    ! end do
+    !
+    ! Set T boundary conditions on R = 2.100
+    ! do f = 1, nfc
+    !    mask = (ABS(SQRT(Xf(1,f,:)**2 + Xf(3,f,:)**2) - 2.1) < small) &
+    !         .and. (Xf(2,f,:) > 0.625)
+    !    value = HTC
+    !    call SETBOUNDARYCONDITION (BC_T,mask,f,.false.,BC_T_HTC, value)
+    ! end do
+    !
+    ! <><><><><><><><><><><> End of Example 1 <><><><><><><><><><><><>
+
+    ! <><><><><><> Example 2: Overwrite outflow and pressure BCs <><><>
+    !
+    !    ! Allocate the BC arrays
+    !      if (.not.ASSOCIATED(BC_Prs)) ALLOCATE (BC_Prs(nfc,ncells))
+    !      BC_Prs = zero
+    !  
+    !      ! Loop over faces
+    !      faces = 0
+    !      do f = 1,nfc
+    !         ! Compute the mask and count the faces that are hit.
+    !         Radius_XZ = SQRT(Xf(1,f,:)**2 + Xf(3,f,:)**2)
+    !         Mask = Xf(2,f,:) > 2.661 .and. Radius_XZ >= 0.40
+    !         faces = faces + COUNT(Mask)
+    !  
+    !         ! Set the pressure Dirichlet BC with a BC value of zero
+    !         call SET_DIRICHLET (Mask, BC%Flag, Prs%Face_bit(f))
+    !         where (Mask) BC_Prs(f,:) = zero
+    !  
+    !         ! Set outflow velocity BC.
+    !         call SET_OUT_FLOW (Mask, BC%Flag, Vel%Face_bit(f))
+    !      end do
+    !  
+    !      ! Write out the number of faces affected.
+    !      Output_String = blank_line
+    !      write (Output_String, 1) faces
+    !  1   format (i6,' faces were affected by BC Overwrite')
+    !      call TLS_info (Output_String(1))
+    !
+    ! <><><><><><><><><><><> End of Example 2 <><><><><><><><><><><><>
+
+    ! Set the Dirichet pressure flag; this MUST remain uncommented!
+    dirichlet_pressure = ASSOCIATED(BC_Prs)
+
+    return
+
+  END SUBROUTINE OVERWRITE_BC
+
+  SUBROUTINE OVERWRITE_MATL (Zone, Matl)
+    !=======================================================================
+    ! Purpose(s):
+    !
+    !   Overwrite the standard initialization of cell-centered
+    !   material quantities computed in MATL_INIT
+    !
+    !=======================================================================
+    use constants_module, only: one
+    use kind_module,      only: int_kind, real_kind
+    use mesh_module, only: Cell, Mesh, Vertex
+    use matl_module,      only: MATL_SLOT
+    use parameter_module, only: max_slots, ncells, nnodes
+    use zone_module,      only: CELL_AVG
+
+    implicit none
+
+    ! Arguments
+    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
+
+    ! Local Variables
+
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    ! NOTE: This is just an example!!
+
+    ! Matl(1)%Cell(:)%Cp    = one
+    ! Matl(1)%Cell(:)%Rho   = one
+    ! Matl(1)%Cell(:)%Kappa = one
+
+    return
+
+  END SUBROUTINE OVERWRITE_MATL
+
+  SUBROUTINE OVERWRITE_VEL (Zone, Matl)
+    !=======================================================================
+    ! Purpose(s):
+    !
+    !   Overwrite the standard initialization of cell-centered
+    !   velocities computed in VELOCITY_INIT
+    !
+    !=======================================================================
+    use parameter_module, only: max_slots, ncells, nnodes
+    use zone_module,      only: CELL_AVG
+    use mesh_module, only: Mesh, Cell, Vertex
+    use matl_module,      only: MATL_SLOT
+
+    implicit none
+
+    ! Arguments
+    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
+
+    ! Local Variables
+
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    return
+
+  END SUBROUTINE OVERWRITE_VEL
+
+  SUBROUTINE OVERWRITE_ZONE (Zone, Matl)
+    !=======================================================================
+    ! Purpose(s):
+    !
+    !   Overwrite the standard initialization of cell-centered
+    !   quantities computed in ZONE_INIT.
+    !
+    !=======================================================================
+    use constants_module, only: one, pi, two, zero
+    use kind_module,      only: int_kind, real_kind
+    use mesh_module, only: Cell, Mesh, Vertex
+    use matl_module,      only: MATL_SLOT
+    use parameter_module, only: max_slots, ncells, ndim, nnodes
+    use zone_module,      only: CELL_AVG
+
+    implicit none
+
+    ! Arguments
+    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
+
+    ! Local Variables
+    integer(KIND = int_kind)  :: n
+    real(KIND = real_kind)    :: omega
+
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    ! Initialize Uniform Flow Field ..........................
+    ! 'Box_Diagonal' Tracer Problem
+    ! do n = 1, ndim
+    !    select case (n)
+    !       case (1) ! x-component
+    !          Zone(:)%Vc(n) = 0.006
+    !       case (2) ! y-component
+    !          Zone(:)%Vc(n) = 0.008
+    !       case (3) ! z-component
+    !          Zone(:)%Vc(n) = 0.007
+    !    end select
+    ! end do
+
+    ! Initialize XY-Plane Vortex .............................
+    ! Streamfunction Given in BCG (JCP 85:257,1989)
+    ! do n = 1, ndim
+    !    select case (n)
+    !    case (1) ! x-component
+    !       Zone%Vc(n) = -two*SIN(pi*Cell%Centroid(1))*SIN(pi*Cell%Centroid(1)) &
+    !                        *SIN(pi*Cell%Centroid(2))*COS(pi*Cell%Centroid(2))
+    !    case (2) ! y-component
+    !       Zone%Vc(n) = +two*SIN(pi*Cell%Centroid(2))*SIN(pi*Cell%Centroid(2)) &
+    !                        *SIN(pi*Cell%Centroid(1))*COS(pi*Cell%Centroid(1))
+    !    case (3) ! z-component
+    !       Zone%Vc(n) = zero
+    !    end select
+    ! end do
+
+    ! Initialize XY-Plane Forced Vortex ......................
+    ! Solid-Body Rotation, Rotaional Flow
+    !
+    ! Rotation Frequency
+    ! omega = one          ! Revolutions/second
+    ! omega = omega*two*pi ! Radians/second
+    !
+    ! Velocity Components; V=(-omega*y,+omega*x)
+    ! do n = 1, ndim
+    !    select case (n)
+    !    case (1) ! x-component
+    !       Zone%Vc(n) = -omega*Cell%Centroid(2)
+    !    case (2) ! y-component
+    !       Zone%Vc(n) = +omega*Cell%Centroid(1)
+    !    case (3) ! z-component
+    !       Zone%Vc(n) = 0.80
+    !    end select
+    ! end do
+
+    return
+
+  END SUBROUTINE OVERWRITE_ZONE
+
+END MODULE OVERWRITE_MODULE

@@ -1,0 +1,109 @@
+During initialization, Truchas populates the phase property table with
+phases, properties and associated functions using data read from the
+PHASE namelists and any FUNCTION namelists that they reference.  For
+example, the following namelists read from the input file,
+
+  &PHASE
+    name = 'stuff'
+    property_name(13) = 'kappa',  property_constant(13) = 3.14
+    property_name(17) = 'gamma',  property_function(17) = 'fun1'
+  /
+  
+  &FUNCTION
+    name = 'fun1'
+    type = 'polynomial'
+    poly_coefficients(:) = 1.0 2.0
+    poly_exponents(1,:)  = 0,  3
+  /
+  
+establishes 'stuff' as a phase name, 'kappa' and 'gamma' as property names,
+and most importantly it assigns the constant, 3.14-valued function as the
+'kappa' property function and the single variable polynomial 1 + 2 * x**3
+as the 'gamma' property function for the 'solid' phase.
+
+For the Truchas developer this means that the function calls
+ppt_has_phase('solid'), ppt_has_property('kappa') and ppt_has_property('gamma')
+all return true.  To access the function for the 'gamma' property would use
+the following code snippet:
+
+   use phase_property_table
+   use scalar_functions
+
+   integer :: phase_id, prop_id
+   type(scafun), pointer :: f
+   
+   phase_id = ppt_get_phase_id('solid')
+   prop_id  = ppt_get_property_id('gamma')
+   call ppt_get_phase_property(phase_id, prop_id, f)
+
+The returned phase property function 'f' is a (pointer to a) scafun object
+that is capable of representing constant functions, multivariable polynomials,
+functions from dynamically-linked shared libraries, etc.  In this case it
+represents the single variable polynomial 1 + 2 * x**3.  The internal details
+of f are hidden and not relevant.  What is relevant is that that the function
+can be evaluated:
+
+   real :: x(1)   ! actually double precision
+   x(1) = 3.0
+   value = eval(f, x)
+
+This will assign 1 + 2 * (x(1)**3) to value.
+
+Some important things to note:
+
+* Truchas does not codify any particular set of property names.  The input
+  file establishes what properties and phases the table is populated with.
+  Application code, on the other hand, will expect that certain properties
+  with fixed names have been defined.  This means it will need to verify
+  during initialization that 'density', for example, has been defined for
+  the phases of interest and exit with an error if not.
+  
+* It is not necessary that a particular property have been assigned a
+  constant/function for every phase.  If nothing was assigned,
+  ppt_get_phase_property returns a null pointer.   Application code needs
+  to verify that it has a function for all the phases it deals with.  For
+  example, the flow solver would only require that a viscosity property
+  function exist for the mobile phases it deals with.
+
+* Truchas does not codify the number of arguments to a function nor their
+  interpretation.  When evaluating a scafun object with the eval method, a
+  real rank-1 array filled with the function's argument values needs to be
+  passed.  The application code determines what is passed, and this needs
+  to be communicated to the user (through documentation) so that they can
+  define their functions appropriately.  (Of course this doesn't matter
+  for constant-valued functions.)   For a concrete example, consider a
+  coupled heat transfer / single-species diffusion problem.  Physical
+  properties like species diffusivity are taken to be functions of temperature
+  and concentration, in that order.  That means that if the user desires to
+  make the diffusivity a polynomial function of the concentration they must
+  define it something like
+  
+    &FUNCTION
+      type = 'polynomial'
+      poly_coefficients(:) = 1.0 2.0
+      poly_exponents(1,:)  =  0   0
+      poly_exponents(2,:)  =  0   3
+    /
+  
+  recognizing that the first variable is temperature.
+  
+* The routine ppt_get_phase_property returns a pointer to a function held
+  inside the table; DO NOT DEALLOCATE THAT POINTER.
+
+* Application code itself is free to add properties to the table (or even
+  phases if that makes any sense).  The diffusion solver, for example,
+  creates an 'enthalpy' property by integrating the 'specific heat' property
+  that it expects the user has defined.  Incidently, the scalar_function
+  module provides a few other methods (besides eval) that operate on scafun
+  objects.  One is create_scafun_antideriv which will generate a new scafun
+  object that is the antiderivative of another (when it can!).
+
+
+When attempting to use the phase property table in conjuction with Truchas'
+old MATL structure and material numbers there is some translation that needs
+to take place, unfortunately.  Currently it is required that every PHASE
+namelist be matched by an old MATERIAL namelist with the same names.  It
+isn't the case however that the internal truchas material numbers and the
+phase IDs will match.  The module MATERIAL_INTEROP defines the module arrays
+material_to_phase(:) and phase_to_material(:) that map the internal material
+numbers to phase IDs and vice versa.

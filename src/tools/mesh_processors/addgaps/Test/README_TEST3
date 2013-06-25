@@ -1,0 +1,37 @@
+TEST 3: HYBRID HEX/WEDGE MESH
+-----------------------------
+
+We have limited ability to generate truly hybrid meshes that contain
+(connected) combinations of hexes, tets, and wedges.  Cubit is only
+able to generate pure hex or tet meshes in each connected component
+of the mesh.  The mesh utility cyl2car is able, however, to take a
+hex mesh with cylindrical coordinate data (r,theta,z) and transform
+it into a cartesian coordinate mesh.  In the process some hex elements
+are transformed into wedge elements.  Mesh3.exo is such a mesh (the
+source cylindrical coordinate mesh is mesh3-cyl.exo).  The element
+blocks are pictured in mesh3-blocks-front.png and mesh-blocks-back.png.
+The gap side sets 11-15 are pictured in mesh3-sidesets.png.  There are
+external boundary side sets 20 and 30, also.  Each of the side sets
+11-15 intersect both wedge and hex element blocks, and they contain
+both tri and quad sides of wedge elements.
+
+TEST-3A.
+
+addgaps mesh3.exo gap3a.exo 11 12 13 14 15 << EOF
+111
+112
+121
+131
+132
+141
+151
+EOF
+
+Creating element block 111 for 2 WEDGE6 gap elements from side set 11
+Creating element block 112 for 14 HEX8 gap elements from side set 11
+Creating element block 121 for 16 HEX8 gap elements from side set 12
+Creating element block 131 for 2 WEDGE6 gap elements from side set 13
+Creating element block 132 for 14 HEX8 gap elements from side set 13
+Creating element block 141 for 16 HEX8 gap elements from side set 14
+Creating element block 151 for 32 HEX8 gap elements from side set 15
+

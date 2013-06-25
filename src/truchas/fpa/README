@@ -1,0 +1,14 @@
+This directory tree contains the (slightly reorganized) FPA code
+distribution by Neil Carlson <nnc@newmexico.com>.  The code is
+licensed under the extremely permissive MIT license (see LICENSE).
+The original readme file is README.FPA.
+
+Changes
+
+o Dropped the pure attribute from the interface to the dummy
+  procedure DP of FPA_CORRECTION.  The PGSLIB_GLOBAL_DOT_PRODUCT
+  routine we intend to pass doesn't have this attribute.
+
+o Modified the interface to FPA_CREATE to take the vector size
+  as an argument in place of a sample vector from which the size
+  would have been gleaned.

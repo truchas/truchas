@@ -1,0 +1,41 @@
+# Truchas files in directory
+#   material
+
+# List of files to  process
+set(MAT_FILES)
+
+# List of files to add to the Truchas library
+set(MAT_SOURCE_FILES)
+
+# Process target name
+set(MAT_TARGET_NAME ProcessTruchasMaterialFiles)
+
+
+set(MAT_FILES
+       materials/material_interop.F90
+       materials/material_mesh_function.F90
+       materials/material_property.F90
+       materials/material_system.F90
+       materials/material_system_namelist.F90
+       materials/material_table.F90
+       materials/material_utilities.F90
+       materials/phase_namelist.F90
+       materials/phase_property_table.F90)
+
+set(MAT_FPP_FLAGS 
+        -I${TruchasExe_SOURCE_DIR}/utilities
+	${Truchas_FPP_FLAGS})
+
+# Process files
+fortran_preprocess_files(MAT_SOURCE_FILES
+                         FILES ${MAT_FILES}
+			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
+			 FPP_FLAGS ${MAT_FPP_FLAGS}
+			 PROCESS_TARGET ${MAT_TARGET_NAME})
+set_source_files_properties(${MAT_SOURCE_FILES} PROPERTIES
+                            COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
+
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${MAT_SOURCE_FILES})		       
+list(APPEND Truchas_PROCESS_TARGETS ${MAT_TARGET_NAME})
+
+

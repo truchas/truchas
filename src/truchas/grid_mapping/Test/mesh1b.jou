@@ -1,0 +1,32 @@
+import acis "shell-core-geom.sat"
+
+delete volume 1 4
+imprint body all 
+merge all 
+
+surface 12 to 15 scheme triprimitive
+surface 12 to 15 interval 6
+mesh surface 12 to 15
+surface 12 to 15 smooth scheme centroid area pull free 
+smooth surface 12 to 15 
+
+volume 3 scheme tetprimitive
+mesh volume 3
+
+surface 8 scheme triprimitive
+surface 8 interval 5
+mesh surface 8
+surface 8 smooth scheme centroid area pull free 
+smooth surface 8 
+
+volume 2 scheme sweep
+volume 2 interval 2
+mesh volume 2
+
+block 1 volume 3
+block 2 volume 2
+
+sideset 1 surface 12 to 15 wrt volume 3     # external boundaries of volume 3
+sideset 2 surface 3 7 to 9 11 wrt volume 2  # external boundaries of volume 2
+
+export mesh "mesh1b.exo"

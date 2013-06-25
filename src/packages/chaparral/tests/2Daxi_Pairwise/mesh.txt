@@ -1,0 +1,11 @@
+& ndim nnodes nfacets
+   2     4      3   
+& nodes:  node_id  coordinates
+    1             0.        4.
+    2             2.        4.
+    3             3.        0.
+    4             0.        0.
+& facets:  facet_id  patch_id  connectivity (1-based)
+     1      1      1      2
+     2      2      2      3
+     3      3      3      4

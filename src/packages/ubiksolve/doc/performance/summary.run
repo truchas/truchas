@@ -1,0 +1,43 @@
+using 50000/500 GMRES(223)/SSOR(2/1.8) case
+- sorted by time in seconds
+- see individual files for platform details (incl. compiler options)
+
+
+chip            clock       OS                 compiler            CPU
+                (GHz)                                             (sec)
+
+Alpha EV68      1.25   Tru64Unix 5.1-1885      Compaq 5.5-1887     2.64
+Alpha EV68      1.25   Tru64Unix 5.1-1877      Compaq 5.5-1877     2.70
+Alpha EV68      1.0    Tru64Unix 5.1-1885      Compaq 5.4-1684     3.81
+Xeon            3.06   Win2kSP3/Cygwin 1.3.22  Intel 7.0.092       4.41
+Xeon            3.06   Win2kSP3/Cygwin 1.3.20  Absoft 7.5.2        4.97
+Xeon            3.06   Win2kSP3/Cygwin 1.3.22  Absoft 7.5.2        5.05
+Alpha EV67      0.667  Linux 2.4.13            Compaq X1.1.1-1684  5.24
+Alpha EV67      0.667  Tru64Unix 5.1-1877      Compaq 5.5-1877     5.55
+IA-64           1.0    Linux 2.4.18            Intel 7.0.083       7.33
+Xeon            1.7    Win2kSP3/Cygwin 1.3.13  Intel 7.0.067       7.47
+Athlon          1.67   Win2kSP3/Cygwin 1.3.22  Intel 7.0.092       8.13
+Xeon            1.7    Win2kSP2/Cygwin 1.3.10  Absoft 7.5.1        8.80
+Xeon            2.4    Linux 2.4.18            Lahey 6.10d         8.94
+Xeon            1.7    Win2kSP3/Cygwin 1.3.12  Absoft 7.5.2        9.30
+Xeon            1.7    Win2kSP2/Cygwin 1.3.10  Lahey 5.60h         9.33
+Athlon          1.67   Win2kSP3/Cygwin 1.3.22  Absoft 7.5.2        9.63
+Athlon          1.67   Win2kSP3/Cygwin 1.3.13  Absoft 7.5.2        9.63
+Xeon            1.7    Win2kSP3/Cygwin 1.3.12  Lahey 5.60h        10.00
+Xeon            1.4    Linux 2.4.18            NAGware 4.2.490    12.00
+Xeon            1.4    Linux 2.4.18            Lahey 6.00c        14.90
+PowerPC G4      1.0    Mac OS X 10.1.S         Absoft 7.0b        15.50
+Pentium III     1.0    Linux 2.4.18            Intel 7.0.064      16.00
+Athlon          1.2    Linux 2.4.17            Absoft 7.5.1       16.10
+Xeon            1.4    Linux 2.4.18            Lahey 6.10d        17.20
+Xeon            1.7    Win2kSP3/Cygwin 1.3.12  Lahey 5.7          17.40
+Athlon          1.2    Linux 2.4.17            Lahey 6.10b        19.20
+MIPS R10000     0.194  Irix 6.5.11f            SGI 7.3.1.2m       24.60
+Pentium IIIM    0.850  Win2kSP3/Cygwin 1.3.13  Intel 7.0.067      24.60
+Alpha EV56      0.500  Linux 2.2.18            Compaq 1.2.0-1882  25.90
+Pentium III     1.0    Linux 2.4.9-31          Lahey 6.10b        26.50
+PowerPC 604     0.332  AIX 4.3                 XLF 7.01           28.70
+Pentium IIIM    0.850  Win2kSP3/Cygwin 1.3.12  Lahey 5.60h        31.60
+UltraSPARC-IIi  0.300  Solaris 5.6             Sun 6.2            34.40
+UltraSPARC-IIi  0.300  Solaris 5.6             Sun 6.0            42.20
+Pentium IIIM    0.850  Win2kSP3/Cygwin 1.3.12  Lahey 5.70b        44.90

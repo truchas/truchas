@@ -1,0 +1,50 @@
+\documentclass[12pt,reqno]{amsart}
+
+%%% Widen the text width; don't know of a cleaner way to do this.
+\advance\textwidth6pc
+\advance\hoffset-3pc
+
+\title{Hypre PCG Test Problem}
+\author{Neil N. Carlson}
+
+\begin{document}
+\maketitle
+
+Let $A = -\Delta + a I$ on a discrete 3-D periodic domain.  Specifically,
+if $u$ is a discrete function define
+\begin{multline}
+  (Au)(j_1,j_2,j_3) = a u(j_1,j_2,j_3) + 6 u(j_1,j_2,j_3) - {} \\
+      u(j_1-1,j_2,j_3) - u(j_1+1,j_2,j_3) - u(j_1,j_2-1,j_3) - {} \\
+      u(j_1,j_2+1,j_3) - u(j_1,j_2,j_3-1) - u(j_1,j_2,j_3+1),
+\end{multline}
+where $0 \le j_i < N_i$, for $i=1,2,3$, and index arithmetic is
+done modulo $N_1$, $N_2$ and $N_3$, respectively.
+
+Let $u_{n_1n_2n_3}$, with $0 \le n_i < N_i$, $i=1,2,3$, denote the
+eigenfunctions of $A$:
+\begin{equation}
+  u_{n_1n_2n_3}(j_1,j_2,j_3) =
+    \exp\bigl(2\pi i(j_1 n_1/N_1 + j_2 n_2/N_2 + j_3 n_3/N_3)\bigr).
+\end {equation}
+Note the the functions exhibit required periodicity when allowing the
+indices $j_i$ to range over all integers.  Then
+\begin{gather}
+  Au_{n_1n_2n_3} = \lambda_{n_1n_2n_3} u_{n_1n_2n_3} \\ \intertext{with}
+  \lambda_{n_1n_2n_3} = a + 4\bigl(\sin^2(\pi n_1/N_1) +
+                        \sin^2(\pi n_2/N_2) + \sin^2(\pi n_3/N_3)\bigr)
+\end{gather}
+The condition number of $A$ is 
+\begin{equation}
+  \frac{\lambda_{\text{max}}}{\lambda_{\text{min}}} = \frac{12+a}{a},
+\end{equation}
+which can be made arbitrarily large taking $a>0$ small.  Note that
+$A$ is singular when $a=0$ with nullspace constant functions.
+
+For the test of the Hypre PCG solver consider the problem
+\begin{equation}
+  A x = \lambda_ {n_1n_2n_3} u_{n_1n_2n_3},
+\end{equation}
+which has the solution $u_{n_1n_2n_3}$, for different choices of $a$,
+$n_1$, $n_2$, and $n_3$.
+
+\end{document}

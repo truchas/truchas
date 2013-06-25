@@ -1,0 +1,703 @@
+$Id: ChangeLog.77,v 1.1.1.1 2000/11/01 03:06:56 turner Exp $
+
+------------------------------------------------------------------------
+NOTE: Tags are made up of a major and a minor release number.  For
+      example, tag "release3-2" has a major release number of 3 and a
+      minor release number of 2.
+------------------------------------------------------------------------
+
+Tag: release17-8 (1/27/95)
+
+- found out I hadn't eliminated all occurences of dimensioning dummy
+  arrays with array references
+ > was still doing it with dynamically-allocated arrays
+ > modified memory.awk
+  - now sets dimension, dimension_unknown, and dimension_unknown_alt
+  - writes a new #ifdef block to declaration include file
+   > tests new cpp variable strict_f77
+   > if strict_f77 is defined, it indicates that the compiler will not
+     accept array references as a dimension bound, and dynamically-
+     allocated arrays are treated as adjustable arrays (dimensioned
+     to (*) or whatever, as appropriate)
+ > strict_f77 is now defined by default for SunOS
+ > this means dynamically-allocated arrays can only be accessed as
+   vectors in routines that allocate them
+  - fine for everything but JT_GMRES, which allocates two 2D arrays
+    dynamically
+  - added #define macros to translate 2d references to calls to
+    function IJ2I to translate them into 1d references when
+    use_automatic is not defined and strict_f77 is defined
+- in order to improve portability, make things cleaner, etc., changed
+  functions IJ2I and IJK2I to function subroutines (were statement
+  functions in include files that could be included as needed)
+
+Tag: release17-7 (1/26/95)
+
+- eliminated all occurences of dimensioning dummy arrays with array
+  references, i.e.
+
+  subroutine xx (a, ia)
+  dimension a(ia(2),*)
+    :
+
+ > the above is not standard Fortran 77
+ > interestingly, Cray, HP, and IBM compilers, and Sun compilers up to
+   2.0.1, accept this construct
+  - Sun Fortran 3.0.1 does not accept
+  - see p. 41 of the Sun Fortran 3.0.1 Reference Manual
+ > the above is OK in Fortran 90, according to the Cray CF77 manual
+  - see p. 93 of the CF77 Fortran Language Reference Manual,
+    SR-3772 6.0
+ > affected routines JT_B_eq_A, JT_GeneratePreconditioner, and
+   JT_ApplyPreconditioner
+  - added some new routines
+- added info to Performance
+- added info to README
+- corrected comments in headers of several files
+ > mostly missing routines from SUBROUTINES NEEDED
+
+Tag: release17-6 (1/18/95)
+
+- verified build and execution of test suite on Sun, IBM, HP, Cray
+- updated and rearranged Performance file
+- added routine to evaluate error function
+- fixed bug in calls to LAPACK routine STRTRS in JT_SolveUTriang
+ > only encountered in IC family of preconditioners, when package
+   compiled using LAPACK (currently only used by default on Crays)
+- modifications to GUI
+ > added author and version info to jtpack.tcl
+ > now tests to see whether Lucida Sans fonts exist (e.g. on SGI) and
+   use Helvetica if they don't
+ > now tests to make sure an iterative method was used and that >1
+   iteration was required for convergence before spawning gnuplot process
+
+Tag: release17-5 (12/20/94)
+
+- fixed bug in memory.awk introduced in 17-4
+ > on Cray, dynamically-allocated arrays starting at zero whose
+   dimensions are not known at declaration must be dimensioned (0:1)
+   rather than just (0)
+  - this is when not using the F90 construct ALLOCATABLE, of course
+- modified test/GNUmakefile
+ > fixed bug in copying perf.data (Cray)
+ > modified cleanup targets slightly (now clean, rather than distclean,
+   removes output files)
+- added build.log to list of files to ignore in bin
+
+Tag: release17-4 (12/20/94)
+
+- modified memory.awk
+ > fixed problem of whether to use * or 1 when dimensioning dynamically-
+   allocated arrays whose dimensions are not known at declaration
+  - no single syntax works for Sun, Cray, HP, etc.
+  - used #ifdefs
+- modifications to jtpack.tcl
+ > enabled "Save Log" capability to jtpack.tcl (for saving log of build)
+ > other minor modifications
+- fixed bug in JT_Main related to solution by LU decomposition
+ > modifications to triangular solve routines had not been propogated
+   to JT_Main
+
+Tag: release17-3 (12/19/94)
+
+- modified jtpack.tcl
+ > now menubuttons are disabled rather than removed from menubar when
+   they are not appropriate
+  - eliminates annoying resizing of menubuttons
+ > now explicitly set foreground and background colors for selected
+   text and insert cursor color for gaudy > 0
+- corrected terminology used for ELL
+ > apparently means ELLPACK-ITPACK, not ELLPACK-EISPACK (according to
+   SPARSKIT documentation)
+ > affected comments in numerous files
+- slightly modified variable trash in both makefiles
+
+Tag: release17-2 (12/16/94)
+
+- fixed a couple of UNICOS problems
+ > changed memory.awk back to using 0 and 1 instead of 0:* and * when
+   declaring arrays whose dimensions are not known at declaration
+ > added #ifdef in JT_Main because UNICOS uses ISHELL rather than
+   SYSTEM to execute shell commands
+
+Tag: release17-1 (12/14/94)
+
+- fixed exclude file (was leaving an input file out of the distribution
+  tar file)
+- modified README slightly
+ > added info on use of gnuplot by the test suite (by default the test
+   suite does not plot the results, and so gnuplot doesn't have to be
+   installed)
+
+Tag: release17-0 (12/12/94)
+
+- added RIC and RILU preconditioning
+ > added routines JT_RIC_ELL, JT_RIC_Full, JT_RILU_ELL, and JT_RILU_Full
+ > modified Usage, JT_Main, JT_GeneratePreconditioner,
+   JT_ApplyPreconditioner, and jtpack.tcl as appropriate
+ > added to test suites
+  - since RIC and RILU are quite slow for ELL storage, also run tests
+    using MIC and MILU for ELL since even though they involve more
+    operations they can be faster
+ > changed meanings of ipre values again
+  - modified parmdesc.inc as appropriate
+- in the course of adding RIC and RILU preconditioning options to
+  jtpack.tcl, restructured code that controls those options
+ > combined procedures mStepPrecond and StdPrecond into a single new
+   procedure named Precond
+ > executed whenever any preconditioning option is chosen
+ > much cleaner
+- updated and modified src/include/iadesc.inc
+- updated I/O section in Implementation
+- updated ToDo
+
+Tag: release16-1 (12/10/94)
+
+- added IC and MIC preconditioning to test suites
+
+Tag: release16-0 (12/10/94)
+
+- added IC and MIC preconditioning
+ > added routines JT_IC_ELL, JT_IC_Full, JT_MIC_ELL, and JT_MIC_Full
+ > modified parmdesc.inc, JT_Main, JT_GeneratePreconditioner,
+   JT_ApplyPreconditioner, and jtpack.tcl as appropriate
+- generalized triangular solve routines (a consequence of adding IC
+  and MIC preconditioners)
+ > now both lower and upper triangular solve routines can:
+  - solve systems with general or unit diagonals
+  - use matrix as is or use transpose
+- improved jtpack.tcl by generalizing the AddValue, AddMenu, etc.
+  procedures using args
+
+Tag: release15-0 (12/7/94)
+
+- added LU decomposition routines
+ > already had triangular solve routines, so now can do LU decomposition
+   followed by two triangular solves to solve system (see
+   test/src/JT_Main for an example)
+ > higher level, storage-independent routine is JT_LUdecomp
+  - calls storage-specific routines
+  - only full storage currently implemented (JT_LUdecomp_Full)
+ > modified JT_Main as appropriate
+  - rearranged order of input when using single file for all input
+    (pure batch mode, like jtpack.tcl uses)
+  - needs cleaning up
+   > starting to look pretty hacked together
+   > interactive input isn't quite right now (common.in and jtpack.in
+     need rethinking)
+ > required major modification to jtpack.tcl since direct solvers are
+   a whole new class of method
+  - no need for stopping test, norm, convergence criterion, etc.
+  - major changes to logic so appropriate menus and settings are
+    displayed
+ > modified test/GNUmakefile as appropriate
+  - added testing of LU as solver
+  - added if block to runone target
+
+Tag: release14-0 (12/5/94)
+
+- added modified ILU preconditioning
+ > added routines JT_MILU_Full and JT_MILU_ELL
+ > Saad's test problem converges in one iteration using MILU
+ > full-storage version has little additional cost compared to ILU,
+   but ELL version quite expensive (see comments in routine for details)
+ > modified JT_GeneratePreconditioner, etc. as appropriate
+ > added problems using new preconditioners to test suite in
+   test/GNUmakefile
+
+Tag: release13-0 (12/1/94)
+
+- added m-step Jacobi and m-step SSOR preconditioning
+ > no new routines needed
+ > changed meanings of ipre values
+ > changed iparm(13) from ipreslv, which was never used and probably
+   would never be used, to istep (number of steps to take)
+  - updated pardesc.inc, parmdefines.h
+  - added initialization of istep to JT_SetDefaults (default = 1)
+ > use rparm(3) (omega) for these as well as for Jacobi, SOR, and SSOR
+   solvers
+  - changed default value for omega to 1.0
+ > modified JT_Main, JT_ApplyPreconditioner as appropriate
+ > added problems using new preconditioners to test suite in
+   test/GNUmakefile
+ > required significant changes to jtpack.tcl 
+- fixed omission of subroutines needed in headers of several routines
+ > JT_SOR_ELL, JT_Jacobi_ELL, JT_Jacobi_Full, JT_SetDefaults
+- other modifications to jtpack.tcl
+ > now write descriptive strings to JTPACK input file
+ > removed symbolic description of stopping criteria (just use words)
+ > rearranged order of methods in menu
+
+Tag: release12-1 (12/1/94)
+
+- dramatically improved performance of full versions of ILU and MILU
+  by adding some if checks
+ > ELL versions already essentially do this, but could really use some
+   performance improvements
+- modified comments in ELL versions of ILU and MILU
+- modifications to jtpack.tcl
+ > Info button now displays README file in window
+ > added Usage button to display Usage file in window
+- modified README and Usage files somewhat
+
+Tag: release12-0 (12/1/94)
+
+- added MILU as a preconditioning option
+ > added new routines JT_MILU_ELL and JT_MILU_Full to generate the
+   incomplete factorization
+  - the full version is very similar to the full ILU version
+  - the ELL version required some restructuring
+ > modified JT_Main, JT_GeneratePreconditioner, and parmdesc,inc as
+   appropriate
+ > enabled MILU as option in Preconditioner menu
+ > added problems using MILU to test suite in test/GNUmakefile
+
+Tag: release11-1 (12/1/94)
+
+- added Info button to jtpack.tcl
+ > displays Usage file in window
+ > added a bit more info to Usage
+- improved performance of JT_SolveLTriang_ELL slightly
+
+Tag: release11-0 (11/30/94)
+
+- added ILU as a preconditioning option
+ > added new routines JT_ILU_ELL and JT_ILU_Full to generate the
+   incomplete factorization
+ > added new routines JT_SolveLTriang_ELL and JT_SolveUTriang_ELL to
+   solve lower and upper triangular systems in ELL format
+  - renamed former triangular solver routines JT_SolveLTriang_Full and
+    JT_SolveUTriang_Full
+  - added new routines JT_SolveLTriang and JT_SolveUTriang as top-level,
+    storage-independent routines that call the storage-specific routines
+ > modified JT_Main, JT_GeneratePreconditioner, JT_ApplyPreconditioner,
+   and parmdesc.inc as appropriate
+ > enabled ILU as option in Preconditioner menu
+ > added problems using ILU to test suite in test/GNUmakefile
+- added Jacobi iteration as an option
+ > renamed routine JT_SOR to JT_Stationary, since now performs Jacobi
+   as well as SOR and SSOR
+ > added routines JT_Jacobi_ELL and JT_Jacobi_Full, which perform single
+   Jacobi iteration for systems in ELL and Full formats
+ > Jacobi routines use dynamically-allocated temporary vector
+ > modified JT_Main as appropriate
+ > added Jacobi as option in Methods menu
+- fixed bug in JT_SOR_ELL
+ > needed to add dynamically-allocated temporary vector that starts at
+   zero to hold solution vector during iteration, since ELL format
+   accesses x(ja(i,j)), and ja(i,j) can be zero
+- added new dependencies due to dynamically-allocated temporaries to
+  GNUmakefile
+- other modifications to jtpack.tcl
+ > general improvements to appearance, error checking, etc.
+ > made buttons in Build Options section the same size
+ > found out that killing gnuplot window leaves processes hanging around
+  - dismissing window displaying output now dismisses gnuplot window as well
+ > added several other options (all currently disabled) to Preconditioner
+   menu
+
+Tag: release10-0 (11/21/94)
+
+- added Tcl/Tk interface for building library and/or test program and
+  for running the test program
+- put Performance file into a somewhat nicer format
+- in JT_SOR, force iresid to be 1 if using residual-based stopping test
+- modified list of files to be ignored in bin and test subdirectories
+- added plotting of residual norm
+ > use gnuplot
+ > added new input parameter, iplot, to control
+  - gnuplot command file and data file always created, but gnuplot
+    only called to actually draw the plot on the screen if iplot=1
+ > modified test/GNUmakefile to save gnuplot command file and data file
+   with other output when test suite is run
+
+Tag: release9-1 (11/4/94)
+
+- added routine JT_FlushUnit to flush the contents of the I/O buffer
+  for a logical unit
+ > added calls to the routine after writing debug output in iterative
+   solvers
+ > added -l cftlib to LDFLAGS for UNICOS
+- fixed JT_OpenUnitAppend for AIX
+- added initial version of Performance file to repository
+
+Tag: release9-0 (11/4/94)
+
+- added #ifdefs to level 1 and level 2 BLAS routines to use standard
+  BLAS routines if desired
+ > define use_blas in CPPFLAGS to use
+- added #ifdefs to triangular solvers to use LAPACK routine STRTRS
+  if desired
+ > define use_lapack in CPPFLAGS to use
+- fully implemented full conventional storage format (istore=1)
+ > modified JT_Main
+  - iprob=1 means Saad problem, full storage
+   > reads in/saad1.in
+  - iprob=2 means Saad problem, ELL storage
+   > reads in/saad8.in
+ > renamed what was JT_SetUpSaad to JT_SetUpSaad_ELL, and created
+   a new JT_SetUpSaad_Full
+ > modified preconditioner generation and application routines
+- no longer open and close logical units for output and error
+ > will later add calls to flush logical units when debugging
+- modifications to test/GNUmakefile
+ > added full storage test problems 
+ > added ability to run subset of full test suite
+ > now saves perf.data on Cray
+ > Cray uses BLAS and LAPACK by default
+- many more routines now conform to most recent stylistic standards
+ > single space after commas in parameter lists, argument lists,
+   declaration statements, etc.
+ > enddo, endif, etc.
+ > removed (1), etc. when passing arrays (unless passing particular
+   element, column, etc., of course)
+- NOTE: something's screwy about the makefiles
+ > on the Cray and HP things get redone when they don't need to
+ > may have to do with the lack of ranlib on those two machines?
+
+Tag: release8-0 (10/24/94)
+
+- ported to HP-UX 9.01
+ > HP Fortran has F90 dynamic memory constructs (allocatable and
+   automatic arrays)
+ > modified makefiles, memory.awk, JT_Clock, JT_GetRandomFloat,
+   and JT_OpenUnitAppend
+ > bundled cpp doesn't recognize -M option, so must use GNU C
+  - have heard that unbundled C environment doesn't either
+  - must use -traditional option with GNU cpp, otherwise it chokes on
+    quotes in comments
+ > code fails using malloc/free, but works fine using the F90 construct
+   for dynamic memory
+- ported to UNICOS 7.0.6.1 using cf77 (not cf90 yet)
+ > modified makefiles
+  - have to figure out operating_system a bit differently
+  - use gpp rather than cpp
+  - hardwired memory size in test/GNUmakefile
+  - had to add rules for .f -> .o, since implicit rule isn't right
+  - added warning messages and recovery if try to build or run
+    real*4 versions on Cray
+  - cf77 has automatic but not allocatable arrays
+   > runs fine both using automatic and using HPALLOC/HPDEALLOC
+ > modified memory.awk
+  - cf77 wouldn't allow (*) or (0:*) as dimensions for arrays allocated
+    in main program, so changed to (1) and (0:1)
+   > can still access them as 1-D arrays
+  - since I use such long routine names, the error messages written
+    out when memory allocation/deallocation fails had to be shortened
+  - added code to declare memerr as integer on Cray
+ > modified JT_ParseArgFloat and JT_ParseArgInt
+  - cf77 doesn't allow unformatted reads with internal I/O, so
+    had to hard-code "reasonable" edit descriptors
+ > modified JT_Main
+  - close luout and luout_nspcg after creating
+ > results disappointing
+  - test suite currently only solves systems stored in ELL format,
+    which uses indirect addressing
+  - CPU times generally longer than for RS/6000 Model 590 sometimes
+    (e.g. SOR/SSOR) by a lot
+- modified JT_Clock to return user+system time on workstations
+ > formerly just returned user time
+ > may want to add ability to return both
+- increased itmax for problem suite to 5000
+ > noticed that SOR/SSOR were not converging in 1000 iterations,
+   which was the old value of itmax
+- improved Usage file
+ > noticed that JT_OpenUnitAppend was missing, so added it
+ > modified intro section and added section describing how to use
+   the iterative solvers
+- added Implementation file
+ > for details about how and why certain things are implemented in
+   the package
+- revamped output routines
+ > removed JT_WriteMatrix_ELL, JT_WriteMatrix_Full and corresponding
+   routines to output system
+ > replaced with JT_WriteMatrixFloat, JT_WriteMatrixInt, JT_WriteSystemFloat
+ > of course required modifications to JT_WriteMatrix and JT_WriteSystem
+- updated ToDo
+
+Tag: release7-1 (10/16/94)
+
+- fixed typo in release7-0 release notes (AIX version number)
+- modified memory.awk and makefiles to allow use of Fortran 90-type
+  dynamic allocation of arrays
+ > allocatable arrays for arrays not known at declaration (just
+   arrays in test program at this point)
+ > automatic arrays for all others
+ > made this the default on RS/6000's
+ > much cleaner code
+- also added "routine" variable to memory.awk 
+ > used in error messages
+ > somewhat problematic in that the makefiles construct the string to
+   set the variable to from the filename, which doesn't always match
+   the routine name (e.g. most JTPACK routines)
+ > modified makefiles accordingly
+- other modifications to both makefiles
+ > modified cleanup targets somewhat
+ > added -qhot to OPTFLAGS for RS/6000's
+ > changed DPFLAGS for RS/6000's to -qrealsize=8
+- other modifications to test/GNUmakefile
+ > changed DEBUG and DEBUGFLAGS to DBX and DBXFLAGS
+ > modified setting of "model" variable to work for Tatung Super
+   COMPstation 20
+ > added correction for 64MB of memory
+ > corrected AIX version number
+- modified comments in .F files about dynamic allocation of temporaries
+ > since no allocation or deallocation when using automatic arrays,
+   removed comments about allocation and deallocation except in main
+   program
+ > left declaration comments
+- fixed minor bug in JT_SetUpSaad
+- continued removing starting point for arrays from call statements
+- increased size of test problems
+ > now 2000 unknowns, block size of 50
+- noticed that checkout of past releases does not create directories
+  that are completely empty (those without even a .cvsignore file)
+ > lib, test/obj, and test/out
+ > haven't decided what to do about it yet
+  - could just put *something* in them to force them to be checked out
+  - could remove them from the repository and have the makefiles create
+    them as needed
+
+Tag: release7-0 (10/3/94)
+
+- ported package to IBM RS/6000, AIX 3.2, XL Fortran 3.1
+ > appending to files is default with old files
+  - different from Sun (uses access='append') or Cray (uses position=
+    'append')
+  - added new routine, JT_OpenUnitAppend, which is called whenever
+    need to append to a file (isolates this system dependency)
+ > timer called in JT_Clock is similar to that for Sun, but has
+   an underscore appended to the name of the routine (ETIME_)
+ > added #ifdefs to JT_GetRandomFloat (similar to Sun)
+ > added #ifdef to JT_ParseArgChar
+  - XLF didn't like reading a character from a string with a
+    format of '(a)', so used * instead
+ > several modifications to JT_Main
+  - XLF didn't like zero-length strings, so changed them to
+    single blanks
+  - removed dimensions for arrays in call statements
+  - added compiler directive to turn on the DDIM option on RS/6000
+   > allows access to dynamically allocated arrays in routines
+     in which they are allocated
+  - call JT_OpenUnitAppend to append to output file
+ > modified memory.awk
+  - now writes out #ifdefs for RS/6000
+   > same as for Sun, but calls MALLOC and FREE with %val() around
+     arguments (since using C routines and C passes arguments by
+     value rather than reference)
+   > changed #ifdef sun around declaration of MALLOC as integer to
+     #ifndef cray
+ > modified makefiles for use on IBM RS/6000, AIX 2.3
+  - changed from $(machine) to $(operating_system), which is
+    automatically determined by $(shell uname), which returns SunOS
+    on Suns and AIX on RS/6000s
+  - had to do some weird stuff to get dependencies and create .f
+    files from .F files because of how cpp works on the RS/6000s
+  - for now hardwired the os, model, and memory variables for the
+    RS/6000s (not as easy to get as on Suns)
+
+Tag: release6-5 (8/29/94)
+
+- documented dist target in main makefile
+- corrected comment in JT_VectorNorm
+
+Tag: release6-4 (7/19/94)
+
+- minor changes to makefiles
+ > improved setting of environment variables in test/GNUmakefile
+ > documented cleanup targets in both makefiles
+ > other minor changes to comments
+- removed exclude from the exclude file (so a distribution could build
+  another distribution from itself after being un-tarred)
+
+Tag: release6-3 (6/29/94)
+
+- modified memory.awk to add lines to allocate-xxx.inc files to test 
+  memory allocation return status for each allocation
+ > if allocation fails, execution will stop, and a message is written
+   to stderr saying that the failure occurred in JTPACK, and the name
+   of the array is given
+ > the return status of deallocation is also checked on Crays
+
+Tag: release6-2 (6/17/94)
+
+- changed main makefile to use compress rather than gzip
+
+Tag: release6-1 (6/17/94)
+
+- modified output options (specified by iout)
+- started modifying routines to conform to a new style standard
+ > use goto, enddo, endif, elseif, rather than inserting a space between
+   the two words
+ > more C-like, shell-like, make-like etc.
+
+Tag: release6-0 (6/17/94)
+
+- modified both makefiles to work correctly with new test program input
+  structure
+ > again runs a variety of test problems
+- haven't yet fixed comments in test program describing input, but
+  added a warning stating that the comments that are there are out-of-
+  date
+- added new routines to Usage file
+- removed comments in JT_CG, JT_BCGS, and JT_GMRES about which iparm
+  and rparm elements need to be set on entry and which are returned
+ > now that the matrix storage format stuff is split off, all of them
+   have the potential of being used or set, depending on the
+   circumstances
+
+Tag: release6-0beta (6/16/94)
+
+- this is a beta release since there are things that I *know* are not
+  quite right
+- fixed bug in JT_GMRES introduced by change in release5-3
+- completely restructured test program
+ > now allows interactive use, etc. (see header for details)
+ > deleted most input files that were being used (modified and kept
+   a few, and added a few new input files that set default parameters)
+ > updated comments in header
+
+Tag: release5-3 (6/13/94)
+
+- fixed bugs in JT_BCGS and JT_GMRES
+
+Tag: release5-2 (6/13/94)
+
+- fixed bug in makefile
+
+Tag: release5-1 (6/13/94)
+
+- fixed exclude file to reflect changes in release4-0
+
+Tag: release5-0 (6/13/94)
+
+- implemented reverse communication option for preconditioning
+- modified how user routines for matrix-vector multiplication is
+  implemented
+ > changed to be consistent with preconditioning options
+ > added new iparm value, matvec, which indicates whether to use
+   JTPACK or user routines
+
+Tag: release4-0 (6/10/94)
+
+- fixed bug in double precision part of JT_GetRandomFloat
+- changed from implicit typing to explicit typing of variables
+- got rid of all those silly include files that were just comments
+  about particular storage parameters (like maxnz)
+ > actually these were useful at one time, but the need for them
+   has long since disappeared, and they had become simply a hassle
+- increased "objectification" of package
+ > split information about how matrices are stored out of iparm
+ > now each matrix has two auxiliary integer arrays, one containing 
+   information on how the matrix is stored, and one containing other
+   information, as needed, e.g. a column map
+ > so a matrix a would be represented as a,ia,ja in calling statements,
+   etc.
+ > individual variables containing storage information, e.g. maxnz, are
+   now called, e.g. maxnz_a, to facilitate referring to more than one
+   matrix
+ > required changing defines, call statements, etc.
+- modified memory.awk
+ > added new variable, outdir, which is the location to put the include
+   files it generates (defaults to .)
+ > output file that was named pointers-foo.inc is now called 
+   declare-foo.inc and also contains type declarations for each array
+   (including dimension if dimension_in_pointer == "no"), and
+   a cpp "#ifdef sun" block to declare MALLOC as an integer function on
+   the Sun
+- automatically-generated include files related to dynamically-allocated
+  arrays now stored in tmp and test/tmp directory rather than src/include
+  and test/include
+- massive changes to test program (many as a result of the above changes
+  to the package, but also some cleaning up of output, code, etc.)
+
+Tag: release3-2 (5/17/94)
+
+- several makefile changes
+ > changed dist target rules so that distribution tar file again creates
+   a subdirectory in which the package is unpacked (now also looks at
+   this file to determine a version number to use in the name of the 
+   subdirectory and tar file
+ > added a variable called NOINC that is tested to determine whether or
+   not to include the dependency makefiles (this solves the problem of
+   some files being created just so they could be deleted in cleanup
+   targets)
+ > added a default rule to both makefiles
+ > changed directory name variables to more closely follow GNU standards
+ > changed the cleanup targets somewhat
+
+Tag: release3-1 (5/17/94)
+
+- added a *very* rudimentary User's Guide
+- added a "To Do" list
+- took out the loop in JT_GeneratePreconditioner that set jap identically
+  to ja
+ > ipre=1 and ipre=2 don't really need jap
+ > should be done specifically for each preconditioner anyway
+
+Tag: release3-0 (5/13/94)
+
+- added routine JT_SOR, which is a driver for performing SOR or SSOR
+ > added routines JT_SOR_Full and JT_SOR_ELL to perform one iteration
+   of SOR or SSOR for full and ELL storage
+ > added new istop option, || x - xold || / || x ||
+ > added new rparm value, rparm(3), a relaxation parameter
+ > required significant changes to JT_CheckConvergence, which in turn
+   impacted the other iterative solver routines and the test program
+ > added input files to test new routines
+- improved the way the makefile determines the environment (model, os,
+  memory, etc.)
+- fixed possible bug in JT_Clock (wasn't declaring ETIME real*4)
+- added the file ChangeLog.old, which is from the old version of JTPACK
+
+Tag: release2-1 (5/11/94)
+
+- added routine JT_SetDefaults to set reasonable iparm and rparm values
+- minor modifications to distribution targets in makefile
+
+Tag: release2-0 (5/10/94)
+
+- removed restriction that required some vectors to begin at zero
+ > now dynamically allocate a temporary vector in the routines that
+   perform matrix-vector multiplication for matrices stored in ELL
+   format, and copy the vector being multiplied into it
+ > impact on CPU time negligible for problems with 200 unknowns and
+   around 5% for problems with 1000 unknowns
+ > benefit outweighs cost
+- fixed ipre.inc to reflect the fact that the least-squares
+  preconditioner has been removed and the continuous operator option
+  was never implemented
+- fixed logic problem related to ipre and iprein in JT_BCGS, JT_CG, and
+  JT_GMRES
+
+Tag: release1-0 (5/10/94)
+
+- added this file
+- fixed bug in user-preconditioning in ApplyPreconditioner
+- added and fixed .cvsignores
+- fixed targets in makefile related to creating tar files for
+  distribution
+- fixed exclude file
+- added test/obj, test/out, test/tmp subdirectories to repository
+
+Tag: start (5/9/94)
+
+- this is the package as imported into CVS
+- differences between this version and the old version:
+ > radically changed directory structure
+ > renamed routines and source files (now long and much more descriptive)
+ > renamed Fortran includes from .h to .inc
+ > renamed makefile GNUmakefile to emphasize the fact that it uses
+   features specific to GNU make
+ > changed references to elements of iparm and rparm to cpp defines
+   (this fixes a bug related to recursion since local variables in
+   subroutines are by default static in Sun Fortran)
+ > changed dot product and vector norm routines from subroutines to
+   functions, since they return a single scalar
+ > removed routines and input files related to preconditioning by a
+   least-square approximate inverse
+ > fixed bug in makefile related to building just the library
+ > fixed bug in makefile related to seting OUTDIR
+ > changed argument lists of all subroutines using a matrix (e.g. "a" or
+   "ap") such that the corresponding map arrays (e.g. "ja" or "jap") always
+   appear just after the array itself (think of the two as one object)

@@ -1,0 +1,115 @@
+
+Welcome to UbikSolve
+____________________
+
+$Id: README,v 1.9 2002/07/31 21:02:23 turner Exp $
+
+
+UbikSolve is an object-based toolkit comprised of various Fortran routines
+developed over the years.  It is the successor to JTpack, which began as a
+Fortran 77 library, JTpack77 (LA-CC-93-5), evolved through several initial
+Fortran 90 incarnations into JTpack90 (LA-CC-95-6).
+
+It contains some BLAS-like routines, some LAPACK-like routines, various
+iterative solvers, and utility routines like timers, random number
+generators, I/O routines, routines to parse command-line arguments to
+Fortran programs, etc.
+
+The package embraces many of the advantages of modern Fortran:
+
+- All routines are encapsulated in modules, so all interfaces are
+  explicit.
+- The KIND selector is used in all declarations.
+- The INTENT attribute is used in all dummy argument declarations.
+- Assumed-shape arrays are used exclusively (*no* assumed-size
+  arrays are used).
+- Generic procedures are used extensively.
+- Derived types are used extensively.
+
+Contents of top-level directory:
+
+  ChangeLog       self-explanatory
+  GNUmakefile     a GNU makefile for building various versions of the
+                  library and building and running the test program
+  README          this file
+  bin             contains scripts, programs, and makefile fragments
+                  used to build/run the package; also the destination
+                  for the test program executables
+  build           subdirectory to hold auxiliary files created during
+                  compilation (listings, dependency and cpp-processed
+                  files, etc.)
+  doc             subdirectory containing documentation (see below)
+  include         subdirectory containing source files included by other
+                  source files
+  lib             default destination for the libraries
+  src             subdirectory containing source files
+  test            subdirectory containing routines for testing the package
+
+Contents of doc subdirectory:
+
+  ChangeLog.77    ChangeLog for the Fortran 77 version of JTpack
+  ChangeLog.90    ChangeLog for the earlier Fortran 90 versions of JTpack
+  ChangeLog.90_2  ChangeLog for the most recent precursor to UbikSolve
+  Implementation  notes about implementation details
+  Modules         a description of the module structure of the library
+  Performance.90  performance of earlier versions on various platforms
+  Performance.77  performance of the Fortran 77 version on various platforms
+  ToDo            a list of things I plan to do
+  Usage           a rudimentary User's Guide
+
+Building
+========
+
+Comments in the header of the makefile describe how to build the various
+versions of the library and test program.
+
+Building the library on most platforms requires:
+
+o one of the supported Fortran compilers (see above)
+
+o GNU make (version 3.69 or greater), which can be obtained (free of charge)
+  from ftp://ftp.gnu.org/ (and mirror sites)
+
+o Perl (just about any version), which can be obtained (free of charge)
+  from http://www.perl.org/
+
+o a C preprocessor (if a vendor C preprocessor is not available, use gcc,
+  available free of charge from ftp://ftp.gnu.org/ and mirror sites)
+
+On Windows 2000 the easiest way to obtain the required tools (other than
+the Fortran compiler) is to install the Cygwin suite, available free of
+charge from http://www.cygwin.com/.
+
+To use the library, link your code to the library.  For example, if
+the libraries are in /usr/local/lib and you wanted to link to the
+library libubiksolve.a, you'd add the following to your link command:
+
+        -L/usr/local/lib -lUbikSolve
+
+If you plan to use the test program to see plots of residual norms (an
+input variable turns plotting on and off), gnuplot (version 3.6 or greater)
+must also be installed.  Gnuplot can be obtained free of charge from
+http://www.gnuplot.info/.
+
+By default, the test suite (see GNUmakefile for instructions on how to do
+that) does not generate plots as it runs.  It does generate plot files so
+the plots can be viewed later, but it doesn't put the plots on the screen.
+This way you can still test the library even if gnuplot isn't available.
+To run the test suite with plotting turned on, change the value of iplot in
+test/in/UbikSolve.in from 0 to 1.
+
+Final Notes
+===========
+
+If you want to get deeper into the package, compile the library as
+described above and look at the cpp-processed .f files in the build
+directory after compilation to see how to call the various routines.
+The header for each routine explains what the routine does and how to
+call it.
+
+If you have any questions or problems, please feel free to contact me.
+
+--
+John A. Turner
+john.turner@pobox.com
+http://john.turner.org/

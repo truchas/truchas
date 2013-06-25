@@ -1,0 +1,18 @@
+brick x 4 
+webcut volume 1 with plane xplane offset 0
+webcut volume 2 with plane yplane offset 0
+webcut volume 1 with plane zplane offset 0
+imprint volume all 
+merge volume all 
+
+volume all size 1
+volume all scheme Map
+mesh volume all
+
+block 7 volume 1  
+block 3 volume 2  
+block 31 volume 3  
+block 101 volume 4  
+
+set large exodus file off
+export Genesis  "mesh1.gen"  overwrite

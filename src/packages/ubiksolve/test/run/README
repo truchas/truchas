@@ -1,0 +1,16 @@
+sample command lines for running problems
+
+./UbikTest problem=2 method=tfqmr pre=ssor
+./UbikTest problem=2 method=tfqmr pre=ssor plot=yes
+
+./UbikTest problem=2 method=fgmres pre=none use_true_residual=yes
+
+./UbikTest problem=2 unknowns=5000 blocksize=50 method=tfqmr pre=ssor plot=yes
+./UbikTest problem=2 unknowns=5000 blocksize=50 method=tfqmr pre=ssor residual=1 plot=yes
+
+./UbikTest problem=2 unknowns=5000 blocksize=50 method=gmres pre=ssor
+
+./UbikTest problem=2 unknowns=5000 blocksize=50 method=fgmres pre=none
+./UbikTest problem=2 unknowns=5000 blocksize=50 method=fgmres pre=ssor
+./UbikTest problem=2 unknowns=5000 blocksize=50 method=fgmres pre=ssor stop=r
+./UbikTest problem=2 unknowns=5000 blocksize=50 method=fgmres pre=jacobi

@@ -1,0 +1,26 @@
+A BDF2 ODE Integrator
+
+Neil N. Carlson <nnc@lanl.gov>
+20 Jun 2005
+
+BDF2 is a stiff ODE integrator based on the second-order, backward-difference
+approximation of the derivative.  This code is adapted from an existing BDF2
+integrator package I wrote in the mid-90's (pre-LANL days) and used in my
+moving finite element codes.
+
+This package is specifically targeted for use in subscale modelling within
+Truchas; that is, models that require the numerical solution of independent
+ODE systems on some (or all) cells within a single Truchas time step.  The
+modelling of viscoplasticity is one such example.
+
+Most ODE integration packages are designed for solving (very) large coupled
+systems, where overhead cost is insignificant, and the effective solution of
+sparse linear systems is central.  For the present application, the systems
+are very small (1 to a few) unknowns, but we may have a great many such systems
+being solved simultaneously (one per cell, e.g.), and the overhead cost can
+be quite large if a standard package is used.  This package thus seeks to
+minimize overhead, by sharing fixed 'read-only' data between multiple instances
+of an integration procedure, and making optional other data, such as the
+gathering of integration statistics.
+
+*** THIS IS A WORK IN PROGRESS ***

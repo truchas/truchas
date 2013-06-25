@@ -1,0 +1,31 @@
+time to compile optimized executable - sorted by total time
+
+ chip           clock      OS                  compiler          user    sys    total
+                (GHz)                                           (sec)   (sec)  (approx)
+ 
+ Athlon          1.2   Linux 2.4.17           Lahey 6.10b         8.07   1.12      9
+*Xeon            1.4   Linux 2.4.18           Lahey 6.10d         8.87   3.21     12
+ Pentium III     1.0   Linux 2.4.9-31         Lahey 6.10b        10.46   3.15     14
+ Athlon          1.2   Linux 2.4.17           Absoft 7.5.1       13.12   1.54     15
+*Alpha EV68      1.0   Tru64Unix 5.1-1885     Compaq 5.4-1684    17.99   2.29     20
+ Athlon          1.67  Win2kSP3/Cygwin 1.3.13 Absoft 8.0         17.11   4.87     22
+ Athlon          1.67  Win2kSP3/Cygwin 1.3.13 Absoft 7.5.2       17.35   4.70     22
+ Pentium III     1.0   Linux 2.4.18           Intel 7.0.064      19.89   2.39     22
+ Athlon          1.67  Win2kSP3/Cygwin 1.3.22 Absoft 7.5.2       17.84   5.50     23
+*Alpha EV68      1.25  Tru64Unix 5.1-1885     Compaq 5.5-1877    18.99   3.69     23
+*Xeon            1.4   Linux 2.4.18           NAGware 4.2.490    19.08   4.19     23
+ Athlon          1.67  Win2kSP3/Cygwin 1.3.22 Intel 7.0.092      18.39   5.67     24
+ Xeon            3.06  Win2kSP3/Cygwin 1.3.20 Absoft 7.5.2       16.45   8.39     25
+ Xeon            3.06  Win2kSP3/Cygwin 1.3.22 Intel 7.0.092      17.32   9.61     27
+ Xeon            1.7   Win2kSP2/Cygwin 1.3.10 Absoft 7.5.1       12.46  21.97     34
+ Alpha EV67     0.667  Tru64Unix 5.1-1877     Compaq 5.5-1877    35.14   3.30     38
+ Xeon            1.7   Win2kSP2/Cygwin 1.3.10 Lahey 5.60h        14.39  25.37     40
+ Pentium IIIM   0.850  Win2kSP3/Cygwin 1.3.12 Lahey 5.60h        16.43  23.94     41
+ Xeon            1.7   Win2kSP3/Cygwin 1.3.12 Absoft 7.5.2       17.95  32.94     51
+ Xeon            1.7   Win2kSP3/Cygwin 1.3.13 Intel 7.0.067      18.54  34.50     53
+ IA-64           1.0   Linux 2.4.18           Intel 7.0.083      79.3    1.64     81
+ MIPS R10000    0.194  Irix 6.5.11f           SGI 7.3.1.2m       91.6   10.5     102
+ Alpha EV56     0.500  Linux 2.2.18           Compaq 1.2.0-1882 137.95   6.28    144
+ UltraSPARC-IIi 0.300  Solaris 5.6            Sun 6.2           309.0   69.0     378
+
+*NFS-mounted files

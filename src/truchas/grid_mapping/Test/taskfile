@@ -1,0 +1,180 @@
+'*************************'
+'Run_1'
+'*************************'
+'mesh_a' 'mesh1a.exo'
+'mesh_b' 'mesh1b.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_2'
+'*************************'
+'mesh_a' 'mesh1a.exo'
+'mesh_b' 'mesh1b.exo'
+'reverse_order' T
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_3'
+'*************************'
+'mesh_a' 'mesh1a.exo'
+'mesh_b' 'mesh1b.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' T
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_4'
+'*************************'
+'mesh_a' 'mesh1a.exo'
+'mesh_b' 'mesh1b.exo'
+'reverse_order' T
+'exactly_conservative' F
+'preserve_constants' T
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_5'
+'*************************'
+'mesh_a' 'mesh1a.exo'
+'mesh_b' 'mesh1b.exo'
+'reverse_order' F
+'exactly_conservative' T
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_6'
+'*************************'
+'mesh_a' 'mesh1a.exo'
+'mesh_b' 'mesh1b.exo'
+'reverse_order' T
+'exactly_conservative' T
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_7'
+'*************************'
+'mesh_a' 'mesh1c.exo'
+'mesh_b' 'mesh1d.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_8'
+'*************************'
+'mesh_a' 'mesh1c.exo'
+'mesh_b' 'mesh1d.exo'
+'reverse_order' T
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_9'
+'*************************'
+'mesh_a' 'mesh1c.exo'
+'mesh_b' 'mesh1d.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' T
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_10'
+'*************************'
+'mesh_a' 'mesh1c.exo'
+'mesh_b' 'mesh1d.exo'
+'reverse_order' T
+'exactly_conservative' F
+'preserve_constants' T
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_11'
+'*************************'
+'mesh_a' 'mesh1c.exo'
+'mesh_b' 'mesh1d.exo'
+'reverse_order' F
+'exactly_conservative' T
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_12'
+'*************************'
+'mesh_a' 'mesh1c.exo'
+'mesh_b' 'mesh1d.exo'
+'reverse_order' T
+'exactly_conservative' T
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_13'
+'*************************'
+'mesh_a' 'sphere.exo'
+'mesh_b' 'sphere.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_14'
+'*************************'
+'mesh_a' 'shell-core-tet.exo'
+'mesh_b' 'shell-core-hex.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_15'
+'*************************'
+'mesh_a' 'shell-core-hex.exo'
+'mesh_b' 'shell-core-tet.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_16'
+'*************************'
+'mesh_a' 'shell-core-tet.exo'
+'mesh_b' 'shell-core-tet.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_17'
+'*************************'
+'mesh_a' 'quart-cyl-tet.exo'
+'mesh_b' 'quart-cyl-hex.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_18'
+'*************************'
+'mesh_a' 'quart-cyl-hex.exo'
+'mesh_b' 'quart-cyl-tet.exo'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0

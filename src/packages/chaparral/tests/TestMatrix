@@ -1,0 +1,37 @@
+2Daxi_Pairwise                    PAIRWISE ACTIVE 2DAXI FAST
+2Daxi_Hemicube                    HEMICUBE ACTIVE 2DAXI FAST
+2Dplanar_Pairwise                 PAIRWISE ACTIVE 2DPLANAR FAST
+2Dplanar_Hemicube                 HEMICUBE ACTIVE 2DPLANAR FAST
+3Daxi_Pairwise                    PAIRWISE ACTIVE 3D FAST
+3Daxi_Hemicube                    HEMICUBE ACTIVE 3D FAST
+AgglomeratedUnitCube1_Pairwise    PAIRWISE ACTIVE 3D AGGLOMERATE FAST
+AgglomeratedUnitCube_Pairwise     PAIRWISE ACTIVE 3D AGGLOMERATE FAST
+AgglomeratedUnitCube_Hemicube     HEMICUBE ACTIVE 3D AGGLOMERATE FAST
+BlockingParallelPlates_Pairwise   PAIRWISE ACTIVE 3D FAST  
+BlockingParallelPlates_Hemicube   HEMICUBE ACTIVE 3D FAST	  
+Box_Pairwise                      PAIRWISE ACTIVE 3D FAST	  
+Box_Hemicube                      HEMICUBE ACTIVE 3D FAST	  
+Box_Hemicube_Radsolve_CG          HEMICUBE ACTIVE 3D RADSOLVE CG FAST
+Box_Hemicube_Radsolve_CG_DLB      HEMICUBE ACTIVE 3D RADSOLVE CG DLB FAST
+Box_Hemicube_Radsolve_GMRES       HEMICUBE ACTIVE 3D RADSOLVE GMRES FAST
+Box_Read_Radsolve_CG              HEMICUBE ACTIVE 3D RADSOLVE CG IO
+MultipleEnclosure                 HEMICUBE ACTIVE 3D MULTIENCL FAST
+MultipleEnclosure_Radsolve_CG     HEMICUBE ACTIVE 3D MULTIENCL RADSOLVE CG FAST
+BirthDeath_Radsolve_CG            HEMICUBE ACTIVE 3D MULTIENCL RADSOLVE CG FAST
+Octant_Hemicube                   HEMICUBE ACTIVE 3D SYMMETRY FAST
+ParallelPlates_Pairwise           PAIRWISE ACTIVE 3D FAST  
+ParallelPlates_Hemicube           HEMICUBE ACTIVE 3D FAST  
+PlateInBox_Pairwise               PAIRWISE ACTIVE 3D FAST  
+PlateInBox_Hemicube               HEMICUBE ACTIVE 3D FAST  
+SmallBoxInBox_Pairwise            PAIRWISE ACTIVE 3D FAST  
+SmallBoxInBox_Hemicube            HEMICUBE ACTIVE 3D FAST  
+UnitCube_Pairwise                 PAIRWISE ACTIVE 3D FAST	  
+UnitCube_Hemicube                 HEMICUBE ACTIVE 3D FAST	  
+WarpedCube_Pairwise               PAIRWISE ACTIVE 3D FAST	  
+WarpedCube_Hemicube               HEMICUBE ACTIVE 3D FAST
+LargeBoxInBox_Pairwise            PAIRWISE ACTIVE 3D FAST
+LargeBoxInBox_Hemicube            HEMICUBE ACTIVE 3D FAST
+Complex_Pairwise                  PAIRWISE ACTIVE 3D
+Complex_Hemicube                  HEMICUBE ACTIVE 3D  
+SphereInSphere_Pairwise           PAIRWISE ACTIVE 3D	  
+SphereInSphere_Hemicube           HEMICUBE ACTIVE 3D	  

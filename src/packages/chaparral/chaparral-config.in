@@ -1,0 +1,27 @@
+# ############################################################################ #
+#                                                                              #
+# Chaparral CMake configuration file                                              #
+#                                                                              #
+# ############################################################################ #
+
+# Define the directory this file resides in, need this for the targets file
+get_filename_component(SELF_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+# Version
+set(Chaparral_VERSION                   @Chaparral_VERSION@)
+
+# Build Configuration
+set(Chaparral_ENABLE_MPI                @ENABLE_MPI@)
+set(Chaparral_C_COMPILER                @CMAKE_C_COMPILER@)
+
+# Include directories
+set(Chaparral_INCLUDE_DIRS        @Chaparral_INCLUDE_INSTALL_DIR@)
+if(Chaparral_ENABLE_MPI)
+  list(APPEND Chaparral_INCLUDE_DIRS @MPI_C_INCLUDE_PATH@)
+endif()
+
+# Library directory
+set(Chaparral_LIBRARY_DIR         @Chaparral_LIBRARY_INSTALL_DIR@)
+
+# Include the targets file
+include(${SELF_DIR}/chaparral-targets.cmake)

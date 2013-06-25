@@ -1,0 +1,54 @@
+/* runinfo.C */
+
+/*------------------------------------------------------------------------------
+ * get system information at runtime
+ *
+ * too hard (or impossible) to do in F90
+ *
+ * author: Bryan Lally, lally@lanl.gov
+ *----------------------------------------------------------------------------*/
+
+#include <sys/utsname.h>
+#include <unistd.h>
+#include <string.h>
+
+#include <FortranCInterface_names.h>
+
+static void f90strcpy(char *ostring, char *istring)
+{
+  while (*istring)
+    *ostring++ = *istring++;
+}
+
+#define getrunhostinfo TR_ROUTINE_GLOBAL(getrunhostinfo,GETRUNHOSTINFO)
+
+void getrunhostinfo(char *arch, char *host)
+{
+  char string[128];
+  struct utsname data;
+
+  /* fill the uname structure */
+  uname(&data);
+
+  /* build one arch string, as 'uname -a' would return */
+  strcpy (string, data.sysname);
+  strcat (string, " ");
+  strcat (string, data.nodename);
+  strcat (string, " ");
+  strcat (string, data.release);
+  strcat (string, " ");
+  strcat (string, data.version);
+  strcat (string, " ");
+  strcat (string, data.machine);
+
+  /* send to f90 */
+  f90strcpy (arch, string);
+
+  /* get the fully qualified domain name */
+  gethostname (string, sizeof(string));
+
+  /* send to f90 */
+  f90strcpy (host, string);
+}
+
+/* runinfo.C end */

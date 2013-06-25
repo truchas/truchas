@@ -1,0 +1,34 @@
+This directory contains GRID_MAPPING_MODULE.F90 which contains the
+promised procedures in the 'Hex to Hex Mapping' interface design
+document.  It also contains GRID_MAPPING_UTILS.F90, HPSORT.F90, and
+OVERLAP_MODULE.F90 required by GRID_MAPPING_MODULE.F90.  Note:
+OVERLAP_MODULE.F90 is by Jay Mosso; GRID_MAPPING_MODULE.F90 is by me.
+
+As an example of usage of the hex to hex procedures, there is a
+program called DRIVER.F90 in this directory.  If you execute the
+script BUILD_GM on the linux machines, an executable MAPTEST will be
+built.  When MAPTEST is executed, a command file TASKFILE is read
+which instructs MAPTEST to read pairs of binary exodus meshes and map
+a cell field between the two meshes.  DRIVER.F90 demonstrates usage of
+the publically available procedures in GRID_MAPPING_MODULE.F90,
+including computation of the intersection volumes, reading and writing
+intersection volumes to disk, mapping cell fields, and destroying
+derived data types.
+
+At this point, the demo build script BUILD_GM only works on the
+lahey/linux machines (i.e., telluride and tsoodzil).
+
+Routines from the ../EXODUS directory are linked into the MAPTEST
+executable in order to allow reading of the exodus binaries
+MESH1A.EXO, MESH1B.EXO, MESH1C.EXO, and MESH1D.EXO.  The first six
+tasks in TASKFILE compare MESH1A.EXO and MESH1B.EXO.  These meshes
+cover approximately the same space and so the integral of the test
+field (a field which is identically 1 on the source mesh) is
+approximately the same on both meshes.  The last six tasks in TASKFILE
+compare MESH1C.EXO and MESH1D.EXO.  Here, MESH1C.EXO is intentionally
+missing a region, so the integral over this mesh is significantly
+smaller if this mesh is the 'destination' mesh.
+
+Andrew Kuprat
+Feb. 10, 2005
+kuprat@lanl.gov

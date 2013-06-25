@@ -1,0 +1,28 @@
+This directory contains some small tests to verify the correct function
+of the utility program addgaps.  There are three test meshes.  The first
+two are a cube divided into 3 bodies with a collection of internal side
+sets, and node sets defined.  Mesh1 is meshed with hexes, and mesh2 with
+tets.  The bulk of the testing can be performed with these meshes.  Mesh3
+is a hybrid mesh containing both hex and wedge elements and is used to
+test the ability of addgaps to correctly handle hybrid meshes with both
+tri and quad sides on the gap surfaces.
+
+See the README_TEST* files for a description of the tests in each suite,
+and the expected results.  Reference output from the tests can be found
+in the subdirectory Reference_Output.
+
+For the hex mesh tests (TEST1) we can read the output meshes back into
+cubit for visualization to verify the results.  The output of the
+remaining tests will contain wedge elements and cubit will not import
+these, however.  Ensight8 is able to read Exodus meshes and can be used
+for visualization.
+
+The netCDF utility 'ncdump' can be used to obtain a human-readable dump
+of the .exo files in order to verify quantitatively that addgaps is
+functioning correctly.  Unless the mesh is very small, this is most
+useful only for checking the number of nodes and elements, the number
+of new element blocks and their type, the number of sides in each side
+set, etc.
+
+Neil Carlson <nnc@lanl.gov>
+7 Nov 2005

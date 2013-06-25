@@ -1,0 +1,38 @@
+concentric spheres
+&
+& GEOMETRY:      2Daxisym, 2Dplanar, 3D
+& VF_METHOD:     READ, PAIRWISE, HEMICUBE
+& SAMPLING:      RANDOM, UNIFORM, JITTER, HALTON
+& SYMMETRY:      NONE, SUB, ADD, AVG
+& SMOOTHING:     NO, YES
+& RAD_SOLVER:    CG, GMRES, AZ_CG, AZ_GMRES
+& MESH_FORMAT:   ASCII, EXODUS
+& MATRIX_FORMAT: ASCII, BINARY, XDR
+&
+& NUM_STEPS  NUM_ENCLOSURES  MAX_PATCHES
+      1            1            2000
+&
+& ENCLOSURE_ID    
+  SphereInSphere
+&         GEOMETRY  NONBLOCKING  PARTIAL  ASINK  SPATIAL_TOL 
+             3D         no         no      1.0     1.0e-5       
+&         XMIRROR  YMIRROR  ZMIRROR  NROTATIONS 
+            no       no       no         1   
+&         BSP_DEPTH  BSP_LENGTH 
+             6          25     
+&         VF_METHOD  OUTPUT_LEVEL
+          pairwise        1
+&         VIS_NSAMPLES  VIS_SAMPLING  MC_NSAMPLES  MC_SAMPLING  MC_TOL1  MC_TOL2
+              16          uniform         100        halton     1.0e-5   1.0e-6
+&         SMOOTHING  WEIGHT  TOLERANCE  MAX_ITERATIONS  SYMMETRY  OUTPUT_LEVEL
+             yes      2.0     1.0e-8         200          avg          1
+&
+&
+&         TOPOLOGY_STEPS
+           1
+&         MESH_FILE  MESH_FORMAT  MATRIX_OUTPUT  MATRIX_FORMAT
+          mesh.txt      ascii          yes          binary
+&
+&
+&         RADSOLVE  SOLVER  DLB  OUTPUT_LEVEL
+             no       cg    no        1

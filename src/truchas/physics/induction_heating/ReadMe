@@ -1,0 +1,33 @@
+The following files comprise the EM solver core:
+
+MimeticDiscretization.F90 -- Provides the fundamental tools needed to
+	implement mimetic FD schemes over tetrahedral meshes.
+MeshSupport.F90 -- Provides mesh tools.
+
+MaxwellEddy.F90 -- Maxwell solver in the low-frequency, eddy current regime.
+SolutionHistory.F90 -- Provides a structure for maintaining solution history.
+CGSolver.F90 -- Simple CG solver.
+sparse_matrix.F90 -- Essential sparse matrix tools.
+GraphModule.F90 -- Tools for handling graphs; used by sparse_matrix.
+
+MaxwellBoundaryData.F90 -- Provides high-level tools for configuring the
+	boundary condition data.  Works in conjunction with MaxwellEddy.
+
+
+The following files provide general output tools:
+data_explorer.F90 -- General tools for producing DX graphics files.
+field_probes.F90 -- General tools for probing discrete fields in mimetic
+	discretization schemes.
+GeometricModeler.F90 -- Rudimentary geometric modeling tools; used to
+	reconstruct boundary information on bare meshes.
+
+
+Miscellaneous service tools:
+kind_parameters.F90 -- Kind parameters.
+system_io.F90 -- mainly a routine to get a free logical unit for I/O.
+utilities.F90 -- mainly a routine to convert an integer to a string.
+
+
+The following files provide C-style assert facilities for F90:
+f90_assert.F90, f90_assert.fpp
+

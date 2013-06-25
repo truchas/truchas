@@ -1,0 +1,46 @@
+&PHYSICAL_CONSTANTS
+  absolute_zero = 0.0
+  stefan_boltzmann = 1.0e-3
+/
+
+&MESH
+ name='main'
+ file='mesh.g'
+ coord_scale_factor=2.0
+/
+
+&ENCLOSURE_RADIATION
+  name = 'exterior'
+  enclosure_file = 'exterior.nc'
+  ambient_constant = 6.5
+  coord_scale_factor = 2.0
+/
+
+&ENCLOSURE_SURFACE
+  name = 'exterior surface'
+  enclosure_name = 'exterior'
+  face_block_ids = 3
+  emissivity_function = 'exterior eps'
+/
+
+&FUNCTION
+  name = 'exterior eps'
+  type = 'polynomial'
+  poly_coefficients = 0.8
+  poly_exponents = 0
+/
+
+&ENCLOSURE_RADIATION
+  name = 'interior'
+  enclosure_file = 'interior.nc'
+  ambient_constant = 1.0
+  coord_scale_factor = 2.0
+/
+
+&ENCLOSURE_SURFACE
+  name = 'interior surface'
+  enclosure_name = 'interior'
+  face_block_ids = 2
+  emissivity_constant = 0.8
+/
+

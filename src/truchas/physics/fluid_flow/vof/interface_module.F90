@@ -1,0 +1,207 @@
+MODULE INTERFACE_MODULE
+  !=======================================================================
+  ! Purpose(s):
+  !
+  !   Define interface derived types containing all interface
+  !   and interface cell data necessary to perform a piecewise
+  !   planar reconstruction.
+  !
+  ! Public Interface(s):
+  !
+  ! Contains: INTERFACE_DATA
+  !           INTERFACE_FLUX_DATA
+  !           INTERFACE_MODEL_DEFAULT
+  !           SETUP_INTERFACE_GEOM
+  !           SETUP_INTERFACE_FLUX
+  !
+  ! Author(s): S. Jay Mosso (LANL Group X-HM, sjm@lanl.gov)
+  !            Matthew Williams (MST-8, mww@lanl.gov)
+  !
+  !=======================================================================
+  use kind_module,      only: int_kind, real_kind
+  use parameter_module, only: ncells, ndim, nvc, max_topology_models
+ 
+  implicit none
+ 
+  ! Private Module
+  private
+
+  ! Public Procedures and Types
+  public :: INTERFACE_DATA,           &
+            INTERFACE_FLUX_DATA,      &
+            INTERFACE_MODEL_DEFAULT,  &
+            SETUP_INTERFACE_GEOM,     &
+            SETUP_INTERFACE_FLUX
+
+  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+  ! character string in NUMERICS namelist
+  character(LEN = 80),                                 public, save :: interface_topology_model
+  character(LEN = 80), dimension(max_topology_models), public, save :: interface_model_forms
+
+  type INTERFACE_DATA
+ 
+     ! The interface normal.
+     real(real_kind) :: Normal(ndim)
+ 
+     ! The interface plane constant.
+     real(real_kind) :: Rho
+ 
+     ! Volume fraction of the material(s) behind this interface.
+     real(real_kind) :: Vof
+
+     ! Area of the interface for material(s)
+     real(real_kind) :: Area
+ 
+     ! The donor cell volume.
+     real(real_kind) :: Cell_Volume
+ 
+     ! The physical coordinates of the cell vertices of the interface cells.
+     real(real_kind) :: Cell_Coord(ndim,nvc)
+ 
+  end type INTERFACE_DATA
+
+  ! Declare an array of INTERFACE_DATA types
+  type(INTERFACE_DATA), pointer, public, dimension(:) :: Int_Geom => null()
+
+  type INTERFACE_FLUX_DATA
+
+     ! The flux volume.
+     real(real_kind) :: Flux_Vol
+
+     ! The physical coordinates of the flux volume vertices of the interface cells.
+     real(real_kind) :: Flux_Vol_Coord(ndim,nvc)
+ 
+     ! The face identifier for this advection sweep.
+     integer(int_kind) :: Face
+ 
+     ! The advected volume of the materials behind this interface.
+     real(real_kind) :: Advected_Volume
+
+     ! The iteration count required to locate this plane.
+     integer(int_kind) :: Iter
+
+   end type INTERFACE_FLUX_DATA
+
+  ! Declare an array of INTERFACE_FLUX_DATA types
+  type(INTERFACE_FLUX_DATA), pointer, public, dimension(:) :: Int_Flux => null()
+
+
+CONTAINS
+
+  SUBROUTINE INTERFACE_MODEL_DEFAULT()
+    !=======================================================================
+    ! Purpose:
+    !   Fill allowable interface topology model array (interface_model_forms)
+    !
+    !=======================================================================
+
+    ! Valid character strings for interface topology models
+    interface_model_forms = ''
+    interface_model_forms(1) = 'least squares model'  
+    interface_model_forms(2) = 'convolution model'
+ 
+    return
+
+  END SUBROUTINE INTERFACE_MODEL_DEFAULT
+
+  SUBROUTINE SETUP_INTERFACE_GEOM (Mask, G1, G2, G3, Vof)
+    !=======================================================================
+    !  Purpose(s):
+    !
+    !    Perform a masked pack of interface parameters into 
+    !    the INTERFACE_DATA derived type.
+    !
+    !=======================================================================
+    use gs_module,   only: EN_GATHER
+    use mesh_module, only: Cell, Vertex, Vrtx_Bdy
+ 
+    implicit none
+ 
+    ! Arguments
+    logical,         dimension(ncells), intent(IN) :: Mask
+    real(real_kind), dimension(ncells), intent(IN) :: G1, G2, G3
+    real(real_kind), dimension(ncells), intent(IN) :: Vof
+ 
+    ! Local Variables
+    integer(int_kind)                        :: n, v
+    real(real_kind),   dimension(ncells)     :: Tmp
+    real(real_kind),   dimension(nvc,ncells) :: Vtx1
+ 
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+ 
+    ! Pack the interface normal vector.
+    Int_Geom%Normal(1) = PACK (G1, Mask)
+    Int_Geom%Normal(2) = PACK (G2, Mask)
+    Int_Geom%Normal(3) = PACK (G3, Mask)
+ 
+    ! Pack the donor volume fraction.
+    Int_Geom%Vof = PACK(Vof, Mask)
+ 
+    ! The correct donor cell volume was put into Volume
+    ! in the code above.  Just pack it into the arrays.
+    Int_Geom%Cell_Volume = PACK (Cell%Volume, Mask)
+ 
+    ! Gather the donor cell's vertices
+    do n = 1,ndim
+ 
+       ! Added the BOUNDARY argument.  Now off-pe data motion only done
+       ! on first time through.
+       call EN_GATHER (Vtx1, Vertex%Coord(n), BOUNDARY=Vrtx_Bdy(n)%Data)
+ 
+       do v = 1, nvc
+
+          Tmp = Vtx1(v,:) 
+          Int_Geom%Cell_Coord(n,v) = PACK (Tmp, Mask)
+ 
+       end do
+ 
+    end do
+ 
+    return
+ 
+  END SUBROUTINE SETUP_INTERFACE_GEOM
+
+  SUBROUTINE SETUP_INTERFACE_FLUX (Flux_vol, Mask)
+    !=======================================================================
+    !  Purpose(s):
+    !
+    !    Perform a masked pack of interface parameters into 
+    !    the INTERFACE_DATA derived type.
+    !
+    !=======================================================================
+    use constants_module,   only: zero
+    use flux_volume_module, only: FLUX_VOL_QUANTITY
+ 
+    implicit none
+ 
+    ! Arguments
+    type(FLUX_VOL_QUANTITY), dimension(ncells), intent(IN) :: Flux_Vol
+    logical,                 dimension(ncells), intent(IN) :: Mask
+ 
+    ! Local Variables
+    integer(int_kind) :: n, v
+ 
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    ! Load the Flux_Vol
+    Int_Flux%Flux_Vol = PACK (Flux_Vol%Vol, Mask)
+
+    ! Gather the donor cell's flux volume vertices
+    do v = 1, nvc
+       do n = 1,ndim
+          Int_Flux%Flux_Vol_Coord(n,v) = PACK(Flux_Vol%Xv(v,n),  Mask)
+       end do
+    end do
+
+    ! This is needed for a directionally-swept algorithm.
+!    Int_Flux%Face = PACK (Flux_Vol%Fc, Mask)
+ 
+    ! Advected volume behind the interface (initialize to zero).
+    Int_Flux%Advected_Volume = zero
+ 
+    return
+ 
+  END SUBROUTINE SETUP_INTERFACE_FLUX
+
+END MODULE INTERFACE_MODULE

@@ -1,0 +1,15 @@
+#!/bin/sh
+\rm -f master-test-serial.out
+\rm -f PGSLib-out*
+./master-test-serial > master-test-serial.out
+output_files=`ls PGSLib-out*`
+test_output=`grep -i fail $output_files`
+if [ `echo $test_output | wc -w` = 0 ] ; then
+	echo "Passed master-serial-test"
+else
+	echo "FAILED: Some master-serial-tests FAILED"
+	grep -i fail $output_files
+fi
+
+
+

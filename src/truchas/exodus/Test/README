@@ -1,0 +1,8 @@
+o A simple "make" builds the program test1.
+o "test1 <.exo mesh file>" reads the mesh file, writes it back out to a file
+  of the same name with ".copy" appended, reads that mesh file in and compares
+  the two meshes.  If they are identical "PASS" is printed. Otherwise, if they
+  are different or if any other failure occurred, "FAIL" is printed.
+o "make clean" removes all temporary or intermerdiate files; "make cleanest"
+  removes test1 in addition.
+o The .jou files are the Cubit journal files used to produce the .exo files.

@@ -1,0 +1,14 @@
+A BDF2 DAE Integrator 
+
+Neil N. Carlson <nnc@lanl.gov>
+15 Aug 2006
+
+BDF2-DAE is an integrator for stiff index-0 and index-1 differential-algebraic
+equations (DAE) of the form f(t,u,u')=0, that uses a variable step-size,
+second-order BDF method.  Fully implicit ODE systems are index-0 DAE.  The
+local SOM for the heat equation gives rise to an index-1 system: here the
+scalar face unknowns (Lagrange multipliers) are algebraically related to the
+cell-centered unknowns, their time derivative does not appear in the system.
+
+This code is adapted from an existing BDF2 integrator package I wrote in the
+mid-90's (pre-LANL days) and used in my moving finite element codes.

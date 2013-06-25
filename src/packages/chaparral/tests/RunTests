@@ -1,0 +1,36 @@
+#!/bin/csh -f
+
+if (-e TestProblems) then
+  if ($?NP) then
+    set LOG = RunTests.np$NP.log
+  else
+    set LOG = RunTests.np1.log
+  endif
+
+  if (-e $LOG) /bin/rm -f $LOG
+  touch $LOG
+    
+  if ($?NP) then
+    echo "Running parallel tests on $NP processors" >> $LOG
+    echo "" >> $LOG
+  else
+    echo "Running serial tests" >> $LOG
+    echo "" >> $LOG
+  endif
+
+  set tests = `cat TestProblems`
+
+  foreach test ($tests)
+    echo ">>>>>>>>>> $test <<<<<<<<<<" >> $LOG
+    echo "" >> $LOG
+    if ($?NP) then
+      RunTest -tst $test -np $NP >>& $LOG
+    else
+      RunTest -tst $test >>& $LOG
+    endif
+    echo "" >> $LOG
+    echo "" >> $LOG
+  end
+else
+  echo "Error: must run build_test_problems first."
+endif

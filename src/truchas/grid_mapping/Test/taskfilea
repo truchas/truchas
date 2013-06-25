@@ -1,0 +1,60 @@
+'*************************'
+'Run_a1'
+'*************************'
+'mesh_a' 'tmesha.ascii'
+'mesh_b' 'tmeshc.ascii'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_a2'
+'*************************'
+'mesh_a' 'tmesha.ascii'
+'mesh_b' 'tmeshc.ascii'
+'reverse_order' F
+'exactly_conservative' T
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_a3'
+'*************************'
+'mesh_a' 'tmesha.ascii'
+'mesh_b' 'tmeshc.ascii'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' T
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_a4'
+'*************************'
+'mesh_a' 'tmesha.ascii'
+'mesh_b' 'tmeshb.ascii'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_a5'
+'*************************'
+'mesh_a' 'tmesha.ascii'
+'mesh_b' 'tmeshb.ascii'
+'reverse_order' F
+'exactly_conservative' T
+'preserve_constants' F
+'strict' T
+'defval' 0.d0
+'*************************'
+'Run_a6'
+'*************************'
+'mesh_a' 'tmesha.ascii'
+'mesh_b' 'tmeshb.ascii'
+'reverse_order' F
+'exactly_conservative' F
+'preserve_constants' T
+'strict' T
+'defval' 0.d0

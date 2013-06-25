@@ -1,0 +1,20 @@
+<!-- <!DOCTYPE Product SYSTEM "product.dtd"> -->
+<!-- 
+This is the chaparral_sn.xml files for the new SNTools.
+
+It should exist in the top-level directory of the chaparral/<version> package
+system until such time as the two are separated.
+
+-->
+<product name="chaparral" version="3.2.4" type="interface">
+
+    <use product="exodusii" version="4.39"/>
+
+    <include> vflib </include>
+    <include if_option="janus2"> /usr/local/x-comp/intel/tflop/current/tflops/cougar/include.newmpi</include>
+
+    <provides name="VF" type="library">
+        <libs> </libs>
+        <requires  product="exodusii|exoIIv2c"/>
+    </provides>
+</product>

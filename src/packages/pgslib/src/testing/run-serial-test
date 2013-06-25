@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# $Id: run-serial-test,v 1.1.1.1 2000/10/11 22:44:25 ferrell Exp $
+
+# Inform the user of the test
+echo "Running serial test in" `pwd`
+
+
+# Find all output files
+
+
+# Clean up
+if [ -s "*out*" ]; then 
+output_files=`ls *out*`
+\rm -f $output_files;
+fi
+
+\rm -f serial-test.out
+
+./$1 > serial-test.out
+
+output_files=`ls *out*`
+test_output=`grep -i fail $output_files`
+if [ `echo $test_output | wc -w` = 0 ] ; then
+	echo "Passed $1"
+else
+	echo "FAILED: $1 FAILED"
+	grep -i fail $output_files
+fi
+
+
+

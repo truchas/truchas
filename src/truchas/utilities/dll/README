@@ -1,0 +1,8 @@
+The DYNAMIC_LINKING_LOADER module provides access to the dynamic linking
+loader implemented by the POSIX C functions dlopen, dlclose, dlsym, and
+dlerror from the system DLL library (libdl on linux).
+
+See the Examples directory for an example of its use.
+
+Neil N. Carlson <nnc@lanl.gov>
+26 Jul 2006

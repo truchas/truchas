@@ -1,0 +1,4 @@
+&MESH
+  name = "mesh1"
+  file = "mesh1.gen"
+/

@@ -1,0 +1,4 @@
+&MESH
+  name = "testmesh"
+  file = "cube16.gen"
+/

@@ -1,0 +1,298 @@
+#include "f90_assert.fpp"
+
+module HTSD_solver_type
+
+  use kinds, only: r8
+  use HTSD_model_type
+  use HTSD_precon_type
+  use HTSD_norm_type
+  use material_mesh_function
+  use distributed_mesh
+  use index_partitioning
+  use bdf2_dae
+  implicit none
+  private
+  
+  type, public :: HTSD_solver
+    type(mat_mf),    pointer :: mmf => null()
+    type(dist_mesh), pointer :: mesh => null()
+    type(state) :: bdf2_state
+    logical :: state_is_pending = .false.
+    !! Pending state
+    real(r8) :: t, dt
+    real(r8), pointer :: u(:) => null()
+    type(HTSD_model),  pointer :: model  => null()
+    type(HTSD_precon), pointer :: precon => null()
+    type(HTSD_norm),   pointer :: norm   => null()
+    real(r8) :: hmin
+    integer :: max_step_tries
+    !integer :: step_method
+  end type HTSD_solver
+  
+  public :: HTSD_solver_init
+  public :: HTSD_solver_delete
+  public :: HTSD_solver_set_initial_state
+  public :: HTSD_solver_advance_state
+  public :: HTSD_solver_commit_pending_state
+  public :: HTSD_solver_get_soln_view, HTSD_solver_get_soln_copy
+  public :: HTSD_solver_get_cell_temp_view, HTSD_solver_get_cell_temp_copy
+  public :: HTSD_solver_get_cell_heat_view, HTSD_solver_get_cell_heat_copy
+  public :: HTSD_solver_get_cell_conc_view, HTSD_solver_get_cell_conc_copy
+  public :: HTSD_solver_get_cell_temp_grad
+  public :: HTSD_solver_get_stepping_stats  
+  public :: HTSD_solver_last_step_size
+  public :: HTSD_solver_last_time
+   
+  type, public :: HTSD_solver_params
+    type(HTSD_norm_params) :: norm_params
+    type(HTSD_precon_params) :: precon_params
+    real(r8) :: hmin
+    integer :: max_step_tries
+    !integer :: step_method
+    !! Destined for the BDF2 DAE integrator
+    logical :: verbose_stepping
+    integer :: output_unit
+    integer :: max_nlk_itr, max_nlk_vec
+    real(r8) :: nlk_tol, nlk_vec_tol
+  end type HTSD_solver_params
+  public :: HT_precon_params, SD_precon_params
+  public :: diff_precon_params, ssor_precon_params, boomer_amg_precon_params
+  
+contains
+
+  subroutine HTSD_solver_init (this, mmf, model, params)
+    type(HTSD_solver), intent(out) :: this
+    type(mat_mf), intent(in), target :: mmf
+    type(HTSD_model), intent(in), target :: model
+    type(HTSD_solver_params), intent(in) :: params
+    integer :: n
+#ifdef INTEL_COMPILER_WORKAROUND
+    type(dist_mesh), pointer :: fubar
+#endif
+    this%mmf   => mmf
+    this%model => model
+    this%mesh  => model%mesh
+#ifdef INTEL_COMPILER_WORKAROUND
+    fubar => mmf_mesh(mmf)
+    ASSERT(associated(fubar, model%mesh))
+#else
+    ASSERT(associated(mmf_mesh(mmf), model%mesh))
+#endif
+    allocate(this%norm)
+    call HTSD_norm_init (this%norm, model, params%norm_params)
+    allocate(this%precon)
+    call HTSD_precon_init (this%precon, model, params%precon_params)
+    n = HTSD_model_size(model)
+    allocate(this%u(n))
+    call create_state (this%bdf2_state, n, &
+        params%max_nlk_itr, params%nlk_tol, params%max_nlk_vec, params%nlk_vec_tol)
+    if (params%verbose_stepping) call set_verbose_stepping (this%bdf2_state, params%output_unit)
+    this%hmin = params%hmin
+    this%max_step_tries = params%max_step_tries
+    !this%step_method = params%step_method
+  end subroutine HTSD_solver_init
+  
+  subroutine HTSD_solver_delete (this)
+    type(HTSD_solver), intent(inout) :: this
+    if (associated(this%u)) deallocate(this%u)
+    if (associated(this%precon)) then
+      call HTSD_precon_delete (this%precon)
+      deallocate(this%precon)
+    end if
+    if (associated(this%norm)) then
+      call HTSD_norm_delete (this%norm)
+      deallocate(this%norm)
+    end if
+    call destroy_state (this%bdf2_state)
+    !! The solver owns the void cell and face mask components of the model.
+    if (associated(this%model%void_cell)) deallocate(this%model%void_cell)
+    if (associated(this%model%void_face)) deallocate(this%model%void_face)
+  end subroutine HTSD_solver_delete
+  
+  subroutine HTSD_solver_get_soln_view (this, view)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), pointer :: view(:)
+    view => this%u
+  end subroutine HTSD_solver_get_soln_view
+  
+  subroutine HTSD_solver_get_soln_copy (this, copy)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), intent(inout) :: copy(:)
+    ASSERT(size(copy) >= size(this%u))
+    copy(:size(this%u)) = this%u
+  end subroutine HTSD_solver_get_soln_copy
+  
+  subroutine HTSD_solver_get_cell_temp_view (this, view)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), pointer :: view(:)
+    call HTSD_model_get_cell_temp_view (this%model, this%u, view)
+  end subroutine HTSD_solver_get_cell_temp_view
+  
+  subroutine HTSD_solver_get_cell_temp_copy (this, copy)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), intent(out) :: copy(:)
+    call HTSD_model_get_cell_temp_copy (this%model, this%u, copy)
+  end subroutine HTSD_solver_get_cell_temp_copy
+  
+  subroutine HTSD_solver_get_cell_heat_view (this, view)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), pointer :: view(:)
+    call HTSD_model_get_cell_heat_view (this%model, this%u, view)
+  end subroutine HTSD_solver_get_cell_heat_view
+  
+  subroutine HTSD_solver_get_cell_heat_copy (this, copy)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), intent(out) :: copy(:)
+    call HTSD_model_get_cell_heat_copy (this%model, this%u, copy)
+  end subroutine HTSD_solver_get_cell_heat_copy
+  
+  subroutine HTSD_solver_get_cell_conc_view (this, n, view)
+    type(HTSD_solver), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8), pointer :: view(:)
+    call HTSD_model_get_cell_conc_view (this%model, n, this%u, view)
+  end subroutine HTSD_solver_get_cell_conc_view
+  
+  subroutine HTSD_solver_get_cell_conc_copy (this, n, copy)
+    type(HTSD_solver), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8), intent(inout) :: copy(:)
+    call HTSD_model_get_cell_conc_copy (this%model, n, this%u, copy)
+  end subroutine HTSD_solver_get_cell_conc_copy
+  
+  subroutine HTSD_solver_get_cell_temp_grad (this, tgrad)
+    use mfd_disc_type
+    type(HTSD_solver), intent(in) :: this
+    real(r8), intent(out) :: tgrad(:,:)
+    real(r8) :: tface(this%model%mesh%nface)
+    INSIST(size(tgrad,1) == 3)
+    INSIST(size(tgrad,2) == this%model%mesh%ncell_onP)
+    INSIST(associated(this%model%ht))
+    call HTSD_model_get_face_temp_copy (this%model, this%u, tface)
+    call gather_boundary (this%model%mesh%face_ip, tface)
+    call mfd_disc_compute_cell_grad (this%model%disc, tface, tgrad)
+  end subroutine HTSD_solver_get_cell_temp_grad
+    
+  subroutine HTSD_solver_get_stepping_stats (this, counters)
+    use bdf2_dae, only: get_bdf2_stepping_statistics
+    type(HTSD_solver), intent(in) :: this
+    integer, intent(out) :: counters(:)
+    ASSERT(size(counters) == 6)
+    call get_bdf2_stepping_statistics (this%bdf2_state, counters)
+  end subroutine HTSD_solver_get_stepping_stats
+  
+  function HTSD_solver_last_time (this) result (t)
+    type(HTSD_solver), intent(in) :: this
+    real(r8) :: t
+    t = last_time(this%bdf2_state)
+  end function HTSD_solver_last_time
+  
+  function HTSD_solver_last_step_size (this) result (h)
+    use bdf2_dae, only: last_step_size
+    type(HTSD_solver), intent(in) :: this
+    real(r8) :: h
+    h = last_step_size(this%bdf2_state)
+  end function HTSD_solver_last_step_size
+  
+!TODO!  The BDF2 step procedure invoked by this advance routine may reduce the
+!TODO!  step size if it is unable to succeed with the given step size.  This is
+!TODO!  okay as long as no other physics precedes this DS step in the cycle
+!TODO!  driver loop (i.e., flow), but otherwise this is wrong.  A different
+!TODO!  stepper is required here -- one that won't cut the step size in the
+!TODO!  case of a failure, and push that handling to a higher level where it
+!TODO!  can be done properly in the context of all the other physics.
+
+!TODO!  We want to pass the target time t instead of the step size, but since
+!TODO!  right now this procedure may adjust the step size, we continue to pass
+!TODO!  the step size as an inout parameter.  Why pass t?  Want to ensure that
+!TODO!  all physics have the bit-identical notion of time.  If dt is used instead
+!TODO!  each phyiscs builds each version of t by successive increments -- iffy. 
+
+  subroutine HTSD_solver_advance_state (this, dt, dtnext, stat)
+  
+    use HTSD_BDF2_model
+    
+    type(HTSD_solver), intent(inout) :: this
+    real(r8), intent(inout) :: dt
+    real(r8), intent(out) :: dtnext
+    integer, intent(out) :: stat
+    
+!    real(r8) :: dt
+    real(r8) :: t
+    
+!    !! Step size.
+!    dt = t - last_time(this%bdf2_state)
+!    INSIST(dt > 0.0_r8)
+    t = last_time(this%bdf2_state) + dt
+    
+    !! Link the lookaside data used by the BDF2 integrator call back procedures.
+    call set_context (this%model, this%precon, this%norm)
+    
+!    select case (this%step_method)
+!    case (1)  !! Simple backward Cauchy-Euler with no predictor error control
+!      call bdf1_step (this%bdf2_state, dt, this%u, stat, bdf2_pcfun, bdf2_updpc, bdf2_enorm)
+!      !call bdf1_step_new (this%bdf2_state, dt, this%u, errc, &
+!      !                    bdf1_fun, bdf1_pc, bdf1_updpc, bdf1_fnorm)
+!      dtnext = huge(1.0d0) ! step size controlled by caller, not this routine
+!    case default !! Usual BDF2 with adaptive step size selection     
+      call bdf2_step (this%bdf2_state, bdf2_pcfun, bdf2_updpc, bdf2_enorm, &
+                      dt, this%hmin, this%max_step_tries, this%u, dtnext, stat)
+!    end select
+
+    if (stat == 0) then
+      this%t = t
+      this%dt = dt
+      this%state_is_pending = .true.
+    else ! failed -- restore last good state before returning
+      this%u = last_solution(this%bdf2_state)
+      this%state_is_pending = .false.
+    end if
+    
+  end subroutine HTSD_solver_advance_state
+  
+  subroutine HTSD_solver_commit_pending_state (this)
+    type(HTSD_solver), intent(inout) :: this
+    INSIST(this%state_is_pending)
+    call commit_solution (this%bdf2_state, this%dt, this%u)
+    this%state_is_pending = .false.
+  end subroutine HTSD_solver_commit_pending_state
+  
+  subroutine HTSD_solver_set_initial_state (this, t, temp, conc)
+  
+    use parallel_communication, only: global_count
+  
+    type(HTSD_solver), intent(inout) :: this
+    real(r8), intent(in) :: t
+    real(r8), pointer :: temp(:), conc(:,:)
+    
+    integer :: j
+    real(r8), allocatable :: void_vol_frac(:), udot(:)
+    
+    INSIST(associated(this%model))
+    
+    !! Establish the void cell and face masks in the model.
+    !! N.B. We assume no one else allocates and defines these arrays.
+    allocate(void_vol_frac(this%mesh%ncell), this%model%void_cell(this%mesh%ncell))
+    call mmf_get_void_vol_frac (this%mmf, void_vol_frac)
+    this%model%void_cell = (void_vol_frac > 1.0_r8 - 2*epsilon(1.0_r8))
+    deallocate(void_vol_frac)
+    if (global_count(this%model%void_cell) > 0) then
+      allocate(this%model%void_face(this%mesh%nface))
+      this%model%void_face = .true.
+      do j = 1, this%mesh%ncell
+        if (.not.this%model%void_cell(j)) this%model%void_face(this%mesh%cface(:,j)) = .false.
+      end do
+      call gather_boundary (this%mesh%face_ip, this%model%void_face)
+    else
+      deallocate(this%model%void_cell)
+      this%model%void_face => null()
+    end if
+    
+    allocate(udot(size(this%u)))
+    call HTSD_model_compute_udot (this%model, t, temp, conc, this%u, udot)
+    call set_initial_state (this%bdf2_state, t, this%u, udot)
+    deallocate(udot)
+    
+  end subroutine HTSD_solver_set_initial_state
+  
+end module HTSD_solver_type

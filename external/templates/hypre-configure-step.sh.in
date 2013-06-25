@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# CMake generates this file 
+# Replaces each @VAR@ with value of ${VAR}
+
+
+# Useful environment variables
+export CC=@CMAKE_C_COMPILER@
+export CXX=@CMAKE_CXX_COMPILER@
+export F77=''
+export CFLAGS='@hypre_cflags@'
+
+
+cd @hypre_source_dir@/src
+./configure --prefix=@hypre_install_dir@ \
+            --without-fei \
+	    @hypre_openmp_opt@ \
+            @hypre_mpi_opt@ \
+	    @hypre_blas_opt@ \
+	    @hypre_lapack_opt@ 
+
+exit $?

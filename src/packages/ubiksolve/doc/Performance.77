@@ -1,0 +1,113 @@
+Some notes:
+
+- The results given here should not be considered benchmarks of any sort.
+  They are simply the timings for the test suite on various machines.
+
+- Probably the most important thing to note is that even if you are
+  solving a symmetric system and are using ELL format, it is *far* better
+  to use one of the ILU preconditioners than one of the IC preconditioners,
+  even though the IC preconditioners should require roughly half the work.
+  The reason has to do with the implementation of the preconditioners in
+  ELL format.
+
+- The Cray Y-MP results are shocking, to say the least.
+
+- It's interesting to compare what seem to be the two best machines: the
+  HP 735 and the IBM 590.  They must have made quite different design
+  tradeoffs, since sometimes one machine is far superior to the other,
+  and other times the results are reversed.
+
+
+Platforms:
+
+Sun SPARCstation IPX:		64MB, SunOS 4.1.3, Sun Fortran 1.4, -fast
+Tatung Super COMPstation 20/50:	96MB, SunOS 4.1.3, Sun Fortran 2.0.1, -fast
+Tatung Super COMPstation 20/61:	96MB, SunOS 4.1.3, Sun Fortran 1.4, -fast
+HP 735/99:			96MB, HP-UX 9.01, HP Fortran, -O
+HP 735/125:			96MB, HP-UX 9.01, HP Fortran, -O
+IBM Powerstation 590:		512MB, AIX 3.2, XLF 3.1.2, -qarch=pwr2 -qhot
+Cray Y-MP			64MW, UNICOS 7.0.6.1, cf77, 
+
+All machines had local swap space.
+
+Methods:		CG	Conjugate Gradient
+			SOR	Successive Over-Relaxation
+				(relaxation parameter in parentheses)
+			GMRES	Generalized Minimal Residual Method
+				(number of directions used in orthogonalization
+				 in parentheses)
+			TFQMR	Transpose-Free Quasi-Minimal Residual Method
+			BCGS	[Bi-]Conjugate Gradients Squared
+
+Preconditioners:	diag	Jacobi (diagonal) scaling
+			IC	Incomplete Cholesky
+			MIC	Modified ILU
+			RIC	Relaxed ILU
+				(relaxation parameter in parentheses)
+			ILU	Incomplete LU
+			MILU	Modified ILU
+			RILU	Relaxed ILU
+				(relaxation parameter in parentheses)
+			SSOR	Symmetric Successive Over-Relaxation
+				(number of SSOR steps and relaxation parameter
+				 in parentheses)
+
+Saad's test problem was used, which is Ax = b, where:
+
+                   B  -I                     4  a
+                  -I   B  -I                 c  4  a
+             A =      -I   B  -I         B =    c  4  a
+                          -I   B  -I               c  4  a
+                              -I   B                  c  4
+
+where a = -1 + d and c = -1 - d.  The right-hand side is set to b = Af, where
+f = [1,...,1]', so the solution is x = f.  Also, in the following, Na = the total
+number of unknowns, and Nb = the block size.
+
+			*******	FULL STORAGE ******
+
+Method/Preconditioner	IPX	20/50	20/61	735/99	735/125	  590	 Y-MP	   Y-MP
+									(no BLAS) (BLAS)
+Symmetric problem (d = 0, Na = 140, Nb = 20)
+
+CG/diag				0.30	0.23	0.06		  0.02	 0.21	   0.02
+CG/IC				0.25	0.19	0.06		  0.03	 0.14	   0.02
+CG/MIC				0.22	0.18	0.05		  0.03	 0.14	   0.02
+CG/RIC				0.23	0.17	0.06		  0.03	 0.14	   0.02
+
+Nonsymmetric problem (d = 0.2, Na = 140, Nb = 20)
+
+LU decomposition		0.25	0.16	0.05		  0.02	 0.20	   0.19
+SOR(1.0)			1.38	1.06	0.27		  0.11	 0.74	   0.22
+GMRES(10)/diag			0.73	0.55	0.14		  0.05	 0.57	   0.09
+TFQMR/diag			0.68	0.51	0.13		  0.05	 0.47	   0.05
+BCGS/diag			0.50	0.38	0.10		  0.03	 0.33	   0.03
+BCGS/ILU			0.35	0.23	0.09		  0.03	 0.23	   0.02
+BCGS/MILU			0.05	0.03	0.02		  0.01	 0.04	   0.01
+BCGS/RILU(1.0)			0.05	0.03	0.02		  0.01	 0.04	   0.01
+BCGS/SSOR(1/1.0)		0.37	0.32	0.07		  0.05	 0.17	   0.23
+
+			*******	ELL STORAGE ******
+
+Method/Preconditioner	IPX	20/50	20/61	735/99	735/125	  590	 Y-MP	    Y-MP
+									(no BLAS)  (BLAS)
+Symmetric problem (d = 0, Na = 2000, Nb = 50)
+
+CG/diag				 1.57	 1.28	 0.77		   0.13	   0.10	     0.11
+CG/IC				85.5	69.8	32.7		  43.6	 146.7	   147.1
+CG/MIC				70.8	59.2	27.0		  35.7	 119.8	   119.9
+CG/RIC				70.0	58.9	27.0		  35.7	 119.7	   119.9
+CG/ILU				 2.92	 2.57	 1.18		   1.13	   3.82	     3.81
+CG/MILU				 5.38	 5.03	 1.97		   2.49	   9.98	     9.90
+CG/RILU(1.0)			 5.30	 4.80	 1.97		   2.63	  10.0	     9.91
+
+Nonsymmetric problem (d = 0.2, Na = 2000, Nb = 50)
+
+SOR(1.0)			8.70	6.02	4.65		  1.32	 13.5	    13.5
+GMRES(10)/diag			4.85	3.60	1.49		  0.32	  2.44	     2.31
+TFQMR/diag			2.93	2.00	1.27		  0.22	  0.49	     0.54
+BCGS/diag			1.88	1.57	0.85		  0.17	  0.30	     0.31
+BCGS/ILU			2.97	2.75	1.25		  1.18	  4.58	     4.58
+BCGS/MILU			5.37	4.90	1.98		  2.58	 10.0	     9.94
+BCGS/RILU(1.0)			5.23	4.86	1.98		  2.55	 10.0	     9.94
+BCGS/SSOR(1/1.0)		1.25	1.02	0.57		  0.20	  1.41	     1.42
