@@ -70,11 +70,12 @@ set(TruchasExternal_LOG_OPTS
 
 
 # HYPRE
-find_package(HYPRE)
+#BROKENfind_package(HYPRE)
 
-if ( NOT HYPRE_FOUND )
-  include(ExternalProject_HYPRE)
-endif()  
+#BROKENif ( NOT HYPRE_FOUND )
+#BROKEN  include(ExternalProject_HYPRE)
+#BORKENendif()  
+include(ExternalProject_HYPRE)
 
 # HDF5
 include(ExternalProject_ZLIB)
