@@ -31,6 +31,14 @@ fortran_preprocess_files(SOLVER_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${SOLVER_FPP_FLAGS}
 			 PROCESS_TARGET ${SOLVER_TARGET_NAME})
+set(fc_flags)
+if(ENABLE_PGSLib)
+  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+endif()
+if(ENABLE_UbikSolve)
+  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+endif()
+build_whitespace_string(SOLVER_COMPILE_FLAGS ${fc_flags})
 set(SOLVER_COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR}")		       
 set_source_files_properties(${SOLVER_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${SOLVER_COMPILE_FLAGS})
