@@ -40,7 +40,17 @@ fortran_preprocess_files(OUTPUT_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${OUTPUT_FPP_FLAGS}
 			 PROCESS_TARGET ${OUTPUT_TARGET_NAME})
-set(OUTPUT_COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}")		       
+set(fc_flags -I${NetCDF_INCLUDE_DIR})
+if (ENABLE_PGSLib)
+  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+endif()
+if (ENABLE_Danu)
+  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
+endif()
+if(ENABLE_UbikSolve)
+  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+endif()
+build_whitespace_string(OUTPUT_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${OUTPUT_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${OUTPUT_COMPILE_FLAGS})
 

@@ -41,7 +41,7 @@ fortran_preprocess_files(DISMESH_SOURCE_FILES
 			 FPP_FLAGS ${DISMESH_FPP_FLAGS}
 			 PROCESS_TARGET ${DISMESH_TARGET_NAME})
 set_source_files_properties(${DISMESH_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
+                            COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${NetCDF_INCLUDE_DIR}")
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DISMESH_SOURCE_FILES})		       
 list(APPEND Truchas_PROCESS_TARGETS ${DISMESH_TARGET_NAME})

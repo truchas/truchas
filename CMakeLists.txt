@@ -181,10 +181,13 @@ endif()
 
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "-D${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
-add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
+#add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
+#list(APPEND Truchas_PREPROCESSOR 
+#            ${Truchas_Compiler_Define}
+#	    ${Truchas_Compiler_Define}_WORKAROUND)
+add_definitions(${Truchas_Compiler_Define})
 list(APPEND Truchas_PREPROCESSOR 
-            ${Truchas_Compiler_Define}
-	    ${Truchas_Compiler_Define}_WORKAROUND)
+            ${Truchas_Compiler_Define})
 
 # Add USE_PGSLIB
 if (ENABLE_PGSLib)

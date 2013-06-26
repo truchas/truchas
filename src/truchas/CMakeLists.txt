@@ -171,9 +171,12 @@ if (ENABLE_Danu)
   list(APPEND Truchas_LINK_LIBS danu_f)
 endif()
 
+# To pick up the dlopen and dlclose symbols
+list(APPEND Truchas_LINK_LIBS ${CMAKE_DL_LIBS})
+
 link_libraries(truchas ${Truchas_LINK_LIBS})
 
-# The linking of external packages is broken need 
+# The linking of external packages is broken. Need 
 # to push this variable definition up one level as
 # a work-around until this is fixed.
 set(Truchas_LINK_LIBS ${Truchas_LINK_LIBS} PARENT_SCOPE)
@@ -186,6 +189,20 @@ fortran_preprocess_files(MAIN_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${Truchas_FPP_FLAGS}
 			 PROCESS_TARGET ProcessTruchasMainFiles)
+
+set(fc_flags -I${NetCDF_INCLUDE_DIR})
+if(ENABLE_PGSLib)
+  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+endif()
+if(ENABLE_UbikSolve)
+  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+endif()
+if(ENABLE_Danu)
+  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
+endif()
+build_whitespace_string(MAIN_COMPILE_FLAGS ${fc_flags})
+set_source_files_properties(${MAIN_SOURCE_FILES} PROPERTIES
+                            COMPILE_FLAGS ${MAIN_COMPILE_FLAGS})
 
 # Add the executable with required dependencies and libraries		       
 add_executable(truchas_exe ${MAIN_SOURCE_FILES})

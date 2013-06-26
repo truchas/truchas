@@ -185,7 +185,7 @@ endif()
 if(ENABLE_Danu)
   list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 endif()
-build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags})
+build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags} -I${NetCDF_INCLUDE_DIR})
 set_source_files_properties(${PHYSICS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${PHYSICS_COMPILE_FLAGS})
 

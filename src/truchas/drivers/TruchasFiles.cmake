@@ -25,11 +25,24 @@ fortran_preprocess_files(DRIVERS_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${DRIVERS_FPP_FLAGS}
 			 PROCESS_TARGET ${DRIVERS_TARGET_NAME})
+set(fc_flags -I${NetCDF_INCLUDE_DIR})
+if(ENABLE_PGSLib)
+  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+endif()
+build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${DRIVERS_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
+                            COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
 
+# drivers.F90 requires extra flags
+if(ENABLE_Danu)
+  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
+endif()
+if(ENABLE_UbikSolve)
+  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+endif()
+build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${TruchasExe_BINARY_DIR}/drivers.f90
-                            COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}")
+                            COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
 
 
 # Add the C source files
