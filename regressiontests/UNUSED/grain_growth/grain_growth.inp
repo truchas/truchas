@@ -1,0 +1,129 @@
+
+Test problem for grain growth in passive coupling with the heat transfer solver.
+1D vertical bar casting. set full_coupling_flag = 1 for full coupling
+
+&MESH
+    ncell                       = 100, 1, 1
+    coord                       = 3*0.0, 0.10, 0.01, 0.012
+/
+
+&PHYSICS
+    phase_change                = .true.
+    fluid_flow                  = .false.
+    heat_conduction             = .true.
+/
+
+&MATERIAL
+    material_number             = 1
+    material_name               = 'Al-7Si liquid'
+    material_feature            = 'background'
+    priority                    = 1
+    density                     = 2670.
+    cp_constants                = 970.
+    conductivity_constants      = 90.
+/
+
+&MATERIAL
+    material_number             = 2 
+    material_name               = 'Al-7Si solid'
+    priority                    = 2
+    density                     = 2670.
+    cp_constants                = 970.
+    conductivity_constants      = 90.
+/
+
+&PHASE_CHANGE_PROPERTIES
+    phase_change_active             = .true.
+    phase_change_type               = 'alloy'
+    Hi_Temp_Phase_Material_Id       = 1
+    Lo_Temp_Phase_Material_Id       = 2
+    phase_change_model              = 'grain_growth_bw'
+    Latent_Heat                     = 3.56d+5
+    Liquidus_Slope                  = -600.
+    Liquidus_Temp                   = 618.
+    Melting_Temperature_Solvent     = 660.
+    Partition_Coefficient_Constants = 0.13
+    Eutectic_Temperature            = 584.4
+    deltempnucl                     = 4.5
+    deltempsigma                    = 0.7
+    ndmaxnucl                       = 1.d+11
+    a2_coeff                        = 2.904e-6
+    a3_coeff                        = 1.488e-6
+    forward_diffusion_coefficient   = 3.e-9
+    full_coupling_flag              = 0
+/
+
+phase_change_model = 'clyne_and_kurz'
+
+
+&BODY
+    material_number             = 1
+    surface_name                = 'background'
+    concentration               = 0.07 
+    temperature                 = 670.0
+/
+
+&BC
+    surface_name                = 'conic'
+    conic_relation              = '='
+    conic_x                     = 1.
+    conic_constant              = 0.0
+    conic_tolerance             = 1.e-6
+    bc_variable                 = 'temperature'
+    bc_type                     = 'htc'
+    bc_value                    = 1.5e3
+    t0_convection               = 150.
+/
+
+
+&BC
+    surface_name                = 'external material boundary'
+    surface_materials           = 1, 2
+    bc_variable                 = 'temperature'
+    bc_type                     = 'hneumann'
+/
+
+&OUTPUTS
+    output_t                    = 0., 3.0
+    output_dt                   = 0.005
+    Long_Output_Dt_Multiplier   = 100,
+    Short_Output_Dt_Multiplier  = 0,
+    XML_Output_Dt_Multiplier    = 100,
+    Long_Edit_Bounding_Coords   =
+                                  0, 0.10
+                                  0, 0.01,
+                                  0, 0.01,
+/
+
+&NUMERICS
+
+    energy_nonlinear_solution  = 'nk'
+    dt_init                    = 1.e-4,
+    dt_grow                    = 1.01,
+    dt_min                     = 1.e-7
+    dt_max                     = 5.e-3
+/
+
+&LINEAR_SOLVER 
+    name                    = 'nk', 
+    method                  = 'fgmres',
+    convergence_criterion   = 1.0e-8, 
+    preconditioning_method  = 'ssor', 
+    relaxation_parameter    = 0.9, 
+    preconditioning_steps   = 5, 
+    output_mode             = 'none'
+/
+
+&NONLINEAR_SOLVER 
+    name                    = 'nk', 
+    method                  = 'nk', 
+    linear_solver_name      = 'nk', 
+    convergence_criterion   = 1.0e-06, 
+    maximum_iterations      = 50, 
+    output_mode             = 'verbose3', 
+    use_damper              = .false., 
+    Damper_Parameters       = 0.800, 1.50, 1.00, 1.000, 
+    perturbation_parameter  = 1.0000000000e-06, 
+/
+
+

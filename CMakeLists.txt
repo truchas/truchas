@@ -295,6 +295,9 @@ add_subdirectory(external)
 # Main source directory
 add_subdirectory(src)
 
+# Old regression tests
+add_subdirectory(regressiontests)
+
 # ---------------------------------------------------------------------------- #
 # Export Definitions 
 # ---------------------------------------------------------------------------- #

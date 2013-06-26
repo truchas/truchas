@@ -1,0 +1,600 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                truchas
+   version:             2.6.dev
+   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+   build architecture:  Linux pn1177484.lanl.gov 2.6.34.7-56.fc13.x86_64 #1 SMP Wed Sep 15 03:36:55 UTC 2010 x86_64 x86_64 x86_64 GNU/Linux
+   build date/time:     27 Sep 10 14:07:00
+   build flags:         -O2 -u -maxcontin=99
+   build host:          pn1177484.lanl.gov
+   run architecture:    Linux pn1177484.lanl.gov 2.6.34.7-56.fc13.x86_64 #1 SMP Wed Sep 15 03:36:55 UTC 2010 x86_64
+   run host:            pn1177484.lanl.gov
+   run date/time:       27 Sep 10 15:17:40
+   processors:          4
+                        (processor 1 is performing I/O)
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007. Los Alamos National Security, LLC.  This material
+   was produced under U.S. Government contract DE-AC52-06NA25396 for
+   Los Alamos National Laboratory (LANL), which is operated by Los
+   Alamos National Security, LLC for the U.S. Department of Energy.
+   The U.S. Government has rights to use, reproduce, and distribute
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
+   modified to produce derivative works, such modified software
+   should be clearly marked, so as not to confuse it with the
+   version available from LANL.
+
+   Additionally, this program is free software; you can redistribute
+   it and/or modify it under the terms of the GNU General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   Accordingly, this program is distributed in the hope that it will
+   be useful, but WITHOUT ANY WARRANTY; without even the implied
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-06-113.
+   Truchas is currently a beta version, as development is ongoing
+   and continuous, hence bugs are likely to be present. All aspects
+   of the Truchas software and its user interface are subject to
+   change without notice.
+
+================================================================================
+
+INPUT
+
+ Opening Input File em3.inp:
+
+ Reading PARALLEL_PARAMETERS Namelist ...
+
+         WARNING: PARALLEL_PARAMETERS namelist not found: using defaults
+ vfParallelSize =          10000000
+
+Reading FUNCTION namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+ Reading PHYSICS Namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+ Reading MESH Namelist ...
+
+         Opened mesh file ./em-oball-hex.gen
+           containing      491 nodes and      352 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+         Finished this namelist read.
+
+         This is the last MATERIAL Namelist.
+
+         Identified  1 material(s)
+
+         WARNING: Material  1 priority not initialized; set to  1
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1     conducto        1
+
+ PHASE_CHANGE_PROPERTIES Namelist:
+         WARNING: Phase changes not activated in physics namelist,
+         All phase changes have been disabled.
+
+         Finished this namelist read.
+
+ Reading INTERFACES Namelist ...
+
+         WARNING: INTERFACES namelist not found: using defaults
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+         BODY Namelist number  1 will be used for background material ( 1)
+
+ Reading HEAT_SOURCE Namelist ...
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+
+         Reading LINEAR_SOLVER Namelist # 1 ...
+
+ Reading SO_SOLVER Namelist ...
+
+         WARNING: SO_SOLVER namelist not found! Using defaults.
+
+ Reading NONLINEAR_SOLVER Namelist(s) ...
+
+         Reading NONLINEAR_SOLVER Namelist # 1 ...
+
+ Reading NUMERICS Namelist ...
+
+         Using linear solver "AIN PC" for nonlinear solver "HT AIN".
+
+ Reading BC Namelists ...
+
+         Reading BC namelist #  1: Unnamed
+
+         Reading BC namelist #  2: Unnamed
+
+         Finished this namelist read.
+
+ Reading ELECTROMAGNETICS and INDUCTION_COIL Namelists ...
+
+         Using default value "Z" for Symmetry_Axis
+
+         Using default value 0.3 for Material_Change_Threshold
+
+Reading DIFFUSION_SOLVER namelist ...
+  using default Max_AIN_Itr value: 5
+  using default Max_AIN_Vec value: Max_AIN_Itr - 1
+  using default AIN_Vec_Tol value: 1.00E-03
+  using default Max_Step_Tries value: 10
+  WARNING: using a pure relative error norm; temp must be bounded away from 0
+  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
+  using default PC_AMG_Cycles value: 1
+
+Reading DS_BOUNDARY_CONDITION namelists ...
+  [symmetry planes] "flux" condition for "temperature" variable
+  [ball surface] "radiation" condition for "temperature" variable
+
+Reading DS_INTERFACE_CONDITION namelists ...
+
+Reading DS_SOURCE namelists ...
+  No DS_SOURCE namelists found.
+
+Reading ENCLOSURE_RADIATION namelists ...
+
+Reading ENCLOSURE_SURFACE namelists ...
+
+ Reading SENS_VARIABLE Namelists ...
+
+         This is the last SENS_VARIABLE Namelist.
+
+         Identified  0 design variable(s)
+
+ Reading SENS_FUNCTION Namelists ...
+
+         This is the last SENS_FUNCTION Namelist.
+
+         Identified  0 response function(s)
+
+ Reading PROBE namelists ...
+
+         This is the last PROBE Namelist.
+
+         Identified  0 probe(s)
+ 
+ Closing Input File em3.inp.
+
+================================================================================
+
+INITIALIZATION
+
+Allocating mesh derived types ... done.
+
+ Automatic partitioner selection: Chaco
+
+ Reading ExodusII mesh file ./em-oball-hex.gen...
+ Closed ExodusII mesh file ./em-oball-hex.gen
+ Determining mesh partitions and permutation vectors.
+ Using                4 partitions.
+ Partitioning with Chaco.
+ 
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+ Establishing mesh connectivity for      2112 faces ...
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are        240 external boundary faces.
+ Mesh connectivity established.
+
+ Finding all cell neighbors ... done.
+ 
+Allocating base derived types ...done.
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type   Number     Face Type   Number
+                   ------------   ------     ---------   ------
+                      Hex           352       Point           0
+                      Prism           0       Line            0
+                      Pyramid         0       Triangle        0
+                      Tet             0       Quad         2112
+
+                            Nodes               Cells
+                          -----               -----
+                                4 are shared by   1
+                               48 are shared by   2
+                                4 are shared by   3
+                              187 are shared by   4
+                               14 are shared by   6
+                              234 are shared by   8
+
+Computing cell geometry ... 
+                    Min        Cell       Max        Cell       Total
+                    ---        ----      ---        ----       -----
+       Volumes   1.7815E-07       204   1.9562E-06        45    2.6363E-04
+
+                0 out of      352 total cells are orthogonal
+    use_ortho_face_gradient = F
+    Using full pivoting for LSLR_ operators
+
+done.
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                   0.0000E+00       8.0000E-02
+                   0.0000E+00       8.0000E-02
+                   0.0000E+00       8.0000E-02
+
+ Finding face neighbors ... done.
+
+Initializing distributed mesh ALT ...
+  Reading ExodusII mesh file ./em-oball-tet.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell                                    
+    ---+------------------------------------
+      1|      526     2983     4631     2173                                    
+      2|      422     2397     3737     1761                                    
+      3|      485     2671     4083     1896                                    
+      4|      364     2022     3113     1454                                    
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells             
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE        
+    ---+----------------------------------------------------------------
+      1|    165      361    964     2019   1517     3114    718     1455        
+      2|    128      294    552     1845    732     3005    307     1454        
+      3|    182      303    796     1875   1057     3026    442     1454        
+      4|    131      233    358     1664    228     2885      0     1454        
+  Distributed mesh ALT initialized.
+
+Initializing distributed mesh MAIN ...
+  Reading ExodusII mesh file ./em-oball-hex.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell                                    
+    ---+------------------------------------
+      1|      258        0      562      160                                    
+      2|      225        0      451      122                                    
+      3|      211        0      452      128                                    
+      4|      169        0      330       88                                    
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells             
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE        
+    ---+----------------------------------------------------------------
+      1|     93      165      0        0    236      326     72       88        
+      2|    103      122      0        0    155      296     34       88        
+      3|     83      128      0        0    153      299     40       88        
+      4|     93       76      0        0     75      255      0       88        
+  Distributed mesh MAIN initialized.
+
+ Computing initial volume fractions ...
+
+ Volume fractions computed.
+ Initializing Displacement Boundary Conditions 
+
+ Locating cell faces for which BCs are to be applied ...
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.49829E-02 (   192 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   9.96937E-03 (    48 faces)
+ Initializing Pressure Boundary Conditions
+           DIRICHLET:                   0 boundary points
+          REFLECTIVE:                 240 boundary points
+            EXTERIOR:                 240 boundary points
+             NEUMANN:                   0 boundary points
+            HNEUMANN:                 240 boundary points
+ Pressure BCs initialized.
+ Initializing Temperature Boundary Conditions
+              DIRICHLET:                0 boundary points
+             REFLECTIVE:              240 boundary points
+               EXTERIOR:              240 boundary points
+                NEUMANN:                0 boundary points
+               HNEUMANN:              192 boundary points
+              RADIATION:               48 boundary points
+    ENCLOSURE_RADIATION:                0 boundary points
+           HTC_EXTERNAL:                0 boundary points
+           HTC_INTERNAL:                0 boundary points
+                HTC_GAP:                0 boundary points
+      HTC_RADIATION_EXT:                0 boundary points
+      HTC_RADIATION_INT:                0 boundary points
+ Temperature BCs initialized.
+
+ Finished BC initialization.
+
+Initializing diffusion solver ...
+  Generating external source for "temperature" equation
+  Generating "HTC" interface condition for "temperature" variable
+  Generating "HTC" boundary condition for "temperature" variable
+  Generating "radiation" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[2]: ball surface
+  Generating "dirichlet" boundary condition for "temperature" variable
+  Generating "flux" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[1]: symmetry planes
+  Diffusion solver initialized.
+ Initializing electromagnetics ...
+  Initializing the hex-tet grid mapping data ...
+   Computing the hex-tet grid mapping data.
+   Writing the hex-tet grid mapping data to altmesh_mapping_data.bin
+   Hex-tet grid mapping data initialized.
+  Computing the Joule heat ...
+   Min epsilon= 1.0000E+00, Max epsilon= 1.0000E+00
+   Min mu=      1.0000E+00, Max mu=      1.0000E+00
+   Min sigma=   1.0000E+05, Max sigma=   1.0000E+05
+   DELTA= 1.2616E-01
+   ETASQ= 4.4271E-14
+   Using input numerical ETASQ value instead: 1.0000E-06
+     step cg summary:  69 iterations, |r|= 9.894E-08, |r0|= 1.115E+01
+     step cg summary:  64 iterations, |r|= 5.746E-07, |r0|= 7.265E+01
+     step cg summary:  68 iterations, |r|= 8.874E-07, |r0|= 1.003E+02
+     step cg summary:  68 iterations, |r|= 2.017E-07, |r0|= 2.367E+01
+     step cg summary:  59 iterations, |r|= 1.466E-06, |r0|= 1.488E+02
+     step cg summary:  64 iterations, |r|= 2.453E-06, |r0|= 3.111E+02
+     step cg summary:  63 iterations, |r|= 2.489E-06, |r0|= 3.401E+02
+     step cg summary:  64 iterations, |r|= 1.505E-06, |r0|= 1.806E+02
+     step cg summary:  64 iterations, |r|= 1.073E-06, |r0|= 1.256E+02
+     step cg summary:  58 iterations, |r|= 4.165E-06, |r0|= 4.438E+02
+     step cg summary:  62 iterations, |r|= 5.353E-06, |r0|= 6.293E+02
+     step cg summary:  62 iterations, |r|= 4.699E-06, |r0|= 5.873E+02
+   Source cycle   1: |Q|_max= 8.8364E+03, Q_total= 9.5089E-01
+     step cg summary:  64 iterations, |r|= 2.302E-06, |r0|= 3.222E+02
+     step cg summary:  65 iterations, |r|= 7.323E-07, |r0|= 7.744E+01
+     step cg summary:  59 iterations, |r|= 3.479E-06, |r0|= 4.697E+02
+     step cg summary:  61 iterations, |r|= 6.551E-06, |r0|= 7.263E+02
+     step cg summary:  60 iterations, |r|= 7.322E-06, |r0|= 7.653E+02
+     step cg summary:  61 iterations, |r|= 5.035E-06, |r0|= 5.793E+02
+     step cg summary:  62 iterations, |r|= 2.186E-06, |r0|= 2.253E+02
+     step cg summary:  59 iterations, |r|= 1.742E-06, |r0|= 1.923E+02
+     step cg summary:  62 iterations, |r|= 5.202E-06, |r0|= 5.567E+02
+     step cg summary:  60 iterations, |r|= 6.268E-06, |r0|= 7.676E+02
+     step cg summary:  59 iterations, |r|= 7.176E-06, |r0|= 7.705E+02
+     step cg summary:  60 iterations, |r|= 4.915E-06, |r0|= 5.645E+02
+   Source cycle   2: |Q|_max= 3.7467E+04, Q_total= 4.2725E+00
+     step cg summary:  62 iterations, |r|= 2.025E-06, |r0|= 2.075E+02
+     step cg summary:  64 iterations, |r|= 1.417E-06, |r0|= 2.061E+02
+     step cg summary:  59 iterations, |r|= 4.412E-06, |r0|= 5.631E+02
+     step cg summary:  59 iterations, |r|= 7.522E-06, |r0|= 7.698E+02
+     step cg summary:  60 iterations, |r|= 6.511E-06, |r0|= 7.695E+02
+     step cg summary:  60 iterations, |r|= 5.228E-06, |r0|= 5.636E+02
+     step cg summary:  63 iterations, |r|= 1.535E-06, |r0|= 2.062E+02
+     step cg summary:  59 iterations, |r|= 1.797E-06, |r0|= 2.062E+02
+     step cg summary:  62 iterations, |r|= 5.081E-06, |r0|= 5.636E+02
+     step cg summary:  59 iterations, |r|= 7.693E-06, |r0|= 7.694E+02
+     step cg summary:  59 iterations, |r|= 7.176E-06, |r0|= 7.698E+02
+     step cg summary:  60 iterations, |r|= 4.877E-06, |r0|= 5.633E+02
+   Source cycle   3: |Q|_max= 4.0207E+04, Q_total= 4.6195E+00
+     step cg summary:  63 iterations, |r|= 1.847E-06, |r0|= 2.066E+02
+     step cg summary:  64 iterations, |r|= 1.404E-06, |r0|= 2.066E+02
+     step cg summary:  59 iterations, |r|= 4.229E-06, |r0|= 5.632E+02
+     step cg summary:  59 iterations, |r|= 7.230E-06, |r0|= 7.698E+02
+     step cg summary:  60 iterations, |r|= 6.768E-06, |r0|= 7.694E+02
+     step cg summary:  60 iterations, |r|= 5.487E-06, |r0|= 5.636E+02
+     step cg summary:  63 iterations, |r|= 1.494E-06, |r0|= 2.062E+02
+     step cg summary:  59 iterations, |r|= 1.604E-06, |r0|= 2.062E+02
+     step cg summary:  62 iterations, |r|= 4.990E-06, |r0|= 5.636E+02
+     step cg summary:  60 iterations, |r|= 6.409E-06, |r0|= 7.694E+02
+     step cg summary:  59 iterations, |r|= 7.268E-06, |r0|= 7.698E+02
+     step cg summary:  60 iterations, |r|= 4.555E-06, |r0|= 5.633E+02
+   Source cycle   4: |Q|_max= 4.0213E+04, Q_total= 4.6202E+00
+  Joule heat computation completed.
+ Electromagnetics initialized.
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E-02
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=1.000E-02, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
+
+          2: t =   1.00000E-02, dt(diffusion solver) =   1.00000E-02
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=1.000E-02, NFUN:NPC=0000005:00001, NNR:NNF:NSR=0000:0000:0000
+
+          3: t =   2.00000E-02, dt(diffusion solver) =   1.00000E-02
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=1.000E-02, NFUN:NPC=0000007:00001, NNR:NNF:NSR=0000:0000:0000
+
+          4: t =   3.00000E-02, dt(diffusion solver) =   1.00000E-02
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=1.000E-02, NFUN:NPC=0000009:00001, NNR:NNF:NSR=0000:0000:0000
+
+          5: t =   4.00000E-02, dt(diffusion solver) =   3.60230E-02
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=3.602E-02, NFUN:NPC=0000011:00002, NNR:NNF:NSR=0000:0000:0000
+
+          6: t =   7.60230E-02, dt(diffusion solver) =   4.89663E-02
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=4.897E-02, NFUN:NPC=0000013:00002, NNR:NNF:NSR=0000:0000:0000
+
+          7: t =   1.24989E-01, dt(diffusion solver) =   1.46171E-01
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=1.462E-01, NFUN:NPC=0000015:00003, NNR:NNF:NSR=0000:0000:0000
+
+          8: t =   2.71161E-01, dt(diffusion solver) =   2.67316E-01
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=2.673E-01, NFUN:NPC=0000017:00003, NNR:NNF:NSR=0000:0000:0000
+
+          9: t =   5.38476E-01, dt(diffusion solver) =   7.11643E-01
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=7.116E-01, NFUN:NPC=0000019:00004, NNR:NNF:NSR=0000:0000:0000
+
+         10: t =   1.25012E+00, dt(diffusion solver) =   1.55704E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=1.557E+00, NFUN:NPC=0000022:00004, NNR:NNF:NSR=0000:0000:0000
+
+         11: t =   2.80716E+00, dt(diffusion solver) =   1.90860E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=1.909E+00, NFUN:NPC=0000025:00004, NNR:NNF:NSR=0000:0000:0000
+
+         12: t =   4.71576E+00, dt(diffusion solver) =   2.39937E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=2.399E+00, NFUN:NPC=0000028:00004, NNR:NNF:NSR=0000:0000:0000
+
+         13: t =   7.11513E+00, dt(diffusion solver) =   2.55705E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=2.557E+00, NFUN:NPC=0000030:00005, NNR:NNF:NSR=0000:0000:0000
+
+         14: t =   9.67218E+00, dt(diffusion solver) =   2.73851E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=2.739E+00, NFUN:NPC=0000032:00005, NNR:NNF:NSR=0000:0000:0000
+
+         15: t =   1.24107E+01, dt(diffusion solver) =   2.97470E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=2.975E+00, NFUN:NPC=0000034:00005, NNR:NNF:NSR=0000:0000:0000
+
+         16: t =   1.53854E+01, dt(diffusion solver) =   3.20347E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=3.203E+00, NFUN:NPC=0000037:00005, NNR:NNF:NSR=0000:0000:0000
+
+         17: t =   1.85889E+01, dt(diffusion solver) =   3.48032E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=3.480E+00, NFUN:NPC=0000040:00005, NNR:NNF:NSR=0000:0000:0000
+
+         18: t =   2.20692E+01, dt(diffusion solver) =   3.76412E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=3.764E+00, NFUN:NPC=0000043:00005, NNR:NNF:NSR=0000:0000:0000
+
+         19: t =   2.58333E+01, dt(diffusion solver) =   4.07372E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=4.074E+00, NFUN:NPC=0000046:00005, NNR:NNF:NSR=0000:0000:0000
+
+         20: t =   2.99070E+01, dt(diffusion solver) =   4.39094E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=4.391E+00, NFUN:NPC=0000049:00005, NNR:NNF:NSR=0000:0000:0000
+
+         21: t =   3.42980E+01, dt(diffusion solver) =   4.72221E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=4.722E+00, NFUN:NPC=0000052:00005, NNR:NNF:NSR=0000:0000:0000
+
+         22: t =   3.90202E+01, dt(diffusion solver) =   5.06130E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=5.061E+00, NFUN:NPC=0000055:00005, NNR:NNF:NSR=0000:0000:0000
+
+         23: t =   4.40815E+01, dt(diffusion solver) =   5.40973E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=5.410E+00, NFUN:NPC=0000058:00005, NNR:NNF:NSR=0000:0000:0000
+
+         24: t =   4.94912E+01, dt(diffusion solver) =   5.76514E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=5.765E+00, NFUN:NPC=0000061:00005, NNR:NNF:NSR=0000:0000:0000
+
+         25: t =   5.52563E+01, dt(diffusion solver) =   6.11805E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=6.118E+00, NFUN:NPC=0000064:00005, NNR:NNF:NSR=0000:0000:0000
+
+         26: t =   6.13744E+01, dt(diffusion solver) =   6.44803E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=6.448E+00, NFUN:NPC=0000067:00005, NNR:NNF:NSR=0000:0000:0000
+
+         27: t =   6.78224E+01, dt(diffusion solver) =   6.79574E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=6.796E+00, NFUN:NPC=0000070:00005, NNR:NNF:NSR=0000:0000:0000
+
+         28: t =   7.46182E+01, dt(diffusion solver) =   7.10717E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=7.107E+00, NFUN:NPC=0000073:00005, NNR:NNF:NSR=0000:0000:0000
+
+         29: t =   8.17253E+01, dt(diffusion solver) =   7.40624E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=7.406E+00, NFUN:NPC=0000076:00005, NNR:NNF:NSR=0000:0000:0000
+
+         30: t =   8.91316E+01, dt(diffusion solver) =   7.70654E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=7.707E+00, NFUN:NPC=0000079:00005, NNR:NNF:NSR=0000:0000:0000
+
+         31: t =   9.68381E+01, dt(diffusion solver) =   8.00756E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=8.008E+00, NFUN:NPC=0000082:00005, NNR:NNF:NSR=0000:0000:0000
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0485E+02 after    31 steps
+  TIMING SUMMARY                       AVERAGE        MIN          MAX
+  --------------                      ---------    ---------    ---------
+  Total                               3.668E+00    3.430E+00    3.866E+00
+    Input                               4.924E-02    3.799E-02    6.199E-02
+    Initialization                      3.360E+00    3.166E+00    3.562E+00
+    Main Cycle                          2.510E-01    2.180E-01    3.200E-01
+      Output                              9.498E-03    8.997E-03    1.100E-02
+      Time Step                           0.000E+00    0.000E+00    0.000E+00
+      Diffusion Solver                    1.477E-01    1.290E-01    1.870E-01
+        DS precon update                    2.375E-02    2.099E-02    2.800E-02
+        DS residual                         1.525E-02    9.999E-03    2.000E-02
+        DS preconditioning                  9.373E-02    8.299E-02    1.220E-01
+          DS heat precon                      9.373E-02    8.299E-02    1.220E-01
+
+
+          Smallest process virtual memory used: 1.14E+02   mb
+          Largest process virtual memory used:  1.19E+02   mb
+          Total virtual memory used:            4.61E+02   mb
+          words/cell:                             171761
+
+
+truchas terminated normally on 27 Sep 10 at 15:17:48

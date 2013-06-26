@@ -1,0 +1,106 @@
+DIFFUSION SOLVER TEST 7
+
+Linear heat conduction with simple radiation boundary condition.  Spherically
+symmetric problem solved in a 1-cell thick annular wedge.  No heat flux at the
+inner surface, simple heat radiation at the outer surface, and no flux on the
+remaining symmetry planes.
+
+This is essentially the same problem as the species diffusion TEST 1, only
+expressed in terms of temperature rather than concentration; the solutions
+should be identical, and the enthalpy 1/4 of the temperature.
+
+Input file is written to allow running the same problem using the existing
+HT/PC solver.  Just turn on heat conduction and turn off the diffusion solver
+in the PHYSICS namelist.  Note that the mesh is non-orthogonal and that LSLR
+discrete operator seems to have problems with it and/or the boundary conditions
+so ortho operators are used for HT/PC.
+
+&MESH
+  mesh_file = 'ds5.gen'
+  mesh_file_format = 'ExodusII'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 0.1, 1.0
+  Output_Dt = 0.1, 1.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  fluid_flow = .false.
+/
+
+&PHYSICAL_CONSTANTS
+  stefan_boltzmann = 2.0
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 0.05
+  nlk_preconditioner = 'hypre_amg'
+/
+
+&NUMERICS
+  dt_init = 1.0d-3
+  dt_min  = 1.0d-5
+  dt_grow = 10.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'inner'
+  variable = 'temperature'
+  condition = 'flux'
+  data_constant = 0.0
+  Face_Set_IDs = 1
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'outer'
+  variable = 'temperature'
+  condition = 'radiation'
+  data_constant = 0.5, 1.0
+  Face_Set_IDs = 2
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'symmetry sides'
+  variable = 'temperature'
+  condition = 'flux'
+  data_constant = 0.0
+  Face_Set_IDs = 3
+/
+
+&DS_SOURCE
+  equation = 'temperature'
+  cell_set_ids = 1
+  source_constant = 9.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 1.0
+/
+
+&MATERIAL
+  Material_Number        = 1,
+  Material_Name          = 'A'
+  material_feature       = 'background'
+  Density                = 4.0
+/
+
+&PHASE
+  name = 'A'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 0.5
+/
+
+&MATERIAL_SYSTEM
+  name = 'A'
+  phases = 'A'
+/

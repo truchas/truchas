@@ -1,0 +1,11 @@
+write
+gmv 
+sloshing_flow_output/sloshing_flow.TBrook.xml
+DefaultMesh
+0
+binary
+gmv.bin
+all
+q
+
+

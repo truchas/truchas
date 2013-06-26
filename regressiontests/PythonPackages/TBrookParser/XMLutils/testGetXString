@@ -1,0 +1,41 @@
+#!/bin/tcsh
+
+echo ================================
+ python XMLgetString.py -d
+
+echo ================================
+#setenv SAMP ~/Telluride/wrk/tools/scripts/test_TBrookParse/samples
+setenv SAMP /../../../scripts/test_TBrookParse/samples
+
+ python XMLgetString.py -d -f $SAMP/map-b_output/map-b.TBrook.xml
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/map_output/map.TBrook.xml
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/test_broken_xml_output/broken_dam_hex_void.TBrook.xml
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/test_broken_xmlvars_output/map.TBrook.xml
+
+echo ================================
+setenv SAMP ~/samp/test_residual
+
+ python XMLgetString.py -d -f $SAMP/box_fill_ortho_output/box_fill_ortho.TBrook.xml      
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/ht_bc_output/ht_bc.TBrook.xml*                       
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/shear_constr_heat_output/shear_constr_heat.TBrook.xml
+
+echo ================================
+setenv SAMP ~/samp/test_residual_np4
+
+ python XMLgetString.py -d -f $SAMP/box_fill_ortho_output/box_fill_ortho.TBrook.xml      
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/ht_bc_output/ht_bc.TBrook.xml*                       
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/shear_constr_heat_output/shear_constr_heat.TBrook.xml
+
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+setenv SAMP ~/samp/test_joule
+
+ python XMLgetString.py -d -f $SAMP/em_restarts2_output/em_restarts2.TBrook.xml  
+ echo '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ python XMLgetString.py -d -f $SAMP/em_temp_deppb_output/em_temp_deppb.TBrook.xml

@@ -1,0 +1,59 @@
+\documentclass[12pt]{article}
+
+\usepackage{times}
+%\usepackage{latexmake}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+
+
+\textheight 9.35in \textwidth 6.8in %
+\oddsidemargin -0.15in \evensidemargin -0.15in
+\topmargin -15mm
+\footskip 8mm
+\headheight 13pt
+
+
+\begin{document}
+
+\begin{center}
+{\large {\bf Solidification with Alloy, Clyne and Kurz, Phase Change}}
+\end{center}
+
+
+\subsection*{Objective}
+
+This test problem is intended to test the alloy phase change with Clyne and Kurz model subsection* of Truchas with thermal conduction but without fluid flow or volume change.  This is testing the accurate traversal of the defined phase diagram.
+
+\subsection*{Definition}
+
+The problem begins with a bar of liquid at a temperature of 1000.  A Dirchlet temperature boundary condition of 800 is applied to the left end, which is below the liquidus melting point of 1000 and the eutectic melting point of 960.  The material will solidify from the left to the right as the liquid cools over time.
+
+\subsection*{Metrics}
+
+The temperature and enthalpy of the liquid and solid portions of the bar are determined by the thermal conductivity in each phase.  The cells undergoing phase change follow the phase diagram defined below.  The volume of fluid (VOF) of the liquid should be 1 to the right of the phase change and 0 to the left.  These metrics can be approximated by:
+
+\begin{enumerate}
+\item Compare the temperature along the bar at specific time steps to the golden solution.
+\item Compare the enthalpy along the bar at specific time steps to the golden solution.
+\item Compare the volume of fluid along the bar at specific time steps to the golden solution.
+\end{enumerate}
+
+For each metric the error is determined by taking the L2 norm of the corresponding vectors from Truchas and the golden solution.
+
+\subsection*{Truchas Model}
+
+The problem domain is a bar of length 0.04 with height of 0.004 and depth of 0.004.  The bar is subdivided into 20 cells along the length of the bar.  The initial temperature is 1000 with a concentration of 0.30.  For the phase change the melting temperature of the solvent is 1000, the liquidus temperature is 970, the liquidus slope is -100, the eutectic temperature is 960, and the latent heat is 6000.  For the Clyne and Kurz model alpha is 0.4, the back diffusion coefficient is 0.4e-11, the secondary arm spacing is 1e-5, and solidification time is 1e1, and the partition coefficient constant is 0.65.  The left end of the bar has a Dirichlet temperature boundary condition of 800.  The liquid material has a temperature hneumann boundary condition.  The phase change type is alloy using the Clyne and Kurz model.  The simulation is run for 100 time steps, each of duration 1.
+
+\subsection*{Results}
+
+To be added.
+
+\subsection*{Critique}
+
+To be added.
+
+\subsection*{References}
+
+\end{document}

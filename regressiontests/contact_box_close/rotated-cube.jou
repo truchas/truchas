@@ -1,0 +1,32 @@
+## /opt/cubit/13.1-47471/bin/clarox
+## Cubit Version 13.1
+## Cubit Build 47471
+## Revised 2012-01-25 09:56:34 -0700 (Wed, 25 Jan 2012)
+## Running 05/16/2012 02:23:52 PM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 4 y 4 z 4
+webcut volume 1 with plane xplane offset 0 noimprint nomerge
+rotate volume all angle 45 about y include_merged
+rotate volume all angle -30 about x include_merged
+imprint volume all
+merge volume all
+
+volume all size 1
+mesh volume all
+
+set duplicate block elements off
+block 1 volume 2
+block 2 volume 1
+
+sideset 1 surface 4     # left side (x = const)
+sideset 2 surface 6     # right side (x = const)
+sideset 3 surface 9 16  # front side (y = const)
+sideset 4 surface 11 13 # back side (y = const)
+sideset 5 surface 14 10 # bottom side (z = const)
+sideset 6 surface 15 8  # top side (z = const)
+sideset 10 surface 7 both # surface to split cube on (x = const)
+
+set large exodus file off
+export genesis "rotated-cube.exo" overwrite

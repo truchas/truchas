@@ -1,0 +1,190 @@
+Reference:  G. de Vahl Davis, "Natural Convection of Air in a Square
+            Cavity:  A Bench Mark Numerical Solution," IJNMF, v. 3,            
+            pp. 249-264 (1983).
+
+A standard benchmark problem of boussinesq flow + heat transfer in a 
+2D square cavity, cooled at one side, heated from the opposite, 
+otherwise insulated. No-slip conditions applied at the four walls. 
+
+de Vahl Davis ran the problem for several Rayleigh numbers; this input 
+file corresponds to Ra = 1000.  The paper presents various steady state 
+results against which to compare, including:
+
+   maximum u velocity along the vertical centerline   = 3.649 @ z = 0.813
+   maximum w velocity along the horizontal centerline = 3.697 @ x = 0.178
+   average Nusselt number along any vertical plane    = 1.118
+
+To scale the Telluride results to the de Vahl Davis ones:
+   divide Telluride velocities by 2.07866104E-5
+
+To calculate the Nusselt number at the left edge of the domain:
+
+   Nu = 0
+   do for every face at the left edge
+     Nu = Nu + 2.0 * (1.0 - Zone(n)%Temp) 
+   end do
+   ... where Zone(n)%Temp is the cell-centered temperature next to each
+       face at the left edge
+
+The output file issues results for the vertical and horizontal centerline 
+cells at each long_edit interval.
+
+
+&OUTPUTS
+  Output_T                      = 0.0, 60000.0,60500.0
+  Output_Dt                     = 600.0, 500.0
+  Short_Output_Dt_Multiplier    = 1, 1
+  output_dt_Multiplier      = 1, 1
+/
+
+&PROBE
+  Probe_Description = 'Maximum Horizontal Velocity'
+  Probe_Name        = 'VhMax',
+  Probe_Coords      = 0.5, 0.0, 0.813,
+/
+
+&PROBE
+  Probe_Description = 'Maximum Vertical Velocity'
+  Probe_Name        = 'VvMax',
+  Probe_Coords      = 0.178, 0.0, 0.5,
+/
+
+&MESH
+  mesh_file = 'square-49.g'
+  mesh_file_format = 'ExodusII'
+/
+ 
+&PHYSICS
+  fluid_flow                = .true.
+  inviscid                  = .false.
+  stokes                    = .false.
+  heat_transport            = .true.
+  body_force                = 0.0, 0.0, -9.34142216E-5
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 0.05
+  nlk_preconditioner = 'hypre_amg'
+/
+
+&NUMERICS
+  dt_init                     = 1.0e-2
+  dt_grow                     = 1.05
+  dt_min                      = 1.0e-05
+  dt_max                      = 1000.0
+  viscous_implicitness        = 1.0
+  viscous_number              = 0.3
+  courant_number              = 0.5
+  projection_linear_solution  = 'projection'
+  viscous_linear_solution     = 'viscous', 
+/
+
+&LINEAR_SOLVER
+  name                    = 'projection'
+  method                  = 'fgmres'
+  preconditioning_method  = 'ssor'
+  preconditioning_steps   = 2
+  relaxation_parameter    = 1.4
+  convergence_criterion   = 1.0e-12
+/
+
+&LINEAR_SOLVER
+  name                    = 'viscous'
+  method                  = 'fgmres'
+  convergence_criterion   = 1.0e-8
+  preconditioning_method  = 'none'
+  stopping_criterion      = '||r||/||b||'
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'left side'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 1
+  data_constant = 2.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'right side'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 2
+  data_constant = 1.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'top/bottom/symmetry planes'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 3, 4, 5
+  data_constant = 0.0
+/
+
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable  = 'velocity'
+  bc_type      = 'no-slip'
+/
+
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'velocity'
+  bc_type      = 'no-slip'
+/
+
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 3
+  bc_variable  = 'velocity'
+  bc_type      = 'no-slip'
+/
+
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 4
+  bc_variable  = 'velocity'
+  bc_type      = 'no-slip'
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number  = 1
+  velocity         = 3*0.0
+  temperature      = 1.0
+/
+
+&MATERIAL
+  Material_Number  = 1
+  Material_Name = 'air'
+  Material_Feature = 'background'
+  Density = 1.2180, 
+ /
+
+&PHASE
+  name = 'air'
+  property_name(1) = 'density',       property_constant(1) = 1.2180
+  property_name(2) = 'specific heat', property_constant(2) = 1.006
+  property_name(3) = 'conductivity',  property_constant(3) = 25.470e-6
+  property_name(4) = 'density deviation', property_function(4) = 'air-drho'
+  property_name(5) = 'viscosity',     property_constant(5) = 17.975845e-6
+/
+
+&FUNCTION
+  name = 'air-drho'
+  type = 'polynomial'
+  poly_coefficients = -0.003284072
+  poly_exponents(1,:) = 1
+  poly_refvars = 0.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'air'
+  phases = 'air'
+/

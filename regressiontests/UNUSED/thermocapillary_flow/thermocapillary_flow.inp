@@ -1,0 +1,265 @@
+
+&MESH
+
+    Ncell  = 50, 1, 16
+    Coord  = 0.0,0.0,0.0,1.0, 0.02,0.3 
+    Ratio  = 3*1.0
+    Fuzz   = 3*0.0
+
+/
+
+&OUTPUTS
+
+    Output_T                      = 0.0, 1000.0
+    Output_Dt                     = 1. 
+    Short_Output_Dt_Multiplier    = 1
+    Restart_Output_Dt_Multiplier  = 0
+    Gra_Output_Dt_Multiplier      = 1
+    Graphics_Format               = 'tecplot'
+    Int_Output_Dt_Multiplier      = 0
+    User_Output_Dt_Multiplier     = 1
+    Long_Output_Dt_Multiplier     = 0
+
+/
+
+&PHYSICS
+
+    fluid_flow                = .true.,
+    boussinesq_approximation  = .true.,
+    inviscid                  = .false.,
+    stokes                    = .false.,
+    surface_tension_model     = 'csf model',
+    csf_normal                = .true.,
+    csf_tangential            = .true., 
+    heat_conduction           = .true.,
+    body_force                = 0.0, 0.0, 0.0, 
+    phase_change              = .false.,  
+    curvature_model           = 'rudman_kernel' 
+/
+
+&NUMERICS
+
+    dt_init                     = 1.e-3
+    dt_grow                     = 1.2
+    dt_min                      = 1.0e-8
+    dt_max                      = 0.1
+    courant_number              = 0.5
+    fourier_number              = 1000
+    energy_nonlinear_solution   = 'nk'
+    projection_linear_solution  = 'projection'
+    cycle_max                   = 5000
+    volume_track_interfaces     =.true.
+    volume_track_brents_method  =.true.
+    volume_track_iter_tol       =1.0e-12
+    interface_geometry          ='piecewise linear'
+    cutvof                      =1.e-8  
+    interface_smoothing_length  =0.06
+    viscous_implicitness        = 0.0
+    viscous_linear_solution     = 'viscous'
+  
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'projection'
+    method                  = 'fgmres'
+    preconditioning_method  = 'ssor'
+    preconditioning_steps   = 2
+    relaxation_parameter    = 1.4
+    convergence_criterion   = 1.0e-12
+/
+
+&LINEAR_SOLVER
+                                                                                                 
+    name                    = 'viscous',
+    method                  = 'fgmres',
+    convergence_criterion   = 1.0e-8,
+    preconditioning_method  = 'none',
+    stopping_criterion       ='||r||/||b||' 
+    maximum_iterations      = 1000
+/
+
+&NONLINEAR_SOLVER
+
+    name                    = 'nk'
+    method                  = 'nk'
+    linear_solver_name      = 'nk'
+    convergence_criterion   = 1.0e-6
+    use_damper              = .false.
+    perturbation_parameter  = 1.0e-6
+    damper_parameters       = 0.8, 1.5, 1.0, 1.0
+    maximum_iterations      = 100
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'nk'
+    method                  = 'fgmres'
+    preconditioning_method  = 'ssor'
+    preconditioning_steps   = 3
+    relaxation_parameter    = 0.9
+    convergence_criterion   = 1.0e-3
+    krylov_vectors          = 100
+    stopping_criterion      = '||r||/||r0||'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'temperature'
+    BC_Type          = 'dirichlet'
+    BC_Value         = 1.0 
+/
+
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = -1.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'temperature'
+    BC_Type          = 'dirichlet'
+    BC_Value         = 0.0
+/
+
+&BC
+
+    Surface_Name	= 'external material boundary'
+    surface_materials   = 1
+    BC_Variable		= 'temperature'
+    BC_Type		= 'hneumann'
+
+/
+
+&BC
+
+    Surface_Name	= 'external material boundary'
+    surface_materials   = 2
+    BC_Variable		= 'temperature'
+    BC_Type		= 'hneumann'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = -1.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_Z          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_Z          = 1.0
+    Conic_Constant   = -0.3
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+/
+
+&INTERFACES
+    int_particles = 5,
+    vof_particles = 5,
+/
+
+&BODY
+    Material_number = 1,
+    Surface_Name    = 'plane',
+    Axis            = 'z'
+    Fill            = 'below'
+    Translation_Pt  = 0.0,0.0,0.2
+    Velocity		= 3*0.0
+    Temperature		= 0.5
+
+/                 
+    
+
+&BODY
+
+    Material_Number  = 2
+    Surface_Name     = 'background'
+    Velocity         = 3*0.0
+    Temperature      = 0.5 
+/
+
+&MATERIAL
+
+    Material_Number                = 1,
+    Material_Name                  = 'Liquid',
+    priority                       = 1,
+    Density                        = 50.0, 
+    Reference_Temperature          = 0.0, 
+    Cp_Constants                   = 2,
+    Conductivity_Constants         = 1,
+    Viscosity_constants            = 1.e-1,
+ 
+    Surf10_Material_number         = 2,
+    Surf10_Relation                = 'temperature_polynomial',
+    Surf10_Constants               = 0.125,0.0,-0.001,
+    Surf10_Exponents               = 0,0,1, 
+
+/
+
+&MATERIAL
+
+    Material_Number                = 2
+    Material_Name                  = 'void'
+    Material_Feature               = 'background'
+    priority                       = 2
+  
+    Density                        = 0.0, 
+
+    Reference_Temperature          = 0.0,
+    Cp_Constants                   = 0.0
+    Conductivity_Constants         = 0.0
+    Viscosity_constants            = 0.0 
+
+    Surf10_Material_number         = 1,
+    Surf10_Relation                = 'temperature_polynomial',
+    Surf10_Constants               = 0.125,0.0,-0.001
+    Surf10_Exponents               = 0,0,1, 
+/
+
+&PARALLEL_PARAMETERS
+
+    Partitioner  = 'automatic'
+
+/

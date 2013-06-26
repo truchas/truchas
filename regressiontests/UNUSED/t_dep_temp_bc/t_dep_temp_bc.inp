@@ -1,0 +1,160 @@
+Test of time varying temperature coding
+
+1D conduction with low thermal mass 
+Insulated on all but two boundaries
+one of which radiates to varying temperatures
+the other is specified as a varying dirichlet boundary with the same temperature history
+
+Based on conduction_0
+
+&MESH 
+
+    Ncell  = 10, 1, 1
+    Coord  = 0, 0, 0, 
+             1, 1, 1, 
+
+/
+
+&PHYSICS 
+
+    fluid_flow       = .false., 
+    heat_conduction  = .true., 
+    phase_change     = .false., 
+
+/
+
+
+&NUMERICS 
+
+    dt_constant                = 0.01, 
+    dt_init                    = 0.01,
+    dt_min                     = 1e-10,
+    dt_max                     = 1.0,
+    dt_grow                    = 1.2,
+    fourier_number             = 100, 
+
+    energy_nonlinear_solution  = 'ht-pc solve', 
+
+/
+
+&PARALLEL_PARAMETERS 
+
+    Partitioner  = 'automatic', 
+
+/
+
+&OUTPUTS 
+
+    Output_T                    = 0, 10., 
+    Output_Dt                   = 0.5, 
+    Xml_Output_Dt_Multiplier    = 1,
+    Probe_Output_Cycle_Multiplier    = 10,
+
+/
+
+&MATERIAL 
+
+    Material_Name           = 'matl_1', 
+    Material_Feature        = 'background',
+    Material_Number         = 1, 
+
+    Conductivity_Constants  = 10.
+
+    Density                 = 100.
+
+    Cp_Constants            = 10
+    Priority                = 1, 
+
+/
+
+&BODY 
+
+    Surface_Name     = 'plane', 
+    Axis             = 'y', 
+    Fill             = '-', 
+    Translation_Pt   = 0, 0., 0, 
+    Material_Number  = 1, 
+    Temperature      = 50, 
+
+/
+
+&BC 
+
+    Surface_Name     = 'conic', 
+    Conic_X          = 1, 
+    Conic_Constant   = 0, 
+    Conic_Tolerance  = 0.01, 
+    Conic_Relation   = '=', 
+
+    BC_Type          = 'radiation', 
+    BC_Variable      = 'temperature', 
+    BC_Value         = 1.0, 50.0, 10.0, 300.0,
+
+/
+
+&BC 
+
+    Surface_Name     = 'conic', 
+    Conic_X          = 1, 
+    Conic_Constant   = -1,
+    Conic_Tolerance  = 0.01, 
+    Conic_Relation   = '=', 
+
+    BC_Type          = 'dirichlet', 
+    BC_Variable      = 'temperature', 
+    BC_Value         = 50.0, 1.0, 1.0, 2.0, 100.0, 5.0, 25.0, 7.50, 222.0, 10.0, 0.5,
+
+/
+
+&BC
+
+    surface_name      = 'external material boundary',
+    bc_variable       = 'temperature',
+    bc_type           = 'hneumann',
+    surface_materials = 1,
+
+/
+
+&LINEAR_SOLVER 
+
+    name                    = 'nk', 
+    method                  = 'fgmres', 
+    stopping_criterion      = '||r||/||r0||',
+    convergence_criterion   = 1.0e-12,
+    preconditioning_method  = 'ssor', 
+    relaxation_parameter    = 0.9, 
+    preconditioning_steps   = 4, 
+
+/
+
+&NONLINEAR_SOLVER 
+
+    name                    = 'ht-pc solve', 
+    method                  = 'nk', 
+    linear_solver_name      = 'nk', 
+    convergence_criterion   = 1.0e-12,
+    maximum_iterations      = 4000,
+    output_mode             = 'none', 
+    use_damper              = .false., 
+    damper_parameters       = 0.5, 2, 1, 1, 
+    perturbation_parameter  = 1e-8
+
+/
+
+&probe
+  probe_name = 'cell1',
+  probe_description = 'Radiation Side Cell',
+  probe_coords =  0.05, 0.5, 0.5,
+/
+
+&probe
+  probe_name = 'cell5',
+  probe_description = 'Central Cell',
+  probe_coords =  0.45, 0.5, 0.5,
+/
+
+&probe
+  probe_name = 'cell10',
+  probe_description = 'Conduction Side Cell',
+  probe_coords =  0.95, 0.5, 0.5,
+/

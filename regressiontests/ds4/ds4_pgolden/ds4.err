@@ -1,0 +1,721 @@
+ vfParallelSize =           1000000
+
+         WARNING: Material  1 priority not initialized; set to  1
+
+         WARNING: Material  2 priority not initialized; set to  2
+
+         WARNING: Material  3 priority not initialized; set to  3
+
+         WARNING: Material  4 priority not initialized; set to  4
+
+ PHASE_CHANGE_PROPERTIES Namelist:
+         WARNING: Phase changes not activated in physics namelist,
+         All phase changes have been disabled.
+
+         WARNING: INTERFACES namelist not found: using defaults
+
+         Using linear solver "HT_AIN_PC" for nonlinear solver "HT_AIN".
+
+         Reading BC namelist #  1: Unnamed
+
+         Reading BC namelist #  2: Unnamed
+
+         Reading BC namelist #  3: Unnamed
+
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   3.75000E-03 (    17 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   3.75000E-03 (    17 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   3.97500E-01 (  1800 faces)
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E-06
+
+          2: t =   1.00000E-06, dt(diffusion solver) =   1.00000E-06
+
+          3: t =   2.00000E-06, dt(diffusion solver) =   1.00000E-06
+
+          4: t =   3.00000E-06, dt(diffusion solver) =   1.00000E-06
+
+          5: t =   4.00000E-06, dt(diffusion solver) =   3.44444E-06
+
+          6: t =   7.44444E-06, dt(diffusion solver) =   3.83044E-06
+
+          7: t =   1.12749E-05, dt(diffusion solver) =   1.53218E-05
+
+          8: t =   2.65966E-05, dt(diffusion solver) =   4.86052E-05
+
+          9: t =   7.52018E-05, dt(diffusion solver) =   4.34326E-05
+
+         10: t =   1.18634E-04, dt(diffusion solver) =   1.73730E-04
+
+         11: t =   2.92365E-04, dt(diffusion solver) =   1.50964E-04
+
+         12: t =   4.43329E-04, dt(diffusion solver) =   1.76286E-04
+
+         13: t =   6.19615E-04, dt(diffusion solver) =   1.51182E-04
+
+         14: t =   7.70797E-04, dt(diffusion solver) =   1.31053E-04
+
+         15: t =   9.01850E-04, dt(diffusion solver) =   1.18586E-04
+
+         16: t =   1.02044E-03, dt(diffusion solver) =   1.15338E-04
+
+         17: t =   1.13577E-03, dt(diffusion solver) =   1.12543E-04
+
+         18: t =   1.24832E-03, dt(diffusion solver) =   1.16064E-04
+
+         19: t =   1.36438E-03, dt(diffusion solver) =   1.20961E-04
+
+         20: t =   1.48534E-03, dt(diffusion solver) =   1.29431E-04
+
+         21: t =   1.61477E-03, dt(diffusion solver) =   1.43061E-04
+
+         22: t =   1.75783E-03, dt(diffusion solver) =   1.66527E-04
+
+         23: t =   1.92436E-03, dt(diffusion solver) =   1.70244E-04
+
+         24: t =   2.09460E-03, dt(diffusion solver) =   1.57115E-04
+
+         25: t =   2.25172E-03, dt(diffusion solver) =   1.65912E-04
+
+         26: t =   2.41763E-03, dt(diffusion solver) =   1.64080E-04
+
+         27: t =   2.58171E-03, dt(diffusion solver) =   1.84457E-04
+
+         28: t =   2.76617E-03, dt(diffusion solver) =   1.98509E-04
+
+         29: t =   2.96468E-03, dt(diffusion solver) =   2.34589E-04
+
+         30: t =   3.19927E-03, dt(diffusion solver) =   1.99226E-04
+
+         31: t =   3.39849E-03, dt(diffusion solver) =   2.20511E-04
+
+         32: t =   3.61900E-03, dt(diffusion solver) =   2.16683E-04
+
+         33: t =   3.83569E-03, dt(diffusion solver) =   2.38286E-04
+
+         34: t =   4.07397E-03, dt(diffusion solver) =   2.61108E-04
+
+         35: t =   4.33508E-03, dt(diffusion solver) =   2.86222E-04
+
+         36: t =   4.62130E-03, dt(diffusion solver) =   2.57070E-04
+
+         37: t =   4.87837E-03, dt(diffusion solver) =   2.83034E-04
+
+         38: t =   5.16141E-03, dt(diffusion solver) =   2.85710E-04
+
+         39: t =   5.44712E-03, dt(diffusion solver) =   3.18092E-04
+
+         40: t =   5.76521E-03, dt(diffusion solver) =   3.53972E-04
+
+         41: t =   6.11918E-03, dt(diffusion solver) =   3.11730E-04
+
+         42: t =   6.43091E-03, dt(diffusion solver) =   3.47608E-04
+
+         43: t =   6.77852E-03, dt(diffusion solver) =   3.50695E-04
+
+         44: t =   7.12921E-03, dt(diffusion solver) =   3.96015E-04
+
+         45: t =   7.52523E-03, dt(diffusion solver) =   3.86419E-04
+
+         46: t =   7.91165E-03, dt(diffusion solver) =   3.91281E-04
+
+         47: t =   8.30293E-03, dt(diffusion solver) =   4.13860E-04
+
+         48: t =   8.71679E-03, dt(diffusion solver) =   6.36789E-04
+
+         49: t =   9.35358E-03, dt(diffusion solver) =   2.71027E-04
+
+         50: t =   9.62461E-03, dt(diffusion solver) =   6.61296E-04
+
+         51: t =   1.02859E-02, dt(diffusion solver) =   3.86998E-04
+
+         52: t =   1.06729E-02, dt(diffusion solver) =   6.09055E-04
+
+         53: t =   1.12820E-02, dt(diffusion solver) =   4.72714E-04
+
+         54: t =   1.17547E-02, dt(diffusion solver) =   5.55781E-04
+
+         55: t =   1.23104E-02, dt(diffusion solver) =   5.48055E-04
+
+         56: t =   1.28585E-02, dt(diffusion solver) =   6.21282E-04
+
+         57: t =   1.34798E-02, dt(diffusion solver) =   5.69928E-04
+
+         58: t =   1.40497E-02, dt(diffusion solver) =   6.23855E-04
+
+         59: t =   1.46736E-02, dt(diffusion solver) =   6.50859E-04
+
+         60: t =   1.53244E-02, dt(diffusion solver) =   6.51611E-04
+
+         61: t =   1.59760E-02, dt(diffusion solver) =   6.72211E-04
+
+         62: t =   1.66482E-02, dt(diffusion solver) =   7.12550E-04
+
+         63: t =   1.73608E-02, dt(diffusion solver) =   7.27028E-04
+
+         64: t =   1.80878E-02, dt(diffusion solver) =   7.29781E-04
+
+         65: t =   1.88176E-02, dt(diffusion solver) =   7.76871E-04
+
+         66: t =   1.95945E-02, dt(diffusion solver) =   8.05962E-04
+
+         67: t =   2.04004E-02, dt(diffusion solver) =   7.95119E-04
+
+         68: t =   2.11956E-02, dt(diffusion solver) =   8.54161E-04
+
+         69: t =   2.20497E-02, dt(diffusion solver) =   8.74404E-04
+
+         70: t =   2.29241E-02, dt(diffusion solver) =   8.72517E-04
+
+         71: t =   2.37966E-02, dt(diffusion solver) =   9.40878E-04
+
+         72: t =   2.47375E-02, dt(diffusion solver) =   9.35082E-04
+
+         73: t =   2.56726E-02, dt(diffusion solver) =   9.66311E-04
+
+         74: t =   2.66389E-02, dt(diffusion solver) =   1.03718E-03
+
+         75: t =   2.76761E-02, dt(diffusion solver) =   9.99837E-04
+
+         76: t =   2.86759E-02, dt(diffusion solver) =   1.08687E-03
+
+         77: t =   2.97628E-02, dt(diffusion solver) =   1.10653E-03
+
+         78: t =   3.08693E-02, dt(diffusion solver) =   1.09381E-03
+
+         79: t =   3.19631E-02, dt(diffusion solver) =   1.20621E-03
+
+         80: t =   3.31694E-02, dt(diffusion solver) =   1.15897E-03
+
+         81: t =   3.43283E-02, dt(diffusion solver) =   1.26670E-03
+
+         82: t =   3.55950E-02, dt(diffusion solver) =   1.24882E-03
+
+         83: t =   3.68438E-02, dt(diffusion solver) =   1.30577E-03
+
+         84: t =   3.81496E-02, dt(diffusion solver) =   1.37789E-03
+
+         85: t =   3.95275E-02, dt(diffusion solver) =   1.33779E-03
+
+         86: t =   4.08653E-02, dt(diffusion solver) =   1.46715E-03
+
+         87: t =   4.23325E-02, dt(diffusion solver) =   1.39855E-03
+
+         88: t =   4.37310E-02, dt(diffusion solver) =   1.53489E-03
+
+         89: t =   4.52659E-02, dt(diffusion solver) =   1.47339E-03
+
+         90: t =   4.67393E-02, dt(diffusion solver) =   1.58396E-03
+
+         91: t =   4.83232E-02, dt(diffusion solver) =   1.55175E-03
+
+         92: t =   4.98750E-02, dt(diffusion solver) =   1.64809E-03
+
+         93: t =   5.15231E-02, dt(diffusion solver) =   1.63421E-03
+
+         94: t =   5.31573E-02, dt(diffusion solver) =   1.72499E-03
+
+         95: t =   5.48823E-02, dt(diffusion solver) =   1.71759E-03
+
+         96: t =   5.65999E-02, dt(diffusion solver) =   1.80596E-03
+
+         97: t =   5.84058E-02, dt(diffusion solver) =   1.80259E-03
+
+         98: t =   6.02084E-02, dt(diffusion solver) =   1.93639E-03
+
+         99: t =   6.21448E-02, dt(diffusion solver) =   1.88470E-03
+
+        100: t =   6.40295E-02, dt(diffusion solver) =   2.05883E-03
+
+        101: t =   6.60883E-02, dt(diffusion solver) =   1.99006E-03
+
+        102: t =   6.80784E-02, dt(diffusion solver) =   2.16535E-03
+
+        103: t =   7.02437E-02, dt(diffusion solver) =   2.11723E-03
+
+        104: t =   7.23610E-02, dt(diffusion solver) =   2.25851E-03
+
+        105: t =   7.46195E-02, dt(diffusion solver) =   2.26529E-03
+
+        106: t =   7.68848E-02, dt(diffusion solver) =   2.35341E-03
+
+        107: t =   7.92382E-02, dt(diffusion solver) =   2.42628E-03
+
+        108: t =   8.16645E-02, dt(diffusion solver) =   2.46440E-03
+
+        109: t =   8.41289E-02, dt(diffusion solver) =   2.60923E-03
+
+        110: t =   8.67381E-02, dt(diffusion solver) =   2.60199E-03
+
+        111: t =   8.93401E-02, dt(diffusion solver) =   2.74221E-03
+
+        112: t =   9.20823E-02, dt(diffusion solver) =   2.79467E-03
+
+        113: t =   9.48770E-02, dt(diffusion solver) =   2.87325E-03
+
+        114: t =   9.77502E-02, dt(diffusion solver) =   3.00244E-03
+
+        115: t =   1.00753E-01, dt(diffusion solver) =   3.02003E-03
+
+        116: t =   1.03773E-01, dt(diffusion solver) =   3.16742E-03
+
+        117: t =   1.06940E-01, dt(diffusion solver) =   3.27945E-03
+
+        118: t =   1.10220E-01, dt(diffusion solver) =   3.32963E-03
+
+        119: t =   1.13549E-01, dt(diffusion solver) =   3.46036E-03
+
+        120: t =   1.17010E-01, dt(diffusion solver) =   3.58290E-03
+
+        121: t =   1.20592E-01, dt(diffusion solver) =   3.65230E-03
+
+        122: t =   1.24245E-01, dt(diffusion solver) =   3.78126E-03
+
+        123: t =   1.28026E-01, dt(diffusion solver) =   3.91229E-03
+
+        124: t =   1.31938E-01, dt(diffusion solver) =   4.05822E-03
+
+        125: t =   1.35997E-01, dt(diffusion solver) =   3.86311E-03
+
+        126: t =   1.39860E-01, dt(diffusion solver) =   3.93981E-03
+
+        127: t =   1.43799E-01, dt(diffusion solver) =   3.99117E-03
+
+        128: t =   1.47791E-01, dt(diffusion solver) =   4.04514E-03
+
+        129: t =   1.51836E-01, dt(diffusion solver) =   1.13950E-03
+
+        130: t =   1.52975E-01, dt(diffusion solver) =   1.31612E-03
+
+        131: t =   1.54291E-01, dt(diffusion solver) =   1.47131E-03
+
+        132: t =   1.55763E-01, dt(diffusion solver) =   1.80521E-03
+
+        133: t =   1.57568E-01, dt(diffusion solver) =   1.43124E-03
+
+        134: t =   1.58999E-01, dt(diffusion solver) =   1.19962E-03
+
+        135: t =   1.60199E-01, dt(diffusion solver) =   1.59753E-03
+
+        136: t =   1.61796E-01, dt(diffusion solver) =   1.44752E-03
+
+        137: t =   1.63244E-01, dt(diffusion solver) =   1.79723E-03
+
+        138: t =   1.65041E-01, dt(diffusion solver) =   1.64412E-03
+
+        139: t =   1.66685E-01, dt(diffusion solver) =   1.46702E-03
+
+        140: t =   1.68152E-01, dt(diffusion solver) =   1.67551E-03
+
+        141: t =   1.69828E-01, dt(diffusion solver) =   1.60783E-03
+
+        142: t =   1.71436E-01, dt(diffusion solver) =   1.71004E-03
+
+        143: t =   1.73146E-01, dt(diffusion solver) =   2.13802E-03
+
+        144: t =   1.75284E-01, dt(diffusion solver) =   1.47090E-03
+
+        145: t =   1.76754E-01, dt(diffusion solver) =   1.76700E-03
+
+        146: t =   1.78521E-01, dt(diffusion solver) =   2.08022E-03
+
+        147: t =   1.80602E-01, dt(diffusion solver) =   1.77196E-03
+
+        148: t =   1.82374E-01, dt(diffusion solver) =   2.03654E-03
+
+        149: t =   1.84410E-01, dt(diffusion solver) =   2.50668E-03
+
+        150: t =   1.86917E-01, dt(diffusion solver) =   1.71036E-03
+
+        151: t =   1.88627E-01, dt(diffusion solver) =   2.33323E-03
+
+        152: t =   1.90960E-01, dt(diffusion solver) =   2.69259E-03
+
+        153: t =   1.93653E-01, dt(diffusion solver) =   1.84754E-03
+
+        154: t =   1.95501E-01, dt(diffusion solver) =   2.52974E-03
+
+        155: t =   1.98030E-01, dt(diffusion solver) =   2.79739E-03
+
+        156: t =   2.00828E-01, dt(diffusion solver) =   2.70875E-03
+
+        157: t =   2.03536E-01, dt(diffusion solver) =   2.80163E-03
+
+        158: t =   2.06338E-01, dt(diffusion solver) =   2.23802E-03
+
+        159: t =   2.08576E-01, dt(diffusion solver) =   2.73614E-03
+
+        160: t =   2.11312E-01, dt(diffusion solver) =   3.20817E-03
+
+        161: t =   2.14520E-01, dt(diffusion solver) =   2.35012E-03
+
+        162: t =   2.16871E-01, dt(diffusion solver) =   2.52091E-03
+
+        163: t =   2.19391E-01, dt(diffusion solver) =   3.01908E-03
+
+        164: t =   2.22411E-01, dt(diffusion solver) =   3.42858E-03
+
+        165: t =   2.25839E-01, dt(diffusion solver) =   3.72967E-03
+
+        166: t =   2.29569E-01, dt(diffusion solver) =   3.17219E-03
+
+        167: t =   2.32741E-01, dt(diffusion solver) =   4.34525E-03
+
+        168: t =   2.37086E-01, dt(diffusion solver) =   2.77855E-03
+
+        169: t =   2.39865E-01, dt(diffusion solver) =   3.77912E-03
+
+        170: t =   2.43644E-01, dt(diffusion solver) =   2.80985E-03
+
+        171: t =   2.46454E-01, dt(diffusion solver) =   3.79204E-03
+
+        172: t =   2.50246E-01, dt(diffusion solver) =   3.61991E-03
+
+        173: t =   2.53866E-01, dt(diffusion solver) =   2.71673E-03
+
+        174: t =   2.56582E-01, dt(diffusion solver) =   3.50456E-03
+
+        175: t =   2.60087E-01, dt(diffusion solver) =   3.66208E-03
+
+        176: t =   2.63749E-01, dt(diffusion solver) =   4.00416E-03
+
+        177: t =   2.67753E-01, dt(diffusion solver) =   4.53151E-03
+
+        178: t =   2.72285E-01, dt(diffusion solver) =   2.94622E-03
+
+        179: t =   2.75231E-01, dt(diffusion solver) =   4.19034E-03
+
+        180: t =   2.79421E-01, dt(diffusion solver) =   2.74174E-03
+
+        181: t =   2.82163E-01, dt(diffusion solver) =   3.46455E-03
+
+        182: t =   2.85628E-01, dt(diffusion solver) =   3.68113E-03
+
+        183: t =   2.89309E-01, dt(diffusion solver) =   4.13470E-03
+
+        184: t =   2.93443E-01, dt(diffusion solver) =   4.42674E-03
+
+        185: t =   2.97870E-01, dt(diffusion solver) =   5.13425E-03
+
+        186: t =   3.03004E-01, dt(diffusion solver) =   3.23803E-03
+
+        187: t =   3.06242E-01, dt(diffusion solver) =   3.58817E-03
+
+        188: t =   3.09831E-01, dt(diffusion solver) =   3.21529E-03
+
+        189: t =   3.13046E-01, dt(diffusion solver) =   3.92548E-03
+
+        190: t =   3.16971E-01, dt(diffusion solver) =   4.29411E-03
+
+        191: t =   3.21265E-01, dt(diffusion solver) =   4.04709E-03
+
+        192: t =   3.25313E-01, dt(diffusion solver) =   4.46113E-03
+
+        193: t =   3.29774E-01, dt(diffusion solver) =   2.63945E-03
+
+        194: t =   3.32413E-01, dt(diffusion solver) =   3.92399E-03
+
+        195: t =   3.36337E-01, dt(diffusion solver) =   3.93537E-03
+
+        196: t =   3.40273E-01, dt(diffusion solver) =   4.55200E-03
+
+        197: t =   3.44825E-01, dt(diffusion solver) =   2.77907E-03
+
+        198: t =   3.47604E-01, dt(diffusion solver) =   3.37443E-03
+
+        199: t =   3.50978E-01, dt(diffusion solver) =   3.69472E-03
+
+        200: t =   3.54673E-01, dt(diffusion solver) =   4.49164E-03
+
+        201: t =   3.59164E-01, dt(diffusion solver) =   3.23505E-03
+
+        202: t =   3.62399E-01, dt(diffusion solver) =   2.78659E-03
+
+        203: t =   3.65186E-01, dt(diffusion solver) =   3.55023E-03
+
+        204: t =   3.68736E-01, dt(diffusion solver) =   4.06197E-03
+
+        205: t =   3.72798E-01, dt(diffusion solver) =   2.14439E-03
+
+        206: t =   3.74943E-01, dt(diffusion solver) =   3.13670E-03
+
+        207: t =   3.78079E-01, dt(diffusion solver) =   3.30259E-03
+
+        208: t =   3.81382E-01, dt(diffusion solver) =   2.39597E-03
+
+        209: t =   3.83778E-01, dt(diffusion solver) =   2.92579E-03
+
+        210: t =   3.86704E-01, dt(diffusion solver) =   3.21643E-03
+
+        211: t =   3.89920E-01, dt(diffusion solver) =   3.14109E-03
+
+        212: t =   3.93061E-01, dt(diffusion solver) =   3.04581E-03
+
+        213: t =   3.96107E-01, dt(diffusion solver) =   3.80876E-03
+
+        214: t =   3.99916E-01, dt(diffusion solver) =   2.46865E-03
+
+        215: t =   4.02384E-01, dt(diffusion solver) =   2.77029E-03
+
+        216: t =   4.05155E-01, dt(diffusion solver) =   2.73575E-03
+
+        217: t =   4.07890E-01, dt(diffusion solver) =   3.27347E-03
+
+        218: t =   4.11164E-01, dt(diffusion solver) =   3.88512E-03
+
+        219: t =   4.15049E-01, dt(diffusion solver) =   2.85376E-03
+
+        220: t =   4.17903E-01, dt(diffusion solver) =   2.88220E-03
+
+        221: t =   4.20785E-01, dt(diffusion solver) =   3.12973E-03
+
+        222: t =   4.23915E-01, dt(diffusion solver) =   3.02501E-03
+
+        223: t =   4.26940E-01, dt(diffusion solver) =   2.76240E-03
+
+        224: t =   4.29702E-01, dt(diffusion solver) =   3.38795E-03
+
+        225: t =   4.33090E-01, dt(diffusion solver) =   2.77512E-03
+
+        226: t =   4.35865E-01, dt(diffusion solver) =   2.74282E-03
+
+        227: t =   4.38608E-01, dt(diffusion solver) =   2.85428E-03
+
+        228: t =   4.41462E-01, dt(diffusion solver) =   2.92438E-03
+
+        229: t =   4.44387E-01, dt(diffusion solver) =   2.72195E-03
+
+        230: t =   4.47109E-01, dt(diffusion solver) =   3.28990E-03
+
+        231: t =   4.50399E-01, dt(diffusion solver) =   3.53344E-03
+
+        232: t =   4.53932E-01, dt(diffusion solver) =   4.01018E-03
+
+        233: t =   4.57942E-01, dt(diffusion solver) =   4.33371E-03
+
+        234: t =   4.62276E-01, dt(diffusion solver) =   5.02491E-03
+
+        235: t =   4.67301E-01, dt(diffusion solver) =   4.55649E-03
+
+        236: t =   4.71857E-01, dt(diffusion solver) =   3.69054E-03
+
+        237: t =   4.75548E-01, dt(diffusion solver) =   4.48927E-03
+
+        238: t =   4.80037E-01, dt(diffusion solver) =   5.06037E-03
+
+        239: t =   4.85097E-01, dt(diffusion solver) =   4.09648E-03
+
+        240: t =   4.89194E-01, dt(diffusion solver) =   3.76455E-03
+
+        241: t =   4.92958E-01, dt(diffusion solver) =   3.42247E-03
+
+        242: t =   4.96381E-01, dt(diffusion solver) =   3.54933E-03
+
+        243: t =   4.99930E-01, dt(diffusion solver) =   6.35281E-03
+
+        244: t =   5.06283E-01, dt(diffusion solver) =   1.58820E-03
+
+        245: t =   5.07871E-01, dt(diffusion solver) =   4.00902E-03
+
+        246: t =   5.11880E-01, dt(diffusion solver) =   4.32623E-03
+
+        247: t =   5.16207E-01, dt(diffusion solver) =   5.46232E-03
+
+        248: t =   5.21669E-01, dt(diffusion solver) =   4.45312E-03
+
+        249: t =   5.26122E-01, dt(diffusion solver) =   5.74080E-03
+
+        250: t =   5.31863E-01, dt(diffusion solver) =   5.22927E-03
+
+        251: t =   5.37092E-01, dt(diffusion solver) =   7.93734E-03
+
+        252: t =   5.45029E-01, dt(diffusion solver) =   5.79706E-03
+
+        253: t =   5.50826E-01, dt(diffusion solver) =   4.63331E-03
+
+        254: t =   5.55460E-01, dt(diffusion solver) =   4.59695E-03
+
+        255: t =   5.60057E-01, dt(diffusion solver) =   4.90482E-03
+
+        256: t =   5.64962E-01, dt(diffusion solver) =   5.61205E-03
+
+        257: t =   5.70574E-01, dt(diffusion solver) =   5.79252E-03
+
+        258: t =   5.76366E-01, dt(diffusion solver) =   5.65167E-03
+
+        259: t =   5.82018E-01, dt(diffusion solver) =   4.11935E-03
+
+        260: t =   5.86137E-01, dt(diffusion solver) =   4.31450E-03
+
+        261: t =   5.90452E-01, dt(diffusion solver) =   5.36567E-03
+
+        262: t =   5.95817E-01, dt(diffusion solver) =   4.43611E-03
+
+        263: t =   6.00253E-01, dt(diffusion solver) =   5.18078E-03
+
+        264: t =   6.05434E-01, dt(diffusion solver) =   3.83042E-03
+
+        265: t =   6.09265E-01, dt(diffusion solver) =   4.50144E-03
+
+        266: t =   6.13766E-01, dt(diffusion solver) =   4.91754E-03
+
+        267: t =   6.18684E-01, dt(diffusion solver) =   4.59936E-03
+
+        268: t =   6.23283E-01, dt(diffusion solver) =   3.84148E-03
+
+        269: t =   6.27124E-01, dt(diffusion solver) =   3.78063E-03
+
+        270: t =   6.30905E-01, dt(diffusion solver) =   4.36412E-03
+
+        271: t =   6.35269E-01, dt(diffusion solver) =   2.87744E-03
+
+        272: t =   6.38147E-01, dt(diffusion solver) =   3.10112E-03
+
+        273: t =   6.41248E-01, dt(diffusion solver) =   3.28443E-03
+
+        274: t =   6.44532E-01, dt(diffusion solver) =   7.25359E-03
+
+        275: t =   6.51786E-01, dt(diffusion solver) =   7.31713E-03
+
+        276: t =   6.59103E-01, dt(diffusion solver) =   6.50747E-03
+
+        277: t =   6.65610E-01, dt(diffusion solver) =   6.74577E-03
+
+        278: t =   6.72356E-01, dt(diffusion solver) =   4.67018E-03
+
+        279: t =   6.77026E-01, dt(diffusion solver) =   5.07938E-03
+
+        280: t =   6.82106E-01, dt(diffusion solver) =   6.07550E-03
+
+        281: t =   6.88181E-01, dt(diffusion solver) =   5.75500E-03
+
+        282: t =   6.93936E-01, dt(diffusion solver) =   5.17489E-03
+
+        283: t =   6.99111E-01, dt(diffusion solver) =   6.35592E-03
+
+        284: t =   7.05467E-01, dt(diffusion solver) =   4.84819E-03
+
+        285: t =   7.10315E-01, dt(diffusion solver) =   5.08831E-03
+
+        286: t =   7.15403E-01, dt(diffusion solver) =   4.69255E-03
+
+        287: t =   7.20096E-01, dt(diffusion solver) =   5.09437E-03
+
+        288: t =   7.25190E-01, dt(diffusion solver) =   6.87767E-03
+
+        289: t =   7.32068E-01, dt(diffusion solver) =   6.58224E-03
+
+        290: t =   7.38650E-01, dt(diffusion solver) =   5.21158E-03
+
+        291: t =   7.43862E-01, dt(diffusion solver) =   5.09044E-03
+
+        292: t =   7.48952E-01, dt(diffusion solver) =   5.20287E-03
+
+        293: t =   7.54155E-01, dt(diffusion solver) =   4.17228E-03
+
+        294: t =   7.58327E-01, dt(diffusion solver) =   5.25688E-03
+
+        295: t =   7.63584E-01, dt(diffusion solver) =   4.85657E-03
+
+        296: t =   7.68441E-01, dt(diffusion solver) =   3.40622E-03
+
+        297: t =   7.71847E-01, dt(diffusion solver) =   3.44690E-03
+
+        298: t =   7.75294E-01, dt(diffusion solver) =   3.62718E-03
+
+        299: t =   7.78921E-01, dt(diffusion solver) =   2.92147E-03
+
+        300: t =   7.81843E-01, dt(diffusion solver) =   2.53956E-03
+
+        301: t =   7.84382E-01, dt(diffusion solver) =   4.27010E-03
+
+        302: t =   7.88652E-01, dt(diffusion solver) =   5.67981E-03
+
+        303: t =   7.94332E-01, dt(diffusion solver) =   5.14293E-03
+
+        304: t =   7.99475E-01, dt(diffusion solver) =   4.66187E-03
+
+        305: t =   8.04137E-01, dt(diffusion solver) =   5.15981E-03
+
+        306: t =   8.09297E-01, dt(diffusion solver) =   5.63990E-03
+
+        307: t =   8.14937E-01, dt(diffusion solver) =   7.51939E-03
+
+        308: t =   8.22456E-01, dt(diffusion solver) =   7.23605E-03
+
+        309: t =   8.29692E-01, dt(diffusion solver) =   6.19815E-03
+
+        310: t =   8.35890E-01, dt(diffusion solver) =   6.05508E-03
+
+        311: t =   8.41945E-01, dt(diffusion solver) =   4.94553E-03
+
+        312: t =   8.46891E-01, dt(diffusion solver) =   4.58890E-03
+
+        313: t =   8.51480E-01, dt(diffusion solver) =   5.17387E-03
+
+        314: t =   8.56654E-01, dt(diffusion solver) =   4.57285E-03
+
+        315: t =   8.61226E-01, dt(diffusion solver) =   4.98525E-03
+
+        316: t =   8.66212E-01, dt(diffusion solver) =   4.87076E-03
+
+        317: t =   8.71082E-01, dt(diffusion solver) =   3.34944E-03
+
+        318: t =   8.74432E-01, dt(diffusion solver) =   5.03315E-03
+
+        319: t =   8.79465E-01, dt(diffusion solver) =   5.21798E-03
+
+        320: t =   8.84683E-01, dt(diffusion solver) =   6.16700E-03
+
+        321: t =   8.90850E-01, dt(diffusion solver) =   4.91100E-03
+
+        322: t =   8.95761E-01, dt(diffusion solver) =   4.74800E-03
+
+        323: t =   9.00509E-01, dt(diffusion solver) =   3.97274E-03
+
+        324: t =   9.04482E-01, dt(diffusion solver) =   4.25916E-03
+
+        325: t =   9.08741E-01, dt(diffusion solver) =   5.09557E-03
+
+        326: t =   9.13837E-01, dt(diffusion solver) =   2.29541E-03
+
+        327: t =   9.16132E-01, dt(diffusion solver) =   4.92642E-03
+
+        328: t =   9.21058E-01, dt(diffusion solver) =   4.47578E-03
+
+        329: t =   9.25534E-01, dt(diffusion solver) =   5.44445E-03
+
+        330: t =   9.30979E-01, dt(diffusion solver) =   5.44512E-03
+
+        331: t =   9.36424E-01, dt(diffusion solver) =   6.30199E-03
+
+        332: t =   9.42726E-01, dt(diffusion solver) =   5.84121E-03
+
+        333: t =   9.48567E-01, dt(diffusion solver) =   4.27948E-03
+
+        334: t =   9.52846E-01, dt(diffusion solver) =   5.08845E-03
+
+        335: t =   9.57935E-01, dt(diffusion solver) =   3.99600E-03
+
+        336: t =   9.61931E-01, dt(diffusion solver) =   5.52706E-03
+
+        337: t =   9.67458E-01, dt(diffusion solver) =   4.22289E-03
+
+        338: t =   9.71681E-01, dt(diffusion solver) =   3.71407E-03
+
+        339: t =   9.75395E-01, dt(diffusion solver) =   3.86003E-03
+
+        340: t =   9.79255E-01, dt(diffusion solver) =   3.08362E-03
+
+        341: t =   9.82339E-01, dt(diffusion solver) =   3.57280E-03
+
+        342: t =   9.85911E-01, dt(diffusion solver) =   3.20610E-03
+
+        343: t =   9.89117E-01, dt(diffusion solver) =   2.52658E-03
+
+        344: t =   9.91644E-01, dt(diffusion solver) =   4.02367E-03
+
+        345: t =   9.95668E-01, dt(diffusion solver) =   4.53745E-03
+
+
+truchas terminated normally on 07 Sep 11 at 11:27:20

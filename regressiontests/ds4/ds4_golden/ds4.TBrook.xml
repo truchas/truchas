@@ -1,0 +1,4635 @@
+<?xml version="1.0" ?>
+
+<TruchasData Version="1.0">
+<Variable Name="TBrookVersion" DataType="c" Rank=" 0" Shape=""   ArrayOrder="FORTRAN" Offset="                   0"  >
+
+<DataValues>
+1.001                           
+</DataValues>
+</Variable>
+
+[OUTTTY]
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                truchas
+   version:             2.6.dev
+   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+   build architecture:  Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+   build date/time:      7 Sep 11 11:02:00
+   build flags:         -O2 -u -maxcontin=99
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       07 Sep 11 11:02:56
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007. Los Alamos National Security, LLC.  This material
+   was produced under U.S. Government contract DE-AC52-06NA25396 for
+   Los Alamos National Laboratory (LANL), which is operated by Los
+   Alamos National Security, LLC for the U.S. Department of Energy.
+   The U.S. Government has rights to use, reproduce, and distribute
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
+   modified to produce derivative works, such modified software
+   should be clearly marked, so as not to confuse it with the
+   version available from LANL.
+
+   Additionally, this program is free software; you can redistribute
+   it and/or modify it under the terms of the GNU General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   Accordingly, this program is distributed in the hope that it will
+   be useful, but WITHOUT ANY WARRANTY; without even the implied
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-06-113.
+   Truchas is currently a beta version, as development is ongoing
+   and continuous, hence bugs are likely to be present. All aspects
+   of the Truchas software and its user interface are subject to
+   change without notice.
+
+================================================================================
+
+INPUT
+
+
+[OUTTTY]
+ Opening Input File ds4.inp:
+
+ Reading PARALLEL_PARAMETERS Namelist ...
+
+         WARNING: PARALLEL_PARAMETERS namelist not found: using defaults
+
+[OUTERRTTY]
+ vfParallelSize =           1000000
+
+[OUTTTY]
+
+Reading FUNCTION namelists ...
+  Reading FUNCTION namelist #1
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+  Reading PHASE namelist #2
+  Reading PHASE namelist #3
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+  Reading MATERIAL_SYSTEM namelist #2
+    using default SMOOTHING_RADIUS(1) = 2.5000E-01
+
+[OUTTTY]
+
+ Reading PHYSICS Namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+ Reading MESH Namelist ...
+
+         Opened mesh file ./ds1-randomized.gen
+           containing     1836 nodes and      850 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+[OUT]
+
+         Finished this namelist read.
+
+[OUTTTY]
+
+ Reading MATERIAL Namelist # 2 ...
+
+[OUT]
+
+         Finished this namelist read.
+
+[OUTTTY]
+
+ Reading MATERIAL Namelist # 3 ...
+
+[OUT]
+
+         Finished this namelist read.
+
+[OUTTTY]
+
+ Reading MATERIAL Namelist # 4 ...
+
+[OUT]
+
+         Finished this namelist read.
+
+         This is the last MATERIAL Namelist.
+
+[OUTTTY]
+
+         Identified  4 material(s)
+
+[OUTERRTTY]
+
+         WARNING: Material  1 priority not initialized; set to  1
+
+         WARNING: Material  2 priority not initialized; set to  2
+
+         WARNING: Material  3 priority not initialized; set to  3
+
+         WARNING: Material  4 priority not initialized; set to  4
+
+[OUT]
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1         mold        1
+             2        solid        2
+             3       liquid        3
+             4         void        4
+
+[OUTERRTTY]
+
+ PHASE_CHANGE_PROPERTIES Namelist:
+         WARNING: Phase changes not activated in physics namelist,
+         All phase changes have been disabled.
+
+[OUT]
+
+         Finished this namelist read.
+
+[OUTTTY]
+
+ Reading INTERFACES Namelist ...
+
+[OUTERRTTY]
+
+         WARNING: INTERFACES namelist not found: using defaults
+
+[OUTTTY]
+
+ Reading BODY Namelist # 1 ...
+
+[OUT]
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       2    cylinder   0.000E+00   0.000E+00    0.0    3.000E+00
+                         (inside )  0.000E+00   0.000E+00    0.0    1.800E-01
+                                   -5.000E-01   0.000E+00    0.0    1.000E+00
+
+[OUTTTY]
+
+ Reading BODY Namelist # 2 ...
+
+[OUT]
+            2       1    background
+
+[OUTTTY]
+
+         BODY Namelist number  2 will be used for background material ( 1)
+
+ Reading HEAT_SOURCE Namelist ...
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+
+         Reading LINEAR_SOLVER Namelist # 1 ...
+
+ Reading SO_SOLVER Namelist ...
+
+         WARNING: SO_SOLVER namelist not found! Using defaults.
+
+ Reading NONLINEAR_SOLVER Namelist(s) ...
+
+         Reading NONLINEAR_SOLVER Namelist # 1 ...
+
+ Reading NUMERICS Namelist ...
+
+[OUTERRTTY]
+
+         Using linear solver "HT_AIN_PC" for nonlinear solver "HT_AIN".
+
+[OUTTTY]
+
+ Reading BC Namelists ...
+
+[OUTERRTTY]
+
+         Reading BC namelist #  1: Unnamed
+
+         Reading BC namelist #  2: Unnamed
+
+         Reading BC namelist #  3: Unnamed
+
+[OUT]
+
+         Finished this namelist read.
+
+[OUTTTY]
+
+Reading DIFFUSION_SOLVER namelist ...
+  using default Max_AIN_Itr value: 5
+  using default Max_AIN_Vec value: Max_AIN_Itr - 1
+  using default AIN_Vec_Tol value: 1.00E-03
+  using default Max_Step_Tries value: 10
+  WARNING: using a pure relative error norm; temp must be bounded away from 0
+  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
+
+Reading DS_BOUNDARY_CONDITION namelists ...
+  [left end] "flux" condition for "temperature" variable
+  [right end] "flux" condition for "temperature" variable
+  [symmetry planes] "flux" condition for "temperature" variable
+
+Reading DS_INTERFACE_CONDITION namelists ...
+
+Reading DS_SOURCE namelists ...
+  No DS_SOURCE namelists found.
+
+Reading ENCLOSURE_RADIATION namelists ...
+
+Reading ENCLOSURE_SURFACE namelists ...
+
+[OUTTTY]
+
+ Reading SENS_VARIABLE Namelists ...
+
+[OUT]
+
+         This is the last SENS_VARIABLE Namelist.
+
+[OUTTTY]
+
+         Identified  0 design variable(s)
+
+ Reading SENS_FUNCTION Namelists ...
+
+[OUT]
+
+         This is the last SENS_FUNCTION Namelist.
+
+[OUTTTY]
+
+         Identified  0 response function(s)
+
+ Reading PROBE namelists ...
+
+[OUT]
+
+         This is the last PROBE Namelist.
+
+[OUTTTY]
+
+         Identified  0 probe(s)
+
+[OUTTTY]
+ 
+ Closing Input File ds4.inp.
+
+[OUTTTY]
+
+================================================================================
+
+INITIALIZATION
+
+
+[OUTTTY]
+Allocating mesh derived types ... done.
+
+
+[OUTTTY]
+ Automatic partitioner selection: None
+
+ Reading ExodusII mesh file ./ds1-randomized.gen...
+ Closed ExodusII mesh file ./ds1-randomized.gen
+
+[OUTTTY]
+ Determining mesh partitions and permutation vectors.
+ 
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+[OUTTTY]
+
+ Establishing mesh connectivity for      5100 faces ...
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are       1834 external boundary faces.
+ Mesh connectivity established.
+
+
+[OUTTTY]
+ Finding all cell neighbors ... done.
+ 
+Allocating base derived types ...done.
+
+[OUT]
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type   Number     Face Type   Number
+                   ------------   ------     ---------   ------
+                      Hex           850       Point           0
+                      Prism           0       Line            0
+                      Pyramid         0       Triangle        0
+                      Tet             0       Quad         5100
+
+                            Nodes               Cells
+                          -----               -----
+                                8 are shared by   1
+                              260 are shared by   2
+                             1568 are shared by   4
+
+
+[OUTTTY]
+Computing cell geometry ... 
+[OUT]
+
+                    Min        Cell       Max        Cell       Total
+                    ---        ----      ---        ----       -----
+       Volumes   2.7722E-06       547   3.9209E-06       825    2.8125E-03
+
+                0 out of      850 total cells are orthogonal
+    use_ortho_face_gradient = F
+    Using full pivoting for LSLR_ operators
+
+
+[OUTTTY]
+done.
+
+[OUTTTY]
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                  -3.7500E-01       3.7500E-01
+                   0.0000E+00       2.5000E-01
+                  -2.5000E-03       1.2500E-02
+
+
+[OUTTTY]
+ Finding face neighbors ... done.
+
+Initializing distributed mesh MAIN ...
+  Reading ExodusII mesh file ./ds1-randomized.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell                                    
+    ---+------------------------------------
+      1|     1836        0     3467      850                                    
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells             
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE        
+    ---+----------------------------------------------------------------
+      1|      0     1836      0        0      0     3467      0      850        
+  Distributed mesh MAIN initialized.
+
+<MESH FORMAT="TRUCHASMESH" LABEL="DefaultMesh" MESHWRITERVERSION="1.0000">
+
+<FILE FORMAT="xml">
+ds4_output/ds4.DefaultMesh.00001.xml
+</FILE>
+</MESH>
+
+[OUTTTY]
+
+ Computing initial volume fractions ...
+
+    Volume fractions will be computed in        850 total cells with   5**3 particles/cell
+
+    Tallying        5**3 =    125 interface particles
+    Tallied   1 x   5**2 =     25 interface particles
+    Tallied   2 x   5**2 =     50 interface particles
+    Tallied   3 x   5**2 =     75 interface particles
+    Tallied   4 x   5**2 =    100 interface particles
+    Tallied   5 x   5**2 =    125 interface particles
+
+    Body # 2 was clipped in    255 cells because of previously defined bodies
+
+ Volume fractions computed.
+
+[OUTTTY]
+ Initializing Displacement Boundary Conditions 
+
+[OUTTTY]
+
+ Locating cell faces for which BCs are to be applied ...
+
+[OUTERRTTY]
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   3.75000E-03 (    17 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   3.75000E-03 (    17 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   3.97500E-01 (  1800 faces)
+
+[OUTTTY]
+ Initializing Pressure Boundary Conditions
+           DIRICHLET:                   0 boundary points
+          REFLECTIVE:                1834 boundary points
+            EXTERIOR:                1834 boundary points
+             NEUMANN:                   0 boundary points
+            HNEUMANN:                1834 boundary points
+ Pressure BCs initialized.
+ Initializing Temperature Boundary Conditions
+              DIRICHLET:                0 boundary points
+             REFLECTIVE:             1834 boundary points
+               EXTERIOR:             1834 boundary points
+                NEUMANN:               17 boundary points
+               HNEUMANN:             1817 boundary points
+              RADIATION:                0 boundary points
+    ENCLOSURE_RADIATION:                0 boundary points
+           HTC_EXTERNAL:                0 boundary points
+           HTC_INTERNAL:                0 boundary points
+                HTC_GAP:                0 boundary points
+      HTC_RADIATION_EXT:                0 boundary points
+      HTC_RADIATION_INT:                0 boundary points
+ Temperature BCs initialized.
+
+[OUTTTY]
+
+ Finished BC initialization.
+
+[OUTTTY]
+
+Initializing diffusion solver ...
+  Generating external source for "temperature" equation
+  Generating "HTC" interface condition for "temperature" variable
+  Generating "HTC" boundary condition for "temperature" variable
+  Generating "radiation" boundary condition for "temperature" variable
+  Generating "dirichlet" boundary condition for "temperature" variable
+  Generating "flux" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[1]: left end
+    using DS_BOUNDARY_CONDITION[2]: right end
+    using DS_BOUNDARY_CONDITION[3]: symmetry planes
+  Diffusion solver initialized.
+
+[OUTTTY]
+
+================================================================================
+
+EXECUTION
+
+
+<BASICDATA>
+<![CDATA[                                                             
+                                                                      
+  In case the run dies in the middle, you can restore this file       
+  by closing any open tags.  Typically, the only tags you will        
+  have to close are CYCLE and TruchasData:                            
+         </CYCLE>                                                     
+     </TruchasData>                                                   
+                                                                      
+  or TIMESTEP and TruchasData:                                        
+         </TIMESTEP>                                                  
+     </TruchasData>                                                   
+                                                                      
+  Most other tags write their information in a single pass and        
+  should already be closed.                                           
+                                                                      
+  It is also possible that some of your variable data in the          
+  lookaside files '*.ts.#####.xml' are incomplete, but there is       
+  no way to recover this data since it was never written.  The        
+  OutputParser.py should ignore these files, but if it doesn't,       
+  You can just delete the last timestep tag from this file.           
+                                                                      
+]]>                                                                   
+<PROGRAMSPECIFICATIONS>
+
+<CODE TSTRLEN="       256">
+truchas
+</CODE>
+
+<VERSION TSTRLEN="       256">
+2.6.dev
+</VERSION>
+
+<LIBRARIES TSTRLEN="       256">
+UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+</LIBRARIES>
+
+<BUILDARCHITECTURE TSTRLEN="      1024">
+Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+</BUILDARCHITECTURE>
+
+<BUILDDATETIME TSTRLEN="       256">
+ 7 Sep 11 11:02:00
+</BUILDDATETIME>
+
+<BUILDFLAGS TSTRLEN="      1024">
+-O2 -u -maxcontin=99
+</BUILDFLAGS>
+
+<BUILDHOST TSTRLEN="       256">
+noether.lanl.gov
+</BUILDHOST>
+
+<RUNARCHITECTURE TSTRLEN="       256">
+Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64
+</RUNARCHITECTURE>
+
+<RUNHOST TSTRLEN="       256">
+noether.lanl.gov
+</RUNHOST>
+
+<RUNDATE TSTRLEN="       256">
+Wed 07 Sep 11 11:02:56.692
+</RUNDATE>
+
+<RUNPROCESSORS>
+1
+</RUNPROCESSORS>
+</PROGRAMSPECIFICATIONS>
+
+<SIMULATIONINFORMATION>
+
+<TITLE TSTRLEN="       256">
+DIFFUSION SOLVER TEST 4
+</TITLE>
+
+<RESTARTVARIABLES>
+
+<RESTART_COMMON>
+CODE, VERSION, PHYSICS, LIBRARIES, BUILDDATETIME, BUILDARCHITECTURE, BUILDFLAGS, BUILDHOST, RUNARCHITECTURE, RUNHOST, RUNDATE, TITLE, t, dt, dt_courant, cycle, ncells, nnodes, boundaryfaces, MAT_SLOT, NPHASES, NCOMPONENTS, CELLVERTICES, VERTEXCOORDS, RSUMRVOL, Z_RHO, Z_RHOOLD, Z_TEMP, Z_TEMP_OLD, Z_ENTHALPY, Z_ENTHALPYOLD, Z_P, Z_VC, Z_VCOLD, Z_VF, M_ID, M_VOF, M_VOF_OLD, M_RHO, M_RHO_OLD
+</RESTART_COMMON>
+
+<RESTART_MICRO>
+LIQUIDUS_TEMP, EUTECTIC_FRACTION, SEC_ARM_SPACING, PHASECONC, PHASECONCOLD
+</RESTART_MICRO>
+
+<RESTART_FLOW></RESTART_FLOW>
+
+<RESTART_HEAT_TRANSFER></RESTART_HEAT_TRANSFER>
+
+<RESTART_SOLID_MECHANICS>
+TOTAL_STRAIN, ELASTIC_STRESS, PLASTIC_STRAIN, PLASTIC_STRAIN_RATE, RHS, epstherm, epspc, DISPLACEMENT
+</RESTART_SOLID_MECHANICS>
+
+<RESTART_ELECTROMAGNETICS></RESTART_ELECTROMAGNETICS>
+</RESTARTVARIABLES>
+
+<PHYSICS NAME="HEAT_CONDUCTION" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="FLUID_FLOW" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="SOLID_MECHANICS" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="ELECTROMAGNETICS" VALUE="F"></PHYSICS>
+
+<ALLOYINFORMATION NPHASES="        -1" NCOMPONENTS="        -1"></ALLOYINFORMATION>
+
+<SPECIESINFO NSPECIES="         0"></SPECIESINFO>
+
+<MESHSCALEFACTOR>
+1.0000000000000000
+</MESHSCALEFACTOR>
+</SIMULATIONINFORMATION>
+
+<COPYRIGHT>
+<![CDATA[
+   Copyright 2007. Los Alamos National Security, LLC.  This material  
+   was produced under U.S. Government contract DE-AC52-06NA25396 for  
+   Los Alamos National Laboratory (LANL), which is operated by Los    
+   Alamos National Security, LLC for the U.S. Department of Energy.   
+   The U.S. Government has rights to use, reproduce, and distribute   
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL     
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES   
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is        
+   modified to produce derivative works, such modified software       
+   should be clearly marked, so as not to confuse it with the         
+   version available from LANL.                                       
+                                                                      
+   Additionally, this program is free software; you can redistribute  
+   it and/or modify it under the terms of the GNU General Public      
+   License as published by the Free Software Foundation; either       
+   version 2 of the License, or (at your option) any later version.   
+   Accordingly, this program is distributed in the hope that it will  
+   be useful, but WITHOUT ANY WARRANTY; without even the implied      
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.   
+   See the GNU General Public License for more details.               ]]>
+</COPYRIGHT>
+
+<DISCLAIMER>
+<![CDATA[
+   This Truchas release is registered with the Los Alamos National    
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-06-113.        
+   Truchas is currently a beta version, as development is ongoing     
+   and continuous, hence bugs are likely to be present. All aspects   
+   of the Truchas software and its user interface are subject to      
+   change without notice.                                             ]]>
+</DISCLAIMER>
+</BASICDATA>
+
+<TIMESTEP CYCLE="                   0" t="    0.00000000000000000000E+00" dt="    0.99999999999999995475E-06" dt_courant="    0.10000000000000000000E+11" ID="         0">
+
+<FILE FORMAT="binary">
+ds4_output/ds4.ts.00000.bin
+</FILE>
+
+<FILEVAR Name="MATSLOT" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  16"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  20"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                6820"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPY" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               13620"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPYOLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               20420"></FILEVAR>
+
+<FILEVAR Name="Z_P" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               27220"></FILEVAR>
+
+<FILEVAR Name="Z_VC" DataType="d" Rank=" 2" Shape="3        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               34020" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_VCOLD" DataType="d" Rank=" 2" Shape="3        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               54420" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_RHO" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               74820"></FILEVAR>
+
+<FILEVAR Name="Face_Vel" DataType="d" Rank=" 2" Shape="6        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               81620" Attr="none"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              122420" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              125820" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              132620" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              139420" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              146220" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              153020" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              156420" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              163220" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_RHO" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              170020" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_RHO_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              176820" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="nsens_design_variables" DataType="i" Rank="0" Shape="" Offset="183620"></FILEVAR>
+
+<FILEVAR Name="nsens_functions" DataType="i" Rank="0" Shape="" Offset="183624"></FILEVAR>
+
+<FILEVAR Name="COURANT" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              183628"></FILEVAR>
+
+<FILEVAR Name="VOF0001" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              190428"></FILEVAR>
+
+<FILEVAR Name="VOF0002" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              197228"></FILEVAR>
+
+<FILEVAR Name="VOF0003" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              204028"></FILEVAR>
+
+<FILEVAR Name="VOF0004" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              210828"></FILEVAR>
+
+<FILEVAR Name="Grad_T" DataType="d" Rank=" 2" Shape="3        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              217628"></FILEVAR>
+
+<FILEVAR Name="||Grad_T||" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              238028"></FILEVAR>
+</TIMESTEP>
+
+[OUTERRTTY]
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E-06
+
+<CYCLE ID="         1" t="  0.00000E+00" dt="  1.00000E-06" limiter="initial">
+
+[OUTTTY]
+
+DS: dt=1.000E-06, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          2: t =   1.00000E-06, dt(diffusion solver) =   1.00000E-06
+
+<CYCLE ID="         2" t="  1.00000E-06" dt="  1.00000E-06" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.000E-06, NFUN:NPC=0000005:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          3: t =   2.00000E-06, dt(diffusion solver) =   1.00000E-06
+
+<CYCLE ID="         3" t="  2.00000E-06" dt="  1.00000E-06" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.000E-06, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          4: t =   3.00000E-06, dt(diffusion solver) =   1.00000E-06
+
+<CYCLE ID="         4" t="  3.00000E-06" dt="  1.00000E-06" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.000E-06, NFUN:NPC=0000010:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          5: t =   4.00000E-06, dt(diffusion solver) =   3.44444E-06
+
+<CYCLE ID="         5" t="  4.00000E-06" dt="  3.44444E-06" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.444E-06, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          6: t =   7.44444E-06, dt(diffusion solver) =   3.83044E-06
+
+<CYCLE ID="         6" t="  7.44444E-06" dt="  3.83044E-06" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.830E-06, NFUN:NPC=0000016:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          7: t =   1.12749E-05, dt(diffusion solver) =   1.53218E-05
+
+<CYCLE ID="         7" t="  1.12749E-05" dt="  1.53218E-05" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.532E-05, NFUN:NPC=0000018:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          8: t =   2.65966E-05, dt(diffusion solver) =   4.86052E-05
+
+<CYCLE ID="         8" t="  2.65966E-05" dt="  4.86052E-05" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.861E-05, NFUN:NPC=0000020:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          9: t =   7.52018E-05, dt(diffusion solver) =   4.34326E-05
+
+<CYCLE ID="         9" t="  7.52018E-05" dt="  4.34326E-05" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.343E-05, NFUN:NPC=0000022:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         10: t =   1.18634E-04, dt(diffusion solver) =   1.73730E-04
+
+<CYCLE ID="        10" t="  1.18634E-04" dt="  1.73730E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.737E-04, NFUN:NPC=0000029:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         11: t =   2.92365E-04, dt(diffusion solver) =   1.50964E-04
+
+<CYCLE ID="        11" t="  2.92365E-04" dt="  1.50964E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.510E-04, NFUN:NPC=0000032:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         12: t =   4.43329E-04, dt(diffusion solver) =   1.76286E-04
+
+<CYCLE ID="        12" t="  4.43329E-04" dt="  1.76286E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.763E-04, NFUN:NPC=0000036:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         13: t =   6.19615E-04, dt(diffusion solver) =   1.51182E-04
+
+<CYCLE ID="        13" t="  6.19615E-04" dt="  1.51182E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.512E-04, NFUN:NPC=0000038:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         14: t =   7.70797E-04, dt(diffusion solver) =   1.31053E-04
+
+<CYCLE ID="        14" t="  7.70797E-04" dt="  1.31053E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.311E-04, NFUN:NPC=0000041:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         15: t =   9.01850E-04, dt(diffusion solver) =   1.18586E-04
+
+<CYCLE ID="        15" t="  9.01850E-04" dt="  1.18586E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.186E-04, NFUN:NPC=0000045:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         16: t =   1.02044E-03, dt(diffusion solver) =   1.15338E-04
+
+<CYCLE ID="        16" t="  1.02044E-03" dt="  1.15338E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.153E-04, NFUN:NPC=0000048:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         17: t =   1.13577E-03, dt(diffusion solver) =   1.12543E-04
+
+<CYCLE ID="        17" t="  1.13577E-03" dt="  1.12543E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.125E-04, NFUN:NPC=0000051:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         18: t =   1.24832E-03, dt(diffusion solver) =   1.16064E-04
+
+<CYCLE ID="        18" t="  1.24832E-03" dt="  1.16064E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.161E-04, NFUN:NPC=0000054:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         19: t =   1.36438E-03, dt(diffusion solver) =   1.20961E-04
+
+<CYCLE ID="        19" t="  1.36438E-03" dt="  1.20961E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.210E-04, NFUN:NPC=0000057:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         20: t =   1.48534E-03, dt(diffusion solver) =   1.29431E-04
+
+<CYCLE ID="        20" t="  1.48534E-03" dt="  1.29431E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.294E-04, NFUN:NPC=0000060:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         21: t =   1.61477E-03, dt(diffusion solver) =   1.43061E-04
+
+<CYCLE ID="        21" t="  1.61477E-03" dt="  1.43061E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.431E-04, NFUN:NPC=0000063:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         22: t =   1.75783E-03, dt(diffusion solver) =   1.66527E-04
+
+<CYCLE ID="        22" t="  1.75783E-03" dt="  1.66527E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.665E-04, NFUN:NPC=0000066:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         23: t =   1.92436E-03, dt(diffusion solver) =   1.70244E-04
+
+<CYCLE ID="        23" t="  1.92436E-03" dt="  1.70244E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.702E-04, NFUN:NPC=0000069:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         24: t =   2.09460E-03, dt(diffusion solver) =   1.57115E-04
+
+<CYCLE ID="        24" t="  2.09460E-03" dt="  1.57115E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.571E-04, NFUN:NPC=0000071:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         25: t =   2.25172E-03, dt(diffusion solver) =   1.65912E-04
+
+<CYCLE ID="        25" t="  2.25172E-03" dt="  1.65912E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.659E-04, NFUN:NPC=0000074:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         26: t =   2.41763E-03, dt(diffusion solver) =   1.64080E-04
+
+<CYCLE ID="        26" t="  2.41763E-03" dt="  1.64080E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.641E-04, NFUN:NPC=0000077:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         27: t =   2.58171E-03, dt(diffusion solver) =   1.84457E-04
+
+<CYCLE ID="        27" t="  2.58171E-03" dt="  1.84457E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.845E-04, NFUN:NPC=0000081:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         28: t =   2.76617E-03, dt(diffusion solver) =   1.98509E-04
+
+<CYCLE ID="        28" t="  2.76617E-03" dt="  1.98509E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.985E-04, NFUN:NPC=0000085:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         29: t =   2.96468E-03, dt(diffusion solver) =   2.34589E-04
+
+<CYCLE ID="        29" t="  2.96468E-03" dt="  2.34589E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.346E-04, NFUN:NPC=0000089:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         30: t =   3.19927E-03, dt(diffusion solver) =   1.99226E-04
+
+<CYCLE ID="        30" t="  3.19927E-03" dt="  1.99226E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.992E-04, NFUN:NPC=0000093:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         31: t =   3.39849E-03, dt(diffusion solver) =   2.20511E-04
+
+<CYCLE ID="        31" t="  3.39849E-03" dt="  2.20511E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.205E-04, NFUN:NPC=0000097:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         32: t =   3.61900E-03, dt(diffusion solver) =   2.16683E-04
+
+<CYCLE ID="        32" t="  3.61900E-03" dt="  2.16683E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.167E-04, NFUN:NPC=0000101:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         33: t =   3.83569E-03, dt(diffusion solver) =   2.38286E-04
+
+<CYCLE ID="        33" t="  3.83569E-03" dt="  2.38286E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.383E-04, NFUN:NPC=0000105:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         34: t =   4.07397E-03, dt(diffusion solver) =   2.61108E-04
+
+<CYCLE ID="        34" t="  4.07397E-03" dt="  2.61108E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.611E-04, NFUN:NPC=0000109:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         35: t =   4.33508E-03, dt(diffusion solver) =   2.86222E-04
+
+<CYCLE ID="        35" t="  4.33508E-03" dt="  2.86222E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.862E-04, NFUN:NPC=0000113:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         36: t =   4.62130E-03, dt(diffusion solver) =   2.57070E-04
+
+<CYCLE ID="        36" t="  4.62130E-03" dt="  2.57070E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.571E-04, NFUN:NPC=0000118:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         37: t =   4.87837E-03, dt(diffusion solver) =   2.83034E-04
+
+<CYCLE ID="        37" t="  4.87837E-03" dt="  2.83034E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.830E-04, NFUN:NPC=0000123:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         38: t =   5.16141E-03, dt(diffusion solver) =   2.85710E-04
+
+<CYCLE ID="        38" t="  5.16141E-03" dt="  2.85710E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.857E-04, NFUN:NPC=0000128:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         39: t =   5.44712E-03, dt(diffusion solver) =   3.18092E-04
+
+<CYCLE ID="        39" t="  5.44712E-03" dt="  3.18092E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.181E-04, NFUN:NPC=0000133:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         40: t =   5.76521E-03, dt(diffusion solver) =   3.53972E-04
+
+<CYCLE ID="        40" t="  5.76521E-03" dt="  3.53972E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.540E-04, NFUN:NPC=0000138:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         41: t =   6.11918E-03, dt(diffusion solver) =   3.11730E-04
+
+<CYCLE ID="        41" t="  6.11918E-03" dt="  3.11730E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.117E-04, NFUN:NPC=0000143:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         42: t =   6.43091E-03, dt(diffusion solver) =   3.47608E-04
+
+<CYCLE ID="        42" t="  6.43091E-03" dt="  3.47608E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.476E-04, NFUN:NPC=0000148:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         43: t =   6.77852E-03, dt(diffusion solver) =   3.50695E-04
+
+<CYCLE ID="        43" t="  6.77852E-03" dt="  3.50695E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.507E-04, NFUN:NPC=0000153:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         44: t =   7.12921E-03, dt(diffusion solver) =   3.96015E-04
+
+<CYCLE ID="        44" t="  7.12921E-03" dt="  3.96015E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.960E-04, NFUN:NPC=0000158:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         45: t =   7.52523E-03, dt(diffusion solver) =   3.86419E-04
+
+<CYCLE ID="        45" t="  7.52523E-03" dt="  3.86419E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.864E-04, NFUN:NPC=0000163:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         46: t =   7.91165E-03, dt(diffusion solver) =   3.91281E-04
+
+<CYCLE ID="        46" t="  7.91165E-03" dt="  3.91281E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.913E-04, NFUN:NPC=0000168:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         47: t =   8.30293E-03, dt(diffusion solver) =   4.13860E-04
+
+<CYCLE ID="        47" t="  8.30293E-03" dt="  4.13860E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.139E-04, NFUN:NPC=0000170:00004, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         48: t =   8.71679E-03, dt(diffusion solver) =   6.36789E-04
+
+<CYCLE ID="        48" t="  8.71679E-03" dt="  6.36789E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.368E-04, NFUN:NPC=0000173:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         49: t =   9.35358E-03, dt(diffusion solver) =   2.71026E-04
+
+<CYCLE ID="        49" t="  9.35358E-03" dt="  2.71026E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.710E-04, NFUN:NPC=0000176:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         50: t =   9.62460E-03, dt(diffusion solver) =   6.61320E-04
+
+<CYCLE ID="        50" t="  9.62460E-03" dt="  6.61320E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.613E-04, NFUN:NPC=0000179:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         51: t =   1.02859E-02, dt(diffusion solver) =   3.86979E-04
+
+<CYCLE ID="        51" t="  1.02859E-02" dt="  3.86979E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.870E-04, NFUN:NPC=0000182:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         52: t =   1.06729E-02, dt(diffusion solver) =   6.09074E-04
+
+<CYCLE ID="        52" t="  1.06729E-02" dt="  6.09074E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.091E-04, NFUN:NPC=0000185:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         53: t =   1.12820E-02, dt(diffusion solver) =   4.72703E-04
+
+<CYCLE ID="        53" t="  1.12820E-02" dt="  4.72703E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.727E-04, NFUN:NPC=0000188:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         54: t =   1.17547E-02, dt(diffusion solver) =   5.55791E-04
+
+<CYCLE ID="        54" t="  1.17547E-02" dt="  5.55791E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.558E-04, NFUN:NPC=0000191:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         55: t =   1.23105E-02, dt(diffusion solver) =   5.48050E-04
+
+<CYCLE ID="        55" t="  1.23105E-02" dt="  5.48050E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.481E-04, NFUN:NPC=0000194:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         56: t =   1.28585E-02, dt(diffusion solver) =   6.21291E-04
+
+<CYCLE ID="        56" t="  1.28585E-02" dt="  6.21291E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.213E-04, NFUN:NPC=0000197:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         57: t =   1.34798E-02, dt(diffusion solver) =   5.69924E-04
+
+<CYCLE ID="        57" t="  1.34798E-02" dt="  5.69924E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.699E-04, NFUN:NPC=0000200:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         58: t =   1.40497E-02, dt(diffusion solver) =   6.23860E-04
+
+<CYCLE ID="        58" t="  1.40497E-02" dt="  6.23860E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.239E-04, NFUN:NPC=0000203:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         59: t =   1.46736E-02, dt(diffusion solver) =   6.50858E-04
+
+<CYCLE ID="        59" t="  1.46736E-02" dt="  6.50858E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.509E-04, NFUN:NPC=0000206:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         60: t =   1.53245E-02, dt(diffusion solver) =   6.51606E-04
+
+<CYCLE ID="        60" t="  1.53245E-02" dt="  6.51606E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.516E-04, NFUN:NPC=0000209:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         61: t =   1.59761E-02, dt(diffusion solver) =   6.72218E-04
+
+<CYCLE ID="        61" t="  1.59761E-02" dt="  6.72218E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.722E-04, NFUN:NPC=0000212:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         62: t =   1.66483E-02, dt(diffusion solver) =   7.12553E-04
+
+<CYCLE ID="        62" t="  1.66483E-02" dt="  7.12553E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.126E-04, NFUN:NPC=0000215:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         63: t =   1.73608E-02, dt(diffusion solver) =   7.27043E-04
+
+<CYCLE ID="        63" t="  1.73608E-02" dt="  7.27043E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.270E-04, NFUN:NPC=0000218:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         64: t =   1.80879E-02, dt(diffusion solver) =   7.29775E-04
+
+<CYCLE ID="        64" t="  1.80879E-02" dt="  7.29775E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.298E-04, NFUN:NPC=0000221:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         65: t =   1.88176E-02, dt(diffusion solver) =   7.76877E-04
+
+<CYCLE ID="        65" t="  1.88176E-02" dt="  7.76877E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.769E-04, NFUN:NPC=0000224:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         66: t =   1.95945E-02, dt(diffusion solver) =   8.05956E-04
+
+<CYCLE ID="        66" t="  1.95945E-02" dt="  8.05956E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=8.060E-04, NFUN:NPC=0000227:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         67: t =   2.04005E-02, dt(diffusion solver) =   7.95120E-04
+
+<CYCLE ID="        67" t="  2.04005E-02" dt="  7.95120E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.951E-04, NFUN:NPC=0000231:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         68: t =   2.11956E-02, dt(diffusion solver) =   8.54167E-04
+
+<CYCLE ID="        68" t="  2.11956E-02" dt="  8.54167E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=8.542E-04, NFUN:NPC=0000235:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         69: t =   2.20498E-02, dt(diffusion solver) =   8.74375E-04
+
+<CYCLE ID="        69" t="  2.20498E-02" dt="  8.74375E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=8.744E-04, NFUN:NPC=0000239:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         70: t =   2.29241E-02, dt(diffusion solver) =   8.72533E-04
+
+<CYCLE ID="        70" t="  2.29241E-02" dt="  8.72533E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=8.725E-04, NFUN:NPC=0000243:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         71: t =   2.37967E-02, dt(diffusion solver) =   9.40874E-04
+
+<CYCLE ID="        71" t="  2.37967E-02" dt="  9.40874E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=9.409E-04, NFUN:NPC=0000247:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         72: t =   2.47376E-02, dt(diffusion solver) =   9.35073E-04
+
+<CYCLE ID="        72" t="  2.47376E-02" dt="  9.35073E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=9.351E-04, NFUN:NPC=0000251:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         73: t =   2.56726E-02, dt(diffusion solver) =   9.66327E-04
+
+<CYCLE ID="        73" t="  2.56726E-02" dt="  9.66327E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=9.663E-04, NFUN:NPC=0000255:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         74: t =   2.66390E-02, dt(diffusion solver) =   1.03716E-03
+
+<CYCLE ID="        74" t="  2.66390E-02" dt="  1.03716E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.037E-03, NFUN:NPC=0000259:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         75: t =   2.76761E-02, dt(diffusion solver) =   9.99821E-04
+
+<CYCLE ID="        75" t="  2.76761E-02" dt="  9.99821E-04" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=9.998E-04, NFUN:NPC=0000263:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         76: t =   2.86759E-02, dt(diffusion solver) =   1.08688E-03
+
+<CYCLE ID="        76" t="  2.86759E-02" dt="  1.08688E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.087E-03, NFUN:NPC=0000267:00005, NNR:NNF:NSR=0001:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         77: t =   2.97628E-02, dt(diffusion solver) =   1.10658E-03
+
+<CYCLE ID="        77" t="  2.97628E-02" dt="  1.10658E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.107E-03, NFUN:NPC=0000275:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         78: t =   3.08694E-02, dt(diffusion solver) =   1.09376E-03
+
+<CYCLE ID="        78" t="  3.08694E-02" dt="  1.09376E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.094E-03, NFUN:NPC=0000278:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         79: t =   3.19632E-02, dt(diffusion solver) =   1.20623E-03
+
+<CYCLE ID="        79" t="  3.19632E-02" dt="  1.20623E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.206E-03, NFUN:NPC=0000281:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         80: t =   3.31694E-02, dt(diffusion solver) =   1.15895E-03
+
+<CYCLE ID="        80" t="  3.31694E-02" dt="  1.15895E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.159E-03, NFUN:NPC=0000284:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         81: t =   3.43283E-02, dt(diffusion solver) =   1.26671E-03
+
+<CYCLE ID="        81" t="  3.43283E-02" dt="  1.26671E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.267E-03, NFUN:NPC=0000287:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         82: t =   3.55950E-02, dt(diffusion solver) =   1.24881E-03
+
+<CYCLE ID="        82" t="  3.55950E-02" dt="  1.24881E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.249E-03, NFUN:NPC=0000290:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         83: t =   3.68439E-02, dt(diffusion solver) =   1.30578E-03
+
+<CYCLE ID="        83" t="  3.68439E-02" dt="  1.30578E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.306E-03, NFUN:NPC=0000293:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         84: t =   3.81496E-02, dt(diffusion solver) =   1.37789E-03
+
+<CYCLE ID="        84" t="  3.81496E-02" dt="  1.37789E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.378E-03, NFUN:NPC=0000296:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         85: t =   3.95275E-02, dt(diffusion solver) =   1.33779E-03
+
+<CYCLE ID="        85" t="  3.95275E-02" dt="  1.33779E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.338E-03, NFUN:NPC=0000299:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         86: t =   4.08653E-02, dt(diffusion solver) =   1.46715E-03
+
+<CYCLE ID="        86" t="  4.08653E-02" dt="  1.46715E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.467E-03, NFUN:NPC=0000302:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         87: t =   4.23325E-02, dt(diffusion solver) =   1.39855E-03
+
+<CYCLE ID="        87" t="  4.23325E-02" dt="  1.39855E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.399E-03, NFUN:NPC=0000305:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         88: t =   4.37310E-02, dt(diffusion solver) =   1.53489E-03
+
+<CYCLE ID="        88" t="  4.37310E-02" dt="  1.53489E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.535E-03, NFUN:NPC=0000308:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         89: t =   4.52659E-02, dt(diffusion solver) =   1.47339E-03
+
+<CYCLE ID="        89" t="  4.52659E-02" dt="  1.47339E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.473E-03, NFUN:NPC=0000311:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         90: t =   4.67393E-02, dt(diffusion solver) =   1.58395E-03
+
+<CYCLE ID="        90" t="  4.67393E-02" dt="  1.58395E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.584E-03, NFUN:NPC=0000315:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         91: t =   4.83233E-02, dt(diffusion solver) =   1.55171E-03
+
+<CYCLE ID="        91" t="  4.83233E-02" dt="  1.55171E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.552E-03, NFUN:NPC=0000318:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         92: t =   4.98750E-02, dt(diffusion solver) =   1.64818E-03
+
+<CYCLE ID="        92" t="  4.98750E-02" dt="  1.64818E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.648E-03, NFUN:NPC=0000322:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         93: t =   5.15231E-02, dt(diffusion solver) =   1.63423E-03
+
+<CYCLE ID="        93" t="  5.15231E-02" dt="  1.63423E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.634E-03, NFUN:NPC=0000326:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         94: t =   5.31574E-02, dt(diffusion solver) =   1.72496E-03
+
+<CYCLE ID="        94" t="  5.31574E-02" dt="  1.72496E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.725E-03, NFUN:NPC=0000330:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         95: t =   5.48823E-02, dt(diffusion solver) =   1.71765E-03
+
+<CYCLE ID="        95" t="  5.48823E-02" dt="  1.71765E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.718E-03, NFUN:NPC=0000335:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         96: t =   5.66000E-02, dt(diffusion solver) =   1.80595E-03
+
+<CYCLE ID="        96" t="  5.66000E-02" dt="  1.80595E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.806E-03, NFUN:NPC=0000340:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         97: t =   5.84059E-02, dt(diffusion solver) =   1.80257E-03
+
+<CYCLE ID="        97" t="  5.84059E-02" dt="  1.80257E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.803E-03, NFUN:NPC=0000345:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         98: t =   6.02085E-02, dt(diffusion solver) =   1.93649E-03
+
+<CYCLE ID="        98" t="  6.02085E-02" dt="  1.93649E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.936E-03, NFUN:NPC=0000350:00006, NNR:NNF:NSR=0002:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         99: t =   6.21450E-02, dt(diffusion solver) =   1.88481E-03
+
+<CYCLE ID="        99" t="  6.21450E-02" dt="  1.88481E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.885E-03, NFUN:NPC=0000358:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        100: t =   6.40298E-02, dt(diffusion solver) =   2.05870E-03
+
+<CYCLE ID="       100" t="  6.40298E-02" dt="  2.05870E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.059E-03, NFUN:NPC=0000361:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        101: t =   6.60885E-02, dt(diffusion solver) =   1.99022E-03
+
+<CYCLE ID="       101" t="  6.60885E-02" dt="  1.99022E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.990E-03, NFUN:NPC=0000364:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        102: t =   6.80787E-02, dt(diffusion solver) =   2.16505E-03
+
+<CYCLE ID="       102" t="  6.80787E-02" dt="  2.16505E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.165E-03, NFUN:NPC=0000367:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        103: t =   7.02438E-02, dt(diffusion solver) =   2.11757E-03
+
+<CYCLE ID="       103" t="  7.02438E-02" dt="  2.11757E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.118E-03, NFUN:NPC=0000370:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        104: t =   7.23613E-02, dt(diffusion solver) =   2.25773E-03
+
+<CYCLE ID="       104" t="  7.23613E-02" dt="  2.25773E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.258E-03, NFUN:NPC=0000373:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        105: t =   7.46191E-02, dt(diffusion solver) =   2.26544E-03
+
+<CYCLE ID="       105" t="  7.46191E-02" dt="  2.26544E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.265E-03, NFUN:NPC=0000376:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        106: t =   7.68845E-02, dt(diffusion solver) =   2.35450E-03
+
+<CYCLE ID="       106" t="  7.68845E-02" dt="  2.35450E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.355E-03, NFUN:NPC=0000379:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        107: t =   7.92390E-02, dt(diffusion solver) =   2.42557E-03
+
+<CYCLE ID="       107" t="  7.92390E-02" dt="  2.42557E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.426E-03, NFUN:NPC=0000382:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        108: t =   8.16646E-02, dt(diffusion solver) =   2.46447E-03
+
+<CYCLE ID="       108" t="  8.16646E-02" dt="  2.46447E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.464E-03, NFUN:NPC=0000385:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        109: t =   8.41290E-02, dt(diffusion solver) =   2.61027E-03
+
+<CYCLE ID="       109" t="  8.41290E-02" dt="  2.61027E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.610E-03, NFUN:NPC=0000388:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        110: t =   8.67393E-02, dt(diffusion solver) =   2.60177E-03
+
+<CYCLE ID="       110" t="  8.67393E-02" dt="  2.60177E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.602E-03, NFUN:NPC=0000392:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        111: t =   8.93411E-02, dt(diffusion solver) =   2.74242E-03
+
+<CYCLE ID="       111" t="  8.93411E-02" dt="  2.74242E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.742E-03, NFUN:NPC=0000396:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        112: t =   9.20835E-02, dt(diffusion solver) =   2.78191E-03
+
+<CYCLE ID="       112" t="  9.20835E-02" dt="  2.78191E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.782E-03, NFUN:NPC=0000400:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        113: t =   9.48654E-02, dt(diffusion solver) =   2.88286E-03
+
+<CYCLE ID="       113" t="  9.48654E-02" dt="  2.88286E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.883E-03, NFUN:NPC=0000404:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        114: t =   9.77483E-02, dt(diffusion solver) =   2.98918E-03
+
+<CYCLE ID="       114" t="  9.77483E-02" dt="  2.98918E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.989E-03, NFUN:NPC=0000408:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        115: t =   1.00737E-01, dt(diffusion solver) =   3.05641E-03
+
+<CYCLE ID="       115" t="  1.00737E-01" dt="  3.05641E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.056E-03, NFUN:NPC=0000413:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        116: t =   1.03794E-01, dt(diffusion solver) =   3.15022E-03
+
+<CYCLE ID="       116" t="  1.03794E-01" dt="  3.15022E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.150E-03, NFUN:NPC=0000418:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        117: t =   1.06944E-01, dt(diffusion solver) =   3.28897E-03
+
+<CYCLE ID="       117" t="  1.06944E-01" dt="  3.28897E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.289E-03, NFUN:NPC=0000423:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        118: t =   1.10233E-01, dt(diffusion solver) =   3.32465E-03
+
+<CYCLE ID="       118" t="  1.10233E-01" dt="  3.32465E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.325E-03, NFUN:NPC=0000428:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        119: t =   1.13558E-01, dt(diffusion solver) =   3.46248E-03
+
+<CYCLE ID="       119" t="  1.13558E-01" dt="  3.46248E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.462E-03, NFUN:NPC=0000433:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        120: t =   1.17020E-01, dt(diffusion solver) =   3.58566E-03
+
+<CYCLE ID="       120" t="  1.17020E-01" dt="  3.58566E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.586E-03, NFUN:NPC=0000438:00007, NNR:NNF:NSR=0003:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        121: t =   1.20606E-01, dt(diffusion solver) =   3.65076E-03
+
+<CYCLE ID="       121" t="  1.20606E-01" dt="  3.65076E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.651E-03, NFUN:NPC=0000446:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        122: t =   1.24257E-01, dt(diffusion solver) =   3.78649E-03
+
+<CYCLE ID="       122" t="  1.24257E-01" dt="  3.78649E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.786E-03, NFUN:NPC=0000449:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        123: t =   1.28043E-01, dt(diffusion solver) =   3.91758E-03
+
+<CYCLE ID="       123" t="  1.28043E-01" dt="  3.91758E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.918E-03, NFUN:NPC=0000452:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        124: t =   1.31961E-01, dt(diffusion solver) =   4.06084E-03
+
+<CYCLE ID="       124" t="  1.31961E-01" dt="  4.06084E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.061E-03, NFUN:NPC=0000455:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        125: t =   1.36022E-01, dt(diffusion solver) =   3.86805E-03
+
+<CYCLE ID="       125" t="  1.36022E-01" dt="  3.86805E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.868E-03, NFUN:NPC=0000458:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        126: t =   1.39890E-01, dt(diffusion solver) =   3.93704E-03
+
+<CYCLE ID="       126" t="  1.39890E-01" dt="  3.93704E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.937E-03, NFUN:NPC=0000461:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        127: t =   1.43827E-01, dt(diffusion solver) =   4.00724E-03
+
+<CYCLE ID="       127" t="  1.43827E-01" dt="  4.00724E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.007E-03, NFUN:NPC=0000464:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        128: t =   1.47834E-01, dt(diffusion solver) =   4.04196E-03
+
+<CYCLE ID="       128" t="  1.47834E-01" dt="  4.04196E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.042E-03, NFUN:NPC=0000468:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        129: t =   1.51876E-01, dt(diffusion solver) =   1.11818E-03
+
+<CYCLE ID="       129" t="  1.51876E-01" dt="  1.11818E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.118E-03, NFUN:NPC=0000473:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        130: t =   1.52994E-01, dt(diffusion solver) =   1.33192E-03
+
+<CYCLE ID="       130" t="  1.52994E-01" dt="  1.33192E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.332E-03, NFUN:NPC=0000478:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        131: t =   1.54326E-01, dt(diffusion solver) =   1.45528E-03
+
+<CYCLE ID="       131" t="  1.54326E-01" dt="  1.45528E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.455E-03, NFUN:NPC=0000483:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        132: t =   1.55781E-01, dt(diffusion solver) =   1.84841E-03
+
+<CYCLE ID="       132" t="  1.55781E-01" dt="  1.84841E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.848E-03, NFUN:NPC=0000488:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        133: t =   1.57630E-01, dt(diffusion solver) =   1.39241E-03
+
+<CYCLE ID="       133" t="  1.57630E-01" dt="  1.39241E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.392E-03, NFUN:NPC=0000492:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        134: t =   1.59022E-01, dt(diffusion solver) =   1.20910E-03
+
+<CYCLE ID="       134" t="  1.59022E-01" dt="  1.20910E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.209E-03, NFUN:NPC=0000496:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        135: t =   1.60231E-01, dt(diffusion solver) =   1.62977E-03
+
+<CYCLE ID="       135" t="  1.60231E-01" dt="  1.62977E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.630E-03, NFUN:NPC=0000501:00008, NNR:NNF:NSR=0004:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        136: t =   1.61861E-01, dt(diffusion solver) =   1.43970E-03
+
+<CYCLE ID="       136" t="  1.61861E-01" dt="  1.43970E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.440E-03, NFUN:NPC=0000508:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        137: t =   1.63301E-01, dt(diffusion solver) =   1.81489E-03
+
+<CYCLE ID="       137" t="  1.63301E-01" dt="  1.81489E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.815E-03, NFUN:NPC=0000511:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        138: t =   1.65115E-01, dt(diffusion solver) =   1.63661E-03
+
+<CYCLE ID="       138" t="  1.65115E-01" dt="  1.63661E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.637E-03, NFUN:NPC=0000514:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        139: t =   1.66752E-01, dt(diffusion solver) =   1.45944E-03
+
+<CYCLE ID="       139" t="  1.66752E-01" dt="  1.45944E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.459E-03, NFUN:NPC=0000518:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        140: t =   1.68212E-01, dt(diffusion solver) =   1.69345E-03
+
+<CYCLE ID="       140" t="  1.68212E-01" dt="  1.69345E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.693E-03, NFUN:NPC=0000522:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        141: t =   1.69905E-01, dt(diffusion solver) =   1.58411E-03
+
+<CYCLE ID="       141" t="  1.69905E-01" dt="  1.58411E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.584E-03, NFUN:NPC=0000526:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        142: t =   1.71489E-01, dt(diffusion solver) =   1.73949E-03
+
+<CYCLE ID="       142" t="  1.71489E-01" dt="  1.73949E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.739E-03, NFUN:NPC=0000530:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        143: t =   1.73229E-01, dt(diffusion solver) =   2.13837E-03
+
+<CYCLE ID="       143" t="  1.73229E-01" dt="  2.13837E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.138E-03, NFUN:NPC=0000535:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        144: t =   1.75367E-01, dt(diffusion solver) =   1.45009E-03
+
+<CYCLE ID="       144" t="  1.75367E-01" dt="  1.45009E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.450E-03, NFUN:NPC=0000539:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        145: t =   1.76817E-01, dt(diffusion solver) =   1.79644E-03
+
+<CYCLE ID="       145" t="  1.76817E-01" dt="  1.79644E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.796E-03, NFUN:NPC=0000544:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        146: t =   1.78613E-01, dt(diffusion solver) =   2.07642E-03
+
+<CYCLE ID="       146" t="  1.78613E-01" dt="  2.07642E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.076E-03, NFUN:NPC=0000549:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        147: t =   1.80690E-01, dt(diffusion solver) =   1.75432E-03
+
+<CYCLE ID="       147" t="  1.80690E-01" dt="  1.75432E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.754E-03, NFUN:NPC=0000554:00009, NNR:NNF:NSR=0005:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        148: t =   1.82444E-01, dt(diffusion solver) =   2.07294E-03
+
+<CYCLE ID="       148" t="  1.82444E-01" dt="  2.07294E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.073E-03, NFUN:NPC=0000561:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        149: t =   1.84517E-01, dt(diffusion solver) =   2.50627E-03
+
+<CYCLE ID="       149" t="  1.84517E-01" dt="  2.50627E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.506E-03, NFUN:NPC=0000564:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        150: t =   1.87023E-01, dt(diffusion solver) =   1.70742E-03
+
+<CYCLE ID="       150" t="  1.87023E-01" dt="  1.70742E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.707E-03, NFUN:NPC=0000566:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        151: t =   1.88731E-01, dt(diffusion solver) =   2.35811E-03
+
+<CYCLE ID="       151" t="  1.88731E-01" dt="  2.35811E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.358E-03, NFUN:NPC=0000570:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        152: t =   1.91089E-01, dt(diffusion solver) =   2.74950E-03
+
+<CYCLE ID="       152" t="  1.91089E-01" dt="  2.74950E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.750E-03, NFUN:NPC=0000574:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        153: t =   1.93838E-01, dt(diffusion solver) =   1.81227E-03
+
+<CYCLE ID="       153" t="  1.93838E-01" dt="  1.81227E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.812E-03, NFUN:NPC=0000578:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        154: t =   1.95651E-01, dt(diffusion solver) =   2.59336E-03
+
+<CYCLE ID="       154" t="  1.95651E-01" dt="  2.59336E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.593E-03, NFUN:NPC=0000583:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        155: t =   1.98244E-01, dt(diffusion solver) =   2.77056E-03
+
+<CYCLE ID="       155" t="  1.98244E-01" dt="  2.77056E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.771E-03, NFUN:NPC=0000588:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        156: t =   2.01015E-01, dt(diffusion solver) =   2.65998E-03
+
+<CYCLE ID="       156" t="  2.01015E-01" dt="  2.65998E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.660E-03, NFUN:NPC=0000593:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        157: t =   2.03675E-01, dt(diffusion solver) =   2.86838E-03
+
+<CYCLE ID="       157" t="  2.03675E-01" dt="  2.86838E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.868E-03, NFUN:NPC=0000598:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        158: t =   2.06543E-01, dt(diffusion solver) =   2.18831E-03
+
+<CYCLE ID="       158" t="  2.06543E-01" dt="  2.18831E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.188E-03, NFUN:NPC=0000603:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        159: t =   2.08731E-01, dt(diffusion solver) =   2.81357E-03
+
+<CYCLE ID="       159" t="  2.08731E-01" dt="  2.81357E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.814E-03, NFUN:NPC=0000608:00010, NNR:NNF:NSR=0006:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        160: t =   2.11545E-01, dt(diffusion solver) =   3.22048E-03
+
+<CYCLE ID="       160" t="  2.11545E-01" dt="  3.22048E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.220E-03, NFUN:NPC=0000615:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        161: t =   2.14765E-01, dt(diffusion solver) =   2.26020E-03
+
+<CYCLE ID="       161" t="  2.14765E-01" dt="  2.26020E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.260E-03, NFUN:NPC=0000618:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        162: t =   2.17026E-01, dt(diffusion solver) =   2.60009E-03
+
+<CYCLE ID="       162" t="  2.17026E-01" dt="  2.60009E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.600E-03, NFUN:NPC=0000621:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        163: t =   2.19626E-01, dt(diffusion solver) =   3.01616E-03
+
+<CYCLE ID="       163" t="  2.19626E-01" dt="  3.01616E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.016E-03, NFUN:NPC=0000624:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        164: t =   2.22642E-01, dt(diffusion solver) =   3.49560E-03
+
+<CYCLE ID="       164" t="  2.22642E-01" dt="  3.49560E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.496E-03, NFUN:NPC=0000627:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        165: t =   2.26137E-01, dt(diffusion solver) =   3.57807E-03
+
+<CYCLE ID="       165" t="  2.26137E-01" dt="  3.57807E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.578E-03, NFUN:NPC=0000631:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        166: t =   2.29716E-01, dt(diffusion solver) =   3.26947E-03
+
+<CYCLE ID="       166" t="  2.29716E-01" dt="  3.26947E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.269E-03, NFUN:NPC=0000635:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        167: t =   2.32985E-01, dt(diffusion solver) =   4.14270E-03
+
+<CYCLE ID="       167" t="  2.32985E-01" dt="  4.14270E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.143E-03, NFUN:NPC=0000639:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        168: t =   2.37128E-01, dt(diffusion solver) =   2.85653E-03
+
+<CYCLE ID="       168" t="  2.37128E-01" dt="  2.85653E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.857E-03, NFUN:NPC=0000643:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        169: t =   2.39984E-01, dt(diffusion solver) =   3.67963E-03
+
+<CYCLE ID="       169" t="  2.39984E-01" dt="  3.67963E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.680E-03, NFUN:NPC=0000648:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        170: t =   2.43664E-01, dt(diffusion solver) =   2.84627E-03
+
+<CYCLE ID="       170" t="  2.43664E-01" dt="  2.84627E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.846E-03, NFUN:NPC=0000653:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        171: t =   2.46510E-01, dt(diffusion solver) =   3.78252E-03
+
+<CYCLE ID="       171" t="  2.46510E-01" dt="  3.78252E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.783E-03, NFUN:NPC=0000658:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        172: t =   2.50293E-01, dt(diffusion solver) =   3.57567E-03
+
+<CYCLE ID="       172" t="  2.50293E-01" dt="  3.57567E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.576E-03, NFUN:NPC=0000663:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        173: t =   2.53868E-01, dt(diffusion solver) =   2.73908E-03
+
+<CYCLE ID="       173" t="  2.53868E-01" dt="  2.73908E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.739E-03, NFUN:NPC=0000667:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        174: t =   2.56607E-01, dt(diffusion solver) =   3.49582E-03
+
+<CYCLE ID="       174" t="  2.56607E-01" dt="  3.49582E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.496E-03, NFUN:NPC=0000672:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        175: t =   2.60103E-01, dt(diffusion solver) =   3.69077E-03
+
+<CYCLE ID="       175" t="  2.60103E-01" dt="  3.69077E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.691E-03, NFUN:NPC=0000677:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        176: t =   2.63794E-01, dt(diffusion solver) =   3.97989E-03
+
+<CYCLE ID="       176" t="  2.63794E-01" dt="  3.97989E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.980E-03, NFUN:NPC=0000682:00011, NNR:NNF:NSR=0007:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        177: t =   2.67774E-01, dt(diffusion solver) =   4.54741E-03
+
+<CYCLE ID="       177" t="  2.67774E-01" dt="  4.54741E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.547E-03, NFUN:NPC=0000689:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        178: t =   2.72321E-01, dt(diffusion solver) =   2.93269E-03
+
+<CYCLE ID="       178" t="  2.72321E-01" dt="  2.93269E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.933E-03, NFUN:NPC=0000692:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        179: t =   2.75254E-01, dt(diffusion solver) =   4.22486E-03
+
+<CYCLE ID="       179" t="  2.75254E-01" dt="  4.22486E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.225E-03, NFUN:NPC=0000696:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        180: t =   2.79479E-01, dt(diffusion solver) =   2.72919E-03
+
+<CYCLE ID="       180" t="  2.79479E-01" dt="  2.72919E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.729E-03, NFUN:NPC=0000700:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        181: t =   2.82208E-01, dt(diffusion solver) =   3.47443E-03
+
+<CYCLE ID="       181" t="  2.82208E-01" dt="  3.47443E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.474E-03, NFUN:NPC=0000704:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        182: t =   2.85682E-01, dt(diffusion solver) =   3.67786E-03
+
+<CYCLE ID="       182" t="  2.85682E-01" dt="  3.67786E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.678E-03, NFUN:NPC=0000708:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        183: t =   2.89360E-01, dt(diffusion solver) =   4.14734E-03
+
+<CYCLE ID="       183" t="  2.89360E-01" dt="  4.14734E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.147E-03, NFUN:NPC=0000712:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        184: t =   2.93508E-01, dt(diffusion solver) =   4.42548E-03
+
+<CYCLE ID="       184" t="  2.93508E-01" dt="  4.42548E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.425E-03, NFUN:NPC=0000716:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        185: t =   2.97933E-01, dt(diffusion solver) =   5.15786E-03
+
+<CYCLE ID="       185" t="  2.97933E-01" dt="  5.15786E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.158E-03, NFUN:NPC=0000720:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        186: t =   3.03091E-01, dt(diffusion solver) =   3.22904E-03
+
+<CYCLE ID="       186" t="  3.03091E-01" dt="  3.22904E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.229E-03, NFUN:NPC=0000724:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        187: t =   3.06320E-01, dt(diffusion solver) =   3.56279E-03
+
+<CYCLE ID="       187" t="  3.06320E-01" dt="  3.56279E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.563E-03, NFUN:NPC=0000729:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        188: t =   3.09883E-01, dt(diffusion solver) =   3.23370E-03
+
+<CYCLE ID="       188" t="  3.09883E-01" dt="  3.23370E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.234E-03, NFUN:NPC=0000734:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        189: t =   3.13117E-01, dt(diffusion solver) =   3.92985E-03
+
+<CYCLE ID="       189" t="  3.13117E-01" dt="  3.92985E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.930E-03, NFUN:NPC=0000739:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        190: t =   3.17046E-01, dt(diffusion solver) =   4.27904E-03
+
+<CYCLE ID="       190" t="  3.17046E-01" dt="  4.27904E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.279E-03, NFUN:NPC=0000744:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        191: t =   3.21325E-01, dt(diffusion solver) =   4.05920E-03
+
+<CYCLE ID="       191" t="  3.21325E-01" dt="  4.05920E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.059E-03, NFUN:NPC=0000748:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        192: t =   3.25385E-01, dt(diffusion solver) =   4.37510E-03
+
+<CYCLE ID="       192" t="  3.25385E-01" dt="  4.37510E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.375E-03, NFUN:NPC=0000753:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        193: t =   3.29760E-01, dt(diffusion solver) =   2.67680E-03
+
+<CYCLE ID="       193" t="  3.29760E-01" dt="  2.67680E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.677E-03, NFUN:NPC=0000758:00012, NNR:NNF:NSR=0008:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        194: t =   3.32437E-01, dt(diffusion solver) =   3.89707E-03
+
+<CYCLE ID="       194" t="  3.32437E-01" dt="  3.89707E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.897E-03, NFUN:NPC=0000765:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        195: t =   3.36334E-01, dt(diffusion solver) =   3.97798E-03
+
+<CYCLE ID="       195" t="  3.36334E-01" dt="  3.97798E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.978E-03, NFUN:NPC=0000767:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        196: t =   3.40312E-01, dt(diffusion solver) =   4.54045E-03
+
+<CYCLE ID="       196" t="  3.40312E-01" dt="  4.54045E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.540E-03, NFUN:NPC=0000771:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        197: t =   3.44852E-01, dt(diffusion solver) =   2.77233E-03
+
+<CYCLE ID="       197" t="  3.44852E-01" dt="  2.77233E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.772E-03, NFUN:NPC=0000774:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        198: t =   3.47624E-01, dt(diffusion solver) =   3.38361E-03
+
+<CYCLE ID="       198" t="  3.47624E-01" dt="  3.38361E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.384E-03, NFUN:NPC=0000778:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        199: t =   3.51008E-01, dt(diffusion solver) =   3.69337E-03
+
+<CYCLE ID="       199" t="  3.51008E-01" dt="  3.69337E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.693E-03, NFUN:NPC=0000782:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        200: t =   3.54701E-01, dt(diffusion solver) =   4.50075E-03
+
+<CYCLE ID="       200" t="  3.54701E-01" dt="  4.50075E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.501E-03, NFUN:NPC=0000786:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        201: t =   3.59202E-01, dt(diffusion solver) =   3.21003E-03
+
+<CYCLE ID="       201" t="  3.59202E-01" dt="  3.21003E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.210E-03, NFUN:NPC=0000790:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        202: t =   3.62412E-01, dt(diffusion solver) =   2.79936E-03
+
+<CYCLE ID="       202" t="  3.62412E-01" dt="  2.79936E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.799E-03, NFUN:NPC=0000794:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        203: t =   3.65211E-01, dt(diffusion solver) =   3.54687E-03
+
+<CYCLE ID="       203" t="  3.65211E-01" dt="  3.54687E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.547E-03, NFUN:NPC=0000799:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        204: t =   3.68758E-01, dt(diffusion solver) =   4.07631E-03
+
+<CYCLE ID="       204" t="  3.68758E-01" dt="  4.07631E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.076E-03, NFUN:NPC=0000804:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        205: t =   3.72835E-01, dt(diffusion solver) =   2.13735E-03
+
+<CYCLE ID="       205" t="  3.72835E-01" dt="  2.13735E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.137E-03, NFUN:NPC=0000808:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        206: t =   3.74972E-01, dt(diffusion solver) =   3.14372E-03
+
+<CYCLE ID="       206" t="  3.74972E-01" dt="  3.14372E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.144E-03, NFUN:NPC=0000813:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        207: t =   3.78116E-01, dt(diffusion solver) =   3.30485E-03
+
+<CYCLE ID="       207" t="  3.78116E-01" dt="  3.30485E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.305E-03, NFUN:NPC=0000818:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        208: t =   3.81421E-01, dt(diffusion solver) =   2.38917E-03
+
+<CYCLE ID="       208" t="  3.81421E-01" dt="  2.38917E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.389E-03, NFUN:NPC=0000823:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        209: t =   3.83810E-01, dt(diffusion solver) =   2.93353E-03
+
+<CYCLE ID="       209" t="  3.83810E-01" dt="  2.93353E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.934E-03, NFUN:NPC=0000828:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        210: t =   3.86743E-01, dt(diffusion solver) =   3.22017E-03
+
+<CYCLE ID="       210" t="  3.86743E-01" dt="  3.22017E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.220E-03, NFUN:NPC=0000833:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        211: t =   3.89963E-01, dt(diffusion solver) =   3.13801E-03
+
+<CYCLE ID="       211" t="  3.89963E-01" dt="  3.13801E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.138E-03, NFUN:NPC=0000838:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        212: t =   3.93101E-01, dt(diffusion solver) =   3.05107E-03
+
+<CYCLE ID="       212" t="  3.93101E-01" dt="  3.05107E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.051E-03, NFUN:NPC=0000843:00013, NNR:NNF:NSR=0009:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        213: t =   3.96153E-01, dt(diffusion solver) =   3.76663E-03
+
+<CYCLE ID="       213" t="  3.96153E-01" dt="  3.76663E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.767E-03, NFUN:NPC=0000850:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        214: t =   3.99919E-01, dt(diffusion solver) =   2.48725E-03
+
+<CYCLE ID="       214" t="  3.99919E-01" dt="  2.48725E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.487E-03, NFUN:NPC=0000853:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        215: t =   4.02406E-01, dt(diffusion solver) =   2.75744E-03
+
+<CYCLE ID="       215" t="  4.02406E-01" dt="  2.75744E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.757E-03, NFUN:NPC=0000856:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        216: t =   4.05164E-01, dt(diffusion solver) =   2.74203E-03
+
+<CYCLE ID="       216" t="  4.05164E-01" dt="  2.74203E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.742E-03, NFUN:NPC=0000859:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        217: t =   4.07906E-01, dt(diffusion solver) =   3.27360E-03
+
+<CYCLE ID="       217" t="  4.07906E-01" dt="  3.27360E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.274E-03, NFUN:NPC=0000862:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        218: t =   4.11179E-01, dt(diffusion solver) =   3.89126E-03
+
+<CYCLE ID="       218" t="  4.11179E-01" dt="  3.89126E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.891E-03, NFUN:NPC=0000866:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        219: t =   4.15071E-01, dt(diffusion solver) =   2.84279E-03
+
+<CYCLE ID="       219" t="  4.15071E-01" dt="  2.84279E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.843E-03, NFUN:NPC=0000870:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        220: t =   4.17914E-01, dt(diffusion solver) =   2.88973E-03
+
+<CYCLE ID="       220" t="  4.17914E-01" dt="  2.88973E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.890E-03, NFUN:NPC=0000875:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        221: t =   4.20803E-01, dt(diffusion solver) =   3.13006E-03
+
+<CYCLE ID="       221" t="  4.20803E-01" dt="  3.13006E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.130E-03, NFUN:NPC=0000879:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        222: t =   4.23933E-01, dt(diffusion solver) =   3.01781E-03
+
+<CYCLE ID="       222" t="  4.23933E-01" dt="  3.01781E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.018E-03, NFUN:NPC=0000883:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        223: t =   4.26951E-01, dt(diffusion solver) =   2.76767E-03
+
+<CYCLE ID="       223" t="  4.26951E-01" dt="  2.76767E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.768E-03, NFUN:NPC=0000888:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        224: t =   4.29719E-01, dt(diffusion solver) =   3.37975E-03
+
+<CYCLE ID="       224" t="  4.29719E-01" dt="  3.37975E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.380E-03, NFUN:NPC=0000893:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        225: t =   4.33099E-01, dt(diffusion solver) =   2.78060E-03
+
+<CYCLE ID="       225" t="  4.33099E-01" dt="  2.78060E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.781E-03, NFUN:NPC=0000898:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        226: t =   4.35879E-01, dt(diffusion solver) =   2.74121E-03
+
+<CYCLE ID="       226" t="  4.35879E-01" dt="  2.74121E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.741E-03, NFUN:NPC=0000903:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        227: t =   4.38620E-01, dt(diffusion solver) =   2.85645E-03
+
+<CYCLE ID="       227" t="  4.38620E-01" dt="  2.85645E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.856E-03, NFUN:NPC=0000908:00014, NNR:NNF:NSR=0010:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        228: t =   4.41477E-01, dt(diffusion solver) =   2.92371E-03
+
+<CYCLE ID="       228" t="  4.41477E-01" dt="  2.92371E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.924E-03, NFUN:NPC=0000915:00015, NNR:NNF:NSR=0011:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        229: t =   4.44400E-01, dt(diffusion solver) =   2.72352E-03
+
+<CYCLE ID="       229" t="  4.44400E-01" dt="  2.72352E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.724E-03, NFUN:NPC=0000918:00015, NNR:NNF:NSR=0011:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        230: t =   4.47124E-01, dt(diffusion solver) =   3.29354E-03
+
+<CYCLE ID="       230" t="  4.47124E-01" dt="  3.29354E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.294E-03, NFUN:NPC=0000921:00015, NNR:NNF:NSR=0011:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        231: t =   4.50418E-01, dt(diffusion solver) =   3.53539E-03
+
+<CYCLE ID="       231" t="  4.50418E-01" dt="  3.53539E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.535E-03, NFUN:NPC=0000925:00015, NNR:NNF:NSR=0011:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        232: t =   4.53953E-01, dt(diffusion solver) =   4.01748E-03
+
+<CYCLE ID="       232" t="  4.53953E-01" dt="  4.01748E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.017E-03, NFUN:NPC=0000929:00015, NNR:NNF:NSR=0011:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        233: t =   4.57970E-01, dt(diffusion solver) =   4.33488E-03
+
+<CYCLE ID="       233" t="  4.57970E-01" dt="  4.33488E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.335E-03, NFUN:NPC=0000936:00016, NNR:NNF:NSR=0012:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        234: t =   4.62305E-01, dt(diffusion solver) =   5.03143E-03
+
+<CYCLE ID="       234" t="  4.62305E-01" dt="  5.03143E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.031E-03, NFUN:NPC=0000939:00016, NNR:NNF:NSR=0012:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        235: t =   4.67337E-01, dt(diffusion solver) =   4.54036E-03
+
+<CYCLE ID="       235" t="  4.67337E-01" dt="  4.54036E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.540E-03, NFUN:NPC=0000942:00016, NNR:NNF:NSR=0012:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        236: t =   4.71877E-01, dt(diffusion solver) =   3.69710E-03
+
+<CYCLE ID="       236" t="  4.71877E-01" dt="  3.69710E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.697E-03, NFUN:NPC=0000945:00016, NNR:NNF:NSR=0012:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        237: t =   4.75574E-01, dt(diffusion solver) =   4.48870E-03
+
+<CYCLE ID="       237" t="  4.75574E-01" dt="  4.48870E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.489E-03, NFUN:NPC=0000949:00016, NNR:NNF:NSR=0012:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        238: t =   4.80063E-01, dt(diffusion solver) =   5.05874E-03
+
+<CYCLE ID="       238" t="  4.80063E-01" dt="  5.05874E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.059E-03, NFUN:NPC=0000956:00017, NNR:NNF:NSR=0013:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        239: t =   4.85122E-01, dt(diffusion solver) =   4.09148E-03
+
+<CYCLE ID="       239" t="  4.85122E-01" dt="  4.09148E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.091E-03, NFUN:NPC=0000959:00017, NNR:NNF:NSR=0013:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        240: t =   4.89213E-01, dt(diffusion solver) =   3.76176E-03
+
+<CYCLE ID="       240" t="  4.89213E-01" dt="  3.76176E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.762E-03, NFUN:NPC=0000963:00017, NNR:NNF:NSR=0013:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        241: t =   4.92975E-01, dt(diffusion solver) =   3.42215E-03
+
+<CYCLE ID="       241" t="  4.92975E-01" dt="  3.42215E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.422E-03, NFUN:NPC=0000966:00017, NNR:NNF:NSR=0013:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        242: t =   4.96397E-01, dt(diffusion solver) =   3.55012E-03
+
+<CYCLE ID="       242" t="  4.96397E-01" dt="  3.55012E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.550E-03, NFUN:NPC=0000973:00018, NNR:NNF:NSR=0014:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        243: t =   4.99947E-01, dt(diffusion solver) =   6.34715E-03
+
+<CYCLE ID="       243" t="  4.99947E-01" dt="  6.34715E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.347E-03, NFUN:NPC=0000977:00018, NNR:NNF:NSR=0014:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        244: t =   5.06294E-01, dt(diffusion solver) =   1.58679E-03
+
+<CYCLE ID="       244" t="  5.06294E-01" dt="  1.58679E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.587E-03, NFUN:NPC=0000980:00018, NNR:NNF:NSR=0014:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        245: t =   5.07881E-01, dt(diffusion solver) =   4.01959E-03
+
+<CYCLE ID="       245" t="  5.07881E-01" dt="  4.01959E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.020E-03, NFUN:NPC=0000983:00018, NNR:NNF:NSR=0014:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        246: t =   5.11901E-01, dt(diffusion solver) =   4.33413E-03
+
+<CYCLE ID="       246" t="  5.11901E-01" dt="  4.33413E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.334E-03, NFUN:NPC=0000986:00018, NNR:NNF:NSR=0014:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        247: t =   5.16235E-01, dt(diffusion solver) =   5.45013E-03
+
+<CYCLE ID="       247" t="  5.16235E-01" dt="  5.45013E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.450E-03, NFUN:NPC=0000989:00018, NNR:NNF:NSR=0014:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        248: t =   5.21685E-01, dt(diffusion solver) =   4.45934E-03
+
+<CYCLE ID="       248" t="  5.21685E-01" dt="  4.45934E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.459E-03, NFUN:NPC=0000994:00018, NNR:NNF:NSR=0014:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        249: t =   5.26144E-01, dt(diffusion solver) =   5.73899E-03
+
+<CYCLE ID="       249" t="  5.26144E-01" dt="  5.73899E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.739E-03, NFUN:NPC=0001001:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        250: t =   5.31883E-01, dt(diffusion solver) =   5.23668E-03
+
+<CYCLE ID="       250" t="  5.31883E-01" dt="  5.23668E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.237E-03, NFUN:NPC=0001003:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        251: t =   5.37120E-01, dt(diffusion solver) =   7.94345E-03
+
+<CYCLE ID="       251" t="  5.37120E-01" dt="  7.94345E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.943E-03, NFUN:NPC=0001007:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        252: t =   5.45063E-01, dt(diffusion solver) =   5.78775E-03
+
+<CYCLE ID="       252" t="  5.45063E-01" dt="  5.78775E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.788E-03, NFUN:NPC=0001011:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        253: t =   5.50851E-01, dt(diffusion solver) =   4.62938E-03
+
+<CYCLE ID="       253" t="  5.50851E-01" dt="  4.62938E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.629E-03, NFUN:NPC=0001015:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        254: t =   5.55481E-01, dt(diffusion solver) =   4.60000E-03
+
+<CYCLE ID="       254" t="  5.55481E-01" dt="  4.60000E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.600E-03, NFUN:NPC=0001019:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        255: t =   5.60081E-01, dt(diffusion solver) =   4.90316E-03
+
+<CYCLE ID="       255" t="  5.60081E-01" dt="  4.90316E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.903E-03, NFUN:NPC=0001023:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        256: t =   5.64984E-01, dt(diffusion solver) =   5.62296E-03
+
+<CYCLE ID="       256" t="  5.64984E-01" dt="  5.62296E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.623E-03, NFUN:NPC=0001027:00019, NNR:NNF:NSR=0015:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        257: t =   5.70607E-01, dt(diffusion solver) =   5.78818E-03
+
+<CYCLE ID="       257" t="  5.70607E-01" dt="  5.78818E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.788E-03, NFUN:NPC=0001034:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        258: t =   5.76395E-01, dt(diffusion solver) =   5.64671E-03
+
+<CYCLE ID="       258" t="  5.76395E-01" dt="  5.64671E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.647E-03, NFUN:NPC=0001037:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        259: t =   5.82042E-01, dt(diffusion solver) =   4.11542E-03
+
+<CYCLE ID="       259" t="  5.82042E-01" dt="  4.11542E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.115E-03, NFUN:NPC=0001040:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        260: t =   5.86157E-01, dt(diffusion solver) =   4.31869E-03
+
+<CYCLE ID="       260" t="  5.86157E-01" dt="  4.31869E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.319E-03, NFUN:NPC=0001044:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        261: t =   5.90476E-01, dt(diffusion solver) =   5.37363E-03
+
+<CYCLE ID="       261" t="  5.90476E-01" dt="  5.37363E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.374E-03, NFUN:NPC=0001048:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        262: t =   5.95849E-01, dt(diffusion solver) =   4.43059E-03
+
+<CYCLE ID="       262" t="  5.95849E-01" dt="  4.43059E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.431E-03, NFUN:NPC=0001053:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        263: t =   6.00280E-01, dt(diffusion solver) =   5.18973E-03
+
+<CYCLE ID="       263" t="  6.00280E-01" dt="  5.18973E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.190E-03, NFUN:NPC=0001057:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        264: t =   6.05470E-01, dt(diffusion solver) =   3.82381E-03
+
+<CYCLE ID="       264" t="  6.05470E-01" dt="  3.82381E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.824E-03, NFUN:NPC=0001062:00020, NNR:NNF:NSR=0016:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        265: t =   6.09293E-01, dt(diffusion solver) =   4.51171E-03
+
+<CYCLE ID="       265" t="  6.09293E-01" dt="  4.51171E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.512E-03, NFUN:NPC=0001069:00021, NNR:NNF:NSR=0017:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        266: t =   6.13805E-01, dt(diffusion solver) =   4.91007E-03
+
+<CYCLE ID="       266" t="  6.13805E-01" dt="  4.91007E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.910E-03, NFUN:NPC=0001072:00021, NNR:NNF:NSR=0017:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        267: t =   6.18715E-01, dt(diffusion solver) =   4.59438E-03
+
+<CYCLE ID="       267" t="  6.18715E-01" dt="  4.59438E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.594E-03, NFUN:NPC=0001076:00021, NNR:NNF:NSR=0017:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        268: t =   6.23310E-01, dt(diffusion solver) =   3.83928E-03
+
+<CYCLE ID="       268" t="  6.23310E-01" dt="  3.83928E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.839E-03, NFUN:NPC=0001080:00021, NNR:NNF:NSR=0017:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        269: t =   6.27149E-01, dt(diffusion solver) =   3.78074E-03
+
+<CYCLE ID="       269" t="  6.27149E-01" dt="  3.78074E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.781E-03, NFUN:NPC=0001084:00021, NNR:NNF:NSR=0017:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        270: t =   6.30930E-01, dt(diffusion solver) =   4.37878E-03
+
+<CYCLE ID="       270" t="  6.30930E-01" dt="  4.37878E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.379E-03, NFUN:NPC=0001089:00021, NNR:NNF:NSR=0017:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        271: t =   6.35308E-01, dt(diffusion solver) =   2.84917E-03
+
+<CYCLE ID="       271" t="  6.35308E-01" dt="  2.84917E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.849E-03, NFUN:NPC=0001092:00021, NNR:NNF:NSR=0017:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        272: t =   6.38158E-01, dt(diffusion solver) =   3.11587E-03
+
+<CYCLE ID="       272" t="  6.38158E-01" dt="  3.11587E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.116E-03, NFUN:NPC=0001099:00022, NNR:NNF:NSR=0018:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        273: t =   6.41273E-01, dt(diffusion solver) =   3.30824E-03
+
+<CYCLE ID="       273" t="  6.41273E-01" dt="  3.30824E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.308E-03, NFUN:NPC=0001101:00022, NNR:NNF:NSR=0018:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        274: t =   6.44582E-01, dt(diffusion solver) =   7.40039E-03
+
+<CYCLE ID="       274" t="  6.44582E-01" dt="  7.40039E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.400E-03, NFUN:NPC=0001106:00022, NNR:NNF:NSR=0018:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        275: t =   6.51982E-01, dt(diffusion solver) =   7.24187E-03
+
+<CYCLE ID="       275" t="  6.51982E-01" dt="  7.24187E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.242E-03, NFUN:NPC=0001111:00022, NNR:NNF:NSR=0018:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        276: t =   6.59224E-01, dt(diffusion solver) =   6.51403E-03
+
+<CYCLE ID="       276" t="  6.59224E-01" dt="  6.51403E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.514E-03, NFUN:NPC=0001118:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        277: t =   6.65738E-01, dt(diffusion solver) =   6.76018E-03
+
+<CYCLE ID="       277" t="  6.65738E-01" dt="  6.76018E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.760E-03, NFUN:NPC=0001121:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        278: t =   6.72498E-01, dt(diffusion solver) =   4.63529E-03
+
+<CYCLE ID="       278" t="  6.72498E-01" dt="  4.63529E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.635E-03, NFUN:NPC=0001124:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        279: t =   6.77133E-01, dt(diffusion solver) =   5.10535E-03
+
+<CYCLE ID="       279" t="  6.77133E-01" dt="  5.10535E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.105E-03, NFUN:NPC=0001128:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        280: t =   6.82239E-01, dt(diffusion solver) =   6.10449E-03
+
+<CYCLE ID="       280" t="  6.82239E-01" dt="  6.10449E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.104E-03, NFUN:NPC=0001132:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        281: t =   6.88343E-01, dt(diffusion solver) =   5.69391E-03
+
+<CYCLE ID="       281" t="  6.88343E-01" dt="  5.69391E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.694E-03, NFUN:NPC=0001136:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        282: t =   6.94037E-01, dt(diffusion solver) =   5.21122E-03
+
+<CYCLE ID="       282" t="  6.94037E-01" dt="  5.21122E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.211E-03, NFUN:NPC=0001140:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        283: t =   6.99248E-01, dt(diffusion solver) =   6.37191E-03
+
+<CYCLE ID="       283" t="  6.99248E-01" dt="  6.37191E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.372E-03, NFUN:NPC=0001145:00023, NNR:NNF:NSR=0019:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        284: t =   7.05620E-01, dt(diffusion solver) =   4.83148E-03
+
+<CYCLE ID="       284" t="  7.05620E-01" dt="  4.83148E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.831E-03, NFUN:NPC=0001152:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        285: t =   7.10452E-01, dt(diffusion solver) =   5.09972E-03
+
+<CYCLE ID="       285" t="  7.10452E-01" dt="  5.09972E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.100E-03, NFUN:NPC=0001154:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        286: t =   7.15551E-01, dt(diffusion solver) =   4.67202E-03
+
+<CYCLE ID="       286" t="  7.15551E-01" dt="  4.67202E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.672E-03, NFUN:NPC=0001157:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        287: t =   7.20223E-01, dt(diffusion solver) =   5.14110E-03
+
+<CYCLE ID="       287" t="  7.20223E-01" dt="  5.14110E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.141E-03, NFUN:NPC=0001160:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        288: t =   7.25365E-01, dt(diffusion solver) =   6.85915E-03
+
+<CYCLE ID="       288" t="  7.25365E-01" dt="  6.85915E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.859E-03, NFUN:NPC=0001164:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        289: t =   7.32224E-01, dt(diffusion solver) =   6.61636E-03
+
+<CYCLE ID="       289" t="  7.32224E-01" dt="  6.61636E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.616E-03, NFUN:NPC=0001168:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        290: t =   7.38840E-01, dt(diffusion solver) =   5.15461E-03
+
+<CYCLE ID="       290" t="  7.38840E-01" dt="  5.15461E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.155E-03, NFUN:NPC=0001173:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        291: t =   7.43995E-01, dt(diffusion solver) =   5.11679E-03
+
+<CYCLE ID="       291" t="  7.43995E-01" dt="  5.11679E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.117E-03, NFUN:NPC=0001178:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        292: t =   7.49112E-01, dt(diffusion solver) =   5.16201E-03
+
+<CYCLE ID="       292" t="  7.49112E-01" dt="  5.16201E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.162E-03, NFUN:NPC=0001182:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        293: t =   7.54274E-01, dt(diffusion solver) =   4.18261E-03
+
+<CYCLE ID="       293" t="  7.54274E-01" dt="  4.18261E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.183E-03, NFUN:NPC=0001186:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        294: t =   7.58456E-01, dt(diffusion solver) =   5.30949E-03
+
+<CYCLE ID="       294" t="  7.58456E-01" dt="  5.30949E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.309E-03, NFUN:NPC=0001191:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        295: t =   7.63766E-01, dt(diffusion solver) =   4.77177E-03
+
+<CYCLE ID="       295" t="  7.63766E-01" dt="  4.77177E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.772E-03, NFUN:NPC=0001196:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        296: t =   7.68537E-01, dt(diffusion solver) =   3.41316E-03
+
+<CYCLE ID="       296" t="  7.68537E-01" dt="  3.41316E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.413E-03, NFUN:NPC=0001201:00024, NNR:NNF:NSR=0020:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        297: t =   7.71951E-01, dt(diffusion solver) =   3.43602E-03
+
+<CYCLE ID="       297" t="  7.71951E-01" dt="  3.43602E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.436E-03, NFUN:NPC=0001208:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        298: t =   7.75387E-01, dt(diffusion solver) =   3.68386E-03
+
+<CYCLE ID="       298" t="  7.75387E-01" dt="  3.68386E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.684E-03, NFUN:NPC=0001211:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        299: t =   7.79070E-01, dt(diffusion solver) =   2.80299E-03
+
+<CYCLE ID="       299" t="  7.79070E-01" dt="  2.80299E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.803E-03, NFUN:NPC=0001214:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        300: t =   7.81873E-01, dt(diffusion solver) =   2.61619E-03
+
+<CYCLE ID="       300" t="  7.81873E-01" dt="  2.61619E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.616E-03, NFUN:NPC=0001217:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        301: t =   7.84490E-01, dt(diffusion solver) =   4.26189E-03
+
+<CYCLE ID="       301" t="  7.84490E-01" dt="  4.26189E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.262E-03, NFUN:NPC=0001219:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        302: t =   7.88752E-01, dt(diffusion solver) =   5.71629E-03
+
+<CYCLE ID="       302" t="  7.88752E-01" dt="  5.71629E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.716E-03, NFUN:NPC=0001223:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        303: t =   7.94468E-01, dt(diffusion solver) =   5.07826E-03
+
+<CYCLE ID="       303" t="  7.94468E-01" dt="  5.07826E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.078E-03, NFUN:NPC=0001227:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        304: t =   7.99546E-01, dt(diffusion solver) =   4.68849E-03
+
+<CYCLE ID="       304" t="  7.99546E-01" dt="  4.68849E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.688E-03, NFUN:NPC=0001232:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        305: t =   8.04235E-01, dt(diffusion solver) =   5.16373E-03
+
+<CYCLE ID="       305" t="  8.04235E-01" dt="  5.16373E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.164E-03, NFUN:NPC=0001236:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        306: t =   8.09398E-01, dt(diffusion solver) =   5.65856E-03
+
+<CYCLE ID="       306" t="  8.09398E-01" dt="  5.65856E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.659E-03, NFUN:NPC=0001240:00025, NNR:NNF:NSR=0021:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        307: t =   8.15057E-01, dt(diffusion solver) =   7.55769E-03
+
+<CYCLE ID="       307" t="  8.15057E-01" dt="  7.55769E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.558E-03, NFUN:NPC=0001247:00026, NNR:NNF:NSR=0022:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        308: t =   8.22615E-01, dt(diffusion solver) =   7.19523E-03
+
+<CYCLE ID="       308" t="  8.22615E-01" dt="  7.19523E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.195E-03, NFUN:NPC=0001250:00026, NNR:NNF:NSR=0022:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        309: t =   8.29810E-01, dt(diffusion solver) =   6.18906E-03
+
+<CYCLE ID="       309" t="  8.29810E-01" dt="  6.18906E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.189E-03, NFUN:NPC=0001254:00026, NNR:NNF:NSR=0022:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        310: t =   8.35999E-01, dt(diffusion solver) =   6.06378E-03
+
+<CYCLE ID="       310" t="  8.35999E-01" dt="  6.06378E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.064E-03, NFUN:NPC=0001258:00026, NNR:NNF:NSR=0022:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        311: t =   8.42063E-01, dt(diffusion solver) =   4.89809E-03
+
+<CYCLE ID="       311" t="  8.42063E-01" dt="  4.89809E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.898E-03, NFUN:NPC=0001263:00026, NNR:NNF:NSR=0022:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        312: t =   8.46961E-01, dt(diffusion solver) =   4.61715E-03
+
+<CYCLE ID="       312" t="  8.46961E-01" dt="  4.61715E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.617E-03, NFUN:NPC=0001268:00026, NNR:NNF:NSR=0022:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        313: t =   8.51578E-01, dt(diffusion solver) =   5.14343E-03
+
+<CYCLE ID="       313" t="  8.51578E-01" dt="  5.14343E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.143E-03, NFUN:NPC=0001273:00026, NNR:NNF:NSR=0022:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        314: t =   8.56721E-01, dt(diffusion solver) =   4.59254E-03
+
+<CYCLE ID="       314" t="  8.56721E-01" dt="  4.59254E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.593E-03, NFUN:NPC=0001280:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        315: t =   8.61314E-01, dt(diffusion solver) =   4.97451E-03
+
+<CYCLE ID="       315" t="  8.61314E-01" dt="  4.97451E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.975E-03, NFUN:NPC=0001283:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        316: t =   8.66288E-01, dt(diffusion solver) =   4.80129E-03
+
+<CYCLE ID="       316" t="  8.66288E-01" dt="  4.80129E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.801E-03, NFUN:NPC=0001286:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        317: t =   8.71090E-01, dt(diffusion solver) =   3.37917E-03
+
+<CYCLE ID="       317" t="  8.71090E-01" dt="  3.37917E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.379E-03, NFUN:NPC=0001289:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        318: t =   8.74469E-01, dt(diffusion solver) =   5.04236E-03
+
+<CYCLE ID="       318" t="  8.74469E-01" dt="  5.04236E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.042E-03, NFUN:NPC=0001293:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        319: t =   8.79511E-01, dt(diffusion solver) =   5.22433E-03
+
+<CYCLE ID="       319" t="  8.79511E-01" dt="  5.22433E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.224E-03, NFUN:NPC=0001297:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        320: t =   8.84735E-01, dt(diffusion solver) =   6.15502E-03
+
+<CYCLE ID="       320" t="  8.84735E-01" dt="  6.15502E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.155E-03, NFUN:NPC=0001302:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        321: t =   8.90891E-01, dt(diffusion solver) =   4.90184E-03
+
+<CYCLE ID="       321" t="  8.90891E-01" dt="  4.90184E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.902E-03, NFUN:NPC=0001307:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        322: t =   8.95792E-01, dt(diffusion solver) =   4.75577E-03
+
+<CYCLE ID="       322" t="  8.95792E-01" dt="  4.75577E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.756E-03, NFUN:NPC=0001312:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        323: t =   9.00548E-01, dt(diffusion solver) =   3.96294E-03
+
+<CYCLE ID="       323" t="  9.00548E-01" dt="  3.96294E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.963E-03, NFUN:NPC=0001317:00027, NNR:NNF:NSR=0023:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        324: t =   9.04511E-01, dt(diffusion solver) =   4.27382E-03
+
+<CYCLE ID="       324" t="  9.04511E-01" dt="  4.27382E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.274E-03, NFUN:NPC=0001324:00028, NNR:NNF:NSR=0024:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        325: t =   9.08785E-01, dt(diffusion solver) =   5.00733E-03
+
+<CYCLE ID="       325" t="  9.08785E-01" dt="  5.00733E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.007E-03, NFUN:NPC=0001327:00028, NNR:NNF:NSR=0024:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        326: t =   9.13792E-01, dt(diffusion solver) =   2.32339E-03
+
+<CYCLE ID="       326" t="  9.13792E-01" dt="  2.32339E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.323E-03, NFUN:NPC=0001330:00028, NNR:NNF:NSR=0024:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        327: t =   9.16116E-01, dt(diffusion solver) =   4.91373E-03
+
+<CYCLE ID="       327" t="  9.16116E-01" dt="  4.91373E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.914E-03, NFUN:NPC=0001333:00028, NNR:NNF:NSR=0024:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        328: t =   9.21029E-01, dt(diffusion solver) =   4.48955E-03
+
+<CYCLE ID="       328" t="  9.21029E-01" dt="  4.48955E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.490E-03, NFUN:NPC=0001337:00028, NNR:NNF:NSR=0024:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        329: t =   9.25519E-01, dt(diffusion solver) =   5.43812E-03
+
+<CYCLE ID="       329" t="  9.25519E-01" dt="  5.43812E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.438E-03, NFUN:NPC=0001341:00028, NNR:NNF:NSR=0024:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        330: t =   9.30957E-01, dt(diffusion solver) =   5.43940E-03
+
+<CYCLE ID="       330" t="  9.30957E-01" dt="  5.43940E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.439E-03, NFUN:NPC=0001345:00028, NNR:NNF:NSR=0024:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        331: t =   9.36396E-01, dt(diffusion solver) =   6.29915E-03
+
+<CYCLE ID="       331" t="  9.36396E-01" dt="  6.29915E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.299E-03, NFUN:NPC=0001352:00029, NNR:NNF:NSR=0025:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        332: t =   9.42696E-01, dt(diffusion solver) =   5.84662E-03
+
+<CYCLE ID="       332" t="  9.42696E-01" dt="  5.84662E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.847E-03, NFUN:NPC=0001355:00029, NNR:NNF:NSR=0025:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        333: t =   9.48542E-01, dt(diffusion solver) =   4.27940E-03
+
+<CYCLE ID="       333" t="  9.48542E-01" dt="  4.27940E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.279E-03, NFUN:NPC=0001359:00029, NNR:NNF:NSR=0025:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        334: t =   9.52822E-01, dt(diffusion solver) =   5.09814E-03
+
+<CYCLE ID="       334" t="  9.52822E-01" dt="  5.09814E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.098E-03, NFUN:NPC=0001363:00029, NNR:NNF:NSR=0025:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        335: t =   9.57920E-01, dt(diffusion solver) =   3.99135E-03
+
+<CYCLE ID="       335" t="  9.57920E-01" dt="  3.99135E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.991E-03, NFUN:NPC=0001368:00029, NNR:NNF:NSR=0025:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        336: t =   9.61911E-01, dt(diffusion solver) =   5.51858E-03
+
+<CYCLE ID="       336" t="  9.61911E-01" dt="  5.51858E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.519E-03, NFUN:NPC=0001372:00029, NNR:NNF:NSR=0025:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        337: t =   9.67430E-01, dt(diffusion solver) =   4.22952E-03
+
+<CYCLE ID="       337" t="  9.67430E-01" dt="  4.22952E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.230E-03, NFUN:NPC=0001379:00030, NNR:NNF:NSR=0026:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        338: t =   9.71659E-01, dt(diffusion solver) =   3.71127E-03
+
+<CYCLE ID="       338" t="  9.71659E-01" dt="  3.71127E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.711E-03, NFUN:NPC=0001382:00030, NNR:NNF:NSR=0026:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        339: t =   9.75370E-01, dt(diffusion solver) =   3.86715E-03
+
+<CYCLE ID="       339" t="  9.75370E-01" dt="  3.86715E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.867E-03, NFUN:NPC=0001386:00030, NNR:NNF:NSR=0026:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        340: t =   9.79238E-01, dt(diffusion solver) =   3.08132E-03
+
+<CYCLE ID="       340" t="  9.79238E-01" dt="  3.08132E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.081E-03, NFUN:NPC=0001391:00030, NNR:NNF:NSR=0026:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        341: t =   9.82319E-01, dt(diffusion solver) =   3.57416E-03
+
+<CYCLE ID="       341" t="  9.82319E-01" dt="  3.57416E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.574E-03, NFUN:NPC=0001398:00031, NNR:NNF:NSR=0027:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        342: t =   9.85893E-01, dt(diffusion solver) =   3.22140E-03
+
+<CYCLE ID="       342" t="  9.85893E-01" dt="  3.22140E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.221E-03, NFUN:NPC=0001400:00031, NNR:NNF:NSR=0027:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        343: t =   9.89114E-01, dt(diffusion solver) =   2.51854E-03
+
+<CYCLE ID="       343" t="  9.89114E-01" dt="  2.51854E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.519E-03, NFUN:NPC=0001403:00031, NNR:NNF:NSR=0027:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        344: t =   9.91633E-01, dt(diffusion solver) =   4.02026E-03
+
+<CYCLE ID="       344" t="  9.91633E-01" dt="  4.02026E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.020E-03, NFUN:NPC=0001405:00031, NNR:NNF:NSR=0027:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+        345: t =   9.95653E-01, dt(diffusion solver) =   4.53493E-03
+
+<CYCLE ID="       345" t="  9.95653E-01" dt="  4.53493E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.535E-03, NFUN:NPC=0001409:00031, NNR:NNF:NSR=0027:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+<TIMESTEP CYCLE="                 345" t="    0.10001881494844839793E+01" dt="    0.45349283898719261118E-02" dt_courant="    0.10000000000000000000E+11" ID="         1">
+
+<FILE FORMAT="binary">
+ds4_output/ds4.ts.00001.bin
+</FILE>
+
+<FILEVAR Name="MATSLOT" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  16"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  20"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                6820"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPY" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               13620"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPYOLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               20420"></FILEVAR>
+
+<FILEVAR Name="Z_P" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               27220"></FILEVAR>
+
+<FILEVAR Name="Z_VC" DataType="d" Rank=" 2" Shape="3        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               34020" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_VCOLD" DataType="d" Rank=" 2" Shape="3        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               54420" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_RHO" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               74820"></FILEVAR>
+
+<FILEVAR Name="Face_Vel" DataType="d" Rank=" 2" Shape="6        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               81620" Attr="none"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              122420" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              125820" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              132620" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              139420" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              146220" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              153020" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              156420" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              163220" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_RHO" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              170020" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_RHO_OLD" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              176820" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="nsens_design_variables" DataType="i" Rank="0" Shape="" Offset="183620"></FILEVAR>
+
+<FILEVAR Name="nsens_functions" DataType="i" Rank="0" Shape="" Offset="183624"></FILEVAR>
+
+<FILEVAR Name="COURANT" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              183628"></FILEVAR>
+
+<FILEVAR Name="VOF0001" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              190428"></FILEVAR>
+
+<FILEVAR Name="VOF0002" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              197228"></FILEVAR>
+
+<FILEVAR Name="VOF0003" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              204028"></FILEVAR>
+
+<FILEVAR Name="VOF0004" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              210828"></FILEVAR>
+
+<FILEVAR Name="Grad_T" DataType="d" Rank=" 2" Shape="3        850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              217628"></FILEVAR>
+
+<FILEVAR Name="||Grad_T||" DataType="d" Rank=" 1" Shape="850" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              238028"></FILEVAR>
+</TIMESTEP>
+
+[OUTTTY]
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0002E+00 after   345 steps
+
+<FINALTIME>
+                 Final Time:  1.0002E+00 after   345 steps
+</FINALTIME>
+
+<timing_tree processor=" 1">
+
+<TIMER key="Total" wall="    3.84" cpu="    3.80">
+
+<TIMER key="Input" wall="    0.01" cpu="    0.01">
+</TIMER>
+
+<TIMER key="Initialization" wall="    0.25" cpu="    0.25">
+</TIMER>
+
+<TIMER key="Main Cycle" wall="    3.57" cpu="    3.53">
+
+<TIMER key="Output" wall="    0.01" cpu="    0.01">
+</TIMER>
+
+<TIMER key="Time Step" wall="    0.01" cpu="    0.01">
+</TIMER>
+
+<TIMER key="Diffusion Solver" wall="    3.42" cpu="    3.41">
+
+<TIMER key="HT precon compute" wall="    0.45" cpu="    0.45">
+</TIMER>
+
+<TIMER key="HT function" wall="    0.38" cpu="    0.40">
+</TIMER>
+
+<TIMER key="HT precon apply" wall="    2.03" cpu="    2.00">
+</TIMER>
+</TIMER>
+</TIMER>
+</TIMER>
+</timing_tree>
+  TIMING SUMMARY                       AVERAGE        MIN          MAX
+  --------------                      ---------    ---------    ---------
+  Total                               3.802E+00    3.802E+00    3.802E+00
+    Input                               1.400E-02    1.400E-02    1.400E-02
+    Initialization                      2.470E-01    2.470E-01    2.470E-01
+    Main Cycle                          3.534E+00    3.534E+00    3.534E+00
+      Output                              6.999E-03    6.999E-03    6.999E-03
+      Time Step                           7.000E-03    7.000E-03    7.000E-03
+      Diffusion Solver                    3.406E+00    3.406E+00    3.406E+00
+        HT precon compute                   4.479E-01    4.479E-01    4.479E-01
+        HT function                         4.009E-01    4.009E-01    4.009E-01
+        HT precon apply                     1.998E+00    1.998E+00    1.998E+00
+
+
+          Process virtual memory used:          4.16E+01   mb
+          words/cell:                               6416
+
+[OUTERRTTY]
+
+
+
+<PUNTSTRING></PUNTSTRING>
+truchas terminated normally on 07 Sep 11 at 11:03:00
+
+<PUNTSTRING>
+truchas terminated normally on 07 Sep 11 at 11:03:00
+</PUNTSTRING>
+</TruchasData>

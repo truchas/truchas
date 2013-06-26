@@ -1,0 +1,43 @@
+<?xml version="1.0" ?>
+
+<BrookXML Version="1.0">
+
+<MESH FORMAT="TRUCHASMESH" LABEL="DefaultMesh" MESHWRITERVERSION="1.0000">
+
+<FILE FORMAT="binary">
+composite_conduction_output/composite_conduction.DefaultMesh.00001.bin
+</FILE>
+
+<FILEVAR Name="MESHTYPE" DataType="c" Rank=" 0" Shape="" Mesh="DefaultMesh" Map="NONE" ArrayOrder="FORTRAN" Offset="                  16" INFORMATION="MESH"></FILEVAR>
+
+<FILEVAR Name="N" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="                  19" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="PERMUTE" DataType="i" Rank=" 1" Shape="729" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="                  23" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="UNPERMUTE" DataType="i" Rank=" 1" Shape="729" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="                2939" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="VERTICES" DataType="i" Rank=" 2" Shape="8        729" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="                5855" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="VOLUMES" DataType="d" Rank=" 1" Shape="729" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="               29183" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="CENTROIDS" DataType="d" Rank=" 2" Shape="3        729" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="               35015" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="BOUNDARY" DataType="i" Rank=" 1" Shape="729" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="               52511" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="NUMNEIGHBORS" DataType="i" Rank=" 1" Shape="729" Mesh="DefaultMesh" Map="CELLS" ArrayOrder="FORTRAN" Offset="               55427" INFORMATION="CELL"></FILEVAR>
+
+<FILEVAR Name="TOTALBOUNDARYFACES" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh" Map="FACES" ArrayOrder="FORTRAN" Offset="               58343" INFORMATION="FACE"></FILEVAR>
+
+<FILEVAR Name="NUMSIDESETS" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh" Map="FACES" ArrayOrder="FORTRAN" Offset="               58347" INFORMATION="FACE"></FILEVAR>
+
+<FILEVAR Name="N" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh" Map="NODES" ArrayOrder="FORTRAN" Offset="               58351" INFORMATION="VERTEX"></FILEVAR>
+
+<FILEVAR Name="PERMUTE" DataType="i" Rank=" 1" Shape="1568" Mesh="DefaultMesh" Map="NODES" ArrayOrder="FORTRAN" Offset="               58355" INFORMATION="VERTEX"></FILEVAR>
+
+<FILEVAR Name="UNPERMUTE" DataType="i" Rank=" 1" Shape="1568" Mesh="DefaultMesh" Map="NODES" ArrayOrder="FORTRAN" Offset="               64627" INFORMATION="VERTEX"></FILEVAR>
+
+<FILEVAR Name="COORDS" DataType="d" Rank=" 2" Shape="3       1568" Mesh="DefaultMesh" Map="NODES" ArrayOrder="FORTRAN" Offset="               70899" INFORMATION="VERTEX"></FILEVAR>
+
+<FILEVAR Name="RSUMRVOL" DataType="d" Rank=" 1" Shape="1568" Mesh="DefaultMesh" Map="NODES" ArrayOrder="FORTRAN" Offset="              108531" INFORMATION="VERTEX"></FILEVAR>
+</MESH>
+</BrookXML>

@@ -1,0 +1,143 @@
+TestingInfrastructure FAQ
+LA-UR-??-????
+
+---------------------------------------------------------------------------
+Version:        1.0
+
+
+Questions:
+-------------------------------------------------
+
+*Where do I find extensive documentation of the testing infrastructure?
+*How do I run the new testing infrastructure?
+*How do I run the old test suite?
+*How do I get started writing a Capability script?
+*What if I want to run from a restart file rather than an input file?
+*How do I define where the golden output is located in my Capability script?
+*How do I define multiple tolerances?
+*How do I define tolerances for difference platforms or compiler options?
+*How are mesh regions defined?                 
+*How do I extract field data on a mesh region from the Truchas results?
+*What needs to be written to the CapabilityTest log file?
+*How do I write a field to the CapabilityTest log file?
+*How do I use a Truchas probe within the CapabilityTest ?            
+*How do I encorporate an analytic solution into the Capability script?
+*What if I have several related tests that I want to group and run together?
+*What if I want to run a Truchas simulation, create a restart, and test the results of the restart?
+
+
+
+
+Answers:
+-------------------------------------------------
+
+*Where do I find extensive documentation of the testing infrastructure?
+
+    Extensive documentation is found in the Truchas Guide to Testing Code Modifications.  After checking out the truchas code navagte to truchas/documentation/src/HowToGuides/Testing.  Use make to generate a pdf from the LaTex source.  The resulting pdf will be placed in truchas/documentation/src/formatted.
+
+
+*How do I run the new testing infrastructure?
+
+    From truchas/ type make.  This displays the various make options.  There are several make test-* options to choose from.  Select the appropriate option and execute.  See the Truchas Guide to Testing Code Modifications for further explanation of the options and discussion of the resulting screen and file outputs.
+
+
+*How do I run the old test suite?
+
+    As in the previous question, more detailed information is included in the Truchas Guide to Testing Code Modifications.  Currently typing "make test", or the test option of your choice, will run the new testing infrastructure.  To enact the only regression test suite add the option use_OLDTESTING=yes to the command line.
+
+
+*How do I get started writing a Capability script?
+
+    First, begin by describing your test problem.  Descriptions of other test problems can be found on SourceForge under Documents/Working Groups.  Select a working group to see the related test problems.  Next, copy CapabilityTest.py from /truchas/tools/PythonPackages/TestingInfrastructure/examples/simple_example.  This CapabilityTest.py is the most basic form of the Capability Test.  Be sure to edit the "truchasdir" with the new relative path to /truchas/bin.  You can expand CapabilityTest.py for your particular test problem.
+
+
+*What if I want to run from a restart file rather than an input file?
+
+    For each *.inp file in the directory a TruchasBasicRun is automatically run.  If a restart.mac file is in the directory a TruchasPostProcessorRun is executated to generate a restart.bin file which is placed in the appropriate outputs* directory.  If a *restart.inp or restart.bin file exists in the current or outputs* directory then a TruchasRestartRun is executed.  Any or all of these are run before executing the CapabilityTest test method.
+
+
+*How do I define where the golden output is located in my Capability script?
+
+    Directories where data is stored are set in setDataStores.  For example,
+       def setDataStores(self):
+           self.testdirs    = ['example_output']
+           self.restartdirs = ['example_restart_output']
+           self.goldendirs  = ['example_golden_output']
+    The DataStores are defined as arrays.  Therefore, multiple locations can be specified for each data type.  When references the DataStores in the test methods use the appropriate array index (i.e, self.testdata[0]).
+
+
+*How do I define multiple tolerances?
+
+    The developer can define as many tolerances as needed in the setTolerances section.  Each tolerances is defined with an associated name as self.tol['tol_name'] = 1.0.  Later use is done by self.tol['tol_name'].
+
+
+*How do I define tolerances for difference platforms or compiler options?
+
+    The RunTimeSpecs class contains the runtime specs for the current executable.  These specs include parallel_env (serial, parallel), np (number of processors), compiler (lahey, nag, compaq), and compile_mode(opt,dbg).  This information is extracted from the executable name and used to name the outputs* directories.  Use self.basicrunspecs.OPTION to access the option you desire.  See the regression test problem ds1 in truchas/regressiontests/ds1/ for an example of accessing the runtime specs and using the parallel_env to define a tolerance.
+
+
+*How are mesh regions defined?
+
+    Mesh regions are defined in setDefinitions.  Many examples can be found in the example CapabilityTest.py files.  Below is an example of a mesh region defined by a variable value.  "self.testdata[0]" indicates that the first testdirs defined in setDataStores is being used.  "selector" determines how the region is be selected (i.e Default, VAR, ....).  For rinside the variable being used to define the mesh region is VOF0001.  Any available variable can be used.
+
+        def setDefinitions(self):
+            self.rinside    = self.testdata[0].getRegion(selector = ['VAR','VOF0001',[0.99,1.0]],
+                                                         desc     = 'Region inside a drop')
+            self.meshregion = self.testdata[0].getRegion(selector = ['Default'],
+                                                         desc     = 'entire Truchas mesh')
+                                                            
+
+*How do I extract field data on a mesh region from the Truchas results?
+
+    This is done within a test definition as shown below.  "testdata[0]" indicates that the first test direction defined in setDataStores is being used.  The getField function requires a field name, cycle number, and a region.  Then the requested field is returned.
+
+        def testPressureDrop(self):
+            Pin = self.testdata[0].getField(field  = "P",
+                                            cycle  = 1, 
+                                            region = self.rinside)
+
+
+*What needs to be written to the CapabilityTest log file?
+
+    This is up to the developer.  Common items the developer may wish record the fields being tested and the associated error.  functionality to write to the log file is provided through logger functions such as logger.write and logger.writeField.  
+
+
+*How do I write a field to the CapabilityTest log file?
+
+    A field that has been extracte using the getFIeld function is writen to the log file by logger.writeField function.  Most of the CapabilityTest.py files in truchas/tools/PythonPackages/TestingInfrastructure/examples have examples of writing fields to the log file as shown below.  The text included in the desc field is printed in the log file above the field.  This is helpful in identifing the field data when reading the log file.
+
+        # extract field from a TruchasBasicRun
+        Pin  = self.testdata[0].getField(field  = 'P',
+                                         cycle  = 1,
+                                         region = self.rinside)      
+        # write the field to the log file
+        self.logger.writeField(Pin,
+                               region = self.rinside,
+                               desc   = 'Total Measure PD : Pressure inside the drop')
+
+*How do I use a Truchas probe within the CapabilityTest ?
+
+    Extracting probe data is similar to extract any other field data from a DataStore.
+
+        VProbe = self.testdata[0].getProbe(name      = 'VhMax',
+                                           field     = 'Velocity',
+                                           timerange = [0.1,0.2])
+    Probe data is stored in an array [cycle, timestep, (field)].  In this example the field is an arry (u,v,w).  Having extracted the entire Probe data the individual field information can be extracted using,
+ 
+        U = Vprobe.data[0,2]
+        W = Vprobe.data[0,4]
+               
+               
+*How do I encorporate an analytic solution into the Capability script?
+
+    For an example see /truchas/tools/PythonPackages/TestingInfrastructure/examples/channel_flow/CapbilityTest.py.  This capability script includes a function called Analytic Solution.  Within the test definition testXVelocities the anlaytic solution function is called.  The truchas results and the analytic function results are compared to determine pass or fail.
+
+
+*What if I have several related tests that I want to group and run together?
+
+    The regressiontests/ directory is set up with each test in an individual sub directory.  However, there maybe times when a developer wishes to group related tests together.  In this case it is also convienant to beable to run this group of tests from a single command line.  This can be achieved using a HeirachicalRunner.  This runner executes any test in the current directory and then traverses each subdirectory looking for additional test to run.  For an example of setting up and running a HeirachicalRunner see truchas/tools/PythonPackages/TestingInfrastructure/examples/hierachical_example.  Note that in the '__main__' section RunThisCapability now lists RunHierarchicalTestSuite as the runnername.  The test methods can be defined as in a regular Capability Test.  In the subdirectories the appropriate *.inp files and CapabilityTest.py exist.  In the subdirectories RunThisCapability does not define the runnername since it has been set in the main directory.
+
+
+*What if I want to run a Truchas simulation, create a restart, and test the results of the restart?
+  
+    Begin by including the appropriate Truchas files (i.e, the *.inp file and restart.mac).  The RunThisCapability class will automatically run to appropriate Truchas simulations.  Then, within the CapabilityTest.py define the appropriate DataStores in the setDataStores section.  Finally, write the test methods using self.restartdata to extract the necessary field data from the restart run.

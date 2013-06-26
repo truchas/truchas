@@ -1,0 +1,228 @@
+
+&MESH
+
+        mesh_file = 'two-enclosures.exo',
+	mesh_file_format = 'exodusII'
+/
+ 
+&RADIATION_ENCLOSURE
+
+
+    chaparral_symmetry  = 'x','y','z'
+    EnclosureID  = 101
+    Comment      = 'interior of the sphere'
+    partial      = .false.
+    LinearSolver = 'vf'
+    chaparral_rParam   = 1.0, 1.0d-14, 5.0d0, 1.0d-6, 1.0d-6, 2.0d0, 1.0d-8, 1.0d-4
+    chaparral_iParam   = 1, 3, 0, 0, 0, 0, 40, 25, 10, 100, 16, 1, 1000, 3, 0, 100, 3, 1, 0, 0, 1
+
+    outfile       = '101.vf'
+    outfiletype   = 'ascii'
+
+/
+
+&RADIATION_ENCLOSURE
+
+
+    chaparral_symmetry  = 'x','y','z'
+    EnclosureID  = 102
+    Comment      = 'exterior of the sphere and the plate'
+    partial      = .true.
+    LinearSolver = 'vf'
+    chaparral_Amax     = 33.0
+    chaparral_rParam   = 1.0, 1.0d-14, 50.0d0, 1.0d-6, 1.0d-6, 2.0d0, 1.0d-8, 1.0d-4
+    chaparral_iParam   = 1, 3, 1, 1, 0, 0, 40, 25, 20, 100, 25, 1, 1000, 3, 2, 100, 3, 1, 0, 0, 1
+
+    outfile       = '102.vf'
+    outfiletype   = 'binary'
+
+/
+
+
+&OUTPUTS
+
+	Output_T = 0.0,50.0
+	Output_Dt = 50.,
+	short_output_dt_multiplier = 1
+	xml_output_dt_multiplier = 1
+/
+
+ 
+&PHYSICS
+
+	fluid_flow = .false.,
+	heat_conduction = .true.,
+	phase_change = .false.,
+        electromagnetics = .false.,
+
+/
+
+&PHYSICAL_CONSTANTS
+
+	absolute_zero = 0.0
+
+/
+
+&NONLINEAR_SOLVER
+
+      name                   = 'nk',
+      method                 = 'nk',
+      linear_solver_name     = 'nk',
+      convergence_criterion  = 1.0e-06
+      maximum_iterations     = 1000
+      use_damper              = .true., 
+      damper_parameters       = 0.5, 1.5, 1, 1, 
+
+/
+
+&NONLINEAR_SOLVER
+
+      name                   = 'ain',
+      method                 = 'ain',
+      linear_solver_name     = 'nk',
+      convergence_criterion  = 1.0e-06
+      maximum_iterations     = 1000
+      use_damper              = .true., 
+      damper_parameters       = 0.5, 1.5, 1, 1, 
+
+/
+ 
+&LINEAR_SOLVER
+
+      name                   = 'nk',
+      method                 = 'gmres',
+      preconditioning_method = 'ssor',
+      preconditioning_steps  = 2,
+      relaxation_parameter   = 1.40,
+      convergence_criterion  = 1.0e-04
+
+/
+
+&LINEAR_SOLVER 
+
+    name                    = 'vf', 
+    method                  = 'gmres', 
+    stopping_criterion      = '||r||/||r0||',
+    convergence_criterion   = 1.0e-8
+    preconditioning_method  = 'none'
+    maximum_iterations      = 150
+
+/
+
+&NUMERICS
+
+	fourier_number              = 500.,
+
+	dt_constant = 1.0
+
+	energy_nonlinear_solution = 'ain',
+	enclosure_flux_convergence = 1.0e-7
+/
+ 
+Symmetry boundary condition 
+&BC
+  
+       Surface_Name     = 'from mesh file',
+       Mesh_Surface     = 4
+
+       BC_Variable = 'temperature',
+       BC_Type     = 'hneumann',
+       BC_Name     = 'Symmetry boundary conditions'
+/
+
+ 
+&BC
+
+       Surface_Name     = 'from mesh file',
+       mesh_surface     = 1
+ 
+       BC_Variable = 'temperature',
+       BC_Type     = 'enclosure_radiation',
+       BC_name = 'inner surface of sphere',
+       BC_Value = 101, 0.8, 300.
+/
+ 
+&BC
+
+       Surface_Name     = 'from mesh file',
+       mesh_surface     = 2
+       BC_Name = 'outer surface of half sphere', 
+
+       BC_Variable = 'temperature',
+       BC_Type     = 'enclosure_radiation',
+       BC_Value    = 102, 0.8, 300.
+
+/
+ 
+&BC
+
+       Surface_Name     = 'from mesh file',
+       mesh_surface     = 3
+       BC_Name = 'inner surface of the plate',
+
+       BC_Variable = 'temperature',
+       BC_Type     = 'enclosure_radiation',
+       BC_Value    = 102, 0.8, 300.
+
+/
+
+&BODY
+	Surface_Name = 'from mesh file',
+	mesh_material_number = 1,
+	Material_Number = 2,
+ 
+	Temperature = 300.0,
+/
+ 
+&BODY
+        Surface_Name = 'from mesh file',
+        mesh_material_number = 2,
+        Material_Number = 1,
+
+        Temperature = 300.0,
+/
+
+&BODY
+        Surface_Name = 'from mesh file',
+        mesh_material_number = 3,
+        Material_Number = 1,
+
+        Temperature = 900.0,
+/
+ 
+&MATERIAL
+	immobile = .true.,
+
+	Material_Number     = 1,
+	Material_Name       = 'graphite',
+	Priority = 1,
+ 
+	Density = 1770.,
+
+	Cp_Constants           = 1600.,
+	Conductivity_Constants = 100.,
+
+        EM_Conductivity_Constants = 5.618e4,
+        EM_Permittivity_Constants = 1.0,
+        EM_Permeability_Constants = 1.0,
+/
+
+
+&MATERIAL
+
+        immobile = .false.,
+
+        Material_Number     = 2,
+        Material_Name       = 'vacuum',
+        Material_Feature = 'background',
+        Priority = 2,
+ 
+        Density = 0.0,
+
+        Cp_Constants           = 0.0,
+        Conductivity_Constants = 0.0,
+
+        void_temperature = 300.,
+
+/
+

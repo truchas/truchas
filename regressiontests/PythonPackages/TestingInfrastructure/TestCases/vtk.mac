@@ -1,0 +1,17 @@
+write 
+vtk
+static_drop_output/static_drop.TBrook.xml
+-
+-
+ascii
+ascii.vtk
+all
+write 
+vtk
+static_drop_output/static_drop.TBrook.xml
+-
+-
+binary
+binary.vtk
+all
+q

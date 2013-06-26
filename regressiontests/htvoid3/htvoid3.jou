@@ -1,0 +1,36 @@
+## /opt/cubit/12.2-44513/bin/clarox
+## Cubit Version 12.2
+## Cubit Build 44513
+## Revised 2010-10-07 12:42:34 -0600 (Thu, 07 Oct 2010)
+## Running 12/10/2011 05:49:59 PM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 7 y 1.4 z 0.2
+webcut volume 1 with plane yplane offset 0.5 noimprint nomerge
+webcut volume 1 with plane yplane offset -0.5 noimprint nomerge
+delete volume 2
+rotate volume all about x angle 90
+imprint volume all
+merge volume all
+
+volume 1 size 0.2
+mesh volume 1
+
+curve 41 scheme bias fine size 0.1 coarse size 0.2 start vertex 18
+curve 42 scheme bias fine size 0.1 coarse size 0.2 start vertex 20
+curve 43 scheme bias fine size 0.1 coarse size 0.2 start vertex 17
+curve 44 scheme bias fine size 0.1 coarse size 0.2 start vertex 19
+volume 3 size auto factor 5
+mesh volume 3
+
+block 1 volume 3 # channel
+block 2 volume 1 # lower wall
+
+sideset 1 surface 23 # left channel end
+sideset 2 surface 26 # right channel end
+sideset 5 surface 24 20 25 18 7 19 21 3 # exterior surfaces
+sideset 10 surface 17 both # lower channel/wall interface
+
+set large exodus file off
+export genesis "htvoid3.gen" overwrite

@@ -1,0 +1,390 @@
+Solid mechanics isothermal phase change test problem
+
+Constrained in the z direction, symmetry planes at x=0 and y=0.
+
+The block is then cooled from the bottom with a Dirichlet temperature
+BC.  The problems runs to a point where only some of the solid has
+transformed.  Thermal stresses arise from the fact that the top and
+bottom are constrained in the normal z direction and one phase change
+occurs at T=400 and another between T=375 and T=350.
+
+================================================================================
+
+Dave Korzekwa, MST6, dak@lanl.gov
+
+Andrew Kuprat, T-1, kuprat@lanl.gov (modification for AIN-solver)
+
+================================================================================
+
+define a three-dimensional mesh
+
+ 2 x  3 x 4  cells
+ 2 x  3 x 4  cm
+
+
+&MESH
+
+    ncell  = 2,3,3
+    coord  = 0.0, 0.0, 0.0, 2.0e-2, 3.0e-2, 4.0e-2
+
+/
+
+define the solid material geometry and the initial conditions
+
+&BODY
+
+    surface_name     = 'background'
+    material_number  = 1
+    temperature      = 5.0e+02, 
+
+/
+
+define the boundary conditions:
+
+x = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'x-displacement', 
+    bc_value         = 0.0
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+x = 2.0e-2 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = -2.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = -2.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'x-displacement', 
+    bc_value         = 0.0
+
+/
+
+y = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_y          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'y-displacement', 
+    bc_value         = 0.0e+00
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_y          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+y = 3.0e-2 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_y          = 1.0e+00, 
+    conic_constant   = -3.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_y          = 1.0e+00, 
+    conic_constant   = -3.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'y-displacement', 
+    bc_value         = 0.0e+00
+
+/
+
+z = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'z-displacement'
+    bc_value         = 0.0e+00
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'dirichlet'
+    bc_value         = 3.0e+02
+
+/
+
+z = 4.0 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = -4.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+define the material properties (aluminum, SI units)
+Elastic constants (stresses) in MPa to make test checking easier 
+
+&MATERIAL
+
+    material_number               = 1, 
+    priority                      = 1, 
+    material_name                 = 'aluminum', 
+    material_feature              = 'background', 
+    density                       = 2.70e+03, 
+    cp_constants                  = 9.00e+02
+    conductivity_constants        = 2.40e+02, 
+    Lame1_Constants               = 5.20e+10, 
+    Lame2_Constants               = 2.60e+10, 
+    CTE_Constants                 = 2.20e-05, 
+    Stress_Reference_Temperature  = 5.0e+02, 
+    immobile                      = .true.
+/
+
+Bogus phase change material
+
+&MATERIAL
+
+    material_number               = 2, 
+    priority                      = 2, 
+    material_name                 = 'PC-aluminum', 
+    density                       = 2.673e+03, 
+    cp_constants                  = 1.2e+3, 
+    conductivity_constants        = 2.70e+02, 
+    Lame1_Constants               = 5.20e+10, 
+    Lame2_Constants               = 2.60e+10, 
+    CTE_Constants                 = 2.1e-05, 
+    Stress_Reference_Temperature  = 4.0e2, 
+    immobile                      = .true.
+
+/
+
+&MATERIAL
+
+    material_number               = 3, 
+    priority                      = 3, 
+    material_name                 = 'PC-aluminum_2', 
+    density                       = 2.6865e+03, 
+    cp_constants                  = 1.2e+3, 
+    conductivity_constants        = 2.70e+02, 
+    Lame1_Constants               = 5.20e+10, 
+    Lame2_Constants               = 2.60e+10, 
+    CTE_Constants                 = 2.0e-05, 
+    Stress_Reference_Temperature  = 4.0e2, 
+    immobile                      = .true.
+
+/
+
+
+&PHASE_CHANGE_PROPERTIES
+
+    phase_change_active       = .true.,
+    phase_change_type         = 'isothermal',
+    phase_change_model        = 'none',
+    hi_temp_phase_material_id = 1,
+    lo_temp_phase_material_id = 2,
+    latent_heat               = 10000.0,
+    melting_temperature       = 400.0
+
+/
+
+&PHASE_CHANGE_PROPERTIES
+
+    phase_change_active       = .true.,
+    phase_change_type         = 'non_isothermal',
+    phase_change_model        = 'none',
+    hi_temp_phase_material_id = 2,
+    lo_temp_phase_material_id = 3,
+    latent_heat               = 10000.0,
+    liquidus_temp             = 375.0,
+    melting_temperature       = 350.0
+ 
+/
+
+&PHYSICS
+
+    fluid_flow                    = .false., 
+    heat_conduction               = .true., 
+    solid_mechanics               = .true.
+    solid_mechanics_phase_change  = .true.,
+    phase_change                  = .true., 
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'displacement nk', 
+    method                  = 'fgmres', 
+    preconditioning_steps   = 4, 
+    relaxation_parameter    = 1.0, 
+    preconditioning_method  = 'tm_ssor', 
+    convergence_criterion   = 1.0e-10, 
+    stopping_criterion      = '||r||/||r0||'
+    maximum_iterations      = 180, 
+    output_mode             = 'none'
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'ht-pc precon', 
+    method                  = 'none', 
+    preconditioning_method  = 'ssor', 
+    preconditioning_steps   = 4, 
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'displacement precon', 
+    method                  = 'none', 
+    preconditioning_steps   = 4, 
+    relaxation_parameter    = 1.0, 
+    preconditioning_method  = 'tm_ssor', 
+
+/
+
+&NONLINEAR_SOLVER 
+
+    name                    = 'ht-pc solve', 
+    method                  = 'ain', 
+    linear_solver_name      = 'ht-pc precon', 
+    convergence_criterion   = 1.0e-12,
+    output_mode             = 'none', 
+    AIN_max_vectors         = 20
+    AIN_vector_tolerance    = 0.01
+    maximum_iterations      = 100
+
+/
+
+LINEAR_SOLVER
+
+    name                    = 'nk', 
+    method                  = 'fgmres', 
+    preconditioning_method  = 'ssor', 
+    preconditioning_steps   = 2, 
+    stopping_criterion      = '||r||/||r0||'
+    convergence_criterion   = 1.0e-3, 
+
+/
+
+NONLINEAR_SOLVER 
+
+    name                    = 'ht-pc solve', 
+    method                  = 'nk', 
+    linear_solver_name      = 'nk', 
+    convergence_criterion   = 1.0e-8,
+    output_mode             = 'none', 
+    use_damper              = .false., 
+    Damper_Parameters       = 0.5, 2, 1, 1, 
+    perturbation_parameter  = 1e-6, 
+
+/
+
+
+&NONLINEAR_SOLVER 
+
+    name                    = 'displacement solve', 
+    method                  = 'ain', 
+    linear_solver_name      = 'displacement precon', 
+    convergence_criterion   = 1.0e-10, 
+    AIN_max_vectors         = 20
+    AIN_vector_tolerance    = 0.01
+    maximum_iterations      = 100
+
+/
+
+constant time increment
+loose solver tolerance
+
+&NUMERICS
+    dt_init                          = 1.00e-2,
+    dt_max                           = 5.0e-2,
+    dt_grow                          = 1.01,
+    energy_nonlinear_solution        = 'ht-pc solve', 
+    displacement_nonlinear_solution  = 'displacement solve', 
+/
+
+Run for 100 sec
+
+&OUTPUTS
+
+    output_t                     = 0.0e+00, 6.0e+00, 
+    output_dt                    = 1.0e-2, 
+    xml_output_dt_multiplier            = 20
+    short_output_dt_multiplier   = 1, 
+
+/
+
+&PARALLEL_PARAMETERS
+
+    Partitioner  = 'automatic', 
+
+/

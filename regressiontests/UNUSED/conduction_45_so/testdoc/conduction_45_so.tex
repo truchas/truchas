@@ -1,0 +1,84 @@
+\documentclass[12pt]{article}
+
+\usepackage{times}
+\usepackage{latexmake}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+
+
+\textheight 9.35in \textwidth 6.8in %
+\oddsidemargin -0.15in \evensidemargin -0.15in
+\topmargin -15mm
+\footskip 8mm
+\headheight 13pt
+
+
+\begin{document}
+
+\begin{center}
+{\large {\bf Discontinuous Conductivity at a 45 Degree Angle to the Heat Flux}}
+\end{center}
+
+\subsubsection*{Objective}
+
+
+This test problem tests the case of a discontinuous conductivity in
+the heat transfer model. The interface between the materials with
+different conductivities is chosen such that it is not aligned with
+the mesh. We test with the support operator discretization. 
+
+
+\subsubsection*{Definition}
+
+We consider the 2D conductive heat transfer problem that is defined as
+follows.
+$$
+-\nabla\cdot K\nabla T = 0.
+$$
+The problem domain is the cube $[0,1]^2$, which is
+discretized using an orthogonal mesh of size $10 \times
+10 \times 10$. The conductivity is piecewise constant
+$$
+K(T) = \left\{\begin{array}{l}
+              1,\quad x > y \\
+              1000,\quad x < y
+             \end{array}
+             \right.
+$$
+The boundary conditions are a constant Dirichlet boundary conditions
+on the boundaries $x=0$ and $x=1$ 
+\begin{eqnarray*}
+T(x,y,z) &=& 0,\quad x=0 \\
+T(x,y,z) &=& 100,\quad x=1. 
+\end{eqnarray*} 
+All other boundaries have homogeneous Neumann boundary conditions
+(insulation). 
+
+\subsubsection*{Metrics}
+
+We compare the temperature at the final time step to a reference
+solution (golden output).
+We use the $\ell^\infty$-norm for this comparison. 
+
+\subsubsection*{Truchas Model}
+
+To run this example in Truchas, we select the heat conduction model
+exclusively and a constant time step of $0.1$, and an orthogonal
+pseudo-2D mesh that has a thickness of one in the $z$-direction. 
+The boundary conditions are selected as described above.
+The interface between the two materials with different conductivities
+is modeled using the least squares model.
+The heat transfer problem is solved using Newton Krylov with flexible
+GMRES as a preconditioner, which is itself preconditioned by SSOR, and
+we run truchas for ten time steps. We use the support  operators to
+discretize the gradient. 
+
+
+\subsubsection*{Results}
+
+The results of these runs are compared to a reference solution (golden
+output). 
+
+\end{document}

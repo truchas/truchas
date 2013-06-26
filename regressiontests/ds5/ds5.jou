@@ -1,0 +1,24 @@
+create sphere radius 1 inner radius 0.3333333333333333 xpositive
+webcut volume 1 with plane yplane offset 0 rotate 30 about z noimprint nomerge
+webcut volume 1 with plane yplane offset 0 rotate -30 about z noimprint nomerge
+delete volume 2 1
+webcut volume 3 with plane zplane offset 0 rotate 1 about y noimprint nomerge
+webcut volume 3 with plane zplane offset 0 rotate -1 about y noimprint nomerge
+delete volume 3 4
+compress all
+surface 2 size 0.02
+surface 2 scheme pave
+mesh surface 2
+surface 2 smooth scheme centroid area pull
+smooth surface 2
+curve 12 interval 1
+curve 12 scheme equal
+volume 1 scheme sweep source surface 2 target surface 1 rotate off
+volume 1 sweep smooth copy
+mesh volume 1
+block 1 volume 1
+sideset 1 surface 3
+sideset 2 surface 6
+sideset 3 surface 2 5 1 4
+set large exodus file off
+export genesis "ds5.gen" overwrite

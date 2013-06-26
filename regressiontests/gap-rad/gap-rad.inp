@@ -1,0 +1,139 @@
+GAP RADIATION TEST 1 (GAP-RAD)
+------------------------------
+1D heat conduction on [-1,1] with an internal interface at x=0, where a gap
+radiation interface condition is imposed.  No heat flux at either end.  The
+initial temperature is ~1.5 on the left and ~0.5 on the right.  This problem
+has an approximate analytic solution in the form of a 2-term asymptotic
+expansion in powers of 1/k, where k=100 is the thermal conductivity.  This
+test exercises interface condition implemented in the 'HTSD' solver; the
+associated gap-rad-flow test exercises the implementation in the 'FHT' solver.
+
+&MESH
+  mesh_file = 'gap-rad.g'
+  mesh_file_format = 'ExodusII'
+  interface_side_sets = 2
+/
+
+&OUTPUTS
+  Output_T = 0.0, 0.5
+  Output_Dt = 5.0
+/
+
+&PROBE
+  probe_name = 'left end'
+  probe_coords = -0.96875, 0.0, 0.0
+/
+
+&PROBE
+  probe_name = 'gap left'
+  probe_coords = -0.03125, 0.0, 0.0
+/
+
+&PROBE
+  probe_name = 'gap right'
+  probe_coords = 0.03125, 0.0, 0.0
+/
+
+&PROBE
+  probe_name = 'right end'
+  probe_coords = 0.96875, 0.0, 0.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  fluid_flow = .false.
+/
+
+&PHYSICAL_CONSTANTS
+  stefan_boltzmann = 0.125
+/
+
+In order to hit the final time exactly we are using a fixed step size.
+Towards the end this is much smaller than BDF2 would want and the nonlinear
+solver 'converges' in a single iteration (just a FP iteration -- not good).
+In order to force more iterations we have set nlk_tol much smaller than
+one would use under normal circumstances (0.1-0.01).  Note that the solver
+will exit after the first iteration only when the error is 100 times smaller
+than this.  Without this hack the final error is larger than it should be
+because of the accumulation of local errors over many steps due to the
+nonlinear system not being solved accurately enough at late times.
+
+&DIFFUSION_SOLVER
+  stepping_method    = 'Adaptive BDF2'
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 1.0e-4
+  max_nlk_itr        = 8
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_constant = 9.765625e-4 ! = 1/1024
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'all external sides'
+  variable = 'temperature'
+  condition = 'flux'
+  Face_Set_IDs = 1
+  data_constant = 0.0
+/
+
+&DS_INTERFACE_CONDITION
+  name = 'gap'
+  variable = 'temperature'
+  condition = 'radiation'
+  Face_Set_IDs = 2
+  data_constant = 0.5
+/
+
+Left block (x<0):
+Desired initial state is T = 1.5 - (5/16) (eps/k) (1+x)^2 + O(1/k^2)
+where eps is the gap emissivity and k is the thermal conductivity.
+T = 1.5*(1 - (5/48) 10^-2 (1-r)^2), where here r = |x|
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 1.5
+  tg_r_constants = -0.1041666667e-2, 0.2083333333e-2,  -0.1041666667e-2
+  tg_r_exponents = 0, 1, 2
+/
+
+Right block (x>0):
+Desired initial state is T = 0.5 + (5/16) (eps/k) (1-x)^2 + O(1/k^2)
+where eps is the gap emissivity and k is the thermal conductivity.
+T = 0.5*(1 + (5/16) 10^-2 (1-r)^2), where here r = |x|
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  temperature = 0.5
+  tg_r_constants = 0.3125e-2, -0.625e-2, 0.3125e-2
+  tg_r_exponents = 0, 1, 2
+/
+
+&MATERIAL
+  material_number = 1
+  material_name = 'solid'
+  material_feature = 'background'
+  density = 1.0
+  immobile = .true.
+/
+
+&PHASE
+  name = 'solid'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 1.0e2
+/
+
+&MATERIAL_SYSTEM
+  name = 'solid'
+  phases = 'solid'
+/

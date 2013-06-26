@@ -1,0 +1,14 @@
+#This file provides a set of default map rules for variables in the Truchas restart.
+#The user may change these rules to suit their application. 
+#There are 2 choices : 'conservative' and 'constants_preserving'.
+#If neither of these choices are chosen then a 'raw' map is performed whereby neither
+#constraint is enforced.
+----------------------------------------------------------------------------------
+	VARIABLE		    MAP	 
+----------------------------------------------------------------------------------
+	Z_RHO			    constants_preserving
+	Z_ENTHALPY		    constants_preserving
+	Z_TEMP  	            constants_preserving
+	PHASECONC		    constants_preserving
+	VOF			    constants_preserving			    
+	

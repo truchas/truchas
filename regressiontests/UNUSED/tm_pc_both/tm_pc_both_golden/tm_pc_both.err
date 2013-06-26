@@ -1,0 +1,1272 @@
+ vfParallelSize =          10000000
+         WARNING: INTERFACES namelist not found: using defaults
+
+         Using default linear solver parameters for displacement linear solution.
+
+         Using nonlinear solver "ht-pc solve" for energy nonlinear solution.
+
+         Using nonlinear solver "displacement solve" for displacement nonlinear solution.
+
+         Using default linear solver "displacement nk" for nonlinear solver "ht-pc solve".
+
+         Using linear solver "ht-pc precon" for nonlinear solver "ht-pc solve".
+
+         Using default linear solver "displacement nk" for nonlinear solver "displacement solve".
+
+         Using default linear solver "ht-pc precon" for nonlinear solver "displacement solve".
+
+         Using linear solver "displacement precon" for nonlinear solver "displacement solve".
+
+         Reading BC namelist #  1: Unnamed
+
+         Reading BC namelist #  2: Unnamed
+
+         Reading BC namelist #  3: Unnamed
+
+         Reading BC namelist #  4: Unnamed
+
+         Reading BC namelist #  5: Unnamed
+
+         Reading BC namelist #  6: Unnamed
+
+         Reading BC namelist #  7: Unnamed
+
+         Reading BC namelist #  8: Unnamed
+
+         Reading BC namelist #  9: Unnamed
+
+         Reading BC namelist # 10: Unnamed
+
+         Reading BC namelist # 11: Unnamed
+
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.20000E-03 (     9 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   1.20000E-03 (     9 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   1.20000E-03 (     9 faces)
+    Boundary conditions in BC namelist  4 will be applied on an area of   1.20000E-03 (     9 faces)
+    Boundary conditions in BC namelist  5 will be applied on an area of   8.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist  6 will be applied on an area of   8.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist  7 will be applied on an area of   8.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist  8 will be applied on an area of   8.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist  9 will be applied on an area of   6.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist 10 will be applied on an area of   6.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist 11 will be applied on an area of   6.00000E-04 (     6 faces)
+
+ Calculating initial thermo-elastic state.
+               0  Thermo-elastic iterations (linear)
+               1  Thermo-elastic iterations (nonlinear)
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+          2: t =   1.00000E-02, dt(growth) =   1.01000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+          3: t =   2.01000E-02, dt(growth) =   1.02010E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+          4: t =   3.03010E-02, dt(growth) =   1.03030E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+          5: t =   4.06040E-02, dt(growth) =   1.04060E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+          6: t =   5.10101E-02, dt(growth) =   1.05101E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+          7: t =   6.15202E-02, dt(growth) =   1.06152E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+          8: t =   7.21354E-02, dt(growth) =   1.07214E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+          9: t =   8.28567E-02, dt(growth) =   1.08286E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         10: t =   9.36853E-02, dt(growth) =   1.09369E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         11: t =   1.04622E-01, dt(growth) =   1.10462E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         12: t =   1.15668E-01, dt(growth) =   1.11567E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         13: t =   1.26825E-01, dt(growth) =   1.12683E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         14: t =   1.38093E-01, dt(growth) =   1.13809E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         15: t =   1.49474E-01, dt(growth) =   1.14947E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         16: t =   1.60969E-01, dt(growth) =   1.16097E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         17: t =   1.72579E-01, dt(growth) =   1.17258E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         18: t =   1.84304E-01, dt(growth) =   1.18430E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         19: t =   1.96147E-01, dt(growth) =   1.19615E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         20: t =   2.08109E-01, dt(growth) =   1.20811E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         21: t =   2.20190E-01, dt(growth) =   1.22019E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         22: t =   2.32392E-01, dt(growth) =   1.23239E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         23: t =   2.44716E-01, dt(growth) =   1.24472E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         24: t =   2.57163E-01, dt(growth) =   1.25716E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         25: t =   2.69735E-01, dt(growth) =   1.26973E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         26: t =   2.82432E-01, dt(growth) =   1.28243E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         27: t =   2.95256E-01, dt(growth) =   1.29526E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         28: t =   3.08209E-01, dt(growth) =   1.30821E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         29: t =   3.21291E-01, dt(growth) =   1.32129E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         30: t =   3.34504E-01, dt(growth) =   1.33450E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         31: t =   3.47849E-01, dt(growth) =   1.34785E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         32: t =   3.61327E-01, dt(growth) =   1.36133E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         33: t =   3.74941E-01, dt(growth) =   1.37494E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         34: t =   3.88690E-01, dt(growth) =   1.38869E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         35: t =   4.02577E-01, dt(growth) =   1.40258E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         36: t =   4.16603E-01, dt(growth) =   1.41660E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         37: t =   4.30769E-01, dt(growth) =   1.43077E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         38: t =   4.45076E-01, dt(growth) =   1.44508E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         39: t =   4.59527E-01, dt(growth) =   1.45953E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         40: t =   4.74123E-01, dt(growth) =   1.47412E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         41: t =   4.88864E-01, dt(growth) =   1.48886E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         42: t =   5.03752E-01, dt(growth) =   1.50375E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         43: t =   5.18790E-01, dt(growth) =   1.51879E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         44: t =   5.33978E-01, dt(growth) =   1.53398E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         45: t =   5.49318E-01, dt(growth) =   1.54932E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         46: t =   5.64811E-01, dt(growth) =   1.56481E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         47: t =   5.80459E-01, dt(growth) =   1.58046E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         48: t =   5.96263E-01, dt(growth) =   1.59626E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         49: t =   6.12226E-01, dt(growth) =   1.61223E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         50: t =   6.28348E-01, dt(growth) =   1.62835E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         51: t =   6.44632E-01, dt(growth) =   1.64463E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         52: t =   6.61078E-01, dt(growth) =   1.66108E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         53: t =   6.77689E-01, dt(growth) =   1.67769E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         54: t =   6.94466E-01, dt(growth) =   1.69447E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         55: t =   7.11410E-01, dt(growth) =   1.71141E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         56: t =   7.28525E-01, dt(growth) =   1.72852E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         57: t =   7.45810E-01, dt(growth) =   1.74581E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         58: t =   7.63268E-01, dt(growth) =   1.76327E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         59: t =   7.80901E-01, dt(growth) =   1.78090E-02
+            0 Energy iterations (linear)
+           17 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+         60: t =   7.98710E-01, dt(growth) =   1.79871E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         61: t =   8.16697E-01, dt(growth) =   1.81670E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+         62: t =   8.34864E-01, dt(growth) =   1.83486E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+         63: t =   8.53212E-01, dt(growth) =   1.85321E-02
+            0 Energy iterations (linear)
+           15 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+         64: t =   8.71744E-01, dt(growth) =   1.87174E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+         65: t =   8.90462E-01, dt(growth) =   1.89046E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+         66: t =   9.09366E-01, dt(growth) =   1.90937E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+         67: t =   9.28460E-01, dt(growth) =   1.92846E-02
+            0 Energy iterations (linear)
+            6 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           20 Solid mechanics iterations (nonlinear)
+
+         68: t =   9.47745E-01, dt(growth) =   1.94774E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         69: t =   9.67222E-01, dt(growth) =   1.96722E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         70: t =   9.86894E-01, dt(growth) =   1.98689E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         71: t =   1.00676E+00, dt(growth) =   2.00676E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         72: t =   1.02683E+00, dt(growth) =   2.02683E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         73: t =   1.04710E+00, dt(growth) =   2.04710E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         74: t =   1.06757E+00, dt(growth) =   2.06757E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         75: t =   1.08825E+00, dt(growth) =   2.08825E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         76: t =   1.10913E+00, dt(growth) =   2.10913E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         77: t =   1.13022E+00, dt(growth) =   2.13022E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         78: t =   1.15152E+00, dt(growth) =   2.15152E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         79: t =   1.17304E+00, dt(growth) =   2.17304E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         80: t =   1.19477E+00, dt(growth) =   2.19477E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+         81: t =   1.21672E+00, dt(growth) =   2.21672E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         82: t =   1.23888E+00, dt(growth) =   2.23888E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         83: t =   1.26127E+00, dt(growth) =   2.26127E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         84: t =   1.28388E+00, dt(growth) =   2.28388E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         85: t =   1.30672E+00, dt(growth) =   2.30672E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         86: t =   1.32979E+00, dt(growth) =   2.32979E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         87: t =   1.35309E+00, dt(growth) =   2.35309E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         88: t =   1.37662E+00, dt(growth) =   2.37662E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         89: t =   1.40038E+00, dt(growth) =   2.40038E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         90: t =   1.42439E+00, dt(growth) =   2.42439E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         91: t =   1.44863E+00, dt(growth) =   2.44863E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         92: t =   1.47312E+00, dt(growth) =   2.47312E-02
+            0 Energy iterations (linear)
+            8 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         93: t =   1.49785E+00, dt(growth) =   2.49785E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         94: t =   1.52283E+00, dt(growth) =   2.52283E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         95: t =   1.54806E+00, dt(growth) =   2.54806E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         96: t =   1.57354E+00, dt(growth) =   2.57354E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         97: t =   1.59927E+00, dt(growth) =   2.59927E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         98: t =   1.62527E+00, dt(growth) =   2.62527E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+         99: t =   1.65152E+00, dt(growth) =   2.65152E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        100: t =   1.67803E+00, dt(growth) =   2.67803E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        101: t =   1.70481E+00, dt(growth) =   2.70481E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        102: t =   1.73186E+00, dt(growth) =   2.73186E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        103: t =   1.75918E+00, dt(growth) =   2.75918E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        104: t =   1.78677E+00, dt(growth) =   2.78677E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        105: t =   1.81464E+00, dt(growth) =   2.81464E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        106: t =   1.84279E+00, dt(growth) =   2.84279E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        107: t =   1.87121E+00, dt(growth) =   2.87121E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        108: t =   1.89993E+00, dt(growth) =   2.89993E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        109: t =   1.92893E+00, dt(growth) =   2.92893E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        110: t =   1.95822E+00, dt(growth) =   2.95822E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        111: t =   1.98780E+00, dt(growth) =   2.98780E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        112: t =   2.01768E+00, dt(growth) =   3.01768E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        113: t =   2.04785E+00, dt(growth) =   3.04785E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        114: t =   2.07833E+00, dt(growth) =   3.07833E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        115: t =   2.10911E+00, dt(growth) =   3.10911E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        116: t =   2.14020E+00, dt(growth) =   3.14020E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        117: t =   2.17161E+00, dt(growth) =   3.17161E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        118: t =   2.20332E+00, dt(growth) =   3.20332E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        119: t =   2.23536E+00, dt(growth) =   3.23536E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        120: t =   2.26771E+00, dt(growth) =   3.26771E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        121: t =   2.30039E+00, dt(growth) =   3.30039E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        122: t =   2.33339E+00, dt(growth) =   3.33339E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        123: t =   2.36672E+00, dt(growth) =   3.36672E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        124: t =   2.40039E+00, dt(growth) =   3.40039E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        125: t =   2.43440E+00, dt(growth) =   3.43440E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        126: t =   2.46874E+00, dt(growth) =   3.46874E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        127: t =   2.50343E+00, dt(growth) =   3.50343E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        128: t =   2.53846E+00, dt(growth) =   3.53846E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        129: t =   2.57385E+00, dt(growth) =   3.57385E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        130: t =   2.60958E+00, dt(growth) =   3.60958E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        131: t =   2.64568E+00, dt(growth) =   3.64568E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        132: t =   2.68214E+00, dt(growth) =   3.68214E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        133: t =   2.71896E+00, dt(growth) =   3.71896E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        134: t =   2.75615E+00, dt(growth) =   3.75615E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        135: t =   2.79371E+00, dt(growth) =   3.79371E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        136: t =   2.83165E+00, dt(growth) =   3.83165E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        137: t =   2.86996E+00, dt(growth) =   3.86996E-02
+            0 Energy iterations (linear)
+           11 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        138: t =   2.90866E+00, dt(growth) =   3.90866E-02
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        139: t =   2.94775E+00, dt(growth) =   3.94775E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        140: t =   2.98723E+00, dt(growth) =   3.98723E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        141: t =   3.02710E+00, dt(growth) =   4.02710E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        142: t =   3.06737E+00, dt(growth) =   4.06737E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        143: t =   3.10804E+00, dt(growth) =   4.10804E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        144: t =   3.14912E+00, dt(growth) =   4.14912E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        145: t =   3.19062E+00, dt(growth) =   4.19062E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        146: t =   3.23252E+00, dt(growth) =   4.23252E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        147: t =   3.27485E+00, dt(growth) =   4.27485E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        148: t =   3.31760E+00, dt(growth) =   4.31760E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        149: t =   3.36077E+00, dt(growth) =   4.36077E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           16 Solid mechanics iterations (nonlinear)
+
+        150: t =   3.40438E+00, dt(growth) =   4.40438E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           16 Solid mechanics iterations (nonlinear)
+
+        151: t =   3.44842E+00, dt(growth) =   4.44842E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        152: t =   3.49291E+00, dt(growth) =   4.49291E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        153: t =   3.53784E+00, dt(growth) =   4.53784E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        154: t =   3.58321E+00, dt(growth) =   4.58321E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        155: t =   3.62905E+00, dt(growth) =   4.62905E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        156: t =   3.67534E+00, dt(growth) =   4.67534E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        157: t =   3.72209E+00, dt(growth) =   4.72209E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        158: t =   3.76931E+00, dt(growth) =   4.76931E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        159: t =   3.81700E+00, dt(growth) =   4.81700E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        160: t =   3.86517E+00, dt(growth) =   4.86517E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        161: t =   3.91383E+00, dt(growth) =   4.91383E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        162: t =   3.96296E+00, dt(growth) =   4.96296E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        163: t =   4.01259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           17 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           16 Solid mechanics iterations (nonlinear)
+
+        164: t =   4.06259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           19 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        165: t =   4.11259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           18 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        166: t =   4.16259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           18 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        167: t =   4.21259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           19 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        168: t =   4.26259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           18 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        169: t =   4.31259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        170: t =   4.36259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           19 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           18 Solid mechanics iterations (nonlinear)
+
+        171: t =   4.41259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           19 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           19 Solid mechanics iterations (nonlinear)
+
+        172: t =   4.46259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           17 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           19 Solid mechanics iterations (nonlinear)
+
+        173: t =   4.51259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+           16 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           19 Solid mechanics iterations (nonlinear)
+
+        174: t =   4.56259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            6 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        175: t =   4.61259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        176: t =   4.66259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        177: t =   4.71259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        178: t =   4.76259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        179: t =   4.81259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        180: t =   4.86259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        181: t =   4.91259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        182: t =   4.96259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        183: t =   5.01259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           17 Solid mechanics iterations (nonlinear)
+
+        184: t =   5.06259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        185: t =   5.11259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        186: t =   5.16259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        187: t =   5.21259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        188: t =   5.26259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        189: t =   5.31259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        190: t =   5.36259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        191: t =   5.41259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        192: t =   5.46259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        193: t =   5.51259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        194: t =   5.56259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        195: t =   5.61259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        196: t =   5.66259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        197: t =   5.71259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        198: t =   5.76259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        199: t =   5.81259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        200: t =   5.86259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        201: t =   5.91259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+        202: t =   5.96259E+00, dt(maximum) =   5.00000E-02
+            0 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+            0 Solid mechanics iterations (linear)
+           15 Solid mechanics iterations (nonlinear)
+
+
+truchas terminated normally on 13 Apr 07 at 15:22:40

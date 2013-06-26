@@ -1,0 +1,17 @@
+write 
+vtk
+sloshing_flow_output/sloshing_flow.TBrook.xml
+-
+-
+ascii
+ascii.vtk
+all
+write 
+vtk
+sloshing_flow_output/sloshing_flow.TBrook.xml
+-
+-
+binary
+binary.vtk
+all
+q

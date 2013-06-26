@@ -1,0 +1,351 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                truchas
+   version:             2.3.dev
+   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+   build architecture:  Linux spider.mst6.lanl.gov 2.6.9-42.0.8.ELsmp #1 SMP Tue Jan 23 13:01:26 EST 2007 i686 athlon i386 GNU/Linux
+   build date/time:     26 Mar 07 11:09:45
+   build flags:         -u -C=all -g -gline -nan -maxcontin=99
+   build host:          spider.mst6.lanl.gov
+   run architecture:    Linux triumph.mst6.lanl.gov 2.6.9-42.0.8.ELsmp #1 SMP Tue Jan 23 13:01:26 EST 2007 i686
+   run host:            triumph.mst6.lanl.gov
+   run date/time:       27 Mar 07 13:26:07
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007. Los Alamos National Security, LLC.  This material
+   was produced under U.S. Government contract DE-AC52-06NA25396 for
+   Los Alamos National Laboratory (LANL), which is operated by Los
+   Alamos National Security, LLC for the U.S. Department of Energy.
+   The U.S. Government has rights to use, reproduce, and distribute
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
+   modified to produce derivative works, such modified software
+   should be clearly marked, so as not to confuse it with the
+   version available from LANL.
+
+   Additionally, this program is free software; you can redistribute
+   it and/or modify it under the terms of the GNU General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   Accordingly, this program is distributed in the hope that it will
+   be useful, but WITHOUT ANY WARRANTY; without even the implied
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-06-113.
+   Truchas is currently a beta version, as development is ongoing
+   and continuous, hence bugs are likely to be present. All aspects
+   of the Truchas software and its user interface are subject to
+   change without notice.
+
+================================================================================
+
+INPUT
+
+ Opening Input File ../shear_constr_heat_unstruc.inp:
+
+ Reading PARALLEL_PARAMETERS Namelist ...
+ vfParallelSize =          10000000
+ Reading PHYSICS Namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+ Reading MESH Namelist ...
+
+         Opened mesh file ../tiny_box_unstruc.g
+           containing     78 nodes and     34 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+         Finished this namelist read.
+
+         This is the last MATERIAL Namelist.
+
+         Identified  1 material(s)
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1     aluminum        1
+
+ PHASE_CHANGE_PROPERTIES Namelist:
+         WARNING: Phase changes not activated in physics namelist,
+         All phase changes have been disabled.
+
+         Finished this namelist read.
+
+ Reading INTERFACES Namelist ...
+
+         WARNING: INTERFACES namelist not found: using defaults
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       1    background
+
+         BODY Namelist number  1 will be used for background material ( 1)
+
+ Reading HEAT_SOURCE Namelist ...
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+
+         Reading LINEAR_SOLVER Namelist # 1 ...
+
+ Reading SO_SOLVER Namelist ...
+
+         WARNING: SO_SOLVER namelist not found! Using defaults.
+
+ Reading NONLINEAR_SOLVER Namelist(s) ...
+
+         Reading NONLINEAR_SOLVER Namelist # 1 ...
+
+ Reading NUMERICS Namelist ...
+
+         Using default linear solver parameters for displacement linear solution.
+
+         Using nonlinear solver "displacement solve" for displacement nonlinear solution.
+
+         Using linear solver "displacement nk" for nonlinear solver "displacement solve".
+
+ Reading BC Namelists ...
+
+         Reading BC namelist #  1: Unnamed
+
+         Reading BC namelist #  2: Unnamed
+
+         Reading BC namelist #  3: Unnamed
+
+         Reading BC namelist #  4: Unnamed
+
+         Reading BC namelist #  5: Unnamed
+
+         Reading BC namelist #  6: Unnamed
+
+         Reading BC namelist #  7: Unnamed
+
+         Reading BC namelist #  8: Unnamed
+
+         Reading BC namelist #  9: Unnamed
+
+         Reading BC namelist # 10: Unnamed
+
+         Reading BC namelist # 11: Unnamed
+
+         Reading BC namelist # 12: Unnamed
+
+         Reading BC namelist # 13: Unnamed
+
+         Reading BC namelist # 14: Unnamed
+
+         Finished this namelist read.
+
+ Reading SENS_VARIABLE Namelists ...
+
+         This is the last SENS_VARIABLE Namelist.
+
+         Identified  0 design variable(s)
+
+ Reading SENS_FUNCTION Namelists ...
+
+         This is the last SENS_FUNCTION Namelist.
+
+         Identified  0 response function(s)
+
+ Reading PROBE namelists ...
+
+         This is the last PROBE Namelist.
+
+         Identified  0 probe(s)
+ 
+ Closing Input File ../shear_constr_heat_unstruc.inp.
+
+================================================================================
+
+INITIALIZATION
+
+Allocating mesh derived types ... done.
+
+ Automatic partitioner selection: None
+
+ Reading ExodusII mesh file ../tiny_box_unstruc.g...
+ Closed ExodusII mesh file ../tiny_box_unstruc.g
+ Determining mesh partitions and permutation vectors.
+ 
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+ Establishing mesh connectivity for       204 faces ...
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are         66 external boundary faces.
+ Mesh connectivity established.
+
+ Finding all cell neighbors ... done.
+ 
+Allocating base derived types ...done.
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type Number     Face Type Number
+                   ------------ ------     --------- ------
+                      Hex          34       Point         0
+                      Prism         0       Line          0
+                      Pyramid       0       Triangle      0
+                      Tet           0       Quad        204
+
+                          Nodes               Cells
+                          -----               -----
+                              8 are shared by   1
+                             28 are shared by   2
+                              2 are shared by   3
+                             28 are shared by   4
+                              2 are shared by   5
+                              1 are shared by   6
+                              8 are shared by   8
+                              1 are shared by  10
+
+Computing cell geometry ... 
+                    Min        Cell      Max        Cell       Total
+                    ---        ----      ---        ----       -----
+       Volumes   4.5484E-07      33   1.2141E-06      27     2.4000E-05
+
+              0 out of     34 total cells are orthogonal
+    use_ortho_face_gradient = F
+    Using full pivoting for LSLR_ operators
+
+done.
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                   0.0000E+00       2.0000E-02
+                   0.0000E+00       3.0000E-02
+                   0.0000E+00       4.0000E-02
+
+ Finding face neighbors ... done.
+
+ Computing initial volume fractions ...
+
+ Volume fractions computed.
+ Initializing Displacement Boundary Conditions 
+
+ Locating cell faces for which BCs are to be applied ...
+
+         Node number   28 matches bc coordinates for x-displacement boundary condition
+
+         Node number   43 matches bc coordinates for x-displacement boundary condition
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.20000E-03 (    17 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   1.20000E-03 (    17 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   1.20000E-03 (    17 faces)
+    Boundary conditions in BC namelist  4 will be applied on an area of   1.20000E-03 (    17 faces)
+    Boundary conditions in BC namelist  5 will be applied on an area of   8.00000E-04 (     8 faces)
+    Boundary conditions in BC namelist  6 will be applied on an area of   8.00000E-04 (     8 faces)
+    Boundary conditions in BC namelist  7 will be applied on an area of   8.00000E-04 (    10 faces)
+    Boundary conditions in BC namelist  8 will be applied on an area of   6.00000E-04 (     8 faces)
+    Boundary conditions in BC namelist  9 will be applied on an area of   6.00000E-04 (     8 faces)
+    Boundary conditions in BC namelist 10 will be applied on an area of   6.00000E-04 (     8 faces)
+    Boundary conditions in BC namelist 11 will be applied on an area of   6.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist 12 will be applied on an area of   6.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist 13 will be applied on an area of   6.00000E-04 (     6 faces)
+    Boundary conditions in BC namelist 14 will be applied on an area of   0.00000E+00 (     0 faces)
+ Initializing Pressure Boundary Conditions
+           DIRICHLET:                   0 boundary points
+          REFLECTIVE:                  66 boundary points
+            EXTERIOR:                  66 boundary points
+             NEUMANN:                   0 boundary points
+            HNEUMANN:                  66 boundary points
+ Pressure BCs initialized.
+ Initializing Temperature Boundary Conditions
+              DIRICHLET:                8 boundary points
+             REFLECTIVE:               66 boundary points
+               EXTERIOR:               66 boundary points
+                NEUMANN:                0 boundary points
+               HNEUMANN:               58 boundary points
+              RADIATION:                0 boundary points
+    ENCLOSURE_RADIATION:                0 boundary points
+           HTC_EXTERNAL:                0 boundary points
+           HTC_INTERNAL:                0 boundary points
+                HTC_GAP:                0 boundary points
+ Temperature BCs initialized.
+
+ Finished BC initialization.
+
+ Finding control volume faces internal to cells ... 
+
+ Finding jacobians ... 
+
+ Inverting jacobians ... 
+done.
+
+ Finding control volume faces on external boundaries ...
+
+done.
+
+ Calculating initial thermo-elastic state. Done.
+
+              91  Thermo-elastic iterations (linear)
+               2  Thermo-elastic iterations (nonlinear)
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(constant) =   1.00000E-01
+           47 Solid mechanics iterations (linear)
+            1 Solid mechanics iterations (nonlinear)
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0000E-01 after     1 steps
+
+                     * * * * TIMING SUMMARY * * * *
+
+            TASK                TIME (sec)        % of PARENT TASK
+            ----                ----------        ----------------
+             Total              1.1900E+00            100.0%
+              Input             4.0000E-02             3.4%
+              Initialization    1.4000E-01             11.8%
+               Solid Mech Init  2.0000E-02              14.3%
+              Main Cycle        1.1000E+00             92.4%
+               Solid Mechanics  9.7000E-01              88.2%
+                Nonlinar Solve  9.7000E-01               100.0%
+                 Linear Solver  9.7000E-01                100.0%
+               Output           2.0000E-02              1.8%
+
+                           Communication Time
+                           ------------------
+                 Time for trace setup:         0.0000E+00
+                 Time for off-process gather:  0.0000E+00
+                 Time for off-process scatter: 0.0000E+00
+
+          Average CPU time per cell per cycle:  3.2353E+04 microseconds
+          Process virtual memory used:          4.97E+01   mb
+          words/cell:                             191668
+
+
+truchas terminated normally on 27 Mar 07 at 13:26:09

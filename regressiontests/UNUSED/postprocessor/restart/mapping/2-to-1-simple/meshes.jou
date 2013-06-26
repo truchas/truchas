@@ -1,0 +1,31 @@
+## /opt/cubit/13.1-47471/bin/clarox
+## Cubit Version 13.1
+## Cubit Build 47471
+## Revised 2012-01-25 09:56:34 -0700 (Wed, 25 Jan 2012)
+## Running 05/21/2012 11:24:20 AM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 2 y 2 z 2
+webcut volume 1 with plane xplane noimprint nomerge
+imprint volume all
+merge volume all
+
+volume all size 0.5
+mesh volume all
+
+set duplicate block elements off
+block 1 volume 2
+block 2 volume 1
+
+sideset 1 surface 15 13 11 8 6 4 16 14 10 9
+set large exodus file off
+export genesis "boxAB.exo" overwrite
+
+sideset 1 surface 7 both
+
+set large exodus file off
+export genesis "boxA.exo" block 1 overwrite
+
+set large exodus file off
+export genesis "boxB.exo" block 2 overwrite

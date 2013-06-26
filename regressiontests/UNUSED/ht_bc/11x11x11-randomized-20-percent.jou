@@ -1,0 +1,10 @@
+#!python
+cubit.cmd('brick x 11 y 11 z 11')
+cubit.cmd('volume 1 move x 5.5 y 5.5 z 5.5 ')
+cubit.cmd('volume 1 interval 11')
+cubit.cmd('mesh volume 1')
+cubit.cmd('set developer commands on')
+cubit.cmd('volume 1 smooth scheme randomize 0.2')
+cubit.cmd('set large exodus file off')
+cubit.cmd('export mesh "/home/berndt/HEAD/truchas/regressiontests/ht_bc/11x11x11-randomized-20-percent.gen" overwrite')
+

@@ -1,0 +1,20 @@
+&ENCLOSURE
+  name = 'exterior'
+  mesh_file = 'vfrad1.gen'
+  side_set_ids = 3
+  ignore_block_ids = 2
+  symmetries = 'mirrory', 'rotz3', 'mirrorz'
+/
+
+&CHAPARRAL
+  blocking_enclosure  = .true.
+  partial_enclosure   = .false.
+  BSP_max_tree_depth  = 10
+  BSP_min_leaf_length = 25
+  spatial_tolerance   = 1.0e-8
+  hemicube_resolution = 400
+  min_separation      = 40.0
+  max_subdivisions    = 20
+  smoothing_tolerance = 1.0e-8
+  smoothing_max_iter  = 100
+/

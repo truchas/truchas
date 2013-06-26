@@ -1,0 +1,22 @@
+restart
+runB_output/runB.TBrook.xml,runA_output/runA.TBrook.xml
+mapped
+-
+-
+15
+15
+../meshAB.exo
+0.8
+binary
+restart.bin
+q
+
+SJC NEED TO REMOVE TO PREVENT FILE SERVER ERRORS IF RUNNING ON CROSS-MOUNTED PLATFORMS
+write
+ensight
+../mapping1
+-
+0
+binary
+all
+q

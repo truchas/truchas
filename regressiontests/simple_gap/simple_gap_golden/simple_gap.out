@@ -1,0 +1,380 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                truchas
+   version:             2.3.dev
+   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+   build architecture:  Linux spider.mst6.lanl.gov 2.6.9-42.0.8.ELsmp #1 SMP Tue Jan 23 13:01:26 EST 2007 i686 athlon i386 GNU/Linux
+   build date/time:     26 Mar 07 11:09:45
+   build flags:         -u -C=all -g -gline -nan -maxcontin=99
+   build host:          spider.mst6.lanl.gov
+   run architecture:    Linux spider.mst6.lanl.gov 2.6.9-42.0.8.ELsmp #1 SMP Tue Jan 23 13:01:26 EST 2007 i686
+   run host:            spider.mst6.lanl.gov
+   run date/time:       28 Mar 07 16:16:30
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007. Los Alamos National Security, LLC.  This material
+   was produced under U.S. Government contract DE-AC52-06NA25396 for
+   Los Alamos National Laboratory (LANL), which is operated by Los
+   Alamos National Security, LLC for the U.S. Department of Energy.
+   The U.S. Government has rights to use, reproduce, and distribute
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
+   modified to produce derivative works, such modified software
+   should be clearly marked, so as not to confuse it with the
+   version available from LANL.
+
+   Additionally, this program is free software; you can redistribute
+   it and/or modify it under the terms of the GNU General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   Accordingly, this program is distributed in the hope that it will
+   be useful, but WITHOUT ANY WARRANTY; without even the implied
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-06-113.
+   Truchas is currently a beta version, as development is ongoing
+   and continuous, hence bugs are likely to be present. All aspects
+   of the Truchas software and its user interface are subject to
+   change without notice.
+
+================================================================================
+
+INPUT
+
+ Opening Input File ../simple_gap.inp:
+
+ Reading PARALLEL_PARAMETERS Namelist ...
+ vfParallelSize =          10000000
+ Reading PHYSICS Namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+ Reading MESH Namelist ...
+
+         Opened mesh file ../simple_gap_4_g.txt
+           containing    150 nodes and     80 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+         Finished this namelist read.
+
+ Reading MATERIAL Namelist # 2 ...
+
+         Finished this namelist read.
+
+ Reading MATERIAL Namelist # 3 ...
+
+         Finished this namelist read.
+
+         This is the last MATERIAL Namelist.
+
+         Identified  3 material(s)
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1     aluminum        1
+             2     bogosium        2
+             3     gap_bogo        3
+
+ PHASE_CHANGE_PROPERTIES Namelist:
+         WARNING: Phase changes not activated in physics namelist,
+         All phase changes have been disabled.
+
+         Finished this namelist read.
+
+ Reading INTERFACES Namelist ...
+
+         WARNING: INTERFACES namelist not found: using defaults
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       2    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 3 ...
+            3       3    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 4 ...
+            4       3    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+         BODY Namelist number  1 will be used for background material ( 1)
+
+ Reading HEAT_SOURCE Namelist ...
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+
+         Reading LINEAR_SOLVER Namelist # 1 ...
+
+ Reading SO_SOLVER Namelist ...
+
+         WARNING: SO_SOLVER namelist not found! Using defaults.
+
+ Reading NONLINEAR_SOLVER Namelist(s) ...
+
+         Reading NONLINEAR_SOLVER Namelist # 1 ...
+
+ Reading NUMERICS Namelist ...
+
+         WARNING: Linear solver "displacement linear" for displacement linear solution not found!
+                  Reverting to default linear solver parameters.
+
+         Using nonlinear solver "displacement solve" for displacement nonlinear solution.
+
+         Using linear solver "displacement nk" for nonlinear solver "displacement solve".
+
+ Reading BC Namelists ...
+
+         Reading BC namelist #  1: Unnamed
+
+         Reading BC namelist #  2: Unnamed
+
+         Reading BC namelist #  3: Unnamed
+
+         Reading BC namelist #  4: Unnamed
+
+         Reading BC namelist #  5: Unnamed
+
+         Reading BC namelist #  6: Unnamed
+
+         Reading BC namelist #  7: Unnamed
+
+         Reading BC namelist #  8: Unnamed
+
+         Finished this namelist read.
+
+ Reading SENS_VARIABLE Namelists ...
+
+         This is the last SENS_VARIABLE Namelist.
+
+         Identified  0 design variable(s)
+
+ Reading SENS_FUNCTION Namelists ...
+
+         This is the last SENS_FUNCTION Namelist.
+
+         Identified  0 response function(s)
+
+ Reading PROBE namelists ...
+
+         This is the last PROBE Namelist.
+
+         Identified  0 probe(s)
+ 
+ Closing Input File ../simple_gap.inp.
+
+================================================================================
+
+INITIALIZATION
+
+Allocating mesh derived types ... done.
+
+ Automatic partitioner selection: None
+
+ Reading Exodus/Genesis mesh file ../simple_gap_4_g.txt ...
+ Closed Exodus/Genesis mesh file ../simple_gap_4_g.txt.
+ Determining mesh partitions and permutation vectors.
+ 
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+ Establishing mesh connectivity for       480 faces ...
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are        112 external boundary faces.
+ Mesh connectivity established.
+
+ Finding all cell neighbors ... done.
+ 
+Allocating base derived types ...done.
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type Number     Face Type Number
+                   ------------ ------     --------- ------
+                      Hex          80       Point         0
+                      Prism         0       Line          0
+                      Pyramid       0       Triangle      0
+                      Tet           0       Quad        480
+
+                          Nodes               Cells
+                          -----               -----
+                              8 are shared by   1
+                             40 are shared by   2
+                              2 are shared by   3
+                             62 are shared by   4
+                              2 are shared by   5
+                              3 are shared by   6
+                             30 are shared by   8
+                              3 are shared by  10
+
+Computing cell geometry ... 
+                    Min        Cell      Max        Cell       Total
+                    ---        ----      ---        ----       -----
+       Volumes   4.4409E-16      65   1.5625E-05      54     1.0000E-03
+
+    Entire mesh is orthogonal
+    use_ortho_face_gradient = T
+    Using full pivoting for LSLR_ operators
+
+done.
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                   0.0000E+00       1.0000E-01
+                   0.0000E+00       1.0000E-01
+                   0.0000E+00       1.0000E-01
+
+ Finding face neighbors ... done.
+
+ Computing initial volume fractions ...
+
+    Volume fractions will be computed in         80 total cells with   5**3 particles/cell
+
+    Tallying        5**3 =    125 interface particles
+    Tallied   1 x   5**2 =     25 interface particles
+    Tallied   2 x   5**2 =     50 interface particles
+    Tallied   3 x   5**2 =     75 interface particles
+    Tallied   4 x   5**2 =    100 interface particles
+    Tallied   5 x   5**2 =    125 interface particles
+
+ Volume fractions computed.
+ Initializing Displacement Boundary Conditions 
+
+ Locating cell faces for which BCs are to be applied ...
+
+    WARNING:      8 interior #1 faces are affected by BC namelist  7!
+
+    WARNING:      8 interior #3 faces are affected by BC namelist  8!
+
+    WARNING:      8 interior #4 faces are affected by BC namelist  7!
+
+    WARNING:      8 interior #5 faces are affected by BC namelist  7!
+
+    WARNING:     16 interior #5 faces are affected by BC namelist  8!
+
+    WARNING:      8 interior #6 faces are affected by BC namelist  7!
+
+    WARNING:      8 interior #6 faces are affected by BC namelist  8!
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.00000E-02 (    16 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   1.00000E-02 (    20 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   1.00000E-02 (    20 faces)
+    Boundary conditions in BC namelist  4 will be applied on an area of   1.00000E-02 (    16 faces)
+    Boundary conditions in BC namelist  5 will be applied on an area of   5.00000E-03 (     8 faces)
+    Boundary conditions in BC namelist  6 will be applied on an area of   5.00000E-03 (     8 faces)
+    Boundary conditions in BC namelist  7 will be applied on an area of   2.00000E-02 (    32 faces)
+    Boundary conditions in BC namelist  8 will be applied on an area of   2.00000E-02 (    32 faces)
+ Initializing Pressure Boundary Conditions
+           DIRICHLET:                   0 boundary points
+          REFLECTIVE:                 112 boundary points
+            EXTERIOR:                 112 boundary points
+             NEUMANN:                   0 boundary points
+            HNEUMANN:                 112 boundary points
+ Pressure BCs initialized.
+ Initializing Temperature Boundary Conditions
+              DIRICHLET:                0 boundary points
+             REFLECTIVE:              112 boundary points
+               EXTERIOR:              112 boundary points
+                NEUMANN:                0 boundary points
+               HNEUMANN:                0 boundary points
+              RADIATION:                0 boundary points
+    ENCLOSURE_RADIATION:                0 boundary points
+           HTC_EXTERNAL:                0 boundary points
+           HTC_INTERNAL:                0 boundary points
+                HTC_GAP:                0 boundary points
+ Temperature BCs initialized.
+
+ Finished BC initialization.
+
+ Finding control volume faces internal to cells ... 
+
+ Finding jacobians ... 
+
+ Inverting jacobians ... 
+done.
+
+ Finding control volume faces on external boundaries ...
+
+done.
+
+ Calculating initial thermo-elastic state. Done.
+
+             103  Thermo-elastic iterations (linear)
+               3  Thermo-elastic iterations (nonlinear)
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(constant) =   2.00000E+00
+           35 Solid mechanics iterations (linear)
+            1 Solid mechanics iterations (nonlinear)
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  2.0000E+00 after     1 steps
+
+                     * * * * TIMING SUMMARY * * * *
+
+            TASK                TIME (sec)        % of PARENT TASK
+            ----                ----------        ----------------
+             Total              2.2100E+00            100.0%
+              Input             5.0000E-02             2.3%
+              Initialization    2.3000E-01             10.4%
+               Solid Mech Init  5.0000E-02              21.7%
+              Main Cycle        2.0800E+00             94.1%
+               Solid Mechanics  1.8700E+00              89.9%
+                Nonlinar Solve  1.8500E+00               98.9%
+                 Linear Solver  1.8500E+00                100.0%
+               Output           2.0000E-02              1.0%
+
+                           Communication Time
+                           ------------------
+                 Time for trace setup:         0.0000E+00
+                 Time for off-process gather:  0.0000E+00
+                 Time for off-process scatter: 0.0000E+00
+
+          Average CPU time per cell per cycle:  2.6000E+04 microseconds
+          Process virtual memory used:          5.23E+01   mb
+          words/cell:                              85721
+
+
+truchas terminated normally on 28 Mar 07 at 16:16:32

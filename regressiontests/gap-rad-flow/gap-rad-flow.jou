@@ -1,0 +1,37 @@
+## /opt/cubit/13.2-48137/bin/cubitx
+## Cubit Version 13.2
+## Cubit Build 48137
+## Revised 2012-05-31 10:27:28 -0600 (Thu, 31 May 2012)
+## Running 08/01/2012 04:20:37 PM
+## Command Options:
+## -warning = On
+## -information = On
+## gap-rad-flow.jou 
+brick x 2 y 0.125 z 0.0625
+webcut volume 1 with plane yplane offset 0 noimprint nomerge
+webcut volume 1 with plane xplane offset 0 noimprint nomerge
+move Volume all x 0 y 0.03125 z 0 include_merged 
+imprint volume all
+merge volume all
+compress all
+volume all size 0.0625
+mesh volume all
+set duplicate block elements off
+# left solid
+block 1 volume 3
+# right solid
+block 2 volume 1
+# upper fluid channel
+block 3 volume 2
+# All external boundaries
+sideset 1 surface 1 6 13 12 9 16 10 15 5 4 3 2 7
+# gap interface between solid halves
+sideset 2 surface 8
+# internal surface between fluid and solid
+sideset 3 surface 14 11
+# left end of fluid channel
+sideset 4 surface 7
+# right end of fluid channel
+sideset 5 surface 4
+set large exodus file off
+export genesis "gap-rad-flow.g" overwrite

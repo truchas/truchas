@@ -1,0 +1,417 @@
+ vfParallelSize =          10000000
+         WARNING: INTERFACES namelist not found: using defaults
+
+         Using nonlinear solver "nk" for energy nonlinear solution.
+
+         Using linear solver "nk" for nonlinear solver "nk".
+
+         Reading BC namelist #  1: left
+
+         Reading BC namelist #  2: Unnamed
+
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.60000E-05 (     1 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   6.56000E-04 (    81 faces)
+
+          1: t =   0.00000E+00, dt(constant) =   1.00000E+00
+            8 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+          2: t =   1.00000E+00, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+          3: t =   2.00000E+00, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+          4: t =   3.00000E+00, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+          5: t =   4.00000E+00, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+          6: t =   5.00000E+00, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+          7: t =   6.00000E+00, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+          8: t =   7.00000E+00, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+          9: t =   8.00000E+00, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         10: t =   9.00000E+00, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         11: t =   1.00000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         12: t =   1.10000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         13: t =   1.20000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         14: t =   1.30000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         15: t =   1.40000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         16: t =   1.50000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         17: t =   1.60000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         18: t =   1.70000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         19: t =   1.80000E+01, dt(constant) =   1.00000E+00
+            8 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         20: t =   1.90000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         21: t =   2.00000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         22: t =   2.10000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         23: t =   2.20000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         24: t =   2.30000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         25: t =   2.40000E+01, dt(constant) =   1.00000E+00
+           10 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         26: t =   2.50000E+01, dt(constant) =   1.00000E+00
+            9 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         27: t =   2.60000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         28: t =   2.70000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         29: t =   2.80000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         30: t =   2.90000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         31: t =   3.00000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         32: t =   3.10000E+01, dt(constant) =   1.00000E+00
+           10 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         33: t =   3.20000E+01, dt(constant) =   1.00000E+00
+            9 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         34: t =   3.30000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         35: t =   3.40000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         36: t =   3.50000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         37: t =   3.60000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         38: t =   3.70000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         39: t =   3.80000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         40: t =   3.90000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         41: t =   4.00000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         42: t =   4.10000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         43: t =   4.20000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         44: t =   4.30000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         45: t =   4.40000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         46: t =   4.50000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         47: t =   4.60000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         48: t =   4.70000E+01, dt(constant) =   1.00000E+00
+            9 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         49: t =   4.80000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         50: t =   4.90000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         51: t =   5.00000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         52: t =   5.10000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         53: t =   5.20000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         54: t =   5.30000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         55: t =   5.40000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         56: t =   5.50000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         57: t =   5.60000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         58: t =   5.70000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         59: t =   5.80000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         60: t =   5.90000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         61: t =   6.00000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         62: t =   6.10000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         63: t =   6.20000E+01, dt(constant) =   1.00000E+00
+           11 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         64: t =   6.30000E+01, dt(constant) =   1.00000E+00
+            8 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         65: t =   6.40000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         66: t =   6.50000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         67: t =   6.60000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         68: t =   6.70000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         69: t =   6.80000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         70: t =   6.90000E+01, dt(constant) =   1.00000E+00
+            8 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         71: t =   7.00000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         72: t =   7.10000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         73: t =   7.20000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         74: t =   7.30000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         75: t =   7.40000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         76: t =   7.50000E+01, dt(constant) =   1.00000E+00
+            8 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         77: t =   7.60000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         78: t =   7.70000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         79: t =   7.80000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         80: t =   7.90000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         81: t =   8.00000E+01, dt(constant) =   1.00000E+00
+            8 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         82: t =   8.10000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         83: t =   8.20000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         84: t =   8.30000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         85: t =   8.40000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         86: t =   8.50000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         87: t =   8.60000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         88: t =   8.70000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         89: t =   8.80000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         90: t =   8.90000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         91: t =   9.00000E+01, dt(constant) =   1.00000E+00
+            8 Energy iterations (linear)
+            4 Energy iterations (nonlinear)
+
+         92: t =   9.10000E+01, dt(constant) =   1.00000E+00
+            6 Energy iterations (linear)
+            3 Energy iterations (nonlinear)
+
+         93: t =   9.20000E+01, dt(constant) =   1.00000E+00
+            4 Energy iterations (linear)
+            2 Energy iterations (nonlinear)
+
+         94: t =   9.30000E+01, dt(constant) =   1.00000E+00
+            2 Energy iterations (linear)
+            1 Energy iterations (nonlinear)
+
+         95: t =   9.40000E+01, dt(constant) =   1.00000E+00
+            2 Energy iterations (linear)
+            1 Energy iterations (nonlinear)
+
+         96: t =   9.50000E+01, dt(constant) =   1.00000E+00
+            2 Energy iterations (linear)
+            1 Energy iterations (nonlinear)
+
+         97: t =   9.60000E+01, dt(constant) =   1.00000E+00
+            2 Energy iterations (linear)
+            1 Energy iterations (nonlinear)
+
+         98: t =   9.70000E+01, dt(constant) =   1.00000E+00
+            2 Energy iterations (linear)
+            1 Energy iterations (nonlinear)
+
+         99: t =   9.80000E+01, dt(constant) =   1.00000E+00
+            2 Energy iterations (linear)
+            1 Energy iterations (nonlinear)
+
+        100: t =   9.90000E+01, dt(constant) =   1.00000E+00
+            2 Energy iterations (linear)
+            1 Energy iterations (nonlinear)
+
+
+truchas terminated normally on 12 Apr 07 at 11:01:32

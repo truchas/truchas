@@ -1,0 +1,568 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                truchas
+   version:             2.7.dev
+   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+   build architecture:  Linux noether.lanl.gov 3.3.0-4.fc16.x86_64 #1 SMP Tue Mar 20 18:05:40 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+   build date/time:      4 May 12 21:33:31
+   build flags:         -O2 -u -maxcontin=99
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 3.3.0-4.fc16.x86_64 #1 SMP Tue Mar 20 18:05:40 UTC 2012 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       04 May 12 22:07:40
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2012. Los Alamos National Security, LLC.  This material
+   was produced under U.S. Government contract DE-AC52-06NA25396 for
+   Los Alamos National Laboratory (LANL), which is operated by Los
+   Alamos National Security, LLC for the U.S. Department of Energy.
+   The U.S. Government has rights to use, reproduce, and distribute
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
+   modified to produce derivative works, such modified software
+   should be clearly marked, so as not to confuse it with the
+   version available from LANL.
+
+   Additionally, this program is free software; you can redistribute
+   it and/or modify it under the terms of the GNU General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   Accordingly, this program is distributed in the hope that it will
+   be useful, but WITHOUT ANY WARRANTY; without even the implied
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
+   Truchas is currently a beta version, as development is ongoing
+   and continuous, hence bugs are likely to be present. All aspects
+   of the Truchas software and its user interface are subject to
+   change without notice.
+
+================================================================================
+
+INPUT
+
+ Opening Input File em2.inp:
+ Reading PARALLEL_PARAMETERS Namelist ...
+PARALLEL_PARAMETERS namelist not found; using defaults.
+
+Reading FUNCTION namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+ Reading PHYSICS Namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading MESH Namelist ...
+
+         Opened mesh file ./em-qcyl-hex.gen
+           containing      182 nodes and       75 cells
+
+ Reading MATERIAL Namelist # 1 ...
+This is the last MATERIAL Namelist.
+Identified  1 material(s)
+
+Warning: Material  1 priority not initialized; set to  1
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+
+             1     conducto        1
+
+Reading INTERFACES namelist ...
+  INTERFACES namelist not found; using defaults
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+         BODY Namelist number  2 will be used for background material ( 1)
+
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+Warning: LINEAR_SOLVER namelist not found! Using defaults.
+
+ Reading SO_SOLVER Namelist ...
+
+         SO_SOLVER namelist not found! Using defaults.
+
+Reading NONLINEAR_SOLVER Namelists ...
+  NONLINEAR_SOLVER namelist not found; using defaults.
+
+ Reading NUMERICS Namelist ...
+
+ Reading BC Namelists ...
+BC namelists not found; using defaults.
+Reading ELECTROMAGNETICS and INDUCTION_COIL Namelists ...
+Using default value "Z" for Symmetry_Axis
+
+Reading DIFFUSION_SOLVER namelist ...
+  using default Stepping_Method value: "Adaptive BDF2"
+  using default Max_AIN_Itr value: 5
+  using default Max_Step_Tries value: 10
+  using default Max_AIN_Vec value: Max_AIN_Itr - 1
+  using default AIN_Vec_Tol value: 1.00E-03
+  WARNING: using a pure relative error norm; temp must be bounded away from 0
+  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
+
+Reading DS_BOUNDARY_CONDITION namelists ...
+  [whole boundary insulated] "flux" condition for "temperature" variable
+
+Reading DS_INTERFACE_CONDITION namelists ...
+
+Reading DS_SOURCE namelists ...
+  No DS_SOURCE namelists found.
+
+Reading ENCLOSURE_RADIATION namelists ...
+
+Reading ENCLOSURE_SURFACE namelists ...
+
+ Reading PROBE namelists ...
+
+         This is the last PROBE Namelist.
+
+         Identified  0 probe(s)
+
+ Closing Input File em2.inp.
+
+================================================================================
+
+INITIALIZATION
+
+Allocating mesh derived types ... done.
+ Automatic partitioner selection: None
+
+ Reading ExodusII mesh file ./em-qcyl-hex.gen...
+ Closed ExodusII mesh file ./em-qcyl-hex.gen
+
+ Determining mesh partitions and permutation vectors.
+
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+ Establishing mesh connectivity for       450 faces ...
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are        180 external boundary faces.
+ Mesh connectivity established.
+
+ Finding all cell neighbors ... done.
+
+Allocating base derived types ...done.
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type   Number     Face Type   Number
+                   ------------   ------     ---------   ------
+                      Hex            75       Point           0
+                      Prism           0       Line            0
+                      Pyramid         0       Triangle        0
+                      Tet             0       Quad          450
+
+                            Nodes               Cells
+                          -----               -----
+                                6 are shared by   1
+                               54 are shared by   2
+                                2 are shared by   3
+                              120 are shared by   4
+
+Computing cell geometry ... 
+                    Min        Cell       Max        Cell       Total
+                    ---        ----      ---        ----       -----
+       Volumes   4.8886E-07        73   9.3112E-07        15    5.0059E-05
+
+               40 out of       75 total cells are orthogonal
+
+    use_ortho_face_gradient = F
+
+    Using full pivoting for LSLR_ operators
+
+done.
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                   0.0000E+00       8.0000E-02
+                   0.0000E+00       8.0000E-02
+                  -5.0000E-03       5.0000E-03
+
+ Finding face neighbors ... done.
+
+Initializing distributed mesh ALT ...
+  Reading ExodusII mesh file ./em-qcyl-tet.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell
+    ---+------------------------------------
+      1|      226     1019     1364      570
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+----------------------------------------------------------------
+      1|      0      226      0     1019      0     1364      0      570
+  Distributed mesh ALT initialized.
+
+Initializing distributed mesh MAIN ...
+  Reading ExodusII mesh file ./em-qcyl-hex.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell
+    ---+------------------------------------
+      1|      182        0      315       75
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+----------------------------------------------------------------
+      1|      0      182      0        0      0      315      0       75
+  Distributed mesh MAIN initialized.
+
+ Computing initial volume fractions ... 
+    Volume fractions will be computed in         75 total cells with   5**3 particles/cell
+
+    Tallying        5**3 =    125 interface particles
+
+    Tallied   1 x   5**2 =     25 interface particles
+    Tallied   2 x   5**2 =     50 interface particles
+    Tallied   3 x   5**2 =     75 interface particles
+    Tallied   4 x   5**2 =    100 interface particles
+    Tallied   5 x   5**2 =    125 interface particles
+done.
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 180 boundary points
+   EXTERIOR: 180 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 180 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+
+Initializing diffusion solver ...
+  Generating external source for "temperature" equation
+  Generating "HTC" interface condition for "temperature" variable
+  Generating "HTC" boundary condition for "temperature" variable
+  Generating "radiation" boundary condition for "temperature" variable
+  Generating "dirichlet" boundary condition for "temperature" variable
+  Generating "flux" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[1]: whole boundary insulated
+  Diffusion solver initialized.
+ Initializing electromagnetics ...
+  Initializing the hex-tet grid mapping data ...
+   Computing the hex-tet grid mapping data.
+   Writing the hex-tet grid mapping data to altmesh_mapping_data.bin
+   Hex-tet grid mapping data initialized.
+  Computing the Joule heat ...
+   Min epsilon= 1.0000E+00, Max epsilon= 1.0000E+00
+   Min mu=      1.0000E+00, Max mu=      1.9606E+00
+   Min sigma=   2.5000E+03, Max sigma=   2.5000E+03
+   DELTA= 7.9788E-01
+   ETASQ= 1.7708E-12
+     step cg summary:  48 iterations, |r|= 4.115E-09, |r0|= 4.399E-01
+     step cg summary:  48 iterations, |r|= 1.143E-08, |r0|= 1.226E+00
+     step cg summary:  48 iterations, |r|= 2.428E-08, |r0|= 2.592E+00
+     step cg summary:  48 iterations, |r|= 1.372E-09, |r0|= 2.737E-01
+     step cg summary:  48 iterations, |r|= 8.506E-09, |r0|= 9.818E-01
+     step cg summary:  48 iterations, |r|= 2.448E-08, |r0|= 2.605E+00
+     step cg summary:  48 iterations, |r|= 1.108E-08, |r0|= 1.282E+00
+     step cg summary:  48 iterations, |r|= 2.627E-08, |r0|= 2.779E+00
+     step cg summary:  48 iterations, |r|= 8.321E-09, |r0|= 8.844E-01
+     step cg summary:  48 iterations, |r|= 3.604E-09, |r0|= 5.835E-01
+     step cg summary:  48 iterations, |r|= 3.479E-08, |r0|= 3.666E+00
+     step cg summary:  48 iterations, |r|= 1.330E-08, |r0|= 1.586E+00
+   Source cycle   1: |Q|_max= 1.6805E+04, Q_total= 4.3182E-01
+     step cg summary:  48 iterations, |r|= 2.434E-08, |r0|= 2.549E+00
+     step cg summary:  47 iterations, |r|= 1.051E-08, |r0|= 1.163E+00
+     step cg summary:  48 iterations, |r|= 3.051E-09, |r0|= 6.231E-01
+     step cg summary:  48 iterations, |r|= 3.347E-08, |r0|= 3.491E+00
+     step cg summary:  48 iterations, |r|= 1.243E-08, |r0|= 1.541E+00
+     step cg summary:  48 iterations, |r|= 2.795E-08, |r0|= 2.902E+00
+     step cg summary:  49 iterations, |r|= 2.828E-09, |r0|= 4.916E-01
+     step cg summary:  49 iterations, |r|= 3.235E-09, |r0|= 5.361E-01
+     step cg summary:  48 iterations, |r|= 2.684E-08, |r0|= 2.753E+00
+     step cg summary:  48 iterations, |r|= 1.021E-08, |r0|= 1.344E+00
+     step cg summary:  48 iterations, |r|= 3.272E-08, |r0|= 3.354E+00
+     step cg summary:  47 iterations, |r|= 7.294E-09, |r0|= 7.600E-01
+   Source cycle   2: |Q|_max= 6.0931E+04, Q_total= 1.5723E+00
+     step cg summary:  49 iterations, |r|= 9.557E-09, |r0|= 1.676E+00
+     step cg summary:  48 iterations, |r|= 1.651E-08, |r0|= 1.684E+00
+     step cg summary:  47 iterations, |r|= 7.226E-09, |r0|= 7.449E-01
+     step cg summary:  48 iterations, |r|= 3.290E-08, |r0|= 3.337E+00
+     step cg summary:  48 iterations, |r|= 9.530E-09, |r0|= 1.322E+00
+     step cg summary:  49 iterations, |r|= 1.534E-08, |r0|= 2.726E+00
+     step cg summary:  49 iterations, |r|= 3.519E-09, |r0|= 5.676E-01
+     step cg summary:  48 iterations, |r|= 5.442E-09, |r0|= 5.473E-01
+     step cg summary:  49 iterations, |r|= 1.546E-08, |r0|= 2.729E+00
+     step cg summary:  48 iterations, |r|= 9.334E-09, |r0|= 1.321E+00
+     step cg summary:  48 iterations, |r|= 3.331E-08, |r0|= 3.337E+00
+     step cg summary:  47 iterations, |r|= 4.290E-09, |r0|= 7.630E-01
+   Source cycle   3: |Q|_max= 6.4078E+04, Q_total= 1.6542E+00
+  Joule heat computation completed.
+ Electromagnetics initialized.
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
+
+          2: t =   5.00000E+00, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 3.921E-05, mu= 1.013E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000006:00001, NNR:NNF:NSR=0000:0000:0000
+
+          3: t =   1.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 1.184E-03, mu= 2.694E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000010:00001, NNR:NNF:NSR=0000:0000:0000
+
+          4: t =   1.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 8.280E-03, mu= 4.500E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000013:00001, NNR:NNF:NSR=0000:0000:0000
+
+          5: t =   2.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 3.015E-02, mu= 6.137E-01
+ EM material parameters have changed; computing the Joule heat ...
+   Min epsilon= 1.0000E+00, Max epsilon= 1.0000E+00
+   Min mu=      1.0000E+00, Max mu=      1.9214E+00
+   Min sigma=   2.5000E+03, Max sigma=   2.5777E+03
+   DELTA= 7.8576E-01
+   ETASQ= 1.7174E-12
+     step cg summary:  48 iterations, |r|= 3.326E-09, |r0|= 4.467E-01
+     step cg summary:  48 iterations, |r|= 8.544E-09, |r0|= 1.245E+00
+     step cg summary:  48 iterations, |r|= 2.001E-08, |r0|= 2.632E+00
+     step cg summary:  48 iterations, |r|= 1.707E-09, |r0|= 2.576E-01
+     step cg summary:  48 iterations, |r|= 8.000E-09, |r0|= 9.939E-01
+     step cg summary:  48 iterations, |r|= 2.122E-08, |r0|= 2.643E+00
+     step cg summary:  48 iterations, |r|= 9.873E-09, |r0|= 1.290E+00
+     step cg summary:  48 iterations, |r|= 2.265E-08, |r0|= 2.821E+00
+     step cg summary:  48 iterations, |r|= 6.731E-09, |r0|= 8.800E-01
+     step cg summary:  48 iterations, |r|= 3.844E-09, |r0|= 5.653E-01
+     step cg summary:  48 iterations, |r|= 2.989E-08, |r0|= 3.721E+00
+     step cg summary:  48 iterations, |r|= 1.208E-08, |r0|= 1.594E+00
+   Source cycle   1: |Q|_max= 9.8090E+03, Q_total= 2.8900E-01
+     step cg summary:  48 iterations, |r|= 2.107E-08, |r0|= 2.584E+00
+     step cg summary:  47 iterations, |r|= 1.036E-08, |r0|= 1.164E+00
+     step cg summary:  48 iterations, |r|= 3.766E-09, |r0|= 5.976E-01
+     step cg summary:  48 iterations, |r|= 2.873E-08, |r0|= 3.541E+00
+     step cg summary:  48 iterations, |r|= 1.152E-08, |r0|= 1.545E+00
+     step cg summary:  48 iterations, |r|= 2.406E-08, |r0|= 2.942E+00
+     step cg summary:  48 iterations, |r|= 4.151E-09, |r0|= 4.441E-01
+     step cg summary:  48 iterations, |r|= 4.764E-09, |r0|= 5.056E-01
+     step cg summary:  48 iterations, |r|= 2.297E-08, |r0|= 2.790E+00
+     step cg summary:  48 iterations, |r|= 9.753E-09, |r0|= 1.342E+00
+     step cg summary:  48 iterations, |r|= 2.774E-08, |r0|= 3.402E+00
+     step cg summary:  48 iterations, |r|= 4.434E-09, |r0|= 7.301E-01
+   Source cycle   2: |Q|_max= 3.5520E+04, Q_total= 1.0500E+00
+     step cg summary:  48 iterations, |r|= 1.414E-08, |r0|= 1.691E+00
+     step cg summary:  48 iterations, |r|= 1.403E-08, |r0|= 1.697E+00
+     step cg summary:  48 iterations, |r|= 4.359E-09, |r0|= 7.185E-01
+     step cg summary:  48 iterations, |r|= 2.768E-08, |r0|= 3.384E+00
+     step cg summary:  48 iterations, |r|= 9.318E-09, |r0|= 1.316E+00
+     step cg summary:  48 iterations, |r|= 2.284E-08, |r0|= 2.762E+00
+     step cg summary:  48 iterations, |r|= 5.023E-09, |r0|= 5.226E-01
+     step cg summary:  48 iterations, |r|= 4.772E-09, |r0|= 5.094E-01
+     step cg summary:  48 iterations, |r|= 2.298E-08, |r0|= 2.764E+00
+     step cg summary:  48 iterations, |r|= 9.187E-09, |r0|= 1.315E+00
+     step cg summary:  48 iterations, |r|= 2.760E-08, |r0|= 3.383E+00
+     step cg summary:  48 iterations, |r|= 4.092E-09, |r0|= 7.280E-01
+   Source cycle   3: |Q|_max= 3.7350E+04, Q_total= 1.1045E+00
+  Joule heat computation completed.
+
+DS: dt=5.000E+00, NFUN:NPC=0000017:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   2.38976E+00
+
+          6: t =   2.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 2.986E-02, mu= 6.945E-02
+
+DS: dt=5.000E+00, NFUN:NPC=0000021:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   3.14278E+00
+
+          7: t =   3.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 6.695E-02, mu= 1.268E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000024:00001, NNR:NNF:NSR=0000:0000:0000
+
+          8: t =   3.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 1.124E-01, mu= 1.797E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000027:00001, NNR:NNF:NSR=0000:0000:0000
+
+          9: t =   4.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 1.663E-01, mu= 2.281E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000030:00001, NNR:NNF:NSR=0000:0000:0000
+
+         10: t =   4.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 2.272E-01, mu= 2.725E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000033:00001, NNR:NNF:NSR=0000:0000:0000
+
+         11: t =   5.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 2.929E-01, mu= 3.133E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000036:00001, NNR:NNF:NSR=0000:0000:0000
+
+         12: t =   5.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 3.605E-01, mu= 3.515E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000038:00001, NNR:NNF:NSR=0000:0000:0000
+
+         13: t =   6.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 4.275E-01, mu= 3.864E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000040:00001, NNR:NNF:NSR=0000:0000:0000
+
+         14: t =   6.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 4.918E-01, mu= 4.193E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000042:00001, NNR:NNF:NSR=0000:0000:0000
+
+         15: t =   7.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 5.517E-01, mu= 4.497E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000044:00001, NNR:NNF:NSR=0000:0000:0000
+
+         16: t =   7.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 6.062E-01, mu= 4.795E-01
+ EM material parameters have changed; computing the Joule heat ...
+   Min epsilon= 1.0000E+00, Max epsilon= 1.0000E+00
+   Min mu=      1.0000E+00, Max mu=      1.5650E+00
+   Min sigma=   2.5023E+03, Max sigma=   6.5465E+03
+   DELTA= 4.9307E-01
+   ETASQ= 6.7626E-13
+     step cg summary:  49 iterations, |r|= 4.916E-09, |r0|= 7.119E-01
+     step cg summary:  48 iterations, |r|= 1.981E-08, |r0|= 1.984E+00
+     step cg summary:  49 iterations, |r|= 2.915E-08, |r0|= 4.195E+00
+     step cg summary:  48 iterations, |r|= 2.925E-09, |r0|= 4.172E-01
+     step cg summary:  49 iterations, |r|= 1.134E-08, |r0|= 1.584E+00
+     step cg summary:  48 iterations, |r|= 3.269E-08, |r0|= 4.212E+00
+     step cg summary:  48 iterations, |r|= 1.475E-08, |r0|= 2.058E+00
+     step cg summary:  49 iterations, |r|= 3.157E-08, |r0|= 4.495E+00
+     step cg summary:  48 iterations, |r|= 8.698E-09, |r0|= 1.405E+00
+     step cg summary:  48 iterations, |r|= 3.954E-09, |r0|= 9.028E-01
+     step cg summary:  49 iterations, |r|= 4.196E-08, |r0|= 5.929E+00
+     step cg summary:  48 iterations, |r|= 1.712E-08, |r0|= 2.541E+00
+   Source cycle   1: |Q|_max= 1.3507E+04, Q_total= 2.9015E-01
+     step cg summary:  49 iterations, |r|= 2.966E-08, |r0|= 4.118E+00
+     step cg summary:  48 iterations, |r|= 1.483E-08, |r0|= 1.855E+00
+     step cg summary:  48 iterations, |r|= 5.248E-09, |r0|= 9.517E-01
+     step cg summary:  45 iterations, |r|= 4.977E-08, |r0|= 5.643E+00
+     step cg summary:  48 iterations, |r|= 1.549E-08, |r0|= 2.462E+00
+     step cg summary:  49 iterations, |r|= 3.355E-08, |r0|= 4.688E+00
+     step cg summary:  49 iterations, |r|= 6.410E-09, |r0|= 7.067E-01
+     step cg summary:  48 iterations, |r|= 7.860E-09, |r0|= 8.022E-01
+     step cg summary:  49 iterations, |r|= 3.234E-08, |r0|= 4.445E+00
+     step cg summary:  48 iterations, |r|= 1.198E-08, |r0|= 2.139E+00
+     step cg summary:  48 iterations, |r|= 5.145E-08, |r0|= 5.421E+00
+     step cg summary:  48 iterations, |r|= 5.971E-09, |r0|= 1.165E+00
+   Source cycle   2: |Q|_max= 4.9124E+04, Q_total= 1.0587E+00
+     step cg summary:  49 iterations, |r|= 1.960E-08, |r0|= 2.694E+00
+     step cg summary:  49 iterations, |r|= 1.931E-08, |r0|= 2.703E+00
+     step cg summary:  47 iterations, |r|= 1.004E-08, |r0|= 1.146E+00
+     step cg summary:  48 iterations, |r|= 5.228E-08, |r0|= 5.392E+00
+     step cg summary:  48 iterations, |r|= 1.095E-08, |r0|= 2.100E+00
+     step cg summary:  48 iterations, |r|= 4.318E-08, |r0|= 4.401E+00
+     step cg summary:  49 iterations, |r|= 6.450E-09, |r0|= 8.361E-01
+     step cg summary:  48 iterations, |r|= 7.375E-09, |r0|= 8.128E-01
+     step cg summary:  49 iterations, |r|= 3.220E-08, |r0|= 4.404E+00
+     step cg summary:  48 iterations, |r|= 1.110E-08, |r0|= 2.099E+00
+     step cg summary:  49 iterations, |r|= 3.919E-08, |r0|= 5.391E+00
+     step cg summary:  47 iterations, |r|= 9.151E-09, |r0|= 1.167E+00
+   Source cycle   3: |Q|_max= 5.1677E+04, Q_total= 1.1141E+00
+  Joule heat computation completed.
+
+DS: dt=5.000E+00, NFUN:NPC=0000048:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   4.15470E+00
+
+         17: t =   8.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 1.583E-01, mu= 2.546E-02
+
+DS: dt=5.000E+00, NFUN:NPC=0000052:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   4.72938E+00
+
+         18: t =   8.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 2.987E-01, mu= 5.095E-02
+
+DS: dt=5.000E+00, NFUN:NPC=0000055:00001, NNR:NNF:NSR=0000:0000:0000
+
+         19: t =   9.00000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 4.145E-01, mu= 7.710E-02
+
+DS: dt=5.000E+00, NFUN:NPC=0000058:00001, NNR:NNF:NSR=0000:0000:0000
+
+         20: t =   9.50000E+01, dt(constant) =   5.00000E+00
+   Maximum relative change: sigma= 5.081E-01, mu= 1.035E-01
+
+DS: dt=5.000E+00, NFUN:NPC=0000061:00001, NNR:NNF:NSR=0000:0000:0000
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0000E+02 after    20 steps
+
+  TIMING SUMMARY                       AVERAGE        MIN          MAX
+  --------------                      ---------    ---------    ---------
+  Total                               1.061E+00    1.061E+00    1.061E+00
+    Input                               4.000E-03    4.000E-03    4.000E-03
+    Initialization                      3.599E-01    3.599E-01    3.599E-01
+      HTSD function                       0.000E+00    0.000E+00    0.000E+00
+        HT function                         0.000E+00    0.000E+00    0.000E+00
+    Main Cycle                          6.939E-01    6.939E-01    6.939E-01
+      Output                              1.999E-02    1.999E-02    1.999E-02
+      Time Step                           0.000E+00    0.000E+00    0.000E+00
+      Diffusion Solver                    1.100E-02    1.100E-02    1.100E-02
+        HTSD precon compute                 1.000E-03    1.000E-03    1.000E-03
+        HTSD function                       2.000E-03    2.000E-03    2.000E-03
+          HT function                         2.000E-03    2.000E-03    2.000E-03
+        HTSD precon apply                   7.000E-03    7.000E-03    7.000E-03
+          HT precon apply                     7.000E-03    7.000E-03    7.000E-03
+
+                  Process virtual memory used: 3.06E+01 mB
+                                   words/cell: 53439
+
+truchas terminated normally on 04 May 12 at 22:07:41
+

@@ -1,0 +1,1444 @@
+<?xml version="1.0" ?>
+
+<TruchasData Version="1.0">
+<Variable Name="TBrookVersion" DataType="c" Rank=" 0" Shape=""   ArrayOrder="FORTRAN" Offset="                   0"  >
+
+<DataValues>
+1.001                           
+</DataValues>
+</Variable>
+
+[OUTTTY]
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                truchas
+   version:             2.6.dev
+   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+   build architecture:  Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+   build date/time:      7 Sep 11 11:01:09
+   build flags:         -O2 -u -maxcontin=99
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       07 Sep 11 11:38:53
+   processors:          4
+                        (processor 1 is performing I/O)
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007. Los Alamos National Security, LLC.  This material
+   was produced under U.S. Government contract DE-AC52-06NA25396 for
+   Los Alamos National Laboratory (LANL), which is operated by Los
+   Alamos National Security, LLC for the U.S. Department of Energy.
+   The U.S. Government has rights to use, reproduce, and distribute
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
+   modified to produce derivative works, such modified software
+   should be clearly marked, so as not to confuse it with the
+   version available from LANL.
+
+   Additionally, this program is free software; you can redistribute
+   it and/or modify it under the terms of the GNU General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
+   Accordingly, this program is distributed in the hope that it will
+   be useful, but WITHOUT ANY WARRANTY; without even the implied
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-06-113.
+   Truchas is currently a beta version, as development is ongoing
+   and continuous, hence bugs are likely to be present. All aspects
+   of the Truchas software and its user interface are subject to
+   change without notice.
+
+================================================================================
+
+INPUT
+
+
+[OUTTTY]
+ Opening Input File ds7.inp:
+
+ Reading PARALLEL_PARAMETERS Namelist ...
+
+         WARNING: PARALLEL_PARAMETERS namelist not found: using defaults
+
+[OUTERRTTY]
+ vfParallelSize =           1000000
+
+[OUTTTY]
+
+ Reading PHYSICAL_CONSTANTS namelist ...
+
+Reading FUNCTION namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+[OUTTTY]
+
+ Reading PHYSICS Namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+ Reading MESH Namelist ...
+
+         Opened mesh file ./ds5.gen
+           containing     2464 nodes and     1163 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+[OUT]
+
+         Finished this namelist read.
+
+         This is the last MATERIAL Namelist.
+
+[OUTTTY]
+
+         Identified  1 material(s)
+
+[OUTERRTTY]
+
+         WARNING: Material  1 priority not initialized; set to  1
+
+[OUT]
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1            A        1
+
+[OUTERRTTY]
+
+ PHASE_CHANGE_PROPERTIES Namelist:
+         WARNING: Phase changes not activated in physics namelist,
+         All phase changes have been disabled.
+
+[OUT]
+
+         Finished this namelist read.
+
+[OUTTTY]
+
+ Reading INTERFACES Namelist ...
+
+[OUTERRTTY]
+
+         WARNING: INTERFACES namelist not found: using defaults
+
+[OUTTTY]
+
+ Reading BODY Namelist # 1 ...
+
+[OUT]
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+[OUTTTY]
+
+         BODY Namelist number  1 will be used for background material ( 1)
+
+ Reading HEAT_SOURCE Namelist ...
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+
+         Reading LINEAR_SOLVER Namelist # 1 ...
+
+ Reading SO_SOLVER Namelist ...
+
+         WARNING: SO_SOLVER namelist not found! Using defaults.
+
+ Reading NONLINEAR_SOLVER Namelist(s) ...
+
+         Reading NONLINEAR_SOLVER Namelist # 1 ...
+
+ Reading NUMERICS Namelist ...
+
+[OUTERRTTY]
+
+         Using linear solver "HT_AIN_PC" for nonlinear solver "HT_AIN".
+
+[OUTTTY]
+
+ Reading BC Namelists ...
+
+[OUTERRTTY]
+
+         Reading BC namelist #  1: Unnamed
+
+         Reading BC namelist #  2: Unnamed
+
+         Reading BC namelist #  3: Unnamed
+
+[OUT]
+
+         Finished this namelist read.
+
+[OUTTTY]
+
+Reading DIFFUSION_SOLVER namelist ...
+  using default Max_AIN_Itr value: 5
+  using default Max_AIN_Vec value: Max_AIN_Itr - 1
+  using default AIN_Vec_Tol value: 1.00E-03
+  using default Max_Step_Tries value: 10
+  WARNING: using a pure relative error norm; temp must be bounded away from 0
+  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
+  using default PC_AMG_Cycles value: 1
+
+Reading DS_BOUNDARY_CONDITION namelists ...
+  [inner] "flux" condition for "temperature" variable
+  [outer] "radiation" condition for "temperature" variable
+  [symmetry sides] "flux" condition for "temperature" variable
+
+Reading DS_INTERFACE_CONDITION namelists ...
+
+Reading DS_SOURCE namelists ...
+  [1] read source for "temperature" equation
+
+Reading ENCLOSURE_RADIATION namelists ...
+
+Reading ENCLOSURE_SURFACE namelists ...
+
+[OUTTTY]
+
+ Reading SENS_VARIABLE Namelists ...
+
+[OUT]
+
+         This is the last SENS_VARIABLE Namelist.
+
+[OUTTTY]
+
+         Identified  0 design variable(s)
+
+ Reading SENS_FUNCTION Namelists ...
+
+[OUT]
+
+         This is the last SENS_FUNCTION Namelist.
+
+[OUTTTY]
+
+         Identified  0 response function(s)
+
+ Reading PROBE namelists ...
+
+[OUT]
+
+         This is the last PROBE Namelist.
+
+[OUTTTY]
+
+         Identified  0 probe(s)
+
+[OUTTTY]
+ 
+ Closing Input File ds7.inp.
+
+[OUTTTY]
+
+================================================================================
+
+INITIALIZATION
+
+
+[OUTTTY]
+Allocating mesh derived types ... done.
+
+
+[OUTTTY]
+ Automatic partitioner selection: Chaco
+
+ Reading ExodusII mesh file ./ds5.gen...
+ Closed ExodusII mesh file ./ds5.gen
+
+[OUTTTY]
+ Determining mesh partitions and permutation vectors.
+ Using                4 partitions.
+ Partitioning with Chaco.
+ 
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+[OUTTTY]
+
+ Establishing mesh connectivity for      6978 faces ...
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are       2462 external boundary faces.
+ Mesh connectivity established.
+
+
+[OUTTTY]
+ Finding all cell neighbors ... done.
+ 
+Allocating base derived types ...done.
+
+[OUT]
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type   Number     Face Type   Number
+                   ------------   ------     ---------   ------
+                      Hex          1163       Point           0
+                      Prism           0       Line            0
+                      Pyramid         0       Triangle        0
+                      Tet             0       Quad         6978
+
+                            Nodes               Cells
+                          -----               -----
+                                8 are shared by   1
+                              264 are shared by   2
+                               40 are shared by   3
+                             2112 are shared by   4
+                               40 are shared by   5
+
+
+[OUTTTY]
+Computing cell geometry ... 
+[OUT]
+
+                    Min        Cell       Max        Cell       Total
+                    ---        ----      ---        ----       -----
+       Volumes   3.7827E-06      1003   1.6723E-05        74    1.1200E-02
+
+                0 out of     1163 total cells are orthogonal
+    use_ortho_face_gradient = F
+    Using full pivoting for LSLR_ operators
+
+
+[OUTTTY]
+done.
+
+[OUTTTY]
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                   2.8864E-01       9.9980E-01
+                  -4.9994E-01       4.9994E-01
+                  -1.7452E-02       1.7452E-02
+
+
+[OUTTTY]
+ Finding face neighbors ... done.
+
+Initializing distributed mesh MAIN ...
+  Reading ExodusII mesh file ./ds5.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell                                    
+    ---+------------------------------------
+      1|      780        0     1424      345                                    
+      2|      690        0     1256      304                                    
+      3|      700        0     1285      312                                    
+      4|      662        0     1203      291                                    
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells             
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE        
+    ---+----------------------------------------------------------------
+      1|    114      666      0        0    219     1205     54      291        
+      2|     82      608      0        0     79     1177     13      291        
+      3|     72      628      0        0    101     1184     22      290        
+      4|    100      562      0        0     49     1154      0      291        
+  Distributed mesh MAIN initialized.
+
+<MESH FORMAT="TRUCHASMESH" LABEL="DefaultMesh" MESHWRITERVERSION="1.0000">
+
+<FILE FORMAT="xml">
+ds7_output/ds7.DefaultMesh.00001.xml
+</FILE>
+</MESH>
+
+[OUTTTY]
+
+ Computing initial volume fractions ...
+
+ Volume fractions computed.
+
+[OUTTTY]
+ Initializing Displacement Boundary Conditions 
+
+[OUTTTY]
+
+ Locating cell faces for which BCs are to be applied ...
+
+[OUTERRTTY]
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   3.87598E-03 (    17 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   3.48987E-02 (    53 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   9.57598E-01 (  2392 faces)
+
+[OUTTTY]
+ Initializing Pressure Boundary Conditions
+           DIRICHLET:                   0 boundary points
+          REFLECTIVE:                2462 boundary points
+            EXTERIOR:                2462 boundary points
+             NEUMANN:                   0 boundary points
+            HNEUMANN:                2462 boundary points
+ Pressure BCs initialized.
+ Initializing Temperature Boundary Conditions
+              DIRICHLET:                0 boundary points
+             REFLECTIVE:             2462 boundary points
+               EXTERIOR:             2462 boundary points
+                NEUMANN:                0 boundary points
+               HNEUMANN:             2409 boundary points
+              RADIATION:               53 boundary points
+    ENCLOSURE_RADIATION:                0 boundary points
+           HTC_EXTERNAL:                0 boundary points
+           HTC_INTERNAL:                0 boundary points
+                HTC_GAP:                0 boundary points
+      HTC_RADIATION_EXT:                0 boundary points
+      HTC_RADIATION_INT:                0 boundary points
+ Temperature BCs initialized.
+
+[OUTTTY]
+
+ Finished BC initialization.
+
+[OUTTTY]
+
+Initializing diffusion solver ...
+  Generating external source for "temperature" equation
+  Generating "HTC" interface condition for "temperature" variable
+  Generating "HTC" boundary condition for "temperature" variable
+  Generating "radiation" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[2]: outer
+  Generating "dirichlet" boundary condition for "temperature" variable
+  Generating "flux" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[1]: inner
+    using DS_BOUNDARY_CONDITION[3]: symmetry sides
+  Diffusion solver initialized.
+
+[OUTTTY]
+
+================================================================================
+
+EXECUTION
+
+
+<BASICDATA>
+<![CDATA[                                                             
+                                                                      
+  In case the run dies in the middle, you can restore this file       
+  by closing any open tags.  Typically, the only tags you will        
+  have to close are CYCLE and TruchasData:                            
+         </CYCLE>                                                     
+     </TruchasData>                                                   
+                                                                      
+  or TIMESTEP and TruchasData:                                        
+         </TIMESTEP>                                                  
+     </TruchasData>                                                   
+                                                                      
+  Most other tags write their information in a single pass and        
+  should already be closed.                                           
+                                                                      
+  It is also possible that some of your variable data in the          
+  lookaside files '*.ts.#####.xml' are incomplete, but there is       
+  no way to recover this data since it was never written.  The        
+  OutputParser.py should ignore these files, but if it doesn't,       
+  You can just delete the last timestep tag from this file.           
+                                                                      
+]]>                                                                   
+<PROGRAMSPECIFICATIONS>
+
+<CODE TSTRLEN="       256">
+truchas
+</CODE>
+
+<VERSION TSTRLEN="       256">
+2.6.dev
+</VERSION>
+
+<LIBRARIES TSTRLEN="       256">
+UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+</LIBRARIES>
+
+<BUILDARCHITECTURE TSTRLEN="      1024">
+Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+</BUILDARCHITECTURE>
+
+<BUILDDATETIME TSTRLEN="       256">
+ 7 Sep 11 11:01:09
+</BUILDDATETIME>
+
+<BUILDFLAGS TSTRLEN="      1024">
+-O2 -u -maxcontin=99
+</BUILDFLAGS>
+
+<BUILDHOST TSTRLEN="       256">
+noether.lanl.gov
+</BUILDHOST>
+
+<RUNARCHITECTURE TSTRLEN="       256">
+Linux noether.lanl.gov 2.6.35.13-92.fc14.x86_64 #1 SMP Sat May 21 17:26:25 UTC 2011 x86_64
+</RUNARCHITECTURE>
+
+<RUNHOST TSTRLEN="       256">
+noether.lanl.gov
+</RUNHOST>
+
+<RUNDATE TSTRLEN="       256">
+Wed 07 Sep 11 11:38:53.747
+</RUNDATE>
+
+<RUNPROCESSORS>
+4
+</RUNPROCESSORS>
+
+<IOPROCESSOR>
+1
+</IOPROCESSOR>
+</PROGRAMSPECIFICATIONS>
+
+<SIMULATIONINFORMATION>
+
+<TITLE TSTRLEN="       256">
+DIFFUSION SOLVER TEST 7
+</TITLE>
+
+<RESTARTVARIABLES>
+
+<RESTART_COMMON>
+CODE, VERSION, PHYSICS, LIBRARIES, BUILDDATETIME, BUILDARCHITECTURE, BUILDFLAGS, BUILDHOST, RUNARCHITECTURE, RUNHOST, RUNDATE, TITLE, t, dt, dt_courant, cycle, ncells, nnodes, boundaryfaces, MAT_SLOT, NPHASES, NCOMPONENTS, CELLVERTICES, VERTEXCOORDS, RSUMRVOL, Z_RHO, Z_RHOOLD, Z_TEMP, Z_TEMP_OLD, Z_ENTHALPY, Z_ENTHALPYOLD, Z_P, Z_VC, Z_VCOLD, Z_VF, M_ID, M_VOF, M_VOF_OLD, M_RHO, M_RHO_OLD
+</RESTART_COMMON>
+
+<RESTART_MICRO>
+LIQUIDUS_TEMP, EUTECTIC_FRACTION, SEC_ARM_SPACING, PHASECONC, PHASECONCOLD
+</RESTART_MICRO>
+
+<RESTART_FLOW></RESTART_FLOW>
+
+<RESTART_HEAT_TRANSFER></RESTART_HEAT_TRANSFER>
+
+<RESTART_SOLID_MECHANICS>
+TOTAL_STRAIN, ELASTIC_STRESS, PLASTIC_STRAIN, PLASTIC_STRAIN_RATE, RHS, epstherm, epspc, DISPLACEMENT
+</RESTART_SOLID_MECHANICS>
+
+<RESTART_ELECTROMAGNETICS></RESTART_ELECTROMAGNETICS>
+</RESTARTVARIABLES>
+
+<PHYSICS NAME="HEAT_CONDUCTION" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="FLUID_FLOW" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="SOLID_MECHANICS" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="ELECTROMAGNETICS" VALUE="F"></PHYSICS>
+
+<ALLOYINFORMATION NPHASES="        -1" NCOMPONENTS="        -1"></ALLOYINFORMATION>
+
+<SPECIESINFO NSPECIES="         0"></SPECIESINFO>
+
+<MESHSCALEFACTOR>
+1.0000000000000000
+</MESHSCALEFACTOR>
+</SIMULATIONINFORMATION>
+
+<COPYRIGHT>
+<![CDATA[
+   Copyright 2007. Los Alamos National Security, LLC.  This material  
+   was produced under U.S. Government contract DE-AC52-06NA25396 for  
+   Los Alamos National Laboratory (LANL), which is operated by Los    
+   Alamos National Security, LLC for the U.S. Department of Energy.   
+   The U.S. Government has rights to use, reproduce, and distribute   
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL     
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES   
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is        
+   modified to produce derivative works, such modified software       
+   should be clearly marked, so as not to confuse it with the         
+   version available from LANL.                                       
+                                                                      
+   Additionally, this program is free software; you can redistribute  
+   it and/or modify it under the terms of the GNU General Public      
+   License as published by the Free Software Foundation; either       
+   version 2 of the License, or (at your option) any later version.   
+   Accordingly, this program is distributed in the hope that it will  
+   be useful, but WITHOUT ANY WARRANTY; without even the implied      
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.   
+   See the GNU General Public License for more details.               ]]>
+</COPYRIGHT>
+
+<DISCLAIMER>
+<![CDATA[
+   This Truchas release is registered with the Los Alamos National    
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-06-113.        
+   Truchas is currently a beta version, as development is ongoing     
+   and continuous, hence bugs are likely to be present. All aspects   
+   of the Truchas software and its user interface are subject to      
+   change without notice.                                             ]]>
+</DISCLAIMER>
+</BASICDATA>
+
+<TIMESTEP CYCLE="                   0" t="    0.00000000000000000000E+00" dt="    0.10000000000000000208E-02" dt_courant="    0.10000000000000000000E+11" ID="         0">
+
+<FILE FORMAT="binary">
+ds7_output/ds7.ts.00000.bin
+</FILE>
+
+<FILEVAR Name="MATSLOT" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  16"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  20"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                9324"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPY" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               18628"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPYOLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               27932"></FILEVAR>
+
+<FILEVAR Name="Z_P" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               37236"></FILEVAR>
+
+<FILEVAR Name="Z_VC" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               46540" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_VCOLD" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               74452" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_RHO" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              102364"></FILEVAR>
+
+<FILEVAR Name="Face_Vel" DataType="d" Rank=" 2" Shape="6       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              111668" Attr="none"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              167492" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              172144" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              181448" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              190752" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              200056" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="nsens_design_variables" DataType="i" Rank="0" Shape="" Offset="209360"></FILEVAR>
+
+<FILEVAR Name="nsens_functions" DataType="i" Rank="0" Shape="" Offset="209364"></FILEVAR>
+
+<FILEVAR Name="COURANT" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              209368"></FILEVAR>
+
+<FILEVAR Name="Grad_T" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              218672"></FILEVAR>
+
+<FILEVAR Name="||Grad_T||" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              246584"></FILEVAR>
+</TIMESTEP>
+
+[OUTERRTTY]
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E-03
+
+<CYCLE ID="         1" t="  0.00000E+00" dt="  1.00000E-03" limiter="initial">
+
+[OUTTTY]
+
+DS: dt=1.000E-03, NFUN:NPC=0000003:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          2: t =   1.00000E-03, dt(diffusion solver) =   1.00000E-03
+
+<CYCLE ID="         2" t="  1.00000E-03" dt="  1.00000E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.000E-03, NFUN:NPC=0000006:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          3: t =   2.00000E-03, dt(diffusion solver) =   1.00000E-03
+
+<CYCLE ID="         3" t="  2.00000E-03" dt="  1.00000E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.000E-03, NFUN:NPC=0000009:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          4: t =   3.00000E-03, dt(diffusion solver) =   1.00000E-03
+
+<CYCLE ID="         4" t="  3.00000E-03" dt="  1.00000E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.000E-03, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          5: t =   4.00000E-03, dt(diffusion solver) =   1.89607E-03
+
+<CYCLE ID="         5" t="  4.00000E-03" dt="  1.89607E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.896E-03, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          6: t =   5.89607E-03, dt(diffusion solver) =   2.07958E-03
+
+<CYCLE ID="         6" t="  5.89607E-03" dt="  2.07958E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.080E-03, NFUN:NPC=0000017:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          7: t =   7.97565E-03, dt(diffusion solver) =   2.84390E-03
+
+<CYCLE ID="         7" t="  7.97565E-03" dt="  2.84390E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.844E-03, NFUN:NPC=0000020:00001, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          8: t =   1.08195E-02, dt(diffusion solver) =   3.08418E-03
+
+<CYCLE ID="         8" t="  1.08195E-02" dt="  3.08418E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.084E-03, NFUN:NPC=0000022:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+          9: t =   1.39037E-02, dt(diffusion solver) =   3.71608E-03
+
+<CYCLE ID="         9" t="  1.39037E-02" dt="  3.71608E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.716E-03, NFUN:NPC=0000025:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         10: t =   1.76198E-02, dt(diffusion solver) =   4.03914E-03
+
+<CYCLE ID="        10" t="  1.76198E-02" dt="  4.03914E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.039E-03, NFUN:NPC=0000028:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         11: t =   2.16589E-02, dt(diffusion solver) =   4.73346E-03
+
+<CYCLE ID="        11" t="  2.16589E-02" dt="  4.73346E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.733E-03, NFUN:NPC=0000031:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         12: t =   2.63924E-02, dt(diffusion solver) =   5.21228E-03
+
+<CYCLE ID="        12" t="  2.63924E-02" dt="  5.21228E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.212E-03, NFUN:NPC=0000034:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         13: t =   3.16047E-02, dt(diffusion solver) =   5.86550E-03
+
+<CYCLE ID="        13" t="  3.16047E-02" dt="  5.86550E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.866E-03, NFUN:NPC=0000037:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         14: t =   3.74702E-02, dt(diffusion solver) =   6.45426E-03
+
+<CYCLE ID="        14" t="  3.74702E-02" dt="  6.45426E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.454E-03, NFUN:NPC=0000040:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         15: t =   4.39244E-02, dt(diffusion solver) =   7.13871E-03
+
+<CYCLE ID="        15" t="  4.39244E-02" dt="  7.13871E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.139E-03, NFUN:NPC=0000043:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         16: t =   5.10632E-02, dt(diffusion solver) =   7.83538E-03
+
+<CYCLE ID="        16" t="  5.10632E-02" dt="  7.83538E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.835E-03, NFUN:NPC=0000046:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         17: t =   5.88985E-02, dt(diffusion solver) =   8.60533E-03
+
+<CYCLE ID="        17" t="  5.88985E-02" dt="  8.60533E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=8.605E-03, NFUN:NPC=0000049:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         18: t =   6.75039E-02, dt(diffusion solver) =   9.42753E-03
+
+<CYCLE ID="        18" t="  6.75039E-02" dt="  9.42753E-03" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=9.428E-03, NFUN:NPC=0000052:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         19: t =   7.69314E-02, dt(diffusion solver) =   1.03126E-02
+
+<CYCLE ID="        19" t="  7.69314E-02" dt="  1.03126E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.031E-02, NFUN:NPC=0000055:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         20: t =   8.72440E-02, dt(diffusion solver) =   1.12683E-02
+
+<CYCLE ID="        20" t="  8.72440E-02" dt="  1.12683E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.127E-02, NFUN:NPC=0000058:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         21: t =   9.85123E-02, dt(diffusion solver) =   1.22924E-02
+
+<CYCLE ID="        21" t="  9.85123E-02" dt="  1.22924E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.229E-02, NFUN:NPC=0000061:00002, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+<TIMESTEP CYCLE="                  21" t="    0.11080464241077875309E+00" dt="    0.12292391834518393359E-01" dt_courant="    0.10000000000000000000E+11" ID="         1">
+
+<FILE FORMAT="binary">
+ds7_output/ds7.ts.00001.bin
+</FILE>
+
+<FILEVAR Name="MATSLOT" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  16"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  20"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                9324"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPY" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               18628"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPYOLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               27932"></FILEVAR>
+
+<FILEVAR Name="Z_P" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               37236"></FILEVAR>
+
+<FILEVAR Name="Z_VC" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               46540" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_VCOLD" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               74452" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_RHO" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              102364"></FILEVAR>
+
+<FILEVAR Name="Face_Vel" DataType="d" Rank=" 2" Shape="6       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              111668" Attr="none"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              167492" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              172144" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              181448" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              190752" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              200056" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="nsens_design_variables" DataType="i" Rank="0" Shape="" Offset="209360"></FILEVAR>
+
+<FILEVAR Name="nsens_functions" DataType="i" Rank="0" Shape="" Offset="209364"></FILEVAR>
+
+<FILEVAR Name="COURANT" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              209368"></FILEVAR>
+
+<FILEVAR Name="Grad_T" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              218672"></FILEVAR>
+
+<FILEVAR Name="||Grad_T||" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              246584"></FILEVAR>
+</TIMESTEP>
+
+         22: t =   1.10805E-01, dt(diffusion solver) =   1.34008E-02
+
+<CYCLE ID="        22" t="  1.10805E-01" dt="  1.34008E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.340E-02, NFUN:NPC=0000063:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         23: t =   1.24205E-01, dt(diffusion solver) =   1.46231E-02
+
+<CYCLE ID="        23" t="  1.24205E-01" dt="  1.46231E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.462E-02, NFUN:NPC=0000066:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         24: t =   1.38829E-01, dt(diffusion solver) =   1.56970E-02
+
+<CYCLE ID="        24" t="  1.38829E-01" dt="  1.56970E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.570E-02, NFUN:NPC=0000069:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         25: t =   1.54526E-01, dt(diffusion solver) =   1.73974E-02
+
+<CYCLE ID="        25" t="  1.54526E-01" dt="  1.73974E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.740E-02, NFUN:NPC=0000072:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         26: t =   1.71923E-01, dt(diffusion solver) =   1.86806E-02
+
+<CYCLE ID="        26" t="  1.71923E-01" dt="  1.86806E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=1.868E-02, NFUN:NPC=0000075:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         27: t =   1.90604E-01, dt(diffusion solver) =   2.03607E-02
+
+<CYCLE ID="        27" t="  1.90604E-01" dt="  2.03607E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.036E-02, NFUN:NPC=0000078:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         28: t =   2.10964E-01, dt(diffusion solver) =   2.18202E-02
+
+<CYCLE ID="        28" t="  2.10964E-01" dt="  2.18202E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.182E-02, NFUN:NPC=0000081:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         29: t =   2.32785E-01, dt(diffusion solver) =   2.33251E-02
+
+<CYCLE ID="        29" t="  2.32785E-01" dt="  2.33251E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.333E-02, NFUN:NPC=0000084:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         30: t =   2.56110E-01, dt(diffusion solver) =   2.45586E-02
+
+<CYCLE ID="        30" t="  2.56110E-01" dt="  2.45586E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.456E-02, NFUN:NPC=0000087:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         31: t =   2.80668E-01, dt(diffusion solver) =   2.55191E-02
+
+<CYCLE ID="        31" t="  2.80668E-01" dt="  2.55191E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.552E-02, NFUN:NPC=0000090:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         32: t =   3.06187E-01, dt(diffusion solver) =   2.60809E-02
+
+<CYCLE ID="        32" t="  3.06187E-01" dt="  2.60809E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.608E-02, NFUN:NPC=0000093:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         33: t =   3.32268E-01, dt(diffusion solver) =   2.70213E-02
+
+<CYCLE ID="        33" t="  3.32268E-01" dt="  2.70213E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.702E-02, NFUN:NPC=0000096:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         34: t =   3.59290E-01, dt(diffusion solver) =   2.80671E-02
+
+<CYCLE ID="        34" t="  3.59290E-01" dt="  2.80671E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.807E-02, NFUN:NPC=0000099:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         35: t =   3.87357E-01, dt(diffusion solver) =   2.93912E-02
+
+<CYCLE ID="        35" t="  3.87357E-01" dt="  2.93912E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=2.939E-02, NFUN:NPC=0000102:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         36: t =   4.16748E-01, dt(diffusion solver) =   3.08737E-02
+
+<CYCLE ID="        36" t="  4.16748E-01" dt="  3.08737E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.087E-02, NFUN:NPC=0000105:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         37: t =   4.47622E-01, dt(diffusion solver) =   3.25556E-02
+
+<CYCLE ID="        37" t="  4.47622E-01" dt="  3.25556E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.256E-02, NFUN:NPC=0000108:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         38: t =   4.80177E-01, dt(diffusion solver) =   3.44206E-02
+
+<CYCLE ID="        38" t="  4.80177E-01" dt="  3.44206E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.442E-02, NFUN:NPC=0000111:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         39: t =   5.14598E-01, dt(diffusion solver) =   3.65019E-02
+
+<CYCLE ID="        39" t="  5.14598E-01" dt="  3.65019E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.650E-02, NFUN:NPC=0000114:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         40: t =   5.51100E-01, dt(diffusion solver) =   3.88282E-02
+
+<CYCLE ID="        40" t="  5.51100E-01" dt="  3.88282E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=3.883E-02, NFUN:NPC=0000117:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         41: t =   5.89928E-01, dt(diffusion solver) =   4.14464E-02
+
+<CYCLE ID="        41" t="  5.89928E-01" dt="  4.14464E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.145E-02, NFUN:NPC=0000120:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         42: t =   6.31374E-01, dt(diffusion solver) =   4.44135E-02
+
+<CYCLE ID="        42" t="  6.31374E-01" dt="  4.44135E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.441E-02, NFUN:NPC=0000123:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         43: t =   6.75788E-01, dt(diffusion solver) =   4.78032E-02
+
+<CYCLE ID="        43" t="  6.75788E-01" dt="  4.78032E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=4.780E-02, NFUN:NPC=0000126:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         44: t =   7.23591E-01, dt(diffusion solver) =   5.17115E-02
+
+<CYCLE ID="        44" t="  7.23591E-01" dt="  5.17115E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.171E-02, NFUN:NPC=0000129:00003, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         45: t =   7.75303E-01, dt(diffusion solver) =   5.62643E-02
+
+<CYCLE ID="        45" t="  7.75303E-01" dt="  5.62643E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=5.626E-02, NFUN:NPC=0000131:00004, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         46: t =   8.31567E-01, dt(diffusion solver) =   6.17756E-02
+
+<CYCLE ID="        46" t="  8.31567E-01" dt="  6.17756E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.178E-02, NFUN:NPC=0000134:00004, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         47: t =   8.93342E-01, dt(diffusion solver) =   6.74275E-02
+
+<CYCLE ID="        47" t="  8.93342E-01" dt="  6.74275E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=6.743E-02, NFUN:NPC=0000137:00004, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+         48: t =   9.60770E-01, dt(diffusion solver) =   7.63010E-02
+
+<CYCLE ID="        48" t="  9.60770E-01" dt="  7.63010E-02" limiter="diffusion solver">
+
+[OUTTTY]
+
+DS: dt=7.630E-02, NFUN:NPC=0000140:00004, NNR:NNF:NSR=0000:0000:0000
+</CYCLE>
+
+[OUTERRTTY]
+
+<TIMESTEP CYCLE="                  48" t="    0.10370709059520808459E+01" dt="    0.76300971766947056629E-01" dt_courant="    0.10000000000000000000E+11" ID="         2">
+
+<FILE FORMAT="binary">
+ds7_output/ds7.ts.00002.bin
+</FILE>
+
+<FILEVAR Name="MATSLOT" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  16"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  20"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                9324"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPY" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               18628"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPYOLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               27932"></FILEVAR>
+
+<FILEVAR Name="Z_P" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               37236"></FILEVAR>
+
+<FILEVAR Name="Z_VC" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               46540" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_VCOLD" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               74452" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_RHO" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              102364"></FILEVAR>
+
+<FILEVAR Name="Face_Vel" DataType="d" Rank=" 2" Shape="6       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              111668" Attr="none"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              167492" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              172144" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              181448" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              190752" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_RHO_OLD" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              200056" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="nsens_design_variables" DataType="i" Rank="0" Shape="" Offset="209360"></FILEVAR>
+
+<FILEVAR Name="nsens_functions" DataType="i" Rank="0" Shape="" Offset="209364"></FILEVAR>
+
+<FILEVAR Name="COURANT" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              209368"></FILEVAR>
+
+<FILEVAR Name="Grad_T" DataType="d" Rank=" 2" Shape="3       1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              218672"></FILEVAR>
+
+<FILEVAR Name="||Grad_T||" DataType="d" Rank=" 1" Shape="1163" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="              246584"></FILEVAR>
+</TIMESTEP>
+
+[OUTTTY]
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0371E+00 after    48 steps
+
+<FINALTIME>
+                 Final Time:  1.0371E+00 after    48 steps
+</FINALTIME>
+
+<timing_tree processor=" 1">
+
+<TIMER key="Total" wall="    0.58" cpu="    0.57">
+
+<TIMER key="Input" wall="    0.04" cpu="    0.04">
+</TIMER>
+
+<TIMER key="Initialization" wall="    0.25" cpu="    0.25">
+</TIMER>
+
+<TIMER key="Main Cycle" wall="    0.28" cpu="    0.27">
+
+<TIMER key="Output" wall="    0.01" cpu="    0.01">
+</TIMER>
+
+<TIMER key="Time Step" wall="    0.00" cpu="    0.00">
+</TIMER>
+
+<TIMER key="Diffusion Solver" wall="    0.24" cpu="    0.24">
+
+<TIMER key="HT precon compute" wall="    0.05" cpu="    0.05">
+</TIMER>
+
+<TIMER key="HT function" wall="    0.02" cpu="    0.02">
+</TIMER>
+
+<TIMER key="HT precon apply" wall="    0.12" cpu="    0.12">
+</TIMER>
+</TIMER>
+</TIMER>
+</TIMER>
+</timing_tree>
+
+<timing_tree processor=" 2">
+
+<TIMER key="Total" wall="    0.58" cpu="    0.57">
+
+<TIMER key="Input" wall="    0.04" cpu="    0.04">
+</TIMER>
+
+<TIMER key="Initialization" wall="    0.25" cpu="    0.25">
+</TIMER>
+
+<TIMER key="Main Cycle" wall="    0.28" cpu="    0.27">
+
+<TIMER key="Output" wall="    0.01" cpu="    0.01">
+</TIMER>
+
+<TIMER key="Time Step" wall="    0.00" cpu="    0.00">
+</TIMER>
+
+<TIMER key="Diffusion Solver" wall="    0.24" cpu="    0.24">
+
+<TIMER key="HT precon compute" wall="    0.05" cpu="    0.05">
+</TIMER>
+
+<TIMER key="HT function" wall="    0.03" cpu="    0.03">
+</TIMER>
+
+<TIMER key="HT precon apply" wall="    0.12" cpu="    0.12">
+</TIMER>
+</TIMER>
+</TIMER>
+</TIMER>
+</timing_tree>
+
+<timing_tree processor=" 3">
+
+<TIMER key="Total" wall="    0.58" cpu="    0.57">
+
+<TIMER key="Input" wall="    0.04" cpu="    0.04">
+</TIMER>
+
+<TIMER key="Initialization" wall="    0.25" cpu="    0.25">
+</TIMER>
+
+<TIMER key="Main Cycle" wall="    0.28" cpu="    0.27">
+
+<TIMER key="Output" wall="    0.01" cpu="    0.01">
+</TIMER>
+
+<TIMER key="Time Step" wall="    0.00" cpu="    0.00">
+</TIMER>
+
+<TIMER key="Diffusion Solver" wall="    0.24" cpu="    0.23">
+
+<TIMER key="HT precon compute" wall="    0.05" cpu="    0.05">
+</TIMER>
+
+<TIMER key="HT function" wall="    0.03" cpu="    0.03">
+</TIMER>
+
+<TIMER key="HT precon apply" wall="    0.12" cpu="    0.13">
+</TIMER>
+</TIMER>
+</TIMER>
+</TIMER>
+</timing_tree>
+
+<timing_tree processor=" 4">
+
+<TIMER key="Total" wall="    0.58" cpu="    0.57">
+
+<TIMER key="Input" wall="    0.04" cpu="    0.04">
+</TIMER>
+
+<TIMER key="Initialization" wall="    0.25" cpu="    0.25">
+</TIMER>
+
+<TIMER key="Main Cycle" wall="    0.28" cpu="    0.27">
+
+<TIMER key="Output" wall="    0.01" cpu="    0.01">
+</TIMER>
+
+<TIMER key="Time Step" wall="    0.00" cpu="    0.00">
+</TIMER>
+
+<TIMER key="Diffusion Solver" wall="    0.23" cpu="    0.23">
+
+<TIMER key="HT precon compute" wall="    0.05" cpu="    0.05">
+</TIMER>
+
+<TIMER key="HT function" wall="    0.03" cpu="    0.03">
+</TIMER>
+
+<TIMER key="HT precon apply" wall="    0.12" cpu="    0.12">
+</TIMER>
+</TIMER>
+</TIMER>
+</TIMER>
+</timing_tree>
+  TIMING SUMMARY                       AVERAGE        MIN          MAX
+  --------------                      ---------    ---------    ---------
+  Total                               5.709E-01    5.689E-01    5.739E-01
+    Input                               3.899E-02    3.699E-02    4.099E-02
+    Initialization                      2.465E-01    2.460E-01    2.470E-01
+    Main Cycle                          2.737E-01    2.730E-01    2.750E-01
+      Output                              1.175E-02    1.100E-02    1.300E-02
+      Time Step                           7.500E-04    0.000E+00    2.000E-03
+      Diffusion Solver                    2.357E-01    2.310E-01    2.400E-01
+        HT precon compute                   4.824E-02    4.699E-02    4.899E-02
+        HT function                         2.600E-02    2.300E-02    2.799E-02
+        HT precon apply                     1.225E-01    1.180E-01    1.270E-01
+
+
+          Smallest process virtual memory used: 1.11E+02   mb
+          Largest process virtual memory used:  1.14E+02   mb
+          Total virtual memory used:            4.48E+02   mb
+          words/cell:                              50443
+
+[OUTERRTTY]
+
+
+
+<PUNTSTRING></PUNTSTRING>
+truchas terminated normally on 07 Sep 11 at 11:38:54
+
+<PUNTSTRING>
+truchas terminated normally on 07 Sep 11 at 11:38:54
+</PUNTSTRING>
+</TruchasData>

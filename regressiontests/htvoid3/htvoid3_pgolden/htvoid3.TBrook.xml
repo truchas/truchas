@@ -1,0 +1,2224 @@
+<?xml version="1.0" ?>
+
+<TruchasData Version="1.0">
+<Variable Name="TBrookVersion" DataType="c" Rank=" 0" Shape=""   ArrayOrder="FORTRAN" Offset="                   0"  >
+
+<DataValues>
+1.001                           
+</DataValues>
+</Variable>
+
+<MESH FORMAT="TRUCHASMESH" LABEL="DefaultMesh" MESHWRITERVERSION="1.0000">
+
+<FILE FORMAT="xml">
+htvoid3_output/htvoid3.DefaultMesh.00001.xml
+</FILE>
+</MESH>
+
+<BASICDATA>
+<![CDATA[                                                             
+                                                                      
+  In case the run dies in the middle, you can restore this file       
+  by closing any open tags.  Typically, the only tags you will        
+  have to close are CYCLE and TruchasData:                            
+         </CYCLE>                                                     
+     </TruchasData>                                                   
+                                                                      
+  or TIMESTEP and TruchasData:                                        
+         </TIMESTEP>                                                  
+     </TruchasData>                                                   
+                                                                      
+  Most other tags write their information in a single pass and        
+  should already be closed.                                           
+                                                                      
+  It is also possible that some of your variable data in the          
+  lookaside files '*.ts.#####.xml' are incomplete, but there is       
+  no way to recover this data since it was never written.  The        
+  OutputParser.py should ignore these files, but if it doesn't,       
+  You can just delete the last timestep tag from this file.           
+                                                                      
+]]>                                                                   
+<PROGRAMSPECIFICATIONS>
+
+<CODE TSTRLEN="       256">
+truchas
+</CODE>
+
+<VERSION TSTRLEN="       256">
+2.7.dev
+</VERSION>
+
+<LIBRARIES TSTRLEN="       256">
+UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+</LIBRARIES>
+
+<BUILDARCHITECTURE TSTRLEN="      1024">
+Linux noether.lanl.gov 3.6.11-5.fc17.x86_64 #1 SMP Tue Jan 8 21:40:51 UTC 2013 x86_64 x86_64 x86_64 GNU/Linux
+</BUILDARCHITECTURE>
+
+<BUILDDATETIME TSTRLEN="       256">
+ 6 Feb 13 16:07:31
+</BUILDDATETIME>
+
+<BUILDFLAGS TSTRLEN="      1024">
+-O2 -u -maxcontin=99
+</BUILDFLAGS>
+
+<BUILDHOST TSTRLEN="       256">
+noether.lanl.gov
+</BUILDHOST>
+
+<RUNARCHITECTURE TSTRLEN="       256">
+Linux noether.lanl.gov 3.6.11-5.fc17.x86_64 #1 SMP Tue Jan 8 21:40:51 UTC 2013 x86_64
+</RUNARCHITECTURE>
+
+<RUNHOST TSTRLEN="       256">
+noether.lanl.gov
+</RUNHOST>
+
+<RUNDATE TSTRLEN="       256">
+Thu 07 Feb 13 13:17:54.625
+</RUNDATE>
+
+<RUNPROCESSORS>
+4
+</RUNPROCESSORS>
+
+<IOPROCESSOR>
+1
+</IOPROCESSOR>
+</PROGRAMSPECIFICATIONS>
+
+<SIMULATIONINFORMATION>
+
+<TITLE TSTRLEN="       256">
+HTVOID3 -- Solidifying flow with void
+</TITLE>
+
+<RESTARTVARIABLES>
+
+<RESTART_COMMON>
+CODE, VERSION, PHYSICS, LIBRARIES, BUILDDATETIME, BUILDARCHITECTURE, BUILDFLAGS, BUILDHOST, RUNARCHITECTURE, RUNHOST, RUNDATE, TITLE, t, dt, dt_courant, cycle, ncells, nnodes, boundaryfaces, MAT_SLOT, NPHASES, NCOMPONENTS, CELLVERTICES, VERTEXCOORDS, RSUMRVOL, Z_RHO, Z_TEMP, Z_TEMP_OLD, Z_ENTHALPY, Z_ENTHALPYOLD, Z_P, Z_VC, Z_VCOLD, Z_VF, M_ID, M_VOF, M_VOF_OLD
+</RESTART_COMMON>
+
+<RESTART_MICRO>
+LIQUIDUS_TEMP, EUTECTIC_FRACTION, SEC_ARM_SPACING, PHASECONC, PHASECONCOLD
+</RESTART_MICRO>
+
+<RESTART_FLOW></RESTART_FLOW>
+
+<RESTART_HEAT_TRANSFER></RESTART_HEAT_TRANSFER>
+
+<RESTART_SOLID_MECHANICS>
+TOTAL_STRAIN, ELASTIC_STRESS, PLASTIC_STRAIN, PLASTIC_STRAIN_RATE, RHS, epstherm, epspc, DISPLACEMENT
+</RESTART_SOLID_MECHANICS>
+
+<RESTART_ELECTROMAGNETICS></RESTART_ELECTROMAGNETICS>
+</RESTARTVARIABLES>
+
+<PHYSICS NAME="HEAT_CONDUCTION" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="FLUID_FLOW" VALUE="T"></PHYSICS>
+
+<PHYSICS NAME="SOLID_MECHANICS" VALUE="F"></PHYSICS>
+
+<PHYSICS NAME="ELECTROMAGNETICS" VALUE="F"></PHYSICS>
+
+<ALLOYINFORMATION NPHASES="        -1" NCOMPONENTS="        -1"></ALLOYINFORMATION>
+
+<SPECIESINFO NSPECIES="         0"></SPECIESINFO>
+
+<MESHSCALEFACTOR>
+1.0000000000000000
+</MESHSCALEFACTOR>
+</SIMULATIONINFORMATION>
+
+<COPYRIGHT>
+<![CDATA[
+   Copyright 2012. Los Alamos National Security, LLC.  This material  
+   was produced under U.S. Government contract DE-AC52-06NA25396 for  
+   Los Alamos National Laboratory (LANL), which is operated by Los    
+   Alamos National Security, LLC for the U.S. Department of Energy.   
+   The U.S. Government has rights to use, reproduce, and distribute   
+   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL     
+   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES   
+   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is        
+   modified to produce derivative works, such modified software       
+   should be clearly marked, so as not to confuse it with the         
+   version available from LANL.                                       
+                                                                      
+   Additionally, this program is free software; you can redistribute  
+   it and/or modify it under the terms of the GNU General Public      
+   License as published by the Free Software Foundation; either       
+   version 2 of the License, or (at your option) any later version.   
+   Accordingly, this program is distributed in the hope that it will  
+   be useful, but WITHOUT ANY WARRANTY; without even the implied      
+   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.   
+   See the GNU General Public License for more details.               ]]>
+</COPYRIGHT>
+
+<DISCLAIMER>
+<![CDATA[
+   This Truchas release is registered with the Los Alamos National    
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.        
+   Truchas is currently a beta version, as development is ongoing     
+   and continuous, hence bugs are likely to be present. All aspects   
+   of the Truchas software and its user interface are subject to      
+   change without notice.                                             ]]>
+</DISCLAIMER>
+</BASICDATA>
+
+<TIMESTEP CYCLE="                   0" t="    0.00000000000000000000E+00" dt="    0.20000000000000000416E-01" dt_courant="    0.10000000000000000000E+11" ID="         0">
+
+<FILE FORMAT="binary">
+htvoid3_output/htvoid3.ts.00000.bin
+</FILE>
+
+<FILEVAR Name="MATSLOT" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  16"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  20"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP_OLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                2260"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPY" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                4500"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPYOLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                6740"></FILEVAR>
+
+<FILEVAR Name="Z_P" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                8980"></FILEVAR>
+
+<FILEVAR Name="Z_VC" DataType="d" Rank=" 2" Shape="3        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               11220" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_VCOLD" DataType="d" Rank=" 2" Shape="3        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               17940" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_RHO" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               24660"></FILEVAR>
+
+<FILEVAR Name="Face_Vel" DataType="d" Rank=" 2" Shape="6        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               26900" Attr="none"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               40340" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               41460" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               43700" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="dTdt" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               45940"></FILEVAR>
+
+<FILEVAR Name="COURANT" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               48180"></FILEVAR>
+
+<FILEVAR Name="VOF0001" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               50420"></FILEVAR>
+
+<FILEVAR Name="VOF0002" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               52660"></FILEVAR>
+
+<FILEVAR Name="VOF0003" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               54900"></FILEVAR>
+
+<FILEVAR Name="VOF0004" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               57140"></FILEVAR>
+
+<FILEVAR Name="del-rho" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               59380"></FILEVAR>
+
+<FILEVAR Name="Volume_Error" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               61620"></FILEVAR>
+
+<FILEVAR Name="Grad_T" DataType="d" Rank=" 2" Shape="3        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               63860"></FILEVAR>
+
+<FILEVAR Name="||Grad_T||" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               70580"></FILEVAR>
+</TIMESTEP>
+
+<CYCLE ID="         1" t="  0.00000E+00" dt="  2.00000E-02" limiter="initial">
+
+<ITERATION SOLVER="Preliminary projection iterations (linear)" COUNT="        20"></ITERATION>
+
+<ITERATION SOLVER="Preliminary projection iterations (linear)" COUNT="         0"></ITERATION>
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         2" t="  2.00000E-02" dt="  2.10000E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        17"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         3" t="  4.10000E-02" dt="  2.20500E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         4" t="  6.30500E-02" dt="  2.31525E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         5" t="  8.62025E-02" dt="  2.43101E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         6" t="  1.10513E-01" dt="  2.55256E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         7" t="  1.36038E-01" dt="  2.68019E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         8" t="  1.62840E-01" dt="  2.81420E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="         9" t="  1.90982E-01" dt="  2.95491E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        31"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        10" t="  2.20531E-01" dt="  3.10266E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        17"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        11" t="  2.51558E-01" dt="  3.25779E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        12" t="  2.84136E-01" dt="  3.42068E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        28"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        13" t="  3.18343E-01" dt="  3.59171E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        17"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        14" t="  3.54260E-01" dt="  3.77130E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        18"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        15" t="  3.91973E-01" dt="  3.95986E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        27"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        16" t="  4.31571E-01" dt="  4.15786E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        19"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        17" t="  4.73150E-01" dt="  4.36575E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        27"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        18" t="  5.16807E-01" dt="  3.97043E-02" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        24"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        19" t="  5.56512E-01" dt="  2.66250E-02" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        20" t="  5.83137E-01" dt="  1.79988E-02" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        21" t="  6.01135E-01" dt="  1.22682E-02" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        22" t="  6.13404E-01" dt="  8.43534E-03" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        23" t="  6.21839E-01" dt="  5.85476E-03" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        24" t="  6.27694E-01" dt="  4.10576E-03" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        25" t="  6.31799E-01" dt="  2.91209E-03" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        26" t="  6.34712E-01" dt="  2.09124E-03" limiter="courant" cell="       185">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        27" t="  6.36803E-01" dt="  2.19580E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        28" t="  6.38999E-01" dt="  2.30559E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        29" t="  6.41304E-01" dt="  2.42087E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        30" t="  6.43725E-01" dt="  2.54191E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        31" t="  6.46267E-01" dt="  2.66900E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        32" t="  6.48936E-01" dt="  2.80246E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        33" t="  6.51738E-01" dt="  2.94258E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        34" t="  6.54681E-01" dt="  3.08971E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        35" t="  6.57771E-01" dt="  3.24419E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        36" t="  6.61015E-01" dt="  3.40640E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        37" t="  6.64421E-01" dt="  3.57672E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        38" t="  6.67998E-01" dt="  3.75556E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        39" t="  6.71754E-01" dt="  3.94334E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        40" t="  6.75697E-01" dt="  4.14050E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        41" t="  6.79837E-01" dt="  4.34753E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        42" t="  6.84185E-01" dt="  4.56490E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        43" t="  6.88750E-01" dt="  4.79315E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        44" t="  6.93543E-01" dt="  5.03281E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        45" t="  6.98576E-01" dt="  5.28445E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        46" t="  7.03860E-01" dt="  5.54867E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        47" t="  7.09409E-01" dt="  5.82610E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        48" t="  7.15235E-01" dt="  6.11741E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        49" t="  7.21352E-01" dt="  6.42328E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        50" t="  7.27776E-01" dt="  6.74444E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        51" t="  7.34520E-01" dt="  7.08166E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        52" t="  7.41602E-01" dt="  7.43575E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        53" t="  7.49038E-01" dt="  7.80754E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        54" t="  7.56845E-01" dt="  8.19791E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        55" t="  7.65043E-01" dt="  8.60781E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        56" t="  7.73651E-01" dt="  9.03820E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        57" t="  7.82689E-01" dt="  9.49011E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        58" t="  7.92179E-01" dt="  9.96461E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        59" t="  8.02144E-01" dt="  1.04628E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        60" t="  8.12607E-01" dt="  1.09860E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        61" t="  8.23593E-01" dt="  1.15353E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        62" t="  8.35128E-01" dt="  1.21120E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        63" t="  8.47240E-01" dt="  1.27177E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        64" t="  8.59958E-01" dt="  1.33535E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        65" t="  8.73311E-01" dt="  1.40212E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        66" t="  8.87332E-01" dt="  1.47223E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        67" t="  9.02055E-01" dt="  1.54584E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        68" t="  9.17513E-01" dt="  1.62313E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        69" t="  9.33744E-01" dt="  1.70429E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        70" t="  9.50787E-01" dt="  1.78950E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        71" t="  9.68682E-01" dt="  1.87898E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        72" t="  9.87472E-01" dt="  1.97293E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        73" t="  1.00720E+00" dt="  2.07157E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        74" t="  1.02792E+00" dt="  2.17515E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        75" t="  1.04967E+00" dt="  2.28391E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        76" t="  1.07251E+00" dt="  2.39810E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        77" t="  1.09649E+00" dt="  2.51801E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        78" t="  1.12167E+00" dt="  2.64391E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        79" t="  1.14811E+00" dt="  2.77610E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        80" t="  1.17587E+00" dt="  2.91491E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        81" t="  1.20502E+00" dt="  3.06065E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        82" t="  1.23562E+00" dt="  3.21369E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        83" t="  1.26776E+00" dt="  3.37437E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        84" t="  1.30150E+00" dt="  3.54309E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        85" t="  1.33694E+00" dt="  3.72024E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        86" t="  1.37414E+00" dt="  3.90626E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        87" t="  1.41320E+00" dt="  4.10157E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        88" t="  1.45422E+00" dt="  4.30665E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        89" t="  1.49728E+00" dt="  4.52198E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        90" t="  1.54250E+00" dt="  4.74808E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        91" t="  1.58998E+00" dt="  4.98548E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        92" t="  1.63984E+00" dt="  5.23476E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        93" t="  1.69219E+00" dt="  5.49650E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        94" t="  1.74715E+00" dt="  5.77132E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        95" t="  1.80486E+00" dt="  6.05989E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        96" t="  1.86546E+00" dt="  6.36288E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        97" t="  1.92909E+00" dt="  6.68103E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        98" t="  1.99590E+00" dt="  6.92248E-02" limiter="courant" cell="       101">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="        99" t="  2.06513E+00" dt="  7.10396E-02" limiter="courant" cell="       101">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        15"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       100" t="  2.13617E+00" dt="  6.90701E-02" limiter="courant" cell="        40">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       101" t="  2.20524E+00" dt="  7.05427E-02" limiter="courant" cell="        40">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        16"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       102" t="  2.27578E+00" dt="  6.92013E-02" limiter="courant" cell="        39">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       103" t="  2.34498E+00" dt="  6.76686E-02" limiter="courant" cell="        39">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       104" t="  2.41265E+00" dt="  6.85683E-02" limiter="courant" cell="        39">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        14"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       105" t="  2.48122E+00" dt="  6.81143E-02" limiter="courant" cell="        38">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       106" t="  2.54933E+00" dt="  6.20302E-02" limiter="courant" cell="       252">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       107" t="  2.61136E+00" dt="  5.70429E-02" limiter="courant" cell="       251">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       108" t="  2.66840E+00" dt="  5.24805E-02" limiter="courant" cell="       184">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       109" t="  2.72089E+00" dt="  4.83033E-02" limiter="courant" cell="       183">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       110" t="  2.76919E+00" dt="  4.44763E-02" limiter="courant" cell="       182">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       111" t="  2.81366E+00" dt="  4.09688E-02" limiter="courant" cell="       181">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       112" t="  2.85463E+00" dt="  3.77529E-02" limiter="courant" cell="       180">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       113" t="  2.89239E+00" dt="  3.48033E-02" limiter="courant" cell="       179">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       114" t="  2.92719E+00" dt="  3.20979E-02" limiter="courant" cell="       178">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        13"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       115" t="  2.95929E+00" dt="  2.96216E-02" limiter="courant" cell="       178">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       116" t="  2.98891E+00" dt="  2.73352E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       117" t="  3.01624E+00" dt="  2.52365E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       118" t="  3.04148E+00" dt="  2.33106E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       119" t="  3.06479E+00" dt="  2.15439E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       120" t="  3.08634E+00" dt="  1.99244E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       121" t="  3.10626E+00" dt="  1.84409E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       122" t="  3.12470E+00" dt="  1.70833E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       123" t="  3.14178E+00" dt="  1.58415E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       124" t="  3.15763E+00" dt="  1.47059E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       125" t="  3.17233E+00" dt="  1.36675E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       126" t="  3.18600E+00" dt="  1.27176E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       127" t="  3.19872E+00" dt="  1.18488E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       128" t="  3.21057E+00" dt="  9.73821E-03" limiter="courant" cell="       257">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       129" t="  3.22030E+00" dt="  1.02251E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       130" t="  3.23053E+00" dt="  1.01602E-02" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       131" t="  3.24069E+00" dt="  9.78522E-03" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       132" t="  3.25047E+00" dt="  9.30674E-03" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       133" t="  3.25978E+00" dt="  8.78848E-03" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       134" t="  3.26857E+00" dt="  8.28074E-03" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       135" t="  3.27685E+00" dt="  3.97323E-03" limiter="courant" cell="       253">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         7"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       136" t="  3.28082E+00" dt="  4.17189E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         7"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       137" t="  3.28500E+00" dt="  4.38048E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         7"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       138" t="  3.28938E+00" dt="  4.59951E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       139" t="  3.29398E+00" dt="  4.82948E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       140" t="  3.29880E+00" dt="  5.07096E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       141" t="  3.30388E+00" dt="  5.32450E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       142" t="  3.30920E+00" dt="  5.59073E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       143" t="  3.31479E+00" dt="  5.77709E-03" limiter="courant" cell="       177">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       144" t="  3.32057E+00" dt="  5.13122E-03" limiter="courant" cell="       180">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       145" t="  3.32570E+00" dt="  3.46396E-03" limiter="courant" cell="       180">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       146" t="  3.32916E+00" dt="  3.19894E-03" limiter="courant" cell="       180">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       147" t="  3.33236E+00" dt="  3.16910E-03" limiter="courant" cell="       180">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       148" t="  3.33553E+00" dt="  2.89842E-03" limiter="courant" cell="       179">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       149" t="  3.33843E+00" dt="  2.64021E-03" limiter="courant" cell="       179">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       150" t="  3.34107E+00" dt="  2.77222E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       151" t="  3.34384E+00" dt="  2.91083E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       152" t="  3.34675E+00" dt="  3.05637E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       153" t="  3.34981E+00" dt="  3.20919E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       154" t="  3.35302E+00" dt="  3.04820E-03" limiter="courant" cell="       178">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       155" t="  3.35607E+00" dt="  2.90234E-03" limiter="courant" cell="       178">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       156" t="  3.35897E+00" dt="  2.19922E-03" limiter="courant" cell="       181">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       157" t="  3.36117E+00" dt="  2.30918E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       158" t="  3.36348E+00" dt="  1.44863E-03" limiter="courant" cell="       179">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       159" t="  3.36493E+00" dt="  1.52106E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       160" t="  3.36645E+00" dt="  1.59711E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       161" t="  3.36804E+00" dt="  1.67697E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       162" t="  3.36972E+00" dt="  1.76082E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       163" t="  3.37148E+00" dt="  1.84886E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       164" t="  3.37333E+00" dt="  1.94130E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       165" t="  3.37527E+00" dt="  2.03837E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       166" t="  3.37731E+00" dt="  2.14029E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       167" t="  3.37945E+00" dt="  2.24730E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       168" t="  3.38170E+00" dt="  2.35966E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       169" t="  3.38406E+00" dt="  2.25010E-03" limiter="courant" cell="       251">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       170" t="  3.38631E+00" dt="  2.36261E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       171" t="  3.38867E+00" dt="  2.48074E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       172" t="  3.39115E+00" dt="  2.60477E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       173" t="  3.39376E+00" dt="  2.73501E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        12"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       174" t="  3.39649E+00" dt="  2.87176E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       175" t="  3.39936E+00" dt="  3.01535E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       176" t="  3.40238E+00" dt="  3.16612E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       177" t="  3.40554E+00" dt="  3.32442E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       178" t="  3.40887E+00" dt="  1.22828E-03" limiter="courant" cell="       255">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       179" t="  3.41010E+00" dt="  1.28969E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       180" t="  3.41139E+00" dt="  1.35417E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       181" t="  3.41274E+00" dt="  1.42188E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       182" t="  3.41416E+00" dt="  1.49298E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       183" t="  3.41566E+00" dt="  1.56762E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       184" t="  3.41722E+00" dt="  1.64601E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       185" t="  3.41887E+00" dt="  1.72831E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       186" t="  3.42060E+00" dt="  1.81472E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       187" t="  3.42241E+00" dt="  1.90546E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       188" t="  3.42432E+00" dt="  2.00073E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       189" t="  3.42632E+00" dt="  2.10077E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       190" t="  3.42842E+00" dt="  2.20581E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       191" t="  3.43062E+00" dt="  2.31610E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       192" t="  3.43294E+00" dt="  2.43190E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       193" t="  3.43537E+00" dt="  2.55350E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       194" t="  3.43793E+00" dt="  2.68117E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       195" t="  3.44061E+00" dt="  2.81523E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       196" t="  3.44342E+00" dt="  2.95599E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       197" t="  3.44638E+00" dt="  3.10379E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       198" t="  3.44948E+00" dt="  3.25898E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       199" t="  3.45274E+00" dt="  3.37051E-03" limiter="courant" cell="       259">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       200" t="  3.45611E+00" dt="  3.15744E-03" limiter="courant" cell="       259">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       201" t="  3.45927E+00" dt="  2.97454E-03" limiter="courant" cell="       259">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       202" t="  3.46224E+00" dt="  2.80360E-03" limiter="courant" cell="       259">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       203" t="  3.46505E+00" dt="  2.62804E-03" limiter="courant" cell="       259">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       204" t="  3.46768E+00" dt="  2.46118E-03" limiter="courant" cell="       259">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       205" t="  3.47014E+00" dt="  2.58423E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       206" t="  3.47272E+00" dt="  2.71345E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       207" t="  3.47543E+00" dt="  2.84912E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       208" t="  3.47828E+00" dt="  2.99157E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       209" t="  3.48128E+00" dt="  3.14115E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       210" t="  3.48442E+00" dt="  3.29821E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       211" t="  3.48771E+00" dt="  3.46312E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       212" t="  3.49118E+00" dt="  3.63628E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       213" t="  3.49481E+00" dt="  3.81809E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       214" t="  3.49863E+00" dt="  4.00900E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       215" t="  3.50264E+00" dt="  4.20944E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       216" t="  3.50685E+00" dt="  4.41992E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       217" t="  3.51127E+00" dt="  4.64091E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       218" t="  3.51591E+00" dt="  4.87296E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       219" t="  3.52078E+00" dt="  5.11661E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       220" t="  3.52590E+00" dt="  5.37244E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       221" t="  3.53127E+00" dt="  5.64106E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       222" t="  3.53691E+00" dt="  5.92311E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       223" t="  3.54284E+00" dt="  6.21927E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       224" t="  3.54906E+00" dt="  6.53023E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       225" t="  3.55559E+00" dt="  6.85674E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       226" t="  3.56244E+00" dt="  7.19958E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       227" t="  3.56964E+00" dt="  7.55956E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       228" t="  3.57720E+00" dt="  7.93754E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       229" t="  3.58514E+00" dt="  8.33441E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       230" t="  3.59347E+00" dt="  8.75113E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       231" t="  3.60223E+00" dt="  9.18869E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       232" t="  3.61141E+00" dt="  9.64812E-03" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         8"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       233" t="  3.62106E+00" dt="  1.01305E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       234" t="  3.63119E+00" dt="  1.06371E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       235" t="  3.64183E+00" dt="  1.11689E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       236" t="  3.65300E+00" dt="  1.17274E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       237" t="  3.66473E+00" dt="  1.23137E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       238" t="  3.67704E+00" dt="  1.29294E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       239" t="  3.68997E+00" dt="  1.35759E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       240" t="  3.70355E+00" dt="  1.42547E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       241" t="  3.71780E+00" dt="  1.49674E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       242" t="  3.73277E+00" dt="  1.57158E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       243" t="  3.74848E+00" dt="  1.65016E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       244" t="  3.76499E+00" dt="  1.73266E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       245" t="  3.78231E+00" dt="  1.81930E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       246" t="  3.80050E+00" dt="  1.91026E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       247" t="  3.81961E+00" dt="  2.00578E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       248" t="  3.83967E+00" dt="  2.10606E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       249" t="  3.86073E+00" dt="  2.21137E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       250" t="  3.88284E+00" dt="  2.32194E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       251" t="  3.90606E+00" dt="  2.43803E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       252" t="  3.93044E+00" dt="  2.55993E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       253" t="  3.95604E+00" dt="  2.68793E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       254" t="  3.98292E+00" dt="  2.82233E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       255" t="  4.01114E+00" dt="  2.96344E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       256" t="  4.04078E+00" dt="  3.11162E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       257" t="  4.07189E+00" dt="  3.26720E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       258" t="  4.10456E+00" dt="  3.43056E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       259" t="  4.13887E+00" dt="  3.60209E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       260" t="  4.17489E+00" dt="  3.78219E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       261" t="  4.21271E+00" dt="  3.97130E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        11"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       262" t="  4.25243E+00" dt="  4.16986E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       263" t="  4.29412E+00" dt="  4.37836E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       264" t="  4.33791E+00" dt="  4.59727E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       265" t="  4.38388E+00" dt="  4.82714E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       266" t="  4.43215E+00" dt="  5.06850E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       267" t="  4.48284E+00" dt="  5.32192E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       268" t="  4.53606E+00" dt="  4.83348E-02" limiter="courant" cell="       245">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       269" t="  4.58439E+00" dt="  5.07516E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       270" t="  4.63514E+00" dt="  5.32892E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="        10"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       271" t="  4.68843E+00" dt="  5.59536E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       272" t="  4.74438E+00" dt="  5.87513E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       273" t="  4.80314E+00" dt="  6.16889E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       274" t="  4.86482E+00" dt="  6.47733E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       275" t="  4.92960E+00" dt="  6.80120E-02" limiter="growth">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<CYCLE ID="       276" t="  4.99761E+00" dt="  7.11646E-02" limiter="courant" cell="       233">
+
+<ITERATION SOLVER="projection iterations (linear)" COUNT="         9"></ITERATION>
+
+<ITERATION SOLVER="Viscous iterations (linear)" COUNT="         0"></ITERATION>
+</CYCLE>
+
+<TIMESTEP CYCLE="                 276" t="    0.50687746719516431071E+01" dt="    0.71164555842893079118E-01" dt_courant="    0.71164555842893079118E-01" ID="         1">
+
+<FILE FORMAT="binary">
+htvoid3_output/htvoid3.ts.00001.bin
+</FILE>
+
+<FILEVAR Name="MATSLOT" DataType="i" Rank=" 0" Shape="" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  16"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                  20"></FILEVAR>
+
+<FILEVAR Name="Z_TEMP_OLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                2260"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPY" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                4500"></FILEVAR>
+
+<FILEVAR Name="Z_ENTHALPYOLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                6740"></FILEVAR>
+
+<FILEVAR Name="Z_P" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="                8980"></FILEVAR>
+
+<FILEVAR Name="Z_VC" DataType="d" Rank=" 2" Shape="3        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               11220" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_VCOLD" DataType="d" Rank=" 2" Shape="3        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               17940" Attr="none"></FILEVAR>
+
+<FILEVAR Name="Z_RHO" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               24660"></FILEVAR>
+
+<FILEVAR Name="Face_Vel" DataType="d" Rank=" 2" Shape="6        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               26900" Attr="none"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               40340" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               41460" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               43700" SLOT="         1"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               45940" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               47060" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               49300" SLOT="         2"></FILEVAR>
+
+<FILEVAR Name="M_ID" DataType="i" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               51540" SLOT="         3"></FILEVAR>
+
+<FILEVAR Name="M_VOF" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               52660" SLOT="         3"></FILEVAR>
+
+<FILEVAR Name="M_VOF_OLD" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               54900" SLOT="         3"></FILEVAR>
+
+<FILEVAR Name="dTdt" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               57140"></FILEVAR>
+
+<FILEVAR Name="COURANT" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               59380"></FILEVAR>
+
+<FILEVAR Name="VOF0001" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               61620"></FILEVAR>
+
+<FILEVAR Name="VOF0002" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               63860"></FILEVAR>
+
+<FILEVAR Name="VOF0003" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               66100"></FILEVAR>
+
+<FILEVAR Name="VOF0004" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               68340"></FILEVAR>
+
+<FILEVAR Name="del-rho" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               70580"></FILEVAR>
+
+<FILEVAR Name="Volume_Error" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               72820"></FILEVAR>
+
+<FILEVAR Name="Grad_T" DataType="d" Rank=" 2" Shape="3        280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               75060"></FILEVAR>
+
+<FILEVAR Name="||Grad_T||" DataType="d" Rank=" 1" Shape="280" Mesh="DefaultMesh"  ArrayOrder="FORTRAN" Offset="               81780"></FILEVAR>
+</TIMESTEP>
+</TruchasData>

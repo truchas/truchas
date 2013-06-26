@@ -1,0 +1,306 @@
+Solid mechanics isothermal phase change test problem
+
+Constrained in the z direction, symmetry planes at x=0 and y=0.
+
+The block is then cooled from the bottom with a Dirichlet temperature
+BC.  The problems runs to a point where only some of the solid has
+transformed.  Thermal stresses arise from the fact that the top and
+bottom are constrained in the normal z direction and one phase change
+occurs at T=400 and another between T=375 and T=350.
+
+================================================================================
+
+Dave Korzekwa, MST6, dak@lanl.gov
+
+Andrew Kuprat, T-1, kuprat@lanl.gov (modification for AIN-solver)
+
+================================================================================
+
+define a three-dimensional mesh
+
+ 2 x  3 x 4  cells
+ 2 x  3 x 4  cm
+
+
+&MESH
+       mesh_file = '233_box.exo',
+       mesh_file_format = 'exodusII',
+       coordinate_scale_factor         =  0.01
+/
+
+define the solid material geometry and the initial conditions
+
+&BODY
+
+    surface_name         = 'from mesh file'
+    material_number      = 1
+    mesh_material_number = 1
+    temperature          = 5.0e+02, 
+
+/
+
+define the boundary conditions:
+
+x = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'from mesh file', 
+    mesh_surface          = 1, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'x-displacement', 
+    bc_value         = 0.0
+
+/
+
+&DS_BOUNDARY_CONDITION
+  NAME = 'x=0'
+  VARIABLE = 'temperature'
+  CONDITION = 'flux'
+  DATA_CONSTANT = 0.0
+  Face_Set_IDs = 1
+/
+
+x = 2.0e-2 boundary
+
+&DS_BOUNDARY_CONDITION
+  NAME = 'x=2.0e-2'
+  VARIABLE = 'temperature'
+  CONDITION = 'flux'
+  DATA_CONSTANT = 0.0
+  Face_Set_IDs = 2
+/
+
+&BC
+
+    surface_name     = 'from mesh file', 
+    mesh_surface          = 2, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'x-displacement', 
+    bc_value         = 0.0
+
+/
+
+y = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'from mesh file', 
+    mesh_surface          = 3, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'y-displacement', 
+    bc_value         = 0.0e+00
+
+/
+
+&DS_BOUNDARY_CONDITION
+  NAME = 'y=0'
+  VARIABLE = 'temperature'
+  CONDITION = 'flux'
+  DATA_CONSTANT = 0.0
+  Face_Set_IDs = 3
+/
+
+y = 3.0e-2 boundary
+
+&DS_BOUNDARY_CONDITION
+  NAME = 'y=3.0e-2'
+  VARIABLE = 'temperature'
+  CONDITION = 'flux'
+  DATA_CONSTANT = 0.0
+  Face_Set_IDs = 4
+/
+
+&BC
+
+    surface_name     = 'from mesh file', 
+    mesh_surface          = 4, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'y-displacement', 
+    bc_value         = 0.0e+00
+
+/
+
+z = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'from mesh file', 
+    mesh_surface          = 5, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'z-displacement'
+    bc_value         = 0.0e+00
+
+/
+
+&DS_BOUNDARY_CONDITION
+  NAME = 'z=0'
+  VARIABLE = 'temperature'
+  CONDITION = 'dirichlet'
+  DATA_CONSTANT = 300.0
+  Face_Set_IDs = 5
+/
+
+z = 4.0 boundary
+
+&DS_BOUNDARY_CONDITION
+  NAME = 'z=4'
+  VARIABLE = 'temperature'
+  CONDITION = 'flux'
+  DATA_CONSTANT = 0.0
+  Face_Set_IDs = 6
+/
+
+define the material properties (aluminum, SI units)
+Elastic constants (stresses) in MPa to make test checking easier 
+
+&MATERIAL_SYSTEM
+  name = 'Pseudo_Al'
+  phases = 'PC-aluminum_2', 'PC-aluminum', 'aluminum'
+  transition_temps_low  = 350.0, 399.0
+  transition_temps_high = 375.0, 401.0
+  latent_heat           =  10000.0, 10000.0 ! J/kg
+  reference_temp        = 0.0
+  reference_enthalpy    = 0.0
+  smoothing_radius	= 0.1
+/
+
+&MATERIAL
+
+    material_number               = 1, 
+    priority                      = 1, 
+    material_name                 = 'aluminum', 
+    material_feature              = 'background', 
+    density                       = 2.70e+03, 
+    immobile                      = .true.
+/
+    Lame1_Constants               = 5.20e+10, 
+    Lame2_Constants               = 2.60e+10, 
+
+&PHASE
+  name = 'aluminum'
+  property_name(1) = 'density',              property_constant(1) = 2700.0, ! kg/m^3
+  property_name(2) = 'specific heat',        property_constant(2) = 900.0,  ! J/kg-K
+  property_name(3) = 'conductivity',         property_constant(3) = 240.0,  ! W/m-K
+  property_name(4) = 'TM reference density',      property_constant(4) = 2700.0 ! kg/m^3
+  property_name(5) = 'TM reference temperature',  property_constant(5) = 500.0 
+  property_name(6) = 'TM linear CTE',             property_constant(6) = 2.2e-5
+  property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
+  property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
+/
+
+
+Bogus phase change material
+
+&MATERIAL
+
+    material_number               = 2, 
+    priority                      = 2, 
+    material_name                 = 'PC-aluminum', 
+    density                       = 2.673e+03, 
+    immobile                      = .true.
+/
+    Lame1_Constants               = 5.20e+10, 
+    Lame2_Constants               = 2.60e+10, 
+
+&PHASE
+  name = 'PC-aluminum'
+  property_name(1) = 'density',              property_constant(1) = 2700.0, ! kg/m^3
+  property_name(2) = 'specific heat',        property_constant(2) = 1200.0,  ! J/kg-K
+  property_name(3) = 'conductivity',         property_constant(3) = 270.0,  ! W/m-K
+  property_name(4) = 'TM reference density',      property_constant(4) = 2690.7 ! kg/m^3
+  property_name(5) = 'TM reference temperature',  property_constant(5) = 400.0 
+  property_name(6) = 'TM linear CTE',             property_constant(6) = 2.1e-5
+  property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
+  property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
+/
+
+&MATERIAL
+
+    material_number               = 3, 
+    priority                      = 3, 
+    material_name                 = 'PC-aluminum_2', 
+    density                       = 2.6865e+03, 
+    immobile                      = .true.
+
+/
+    Lame1_Constants               = 5.20e+10, 
+    Lame2_Constants               = 2.60e+10, 
+
+&PHASE
+  name = 'PC-aluminum_2'
+  property_name(1) = 'density',              property_constant(1) = 2700.0, ! kg/m^3
+  property_name(2) = 'specific heat',        property_constant(2) = 1200.0,  ! J/kg-K
+  property_name(3) = 'conductivity',         property_constant(3) = 270.0,  ! W/m-K
+  property_name(4) = 'TM reference density',      property_constant(4) = 2712.82 ! kg/m^3
+  property_name(5) = 'TM reference temperature',  property_constant(5) = 350.0 
+  property_name(6) = 'TM linear CTE',             property_constant(6) = 2.0e-5
+  property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
+  property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
+/
+
+&PHYSICS
+
+    fluid_flow                    = .false., 
+    heat_transport                = .true., 
+    solid_mechanics               = .true.
+
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-5
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-5
+  nlk_tol            = 1.0e-3
+  nlk_preconditioner = 'hypre_amg'
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'displacement precon', 
+    method                  = 'none', 
+    preconditioning_steps   = 4, 
+    relaxation_parameter    = 1.0, 
+    preconditioning_method  = 'tm_ssor', 
+
+/
+
+&NONLINEAR_SOLVER 
+
+    name                    = 'displacement solve', 
+    method                  = 'nlk', 
+    linear_solver_name      = 'displacement precon', 
+    convergence_criterion   = 1.0e-12, 
+    nlk_max_vectors         = 20
+    nlk_vector_tolerance    = 0.01
+    maximum_iterations      = 100
+
+/
+
+constant time increment
+loose solver tolerance
+
+&NUMERICS
+    dt_init                          = 1.00e-3,
+    dt_max                           = 5.0e0,
+    dt_grow                          = 100,
+    displacement_nonlinear_solution  = 'displacement solve', 
+/
+
+Run for 100 sec
+
+&OUTPUTS
+
+    output_t                     = 0.0e+00, 6.0e+00, 
+    output_dt                    = 1.0e-2, 
+    output_dt_multiplier         = 20
+    short_output_dt_multiplier   = 1, 
+
+/
+
+&PARALLEL_PARAMETERS
+
+    Partitioner  = 'automatic', 
+
+/

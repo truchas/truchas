@@ -1,0 +1,556 @@
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.537E-02, ||F2_0||_max = 4.130E-01
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                5.694E-03                4.289E+02
+    1: error= 4.28942E+02
+                6.080E-07                4.712E-01
+    2: error= 4.71198E-01
+  NLK BCE solve succeeded:   2 iterations, error= 4.71198E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 4.339E-01, ||F2_0||_max = 4.421E-01
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                4.103E-06                4.109E+02
+    1: error= 4.10894E+02
+                3.999E-08                4.550E-01
+    2: error= 4.55004E-01
+  NLK BCE solve succeeded:   2 iterations, error= 4.55004E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 4.418E-04, ||F2_0||_max = 4.586E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                4.703E-03                1.038E+03
+    1: error= 1.03786E+03
+                1.699E-05                8.803E-01
+    2: error= 8.80302E-01
+  NLK BCE solve succeeded:   2 iterations, error= 8.80302E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 4.894E-04, ||F2_0||_max = 4.955E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                4.104E-03                1.108E+03
+    1: error= 1.10828E+03
+                1.403E-05                1.103E+00
+    2: error= 1.10315E+00
+                1.479E-05                1.898E-03
+    3: error= 1.89765E-03
+  NLK BCE solve succeeded:   3 iterations, error= 1.89765E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 5.404E-04, ||F2_0||_max = 5.388E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.778E-03                1.173E+03
+    1: error= 1.17299E+03
+                1.503E-05                1.347E+00
+    2: error= 1.34700E+00
+                1.310E-05                2.481E-03
+    3: error= 2.48079E-03
+  NLK BCE solve succeeded:   3 iterations, error= 2.48079E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 5.949E-04, ||F2_0||_max = 5.851E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                4.442E-03                1.240E+03
+    1: error= 1.24027E+03
+                1.132E-05                1.637E+00
+    2: error= 1.63682E+00
+                9.950E-06                3.207E-03
+    3: error= 3.20669E-03
+  NLK BCE solve succeeded:   3 iterations, error= 3.20669E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 6.530E-04, ||F2_0||_max = 6.354E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                4.227E-03                1.308E+03
+    1: error= 1.30805E+03
+                9.785E-06                1.975E+00
+    2: error= 1.97452E+00
+                1.117E-05                4.108E-03
+    3: error= 4.10765E-03
+  NLK BCE solve succeeded:   3 iterations, error= 4.10765E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 7.148E-04, ||F2_0||_max = 6.903E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.421E-03                1.376E+03
+    1: error= 1.37564E+03
+                6.302E-06                2.365E+00
+    2: error= 2.36458E+00
+                8.227E-06                5.216E-03
+    3: error= 5.21612E-03
+  NLK BCE solve succeeded:   3 iterations, error= 5.21612E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 7.806E-04, ||F2_0||_max = 7.502E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.307E-03                1.492E+03
+    1: error= 1.49170E+03
+                8.190E-06                2.811E+00
+    2: error= 2.81090E+00
+                5.874E-06                6.567E-03
+    3: error= 6.56672E-03
+  NLK BCE solve succeeded:   3 iterations, error= 6.56672E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 8.504E-04, ||F2_0||_max = 8.158E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.458E-04                1.629E+03
+    1: error= 1.62903E+03
+                6.579E-06                3.317E+00
+    2: error= 3.31674E+00
+                7.520E-06                8.218E-03
+    3: error= 8.21802E-03
+  NLK BCE solve succeeded:   3 iterations, error= 8.21802E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 9.243E-04, ||F2_0||_max = 8.882E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.290E-03                1.768E+03
+    1: error= 1.76760E+03
+                5.739E-06                3.885E+00
+    2: error= 3.88486E+00
+                6.424E-06                1.023E-02
+    3: error= 1.02332E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.02332E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.003E-03, ||F2_0||_max = 9.685E-05
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.586E-03                1.904E+03
+    1: error= 1.90436E+03
+                4.429E-06                4.517E+00
+    2: error= 4.51687E+00
+                4.669E-06                1.268E-02
+    3: error= 1.26836E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.26836E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.086E-03, ||F2_0||_max = 1.058E-04
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.382E-03                2.035E+03
+    1: error= 2.03543E+03
+                4.653E-06                5.211E+00
+    2: error= 5.21077E+00
+                4.421E-06                1.566E-02
+    3: error= 1.56630E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.56630E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.176E-03, ||F2_0||_max = 1.159E-04
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.798E-03                2.156E+03
+    1: error= 2.15602E+03
+                3.570E-06                5.985E+00
+    2: error= 5.98493E+00
+                4.726E-06                1.925E-02
+    3: error= 1.92468E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.92468E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.281E-03, ||F2_0||_max = 1.384E-04
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.963E-04                2.081E+03
+    1: error= 2.08107E+03
+                3.202E-06                6.515E+00
+    2: error= 6.51520E+00
+                3.084E-06                2.164E-02
+    3: error= 2.16434E-02
+  NLK BCE solve succeeded:   3 iterations, error= 2.16434E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.395E-03, ||F2_0||_max = 1.810E-04
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.253E-04                1.946E+03
+    1: error= 1.94574E+03
+                2.848E-06                6.430E+00
+    2: error= 6.43047E+00
+                3.238E-06                2.216E-02
+    3: error= 2.21591E-02
+  NLK BCE solve succeeded:   3 iterations, error= 2.21591E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.519E-03, ||F2_0||_max = 1.308E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.665E-03                3.377E+01
+    1: error= 3.37650E+01
+                2.695E-06                1.152E-01
+    2: error= 1.15188E-01
+  NLK BCE solve succeeded:   2 iterations, error= 1.15188E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.648E-03, ||F2_0||_max = 4.573E-04
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.693E-03                1.333E+03
+    1: error= 1.33264E+03
+                2.065E-06                5.509E+00
+    2: error= 5.50905E+00
+                2.035E-06                2.121E-02
+    3: error= 2.12105E-02
+  NLK BCE solve succeeded:   3 iterations, error= 2.12105E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.538E-03, ||F2_0||_max = 1.136E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.953E-03                8.686E+01
+    1: error= 8.68567E+01
+                2.406E-06                4.088E-01
+    2: error= 4.08765E-01
+  NLK BCE solve succeeded:   2 iterations, error= 4.08765E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.435E-03, ||F2_0||_max = 1.589E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.635E-03                1.241E+03
+    1: error= 1.24097E+03
+                2.708E-06                5.202E+00
+    2: error= 5.20182E+00
+                2.817E-06                2.687E-02
+    3: error= 2.68671E-02
+  NLK BCE solve succeeded:   3 iterations, error= 2.68671E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.584E-03, ||F2_0||_max = 6.136E-04
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.482E-03                2.962E+03
+    1: error= 2.96158E+03
+                1.357E-06                1.130E+01
+    2: error= 1.13043E+01
+                1.323E-06                6.710E-02
+    3: error= 6.70953E-02
+  NLK BCE solve succeeded:   3 iterations, error= 6.70953E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.078E-03, ||F2_0||_max = 1.329E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.309E-03                1.186E+03
+    1: error= 1.18637E+03
+                1.115E-06                3.844E+00
+    2: error= 3.84445E+00
+                1.085E-06                6.436E-03
+    3: error= 6.43551E-03
+  NLK BCE solve succeeded:   3 iterations, error= 6.43551E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.193E-03, ||F2_0||_max = 8.744E-04
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.041E-03                2.216E+03
+    1: error= 2.21600E+03
+                1.246E-06                1.271E+01
+    2: error= 1.27092E+01
+                1.089E-06                6.528E-02
+    3: error= 6.52813E-02
+  NLK BCE solve succeeded:   3 iterations, error= 6.52813E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.780E-03, ||F2_0||_max = 1.098E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.082E-03                4.249E+02
+    1: error= 4.24892E+02
+                1.012E-06                2.344E+00
+    2: error= 2.34444E+00
+                1.153E-06                1.656E-02
+    3: error= 1.65596E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.65596E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 6.539E-02, ||F2_0||_max = 2.447E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                7.342E-03                1.982E+03
+    1: error= 1.98154E+03
+                2.261E-07                9.340E+00
+    2: error= 9.34040E+00
+                4.703E-08                8.089E-02
+    3: error= 8.08881E-02
+  NLK BCE solve succeeded:   3 iterations, error= 8.08881E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 4.468E-03, ||F2_0||_max = 1.348E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.464E-03                1.564E+03
+    1: error= 1.56443E+03
+                8.865E-07                7.488E+00
+    2: error= 7.48815E+00
+                5.599E-07                1.488E-02
+    3: error= 1.48843E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.48843E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.626E-03, ||F2_0||_max = 1.073E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.535E-03                1.268E+03
+    1: error= 1.26843E+03
+                3.141E-06                5.660E+00
+    2: error= 5.66032E+00
+                6.988E-07                3.792E-02
+    3: error= 3.79219E-02
+  NLK BCE solve succeeded:   3 iterations, error= 3.79219E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.745E-03, ||F2_0||_max = 1.350E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.897E-03                1.758E+03
+    1: error= 1.75799E+03
+                1.741E-06                6.577E+00
+    2: error= 6.57730E+00
+                9.813E-07                1.562E-02
+    3: error= 1.56207E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.56207E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 4.147E-03, ||F2_0||_max = 1.057E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.272E-03                5.379E+02
+    1: error= 5.37853E+02
+                9.371E-07                2.212E+00
+    2: error= 2.21151E+00
+                9.066E-07                1.376E-02
+    3: error= 1.37575E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.37575E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.367E-03, ||F2_0||_max = 2.945E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.132E-03                2.796E+03
+    1: error= 2.79610E+03
+                1.366E-06                9.788E+00
+    2: error= 9.78757E+00
+                1.458E-06                1.121E-01
+    3: error= 1.12128E-01
+  NLK BCE solve succeeded:   3 iterations, error= 1.12128E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 4.078E-03, ||F2_0||_max = 1.356E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.937E-03                1.694E+03
+    1: error= 1.69361E+03
+                8.596E-07                5.031E+00
+    2: error= 5.03098E+00
+                8.311E-07                8.321E-03
+    3: error= 8.32131E-03
+  NLK BCE solve succeeded:   3 iterations, error= 8.32131E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.573E-03, ||F2_0||_max = 1.041E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.494E-03                3.949E+02
+    1: error= 3.94857E+02
+                1.045E-06                1.191E+00
+    2: error= 1.19096E+00
+                1.085E-06                8.095E-03
+    3: error= 8.09508E-03
+  NLK BCE solve succeeded:   3 iterations, error= 8.09508E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.080E-03, ||F2_0||_max = 1.354E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.493E-03                1.857E+03
+    1: error= 1.85706E+03
+                1.218E-06                4.940E+00
+    2: error= 4.93996E+00
+                1.025E-06                7.391E-03
+    3: error= 7.39063E-03
+  NLK BCE solve succeeded:   3 iterations, error= 7.39063E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.876E-03, ||F2_0||_max = 1.030E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.472E-03                2.943E+02
+    1: error= 2.94331E+02
+                1.033E-06                7.614E-01
+    2: error= 7.61414E-01
+  NLK BCE solve succeeded:   2 iterations, error= 7.61414E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.546E-03, ||F2_0||_max = 2.928E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.609E-03                9.412E+02
+    1: error= 9.41200E+02
+                1.295E-06                3.259E+00
+    2: error= 3.25858E+00
+                1.590E-06                1.522E-02
+    3: error= 1.52153E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.52153E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.612E-03, ||F2_0||_max = 1.354E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.071E-03                7.684E+01
+    1: error= 7.68364E+01
+                1.068E-06                2.265E-01
+    2: error= 2.26463E-01
+  NLK BCE solve succeeded:   2 iterations, error= 2.26463E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.492E-03, ||F2_0||_max = 1.018E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.449E-03                2.409E+02
+    1: error= 2.40854E+02
+                1.039E-06                8.237E-01
+    2: error= 8.23683E-01
+  NLK BCE solve succeeded:   2 iterations, error= 8.23683E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.411E-03, ||F2_0||_max = 2.576E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                5.745E-03                5.754E+02
+    1: error= 5.75440E+02
+                1.794E-06                1.739E+00
+    2: error= 1.73918E+00
+                1.865E-06                6.036E-03
+    3: error= 6.03609E-03
+  NLK BCE solve succeeded:   3 iterations, error= 6.03609E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.507E-03, ||F2_0||_max = 1.351E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                4.397E-03                1.394E+02
+    1: error= 1.39354E+02
+                1.143E-06                4.827E-01
+    2: error= 4.82677E-01
+  NLK BCE solve succeeded:   2 iterations, error= 4.82677E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.548E-03, ||F2_0||_max = 3.054E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.104E-03                6.432E+02
+    1: error= 6.43214E+02
+                1.800E-06                2.023E+00
+    2: error= 2.02304E+00
+                1.757E-06                1.369E-02
+    3: error= 1.36897E-02
+  NLK BCE solve succeeded:   3 iterations, error= 1.36897E-02
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.091E-03, ||F2_0||_max = 1.344E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.723E-03                5.494E+01
+    1: error= 5.49388E+01
+                1.552E-06                2.371E-01
+    2: error= 2.37114E-01
+  NLK BCE solve succeeded:   2 iterations, error= 2.37114E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.180E-03, ||F2_0||_max = 9.995E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.820E-03                2.685E+02
+    1: error= 2.68534E+02
+                1.172E-06                6.301E-01
+    2: error= 6.30123E-01
+  NLK BCE solve succeeded:   2 iterations, error= 6.30123E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.031E-03, ||F2_0||_max = 2.610E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                1.847E-03                4.529E+02
+    1: error= 4.52908E+02
+                2.006E-06                1.051E+00
+    2: error= 1.05084E+00
+                2.256E-06                3.627E-03
+    3: error= 3.62667E-03
+  NLK BCE solve succeeded:   3 iterations, error= 3.62667E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 3.114E-03, ||F2_0||_max = 1.338E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                5.372E-03                2.045E+02
+    1: error= 2.04465E+02
+                1.546E-06                3.297E-01
+    2: error= 3.29727E-01
+  NLK BCE solve succeeded:   2 iterations, error= 3.29727E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.417E-03, ||F2_0||_max = 3.032E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                2.235E-03                8.955E+02
+    1: error= 8.95540E+02
+                1.947E-06                1.427E+00
+    2: error= 1.42710E+00
+                1.816E-06                2.830E-03
+    3: error= 2.83039E-03
+  NLK BCE solve succeeded:   3 iterations, error= 2.83039E-03
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.601E-03, ||F2_0||_max = 1.329E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                4.615E-03                5.981E+01
+    1: error= 5.98111E+01
+                1.871E-06                1.020E-01
+    2: error= 1.01994E-01
+  NLK BCE solve succeeded:   2 iterations, error= 1.01994E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.831E-03, ||F2_0||_max = 9.846E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                5.980E-03                2.455E+02
+    1: error= 2.45456E+02
+                1.809E-06                4.619E-01
+    2: error= 4.61903E-01
+  NLK BCE solve succeeded:   2 iterations, error= 4.61903E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 1.822E-03, ||F2_0||_max = 2.634E-03
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                3.843E-03                4.003E+02
+    1: error= 4.00307E+02
+                2.165E-06                7.291E-01
+    2: error= 7.29104E-01
+  NLK BCE solve succeeded:   2 iterations, error= 7.29104E-01
+HEAT TRANSFER FUNCTION NORMS
+  F1: heat conservation equation (cells)
+  F2: flux continuity equation (faces)
+  ||F1_0||_max = 2.726E-03, ||F2_0||_max = 1.321E-02
+  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max
+                6.982E-03                9.402E+01
+    1: error= 9.40158E+01
+                1.862E-06                2.272E-01
+    2: error= 2.27235E-01
+  NLK BCE solve succeeded:   2 iterations, error= 2.27235E-01
