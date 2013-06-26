@@ -1,0 +1,23 @@
+# Makefile for ArrayAllocate_Test
+FFLAGS = -g2 -O0 -I../../tmp
+
+ArrayAllocate_Test : ArrayAllocate_Test.o ArrayAllocate.o Output_Module.o Makefile.ArrayAllocate
+	f90 -o ArrayAllocate_Test ArrayAllocate_Test.o ArrayAllocate.o Output_Module.o
+
+ArrayAllocate.o : ArrayAllocate.f90 Output_Module.o Makefile.ArrayAllocate
+	f90 -c ${FFLAGS} ArrayAllocate.f90
+
+Output_Module.o : Output_Module.f90 Makefile.ArrayAllocate
+	f90 -c $(FFLAGS) Output_Module.f90
+
+ArrayAllocate_Test.o : ArrayAllocate_Test.f90 ArrayAllocate.o Makefile.ArrayAllocate
+	f90 -c ${FFLAGS} ArrayAllocate_Test.f90
+
+ArrayAllocate.f90 : ../ArrayAllocate_Module.F90 Makefile.ArrayAllocate
+	cp ../ArrayAllocate_Module.F90 ArrayAllocate.f90
+
+clean : Makefile.ArrayAllocate
+	rm -rf ArrayAllocate_Test ArrayAllocate.f90 *.o *.mod *~ core
+
+test : ArrayAllocate_Test Makefile.ArrayAllocate
+	ArrayAllocate_Test
