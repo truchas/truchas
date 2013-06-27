@@ -1,0 +1,66 @@
+THE GENRE INPUT FILE FORMAT
+---------------------------
+
+The following namelist is required:
+
+
+&ENCLOSURE
+  name =               ! user-supplied name for the enclosure
+  mesh_file =          ! path to the Exodus/Genesis mesh file
+  ignore_block_IDs =   ! list of element blocks to mask-off from the mesh (optional
+  side_set_ids =       ! list of side sets specifying the surface
+  symmetries =         ! list of up to 3 symmetry operations:
+                       ! Mirror<a>, a = X, Y, Z; e.g. MirrorZ
+                       ! Rot<a><n>, a = X, Y, Z; n integer; e.g., RotZ3, RotX16
+  coord_scale_factor = ! scale coord data by this factor (opt)
+/
+
+The following namelist is optional:
+
+  &CHAPARRAL
+    blocking_enclosure  = .true.
+    partial_enclosure   = .true.
+    partial_area        = 50.0
+    BSP_max_tree_depth  = 10
+    BSP_min_leaf_length = 25
+    spatial_tolerance   = 1.0e-8
+    hemicube_resolution = 200
+    min_separation      = 10.0
+    max_subdivisions    = 20
+    smoothing_tolerance = 1.0e-8
+    smoothing_max_iter  = 100
+    verbosity_level
+    smoothing_weight
+  /
+
+o The order of the namelists does not matter, and there may be other stuff
+  in the input file; behavior is similar to Truchas input files.
+  
+o There must be a single ENCLOSURE namelist, and at most one CHAPARRAL
+  namelist.  The first instance found is the one used.  If there is a
+  CHAPARRAL namelist the specified enclosure surface is generated and
+  written to the enclosure file along with the calculated view factors,
+  otherwise just the enclosure surface is written; this is useful for
+  examining the surface for correctness prior to performing the expensive
+  view factor calculation.
+
+o Accuracy of the raw VF calculation is controlled by min_separation
+  and hemicube_resolution.
+  
+o Accuracy of the final smoothing step is controlled by smoothing_tolerance.
+  The smoothing step should not require a lot of work.
+  
+o "Back stop" parameters that prevent runaway calculations are:
+  max_subdivisions, smoothing_max_iterations.  If any of these are
+  tripped the VF calculation is suspect.
+
+o If any two faces are oriented so that they would be visible to each
+  other except for a piece of the surface that blocks the view then
+  blocking_enclosure must be set true.
+  
+o If the surface is not the boundary of a bounded volume then the
+  enclosure is partial and partial_enclosure must be set true.
+
+o For partial enclosures the area of a virtual surface that would
+  make the enclosure complete must be specified.  Chaparral will
+  tell you what that area should be as part of the output.

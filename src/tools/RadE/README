@@ -1,0 +1,92 @@
+GENERATING A RADIATION ENCLOSURE DATASET
+----------------------------------------
+
+Serial: genre <input_file> <encl_file>
+
+Parallel: mpirun -np 128 genre <input_file> <encl_file>
+
+The input file has the following format:
+
+  &ENCLOSURE
+    name =              ! user-supplied name for the enclosure
+    mesh_file =         ! path to the Exodus/Genesis mesh file
+    ignore_block_IDs =  ! list of element blocks to mask-off from the mesh
+    side_set_ids =      ! list of side sets specifying the surface
+    symmetries =        ! list of up to 3 symmetry operations:
+                        ! Mirror<a>, a = X, Y, Z; e.g. MirrorZ
+                        ! Rot<a><n>, a = X, Y, Z; n integer; e.g., RotZ3, RotX16
+    partial_enclosure = ! is the enclosure partial? T/F
+  /
+
+  &CHAPARRAL
+    blocking_enclosure  = .true.
+    partial_enclosure   = .true.
+    partial_area        = 50.0
+    BSP_max_tree_depth  = 10
+    BSP_min_leaf_length = 25
+    spatial_tolerance   = 1.0e-8
+    hemicube_resolution = 200
+    min_separation      = 10.0
+    max_subdivisions    = 20
+    smoothing_tolerance = 1.0e-8
+    smoothing_max_iter  = 100
+  /
+
+o The order of the namelists does not matter, and there may be other stuff
+  in the input file; behavior is similar to Truchas input files.
+o There must be a single ENCLOSURE namelist, and at most one CHAPARRAL
+  namelist.  If there is a CHAPARRAL namelist the specified enclosure
+  surface is generated and written to the enclosure file along with the
+  calculated view factors, otherwise just the enclosure surface is written;
+  this is useful for examining the surface for correctness prior to performing
+  the expensive view factor calculation.
+
+
+COMPARING TWO RADIATION ENCLOSURE DATASETS
+------------------------------------------
+
+If you've generated multiple datasets for the same enclosure using different
+sets of Chaparral parameters, it is useful to compare the calculated view
+factor matrices.  You can do this with cmpre:
+
+Serial: cmpre <encl_file1> <encl_file2>
+
+Parallel: mpirun -np 128 cmpre <encl_file1> <encl_file2>
+(only useful if the matrix is too large to be held on a single process.)
+
+The program simply prints out several VF operator norms of the difference
+of the two view factor matrices to the screen.  It also prints the largest
+single difference in matrix and its row and column location.  Naturally
+both files must contain VF data, and the enclosure surfaces must be the
+same.
+
+  
+VISUALIZING AN ENCLOSURE DATASET
+--------------------------------
+
+Serial: vizre [options] enclosure_file gmv_file
+
+Parallel: mpirun -np 128 vizre [options] enclosure_file gmv_file
+(only useful if the matrix is too large to be held on a single process.)
+
+Writes a GMV-format visualization file for the specified enclosure.
+If the enclosure includes view factor data, the ambient view factor
+and view factor matrix row sums are written as face variables.
+ 
+Options:
+  -r list      Write the specified rows or columns of the view factor matrix
+  -c list      as face variables.  List is a comma-separated list of ranges;
+               a range is index, first:last, or first:last:stride.
+  -s           Write the fully-developed enclosure surface defined by the
+               enclosure's symmetries.  The default is to write just the
+               generating surface.
+  -h, --help   Display this help and exit.
+
+* Only surface faces are written.
+* Faces are oriented and GMV can optionally darken the "bottom" side
+  (option "test normals")
+* Surface side set info is written as GMV materials.
+* When using the "-s" option, info about the copies of the generating
+  surface are written as GMV flags.
+* May need a parallel version simply because the VF matrix is too large
+  to be held on a single process.

@@ -26,25 +26,9 @@ if(ENABLE_Danu)
 endif()
 build_whitespace_string(fpp_flags ${fpp_flags_list})
 
-
-# --- mesh_translate binary
-if ( "${CMAKE_Fortran_COMPILER_ID}" MATCHES "Nag|NAG|nag")
-  message(STATUS "Skipping meshtranslate. Does not compile with Nag")
-else()
-  add_executable(meshtranslate meshtranslate.f90)
-endif()
-
 # --- Add subdirectories 
 
 # addgaps 
 add_subdirectory(addgaps)
 
 # --- Install rules 		    
-if ( NOT "${CMAKE_Fortran_COMPILER_ID}" MATCHES "Nag|NAG|nag")
-  install(TARGETS meshtranslate
-          RUNTIME DESTINATION ${Truchas_BIN_INSTALL_DIR}
-          LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
-          ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
-endif()
-
-
