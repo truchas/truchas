@@ -15,10 +15,9 @@ MODULE DO_DISCRETE_OPERATORS
   !            Robert Ferrell (ferrell@cpca.com)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -27,10 +26,7 @@ MODULE DO_DISCRETE_OPERATORS
   ! Public Functions
   public :: DO_GoodSolution, DO_GoodPhiSolution
 
-
-
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
 
   INTERFACE DO_GRADIENT_FACE
     MODULE PROCEDURE GRADIENT_FACE
@@ -52,9 +48,7 @@ MODULE DO_DISCRETE_OPERATORS
     MODULE PROCEDURE GoodPhiSolution
   END INTERFACE
 
-
 CONTAINS
-
 
   SUBROUTINE GRADIENT_FACE (Phi, SolveSpec, Grad, Phi_Face)
     !=======================================================================
@@ -66,21 +60,18 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,    only: alittle
-    use constants_module, only: zero
     use do_base_types,    only: DO_Specifier, DO_SOLVE_LU_LSLR, DO_SOLVE_SVD_LSLR, DO_SOLVE_ORTHO
-    use kind_module,       only: real_kind, int_kind
     use parameter_module,  only: ndim,nfc,ncells
     use mesh_module,      only: Mesh
-    implicit none
 
     ! Arguments
-    real(KIND=real_kind),dimension(ncells),             intent(IN)    :: Phi
+    real(r8),dimension(ncells),             intent(IN)    :: Phi
     type(DO_Specifier), target,                         intent(INOUT) :: SolveSpec
-    real(KIND=real_kind),dimension(ndim,nfc,ncells),    intent(INOUT) :: Grad
-    real(KIND=real_kind),dimension(nfc,ncells),OPTIONAL,intent(OUT)   :: Phi_Face
+    real(r8),dimension(ndim,nfc,ncells),    intent(INOUT) :: Grad
+    real(r8),dimension(nfc,ncells),OPTIONAL,intent(OUT)   :: Phi_Face
 
     ! Local Variables
-    integer(KIND=int_kind)                          :: n, f
+    integer                          :: n, f
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -92,14 +83,14 @@ CONTAINS
           call FACE_LSLR_LU(Phi,SS=SolveSpec,GRAD_PHI=Grad,FACE_PHI=Phi_Face)
         ! Eliminate Face Gradient Noise
           do n = 1, ndim
-            Grad(n,:,:) = MERGE(zero,Grad(n,:,:),ABS(Grad(n,:,:)) <= alittle)
+            Grad(n,:,:) = MERGE(0.0_r8,Grad(n,:,:),ABS(Grad(n,:,:)) <= alittle)
           end do
         ! Note that the following step zeros out gradient values on boundary
         ! faces. It is a hold over from the old LSLR implementation and should
         ! likely be removed at some point.
           do f = 1,nfc
             do n = 1,ndim
-              where(Mesh%Ngbr_Cell(f) == 0)Grad(n,f,:) = zero
+              where(Mesh%Ngbr_Cell(f) == 0)Grad(n,f,:) = 0.0_r8
             end do
           end do
        CASE(DO_SOLVE_SVD_LSLR)
@@ -107,7 +98,7 @@ CONTAINS
           call FACE_LSLR_SVD(Phi,SS=SolveSpec,GRAD_PHI=Grad,FACE_PHI=Phi_Face)
         ! Eliminate Face Gradient Noise
           do n = 1, ndim
-            Grad(n,:,:) = MERGE(zero,Grad(n,:,:),ABS(Grad(n,:,:)) <= alittle)
+            Grad(n,:,:) = MERGE(0.0_r8,Grad(n,:,:),ABS(Grad(n,:,:)) <= alittle)
           end do
         ! Note that the following step zeros out gradient values on boundary
         ! faces. It is a hold over from the old LSLR implementation and should
@@ -115,7 +106,7 @@ CONTAINS
         ! the LU solution.
           do f = 1,nfc
             do n = 1,ndim
-              where(Mesh%Ngbr_Cell(f) == 0)Grad(n,f,:) = zero
+              where(Mesh%Ngbr_Cell(f) == 0)Grad(n,f,:) = 0.0_r8
             end do
           end do
        CASE(DO_SOLVE_ORTHO)
@@ -136,14 +127,12 @@ CONTAINS
     !
     !=======================================================================
     use do_base_types,    only: DO_Specifier, DO_SOLVE_LU_LSLR, DO_SOLVE_SVD_LSLR, DO_SOLVE_ORTHO
-    use kind_module,       only: real_kind
     use parameter_module,  only: nfc,ncells
-    implicit none
 
     ! Arguments
-    real(KIND=real_kind),dimension(ncells),             intent(IN)    :: Phi
+    real(r8),dimension(ncells),             intent(IN)    :: Phi
     type(DO_Specifier),                                 intent(INOUT) :: SolveSpec
-    real(KIND=real_kind),dimension(nfc,ncells),         intent(INOUT) :: Phi_Face
+    real(r8),dimension(nfc,ncells),         intent(INOUT) :: Phi_Face
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -173,26 +162,22 @@ CONTAINS
     !   of a cell-centered scalar quantity Phi on face f.
     !
     !=======================================================================
-    use constants_module, only: zero,two
     use do_base_types,  only: DO_Specifier
     use do_solve_specifier,  only: dX_Scaled
     use gs_module,      only: EE_GATHER
-    use kind_module,       only: real_kind,int_kind
     use parameter_module,  only: ndim,nfc,ncells
     use mesh_module,    only: Mesh
     
-    implicit none
-    
     ! Arguments
-    real(KIND = real_kind), dimension(ncells), intent(IN) :: Phi
+    real(r8), dimension(ncells), intent(IN) :: Phi
     type(DO_Specifier), target, intent(IN) :: SS
-    real(KIND=real_kind),dimension(ndim,nfc,ncells),OPTIONAL,intent(OUT) :: Grad_Phi
-    real(KIND=real_kind),dimension(nfc,ncells)     ,OPTIONAL,intent(OUT) :: Face_Phi
+    real(r8),dimension(ndim,nfc,ncells),OPTIONAL,intent(OUT) :: Grad_Phi
+    real(r8),dimension(nfc,ncells)     ,OPTIONAL,intent(OUT) :: Face_Phi
 
     ! Local Variables
-    integer(KIND=int_kind)                          :: n, f, f2, j, j2
-    real(KIND=real_kind),dimension(nfc,ncells)      :: Phi_e
-    real(KIND=real_kind)                            :: dPhi
+    integer                          :: n, f, f2, j, j2
+    real(r8),dimension(nfc,ncells)      :: Phi_e
+    real(r8)                            :: dPhi
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -204,7 +189,7 @@ CONTAINS
       CELL_LOOP: do j=1,ncells
          FACE_LOOP: do f = 1,nfc
             if(Mesh(j)%Ngbr_Cell(f) == 0)then
-              Grad_Phi(:,f,j) = zero
+              Grad_Phi(:,f,j) = 0.0_r8
             else
             ! Calculate value for given face only once;
             ! copy value to neighbor shared face
@@ -228,25 +213,25 @@ CONTAINS
      ! as either zero or one; zero if weight = zero, one for any non-zero value
 
      if(PRESENT(Face_Phi))then
-        Face_Phi = zero ! set a default value for those faces between two void cells
+        Face_Phi = 0.0_r8 ! set a default value for those faces between two void cells
         if(ASSOCIATED(SS%W_Ortho))then
           do j = 1,ncells
-             if (SS%W_Ortho(j) == zero) CYCLE
+             if (SS%W_Ortho(j) == 0.0_r8) CYCLE
              do f = 1,nfc
-                if (SS%W_Ortho_Nghbr(f,j) == zero) then
+                if (SS%W_Ortho_Nghbr(f,j) == 0.0_r8) then
                    Face_Phi(f,j) = Phi(j)
                 else
-                   Face_Phi(f,j) = (Phi(j) + Phi_e(f,j)) / two
+                   Face_Phi(f,j) = (Phi(j) + Phi_e(f,j)) / 2
                 end if
              end do
           end do
         else ! no Weight specified; assume one everywhere
           do j = 1,ncells
              do f = 1,nfc
-                if (Mesh(j)%Ngbr_Cell(f) == zero) then
+                if (Mesh(j)%Ngbr_Cell(f) == 0.0_r8) then
                    Face_Phi(f,j) = Phi(j)
                 else
-                   Face_Phi(f,j) = (Phi(j) + Phi_e(f,j)) / two
+                   Face_Phi(f,j) = (Phi(j) + Phi_e(f,j)) / 2
                 end if
              end do
           end do
@@ -262,40 +247,37 @@ CONTAINS
     !   at face centers (Gradient_Phi) via LU decomposition with full pivot
     !
     !=======================================================================
-    use constants_module, only: zero
     use do_base_types,    only: DO_Specifier,dX_Type,SField_Type
     use do_update_module, only: FGetPhiValues
     use do_solve_module,  only: do_lu_solve
-    use kind_module,       only: real_kind, int_kind
     use parameter_module,  only: ndim,nfc,ncells
     use mesh_module,      only: Mesh,DEGENERATE_FACE
-    implicit none
 
     ! Arguments
-    real(KIND = real_kind), dimension(ncells), intent(IN)    :: Phi
+    real(r8), dimension(ncells), intent(IN)    :: Phi
     type(DO_Specifier), target, intent(INOUT) :: SS
-    real(KIND=real_kind),dimension(ndim,nfc,ncells),OPTIONAL,intent(OUT) :: Grad_Phi
-    real(KIND=real_kind),dimension(nfc,ncells)     ,OPTIONAL,intent(OUT) :: Face_Phi
+    real(r8),dimension(ndim,nfc,ncells),OPTIONAL,intent(OUT) :: Grad_Phi
+    real(r8),dimension(nfc,ncells)     ,OPTIONAL,intent(OUT) :: Face_Phi
 
     ! Local Variables
-    integer(KIND=int_kind)                               :: Face,NFC_F
-    integer(KIND=int_kind)                               :: n,c1,c2,f2
-    integer(KIND=int_kind),dimension(:),pointer,save     :: NumFacesCell
+    integer                               :: Face,NFC_F
+    integer                               :: n,c1,c2,f2
+    integer,dimension(:),pointer,save     :: NumFacesCell
     type(dX_Type),  pointer,dimension(:)                 :: dXList
     type(SField_Type), pointer,dimension(:)              :: WList
     type(SField_Type), pointer,dimension(:)              :: PhiVal
-    real(KIND = real_kind)                               :: Weight
-    real(KIND = real_kind),dimension(4),save             :: dX,RHS
-    real(KIND = real_kind)                               :: PhiValCell
+    real(r8)                               :: Weight
+    real(r8),dimension(4),save             :: dX,RHS
+    real(r8)                               :: PhiValCell
   ! LU solution on "Normal Matrix"
-    integer(KIND=int_kind),pointer,dimension(:)   :: R1
-    integer(KIND=int_kind),pointer,dimension(:)   :: R2
-    real(KIND=real_kind),pointer,dimension(:,:)   :: LHS
+    integer,pointer,dimension(:)   :: R1
+    integer,pointer,dimension(:)   :: R2
+    real(r8),pointer,dimension(:,:)   :: LHS
 
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    dX  = zero
+    dX  = 0.0_r8
     CELL_LOOP: do c1=1,ncells
       dXList => SS%dX_Struct(:,c1)
       PhiVal => FGetPhiValues(SS,c1,Phi)  ! Update neighbor and BC Phi values for the cell.
@@ -303,7 +285,7 @@ CONTAINS
       NumFacesCell => SS%NF_Struct(c1)%ptr
       FACE_LOOP: do Face=1,nfc
         if(SS%done(Face,c1))cycle FACE_LOOP
-        RHS = zero
+        RHS = 0.0_r8
         if (.not. (Mesh(c1)%Ngbr_Cell(Face) == DEGENERATE_FACE))then
           ! Loop over all face components
           NFC_F =  NumFacesCell(Face)
@@ -377,35 +359,28 @@ CONTAINS
     !         to Grad and vice versa.
     !
     !=======================================================================
-    use constants_module, only: zero
     use do_base_types,    only: DO_Specifier,dX_Type,SField_Type
     use do_update_module, only: FGetPhiValues
-    use kind_module,       only: real_kind, int_kind
     use parameter_module,  only: ndim,nfc,ncells
     use mesh_module,      only: Mesh,DEGENERATE_FACE
-    implicit none
 
     ! Arguments
-    real(KIND = real_kind), dimension(ncells), intent(IN)    :: Phi
+    real(r8), dimension(ncells), intent(IN)    :: Phi
     type(DO_Specifier), target,                intent(INOUT) :: SS
-    real(KIND=real_kind),dimension(ndim,nfc,ncells),OPTIONAL,intent(OUT) :: Grad_Phi
-    real(KIND=real_kind),dimension(nfc,ncells)     ,OPTIONAL,intent(OUT) :: Face_Phi
+    real(r8),dimension(ndim,nfc,ncells),OPTIONAL,intent(OUT) :: Grad_Phi
+    real(r8),dimension(nfc,ncells)     ,OPTIONAL,intent(OUT) :: Face_Phi
 
     ! Local Variables
-    integer(KIND=int_kind)                               :: Face,NFC_F,lb,ub
-    integer(KIND=int_kind)                               :: n,m,c1,c2,f2
-    integer(KIND=int_kind),dimension(:),pointer,save     :: NumFacesCell
-    type(dX_Type),  pointer,dimension(:)                 :: dXList
-    type(SField_Type),pointer,dimension(:)               :: WList
-    type(SField_Type),pointer,dimension(:)               :: PhiVal
-    real(KIND = real_kind)                               :: Weight
-    real(KIND = real_kind)                               :: RHS
-    real(KIND = real_kind),dimension(ndim+1),save        :: X
-    real(KIND = real_kind)                               :: dX1
-    real(KIND = real_kind)                               :: PhiValCell
+    integer :: Face,NFC_F,lb,ub
+    integer :: n,m,c1,c2,f2
+    integer, pointer, save :: NumFacesCell(:)
+    type(dX_Type), pointer :: dXList(:)
+    type(SField_Type), pointer :: WList(:), PhiVal(:)
+    real(r8) :: Weight, RHS, dX1, PhiValCell
+    real(r8), save :: X(ndim+1)
 
   ! SVD solution on "Design Matrix"
-    real(KIND=real_kind),pointer,dimension(:,:) :: cM
+    real(r8), pointer :: cM(:,:)
 
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -418,7 +393,7 @@ CONTAINS
     ! Find the last index in the contiguous SVD_U for a given cell
       FACE_LOOP: do Face=1,nfc
         if(SS%done(Face,c1))cycle FACE_LOOP
-        X = zero; RHS = zero
+        X = 0.0_r8; RHS = 0.0_r8
         if (.not. (Mesh(c1)%Ngbr_Cell(Face) == DEGENERATE_FACE))then
           lb = SS%SVDlb(Face,c1); ub = SS%SVDub(Face,c1)
           cM =>SS%SVD_cM(c1)%Mat(:,lb:ub)
@@ -486,20 +461,16 @@ CONTAINS
     ! Subroutine to update weights associated with given cell
     !
     !=======================================================================
-    use constants_module, only: zero,one
     use do_base_types,    only: DO_Specifier, DO_SOLVE_LU_LSLR, DO_SOLVE_SVD_LSLR, DO_SOLVE_ORTHO
     use do_update_module, only: UpdateLSLRWeights
     use gs_module,        only: EE_GATHER
-    use kind_module,       only: real_kind
     use parameter_module,  only: ncells
-    implicit none
  
     ! Arguments
-    type(DO_Specifier),                    intent(INOUT) :: SolveSpec
-    real(KIND=real_kind),dimension(ncells),intent(IN)    :: Weights
+    type(DO_Specifier), intent(INOUT) :: SolveSpec
+    real(r8), dimension(ncells), intent(IN) :: Weights
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-    
 
     ! NOTE: This will also catch error where SS (SolveSpec) has somehow become associated
     ! with both weighted ORTHO and LSLR solution techniques... clearly an error
@@ -515,8 +486,8 @@ CONTAINS
       case(DO_SOLVE_SVD_LSLR)
         call UpdateLSLRWeights(SolveSpec,Weights)
       case(DO_SOLVE_ORTHO)
-        SolveSpec%W_Ortho = zero
-        where (Weights > zero) SolveSpec%W_Ortho = one
+        SolveSpec%W_Ortho = 0.0_r8
+        where (Weights > 0.0_r8) SolveSpec%W_Ortho = 1.0_r8
         call EE_GATHER(DEST=SolveSpec%W_Ortho_Nghbr, SRC=SolveSpec%W_Ortho)
       case DEFAULT
         call TLS_fatal ('UpdateWeights: attempt to update weights for unknown solution method.')
@@ -526,12 +497,10 @@ CONTAINS
 
   FUNCTION GoodPhiSolution(SolveSpec)
     use do_base_types,  only: DO_Specifier
-    use kind_module,       only: log_kind
     use parameter_module,  only: nfc,ncells
-    implicit none
-      type(DO_Specifier),                    intent(IN) :: SolveSpec
-      logical(KIND=log_kind), pointer, dimension(:,:) :: GoodPhiSolution
-      logical(KIND=log_kind), allocatable, dimension(:,:), target, save :: GPS
+      type(DO_Specifier), intent(IN) :: SolveSpec
+      logical, pointer, dimension(:,:) :: GoodPhiSolution
+      logical, allocatable, dimension(:,:), target, save :: GPS
       if(.not. ALLOCATED(GPS))ALLOCATE(GPS(nfc,ncells))
       GPS = SolveSpec%SolveFlag(1,:,:)
       GoodPhiSolution => GPS
@@ -540,12 +509,10 @@ CONTAINS
 
   FUNCTION GoodSolution(SolveSpec)
     use do_base_types,  only: DO_Specifier
-    use kind_module,       only: log_kind
     use parameter_module,  only: ndim,nfc,ncells
-    implicit none
-      type(DO_Specifier),                    intent(IN) :: SolveSpec
-      logical(KIND=log_kind), pointer, dimension(:,:,:) :: GoodSolution
-      logical(KIND=log_kind), allocatable, dimension(:,:,:), target, save :: GS
+      type(DO_Specifier), intent(IN) :: SolveSpec
+      logical, pointer, dimension(:,:,:) :: GoodSolution
+      logical, allocatable, dimension(:,:,:), target, save :: GS
       if(.not. ALLOCATED(GS))ALLOCATE(GS(ndim+1,nfc,ncells))
       GS = SolveSpec%SolveFlag
       GoodSolution => GS

@@ -2,7 +2,7 @@
 
 MODULE MATL_UTILITIES
 
-  use kind_module, only: real_kind, int_kind  
+  use kinds, only: r8
   IMPLICIT NONE
   private
 
@@ -25,17 +25,16 @@ CONTAINS
     ! Written by:
     ! Markus Bussmann (University of Toronto)
     !===========================================================================
-    use constants_module, only: zero
     use matl_module,      only: Matl
     use parameter_module, only: nmat, ncells, mat_slot
 
     ! Arguments
-    real(real_kind), dimension(nmat,ncells), intent(INOUT) :: VOF
+    real(r8), dimension(nmat,ncells), intent(INOUT) :: VOF
 
     ! Local Variables
-    integer(int_kind) :: m, n, s
+    integer :: m, n, s
 
-    VOF = zero
+    VOF = 0.0_r8
 
     do n = 1,ncells
        do s = 1,mat_slot
@@ -45,8 +44,6 @@ CONTAINS
           end if
        end do
     end do
-
-    return
 
   END SUBROUTINE MATL_GET_VOF
   
@@ -65,7 +62,7 @@ CONTAINS
     use parameter_module, only: nmat, ncells, mat_slot
     
     integer, intent(in) :: n
-    real(real_kind), intent(out) :: vof(:)
+    real(r8), intent(out) :: vof(:)
     
     integer :: s, m
     
@@ -89,17 +86,16 @@ CONTAINS
     ! Written by:
     ! Markus Bussmann (University of Toronto)
     !===========================================================================
-    use constants_module,  only: zero
     use matl_module,       only: Matl, SLOT_COMPRESS, SLOT_DECREASE, SLOT_INCREASE
     use parameter_module,  only: nmat, ncells, mat_slot
     use pgslib_module,     only: PGSLib_Global_MAXVAL
 
     ! Arguments
-    real(real_kind), dimension(nmat,ncells), intent(INOUT) :: VOF
+    real(r8), dimension(nmat,ncells), intent(INOUT) :: VOF
 
     ! Local Variables
-    integer(int_kind), dimension(ncells) :: mat
-    integer(int_kind)                    :: m, n, s, max_mat
+    integer, dimension(ncells) :: mat
+    integer :: m, n, s, max_mat
 
     ! Begin by compressing the current slot structure.
     call SLOT_COMPRESS (Matl, mat_slot)
@@ -107,7 +103,7 @@ CONTAINS
     ! Determine the maximum number of materials in any one cell.
     mat = 0
     do m = 1,nmat
-       where (Vof(m,:) > zero) mat = mat + 1
+       where (Vof(m,:) > 0.0_r8) mat = mat + 1
     end do
     max_mat = PGSLIB_Global_MAXVAL(mat)
 
@@ -122,12 +118,12 @@ CONTAINS
     ! Now insert VOF values that are zero, to open slots for new materials.
     do n = 1,ncells
        MATERIALS_1: do m = 1,nmat
-          if (Vof(m,n) == zero) then
+          if (Vof(m,n) == 0.0_r8) then
              do s = 1,mat_slot
                 if (Matl(s)%Cell(n)%Id == m) then
                    Matl(s)%Cell(n)%Id = 0
-                   Matl(s)%Cell(n)%Vof = zero
-                   Matl(s)%Cell(n)%Vof_Old = zero
+                   Matl(s)%Cell(n)%Vof = 0.0_r8
+                   Matl(s)%Cell(n)%Vof_Old = 0.0_r8
                    CYCLE MATERIALS_1
                 end if
              end do
@@ -139,7 +135,7 @@ CONTAINS
     do n = 1,ncells
        MATERIALS_2: do m = 1, nmat
 
-          if (Vof(m,n) == zero) cycle MATERIALS_2
+          if (Vof(m,n) == 0.0_r8) cycle MATERIALS_2
 
           ! Look for an existing Matl slot for material number m.
           do s = 1,mat_slot
@@ -154,15 +150,13 @@ CONTAINS
              if (Matl(s)%Cell(n)%Id == 0) then
                 Matl(s)%Cell(n)%Id = m
                 Matl(s)%Cell(n)%Vof = VOF(m,n)
-                Matl(s)%Cell(n)%Vof_Old = zero
+                Matl(s)%Cell(n)%Vof_Old = 0.0_r8
                 cycle MATERIALS_2
              end if
           end do
 
        end do MATERIALS_2
     end do
-
-    return
 
   END SUBROUTINE MATL_SET_VOF
 
@@ -173,22 +167,17 @@ CONTAINS
     !  Update the matl pointer with the new  volume fractions and  densitiy
     !  values
     !===========================================================================
-    use matl_module,          only: Matl,          &
-         SLOT_INCREASE, &
-         SLOT_DECREASE
-    use parameter_module,     only: ncells,        &
-         mat_slot,      &
-         mat_slot_new,  &
-         nmat
-    use pgslib_module,        only: PGSLIB_GLOBAL_MAXVAL
+    use matl_module, only: Matl, SLOT_INCREASE, SLOT_DECREASE
+    use parameter_module, only: ncells, mat_slot, mat_slot_new, nmat
+    use pgslib_module, only: PGSLIB_GLOBAL_MAXVAL
 
     ! Arguments
-    real(real_kind), dimension(0:nmat, 1:ncells), intent(IN) :: VF_New
+    real(r8), dimension(0:nmat, 1:ncells), intent(IN) :: VF_New
 
     ! Local Variables
-    integer(int_kind) ::  i,m,s,slots_needed
-    real(real_kind), dimension(0:nmat) ::vof_old_temp 
-    real(real_kind), dimension(ncells) :: nslots_cell
+    integer :: i, m, s, slots_needed
+    real(r8), dimension(0:nmat) :: vof_old_temp 
+    real(r8), dimension(ncells) :: nslots_cell
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -198,7 +187,7 @@ CONTAINS
     ! Check the number of slots and increase if needed
     nslots_cell = 0
     do m = 1,nmat
-       where (VF_New(m,:) > 0.0_real_kind) nslots_cell = nslots_cell + 1
+       where (VF_New(m,:) > 0.0_r8) nslots_cell = nslots_cell + 1
     end do
     slots_needed = PGSLib_Global_MAXVAL(nslots_cell)
     if (slots_needed > mat_slot) then
@@ -240,8 +229,6 @@ CONTAINS
        call SLOT_DECREASE(Matl, mat_slot, mat_slot_new)
     end if
 
-    return
-
   END SUBROUTINE UPDATE_MATL
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -267,7 +254,7 @@ CONTAINS
     use matl_module, only: material, matl_slot, slot_resize
     use pgslib_module, only: pgslib_global_maxval
 
-    real(real_kind), intent(in)    :: vf(:,:)
+    real(r8), intent(in)    :: vf(:,:)
     type(matl_slot), intent(inout) :: matl(:)
 
     integer :: j, m, s
@@ -278,14 +265,14 @@ CONTAINS
     ASSERT( size(vf,2) == ncells )
 
     !! Find the max number of materials in any one cell and resize MATL accordingly.
-    m = pgslib_global_maxval(count(vf > 0.0_real_kind, dim=1))
+    m = pgslib_global_maxval(count(vf > 0.0_r8, dim=1))
     call slot_resize (matl, mat_slot, m)
 
     !! Set up the material list; only the VOF values change from cell to cell.
     allocate(mlist(size(vf,1)))  ! This is default initialized.
     do m = 1, size(mlist)
       mlist(m)%ID  = m
-      mlist(m)%vof_old = 0.0_real_kind
+      mlist(m)%vof_old = 0.0_r8
     end do
 
     !! Define MATL.
@@ -294,7 +281,7 @@ CONTAINS
       !! Pack the valid part of the material list into MATL; can't use the pack intrinsic :(
       s = 1
       do m = 1, size(mlist)
-        if (vf(m,j) <= 0.0_real_kind) cycle
+        if (vf(m,j) <= 0.0_r8) cycle
         matl(s)%cell(j) = mlist(m)
         s = s + 1
       end do
@@ -338,7 +325,7 @@ CONTAINS
     integer, intent(in) :: unit, version
 
     integer :: n
-    real(real_kind), allocatable :: vf(:,:)
+    real(r8), allocatable :: vf(:,:)
 
     !! Read the number of materials defined in the restart file.
     call read_var (unit, n, 'READ_MATL_DATA: error reading NMAT record')

@@ -20,11 +20,7 @@ module parallel_csr_matrix
 
   type, public :: pcsr_graph
     type(ip_desc), pointer :: row_ip => null()
-#ifdef SUPPORTS_TR15581
     integer, allocatable :: xadj(:), adjncy(:)
-#else
-    integer, pointer :: xadj(:) => null(), adjncy(:) => null()
-#endif
     type(NGraphType), pointer :: g => null() ! temporary used during construction
   end type pcsr_graph
   
@@ -92,10 +88,6 @@ contains
     use GraphModule, only: DeleteGraph
     type(pcsr_graph), intent(inout) :: this
     this%row_ip => null()
-#ifndef SUPPORTS_TR15581
-    if (associated(this%xadj)) deallocate(this%xadj)
-    if (associated(this%adjncy)) deallocate(this%adjncy)
-#endif
     if (associated(this%g)) then
       call DeleteGraph (this%g)
       deallocate(this%g)
@@ -104,11 +96,7 @@ contains
   
   logical function pcsr_graph_filled (this)
     type(pcsr_graph), intent(in) :: this
-#ifdef SUPPORTS_TR15581
     pcsr_graph_filled = allocated(this%xadj)
-#else
-    pcsr_graph_filled = associated(this%xadj)
-#endif
   end function pcsr_graph_filled
 
   subroutine pcsr_matrix_create (this, graph, take_graph)

@@ -257,7 +257,7 @@ module scalar_functions
     function call_dll_scafun (addr, x, p) result(f)
       use kinds, only: r8
       use dynamic_linking_loader, only: c_ptr_kind
-#if (defined(COMPAQ_COMPILER) || defined(PATHSCALE_COMPILER))
+#ifdef PATHSCALE_COMPILER
       integer(c_ptr_kind) :: addr
 #else
       integer(c_ptr_kind), value :: addr
@@ -645,7 +645,7 @@ contains
     type(scafun_dll), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: f
-#if (defined(COMPAQ_COMPILER) || defined(PATHSCALE_COMPILER))
+#ifdef PATHSCALE_COMPILER
     f = call_dll_scafun (%VAL(this%f_addr), x, this%p)
 #else
     f = call_dll_scafun (this%f_addr, x, this%p)

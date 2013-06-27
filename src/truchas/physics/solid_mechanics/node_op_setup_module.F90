@@ -12,21 +12,20 @@ MODULE NODE_OP_SETUP_MODULE
   ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
   !
   !=============================================================================
-  use kind_module,              only: int_kind, real_kind, log_kind
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-  ! Private Module
   private
-  ! Public Procedures
+
   public :: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
   ! Private variables
-  logical(log_kind), pointer, dimension(:,:)  :: Node_Mask
-  integer(int_kind), pointer, dimension(:)    :: GNode
-  real(real_kind), pointer, dimension(:,:)    :: Node_Value
-  real(KIND = real_kind), parameter           :: small_angle = 0.02 ! Largest angle treated as a corner
-  !
+  logical, pointer, dimension(:,:)  :: Node_Mask
+  integer, pointer, dimension(:)    :: GNode
+  real(r8), pointer, dimension(:,:)    :: Node_Value
+  real(r8), parameter           :: small_angle = 0.02 ! Largest angle treated as a corner
 
 CONTAINS
+
   ! <><><><><><><><><><><><> PUBLIC ROUTINES <><><><><><><><><><><><><><><>
   SUBROUTINE ALLOCATE_CONTROL_VOLUME()
     !=============================================================================
@@ -38,10 +37,9 @@ CONTAINS
     use node_operator_module,     only: CV_Internal, Nodal_Volume, nipc, &
          stress_reduced_integration
     use parameter_module,         only: ndim, ncells, nnodes
-    implicit none
 
     ! Local variables
-    integer(int_kind)                          :: status
+    integer :: status
     ! 
     ! Control volume faces internal to the cells
     allocate(CV_Internal%Face_Normal(ndim,nipc,ncells), stat=status)
@@ -87,18 +85,16 @@ CONTAINS
     use parameter_module,         only: ndim, nvc, ncells, nnodes
     use var_vector_module
 
-    implicit none
-
     ! Local variables
-    integer(int_kind)                          :: status, i, j, atlas_size, c, inode, nbnodes_tot
-    logical(log_kind), pointer, dimension(:,:) :: Mask_EN
-    real(real_kind), pointer, dimension(:,:)   :: Value_EN
-    integer(int_kind), dimension(nipbf)        :: v
-    type (BC_Operator), POINTER                :: Operator
-    type (BC_Atlas),    POINTER                :: Atlas
-    integer(int_kind), pointer, dimension(:)   :: Cell_List
-    integer(int_kind), pointer, dimension(:)   :: Face_List
-    real(real_kind), pointer, dimension(:,:)   :: Value_List
+    integer :: status, i, j, atlas_size, c, inode, nbnodes_tot
+    logical, pointer, dimension(:,:) :: Mask_EN
+    real(r8), pointer, dimension(:,:) :: Value_EN
+    integer, dimension(nipbf) :: v
+    type (BC_Operator), POINTER :: Operator
+    type (BC_Atlas), POINTER :: Atlas
+    integer, pointer, dimension(:) :: Cell_List
+    integer, pointer, dimension(:) :: Face_List
+    real(r8), pointer, dimension(:,:) :: Value_List
 
     ! Control volume faces on boundaries  - using "new" bc stuff
     ! Number of bc atlases with data
@@ -339,53 +335,50 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use kind_module,          only: int_kind, log_kind, real_kind
     use mesh_module,          only: Vertex, Vrtx_Bdy, Mesh, CELL_TET,&
          CELL_PYRAMID, CELL_PRISM, CELL_EDGE, &
          GAP_ELEMENT_1
     use parameter_module,     only: ndim, nvc, nec, nvf, ncells
-    use constants_module,     only: one_half, zero, one, one_third
     use cutoffs_module,       only: alittle
     use linear_module,        only: LINEAR_PROP, LINEAR_GRAD
     use lu_solve_module,      only: LU_SOLVE, factsolve, backsolve
     use gs_module,            only: EN_GATHER, EN_SUM_Scatter
     use node_operator_module, only: CV_Internal, nipc, stress_reduced_integration, Nodal_Volume
-    use truchas_logging_services
-    implicit none
+
     ! Local Variables
-    integer                                              :: status
-    real(KIND = real_kind), pointer, dimension(:,:,:)    :: Xv
-    integer(KIND = int_kind) :: edge, i, j, v1, v2, v11, v12, v13, v14, v21, v22, v23, v24, &
+    integer :: status
+    real(r8), pointer, dimension(:,:,:) :: Xv
+    integer :: edge, i, j, v1, v2, v11, v12, v13, v14, v21, v22, v23, v24, &
          v31, v32, v33, v34, n, nn, i1, i2, solve_flag
-    integer(KIND = int_kind), Dimension(ndim)            :: indx
-    real(KIND = real_kind), Dimension(:,:,:),pointer     :: Xn
-    real(KIND = real_kind), Dimension(nvc,ndim)          :: Xlc
-    real(KIND = real_kind), Dimension(:,:,:),pointer     :: Xl
-    real(KIND = real_kind), Dimension(ndim)              :: Coef
-    real(KIND = real_kind), Dimension(:,:), pointer      :: X1, X2
-    real(KIND = real_kind), Dimension(:,:), pointer      :: cell_cen_l
-    real(KIND = real_kind)                               :: area_l, nsign
-    real(KIND = real_kind), Dimension(:,:,:), pointer    :: ip_crd_lp
-    real(KIND = real_kind), Dimension(:,:), pointer      :: Cell_Vertex_Volume
-    real(KIND = real_kind), Dimension(:,:), pointer      :: Projection
-    real(KIND = real_kind), Dimension(:,:,:),pointer     :: Xlt
-    real(KIND = real_kind), Dimension(:,:,:),pointer     :: Xg
+    integer, Dimension(ndim)            :: indx
+    real(r8), Dimension(:,:,:),pointer  :: Xn
+    real(r8), Dimension(nvc,ndim)       :: Xlc
+    real(r8), Dimension(:,:,:),pointer  :: Xl
+    real(r8), Dimension(ndim)           :: Coef
+    real(r8), Dimension(:,:), pointer   :: X1, X2
+    real(r8), Dimension(:,:), pointer   :: cell_cen_l
+    real(r8)                            :: area_l, nsign
+    real(r8), Dimension(:,:,:), pointer :: ip_crd_lp
+    real(r8), Dimension(:,:), pointer   :: Cell_Vertex_Volume
+    real(r8), Dimension(:,:), pointer   :: Projection
+    real(r8), Dimension(:,:,:),pointer  :: Xlt
+    real(r8), Dimension(:,:,:),pointer  :: Xg
     ! jac only need to be allocated if we are using full integration
-    real(KIND = real_kind), Dimension(:,:,:,:), pointer  :: jac
-    logical(KIND=log_kind)                               :: pivot = .true.
+    real(r8), Dimension(:,:,:,:), pointer  :: jac
+    logical                               :: pivot = .true.
 
     ! Inform the user of control volume face calculation.
     call TLS_info ('')
     call TLS_info (' Finding control volume faces internal to cells ... ')
     ! Define vertex coordinates for logical cell
-    Xlc(1,1)=one;  Xlc(1,2)=zero; Xlc(1,3)=zero
-    Xlc(2,1)=one;  Xlc(2,2)=one;  Xlc(2,3)=zero
-    Xlc(3,1)=zero; Xlc(3,2)=one;  Xlc(3,3)=zero
-    Xlc(4,1)=zero; Xlc(4,2)=zero; Xlc(4,3)=zero
-    Xlc(5,1)=one;  Xlc(5,2)=zero; Xlc(5,3)=one
-    Xlc(6,1)=one;  Xlc(6,2)=one;  Xlc(6,3)=one
-    Xlc(7,1)=zero; Xlc(7,2)=one;  Xlc(7,3)=one
-    Xlc(8,1)=zero; Xlc(8,2)=zero; Xlc(8,3)=one
+    Xlc(1,1) = 1.0_r8; Xlc(1,2) = 0.0_r8; Xlc(1,3) = 0.0_r8
+    Xlc(2,1) = 1.0_r8; Xlc(2,2) = 1.0_r8; Xlc(2,3) = 0.0_r8
+    Xlc(3,1) = 0.0_r8; Xlc(3,2) = 1.0_r8; Xlc(3,3) = 0.0_r8
+    Xlc(4,1) = 0.0_r8; Xlc(4,2) = 0.0_r8; Xlc(4,3) = 0.0_r8
+    Xlc(5,1) = 1.0_r8; Xlc(5,2) = 0.0_r8; Xlc(5,3) = 1.0_r8
+    Xlc(6,1) = 1.0_r8; Xlc(6,2) = 1.0_r8; Xlc(6,3) = 1.0_r8
+    Xlc(7,1) = 0.0_r8; Xlc(7,2) = 1.0_r8; Xlc(7,3) = 1.0_r8
+    Xlc(8,1) = 0.0_r8; Xlc(8,2) = 0.0_r8; Xlc(8,3) = 1.0_r8
     !
     ! Create temporary arrays
     allocate(cell_cen_l(ndim,ncells), stat=status)
@@ -449,12 +442,12 @@ CONTAINS
           case (3)
              v1 = 1; v2 = 2
           end select
-          if (ndim == 3) CV_Internal%Face_Normal(i,edge,:) = one_half*(X1(v1,:)*X2(v2,:) - X2(v1,:)*X1(v2,:))
+          if (ndim == 3) CV_Internal%Face_Normal(i,edge,:) = 0.5_r8*(X1(v1,:)*X2(v2,:) - X2(v1,:)*X1(v2,:))
        end do
        ! Set components to zero if they're small; accumulate areas.
-       CV_Internal%Face_Area(edge,:) = zero
+       CV_Internal%Face_Area(edge,:) = 0.0_r8
        do i = 1,ndim
-          CV_Internal%Face_Normal(i,edge,:) = MERGE(zero, CV_Internal%Face_Normal(i,edge,:), &
+          CV_Internal%Face_Normal(i,edge,:) = MERGE(0.0_r8, CV_Internal%Face_Normal(i,edge,:), &
                ABS(CV_Internal%Face_Normal(i,edge,:)) < alittle)
           CV_Internal%Face_Area(edge,:) = CV_Internal%Face_Area(edge,:) + CV_Internal%Face_Normal(i,edge,:)**2
        end do
@@ -468,7 +461,7 @@ CONTAINS
           where (CV_Internal%Face_Area(edge,:) >= alittle**2)
              CV_Internal%Face_Normal(i,edge,:) = CV_Internal%Face_Normal(i,edge,:) / CV_Internal%Face_Area(edge,:)
           elsewhere
-             CV_Internal%Face_Normal(i,edge,:) = zero
+             CV_Internal%Face_Normal(i,edge,:) = 0.0_r8
           end where
        end do
        ! Find the logical centroid of the CV face this is in a new (xi', eta', zeta') logical
@@ -481,7 +474,7 @@ CONTAINS
        !
        ! Since this is in logical coordinates for the original cell, initial area=(1/12)/(1/4)
        ! Face_Area = one_twelfth / (CV_Internal(:)%Face_Area + alittle)
-       area_l = one_third
+       area_l = 1.0_r8/3.0_r8
        NDIM_LOOP: do i = 1,ndim
           select case (i)
           case (1)
@@ -520,24 +513,24 @@ CONTAINS
     !
     ! Set areas of missing edges of degenerate cells to zero.  (Leave faces for redundant edges.)
     where (Mesh%Cell_Shape <= CELL_PRISM)
-       CV_Internal%Face_Area(10,:) = zero
-       CV_Internal%Face_Area(12,:) = zero
+       CV_Internal%Face_Area(10,:) = 0.0_r8
+       CV_Internal%Face_Area(12,:) = 0.0_r8
     end where
     where (Mesh%Cell_Shape <= CELL_PYRAMID)
-       CV_Internal%Face_Area(9,:) = zero
-       CV_Internal%Face_Area(11,:) = zero
+       CV_Internal%Face_Area(9,:) = 0.0_r8
+       CV_Internal%Face_Area(11,:) = 0.0_r8
     end where
     where (Mesh%Cell_Shape == CELL_TET)
-       CV_Internal%Face_Area(1,:) = zero
+       CV_Internal%Face_Area(1,:) = 0.0_r8
     end where
     !
     ! Calculate volume of the control volumes for nodes:
     ! Accumulate volumes for tetrahedrons formed by the control volume faces and the two nodes associated
     ! with each face.  These will be sum scattered to the nodes.
     ! Initialize nodal volume array
-    Cell_Vertex_Volume(:,:) = zero
+    Cell_Vertex_Volume(:,:) = 0.0_r8
     VOLUME_EDGE_LOOP: do edge = 1,nec
-       Projection(:,:) = zero
+       Projection(:,:) = 0.0_r8
        do i = 1,ndim
           Projection(1,:) = Projection(1,:) + (Xg(i,edge,:)-Xv(i,Cell_Edge(1,edge),:)) * &
                CV_Internal%Face_Normal(i,edge,:)
@@ -545,9 +538,9 @@ CONTAINS
                CV_Internal%Face_Normal(i,edge,:)
        end do
        Cell_Vertex_Volume(Cell_Edge(1,edge),:) = Cell_Vertex_Volume(Cell_Edge(1,edge),:) + Projection(1,:) * &
-            CV_Internal%Face_Area(edge,:) * one_third
+            CV_Internal%Face_Area(edge,:) / 3.0_r8
        Cell_Vertex_Volume(Cell_Edge(2,edge),:) = Cell_Vertex_Volume(Cell_Edge(2,edge),:) + Projection(2,:) * &
-            CV_Internal%Face_Area(edge,:) * one_third
+            CV_Internal%Face_Area(edge,:) / 3.0_r8
     end do VOLUME_EDGE_LOOP
     call EN_SUM_Scatter(Nodal_Volume,Cell_Vertex_Volume)
     !
@@ -556,12 +549,12 @@ CONTAINS
     call TLS_info (' Finding jacobians ... ')
     do n=1,ncells
        ! How are other derived types initialized??
-       CV_Internal%Face_Ijac(:,:,:,n)=zero
+       CV_Internal%Face_Ijac(:,:,:,n)=0.0_r8
        do i = 1,ndim
           do edge = 1,nipc
              Xlt(:,edge,n)=Xv(i,:,n)
              do j=1,ndim
-                CV_Internal%Face_Ijac(j,j,edge,n)=one
+                CV_Internal%Face_Ijac(j,j,edge,n)=1.0_r8
              end do
           end do
           ! Leave the jacobians for gap elements set to the identity matrix
@@ -604,7 +597,6 @@ CONTAINS
     end if
     ! Inform the user of successful geometry computation.
     call TLS_info ('done.')
-    return
   END SUBROUTINE CELL_CV_FACE
 
   !---------------------------------------------------------------------------------
@@ -616,11 +608,8 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use kind_module,          only: int_kind, real_kind
-    use truchas_logging_services
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
     use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes
-    use constants_module,     only: one_half, zero
     use cutoffs_module,       only: alittle
     use gs_module,            only: EN_GATHER
     use pgslib_module,        only: PGSLib_GLOBAL_ANY
@@ -629,21 +618,20 @@ CONTAINS
     use mech_bc_data_module
     use var_vector_module
 
-    implicit none
     ! Local Variables
-    integer                                              :: status
-    real(KIND = real_kind), pointer, dimension(:,:,:)    :: Xv
-    real(KIND = real_kind), Dimension(:,:,:),pointer     :: Xn
-    real(KIND = real_kind), Dimension(:,:), pointer      :: X1, X2
-    integer(int_kind)                                    :: atlas_size, i, j, v1, v2, nodecount
-    type (BC_Operator), POINTER                          :: Operator
-    type (BC_Atlas),    POINTER                          :: Atlas
-    integer(int_kind), pointer, dimension(:)             :: Cell_List
-    integer(int_kind), pointer, dimension(:)             :: Face_List
+    integer :: status
+    real(r8), pointer, dimension(:,:,:) :: Xv
+    real(r8), Dimension(:,:,:), pointer :: Xn
+    real(r8), Dimension(:,:), pointer :: X1, X2
+    integer :: atlas_size, i, j, v1, v2, nodecount
+    type (BC_Operator), POINTER :: Operator
+    type (BC_Atlas),    POINTER :: Atlas
+    integer, pointer, dimension(:) :: Cell_List
+    integer, pointer, dimension(:) :: Face_List
     ! Boundary stuff 
-    real(KIND = real_kind), pointer, Dimension(:,:)      :: F_Cent
-    integer(KIND = int_kind)                             :: ICell, Face, F_Node
-    integer(KIND = int_kind)                             :: ibcop, inode
+    real(r8), pointer, Dimension(:,:) :: F_Cent
+    integer :: ICell, Face, F_Node
+    integer :: ibcop, inode
 
     !
     ! Inform the user of control volume face calculation.
@@ -735,12 +723,12 @@ CONTAINS
                 case (3)
                    v1 = 1; v2 = 2
                 end select
-                if (ndim == 3) CV_Boundary(ibcop)%Face_Normal(i,inode,:) = one_half*(X1(v1,:)*X2(v2,:) - X2(v1,:)*X1(v2,:))
+                if (ndim == 3) CV_Boundary(ibcop)%Face_Normal(i,inode,:) = 0.5_r8*(X1(v1,:)*X2(v2,:) - X2(v1,:)*X1(v2,:))
              end do
              ! Set components to zero if they're small; accumulate areas.
-             CV_Boundary(ibcop)%Face_Area(inode,:) = zero
+             CV_Boundary(ibcop)%Face_Area(inode,:) = 0.0_r8
              do i = 1,ndim
-                CV_Boundary(ibcop)%Face_Normal(i,inode,:) = MERGE(zero, CV_Boundary(ibcop)%Face_Normal(i,inode,:), &
+                CV_Boundary(ibcop)%Face_Normal(i,inode,:) = MERGE(0.0_r8, CV_Boundary(ibcop)%Face_Normal(i,inode,:), &
                      ABS(CV_Boundary(ibcop)%Face_Normal(i,inode,:)) < alittle)
                 CV_Boundary(ibcop)%Face_Area(inode,:) = CV_Boundary(ibcop)%Face_Area(inode,:) + &
                      CV_Boundary(ibcop)%Face_Normal(i,inode,:)**2
@@ -753,7 +741,7 @@ CONTAINS
                    CV_Boundary(ibcop)%Face_Normal(i,inode,:) = CV_Boundary(ibcop)%Face_Normal(i,inode,:) / &
                         CV_Boundary(ibcop)%Face_Area(inode,:)
                 elsewhere
-                   CV_Boundary(ibcop)%Face_Normal(i,inode,:) = zero
+                   CV_Boundary(ibcop)%Face_Normal(i,inode,:) = 0.0_r8
                 end where
              end do
           end do INODE_LOOP
@@ -773,10 +761,9 @@ CONTAINS
     ! Calculate new vectors for combined normal constraint nodel BCs
     CALL DISPLACEMENT_CONSTRAINT_VECTORS()
 
-
     ! Inform the user of successful geometry computation.
     call TLS_info ('done.')
-    return
+
   END SUBROUTINE BOUNDARY_CV_FACE
 
   !---------------------------------------------------------------------------------
@@ -789,35 +776,30 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-
-    use kind_module,          only: int_kind, real_kind
-    use constants_module,     only: one_half, zero, one, two
     use mesh_module,          only: Cell
     
     !Arguments
     ! Inputs
-    integer(KIND = int_kind), intent(IN)                 :: edge, ndim
-    real(KIND = real_kind), Dimension(:,:) , intent(IN)  :: Xlc
-    real(KIND = real_kind), pointer, dimension(:,:,:)    :: Xv
-    real(KIND = real_kind), Dimension(:,:), pointer      :: cell_cen_l
+    integer, intent(IN) :: edge, ndim
+    real(r8), Dimension(:,:) , intent(IN) :: Xlc
+    real(r8), pointer, dimension(:,:,:) :: Xv
+    real(r8), Dimension(:,:), pointer :: cell_cen_l
     ! Outputs
-    integer(KIND = int_kind), intent(OUT)                :: nn
-    real(KIND = real_kind), Dimension(:,:,:),pointer     :: Xl
-    real(KIND = real_kind), Dimension(:,:,:),pointer     :: Xn
-    real(KIND = real_kind), Dimension(:), intent(OUT)    :: Coef
-    real(KIND = real_kind), intent(OUT)                  :: nsign
-    real(KIND = real_kind), Dimension(:,:,:), pointer    :: ip_crd_lp
-    integer(KIND = int_kind), intent(OUT)                :: v11, v12, v13, v14, v21, &
-                                                            v22, v23, v24, v31, v32, v33, v34
+    integer, intent(OUT) :: nn
+    real(r8), Dimension(:,:,:),pointer :: Xl
+    real(r8), Dimension(:,:,:),pointer :: Xn
+    real(r8), Dimension(:), intent(OUT) :: Coef
+    real(r8), intent(OUT) :: nsign
+    real(r8), Dimension(:,:,:), pointer    :: ip_crd_lp
+    integer, intent(OUT) :: v11, v12, v13, v14, v21, v22, v23, v24, v31, v32, v33, v34
 
     ! Local variables
-    integer(KIND = int_kind)                :: i, n
-    
+    integer :: i, n
     
     ! Preinitialize the face centroid
     do n = 1,ndim
-       ip_crd_lp(n,edge,:) = one_half
-       Coef(n)          = one
+       ip_crd_lp(n,edge,:) = 0.5_r8
+       Coef(n)          = 1.0_r8
     end do
 
     select case (edge)
@@ -829,10 +811,10 @@ CONTAINS
        ! Get logical cell vertices of the corner volume associated with these 3 edges.
        do i=1,ndim
           Xl(1,i,:)= Xlc(1,i)
-          Xl(2,i,:)= (Xlc(1,i)+Xlc(2,i))/two
+          Xl(2,i,:)= (Xlc(1,i)+Xlc(2,i))/2.0_r8
           Xl(3,i,:)= Cell%Face_centroid_L(i,5)
-          Xl(4,i,:)= (Xlc(1,i)+Xlc(4,i))/two
-          Xl(5,i,:)= (Xlc(1,i)+Xlc(5,i))/two
+          Xl(4,i,:)= (Xlc(1,i)+Xlc(4,i))/2.0_r8
+          Xl(5,i,:)= (Xlc(1,i)+Xlc(5,i))/2.0_r8
           Xl(6,i,:)= Cell%Face_centroid_L(i,2)
           Xl(7,i,:)= cell_cen_l(i,:)
           Xl(8,i,:)= Cell%Face_centroid_L(i,3)
@@ -843,7 +825,7 @@ CONTAINS
           ! Get physical coordinates for face and put in order for area/normal calculation
           do i=1,ndim
              Xn(i,1,:)= Cell%Centroid(i)
-             Xn(i,2,:)= one_half*(Xv(i,1,:)+Xv(i,2,:))
+             Xn(i,2,:)= 0.5_r8*(Xv(i,1,:)+Xv(i,2,:))
              Xn(i,3,:)= Cell%Face_Centroid(i,2)
              Xn(i,4,:)= Cell%Face_Centroid(i,5)
           end do
@@ -851,11 +833,11 @@ CONTAINS
           v11 = 3; v12 = 1; v13 = 2; v14 = 4
           v21 = 1; v22 = 1; v23 = 1; v24 = 1
           v31 = 1; v32 = 4; v33 = 3; v34 = 2
-          nn = 2; ip_crd_lp(nn, edge,:) = one; Coef(nn)=zero; nsign = one
+          nn = 2; ip_crd_lp(nn, edge,:) = 1.0_r8; Coef(nn)=0.0_r8; nsign = 1.0_r8
        case (4)
           do i=1,ndim
              Xn(i,1,:)= Cell%Centroid(i)
-             Xn(i,2,:)= one_half*(Xv(i,4,:)+Xv(i,1,:))
+             Xn(i,2,:)= 0.5_r8*(Xv(i,4,:)+Xv(i,1,:))
              Xn(i,3,:)= Cell%Face_Centroid(i,3)
              Xn(i,4,:)= Cell%Face_Centroid(i,5)
           end do
@@ -863,126 +845,126 @@ CONTAINS
           v11 = 1; v12 = 1; v13 = 1; v14 = 1
           v21 = 1; v22 = 3; v23 = 4; v24 = 2
           v31 = 3; v32 = 2; v33 = 1; v34 = 4
-          nn = 1; ip_crd_lp(nn, edge,:) = zero; Coef(nn)=zero; nsign = -one
+          nn = 1; ip_crd_lp(nn, edge,:) = 0.0_r8; Coef(nn)=0.0_r8; nsign = -1.0_r8
        case (8)
           do i=1,ndim
              Xn(i,1,:)= Cell%Face_Centroid(i,2)
              Xn(i,2,:)= Cell%Face_Centroid(i,3)
              Xn(i,3,:)= Cell%Centroid(i)
-             Xn(i,4,:)= one_half*(Xv(i,1,:)+Xv(i,5,:))
+             Xn(i,4,:)= 0.5_r8*(Xv(i,1,:)+Xv(i,5,:))
           end do
           v11 = 4; v12 = 2; v13 = 1; v14 = 3
           v21 = 1; v22 = 4; v23 = 3; v24 = 2
           v31 = 1; v32 = 1; v33 = 1; v34 = 1
-          nn = 3; ip_crd_lp(nn, edge,:) = one; Coef(nn)=zero; nsign = one
+          nn = 3; ip_crd_lp(nn, edge,:) = 1.0_r8; Coef(nn)=0.0_r8; nsign = 1.0_r8
        end select
     case(7,11,12)
        do i=1,ndim
           Xl(1,i,:)= Cell%Face_centroid_L(i,3)
           Xl(2,i,:)= cell_cen_l(i,:)
           Xl(3,i,:)= Cell%Face_centroid_L(i,1)
-          Xl(4,i,:)= (Xlc(8,i)+Xlc(4,i))/two
-          Xl(5,i,:)= (Xlc(8,i)+Xlc(5,i))/two
+          Xl(4,i,:)= (Xlc(8,i)+Xlc(4,i))/2.0_r8
+          Xl(5,i,:)= (Xlc(8,i)+Xlc(5,i))/2.0_r8
           Xl(6,i,:)= Cell%Face_centroid_L(i,6)
-          Xl(7,i,:)= (Xlc(8,i)+Xlc(7,i))/two
+          Xl(7,i,:)= (Xlc(8,i)+Xlc(7,i))/2.0_r8
           Xl(8,i,:)= Xlc(8,i)
        end do
        select case (edge)
        case (7)
           do i=1,ndim
              Xn(i,1,:)= Cell%Centroid(i)
-             Xn(i,2,:)= one_half*(Xv(i,4,:)+Xv(i,8,:))
+             Xn(i,2,:)= 0.5_r8*(Xv(i,4,:)+Xv(i,8,:))
              Xn(i,3,:)= Cell%Face_Centroid(i,1)
              Xn(i,4,:)= Cell%Face_Centroid(i,3)
           end do
           v11 = 1; v12 = 3; v13 = 4; v14 = 2
           v21 = 3; v22 = 2; v23 = 1; v24 = 4
           v31 = 1; v32 = 1; v33 = 1; v34 = 1
-          nn = 3; ip_crd_lp(nn, edge,:) = zero; Coef(nn)=zero; nsign = -one
+          nn = 3; ip_crd_lp(nn, edge,:) = 0.0_r8; Coef(nn)=0.0_r8; nsign = -1.0_r8
        case (11)
           do i=1,ndim
              Xn(i,1,:)= Cell%Face_Centroid(i,6)
              Xn(i,2,:)= Cell%Face_Centroid(i,1)
-             Xn(i,3,:)= one_half*(Xv(i,7,:)+Xv(i,8,:))
+             Xn(i,3,:)= 0.5_r8*(Xv(i,7,:)+Xv(i,8,:))
              Xn(i,4,:)= Cell%Centroid(i)
           end do
           v11 = 1; v12 = 3; v13 = 4; v14 = 2
           v21 = 1; v22 = 1; v23 = 1; v24 = 1
           v31 = 3; v32 = 2; v33 = 1; v34 = 4
-          nn = 2; ip_crd_lp(nn, edge,:) = one; Coef(nn)=zero; nsign = -one
+          nn = 2; ip_crd_lp(nn, edge,:) = 1.0_r8; Coef(nn)=0.0_r8; nsign = -1.0_r8
        case (12)
           do i=1,ndim
              Xn(i,1,:)= Cell%Face_Centroid(i,6)
              Xn(i,2,:)= Cell%Face_Centroid(i,3)
-             Xn(i,3,:)= one_half*(Xv(i,5,:)+Xv(i,8,:))
+             Xn(i,3,:)= 0.5_r8*(Xv(i,5,:)+Xv(i,8,:))
              Xn(i,4,:)= Cell%Centroid(i)
           end do
           v11 = 1; v12 = 1; v13 = 1; v14 = 1
           v21 = 4; v22 = 2; v23 = 1; v24 = 3
           v31 = 1; v32 = 4; v33 = 3; v34 = 2
-          nn = 1; ip_crd_lp(nn, edge,:) = one; Coef(nn)=zero; nsign = one
+          nn = 1; ip_crd_lp(nn, edge,:) = 1.0_r8; Coef(nn)=0.0_r8; nsign = 1.0_r8
        end select
     case(2,3,6)
        do i=1,ndim
           Xl(1,i,:)= Cell%Face_centroid_L(i,5)
-          Xl(2,i,:)= (Xlc(3,i)+Xlc(2,i))/two
+          Xl(2,i,:)= (Xlc(3,i)+Xlc(2,i))/2.0_r8
           Xl(3,i,:)= Xlc(3,i)
-          Xl(4,i,:)= (Xlc(3,i)+Xlc(4,i))/two
+          Xl(4,i,:)= (Xlc(3,i)+Xlc(4,i))/2.0_r8
           Xl(5,i,:)= cell_cen_l(i,:)
           Xl(6,i,:)= Cell%Face_centroid_L(i,4)
-          Xl(7,i,:)= (Xlc(3,i)+Xlc(7,i))/two
+          Xl(7,i,:)= (Xlc(3,i)+Xlc(7,i))/2.0_r8
           Xl(8,i,:)= Cell%Face_centroid_L(i,1)
        end do
        select case (edge)
        case (2)
           do i=1,ndim
              Xn(i,1,:)= Cell%Centroid(i)
-             Xn(i,2,:)= one_half*(Xv(i,2,:)+Xv(i,3,:))
+             Xn(i,2,:)= 0.5_r8*(Xv(i,2,:)+Xv(i,3,:))
              Xn(i,3,:)= Cell%Face_Centroid(i,4)
              Xn(i,4,:)= Cell%Face_Centroid(i,5)
           end do
           v11 = 1; v12 = 1; v13 = 1; v14 = 1
           v21 = 2; v22 = 4; v23 = 3; v24 = 1
           v31 = 3; v32 = 2; v33 = 1; v34 = 4
-          nn = 1; ip_crd_lp(nn, edge,:) = one; Coef(nn)=zero; nsign = -one
+          nn = 1; ip_crd_lp(nn, edge,:) = 1.0_r8; Coef(nn)=0.0_r8; nsign = -1.0_r8
        case (3)
           do i=1,ndim
              Xn(i,1,:)= Cell%Centroid(i)
-             Xn(i,2,:)= one_half*(Xv(i,3,:)+Xv(i,4,:))
+             Xn(i,2,:)= 0.5_r8*(Xv(i,3,:)+Xv(i,4,:))
              Xn(i,3,:)= Cell%Face_Centroid(i,1)
              Xn(i,4,:)= Cell%Face_Centroid(i,5)
           end do
           v11 = 4; v12 = 2; v13 = 1; v14 = 3
           v21 = 1; v22 = 1; v23 = 1; v24 = 1
           v31 = 1; v32 = 4; v33 = 3; v34 = 2
-          nn = 2; ip_crd_lp(nn, edge,:) = zero; Coef(nn)=zero; nsign = one
+          nn = 2; ip_crd_lp(nn, edge,:) = 0.0_r8; Coef(nn)=0.0_r8; nsign = 1.0_r8
        case (6)
           do i=1,ndim
              Xn(i,1,:)= Cell%Face_Centroid(i,4)
              Xn(i,2,:)= Cell%Face_Centroid(i,1)
-             Xn(i,3,:)= one_half*(Xv(i,3,:)+Xv(i,7,:))
+             Xn(i,3,:)= 0.5_r8*(Xv(i,3,:)+Xv(i,7,:))
              Xn(i,4,:)= Cell%Centroid(i)
           end do
           v11 = 4; v12 = 2; v13 = 1; v14 = 3
           v21 = 1; v22 = 4; v23 = 3; v24 = 2
           v31 = 1; v32 = 1; v33 = 1; v34 = 1
-          nn = 3; ip_crd_lp(nn, edge,:) = one; Coef(nn)=zero; nsign = one
+          nn = 3; ip_crd_lp(nn, edge,:) = 1.0_r8; Coef(nn)=0.0_r8; nsign = 1.0_r8
        end select
     case(5,9,10)
        do i=1,ndim
           Xl(1,i,:)= Cell%Face_centroid_L(i,2)
-          Xl(2,i,:)= (Xlc(6,i)+Xlc(2,i))/two
+          Xl(2,i,:)= (Xlc(6,i)+Xlc(2,i))/2.0_r8
           Xl(3,i,:)= Cell%Face_centroid_L(i,4)
           Xl(4,i,:)= cell_cen_l(i,:)
-          Xl(5,i,:)= (Xlc(6,i)+Xlc(5,i))/two
+          Xl(5,i,:)= (Xlc(6,i)+Xlc(5,i))/2.0_r8
           Xl(6,i,:)= Xlc(6,i)
-          Xl(7,i,:)= (Xlc(6,i)+Xlc(7,i))/two
+          Xl(7,i,:)= (Xlc(6,i)+Xlc(7,i))/2.0_r8
           Xl(8,i,:)= Cell%Face_centroid_L(i,6)
        end do
        select case (edge)
        case (5)
           do i=1,ndim
-             Xn(i,1,:)= one_half*(Xv(i,2,:)+Xv(i,6,:))
+             Xn(i,1,:)= 0.5_r8*(Xv(i,2,:)+Xv(i,6,:))
              Xn(i,2,:)= Cell%Centroid(i)
              Xn(i,3,:)= Cell%Face_Centroid(i,4)
              Xn(i,4,:)= Cell%Face_Centroid(i,2)
@@ -990,29 +972,29 @@ CONTAINS
           v11 = 1; v12 = 3; v13 = 4; v14 = 2
           v21 = 3; v22 = 2; v23 = 1; v24 = 4
           v31 = 1; v32 = 1; v33 = 1; v34 = 1
-          nn = 3; ip_crd_lp(nn, edge,:) = zero; Coef(nn)=zero; nsign = -one
+          nn = 3; ip_crd_lp(nn, edge,:) = 0.0_r8; Coef(nn)=0.0_r8; nsign = -1.0_r8
        case (9)
           do i=1,ndim
              Xn(i,1,:)= Cell%Face_Centroid(i,6)
              Xn(i,2,:)= Cell%Face_Centroid(i,2)
-             Xn(i,3,:)= one_half*(Xv(i,5,:)+Xv(i,6,:))
+             Xn(i,3,:)= 0.5_r8*(Xv(i,5,:)+Xv(i,6,:))
              Xn(i,4,:)= Cell%Centroid(i)
           end do
           v11 = 2; v12 = 4; v13 = 3; v14 = 1
           v21 = 1; v22 = 1; v23 = 1; v24 = 1
           v31 = 3; v32 = 2; v33 = 1; v34 = 4
-          nn = 2; ip_crd_lp(nn, edge,:) = zero; Coef(nn)=zero; nsign = -one
+          nn = 2; ip_crd_lp(nn, edge,:) = 0.0_r8; Coef(nn)=0.0_r8; nsign = -1.0_r8
        case (10)
           do i=1,ndim
              Xn(i,1,:)= Cell%Face_Centroid(i,6)
              Xn(i,2,:)= Cell%Face_Centroid(i,4)
-             Xn(i,3,:)= one_half*(Xv(i,6,:)+Xv(i,7,:))
+             Xn(i,3,:)= 0.5_r8*(Xv(i,6,:)+Xv(i,7,:))
              Xn(i,4,:)= Cell%Centroid(i)
           end do
           v11 = 1; v12 = 1; v13 = 1; v14 = 1
           v21 = 3; v22 = 1; v23 = 2; v24 = 4
           v31 = 1; v32 = 4; v33 = 3; v34 = 2
-          nn = 1; ip_crd_lp(nn, edge,:) = zero; Coef(nn)=zero; nsign = one
+          nn = 1; ip_crd_lp(nn, edge,:) = 0.0_r8; Coef(nn)=0.0_r8; nsign = 1.0_r8
        end select
     end select
 
@@ -1027,23 +1009,17 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-
-
-    use kind_module,          only: int_kind, real_kind
     use parameter_module,     only: ndim
-    use constants_module,     only: one_half
-    implicit none
 
     !Arguments
-    integer(kind = int_kind), intent(IN)            :: inode, jface, ICell, Face
-    real(kind=real_kind), dimension(:,:), pointer   :: F_Cent
-    real(kind=real_kind), dimension(:,:,:), pointer :: Xv
-    real(kind=real_kind), dimension(:,:,:), pointer :: Xn
-    integer(kind = int_kind), intent(OUT)           :: F_Node
+    integer, intent(IN) :: inode, jface, ICell, Face
+    real(r8), dimension(:,:), pointer   :: F_Cent
+    real(r8), dimension(:,:,:), pointer :: Xv
+    real(r8), dimension(:,:,:), pointer :: Xn
+    integer, intent(OUT) :: F_Node
 
     ! Local variables
-    integer(kind = int_kind)           :: i
-
+    integer :: i
 
     select case (Face)
     case (1)
@@ -1052,14 +1028,14 @@ CONTAINS
           do i=1,ndim
              Xn(i,1,jface)= Xv(i,8,ICell)
                          Xn(i,2,jface)= F_Cent(i,1)
-                         Xn(i,3,jface)= one_half*(Xv(i,7,ICell)+Xv(i,8,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,4,ICell)+Xv(i,8,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,7,ICell)+Xv(i,8,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,4,ICell)+Xv(i,8,ICell))
                       end do
                       F_Node = 8
                    case (2)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,7,ICell)+Xv(i,8,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,3,ICell)+Xv(i,7,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,7,ICell)+Xv(i,8,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,7,ICell))
                          Xn(i,3,jface)= Xv(i,7,ICell)
                          Xn(i,4,jface)= F_Cent(i,1)
                       end do
@@ -1068,14 +1044,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= F_Cent(i,1)
                          Xn(i,2,jface)= Xv(i,3,ICell)
-                         Xn(i,3,jface)= one_half*(Xv(i,3,ICell)+Xv(i,7,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,3,ICell)+Xv(i,4,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,7,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,4,ICell))
                       end do
                       F_Node = 3
                    case (4)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,8,ICell)+Xv(i,4,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,3,ICell)+Xv(i,4,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,8,ICell)+Xv(i,4,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,4,ICell))
                          Xn(i,3,jface)= F_Cent(i,1)
                          Xn(i,4,jface)= Xv(i,4,ICell)
                       end do
@@ -1087,14 +1063,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= Xv(i,6,ICell)
                          Xn(i,2,jface)= F_Cent(i,2)
-                         Xn(i,3,jface)= one_half*(Xv(i,6,ICell)+Xv(i,5,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,6,ICell)+Xv(i,2,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,6,ICell)+Xv(i,5,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,6,ICell)+Xv(i,2,ICell))
                       end do
                       F_Node = 6
                    case (2)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,6,ICell)+Xv(i,5,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,1,ICell)+Xv(i,5,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,6,ICell)+Xv(i,5,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,1,ICell)+Xv(i,5,ICell))
                          Xn(i,3,jface)= Xv(i,5,ICell)
                          Xn(i,4,jface)= F_Cent(i,2)
                       end do
@@ -1103,14 +1079,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= F_Cent(i,2)
                          Xn(i,2,jface)= Xv(i,1,ICell)
-                         Xn(i,3,jface)= one_half*(Xv(i,1,ICell)+Xv(i,5,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,1,ICell)+Xv(i,2,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,1,ICell)+Xv(i,5,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,1,ICell)+Xv(i,2,ICell))
                       end do
                       F_Node = 1
                    case (4)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,2,ICell)+Xv(i,6,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,2,ICell)+Xv(i,1,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,2,ICell)+Xv(i,6,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,2,ICell)+Xv(i,1,ICell))
                          Xn(i,3,jface)= F_Cent(i,2)
                          Xn(i,4,jface)= Xv(i,2,ICell)
                       end do
@@ -1122,14 +1098,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= Xv(i,5,ICell)
                          Xn(i,2,jface)= F_Cent(i,3)
-                         Xn(i,3,jface)= one_half*(Xv(i,5,ICell)+Xv(i,8,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,5,ICell)+Xv(i,1,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,5,ICell)+Xv(i,8,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,5,ICell)+Xv(i,1,ICell))
                       end do
                       F_Node = 5
                    case (2)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,8,ICell)+Xv(i,5,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,8,ICell)+Xv(i,4,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,8,ICell)+Xv(i,5,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,8,ICell)+Xv(i,4,ICell))
                          Xn(i,3,jface)= Xv(i,8,ICell)
                          Xn(i,4,jface)= F_Cent(i,3)
                       end do
@@ -1138,14 +1114,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= F_Cent(i,3)
                          Xn(i,2,jface)= Xv(i,4,ICell)
-                         Xn(i,3,jface)= one_half*(Xv(i,4,ICell)+Xv(i,8,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,4,ICell)+Xv(i,1,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,4,ICell)+Xv(i,8,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,4,ICell)+Xv(i,1,ICell))
                       end do
                       F_Node = 4
                    case (4)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,1,ICell)+Xv(i,5,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,1,ICell)+Xv(i,4,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,1,ICell)+Xv(i,5,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,1,ICell)+Xv(i,4,ICell))
                          Xn(i,3,jface)= F_Cent(i,3)
                          Xn(i,4,jface)= Xv(i,1,ICell)
                       end do
@@ -1157,14 +1133,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= Xv(i,7,ICell)
                          Xn(i,2,jface)= F_Cent(i,4)
-                         Xn(i,3,jface)= one_half*(Xv(i,7,ICell)+Xv(i,6,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,7,ICell)+Xv(i,3,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,7,ICell)+Xv(i,6,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,7,ICell)+Xv(i,3,ICell))
                       end do
                       F_Node = 7
                    case (2)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,6,ICell)+Xv(i,7,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,6,ICell)+Xv(i,2,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,6,ICell)+Xv(i,7,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,6,ICell)+Xv(i,2,ICell))
                          Xn(i,3,jface)= Xv(i,6,ICell)
                          Xn(i,4,jface)= F_Cent(i,4)
                       end do
@@ -1173,14 +1149,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= F_Cent(i,4)
                          Xn(i,2,jface)= Xv(i,2,ICell)
-                         Xn(i,3,jface)= one_half*(Xv(i,2,ICell)+Xv(i,6,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,2,ICell)+Xv(i,3,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,2,ICell)+Xv(i,6,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,2,ICell)+Xv(i,3,ICell))
                       end do
                       F_Node = 2
                    case (4)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,3,ICell)+Xv(i,7,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,3,ICell)+Xv(i,2,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,7,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,2,ICell))
                          Xn(i,3,jface)= F_Cent(i,4)
                          Xn(i,4,jface)= Xv(i,3,ICell)
                       end do
@@ -1192,14 +1168,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= Xv(i,4,ICell)
                          Xn(i,2,jface)= F_Cent(i,5)
-                         Xn(i,3,jface)= one_half*(Xv(i,4,ICell)+Xv(i,3,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,4,ICell)+Xv(i,1,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,4,ICell)+Xv(i,3,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,4,ICell)+Xv(i,1,ICell))
                       end do
                       F_Node = 4
                    case (2)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,3,ICell)+Xv(i,4,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,3,ICell)+Xv(i,2,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,4,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,3,ICell)+Xv(i,2,ICell))
                          Xn(i,3,jface)= Xv(i,3,ICell)
                          Xn(i,4,jface)= F_Cent(i,5)
                       end do
@@ -1208,14 +1184,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= F_Cent(i,5)
                          Xn(i,2,jface)= Xv(i,2,ICell)
-                         Xn(i,3,jface)= one_half*(Xv(i,2,ICell)+Xv(i,3,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,2,ICell)+Xv(i,1,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,2,ICell)+Xv(i,3,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,2,ICell)+Xv(i,1,ICell))
                       end do
                       F_Node = 2
                    case (4)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,1,ICell)+Xv(i,4,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,1,ICell)+Xv(i,2,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,1,ICell)+Xv(i,4,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,1,ICell)+Xv(i,2,ICell))
                          Xn(i,3,jface)= F_Cent(i,5)
                          Xn(i,4,jface)= Xv(i,1,ICell)
                       end do
@@ -1227,14 +1203,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= Xv(i,5,ICell)
                          Xn(i,2,jface)= F_Cent(i,6)
-                         Xn(i,3,jface)= one_half*(Xv(i,5,ICell)+Xv(i,6,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,5,ICell)+Xv(i,8,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,5,ICell)+Xv(i,6,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,5,ICell)+Xv(i,8,ICell))
                       end do
                       F_Node = 5
                    case (2)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,6,ICell)+Xv(i,5,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,6,ICell)+Xv(i,7,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,6,ICell)+Xv(i,5,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,6,ICell)+Xv(i,7,ICell))
                          Xn(i,3,jface)= Xv(i,6,ICell)
                          Xn(i,4,jface)= F_Cent(i,6)
                       end do
@@ -1243,14 +1219,14 @@ CONTAINS
                       do i=1,ndim
                          Xn(i,1,jface)= F_Cent(i,6)
                          Xn(i,2,jface)= Xv(i,7,ICell)
-                         Xn(i,3,jface)= one_half*(Xv(i,7,ICell)+Xv(i,6,ICell))
-                         Xn(i,4,jface)= one_half*(Xv(i,7,ICell)+Xv(i,8,ICell))
+                         Xn(i,3,jface)= 0.5_r8*(Xv(i,7,ICell)+Xv(i,6,ICell))
+                         Xn(i,4,jface)= 0.5_r8*(Xv(i,7,ICell)+Xv(i,8,ICell))
                       end do
                       F_Node = 7
                    case (4)
                       do i=1,ndim
-                         Xn(i,1,jface)= one_half*(Xv(i,8,ICell)+Xv(i,5,ICell))
-                         Xn(i,2,jface)= one_half*(Xv(i,8,ICell)+Xv(i,7,ICell))
+                         Xn(i,1,jface)= 0.5_r8*(Xv(i,8,ICell)+Xv(i,5,ICell))
+                         Xn(i,2,jface)= 0.5_r8*(Xv(i,8,ICell)+Xv(i,7,ICell))
                          Xn(i,3,jface)= F_Cent(i,6)
                          Xn(i,4,jface)= Xv(i,8,ICell)
                       end do
@@ -1279,28 +1255,26 @@ CONTAINS
     use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes, nfc
     use mesh_module,          only: Vertex, Vertex_Ngbr_All, Mesh, GAP_ELEMENT_1, Cell
     use var_vector_module
-    use truchas_logging_services
-    implicit none
 
     ! Arguments
-    integer(int_kind), intent(IN)                        :: ibcop, ibcnodes, ibcfaces
+    integer, intent(IN) :: ibcop, ibcnodes, ibcfaces
 
     ! Local variables
-    integer                                              :: status
-    real(KIND = real_kind), allocatable, dimension(:,:)  :: Fnorm, Fcount, Farea
-    real(KIND = real_kind), allocatable, dimension(:)    :: Ncount, Narea
-    real(KIND = real_kind), allocatable, dimension(:,:)  :: Nnorm
-    integer(int_kind)                                    :: bctype, inode, nnum, i, j, k, n, nmax, nnbr, ncnt
-    logical(log_kind)                                    :: found_node, dup1, dup2, fatal
-    real(real_kind)                                      :: vmag, dist, costheta, sintheta, mindist
-    real(real_kind), pointer, dimension(:,:)             :: Bcoords
-    real(real_kind), pointer, dimension(:)               :: Btemp
-    real(real_kind), pointer, dimension(:)               :: BNcount 
-    real(real_kind), pointer, dimension(:,:)             :: BNnorm 
-    integer(int_kind), pointer, dimension(:)             :: NN_Vec
-    real(real_kind), dimension(ndim)                     :: Nbrvec
-    real(real_kind)                                      :: dotprod
-    real(real_kind), dimension(nfc)                      :: htemp
+    integer :: status
+    real(r8), allocatable, dimension(:,:) :: Fnorm, Fcount, Farea
+    real(r8), allocatable, dimension(:)   :: Ncount, Narea
+    real(r8), allocatable, dimension(:,:) :: Nnorm
+    integer :: bctype, inode, nnum, i, j, k, n, nmax, nnbr, ncnt
+    logical :: found_node, dup1, dup2, fatal
+    real(r8) :: vmag, dist, costheta, sintheta, mindist
+    real(r8), pointer, dimension(:,:) :: Bcoords
+    real(r8), pointer, dimension(:) :: Btemp
+    real(r8), pointer, dimension(:) :: BNcount 
+    real(r8), pointer, dimension(:,:) :: BNnorm 
+    integer, pointer, dimension(:) :: NN_Vec
+    real(r8), dimension(ndim) :: Nbrvec
+    real(r8) :: dotprod
+    real(r8), dimension(nfc) :: htemp
 
     if (PGSLib_GLOBAL_ANY(ibcnodes /= 0)) then
        allocate(Fnorm(nvc, ncells), stat= status)
@@ -1858,18 +1832,15 @@ CONTAINS
     use parameter_module,     only: ndim, nnodes
     use lu_solve_module,      only: LU_SOLVE, factsolve
 
-    implicit none
-
     ! Local variables
-    integer(KIND = int_kind)                              :: inode, idim, solve_flag, nnum, &
-                                                             status
-    real(KIND = real_kind), dimension(ndim)               :: Nvec1, Nvec2, Gvec1, Gvec2, Gvec3, &
-                                                             Tvec1, Tvec2, Tvec3, Vvec, Wvec, D, B, Avec
-    integer(KIND = int_kind), dimension(ndim)             :: indx
-    real(KIND = real_kind), dimension(ndim,ndim)          :: M
-    real(KIND = real_kind), allocatable, dimension(:,:,:) :: All_Norm
-    real(KIND = real_kind)                                :: costheta, sintheta, vmag
-    logical(KIND=log_kind)                                :: pivot = .true.
+    integer :: inode, idim, solve_flag, nnum, status
+    real(r8), dimension(ndim) :: Nvec1, Nvec2, Gvec1, Gvec2, Gvec3, &
+                                 Tvec1, Tvec2, Tvec3, Vvec, Wvec, D, B, Avec
+    integer, dimension(ndim) :: indx
+    real(r8), dimension(ndim,ndim) :: M
+    real(r8), allocatable, dimension(:,:,:) :: All_Norm
+    real(r8) :: costheta, sintheta, vmag
+    logical :: pivot = .true.
 
     ! Gather normals from off-processor nodes int a boundary array so we can
     ! calculate lambda3 if we need to.
@@ -2075,9 +2046,8 @@ CONTAINS
   !---------------------------------------------------------------------------------
   !! Copied from MeshSupport
   pure function cross_product (a, b) result (axb)
-    use kind_module,          only: real_kind
-    real(real_kind), intent(in) :: a(:), b(:)
-    real(real_kind)             :: axb(3)
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: axb(3)
     axb(1) = a(2) * b(3) - a(3) * b(2)
     axb(2) = a(3) * b(1) - a(1) * b(3)
     axb(3) = a(1) * b(2) - a(2) * b(1)
@@ -2090,20 +2060,16 @@ CONTAINS
     !
     ! Author: David Korzekwa
     !---------------------------------------------------------------------------------
-
-    use kind_module,          only: int_kind, real_kind
     use parameter_module,     only: ndim, nrot, ncells
-    use constants_module,     only: one_half, one_fourth, one_twelfth,  &
-         twenty_four, zero
     use mesh_module,          only: Cell
-    implicit none
+
     ! Arguments
-    real(KIND = real_kind), Dimension(:,:,:),          intent(IN)     :: Xv
-    real(KIND = real_kind), Dimension(:,:) ,           intent(OUT)    :: cell_cen_l
+    real(r8), Dimension(:,:,:), intent(IN) :: Xv
+    real(r8), Dimension(:,:),   intent(OUT) :: cell_cen_l
     ! Local Variables
-    integer(KIND = int_kind) :: i, i1, i2, v1, v2, v3, v4, v5, v6, v7, v8,status
-    real(KIND = real_kind), dimension(:,:), pointer ::L, M, N, D1, D2, D3, Dv
-    real(KIND = real_kind), dimension(:,:), pointer :: LxD3, MxD2, NxD1, D1xDv, D2xDv, D3xDv
+    integer :: i, i1, i2, v1, v2, v3, v4, v5, v6, v7, v8,status
+    real(r8), dimension(:,:), pointer ::L, M, N, D1, D2, D3, Dv
+    real(r8), dimension(:,:), pointer :: LxD3, MxD2, NxD1, D1xDv, D2xDv, D3xDv
     ! Explicitly allocate temporaries
     allocate (L(ndim,ncells), stat=status)
     if (status /= 0) call TLS_panic ('CELL_LOGICAL_CENTROID: allocation error: L')
@@ -2176,10 +2142,10 @@ CONTAINS
           NxD1(i,:) = N(i1,:)*M(i2,:) - N(i2,:)*M(i1,:)
        end do
     case (3)
-       L = one_fourth*L
-       M = one_fourth*M
-       N = one_fourth*N
-       cell_cen_l = zero
+       L = L/4
+       M = M/4
+       N = N/4
+       cell_cen_l = 0.0_r8
        do i = 1,nrot
           select case (i)
           case (1)
@@ -2198,14 +2164,14 @@ CONTAINS
        end do
        do i = 1,ndim
           cell_cen_l(v1,:) = cell_cen_l(v1,:) + L(i,:)*(MxD2(i,:) - NxD1(i,:)) &
-               + one_twelfth*(N(i,:)*D2xDv(i,:) - M(i,:)*D1xDv(i,:))
+               + (N(i,:)*D2xDv(i,:) - M(i,:)*D1xDv(i,:))/12
           cell_cen_l(v2,:) = cell_cen_l(v2,:) + M(i,:)*(NxD1(i,:) - LxD3(i,:)) &
-               + one_twelfth*(L(i,:)*D1xDv(i,:) - N(i,:)*D3xDv(i,:))
+               + (L(i,:)*D1xDv(i,:) - N(i,:)*D3xDv(i,:))/12
           cell_cen_l(v3,:) = cell_cen_l(v3,:) + N(i,:)*(LxD3(i,:) - MxD2(i,:)) &
-               + one_twelfth*(M(i,:)*D3xDv(i,:) - L(i,:)*D2xDv(i,:))
+               + (M(i,:)*D3xDv(i,:) - L(i,:)*D2xDv(i,:))/12
        end do
        do i = 1,ndim
-          cell_cen_l(i,:) = one_half + cell_cen_l(i,:)/(twenty_four*Cell%Volume)
+          cell_cen_l(i,:) = 0.5_r8 + cell_cen_l(i,:)/(24*Cell%Volume)
        end do
     end select
     ! Explicitly allocate temporaries
@@ -2225,7 +2191,6 @@ CONTAINS
        deallocate (D2xDv)
        deallocate (D3xDv)
     end if
-    return
   END SUBROUTINE CELL_LOGICAL_CENTROID
 
 END MODULE NODE_OP_SETUP_MODULE

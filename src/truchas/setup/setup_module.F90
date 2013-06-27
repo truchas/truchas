@@ -35,10 +35,10 @@ CONTAINS
     !
     !    set up the problem
     !=======================================================================
+    use kinds, only: r8
     use base_types_module,      only: MESH_VERTEX_ALLOCATE, BASE_TYPES_ALLOCATE
     use bc_module,              only: ASSIGN_BC_BITS, Conc, Prs, Vel
     use cell_geometry_module,   only: GET_CELL_GEOMETRY
-    use constants_module,       only: zero
     use gs_module,              only: EE_GS_INIT, EN_GS_INIT, NN_GS_INIT
     use init_module,            only: INITIAL
     use linear_module,          only: LINEAR_COEF
@@ -156,7 +156,7 @@ CONTAINS
     if (restart) call close_restart_file ()
 
     ! Set previous time, last time, and initial cycle number.
-    t1 = MAX(t - dt, zero)
+    t1 = MAX(t - dt, 0.0_r8)
     t2 = t
     cycle_number_restart = cycle_number
 

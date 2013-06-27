@@ -172,7 +172,7 @@ contains
 
   pure function concat (array) result (s)
     character(len=*), intent(in) :: array(:)
-#if (defined(LAHEY_COMPILER_WORKAROUND) || defined(PATHSCALE_COMPILER_WORKAROUND))
+#ifdef PATHSCALE_COMPILER_WORKAROUND
     character(len=size(array)*len(array)) :: s
 #else
     character(len=len_concat(array)) :: s
@@ -191,7 +191,7 @@ contains
     end do
   end function concat
 
-#if !(defined(LAHEY_COMPILER_WORKAROUND) || defined(PATHSCALE_COMPILER_WORKAROUND))
+#ifndef PATHSCALE_COMPILER_WORKAROUND
   pure integer function len_concat (array) result (m)
     character(len=*), intent(in) :: array(:)
     integer :: j, n

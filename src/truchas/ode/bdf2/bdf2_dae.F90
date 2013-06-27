@@ -37,7 +37,7 @@ module bdf2_dae
 
   use kinds
   use solution_history
-  use fixed_point_accelerator
+  use nka_type
   implicit none
   private
 
@@ -59,7 +59,7 @@ module bdf2_dae
     integer  :: freeze_count        ! don't increase step size for this number of steps
     integer  :: mitr = 5            ! maximum number of nonlinear iterations
     real(r8) :: ntol = 0.1_r8       ! nonlinear solver error tolerance (relative to 1)
-    type(fpa_state) :: fpa          ! nonlinear solver (AIN) accelerator structure
+    type(nka) :: fpa                ! nonlinear solver (NKA) accelerator structure
     type(history)   :: uhist        ! solution history structure
 
     !! Perfomance counters
@@ -121,8 +121,9 @@ contains
       maxv = min(maxv, mvec)
     end if
 
-    !! Initialize the FPA structure.
-    call fpa_create (this%fpa, this%n, maxv, vtol)
+    !! Initialize the NKA structure.
+    call nka_init (this%fpa, this%n, maxv)
+    call nka_set_vec_tol (this%fpa, vtol)
 
     !! We need to maintain 3 solution vectors for quadratic extrapolation.
     call create_history (this%uhist, 3, this%n)
@@ -165,7 +166,7 @@ contains
   subroutine destroy_state (this)
     type(state), intent(inout) :: this
     call destroy (this%uhist)
-    call fpa_destroy (this%fpa)
+    call nka_delete (this%fpa)
   end subroutine destroy_state
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -732,11 +733,11 @@ contains
  !!    u given
  !!    Do until converged:
  !!      du <-- g(u)
- !!      du <-- FPA(du)
+ !!      du <-- NKA(du)
  !!      u  <-- u - du
  !!    End do
  !!
- !! The procedure FPA uses information about g' gleaned from the unaccelerated
+ !! The procedure NKA uses information about g' gleaned from the unaccelerated
  !! correction du=g(u) and previous g values to compute an improved correction.
  !! The preconditioning function pc() is typically an approximate solution
  !! of the Newton correction equation  J*du = f(t,u,(u-u0)/h) where J is an
@@ -763,7 +764,7 @@ contains
     integer  :: itr
     real(r8) :: error, du(size(u))
 
-    call fpa_restart (this%fpa)
+    call nka_restart (this%fpa)
 
     itr = 0
     do
@@ -782,7 +783,7 @@ contains
       call pcfun (t, u, (u-u0)/h, du)
 
       !! Accelerated correction.
-      call fpa_correction (this%fpa, du, dp=pardp)
+      call nka_accel_update (this%fpa, du, dp=pardp)
 
       !! Next solution iterate and error estimate.
       u  = u - du
@@ -830,7 +831,7 @@ contains
     integer  :: itr
     real(r8) :: error, error0, du(size(u)), conv_rate
 
-    call fpa_restart (this%fpa)
+    call nka_restart (this%fpa)
 
     itr = 0
 
@@ -855,7 +856,7 @@ contains
       itr = itr + 1
 
       !! Accelerated correction and next solution iterate.
-      call fpa_correction (this%fpa, du, dp=pardp)
+      call nka_accel_update (this%fpa, du, dp=pardp)
       u  = u - du
       
       !! Evaluate the preconditioned nonlinear function.
@@ -963,7 +964,7 @@ contains
     integer  :: itr
     real(r8) :: f(size(u)), udot(size(u)), error
 
-    call fpa_restart (this%fpa)
+    call nka_restart (this%fpa)
 
     itr = 0
     
@@ -979,7 +980,7 @@ contains
     
       !! Compute the next solution iterate.
       call pc (t, u, udot, f)
-      call fpa_correction (this%fpa, f, dp=pardp)
+      call nka_accel_update (this%fpa, f, dp=pardp)
       u = u - f
       udot = (u - u0)/h
       

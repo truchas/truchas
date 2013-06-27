@@ -79,12 +79,10 @@ Contains
     use bc_type_module,       only: BC_C, BC_P, BC_T, BC_V
     use scalars_module
 
-    implicit none
-
     ! Argument List
-    logical(KIND = log_kind), intent(IN) :: cflag ! Concentration flag
-    logical(KIND = log_kind), intent(IN) :: fflag ! Fluid flow flag
-    logical(KIND = log_kind), intent(IN) :: tflag ! Temperature flag
+    logical, intent(IN) :: cflag ! Concentration flag
+    logical, intent(IN) :: fflag ! Fluid flow flag
+    logical, intent(IN) :: tflag ! Temperature flag
 
     !---------------------------------------------------------------------------
 
@@ -181,8 +179,6 @@ Contains
        BC_T%Flag = 0
     end if
 
-    return
-
   End Subroutine InitializeBoundaryConditions
 
   !-----------------------------------------------------------------------------
@@ -267,42 +263,34 @@ Contains
                                     BC_HTC_GAP_OP
 
     use bc_type_module,       only: BC_STRUCTURE
-    use constants_module,     only: zero
     use scalars_module
+    use kinds, only: r8
     Use mesh_module,          Only: Mesh
     use parameter_module,     only: ncells
     use pgslib_module,        only: PGSLIB_GLOBAL_COUNT
 
-    implicit none
-
     ! Argument List
     integer,                                     intent(in)           :: BCID
     type   (BC_STRUCTURE),                       intent(INOUT)        :: BC
-    logical(KIND = log_kind), dimension(ncells), intent(IN)           :: mask
-    integer(KIND = int_kind),                    intent(IN)           :: face
-    integer(KIND = int_kind),                    intent(IN)           :: bctype
-    logical(KIND = log_kind),                    intent(IN), optional :: UseFunc
-    real   (KIND = real_kind),                   intent(IN), optional :: value1
-    real   (KIND = real_kind),                   intent(IN), optional :: value2
-    real   (KIND = real_kind),                   intent(IN), optional :: value3
-    real   (KIND = real_kind), dimension(:),     intent(IN), optional :: value_array
+    logical, dimension(ncells), intent(IN)           :: mask
+    integer,                    intent(IN)           :: face
+    integer,                    intent(IN)           :: bctype
+    logical,                    intent(IN), optional :: UseFunc
+    real(r8),                   intent(IN), optional :: value1
+    real(r8),                   intent(IN), optional :: value2
+    real(r8),                   intent(IN), optional :: value3
+    real(r8), dimension(:),     intent(IN), optional :: value_array
 
     ! Local Variables
-    integer(KIND = int_kind)                    :: bit_mask
-    integer(KIND = int_kind)                    :: bits
-    integer(KIND = int_kind)                    :: bitsi
-    integer(KIND = int_kind)                    :: k, length_value_array
-    integer(KIND = int_kind), dimension(ncells) :: bit_mask_array
-    integer(KIND = int_kind), dimension(ncells) :: bits_array
-    integer(KIND = int_kind), dimension(ncells) :: bitsi_array
+    integer                    :: bit_mask
+    integer                    :: bits
+    integer                    :: bitsi
+    integer                    :: k, length_value_array
+    integer, dimension(ncells) :: bit_mask_array
+    integer, dimension(ncells) :: bits_array
+    integer, dimension(ncells) :: bitsi_array
     integer                                     :: tmpOp
     integer                                     :: n_interior_faces 
-!    real   (KIND = real_kind), dimension(max_bc_dof)            ::workarray
-!    real   (KIND = real_kind), dimension(:,:,:), allocatable    ::copyarray
-!    integer(KIND = int_kind), dimension(1)                      :: minlocworkarray
-!    integer(KIND = int_kind)                                    :: existing_length_value_array
-!    integer(KIND = int_kind)                                    :: i
-
     
     !---------------------------------------------------------------------------
 
@@ -459,28 +447,10 @@ Contains
 
     ! Value Array
     if (PRESENT(value_array)) then
-!       workarray =(Value_array-preset)**2
-!       minlocworkarray = minloc(workarray)
-!       length_value_array = minlocworkarray(1) - 1
        length_value_array = SIZE (value_array)
        if (.not. ASSOCIATED(BC%Value_Array)) then
           call ARRAYCREATE (BC%Value_Array,1,length_value_array,1,nfc,1,ncells,'SetBoundaryCondition, value_array')
-          BC%Value_Array = zero
-!       else
-!          existing_length_value_array = size(BC%Value_Array,1)
-!          if (existing_length_value_array < length_value_array) then
-!            allocate (copyarray(existing_length_value_array, nfc, ncells))
-!            copyarray = BC%Value_Array 
-!            call ARRAYDESTROY (BC%Value_Array, 'SetBoundaryCondition, value_array')
-!            call ARRAYCREATE (BC%Value_Array,1,length_value_array,1,nfc,1,ncells,'SetBoundaryCondition, value_array')
-!            do i = 1, existing_length_value_array
-!              BC%Value_Array(i,:,:) = copyarray(i,:,:)
-!            enddo
-!            do i = existing_length_value_array+1, length_value_array
-!              BC%Value_Array(i,:,:) =  zero
-!            enddo
-!            deallocate (copyarray)
-!          endif
+          BC%Value_Array = 0.0_r8
        end if
        do k = 1,length_value_array
            Where (mask)
@@ -488,8 +458,6 @@ Contains
            End Where
        end do
     end if
-
-    return
 
   End Subroutine SetBoundaryCondition
 

@@ -11,12 +11,9 @@ MODULE ZONE_MODULE
   !
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !=======================================================================
-  use kind_module,      Only: int_kind, real_kind
+  use kinds, only: r8
   use parameter_module, Only: ndim
-
-
   implicit none
-
   private
 
   ! public variables and types
@@ -30,15 +27,15 @@ MODULE ZONE_MODULE
 
   ! CELL_AVG structure - hold physical state variables
   type CELL_AVG
-     real(KIND=real_kind)                      :: Rho       ! current cell average density
-     real(KIND=real_kind)                      :: Rho_Old   ! past cell average density
-     real(KIND=real_kind)                      :: Temp      ! current temperature
-     real(KIND=real_kind)                      :: Temp_Old  ! past temperature
-     real(KIND=real_kind)                      :: Enthalpy      ! current enthalpy
-     real(KIND=real_kind)                      :: Enthalpy_Old  ! past enthalpy
-     real(KIND=real_kind)                      :: P         ! current pressure
-     real(KIND=real_kind), dimension(ndim)     :: Vc        ! current cell-centered velocity
-     real(KIND=real_kind), dimension(ndim)     :: Vc_old    ! past cell-centered velocity
+     real(r8)                      :: Rho       ! current cell average density
+     real(r8)                      :: Rho_Old   ! past cell average density
+     real(r8)                      :: Temp      ! current temperature
+     real(r8)                      :: Temp_Old  ! past temperature
+     real(r8)                      :: Enthalpy      ! current enthalpy
+     real(r8)                      :: Enthalpy_Old  ! past enthalpy
+     real(r8)                      :: P         ! current pressure
+     real(r8), dimension(ndim)     :: Vc        ! current cell-centered velocity
+     real(r8), dimension(ndim)     :: Vc_old    ! past cell-centered velocity
   end type CELL_AVG
 
   type(CELL_AVG), dimension(:), pointer :: Zone
@@ -67,8 +64,6 @@ CONTAINS
 
     call COLLATE(Zone_Collate, Zone)
 
-    return
-
   END FUNCTION ZONE_COLLATE
 
   SUBROUTINE COLLATE_ZONE (Collated_Zone, Local_Zone)
@@ -79,15 +74,12 @@ CONTAINS
     use parameter_module,     only: ndim
     use pgslib_module,        only: PGSLib_COLLATE
 
-    implicit none
-
     ! Arguments
     type(CELL_AVG), dimension(:), intent(IN    ) :: Local_Zone
     type(CELL_AVG), dimension(:), intent(   OUT) :: Collated_Zone
 
     ! Local variables
-    integer (int_kind) :: n
-
+    integer :: n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -103,8 +95,6 @@ CONTAINS
        call PGSLib_COLLATE (Collated_Zone%Vc(n),      Local_Zone%Vc(n))
        call PGSLib_COLLATE (Collated_Zone%Vc_Old(n),  Local_Zone%Vc_Old(n))
     end do
-
-    return
 
   END SUBROUTINE COLLATE_ZONE
 
@@ -157,13 +147,12 @@ CONTAINS
     ! Purpose(s):
     !   Permute zone according the Permuter vector
     !==================================================================
-    use kind_module,      only: int_kind
     use parallel_scope
 
     ! Arguments
     type(CELL_AVG), dimension(:), intent(IN   ) :: Orig_Zone
     type(CELL_AVG), dimension(:), intent(  OUT) :: Permuted_Zone
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
     type (PL_SCOPE), OPTIONAL,    intent(IN   ) :: SCOPE
 
     ! Local variables
@@ -186,7 +175,6 @@ CONTAINS
        call PERMUTE_ZONE_LOCAL (Permuted_Zone, Orig_Zone, Permuter)
     end if
 
-    return
   end SUBROUTINE PERMUTE_ZONE
 
   SUBROUTINE PERMUTE_ZONE_GLOBAL (Permuted_Zone, Orig_Zone, Permuter)
@@ -194,22 +182,18 @@ CONTAINS
     ! Purpose(s):
     !   Permute zone according the Permuter vector, global version
     !==================================================================
-    use kind_module,      only: int_kind
     use parameter_module, only: ndim
     use pgslib_module,    only: PGSLib_Permute,    &
                                 PGSLIB_Deallocate_Trace, &
                                 PGSLib_GS_Trace
 
-
-    implicit none
-
     ! Arguments
     type(CELL_AVG), dimension(:), intent(IN   ) :: Orig_Zone
     type(CELL_AVG), dimension(:), intent(  OUT) :: Permuted_Zone
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
 
     ! Local variables
-    integer(KIND = int_kind) :: n
+    integer :: n
     type (PGSLib_GS_Trace), POINTER :: Zone_Trace
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -259,8 +243,6 @@ CONTAINS
     ! Done with the trace
     call PGSLib_DEALLOCATE_TRACE (Zone_Trace)
 
-    return
-
   END SUBROUTINE PERMUTE_ZONE_GLOBAL
 
   SUBROUTINE PERMUTE_ZONE_LOCAL (Permuted_Zone, Orig_Zone, Permuter)
@@ -270,23 +252,20 @@ CONTAINS
     !   The Permuter vector refers to local indices.
     !   The input and output vectors must have the same size.
     !==================================================================
-    use kind_module,      only: int_kind
 
     ! Arguments
     type(CELL_AVG), dimension(:), intent(IN   ) :: Orig_Zone
     type(CELL_AVG), dimension(:), intent(  OUT) :: Permuted_Zone
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
 
     ! Local variables
-    integer(KIND = int_kind) :: cell
+    integer :: cell
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     do cell = 1, SIZE(Permuter)
        Permuted_Zone(Permuter(cell)) = Orig_Zone(Cell)
     end do
-
-    return
 
   END SUBROUTINE PERMUTE_ZONE_LOCAL
 

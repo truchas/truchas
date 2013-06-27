@@ -6,14 +6,11 @@ Module SOLID_MECH_CONSTRAINTS
   !             
   ! Authors:  Dave Korzekwa (dak@lanl.gov)
   !-----------------------------------------------------------------------------
-  Use kind_module,      Only: real_kind
-  Use truchas_logging_services
-!  Use parameter_module, Only: ndim
-  Use var_vector_module
+  use kinds, only: r8
+  use truchas_logging_services
+  use var_vector_module
   use solid_mechanics_data
-!  use nonlinear_solution, only: NK_SOLUTION_FIELD
   Implicit None
-
   Private
 
   ! Public procedures
@@ -24,7 +21,7 @@ Module SOLID_MECH_CONSTRAINTS
             FACE_GAP_UPDATE
 
   ! Penalty parameter for displacement BCs
-  Real   (KIND = real_kind)                     :: penalty
+  real(r8)                     :: penalty
   !-----------------------------------------------------------------------------
 
 Contains
@@ -41,11 +38,10 @@ Contains
     use parameter_module,     only: ndim
     use bc_data_types
 
-    implicit none
     ! Local variables
-    Integer(KIND =  int_kind)                          :: inode, yindex, nnum, idim
-    real(real_kind),dimension(ndim)                    :: Nvec1, Tvec, Avec, rj
-    real(real_kind)                                    :: ndotr, tdotr, tdota, ndotdn, d
+    integer :: inode, yindex, nnum, idim
+    real(r8), dimension(ndim) :: Nvec1, Tvec, Avec, rj
+    real(r8) :: ndotr, tdotr, tdota, ndotdn, d
 
     penalty = contact_penalty
 
@@ -131,32 +127,30 @@ Contains
     use gs_module,            only: NN_Gather_BoundaryData
     use mesh_module,          only: Vertex
 
-    implicit none
-
     ! Arguments
-    Real   (KIND = real_kind), Dimension(:), Intent(IN)    :: X
-    Real   (KIND = real_kind), Dimension(:), Intent(INOUT) :: Y
+    real(r8), Dimension(:), Intent(IN)    :: X
+    real(r8), Dimension(:), Intent(INOUT) :: Y
 
     ! Local variables
-    integer                                    :: status
-    Integer(KIND =  int_kind)                  :: inode, yindex, nnum, idim, gap_nnum1, &
-                                                  gap_nnum2, gap_nnum3, gapindex1, gapindex2
-    real(real_kind),dimension(ndim)            :: Nvec1, Tvec1, Tvec2, Tvec3, &
-                                                  Gvec1, Gvec2, Gvec3, Vvec, Wvec, &
-                                                  uj, uk, ul, fj, frk, frl, cj, ck, cl
-    real(real_kind)                            :: ndotfj, ndotuj, ndotfrk, ndotukuj, ndotfrl, ndotuluj, &
-                                                  tdotfj, tdotuj, tdotfrk, tdotfrl, tdotukuj, tdotuluj, &
-                                                  t1dotfrk, t1dotukuj, &
-                                                  t2dotfrk, t2dotukuj, &
-                                                  t3dotfrk, t3dotukuj, & 
-                                                  mdotfrk, mdotfrl, mdotukuj, mdotuluj, &
-                                                  pdotfrk, pdotukuj, &
-                                                  vdotfrk, vdotukuj, &
-                                                  wdotfrk, wdotfrl, wdotukuj, wdotuluj, &
-                                                  costheta1, costheta2, &
-                                                  lambda1, lambda2, lambda3
-    real(real_kind), dimension(ndim*nnodes)    :: Ysave, Ftot
-    real(real_kind), pointer, dimension(:)     :: Btemp, X_Bound, XC_Bound, Y_Bound, S_Bound, CS_Bound
+    integer :: status
+    integer :: inode, yindex, nnum, idim, gap_nnum1, &
+               gap_nnum2, gap_nnum3, gapindex1, gapindex2
+    real(r8), dimension(ndim) :: Nvec1, Tvec1, Tvec2, Tvec3, &
+                                 Gvec1, Gvec2, Gvec3, Vvec, Wvec, &
+                                 uj, uk, ul, fj, frk, frl, cj, ck, cl
+    real(r8) :: ndotfj, ndotuj, ndotfrk, ndotukuj, ndotfrl, ndotuluj, &
+                tdotfj, tdotuj, tdotfrk, tdotfrl, tdotukuj, tdotuluj, &
+                t1dotfrk, t1dotukuj, &
+                t2dotfrk, t2dotukuj, &
+                t3dotfrk, t3dotukuj, & 
+                mdotfrk, mdotfrl, mdotukuj, mdotuluj, &
+                pdotfrk, pdotukuj, &
+                vdotfrk, vdotukuj, &
+                wdotfrk, wdotfrl, wdotukuj, wdotuluj, &
+                costheta1, costheta2, &
+                lambda1, lambda2, lambda3
+    real(r8), dimension(ndim*nnodes) :: Ysave, Ftot
+    real(r8), pointer, dimension(:)  :: Btemp, X_Bound, XC_Bound, Y_Bound, S_Bound, CS_Bound
      
     NULLIFY(Btemp)
     NULLIFY(X_Bound, X_Bound, XC_Bound, Y_Bound, S_Bound, CS_Bound)
@@ -762,17 +756,16 @@ Contains
   SUBROUTINE CONTACT_FUNCTION(U, F, U_Bound, XC_Bound)
 
     use mech_bc_data_module
-    use parameter_module,     only: ndim
-    use mesh_module,          only: Vertex
+    use parameter_module, only: ndim
+    use mesh_module, only: Vertex
 
-    real(real_kind), dimension(:), intent(IN)  :: F, U
-    real(real_kind), pointer, dimension(:)     :: U_Bound, XC_Bound
+    real(r8), dimension(:), intent(IN) :: F, U
+    real(r8), pointer, dimension(:)    :: U_Bound, XC_Bound
 
     ! local variables
-    real(real_kind), dimension(ndim)  :: u1, u2, fj, Gvec
-    real(real_kind)                   :: ndotudiff, normtrac
-    integer(KIND = int_kind)          :: inode, nnum, yindex, gnum, gindex, &
-                                         combination, gap_pos
+    real(r8), dimension(ndim) :: u1, u2, fj, Gvec
+    real(r8) :: ndotudiff, normtrac
+    integer :: inode, nnum, yindex, gnum, gindex, combination, gap_pos
 
     ! Initialize to an invalid value
     Node_Displacement_BC%Lambda(:,:) = -1.0
@@ -933,8 +926,8 @@ Contains
 
   FUNCTION GET_LAMBDA(ndotudiff, normtrac) result (lam)
 
-    real(real_kind), intent(IN) :: ndotudiff, normtrac
-    real(real_kind)             :: lam
+    real(r8), intent(IN) :: ndotudiff, normtrac
+    real(r8) :: lam
 
     ! local variables
     
@@ -978,22 +971,20 @@ Contains
     !=============================================================================
 
     use mech_bc_data_module
-    use parameter_module,     only: ndim
-    use mesh_module,          only: Vertex_Ngbr_All
-    implicit none
+    use parameter_module, only: ndim
+    use mesh_module, only: Vertex_Ngbr_All
 
     ! Arguments
     type(real_var_vector), pointer, dimension(:) :: A_Elas
 
     ! Local variables
-    integer                                      :: status
-    Integer(KIND = int_kind)                     :: inode, yindex, nnum, idim, jdim, &
-                                                    nmax, n, nindex
-    real(real_kind),dimension(ndim)              :: Nvec1, Tvec1
-    real(real_kind)                              :: atmp, n1dotf, t1dotf
+    integer :: status
+    integer :: inode, yindex, nnum, idim, jdim, nmax, n, nindex
+    real(r8), dimension(ndim) :: Nvec1, Tvec1
+    real(r8) :: atmp, n1dotf, t1dotf
     
-    real(real_kind), pointer, dimension(:)       :: A_Vec
-    real(real_kind), allocatable, dimension(:,:) :: A_Vec2, A_Save
+    real(r8), pointer, dimension(:) :: A_Vec
+    real(r8), allocatable, dimension(:,:) :: A_Vec2, A_Save
   
     penalty = contact_penalty
 
@@ -1102,9 +1093,8 @@ Contains
 
   !! Copied from MeshSupport
   pure function cross_product (a, b) result (axb)
-    use kind_module,          only: real_kind
-    real(real_kind), intent(in) :: a(:), b(:)
-    real(real_kind)             :: axb(3)
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: axb(3)
     axb(1) = a(2) * b(3) - a(3) * b(2)
     axb(2) = a(3) * b(1) - a(1) * b(3)
     axb(3) = a(1) * b(2) - a(2) * b(1)
@@ -1118,25 +1108,21 @@ Contains
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-
-    use kind_module,          only: int_kind, real_kind
     use mech_bc_data_module
     use bc_operations
-    use parameter_module,     only: nvf
-    use pgslib_module,        only: PGSLib_GLOBAL_ANY
-    implicit none
+    use parameter_module, only: nvf
+    use pgslib_module, only: PGSLib_GLOBAL_ANY
 
-    TYPE(BC_Operator), POINTER                 :: HTC_GAP_Operator
-    TYPE(BC_Atlas),    POINTER                 :: HTC_GAP_Atlas
+    TYPE(BC_Operator), POINTER :: HTC_GAP_Operator
+    TYPE(BC_Atlas),    POINTER :: HTC_GAP_Atlas
 
-    INTEGER(int_kind), POINTER, DIMENSION(:)   :: FaceList
-    INTEGER(int_kind), POINTER, DIMENSION(:)   :: CellList
-    INTEGER(int_kind), POINTER, DIMENSION(:)   :: OffsetList
-    REAL(real_kind), POINTER, DIMENSION(:,:)   :: ValueList
+    integer, POINTER, DIMENSION(:) :: FaceList
+    integer, POINTER, DIMENSION(:) :: CellList
+    integer, POINTER, DIMENSION(:) :: OffsetList
+    real(r8), POINTER, DIMENSION(:,:) :: ValueList
 
-    Integer(KIND = int_kind)                   :: numfaces, iface, jnode, l, &
-                                                  finterface, status
-    Integer(KIND = int_kind),dimension(nvf)    :: v
+    integer :: numfaces, iface, jnode, l, finterface, status
+    integer, dimension(nvf) :: v
 
     numfaces = 0
 
@@ -1209,27 +1195,24 @@ Contains
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
 
-    use kind_module,          only: int_kind, real_kind
     use bc_operations
     use mech_bc_data_module
-    use parameter_module,     only: nvf, nvc, ncells
-    use pgslib_module,        only: PGSLib_GLOBAL_ANY
-    use gs_module,            only: EN_Gather
-    implicit none
+    use parameter_module, only: nvf, nvc, ncells
+    use pgslib_module, only: PGSLib_GLOBAL_ANY
+    use gs_module, only: EN_Gather
 
-    TYPE(BC_Operator), POINTER                 :: HTC_GAP_Operator
-    TYPE(BC_Atlas),    POINTER                 :: HTC_GAP_Atlas
+    TYPE(BC_Operator), POINTER :: HTC_GAP_Operator
+    TYPE(BC_Atlas),    POINTER :: HTC_GAP_Atlas
 
-    Integer(KIND = int_kind)                   :: nv, iface, numfaces, iint, &
-                                                  status, vrtx, icell
-    real(kind=real_kind),dimension(nvf)        :: g = 0.0
+    integer :: nv, iface, numfaces, iint, status, vrtx, icell
+    real(r8),dimension(nvf) :: g = 0.0
 
-    INTEGER(int_kind), POINTER, DIMENSION(:)   :: CellList
-    INTEGER(int_kind), POINTER, DIMENSION(:)   :: OffsetList
-    REAL(real_kind), POINTER, DIMENSION(:,:)   :: ValueList
+    integer, POINTER, DIMENSION(:) :: CellList
+    integer, POINTER, DIMENSION(:) :: OffsetList
+    real(r8), POINTER, DIMENSION(:,:) :: ValueList
 
-    real(real_kind), pointer, dimension(:,:)     :: ENtemp
-    real(real_kind), pointer, dimension(:,:,:)   :: EN_Gap
+    real(r8), pointer, dimension(:,:) :: ENtemp
+    real(r8), pointer, dimension(:,:,:) :: EN_Gap
      
     NULLIFY(ENtemp)
     NULLIFY(EN_Gap)

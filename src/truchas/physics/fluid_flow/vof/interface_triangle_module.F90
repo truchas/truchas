@@ -18,15 +18,11 @@ MODULE INTERFACE_TRIANGLE_MODULE
   !            Matthew Williams (LANL Group MST-8, mww@lanl.gov)  
   !
   !=======================================================================
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: INTERFACE_TRIANGLES
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -39,23 +35,20 @@ CONTAINS
     !   Compute triangle vertices associated with each interface plane
     !
     !=======================================================================
-    use constants_module,     only: zero, pi, one
+    use constants_module,     only: pi
     use interface_module,     only: Int_Geom
-    use kind_module,          only: int_kind, log_kind, real_kind
     use parameter_module,     only: ndim, nec, nvc, nicells
 
-    implicit none
-
     ! Arguments
-    real(real_kind), dimension(ndim,nvc,nicells), intent(IN) :: Xv
+    real(r8), dimension(ndim,nvc,nicells), intent(IN) :: Xv
 
     ! Local Variables
-    integer(int_kind)                                :: edge, i, n
-    integer(int_kind), allocatable, dimension(:,:)   :: N_Order, Perm
-    integer(int_kind), allocatable, dimension(:)     :: Nvrt, Cntr
-    logical(log_kind), allocatable, dimension(:,:)   :: Edge_Hit
-    real(real_kind),   allocatable, dimension(:,:,:) :: Pv, V_vec
-    real(real_kind),   allocatable, dimension(:,:)   :: Mdpnt, Angl, Y_vec, Dist
+    integer :: edge, i, n
+    integer, allocatable, dimension(:,:) :: N_Order, Perm
+    integer, allocatable, dimension(:) :: Nvrt, Cntr
+    logical, allocatable, dimension(:,:) :: Edge_Hit
+    real(r8), allocatable, dimension(:,:,:) :: Pv, V_vec
+    real(r8), allocatable, dimension(:,:) :: Mdpnt, Angl, Y_vec, Dist
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Deallocate/Allocate polygon arrays,
@@ -74,10 +67,10 @@ CONTAINS
 
     ! Initialize arrays.
     Edge_Hit = .false.
-    Pv = zero
+    Pv = 0.0_r8
     Nvrt = 0
     N_Order = 0
-    V_vec = zero 
+    V_vec = 0.0_r8 
 
     ! Compute the polygon vertices (arrays Pv and Edge_Hit)
     call POLYGON_VERT (Xv, Pv, Edge_Hit)
@@ -114,9 +107,9 @@ CONTAINS
     do n = 1,nicells
 
        if (  V_vec(n,N_Order(1,n),2)*Int_Geom(n)%Normal(3) &
-           - V_vec(n,N_Order(1,n),3)*Int_Geom(n)%Normal(2) .ne. zero) then
-          Y_vec(n,1) = one
-          if (Int_Geom(n)%Normal(3)*V_vec(n,N_Order(1,n),2) .ne. zero) then
+           - V_vec(n,N_Order(1,n),3)*Int_Geom(n)%Normal(2) .ne. 0.0_r8) then
+          Y_vec(n,1) = 1.0_r8
+          if (Int_Geom(n)%Normal(3)*V_vec(n,N_Order(1,n),2) .ne. 0.0_r8) then
              Y_vec(n,3) = (-Int_Geom(n)%Normal(1) + Int_Geom(n)%Normal(2)*V_vec(n,N_Order(1,n),1)/V_vec(n,N_Order(1,n),2)) &
                         / ( Int_Geom(n)%Normal(3) - Int_Geom(n)%Normal(2)*V_vec(n,N_Order(1,n),3)/V_vec(n,N_Order(1,n),2))
              Y_vec(n,2) = -(V_vec(n,N_Order(1,n),1) + V_vec(n,N_Order(1,n),3)*Y_vec(n,3)) / V_vec(n,N_Order(1,n),2)
@@ -127,9 +120,9 @@ CONTAINS
           end if
 
        else if ( V_vec(n,N_Order(1,n),1)*Int_Geom(n)%Normal(3) &
-               - V_vec(n,N_Order(1,n),3)*Int_Geom(n)%Normal(1) .ne. zero) then
-          Y_vec(n,2) = one
-          if (Int_Geom(n)%Normal(3)*V_vec(n,N_Order(1,n),1) .ne. zero) then
+               - V_vec(n,N_Order(1,n),3)*Int_Geom(n)%Normal(1) .ne. 0.0_r8) then
+          Y_vec(n,2) = 1.0_r8
+          if (Int_Geom(n)%Normal(3)*V_vec(n,N_Order(1,n),1) .ne. 0.0_r8) then
              Y_vec(n,3) = (-Int_Geom(n)%Normal(2) + Int_Geom(n)%Normal(1)*V_vec(n,N_Order(1,n),2)/V_vec(n,N_Order(1,n),1)) &
                         / ( Int_Geom(n)%Normal(3) - Int_Geom(n)%Normal(1)*V_vec(n,N_Order(1,n),3)/V_vec(n,N_Order(1,n),1))
              Y_vec(n,1) = -(V_vec(n,N_Order(1,n),2) + V_vec(n,N_Order(1,n),3)*Y_vec(n,3)) / V_vec(n,N_Order(1,n),1)
@@ -140,9 +133,9 @@ CONTAINS
           end if
 
        else if ( V_vec(n,N_Order(1,n),1)*Int_Geom(n)%Normal(2) &
-               - V_vec(n,N_Order(1,n),2)*Int_Geom(n)%Normal(1) .ne. zero) then
-          Y_vec(n,3) = one
-          if (Int_Geom(n)%Normal(2)*V_vec(n,N_Order(1,n),1) .ne. zero) then
+               - V_vec(n,N_Order(1,n),2)*Int_Geom(n)%Normal(1) .ne. 0.0_r8) then
+          Y_vec(n,3) = 1.0_r8
+          if (Int_Geom(n)%Normal(2)*V_vec(n,N_Order(1,n),1) .ne. 0.0_r8) then
              Y_vec(n,2) = (-Int_Geom(n)%Normal(3) + Int_Geom(n)%Normal(1)*V_vec(n,N_Order(1,n),3)/V_vec(n,N_Order(1,n),1)) &
                         / ( Int_Geom(n)%Normal(2) - Int_Geom(n)%Normal(1)*V_vec(n,N_Order(1,n),2)/V_vec(n,N_Order(1,n),1))
              Y_vec(n,1) = -(V_vec(n,N_Order(1,n),3) + V_vec(n,N_Order(1,n),2)*Y_vec(n,2)) / V_vec(n,N_Order(1,n),1)
@@ -175,12 +168,12 @@ CONTAINS
              if (ABS(Angl(n,i)+1.0) .lt. 1.0e-08) then
                 Angl(n,i) = pi
              else if (ABS(Angl(n,i)-1.0) .lt. 1.0e-08) then
-                Angl(n,i) = zero
+                Angl(n,i) = 0.0_r8
              else
                 Angl(n,i) = ACOS(Angl(n,i))
              end if
           end if
-          if (Y_vec(n,1)*V_vec(n,i,1) + Y_vec(n,2)*V_vec(n,i,2) + Y_vec(n,3)*V_vec(n,i,3) .lt. zero) then
+          if (Y_vec(n,1)*V_vec(n,i,1) + Y_vec(n,2)*V_vec(n,i,2) + Y_vec(n,3)*V_vec(n,i,3) .lt. 0.0_r8) then
              Angl(n,i) = 2*pi - Angl(n,i)
           end if
        end do
@@ -203,8 +196,6 @@ CONTAINS
                 Y_vec,    &
                 Dist)
     
-    return
-
   END SUBROUTINE INTERFACE_TRIANGLES
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><><>
@@ -229,26 +220,22 @@ CONTAINS
     !   and t is the parametric variable that is allowed to
     !   vary.
     !=======================================================================
-    use constants_module,  only: one, zero
     use interface_module,  only: Int_Geom
-    use kind_module,       only: int_kind, log_kind, real_kind
     use mesh_module,       only: orthogonal_mesh
     use parameter_module,  only: ndim, nec, nvc, nicells
 
-    implicit none
-
     ! Arguments
-    real(real_kind),   dimension(ndim,nvc,nicells),   intent(IN)    :: Xv
-    real(real_kind),   dimension(ndim, nec, nicells), intent(INOUT) :: Pv
-    logical(log_kind), dimension(nec,nicells),        intent(INOUT) :: Edge_Hit
+    real(r8), dimension(ndim,nvc,nicells), intent(IN) :: Xv
+    real(r8), dimension(ndim, nec, nicells), intent(INOUT) :: Pv
+    logical, dimension(nec,nicells), intent(INOUT) :: Edge_Hit
 
     ! Local Variables
-    integer(int_kind)                          :: edge, n, v1, v2
-    integer(int_kind), dimension(2,nec)        :: Edge_Vertex
-    real(real_kind)                            :: epsilon = 1.0e-07
-    real(real_kind),   dimension(ndim,nicells) :: X_0, X_1, Delta
-    real(real_kind),   dimension(nec,nicells)  :: T
-    real(real_kind),   dimension(nicells)      :: N_Dot_Delta
+    integer :: edge, n, v1, v2
+    integer, dimension(2,nec) :: Edge_Vertex
+    real(r8) :: epsilon = 1.0e-07
+    real(r8), dimension(ndim,nicells) :: X_0, X_1, Delta
+    real(r8), dimension(nec,nicells) :: T
+    real(r8), dimension(nicells) :: N_Dot_Delta
 
     ! Set Edge-Vertex connectivity
     data Edge_Vertex /1, 2, 2, 3, 3, 4, 4, 1, 2, 6, 3, 7, &
@@ -283,25 +270,25 @@ CONTAINS
           Delta(n,:) = X_1(n,:) - X_0(n,:)
        end do
 
-       N_Dot_Delta = zero
+       N_Dot_Delta = 0.0_r8
        do n = 1,ndim
           N_Dot_Delta = N_Dot_Delta + Delta(n,:)*Int_Geom(:)%Normal(n)
        end do
 
-       T(edge,:) = zero
+       T(edge,:) = 0.0_r8
        do n = 1,ndim
           T(edge,:) = T(edge,:) + Int_Geom(:)%Normal(n)*X_0(n,:)
        end do
 
        where (ABS(N_Dot_Delta) > epsilon)  T(edge,:) = (Int_Geom(:)%Rho - T(edge,:))/N_Dot_Delta
        where (ABS(T(edge,:)) < epsilon) T(edge,:) = ABS(T(edge,:))
-       where (ABS(one - T(edge,:)) < epsilon) T(edge,:) = one 
+       where (ABS(1.0_r8 - T(edge,:)) < epsilon) T(edge,:) = 1.0_r8 
 
        where (ABS(N_Dot_Delta) > epsilon)
           Pv(1,edge,:) = X_0(1,:) + Delta(1,:)*T(edge,:)
           Pv(2,edge,:) = X_0(2,:) + Delta(2,:)*T(edge,:)
           Pv(3,edge,:) = X_0(3,:) + Delta(3,:)*T(edge,:)
-          Edge_Hit(edge,:) = T(edge,:) >= zero .and. T(edge,:) <= one
+          Edge_Hit(edge,:) = T(edge,:) >= 0.0_r8 .and. T(edge,:) <= 1.0_r8
        end where
 
        if (.not. orthogonal_mesh) &
@@ -374,8 +361,6 @@ CONTAINS
 
     end if DEGENERATE_CHECK
 
-    return
-
   END SUBROUTINE POLYGON_VERT
 
   Function Angle_Permute (vector, Nvrt, N_Order, nicells, nec)
@@ -390,22 +375,19 @@ CONTAINS
     !    warning: this is a simple n^2 sort, and should not be used
     !    if n is greater than about 10
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    Implicit None
 
     ! arguments
-    integer(int_kind),                         intent(IN) :: nicells
-    integer(int_kind),                         intent(IN) :: nec
-    real(real_kind),   dimension(nicells,nec), intent(IN) :: vector
-    integer(int_kind), dimension(nicells),     intent(IN) :: Nvrt
-    integer(int_kind), dimension(nec,nicells), intent(IN) :: N_Order
+    integer, intent(IN) :: nicells
+    integer, intent(IN) :: nec
+    real(r8), dimension(nicells,nec), intent(IN) :: vector
+    integer, dimension(nicells), intent(IN) :: Nvrt
+    integer, dimension(nec,nicells), intent(IN) :: N_Order
     
     ! function return
-    integer(int_kind), dimension(nicells,nec) :: Angle_Permute
+    integer, dimension(nicells,nec) :: Angle_Permute
 
     ! local variables
-    integer(int_kind) :: i, j, n, tmp
+    integer :: i, j, n, tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -430,8 +412,6 @@ CONTAINS
        end do
     end do
 
-    return
-
   End Function Angle_Permute
 
   SUBROUTINE INTERFACE_AREA (V_vec, Nvrt, Perm)
@@ -441,22 +421,18 @@ CONTAINS
     ! Calculate area of interface in each cell containing an interface.
     !
     !=======================================================================
-    use constants_module,  only: zero, one_half
     use interface_module,  only: Int_Geom
-    use kind_module,       only: int_kind, real_kind
     use parameter_module,  only: ndim, nec, nicells
 
-    implicit none
-
     ! Arguments
-    real(real_kind),   dimension(nicells,nec,ndim), intent(IN)  :: V_vec
-    integer(int_kind), dimension(nicells),          intent(IN)  :: Nvrt
-    integer(int_kind), dimension(nicells,nec),      intent(IN)  :: Perm
+    real(r8), dimension(nicells,nec,ndim), intent(IN) :: V_vec
+    integer, dimension(nicells), intent(IN) :: Nvrt
+    integer, dimension(nicells,nec), intent(IN) :: Perm
 
     ! Local Variables
-    integer(int_kind)                       :: i, n, incr
-    real(real_kind)                         :: x_1, x_2, y_1, y_2, z_1, z_2
-    real(real_kind), dimension(nicells,nec) :: Pv_1, Pv_2, Pv_3
+    integer :: i, n, incr
+    real(r8) :: x_1, x_2, y_1, y_2, z_1, z_2
+    real(r8), dimension(nicells,nec) :: Pv_1, Pv_2, Pv_3
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -471,7 +447,7 @@ CONTAINS
           Pv_3 = V_vec(:,:,3)
     end select
 
-    Int_Geom%Area = zero    
+    Int_Geom%Area = 0.0_r8    
 
     do n = 1,nicells
        incr = 0
@@ -510,9 +486,7 @@ CONTAINS
           sqrt((y_1*z_2-z_1*y_2)**2 + (x_1*z_2-z_1*x_2)**2 + (x_1*y_2-y_1*x_2)**2)
     end do 
 
-    Int_Geom%Area = one_half*Int_Geom%Area
-
-    return
+    Int_Geom%Area = 0.5_r8 * Int_Geom%Area
 
   END SUBROUTINE INTERFACE_AREA
 

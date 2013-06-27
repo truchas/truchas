@@ -29,14 +29,10 @@ MODULE MESH_MODULE
   !            Modifed by ferrell@cpca.com
   !
   !=======================================================================
-  use constants_module, only: preset
-  use kind_module,      only: int_kind, log_kind, real_kind
+  use kinds, only: r8
   use parameter_module, only: ndim, nfc, nvc, nvf, nec
   use var_vector_types
-
   implicit none
-
-  ! Private Module
   private
 
   ! Public Variables and Types
@@ -66,37 +62,37 @@ MODULE MESH_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Various mesh flags.
-  logical(KIND = log_kind), public, save :: orthogonal_mesh
+  logical, public, save :: orthogonal_mesh
 
   !! Parameters to identify the state of cells, faces and nodes.
   ! Degenerate face and node parameters.
-  integer(int_kind), parameter, public :: EXTERNAL_FACE   = 0
-  integer(int_kind), parameter, public :: DEGENERATE_FACE = -HUGE(int_kind)
-  integer(int_kind), parameter, public :: DEGENERATE_NODE = -1
+  integer, parameter, public :: EXTERNAL_FACE   = 0
+  integer, parameter, public :: DEGENERATE_FACE = -HUGE(1)
+  integer, parameter, public :: DEGENERATE_NODE = -1
   ! Define unknown, default, vertex (node), cell, face and PE numbers
-  integer(int_kind), parameter :: DEFAULT_CELL   = -1
-  integer(int_kind), parameter :: DEFAULT_VERTEX = -1
-  integer(int_kind), parameter :: DEFAULT_FACE   = -1
-  integer(int_kind), parameter :: DEFAULT_PE     = -1
+  integer, parameter :: DEFAULT_CELL   = -1
+  integer, parameter :: DEFAULT_VERTEX = -1
+  integer, parameter :: DEFAULT_FACE   = -1
+  integer, parameter :: DEFAULT_PE     = -1
 
   ! Mesh diagnostics variables.
-  integer(KIND = int_kind), public, save :: degenerate_points, degenerate_lines, &
+  integer, public, save :: degenerate_points, degenerate_lines, &
                                             triangle_faces, quad_faces
-  real(KIND = real_kind),   public, save :: volume_min, volume_max
+  real(r8),   public, save :: volume_min, volume_max
 
   ! Face-Vertex and Vertex-Face mappings.
-  integer(KIND = int_kind), public, save, dimension(nfc,nvf)  :: Face_Vrtx
-  integer(KIND = int_kind), public, save, dimension(nvc,ndim) :: Vrtx_Face
+  integer, public, save, dimension(nfc,nvf)  :: Face_Vrtx
+  integer, public, save, dimension(nvc,ndim) :: Vrtx_Face
   
   ! MESH_CONNECTIVITY structure
   Type MESH_CONNECTIVITY
-     Integer (KIND=int_kind), Dimension(nfc)  :: Ngbr_Cell      ! cell number across each face
-     Integer (KIND=int_kind), Dimension(nfc)  :: Ngbr_Cell_PE   ! holding data for Ngbr_Cell
-     Integer (KIND=int_kind), Dimension(nfc)  :: Ngbr_Cell_Orig ! original cell numbers across each face
-     Integer (KIND=int_kind), Dimension(nfc)  :: Ngbr_Face      ! face number of cell across each face
-     Integer (KIND=int_kind), Dimension(nvc)  :: Ngbr_Vrtx      ! cell vertex numbers
-     Integer (KIND=int_kind), Dimension(nvc)  :: Ngbr_Vrtx_PE   ! holding data for Ngbr_Vrtx
-     Integer (KIND=int_kind), Dimension(nvc)  :: Ngbr_Vrtx_Orig ! original vertex numbers
+     integer, Dimension(nfc)  :: Ngbr_Cell      ! cell number across each face
+     integer, Dimension(nfc)  :: Ngbr_Cell_PE   ! holding data for Ngbr_Cell
+     integer, Dimension(nfc)  :: Ngbr_Cell_Orig ! original cell numbers across each face
+     integer, Dimension(nfc)  :: Ngbr_Face      ! face number of cell across each face
+     integer, Dimension(nvc)  :: Ngbr_Vrtx      ! cell vertex numbers
+     integer, Dimension(nvc)  :: Ngbr_Vrtx_PE   ! holding data for Ngbr_Vrtx
+     integer, Dimension(nvc)  :: Ngbr_Vrtx_Orig ! original vertex numbers
      Type (int_var_vector)                    :: Ngbr_Cells_ALL ! all neighbor cells
      Type (int_var_vector)                    :: Ngbr_Cells_ALL_Orig ! Orig, global, cell numbers, 
      Type (int_var_vector)                    :: Ngbr_Cells_Face ! Bits to identify face ngbrs
@@ -121,30 +117,30 @@ MODULE MESH_MODULE
   integer, parameter :: GAP_ELEMENT_5  = 7
 
   ! Permutation vectors for mesh and vertices (used by Mesh_Permute)
-  integer(int_kind), POINTER,      &
+  integer, POINTER,      &
                      PUBLIC,       &
                      SAVE,         &
                      dimension(:) :: UnPermute_Mesh_Vector => NULL()
-  integer(int_kind), POINTER,      &
+  integer, POINTER,      &
                      PUBLIC,       &
                      SAVE,         &
                      dimension(:) :: Permute_Mesh_Vector => NULL()
-  logical(log_kind), SAVE,         &
+  logical, SAVE,         &
                      PUBLIC       :: UnPermute_Mesh_Initialized = .FALSE.
-  integer(int_kind), POINTER,      &
+  integer, POINTER,      &
                      PUBLIC,       &
                      SAVE,         &
                      dimension(:) :: UnPermute_Vertex_Vector => NULL()
-  integer(int_kind), POINTER,      &
+  integer, POINTER,      &
                      PUBLIC,       &
                      SAVE,         &
                      dimension(:) :: Permute_Vertex_Vector => NULL()
-  logical(log_kind), SAVE,         &
+  logical, SAVE,         &
                      PUBLIC       :: UnPermute_Vertex_Initialized = .FALSE.
 
   ! Define VERTEX_BIT structure
   type VERTEX_BIT
-     integer(KIND = int_kind), dimension(nvc) :: Bit
+     integer, dimension(nvc) :: Bit
   end type VERTEX_BIT
 
   ! Declare a VERTEX_BIT type
@@ -152,25 +148,25 @@ MODULE MESH_MODULE
 
   ! Define CELL_BIT structure
   type CELL_BIT
-     integer(KIND = int_kind), dimension(nfc) :: Bit
+     integer, dimension(nfc) :: Bit
   end type CELL_BIT
 
   ! Declare a CELL_BIT instance
   type(CELL_BIT), public, save :: CllNgbr
 
   ! Define the edges surrounding a cell
-  integer(KIND = int_kind), dimension(2,nec) :: Cell_Edge
+  integer, dimension(2,nec) :: Cell_Edge
 
   ! define CELL_GEOMETRY derived type
   Type CELL_GEOMETRY
-     real (real_kind), dimension(ndim)     :: Centroid        ! cell centroid (physical coordinates)
-!    real (real_kind), dimension(ndim)     :: Centroid_L      ! cell centroid (logical coordinates) (place holder)
-     real (real_kind)                      :: Volume          ! cell volume
-     real (real_kind), dimension(nfc)      :: Halfwidth       ! cell halfwidth
-     real (real_kind), dimension(ndim,nfc) :: Face_Centroid   ! face centroid (physical coordinates)
-     real (real_kind), dimension(ndim,nfc) :: Face_Centroid_L ! face centroid (logical coordinates)
-     real (real_kind), dimension(nfc)      :: Face_Area       ! face area
-     real (real_kind), dimension(ndim,nfc) :: Face_Normal     ! face unit normal
+     real(r8), dimension(ndim)     :: Centroid        ! cell centroid (physical coordinates)
+!    real(r8), dimension(ndim)     :: Centroid_L      ! cell centroid (logical coordinates) (place holder)
+     real(r8)                      :: Volume          ! cell volume
+     real(r8), dimension(nfc)      :: Halfwidth       ! cell halfwidth
+     real(r8), dimension(ndim,nfc) :: Face_Centroid   ! face centroid (physical coordinates)
+     real(r8), dimension(ndim,nfc) :: Face_Centroid_L ! face centroid (logical coordinates)
+     real(r8), dimension(nfc)      :: Face_Area       ! face area
+     real(r8), dimension(ndim,nfc) :: Face_Normal     ! face unit normal
   End Type CELL_GEOMETRY
 
   ! Declare instance of CELL_GEOMETRY type.
@@ -182,21 +178,21 @@ MODULE MESH_MODULE
 
   ! VERTEX_DATA structure
   Type VERTEX_DATA
-     Real (KIND=real_kind) :: Coord(ndim)   ! vertex coordinates
-     Real (KIND=real_kind) :: Rsum_rvol     ! reciprocal sum of inverse volumes around vertices
+     real(r8) :: Coord(ndim)   ! vertex coordinates
+     real(r8) :: Rsum_rvol     ! reciprocal sum of inverse volumes around vertices
   End Type VERTEX_DATA
 
   ! Ghost cells for the vertex data
   ! **DANGER** If coord data changes these need to be nullified.
   ! Define type for boundary data
   type BOUNDARY
-    real(KIND = real_kind), dimension(:), pointer :: Data => NULL()
+    real(r8), dimension(:), pointer :: Data => NULL()
   end type BOUNDARY
 
   ! This is needed because F90 may not put pointers into known state
   ! When we have gone fully to F95 this will no longer be necessary.
   ! Only place this is used is in Vertex_Preset_Scalar%
-  logical(KIND = log_kind), dimension(ndim), SAVE :: Bdy_Initialized = .false.
+  logical, dimension(ndim), SAVE :: Bdy_Initialized = .false.
   
   type(BOUNDARY), dimension(ndim), SAVE :: Vrtx_Bdy
 
@@ -214,8 +210,8 @@ MODULE MESH_MODULE
   type(VERTEX_DATA), dimension(:), pointer, save :: Vertex => NULL()
 
   ! Bit mask for identifying face neighbors
-  integer(int_kind), dimension(:), pointer :: Face_Bit_Mask => NULL()
-  logical(log_kind), SAVE                  :: Face_Bit_Mask_Initialized = .FALSE.
+  integer, dimension(:), pointer :: Face_Bit_Mask => NULL()
+  logical, SAVE                  :: Face_Bit_Mask_Initialized = .FALSE.
 
   interface COLLATE
      module procedure COLLATE_CELL
@@ -261,8 +257,6 @@ CONTAINS
     Mesh_Preset%Ngbr_Vrtx_Orig = DEFAULT_VERTEX
     NULLIFY(Mesh_Preset%Ngbr_Cells_All%v)
 
-    return
-
   END FUNCTION MESH_PRESET_SCALAR
 
   FUNCTION VERTEX_PRESET_SCALAR ()
@@ -273,19 +267,16 @@ CONTAINS
     !   This is a function so we can nullify the boundary stuff
     !
     !====================================================================
-    use kind_module, only: int_kind
-
-    implicit none
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
+    integer :: n
     type(VERTEX_DATA)        :: Vertex_Preset_Scalar
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize.
-    Vertex_Preset_Scalar%Coord     = preset
-    Vertex_Preset_Scalar%Rsum_rvol = preset
+    Vertex_Preset_Scalar%Coord     = 0
+    Vertex_Preset_Scalar%Rsum_rvol = 0
 
     do n = 1, ndim
 
@@ -314,16 +305,13 @@ CONTAINS
     !   A bit set to 1 means the cell is on-processor.
     !
     !=======================================================================
-    use kind_module,      only: int_kind
     use parameter_module, only: nfc
 
-    implicit none
-
     ! Arguments
-    integer(KIND = int_kind), dimension(nfc), intent(OUT) :: Cell_Bit
+    integer, dimension(nfc), intent(OUT) :: Cell_Bit
 
     ! Local Variables
-    integer(KIND = int_kind) :: c
+    integer :: c
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -338,8 +326,6 @@ CONTAINS
        Cell_Bit(c) = c - 1 + SIZE(Vrtx%Bit,1)
     end do
 
-    return
-
   END SUBROUTINE ASSIGN_CELL_BITS
 
   SUBROUTINE ASSIGN_VRTX_BITS (Vrtx_bit)
@@ -352,16 +338,13 @@ CONTAINS
     !   A bit set to 1 means the vertex is on-processor.
     !
     !=======================================================================
-    use kind_module,      only: int_kind
     use parameter_module, only: nvc
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), dimension(nvc), intent(OUT) :: Vrtx_bit
+    integer, dimension(nvc), intent(OUT) :: Vrtx_bit
 
     ! Local Variables
-    integer(KIND = int_kind) :: v
+    integer :: v
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -376,8 +359,6 @@ CONTAINS
        Vrtx_bit(v) = v - 1
     end do
 
-    return
-
   END SUBROUTINE ASSIGN_VRTX_BITS
 
   SUBROUTINE ASSIGN_CELL_EDGES (Cell_Edge)
@@ -387,16 +368,13 @@ CONTAINS
     !    Assign cell edges.
     !
     !=======================================================================
-    use kind_module,      only: int_kind
     use parameter_module, only: nec
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), dimension(2,nec), intent(OUT) :: Cell_Edge
+    integer, dimension(2,nec), intent(OUT) :: Cell_Edge
 
     ! Local Variables
-    integer(KIND = int_kind) :: edge
+    integer :: edge
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -429,8 +407,6 @@ CONTAINS
        end select
     end do
 
-    return
-
   END SUBROUTINE ASSIGN_CELL_EDGES
 
   SUBROUTINE Initialize_Face_Bit_Mask()
@@ -442,7 +418,6 @@ CONTAINS
     
     ! Local variables
     integer :: face
-
 
     if (.NOT. Face_Bit_Mask_Initialized) then
        ! Allocate the array, and clear all bits
@@ -456,59 +431,45 @@ CONTAINS
        Face_Bit_Mask_Initialized = .TRUE.
     end if
 
-    RETURN
   END SUBROUTINE Initialize_Face_Bit_Mask
        
+  !==================================================================
+  ! Purpose(s):
+  !   Set the neighbor flag to indicate that it is a neighbor
+  !   of Face.
+  !==================================================================
 
   SUBROUTINE Set_Face_Neighbor(Face_Bits, Face)
-    !==================================================================
-    ! Purpose(s):
-    !   Set the neighbor flag to indicate that it is a neighbor
-    !   of Face.
-    !==================================================================
-    
-    integer(int_kind), intent(INOUT) :: Face_Bits
-    integer(int_kind), intent(IN   ) :: Face
-
+    integer, intent(INOUT) :: Face_Bits
+    integer, intent(IN   ) :: Face
     Face_Bits = IOR(Face_Bits, Face_Bit_Mask(Face))
-      
-    RETURN
   END SUBROUTINE Set_Face_Neighbor
     
-  SUBROUTINE Clear_Face_Neighbor(Face_Bits, Face)
     !==================================================================
     ! Purpose(s):
     !   Clear the neighbor flag which indicates that it is a neighbor
     !   of Face.
     !==================================================================
-    
-    integer(int_kind), intent(INOUT) :: Face_Bits
-    integer(int_kind), intent(IN   ) :: Face
 
+  SUBROUTINE Clear_Face_Neighbor(Face_Bits, Face)
+    integer, intent(INOUT) :: Face_Bits
+    integer, intent(IN   ) :: Face
     Face_Bits = IAND(Face_Bits, NOT(Face_Bit_Mask(Face)))
-      
-    RETURN
   END SUBROUTINE Clear_Face_Neighbor
       
-  FUNCTION Is_Face_Ngbr(Face_Bits, Face)
     !==================================================================
     ! Purpose(s):
     !   Test the flag of an integer to see if that neighbor is also
     !   a neighbor of Face.
-    
     !   Set the neighbor flag to indicate that it is a neighbor
     !   of Face.
     !==================================================================
-    use kind_module, only: int_kind
-    implicit none
-        
-    integer(int_kind), intent(IN   ) :: Face_Bits
-    integer(int_kind), intent(IN   ) :: Face
-    logical(log_kind)                :: Is_Face_Ngbr
 
+  FUNCTION Is_Face_Ngbr(Face_Bits, Face)
+    integer, intent(IN   ) :: Face_Bits
+    integer, intent(IN   ) :: Face
+    logical                :: Is_Face_Ngbr
     Is_Face_Ngbr = (IAND(Face_Bits, Face_Bit_Mask(Face)) /= 0)
-      
-    RETURN
   END FUNCTION Is_Face_Ngbr
       
   FUNCTION MESH_COLLATE_VERTEX (Mesh)
@@ -520,14 +481,12 @@ CONTAINS
     use parameter_module,     only: ncells_tot, nvc, ncells
     use pgslib_module,        only: PGSLib_COLLATE
 
-    implicit none
-
     ! Arguments
     type(MESH_CONNECTIVITY),  dimension(ncells), intent(IN) :: Mesh
-    integer(KIND = int_kind), dimension(:,:), pointer       :: Mesh_Collate_Vertex
+    integer, dimension(:,:), pointer       :: Mesh_Collate_Vertex
     
     ! Local variables
-    integer(KIND = int_kind) :: v
+    integer :: v
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -541,8 +500,6 @@ CONTAINS
        call PGSLib_COLLATE (Mesh_Collate_Vertex(v,:), Mesh%Ngbr_Vrtx_Orig(v))
     end do
 
-    return
-
   END FUNCTION MESH_COLLATE_VERTEX
 
   FUNCTION VERTEX_COLLATE (Vertex)
@@ -554,14 +511,12 @@ CONTAINS
     use parameter_module,     only: nnodes_tot, nnodes
     use pgslib_module,        only: PGSLib_COLLATE
 
-    implicit none
-
     ! Arguments
     type(VERTEX_DATA), dimension(nnodes), intent(IN) :: Vertex
     type(VERTEX_DATA), dimension(:), pointer         :: VERTEX_COLLATE
     
     ! Local variables
-    integer(KIND = int_kind) :: n
+    integer :: n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -576,8 +531,6 @@ CONTAINS
     end do
     call PGSLib_COLLATE (Vertex_Collate%Rsum_Rvol, Vertex%Rsum_Rvol)
 
-    return
-
   END FUNCTION VERTEX_COLLATE
 
   FUNCTION CELL_COLLATE (Cell)
@@ -587,8 +540,6 @@ CONTAINS
     !==================================================================
     use parallel_info_module, only: p_info
     use parameter_module,     only: ncells_tot, ncells
-
-    implicit none
 
     ! Arguments
     type(CELL_GEOMETRY), dimension(ncells), intent(IN) :: Cell
@@ -604,8 +555,6 @@ CONTAINS
     
     call COLLATE(Cell_Collate, Cell)
 
-    return
-
   END FUNCTION CELL_COLLATE
 
   SUBROUTINE COLLATE_CELL (Collated_Cell, Local_Cell)
@@ -616,14 +565,12 @@ CONTAINS
     use parameter_module,     only: ndim, nfc
     use pgslib_module,        only: PGSLib_COLLATE
 
-    implicit none
-
     ! Arguments
     type(CELL_GEOMETRY), dimension(:), intent(IN   ) :: Local_Cell
     type(CELL_GEOMETRY), dimension(:), intent(  OUT) :: Collated_Cell
     
     ! Local variables
-    integer(KIND = int_kind) :: f, n
+    integer :: f, n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -641,8 +588,6 @@ CONTAINS
        end do
     end do
 
-    return
-
   END SUBROUTINE COLLATE_CELL
 
   SUBROUTINE PERMUTE_CELL (Permuted_Cell, Orig_Cell, Permuter, SCOPE)
@@ -655,7 +600,7 @@ CONTAINS
     ! Arguments
     type(CELL_GEOMETRY), dimension(:), intent(IN   ) :: Orig_Cell
     type(CELL_GEOMETRY), dimension(:), intent(  OUT) :: Permuted_Cell
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
     type (PL_SCOPE), OPTIONAL,    intent(IN   ) :: SCOPE
 
     ! Local variables
@@ -678,7 +623,6 @@ CONTAINS
        call PERMUTE_CELL_LOCAL(Permuted_Cell, Orig_Cell, Permuter)
     end if
 
-    return
   END SUBROUTINE PERMUTE_CELL
 
   SUBROUTINE PERMUTE_CELL_GLOBAL (Permuted_Cell, Orig_Cell, Permuter)
@@ -692,15 +636,13 @@ CONTAINS
                                     PGSLIB_Deallocate_Trace, &
                                     PGSLib_GS_Trace
 
-    implicit none
-
     ! Arguments
     type(CELL_GEOMETRY), dimension(:), intent(IN   ) :: Orig_Cell
     type(CELL_GEOMETRY), dimension(:), intent(  OUT) :: Permuted_Cell
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
 
     ! Local variables
-    integer(KIND = int_kind) :: f, n
+    integer :: f, n
     type (PGSLib_GS_Trace), POINTER :: Cell_Trace => null()
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -742,8 +684,6 @@ CONTAINS
     ! Done with the trace
     call PGSLib_DEALLOCATE_TRACE (Cell_Trace)
 
-    return
-
   END SUBROUTINE PERMUTE_CELL_GLOBAL
 
   SUBROUTINE PERMUTE_CELL_LOCAL (Permuted_Cell, Orig_Cell, Permuter)
@@ -756,18 +696,16 @@ CONTAINS
     ! Arguments
     type(CELL_GEOMETRY), dimension(:), intent(IN   ) :: Orig_Cell
     type(CELL_GEOMETRY), dimension(:), intent(  OUT) :: Permuted_Cell
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
 
     ! Local variables
-    integer(int_kind) :: cell
+    integer :: cell
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     do cell = 1, SIZE(Permuter)
        Permuted_Cell(Permuter(cell)) = Orig_Cell(Cell)
     end do
-
-    return
 
   END SUBROUTINE PERMUTE_CELL_LOCAL
 
@@ -779,18 +717,15 @@ CONTAINS
     !   mesh data structure changes, this routine must be updated too.
     !
     !====================================================================
-    use kind_module,      only: int_kind
     use parameter_module, only: ncells, nfc, nvc
     use pgslib_module,    only: PGSLib_DIST
-
-    implicit none
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(:),     intent(IN) :: Mesh_Tot
     type(MESH_CONNECTIVITY), dimension(ncells)            :: Mesh_Distribute
 
     ! Local Variables
-    integer(KIND = int_kind) :: f, v
+    integer :: f, v
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -824,8 +759,6 @@ CONTAINS
     ! Distribute the cell block ID data
     call PGSLib_DIST (Mesh_Distribute%CBlockID, Mesh_Tot%CBlockID)
 
-    return
-
   END FUNCTION MESH_DISTRIBUTE
 
   FUNCTION VERTEX_DISTRIBUTE (Vertex_Tot)
@@ -836,18 +769,15 @@ CONTAINS
     !   data structure changes this routine must be updated too.
     !
     !====================================================================
-    use kind_module,          only: int_kind
     use parameter_module,     only: ndim, nnodes
     use pgslib_module,        only: PGSLib_DIST
-
-    implicit none
 
     ! Arguments
     type(VERTEX_DATA), dimension(:),     intent(IN) :: Vertex_Tot
     type(VERTEX_DATA), dimension(nnodes)            :: Vertex_Distribute
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
+    integer :: n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -860,8 +790,6 @@ CONTAINS
 
     call PGSLib_DIST (Vertex_Distribute%Rsum_Rvol, Vertex_Tot%Rsum_Rvol)
 
-    return
-
   END FUNCTION VERTEX_DISTRIBUTE
   
   FUNCTION CELL_DISTRIBUTE (Cell_Tot)
@@ -872,18 +800,15 @@ CONTAINS
     !   data structure changes this routine must be updated too.
     !
     !====================================================================
-    use kind_module,          only: int_kind
     use parameter_module,     only: ncells
     use pgslib_module,        only: PGSLib_DIST
-
-    implicit none
 
     ! Arguments
     type(CELL_GEOMETRY), dimension(:), intent(IN) :: Cell_Tot
     type(CELL_GEOMETRY), dimension(ncells)        :: Cell_Distribute
 
     ! Local Variables
-    integer(KIND = int_kind) :: n, f
+    integer :: n, f
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -924,8 +849,6 @@ CONTAINS
     end do DIST_CELL_HALFWIDTH
 
     call PGSLib_DIST (Cell_Distribute%Volume, Cell_Tot%Volume)
-
-    return
 
   END FUNCTION CELL_DISTRIBUTE
 

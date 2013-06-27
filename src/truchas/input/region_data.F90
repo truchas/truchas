@@ -9,29 +9,21 @@ MODULE REGION_DATA
   ! Author(s):  Ed Dendy     (dendy@lanl.gov)
   !
   !=======================================================================
-  use kind_module,        only: int_kind, log_kind, real_kind
-
+  use kinds, only: r8
   implicit none
-
-  public :: Region_type
-
-  type REGION_type
-    real(real_kind), dimension(3) :: x1
-    real(real_kind), dimension(3) :: x2
-    logical(log_kind)             :: flow_off
-  end type REGION_type
-
-  ! Private Module
   private
+
+  type, public :: REGION_type
+    real(r8) :: x1(3), x2(3)
+    logical :: flow_off
+  end type REGION_type
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    real(real_kind),   public   :: x1,y1,z1,x2,y2,z2
-    logical(log_kind), public   :: flow_off
-    integer(int_kind), public   :: nregion
+    real(r8), public :: x1,y1,z1,x2,y2,z2
+    logical,  public :: flow_off
+    integer,  public :: nregion
 
     type(REGION_type), public, dimension(50) :: Regions
-
-    
 
 END MODULE REGION_DATA

@@ -13,7 +13,7 @@
 
 module EM_hex_tet_mapping
 
-  use kind_module, only : rk => real_kind
+  use kinds, only : rk => r8
   use grid_mapping_module
 
   implicit none

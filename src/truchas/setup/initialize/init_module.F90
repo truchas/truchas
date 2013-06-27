@@ -27,7 +27,7 @@ MODULE INIT_MODULE
 !            Larry J. Cox (ljcox@lanl.gov
 !
 !=======================================================================
-
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
   private
@@ -54,13 +54,11 @@ CONTAINS
     !
     !=======================================================================
     use time_step_module,       only: t
-    use constants_module,       only: zero
     use fluid_data_module,      only: Void_Material_Exists,     &
                                       Void_Material_Index,      &
                                       Void_Material_Count, fluid_flow
     use fluid_utilities_module, only: FLUID_INIT
     use interfaces_module,      only: nbody
-    use kind_module,            only: int_kind, real_kind
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
                                       OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: ncells, nmat
@@ -79,17 +77,15 @@ CONTAINS
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind)                         :: m, stat
-    real(real_kind)                                  :: density
-    logical                                          :: found
+    integer :: m, stat
+    real(r8) :: density
+    logical :: found
 
-    real (real_kind), dimension(nbody,ncells) :: Hits_Vol
-    real (real_kind), dimension(nbody,ncells) :: volume_fractions
-    real (real_kind), allocatable :: phi(:,:)
-    character(len=200) :: errmsg
+    real(r8), dimension(nbody,ncells) :: Hits_Vol
+    real(r8), dimension(nbody,ncells) :: volume_fractions
+    real(r8), allocatable :: phi(:,:)
+    character(200) :: errmsg
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     
     !! Initialize the MATERIAL_INTEROP module which provides tools for moving
@@ -105,7 +101,7 @@ CONTAINS
     Void_Material_Count  = 0
     MATERIALS: do m = 1,nmat
        density = DENSITY_MATERIAL(m)
-       if (density == zero) then
+       if (density == 0.0_r8) then
           Void_Material_Exists = .true.
           Void_Material_Count = Void_Material_Count + 1
           Void_Material_Index(Void_Material_Count) = m
@@ -206,7 +202,6 @@ CONTAINS
   
   subroutine property_init
   
-    use kinds, only: r8
     use material_table
     use material_utilities
     use physics_module
@@ -241,8 +236,6 @@ CONTAINS
   
   subroutine flow_property_init
   
-    use kinds, only: r8
-  
     use fluid_data_module, only: boussinesq_approximation
     use viscous_data_module, only: inviscid
     use property_module, only: request_fluid_property
@@ -259,13 +252,12 @@ CONTAINS
 
   subroutine init_conc (hits_vol, phi)
 
-    use kind_module, only: real_kind
     use parameter_module, only: ncells
     use mesh_module, only: mesh, GAP_ELEMENT_1
     use interfaces_module, only: body_phi
 
-    real(real_kind), intent(in) :: hits_vol(:,:)
-    real(real_kind), intent(out) :: phi(:,:)
+    real(r8), intent(in) :: hits_vol(:,:)
+    real(r8), intent(out) :: phi(:,:)
 
     integer :: j, nbody, nconc
 
@@ -311,10 +303,9 @@ CONTAINS
                                       append_to_displacement_bc,                            &
                                       Make_Displacement_BC_Atlases, Interface_Surface_Id
     use bc_pressure_init,       only: Initialize_Pressure_BC
-    use constants_module,       only: zero, preset, ipreset
+    use input_utilities,        only: NULL_I, NULL_R
     use fluid_data_module,      only: fluid_flow
     use gs_module,              only: EE_GATHER
-    use kind_module,            only: int_kind, log_kind, real_kind
     use mesh_module,            only: Cell, Mesh, DEGENERATE_FACE
     use parameter_module,       only: ncells, ndim, nfc, nvc
     use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
@@ -322,26 +313,22 @@ CONTAINS
     use property_module,        only: Get_Truchas_Material_Id
     use solid_mechanics_data,   only: solid_mechanics
     use physics_module,         only: heat_transport, heat_species_transport
-	
-    implicit none
-
-    ! Arguments
 
     ! Local Variables
-    integer(KIND = int_kind)                              :: bit_position, f, n, nf, p, &
+    integer                              :: bit_position, f, n, nf, p, &
                                                              m, c, mat1, mat2, set1, nssets
-    logical(KIND = log_kind), dimension(:),   allocatable :: Mask1, Mask2
-    logical(KIND = log_kind), dimension(:,:), allocatable :: Disp_Mask
-    logical(KIND = log_kind), dimension(:,:), allocatable :: Found_Faces
-    integer (int_kind), allocatable, dimension(:,:,:,:)       :: Ngbr_Mesh_Face_Set
-    real(KIND = real_kind),   dimension(:),   allocatable :: Coeff_XX
-    real(KIND = real_kind),   dimension(:),   allocatable :: Coeff_X
-    real(KIND = real_kind),   dimension(:),   allocatable :: Area
-    integer(KIND = int_kind), dimension(:),   allocatable :: Faces
-    real(KIND = real_kind),   dimension(:,:), allocatable :: tmp_r2
-    integer(KIND = int_kind), dimension(:,:), allocatable :: Tmp_BC
-    real(KIND = real_kind),   dimension(:),   allocatable :: Tmp1, Tmp2
-    integer                                               :: istatus
+    logical, dimension(:),   allocatable :: Mask1, Mask2
+    logical, dimension(:,:), allocatable :: Disp_Mask
+    logical, dimension(:,:), allocatable :: Found_Faces
+    integer, allocatable, dimension(:,:,:,:) :: Ngbr_Mesh_Face_Set
+    real(r8), dimension(:),   allocatable :: Coeff_XX
+    real(r8), dimension(:),   allocatable :: Coeff_X
+    real(r8), dimension(:),   allocatable :: Area
+    integer,  dimension(:),   allocatable :: Faces
+    real(r8), dimension(:,:), allocatable :: tmp_r2
+    integer,  dimension(:,:), allocatable :: Tmp_BC
+    real(r8), dimension(:),   allocatable :: Tmp1, Tmp2
+    integer :: istatus
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -370,16 +357,16 @@ CONTAINS
 
     if (fluid_flow) then
        ALLOCATE (BC_Vel(ndim,nfc,ncells))
-       BC_Vel = preset
+       BC_Vel = NULL_R
        ALLOCATE (BC_Pressure(nfc,ncells))
-       BC_Pressure = preset
+       BC_Pressure = 0.0_r8
        ALLOCATE (BC_Zero(nfc,ncells))
-       BC_Zero = zero
+       BC_Zero = 0.0_r8
        ALLOCATE (BC_Mat(nfc,ncells))
-       BC_Mat = ipreset
+       BC_Mat = NULL_I
        if (heat_transport .or. heat_species_transport) then
           ALLOCATE (BC_Temp(nfc,ncells))
-          BC_Temp = preset
+          BC_Temp = NULL_R
        end if
     end if
 
@@ -413,7 +400,7 @@ CONTAINS
 
     ! Initialize relevant quantities
     Found_Faces = .true.
-    Area        = zero
+    Area        = 0.0_r8
     Faces       = 0
 
     ! Loop over faces, finding those that need a BC applied to them
@@ -553,7 +540,7 @@ CONTAINS
 
                       call SET_DIRICHLET_VEL (Mask1, BC%Flag, bit_position)
                       do n = 1, ndim
-                         where (Mask1) BC_Vel(n,f,:) = zero
+                         where (Mask1) BC_Vel(n,f,:) = 0.0_r8
                       end do
 
                    case ('dirichlet')
@@ -607,7 +594,7 @@ CONTAINS
           if (n > 0) then
 
              Faces(p) = Faces(p) + n
-             Tmp2     = MERGE (Cell%Face_Area(f), zero, Mask1)
+             Tmp2     = MERGE (Cell%Face_Area(f), 0.0_r8, Mask1)
              Area(p)  = Area(p) + PGSLib_Global_SUM(Tmp2)
              n = PGSLib_Global_COUNT(Mask1 .and. Mesh%Ngbr_cell(f) /= 0)
 
@@ -698,8 +685,6 @@ CONTAINS
 
      if (nssets.gt.0) DEALLOCATE(Ngbr_Mesh_Face_Set)
 
-    return
-
   END SUBROUTINE BC_INIT
 
   FUNCTION BC_SURFACE (face, Coeff_X, Coeff_XX, constant, tolerance, relation)
@@ -707,26 +692,23 @@ CONTAINS
     ! Purpose(s):
     !
     !=======================================================================
-    use kind_module,      only: real_kind, log_kind, int_kind
     use parameter_module, only: ndim, ncells
     use mesh_module,      only: Cell
 
-    implicit none
-
     ! Arguments
-    integer(KIND = int_kind),                      intent(IN) :: face
-    real(KIND = real_kind), dimension(ndim),       intent(IN) :: Coeff_X
-    real(KIND = real_kind), dimension(3*(ndim-1)), intent(IN) :: Coeff_XX
-    real(KIND = real_kind),                        intent(IN) :: constant
-    real(KIND = real_kind),                        intent(IN) :: tolerance
-    character(LEN = *),                            intent(IN) :: relation
+    integer, intent(IN) :: face
+    real(r8), dimension(ndim), intent(IN) :: Coeff_X
+    real(r8), dimension(3*(ndim-1)), intent(IN) :: Coeff_XX
+    real(r8), intent(IN) :: constant
+    real(r8), intent(IN) :: tolerance
+    character(*), intent(IN) :: relation
 
     ! Function Return
-    logical(KIND = log_kind), dimension(ncells) :: BC_SURFACE
+    logical, dimension(ncells) :: BC_SURFACE
 
     ! Local variables
-    integer(KIND = int_kind)                  :: m, n, k
-    real(KIND = real_kind), dimension(ncells) :: F
+    integer :: m, n, k
+    real(r8), dimension(ncells) :: F
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -757,8 +739,6 @@ CONTAINS
           BC_SURFACE = F      > tolerance
     end select
 
-    return
-
   END FUNCTION BC_SURFACE
 
   SUBROUTINE MATL_INIT (Hits_Vol)
@@ -769,11 +749,9 @@ CONTAINS
     !   the Zone structure
     !
     !=======================================================================
-    use constants_module,     only: one, zero
     use cutoffs_module,       only: cutvof
     use interfaces_module,    only: background_body, Body_Mass, Matnum, nbody,   &
                                     Body_Temp
-    use kind_module,          only: int_kind, log_kind, real_kind
     use matl_module,          only: Matl, SLOT_INCREASE, SLOT_SET
     use mesh_module,          only: Cell
     use parameter_module,     only: mat_slot, mat_slot_new, maxmat, &
@@ -783,20 +761,18 @@ CONTAINS
     use restart_variables,    only: restart
     use property_module,      only: density_material
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind), dimension(nbody,ncells), intent(INOUT) :: Hits_Vol
+    real(r8), dimension(nbody,ncells), intent(INOUT) :: Hits_Vol
 
     ! Local Variables
     integer :: stat
-    logical(KIND = log_kind) :: fatal
-    integer(KIND = int_kind) :: ib, jb, m, s
-    integer(KIND = int_kind), dimension(maxmat)       :: Nbodym
-    integer(KIND = int_kind), dimension(mbody,maxmat) :: Body_Num
-    logical(KIND = log_kind), dimension(ncells)       :: Insert_mat
-    real(KIND = real_kind),   dimension(ncells)       :: Vofm, Total, Tmp1
-    integer(KIND = int_kind), dimension(ncells)       :: Nmtl
+    logical :: fatal
+    integer :: ib, jb, m, s
+    integer,  dimension(maxmat) :: Nbodym
+    integer,  dimension(mbody,maxmat) :: Body_Num
+    logical,  dimension(ncells) :: Insert_mat
+    real(r8), dimension(ncells) :: Vofm, Total, Tmp1
+    integer,  dimension(ncells) :: Nmtl
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -811,21 +787,21 @@ CONTAINS
     Nbodym   = 0
     Body_Num = 0
 
-    Total = zero
+    Total = 0.0_r8
     do ib = 1,nbody
        m = matnum(ib)
        Nbodym(m) = Nbodym(m) + 1
        Body_Num(Nbodym(m),m) = ib
 
-       where (Hits_Vol(ib,:)/Cell%Volume < cutvof) Hits_Vol(ib,:) = zero
+       where (Hits_Vol(ib,:)/Cell%Volume < cutvof) Hits_Vol(ib,:) = 0.0_r8
        Total = Total + Hits_Vol(ib,:)
     end do
 
     ! Convert from total volume to volume fraction
     ! and set to 0 or 1 if within cutvof away
     Total = Total / Cell%Volume
-    where (ABS(Total) < cutvof) Total = zero
-    where (ABS(Total - one) < cutvof) Total = one
+    where (ABS(Total) < cutvof) Total = 0.0_r8
+    where (ABS(Total - 1.0_r8) < cutvof) Total = 1.0_r8
 
 1   continue
 
@@ -837,7 +813,7 @@ CONTAINS
 
     ! Count the required number of material slots
     ! Background materials must reside where 0.0 <= Total < 1.0
-    where (Total >= zero .and. Total < one)
+    where (Total >= 0.0_r8 .and. Total < 1.0_r8)
        Nmtl = 1
        Matl(1)%Cell%Id = background_material
     end where
@@ -845,14 +821,14 @@ CONTAINS
     ! Set the Matl Id
     SET_MATL_ID: do m = 1,nmat
 
-       Vofm = zero
+       Vofm = 0.0_r8
        do jb = 1,Nbodym(m)
           ib = Body_Num(jb,m)
           Vofm = Vofm + Hits_Vol(ib,:) / Cell%Volume
        end do
 
        Insert_mat = .false.
-       where (Vofm > zero) Insert_mat = .true.
+       where (Vofm > 0.0_r8) Insert_mat = .true.
        do s = 1,mat_slot
           Insert_mat = Insert_mat .and. .not.(Matl(s)%Cell%Id == m)
        end do
@@ -883,7 +859,7 @@ CONTAINS
     ! Compute volume fractions and body volumes for each material.
     SET_MATL_VOF: do m = 1,nmat
 
-       Vofm = zero
+       Vofm = 0.0_r8
 
        do jb = 1,Nbodym(m)
 
@@ -909,16 +885,16 @@ CONTAINS
     end do SET_MATL_VOF
 
     ! Total the volume fractions over all materials
-    Total = zero
+    Total = 0.0_r8
     do s = 1,mat_slot
        Total = Total + Matl(s)%Cell%Vof
     end do
 
     ! Fill background with material "background_material", if not already filled
-    Tmp1 = MIN(MAX(one - Total, zero), one)
+    Tmp1 = MIN(MAX(1.0_r8 - Total, 0.0_r8), 1.0_r8)
 
     ! Set up background_material material arrays
-    Vofm = zero
+    Vofm = 0.0_r8
     do s = 1,mat_slot
        where (Matl(s)%Cell%Id == background_material)
           Vofm = Matl(s)%Cell%Vof
@@ -943,7 +919,7 @@ CONTAINS
     !! this point I don't understand and isn't proper.  Needs to be fixed!
 
 !    ! Total the volume fractions
-!    Total = zero
+!    Total = 0.0_r8
 !    do s = 1,mat_slot
 !       Total = Total + Matl(s)%Cell%Vof
 !    end do
@@ -955,26 +931,26 @@ CONTAINS
 !
 !    ! Renormalize Vofm array in case they are under or over-filled.
 !    ! Also initialize Rho_Old
-!    Total = one/Total
+!    Total = 1.0_r8/Total
 !    do s = 1,mat_slot
 !       Matl(s)%Cell%Vof     = Total*Matl(s)%Cell%Vof
-!       where (Matl(s)%Cell%Vof == zero) Matl(s)%Cell%Id = 0
+!       where (Matl(s)%Cell%Vof == 0.0_r8) Matl(s)%Cell%Id = 0
 !    end do
 
     !! Preserved from the above code -- is it really necessary?
     do s = 1,mat_slot
-       where (Matl(s)%Cell%Vof == zero) Matl(s)%Cell%Id = 0
+       where (Matl(s)%Cell%Vof == 0.0_r8) Matl(s)%Cell%Id = 0
     end do
 
     !! Check that the computed VoFs are valid.
     call check_vof (stat)
     if (stat /= 0) then
       call TLS_info ('  Computed volume fractions are invalid; attempting to normalize.')
-      Total = zero
+      Total = 0.0_r8
       do s = 1,mat_slot
         Total = Total + Matl(s)%Cell%Vof
       end do
-      Total = one/Total
+      Total = 1.0_r8/Total
       do s = 1,mat_slot
         Matl(s)%Cell%Vof = Total*Matl(s)%Cell%Vof
       end do
@@ -989,8 +965,6 @@ CONTAINS
     ! Compute mesh Velocities from body velocities
     call VELOCITY_INIT (Hits_Vol)
 
-    return
-
   END SUBROUTINE MATL_INIT
 
   subroutine ZONE_INIT (Hits_Vol)
@@ -1001,9 +975,7 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,       only: alittle
-    use constants_module,     only: zero
     use interfaces_module,    only: Body_Temp, Matnum, nbody
-    use kind_module,          only: int_kind, real_kind
     use matl_module,          only: Matl, GATHER_VOF
     use matl_utilities,       only: update_matl
     use mesh_module,          only: Cell
@@ -1014,18 +986,17 @@ CONTAINS
     use restart_variables,    only: restart
     use tempGrad_module,      only: Body_Temperature, Body_Temp_Grad
     use physics_module, only: heat_transport, heat_species_transport
-    implicit none
 
     ! Arguments
-    real(KIND = real_kind), dimension(nbody,ncells), intent(IN) :: Hits_Vol
+    real(r8), dimension(nbody,ncells), intent(IN) :: Hits_Vol
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, ib, iz, m, s
-    real(KIND = real_kind), pointer, dimension(:)    :: enth_sum, scratch
-    real(KIND = real_kind), pointer, dimension(:,:)  :: bzRho
-    real(kind = real_kind), pointer, dimension(:)    :: mass_sum, vof
-    real(KIND = real_kind)                           :: enth_matl, rho, temp
-    real(real_kind), allocatable :: Volume_Fraction(:,:)
+    integer :: i, ib, iz, m, s
+    real(r8), pointer, dimension(:)   :: enth_sum, scratch
+    real(r8), pointer, dimension(:,:) :: bzRho
+    real(r8), pointer, dimension(:)   :: mass_sum, vof
+    real(r8) :: enth_matl, rho, temp
+    real(r8), allocatable :: Volume_Fraction(:,:)
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ALLOCATE (Volume_Fraction(0:nmat,ncells), STAT=s)
@@ -1038,7 +1009,7 @@ CONTAINS
 
     ! Gather volume fractions of materials using enth_sum as a temporary
     ! Volume Fraction is need later inside of the T_of_H call
-    Volume_Fraction = zero
+    Volume_Fraction = 0.0_r8
     vof => scratch
     do i = 1,nmat
        call GATHER_VOF (i, vof)
@@ -1091,7 +1062,7 @@ CONTAINS
       call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating enth_sum')
 
       ! Compute a cell-average density
-      Zone%Rho = zero
+      Zone%Rho = 0.0_r8
       do s = 1,mat_slot
         do i = 1, ncells
           Zone(i)%Rho = Zone(i)%Rho + Matl(s)%Cell(i)%Vof * DENSITY_MATERIAL(Matl(s)%Cell(i)%Id)
@@ -1101,14 +1072,14 @@ CONTAINS
 
       ! Initialize target arrays to zero
       mass_sum    => scratch
-      mass_sum(:)  = zero
-      enth_sum(:)  = zero
-      Zone(:)%Temp = zero
+      mass_sum(:)  = 0.0_r8
+      enth_sum(:)  = 0.0_r8
+      Zone(:)%Temp = 0.0_r8
 
       ! Accumulate the partial density values for each body in each zone
       ALLOCATE (bzRho(nbody,ncells), STAT=s)
       call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating bzRho')
-      bzRho(:,:) = zero
+      bzRho(:,:) = 0.0_r8
       !FORALL (ib = 1:nbody, iz = 1:ncells, Hits_Vol(ib,iz) .gt. alittle)
       !  bzRho(ib,iz) = DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,iz)
       !END FORALL
@@ -1166,7 +1137,7 @@ CONTAINS
       where(mass_sum(:) .gt. alittle)
         enth_sum(:) = enth_sum(:)/mass_sum(:)
       elsewhere
-        enth_sum(:) = zero
+        enth_sum(:) = 0.0_r8
       end where
       Zone(:)%Enthalpy     = enth_sum
       Zone(:)%Enthalpy_Old = Zone%Enthalpy
@@ -1197,7 +1168,6 @@ CONTAINS
 
   subroutine check_vof (stat)
 
-    use kinds, only: r8
     use parameter_module, only: nmat, ncells
     use mesh_module, only: unpermute_mesh_vector
     use matl_utilities, only: matl_get_vof
@@ -1220,7 +1190,6 @@ CONTAINS
 
   subroutine check_vof_aux (vfrac, mmap, cmap, stat)
 
-    use kinds, only: r8
     use parallel_communication, only: global_any, global_minval, global_maxval
 
     real(r8), intent(in)  :: vfrac(:,:)
@@ -1397,31 +1366,27 @@ CONTAINS
     !   Compute initial cell-centered velocities
     !
     !=======================================================================
-    use constants_module,  only: zero
     use cutoffs_module,    only: alittle
     use interfaces_module, only: Body_Vel, nbody, Body_Temp, Matnum
-    use kind_module,       only: int_kind, real_kind
     use parameter_module,  only: ndim, ncells
     use zone_module,       only: Zone
     use property_module,   only: density_material
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind), dimension(nbody,ncells), intent(IN)    :: Hits_Vol
+    real(r8), dimension(nbody,ncells), intent(IN) :: Hits_Vol
 
     ! Local Variables
-    integer(KIND = int_kind) :: m, n
-    real(KIND = real_kind), dimension(ncells)      :: Mass, Massc
-    real(KIND = real_kind), dimension(ndim,ncells) :: Momentum
-    real(KIND = real_kind) :: rhomat
+    integer :: m, n
+    real(r8), dimension(ncells)      :: Mass, Massc
+    real(r8), dimension(ndim,ncells) :: Momentum
+    real(r8) :: rhomat
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Loop over bodies, accumulating cell-centered momentum and total mass
-    Mass     = zero
-    Massc    = zero
-    Momentum = zero
+    Mass     = 0.0_r8
+    Massc    = 0.0_r8
+    Momentum = 0.0_r8
     do m = 1,nbody
        rhomat = density_material(Matnum(m))
        do n = 1,ndim
@@ -1438,14 +1403,12 @@ CONTAINS
 
        ! Compute the center of mass velocity
        where (ABS(Massc) <= alittle)
-          Zone%Vc(n) = zero
+          Zone%Vc(n) = 0.0_r8
        elsewhere
           Zone%Vc(n) = Massc/(Mass + alittle)
        end where
 
     end do
-
-    return
 
   END SUBROUTINE VELOCITY_INIT
 
@@ -1460,23 +1423,20 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,    only: cutvof
     use gs_module,         only: EE_GATHER
-    use kind_module,       only: log_kind, int_kind, real_kind
     use matl_module,       only: GATHER_VOF
     use parameter_module,  only: ncells, nfc
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                    intent(IN)    :: face
-    integer(int_kind),                    intent(IN)    :: material_1
-    integer(int_kind),                    intent(IN)    :: material_2
-    logical(log_kind), dimension(ncells), intent(INOUT) :: Mask
+    integer, intent(IN) :: face
+    integer, intent(IN) :: material_1
+    integer, intent(IN) :: material_2
+    logical, dimension(ncells), intent(INOUT) :: Mask
 
     ! Local Variables
-    real (real_kind)                              :: threshold
-    integer (int_kind)                            :: c, status
-    real (real_kind), allocatable, dimension(:)   :: Vof_1, Vof_2
-    real (real_kind), allocatable, dimension(:,:) :: Vof_Tmp
+    real(r8) :: threshold
+    integer  :: c, status
+    real(r8), allocatable, dimension(:)   :: Vof_1, Vof_2
+    real(r8), allocatable, dimension(:,:) :: Vof_Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1521,8 +1481,6 @@ CONTAINS
     DEALLOCATE(Vof_2)
     DEALLOCATE(Vof_1)
 
-    return
-
   END SUBROUTINE BOUNDARYBETWEENMATERIALS
 
   SUBROUTINE EXTERNALMATERIALBOUNDARY (face, material, Mask)
@@ -1534,22 +1492,19 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,    only: cutvof
-    use kind_module,       only: log_kind, int_kind, real_kind
     use matl_module,       only: GATHER_VOF
     use mesh_module,       only: Mesh
     use parameter_module,  only: ncells
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                    intent(IN)    :: face
-    integer(int_kind),                    intent(IN)    :: material
-    logical(log_kind), dimension(ncells), intent(INOUT) :: Mask
+    integer, intent(IN) :: face
+    integer, intent(IN) :: material
+    logical, dimension(ncells), intent(INOUT) :: Mask
 
     ! Local Variables
-    real (real_kind)                            :: threshold
-    integer (int_kind)                          :: c, status
-    real (real_kind), allocatable, dimension(:) :: Vof
+    real(r8) :: threshold
+    integer  :: c, status
+    real(r8), allocatable, dimension(:) :: Vof
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1574,8 +1529,6 @@ CONTAINS
     ! Release working space.
     DEALLOCATE(Vof)
 
-    return
-
   END SUBROUTINE EXTERNALMATERIALBOUNDARY
 
   SUBROUTINE MESHBCFACES(face, set1, Mask, nssets, Ngbr_Mesh_Face_Set )
@@ -1589,21 +1542,17 @@ CONTAINS
     ! elements.
     !
     !=======================================================================
-
-    use kind_module,       only: log_kind, int_kind
     use bc_data_module,    only: Mesh_Face_Set
-
     use parameter_module,  only: ncells, nfc
     use mesh_module,       only: Mesh
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                    intent(IN)          :: face, set1, nssets
-    logical(log_kind), dimension(ncells), intent(INOUT)       :: Mask
-    integer(int_kind), dimension(nssets,nfc,nfc,ncells), intent(IN) :: Ngbr_Mesh_Face_Set
+    integer, intent(IN) :: face, set1, nssets
+    logical, dimension(ncells), intent(INOUT) :: Mask
+    integer, dimension(nssets,nfc,nfc,ncells), intent(IN) :: Ngbr_Mesh_Face_Set
+
     ! Local Variables
-    integer (int_kind)                                        :: n, nf, icell
+    integer :: n, nf, icell
 
     ! Start with a null boundary.
     Mask = .false.
@@ -1645,7 +1594,6 @@ CONTAINS
 
   subroutine compute_cell_enthalpy (T, vof, H)
   
-    use kinds, only: r8
     use parameter_module, only: nmat
     use phase_property_table
     use material_table

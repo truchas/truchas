@@ -35,10 +35,9 @@ MODULE MATL_MODULE
   ! Author(s): Douglas B. Kothe, LANL T-3 (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: int_kind, real_kind
+  use kinds, only: r8
   use parameter_module, only: max_relation_forms, max_slots
   use truchas_logging_services
-
   implicit none
   private
 
@@ -66,13 +65,13 @@ MODULE MATL_MODULE
   ! Define MATERIAL Structure
   type MATERIAL
      ! Material Identifier
-     integer(KIND = int_kind) :: Id = 0
+     integer :: Id = 0
 
      ! Volume Fraction
-     real(KIND = real_kind)   :: Vof = 0.0_real_kind
+     real(r8)   :: Vof = 0.0_r8
 
      ! Old time step Volume Fraction
-     real(KIND = real_kind)   :: Vof_Old = 0.0_real_kind
+     real(r8)   :: Vof_Old = 0.0_r8
 
   end type MATERIAL
 
@@ -93,29 +92,24 @@ CONTAINS
     !   Gather material m volume fractions from the Matl derived
     !   type and place them into array Vof.
     !=======================================================================
-    use constants_module, only: zero
-    use parameter_module, only: mat_slot, ncells
-
-    implicit none
+    use parameter_module, only: mat_slot
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN)  :: m
-    real(KIND = real_kind),   intent(OUT) :: Vof(:)
+    integer,  intent(IN)  :: m
+    real(r8), intent(OUT) :: Vof(:)
 
     ! Local Variables
-    integer(KIND = int_kind) :: s
+    integer :: s
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize
-    Vof = zero
+    Vof = 0.0_r8
 
     ! Loop over slots, gathering material m volume fractions
     do s = 1,mat_slot
        where (Matl(s)%Cell%Id == m) Vof = Matl(s)%Cell%Vof
     end do
-
-    return
 
   END SUBROUTINE GATHER_VOF
 
@@ -127,29 +121,24 @@ CONTAINS
     !   Gather material m volume fractions from the Matl derived
     !   type and place them into array Vof.
     !=======================================================================
-    use constants_module, only: zero
     use parameter_module, only: mat_slot, ncells
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind),                     intent(IN)  :: m
-    real(KIND = real_kind), dimension(ncells),    intent(OUT) :: Vof_Old
+    integer, intent(IN) :: m
+    real(r8), dimension(ncells), intent(OUT) :: Vof_Old
 
     ! Local Variables
-    integer(KIND = int_kind) :: s
+    integer :: s
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize
-    Vof_Old = zero
+    Vof_Old = 0.0_r8
 
     ! Loop over slots, gathering material m volume fractions
     do s = 1,mat_slot
        where (Matl(s)%Cell%Id == m) Vof_Old = Matl(s)%Cell%Vof_Old
     end do
-
-    return
 
   END SUBROUTINE GATHER_VOF_OLD
 
@@ -163,14 +152,12 @@ CONTAINS
     !=======================================================================
     use parameter_module, only: mat_slot, ncells
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind),                     intent(IN)    :: m
-    real(KIND = real_kind), dimension(ncells),    intent(IN)    :: Vof
+    integer, intent(IN) :: m
+    real(r8), dimension(ncells), intent(IN) :: Vof
 
     ! Local Variables
-    integer(KIND = int_kind) :: s
+    integer :: s
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -178,8 +165,6 @@ CONTAINS
     do s = 1,mat_slot
        where (Matl(s)%Cell%Id == m) Matl(s)%Cell%Vof = Vof
     end do
-
-    return
 
   END SUBROUTINE SCATTER_VOF
 
@@ -192,14 +177,12 @@ CONTAINS
     !=======================================================================
     use parameter_module, only: max_slots
 
-    implicit none
-
     ! Argument List
-    type(MATL_SLOT),   dimension(max_slots), intent(INOUT) :: ABC
-    integer(KIND = int_kind),                       intent(INOUT) :: slot, slot_new
+    type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
+    integer, intent(INOUT) :: slot, slot_new
 
     ! Local Variables
-    integer(KIND = int_kind) :: memstat, s
+    integer :: s
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -220,8 +203,6 @@ CONTAINS
 
     slot = slot_new
 
-    return
-
   END SUBROUTINE SLOT_DECREASE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -233,14 +214,12 @@ CONTAINS
     !=======================================================================
     use parameter_module, only: max_slots, ncells
 
-    implicit none
-
     ! Argument List
-    type(MATL_SLOT),   dimension(max_slots), intent(INOUT) :: ABC
-    integer(KIND = int_kind),                       intent(INOUT) :: slot, slot_new
+    type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
+    integer, intent(INOUT) :: slot, slot_new
 
     ! Local Variables
-    integer(KIND = int_kind) :: memstat, s
+    integer :: memstat, s
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -267,8 +246,6 @@ CONTAINS
     end do
 
     slot = slot_new
-
-    return
 
   END SUBROUTINE SLOT_INCREASE
   
@@ -316,20 +293,16 @@ CONTAINS
     !   This routine compresses the slot structure to remove unused holes.
     !
     !=======================================================================
-    use constants_module, only: zero
-    use kind_module,      only: log_kind
     use parameter_module, only: max_slots, ncells
 
-    implicit none
-
     ! Argument List
-    type(MATL_SLOT),   dimension(max_slots), intent(INOUT) :: ABC
-    integer(KIND = int_kind),                       intent(INOUT) :: slot
+    type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
+    integer, intent(INOUT) :: slot
 
     ! Local Variables
-    integer(KIND = int_kind)                    :: s_old, s_new
-    logical(KIND = log_kind), dimension(ncells) :: Move_slot
-    integer(KIND = int_kind), dimension(ncells) :: Num_mat 
+    integer :: s_old, s_new
+    logical, dimension(ncells) :: Move_slot
+    integer, dimension(ncells) :: Num_mat 
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -355,14 +328,12 @@ CONTAINS
              ABC(s_new)%Cell%Vof      = ABC(s_old)%Cell%Vof
              ABC(s_new)%Cell%Vof_Old  = ABC(s_old)%Cell%Vof_Old
              ABC(s_old)%Cell%Id       = 0
-             ABC(s_old)%Cell%Vof      = zero
-             ABC(s_old)%Cell%Vof_Old  = zero
+             ABC(s_old)%Cell%Vof      = 0.0_r8
+             ABC(s_old)%Cell%Vof_Old  = 0.0_r8
           end where
        end do
 
     end do
-
-    return
 
   END SUBROUTINE SLOT_COMPRESS
 
@@ -373,18 +344,15 @@ CONTAINS
     ! Purpose(s):
     !   Initialize the ABC structure for slot s.
     !=======================================================================
-    use constants_module, only: zero
     use parameter_module, only: max_slots
 
-    implicit none
-
     ! Argument List
-    type(MATL_SLOT),   dimension(max_slots), intent(INOUT) :: ABC
-    integer(KIND = int_kind),                       intent(IN)    :: s
+    type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
+    integer, intent(IN) :: s
 
     ! Local Variables
-    integer(KIND = int_kind) :: Id_def  = 0
-    real(KIND = real_kind)   :: Vof_def = zero
+    integer :: Id_def  = 0
+    real(r8)   :: Vof_def = 0.0_r8
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -392,8 +360,6 @@ CONTAINS
     ABC(s)%Cell%Id      = Id_def
     ABC(s)%Cell%Vof     = Vof_def
     ABC(s)%Cell%Vof_Old = Vof_def
-
-    return
 
   END SUBROUTINE SLOT_SET
 
@@ -407,14 +373,12 @@ CONTAINS
     use parameter_module,     only: mat_slot, max_slots
     use pgslib_module,        only: PGSLib_COLLATE
 
-    implicit none
-
     ! Arguments
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: Collated_Matl
     type(MATL_SLOT), dimension(max_slots), intent(IN   ) :: Local_Matl
     
     ! Local variables
-    integer(KIND = int_kind) :: s
+    integer :: s
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -423,8 +387,6 @@ CONTAINS
        call PGSLib_COLLATE(Collated_Matl(s)%Cell%Vof,     Local_Matl(s)%Cell%Vof )
        call PGSLib_COLLATE(Collated_Matl(s)%Cell%Vof_Old, Local_Matl(s)%Cell%Vof_Old )
     end do
-
-    return
 
   END SUBROUTINE COLLATE_MATL
   
@@ -439,8 +401,6 @@ CONTAINS
     use parallel_scope
     use parameter_module, only: ncells
 
-    implicit none
-
     ! Arguments
     type(MATERIAL), dimension(:), intent(IN) :: Matl_Cell
     type(MATERIAL), dimension(ncells)        :: Matl_Permute_Cell
@@ -450,8 +410,6 @@ CONTAINS
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     call PERMUTE_MATL(Matl_Permute_Cell, Matl_Cell, Permute_Mesh_Vector, SCOPE=GLOBAL_SCOPE)
-
-    return
 
   END FUNCTION MATL_PERMUTE
   
@@ -464,13 +422,11 @@ CONTAINS
     !==================================================================
     use parallel_scope
 
-    implicit none
-
     ! Arguments
     type(MATERIAL), dimension(:), intent(  OUT) :: Permuted_Matl
     type(MATERIAL), dimension(:), intent(IN   ) :: Orig_Matl
-    integer(KIND = int_kind), dimension(:), intent(IN) :: Permuter
-    type (PL_SCOPE), OPTIONAL,    intent(IN   ) :: SCOPE
+    integer, dimension(:), intent(IN) :: Permuter
+    type (PL_SCOPE), OPTIONAL, intent(IN   ) :: SCOPE
 
     ! Local variables
     type (PL_SCOPE) :: Desired_Scope
@@ -491,7 +447,6 @@ CONTAINS
     if (DESIRED_SCOPE == LOCAL_SCOPE) then
        call PERMUTE_MATL_LOCAL(Permuted_Matl, Orig_Matl, Permuter)
     end if
-    return
 
   END SUBROUTINE PERMUTE_MATL
   
@@ -507,12 +462,10 @@ CONTAINS
                                 PGSLIB_Deallocate_Trace, &
                                 PGSLIB_GS_Trace
 
-    implicit none
-
     ! Arguments
     type(MATERIAL), dimension(:), intent(  OUT) :: Permuted_Matl
     type(MATERIAL), dimension(:), intent(IN   ) :: Orig_Matl
-    integer(KIND = int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
 
     ! Local variables
     type (PGSLIB_GS_Trace), POINTER :: Matl_Trace
@@ -537,7 +490,6 @@ CONTAINS
 
     ! Done with the trace
     Call PGSLib_Deallocate_Trace(Matl_Trace)
-    return
 
   END SUBROUTINE PERMUTE_MATL_GLOBAL
   
@@ -549,22 +501,18 @@ CONTAINS
     !   PERMUTE a matl slot according to Permute_Mesh_Vector
     !   Local version, so Permuter must have local indices
     !==================================================================
-    implicit none
 
     ! Arguments
     type(MATERIAL), dimension(:), intent(  OUT) :: Permuted_Matl
     type(MATERIAL), dimension(:), intent(IN   ) :: Orig_Matl
-    integer(KIND = int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
 
     ! Local variables
     integer :: cell
 
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
     do cell = 1, SIZE(Permuter)
        Permuted_Matl(Permuter(cell)) = Orig_Matl(cell)
     end do
-    return
 
   END SUBROUTINE PERMUTE_MATL_LOCAL
   
@@ -582,24 +530,17 @@ CONTAINS
     !====================================================================
     use parameter_module, only: mat_slot, max_slots
 
-    implicit none
-
     ! Arguments
     type(MATL_SLOT), dimension(max_slots), intent(IN)  :: Matl_Src
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: Matl_Dest
 
     ! Local variables
-    integer(KIND = int_kind) :: s
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    integer :: s
 
     do s = 1, mat_slot
        Matl_Dest(s)%Cell = Matl_Src(s)%Cell
     end do
-    
-    return
 
   END SUBROUTINE MATL_ASSIGN
-
 
 END MODULE MATL_MODULE

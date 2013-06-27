@@ -14,9 +14,7 @@ MODULE PROBE_OUTPUT_MODULE
   !
   ! Author(s): Sharen Cummins (scummins@lanl.gov)
   !-----------------------------------------------------------------------------
-
-  use kind_module,      only: int_kind
-
+  use kinds, only: r8
   implicit none
   private
 
@@ -26,7 +24,7 @@ MODULE PROBE_OUTPUT_MODULE
   public :: PROBE_INIT_DANU
 #endif
 
-  Integer (KIND=int_kind), Save, Public :: Probe_Output_Cycle_Multiplier = 1
+  integer, Save, Public :: Probe_Output_Cycle_Multiplier = 1
 
 CONTAINS
 
@@ -43,7 +41,6 @@ CONTAINS
     !       3. all tensor variables
     !
     !---------------------------------------------------------------------------
-    use kind_module,            only: real_kind, int_kind
     use probe_module,           only: probes
     use parameter_module,       only: nprobes
     use parallel_info_module,   only: p_info
@@ -58,16 +55,13 @@ CONTAINS
     use danu_module
     use parallel_communication, only: is_IOP, broadcast
 #endif
-    implicit none
-
-    ! Argument List
 
     ! Local Variables
-    integer(KIND = int_kind) :: iStatus, i, j, count, thesize
-    real(KIND=real_kind), pointer, dimension(:) :: probe_cycle
+    integer :: iStatus, i, j, count, thesize
+    real(r8), pointer, dimension(:) :: probe_cycle
 #ifdef USE_DANU
     integer :: stat
-    real(real_kind), allocatable :: probe_data(:,:)
+    real(r8), allocatable :: probe_data(:,:)
 #endif
 
     call PROBES_FIELDS ()
@@ -180,8 +174,6 @@ CONTAINS
 
     end do
 
-    return
-
   END SUBROUTINE PROBES_OUTPUT
 
   !-----------------------------------------------------------------------------
@@ -196,11 +188,10 @@ CONTAINS
     !
     ! Author(s): Sharen Cummins (scummins@lanl.gov)
     !=======================================================================
-    use kind_module,                only: int_kind
     use parameter_module,           only: nprobes, nmat
     use solid_mechanics_data,       only: solid_mechanics
     use EM_data_proxy,              only: EM_is_on
-    use constants_module,           only: ipreset
+    use input_utilities,            only: NULL_I
     use property_module,            only: GET_USER_MATERIAL_ID
     use probe_data_module
     use probe_module
@@ -209,19 +200,16 @@ CONTAINS
     use tbrook_module,              only: Brook
 #endif
 
-    implicit none
-
-
     ! Local Variables
-    integer(KIND = int_kind)           :: i, j, count, index,               &
-                                          cellf_count, nodef_count,cellv_count, nodev_count, &
-                                          cellt_count, nodet_count
-    character(LEN=256)                 :: str
+    integer :: i, j, count, index,               &
+               cellf_count, nodef_count,cellv_count, nodev_count, &
+               cellt_count, nodet_count
+    character(LEN=256) :: str
 #ifdef USE_TBROOK
-    type(Brook)                        :: RHOB, DELTA_RHOB, TEMPB, dT_dtB, GRADTB,           &
-                                          ENTHALPYB, PB, JOULE_PB, EPSDOTB, GAPDISPB,        &
-                                          GAPFORCEB, VCB, DISPLACEMENTB, SIGMAB, EPSILONB,   &
-                                          EPSTHERMB, EPSPCB
+    type(Brook) :: RHOB, DELTA_RHOB, TEMPB, dT_dtB, GRADTB,           &
+                   ENTHALPYB, PB, JOULE_PB, EPSDOTB, GAPDISPB,        &
+                   GAPFORCEB, VCB, DISPLACEMENTB, SIGMAB, EPSILONB,   &
+                   EPSTHERMB, EPSPCB
     type(Brook), pointer, dimension(:) :: VOF_Bs
 #endif
 
@@ -276,9 +264,9 @@ CONTAINS
       probes(i)%description    = probe_description(i)
       probes(i)%coords_scale   = probe_coords_scale(i)
       probes(i)%coords(:)      = probes(i)%coords_scale*probe_coords(:, i)
-      probes(i)%node%index     = ipreset
+      probes(i)%node%index     = NULL_I
       probes(i)%node%coords(:) = probe_coords(:,i)
-      probes(i)%cell%index     = ipreset
+      probes(i)%cell%index     = NULL_I
       probes(i)%cell%coords(:) = probe_coords(:,i)
 
       !Store all names of scalar fields, vector fields and tensor fields for each probe in a NameLU table
@@ -451,8 +439,6 @@ CONTAINS
       !at each cycle in the diagnostics_module subroutine 'PROBES_FIELDS'
 
     enddo
-
-    return
 
   END SUBROUTINE PROBE_INIT
 

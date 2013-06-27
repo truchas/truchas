@@ -17,7 +17,7 @@ MODULE ARRAYALLOCATE_MODULE
   !      integer, intent(IN) :: ubn
   !         ubn is the upper bound of the array - multiple 'n's are used for 
   !         multidimensional arrays
-  !      character(LEN=*), intent(IN), optional :: string
+  !      character(*), intent(IN), optional :: string
   !         string is an optional error string to be included in an error message
   !
   !   Example:
@@ -98,11 +98,10 @@ MODULE ARRAYALLOCATE_MODULE
   ! Author(s): Bryan R. Lally, LANL ESA-EPE (lally@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use parameter_module, only : string_len
-  use truchas_logging_services, only: TLS_panic
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -152,11 +151,11 @@ CONTAINS
     real, pointer, dimension(:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_real_R1'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_real_R1'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -173,8 +172,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_REAL_R1
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -186,11 +183,11 @@ CONTAINS
     !=======================================================================
     ! Argument List
     real, pointer, dimension(:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayDestroy_real_R1'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayDestroy_real_R1'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -213,11 +210,11 @@ CONTAINS
     integer, intent(IN) :: ub1
     integer, intent(IN) :: lb2
     integer, intent(IN) :: ub2
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_real_R2'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_real_R2'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -233,8 +230,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_REAL_R2
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -246,7 +241,7 @@ CONTAINS
     !=======================================================================
     ! Argument List
     real, pointer, dimension(:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -270,11 +265,11 @@ CONTAINS
     integer, intent(IN) :: ub2
     integer, intent(IN) :: lb3
     integer, intent(IN) :: ub3
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_real_R3'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_real_R3'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -290,8 +285,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_REAL_R3
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -303,14 +296,12 @@ CONTAINS
     !=======================================================================
     ! Argument List
     real, pointer, dimension(:,:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! attempt to deallocate space
     DEALLOCATE (ArrayPtr)
-
-    return
 
   END SUBROUTINE ARRAYDESTROY_REAL_R3
 
@@ -321,17 +312,16 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE log_type array of rank 1.
     !=======================================================================
-    use kind_module,  only: log_kind
 
     ! Argument List
-    Logical(KIND=log_kind), pointer, dimension(:) :: ArrayPtr
+    logical, pointer, dimension(:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_Log_Type_R1'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_Log_Type_R1'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -347,8 +337,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_LOG_TYPE_R1
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -358,11 +346,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE log_type array of rank 1.
     !=======================================================================
-    use kind_module, only: log_kind
 
     ! Argument List
-    Logical(KIND=log_kind), pointer, dimension(:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    logical, pointer, dimension(:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -378,19 +365,18 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE log_type array of rank 2.
     !=======================================================================
-    use kind_module,  only: log_kind
 
     ! Argument List
-    Logical(KIND=log_kind), pointer, dimension(:,:) :: ArrayPtr
+    logical, pointer, dimension(:,:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
     integer, intent(IN) :: lb2
     integer, intent(IN) :: ub2
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_Log_Type_R2'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_Log_Type_R2'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -406,8 +392,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_LOG_TYPE_R2
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -417,11 +401,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE log_type array of rank 2.
     !=======================================================================
-    use kind_module,  only: log_kind
 
     ! Argument List
-    Logical(KIND=log_kind), pointer, dimension(:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    logical, pointer, dimension(:,:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -437,21 +420,20 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE log_type array of rank 3.
     !=======================================================================
-    use kind_module,  only: log_kind
 
     ! Argument List
-    Logical(KIND=log_kind), pointer, dimension(:,:,:) :: ArrayPtr
+    logical, pointer, dimension(:,:,:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
     integer, intent(IN) :: lb2
     integer, intent(IN) :: ub2
     integer, intent(IN) :: lb3
     integer, intent(IN) :: ub3
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_Log_Type_R3'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_Log_Type_R3'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -467,8 +449,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_LOG_TYPE_R3
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -478,11 +458,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE log_type array of rank 3.
     !=======================================================================
-    use kind_module,  only: log_kind
 
     ! Argument List
-    Logical(KIND=log_kind), pointer, dimension(:,:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    logical, pointer, dimension(:,:,:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -498,17 +477,16 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE int_type array of rank 1.
     !=======================================================================
-    use kind_module,  only: int_kind 
 
     ! Argument List
-    integer(KIND=int_kind), pointer, dimension(:) :: ArrayPtr
+    integer, pointer, dimension(:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_Int_Type_R1'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_Int_Type_R1'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -525,8 +503,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_INT_TYPE_R1
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -536,11 +512,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE int_type array of rank 1.
     !=======================================================================
-    use kind_module,  only: int_kind
 
     ! Argument List
-    integer(KIND=int_kind), pointer, dimension(:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    integer, pointer, dimension(:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -556,19 +531,18 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE int_type array of rank 2.
     !=======================================================================
-    use kind_module,  only: int_kind
 
     ! Argument List
-    integer(KIND=int_kind), pointer, dimension(:,:) :: ArrayPtr
+    integer, pointer, dimension(:,:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
     integer, intent(IN) :: lb2
     integer, intent(IN) :: ub2
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_Int_Type_R2'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_Int_Type_R2'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -584,8 +558,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_INT_TYPE_R2
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -595,11 +567,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE int_type array of rank 2.
     !=======================================================================
-    use kind_module,  only: int_kind
 
     ! Argument List
-    integer(KIND=int_kind), pointer, dimension(:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    integer, pointer, dimension(:,:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -615,21 +586,20 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE int_type array of rank 3.
     !=======================================================================
-    use kind_module,  only: int_kind
 
     ! Argument List
-    integer(KIND=int_kind), pointer, dimension(:,:,:) :: ArrayPtr
+    integer, pointer, dimension(:,:,:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
     integer, intent(IN) :: lb2
     integer, intent(IN) :: ub2
     integer, intent(IN) :: lb3
     integer, intent(IN) :: ub3
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_Int_Type_R3'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_Int_Type_R3'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -645,8 +615,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_INT_TYPE_R3
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -656,11 +624,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE int_type array of rank 3.
     !=======================================================================
-    use kind_module,  only: int_kind
 
     ! Argument List
-    integer(KIND=int_kind), pointer, dimension(:,:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    integer, pointer, dimension(:,:,:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -676,17 +643,16 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE real_type array of rank 1.
     !=======================================================================
-    use kind_module,  only: real_kind
 
     ! Argument List
-    real(KIND=real_kind), pointer, dimension(:) :: ArrayPtr
+    real(r8), pointer, dimension(:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_real_Type_R1'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_real_Type_R1'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -702,8 +668,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_REAL_TYPE_R1
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -713,11 +677,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE real_type array of rank 1.
     !=======================================================================
-    use kind_module,  only: real_kind
 
     ! Argument List
-    real(KIND=real_kind), pointer, dimension(:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    real(r8), pointer, dimension(:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -733,19 +696,18 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE real_type array of rank 2.
     !=======================================================================
-    use kind_module,  only: real_kind
 
     ! Argument List
-    real(KIND=real_kind), pointer, dimension(:,:) :: ArrayPtr
+    real(r8), pointer, dimension(:,:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
     integer, intent(IN) :: lb2
     integer, intent(IN) :: ub2
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_real_Type_R2'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_real_Type_R2'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -761,8 +723,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_REAL_TYPE_R2
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -772,11 +732,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE real_type array of rank 2.
     !=======================================================================
-    use kind_module,  only: real_kind
 
     ! Argument List
-    real(KIND=real_kind), pointer, dimension(:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    real(r8), pointer, dimension(:,:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -792,21 +751,20 @@ CONTAINS
     ! Purpose(s):
     !   ALLOCATE real_type array of rank 3.
     !=======================================================================
-    use kind_module,  only: real_kind
 
     ! Argument List
-    real(KIND=real_kind), pointer, dimension(:,:,:) :: ArrayPtr
+    real(r8), pointer, dimension(:,:,:) :: ArrayPtr
     integer, intent(IN) :: lb1
     integer, intent(IN) :: ub1
     integer, intent(IN) :: lb2
     integer, intent(IN) :: ub2
     integer, intent(IN) :: lb3
     integer, intent(IN) :: ub3
-    character(LEN=*), intent(IN), optional :: string
+    character(*), intent(IN), optional :: string
 
     ! Local Variables
-    character(LEN=64) :: routine = 'ArrayCreate_real_Type_R3'
-    character(LEN=string_len) :: error_string
+    character(64) :: routine = 'ArrayCreate_real_Type_R3'
+    character(string_len) :: error_string
     integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -822,8 +780,6 @@ CONTAINS
 
     if (status /= 0) call TLS_panic (trim(error_string) // ': allocate failed')
 
-    return
-
   END SUBROUTINE ARRAYCREATE_REAL_TYPE_R3
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -833,11 +789,10 @@ CONTAINS
     ! Purpose(s):
     !   DEALLOCATE real_type array of rank 3.
     !=======================================================================
-    use kind_module,  only: real_kind
 
     ! Argument List
-    real(KIND=real_kind), pointer, dimension(:,:,:) :: ArrayPtr
-    character(LEN=*), intent(IN), optional :: string
+    real(r8), pointer, dimension(:,:,:) :: ArrayPtr
+    character(*), intent(IN), optional :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

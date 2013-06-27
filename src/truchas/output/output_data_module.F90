@@ -1,25 +1,22 @@
 module output_data_module
   ! holds TBROOK data
-  use kind_module,   only: int_kind
   use parameter_module, only: string_len, mops
   use tbrook_module,  only: brook, B_IFORM_BINARY
   use truchas_env, only: prefix, indir=>input_dir, outdir=>output_dir, input_file, title
   use output_control, only: retain_last_step
   implicit none
-
-  ! Howard Free Zone i.e. no private parts!
   public
   
-  integer(KIND = int_kind), save, public :: out_tbrook, &
-                                            err_tbrook, &
-                                            aux_lun, &
-                                            int_lun, &
-                                            msh_lun, &
-                                            tab_lun, &
-                                            tty_tbrook, &
-                                            tty_lun, &
-                                            out_lun, &
-                                            err_lun
+  integer, save, public :: out_tbrook, &
+                           err_tbrook, &
+                           aux_lun, &
+                           int_lun, &
+                           msh_lun, &
+                           tab_lun, &
+                           tty_tbrook, &
+                           tty_lun, &
+                           out_lun, &
+                           err_lun
 
   type(Brook), save, public, target :: odm_b_out, &
                                        odm_b_err, &

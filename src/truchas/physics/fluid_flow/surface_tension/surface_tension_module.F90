@@ -59,7 +59,6 @@ contains
     !   momentum delta array by dt*(Fx,Fy,Fz), where (Fx,Fy,Fz)
     !   is the CSF force.
     !=======================================================================
-    use constants_module,     only: one, zero
     use cutoffs_module,       only: alittle, cutvof
     use discrete_op_module,   only: GRADIENT
     use matl_module,          only: GATHER_VOF
@@ -87,7 +86,7 @@ contains
     call start_timer('Predictor Surface Tension')
 
     ! Initialize.
-    Fx = zero; Fy = zero; Fz = zero
+    Fx = 0.0_r8; Fy = 0.0_r8; Fz = 0.0_r8
 
     ! NNC, Dec 2012.  Formerly, surface tension was triggered when the first
     ! material having the surf10 property was encountered.  This property also
@@ -96,7 +95,7 @@ contains
     ! this behavior treating surfmat1 as the first material and surfmat2 as
     ! the other, though I don't understand why COLOR wasn't just taken to be
     ! the volume fraction of the first (or other) material.
-    Color = zero
+    Color = 0.0_r8
     do m = 1, nmat
       if (m == surfmat2) cycle
       call gather_vof (m, Kappa)
@@ -111,7 +110,7 @@ contains
 
     ! Normalize the color gradient (use Sigma as a temporary).
     Sigma = SQRT(dC_dx*dC_dx + dC_dy*dC_dy + dC_dz*dC_dz)
-    Sigma = MERGE(zero, one/Sigma, Sigma <= alittle)
+    Sigma = MERGE(0.0_r8, 1.0_r8/Sigma, Sigma <= alittle)
     dC_dx = Sigma*dC_dx; dC_dy = Sigma*dC_dy; dC_dz = Sigma*dC_dz
 
     ! Get the cell-centered surface tension coefficient.
@@ -130,13 +129,13 @@ contains
     ! Construct the CSF tangential component. 
     where (abs(dC_dx).gt.cutvof.or.abs(dC_dy).gt.cutvof & 
            .or.abs(dC_dz).gt.cutvof)  
-       Fx = Fx + Delta*((one - dC_dx*dC_dx)*dS_dx - &
+       Fx = Fx + Delta*((1.0_r8 - dC_dx*dC_dx)*dS_dx - &
                                dC_dy*dC_dx *dS_dy - &
                                dC_dz*dC_dx *dS_dz)
-       Fy = Fy + Delta*((one - dC_dy*dC_dy)*dS_dy - &
+       Fy = Fy + Delta*((1.0_r8 - dC_dy*dC_dy)*dS_dy - &
                                dC_dz*dC_dy *dS_dz - &
                                dC_dx*dC_dy *dS_dx)
-       Fz = Fz + Delta*((one - dC_dz*dC_dz)*dS_dz - &
+       Fz = Fz + Delta*((1.0_r8 - dC_dz*dC_dz)*dS_dz - &
                                dC_dx*dC_dz *dS_dx - &
                                dC_dy*dC_dz *dS_dy)
     end where
@@ -192,7 +191,6 @@ contains
     !        
     ! Author: Marianne M. Francois, LANL CCS-2 (mmfran@lanl.gov)
     !=======================================================================
-    use constants_module,            only: one, zero
     use cutoffs_module,              only: alittle, cutvof
     use discrete_derivatives,        only: GRADIENT_FACE
     use discrete_op_module,          only: GRADIENT,VERTEX_AVG 
@@ -213,7 +211,7 @@ contains
    ! Local Variables
     integer :: j, m, n, f, status
     real(r8) :: state(1)
-    !integer(int_kind) :: curvmodel
+    !integer :: curvmodel
     real(r8)   :: d    
     real(r8), dimension(:),     allocatable :: Weight
     real(r8), dimension(:,:,:), allocatable :: dC
@@ -279,7 +277,7 @@ contains
     call  start_timer ("Projection Surface Tension")
 
     ! Initialize.
-    Fx=zero; Fy=zero; Fz=zero
+    Fx=0.0_r8; Fy=0.0_r8; Fz=0.0_r8
 
     ! NNC, Dec 2012.  Formerly, surface tension was triggered when the first
     ! material having the surf10 property was encountered.  This property also
@@ -288,7 +286,7 @@ contains
     ! this behavior treating surfmat1 as the first material and surfmat2 as
     ! the other, though I don't understand why COLOR wasn't just taken to be
     ! the volume fraction of the first (or other) material.
-    Color = zero
+    Color = 0.0_r8
     do m = 1, nmat
       if (m == surfmat2) cycle
       call gather_vof (m, Kappa)
@@ -297,18 +295,18 @@ contains
 
     !-----------------------------------------------------
     !Compute the face-centered color gradient.          
-    dC=zero
-    dC_dx=zero; dC_dy=zero; dC_dz=zero
-    Weight=one
+    dC=0.0_r8
+    dC_dx=0.0_r8; dC_dy=0.0_r8; dC_dz=0.0_r8
+    Weight=1.0_r8
     call GRADIENT_FACE (PHI=Color,GRAD=dC,WEIGHT=Weight, &
                         USE_ORTHO=use_ortho_face_gradient)
     dC_dx=dC(1,:,:)
     dC_dy=dC(2,:,:)
     dC_dz=dC(3,:,:)
 
-    dC_dx=MERGE(zero,dC_dx,abs(dC_dx) <= cutvof)
-    dC_dy=MERGE(zero,dC_dy,abs(dC_dy) <= cutvof)
-    dC_dz=MERGE(zero,dC_dz,abs(dC_dz) <= cutvof)
+    dC_dx=MERGE(0.0_r8,dC_dx,abs(dC_dx) <= cutvof)
+    dC_dy=MERGE(0.0_r8,dC_dy,abs(dC_dy) <= cutvof)
+    dC_dz=MERGE(0.0_r8,dC_dz,abs(dC_dz) <= cutvof)
 
     !------------------------------------------------------
     !Compute curvature Kappa at cell-centers
@@ -350,23 +348,23 @@ contains
 
       ALLOCATE(dCn1(ncells),STAT=status)
       if (status /=0) call TLS_panic ('CSF_FACE: dCn1(ncells) allocation failed')
-      dCn1=zero
+      dCn1=0.0_r8
 
       ALLOCATE(dCn2(ncells),STAT=status)
       if (status /=0) call TLS_panic ('CSF_FACE: dCn2(ncells) allocation failed')
-      dCn2=zero
+      dCn2=0.0_r8
 
       ALLOCATE(dCn3(ncells),STAT=status)
       if (status /=0) call TLS_panic ('CSF_FACE: dCn3(ncells) allocation failed')
-      dCn3=zero
+      dCn3=0.0_r8
 
       ALLOCATE(dCcc(ndim,ncells),STAT=status)
       if (status /=0) call TLS_panic ('CSF_FACE: dCcc(ndim,ncells) allocation failed')
-      dCcc=zero
+      dCcc=0.0_r8
 
       ALLOCATE(Tmp(ncells),STAT=status)
       if (status /=0) call TLS_panic ('CSF_FACE: Tmp(ncells) allocation failed')
-      Tmp=zero
+      Tmp=0.0_r8
 
       d=interface_smoothing_length 
 
@@ -380,8 +378,8 @@ contains
       ! normalize the normal vectors
 
       Tmp=sqrt(dCn1**2+dCn2**2+dCn3**2)
-      Tmp=MERGE(zero,one/Tmp, Tmp<=alittle)
-      where (mo_col > cutvof .and. mo_col < one - cutvof)
+      Tmp=MERGE(0.0_r8,1.0_r8/Tmp, Tmp<=alittle)
+      where (mo_col > cutvof .and. mo_col < 1.0_r8 - cutvof)
         dCcc(1,:)=dCn1*Tmp
         dCcc(2,:)=dCn2*Tmp
         dCcc(3,:)=dCn3*Tmp
@@ -411,7 +409,7 @@ contains
     ALLOCATE (Kappa_v(nvc,ncells),STAT=status)
     if (status /=0) call TLS_panic ('CSF_FACE: Kappa_v(nvc,ncells) allocation failed')
 
-    Kappa_face=zero
+    Kappa_face=0.0_r8
 
     !-averaged Kappa at faces
     ! first averaged at vertices
@@ -437,7 +435,7 @@ contains
           face_flag(f,n)=.true.
         endif 
         if (.not.face_flag(f,n)) then
-          Kappa_face(f,n)=zero
+          Kappa_face(f,n)=0.0_r8
         endif
       enddo
     enddo
@@ -463,7 +461,7 @@ contains
     ALLOCATE (Sigma_v(nvc,ncells),STAT=status)
     if (status /=0) call TLS_panic ('CSF_FACE: Sigma_v(nvc,ncells) allocation failed')
 
-    Sigma_face=zero
+    Sigma_face=0.0_r8
 
     !-averaged Sigma at faces
     ! first averaged at vertices
@@ -528,7 +526,6 @@ contains
     !       and has different boundary condition
     ! 
     !=======================================================================
-    use constants_module,  only: zero
     use cutoffs_module,    only: alittle
     use linear_module,     only: LINEAR_PROP
     use mesh_module,       only: Cell, Mesh, Vrtx_Face, Vertex
@@ -554,7 +551,7 @@ contains
     do n = 1,ndim
        ! Loop over each vertex, computing the portion of the
        ! cell-centered normal component apportioned to each vertex
-       NV_v = zero
+       NV_v = 0.0_r8
        do v = 1,nvc
           Normal = NV(n,:)
 
@@ -576,7 +573,7 @@ contains
              Mask = Mesh%Ngbr_cell(face) == 0
 
              ! Normal part of the velocity
-             Tmp = zero
+             Tmp = 0.0_r8
              do i = 1,ndim
                Tmp = Tmp + NV(i,:)*Cell%Face_Normal(i,face)
              end do
@@ -612,7 +609,7 @@ contains
     ! normalize NV_face
     do f=1,nfc 
       Tmp=sqrt(NV_face(1,f,:)**2+NV_face(2,f,:)**2+NV_face(3,f,:)**2)        
-      Tmp=MERGE(zero,1/Tmp,Tmp<=alittle)
+      Tmp=MERGE(0.0_r8,1/Tmp,Tmp<=alittle)
       NV_face(1,f,:)=Tmp*NV_face(1,f,:)
       NV_face(2,f,:)=Tmp*NV_face(2,f,:) 
       NV_face(3,f,:)=Tmp*NV_face(3,f,:)
@@ -620,9 +617,9 @@ contains
   
     ! Loop over faces and accumulate the divergence
     ! from these face-centered velocities
-    D = zero
+    D = 0.0_r8
     do f = 1,nfc
-       Tmp = zero
+       Tmp = 0.0_r8
        ! Apply BC if wall adhesion
  
        ! Dot product of face interface normal and unit normals
@@ -638,7 +635,7 @@ contains
     D = D/Cell%Volume
 
     ! Eliminate noise
-    D = MERGE(zero, D, ABS(D) <= alittle)
+    D = MERGE(0.0_r8, D, ABS(D) <= alittle)
 
   END SUBROUTINE DIVERGENCE_INTNORMAL
 

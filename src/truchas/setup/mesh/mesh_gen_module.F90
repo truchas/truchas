@@ -25,20 +25,17 @@ MODULE MESH_GEN_MODULE
   !            Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only : int_kind
-
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: MESH_GEN, FLAG_FACE_NEIGHBORS
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Private parameters
-  integer(KIND = int_kind), parameter :: NOT_LOCAL_INDEX = -1
+  integer, parameter :: NOT_LOCAL_INDEX = -1
 
 CONTAINS
 
@@ -60,23 +57,18 @@ CONTAINS
     !
     !=======================================================================
     use gs_module,        only: EE_GATHER
-    use kind_module,      only: int_kind
     use mesh_module,      only: Mesh, Face_Vrtx, Initialize_Face_Bit_Mask,   &
                                 Set_Face_Neighbor, Clear_Face_Neighbor,      &
                                 DEGENERATE_FACE
     use parameter_module, only: ncells, nfc, nvf, nvc
     use var_vector_module
-    use truchas_logging_services
-
-    implicit none
 
     ! Local Variables
-    type (int_var_vector), pointer, dimension(:)   :: Ngbr_Vertices  ! Holds the gathered vertices
-    integer(int_kind),     pointer, dimension(:)   :: Ngbr_Data      ! Points to neighbors of Ref_Cell
-    integer(int_kind),     pointer, dimension(:)   :: Ngbr_Face_Bits ! Points to neighbors of Ref_Cell
-    integer(int_kind),              dimension(nvf) :: Reference_Face ! Current face of interest
-    integer(KIND = int_kind)                       :: ref_cell, ngbr_vtx, f, &
-                                                      v, ngbr
+    type(int_var_vector), pointer, dimension(:) :: Ngbr_Vertices  ! Holds the gathered vertices
+    integer, pointer, dimension(:) :: Ngbr_Data      ! Points to neighbors of Ref_Cell
+    integer, pointer, dimension(:) :: Ngbr_Face_Bits ! Points to neighbors of Ref_Cell
+    integer, dimension(nvf) :: Reference_Face ! Current face of interest
+    integer :: ref_cell, ngbr_vtx, f, v, ngbr
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -147,8 +139,6 @@ CONTAINS
 
     call TLS_info ('done.')
 
-    return
-
   END SUBROUTINE FLAG_FACE_NEIGHBORS
       
   SUBROUTINE MESH_GEN ()
@@ -163,7 +153,6 @@ CONTAINS
                                       PERMUTE_VERTEX, RENUMBER_CELLS_VERTICES, &
                                       ANNOUNCE_MESH_SIZES
     use bc_data_module,         only: Mesh_Face_Set, Mesh_Face_Set_Tot
-    use kind_module,            only: int_kind, log_kind
     use mesh_input_module,      only: MESH_READ, mesh_file, &
                                       coordinate_scale_factor, &
                                       use_RCM, MESH_READ_SIDE_SETS
@@ -190,18 +179,15 @@ CONTAINS
     use restart_driver,         only: restart_mesh, restart_side_sets
     use partitioner_data,       only: PARTITIONER_INIT
     use var_vector_module
-    use truchas_logging_services
     use input_utilities, only: NULL_C
 
-    implicit none
-
     ! Local Variables
-    logical(log_kind)                                  :: fatal, read_mesh, read_face_sets
-    integer(int_kind)                                  :: memerror, n, m
-    type(VERTEX_DATA),       allocatable, dimension(:) :: Vertex_Tot
+    logical :: fatal, read_mesh, read_face_sets
+    integer :: memerror, n, m
+    type(VERTEX_DATA), allocatable, dimension(:) :: Vertex_Tot
     type(MESH_CONNECTIVITY), allocatable, dimension(:) :: Mesh_Tot
-    integer(KIND = int_kind), pointer,    dimension(:) :: MeshPermute, VertexPermute, Node_BC_Tmp, &
-                                                          RCM_Permute, Face_Set_Tmp
+    integer, pointer, dimension(:) :: MeshPermute, VertexPermute, Node_BC_Tmp, &
+                                      RCM_Permute, Face_Set_Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -400,8 +386,6 @@ CONTAINS
     !   Creates mesh only on IO processor.  The mesh must then be
     !   distributed across other processors (outside of this routine)
     !======================================================================
-    use constants_module,       only: one
-    use kind_module,            only: int_kind, real_kind, log_kind
     use mesh_input_module,      only: Coord, Heps,                &
                                       Fuzz, Ncell, Nseg, Ratio,   &
                                       Coord_label
@@ -413,27 +397,18 @@ CONTAINS
                                       Nx_tot, Mx_tot,             &
                                       ndim, nvc, nvf
     use random_module,          only: GENERATE_RANDOM
-    use truchas_logging_services
-    implicit none
     
     ! Arguments
-    type(VERTEX_DATA),       intent(INOUT), dimension(:)               :: Vertex_Tot
-    type(MESH_CONNECTIVITY), intent(INOUT), dimension(:)               :: Mesh_Tot
+    type(VERTEX_DATA),       intent(INOUT), dimension(:) :: Vertex_Tot
+    type(MESH_CONNECTIVITY), intent(INOUT), dimension(:) :: Mesh_Tot
 
-    integer(KIND = int_kind),             dimension(0:nvc)           :: Nvtx
-
-    real(KIND = real_kind),   pointer,    dimension(:,:)             :: Xv_Tot
-
-    real(KIND = real_kind),               dimension(ndim,nnodes_tot) :: Del_Tot
-    real(KIND = real_kind),               dimension(nnodes_tot)      :: Rnum_Tot
-
-    real(KIND = real_kind)    :: SHIFT, PI, xi, eta, zeta, dx, dy, dz
-
-    logical(KIND = log_kind) :: orthog_mesh
-    integer(KIND = int_kind) :: i, iend, j, jend, k, kend, n, nc, &
-                                nv, maxdim, skip, v, vertex_start
-
-
+    integer, dimension(0:nvc) :: Nvtx
+    real(r8), pointer, dimension(:,:) :: Xv_Tot
+    real(r8), dimension(ndim,nnodes_tot) :: Del_Tot
+    real(r8), dimension(nnodes_tot)      :: Rnum_Tot
+    real(r8) :: SHIFT, PI, xi, eta, zeta, dx, dy, dz
+    logical :: orthog_mesh
+    integer :: i, iend, j, jend, k, kend, n, nc, nv, maxdim, skip, v, vertex_start
 
     ! Test that the mesh and vertex structures are the proper size
 
@@ -519,7 +494,7 @@ CONTAINS
              if (ndim == 2 .and. kend == 1) kend = 3
 
              ! Random number [-1.0, +1.0]
-             call GENERATE_RANDOM(-one,one,nnodes_tot,Rnum_Tot)
+             call GENERATE_RANDOM(-1.0_r8,1.0_r8,nnodes_tot,Rnum_Tot)
 
              ! Initialize Min-Delta arrays
              Del_Tot = 0.
@@ -690,7 +665,6 @@ CONTAINS
     !======================================================================
 
     use ArrayAllocate_Module, only: ArrayCreate, ArrayDestroy
-    use kind_module,          only: int_kind, log_kind
     use mesh_module,          only: MESH_CONNECTIVITY
     use pgslib_module,        only: PGSLib_Deallocate_Trace, &
                                     PGSLib_Gather,           &
@@ -705,44 +679,41 @@ CONTAINS
                                     PGSLib_SCATTER_SUM    
     use parameter_module,     only: ncells, nvc, nnodes
     use var_vector_module
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(ncells), intent(INOUT) :: Mesh
 
     ! Local variables
-    integer(int_kind) :: c, v, i, l, p, n, ngbr_count
-    integer(int_kind) :: Total_CV_Pairs, Total_Neighbors
+    integer :: c, v, i, l, p, n, ngbr_count
+    integer :: Total_CV_Pairs, Total_Neighbors
 
     ! Local arrays
-    integer(int_kind), POINTER, dimension(:,:) :: CV_Pairs_ALL
-    integer(int_kind), POINTER, dimension(:)   :: Vertex_Rank
-    integer(int_kind), POINTER, dimension(:)   :: Global_Cell_Number
-    integer(int_kind), POINTER, dimension(:)   :: CV_Pairs_Temp
-    logical(log_kind), POINTER, dimension(:)   :: CV_Pairs_MASK
-    logical(log_kind), POINTER, dimension(:)   :: CV_Pairs_Seg
-    integer(int_kind), POINTER, dimension(:)   :: SegmentLength
-    integer(int_kind), POINTER, dimension(:)   :: SegmentOffset
-    integer(int_kind), POINTER, dimension(:)   :: Offset_V
-    integer(int_kind), POINTER, dimension(:)   :: Length_V
-    integer(int_kind), POINTER, dimension(:,:) :: Offset_C
-    integer(int_kind), POINTER, dimension(:,:) :: Length_C
-    integer(int_kind), POINTER, dimension(:,:) :: Ngbr_Vrtx
-    integer(int_kind), POINTER, dimension(:)   :: C_To_Seg_Index
-    integer(int_kind), POINTER, dimension(:)   :: C_Ngbr_List
-    integer(int_kind), POINTER, dimension(:)   :: C_to_C_Segments
+    integer, POINTER, dimension(:,:) :: CV_Pairs_ALL
+    integer, POINTER, dimension(:)   :: Vertex_Rank
+    integer, POINTER, dimension(:)   :: Global_Cell_Number
+    integer, POINTER, dimension(:)   :: CV_Pairs_Temp
+    logical, POINTER, dimension(:)   :: CV_Pairs_MASK
+    logical, POINTER, dimension(:)   :: CV_Pairs_Seg
+    integer, POINTER, dimension(:)   :: SegmentLength
+    integer, POINTER, dimension(:)   :: SegmentOffset
+    integer, POINTER, dimension(:)   :: Offset_V
+    integer, POINTER, dimension(:)   :: Length_V
+    integer, POINTER, dimension(:,:) :: Offset_C
+    integer, POINTER, dimension(:,:) :: Length_C
+    integer, POINTER, dimension(:,:) :: Ngbr_Vrtx
+    integer, POINTER, dimension(:)   :: C_To_Seg_Index
+    integer, POINTER, dimension(:)   :: C_Ngbr_List
+    integer, POINTER, dimension(:)   :: C_to_C_Segments
 
-    integer(int_kind),    dimension(ncells)    :: Length_Too_Many
-    integer(int_kind),    dimension(ncells)    :: Length_Unique
+    integer,    dimension(ncells)    :: Length_Too_Many
+    integer,    dimension(ncells)    :: Length_Unique
     type(int_var_vector), dimension(ncells)    :: C_Ngbrs_Too_Many
     type(int_var_vector), dimension(ncells)    :: C_Ngbrs_Rank
     type(int_var_vector), dimension(ncells)    :: C_Ngbrs_Temp
     type(log_var_vector), dimension(ncells)    :: C_Ngbrs_Mask
-    integer(int_kind),    POINTER, dimension(:):: Too_Many_Temp, temp_ngbr_too_many
-    integer(int_kind),    POINTER, dimension(:):: Temp_Ngbr_List
-    logical(log_kind),    POINTER, dimension(:):: temp_ngbr_mask
+    integer,    POINTER, dimension(:):: Too_Many_Temp, temp_ngbr_too_many
+    integer,    POINTER, dimension(:):: Temp_Ngbr_List
+    logical,    POINTER, dimension(:):: temp_ngbr_mask
 
     integer, PARAMETER :: Cell_Slot = 1
     integer, PARAMETER :: Vertex_Slot = 2
@@ -752,9 +723,6 @@ CONTAINS
     type (PGSLib_GS_Trace), POINTER                     :: S_To_V_Trace 
     type (PGSLib_GS_Trace), POINTER                     :: V_To_C_Trace
 
-#if ( defined(DARWIN_NAG_COMPILER_WORKAROUND) )
-    integer :: inv
-#endif
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Each hex has nvc vertices around it.  We will pair vertices and cells.
@@ -927,15 +895,7 @@ CONTAINS
     ! That is easiest doen in cell-centric data structure.
     ! so, move C_Ngbr_List into a ragged array.
     ! Each vetor in the ragged array has size Length_C(i).
-#if ( defined(DARWIN_NAG_COMPILER_WORKAROUND) )
-    ! Workaround to get optimized compilation with nag compiler
-    Length_Too_Many = 0
-    do inv =1, size(LENGTH_C,DIM=1)
-       Length_Too_Many(:) = Length_Too_Many(:) + Length_C(inv,:)
-    end do
-#else
     Length_Too_Many = SUM(Length_C, DIM=1)
-#endif
 
     ! Done with a few temporaries, so we can ditch them before using more memory
     call ARRAYDESTROY (Offset_C)
@@ -1022,8 +982,6 @@ CONTAINS
     call DESTROY (C_Ngbrs_Temp)
 
     call TLS_info ('done.')
-
-    return
     
   END SUBROUTINE ALL_NGBR_CONNECTIVITY
 
@@ -1060,7 +1018,6 @@ CONTAINS
     !               Ferrell (ferrell@cpca.com) of CPCA, Ltd. on 5/29/97.
     !
     !=======================================================================
-    use kind_module,          only: int_kind, log_kind
     use mesh_module,          only: Face_Vrtx, MESH_CONNECTIVITY,       &
                                     DEGENERATE_FACE, degenerate_points, &
                                     degenerate_lines, triangle_faces,   &
@@ -1081,41 +1038,38 @@ CONTAINS
                                     PGSLib_Dup_Index
 
     use parameter_module,     only: boundary_faces, ncells, nfc, boundary_faces_tot, nvf
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(ncells), intent(INOUT) :: Mesh
 
     ! Local variables
-    integer(int_kind) :: allfaces
+    integer :: allfaces
     
     ! The array Faces is the main work array of this routine.  It
     ! holds the list of faces, gets sorted and is used to 
     ! identify neighboring cells.
     ! The entries in Faces are listed here
-    integer(int_kind), dimension(nvf, SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: Faces
-    logical(log_kind), dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceSegment
-    logical(log_kind), dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceBoundary
-    logical(log_kind), dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceMask
-    integer(int_kind), dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceRank
+    integer, dimension(nvf, SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: Faces
+    logical, dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceSegment
+    logical, dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceBoundary
+    logical, dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceMask
+    integer, dimension(     SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FaceRank
     ! HomeCell is the (face, cell) pair for the face
     ! AdjCell  is the (face, cell) pair for the adjacent face
-    integer(int_kind), dimension(2, SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: HomeCell
-    integer(int_kind), dimension(2, SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: AdjCell
-    integer(int_kind), dimension(   SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FTemp
+    integer, dimension(2, SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: HomeCell
+    integer, dimension(2, SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: AdjCell
+    integer, dimension(   SIZE(Mesh,1)*SIZE(Mesh(1)%Ngbr_Face,1)) :: FTemp
 
     ! These are scratch arrays that are needed a bit.
-    integer(int_kind), dimension(SIZE(Mesh,1))      :: MeshGlobalNumber, ITemp
+    integer, dimension(SIZE(Mesh,1))      :: MeshGlobalNumber, ITemp
 
     ! Communication buffers
     type (PGSLib_GS_Trace), POINTER                     :: GS_Trace
-    integer(KIND = int_kind), dimension(:,:),   pointer :: AFSup, AFDup
-    integer(KIND = int_kind), dimension(:,:),   pointer :: ACSup, ACDup
+    integer, dimension(:,:),   pointer :: AFSup, AFDup
+    integer, dimension(:,:),   pointer :: ACSup, ACDup
 
     ! Misc integers
-    integer(KIND = int_kind) :: tf1, f, v, v2, FaceIndex, c
+    integer :: tf1, f, v, v2, FaceIndex, c
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -1316,8 +1270,6 @@ CONTAINS
     call TLS_info (' Mesh connectivity established.')
     call TLS_info ('')
 
-    return
-    
   END SUBROUTINE CONNECTIVITY
 
   SUBROUTINE MESH_AXIS (axis, nsegs, Ncell, Coord, Ratio, nvx, mvx, Vertex)
@@ -1327,24 +1279,19 @@ CONTAINS
     !   Generate an axis using mesh segments for an orthogonal grid.
     !
     !=======================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: double_kind, int_kind, real_kind
-    use truchas_logging_services
-    implicit none
-
     ! Arguments
-    character(LEN = 1),                           intent(IN)  :: axis
-    integer(KIND = int_kind),                     intent(IN)  :: nvx
-    integer(KIND = int_kind),                     intent(IN)  :: nsegs
-    integer(KIND = int_kind),                     intent(IN)  :: mvx
-    integer(KIND = int_kind), dimension(nsegs),   intent(IN)  :: Ncell
-    real(KIND = double_kind), dimension(nsegs+1), intent(IN)  :: Coord
-    real(KIND = double_kind), dimension(nsegs),   intent(IN)  :: Ratio
-    real(KIND = real_kind),   dimension(mvx),     intent(OUT) :: Vertex
+    character, intent(IN) :: axis
+    integer, intent(IN)  :: nvx
+    integer, intent(IN)  :: nsegs
+    integer, intent(IN)  :: mvx
+    integer,  dimension(nsegs),   intent(IN)  :: Ncell
+    real(r8), dimension(nsegs+1), intent(IN)  :: Coord
+    real(r8), dimension(nsegs),   intent(IN)  :: Ratio
+    real(r8), dimension(mvx),     intent(OUT) :: Vertex
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, j, m, n, ncl
-    real(KIND = double_kind) :: dbl_coord, expf, expq, h1, h2, rn, width
+    integer :: i, j, m, n, ncl
+    real(r8) :: dbl_coord, expf, expq, h1, h2, rn, width
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -1380,7 +1327,7 @@ CONTAINS
        width = Coord(i+1) - Coord(i)
 
        ! Fatal if width is negative
-       if (width <= zero) then
+       if (width <= 0.0_r8) then
           write (message, 6) axis, i, width
 6         format('MESH_AXIS: ',a,'-axis mesh width(',i2,') =',1pe12.5,' is <= 0!')
           call TLS_panic (message)
@@ -1393,20 +1340,20 @@ CONTAINS
           call TLS_panic (message)
        end if
 
-       EXPANSION_FACTOR: if (Ratio(i) > zero .and. Ratio(i) /= one) then
+       EXPANSION_FACTOR: if (Ratio(i) > 0.0_r8 .and. Ratio(i) /= 1.0_r8) then
 
           expf = Ratio(i)                ! Expansion factor
           rn = expf**Ncell(i)            ! Set r**n
-          h1 = width*(expf-one)/(rn-one) ! First cell size
-          expq = one/expf                ! Inverse expansion factor
+          h1 = width*(expf-1.0_r8)/(rn-1.0_r8) ! First cell size
+          expq = 1.0_r8/expf                ! Inverse expansion factor
           h2 = h1*rn*expq                ! Last cell size
 
-       else if (Ratio(i) == zero .or. Ratio(i) == one) then
+       else if (Ratio(i) == 0.0_r8 .or. Ratio(i) == 1.0_r8) then
 
           h1 = width/real(Ncell(i))      ! Constant mesh
           h2 = h1
-          expf = one                     ! No expansion
-          expq = one
+          expf = 1.0_r8                     ! No expansion
+          expq = 1.0_r8
 
        else
 
@@ -1464,25 +1411,24 @@ CONTAINS
      !          "Iterative Methods for Sparse Linear Systems,"
      !          Yousef Saad, Pg 77
      !--------------------------------------------------------------------------
-    use kind_module,       only: int_kind
     use mesh_module,       only: MESH_CONNECTIVITY
     use parameter_module,  only: ncells
     use var_vector_module, only: SIZES, FLATTEN
 
     ! arguments
     type (MESH_CONNECTIVITY), dimension(ncells), intent(IN) :: Mesh
-    integer (int_kind),       dimension(ncells)             :: RCM
+    integer,       dimension(ncells)             :: RCM
 
     ! local variables
-    integer (int_kind) :: i, j, cellid, rcount, scount
-    integer (int_kind) :: rmax, next, ni, num_neighbors
-    integer (int_kind), pointer, dimension(:)         :: Ngbr_List
-    integer (int_kind), dimension(ncells)             :: M
-    integer (int_kind), dimension(ncells)             :: RCM2 
+    integer :: i, j, cellid, rcount, scount
+    integer :: rmax, next, ni, num_neighbors
+    integer, pointer, dimension(:) :: Ngbr_List
+    integer, dimension(ncells) :: M
+    integer, dimension(ncells) :: RCM2 
 
     ! these are working vectors which need be allowed to grow later
-    integer (int_kind), dimension(ncells)             :: R
-    integer (int_kind), dimension(ncells)             :: S
+    integer, dimension(ncells) :: R
+    integer, dimension(ncells) :: S
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1580,16 +1526,13 @@ CONTAINS
     ! Purpose(s):
     !
     !=======================================================================
-    use kind_module, only: int_kind
-
-    implicit none
 
     ! Arguments
-    integer(KIND = int_kind), dimension(:) :: M
+    integer, dimension(:) :: M
 
     ! Local Variables
-    integer(KIND = int_kind)       :: n, Next_Cell
-    integer(KIND = int_kind), save :: next_cell_ptr = 1
+    integer :: n, Next_Cell
+    integer, save :: next_cell_ptr = 1
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1621,22 +1564,19 @@ CONTAINS
     !   The first call must supply ncells.
     !
     !=======================================================================
-    use kind_module,   only: int_kind, log_kind
     use pgslib_module, only: PGSLib_SUM_PREFIX
 
-    implicit none
-
     ! Arguments
-    integer(KIND = int_kind)           :: global_index
-    integer(KIND = int_kind), optional :: ncells
+    integer :: global_index
+    integer, optional :: ncells
 
     ! Function Return
-    integer(KIND = int_kind) :: MAKE_LOCAL
+    integer :: MAKE_LOCAL
 
     ! Local variables
-    integer(KIND = int_kind), save                  :: lower, upper
-    logical(KIND = log_kind), save                  :: initialized = .FALSE.
-    integer(KIND = int_kind), pointer, dimension(:) :: Offset
+    integer, save                  :: lower, upper
+    logical, save                  :: initialized = .FALSE.
+    integer, pointer, dimension(:) :: Offset
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1657,8 +1597,6 @@ CONTAINS
        MAKE_LOCAL = NOT_LOCAL_INDEX
     end if
 
-    return
-
   END FUNCTION MAKE_LOCAL
     
   FUNCTION TOUCHES_FACE (Face, vertex)
@@ -1667,20 +1605,17 @@ CONTAINS
     !              if so, .FALSE. otherwise.
     !
     !=======================================================================
-    use kind_module,      only: int_kind
     use parameter_module, only: nvf
 
-    implicit none 
-
     ! Arguments
-    integer(KIND = int_kind), dimension(nvf), intent(IN) :: Face
-    integer(KIND = int_kind),                 intent(IN) :: vertex
+    integer, dimension(nvf), intent(IN) :: Face
+    integer, intent(IN) :: vertex
 
     ! Function return
-    logical(KIND = int_kind) :: TOUCHES_FACE
+    logical :: TOUCHES_FACE
 
     ! Local variables
-    integer(KIND = int_kind) :: v
+    integer :: v
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

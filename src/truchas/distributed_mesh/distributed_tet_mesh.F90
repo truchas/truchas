@@ -294,11 +294,7 @@ contains
     integer :: pass(size(cnode,2)), cnhbr(size(cnode,1),size(cnode,2)), rcm_perm(size(perm))
 
     type(NGraphType) :: g
-#ifdef SUPPORTS_TR15581
     integer, allocatable :: xadj(:), adjncy(:)
-#else
-    integer, pointer :: xadj(:), adjncy(:)
-#endif
 
     ASSERT( np > 0 )
     ASSERT( size(bsize) == np )

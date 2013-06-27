@@ -35,17 +35,13 @@ MODULE ADVECTION_MODULE
   !            Mark A. Christon (christon@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: real_kind
-
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
   private
               
-  ! Public Procedures
   public :: ADVECT_MASS, ADVECT_MOMENTUM
   public :: compute_advected_enthalpy, advected_phi
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -60,9 +56,7 @@ CONTAINS
     use advect_volume_module, only: ADVECT_VOLUME
     use advection_data,       only: Volume_Flux
     use bc_module,            only: IN_FLOW, OUT_FLOW
-    use constants_module,     only: zero
     use fluid_data_module,    only: qin, qout, fluid_to_move, Fluxing_Velocity
-    use kind_module,          only: int_kind, log_kind
     use matl_utilities,       only: MATL_GET_VOF, MATL_SET_VOF
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, nfc, nmat
@@ -70,14 +64,13 @@ CONTAINS
     use time_step_module,     only: dt    
     use timing_tree
     use vof_data_module,      only: volume_track_interfaces, VT_Interface_Mask
-    use truchas_logging_services
 
     ! Local Variables
-    integer                                          :: status
-    integer(int_kind)                                :: f
-    logical(log_kind), dimension(:),     allocatable :: Mask
-    real(real_kind),   dimension(:),     allocatable :: Tmp
-    real(real_kind),   dimension(:,:),   allocatable :: Vof, Vof_n
+    integer :: status
+    integer :: f
+    logical,  dimension(:),   allocatable :: Mask
+    real(r8), dimension(:),   allocatable :: Tmp
+    real(r8), dimension(:,:), allocatable :: Vof, Vof_n
    
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -132,11 +125,11 @@ CONTAINS
 
        if (PGSLib_Global_ANY(Mask)) then
           ! Accumulate inflow volume - Fluxing_Velocity < zero
-          Tmp = MIN(dt*Cell%Face_Area(f)*Fluxing_Velocity(f,:),zero)
+          Tmp = MIN(dt*Cell%Face_Area(f)*Fluxing_Velocity(f,:),0.0_r8)
           qin = qin + ABS(PGSLib_Global_SUM(Tmp, MASK = Mask))
 
           ! Accumulate outflow volume - Fluxing_Velocity > zero
-          Tmp = MAX(dt*Cell%Face_Area(f)*Fluxing_Velocity(f,:),zero)
+          Tmp = MAX(dt*Cell%Face_Area(f)*Fluxing_Velocity(f,:),0.0_r8)
           qout = qout + PGSLib_Global_SUM(Tmp, MASK = Mask)
 
        end if
@@ -150,8 +143,6 @@ CONTAINS
     ! Stop the Volume Advection Timer
     call stop_timer("Mass Advection")
 
-    return
-
   END SUBROUTINE ADVECT_MASS
 
   SUBROUTINE UPDATE_MASS (Fluxing_Velocity, Vof, Vof_n, VT_Interface_Mask)
@@ -161,30 +152,25 @@ CONTAINS
     !   Update the volume fractions.
     !
     !=======================================================================
-    use constants_module,       only: zero
     use fluid_data_module,      only: fluidVof, fluidVof_n, fluidRho, fluidRho_n, isImmobile, &
                                       Cell_isnt_Void, Ngbr_isnt_Void
     use gs_module,              only: EE_GATHER
-    use kind_module,            only: int_kind, log_kind, real_kind
     use parameter_module,       only: ncells, nfc, nmat
     use property_module,        only: DENSITY_MATERIAL
     use zone_module,            only: Zone
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    real(real_kind),   dimension(nfc,ncells),                intent(IN)    :: Fluxing_Velocity
-    real(real_kind),   dimension(nmat,ncells),               intent(INOUT) :: Vof
-    real(real_kind),   dimension(nmat,ncells),               intent(INOUT) :: Vof_n
-    logical(log_kind), dimension(nfc,ncells),      optional, intent(INOUT) :: VT_Interface_Mask
+    real(r8), dimension(nfc,ncells),  intent(IN)    :: Fluxing_Velocity
+    real(r8), dimension(nmat,ncells), intent(INOUT) :: Vof
+    real(r8), dimension(nmat,ncells), intent(INOUT) :: Vof_n
+    logical,  dimension(nfc,ncells), optional, intent(INOUT) :: VT_Interface_Mask
 
     ! Local Variables
-    integer                                        :: status
-    integer(int_kind)                              :: m, n, f
-    logical(log_kind), dimension(:),   allocatable :: Mask
-    logical(log_kind), dimension(:,:), allocatable :: VT_Interface_Mask_Ngbr
-    real(real_kind)                                :: m_density
+    integer :: status
+    integer :: m, n, f
+    logical, dimension(:),   allocatable :: Mask
+    logical, dimension(:,:), allocatable :: VT_Interface_Mask_Ngbr
+    real(r8) :: m_density
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -192,33 +178,33 @@ CONTAINS
     if (status /= 0) call TLS_panic ('UPDATE_MASS: Mask(ncells) allocation failed')
 
     ! Update Zone%Rho, and fluidRho and fluidVof at old and new times.
-    Zone%Rho = zero
-    fluidVof_n = zero
-    fluidVof = zero
-    fluidRho_n = zero
-    fluidRho = zero
+    Zone%Rho = 0.0_r8
+    fluidVof_n = 0.0_r8
+    fluidVof = 0.0_r8
+    fluidRho_n = 0.0_r8
+    fluidRho = 0.0_r8
 
     do m = 1, nmat
        m_density = DENSITY_MATERIAL(m)
-       where (Vof(m,:) > zero) Zone%Rho = Zone%Rho + Vof(m,:)*m_density
+       where (Vof(m,:) > 0.0_r8) Zone%Rho = Zone%Rho + Vof(m,:)*m_density
        if (isImmobile(m)) cycle
        do n = 1, ncells
-          if (Vof_n(m,n) > zero) then
+          if (Vof_n(m,n) > 0.0_r8) then
              fluidRho_n(n) = fluidRho_n(n) + Vof_n(m,n)*m_density
              fluidVof_n(n) = fluidVof_n(n) + Vof_n(m,n)
           end if
-          if (Vof(m,n) > zero) then
+          if (Vof(m,n) > 0.0_r8) then
              fluidRho(n) = fluidRho(n) + Vof(m,n)*m_density
              fluidVof(n) = fluidVof(n) + Vof(m,n)
           end if
        end do
     end do
 
-    where (fluidVof_n > zero) fluidRho_n = fluidRho_n / fluidVof_n
-    where (fluidVof   > zero) fluidRho   = fluidRho   / fluidVof
+    where (fluidVof_n > 0.0_r8) fluidRho_n = fluidRho_n / fluidVof_n
+    where (fluidVof   > 0.0_r8) fluidRho   = fluidRho   / fluidVof
 
     ! Set void cell indicator arrays.
-    Cell_isnt_Void = Zone%Rho > zero
+    Cell_isnt_Void = Zone%Rho > 0.0_r8
     call EE_GATHER(Ngbr_isnt_Void, Cell_isnt_Void)
 
     ! Calculate VT_Interface_Mask, a flag for faces near a volume
@@ -235,7 +221,7 @@ CONTAINS
 
        ! In cells where a material volume fraction has changed ...
        do m = 1,nmat
-          where (Vof(m,:)-Vof_n(m,:) /= zero) Mask = .true.
+          where (Vof(m,:)-Vof_n(m,:) /= 0.0_r8) Mask = .true.
        end do
 
        ! ... all faces should be masked the same way.
@@ -251,7 +237,7 @@ CONTAINS
 
        ! Now limit the .true.'s to faces with a positive Fluxing_Velocity.
        do f = 1,nfc
-          where (Fluxing_Velocity(f,:) <= zero) VT_Interface_Mask(f,:) = .false.
+          where (Fluxing_Velocity(f,:) <= 0.0_r8) VT_Interface_Mask(f,:) = .false.
        end do
 
        DEALLOCATE (VT_Interface_Mask_Ngbr)
@@ -259,8 +245,6 @@ CONTAINS
     end if
 
     DEALLOCATE (Mask)
-
-    return
 
   END SUBROUTINE UPDATE_MASS
  
@@ -275,14 +259,8 @@ CONTAINS
     use time_step_module,     only: dt
     use timing_tree
 
-    implicit none
-
-    ! Local Varialbes
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
     ! Start Timer
-    call  start_timer("Momentum Advection")
+    call start_timer("Momentum Advection")
 
     ! Advect Momentum.
     if (advection_order_momentum > 1) then
@@ -296,8 +274,6 @@ CONTAINS
     ! Stop Timer
     call stop_timer ("Momentum Advection")
 
-    return
-
   END SUBROUTINE ADVECT_MOMENTUM_ACCUMULATION
 
   SUBROUTINE ADVECT_MOMENTUM_DC (dt, Momentum_Delta)
@@ -309,33 +285,29 @@ CONTAINS
     !=======================================================================
     use advection_data,       only: Volume_Flux
     use bc_module,            only: BC_Vel, BC_Mat, BC_Temp, IN_FLOW
-    use constants_module,     only: zero, preset
+    use input_utilities,      only: NULL_R
     use fluid_data_module,    only: Fluxing_Velocity
     use gs_module,            only: EE_GATHER
-    use kind_module,          only: int_kind, log_kind
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, ndim, nfc, nmat
     use pgslib_module,        only: PGSLib_Global_ANY
     use time_step_module,     only: cycle_number
     use zone_module,          only: Zone
     use property_module,      only: DENSITY_MATERIAL
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    real(real_kind),  intent(IN)   :: dt
-    real(real_kind),  intent(OUT)  :: Momentum_Delta(:,:)
+    real(r8), intent(IN)  :: dt
+    real(r8), intent(OUT) :: Momentum_Delta(:,:)
 
     ! Local Variables
-    integer                                        :: status
-    integer(int_kind)                              :: f, m, n, nc
-    logical(log_kind), dimension(:),   allocatable :: Mask
-    real(real_kind),   dimension(:),   allocatable :: Inflow_Density, Inflow_Temp, Inflow_Vel, Tmp
-    real(real_kind),   dimension(:),   allocatable :: Momentum_Delta_Component
-    real(real_kind),   dimension(:,:), allocatable :: Momentum, Vc_Ngbr
-    real(real_kind), dimension(:,:,:), allocatable :: Mass_Flux
-    real(real_kind) :: rhom
+    integer :: status
+    integer :: f, m, n, nc
+    logical,  dimension(:), allocatable :: Mask
+    real(r8), dimension(:), allocatable :: Inflow_Density, Inflow_Temp, Inflow_Vel, Tmp
+    real(r8), dimension(:), allocatable :: Momentum_Delta_Component
+    real(r8), dimension(:,:), allocatable :: Momentum, Vc_Ngbr
+    real(r8), dimension(:,:,:), allocatable :: Mass_Flux
+    real(r8) :: rhom
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -351,7 +323,7 @@ CONTAINS
               STAT = status)
     call TLS_fatal_if_any (status /= 0, 'ADVECT_MOMENTUM_DC: allocation failed')
 
-    Momentum_Delta = zero
+    Momentum_Delta = 0.0_r8
 
     ! Calculate Mass_Flux using the previously computed Volume_Flux.
     do m = 1,nmat
@@ -361,7 +333,7 @@ CONTAINS
     ! Loop over each velocity component.
     DIMENSIONS: do n = 1, ndim
 
-       Momentum = zero
+       Momentum = 0.0_r8
        Tmp = Zone%Vc(n)
        call EE_GATHER(Vc_Ngbr, Tmp)
 
@@ -370,7 +342,7 @@ CONTAINS
           do nc = 1,ncells
              do f = 1,nfc
                 do m = 1,nmat
-                   if(Mass_Flux(m,f,nc)>zero) then
+                   if(Mass_Flux(m,f,nc)>0.0_r8) then
                       Momentum(f,nc) = Momentum(f,nc) + Mass_Flux(m,f,nc)*Zone(nc)%Vc(n)
                    else
                       Momentum(f,nc) = Momentum(f,nc) + Mass_Flux(m,f,nc)*Vc_Ngbr(f,nc)
@@ -388,7 +360,7 @@ CONTAINS
 
              Inflow_Temp = Zone%Temp
              if (ASSOCIATED(BC_Temp)) then
-                where (BC_Temp(f,:) /= preset) Inflow_Temp = BC_Temp(f,:)
+                where (BC_Temp(f,:) /= NULL_R) Inflow_Temp = BC_Temp(f,:)
              end if
 
              Inflow_Density = Zone%Rho_Old
@@ -398,13 +370,13 @@ CONTAINS
              end do
 
              Inflow_Vel = Zone%Vc(n)
-             where (BC_Vel(n,f,:) /= preset) Inflow_Vel = BC_Vel(n,f,:)
+             where (BC_Vel(n,f,:) /= NULL_R) Inflow_Vel = BC_Vel(n,f,:)
 
 
              ! fix up for 1D_plug_flow problem
              if (cycle_number == 1) then
                 
-                where (Mask .and. Zone(:)%Rho_old>zero) 
+                where (Mask .and. Zone(:)%Rho_old>0.0_r8) 
                     Momentum(f,:) = dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)*Zone%Vc_Old(n)*Zone%Rho_Old
                   elsewhere (Mask)
                     Momentum(f,:) = dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)*Inflow_Vel*Inflow_Density
@@ -419,7 +391,7 @@ CONTAINS
        end do INFLOW_LOOP
 
        ! Loop over faces to calculate Momentum_Delta_Component
-       Momentum_Delta_Component = zero
+       Momentum_Delta_Component = 0.0_r8
        do f = 1,nfc
           Momentum_Delta_Component = Momentum_Delta_Component - Momentum(f,:)
        end do
@@ -450,34 +422,30 @@ CONTAINS
     !=======================================================================
     use advection_data,       only: Volume_Flux
     use bc_module,            only: BC_Vel, IN_FLOW
-    use constants_module,     only: zero, preset
+    use input_utilities,      only: NULL_R
     use fluid_data_module,    only: Fluxing_Velocity
     use gs_module,            only: EE_GATHER
-    use kind_module,          only: int_kind, log_kind
     use parameter_module,     only: ncells, ndim, nfc, nmat
     use pgslib_module,        only: PGSLib_Global_ANY
     use time_step_module,     only: cycle_number
     use zone_module,          only: Zone
     use property_module,      only: DENSITY_MATERIAL
     use hoadvection,          only: ADVECT_SCALAR
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    real(real_kind),  intent(OUT)  :: Momentum_Delta(:,:)
+    real(r8),  intent(OUT)  :: Momentum_Delta(:,:)
 
     ! Local Variables
-    integer                                        :: status
-    integer(int_kind)                              :: f, m, n, nc
-    real(real_kind)                                :: sum
-    real(real_kind),   dimension(:),   allocatable :: Momentum_Delta_Component, Inflow_Density, Inflow_Temp, Inflow_Vel, Velocity
-    real(real_kind),   dimension(:,:), allocatable :: Momentum, Vc_Ngbr
-    real(real_kind), dimension(:,:,:), allocatable :: Mass_Flux
-    real(real_kind),   dimension(:,:), allocatable :: ModFluxVolume
+    integer :: status
+    integer :: f, m, n, nc
+    real(r8) :: sum
+    real(r8), dimension(:),     allocatable :: Momentum_Delta_Component, Inflow_Density, Inflow_Temp, Inflow_Vel, Velocity
+    real(r8), dimension(:,:),   allocatable :: Momentum, Vc_Ngbr
+    real(r8), dimension(:,:,:), allocatable :: Mass_Flux
+    real(r8), dimension(:,:),   allocatable :: ModFluxVolume
 
-    logical(log_kind),   dimension(:,:), allocatable :: InflowMask
-    real(real_kind),   dimension(:,:), allocatable :: InflowPhi
+    logical,  dimension(:,:),   allocatable :: InflowMask
+    real(r8), dimension(:,:),   allocatable :: InflowPhi
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -500,12 +468,12 @@ CONTAINS
        Mass_Flux(m,:,:) = Volume_Flux(m,:,:) * DENSITY_MATERIAL(m)
     end do
 
-    Momentum_Delta = zero
+    Momentum_Delta = 0.0_r8
 
     ! Loop over each velocity component.
     DIMENSIONS: do n = 1, ndim
 
-       Momentum = zero
+       Momentum = 0.0_r8
        Velocity = Zone%Vc(n)
        call EE_GATHER(Vc_Ngbr, Velocity)
 
@@ -516,9 +484,9 @@ CONTAINS
 
           if (PGSLIB_GLOBAL_ANY(InflowMask)) then
              InflowPhi(f,:) = Zone%Vc(n)
-             where (BC_Vel(n,f,:) /= preset) InflowPhi(f,:) =  BC_Vel(n,f,:)
+             where (BC_Vel(n,f,:) /= NULL_R) InflowPhi(f,:) =  BC_Vel(n,f,:)
              if (cycle_number == 1) then
-               where (InflowMask(f,:) .and. Zone(:)%Rho_old > zero) 
+               where (InflowMask(f,:) .and. Zone(:)%Rho_old > 0.0_r8) 
                  InflowPhi(f,:) = Zone%Vc(n)
                end where
              end if
@@ -528,7 +496,7 @@ CONTAINS
 
        do nc = 1,ncells
           do f = 1,nfc
-             sum = zero
+             sum = 0.0_r8
              do m = 1,nmat             
                 sum = sum + Mass_Flux(m,f,nc)
              end do
@@ -540,7 +508,7 @@ CONTAINS
 
        ! now to fit in with the rest of code calculate momentum_delta (MOM_NP1 - MOM_N)
 
-       Momentum_Delta_Component = zero
+       Momentum_Delta_Component = 0.0_r8
        Momentum_Delta_Component = Velocity*Zone%Rho - Zone%Vc(n)*Zone%Rho_Old
 
        ! Increment the momentum delta by advection.
@@ -571,20 +539,9 @@ CONTAINS
     !   is stored in Momentum_Delta, defined at the top of this module.
     !
     !=======================================================================
-    use advection_data,       only: Momentum_Delta
-
-    implicit none
-
-    ! Argument List
-    real(real_kind), dimension(:,:), intent(INOUT) :: Mom_Delta
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-
+    use advection_data, only: Momentum_Delta
+    real(r8), dimension(:,:), intent(INOUT) :: Mom_Delta
     Mom_Delta = Mom_Delta + Momentum_Delta
-
-    return
-
   END SUBROUTINE ADVECT_MOMENTUM
 
 !---------------mf----------------
@@ -592,28 +549,23 @@ CONTAINS
     
 ! advect scalar phi using DC
 ! dt 
-    use constants_module,  only : zero
     use fluid_data_module, only : Fluxing_Velocity
     use gs_module,         only : EE_GATHER
-    use kind_module,       only : int_kind,log_kind
     use parameter_module,  only : ncells,nfc
     use pgslib_module,     only : PGSLib_Global_Any
     use mesh_module,       only : Cell
     use time_step_module,  only : dt
-    use truchas_logging_services
 
-    implicit none
-
-    real(real_kind), intent(in)  :: phi(:)
-    real(real_kind), intent(out) :: delta_phi(:)
+    real(r8), intent(in)  :: phi(:)
+    real(r8), intent(out) :: delta_phi(:)
 
 
-    integer(int_kind) :: status
-    integer(int_kind) :: j,f 
-    logical(log_kind), dimension(:),     allocatable :: Mask
-    real(real_kind),   dimension(:),     allocatable :: Inflow_Conc
-    real(real_kind),   dimension(:,:),   allocatable :: Conc_Flux
-    real(real_kind),   dimension(:,:),   allocatable :: phi_ngbr 
+    integer :: status
+    integer :: j,f 
+    logical, dimension(:),    allocatable :: Mask
+    real(r8), dimension(:),   allocatable :: Inflow_Conc
+    real(r8), dimension(:,:), allocatable :: Conc_Flux
+    real(r8), dimension(:,:), allocatable :: phi_ngbr 
 
     Allocate (Mask(ncells),            &
               Inflow_Conc(ncells),     &
@@ -625,11 +577,11 @@ CONTAINS
     ! get the neighbor values of phi 
     call EE_GATHER(phi_ngbr,phi)
 
-    Conc_Flux = zero
+    Conc_Flux = 0.0_r8
 
     do j=1,ncells
       do f=1,nfc
-        if (Fluxing_Velocity(f,j)>zero) then
+        if (Fluxing_Velocity(f,j)>0.0_r8) then
           Conc_Flux(f,j) = Conc_Flux(f,j) + dt*Fluxing_Velocity(f,j)*phi(j)*Cell(j)%Face_Area(f)
         else
           Conc_Flux(f,j) = Conc_Flux(f,j) + dt*Fluxing_Velocity(f,j)*phi_ngbr(f,j)*Cell(j)%Face_Area(f)
@@ -644,7 +596,7 @@ CONTAINS
 !       if (PGSLIB_GLOBAL_ANY(Mask)) then
 !         Inflow_Conc = phi
 !         if (ASSOCIATED(BC_Conc)) then
-!           where (BC_Conc(f,:) /= preset) 
+!           where (BC_Conc(f,:) /= NULL_R) 
 !              Inflow_Conc = BC_Conc(f,:)
 !           end where
 !         end if
@@ -656,7 +608,7 @@ CONTAINS
 !    end do TI_INFLOW_LOOP
 
 
-    delta_phi = zero  
+    delta_phi = 0.0_r8  
     do f=1,nfc
       delta_phi(:) = delta_phi(:) - Conc_Flux(f,:) !/Cell%Volume 
     enddo
@@ -692,9 +644,8 @@ CONTAINS
 
   subroutine compute_advected_enthalpy (Tcell, Hdelta, Tmin, Tmax)
   
-    use kinds, only: r8
     use parameter_module, only: ncells, nfc, nmat
-    use constants_module, only: preset
+    use input_utilities,  only: NULL_R
     use bc_module, only: IN_FLOW, BC_Temp
     use fluid_data_module, only: Fluxing_Velocity
     use advection_data, only: Volume_Flux
@@ -746,7 +697,7 @@ CONTAINS
         if (mask(j)) then
           Tnbr(k,j) = Tcell(j)
           if (associated(BC_Temp)) then
-            if (BC_Temp(k,j) /= preset) Tnbr(k,j) = BC_Temp(k,j)
+            if (BC_Temp(k,j) /= NULL_R) Tnbr(k,j) = BC_Temp(k,j)
           end if
         end if
       end do

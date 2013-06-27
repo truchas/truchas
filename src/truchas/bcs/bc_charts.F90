@@ -10,7 +10,7 @@ Module BC_CHARTS
   !
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
-  use kind_module, only: int_kind, real_kind, log_kind
+  use kinds, only: r8
   use bc_enum_types
   Implicit None
   Private
@@ -42,31 +42,31 @@ Module BC_CHARTS
      PRIVATE
      ! DataSize is the total size of the arrays.  NOT necessarily the length
      ! of the chart data stored in the array (DataSize may be > than valid length)
-     integer( int_kind)                          :: DataSize
+     integer :: DataSize
      ! Dimensionality is the size of the first dimension of Position
-     integer( int_kind)                          :: Dimensionality
-     integer( int_kind)                          :: DegreesOfFreedom
-     integer( int_kind), pointer, dimension(:)   :: ValueIndex
-     logical( log_kind), pointer, dimension(:)   :: UseFunction
-     real(real_kind),    pointer, dimension(:,:) :: Values
-     real(real_kind),    pointer, dimension(:,:) :: Position
+     integer :: Dimensionality
+     integer :: DegreesOfFreedom
+     integer,  pointer, dimension(:)   :: ValueIndex
+     logical,  pointer, dimension(:)   :: UseFunction
+     real(r8), pointer, dimension(:,:) :: Values
+     real(r8), pointer, dimension(:,:) :: Position
   end type BC_Chart_Data
 
   ! Type to specify information about a chart.
   type BC_Chart_Spec
      PRIVATE
-     integer( int_kind) :: Face
-     integer( int_kind) :: Cell
-     integer( int_kind) :: Offset
+     integer :: Face
+     integer :: Cell
+     integer :: Offset
      ! Length is the number of data items in this chart.  
-     integer( int_kind) :: Length
+     integer :: Length
   end type BC_Chart_Spec
 
   ! A chart
   type BC_CHART
      PRIVATE
-     type (BC_Chart_Spec) :: Spec
-     type (BC_Chart_Data) :: Data
+     type(BC_Chart_Spec) :: Spec
+     type(BC_Chart_Data) :: Data
   end type BC_CHART
   
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -158,7 +158,7 @@ Module BC_CHARTS
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  type (BC_Chart_Spec), PARAMETER :: Not_A_Chart = BC_Chart_Spec(-1,-1,-1,-1)
+  type(BC_Chart_Spec), PARAMETER :: Not_A_Chart = BC_Chart_Spec(-1,-1,-1,-1)
 CONTAINS
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -168,33 +168,29 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function ChartDataSize(ChartData)
-    implicit none
     type(BC_Chart_Data), intent(IN) :: ChartData
-    integer( int_kind) :: ChartDataSize
-
+    integer :: ChartDataSize
     ChartDataSize = ChartData%DataSize
-    return
   end function ChartDataSize
 
   subroutine InitChartData(ChartData)
     ! Initialize fields in ChartData
-    type(BC_Chart_Data), intent(  OUT) :: ChartData
+    type(BC_Chart_Data), intent(OUT) :: ChartData
 
     NULLIFY(ChartData%Values)
     NULLIFY(ChartData%ValueIndex)
     NULLIFY(ChartData%UseFunction)
     NULLIFY(ChartData%Position)
     ChartData%DataSize = BC_INVALID_SIZE
-    ChartData%Dimensionality     = BC_INVALID_DIMENSIONALITY
+    ChartData%Dimensionality = BC_INVALID_DIMENSIONALITY
     ChartData%DegreesOfFreedom = BC_INVALID_SIZE
 
-    return
   end subroutine InitChartData
 
   subroutine AllocChartData(ChartData, SIZE, DIMENSIONALITY, DOF)
     ! Allocate fields in ChartData
-    type(BC_Chart_Data), intent(  OUT) :: ChartData
-    integer( int_kind),             intent(IN   ) :: Size, Dimensionality, DOF
+    type(BC_Chart_Data), intent(OUT) :: ChartData
+    integer, intent(IN) :: Size, Dimensionality, DOF
 
     ALLOCATE(ChartData%Values(DOF,Size))
     ALLOCATE(ChartData%ValueIndex(Size))
@@ -203,7 +199,6 @@ CONTAINS
     ChartData%DataSize = Size
     ChartData%Dimensionality     = Dimensionality
     ChartData%DegreesOfFreedom = DOF
-    return
   end subroutine AllocChartData
 
   subroutine FreeChartData(ChartData)
@@ -224,21 +219,19 @@ CONTAINS
     end if
     call INITIALIZE(ChartData)
 
-    return
   end subroutine FreeChartData
 
   subroutine setChartData(ChartData, Values, ValueIndex, UseFunction, Positions)
     ! Set chart data, assumes space is already allocated
-    implicit none
     type(BC_Chart_Data),  intent(INOUT) :: ChartData
-    real(real_kind), dimension(:,:), intent(IN   ) :: Values
-    integer( int_kind),dimension(:), intent(IN   ) :: ValueIndex
-    logical( log_kind),dimension(:), intent(IN   ) :: UseFunction
-    real(real_kind), dimension(:,:), intent(IN   ) :: Positions
+    real(r8), dimension(:,:), intent(IN) :: Values
+    integer,dimension(:), intent(IN) :: ValueIndex
+    logical,dimension(:), intent(IN) :: UseFunction
+    real(r8), dimension(:,:), intent(IN) :: Positions
 
 #ifdef ADD_DEBUG_CODE_HERE
     ! Local variables
-    integer( int_kind) :: DataSize
+    integer :: DataSize
 
     ! Check that the ChartData Size is large enough
     DataSize = BC_Chart_Data_Size(ChartData)
@@ -255,56 +248,47 @@ CONTAINS
     ChartData%ValueIndex   = ValueIndex
     ChartData%UseFunction  = UseFunction
     ChartData%Position     = Positions
-    return
   end subroutine setChartData
   
   function ChartDataValues(ChartData) RESULT(Values)
     ! Return a pointer to the Values field of chart data
-    type (BC_Chart_Data), intent(IN), TARGET :: ChartData
-    real(real_kind), dimension(:,:), pointer :: VALUES
+    type(BC_Chart_Data), intent(IN), TARGET :: ChartData
+    real(r8), dimension(:,:), pointer :: VALUES
     Values => ChartData%Values
-    return
   end function ChartDataValues
   
   function ChartDataValueIndex(ChartData) RESULT(ValueIndex)
     ! Return a pointer to the ValueIndex field of chart data
-    type (BC_Chart_Data), intent(IN), TARGET :: ChartData
-    integer( int_kind),           dimension(:), pointer :: VALUEINDEX
+    type(BC_Chart_Data), intent(IN), TARGET :: ChartData
+    integer, dimension(:), pointer :: VALUEINDEX
     ValueIndex => ChartData%ValueIndex
-    return
   end function ChartDataValueIndex
   
   function ChartDataUseFunction(ChartData) RESULT(UseFunction)
     ! Return a pointer to the UseFunction field of chart data
-    type (BC_Chart_Data), intent(IN), TARGET :: ChartData
-    logical( log_kind),           dimension(:), pointer :: UseFunction
+    type(BC_Chart_Data), intent(IN), TARGET :: ChartData
+    logical, dimension(:), pointer :: UseFunction
     UseFunction => ChartData%UseFunction
-    return
   end function ChartDataUseFunction
   
   function ChartDataPositions(ChartData) RESULT(Positions)
     ! Return a pointer to the Positions field of chart data
-    type (BC_Chart_Data), intent(IN), TARGET :: ChartData
-    real(real_kind), dimension(:,:), pointer :: Positions
+    type(BC_Chart_Data), intent(IN), TARGET :: ChartData
+    real(r8), dimension(:,:), pointer :: Positions
     Positions => ChartData%Position
-    return
   end function ChartDataPositions
   
 
   subroutine ChartDataSetDOF(ChartData, DOF)
-    implicit none
-    type (BC_Chart_Data), intent(INOUT) :: ChartData
-    integer(int_kind),    intent(IN)    :: DOF
+    type(BC_Chart_Data), intent(INOUT) :: ChartData
+    integer, intent(IN)    :: DOF
     ChartData%DegreesOfFreedom = DOF
-    return
   end subroutine ChartDataSetDOF
 
   function ChartDataGetDOF(ChartData) RESULT(DOF)
-    implicit none
-    type (BC_Chart_Data), intent(IN) :: ChartData
-    integer(int_kind)                :: DOF
+    type(BC_Chart_Data), intent(IN) :: ChartData
+    integer :: DOF
     DOF = ChartData%DegreesOfFreedom
-    return
   end function ChartDataGetDOF
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -314,43 +298,35 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine InitChartSpec(ChartSpec)
-    implicit none
     ! Initialize a chart spec to be nothing
-    type(BC_Chart_Spec), intent(  OUT) :: ChartSpec
+    type(BC_Chart_Spec), intent(OUT) :: ChartSpec
     ChartSpec = Not_A_Chart
   end subroutine InitChartSpec
 
   function ChartSpecLength(ChartSpec)
-    implicit none
     type(BC_Chart_Spec), intent(IN) :: ChartSpec
-    integer( int_kind)                         :: ChartSpecLength
+    integer :: ChartSpecLength
     ChartSpecLength = ChartSpec%Length
-    return
   end function ChartSpecLength
   
   function ChartSpecFace(ChartSpec)
-    implicit none
     type(BC_Chart_Spec), intent(IN) :: ChartSpec
-    integer( int_kind)                         :: ChartSpecFace
+    integer :: ChartSpecFace
     ChartSpecFace = ChartSpec%Face
-    return
   end function ChartSpecFace
 
   function ChartSpecCell(ChartSpec)
-    implicit none
     type(BC_Chart_Spec), intent(IN) :: ChartSpec
-    integer( int_kind)                         :: ChartSpecCell
+    integer :: ChartSpecCell
     ChartSpecCell = ChartSpec%Cell
-    return
   end function ChartSpecCell
 
   subroutine setChartSpec(ChartSpec, Length, Cell, Face)
     ! Set the fields in a Chart Spec
     ! Offset is not set, since only relevant with an Atlas
-    implicit none
-    type(BC_Chart_Spec), intent(  OUT) :: ChartSpec
-    integer( int_kind),             intent(IN   ) :: Length, Cell
-    integer( int_kind), OPTIONAL,   intent(IN   ) :: Face
+    type(BC_Chart_Spec), intent(OUT) :: ChartSpec
+    integer,             intent(IN) :: Length, Cell
+    integer, OPTIONAL,   intent(IN) :: Face
 
     ChartSpec%Length = Length
     ChartSpec%Offset = BC_INVALID_OFFSET
@@ -361,7 +337,6 @@ CONTAINS
        ChartSpec%Face = BC_INVALID_FACE
     end if
 
-    return
   end subroutine setChartSpec
   
 
@@ -373,22 +348,19 @@ CONTAINS
 
   function EmptyChart()
     ! Return a pointer to an empty chart
-    implicit none
-    type (BC_Chart), TARGET, SAVE :: Empty_Chart
-    logical,                 SAVE :: Initialized = .FALSE.
-    type (BC_Chart), POINTER      :: EmptyChart
+    type(BC_Chart), TARGET, SAVE :: Empty_Chart
+    logical, SAVE :: Initialized = .FALSE.
+    type(BC_Chart), POINTER      :: EmptyChart
     if (.NOT. Initialized) then
        Call INITIALIZE(Empty_Chart)
        Initialized = .TRUE.
     end if
     EmptyChart => Empty_Chart
-    return
   end function EmptyChart
 
   subroutine InitChart(Chart)
     ! Initialize a BC_Chart
-    implicit none
-    type (BC_Chart), intent(OUT) :: Chart
+    type(BC_Chart), intent(OUT) :: Chart
     Call INITIALIZE(Chart%Data)
     Call INITIALIZE(Chart%Spec)
   end subroutine InitChart
@@ -396,110 +368,88 @@ CONTAINS
   subroutine AllocChart(Chart, SIZE, Dimensionality, DOF)
     ! Allocate the chart data fields of a chart
     type(BC_Chart), intent(INOUT) :: Chart
-    integer( int_kind),        intent(IN   ) :: SIZE, Dimensionality, DOF
+    integer, intent(IN) :: SIZE, Dimensionality, DOF
     Call ALLOC(Chart%Data, SIZE, DIMENSIONALITY, DOF)
-    return
   end subroutine AllocChart
 
   subroutine FreeChart(Chart)
     ! Allocate the chart data fields of a chart
-    implicit none
     type(BC_Chart), intent(INOUT) :: Chart
     Call FREE(Chart%Data)
-    return
   end subroutine FreeChart
 
   function ChartCell(Chart)
-    implicit none
-    type (BC_Chart), intent(IN)   :: Chart
-    integer( int_kind)                       :: ChartCell
+    type(BC_Chart), intent(IN) :: Chart
+    integer :: ChartCell
     ChartCell = BC_Chart_Cell(Chart%Spec)
-    return
   end function ChartCell
 
   function ChartFace(Chart)
-    implicit none
-    type (BC_Chart), intent(IN)   :: Chart
-    integer( int_kind)                       :: ChartFace
+    type(BC_Chart), intent(IN) :: Chart
+    integer :: ChartFace
     ChartFace = BC_Chart_Face(Chart%Spec)
-    return
   end function ChartFace
 
   function ChartLength(Chart)
     ! Returns the length of the chart = number of valid data points
-    implicit none
-    type (BC_Chart), intent(IN)   :: Chart
-    integer( int_kind)                       :: ChartLength
+    type(BC_Chart), intent(IN) :: Chart
+    integer :: ChartLength
     ChartLength = BC_Chart_Length(Chart%Spec)
-    return
   end function ChartLength
 
   function ChartSize(Chart)
     ! Returns the size of the chart data arrays, which may be larger
     ! than ChartLength.
-    implicit none
-    type (BC_Chart), intent(IN)   :: Chart
-    integer( int_kind)                       :: ChartSize
+    type(BC_Chart), intent(IN) :: Chart
+    integer :: ChartSize
     ChartSize = BC_Chart_Size(Chart%Data)
-    return
   end function ChartSize
 
   function ChartGetDOF(Chart) RESULT(DOF)
     ! Returns the size of the chart data arrays, which may be larger
     ! than ChartLength.
-    implicit none
-    type (BC_Chart), intent(IN)   :: Chart
-    integer( int_kind)            :: DOF
+    type(BC_Chart), intent(IN) :: Chart
+    integer :: DOF
     DOF = BC_Get_DOF(Chart%Data)
-    return
   end function ChartGetDOF
 
   function ChartValues(Chart) RESULT(Values)
     ! Return a pointer to the VALUES field of a chart
-    implicit none
     type(BC_Chart), intent(IN), TARGET :: Chart
-    real(real_kind), dimension(:,:), pointer :: VALUES
+    real(r8), dimension(:,:), pointer :: VALUES
     VALUES => BC_CHART_VALUES(Chart%Data)
-    RETURN
   end function ChartValues
   
   function ChartValueIndex(Chart) RESULT(ValueIndex)
     ! Return a pointer to the VALUEINDEX field of a chart
-    implicit none
     type(BC_Chart), intent(IN), TARGET :: Chart
-    integer( int_kind),     dimension(:), pointer :: VALUEINDEX
+    integer, dimension(:), pointer :: VALUEINDEX
     VALUEINDEX => BC_CHART_VALUEINDEX(Chart%Data)
-    RETURN
   end function ChartValueIndex
   
   function ChartUseFunction(Chart) RESULT(UseFunction)
     ! Return a pointer to the USEFUNCTION field of a chart
-    implicit none
     type(BC_Chart), intent(IN), TARGET :: Chart
-    logical( log_kind),     dimension(:), pointer :: USEFUNCTION
+    logical, dimension(:), pointer :: USEFUNCTION
     USEFUNCTION => BC_CHART_USEFUNCTION(Chart%Data)
-    RETURN
   end function ChartUseFunction
   
   function ChartPositions(Chart) RESULT(Positions)
     ! Return a pointer to the POSITIONS field of a chart
-    implicit none
     type(BC_Chart), intent(IN), TARGET :: Chart
-    real(real_kind), dimension(:,:), pointer :: POSITIONS
+    real(r8), dimension(:,:), pointer :: POSITIONS
     POSITIONS => BC_CHART_POSITIONS(Chart%Data)
-    RETURN
   end function ChartPositions
   
   subroutine SetChart(Chart, Length, Dimensionality, DOF, Cell, Face, Values, ValueIndex, UseFunction, Positions)
     ! Set the chart according to given data.
-    implicit none
-    type (BC_Chart),    intent(  OUT)    :: Chart
-    integer( int_kind),             intent(IN   ) :: Length, Dimensionality, DOF, Cell
-    integer( int_kind), OPTIONAL,   intent(IN   ) :: Face
-    real(real_kind), dimension(:,:),intent(IN   ) :: Values
-    integer( int_kind),dimension(:),intent(IN   ) :: ValueIndex
-    logical( log_kind),dimension(:),intent(IN   ) :: UseFunction
-    real(real_kind), dimension(:,:),intent(IN   ) :: Positions
+    type(BC_Chart), intent(OUT)    :: Chart
+    integer, intent(IN) :: Length, Dimensionality, DOF, Cell
+    integer, OPTIONAL, intent(IN) :: Face
+    real(r8), dimension(:,:),intent(IN) :: Values
+    integer,dimension(:),intent(IN) :: ValueIndex
+    logical,dimension(:),intent(IN) :: UseFunction
+    real(r8), dimension(:,:),intent(IN) :: Positions
 
     Call BC_Chart_Set_Chart(Chart%Spec, LENGTH = Length, &
                                         CELL   = Cell,   &
@@ -514,15 +464,12 @@ CONTAINS
                                         USEFUNCTION= UseFunction,&
                                         POSITIONS  = Positions)
 
-    return
   end subroutine SetChart
 
   function ChartMatches(Chart, Cell, Face)
-    implicit none
-    type (BC_Chart), intent(IN) :: Chart
-    integer( int_kind),         intent(IN) :: Cell
-    integer( int_kind),         intent(IN), &
-                     OPTIONAL   :: Face
+    type(BC_Chart), intent(IN) :: Chart
+    integer, intent(IN) :: Cell
+    integer, intent(IN), OPTIONAL :: Face
     logical :: ChartMatches 
     
     if (PRESENT(Face)) then
@@ -531,7 +478,6 @@ CONTAINS
     else
        ChartMatches = (Cell == BC_Chart_Cell(Chart))
     end if
-    RETURN
   end function ChartMatches
 
 END Module BC_CHARTS

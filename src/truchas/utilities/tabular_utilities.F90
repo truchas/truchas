@@ -11,16 +11,12 @@ MODULE TABULAR_UTILITIES
   ! May 2003
   !
   !=======================================================================
-  use kind_module,      only: real_kind, int_kind
-
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: TABULAR_LINEAR_INTERP
-
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -48,22 +44,15 @@ CONTAINS
     !               it brackets x between two values of the independent variable
     !
     !======================================================================
-
-    use constants_module, only: one
-    use truchas_logging_services, only: TLS_panic
-
-    implicit none
-
-    real(kind=real_kind)                            :: TABULAR_LINEAR_INTERP
-
+    real(r8) :: TABULAR_LINEAR_INTERP
 
     ! Local Variables
-    integer(kind=int_kind)                          :: i, itest, imin, imax, table_length, count
-    real(kind=real_kind)                            :: alpha
+    integer  :: i, itest, imin, imax, table_length, count
+    real(r8) :: alpha
 
     ! Argument List
-    real(kind=real_kind), INTENT(IN)                :: x
-    real(kind=real_kind), dimension(:),INTENT(IN) :: xtable, ytable
+    real(r8), INTENT(IN) :: x
+    real(r8), dimension(:), INTENT(IN) :: xtable, ytable
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -117,7 +106,7 @@ CONTAINS
 !     Calculate the averaging factor
     alpha = xtable(imax)-xtable(imin)
     alpha = (x-xtable(imin))/alpha
-    TABULAR_LINEAR_INTERP = alpha*ytable(imax) + (one - alpha)*ytable(imin)
+    TABULAR_LINEAR_INTERP = alpha*ytable(imax) + (1.0_r8 - alpha)*ytable(imin)
     return
 
     END FUNCTION TABULAR_LINEAR_INTERP

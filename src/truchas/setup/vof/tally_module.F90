@@ -27,9 +27,8 @@ MODULE TALLY_MODULE
    !    Douglas B. Kothe (LANL, dbk@lanl.gov)
    !    S. Jay Mosso (LANL, sjm@lanl.gov)
    !----------------------------------------------------------------------------
-
-   use kind_module, only: int_kind
-
+   use kinds, only: r8
+   use truchas_logging_services
    implicit none
    private
 
@@ -41,8 +40,8 @@ MODULE TALLY_MODULE
 
    ! material type associated with each cell (read in from the mesh file) 
    ! this shouldn't be here ...
-   integer (int_kind), dimension(:), pointer :: Mesh_Material
-   integer (int_kind), dimension(:), pointer :: Mesh_Material_Tot
+   integer, dimension(:), pointer :: Mesh_Material
+   integer, dimension(:), pointer :: Mesh_Material_Tot
 
 CONTAINS
 
@@ -56,35 +55,30 @@ CONTAINS
       !    particles that fall on either side of a user-specified interface
       !-------------------------------------------------------------------------
 
-      use constants_module,     only: one, one_hundred, ten, zero
       use cutoffs_module,       only: cutvof
       use interfaces_module,    only: int_particles, nbody, vof_particles
       use gs_module,            only: EN_MIN_GATHER, EN_MIN_SCATTER, EN_OR_GATHER, EN_OR_SCATTER
-      use kind_module,          only: int_kind, log_kind, real_kind
       use mesh_module,          only: Cell
       use parameter_module,     only: nicells, nicells_tot, nnodes, ncells, ndim
       use pgslib_module,        only: PGSLib_GLOBAL_SUM
-      use truchas_logging_services
-
-      implicit none
 
       ! return value
-      real (real_kind), dimension(nbody,ncells) :: VOF_INIT_TALLY_POINTS
+      real(r8), dimension(nbody,ncells) :: VOF_INIT_TALLY_POINTS
 
       ! local variables
-      logical (log_kind), dimension(ncells)     :: Interface_Cell
-      logical (log_kind), dimension(ncells)     :: Interface_Cell_old
-      logical (log_kind), dimension(nnodes)     :: Node_mask
-      integer (int_kind)                        :: ib
-      integer (int_kind)                        :: iterpack
-      integer (int_kind)                        :: iterpackmax
-      integer (int_kind)                        :: max_particles
-      integer (int_kind)                        :: particlesf
-      real (real_kind)                          :: hitsmax
-      real (real_kind)                          :: hitsmaxc
-      real (real_kind), dimension(nnodes)       :: Tmp1
-      real (real_kind), dimension(ncells)       :: Tmp3
-      real (real_kind), dimension(nbody,ncells) :: Hits_Vol
+      logical, dimension(ncells) :: Interface_Cell
+      logical, dimension(ncells) :: Interface_Cell_old
+      logical, dimension(nnodes) :: Node_mask
+      integer :: ib
+      integer :: iterpack
+      integer :: iterpackmax
+      integer :: max_particles
+      integer :: particlesf
+      real(r8) :: hitsmax
+      real(r8) :: hitsmaxc
+      real(r8), dimension(nnodes) :: Tmp1
+      real(r8), dimension(ncells) :: Tmp3
+      real(r8), dimension(nbody,ncells) :: Hits_Vol
       character(128) :: message
 
       !-------------------------------------------------------------------------
@@ -98,7 +92,7 @@ CONTAINS
       call PRE_TALLY()
 
       ! Set the maximum allowed number of particles (based on 0.1*cutvof)
-      max_particles = (ten/cutvof)**(one/ndim)
+      max_particles = (10/cutvof)**(1.0_r8/ndim)
 
       ! Coarse particle mapping using approximately (particles/4)**ndim
       ! random points in each cell.  Count how many points lie within
@@ -137,11 +131,11 @@ CONTAINS
       FINE_PARTICLE_TALLY: if (particlesf > vof_particles) then
 
          iterpack      = 1
-         iterpackmax   = ncells**(one/ndim)
+         iterpackmax   = ncells**(1.0_r8/ndim)
          hitsmaxc      = vof_particles**ndim
          vof_particles = particlesf
          hitsmax       = vof_particles**ndim
-         hitsmaxc      = hitsmaxc - one/one_hundred
+         hitsmaxc      = hitsmaxc - 0.01_r8
          Interface_Cell_old = .false.
 
 100      continue
@@ -150,7 +144,7 @@ CONTAINS
 
          do ib = 1,nbody
 
-            where (Hits_Vol(ib,:) > zero                                  &
+            where (Hits_Vol(ib,:) > 0                                  &
                .and. (Cell%Volume - Hits_Vol(ib,:)) > cutvof*Cell%Volume) &
                Interface_Cell = .true.
 
@@ -164,7 +158,7 @@ CONTAINS
 
             ! If a cell has some of body IB in it and it has a neighbor that
             ! had NO hits, then fine zone it.
-            where (Hits_Vol(ib,:) > zero .and. Tmp3 == zero) Interface_Cell = .true.
+            where (Hits_Vol(ib,:) > 0 .and. Tmp3 == 0) Interface_Cell = .true.
 
          end do
 
@@ -183,12 +177,12 @@ CONTAINS
 
             if (iterpack == 1) then
                do ib = 1,nbody
-                  where (Hits_Vol(ib,:) > zero) Hits_Vol(ib,:) = Cell%Volume
+                  where (Hits_Vol(ib,:) > 0) Hits_Vol(ib,:) = Cell%Volume
                end do
             end if
 
             do ib = 1,nbody
-               where (Interface_Cell) Hits_Vol(ib,:) = zero
+               where (Interface_Cell) Hits_Vol(ib,:) = 0
             end do
 
             write (message, 110) nicells_tot, vof_particles, ndim
@@ -210,8 +204,6 @@ CONTAINS
 
       VOF_INIT_TALLY_POINTS = Hits_Vol
 
-      return
-
    end function VOF_INIT_TALLY_POINTS
 
    !----------------------------------------------------------------------------
@@ -224,17 +216,14 @@ CONTAINS
     !   bodies.
     !
     !=======================================================================
-    use constants_module,  only: one, one_half, zero, pi
+    use constants_module,  only: pi
     use interfaces_module, only: Ar, Cosa, Isrftype, nbody, Nsurf, &
                                  Offset, Rotangl, Sina, Sgeom
-    use kind_module,       only: int_kind, real_kind
     use parameter_module,  only: ndim, nrot
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: ib, is, n, n1, n2, na
-    real(KIND = real_kind)   :: deg, tmp_s
+    integer :: ib, is, n, n1, n2, na
+    real(r8) :: deg, tmp_s
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -263,13 +252,13 @@ CONTAINS
 
                    ! Surface is a box of lengths Sgeom(i,is,ib),i=1,3
                    do n = 1,ndim
-                      Ar(n,is,ib)=one_half*ABS(Sgeom(n,is,ib))
+                      Ar(n,is,ib)=0.5_r8*ABS(Sgeom(n,is,ib))
                    end do
 
                 case (3)
 
                    ! Surface is a sphere of radius Sgeom(1,is,ib).
-                   Ar(1,is,ib) = one/ABS(Sgeom(1,is,ib))
+                   Ar(1,is,ib) = 1.0_r8/ABS(Sgeom(1,is,ib))
                    do n = 2,ndim
                       Ar(n,is,ib) = Ar(1,is,ib)
                    end do
@@ -278,17 +267,17 @@ CONTAINS
 
                    ! Surface is an ellipsoid.
                    do n = 1,ndim
-                      Ar(n,is,ib) = one/ABS(Sgeom(n,is,ib))
+                      Ar(n,is,ib) = 1.0_r8/ABS(Sgeom(n,is,ib))
                    end do
 
                 case (5)
 
                    do n = 1,ndim
-                      Ar(n,is,ib) = one/ABS(Sgeom(2,is,ib))
+                      Ar(n,is,ib) = 1.0_r8/ABS(Sgeom(2,is,ib))
                    end do
 
                    do n = 1,ndim
-                      if (Sgeom(1,is,ib) == n) Ar(n,is,ib) = zero
+                      if (Sgeom(1,is,ib) == n) Ar(n,is,ib) = 0
                    end do
 
              end select
@@ -321,7 +310,7 @@ CONTAINS
              end select
 
              ! Rotate the offset coordinates in the rotation plane.
-             if (Rotangl(n,is,ib) /= zero) then
+             if (Rotangl(n,is,ib) /= 0) then
                 tmp_s            = Cosa(n,is,ib)*Offset(n1,is,ib) - Sina(n,is,ib)*Offset(n2,is,ib)
                 Offset(n2,is,ib) = Sina(n,is,ib)*Offset(n1,is,ib) + Cosa(n,is,ib)*Offset(n2,is,ib)
                 Offset(n1,is,ib) = tmp_s
@@ -332,8 +321,6 @@ CONTAINS
        end do SURFACE_TRANS
 
     end do BODY_TRANS
-
-    return
 
   END SUBROUTINE PRE_TALLY
 
@@ -347,28 +334,22 @@ CONTAINS
     !   vertices Xv
     !
     !=======================================================================
-    use constants_module, only: one_half, zero
-    use kind_module,      only: int_kind, real_kind
     use parameter_module, only: ndim, nvc, nfc, nec
     use pgslib_module,    only: PGSLib_GLOBAL_ANY
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    integer(KIND = int_kind),                            intent(IN)  :: nicells
-    real(KIND = real_kind), dimension(ndim,nvc,nicells), intent(IN)  :: Xv
-    real(KIND = real_kind), dimension(nicells),          intent(OUT) :: Volume
+    integer, intent(IN)  :: nicells
+    real(r8), dimension(ndim,nvc,nicells), intent(IN)  :: Xv
+    real(r8), dimension(nicells), intent(OUT) :: Volume
 
     ! Local Variables
-    integer(KIND = int_kind)                        :: n, f, v1, v2, v3, &
-                                                       v4, v5, v6
-    real(KIND = real_kind), dimension(ndim,nicells) :: X1, X2, X3
+    integer :: n, f, v1, v2, v3, v4, v5, v6
+    real(r8), dimension(ndim,nicells) :: X1, X2, X3
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize relevant quantities
-    Volume = zero
+    Volume = 0
 
     ! Loop over faces, accumulating the cell volume.
     FACE_LOOP: do f = 1,nfc
@@ -411,7 +392,7 @@ CONTAINS
 
        case (2)
              ! 2-D
-          X1 = one_half
+          X1 = 0.5_r8
           v1 = v2
           v3 = v5
           v4 = v6
@@ -448,11 +429,9 @@ CONTAINS
     Volume = Volume/REAL(nec)
 
     ! Make sure volumes are OK.
-    if (PGSLib_GLOBAL_ANY(Volume < zero)) then
+    if (PGSLib_GLOBAL_ANY(Volume < 0)) then
        call TLS_fatal ('HEX_VOLUME: Negative particle volumes found during volume fraction tallying')
     end if
-
-    return
 
   END SUBROUTINE HEX_VOLUME
 
@@ -466,27 +445,23 @@ CONTAINS
     !   periodic boundary conditions, r(0) = r(n) and z(0) = z(n).
     !
     !=======================================================================
-    use constants_module,  only: one, zero
     use interfaces_module, only: Rtab, Ztab
-    use kind_module,       only: int_kind, real_kind
     use parameter_module,  only: ncells
 
-    implicit none
-
     ! Arguments
-    integer(KIND = int_kind),                  intent(IN)  :: vertices
-    integer(KIND = int_kind),                  intent(IN)  :: body
-    real(KIND = real_kind), dimension(ncells), intent(IN)  :: R0, Z0
-    real(KIND = real_kind), dimension(ncells), intent(OUT) :: Xin
+    integer, intent(IN)  :: vertices
+    integer, intent(IN)  :: body
+    real(r8), dimension(ncells), intent(IN)  :: R0, Z0
+    real(r8), dimension(ncells), intent(OUT) :: Xin
 
     ! Local Variables
-    integer(KIND = int_kind) :: i
+    integer :: i
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! For a vertical line passing thru R0, count up # of
     ! crossings on sides of the polygon that lie below Z0.
-    Xin = zero
+    Xin = 0
 
     ! Loop over n pairs of vertices (r,z)
     do i = 1,vertices
@@ -495,14 +470,14 @@ CONTAINS
        ! Cross product (0,i-1) x (0,i) > 0 ...
        where (Rtab(i-1,body) <= R0 .and. R0 < Rtab(i,body)) &
             Xin = Xin +  &
-            MAX( zero, SIGN(one,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
+            MAX( 0.0_r8, SIGN(1.0_r8,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
             (Ztab(i-1,body)-Z0)*(Rtab(i,body)-R0)) )
 
        ! Test for a vector between vertices (i) <- (i-1)
        ! Cross product (0,i-1) x (0,i) < 0 ...
        where (Rtab(i-1,body) > R0 .and. R0 >= Rtab(i,body)) &
             Xin = Xin - &
-            MIN( zero, SIGN(one,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
+            MIN( 0.0_r8, SIGN(1.0_r8,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
             (Ztab(i-1,body)-Z0)*(Rtab(i,body)-R0)) )
 
     end do
@@ -510,8 +485,6 @@ CONTAINS
     ! # of crossings == ODD  => point(X0,Y0) INSIDE  polygon (in = 1).
     !                == EVEN => point(X0,Y0) OUTSIDE polygon (in = 0).
     Xin = MOD(NINT(Xin),2)
-
-    return
 
   END SUBROUTINE IN_OUT_CRSE
 
@@ -526,27 +499,23 @@ CONTAINS
     !   periodic boundary conditions, r(0) = r(n) and z(0) = z(n).
     !
     !=======================================================================
-    use constants_module,  only: one, zero
     use interfaces_module, only: Rtab, Ztab
-    use kind_module,       only: int_kind, real_kind
-
-    implicit none
 
     ! Arguments
-    integer(KIND = int_kind),                   intent(IN)  :: body
-    integer(KIND = int_kind),                   intent(IN)  :: vertices
-    integer(KIND = int_kind),                   intent(IN)  :: nicells
-    real(KIND = real_kind), dimension(nicells), intent(IN)  :: R0, Z0
-    real(KIND = real_kind), dimension(nicells), intent(OUT) :: Xin
+    integer, intent(IN)  :: body
+    integer, intent(IN)  :: vertices
+    integer, intent(IN)  :: nicells
+    real(r8), dimension(nicells), intent(IN)  :: R0, Z0
+    real(r8), dimension(nicells), intent(OUT) :: Xin
 
     ! Local Variables
-    integer(KIND = int_kind) :: i
+    integer :: i
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! For a vertical line passing thru R0, count up # of
     !    crossings of sides of the polygon that lie below Z0.
-    Xin = zero
+    Xin = 0.0_r8
 
     ! Loop over n pairs of vertices (r,z)
     do i = 1,vertices
@@ -555,14 +524,14 @@ CONTAINS
        ! Cross product (0,i-1) x (0,i) > 0 ...
        where (Rtab(i-1,body) <= R0 .and. R0 < Rtab(i,body)) &
             Xin = Xin + &
-            MAX( zero, SIGN(one,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
+            MAX( 0.0_r8, SIGN(1.0_r8,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
             (Ztab(i-1,body)-Z0)*(Rtab(i,body)-R0)) )
 
        ! Test for a vector between vertices (i) <- (i-1)
        ! Cross product (0,i-1) x (0,i) < 0 ...
        where (Rtab(i-1,body) > R0 .and. R0 >= Rtab(i,body)) &
             Xin = Xin - &
-            MIN( zero, SIGN(one,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
+            MIN( 0.0_r8, SIGN(1.0_r8,(Rtab(i-1,body)-R0)*(Ztab(i,body)-Z0) - &
             (Ztab(i-1,body)-Z0)*(Rtab(i,body)-R0)) )
 
     end do
@@ -570,8 +539,6 @@ CONTAINS
     ! # of crossings: ODD  => point(X0,Y0) INSIDE  polygon (in = 1).
     !                 EVEN => point(X0,Y0) OUTSIDE polygon (in = 0).
     Xin = MOD(NINT(Xin),2)
-
-    return
 
   END SUBROUTINE IN_OUT_FINE
 
@@ -582,30 +549,26 @@ CONTAINS
     !   Compute particle subvolumes
     !
     !=======================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: int_kind, real_kind
     use parameter_module, only: ndim, nvc
 
-    implicit none
-
     ! Arguments
-    integer(KIND = int_kind),                            intent(IN)    :: i
-    integer(KIND = int_kind),                            intent(IN)    :: j
-    integer(KIND = int_kind),                            intent(IN)    :: k
-    integer(KIND = int_kind),                            intent(IN)    :: nicells
-    real(KIND = real_kind),                              intent(IN)    :: delta
-    real(KIND = real_kind), dimension(ndim,nvc,nicells), intent(INOUT) :: Xv
-    real(KIND = real_kind), dimension(nicells),          intent(OUT)   :: Volume
+    integer, intent(IN)    :: i
+    integer, intent(IN)    :: j
+    integer, intent(IN)    :: k
+    integer, intent(IN)    :: nicells
+    real(r8), intent(IN)    :: delta
+    real(r8), dimension(ndim,nvc,nicells), intent(INOUT) :: Xv
+    real(r8), dimension(nicells),          intent(OUT)   :: Volume
 
     ! Local Variables
-    integer(KIND = int_kind) :: v, vp
-    real(KIND = real_kind)   :: coeff, xi, eta, zeta
-    real(KIND = real_kind), dimension(ndim,nvc,nicells) :: Xvp
+    integer :: v, vp
+    real(r8) :: coeff, xi, eta, zeta
+    real(r8), dimension(ndim,nvc,nicells) :: Xvp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Interpolation coefficients
-    Xvp  = zero
+    Xvp  = 0.0_r8
 
     ! Compute physical positions of vertices bounding the particle subvolumes
     do vp = 1,nvc
@@ -646,21 +609,21 @@ CONTAINS
        do v = 1,nvc
           select case (v)
           case (1)
-             coeff = xi*(one - eta)*(one - zeta)
+             coeff = xi*(1.0_r8 - eta)*(1.0_r8 - zeta)
           case (2)
-             coeff = xi*eta*(one - zeta)
+             coeff = xi*eta*(1.0_r8 - zeta)
           case (3)
-             coeff = (one - xi)*eta*(one - zeta)
+             coeff = (1.0_r8 - xi)*eta*(1.0_r8 - zeta)
           case (4)
-             coeff = (one - xi)*(one - eta)*(one - zeta)
+             coeff = (1.0_r8 - xi)*(1.0_r8 - eta)*(1.0_r8 - zeta)
           case (5)
-             coeff = xi*(one - eta)*zeta
+             coeff = xi*(1.0_r8 - eta)*zeta
           case (6)
              coeff = xi*eta*zeta
           case (7)
-             coeff = (one - xi)*eta*zeta
+             coeff = (1.0_r8 - xi)*eta*zeta
           case (8)
-             coeff = (one - xi)*(one - eta)*zeta
+             coeff = (1.0_r8 - xi)*(1.0_r8 - eta)*zeta
           end select
           Xvp(:,vp,:) = Xvp(:,vp,:) + coeff*Xv(:,v,:)
        end do
@@ -668,8 +631,6 @@ CONTAINS
 
     ! Now compute the volume of the hexahedra surrounding each particle
     call HEX_VOLUME (nicells, Xvp, Volume)
-
-    return
 
   END SUBROUTINE PARTICLE_VOLUME
 
@@ -682,35 +643,29 @@ CONTAINS
     !   cells.
     !
     !=======================================================================
-    use constants_module,     only: one, zero, two
     use cutoffs_module,       only: cutvof
     use interfaces_module,    only: Ar, Cosa, Isrftype, nbody, Nsurf, Offset, &
                                     Rotangl, Rotpt, Rtab, Sgeom, Sina,        &
                                     vof_particles, Ztab, Mesh_Matnum
     use gs_module,            only: EN_GATHER
-    use kind_module,          only: double_kind, int_kind, log_kind, real_kind
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy, Mesh, mesh_has_cblockid_data
     use parameter_module,     only: ndim, ncells, nvc, nrot, string_len
     use random_module,        only: GENERATE_RANDOM
     use utilities_module,     only: TIMESTAMP
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    real(KIND = real_kind),  dimension(nbody,ncells), intent(OUT) :: Hits_Vol
+    real(r8), dimension(nbody,ncells), intent(OUT) :: Hits_Vol
 
     ! Local Variables
-    logical(KIND = log_kind), dimension(ncells) :: Lsf, Lbf
-    integer(KIND = int_kind) :: i, j, k, ib, n, overlap, is, isrf, npoly,  &
-                                back_body, Overlap_Body(nbody), v,         &
-                                total_particles, iend, jend, kend, n1, n2, &
-                                na
-    real(KIND = real_kind) :: xi, coeff, eta, zeta, ovn
-    real(KIND = double_kind), dimension(ndim) :: Rand
-    real(KIND = real_kind), dimension(ncells) :: Subvol, Total, Hitscurrent
-    real(KIND = real_kind), dimension(ndim,ncells)     :: X, Xloc
-    real(KIND = real_kind), dimension(ndim,nvc,ncells) :: X_v
+    logical, dimension(ncells) :: Lsf, Lbf
+    integer :: i, j, k, ib, n, overlap, is, isrf, npoly, back_body, &
+               Overlap_Body(nbody), v, total_particles, iend, jend, kend, &
+               n1, n2, na
+    real(r8) :: xi, coeff, eta, zeta, ovn
+    real(r8), dimension(ndim) :: Rand
+    real(r8), dimension(ncells) :: Subvol, Total, Hitscurrent
+    real(r8), dimension(ndim,ncells)     :: X, Xloc
+    real(r8), dimension(ndim,nvc,ncells) :: X_v
     character(LEN = string_len) :: run_date
     character(128) :: message
 
@@ -725,8 +680,8 @@ CONTAINS
     end do
 
     ! Initialize relevant quantities
-    Hits_Vol = zero
-    ovn      = one/vof_particles
+    Hits_Vol = 0.0_r8
+    ovn      = 1.0_r8/vof_particles
     Subvol   = Cell%Volume/total_particles
     Overlap_Body = 0
 
@@ -747,47 +702,47 @@ CONTAINS
     ZETA_LOOP: do k = 1,kend
        ETA_LOOP: do j = 1,jend
           XI_LOOP: do i = 1,iend
-             xi = zero; eta = zero; zeta = zero
-             call GENERATE_RANDOM(zero,one,ndim,Rand)
+             xi = 0.0_r8; eta = 0.0_r8; zeta = 0.0_r8
+             call GENERATE_RANDOM(0.0_r8,1.0_r8,ndim,Rand)
 
              ! Coordinates (x,y,z) are for each particle,
              ! placed in a random rectangular pattern
              do n = 1,ndim
                 select case (n)
                    case (1)
-                      xi = MIN(one,MAX((i - one + Rand(n))*ovn,zero))
+                      xi = MIN(1.0_r8,MAX((i - 1.0_r8 + Rand(n))*ovn,0.0_r8))
                    case (2)
-                      eta = MIN(one,MAX((j - one + Rand(n))*ovn,zero))
+                      eta = MIN(1.0_r8,MAX((j - 1.0_r8 + Rand(n))*ovn,0.0_r8))
                    case (3)
-                      zeta = MIN(one,MAX((k - one + Rand(n))*ovn,zero))
+                      zeta = MIN(1.0_r8,MAX((k - 1.0_r8 + Rand(n))*ovn,0.0_r8))
                 end select
              end do
 
              ! Compute particle physical positions via linear interpolation
-             X = zero
+             X = 0.0_r8
              do v = 1,nvc
                 select case (v)
                    case (1)
-                     coeff = xi*(one - eta)*(one - zeta)
+                     coeff = xi*(1.0_r8 - eta)*(1.0_r8 - zeta)
                    case (2)
-                     coeff = xi*eta*(one - zeta)
+                     coeff = xi*eta*(1.0_r8 - zeta)
                    case (3)
-                     coeff = (one - xi)*eta*(one - zeta)
+                     coeff = (1.0_r8 - xi)*eta*(1.0_r8 - zeta)
                    case (4)
-                     coeff = (one - xi)*(one - eta)*(one - zeta)
+                     coeff = (1.0_r8 - xi)*(1.0_r8 - eta)*(1.0_r8 - zeta)
                    case (5)
-                     coeff = xi*(one - eta)*zeta
+                     coeff = xi*(1.0_r8 - eta)*zeta
                    case (6)
                      coeff = xi*eta*zeta
                    case (7)
-                     coeff = (one - xi)*eta*zeta
+                     coeff = (1.0_r8 - xi)*eta*zeta
                    case (8)
-                     coeff = (one - xi)*(one - eta)*zeta
+                     coeff = (1.0_r8 - xi)*(1.0_r8 - eta)*zeta
                 end select
                 X = X + coeff*X_v(:,v,:)
              end do
 
-             Hitscurrent = zero
+             Hitscurrent = 0.0_r8
 
              BODY_LOOP: do ib = 1,nbody
 
@@ -814,15 +769,15 @@ CONTAINS
                       ! Select the rotation plane axes (two of them).
                       select case (na)
                       case (1)
-                         n1 = 2; n2 = 3; coeff = one
+                         n1 = 2; n2 = 3; coeff = 1.0_r8
                       case (2)
-                         n1 = 3; n2 = 1; coeff = -one
+                         n1 = 3; n2 = 1; coeff = -1.0_r8
                       case (3)
-                         n1 = 1; n2 = 2; coeff = one
+                         n1 = 1; n2 = 2; coeff = 1.0_r8
                       end select
 
                       ! Rotate the surface coordinate system.
-                      if (Rotangl(n,is,ib) /= zero) then
+                      if (Rotangl(n,is,ib) /= 0.0_r8) then
                          Total      = Cosa(n,is,ib)*(Xloc(n1,:)-Rotpt(n1,is,ib)) - &
                                       coeff*Sina(n,is,ib)*(Xloc(n2,:)-Rotpt(n2,is,ib)) + Rotpt(n1,is,ib)
                          Xloc(n2,:) = Cosa(n,is,ib)*(Xloc(n2,:)-Rotpt(n2,is,ib)) + &
@@ -857,7 +812,7 @@ CONTAINS
                          ! of the plane, and negative values imply the body is on the
                          ! negative side.
                          do n = 1,ndim
-                            if (ABS(Sgeom(1,is,ib)) == REAL(n)) Lsf = Xloc(n,:) > zero
+                            if (ABS(Sgeom(1,is,ib)) == REAL(n)) Lsf = Xloc(n,:) > 0.0_r8
                          end do
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
                          Lbf = Lbf .and. Lsf
@@ -878,11 +833,11 @@ CONTAINS
                       case (3:4)
 
                          ! Surface is a sphere or ellipsoid
-                         Total = zero
+                         Total = 0.0_r8
                          do n = 1,ndim
                             Total = Total + (Ar(n,is,ib)*Xloc(n,:))**2
                          end do
-                         Lsf = Total <= one
+                         Lsf = Total <= 1.0_r8
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
                          Lbf = Lbf .and. Lsf
 
@@ -894,15 +849,15 @@ CONTAINS
                          ! specify the x-, y-, or z-axis, respectively.  Parameter
                          ! Sgeom(2,is,ib) is the cylinder radius and Sgeom(3,is,ib)
                          ! is the cylinder height.
-                         Total = zero
+                         Total = 0.0_r8
                          do n = 1,ndim
                             Total = Total + (Ar(n,is,ib)*Xloc(n,:))**2
                          end do
-                         Lsf = Total <= one
+                         Lsf = Total <= 1.0_r8
 
                          do n = 1,ndim
                             if (ABS(Sgeom(1,is,ib)) == REAL(n)) then
-                               Lsf = Lsf .and. (Xloc(n,:) - Sgeom(3,is,ib))*Xloc(n,:) <= zero
+                               Lsf = Lsf .and. (Xloc(n,:) - Sgeom(3,is,ib))*Xloc(n,:) <= 0.0_r8
                             end if
                          end do
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
@@ -934,8 +889,8 @@ CONTAINS
 
                                Total = Sgeom(3,is,ib)/Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n,:))
                                Lsf = Xloc(n1,:)**2 + Xloc(n2,:)**2 <= Total**2 .and. &
-                                    Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n,:)) >= zero .and. &
-                                    Sgeom(2,is,ib)*Xloc(n,:) >= zero
+                                    Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n,:)) >= 0.0_r8 .and. &
+                                    Sgeom(2,is,ib)*Xloc(n,:) >= 0.0_r8
                             end if
                          end do
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
@@ -966,7 +921,7 @@ CONTAINS
                             case (3)
                                n1 = 1; n2 = 2
                             end select
-                            if (Sgeom(1,is,ib) == zero) then
+                            if (Sgeom(1,is,ib) == 0.0_r8) then
                                ! Rotate
                                Xloc(n1,:) = SQRT(Xloc(n1,:)**2 + Xloc(n2,:)**2)
                                na = n
@@ -1005,15 +960,15 @@ CONTAINS
                    ! be in only one body.  Note that Hitscurrent will
                    ! exceed 1.0 if particle is in both the current
                    ! body and a previously defined body.
-                   where (Lbf) Hitscurrent = Hitscurrent + one
+                   where (Lbf) Hitscurrent = Hitscurrent + 1.0_r8
 
-                   overlap = COUNT(Hitscurrent > one)
+                   overlap = COUNT(Hitscurrent > 1.0_r8)
 
                    if (overlap > 0) Overlap_Body(ib) = overlap
 
-                   where (Lbf .and. Hitscurrent < two) Hits_Vol(ib,:) = Hits_Vol(ib,:) + Subvol
+                   where (Lbf .and. Hitscurrent < 2.0_r8) Hits_Vol(ib,:) = Hits_Vol(ib,:) + Subvol
 
-                   Hitscurrent = MIN(Hitscurrent,one)
+                   Hitscurrent = MIN(Hitscurrent,1.0_r8)
 
                 end if
                 
@@ -1052,7 +1007,7 @@ CONTAINS
 
     end do
 
-    Total = zero
+    Total = 0.0_r8
     back_body = 0
 
     do ib = 1,nbody
@@ -1062,7 +1017,7 @@ CONTAINS
           cycle
        end if
 
-       Xloc(1,:) = MAX(Total + Hits_Vol(ib,:) - Cell%Volume, zero)
+       Xloc(1,:) = MAX(Total + Hits_Vol(ib,:) - Cell%Volume, 0.0_r8)
        overlap = COUNT(Xloc(1,:) > cutvof*Cell%Volume)
 
        if(overlap > 0) then
@@ -1082,7 +1037,7 @@ CONTAINS
 
        ib = back_body
        Hits_Vol(ib,:) = Cell%Volume - Total
-       overlap = COUNT(Total > zero)
+       overlap = COUNT(Total > 0.0_r8)
 
        if (overlap > 0) then
           write (message, 110) ib, overlap
@@ -1096,8 +1051,6 @@ CONTAINS
 
     end if
 
-    return
-
   END SUBROUTINE TALLY_CRSE
 
   SUBROUTINE TALLY_FINE (Mask, Hits_Vol)
@@ -1108,44 +1061,34 @@ CONTAINS
     !   cells, which are a subset of mesh cells.
     !
     !=======================================================================
-    use constants_module,     only: five, one_half, one, three, zero, two
     use cutoffs_module,       only: cutvof
     use interfaces_module,    only: Ar, Cosa, Isrftype, nbody, Nsurf, Offset, &
                                     Rotangl, Rotpt, Rtab, Sgeom, Sina,        &
                                     vof_particles, Ztab, Mesh_Matnum
     use gs_module,            only: EN_GATHER
-    use kind_module,          only: double_kind, int_kind, log_kind, real_kind
     use mesh_module,          only: Cell, Vertex, Mesh, mesh_has_cblockid_data
     use parameter_module,     only: ndim, nicells, ncells, nvc, nrot, string_len
     use PGSlib_module,        only: PGSlib_GLOBAL_SUM
     use utilities_module,     only: TIMESTAMP
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    logical(KIND = log_kind), dimension(ncells),       intent(IN)    :: Mask
-    real(KIND = real_kind),   dimension(nbody,ncells), intent(INOUT) :: Hits_Vol
+    logical, dimension(ncells), intent(IN) :: Mask
+    real(r8), dimension(nbody,ncells), intent(INOUT) :: Hits_Vol
 
     ! Local Variables
-    integer(KIND = int_kind)                            :: i, iend, j, jend,      &
-                                                           k, kend, ib, overlap,  &
-                                                           is, isrf, n, npoly, p, &
-                                                           back_body, v, n1, n2, na
-    Character(LEN = string_len)                         :: run_date
-    real(KIND = real_kind)                              :: xi, eta, zeta, &
-                                                           coeff, ovn
-    integer(KIND = int_kind), dimension(nbody)          :: Overlap_Body
-    real(KIND = double_kind), dimension(ndim)           :: Rand, Seed
-    logical(KIND = log_kind), dimension(nicells)        :: Lsf, Lbf
-    real(KIND = real_kind), dimension(nvc,ncells)       :: Xv
-    real(KIND = real_kind), dimension(ndim,nvc,nicells) :: Xv_int
-    real(KIND = real_kind), dimension(nbody,nicells)    :: Hits_Vol_Packed
-    real(KIND = real_kind), dimension(ndim,nicells)     :: X, Xloc
-    real(KIND = real_kind), dimension(nicells)          :: Total, Subvol, &
-                                                           Hitscurrent,   &
-                                                           Cell_Volume
-    real(KIND = real_kind), allocatable :: Mesh_Matl(:)
+    integer :: i, iend, j, jend, k, kend, ib, overlap, is, isrf, n, npoly, p, &
+                back_body, v, n1, n2, na
+    Character(LEN = string_len) :: run_date
+    real(r8) :: xi, eta, zeta, coeff, ovn
+    integer,  dimension(nbody) :: Overlap_Body
+    real(r8), dimension(ndim) :: Rand, Seed
+    logical,  dimension(nicells) :: Lsf, Lbf
+    real(r8), dimension(nvc,ncells) :: Xv
+    real(r8), dimension(ndim,nvc,nicells) :: Xv_int
+    real(r8), dimension(nbody,nicells) :: Hits_Vol_Packed
+    real(r8), dimension(ndim,nicells) :: X, Xloc
+    real(r8), dimension(nicells) :: Total, Subvol, Hitscurrent, Cell_Volume
+    real(r8), allocatable :: Mesh_Matl(:)
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -1154,7 +1097,7 @@ CONTAINS
     Cell_Volume = PACK (Cell%Volume, Mask)
 
     ! Gather cell vertices into a packed, interface-cell array
-    Xv_Int = zero
+    Xv_Int = 0.0_r8
     do n = 1,ndim
        call EN_GATHER (Xv, Vertex%Coord(n))
        do v = 1,nvc
@@ -1175,19 +1118,19 @@ CONTAINS
        select case (n)
           case (1)
              iend    = vof_particles
-             Seed(n) = MOD(SQRT(two),one)
+             Seed(n) = MOD(SQRT(2.0_r8),1.0_r8)
           case (2)
              jend    = vof_particles
-             Seed(n) = MOD(one_half*(SQRT(five) + one),one)
+             Seed(n) = MOD(0.5_r8*(SQRT(5.0_r8) + 1.0_r8),1.0_r8)
           case (3)
              kend    = vof_particles
-             Seed(n) = MOD(SQRT(three),one)
+             Seed(n) = MOD(SQRT(3.0_r8),1.0_r8)
        end select
     end do
 
     ! Initialize relevant variables
-    Hits_Vol_Packed = zero
-    ovn = one/vof_particles
+    Hits_Vol_Packed = 0.0_r8
+    ovn = 1.0_r8/vof_particles
     Overlap_Body = 0
 
     ! Inform the user what's about to happen
@@ -1214,9 +1157,9 @@ CONTAINS
              call PARTICLE_VOLUME (Xv_Int, i, j, k, nicells, ovn, Subvol)
 
              ! Set the ramdom numbers.
-             xi = zero; eta = zero; zeta = zero
+             xi = 0.0_r8; eta = 0.0_r8; zeta = 0.0_r8
              do n = 1,ndim
-                Rand(n) = MOD(p*MOD(p*Seed(n),one),one)
+                Rand(n) = MOD(p*MOD(p*Seed(n),1.0_r8),1.0_r8)
              end do
 
              ! Coordinates (x,y,z) are for each particle,
@@ -1224,41 +1167,41 @@ CONTAINS
              do n = 1,ndim
                 select case (n)
                    case (1)
-                      xi = MIN(one,MAX((i - one + Rand(n))*ovn,zero))
+                      xi = MIN(1.0_r8,MAX((i - 1.0_r8 + Rand(n))*ovn,0.0_r8))
                    case (2)
-                      eta = MIN(one,MAX((j - one + Rand(n))*ovn,zero))
+                      eta = MIN(1.0_r8,MAX((j - 1.0_r8 + Rand(n))*ovn,0.0_r8))
                    case (3)
-                      zeta = MIN(one,MAX((k - one + Rand(n))*ovn,zero))
+                      zeta = MIN(1.0_r8,MAX((k - 1.0_r8 + Rand(n))*ovn,0.0_r8))
                 end select
              end do
 
              ! Compute particle physical positions via linear interpolation
-             X = zero
+             X = 0.0_r8
              do v = 1,nvc
                 select case (v)
                    case (1)
-                     coeff = xi*(one - eta)*(one - zeta)
+                     coeff = xi*(1.0_r8 - eta)*(1.0_r8 - zeta)
                    case (2)
-                     coeff = xi*eta*(one - zeta)
+                     coeff = xi*eta*(1.0_r8 - zeta)
                    case (3)
-                     coeff = (one - xi)*eta*(one - zeta)
+                     coeff = (1.0_r8 - xi)*eta*(1.0_r8 - zeta)
                    case (4)
-                     coeff = (one - xi)*(one - eta)*(one - zeta)
+                     coeff = (1.0_r8 - xi)*(1.0_r8 - eta)*(1.0_r8 - zeta)
                    case (5)
-                     coeff = xi*(one - eta)*zeta
+                     coeff = xi*(1.0_r8 - eta)*zeta
                    case (6)
                      coeff = xi*eta*zeta
                    case (7)
-                     coeff = (one - xi)*eta*zeta
+                     coeff = (1.0_r8 - xi)*eta*zeta
                    case (8)
-                     coeff = (one - xi)*(one - eta)*zeta
+                     coeff = (1.0_r8 - xi)*(1.0_r8 - eta)*zeta
                 end select
                 do n = 1,ndim
                    X(n,:) = X(n,:) + coeff*Xv_Int(n,v,:)
                 end do
              end do
 
-             Hitscurrent = zero
+             Hitscurrent = 0.0_r8
 
              BODY_LOOP: do ib = 1,nbody
 
@@ -1285,15 +1228,15 @@ CONTAINS
                       ! Select the rotation plane axes (two of them).
                       select case (na)
                       case (1)
-                         n1 = 2; n2 = 3; coeff = one
+                         n1 = 2; n2 = 3; coeff = 1.0_r8
                       case (2)
-                         n1 = 3; n2 = 1; coeff = -one
+                         n1 = 3; n2 = 1; coeff = -1.0_r8
                       case (3)
-                         n1 = 1; n2 = 2; coeff = one
+                         n1 = 1; n2 = 2; coeff = 1.0_r8
                       end select
 
                       ! Rotate the surface coordinate system.
-                      if (Rotangl(n,is,ib) /= zero) then
+                      if (Rotangl(n,is,ib) /= 0.0_r8) then
                          Total      = Cosa(n,is,ib)*(Xloc(n1,:)-Rotpt(n1,is,ib)) - &
                                       coeff*Sina(n,is,ib)*(Xloc(n2,:)-Rotpt(n2,is,ib)) + Rotpt(n1,is,ib)
                          Xloc(n2,:) = Cosa(n,is,ib)*(Xloc(n2,:)-Rotpt(n2,is,ib)) + &
@@ -1328,7 +1271,7 @@ CONTAINS
                          ! of the plane, and negative values imply the body is on the
                          ! negative side.
                          do n = 1,ndim
-                            if (ABS(Sgeom(1,is,ib)) == REAL(n)) Lsf = Xloc(n,:) > zero
+                            if (ABS(Sgeom(1,is,ib)) == REAL(n)) Lsf = Xloc(n,:) > 0.0_r8
                          end do
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
                          Lbf = Lbf .and. Lsf
@@ -1349,11 +1292,11 @@ CONTAINS
                       case (3:4)
 
                          ! Surface is a sphere or ellipsoid
-                         Total = zero
+                         Total = 0.0_r8
                          do n = 1,ndim
                             Total = Total + (Ar(n,is,ib)*Xloc(n,:))**2
                          end do
-                         Lsf = Total <= one
+                         Lsf = Total <= 1.0_r8
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
                          Lbf = Lbf .and. Lsf
 
@@ -1365,15 +1308,15 @@ CONTAINS
                          ! specify the x-, y-, or z-axis, respectively.  Parameter
                          ! Sgeom(2,is,ib) is the cylinder radius and Sgeom(3,is,ib)
                          ! is the cylinder height.
-                         Total = zero
+                         Total = 0.0_r8
                          do n = 1,ndim
                             Total = Total + (Ar(n,is,ib)*Xloc(n,:))**2
                          end do
-                         Lsf = Total <= one
+                         Lsf = Total <= 1.0_r8
 
                          do n = 1,ndim
                             if (ABS(Sgeom(1,is,ib)) == REAL(n)) then
-                               Lsf = Lsf .and. (Xloc(n,:) - Sgeom(3,is,ib))*Xloc(n,:) <= zero
+                               Lsf = Lsf .and. (Xloc(n,:) - Sgeom(3,is,ib))*Xloc(n,:) <= 0.0_r8
                             end if
                          end do
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
@@ -1405,8 +1348,8 @@ CONTAINS
 
                                Total = Sgeom(3,is,ib)/Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n,:))
                                Lsf = Xloc(n1,:)**2 + Xloc(n2,:)**2 <= Total**2 .and. &
-                                    Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n,:)) >= zero .and. &
-                                    Sgeom(2,is,ib)*Xloc(n,:) >= zero
+                                    Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n,:)) >= 0.0_r8 .and. &
+                                    Sgeom(2,is,ib)*Xloc(n,:) >= 0.0_r8
                             end if
                          end do
                          if (Isrftype(is,ib) < 0) Lsf = .not. Lsf
@@ -1437,7 +1380,7 @@ CONTAINS
                             case (3)
                                n1 = 1; n2 = 2
                             end select
-                            if (Sgeom(1,is,ib) == zero) then
+                            if (Sgeom(1,is,ib) == 0.0_r8) then
                                ! Rotate
                                Xloc(n1,:) = SQRT(Xloc(n1,:)**2 + Xloc(n2,:)**2)
                                na = n
@@ -1477,16 +1420,16 @@ CONTAINS
                    ! be in only one body.  Note that Hitscurrent will
                    ! exceed 1.0 if particle is in both the current
                    ! body and a previously defined body.
-                   where (Lbf) Hitscurrent = Hitscurrent + one
+                   where (Lbf) Hitscurrent = Hitscurrent + 1.0_r8
 
-                   overlap = COUNT(Hitscurrent > one)
+                   overlap = COUNT(Hitscurrent > 1.0_r8)
 
                    if (overlap > 0) Overlap_Body(ib) = overlap
 
-                   where (Lbf .and. Hitscurrent < two) &
+                   where (Lbf .and. Hitscurrent < 2.0_r8) &
                         Hits_Vol_Packed(ib,:) = Hits_Vol_Packed(ib,:) + Subvol
 
-                   Hitscurrent = MIN(Hitscurrent,one)
+                   Hitscurrent = MIN(Hitscurrent,1.0_r8)
 
                 end if
 
@@ -1525,7 +1468,7 @@ CONTAINS
 
     end do
 
-    Total = zero
+    Total = 0.0_r8
     back_body = 0
     do ib = 1,nbody
 
@@ -1534,7 +1477,7 @@ CONTAINS
           cycle
        end if
 
-       Xloc(1,:) = MAX(Total + Hits_Vol_Packed(ib,:) - Cell_Volume, zero)
+       Xloc(1,:) = MAX(Total + Hits_Vol_Packed(ib,:) - Cell_Volume, 0.0_r8)
        overlap = COUNT(Xloc(1,:) > cutvof*Cell_Volume)
 
        if (overlap > 0) then
@@ -1556,7 +1499,7 @@ CONTAINS
 
        ib = back_body
        Hits_Vol_Packed(ib,:) = Cell_Volume - Total
-       overlap = COUNT(Total > zero)
+       overlap = COUNT(Total > 0.0_r8)
        overlap = PGSlib_GLOBAL_SUM( overlap )
 
        if (overlap > 0) then
@@ -1581,8 +1524,6 @@ CONTAINS
 
     ! Deallocate the smaller (packed) Mesh_Matl array if necessary.
     if (ALLOCATED(Mesh_Matl)) deallocate(Mesh_Matl)
-
-    return
 
   END SUBROUTINE TALLY_FINE
 

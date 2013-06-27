@@ -14,7 +14,7 @@
 
 module EM_graphics_output
 
-  use kind_module, only: rk => real_kind
+  use kinds, only: rk => r8
   use system_io
   use string_utilities, only: i_to_c
   use parallel_communication

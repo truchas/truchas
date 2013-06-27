@@ -113,7 +113,6 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/ds_boundary_condition_input.F90
            physics/heat_species_transport/ds_interface_condition_input.F90
            physics/heat_species_transport/ds_source_input.F90
-           physics/heat_species_transport/ds_utilities.F90
            physics/heat_species_transport/interface_data.F90
            physics/heat_species_transport/mesh_interop.F90
            physics/heat_species_transport/mfd_disc_type.F90

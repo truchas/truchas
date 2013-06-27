@@ -33,29 +33,25 @@ MODULE TRUNCATE_VOLUME_MODULE
   !            S. Jay Mosso, LANL (sjm@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: real_kind, int_kind
+  use kinds, only: r8
   use parameter_module, only: ndim, nvf
-
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: TRUNCATE_VOLUME, TRUNCATE_FACE, FACE_PARAM, Trunc_Vol, TRUNCVOL_DATA
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   type TRUNCVOL_DATA
 
-    real(real_kind)   :: K(ndim)
-    real(real_kind)   :: Lambda
-    real(real_kind)   :: MUa(nvf)
-    real(real_kind)   :: MUi(nvf)
-    real(real_kind)   :: Nu
-    real(real_kind)   :: V1234
-    real(real_kind)   :: X(nvf,ndim)
-    integer(int_kind) :: MUp(nvf)
+    real(r8) :: K(ndim)
+    real(r8) :: Lambda
+    real(r8) :: MUa(nvf)
+    real(r8) :: MUi(nvf)
+    real(r8) :: Nu
+    real(r8) :: V1234
+    real(r8) :: X(nvf,ndim)
+    integer  :: MUp(nvf)
 
   end type TRUNCVOL_DATA
 
@@ -76,19 +72,16 @@ CONTAINS
     !   for the volume truncation calculation
     !
     !=======================================================================
-    use constants_module, only: zero, one_half, one
     use interface_module, only: Int_Geom, Int_Flux
     use parameter_module, only: nicells
 
-    implicit none
-
     ! Arguments
-    character(LEN = 9), intent(IN) :: option
-    integer(int_kind),  intent(IN) :: face
+    character(9), intent(IN) :: option
+    integer, intent(IN) :: face
 
     ! Local Variables
-    integer(int_kind)                          :: i, j, n, v1, v2, v3, v4
-    real(real_kind),   dimension(nicells,ndim) :: Tmp1, Tmp2
+    integer :: i, j, n, v1, v2, v3, v4
+    real(r8), dimension(nicells,ndim) :: Tmp1, Tmp2
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -140,14 +133,14 @@ CONTAINS
     Trunc_Vol(:,face)%K(3) = Tmp1(:,1)*Tmp2(:,2) - Tmp1(:,2)*Tmp2(:,1)
 
     ! Compute V1234
-    Trunc_Vol(:,face)%V1234 = zero
+    Trunc_Vol(:,face)%V1234 = 0.0_r8
     do i = 1,ndim
        Tmp1(:,i) = Trunc_Vol(:,face)%X(1,i) - Trunc_Vol(:,face)%X(2,i) + &
             Trunc_Vol(:,face)%X(3,i) - Trunc_Vol(:,face)%X(4,i)
        Trunc_Vol(:,face)%V1234 = Trunc_Vol(:,face)%V1234 +       &
                                        Tmp1(:,i)*Trunc_Vol(:,face)%K(i)
     end do
-    Trunc_Vol(:,face)%V1234 = one_half*Trunc_Vol(:,face)%V1234
+    Trunc_Vol(:,face)%V1234 = 0.5_r8 * Trunc_Vol(:,face)%V1234
 
     ! Compute the Mu-i-s.  This is the normal of the interface dotted
     ! with the coordinates of each faces vertex.  Mu-p is the vertex number
@@ -156,7 +149,7 @@ CONTAINS
     ! pass through first, second, etc.  The variable Mu-p is the vertex
     ! number of the reordered distances.
     do j = 1, nvf
-       Trunc_Vol(:,face)%MUi(j) = zero
+       Trunc_Vol(:,face)%MUi(j) = 0.0_r8
        do i = 1,ndim
           Trunc_Vol(:,face)%MUi(j) = Trunc_Vol(:,face)%MUi(j) +     &
                  Int_Geom%Normal(i)*Trunc_Vol(:,face)%X(j,i)
@@ -169,17 +162,17 @@ CONTAINS
     ! Mu-i into the Mu-a.  Put the minimum distance (the first vertex
     ! that the interface will pass through) into Mu-p(1) and put its
     ! facial vertex number into Mu-p(1).
-    Trunc_Vol(:,face)%Nu = zero
+    Trunc_Vol(:,face)%Nu = 0.0_r8
     Trunc_Vol(:,face)%Lambda = MIN(Trunc_Vol(:,face)%MUi(1),Trunc_Vol(:,face)%MUi(2), &
                                    Trunc_Vol(:,face)%MUi(3),Trunc_Vol(:,face)%MUi(4))
     do j = 1, nvf
        where (Trunc_Vol(:,face)%MUi(j) == Trunc_Vol(:,face)%Lambda .and.   &
-               Trunc_Vol(:,face)%Nu == zero)
+               Trunc_Vol(:,face)%Nu == 0.0_r8)
           Trunc_Vol(:,face)%MUp(j) = 1
           Trunc_Vol(:,face)%MUp(1) = j
           Trunc_Vol(:,face)%MUa(j) = Trunc_Vol(:,face)%MUa(1)
           Trunc_Vol(:,face)%MUa(1) = Trunc_Vol(:,face)%MUi(j)
-          Trunc_Vol(:,face)%Nu = one
+          Trunc_Vol(:,face)%Nu = 1.0_r8
        end where
     end do
 
@@ -232,8 +225,6 @@ CONTAINS
     Trunc_Vol(:,face)%Nu = Trunc_Vol(:,face)%MUi(1) - Trunc_Vol(:,face)%MUi(2) + &
                              Trunc_Vol(:,face)%MUi(3) - Trunc_Vol(:,face)%MUi(4)
 
-    return
-
   END SUBROUTINE FACE_PARAM
 
   SUBROUTINE TRUNCATE_VOLUME (Volume_Trunc_Total)
@@ -243,36 +234,31 @@ CONTAINS
     !   Compute the truncation volume.
     !
     !=======================================================================
-    use constants_module, only: zero
     use parameter_module, only: nfc, nicells
     use vof_data_module,  only: Cases, count_cases
 
-    implicit none
-
     ! Arguments
-    real(real_kind), dimension(nicells), intent(OUT) :: Volume_Trunc_Total
+    real(r8), dimension(nicells), intent(OUT) :: Volume_Trunc_Total
 
     ! Local Variables
-    integer(int_kind)                     :: f
-    real(real_kind),   dimension(nicells) :: Volume_Trunc_Face
+    integer :: f
+    real(r8), dimension(nicells) :: Volume_Trunc_Face
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize relevant quantities
-    Volume_Trunc_Total     = zero
+    Volume_Trunc_Total     = 0.0_r8
     if (count_cases) Cases = 0
 
     ! Loop over faces, accumulating the truncated volume
     do f = 1, nfc
 
-       Volume_Trunc_Face = zero
+       Volume_Trunc_Face = 0.0_r8
        call TRUNCATE_FACE (f, Volume_Trunc_Face)
 
        Volume_Trunc_Total = Volume_Trunc_Total + Volume_Trunc_Face
 
     end do
-
-    return
 
   END SUBROUTINE TRUNCATE_VOLUME
 
@@ -284,34 +270,30 @@ CONTAINS
     !   hex face by the plane given by X*Normal - Ro = 0
     !
     !=======================================================================
-    use constants_module, only: zero
     use interface_module, only: Int_Geom
-    use kind_module,      only: log_kind
     use parameter_module, only: nfc, nicells
     use vof_data_module,  only: Cases, count_cases
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                     intent(IN)  :: f
-    real(real_kind),   dimension(nicells), intent(OUT) :: Vf
+    integer, intent(IN)  :: f
+    real(r8), dimension(nicells), intent(OUT) :: Vf
 
     ! Local Variables
-    integer(int_kind)                         :: i
-    integer(int_kind), dimension(nicells,nfc) :: Truncation_Case
-    logical(log_kind), dimension(nicells,5)   :: Face_Trun
-    real(real_kind),   dimension(nicells)     :: Q
-    real(real_kind),   dimension(nicells,nvf) :: Y
+    integer :: i
+    integer, dimension(nicells,nfc) :: Truncation_Case
+    logical, dimension(nicells,5) :: Face_Trun
+    real(r8), dimension(nicells) :: Q
+    real(r8), dimension(nicells,nvf) :: Y
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    Y = zero
+    Y = 0.0_r8
     call Y_FUNCTION (f, Y)
 
-    Vf = zero
+    Vf = 0.0_r8
 
     ! Case #1 intersection
-    Q = zero
+    Q = 0.0_r8
     call TRUNCATE_FACE_N (1, f, Q, Y)
     where (Int_Geom%Rho >  Trunc_Vol(:,f)%MUa(1) .and. &
            Int_Geom%Rho <= Trunc_Vol(:,f)%MUa(2) .and. &
@@ -334,7 +316,7 @@ CONTAINS
        Vf = Vf + Q 
     end where
 
-    Q = zero
+    Q = 0.0_r8
     call TRUNCATE_FACE_N (2, f, Q, Y)
     where (Int_Geom%Rho >  Trunc_Vol(:,f)%MUa(2) .and. &
            Int_Geom%Rho <= Trunc_Vol(:,f)%MUa(3) .and. &
@@ -351,7 +333,7 @@ CONTAINS
     end if
 
     ! Case #3 intersection
-    Q = zero
+    Q = 0.0_r8
     call TRUNCATE_FACE_N (4, f, Q, Y)
     where (Int_Geom%Rho > Trunc_Vol(:,f)%MUa(3) .and. &
            Int_Geom%Rho < Trunc_Vol(:,f)%MUa(4)) Vf = Vf - Q 
@@ -366,7 +348,7 @@ CONTAINS
     ! Case #4 intersection.  Note, this term is in common with
     !    a term in the calculation of case #3.  That is why the 
     !    conditional doesn-t exclude case #3.
-    Q = zero
+    Q = 0.0_r8
     call TRUNCATE_FACE_4 (f, Q)
     where (Int_Geom%Rho > Trunc_Vol(:,f)%MUa(3)) Vf = Vf + Q 
 
@@ -377,7 +359,7 @@ CONTAINS
     end if
 
     ! Case #2 intersection
-    Q = zero
+    Q = 0.0_r8
     call TRUNCATE_FACE_2 (f, Q, Y)
     where (Int_Geom%Rho >  Trunc_Vol(:,f)%MUa(2) .and. &
            Int_Geom%Rho <= Trunc_Vol(:,f)%MUa(3) .and. &
@@ -399,8 +381,6 @@ CONTAINS
 
     end if
 
-    return
-
   END SUBROUTINE TRUNCATE_FACE
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><>
@@ -412,36 +392,40 @@ CONTAINS
     !   the volume truncated along a hex face by the plane
     !   X*Normal - Ro = 0
     !=======================================================================
-    use constants_module
     use cutoffs_module,   only: alittle
     use interface_module, only: Int_Geom
     use parameter_module, only: nicells
     use vof_data_module,  only: Eps
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                         intent(IN)  :: face
-    real(real_kind),   dimension(nicells,nvf), intent(IN)  :: Y
-    real(real_kind),   dimension(nicells),     intent(OUT) :: Q 
+    integer, intent(IN)  :: face
+    real(r8), dimension(nicells,nvf), intent(IN)  :: Y
+    real(r8), dimension(nicells), intent(OUT) :: Q 
 
     ! Local Variables
-    integer(int_kind)                     :: i, k
-    real(real_kind),   dimension(nicells) :: J1, J2, J3, W1, W2, W3, W4, Z1, Z2, Z3
+    integer :: i, k
+    real(r8), dimension(nicells) :: J1, J2, J3, W1, W2, W3, W4, Z1, Z2, Z3
+
+    real(r8), parameter :: one_third     = 1.0_r8 / 3.0_r8
+    real(r8), parameter :: one_fourth    = 0.25_r8
+    real(r8), parameter :: one_fifth     = 0.2_r8
+    real(r8), parameter :: one_sixth     = 1.0_r8 / 6.0_r8
+    real(r8), parameter :: one_seventh   = 1.0_r8 / 7.0_r8
+    real(r8), parameter :: one_eighth    = 0.125_r8
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    Q  = zero
-    J1 = zero
-    J2 = zero
-    J3 = zero
-    W1 = zero
-    W2 = zero
-    W3 = zero
-    W4 = zero
-    Z1 = zero
-    Z2 = zero
-    Z3 = zero
+    Q  = 0.0_r8
+    J1 = 0.0_r8
+    J2 = 0.0_r8
+    J3 = 0.0_r8
+    W1 = 0.0_r8
+    W2 = 0.0_r8
+    W3 = 0.0_r8
+    W4 = 0.0_r8
+    Z1 = 0.0_r8
+    Z2 = 0.0_r8
+    Z3 = 0.0_r8
 
     do k = 1, nvf
        i = 1 + mod(k + 1,nvf)
@@ -460,9 +444,9 @@ CONTAINS
     end do
 
     where (ABS(W1) > alittle)
-       W1 = one / W1
+       W1 = 1.0_r8 / W1
     elsewhere
-       W1 = zero
+       W1 = 0.0_r8
     endwhere
 
     do k = 1, nvf
@@ -478,7 +462,7 @@ CONTAINS
           ! Z2 is the Y function of the 2nd successor of the A vertex
           Z2 = Y(:,i) 
           W3 = eps(k)*Trunc_Vol(:,face)%Nu*W1
-          Q  = eps(k)*Trunc_Vol(:,face)%V1234*one_half*W1*W1 
+          Q  = eps(k)*Trunc_Vol(:,face)%V1234*0.5_r8*W1*W1 
 
           ! W2 is the difference between: 
           !   the Mu of the 2nd successor of vertex A and 
@@ -488,34 +472,32 @@ CONTAINS
     end do
 
     where (ABS(W2) > alittle)
-       W2 = one / W2
+       W2 = 1.0_r8 / W2
        elsewhere
-       W2 = zero
+       W2 = 0.0_r8
     endwhere
 
-    where ((ABS(W3) > 1.0e-2) .and. (W3 /= -one))
-       W4 = one/W3
-       J1 = (one - LOG(ABS(one + W3))*W4)*W4
-       J2 = (one_half - J1)*W4
+    where ((ABS(W3) > 1.0e-2) .and. (W3 /= -1.0_r8))
+       W4 = 1.0_r8/W3
+       J1 = (1.0_r8 - LOG(ABS(1.0_r8 + W3))*W4)*W4
+       J2 = (0.5_r8 - J1)*W4
        J3 = (one_third - J2)*W4
     elsewhere
        J3 = one_fourth - one_fifth*W3 + one_sixth*W3*W3 - &
             one_seventh*W3*W3*W3 + one_eighth*W3**4
        J2 = one_third - W3*J3
-       J1 = one_half - W3*J2
+       J1 = 0.5_r8 - W3*J2
     end where
 
     Q = Q*(J1*(Int_Geom%Rho - Trunc_Vol(:,face)%MUa(1))**2 -  &
-         two*(Trunc_Vol(:,face)%MUa(2) - Trunc_Vol(:,face)%MUa(1))*&
+         2.0_r8*(Trunc_Vol(:,face)%MUa(2) - Trunc_Vol(:,face)%MUa(1))*&
          (Int_Geom%Rho - Trunc_Vol(:,face)%MUa(1))*J2 &
          + J3*(Trunc_Vol(:,face)%MUa(2) - Trunc_Vol(:,face)%MUa(1))**2)
 
-    Q = Q + one_sixth*W1*Z1*(two*Int_Geom%Rho - Trunc_Vol(:,face)%MUa(1) - &
-            Trunc_Vol(:,face)%MUa(2))
+    Q = Q + W1*Z1*(2.0_r8*Int_Geom%Rho - Trunc_Vol(:,face)%MUa(1) - &
+            Trunc_Vol(:,face)%MUa(2))/6.0_r8
 
-    Q = Q + one_sixth*W1*W2*(Z2 - Z3)*(Int_Geom%Rho - Trunc_Vol(:,face)%MUa(2))**2
-
-    return
+    Q = Q + (W1*W2*(Z2 - Z3)*(Int_Geom%Rho - Trunc_Vol(:,face)%MUa(2))**2)/6.0_r8
 
   END SUBROUTINE TRUNCATE_FACE_2
 
@@ -526,35 +508,30 @@ CONTAINS
     !   the volume truncated along a hex face by the plane
     !   X*Normal - Ro = 0
     !=======================================================================
-    use constants_module, only: zero, one_fourth, one_sixth
     use interface_module, only: Int_Geom
     use parameter_module, only: nicells
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                     intent(IN)    :: face
-    real(real_kind),   dimension(nicells), intent(INOUT) :: Q
+    integer, intent(IN) :: face
+    real(r8), dimension(nicells), intent(INOUT) :: Q
 
     ! Local Variables
-    integer(int_kind)                          :: i
-    real(real_kind),   dimension(nicells,ndim) :: Tmp
+    integer :: i
+    real(r8), dimension(nicells,ndim) :: Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     do i = 1,ndim
-       Tmp(:,i) = one_fourth*(Trunc_Vol(:,face)%X(1,i) + Trunc_Vol(:,face)%X(2,i) +  &
+       Tmp(:,i) = 0.25_r8*(Trunc_Vol(:,face)%X(1,i) + Trunc_Vol(:,face)%X(2,i) +  &
                               Trunc_Vol(:,face)%X(3,i) + Trunc_Vol(:,face)%X(4,i)) - &
                               Int_Geom%Rho*Int_Geom%Normal(i)
     end do
 
-    Q = zero
+    Q = 0.0_r8
     do i = 1,ndim
        Q = Q + Tmp(:,i)*Trunc_Vol(:,face)%K(i)
     end do
-    Q = Q*one_sixth
-
-    return
+    Q = Q/6.0_r8
 
   END SUBROUTINE TRUNCATE_FACE_4
 
@@ -565,58 +542,60 @@ CONTAINS
     !   the volume truncated along a hex face by the plane
     !   X*Normal - Ro = 0
     !=======================================================================
-    use constants_module
     use cutoffs_module,   only: alittle
     use interface_module, only: Int_Geom
     use parameter_module, only: nicells
     use vof_data_module,  only: Eps
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                         intent(IN)    :: n, face
-    real(real_kind),   dimension(nicells,nvf), intent(IN)    :: Y
-    real(real_kind),   dimension(nicells),     intent(INOUT) :: Q
+    integer, intent(IN) :: n, face
+    real(r8), dimension(nicells,nvf), intent(IN) :: Y
+    real(r8), dimension(nicells), intent(INOUT) :: Q
 
     ! Local Variables
-    integer(int_kind)                     :: k
-    real(real_kind),   dimension(nicells) :: J1, S, T, W1, W3
+    integer :: k
+    real(r8), dimension(nicells) :: J1, S, T, W1, W3
 
+    real(r8), parameter :: two_thirds    = 2.0_r8 / 3.0_r8
+    real(r8), parameter :: one_twelfth   = 1.0_r8 / 12.0_r8
+    real(r8), parameter :: one_thirtieth = 1.0_r8 / 30.0_r8
+    real(r8), parameter :: one_sixtieth  = 1.0_r8 / 60.0_r8
+    real(r8), parameter :: one_168th     = 1.0_r8 / 168.0_r8
+    real(r8), parameter :: one_105th     = 1.0_r8 / 105.0_r8
+    
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    Q = zero
+    Q = 0.0_r8
 
     T = Int_Geom%Rho - Trunc_Vol(:,face)%MUa(n)
     W3 = Trunc_Vol(:,face)%Lambda + Trunc_Vol(:,face)%Nu*Trunc_Vol(:,face)%MUa(n)
 
     where (ABS(W3) > alittle)
-       W3 = one/W3
+       W3 = 1.0_r8/W3
     elsewhere
-       W3 = zero
+       W3 = 0.0_r8
     endwhere
 
     W1 = T*T*W3
     T = Trunc_Vol(:,face)%Nu*T*W3
 
-    S = zero
-    where (ABS(T) > alittle) S = one/T
+    S = 0.0_r8
+    where (ABS(T) > alittle) S = 1.0_r8/T
 
-    J1 = zero
-    where (T /= -one) J1 = (one-LOG(ABS(one+T))*S)*S
+    J1 = 0.0_r8
+    where (T /= -1.0_r8) J1 = (1.0_r8-LOG(ABS(1.0_r8+T))*S)*S
 
     where (ABS(T) > 1.0e-2)
-       W3 = J1 + (-two_thirds + two*J1 + (J1 - one_half) * S) * S
+       W3 = J1 + (-two_thirds + 2.0_r8*J1 + (J1 - 0.5_r8) * S) * S
     elsewhere
        W3 = one_twelfth + T*(-one_thirtieth + T*(one_sixtieth + T*(-one_105th + T*one_168th)))
     endwhere
 
     do k = 1, nvf
        where (Trunc_Vol(:,face)%MUp(n) == k)
-          Q = eps(k)*(Y(:,k)*W1*one_sixth + one_half*Trunc_Vol(:,face)%V1234*W3*W1*W1)
+          Q = eps(k)*(Y(:,k)*W1/6.0_r8 + 0.5_r8*Trunc_Vol(:,face)%V1234*W3*W1*W1)
        end where
     end do
-
-    return
 
   END SUBROUTINE TRUNCATE_FACE_N
 
@@ -643,16 +622,14 @@ CONTAINS
     use interface_module, only: Int_Geom
     use parameter_module, only: nicells
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                         intent(IN)    :: face
-    real(real_kind),   dimension(nicells,nvf), intent(INOUT) :: Y
+    integer, intent(IN) :: face
+    real(r8), dimension(nicells,nvf), intent(INOUT) :: Y
 
     ! Local Variables
-    integer(int_kind)                                     :: i
-    integer(int_kind),                          parameter :: ICMP = 1, JCMP = 2, KCMP = 3
-    real(real_kind),   dimension(nicells,ndim)            :: R1, R2, R3, R4, S1, S3
+    integer :: i
+    integer, parameter :: ICMP = 1, JCMP = 2, KCMP = 3
+    real(r8), dimension(nicells,ndim) :: R1, R2, R3, R4, S1, S3
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -696,8 +673,6 @@ CONTAINS
     !     compute the S4 vector as above.  We can use the S3 vector:
     !     Y4 = (X1 - Normal.Ro) . (X3 - Normal.Ro) X (X4 - Normal.Ro)
     Y(:,4) = R1(:,ICMP)*S3(:,ICMP) + R1(:,JCMP)*S3(:,JCMP) + R1(:,KCMP)*S3(:,KCMP)
-
-    return
 
   END SUBROUTINE Y_FUNCTION
 

@@ -6,12 +6,12 @@ MODULE NONLINEAR_SOLUTION
   ! Nonlinear Solver Module
   !
   !=======================================================================
-  use kind_module,      only: int_kind, real_kind, log_kind
+  use kinds, only: r8
   use parameter_module, only: string_len
+  use UbikSolve_module
+  use timing_tree
   use truchas_logging_services
-
   implicit none
-
   private
 
   ! Public procedures.
@@ -26,14 +26,14 @@ MODULE NONLINEAR_SOLUTION
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
  
   ! Number of NKuser elements needed for default control parameters.
-  integer (int_kind), parameter, public :: DEFAULT_NK_CONTROLS = 1
-  integer (int_kind), parameter, public :: NK_DEFAULT = 1
+  integer, parameter, public :: DEFAULT_NK_CONTROLS = 1
+  integer, parameter, public :: NK_DEFAULT = 1
 
   ! Max number of NK damper parameters
-  integer (int_kind), parameter, public :: ndampers = 4
+  integer, parameter, public :: ndampers = 4
 
-  integer (int_kind), parameter :: MAX_FIELDS = 10
-  integer (int_kind), parameter :: MAX_TIMES  = 3
+  integer, parameter :: MAX_FIELDS = 10
+  integer, parameter :: MAX_TIMES  = 3
 
   type NK_CONTROL
 
@@ -42,58 +42,58 @@ MODULE NONLINEAR_SOLUTION
      character (string_len) :: linear_solver_name
      character (string_len) :: output_mode
 
-     real (real_kind) :: tolnewt
-     real (real_kind) :: eps_NK
-     real (real_kind) :: limit_high
-     real (real_kind) :: limit_low
+     real(r8) :: tolnewt
+     real(r8) :: eps_NK
+     real(r8) :: limit_high
+     real(r8) :: limit_low
 
-     real (real_kind)   :: NLK_Vector_Tolerance
-     integer (int_kind) :: NLK_Max_Vectors
+     real(r8) :: NLK_Vector_Tolerance
+     integer  :: NLK_Max_Vectors
 
-     real (real_kind),   pointer, dimension(:) :: L2
-     real (real_kind),   pointer, dimension(:) :: LI
-     integer (int_kind), pointer, dimension(:) :: LI_Location
+     real(r8), pointer, dimension(:) :: L2
+     real(r8), pointer, dimension(:) :: LI
+     integer,  pointer, dimension(:) :: LI_Location
 
-     integer (int_kind) :: linear_tot
-     integer (int_kind) :: newton_tot
-     integer (int_kind) :: newton_itmax
-     integer (int_kind) :: linear_solver_index
+     integer :: linear_tot
+     integer :: newton_tot
+     integer :: newton_itmax
+     integer :: linear_solver_index
    
-     logical (log_kind) :: use_damper
+     logical :: use_damper
    
   end type NK_CONTROL
 
-  real (real_kind), public, save, pointer, dimension(:) :: P_Residual
-  real (real_kind), public, save, pointer, dimension(:) :: P_Past
-  real (real_kind), public, save, pointer, dimension(:) :: P_Present
-  real (real_kind), public, save, pointer, dimension(:) :: P_Future
+  real(r8), public, save, pointer, dimension(:) :: P_Residual
+  real(r8), public, save, pointer, dimension(:) :: P_Past
+  real(r8), public, save, pointer, dimension(:) :: P_Present
+  real(r8), public, save, pointer, dimension(:) :: P_Future
 
-  type (NK_CONTROL), public, save, pointer :: P_Control
+  type(NK_CONTROL), public, save, pointer :: P_Control
 
   type NK_FIELD
-     real (real_kind), pointer, dimension(:) :: Field
+     real(r8), pointer, dimension(:) :: Field
   end type
 
   type NK_STATE
-     type (NK_FIELD), dimension(MAX_FIELDS) :: CC_Field
+     type(NK_FIELD), dimension(MAX_FIELDS) :: CC_Field
   end type
 
   type NK_SOLUTION_FIELD
-     integer (int_kind)                      :: vectorsize
-     integer (int_kind)                      :: unknowns_per_element
-     integer (int_kind)                      :: time_levels
-     type (NK_STATE),  dimension(MAX_TIMES)  :: t
-     type (NK_STATE)                         :: residual
-     real (real_kind), dimension(MAX_FIELDS) :: cc_norms
-     real (real_kind)                        :: tot_norm
+     integer :: vectorsize
+     integer :: unknowns_per_element
+     integer :: time_levels
+     type(NK_STATE),  dimension(MAX_TIMES)  :: t
+     type(NK_STATE) :: residual
+     real(r8), dimension(MAX_FIELDS) :: cc_norms
+     real(r8) :: tot_norm
   end type
 
   ! Declare an array of the NK_CONTROL type to hold
   ! user-input NK nonlinear solution parameters
-  type (NK_CONTROL), pointer, dimension(:) :: NKuser
+  type(NK_CONTROL), pointer, dimension(:) :: NKuser
  
   ! Number of user-specified NK nonlinear solution control parameters.
-  integer (int_kind), public, save :: nonlinear_solutions
+  integer, public, save :: nonlinear_solutions
 
 CONTAINS
 
@@ -107,12 +107,9 @@ CONTAINS
     !
     !======================================================================
     use linear_solution,       only: Ubik_type
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments
-    type (NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
+    type(NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
 
     ! Interface blocks for external routines:
     !   RESIDUAL
@@ -123,9 +120,9 @@ CONTAINS
 
     optional :: PRECONDITIONER_UPDATE
 
-    type (NK_CONTROL),  target, intent(INOUT) :: NLS
-    type (Ubik_type),           intent(INOUT) :: LS
-    integer (int_kind),         intent(INOUT) :: status
+    type(NK_CONTROL), target, intent(INOUT) :: NLS
+    type(Ubik_type), intent(INOUT) :: LS
+    integer, intent(INOUT) :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -139,8 +136,6 @@ CONTAINS
             PRECONDITIONER_UPDATE, NLS, LS, status)
     end select
 
-    return
-
   END SUBROUTINE NONLINEAR_SOLVE
 
   SUBROUTINE NK_BB (NK_Data, RESIDUAL, MATVEC, PRECONDITIONER, &
@@ -151,22 +146,16 @@ CONTAINS
     !    Newton-Krylov "Black-Box" nonlinear PDE solver driver.
     !
     !======================================================================
-    use constants_module,      only: zero
-    use kind_module,           only: real_kind, int_kind
     use linear_solution,       only: LINEAR_SOLVER, Ubik_type, COMING_FROM_INSIDE_NK
     use lnorm_module,          only: L2NORM, LINORM
     use pgslib_module,         only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL,    &
                                      PGSLib_Global_All
-    use timing_tree
-    use UbikSolve_module
 #ifdef USE_TBROOK
     use output_data_module, only: enable_tbrook_output
 #endif
 
-    implicit none
-
     ! Arguments
-    type (NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
+    type(NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
 
     ! Interface blocks for external routines:
     !   RESIDUAL
@@ -177,18 +166,18 @@ CONTAINS
 
     optional :: PRECONDITIONER_UPDATE
 
-    type (NK_CONTROL),  target, intent(INOUT) :: NK
-    type (Ubik_type),           intent(INOUT) :: LS
-    integer (int_kind),         intent(INOUT) :: status
+    type(NK_CONTROL),  target, intent(INOUT) :: NK
+    type(Ubik_type),           intent(INOUT) :: LS
+    integer,         intent(INOUT) :: status
 
     ! Local Variables
-    logical (log_kind) :: TINY_INITIAL_RESIDUAL, fixed_point
-    integer (int_kind) :: i, unknowns, OLD, CURRENT, NEW
-    real (real_kind)   :: avg, alpha
-    real (real_kind)   :: max_delta_norm, max_delta_norm_old, future_state_norm
-    real (real_kind)   :: relative_max_delta_norm, convergence_rate, criterion
-    integer (int_kind), dimension(1)        :: Location
-    real (real_kind), dimension(:), pointer :: Solution_Delta, Solution_Res, RHS 
+    logical :: TINY_INITIAL_RESIDUAL, fixed_point
+    integer :: i, unknowns, OLD, CURRENT, NEW
+    real(r8)   :: avg, alpha
+    real(r8)   :: max_delta_norm, max_delta_norm_old, future_state_norm
+    real(r8)   :: relative_max_delta_norm, convergence_rate, criterion
+    integer, dimension(1)        :: Location
+    real(r8), dimension(:), pointer :: Solution_Delta, Solution_Res, RHS 
     character(256) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -231,8 +220,8 @@ CONTAINS
 
     ! Initialize various arrays and values.
     do i = 0,NK%newton_itmax
-       NK%L2(i) = zero
-       NK%LI(i) = zero
+       NK%L2(i) = 0.0_r8
+       NK%LI(i) = 0.0_r8
        NK%LI_Location(i) = 0
     end do    
     NK%newton_tot = 0
@@ -397,7 +386,7 @@ CONTAINS
        call TLS_fatal ('NK_BB: Newton-Krylov iteration limit! Examine .err file for details')
     end if
     if (TLS_verbosity >= TLS_VERB_NOISY) then
-       avg = zero
+       avg = 0.0_r8
        if (NK%Newton_tot > 0) then
           avg = REAL(NK%linear_tot)/REAL(NK%Newton_tot)
        end if
@@ -425,8 +414,6 @@ CONTAINS
     ! Stop the NK timer.
     call stop_timer("NK")
 
-    return
-
   END SUBROUTINE NK_BB
 
   SUBROUTINE NLK (NK_Data, RESIDUAL, MATVEC, PRECONDITIONER, &
@@ -437,27 +424,16 @@ CONTAINS
     !    Approximate Inexact Newton Method for Solving Nonlinear Equations
     !
     !======================================================================
-    use constants_module,      only: zero
-    use debug_control_data,    only: verbose, VERBOSE_NOISY
-    use fixed_point_accelerator, only: fpa_create, fpa_destroy, fpa_correction, fpa_state 
-    use kind_module,           only: real_kind, int_kind
-!    use linear_solution,       only: LINEAR_SOLVER, Ubik_type, COMING_FROM_INSIDE_NK
-!    use linear_solution
-    use linear_solution,       only: Ubik_type, Ubik_solver, PRECOND_NONE, &
-                                     SOLVER_NONE
-    use lnorm_module,          only: L2NORM, LINORM
-    use pgslib_module,         only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL,    &
-                                     PGSLib_Global_All
-    use timing_tree
-    use UbikSolve_module
+    use nka_type
+    use linear_solution, only: Ubik_type, Ubik_solver, PRECOND_NONE, SOLVER_NONE
+    use lnorm_module, only: L2NORM, LINORM
+    use pgslib_module, only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL, PGSLib_Global_All
 #ifdef USE_TBROOK
     use output_data_module, only: enable_tbrook_output
 #endif
 
-    implicit none
-
     ! Arguments
-    type (NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
+    type(NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
 
     ! Interface blocks for external routines:
     !   RESIDUAL
@@ -468,21 +444,21 @@ CONTAINS
 
     optional :: PRECONDITIONER_UPDATE
 
-    type (NK_CONTROL),  target, intent(INOUT) :: NLS
-    type (Ubik_type),           intent(INOUT) :: LS
-    type (Ubik_vector_type)                   :: ubik_vec
-    integer (int_kind),         intent(INOUT) :: status
+    type(NK_CONTROL), target, intent(INOUT) :: NLS
+    type(Ubik_type), intent(INOUT) :: LS
+    type(Ubik_vector_type) :: ubik_vec
+    integer, intent(INOUT) :: status
 
     ! Local Variables
-    logical (log_kind) :: TINY_INITIAL_RESIDUAL, fixed_point
-    integer (int_kind) :: i, unknowns, OLD, CURRENT, NEW, n
-    real (real_kind)   :: avg, alpha
-    real (real_kind)   :: max_delta_norm, max_delta_norm_old, future_state_norm
-    real (real_kind)   :: relative_max_delta_norm, convergence_rate, criterion
-    integer (int_kind), dimension(1)        :: Location
-    real (real_kind), dimension(:), pointer :: Solution_Delta, Solution_Res, RHS 
-    type (fpa_state)   :: accel_state
-    integer(int_kind) :: mvec
+    logical  :: TINY_INITIAL_RESIDUAL, fixed_point
+    integer  :: i, unknowns, OLD, CURRENT, NEW, n
+    real(r8) :: avg, alpha
+    real(r8) :: max_delta_norm, max_delta_norm_old, future_state_norm
+    real(r8) :: relative_max_delta_norm, convergence_rate, criterion
+    integer, dimension(1) :: Location
+    real(r8), dimension(:), pointer :: Solution_Delta, Solution_Res, RHS 
+    type(nka) :: accel_state
+    integer :: mvec
     character(256) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -525,8 +501,8 @@ CONTAINS
 
     ! Initialize various arrays and values.
     do i = 0,NLS%newton_itmax
-       NLS%L2(i) = zero
-       NLS%LI(i) = zero
+       NLS%L2(i) = 0.0_r8
+       NLS%LI(i) = 0.0_r8
        NLS%LI_Location(i) = 0
     end do    
     NLS%newton_tot = 0
@@ -574,7 +550,8 @@ CONTAINS
     ubik_vec%values => Solution_Delta
 
     ! Initialize fixed point accelerator
-    call fpa_create(accel_state,size(Solution_Delta),mvec,NLS%NLK_Vector_Tolerance)
+    call nka_init (accel_state, size(Solution_Delta), mvec)
+    call nka_set_vec_tol (accel_state, NLS%NLK_Vector_Tolerance)
 
     if (LS%solver.ne.SOLVER_NONE) then
        LS%solver=SOLVER_NONE
@@ -617,9 +594,9 @@ CONTAINS
       
 
       ! The Newton accelerator of Carlson/Miller SIAM Sci. Comp. Vol 19 pp 728-765 1998
-      call fpa_correction(accel_state,Solution_Delta,dp=nlk_dot_product)
+      call nka_accel_update (accel_state, Solution_Delta, dp=nlk_dot_product)
      
-! FPA is not currently set up to handle damping.
+! NKA is not currently set up to handle damping.
       alpha=1.d0
 
       !! A quick fix -- this needs to be redone properly (NNC)
@@ -714,7 +691,7 @@ CONTAINS
       endif
 
 ! We currently do not allow updating of the preconditioner, since the
-! usual presentation of the FPA has the preconditioner being 
+! usual presentation of the NKA has the preconditioner being 
 ! an unchanging linear operator.
 !!$      ! Update the nonlinear preconditioner if called for.
 !!$      if (PRESENT(PRECONDITIONER_UPDATE) .and. LS%precond /= 0) then
@@ -729,7 +706,7 @@ CONTAINS
 !    call POST_SOLVE (Ubik_solver, 'LINEAR_SOLVER')
 
     ! Deallocate acceleration vectors
-    call fpa_destroy(accel_state)
+    call nka_delete (accel_state)
 
     ! copy Ubik_solver out to Ubik before deallocating
     LS%status = Ubik_solver%status
@@ -764,7 +741,7 @@ CONTAINS
        call TLS_fatal ('NLK: Newton iteration limit! Examine .err file for details')
     end if
     if (TLS_verbosity >= TLS_VERB_NOISY) then
-       avg = zero
+       avg = 0.0_r8
        if (NLS%Newton_tot > 0) then
           avg = REAL(NLS%linear_tot)/REAL(NLS%Newton_tot)
        end if
@@ -792,20 +769,18 @@ CONTAINS
     ! Stop the NK timer.
     call stop_timer ("NK")
 
-    return
-
   END SUBROUTINE NLK
 
   !!
-  !! We need to pass the dot product routine to FPA_CORRECTION, but it
+  !! We need to pass the dot product routine to NKA_ACCEL_UPDATE, but it
   !! is illegal to pass a generic name like PGSLIB_GLOBAL_DOT_PRODUCT
   !! (or an internal procedure name for that matter).  Hence this routine.
   !!
   
   function nlk_dot_product (a, b) result (dp)
     use pgslib_module, only: pgslib_global_dot_product
-    real(real_kind), intent(in) :: a(:), b(:)
-    real(real_kind) :: dp
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: dp
     dp = pgslib_global_dot_product(a, b)
   end function nlk_dot_product
 
@@ -816,42 +791,37 @@ CONTAINS
     !    the solution is positive definite everywhere.
     !
     !===========================================================================
-    use constants_module,      only: one, one_tenth
-    use kind_module,           only: real_kind, int_kind
-    use pgslib_module,         only: PGSLIB_GLOBAL_MINVAL
-
-    implicit none
+    use pgslib_module, only: PGSLIB_GLOBAL_MINVAL
 
     ! Arguments
-    real (real_kind), dimension(:), intent(IN)    :: Future_state
-    real (real_kind), dimension(:), intent(IN)    :: Present_state
-    real (real_kind), dimension(:), intent(IN)    :: Solution_Delta
-    integer (int_kind),             intent(IN)    :: unknowns
-    type (NK_CONTROL),              intent(IN)    :: NK
-    real (real_kind),               intent(INOUT) :: alpha_min
+    real(r8), dimension(:), intent(IN) :: Future_state
+    real(r8), dimension(:), intent(IN) :: Present_state
+    real(r8), dimension(:), intent(IN) :: Solution_Delta
+    integer, intent(IN) :: unknowns
+    type(NK_CONTROL), intent(IN) :: NK
+    real(r8), intent(INOUT) :: alpha_min
 
     ! Local Variables
-    integer (int_kind) :: i
-    real (real_kind)   :: alpha, factor, alpha_floor = one_tenth, &
-                          alpha_ceiling = one
+    integer :: i
+    real(r8) :: alpha, factor, alpha_floor = 0.1_r8, alpha_ceiling = 1.0_r8
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize the damping scaler (alpha) to unity.
-    alpha = one
+    alpha = 1.0_r8
 
     if (NK%use_damper) then
        do i = 1,unknowns
           if (Future_state(i)+Solution_Delta(i) < NK%limit_low*Future_state(i)) then
 
-             factor = -(one - NK%limit_low ) * Future_state(i) / Solution_Delta(i)
+             factor = -(1.0_r8 - NK%limit_low ) * Future_state(i) / Solution_Delta(i)
              if (factor < alpha) then
                 alpha = factor
              end if
 
           else if (Future_state(i)+Solution_Delta(i) > NK%limit_high*Future_state(i)) then
 
-             factor = (NK%limit_high - one ) * Future_state(i) / Solution_Delta(i)
+             factor = (NK%limit_high - 1.0_r8 ) * Future_state(i) / Solution_Delta(i)
              if (factor < alpha ) then
                 alpha = factor
              end if
@@ -867,8 +837,6 @@ CONTAINS
     ! Take the global minimum over the entire mesh.
     alpha_min = PGSLIB_GLOBAL_MINVAL(alpha)
 
-    return
-
   END SUBROUTINE NK_DAMPER
 
   SUBROUTINE NK_GET_SOLUTION_FIELD (Solution_Field, Vector, time_level)
@@ -878,17 +846,14 @@ CONTAINS
     !   Retrieve a real rank-1 vector from the NK_Solution_Field data type. 
     !
     !===========================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Arguments
-    type (NK_SOLUTION_FIELD),       intent(IN)    :: Solution_Field
-    real (real_kind), dimension(:), intent(INOUT) :: Vector
-    integer (int_kind),             intent(IN)    :: time_level
+    type(NK_SOLUTION_FIELD), intent(IN) :: Solution_Field
+    real(r8), dimension(:), intent(INOUT) :: Vector
+    integer, intent(IN) :: time_level
   
     ! Local Variables
-    integer (int_kind) :: j, lb, ub
+    integer :: j, lb, ub
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -898,8 +863,6 @@ CONTAINS
       ub = j*Solution_Field%vectorsize
       Vector(lb:ub) = Solution_Field%t(time_level)%cc_field(j)%field(:)   
     end do
-    
-    return
 
   END SUBROUTINE NK_GET_SOLUTION_FIELD
 
@@ -911,18 +874,15 @@ CONTAINS
     !   it to a real rank-1 Vector.
     !
     !===========================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
  
     ! Arguments
-    real (real_kind), dimension(:), pointer :: Vector
-    type (NK_SOLUTION_FIELD), intent(INOUT) :: Solution_Field
-    integer (int_kind),          intent(IN) :: time_level
+    real(r8), dimension(:), pointer :: Vector
+    type(NK_SOLUTION_FIELD), intent(INOUT) :: Solution_Field
+    integer, intent(IN) :: time_level
     
     ! Local Variables.
-    integer (int_kind) :: j, lb, ub
-    real (real_kind), dimension(:), pointer :: Tmp => NULL()
+    integer :: j, lb, ub
+    real(r8), dimension(:), pointer :: Tmp => NULL()
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -935,8 +895,6 @@ CONTAINS
       NULLIFY (Tmp)
     end do
     
-    return
-
   END SUBROUTINE NK_SET_SOLUTION_FIELD
   
   SUBROUTINE NK_INITIALIZE (Solution_Field, vectorsize, unknowns_per_element, &
@@ -947,20 +905,17 @@ CONTAINS
     !   Initialize the NK_Solution_Field data type.
     !
     !===========================================================================
-    use kind_module,  only: int_kind, real_kind
-
-    implicit none
  
     ! Arguments
-    type (NK_SOLUTION_FIELD),       intent(INOUT) :: Solution_Field
-    integer (int_kind),             intent(IN)    :: vectorsize
-    integer (int_kind),             intent(IN)    :: unknowns_per_element
-    integer (int_kind),             intent(IN)    :: time_levels
-    real (real_kind), dimension(:), intent(IN)    :: Solution_Old
-    real (real_kind), dimension(:), intent(IN)    :: Solution_Current
+    type(NK_SOLUTION_FIELD), intent(INOUT) :: Solution_Field
+    integer, intent(IN) :: vectorsize
+    integer, intent(IN) :: unknowns_per_element
+    integer, intent(IN) :: time_levels
+    real(r8), dimension(:), intent(IN) :: Solution_Old
+    real(r8), dimension(:), intent(IN) :: Solution_Current
     
     ! Local Variables.
-    integer (int_kind) :: vlength, j, lb, ub, OLD, CURRENT, NEW, status, n
+    integer :: vlength, j, lb, ub, OLD, CURRENT, NEW, status, n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1004,8 +959,6 @@ CONTAINS
        end do
     end do
     
-    return
-
   END SUBROUTINE NK_INITIALIZE
   
   SUBROUTINE NK_FINALIZE (Solution_Field)
@@ -1015,15 +968,12 @@ CONTAINS
     !   Destroy and deallocate all data associated with Solution_Field
     !
     !===========================================================================
-    use kind_module, only: int_kind
-
-    implicit none
  
     ! Arguments
-    type (NK_SOLUTION_FIELD), intent(INOUT) :: Solution_Field
+    type(NK_SOLUTION_FIELD), intent(INOUT) :: Solution_Field
     
     ! Local Variables.
-    integer (int_kind) :: j, lb, ub, n
+    integer :: j, lb, ub, n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1035,8 +985,6 @@ CONTAINS
           DEALLOCATE(Solution_Field%t(n)%cc_field(j)%field)
        end do
     end do
-    
-    return
 
   END SUBROUTINE NK_FINALIZE
 
@@ -1065,14 +1013,14 @@ CONTAINS
     use string_utilities, only: i_to_c
     use parameter_module, only: ncells, nnodes
 
-    character(len=*), intent(in) :: name
-    real(real_kind),  intent(in) :: r(:), x(:), d(:)
+    character(*), intent(in) :: name
+    real(r8), intent(in) :: r(:), x(:), d(:)
 
     integer :: status, dim
     integer, save :: df_num = 0
-    character(len=256) :: df_name
+    character(256) :: df_name
     type(brook), target :: df_brook
-    real(real_kind), allocatable :: tmp(:,:)
+    real(r8), allocatable :: tmp(:,:)
 
     status = 0 ! for some insane reason, this is intent(in) for all the tbrook stuff.
 
@@ -1179,8 +1127,8 @@ CONTAINS
     !!
 
     subroutine copy_to_rank_2 (in, out)
-      real(real_kind), intent(in)  :: in(:)
-      real(real_kind), intent(out) :: out(:,:)
+      real(r8), intent(in)  :: in(:)
+      real(r8), intent(out) :: out(:,:)
       integer :: i, j, n
       ASSERT( size(in) == size(out) )
       n = 0

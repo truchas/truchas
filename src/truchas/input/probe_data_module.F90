@@ -8,24 +8,14 @@ MODULE PROBE_DATA_MODULE
 ! Author(s): Sharen Cummins (scummins@lanl.gov)   
 !   
 !=======================================================================   
-use kind_module,      only: int_kind, log_kind, real_kind   
-use parameter_module, only: ndim, nprobes, MAX_PROBES
-    
-implicit none    
-! Public Module   
-public    
+  use kinds, only: r8
+  use parameter_module, only: ndim, nprobes, MAX_PROBES
+  implicit none    
+  public    
 
-! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>    
-! Probe Namelist Variables    
-character(LEN = 80), dimension(0:MAX_PROBES), save :: &
-                        probe_name,                   &
-                        probe_description
-
-real(KIND = real_kind), dimension(ndim, 0:MAX_PROBES), save :: &
-                        probe_coords
-
-real(KIND = real_kind), dimension(0:MAX_PROBES), save :: &
-                        probe_coords_scale
-
+  ! Probe Namelist Variables    
+  character(80), dimension(0:MAX_PROBES), save :: probe_name, probe_description
+  real(r8), dimension(ndim, 0:MAX_PROBES), save :: probe_coords
+  real(r8), dimension(0:MAX_PROBES), save :: probe_coords_scale
 
 END MODULE PROBE_DATA_MODULE

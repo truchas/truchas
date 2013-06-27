@@ -23,7 +23,6 @@ SUBROUTINE _ROUTINE_NAME_ (Dest, Src, Mesh, TYPE, TRACE, BOUNDARY, MASK, &
   !   into a _DATA_TYPE_ cell-centered vector of length ShortDim
   !=======================================================================
 
-  implicit none
   ! Arguments
   _DATA_TYPE_             , dimension(:,:),                        &
        intent(INOUT)                          :: Dest
@@ -34,7 +33,7 @@ SUBROUTINE _ROUTINE_NAME_ (Dest, Src, Mesh, TYPE, TRACE, BOUNDARY, MASK, &
   _DATA_TYPE_             , dimension(:),                          &         
        POINTER,                               &
        OPTIONAL                               :: BOUNDARY
-  logical(KIND = log_kind), dimension(SIZE(Dest,1), SIZE(Dest,2)), &
+  logical, dimension(SIZE(Dest,1), SIZE(Dest,2)), &
        intent(IN ),                           &
        OPTIONAL                               :: MASK
    _DATA_TYPE_, intent(IN   ), OPTIONAL                       :: INITIAL_VALUE
@@ -44,12 +43,12 @@ SUBROUTINE _ROUTINE_NAME_ (Dest, Src, Mesh, TYPE, TRACE, BOUNDARY, MASK, &
   LOGICAL, intent(IN), OPTIONAL      :: OVERWRITE_MASKED_VALUES
 
   ! Local scalars & arrays
-  integer(KIND = int_kind) :: f, c
-  logical(KIND = log_kind) :: PRESENT_MASK, TEMP_BOUNDARY, NEW_BOUNDARY
+  integer :: f, c
+  logical :: PRESENT_MASK, TEMP_BOUNDARY, NEW_BOUNDARY
   _DATA_TYPE_, POINTER, Dimension(:) :: Supplement_Data
   _DATA_TYPE_, POINTER, Dimension(:) :: Duplicate_Data
   _DATA_TYPE_                        :: DEFAULT_VALUE
-  logical(log_kind)                  :: OVERWRITE_MASKED_VALUES_Local
+  logical                  :: OVERWRITE_MASKED_VALUES_Local
  
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>

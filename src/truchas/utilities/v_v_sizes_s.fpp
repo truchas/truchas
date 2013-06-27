@@ -23,11 +23,10 @@
           INTENT(in    )          :: Scalar
 
     ! Result
-    integer (int_kind) :: SIZES
+    integer :: SIZES
 
     SIZES = Scalar%L
 
-    return
   end function _ROUTINE_NAME_
     
 #undef _ROUTINE_NAME_

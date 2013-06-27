@@ -42,15 +42,13 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), dimension(nfc) :: Conc_bit
-    integer(KIND = int_kind), dimension(nfc) :: Prs_bit
-    integer(KIND = int_kind), dimension(nfc) :: Vel_bit
+    integer, dimension(nfc) :: Conc_bit
+    integer, dimension(nfc) :: Prs_bit
+    integer, dimension(nfc) :: Vel_bit
 
     ! Local Variables
-    integer(KIND = int_kind) :: f
+    integer :: f
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -80,8 +78,6 @@ CONTAINS
        Vel_bit(f)  = 2*(f + nfc - 1)
     end do
 
-    return
-
   END SUBROUTINE ASSIGN_BC_BITS
   
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -95,13 +91,11 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
 
-    integer(KIND = int_kind),                    intent(IN)    :: bit_position
-    integer(KIND = int_kind), dimension(ncells), intent(INOUT) :: Flag
+    integer,                    intent(IN)    :: bit_position
+    integer, dimension(ncells), intent(INOUT) :: Flag
 
     ! Local Variables
 
@@ -109,8 +103,6 @@ CONTAINS
 
     ! Set Flag
     where (Mask) Flag = IBSET(Flag, bit_position)
-
-    return
 
   END SUBROUTINE SET_DIRICHLET
 
@@ -124,13 +116,11 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
 
-    integer(KIND = int_kind),                    intent(IN)    :: bit_position
-    integer(KIND = int_kind), dimension(ncells), intent(INOUT) :: Flag
+    integer,                    intent(IN)    :: bit_position
+    integer, dimension(ncells), intent(INOUT) :: Flag
 
     ! Local Variables
 
@@ -141,8 +131,6 @@ CONTAINS
        Flag = IBCLR(Flag, bit_position)
        Flag = IBSET(Flag, bit_position + 1)
     end where
-
-    return
 
   END SUBROUTINE SET_FREE_SLIP
 
@@ -156,13 +144,11 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
 
-    integer(KIND = int_kind),                    intent(IN)    :: bit_position
-    integer(KIND = int_kind), dimension(ncells), intent(INOUT) :: Flag
+    integer,                    intent(IN)    :: bit_position
+    integer, dimension(ncells), intent(INOUT) :: Flag
 
     ! Local Variables
 
@@ -173,8 +159,6 @@ CONTAINS
        Flag = IBSET(Flag, bit_position)
        Flag = IBCLR(Flag, bit_position + 1)
     end where
-
-    return
 
   END SUBROUTINE SET_DIRICHLET_VEL
 
@@ -188,13 +172,11 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
 
-    integer(KIND = int_kind),                    intent(IN)    :: bit_position
-    integer(KIND = int_kind), dimension(ncells), intent(INOUT) :: Flag
+    integer,                    intent(IN)    :: bit_position
+    integer, dimension(ncells), intent(INOUT) :: Flag
 
     ! Local Variables
 
@@ -202,8 +184,6 @@ CONTAINS
 
     ! Set Flag
     where (Mask) Flag = IBSET(Flag, bit_position)
-
-    return
 
   END SUBROUTINE SET_INTERNAL_BC
 
@@ -218,13 +198,11 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
 
-    integer(KIND = int_kind),                    intent(IN)    :: bit_position
-    integer(KIND = int_kind), dimension(ncells), intent(INOUT) :: Flag
+    integer,                    intent(IN)    :: bit_position
+    integer, dimension(ncells), intent(INOUT) :: Flag
 
     ! Local Variables
 
@@ -232,8 +210,6 @@ CONTAINS
 
     ! Set Flag
     where (Mask) Flag = IBCLR(Flag, bit_position)
-
-    return
 
   END SUBROUTINE SET_NEUMANN
   
@@ -247,13 +223,11 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
 
-    integer(KIND = int_kind),                    intent(IN)    :: bit_position
-    integer(KIND = int_kind), dimension(ncells), intent(INOUT) :: Flag
+    integer,                    intent(IN)    :: bit_position
+    integer, dimension(ncells), intent(INOUT) :: Flag
 
     ! Local Variables
 
@@ -264,8 +238,6 @@ CONTAINS
        Flag = IBSET(Flag, bit_position)
        Flag = IBSET(Flag, bit_position + 1)
     end where
-
-    return
 
   END SUBROUTINE SET_NEUMANN_VEL
 
@@ -280,23 +252,20 @@ CONTAINS
     !=======================================================================
     use bc_data_module,   only: BC_Vel, BC
     use bc_kind_module,   only: FREE_SLIP, DIRICHLET_VEL
-    use constants_module, only: zero
-    use kind_module,      only: int_kind, log_kind, real_kind
+    use kinds, only: r8
     use mesh_module,      only: Cell
     use parameter_module, only: ncells, ndim
 
-    implicit none
-
     ! Argument List
 
-    integer(int_kind),                       intent(IN)    :: bit_position, f
-    real(real_kind), dimension(ndim,ncells), intent(INOUT) :: Velocity
+    integer, intent(IN) :: bit_position, f
+    real(r8), dimension(ndim,ncells), intent(INOUT) :: Velocity
 
     ! Local Variables
 
-    logical(log_kind), dimension(ncells) :: Mask
-    integer(int_kind)                    :: n
-    real(real_kind),   dimension(ncells) :: Mag
+    logical, dimension(ncells) :: Mask
+    integer :: n
+    real(r8), dimension(ncells) :: Mag
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -304,7 +273,7 @@ CONTAINS
     Mask = FREE_SLIP (BC%Flag, bit_position)
     ! Compute the projection of the velocity and the normal
     if (ANY(Mask)) then
-       Mag = zero
+       Mag = 0.0_r8
        do n = 1,ndim
           where (Mask) Mag = Mag + Velocity(n,:)*Cell%Face_Normal(n,f)
        end do
@@ -321,8 +290,6 @@ CONTAINS
        end do
     end if
 
-    return
-
   END SUBROUTINE SET_VELOCITY_BC
   
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -335,13 +302,11 @@ CONTAINS
     !=======================================================================
     use scalars_module
 
-    implicit none
-
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
 
-    integer(KIND = int_kind),                    intent(IN)    :: bit_position
-    integer(KIND = int_kind), dimension(ncells), intent(INOUT) :: Flag
+    integer,                    intent(IN)    :: bit_position
+    integer, dimension(ncells), intent(INOUT) :: Flag
 
     ! Local Variables
 
@@ -352,8 +317,6 @@ CONTAINS
        Flag = IBCLR(Flag, bit_position)
        Flag = IBCLR(Flag, bit_position + 1)
     end where
-
-    return
 
   END SUBROUTINE SET_NO_VEL_BC
 

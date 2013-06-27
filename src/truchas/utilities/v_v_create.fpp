@@ -24,17 +24,12 @@
 #endif
 
     ! Arguments
-    type (_VAR_DATA_TYPE_), &
-          DIMENSION(:)             :: ARRAY
-    integer (int_kind),    &
-          intent(IN),      &
-          DIMENSION(SIZE(ARRAY,1)) :: SIZES
+    type (_VAR_DATA_TYPE_), DIMENSION(:) :: ARRAY
+    integer, intent(IN), DIMENSION(SIZE(ARRAY,1)) :: SIZES
 
     ! Local variables
-    integer (int_kind) :: i, offset, TotalSize, l_size, upper
-    _DATA_TYPE_,           &
-             pointer,      &
-             dimension(:) :: BigArray
+    integer :: i, offset, TotalSize, l_size, upper
+    _DATA_TYPE_, pointer, dimension(:) :: BigArray
 
     ! If ARRAY has 0 size, then there is nothing to do:
     if (SIZE(ARRAY) >= 1) then
@@ -64,7 +59,6 @@
 
     endif
 
-    return
   end Subroutine _ROUTINE_NAME_
 
 

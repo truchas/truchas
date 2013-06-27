@@ -14,17 +14,8 @@ MODULE SCALARS_MODULE
   !
   !=======================================================================
   use code_module
-  use constants_module
   use cutoffs_module
-  use kind_module
   use parameter_module
-
-  implicit none
-  save
-
-  ! Public Module
   public
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 END MODULE SCALARS_MODULE

@@ -42,9 +42,6 @@ RECURSIVE SUBROUTINE _FUNCTION_NAME_ (B, Variable, FORMAT,  C_Array_Order, ADVAN
   !   Write Variable to the output brook.
   !   Status is returned in iStatus
   !==================================================================
-  !  use kind_module
-
-  IMPLICIT NONE
 
   ! Arguments
   LOGICAL,          OPTIONAL :: ADVANCE
@@ -307,8 +304,6 @@ RECURSIVE SUBROUTINE _FUNCTION_NAME_ (B, Variable, FORMAT,  C_Array_Order, ADVAN
      deallocate(ptr)
   end if
   
-  RETURN
-
 END SUBROUTINE _FUNCTION_NAME_
 
 
@@ -426,8 +421,6 @@ SUBROUTINE _FUNCTION_NAME_RESHAPE_ (iStatus, &
      iStatus = BE_RESHAPE
      call B_Set_Error(BE_RESHAPE, 'Invalid call frame to reshape for C like array output')
   end if
-
-  return
 
 end SUBROUTINE _FUNCTION_NAME_RESHAPE_
 #undef _DEFINE_RESHAPE_

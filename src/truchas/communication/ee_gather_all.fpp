@@ -27,15 +27,11 @@
 #define _DIMENSION_(D) dimension D
 
   subroutine _ROUTINE_NAME_(DEST, SOURCE, BOUNDARY, RANGE)
-    use truchas_logging_services, only: TLS_panic
     use var_vector_module
     use pgslib_module,only: PGSLib_Size_Of_Dup,   &
                           PGSLib_Size_Of_Sup,   &
                           PGSLib_Dup_Index,     &
                           PGSLib_Buffer_Gather
-
-    
-    implicit none
 
     ! Arguments
     _DEST_DATA_TYPE_, &
@@ -47,17 +43,17 @@
               OPTIONAL,    &
               _BDY_DIMENSION_:: BOUNDARY
 
-    integer (int_kind),    &
+    integer,    &
               dimension(:),&
               OPTIONAL     :: RANGE
 
     ! Local variables
-    integer(KIND = int_kind) :: f, c, i, lc, uc
-    logical(KIND = log_kind) :: TEMP_BOUNDARY, NEW_BOUNDARY
+    integer :: f, c, i, lc, uc
+    logical :: TEMP_BOUNDARY, NEW_BOUNDARY
     _DATA_TYPE_, POINTER, Dimension(:) :: Supplement_Data
     _DATA_TYPE_, POINTER, Dimension(:) :: Duplicate_Data
-!    integer (int_kind), POINTER, Dimension(:) :: Duplicate_Indx
-    integer (int_kind), POINTER, Dimension(:) :: Cell_Ngbrs
+!    integer, POINTER, Dimension(:) :: Duplicate_Indx
+    integer, POINTER, Dimension(:) :: Cell_Ngbrs
     _DATA_TYPE_, POINTER, Dimension(:) :: Dest_Column
 
     
@@ -130,7 +126,6 @@
   ! If BOUNDARY was not passed in, then deallocate space provided
   IF (TEMP_BOUNDARY) DEALLOCATE(Supplement_Data)
 
-  return
  end subroutine _ROUTINE_NAME_
 
 #undef _DEST_DATA_TYPE_

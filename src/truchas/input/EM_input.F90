@@ -22,7 +22,7 @@
 
 module EM_input
 
-  use kind_module, only: rk => real_kind
+  use kinds, only: r8
   use parameter_module, only: string_len, MAXSV
   use string_utilities, only: i_to_c
   use truchas_logging_services
@@ -32,46 +32,46 @@ module EM_input
   public :: read_EM_input
 
   !! Magic values used to detect variables not initialized by input
-  character,     parameter :: NULL_C = char(0)
-  integer,       parameter :: NULL_I = huge(1)
-  real(kind=rk), parameter :: NULL_R = huge(1.0_rk)
+  character, parameter :: NULL_C = char(0)
+  integer,   parameter :: NULL_I = huge(1)
+  real(r8),  parameter :: NULL_R = huge(1.0_r8)
 
   !! Domain type: 'FULL_CYLINDER', 'HALF_CYLINDER', or 'QUARTER_CYLINDER'
-  character(len=string_len), public, save :: EM_Domain_Type = NULL_C
-  character(len=1),          public, save :: Symmetry_Axis  = NULL_C
+  character(string_len), public, save :: EM_Domain_Type = NULL_C
+  character, public, save :: Symmetry_Axis  = NULL_C
   
   !! Container for the INDUCTION_COIL namelist data.
   type, public :: coil_data
-    real(kind=rk) :: center(3)
-    real(kind=rk) :: radius
-    real(kind=rk) :: length
+    real(r8) :: center(3)
+    real(r8) :: radius
+    real(r8) :: length
     integer       :: nturns
-    real(kind=rk), pointer :: current(:)   => null()
-    !real(kind=rk), pointer :: frequency(:) => null()
-    !real(kind=rk), pointer :: times(:)     => null()
+    real(r8), pointer :: current(:)   => null()
+    !real(r8), pointer :: frequency(:) => null()
+    !real(r8), pointer :: times(:)     => null()
   end type coil_data
 
   !! Magnetic source field parameters
 
-  real(kind=rk),   pointer, public, save :: src_time(:)   => null()
-  real(kind=rk),   pointer, public, save :: src_freq(:)   => null()
-  real(kind=rk),   pointer, public, save :: unif_src(:)   => null()
+  real(r8), pointer, public, save :: src_time(:)   => null()
+  real(r8), pointer, public, save :: src_freq(:)   => null()
+  real(r8), pointer, public, save :: unif_src(:)   => null()
   type(coil_data), pointer, public, save :: coil_array(:) => null()
   
   !! EM solver control parameters
-  integer,       public, save :: Steps_Per_Cycle       = NULL_I
-  integer,       public, save :: Maximum_Source_Cycles = NULL_I
-  real(kind=rk), public, save :: SS_Stopping_Tolerance = NULL_R
-  integer,       public, save :: Maximum_CG_Iterations = NULL_I
-  real(kind=rk), public, save :: CG_Stopping_Tolerance = NULL_R
-  real(kind=rk), public, save :: Num_Etasq = NULL_R
-  real(kind=rk), public, save :: Material_Change_Threshold = NULL_R
+  integer,  public, save :: Steps_Per_Cycle       = NULL_I
+  integer,  public, save :: Maximum_Source_Cycles = NULL_I
+  real(r8), public, save :: SS_Stopping_Tolerance = NULL_R
+  integer,  public, save :: Maximum_CG_Iterations = NULL_I
+  real(r8), public, save :: CG_Stopping_Tolerance = NULL_R
+  real(r8), public, save :: Num_Etasq = NULL_R
+  real(r8), public, save :: Material_Change_Threshold = NULL_R
   
   !! EM output control parameters
-  integer,       public, save :: Output_Level = NULL_I
-  logical,       public, save :: Graphics_Output = .false.
-  real(kind=rk), public, save :: Probe_Points(3,10) = NULL_R
-  integer,       public, save :: num_probes = 0
+  integer,  public, save :: Output_Level = NULL_I
+  logical,  public, save :: Graphics_Output = .false.
+  real(r8), public, save :: Probe_Points(3,10) = NULL_R
+  integer,  public, save :: num_probes = 0
   
 contains
 
@@ -132,9 +132,9 @@ contains
     integer, intent(out) :: stat
 
     logical :: found
-    real(kind=rk) :: Source_Times(MAXSV-1) = NULL_R
-    real(kind=rk) :: Source_Frequency(MAXSV) = NULL_R
-    real(kind=rk) :: Uniform_Source(MAXSV) = NULL_R
+    real(r8) :: Source_Times(MAXSV-1) = NULL_R
+    real(r8) :: Source_Frequency(MAXSV) = NULL_R
+    real(r8) :: Uniform_Source(MAXSV) = NULL_R
     
     namelist /electromagnetics/ EM_Domain_Type, Symmetry_Axis, &
       Source_Times, Source_Frequency, Uniform_Source, &
@@ -183,7 +183,7 @@ contains
 
     logical :: found
     integer :: nturns
-    real(kind=rk) :: center(3), radius, length, current(MAXSV)
+    real(r8) :: center(3), radius, length, current(MAXSV)
     
     namelist /induction_coil/ center, radius, length, nturns, current
     
@@ -261,8 +261,8 @@ contains
  !!
     
     subroutine copy_to_packed_array (source, array)
-      real(kind=rk), intent(in) :: source(:)
-      real(kind=rk), pointer :: array(:)
+      real(r8), intent(in) :: source(:)
+      real(r8), pointer :: array(:)
       allocate(array(count(source /= NULL_R)))
       array = pack(source, mask=(source /= NULL_R))
     end subroutine copy_to_packed_array
@@ -323,7 +323,7 @@ contains
     
     if (size(src_freq) == 0) then
       call input_error ('Source_Frequency must be assigned a value')
-    else if (any(src_freq <= 0.0_rk)) then
+    else if (any(src_freq <= 0.0_r8)) then
       call input_error ('Source_Frequency values must be > 0.0')
     else if (size(src_freq) /= size(src_time) + 1) then
       call input_error ('Wrong number of values provided for Source_Frequency')
@@ -340,7 +340,7 @@ contains
       if (any(coil_array(n)%center == NULL_R)) then
         if (all(coil_array(n)%center == NULL_R)) then
           call input_info ('Using default value (0,0,0) for Center of INDUCTION_COIL ' // i_to_c(n))
-          coil_array(n)%center = 0.0_rk
+          coil_array(n)%center = 0.0_r8
         else
           call input_error ('Center of INDUCTION_COIL ' // i_to_c(n) // ' requires 3 values')
         end if
@@ -356,18 +356,18 @@ contains
         if (coil_array(n)%length /= NULL_R) then
           call input_info ('Ignoring Length value for INDUCTION_COIL ' // i_to_c(n))
         end if
-        coil_array(n)%length = 0.0_rk
+        coil_array(n)%length = 0.0_r8
       end if
       
       if (coil_array(n)%length == NULL_R) then
         call input_error ('Length must be assigned a value for INDUCTION_COIL ' // i_to_c(n))
-      else if (coil_array(n)%length < 0.0_rk) then
+      else if (coil_array(n)%length < 0.0_r8) then
         call input_error ('Length must be >= 0.0 for INDUCTION_COIL ' // i_to_c(n))
       end if
 
       if (coil_array(n)%radius == NULL_R) then
         call input_error ('Radius must be assigned a value for INDUCTION_COIL ' // i_to_c(n))
-      else if (coil_array(n)%radius <= 0.0_rk) then
+      else if (coil_array(n)%radius <= 0.0_r8) then
         call input_error ('Radius must be > 0.0 for INDUCTION_COIL ' // i_to_c(n))
       end if
 
@@ -394,11 +394,11 @@ contains
     end if
     
     if (SS_Stopping_Tolerance == NULL_R) then
-      SS_Stopping_Tolerance = 1.0e-2_rk
+      SS_Stopping_Tolerance = 1.0e-2_r8
       call input_info ('Using default value 0.01 for SS_Stopping_Tolerance')
-    else if (SS_Stopping_Tolerance <= 0.0_rk) then
+    else if (SS_Stopping_Tolerance <= 0.0_r8) then
       call input_error ('SS_Stopping_Tolerance must be > 0.0')
-    else if (SS_Stopping_Tolerance > 0.1_rk) then
+    else if (SS_Stopping_Tolerance > 0.1_r8) then
       call input_warn ('SS_Stopping_Tolerance is very loose; consider decreasing the value')
     end if
     
@@ -410,26 +410,26 @@ contains
     end if
     
     if (CG_Stopping_Tolerance == NULL_R) then
-      CG_Stopping_Tolerance = 1.0e-5_rk
+      CG_Stopping_Tolerance = 1.0e-5_r8
       call input_info ('Using default value 1.0e-5 for CG_Stopping_Tolerance')
-    else if (CG_Stopping_Tolerance <= 0.0_rk .or. CG_Stopping_Tolerance >= 0.1_rk) then
+    else if (CG_Stopping_Tolerance <= 0.0_r8 .or. CG_Stopping_Tolerance >= 0.1_r8) then
       call input_error ('CG_Stopping_Tolerance must be > 0.0 and < 0.1')
-    else if (CG_Stopping_Tolerance > 1.0e-4_rk) then
+    else if (CG_Stopping_Tolerance > 1.0e-4_r8) then
       call input_warn ('CG_Stopping_Tolerance is very loose and may lead to the build up of errors.')
-    else if (CG_Stopping_Tolerance < 1.e-3_rk * epsilon(1.0_rk)) then
+    else if (CG_Stopping_Tolerance < 1.e-3_r8 * epsilon(1.0_r8)) then
       call input_warn ('CG_Stopping_Tolerance is too tight; CG iterations are unlikely to converge.')
     end if
     
     if (Material_Change_Threshold == NULL_R) then
-      Material_Change_Threshold = 0.3_rk
+      Material_Change_Threshold = 0.3_r8
       call input_info ('Using default value 0.3 for Material_Change_Threshold')
-    else if (Material_Change_Threshold <= 0.0_rk) then
+    else if (Material_Change_Threshold <= 0.0_r8) then
       call input_error ('Material_Change_Threshold must be > 0.0')
     end if
     
     if (Num_Etasq == NULL_R) then
-      Num_Etasq = 0.0_rk
-    else if (Num_Etasq < 0.0_rk) then
+      Num_Etasq = 0.0_r8
+    else if (Num_Etasq < 0.0_r8) then
       call input_error ('Num_Etasq must be >= 0.0')
     end if
     
@@ -521,7 +521,7 @@ contains
   contains
   
     subroutine pgslib_bcast_pointer (ptr)
-      real(kind=rk), pointer :: ptr(:)
+      real(r8), pointer :: ptr(:)
       integer :: n
       ASSERT( p_info%IOP .eqv. associated(ptr) )
       if (associated(ptr)) n = size(ptr)

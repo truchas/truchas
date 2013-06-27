@@ -12,6 +12,7 @@
     !
     !----------------------------------------------------------------------
 
+    use kinds, only: r8
     Private
     Public Update_Radiation_BC, Update_Dirichlet_BC, Update_HTC_External_BC
 
@@ -26,7 +27,6 @@
     !    Jim Sicilian, CCS-2 (sicilian@lanl.gov)
     !
     !-----------------------------------------------------------------------
-    use kind_module,            only: real_kind, int_kind
     use bc_operations,          only: BC_Operator, BC_Atlas, BC_Spec_Get_Operator, &
                                       BC_Op_Get_Atlas, BC_Get_Face, BC_Get_Cell,   &
                                       BC_Get_Offset, BC_Get_Values, &
@@ -38,23 +38,23 @@
     implicit none
 
     ! arguments
-    real(kind=real_kind), INTENT(IN)           :: time
+    real(r8), INTENT(IN) :: time
     ! local variables
-    real(real_kind)                            :: tlast
-    integer(int_kind)                          :: k,n, status
-    integer(int_kind)                          :: DegreesOfFreedom, InterpolationPoints
+    real(r8) :: tlast
+    integer  :: k,n, status
+    integer  :: DegreesOfFreedom, InterpolationPoints
 
     ! BC-related local variables.
-    integer(int_kind)                          :: NumberBdyPts, BdyPt, BdyCell
-    integer(int_kind)                          :: BdyFace, BdyOffSet
-    type(BC_Operator), pointer                 :: RADIATION_Operator
-    type(BC_Atlas),    pointer                 :: RADIATION_Atlas
-    integer(int_kind), pointer, dimension(:)   :: BdyFaceList
-    integer(int_kind), pointer, dimension(:)   :: BdyCellList
-    integer(int_kind), pointer, dimension(:)   :: BdyOffsetList
-    real(real_kind),   pointer, dimension(:,:) :: BdyValueList
+    integer :: NumberBdyPts, BdyPt, BdyCell
+    integer :: BdyFace, BdyOffSet
+    type(BC_Operator), pointer :: RADIATION_Operator
+    type(BC_Atlas),    pointer :: RADIATION_Atlas
+    integer, pointer, dimension(:) :: BdyFaceList
+    integer, pointer, dimension(:) :: BdyCellList
+    integer, pointer, dimension(:) :: BdyOffsetList
+    real(r8), pointer, dimension(:,:) :: BdyValueList
 
-    real(kind=real_kind), allocatable, SAVE, dimension(:)  :: timelist, templist
+    real(r8), allocatable, SAVE, dimension(:) :: timelist, templist
 
     ! Apply the RADIATION Operator
     ! Get the RADIATION operator.
@@ -120,7 +120,6 @@
     !    Jim Sicilian, CCS-2 (sicilian@lanl.gov)
     !
     !-----------------------------------------------------------------------
-    use kind_module,            only: real_kind, int_kind
     use bc_operations,          only: BC_Operator, BC_Atlas, BC_Spec_Get_Operator, &
                                       BC_Op_Get_Atlas, BC_Get_Face, BC_Get_Cell,   &
                                       BC_Get_Offset, BC_Get_Values, &
@@ -132,23 +131,23 @@
     implicit none
 
     ! arguments
-    real(kind=real_kind), INTENT(IN)           :: time
+    real(r8), INTENT(IN) :: time
     ! local variables
-    real(real_kind)                            :: tlast
-    integer(int_kind)                          :: k,n, status
-    integer(int_kind)                          :: DegreesOfFreedom, InterpolationPoints
+    real(r8) :: tlast
+    integer  :: k,n, status
+    integer  :: DegreesOfFreedom, InterpolationPoints
 
     ! BC-related local variables.
-    integer(int_kind)                          :: NumberBdyPts, BdyPt, BdyCell
-    integer(int_kind)                          :: BdyFace, BdyOffSet
-    type(BC_Operator), pointer                 :: DIRICHLET_Operator
-    type(BC_Atlas),    pointer                 :: DIRICHLET_Atlas
-    integer(int_kind), pointer, dimension(:)   :: BdyFaceList
-    integer(int_kind), pointer, dimension(:)   :: BdyCellList
-    integer(int_kind), pointer, dimension(:)   :: BdyOffsetList
-    real(real_kind),   pointer, dimension(:,:) :: BdyValueList
+    integer :: NumberBdyPts, BdyPt, BdyCell
+    integer :: BdyFace, BdyOffSet
+    type(BC_Operator), pointer :: DIRICHLET_Operator
+    type(BC_Atlas),    pointer :: DIRICHLET_Atlas
+    integer, pointer, dimension(:) :: BdyFaceList
+    integer, pointer, dimension(:) :: BdyCellList
+    integer, pointer, dimension(:) :: BdyOffsetList
+    real(r8), pointer, dimension(:,:) :: BdyValueList
 
-    real(kind=real_kind), allocatable, SAVE, dimension(:)  :: timelist, templist
+    real(r8), allocatable, SAVE, dimension(:) :: timelist, templist
 
     ! Apply the DIRICHLET Operator
     ! Get the Dirichlet operator.
@@ -214,7 +213,6 @@
     !    Jim Sicilian, CCS-2 (sicilian@lanl.gov)
     !
     !-----------------------------------------------------------------------
-    use kind_module,            only: real_kind, int_kind
     use bc_operations,          only: BC_Operator, BC_Atlas, BC_Spec_Get_Operator, &
                                       BC_Op_Get_Atlas, BC_Get_Face, BC_Get_Cell,   &
                                       BC_Get_Offset, BC_Get_Values, &
@@ -226,23 +224,23 @@
     implicit none
 
     ! arguments
-    real(kind=real_kind), INTENT(IN)           :: time
+    real(r8), INTENT(IN) :: time
     ! local variables
-    real(real_kind)                            :: tlast
-    integer(int_kind)                          :: k,n, status
-    integer(int_kind)                          :: DegreesOfFreedom, InterpolationPoints
+    real(r8) :: tlast
+    integer  :: k,n, status
+    integer  :: DegreesOfFreedom, InterpolationPoints
 
     ! BC-related local variables.
-    integer(int_kind)                          :: NumberBdyPts, BdyPt, BdyCell
-    integer(int_kind)                          :: BdyFace, BdyOffSet
-    type(BC_Operator), pointer                 :: HTC_External_Operator
-    type(BC_Atlas),    pointer                 :: HTC_External_Atlas
-    integer(int_kind), pointer, dimension(:)   :: BdyFaceList
-    integer(int_kind), pointer, dimension(:)   :: BdyCellList
-    integer(int_kind), pointer, dimension(:)   :: BdyOffsetList
-    real(real_kind),   pointer, dimension(:,:) :: BdyValueList
+    integer :: NumberBdyPts, BdyPt, BdyCell
+    integer :: BdyFace, BdyOffSet
+    type(BC_Operator), pointer :: HTC_External_Operator
+    type(BC_Atlas),    pointer :: HTC_External_Atlas
+    integer, pointer, dimension(:) :: BdyFaceList
+    integer, pointer, dimension(:) :: BdyCellList
+    integer, pointer, dimension(:) :: BdyOffsetList
+    real(r8), pointer, dimension(:,:) :: BdyValueList
 
-    real(kind=real_kind), allocatable, SAVE, dimension(:)  :: timelist, templist
+    real(r8), allocatable, SAVE, dimension(:) :: timelist, templist
 
     ! Apply the HTC_External Operator
     ! Get the HTC_External operator.

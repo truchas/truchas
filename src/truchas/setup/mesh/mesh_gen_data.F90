@@ -21,71 +21,34 @@ MODULE MESH_GEN_DATA
   ! Author(s): Robert Ferrell (ferrell.cpca.com)
   !
   !=======================================================================
-  use kind_module, only : int_kind, &
-                          log_kind
-  use constants_module, only: IPRESET
-
-  ! Private Module
+  implicit none
   private
 
-  ! Public Subroutines and functions
-  public :: set_Generated_Mesh, &
-            Generated_Mesh
+  public :: set_Generated_Mesh, Generated_Mesh
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-  integer (INT_KIND), save, public :: partitions_total
-  integer (INT_KIND), save, public :: partitions_per_process
+  integer, save, public :: partitions_total
+  integer, save, public :: partitions_per_process
 
-  integer (INT_KIND), parameter, public :: partitions_total_DEFAULT       = IPRESET
-  integer (INT_KIND), parameter, public :: partitions_per_process_DEFAULT = IPRESET
+  integer, parameter, public :: partitions_total_DEFAULT       = -1
+  integer, parameter, public :: partitions_per_process_DEFAULT = -1
 
   ! Private parameters
   logical, SAVE :: Generated_Mesh_Flag
 
 CONTAINS
 
-  SUBROUTINE set_Generated_Mesh(Flag)
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Set the Generated_Mesh flag
-    !
-    !   INPUT:
-    !        logical :: Flag
-    !
-    !   OUTPUT:
-    !
-    !=======================================================================
-    implicit none
-    
-    ! Subroutine arguments
-    logical(log_kind) :: Flag
-
-    Generated_Mesh_Flag = Flag
-    return
-  end SUBROUTINE set_Generated_Mesh
+  ! Set the generated_mesh flag
+  subroutine set_generated_mesh (flag)
+    logical :: flag
+    generated_mesh_flag = flag
+  end subroutine set_generated_mesh
   
-  
-  FUNCTION Generated_Mesh()
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Return the Generated_Mesh flag
-    !
-    !   INPUT:
-    !
-    !   OUTPUT:
-    !         .TRUE. if the mesh is generated internally, otherwise .FALSE.
-    !
-    !=======================================================================
-    implicit none
-    logical (log_kind) :: Generated_Mesh
-    
-    Generated_Mesh = Generated_Mesh_Flag
-
-    return
-  end FUNCTION Generated_Mesh
+  ! Return the Generated_Mesh flag
+  logical function generated_mesh()
+    generated_mesh = generated_mesh_flag
+  end function generated_mesh
 
 END MODULE MESH_GEN_DATA
   

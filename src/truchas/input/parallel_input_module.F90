@@ -20,15 +20,15 @@ Module PARALLEL_INPUT_MODULE
    !            Bryan Lally (lally@lanl.gov)
    !=======================================================================
    use parameter_module, only: string_len, ndim
-
+   use truchas_logging_services
    implicit none
    private
 
    ! public procedures
    public :: PARALLEL_PARAMETERS_INPUT
 
-   character (LEN=string_len), save :: partitioner
-   integer, dimension(ndim),   save :: processor_array
+   character(string_len), save :: partitioner
+   integer, dimension(ndim), save :: processor_array
 
 Contains
 
@@ -38,10 +38,8 @@ Contains
       !
       !   read PARALLEL_PARAMETERS namelist
       !=======================================================================
-      use input_utilities,        only: seek_to_namelist
-      use kind_module,            only: log_kind, int_kind
-      use parallel_info_module,   only: p_info
-      use truchas_logging_services
+      use input_utilities, only: seek_to_namelist
+      use parallel_info_module, only: p_info
       
       integer, intent(in) :: lun
 
@@ -49,11 +47,9 @@ Contains
       namelist /PARALLEL_PARAMETERS/ partitioner, processor_array
 
       ! local variables
-!    character(LEN = string_len), dimension(string_dim) :: fatal_error_string = blank_line
-!    character(LEN = string_len), dimension(string_dim) :: warning_error_string = blank_line
-      logical (log_kind)                           :: fatal
-      logical (log_kind)                           :: found
-      integer (int_kind)                           :: ioerror
+      logical :: fatal
+      logical :: found
+      integer :: ioerror
 
       ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -106,13 +102,10 @@ Contains
       !=======================================================================
       use partitioner_data, only: GET_PARTITIONER_DEFAULT, GET_PROCESSOR_ARRAY_DEFAULT
 
-      implicit none
-
       ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
       partitioner = GET_PARTITIONER_DEFAULT ()
       processor_array = GET_PROCESSOR_ARRAY_DEFAULT ()
-      return
 
    end subroutine PARALLEL_PARAMETERS_DEFAULT
 
@@ -126,14 +119,10 @@ Contains
       !=======================================================================
       use pgslib_module, only: PGSLib_BCAST
 
-      implicit none
-
       ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
       
       call PGSLib_BCAST (partitioner)
       call PGSLib_BCAST (processor_array)
-
-      return
 
    end subroutine PARALLEL_INPUT_PARALLEL
 
@@ -145,17 +134,13 @@ Contains
       !
       !   check that PARALLEL_PARAMETERS are consistent
       !=======================================================================
-      use kind_module,          only: log_kind, int_kind
-      use truchas_logging_services
-      use partitioner_data,     only: SET_PARTITIONER, SET_PROCESSOR_ARRAY
-
-      implicit none
+      use partitioner_data, only: SET_PARTITIONER, SET_PROCESSOR_ARRAY
 
       ! arguments
-      logical (log_kind), intent(INOUT) :: fatal
+      logical, intent(INOUT) :: fatal
 
       ! local variables
-      integer (int_kind) :: status
+      integer :: status
       character(64) :: message
 
       ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>

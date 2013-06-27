@@ -8,10 +8,6 @@ program gmv_writer_test
   use parallel_communication
   implicit none
 
-#ifdef LAHEY
-  integer :: system
-  external :: system
-#endif
   integer, parameter :: r8 = selected_real_kind(10,50)  ! 8-byte IEEE float
   integer :: status, j
   
@@ -40,11 +36,7 @@ program gmv_writer_test
   call gmv_end_variables ()
   call gmv_close ()
 
-#ifdef LAHEY
-  if (is_IOP) status = system('cmp mesh1.gmv mesh1.gmv.ref')
-#else
   if (is_IOP) call system ('cmp mesh1.gmv mesh1.gmv.ref', status)
-#endif
   call broadcast (status)
   if (status /= 0) status = 1
   

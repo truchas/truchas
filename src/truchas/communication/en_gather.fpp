@@ -25,12 +25,9 @@
     !
     !=======================================================================
     use gs_info_module,   only: EN_TRACE, EN
-    use kind_module
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nnodes, nvc
     use pgslib_module,  only: PGSLib_GS_Trace_Setup_P
-
-    implicit none
 
     ! Incoming Arguments
     _DATA_TYPE_ , intent(IN   ),                               &
@@ -46,7 +43,7 @@
     ! Local Variables
     _DATA_TYPE_ :: DEFAULT_VALUE
 #ifdef _PREFIX_OP_
-    integer(int_kind) :: v
+    integer :: v
     _DATA_TYPE_ , dimension(nvc,ncells) :: TempDest
 #endif
 

@@ -17,10 +17,9 @@ MODULE MESH_UTILITIES
   ! Author(s): Robert Ferrell (ferrell.cpca.com)
   !
   !=======================================================================
-
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -37,32 +36,26 @@ CONTAINS
     !    Compute and report mesh diagnostics. Check for connectivity errors.
     !
     !=======================================================================
-    use constants_module,       only: zero, one, three, four
     use gs_module,              only: EE_GATHER, EN_SUM_SCATTER
-    use kind_module,            only: int_kind, log_kind, real_kind
     use mesh_module,            only: Face_Vrtx, Mesh, degenerate_points, &
                                       degenerate_lines, triangle_faces,   &
                                       quad_faces, DEGENERATE_FACE
     use mesh_tests,             only: Test_All_Neighbors
-    use truchas_logging_services
     use parameter_module,       only: ncells, nnodes, nfc, nvf, ndim, nvc
     use pgslib_module,          only: PGSLib_GLOBAL_COUNT, PGSLib_GLOBAL_MAXVAL,&
                                       PGSLib_SUM_PREFIX
     use mesh_quality_module,    only: TWISTED_CELL_TEST
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: f, n, v1, v2, v3, v4
-    logical(KIND = log_kind) :: fatal, mismatch
-    logical(KIND = log_kind), dimension(ncells)     :: Match
-    integer(KIND = int_kind), dimension(nfc,ncells) :: Conn, Neighbor
-    integer(KIND = int_kind), dimension(ncells)     :: Global_Cell_Number
-    real(KIND = real_kind),   dimension(ncells)     :: X1, X2
-    real(KIND = real_kind),   dimension(nvc,ncells) :: Xn
-    real(KIND = real_kind),   dimension(nnodes)     :: Coord
+    integer :: f, n, v1, v2, v3, v4
+    logical :: fatal, mismatch
+    logical,  dimension(ncells)     :: Match
+    integer,  dimension(nfc,ncells) :: Conn, Neighbor
+    integer,  dimension(ncells)     :: Global_Cell_Number
+    real(r8), dimension(ncells)     :: X1, X2
+    real(r8), dimension(nvc,ncells) :: Xn
+    real(r8), dimension(nnodes)     :: Coord
     character(128) :: message
-
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -76,15 +69,15 @@ CONTAINS
     !    pyramid               1/point                 3
     !    tet               1/point, 1/line             4
 
-    X2 = zero
+    X2 = 0.0_r8
     do f = 1,nfc
-       X1 = zero
+       X1 = 0.0_r8
        do v1 = 1,nvf
           do v2 = 1,nvf
              if (v2 == v1) cycle
              Match = Mesh%Ngbr_Vrtx_Orig(Face_Vrtx(f,v2)) == Mesh%Ngbr_Vrtx_Orig(Face_Vrtx(f,v1))
              ! Vertices match: we have a degeneracy.
-             where (Match) X1 = X1 + one
+             where (Match) X1 = X1 + 1.0_r8
           end do
        end do
        X1 = X1/REAL(nvf)
@@ -94,10 +87,10 @@ CONTAINS
        end if
     end do
     if (ndim == 3) then
-       v1 = PGSLib_GLOBAL_COUNT(X2 == zero)
-       v2 = PGSLib_GLOBAL_COUNT(X2 == one)
-       v3 = PGSLib_GLOBAL_COUNT(X2 == three)
-       v4 = PGSLib_GLOBAL_COUNT(X2 == four)
+       v1 = PGSLib_GLOBAL_COUNT(X2 == 0.0_r8)
+       v2 = PGSLib_GLOBAL_COUNT(X2 == 1.0_r8)
+       v3 = PGSLib_GLOBAL_COUNT(X2 == 3.0_r8)
+       v4 = PGSLib_GLOBAL_COUNT(X2 == 4.0_r8)
        call TLS_info ('')
        call TLS_info ('                               Mesh Diagnostics')
        call TLS_info ('                               ----------------')
@@ -116,13 +109,13 @@ CONTAINS
 
     ! Sum-scatter a value of 1.0 to nodes, making sure
     ! that redundant scatters don't occur at degenerate faces.
-    Xn = one
+    Xn = 1.0_r8
     do v1 = 1,nvc
-       Match = Xn(v1,:) == zero
+       Match = Xn(v1,:) == 0.0_r8
        do v2 = 1,nvc
           if (v2 == v1) cycle
           where (Mesh%Ngbr_Vrtx_Orig(v2) == Mesh%Ngbr_Vrtx_Orig(v1) .and. &
-                 .not.Match) Xn(v2,:) = zero
+                 .not.Match) Xn(v2,:) = 0.0_r8
        end do
     end do
     call EN_SUM_SCATTER (Coord, Xn)
@@ -201,7 +194,6 @@ CONTAINS
     !   The array is distributed.
     !
     !=======================================================================
-    use kind_module,          only: int_kind, log_kind
     use mesh_module,          only: Mesh, Cell_Edge
     use parameter_module,     only: nec, nnodes
     use pgslib_module,        only: PGSLIB_PERMUTE, PGSLIB_GRADE_UP,             &
@@ -209,20 +201,17 @@ CONTAINS
                                     PGSLIB_SUM_PREFIX, PGSLib_Scatter_SUM
     use var_vector_module
 
-
-    implicit none
-
     ! Arguments
     type(int_var_vector), dimension(nnodes) :: Node_Edges
 
     ! Local Variables
-    integer(int_kind), dimension(:,:), pointer :: Edges
-    integer(int_kind), dimension(:),   pointer :: ITemp, Edge_Rank, Edge_Pack_Index
-    logical(log_kind), dimension(:),   pointer :: Edge_Mask, Edge_Segment
-    integer(int_kind), dimension(:,:), pointer :: Edges_Packed
-    integer(int_kind), dimension(nnodes)       :: Edges_Per_Node
-    integer(int_kind) :: edge, offset, n_edges, max_n_edges
-    integer(int_kind), dimension(:),   allocatable :: Temp_Edge_Src
+    integer, dimension(:,:), pointer :: Edges
+    integer, dimension(:),   pointer :: ITemp, Edge_Rank, Edge_Pack_Index
+    logical, dimension(:),   pointer :: Edge_Mask, Edge_Segment
+    integer, dimension(:,:), pointer :: Edges_Packed
+    integer, dimension(nnodes) :: Edges_Per_Node
+    integer :: edge, offset, n_edges, max_n_edges
+    integer, dimension(:), allocatable :: Temp_Edge_Src
 
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -401,8 +390,6 @@ CONTAINS
 
     DEALLOCATE(Edges_Packed)
 
-    return
-
   END FUNCTION NODE_CONNECTIVITY
 
   SUBROUTINE SET_DEGENERATE_FACES(Mesh)
@@ -413,14 +400,11 @@ CONTAINS
     !   the appropriate flages in mesh%ngbr_cell and mesh%ngbr_face.
     !
     !=======================================================================
-    use mesh_module,          only: MESH_CONNECTIVITY, DEGENERATE_FACE
-    use kind_module,          only: int_kind
-
-    implicit none
+    use mesh_module, only: MESH_CONNECTIVITY, DEGENERATE_FACE
 
     type(MESH_CONNECTIVITY), dimension(:), intent(INOUT) :: Mesh
 
-    integer(KIND = int_kind)                             :: i
+    integer :: i
 
     do i = 1,SIZE(Mesh,1)
        ! Tets, prisms and pyramids all have a degenerate face 6

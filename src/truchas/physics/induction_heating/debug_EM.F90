@@ -1,6 +1,6 @@
 module debug_EM
 
-  use kind_module, only: r8 => real_kind
+  use kinds, only: r8
   use parallel_communication
   use index_partitioning
   use system_io

@@ -79,7 +79,7 @@ module mesh_interop
   use parallel_permutations
   use distributed_mesh, only: dist_mesh
   use material_mesh_function
-  use ds_utilities, only: ds_info
+  use truchas_logging_services, only: TLS_info
   implicit none
   private
   
@@ -278,7 +278,7 @@ contains
     INSIST(all(vfrac >= 0.0_r8 .and. vfrac <= 1.0_r8))
     write(string,'(3(a,f18.16))') 'UPDATE_MMF_FROM_MATL: vfrac sum interval: [', &
        global_minval(sum(vfrac,dim=2)), ', ', global_maxval(sum(vfrac,dim=2)) , ']'
-    call ds_info (string)
+    call TLS_info (string)
 #endif
 
   end subroutine update_mmf_from_matl
@@ -416,7 +416,7 @@ contains
     INSIST(all(vof(1:,:) >= 0.0_r8 .and. vof(1:,:) <= 1.0_r8))
     write(string,'(3(a,f18.16))') 'UPDATE_MATL_FROM_MMF: vof sum interval: [', &
        global_minval(sum(vof(1:,:),dim=1)), ', ', global_maxval(sum(vof(1:,:),dim=1)) , ']'
-    call ds_info (string)
+    call TLS_info (string)
 #endif
 
     !! Update the MATL structure using the uncompressed VoF data.

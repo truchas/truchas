@@ -41,7 +41,6 @@ CONTAINS
                                        Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist
     use interface_output_module, only: Int_Output_Dt_Multiplier
-    use kind_module,             only: int_kind, log_kind
     use output_control,          only: Output_Dt, Output_T, precise_output
     use parallel_info_module,    only: p_info
     use timing_tree
@@ -54,8 +53,8 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! Local Variables
-    logical(KIND = log_kind) :: fatal, found
-    integer(KIND = int_kind) :: ioerror
+    logical :: fatal, found
+    integer :: ioerror
     character(128) :: fatal_error_string
 
     ! Define OUTPUTS namelist
@@ -122,7 +121,7 @@ CONTAINS
     !   Default OUTPUTS namelist.
     !
     !=======================================================================
-    use constants_module,        only: zero, one
+    use kinds, only: r8
     use edit_module,             only: long_edit, Long_Edit_Bounding_Coords,  &
                                        Long_Edit_Cell_List, long_edit_cells,  &
                                        Long_Output_Dt_Multiplier, short_edit, &
@@ -135,15 +134,12 @@ CONTAINS
 #ifdef USE_TBROOK
     use output_data_module,      only: XML_Data_Format
 #endif
-                                     
-
-    implicit none
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Output & delta times
-    Output_Dt = zero
-    Output_T  = zero
+    Output_Dt = 0
+    Output_T  = 0
 
     ! do output at exactly the specified time, deprecated
     precise_output = .false.
@@ -155,8 +151,8 @@ CONTAINS
     long_edit_cells            = 0
     Short_Output_Dt_Multiplier = 0
     Long_Output_Dt_Multiplier  = 0
-    Long_Edit_Bounding_Coords(1,:,:) =  HUGE(one)    ! Min coord is defaulted large positive
-    Long_Edit_Bounding_Coords(2,:,:) = -HUGE(one)    ! Max coord is defaulted large negative
+    Long_Edit_Bounding_Coords(1,:,:) =  HUGE(1.0_r8)    ! Min coord is defaulted large positive
+    Long_Edit_Bounding_Coords(2,:,:) = -HUGE(1.0_r8)    ! Max coord is defaulted large negative
 
     ! interface output
     interface_dump           = .false.
@@ -171,8 +167,6 @@ CONTAINS
 #endif
     Output_Dt_Multiplier  = 1
     Probe_Output_Cycle_Multiplier = 1
-    
-    return
 
   END SUBROUTINE OUTPUTS_DEFAULT
 
@@ -196,7 +190,6 @@ CONTAINS
 #ifdef USE_TBROOK
     use output_data_module,      only: XML_Data_Format
 #endif
-    implicit none
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -217,8 +210,6 @@ CONTAINS
 #endif
     end if
 
-    return
-
   END SUBROUTINE OUTPUTS_INPUT_PARALLEL
 
   SUBROUTINE OUTPUTS_CHECK (fatal)
@@ -228,11 +219,9 @@ CONTAINS
     !   Check OUTPUTS namelist.
     !
     !=======================================================================
-    use constants_module,        only: zero
     use edit_module,             only: long_edit, Long_Output_Dt_Multiplier, &
                                        short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: interface_dump, Int_Output_Dt_Multiplier
-    use kind_module,             only: int_kind, log_kind
     use output_control,          only: nops, Output_Dt, Output_T
     use parameter_module,        only: mops
     use time_step_module,        only: t
@@ -242,14 +231,12 @@ CONTAINS
     use output_data_module,      only: XML_Data_Format, XML_iFormat, enable_tbrook_output
 #endif
 
-    implicit none
-
     ! Arguments
-    logical(KIND = log_kind), intent(INOUT) :: fatal
+    logical, intent(INOUT) :: fatal
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
-    logical(KIND = log_kind) :: dt_okay, strings_match
+    integer :: n
+    logical :: dt_okay, strings_match
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -261,7 +248,7 @@ CONTAINS
     dt_okay = .false.
     OUTPUT_DT_CHECK: do nops = mops,1,-1
        ! Found last positive dt, exit.
-       if (Output_Dt(nops) > zero) then
+       if (Output_Dt(nops) > 0) then
           dt_okay = .true.
           exit OUTPUT_DT_CHECK
        end if
@@ -278,7 +265,7 @@ CONTAINS
 
        OUTPUT_T_CHECK: do n = 1,nops
 
-          if (Output_T(n) < zero) then
+          if (Output_T(n) < 0) then
              write (message,2) n, Output_T(n)
 2            format('Output time Output_T(',i2,') =',1pe10.3,' <= 0.0')
              call TLS_error (message)
@@ -293,7 +280,7 @@ CONTAINS
              fatal = .true.
           end if
 
-          if (Output_Dt(n) <= zero) then
+          if (Output_Dt(n) <= 0) then
              write (message,4) n, Output_Dt(n)
 4            format('Output delta time Output_Dt(',i2,') =',1pe10.3,' <= 0.0')
              call TLS_error (message)

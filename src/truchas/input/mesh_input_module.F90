@@ -32,45 +32,40 @@ MODULE MESH_INPUT_MODULE
   !            Bryan Lally, LANL (lally@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: double_kind, int_kind, real_kind, log_kind
+  use kinds, only: r8
   use parameter_module, only: mseg, ndim, mbody
   use truchas_logging_services
   use parallel_communication
-
   implicit none
-
-  ! Private module
   private
 
-  ! Public procedures
   public :: MESH_INPUT, MESH_READ, MESH_SIZES, MESH_READ_SIDE_SETS
 
   ! Magic values used to detect variables not initialized by input
-  character,       parameter :: NULL_C = char(0)
-  integer,         parameter :: NULL_I = huge(1)
-  real(real_kind), parameter :: NULL_R = huge(1.0_real_kind)
+  character, parameter :: NULL_C = char(0)
+  integer, parameter :: NULL_I = huge(1)
+  real(r8), parameter :: NULL_R = huge(1.0_r8)
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! MESH namelist input variables
-  character(LEN = 120),     public, save                         :: mesh_file
-  character(LEN = 120),     public, save                         :: mesh_file_format
-  real(KIND = real_kind),   public, save                         :: coordinate_scale_factor
-  integer(KIND = int_kind), public, save, dimension(ndim,mseg)   :: Ncell
-  real(KIND = double_kind), public, save, dimension(ndim)        :: Fuzz
-  real(KIND = double_kind), public, save                         :: Heps
-  real(KIND = double_kind), public, save, dimension(ndim,mseg)   :: Ratio
-  real(KIND = double_kind), public, save, dimension(ndim,mseg+1) :: Coord
-  integer(KIND = int_kind), public, save, dimension(mbody)       :: gap_element_blocks
-  integer(KIND = int_kind), public, save, dimension(127)         :: interface_side_sets
-  
+  character(120), public, save :: mesh_file
+  character(120), public, save :: mesh_file_format
+  real(r8), public, save :: coordinate_scale_factor
+  integer,  public, save, dimension(ndim,mseg) :: Ncell
+  real(r8), public, save, dimension(ndim) :: Fuzz
+  real(r8), public, save :: Heps
+  real(r8), public, save, dimension(ndim,mseg) :: Ratio
+  real(r8), public, save, dimension(ndim,mseg+1) :: Coord
+  integer,  public, save, dimension(mbody) :: gap_element_blocks
+  integer,  public, save, dimension(127) :: interface_side_sets
 
   ! Derived MESH namelist quantities
-  integer(KIND = int_kind), public, save, dimension(ndim)        :: Nseg
-  character(LEN = 1),       public, save, dimension(3)           :: Coord_label = (/ 'X','Y','Z' /)
+  integer, public, save, dimension(ndim) :: Nseg
+  character, public, save, dimension(3) :: Coord_label = (/ 'X','Y','Z' /)
 
   ! RCM renumbering flag
-  Logical(log_kind), public, save                                :: use_RCM
+  logical, public, save :: use_RCM
   
   ! Logical unit the mesh file is opened on
   integer, save :: msh_lun
@@ -86,7 +81,6 @@ CONTAINS
     !=======================================================================
     use input_utilities,        only: seek_to_namelist, NULL_C
     use string_utilities,       only: i_to_c
-    use kind_module,            only: log_kind, int_kind
     use truchas_env,            only: input_dir
     use parallel_info_module,   only: p_info
     use pgslib_module,          only: pgslib_bcast
@@ -100,10 +94,10 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! local variables
-    logical(KIND = log_kind) :: fatal, found
-    integer(KIND = int_kind) :: ios
-    integer(KIND = int_kind) :: n
-    integer(KIND = int_kind) :: total_cells
+    logical :: fatal, found
+    integer :: ios
+    integer :: n
+    integer :: total_cells
     character(256) :: message
 
     ! mesh namelist specification
@@ -212,8 +206,6 @@ CONTAINS
        end if
 
     end if GENERATE_MESH
-
-    return
 
   END SUBROUTINE MESH_INPUT
 
@@ -412,7 +404,6 @@ CONTAINS
     !   Set the relevant problem mesh dimensions
     !
     !=======================================================================
-    use kind_module,               only: int_kind, log_kind
     use mesh_decomposition_module, only: MESH_BLOCK_DECOMPOSITION, &
                                          MESH_DOMAIN_SIZES
     use parameter_module,          only: boundary_faces, boundary_faces_tot, &
@@ -424,8 +415,8 @@ CONTAINS
     use restart_variables,         only: restart, restart_ncells, restart_nnodes
 
     ! Local Variables
-    logical(KIND = log_kind) :: read_from_file, all_zero
-    integer(KIND = int_kind) :: n
+    logical :: read_from_file, all_zero
+    integer :: n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -506,8 +497,6 @@ CONTAINS
 
     end if MESH_PARAMETERS
 
-    return
-
   END SUBROUTINE MESH_SIZES
 
   SUBROUTINE MESH_CHECK (axis, mseg, Coord, fuzz, Heps, Ratio, Ncell, fatal, n, nseg)
@@ -517,23 +506,19 @@ CONTAINS
     !   Check MESH namelist parameters for orthogonal mesh generation.
     !   return n, the total number of cells for this axis.
     !=======================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: double_kind, int_kind, log_kind
-    implicit none
-
     ! Arguments
-    character(LEN = 1),                          intent(IN)    :: axis
-    integer(KIND = int_kind),                    intent(IN)    :: mseg
-    real(KIND = double_kind), dimension(mseg+1), intent(IN)    :: Coord
-    real(KIND = double_kind),                    intent(IN)    :: fuzz
-    real(KIND = double_kind),                    intent(IN)    :: Heps
-    real(KIND = double_kind), dimension(mseg),   intent(INOUT) :: Ratio
-    integer(KIND = int_kind), dimension(mseg),   intent(INOUT) :: Ncell
-    logical(KIND = log_kind),                    intent(INOUT) :: fatal
-    integer(KIND = int_kind),                    intent(OUT)   :: n, nseg
+    character, intent(IN) :: axis
+    integer, intent(IN) :: mseg
+    real(r8), dimension(mseg+1), intent(IN) :: Coord
+    real(r8), intent(IN) :: fuzz
+    real(r8), intent(IN) :: Heps
+    real(r8), dimension(mseg), intent(INOUT) :: Ratio
+    integer, dimension(mseg), intent(INOUT) :: Ncell
+    logical, intent(INOUT) :: fatal
+    integer, intent(OUT) :: n, nseg
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, msegm1
+    integer :: i, msegm1
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -547,7 +532,7 @@ CONTAINS
     SEGMENT_LOOP: do i = 1, msegm1
 
        ! Check number of cells for this segment.
-       CELL_NUMBER_CHECK: if (Ncell(i) < zero) then
+       CELL_NUMBER_CHECK: if (Ncell(i) < 0) then
 
           ! Negative number of cells; no good.
           write (message,10) axis, i, Ncell(i)
@@ -556,7 +541,7 @@ CONTAINS
           fatal = .true.
 
        ! Positive number of cells. . .
-       else if (Ncell(i) > zero) then
+       else if (Ncell(i) > 0) then
 
           n    = n + Ncell(i)
           nseg = nseg + 1
@@ -585,11 +570,11 @@ CONTAINS
           end if
 
           ! Zero expansion gives uniform zoning.
-          if (Ratio(i) == zero) Ratio(i) = one
+          if (Ratio(i) == 0.0_r8) Ratio(i) = 1.0_r8
 
           ! Outside allowed bounds for Ratio.
           if (Ratio(i) < 0.8 .or. Ratio(i) > 1.2) then
-             write (message,25) axis, i, Ratio(i)
+             write (message,25) axis, i!, Ratio(i)
 25           format(a,'-axis ratio(',i3,') < 0.8 or > 1.2 !')
              call TLS_warn (message)
           end if
@@ -624,19 +609,19 @@ CONTAINS
     end if
 
     ! Fuzz is greater than one; not allowed.
-    if (Heps > one) then
+    if (Heps > 1.0_r8) then
        call TLS_error ('Heps must be <= 1')
        fatal = .true.
     end if
 
     ! Fuzz is less than zero; not allowed.
-    if (Heps < zero) then
+    if (Heps < 0.0_r8) then
        call TLS_error ('Heps must be >= 0')
        fatal = .true.
     end if
 
     ! Fuzz is greater than one; not allowed.
-    if (fuzz > one) then
+    if (fuzz > 1.0_r8) then
        write (message,55) axis, fuzz
 55     format(a,'-axis randomization is too large: Fuzz = ',1pe12.5, &
               '.  Fuzz must be less than one.')
@@ -646,7 +631,7 @@ CONTAINS
 
 
     ! Fuzz is negative; not allowed.
-    if (fuzz < zero) then
+    if (fuzz < 0.0_r8) then
        write (message,60) axis, fuzz
 60     format(a,'-axis randomization is negative: Fuzz = ',1pe12.5, &
               '.  Fuzz should be positive.')
@@ -655,14 +640,12 @@ CONTAINS
     end if
 
     ! Make sure coordinate scale factor is positive.
-    if (coordinate_scale_factor <= zero) then
+    if (coordinate_scale_factor <= 0.0_r8) then
        write (message,65) Coordinate_Scale_Factor
 65     format(3(1pe12.5,1x),'is not a valid coordinate scale factor!')
        call TLS_error (message)
        fatal = .true.
     end if
-
-    return
 
   END SUBROUTINE MESH_CHECK
 
@@ -673,8 +656,6 @@ CONTAINS
     !   Default MESH namelist
     !=======================================================================
     use input_utilities,  only: NULL_C
-    use constants_module, only: one, zero
-    use kind_module,      only: int_kind
     use mesh_module,      only: Face_Vrtx, Vrtx_Face
     use parameter_module, only: boundary_faces, ncells,   &
                                 nfaces, nfc, nnodes, nvc, &
@@ -683,9 +664,9 @@ CONTAINS
                                 partitions_per_process, partitions_per_process_DEFAULT
 
     ! local variables
-    integer(KIND = int_kind) :: f, i, j
-    integer(KIND = int_kind) :: v
-    integer(KIND = int_kind) :: vertex_number
+    integer :: f, i, j
+    integer :: v
+    integer :: vertex_number
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -894,10 +875,10 @@ CONTAINS
     end do
 
     ! Fuzzing parameters
-    Fuzz = zero
+    Fuzz = 0.0_r8
     
-    Heps = zero
-    Ratio = zero
+    Heps = 0.0_r8
+    Ratio = 0.0_r8
 
     ! Mesh file name
     mesh_file = NULL_C
@@ -906,7 +887,7 @@ CONTAINS
     mesh_file_format = NULL_C
 
     ! Vertex coordinate scale factor.
-    coordinate_scale_factor = one
+    coordinate_scale_factor = 1.0_r8
 
     ! RCM off by default
     use_RCM = .false.
@@ -924,8 +905,6 @@ CONTAINS
        end do
     end do
 
-    return
-
   END SUBROUTINE MESH_DEFAULT
 
   SUBROUTINE MESH_INPUT_PARALLEL ()
@@ -938,8 +917,6 @@ CONTAINS
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_BCAST
     use mesh_gen_data,        only: partitions_total, partitions_per_process
-
-    implicit none
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -958,8 +935,6 @@ CONTAINS
        call PGSLib_BCast (gap_element_blocks)
        call PGSLib_BCast (interface_side_sets)
     end if BROADCAST_VARIABLES
-
-    return
 
   END SUBROUTINE MESH_INPUT_PARALLEL
 

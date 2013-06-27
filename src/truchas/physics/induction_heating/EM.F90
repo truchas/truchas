@@ -2,7 +2,7 @@
 
 module EM
 
-  use kind_module, only: rk => real_kind
+  use kinds, only: rk => r8
   use parallel_communication
   use EM_data_proxy
   use EM_utilities

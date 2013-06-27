@@ -266,11 +266,6 @@ CONTAINS
 
     ! Close all files we are responsible for
 
-#ifdef NAG_COMPILER_WORKAROUND
-    call TBrook_Write(odm_b_aux, Variable='NAG_COMPILER_WORKAROUND',Advance=.true., iStatus=out_code)
-    call TBrook_Write(odm_b_int, Variable='NAG_COMPILER_WORKAROUND',Advance=.true., iStatus=out_code)
-#endif
-
     call TBrook_Close(odm_b_out, iStatus=out_code)
     call TBrook_Destroy(odm_b_out, iStatus=out_code)
 

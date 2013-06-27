@@ -24,14 +24,9 @@ MODULE CYCLE_OUTPUT_MODULE
   !=======================================================================
   use truchas_logging_services
   implicit none
-
-  ! private module
   private
 
-  ! public procedures
   public :: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST, CYCLE_OUTPUT_DRIVER
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -90,7 +85,6 @@ CONTAINS
     !=======================================================================
     use debug_control_data
     use fluid_data_module,      only: fluid_flow
-    use kind_module,            only: int_kind
     use time_step_module,       only: cycle_number
     use process_info_module,    only: get_process_size
     use projection_data_module, only: mac_projection_iterations, &
@@ -98,7 +92,6 @@ CONTAINS
     use viscous_data_module,    only: viscous_implicitness, viscous_iterations, &
                                       prelim_viscous_iterations
     use solid_mechanics_data,   only: solid_mechanics, thermo_elastic_iterations, viscoplastic_iterations
-    use constants_module,       only: zero
     use output_data_module,     only: cycle_tag_open
     use tbrook_module,          only: tbrook_writexmltag,  &
                                       b_strlen,            &
@@ -107,10 +100,9 @@ CONTAINS
                                       BaseBrook
 
     ! Local variables.
-    integer(int_kind) :: vmsize, rssize, dsize, inext
+    integer :: vmsize, rssize, dsize, inext
     integer :: iStatus
     character(LEN=B_STRLEN) :: string
-
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -125,7 +117,7 @@ CONTAINS
          inext = inext + 1
          write(string, 110) 'Preliminary projection iterations (linear)',prelim_projection_iterations
          call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-         if (viscous_implicitness > zero) then
+         if (viscous_implicitness > 0) then
                inext = inext + 1
                write(string, 110) 'Preliminary projection iterations (linear)',prelim_viscous_iterations
                call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
@@ -134,7 +126,7 @@ CONTAINS
        inext = inext + 1
        write(string, 110) 'projection iterations (linear)',mac_projection_iterations
        call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-       if (viscous_implicitness > zero) then
+       if (viscous_implicitness > 0) then
              inext = inext + 1
              write(string, 110) 'Viscous iterations (linear)',viscous_iterations
              call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
@@ -164,8 +156,6 @@ CONTAINS
     cycle_tag_open = .false.
     call TBrook_Flush(BaseBrook, iStatus)
 
-    return
-
   END SUBROUTINE CYCLE_OUTPUT_POST_TB
 #endif
 
@@ -178,7 +168,6 @@ CONTAINS
     !=======================================================================
     use debug_control_data
     use fluid_data_module,      only: fluid_flow, minVel, maxVel
-    use kind_module,            only: int_kind
     use process_info_module,    only: get_process_size
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXVAL, PGSLIB_GLOBAL_SUM
     use projection_data_module, only: mac_projection_iterations, &
@@ -189,17 +178,13 @@ CONTAINS
                                       prelim_viscous_iterations
     use solid_mechanics_data, only: solid_mechanics, thermo_elastic_iterations, viscoplastic_iterations
     use time_step_module,       only: cycle_number
-    use constants_module,       only: zero
-
     use fluid_utilities_module
 #ifdef USE_TBROOK
     use output_data_module, only: enable_tbrook_output
 #endif
 
-    implicit none
-
     ! Local variables.
-    integer(int_kind) :: vmsize, rssize, dsize
+    integer :: vmsize, rssize, dsize
     character(128) :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -215,14 +200,14 @@ CONTAINS
        if(cycle_number == 1) then
          write (string, 10) prelim_projection_iterations,'Preliminary projection iterations (linear)'
          call TLS_info (string)
-         if (.not. inviscid .and. viscous_implicitness > zero) then
+         if (.not. inviscid .and. viscous_implicitness > 0) then
                write (string, 10) prelim_viscous_iterations,'Preliminary Viscous iterations (linear)'
                call TLS_info (string)
          end if
        endif
        write (string, 10) mac_projection_iterations,'Projection iterations (linear)'
        call TLS_info (string)
-       if (.not. inviscid .and. viscous_implicitness > zero) then
+       if (.not. inviscid .and. viscous_implicitness > 0) then
              write (string, 10) viscous_iterations,'Viscous iterations (linear)'
              call TLS_info (string)
        end if
@@ -271,7 +256,6 @@ CONTAINS
                                        Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump, &
                                        time_for_int_dump
-    use kind_module,             only: int_kind, log_kind
     use output_control,          only: next_op, nops, Output_Dt, Output_T
     use time_step_module,        only: cycle_number, cycle_number_restart, t1, t2, &
                                        cycle_max, t
@@ -287,17 +271,13 @@ CONTAINS
     use truchas_danu_output, only: TDO_write_timestep
 #endif
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), intent(IN)    :: cycle
-    logical(KIND = log_kind), intent(INOUT) :: quit
+    integer, intent(IN)    :: cycle
+    logical, intent(INOUT) :: quit
 
     ! Local Variables
-    integer (KIND = int_kind) :: idiff, last, next
-    logical(KIND = log_kind)  :: do_edit_short,      &
-                                 do_edit_long,       &
-                                 do_xml_output
+    integer :: idiff, last, next
+    logical :: do_edit_short, do_edit_long, do_xml_output
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -446,7 +426,7 @@ CONTAINS
           if (MOD(next, Output_Dt_Multiplier(next_op)) <= &
                MOD(last, Output_Dt_Multiplier(next_op)) .or. &
                idiff >= Output_Dt_Multiplier(next_op)) then
-#endif USE_TBROOK
+#ifdef USE_TBROOK
              if (enable_tbrook_output) call TBU_TIMESTEP_OUTPUT()
 #endif
 #ifdef USE_DANU
@@ -548,8 +528,6 @@ CONTAINS
 
     ! Stop the outputs timer
     call stop_timer("Output")
-
-    return
 
   END SUBROUTINE CYCLE_OUTPUT_DRIVER
 

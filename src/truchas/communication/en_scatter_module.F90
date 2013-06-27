@@ -5,14 +5,11 @@ MODULE EN_SCATTER_MODULE
   !   Supply the EN (element->node) scatter routines
   !
   !=======================================================================
-  use gs_util,        only: EN_GS_INIT
-  use kind_module
+  use gs_util, only: EN_GS_INIT
+  use kinds, only: r8
   use parameter_module
   use scatter_module, only: SUM_SCATTER, MIN_SCATTER, MAX_SCATTER, OR_SCATTER
-
   implicit none
-
-  ! Private Module
   private
 
   Public :: EN_SUM_Scatter, &
@@ -107,8 +104,8 @@ CONTAINS
 
   !========== EN_SUM_SCATTER_SCALAR_INT  ==============================
 #define _ROUTINE_NAME_  EN_SUM_SCATTER_SCALAR_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         0_int_kind
+#define _DATA_TYPE_     integer
+#define _OP_ID_         0
 #define _OP_NAME_       sum_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -117,8 +114,8 @@ CONTAINS
 
   !========== EN_SUM_SCATTER_SCALAR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_SUM_SCATTER_SCALAR_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         0.0_single_kind
+#define _DATA_TYPE_     real
+#define _OP_ID_         0.0
 #define _OP_NAME_       sum_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -127,8 +124,8 @@ CONTAINS
 
   !========== EN_SUM_SCATTER_SCALAR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_SUM_SCATTER_SCALAR_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         0.0_double_kind
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         0.0_r8
 #define _OP_NAME_       sum_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -137,8 +134,8 @@ CONTAINS
 
   !========== EN_SUM_SCATTER_VECTOR_INT  ==============================
 #define _ROUTINE_NAME_  EN_SUM_SCATTER_VECTOR_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         0_int_kind
+#define _DATA_TYPE_     integer
+#define _OP_ID_         0
 #define _OP_NAME_       sum_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -147,8 +144,8 @@ CONTAINS
 
   !========== EN_SUM_SCATTER_VECTOR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_SUM_SCATTER_VECTOR_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         0.0_single_kind
+#define _DATA_TYPE_     real
+#define _OP_ID_         0.0
 #define _OP_NAME_       sum_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -157,8 +154,8 @@ CONTAINS
 
   !========== EN_SUM_SCATTER_VECTOR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_SUM_SCATTER_VECTOR_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         0.0_double_kind
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         0.0_r8
 #define _OP_NAME_       sum_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -167,8 +164,8 @@ CONTAINS
 
   !========== EN_MIN_SCATTER_SCALAR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_SCALAR_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         MINVAL( (/0_int_kind/), MASK=.false.)
+#define _DATA_TYPE_     integer
+#define _OP_ID_         MINVAL( (/0/), MASK=.false.)
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -177,8 +174,8 @@ CONTAINS
 
   !========== EN_MIN_SCATTER_SCALAR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_SCALAR_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         MINVAL( (/0.0_single_kind/), MASK=.false.)
+#define _DATA_TYPE_     real
+#define _OP_ID_         MINVAL( (/0.0/), MASK=.false.)
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -187,8 +184,8 @@ CONTAINS
 
   !========== EN_MIN_SCATTER_SCALAR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_SCALAR_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         MINVAL( (/0.0_double_kind/), MASK=.false.)
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         MINVAL( (/0.0_r8/), MASK=.false.)
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -197,8 +194,8 @@ CONTAINS
 
   !========== EN_MIN_SCATTER_VECTOR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_VECTOR_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         MINVAL( (/0_int_kind/), MASK=.false.)
+#define _DATA_TYPE_     integer
+#define _OP_ID_         MINVAL( (/0/), MASK=.false.)
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -208,8 +205,8 @@ CONTAINS
 
   !========== EN_MIN_SCATTER_VECTOR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_VECTOR_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         MINVAL( (/0.0_single_kind/), MASK=.false.)
+#define _DATA_TYPE_     real
+#define _OP_ID_         MINVAL( (/0.0/), MASK=.false.)
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -218,8 +215,8 @@ CONTAINS
 
   !========== EN_MIN_SCATTER_VECTOR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_VECTOR_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         MINVAL( (/0.0_double_kind/), MASK=.false.)
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         MINVAL( (/0.0_r8/), MASK=.false.)
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -228,8 +225,8 @@ CONTAINS
 
   !========== EN_MAX_SCATTER_SCALAR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_SCALAR_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         MAXVAL( (/0_int_kind/), MASK=.false.)
+#define _DATA_TYPE_     integer
+#define _OP_ID_         MAXVAL( (/0/), MASK=.false.)
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -238,8 +235,8 @@ CONTAINS
 
   !========== EN_MAX_SCATTER_SCALAR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_SCALAR_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         MAXVAL( (/0.0_single_kind/), MASK=.false.)
+#define _DATA_TYPE_     real
+#define _OP_ID_         MAXVAL( (/0.0/), MASK=.false.)
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -248,8 +245,8 @@ CONTAINS
 
   !========== EN_MAX_SCATTER_SCALAR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_SCALAR_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         MAXVAL( (/0.0_double_kind/), MASK=.false.)
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         MAXVAL( (/0.0_r8/), MASK=.false.)
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -258,8 +255,8 @@ CONTAINS
 
   !========== EN_MAX_SCATTER_VECTOR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_VECTOR_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         MAXVAL( (/0_int_kind/), MASK=.false.)
+#define _DATA_TYPE_     integer
+#define _OP_ID_         MAXVAL( (/0/), MASK=.false.)
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -269,8 +266,8 @@ CONTAINS
 
   !========== EN_MAX_SCATTER_VECTOR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_VECTOR_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         MAXVAL( (/0.0_single_kind/), MASK=.false.)
+#define _DATA_TYPE_     real
+#define _OP_ID_         MAXVAL( (/0.0/), MASK=.false.)
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -279,8 +276,8 @@ CONTAINS
 
   !========== EN_MAX_SCATTER_VECTOR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_VECTOR_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         MAXVAL( (/0.0_double_kind/), MASK=.false.)
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         MAXVAL( (/0.0_r8/), MASK=.false.)
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -293,16 +290,13 @@ CONTAINS
     !
     !=======================================================================
     use gs_info_module,   only: EN, EN_TRACE
-    use kind_module,      only: log_kind
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nnodes
 
-    implicit none
-
     ! Arguments
-    logical(KIND = log_kind), dimension(ncells), intent(IN)   :: Src
-    logical(KIND = log_kind), dimension(nnodes), intent(OUT)  :: Dest
-    logical(KIND = log_kind), dimension(:), pointer, optional :: BOUNDARY
+    logical, dimension(ncells), intent(IN)   :: Src
+    logical, dimension(nnodes), intent(OUT)  :: Dest
+    logical, dimension(:), pointer, optional :: BOUNDARY
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -310,8 +304,6 @@ CONTAINS
     Dest = .false.
 
     call OR_SCATTER (Dest, Src, Mesh, TYPE = EN, TRACE = EN_TRACE, BOUNDARY = BOUNDARY)
-
-    return
 
   END SUBROUTINE EN_OR_SCATTER_SCALAR_LOG
 
@@ -321,16 +313,13 @@ CONTAINS
     !
     !=======================================================================
     use gs_info_module,   only: EN, EN_TRACE
-    use kind_module,      only: log_kind
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nnodes, nvc
 
-    implicit none
-
     ! Arguments
-    logical(KIND = log_kind), dimension(nvc, ncells), intent(IN)  :: Src
-    logical(KIND = log_kind), dimension(nnodes),      intent(OUT) :: Dest
-    logical(KIND = log_kind), dimension(:), pointer, optional     :: BOUNDARY
+    logical, dimension(nvc, ncells), intent(IN)  :: Src
+    logical, dimension(nnodes),      intent(OUT) :: Dest
+    logical, dimension(:), pointer, optional     :: BOUNDARY
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -338,8 +327,6 @@ CONTAINS
     Dest = .false.
 
     call OR_SCATTER (Dest, Src, Mesh, TYPE = EN, TRACE = EN_TRACE, BOUNDARY = BOUNDARY)
-
-    return
 
   END SUBROUTINE EN_OR_SCATTER_VECTOR_LOG
 

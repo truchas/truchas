@@ -5,16 +5,13 @@ MODULE NN_GATHER_MODULE
   !   Supply the node<->node (NN) gather routines
   !
   !=======================================================================
+  use kinds, only: r8
   use gs_info_module, only: NN_All_Ngbr_Trace
-                            
-  use kind_module
   use mesh_module,    only: Vertex_Ngbr_All
   use parameter_module
   use var_vector_module
-
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   PUBLIC :: NN_Gather, NN_Gather_BoundaryData
@@ -42,7 +39,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_   NN_Gather_ALL_V_S_INT
 #define _DEST_DATA_TYPE_ type (INT_VAR_VECTOR)
-#define _DATA_TYPE_      integer (int_kind)
+#define _DATA_TYPE_      integer
 #define _SRC_DIMENSION_ _DIMENSION_((:))
 #define _DST_DIMENSION_ _DIMENSION_((:))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -53,7 +50,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_   NN_Gather_ALL_V_S_REAL
 #define _DEST_DATA_TYPE_ type (REAL_VAR_VECTOR)
-#define _DATA_TYPE_      real (real_kind)
+#define _DATA_TYPE_      real(r8)
 #define _SRC_DIMENSION_ _DIMENSION_((:))
 #define _DST_DIMENSION_ _DIMENSION_((:))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -64,7 +61,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_   NN_Gather_ALL_V_S_LOG
 #define _DEST_DATA_TYPE_ type (LOG_VAR_VECTOR)
-#define _DATA_TYPE_      logical (log_kind)
+#define _DATA_TYPE_      logical
 #define _SRC_DIMENSION_ _DIMENSION_((:))
 #define _DST_DIMENSION_ _DIMENSION_((:))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -91,15 +88,13 @@ CONTAINS
     !---------------------------------------------------------------------------
     use pgslib_module,  Only: PGSLib_Size_Of_Dup, PGSLib_Dup_Index, &
                               PGSLib_Size_Of_Sup, PGSLib_gather_Buffer
-    use truchas_logging_services, only: TLS_fatal_if_any
-     Implicit None
     ! arguments
-    Real (Real_Kind), Dimension(:), INTENT(IN   ) :: SOURCE
-    Real (Real_Kind), Dimension(:), POINTER       :: BOUNDARY
+    real(r8), Dimension(:), INTENT(IN   ) :: SOURCE
+    real(r8), Dimension(:), POINTER       :: BOUNDARY
     
     ! local variables
-    Integer (KIND=int_kind)                 :: status, i
-    Real (real_kind), POINTER, Dimension(:) :: Duplicate_Data
+    Integer :: status, i
+    real(r8), POINTER, Dimension(:) :: Duplicate_Data
 
     !---------------------------------------------------------------------------
     ! if BOUNDARY doesn't point at anything, get some space
@@ -120,7 +115,6 @@ CONTAINS
        DEALLOCATE(Duplicate_Data)
     End If
 
-    Return
   End subroutine NN_Gather_BoundaryData
 
 END MODULE NN_GATHER_MODULE

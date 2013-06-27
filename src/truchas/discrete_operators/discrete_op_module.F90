@@ -54,11 +54,9 @@ MODULE DISCRETE_OP_MODULE
 ! 560+ mb to ~70 mb, and reduces the time required greatly.  Seems we
 ! must do this to get around a hard kernel limit on rockhopper.
 
-  use gs_module,            only: EN_GATHER, EE_GATHER, EN_SUM_SCATTER
-
+  use kinds, only: r8
+  use gs_module, only: EN_GATHER, EE_GATHER, EN_SUM_SCATTER
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -93,28 +91,24 @@ CONTAINS
     !   evaluated following J. Dukowicz, JCP 74: 493-496 (1988).
     !
     !=======================================================================
-    use constants_module, only: one_twelfth, zero
-    use kind_module,      only: int_kind, real_kind
     use parameter_module, only: ncells, nfc, nvc
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind), dimension(nvc,ncells), intent(IN)  :: Xv, Yv, Zv
-    real(KIND = real_kind), dimension(ncells),     intent(OUT) :: Avg
+    real(r8), dimension(nvc,ncells), intent(IN)  :: Xv, Yv, Zv
+    real(r8), dimension(ncells),     intent(OUT) :: Avg
 
     ! Local Variables
-    integer(KIND = int_kind) :: f
-    integer(KIND = int_kind) :: v1, v2, v3, v4, v5, v6
+    integer :: f
+    integer :: v1, v2, v3, v4, v5, v6
 
-    real(KIND = real_kind), dimension(ncells) :: X1, Y1, Z1
-    real(KIND = real_kind), dimension(ncells) :: X2, Y2, Z2
-    real(KIND = real_kind), dimension(ncells) :: X3, Y3, Z3
+    real(r8), dimension(ncells) :: X1, Y1, Z1
+    real(r8), dimension(ncells) :: X2, Y2, Z2
+    real(r8), dimension(ncells) :: X3, Y3, Z3
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize relevant quantities
-    Avg = zero
+    Avg = 0.0_r8
 
     ! Loop over faces, accumulating the average
     do f = 1,nfc
@@ -154,9 +148,7 @@ CONTAINS
        Avg = Avg + X1*(Y2*Z3 - Y3*Z2) + Y1*(X3*Z2 - X2*Z3) + Z1*(X2*Y3 - X3*Y2)
     end do
 
-    Avg = one_twelfth*Avg
-
-    return
+    Avg = Avg / 12.0_r8
 
   END SUBROUTINE DETERMINANT_VOL_AVG
 
@@ -175,29 +167,25 @@ CONTAINS
     !
     !=======================================================================
     use bc_module,         only: BC, DIRICHLET, SET_VELOCITY_BC, Vel, Prs
-    use constants_module,  only: zero
     use cutoffs_module,    only: alittle
     use fluid_data_module, only: Fluxing_Velocity
-    use kind_module,       only: int_kind, log_kind, real_kind
     use linear_module,     only: LINEAR_PROP
     use mesh_module,       only: Cell, Mesh, Vrtx_Face, Vertex
     use parameter_module,  only: ncells, ndim, nfc, nfv, nnodes, nvc
     use zone_module,       only: Zone
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind),   dimension(ndim,ncells), optional, intent(IN)  :: Vc
-    real(KIND = real_kind),   dimension(ncells),      optional, intent(IN)  :: Weight_Data
-    real(KIND = real_kind),   dimension(ncells),                intent(OUT) :: D
+    real(r8), dimension(ndim,ncells), optional, intent(IN)  :: Vc
+    real(r8), dimension(ncells),      optional, intent(IN)  :: Weight_Data
+    real(r8), dimension(ncells),                intent(OUT) :: D
 
     ! Local Variables
-    logical(KIND = log_kind), dimension(ncells)                             :: Mask
-    integer(KIND = int_kind)                                                :: f, face, n, v, i
-    real(KIND = real_kind),   dimension(ncells)                             :: Tmp, Velocity
-    real(KIND = real_kind),   dimension(ndim,nfc,ncells)                    :: V_Face
-    real(KIND = real_kind),   dimension(nvc,ncells)                         :: V_v
-    real(KIND = real_kind),   dimension(nnodes)                             :: V_vtx
+    logical, dimension(ncells) :: Mask
+    integer :: f, face, n, v, i
+    real(r8), dimension(ncells) :: Tmp, Velocity
+    real(r8), dimension(ndim,nfc,ncells) :: V_Face
+    real(r8), dimension(nvc,ncells) :: V_v
+    real(r8), dimension(nnodes) :: V_vtx
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -206,7 +194,7 @@ CONTAINS
     do n = 1,ndim
        ! Loop over each vertex, computing the portion of the
        ! cell-centered velocity component apportioned to each vertex
-       V_v = zero
+       V_v = 0.0_r8
        do v = 1,nvc
           ! Select the appropriate component
           if (PRESENT(Vc)) then
@@ -232,7 +220,7 @@ CONTAINS
                     .not. (DIRICHLET (BC%Flag, Prs%Face_Bit(face)))
 
              ! Normal part of the velocity
-             Tmp = zero
+             Tmp = 0.0_r8
              do i = 1,ndim
                 if (PRESENT(Vc)) then
                    Tmp = Tmp + Vc(i,:)*Cell%Face_Normal(i,face)
@@ -271,10 +259,10 @@ CONTAINS
 
     ! Loop over faces and accumulate the divergence
     ! from these face-centered velocities
-    D = zero
+    D = 0.0_r8
     do f = 1,nfc
 
-       Tmp = zero
+       Tmp = 0.0_r8
 
        ! Apply BC on the face velocities
        call SET_VELOCITY_BC (V_Face(:,f,:), Vel%Face_bit(f), f)
@@ -296,9 +284,7 @@ CONTAINS
     D = D/Cell%Volume
 
     ! Eliminate noise
-    D = MERGE(zero, D, ABS(D) <= alittle)
-
-    return
+    D = MERGE(0.0_r8, D, ABS(D) <= alittle)
 
   END SUBROUTINE DIVERGENCE_OLD
 
@@ -320,45 +306,40 @@ CONTAINS
     !
     !=======================================================================
     use bc_module,        only: Vel
-    use constants_module, only: zero
     use cutoffs_module,   only: alittle
-    use kind_module,      only: int_kind, log_kind, real_kind
     use linear_module,    only: LINEAR_PROP
     use parameter_module, only: ncells, nfc, nvc
 
-
-    implicit none
-
     ! Arguments
-    integer(KIND = int_kind),                                  intent(IN)    :: f
-    real(KIND = real_kind),   dimension(ncells),               intent(IN)    :: Phi
-    real(KIND = real_kind),   dimension(nfc,ncells),           intent(IN)    :: X_e
-    real(KIND = real_kind),   dimension(nfc,ncells),           intent(IN)    :: Y_e
-    real(KIND = real_kind),   dimension(nfc,ncells),           intent(IN)    :: Z_e
-    real(KIND = real_kind),   dimension(nfc,ncells),           intent(IN)    :: Phi_e
-    real(KIND = real_kind),   dimension(nvc,ncells),           intent(IN)    :: X_n
-    real(KIND = real_kind),   dimension(nvc,ncells),           intent(IN)    :: Y_n
-    real(KIND = real_kind),   dimension(nvc,ncells),           intent(IN)    :: Z_n
-    logical(KIND = log_kind),                                  intent(IN)    :: node_extrap
-    character(LEN = *),                              optional, intent(IN)    :: method
-    real(KIND = real_kind),   dimension(ncells),     optional, intent(IN)    :: Weight_Data
-    integer(KIND = int_kind), dimension(nfc),        optional, intent(IN)    :: Phi_Bit
-    real(KIND = real_kind),   dimension(nfc,ncells), optional, intent(IN)    :: Phi_BC
-    real(KIND = real_kind),   dimension(nvc,ncells),           intent(INOUT) :: Phi_n
-    real(KIND = real_kind),   dimension(ncells),               intent(OUT)   :: dPhi_dx
-    real(KIND = real_kind),   dimension(ncells),               intent(OUT)   :: dPhi_dy
-    real(KIND = real_kind),   dimension(ncells),               intent(OUT)   :: dPhi_dz
+    integer, intent(IN) :: f
+    real(r8), dimension(ncells),     intent(IN) :: Phi
+    real(r8), dimension(nfc,ncells), intent(IN) :: X_e
+    real(r8), dimension(nfc,ncells), intent(IN) :: Y_e
+    real(r8), dimension(nfc,ncells), intent(IN) :: Z_e
+    real(r8), dimension(nfc,ncells), intent(IN) :: Phi_e
+    real(r8), dimension(nvc,ncells), intent(IN) :: X_n
+    real(r8), dimension(nvc,ncells), intent(IN) :: Y_n
+    real(r8), dimension(nvc,ncells), intent(IN) :: Z_n
+    logical, intent(IN) :: node_extrap
+    character(*), optional, intent(IN) :: method
+    real(r8), dimension(ncells), optional, intent(IN) :: Weight_Data
+    integer, dimension(nfc), optional, intent(IN) :: Phi_Bit
+    real(r8), dimension(nfc,ncells), optional, intent(IN) :: Phi_BC
+    real(r8), dimension(nvc,ncells), intent(INOUT) :: Phi_n
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dx
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dy
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dz
 
     ! Local Variables
-    character(LEN = 80)      :: gradient_method
-    logical(KIND = log_kind) :: specified_method
+    character(80) :: gradient_method
+    logical :: specified_method
 
-    logical(KIND = log_kind) :: applied_bc
-    logical(KIND = log_kind) :: fixed_bc
-    logical(KIND = log_kind) :: velocity_bc
-    logical(KIND = log_kind) :: zero_bc
-    real(KIND = real_kind), dimension(ncells) :: Phi_f
-    real(KIND = real_kind), dimension(ncells) :: X_f, Y_f, Z_f
+    logical :: applied_bc
+    logical :: fixed_bc
+    logical :: velocity_bc
+    logical :: zero_bc
+    real(r8), dimension(ncells) :: Phi_f
+    real(r8), dimension(ncells) :: X_f, Y_f, Z_f
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -429,11 +410,11 @@ CONTAINS
 !!$                   Mask = IN_FLOW (BC%Flag, Phi_Bit(f))
 !!$                   where (Mask) Phi_f(:) = Phi_BC(f,:)
 !!$                   Mask = NO_SLIP (BC%Flag, Phi_Bit(f)) ! Consider No-Slip BC
-!!$                   where (Mask) Phi_f(:) = zero         ! to be 'Fixed Velocity BC'
+!!$                   where (Mask) Phi_f(:) = 0.0_r8         ! to be 'Fixed Velocity BC'
 !!$                end if
 !!$                if (zero_bc) then  ! No-Slip
 !!$                   Mask = NO_SLIP (BC%Flag, Phi_Bit(f))
-!!$                   where (Mask) Phi_f(:) = zero
+!!$                   where (Mask) Phi_f(:) = 0.0_r8
 !!$                end if
 !!$             end if
 !!$
@@ -476,11 +457,9 @@ CONTAINS
     end select
 
     ! Eliminate Face Gradient Noise ..........................
-    dPhi_dx = MERGE(zero, dPhi_dx, ABS(dPhi_dx) <= alittle)
-    dPhi_dy = MERGE(zero, dPhi_dy, ABS(dPhi_dy) <= alittle)
-    dPhi_dz = MERGE(zero, dPhi_dz, ABS(dPhi_dz) <= alittle)
-
-    return
+    dPhi_dx = MERGE(0.0_r8, dPhi_dx, ABS(dPhi_dx) <= alittle)
+    dPhi_dy = MERGE(0.0_r8, dPhi_dy, ABS(dPhi_dy) <= alittle)
+    dPhi_dz = MERGE(0.0_r8, dPhi_dz, ABS(dPhi_dz) <= alittle)
 
   END SUBROUTINE FACE_GRADIENT
 
@@ -500,30 +479,26 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
-    use constants_module,     only: one, zero
     use cutoffs_module,       only: alittle
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell, Mesh
     use parameter_module,     only: ncells, nfc, nvc
 
-    implicit none
-
     ! Argument List
 
-    integer(KIND = int_kind), intent(IN) :: f
+    integer, intent(IN) :: f
 
-    real(KIND = real_kind), dimension(ncells),     intent(IN)    :: Phi
-    real(KIND = real_kind), dimension(nfc,ncells), intent(IN)    :: Phi_e
-    real(KIND = real_kind), dimension(nfc,ncells), intent(IN)    :: X_e, Y_e, Z_e
-    real(KIND = real_kind), dimension(nvc,ncells), intent(IN)    :: X_n, Y_n, Z_n
-    real(KIND = real_kind), dimension(nvc,ncells), intent(INOUT) :: Phi_n
-    real(KIND = real_kind), dimension(ncells),     intent(INOUT)   :: dPhi_dx, dPhi_dy, dPhi_dz
+    real(r8), dimension(ncells),     intent(IN)    :: Phi
+    real(r8), dimension(nfc,ncells), intent(IN)    :: Phi_e
+    real(r8), dimension(nfc,ncells), intent(IN)    :: X_e, Y_e, Z_e
+    real(r8), dimension(nvc,ncells), intent(IN)    :: X_n, Y_n, Z_n
+    real(r8), dimension(nvc,ncells), intent(INOUT) :: Phi_n
+    real(r8), dimension(ncells),     intent(INOUT) :: dPhi_dx, dPhi_dy, dPhi_dz
 
     ! Local Variables
-    integer(KIND = int_kind)                      :: v1, v2, v3, v4,i
-    real (KIND = real_kind)                       :: dist, dot
-    real(KIND = real_kind), dimension(:), pointer :: D, dPhi
-    real(KIND = real_kind), dimension(:), pointer :: dX, dY, dZ
+    integer :: v1, v2, v3, v4,i
+    real(r8) :: dist, dot
+    real(r8), dimension(:), pointer :: D, dPhi
+    real(r8), dimension(:), pointer :: dX, dY, dZ
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -599,7 +574,7 @@ CONTAINS
                   (X_n(v1,:) - X_n(v3,:)) * (Z_n(v2,:) - Z_n(v4,:))) + &
            dZ(:)*((X_n(v1,:) - X_n(v3,:)) * (Y_n(v2,:) - Y_n(v4,:))  - &
                   (X_n(v2,:) - X_n(v4,:)) * (Y_n(v1,:) - Y_n(v3,:)))
-    D = MERGE(zero, one/D, ABS(D) <= alittle)
+    D = MERGE(0.0_r8, 1.0_r8/D, ABS(D) <= alittle)
 
     ! X-Derivative: dPhi_dx
     dPhi_dx(:) = dPhi(:) * ((Y_n(v1,:) - Y_n(v3,:)) * (Z_n(v2,:) - Z_n(v4,:))      - &
@@ -653,8 +628,6 @@ CONTAINS
     call ARRAYDESTROY (dY, 'Array dX(ncells)')
     call ARRAYDESTROY (dZ, 'Array dX(ncells)')
 
-    return
-
   END SUBROUTINE FACE_GRADIENT_SAHOTA
 
   SUBROUTINE FACE_CENTER (Q_Cell, Q_Face)
@@ -662,22 +635,18 @@ CONTAINS
     ! Purpose(s):
     !   Evaluate a cell-face centroid quantity given a cell-center quantity.
     !=======================================================================
-    use constants_module,   only: zero
-    use kind_module,        only: int_kind, real_kind
     use linear_module,      only: LINEAR_PROP
     use parameter_module,   only: ncells, nfc, nnodes, nvc
 
-    implicit none
-
     ! Argument List
 
-    real(KIND = real_kind), dimension(ncells),     intent(IN)    :: Q_Cell
-    real(KIND = real_kind), dimension(nfc,ncells), intent(OUT)   :: Q_Face
+    real(r8), dimension(ncells),     intent(IN)  :: Q_Cell
+    real(r8), dimension(nfc,ncells), intent(OUT) :: Q_Face
 
     ! Local Variables
-    integer(KIND = int_kind) :: f
-    real(KIND = real_kind), dimension(nnodes)     :: Q_Vrtx
-    real(KIND = real_kind), dimension(nvc,ncells) :: Q_Vrtx_Cell
+    integer :: f
+    real(r8), dimension(nnodes)     :: Q_Vrtx
+    real(r8), dimension(nvc,ncells) :: Q_Vrtx_Cell
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -690,14 +659,12 @@ CONTAINS
 
     ! Cell-Face Quantity .....................................
     ! Initialize Quantity
-    Q_Face = zero
+    Q_Face = 0.0_r8
 
     ! Evaluate Quantity
     do f = 1, nfc
        call LINEAR_PROP (f, Q_Vrtx_Cell, Q_Face(f,:))
     end do
-
-    return
 
   END SUBROUTINE FACE_CENTER
 
@@ -734,37 +701,34 @@ CONTAINS
     !=======================================================================
     use ArrayAllocate_Module, only: ArrayCreate, ArrayDestroy
     use bc_module,            only: Vel
-    use constants_module,     only: one, zero
     use cutoffs_module,       only: alittle
-    use kind_module,          only: int_kind, log_kind, real_kind
     use linear_module,        only: LINEAR_PROP
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
     use parameter_module,     only: ncells, nfc, nnodes, nvc
-    implicit none
 
     ! Arguments
     character(LEN = *), intent(IN), optional :: method
-    real(KIND = real_kind), dimension(ncells),       intent(OUT)          :: dPhi_dx
-    real(KIND = real_kind), dimension(ncells),       intent(OUT)          :: dPhi_dy
-    real(KIND = real_kind), dimension(ncells),       intent(OUT)          :: dPhi_dz
-    real(KIND = real_kind),   dimension(ncells),     intent(IN)           :: Phi
-    real(KIND = real_kind),   dimension(ncells),     intent(IN), optional :: Weight_Data
-    real(KIND = real_kind),   dimension(nfc,ncells), intent(IN), optional :: Phi_BC
-    integer(KIND = int_kind), dimension(nfc),        intent(IN), optional :: Phi_Bit
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dx
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dy
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dz
+    real(r8), dimension(ncells), intent(IN)  :: Phi
+    real(r8), dimension(ncells), intent(IN), optional :: Weight_Data
+    real(r8), dimension(nfc,ncells), intent(IN), optional :: Phi_BC
+    integer,  dimension(nfc), intent(IN), optional :: Phi_Bit
 
     ! Local Variables
-    character(LEN = 80) :: gradient_method = 'volume-average'
-    logical(KIND = log_kind) :: specified_method
-    logical(KIND = log_kind) :: dirichlet_bc, velocity_bc
-    integer(KIND = int_kind)                    :: f
+    character(80) :: gradient_method = 'volume-average'
+    logical :: specified_method
+    logical :: dirichlet_bc, velocity_bc
+    integer :: f
 
-    real(KIND = real_kind), dimension(ncells)              :: Phi_f
-    real(KIND = real_kind), dimension(:,:),        pointer :: Phi_e
-    real(KIND = real_kind), dimension(nvc,ncells)          :: Phi_v
-    real(KIND = real_kind), dimension(nnodes)              :: Phi_vtx
+    real(r8), dimension(ncells) :: Phi_f
+    real(r8), dimension(:,:), pointer :: Phi_e
+    real(r8), dimension(nvc,ncells) :: Phi_v
+    real(r8), dimension(nnodes) :: Phi_vtx
 
-    real(KIND = real_kind), dimension(:,:),        pointer :: X_v, Y_v, Z_v
-    real(KIND = real_kind), dimension(:,:),        pointer :: X_e, Y_e, Z_e
+    real(r8), dimension(:,:), pointer :: X_v, Y_v, Z_v
+    real(r8), dimension(:,:), pointer :: X_e, Y_e, Z_e
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -824,7 +788,7 @@ CONTAINS
           call DETERMINANT_VOL_AVG (X_v, Y_v, Phi_v, dPhi_dz)
 
           ! Normalize by cell volume
-          Phi_f = one/Cell%Volume
+          Phi_f = 1.0_r8/Cell%Volume
           dPhi_dx = dPhi_dx*Phi_f
           dPhi_dy = dPhi_dy*Phi_f
           dPhi_dz = dPhi_dz*Phi_f
@@ -832,7 +796,7 @@ CONTAINS
        case ('Green-Gauss')
           ! Loop over faces, accumulating the product
           ! Phi_f*Face_Normal for each area vector component
-          dPhi_dx = zero; dPhi_dy = zero; dPhi_dz = zero
+          dPhi_dx = 0.0_r8; dPhi_dy = 0.0_r8; dPhi_dz = 0.0_r8
           do f = 1,nfc
              ! Interpolate vertex values to this face
              call LINEAR_PROP (f, Phi_v, Phi_f)
@@ -844,7 +808,7 @@ CONTAINS
           end do
 
           ! Normalize by cell volume
-          Phi_f = one/Cell%Volume
+          Phi_f = 1.0_r8/Cell%Volume
           dPhi_dx = dPhi_dx*Phi_f
           dPhi_dy = dPhi_dy*Phi_f
           dPhi_dz = dPhi_dz*Phi_f
@@ -931,11 +895,9 @@ CONTAINS
     end select
 
     ! Eliminate noise
-    dPhi_dx = MERGE(zero, dPhi_dx, ABS(dPhi_dx) <= alittle)
-    dPhi_dy = MERGE(zero, dPhi_dy, ABS(dPhi_dy) <= alittle)
-    dPhi_dz = MERGE(zero, dPhi_dz, ABS(dPhi_dz) <= alittle)
-
-    return
+    dPhi_dx = MERGE(0.0_r8, dPhi_dx, ABS(dPhi_dx) <= alittle)
+    dPhi_dy = MERGE(0.0_r8, dPhi_dy, ABS(dPhi_dy) <= alittle)
+    dPhi_dz = MERGE(0.0_r8, dPhi_dz, ABS(dPhi_dz) <= alittle)
 
   END SUBROUTINE GRADIENT
 
@@ -954,41 +916,36 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
-    use constants_module,     only: one, zero
     use cutoffs_module,       only: alittle
-    use kind_module,          only: int_kind, log_kind, real_kind
     use mesh_module,          only: Cell, Face_Vrtx, Mesh, Vrtx_Face
     use parameter_module,     only: ncells, nfc, nnodes, nvc
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind),   dimension(nvc,ncells),         intent(IN)  :: X_v, Y_v, Z_v, Phi_v
-    real(KIND = real_kind),   dimension(nfc,ncells),         intent(IN)  :: X_e, Y_e, Z_e, Phi_e
-    real(KIND = real_kind),   dimension(ncells),             intent(IN)  :: X, Y, Z, Phi
-    real(KIND = real_kind),   dimension(ncells),   optional, intent(IN)  :: Phi_c
-    integer(KIND = int_kind), dimension(nfc),      optional, intent(IN)  :: Phi_Bit
-    integer(KIND = int_kind),                      optional, intent(IN)  :: face
-    logical(KIND = log_kind),                      optional, intent(IN)  :: dirichlet_flag
-    logical(KIND = log_kind),                      optional, intent(IN)  :: velocity_flag
-    real(KIND = real_kind),   dimension(ncells),   optional, intent(IN)  :: Weight_Data
-    real(KIND = real_kind),   dimension(ncells),             intent(OUT) :: dPhi_dx
-    real(KIND = real_kind),   dimension(ncells),             intent(OUT) :: dPhi_dy
-    real(KIND = real_kind),   dimension(ncells),             intent(OUT) :: dPhi_dz
+    real(r8), dimension(nvc,ncells), intent(IN)  :: X_v, Y_v, Z_v, Phi_v
+    real(r8), dimension(nfc,ncells), intent(IN)  :: X_e, Y_e, Z_e, Phi_e
+    real(r8), dimension(ncells), intent(IN)  :: X, Y, Z, Phi
+    real(r8), dimension(ncells), optional, intent(IN) :: Phi_c
+    integer, dimension(nfc), optional, intent(IN) :: Phi_Bit
+    integer, optional, intent(IN) :: face
+    logical, optional, intent(IN) :: dirichlet_flag
+    logical, optional, intent(IN) :: velocity_flag
+    real(r8), dimension(ncells), optional, intent(IN) :: Weight_Data
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dx
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dy
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dz
 
     ! Local Variables
-    logical(KIND = log_kind)                    :: dirichlet_bc
-    logical(KIND = log_kind)                    :: gradient_face
-    logical(KIND = log_kind), dimension(ncells) :: Mask
-    integer(KIND = int_kind)                    :: f, ff = 0, v
+    logical :: dirichlet_bc, gradient_face
+    logical, dimension(ncells) :: Mask
+    integer :: f, ff = 0, v
 
-    real(KIND = real_kind), dimension(ncells)       :: Axx, Axy, Axz
-    real(KIND = real_kind), dimension(ncells)       :: Ayy, Ayz, Azz
-    real(KIND = real_kind), dimension(ncells)       :: Bx, By, Bz
-    real(KIND = real_kind), dimension(ncells)       :: dX, dY, dZ
-    real(KIND = real_kind), dimension(ncells)       :: W
-    real(KIND = real_kind), pointer, dimension(:)   :: WD_Vrtx
-    real(KIND = real_kind), pointer, dimension(:,:) :: WD_Vrtx_Cell, Weight_Data_Nbr
+    real(r8), dimension(ncells) :: Axx, Axy, Axz
+    real(r8), dimension(ncells) :: Ayy, Ayz, Azz
+    real(r8), dimension(ncells) :: Bx, By, Bz
+    real(r8), dimension(ncells) :: dX, dY, dZ
+    real(r8), dimension(ncells) :: W
+    real(r8), pointer, dimension(:)   :: WD_Vrtx
+    real(r8), pointer, dimension(:,:) :: WD_Vrtx_Cell, Weight_Data_Nbr
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! See if this is to be a face or cell-centered gradient
@@ -1000,9 +957,9 @@ CONTAINS
 
     ! Construct the normal equation matrix A and RHS vector B
     ! Add in those vertices that are not on a boundary face
-    Axx = zero; Axy = zero; Axz = zero
-    Ayy = zero; Ayz = zero; Azz = zero
-    Bx  = zero; By  = zero; Bz  = zero
+    Axx = 0.0_r8; Axy = 0.0_r8; Axz = 0.0_r8
+    Ayy = 0.0_r8; Ayz = 0.0_r8; Azz = 0.0_r8
+    Bx  = 0.0_r8; By  = 0.0_r8; Bz  = 0.0_r8
     Mask = .false.
 
     if (PRESENT(Weight_Data)) then
@@ -1024,7 +981,7 @@ CONTAINS
        dZ =  Z_v(v,:) - Z
        W = dX*dX + dY*dY + dZ*dZ
        if (PRESENT(Weight_Data)) W = W * WD_Vrtx_Cell(v,:)
-       W = MERGE (zero, one/W, ABS(W) <= alittle)
+       W = MERGE (0.0_r8, 1.0_r8/W, ABS(W) <= alittle)
 
        ! Mask off the boundary vertices for cell-centered gradients
        ! and those vertices not on this face for face-centered gradients
@@ -1064,7 +1021,7 @@ CONTAINS
        dZ  = Z_e(f,:) - Z
        W = dX*dX + dY*dY + dZ*dZ
        if (PRESENT(Weight_Data)) W = W * Weight_Data_Nbr(f,:)
-       W = MERGE (zero, one/W, ABS(W) <= alittle)
+       W = MERGE (0.0_r8, 1.0_r8/W, ABS(W) <= alittle)
 
        ! Mask off boundaries
        Mask = Mesh%Ngbr_cell(f) /= 0
@@ -1106,7 +1063,7 @@ CONTAINS
 
        W = dX*dX + dY*dY + dZ*dZ
        if (PRESENT(Weight_Data)) W = W * Weight_Data
-       W = MERGE (zero, one/W, ABS(W) <= alittle)
+       W = MERGE (0.0_r8, 1.0_r8/W, ABS(W) <= alittle)
 
        ! Do the sums
        Axx = Axx + dX*dX*W
@@ -1126,7 +1083,7 @@ CONTAINS
     dX = Axx*(Ayy*Azz - Ayz*Ayz) + &
          Axy*(Axz*Ayz - Axy*Azz) + &
          Axz*(Axy*Ayz - Axz*Ayy)
-    dX = MERGE (zero, one/dX, ABS(dX) <= alittle)
+    dX = MERGE (0.0_r8, 1.0_r8/dX, ABS(dX) <= alittle)
 
     ! Numerators (determinant of matrix with B inserted)
     dPhi_dx =  Bx*(Ayy*Azz - Ayz*Ayz) + &
@@ -1151,8 +1108,6 @@ CONTAINS
        call ARRAYDESTROY (Weight_Data_Nbr, 'Weight_Data_Nbr(nfc,ncells)')
     end if
 
-    return
-
   END SUBROUTINE LSLR
 
   SUBROUTINE NODE_EXTRAPOLATION (Phi, Phi_n, X_n, Y_n, Z_n, dirichlet_bc, &
@@ -1165,29 +1120,25 @@ CONTAINS
     !   cell centers.
     !
     !=======================================================================
-    use constants_module, only: one, zero
     use cutoffs_module,   only: alittle
-    use kind_module,      only: int_kind, log_kind, real_kind
     use mesh_module,      only: Cell, Mesh, Vrtx_Face
     use parameter_module, only: ncells, ndim, nfc, nnodes, nvc
 
-    implicit none
-
     ! Argument List
 
-    real(KIND = real_kind), dimension(ncells),                 intent(IN)    :: Phi
-    real(KIND = real_kind), dimension(nvc,ncells),             intent(IN)    :: X_n, Y_n, Z_n
-    logical(KIND = log_kind),                                  intent(IN)    :: dirichlet_bc
-    integer(KIND = int_kind), dimension(nfc),        optional, intent(IN)    :: Phi_Bit
-    real(KIND = real_kind),   dimension(nfc,ncells), optional, intent(IN)    :: Phi_BC
-    real(KIND = real_kind), dimension(nvc,ncells),             intent(OUT)   :: Phi_n
+    real(r8), dimension(ncells), intent(IN) :: Phi
+    real(r8), dimension(nvc,ncells), intent(IN) :: X_n, Y_n, Z_n
+    logical, intent(IN) :: dirichlet_bc
+    integer, dimension(nfc), optional, intent(IN) :: Phi_Bit
+    real(r8), dimension(nfc,ncells), optional, intent(IN) :: Phi_BC
+    real(r8), dimension(nvc,ncells), intent(OUT) :: Phi_n
 
     ! Local Variables
-    integer(KIND = int_kind)                         :: v, n
-    logical(KIND = log_kind), dimension(ncells)      :: Mask
-    real(KIND = real_kind),   dimension(ndim,ncells) :: Coord, Grad
-    real(KIND = real_kind),   dimension(nvc,ncells)  :: Tmp1_n, Tmp2_n
-    real(KIND = real_kind),   dimension(nnodes)      :: Vtx1, Vtx2
+    integer :: v, n
+    logical, dimension(ncells) :: Mask
+    real(r8), dimension(ndim,ncells) :: Coord, Grad
+    real(r8), dimension(nvc,ncells) :: Tmp1_n, Tmp2_n
+    real(r8), dimension(nnodes) :: Vtx1, Vtx2
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1203,7 +1154,7 @@ CONTAINS
 
     ! Loop over vertices, and use the cell-centered gradient
     ! to extrapolate a value of Phi to boundary vertices
-    Vtx1 = zero; Vtx2 = zero
+    Vtx1 = 0.0_r8; Vtx2 = 0.0_r8
     do v = 1,nvc
 
        ! Distance from cell centroid to vertex
@@ -1211,11 +1162,11 @@ CONTAINS
        Coord(2,:) = Y_n(v,:) - Cell%Centroid(2)
        Coord(3,:) = Z_n(v,:) - Cell%Centroid(3)
 
-       Tmp1_n(v,:) = zero
+       Tmp1_n(v,:) = 0.0_r8
        do n = 1,ndim
           Tmp1_n(v,:) = Tmp1_n(v,:) + Coord(n,:)**2
        end do
-       Tmp1_n(v,:) = MERGE (zero, one/SQRT(Tmp1_n(v,:)), Tmp1_n(v,:) <= alittle)
+       Tmp1_n(v,:) = MERGE (0.0_r8, 1.0_r8/SQRT(Tmp1_n(v,:)), Tmp1_n(v,:) <= alittle)
 
        ! Taylor series expansion to this vertex.
        Tmp2_n(v,:) = Phi
@@ -1235,7 +1186,7 @@ CONTAINS
     call EN_SUM_SCATTER (Vtx1, Tmp1_n)
 
     ! Compute the average expansion at vertices; gather it.
-    Vtx2 = MERGE (zero, Vtx2/Vtx1, ABS(Vtx1) <= alittle)
+    Vtx2 = MERGE (0.0_r8, Vtx2/Vtx1, ABS(Vtx1) <= alittle)
     call EN_GATHER (Tmp1_n, Vtx2)
 
     ! Only take the expansion at boundary vertices
@@ -1249,8 +1200,6 @@ CONTAINS
        end where
     end do
 
-    return
-
   END SUBROUTINE NODE_EXTRAPOLATION
 
   SUBROUTINE VERTEX_AVG (X_cell, X_vertex, BOUNDARY)
@@ -1262,19 +1211,16 @@ CONTAINS
     !   of X_cell: X_vertex = SUM(X_cell/Vol)/SUM(1/Vol).
     !
     !=======================================================================
-    use kind_module,      only: real_kind
     use mesh_module,      only: Cell, Vertex
     use parameter_module, only: ncells, nnodes
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind),  dimension(ncells),  intent(IN)  :: X_cell
-    real(KIND = real_kind),  dimension(nnodes),  intent(OUT) :: X_vertex
-    real(KIND = real_kind),  dimension(:), pointer, optional :: BOUNDARY
+    real(r8), dimension(ncells), intent(IN)  :: X_cell
+    real(r8), dimension(nnodes), intent(OUT) :: X_vertex
+    real(r8), dimension(:), pointer, optional :: BOUNDARY
 
     ! Local Variables
-    real(KIND = real_kind), dimension(ncells) :: Tmp
+    real(r8), dimension(ncells) :: Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1284,8 +1230,6 @@ CONTAINS
 
     ! X_vertex: Vertex-averaged X_cell
     X_vertex = X_vertex*Vertex%Rsum_rvol
-
-    return
 
   END SUBROUTINE VERTEX_AVG
 
@@ -1312,38 +1256,35 @@ CONTAINS
 
     use bc_module,        only: BCMATCH, BC_T_DIRICHLET, BC_T_HNEUMANN, BC_T_NEUMANN,&
                                 BC_T_NO_BC, BC_T, BC_T_RADIATION, BC_T_VFRADIATION, BC_T_HTC
-    use kind_module,      only: log_kind, int_kind, real_kind
     use linear_module,    only: LINEAR_PROP
     use parameter_module, only: ncells, nfc, nvc
     use truchas_logging_services
 
-    implicit none
-
     ! arguments
-    integer(int_kind),                                  intent(IN)    :: face
-    real(real_kind),   dimension(ncells),               intent(IN)    :: Phi
-    real(real_kind),   dimension(nfc,ncells),           intent(IN)    :: X_e
-    real(real_kind),   dimension(nfc,ncells),           intent(IN)    :: Y_e
-    real(real_kind),   dimension(nfc,ncells),           intent(IN)    :: Z_e
-    real(real_kind),   dimension(nfc,ncells),           intent(IN)    :: Phi_e
-    real(real_kind),   dimension(nvc,ncells),           intent(IN)    :: X_n
-    real(real_kind),   dimension(nvc,ncells),           intent(IN)    :: Y_n
-    real(real_kind),   dimension(nvc,ncells),           intent(IN)    :: Z_n
-    logical(log_kind),                                  intent(IN)    :: node_extrap
-    character(LEN=*),                         optional, intent(IN)    :: method_arg
-    real(real_kind),   dimension(ncells),     optional, intent(IN)    :: WD
-    real(real_kind),   dimension(nvc,ncells),           intent(IN)    :: Phi_n
-    real(real_kind),   dimension(ncells),               intent(OUT)   :: dPhi_dx
-    real(real_kind),   dimension(ncells),               intent(OUT)   :: dPhi_dy
-    real(real_kind),   dimension(ncells),               intent(OUT)   :: dPhi_dz
+    integer, intent(IN)    :: face
+    real(r8), dimension(ncells), intent(IN) :: Phi
+    real(r8), dimension(nfc,ncells), intent(IN) :: X_e
+    real(r8), dimension(nfc,ncells), intent(IN) :: Y_e
+    real(r8), dimension(nfc,ncells), intent(IN) :: Z_e
+    real(r8), dimension(nfc,ncells), intent(IN) :: Phi_e
+    real(r8), dimension(nvc,ncells), intent(IN) :: X_n
+    real(r8), dimension(nvc,ncells), intent(IN) :: Y_n
+    real(r8), dimension(nvc,ncells), intent(IN) :: Z_n
+    logical, intent(IN) :: node_extrap
+    character(*), optional, intent(IN) :: method_arg
+    real(r8), dimension(ncells), optional, intent(IN) :: WD
+    real(r8), dimension(nvc,ncells), intent(IN) :: Phi_n
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dx
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dy
+    real(r8), dimension(ncells), intent(OUT) :: dPhi_dz
 
     ! local variables
     character(LEN=80) :: method
-    integer(int_kind) :: cell
-    real(real_kind),   dimension(ncells) :: Phi_f
-    real(real_kind),   dimension(ncells) :: X_f
-    real(real_kind),   dimension(ncells) :: Y_f
-    real(real_kind),   dimension(ncells) :: Z_f
+    integer :: cell
+    real(r8), dimension(ncells) :: Phi_f
+    real(r8), dimension(ncells) :: X_f
+    real(r8), dimension(ncells) :: Y_f
+    real(r8), dimension(ncells) :: Z_f
 
     !---------------------------------------------------------------------------
 
@@ -1414,8 +1355,6 @@ CONTAINS
 
     End Select
 
-    Return
-
   End Subroutine FACE_GRADIENT_T
 
   !-----------------------------------------------------------------------------
@@ -1441,50 +1380,30 @@ CONTAINS
     !---------------------------------------------------------------------------
 
     Use cutoffs_module,       Only: alittle
-    Use kind_module,          Only: log_kind, int_kind, real_kind
     Use mesh_module,          Only: Cell, Face_Vrtx, Mesh, Vrtx_Face
     Use parameter_module,     Only: ncells, nfc, nnodes, nvc
     Use bc_module,            Only: BCMATCH, BC_T_DIRICHLET, BC_T
     use truchas_logging_services, only: TLS_fatal_if_any
 
-    Implicit None
-
     ! arguments
-    Real(real_kind),   Dimension(nvc,ncells),           Intent(IN)  :: X_n, Y_n, Z_n ! node coordinates
-    Real(real_kind),   Dimension(nvc,ncells),           Intent(IN)  :: Phi_n         ! node values
-    Real(real_kind),   Dimension(nfc,ncells),           Intent(IN)  :: X_e, Y_e, Z_e ! neighbor cell coordinates
-    Real(real_kind),   Dimension(nfc,ncells),           Intent(IN)  :: Phi_e         ! neighbor cell values
-    Real(real_kind),   Dimension(ncells),               Intent(IN)  :: X, Y, Z       ! desired point coordinates
-    Real(real_kind),   Dimension(ncells),               Intent(IN)  :: Phi           ! desired point value
-    Real(real_kind),   Dimension(ncells),     Optional, Intent(IN)  :: Phi_c         ! cell center value (not always needed)
-    Integer(int_kind),                        Optional, Intent(IN)  :: face          ! face number (not always needed)
-    Real(real_kind),   Dimension(ncells),     Optional, Intent(IN)  :: WD            ! weight data (not always wanted)
-    Real(real_kind),   Dimension(ncells),               Intent(OUT) :: dPhi_dx       ! gradient - x component
-    Real(real_kind),   Dimension(ncells),               Intent(OUT) :: dPhi_dy       ! gradient - y component
-    Real(real_kind),   Dimension(ncells),               Intent(OUT) :: dPhi_dz       ! gradient - z component
+    real(r8), Dimension(nvc,ncells), Intent(IN) :: X_n, Y_n, Z_n ! node coordinates
+    real(r8), Dimension(nvc,ncells), Intent(IN) :: Phi_n         ! node values
+    real(r8), Dimension(nfc,ncells), Intent(IN) :: X_e, Y_e, Z_e ! neighbor cell coordinates
+    real(r8), Dimension(nfc,ncells), Intent(IN) :: Phi_e         ! neighbor cell values
+    real(r8), Dimension(ncells), Intent(IN) :: X, Y, Z       ! desired point coordinates
+    real(r8), Dimension(ncells), Intent(IN) :: Phi           ! desired point value
+    real(r8), Dimension(ncells), Optional, Intent(IN) :: Phi_c         ! cell center value (not always needed)
+    integer, Optional, Intent(IN)  :: face ! face number (not always needed)
+    real(r8), Dimension(ncells), Optional, Intent(IN) :: WD            ! weight data (not always wanted)
+    real(r8), Dimension(ncells), Intent(OUT) :: dPhi_dx       ! gradient - x component
+    real(r8), Dimension(ncells), Intent(OUT) :: dPhi_dy       ! gradient - y component
+    real(r8), Dimension(ncells), Intent(OUT) :: dPhi_dz       ! gradient - z component
 
     ! local variables
-    Logical(log_kind), Dimension(ncells) :: Mask
-    Integer(int_kind)                    :: f
-    Integer(int_kind)                    :: v
-    Integer(int_kind)                    :: c
-    Integer                              :: status
-    Real(real_kind), Dimension(ncells)       :: Axx
-    Real(real_kind), Dimension(ncells)       :: Axy
-    Real(real_kind), Dimension(ncells)       :: Axz
-    Real(real_kind), Dimension(ncells)       :: Ayy
-    Real(real_kind), Dimension(ncells)       :: Ayz
-    Real(real_kind), Dimension(ncells)       :: Azz
-    Real(real_kind), Dimension(ncells)       :: Bx
-    Real(real_kind), Dimension(ncells)       :: By
-    Real(real_kind), Dimension(ncells)       :: Bz
-    Real(real_kind), Dimension(ncells)       :: dX
-    Real(real_kind), Dimension(ncells)       :: dY
-    Real(real_kind), Dimension(ncells)       :: dZ
-    Real(real_kind), Dimension(ncells)       :: W
-    Real(real_kind), Allocatable, Dimension(:)   :: WD_Vrtx
-    Real(real_kind), Allocatable, Dimension(:,:) :: WD_Vrtx_Cell
-    Real(real_kind), Allocatable, Dimension(:,:) :: WD_Nbr
+    logical, Dimension(ncells) :: Mask
+    integer :: f, v, c, status
+    real(r8), Dimension(ncells) :: Axx, Axy, Axz, Ayy, Ayz, Azz, Bx, By, Bz, dX, dY, dZ, W
+    real(r8), Allocatable :: WD_Vrtx(:), WD_Vrtx_Cell(:,:), WD_Nbr(:,:)
 
     !---------------------------------------------------------------------------
 
@@ -1651,8 +1570,6 @@ CONTAINS
        Deallocate (WD_Nbr)
     End If
 
-    Return
-
   End Subroutine LSLR_T
 
 
@@ -1672,31 +1589,23 @@ CONTAINS
     !       face contributions will telescope, leaving only boundary
     !       contributions.
     !=======================================================================
-    use constants_module,     only: one, zero
     use cutoffs_module,       only: alittle
-    use kind_module,          only: int_kind, real_kind
     use linear_module,        only: LINEAR_PROP
-!   use matl_module,          only: GATHER_VOF,MATL
-!   use mesh_module,          only: Cell, Mesh, Face_Vrtx, Vertex, Vrtx_Bdy
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, nfc, nnodes, nvc, ndim
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind),   dimension(ndim,ncells), intent(OUT)          :: Gradient_Phi
-    real(KIND = real_kind),   dimension(ncells),      intent(IN)           :: Phi
+    real(r8), dimension(ndim,ncells), intent(OUT) :: Gradient_Phi
+    real(r8), dimension(ncells),      intent(IN)  :: Phi
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, f, n
+    integer :: i, f, n
 
-!   real(KIND = real_kind),   dimension(ncells)             :: Phi_f, Weight, Vof
-    real(KIND = real_kind),   dimension(ncells)             :: Phi_f
-    real(KIND = real_kind)                                  :: Ptmp
-    real(KIND = real_kind)                                  :: Gtmp
-    real(KIND = real_kind),   dimension(nvc,ncells)         :: Phi_v
-    real(KIND = real_kind),   dimension(nnodes)             :: Phi_vtx
-!   real(KIND = real_kind),   dimension(:,:,:),     pointer :: X_v
+    real(r8), dimension(ncells) :: Phi_f
+    real(r8) :: Ptmp
+    real(r8) :: Gtmp
+    real(r8), dimension(nvc,ncells) :: Phi_v
+    real(r8), dimension(nnodes) :: Phi_vtx
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1710,7 +1619,7 @@ CONTAINS
     ! Loop over faces, accumulating the product
     ! Phi_f*Face_Normal for each area vector component
 
-    Gradient_Phi = zero
+    Gradient_Phi = 0.0_r8
     do f = 1,nfc
        ! Interpolate vertex values to this face
        call LINEAR_PROP (f, Phi_v, Phi_f)
@@ -1721,18 +1630,17 @@ CONTAINS
     end do
     ! Normalize by cell volume
     do i = 1,ncells
-    Ptmp = one/Cell(i)%Volume
+    Ptmp = 1.0_r8/Cell(i)%Volume
     do n = 1,ndim
        Gtmp = Gradient_Phi(n,i)*Ptmp
        ! Eliminate noise
        if(ABS(Gtmp) <= alittle)then
-         Gradient_Phi(n,i) = zero
+         Gradient_Phi(n,i) = 0.0_r8
        else
          Gradient_Phi(n,i) = Gtmp
        endif
     end do
     end do
-    return
   END SUBROUTINE GRADIENT_CELL
 
   SUBROUTINE GRADIENT_CELL_FROM_FACE_VALUES (Gradient_Phi, Phi_f)
@@ -1751,23 +1659,17 @@ CONTAINS
     !       face contributions will telescope, leaving only boundary
     !       contributions.
     !=======================================================================
-    use constants_module,     only: one, zero
     use cutoffs_module,       only: alittle
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, nfc, ndim
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind),   dimension(ndim,ncells), intent(OUT)          :: Gradient_Phi
-    real(KIND = real_kind),   dimension(nfc,ncells),  intent(IN)           :: Phi_f
+    real(r8), dimension(ndim,ncells), intent(OUT) :: Gradient_Phi
+    real(r8), dimension(nfc,ncells),  intent(IN)  :: Phi_f
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, f, n
-
-    real(KIND = real_kind)                                  :: Ptmp
-    real(KIND = real_kind)                                  :: Gtmp
+    integer :: i, f, n
+    real(r8) :: Ptmp, Gtmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1775,7 +1677,7 @@ CONTAINS
     ! Loop over faces, accumulating the product
     ! Phi_f*Face_Normal for each area vector component
 
-    Gradient_Phi = zero
+    Gradient_Phi = 0.0_r8
     do f = 1,nfc
        ! Accumulate the dot product
        do n = 1,ndim  
@@ -1784,18 +1686,17 @@ CONTAINS
     end do
     ! Normalize by cell volume
     do i = 1,ncells
-    Ptmp = one/Cell(i)%Volume
+    Ptmp = 1.0_r8/Cell(i)%Volume
     do n = 1,ndim
        Gtmp = Gradient_Phi(n,i)*Ptmp
        ! Eliminate noise
        if(ABS(Gtmp) <= alittle)then
-         Gradient_Phi(n,i) = zero
+         Gradient_Phi(n,i) = 0.0_r8
        else
          Gradient_Phi(n,i) = Gtmp
        endif
     end do
     end do
-    return
   END SUBROUTINE GRADIENT_CELL_FROM_FACE_VALUES
 
   SUBROUTINE DYNAMIC_PRESSURE_FACE_GRADIENT (facegrad, pc, ghc, ghn)
@@ -1814,33 +1715,26 @@ CONTAINS
     !       face contributions will telescope, leaving only boundary
     !       contributions.
     !=======================================================================
-    use constants_module,     only: zero
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell, Mesh
     use parameter_module,     only: ncells, nfc, ndim
-
     use gs_module,            only: EE_GATHER 
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind),   dimension(ndim,nfc,ncells), intent(OUT)  :: facegrad
-    real(KIND = real_kind),   dimension(ncells),  intent(IN)           :: pc
-    real(KIND = real_kind),   dimension(nfc,ncells),  intent(IN)       :: ghc
-    real(KIND = real_kind),   dimension(nfc,ncells),  intent(IN)       :: ghn
+    real(r8), dimension(ndim,nfc,ncells), intent(OUT) :: facegrad
+    real(r8), dimension(ncells),  intent(IN) :: pc
+    real(r8), dimension(nfc,ncells),  intent(IN) :: ghc
+    real(r8), dimension(nfc,ncells),  intent(IN) :: ghn
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, f, n, d
-
-    real(KIND = real_kind)                             :: dl2, dl2i, plr1, plr2
-
-    real(KIND = real_kind), dimension(nfc,ncells)      :: pn
-    real(KIND = real_kind), dimension(ndim)            :: dx, cn
-    real(KIND = real_kind), dimension(ndim,nfc,ncells) :: Cell_Ngbr_Coord
+    integer :: i, f, n, d
+    real(r8) :: dl2, dl2i, plr1, plr2
+    real(r8), dimension(nfc,ncells) :: pn
+    real(r8), dimension(ndim) :: dx, cn
+    real(r8), dimension(ndim,nfc,ncells) :: Cell_Ngbr_Coord
 
     !***************************************************************************
 
-    facegrad = zero
+    facegrad = 0.0_r8
     
     do i=1,ndim
        call EE_GATHER(Cell_Ngbr_Coord(i,:,:), Cell(:)%Centroid(i))
@@ -1871,7 +1765,7 @@ CONTAINS
              dx(d) = (Cell(n)%Centroid(d) - cn(d))
           end do
           
-          dl2 = zero
+          dl2 = 0.0_r8
           do d=1,ndim
              dl2 = dl2 + dx(d)*dx(d)
           end do 
@@ -1882,13 +1776,11 @@ CONTAINS
           facegrad(3,f,n) = (plr1 - plr2)*dx(3)*dl2i
           
           if (Mesh(n)%Ngbr_Cell(f) == 0) then
-             facegrad(:,f,n) = zero
+             facegrad(:,f,n) = 0.0_r8
           end if
           
        end do
     end do
-    
-    return
 
   END SUBROUTINE DYNAMIC_PRESSURE_FACE_GRADIENT
 

@@ -19,15 +19,12 @@ MODULE VOLUME_TRACK_MODULE
   !            Douglas B. Kothe (dbk@lanl.gov)
   !            Matthew Williams (mww@lanl.gov)
   !=======================================================================
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private module
   private
  
-  ! Public procedures
   public :: VOLUME_TRACK
- 
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
  
@@ -44,7 +41,6 @@ CONTAINS
     !   at all relevant cell faces.
     !
     !=======================================================================
-    use constants_module,          only: one, zero
     use cutoffs_module,            only: cutvof, alittle
     use fluid_data_module,         only: FluidRho
     use flux_volume_module,        only: FLUX_VOL_QUANTITY, FLUX_VOL_VERTICES
@@ -53,7 +49,6 @@ CONTAINS
                                          SETUP_INTERFACE_FLUX
     use interface_output_module,   only: INTERFACE_OUTPUT, time_for_int_dump
     use interface_triangle_module, only: INTERFACE_TRIANGLES
-    use kind_module,               only: log_kind, int_kind, real_kind
     use locate_plane_module,       only: LOCATE_PLANE
     use mesh_module,               only: Cell, Vertex
     use parameter_module,          only: ncells, nicells, ndim, nmat, nfc, nvc
@@ -62,27 +57,24 @@ CONTAINS
     use timing_tree
     use truncate_volume_module,    only: Trunc_Vol, TRUNCATE_VOLUME, FACE_PARAM
     use vof_data_module,           only: adv_dt, interface_area
-    use truchas_logging_services
- 
-    implicit none
  
     ! Arguments
-    real(real_kind), dimension(nmat,ncells),     intent(IN)    :: Vof
-    real(real_kind), dimension(nfc,ncells),      intent(IN)    :: Fluxing_Velocity
-    real(real_kind), dimension(nmat,nfc,ncells), intent(INOUT) :: Volume_Flux_Sub
+    real(r8), dimension(nmat,ncells),     intent(IN)    :: Vof
+    real(r8), dimension(nfc,ncells),      intent(IN)    :: Fluxing_Velocity
+    real(r8), dimension(nmat,nfc,ncells), intent(INOUT) :: Volume_Flux_Sub
  
     ! Local Variables
-    integer                                                            :: status
-    integer(int_kind)                                                  :: interfaces, materials, m, n, f, ff, ni, v, p
-    integer(int_kind),       dimension(ncells)                         :: Mat, last
-    integer(int_kind),       dimension(:,:),              allocatable  :: Pri_Ptr
-    real(real_kind),         dimension(ncells)                         :: G1, G2, G3, Vp, Vofm, Vofint, MVF
-    real(real_kind),         dimension(nfc,ncells)                     :: Flux_Vol_Sum
-    real(real_kind),         dimension(ndim,nvc,ncells)                :: Xv
-    real(real_kind),         dimension(nmat,ndim,ncells)               :: Grad
-    real(real_kind),         dimension(:,:,:),            allocatable  :: Pack_vert
-    logical(log_kind),       dimension(ncells)                         :: Mask
-    type(FLUX_VOL_QUANTITY), dimension(ncells)                         :: Flux_Vol
+    integer :: status
+    integer :: interfaces, materials, m, n, f, ff, ni, v, p
+    integer,  dimension(ncells) :: Mat, last
+    integer,  dimension(:,:), allocatable  :: Pri_Ptr
+    real(r8), dimension(ncells) :: G1, G2, G3, Vp, Vofm, Vofint, MVF
+    real(r8), dimension(nfc,ncells) :: Flux_Vol_Sum
+    real(r8), dimension(ndim,nvc,ncells) :: Xv
+    real(r8), dimension(nmat,ndim,ncells) :: Grad
+    real(r8), dimension(:,:,:), allocatable :: Pack_vert
+    logical,  dimension(ncells) :: Mask
+    type(FLUX_VOL_QUANTITY), dimension(ncells) :: Flux_Vol
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -92,7 +84,7 @@ CONTAINS
     ! Count the number of materials in each cell
     Mat = 0
     do m = 1,nmat
-       where (Vof(m,:) > zero) Mat = Mat + 1
+       where (Vof(m,:) > 0.0_r8) Mat = Mat + 1
     end do
  
     ! Number of interfaces to process, and the maximum number of materials in a cell
@@ -118,7 +110,7 @@ CONTAINS
     do p = 1,nmat
        m = Matpri(p)
        do n = 1,ncells
-          if (Vof(m,n) > zero) then
+          if (Vof(m,n) > 0.0_r8) then
              Pri_Ptr(last(n),n) = m
              last(n) = last(n) + 1
           end if
@@ -129,7 +121,7 @@ CONTAINS
     call INT_NORMAL (Vof, Grad, MVF)
 
     ! Initialize the sum of volume fluxes on each donor face.
-    Flux_Vol_Sum = zero
+    Flux_Vol_Sum = 0.0_r8
  
     ! Loop over the interfaces in priority order; if interfaces <= 0,
     ! we don't ever go into this loop.
@@ -137,7 +129,7 @@ CONTAINS
 
        ! Accumulate the volume fraction of this material and
        ! the volume fraction of materials with lower priorities.
-       Vofint = zero
+       Vofint = 0.0_r8
        do m = 1,ni
           do n = 1,ncells
              if (Pri_Ptr(m,n) > 0) Vofint(n) = Vofint(n) + Vof(Pri_Ptr(m,n),n)
@@ -145,13 +137,13 @@ CONTAINS
        end do
  
        ! Force 0.0 <= Vofint <= 1.0
-       Vofint = MIN(MAX(Vofint, zero), one)
+       Vofint = MIN(MAX(Vofint, 0.0_r8), 1.0_r8)
  
        ! Retrieve this material's interface normal and volume fraction from the Grad array.
-       G1   = zero
-       G2   = zero
-       G3   = zero
-       Vofm = zero
+       G1   = 0.0_r8
+       G2   = 0.0_r8
+       G3   = 0.0_r8
+       Vofm = 0.0_r8
        do n = 1,ncells
           if (Pri_Ptr(ni,n) > 0) then
              G1(n) = Grad(Pri_Ptr(ni,n),1,n)
@@ -162,7 +154,7 @@ CONTAINS
        end do
  
        ! Count the number of mixed donor cells
-       Mask = Vofint > (zero + cutvof) .and. Vofint < (one - cutvof)
+       Mask = Vofint > (0.0_r8 + cutvof) .and. Vofint < (1.0_r8 - cutvof)
        where(fluidRho < alittle) Mask = .false.
        nicells = COUNT(Mask)
 
@@ -219,7 +211,7 @@ CONTAINS
           Flux_Vol%Vol = adv_dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)
           where (Flux_Vol%Vol <= cutvof*Cell%Volume) 
              Flux_Vol%Fc = 0
-             Flux_Vol%Vol = zero
+             Flux_Vol%Vol = 0.0_r8
           endwhere
 
           call FLUX_VOL_VERTICES (f, Mask, Fluxing_Velocity, Flux_Vol) 
@@ -235,7 +227,7 @@ CONTAINS
           ! Use G1 as a temporary to hold the delta advection volumes.  Where
           ! the donor cell doesn't have this material, zero the advected volume
           ! for this material.
-          G1 = zero
+          G1 = 0.0_r8
  
           ! For clean donor cells, the entire Flux volume goes to the single donor material.
           ! The following line was replaced to deal with the possibility that the volume fraction
@@ -243,17 +235,17 @@ CONTAINS
           ! cell from an interface cell to a pure cell.  This is necessary because VOF_BOUNDS does
           ! not increase such volume fractions to 1.   Jim Sicilian   July 2002.
 
-!!$       where ((.not.Mask) .and. Vofm == one ) G1 = ABS(Flux_Vol%Vol)
-          where ((.not.Mask) .and. Vofm >= (one-cutvof) ) G1 = ABS(Flux_Vol%Vol)
+!!$       where ((.not.Mask) .and. Vofm == 1.0_r8 ) G1 = ABS(Flux_Vol%Vol)
+          where ((.not.Mask) .and. Vofm >= (1.0_r8-cutvof) ) G1 = ABS(Flux_Vol%Vol)
  
           ! For clean donor cells, the face flux has been put in G1.
           ! For mixed donor cells, the face flux is in Int_Flux%Advection_Volume.
-          Vp = zero
+          Vp = 0.0_r8
           Vp = UNPACK(Int_Flux%Advected_Volume, Mask, G1)
  
           ! If Vp is close to 0 set it to 0.  If it is close
           ! to 1 set it to 1. This will avoid numerical round-off.
-          where (Vp > (one-cutvof)*ABS(Flux_Vol%Vol)) Vp = ABS(Flux_Vol%Vol)
+          where (Vp > (1.0_r8-cutvof)*ABS(Flux_Vol%Vol)) Vp = ABS(Flux_Vol%Vol)
  
           ! Make sure that the current material-integrated advection
           ! volume hasn't decreased from its previous value.  (This
@@ -261,12 +253,12 @@ CONTAINS
           ! orientation and now crosses previous interfaces.)  Also
           ! limit Volume_Flux_Sub to take no more than the material
           ! occupied volume in the donor cell.
-          G2 = zero
-          where (ABS(Flux_Vol%Vol) > zero) G2 = MIN(MAX(Vp - Flux_Vol_Sum(f,:), zero), Vofm*Cell%Volume)
+          G2 = 0.0_r8
+          where (ABS(Flux_Vol%Vol) > 0.0_r8) G2 = MIN(MAX(Vp - Flux_Vol_Sum(f,:), 0.0_r8), Vofm*Cell%Volume)
  
           ! Now gather advected volume information into Volume_Flux_Sub
           do n = 1,ncells
-             if (Pri_Ptr(ni,n) > 0 .and. Flux_Vol(n)%Vol > zero) then
+             if (Pri_Ptr(ni,n) > 0 .and. Flux_Vol(n)%Vol > 0.0_r8) then
                 Volume_Flux_Sub(Pri_Ptr(ni,n),f,n) = G2(n)
                 Flux_Vol_Sum(f,n) = Flux_Vol_Sum(f,n) + G2(n)
              end if
@@ -290,7 +282,7 @@ CONTAINS
     ! the books.  Yes?   - Markus
 
     ! Make sure the volume flux sum has been initialized if there are no interfaces.
-    if (interfaces == 0) Flux_Vol_Sum = zero
+    if (interfaces == 0) Flux_Vol_Sum = 0.0_r8
 
     ! Compute the advection volume for the last material.
     last = Mat
@@ -304,13 +296,13 @@ CONTAINS
 
        ! Recalculate the total flux volume for this face.
        Flux_Vol%Vol = adv_dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)
-       where (Flux_Vol%Vol <= cutvof*Cell%Volume) Flux_Vol%Vol = zero
+       where (Flux_Vol%Vol <= cutvof*Cell%Volume) Flux_Vol%Vol = 0.0_r8
 
        ! The volume flux of the last material shouldn't be less than
        ! zero nor greater than the volume of this material in the donor cell.
-       G2   = zero
-       where (ABS(Flux_Vol%Vol) > zero) &
-          G2 = MIN(MAX(ABS(Flux_Vol%Vol - Flux_Vol_Sum(f,:)), zero), Vofm*Cell%Volume)
+       G2   = 0.0_r8
+       where (ABS(Flux_Vol%Vol) > 0.0_r8) &
+          G2 = MIN(MAX(ABS(Flux_Vol%Vol - Flux_Vol_Sum(f,:)), 0.0_r8), Vofm*Cell%Volume)
  
        ! Store the last material's volume flux.
        do n = 1,ncells
@@ -322,7 +314,7 @@ CONTAINS
 
        ! For donor cells containing only one material, assign the total flux.
        do n = 1,ncells
-          if (Mat(n) == 1 .and. Flux_Vol(n)%Vol > zero) then
+          if (Mat(n) == 1 .and. Flux_Vol(n)%Vol > 0.0_r8) then
              Volume_Flux_Sub(Pri_Ptr(last(n),n),f,n) = Flux_Vol(n)%Vol
              Flux_Vol_Sum(f,n) = Flux_Vol(n)%Vol
           end if
@@ -334,8 +326,6 @@ CONTAINS
 
     ! Stop the volume track timer
     call stop_timer ("Reconstruct/Advect")
-
-    return
  
   END SUBROUTINE VOLUME_TRACK
  
@@ -349,48 +339,42 @@ CONTAINS
     !   material by computing the gradient of material volume fractions
     !
     !=======================================================================
-    use constants_module,     only: one, ten_tominus6, zero
     use cutoffs_module,       only: alittle
     use discrete_op_module,   only: GRADIENT
     use interface_module,     only: interface_topology_model
-    use kind_module,          only: int_kind, real_kind
     use mollify,              only: MOLLIFY_CONV_SAVEMEM
     use parameter_module,     only: ncells, nmat, ndim
     use property_data_module, only: Matpri
     use vof_data_module,      only: interface_geometry
-    use truchas_logging_services
- 
-    implicit none
  
     ! Arguments
-    real(real_kind), dimension(nmat,ncells),      intent(IN)  :: Vof
-    real(real_kind), dimension(nmat,ndim,ncells), intent(OUT) :: Grad
-    real(real_kind), dimension(ncells),           intent(OUT) :: MVF
+    real(r8), dimension(nmat,ncells),      intent(IN)  :: Vof
+    real(r8), dimension(nmat,ndim,ncells), intent(OUT) :: Grad
+    real(r8), dimension(ncells),           intent(OUT) :: MVF
  
     ! Local Variables
-    integer                                      :: status
-    integer(int_kind)                            :: m, n, mp, mi, nc
-    real(real_kind), dimension(ndim,nmat,ncells) :: Mat_Normal
-    real(real_kind), dimension(ncells)           :: Tmp
-    real(real_kind), dimension(:,:), allocatable :: Nx, Ny, Nz
+    integer :: status
+    integer :: m, n, mp, mi, nc
+    real(r8), dimension(ndim,nmat,ncells) :: Mat_Normal
+    real(r8), dimension(ncells) :: Tmp
+    real(r8), dimension(:,:), allocatable :: Nx, Ny, Nz
    
-    integer(int_kind),dimension(ncells)          :: Mat    ! to count number of material present in a cell
-    integer(int_kind), dimension(nmat,ncells)    :: mid    ! to identify material id in a given cell
-
+    integer, dimension(ncells) :: Mat    ! to count number of material present in a cell
+    integer, dimension(nmat,ncells) :: mid    ! to identify material id in a given cell
  
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
  
     ! Initialize arrays
-    Mat_Normal = zero
-    Grad  = zero
+    Mat_Normal = 0.0_r8
+    Grad  = 0.0_r8
 
     ! Use the Nx,Ny,Nz arrays for the convolution method.
     if (interface_topology_model == 'convolution model') then
        ALLOCATE(Nx(nmat,ncells),Ny(nmat,ncells),Nz(nmat,ncells), STAT=status)
        call TLS_fatal_if_any ((status /= 0), 'INT_NORMAL: error allocating Nx,Ny,Nz')
-       Nx = zero
-       Ny = zero
-       Nz = zero
+       Nx = 0.0_r8
+       Ny = 0.0_r8
+       Nz = 0.0_r8
     end if 
 
     ! Loop over materials
@@ -433,18 +417,18 @@ CONTAINS
        if (TRIM(interface_geometry) == 'piecewise constant') then
           where (ABS(Mat_Normal(1,m,:)) >= ABS(Mat_Normal(2,m,:)) .and. &
                  ABS(Mat_Normal(1,m,:)) >= ABS(Mat_Normal(3,m,:)))
-             Mat_Normal(2,m,:) = zero 
-             Mat_Normal(3,m,:) = zero
+             Mat_Normal(2,m,:) = 0.0_r8 
+             Mat_Normal(3,m,:) = 0.0_r8
           end where
           where (ABS(Mat_Normal(2,m,:)) >= ABS(Mat_Normal(1,m,:)) .and. &
                  ABS(Mat_Normal(2,m,:)) >= ABS(Mat_Normal(3,m,:)))
-             Mat_Normal(1,m,:) = zero 
-             Mat_Normal(3,m,:) = zero
+             Mat_Normal(1,m,:) = 0.0_r8 
+             Mat_Normal(3,m,:) = 0.0_r8
           end where
           where (ABS(Mat_Normal(3,m,:)) >= ABS(Mat_Normal(1,m,:)) .and. &
                  ABS(Mat_Normal(3,m,:)) >= ABS(Mat_Normal(2,m,:)))
-             Mat_Normal(1,m,:) = zero 
-             Mat_Normal(2,m,:) = zero
+             Mat_Normal(1,m,:) = 0.0_r8 
+             Mat_Normal(2,m,:) = 0.0_r8
           end where
        end if
 
@@ -457,7 +441,7 @@ CONTAINS
     Mat = 0
     mid = 0
     do m=1,nmat
-      where(Vof(m,:) > zero) Mat = Mat + 1
+      where(Vof(m,:) > 0.0_r8) Mat = Mat + 1
     enddo
 
     do nc = 1,ncells
@@ -481,7 +465,7 @@ CONTAINS
         ! identify the material ID in the cells
         mi=1
         do m=1,nmat
-           if (Vof(m,nc) > zero) then
+           if (Vof(m,nc) > 0.0_r8) then
              mid(mi,nc)=m
              mi=mi+1
            endif
@@ -497,7 +481,7 @@ CONTAINS
 
     ! Eliminate noise from the gradient
     do n = 1,ndim
-       where (ABS(Mat_Normal(n,:,:)) < alittle) Mat_Normal(n,:,:) = zero
+       where (ABS(Mat_Normal(n,:,:)) < alittle) Mat_Normal(n,:,:) = 0.0_r8
     end do
  
     ! Save Mat_Normal into Grad
@@ -511,9 +495,9 @@ CONTAINS
        Tmp = SQRT(Grad(m,1,:)**2 + Grad(m,2,:)**2 + Grad(m,3,:)**2)
 
        where (ABS(Tmp) > alittle)
-          Tmp = one/Tmp
+          Tmp = 1.0_r8/Tmp
        elsewhere
-          Tmp = one
+          Tmp = 1.0_r8
        end where
 
        Grad(m,1,:) = Grad(m,1,:) * Tmp
@@ -521,14 +505,14 @@ CONTAINS
        Grad(m,3,:) = Grad(m,3,:) * Tmp
  
        ! Set tiny components to zero, and set all components to 1.0 in pure cells.
-       where (ABS(Grad(m,1,:)) < ten_tominus6) Grad(m,1,:) = zero
-       where (ABS(Grad(m,2,:)) < ten_tominus6) Grad(m,2,:) = zero
-       where (ABS(Grad(m,3,:)) < ten_tominus6) Grad(m,3,:) = zero
+       where (ABS(Grad(m,1,:)) < 1.0d-6) Grad(m,1,:) = 0.0_r8
+       where (ABS(Grad(m,2,:)) < 1.0d-6) Grad(m,2,:) = 0.0_r8
+       where (ABS(Grad(m,3,:)) < 1.0d-6) Grad(m,3,:) = 0.0_r8
  
-       where (Grad(m,1,:) == zero .and. Grad(m,2,:) == zero .and. Grad(m,3,:) == zero)
-          Grad(m,1,:) = one
-          Grad(m,2,:) = one
-          Grad(m,3,:) = one
+       where (Grad(m,1,:) == 0.0_r8 .and. Grad(m,2,:) == 0.0_r8 .and. Grad(m,3,:) == 0.0_r8)
+          Grad(m,1,:) = 1.0_r8
+          Grad(m,2,:) = 1.0_r8
+          Grad(m,3,:) = 1.0_r8
        end where
  
     end do

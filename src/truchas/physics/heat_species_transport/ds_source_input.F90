@@ -86,7 +86,7 @@ module ds_source_input
   use scalar_functions
   use source_mesh_function
   use distributed_mesh
-  use ds_utilities
+  use truchas_logging_services
   use parallel_communication
   use string_utilities, only: raise_case, i_to_c
   implicit none
@@ -138,8 +138,8 @@ contains
 
     ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
 
-    call ds_info ('')
-    call ds_info ('Reading DS_SOURCE namelists ...')
+    call TLS_info ('')
+    call TLS_info ('Reading DS_SOURCE namelists ...')
 
     if (is_IOP) rewind(lun)
     n = 0 ! namelist counter
@@ -231,15 +231,15 @@ contains
       allocate(last%cell_set_ids(count(cell_set_ids /= NULL_I)))
       last%cell_set_ids = pack(cell_set_ids, mask=(cell_set_ids /= NULL_I))
 
-      call ds_info (trim(label) // ' read source for "' // trim(equation) // '" equation')
+      call TLS_info (trim(label) // ' read source for "' // trim(equation) // '" equation')
 
     end do
 
     if (stat /= 0) then
-      call ds_info (trim(errmsg))
-      call ds_halt ('error reading DS_SOURCE namelists')
+      call TLS_info (trim(errmsg))
+      call TLS_fatal ('error reading DS_SOURCE namelists')
     else if (n == 1) then ! if no errors, N is one more than the number of namelists found
-      call ds_info ('  No DS_SOURCE namelists found.')
+      call TLS_info ('  No DS_SOURCE namelists found.')
     end if
 
   end subroutine read_ds_source
@@ -260,7 +260,7 @@ contains
     character(len=127) :: errmsg
     type(list_node), pointer :: l
 
-    call ds_info ('  Generating external source for "' // trim(equation) // '" equation')
+    call TLS_info ('  Generating external source for "' // trim(equation) // '" equation')
     call smf_prep (q, mesh)
 
     l => list
@@ -268,14 +268,14 @@ contains
       if (raise_case(l%equation) == raise_case(equation)) then
         write(label,'(a,i0,a)') 'DS_SOURCE[', l%seq, ']'
         call smf_add_function (q, l%srcf, l%cell_set_ids, stat, errmsg)
-        call ds_check_stat (stat, trim(label) // ' error: ' // trim(errmsg))
+        call TLS_fatal_if_any (stat /= 0, trim(label) // ' error: ' // trim(errmsg))
       end if
       l => l%next
     end do
 
     call smf_set_default (q, 0.0_r8)  ! 0-source for all other cells
     call smf_done (q, stat, errmsg)
-    call ds_check_stat (stat, 'Error defining external source: ' // trim(errmsg))
+    call TLS_fatal_if_any (stat /= 0, 'Error defining external source: ' // trim(errmsg))
 
   end subroutine define_external_source
 

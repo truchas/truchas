@@ -76,7 +76,7 @@
 
 module restart_utilities
 
-  use kind_module, only: real_kind
+  use kinds, only: r8
 
   implicit none
   private

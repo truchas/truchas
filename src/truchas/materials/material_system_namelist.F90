@@ -26,7 +26,7 @@ contains
     use phase_property_table
     use input_utilities, only: seek_to_namelist
     use string_utilities, only: i_to_c
-    use ds_utilities
+    use truchas_logging_services
   
     integer, intent(in) :: lun
 
@@ -55,8 +55,8 @@ contains
     character(len=10) :: string
     type(mat_system) :: ms
 
-    call ds_info ('')
-    call ds_info ('Reading MATERIAL_SYSTEM namelists ...')
+    call TLS_info ('')
+    call TLS_info ('Reading MATERIAL_SYSTEM namelists ...')
 
     if (is_IOP) rewind(lun)
     num_nml = 0
@@ -65,13 +65,13 @@ contains
     
       if (is_IOP) call seek_to_namelist (lun, 'MATERIAL_SYSTEM', found, iostat=stat)
       call broadcast (stat)
-      if (stat /= 0) call ds_halt ('error reading input file')
+      if (stat /= 0) call TLS_fatal ('error reading input file')
 
       call broadcast (found)
       if (.not.found) return  ! no further MATERIAL_SYSTEM namelists found
 
       num_nml = num_nml + 1
-      call ds_info ('  Reading MATERIAL_SYSTEM namelist #' // i_to_c(num_nml))
+      call TLS_info ('  Reading MATERIAL_SYSTEM namelist #' // i_to_c(num_nml))
 
       !! Read the namelist variables, assigning default values first.
       if (is_IOP) then
@@ -89,7 +89,7 @@ contains
         read(lun, nml=material_system, iostat=stat)
       endif
       call broadcast (stat)
-      if (stat /= 0) call ds_halt('error reading MATERIAL_SYSTEM namelist')
+      if (stat /= 0) call TLS_fatal ('error reading MATERIAL_SYSTEM namelist')
 
       !! Broadcast the namelist variables.
       call broadcast (name)
@@ -106,17 +106,17 @@ contains
       
       !! Check the user-supplied name for the material system.
       if (name == NULL_C .or. name == '') then
-        call ds_halt ('NAME must be assigned a nonempty value')
+        call TLS_fatal ('NAME must be assigned a nonempty value')
       else if (mt_has_material(name)) then
-        call ds_halt ('already read a MATERIAL_SYSTEM namelist with this name: ' // trim(name))
+        call TLS_fatal ('already read a MATERIAL_SYSTEM namelist with this name: ' // trim(name))
       end if
 
       !! Check PHASES for basic correctness.
       num_phases = count(phases /= NULL_C)
       if (num_phases < 1) then
-        call ds_halt ('at least one phase name must be assigned to PHASES')
+        call TLS_fatal ('at least one phase name must be assigned to PHASES')
       else if (any(phases(:num_phases) == NULL_C)) then
-        call ds_halt ('phase names must be packed into the PHASES array')
+        call TLS_fatal ('phase names must be packed into the PHASES array')
       end if
 
       !! Check that these are known phases and retrieve their IDs.
@@ -125,7 +125,7 @@ contains
         if (ppt_has_phase(phases(i))) then
           phase_id(i) = ppt_phase_id(phases(i))
         else
-          call ds_halt ('unknown phase: "' // trim(phases(i)) // '"')
+          call TLS_fatal ('unknown phase: "' // trim(phases(i)) // '"')
         end if
       end do
       
@@ -133,7 +133,7 @@ contains
       do i = 1, num_phases-1
         do j = i+1, num_phases
           if (phases(i) == phases(j)) then
-            call ds_halt ('phase name appears more than once: "' // trim(phases(i)) // '"')
+            call TLS_fatal ('phase name appears more than once: "' // trim(phases(i)) // '"')
           end if
         end do
       end do
@@ -145,8 +145,8 @@ contains
         call ms_get_phase_id (mt_get_material(mid(i)), pid)
         do j = 1, size(phase_id)
           if (any(phase_id(j) == pid)) then
-            call ds_halt ('phase "' // trim(phases(j)) // '" already belongs to material system "' &
-                                    // trim(mt_material_name(mid(i))) // '"')
+            call TLS_fatal ('phase "' // trim(phases(j)) // '" already belongs to material system "' &
+                                      // trim(mt_material_name(mid(i))) // '"')
           end if
         end do
         deallocate(pid)
@@ -157,13 +157,13 @@ contains
       if (number_of_components == NULL_I) then
         number_of_components = 1
       else if (number_of_components < 1) then
-        call ds_halt ('NUMBER_OF_COMPONENTS must be positive')
+        call TLS_fatal ('NUMBER_OF_COMPONENTS must be positive')
       end if
 
       if (num_phases > 1) then  ! have a phase diagram
       
         if (.not.temperature_dependent) then
-          call ds_halt ('multi-phase material systems must be temperature-dependent')
+          call TLS_fatal ('multi-phase material systems must be temperature-dependent')
         end if
       
         if (number_of_components == 1) then ! unary phase diagram
@@ -172,26 +172,26 @@ contains
 
           !! Check TRANSITION_TEMPS_LOW and TRANSITION_TEMPS_HIGH for correctness.
           if (any(transition_temps_low(n+1:) /= NULL_R)) then
-            call ds_halt ('found extraneous TRANSITION_TEMPS_LOW values')
+            call TLS_fatal ('found extraneous TRANSITION_TEMPS_LOW values')
           end if
           if (any(transition_temps_low(:n) == NULL_R)) then
-            call ds_halt ('too few TRANSITION_TEMPS_LOW values; expecting ' // i_to_c(n))
+            call TLS_fatal ('too few TRANSITION_TEMPS_LOW values; expecting ' // i_to_c(n))
           end if
 
           if (any(transition_temps_high(n+1:) /= NULL_R)) then
-            call ds_halt ('found extraneous TRANSITION_TEMPS_HIGH values')
+            call TLS_fatal ('found extraneous TRANSITION_TEMPS_HIGH values')
           end if
           if (any(transition_temps_high(:n) == NULL_R)) then
-            call ds_halt ('too few TRANSITION_TEMPS_HIGH values; expecting ' // i_to_c(n))
+            call TLS_fatal ('too few TRANSITION_TEMPS_HIGH values; expecting ' // i_to_c(n))
           end if
 
           if (any(transition_temps_high(:n) <= transition_temps_low(:n))) then
-            call ds_halt ('all transition interval widths must be positive')
+            call TLS_fatal ('all transition interval widths must be positive')
           end if
 
           !! Check for properly ordered transition intervals.
           if (any(transition_temps_high(1:n-1) >= transition_temps_low(2:n))) then
-            call ds_halt('the sequence of transition intervals are not monotonically increasing')
+            call TLS_fatal('the sequence of transition intervals are not monotonically increasing')
           end if
 
           !! Assign default values for SMOOTHING_RADIUS where needed.
@@ -207,20 +207,20 @@ contains
                      0.25_r8*(transition_temps_low(i+1)-transition_temps_high(i)))
               end if
               write(string,'(es10.4)') smoothing_radius(i)
-              call ds_info ('    using default SMOOTHING_RADIUS(' // i_to_c(i) // ') = ' // string)
+              call TLS_info ('    using default SMOOTHING_RADIUS(' // i_to_c(i) // ') = ' // string)
             end if
           end do
 
           !! Check SMOOTHING_RADIUS for correctness.
           if (any(smoothing_radius(n+1:) /= NULL_R)) then
-            call ds_halt ('found extraneous SMOOTHING_RADIUS values')
+            call TLS_fatal ('found extraneous SMOOTHING_RADIUS values')
           end if
           do i = 1, n
             if (smoothing_radius(i) < 0.0_r8) then
-              call ds_halt ('all SMOOTHING_RADIUS values must be nonnegative')
+              call TLS_fatal ('all SMOOTHING_RADIUS values must be nonnegative')
             end if
             if (smoothing_radius(i) > (transition_temps_high(i) - transition_temps_low(i))/2) then
-              call ds_halt('SMOOTHING_RADIUS exceeds half the transition width')
+              call TLS_fatal ('SMOOTHING_RADIUS exceeds half the transition width')
             end if
           end do
 
@@ -228,19 +228,19 @@ contains
           do i = 1, n-1
             if (transition_temps_high(i) + smoothing_radius(i) > &
                 transition_temps_low(i+1) - smoothing_radius(i+1)) then
-              call ds_halt('SMOOTHING_RADIUS is too large; adjacent transition intervals overlap')
+              call TLS_fatal ('SMOOTHING_RADIUS is too large; adjacent transition intervals overlap')
             end if
           end do
 
           !! Check LATENT_HEAT for correctness.
           if (any(latent_heat(n+1:) /= NULL_R)) then
-            call ds_halt ('found extraneous LATENT_HEAT values')
+            call TLS_fatal ('found extraneous LATENT_HEAT values')
           end if
           if (any(latent_heat(:n) == NULL_R)) then
-            call ds_halt ('too few LATENT_HEAT values; expecting ' // i_to_c(n))
+            call TLS_fatal ('too few LATENT_HEAT values; expecting ' // i_to_c(n))
           end if
           if (any(latent_heat(:n) <= 0.0_r8)) then
-            call ds_halt('all LATENT_HEAT values must be positive')
+            call TLS_fatal('all LATENT_HEAT values must be positive')
           end if
 
           !if (phase_diagram_type == NULL_C) then
@@ -251,30 +251,30 @@ contains
         
         else  ! multi-component phase diagram
 
-          call ds_halt ('multi-phase, multi-component material systems are not yet implemented')
+          call TLS_fatal ('multi-phase, multi-component material systems are not yet implemented')
            
         end if
         
       else  ! this is a single-phase material system -- no phase diagram
 
         if (number_of_components == 1 .and. .not.temperature_dependent) then
-          call ds_halt ('single-component material systems must be temperature-dependent')
+          call TLS_fatal ('single-component material systems must be temperature-dependent')
         end if
       
         if (any(transition_temps_low /= NULL_R)) then
-          call ds_halt ('use of TRANSITION_TEMPS_LOW is not relevant to single-phase systems')
+          call TLS_fatal ('use of TRANSITION_TEMPS_LOW is not relevant to single-phase systems')
         endif
         if (any(transition_temps_high /= NULL_R)) then
-          call ds_halt ('use of TRANSITION_TEMPS_HIGH is not relevant to single-phase systems')
+          call TLS_fatal ('use of TRANSITION_TEMPS_HIGH is not relevant to single-phase systems')
         endif
         if (any(smoothing_radius /= NULL_R)) then
-          call ds_halt ('use of SMOOTHING_RADIUS is not relevant to single-phase systems')
+          call TLS_fatal ('use of SMOOTHING_RADIUS is not relevant to single-phase systems')
         endif
         if (any(latent_heat /= NULL_R)) then
-          call ds_halt ('use of LATENT_HEAT is not relevant to single-phase systems')
+          call TLS_fatal ('use of LATENT_HEAT is not relevant to single-phase systems')
         endif
         !if (phase_diagram_type /= NULL_C) then
-        !  call ds_halt ('use of PHASE_DIAGRAM_TYPE is not relevant to single-phase systems')
+        !  call TLS_fatal ('use of PHASE_DIAGRAM_TYPE is not relevant to single-phase systems')
         !endif
         
       endif
@@ -282,13 +282,13 @@ contains
       if (reference_temp == NULL_R) then
         reference_temp = 0.0_r8
         write(string,'(es10.3)') reference_temp
-        call ds_info ('    using default REFERENCE_TEMP = ' // string)
+        call TLS_info ('    using default REFERENCE_TEMP = ' // string)
       endif
 
       if (reference_enthalpy == NULL_R) then
         reference_enthalpy = 0.0_r8
         write(string,'(es10.3)') reference_enthalpy
-        call ds_info ('    using default REFERENCE_ENTHALPY = ' // string)
+        call TLS_info ('    using default REFERENCE_ENTHALPY = ' // string)
       endif
 
       !! now initialize the current material_system object

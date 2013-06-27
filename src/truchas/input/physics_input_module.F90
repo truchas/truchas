@@ -19,8 +19,6 @@ MODULE PHYSICS_INPUT_MODULE
   !=======================================================================
   use truchas_logging_services
   implicit none
- 
-  ! Private Module
   private
  
   ! Public Subroutines
@@ -39,23 +37,14 @@ CONTAINS
     !   Check PHYSICS namelist
     !=======================================================================
     use physics_module
-    use constants_module,       only: zero, one
     use fluid_data_module,      only: fluid_flow, applyflow
-    use kind_module,            only: log_kind, int_kind
     use porous_drag_data,       only: porous_flow
     use surface_tension_module, only: surface_tension
     use viscous_data_module,    only: inviscid, stokes
-    use utilities_module,       only: STRING_COMPARE
  
     ! argument list
-    logical(KIND = log_kind), intent(INOUT) :: fatal
+    logical, intent(INOUT) :: fatal
  
-    ! local variables
-    logical(KIND = log_kind)       :: strings_match
-    character(LEN = 80)            :: initialized_string
-    integer(KIND = int_kind)       :: l
-    character(128) :: message
-
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     
     if (surface_tension .and. .not. fluid_flow) then
@@ -112,9 +101,8 @@ CONTAINS
     !=======================================================================
     use physics_module
     use body_data_module,       only: Body_Force
-    use constants_module,       only: zero, one_twentieth, one_tenth
     use fluid_data_module,      only: fluid_flow, qin, qout, void_pressure, &
-                                      boussinesq_approximation, applyflow
+                                      boussinesq_approximation
     use porous_drag_data,       only: porous_flow
     use surface_tension_module, only: surface_tension
     use viscous_data_module,    only: inviscid, stokes
@@ -134,7 +122,7 @@ CONTAINS
     solid_mechanics_body_force = .false.
 
     ! Fluid flow flags and parameters.
-    Body_Force               =  zero   ! Body force
+    Body_Force               =  0   ! Body force
     fluid_flow               = .true.  ! Fluid flow
     inviscid                 = .true.  ! Inviscid flow
     stokes                   = .false. ! Stokes flow
@@ -145,11 +133,11 @@ CONTAINS
     electromagnetics = .false.
  
      ! Inflow/Outflow volumes.
-    qin  = zero
-    qout = zero
+    qin  = 0
+    qout = 0
  
     ! Void pressure.
-    void_pressure = zero
+    void_pressure = 0
 
   END SUBROUTINE PHYSICS_DEFAULT
  
@@ -165,7 +153,6 @@ CONTAINS
     use EM_data_proxy,          only: SET_EM_SIMULATION_ON_OR_OFF
     use fluid_data_module,      only: fluid_flow, void_pressure, applyflow
     use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: log_kind, int_kind
     use parallel_info_module,   only: p_info
     use porous_drag_data,       only: porous_flow
     use surface_tension_module, only: surface_tension
@@ -176,8 +163,8 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! Local Variables
-    logical(KIND = log_kind)                    :: fatal, found, use_phys_defaults
-    integer(KIND = int_kind)                    :: ioerror
+    logical :: fatal, found, use_phys_defaults
+    integer :: ioerror
 
     ! Define PHYSICS namelist
     Namelist /PHYSICS/ heat_transport,                 &
@@ -317,8 +304,6 @@ CONTAINS
        call PGSLib_BCAST (electromagnetics)
 
     end if BROADCAST_VARIABLES
- 
-    return
  
   END SUBROUTINE PHYSICS_INPUT_PARALLEL
  

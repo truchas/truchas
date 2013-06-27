@@ -5,13 +5,12 @@ MODULE EN_GATHER_MODULE
   !   Supply the EN (element<-node) gather routines
   !
   !=======================================================================
+  use kinds, only: r8
   use gather_module,  only: GATHER
   use gs_util,        only: en_gs_init
-  use kind_module
   use parameter_module
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   Public :: EN_Gather,      &
@@ -95,8 +94,8 @@ CONTAINS
   !========== EN_GATHER_INT========================================
 
 #define _ROUTINE_NAME_  EN_GATHER_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         0_int_kind
+#define _DATA_TYPE_     integer
+#define _OP_ID_         0
 #define _DST_DIMENSION_ _DIMENSION_((nvc,ncells))
 
 #include "en_gather.fpp"
@@ -104,8 +103,8 @@ CONTAINS
   !========== EN_GATHER_SINGLE========================================
 
 #define _ROUTINE_NAME_ EN_GATHER_SINGLE
-#define _DATA_TYPE_    real (single_kind)
-#define _OP_ID_        0.0_single_kind
+#define _DATA_TYPE_    real
+#define _OP_ID_        0.0
 #define _DST_DIMENSION_ _DIMENSION_((nvc,ncells))
 
 #include "en_gather.fpp"
@@ -113,8 +112,8 @@ CONTAINS
   !========== EN_GATHER_DOUBLE========================================
 
 #define _ROUTINE_NAME_ EN_GATHER_DOUBLE
-#define _DATA_TYPE_    real (double_kind)
-#define _OP_ID_        0.0_double_kind
+#define _DATA_TYPE_    real(r8)
+#define _OP_ID_        0.0_r8
 #define _DST_DIMENSION_ _DIMENSION_((nvc,ncells))
 
 #include "en_gather.fpp"
@@ -122,7 +121,7 @@ CONTAINS
   !========== EN_GATHER_LOG========================================
 
 #define _ROUTINE_NAME_ EN_GATHER_LOG
-#define _DATA_TYPE_    logical(log_kind)
+#define _DATA_TYPE_    logical
 #define _OP_ID_        .false.
 #define _DST_DIMENSION_ _DIMENSION_((nvc,ncells))
 
@@ -132,8 +131,8 @@ CONTAINS
   !========== EN_MIN_GATHER_INT========================================
 
 #define _ROUTINE_NAME_  EN_MIN_GATHER_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         MINVAL((/0_int_kind/), MASK=.false.)
+#define _DATA_TYPE_     integer
+#define _OP_ID_         MINVAL((/0/), MASK=.false.)
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MIN
 
@@ -142,8 +141,8 @@ CONTAINS
   !========== EN_MIN_GATHER_SINGLE========================================
 
 #define _ROUTINE_NAME_  EN_MIN_GATHER_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         MINVAL((/0.0_single_kind/), MASK=.false.)
+#define _DATA_TYPE_     real
+#define _OP_ID_         MINVAL((/0.0/), MASK=.false.)
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MIN
 
@@ -152,8 +151,8 @@ CONTAINS
   !========== EN_MIN_GATHER_DOUBLE========================================
 
 #define _ROUTINE_NAME_  EN_MIN_GATHER_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         MINVAL((/0.0_double_kind/), MASK=.false.)
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         MINVAL((/0.0_r8/), MASK=.false.)
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MIN
 
@@ -162,8 +161,8 @@ CONTAINS
   !========== EN_MAX_GATHER_INT========================================
 
 #define _ROUTINE_NAME_  EN_MAX_GATHER_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         MAXVAL((/0_int_kind/), MASK=.false.)
+#define _DATA_TYPE_     integer
+#define _OP_ID_         MAXVAL((/0/), MASK=.false.)
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MAX
 
@@ -172,8 +171,8 @@ CONTAINS
   !========== EN_MAX_GATHER_SINGLE========================================
 
 #define _ROUTINE_NAME_  EN_MAX_GATHER_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         MAXVAL((/0.0_single_kind/), MASK=.false.)
+#define _DATA_TYPE_     real
+#define _OP_ID_         MAXVAL((/0.0/), MASK=.false.)
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MAX
 
@@ -182,8 +181,8 @@ CONTAINS
   !========== EN_MAX_GATHER_DOUBLE========================================
 
 #define _ROUTINE_NAME_  EN_MAX_GATHER_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         MAXVAL((/0.0_double_kind/), MASK=.false.)
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         MAXVAL((/0.0_r8/), MASK=.false.)
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MAX
 
@@ -194,22 +193,19 @@ CONTAINS
     ! PURPOSE - 
     !
     !=======================================================================
-    use kind_module,      only: int_kind, log_kind
     use parameter_module, only: ncells, nnodes, nvc
 
-    implicit none
-
     ! Arguments
-    logical(log_kind), dimension(nnodes),   intent(IN)  :: Src
-    logical(log_kind), dimension(ncells),   intent(OUT) :: Dest
-    logical(log_kind), dimension(:), pointer, optional  :: BOUNDARY
-    logical(log_kind), intent(IN   ), OPTIONAL          :: INITIAL_VALUE
+    logical, dimension(nnodes),   intent(IN)  :: Src
+    logical, dimension(ncells),   intent(OUT) :: Dest
+    logical, dimension(:), pointer, optional  :: BOUNDARY
+    logical, intent(IN   ), OPTIONAL          :: INITIAL_VALUE
 
 
     ! Local Variables
-    logical(log_kind) :: DEFAULT_VALUE
-    integer(int_kind) :: v
-    logical(log_kind), dimension(nvc,ncells) :: TempDest
+    logical :: DEFAULT_VALUE
+    integer :: v
+    logical, dimension(nvc,ncells) :: TempDest
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -229,10 +225,7 @@ CONTAINS
        Dest = Dest .or. TempDest(v,:)
     end do
 
-    return
-
   END SUBROUTINE EN_OR_GATHER_LOG
-
 
 END MODULE EN_GATHER_MODULE
 

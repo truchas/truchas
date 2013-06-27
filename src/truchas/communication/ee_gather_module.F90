@@ -5,6 +5,7 @@ MODULE EE_GATHER_MODULE
   !   Supply the EE gather routines
   !
   !=======================================================================
+  use kinds, only: r8
   use gather_module,  only: GATHER
   use gs_info_module, only: EE_All_Ngbr_Trace,      &
                             EE_Mask_Initialized,    &
@@ -13,14 +14,12 @@ MODULE EE_GATHER_MODULE
                             
   use gs_util,        only: gs_init_ee_mask,        &
                             ee_gs_init
-  use kind_module
   use mesh_module,    only: Mesh
   use parameter_module
   use var_vector_module
+  use truchas_logging_services
 
   implicit none
-
-  ! Private Module
   private
 
   PUBLIC :: EE_Gather
@@ -57,8 +56,8 @@ CONTAINS
     !========== EE_GATHER_INT========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         0_int_kind
+#define _DATA_TYPE_     integer
+#define _OP_ID_         0
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc,ncells))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -68,8 +67,8 @@ CONTAINS
   !========== EE_GATHER_SINGLE========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         0.0_single_kind
+#define _DATA_TYPE_     real
+#define _OP_ID_         0.0
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc,ncells))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -79,8 +78,8 @@ CONTAINS
   !========== EE_GATHER_DOUBLE========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         0.0_double_kind
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         0.0_r8
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc,ncells))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -90,7 +89,7 @@ CONTAINS
   !========== EE_GATHER_LOG========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_LOG
-#define _DATA_TYPE_     logical (log_kind)
+#define _DATA_TYPE_     logical
 #define _OP_ID_         .false.
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc,ncells))
@@ -101,8 +100,8 @@ CONTAINS
   !========== EE_GATHER_V_V_INT ========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_V_V_INT
-#define _DATA_TYPE_     integer (int_kind)
-#define _OP_ID_         0_int_kind
+#define _DATA_TYPE_     integer
+#define _OP_ID_         0
 #define _SRC_DIMENSION_ _DIMENSION_((nfc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc, ncells))
 #define _BDY_DIMENSION_ _DIMENSION_((:,:))
@@ -112,8 +111,8 @@ CONTAINS
   !========== EE_GATHER_V_V_SINGLE ========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_V_V_SINGLE
-#define _DATA_TYPE_     real (single_kind)
-#define _OP_ID_         0.0_single_kind
+#define _DATA_TYPE_     real
+#define _OP_ID_         0.0
 #define _SRC_DIMENSION_ _DIMENSION_((nfc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc, ncells))
 #define _BDY_DIMENSION_ _DIMENSION_((:,:))
@@ -123,8 +122,8 @@ CONTAINS
   !========== EE_GATHER_V_V_DOUBLE ========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_V_V_DOUBLE
-#define _DATA_TYPE_     real (double_kind)
-#define _OP_ID_         0.0_double_kind
+#define _DATA_TYPE_     real(r8)
+#define _OP_ID_         0.0_r8
 #define _SRC_DIMENSION_ _DIMENSION_((nfc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc, ncells))
 #define _BDY_DIMENSION_ _DIMENSION_((:,:))
@@ -134,7 +133,7 @@ CONTAINS
   !========== EE_GATHER_V_V_LOG ========================================
 
 #define _ROUTINE_NAME_  EE_GATHER_V_V_LOG
-#define _DATA_TYPE_     logical (log_kind)
+#define _DATA_TYPE_     logical
 #define _OP_ID_         .false.
 #define _SRC_DIMENSION_ _DIMENSION_((nfc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nfc, ncells))
@@ -146,7 +145,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_   EE_Gather_ALL_V_S_INT
 #define _DEST_DATA_TYPE_ type (INT_VAR_VECTOR)
-#define _DATA_TYPE_      integer (int_kind)
+#define _DATA_TYPE_      integer
 #define _SRC_DIMENSION_ _DIMENSION_((:))
 #define _DST_DIMENSION_ _DIMENSION_((:))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -157,7 +156,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_   EE_Gather_ALL_V_S_REAL
 #define _DEST_DATA_TYPE_ type (REAL_VAR_VECTOR)
-#define _DATA_TYPE_      real (real_kind)
+#define _DATA_TYPE_      real(r8)
 #define _SRC_DIMENSION_ _DIMENSION_((:))
 #define _DST_DIMENSION_ _DIMENSION_((:))
 #define _BDY_DIMENSION_ _DIMENSION_((:))
@@ -168,7 +167,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_   EE_Gather_ALL_V_S_LOG
 #define _DEST_DATA_TYPE_ type (LOG_VAR_VECTOR)
-#define _DATA_TYPE_      logical (log_kind)
+#define _DATA_TYPE_      logical
 #define _SRC_DIMENSION_ _DIMENSION_((:))
 #define _DST_DIMENSION_ _DIMENSION_((:))
 #define _BDY_DIMENSION_ _DIMENSION_((:))

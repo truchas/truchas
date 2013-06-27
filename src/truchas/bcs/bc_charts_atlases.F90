@@ -10,7 +10,7 @@ Module BC_CHARTS_Atlases
   !
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
-  use kind_module, only: int_kind, real_kind, log_kind
+  use kinds, only: r8
   use bc_enum_types
   use bc_atlases, only : BC_Atlas, BC_Get_Values, BC_Get_ValueIndex, BC_Get_UseFunction, &
                          BC_Get_Positions, &
@@ -45,8 +45,8 @@ Module BC_CHARTS_Atlases
   ! A chart ID, identifies a chart in an atlas
   type BC_CHART_ID
      PRIVATE
-     integer( int_kind)                    :: AtlasIndex
-     type (BC_Atlas), POINTER   :: Atlas => NULL()
+     integer :: AtlasIndex
+     type(BC_Atlas), POINTER :: Atlas => NULL()
   end type BC_CHART_ID
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -127,10 +127,9 @@ CONTAINS
 
   function InvalidChart_ID() RESULT(ChartID)
     ! Return a pointer to an invalid chart ID
-    implicit none
-    type (BC_Chart_ID), TARGET, SAVE :: Invalid_Chart_ID
-    logical,                    SAVE :: Initialized = .FALSE.
-    type (BC_Chart_ID), POINTER      :: ChartID
+    type(BC_Chart_ID), TARGET, SAVE :: Invalid_Chart_ID
+    logical, SAVE :: Initialized = .FALSE.
+    type(BC_Chart_ID), POINTER :: ChartID
 
     if (.NOT. Initialized) then
        ! No valid Atlas
@@ -140,144 +139,101 @@ CONTAINS
        Initialized = .TRUE.
     end if
     ChartID => Invalid_Chart_ID
-    return
   end function InvalidChart_ID
 
   subroutine InitChartID(ChartID)
-    implicit none
-    type (BC_Chart_ID), target, intent(  OUT) :: ChartID
+    type(BC_Chart_ID), target, intent(OUT) :: ChartID
     ChartID%AtlasIndex = BC_INVALID_ATLASINDEX
     NULLIFY(ChartID%Atlas)
-    return
   end subroutine InitChartID
 
   function ChartIDIsValid(ChartID)
     ! Returns .TRUE. if ChartID is a valid chart ID.
     ! Otherwise returns .FALSE.
     ! The test is on the AtlasIndex field.
-    implicit none
-    type (BC_Chart_ID), target, intent(IN) :: ChartID
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
     logical                        :: ChartIDIsValid
-
     ChartIDIsValid = ChartID%AtlasIndex /= BC_INVALID_ATLASINDEX
-
-    return
   end function ChartIDIsValid
 
   function ChartIDAtlas(ChartID)
-    implicit none
-    type (BC_Chart_ID), TARGET,    &
-                     intent(IN):: ChartID
-    type(BC_Atlas),  POINTER   :: ChartIDAtlas
-
+    type(BC_Chart_ID), TARGET, intent(IN):: ChartID
+    type(BC_Atlas), POINTER :: ChartIDAtlas
     ChartIDAtlas => ChartID%Atlas
-    return
   end function ChartIDAtlas
 
   function ChartIDAtlasIndex(ChartID)
-    implicit none
-    type (BC_Chart_ID), target, intent(IN)   :: ChartID
-    integer( int_kind)                       :: ChartIDAtlasIndex
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
+    integer :: ChartIDAtlasIndex
     ChartIDAtlasIndex = ChartID%AtlasIndex
-    return
   end function ChartIDAtlasIndex
 
   function ChartIDCell(ChartID)
-    implicit none
-    type (BC_Chart_ID), target, intent(IN)   :: ChartID
-    integer( int_kind)                          :: ChartIDCell
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
+    integer :: ChartIDCell
     ChartIDCell = BC_Get_Cell(BC_Chart_Atlas(ChartID), BC_CHART_AtlasIndex(ChartID))
-    return
   end function ChartIDCell
 
   function ChartIDFace(ChartID)
-    implicit none
-    type (BC_Chart_ID), target, intent(IN)   :: ChartID
-    integer( int_kind)                          :: ChartIDFace
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
+    integer :: ChartIDFace
     ChartIDFace = BC_Get_Face(BC_Chart_Atlas(ChartID), BC_CHART_AtlasIndex(ChartID))
-    return
   end function ChartIDFace
 
   function ChartIDLength(ChartID)
-    implicit none
-    type (BC_Chart_ID), target, intent(IN)   :: ChartID
-    integer( int_kind)                          :: ChartIDLength
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
+    integer :: ChartIDLength
     ChartIDLength = BC_Get_Length(BC_Chart_Atlas(ChartID), BC_CHART_AtlasIndex(ChartID))
-    return
   end function ChartIDLength
 
   function ChartIDOffset(ChartID)
-    implicit none
-    type (BC_Chart_ID), target, intent(IN)   :: ChartID
-    integer( int_kind)                          :: ChartIDOffset
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
+    integer :: ChartIDOffset
     ChartIDOffset = BC_Get_Offset(BC_Chart_Atlas(ChartID), BC_CHART_AtlasIndex(ChartID))
-    return
   end function ChartIDOffset
 
   function GetChartIDValues(ChartID) RESULT(Values)
-    implicit none
-    real(real_kind), dimension(:,:), POINTER    :: Values
-    type (BC_Chart_ID), target, intent(IN) :: ChartID
-
+    real(r8), dimension(:,:), POINTER :: Values
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
     Values => BC_Get_Values(BC_Chart_Atlas(ChartID), BC_Chart_AtlasIndex(ChartID))
-
-    return
   end function GetChartIDValues
 
   function GetChartIDValueIndex(ChartID) RESULT(ValueIndex)
-    implicit none
-    integer( int_kind),dimension(:), POINTER   :: ValueIndex
-    type (BC_Chart_ID),  target, intent(IN) :: ChartID
-
+    integer,dimension(:), POINTER :: ValueIndex
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
     ValueIndex => BC_Get_ValueIndex(BC_Chart_Atlas(ChartID), BC_Chart_AtlasIndex(ChartID))
-
-    return
   end function GetChartIDValueIndex
 
   function GetChartIDUseFunction(ChartID) RESULT(UseFunction)
-    implicit none
-    logical( log_kind),dimension(:), POINTER   :: UseFunction
-    type (BC_Chart_ID),  target, intent(IN) :: ChartID
-
+    logical,dimension(:), POINTER :: UseFunction
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
     UseFunction => BC_Get_UseFunction(BC_Chart_Atlas(ChartID), BC_Chart_AtlasIndex(ChartID))
-
-    return
   end function GetChartIDUseFunction
 
   function GetChartIDPositions(ChartID) RESULT(Positions)
-    implicit none
-    real(real_kind), dimension(:,:), POINTER    :: Positions
-    type (BC_Chart_ID),   target, intent(IN) :: ChartID
-
+    real(r8), dimension(:,:), POINTER :: Positions
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
     Positions => BC_Get_Positions(BC_Chart_Atlas(ChartID), BC_Chart_AtlasIndex(ChartID))
-
-    return
   end function GetChartIDPositions
 
   subroutine SetChartID(ChartID, Atlas, AtlasIndex)
     ! Set the ChartID to point at the appropriate Atlas & AtlasIndex
-    implicit none
-    type (BC_Chart_ID), target, intent(  OUT) :: ChartID
-    type (BC_Atlas),    TARGET,        &
-                        intent(IN   ) :: Atlas
-    integer( int_kind), intent(IN   ) :: AtlasIndex
-
+    type(BC_Chart_ID), target, intent(OUT) :: ChartID
+    type(BC_Atlas), TARGET, intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
     ChartID%AtlasIndex = AtlasIndex
-    ChartID%Atlas     => Atlas
-
-    return
+    ChartID%Atlas => Atlas
   end subroutine SetChartID
 
   subroutine SetChartChartID(Chart, ChartID)
     ! Set the chart according to ChartID information
-    implicit none
-    type (BC_Chart),    target, intent(  OUT)    :: Chart
-    type (BC_Chart_ID), target, intent(IN   ) :: ChartID
+    type(BC_Chart),    target, intent(OUT)    :: Chart
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
 
     ! Local variables
-    type (BC_Atlas), POINTER :: Atlas
-    real(real_kind), dimension(:,:), pointer :: Values
-    integer( int_kind)                  :: AtlasIndex
+    type(BC_Atlas), POINTER :: Atlas
+    real(r8), dimension(:,:), pointer :: Values
+    integer :: AtlasIndex
 
     Atlas => BC_Chart_Atlas(ChartID)
     AtlasIndex = BC_CHART_AtlasIndex(ChartID)
@@ -293,7 +249,6 @@ CONTAINS
                                    USEFUNCTION = BC_Get_UseFunction(Atlas, AtlasIndex), &
                                    POSITIONS = BC_Get_Positions(Atlas, AtlasIndex))
 
-    return
   end subroutine SetChartChartID
     
 
@@ -302,14 +257,13 @@ CONTAINS
     ! Returns the data into NextChart
     ! Returns .TRUE. if there is such a chart
     ! Returns .FALSE. if there is not a next chart
-    implicit none
-    type (BC_Chart_ID), target, intent(IN   ) :: ChartID
-    type (BC_Chart_ID), target, intent(  OUT) :: NextChartID
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
+    type(BC_Chart_ID), target, intent(OUT) :: NextChartID
     logical :: SetNextChartID
 
     ! Local variables
-    integer( int_kind) :: CurrentIndex, NextIndex, NumberOfCharts
-    type (BC_Atlas), POINTER :: Atlas
+    integer :: CurrentIndex, NextIndex, NumberOfCharts
+    type(BC_Atlas), POINTER :: Atlas
     
     ! Information about the input chart
     CurrentIndex = BC_Chart_AtlasIndex(ChartID)
@@ -326,16 +280,13 @@ CONTAINS
        NextChartID = BC_Invalid_Chart_ID()
     end if
 
-    return
   end function SetNextChartID
 
   function ChartIDMatches(ChartID, Cell, Face)
-    implicit none
-    type (BC_Chart_ID), target, intent(IN) :: ChartID
-    integer( int_kind),            target, intent(IN) :: Cell
-    integer( int_kind),            target, intent(IN), &
-                        OPTIONAL   :: Face
-    logical                        :: ChartIDMatches 
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
+    integer, target, intent(IN) :: Cell
+    integer, target, intent(IN), OPTIONAL :: Face
+    logical :: ChartIDMatches 
     
     if (BC_Chart_ID_Is_Valid(ChartID)) then
        
@@ -348,12 +299,10 @@ CONTAINS
     else
        ChartIDMatches = .FALSE.
     end if
-    RETURN
   end function ChartIDMatches
 
   function ValidChart(ChartID)
-    implicit none
-    type (BC_Chart_ID), target, intent(IN) :: ChartID
+    type(BC_Chart_ID), target, intent(IN) :: ChartID
     logical :: ValidChart
 
     ! To make this routine fast, we only check that the index is not 
@@ -363,21 +312,19 @@ CONTAINS
     
 
     ValidChart = ChartID%AtlasIndex /= BC_INVALID_ATLASINDEX
-    return
   end function ValidChart
 
   subroutine AppendChartAtlas(Atlas, Chart)
     ! Append the Chart data to the Atlas
-    implicit none
-    type (BC_Atlas), target, intent(INOUT) :: Atlas
-    type (BC_Chart), target, intent(IN   ) :: Chart
+    type(BC_Atlas), target, intent(INOUT) :: Atlas
+    type(BC_Chart), target, intent(IN) :: Chart
 
     ! Local variables
-    integer( int_kind),dimension( : ),pointer :: ValueIndex
-    logical( log_kind),dimension( : ),pointer :: UseFunction
-    real(real_kind), dimension(:,:), pointer :: Values
-    real(real_kind), dimension(:,:), pointer :: Positions
-    integer( int_kind) :: Cell, Face
+    integer,dimension( : ),pointer :: ValueIndex
+    logical,dimension( : ),pointer :: UseFunction
+    real(r8), dimension(:,:), pointer :: Values
+    real(r8), dimension(:,:), pointer :: Positions
+    integer :: Cell, Face
     
     Cell = BC_Chart_Cell(Chart)
     Face = BC_Chart_Face(Chart)
@@ -392,7 +339,6 @@ CONTAINS
                        CELL       = Cell,       &
                        FACE       = Face)
 
-    return
   end subroutine AppendChartAtlas
   
 END Module BC_CHARTS_Atlases

@@ -23,15 +23,11 @@ MODULE MESH_DECOMPOSITION_MODULE
   ! Author(s): Robert Ferrell (CPCA, Ltd., ferrell@cpca.com)
   !
   !=======================================================================
+  use truchas_logging_services
   implicit none
-
-  ! Pivate Module
   private
 
-  ! Public Subroutines
   public :: MESH_BLOCK_DECOMPOSITION, MESH_DOMAIN_SIZES
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -43,15 +39,14 @@ CONTAINS
     !   PE's > critPT have blcok size = min_block.
     !   The algorithm used here has (max_block - min_block) = 1.
     !=======================================================================
-    use kind_module,          only: int_kind
     use parallel_info_module, only: p_info
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN)  :: N_Tot
-    integer(KIND = int_kind), intent(OUT) :: critPE, max_block, min_block
+    integer, intent(IN)  :: N_Tot
+    integer, intent(OUT) :: critPE, max_block, min_block
 
     ! Local Variables
-    integer(KIND = int_kind) :: nPE
+    integer :: nPE
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -69,8 +64,6 @@ CONTAINS
     ! (Counting of PE's is one based at F90 level)
     critPE = (N_Tot - min_block*nPE) 
 
-    return
-
   END SUBROUTINE BLOCK_PARAMETERS
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -84,20 +77,17 @@ CONTAINS
     !           (nx and ny are copied from nx_tot and ny_tot)
     !           (nz_tot is distributed as evenly as possible over nPEs)
     !=======================================================================
-    use kind_module,          only: int_kind
     use parallel_info_module, only: p_info
     use parameter_module,     only: ndim
     use pgslib_module,        only: PGSLib_BCAST, PGSLib_COLLATE
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), dimension(ndim), intent(IN)  :: Nx_tot
-    integer(KIND = int_kind), dimension(ndim), intent(OUT) :: Nx
+    integer, dimension(ndim), intent(IN)  :: Nx_tot
+    integer, dimension(ndim), intent(OUT) :: Nx
 
     ! Local Variables
-    integer(KIND = int_kind) :: nPE, max_block, min_block, critPE, pe, n
-    integer(KIND = int_kind), allocatable, dimension(:,:) :: Nx_all
+    integer :: nPE, max_block, min_block, critPE, pe, n
+    integer, allocatable, dimension(:,:) :: Nx_all
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -161,8 +151,6 @@ CONTAINS
     ! Deallocate temporaries
     DEALLOCATE (Nx_all)
 
-    return
-
   END SUBROUTINE MESH_BLOCK_DECOMPOSITION
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -173,27 +161,23 @@ CONTAINS
     !   Figure out how the mesh is decomposed, and determine how to assign 
     !   domains to processors. Determine size of domain on each processor.
     !=======================================================================
-    use kind_module,            only: int_kind, log_kind
     use mesh_distribute_module, only: number_domains, Ncells_List, Nnodes_List
     use parallel_info_module,   only: p_info
     use pgslib_module,          only: PGSLib_BCAST
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
     integer, intent(in) :: msh_lun
-    integer(KIND = int_kind), intent(IN)  :: ncells_tot
-    integer(KIND = int_kind), intent(IN)  :: nnodes_tot
-    integer(KIND = int_kind), intent(OUT) :: ncells
-    integer(KIND = int_kind), intent(OUT) :: nnodes
+    integer, intent(IN)  :: ncells_tot
+    integer, intent(IN)  :: nnodes_tot
+    integer, intent(OUT) :: ncells
+    integer, intent(OUT) :: nnodes
 
     ! Local Variables
-    logical(KIND = log_kind) :: fatal
-    integer(KIND = int_kind) :: mesh_file_number_domains, nPE, max_block, &
+    logical :: fatal
+    integer :: mesh_file_number_domains, nPE, max_block, &
                                 min_block, critPE, memerror, dom
-    integer(KIND = int_kind), pointer, dimension(:) :: Mesh_File_Nnodes_List => null()
-    integer(KIND = int_kind), pointer, dimension(:) :: Mesh_File_Ncells_List => null()
+    integer, pointer, dimension(:) :: Mesh_File_Nnodes_List => null()
+    integer, pointer, dimension(:) :: Mesh_File_Ncells_List => null()
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -336,8 +320,6 @@ CONTAINS
     ! Deallocate temporaries
     if (ASSOCIATED(Mesh_File_Ncells_List) .and. ASSOCIATED(Mesh_File_Nnodes_List)) &
         DEALLOCATE (Mesh_File_Ncells_List, Mesh_File_Nnodes_List)
-
-    return
 
   END SUBROUTINE MESH_DOMAIN_SIZES
 

@@ -17,29 +17,23 @@ MODULE HOADVECTION
   !           Author(s): Edward D. Dendy (dendy@lanl.gov)
   !
   !=======================================================================
-  use kind_module,          only: log_kind
-
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
-
-  ! Public Procedures
 
   public :: ADVECT_SCALAR
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! PHYSICS namelist variable: Flag for running in scalar advection mode.
-  logical(log_kind), public, save :: scalar_advection
+  logical, public, save :: scalar_advection
   ! PHYSICS namelist variable: Flag for running in donor cell or first
   ! order advection mode
-  logical(log_kind), public, save :: donor_cell_advection
+  logical, public, save :: donor_cell_advection
 
-
-  character(LEN = 80), public, save :: limiter_type
-  character(LEN = 80), public, save :: limiter_name
-
+  character(80), public, save :: limiter_type
+  character(80), public, save :: limiter_name
 
 CONTAINS
 
@@ -52,39 +46,34 @@ CONTAINS
     !   Calculate a fluix quantity which is compatible with the mass
     !
     !======================================================================= 
-    use constants_module,          only: zero
     use gs_module,                 only: EE_GATHER
-    use kind_module,               only: real_kind, int_kind, log_kind
     use parameter_module,          only: ncells, ndim, nfc
     use time_step_module,          only: dt
     use zone_module,               only: CELL_AVG
     use limiter,                   only: fluxLimiterThuburn, limitGradient
     use discrete_op_module,        only: GRADIENT_CELL
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    real(real_kind),   dimension(:),    intent(INOUT) :: Phi
-    type(CELL_AVG),    dimension(:),    intent(INOUT) :: Zone
-    real(real_kind),   dimension(:,:),  intent(IN)    :: Fluxing_Velocity
-    real(real_kind),   dimension(:,:),  intent(INOUT) :: Flux_Phi
-    real(real_kind),   dimension(:,:),  intent(IN)    :: ModFluxVolume
-    real(real_kind),   dimension(:),    intent(IN)    :: ModVolume
-    real(real_kind),   dimension(:),    intent(INOUT) :: phimin, phimax
-    character(LEN = *),                 intent(IN)    :: limitingtype
-    character(LEN = *),                 intent(IN)    :: limitingname
-    logical(log_kind), dimension(:,:),  intent(IN)    :: InflowMask
+    real(r8), dimension(:), intent(INOUT) :: Phi
+    type(CELL_AVG), dimension(:), intent(INOUT) :: Zone
+    real(r8), dimension(:,:), intent(IN)    :: Fluxing_Velocity
+    real(r8), dimension(:,:), intent(INOUT) :: Flux_Phi
+    real(r8), dimension(:,:), intent(IN)    :: ModFluxVolume
+    real(r8), dimension(:),   intent(IN)    :: ModVolume
+    real(r8), dimension(:),   intent(INOUT) :: phimin, phimax
+    character(*), intent(IN) :: limitingtype
+    character(*), intent(IN) :: limitingname
+    logical, dimension(:,:), intent(IN) :: InflowMask
 
     ! Local Variables
-    integer(int_kind)                                  :: status
-    real(real_kind), dimension(:,:),   allocatable     :: Ngbr_Flux_vel
-    real(real_kind), dimension(:,:),   allocatable     :: Face_flx_vols
-    real(real_kind), dimension(:,:,:), allocatable     :: Face_flx_cents
-    real(real_kind), dimension(:),     allocatable     :: dPhiV
-    real(real_kind), dimension(:),     allocatable     :: othervof
-    real(real_kind), dimension(:),     allocatable     :: vfdotn
-    real(real_kind), dimension(:,:),   allocatable     :: GradPhi
+    integer :: status
+    real(r8), dimension(:,:),   allocatable :: Ngbr_Flux_vel
+    real(r8), dimension(:,:),   allocatable :: Face_flx_vols
+    real(r8), dimension(:,:,:), allocatable :: Face_flx_cents
+    real(r8), dimension(:),     allocatable :: dPhiV
+    real(r8), dimension(:),     allocatable :: othervof
+    real(r8), dimension(:),     allocatable :: vfdotn
+    real(r8), dimension(:,:),   allocatable :: GradPhi
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -115,7 +104,7 @@ CONTAINS
       donor_cell_advection = .true.
     end if
 
-    Ngbr_Flux_vel    = Zero
+    Ngbr_Flux_vel    = 0.0_r8
 
     ! Gather face neighbor fluxing velocities 
     call EE_GATHER(Ngbr_Flux_vel(:,:), Fluxing_Velocity(:,:))
@@ -170,30 +159,25 @@ CONTAINS
     !   be limited or not.
     !
     !======================================================================= 
-    use constants_module,          only: zero
     use gs_module,                 only: EE_GATHER
-    use kind_module,               only: real_kind, int_kind
     use parameter_module,          only: ncells, ndim, nfc
     use zone_module,               only: CELL_AVG
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    type(CELL_AVG),    dimension(:),       intent(INOUT)   :: Zone
-    real(real_kind),   dimension(:,:),     intent(IN)      :: Fluxing_Velocity
-    real(real_kind),   dimension(:,:),     intent(IN)      :: Face_flx_vols
-    real(real_kind),   dimension(:,:,:),   intent(IN)      :: Face_flx_cents
-    real(real_kind),   dimension(:),       intent(IN)      :: Phi
-    real(real_kind),   dimension(:,:),     intent(INOUT)   :: Flux_Phi
-    real(real_kind),   dimension(:,:),     intent(IN)      :: GradPhi
-    logical(log_kind), dimension(:,:),     intent(IN)      :: InflowMask
+    type(CELL_AVG), dimension(:), intent(INOUT) :: Zone
+    real(r8), dimension(:,:),   intent(IN)    :: Fluxing_Velocity
+    real(r8), dimension(:,:),   intent(IN)    :: Face_flx_vols
+    real(r8), dimension(:,:,:), intent(IN)    :: Face_flx_cents
+    real(r8), dimension(:),     intent(IN)    :: Phi
+    real(r8), dimension(:,:),   intent(INOUT) :: Flux_Phi
+    real(r8), dimension(:,:),   intent(IN)    :: GradPhi
+    logical,  dimension(:,:),   intent(IN)    :: InflowMask
 
     ! Local Variables
-    integer(int_kind)                               :: f,n,i,status
-    real(real_kind), dimension(:,:), allocatable    :: Ngbr_flux_Phi
-    real(real_kind), dimension(:), allocatable      :: Psi, Tmp1, Tmp2
-    real(real_kind), dimension(:,:), allocatable    :: Ngbr_Phi
+    integer :: f,n,i,status
+    real(r8), dimension(:,:), allocatable :: Ngbr_flux_Phi
+    real(r8), dimension(:),   allocatable :: Psi, Tmp1, Tmp2
+    real(r8), dimension(:,:), allocatable :: Ngbr_Phi
 
     ALLOCATE(Ngbr_flux_Phi(nfc,ncells),     &
              Psi(ncells),                   &
@@ -223,7 +207,7 @@ CONTAINS
                 ! if fluxing velocity is less than zero do not calc since
                 ! it would be unecessary and would overwrite boundary 
                 ! initialization the int facePhi.
-                if (Fluxing_Velocity(f,n) < zero) cycle
+                if (Fluxing_Velocity(f,n) < 0.0_r8) cycle
                 Flux_Phi(f,n) = Flux_Phi(f,n)+GradPhi(i,n)*Face_flx_cents(i,f,n) 
              end do
           end do
@@ -243,25 +227,20 @@ CONTAINS
     !   Compute evaluation point for calculating fluxed quantity.
     !
     !======================================================================= 
-    use constants_module,          only: zero, one_half
-    use kind_module,               only: real_kind, int_kind
     use mesh_module,               only: Cell
     use parameter_module,          only: ncells, ndim, nfc
     use zone_module,               only: CELL_AVG
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    type(CELL_AVG),  dimension(:),        intent(INOUT) :: Zone
-    real(real_kind),                      intent(IN)    :: dtcyc
-    real(real_kind), dimension(:,:),      intent(IN)    :: Fluxing_Velocity
-    real(real_kind), dimension(:,:),      intent(OUT)   :: Face_flx_vols
-    real(real_kind), dimension(:,:,:),    intent(OUT)   :: Face_flx_cents
+    type(CELL_AVG),  dimension(:), intent(INOUT) :: Zone
+    real(r8), intent(IN) :: dtcyc
+    real(r8), dimension(:,:),   intent(IN)  :: Fluxing_Velocity
+    real(r8), dimension(:,:),   intent(OUT) :: Face_flx_vols
+    real(r8), dimension(:,:,:), intent(OUT) :: Face_flx_cents
     
     ! Local Variables
-    integer(int_kind)                                :: f,n,i,d,d1,status
-    real(real_kind), dimension(:,:,:), allocatable   :: vf
+    integer :: f,n,i,d,d1,status
+    real(r8), dimension(:,:,:), allocatable :: vf
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -269,7 +248,7 @@ CONTAINS
              STAT = status)
     call TLS_fatal_if_any (status /= 0, 'ADVECT_GEOM: allocation failed')
  
-    Face_flx_vols = zero
+    Face_flx_vols = 0.0_r8
     Do f = 1,nfc
        Face_flx_vols(f,:) = Fluxing_Velocity(f,:) * Cell%Face_Area(f) * dtcyc
     End do
@@ -307,9 +286,9 @@ CONTAINS
              do n=1,ncells
                 ! if fluxing velocity is less than zero do not calc since
                 ! it would be unnecessary work.
-                if (Fluxing_Velocity(f,n) < zero) cycle
+                if (Fluxing_Velocity(f,n) < 0.0_r8) cycle
                 Face_flx_cents(i,f,n) =   Cell(n)%Face_Centroid(i,f)     & 
-                     - dtcyc * one_half               & 
+                     - dtcyc * 0.5_r8                 & 
                      * vf(i,f,n)                      &
                      - Cell(n)%Centroid(i)
              end do
@@ -329,33 +308,27 @@ CONTAINS
     !           takes a scalar quantity from time n to time n+1.
     !
     !=======================================================================
-  
-    use constants_module,     only: zero
     use gs_module,            only: EE_GATHER
-    use kind_module,          only: int_kind, log_kind, real_kind
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, nfc
     use zone_module,          only: Zone
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    real(real_kind),   dimension(:),     intent(INOUT) :: Phi
-    real(real_kind),   dimension(:,:),   intent(IN)    :: Fluxing_Velocity
-    real(real_kind),   dimension(:),     intent(IN)    :: RhoN
-    real(real_kind),   dimension(:),     intent(IN)    :: RhoNP1
-    real(real_kind),   dimension(:,:),   intent(IN)    :: ModFluxVolume
-    real(real_kind),   dimension(:,:),   intent(IN)    :: InflowPhi
-    logical(log_kind), dimension(:,:),   intent(IN)    :: InflowMask
+    real(r8), dimension(:),   intent(INOUT) :: Phi
+    real(r8), dimension(:,:), intent(IN)    :: Fluxing_Velocity
+    real(r8), dimension(:),   intent(IN)    :: RhoN
+    real(r8), dimension(:),   intent(IN)    :: RhoNP1
+    real(r8), dimension(:,:), intent(IN)    :: ModFluxVolume
+    real(r8), dimension(:,:), intent(IN)    :: InflowPhi
+    logical,  dimension(:,:), intent(IN)    :: InflowMask
 
     ! Local Variables
-    integer                                        :: status
-    integer(int_kind)                              :: f, nc
-    real(real_kind)                                :: t1, t2, t3, vol
+    integer :: status
+    integer :: f, nc
+    real(r8) :: t1, t2, t3, vol
    
-    real(real_kind),   dimension(:,:), allocatable :: Flux_Phi, Flux_Phi_Ngbr
-    real(real_kind),   dimension(:),   allocatable :: ModVolume, phimin, phimax
+    real(r8), dimension(:,:), allocatable :: Flux_Phi, Flux_Phi_Ngbr
+    real(r8), dimension(:),   allocatable :: ModVolume, phimin, phimax
 
     !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    
@@ -371,7 +344,7 @@ CONTAINS
       ModVolume = RhoNP1*Cell%Volume
 
       ! Initialize the fluxed quantity to account for boundaries
-      FLux_Phi(:,:) = zero
+      FLux_Phi(:,:) = 0.0_r8
       do f = 1,nfc
          where (InflowMask(f,:))
             Flux_Phi(f,:)  = InflowPhi(f,:)
@@ -393,11 +366,11 @@ CONTAINS
       ! Now for the update...
       do nc = 1,ncells
          vol  = Cell(nc)%Volume
-         t3 = zero
+         t3 = 0.0_r8
          do f = 1,nfc
-            if(Fluxing_Velocity(f,nc) > zero ) then
+            if(Fluxing_Velocity(f,nc) > 0.0_r8 ) then
                t3 = t3 + ModFluxVolume(f,nc)*Flux_Phi(f,nc)
-            elseif (Fluxing_Velocity(f,nc) < zero) then
+            elseif (Fluxing_Velocity(f,nc) < 0.0_r8) then
                t3 = t3 + ModFluxVolume(f,nc)*Flux_Phi_Ngbr(f,nc)
             endif
          end do
@@ -425,6 +398,5 @@ CONTAINS
       DEALLOCATE (Flux_Phi, Flux_Phi_Ngbr, ModVolume, phimin, phimax)
 
   END SUBROUTINE ADVECT_SCALAR
-
 
 END MODULE HOADVECTION

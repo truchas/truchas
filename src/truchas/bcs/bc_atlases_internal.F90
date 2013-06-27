@@ -10,7 +10,7 @@ Module BC_ATLASES_INTERNAL
   !
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
-  use kind_module, only: int_kind, real_kind, log_kind
+  use kinds, only: r8
   use bc_enum_types
   Implicit None
   Private
@@ -55,18 +55,18 @@ Module BC_ATLASES_INTERNAL
 
   ! Type to hold Atlas data
   type BC_Atlas_Data
-     integer( int_kind), pointer, dimension(:)   :: Face => null()
-     integer( int_kind), pointer, dimension(:)   :: Cell => null()
-     real(real_kind),    pointer, dimension(:,:) :: Values => null()
-     integer( int_kind), pointer, dimension(:)   :: ValueIndex => null()
-     logical(log_kind),  pointer, dimension(:)   :: UseFunction => null()
-     real(real_kind),    pointer, dimension(:,:) :: Positions => null()
+     integer, pointer, dimension(:) :: Face => null()
+     integer, pointer, dimension(:) :: Cell => null()
+     real(r8), pointer, dimension(:,:) :: Values => null()
+     integer, pointer, dimension(:) :: ValueIndex => null()
+     logical,  pointer, dimension(:) :: UseFunction => null()
+     real(r8), pointer, dimension(:,:) :: Positions => null()
   end type BC_Atlas_Data
 
   ! Type to identify charts in an atlas
   type BC_Atlas_Spec
-     integer( int_kind), pointer, dimension(:) :: Offset => null()
-     integer( int_kind), pointer, dimension(:) :: Lengths => null()
+     integer, pointer, dimension(:) :: Offset => null()
+     integer, pointer, dimension(:) :: Lengths => null()
   end type BC_Atlas_Spec
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -150,9 +150,7 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine InitializeMaxExtents(AtlasMax)
-    implicit none
-    type (BC_Atlas_Max_Extents), intent(INOUT) :: AtlasMax
-
+    type(BC_Atlas_Max_Extents), intent(INOUT) :: AtlasMax
     AtlasMax%MaxNumberOfCharts = BC_INVALID_COUNT
     AtlasMax%MaxAtlasDataSize  = BC_INVALID_COUNT
     AtlasMax%Dimensionality    = BC_INVALID_COUNT
@@ -160,28 +158,22 @@ CONTAINS
   end subroutine InitializeMaxExtents
 
   subroutine InitializeCurrent(AtlasCurrent)
-    implicit none
-    type (BC_Atlas_Current), intent(INOUT) :: AtlasCurrent
+    type(BC_Atlas_Current), intent(INOUT) :: AtlasCurrent
     AtlasCurrent%NumberOfCharts = BC_INVALID_COUNT
     AtlasCurrent%AtlasDataSize  = BC_INVALID_COUNT
     AtlasCurrent%Scope          = BC_Cells_No_Scope
   end subroutine InitializeCurrent
 
   subroutine AtlasMaxSetDOF(AtlasMax, DOF)
-    implicit none
-    type (BC_Atlas_Max_Extents), intent(INOUT) :: AtlasMax
+    type(BC_Atlas_Max_Extents), intent(INOUT) :: AtlasMax
     integer, intent(IN) :: DOF
-
     AtlasMax%DegreesOfFreedom  = DOF
-    return
   end subroutine AtlasMaxSetDOF
 
   function AtlasMaxGetDOF(AtlasMax) RESULT(DOF)
-    implicit none
-    type (BC_Atlas_Max_Extents), intent(IN) :: AtlasMax
+    type(BC_Atlas_Max_Extents), intent(IN) :: AtlasMax
     integer :: DOF
     DOF = AtlasMax%DegreesOfFreedom
-    return
   end function AtlasMaxGetDOF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -189,51 +181,38 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine InitializeAtlasSpec(AtlasSpec)
-    implicit none
-    type (BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
+    type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
     NULLIFY(AtlasSpec%Offset)
     NULLIFY(AtlasSpec%Lengths)
-    return
   end subroutine InitializeAtlasSpec
 
   subroutine AllocAtlasSpec(AtlasSpec, SIZE)
-    implicit none
-    type (BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
-    integer( int_kind),              intent(IN   ) :: SIZE
-
+    type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
+    integer, intent(IN) :: SIZE
     ALLOCATE(AtlasSpec%Offset(SIZE))
     ALLOCATE(AtlasSpec%Lengths(SIZE))
-    
     AtlasSpec%Offset = BC_INVALID_OFFSET
     AtlasSpec%Lengths = BC_INVALID_LENGTH
-    
-    return
   end subroutine AllocAtlasSpec
   
   subroutine FreeAtlasSpec(AtlasSpec)
-    implicit none
-    type (BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
-    
+    type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
     if (ASSOCIATED(AtlasSpec%Offset))  DEALLOCATE(AtlasSpec%Offset)
     if (ASSOCIATED(AtlasSpec%Lengths)) DEALLOCATE(AtlasSpec%Lengths)
-    return
   end subroutine FreeAtlasSpec
 
   function AtlasSpecSize(AtlasSpec)
-    implicit none
     type(BC_Atlas_Spec), intent(IN) :: AtlasSpec
-    integer( int_kind) :: AtlasSpecSize
+    integer :: AtlasSpecSize
     AtlasSpecSize = SIZE(AtlasSpec%Offset)
-    return
   END function AtlasSpecSize
     
   subroutine AtlasSpecCopy(AtlasSpecDest, AtlasSpecSrc)
     ! Assign AtlasSpecDest contents of AtlasSpecSrc.  Okay if AtlasSpecDest is larger.  This
     ! copies AtlasSpecSrc into low portion of AtlasSpecDest.
     ! This does not do any memory allocation.  Assumes that is already done.
-    implicit none
     type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpecDest
-    type(BC_Atlas_Spec), intent(IN   ) :: AtlasSpecSrc
+    type(BC_Atlas_Spec), intent(IN) :: AtlasSpecSrc
 
     ! Local variables
     integer :: DestMaxNumCharts, SrcNumCharts
@@ -248,7 +227,6 @@ CONTAINS
     ! Assume that dest is already initialized as needed.
     AtlasSpecDest%Offset(1:SrcNumCharts) = AtlasSpecSrc%Offset(1:SrcNumCharts)
     AtlasSpecDest%Lengths(1:SrcNumCharts) = AtlasSpecSrc%Lengths(1:SrcNumCharts)
-    return
   end subroutine AtlasSpecCopy
   
   subroutine AtlasSpecClone(AtlasSpecDest, AtlasSpecSrc)
@@ -257,9 +235,8 @@ CONTAINS
     ! all Src data into it.
     ! The cloned AtlasSpec has all of its own memory, and is fully
     ! indepenent of the src.  
-    implicit none
-    type(BC_Atlas_Spec), intent(  OUT) :: AtlasSpecDest
-    type(BC_Atlas_Spec), intent(IN   ) :: AtlasSpecSrc
+    type(BC_Atlas_Spec), intent(OUT) :: AtlasSpecDest
+    type(BC_Atlas_Spec), intent(IN) :: AtlasSpecSrc
 
     ! Before we can do anything with Dest, we need to initialize it.
     call INITIALIZE(AtlasSpecDest)
@@ -269,15 +246,14 @@ CONTAINS
     
     ! Finally, just copy the data from Src into Dest
     AtlasSpecDest = AtlasSpecSrc
-    return
   end subroutine AtlasSpecClone
   
   subroutine AtlasSpecRealloc(AtlasSpec, SIZE)
     ! Reallocate AtlasSpec to the new size.  If the new size is larger
     ! than the current size, then the new spec contains the original
     ! data at the beginning of it's lists.  
-    type (BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
-    integer( int_kind),              intent(IN   ) :: SIZE
+    type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
+    integer, intent(IN) :: SIZE
 
     ! Local variables
     type(BC_Atlas_Spec) :: Orig_Spec
@@ -303,43 +279,36 @@ CONTAINS
     ! Free up the temporary
     call FREE(Orig_Spec)
 
-    return
   end subroutine AtlasSpecRealloc
 
   subroutine AtlasSpecAppend(AtlasSpec, AtlasIndex, LENGTH, OFFSET)
     ! Append the data to the Spec.  Assumes that there is enough room.
     ! Does not do any reallocation of memory.
-    implicit none
     type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
-    integer( int_kind),             intent(IN   ) :: AtlasIndex
-    integer( int_kind),             intent(IN   ) :: LENGTH, OFFSET
+    integer, intent(IN) :: AtlasIndex
+    integer, intent(IN) :: LENGTH, OFFSET
 
     AtlasSpec%LENGTHS(AtlasIndex) = LENGTH
     AtlasSpec%OFFSET(AtlasIndex) = OFFSET
-    return
   end subroutine AtlasSpecAppend
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Routines to create and destroy Atlas_Data
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine InitializeAtlasDATA(AtlasDATA)
-    implicit none
-    type (BC_Atlas_Data), intent(INOUT) :: AtlasDATA
+    type(BC_Atlas_Data), intent(INOUT) :: AtlasDATA
     NULLIFY(AtlasData%Face)
     NULLIFY(AtlasData%Cell)
     NULLIFY(AtlasData%Values)
     NULLIFY(AtlasData%ValueIndex)
     NULLIFY(AtlasData%UseFunction)
     NULLIFY(AtlasData%Positions)
-    return
   end subroutine InitializeAtlasDATA
 
   subroutine AllocAtlasDATA(AtlasDATA, SIZE, DIMENSIONALITY, DOF)
-    implicit none
-    type (BC_Atlas_Data), intent(INOUT) :: AtlasDATA
-    integer( int_kind),              intent(IN   ) :: SIZE, DIMENSIONALITY, DOF
+    type(BC_Atlas_Data), intent(INOUT) :: AtlasDATA
+    integer, intent(IN) :: SIZE, DIMENSIONALITY, DOF
 
     ALLOCATE(AtlasData%Face(SIZE))
     ALLOCATE(AtlasData%Cell(SIZE))
@@ -352,12 +321,10 @@ CONTAINS
     AtlasData%ValueIndex = BC_INVALID_CELL
     AtlasData%UseFunction = .FALSE.
 
-    return
   end subroutine AllocAtlasDATA
 
   subroutine FreeAtlasData(AtlasData)
-    implicit none
-    type (BC_Atlas_Data), intent(INOUT) :: AtlasData
+    type(BC_Atlas_Data), intent(INOUT) :: AtlasData
     
     if (ASSOCIATED(AtlasData%Face))    DEALLOCATE(AtlasData%Face)
     if (ASSOCIATED(AtlasData%Cell))    DEALLOCATE(AtlasData%Cell)
@@ -365,40 +332,32 @@ CONTAINS
     if (ASSOCIATED(AtlasData%ValueIndex))    DEALLOCATE(AtlasData%ValueIndex)
     if (ASSOCIATED(AtlasData%UseFunction))    DEALLOCATE(AtlasData%UseFunction)
     if (ASSOCIATED(AtlasData%Positions)) DEALLOCATE(AtlasData%Positions)
-    return
   end subroutine FreeAtlasData
 
   function AtlasDataSize(AtlasData)
-    implicit none
     type(BC_Atlas_Data), intent(IN) :: AtlasData
-    integer( int_kind) :: AtlasDataSize
+    integer :: AtlasDataSize
     AtlasDataSize = SIZE(AtlasData%Values,2)
-    return
   END function AtlasDataSize
     
   function AtlasDataDimensionality(AtlasData)
-    implicit none
     type(BC_Atlas_Data), intent(IN) :: AtlasData
-    integer( int_kind) :: AtlasDataDimensionality
+    integer :: AtlasDataDimensionality
     AtlasDataDimensionality = SIZE(AtlasData%Positions,1)
-    return
   END function AtlasDataDimensionality
     
   function AtlasDataGetDOF(AtlasData) RESULT(DOF)
-    implicit none
     type(BC_Atlas_Data), intent(IN) :: AtlasData
     integer :: DOF
     DOF = SIZE(AtlasData%Values,1)
-    return
   end function AtlasDataGetDOF
 
   subroutine AtlasDataCopy(AtlasDataDest, AtlasDataSrc)
     ! Assign AtlasDataDest contents of AtlasDataSrc.  Okay if AtlasDataDest is larger.  This
     ! copies AtlasDataSrc into low portion of AtlasDataDest.
     ! This does not do any memory allocation.  Assumes that is already done.
-    implicit none
     type(BC_Atlas_Data), intent(INOUT) :: AtlasDataDest
-    type(BC_Atlas_Data), intent(IN   ) :: AtlasDataSrc
+    type(BC_Atlas_Data), intent(IN) :: AtlasDataSrc
 
     ! Local variables
     integer :: DestChartDataSpace, SrcChartDataSpace
@@ -436,7 +395,6 @@ CONTAINS
     AtlasDataDest%ValueIndex(1:SrcChartDataSpace) = AtlasDataSrc%ValueIndex(1:SrcChartDataSpace)
     AtlasDataDest%UseFunction(1:SrcChartDataSpace) = AtlasDataSrc%UseFunction(1:SrcChartDataSpace)
     AtlasDataDest%Positions(:, 1:SrcChartDataSpace) = AtlasDataSrc%Positions(:, 1:SrcChartDataSpace)
-    return
     
   end subroutine AtlasDataCopy
   
@@ -446,9 +404,8 @@ CONTAINS
     ! all Src data into it.
     ! The cloned AtlasData has all of its own memory, and is fully
     ! indepenent of the src.  
-    implicit none
-    type(BC_Atlas_Data), intent(  OUT) :: AtlasDataDest
-    type(BC_Atlas_Data), intent(IN   ) :: AtlasDataSrc
+    type(BC_Atlas_Data), intent(OUT) :: AtlasDataDest
+    type(BC_Atlas_Data), intent(IN) :: AtlasDataSrc
 
     ! Before we can do anything with Dest, we need to initialize it.
     call INITIALIZE(AtlasDataDest)
@@ -460,15 +417,14 @@ CONTAINS
     
     ! Finally, just copy the data from Src into Dest
     AtlasDataDest = AtlasDataSrc
-    return
   end subroutine AtlasDataClone
   
   subroutine AtlasDataRealloc(AtlasData, SIZE)
     ! Reallocate AtlasData to the new size.  If the new size is larger
     ! than the current size, then the new Data contains the original
     ! data at the beginning of it's lists.  
-    type (BC_Atlas_Data), intent(INOUT) :: AtlasData
-    integer( int_kind),              intent(IN   ) :: SIZE
+    type(BC_Atlas_Data), intent(INOUT) :: AtlasData
+    integer, intent(IN) :: SIZE
 
     ! Local variables
     type(BC_Atlas_Data) :: Orig_Data
@@ -500,21 +456,19 @@ CONTAINS
     ! Free up the temporary
     call FREE(Orig_Data)
 
-    return
   end subroutine AtlasDataRealloc
 
   subroutine AtlasDataAppend(AtlasData, OFFSET, VALUES, POSITIONS, USEFUNCTION, VALUEINDEX, CELL, FACE)
     ! Append the data to the Data.  Assumes that there is enough room.
     ! Does not do any reallocation of memory.
-    implicit none
     type(BC_Atlas_Data), intent(INOUT) :: AtlasData
-    integer( int_kind),             intent(IN   ) :: OFFSET
-    real(real_kind), dimension(:,:),intent(IN   ) :: Values
-    real(real_kind), dimension(:,:),intent(IN   ) :: Positions
-    integer( int_kind),dimension(:),intent(IN   ) :: VALUEINDEX
-    logical( log_kind),dimension(:),intent(IN   ) :: USEFUNCTION
-    integer( int_kind),             intent(IN   ) :: CELL
-    integer( int_kind), OPTIONAL,   intent(IN   ) :: FACE
+    integer, intent(IN) :: OFFSET
+    real(r8), dimension(:,:),intent(IN) :: Values
+    real(r8), dimension(:,:),intent(IN) :: Positions
+    integer,dimension(:),intent(IN) :: VALUEINDEX
+    logical,dimension(:),intent(IN) :: USEFUNCTION
+    integer, intent(IN) :: CELL
+    integer, OPTIONAL, intent(IN) :: FACE
 
     ! Local variables
     integer :: AppendSize
@@ -538,37 +492,34 @@ CONTAINS
     if (PRESENT(FACE)) then
        AtlasData%FACE(Offset:Offset+AppendSize-1) = FACE
     end if
-    return
   end subroutine AtlasDataAppend
 
   subroutine AtlasDataPermute(AtlasData, Rank)
     ! Permute the atlas data according to the input vector RANK.
     ! 
-    use pgslib_module, ONLY: PGSLib_GS_Trace, PGSLib_Permute, &
-                             PGSLib_DEALLOCATE_TRACE
-    implicit none
-    type(BC_Atlas_Data),   TARGET,            intent(INOUT) :: AtlasData
-    integer( int_kind), dimension(SIZE(AtlasData%Face)), intent(IN   ) :: Rank
+    use pgslib_module, ONLY: PGSLib_GS_Trace, PGSLib_Permute, PGSLib_DEALLOCATE_TRACE
+    type(BC_Atlas_Data), TARGET, intent(INOUT) :: AtlasData
+    integer, dimension(SIZE(AtlasData%Face)), intent(IN) :: Rank
 
     ! Local variables
     integer :: DataSize, d
-    integer( int_kind),  dimension(SIZE(AtlasData%Face)  ) :: Cells_Temp
-    integer( int_kind),  dimension(SIZE(AtlasData%Face)  ) :: Faces_Temp
-    integer( int_kind),  dimension(SIZE(AtlasData%Face)  ) :: ValueIndex_Temp
-    logical( log_kind),  dimension(SIZE(AtlasData%Face)  ) :: UseFunction_Temp
-    real(real_kind),     dimension(SIZE(AtlasData%Values,1), &
+    integer,  dimension(SIZE(AtlasData%Face)  ) :: Cells_Temp
+    integer,  dimension(SIZE(AtlasData%Face)  ) :: Faces_Temp
+    integer,  dimension(SIZE(AtlasData%Face)  ) :: ValueIndex_Temp
+    logical,  dimension(SIZE(AtlasData%Face)  ) :: UseFunction_Temp
+    real(r8), dimension(SIZE(AtlasData%Values,1), &
                                    SIZE(AtlasData%Values,2)):: Values_Temp
 
-    real(real_kind),     dimension(SIZE(AtlasData%Positions,1), &
+    real(r8), dimension(SIZE(AtlasData%Positions,1), &
                                    SIZE(AtlasData%Positions,2)) :: Positions_Temp
-    type (PGSLib_GS_Trace), POINTER                     :: Permute_Trace
+    type(PGSLib_GS_Trace), POINTER                     :: Permute_Trace
 
-    integer( int_kind), POINTER, dimension(:  ) :: Cells
-    integer( int_kind), POINTER, dimension(:  ) :: Faces
-    integer( int_kind), POINTER, dimension(:  ) :: ValueIndex
-    logical( log_kind), POINTER, dimension(:  ) :: UseFunction
-    real(real_kind),    POINTER, dimension(:,:) :: Values
-    real(real_kind),    POINTER, dimension(:,:) :: Positions
+    integer, POINTER, dimension(:) :: Cells
+    integer, POINTER, dimension(:) :: Faces
+    integer, POINTER, dimension(:) :: ValueIndex
+    logical, POINTER, dimension(:) :: UseFunction
+    real(r8), POINTER, dimension(:,:) :: Values
+    real(r8), POINTER, dimension(:,:) :: Positions
     
     DataSize = SIZE(AtlasData)
 
@@ -620,28 +571,25 @@ CONTAINS
     ! Done with trace
     call PGSLib_DEALLOCATE_TRACE(Permute_Trace)
 
-    return
   end subroutine AtlasDataPermute
 
   subroutine AtlasDataRedistribute(Dest, Source)
     ! Redistribute the source atlas into the dest atlas
     ! Also set ChartDataSize to number of valid entries
-    use pgslib_module,      ONLY: PGSLib_GS_Trace, PGSLib_Redistribute, &
-                                  PGSLib_DEALLOCATE_TRACE
-    implicit none
-    type(BC_Atlas_Data),   TARGET,            intent(INOUT) :: Dest
-    type(BC_Atlas_Data),   TARGET,            intent(IN   ) :: Source
+    use pgslib_module, ONLY: PGSLib_GS_Trace, PGSLib_Redistribute, PGSLib_DEALLOCATE_TRACE
+    type(BC_Atlas_Data), TARGET, intent(INOUT) :: Dest
+    type(BC_Atlas_Data), TARGET, intent(IN) :: Source
 
     ! Local variables
     integer :: d
-    type (PGSLib_GS_Trace), POINTER                     :: Redistribute_Trace
+    type(PGSLib_GS_Trace), POINTER :: Redistribute_Trace
 
-    integer( int_kind), POINTER, dimension(:  ) :: Cells_Dest, Cells_Source
-    integer( int_kind), POINTER, dimension(:  ) :: Faces_Dest, Faces_Source
-    integer( int_kind), POINTER, dimension(:  ) :: ValueIndex_Dest, ValueIndex_Source
-    logical( log_kind), POINTER, dimension(:  ) :: UseFunction_Dest, UseFunction_Source
-    real(real_kind),    POINTER, dimension(:,:) :: Values_Dest, Values_Source
-    real(real_kind),    POINTER, dimension(:,:) :: Positions_Dest, Positions_Source
+    integer, POINTER, dimension(:) :: Cells_Dest, Cells_Source
+    integer, POINTER, dimension(:) :: Faces_Dest, Faces_Source
+    integer, POINTER, dimension(:) :: ValueIndex_Dest, ValueIndex_Source
+    logical, POINTER, dimension(:) :: UseFunction_Dest, UseFunction_Source
+    real(r8), POINTER, dimension(:,:) :: Values_Dest, Values_Source
+    real(r8), POINTER, dimension(:,:) :: Positions_Dest, Positions_Source
     
     Cells_Dest      => Dest%Cell
     Faces_Dest      => Dest%Face
@@ -678,7 +626,6 @@ CONTAINS
     ! Done with trace
     call PGSLib_DEALLOCATE_TRACE(Redistribute_Trace)
 
-    return
   end subroutine AtlasDataRedistribute
 
 END Module BC_ATLASES_INTERNAL

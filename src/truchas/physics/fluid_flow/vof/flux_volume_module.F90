@@ -18,34 +18,30 @@ MODULE FLUX_VOLUME_MODULE
   !            S. Jay Mosso (LANL Group X-HM, sjm@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: log_kind, int_kind, real_kind
+  use kinds, only: r8
   use parameter_module, only: ndim, nvc
   use truchas_logging_services
-
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures and Types
   public :: FLUX_VOL_QUANTITY, FLUX_VOL_VERTICES
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Maximum allowable iterations for the flux volume vertex location
-  integer(int_kind), public, save :: flux_vol_iter_max
+  integer, public, save :: flux_vol_iter_max
 
   ! Define FLUX structure
   type FLUX_VOL_QUANTITY
   
      ! Face number through which we this cell is fluxing
-     integer(int_kind) :: Fc
+     integer :: Fc
 
      ! Volume of the flux
-     real(real_kind) :: Vol
+     real(r8) :: Vol
 
      ! Vertices of the flux volume
-     real(real_kind), dimension(nvc,ndim) :: Xv
+     real(r8), dimension(nvc,ndim) :: Xv
      
   end type FLUX_VOL_QUANTITY
 
@@ -69,30 +65,26 @@ CONTAINS
     !   Flux_Vol.
     !
     !=======================================================================
-    use constants_module, only: one, zero
     use cutoffs_module,   only: alittle, cutvof
     use gs_module,        only: EN_GATHER
     use mesh_module,      only: Cell, Mesh, Vertex, Vrtx_Bdy, CELL_TET, &
                                 CELL_PYRAMID, CELL_PRISM, CELL_HEX
     use parameter_module, only: ncells, nfc, nvf
     use vof_data_module,  only: adv_dt
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    integer(int_kind),                              intent(IN)    :: face
-    logical(log_kind),       dimension(ncells),     intent(IN)    :: Mask
-    real(real_kind),         dimension(nfc,ncells), intent(IN)    :: Fluxing_Velocity
-    type(FLUX_VOL_QUANTITY), dimension(ncells),     intent(INOUT) :: Flux_Vol
+    integer, intent(IN) :: face
+    logical,  dimension(ncells),     intent(IN) :: Mask
+    real(r8), dimension(nfc,ncells), intent(IN) :: Fluxing_Velocity
+    type(FLUX_VOL_QUANTITY), dimension(ncells), intent(INOUT) :: Flux_Vol
 
     ! Local Variables
-    integer(int_kind)                       :: i, n, v, ia, ib, e, iter
-    real(real_kind), dimension(nvf)         :: Percnt
-    real(real_kind), dimension(nvc,ncells)  :: Vtx
-    real(real_kind), dimension(nvf,ndim)    :: Uedge
-    real(real_kind)                         :: Volume, Mult, Tmp, Dist
-    integer(int_kind), dimension(2,nvf,nfc) :: Edge_ends, &
+    integer :: i, n, v, ia, ib, e, iter
+    real(r8), dimension(nvf)         :: Percnt
+    real(r8), dimension(nvc,ncells)  :: Vtx
+    real(r8), dimension(nvf,ndim)    :: Uedge
+    real(r8) :: Volume, Mult, Tmp, Dist
+    integer, dimension(2,nvf,nfc) :: Edge_ends, &
         HEX_Edge_ends     = RESHAPE((/ 3,2,  4,1,  7,6,  8,5, &     ! face one edges
                                        1,4,  2,3,  5,8,  6,7, &     ! face two edges
                                        1,2,  4,3,  5,6,  8,7, &     ! face three edges
@@ -121,7 +113,7 @@ CONTAINS
                                        1,5,  2,6,  3,7,  4,8, &
                                        5,1,  6,2,  7,3,  8,4 /), &
                                        (/2,nvf,nfc/))
-    logical(log_kind)                           :: converged
+    logical :: converged
     character(256) :: errmsg
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -161,7 +153,7 @@ CONTAINS
           ia  = Edge_ends(1,e,face)
           ib  = Edge_ends(2,e,face)
 
-          Tmp = zero
+          Tmp = 0.0_r8
           do n = 1,ndim
              Uedge(e,n) = Flux_Vol(i)%Xv(ib,n) - Flux_Vol(i)%Xv(ia,n)
              Tmp = Tmp + Cell(i)%Face_Normal(n,face) * Uedge(e,n)
@@ -170,14 +162,14 @@ CONTAINS
        end do
 
        do e = 1, nvf
-          if (Percnt(e) < zero .or. Percnt(e) > one) then
+          if (Percnt(e) < 0.0_r8 .or. Percnt(e) > 1.0_r8) then
              write(errmsg,'(a,3es13.6)') 'FLUX_VOL_VERTICES: invalid flux volume or inverted element; cell centroid =', Cell(i)%Centroid
              call TLS_panic (errmsg)
           end if
        end do
 
        ! Initialize the scale factor to unity
-       Mult = one
+       Mult = 1.0_r8
 
        converged = .false.
 
@@ -220,8 +212,6 @@ CONTAINS
 
     end do
 
-    return
-
   END SUBROUTINE FLUX_VOL_VERTICES
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><><>
@@ -234,25 +224,21 @@ CONTAINS
     !   given by J. Dukowicz, JCP 74: 493-496 (1988).
     !
     !=======================================================================
-    use constants_module, only: one_twelfth, zero
     use parameter_module, only: ncells
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    type(FLUX_VOL_QUANTITY), dimension(ncells), intent(IN)  :: Flux_Vol
-    integer(int_kind),                          intent(IN)  :: icell
-    real(real_kind),                            intent(OUT) :: Volume
+    type(FLUX_VOL_QUANTITY), dimension(ncells), intent(IN) :: Flux_Vol
+    integer, intent(IN) :: icell
+    real(r8), intent(OUT) :: Volume
 
     ! Local Variables
-    real(real_kind), dimension(ndim) :: X1, X2, X3
-    integer(int_kind)                :: f, v1, v2, v3, v4, v5, v6, n
+    real(r8), dimension(ndim) :: X1, X2, X3
+    integer :: f, v1, v2, v3, v4, v5, v6, n
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    Volume = zero
+    Volume = 0.0_r8
 
     ! Loop over the six faces of the flux volume
     do f = 1,6
@@ -290,15 +276,13 @@ CONTAINS
 
     end do
 
-    Volume = one_twelfth*Volume
+    Volume = Volume / 12.0_r8
 
     ! Punt if Volume < 0
-    if (Volume < zero) then
+    if (Volume < 0.0_r8) then
        write(message,'(a,i0,a)') 'SCREWED_VOLUME: cell ', icell, ' contains a negative flux volume'
        call TLS_panic (message)
     end if
-
-    return
 
   END SUBROUTINE SCREWED_VOLUME
 

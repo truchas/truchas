@@ -12,12 +12,10 @@ Module MESH_PARTITION_MODULE
   !
   ! Author(s) : Robert Ferrell (CPCA, Ltd., ferrell@cpca.com)
   !
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: MESH_PARTITIONS
 
   ! Interface blocks
@@ -44,24 +42,20 @@ CONTAINS
     !   tell how to take input data and permute it into partitioned data.  
     !
     !=======================================================================
-    use kind_module,          only: int_kind
     use mesh_gen_data,        only: Generated_Mesh
     use partitioner_data,     only: get_partitioner, &
                                     PART_None,       &
                                     PART_Cartesian,  &
                                     PART_Chaco,      &
                                     PART_Metis
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    integer(int_kind), dimension(:), pointer :: MeshPermute
-    integer(int_kind), dimension(:), pointer :: VertexPermute
+    integer, dimension(:), pointer :: MeshPermute
+    integer, dimension(:), pointer :: VertexPermute
 
     ! Local Variables
-    integer(int_kind), dimension(:),   pointer :: Node_Colors
-    integer(int_kind), dimension(:),   pointer :: Cell_Colors
+    integer, dimension(:),   pointer :: Node_Colors
+    integer, dimension(:),   pointer :: Cell_Colors
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -133,7 +127,6 @@ CONTAINS
     !   Vertex.
     !
     !=======================================================================
-    use kind_module,          only: int_kind
     use mesh_gen_data,        only: Partitions_Total
     use mesh_utilities,       only: NODE_CONNECTIVITY
     use parallel_info_module, only: p_info
@@ -141,25 +134,22 @@ CONTAINS
     use pgslib_module,        only: PGSLIB_GLOBAL_SUM, PGSLIB_COLLATE, &
                                     PGSLIB_DIST, PGSLib_SUM_PREFIX
     use var_vector_module
-    use truchas_logging_services
     use string_utilities, only: i_to_c
 
-    implicit none
-
     ! Arguments
-    integer(int_kind), dimension(:), pointer :: Node_Colors
+    integer, dimension(:), pointer :: Node_Colors
 
     ! Local Variables
-    integer(int_kind) :: edge, n_edges, n_edges_tot, head, thisnode, node
-    integer(int_kind), dimension(:), pointer  :: Edges_Tot1
-    integer(int_kind), dimension(:), pointer  :: Edges_Tot2
-    integer(int_kind), dimension(:), pointer  :: Start
-    integer(int_kind), dimension(:), pointer  :: Node_Colors_Tot
-    integer(int_kind), dimension(:,:), pointer :: Edges
+    integer :: edge, n_edges, n_edges_tot, head, thisnode, node
+    integer, dimension(:), pointer  :: Edges_Tot1
+    integer, dimension(:), pointer  :: Edges_Tot2
+    integer, dimension(:), pointer  :: Start
+    integer, dimension(:), pointer  :: Node_Colors_Tot
+    integer, dimension(:,:), pointer :: Edges
     type (int_var_vector), dimension(nnodes)   :: All_Edges
-    integer (int_kind) :: status
-    integer (int_kind) :: StartEdge, EndEdge
-    integer (int_kind), dimension(1) :: GlobalStartNode
+    integer :: status
+    integer :: StartEdge, EndEdge
+    integer, dimension(1) :: GlobalStartNode
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -281,8 +271,6 @@ CONTAINS
 
     DEALLOCATE(Node_Colors_Tot)
 
-    return
-
   END FUNCTION GENERAL_PARTITION
 
   FUNCTION CARTESIAN_PARTITION () RESULT( Cell_Colors )
@@ -295,23 +283,20 @@ CONTAINS
     !   Mesh.
     !
     !=======================================================================
-    use kind_module,          only: int_kind, log_kind
     use partitioner_data,     only: get_Processor_Array
     use parameter_module,     only: ncells, Nx_Tot, ndim
     use pgslib_module,        only: PGSLIB_SUM_PREFIX
-    use truchas_logging_services
-    implicit none
 
     ! Arguments
-    integer(int_kind), dimension(:), pointer :: Cell_Colors
+    integer, dimension(:), pointer :: Cell_Colors
 
     ! Local Variables
-    logical(log_kind)                          :: fatal
-    integer(int_kind)                          :: c, d, d1
-    integer(int_kind), dimension(ndim, ncells) :: BlockNumbers, Indices
-    integer(int_kind), dimension(ncells)       :: GlobalIndex
-    integer(int_kind), dimension(ndim)         :: Strides, PE_Strides, BlockSizes
-    integer(int_kind),        dimension(ndim)         :: Processor_Array
+    logical                          :: fatal
+    integer                          :: c, d, d1
+    integer, dimension(ndim, ncells) :: BlockNumbers, Indices
+    integer, dimension(ncells)       :: GlobalIndex
+    integer, dimension(ndim)         :: Strides, PE_Strides, BlockSizes
+    integer,        dimension(ndim)         :: Processor_Array
     character(128) :: message
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -366,8 +351,6 @@ CONTAINS
        Cell_Colors = Cell_Colors + BlockNumbers(d,:) * PE_Strides(d)
     end do
 
-    return
-
   END FUNCTION CARTESIAN_PARTITION
 
   FUNCTION CELL_COLORS_From_NODE_COLORS (Node_Colors) RESULT (Cell_Colors)
@@ -378,20 +361,17 @@ CONTAINS
     !   and a coloring for each node, assign a coloring to the cells (elements).
     !
     !=======================================================================
-    use kind_module,      only: int_kind
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nvc
     use pgslib_module,    only: PGSLib_GATHER
 
-    implicit none
-
     ! Arguments
-    integer(int_kind), dimension(:), pointer :: CELL_COLORS
-    integer(int_kind), dimension(:)          :: Node_Colors
+    integer, dimension(:), pointer :: CELL_COLORS
+    integer, dimension(:)          :: Node_Colors
 
     ! Local Variables
-    integer (int_kind) :: node
-    integer(int_kind), dimension(nvc,ncells) :: Cell_Colors_All, Mesh_Cell_Nodes
+    integer :: node
+    integer, dimension(nvc,ncells) :: Cell_Colors_All, Mesh_Cell_Nodes
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -411,8 +391,6 @@ CONTAINS
 
     Cell_Colors = MAXVAL (Cell_Colors_All, DIM = 1)
 
-    return
-
   END FUNCTION CELL_COLORS_From_NODE_COLORS
   
   FUNCTION NODE_COLORS_From_Cell_Colors (Cell_Colors) RESULT( Node_Colors )
@@ -423,20 +401,17 @@ CONTAINS
     !   and a coloring for each cell, assign a coloring to the nodes (vertices).
     !
     !=======================================================================
-    use kind_module,      only: int_kind
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nnodes, nvc
     use pgslib_module,    only: PGSLib_SCATTER_MAX
 
-    implicit none
-
     ! Arguments
-    integer(int_kind), dimension(:), pointer :: Node_Colors
-    integer(int_kind), dimension(:)          :: Cell_Colors
+    integer, dimension(:), pointer :: Node_Colors
+    integer, dimension(:)          :: Cell_Colors
 
     ! Local Variables
-    integer(int_kind) :: node
-    integer(int_kind), dimension(nvc,ncells) :: Mesh_Cell_Nodes, Temp_Cell_Colors
+    integer :: node
+    integer, dimension(nvc,ncells) :: Mesh_Cell_Nodes, Temp_Cell_Colors
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -454,8 +429,6 @@ CONTAINS
     call PGSLib_SCATTER_MAX (DEST   = Node_Colors,      &
                              SOURCE = Temp_Cell_Colors, &
                              INDEX  = Mesh_Cell_Nodes)
-
-    return
 
   END FUNCTION NODE_COLORS_From_Cell_Colors
   
@@ -477,36 +450,30 @@ CONTAINS
     use two_level_partition,  only: Cell_Two_Level_Partitioning, &
                                     Set_Of_Cells, &
                                     Precond_2level_Active
-    use kind_module,          only: int_kind
     use parameter_module,     only: ncells, nnodes, ncells_tot
     use pgslib_module,        only: PGSLib_REDISTRIBUTE, PGSLib_PERMUTE, &
                                     PGSLib_Collate, &
                                     ALLOC, INITIALIZE, SET, PGSLib_Local,&
                                     Get_Num_Partitions_Available,        &
                                     Get_Num_Partitions
-    use truchas_logging_services
     use string_utilities, only: i_to_c
 
-    implicit none
-
     ! Arguments
-    integer(int_kind), dimension(:), intent(INOUT) :: Node_Colors
-    integer(int_kind), dimension(:), intent(INOUT) :: Cell_Colors
-    integer(int_kind), dimension(:), pointer       :: MeshPermute
-    integer(int_kind), dimension(:), pointer       :: VertexPermute
+    integer, dimension(:), intent(INOUT) :: Node_Colors
+    integer, dimension(:), intent(INOUT) :: Cell_Colors
+    integer, dimension(:), pointer       :: MeshPermute
+    integer, dimension(:), pointer       :: VertexPermute
 
     ! Local Variables
-
-
-    integer(int_kind) :: ncells_new, nnodes_new
-    integer(int_kind) :: pe
-    integer(int_kind) :: Partitions_This_Processor
-    integer(int_kind), dimension(:), POINTER :: Cell_Colors_New
-    integer(int_kind), dimension(ncells)              :: MeshPermute_Orig_Layout
-    integer(int_kind), dimension(nnodes)              :: VertexPermute_Orig_Layout
-    integer(int_kind), dimension(p_info%nPE)          :: num_avail_part_tot
+    integer :: ncells_new, nnodes_new
+    integer :: pe
+    integer :: Partitions_This_Processor
+    integer, dimension(:), POINTER :: Cell_Colors_New
+    integer, dimension(ncells)              :: MeshPermute_Orig_Layout
+    integer, dimension(nnodes)              :: VertexPermute_Orig_Layout
+    integer, dimension(p_info%nPE)          :: num_avail_part_tot
 #ifdef USE_OLD_PERMUTE_WAY
-    integer(int_kind) :: partition
+    integer :: partition
 #endif
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -698,8 +665,6 @@ CONTAINS
     
 #endif
 
-    return
-
   END SUBROUTINE COMPUTE_PERMUTATIONS
 
   SUBROUTINE PERMUTE_Colors_To_Processors (Permuter,                       &
@@ -721,7 +686,6 @@ CONTAINS
     !   
     !
     !=======================================================================
-    use kind_module,          only: int_kind
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_PERMUTE,        &
                                     PGSLIB_GRADE_UP,       &
@@ -731,23 +695,22 @@ CONTAINS
                                     PGSLib_BLOCK_SIZE,     &
                                     PGSLib_SCATTER_SUM,    &
                                     PGSLib_SUM_PREFIX
-    implicit none
 
     ! Arguments
-    integer(int_kind), dimension(:), intent(IN   ) :: Colors
-    integer(int_kind), dimension(:), intent(  OUT) :: Permuter
-    integer(int_kind),               intent(  OUT) :: ItemsThisProcessor
+    integer, dimension(:), intent(IN   ) :: Colors
+    integer, dimension(:), intent(  OUT) :: Permuter
+    integer,               intent(  OUT) :: ItemsThisProcessor
 
     ! Local Variables
-    integer(int_kind) :: NColors, NDomains, color, c, d, ColorsThisDomain
-    integer(int_kind) :: Max_Color, Min_Color
+    integer :: NColors, NDomains, color, c, d, ColorsThisDomain
+    integer :: Max_Color, Min_Color
 
-    integer(int_kind), dimension(SIZE(Colors)) :: OrderedColors
-    integer(int_kind), dimension(SIZE(Colors)) :: Domain
+    integer, dimension(SIZE(Colors)) :: OrderedColors
+    integer, dimension(SIZE(Colors)) :: Domain
 
-    integer(int_kind), dimension(1)            :: ItemsPerDomain
+    integer, dimension(1)            :: ItemsPerDomain
 
-    integer(int_kind), dimension(:),   pointer :: DomainForColor
+    integer, dimension(:),   pointer :: DomainForColor
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -822,8 +785,6 @@ CONTAINS
     ! Clean up and go home
     DEALLOCATE(DomainForColor)
     
-    RETURN
-    
   END SUBROUTINE PERMUTE_Colors_To_Processors
 
   FUNCTION Identity_Cell_Colors () RESULT( Cell_Colors )
@@ -838,12 +799,10 @@ CONTAINS
     !          Cell_Colors is ALLOCATED and assigned the value 0.
     !      
     !=======================================================================
-    use kind_module,          only: int_kind
-    use parameter_module,     only: ncells
-    implicit none
+    use parameter_module, only: ncells
 
     ! Arguments
-    integer(int_kind), dimension(:), pointer :: Cell_Colors
+    integer, dimension(:), pointer :: Cell_Colors
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     ! Allocate the result
@@ -852,8 +811,6 @@ CONTAINS
     ! Assign it, all the same value for a single partition
     Cell_Colors = 0
 
-    ! Done
-    RETURN
   END FUNCTION Identity_Cell_Colors
   
   FUNCTION Identity_Node_Colors () RESULT( Node_Colors )
@@ -868,12 +825,10 @@ CONTAINS
     !          Node_Colors is ALLOCATED and assigned the value 0.
     !      
     !=======================================================================
-    use kind_module,          only: int_kind
-    use parameter_module,     only: nnodes
-    implicit none
+    use parameter_module, only: nnodes
 
     ! Arguments
-    integer(int_kind), dimension(:), pointer :: Node_Colors
+    integer, dimension(:), pointer :: Node_Colors
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     ! Allocate the result
@@ -882,8 +837,6 @@ CONTAINS
     ! Assign it, all the same value for a single partition
     Node_Colors = 0
 
-    ! Done
-    RETURN
   END FUNCTION Identity_Node_Colors
 
 
@@ -901,18 +854,15 @@ CONTAINS
     !   
     !
     !=======================================================================
-    use kind_module,          only: int_kind
-    use parameter_module,     only: ncells, nnodes
-    use pgslib_module,        only: PGSLib_SUM_PREFIX
-
-    implicit none
+    use parameter_module, only: ncells, nnodes
+    use pgslib_module, only: PGSLib_SUM_PREFIX
 
     ! Arguments
-    integer(int_kind), dimension(:), pointer       :: MeshPermute
-    integer(int_kind), dimension(:), pointer       :: VertexPermute
+    integer, dimension(:), pointer :: MeshPermute
+    integer, dimension(:), pointer :: VertexPermute
 
     ! Local Variables
-    integer(int_kind) :: c
+    integer :: c
 
     ! Allocate the arrays
     ALLOCATE(MeshPermute(ncells))
@@ -922,10 +872,7 @@ CONTAINS
     MeshPermute   = PGSLib_SUM_PREFIX ( (/ (1, c=1,ncells) /) ) 
     VertexPermute = PGSLib_SUM_PREFIX ( (/ (1, c=1,nnodes) /) ) 
 
-    ! Done
-    RETURN
   END SUBROUTINE Identity_Partitons
-  
 
 END MODULE MESH_PARTITION_MODULE
 

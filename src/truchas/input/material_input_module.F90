@@ -25,13 +25,11 @@ MODULE MATERIAL_INPUT_MODULE
   !            Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: MATERIAL_INPUT, MATERIAL_SIZES
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -45,8 +43,7 @@ CONTAINS
     !   Check MATERIAL namelist.
     !
     !=======================================================================
-    use constants_module,     only: ipreset, zero, preset
-    use kind_module,          only: int_kind, log_kind, real_kind
+    use input_utilities,      only: NULL_I, NULL_R
     use matl_module,          only: relation_forms
     use solid_mechanics_data, only: Viscoplastic_Model_Forms, maxvpforms
     use parameter_module,     only: maxcon, maxmat, max_Relation_forms , nmat
@@ -60,12 +57,12 @@ CONTAINS
     use property_module,      only: Get_User_Material_ID
 
     ! Argument List
-    logical(KIND = log_kind) :: fatal
+    logical :: fatal
 
     ! Local Variables
-    character(LEN = 80)                         :: initialized_string
-    logical(KIND = log_kind)                    :: strings_match
-    integer(KIND = int_kind)                    :: l, m, n
+    character(80) :: initialized_string
+    logical :: strings_match
+    integer :: l, m, n
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -98,7 +95,7 @@ CONTAINS
 
     ! Check background material number; punt and inform user if
     ! background material has not been set.
-    if (background_material == ipreset) then
+    if (background_material == NULL_I) then
        write (message, 14) 
 14     format('Background material number is not defined; must have Material_Feature = ''background'' for one of the materials')
        call TLS_error (message)
@@ -116,7 +113,7 @@ CONTAINS
 
     do m = 1,nmat
        n = priority(m)
-       if (n == ipreset) then
+       if (n == NULL_I) then
           write (message, 20) Get_User_Material_ID(m),m
 20        format('Material ',i2,' priority not initialized; set to ',i2)
           call TLS_warn (message)
@@ -170,7 +167,7 @@ CONTAINS
        ! and set appropriate flags
 
        !   User must specifiy the "reference" density
-       if (density(m) == preset) then
+       if (density(m) == NULL_R) then
           write (message,69) Get_User_Material_ID(m)
 69        format('Density must be specified for Material ',i2)
           call TLS_error (message)
@@ -183,7 +180,7 @@ CONTAINS
     PERMEABILITY: do m = 1,nmat
 
        ! Check constants.
-       if (any(Permeability_Constant(:,m) < zero)) then
+       if (any(Permeability_Constant(:,m) < 0)) then
           write (message, 130) Get_User_Material_ID(m)
 130       format('Material ',i2,' has a negative permeability constant; must be positive!')
           call TLS_error (message)
@@ -196,14 +193,14 @@ CONTAINS
     SOUNDSPEED: do m = 1,nmat
 
        ! Check constants.
-       if (Sound_Speed(m) < zero) then
+       if (Sound_Speed(m) < 0) then
           write (message, 132) Get_User_Material_ID(m)
 132       format('Material ',i2,' has a negative sound speed; must be positive!')
           call TLS_error (message)
           fatal = .true.
        end if
 
-       if (Sound_Speed(m) > zero .and. Density(m) /= zero) then
+       if (Sound_Speed(m) > 0 .and. Density(m) /= 0) then
           write (message, 133) m
 133       format('Material ',i2,' has a positive sound speed and is not a void')
           call TLS_warn (message)
@@ -247,7 +244,7 @@ CONTAINS
     !
     !=======================================================================
     use parameter_module,     only: nmat
-    use constants_module,     only: ipreset, preset, zero, one
+    use input_utilities,      only: NULL_I, NULL_R
     use matl_module,          only: relation_forms
     use solid_mechanics_data, only: Viscoplastic_Model_Forms
     use property_data_module, only: background_material,                          &
@@ -268,14 +265,13 @@ CONTAINS
     Material_Feature               = 'normal'
 
     ! Material numbers
-    background_material    = ipreset
-    matpri                 = ipreset
+    background_material = NULL_I
 
-    density                         = preset
-    Permeability_Constant           = preset
+    density                         = NULL_R
+    Permeability_Constant           = 0
 
-    Void_Temperature             = zero
-    Sound_Speed                  = zero
+    Void_Temperature             = 0
+    Sound_Speed                  = 0
     
     ! Valid character strings for property relations
     relation_forms = ''
@@ -300,9 +296,7 @@ CONTAINS
     !   Read MATERIAL namelist.
     !
     !=======================================================================
-    use constants_module,       only: ipreset, zero, preset, one
-    use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind
+    use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R
     use parallel_info_module,   only: p_info
     use parameter_module,       only: nmat
     use property_module,        only: Set_User_Material_ID
@@ -319,10 +313,10 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! Local Variables
-    logical(KIND = log_kind) :: fatal, found, read_done
-    integer(KIND = int_kind) :: material_number
-    integer(KIND = int_kind) :: ioerror
-    logical                  :: Immobile
+    logical :: fatal, found, read_done
+    integer :: material_number
+    integer :: ioerror
+    logical :: Immobile
     character(128) :: message
 
     ! Define MATERIAL Namelist
@@ -354,34 +348,34 @@ CONTAINS
     READ_MATERIALS: do
 
        ! Re-initialize critical input values
-       material_number           = ipreset
+       material_number           = NULL_I
        Immobile                  = .false.
-       priority(0)               = ipreset
+       priority(0)               = NULL_I
 
        material_name(0)                  = 'none'
        Material_Feature(0)               = 'normal'
        Viscoplastic_Model(0)             = 'elastic_only'
 
-       density(0)                           = preset
-       Permeability_Constant(:,0)           = zero
+       density(0)                           = NULL_R
+       Permeability_Constant(:,0)           = 0
        
-       Void_Temperature(0)             = zero
-       Sound_Speed(0)                  = zero
-       MTS_k(0)                        = zero                       
-       MTS_mu_0(0)                     = zero
-       MTS_sig_a(0)                    = zero
-       MTS_d(0)                        = zero
-       MTS_temp_0(0)                   = zero
-       MTS_b(0)                        = zero
-       MTS_edot_0i(0)                  = zero
-       MTS_g_0i(0)                     = zero
-       MTS_q_i(0)                      = zero
-       MTS_p_i(0)                      = zero
-       MTS_sig_i(0)                    = zero
-       Pwr_Law_A(0)                    = zero
-       Pwr_Law_N(0)                    = zero
-       Pwr_Law_Q(0)                    = zero
-       Pwr_Law_R(0)                    = zero
+       Void_Temperature(0)             = 0
+       Sound_Speed(0)                  = 0
+       MTS_k(0)                        = 0                       
+       MTS_mu_0(0)                     = 0
+       MTS_sig_a(0)                    = 0
+       MTS_d(0)                        = 0
+       MTS_temp_0(0)                   = 0
+       MTS_b(0)                        = 0
+       MTS_edot_0i(0)                  = 0
+       MTS_g_0i(0)                     = 0
+       MTS_q_i(0)                      = 0
+       MTS_p_i(0)                      = 0
+       MTS_sig_i(0)                    = 0
+       Pwr_Law_A(0)                    = 0
+       Pwr_Law_N(0)                    = 0
+       Pwr_Law_Q(0)                    = 0
+       Pwr_Law_R(0)                    = 0
 
        ! Read next MATERIAL
        READ_IO_PE_ONLY: if (p_info%IOP) then
@@ -419,7 +413,7 @@ CONTAINS
        ! separate routine with checking & error msgs, etc. later
 
        nmat = nmat + 1
-       MATERIAL_ASSIGNED: if (material_number == ipreset) then
+       MATERIAL_ASSIGNED: if (material_number == NULL_I) then
           material_number = nmat
           write (message, 15) nmat, nmat
 15        format ('Assigned material_numer = ',i2,' to MATERIAL namelist ',i2)
@@ -470,8 +464,6 @@ CONTAINS
     call MATERIAL_CHECK (fatal)
     call TLS_fatal_if_any (fatal, 'terminating execution due to previous input errors')
 
-    return
-
   END SUBROUTINE MATERIAL_INPUT
 
   SUBROUTINE MATERIAL_INPUT_PARALLEL (ioerror, material_number, immobile, read_done)
@@ -483,7 +475,6 @@ CONTAINS
     !   the two flags read_done and ioerror.
     !
     !======================================================================
-    use kind_module,          only: int_kind, log_kind
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_BCAST
     use property_data_module, only: background_material,                            &
@@ -497,10 +488,10 @@ CONTAINS
                                     Pwr_Law_N, Pwr_Law_Q, Pwr_Law_R
 
     ! Argument List
-    logical(KIND = log_kind), intent(inout) :: read_done
-    logical,                  intent(inout) :: immobile
-    integer(KIND = int_kind), intent(inout) :: material_number
-    integer(KIND = int_kind), intent(inout) :: ioerror
+    logical, intent(inout) :: read_done
+    logical, intent(inout) :: immobile
+    integer, intent(inout) :: material_number
+    integer, intent(inout) :: ioerror
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -555,8 +546,6 @@ CONTAINS
      !
      !=======================================================================
      use parameter_module, only: mat_slot_new, mmat, nmat
-
-     implicit none
 
      ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

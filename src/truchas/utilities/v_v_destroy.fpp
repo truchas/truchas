@@ -26,7 +26,7 @@
          DIMENSION(:)              :: ARRAY
 
     ! Local variables
-    integer (int_kind) :: i
+    integer :: i
     _DATA_TYPE_, pointer, dimension(:) :: BigArray
 
     ! If ARRAY has 0 size, then there is nothing to do:
@@ -45,7 +45,7 @@
        end do
 
     endif
-    return
+
   end Subroutine _ROUTINE_NAME_
 
 #undef _ROUTINE_NAME_

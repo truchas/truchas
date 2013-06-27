@@ -13,16 +13,12 @@ MODULE ORTHO_MATVEC
   ! Contains: ORTHO_MATVEC_Y_EQ_AX
   !
   !=======================================================================
-  use kind_module, only: int_kind, real_kind
-
+  use kinds, only: r8
+  use timing_tree
   Implicit None
-
   Private
 
-  ! public procedures
   Public :: ORTHO_MATVEC_Y_EQ_AX
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -33,20 +29,17 @@ CONTAINS
     !   Compute y = Ax where A is an ortho matrix stored in ELL format
     !
     !=======================================================================
-    use timing_tree
-
-    implicit none
 
     ! Arguments
-    integer(KIND = int_kind),                      intent(IN)    :: nunk, nfc
-    real(KIND = real_kind), dimension(nunk),       intent(IN)    :: X
-    real(KIND = real_kind), dimension(0:nfc,nunk), intent(IN)    :: Matrix  
-    real(KIND = real_kind), dimension(nfc,nunk),   intent(IN)    :: X_Neighbors
-    integer(KIND = int_kind),                      intent(OUT)   :: status
-    real(KIND = real_kind), dimension(nunk),       intent(INOUT) :: Y
+    integer, intent(IN) :: nunk, nfc
+    real(r8), dimension(nunk), intent(IN) :: X
+    real(r8), dimension(0:nfc,nunk), intent(IN) :: Matrix  
+    real(r8), dimension(nfc,nunk), intent(IN) :: X_Neighbors
+    integer, intent(OUT) :: status
+    real(r8), dimension(nunk), intent(INOUT) :: Y
 
     ! Local Variables
-    integer(KIND = int_kind) :: f
+    integer :: f
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -63,7 +56,6 @@ CONTAINS
     call stop_timer ("Solver TMP2")
 
     status = 0
-    return
 
   END SUBROUTINE ORTHO_MATVEC_Y_EQ_AX
 

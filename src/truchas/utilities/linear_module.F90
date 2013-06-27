@@ -15,12 +15,9 @@ MODULE LINEAR_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: real_kind
+  use kinds, only: r8
   use parameter_module, only: ndim, nvc
-
   implicit none
-
-  ! Pivate Module
   private
 
   ! Public Subroutines
@@ -42,7 +39,7 @@ MODULE LINEAR_MODULE
   END INTERFACE
 
   ! Components of Linear Interpolation Coefficients
-  real(KIND = real_kind), dimension(ndim,nvc) :: LC1, LC2
+  real(r8), dimension(ndim,nvc) :: LC1, LC2
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -70,33 +67,29 @@ CONTAINS
     !               n=1
     !
     !=======================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: Cell
     use parameter_module, only: ncells, ndim, nvc
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: f ! Cell-Face Number
+    integer, intent(IN) :: f ! Cell-Face Number
 
-    real(KIND = real_kind), dimension(ncells),     intent(OUT) :: Prop
-    real(KIND = real_kind), dimension(nvc,ncells), intent(IN)  :: Vrtx
+    real(r8), dimension(ncells),     intent(OUT) :: Prop
+    real(r8), dimension(nvc,ncells), intent(IN)  :: Vrtx
 
     ! Local Variables
-    integer(KIND = int_kind) :: n, v
+    integer :: n, v
 
-    real(KIND = real_kind), dimension(ncells) :: Coef
+    real(r8), dimension(ncells) :: Coef
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize Property
-    Prop(:) = zero
+    Prop(:) = 0.0_r8
 
     ! Evaluate Property
     Vrtx_Loop : do v = 1, nvc
        ! Initialize Coefficient
-       Coef(:) = one
+       Coef(:) = 1.0_r8
 
        ! Accumulate Coefficient
        Ndim_Loop : do n = 1, ndim
@@ -106,8 +99,6 @@ CONTAINS
        ! Accumulate Property
        Prop(:) = Prop(:) + Coef(:)*Vrtx(v,:)
     end do Vrtx_Loop
-
-    return
 
   END SUBROUTINE LINEAR_PROP_FACE
 
@@ -133,33 +124,29 @@ CONTAINS
     !               n=1
     !
     !=======================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: Cell
     use parameter_module, only: ncells, ndim, nvc
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: f ! Cell-Face Number
+    integer, intent(IN) :: f ! Cell-Face Number
 
-    real(KIND = real_kind),   dimension(ncells),     intent(OUT) :: Prop
-    integer(KIND = int_kind), dimension(nvc,ncells), intent(IN)  :: Vrtx
+    real(r8), dimension(ncells),     intent(OUT) :: Prop
+    integer,  dimension(nvc,ncells), intent(IN)  :: Vrtx
 
     ! Local Variables
-    integer(KIND = int_kind) :: n, v
+    integer :: n, v
 
-    real(KIND = real_kind), dimension(ncells) :: Coef
+    real(r8), dimension(ncells) :: Coef
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize Property
-    Prop(:) = zero
+    Prop(:) = 0.0_r8
 
     ! Evaluate Property
     Vrtx_Loop : do v = 1, nvc
        ! Initialize Coefficient
-       Coef(:) = one
+       Coef(:) = 1.0_r8
 
        ! Accumulate Coefficient
        Ndim_Loop : do n = 1, ndim
@@ -169,8 +156,6 @@ CONTAINS
        ! Accumulate Property
        Prop(:) = Prop(:) + Coef(:)*Vrtx(v,:)
     end do Vrtx_Loop
-
-    return
 
   END SUBROUTINE LINEAR_PROP_FACE_INT
 
@@ -198,24 +183,20 @@ CONTAINS
     !               n=1
     !
     !=======================================================================
-    use constants_module, only: zero, one
-    use kind_module,      only: int_kind, real_kind
     use parameter_module, only: ndim, nvc
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), optional, intent(IN)  :: id
-    integer(KIND = int_kind),           intent(IN)  :: num
+    integer, optional, intent(IN)  :: id
+    integer,           intent(IN)  :: num
 
-    real(KIND = real_kind), dimension(num),      intent(OUT) :: Prop
-    real(KIND = real_kind), dimension(ndim,num), intent(IN)  :: Xi
-    real(KIND = real_kind), dimension(nvc,num),  intent(IN)  :: Vrtx
+    real(r8), dimension(num),      intent(OUT) :: Prop
+    real(r8), dimension(ndim,num), intent(IN)  :: Xi
+    real(r8), dimension(nvc,num),  intent(IN)  :: Vrtx
 
     ! Local Variables
-    integer(KIND = int_kind) :: e, s, n, v
+    integer :: e, s, n, v
 
-    real(KIND = real_kind), dimension(num) :: Coef
+    real(r8), dimension(num) :: Coef
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -229,12 +210,12 @@ CONTAINS
     end if
 
     ! Initialize Property
-    Prop(s:e) = zero
+    Prop(s:e) = 0.0_r8
 
     ! Evaluate Property
     Vrtx_Loop : do v = 1, nvc
        ! Initialize Coefficient
-       Coef(s:e) = one
+       Coef(s:e) = 1.0_r8
 
        ! Accumulate Coefficient
        Ndim_Loop : do n = 1, ndim
@@ -244,8 +225,6 @@ CONTAINS
        ! Accumulate Property
        Prop(s:e) = Prop(s:e) + Coef(s:e)*Vrtx(v,s:e)
     end do Vrtx_Loop
-
-    return
 
   END SUBROUTINE LINEAR_PROP_VECTOR
 
@@ -276,26 +255,22 @@ CONTAINS
     !   The index 'nlc' is never equivalent to n, and is derived from
     !   the Tensor matrix, nlc = Tensor(nn+1,n).
     !=======================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: int_kind, real_kind
     use parameter_module, only: ndim, nvc
     use tensor_module,    only: Tensor
 
-    implicit none
-
     ! Argument List
-    integer(KIND = int_kind), intent(IN), optional :: id
-    integer(KIND = int_kind), intent(IN)           :: num
+    integer, intent(IN), optional :: id
+    integer, intent(IN)           :: num
 
-    real(KIND = real_kind), dimension(ndim,num), intent(IN)  :: Xi
-    real(KIND = real_kind), dimension(ndim,num), intent(OUT) :: Grad
-    real(KIND = real_kind), dimension(nvc,num),  intent(IN)  :: Vrtx
+    real(r8), dimension(ndim,num), intent(IN)  :: Xi
+    real(r8), dimension(ndim,num), intent(OUT) :: Grad
+    real(r8), dimension(nvc,num),  intent(IN)  :: Vrtx
 
     ! Local Variables
-    integer(KIND = int_kind) :: e, s, v, n
-    integer(KIND = int_kind) :: nn, nlc
+    integer :: e, s, v, n
+    integer :: nn, nlc
 
-    real(KIND = real_kind), dimension(num) :: Coef
+    real(r8), dimension(num) :: Coef
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -309,13 +284,13 @@ CONTAINS
     end if
 
     ! Initialize Gradient
-    Grad(:,s:e) = zero
+    Grad(:,s:e) = 0.0_r8
 
     ! Evaluate Gradient
     Ndim_Loop : do n = 1, ndim
        Vrtx_Loop : do v = 1, nvc
           ! Initialize Coefficient
-          Coef(s:e) = one
+          Coef(s:e) = 1.0_r8
 
           ! Coefficient Factor Terms
           do nn = 1, ndim-1
@@ -330,8 +305,6 @@ CONTAINS
           Grad(n,s:e) = Grad(n,s:e) + Coef(s:e)*Vrtx(v,s:e)
        end do Vrtx_Loop
     end do Ndim_Loop
-
-    return
 
   END SUBROUTINE LINEAR_GRAD_VECTOR
 
@@ -361,16 +334,10 @@ CONTAINS
     !         8 |  1  1  0             8 | -1 -1  1
     !
     !=======================================================================
-    use constants_module, only: zero, one
-    use kind_module,      only: int_kind
     use parameter_module, only: ndim, nvc
 
-    implicit none
-
-    ! Argument List
-
     ! Local Variables
-    integer(KIND = int_kind) :: n, v
+    integer :: n, v
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -381,118 +348,116 @@ CONTAINS
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              end select
           end do
        case (2) ! Vertex Two
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              end select
           end do
        case (3) ! Vertex Three
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              end select
           end do
        case (4) ! Vertex Four
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              end select
           end do
        case (5) ! Vertex Five
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              end select
           end do
        case (6) ! Vertex Six
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              end select
           end do
        case (7) ! Vertex Seven
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              end select
           end do
        case (8) ! Vertex Eight
           do n = 1, ndim
              select case (n)
              case (1) ! 1-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (2) ! 2-D Coefficients
-                LC1(n,v) = + one
-                LC2(n,v) = - one
+                LC1(n,v) = + 1.0_r8
+                LC2(n,v) = - 1.0_r8
              case (3) ! 3-D Coefficients
-                LC1(n,v) = + zero
-                LC2(n,v) = + one
+                LC1(n,v) = + 0.0_r8
+                LC2(n,v) = + 1.0_r8
              end select
           end do
        end select
     end do Vrtx_Loop
-
-    return
 
   END SUBROUTINE LINEAR_COEF
 

@@ -1,6 +1,40 @@
 ===============================================================================
-HISTORY                                                  fpa-1.1.1 (2004/12/22)
+HISTORY                                                 nlkain-2.0 (2013/6/1)
 ===============================================================================
+
+nlkain-2.0 (2013/6/1):
+
+o added a C++ implementation that is compatible with Trilinos (tested with
+  version 10.0.2). - M. Berndt 5/28/2010
+
+o Added a modern, object-oriented Fortran (2008) version.
+
+o The interfaces to the C, Fortran 95, and Fortran 2008 versions were
+  harmonized.
+  
+o Added a simple cmake build system for each of the versions (except C++).
+
+o The Fortran 2008 example program was extended to allow various problem
+  and method parameters to be varied from the command line.
+
+nlkain-1.3 (2009/7/4):
+
+o Added a C implementation of the accelerator that is closely modeled after
+  the Fortran version.  The Fortran implementation is unchanged.
+  
+nlkain-1.2 (2006/10/14):
+
+o Name changes: package fpa renamed nlkain, module fixed_point_accelerator
+  renamed nonlinear_krylov_accelerator, and object prefix "fpa_" replaced
+  by "nka_".  The old terminology was a bit arcane, and the new is consistent
+  with Miller's terminology for the accelerator.
+  
+o Modified the interface to NKA_CREATE to take the vector size as an argument
+  in place of a sample vector from which the size would have been gleaned.
+
+o Converted the CVS repository to Subversion, which is now hosted at
+  http://sourceforge.net/projects/nlkain
+
 fpa-1.1.1 (2004/12/22):
 
 o Fixed a bug in fpa_defined introduced in 1.0.0 which would cause a spurious

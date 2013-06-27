@@ -50,13 +50,11 @@ MODULE Var_Vector_MODULE
   ! Author(s): Robert C. Ferrell, CPCA (ferrell@cpca.com)
   !
   !=======================================================================
+  use kinds, only: r8
   use ArrayAllocate_Module
-  use truchas_logging_services, only: TLS_panic
-  use kind_module,      only: real_kind, int_kind, log_kind
+  use truchas_logging_services
   use var_vector_types
-
   implicit none
-
   private
 
   ! Public variables and types
@@ -147,21 +145,21 @@ CONTAINS
   ! Integer
 
 #define _ROUTINE_NAME_   V_V_CREATE_V_INT
-#define _DATA_TYPE_      integer (INT_KIND)
+#define _DATA_TYPE_      integer
 #define _VAR_DATA_TYPE_  INT_VAR_VECTOR
 #include "v_v_create.fpp"
   
   ! Real
 
 #define _ROUTINE_NAME_   V_V_CREATE_V_REAL
-#define _DATA_TYPE_      real (REAL_KIND)
+#define _DATA_TYPE_      real(r8)
 #define _VAR_DATA_TYPE_  REAL_VAR_VECTOR
 #include "v_v_create.fpp"
   
   ! Logical
 
 #define _ROUTINE_NAME_   V_V_CREATE_V_LOG
-#define _DATA_TYPE_      logical (LOG_KIND)
+#define _DATA_TYPE_      logical
 #define _VAR_DATA_TYPE_  LOG_VAR_VECTOR
 #include "v_v_create.fpp"
   
@@ -177,19 +175,19 @@ CONTAINS
     
   ! Integer
 #define _ROUTINE_NAME_  V_V_DESTROY_V_INT
-#define _DATA_TYPE_     integer (INT_KIND)
+#define _DATA_TYPE_     integer
 #define _VAR_DATA_TYPE_ INT_VAR_VECTOR
 #include "v_v_destroy.fpp"
 
   ! Real
 #define _ROUTINE_NAME_  V_V_DESTROY_V_REAL
-#define _DATA_TYPE_     real (REAL_KIND)
+#define _DATA_TYPE_     real(r8)
 #define _VAR_DATA_TYPE_ REAL_VAR_VECTOR
 #include "v_v_destroy.fpp"
 
   ! Logical
 #define _ROUTINE_NAME_  V_V_DESTROY_V_LOG
-#define _DATA_TYPE_     logical (LOG_KIND)
+#define _DATA_TYPE_     logical
 #define _VAR_DATA_TYPE_ LOG_VAR_VECTOR
 #include "v_v_destroy.fpp"
 
@@ -201,19 +199,19 @@ CONTAINS
   
   ! Integer
 #define _ROUTINE_NAME_  V_V_SIZES_V_INT
-#define _DATA_TYPE_     integer (INT_KIND)
+#define _DATA_TYPE_     integer
 #define _VAR_DATA_TYPE_ INT_VAR_VECTOR
 #include "v_v_sizes_v.fpp"
 
   ! REAL
 #define _ROUTINE_NAME_  V_V_SIZES_V_REAL
-#define _DATA_TYPE_     real (REAL_KIND)
+#define _DATA_TYPE_     real(r8)
 #define _VAR_DATA_TYPE_ REAL_VAR_VECTOR
 #include "v_v_sizes_v.fpp"
 
   ! Logical
 #define _ROUTINE_NAME_  V_V_SIZES_V_LOG
-#define _DATA_TYPE_     logical (LOG_KIND)
+#define _DATA_TYPE_     logical
 #define _VAR_DATA_TYPE_ LOG_VAR_VECTOR
 #include "v_v_sizes_v.fpp"
 
@@ -225,19 +223,19 @@ CONTAINS
   
   ! Integer
 #define _ROUTINE_NAME_  V_V_SIZES_S_INT
-#define _DATA_TYPE_     integer (INT_KIND)
+#define _DATA_TYPE_     integer
 #define _VAR_DATA_TYPE_ INT_VAR_VECTOR
 #include "v_v_sizes_s.fpp"
 
   ! REAL
 #define _ROUTINE_NAME_  V_V_SIZES_S_REAL
-#define _DATA_TYPE_     real (REAL_KIND)
+#define _DATA_TYPE_     real(r8)
 #define _VAR_DATA_TYPE_ REAL_VAR_VECTOR
 #include "v_v_sizes_s.fpp"
 
   ! Logical
 #define _ROUTINE_NAME_  V_V_SIZES_S_LOG
-#define _DATA_TYPE_     logical (LOG_KIND)
+#define _DATA_TYPE_     logical
 #define _VAR_DATA_TYPE_ LOG_VAR_VECTOR
 #include "v_v_sizes_s.fpp"
 
@@ -250,19 +248,19 @@ CONTAINS
   
   ! Integer
 #define _ROUTINE_NAME_  V_V_FLATTEN_V_INT
-#define _DATA_TYPE_     integer (INT_KIND)
+#define _DATA_TYPE_     integer
 #define _VAR_DATA_TYPE_ INT_VAR_VECTOR
 #include "v_v_flatten_v.fpp"
 
   ! REAL
 #define _ROUTINE_NAME_  V_V_FLATTEN_V_REAL
-#define _DATA_TYPE_     real (REAL_KIND)
+#define _DATA_TYPE_     real(r8)
 #define _VAR_DATA_TYPE_ REAL_VAR_VECTOR
 #include "v_v_flatten_v.fpp"
 
   ! Logical
 #define _ROUTINE_NAME_  V_V_FLATTEN_V_LOG
-#define _DATA_TYPE_     logical (LOG_KIND)
+#define _DATA_TYPE_     logical
 #define _VAR_DATA_TYPE_ LOG_VAR_VECTOR
 #include "v_v_flatten_v.fpp"
 
@@ -273,19 +271,19 @@ CONTAINS
 
   ! Integer
 #define _ROUTINE_NAME_  V_V_FLATTEN_S_INT
-#define _DATA_TYPE_     integer (INT_KIND)
+#define _DATA_TYPE_     integer
 #define _VAR_DATA_TYPE_ INT_VAR_VECTOR
 #include "v_v_flatten_s.fpp"
 
   ! Real
 #define _ROUTINE_NAME_  V_V_FLATTEN_S_REAL
-#define _DATA_TYPE_     real (REAL_KIND)
+#define _DATA_TYPE_     real(r8)
 #define _VAR_DATA_TYPE_ REAL_VAR_VECTOR
 #include "v_v_flatten_s.fpp"
 
   ! Logical
 #define _ROUTINE_NAME_  V_V_FLATTEN_S_LOG
-#define _DATA_TYPE_     logical (LOG_KIND)
+#define _DATA_TYPE_     logical
 #define _VAR_DATA_TYPE_ LOG_VAR_VECTOR
 #include "v_v_flatten_s.fpp"
 
@@ -300,19 +298,19 @@ CONTAINS
 
   ! Integer
 #define _ROUTINE_NAME_  V_V_STUFF_V_INT
-#define _DATA_TYPE_     integer (INT_KIND)
+#define _DATA_TYPE_     integer
 #define _VAR_DATA_TYPE_ INT_VAR_VECTOR
 #include "v_v_stuff_v.fpp"  
 
   ! Real
 #define _ROUTINE_NAME_  V_V_STUFF_V_REAL
-#define _DATA_TYPE_     real (REAL_KIND)
+#define _DATA_TYPE_     real(r8)
 #define _VAR_DATA_TYPE_ REAL_VAR_VECTOR
 #include "v_v_stuff_v.fpp"  
 
   ! Logical
 #define _ROUTINE_NAME_  V_V_STUFF_V_LOG
-#define _DATA_TYPE_     logical (LOG_KIND)
+#define _DATA_TYPE_     logical
 #define _VAR_DATA_TYPE_ LOG_VAR_VECTOR
 #include "v_v_stuff_v.fpp"  
   
@@ -328,19 +326,19 @@ CONTAINS
   
   ! Integer
 #define _ROUTINE_NAME_  V_V_STUFF_S_INT
-#define _DATA_TYPE_     integer (INT_KIND)
+#define _DATA_TYPE_     integer
 #define _VAR_DATA_TYPE_ INT_VAR_VECTOR
 #include "v_v_stuff_s.fpp"
 
   ! Real
 #define _ROUTINE_NAME_  V_V_STUFF_S_REAL
-#define _DATA_TYPE_     real (REAL_KIND)
+#define _DATA_TYPE_     real(r8)
 #define _VAR_DATA_TYPE_ REAL_VAR_VECTOR
 #include "v_v_stuff_s.fpp"
 
   ! Logical
 #define _ROUTINE_NAME_  V_V_STUFF_S_LOG
-#define _DATA_TYPE_     logical (LOG_KIND)
+#define _DATA_TYPE_     logical
 #define _VAR_DATA_TYPE_ LOG_VAR_VECTOR
 #include "v_v_stuff_s.fpp"
 

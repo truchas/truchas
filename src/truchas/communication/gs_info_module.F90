@@ -5,7 +5,6 @@ MODULE GS_INFO_MODULE
   !  internally in the gather/scatter routines.
   !
   !======================================================================
-  use kind_module,   ONLY: int_kind, log_kind
   use pgslib_module, ONLY: PGSLib_GS_Trace
 
   SAVE
@@ -15,7 +14,7 @@ MODULE GS_INFO_MODULE
   public :: PGSLib_GS_Trace, EE_Mask_Initialized, El_Nbr_Mask
 
   type COMM_TYPE
-     integer (KIND = int_kind) Type
+     integer :: Type
   end type COMM_TYPE
 
   type (COMM_TYPE), Parameter :: EN = COMM_TYPE(1), EE = COMM_TYPE(2)
@@ -24,7 +23,7 @@ MODULE GS_INFO_MODULE
   type (PGSLib_GS_Trace), POINTER :: NN_All_Ngbr_Trace
 
   ! Flag to inidicate that some initializaiton has been done.
-  logical(KIND = log_kind), pointer, dimension(:,:) :: El_Nbr_MASK
-  logical(KIND = log_kind)                          :: EE_MASK_Initialized = .false.
+  logical, pointer, dimension(:,:) :: El_Nbr_MASK
+  logical :: EE_MASK_Initialized = .false.
 
 END MODULE GS_INFO_MODULE

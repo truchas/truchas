@@ -18,12 +18,9 @@ MODULE INTERFACE_MODULE
   !            Matthew Williams (MST-8, mww@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: int_kind, real_kind
+  use kinds, only: r8
   use parameter_module, only: ncells, ndim, nvc, max_topology_models
- 
   implicit none
- 
-  ! Private Module
   private
 
   ! Public Procedures and Types
@@ -42,22 +39,22 @@ MODULE INTERFACE_MODULE
   type INTERFACE_DATA
  
      ! The interface normal.
-     real(real_kind) :: Normal(ndim)
+     real(r8) :: Normal(ndim)
  
      ! The interface plane constant.
-     real(real_kind) :: Rho
+     real(r8) :: Rho
  
      ! Volume fraction of the material(s) behind this interface.
-     real(real_kind) :: Vof
+     real(r8) :: Vof
 
      ! Area of the interface for material(s)
-     real(real_kind) :: Area
+     real(r8) :: Area
  
      ! The donor cell volume.
-     real(real_kind) :: Cell_Volume
+     real(r8) :: Cell_Volume
  
      ! The physical coordinates of the cell vertices of the interface cells.
-     real(real_kind) :: Cell_Coord(ndim,nvc)
+     real(r8) :: Cell_Coord(ndim,nvc)
  
   end type INTERFACE_DATA
 
@@ -67,19 +64,19 @@ MODULE INTERFACE_MODULE
   type INTERFACE_FLUX_DATA
 
      ! The flux volume.
-     real(real_kind) :: Flux_Vol
+     real(r8) :: Flux_Vol
 
      ! The physical coordinates of the flux volume vertices of the interface cells.
-     real(real_kind) :: Flux_Vol_Coord(ndim,nvc)
+     real(r8) :: Flux_Vol_Coord(ndim,nvc)
  
      ! The face identifier for this advection sweep.
-     integer(int_kind) :: Face
+     integer :: Face
  
      ! The advected volume of the materials behind this interface.
-     real(real_kind) :: Advected_Volume
+     real(r8) :: Advected_Volume
 
      ! The iteration count required to locate this plane.
-     integer(int_kind) :: Iter
+     integer :: Iter
 
    end type INTERFACE_FLUX_DATA
 
@@ -100,8 +97,6 @@ CONTAINS
     interface_model_forms = ''
     interface_model_forms(1) = 'least squares model'  
     interface_model_forms(2) = 'convolution model'
- 
-    return
 
   END SUBROUTINE INTERFACE_MODEL_DEFAULT
 
@@ -116,17 +111,15 @@ CONTAINS
     use gs_module,   only: EN_GATHER
     use mesh_module, only: Cell, Vertex, Vrtx_Bdy
  
-    implicit none
- 
     ! Arguments
-    logical,         dimension(ncells), intent(IN) :: Mask
-    real(real_kind), dimension(ncells), intent(IN) :: G1, G2, G3
-    real(real_kind), dimension(ncells), intent(IN) :: Vof
+    logical,  dimension(ncells), intent(IN) :: Mask
+    real(r8), dimension(ncells), intent(IN) :: G1, G2, G3
+    real(r8), dimension(ncells), intent(IN) :: Vof
  
     ! Local Variables
-    integer(int_kind)                        :: n, v
-    real(real_kind),   dimension(ncells)     :: Tmp
-    real(real_kind),   dimension(nvc,ncells) :: Vtx1
+    integer :: n, v
+    real(r8), dimension(ncells)     :: Tmp
+    real(r8), dimension(nvc,ncells) :: Vtx1
  
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
  
@@ -158,8 +151,6 @@ CONTAINS
  
     end do
  
-    return
- 
   END SUBROUTINE SETUP_INTERFACE_GEOM
 
   SUBROUTINE SETUP_INTERFACE_FLUX (Flux_vol, Mask)
@@ -170,17 +161,14 @@ CONTAINS
     !    the INTERFACE_DATA derived type.
     !
     !=======================================================================
-    use constants_module,   only: zero
     use flux_volume_module, only: FLUX_VOL_QUANTITY
- 
-    implicit none
  
     ! Arguments
     type(FLUX_VOL_QUANTITY), dimension(ncells), intent(IN) :: Flux_Vol
-    logical,                 dimension(ncells), intent(IN) :: Mask
+    logical, dimension(ncells), intent(IN) :: Mask
  
     ! Local Variables
-    integer(int_kind) :: n, v
+    integer :: n, v
  
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -198,9 +186,7 @@ CONTAINS
 !    Int_Flux%Face = PACK (Flux_Vol%Fc, Mask)
  
     ! Advected volume behind the interface (initialize to zero).
-    Int_Flux%Advected_Volume = zero
- 
-    return
+    Int_Flux%Advected_Volume = 0.0_r8
  
   END SUBROUTINE SETUP_INTERFACE_FLUX
 

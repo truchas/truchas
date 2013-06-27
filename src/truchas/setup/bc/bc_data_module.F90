@@ -12,8 +12,8 @@ MODULE BC_DATA_MODULE
   !            Bryan Lally (lally@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use bc_type_module,   only: BOUNDARY_CONDITION
-  use kind_module,      only: int_kind, real_kind, log_kind
   use parameter_module, only: bc_forms, ndim, nbcs, nvar, mbc_surfaces, &
                               string_len, mbcsrf, mbc_nodes, max_bc_dof
 
@@ -28,66 +28,66 @@ MODULE BC_DATA_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Namelist input variables
-  character (LEN = 80),         dimension(0:mbc_surfaces)       :: BC_Type
-  character (LEN = 80),         dimension(0:mbc_surfaces)       :: BC_Name
-  real      (real_kind), dimension(max_bc_dof,0:mbc_surfaces)  :: BC_Value
-  character (LEN = 80),         dimension(0:mbc_surfaces)       :: BC_Variable
+  character(80),         dimension(0:mbc_surfaces)       :: BC_Type
+  character(80),         dimension(0:mbc_surfaces)       :: BC_Name
+  real(r8), dimension(max_bc_dof,0:mbc_surfaces)  :: BC_Value
+  character(80),         dimension(0:mbc_surfaces)       :: BC_Variable
 
-  integer   (int_kind),  dimension(0:mbc_surfaces)       :: Inflow_Material
-  real      (real_kind), dimension(0:mbc_surfaces)       :: Inflow_Temperature
+  integer,  dimension(0:mbc_surfaces)       :: Inflow_Material
+  real(r8), dimension(0:mbc_surfaces)       :: Inflow_Temperature
 
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_XX
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_YY
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_ZZ
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_XY
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_XZ
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_YZ
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_X
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Y
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Z
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Constant
-  real(real_kind), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Tolerance
-  character(LEN = string_len), dimension(mbcsrf,0:mbc_surfaces) :: Conic_Relation
-  character(LEN = string_len), dimension(mbcsrf,0:mbc_surfaces) :: Surface_Name
-  integer(int_kind), dimension(2,mbcsrf,0:mbc_surfaces)  :: Surface_Materials
-  real(real_kind), dimension(2,ndim,0:mbc_surfaces)      :: Bounding_Box
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_XX
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_YY
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_ZZ
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_XY
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_XZ
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_YZ
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_X
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Y
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Z
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Constant
+  real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Tolerance
+  character(string_len), dimension(mbcsrf,0:mbc_surfaces) :: Conic_Relation
+  character(string_len), dimension(mbcsrf,0:mbc_surfaces) :: Surface_Name
+  integer, dimension(2,mbcsrf,0:mbc_surfaces)  :: Surface_Materials
+  real(r8), dimension(2,ndim,0:mbc_surfaces)      :: Bounding_Box
 
 
-  integer (int_kind),  dimension(mbcsrf,0:mbc_surfaces)  :: Mesh_Surface  
+  integer,  dimension(mbcsrf,0:mbc_surfaces)  :: Mesh_Surface  
 
   ! Variables needed in processing the namelist input
-  integer(int_kind), dimension(mbcsrf,mbc_surfaces)      :: Srfmatl_Index
-  integer   (int_kind),  dimension(mbc_surfaces)         :: Inflow_Index
-  integer   (int_kind),  dimension(mbc_surfaces)         :: surfaces_in_this_bc
-  integer   (int_kind)                                   :: nbc_surfaces
-  character (LEN = 80),         dimension(nbcs,bc_forms)        :: Type_Forms
-  character (LEN = 80),         dimension(nvar,bc_forms)        :: Variable_Forms 
-  character (LEN = 80),         dimension(mbc_surfaces)         :: BC_Surface_Forms 
+  integer, dimension(mbcsrf,mbc_surfaces)      :: Srfmatl_Index
+  integer,  dimension(mbc_surfaces)         :: Inflow_Index
+  integer,  dimension(mbc_surfaces)         :: surfaces_in_this_bc
+  integer                                   :: nbc_surfaces
+  character(80),         dimension(nbcs,bc_forms)        :: Type_Forms
+  character(80),         dimension(nvar,bc_forms)        :: Variable_Forms 
+  character(80),         dimension(mbc_surfaces)         :: BC_Surface_Forms 
   ! Coordinates for individual node displacement BCs (read from input file)   
-  real(real_kind), dimension(ndim,mbc_nodes,0:mbc_surfaces)         :: Node_Disp_Coords
+  real(r8), dimension(ndim,mbc_nodes,0:mbc_surfaces)         :: Node_Disp_Coords
   ! Mask arrays for face and node sets read from mesh file 
-  integer(int_kind), pointer, dimension(:,:,:)           :: Mesh_Face_Set     => NULL()
-  integer(int_kind), pointer, dimension(:,:,:)           :: Mesh_Face_Set_Tot => NULL()
+  integer, pointer, dimension(:,:,:)           :: Mesh_Face_Set     => NULL()
+  integer, pointer, dimension(:,:,:)           :: Mesh_Face_Set_Tot => NULL()
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Define Arrays for Dirichlet BC .........................
   ! Applied concentration values (Each face of each cell)
-  real(real_kind), pointer, dimension(:,:) :: BC_Conc => null()
+  real(r8), pointer, dimension(:,:) :: BC_Conc => null()
 
   ! Applied pressure values (Each face of each cell)
   !     BC_Zero is used for pressure change solution
   !     BC_Pressure contains the actual pressures at the faces
   !     BC_Prs points to either BC_Zero or BC_Pressure as appropriate
-  real(real_kind), pointer, dimension(:,:) :: BC_Pressure => null()
-  real(real_kind), pointer, dimension(:,:) :: BC_Zero => null()
-  real(real_kind), pointer, dimension(:,:) :: BC_Prs => NULL()
+  real(r8), pointer, dimension(:,:) :: BC_Pressure => null()
+  real(r8), pointer, dimension(:,:) :: BC_Zero => null()
+  real(r8), pointer, dimension(:,:) :: BC_Prs => NULL()
 
   ! Inflow temperature values.
-  real(real_kind), pointer, dimension(:,:) :: BC_Temp => null()
+  real(r8), pointer, dimension(:,:) :: BC_Temp => null()
 
   ! Applied velocity values (3 components on each face of each cell)
-  integer(int_kind), pointer, dimension(:,:)   :: BC_Mat => null()
-  real(real_kind),   pointer, dimension(:,:,:) :: BC_Vel => null()
+  integer, pointer, dimension(:,:)   :: BC_Mat => null()
+  real(r8),   pointer, dimension(:,:,:) :: BC_Vel => null()
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -113,18 +113,18 @@ MODULE BC_DATA_MODULE
   ! BC_C_Value#(nfc,ncells)
 
   ! Concentration (C) Constants
-  integer(int_kind), parameter :: BC_C_NO_BC         = 0
-  integer(int_kind), parameter :: BC_C_DIRICHLET     = 1
-  integer(int_kind), parameter :: BC_C_HNEUMANN      = 2
-  integer(int_kind), parameter :: BC_C_NEUMANN       = 3
-  integer(int_kind), parameter :: BC_C_RESERVED1     = 4
-  integer(int_kind), parameter :: BC_C_RESERVED2     = 5
-  integer(int_kind), parameter :: BC_C_RESERVED3     = 6
-  integer(int_kind), parameter :: BC_C_RESERVED4     = 7
+  integer, parameter :: BC_C_NO_BC         = 0
+  integer, parameter :: BC_C_DIRICHLET     = 1
+  integer, parameter :: BC_C_HNEUMANN      = 2
+  integer, parameter :: BC_C_NEUMANN       = 3
+  integer, parameter :: BC_C_RESERVED1     = 4
+  integer, parameter :: BC_C_RESERVED2     = 5
+  integer, parameter :: BC_C_RESERVED3     = 6
+  integer, parameter :: BC_C_RESERVED4     = 7
 
-  integer(int_kind), parameter :: BC_C_SHIFT = 4 ! Bit section size per face
-  integer(int_kind), parameter :: BC_C_EXIST = 7 ! Mask - zero means no BC
-  integer(int_kind), parameter :: BC_C_IFLAG = 8 ! External boundary bit
+  integer, parameter :: BC_C_SHIFT = 4 ! Bit section size per face
+  integer, parameter :: BC_C_EXIST = 7 ! Mask - zero means no BC
+  integer, parameter :: BC_C_IFLAG = 8 ! External boundary bit
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -151,20 +151,20 @@ MODULE BC_DATA_MODULE
   ! BC_T_Value#(nfc,ncells)
 
   ! Heat Transfer (T) Constants
-  integer(int_kind), parameter :: BC_T_NO_BC         = 0
-  integer(int_kind), parameter :: BC_T_DIRICHLET     = 1
-  integer(int_kind), parameter :: BC_T_HNEUMANN      = 2
-  integer(int_kind), parameter :: BC_T_NEUMANN       = 3
-  integer(int_kind), parameter :: BC_T_HTC           = 4
-  integer(int_kind), parameter :: BC_T_RADIATION     = 5
-  integer(int_kind), parameter :: BC_T_HTC_RADIATION = 6
-  integer(int_kind), parameter :: BC_T_REFLECTIVE    = 7
-  integer(int_kind), parameter :: BC_T_VFRADIATION   = 8
-  integer(int_kind), parameter :: BC_T_HTC_GAP       = 9
+  integer, parameter :: BC_T_NO_BC         = 0
+  integer, parameter :: BC_T_DIRICHLET     = 1
+  integer, parameter :: BC_T_HNEUMANN      = 2
+  integer, parameter :: BC_T_NEUMANN       = 3
+  integer, parameter :: BC_T_HTC           = 4
+  integer, parameter :: BC_T_RADIATION     = 5
+  integer, parameter :: BC_T_HTC_RADIATION = 6
+  integer, parameter :: BC_T_REFLECTIVE    = 7
+  integer, parameter :: BC_T_VFRADIATION   = 8
+  integer, parameter :: BC_T_HTC_GAP       = 9
 
-  integer(int_kind), parameter :: BC_T_SHIFT =  5 ! Bit section size per face
-  integer(int_kind), parameter :: BC_T_EXIST = 15 ! Mask - zero means no BC
-  integer(int_kind), parameter :: BC_T_IFLAG = 16 ! External boundary bit
+  integer, parameter :: BC_T_SHIFT =  5 ! Bit section size per face
+  integer, parameter :: BC_T_EXIST = 15 ! Mask - zero means no BC
+  integer, parameter :: BC_T_IFLAG = 16 ! External boundary bit
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -190,18 +190,18 @@ MODULE BC_DATA_MODULE
   ! BC_P_Value#(nfc,ncells)
 
   ! Pressure (P) Constants
-  integer(int_kind), parameter :: BC_P_NO_BC         = 0
-  integer(int_kind), parameter :: BC_P_DIRICHLET     = 1
-  integer(int_kind), parameter :: BC_P_HNEUMANN      = 2
-  integer(int_kind), parameter :: BC_P_NEUMANN       = 3
-  integer(int_kind), parameter :: BC_P_REFLECTIVE    = 4
-  integer(int_kind), parameter :: BC_P_RESERVED2     = 5
-  integer(int_kind), parameter :: BC_P_RESERVED3     = 6
-  integer(int_kind), parameter :: BC_P_RESERVED4     = 7
+  integer, parameter :: BC_P_NO_BC         = 0
+  integer, parameter :: BC_P_DIRICHLET     = 1
+  integer, parameter :: BC_P_HNEUMANN      = 2
+  integer, parameter :: BC_P_NEUMANN       = 3
+  integer, parameter :: BC_P_REFLECTIVE    = 4
+  integer, parameter :: BC_P_RESERVED2     = 5
+  integer, parameter :: BC_P_RESERVED3     = 6
+  integer, parameter :: BC_P_RESERVED4     = 7
 
-  integer(int_kind), parameter :: BC_P_SHIFT = 4 ! Bit section size per face
-  integer(int_kind), parameter :: BC_P_EXIST = 7 ! Mask - zero means no BC
-  integer(int_kind), parameter :: BC_P_IFLAG = 8 ! External boundary bit
+  integer, parameter :: BC_P_SHIFT = 4 ! Bit section size per face
+  integer, parameter :: BC_P_EXIST = 7 ! Mask - zero means no BC
+  integer, parameter :: BC_P_IFLAG = 8 ! External boundary bit
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -227,18 +227,18 @@ MODULE BC_DATA_MODULE
   ! BC_V_Value#(nfc,ncells)
 
   ! Velocity (V) Constants
-  integer(int_kind), parameter :: BC_V_NO_BC         = 0
-  integer(int_kind), parameter :: BC_V_DIRICHLET     = 1
-  integer(int_kind), parameter :: BC_V_HNEUMANN      = 2
-  integer(int_kind), parameter :: BC_V_NEUMANN       = 3
-  integer(int_kind), parameter :: BC_V_RESERVED1     = 4
-  integer(int_kind), parameter :: BC_V_RESERVED2     = 5
-  integer(int_kind), parameter :: BC_V_RESERVED3     = 6
-  integer(int_kind), parameter :: BC_V_RESERVED4     = 7
+  integer, parameter :: BC_V_NO_BC         = 0
+  integer, parameter :: BC_V_DIRICHLET     = 1
+  integer, parameter :: BC_V_HNEUMANN      = 2
+  integer, parameter :: BC_V_NEUMANN       = 3
+  integer, parameter :: BC_V_RESERVED1     = 4
+  integer, parameter :: BC_V_RESERVED2     = 5
+  integer, parameter :: BC_V_RESERVED3     = 6
+  integer, parameter :: BC_V_RESERVED4     = 7
 
-  integer(int_kind), parameter :: BC_V_SHIFT = 4 ! Bit section size per face
-  integer(int_kind), parameter :: BC_V_EXIST = 7 ! Mask - zero means no BC
-  integer(int_kind), parameter :: BC_V_IFLAG = 8 ! External boundary bit
+  integer, parameter :: BC_V_SHIFT = 4 ! Bit section size per face
+  integer, parameter :: BC_V_EXIST = 7 ! Mask - zero means no BC
+  integer, parameter :: BC_V_IFLAG = 8 ! External boundary bit
 
   type(BOUNDARY_CONDITION), dimension(:), pointer :: BC => null()
 

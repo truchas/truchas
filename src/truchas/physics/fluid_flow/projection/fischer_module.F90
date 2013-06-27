@@ -20,35 +20,26 @@ MODULE FISCHER_MODULE
   !
   !=======================================================================
 
-use kind_module, only : real_kind, int_kind
-
-implicit none
-
-  ! Private Module
+  use kinds, only: r8
+  use truchas_logging_services
+  implicit none
   private 
 
-  real(real_kind), pointer, public, save, dimension(:,:) :: b_tilde
-  real(real_kind), pointer, public, save, dimension(:,:) :: x_tilde
-  real(real_kind), pointer, public, save, dimension(:)   :: x_guess
+  real(r8), pointer, public, save, dimension(:,:) :: b_tilde
+  real(r8), pointer, public, save, dimension(:,:) :: x_tilde
+  real(r8), pointer, public, save, dimension(:)   :: x_guess
 
-  !integer(int_kind),  public, save :: fischer_space_size
-
-  integer(KIND = int_kind), parameter            :: max_num_vecs = 6
-  integer(KIND = int_kind)                       :: cur_num_vecs
+  integer, parameter :: max_num_vecs = 6
+  integer :: cur_num_vecs
 
   public:: FISCHER_INITIALIZE, FISCHER_INITIAL_GUESS, FISCHER_UPDATE_SPACE
-
 
 CONTAINS
 
   SUBROUTINE FISCHER_INITIALIZE ()
-    use kind_module,            only: real_kind
-    use parameter_module,       only: ncells
-    use truchas_logging_services
+    use parameter_module, only: ncells
 
-    implicit none
-
-    integer                                    :: status
+    integer :: status
 
     ALLOCATE( b_tilde(max_num_vecs,ncells), &
          x_tilde(max_num_vecs,ncells), x_guess(ncells), &
@@ -58,7 +49,7 @@ CONTAINS
 
     cur_num_vecs = 0
 
-    x_guess(:) = 0.0_real_kind
+    x_guess(:) = 0.0_r8
 
   END SUBROUTINE FISCHER_INITIALIZE
 
@@ -82,24 +73,20 @@ CONTAINS
     !    then the update will be wrong.
     !
     !=======================================================================
-    use kind_module,            only: real_kind
     use parameter_module,       only: ncells
-    use constants_module,       only: zero
     use pgslib_module, only: PGSLib_Global_DOT_PRODUCT
- 
-    implicit none
 
-    real(real_kind),   dimension(ncells) :: x
-    real(real_kind),   dimension(ncells) :: b
+    real(r8), dimension(ncells) :: x
+    real(r8), dimension(ncells) :: b
 
-    integer   :: i
-    real(real_kind), dimension(max_num_vecs) :: alpha
+    integer :: i
+    real(r8), dimension(max_num_vecs) :: alpha
 
     do i=1, cur_num_vecs
        alpha(i) = PGSLib_Global_DOT_PRODUCT(b,b_tilde(i,:))
     enddo
 
-    x_guess(:) = zero
+    x_guess(:) = 0
 
     do i=1, cur_num_vecs
        x_guess(:) = x_guess(:) + alpha(i)*x_tilde(i,:)
@@ -118,27 +105,23 @@ CONTAINS
     !   solutions and right hand sides) is updated.
     !
     !=======================================================================
-    use kind_module,            only: int_kind, real_kind
-    use parameter_module,       only: ncells
-    use cutoffs_module,         only: alittle
+    use parameter_module, only: ncells
+    use cutoffs_module, only: alittle
     use UbikSolve_module
-
     use pgslib_module, only: PGSLib_Global_DOT_PRODUCT
-
-    implicit none
 
     ! For MatVec definition
 #include "solver_function_prototypes.fpp"
 
-    real(real_kind),   dimension(ncells) :: x_soln
-    real(real_kind),   dimension(ncells) :: b
-    real(real_kind)  :: b_norm
+    real(r8), dimension(ncells) :: x_soln
+    real(r8), dimension(ncells) :: b
+    real(r8) :: b_norm
 
-    real(real_kind), dimension(max_num_vecs) :: alpha
+    real(r8), dimension(max_num_vecs) :: alpha
 
     type(Ubik_vector_type), target :: x_vec
 
-    integer(int_kind) :: i, status
+    integer :: i, status
 
     ! MatVec takes a Ubik_vector_type as the vector to be multiplied,
     ! so set one up to contain x

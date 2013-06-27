@@ -25,7 +25,7 @@
 
 module CGSolver
 
-  use kind_module, only: r8=>real_kind
+  use kinds, only: r8
   use parallel_communication
   use EM_utilities
   !use index_partitioning
@@ -59,12 +59,12 @@ contains
     
     interface
       subroutine ax (x, y)
-        use kind_module, only: r8=>real_kind
+        use kinds, only: r8
         real(kind=r8), intent(in)  :: x(:)
         real(kind=r8), intent(out) :: y(:)
       end subroutine ax
       subroutine pc (x, y)
-        use kind_module, only: r8=>real_kind
+        use kinds, only: r8
         real(kind=r8), intent(in)  :: x(:)
         real(kind=r8), intent(out) :: y(:)
       end subroutine pc

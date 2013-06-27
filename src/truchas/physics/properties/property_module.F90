@@ -52,7 +52,7 @@ contains
 
   integer function get_truchas_material_id (id_user) result (id_truchas)
     use parameter_module, only: nmat
-    use constants_module, only: ipreset
+    use input_utilities, only: NULL_I
     integer, intent(in) :: id_user
     if (id_user == 0) then
       id_truchas = 0
@@ -60,7 +60,7 @@ contains
       do id_truchas = 1, nmat
         if (user_material_number(id_truchas) == id_user) return
       end do
-      id_truchas = ipreset  ! This is actually used!
+      id_truchas = NULL_I  ! This is actually used!
     end if
   end function get_truchas_material_id
 
@@ -212,7 +212,7 @@ contains
     !
     !======================================================================
     use bc_module,              only: BC_Mat, BC_Vel
-    use constants_module,       only: zero, ipreset
+    use input_utilities,        only: NULL_I
     use cutoffs_module,         only: cutvof
     use fluid_data_module,      only: fluid_flow,                             &
                                       fluidRho, fluidVof, fluidDeltaRho,      &
@@ -250,18 +250,18 @@ contains
               mVof(ncells),                   STAT = status)
     call TLS_fatal_if_any (status/=0, 'FLUID_PROPERTIES: failed allocation')
 
-    RealFluidVof  = zero  ! Vof of fluids that are not void
-    cutRho        = zero  ! used for mass cutoff
-    DeltaFluidRho = zero  ! Need to be sure to zero the density change from reference
+    RealFluidVof  = 0.0_r8  ! Vof of fluids that are not void
+    cutRho        = 0.0_r8  ! used for mass cutoff
+    DeltaFluidRho = 0.0_r8  ! Need to be sure to zero the density change from reference
     
-    fluidRho = zero      ! density of (remaining) fluid in cell
-    fluidVof = zero      ! volume fraction of fluid in cell
-    Zone%Rho = zero      ! cell density
-    !fluidDeltaRho = zero ! density variation (due to temperature)
+    fluidRho = 0.0_r8      ! density of (remaining) fluid in cell
+    fluidVof = 0.0_r8      ! volume fraction of fluid in cell
+    Zone%Rho = 0.0_r8      ! cell density
+    !fluidDeltaRho = 0.0_r8 ! density variation (due to temperature)
 
     do m = 1, nmat
        call gather_vof(m, mVof)
-       !mMask(:) = (mVof > zero)
+       !mMask(:) = (mVof > 0.0_r8)
      
        !call PROPERTY (Zone%Temp, m, 'density', &
        !               Value = Prop, material_mask = mMask)
@@ -286,7 +286,7 @@ contains
        
        ! realFluidVof is kept as a fluid-flow variable since it's useful there
        ! cutRho is used as a cutoff metric for the velocity update in the predictor
-       !where (Prop > zero) 
+       !where (Prop > 0.0_r8) 
        !   RealFluidVof = RealFluidVof + mVof
        !   cutRho       = cutRho + cutvof*Prop
        !end where
@@ -303,33 +303,34 @@ contains
     call get_density_delta (Zone%Temp, fluidDeltaRho)
 
     ! Set void cell indicator arrays.
-    Cell_isnt_Void = Zone%Rho > zero
+    Cell_isnt_Void = Zone%Rho > 0.0_r8
     call EE_GATHER(Ngbr_isnt_Void, Cell_isnt_Void)
 
     if (boussinesq_approximation) then
-       where (fluidVof > zero)
+       where (fluidVof > 0.0_r8)
           fluidRho      = fluidRho / fluidVof
           fluidDeltaRho = fluidDeltaRho / fluidVof
        end where
     else
-       where (fluidVof > zero)
+       where (fluidVof > 0.0_r8)
           fluidRho       = (fluidRho+fluidDeltaRho) / fluidVof
-          fluidDeltaRho  = zero
+          fluidDeltaRho  = 0.0_r8
        end where
     endif
 
     ! Evaluate and store the minimum 'real' fluid density for evaluation of the
     ! face density limit
-    Mask = RealFluidVof > zero
-    Prop = zero
+    Mask = RealFluidVof > 0.0_r8
+    Prop = 0.0_r8
     where(Mask) Prop = fluidRho*fluidVof/RealFluidVof
     MinFluidRho = PGSLIB_GLOBAL_MINVAL(prop, MASK=Mask)
 
-    ! Where cells are void (rho = zero), zero out velocity & pressure
+    ! Where cells are void (rho = 0.0_r8), zero out velocity & pressure
+    ! NNC, Mar 2013.  Oh my! Why not just "mask = FluidRho == 0?
     Mask = .false.
-    where (FluidRho == zero ) Mask = .true.
+    where (FluidRho == 0.0_r8 ) Mask = .true.
     do n = 1,ndim
-       where (Mask) Zone%Vc(n) = zero
+       where (Mask) Zone%Vc(n) = 0.0_r8
     end do
 !!!!   remove this -- we must let the projection solve impose this condition
 !!!!      where (Mask) Zone%P = void_pressure
@@ -351,12 +352,12 @@ contains
     ! between the last flow call and this one.
     do nc = 1, ncells
        if (isPureImmobile(nc)) then
-          Zone(nc)%Vc(:)  = zero
-          Zone(nc)%Vc_old(:) = zero
+          Zone(nc)%Vc(:)  = 0.0_r8
+          Zone(nc)%Vc_old(:) = 0.0_r8
        endif
        do f= 1, nfc
           if(Solid_Face(f,nc)) then
-             Fluxing_Velocity(f,nc)   = zero
+             Fluxing_Velocity(f,nc)   = 0.0_r8
           endif
        end do
     end do
@@ -372,8 +373,8 @@ contains
           do f = 1, nfc
               if(Boundary_Flag(f,c) == 1) then
               ! Dirichlet Pressure BC
-                  if(BC_Mat(f,c) /= ipreset) then
-                     if(DENSITY_MATERIAL(BC_Mat(f,c)) > zero ) then
+                  if(BC_Mat(f,c) /= NULL_I) then
+                     if(DENSITY_MATERIAL(BC_Mat(f,c)) > 0.0_r8 ) then
                         SkipFlow = .false.
                         EXIT SKIPFLOWLOOP
                     endif
@@ -381,14 +382,14 @@ contains
               endif
               if(Boundary_Flag(f,c) == 2) then
               ! Dirichlet Velocity BC
-                  if(BC_Mat(f,c) /= ipreset) then
-                     if(DENSITY_MATERIAL(BC_Mat(f,c)) > zero ) then
+                  if(BC_Mat(f,c) /= NULL_I) then
+                     if(DENSITY_MATERIAL(BC_Mat(f,c)) > 0.0_r8 ) then
                         !Inward Flow?
                         BC_V_Dot_N = 0.0
                         do n = 1, ndim
                            BC_V_Dot_N = BC_V_Dot_N + BC_Vel(n,f,c)*Cell(c)%Face_Normal(n,f)
                         enddo
-                        if(BC_V_Dot_N < zero) then
+                        if(BC_V_Dot_N < 0.0_r8) then
                            SkipFlow = .false.
                            EXIT SKIPFLOWLOOP
                         endif

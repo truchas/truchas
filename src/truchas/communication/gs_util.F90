@@ -11,8 +11,6 @@ MODULE GS_UTIL
                             EL_Nbr_Mask,            &
                             NN_All_Ngbr_Trace
   implicit none
-
-  ! Private Module
   private
 
   ! Public procedures
@@ -33,14 +31,11 @@ CONTAINS
     !
     !=======================================================================
     use truchas_logging_services, only: TLS_fatal_if_any
-    use kind_module,      only: int_kind
     use mesh_module,      only: Mesh, DEGENERATE_FACE
     use parameter_module, only: ncells, nfc
 
-    implicit none 
-
     ! Local variables
-    integer(KIND = int_kind) :: memerror, f
+    integer :: memerror, f
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -52,8 +47,6 @@ CONTAINS
                           Mesh%Ngbr_cell(f) /= DEGENERATE_FACE
     end do
 
-    return
-
   END SUBROUTINE GS_INIT_EE_MASK
 
   SUBROUTINE EE_GS_INIT()
@@ -62,7 +55,6 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module
-    use kind_module,      only: int_kind
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nfc
     use two_level_partition,    only: Cell_Two_Level_Partitioning, &
@@ -81,25 +73,16 @@ CONTAINS
                                       Get_Num_Edges_Available,&
                                       PGSLib_Local, &
                                       PGSLib_Global_SUM
-    
-    implicit none
 
     ! Local variables
-    integer(KIND = int_kind), dimension(nfc,ncells) :: Mesh_Ngbr_Cell
-    integer(KIND = int_kind), dimension(:,:),       &
-                              POINTER               :: Mesh_Ngbr_Cell_PE
-    integer(KIND = int_kind), dimension(:),         &
-                              POINTER               :: Mesh_Ngbr_Cells_All
-    integer(KIND = int_kind), dimension(:),         &
-                              POINTER               :: Tail_Partition
+    integer, dimension(nfc,ncells) :: Mesh_Ngbr_Cell
+    integer, dimension(:,:), POINTER :: Mesh_Ngbr_Cell_PE
+    integer, dimension(:), POINTER :: Mesh_Ngbr_Cells_All
+    integer, dimension(:), POINTER :: Tail_Partition
     ! This stuff is for setting up the two_level partitioned graph
-    integer(int_kind),       dimension(2, ncells*nfc)  :: Cell_Cell_Edges
-    integer(int_kind),       dimension(ncells)         :: Global_Cell_Number
-    integer(int_kind)                                  :: edge
-    integer(int_kind)                                  :: c
-    integer(int_kind)                                  :: f
-    integer(int_kind)                                  :: Number_Edges_Avail
-    integer(int_kind)                                  :: Number_Edges
+    integer, dimension(2, ncells*nfc)  :: Cell_Cell_Edges
+    integer, dimension(ncells) :: Global_Cell_Number
+    integer :: edge, c, f, Number_Edges_Avail, Number_Edges
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -189,9 +172,6 @@ CONTAINS
 !!$    ! Move renumbered index back to permanent storage
 !!$    Mesh%Ngbr_Cells_All = Mesh_Ngbr_Cells_ALL
 
-
-    return
-
   END SUBROUTINE EE_GS_INIT
 
   SUBROUTINE EN_GS_INIT()
@@ -200,19 +180,14 @@ CONTAINS
     !
     !=======================================================================
     use gs_info_module,   only: EN_TRACE
-    use kind_module,      only: int_kind
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nnodes, nvc
     use pgslib_module,    only: PGSLIB_SETUP_TRACE
 
-
-    implicit none
-
     ! Local variables
-    integer(KIND = int_kind) :: v
-    integer(KIND = int_kind), dimension(nvc, ncells) :: Mesh_Ngbr_Vrtx
-    integer(KIND = int_kind), dimension(:,:) ,       &
-                              POINTER                :: Mesh_Ngbr_Vrtx_PE
+    integer :: v
+    integer, dimension(nvc, ncells) :: Mesh_Ngbr_Vrtx
+    integer, dimension(:,:), POINTER :: Mesh_Ngbr_Vrtx_PE
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -237,8 +212,6 @@ CONTAINS
        ! Save the PE number, for global/local stuff
        Mesh%Ngbr_Vrtx_PE(v)   = Mesh_Ngbr_Vrtx_PE(v,:)
     end do
-
-    return
   
   END SUBROUTINE EN_GS_INIT
 
@@ -248,17 +221,13 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module
-    use kind_module,      only: int_kind
     use mesh_module,      only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig
     use parameter_module, only: nnodes
     use var_vector_module
     use pgslib_module,    only: PGSLIB_SETUP_TRACE
-    
-    implicit none
 
     ! Local variables
-    integer(KIND = int_kind), dimension(:),         &
-                              POINTER               :: Vertex_Ngbr_List
+    integer, dimension(:), POINTER :: Vertex_Ngbr_List
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -277,8 +246,6 @@ CONTAINS
     
     NN_All_Ngbr_Trace => PGSLib_Setup_Trace(INDEX = Vertex_Ngbr_List, &
                                             SIZE_OF_DEST = nnodes)
-    
-    return
 
   END SUBROUTINE NN_GS_INIT
 

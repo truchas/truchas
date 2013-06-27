@@ -9,11 +9,8 @@ MODULE COORDINATES_MODULE
   !            Douglas B. Kothe, LANL T-3 (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: real_kind
-
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
 
   ! Public Variables
@@ -26,10 +23,10 @@ MODULE COORDINATES_MODULE
 
   ! Gathered Coordinates
   ! Cell-Vertex Coordinates (Vertex_Coord(ndim,nvc,ncells))
-  real(KIND = real_kind), dimension(:,:,:), pointer, save :: Vertex_Coord
+  real(r8), dimension(:,:,:), pointer, save :: Vertex_Coord
 
   ! Neighbor Cell-Centroid Coordinates (Cell_Ngbr_Coord(ndim,nfc,ncells))
-  real(KIND = real_kind), dimension(:,:,:), pointer, save :: Cell_Ngbr_Coord
+  real(r8), dimension(:,:,:), pointer, save :: Cell_Ngbr_Coord
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -43,14 +40,11 @@ CONTAINS
     !   Vertex_Coord(ndim,nvc,ncells).
     !=======================================================================
     use gs_module,        only: EE_GATHER, EN_GATHER
-    use kind_module,      only: int_kind
     use mesh_module,      only: Cell, Vertex
     use parameter_module, only: ndim
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: n
+    integer :: n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -62,8 +56,6 @@ CONTAINS
        ! Neighbor Cell-Centroid Coordinates
        call EE_GATHER (Cell_Ngbr_Coord(n,:,:), Cell%Centroid(n))
     end do
-
-    return
 
   END SUBROUTINE GATHER_COORDINATES
 

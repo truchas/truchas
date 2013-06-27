@@ -191,7 +191,7 @@
 
 module EM_data_proxy
 
-  use kind_module, only : rk => real_kind
+  use kinds, only : rk => r8
   use EM_hex_tet_mapping
   
   implicit none

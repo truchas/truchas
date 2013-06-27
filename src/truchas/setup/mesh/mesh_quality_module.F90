@@ -17,16 +17,12 @@ MODULE MESH_QUALITY_MODULE
   ! Author(s): Kin Lam, LANL ESA-EA (klam@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: TWISTED_CELL_TEST
-
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -64,32 +60,27 @@ CONTAINS
     !   Patrick M. Knupp, Int. J. Numer. Meth. Engng. 2000; 48:1165-1185
     !
     !=======================================================================
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Vertex
     use gs_module,            only: EN_GATHER
-    use constants_module,     only: ten_tominus6, ten_tominus14
     use parameter_module,     only: ncells, ndim, nvc
     use PGSLIB_Module,        only: pgslib_global_any
-    use truchas_logging_services
-
-    implicit none
 
     ! Local variables
-    integer(KIND = int_kind) :: c, edge, i
-    integer(KIND = int_kind) :: vr1, vr2, vr3, vr4     ! vertices of right-handed tet
-    integer(KIND = int_kind) :: vl1, vl2, vl3, vl4     ! vertices of left-handed tet
-    integer(KIND = int_kind) :: v1, v2, v3, v4, v5, v6, v7, v8
+    integer :: c, edge, i
+    integer :: vr1, vr2, vr3, vr4     ! vertices of right-handed tet
+    integer :: vl1, vl2, vl3, vl4     ! vertices of left-handed tet
+    integer :: v1, v2, v3, v4, v5, v6, v7, v8
 
-    real(KIND = real_kind)   :: det_r, det_l
-    real(KIND = real_kind)   :: e1e2e3_r, e1e2e3_l
-    real (real_kind) :: jac_scaled_r
-    real (real_kind) :: jac_scaled_l
+    real(r8)   :: det_r, det_l
+    real(r8)   :: e1e2e3_r, e1e2e3_l
+    real(r8) :: jac_scaled_r
+    real(r8) :: jac_scaled_l
 
-    real(KIND = real_kind), dimension(3)   :: er1, er2, er3    ! edge/basis vectors for right-handed tet
-    real(KIND = real_kind), dimension(3)   :: el1, el2, el3    ! edge/basis vectors for left-handed tet
-    real(KIND = real_kind), dimension(3,3) :: jac_r, jac_l
+    real(r8), dimension(3)   :: er1, er2, er3    ! edge/basis vectors for right-handed tet
+    real(r8), dimension(3)   :: el1, el2, el3    ! edge/basis vectors for left-handed tet
+    real(r8), dimension(3,3) :: jac_r, jac_l
 
-    real (real_kind), pointer, dimension(:,:,:) :: Coord
+    real(r8), pointer, dimension(:,:,:) :: Coord
     logical, pointer, dimension(:,:) :: twisted
     integer :: status
 
@@ -267,9 +258,9 @@ CONTAINS
                     * SQRT(el2(1)**2+el2(2)**2+el2(3)**2) &
                     * SQRT(el3(1)**2+el3(2)**2+el3(3)**2)
    
-          jac_scaled_r = det_r / (e1e2e3_r + ten_tominus14)
-          jac_scaled_l = det_l / (e1e2e3_l + ten_tominus14)
-          if (jac_scaled_l <= -ten_tominus6 .or. jac_scaled_r <= -ten_tominus6) then
+          jac_scaled_r = det_r / (e1e2e3_r + 1.0d-14)
+          jac_scaled_l = det_l / (e1e2e3_l + 1.0d-14)
+          if (jac_scaled_l <= -1.0d-6 .or. jac_scaled_r <= -1.0d-6) then
              twisted(c,edge) = .true.
           end if
         end do
@@ -293,8 +284,6 @@ CONTAINS
     ! Explicitly deallocate temporary array
     deallocate(coord)
     deallocate(twisted)
-
-    return
 
   end subroutine twisted_cell_test
 

@@ -22,8 +22,6 @@ SUBROUTINE _ROUTINE_NAME_ (Dest, Src, Mesh, TYPE, TRACE, BOUNDARY, MASK, &
   !   into an _DATA_TYPE_ cell-centered vector of length ShortDim
   !=======================================================================
 
-  implicit none
-
   ! Global scalars & arrays
   _DATA_TYPE_             , dimension(:,:),                        &
        intent(INOUT)                          :: Dest
@@ -34,7 +32,7 @@ SUBROUTINE _ROUTINE_NAME_ (Dest, Src, Mesh, TYPE, TRACE, BOUNDARY, MASK, &
   _DATA_TYPE_             , dimension(:,:),                        &         
        POINTER,                               &
        OPTIONAL                               :: BOUNDARY
-  logical(KIND = log_kind), dimension(SIZE(Dest,1), SIZE(Dest,2)), &
+  logical,                  dimension(SIZE(Dest,1), SIZE(Dest,2)), &
        intent(IN ),                           &
        OPTIONAL                               :: MASK
   type (COMM_TYPE),         intent(IN   )                          :: TYPE
@@ -43,15 +41,14 @@ SUBROUTINE _ROUTINE_NAME_ (Dest, Src, Mesh, TYPE, TRACE, BOUNDARY, MASK, &
 
   type (PGSLib_GS_Trace), POINTER :: Trace
 
-
   ! Local scalars & arrays
-  integer(KIND = int_kind) :: f, c
-  logical(KIND = log_kind) :: PRESENT_MASK, TEMP_BOUNDARY, NEW_BOUNDARY
-  _DATA_TYPE_                        :: DEFAULT_VALUE
+  integer :: f, c
+  logical :: PRESENT_MASK, TEMP_BOUNDARY, NEW_BOUNDARY
+  _DATA_TYPE_ :: DEFAULT_VALUE
 
   _DATA_TYPE_, POINTER, Dimension(:,:) :: Supplement_Data
   _DATA_TYPE_, POINTER, Dimension(:,:) :: Duplicate_Data
-  logical(log_kind)                  :: OVERWRITE_MASKED_VALUES_Local
+  logical :: OVERWRITE_MASKED_VALUES_Local
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

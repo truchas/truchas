@@ -32,11 +32,12 @@
 #include "f90_assert.fpp"
 
 module tbrook_utility
-  use tbrook_module,     only: tbu_make_file_entry, &
-                               B_Strlen
+  use kinds, only: r8
+  use tbrook_module, only: tbu_make_file_entry, B_Strlen
   use truchas_logging_services
   implicit none
   private
+
   public :: TBU_WriteBasicData
   public :: TBU_WriteDefaultMesh
   public :: TBU_MeshWriter
@@ -56,31 +57,27 @@ module tbrook_utility
   integer, public, parameter :: EDGE_MAP = 3
   integer, public, parameter :: NODE_MAP = 4
 
-
 contains
 
-
   SUBROUTINE TBU_ENSIGHT_ADD_VARIABLE(Name, filename, FORMAT, R1, R2, R3, I1, I2, I3, L1, L2, L3, iStatus)
-    use kind_module, only: real_kind
     use tbrook_module
-    use file_utility,         only: MAKE_FILE_NAME
+    use file_utility, only: MAKE_FILE_NAME
 
-    implicit none
     !Arguments
     character(len=*), intent(in)    :: Name
     character(len=*), intent(in)    :: filename
     integer,          intent(inout) :: iStatus
 
-    character(len=*), optional,                  intent(in) :: format
-    real(real_kind), optional, dimension(:),     intent(in) :: R1
-    real(real_kind), optional, dimension(:,:),   intent(in) :: R2
-    real(real_kind), optional, dimension(:,:,:), intent(in) :: R3
-    integer,         optional, dimension(:),     intent(in) :: I1
-    integer,         optional, dimension(:,:),   intent(in) :: I2
-    integer,         optional, dimension(:,:,:), intent(in) :: I3
-    logical,         optional, dimension(:),     intent(in) :: L1
-    logical,         optional, dimension(:,:),   intent(in) :: L2
-    logical,         optional, dimension(:,:,:), intent(in) :: L3
+    character(len=*), optional, intent(in) :: format
+    real(r8), optional, dimension(:),     intent(in) :: R1
+    real(r8), optional, dimension(:,:),   intent(in) :: R2
+    real(r8), optional, dimension(:,:,:), intent(in) :: R3
+    integer,  optional, dimension(:),     intent(in) :: I1
+    integer,  optional, dimension(:,:),   intent(in) :: I2
+    integer,  optional, dimension(:,:,:), intent(in) :: I3
+    logical,  optional, dimension(:),     intent(in) :: L1
+    logical,  optional, dimension(:,:),   intent(in) :: L2
+    logical,  optional, dimension(:,:,:), intent(in) :: L3
 
     Type(Brook), Target :: B_E
 
@@ -120,8 +117,6 @@ contains
     call TBrook_Close(B_E, iStatus=iStatus)
     call TBrook_Destroy(B_E, iStatus=iStatus)
 
-    return
-
   END SUBROUTINE TBU_ENSIGHT_ADD_VARIABLE
 
   SUBROUTINE TBU_GMV_WRITE_HEADER(B_gmv, filename, iStatus, faceBased, mask)
@@ -134,7 +129,6 @@ contains
     !   faceBased: logical, if true, write face based gmv file
     !   mask: for face based, only write faces that are true, dimensions nfc*ncells
     !---------------------------------------------------------------------------
-    use kind_module,          only: int_kind
     use mesh_module,          only: Mesh, Vertex, Face_Vrtx, unpermute_mesh_vector
     use parameter_module,     only: ncells, ndim, nvc, nfc, ncells_tot, nnodes_tot
     use pgslib_module,        only: pgslib_global_sum, &
@@ -146,8 +140,6 @@ contains
                                     TBrook_Endline,  &
                                     ASSIGNMENT(=)
     use parallel_info_module, only: p_info
-    
-    implicit none
 
     ! Argument List
     type(Brook), target :: B_gmv
@@ -157,10 +149,10 @@ contains
     logical, intent(in), optional, dimension(:) :: mask
 
     ! Local Variables
-    integer(int_kind) :: n, f, v, m, out_stat, istat, nf
+    integer :: n, f, v, m, out_stat, istat, nf
     logical :: doCells = .true.
 
-    integer(int_kind), dimension(nvc,ncells) :: Vrtx_Ngbr
+    integer, dimension(nvc,ncells) :: Vrtx_Ngbr
     character(LEN=70), dimension(ncells)     :: Vrtx_Ngbr_String
     integer, dimension(:,:), allocatable :: faceInfo
     integer, dimension(nfc*ncells+nfc) :: faceMask
@@ -297,9 +289,7 @@ contains
     ! Write variable data.
     if(out_stat==0) CALL TBrook_Write(B_gmv, Variable='variable ', Advance=.true., iStatus=out_stat)
 
-
     iStatus = out_stat
-    return
 
   END SUBROUTINE TBU_GMV_WRITE_HEADER
 
@@ -308,7 +298,6 @@ contains
     ! Purpose:
     !   Write a GMV graphics dump
     !---------------------------------------------------------------------------
-    use kind_module,          only: real_kind
     use output_utilities,     only: ANNOUNCE_FILE_WRITE
     use tbrook_module,        only: Brook,           &
                                     TBrook_Write,    &
@@ -316,14 +305,12 @@ contains
                                     TBrook_Destroy,  &
                                     ASSIGNMENT(=)
     use tbrook_module,         only: tBrook_File
-    
-    implicit none
 
     ! Argument List
-    type(Brook), target         :: B_Gmv
-    real(real_kind), intent(in) :: t
-    integer, intent(inout)      :: iStatus
-    integer                     :: out_stat
+    type(Brook), target :: B_Gmv
+    real(r8), intent(in) :: t
+    integer, intent(inout) :: iStatus
+    integer :: out_stat
     Logical, optional, intent(in) :: WriteEndVars
 
     ! Local Variable            
@@ -350,7 +337,6 @@ contains
     call ANNOUNCE_FILE_WRITE ('GMV graphics dump into file', TBrook_File(B_Gmv))
 
     iStatus = out_stat
-    return
 
   END SUBROUTINE TBU_GMV_WRITE_FOOTER
 
@@ -359,22 +345,16 @@ contains
     ! Purpose:
     !   Write a GMV graphics dump
     !---------------------------------------------------------------------------
-    use kind_module,          only: real_kind
-    use tbrook_module,        only: Brook,           &
-                                    TBrook_Write,    &
-                                    ASSIGNMENT(=)
-    
-    implicit none
+    use tbrook_module, only: Brook, TBrook_Write, ASSIGNMENT(=)
 
     ! Argument List
-    type(Brook), target          :: B_Gmv
-    integer, intent(inout)       :: iStatus
+    type(Brook), target    :: B_Gmv
+    integer, intent(inout) :: iStatus
     character(LEN=*), intent(in) :: name
-    real(real_kind), dimension(:), intent(in), optional :: RVar
-    integer,         dimension(:), intent(in), optional :: IVar
-    logical,         dimension(:), intent(in), optional :: LVar
-    character(len=*),              intent(in), optional :: Format
-
+    real(r8), dimension(:), intent(in), optional :: RVar
+    integer,  dimension(:), intent(in), optional :: IVar
+    logical,  dimension(:), intent(in), optional :: LVar
+    character(len=*),       intent(in), optional :: Format
 
     ! Local Variables
     integer :: out_stat
@@ -405,15 +385,13 @@ contains
     end if 
  
     iStatus = out_stat 
-    return 
  
   END SUBROUTINE TBU_GMV_ADD_VARIABLE 
  
  
   SUBROUTINE TBU_ABORT(Message, SUBROUTINENAME, error_code, iStatus) 
-    use tbrook_module, only: B_Stdout, & 
-                              tBrook_Write 
-    implicit none 
+    use tbrook_module, only: B_Stdout, tBrook_Write 
+
     character(LEN=*) :: Message 
     character(LEN=*) :: SubroutineName 
     integer          :: error_code 
@@ -429,7 +407,6 @@ contains
                         Variable='ERRORS: '// TRIM(Message) //' in '//TRIM(SUBROUTINENAME), &
                         iStatus=i)
     end if
-    return
   END SUBROUTINE TBU_ABORT
 
   SUBROUTINE TBU_WriteProgramSpecifications (B, iStatus) 
@@ -456,8 +433,6 @@ contains
     use parallel_info_module,    only: p_info 
     use utilities_module,        only: TIMESTAMP 
  
- 
-    implicit none 
     type(Brook), target :: B 
     integer :: iStatus 
  
@@ -534,17 +509,14 @@ contains
           call Tbrook_WriteXMLTag(B=B, XMLTag="IOPROCESSOR",XMLStringData=TRIM(ADJUSTL(iString)), iStatus=iStatus) 
     end if 
  
- 
     ! Close the Program specifications tag 
     if ( iStatus == 0 ) call Tbrook_CloseXMLTag(B=B, XMLTag="PROGRAMSPECIFICATIONS",iStatus=iStatus) 
-    return 
  
   END SUBROUTINE TBU_WRITEPROGRAMSPECIFICATIONS 
 
 
   SUBROUTINE TBU_WRITEPROBES(B, iStatus)
 
-    use kind_module,            only: real_kind
     use parallel_info_module,   only: p_info 
     use probe_module,           only: probes
     use parameter_module,       only: nprobes
@@ -560,15 +532,14 @@ contains
     use output_data_module,     only: XML_Data_Format 
     use diagnostics_module,     only: PROBES_POSITIONS                   
 
-    implicit none 
     type(Brook), target :: B
-    integer             :: i, iStatus
+    integer :: i, iStatus
 
     ! Local Variables 
-    character (LEN=B_Strlen)                    :: string
-    character(LEN=256)                          :: filename, probename, varname, thesuffix
-    integer                                     :: j, count, scalarsize, vectorsize, tensorsize
-    real(KIND=real_kind), pointer, dimension(:) :: probe_cycle, probe_cycleV, probe_cycleT
+    character (LEN=B_Strlen) :: string
+    character(LEN=256) :: filename, probename, varname, thesuffix
+    integer :: j, count, scalarsize, vectorsize, tensorsize
+    real(r8), pointer, dimension(:) :: probe_cycle, probe_cycleV, probe_cycleT
 
 100 FORMAT('NAME="',a,'"')
 101 FORMAT('ID="',i8,'" X="',1es12.5,'" Y="',1es12.5,'" Z="',1es12.5, '"' )
@@ -806,9 +777,8 @@ contains
     use parallel_info_module,   only: p_info 
     use diffusion_solver_data,  only: ds_enabled, num_species
  
-    implicit none 
     type(Brook), target :: B 
-    integer             :: iStatus
+    integer :: iStatus
  
     ! Local Variables 
     character (LEN=B_Strlen) :: string
@@ -897,8 +867,6 @@ contains
        if ( iStatus == 0 ) call Tbrook_CloseXMLTag(B=B, XMLTag="SIMULATIONINFORMATION",iStatus=iStatus) 
     end if 
  
-    return 
- 
   END SUBROUTINE TBU_WRITESIMULATIONINFORMATION 
  
   SUBROUTINE TBU_WriteBasicData(B, Copyright, Disclaimer, iStatus) 
@@ -927,8 +895,6 @@ contains
  
     use parallel_info_module, only: p_info 
  
- 
-    implicit none 
     type(Brook),      target         :: B 
     character(LEN=*), dimension(:)   :: Copyright 
     character(LEN=*), dimension(:)   :: Disclaimer 
@@ -1045,7 +1011,6 @@ contains
     ! Purpose: 
     !   Write a GMV graphics dump 
     !--------------------------------------------------------------------------- 
-    use kind_module,         only: real_kind 
     use tbrook_module,       only: BROOK, ASSIGNMENT(=)
     use mesh_module,          only: Mesh,                    & 
                                     Vertex,                  & 
@@ -1058,25 +1023,21 @@ contains
     use parameter_module,     only: ncells, ndim, nfc, nnodes, nvc, & 
                                     ncells_tot, nnodes_tot, boundary_faces_tot 
     use parallel_info_module, only: p_info 
-    implicit none 
  
     ! Argument List 
     type(Brook), target, intent(in)  :: B
-    integer                          :: iStatus 
+    integer :: iStatus 
  
-    !Local Variables 
-    integer                 :: n 
-    integer                 :: c 
-    integer                 :: v 
-    integer                 :: f 
+    ! Local Variables 
+    integer :: n, c, v, f 
  
-    integer, dimension(nvc,ncells)          :: Vrtx_Ngbr 
-    real(real_kind), dimension(ndim,nnodes) :: VertexCoords 
-    real(real_kind), dimension(ndim,ncells) :: Centroids 
-    integer, dimension(ncells)              :: NNeighbors 
-    integer, dimension(ncells)              :: Boundary_Flag 
-    integer, dimension(ncells)              :: cpart
-    integer, dimension(nnodes)              :: vpart
+    integer, dimension(nvc,ncells)   :: Vrtx_Ngbr 
+    real(r8), dimension(ndim,nnodes) :: VertexCoords 
+    real(r8), dimension(ndim,ncells) :: Centroids 
+    integer, dimension(ncells) :: NNeighbors 
+    integer, dimension(ncells) :: Boundary_Flag 
+    integer, dimension(ncells) :: cpart
+    integer, dimension(nnodes) :: vpart
     !--------------------------------------------------------------------------- 
  
     ! our new and improved writer? 
@@ -1144,7 +1105,6 @@ contains
                            iStatus             = iStatus)
     end if
  
-    return 
   END SUBROUTINE TBU_WriteDefaultMesh 
  
  
@@ -1199,7 +1159,6 @@ contains
     ! Purpose: 
     !   Write a mesh file as a brookxml mesh 
     !--------------------------------------------------------------------------- 
-    use kind_module,         only: real_kind 
     use file_utility,        only: Make_File_Name 
     use tbrook_module,       only: TBrook_WriteXMLTag,  & 
                                    TBrook_OpenXMLTag,   & 
@@ -1212,7 +1171,6 @@ contains
                                    TBrook_Destroy,      &
                                    TB_SCOPE_LOCAL
     use parallel_info_module, only: p_info 
-    implicit none 
  
     ! Argument List 
     type(Brook), target, intent(in) :: B  ! Main xml file brook
@@ -1220,49 +1178,49 @@ contains
     character(LEN=*),  intent(in) :: MLabel          ! Label of Mesh 
     integer, optional, intent(in) :: Mboundary_faces_tot 
  
-    integer,                                     intent(in) :: CN_tot       ! Number of cells 
-    integer,         dimension(:,:),             intent(in) :: CVertices    ! Vertex IDs for each cell 
-    real(real_kind), dimension(:),     optional, intent(in) :: CVolumes     ! Volumes of cells 
-    real(real_kind), dimension(:,:),   optional, intent(in) :: CCentroids   ! Centroids of cells 
-    integer,         dimension(:),     optional, intent(in) :: CBlockID     ! Block ID for cell 
-    integer,         dimension(:),     optional, intent(in) :: CPartition   ! Partition on which cell sits 
-    integer,         dimension(:),     optional, intent(in) :: CBoundary    ! Boudnary cell? 0 = no, 1 = yes 
-    integer,         dimension(:),     optional, intent(in) :: CNNeighbors  ! Number of neighbors 
-    integer,         dimension(:),     optional, intent(in) :: CPermute     ! Permute Cells from User to T 
-    integer,         dimension(:),     optional, intent(in) :: CUnpermute   ! Permute Cells from T to User 
+    integer,                            intent(in) :: CN_tot       ! Number of cells 
+    integer,  dimension(:,:),           intent(in) :: CVertices    ! Vertex IDs for each cell 
+    real(r8), dimension(:),   optional, intent(in) :: CVolumes     ! Volumes of cells 
+    real(r8), dimension(:,:), optional, intent(in) :: CCentroids   ! Centroids of cells 
+    integer,  dimension(:),   optional, intent(in) :: CBlockID     ! Block ID for cell 
+    integer,  dimension(:),   optional, intent(in) :: CPartition   ! Partition on which cell sits 
+    integer,  dimension(:),   optional, intent(in) :: CBoundary    ! Boudnary cell? 0 = no, 1 = yes 
+    integer,  dimension(:),   optional, intent(in) :: CNNeighbors  ! Number of neighbors 
+    integer,  dimension(:),   optional, intent(in) :: CPermute     ! Permute Cells from User to T 
+    integer,  dimension(:),   optional, intent(in) :: CUnpermute   ! Permute Cells from T to User 
  
-    integer,                                     intent(in) :: VN_tot       ! Number of vertices 
-    real(real_kind), dimension(:,:),             intent(in) :: VCoords      ! Coordinates of Vertices 
-    real(real_kind), dimension(:),     optional, intent(in) :: VRsum_RVol   ! Sum divided by volume??? 
-    integer,         dimension(:),     optional, intent(in) :: VPartition   ! Partition on which Vertex sits 
-    integer,         dimension(:),     optional, intent(in) :: VBoundary    ! Boudnary Vertex? 0 = no, 1 = yes 
-    integer,         dimension(:),     optional, intent(in) :: VPermute     ! Permute Vertices from User to T 
-    integer,         dimension(:),     optional, intent(in) :: VUnpermute   ! Unpermute Vertices from T to User 
+    integer,                            intent(in) :: VN_tot       ! Number of vertices 
+    real(r8), dimension(:,:),           intent(in) :: VCoords      ! Coordinates of Vertices 
+    real(r8), dimension(:),   optional, intent(in) :: VRsum_RVol   ! Sum divided by volume??? 
+    integer,  dimension(:),   optional, intent(in) :: VPartition   ! Partition on which Vertex sits 
+    integer,  dimension(:),   optional, intent(in) :: VBoundary    ! Boudnary Vertex? 0 = no, 1 = yes 
+    integer,  dimension(:),   optional, intent(in) :: VPermute     ! Permute Vertices from User to T 
+    integer,  dimension(:),   optional, intent(in) :: VUnpermute   ! Unpermute Vertices from T to User 
  
-    integer,                           optional, intent(in) :: FN_tot       ! Number of Faces 
-    integer,         dimension(:),     optional, intent(in) :: FBoundary    ! Boudnary Face? 0 = no, 1 = yes 
-    integer,         dimension(:),     optional, intent(in) :: FPartition   ! Partition on which Face sits 
-    integer,         dimension(:),     optional, intent(in) :: FPermute     ! Permute Faces from User to T 
-    integer,         dimension(:),     optional, intent(in) :: FUnpermute   ! Permute Faces from T to User 
-    real(real_kind), dimension(:,:),   optional, intent(in) :: FCentroids   ! Centroids of Faces 
-    integer,         dimension(:,:),   optional, intent(in) :: FVertices    ! Vertex IDs for each Face 
-    integer,         dimension(:,:),   optional, intent(in) :: FCells       ! Cell IDs for each Face 
-    integer,         dimension(:,:),   optional, intent(in) :: FEdges       ! Edge IDs for each Face 
+    integer,                  optional, intent(in) :: FN_tot       ! Number of Faces 
+    integer,  dimension(:),   optional, intent(in) :: FBoundary    ! Boudnary Face? 0 = no, 1 = yes 
+    integer,  dimension(:),   optional, intent(in) :: FPartition   ! Partition on which Face sits 
+    integer,  dimension(:),   optional, intent(in) :: FPermute     ! Permute Faces from User to T 
+    integer,  dimension(:),   optional, intent(in) :: FUnpermute   ! Permute Faces from T to User 
+    real(r8), dimension(:,:), optional, intent(in) :: FCentroids   ! Centroids of Faces 
+    integer,  dimension(:,:), optional, intent(in) :: FVertices    ! Vertex IDs for each Face 
+    integer,  dimension(:,:), optional, intent(in) :: FCells       ! Cell IDs for each Face 
+    integer,  dimension(:,:), optional, intent(in) :: FEdges       ! Edge IDs for each Face 
  
-    integer,                           optional, intent(in) :: EN_tot       ! Number of Edges 
-    integer,         dimension(:),     optional, intent(in) :: EBoundary    ! Boudnary Edge? 0 = no, 1 = yes 
-    integer,         dimension(:),     optional, intent(in) :: EPartition   ! Partition on which Edge sits 
-    integer,         dimension(:),     optional, intent(in) :: EPermute     ! Permute Edges from User to T 
-    integer,         dimension(:),     optional, intent(in) :: EUnpermute   ! Permute Edges from T to User 
-    real(real_kind), dimension(:,:),   optional, intent(in) :: ECentroids   ! Centroids of Edge 
-    integer,         dimension(:,:),   optional, intent(in) :: EVertices    ! Vertex IDs for each Edge 
-    integer,         dimension(:,:),   optional, intent(in) :: ECells       ! Cell IDs for each Edge 
-    integer,         dimension(:,:),   optional, intent(in) :: EFaces       ! Face IDs for each Edge 
+    integer,                  optional, intent(in) :: EN_tot       ! Number of Edges 
+    integer,  dimension(:),   optional, intent(in) :: EBoundary    ! Boudnary Edge? 0 = no, 1 = yes 
+    integer,  dimension(:),   optional, intent(in) :: EPartition   ! Partition on which Edge sits 
+    integer,  dimension(:),   optional, intent(in) :: EPermute     ! Permute Edges from User to T 
+    integer,  dimension(:),   optional, intent(in) :: EUnpermute   ! Permute Edges from T to User 
+    real(r8), dimension(:,:), optional, intent(in) :: ECentroids   ! Centroids of Edge 
+    integer,  dimension(:,:), optional, intent(in) :: EVertices    ! Vertex IDs for each Edge 
+    integer,  dimension(:,:), optional, intent(in) :: ECells       ! Cell IDs for each Edge 
+    integer,  dimension(:,:), optional, intent(in) :: EFaces       ! Face IDs for each Edge 
  
  
  
-    integer, optional,   intent(in)  :: Scope     ! Parallel or serial 
-    integer,             intent(out) :: iStatus   ! Did an error occur? 
+    integer, optional, intent(in)  :: Scope     ! Parallel or serial 
+    integer,           intent(out) :: iStatus   ! Did an error occur? 
  
     !Local Variables 
     character(LEN=1024)  :: tmpString 
@@ -1614,7 +1572,6 @@ contains
             iStatus=iStatus)
     end if
 
-    return
   END SUBROUTINE TBU_MeshWriter
 
 
@@ -1624,7 +1581,6 @@ contains
     !   Write out a Truchas timestep to the *.TBrook.xml file (BaseBrook)
     !---------------------------------------------------------------------------
     use gap_output, only: set_gap_element_output
-    use kind_module,          only: int_kind
     use file_utility,         only: Make_File_Name
     use output_utilities,     only: ANNOUNCE_FILE_WRITE
     use output_data_module,   only: XML_Data_Format,     &
@@ -1647,17 +1603,16 @@ contains
                                      Brook_Form 
 #undef UTILIZE 
 #endif 
-    implicit none 
  
     ! Argument List 
     integer, optional :: iStatus 
     ! Local Variables 
     type(Brook), target :: B_Tmp 
 
-    character(LEN=256)             :: tmpString 
-    character(LEN=256)             :: filename 
-    integer (int_kind), save       :: file_count = 0 
-    integer (int_kind)             :: error_code 
+    character(LEN=256) :: tmpString 
+    character(LEN=256) :: filename 
+    integer, save :: file_count = 0 
+    integer :: error_code 
  
     !--------------------------------------------------------------------------- 
  
@@ -1768,7 +1723,6 @@ contains
     !
     !--------------------------------------------------------------------------- 
 
-    use kind_module,       only: int_kind
     use file_utility,      only: MAKE_FILE_NAME
     use time_step_module,  only: t, dt, cycle_number, dt_courant
     use tbrook_module,     only: Brook,    &
@@ -1782,12 +1736,12 @@ contains
          TBrook_Close 
 
     ! Argument List
-    integer(kind=int_kind), optional   :: iStatus 
+    integer, optional :: iStatus 
 
     ! Local Variables
-    character(LEN=256)     :: tmpString, filename, LastStepFile 
-    type(Brook), target    :: BAside
-    integer(kind=int_kind) :: error_code, file_count
+    character(LEN=256) :: tmpString, filename, LastStepFile 
+    type(Brook), target :: BAside
+    integer :: error_code, file_count
 
     error_code = 0
     file_count = 0
@@ -1877,7 +1831,6 @@ contains
     !--------------------------------------------------------------------------- 
 
     use fluid_data_module,    only: fluid_flow, boussinesq_approximation, courant
-    use kind_module,          only: int_kind, real_kind
     use matl_module,          only: GATHER_VOF, Matl
     use parameter_module,     only: ncells, ndim, nmat, mat_slot
     use diagnostics_module,   only: DIVERGENCE
@@ -1907,19 +1860,17 @@ contains
     use string_utilities,          only: i_to_c
     use gap_output, only: set_gap_element_output
     use physics_module, only: heat_transport, heat_species_transport
-
-    implicit none 
  
     ! Argument List 
     integer, optional   :: iStatus 
     type(Brook), target :: BBase, BAside 
 
     ! Local Variables 
-    integer(KIND = int_kind)                        :: n
-    real(KIND = real_kind),   dimension(ncells)     :: Vof, fluidDeltaRho, materialRho 
-    real(KIND = real_kind), pointer, dimension(:,:) :: tmp_2dArray 
-    character(LEN=32)                               :: vof_name
-    real(KIND = real_kind), pointer, dimension(:,:) :: gradT
+    integer :: n
+    real(r8), dimension(ncells) :: Vof, fluidDeltaRho, materialRho 
+    real(r8), pointer, dimension(:,:) :: tmp_2dArray 
+    character(LEN=32) :: vof_name
+    real(r8), pointer, dimension(:,:) :: gradT
 
     tmp_2dArray => NULL()
 
@@ -2044,7 +1995,7 @@ contains
          call ds_get_temp_grad(gradT)
          if (iStatus == 0) call tbu_make_file_entry (BBase, BAside, "Grad_T", gradT, iStatus)
          
-         vof(:) = 0.0_real_kind
+         vof(:) = 0.0_r8
          do n=1,ndim
             vof(:) = vof(:) + gradT(n,:)**2
          enddo
@@ -2068,10 +2019,8 @@ contains
     !================================================================== 
     use tbrook_module, only: brook, assignment(=) 
     use zone_module, only: CELL_AVG 
-    use kind_module, only: real_kind, int_kind 
     use parameter_module, only: ndim
 
-    implicit none 
     type(brook), intent(in) :: b 
     type(brook), optional, target, intent(in) :: b_base 
     type(CELL_AVG),  target, dimension(:), intent(IN) :: Variable 
@@ -2080,9 +2029,9 @@ contains
  
     ! Arguments 
     ! Local variables 
-    type(CELL_AVG),  pointer, dimension(:) :: Zone 
-    real(real_kind), dimension(:,:),   allocatable :: tmp_2DArray 
-    integer(KIND = int_kind)               :: n, out_stat 
+    type(CELL_AVG), pointer, dimension(:) :: Zone 
+    real(r8), dimension(:,:), allocatable :: tmp_2DArray 
+    integer :: n, out_stat 
     type(Brook), pointer :: B_lbase 
     type(Brook), target  :: B_dummy 
  
@@ -2122,8 +2071,6 @@ contains
     
     istatus = out_stat
  
-    return 
- 
   END subroutine tbu_zone_out 
  
   subroutine tbu_flow_out(b, istatus, scope, b_base) 
@@ -2132,12 +2079,8 @@ contains
     !   Output zone to stream 
     !================================================================== 
     use tbrook_module, only: brook, assignment(=) 
-
     use fluid_data_module, only: Fluxing_Velocity
 
-    use kind_module,   only: int_kind 
- 
-    implicit none 
     type(brook), intent(in) :: b 
     type(brook), optional, target, intent(in) :: b_base 
     integer, intent(in), optional :: scope 
@@ -2145,7 +2088,7 @@ contains
  
     ! Arguments 
     ! Local variables 
-    integer(KIND = int_kind)               :: out_stat 
+    integer :: out_stat 
     type(Brook), pointer :: B_lbase 
     type(Brook), target  :: B_dummy 
  
@@ -2163,8 +2106,6 @@ contains
  
     istatus = out_stat
 
-    return 
- 
   END subroutine tbu_flow_out 
  
  
@@ -2175,10 +2116,7 @@ contains
     !================================================================== 
     use matl_module,   only: MATL_SLOT 
     use tbrook_module, only: brook, assignment(=) 
-    use kind_module,   only: int_kind 
     use parameter_module, only: mat_slot 
- 
-    implicit none 
  
     type(brook), intent(in) :: b 
     type(brook), optional, target, intent(in) :: b_base 
@@ -2188,8 +2126,7 @@ contains
  
     ! Arguments 
     ! Local variables 
-    integer(KIND = int_kind) :: s 
-    integer(KIND = int_kind) :: out_stat 
+    integer :: s, out_stat 
     type(MATL_SLOT), pointer, dimension(:) :: Matl 
     type(Brook), pointer :: B_lbase 
     type(Brook), target  :: B_dummy 
@@ -2216,9 +2153,8 @@ contains
     end do 
  
     iStatus=out_stat 
-    return 
+
   END subroutine tbu_MATL_out 
- 
  
 end module tbrook_utility 
 

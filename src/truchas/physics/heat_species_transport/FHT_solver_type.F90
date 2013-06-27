@@ -27,7 +27,7 @@ module FHT_solver_type
   use material_mesh_function
   use property_mesh_function
   use solution_history
-  use fixed_point_accelerator
+  use nka_type
   use distributed_mesh, only: dist_mesh
   use parallel_communication
   use index_partitioning
@@ -67,7 +67,7 @@ module FHT_solver_type
     
     !! ODE integrator data
     type(history) :: uhist
-    type(fpa_state) :: fpa
+    type(nka) :: accel
     integer  :: max_itr
   end type FHT_solver
   
@@ -134,7 +134,8 @@ contains
     
     !! Setup the backward-Euler integrator.
     n = FHT_model_size(model)
-    call fpa_create (this%fpa, n, params%nlk_max_vec, params%nlk_vec_tol)
+    call nka_init (this%accel, n, params%nlk_max_vec)
+    call nka_set_vec_tol (this%accel, params%nlk_vec_tol)
     call create_history (this%uhist, 2, n)
     this%max_itr = params%nlk_max_itr
     
@@ -147,7 +148,7 @@ contains
   subroutine FHT_solver_delete (this)
     type(FHT_solver), intent(inout) :: this
     call FHT_precon_delete (this%precon)
-    call fpa_destroy (this%fpa)
+    call nka_delete (this%accel)
     call destroy (this%uhist)
   end subroutine FHT_solver_delete
   
@@ -410,7 +411,7 @@ contains
   contains
   
     subroutine write_solver_diagnostics ()
-      use ds_utilities
+      use truchas_logging_services
       integer :: n1, n2, n3, max_itr, max_adj
       real avg_itr, rec_rate, avg_adj
       character(80) :: msg
@@ -418,13 +419,13 @@ contains
       n2 = global_count(this%void_cell(:this%mesh%ncell_onP)) - n1
       n3 = global_sum(this%mesh%ncell_onP) - n1 - n2
       write(msg,'(a,3(i0,:,"/"))') 'DS: totally/essentially/non-void cell counts = ', n1, n2, n3
-      call ds_info (msg)
+      call TLS_info (msg)
       call TofH_get_metrics (this%T_of_H, avg_itr, max_itr, rec_rate, avg_adj, max_adj)
       write(msg,'(a,f5.2,a,i0,a)') 'DS: T(H) iterations: ', avg_itr, '(avg), ', max_itr, '(max)'
-      call ds_info (msg)
+      call TLS_info (msg)
       write(msg,'(a,f5.3,a,f5.2,a,i0,a)') 'DS: T(H) salvage rate = ', rec_rate, &
           '; interval adjustments = ', avg_adj, '(avg), ', max_adj, '(max)'
-      call ds_info (msg)
+      call TLS_info (msg)
     end subroutine
     
   end subroutine FHT_solver_commit_pending_state
@@ -683,7 +684,7 @@ contains
     call FHT_norm_fnorm (this%norm, t, u, Hdot, f)
     
     itr = 0
-    call fpa_restart (this%fpa)
+    call nka_restart (this%accel)
     do ! until converged
     
       itr = itr + 1
@@ -691,7 +692,7 @@ contains
       !! Compute the next solution iterate.
       this%num_precon_apply = this%num_precon_apply + 1
       call FHT_precon_apply (this%precon, t, u, f)
-      call fpa_correction (this%fpa, f, dp=pardp)
+      call nka_accel_update (this%accel, f, dp=pardp)
       u = u - f
       
       !! Compute the residual and norm.

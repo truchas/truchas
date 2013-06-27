@@ -28,11 +28,7 @@ MODULE PARALLEL_INFO_MODULE
   ! Author(s): Robert Ferrell (CPCA, Ltd., ferrell@cpca.com)
   !
   !=======================================================================
-  use kind_module,      only: int_kind, log_kind
-
   implicit none
-
-  ! Private Module
   private 
 
   ! Public types
@@ -45,13 +41,13 @@ MODULE PARALLEL_INFO_MODULE
   
   ! Define PEINFO structure
   type PEINFO
-     integer(KIND = int_kind) :: nPE
-     integer(KIND = int_kind) :: thisPE
-     integer(KIND = int_kind) :: IO_ROOT_PE
-     integer(KIND = int_kind) :: GlobalServicesFlag
-     logical(KIND = log_kind) :: UseGlobalServices
-     logical(KIND = log_kind) :: IOP
-     logical(KIND = log_kind) :: IsParallel
+     integer :: nPE
+     integer :: thisPE
+     integer :: IO_ROOT_PE
+     integer :: GlobalServicesFlag
+     logical :: UseGlobalServices
+     logical :: IOP
+     logical :: IsParallel
   end type PEINFO
 
   ! Declare PEINFO structure

@@ -9,12 +9,8 @@ MODULE TENSOR_MODULE
   !            Douglas B. Kothe, LANL T-3 (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: int_kind
   use parameter_module, only: ndim
-
   implicit none
-
-  ! Private Module
   private
 
   ! Public Variables
@@ -26,7 +22,7 @@ MODULE TENSOR_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Tensor Matrix
-  integer(KIND = int_kind), dimension(ndim,ndim), save :: Tensor
+  integer, dimension(ndim,ndim), save :: Tensor
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -49,21 +45,17 @@ CONTAINS
     !                      |_2, 3, 1_|
     !
     !=======================================================================
-    use constants_module, only: zero
-    use kind_module,      only: int_kind
     use parameter_module, only: ndim
-
-    implicit none
 
     ! Argument List
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, j, m, n
+    integer :: i, j, m, n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize Variables
-    Tensor = zero
+    Tensor = 0
 
     ! Tensor Matrix
     do i = 1, ndim
@@ -78,8 +70,6 @@ CONTAINS
           n = n + 1
        end do
     end do
-
-    return
 
   END SUBROUTINE TENSOR_MATRIX
 

@@ -65,14 +65,14 @@ CONTAINS
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: cell
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: cell
+    integer, intent(IN) :: face
 
     ! Local Variables
-    integer(KIND = int_kind) :: shift
+    integer :: shift
 
     ! Function Return
-    integer(KIND = int_kind) :: BCMatch_Scalar
+    integer :: BCMatch_Scalar
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -98,13 +98,13 @@ CONTAINS
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: face
 
     ! Local Variables
-    integer(KIND = int_kind) :: shift
+    integer :: shift
 
     ! Function Return
-    integer(KIND = int_kind), dimension(ncells) :: BCMatch_Array
+    integer, dimension(ncells) :: BCMatch_Array
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -132,13 +132,13 @@ CONTAINS
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: cell
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: cell
+    integer, intent(IN) :: face
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind) :: Boundary_Scalar
+    logical :: Boundary_Scalar
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -168,12 +168,12 @@ CONTAINS
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: face
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind), dimension(ncells) :: Boundary_Array
+    logical, dimension(ncells) :: Boundary_Array
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -203,11 +203,11 @@ CONTAINS
 
     ! argument list
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: cell
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: cell
+    integer, intent(IN) :: face
     
     ! function return
-    logical(KIND = log_kind) :: ExternalBoundary_Scalar
+    logical :: ExternalBoundary_Scalar
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -235,13 +235,13 @@ CONTAINS
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: face
 
     ! Local Variables
-    integer (KIND=int_kind) :: cell
+    integer :: cell
 
     ! Function Return
-    logical(KIND = log_kind), dimension(ncells) :: ExternalBoundary_Array
+    logical, dimension(ncells) :: ExternalBoundary_Array
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -269,13 +269,13 @@ CONTAINS
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: cell
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: cell
+    integer, intent(IN) :: face
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind) :: InternalBoundary_Scalar
+    logical :: InternalBoundary_Scalar
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -302,13 +302,13 @@ CONTAINS
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
-    integer(KIND = int_kind), intent(IN) :: face
+    integer, intent(IN) :: face
 
     ! Local Variables
-    integer (KIND=int_kind) :: cell
+    integer :: cell
 
     ! Function Return
-    logical(KIND = log_kind), dimension(ncells) :: InternalBoundary_Array
+    logical, dimension(ncells) :: InternalBoundary_Array
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

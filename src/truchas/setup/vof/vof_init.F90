@@ -33,31 +33,30 @@ module vof_init
    !    improve creation of subcells when degenerate vertices are involved
    !----------------------------------------------------------------------------
 
-   use kind_module,       only: real_kind, int_kind, log_kind
+   use kinds, only: r8
    use parameter_module,  only: ndim, nvc, ncells, nfc, nec
    use interfaces_module, only: nbody, vof_method, vof_tolerance, vof_max_recursion
    use parameter_module,  only: nmat
    use truchas_logging_services
-
    implicit none
-
    private
+   
    public :: vof_initialize
 
    ! local development/testing control flags
-   logical (log_kind), parameter :: test_vertex_once     = .true.
-   logical (log_kind), parameter :: degenerate_vertices  = .false.
-   logical (log_kind), parameter :: make_gmv_picture     = .false.
+   logical, parameter :: test_vertex_once     = .true.
+   logical, parameter :: degenerate_vertices  = .false.
+   logical, parameter :: make_gmv_picture     = .false.
 
    ! symbolic constants
-   integer (int_kind), parameter :: BODY_ID_UNKNOWN = -1
+   integer, parameter :: BODY_ID_UNKNOWN = -1
 
    ! vertex_info type is a collection of a vertex's location and the number of
    ! the body that the vertex is in, maybe other information
 
    type vertex_info
-      integer                           :: body_id
-      real (real_kind), dimension(ndim) :: location
+      integer :: body_id
+      real(r8), dimension(ndim) :: location
    end type vertex_info
 
 contains
@@ -69,10 +68,8 @@ contains
       use tally_module,      only: vof_init_tally_points
       use mesh_module,       only: cell
 
-      implicit none
-
       ! return value
-      real (real_kind), dimension(nbody,ncells) :: vof_initialize
+      real(r8), dimension(nbody,ncells) :: vof_initialize
 
       !-------------------------------------------------------------------------
 
@@ -123,22 +120,20 @@ contains
 
       use mesh_module,      only: vertex, mesh, cell, vrtx_bdy
       use PGSLib_module,    only: PGSLib_GLOBAL_MINVAL
-      use constants_module, only: preset, ipreset
+      use input_utilities,  only: NULL_R, NULL_I
       use gs_module,        only: en_gather
 
-      implicit none
-
       ! return value
-      real (real_kind), dimension(nbody,ncells) :: vof_init_divide_conquer
+      real(r8), dimension(nbody,ncells) :: vof_init_divide_conquer
 
       ! local variables
-      integer (int_kind) :: i
-      integer (int_kind) :: v                               ! vertex loop index
-      integer (int_kind) :: c                               ! cell loop index
-      integer (int_kind) :: vtx                             ! temporary, holds a vertex number
-      real (real_kind)   :: tolerance                       ! volume at which recursive algorithm terminates
+      integer :: i
+      integer :: v                               ! vertex loop index
+      integer :: c                               ! cell loop index
+      integer :: vtx                             ! temporary, holds a vertex number
+      real(r8) :: tolerance                       ! volume at which recursive algorithm terminates
       type (vertex_info), dimension(nvc) :: vertices        ! nvc array of vertex_info structures - location + body ids
-      real (real_kind)   :: vtx_coord(ndim,nvc,ncells)
+      real(r8) :: vtx_coord(ndim,nvc,ncells)
 
       !-------------------------------------------------------------------------
 
@@ -147,11 +142,11 @@ contains
       end if
 
       ! if user hasn't set vof_tolerance nor vof_max_recursion, apply some defaults
-      if (vof_tolerance == preset) then
+      if (vof_tolerance == NULL_R) then
          vof_tolerance = 0.001d0
       end if
 
-      if (vof_max_recursion == ipreset) then
+      if (vof_max_recursion == NULL_I) then
          vof_max_recursion = 100
       end if
 
@@ -234,22 +229,20 @@ contains
       !       return partial_volumes_sum
       !-------------------------------------------------------------------------
 
-      implicit none
-
       ! arguments
-      integer (int_kind),                 intent(in)    :: recursion_depth
-      real (real_kind),                   intent(in)    :: tolerance
-      type (vertex_info), dimension(nvc), intent(inout) :: vertices
+      integer,  intent(in) :: recursion_depth
+      real(r8), intent(in) :: tolerance
+      type(vertex_info), dimension(nvc), intent(inout) :: vertices
 
       ! return value
-      real, dimension(nbody)                            :: pv
+      real(r8), dimension(nbody) :: pv
 
       ! local variables
-      logical            :: all_the_same
-      integer (int_kind) :: v
-      integer (int_kind) :: n
-      real (real_kind)   :: volume
-      real (real_kind),   dimension(ndim)    :: cell_centroid
+      logical :: all_the_same
+      integer :: v
+      integer :: n
+      real(r8) :: volume
+      real(r8), dimension(ndim) :: cell_centroid
 
       ! nvc vertices for each cell, nvc subcells per cell
       type (vertex_info), dimension(nvc,nvc) :: subcell_vertices
@@ -275,23 +268,12 @@ contains
       ! If all vertices and the cell centroid are in the same body,
       ! return the cell volume for that body's partial volume, zero
       ! for the rest.
-
-#ifdef NAG_COMPILER_WORKAROUND
-      all_the_same = .true.
-      do n = 2, nvc
-         if (vertices(n)%body_id /= vertices(1)%body_id) then
-            all_the_same = .false.
-            exit
-         end if
-      end do
-#else
       all_the_same = ALL(vertices(2:nvc)%body_id == vertices(1)%body_id)
-#endif
 
       ! (maybe) make an additional check at cell centroid
       if (all_the_same) then
          do n=1, ndim
-            cell_centroid(n) = 0.0_real_kind
+            cell_centroid(n) = 0.0_r8
             do v = 1, nvc
                cell_centroid(n) = cell_centroid(n) + vertices(v)%location(n)
             end do
@@ -418,20 +400,20 @@ contains
       type (vertex_info), dimension(:), intent(in) :: vertices
 
       ! return value
-      type (vertex_info), dimension(nvc,nvc)       :: subcell_vertices
+      type (vertex_info), dimension(nvc,nvc) :: subcell_vertices
 
       ! local variables
-      integer (int_kind) :: v1
-      integer (int_kind) :: v2
-      integer (int_kind) :: v3
-      integer (int_kind) :: v4
-      integer (int_kind) :: e
-      integer (int_kind) :: f
-      integer (int_kind) :: n
-      integer (int_kind) :: v
-      real (real_kind), dimension(ndim,nec) :: Xec          ! Xec: coordinates of edge centers
-      real (real_kind), dimension(ndim,nfc) :: Xfc          ! Xfc: coordinates of face centers (face centroid)
-      real (real_kind), dimension(ndim)     :: Xcc          ! Xcc: coordinates of cell center  (cell centroid)
+      integer :: v1
+      integer :: v2
+      integer :: v3
+      integer :: v4
+      integer :: e
+      integer :: f
+      integer :: n
+      integer :: v
+      real(r8), dimension(ndim,nec) :: Xec ! Xec: coordinates of edge centers
+      real(r8), dimension(ndim,nfc) :: Xfc ! Xfc: coordinates of face centers (face centroid)
+      real(r8), dimension(ndim)     :: Xcc ! Xcc: coordinates of cell center  (cell centroid)
 
       !-------------------------------------------------------------------------
 
@@ -641,18 +623,16 @@ contains
       !    cell face
       !-------------------------------------------------------------------------
 
-      implicit none
-
       ! arguments
-      type (vertex_info), dimension(nvc), intent(in) :: vertices
-      real (real_kind),                   intent(in) :: volume
+      type(vertex_info), dimension(nvc), intent(in) :: vertices
+      real(r8), intent(in) :: volume
 
       ! return value
-      real, dimension(nbody)                         :: approximation
+      real, dimension(nbody) :: approximation
 
       ! local variables
       integer :: n
-      real (real_kind), dimension(ndim) :: cell_centroid
+      real(r8), dimension(ndim) :: cell_centroid
 
       !-------------------------------------------------------------------------
 
@@ -709,26 +689,24 @@ contains
       ! algorithm:
       !-------------------------------------------------------------------------
 
-      implicit none
-
       ! arguments
       type (vertex_info), dimension(nvc), intent(in) :: vertices
 
       ! return value
-      real (real_kind)                               :: cell_volume 
+      real(r8) :: cell_volume 
 
       ! local variables
-      integer (int_kind) :: n
-      integer (int_kind) :: f
-      integer (int_kind) :: v1
-      integer (int_kind) :: v2
-      integer (int_kind) :: v3
-      integer (int_kind) :: v4
-      integer (int_kind) :: v5
-      integer (int_kind) :: v6
-      real (real_kind), dimension(ndim) :: X1
-      real (real_kind), dimension(ndim) :: X2
-      real (real_kind), dimension(ndim) :: X3
+      integer :: n
+      integer :: f
+      integer :: v1
+      integer :: v2
+      integer :: v3
+      integer :: v4
+      integer :: v5
+      integer :: v6
+      real(r8), dimension(ndim) :: X1
+      real(r8), dimension(ndim) :: X2
+      real(r8), dimension(ndim) :: X3
 
       !-------------------------------------------------------------------------
 
@@ -792,35 +770,32 @@ contains
       ! this code is ugly, undocumented, and based on what was already there
       !-------------------------------------------------------------------------
 
-      use constants_module,  only: zero, one
       use interfaces_module, only: Ar, Cosa, Isrftype, nbody, Nsurf, Offset, &
                                    Rotangl, Rotpt, Sgeom, Sina
       use parameter_module,  only: nrot
       use tally_module,      only: PRE_TALLY
  
-      implicit none 
-  
       ! arguments
-      real (real_kind), dimension(ndim), intent(in) :: X
+      real(r8), dimension(ndim), intent(in) :: X
 
       ! return value
-      integer (int_kind)                            :: body_id_from_vertex
+      integer :: body_id_from_vertex
 
       ! local variables
-      logical (log_kind) :: Lsf                             ! logical surface flag
-      logical (log_kind) :: Lbf                             ! logical body flag
-      integer (int_kind) :: ib
-      integer (int_kind) :: is
-      integer (int_kind) :: isrf
-      integer (int_kind) :: n
-      integer (int_kind) :: n1
-      integer (int_kind) :: n2
-      integer (int_kind) :: na
-      real (real_kind)   :: Total
-      real (real_kind)   :: coeff
-      real (real_kind), dimension(ndim)     :: Xloc
+      logical :: Lsf                             ! logical surface flag
+      logical :: Lbf                             ! logical body flag
+      integer :: ib
+      integer :: is
+      integer :: isrf
+      integer :: n
+      integer :: n1
+      integer :: n2
+      integer :: na
+      real(r8) :: Total
+      real(r8) :: coeff
+      real(r8), dimension(ndim) :: Xloc
 
-      logical (log_kind), save :: first_time = .true.
+      logical, save :: first_time = .true.
 
       !-------------------------------------------------------------------------
 
@@ -866,7 +841,7 @@ contains
                end select
 
                ! Rotate the surface coordinate system.
-               if (Rotangl(n,is,ib) /= zero) then
+               if (Rotangl(n,is,ib) /= 0.0_r8) then
                   Total    = Cosa(n,is,ib)*(Xloc(n1)-Rotpt(n1,is,ib)) &
                            - coeff*Sina(n,is,ib)*(Xloc(n2)-Rotpt(n2,is,ib)) + Rotpt(n1,is,ib)
                   Xloc(n2) = Cosa(n,is,ib)*(Xloc(n2)-Rotpt(n2,is,ib)) &
@@ -900,7 +875,7 @@ contains
 
                do n = 1, ndim
                   if (ABS(Sgeom(1,is,ib)) == REAL(n)) then
-                     Lsf = Xloc(n) > zero
+                     Lsf = Xloc(n) > 0.0_r8
                   end if
                end do
                if (Isrftype(is,ib) < 0) then
@@ -926,11 +901,11 @@ contains
             case (3:4)
                ! Surface is a sphere or ellipsoid
 
-               Total = zero
+               Total = 0.0_r8
                do n = 1, ndim
                   Total = Total + (Ar(n,is,ib)*Xloc(n))**2
                end do
-               Lsf = Total <= one
+               Lsf = Total <= 1.0_r8
                if (Isrftype(is,ib) < 0) then
                   Lsf = .not. Lsf
                end if
@@ -944,14 +919,14 @@ contains
                ! Sgeom(2,is,ib) is the cylinder radius and Sgeom(3,is,ib)
                ! is the cylinder height.
 
-               Total = zero
+               Total = 0.0_r8
                do n = 1, ndim
                   Total = Total + (Ar(n,is,ib)*Xloc(n))**2
                end do
-               Lsf = Total <= one
+               Lsf = Total <= 1.0_r8
                do n = 1, ndim
                   if (ABS(Sgeom(1,is,ib)) == REAL(n)) then
-                     Lsf = Lsf .and. (Xloc(n) - Sgeom(3,is,ib))*Xloc(n) <= zero
+                     Lsf = Lsf .and. (Xloc(n) - Sgeom(3,is,ib))*Xloc(n) <= 0.0_r8
                   end if
                end do
                if (Isrftype(is,ib) < 0) then
@@ -990,8 +965,8 @@ contains
                   if (ABS(Sgeom(1,is,ib)) == REAL(n)) then
                      Total = Sgeom(3,is,ib)/Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n))
                      Lsf = Xloc(n1)**2 + Xloc(n2)**2 <= Total**2 &
-                         .and. Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n)) >= zero &
-                         .and. Sgeom(2,is,ib)*Xloc(n) >= zero
+                         .and. Sgeom(2,is,ib)*(Sgeom(2,is,ib) - Xloc(n)) >= 0.0_r8 &
+                         .and. Sgeom(2,is,ib)*Xloc(n) >= 0.0_r8
                   end if
 
                end do
@@ -1037,7 +1012,7 @@ contains
 ! 
 !                   end select
 ! 
-!                   if (Sgeom(1,is,ib) == zero) then
+!                   if (Sgeom(1,is,ib) == 0.0_r8) then
 !                      ! Rotate
 !                      Xloc(n1) = SQRT(Xloc(n1)**2 + Xloc(n2)**2)
 !                      na = n

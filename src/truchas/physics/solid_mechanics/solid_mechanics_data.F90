@@ -10,13 +10,11 @@ Module SOLID_MECHANICS_DATA
   ! Authors:  Dave Korzekwa (dak@lanl.gov)
   !-----------------------------------------------------------------------------
   !
-  Use kind_module,      Only: log_kind, int_kind, real_kind
-  Use parameter_module, Only: string_len, ncomps, ndim
-  !
-  Implicit None
-  !
-  Private
-  !
+  use kinds, only: r8
+  use parameter_module, only: string_len, ncomps, ndim
+  implicit none
+  private
+
   ! Public data
   Public :: solid_mechanics,                  &
             solid_mechanics_body_force,     &
@@ -78,39 +76,39 @@ Module SOLID_MECHANICS_DATA
   END INTERFACE
   
   ! Linear and non-linear solution names
-  character(LEN = string_len), save :: displacement_linear_solution
-  character(LEN = string_len), save :: displacement_nonlinear_solution
+  character(string_len), save :: displacement_linear_solution
+  character(string_len), save :: displacement_nonlinear_solution
   !
   ! Ubik_user element number to use for energy linear solve
-  integer(KIND = int_kind), save    :: Ubik_DISPLACEMENT
+  integer, save :: Ubik_DISPLACEMENT
   ! Linear iteration count
-  integer(KIND = int_kind), save    :: thermo_elastic_iterations
+  integer, save :: thermo_elastic_iterations
   ! Nonlinear iteration count
-  integer(KIND = int_kind), save    :: viscoplastic_iterations
+  integer, save :: viscoplastic_iterations
   ! Precondition iteration count
-  integer(KIND = int_kind), save    :: thermo_elastic_precond_iter
+  integer, save :: thermo_elastic_precond_iter
   !
   ! NKuser element number to use for energy solution
-  integer(int_kind), save           :: NK_DISPLACEMENT
+  integer, save :: NK_DISPLACEMENT
   ! This data type and instance are only for use in long edit.  We should not be
   ! setting up a data structure this way (an array of types).
   type CELL_MECH_INVARIANT
-     real(real_kind)  :: mises_stress
-     real(real_kind)  :: eff_plastic_strain
-     real(real_kind)  :: mean_stress
-     real(real_kind)  :: volumetric_strain
+     real(r8) :: mises_stress
+     real(r8) :: eff_plastic_strain
+     real(r8) :: mean_stress
+     real(r8) :: volumetric_strain
   end type CELL_MECH_INVARIANT
   !
   ! Needed in processing the namelist input
-  integer(int_kind), parameter                     :: maxvpforms = 4
-  character(LEN = 80), dimension(maxvpforms), save :: Viscoplastic_Model_Forms
+  integer, parameter                     :: maxvpforms = 4
+  character(80), dimension(maxvpforms), save :: Viscoplastic_Model_Forms
   ! This data type is used to store the solid mechanics state at integration points and 
   ! cell centers
   type MECH_DATA
-     real(real_kind), pointer, dimension(:,:)  :: Total_Strain => null()
-     real(real_kind), pointer, dimension(:,:)  :: Elastic_Stress => null()
-     real(real_kind), pointer, dimension(:,:)  :: Plastic_Strain => null()
-     real(real_kind), pointer, dimension(:)    :: Plastic_Strain_Rate => null()
+     real(r8), pointer, dimension(:,:) :: Total_Strain => null()
+     real(r8), pointer, dimension(:,:) :: Elastic_Stress => null()
+     real(r8), pointer, dimension(:,:) :: Plastic_Strain => null()
+     real(r8), pointer, dimension(:)   :: Plastic_Strain_Rate => null()
   end type MECH_DATA
   !
   ! Various stresses and strains
@@ -120,46 +118,46 @@ Module SOLID_MECHANICS_DATA
   type(MECH_DATA), save                        :: SMech_Cell
   type(MECH_DATA), save                        :: SMech_Cell_Old
 
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: Thermal_Strain
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: Thermal_Strain_Inc
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)     :: tm_dens_old
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)     :: tm_dens
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: PC_Strain
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: Elastic_Strain
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)     :: Rotation_Magnitude
+  real(r8), Save, Pointer, Dimension(:,:)   :: Thermal_Strain
+  real(r8), Save, Pointer, Dimension(:,:)   :: Thermal_Strain_Inc
+  real(r8), Save, Pointer, Dimension(:)     :: tm_dens_old
+  real(r8), Save, Pointer, Dimension(:)     :: tm_dens
+  real(r8), Save, Pointer, Dimension(:,:)   :: PC_Strain
+  real(r8), Save, Pointer, Dimension(:,:)   :: Elastic_Strain
+  real(r8), Save, Pointer, Dimension(:)     :: Rotation_Magnitude
   !
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)     :: Eff_Stress_Cell_old
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: Eff_Stress_IP_old
+  real(r8), Save, Pointer, Dimension(:)     :: Eff_Stress_Cell_old
+  real(r8), Save, Pointer, Dimension(:,:)   :: Eff_Stress_IP_old
   !
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: Dev_Stress_Cell
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:,:) :: Dev_Stress_IP
+  real(r8), Save, Pointer, Dimension(:,:)   :: Dev_Stress_Cell
+  real(r8), Save, Pointer, Dimension(:,:,:) :: Dev_Stress_IP
   !
   ! Thermo-elastic properties
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)   :: Lame1
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)   :: Lame2
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)   :: CTE
+  real(r8), Save, Pointer, Dimension(:) :: Lame1
+  real(r8), Save, Pointer, Dimension(:) :: Lame2
+  real(r8), Save, Pointer, Dimension(:) :: CTE
   ! Nodal displacements
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:) :: Displacement
+  real(r8), Save, Pointer, Dimension(:,:) :: Displacement
   ! Gap displacements and scaled forces
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: Node_Gap => NULL()
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:,:)   :: Node_Norm_Trac => NULL()
+  real(r8), Save, Pointer, Dimension(:,:) :: Node_Gap => NULL()
+  real(r8), Save, Pointer, Dimension(:,:) :: Node_Norm_Trac => NULL()
   ! Right hand side of system of equations
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)   :: RHS
+  real(r8), Save, Pointer, Dimension(:) :: RHS
   ! Source terms needed for contact equations
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)   :: Src
+  real(r8), Save, Pointer, Dimension(:) :: Src
   ! Physics flags
-  Logical(KIND =  log_kind), Save                          :: solid_mechanics
-  Logical(KIND =  log_kind), Save                          :: plasticity
-  Logical(KIND =  log_kind), Save                          :: solid_mechanics_body_force
-  Logical(KIND =  log_kind), Save, Pointer, dimension(:)   :: Solid_Mask, gap_cell_mask
+  logical, Save                          :: solid_mechanics
+  logical, Save                          :: plasticity
+  logical, Save                          :: solid_mechanics_body_force
+  logical, Save, Pointer, dimension(:)   :: Solid_Mask, gap_cell_mask
   ! Interface BC flag
-  Logical(KIND =  log_kind), Save                          :: mech_interface
+  logical, Save                          :: mech_interface
   ! Contact parameters
-  Real   (KIND = real_kind), Save                          :: contact_distance, contact_norm_trac, contact_penalty
+  real(r8), Save                          :: contact_distance, contact_norm_trac, contact_penalty
   ! Maximum plsatic strain increment
-  Real   (KIND = real_kind), Save                          :: strain_limit
+  real(r8), Save                          :: strain_limit
   ! System scale factor
-  Real   (KIND = real_kind), save, pointer, dimension(:)   :: cscale
+  real(r8), save, pointer, dimension(:)   :: cscale
 
 CONTAINS
 
@@ -171,11 +169,9 @@ CONTAINS
     use parallel_info_module, only: p_info
     use parameter_module,     only: ncells_tot
 
-    implicit none
-
     ! Arguments
-    type(MECH_DATA), intent(IN)    :: Mech
-    type(MECH_DATA), pointer       :: Mech_Collate
+    type(MECH_DATA), intent(IN) :: Mech
+    type(MECH_DATA), pointer    :: Mech_Collate
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -195,8 +191,6 @@ CONTAINS
     
     call COLLATE(Mech_Collate, Mech)
 
-    return
-
   END FUNCTION MECH_COLLATE
 
   SUBROUTINE COLLATE_MECH (Collated_Mech, Local_Mech)
@@ -204,19 +198,14 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed mech data type into a single large mech on IO PE
     !==================================================================
-    use pgslib_module,        only: PGSLib_COLLATE
-
-    implicit none
+    use pgslib_module, only: PGSLib_COLLATE
 
     ! Arguments
-    type(MECH_DATA), intent(IN    ) :: Local_Mech
-    type(MECH_DATA), intent(   OUT) :: Collated_Mech
+    type(MECH_DATA), intent(IN)  :: Local_Mech
+    type(MECH_DATA), intent(OUT) :: Collated_Mech
     
     ! Local variables
-    integer (int_kind) :: n
-    
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    integer :: n
 
     do n = 1,ncomps
        call PGSLib_COLLATE (Collated_Mech%Total_Strain(n,:),     Local_Mech%Total_Strain(n,:))
@@ -224,8 +213,6 @@ CONTAINS
        call PGSLib_COLLATE (Collated_Mech%Plastic_Strain(n,:),   Local_Mech%Plastic_Strain(n,:))
     end do
     call PGSLib_COLLATE (Collated_Mech%Plastic_Strain_Rate,      Local_Mech%Plastic_Strain_Rate)
-
-    return
 
   END SUBROUTINE COLLATE_MECH
 
@@ -294,16 +281,13 @@ CONTAINS
     ! Purpose(s):
     !   Permute mech according the Permuter vector
     !==================================================================
-    use kind_module,      only: int_kind
     use parallel_scope
-
-    implicit none
 
     ! Arguments
     type(MECH_DATA), intent(IN   ) :: Orig_Mech
     type(MECH_DATA), intent(INOUT) :: Permuted_Mech
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
-    type (PL_SCOPE), OPTIONAL,    intent(IN   ) :: SCOPE
+    integer, dimension(:), intent(IN) :: Permuter
+    type (PL_SCOPE), OPTIONAL, intent(IN   ) :: SCOPE
 
     ! Local variables
     type (PL_SCOPE) :: Desired_Scope
@@ -325,7 +309,6 @@ CONTAINS
        call PERMUTE_MECH_LOCAL (Permuted_Mech, Orig_Mech, Permuter)
     end if
 
-    return
   end SUBROUTINE PERMUTE_MECH
 
   SUBROUTINE PERMUTE_MECH_GLOBAL (Permuted_Mech, Orig_Mech, Permuter)
@@ -333,21 +316,17 @@ CONTAINS
     ! Purpose(s):
     !   Permute mech according the Permuter vector, global version
     !==================================================================
-    use kind_module,      only: int_kind
     use pgslib_module,    only: PGSLib_Permute,    &
                                 PGSLIB_Deallocate_Trace, &
                                 PGSLib_GS_Trace
-                                
-
-    implicit none
 
     ! Arguments
     type(MECH_DATA), intent(IN   ) :: Orig_Mech
     type(MECH_DATA), intent(INOUT) :: Permuted_Mech
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
     
     ! Local variables
-    integer(KIND = int_kind) :: n
+    integer :: n
     type (PGSLib_GS_Trace), POINTER :: Mech_Trace
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -376,8 +355,6 @@ CONTAINS
     ! Done with the trace
     call PGSLib_DEALLOCATE_TRACE (Mech_Trace)
 
-    return
-
   END SUBROUTINE PERMUTE_MECH_GLOBAL
 
   SUBROUTINE PERMUTE_MECH_LOCAL (Permuted_Mech, Orig_Mech, Permuter)
@@ -387,17 +364,14 @@ CONTAINS
     !   The Permuter vector refers to local indices.
     !   The input and output vectors must have the same size.
     !==================================================================
-    use kind_module,      only: int_kind
-
-    implicit none
 
     ! Arguments
     type(MECH_DATA), intent(IN   ) :: Orig_Mech
     type(MECH_DATA), intent(INOUT) :: Permuted_Mech
-    integer(int_kind), dimension(:), intent(IN) :: Permuter
+    integer, dimension(:), intent(IN) :: Permuter
     
     ! Local variables
-    integer(KIND = int_kind) :: cell, n
+    integer :: cell, n
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -409,8 +383,6 @@ CONTAINS
        end do
        Permuted_Mech%Plastic_Strain_Rate(Permuter(cell)) = Orig_Mech%Plastic_Strain_Rate(cell)
     end do
-
-    return
 
   END SUBROUTINE PERMUTE_MECH_LOCAL
 
@@ -424,7 +396,7 @@ CONTAINS
     use parameter_module, only: nnodes
 
     ! Local variables
-    integer(int_kind)                :: inode, nnum, n, isize, iint
+    integer :: inode, nnum, n, isize, iint
     
     if (.not. (ASSOCIATED(Node_Gap))) then
        isize = 0

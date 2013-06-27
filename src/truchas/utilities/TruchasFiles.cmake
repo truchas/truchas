@@ -14,7 +14,6 @@ set(UTIL_FILES
          utilities/f90_assert.F90
          utilities/file_utility.F90
          utilities/input_utilities.F90
-         utilities/kind_module.F90
          utilities/kinds.F90
          utilities/linear_module.F90
          utilities/lnorm_module.F90

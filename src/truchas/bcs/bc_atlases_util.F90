@@ -9,9 +9,10 @@ Module BC_ATLASES_Util
   !
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
-  use kind_module
+  use kinds, only: r8
   use bc_atlases_data_types
   use bc_enum_types
+  use truchas_logging_services
   Implicit None
   Private
 
@@ -76,7 +77,7 @@ CONTAINS
 
   subroutine AtlasCanonical(Atlas)
     ! Permute, sort, re-arrange Atlas so it is in canonical order.
-    type (BC_Atlas), intent(INOUT), target :: Atlas
+    type(BC_Atlas), intent(INOUT), target :: Atlas
     
     ! An atlas is canonical if 
     ! 1) All data for a chart is on the same processor as 
@@ -103,24 +104,21 @@ CONTAINS
     ! is determined by the cell identifier for that chart.
     use parameter_module
     use parallel_info_module
-    use pgslib_module,      ONLY: PGSLib_Gather, PGSLib_GRADE_UP,&
-                                  PGSLib_Scatter_SUM                                  
-    use truchas_logging_services
-    implicit none
-    type (BC_Atlas), intent(INOUT), target :: Atlas
+    use pgslib_module, ONLY: PGSLib_Gather, PGSLib_GRADE_UP, PGSLib_Scatter_SUM                                  
+    type(BC_Atlas), intent(INOUT), target :: Atlas
 
     ! Local variables
-    integer( int_kind) :: i, NewDataSize
-    integer( int_kind), allocatable, dimension(:) :: ChartProcNum
-    integer( int_kind), allocatable, dimension(:) :: Rank
-    integer( int_kind), dimension(1)              :: ItemsThisProc
-!!$    integer( int_kind), allocatable, dimension(:) :: ItemsPerProc
+    integer :: i, NewDataSize
+    integer, allocatable, dimension(:) :: ChartProcNum
+    integer, allocatable, dimension(:) :: Rank
+    integer, dimension(1) :: ItemsThisProc
+!!$    integer, allocatable, dimension(:) :: ItemsPerProc
 !!$    logical, allocatable, dimension(:) :: ProcNumSeg
 !!$    logical, allocatable, dimension(:) :: ProcNumMask
-    integer( int_kind), dimension(ncells)         :: CellProcNum
-    integer( int_kind), POINTER, dimension(:)     :: Cells
-    type (BC_Atlas)                    :: Temp_Atlas
-    integer( int_kind)                            :: status
+    integer, dimension(ncells)         :: CellProcNum
+    integer, POINTER, dimension(:)     :: Cells
+    type(BC_Atlas)                    :: Temp_Atlas
+    integer                            :: status
 
     allocate (ChartProcNum(SIZE(Atlas)), STAT=status)
     if (status /= 0) call TLS_panic ('AtlasLocalize: allocate failed: ChartProcNum')
@@ -204,7 +202,6 @@ CONTAINS
     deallocate (Rank)
     deallocate (ChartProcNum)
 
-    return
   end subroutine AtlasLocalize
 
     
@@ -213,18 +210,16 @@ CONTAINS
     ! Sort an atlas so that it is in canonical order.  That means
     ! ordered by cells, and then for each cell by face number.
     use parallel_info_module
-    use PGSLib_module,      ONLY: PGSLib_GRADE_UP, PGSLib_Global_EOSHIFT,&
-                                  PGSLib_PARITY_PREFIX
-    use truchas_logging_services
-    type (BC_Atlas), intent(INOUT), target :: Atlas
+    use PGSLib_module, ONLY: PGSLib_GRADE_UP, PGSLib_Global_EOSHIFT, PGSLib_PARITY_PREFIX
+    type(BC_Atlas), intent(INOUT), target :: Atlas
 
     ! Local variables
-    integer( int_kind), allocatable, dimension(:) :: Rank
-    integer( int_kind), allocatable, dimension(:) :: CellSegNum
+    integer, allocatable, dimension(:) :: Rank
+    integer, allocatable, dimension(:) :: CellSegNum
     logical, allocatable, dimension(:) :: CellSeg
     logical, allocatable, dimension(:) :: CellMask
-    integer( int_kind), POINTER,     dimension(:) :: Cells, Faces
-    integer( int_kind)                            :: status
+    integer, POINTER,     dimension(:) :: Cells, Faces
+    integer :: status
 
     allocate (rank(SIZE(Atlas)), STAT=status)
     if (status /= 0) call TLS_panic ('AtlasOrder: allocate failed: Rank')
@@ -260,7 +255,6 @@ CONTAINS
     deallocate (CellSegNum)
     deallocate (rank)
 
-    return
   end subroutine AtlasOrder
 
   subroutine AtlasPermute(Atlas, Rank, REINDEX)
@@ -268,14 +262,13 @@ CONTAINS
     ! to re-order the data, and also recompute the Length and Offset fields.
     ! If REINDEX is present and false, then the Length and Offset fields
     ! are not defined and not correct after this call.
-    implicit none
-    type (BC_Atlas), intent(INOUT), target :: Atlas
-    integer( int_kind), dimension(:), intent(IN) :: Rank
+    type(BC_Atlas), intent(INOUT), target :: Atlas
+    integer, dimension(:), intent(IN) :: Rank
     logical, OPTIONAL,     intent(IN) :: REINDEX
 
     ! Local variables
-    type (BC_Atlas_Data), POINTER     :: AtlasData
-    logical                           :: ReCompute
+    type(BC_Atlas_Data), POINTER :: AtlasData
+    logical :: ReCompute
 
     AtlasData => BC_Get_Data(Atlas)
     call PERMUTE(AtlasData, Rank)
@@ -290,21 +283,19 @@ CONTAINS
        call ComputeIndex(Atlas)
     end if
 
-    return
   end subroutine AtlasPermute
 
   subroutine AtlasRedistribute(Dest, Source)
     ! Redistribute the source atlas into the dest atlas.  The redistribution
     ! does not do anything with the AtlasSpec component.  This routine
     ! must be followed by a ComputeIndex call to finish constructing the atlas.
-    implicit none
-    type (BC_Atlas), intent(INOUT), target :: Dest
-    type (BC_Atlas), intent(INOUT), target :: Source
+    type(BC_Atlas), intent(INOUT), target :: Dest
+    type(BC_Atlas), intent(INOUT), target :: Source
 
     ! Local variables
-    type (BC_Atlas_Data), POINTER     :: AtlasDataDest
-    type (BC_Atlas_Data), POINTER     :: AtlasDataSource
-    integer( int_kind), POINTER, dimension(:  )  :: Cells_Dest
+    type(BC_Atlas_Data), POINTER :: AtlasDataDest
+    type(BC_Atlas_Data), POINTER :: AtlasDataSource
+    integer, POINTER, dimension(:  )  :: Cells_Dest
 
     AtlasDataDest   => BC_Get_Data(Dest)
     AtlasDataSource => BC_Get_Data(Source)
@@ -320,24 +311,22 @@ CONTAINS
     ! And need to set the scope of the cell pointers.
     call SET_SCOPE(Dest, GET_SCOPE(Source))
     
-    return
   end subroutine AtlasRedistribute
 
   subroutine ComputeIndex(Atlas)
     ! Compute the length and offset fields based on the atlas data.
-    implicit none
-    type (BC_Atlas), intent(INOUT) :: Atlas
+    type(BC_Atlas), intent(INOUT) :: Atlas
 
     ! Local variables
-    integer( int_kind) :: numcharts, datasize, Current_cell, Current_Face, Item, ChartStart
+    integer :: numcharts, datasize, Current_cell, Current_Face, Item, ChartStart
     logical :: NewCell, NewFace, NewChart, ChartComplete
-    integer( int_kind), POINTER, dimension(:) :: Cells
-    integer( int_kind), POINTER, dimension(:) :: Faces
-    integer( int_kind), POINTER, dimension(:) :: ValueIndex
-    logical( log_kind), POINTER, dimension(:) :: UseFunction
-    real(real_kind),    POINTER, dimension(:,:) :: Values
-    real(real_kind),    POINTER, dimension(:,:) :: Positions
-    type (BC_Atlas)       :: Temp_Atlas
+    integer, POINTER, dimension(:) :: Cells
+    integer, POINTER, dimension(:) :: Faces
+    integer, POINTER, dimension(:) :: ValueIndex
+    logical, POINTER, dimension(:) :: UseFunction
+    real(r8), POINTER, dimension(:,:) :: Values
+    real(r8), POINTER, dimension(:,:) :: Positions
+    type(BC_Atlas) :: Temp_Atlas
 
     ! We plan to totally clobber Atlas, so we need to store the data someplace
     call CLONE(Temp_Atlas, Atlas)
@@ -427,16 +416,15 @@ CONTAINS
   subroutine AtlasRenumberCells(Atlas, SCOPE)
     ! Renumber the cells based on the the input scope
     use parameter_module
-    use pgslib_module,        ONLY: PGSLib_SUM_PREFIX
-    implicit none
-    type (BC_Atlas), intent(INOUT), target :: Atlas
-    integer( int_kind),         intent(IN   ) :: SCOPE
+    use pgslib_module, ONLY: PGSLib_SUM_PREFIX
+    type(BC_Atlas), intent(INOUT), target :: Atlas
+    integer, intent(IN) :: SCOPE
 
     ! Local variables
-    integer( int_kind) :: c
-    integer( int_kind), dimension(ncells)     :: Global_Cell_Number
-    integer( int_kind)                        :: Global_Offset
-    integer( int_kind), POINTER, dimension(:) :: Cells
+    integer :: c
+    integer, dimension(ncells) :: Global_Cell_Number
+    integer :: Global_Offset
+    integer, POINTER, dimension(:) :: Cells
 
     ! If output scope should be local, then convert global to local,
     ! unless scope is already local
@@ -475,7 +463,6 @@ CONTAINS
           call Set_Scope(Atlas, SCOPE = BC_Cells_Scope_Global)
        end if
     end if
-    return
     
   end subroutine AtlasRenumberCells
 
@@ -489,20 +476,19 @@ CONTAINS
     ! already been setup, so Collated_Atlas is an INOUT argument.
     use parallel_util_module, only: Is_IO_PE
     use pgslib_module,        ONLY: PGSLib_Global_SUM, PGSlib_Collate
-    implicit none
     type(BC_Atlas), intent(INOUT) :: collated_atlas
-    type(BC_Atlas), intent(IN   ) :: local_atlas
+    type(BC_Atlas), intent(IN) :: local_atlas
 
     ! local variables
-    integer( int_kind) :: d, p, Collated_Size
-    integer( int_kind), pointer, dimension(:)   :: Collated_Cells, Local_Cells
-    integer( int_kind), pointer, dimension(:)   :: Collated_Faces, Local_Faces
-    integer( int_kind), pointer, dimension(:)   :: Collated_ValueIndex, Local_ValueIndex
-    logical( log_kind), pointer, dimension(:)   :: Collated_UseFunction, Local_UseFunction
-    real(real_kind),    pointer, dimension(:,:) :: Collated_Values, Local_Values
-    real(real_kind),    pointer, dimension(:,:) :: Collated_Positions, Local_Positions
-    integer( int_kind)               :: DIMS
-    real(real_kind), ALLOCATABLE, dimension(:,:)  :: ChartPositions
+    integer :: d, p, Collated_Size
+    integer,  pointer, dimension(:) :: Collated_Cells, Local_Cells
+    integer,  pointer, dimension(:) :: Collated_Faces, Local_Faces
+    integer,  pointer, dimension(:) :: Collated_ValueIndex, Local_ValueIndex
+    logical,  pointer, dimension(:) :: Collated_UseFunction, Local_UseFunction
+    real(r8), pointer, dimension(:,:) :: Collated_Values, Local_Values
+    real(r8), pointer, dimension(:,:) :: Collated_Positions, Local_Positions
+    integer :: DIMS
+    real(r8), ALLOCATABLE, dimension(:,:) :: ChartPositions
 
     ! Would like to have this on the stack, but Fujitsu doesn't like
     ! using DIMENSIONALITY in the declaration list
@@ -568,7 +554,6 @@ CONTAINS
     DEALLOCATE(Collated_Cells)
 
     DEALLOCATE(ChartPositions)
-    return
 
   end subroutine AtlasCollate
 

@@ -11,10 +11,8 @@ Module BC_Operations
   !
   ! Author: Robert Ferrell (ferrell@lanl.gov)
   !-----------------------------------------------------------------------------
-
   use bc_data_types
   Implicit None
-
 
   ! Data instances provided by this module.
   type (BC_Specifier), SAVE, target :: Temperature_BC

@@ -17,17 +17,11 @@ MODULE PREDICTOR_MODULE
   !
   !=======================================================================
 
-  use kind_module
-
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: PREDICTOR
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -49,14 +43,12 @@ CONTAINS
     use advection_module,        only: ADVECT_MOMENTUM
     use body_data_module,        only: body_force_face_method
     use body_force_module,       only: add_cell_body_force
-    use constants_module,        only: zero,one
     use fluid_data_module,       only: fluidRho_n,           &
                                        fluidVof, fluidVof_n,           &
                                        Drag_Coefficient,               &
                                        Mom_Delta,                      &
                                        momentum_solidify_implicitness
     use flow_phase_change,       only: have_solidifying_flow, solidified_rho
-    use kind_module,             only: int_kind, real_kind
     use parameter_module,        only: ncells, ndim
     use porous_drag_data,        only: porous_flow
     use porous_drag_module,      only: POROUS_DRAG
@@ -68,13 +60,9 @@ CONTAINS
     use zone_module,             only: Zone
     use surface_tension_module,  only: CSF, csf_tangential
 
-    implicit none
-
-    ! Argument List
-
     ! Local Variables
-    integer(int_kind)  :: i, n
-    real(real_kind)    :: tweight
+    integer :: i, n
+    real(r8) :: tweight
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -82,8 +70,8 @@ CONTAINS
     call start_timer ("Predictor")
 
     ! Initialize
-    Mom_Delta        = zero
-    Drag_Coefficient = zero
+    Mom_Delta        = 0
+    Drag_Coefficient = 0
 
     call predictorSetup(dt, Mom_Delta)
 
@@ -95,7 +83,7 @@ CONTAINS
        call TURBULENCE(turbulence_model)
 
        ! Add in the explicit evaluation of the Standard Newtonian stress tensor.
-       if(viscous_implicitness < one) then
+       if(viscous_implicitness < 1) then
           call viscousExplicit(dt, Mom_Delta)
        end if
     end if
@@ -160,8 +148,6 @@ CONTAINS
     ! Stop Timer
     call stop_timer("Predictor")
 
-    return
-
   END SUBROUTINE PREDICTOR
 
   SUBROUTINE PressureExplicit (dt, Mom_Delta)
@@ -172,28 +158,24 @@ CONTAINS
 ! momentum equations.
 !
 !===============================================================================
-    use constants_module,         only: zero
-    use kind_module,              only: int_kind, real_kind
     use parameter_module,         only: ncells, ndim
     use fluid_data_module,        only: Centered_GradP_Dynamic, &
                                         fluidRho, fluidRho_n
     
     ! Arguments...
-    real(KIND = real_kind),                         intent(IN)    :: dt
-    real(KIND = real_kind), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
+    real(r8), intent(IN) :: dt
+    real(r8), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
 
     ! Local variables
-    integer(int_kind) n
+    integer :: n
 
     do n = 1,ndim
-       where (fluidRho_n == zero) Centered_GradP_Dynamic(n,:) = zero
-       where (fluidRho(:) > zero)
+       where (fluidRho_n == 0) Centered_GradP_Dynamic(n,:) = 0
+       where (fluidRho(:) > 0)
           Mom_Delta(n,:) = Mom_Delta(n,:) - &
                            dt*Centered_GradP_Dynamic(n,:)*fluidRho(:)
        endwhere
-    enddo
-    
-    return
+    end do
 
   END SUBROUTINE PressureExplicit
 
@@ -206,7 +188,6 @@ CONTAINS
 !   for the viscous stress
 !
 !===============================================================================
-    use constants_module,        only: zero, one, one_half
     use cutoffs_module,          only: cutvof
     use fluid_data_module,       only: fluidRho, fluidVof, &
                                        realfluidVof, cutRho, &
@@ -214,7 +195,6 @@ CONTAINS
                                        momentum_solidify_implicitness,    &
                                        mass_limiter, mass_limiter_cutoff
     use flow_phase_change,       only: have_solidifying_flow, solidified_rho
-    use kind_module,             only: int_kind, real_kind
     use parameter_module,        only: ndim, ncells
     use pgslib_module,           only: PGSLIB_GLOBAL_MAXVAL, &
                                        PGSLIB_GLOBAL_MINVAL
@@ -230,27 +210,25 @@ CONTAINS
     use y_eq_Ax_vel,             only: Y_EQ_AX_VELOCITY
 
     use UbikSolve_module
-  
-    implicit none
 
     ! Argument List
-    real(real_kind), dimension(:,:)          :: Mom_Delta
+    real(r8), dimension(:,:) :: Mom_Delta
 
     ! Local Variables
-    integer(int_kind)                        :: n, i, j
-    real(real_kind)                          :: rhsmin, rhsmax
-    real(real_kind), dimension(ndim*ncells)  :: Solution
-    real(real_kind), dimension(ndim*ncells)  :: RHS
-    real(real_kind), dimension(ndim,ncells)  :: mass
-    real(real_kind), dimension(ncells)       :: rho
-    real(real_kind), dimension(ncells)       :: mscale
-    real(real_kind), dimension(:), pointer   :: diag
+    integer :: n, i, j
+    real(r8) :: rhsmin, rhsmax
+    real(r8), dimension(ndim*ncells)  :: Solution
+    real(r8), dimension(ndim*ncells)  :: RHS
+    real(r8), dimension(ndim,ncells)  :: mass
+    real(r8), dimension(ncells)       :: rho
+    real(r8), dimension(ncells)       :: mscale
+    real(r8), dimension(:), pointer   :: diag
 
     ! Parameters used for the mass limiter. At some point, it may be 
     ! necessary to provide a user interface to adjust the exponential width.  
     ! For now, an on-off toggle has been provided to switch off the 
     ! mass limiter when desired.
-    real(real_kind) :: cmass, width, cutoff, offset, xi
+    real(r8) :: cmass, width, cutoff, offset, xi
 
     ! The cutoff should really be cast in terms of a mass rather than volume 
     ! fractions ... but make do with what's here.  The width of the exponential
@@ -286,22 +264,22 @@ CONTAINS
     if (have_solidifying_flow() .and. mass_limiter) then
        do i = 1, ncells
           ! Setup the mass limiter 
-          mscale(i) = one
+          mscale(i) = 1
           cutoff = width*cutRho(i)
-          if(solidified_rho(i) > zero .and. rho(i) > cutRho(i) .and. rho(i) < cutoff) then
+          if(solidified_rho(i) > 0 .and. rho(i) > cutRho(i) .and. rho(i) < cutoff) then
              ! Here, define xi = amp*cutRho(i)/(cutoff - cutRho(i)), but
              ! scale by something roughly proportional to 1/cutRho(i) 
              ! for robust behavior.
-             xi = one/(cutoff - cutRho(i))
-             offset = xi + one_half*xi*xi
-             xi = one/(rho(i) - cutRho(i))
-             mscale(i) = one + xi + one_half*xi*xi - offset
+             xi = 1/(cutoff - cutRho(i))
+             offset = xi + xi*xi/2
+             xi = 1/(rho(i) - cutRho(i))
+             mscale(i) = 1 + xi + xi*xi/2 - offset
           endif
        end do
     endif
 
     ! Treat the explicit cases first
-    if(viscous_implicitness == zero .or. inviscid) then
+    if(viscous_implicitness == 0 .or. inviscid) then
 
        ! Setup the base 'mass matrix'.  Here, the mass matrix is 
        ! just a generic array used to hold the left-hand-side terms
@@ -340,11 +318,11 @@ CONTAINS
              ! Update the velocities
              do n = 1, Ndim
                 ! Overly restrictive conditions, but use for now (MAC)
-                if(mass(n,i) > zero .and. &
+                if(mass(n,i) > 0 .and. &
                    rho(i) > cutRho(i) .and. realfluidVof(i) > cutvof) then
                    Zone(i)%Vc(n) = Mom_Delta(n,i)/(mass(n,i)*mscale(i))
                 else
-                   Zone(i)%Vc(n) = zero
+                   Zone(i)%Vc(n) = 0
                 endif
              end do
           end do ! End of Ncells loop
@@ -353,11 +331,11 @@ CONTAINS
           ! Original update -- can lead to spurious velocities with void present
           do n = 1, ndim
           ! Old treatment of momentum
-          ! where (rho > zero) OR generally where (mass(n,:) > zero)  
-             where (mass(n,:) > zero)
+          ! where (rho > 0) OR generally where (mass(n,:) > 0)  
+             where (mass(n,:) > 0)
                 Zone%Vc(n) = Mom_Delta(n,:)/mass(n,:)
              elsewhere 
-                Zone%Vc(n) = zero
+                Zone%Vc(n) = 0
              endwhere
           end do ! End of Ndim loop
        endif
@@ -377,7 +355,7 @@ CONTAINS
               if(.not. isPureImmobile(i) .and. realFluidVof(i) > cutvof) then
                  Mom_Delta(n,i) = Mom_Delta(n,i)/FluidVof(i)
               else
-                 Mom_Delta(n,i) = zero
+                 Mom_Delta(n,i) = 0
               endif
           end do
        end do
@@ -466,16 +444,15 @@ CONTAINS
 !
 !===============================================================================
 
-    use viscous_module,                only: viscousSetup
-    use parameter_module,              only: ncells, ndim
+    use viscous_module, only: viscousSetup
+    use parameter_module, only: ncells, ndim
 
     ! Arguments...
-    real(KIND = real_kind),                         intent(IN)    :: dt
-    real(KIND = real_kind), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
+    real(r8), intent(IN) :: dt
+    real(r8), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
 
      ! call the setup for viscous physics...
      call viscousSetup(dt, Mom_Delta)
-
 
   END SUBROUTINE predictorSetup
 
@@ -486,7 +463,7 @@ CONTAINS
 !
 !===============================================================================
 
-     use viscous_module,          only: viscousCleanup
+     use viscous_module, only: viscousCleanup
 
      ! call the cleanup for viscous physics...
      call viscousCleanup()
@@ -502,7 +479,6 @@ CONTAINS
 !===============================================================================
     use bc_module,            only: BC, FREE_SLIP, Vel
     use bc_operations
-    use constants_module,     only: zero, one
     use fluid_data_module,    only: fluidVof, fluidRho, &
                                     Drag_Coefficient, isPureImmobile, &
                                     momentum_solidify_implicitness
@@ -510,17 +486,16 @@ CONTAINS
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, ndim, nfc
     use time_step_module,     only: dt
-    use kind_module,          only: int_kind, real_kind
     use viscous_data_module,  only: viscous_implicitness, Mu_Face, Mask
     use porous_drag_data,     only: porous_flow, porous_implicitness
  
     ! Arguments
-    real(real_kind), intent(inout) :: diag(:)
+    real(r8), intent(inout) :: diag(:)
 
     ! Local Variables
 
-    integer(int_kind)                         :: i, j, f, n
-    real(real_kind),   dimension(nfc,ncells)  :: beta
+    integer :: i, j, f, n
+    real(r8), dimension(nfc,ncells) :: beta
 
     ! Initialize the diagonal
     diag(:) = 0.0
@@ -577,7 +552,7 @@ CONTAINS
        do i = 1, ncells
           do n = 1, ndim
              j = (i-1)*ndim+n
-             if (fluidVof(i) > zero) then
+             if (fluidVof(i) > 0) then
                 diag(j) = diag(j) + &
                      momentum_solidify_implicitness*solidified_rho(i)/fluidVof(i)
              endif
@@ -598,10 +573,9 @@ CONTAINS
     do i = 1, ncells
        do n = 1, ndim
           j = (i-1)*ndim+n
-          if (isPureImmobile(i) .or. diag(j) == zero) diag(j) = one 
+          if (isPureImmobile(i) .or. diag(j) == 0) diag(j) = 1 
        end do
     end do
-
 
   end subroutine setupDiagonal
 
@@ -621,16 +595,16 @@ CONTAINS
   use viscous_data_module,  only: mask
 
   ! Arguments
-  real(real_kind), intent(inout)       :: beta(:,:)
+  real(r8), intent(inout) :: beta(:,:)
 
   ! Local variables
-  logical(log_kind), dimension(ncells) :: mask1
-  integer(int_kind)                    :: i, f
-  real(real_kind)                      :: dx, dy, dz, delta_mag
+  logical, dimension(ncells) :: mask1
+  integer :: i, f
+  real(r8) :: dx, dy, dz, delta_mag
 
   ! This could be pre-allocated for the diagonal preconditioner a-priori, 
   ! but for now, leave it local to the routine as an automatic (MAC)
-  real(real_kind), dimension(nfc,ncells) :: xnbr, ynbr, znbr
+  real(r8), dimension(nfc,ncells) :: xnbr, ynbr, znbr
 
   beta(:,:) = 0.0
 

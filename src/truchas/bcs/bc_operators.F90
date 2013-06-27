@@ -157,7 +157,6 @@ Module BC_OPERATORS
 CONTAINS
 
   subroutine InitOperator(BC_Op, OP_ID) 
-    implicit none
     type(BC_Operator), target, intent(INOUT) :: BC_Op
     integer,           intent(IN   ) :: OP_ID
 
@@ -170,12 +169,11 @@ CONTAINS
     call INITIALIZE(BC_Op%NextChart_ID)
     call BC_Op_Set_State(BC_Op, BC_OP_INVALID_STATE)
     call BC_Set_Name(BC_Op, BC_NO_NAME)
-    return
+
   end subroutine InitOperator
 
   subroutine FreeOperator(BC_OP)
     ! Free all memory used by the operator
-    implicit none
     type(BC_Operator), target, intent(INOUT) :: BC_Op
 
     BC_Op%OP_ID = BC_INVALID_ID
@@ -190,31 +188,26 @@ CONTAINS
        DEALLOCATE(BC_Op%NextChart_ID)
     end if
     
-    return
+
   end subroutine FreeOperator
 
   function GetRegion(BC_Op) RESULT(Region)
-    implicit none
     type (BC_Operator), intent(IN), TARGET :: BC_Op
     type (BC_Region),   POINTER            :: Region
 
     Region => BC_Op%Region
 
-    RETURN
   end function GetRegion
       
   function GetAtlas(BC_Op) RESULT(Atlas)
-    implicit none
     type (BC_Operator), intent(IN), TARGET :: BC_Op
     type (BC_Atlas),   POINTER            :: Atlas
 
     Atlas => BC_Op%Atlas
 
-    RETURN
   end function GetAtlas
       
   function GetOpDimensionality(BC_Op) RESULT(Dims)
-    implicit none
     type (BC_Operator), target, intent(IN) :: BC_Op
     integer                        :: Dims
 
@@ -223,75 +216,60 @@ CONTAINS
     Atlas => BC_OP_Get_Atlas(BC_Op)
     Dims = DIMENSIONALITY(Atlas)
 
-    RETURN
   end function GetOpDimensionality
 
   function GetOpID(BC_Op) RESULT(ID)
-    implicit none
     type (BC_Operator), target, intent(IN) :: BC_Op
     integer                        :: ID
 
     ID = BC_Op%OP_ID
 
-    RETURN
   end function GetOpID
 
   subroutine SetState(BC_Op, State)
-    implicit none
     type (BC_Operator), target, intent(INOUT) :: BC_Op
     integer                           :: State
 
     BC_Op%State = State
-    return
   end subroutine SetState
 
   function ActiveP(BC_Op)
-    implicit none
     type (BC_Operator), target, intent(IN) :: BC_Op
     logical              :: ActiveP
 
     ActiveP = (BC_Op%State == BC_OP_ACTIVE)
-    return
   end function ActiveP
 
   function GetCurrentChart_ID(BC_Op) RESULT(Chart_ID)
-    implicit none
     type (BC_Operator), intent(INOUT), TARGET :: BC_Op
     type (BC_Chart_ID),   POINTER            :: Chart_ID
     
     Chart_ID => BC_Op%CurrentChart_ID
 
-    RETURN
   end function GetCurrentChart_ID
 
   subroutine SetCurrentChart_ID(BC_Op, Chart_ID)
-    implicit none
     type (BC_Operator), target, intent(INOUT) :: BC_Op
     type (BC_Chart_ID),    TARGET,        &
                         intent(IN   ) :: Chart_ID
     
     BC_Op%CurrentChart_ID => Chart_ID
-    RETURN
   end subroutine SetCurrentChart_ID
 
   function GetNextChart_ID(BC_Op) RESULT(Chart_ID)
-    implicit none
     type (BC_Operator), intent(IN), TARGET :: BC_Op
     type (BC_Chart_ID),   POINTER            :: Chart_ID
     
     Chart_ID => BC_Op%NextChart_ID
-    RETURN
   end function GetNextChart_ID
 
   subroutine SetNextChart_ID(BC_Op, Chart_ID)
-    implicit none
     type (BC_Operator), target, intent(INOUT) :: BC_Op
     type (BC_Chart_ID),    TARGET,        &
                         intent(IN   ) :: Chart_ID
     
     BC_Op%NextChart_ID => Chart_ID
     
-    RETURN
   end subroutine SetNextChart_ID
 
   subroutine StartChartSearch(BC_Op)
@@ -302,12 +280,6 @@ CONTAINS
     type (BC_Chart_ID), POINTER :: CurrentID, NextID
     logical :: foundNext
 
-! Compaq compiler is fouling up some pointer code
-#ifdef NAG_COMPILER_WORKAROUND
-    type (BC_Atlas), POINTER :: LocalAtlas
-    integer :: NumberOfCharts
-#endif
-
     ! Get the current chart
     CurrentID => BC_Op_Get_Current_Chart(BC_Op)
     ! Get the next chart
@@ -315,20 +287,6 @@ CONTAINS
 
     ! If there are no charts, then can never search, so set both current and next ID's to invalide
 
-#ifdef NAG_COMPILER_WORKAROUND
-    LocalAtlas => BC_Op_Get_Atlas(BC_Op)
-    NumberOfCharts = BC_NumberOfCharts(LocalAtlas)
-
-    if (NumberOfCharts <= 0) then
-       CurrentID   = BC_Invalid_Chart_ID()
-       NextID      = BC_Invalid_Chart_ID()
-    else
-       ! Set the currentID to point to the first entry, which has index = 1
-       call BC_Chart_Set_Chart(CurrentID, ATLAS=LocalAtlas, AtlasIndex = 1)
-       ! Set the next chart ID
-       FoundNext = BC_Chart_Next_Chart(CurrentID, NextID)
-    end if
-#else
     if (BC_NumberOfCharts(BC_OP_Get_Atlas(BC_Op)) <= 0) then
        CurrentID   = BC_Invalid_Chart_ID()
        NextID      = BC_Invalid_Chart_ID()
@@ -338,16 +296,13 @@ CONTAINS
        ! Set the next chart ID
        FoundNext = BC_Chart_Next_Chart(CurrentID, NextID)
     end if
-#endif
 
-    return
   end subroutine StartChartSearch
 
   subroutine StepChartIDs(BC_Op)
     ! Advance the chartIDs.  The data in the "NextChartID" becomes the "CurrentChartID",
     ! and we get new data for the NextChartID
     use bc_charts_atlases,  only: BC_Chart_ID, BC_Chart_Next_Chart
-    implicit none
     type (BC_OPERATOR), target, intent(INOUT) :: BC_Op
     
     ! Local variables
@@ -374,13 +329,11 @@ CONTAINS
     
     ! Finally, poke this into the chartID
     call BC_Op_Set_Next_Chart(BC_Op, NextChartID)
-    return
   end subroutine StepChartIDs
 
   function GetBCChartID(ChartID, Operator, Cell, Face) RESULT(FoundChartID)
     use bc_charts_atlases, only: BC_Chart_ID, BC_Chart_Matches, &
                                  BC_Invalid_Chart_ID
-    implicit none
     type (BC_Chart_ID),    POINTER    :: ChartID
     type (BC_Operator), TARGET,     &
                         intent(INOUT) :: Operator
@@ -425,7 +378,6 @@ CONTAINS
        ChartID => BC_Invalid_Chart_ID()
     end if
 
-    return
   end function GetBCChartID
 
   subroutine OpCollate(Collated_Op, Local_Op)
@@ -433,7 +385,6 @@ CONTAINS
     ! This routine assumes that Collated_Op has been appropriately allocated,
     ! so Collated_Op is an INOUT argument.
     use parallel_util_module
-    implicit none
     type (BC_Operator), target, intent(INOUT) :: Collated_Op
     type (BC_Operator), target, intent(IN   ) :: Local_Op
 
@@ -445,31 +396,24 @@ CONTAINS
     call COLLATE(Collated_Op%Atlas,  Local_Op%Atlas )
 
     call BC_Set_Name(Collated_Op, BC_Get_NAME(Local_Op))
-    return
   end subroutine OpCollate
     
   subroutine OpSetName(BC_Op, NAME)
-    implicit none
     type (BC_Operator), target, intent(INOUT) :: BC_Op
     character(LEN=*), intent(IN) :: NAME
     BC_Op%Name = TRIM(NAME)
-    RETURN
   END subroutine OpSetName
 
   function OpGetName(BC_Op) RESULT(NAME)
-    implicit none
     type (BC_Operator), target, intent(IN   ) :: BC_Op
     character(LEN=BC_STRING_LEN) ::NAME
     NAME = TRIM(BC_Op%Name)
-    RETURN
   END function OpGetName
 
   function OpGetDOF(BC_Op) RESULT(DOF)
-    implicit none
     type (BC_Operator), target, intent(IN   ) :: BC_Op
     integer :: DOF
     DOF = BC_Get_DOF(BC_Op%Atlas)
-    RETURN
   END function OpGetDOF
 
 END Module BC_OPERATORS

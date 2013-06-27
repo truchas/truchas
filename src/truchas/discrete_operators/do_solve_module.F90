@@ -1,12 +1,10 @@
 MODULE DO_SOLVE_MODULE
-  use constants_module, only: zero, one, two
-  use truchas_logging_services, only: TLS_panic
-  use kind_module,      only: int_kind, real_kind
+  use truchas_logging_services
+  use kinds, only: r8
+  implicit none
+  private
 
- implicit none
- private
-
- public :: DO_SV_DECOMP,DO_LU_SOLVE,DO_LU_DECOMP
+  public :: DO_SV_DECOMP,DO_LU_SOLVE,DO_LU_DECOMP
 
 CONTAINS
 
@@ -33,38 +31,36 @@ CONTAINS
 ! * Press, et al, Cambridge University Press                                   *
 ! *                                                                            *
 ! ******************************************************************************
-    implicit none
+      integer,  intent(IN)    :: mrowa,mrow,ncol
+      real(r8), intent(INOUT) :: a(mrowa,ncol)
+      real(r8), intent(OUT)   :: w(ncol),v(ncol,ncol)
 
-      integer(KIND=int_kind),intent(IN) :: mrowa,mrow,ncol
-      real(KIND=real_kind),intent(INOUT) :: a(mrowa,ncol)
-      real(KIND=real_kind),intent(OUT):: w(ncol),v(ncol,ncol)
-
-      real(KIND=real_kind) f,g,h,scale,anorm,s,c,x,y,z
-      integer(KIND=int_kind),parameter :: NMAX=4  ! Maximum number of columns (ndim+1)
-      integer(KIND=int_kind),parameter :: MAX_ITERATIONS=30  ! Maximum number of iterations
-      real(KIND=real_kind),dimension(NMAX),save :: rv1
-      integer(KIND=int_kind) :: i,j,k,l,its,nm
+      real(r8) f,g,h,scale,anorm,s,c,x,y,z
+      integer, parameter :: NMAX=4  ! Maximum number of columns (ndim+1)
+      integer, parameter :: MAX_ITERATIONS=30  ! Maximum number of iterations
+      real(r8), dimension(NMAX), save :: rv1
+      integer :: i,j,k,l,its,nm
 
       if(mrow < ncol)then
 !       call PUNT((/'Under determined system.'/),'DO_SVDCMP')
       endif
 
-      g = zero
-      scale = zero
-      anorm = zero
+      g = 0.0_r8
+      scale = 0.0_r8
+      anorm = 0.0_r8
 
 !  Reduce input A to bidiagonal form via Househoulder
       BIDIAG_FORM: do i=1,ncol
         l = i + 1
         rv1(i) = scale*g
-        g = zero
-        s = zero
-        scale = zero
+        g = 0.0_r8
+        s = 0.0_r8
+        scale = 0.0_r8
         if(i <= mrow)then
           do k=i,mrow
             scale = scale + abs(a(k,i))
           end do
-          if(scale /= zero)then
+          if(scale /= 0.0_r8)then
             do k=i,mrow
               a(k,i) = a(k,i)/scale
               s = s + a(k,i)*a(k,i)
@@ -75,7 +71,7 @@ CONTAINS
             a(i,i) = f - g
             if(i /= ncol)then
               do j=l,ncol
-                s = zero
+                s = 0.0_r8
                 do k=i,mrow
                   s = s + a(k,i)*a(k,j)
                 end do
@@ -91,14 +87,14 @@ CONTAINS
           endif  ! if(scale /=
         endif  ! if(i <=
         w(i) = scale*g
-        g = zero
-        s = zero
-        scale = zero
+        g = 0.0_r8
+        s = 0.0_r8
+        scale = 0.0_r8
         if (i <= mrow .and. i /= ncol) then
           do k=l,ncol
             scale = scale + abs(a(i,k))
           end do
-          if(scale /= zero)then
+          if(scale /= 0.0_r8)then
             do k=l,ncol
               a(i,k) = a(i,k)/scale
               s = s + a(i,k)*a(i,k)
@@ -112,7 +108,7 @@ CONTAINS
             end do
             if(i /= mrow)then
               do j=l,mrow
-                s = zero
+                s = 0.0_r8
                 do k=l,ncol
                   s = s + a(j,k)*a(i,k)
                 end do
@@ -132,12 +128,12 @@ CONTAINS
 ! Form right transformation
       CALC_RT: do i=ncol,1,-1
         if(i < ncol)then
-          if(g /= zero)then
+          if(g /= 0.0_r8)then
             do j=l,ncol
               v(j,i) = (a(i,j)/a(i,l))/g
             end do
             do j=l,ncol
-              s= zero
+              s= 0.0_r8
               do k=l,ncol
                 s = s + a(i,k)*v(k,j)
               end do
@@ -147,11 +143,11 @@ CONTAINS
             end do  ! j=
           endif  ! if(g /=
           do j=l,ncol
-            v(i,j) = zero
-            v(j,i) = zero
+            v(i,j) = 0.0_r8
+            v(j,i) = 0.0_r8
           end do
         endif  ! if(i <
-        v(i,i) = one
+        v(i,i) = 1.0_r8
         g = rv1(i)
         l = i
       end do CALC_RT
@@ -162,14 +158,14 @@ CONTAINS
         g = w(i)
         if(i < ncol)then
           do j=l,ncol
-            a(i,j) = zero
+            a(i,j) = 0.0_r8
           end do
         endif
-        if(g /= zero)then
-          g = one/g
+        if(g /= 0.0_r8)then
+          g = 1.0_r8/g
           if(i /= ncol)then
             do j=l,ncol
-              s = zero
+              s = 0.0_r8
               do k=l,mrow
                 s = s + a(k,i)*a(k,j)
               end do
@@ -184,10 +180,10 @@ CONTAINS
           end do
         else
           do j= i,mrow
-            a(j,i) = zero
+            a(j,i) = 0.0_r8
           end do
         endif  ! if(g /=
-        a(i,i) = a(i,i) + one
+        a(i,i) = a(i,i) + 1.0_r8
       end do CALC_LT
 
 ! Diagonlize bidiagonal form
@@ -198,8 +194,8 @@ CONTAINS
             nm=l-1
             if((abs(rv1(l))+anorm) == anorm)exit L_LOOP  ! Note rv1(1) is always zero
             if((abs(w(nm))+anorm) == anorm)then  ! Cancel out rv1(l) if l>1
-              c = zero  
-              s = one
+              c = 0.0_r8  
+              s = 1.0_r8
               do i=l,k
                 f = s*rv1(i)
                 if((abs(f)+anorm) == anorm)exit L_LOOP
@@ -207,7 +203,7 @@ CONTAINS
 !               h = sqrt(f*f+g*g)
                 h = pythag(f,g)
                 w(i)  = h
-                h = one/h
+                h = 1.0_r8/h
                 c = (g*h)
                 s = -(f*h)
                 do j=1,mrow
@@ -223,7 +219,7 @@ CONTAINS
           z = w(k)
 
           if(l == k)then  ! Solution converged
-            if(z < zero)then
+            if(z < 0.0_r8)then
               w(k) = -z
               do j=1,ncol
                 v(j,k) = -v(j,k)
@@ -241,13 +237,13 @@ CONTAINS
           y = w(nm)
           g = rv1(nm)
           h = rv1(k)
-          f = ((y-z)*(y+z)+(g-h)*(g+h))/(two*h*y)
-!         g = sqrt(f*f+one)
-          g = pythag(f,one)
+          f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_r8*h*y)
+!         g = sqrt(f*f+1.0_r8)
+          g = pythag(f,1.0_r8)
           f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
 !  Next QR transformation
-          c = one
-          s = one
+          c = 1.0_r8
+          s = 1.0_r8
           NM_LOOP: do j=l,nm
             i = j + 1
             g = rv1(i)
@@ -272,8 +268,8 @@ CONTAINS
 !           z = sqrt(f*f+h*h)
             z = pythag(f,h)
             w(j) = z
-            if (z /= zero)then  ! Rotation fixed if z /= zero
-              z = one/z
+            if (z /= 0.0_r8)then  ! Rotation fixed if z /= 0.0_r8
+              z = 1.0_r8/z
               c = f*z
               s = h*z
             endif
@@ -286,7 +282,7 @@ CONTAINS
               a(nm,i) = z*c - y*s
             end do
           end do NM_LOOP
-          rv1(l) = zero
+          rv1(l) = 0.0_r8
           rv1(k) = f
           w(k) = x
         end do IT_LOOP
@@ -294,18 +290,18 @@ CONTAINS
       END SUBROUTINE DO_SV_DECOMP
 
       FUNCTION PYTHAG(a,b)
-      real(KIND=real_kind), intent(IN) :: a,b
-      real(KIND=real_kind)             :: pythag
-      real(KIND=real_kind) :: absa, absb
+      real(r8), intent(IN) :: a,b
+      real(r8) :: pythag
+      real(r8) :: absa, absb
       absa = abs(a)
       absb = abs(b)
       if(absa > absb)then
-        pythag=absa*sqrt(one + (absb/absa)**2)
+        pythag=absa*sqrt(1.0_r8 + (absb/absa)**2)
       else
-        if(absb == zero)then
-          pythag = zero
+        if(absb == 0.0_r8)then
+          pythag = 0.0_r8
         else
-          pythag=absb*sqrt(one + (absa/absb)**2)
+          pythag=absb*sqrt(1.0_r8 + (absa/absb)**2)
         endif
       endif
       END FUNCTION PYTHAG
@@ -348,18 +344,17 @@ CONTAINS
     !
     !
     !=======================================================================
-    implicit none
-    Integer(KIND=int_kind), intent(IN) :: n
+    integer, intent(IN) :: n
 
     ! arguments
-    integer (int_kind),               intent(OUT)  :: row(n)
-    integer (int_kind),               intent(OUT)  :: col(n)
-    real (real_kind), dimension(n,n), intent(INOUT)  :: A
+    integer, intent(OUT) :: row(n)
+    integer, intent(OUT) :: col(n)
+    real(r8), dimension(n,n), intent(INOUT) :: A
 
     ! local variables
-    Integer(KIND=int_kind) :: piv,i,j,rowp,colp
-    real (real_kind) :: tmp
-    real (real_kind) :: dont_care
+    integer :: piv,i,j,rowp,colp
+    real(r8) :: tmp
+    real(r8) :: dont_care
   ! dont_care_magnitude sets the relative magnitude below which values
   ! are "zero" wrt a cell face's LU solve component. It use implies that
   ! components with magnitudes less than 'dont_care' are "unphysical" wrt
@@ -367,7 +362,7 @@ CONTAINS
   ! The absolute value
   ! for a cell face is the product of the largest magnitude component of
   ! the (ndim+1)x(ndim+1) matrix with the "dont_care_magnitude"
-    real (real_kind),parameter :: dont_care_magnitude=1.d-15
+    real(r8),parameter :: dont_care_magnitude=1.d-15
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     do i=1,n
@@ -421,7 +416,6 @@ CONTAINS
           A(i,piv)=tmp
        enddo
     enddo
-    return
   END SUBROUTINE DO_LU_DECOMP
 
 
@@ -434,20 +428,19 @@ CONTAINS
     !   Return the result in ans.  (data in B is trashed)
     !
     !=======================================================================
-    implicit none
-    Integer(KIND=int_kind), intent(IN)  :: n,nm
+    integer, intent(IN)  :: n,nm
 
     ! arguments
-    integer (int_kind),               intent(IN)  :: row(n)
-    integer (int_kind),               intent(IN)  :: col(n)
-    real (real_kind), dimension(n,n), intent(IN)  :: A
-    real (real_kind), dimension(n),   intent(INOUT)  :: B
+    integer, intent(IN) :: row(n)
+    integer, intent(IN) :: col(n)
+    real(r8), dimension(n,n), intent(IN) :: A
+    real(r8), dimension(n), intent(INOUT) :: B
 
     ! function return
-    real (real_kind)                              :: tmp
-    real (real_kind), dimension(n)                :: B2
+    real(r8) :: tmp
+    real(r8), dimension(n) :: B2
     ! local variables
-    Integer(KIND=int_kind) :: piv,i,j
+    integer :: piv,i,j
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! solve the system Ax=B
@@ -479,8 +472,6 @@ CONTAINS
     do i=1,n
        B(col(i))=B2(i)
     enddo
-    return
   END SUBROUTINE DO_LU_SOLVE
-
 
 END MODULE DO_SOLVE_MODULE

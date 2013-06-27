@@ -10,14 +10,9 @@ MODULE LNORM_MODULE
   ! Author(s): Jerry S. Brock, LANL T-3 (jsbrock@lanl.gov)
   !
   !=======================================================================
-  use constants_module, only: zero
-  use kind_module,      only: real_kind
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
-
-  ! Public Variables
 
   ! Public Subroutines
   public :: L1NORM
@@ -35,23 +30,20 @@ CONTAINS
     !=======================================================================
     use pgslib_module, only: PGSLib_Global_SUM
 
-    implicit none
-
     ! Argument List
-    real(real_kind), dimension(:), intent(IN)  :: X
-    real(real_kind) :: L1NORM
+    real(r8), dimension(:), intent(IN)  :: X
+    real(r8) :: L1NORM
 
     ! Local Variables
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize vector norm
-    L1NORM = zero
+    L1NORM = 0.0_r8
 
     ! Compute vector norm
     L1NORM = PGSLib_Global_SUM(ABS(X))
 
-    return
   END FUNCTION L1NORM
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -63,23 +55,20 @@ CONTAINS
     !=======================================================================
     use pgslib_module, only: PGSLib_Global_DOT_PRODUCT
 
-    implicit none
-
     ! Argument List
-    real(real_kind), dimension(:), intent(IN)  :: X
-    real(real_kind) :: L2NORM
+    real(r8), dimension(:), intent(IN)  :: X
+    real(r8) :: L2NORM
 
     ! Local Variables
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize vector norm
-    L2NORM = zero
+    L2NORM = 0.0_r8
 
     ! Compute vector norm
     L2NORM = SQRT(PGSLib_Global_DOT_PRODUCT(X,X))
 
-    return
   END FUNCTION L2NORM
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -91,23 +80,20 @@ CONTAINS
     !=======================================================================
     use pgslib_module, only: PGSLib_Global_MAXVAL
 
-    implicit none
-
     ! Argument List
-    real(real_kind), dimension(:), intent(IN)  :: X
-    real(real_kind) :: LINORM
+    real(r8), dimension(:), intent(IN)  :: X
+    real(r8) :: LINORM
 
     ! Local Variables
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize vector norm
-    LINORM = zero
+    LINORM = 0.0_r8
 
     ! Compute vector norm
     LINORM = PGSLib_Global_MAXVAL(ABS(X))
 
-    return
   END FUNCTION LINORM
 
 END MODULE LNORM_MODULE

@@ -10,21 +10,12 @@ MODULE POROUS_DRAG_MODULE
   ! Author(s): Doug Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-! use kind_module, only: log_kind
-
+  use truchas_logging_services
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: POROUS_DRAG
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  ! PHYSICS namelist variables -
-  ! Flag for enabling/disabling the porous drag model.
-! logical(KIND = log_kind), public, save :: porous_flow
 
 CONTAINS
 
@@ -48,32 +39,27 @@ CONTAINS
     !  orientation.
     !
     !======================================================================= 
-    use constants_module,     only: zero, one
     use fluid_data_module,    only: fluidVof, isImmobile, Drag_Coefficient
-    use kind_module,          only: real_kind, int_kind
     use matl_module,          only: GATHER_VOF
     use parameter_module,     only: nmat, ncells, ndim
     use porous_drag_data,     only: porous_implicitness
     use property_data_module, only: Permeability_Constant
     use timing_tree
     use zone_module,          only: Zone
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    real(KIND=real_kind),                         intent(IN)    :: dt
-    real(KIND=real_kind), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
+    real(r8), intent(IN) :: dt
+    real(r8), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
 
     ! Local Variables
-    integer                                           :: status
-    integer(KIND=int_kind)                            :: m, n
-    real(KIND=real_kind)                              :: tweight
-    real(KIND=real_kind), dimension(:),   allocatable :: Solid_Vof
-    real(KIND=real_kind), dimension(:,:), allocatable :: C
+    integer :: status
+    integer :: m, n
+    real(r8) :: tweight
+    real(r8), dimension(:),   allocatable :: Solid_Vof
+    real(r8), dimension(:,:), allocatable :: C
 
     ! Cutoff value for the drag coefficient
-    real(KIND=real_kind) :: drag_cutoff = 1.0e+6
+    real(r8) :: drag_cutoff = 1.0e+6
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -85,9 +71,9 @@ CONTAINS
     ALLOCATE (C(ndim,ncells), STAT = status)
     if (status /= 0) call TLS_panic ('POROUS_DRAG: C(ndim,ncells) allocation failed')
 
-    C = zero
+    C = 0.0_r8
 
-    tweight = one - porous_implicitness
+    tweight = 1.0_r8 - porous_implicitness
 
     ! This is a hack (for the moment), but because the code allows
     ! Permeability_Constant's to be a function of material, I'll average
@@ -100,15 +86,15 @@ CONTAINS
        end do
     end do
     do n = 1,ndim
-       where (fluidVof < one) C(n,:) = C(n,:)/(one-fluidVof(:))
+       where (fluidVof < 1.0_r8) C(n,:) = C(n,:)/(1.0_r8-fluidVof(:))
     end do
 
     ! Calculate A, according to Voller & Prakash
     ! Increment Velocity Delta for porous drag effects.
     do n = 1,ndim
-       where (fluidVof > zero) 
+       where (fluidVof > 0.0_r8) 
           Drag_Coefficient(n,:) = &
-               MIN(C(n,:) * (one - fluidVof(:))**2 / fluidVof(:)**3, drag_cutoff)
+               MIN(C(n,:) * (1.0_r8 - fluidVof(:))**2 / fluidVof(:)**3, drag_cutoff)
           Mom_Delta(n,:) =  Mom_Delta(n,:) &
                - tweight* dt*fluidVof(:)*Drag_Coefficient(n,:)*Zone%Vc_old(n)
        endwhere
@@ -118,8 +104,6 @@ CONTAINS
 
     ! Stop Timer
     call stop_timer("Porous Drag")
-
-    return
 
   END SUBROUTINE POROUS_DRAG
 

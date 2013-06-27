@@ -16,16 +16,12 @@ MODULE FLUID_FLOW_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: NAVIER_STOKES, FLUID_FLOW_DRIVER
-
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -51,11 +47,9 @@ CONTAINS
     !   Navier-Stokes (NS) driver: increment NS equations by one time step.
     !
     !======================================================================
-    use constants_module,       only: zero
     use fluid_data_module,      only: fluid_flow, fluidRho, Solid_Face, &
                                       isPureImmobile, fluidDeltaRho,      &
                                       fluid_to_move, Fluxing_Velocity
-    use kind_module,            only: int_kind, real_kind, log_kind
     use parameter_module,       only: ncells, nfc, ndim
     use predictor_module,       only: PREDICTOR
     use projection_data_module, only: Face_Density, mac_projection_iterations, &
@@ -66,14 +60,11 @@ CONTAINS
     use viscous_data_module,    only: prelim_viscous_iterations, &
                                       viscous_iterations
     use zone_module,            only: Zone
-    use truchas_logging_services
-
-    implicit none
 
     ! Local Variables
-    integer                                      :: status
-    integer(int_kind)                            :: n
-    logical(log_kind)                            :: abort
+    integer :: status
+    integer :: n
+    logical :: abort
 
     ! Argument List
 
@@ -94,7 +85,7 @@ CONTAINS
     if (status /= 0) &
        call TLS_panic ('FLUID_FLOW: Face_Density(nfc,ncells) allocation failed')
 
-    fluidRho = 0.0_real_kind
+    fluidRho = 0.0_r8
 
     ! Evaluate cell properties excluding immobile materials, and
     ! check that there are at least some flow equations to solve
@@ -123,10 +114,10 @@ CONTAINS
        ! Everything solid; set velocities equal to zero, and check again in the
        ! next timestep.
        fluid_to_move = .false.
-       Fluxing_Velocity = zero
+       Fluxing_Velocity = 0
        do n = 1,ndim
-          Zone%Vc(n) = zero
-          Zone%Vc_Old(n) = zero
+          Zone%Vc(n) = 0
+          Zone%Vc_Old(n) = 0
        end do
 
        if(cycle_number == 0) then
@@ -141,8 +132,6 @@ CONTAINS
     DEALLOCATE (fluidDeltaRho)
     DEALLOCATE (Face_Density)
 
-    return
-
   END SUBROUTINE NAVIER_STOKES
 
   SUBROUTINE appliedflowfield ()
@@ -154,22 +143,14 @@ CONTAINS
     !
     !======================================================================
     use fluid_data_module,      only: fluid_flow, Solid_Face, isPureImmobile, fluidDeltaRho
-    use kind_module,            only: log_kind
     use parameter_module,       only: ncells, nfc
     use projection_data_module, only: Face_Density
     use property_module,        only: FLUID_PROPERTIES
     use overwrite_module,       only: PRESCRIBE_VELOCITY
-    use truchas_logging_services
-
-    implicit none
 
     ! Local Variables
-    integer                                      :: status
-    logical(log_kind)                            :: abort
-
-    ! Argument List
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    integer :: status
+    logical :: abort
 
     if (.not. fluid_flow) return
 
@@ -184,15 +165,12 @@ CONTAINS
 
     call fluid_properties(abort)
 
-
     call PRESCRIBE_VELOCITY('diagxz')
 
     DEALLOCATE (Solid_Face)
     DEALLOCATE (isPureImmobile)
     DEALLOCATE (fluidDeltaRho)
     DEALLOCATE (Face_Density)
-
-    return
 
   END SUBROUTINE appliedflowfield
 

@@ -43,13 +43,13 @@ CONTAINS
     implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: bit_position
-    integer(KIND = int_kind), intent(IN) :: Flag(:)
+    integer, intent(IN) :: bit_position
+    integer, intent(IN) :: Flag(:)
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind), dimension(SIZE(Flag)) :: Dirichlet
+    logical, dimension(SIZE(Flag)) :: Dirichlet
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -73,13 +73,13 @@ CONTAINS
     implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: bit_position
-    integer(KIND = int_kind), intent(IN) :: Flag(:)
+    integer, intent(IN) :: bit_position
+    integer, intent(IN) :: Flag(:)
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind), dimension(SIZE(Flag)) :: Neumann
+    logical, dimension(SIZE(Flag)) :: Neumann
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -103,13 +103,13 @@ CONTAINS
     implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: bit_position
-    integer(KIND = int_kind), intent(IN) :: Flag(:)
+    integer, intent(IN) :: bit_position
+    integer, intent(IN) :: Flag(:)
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind), dimension(SIZE(Flag)) :: Free_slip
+    logical, dimension(SIZE(Flag)) :: Free_slip
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -134,13 +134,13 @@ CONTAINS
     implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: bit_position
-    integer(KIND = int_kind), intent(IN) :: Flag(:)
+    integer, intent(IN) :: bit_position
+    integer, intent(IN) :: Flag(:)
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind), dimension(SIZE(Flag)) :: Dirichlet_Vel
+    logical, dimension(SIZE(Flag)) :: Dirichlet_Vel
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -165,13 +165,13 @@ CONTAINS
     implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: bit_position
-    integer(KIND = int_kind), intent(IN) :: Flag(:)
+    integer, intent(IN) :: bit_position
+    integer, intent(IN) :: Flag(:)
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind), dimension(SIZE(Flag)) :: Neumann_Vel
+    logical, dimension(SIZE(Flag)) :: Neumann_Vel
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -196,13 +196,13 @@ CONTAINS
     implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN) :: bit_position
-    integer(KIND = int_kind), intent(IN) :: Flag(:)
+    integer, intent(IN) :: bit_position
+    integer, intent(IN) :: Flag(:)
 
     ! Local Variables
 
     ! Function Return
-    logical(KIND = log_kind), dimension(SIZE(Flag)) :: Internal_BC
+    logical, dimension(SIZE(Flag)) :: Internal_BC
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -225,22 +225,21 @@ CONTAINS
     use bc_type_module, only: Vel
     use mesh_module,    only: Mesh
     use scalars_module
-
-    implicit none
+    use kinds, only: r8
 
     ! Argument List
 
-    integer(int_kind)                                              :: f
-    real(real_kind),   dimension(nfc,ncells), intent(IN)           :: Fluxing_Velocity
+    integer :: f
+    real(r8), dimension(nfc,ncells), intent(IN) :: Fluxing_Velocity
 
     ! Local Variables
 
-    real(real_kind),   dimension(ncells) :: FV
-    logical(log_kind), dimension(ncells) :: Mask
+    real(r8), dimension(ncells) :: FV
+    logical, dimension(ncells) :: Mask
 
     ! Function Return
 
-    logical(log_kind), dimension(ncells) :: In_flow
+    logical, dimension(ncells) :: In_flow
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -252,9 +251,7 @@ CONTAINS
 
     ! FV < 0 indicates an inflow face
     In_flow = .false.
-    where (Mask .and. FV(:) < zero) In_flow(:) = .true.
-
-    return
+    where (Mask .and. FV(:) < 0.0_r8) In_flow(:) = .true.
 
   END FUNCTION IN_FLOW
   
@@ -270,22 +267,21 @@ CONTAINS
     use bc_type_module, only: Vel
     use mesh_module,    only: Mesh
     use scalars_module
-
-    implicit none
+    use kinds, only: r8
 
     ! Argument List
 
-    integer(int_kind)                                              :: f
-    real(real_kind),   dimension(nfc,ncells), intent(IN)           :: Fluxing_Velocity
+    integer :: f
+    real(r8), dimension(nfc,ncells), intent(IN) :: Fluxing_Velocity
 
     ! Local Variables
 
-    real(real_kind),   dimension(ncells) :: FV
-    logical(log_kind), dimension(ncells) :: Mask
+    real(r8), dimension(ncells) :: FV
+    logical, dimension(ncells) :: Mask
 
     ! Function Return
 
-    logical(log_kind), dimension(ncells) :: Out_flow
+    logical, dimension(ncells) :: Out_flow
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -297,9 +293,7 @@ CONTAINS
 
     ! FV > 0 indicates an outflow face
     Out_flow = .false.
-    where (Mask .and. FV(:) > zero) Out_flow(:) = .true.
-
-    return
+    where (Mask .and. FV(:) > 0.0_r8) Out_flow(:) = .true.
 
   END FUNCTION OUT_FLOW
 

@@ -15,8 +15,8 @@ Module BC_Pressure_Init
   !-----------------------------------------------------------------------------
   use bc_data_types
   use bc_initialize
-  use kind_module, only : int_kind, real_kind, log_kind
   use parameter_module
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
   Private
@@ -31,7 +31,6 @@ CONTAINS
     !   BC initialization will be done.
     !
     !-----------------------------------------------------------------------------
-    use truchas_logging_services
 
     ! Arguments
     type (BC_Specifier), intent(INOUT), target :: Pressure_BC
@@ -77,14 +76,14 @@ CONTAINS
     use pgslib_module, only: PGSLib_Global_SUM
     
     type(BC_Specifier), intent(INOUT), target :: BC_Spec
-    integer( int_kind), intent(IN   ) :: BC_Operator_ID
-    character (LEN=*),  intent(IN   ) :: BC_Name_String
+    integer, intent(IN) :: BC_Operator_ID
+    character(*), intent(IN) :: BC_Name_String
     
     ! Local variables
-    type (BC_Operator), POINTER    :: Operator
-    type (BC_Region),   POINTER    :: Region
-    type (BC_Atlas),    POINTER    :: Atlas
-    integer (int_kind) :: NumBoundaryPoints
+    type(BC_Operator), POINTER :: Operator
+    type(BC_Region),   POINTER :: Region
+    type(BC_Atlas),    POINTER :: Atlas
+    integer :: NumBoundaryPoints
     character(128) :: message
     
     !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -142,17 +141,17 @@ CONTAINS
     use mesh_module,          only: Cell, Mesh
 
     ! Arguments
-    type (BC_Region),   intent(INOUT) :: Region
-    integer( int_kind), intent(IN   ) :: BC_Operator_ID
+    type(BC_Region), intent(INOUT) :: Region
+    integer, intent(IN ) :: BC_Operator_ID
 
     ! Local variables
     logical, dimension(nfc,ncells) :: Face_Is_External, Face_Is_Dirichlet
     logical, dimension(nfc,ncells) :: BC_Mask
-    real(real_kind),    dimension(1,nfc,ncells) :: BC_Values
-    logical(log_kind),  dimension(nfc,ncells) :: BC_UseFunction
-    real(real_kind),    dimension(ndim, nfc, ncells) :: BC_Positions
+    real(r8), dimension(1,nfc,ncells) :: BC_Values
+    logical,  dimension(nfc,ncells) :: BC_UseFunction
+    real(r8), dimension(ndim, nfc, ncells) :: BC_Positions
 
-    integer( int_kind) :: f, c
+    integer :: f, c
 
     ! Initialize the Region to be ready to accumulate the data
     call INITIALIZE(Region)
@@ -247,7 +246,6 @@ CONTAINS
 
     call CANONICALIZE(Region)
 
-    RETURN
   end subroutine Set_Pressure_BC_Region
 
 END Module BC_Pressure_Init

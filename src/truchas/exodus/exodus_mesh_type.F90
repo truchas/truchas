@@ -40,7 +40,7 @@ module exodus_mesh_type
 
   !! These are really only useful in testing situations.
 #ifdef NO_LOGICAL_OPERATORS
-  public :: dump_type ! Sorry, no defined == or /= on SGI's.
+  public :: dump_type ! Sorry, no defined == or /=
 #else
   public :: operator(.eq.), operator(.ne.), dump_type
 #endif
@@ -51,14 +51,6 @@ module exodus_mesh_type
   integer, parameter, public :: MAX_STR_LENGTH  = 32  ! Maximum character string length
   integer, parameter, public :: MAX_LINE_LENGTH = 80  ! Maximum character line length
 
-#ifdef LAHEY_COMPILER_WORKAROUND
-  type, public :: side_set
-    integer :: ID = 0                      ! side set ID
-    integer :: num_side = 0                ! number of sides in the side set
-    integer, pointer :: elem(:) => null()  ! list of sides described as
-    integer, pointer :: face(:) => null()  !   (element, local face) pairs
-  end type side_set
-#endif
   type, public :: exodus_mesh
     integer :: num_dim  = 0   ! spatial dimension of the mesh
     integer :: num_node = 0   ! number of nodes in the mesh
@@ -86,14 +78,12 @@ module exodus_mesh_type
     integer, pointer :: node(:) => null()  ! list of nodes
   end type node_set
 
-#ifndef LAHEY_COMPILER_WORKAROUND
   type, public :: side_set
     integer :: ID = 0                      ! side set ID
     integer :: num_side = 0                ! number of sides in the side set
     integer, pointer :: elem(:) => null()  ! list of sides described as
     integer, pointer :: face(:) => null()  !   (element, local face) pairs
   end type side_set
-#endif
 
   interface defined
     module procedure defined_exodus_mesh, defined_elem_blk, defined_node_set, defined_side_set

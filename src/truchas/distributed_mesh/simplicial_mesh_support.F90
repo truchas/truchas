@@ -24,15 +24,9 @@
 
 #include "f90_assert.fpp"
 
-#ifdef SUPPORTS_TR15581
-# define ASSOCIATED_MACRO allocated
-#else
-# define ASSOCIATED_MACRO associated
-#endif
-
 module simplicial_mesh_support
 
-  use kind_module, only: r8 => real_kind
+  use kinds, only: r8
   implicit none
   private
 
@@ -63,13 +57,8 @@ module simplicial_mesh_support
 
   type, private :: HashTable
     integer(kind=i4) :: tlen = 0  ! Table length
-#ifdef SUPPORTS_TR15581
     integer(kind=i4), allocatable :: value(:)   ! Table's key values
     integer(kind=i4), allocatable :: key(:,:)   ! Table's vector keys
-#else
-    integer(kind=i4), pointer :: value(:) => null()   ! Table's key values
-    integer(kind=i4), pointer :: key(:,:) => null()   ! Table's vector keys
-#endif
     integer(kind=i4) :: n = 0   ! label counter to supply new key values
     !! Hash function parameters
     integer :: tbits  ! Number of table address bits
@@ -497,16 +486,16 @@ contains
     table % h2bit = max(0_i4, table%h2bit)
     table % h2bit = 0 ! this seems to work better
 
-    if (ASSOCIATED_MACRO(table%value)) then
+    if (allocated(table%value)) then
       if (size(table%value) /= table%tlen) deallocate(table%value)
     end if
 
-    if (ASSOCIATED_MACRO(table%key)) then
+    if (allocated(table%key)) then
       if (any(shape(table%key) /= (/ klen, table%tlen /))) deallocate(table%key)
     end if
 
-    if (.not.ASSOCIATED_MACRO(table%value)) allocate(table%value(0:table%tlen-1))
-    if (.not.ASSOCIATED_MACRO(table%key)) allocate(table%key(klen,0:table%tlen-1))
+    if (.not.allocated(table%value)) allocate(table%value(0:table%tlen-1))
+    if (.not.allocated(table%key)) allocate(table%key(klen,0:table%tlen-1))
 
     !! Initialize hash table
     table%value = 0
@@ -539,8 +528,8 @@ contains
   
     type(HashTable), intent(inout) :: table
     
-    if (ASSOCIATED_MACRO(table % value)) deallocate(table % value)
-    if (ASSOCIATED_MACRO(table % key))   deallocate(table % key)
+    if (allocated(table % value)) deallocate(table % value)
+    if (allocated(table % key))   deallocate(table % key)
     
     table%tlen = 0
     table%n = 0

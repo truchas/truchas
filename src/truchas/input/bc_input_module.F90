@@ -21,14 +21,9 @@ MODULE BC_INPUT_MODULE
   !=======================================================================
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: BC_INPUT
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -39,7 +34,7 @@ CONTAINS
     !   Check for obvious errors in the BC namelist input variables.
     !
     !=======================================================================
-    use constants_module, only: zero, ipreset, ten_toplus10
+    use input_utilities, only: NULL_I
     use fluid_data_module, only: fluid_flow
     use bc_data_module,   only: BC_Type, BC_Variable,                       &
                                 Inflow_Material, Inflow_Index,              &
@@ -50,19 +45,17 @@ CONTAINS
                                 Surface_Materials, BC_Surface_Forms,        &
                                 Surfaces_In_This_BC, Srfmatl_Index,         &
                                 Node_Disp_Coords, Mesh_Surface
-    use kind_module,      only: int_kind, log_kind
     use parameter_module, only: bc_forms, maxmat, ndim, nvar, mbc_surfaces, mbcsrf
     use utilities_module, only: STRING_COMPARE
     use solid_mechanics_data, only: solid_mechanics
     use property_module,      only: Get_Truchas_Material_ID
-    implicit none
     
     ! Argument List
-    logical(KIND = log_kind), intent(INOUT) :: fatal
+    logical, intent(INOUT) :: fatal
 
     ! Local Variables
-    logical(KIND = log_kind) :: strings_match
-    integer(KIND = int_kind) :: l, n, p, v
+    logical :: strings_match
+    integer :: l, n, p, v
     character(128) :: errmsg
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -144,7 +137,7 @@ CONTAINS
        ! Check for node list if node set is specified
        do n = 1,Surfaces_In_This_BC(p)
           if (Surface_Name(n,p) == 'node set') then
-             if (Node_Disp_Coords(1,1,p) == -ten_toplus10) then
+             if (Node_Disp_Coords(1,1,p) == -1.0d10) then
                 write (errmsg,5) p,TRIM(bc_name(p))
 5               format('Node coordinates must be specified for BC namelist #',i2,' named ',a)
                 call TLS_error (errmsg)
@@ -322,7 +315,7 @@ CONTAINS
        
        ! Check to insure that surface tolerance is positive.
        do n = 1,Surfaces_In_This_BC(p)
-          if (Conic_Tolerance(n,p) <= zero) then
+          if (Conic_Tolerance(n,p) <= 0) then
              write (errmsg, 40) Conic_Tolerance(n,p)
 40           format('Surface tolerance of ',1pe13.5,' cannot be negative!')
              call TLS_error (errmsg)
@@ -352,7 +345,7 @@ CONTAINS
     if(fluid_flow) then
        do p = 1,nbc_surfaces
           if (Inflow_Index(p) > 0) then
-             if (Inflow_Material(Inflow_Index(p)) /= ipreset .and. &
+             if (Inflow_Material(Inflow_Index(p)) /= NULL_I .and. &
                   (Inflow_Material(Inflow_Index(p)) < 1 .or.        &
                   Inflow_Material(Inflow_Index(p)) > maxmat)) then
                 write (errmsg, FMT=35) Inflow_Material(Inflow_Index(p)), p, maxmat
@@ -364,8 +357,6 @@ CONTAINS
           end if
        end do
     endif
-    
-    return
     
   END SUBROUTINE BC_CHECK
   
@@ -389,40 +380,37 @@ CONTAINS
                                 BC_Surface_Forms,                            &
                                 Surfaces_In_This_BC, Srfmatl_Index,          &
                                 Node_Disp_Coords
-    use constants_module, only: ten_toplus10, ten_tominus6,   &
-         zero, preset, ipreset
-    
-    implicit none
+    use input_utilities,  only: NULL_I, NULL_R
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Default BC Variables
     BC_name     = 'Unnamed'
     BC_Type     = 'none'
-    BC_Value    = zero
+    BC_Value    = 0
     BC_Variable = 'none'
 
     ! Default Velocity Variables
-    Inflow_Material      = ipreset
-    Inflow_Temperature   = preset
+    Inflow_Material      = NULL_I
+    Inflow_Temperature   = NULL_R
 
     ! Default BC surface constants.
     Surface_Name        = 'none'
-    Conic_XX            = zero
-    Conic_YY            = zero
-    Conic_ZZ            = zero
-    Conic_XY            = zero
-    Conic_XZ            = zero
-    Conic_YZ            = zero
-    Conic_X             = zero
-    Conic_Y             = zero
-    Conic_Z             = zero
-    Conic_Constant      = zero
-    Conic_Tolerance     = ten_tominus6
+    Conic_XX            = 0
+    Conic_YY            = 0
+    Conic_ZZ            = 0
+    Conic_XY            = 0
+    Conic_XZ            = 0
+    Conic_YZ            = 0
+    Conic_X             = 0
+    Conic_Y             = 0
+    Conic_Z             = 0
+    Conic_Constant      = 0
+    Conic_Tolerance     = 1.0d-6
     Conic_Relation      = '='
     Bounding_Box(1,:,:) = -huge(1.0d0)
     Bounding_Box(2,:,:) = +huge(1.0d0)
-    Node_Disp_Coords(:,:,:)  = -ten_toplus10
+    Node_Disp_Coords(:,:,:)  = -1.0d10
 
     ! Matl surface number.
     Srfmatl_Index = 0
@@ -493,8 +481,6 @@ CONTAINS
     Variable_Forms(5,1) = 'displacement'  ! 5: Displacement
     Variable_Forms(5,2) = 'disp'
 
-    return
-
   END SUBROUTINE BC_DEFAULT
 
   SUBROUTINE BC_INPUT (lun)
@@ -517,17 +503,16 @@ CONTAINS
                                       Bounding_Box, nbc_surfaces, Surface_Name,    &
                                       Conic_Relation, Surface_Materials,           &
                                       Node_Disp_Coords, Mesh_Surface
-    use constants_module,       only: zero, ten_tominus6, ten_toplus10, preset, ipreset
-    use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind
+    use input_utilities,        only: NULL_R
+    use input_utilities,        only: seek_to_namelist, NULL_I
     use parallel_info_module,   only: P_Info
     use parameter_module,       only: string_dim, mbc_surfaces
 
     integer, intent(in) :: lun
 
     ! Local Variables
-    logical(KIND = log_kind)                    :: fatal, no_bc_namelist, found
-    integer(KIND = int_kind)                    :: ioerror, bcs
+    logical :: fatal, no_bc_namelist, found
+    integer :: ioerror, bcs
     character(128) :: errmsg
 
     ! Define BC Namelist
@@ -560,28 +545,27 @@ CONTAINS
        ! Default the zeroth element of all BC input variable arrays.
        BC_Name(0)               = 'Unnamed'
        BC_Type(0)               = 'none'
-!       BC_Value(:,0)            = preset   ! an attempt to eliminate much bc_value array storage: see bc_set_module and search for "workarray"
-       BC_Value(:,0)            = zero
+       BC_Value(:,0)            = 0
        BC_Variable(0)           = 'none'
-       Inflow_Material(0)       = ipreset
-       Inflow_Temperature(0)    = preset
+       Inflow_Material(0)       = NULL_I
+       Inflow_Temperature(0)    = NULL_R
        Surface_Name(:,0)        = 'none'
        Surface_Materials(:,:,0) = 0
        !Conic_Relation(:,0)      = 'none'
-       Conic_XX(:,0)            = zero
-       Conic_YY(:,0)            = zero
-       Conic_ZZ(:,0)            = zero
-       Conic_XY(:,0)            = zero
-       Conic_XZ(:,0)            = zero
-       Conic_YZ(:,0)            = zero
-       Conic_X(:,0)             = zero
-       Conic_Y(:,0)             = zero
-       Conic_Z(:,0)             = zero
-       Conic_Constant(:,0)      = zero
-       Conic_Tolerance(:,0)     = ten_tominus6
+       Conic_XX(:,0)            = 0
+       Conic_YY(:,0)            = 0
+       Conic_ZZ(:,0)            = 0
+       Conic_XY(:,0)            = 0
+       Conic_XZ(:,0)            = 0
+       Conic_YZ(:,0)            = 0
+       Conic_X(:,0)             = 0
+       Conic_Y(:,0)             = 0
+       Conic_Z(:,0)             = 0
+       Conic_Constant(:,0)      = 0
+       Conic_Tolerance(:,0)     = 1.0d-6
        Bounding_Box(1,:,0)      = -huge(1.0d0)
        Bounding_Box(2,:,0)      =  huge(1.0d0)
-       Node_Disp_Coords(:,:,0)  = -ten_toplus10
+       Node_Disp_Coords(:,:,0)  = -1.0d10
        Mesh_Surface(:,0)        = 0
 
        ! Search for and read this BC namelist only on IO PE.
@@ -692,7 +676,6 @@ CONTAINS
                                     Mesh_Surface
     use parallel_info_module, only: P_Info
     use pgslib_module,        only: PGSLib_BCAST
-    implicit none
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -728,8 +711,6 @@ CONTAINS
        call PGSLib_BCAST (Mesh_Surface)
 
     end if
-  
-    return
 
   END SUBROUTINE BC_INPUT_PARALLEL
 

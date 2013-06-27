@@ -16,17 +16,12 @@ MODULE DISCRETE_DERIVATIVES
   !            Robert Ferrell (ferrell@cpca.com)
   !
   !=======================================================================
+  use kinds, only: r8
   use bc_data_types
   use cutoffs_module,   only: alittle
-  use constants_module, only: zero, one
-  use truchas_logging_services, only: TLS_panic, TLS_fatal
-  use kind_module,      only: real_kind, int_kind, log_kind
+  use truchas_logging_services
   use parameter_module, only: ncells, nfc, ndim
-
-
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -36,61 +31,59 @@ MODULE DISCRETE_DERIVATIVES
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-  real(KIND=real_kind),allocatable,dimension(:,:,:,:) :: ALU
-  logical(KIND=log_kind),allocatable,dimension(:,:)   :: updateDecomp
-  logical(KIND=log_kind),allocatable,dimension(:,:,:) :: PivFlag
-  logical(KIND=log_kind),allocatable,dimension(:,:,:) :: SolveFlag
-  integer(KIND=int_kind),allocatable,dimension(:,:,:) :: row1
-  integer(KIND=int_kind),allocatable,dimension(:,:,:) :: row2
-
-
+  real(r8),allocatable,dimension(:,:,:,:) :: ALU
+  logical,allocatable,dimension(:,:)   :: updateDecomp
+  logical,allocatable,dimension(:,:,:) :: PivFlag
+  logical,allocatable,dimension(:,:,:) :: SolveFlag
+  integer,allocatable,dimension(:,:,:) :: row1
+  integer,allocatable,dimension(:,:,:) :: row2
 
   ! Internal data structures
 
   ! Structure to hold geometric dX
     type dX_Type
-      real(KIND=real_kind),pointer,dimension(:,:)  :: FData
+      real(r8), pointer, dimension(:,:) :: FData
     end type dX_Type
 
   ! Structure to hold geometric Weights
     type W_Type
-      real(KIND=real_kind),pointer,dimension(:)    :: FData
+      real(r8), pointer, dimension(:) :: FData
     end type W_Type
 
   ! Structure to hold field values
     type SField_Type
-      real(KIND=real_kind),pointer,dimension(:)    :: FData
+      real(r8), pointer, dimension(:) :: FData
     end type SField_Type
 
   ! Structure to hold index to face neighbors
     type N_PTR
-       integer(KIND=int_kind),pointer,dimension(:)     :: ptr
+       integer, pointer, dimension(:) :: ptr
     end type N_PTR 
 
-    type(dX_Type),allocatable,dimension(:,:),target,save      :: dX_Struct
-    type(W_Type),allocatable,dimension(:,:),target,save       :: W_Struct
-    type(W_Type),allocatable,dimension(:,:),target,save       :: GeoW_Struct
-    type(SField_Type),allocatable,dimension(:,:),target,save  :: PHI_Struct
-    type(N_PTR),allocatable,dimension(:,:),target,save        :: NghPtr
+    type(dX_Type), allocatable, dimension(:,:), target, save :: dX_Struct
+    type(W_Type), allocatable, dimension(:,:), target, save :: W_Struct
+    type(W_Type), allocatable, dimension(:,:), target, save :: GeoW_Struct
+    type(SField_Type), allocatable, dimension(:,:),target, save :: PHI_Struct
+    type(N_PTR), allocatable, dimension(:,:), target, save :: NghPtr
 
   ! Total number of faces to process
-    integer(KIND=int_kind),allocatable,dimension(:,:),target,save :: NumFaces
+    integer, allocatable, dimension(:,:), target, save :: NumFaces
   ! Number of face neighbors to process
-    integer(KIND=int_kind),allocatable,dimension(:,:),save :: NumFaceNghbrs
+    integer, allocatable, dimension(:,:), save :: NumFaceNghbrs
   ! Number of BCs to process
-    integer(KIND=int_kind),allocatable,dimension(:,:),save :: NumFaceBCs 
+    integer, allocatable, dimension(:,:), save :: NumFaceBCs 
 
   ! Max number of BCs to process
-    integer(KIND=int_kind)                :: MaxBCLen
+    integer :: MaxBCLen
 #ifdef DO_DIRICHLET
   ! Mask to determine whether worth doing dirichlet loop 
   ! for given cell & face 
-    logical(KIND=log_kind),allocatable,dimension(:,:),save :: DIR_Mask
+    logical, allocatable, dimension(:,:), save :: DIR_Mask
   ! Dirichlet operator
-    type (BC_Operator), POINTER,save    :: DIR_Op
+    type(BC_Operator), POINTER, save :: DIR_Op
 #endif
 
-    logical,allocatable,dimension(:,:),save :: done
+    logical, allocatable, dimension(:,:), save :: done
 
   INTERFACE Update_LSLR
     MODULE PROCEDURE Update_LSLR_All
@@ -98,8 +91,8 @@ MODULE DISCRETE_DERIVATIVES
     MODULE PROCEDURE Update_LSLR_SelectFace
   END INTERFACE
 
-
 CONTAINS
+
   SUBROUTINE GRADIENT_FACE (Phi, Grad, Phi_Face, Weight, BC_Spec, use_ortho)
     !=======================================================================
     ! Purpose(s):
@@ -108,30 +101,26 @@ CONTAINS
     !   of a cell-centered scalar quantity Phi on face f.
     !
     !=======================================================================
-    use constants_module,  only: two
     use mesh_module,       only: Mesh
     use gs_module,         only: EE_GATHER
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind), dimension(ncells),           intent(IN)    :: Phi
-    real(KIND = real_kind), dimension(ncells), optional, intent(IN)    :: Weight
-    real(KIND = real_kind), dimension(ndim,nfc,ncells),  intent(INOUT) :: Grad
-    real(KIND = real_kind), optional, dimension(nfc,ncells), intent(OUT)   :: Phi_Face
-    type (BC_Specifier),    OPTIONAL, intent(INOUT)                    :: BC_Spec
-    logical(KIND = log_kind),                            intent(IN)    :: use_ortho
+    real(r8), dimension(ncells),           intent(IN)    :: Phi
+    real(r8), dimension(ncells), optional, intent(IN)    :: Weight
+    real(r8), dimension(ndim,nfc,ncells),  intent(INOUT) :: Grad
+    real(r8), optional, dimension(nfc,ncells), intent(OUT) :: Phi_Face
+    type(BC_Specifier), OPTIONAL, intent(INOUT) :: BC_Spec
+    logical, intent(IN) :: use_ortho
 
     ! Local Variables
-    integer(KIND=int_kind)                          :: n, f, j, istat
-    real(KIND=real_kind),allocatable, dimension(:,:,:),save :: dX_scaled
-    real(KIND=real_kind),dimension(nfc,ncells)      :: Phi_e
-    real(KIND=real_kind)                            :: dPhi
-    real(real_kind),  allocatable, dimension(:)     :: Weight_Ortho
-    real(real_kind),  allocatable, dimension(:,:)   :: Weight_Ortho_Ngbr
+    integer :: n, f, j, istat
+    real(r8), allocatable, dimension(:,:,:), save :: dX_scaled
+    real(r8), dimension(nfc,ncells) :: Phi_e
+    real(r8) :: dPhi
+    real(r8), allocatable, dimension(:)   :: Weight_Ortho
+    real(r8), allocatable, dimension(:,:) :: Weight_Ortho_Ngbr
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
 
     if (.not. use_ortho) then
 
@@ -140,12 +129,12 @@ CONTAINS
 
         ! Eliminate Face Gradient Noise
         do n = 1, ndim
-           Grad(n,:,:) = MERGE(zero,Grad(n,:,:),ABS(Grad(n,:,:)) <= alittle)
+           Grad(n,:,:) = MERGE(0.0_r8,Grad(n,:,:),ABS(Grad(n,:,:)) <= alittle)
         end do
 
         do f = 1,nfc
           do n = 1,ndim
-            where(Mesh%Ngbr_Cell(f) == 0)Grad(n,f,:) = zero
+            where(Mesh%Ngbr_Cell(f) == 0)Grad(n,f,:) = 0.0_r8
           end do
         end do
 
@@ -166,7 +155,7 @@ CONTAINS
        CELL_LOOP: do j=1,ncells
           FACE_LOOP: do f = 1,nfc
              if (Mesh(j)%Ngbr_Cell(f) == 0) then
-                Grad(:,f,j) = zero
+                Grad(:,f,j) = 0.0_r8
              else
                 dPhi = Phi(j) - Phi_e(f,j)
                 do n = 1,ndim
@@ -182,7 +171,7 @@ CONTAINS
 
        if (PRESENT(Phi_Face)) then
 
-          Phi_Face = zero ! set a default value for those faces between two void cells
+          Phi_Face = 0.0_r8 ! set a default value for those faces between two void cells
 
           WEIGHTS: if (PRESENT(Weight)) then
 
@@ -191,17 +180,17 @@ CONTAINS
              ALLOCATE (Weight_Ortho_Ngbr(nfc,ncells),STAT=istat)
              if (istat /= 0) call TLS_panic ('GRADIENT_FACE: memory allocation failure for array Weight_Ortho_Ngbr')
 
-             Weight_Ortho = zero
-             where (Weight > zero) Weight_Ortho = one
+             Weight_Ortho = 0.0_r8
+             where (Weight > 0.0_r8) Weight_Ortho = 1.0_r8
              call EE_GATHER (Weight_Ortho_Ngbr, Weight_Ortho)
         
              do j = 1,ncells
-                if (Weight_Ortho(j) == zero) CYCLE
+                if (Weight_Ortho(j) == 0.0_r8) CYCLE
                 do f = 1,nfc
-                   if (Weight_Ortho_Ngbr(f,j) == zero) then
+                   if (Weight_Ortho_Ngbr(f,j) == 0.0_r8) then
                       Phi_Face(f,j) = Phi(j)
                    else
-                      Phi_Face(f,j) = (Phi(j) + Phi_e(f,j)) / two
+                      Phi_Face(f,j) = 0.5_r8 * (Phi(j) + Phi_e(f,j))
                    end if
                 end do
              end do
@@ -213,10 +202,10 @@ CONTAINS
 
              do j = 1,ncells
                 do f = 1,nfc
-                   if (Mesh(j)%Ngbr_Cell(f) == zero) then
+                   if (Mesh(j)%Ngbr_Cell(f) == 0) then
                       Phi_Face(f,j) = Phi(j)
                    else
-                      Phi_Face(f,j) = (Phi(j) + Phi_e(f,j)) / two
+                      Phi_Face(f,j) = 0.5_r8 * (Phi(j) + Phi_e(f,j))
                    end if
                 end do
              end do
@@ -227,7 +216,6 @@ CONTAINS
 
     end if
 
-    return
   END SUBROUTINE GRADIENT_FACE
 
   SUBROUTINE INIT_ORTHOG_OP (dX_scaled)
@@ -238,20 +226,18 @@ CONTAINS
     !   of a cell-centered scalar quantity Phi on face f.
     !
     !=======================================================================
-    use mesh_module,       only: Cell, Mesh
-    use gs_module,         only: EE_GATHER
-
-    implicit none
+    use mesh_module, only: Cell, Mesh
+    use gs_module, only: EE_GATHER
 
     ! Arguments
-    real(KIND = real_kind), dimension(:,:,:), intent(OUT) :: dX_scaled
+    real(r8), dimension(:,:,:), intent(OUT) :: dX_scaled
 
     ! Local Variables
-    integer(KIND = int_kind)                           :: n, f, j
-    real(KIND = real_kind), dimension(ndim)            :: dX
-    real(KIND = real_kind)                             :: dX_tmp
-    real(KIND = real_kind), dimension(ndim,nfc,ncells) :: X_e
-    real(KIND = real_kind)                             :: Distance
+    integer :: n, f, j
+    real(r8), dimension(ndim) :: dX
+    real(r8) :: dX_tmp
+    real(r8), dimension(ndim,nfc,ncells) :: X_e
+    real(r8) :: Distance
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -262,8 +248,8 @@ CONTAINS
     FACE_LOOP: do f = 1,nfc
        ! Compute Deltas (Cell to Face Neighbors)
        ! Physical Coordinate Deltas
-       dX       = zero
-       Distance = zero
+       dX       = 0.0_r8
+       Distance = 0.0_r8
        do n = 1,ndim
           dX(n)  = Cell(j)%Centroid(n) - X_e(n,f,j)
           Distance = Distance + dX(n)**2
@@ -278,7 +264,6 @@ CONTAINS
        end if
     end do FACE_LOOP
     end do CELL_LOOP
-    return
   END SUBROUTINE INIT_ORTHOG_OP
 
 
@@ -292,28 +277,25 @@ CONTAINS
     use mesh_module, only: Mesh, DEGENERATE_FACE
 
     ! Arguments
-    real(KIND = real_kind), dimension(ncells), intent(IN) :: Phi
-    type (BC_Specifier),    OPTIONAL, intent(INOUT)       :: BC_Spec
-    real(KIND=real_kind),dimension(ndim,nfc,ncells),OPTIONAL,intent(OUT) :: Grad_Phi
-    real(KIND=real_kind),dimension(nfc,ncells),OPTIONAL,intent(OUT) :: Face_Phi
-    real(KIND = real_kind), dimension(ncells), OPTIONAL, intent(IN) :: Weight
+    real(r8), dimension(ncells), intent(IN) :: Phi
+    type(BC_Specifier), OPTIONAL, intent(INOUT) :: BC_Spec
+    real(r8), dimension(ndim,nfc,ncells), OPTIONAL, intent(OUT) :: Grad_Phi
+    real(r8), dimension(nfc,ncells), OPTIONAL, intent(OUT) :: Face_Phi
+    real(r8), dimension(ncells), OPTIONAL, intent(IN) :: Weight
 
     ! Local Variables
-    integer(KIND = int_kind)                             :: ncells_pb
-    integer(KIND=int_kind)                               :: Face
-    integer(KIND=int_kind)                               :: n,c1,c2,f2
-    integer(KIND=int_kind),dimension(:),pointer,save     :: NumFaces
-    type(dX_Type),  pointer,dimension(:)                 :: dXList
-    type(W_Type),   pointer,dimension(:)                 :: WList
-    type(SField_Type), pointer,dimension(:)              :: PhiVal
-    real(KIND = real_kind)                               :: W
-    real(KIND = real_kind),         dimension(ndim+1)    :: dX
-    real(KIND = real_kind)                               :: PhiValCell
+    integer :: ncells_pb, Face, n,c1,c2,f2
+    integer, dimension(:), pointer, save :: NumFaces
+    type(dX_Type), pointer, dimension(:) :: dXList
+    type(W_Type),  pointer, dimension(:) :: WList
+    type(SField_Type), pointer, dimension(:) :: PhiVal
+    real(r8) :: W
+    real(r8), dimension(ndim+1) :: dX
+    real(r8) :: PhiValCell
 
-    logical(KIND=log_kind),save :: first_time=.true.
+    logical, save :: first_time=.true.
 
-
-    real(KIND=real_kind),allocatable,dimension(:),save :: RHS
+    real(r8), allocatable, dimension(:), save :: RHS
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -476,22 +458,16 @@ CONTAINS
           end do FACE_LOOP1D
         end do CELL_Loop1D
     END SELECT SELECT_DIMENSION
-    return
   END SUBROUTINE FACE_LSLR
 
 ! The "F" in the FGet... functions below stands for "Face"
 ! Functions for cells can be generalized from these
 
-  FUNCTION FGetdXList(icell) RESULT(dXLcell)
   ! Accessor function for dXs associated with given cell
-  implicit none
-
-  ! Arguments
-  integer(KIND=int_kind),intent(IN)  :: icell
-  type(dX_Type),pointer,dimension(:) :: dXLcell
-
+  FUNCTION FGetdXList(icell) RESULT(dXLcell)
+  integer, intent(IN) :: icell
+  type(dX_Type), pointer, dimension(:) :: dXLcell
   dXLcell => dX_Struct(:,icell)
-  return
   END FUNCTION FGetdXList
 
   FUNCTION FGetWeightList(icell, Weight) RESULT(WLcell)
@@ -501,20 +477,18 @@ CONTAINS
   use mesh_module,    only: Mesh, DEGENERATE_FACE
   use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN
 
-  implicit none
-
-  integer(KIND=int_kind),intent(IN) :: icell
-  type(W_Type),pointer,dimension(:) :: WLcell
-  real(KIND = real_kind), dimension(ncells), optional, intent(IN) :: Weight
+  integer, intent(IN) :: icell
+  type(W_Type), pointer, dimension(:) :: WLcell
+  real(r8), dimension(ncells), optional, intent(IN) :: Weight
 
   ! Local Variables
-  integer(KIND=int_kind) :: f,FN,n,Nptr
-  logical(KIND=log_kind),save :: first_time=.true.
-  logical(KIND=log_kind),save :: first_update=.true.
-  logical(KIND=log_kind),save :: update_weights=.true.
+  integer :: f,FN,n,Nptr
+  logical, save :: first_time=.true.
+  logical, save :: first_update=.true.
+  logical, save :: update_weights=.true.
   ! This is for all the neighbor weights
-  type(REAL_VAR_VECTOR),pointer,SAVE,dimension(:) :: Nbr_Weight
-  real(KIND=real_kind),pointer,dimension(:)       :: CellsNbrWeights
+  type(REAL_VAR_VECTOR), pointer, SAVE, dimension(:) :: Nbr_Weight
+  real(r8), pointer, dimension(:) :: CellsNbrWeights
 
   if(first_time)then
     first_time=.false.
@@ -560,17 +534,14 @@ CONTAINS
 
   if(icell==ncells)update_weights=.true. !Set flag to gather weights for next iteration
   WLcell => W_Struct(:,icell)
-  return
   END FUNCTION FGetWeightList
 
 
   SUBROUTINE LU_Init()
   ! Initializes LU decomposition
 
-  implicit none
-
   ! Local Variables
-  integer(KIND=int_kind) :: Face,c1
+  integer :: Face,  c1
 
   do c1 = 1,ncells
     FACE_LOOP: do Face=1,nfc
@@ -578,33 +549,29 @@ CONTAINS
       call UpdateFaceLU(Face,c1)
     end do FACE_LOOP
   end do
-  return
   END SUBROUTINE LU_Init
 
 
   SUBROUTINE UpdateFaceLU(Face,c1)
   ! Updates LU decomposition
 
-  use mesh_module,      only: Mesh, DEGENERATE_FACE
+  use mesh_module, only: Mesh, DEGENERATE_FACE
 
-  implicit none
-
-  integer(KIND = int_kind), intent(IN) :: Face
-  integer(KIND = int_kind), intent(IN) :: c1
+  integer, intent(IN) :: Face
+  integer, intent(IN) :: c1
 
   ! Local Variables
-  integer(KIND=int_kind)                               :: istat
-  integer(KIND=int_kind)                               :: i,j,n,d1,d2,c2,f2
-  integer(KIND=int_kind),dimension(:),pointer          :: NumFacesCell
-  integer(KIND=int_kind)                               :: PivCnt
-  type(dX_Type),  pointer,dimension(:)                 :: dXList
-  type(W_Type),   pointer,dimension(:)                 :: WList
-  type(SField_Type), pointer,dimension(:)              :: PhiVal
-  real(KIND = real_kind)                               :: W
-  real(KIND = real_kind),         dimension(ndim+1)    :: dX
-  real(KIND = real_kind)                               :: PhiValCell
-  real(KIND=real_kind),allocatable,dimension(:,:),save :: LHS
-  real(KIND=real_kind),allocatable,dimension(:,:),save :: LHSi
+  integer :: istat,i,j,n,d1,d2,c2,f2
+  integer, dimension(:), pointer :: NumFacesCell
+  integer :: PivCnt
+  type(dX_Type), pointer, dimension(:) :: dXList
+  type(W_Type),  pointer, dimension(:) :: WList
+  type(SField_Type), pointer, dimension(:) :: PhiVal
+  real(r8) :: W
+  real(r8), dimension(ndim+1) :: dX
+  real(r8) :: PhiValCell
+  real(r8), allocatable, dimension(:,:), save :: LHS
+  real(r8), allocatable, dimension(:,:), save :: LHSi
 
   if(.not. ALLOCATED(LHS))then
     ALLOCATE(LHS(ndim+1,ndim+1),STAT=istat)
@@ -619,7 +586,7 @@ CONTAINS
   LHS = 0.0
   if (Mesh(c1)%Ngbr_Cell(Face) == DEGENERATE_FACE)then
     do d1 = 1,ndim+1
-      LHS(d1,d1) = one
+      LHS(d1,d1) = 1.0_r8
     end do
   else
   ! Loop over all face components
@@ -681,58 +648,50 @@ CONTAINS
     call LSLR_SOLVE_pivot(LHS,LHSi(:,i),ndim+1,ndim,row1(1,Face,c1),row2(1,Face,c1))
   end do         
 ! write(39,*) 'SU(Face,Cell)=(',Face,',',c1,'): ',(sqrt(LHSi(i,i)),i=1,ndim+1)
-  return
   END SUBROUTINE UpdateFaceLU
 
 
   FUNCTION FGetPhiValues(icell,Phi) RESULT(PhiLcell)
   ! Accessor function for neighbor and BC field values 
   ! associated with given cell
-  implicit none
+  integer, intent(IN) :: icell
+  real(r8), dimension(ncells), intent(IN) :: Phi
 
-  integer(KIND=int_kind),intent(IN) :: icell
-  real(KIND = real_kind), dimension(ncells), intent(IN)  :: Phi
-
-  type(SField_Type),pointer,dimension(:)         :: PhiLcell
+  type(SField_Type),pointer,dimension(:) :: PhiLcell
 
   ! Have to re-gather field values at beginning of each iteration
   if(icell == 1)call FGetScalarField(Phi,PHI_Struct)
 
   PhiLcell => PHI_Struct(:,icell)
-  return
   END FUNCTION FGetPhiValues
 
 
   SUBROUTINE FGetScalarField(SField,S_Struct)
   ! Accessor function for neighbor and BC scalar field values
   ! associated with given cell
-  use gs_module,      only: EE_GATHER
-  use mesh_module,    only: Mesh, DEGENERATE_FACE
-  use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, &
-                                 DESTROY
-  implicit none
+  use gs_module, only: EE_GATHER
+  use mesh_module, only: Mesh, DEGENERATE_FACE
+  use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, DESTROY
 
-  real(KIND = real_kind), dimension(:), intent(IN)  :: SField
-  type(SField_Type), dimension(:,:), intent(INOUT)  :: S_Struct
+  real(r8), dimension(:), intent(IN) :: SField
+  type(SField_Type), dimension(:,:), intent(INOUT) :: S_Struct
 
-  type(REAL_VAR_VECTOR), pointer, dimension(:)         :: Centers
+  type(REAL_VAR_VECTOR), pointer, dimension(:) :: Centers
 !  This seems to be unnecessary, and was causing a memory leak as noted below
-!  type(BOUNDARY)                                       :: Centers_Bndy
+!  type(BOUNDARY) :: Centers_Bndy
 
   ! This V_HACK type is needed to conform with the REAL_VAR_VECTOR type.
   type V_HACK
-     real(KIND = real_kind), pointer, dimension(:)     :: Data
+     real(r8), pointer, dimension(:) :: Data
   end type V_HACK
-  type(V_HACK)                                         :: Scalar_E
-  integer(KIND=int_kind)                :: FN
-  integer(KIND=int_kind)                :: Nptr
-  integer                               :: f,j,n
+  type(V_HACK) :: Scalar_E
+  integer :: FN,Nptr,f,j,n
 #ifdef DO_DIRICHLET
   integer :: Length
   logical :: lret
   type(BC_Chart_ID), POINTER :: ChartID
-  real(KIND=real_kind), dimension(:), pointer :: Values
-  real(KIND=real_kind), dimension(:,:), pointer :: ValuesMultiDOF
+  real(r8), dimension(:), pointer :: Values
+  real(r8), dimension(:,:), pointer :: ValuesMultiDOF
 #endif
 
 #ifdef DO_DIRICHLET
@@ -793,20 +752,15 @@ CONTAINS
 #endif
   call DESTROY (ARRAY = Centers)
   DEALLOCATE (Centers)
-  return
   END SUBROUTINE FGetScalarField
 
 
   FUNCTION FGetListSize(icell) RESULT(NumFacesCell)
   ! Accessor function for the number of neighbor and BC faces to processed
   ! with a given cell
-  implicit none
-
-  integer(KIND=int_kind),intent(IN) :: icell
-  integer(KIND=int_kind),dimension(:),pointer        :: NumFacesCell
-
+  integer, intent(IN) :: icell
+  integer, dimension(:), pointer :: NumFacesCell
   NumFacesCell => NumFaces(:,icell)
-  return
   END FUNCTION FGetListSize
 
   SUBROUTINE INIT_DD_SUPPORT_Face(BC_Spec,Phi,Weight)
@@ -821,59 +775,58 @@ CONTAINS
     !             arrays for the FGet... accessor functions.
     !
     !=======================================================================
-    use gs_module,      only: EE_GATHER
-    use mesh_module,    only: Cell,Mesh,BOUNDARY,Is_Face_Ngbr
-    use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, &
-                                 DESTROY
+    use gs_module, only: EE_GATHER
+    use mesh_module, only: Cell,Mesh,BOUNDARY,Is_Face_Ngbr
+    use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, DESTROY
 
     ! Arguments
-    type (BC_Specifier),    OPTIONAL, intent(INOUT)        :: BC_Spec
-    real(KIND = real_kind), dimension(ncells), intent(IN)  :: Phi
-    real(KIND = real_kind), dimension(ncells), OPTIONAL, intent(IN) :: Weight
+    type(BC_Specifier), OPTIONAL, intent(INOUT) :: BC_Spec
+    real(r8), dimension(ncells), intent(IN) :: Phi
+    real(r8), dimension(ncells), OPTIONAL, intent(IN) :: Weight
 
     ! Local Variables
   ! Various index variables
-    integer(KIND=int_kind)                             :: d,j,n,f,j2,f2
+    integer :: d,j,n,f,j2,f2
   ! Running count of the number of valid neighbor faces
-    integer(KIND=int_kind)                             :: NumNghbrs
+    integer :: NumNghbrs
   ! The ...tmp arrays are temporary structures to allocated to hold the
   ! maximum possible extent of the required data until the true extent is
   ! determined by Is_Face_Ngbr, DEGENERATE_FACE and the BC routines
-    integer(KIND=int_kind),allocatable,dimension(:,:)  :: PTRtmp
-    real(KIND=real_kind),allocatable,dimension(:,:)    :: CellWtmp
-    real(KIND=real_kind),allocatable,dimension(:,:)    :: GeoWtmp
-    real(KIND=real_kind),allocatable,dimension(:,:,:)  :: dXtmp
+    integer,  allocatable, dimension(:,:)   :: PTRtmp
+    real(r8), allocatable, dimension(:,:)   :: CellWtmp
+    real(r8), allocatable, dimension(:,:)   :: GeoWtmp
+    real(r8), allocatable, dimension(:,:,:) :: dXtmp
   ! The persistent storage for valid indices, field values (which are updated
   ! each interation), geometric weights and dXs
-    integer(KIND=int_kind),pointer,dimension(:),save   :: PTRs
-    real(KIND=real_kind),pointer,dimension(:),save     :: PHIs
-    real(KIND=real_kind),pointer,dimension(:),save     :: GeoW
-    real(KIND=real_kind),pointer,dimension(:),save     :: W
-    real(KIND=real_kind),pointer,dimension(:,:),save   :: dX
-    type(REAL_VAR_VECTOR), pointer, dimension(:,:),save  :: X_Centers
+    integer,  pointer, dimension(:),   save :: PTRs
+    real(r8), pointer, dimension(:),   save :: PHIs
+    real(r8), pointer, dimension(:),   save :: GeoW
+    real(r8), pointer, dimension(:),   save :: W
+    real(r8), pointer, dimension(:,:), save :: dX
+    type(REAL_VAR_VECTOR), pointer, dimension(:,:),save :: X_Centers
 
-    type(BOUNDARY),                 dimension(ndim)      :: X_Centers_Bndy
+    type(BOUNDARY), dimension(ndim) :: X_Centers_Bndy
 
     ! This V_HACK type is needed to conform with the REAL_VAR_VECTOR type.
     type V_HACK
-       real(KIND = real_kind), pointer, dimension(:)     :: Data
+       real(r8), pointer, dimension(:) :: Data
     end type V_HACK
-    type(V_HACK), dimension(ndim)                        :: Xc
-    integer(KIND = int_kind), pointer, dimension(:)      :: Ngbr_Cells_Face
-    integer(KIND=int_kind)                :: FN,NFN
-    integer(KIND=int_kind)         :: istat
-    logical(kind=log_kind),save :: first_time=.true.
+    type(V_HACK), dimension(ndim) :: Xc
+    integer, pointer, dimension(:) :: Ngbr_Cells_Face
+    integer :: FN,NFN
+    integer :: istat
+    logical, save :: first_time=.true.
 
   ! This is for all the neighbor weights
     type(REAL_VAR_VECTOR), pointer, SAVE, dimension(:) :: Nbr_Weight
-    real(real_kind), dimension(:), pointer :: CellsNbrWeights
+    real(r8), dimension(:), pointer :: CellsNbrWeights
 
-    real(KIND=real_kind) :: dX1
+    real(r8) :: dX1
     
 #ifdef DO_DIRICHLET
-    integer(KIND=int_kind) :: Length
+    integer :: Length
     type(BC_Chart_ID), POINTER :: ChartID
-    real(KIND=real_kind), dimension(:,:), pointer :: Positions
+    real(r8), dimension(:,:), pointer :: Positions
     
 #endif
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -1065,7 +1018,6 @@ CONTAINS
       call DESTROY(ARRAY = Nbr_Weight(:))
       DEALLOCATE(Nbr_Weight)
     endif
-    return
   END SUBROUTINE INIT_DD_SUPPORT_Face
 
 
@@ -1106,18 +1058,16 @@ CONTAINS
     !
     !
     !=======================================================================
-    implicit none
-    Integer(KIND=int_kind), intent(IN) :: n
+    integer, intent(IN) :: n
 
     ! arguments
-    integer (int_kind),               intent(OUT)  :: row(n)
-    integer (int_kind),               intent(OUT)  :: col(n)
-    real (real_kind), dimension(n,n), intent(INOUT)  :: A
+    integer, intent(OUT) :: row(n)
+    integer, intent(OUT) :: col(n)
+    real(r8), dimension(n,n), intent(INOUT) :: A
 
     ! local variables
-    Integer(KIND=int_kind) :: piv,i,j,rowp,colp
-    real (real_kind) :: tmp
-    real (real_kind) :: dont_care
+    integer :: piv,i,j,rowp,colp
+    real(r8) :: tmp, dont_care
   ! dont_care_magnitude sets the relative magnitude below which values
   ! are "zero" wrt a cell face's LU solve component. It use implies that
   ! components with magnitudes less than 'dont_care' are "unphysical" wrt
@@ -1125,7 +1075,7 @@ CONTAINS
   ! The absolute value
   ! for a cell face is the product of the largest magnitude component of
   ! the (ndim+1)x(ndim+1) matrix with the "dont_care_magnitude"
-    real (real_kind),parameter :: dont_care_magnitude=1.d-15
+    real(r8), parameter :: dont_care_magnitude=1.d-15
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     do i=1,n
@@ -1179,7 +1129,6 @@ CONTAINS
           A(i,piv)=tmp
        enddo
     enddo
-    return
   END SUBROUTINE LSLR_SOLVE_LU
 
 
@@ -1192,20 +1141,19 @@ CONTAINS
     !   Return the result in ans.  (data in B is trashed)
     !
     !=======================================================================
-    implicit none
-    Integer(KIND=int_kind), intent(IN)  :: n,nm
+    integer, intent(IN)  :: n,nm
 
     ! arguments
-    integer (int_kind),               intent(IN)  :: row(n)
-    integer (int_kind),               intent(IN)  :: col(n)
-    real (real_kind), dimension(n,n), intent(IN)  :: A
-    real (real_kind), dimension(n),   intent(INOUT)  :: B
+    integer, intent(IN) :: row(n)
+    integer, intent(IN) :: col(n)
+    real(r8), dimension(n,n), intent(IN) :: A
+    real(r8), dimension(n),   intent(INOUT) :: B
 
     ! function return
-    real (real_kind)                              :: tmp
-    real (real_kind), dimension(n)                :: B2
+    real(r8) :: tmp
+    real(r8), dimension(n) :: B2
     ! local variables
-    Integer(KIND=int_kind) :: piv,i,j
+    integer :: piv,i,j
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! solve the system Ax=B
@@ -1237,26 +1185,25 @@ CONTAINS
     do i=1,n
        B(col(i))=B2(i)
     enddo
-    return
   END SUBROUTINE LSLR_SOLVE_pivot
 
 
   FUNCTION GoodPhiSolution()
-    logical(KIND=log_kind), pointer, dimension(:,:) :: GoodPhiSolution
-    logical(KIND=log_kind), allocatable, dimension(:,:), target, save :: GPS
+    logical, pointer, dimension(:,:) :: GoodPhiSolution
+    logical, allocatable, dimension(:,:), target, save :: GPS
     if(.not. ALLOCATED(GPS))ALLOCATE(GPS(nfc,ncells))
     GPS = SolveFlag(1,:,:)
     GoodPhiSolution => GPS
   END FUNCTION GoodPhiSolution
 
   SUBROUTINE update_LSLR_All(UFlag)
-    logical(KIND=log_kind), intent(IN) :: UFlag
+    logical, intent(IN) :: UFlag
     UpdateDecomp = UFlag
   END SUBROUTINE update_LSLR_All
 
   SUBROUTINE update_LSLR_SelectCell(UFlagCell)
-    logical(KIND=log_kind), dimension(ncells), intent(IN) :: UFlagCell
-    integer(KIND=int_kind) :: i,j
+    logical, dimension(ncells), intent(IN) :: UFlagCell
+    integer :: i,j
     do j = 1,ncells
     do i = 1,nfc
       UpdateDecomp(i,j) = UFlagCell(j)
@@ -1266,7 +1213,7 @@ CONTAINS
 
 
   SUBROUTINE update_LSLR_SelectFace(UFlagFace)
-    logical(KIND=log_kind), dimension(nfc,ncells), intent(IN) :: UFlagFace
+    logical, dimension(nfc,ncells), intent(IN) :: UFlagFace
     UpdateDecomp = UFlagFace
   END SUBROUTINE update_LSLR_SelectFace
 

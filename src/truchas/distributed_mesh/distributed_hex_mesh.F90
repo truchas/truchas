@@ -379,11 +379,7 @@ contains
     integer :: i, j, k, ncell, stat, n1, n2
 
     type(NGraphType) :: g
-#ifdef SUPPORTS_TR15581
     integer, allocatable :: xadj(:), adjncy(:)
-#else
-    integer, pointer :: xadj(:), adjncy(:)
-#endif
     real, allocatable :: ewgt(:)
     real, parameter :: LINK_WEIGHT = 1.0
 
@@ -504,11 +500,7 @@ contains
     integer :: lnhbr(2,size(lnode,2))
 
     type(NGraphType) :: g
-#ifdef SUPPORTS_TR15581
     integer, allocatable :: xadj(:), adjncy(:)
-#else
-    integer, pointer :: xadj(:), adjncy(:)
-#endif
     real, allocatable :: ewgt(:)
     real, parameter :: LINK_WEIGHT = 2.0
 

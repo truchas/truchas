@@ -15,18 +15,16 @@ MODULE LIMITER_MODULE
   ! Author(s): Douglas B. Kothe (LANL Group T-3, dbk@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: LIMITER
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Limiter namelist variables
-  character(LEN = 80), public, save :: limiter_type
+  character(80), public, save :: limiter_type
 
 CONTAINS
 
@@ -37,29 +35,24 @@ CONTAINS
     !      Initialize parallel parameters, such as the number of PEs,
     !      the PE number of this process, and the I/O PE
     !=======================================================================
-    use constants_module, only: one, one_third, zero, two
     use cutoffs_module,   only: alittle
-    use kind_module,      only: int_kind, log_kind, real_kind
     use parameter_module, only: ncells, nfc
     use mesh_module,      only: Cell
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind), dimension(ncells),     intent(IN)  :: Extrapolated_Value
-    real(KIND = real_kind), dimension(ncells),     intent(IN)  :: Cell_Value
-    real(KIND = real_kind), dimension(nfc,ncells), intent(IN)  :: Neighbor_Values
-    real(KIND = real_kind), dimension(ncells),     intent(OUT) :: Slope_Limiter
-    integer(KIND = int_kind),                      intent(IN)  :: element
-    character(LEN = *), optional,                  intent(IN)  :: location
-    character(LEN = *), optional,                  intent(IN)  :: method
+    real(r8), dimension(ncells),     intent(IN)  :: Extrapolated_Value
+    real(r8), dimension(ncells),     intent(IN)  :: Cell_Value
+    real(r8), dimension(nfc,ncells), intent(IN)  :: Neighbor_Values
+    real(r8), dimension(ncells),     intent(OUT) :: Slope_Limiter
+    integer, intent(IN)  :: element
+    character(*), optional, intent(IN)  :: location
+    character(*), optional, intent(IN)  :: method
 
     ! Local Variables
-    logical(KIND = log_kind) :: specified_method, specified_location
-    character(LEN = 80) :: limiter_method = 'Venkat', &
-                           limiter_location = 'face'
-    real(KIND = real_kind)                    :: Venkat_constant = one_third
-    real(KIND = real_kind), dimension(ncells) :: Tmp1, Tmp2, Tmp3, Tmp4
+    logical :: specified_method, specified_location
+    character(80) :: limiter_method = 'Venkat', limiter_location = 'face'
+    real(r8) :: Venkat_constant = 1.0_r8 / 3.0_r8
+    real(r8), dimension(ncells) :: Tmp1, Tmp2, Tmp3, Tmp4
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -75,7 +68,7 @@ CONTAINS
        ! No limiting; set slope limiter to unity
        case default
 
-          Slope_Limiter = one
+          Slope_Limiter = 1.0_r8
 
        ! Venkatakrishnan's Limiter (AIAA Paper #AIAA-93-0880)
        case ('Venkat')
@@ -83,17 +76,17 @@ CONTAINS
           Tmp1 = MAX(Cell_Value, Neighbor_Values(element,:)) - Cell_Value
           Tmp2 = MIN(Cell_Value, Neighbor_Values(element,:)) - Cell_Value
           Tmp3 = Extrapolated_Value - Cell_Value
-          Tmp3 = SIGN(one,Tmp3)*(ABS(Tmp3) + alittle)
-          Tmp4 = (Cell%Volume)**one_third  ! Approximation of cell length
+          Tmp3 = SIGN(1.0_r8,Tmp3)*(ABS(Tmp3) + alittle)
+          Tmp4 = (Cell%Volume)**(1.0d0/3.0d0)  ! Approximation of cell length
           Tmp4 = (Venkat_constant*Tmp4)**3
           where (Tmp3 > alittle)
-             Slope_Limiter = (Tmp3*(Tmp1**2 + Tmp4) + two*Tmp1*Tmp3**2) / &
-                         (Tmp1**2 + two*Tmp3**2 + Tmp1*Tmp3 + Tmp4 + alittle)
+             Slope_Limiter = (Tmp3*(Tmp1**2 + Tmp4) + 2.0_r8*Tmp1*Tmp3**2) / &
+                         (Tmp1**2 + 2.0_r8*Tmp3**2 + Tmp1*Tmp3 + Tmp4 + alittle)
           elsewhere
-             Slope_Limiter = (Tmp3*(Tmp2**2 + Tmp4) + two*Tmp2*Tmp3**2) / &
-                         (Tmp2**2 + two*Tmp3**2 + Tmp2*Tmp3 + Tmp4 + alittle)
+             Slope_Limiter = (Tmp3*(Tmp2**2 + Tmp4) + 2.0_r8*Tmp2*Tmp3**2) / &
+                         (Tmp2**2 + 2.0_r8*Tmp3**2 + Tmp2*Tmp3 + Tmp4 + alittle)
           end where
-          Slope_Limiter = MERGE(one, Slope_Limiter/Tmp3, ABS(Tmp3) <= alittle)
+          Slope_Limiter = MERGE(1.0_r8, Slope_Limiter/Tmp3, ABS(Tmp3) <= alittle)
 
        ! Barth's Limiter (AIAA Paper #AIAA-89-0366)
        case ('Barth')
@@ -103,18 +96,16 @@ CONTAINS
           Tmp3 = Extrapolated_Value - Cell_Value
           Tmp3 = MERGE(alittle, Tmp3, ABS(Tmp3) <= alittle)
           where (Tmp3 >= alittle)
-             Slope_Limiter = MIN(one, Tmp1/Tmp3)
+             Slope_Limiter = MIN(1.0_r8, Tmp1/Tmp3)
           elsewhere
-             Slope_Limiter = MIN(one, Tmp2/Tmp3)
+             Slope_Limiter = MIN(1.0_r8, Tmp2/Tmp3)
           end where
-          Slope_Limiter = MERGE(one, Slope_Limiter, ABS(Tmp3) <= alittle)
+          Slope_Limiter = MERGE(1.0_r8, Slope_Limiter, ABS(Tmp3) <= alittle)
 
     end select
 
     ! Make sure the limiter is bounded by zero and one
-    Slope_Limiter = MIN(one, MAX(zero, Slope_Limiter))
-
-    return
+    Slope_Limiter = MIN(1.0_r8, MAX(0.0_r8, Slope_Limiter))
 
   END SUBROUTINE LIMITER
 

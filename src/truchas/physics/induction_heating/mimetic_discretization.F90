@@ -2,7 +2,7 @@
 
 module mimetic_discretization
 
-  use kind_module, only: r8=>real_kind
+  use kinds, only: r8
   use distributed_mesh
   use index_partitioning
   implicit none

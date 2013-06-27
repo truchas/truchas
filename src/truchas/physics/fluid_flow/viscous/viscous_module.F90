@@ -10,11 +10,9 @@ MODULE VISCOUS_MODULE
   !            Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: int_kind, real_kind, log_kind
-
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -32,26 +30,22 @@ CONTAINS
     !
     !   Mom_Delta = dt * Stress Gradient
     !======================================================================= 
-    use constants_module,     only: zero, one
     use parameter_module,     only: ncells, ndim, nfc
     use viscous_data_module,  only: Stress_Grad_BC, viscous_implicitness
 
     use viscous_data_module,  only: Mask, Grad, Mu_Face, &
                                     Normal, Face_Velocity, inviscid
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind),                         intent(IN)    :: dt
-    real(KIND = real_kind), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
+    real(r8), intent(IN) :: dt
+    real(r8), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
 
     ! Local Variables
-    integer                                             :: status
-    integer(KIND = int_kind)                            :: n
-    real(KIND = real_kind)                              :: tweight
+    integer :: status
+    integer :: n
+    real(r8) :: tweight
 
-    real(KIND = real_kind), dimension(ndim,ncells)      :: Vc
+    real(r8), dimension(ndim,ncells) :: Vc
 
     ! Don't do anything if this isn't a viscous simulation
     !=====================================================
@@ -77,21 +71,18 @@ CONTAINS
     call calculateCellFaceViscosity ()
 
     ! Don't need the prepass if the viscous terms are explicit
-    if(viscous_implicitness > zero) then
+    if(viscous_implicitness > 0) then
 
-       Vc = zero
+       Vc = 0
        call STRESS_GRADIENT(Stress_Grad_BC, Vc)
 
        ! Increment Momentum Delta
-       tweight = (one - viscous_implicitness)
+       tweight = (1 - viscous_implicitness)
        do n = 1, ndim
           Mom_Delta(n,:) = Mom_Delta(n,:) + dt*tweight*Stress_Grad_BC(n,:)
        end do
 
     endif
-
-
-    return
 
   END SUBROUTINE viscousSetup
 
@@ -102,26 +93,22 @@ CONTAINS
     !
     !   Mom_Delta = dt * Stress Gradient
     !======================================================================= 
-    use constants_module,     only: zero, one
     use parameter_module,     only: ncells, ndim
     use timing_tree
     use zone_module,          only: Zone
     use viscous_data_module,  only: viscous_implicitness, Stress_Grad_BC
-    use truchas_logging_services
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind),                         intent(IN)    :: dt
-    real(KIND = real_kind), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
+    real(r8), intent(IN) :: dt
+    real(r8), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
 
     ! Local Variables
-    integer                                             :: status
-    integer(KIND = int_kind)                            :: n
-    real(KIND = real_kind)                              :: tweight
-    real(KIND = real_kind), dimension(:,:), allocatable :: Stress_Grad
+    integer :: status
+    integer :: n
+    real(r8) :: tweight
+    real(r8), dimension(:,:), allocatable :: Stress_Grad
 
-    real(KIND = real_kind), dimension(ndim,ncells)      :: Vc
+    real(r8), dimension(ndim,ncells) :: Vc
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -140,11 +127,11 @@ CONTAINS
     call STRESS_GRADIENT(Stress_Grad, Vc)
 
     ! Increment Momentum Delta
-    tweight = (one - viscous_implicitness)
+    tweight = (1 - viscous_implicitness)
     do n = 1, ndim
        Mom_Delta(n,:) = Mom_Delta(n,:) + dt*tweight*Stress_Grad(n,:)
        ! See Viscous StressDescription in the flow modeling docs on source forge
-       if(viscous_implicitness > zero) then
+       if(viscous_implicitness > 0) then
           Mom_Delta(n,:) = Mom_Delta(n,:) - dt*tweight*Stress_Grad_BC(n,:)
        endif
     end do
@@ -153,8 +140,6 @@ CONTAINS
 
     ! Stop Timer
     call stop_timer ("Viscous")
-
-    return
 
   END SUBROUTINE viscousExplicit
 
@@ -209,7 +194,6 @@ CONTAINS
     !                               Volume_c
     !
     !=======================================================================
-    use constants_module,     only: zero, one, two
     use fluid_data_module,    only: Solid_Face
     use gs_module,            only: EE_GATHER
     use mesh_module,          only: Mesh, DEGENERATE_FACE
@@ -218,15 +202,12 @@ CONTAINS
     use truchas_logging_services
     use viscous_data_module,  only: Mu_Face
 
-    implicit none
-
     ! Local Variables
-    integer                                                 :: status
-    integer(KIND = int_kind)                                :: i, f
+    integer :: status
+    integer :: i, f
 
-
-    real(KIND = real_kind), dimension(:,:),   allocatable :: Mu_Cell_Ngbr
-    real(KIND = real_kind), dimension(:),     allocatable :: Mu_Cell
+    real(r8), dimension(:,:), allocatable :: Mu_Cell_Ngbr
+    real(r8), dimension(:),   allocatable :: Mu_Cell
 
     ! Allocate the memory...
     ALLOCATE (Mu_Cell_Ngbr(nfc,ncells), STAT = status)
@@ -248,8 +229,8 @@ CONTAINS
     ! call FACE_CENTER (Mu_Cell, Mu_Face)
     call EE_GATHER (Mu_Cell_Ngbr, Mu_Cell)
     do i = 1,ncells
-       if (Mu_Cell(i) == zero) then
-          Mu_Face(:,i) = zero
+       if (Mu_Cell(i) == 0) then
+          Mu_Face(:,i) = 0
        else 
           do f = 1,nfc
              if (Mesh(i)%Ngbr_Cell(f) == DEGENERATE_FACE) then 
@@ -258,10 +239,10 @@ CONTAINS
                 Mu_Face(f,i) = Mu_Cell(i)
              else if (Mesh(i)%Ngbr_Cell(f) == 0) then
                 Mu_Face(f,i) = Mu_Cell(i)
-             else if (Mu_Cell(i) == zero .OR. Mu_Cell_Ngbr(f,i) == zero) then
-                Mu_Face(f,i) = zero
+             else if (Mu_Cell(i) == 0 .OR. Mu_Cell_Ngbr(f,i) == 0) then
+                Mu_Face(f,i) = 0
              else
-                Mu_Face(f,i) = two / (one/Mu_Cell(i) + one/Mu_Cell_Ngbr(f,i))
+                Mu_Face(f,i) = 2 / (1/Mu_Cell(i) + 1/Mu_Cell_Ngbr(f,i))
              endif
           end do
        endif
@@ -301,7 +282,6 @@ CONTAINS
     use bc_module,            only: BC, BC_Vel, FREE_SLIP, DIRICHLET_VEL, &
                                     DIRICHLET, Vel, Prs
     use bc_operations
-    use constants_module,     only: zero
     use do_interface,         only: DO_Specifier, do_init_ss, do_update_weights, &
                                     do_gradient_face, DO_SOLVE_ORTHO, &
                                     DO_SOLVE_LU_LSLR
@@ -310,20 +290,17 @@ CONTAINS
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, ndim, nfc
     use tensor_module,        only: Tensor
-
     use viscous_data_module,  only: Mask, Grad, Mu_Face, &
                                     Normal, Face_Velocity
 
-    implicit none
-
     ! Argument List
-    real(KIND = real_kind), dimension(ndim,ncells), intent(OUT) :: Stress_Grad
-    real(KIND = real_kind), dimension(:,:),         intent(IN)  :: Vc
+    real(r8), dimension(ndim,ncells), intent(OUT) :: Stress_Grad
+    real(r8), dimension(:,:),         intent(IN)  :: Vc
 
     ! Local Variables
-    type(DO_Specifier),pointer,save                         :: SG_SS =>NULL()
-    integer(KIND = int_kind)                                :: j, f, m, n, SGSolveTech
-    logical(log_kind), dimension(ncells)                    :: Mask1
+    type(DO_Specifier),pointer,save :: SG_SS =>NULL()
+    integer :: j, f, m, n, SGSolveTech
+    logical, dimension(ncells) :: Mask1
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -334,7 +311,7 @@ CONTAINS
     else
       call do_update_weights(SOLVESPEC=SG_SS,WEIGHTS=fluidVof)
     endif
-    Stress_Grad = zero
+    Stress_Grad = 0
 
     ! Stress Gradient
     NDIM_LOOP : do n = 1, ndim
@@ -347,13 +324,13 @@ CONTAINS
           ! Apply BCs
 
           ! Define a Face_Velocity at BC faces
-          Face_Velocity = zero
+          Face_Velocity = 0
 
           ! For free-slip, Face_Velocity is approximated by the component of
           ! the neighbouring Zone%Vc_Old tangential to the face;
           ! Calculate the normal component first
           Mask1 = FREE_SLIP (BC%Flag, Vel%Face_bit(f))
-          Normal = zero
+          Normal = 0
           do m = 1,ndim
              where (Mask1) Normal = Normal + Vc(m,:)*Cell%Face_Normal(m,f)
           end do
@@ -402,8 +379,6 @@ CONTAINS
     VOLUME_LOOP : do n = 1, ndim
        Stress_Grad(n,:) = Stress_Grad(n,:) / Cell%Volume
     end do VOLUME_LOOP
-
-    return
 
   END SUBROUTINE STRESS_GRADIENT
 

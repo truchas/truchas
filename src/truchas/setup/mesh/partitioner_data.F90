@@ -9,7 +9,7 @@ module partitioner_data
    ! author: Bryan Lally (LANL, lally@lanl.gov)
    !----------------------------------------------------------------------------
    use parameter_module, only: ndim
-
+   use truchas_logging_services
    implicit none
    private
 
@@ -51,10 +51,8 @@ contains
       !-------------------------------------------------------------------------
       use string_utilities, only: lower_case
 
-      implicit none
-
       ! arguments
-      character (len=*) :: partitioner_arg
+      character(*) :: partitioner_arg
 
       ! return value
       integer :: SET_PARTITIONER
@@ -81,8 +79,6 @@ contains
          SET_PARTITIONER = 1
       end select
 
-      return
-
    end function SET_PARTITIONER
 
    !----------------------------------------------------------------------------
@@ -93,15 +89,11 @@ contains
       !
       !    return the partitioner value
       !-------------------------------------------------------------------------
-      implicit none
-
       integer :: GET_PARTITIONER
 
       !-------------------------------------------------------------------------
 
       GET_PARTITIONER = partitioner
-
-      return
 
    end function GET_PARTITIONER
 
@@ -114,15 +106,12 @@ contains
       !    return the default partitioner value
       !-------------------------------------------------------------------------
       use parameter_module, only: string_len
-      implicit none
 
-      character (len=string_len) :: GET_PARTITIONER_DEFAULT
+      character(string_len) :: GET_PARTITIONER_DEFAULT
 
       !-------------------------------------------------------------------------
 
       GET_PARTITIONER_DEFAULT = 'automatic'
-
-      return
 
    end function GET_PARTITIONER_DEFAULT
 
@@ -138,11 +127,9 @@ contains
       !    returns 1 for failure
       !-------------------------------------------------------------------------
       use parameter_module, only: ndim
-      implicit none
 
       integer, dimension(ndim) :: processor_array_arg
       integer :: SET_PROCESSOR_ARRAY
-      
 
       !-------------------------------------------------------------------------
 
@@ -152,8 +139,6 @@ contains
       if (ANY(processor_array < 0)) then
          SET_PROCESSOR_ARRAY = 1
       end if
-
-      return
 
    end function SET_PROCESSOR_ARRAY
 
@@ -166,15 +151,12 @@ contains
       !    return the processor array
       !-------------------------------------------------------------------------
       use parameter_module, only: ndim
-      implicit none
 
       integer, dimension(ndim) :: GET_PROCESSOR_ARRAY
 
       !-------------------------------------------------------------------------
 
       GET_PROCESSOR_ARRAY = processor_array
-
-      return
 
    end function GET_PROCESSOR_ARRAY
 
@@ -187,15 +169,12 @@ contains
       !    return the default processor array
       !-------------------------------------------------------------------------
       use parameter_module, only: ndim
-      implicit none
 
       integer, dimension(ndim) :: GET_PROCESSOR_ARRAY_DEFAULT
 
       !-------------------------------------------------------------------------
 
       GET_PROCESSOR_ARRAY_DEFAULT = 0
-
-      return
 
    end function GET_PROCESSOR_ARRAY_DEFAULT
 
@@ -210,15 +189,11 @@ contains
       !-------------------------------------------------------------------------
       use parameter_module,     only: nx_tot, ndim
       use parallel_info_module, only: p_info
-      use kind_module,          only: log_kind, int_kind
       use mesh_gen_data,        only: GENERATED_MESH, partitions_total
-      use truchas_logging_services
-
-      implicit none
 
       integer :: d
       integer :: processor_array_product
-      logical (log_kind) :: fatal
+      logical :: fatal
       character(128), allocatable :: message(:)
 
       !-------------------------------------------------------------------------
@@ -296,11 +271,8 @@ contains
 
       !-------------------------------------------------------------------------
 
-      return
-
    end subroutine PARTITIONER_INIT
 
    !----------------------------------------------------------------------------
-
 
 end module partitioner_data

@@ -13,10 +13,9 @@ Module BC_Initialize
   !
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
+  use kinds, only: r8
   use bc_data_types
-  use kind_module, only : int_kind, real_kind, log_kind
   use parameter_module
-
   implicit none
   Private
 
@@ -31,24 +30,24 @@ Module BC_Initialize
 CONTAINS
   subroutine Append_BC_Region_From_Mask(Region, BC_Mask, BC_Values, BC_UseFunction, POSITIONS)
     ! Append the boundary values flagged in BC_Mask to Region
-    use pgslib_module,           ONLY: PGSLib_SUM_PREFIX
+    use pgslib_module, ONLY: PGSLib_SUM_PREFIX
     use mesh_module
 
     type(BC_Region), intent(INOUT) :: Region
     logical, intent(IN), dimension(nfc,ncells) :: BC_Mask
     ! BC_Values is (DOF, nfc, ncells)
-    real(real_kind),    intent(IN), dimension(:,:,:) :: BC_Values
-    logical(log_kind),  intent(IN), dimension(nfc,ncells) :: BC_UseFunction
-    real(real_kind),    intent(IN), dimension(ndim, nfc,ncells) :: Positions
+    real(r8), intent(IN), dimension(:,:,:) :: BC_Values
+    logical,  intent(IN), dimension(nfc,ncells) :: BC_UseFunction
+    real(r8), intent(IN), dimension(ndim, nfc,ncells) :: Positions
 
-    integer( int_kind) :: ItemsInList, C, F, D, ListCounter, DOF
-    integer( int_kind), dimension(ncells)     :: Global_Cell_Number
-    integer( int_kind)                        :: Global_Offset
-    integer( int_kind), pointer, dimension(:) :: CellList
-    integer( int_kind), pointer, dimension(:) :: FaceList
-    real(real_kind),    pointer, dimension(:,:):: ValueList
-    logical(log_kind),  pointer, dimension(:) :: UseFunction
-    real(real_kind),    pointer, dimension(:,:) :: PositionList
+    integer :: ItemsInList, C, F, D, ListCounter, DOF
+    integer, dimension(ncells) :: Global_Cell_Number
+    integer :: Global_Offset
+    integer, pointer, dimension(:) :: CellList
+    integer, pointer, dimension(:) :: FaceList
+    real(r8), pointer, dimension(:,:) :: ValueList
+    logical,  pointer, dimension(:) :: UseFunction
+    real(r8), pointer, dimension(:,:) :: PositionList
 
     ! How many BC points do we get from this side?
     ItemsInList = COUNT(BC_Mask)
@@ -95,7 +94,6 @@ CONTAINS
     ! Done with the lists, clean up and go home.
     DEALLOCATE(CellList, FaceList, ValueList, UseFunction, PositionList)
 
-    return
   end subroutine Append_BC_Region_From_Mask
 
   subroutine BC_Atlas_From_Region(Atlas, Region)
@@ -112,14 +110,14 @@ CONTAINS
     type (BC_Region), intent(IN   ) :: Region
 
     ! Local variables
-    integer( int_kind) :: c, d
+    integer :: c, d
     
-    integer( int_kind), dimension(:), pointer :: Faces, Cells
-    real(real_kind), dimension(:,:),    pointer :: Values
-    logical(log_kind),  pointer, dimension(:) :: UseFunction
-    real(real_kind), dimension(:,:),  pointer :: Positions
-    integer( int_kind), dimension(1) :: ChartValueIndex
-    real(real_kind), dimension(ndim,1) :: ChartPositions
+    integer,  dimension(:), pointer :: Faces, Cells
+    real(r8), dimension(:,:), pointer :: Values
+    logical,  pointer, dimension(:) :: UseFunction
+    real(r8), dimension(:,:), pointer :: Positions
+    integer,  dimension(1) :: ChartValueIndex
+    real(r8), dimension(ndim,1) :: ChartPositions
 
     ! Build the Atlas from the Region data
 

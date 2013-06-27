@@ -1,8 +1,7 @@
 MODULE REGION_INPUT_MODULE
 
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -20,15 +19,14 @@ CONTAINS
 
   SUBROUTINE REGION_READ (lun)
 
-    use kind_module,               only: log_kind
-    use region_data,               only: nregion
-    use parameter_module,          only: mregion
-    use parallel_info_module,      only: p_info
+    use region_data, only: nregion
+    use parameter_module, only: mregion
+    use parallel_info_module, only: p_info
     
     integer, intent(in) :: lun
 
-    Integer            :: ir
-    logical (log_kind) :: region_namelist
+    Integer :: ir
+    logical :: region_namelist
 
     ! Initialize the number of bodies
     nregion = 0
@@ -64,30 +62,28 @@ CONTAINS
 
   SUBROUTINE REGION_INPUT (lun, region_namelist)
 
-    use kind_module,            only: int_kind, log_kind
     use region_data,            only: x1,y1,z1,x2,y2,z2,flow_off,Regions, &
                                       nregion
     use input_utilities,        only: seek_to_namelist
-    use constants_module,       only: ZERO
     use parallel_info_module,   only: p_info
 
     ! Argument List
     integer, intent(in) :: lun
-    logical(KIND = log_kind) :: region_namelist
+    logical :: region_namelist
 
-    logical(log_kind) :: fatal
-    integer(int_kind) :: ioerror
+    logical :: fatal
+    integer :: ioerror
 
     namelist /REGION/ x1,y1,z1,x2,y2,z2,flow_off
 
     ! some default values for REGION
-    x1 = zero
-    y1 = zero
-    z1 = zero
+    x1 = 0
+    y1 = 0
+    z1 = 0
 
-    x2 = zero
-    y2 = zero
-    z2 = zero
+    x2 = 0
+    y2 = 0
+    z2 = 0
 
     flow_off = .false.
 
@@ -121,10 +117,6 @@ CONTAINS
 
     endif
 
-
-
-    return
-
   END SUBROUTINE REGION_INPUT
 
   SUBROUTINE REGION_INPUT_PARALLEL (region_namelist)
@@ -135,17 +127,13 @@ CONTAINS
     !   Also broadcast body_namelist flag.
     !
     !======================================================================
-    use region_data,            only: x1,y1,z1,x2,y2,z2,flow_off
-  
-    use kind_module,          only: log_kind
+    use region_data, only: x1,y1,z1,x2,y2,z2,flow_off
     use parallel_info_module, only: p_info
-    use pgslib_module,        only: PGSLIB_BCAST
-
-    implicit none
+    use pgslib_module, only: PGSLIB_BCAST
 
     ! Argument List
 
-    logical(KIND = log_kind)              :: region_namelist
+    logical :: region_namelist
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -160,8 +148,6 @@ CONTAINS
        call PGSLIB_BCAST (flow_off)
        call PGSLIB_BCAST (region_namelist)
     end if
-
-    return
 
   END SUBROUTINE REGION_INPUT_PARALLEL
 

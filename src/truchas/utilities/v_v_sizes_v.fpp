@@ -24,16 +24,15 @@
          DIMENSION(:)             :: ARRAY
 
     ! Result
-    integer (int_kind), DIMENSION(SIZE(ARRAY,1)) :: SIZES
+    integer, DIMENSION(SIZE(ARRAY,1)) :: SIZES
 
     ! Local variables
-    integer (int_kind) :: i
+    integer :: i
 
     do i = 1, SIZE(ARRAY)
        SIZES(i) = SIZE(ARRAY(i)%V)
     end do
 
-    return
   end function _ROUTINE_NAME_
     
 #undef _ROUTINE_NAME_

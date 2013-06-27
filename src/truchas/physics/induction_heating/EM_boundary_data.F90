@@ -9,7 +9,7 @@
 
 module EM_boundary_data
 
-  use kind_module, only: rk => real_kind
+  use kinds, only: rk => r8
   use MaxwellBoundaryData
   implicit none
   private

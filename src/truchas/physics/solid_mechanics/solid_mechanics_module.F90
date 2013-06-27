@@ -29,14 +29,12 @@ Module SOLID_MECHANICS_MODULE
   !             
   ! Authors:  Dave Korzekwa (dak@lanl.gov), Mark Schraad (schraad@lanl.gov)
   !-----------------------------------------------------------------------------
-
-  Use kind_module,      Only: int_kind, real_kind
+  use kinds, only: r8
   Use var_vector_module
   use solid_mechanics_data
   use nonlinear_solution, only: NK_SOLUTION_FIELD
   use truchas_logging_services
   Implicit None
-
   Private
 
   ! Public procedures
@@ -46,7 +44,7 @@ Module SOLID_MECHANICS_MODULE
             SOLID_MECH_INIT
 
   ! Reference temperature for thermal stress/strain
-  Real   (KIND = real_kind), Save, Pointer, Dimension(:)   :: Ref_Temp
+  real(r8), Save, Pointer, Dimension(:)   :: Ref_Temp
   ! Gradient data for preconditioners
   type(real_var_vector), save, pointer, Dimension(:)                :: M1
   type(real_var_vector), save, pointer, Dimension(:)                :: M2
@@ -66,13 +64,11 @@ Contains
     !    strain, and stress arrays
     !
     !---------------------------------------------------------------------------
-
-    Use constants_module, Only: zero
     Use parameter_module, Only: ncells, ndim, nnodes, ncomps
     Use node_operator_module, Only: nipc
     use timing_tree
-    Implicit None
-    Integer       :: ip
+
+    Integer :: ip
 
     !---------------------------------------------------------------------------
 
@@ -131,55 +127,53 @@ Contains
     Allocate(Solid_Mask(ncells))
     Allocate(gap_cell_mask(ncells))
 
-    Thermal_Strain(:,:)                    = zero
-    Thermal_Strain_Inc(:,:)                = zero
-    tm_dens_old(:)                         = zero
-    tm_dens(:)                             = zero
-    PC_Strain(:,:)                         = zero
-    Elastic_Strain(:,:)                    = zero
-    Rotation_Magnitude(:)                  = zero
+    Thermal_Strain(:,:)                    = 0.0_r8
+    Thermal_Strain_Inc(:,:)                = 0.0_r8
+    tm_dens_old(:)                         = 0.0_r8
+    tm_dens(:)                             = 0.0_r8
+    PC_Strain(:,:)                         = 0.0_r8
+    Elastic_Strain(:,:)                    = 0.0_r8
+    Rotation_Magnitude(:)                  = 0.0_r8
 
-    SMech_Cell%Total_Strain(:,:)           = zero
-    SMech_Cell%Elastic_Stress(:,:)         = zero
-    SMech_Cell%Plastic_Strain(:,:)         = zero
-    SMech_Cell%Plastic_Strain_Rate(:)      = zero
+    SMech_Cell%Total_Strain(:,:)           = 0.0_r8
+    SMech_Cell%Elastic_Stress(:,:)         = 0.0_r8
+    SMech_Cell%Plastic_Strain(:,:)         = 0.0_r8
+    SMech_Cell%Plastic_Strain_Rate(:)      = 0.0_r8
 
-    SMech_Cell_Old%Total_Strain(:,:)       = zero
-    SMech_Cell_Old%Elastic_Stress(:,:)     = zero
-    SMech_Cell_Old%Plastic_Strain(:,:)     = zero
-    SMech_Cell_Old%Plastic_Strain_Rate(:)  = zero
+    SMech_Cell_Old%Total_Strain(:,:)       = 0.0_r8
+    SMech_Cell_Old%Elastic_Stress(:,:)     = 0.0_r8
+    SMech_Cell_Old%Plastic_Strain(:,:)     = 0.0_r8
+    SMech_Cell_Old%Plastic_Strain_Rate(:)  = 0.0_r8
 
     do ip = 1,nipc
-       SMech_IP(ip)%Total_Strain(:,:)          = zero
-       SMech_IP(ip)%Elastic_Stress(:,:)        = zero
-       SMech_IP(ip)%Plastic_Strain(:,:)        = zero
-       SMech_IP(ip)%Plastic_Strain_Rate(:)     = zero
+       SMech_IP(ip)%Total_Strain(:,:)          = 0.0_r8
+       SMech_IP(ip)%Elastic_Stress(:,:)        = 0.0_r8
+       SMech_IP(ip)%Plastic_Strain(:,:)        = 0.0_r8
+       SMech_IP(ip)%Plastic_Strain_Rate(:)     = 0.0_r8
 
-       SMech_IP_Old(ip)%Total_Strain(:,:)      = zero
-       SMech_IP_Old(ip)%Elastic_Stress(:,:)    = zero
-       SMech_IP_Old(ip)%Plastic_Strain(:,:)    = zero
-       SMech_IP_Old(ip)%Plastic_Strain_Rate(:) = zero
+       SMech_IP_Old(ip)%Total_Strain(:,:)      = 0.0_r8
+       SMech_IP_Old(ip)%Elastic_Stress(:,:)    = 0.0_r8
+       SMech_IP_Old(ip)%Plastic_Strain(:,:)    = 0.0_r8
+       SMech_IP_Old(ip)%Plastic_Strain_Rate(:) = 0.0_r8
     end do
 
-    Eff_Stress_Cell_old(:)                 = zero
-    Eff_Stress_IP_old(:,:)                 = zero
+    Eff_Stress_Cell_old(:)                 = 0.0_r8
+    Eff_Stress_IP_old(:,:)                 = 0.0_r8
 
-    Dev_Stress_Cell(:,:)                   = zero
-    Dev_Stress_IP(:,:,:)                   = zero
+    Dev_Stress_Cell(:,:)                   = 0.0_r8
+    Dev_Stress_IP(:,:,:)                   = 0.0_r8
 
-    Lame1(:)                               = zero
-    Lame2(:)                               = zero
-    CTE(:)                                 = zero
+    Lame1(:)                               = 0.0_r8
+    Lame2(:)                               = 0.0_r8
+    CTE(:)                                 = 0.0_r8
 
-    Displacement(:,:)                      = zero
+    Displacement(:,:)                      = 0.0_r8
 
-    RHS(:)                                 = zero
-    Src(:)                                 = zero
-    Ref_Temp(:)                            = zero
+    RHS(:)                                 = 0.0_r8
+    Src(:)                                 = 0.0_r8
+    Ref_Temp(:)                            = 0.0_r8
 
     call stop_timer("Solid Mechanics")
-
-    Return
 
   End Subroutine SOLID_MECHANICS_ALLOCATE
   !
@@ -194,11 +188,9 @@ Contains
     !
     !---------------------------------------------------------------------------
 
-    Use kind_module,          Only: int_kind, real_kind
     Use parameter_module,     Only: ndim, nnodes, ncells, nvc, nfc, nmat, mat_slot
     use node_operator_module, only: cv_init, CV_Internal, nipc
-    use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, &
-                                     BOUNDARY_CV_FACE
+    use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
     use timing_tree
     use UbikSolve_module
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
@@ -214,19 +206,16 @@ Contains
     use pgslib_module,        only: PGSLib_Global_MAXVAL
     Use zone_module,          Only: Zone
 
-    Implicit None
-
     logical :: have_initial_state
-    Real(KIND = real_kind), Dimension(ndim*nnodes)        :: Solution
-    Real(KIND = real_kind), Dimension(nvc,ncells,ndim)    :: U
-    Real(KIND = real_kind), Dimension(ndim,ncells)        :: Arow
-    Real(KIND = real_kind), Dimension(ndim,ndim,ncells)   :: Ugrad
-    Integer(KIND =  int_kind)                             :: idim, inodes, ip, i, j, k, status, &
-                                                             icell, imat, islot
-    real(KIND = real_kind), pointer, dimension(:)         :: Lame2_Node, Nvol, L2tmp
-    real(KIND = real_kind), dimension(nfc)                :: htemp
+    real(r8), Dimension(ndim*nnodes)      :: Solution
+    real(r8), Dimension(nvc,ncells,ndim)  :: U
+    real(r8), Dimension(ndim,ncells)      :: Arow
+    real(r8), Dimension(ndim,ndim,ncells) :: Ugrad
+    integer :: idim, inodes, ip, i, j, k, status, icell, imat, islot
+    real(r8), pointer, dimension(:) :: Lame2_Node, Nvol, L2tmp
+    real(r8), dimension(nfc) :: htemp
 
-    character(len=200)                 :: errmsg
+    character(len=200) :: errmsg
     character(128) :: message
 
     !---------------------------------------------------------------------------
@@ -431,8 +420,6 @@ Contains
 
     status=0
 
-    Return
-
   end Subroutine SOLID_MECH_INIT
 
   !-----------------------------------------------------------------------------
@@ -445,7 +432,6 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    Use kind_module,          Only: int_kind, real_kind
     Use parameter_module,     Only: ndim, nnodes, ncells, ncomps, nmat, mat_slot
     Use node_operator_module, Only: nipc
     use timing_tree
@@ -456,11 +442,9 @@ Contains
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_UPDATE
 
-    Implicit None
-
-    Integer(KIND =  int_kind)                         :: idim, inodes, ip, icell, imat, islot
-    Real   (KIND = real_kind), Dimension(ndim*nnodes) :: Temp
-    Real   (KIND = real_kind), Dimension(ncomps,ncells)      :: Pl_Inc_Cell, Dummy
+    integer :: idim, inodes, ip, icell, imat, islot
+    real(r8), Dimension(ndim*nnodes) :: Temp
+    real(r8), Dimension(ncomps,ncells) :: Pl_Inc_Cell, Dummy
 
     !---------------------------------------------------------------------------
 
@@ -588,8 +572,6 @@ Contains
 
     call stop_timer("Solid Mechanics")
 
-    Return
-
   End Subroutine THERMO_MECHANICS
   !
   !-----------------------------------------------------------------------------
@@ -602,44 +584,7 @@ Contains
     !    that use the conic temperature dependence
     !
     !---------------------------------------------------------------------------
-
-!    Use constants_module,     Only: zero
-!    Use kind_module,          Only: int_kind, real_kind, log_kind
-!    Use matl_module,          Only: GATHER_VOF
-!    Use parameter_module,     Only: ncells, nmat
-!    Use property_module,      Only: PROPERTY
-    Use zone_module,          Only: Zone
-!
-!    Implicit None
-!
-!    ! Local variables
-!    Integer(KIND =  int_kind)                    :: imat
-!    Real   (KIND = real_kind), Dimension(ncells) :: Prop
-!    Real   (KIND = real_kind), Dimension(ncells) :: mVOF
-!    logical(log_kind),         Dimension(ncells) :: mMask
-!
-!    !---------------------------------------------------------------------------
-!    !
-!    ! Initialize the solid material properties to zero
-!    Lame1(:)    = zero
-!    Lame2(:)    = zero
-!
-!    Do imat = 1, nmat ! Number of Materials
-!      call GATHER_VOF(imat,mVOF)
-!      mMask = mVOF > zero
-!
-!     ! Calculate the first Lame constant (i.e., lambda)
-!      Call PROPERTY (Zone%Temp, imat, 'Lame1', &
-!                     Value = Prop,material_mask = mMask)
-!      Lame1(:) = Lame1(:) + mVOF(:) * Prop(:)
-!
-!      ! Calculate the second Lame constant (i.e., mu)
-!      Call PROPERTY (Zone%Temp, imat, 'Lame2', &
-!                     Value = Prop,material_mask = mMask)
-!      Lame2(:) = Lame2(:) + mVOF(:) * Prop(:)
-!    End Do
-!
-!    Return
+    use zone_module, only: zone
     
     call compute_cell_property ('Lame1', zone%temp, Lame1)
     call compute_cell_property ('Lame2', zone%temp, Lame2)
@@ -658,25 +603,22 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    Use kind_module,          Only: int_kind, real_kind
-    Use linear_solution,      Only: Ubik_user, PRECOND_NONE, PRECOND_TM_SSOR, PRECOND_TM_DIAG
-    Use parameter_module,     Only: ndim, nnodes
-    Use preconditioners,      Only: PRECONDITION
+    Use linear_solution, Only: Ubik_user, PRECOND_NONE, PRECOND_TM_SSOR, PRECOND_TM_DIAG
+    Use parameter_module, Only: ndim, nnodes
+    Use preconditioners, Only: PRECONDITION
     use UbikSolve_module
-    use nonlinear_solution,     only: Nonlinear_Solve, NKuser,                     &
-                                      NK_GET_SOLUTION_FIELD, NK_INITIALIZE, NK_FINALIZE
+    use nonlinear_solution, only: Nonlinear_Solve, NKuser,                     &
+                                  NK_GET_SOLUTION_FIELD, NK_INITIALIZE, NK_FINALIZE
     use string_utilities, only: i_to_c
 
-    Implicit None
-
-    Real(KIND = real_kind), Dimension(ndim*nnodes) :: Solution
+    real(r8), Dimension(ndim*nnodes) :: Solution
 
     ! Local variables
-    Integer(KIND =  int_kind)                         :: idim, inodes, status, precon_type
+    integer :: idim, inodes, status, precon_type
     ! Solution time and space information
-    integer(int_kind), parameter :: FUTURE            = 2
-    integer(int_kind), parameter :: PRESENT           = 1
-    integer(int_kind), parameter :: PAST              = 1
+    integer, parameter :: FUTURE            = 2
+    integer, parameter :: PRESENT           = 1
+    integer, parameter :: PAST              = 1
 
     !---------------------------------------------------------------------------
 
@@ -731,8 +673,6 @@ Contains
     thermo_elastic_iterations   = NKuser(NK_DISPLACEMENT)%linear_tot
     viscoplastic_iterations = NKuser(NK_DISPLACEMENT)%Newton_tot
 
-    Return
-
   End Subroutine MATERIAL_DISPLACEMENTS
   !
   !-----------------------------------------------------------------------------
@@ -744,8 +684,6 @@ Contains
     !   terms) for the right hand side of the linear system or the constant part
     !   of the nonlinear residual.
     !---------------------------------------------------------------------------
-    Use constants_module,            Only: zero
-    Use kind_module,                 Only: int_kind, real_kind
     Use mesh_module,                 Only: Cell_Edge, Cell
     Use parameter_module,            Only: ndim, nnodes, ncells, nvc, ncomps, nvf
     Use zone_module,                 Only: Zone
@@ -757,26 +695,24 @@ Contains
     use solid_mech_constraints,      only: RHS_DISPLACEMENT_CONSTRAINTS
     use body_data_module,            only: Body_Force
 
-    Implicit None
     ! Local variables
-    type (BC_Operator), POINTER                            :: Operator
-    type (BC_Atlas),    POINTER                            :: Atlas
-    real (real_kind), pointer, dimension(:,:)              :: BC_Value_List
+    type (BC_Operator), POINTER :: Operator
+    type (BC_Atlas),    POINTER :: Atlas
+    real(r8), pointer, dimension(:,:) :: BC_Value_List
 
-    Integer(KIND =  int_kind)                              :: idim, inode, icomps, icell, ibcop, status, &
-                                                              ibface, atlas_size, ip
-    Real   (KIND = real_kind), Dimension(nvc,ncells)       :: RHS_Temp
-    Real   (KIND = real_kind), Dimension(ncells)           :: Dstrain
-    Real   (KIND = real_kind), Dimension(nnodes)           :: SM_Body_Force
-    Real   (KIND = real_kind), Dimension(ncomps,ncells)    :: Thermal_Stress
-    integer(int_kind), parameter                           :: NON_MECH_BCS = 8
-    real(KIND = real_kind), pointer, dimension(:)   :: Rho_Node, Nvol, Rho_tmp
+    integer :: idim, inode, icomps, icell, ibcop, status, ibface, atlas_size, ip
+    real(r8), Dimension(nvc,ncells)    :: RHS_Temp
+    real(r8), Dimension(ncells)        :: Dstrain
+    real(r8), Dimension(nnodes)        :: SM_Body_Force
+    real(r8), Dimension(ncomps,ncells) :: Thermal_Stress
+    integer, parameter :: NON_MECH_BCS = 8
+    real(r8), pointer, dimension(:) :: Rho_Node, Nvol, Rho_tmp
 
     ! Calculate the change in the cell-centered thermal strain field
 
-    Thermal_Strain_Inc = zero
-    Thermal_Stress     = zero
-    Dstrain            = zero
+    Thermal_Strain_Inc = 0.0_r8
+    Thermal_Stress     = 0.0_r8
+    Dstrain            = 0.0_r8
 
     call compute_cell_property ('TM density', zone%temp, tm_dens)
     where (gap_cell_mask) tm_dens = 1.0
@@ -808,7 +744,7 @@ Contains
     ! For the second vertex of each edge: RHS = RHS + Stress_ii * (-normal_i) * area
 
     NDIM_LOOP: do idim = 1,ndim
-       RHS_Temp(:,:) = zero
+       RHS_Temp(:,:) = 0.0_r8
        NIPC_LOOP: do ip=1,nipc
           do icell=1,ncells
              RHS_Temp(Cell_Edge(1,ip),icell) = RHS_Temp(Cell_Edge(1,ip),icell) + &
@@ -874,14 +810,14 @@ Contains
        ! For now, enforce zero displacements for materials with zero stiffness(?)
        ! This will probably cause problems when we have materials in the cell solidifying, etc.
        Where(Lame2(:) == 0)
-          RHS_Temp(1,:) = zero
-          RHS_Temp(2,:) = zero
-          RHS_Temp(3,:) = zero
-          RHS_Temp(4,:) = zero
-          RHS_Temp(5,:) = zero
-          RHS_Temp(6,:) = zero
-          RHS_Temp(7,:) = zero
-          RHS_Temp(8,:) = zero
+          RHS_Temp(1,:) = 0.0_r8
+          RHS_Temp(2,:) = 0.0_r8
+          RHS_Temp(3,:) = 0.0_r8
+          RHS_Temp(4,:) = 0.0_r8
+          RHS_Temp(5,:) = 0.0_r8
+          RHS_Temp(6,:) = 0.0_r8
+          RHS_Temp(7,:) = 0.0_r8
+          RHS_Temp(8,:) = 0.0_r8
        End Where
 
        call EN_SUM_Scatter(RHS(idim:(ndim*(nnodes-1)+idim):ndim),RHS_Temp)
@@ -952,22 +888,21 @@ Contains
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
 
     ! Preconditioning matrix.  TM_P will be pointed at this.
-    type(real_var_vector), pointer, save, dimension(:)  :: A_Elas
+    type(real_var_vector), pointer, save, dimension(:) :: A_Elas
     ! Connectivity array for A_Elas.  TM_P_Map will be pointed at this.
-    type(int_var_vector), pointer, save, dimension(:)   :: A_Conn
+    type(int_var_vector), pointer, save, dimension(:) :: A_Conn
     ! Node centered elastic constants
-    real(KIND = real_kind), pointer, dimension(:)       :: Lame1_Node, Lame2_Node , Nvol, L1tmp, L2tmp
-    integer(KIND = int_kind)                            :: idim, jdim, lnode, &
-                                                           inode, jnode, nmax
-    integer                                             :: status
-    integer(KIND = int_kind), dimension(nnodes)         :: NN_Sizes
-    integer(KIND = int_kind), dimension(nnodes*ndim)    :: C_Sizes
+    real(r8), pointer, dimension(:) :: Lame1_Node, Lame2_Node , Nvol, L1tmp, L2tmp
+    integer :: idim, jdim, lnode,  inode, jnode, nmax
+    integer :: status
+    integer, dimension(nnodes) :: NN_Sizes
+    integer, dimension(nnodes*ndim) :: C_Sizes
     ! Pointers to var_vector data
-    real(real_kind), pointer, dimension(:)              :: A_Vec
-    real(real_kind), pointer, dimension(:)              :: M1_Vec
-    real(real_kind), pointer, dimension(:)              :: M2_Vec
-    integer(int_kind), pointer, dimension(:)            :: A_C_Vec
-    integer(int_kind), pointer, dimension(:)            :: NN_Vec
+    real(r8), pointer, dimension(:) :: A_Vec
+    real(r8), pointer, dimension(:) :: M1_Vec
+    real(r8), pointer, dimension(:) :: M2_Vec
+    integer, pointer, dimension(:) :: A_C_Vec
+    integer, pointer, dimension(:) :: NN_Vec
 
     if (.not. mech_precond_init) then
        ! This if block is really part of initialization and is only done once
@@ -1123,7 +1058,6 @@ Contains
     deallocate(L1tmp)
     deallocate(L2tmp)
 
-
     ! Associate preconditioner matrix and connectivity
 
     TM_P => A_Elas
@@ -1143,60 +1077,58 @@ Contains
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use parameter_module,     only: ndim, nvc, ncells_tot, &
-                                    nnodes, nnodes_tot
-    use mesh_module,          only: Mesh, Vertex, CELL_TET,&
+    use parameter_module, only: ndim, nvc, ncells_tot, nnodes, nnodes_tot
+    use mesh_module, only: Mesh, Vertex, CELL_TET,&
          CELL_PYRAMID, CELL_PRISM, CELL_HEX, MESH_COLLATE_VERTEX, VERTEX_COLLATE, &
           Vertex_Ngbr_All_Orig, VERTEX_DATA, GAP_ELEMENT_1, GAP_ELEMENT_3
     use node_operator_module, only: CV_Internal, nipc
     use parallel_info_module
-    use pgslib_module,        only: PGSLib_DIST, PGSLib_COLLATE, PGSLib_Global_Sum
+    use pgslib_module, only: PGSLib_DIST, PGSLib_COLLATE, PGSLib_Global_Sum
 
-    integer(KIND = int_kind),parameter      :: nnt = ndim + 1
+    integer, parameter :: nnt = ndim + 1
 
     ! Local variables
-    real(KIND = real_kind), dimension(ndim)  :: Tcen, Fsign 
-    integer(KIND = int_kind), dimension(ndim)  :: Cvf
-    integer(KIND = int_kind), dimension(nnt) :: n
-    integer(KIND = int_kind), dimension(nnt-1) :: Tnode
-    integer(KIND = int_kind)                 :: inode, idim, lnode, neq, &
-         i, j, mindex_i, mindex_j, icell, ivrtx, ip, flat_size
-    integer                                  :: status
+    real(r8), dimension(ndim) :: Tcen, Fsign 
+    integer, dimension(ndim) :: Cvf
+    integer, dimension(nnt) :: n
+    integer, dimension(nnt-1) :: Tnode
+    integer :: inode, idim, lnode, neq, i, j, mindex_i, mindex_j, icell, ivrtx, ip, flat_size
+    integer :: status
     ! Interpolation function coefficients for tets
-    real(KIND = real_kind), Dimension(ndim,nnt)               :: A
+    real(r8), Dimension(ndim,nnt) :: A
     ! Coordinates of tet vertices
-    real(KIND = real_kind), Dimension(nnt,ndim)               :: Tc
+    real(r8), Dimension(nnt,ndim) :: Tc
     ! Used for reordering M
-    real(KIND = real_kind)                                    :: M_Temp
+    real(r8) :: M_Temp
     ! Local node-node connectivity data 
-    integer(KIND = int_kind), dimension(nnodes)               :: NN_Sizes
-    integer(KIND = int_kind), pointer, dimension(:)           :: Node_Ngbr
+    integer, dimension(nnodes) :: NN_Sizes
+    integer, pointer, dimension(:) :: Node_Ngbr
     ! Collated mesh connectivity data, vertex mapping only (nvc,ncells_tot)
-    integer(KIND = int_kind), pointer, dimension(:,:)         :: Mesh_Tot_Vertex => NULL()
+    integer, pointer, dimension(:,:) :: Mesh_Tot_Vertex => NULL()
     ! Collated mesh cell shape data (ncells_tot)
-    integer(KIND = int_kind), pointer, dimension(:)           :: Cell_Shape_Tot
+    integer, pointer, dimension(:) :: Cell_Shape_Tot
     ! Collated vertex data (nnodes_tot)
-    type(VERTEX_DATA), pointer, dimension(:)                  :: Vertex_Tot => NULL()
+    type(VERTEX_DATA), pointer, dimension(:) :: Vertex_Tot => NULL()
     ! M var vector sizes
-    integer(int_kind), pointer, dimension(:)                  :: M_Sizes_Tot
-    integer(int_kind), pointer, dimension(:)                  :: M_Sizes
+    integer, pointer, dimension(:) :: M_Sizes_Tot
+    integer, pointer, dimension(:) :: M_Sizes
     ! Collated NN sizes data
-    integer(int_kind), pointer, dimension(:)                  :: NN_Sizes_Tot
+    integer, pointer, dimension(:) :: NN_Sizes_Tot
     ! Collated NN vector data
-    integer(int_kind), pointer, dimension(:)                  :: Node_Ngbr_Tot
+    integer, pointer, dimension(:) :: Node_Ngbr_Tot
     ! Collated NN var vector (nnodes_tot)
-    type(int_var_vector), pointer, dimension(:)               :: Vertex_Ngbr_Tot
+    type(int_var_vector), pointer, dimension(:) :: Vertex_Ngbr_Tot
     ! M1 and M2 var vectors for collated mesh
-    type(real_var_vector), pointer, dimension(:)              :: M1_Tot
-    type(real_var_vector), pointer, dimension(:)              :: M2_Tot
+    type(real_var_vector), pointer, dimension(:) :: M1_Tot
+    type(real_var_vector), pointer, dimension(:) :: M2_Tot
 
-    integer(KIND = int_kind), pointer, dimension(:)           :: NN_Vec
-    real(real_kind), pointer, dimension(:)                    :: M1_Tot_Vec
-    real(real_kind), pointer, dimension(:)                    :: M2_Tot_Vec
-    real(real_kind), pointer, dimension(:)                    :: M_Data_Tot
-    real(real_kind), pointer, dimension(:)                    :: M_Data
-    real(real_kind), allocatable, dimension(:,:)              :: CV_Area_Tot
-    real(real_kind), allocatable, dimension(:,:,:)            :: CV_Normal_Tot
+    integer, pointer, dimension(:) :: NN_Vec
+    real(r8), pointer, dimension(:) :: M1_Tot_Vec
+    real(r8), pointer, dimension(:) :: M2_Tot_Vec
+    real(r8), pointer, dimension(:) :: M_Data_Tot
+    real(r8), pointer, dimension(:) :: M_Data
+    real(r8), allocatable, dimension(:,:) :: CV_Area_Tot
+    real(r8), allocatable, dimension(:,:,:) :: CV_Normal_Tot
 
     !Allocate temporary arrays
 
@@ -1549,13 +1481,13 @@ Contains
     ! Tc are the coordinates of the nodes
     ! Tcen are the coordinates of the centroid of the tet
 
-    use parameter_module,     only: ndim
+    use parameter_module, only: ndim
 
-    real(KIND = real_kind), Dimension(ndim+1,ndim)  :: Tc
-    real(KIND = real_kind), Dimension(ndim,ndim+1)  :: A
-    real(KIND = real_kind), Dimension(ndim)         :: Tcen
-    real(KIND = real_kind)                          :: sixv, det, a1, a2, b1, b2, c1, c2
-    integer(KIND = int_kind)                        :: idim, inode
+    real(r8), Dimension(ndim+1,ndim) :: Tc
+    real(r8), Dimension(ndim,ndim+1) :: A
+    real(r8), Dimension(ndim) :: Tcen
+    real(r8) :: sixv, det, a1, a2, b1, b2, c1, c2
+    integer :: idim, inode
 
     ! This mess is the determinant of
     !   
@@ -1641,9 +1573,9 @@ Contains
     ! edit output.
     ! 
     !=============================================================================
-    use parameter_module,     only: ncells
+    use parameter_module, only: ncells
 
-    integer                       :: status
+    integer :: status
 
     type(CELL_MECH_INVARIANT), pointer, dimension(:) :: Stress_Strain
 
@@ -1682,9 +1614,6 @@ Contains
     !   a surface integral over the control volumes.
     !
     !---------------------------------------------------------------------------
-
-    Use constants_module,       Only: zero, one_half
-    Use kind_module,            Only: int_kind, real_kind
     Use mesh_module,            Only: Mesh, Cell_Edge, GAP_ELEMENT_1
     Use parameter_module,       Only: ndim, ncells, nnodes, nvc, ncomps
     use node_operator_module,   only: CV_Internal, nipc, stress_reduced_integration
@@ -1695,24 +1624,22 @@ Contains
     Use viscoplasticity,        only: PLASTIC_STRAIN_INCREMENT
     use solid_mech_constraints, only: DISPLACEMENT_CONSTRAINTS
 
-    Implicit None
-
     ! Argument list
-    Real   (KIND = real_kind), Dimension(:), Intent(IN)      :: X, X_old
-    Real   (KIND = real_kind), Dimension(:), Intent(OUT)     :: Residual
-    Integer(KIND =  int_kind)                                :: status
+    real(r8), Dimension(:), Intent(IN) :: X, X_old
+    real(r8), Dimension(:), Intent(OUT) :: Residual
+    integer :: status
 
     ! Local variables
-    Integer(KIND =  int_kind)                                :: ip, icell, idim, icomps
-    Integer(KIND =  int_kind)                                :: ix, iy, iz, i, j, k
-    Real   (KIND = real_kind), Dimension(nvc,ncells)         :: Y_Temp
-    Real   (KIND = real_kind), Dimension(ndim*nnodes)        :: Y
-    Real   (KIND = real_kind), Dimension(nvc,ncells,ndim)    :: U
-    Real   (KIND = real_kind), Dimension(ndim,ncells)        :: Arow
-    Real   (KIND = real_kind), Dimension(ndim,ndim,ncells)   :: Ugrad
-    Real   (KIND = real_kind), Dimension(ncomps,ncells)      :: Ip_Pl_Inc
-    Real   (KIND = real_kind), Dimension(ncomps,ncells,nipc) :: Ipstress
-    Real   (KIND = real_kind), Dimension(nnodes)             :: Lame2_Sum
+    integer :: ip, icell, idim, icomps
+    integer :: ix, iy, iz, i, j, k
+    real(r8), Dimension(nvc,ncells)         :: Y_Temp
+    real(r8), Dimension(ndim*nnodes)        :: Y
+    real(r8), Dimension(nvc,ncells,ndim)    :: U
+    real(r8), Dimension(ndim,ncells)        :: Arow
+    real(r8), Dimension(ndim,ndim,ncells)   :: Ugrad
+    real(r8), Dimension(ncomps,ncells)      :: Ip_Pl_Inc
+    real(r8), Dimension(ncomps,ncells,nipc) :: Ipstress
+    real(r8), Dimension(nnodes)             :: Lame2_Sum
 
     !---------------------------------------------------------------------------
 
@@ -1729,7 +1656,7 @@ Contains
        end do
        IP_STRESS_LOOP: do ip = 1,nipc
           ! Calculate displacement gradient and strain components
-          Ugrad(:,:,:) = zero
+          Ugrad(:,:,:) = 0.0_r8
           do i=1,ndim
              call LINEAR_GRAD(ncells,CV_Internal%Face_Coord(:,ip,:),U(:,:,i),Arow(:,:))
              do j = 1,ndim
@@ -1742,9 +1669,9 @@ Contains
           SMech_IP(ip)%Total_Strain(1,:) = Ugrad(1,1,:)
           SMech_IP(ip)%Total_Strain(2,:) = Ugrad(2,2,:)
           SMech_IP(ip)%Total_Strain(3,:) = Ugrad(3,3,:)
-          SMech_IP(ip)%Total_Strain(4,:) = one_half * (Ugrad(1,2,:) + Ugrad(2,1,:))
-          SMech_IP(ip)%Total_Strain(5,:) = one_half * (Ugrad(1,3,:) + Ugrad(3,1,:))
-          SMech_IP(ip)%Total_Strain(6,:) = one_half * (Ugrad(3,2,:) + Ugrad(2,3,:))
+          SMech_IP(ip)%Total_Strain(4,:) = (Ugrad(1,2,:) + Ugrad(2,1,:)) / 2
+          SMech_IP(ip)%Total_Strain(5,:) = (Ugrad(1,3,:) + Ugrad(3,1,:)) / 2
+          SMech_IP(ip)%Total_Strain(6,:) = (Ugrad(3,2,:) + Ugrad(2,3,:)) / 2
           ! Set total strains to zero in gap elements
 
           do icell = 1,ncells
@@ -1789,10 +1716,10 @@ Contains
     end if
 
     ! Initialize Y
-    Y(:) = zero
+    Y(:) = 0.0_r8
     ! Accumulate Y, looping over cells for each integration point
     NDIM_LOOP: do idim = 1,ndim
-       Y_Temp(:,:) = zero
+       Y_Temp(:,:) = 0.0_r8
        select case (idim)
           case (1)
              ix=1; iy = 4; iz = 5
@@ -1842,8 +1769,6 @@ Contains
     Residual = Y - RHS
     status = 0
 
-    Return
-
   End Subroutine ELAS_VP_RESIDUAL
 
   !
@@ -1857,36 +1782,29 @@ Contains
     !   being sought.
     !
     !=======================================================================
-    use constants_module,   only: one, zero
-    use kind_module,        only: real_kind, int_kind
     use lnorm_module,       only: L1NORM, L2NORM
     use nonlinear_solution, only: P_Residual, P_Future, p_control, P_Past
     use parameter_module,   only: ndim, nnodes, nnodes_tot
     use UbikSolve_module
 
-    implicit none
-
     ! arguments
-    type (Ubik_vector_type),                intent(INOUT) :: X_vec
-    real (real_kind), dimension(:), target, intent(INOUT) :: Y
-    integer (int_kind),                     intent(OUT)   :: status
+    type (Ubik_vector_type), intent(INOUT) :: X_vec
+    real(r8), dimension(:), target, intent(INOUT) :: Y
+    integer, intent(OUT) :: status
 
     ! Local Variables
-    real(real_kind), dimension(ndim * nnodes) :: Perturbed_Residual, Perturbed_X
-    real(real_kind) :: pert, vnorm
-    real(real_kind), dimension(:), pointer :: X
+    real(r8), dimension(ndim * nnodes) :: Perturbed_Residual, Perturbed_X
+    real(r8) :: pert, vnorm
+    real(r8), dimension(:), pointer :: X
     !
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     !
-
-
-
     X => Ubik_values_ptr(X_vec)
 
     ! Define scalar pert and perturbed vector.
     pert = L1NORM(P_Future)
     vnorm = L2NORM(X)
-    if (vnorm == zero) vnorm = one
+    if (vnorm == 0.0_r8) vnorm = 1.0_r8
 
     pert = p_control%eps_NK * pert / nnodes_tot / vnorm + p_control%eps_NK
     Perturbed_X = X * pert + P_Future
@@ -1898,8 +1816,6 @@ Contains
     Y = (Perturbed_Residual - P_Residual) / pert  
 
     status = 0
-
-    return
 
   END SUBROUTINE VP_MATVEC
   
@@ -1913,7 +1829,6 @@ Contains
   
   subroutine define_tm_density_property (stat, errmsg)
   
-    use kinds, only: r8
     use parameter_module, only: nmat
     use material_interop, only: void_material_index, material_to_phase
     use fluid_data_module, only: isImmobile
@@ -1998,7 +1913,6 @@ Contains
   
   subroutine compute_cell_property (prop, temp, value)
   
-    use kinds, only: r8
     use parameter_module, only: ncells, nmat
     use fluid_data_module, only: isImmobile
     use phase_property_table

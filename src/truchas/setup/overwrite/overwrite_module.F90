@@ -37,10 +37,9 @@ MODULE OVERWRITE_MODULE
   ! Author(s): Bryan Lally, (lally@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Procedures
@@ -86,7 +85,6 @@ CONTAINS
     !
     !=======================================================================
 !    use constants_module, only: pi
-!    use kind_module,      only: real_kind, int_kind
 !    use parameter_module, only: max_slots, ncells, nnodes, ndim
 !    use zone_module,      only: Zone
 !    use mesh_module,      only: Mesh, Cell, Vertex
@@ -95,8 +93,8 @@ CONTAINS
     ! Arguments
 
     ! Local Variables
-!    integer(KIND = int_kind) :: n, tes
-!    real(KIND= real_kind), dimension(ncells)  :: D
+!    integer :: n, tes
+!    real(r8), dimension(ncells)  :: D
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -200,7 +198,6 @@ CONTAINS
     !=======================================================================
     
 !!$    use error_module,         only: ERROR_CHECK
-!!$    use kind_module,          only: int_kind, log_kind, real_kind
 !!$    use matl_module,          only: GATHER_VOF
 !!$    use mesh_module,          only: Mesh, Cell, Vertex
 !!$    use parameter_module,     only: max_slots, ncells, nnodes, mat_slot, nmat
@@ -208,18 +205,16 @@ CONTAINS
 !!$    use zone_module,          only: Zone
 !!$    use thermo_iterative,     only: h_of_t
 !!$
-!!$    implicit none
-!!$
 !!$    ! Example of how to specify an initial temperature profile for all
 !!$    ! mold materials based on a gradient from top to bottom.
 !!$
 !!$    ! local variables
-!!$    real (real_kind), dimension(ncells)   :: metal_vof, slope
-!!$    real (real_kind)                      :: temperature_bottom, temperature_top
-!!$    real (real_kind)                      :: y_bottom, y_top
-!!$    integer (int_kind)                    :: metal_material_id
-!!$    real(KIND = real_kind), allocatable, dimension(:) :: Vof
-!!$    integer (int_kind)                    :: n
+!!$    real(r8), dimension(ncells)   :: metal_vof, slope
+!!$    real(r8)                      :: temperature_bottom, temperature_top
+!!$    real(r8)                      :: y_bottom, y_top
+!!$    integer                    :: metal_material_id
+!!$    real(r8), allocatable, dimension(:) :: Vof
+!!$    integer                    :: n
 !!$
 !!$    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 !!$    ALLOCATE (Volume_Fraction(0:nmat,ncells), STAT=n)
@@ -255,8 +250,6 @@ CONTAINS
 !!$    DEALLOCATE (Vof, STAT=n)
 !!$    call ERROR_CHECK ((n /= 0), (/'FATAL: error deallocating Vof'/), 'OVERWRITE_ZONE')
 
-    return
-
   END SUBROUTINE OVERWRITE_ZONE
 
   !-----------------------------------------------------------------------------
@@ -273,26 +266,21 @@ CONTAINS
      ! material_1 or material_2.  Set as close to 1.0 as desired.
      !--------------------------------------------------------------------------
 
-     use kind_module,       only: log_kind, int_kind, real_kind
      use parameter_module,  only: ncells, nfc
      use matl_module,       only: gather_vof
      use gs_module,         only: EE_GATHER
 
-     implicit none
-
      ! arguments
-     logical (log_kind), dimension(:,:)            :: mask
-     integer (int_kind)                            :: material_1
-     integer (int_kind)                            :: material_2
+     logical, dimension(:,:) :: mask
+     integer :: material_1
+     integer :: material_2
 
      ! local variables
-     real (real_kind), allocatable, dimension(:)   :: vof_1
-     real (real_kind), allocatable, dimension(:)   :: vof_2
-     real (real_kind), allocatable, dimension(:,:) :: vof_tmp
-     real (real_kind), parameter                   :: THRESHOLD = 0.99
-     integer (int_kind)                            :: c
-     integer (int_kind)                            :: f
-     integer                                       :: status
+     real(r8), allocatable, dimension(:)   :: vof_1
+     real(r8), allocatable, dimension(:)   :: vof_2
+     real(r8), allocatable, dimension(:,:) :: vof_tmp
+     real(r8), parameter :: THRESHOLD = 0.99
+     integer :: c, f, status
 
      !--------------------------------------------------------------------------
 
@@ -354,7 +342,6 @@ CONTAINS
      deallocate(vof_2)
      deallocate(vof_1)
 
-     return
   end subroutine BoundaryBetweenMaterials
 
   !-----------------------------------------------------------------------------
@@ -367,18 +354,15 @@ CONTAINS
      ! It is set to true for the uncovered boundary faces.
      !--------------------------------------------------------------------------
 
-     use kind_module,       only: log_kind, int_kind
      use parameter_module,  only: ncells, nfc
      use bc_module,         only: Boundary, BC_T
      use mesh_module,       only: Mesh
 
-     implicit none
-
      ! arguments
-     logical (log_kind), dimension(:,:)            :: mask
+     logical, dimension(:,:) :: mask
 
      ! local variables
-     integer (int_kind)                            :: f
+     integer :: f
 
      !--------------------------------------------------------------------------
 
@@ -390,26 +374,21 @@ CONTAINS
         mask(f,:) = Mesh%Ngbr_cell(f) == 0 .and. .not. Boundary(BC_T,f)
      end do
 
-     return
-
   end subroutine BoundaryTExternalUncovered
 
   SUBROUTINE CREATE_PLUME(Phi,xc,yc,zc,r1,type)
 
     use mesh_module,          only: Cell
     use parameter_module,     only: ncells, ndim
-    use kind_module,          only: int_kind, real_kind
-    use constants_module,     only: zero
 
     ! Arguments...
-    real(real_kind), dimension(:),   intent(INOUT)    :: Phi
-    real(real_kind),                 intent(IN)       :: xc,yc,zc,r1
-    character(LEN = *),              intent(IN)       :: type
+    real(r8), dimension(:), intent(INOUT) :: Phi
+    real(r8), intent(IN) :: xc,yc,zc,r1
+    character(*), intent(IN) :: type
 
-    integer(int_kind)                        :: nc, n
-    real(real_kind)                          :: sum, r, std, ro
-
-    real(real_kind), dimension(ndim)         :: xcent
+    integer :: nc, n
+    real(r8) :: sum, r, std, ro
+    real(r8), dimension(ndim) :: xcent
 
     xcent(1) = xc
     xcent(2) = yc
@@ -425,9 +404,9 @@ CONTAINS
 
        do nc = 1,ncells
 
-          Phi(nc) = zero
-          sum     = zero
-          r       = zero
+          Phi(nc) = 0.0_r8
+          sum     = 0.0_r8
+          r       = 0.0_r8
           ! calculate distance...
           do n = 1, ndim
              r = r + (Cell(nc)%Centroid(n) - xcent(n))**2;
@@ -444,9 +423,9 @@ CONTAINS
     case('gaussian')
 
        do nc = 1,ncells
-          Phi(nc) = zero
-          sum     = zero
-          r       = zero
+          Phi(nc) = 0.0_r8
+          sum     = 0.0_r8
+          r       = 0.0_r8
           ! calculate distance...
           do n = 1, ndim
              r = r + (Cell(nc)%Centroid(n) - xcent(n))**2;
@@ -462,7 +441,7 @@ CONTAINS
 
        do nc = 1,ncells
 
-          Phi(nc) = zero
+          Phi(nc) = 0.0_r8
           ! a step...
           if (Cell(nc)%Centroid(1) < 0.5 .AND. Cell(nc)%Centroid(1) > 0.1) then
              if (Cell(nc)%Centroid(3) < 0.8 .AND. Cell(nc)%Centroid(3) > 0.2) then
@@ -519,20 +498,17 @@ CONTAINS
     !=======================================================================
     use constants_module, only: pi
     use fluid_data_module, only: Fluxing_Velocity
-    use kind_module,      only: real_kind, int_kind
     use parameter_module, only: ncells, ndim, nfc
     use zone_module,      only: Zone
     use mesh_module,      only: Cell
 
-    implicit none
-
     ! Arguments
 
-    character(LEN = *),              intent(IN)       :: type
+    character(*), intent(IN) :: type
 
     ! Local Variables
-    integer(KIND = int_kind) :: n, f,i,j,k
-    real(real_kind)                           :: Vfx, Vfy, Vfz
+    integer  :: n, f,i,j,k
+    real(r8) :: Vfx, Vfy, Vfz
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -829,8 +805,6 @@ CONTAINS
     end select
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    return
 
   END SUBROUTINE PRESCRIBE_VELOCITY
 

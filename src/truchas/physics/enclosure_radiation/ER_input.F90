@@ -6,7 +6,7 @@ module ER_input
   use parallel_communication
   use scalar_functions
   use function_table
-  use ds_utilities
+  use truchas_logging_services
   use string_utilities, only: i_to_c, raise_case
   implicit none
   private
@@ -78,8 +78,8 @@ contains
 
     ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
 
-    call ds_info ('')
-    call ds_info ('Reading ENCLOSURE_RADIATION namelists ...')
+    call TLS_info ('')
+    call TLS_info ('Reading ENCLOSURE_RADIATION namelists ...')
 
     if (is_IOP) rewind(lun)
     n = 0 ! namelist counter
@@ -145,7 +145,7 @@ contains
         exit
       end if
 
-      call ds_info (trim(label) // ' read ENCLOSURE_RADIATION namelist "' // trim(name) // '"')
+      call TLS_info (trim(label) // ' read ENCLOSURE_RADIATION namelist "' // trim(name) // '"')
 
       !! Verify ENCLOSURE_FILE was assigned a value.
       if (enclosure_file == NULL_C) then
@@ -212,7 +212,7 @@ contains
       !! Check PRECON_METHOD.
       if (precon_method == NULL_C) then
         precon_method = 'JACOBI'
-        call ds_info (trim(label)//' using default PRECON_METHOD="'//trim(precon_method)//'"')
+        call TLS_info (trim(label)//' using default PRECON_METHOD="'//trim(precon_method)//'"')
       end if
       precon_method = raise_case(precon_method)
       select case (precon_method)
@@ -228,7 +228,7 @@ contains
       if (precon_iter == NULL_I) then
         precon_iter = 1
         write(errmsg,'(2a,i0)' )trim(label), ' using default PRECON_ITER=', precon_iter
-        call ds_info (errmsg)
+        call TLS_info (errmsg)
       else if (precon_iter < 1) then
         stat = -1
         errmsg = trim(label) // ' error: PRECON_ITER must be > 0'
@@ -238,7 +238,7 @@ contains
       !! Check PRECON_COUPLING_METHOD.
       if (precon_coupling_method == NULL_C) then
         precon_coupling_method = 'BACKWARD GS'
-        call ds_info (trim(label)//' using default PRECON_COUPLING_METHOD="'//trim(precon_coupling_method)//'"')
+        call TLS_info (trim(label)//' using default PRECON_COUPLING_METHOD="'//trim(precon_coupling_method)//'"')
       end if
       precon_coupling_method = raise_case(precon_coupling_method)
       select case (precon_coupling_method)
@@ -274,8 +274,8 @@ contains
     end do
 
     if (stat /= 0) then
-      call ds_info (trim(errmsg))
-      call ds_halt ('error processing ENCLOSURE_RADIATION namelists')
+      call TLS_info (trim(errmsg))
+      call TLS_fatal ('error processing ENCLOSURE_RADIATION namelists')
     end if
 
   contains
@@ -425,8 +425,8 @@ contains
 
     ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
 
-    call ds_info ('')
-    call ds_info ('Reading ENCLOSURE_SURFACE namelists ...')
+    call TLS_info ('')
+    call TLS_info ('Reading ENCLOSURE_SURFACE namelists ...')
 
     if (is_IOP) rewind(lun)
     n = 0 ! namelist counter
@@ -511,7 +511,7 @@ contains
           errmsg = trim(label) // ' error: EMISSIVITY_CONSTANT not in [0,1]'
           exit
         else if (emissivity_constant == 0.0_r8) then
-          call ds_info (trim(label) // ' warning: emissivity is 0')
+          call TLS_info (trim(label) // ' warning: emissivity is 0')
         end if
         allocate(f)
         call create_scafun_const (f, emissivity_constant)
@@ -541,13 +541,13 @@ contains
       allocate(es_last%face_block_ids(count(face_block_ids /= NULL_I)))
       es_last%face_block_ids = pack(face_block_ids, mask=(face_block_ids /= NULL_I))
 
-      call ds_info (trim(label) // ' read ENCLOSURE_SURFACE namelist "' // trim(name) // '"')
+      call TLS_info (trim(label) // ' read ENCLOSURE_SURFACE namelist "' // trim(name) // '"')
 
     end do
 
     if (stat /= 0) then
-      call ds_info (trim(errmsg))
-      call ds_halt ('error reading ENCLOSURE_SURFACE namelists')
+      call TLS_info (trim(errmsg))
+      call TLS_fatal ('error reading ENCLOSURE_SURFACE namelists')
     end if
 
   contains
@@ -584,7 +584,7 @@ contains
     character(len=127) :: errmsg
     type(es_list_node), pointer :: l
 
-    call ds_info ('    Defining emissivity for enclosure "' // trim(encl_name) // '" ...')
+    call TLS_info ('    Defining emissivity for enclosure "' // trim(encl_name) // '" ...')
 
     call EF_prep (eps, encl)
 
@@ -592,15 +592,15 @@ contains
     do while (associated(l))
       if (l%encl_name == encl_name) then
         write(errmsg,'(6x,a,i0,2a)') 'using ENCLOSURE_SURFACE[', l%seq, ']: ', trim(l%name)
-        call ds_info (trim(errmsg)) ! not an error message!
+        call TLS_info (trim(errmsg)) ! not an error message!
         call EF_add_function (eps, l%eps, l%face_block_ids, stat, errmsg)
-        call ds_check_stat (stat, 'Error defining emissivity: ' // trim(errmsg))
+        call TLS_fatal_if_any (stat /=0 , 'Error defining emissivity: ' // trim(errmsg))
       end if
       l => l%next
     end do
 
     call EF_done (eps, stat, errmsg)
-    call ds_check_stat (stat, 'Error defining emissivity: ' // trim(errmsg))
+    call TLS_fatal_if_any (stat /= 0, 'Error defining emissivity: ' // trim(errmsg))
 
   end subroutine ERI_get_emissivity
 

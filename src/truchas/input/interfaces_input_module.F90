@@ -20,11 +20,8 @@ MODULE INTERFACES_INPUT_MODULE
   !=======================================================================
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: INTERFACES_INPUT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -43,9 +40,7 @@ CONTAINS
                                  vof_method, &
                                  vof_tolerance, &
                                  vof_max_recursion
-    use constants_module,  only: preset, ipreset
-
-    implicit none
+    use input_utilities,   only: NULL_R, NULL_I
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -58,10 +53,10 @@ CONTAINS
     vof_method = 'default'
 
     ! division tolerance
-    vof_tolerance = preset
+    vof_tolerance = NULL_R
 
     ! maximum recursion depth
-    vof_max_recursion = ipreset
+    vof_max_recursion = NULL_I
 
     ! Interface locator particles
     int_particles = 5
@@ -71,8 +66,6 @@ CONTAINS
 
     ! Background body
     background_body = 0
-
-    return
 
   END SUBROUTINE INTERFACES_DEFAULT
 
@@ -97,25 +90,20 @@ CONTAINS
                                       vof_max_recursion, &
                                       vof_particles,     &
                                       int_particles
-    use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind
+    use input_utilities,        only: seek_to_namelist, NULL_R, NULL_I
     use parallel_info_module,   only: p_info
     use parameter_module,       only: mbody
     use property_data_module,   only: background_material
     use pgslib_module,          only: PGSLib_GLOBAL_ANY, pgslib_bcast
     use property_module,        only: Get_User_Material_ID
     use string_utilities,       only: lower_case
-    use constants_module,       only: preset, ipreset
     use string_utilities, only: i_to_c
 
     integer, intent(in) :: lun
 
     ! local variables
-    logical (log_kind) :: body_namelist
-    logical (log_kind) :: fatal
-    logical :: found
-    integer :: ios
-    integer (int_kind) :: ib
+    logical :: body_namelist, fatal, found
+    integer :: ios, ib
     character(128) :: message
 
     ! interfaces namelist
@@ -190,14 +178,14 @@ CONTAINS
     case ('divide')
 
        ! if vof_max_recursion wasn't specified, set to default of 100
-       if (vof_max_recursion == ipreset) then
+       if (vof_max_recursion == NULL_I) then
           vof_max_recursion = 100
        else if (vof_max_recursion < 0 .or. vof_max_recursion > 1000) then
           call TLS_fatal ('VOF_MAX_RECURSION must be between 0 and 1000')
        end if
 
-       ! if it's still =preset, we'll default it to something reasonable later
-       if (vof_tolerance /= preset .and. vof_tolerance < 0.0d0) then
+       ! if it's still =NULL_R, we'll default it to something reasonable later
+       if (vof_tolerance /= NULL_R .and. vof_tolerance < 0.0d0) then
           call TLS_fatal ('VOF_TOLERANCE must be >= 0.0')
        end if
 
@@ -243,8 +231,6 @@ CONTAINS
 210 format (9x,'BODY Namelist number ',i2,' will be used for background material (',i2,')')
     call TLS_info (message)
 
-    return
-
   END SUBROUTINE INTERFACES_INPUT
 
   !-----------------------------------------------------------------------------
@@ -266,8 +252,6 @@ CONTAINS
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLib_BCAST
 
-    implicit none
-
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Broadcast Data
@@ -278,8 +262,6 @@ CONTAINS
        call PGSLib_BCAST (int_particles)
        call PGSLib_BCAST (vof_particles)
     endif
-
-    return
 
   END SUBROUTINE INTERFACES_INPUT_PARALLEL
 

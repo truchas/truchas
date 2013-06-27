@@ -35,11 +35,8 @@
     !
     !=======================================================================
     use gs_info_module, only: EE_TRACE, EE
-    use kind_module
     use mesh_module,    only: Mesh
     use pgslib_module,  only: PGSLib_GS_Trace_Setup_P
-
-    implicit none
 
     ! Incoming Arguments
     _DATA_TYPE_ , intent(IN   ),                               &
@@ -71,8 +68,6 @@
     call GATHER (Dest, Src, Mesh, TYPE = EE, TRACE = EE_TRACE, &
                  MASK = El_Nbr_Mask, BOUNDARY = BOUNDARY, INITIAL_VALUE = INITIAL_VALUE, &
                  OVERWRITE_MASKED_VALUES = OVERWRITE_MASKED_VALUES)
-
-    return
 
   END SUBROUTINE _ROUTINE_NAME_
 

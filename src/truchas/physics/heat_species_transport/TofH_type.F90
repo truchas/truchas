@@ -102,7 +102,7 @@ contains
   end subroutine TofH_get_metrics
 
 !  subroutine TofH_compute (this, cell, H, Tmin, Tmax, T)
-!    use ds_utilities, only: ds_halt
+!    use truchas_logging_services, only: TLS_fatal
 !    type(TofH), intent(inout) :: this
 !    integer,  intent(in)  :: cell
 !    real(r8), intent(in)  :: H, Tmin, Tmax
@@ -118,13 +118,13 @@ contains
 !        write(errmsg,'(a,es10.4,2(a,es21.14))') &
 !          'convergence failure: error=', this%root_finder%error, ', T=', T, ', H-H(T)=', f(T)
 !      end if
-!      call ds_halt ('TofH_compute: ' // trim(errmsg))
+!      call TLS_fatal ('TofH_compute: ' // trim(errmsg))
 !    end if
 !write(*,'(i0,1x)',advance='no') this%root_finder%numitr
 !  end subroutine TofH_compute
 
   subroutine TofH_compute (this, cell, H, Tmin, Tmax, T)
-    use ds_utilities, only: ds_halt
+    use truchas_logging_services, only: TLS_fatal
     type(TofH), intent(inout) :: this
     integer,  intent(in)  :: cell
     real(r8), intent(in)  :: H, Tmin, Tmax
@@ -164,11 +164,11 @@ contains
       this%max_itr = max(this%max_itr, this%root_finder%numitr)
     else if (stat < 0) then
       write(errmsg,'(2(a,es21.14),a)') 'root not bracketed: [', a, ',', b, ']'
-      call ds_halt ('TofH_compute: ' // trim(errmsg))
+      call TLS_fatal ('TofH_compute: ' // trim(errmsg))
     else
       write(errmsg,'(a,es10.4,2(a,es21.14))') &
         'convergence failure: error=', this%root_finder%error, ', T=', T, ', H-H(T)=', f(T)
-      call ds_halt ('TofH_compute: ' // trim(errmsg))
+      call TLS_fatal ('TofH_compute: ' // trim(errmsg))
     end if
   end subroutine TofH_compute
 

@@ -7,10 +7,9 @@ MODULE MOLLIFY
   ! Author(s): M. Williams (MST-8, mww@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: int_kind, real_kind, log_kind
-
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
- 
   private
 
   public :: MOLLIFY_CONV_SAVEMEM
@@ -20,18 +19,18 @@ MODULE MOLLIFY
   type MOLLIFY_TYPE
  
      ! Cell numbers of cells in mollification domain
-     integer(int_kind), DIMENSION(:), pointer :: ngbr_id
+     integer, DIMENSION(:), pointer :: ngbr_id
 
      ! Distance to cell centroids of cells in mollification domain
-     real(real_kind), DIMENSION(:,:), pointer :: ngbr_dist_vector
+     real(r8), DIMENSION(:,:), pointer :: ngbr_dist_vector
 
      ! Cell volumes of cells in mollification domain
-     real(real_kind), DIMENSION(:), pointer :: ngbr_vol
+     real(r8), DIMENSION(:), pointer :: ngbr_vol
  
   end type MOLLIFY_TYPE
 
   ! Variables in NUMERICS namelist
-  real(real_kind), public, save :: interface_smoothing_length
+  real(r8), public, save :: interface_smoothing_length
 
 CONTAINS
 
@@ -50,27 +49,24 @@ CONTAINS
                                       ,PGSLib_GLOBAL_Maxval
        use parameter_module,        only: ncells, ncells_tot, ndim, nfc, nmat
        use var_vector_module
-       use truchas_logging_services
 
-      IMPLICIT NONE
-       real(real_kind), dimension(ncells),           INTENT(IN)    :: Scal_Field
-       real(real_kind), dimension(ncells),           INTENT(INOUT) :: Moll_Scal
-       real(real_kind), dimension(nmat,ncells),      INTENT(INOUT) :: N_x,N_y,N_z
-       integer(int_kind),                            INTENT(IN)    :: matl_no
+       real(r8), dimension(ncells), INTENT(IN) :: Scal_Field
+       real(r8), dimension(ncells), INTENT(INOUT) :: Moll_Scal
+       real(r8), dimension(nmat,ncells), INTENT(INOUT) :: N_x,N_y,N_z
+       integer, INTENT(IN) :: matl_no
+ 
 !... declare local variables
-      integer(int_kind) :: I, I0, K, C, dim_cnt, memstat
-      real(real_kind) :: dist_x, dist_y, dist_z, KF, KdxF, KDyF, KdzF
-      real(real_kind),dimension(ndim)                     :: cent, dist
-      logical(log_kind),allocatable, dimension(:)         :: Hit_Good, Mask
-      logical(log_kind), save                             :: first_time = .true.
-      integer(int_kind),pointer, save, dimension(:,:) :: All_Ngbrs_All, &
-                                                                    All_Ngbr
-      real(real_kind),pointer, save,  dimension(:)    :: Tot_Vol, &
-                                                                    Tot_Scal
-      real(real_kind),pointer, save,  dimension(:,:)  :: All_centroid
-      real(real_kind),pointer, save,dimension(:,:,:)  :: Tot_Face_Centroid
+      integer :: I, I0, K, C, dim_cnt, memstat
+      real(r8) :: dist_x, dist_y, dist_z, KF, KdxF, KDyF, KdzF
+      real(r8), dimension(ndim) :: cent, dist
+      logical, allocatable, dimension(:) :: Hit_Good, Mask
+      logical, save :: first_time = .true.
+      integer,  pointer, save, dimension(:,:)   :: All_Ngbrs_All, All_Ngbr
+      real(r8), pointer, save, dimension(:)     :: Tot_Vol, Tot_Scal
+      real(r8), pointer, save, dimension(:,:)   :: All_centroid
+      real(r8), pointer, save, dimension(:,:,:) :: Tot_Face_Centroid
       ! variable to find smooth interface indicator function
-      real(real_kind) :: proc_integ, tot_integ, DEL_INT
+      real(r8) :: proc_integ, tot_integ, DEL_INT
 
      ALLOCATE(Hit_Good(ncells_tot),Mask(ncells),STAT = memstat)
      call TLS_fatal_if_any ((memstat /= 0), 'MOLLIFY_CONV_SAVEMEM: Memory allocation error for logical arrays')
@@ -383,7 +379,6 @@ end if
     End Do SWEEP_NORM
     if(Associated(All_Ngbr))DEALLOCATE(All_Ngbr)
     DEALLOCATE(Hit_Good, Mask)
-  RETURN
 
   END SUBROUTINE MOLLIFY_CONV_SAVEMEM
 
@@ -395,21 +390,22 @@ end if
     !    Tot_Scal with a kernel centered at some given cell -
     !    This program is called from the CONV_MOLLIFY_SAMEMEM routine 
     !=======================================================================
-      use mesh_module,       only: DEGENERATE_FACE
-      use parameter_module,  only: ndim
-      Implicit none
-      INTEGER(int_kind),                  INTENT(IN) :: Cell_no
-      REAL(real_kind),  dimension(:),     INTENT(IN) :: Tot_vol
-      REAL(real_kind),  dimension(:),     INTENT(IN) :: Tot_Scal
-      INTEGER(int_kind),  dimension(:,:), INTENT(IN) :: all_ngbr
-      REAL(real_kind),  dimension(:,:),   INTENT(IN) :: all_cent
-      REAL(real_kind),  dimension(:),     INTENT(IN) :: cent
-      LOGICAL(log_kind), dimension(:), INTENT(INOUT) :: Hit_Array
-      REAL(real_kind),                 INTENT(INOUT) :: KF
-      REAL(real_kind),                    INTENT(IN) :: del_int
+      use mesh_module, only: DEGENERATE_FACE
+      use parameter_module, only: ndim
+
+      integer, INTENT(IN) :: Cell_no
+      real(r8), dimension(:), INTENT(IN) :: Tot_vol
+      real(r8), dimension(:), INTENT(IN) :: Tot_Scal
+      integer,  dimension(:,:), INTENT(IN) :: all_ngbr
+      real(r8), dimension(:,:), INTENT(IN) :: all_cent
+      real(r8), dimension(:), INTENT(IN) :: cent
+      logical, dimension(:), INTENT(INOUT) :: Hit_Array
+      real(r8), INTENT(INOUT) :: KF
+      real(r8), INTENT(IN) :: del_int
+
 ! ... Local variables
-      INTEGER(int_kind) :: J,C, dim_cnt
-      REAL(real_kind) :: radius,dist_x,dist_y,dist_z
+      integer :: J,C, dim_cnt
+      real(r8) :: radius,dist_x,dist_y,dist_z
 
 ! ... 
 ! ... check neighbor cells of Cell_no, if they are in the domain and 
@@ -523,7 +519,6 @@ end if
           END IF
         End Do RECURS_CONV_LOOP
 
-      Return
   END SUBROUTINE RECURS_CONV
 
   RECURSIVE SUBROUTINE RECURS_NORM(Cell_no,Tot_vol, Tot_scal,all_ngbr,all_cent  &
@@ -535,23 +530,22 @@ end if
     !    some given cell -
     !    This program is called from the CONV_MOLLIFY_SAMEMEM routine 
     !=======================================================================
-      use mesh_module,       only: DEGENERATE_FACE
-      use parameter_module,  only: ndim
-      Implicit none
-      INTEGER(int_kind),                  INTENT(IN) :: Cell_no
-      REAL(real_kind),  dimension(:),     INTENT(IN) :: Tot_vol
-      REAL(real_kind),  dimension(:),     INTENT(IN) :: Tot_Scal
-      INTEGER(int_kind),  dimension(:,:), INTENT(IN) :: all_ngbr
-      REAL(real_kind),  dimension(:,:),   INTENT(IN) :: all_cent
-      REAL(real_kind),  dimension(:,:,:), INTENT(IN) :: all_face_cent
-      REAL(real_kind),  dimension(:),     INTENT(IN) :: cent
-      LOGICAL(log_kind), dimension(:), INTENT(INOUT) :: Hit_Array
-      REAL(real_kind),                 INTENT(INOUT) :: KDxF,KDyF,KDzF
-      REAL(real_kind),                    INTENT(IN) :: DEL_INT
+      use mesh_module, only: DEGENERATE_FACE
+      use parameter_module, only: ndim
+      integer, INTENT(IN) :: Cell_no
+      real(r8), dimension(:), INTENT(IN) :: Tot_vol
+      real(r8), dimension(:), INTENT(IN) :: Tot_Scal
+      integer, dimension(:,:), INTENT(IN) :: all_ngbr
+      real(r8), dimension(:,:), INTENT(IN) :: all_cent
+      real(r8), dimension(:,:,:), INTENT(IN) :: all_face_cent
+      real(r8), dimension(:), INTENT(IN) :: cent
+      logical, dimension(:), INTENT(INOUT) :: Hit_Array
+      real(r8), INTENT(INOUT) :: KDxF,KDyF,KDzF
+      real(r8), INTENT(IN) :: DEL_INT
 ! ... Local variables
-      INTEGER(int_kind) :: J,C, dim_cnt
-      REAL(real_kind) :: radius,dist_x,dist_y,dist_z
-      REAL(real_kind), dimension(ndim) :: dist
+      integer :: J,C, dim_cnt
+      real(r8) :: radius,dist_x,dist_y,dist_z
+      real(r8), dimension(ndim) :: dist
 
 ! ... 
 ! ... check neighbor cells of Cell_no, if they are in the domain and 
@@ -608,75 +602,74 @@ end if
           ENDIF
         End Do RECURS_NORM_LOOP
 
-      Return
   END SUBROUTINE RECURS_NORM
 
 !<><><><><><>><<><>><><><><>><><><><><><><><><><><><><><><><>><><><><><<><>
 ! Convolution Kernel and it's derivatives listed below
 !<><><><><><>><<><>><><><><>><><><><><><><><><><><><><><><><>><><><><><<><>
-      real FUNCTION Kern(X,Y,Z,DELTA)
-       use constants_module,  only: pi
-       use parameter_module,  only: ndim
-      IMPLICIT NONE
-      real(real_kind) :: X,Y,Z,DELTA,A
-        IF(ndim == 2)then
-          A = 4.0/(DELTA**8*pi)
-        ELSE
-          A = 315.0/(64.0*DELTA**9*pi)
-        ENDIF
-       IF((X)**2+(Y)**2+(Z)**2 <= DELTA**2)THEN
-         Kern = A*(DELTA**2-((X)**2+(Y)**2+(Z)**2))**3
-       ELSE
-         Kern = 0.0
-       ENDIF
-      END FUNCTION Kern
-      real FUNCTION DxKern(X,Y,Z,DELTA)
-       use constants_module,  only: pi
-       use parameter_module,  only: ndim
-      IMPLICIT NONE
-      real(real_kind) :: DELTA,X,Y,Z,A
-        IF(ndim == 2)then
-          A = 4.0/(DELTA**8*pi)
-        ELSE
-          A = 315.0/(64.0*DELTA**9*pi)
-        ENDIF
-       IF(X**2+Y**2+Z**2 <= DELTA**2)THEN
-         DxKern = -6*A*X*(DELTA**2-X**2-Y**2-Z**2)**2
-       ELSE
-         DxKern = 0.0
-       ENDIF 
-      END FUNCTION DxKern
-      real FUNCTION DyKern(X,Y,Z,DELTA)
-       use constants_module,  only: pi
-       use parameter_module,  only: ndim
-      IMPLICIT NONE
-      real(real_kind) :: X,Y,Z,DELTA,A
-        IF(ndim == 2)then
-          A = 4.0/(DELTA**8*pi)
-        ELSE
-          A = 315.0/(64.0*DELTA**9*pi)
-        ENDIF
-       IF(X**2+Y**2+Z**2 <= DELTA**2)THEN
-         DyKern = -6*A*Y*(DELTA**2-X**2-Y**2-Z**2)**2
-       ELSE
-         DyKern = 0.0
-       ENDIF
-      END FUNCTION DyKern
-      real FUNCTION DzKern(X,Y,Z,DELTA)
-       use constants_module,  only: pi
-       use parameter_module,  only: ndim
-      IMPLICIT NONE
-      real(real_kind) :: DELTA,X,Y,Z,A
-        IF(ndim == 2)then
-          A = 4.0/(DELTA**8*pi)
-        ELSE
-          A = 315.0/(64.0*DELTA**9*pi)
-        ENDIF
-       IF(X**2+Y**2+Z**2 <= DELTA**2)THEN
-         DzKern = -6*A*Z*(DELTA**2-X**2-Y**2-Z**2)**2
-       ELSE
-         DzKern = 0.0
-       ENDIF
-      END FUNCTION DzKern
+
+  real FUNCTION Kern(X,Y,Z,DELTA)
+    use constants_module,  only: pi
+    use parameter_module,  only: ndim
+    real(r8) :: X,Y,Z,DELTA,A
+    IF (ndim == 2) then
+      A = 4.0/(DELTA**8*pi)
+    ELSE
+      A = 315.0/(64.0*DELTA**9*pi)
+    END IF
+    IF ((X)**2+(Y)**2+(Z)**2 <= DELTA**2) THEN
+      Kern = A*(DELTA**2-((X)**2+(Y)**2+(Z)**2))**3
+    ELSE
+      Kern = 0.0
+    END IF
+  END FUNCTION Kern
+      
+  real FUNCTION DxKern(X,Y,Z,DELTA)
+    use constants_module, only: pi
+    use parameter_module, only: ndim
+    real(r8) :: DELTA,X,Y,Z,A
+    IF (ndim == 2) then
+      A = 4.0/(DELTA**8*pi)
+    ELSE
+      A = 315.0/(64.0*DELTA**9*pi)
+    END IF
+    IF (X**2+Y**2+Z**2 <= DELTA**2) THEN
+      DxKern = -6*A*X*(DELTA**2-X**2-Y**2-Z**2)**2
+    ELSE
+      DxKern = 0.0
+    END IF 
+  END FUNCTION DxKern
+      
+  real FUNCTION DyKern(X,Y,Z,DELTA)
+    use constants_module, only: pi
+    use parameter_module, only: ndim
+    real(r8) :: X,Y,Z,DELTA,A
+    IF (ndim == 2) then
+      A = 4.0/(DELTA**8*pi)
+    ELSE
+      A = 315.0/(64.0*DELTA**9*pi)
+    END IF
+    IF (X**2+Y**2+Z**2 <= DELTA**2) THEN
+      DyKern = -6*A*Y*(DELTA**2-X**2-Y**2-Z**2)**2
+    ELSE
+      DyKern = 0.0
+    END IF
+  END FUNCTION DyKern
+      
+  real FUNCTION DzKern(X,Y,Z,DELTA)
+    use constants_module, only: pi
+    use parameter_module, only: ndim
+    real(r8) :: DELTA,X,Y,Z,A
+    IF (ndim == 2) then
+      A = 4.0/(DELTA**8*pi)
+    ELSE
+      A = 315.0/(64.0*DELTA**9*pi)
+    END IF
+    IF (X**2+Y**2+Z**2 <= DELTA**2) THEN
+      DzKern = -6*A*Z*(DELTA**2-X**2-Y**2-Z**2)**2
+    ELSE
+      DzKern = 0.0
+    END IF
+  END FUNCTION DzKern
 
 END MODULE MOLLIFY

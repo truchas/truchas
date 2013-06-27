@@ -26,7 +26,7 @@
 
 #ifdef _REAL_DATA_
 #undef _REAL_DATA_
-#define _TYPE_ real(real_kind)
+#define _TYPE_ real(r8)
 #define _READ_VAR0_STAT_ read_var_stat_R0
 #define _READ_VAR0_HALT_ read_var_halt_R0
 #define _READ_VAR1_STAT_ read_var_stat_R1

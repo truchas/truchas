@@ -14,26 +14,26 @@ MODULE ALTMESH_INPUT
   ! Author(s): Andrew Kuprat
   !
   !=======================================================================
-  use parameter_module,       only: string_len
-  use kind_module,            only: real_kind, log_kind
+  use kinds, only: r8
+  use parameter_module, only: string_len
   use truchas_logging_services
   implicit none
+  private
 
-  PRIVATE
-  PUBLIC :: Read_AltMesh_Input
+  public :: Read_AltMesh_Input
 
   !! Magic values used to detect variables not initialized by input
-  character,       parameter :: NULL_C = char(0)
-  integer,         parameter :: NULL_I = huge(1)
-  real(real_kind), parameter :: NULL_R = huge(1.0_real_kind)
+  character, parameter :: NULL_C = char(0)
+  integer,   parameter :: NULL_I = huge(1)
+  real(r8),  parameter :: NULL_R = huge(1.0_r8)
  
   ! Allowed Input parameters (listed in namelist, below)
   ! These are all local variables.
 
-  logical(log_kind),         PUBLIC, SAVE :: altmesh_exists = .false.
-  character(len=string_len), PUBLIC, SAVE :: altmesh_file = NULL_C
-  real(real_kind),           PUBLIC, SAVE :: altmesh_coordinate_scale_factor = 1.d0
-  character(len=string_len), PUBLIC, SAVE :: grid_transfer_file = NULL_C
+  logical, PUBLIC, SAVE :: altmesh_exists = .false.
+  character(string_len), PUBLIC, SAVE :: altmesh_file = NULL_C
+  real(r8), PUBLIC, SAVE :: altmesh_coordinate_scale_factor = 1.d0
+  character(string_len), PUBLIC, SAVE :: grid_transfer_file = NULL_C
   
   ! AltMesh namelist
   namelist /AltMesh/ altmesh_file, altmesh_coordinate_scale_factor, grid_transfer_file
@@ -41,6 +41,7 @@ MODULE ALTMESH_INPUT
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
+
   SUBROUTINE Read_AltMesh_Input (lun)
     !=======================================================================
     ! Purpose(s):
@@ -50,7 +51,7 @@ CONTAINS
     !
     !=======================================================================
     use input_utilities, only: seek_to_namelist
-    use parallel_info_module,   only: p_info
+    use parallel_info_module, only: p_info
     
     integer, intent(in) :: lun
     

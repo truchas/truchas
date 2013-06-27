@@ -98,7 +98,7 @@ module ds_interface_condition_input
   use interface_data
   use scalar_functions
   use function_table
-  use ds_utilities
+  use truchas_logging_services
   use string_utilities, only: raise_case, i_to_c
   implicit none
   private
@@ -150,8 +150,8 @@ contains
 
     ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
 
-    call ds_info ('')
-    call ds_info ('Reading DS_INTERFACE_CONDITION namelists ...')
+    call TLS_info ('')
+    call TLS_info ('Reading DS_INTERFACE_CONDITION namelists ...')
 
     if (is_IOP) rewind(lun)
     n = 0 ! namelist counter
@@ -278,13 +278,13 @@ contains
       allocate(last%face_set_ids(count(face_set_ids /= NULL_I)))
       last%face_set_ids = pack(face_set_ids, mask=(face_set_ids /= NULL_I))
 
-      call ds_info (trim(label) // ' read "' // trim(condition) // '" condition for "' // trim(variable) // '" variable')
+      call TLS_info (trim(label) // ' read "' // trim(condition) // '" condition for "' // trim(variable) // '" variable')
 
     end do
 
     if (stat /= 0) then
-      call ds_info (trim(errmsg))
-      call ds_halt ('error reading DS_INTERFACE_CONDITION namelists')
+      call TLS_info (trim(errmsg))
+      call TLS_fatal ('error reading DS_INTERFACE_CONDITION namelists')
     end if
 
   end subroutine read_ds_interface_condition
@@ -319,7 +319,7 @@ contains
     character(len=127) :: errmsg, errmsg_array(nPE)
     type(list_node), pointer :: l
 
-    call ds_info ('  Generating "' // trim(condition) // '" interface condition for "' &
+    call TLS_info ('  Generating "' // trim(condition) // '" interface condition for "' &
                                    // trim(variable)  // '" variable')
     call if_data_prep (idata, mesh, npar)
 
@@ -330,7 +330,7 @@ contains
       if (raise_case(l%variable) == raise_case(variable)) then
         if (raise_case(l%condition) == raise_case(condition)) then
           write(errmsg,'(4x,a,i0,2a)') 'using DS_INTERFACE_CONDITION[', l%seq, ']: ', trim(l%name)
-          call ds_info (trim(errmsg)) ! not an error message!
+          call TLS_info (trim(errmsg)) ! not an error message!
           if (size(l%f) /= npar) then
             stat = -1
             write(errmsg,'(6x,2(a,i0))') 'condition requires ', npar, ' data values but read ', size(l%f)
@@ -350,10 +350,10 @@ contains
       call broadcast (errmsg_array)
       do j = 1, nPE
         if (stat_array(j) /= 0) then
-          call ds_info ('Error[' // i_to_c(j) // ']: ' // trim(errmsg_array(j)))
+          call TLS_info ('Error[' // i_to_c(j) // ']: ' // trim(errmsg_array(j)))
         end if
       end do
-      call ds_halt ('error generating interface condition')
+      call TLS_fatal ('error generating interface condition')
     end if
 
     call if_data_done (idata)

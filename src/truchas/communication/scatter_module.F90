@@ -5,8 +5,8 @@ MODULE SCATTER_MODULE
   !   Element<->Element and Element<->Node.
   !=======================================================================
 
+  use kinds, only: r8
   use truchas_logging_services
-  use kind_module
   use gs_info_module
   use mesh_module,  only: MESH_CONNECTIVITY, CllNgbr, Vrtx
   use pgslib_module,only: PGSLib_GS_Trace,      &
@@ -61,8 +61,8 @@ CONTAINS
   ! <><><><><><>   SUM_SCATTER_SCALAR_INT       <><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ SUM_SCATTER_SCALAR_INT
-#define _DATA_TYPE_    integer (int_kind)
-#define _OP_ID_        INT(0,   int_kind)
+#define _DATA_TYPE_    integer
+#define _OP_ID_        0
 #define _PLUS_
 
 #include "scatter_infix_parallel_op_s_s_include.fpp"
@@ -72,8 +72,8 @@ CONTAINS
   ! <><><><><><>   SUM_SCATTER_SCALAR_SINGLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ SUM_SCATTER_SCALAR_SINGLE
-#define _DATA_TYPE_    real (single_kind)
-#define _OP_ID_        REAL(0.0,   single_kind)
+#define _DATA_TYPE_    real
+#define _OP_ID_        0.0
 #define _PLUS_
 
 #include "scatter_infix_parallel_op_s_s_include.fpp"
@@ -83,8 +83,8 @@ CONTAINS
   ! <><><><><><>   SUM_SCATTER_SCALAR_DOUBLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ SUM_SCATTER_SCALAR_DOUBLE
-#define _DATA_TYPE_    real (double_kind)
-#define _OP_ID_        REAL(0.0,   double_kind)
+#define _DATA_TYPE_    real(r8)
+#define _OP_ID_        0.0_r8
 #define _PLUS_
 
 #include "scatter_infix_parallel_op_s_s_include.fpp"
@@ -94,8 +94,8 @@ CONTAINS
   ! <><><><><><>    SUM_SCATTER_VECTOR_INT    <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ SUM_SCATTER_VECTOR_INT
-#define _DATA_TYPE_    integer (int_kind)
-#define _OP_ID_        INT(0,   int_kind)
+#define _DATA_TYPE_    integer
+#define _OP_ID_        0
 #define _PLUS_
 
 #include "scatter_infix_parallel_op_s_v_include.fpp"
@@ -105,8 +105,8 @@ CONTAINS
   ! <><><><><><>    SUM_SCATTER_VECTOR_SINGLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ SUM_SCATTER_VECTOR_SINGLE
-#define _DATA_TYPE_    real (single_kind)
-#define _OP_ID_        REAL(0.0,   single_kind)
+#define _DATA_TYPE_    real
+#define _OP_ID_        0.0
 #define _PLUS_
 
 #include "scatter_infix_parallel_op_s_v_include.fpp"
@@ -116,8 +116,8 @@ CONTAINS
   ! <><><><><><>   SUM_SCATTER_VECTOR_DOUBLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ SUM_SCATTER_VECTOR_DOUBLE
-#define _DATA_TYPE_    real (double_kind)
-#define _OP_ID_        REAL(0.0,   double_kind)
+#define _DATA_TYPE_    real(r8)
+#define _OP_ID_        0.0_r8
 #define _PLUS_
 
 #include "scatter_infix_parallel_op_s_v_include.fpp"
@@ -127,7 +127,7 @@ CONTAINS
   ! <><><><><><>   MIN_SCATTER_SCALAR_INT     <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MIN_SCATTER_SCALAR_INT
-#define _DATA_TYPE_    integer (int_kind)
+#define _DATA_TYPE_    integer
 #define _OP_ID_        MINVAL(Src,   MASK=.FALSE.)
 #define _MIN_
 
@@ -138,7 +138,7 @@ CONTAINS
   ! <><><><><><>   MIN_SCATTER_SCALAR_SINGLE     <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MIN_SCATTER_SCALAR_SINGLE
-#define _DATA_TYPE_    real (single_kind)
+#define _DATA_TYPE_    real
 #define _OP_ID_        MINVAL(Src, MASK=.FALSE.)
 #define _MIN_
 
@@ -149,7 +149,7 @@ CONTAINS
   ! <><><><><><>   MIN_SCATTER_SCALAR_DOUBLE     <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MIN_SCATTER_SCALAR_DOUBLE
-#define _DATA_TYPE_    real (double_kind)
+#define _DATA_TYPE_    real(r8)
 #define _OP_ID_        MINVAL(Src, MASK=.FALSE.)
 #define _MIN_
 
@@ -160,7 +160,7 @@ CONTAINS
   ! <><><><><><>   MIN_SCATTER_VECTOR_INT     <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MIN_SCATTER_VECTOR_INT
-#define _DATA_TYPE_    integer (int_kind)
+#define _DATA_TYPE_    integer
 #define _OP_ID_        MINVAL(Src,   MASK=.FALSE.)
 #define _MIN_
 
@@ -171,7 +171,7 @@ CONTAINS
   ! <><><><><><>   MIN_SCATTER_VECTOR_SINGLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MIN_SCATTER_VECTOR_SINGLE
-#define _DATA_TYPE_  real (single_kind)
+#define _DATA_TYPE_  real
 #define _OP_ID_      MINVAL(Src, MASK=.FALSE.)
 #define _MIN_
 
@@ -182,7 +182,7 @@ CONTAINS
   ! <><><><><><>   MIN_SCATTER_VECTOR_DOUBLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MIN_SCATTER_VECTOR_DOUBLE
-#define _DATA_TYPE_  real (double_kind)
+#define _DATA_TYPE_  real(r8)
 #define _OP_ID_      MINVAL(Src, MASK=.FALSE.)
 #define _MIN_
 
@@ -193,7 +193,7 @@ CONTAINS
   ! <><><><><><>   MAX_SCATTER_SCALAR_INT     <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MAX_SCATTER_SCALAR_INT
-#define _DATA_TYPE_  integer (int_kind)
+#define _DATA_TYPE_  integer
 #define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
 #define _MAX_
 
@@ -204,7 +204,7 @@ CONTAINS
   ! <><><><><><>   MAX_SCATTER_SCALAR_SINGLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MAX_SCATTER_SCALAR_SINGLE
-#define _DATA_TYPE_  real (single_kind)
+#define _DATA_TYPE_  real
 #define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
 #define _MAX_
 
@@ -215,7 +215,7 @@ CONTAINS
   ! <><><><><><>   MAX_SCATTER_SCALAR_DOUBLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MAX_SCATTER_SCALAR_DOUBLE
-#define _DATA_TYPE_  real (double_kind)
+#define _DATA_TYPE_  real(r8)
 #define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
 #define _MAX_
 
@@ -227,7 +227,7 @@ CONTAINS
   ! <><><><><><>   MAX_SCATTER_VECTOR_INT     <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MAX_SCATTER_VECTOR_INT
-#define _DATA_TYPE_  integer (int_kind)
+#define _DATA_TYPE_  integer
 #define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
 #define _MAX_
 
@@ -238,7 +238,7 @@ CONTAINS
   ! <><><><><><>   MAX_SCATTER_VECTOR_SINGLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MAX_SCATTER_VECTOR_SINGLE
-#define _DATA_TYPE_  real (single_kind)
+#define _DATA_TYPE_  real
 #define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
 #define _MAX_
 
@@ -249,7 +249,7 @@ CONTAINS
   ! <><><><><><>   MAX_SCATTER_VECTOR_DOUBLE   <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ MAX_SCATTER_VECTOR_DOUBLE
-#define _DATA_TYPE_  real (double_kind)
+#define _DATA_TYPE_  real(r8)
 #define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
 #define _MAX_
 
@@ -260,7 +260,7 @@ CONTAINS
   ! <><><><><><>   OR_SCATTER_SCALAR_LOG      <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ OR_SCATTER_SCALAR_LOG
-#define _DATA_TYPE_  logical (log_kind)
+#define _DATA_TYPE_  logical
 #define _OP_ID_      .FALSE.
 #define _OR_
 
@@ -271,7 +271,7 @@ CONTAINS
   ! <><><><><><>   OR_SCATTER_VECTOR_LOG      <><><><><><><><><><><><><><><>
 
 #define _ROUTINE_NAME_ OR_SCATTER_VECTOR_LOG
-#define _DATA_TYPE_  logical (log_kind)
+#define _DATA_TYPE_  logical
 #define _OP_ID_      .FALSE.
 #define _OR_
 

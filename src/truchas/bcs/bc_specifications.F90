@@ -11,6 +11,7 @@ Module BC_Specifications
   !
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
+  use kinds, only: r8
   use bc_enum_types
   use bc_operators
   Implicit None
@@ -71,7 +72,7 @@ Module BC_Specifications
 CONTAINS
 
   subroutine InitSpecifier(BC_SPec, NAME, ID)
-    implicit none
+
     type(BC_Specifier), intent(INOUT), target :: BC_Spec
     character (LEN=*),  intent(IN   )         :: NAME
     integer,            intent(IN   )         :: ID
@@ -93,20 +94,17 @@ CONTAINS
   subroutine InvalidSpecifier(BC_Spec)
     ! Set the Specifier to invalid, so it will not be used
     ! Does not allocate or free any memory
-    implicit none
     type(BC_Specifier), intent(INOUT) :: BC_Spec
     BC_Spec%SPEC_NAME = 'Invalid'
     BC_Spec%SPEC_ID   = BC_INVALID_ID
-    return
   end subroutine InvalidSpecifier
 
   subroutine FreeSpecifier(BC_Spec)
     ! Free all the storage used by a specifier
-    implicit none
     type(BC_Specifier), intent(INOUT), target :: BC_Spec
     
     ! Local variables
-    type (BC_Operator),  POINTER     :: This_Operator
+    type (BC_Operator), POINTER :: This_Operator
     integer :: Operator
     ! First free up each of the operators
     do Operator = 1, SIZE(BC_Spec%Operators)
@@ -116,32 +114,20 @@ CONTAINS
 
     ! Now make this an invalid specifier
     call InvalidSpecifier(BC_Spec)
-    return
   end subroutine FreeSpecifier
-
 
   function ValidSpecifier(BC_Spec)
     ! Return .TRUE. if this is a valid specifier, .FALSE. otherwise
-    implicit none
     type(BC_Specifier), intent(IN   ) :: BC_Spec
-    logical                           :: ValidSpecifier
-
+    logical :: ValidSpecifier
     ValidSpecifier = BC_Spec%SPEC_ID /= BC_INVALID_ID
-    return
   end function ValidSpecifier
-    
-
-    
 
   function GetOperator(BC_Spec, OP_ID) RESULT(Operator)
-    implicit none
-    type (BC_Specifier), intent(IN),  &
-                         TARGET      :: BC_Spec
-    integer,             intent(IN)  :: OP_ID
-    type (BC_Operator),  POINTER     :: Operator
-    
+    type(BC_Specifier), intent(IN), TARGET :: BC_Spec
+    integer, intent(IN) :: OP_ID
+    type(BC_Operator), POINTER :: Operator
     Operator => BC_Spec%Operators(OP_ID)
-    RETURN
   end function GetOperator
 
   subroutine RetrieveOperatorValue(BC_Spec, OPID, mask, Value, ivalue)
@@ -151,9 +137,7 @@ CONTAINS
     !  an input bc ID, and a new value and update the
     !  atlas to use the new value wherever that 
     !  particular BCID was used to specify a boundary condition
-    use kind_module, only: real_kind, int_kind
-    use parameter_module, only: ncells,   &
-                                nfc
+    use parameter_module, only: ncells, nfc
     use bc_atlases_data_types, only: bc_atlas,   &
                                      data_size,  &
                                      bc_get_face,&
@@ -161,24 +145,20 @@ CONTAINS
                                      bc_get_offset,&
                                      bc_get_values
 
-    implicit none
-    type (BC_Specifier), intent(IN),  &
-                         TARGET      :: BC_Spec
-    integer,             intent(IN)  :: OPID
-    real(real_kind),     intent(OUT) :: Value
-    integer(int_kind),   intent(IN)  :: iValue
+    type(BC_Specifier), intent(IN), TARGET :: BC_Spec
+    integer,  intent(IN)  :: OPID
+    real(r8), intent(OUT) :: Value
+    integer,  intent(IN)  :: iValue
     logical, dimension(nfc, ncells), intent(IN) :: mask
     
-
-    integer                    :: i, n, j
+    integer :: i, n, j
     type(BC_OPERATOR), pointer :: Operator
     type(BC_ATLAS),    pointer :: Atlas
     integer, dimension(:), pointer :: bcells
     integer, dimension(:), pointer :: bfaces
-    real(real_kind), dimension(:,:), pointer :: AtlasValues
+    real(r8), dimension(:,:), pointer :: AtlasValues
     integer, dimension(:), pointer :: bdyOffsetList
     
-
     if (OPID == BC_NO_OP) return
 
     Operator => BC_Spec%Operators(OPID)
@@ -197,7 +177,6 @@ CONTAINS
        end if
     end do
     
-    RETURN
   end subroutine RetrieveOperatorValue
 
 
@@ -208,9 +187,7 @@ CONTAINS
     !  an input bc ID, and a new value and update the
     !  atlas to use the new value wherever that 
     !  particular BCID was used to specify a boundary condition
-    use kind_module, only: real_kind, int_kind
-    use parameter_module, only: ncells,   &
-                                nfc
+    use parameter_module, only: ncells, nfc
     use bc_atlases_data_types, only: bc_atlas,   &
                                      data_size,  &
                                      bc_get_face,&
@@ -218,21 +195,19 @@ CONTAINS
                                      bc_get_offset,&
                                      bc_get_values
 
-    implicit none
-    type (BC_Specifier), intent(IN),  &
-                         TARGET      :: BC_Spec
-    integer,             intent(IN)  :: OPID
-    real(real_kind),     intent(IN)  :: Value
-    integer(int_kind),   intent(IN)  :: iValue
+    type(BC_Specifier), intent(IN), TARGET:: BC_Spec
+    integer,  intent(IN) :: OPID
+    real(r8), intent(IN) :: Value
+    integer,  intent(IN) :: iValue
     logical, dimension(nfc, ncells), intent(IN) :: mask
     
 
-    integer                    :: i, n, j
+    integer :: i, n, j
     type(BC_OPERATOR), pointer :: Operator
     type(BC_ATLAS),    pointer :: Atlas
     integer, dimension(:), pointer :: bcells
     integer, dimension(:), pointer :: bfaces
-    real(real_kind), dimension(:,:), pointer :: AtlasValues
+    real(r8), dimension(:,:), pointer :: AtlasValues
     integer, dimension(:), pointer :: bdyOffsetList
     
     if (OPID == BC_NO_OP) return
@@ -252,7 +227,6 @@ CONTAINS
        end if
     end do
     
-    RETURN
   end subroutine UpdateOperatorValue
 
 END Module BC_SPECIFICATIONS

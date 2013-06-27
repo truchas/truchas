@@ -9,23 +9,18 @@ MODULE FLUID_TYPE_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: int_kind, real_kind
+  use kinds, only: r8
   use parameter_module, only: nfc
-
   implicit none
-
-  ! Private Module
   private
 
   ! Public Variables
   public :: NORMS, DIV_NORMS, Div_c, Div_f
 
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
   ! Define NORMS Structure
   type NORMS
-     real(KIND = real_kind)   :: Linf, L1, L2
-     integer(KIND = int_kind) :: Linf_Location
+     real(r8) :: Linf, L1, L2
+     integer  :: Linf_Location
   end type NORMS
 
   ! Define DIV_NORMS Structure

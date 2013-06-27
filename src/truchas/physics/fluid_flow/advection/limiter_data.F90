@@ -10,25 +10,22 @@ MODULE LIMITER_DATA
   !            
   !
   !=======================================================================
-  use kind_module,        only: real_kind
-
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    real(real_kind), public,  dimension(:),         allocatable :: phiUpMin   
-    real(real_kind), public,  dimension(:),         allocatable :: phiUpMax   
-    real(real_kind), public,  dimension(:),         allocatable :: phiMp1Min  
-    real(real_kind), public,  dimension(:),         allocatable :: phiMp1Max  
-    real(real_kind), public,  dimension(:),         allocatable :: sumVolIn   
-    real(real_kind), public,  dimension(:),         allocatable :: sumVolOut  
-    real(real_kind), public,  dimension(:),         allocatable :: sumPhiVolInMin
-    real(real_kind), public,  dimension(:),         allocatable :: sumPhiVolInMax
-    real(real_kind), public,  dimension(:),         allocatable :: PhiOutMin
-    real(real_kind), public,  dimension(:),         allocatable :: PhiOutMax
+  real(r8), public,  dimension(:), allocatable :: phiUpMin   
+  real(r8), public,  dimension(:), allocatable :: phiUpMax   
+  real(r8), public,  dimension(:), allocatable :: phiMp1Min  
+  real(r8), public,  dimension(:), allocatable :: phiMp1Max  
+  real(r8), public,  dimension(:), allocatable :: sumVolIn   
+  real(r8), public,  dimension(:), allocatable :: sumVolOut  
+  real(r8), public,  dimension(:), allocatable :: sumPhiVolInMin
+  real(r8), public,  dimension(:), allocatable :: sumPhiVolInMax
+  real(r8), public,  dimension(:), allocatable :: PhiOutMin
+  real(r8), public,  dimension(:), allocatable :: PhiOutMax
 
 END MODULE LIMITER_DATA
 

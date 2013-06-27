@@ -12,6 +12,7 @@ MODULE DIAGNOSTICS_MODULE
   ! Author(s): Kin Lam (klam@lanl.gov)
   !            Sharen Cummins (scummins@lanl.gov)
   !=======================================================================
+  use kinds, only: r8
   implicit none
   private
 
@@ -65,17 +66,14 @@ CONTAINS
   ! Author(s): Sharen Cummins (scummins@lanl.gov)
   !=======================================================================
 
-    use kind_module,       only: real_kind,int_kind
     use mesh_module,       only: Cell, Vertex, UnPermute_Mesh_Vector, UnPermute_Vertex_Vector
     use PGSLIB_module,     only: pgslib_global_sum
     use probe_module,      only: probes
     use parameter_module,  only: nprobes, ndim
 
-    implicit none
-
     ! Local variables.
-    integer(KIND=int_kind) :: i, j, icell, inode, cellindex, nodeindex
-    real(KIND=real_kind)   :: multiplicity, cellcoords(ndim), nodecoords(ndim)
+    integer :: i, j, icell, inode, cellindex, nodeindex
+    real(r8) :: multiplicity, cellcoords(ndim), nodecoords(ndim)
 
     do i=1,nprobes
        call get_global_cell(probes(i)%coords,icell,multiplicity)
@@ -127,7 +125,6 @@ CONTAINS
   ! Author(s): Sharen Cummins (scummins@lanl.gov)
   !=======================================================================
 
-    use kind_module,          only: real_kind, int_kind, log_kind
     use zone_module,          only: Zone
     use fluid_data_module,    only: fluid_flow, boussinesq_approximation
     use property_module,      only: get_density_delta
@@ -139,28 +136,25 @@ CONTAINS
                                     Displacement, Node_Gap, Node_Norm_Trac, solid_mechanics
     use probe_module,         only: probes
     use parameter_module,     only: string_len, ncells, ndim, nmat, nprobes
-    use constants_module,     only: zero
-
-    implicit none
 
     ! Local variables.
-    integer(KIND=int_kind)    :: i, j, k, n, m, count, theindex, vfieldsize, tfieldsize
+    integer :: i, j, k, n, m, count, theindex, vfieldsize, tfieldsize
     character(LEN=string_len) :: themeshspace
 
     type afield
-       real(KIND=real_kind), dimension(:), pointer   :: field
+       real(r8), dimension(:), pointer   :: field
     end type afield
     
-    type(afield), dimension(:),   pointer               :: scalarfields
-    type(afield), dimension(:,:), pointer               :: vectorfields
-    type(afield), dimension(:,:), pointer               :: tensorfields
-    real(KIND=real_kind), dimension(:,:),   pointer     :: tmp_2darray 
-    real(KIND=real_kind), dimension(ncells),target      :: tmp,tmp2,tmp3,tmp4
-    real(KIND=real_kind), dimension(nmat,ncells),target :: vof
-    real(KIND=real_kind), dimension(ncells)             :: tmp_1darray
+    type(afield), dimension(:),   pointer :: scalarfields
+    type(afield), dimension(:,:), pointer :: vectorfields
+    type(afield), dimension(:,:), pointer :: tensorfields
+    real(r8), dimension(:,:), pointer :: tmp_2darray 
+    real(r8), dimension(ncells), target :: tmp,tmp2,tmp3,tmp4
+    real(r8), dimension(nmat,ncells), target :: vof
+    real(r8), dimension(ncells) :: tmp_1darray
 
-    real(real_kind),  dimension(ncells) :: mVOF
-    logical(log_kind),dimension(ncells) :: mMask
+    real(r8), dimension(ncells) :: mVOF
+    logical, dimension(ncells) :: mMask
 
     scalarfields => NULL()
     vectorfields => NULL()
@@ -205,7 +199,7 @@ CONTAINS
           tmp2                  = (Zone(:)%Temp-Zone(:)%Temp_Old)/dt
           scalarfields(4)%field => tmp2
           call GRADIENT_CELL(tmp_2darray, Zone(:)%Temp) 
-          tmp_1darray  = zero
+          tmp_1darray  = 0.0_r8
           do n = 1,ndim 
              tmp_1darray = tmp_1darray + tmp_2darray(n,:)**2 
           end do
@@ -335,27 +329,23 @@ CONTAINS
     !   Compute the cell-centered divergence (D) for diagnostic purposes
     !
     !=======================================================================
-    use constants_module,  only: zero
     use fluid_data_module, only: fluidRho
     use fluid_data_module, only: Fluxing_Velocity
-    use kind_module,       only: int_kind, real_kind
     use mesh_module,       only: Cell 
     use parameter_module,  only: nfc, ncells
     use time_step_module,  only: dt
 
-    implicit none
-
     ! Arguments
-    real(KIND = real_kind),   dimension(ncells), intent(OUT) :: D
+    real(r8), dimension(ncells), intent(OUT) :: D
 
     ! Local Variables
-    integer(KIND = int_kind) :: f 
+    integer :: f 
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Loop over faces and accumulate the divergence
     ! from these face-centered velocities
-    D = zero
+    D = 0.0_r8
     do f = 1,nfc
        D = D + Fluxing_Velocity(f,:)*Cell%Face_Area(f)
     end do
@@ -364,12 +354,10 @@ CONTAINS
     D = D*dt/Cell%Volume
 
     ! Zero out divergences in void cells
-    where (FluidRho == zero) D = zero
+    where (FluidRho == 0.0_r8) D = 0.0_r8
 
     ! Eliminate noise
-!   D = MERGE(zero, D, ABS(D) <= alittle)
-
-    return
+!   D = MERGE(0.0_r8, D, ABS(D) <= alittle)
 
   END SUBROUTINE DIVERGENCE
 
@@ -382,28 +370,23 @@ CONTAINS
     !
     !=======================================================================
 
-
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell
     use parameter_module,     only: ndim, ncells
     use PGSLIB_module,        only: PGSLib_Global_SUM, pgslib_global_minval
-    use constants_module,           only: one, zero
-
-    implicit none
 
     ! Argument List
 
-    integer(int_kind), intent(out)  :: icell_o
-    real(real_kind), intent(out)    :: multiplicity
-    real(real_kind), intent(in)     :: coordinates(ndim)
+    integer, intent(out)  :: icell_o
+    real(r8), intent(out) :: multiplicity
+    real(r8), intent(in)  :: coordinates(ndim)
 
     ! Local Variables
 
-    real(real_kind)                 :: tmp(ncells)
-    real(real_kind)                 :: Minimum_distance 
-    real(real_kind)                 :: Minimum_distance_global
-    real(real_kind)                 :: Minimum_distance_global_tot
-    integer(int_kind)               :: icell(1)
+    real(r8) :: tmp(ncells)
+    real(r8) :: Minimum_distance 
+    real(r8) :: Minimum_distance_global
+    real(r8) :: Minimum_distance_global_tot
+    integer  :: icell(1)
     
     ! Find cell at minimum distance from the point
 
@@ -420,11 +403,11 @@ CONTAINS
        icell_o          = icell(1)
     else
        icell_o          = -1
-       Minimum_distance = zero
+       Minimum_distance = 0.0_r8
     endif
 
     if (Minimum_distance_global == 0) then
-       multiplicity                = one
+       multiplicity                = 1.0_r8
     else
        Minimum_distance_global_tot = pgslib_global_sum(Minimum_distance)
        multiplicity                = Minimum_distance_global_tot / Minimum_distance_global 
@@ -442,28 +425,23 @@ CONTAINS
     !
     !=======================================================================
 
-
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Vertex
     use parameter_module,     only: ndim, nnodes
     use PGSLIB_module,        only: PGSLib_Global_SUM, pgslib_global_minval
-    use constants_module,           only: one, zero
-
-    implicit none
 
     ! Argument List
 
-    integer(int_kind), intent(out)  :: inode_o
-    real(real_kind), intent(out)    :: multiplicity
-    real(real_kind), intent(in)     :: coordinates(ndim)
+    integer, intent(out)  :: inode_o
+    real(r8), intent(out) :: multiplicity
+    real(r8), intent(in)  :: coordinates(ndim)
 
     ! Local Variables
 
-    real(real_kind)                 :: tmp(nnodes)
-    real(real_kind)                 :: Minimum_distance 
-    real(real_kind)                 :: Minimum_distance_global
-    real(real_kind)                 :: Minimum_distance_global_tot
-    integer(int_kind)               :: inode(1)
+    real(r8) :: tmp(nnodes)
+    real(r8) :: Minimum_distance 
+    real(r8) :: Minimum_distance_global
+    real(r8) :: Minimum_distance_global_tot
+    integer  :: inode(1)
     
     ! Find node at minimum distance from the point
 
@@ -480,11 +458,11 @@ CONTAINS
        inode_o          = inode(1)
     else
        inode_o          = -1
-       Minimum_distance = zero
+       Minimum_distance = 0.0_r8
     endif
 
     if (Minimum_distance_global == 0) then
-       multiplicity     = one
+       multiplicity     = 1.0_r8
     else
        Minimum_distance_global_tot = pgslib_global_sum(Minimum_distance)
        multiplicity                = Minimum_distance_global_tot / Minimum_distance_global 
@@ -501,26 +479,21 @@ CONTAINS
     !
     !=======================================================================
 
-
-    use kind_module,                only: int_kind, real_kind
-    use PGSLIB_module,              only: pgslib_global_sum
-    use parameter_module,           only: ndim, string_len 
-    use constants_module,           only: zero
-
-    implicit none
+    use PGSLIB_module,    only: pgslib_global_sum
+    use parameter_module, only: ndim, string_len 
 
     ! Argument List
 
-    character(LEN=string_len), intent(in)             :: themeshspace
-    real(real_kind),   intent(in), dimension(ndim)    :: coordinates
-    real(real_kind),   intent(in), dimension(:)       :: field
-    integer(int_kind), intent(out)                    :: findex
-    real(real_kind),   intent(out)                    :: response
+    character(LEN=string_len), intent(in) :: themeshspace
+    real(r8), intent(in), dimension(ndim) :: coordinates
+    real(r8), intent(in), dimension(:) :: field
+    integer, intent(out) :: findex
+    real(r8), intent(out) :: response
 
     ! Local Variables
 
-    real(real_kind)   :: local_response, multiplicity
-    integer(int_kind) :: index, theindex
+    real(r8) :: local_response, multiplicity
+    integer :: index, theindex
 
     if (themeshspace == 'cell') then
        call get_global_cell(coordinates,index,multiplicity)
@@ -535,7 +508,7 @@ CONTAINS
 
     else
  
-       local_response = zero
+       local_response = 0.0_r8
        theindex       = 0
 
     endif

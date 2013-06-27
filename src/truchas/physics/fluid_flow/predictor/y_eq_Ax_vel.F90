@@ -18,7 +18,6 @@ MODULE Y_EQ_AX_VEL
   !            M. A. Christon (christon@lanl.gov)
   !
   !=======================================================================
-
   Implicit None
   Private
 
@@ -34,9 +33,7 @@ CONTAINS
     ! Purpose:
     !
     !=======================================================================
-
     use bc_operations
-    use constants_module,     only: zero
     use fluid_data_module,    only: fluidVof, fluidRho, &
                                     Drag_Coefficient, &
                                     momentum_solidify_implicitness, &
@@ -46,7 +43,7 @@ CONTAINS
 
     use time_step_module,     only: dt
 
-    use kind_module,          only: int_kind, real_kind
+    use kinds, only: r8
     use porous_drag_data,     only: porous_flow, porous_implicitness
     use timing_tree
     use viscous_data_module,  only: viscous_implicitness
@@ -55,21 +52,19 @@ CONTAINS
 
     use UbikSolve_module
 
-    implicit none
-
     ! Arguments
-    type (Ubik_vector_type),                intent(INOUT) :: X_vec
-    real (real_kind), dimension(:), target, intent(INOUT) :: Y
-    integer (int_kind),                     intent(OUT)   :: status
+    type (Ubik_vector_type), intent(INOUT) :: X_vec
+    real(r8), dimension(:), target, intent(INOUT) :: Y
+    integer, intent(OUT) :: status
 
     ! Local Variables
-    real(KIND = real_kind), dimension(ndim,ncells) :: Stress_Grad
-    real(KIND = real_kind), dimension(ndim,ncells) :: Vc
+    real(r8), dimension(ndim,ncells) :: Stress_Grad
+    real(r8), dimension(ndim,ncells) :: Vc
 
-    integer(KIND = int_kind)                                :: i, j, n
-    real(real_kind), dimension(:), pointer :: X
+    integer :: i, j, n
+    real(r8), dimension(:), pointer :: X
 
-    ! real(real_kind), dimension(:), pointer :: Stress_Grad_Pointer
+    ! real(r8), dimension(:), pointer :: Stress_Grad_Pointer
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -88,7 +83,7 @@ CONTAINS
     end do
     
     ! initialize the Y
-    Y = zero
+    Y = 0
 
     call STRESS_GRADIENT(Stress_Grad, Vc)
 
@@ -99,7 +94,7 @@ CONTAINS
     !       ! where in Y is vel component n for cell i
     !       j = (i-1)*(ndim)+n
     !       ! Y(J) include fluidVof on porous drag terms for consistency (MAC)
-    !       if(FluidVof(i).gt.zero) then
+    !       if(FluidVof(i).gt.0) then
     !          Y(j) = ( (fluidRho(i)*fluidVof(i) &
     !              + dt* porous_implicitness*fluidVof(i)*Drag_Coefficient(n,i))*Vc(n,i)&
     !              - dt*viscous_implicitness*fluidVof(i)*(Stress_Grad(n,i) &
@@ -139,7 +134,7 @@ CONTAINS
           do n = 1, ndim
              ! where in Y is vel component n for cell i
              j = (i-1)*(ndim)+n
-             if (fluidVof(i) > zero) then
+             if (fluidVof(i) > 0) then
                 Y(j) = Y(j) + &
                 momentum_solidify_implicitness*solidified_rho(i)*Vc(n,i)/fluidVof(i)
              endif
@@ -151,14 +146,13 @@ CONTAINS
        do n = 1, ndim
           ! where in Y is vel component n for cell i
           j = (i-1)*(ndim)+n
-          if (IsPureImmobile(i) .or. fluidRho(i) == zero) Y(j) = Vc(n,i)
+          if (IsPureImmobile(i) .or. fluidRho(i) == 0) Y(j) = Vc(n,i)
        end do
     end do
     
     call stop_timer("Timer_Solver_TMP2")
     
     status = 0
-    return
 
   END SUBROUTINE Y_EQ_AX_VELOCITY
 

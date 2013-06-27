@@ -35,16 +35,12 @@ MODULE CELL_GEOMETRY_MODULE
   ! Author(s): Douglas B. Kothe, LANL T-3 (dbk@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: GET_CELL_GEOMETRY
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -64,17 +60,13 @@ CONTAINS
     !      FACE_CENTROID_PHYSICAL
     !
     !=======================================================================
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Vertex
     use parameter_module,     only: ndim
     use pgslib_module,        only: PGSLib_Global_MINVAL, PGSLib_Global_MAXVAL
-    use truchas_logging_services
-    implicit none
 
     ! local variables
-    integer (int_kind) :: n
-    real (real_kind)   :: mincoord
-    real (real_kind)   :: maxcoord
+    integer :: n
+    real(r8) :: mincoord, maxcoord
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -114,8 +106,6 @@ CONTAINS
        end do
     end if
 
-    return
-
   END SUBROUTINE GET_CELL_GEOMETRY
 
   SUBROUTINE FACE_CENTROID_PHYSICAL ()
@@ -127,18 +117,13 @@ CONTAINS
     !
     !=======================================================================
     use gs_module,        only: EN_GATHER
-    use kind_module,      only: int_kind, real_kind
     use linear_module,    only: LINEAR_PROP
     use mesh_module,      only: Cell, Vertex, Vrtx_Bdy
     use parameter_module, only: ncells, nfc, ndim, nvc
 
-    implicit none
-
     ! local variables
-    integer (int_kind) :: n
-    integer (int_kind) :: f
-
-    real (real_kind), dimension(nvc,ncells) :: Coord
+    integer :: n, f
+    real(r8), dimension(nvc,ncells) :: Coord
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -156,8 +141,6 @@ CONTAINS
 
     end do NDIM_LOOP
 
-    return
-
   END SUBROUTINE FACE_CENTROID_PHYSICAL
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><><>
@@ -172,22 +155,15 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
-    use constants_module,     only: one_half, one_fourth, one_twelfth,  &
-                                    twenty_four, zero, two, three, six, &
-                                    four, twelve
     use gs_module,            only: EN_GATHER
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
     use parameter_module,     only: ncells, ndim, nvc, nrot
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: i, i1, i2, v1, v2, v3, v4, v5, v6, v7, v8
-    real(KIND = real_kind), pointer, dimension(:,:) :: L, M, N, LxD3, MxD2, NxD1
-    real(KIND = real_kind), pointer, dimension(:,:) :: Tmp, D1, D2, D3, Dv, &
-                                                       D1xDv, D2xDv, D3xDv
-    real(KIND = real_kind), pointer, dimension(:,:,:) :: Xv
+    integer :: i, i1, i2, v1, v2, v3, v4, v5, v6, v7, v8
+    real(r8), pointer, dimension(:,:) :: L, M, N, LxD3, MxD2, NxD1
+    real(r8), pointer, dimension(:,:) :: Tmp, D1, D2, D3, Dv, D1xDv, D2xDv, D3xDv
+    real(r8), pointer, dimension(:,:,:) :: Xv
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -271,10 +247,10 @@ CONTAINS
 
        case (3)
 
-          L = one_fourth*L
-          M = one_fourth*M
-          N = one_fourth*N
-          Tmp = zero
+          L = 0.25_r8*L
+          M = 0.25_r8*M
+          N = 0.25_r8*N
+          Tmp = 0
 
           do i = 1,nrot
 
@@ -300,16 +276,16 @@ CONTAINS
           do i = 1,ndim
 
              Tmp(v1,:) = Tmp(v1,:) + L(i,:)*(MxD2(i,:) - NxD1(i,:)) &
-                        + one_twelfth*(N(i,:)*D2xDv(i,:) - M(i,:)*D1xDv(i,:))
+                        + (N(i,:)*D2xDv(i,:) - M(i,:)*D1xDv(i,:))/12
              Tmp(v2,:) = Tmp(v2,:) + M(i,:)*(NxD1(i,:) - LxD3(i,:)) &
-                        + one_twelfth*(L(i,:)*D1xDv(i,:) - N(i,:)*D3xDv(i,:))
+                        + (L(i,:)*D1xDv(i,:) - N(i,:)*D3xDv(i,:))/12
              Tmp(v3,:) = Tmp(v3,:) + N(i,:)*(LxD3(i,:) - MxD2(i,:)) &
-                        + one_twelfth*(M(i,:)*D3xDv(i,:) - L(i,:)*D2xDv(i,:))
+                        + (M(i,:)*D3xDv(i,:) - L(i,:)*D2xDv(i,:))/12
 
           end do
 
           do i = 1,ndim
-             Tmp(i,:) = one_half + Tmp(i,:)/(twenty_four*Cell%Volume)
+             Tmp(i,:) = 0.5_r8 + Tmp(i,:)/(24*Cell%Volume)
           end do
 
     end select
@@ -321,10 +297,10 @@ CONTAINS
 
           case (2)
 
-             Cell%Centroid(i) = LxD3(1,:)*(twelve*Xv(i,v4,:) + six*(L(i,:) + M(i,:)) + three*N(i,:)) + &
-                                MxD2(1,:)*(six*Xv(i,v4,:) + four*L(i,:) + three*M(i,:) + two*N(i,:)) + &
-                                NxD1(1,:)*(six*Xv(i,v4,:) + three*L(i,:) + four*M(i,:) + two*N(i,:))
-             Cell%Centroid(i) = Cell%Centroid(i)/(twelve*Cell%Volume)
+             Cell%Centroid(i) = LxD3(1,:)*(12*Xv(i,v4,:) + 6*(L(i,:) + M(i,:)) + 3*N(i,:)) + &
+                                MxD2(1,:)*(6*Xv(i,v4,:) + 4*L(i,:) + 3*M(i,:) + 2*N(i,:)) + &
+                                NxD1(1,:)*(6*Xv(i,v4,:) + 3*L(i,:) + 4*M(i,:) + 2*N(i,:))
+             Cell%Centroid(i) = Cell%Centroid(i)/(12*Cell%Volume)
 
           case (3)
 
@@ -360,8 +336,6 @@ CONTAINS
        call ARRAYDESTROY (D3xDv, 'Array D3xDv(nrot,ncells)')
     end if
 
-    return
-
   END SUBROUTINE CELL_CENTROID
 
   SUBROUTINE CELL_VOLUME ()
@@ -375,10 +349,8 @@ CONTAINS
     !     Output - Cell%Volume
     !
     !=======================================================================
-    use constants_module,     only: one, one_half, zero
     use cutoffs_module,       only: alittle
     use gs_module,            only: EN_GATHER, EN_SUM_SCATTER
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy, Mesh,       &
                                     volume_min, volume_max, GAP_ELEMENT_1
     use parameter_module,     only: ncells, ndim, nfc, nnodes, nvc, nec
@@ -388,18 +360,15 @@ CONTAINS
                                     PGSLib_GLOBAL_MINVAL, &
                                     PGSLib_GLOBAL_MAXVAL, &
                                     PGSLib_GLOBAL_ANY
-    use truchas_logging_services
-
-    implicit none
 
     ! Local Variables
-    integer(KIND = int_kind) :: f, n, v1, v2, v3, v4, v5, v6, icell
-    integer(KIND = int_kind), dimension(1)               :: MinLoc_L, MaxLoc_L
-    real(KIND = real_kind),   dimension(nnodes)          :: Coord
-    real(KIND = real_kind),   dimension(ndim,nvc,ncells) :: Xn
-    real(KIND = real_kind),   dimension(ndim,ncells)     :: X1, X2, X3
+    integer :: f, n, v1, v2, v3, v4, v5, v6, icell
+    integer, dimension(1) :: MinLoc_L, MaxLoc_L
+    real(r8), dimension(nnodes)          :: Coord
+    real(r8), dimension(ndim,nvc,ncells) :: Xn
+    real(r8), dimension(ndim,ncells)     :: X1, X2, X3
     character(128) :: message
-    real(KIND = real_kind) :: total_volume
+    real(r8) :: total_volume
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -449,7 +418,7 @@ CONTAINS
 
        case (2)
              ! 2-D
-          X1 = one_half
+          X1 = 0.5_r8
           v1 = v2
           v3 = v5
           v4 = v6
@@ -497,7 +466,7 @@ CONTAINS
     end do GAP_ELE_CHECK
 
     ! Make sure volumes are OK.
-    if (PGSLib_Global_ANY(Cell%Volume < zero)) then
+    if (PGSLib_Global_ANY(Cell%Volume < 0)) then
        call TLS_panic ('CELL_VOLUME: mesh contains cells with negative volumes')
     end if
 
@@ -516,12 +485,10 @@ CONTAINS
     call TLS_info (message)
 
     ! Scatter and store the reciprocal sum of the inverse volumes.
-    X1(1,:) = one/Cell%Volume
+    X1(1,:) = 1/Cell%Volume
     
     call EN_SUM_SCATTER (Coord, X1(1,:))
-    Vertex%Rsum_rvol = one/Coord
-
-    return
+    Vertex%Rsum_rvol = 1/Coord
 
   END SUBROUTINE CELL_VOLUME
 
@@ -533,14 +500,11 @@ CONTAINS
     !   own cell centroid.
     !
     !=======================================================================
-    use kind_module,          only: int_kind
     use mesh_module,          only: Cell
     use parameter_module,     only: ndim, nfc
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: f, n
+    integer :: f, n
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -555,8 +519,6 @@ CONTAINS
        Cell%Halfwidth(f) = SQRT(Cell%Halfwidth(f))
     end do
 
-    return
-
   END SUBROUTINE CELL_WIDTH
 
   SUBROUTINE CELL_TYPE ()
@@ -567,16 +529,13 @@ CONTAINS
     !   Prisms & pyramids differentiated by the number
     !
     !=======================================================================
-    use kind_module,          only: int_kind
     use mesh_module,          only: Mesh, DEGENERATE_FACE, &
                                     CELL_HEX, CELL_PYRAMID, CELL_PRISM, &
                                     CELL_TET, GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5
     use parameter_module,     only: ncells
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: i
+    integer :: i
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -608,8 +567,6 @@ CONTAINS
        end if
     end do
 
-    return
-
   END SUBROUTINE CELL_TYPE
 
   SUBROUTINE FACE_AREA ()
@@ -622,23 +579,19 @@ CONTAINS
     !   pointing out of each face into the neighboring cell.
     !
     !=======================================================================
-    use constants_module, only: one_half, zero
     use cutoffs_module,   only: alittle
     use gs_module,        only: EN_GATHER
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: Cell, Vertex, Vrtx_Bdy
     use parameter_module, only: ncells, ndim, nfc, nvc
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: f, i, v1, v2, v3, v4
-    real(KIND = real_kind), dimension(ndim,nvc,ncells) :: Xn
-    real(KIND = real_kind), dimension(ndim,ncells)     :: X1, X2
+    integer :: f, i, v1, v2, v3, v4
+    real(r8), dimension(ndim,nvc,ncells) :: Xn
+    real(r8), dimension(ndim,ncells)     :: X1, X2
 
 #if DEBUG_FACE_VECTORS
-    integer(KIND = int_kind) :: ff
-    real(KIND = real_kind), dimension(nfc,ncells) :: Face_coord
+    integer :: ff
+    real(r8), dimension(nfc,ncells) :: Face_coord
 #endif
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -707,12 +660,12 @@ CONTAINS
              case (3)
                 v1 = 1; v2 = 2
           end select
-          if (ndim == 3) Cell%Face_Normal(i,f) = one_half*(X1(v1,:)*X2(v2,:) - X2(v1,:)*X1(v2,:))
+          if (ndim == 3) Cell%Face_Normal(i,f) = 0.5_r8*(X1(v1,:)*X2(v2,:) - X2(v1,:)*X1(v2,:))
        end do
 
        ! Set components to zero if they're small; accumulate areas.
        do i = 1,ndim
-          Cell%Face_Normal(i,f) = MERGE(zero, Cell%Face_Normal(i,f), &
+          Cell%Face_Normal(i,f) = MERGE(0.0_r8, Cell%Face_Normal(i,f), &
                                         ABS(Cell%Face_Normal(i,f)) < alittle)
           Cell%Face_Area(f) = Cell%Face_Area(f) + Cell%Face_Normal(i,f)**2
        end do
@@ -725,8 +678,8 @@ CONTAINS
           where (Cell%Face_Area(f) >= alittle)
              Cell%Face_Normal(i,f) = Cell%Face_Normal(i,f) / Cell%Face_Area(f)
           elsewhere
-             Cell%Face_Normal(i,f) = zero
-             Cell%Face_Area(f) = zero
+             Cell%Face_Normal(i,f) = 0
+             Cell%Face_Area(f) = 0
           end where
        end do
 
@@ -737,7 +690,7 @@ CONTAINS
     CHECK_FACE_VECTORS: do f = 1,nfc
 
        ! Gather face area vector for the neighbor of this face f
-       X1 = zero; X2 = zero
+       X1 = 0; X2 = 0
        do i = 1,ndim
           call EE_GATHER (DEST = Face_coord, SRC = Cell%Face_Normal(i,f))
           do ff = 1,nfc
@@ -761,17 +714,15 @@ CONTAINS
                 v1 = 1; v2 = 2
           end select
           Xn(i,1,:) = X1(v1,:)*X2(v2,:) - X2(v1,:)*X1(v2,:)
-          Xn(i,1,:) = MERGE(zero, Xn(i,1,:), ABS(Xn(i,1,:)) < ten_tominus14)
+          Xn(i,1,:) = MERGE(0.0_r8, Xn(i,1,:), ABS(Xn(i,1,:)) < 1.0d-14)
        end do
 
-       if (PGSLib_Global_ANY(Xn(:,1,:) /= zero)) then
+       if (PGSLib_Global_ANY(Xn(:,1,:) /= 0)) then
           call TLS_panic ('FACE_AREA: Some adjacent face area vectors are not equal and opposite')
        end if
 
     end do CHECK_FACE_VECTORS
 #endif
-
-    return
 
   END SUBROUTINE FACE_AREA
 
@@ -787,23 +738,19 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
-    use constants_module,     only: one, one_half, one_twelfth, zero
     use cutoffs_module,       only: alittle
     use gs_module,            only: EN_GATHER
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
     use parameter_module,     only: ncells, ndim, nfc, nvc
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind) :: f, i, i1, i2, n, v11, v12, v13, v14,    &
+    integer :: f, i, i1, i2, n, v11, v12, v13, v14,    &
                                 v21, v22, v23, v24, v31, v32, v33, v34, &
                                 nn
-    integer(KIND = int_kind) :: n1 = 1, n2 = 2, n3 = 3
-    real(KIND = real_kind), dimension(ndim)           :: Coef
-    real(KIND = real_kind), dimension(ncells)         :: Face_Area
-    real(KIND = real_kind), pointer, dimension(:,:,:) :: Xv
+    integer :: n1 = 1, n2 = 2, n3 = 3
+    real(r8), dimension(ndim)   :: Coef
+    real(r8), dimension(ncells) :: Face_Area
+    real(r8), pointer, dimension(:,:,:) :: Xv
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -823,14 +770,14 @@ CONTAINS
 
        ! Preinitialize the face centroid
        do n = 1,ndim
-          Cell%Face_Centroid_L(n,f) = one_half
-          Coef(n)                   = one
+          Cell%Face_Centroid_L(n,f) = 0.5_r8
+          Coef(n)                   = 1
        end do
 
        ! We're done if this is 2-D.
        if (ndim == 2) cycle FACE_LOOP
 
-       Face_Area = one_twelfth / (Cell%Face_Area(f) + alittle)
+       Face_Area = 1.0 / (12*(Cell%Face_Area(f) + alittle))
 
        select case (f)
 
@@ -842,7 +789,7 @@ CONTAINS
           v31 = 8; v32 = 4; v33 = 7; v34 = 3
           nn  = 1
 
-          Cell%Face_centroid_L(nn,f) = zero; Coef(nn) = zero
+          Cell%Face_centroid_L(nn,f) = 0; Coef(nn) = 0
 
           case (2)
 
@@ -852,7 +799,7 @@ CONTAINS
           v31 = 6; v32 = 2; v33 = 5; v34 = 1
           nn  = 1
 
-          Cell%Face_centroid_L(nn,f) = one; Coef(nn) = zero
+          Cell%Face_centroid_L(nn,f) = 1; Coef(nn) = 0
 
           case (3)
 
@@ -862,7 +809,7 @@ CONTAINS
           v31 = 5; v32 = 1; v33 = 8; v34 = 4
           nn  = 2
 
-          Cell%Face_centroid_L(nn,f) = zero; Coef(nn) = zero
+          Cell%Face_centroid_L(nn,f) = 0; Coef(nn) = 0
 
           case (4)
 
@@ -872,7 +819,7 @@ CONTAINS
           v31 = 7; v32 = 3; v33 = 6; v34 = 2
           nn  = 2
 
-          Cell%Face_centroid_L(nn,f) = one; Coef(nn) = zero
+          Cell%Face_centroid_L(nn,f) = 1; Coef(nn) = 0
 
           case (5)
 
@@ -882,7 +829,7 @@ CONTAINS
           v31 = 1; v32 = 1; v33 = 1; v34 = 1
           nn  = 3
 
-          Cell%Face_centroid_L(nn,f) = zero; Coef(nn) = zero
+          Cell%Face_centroid_L(nn,f) = 0; Coef(nn) = 0
 
           case (6)
 
@@ -892,7 +839,7 @@ CONTAINS
           v31 = 1; v32 = 1; v33 = 1; v34 = 1
           nn  = 3
 
-          Cell%Face_centroid_L(nn,f) = one; Coef(nn) = zero
+          Cell%Face_centroid_L(nn,f) = 1; Coef(nn) = 0
 
        end select
 
@@ -929,8 +876,6 @@ CONTAINS
     ! Deallocate temporaries
     if (ASSOCIATED(Xv)) call ARRAYDESTROY (Xv, 'Array Xv(ndim,nvc,ncells)')
 
-    return
-
   END SUBROUTINE FACE_CENTROID_LOGICAL
 
   SUBROUTINE JACOBIAN ()
@@ -949,25 +894,21 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
-    use constants_module,     only: zero
     use cutoffs_module,       only: alittle
     use discrete_ops_data,    only: use_ortho_face_gradient, discrete_ops_type
-    use kind_module,          only: int_kind, log_kind, real_kind
     use mesh_module,          only: Cell, orthogonal_mesh
     use parameter_module,     only: ncells, ncells_tot, ndim
     use pgslib_module,        only: PGSLib_GLOBAL_COUNT
-    use truchas_logging_services
-    implicit none
 
     ! Local Variables
-    integer (int_kind) :: l
-    integer (int_kind) :: m
-    integer (int_kind) :: n
-    integer (int_kind) :: orthogonal_cells
-    integer (int_kind) :: r
-    logical (log_kind), pointer, dimension(:)   :: Mask
-    real (real_kind), pointer, dimension(:,:)   :: Xn
-    real (real_kind), pointer, dimension(:,:,:) :: jacob
+    integer :: l
+    integer :: m
+    integer :: n
+    integer :: orthogonal_cells
+    integer :: r
+    logical,  pointer, dimension(:)     :: Mask
+    real(r8), pointer, dimension(:,:)   :: Xn
+    real(r8), pointer, dimension(:,:,:) :: jacob
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -984,13 +925,13 @@ CONTAINS
           r = m*2
           l = r-1
           Jacob(m,n,:) = cell(:)%face_centroid(n,l) - cell(:)%face_centroid(n,r)
-          Jacob(m,n,:) = MERGE(zero, Jacob(m,n,:), ABS(Jacob(m,n,:)) <= alittle)
+          Jacob(m,n,:) = MERGE(0.0_r8, Jacob(m,n,:), ABS(Jacob(m,n,:)) <= alittle)
        end do
     end do
 
     ! Compute the dot product of each Jacobian vector
     ! with each of other Jacobian vectors: 1*2 in 2D; 1*2, 2*3, 1*3 in 3D
-    Xn = zero
+    Xn = 0
     select case (ndim)
        case (1)
           ! a 1D mesh is inherently orthogonal
@@ -1004,14 +945,14 @@ CONTAINS
           end do
     end select
     do n = 1, ndim
-       Xn(n,:) = MERGE(zero, Xn(n,:), ABS(Xn(n,:)) <= alittle)
+       Xn(n,:) = MERGE(0.0_r8, Xn(n,:), ABS(Xn(n,:)) <= alittle)
     end do
 
     ! Now count the number of cells that have
     ! all 3 Jacobian vectors mutually orthogonal.
     Mask = .true.
     do n = 1,ndim
-       Mask = Mask .and. Xn(n,:) == zero
+       Mask = Mask .and. Xn(n,:) == 0
     end do
     orthogonal_cells = PGSLib_Global_COUNT(Mask)
 
@@ -1046,8 +987,6 @@ CONTAINS
     call ARRAYDESTROY (xn,    'jacobian: xn(nvc,ncells)')
     call ARRAYDESTROY (mask,  'jacobian: mask(ncells)')
 
-    return
-
   END SUBROUTINE JACOBIAN
 
   SUBROUTINE GAP_ELEMENT_TYPE ()
@@ -1061,18 +1000,15 @@ CONTAINS
     !  Dave Korzekwa (dak@lanl.gov)
     !___________________________________________________________________________
 
-
     use mesh_module,       only: Mesh, GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5
     use parameter_module,  only: ncells, ndim, nfc
-    use kind_module,       only: int_kind, log_kind
     use gs_module,         only: EE_GATHER
     use mesh_input_module, only: gap_element_blocks
 
     ! Local variables
-    integer                                          :: status
-    integer(kind = int_kind)                         :: icell, idim, gface, nbid, gap_type
-    integer(kind = int_kind),pointer, dimension(:,:) :: NbrBlkID
-    logical(log_kind)                                :: found_gap, nbgap
+    integer :: status, icell, idim, gface, nbid, gap_type
+    integer, pointer, dimension(:,:) :: NbrBlkID
+    logical :: found_gap, nbgap
     
 
     if (ANY(gap_element_blocks > 0)) then

@@ -13,11 +13,9 @@ MODULE DO_SOLVE_SPECIFIER
   !            Robert Ferrell (ferrell@cpca.com)
   !
   !=======================================================================
-  use kind_module,       only: int_kind,real_kind
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -45,11 +43,10 @@ MODULE DO_SOLVE_SPECIFIER
     MODULE PROCEDURE DO_DESTROY_cM_full
   END INTERFACE
 
-
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Number of DO_Specifier instantiations
-  integer(KIND=int_kind),save      :: NUM_FIELDS=0  ! Initialized to 0
+  integer,save      :: NUM_FIELDS=0  ! Initialized to 0
 
   ! As it's defined, there is only 1 possible dX_Scaled per problem
   ! This coding will allow dX_Scaled to be "destroyed"; this is not a
@@ -59,10 +56,9 @@ MODULE DO_SOLVE_SPECIFIER
   ! checked in do_discrete_operators:face_ortho to prevent use if it's
   ! been deallocated. Only other do_* modules are intended to have access
   ! to this variable.
-  real(KIND=real_kind),allocatable,target,dimension(:,:,:),save :: dX_Scaled
+  real(r8),allocatable,target,dimension(:,:,:),save :: dX_Scaled
 
 CONTAINS
-
 
   SUBROUTINE DO_INIT_SS(NewSolveSpec,SolveTech,BC_Spec,Weights,GeoExp)
     !=======================================================================
@@ -92,22 +88,20 @@ CONTAINS
     use do_base_types,     only: DO_Specifier,DO_NUM_ST,DO_SOLVE_ORTHO, &
                                  DO_SOLVE_LU_LSLR,DO_SOLVE_SVD_LSLR,DO_SOLVE_DEFAULT
     use discrete_ops_data, only: use_ortho_face_gradient
-    use kind_module,       only: real_kind, int_kind
     use parameter_module,  only: ncells
-    implicit none
 
     ! Argument list
-    type(DO_Specifier),pointer                                 :: NewSolveSpec
-    integer(KIND=int_kind),                         intent(IN) :: SolveTech
-    type(BC_Specifier),  optional, target,          intent(IN) :: BC_Spec
-    real(KIND=real_kind),optional,dimension(ncells),intent(IN) :: Weights
-    integer(int_kind),   optional,                  intent(IN) :: GeoExp
+    type(DO_Specifier), pointer :: NewSolveSpec
+    integer, intent(IN) :: SolveTech
+    type(BC_Specifier), optional, target, intent(IN) :: BC_Spec
+    real(r8), optional, dimension(ncells), intent(IN) :: Weights
+    integer, optional, intent(IN) :: GeoExp
 
     ! Local Variables
-    integer(KIND=int_kind)                                      :: ST
-    integer(KIND=int_kind)                                      :: istat
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    integer :: ST
+    integer :: istat
 
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     if(SolveTech<0 .or. SolveTech>DO_NUM_ST)then
       call TLS_panic ('DO_INIT_SS: attempt to use undefined SolveTech.')
@@ -169,27 +163,24 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,   only: alittle
-    use constants_module, only: zero, one
     use do_base_types,    only: DO_Specifier
     use gs_module,        only: EE_GATHER
-    use kind_module,      only: real_kind, int_kind
     use mesh_module,      only: Cell, Mesh
     use parameter_module, only: ncells, nfc, ndim
-    implicit none
 
     ! Argument list
-    type(DO_Specifier), target,                     intent(INOUT) :: SS
-    real(KIND=real_kind),optional,dimension(ncells),intent(IN)    :: Weights
-    integer(int_kind),   optional,                  intent(IN)    :: GeoExp
+    type(DO_Specifier), target, intent(INOUT) :: SS
+    real(r8), optional, dimension(ncells), intent(IN) :: Weights
+    integer, optional, intent(IN) :: GeoExp
 
     ! Local Variables
-    integer(KIND=int_kind)                          :: n, f, f2, j, j2, istat
-    real(KIND=real_kind),dimension(ndim)            :: dX
-    real(KIND=real_kind)                            :: dX_tmp
-    real(KIND=real_kind),dimension(ndim,nfc,ncells) :: X_e
-    real(KIND=real_kind)                            :: Distance
-    real(KIND=real_kind)                            :: pval=10.d0**(- precision(dX_tmp))
-    integer(KIND=int_kind),save :: GExp
+    integer :: n, f, f2, j, j2, istat
+    real(r8), dimension(ndim) :: dX
+    real(r8) :: dX_tmp
+    real(r8), dimension(ndim,nfc,ncells) :: X_e
+    real(r8) :: Distance
+    real(r8) :: pval=10.d0**(- precision(dX_tmp))
+    integer, save :: GExp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -209,16 +200,16 @@ CONTAINS
       FACE_LOOP: do f = 1,nfc
          ! Compute Deltas (Cell to Face Neighbors)
          ! Physical Coordinate Deltas
-         dX       = zero
-         Distance = zero
+         dX       = 0.0_r8
+         Distance = 0.0_r8
          do n = 1,ndim
             dX(n)  = Cell(j)%Centroid(n) - X_e(n,f,j)
-            if(abs(dX(n)) < pval)dX(n)=zero
+            if(abs(dX(n)) < pval)dX(n)=0.0_r8
             Distance = Distance + dX(n)**2
          end do
          Distance = Distance**GExp
          if(Mesh(j)%Ngbr_Cell(f) == 0)then
-           dX_scaled(:,f,j) = zero
+           dX_scaled(:,f,j) = 0.0_r8
          else
            do n = 1,ndim
              dX_tmp = dX(n)/(Distance + alittle)
@@ -251,8 +242,8 @@ CONTAINS
     if(PRESENT(Weights))then           ! Weights may vary between fields
       ALLOCATE(SS%W_Ortho(ncells),STAT=istat)
       if (istat /= 0) call TLS_panic ('DO_INIT_ORTHO: memory allocation failure for W_Ortho')
-      SS%W_Ortho = zero
-      where(Weights > zero)SS%W_Ortho = one
+      SS%W_Ortho = 0.0_r8
+      where(Weights > 0.0_r8)SS%W_Ortho = 1.0_r8
 
       ALLOCATE(SS%W_Ortho_Nghbr(nfc,ncells),STAT=istat)
       if (istat /= 0) call TLS_panic ('DO_INIT_ORTHO: memory allocation failure for W_Ortho_Nghbr')
@@ -285,18 +276,16 @@ CONTAINS
     !=======================================================================
     use bc_data_types,    only: BC_Specifier
     use do_base_types,    only: DO_Specifier
-    use kind_module,      only: real_kind, int_kind
     use parameter_module, only: ncells, nfc, ndim
-    implicit none
 
     ! Argument list
-    type(DO_Specifier),  target,                    intent(INOUT) :: SS
-    type(BC_Specifier),  target, optional,          intent(IN)    :: BC_Spec
-    real(KIND=real_kind),optional,dimension(ncells),intent(IN)    :: Weights
-    integer(int_kind),   optional,                  intent(IN)    :: GeoExp
+    type(DO_Specifier), target, intent(INOUT) :: SS
+    type(BC_Specifier), target, optional, intent(IN) :: BC_Spec
+    real(r8), optional, dimension(ncells), intent(IN) :: Weights
+    integer, optional, intent(IN) :: GeoExp
 
     ! local variables
-    integer(KIND=int_kind) :: istat
+    integer :: istat
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Create and initialize common aspects of LSLR solve specifier
@@ -337,20 +326,18 @@ CONTAINS
     !=======================================================================
     use bc_data_types,    only: BC_Specifier
     use do_base_types,    only: DO_Specifier
-    use kind_module,      only: real_kind, int_kind
     use parameter_module, only: ncells, nfc, ndim
-    implicit none
 
     ! Argument list
-    type(DO_Specifier),            target,          intent(INOUT) :: SS
-    type(BC_Specifier),  optional, target,          intent(IN)    :: BC_Spec
-    real(KIND=real_kind),optional,dimension(ncells),intent(IN)    :: Weights
-    integer(int_kind),   optional,                  intent(IN)    :: GeoExp
+    type(DO_Specifier), target, intent(INOUT) :: SS
+    type(BC_Specifier), optional, target, intent(IN) :: BC_Spec
+    real(r8), optional, dimension(ncells), intent(IN) :: Weights
+    integer, optional, intent(IN) :: GeoExp
 
     ! local variables
-    integer(KIND=int_kind),pointer,dimension(:) :: NumFacesCell => NULL()
-    integer(KIND=int_kind) :: NFC_Tot
-    integer(KIND=int_kind) :: c,f,istat
+    integer, pointer, dimension(:) :: NumFacesCell => NULL()
+    integer :: NFC_Tot
+    integer :: c, f, istat
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -401,55 +388,51 @@ CONTAINS
                                  BC_Chart_Positions, &
                                  DIMENSIONALITY
     use cutoffs_module,    only: alittle
-    use constants_module,  only: zero, one
     use do_base_types,     only: DO_Specifier,SField_Type
     use gs_module,         only: EE_GATHER
-    use kind_module,       only: real_kind, int_kind
     use mesh_module,       only: Cell,Mesh,Is_Face_Ngbr
     use parameter_module,  only: ncells, nfc, ndim
-    use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, &
-                                 DESTROY
-    implicit none
+    use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, DESTROY
 
     ! Arguments
-    type(DO_Specifier),            target,          intent(INOUT) :: SS
-    type(BC_Specifier),  OPTIONAL, target,          intent(IN)    :: BC_Spec
-    real(KIND=real_kind),OPTIONAL,dimension(ncells),intent(IN)    :: Weights
-    integer(KIND=int_kind),OPTIONAL,                intent(IN)    :: GeoExp
+    type(DO_Specifier), target, intent(INOUT) :: SS
+    type(BC_Specifier),  OPTIONAL, target, intent(IN) :: BC_Spec
+    real(r8), OPTIONAL, dimension(ncells), intent(IN) :: Weights
+    integer, OPTIONAL, intent(IN) :: GeoExp
 
     ! Local Variables
   ! Various index variables
-    integer(KIND=int_kind)                             :: d,j,n,f,j1,f1,j2,f2
+    integer :: d,j,n,f,j1,f1,j2,f2
   ! Running count of the number of valid neighbor faces
-    integer(KIND=int_kind)                             :: NumNghbrs
-    integer(KIND=int_kind),dimension(ncells)           :: NumNghbrsAll
+    integer :: NumNghbrs
+    integer, dimension(ncells) :: NumNghbrsAll
   ! The ...tmp arrays are temporary structures to allocated to hold the
   ! maximum possible extent of the required data until the true extent is
   ! determined by Is_Face_Ngbr, DEGENERATE_FACE and the BC routines
-    integer(KIND=int_kind),allocatable,dimension(:,:,:) :: IDXtmp
+    integer, allocatable, dimension(:,:,:) :: IDXtmp
 
-    type(REAL_VAR_VECTOR), pointer, dimension(:,:)     :: X_Centers => NULL()
+    type(REAL_VAR_VECTOR), pointer, dimension(:,:) :: X_Centers => NULL()
 
-    type(SField_Type), dimension(ndim)              :: Xc
-    integer(KIND = int_kind), pointer, dimension(:) :: Ngbr_Cells_Face => NULL()
-    integer(KIND=int_kind)                          :: FN
-    type (BC_Chart_ID), pointer                     :: ChartID => NULL()
-    integer(KIND=int_kind)                          :: Length
-    real(KIND=real_kind), dimension(:,:),  pointer  :: Positions => NULL()
+    type(SField_Type), dimension(ndim) :: Xc
+    integer, pointer, dimension(:) :: Ngbr_Cells_Face => NULL()
+    integer :: FN
+    type (BC_Chart_ID), pointer :: ChartID => NULL()
+    integer :: Length
+    real(r8), dimension(:,:), pointer :: Positions => NULL()
     
   ! This is for all the neighbor weights
-    real(real_kind), dimension(:), pointer :: CellsNbrWeights => NULL()
+    real(r8), dimension(:), pointer :: CellsNbrWeights => NULL()
     
   ! This is for all the neighbor and BC faces
-    integer(KIND=int_kind),pointer,dimension(:)   :: NumFacesCell => NULL()
+    integer, pointer, dimension(:) :: NumFacesCell => NULL()
     
   ! This is for all the neighbor faces
-    integer(KIND=int_kind),pointer,dimension(:)   :: NumNghbrCell => NULL()
+    integer, pointer, dimension(:) :: NumNghbrCell => NULL()
 
-    real(KIND=real_kind)   :: dX1
-    integer(KIND=int_kind) :: lb,ub,idx,istat,NFC_offset,NFC_F,j_offset
-    integer(KIND=int_kind) :: NumComputedF
-    integer(KIND=int_kind) :: GExp
+    real(r8) :: dX1
+    integer :: lb,ub,idx,istat,NFC_offset,NFC_F,j_offset
+    integer :: NumComputedF
+    integer :: GExp
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     call DO_CREATE_SS(SS)
@@ -570,7 +553,7 @@ CONTAINS
     if (istat /= 0) call TLS_panic ('DO_INIT_LSLR_SS: memory allocation failure for dX,W,GeoW and PHI arrays')
     SS%IDXs = -HUGE(SS%IDXs)  ! init value almost certain to cause seg vio if used
     GExp=1; if(PRESENT(GeoExp))GExp=GeoExp
-    SS%W = zero; SS%GeoW = zero
+    SS%W = 0.0_r8; SS%GeoW = 0.0_r8
     idx = 0
     NFC_offset = 0
     CELL_LOOP: do j = 1,ncells
@@ -610,7 +593,7 @@ CONTAINS
              SS%dX(1,idx) = sqrt(SS%GeoW(idx))
            ! Geometric weight is 1/d**2, where d is the distance
            ! to the neighbor.
-             if(SS%GeoW(idx) >= alittle) SS%GeoW(idx) = one/SS%GeoW(idx)
+             if(SS%GeoW(idx) >= alittle) SS%GeoW(idx) = 1.0_r8/SS%GeoW(idx)
              SS%W(idx) = SS%GeoW(idx)
              if(PRESENT(Weights))SS%W(idx) = SS%W(idx)*CellsNbrWeights(FN)
           end do NEIGHBOR_LOOP
@@ -637,7 +620,7 @@ CONTAINS
                 SS%dX(1,idx) = sqrt(SS%GeoW(idx))  ! Use distance to scale phi solution
                 ! Geometric weight is 1/d**2, where d is the distance
                 ! to the neighbor.
-                if(SS%GeoW(idx) >= alittle) SS%GeoW(idx) = one/SS%GeoW(idx)
+                if(SS%GeoW(idx) >= alittle) SS%GeoW(idx) = 1.0_r8/SS%GeoW(idx)
                 SS%W(idx) = SS%GeoW(idx)  ! No Non-Geo BC weights at this time
               end do BC_DIR_LOOP
               DEALLOCATE(Positions)
@@ -678,16 +661,13 @@ CONTAINS
     !
     !=======================================================================
     use do_base_types,    only: DO_Specifier
-    use kind_module,      only: int_kind
     use parameter_module, only: ncells, nfc, ndim
-
-    implicit none
 
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
 
     ! Local Variables
-    integer(KIND=int_kind) :: istat
+    integer :: istat
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ALLOCATE(SS%dX_Struct(nfc,ncells),STAT=istat)
@@ -739,16 +719,13 @@ CONTAINS
     use parameter_module,  only: ncells
     use var_vector_module, only: DESTROY
 
-
-    implicit none
-
     ! Arguments
-    type(DO_Specifier), target, intent(INOUT)            :: SS
-    logical(KIND=int_kind), optional, intent(IN) :: rm_dX_Scaled
+    type(DO_Specifier), target, intent(INOUT) :: SS
+    logical, optional, intent(IN) :: rm_dX_Scaled
 
     ! Local Variables
-    integer(KIND=int_kind)            :: i
-    logical(KIND=int_kind)            :: rmdXScaled
+    integer :: i
+    logical :: rmdXScaled
     
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -840,14 +817,12 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier
     use do_update_module, only: UpdateFaceLU
-    use kind_module,      only: int_kind
     use parameter_module, only: ncells, nfc
-    implicit none
 
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
     ! Local Variables
-    integer(KIND=int_kind) :: Face,c1
+    integer :: Face,c1
 
     do c1 = 1,ncells
       FACE_LOOP: do Face=1,nfc
@@ -865,14 +840,12 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier
     use do_update_module, only: UpdateFaceSVD
-    use kind_module,      only: int_kind
     use parameter_module, only: ncells, nfc
-    implicit none
  
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
     ! Local Variables
-    integer(KIND=int_kind) :: Face,c1
+    integer :: Face,c1
 
     do c1 = 1,ncells
       FACE_LOOP: do Face=1,nfc
@@ -890,29 +863,25 @@ CONTAINS
     !             Discretization', M. Hall, 11/06/02
     !
     !=======================================================================
-    use constants_module, only: zero
     use do_base_types,    only: DO_Specifier,cMat_row_type,DO_SOLVE_SVD_LSLR
-    use kind_module,       only: real_kind, int_kind, log_kind
     use mesh_module,      only: Cell,Mesh,DEGENERATE_FACE
     use parallel_info_module, only: p_info
     use parameter_module,  only: ndim,nfc,ncells
 
-    implicit none
-
     type(DO_Specifier), target, intent(IN) :: SS
-    logical(log_kind),  optional, intent(IN) :: do_BCs
+    logical, optional, intent(IN) :: do_BCs
 
     type(cMat_row_type), pointer, dimension(:) :: cM
-    real(real_kind)                            :: cM_tmp
+    real(r8) :: cM_tmp
 
-    logical(log_kind)                      :: doBCs
-    integer(int_kind)                      :: istat, idx, idx2
+    logical :: doBCs
+    integer :: istat, idx, idx2
 
   ! SVD solution on "Design Matrix"
-    real(KIND=real_kind),pointer,dimension(:,:) :: DO_cM => NULL()
+    real(r8), pointer, dimension(:,:) :: DO_cM => NULL()
 
-    integer(int_kind)                      :: c,c2,f,f2,n,m,NFN,lb,ub
-    integer(int_kind),pointer,dimension(:) :: NumFacesCell => NULL()
+    integer :: c,c2,f,f2,n,m,NFN,lb,ub
+    integer,pointer,dimension(:) :: NumFacesCell => NULL()
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     cM => NULL()
@@ -954,7 +923,7 @@ CONTAINS
           ! Find the last index in the contiguous SVD_U for a given cell
             lb = SS%SVDlb(f,c); ub = SS%SVDub(f,c)                
             DO_cM =>SS%SVD_cM(c)%Mat(:,lb:ub)
-            cM(idx)%coeff(:) = zero  ! initialize coefficient array
+            cM(idx)%coeff(:) = 0.0_r8  ! initialize coefficient array
             NGHBR_LOOP: do n=1,NFN
             ! Calculate "coefficient vector" A_face dot BinvG (MH - pg 7)
             ! It is assumed that the "diffusion coefficient" has been captured
@@ -963,7 +932,7 @@ CONTAINS
             !       DO_cM(2:ndim+1,:) refers to face gradient portion of matrix
             ! NOTE2: DO_cM may contain BC components; 1st NFN is face neighbor
             !        only portion
-              cM_tmp = zero
+              cM_tmp = 0.0_r8
               do m=1,ndim
                 cM_tmp = cM_tmp + Cell(c)%Face_Normal(m,f)*DO_cM(m+1,n)
               end do
@@ -986,10 +955,9 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: cMat_row_type
     use parameter_module,  only: nfc,ncells
-    implicit none
 
     type(cMat_row_type), pointer, dimension(:) :: cM
-    integer(int_kind)                      :: idx
+    integer :: idx
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     if(.not.ASSOCIATED(cM)) &
@@ -1008,29 +976,25 @@ CONTAINS
     !             Discretization', M. Hall, 11/06/02
     !
     !=======================================================================
-    use constants_module, only: zero
-    use do_base_types,    only: DO_Specifier,DO_SOLVE_SVD_LSLR
-    use kind_module,       only: real_kind, int_kind, log_kind
-    use mesh_module,      only: Cell,Mesh,DEGENERATE_FACE
+    use do_base_types, only: DO_Specifier,DO_SOLVE_SVD_LSLR
+    use mesh_module, only: Cell,Mesh,DEGENERATE_FACE
     use parallel_info_module, only: p_info
-    use parameter_module,  only: ndim,nfc,ncells
-
-    implicit none
+    use parameter_module, only: ndim,nfc,ncells
 
     type(DO_Specifier), target,   intent(IN) :: SS
-    logical(log_kind),  optional, intent(IN) :: do_BCs
+    logical,  optional, intent(IN) :: do_BCs
 
-    real(real_kind), pointer, dimension(:,:) :: cM 
-    real(real_kind)                          :: cM_tmp
+    real(r8), pointer, dimension(:,:) :: cM 
+    real(r8) :: cM_tmp
 
-    logical(log_kind)                      :: doBCs
-    integer(int_kind)                      :: istat, idx, idx2
+    logical :: doBCs
+    integer :: istat, idx, idx2
 
   ! SVD solution on "Design Matrix"
-    real(KIND=real_kind),pointer,dimension(:,:) :: DO_cM => NULL()
+    real(r8),pointer,dimension(:,:) :: DO_cM => NULL()
 
-    integer(int_kind)                      :: c,c2,f,f2,j,n,m,NFN,lb,ub
-    integer(int_kind),pointer,dimension(:) :: NumFacesCell => NULL()
+    integer :: c,c2,f,f2,j,n,m,NFN,lb,ub
+    integer, pointer, dimension(:) :: NumFacesCell => NULL()
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     cM => NULL()
     if(p_info%nPE /= 1) &
@@ -1042,7 +1006,7 @@ CONTAINS
       call TLS_fatal ('get_cM_full: get_cM is not currently implemented to handle boundary conditions')
     ALLOCATE(cM(ncells,nfc*ncells),STAT=istat)
     if (istat /= 0) call TLS_panic ('get_cM_full: memory allocation failure for coefficient structure')
-    cM = zero
+    cM = 0.0_r8
     idx = 1
     CELL_LOOP: do c=1,ncells
       NumFacesCell => SS%NFN_Struct(c)%ptr  ! Access face nghbr count
@@ -1077,7 +1041,7 @@ CONTAINS
             !       DO_cM(2:ndim+1,:) refers to face gradient portion of matrix
             ! NOTE2: DO_cM may contain BC components; 1st NFN is face neighbor
             !        only portion
-              cM_tmp = zero
+              cM_tmp = 0.0_r8
               do m=1,ndim
                 cM_tmp = cM_tmp + Cell(c)%Face_Normal(m,f)*DO_cM(m+1,n)
               end do
@@ -1098,15 +1062,12 @@ CONTAINS
     !             of the "coefficient matrix".
     !
     !=======================================================================
-    implicit none
-
-    real(real_kind), pointer, dimension(:,:) :: cM
+    real(r8), pointer, dimension(:,:) :: cM
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     if(.not.ASSOCIATED(cM)) &
       call TLS_panic ('DO_destroy_cM_full: attempt to DEALLOCATE unassociated coefficient matrix')
     DEALLOCATE(cM)
   END SUBROUTINE DO_destroy_cM_full
-
 
 END MODULE DO_SOLVE_SPECIFIER

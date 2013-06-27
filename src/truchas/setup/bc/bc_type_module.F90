@@ -11,10 +11,9 @@ MODULE BC_TYPE_MODULE
   !
   !=======================================================================
   use scalars_module
+  use kinds, only: r8
 
   implicit none
-
-  ! Private Module
   private
 
   ! Public Variables
@@ -27,22 +26,22 @@ MODULE BC_TYPE_MODULE
 
   ! Define BC_STRUCTURE structure ..........................
   Type BC_STRUCTURE
-     character(LEN = 1)                              :: ID
+     character :: ID
 
-     integer(KIND = int_kind)                        :: Exist
-     integer(KIND = int_kind)                        :: IFlag
-     integer(KIND = int_kind)                        :: Shift
-     integer(KIND = int_kind), pointer, dimension(:) :: Flag => null()
+     integer :: Exist
+     integer :: IFlag
+     integer :: Shift
+     integer, pointer, dimension(:) :: Flag => null()
 
-     integer,                  pointer,      dimension(:,:)   :: BCID => null()
-     integer,                  pointer,      dimension(:,:)   :: BCOperator => null()
+     integer, pointer, dimension(:,:)   :: BCID => null()
+     integer, pointer, dimension(:,:)   :: BCOperator => null()
 
-     logical(KIND = log_kind), pointer, dimension(:,:) :: UseFunc => null()
+     logical, pointer, dimension(:,:) :: UseFunc => null()
 
-     real(KIND = real_kind), pointer, dimension(:,:)   :: Value1 => null()
-     real(KIND = real_kind), pointer, dimension(:,:)   :: Value2 => null()
-     real(KIND = real_kind), pointer, dimension(:,:)   :: Value3 => null()
-     real(KIND = real_kind), pointer, dimension(:,:,:) :: Value_Array => null()
+     real(r8), pointer, dimension(:,:)   :: Value1 => null()
+     real(r8), pointer, dimension(:,:)   :: Value2 => null()
+     real(r8), pointer, dimension(:,:)   :: Value3 => null()
+     real(r8), pointer, dimension(:,:,:) :: Value_Array => null()
   End Type BC_STRUCTURE
 
   ! Declare BC_STRUCTURE structures
@@ -53,7 +52,7 @@ MODULE BC_TYPE_MODULE
 
   ! Define BIT_LOCATION structure ..........................
   type BIT_LOCATION
-     integer(KIND = int_kind), dimension(nfc) :: Face_bit
+     integer, dimension(nfc) :: Face_bit
   end type BIT_LOCATION
 
   ! Declare BIT_LOCATION structures
@@ -63,8 +62,8 @@ MODULE BC_TYPE_MODULE
 
   ! Define BOUNDARY_CONDITION structure ....................
   type BOUNDARY_CONDITION
-     integer(KIND = int_kind) :: Flag
-     integer(KIND = int_kind) :: Internal
+     integer :: Flag
+     integer :: Internal
   end type BOUNDARY_CONDITION
 
 END MODULE BC_TYPE_MODULE

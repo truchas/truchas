@@ -12,12 +12,10 @@ MODULE MESH_DISTRIBUTE_MODULE
   ! Author(s): Robert Ferrell (CPCA, Ltd., ferrell@cpca.com)
   !
   !======================================================================
-  use kind_module,      only: int_kind
+  use kinds, only: r8
   use parameter_module, only: max_domains
-
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Variables
@@ -30,8 +28,8 @@ MODULE MESH_DISTRIBUTE_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Global data provided by this module
-  integer(KIND = int_kind) :: number_domains
-  integer(KIND = int_kind), dimension(max_domains) :: NCells_List = -1, &
+  integer :: number_domains
+  integer, dimension(max_domains) :: NCells_List = -1, &
                                                       NNodes_List = -1
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -46,16 +44,12 @@ CONTAINS
     !   Assume that decomposition is already determined.
     !
     !=======================================================================
-    use truchas_logging_services
-    use kind_module,          only: int_kind, log_kind
     use mesh_module,          only: MESH_CONNECTIVITY, VERTEX_DATA
     use parallel_info_module, only: p_info
     use parameter_module,     only: ncells, ncells_tot, nnodes, nnodes_tot
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_COLLATE
 #endif
-
-    implicit none
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(ncells_tot), intent(IN)  :: Mesh_Tot
@@ -64,10 +58,10 @@ CONTAINS
     type(MESH_CONNECTIVITY), dimension(ncells),     intent(OUT) :: Mesh
 
     ! Local Variables
-    logical(KIND = log_kind)         :: fatal
-    character(LEN=128), dimension(4) :: error_string
-    integer(KIND = int_kind)         :: ncells_tot_test, nnodes_tot_test
-    integer(KIND = int_kind), allocatable, dimension(:) :: Mesh_Extents, Vertex_Extents
+    logical :: fatal
+    character(128), dimension(4) :: error_string
+    integer :: ncells_tot_test, nnodes_tot_test
+    integer, allocatable, dimension(:) :: Mesh_Extents, Vertex_Extents
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -103,8 +97,6 @@ CONTAINS
 
     deallocate (Vertex_Extents, Mesh_Extents)
 
-    return
-
   END SUBROUTINE DISTRIBUTE_MESH_VERTEX
 
   SUBROUTINE DISTRIBUTE_MESH (Mesh, Mesh_Tot, Mesh_Extents)
@@ -115,24 +107,21 @@ CONTAINS
     !   mesh data structure changes, this routine must be updated too.
     !
     !====================================================================
-    use kind_module,          only: int_kind
     use mesh_module,          only: MESH_CONNECTIVITY
     use parameter_module,     only: ncells, ncells_tot, nfc, nvc
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_DIST
 #endif
 
-    implicit none
-
     ! Argument List
-    type(MESH_CONNECTIVITY),  dimension(ncells_tot),  intent(IN)  :: Mesh_Tot
-    integer(KIND = int_kind), dimension(:), optional, intent(IN)  :: Mesh_Extents
-    type(MESH_CONNECTIVITY),  dimension(ncells),      intent(OUT) :: Mesh
+    type(MESH_CONNECTIVITY), dimension(ncells_tot), intent(IN) :: Mesh_Tot
+    integer, dimension(:), optional, intent(IN) :: Mesh_Extents
+    type(MESH_CONNECTIVITY), dimension(ncells), intent(OUT) :: Mesh
 
     ! Local Variables
-    integer(KIND = int_kind) :: i
-    integer(KIND = int_kind), dimension(ncells)     :: Local_Temp_Int
-    integer(KIND = int_kind), dimension(ncells_tot) :: Total_Temp_Int
+    integer :: i
+    integer, dimension(ncells)     :: Local_Temp_Int
+    integer, dimension(ncells_tot) :: Total_Temp_Int
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -175,8 +164,6 @@ CONTAINS
 
     end do DIST_NGBR_VRTX
 
-    return
-
   END SUBROUTINE DISTRIBUTE_MESH
 
   SUBROUTINE DISTRIBUTE_VERTEX (Vertex, Vertex_Tot, Vertex_Extents)
@@ -187,24 +174,21 @@ CONTAINS
     !   data structure changes this routine must be updated too.
     !
     !====================================================================
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: VERTEX_DATA
     use parameter_module,     only: ndim, nnodes, nnodes_tot 
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_DIST
 #endif
 
-    implicit none
-
     ! Arguments
-    type(VERTEX_DATA),        dimension(nnodes_tot),  intent(IN)  :: Vertex_Tot
-    integer(KIND = int_kind), dimension(:), optional, intent(IN)  :: Vertex_Extents
-    type(VERTEX_DATA),        dimension(nnodes),      intent(OUT) :: Vertex
+    type(VERTEX_DATA), dimension(nnodes_tot), intent(IN) :: Vertex_Tot
+    integer, dimension(:), optional, intent(IN) :: Vertex_Extents
+    type(VERTEX_DATA), dimension(nnodes), intent(OUT) :: Vertex
 
     ! Local Variables
-    integer(KIND = int_kind)         :: n
-    real(KIND = real_kind), dimension(nnodes)     :: Local_Temp_Real
-    real(KIND = real_kind), dimension(nnodes_tot) :: Total_Temp_Real
+    integer :: n
+    real(r8), dimension(nnodes)     :: Local_Temp_Real
+    real(r8), dimension(nnodes_tot) :: Total_Temp_Real
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -229,8 +213,6 @@ CONTAINS
 #endif
     Vertex%Rsum_rvol = Local_Temp_Real
 
-    return
-
   END SUBROUTINE DISTRIBUTE_VERTEX
   
   SUBROUTINE COLLATE_MESH (Mesh_Tot, Mesh)
@@ -241,23 +223,20 @@ CONTAINS
     !   mesh data structure changes, this routine must be updated too.
     !
     !====================================================================
-    use kind_module,          only: int_kind
     use mesh_module,          only: MESH_CONNECTIVITY
     use parameter_module,     only: nfc, nvc
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_COLLATE
 #endif
 
-    implicit none
-
     ! Argument List
     type(MESH_CONNECTIVITY), dimension(:), intent(IN)  :: Mesh
     type(MESH_CONNECTIVITY), dimension(:), intent(OUT) :: Mesh_Tot
 
     ! Local Variables
-    integer(KIND = int_kind) :: i
-    integer(KIND = int_kind), dimension(SIZE(Mesh,1))     :: Local_Temp_Int
-    integer(KIND = int_kind), dimension(SIZE(Mesh_Tot,1)) :: Total_Temp_Int
+    integer :: i
+    integer, dimension(SIZE(Mesh,1))     :: Local_Temp_Int
+    integer, dimension(SIZE(Mesh_Tot,1)) :: Total_Temp_Int
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -299,8 +278,6 @@ CONTAINS
        Mesh_Tot%Ngbr_vrtx(i) = Total_Temp_Int
 
     end do COLLATE_NGBR_VRTX
-
-    return
 
   END SUBROUTINE COLLATE_MESH
 

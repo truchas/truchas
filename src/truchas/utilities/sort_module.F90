@@ -63,18 +63,11 @@ MODULE SORT_MODULE
   ! Author(s): Jerry S. Brock, LANL T-3 (jsbrock@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: int_kind
-
+  use kinds, only: r8
   implicit none
-
-  ! Pivate Module
   private
 
-  ! Public Variables
-
-  ! Public Subroutines
-  public :: SORT
-  public :: REVERSE
+  public :: SORT, REVERSE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -92,9 +85,9 @@ MODULE SORT_MODULE
   END INTERFACE
 
   ! Sort Technique Parameters
-  integer(KIND = int_kind), parameter, public :: heap_sort   = 1
-  integer(KIND = int_kind), parameter, public :: insert_sort = 2
-  integer(KIND = int_kind), parameter, public :: shell_sort  = 3
+  integer, parameter, public :: heap_sort   = 1
+  integer, parameter, public :: insert_sort = 2
+  integer, parameter, public :: shell_sort  = 3
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -109,20 +102,17 @@ CONTAINS
     !   values of the real array, Array_Test. The elements of the integer
     !   array, Array_Index, are sorted in the same manner as the real array.
     !=======================================================================
-    use kind_module, only: int_kind, log_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind),               intent(IN),    optional :: sort_method
+    integer, intent(IN), optional :: sort_method
 
-    integer(KIND = int_kind), dimension(:), intent(INOUT), optional :: Array_Index
-    real(KIND = real_kind),   dimension(:), intent(INOUT)           :: Array_Test
+    integer, dimension(:), intent(INOUT), optional :: Array_Index
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    logical(KIND = log_kind) :: one_array
-    integer(KIND = int_kind) :: sort_method_flag
-    integer(KIND = int_kind) :: sort_method_default = insert_sort
+    logical :: one_array
+    integer :: sort_method_flag
+    integer :: sort_method_default = insert_sort
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -163,8 +153,6 @@ CONTAINS
           end if
     end select
 
-    return
-
   END SUBROUTINE SORT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -179,16 +167,13 @@ CONTAINS
     !   This routine was adapted from the text Numerical Recipes in Fortran,
     !   2nd Edition, Volume 2, Fortran 90, page 1171.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), dimension(:), intent(INOUT) :: Array_Test
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: i
-    integer(KIND = int_kind) :: num
+    integer :: i
+    integer :: num
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -206,8 +191,6 @@ CONTAINS
        call SIFT1_DOWN (Array_Test, 1, i-1)
     end do
 
-    return
-
   END SUBROUTINE SORT1_HEAP
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -224,17 +207,14 @@ CONTAINS
     !   This routine was adapted from the text Numerical Recipes in Fortran,
     !   2nd Edition, Volume 2, Fortran 90, page 1171.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), dimension(:), intent(INOUT) :: Array_Index
-    real(KIND = real_kind),   dimension(:), intent(INOUT) :: Array_Test
+    integer,  dimension(:), intent(INOUT) :: Array_Index
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: i
-    integer(KIND = int_kind) :: num
+    integer :: i
+    integer :: num
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -253,8 +233,6 @@ CONTAINS
        call SIFT2_DOWN (Array_Test, Array_Index, 1, i-1)
     end do
 
-    return
-
   END SUBROUTINE SORT2_HEAP
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -269,17 +247,14 @@ CONTAINS
     !   This routine was adapted from the text Numerical Recipes in Fortran,
     !   2nd Edition, Volume 2, Fortran 90, page 1167.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), dimension(:), intent(INOUT) :: Array_Test
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, j
-    integer(KIND = int_kind) :: num
-    real(KIND = real_kind)   :: tmp_test
+    integer :: i, j
+    integer :: num
+    real(r8) :: tmp_test
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -304,8 +279,6 @@ CONTAINS
        Array_Test(i+1) = tmp_test
     end do
 
-    return
-
   END SUBROUTINE SORT1_INSERT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -322,19 +295,16 @@ CONTAINS
     !   This routine was adapted from the text Numerical Recipes in Fortran,
     !   2nd Edition, Volume 2, Fortran 90, page 1167.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), dimension(:), intent(INOUT) :: Array_Index
-    real(KIND = real_kind),   dimension(:), intent(INOUT) :: Array_Test
+    integer,  dimension(:), intent(INOUT) :: Array_Index
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, j
-    integer(KIND = int_kind) :: num
-    integer(KIND = int_kind) :: tmp_index
-    real(KIND = real_kind)   :: tmp_test
+    integer :: i, j
+    integer :: num
+    integer :: tmp_index
+    real(r8) :: tmp_test
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -362,8 +332,6 @@ CONTAINS
        Array_Test (i+1) = tmp_test
     end do
 
-    return
-
   END SUBROUTINE SORT2_INSERT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -378,17 +346,14 @@ CONTAINS
     !   This routine was adapted from the text Numerical Recipes in Fortran,
     !   2nd Edition, Volume 2, Fortran 90, page 1168.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), dimension(:), intent(INOUT) :: Array_Test
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, inc, j
-    integer(KIND = int_kind) :: num
-    real(KIND = real_kind)   :: tmp_test
+    integer :: i, inc, j
+    integer :: num
+    real(r8) :: tmp_test
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -434,8 +399,6 @@ CONTAINS
        if (inc <= 1) exit
     end do
 
-    return
-
   END SUBROUTINE SORT1_SHELL
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -452,19 +415,16 @@ CONTAINS
     !   This routine was adapted from the text Numerical Recipes in Fortran,
     !   2nd Edition, Volume 2, Fortran 90, page 1168.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), dimension(:), intent(INOUT) :: Array_Index
-    real(KIND = real_kind),   dimension(:), intent(INOUT) :: Array_Test
+    integer,  dimension(:), intent(INOUT) :: Array_Index
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: i, inc, j
-    integer(KIND = int_kind) :: num
-    integer(KIND = int_kind) :: tmp_index
-    real(KIND = real_kind)   :: tmp_test
+    integer :: i, inc, j
+    integer :: num
+    integer :: tmp_index
+    real(r8) :: tmp_test
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -513,8 +473,6 @@ CONTAINS
        if (inc <= 1) exit
     end do
 
-    return
-
   END SUBROUTINE SORT2_SHELL
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -524,17 +482,14 @@ CONTAINS
     ! Purpose(s):
     !   Sift one (real) array for the Heapsort method.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind),             intent(IN)    :: left, right
-    real(KIND = real_kind), dimension(:), intent(INOUT) :: Array_Test
+    integer, intent(IN) :: left, right
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: j, jold
-    real(KIND = real_kind)   :: tmp_test
+    integer :: j, jold
+    real(r8) :: tmp_test
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -566,8 +521,6 @@ CONTAINS
     ! Replace Temporary
     Array_Test(jold) = tmp_test
 
-    return
-
   END SUBROUTINE SIFT1_DOWN
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -580,19 +533,16 @@ CONTAINS
     !   elements of the integer array, Array_Index, are sifted in the same
     !   manner as the real array.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind),               intent(IN)    :: left, right
-    integer(KIND = int_kind), dimension(:), intent(INOUT) :: Array_Index
-    real(KIND = real_kind),   dimension(:), intent(INOUT) :: Array_Test
+    integer, intent(IN) :: left, right
+    integer,  dimension(:), intent(INOUT) :: Array_Index
+    real(r8), dimension(:), intent(INOUT) :: Array_Test
 
     ! Local Variables
-    integer(KIND = int_kind) :: j, jold
-    integer(KIND = int_kind) :: tmp_index
-    real(KIND = real_kind)   :: tmp_test
+    integer :: j, jold
+    integer :: tmp_index
+    real(r8)   :: tmp_test
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -627,8 +577,6 @@ CONTAINS
     Array_Test (jold) = tmp_test
     Array_Index(jold) = tmp_index
 
-    return
-
   END SUBROUTINE SIFT2_DOWN
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -638,17 +586,14 @@ CONTAINS
     ! Purpose(s):
     !   Reverse the order of an integer array.
     !=======================================================================
-    use kind_module, only: int_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), dimension(:), intent(INOUT) :: A
+    integer, dimension(:), intent(INOUT) :: A
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
-    integer(KIND = int_kind) :: num
-    integer(KIND = int_kind), dimension(SIZE(A)) :: Tmp
+    integer :: n
+    integer :: num
+    integer, dimension(SIZE(A)) :: Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -660,8 +605,6 @@ CONTAINS
        Tmp(n) = A(num - n + 1)
     end do
     A = Tmp
-
-    return
 
   END SUBROUTINE REVERSE_INTEGER
 
@@ -672,17 +615,14 @@ CONTAINS
     ! Purpose(s):
     !   Reverse the order of a real array.
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), dimension(:), intent(INOUT) :: A
+    real(r8), dimension(:), intent(INOUT) :: A
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
-    integer(KIND = int_kind) :: num
-    real(KIND = real_kind), dimension(SIZE(A)) :: Tmp
+    integer :: n
+    integer :: num
+    real(r8), dimension(SIZE(A)) :: Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -695,8 +635,6 @@ CONTAINS
     end do
     A = Tmp
 
-    return
-
   END SUBROUTINE REVERSE_REAL
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -706,16 +644,13 @@ CONTAINS
     ! Purpose(s):
     !   Swap two integer values.
     !=======================================================================
-    use kind_module, only: int_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(INOUT) :: a
-    integer(KIND = int_kind), intent(INOUT) :: b
+    integer, intent(INOUT) :: a
+    integer, intent(INOUT) :: b
 
     ! Local Variables
-    integer(KIND = int_kind) :: tmp
+    integer :: tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -723,8 +658,6 @@ CONTAINS
     tmp = a
     a = b
     b = tmp
-
-    return
 
   END SUBROUTINE SWAP_INTEGER
 
@@ -735,16 +668,13 @@ CONTAINS
     ! Purpose(s):
     !   Swap two rank one integer arrays.
     !=======================================================================
-    use kind_module, only: int_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), dimension(:), intent(INOUT) :: A
-    integer(KIND = int_kind), dimension(:), intent(INOUT) :: B
+    integer, dimension(:), intent(INOUT) :: A
+    integer, dimension(:), intent(INOUT) :: B
 
     ! Local Variables
-    integer(KIND = int_kind), dimension(SIZE(A)) :: Tmp
+    integer, dimension(SIZE(A)) :: Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -752,8 +682,6 @@ CONTAINS
     Tmp = A
     A = B
     B = Tmp
-
-    return
 
   END SUBROUTINE SWAP_INTEGER_R1
 
@@ -764,16 +692,13 @@ CONTAINS
     ! Purpose(s):
     !   Swap two real values.
     !=======================================================================
-    use kind_module, only: real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), intent(INOUT) :: a
-    real(KIND = real_kind), intent(INOUT) :: b
+    real(r8), intent(INOUT) :: a
+    real(r8), intent(INOUT) :: b
 
     ! Local Variables
-    real(KIND = real_kind) :: tmp
+    real(r8) :: tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -781,8 +706,6 @@ CONTAINS
     tmp = a
     a = b
     b = tmp
-
-    return
 
   END SUBROUTINE SWAP_REAL
 
@@ -793,16 +716,13 @@ CONTAINS
     ! Purpose(s):
     !   Swap two rank one real arrays.
     !=======================================================================
-    use kind_module, only: real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), dimension(:), intent(INOUT) :: A
-    real(KIND = real_kind), dimension(:), intent(INOUT) :: B
+    real(r8), dimension(:), intent(INOUT) :: A
+    real(r8), dimension(:), intent(INOUT) :: B
 
     ! Local Variables
-    real(KIND = real_kind), dimension(SIZE(A)) :: Tmp
+    real(r8), dimension(SIZE(A)) :: Tmp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -810,8 +730,6 @@ CONTAINS
     Tmp = A
     A = B
     B = Tmp
-
-    return
 
   END SUBROUTINE SWAP_REAL_R1
 

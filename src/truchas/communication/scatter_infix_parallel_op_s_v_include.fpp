@@ -29,11 +29,7 @@
 #endif
 
   SUBROUTINE _ROUTINE_NAME_ (Dest, Src, Mesh, TYPE, TRACE, BOUNDARY, MASK)
-    use truchas_logging_services, only: TLS_panic
-    use kind_module
     use mesh_module,  only: MESH_CONNECTIVITY
-
-    implicit none
 
     ! Arguments
     _DATA_TYPE_             , dimension(:),                          &
@@ -45,7 +41,7 @@
     _DATA_TYPE_             , dimension(:),                          &         
                               POINTER,                               &
                               OPTIONAL                               :: BOUNDARY
-    logical(KIND = log_kind), dimension(:,:),&
+    logical,                  dimension(:,:),&
                               intent(IN ),                           &
                               OPTIONAL                               :: MASK
     type (COMM_TYPE),         intent(IN   )                          :: TYPE
@@ -53,8 +49,8 @@
     type (PGSLib_GS_Trace), POINTER :: Trace
 
     ! Local scalars & arrays
-    integer(KIND = int_kind) :: v, n, f, c
-    logical(KIND = log_kind) :: PRESENT_MASK, TEMP_BOUNDARY, NEW_BOUNDARY
+    integer :: v, n, f, c
+    logical :: PRESENT_MASK, TEMP_BOUNDARY, NEW_BOUNDARY
     _DATA_TYPE_, POINTER,  Dimension(:) :: Supplement_Data
     _DATA_TYPE_, POINTER,  dimension(:) :: Duplicate_Data
 

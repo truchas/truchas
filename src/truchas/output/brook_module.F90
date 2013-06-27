@@ -2552,9 +2552,6 @@ CONTAINS
                      STATUS   = 'unknown',           &
                      POSITION = TRIM(File_Position), &
                      FORM     = TRIM(File_Form),     & 
-#ifdef DARWIN_NAG_COMPILER_WORKAROUND
-	             RECL    = 16777216,              &
-#endif
                      IOSTAT=iStatus)
                 if (iStatus == BE_NONE ) then
                    call Brook_Write_File_Header(B, iStatus)

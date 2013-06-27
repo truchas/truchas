@@ -24,14 +24,9 @@ MODULE LU_SOLVE_MODULE
   ! Author(s): Jerry S. Brock, LANL T-3 (jsbrock@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: int_kind
-
+  use kinds, only: r8
   implicit none
-
-  ! Private Module
   private
-
-  ! Public Variables
 
   ! Public Subroutines
   public :: LU_SOLVE
@@ -39,9 +34,9 @@ MODULE LU_SOLVE_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Factorization/Solution Parameters
-  integer(KIND = int_kind), parameter, public :: factorize = 1 ! Factorization Only
-  integer(KIND = int_kind), parameter, public :: backsolve = 2 ! Back Substitution Only
-  integer(KIND = int_kind), parameter, public :: factsolve = 3 ! Factorization
+  integer, parameter, public :: factorize = 1 ! Factorization Only
+  integer, parameter, public :: backsolve = 2 ! Back Substitution Only
+  integer, parameter, public :: factsolve = 3 ! Factorization
                                                                ! and Back Substitution
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -73,21 +68,18 @@ CONTAINS
     !   pivot = .true.  : LU-Factorization with Partial Pivoting
     !   pivot = .false. : LU-Factorization without Partial Pivoting
     !=======================================================================
-    use kind_module,  only: int_kind, log_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    logical(KIND = log_kind), intent(IN), optional :: pivot
-    integer(KIND = int_kind), intent(IN), optional :: solve
+    logical, intent(IN), optional :: pivot
+    integer, intent(IN), optional :: solve
 
-    real(KIND = real_kind),   dimension(:,:), intent(INOUT)           :: A
-    real(KIND = real_kind),   dimension(:),   intent(INOUT)           :: B
-    integer(KIND = int_kind), dimension(:),   intent(INOUT), optional :: Indx
+    real(r8), dimension(:,:), intent(INOUT) :: A
+    real(r8), dimension(:),   intent(INOUT) :: B
+    integer,  dimension(:),   intent(INOUT), optional :: Indx
 
     ! Local Variables
-    logical(KIND = log_kind) :: pivot_flag
-    logical(KIND = log_kind) :: pivot_default = .false.
+    logical :: pivot_flag
+    logical :: pivot_default = .false.
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -109,8 +101,6 @@ CONTAINS
        call LUINP (A, B, Indx, solve)
     end select
 
-    return
-
   END SUBROUTINE LU_SOLVE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -130,19 +120,16 @@ CONTAINS
     !   solve = backsolve : Back Substitution Only
     !   solve = factsolve : LU-Factorization and Back Substitution
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN), optional :: solve
+    integer, intent(IN), optional :: solve
 
-    real(KIND = real_kind), dimension(:,:), intent(INOUT) :: A
-    real(KIND = real_kind), dimension(:),   intent(INOUT) :: B
+    real(r8), dimension(:,:), intent(INOUT) :: A
+    real(r8), dimension(:),   intent(INOUT) :: B
 
     ! Local Variables
-    integer(KIND = int_kind) :: solve_flag
-    integer(KIND = int_kind) :: solve_default = factsolve
+    integer :: solve_flag
+    integer :: solve_default = factsolve
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -164,8 +151,6 @@ CONTAINS
        call LUINV_BACKSOLVE (A, B)
     end select
 
-    return
-
   END SUBROUTINE LUINV
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -180,16 +165,13 @@ CONTAINS
     !     Lower Triangular Matrix (L) - Full Matrix with Identity Diagonal
     !   Back Substitution: L*y=b and U*x=y
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), dimension(:,:), intent(INOUT) :: A
+    real(r8), dimension(:,:), intent(INOUT) :: A
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
-    integer(KIND = int_kind) :: i, j, k
+    integer :: n
+    integer :: i, j, k
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -214,8 +196,6 @@ CONTAINS
        end do
     end do
 
-    return
-
   END SUBROUTINE LUINV_FACTORIZE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -231,17 +211,14 @@ CONTAINS
     !     Lower Triangular Matrix (L) - Full Matrix with Identity Diagonal
     !   Back Substitution: L*y=b and U*x=y
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind), dimension(:,:), intent(IN)    :: A
-    real(KIND = real_kind), dimension(:),   intent(INOUT) :: B
+    real(r8), dimension(:,:), intent(IN)    :: A
+    real(r8), dimension(:),   intent(INOUT) :: B
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
-    integer(KIND = int_kind) :: i, j
+    integer :: n
+    integer :: i, j
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -265,8 +242,6 @@ CONTAINS
        B(i) = B(i)/A(i,i)
     end do
 
-    return
-
   END SUBROUTINE LUINV_BACKSOLVE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -287,20 +262,17 @@ CONTAINS
     !   solve = backsolve : Back Substitution Only
     !   solve = factsolve : LU-Factorization and Back Substitution
     !=======================================================================
-    use kind_module,      only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    integer(KIND = int_kind), intent(IN), optional :: solve
+    integer, intent(IN), optional :: solve
 
-    real(KIND = real_kind),   dimension(:,:), intent(INOUT) :: A
-    real(KIND = real_kind),   dimension(:),   intent(INOUT) :: B
-    integer(KIND = int_kind), dimension(:),   intent(INOUT) :: Indx
+    real(r8), dimension(:,:), intent(INOUT) :: A
+    real(r8), dimension(:),   intent(INOUT) :: B
+    integer,  dimension(:),   intent(INOUT) :: Indx
 
     ! Local Variables
-    integer(KIND = int_kind) :: solve_flag
-    integer(KIND = int_kind) :: solve_default = factsolve
+    integer :: solve_flag
+    integer :: solve_default = factsolve
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -322,8 +294,6 @@ CONTAINS
        call LUINP_BACKSOLVE (A, B, Indx)
     end select
 
-    return
-
   END SUBROUTINE LUINP
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -339,23 +309,18 @@ CONTAINS
     !     Lower Triangular Matrix (L) - Full Matrix with Identity Diagonal
     !   Back Substitution: L*y=b and U*x=y
     !=======================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: int_kind, real_kind
-
-    implicit none
-
     ! Argument List
-    real(KIND = real_kind),   dimension(:,:),       intent(INOUT) :: A
-    integer(KIND = int_kind), dimension(SIZE(A,1)), intent(INOUT) :: Indx
+    real(r8), dimension(:,:), intent(INOUT) :: A
+    integer, dimension(SIZE(A,1)), intent(INOUT) :: Indx
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
-    integer(KIND = int_kind) :: imax
-    integer(KIND = int_kind) :: i, j, k
+    integer :: n
+    integer :: imax
+    integer :: i, j, k
 
-    real(KIND = real_kind) :: dum
-    real(KIND = real_kind) :: smax
-    real(KIND = real_kind), dimension(SIZE(A,1)) :: T
+    real(r8) :: dum
+    real(r8) :: smax
+    real(r8), dimension(SIZE(A,1)) :: T
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -364,11 +329,11 @@ CONTAINS
 
     ! LU-Factorization: A*x=L*U*x=b
     do i = 1, n
-       T(i) = zero
+       T(i) = 0.0_r8
        do j = 1, n
           if (ABS(A(i,j)) > T(i)) T(i) = ABS(A(i,j))
        end do
-       T(i) = one/T(i)
+       T(i) = 1.0_r8/T(i)
     end do
 
     do j = 1, n
@@ -379,7 +344,7 @@ CONTAINS
        end do
 
        imax = j
-       smax = zero
+       smax = 0.0_r8
        do i = j, n
           do k = 1, j-1
              A(i,j) = A(i,j) - A(i,k)*A(k,j)
@@ -405,8 +370,6 @@ CONTAINS
        end do
     end do
 
-    return
-
   END SUBROUTINE LUINP_FACTORIZE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -422,19 +385,16 @@ CONTAINS
     !     Lower Triangular Matrix (L) - Full Matrix with Identity Diagonal
     !   Back Substitution: L*y=b and U*x=y
     !=======================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Argument List
-    real(KIND = real_kind),   dimension(:,:),       intent(IN)    :: A
-    real(KIND = real_kind),   dimension(:),         intent(INOUT) :: B
-    integer(KIND = int_kind), dimension(SIZE(A,1)), intent(IN)    :: Indx
+    real(r8), dimension(:,:), intent(IN)    :: A
+    real(r8), dimension(:),   intent(INOUT) :: B
+    integer, dimension(SIZE(A,1)), intent(IN) :: Indx
 
     ! Local Variables
-    integer(KIND = int_kind) :: n
-    integer(KIND = int_kind) :: i, j
-    real(KIND = real_kind), dimension(SIZE(A,1)) :: T
+    integer :: n
+    integer :: i, j
+    real(r8), dimension(SIZE(A,1)) :: T
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -460,8 +420,6 @@ CONTAINS
        end do
        B(i) = B(i)/A(i,i)
     end do
-
-    return
 
   END SUBROUTINE LUINP_BACKSOLVE
 

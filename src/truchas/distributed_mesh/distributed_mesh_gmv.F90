@@ -58,11 +58,11 @@ contains
     character(len=*) :: file
     !! 4-byte integer data and 8-byte real data.
     !if (is_IOP) call gmvwrite_openfile_ir (file, 4, 8) ! GMV bug with node ids
-    if (is_IOP) call gmvwrite_openfile_ir_ascii_f (file, 4, 8)
+    if (is_IOP) call gmvwrite_openfile_ir_ascii (file, 4, 8)
   end subroutine gmv_open
 
   subroutine gmv_close ()
-    if (is_IOP) call gmvwrite_closefile_f ()
+    if (is_IOP) call gmvwrite_closefile ()
   end subroutine gmv_close
 
   subroutine gmv_write_dist_mesh (mesh)
@@ -94,10 +94,10 @@ contains
         INSIST( .false. )
       end select
 
-      call gmvwrite_node_data_f (size(x,dim=2), x(1,:), x(2,:), x(3,:))
-      call gmvwrite_cell_header_f (size(cnode,dim=2))
+      call gmvwrite_node_data (size(x,dim=2), x(1,:), x(2,:), x(3,:))
+      call gmvwrite_cell_header (size(cnode,dim=2))
       do j = 1, size(cnode,dim=2)
-        call gmvwrite_cell_type_f (cell_type, size(cnode,dim=1), cnode(:,j))
+        call gmvwrite_cell_type (cell_type, size(cnode,dim=1), cnode(:,j))
       end do
 
     end if
@@ -105,23 +105,23 @@ contains
     !! Write external mesh node numbers as the nodeids -- GMV uses these for display.
     call allocate_collated_array (map, size(x,dim=2))
     call collate (map, mesh%xnode(:mesh%nnode_onP))
-    if (is_IOP) call gmvwrite_nodeids_f (map)
+    if (is_IOP) call gmvwrite_nodeids (map)
     deallocate (map)
 
     !! Write external mesh cell numbers as the cellids -- GMV uses these for display.
     call allocate_collated_array (map, size(cnode,dim=2))
     call collate (map, mesh%xcell(:mesh%ncell_onP))
-    if (is_IOP) call gmvwrite_cellids_f (map)
+    if (is_IOP) call gmvwrite_cellids (map)
     deallocate (map)
 
     if (is_IOP) then
     
       !! Write the cell block IDs as the cell material.
-      call gmvwrite_material_header_f (size(mesh%block_id), CELLDATA)
+      call gmvwrite_material_header (size(mesh%block_id), CELLDATA)
       do j = 1, size(mesh%block_id)
-        call gmvwrite_material_name_f ('block'//i_to_c(mesh%block_id(j)))
+        call gmvwrite_material_name ('block'//i_to_c(mesh%block_id(j)))
       end do
-      call gmvwrite_material_ids_f (cblock, CELLDATA)
+      call gmvwrite_material_ids (cblock, CELLDATA)
 
     end if
 
@@ -130,17 +130,17 @@ contains
     !! If in parallel write partitioning info as flags.
     if (nPE > 1) then
 
-      if (is_IOP) call gmvwrite_flag_header_f ()
+      if (is_IOP) call gmvwrite_flag_header ()
 
       !! Cell partitioning info ...
       call allocate_collated_array (pdata, global_size(mesh%cell_ip))
       call collate (pdata, spread(this_PE, dim=1, ncopies=onP_size(mesh%cell_ip)))
       if (is_IOP) then
-        call gmvwrite_flag_name_f ('cellpart', nPE, CELLDATA)
+        call gmvwrite_flag_name ('cellpart', nPE, CELLDATA)
         do j = 1, nPE
-          call gmvwrite_flag_subname_f('P'//i_to_c(j))
+          call gmvwrite_flag_subname('P'//i_to_c(j))
         end do
-        call gmvwrite_flag_data_f (CELLDATA, pdata)
+        call gmvwrite_flag_data (CELLDATA, pdata)
       end if
       deallocate(pdata)
 
@@ -148,15 +148,15 @@ contains
       call allocate_collated_array (pdata, global_size(mesh%node_ip))
       call collate (pdata, spread(this_PE, dim=1, ncopies=onP_size(mesh%node_ip)))
       if (is_IOP) then
-        call gmvwrite_flag_name_f ('nodepart', nPE, NODEDATA)
+        call gmvwrite_flag_name ('nodepart', nPE, NODEDATA)
         do j = 1, nPE
-          call gmvwrite_flag_subname_f('P'//i_to_c(j))
+          call gmvwrite_flag_subname('P'//i_to_c(j))
         end do
-        call gmvwrite_flag_data_f (NODEDATA, pdata)
+        call gmvwrite_flag_data (NODEDATA, pdata)
       end if
       deallocate(pdata)
 
-      if (is_IOP) call gmvwrite_flag_endflag_f ()
+      if (is_IOP) call gmvwrite_flag_endflag ()
 
     end if
 
@@ -166,14 +166,14 @@ contains
     real(kind=r8), intent(in), optional :: time
     integer, intent(in), optional :: seq
     if (is_IOP) then
-      if (present(time)) call gmvwrite_probtime_f (time)
-      if (present(seq))  call gmvwrite_cycleno_f (seq)
-      call gmvwrite_variable_header_f()
+      if (present(time)) call gmvwrite_probtime (time)
+      if (present(seq))  call gmvwrite_cycleno (seq)
+      call gmvwrite_variable_header()
     end if
   end subroutine gmv_begin_variables
 
   subroutine gmv_end_variables ()
-    if (is_IOP) call gmvwrite_variable_endvars_f()
+    if (is_IOP) call gmvwrite_variable_endvars()
   end subroutine gmv_end_variables
 
   subroutine gmv_write_dist_cell_var (mesh, u, name)
@@ -192,7 +192,7 @@ contains
 
     call allocate_collated_array (u_global, global_size(mesh%cell_ip))
     call collate (u_global, u)
-    if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
+    if (is_IOP) call gmvwrite_variable_name_data (CELLDATA, name, u_global)
     deallocate(u_global)
 
   end subroutine gmv_write_dist_cell_var

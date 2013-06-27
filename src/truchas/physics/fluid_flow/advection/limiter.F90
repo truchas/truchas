@@ -14,18 +14,12 @@ MODULE LIMITER
   !
   !
   !=======================================================================
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: slopeLimiter, fluxLimiterThuburn, limitGradient
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  ! Limiter namelist variables
-  ! character(LEN = 80), public, save :: limiter_type
 
 CONTAINS
 
@@ -40,25 +34,21 @@ CONTAINS
     !      
     !=======================================================================
 
-    use gs_module,                 only: EE_GATHER
-    use kind_module,               only: real_kind, int_kind
-    use mesh_module,               only: Cell, Mesh
-    use parameter_module,          only: ncells, ndim, nfc
-    use truchas_logging_services
-
-    implicit none
+    use gs_module, only: EE_GATHER
+    use mesh_module, only: Cell, Mesh
+    use parameter_module, only: ncells, ndim, nfc
 
     ! Argument List
-    real(real_kind), dimension(:),    intent(IN)    :: Phi
-    real(real_kind), dimension(:,:),  intent(INOUT) :: gradPhi
-    character(LEN = *), optional,     intent(IN)    :: method
+    real(r8), dimension(:), intent(IN) :: Phi
+    real(r8), dimension(:,:), intent(INOUT) :: gradPhi
+    character(*), optional, intent(IN) :: method
 
     ! Local Variables
-    integer(int_kind)                             :: f,i,status
-    real(real_kind), dimension(:,:), allocatable        :: Flux_Phi
-    real(real_kind), dimension(:,:), allocatable        :: Ngbr_flux_Phi
-    real(real_kind), dimension(:),   allocatable        :: Psi, Tmp1, Tmp2
-    real(real_kind), dimension(:,:), allocatable        :: Ngbr_Phi
+    integer :: f,i,status
+    real(r8), dimension(:,:), allocatable :: Flux_Phi
+    real(r8), dimension(:,:), allocatable :: Ngbr_flux_Phi
+    real(r8), dimension(:),   allocatable :: Psi, Tmp1, Tmp2
+    real(r8), dimension(:,:), allocatable :: Ngbr_Phi
 
     ALLOCATE (Flux_Phi(nfc,ncells),      &
               Ngbr_flux_Phi(nfc,ncells), &
@@ -109,31 +99,25 @@ CONTAINS
     !           limiting.
     !      
     !=======================================================================
-    use constants_module, only: one, one_third, zero, two
     use cutoffs_module,   only: alittle
-    use kind_module,      only: int_kind, log_kind, real_kind
     use parameter_module, only: ncells
     use mesh_module,      only: Cell
-    use truchas_logging_services
-  
-    implicit none
 
     ! Arguments
-    real(real_kind), dimension(:),     intent(IN)  :: Extrapolated_Value
-    real(real_kind), dimension(:),     intent(IN)  :: Cell_Value
-    real(real_kind), dimension(:,:),   intent(IN)  :: Neighbor_Values
-    real(real_kind), dimension(:),     intent(OUT) :: Slope_Limiter
-    integer(int_kind),                 intent(IN)  :: element
-    character(LEN = *), optional,      intent(IN)  :: location
-    character(LEN = *), optional,      intent(IN)  :: method
+    real(r8), dimension(:),   intent(IN)  :: Extrapolated_Value
+    real(r8), dimension(:),   intent(IN)  :: Cell_Value
+    real(r8), dimension(:,:), intent(IN)  :: Neighbor_Values
+    real(r8), dimension(:),   intent(OUT) :: Slope_Limiter
+    integer, intent(IN)  :: element
+    character(*), optional, intent(IN) :: location
+    character(*), optional, intent(IN) :: method
 
     ! Local Variables
-    logical(log_kind) :: specified_method, specified_location
-    character(LEN = 80) :: limiter_method = 'Venkat', &
-                           limiter_location = 'face'
-    integer(int_kind)                  :: status
-    real(real_kind)                    :: Venkat_constant = one_third
-    real(real_kind), dimension(:), allocatable :: Tmp1, Tmp2, Tmp3, Tmp4
+    logical :: specified_method, specified_location
+    character(80) :: limiter_method = 'Venkat', limiter_location = 'face'
+    integer :: status
+    real(r8) :: Venkat_constant = 1.0_r8 / 3.0_r8
+    real(r8), dimension(:), allocatable :: Tmp1, Tmp2, Tmp3, Tmp4
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -156,7 +140,7 @@ CONTAINS
        ! No limiting; set slope limiter to unity
        case default
 
-          Slope_Limiter = one
+          Slope_Limiter = 1.0_r8
 
        ! Venkatakrishnan's Limiter (AIAA Paper #AIAA-93-0880)
        case ('Venkat')
@@ -164,17 +148,17 @@ CONTAINS
           Tmp1 = MAX(Cell_Value, Neighbor_Values(element,:)) - Cell_Value
           Tmp2 = MIN(Cell_Value, Neighbor_Values(element,:)) - Cell_Value
           Tmp3 = Extrapolated_Value - Cell_Value
-          Tmp3 = SIGN(one,Tmp3)*(ABS(Tmp3) + alittle)
-          Tmp4 = (Cell%Volume)**one_third  ! Approximation of cell length
+          Tmp3 = SIGN(1.0_r8,Tmp3)*(ABS(Tmp3) + alittle)
+          Tmp4 = (Cell%Volume)**(1.0_r8/3.0_r8)  ! Approximation of cell length
           Tmp4 = (Venkat_constant*Tmp4)**3
           where (Tmp3 > alittle)
-             Slope_Limiter = (Tmp3*(Tmp1**2 + Tmp4) + two*Tmp1*Tmp3**2) / &
-                         (Tmp1**2 + two*Tmp3**2 + Tmp1*Tmp3 + Tmp4 + alittle)
+             Slope_Limiter = (Tmp3*(Tmp1**2 + Tmp4) + 2.0_r8*Tmp1*Tmp3**2) / &
+                         (Tmp1**2 + 2.0_r8*Tmp3**2 + Tmp1*Tmp3 + Tmp4 + alittle)
           elsewhere
-             Slope_Limiter = (Tmp3*(Tmp2**2 + Tmp4) + two*Tmp2*Tmp3**2) / &
-                         (Tmp2**2 + two*Tmp3**2 + Tmp2*Tmp3 + Tmp4 + alittle)
+             Slope_Limiter = (Tmp3*(Tmp2**2 + Tmp4) + 2.0_r8*Tmp2*Tmp3**2) / &
+                         (Tmp2**2 + 2.0_r8*Tmp3**2 + Tmp2*Tmp3 + Tmp4 + alittle)
           end where
-          Slope_Limiter = MERGE(one, Slope_Limiter/Tmp3, ABS(Tmp3) <= alittle)
+          Slope_Limiter = MERGE(1.0_r8, Slope_Limiter/Tmp3, ABS(Tmp3) <= alittle)
 
        ! Barth's Limiter (AIAA Paper #AIAA-89-0366)
        case ('Barth')
@@ -184,16 +168,16 @@ CONTAINS
           Tmp3 = Extrapolated_Value - Cell_Value
           Tmp3 = MERGE(alittle, Tmp3, ABS(Tmp3) <= alittle)
           where (Tmp3 >= alittle)
-             Slope_Limiter = MIN(one, Tmp1/Tmp3)
+             Slope_Limiter = MIN(1.0_r8, Tmp1/Tmp3)
           elsewhere
-             Slope_Limiter = MIN(one, Tmp2/Tmp3)
+             Slope_Limiter = MIN(1.0_r8, Tmp2/Tmp3)
           end where
-          Slope_Limiter = MERGE(one, Slope_Limiter, ABS(Tmp3) <= alittle)
+          Slope_Limiter = MERGE(1.0_r8, Slope_Limiter, ABS(Tmp3) <= alittle)
 
     end select
 
     ! Make sure the limiter is bounded by zero and one
-    Slope_Limiter = MIN(one, MAX(zero, Slope_Limiter))
+    Slope_Limiter = MIN(1.0_r8, MAX(0.0_r8, Slope_Limiter))
 
     DEALLOCATE (Tmp1, Tmp2, Tmp3, Tmp4)
 
@@ -210,47 +194,42 @@ CONTAINS
     !           the mass.
     !     
     !=======================================================================
-    use constants_module, only: zero
-    use kind_module,      only: int_kind, log_kind, real_kind
     use parameter_module, only: ncells, nfc
     use gs_module,        only: EE_GATHER
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    real(real_kind), dimension(:),     intent(IN)     :: phi
-    real(real_kind), dimension(:,:),   intent(INOUT)  :: facePhi
-    real(real_kind), dimension(:,:),   intent(IN)     :: Face_flx_vols
-    real(real_kind), dimension(:,:),   intent(IN)     :: Fluxing_Velocity
-    real(real_kind), dimension(:,:),   intent(IN)     :: ModFluxVolume
-    real(real_kind), dimension(:),     intent(IN)     :: ModVolume
-    real(real_kind), dimension(:),   intent(INOUT)    :: phimin
-    real(real_kind), dimension(:),   intent(INOUT)    :: phimax
+    real(r8), dimension(:),     intent(IN)     :: phi
+    real(r8), dimension(:,:),   intent(INOUT)  :: facePhi
+    real(r8), dimension(:,:),   intent(IN)     :: Face_flx_vols
+    real(r8), dimension(:,:),   intent(IN)     :: Fluxing_Velocity
+    real(r8), dimension(:,:),   intent(IN)     :: ModFluxVolume
+    real(r8), dimension(:),     intent(IN)     :: ModVolume
+    real(r8), dimension(:),   intent(INOUT)    :: phimin
+    real(r8), dimension(:),   intent(INOUT)    :: phimax
 
-    logical(log_kind), dimension(:,:), intent(IN)   :: InflowMask
+    logical, dimension(:,:), intent(IN) :: InflowMask
 
     ! Local Variables
-    real(real_kind)          :: phiInMin, phiInMax, fluxVolume
-    integer(int_kind)        :: f,i,status
+    real(r8) :: phiInMin, phiInMax, fluxVolume
+    integer :: f,i,status
 
     ! memory for neighbor values of cell quantities...    
 
-    real(real_kind), dimension(:,:), allocatable :: phiUpMin_Ngbr
-    real(real_kind), dimension(:,:), allocatable :: phiUpMax_Ngbr
-    real(real_kind), dimension(:,:), allocatable :: facePhi_Ngbr
+    real(r8), dimension(:,:), allocatable :: phiUpMin_Ngbr
+    real(r8), dimension(:,:), allocatable :: phiUpMax_Ngbr
+    real(r8), dimension(:,:), allocatable :: facePhi_Ngbr
 
-    real(real_kind), dimension(:),   allocatable :: phiUpMin   
-    real(real_kind), dimension(:),   allocatable :: phiUpMax   
-    real(real_kind), dimension(:),   allocatable :: phiMp1Min  
-    real(real_kind), dimension(:),   allocatable :: phiMp1Max  
-    real(real_kind), dimension(:),   allocatable :: sumVolIn   
-    real(real_kind), dimension(:),   allocatable :: sumVolOut  
-    real(real_kind), dimension(:),   allocatable :: sumPhiVolInMin
-    real(real_kind), dimension(:),   allocatable :: sumPhiVolInMax
-    real(real_kind), dimension(:),   allocatable :: PhiOutMin
-    real(real_kind), dimension(:),   allocatable :: PhiOutMax
-    real(real_kind), dimension(:,:),   allocatable :: Phi_Ngbr
+    real(r8), dimension(:),   allocatable :: phiUpMin   
+    real(r8), dimension(:),   allocatable :: phiUpMax   
+    real(r8), dimension(:),   allocatable :: phiMp1Min  
+    real(r8), dimension(:),   allocatable :: phiMp1Max  
+    real(r8), dimension(:),   allocatable :: sumVolIn   
+    real(r8), dimension(:),   allocatable :: sumVolOut  
+    real(r8), dimension(:),   allocatable :: sumPhiVolInMin
+    real(r8), dimension(:),   allocatable :: sumPhiVolInMax
+    real(r8), dimension(:),   allocatable :: PhiOutMin
+    real(r8), dimension(:),   allocatable :: PhiOutMax
+    real(r8), dimension(:,:),   allocatable :: Phi_Ngbr
 
 
     ALLOCATE (phiUpMin_Ngbr(nfc,ncells),  &
@@ -278,10 +257,10 @@ CONTAINS
     phiMp1Min   = Phi
     phiMp1Max   = Phi
     ! initialize values to zero...
-    sumVolIn       = zero
-    sumVolOut      = zero
-    sumPhiVolInMin = zero
-    sumPhiVolInMax = zero
+    sumVolIn       = 0.0_r8
+    sumVolOut      = 0.0_r8
+    sumPhiVolInMin = 0.0_r8
+    sumPhiVolInMax = 0.0_r8
 
     call EE_GATHER (Phi_Ngbr, Phi)
 
@@ -296,16 +275,16 @@ CONTAINS
     end do
     
     do f = 1,nfc
-       where (Fluxing_Velocity(f,:) < zero)
+       where (Fluxing_Velocity(f,:) < 0.0_r8)
           phiUpMin(:) = min(Phi_Ngbr(f,:), phiUpMin(:))
           phiUpMax(:) = max(Phi_Ngbr(f,:), phiUpMax(:))
        end where
     end do ! nfc loop...
 
     ! do our EE_Gathers up front...
-    phiUpMin_Ngbr = zero
-    phiUpMax_Ngbr = zero
-    facePhi_Ngbr  = zero
+    phiUpMin_Ngbr = 0.0_r8
+    phiUpMax_Ngbr = 0.0_r8
+    facePhi_Ngbr  = 0.0_r8
     call EE_GATHER (phiUpMin_Ngbr,phiUpMin)
     call EE_GATHER (phiUpMax_Ngbr,phiUpMax)
     call EE_GATHER (facePhi_Ngbr(:,:), facePhi(:,:))
@@ -326,7 +305,7 @@ CONTAINS
        do f=1,nfc
 
           ! is face an inflow face...
-          if (Fluxing_Velocity(f,i) < zero) then
+          if (Fluxing_Velocity(f,i) < 0.0_r8) then
 
              ! phi in (to the accecptor cell) min and max on this face...
              phiInMin = min(phiUpMin_Ngbr(f,i), phi(i))
@@ -369,7 +348,7 @@ CONTAINS
     do i=1,ncells
        do f=1,nfc
           ! is face an inflow face...
-          if (Fluxing_Velocity(f,i) > zero) then
+          if (Fluxing_Velocity(f,i) > 0.0_r8) then
              sumVolOut(i)          = sumVolOut(i)    +  abs(Face_flx_vols(f,i))
              ! make sure both sides of face have the same inflow limited value...
              facePhi(f,i)          = facePhi_Ngbr(f, i)
@@ -390,7 +369,7 @@ CONTAINS
     do i=1,ncells
        do f=1,nfc
           ! is face an outflow face...
-          if (Fluxing_Velocity(f,i) > zero) then
+          if (Fluxing_Velocity(f,i) > 0.0_r8) then
              facePhi(f,i) = min(facePhi(f,i),phiOutMax(i))
              facePhi(f,i) = max(facePhi(f,i),phiOutMin(i))
           end if

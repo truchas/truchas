@@ -12,8 +12,7 @@ Module signal_module
   Implicit None
   Private
 
-  Public SignalSet,    &
-         SignalInquire
+  Public SignalSet, SignalInquire
 
   Interface
      Subroutine SignalSet ()

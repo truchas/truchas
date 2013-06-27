@@ -17,7 +17,7 @@ MODULE LONG_EDIT_DATA_TYPES
   !
   !  
   !=======================================================================
-  use kind_module,      only: int_kind, log_kind, real_kind
+  use kinds, only: r8
   use matl_module,      only: MATERIAL, MATL_SLOT, COLLATE, PERMUTE_MATL
   use mesh_module,      only: CELL_GEOMETRY, COLLATE, PERMUTE_CELL
   use parameter_module, only: max_slots, mat_slot, nvc, ndim, nfc
@@ -25,8 +25,8 @@ MODULE LONG_EDIT_DATA_TYPES
   use solid_mechanics_data, only: CELL_MECH_INVARIANT
   use solid_mechanics_module, only: STRESS_STRAIN_INVARIANTS
   use truchas_logging_services
-
   implicit none
+  public
 
   PUBLIC :: LONG_EDIT_LIST
   PUBLIC :: CREATE, DESTROY
@@ -48,8 +48,8 @@ MODULE LONG_EDIT_DATA_TYPES
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   type VERTEX_DATA
      ! This is the vertex info for a particular neighbor vertex
-     integer(int_kind)                  :: Ngbr_Vrtx
-     real(real_kind),   dimension(ndim) :: Vertex_Coord
+     integer :: Ngbr_Vrtx
+     real(r8), dimension(ndim) :: Vertex_Coord
   end type VERTEX_DATA
 
   type CELL_VERTEX_DATA
@@ -63,11 +63,11 @@ MODULE LONG_EDIT_DATA_TYPES
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   type FACE_DATA
      ! This is the face neigbhor information for a particular face
-     integer(int_kind) :: Ngbr_Cell
-     integer(int_kind) :: Ngbr_Face
-     real(real_kind), dimension(ndim) :: Face_Normal
-     real(real_kind), dimension(ndim) :: Face_Centroid
-     real(real_kind)                  :: Face_Area
+     integer :: Ngbr_Cell
+     integer :: Ngbr_Face
+     real(r8), dimension(ndim) :: Face_Normal
+     real(r8), dimension(ndim) :: Face_Centroid
+     real(r8) :: Face_Area
   end type FACE_DATA
 
   type CELL_NEIGHBOR_DATA
@@ -81,8 +81,8 @@ MODULE LONG_EDIT_DATA_TYPES
   type LONG_EDIT_PHYS_DATA
      ! This is the data which varies from cycle to cycle.
      PRIVATE
-     type (CELL_AVG),      POINTER, dimension(:)     :: Zone => NULL()
-     type (MATL_SLOT),     dimension(max_slots)      :: Matl
+     type (CELL_AVG), POINTER, dimension(:) :: Zone => NULL()
+     type (MATL_SLOT), dimension(max_slots) :: Matl
   end type LONG_EDIT_PHYS_DATA
 
   type LONG_EDIT_GEO_DATA
@@ -102,7 +102,7 @@ MODULE LONG_EDIT_DATA_TYPES
   
   type MECH_EDIT_LIST
      Private
-     integer,                    dimension(:), pointer :: CellNumber => NULL() ! This is global cell number
+     integer, dimension(:), pointer :: CellNumber => NULL() ! This is global cell number
      type (CELL_MECH_INVARIANT), dimension(:), pointer :: Mech_Data => NULL()
   end type MECH_EDIT_LIST
 
@@ -240,33 +240,28 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine SET_VERTEX_DATA(CELL_VERTEX, VERTEX_NUMBER, VERTEX)
-    implicit none
     type (CELL_VERTEX_DATA), target, intent(INOUT) :: CELL_VERTEX
-    integer (int_kind),     intent(IN   ) :: VERTEX_NUMBER
-    type (VERTEX_DATA),target, intent(IN   ) :: VERTEX
+    integer, intent(IN) :: VERTEX_NUMBER
+    type (VERTEX_DATA),target, intent(IN) :: VERTEX
 
     CELL_VERTEX%Vertices(VERTEX_NUMBER) = VERTEX
-    return
   end subroutine SET_VERTEX_DATA
 
   function vertex_data_vertex_geo_number(CELL_VERTEX, VERTEX_NUMBER) RESULT(VERTEX)
-    implicit none
-    type (CELL_VERTEX_DATA), intent(IN   ), &
+    type (CELL_VERTEX_DATA), intent(IN), &
                              TARGET        :: CELL_VERTEX
-    integer(int_kind),       intent(IN   ) :: VERTEX_NUMBER
-    type(VERTEX_DATA),       POINTER       :: VERTEX
+    integer, intent(IN) :: VERTEX_NUMBER
+    type(VERTEX_DATA), POINTER :: VERTEX
 
     VERTEX => CELL_VERTEX%Vertices(VERTEX_NUMBER)
-    return
   end function vertex_data_vertex_geo_number
 
   subroutine collate_vertex_list(collated_list, local_list)
     use pgslib_module
-    implicit none
     type(CELL_VERTEX_DATA), intent(INOUT), &
                            TARGET,        &
                            dimension(:)  :: collated_list
-    type(CELL_VERTEX_DATA), intent(IN   ), &
+    type(CELL_VERTEX_DATA), intent(IN), &
                            TARGET,        &
                            dimension(:)  :: local_list
 
@@ -274,13 +269,13 @@ CONTAINS
     integer :: v, d
     type(VERTEX_DATA), POINTER, dimension(:) :: collated_vrtx_data => NULL()
     type(VERTEX_DATA), POINTER, dimension(:) :: local_vrtx_data => NULL()
-    integer(int_kind),      POINTER,      &
+    integer,      POINTER,      &
                             dimension(:) :: collated_int_temp => NULL()
-    integer(int_kind),      POINTER,      &
+    integer,      POINTER,      &
                             dimension(:) :: local_int_temp => NULL()
-    real(real_kind),        POINTER,      &
+    real(r8),        POINTER,      &
                             dimension(:) :: collated_real_temp => NULL()
-    real(real_kind),        POINTER,      &
+    real(r8),        POINTER,      &
                             dimension(:) :: local_real_temp => NULL()
 
     do v = 1, nvc
@@ -300,22 +295,20 @@ CONTAINS
        end do
 
     end do
-    return
   end subroutine collate_vertex_list
        
   subroutine permute_vertex_list(permuted_list, orig_list, PERMUTER, SCOPE)
     use parallel_scope
     use pgslib_module
-    implicit none
     type(CELL_VERTEX_DATA), intent(INOUT), &
                            TARGET,        &
                            dimension(:)  :: permuted_list
-    type(CELL_VERTEX_DATA), intent(IN   ), &
+    type(CELL_VERTEX_DATA), intent(IN), &
                            TARGET,        &
                            dimension(:)  :: orig_list
-    integer(int_kind),     intent(IN   ), &
+    integer,     intent(IN), &
                            dimension(:)  :: PERMUTER
-    type (PL_SCOPE),       intent(IN   ) :: SCOPE
+    type (PL_SCOPE),       intent(IN) :: SCOPE
 
     ! Local variables
     integer :: c
@@ -329,7 +322,6 @@ CONTAINS
        permuted_list(permuter(c)) = orig_list(c)
     end do
 
-    return
   end subroutine permute_vertex_list
        
 
@@ -339,34 +331,29 @@ CONTAINS
   
 
   subroutine SET_FACE_NEIGHBOR_DATA(CELL_NGBR, FACE_NUMBER, FACE)
-    implicit none
     type (CELL_NEIGHBOR_DATA), intent(INOUT) :: CELL_NGBR
-    integer (int_kind),        intent(IN   ) :: FACE_NUMBER
-    type (FACE_DATA),          intent(IN   ) :: FACE
+    integer,        intent(IN) :: FACE_NUMBER
+    type (FACE_DATA),          intent(IN) :: FACE
                             
 
     CELL_NGBR%Faces(FACE_NUMBER) = FACE
-    return
   end subroutine SET_FACE_NEIGHBOR_DATA
 
   function get_ngbr_data_face_number_face(CELL_NGBR, FACE_NUMBER) RESULT(FACE)
-    implicit none
-    type (CELL_NEIGHBOR_DATA), intent(IN   ), &
+    type (CELL_NEIGHBOR_DATA), intent(IN), &
                                TARGET        :: CELL_NGBR
-    integer(int_kind),         intent(IN   ) :: FACE_NUMBER
+    integer,         intent(IN) :: FACE_NUMBER
     type(FACE_DATA),           POINTER       :: FACE
 
     FACE => CELL_NGBR%Faces(Face_NUMBER)
-    return
   end function get_ngbr_data_face_number_face
 
   subroutine collate_ngbr_list(collated_list, local_list)
     use pgslib_module
-    implicit none
     type(CELL_NEIGHBOR_DATA), intent(INOUT), &
                            TARGET,        &
                            dimension(:)  :: collated_list
-    type(CELL_NEIGHBOR_DATA), intent(IN   ), &
+    type(CELL_NEIGHBOR_DATA), intent(IN), &
                            TARGET,        &
                            dimension(:)  :: local_list
 
@@ -376,13 +363,13 @@ CONTAINS
                             dimension(:) :: collated_face_data => NULL()
     type(FACE_DATA), POINTER,      &
                             dimension(:) :: local_face_data => NULL()
-    integer(int_kind),      POINTER,      &
+    integer,      POINTER,      &
                             dimension(:) :: collated_int_temp => NULL()
-    integer(int_kind),      POINTER,      &
+    integer,      POINTER,      &
                             dimension(:) :: local_int_temp => NULL()
-    real(real_kind),        POINTER,      &
+    real(r8),        POINTER,      &
                             dimension(:) :: collated_real_temp => NULL()
-    real(real_kind),        POINTER,      &
+    real(r8),        POINTER,      &
                             dimension(:) :: local_real_temp => NULL()
 
     do f = 1, nfc
@@ -419,22 +406,20 @@ CONTAINS
        call pgslib_collate(collated_real_temp, local_real_temp)
 
     end do
-    return
   end subroutine collate_ngbr_list
        
   subroutine permute_ngbr_list(permuted_list, orig_list, PERMUTER, SCOPE)
     use parallel_scope
     use pgslib_module
-    implicit none
     type(CELL_NEIGHBOR_DATA), intent(INOUT), &
                            TARGET,        &
                            dimension(:)  :: permuted_list
-    type(CELL_NEIGHBOR_DATA), intent(IN   ), &
+    type(CELL_NEIGHBOR_DATA), intent(IN), &
                            TARGET,        &
                            dimension(:)  :: orig_list
-    integer(int_kind),     intent(IN   ), &
+    integer,     intent(IN), &
                            dimension(:)  :: PERMUTER
-    type (PL_SCOPE),       intent(IN   ) :: SCOPE
+    type (PL_SCOPE),       intent(IN) :: SCOPE
 
     ! Local variables
     integer :: c
@@ -448,7 +433,6 @@ CONTAINS
        permuted_list(permuter(c)) = orig_list(c)
     end do
 
-    return
   end subroutine permute_ngbr_list
        
 
@@ -458,9 +442,8 @@ CONTAINS
 
   subroutine CREATE_PHYS_DATA(DATA, ITEMS)
     ! Allocate the internal storage for the data
-    implicit none
     type (LONG_EDIT_PHYS_DATA), intent(INOUT) :: DATA
-    integer(int_kind),     intent(IN   ) :: ITEMS
+    integer,     intent(IN) :: ITEMS
 
     ! local variables
     integer :: s
@@ -473,21 +456,18 @@ CONTAINS
     end do
     
     ALLOCATE(Data%Zone(ITEMS))
-    return
   end subroutine CREATE_PHYS_DATA
 
   subroutine CLONE_PHYS_DATA(NEW, OLD)
     ! Clone a long edit item, the new one is empty
-    implicit none
-    type (LONG_EDIT_PHYS_DATA), intent(  OUT) :: NEW
-    type (LONG_EDIT_PHYS_DATA), intent(IN   ) :: OLD
+    type (LONG_EDIT_PHYS_DATA), intent(OUT) :: NEW
+    type (LONG_EDIT_PHYS_DATA), intent(IN) :: OLD
 
     call CREATE(DATA=NEW, ITEMS=SIZE(OLD))
   end subroutine CLONE_PHYS_DATA
   
   subroutine DESTROY_PHYS_DATA(DATA)
     ! DeAllocate the internal storage for the data
-    implicit none
     type (LONG_EDIT_PHYS_DATA), intent(INOUT) :: DATA
 
     ! local variables
@@ -499,13 +479,11 @@ CONTAINS
     end do
     
     DEALLOCATE(Data%Zone)
-    return
   end subroutine DESTROY_PHYS_DATA
 
   subroutine ASSIGN_PHYS_DATA(LDATA, RDATA)
-    implicit none
     type (LONG_EDIT_PHYS_DATA), intent(INOUT) :: LDATA
-    type (LONG_EDIT_PHYS_DATA), intent(IN   ) :: RDATA
+    type (LONG_EDIT_PHYS_DATA), intent(IN) :: RDATA
 
     ! Local variables
     integer :: s
@@ -515,30 +493,26 @@ CONTAINS
     do s = 1, mat_slot
        LData%Matl(s)%Cell = RData%Matl(s)%Cell
     end do
-    return
   end subroutine ASSIGN_PHYS_DATA
 
   function SIZE_PHYS_DATA(DATA) RESULT(S)
-    implicit none
     type (LONG_EDIT_PHYS_DATA), intent(IN) :: DATA
-    integer(int_kind)                :: S
+    integer                :: S
     ! We assume that the create worked properly so we need only look
     ! at size of one of the elements of DATA
     S = SIZE(DATA%Zone)
-    RETURN
   end function SIZE_PHYS_DATA
     
   subroutine SET_PHYS_DATA(DATA, ITEM, ZONE, MATL_SLOT, MATL)
     ! Put the values into the long edit item
-    implicit none
     type (LONG_EDIT_PHYS_DATA), intent(INOUT) :: DATA
-    integer(int_kind),     intent(IN   ) :: ITEM
+    integer,     intent(IN) :: ITEM
     type (CELL_AVG),       OPTIONAL,      &
-                           intent(IN   ) :: ZONE
-    integer(int_kind),     OPTIONAL,      &
-                           intent(IN   ) :: MATL_SLOT
+                           intent(IN) :: ZONE
+    integer,     OPTIONAL,      &
+                           intent(IN) :: MATL_SLOT
     type (MATERIAL),       OPTIONAL,      &
-                           intent(IN   ) :: MATL
+                           intent(IN) :: MATL
 
     ! Local variables
     
@@ -560,19 +534,16 @@ CONTAINS
 
   subroutine CREATE_MECH_DATA(DATA, ITEMS)
     ! Allocate the internal storage for the data
-    implicit none
     type (CELL_MECH_INVARIANT), pointer, dimension(:) :: DATA
-    integer(int_kind),     intent(IN   )              :: ITEMS
+    integer,     intent(IN)              :: ITEMS
 
     ! local variables
 
     ALLOCATE(Data(ITEMS))
-    return
   end subroutine CREATE_MECH_DATA
 
   subroutine CLONE_MECH_DATA(NEW, OLD)
     ! Clone a long edit mech item, the new one is empty
-    implicit none
     type (CELL_MECH_INVARIANT), pointer, dimension(:) :: NEW
     type (CELL_MECH_INVARIANT), pointer, dimension(:) :: OLD
 
@@ -581,11 +552,9 @@ CONTAINS
   
   subroutine DESTROY_MECH_DATA(DATA)
     ! DeAllocate the internal storage for the data
-    implicit none
     type (CELL_MECH_INVARIANT), pointer, dimension(:) :: DATA
 
     DEALLOCATE(Data)
-    return
   end subroutine DESTROY_MECH_DATA
 
 !  subroutine ASSIGN_MECH_DATA(LDATA, RDATA)
@@ -602,21 +571,18 @@ CONTAINS
 !  end subroutine ASSIGN_MECH_DATA
 
   function SIZE_MECH_DATA(DATA) RESULT(S)
-    implicit none
     type (CELL_MECH_INVARIANT), pointer, dimension(:) :: DATA
-    integer(int_kind)                :: S
+    integer                :: S
     ! We assume that the create worked properly so we need only look
     ! at size of one of the elements of DATA
     S = SIZE(DATA)
-    RETURN
   end function SIZE_MECH_DATA
     
   subroutine SET_MECH_DATA(DATA, ITEM, MECH)
     ! Put the values into the long edit item
-    implicit none
     type (CELL_MECH_INVARIANT), pointer, dimension(:) :: DATA
     type (CELL_MECH_INVARIANT), pointer               :: Mech
-    integer(int_kind),     intent(IN   ) :: ITEM
+    integer,     intent(IN) :: ITEM
 
     Data(ITEM) = Mech
 
@@ -626,74 +592,64 @@ CONTAINS
 
   subroutine CREATE_GEO_DATA(DATA, ITEMS)
     ! Allocate the internal storage for the data
-    implicit none
     type (LONG_EDIT_GEO_DATA), intent(INOUT) :: DATA
-    integer(int_kind),         intent(IN   ) :: ITEMS
+    integer,         intent(IN) :: ITEMS
 
     ALLOCATE(Data%Cell_Geo(ITEMS))
     ALLOCATE(Data%Cell_Vrtx(ITEMS))
     ALLOCATE(Data%Cell_Ngbr(ITEMS))
-    return
   end subroutine CREATE_GEO_DATA
 
   subroutine CLONE_GEO_DATA(NEW, OLD)
     ! Clone a long edit item, the new one is empty
-    implicit none
-    type (LONG_EDIT_GEO_DATA), intent(  OUT) :: NEW
-    type (LONG_EDIT_GEO_DATA), intent(IN   ) :: OLD
+    type (LONG_EDIT_GEO_DATA), intent(OUT) :: NEW
+    type (LONG_EDIT_GEO_DATA), intent(IN) :: OLD
 
     call CREATE(DATA=NEW, ITEMS=SIZE(OLD))
   end subroutine CLONE_GEO_DATA
   
   subroutine DESTROY_GEO_DATA(DATA)
     ! DeAllocate the internal storage for the data
-    implicit none
     type (LONG_EDIT_GEO_DATA), intent(INOUT) :: DATA
 
     DEALLOCATE(Data%Cell_Geo)
     DEALLOCATE(Data%Cell_Vrtx)
     DEALLOCATE(Data%Cell_Ngbr)
-    return
   end subroutine DESTROY_GEO_DATA
 
   subroutine ASSIGN_GEO_DATA(LDATA, RDATA)
-    implicit none
     type (LONG_EDIT_GEO_DATA), intent(INOUT) :: LDATA
-    type (LONG_EDIT_GEO_DATA), intent(IN   ) :: RDATA
+    type (LONG_EDIT_GEO_DATA), intent(IN) :: RDATA
 
     LDATA%Cell_Geo  = RData%Cell_Geo
     LDATA%Cell_Vrtx = RData%Cell_Vrtx
     LDATA%Cell_Ngbr = RData%Cell_Ngbr
-    return
   end subroutine ASSIGN_GEO_DATA
 
   function SIZE_GEO_DATA(DATA) RESULT(S)
-    implicit none
     type (LONG_EDIT_GEO_DATA), intent(IN) :: DATA
-    integer(int_kind)                     :: S
+    integer                     :: S
 
     S = SIZE(DATA%Cell_Geo)
 
-    RETURN
   end function SIZE_GEO_DATA
     
   subroutine SET_GEO_DATA(DATA, ITEM, CELL_GEO, &
                           VERTEX_NUMBER, VERTEX,&
                           FACE_NUMBER, FACE)
     ! Put the values into the long edit item
-    implicit none
     type (LONG_EDIT_GEO_DATA), intent(INOUT) :: DATA
-    integer(int_kind),         intent(IN   ) :: ITEM
+    integer,         intent(IN) :: ITEM
     type (CELL_GEOMETRY),      OPTIONAL,      &
-                               intent(IN   ) :: CELL_GEO
-    integer(int_kind),         OPTIONAL,      &
-                               intent(IN   ) :: VERTEX_NUMBER
-    type (VERTEX_DATA), OPTIONAL, intent(IN   ) :: VERTEX
+                               intent(IN) :: CELL_GEO
+    integer,         OPTIONAL,      &
+                               intent(IN) :: VERTEX_NUMBER
+    type (VERTEX_DATA), OPTIONAL, intent(IN) :: VERTEX
 
-    integer(int_kind),         OPTIONAL,      &
-                               intent(IN   ) :: FACE_NUMBER
+    integer,         OPTIONAL,      &
+                               intent(IN) :: FACE_NUMBER
     type (FACE_DATA),   OPTIONAL,      &
-                               intent(IN   ) :: FACE
+                               intent(IN) :: FACE
     ! Local variables
 
     IF (PRESENT(CELL_GEO))    Data%Cell_Geo(Item)  = CELL_GEO
@@ -710,16 +666,14 @@ CONTAINS
        call SET(Data%Cell_Ngbr(Item), FACE_NUMBER = FACE_NUMBER, FACE = FACE)
     end IF
 
-    return
   end subroutine SET_GEO_DATA
 
   !!!!!!!!!! Support routines for LONG_EDIT_LIST type !!!!!!!!!!
 
   subroutine CREATE_LIST(LIST, ITEMS)
     ! Allocate the internal storage for the item list
-    implicit none
     type (LONG_EDIT_LIST), intent(INOUT) :: LIST
-    integer(int_kind),     intent(IN   ) :: ITEMS
+    integer,     intent(IN) :: ITEMS
 
     ! Allocate space for the cell number
     ALLOCATE(List%CellNumber(ITEMS))
@@ -727,21 +681,18 @@ CONTAINS
     ! Now allocate the data
     call CREATE(LIST%Phys_Data, ITEMS)
     call CREATE(LIST%Geo_Data, ITEMS)
-    return
   end subroutine CREATE_LIST
 
   subroutine CLONE_LIST(NEW, OLD)
     ! Clone a long edit item, the new one is empty
-    implicit none
-    type (LONG_EDIT_LIST), intent(  OUT) :: NEW
-    type (LONG_EDIT_LIST), intent(IN   ) :: OLD
+    type (LONG_EDIT_LIST), intent(OUT) :: NEW
+    type (LONG_EDIT_LIST), intent(IN) :: OLD
 
     call CREATE(LIST=NEW, ITEMS=SIZE(OLD))
   end subroutine CLONE_LIST
   
   subroutine DESTROY_LIST(LIST)
     ! DeAllocate the internal storage for the item list
-    implicit none
     type (LONG_EDIT_LIST), intent(INOUT) :: LIST
 
     ! Allocate space for the cell number
@@ -750,29 +701,24 @@ CONTAINS
     ! Now deallocate the data
     call DESTROY(LIST%Phys_Data)
     call DESTROY(LIST%Geo_Data)
-    return
   end subroutine DESTROY_LIST
 
   subroutine ASSIGN_LIST(LITEM, RITEM)
-    implicit none
     type (LONG_EDIT_LIST), intent(INOUT) :: LITEM
-    type (LONG_EDIT_LIST), intent(IN   ) :: RITEM
+    type (LONG_EDIT_LIST), intent(IN) :: RITEM
 
     LITEM%CellNumber = RITEM%CellNumber
     LITEM%Phys_Data  = RITEM%Phys_Data
     LITEM%Geo_Data   = RITEM%Geo_Data
 
-    return
   end subroutine ASSIGN_LIST
 
   function SIZE_LIST(LIST) RESULT(S)
-    implicit none
     type (LONG_EDIT_LIST), intent(IN) :: LIST
-    integer(int_kind)                 :: S
+    integer                 :: S
     ! We assume that the create worked properly so we need only look
     ! at size of one of the elements of LIST
     S = SIZE(List%CellNumber)
-    RETURN
   end function SIZE_LIST
     
   subroutine SET_LIST(LIST, ITEM, CELLNUMBER, ZONE, MATL_SLOT, MATL, &
@@ -780,26 +726,25 @@ CONTAINS
                       VERTEX_NUMBER, VERTEX,                         &
                       FACE_NUMBER,   FACE)
     ! Put the values into the long edit item
-    implicit none
     type (LONG_EDIT_LIST), intent(INOUT) :: LIST
-    integer(int_kind),     intent(IN   ) :: ITEM
-    integer(int_kind),     OPTIONAL,      &
-                           intent(IN   ) :: CELLNUMBER
+    integer,     intent(IN) :: ITEM
+    integer,     OPTIONAL,      &
+                           intent(IN) :: CELLNUMBER
     type (CELL_AVG),       OPTIONAL,      &
-                           intent(IN   ) :: ZONE
-    integer(int_kind),     OPTIONAL,      &
-                           intent(IN   ) :: MATL_SLOT
+                           intent(IN) :: ZONE
+    integer,     OPTIONAL,      &
+                           intent(IN) :: MATL_SLOT
     type (MATERIAL),       OPTIONAL,      &
-                           intent(IN   ) :: MATL
+                           intent(IN) :: MATL
     type (CELL_GEOMETRY),  OPTIONAL,      &
-                           intent(IN   ) :: CELL_GEO
-    integer(int_kind),     OPTIONAL,      &
-                           intent(IN   ) :: VERTEX_NUMBER
-    type(VERTEX_DATA),OPTIONAL, intent(IN   ) :: VERTEX
-    integer(int_kind),     OPTIONAL,      &
-                           intent(IN   ) :: FACE_NUMBER
+                           intent(IN) :: CELL_GEO
+    integer,     OPTIONAL,      &
+                           intent(IN) :: VERTEX_NUMBER
+    type(VERTEX_DATA),OPTIONAL, intent(IN) :: VERTEX
+    integer,     OPTIONAL,      &
+                           intent(IN) :: FACE_NUMBER
     type(FACE_DATA),OPTIONAL,      &
-                           intent(IN   ) :: FACE
+                           intent(IN) :: FACE
     ! Local variables
 
     if (PRESENT(CellNumber)) then
@@ -828,7 +773,6 @@ CONTAINS
        call SET(LIST%Geo_Data, ITEM, CELL_GEO = CELL_GEO)
     end if
 
-    return   
   end subroutine SET_LIST
   
 
@@ -836,30 +780,26 @@ CONTAINS
 
   subroutine CREATE_MECH_LIST(LIST, ITEMS)
     ! Allocate the internal storage for the item list
-    implicit none
     type (MECH_EDIT_LIST), intent(INOUT) :: LIST
-    integer(int_kind),     intent(IN   ) :: ITEMS
+    integer,     intent(IN) :: ITEMS
 
     ! Allocate space for the cell number
     ALLOCATE(List%CellNumber(ITEMS))
 
     ! Now allocate the data
     call CREATE(LIST%Mech_Data, ITEMS)
-    return
   end subroutine CREATE_MECH_LIST
 
   subroutine CLONE_MECH_LIST(NEW, OLD)
     ! Clone a long edit item, the new one is empty
-    implicit none
-    type (MECH_EDIT_LIST), intent(  OUT) :: NEW
-    type (MECH_EDIT_LIST), intent(IN   )  :: OLD
+    type (MECH_EDIT_LIST), intent(OUT) :: NEW
+    type (MECH_EDIT_LIST), intent(IN)  :: OLD
 
     call CREATE(LIST=NEW, ITEMS=SIZE(OLD))
   end subroutine CLONE_MECH_LIST
   
   subroutine DESTROY_MECH_LIST(LIST)
     ! DeAllocate the internal storage for the item list
-    implicit none
     type (MECH_EDIT_LIST), intent(INOUT) :: LIST
 
     ! Deallocate space for the cell number
@@ -867,13 +807,12 @@ CONTAINS
 
     ! Now deallocate the data
     call DESTROY(LIST%MECH_Data)
-    return
   end subroutine DESTROY_MECH_LIST
 
 !  subroutine ASSIGN_MECH_LIST(LITEM, RITEM)
 !    implicit none
-!    type (MECH_EDIT_LIST), intent(  OUT) :: LITEM
-!    type (MECH_EDIT_LIST), intent(IN   ) :: RITEM
+!    type (MECH_EDIT_LIST), intent(OUT) :: LITEM
+!    type (MECH_EDIT_LIST), intent(IN) :: RITEM
 !
 !    ! Local variables
 !    integer :: s
@@ -885,21 +824,18 @@ CONTAINS
 !  end subroutine ASSIGN_MECH_LIST
 
   function SIZE_MECH_LIST(LIST) RESULT(S)
-    implicit none
     type (MECH_EDIT_LIST), intent(IN) :: LIST
-    integer(int_kind)                 :: S
+    integer                 :: S
     ! We assume that the create worked properly so we need only look
     ! at size of one of the elements of LIST
     S = SIZE(List%CellNumber)
-    RETURN
   end function SIZE_MECH_LIST
     
   subroutine SET_MECH_LIST(LIST, ITEM, CELLNUMBER, DATA)
     ! Put the values into the long edit item
-    implicit none
     type (MECH_EDIT_LIST), intent(INOUT) :: LIST
-    integer(int_kind),     intent(IN   ) :: ITEM
-    integer(int_kind),     intent(IN   ) :: CELLNUMBER
+    integer,     intent(IN) :: ITEM
+    integer,     intent(IN) :: CELLNUMBER
     type (CELL_MECH_INVARIANT), pointer :: DATA
     ! Local variables
 
@@ -907,7 +843,6 @@ CONTAINS
 
     call SET(LIST%Mech_DATA, ITEM, DATA)
 
-    return   
   end subroutine SET_MECH_LIST
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -915,114 +850,95 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function phys_data_item_zone(data, item) RESULT(zone)
-    implicit none
     type (LONG_EDIT_PHYS_DATA), TARGET,     &
                            intent(IN) :: DATA
-    integer(int_kind),     intent(IN) :: item
+    integer,     intent(IN) :: item
     type (CELL_AVG), POINTER          :: Zone
 
     Zone => data%Zone(item)
-    return
   end function phys_data_item_zone
   
   function phys_data_zone(data) RESULT(zone)
-    implicit none
     type (LONG_EDIT_PHYS_DATA), TARGET,     &
                            intent(IN) :: DATA
     type (CELL_AVG),       dimension(:),&
                            POINTER    :: Zone
 
     Zone => data%Zone
-    return
   end function phys_data_zone
   
   function phys_data_item_matl(data, item, matl_slot) RESULT(matl)
-    Implicit none
     type (LONG_EDIT_PHYS_DATA), TARGET,     &
                            intent(IN) :: DATA
-    integer(int_kind),     intent(IN) :: item
-    integer(int_kind),     intent(IN) :: matl_slot
+    integer,     intent(IN) :: item
+    integer,     intent(IN) :: matl_slot
     type (MATERIAL),       POINTER    :: Matl
 
     Matl => data%matl(matl_slot)%Cell(item)
-    return
   end function phys_data_item_matl
 
   function phys_data_slot_matl(data, matl_slot) RESULT(matl)
-    implicit none
     type (LONG_EDIT_PHYS_DATA), TARGET,     &
                            intent(IN) :: DATA
-    integer(int_kind),     intent(IN) :: matl_slot
+    integer,     intent(IN) :: matl_slot
     type (MATERIAL),       dimension(:),&
                            POINTER    :: Matl
 
     Matl => data%matl(matl_slot)%Cell
-    return
   end function phys_data_slot_matl
 
   function phys_data_matl(data) RESULT(matl)
-    implicit none
     type (LONG_EDIT_PHYS_DATA), TARGET,     &
                            intent(IN) :: DATA
     type (MATL_SLOT),      dimension(:),&
                            POINTER    :: Matl
 
     Matl => data%matl
-    return
   end function phys_data_matl
 
   !!!!!!!!!! Accessor routines for LONG_EDIT_GEO_DATA type !!!!!!!!!!
 
   function geo_data_item_cell_geo(data, item) RESULT(cell)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                              intent(IN) :: DATA
-    integer(int_kind),       intent(IN) :: item
+    integer,       intent(IN) :: item
     type (CELL_GEOMETRY),    POINTER    :: Cell
 
     Cell => data%cell_geo(item)
-    return
   end function geo_data_item_cell_geo
   
   function geo_data_cell_geo(data) RESULT(cell)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                              intent(IN) :: DATA
     type (CELL_GEOMETRY),    dimension(:), &
                              POINTER    :: Cell
 
     Cell => data%cell_geo
-    return
   end function geo_data_cell_geo
   
   function geo_data_cell_vertex_data(geo_data) RESULT(cell_vrtx_geo)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                              intent(IN) :: GEO_DATA
     type (CELL_VERTEX_DATA),  dimension(:), &
                              POINTER    :: cell_vrtx_geo
 
     cell_vrtx_geo => geo_data%cell_vrtx
-    return
   end function geo_data_cell_vertex_data
   
   function geo_data_item_cell_vertex_data(geo_data, item) RESULT(cell_vrtx_geo)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                              intent(IN) :: GEO_DATA
-    integer(int_kind),       intent(IN) :: item
+    integer,       intent(IN) :: item
     type (CELL_VERTEX_DATA), POINTER    :: cell_vrtx_geo
 
     cell_vrtx_geo => geo_data%cell_vrtx(item)
-    return
   end function geo_data_item_cell_vertex_data
 
   function geo_data_item_vnumber_vertex(geo_data, item, vertex_number) RESULT(vertex)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                              intent(IN) :: GEO_DATA
-    integer(int_kind),       intent(IN) :: item
-    integer(int_kind),       intent(IN) :: vertex_number
+    integer,       intent(IN) :: item
+    integer,       intent(IN) :: vertex_number
     type (VERTEX_DATA),      POINTER    :: Vertex
 
     ! Local variables
@@ -1030,25 +946,21 @@ CONTAINS
     
     Cell_Vertex => VERTEX_GEO_DATA(geo_data, item)
     Vertex      => VERTEX_GEO_DATA(cell_vertex, vertex_number)
-    return
   end function geo_data_item_vnumber_vertex
 
   function geo_data_cell_ngbr_data(geo_data) RESULT(cell_ngbr)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                              intent(IN)   :: GEO_DATA
     type (CELL_NEIGHBOR_DATA),dimension(:),&
                               POINTER     :: cell_ngbr
 
     cell_ngbr => geo_data%cell_Ngbr
-    return
   end function geo_data_cell_ngbr_data
   
   function geo_data_item_cell_ngbr_data(geo_data, item) RESULT(cell_ngbr)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                                intent(IN) :: GEO_DATA
-    integer(int_kind),         intent(IN) :: item
+    integer,         intent(IN) :: item
     type (CELL_NEIGHBOR_DATA),POINTER     :: cell_ngbr
 
     ! Local variables
@@ -1057,15 +969,13 @@ CONTAINS
 
     cell_ngbrs => NGBR_GEO_DATA(geo_data)
     cell_ngbr  => cell_ngbrs(item)
-    return
   end function geo_data_item_cell_ngbr_data
   
   function geo_data_item_fnumber_face(geo_data, item, face_number) RESULT(face)
-    implicit none
     type (LONG_EDIT_GEO_DATA), TARGET,     &
                              intent(IN) :: GEO_DATA
-    integer(int_kind),       intent(IN) :: item
-    integer(int_kind),       intent(IN) :: face_number
+    integer,       intent(IN) :: item
+    integer,       intent(IN) :: face_number
     type (FACE_DATA),      POINTER    :: Face
 
     ! Local variables
@@ -1073,67 +983,55 @@ CONTAINS
     
     Cell_Ngbr => NGBR_GEO_DATA(geo_data, item)
     Face      => FACE_GEO_DATA(cell_Ngbr, face_number)
-    return
   end function geo_data_item_fnumber_face
   
 
   !!!!!!!!!! Accessor routines for LONG_EDIT_LIST type and MECH_LIST_TYPE !!!!!!!!!
 
   function list_cellnumber(LIST, ITEM) RESULT(Cell)
-    implicit none
     type (LONG_EDIT_LIST), intent(IN) :: LIST
-    integer(int_kind),     intent(IN) :: ITEM
-    integer(int_kind)                 :: Cell
+    integer,     intent(IN) :: ITEM
+    integer                 :: Cell
 
     Cell = LIST%CellNumber(ITEM)
-    return
   end function list_cellnumber
 
   function mech_list_cellnumber(LIST, ITEM) RESULT(Cell)
-    implicit none
     type (MECH_EDIT_LIST), intent(IN) :: LIST
-    integer(int_kind),     intent(IN) :: ITEM
-    integer(int_kind)                 :: Cell
+    integer,     intent(IN) :: ITEM
+    integer                 :: Cell
 
     Cell = LIST%CellNumber(ITEM)
-    return
   end function mech_list_cellnumber
 
   function list_phys_data(List) RESULT(Data)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: LIST
     type (LONG_EDIT_PHYS_DATA), POINTER    :: Data
 
     DATA => list%Phys_data
-    return
   end function list_phys_data
   
   function list_geo_data(List) RESULT(Data)
-    implicit none
     type (LONG_EDIT_LIST),     TARGET,     &
                                intent(IN) :: LIST
     type (LONG_EDIT_GEO_DATA), POINTER    :: Data
 
     DATA => list%geo_data
-    return
   end function list_geo_data
   
   function list_mech_data(List) RESULT(Data)
-    implicit none
     type (MECH_EDIT_LIST),     TARGET,     &
                                intent(IN) :: LIST
     type (CELL_MECH_INVARIANT), POINTER, dimension(:)    :: Data
 
     DATA => list%mech_data
-    return
   end function list_mech_data
   
   function list_item_zone(list, item) RESULT(zone)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
+    integer,     intent(IN) :: item
     type (CELL_AVG), POINTER          :: Zone
 
     ! Local variables
@@ -1141,13 +1039,11 @@ CONTAINS
 
     LData => PHYS_DATA(List)
     Zone => ZONE_DATA(LData, ITEM)
-    return
   end function list_item_zone
   
   function list_item_mech(list, item) RESULT(mech)
-    implicit none
     type (MECH_EDIT_LIST), intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
+    integer,     intent(IN) :: item
     type (CELL_MECH_INVARIANT), POINTER     :: mech
 
     ! Local variables
@@ -1155,15 +1051,13 @@ CONTAINS
 
     MData => List_Mech_Data(List)
     mech => MData(ITEM)
-    return
   end function list_item_mech
   
   function list_item_matl(list, item, matl_slot) RESULT(matl)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
-    integer(int_kind),     intent(IN) :: matl_slot
+    integer,     intent(IN) :: item
+    integer,     intent(IN) :: matl_slot
     type (MATERIAL), POINTER          :: Matl
 
     ! Local variables
@@ -1172,14 +1066,12 @@ CONTAINS
     LData => PHYS_DATA(List)
 
     Matl => LDATA%matl(matl_slot)%Cell(item)
-    return
   end function list_item_matl
 
   function list_item_cell_geo(list, item) RESULT(geo)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
+    integer,     intent(IN) :: item
     type (CELL_GEOMETRY), POINTER     :: Geo
 
     ! Local variables
@@ -1187,14 +1079,12 @@ CONTAINS
 
     LData => GEO_DATA(List)
     Geo => CELL_GEO_DATA(LData, ITEM)
-    return
   end function list_item_cell_geo
   
   function list_item_cell_vertex_data(list, item) RESULT(cell_vertex)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
+    integer,     intent(IN) :: item
     type (CELL_VERTEX_DATA),POINTER   :: cell_vertex
 
     ! Local variables
@@ -1202,15 +1092,13 @@ CONTAINS
 
     LData       => GEO_DATA(List)
     cell_vertex => VERTEX_GEO_DATA(LData, ITEM)
-    return
   end function list_item_cell_vertex_data
   
   function list_item_cell_vnumber_vertex(list, item, vertex_number) RESULT(vrtx)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
-    integer(int_kind),     intent(IN) :: vertex_number
+    integer,     intent(IN) :: item
+    integer,     intent(IN) :: vertex_number
     type (VERTEX_DATA),    POINTER    :: vrtx
 
     ! Local variables
@@ -1218,14 +1106,12 @@ CONTAINS
 
     CELL_VERTEX => VERTEX_GEO_DATA(List, item)
     vrtx        => VERTEX_GEO_DATA(CELL_VERTEX, VERTEX_NUMBER)
-    return
   end function list_item_cell_vnumber_vertex
   
   function list_item_cell_ngbr_data(list, item) RESULT(cell_ngbr)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
+    integer,     intent(IN) :: item
     type (CELL_NEIGHBOR_DATA),POINTER :: cell_ngbr
 
     ! Local variables
@@ -1233,15 +1119,13 @@ CONTAINS
 
     LData       => GEO_DATA(List)
     cell_ngbr => NGBR_GEO_DATA(LData, ITEM)
-    return
   end function list_item_cell_ngbr_data
   
   function list_item_cell_fnumber_face(list, item, face_number) RESULT(face)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: item
-    integer(int_kind),     intent(IN) :: face_number
+    integer,     intent(IN) :: item
+    integer,     intent(IN) :: face_number
     type (FACE_DATA),      POINTER    :: face
 
     ! Local variables
@@ -1249,11 +1133,9 @@ CONTAINS
 
     CELL_NGBR => NGBR_GEO_DATA(List, item)
     face      => FACE_GEO_DATA(CELL_NGBR, FACE_NUMBER)
-    return
   end function list_item_cell_fnumber_face
   
   function list_zone(list) RESULT(zone)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
     type (CELL_AVG),       dimension(:),&
@@ -1264,14 +1146,12 @@ CONTAINS
 
     LData => PHYS_DATA(List)
     Zone  => ZONE_DATA(LData)
-    return
   end function list_zone
   
   function list_matl_slot_matl(list, matl_slot) RESULT(matl)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
-    integer(int_kind),     intent(IN) :: matl_slot
+    integer,     intent(IN) :: matl_slot
     type (MATERIAL),       dimension(:),&
                            POINTER    :: Matl
 
@@ -1281,11 +1161,9 @@ CONTAINS
     LData => PHYS_DATA(List)
 
     Matl  => LDATA%matl(matl_slot)%Cell
-    return
   end function list_matl_slot_matl
 
   function list_matl(list) RESULT(matl)
-    implicit none
     type (LONG_EDIT_LIST), TARGET,     &
                            intent(IN) :: List
     type (MATL_SLOT),      dimension(:),&
@@ -1297,7 +1175,6 @@ CONTAINS
     LData => PHYS_DATA(List)
 
     Matl => LDATA%matl
-    return
   end function list_matl
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1305,9 +1182,8 @@ CONTAINS
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 
   subroutine phys_data_collate(COLLATED_DATA, LOCAL_DATA)
-    implicit none
     type (LONG_EDIT_PHYS_DATA), target, intent(INOUT) :: COLLATED_DATA
-    type (LONG_EDIT_PHYS_DATA), target, intent(IN   ) :: LOCAL_DATA
+    type (LONG_EDIT_PHYS_DATA), target, intent(IN) :: LOCAL_DATA
 
     ! Local variables
     type (CELL_AVG), dimension(:), POINTER :: Local_Zone  => NULL()
@@ -1331,18 +1207,16 @@ CONTAINS
     
     call COLLATE(Collated_Matl, Local_Matl)
 
-    return
   end subroutine phys_data_collate
   
   subroutine phys_data_sort(DATA, RANK)
     use parallel_scope
-    implicit none
     type (LONG_EDIT_PHYS_DATA), intent(INOUT) :: Data
-    integer(int_kind),     dimension(:),  &
-                           intent(IN   ) :: Rank
+    integer,     dimension(:),  &
+                           intent(IN) :: Rank
 
     ! Local variables
-    integer(int_kind) :: s
+    integer :: s
     type (LONG_EDIT_PHYS_DATA) :: Temp_Data
     type (CELL_AVG), dimension(:), POINTER :: Temp_Zone => NULL()
     type (CELL_AVG), dimension(:), POINTER :: Permuted_Zone => NULL()
@@ -1369,14 +1243,12 @@ CONTAINS
     ! Now get rid of temporary and go home
     call DESTROY(Temp_Data)
 
-    return
   end subroutine phys_data_sort
 
   subroutine geo_data_collate(COLLATED_DATA, LOCAL_DATA)
     use mesh_module,    only : CELL_GEOMETRY, COLLATE
-    implicit none
     type (LONG_EDIT_GEO_DATA), intent(INOUT) :: COLLATED_DATA
-    type (LONG_EDIT_GEO_DATA), intent(IN   ) :: LOCAL_DATA
+    type (LONG_EDIT_GEO_DATA), intent(IN) :: LOCAL_DATA
 
     ! Local variables
     type (CELL_GEOMETRY), dimension(:), POINTER :: Local_cell_geo => NULL()
@@ -1408,15 +1280,13 @@ CONTAINS
 
     call COLLATE(Collated_ngbr_geo, Local_ngbr_geo)
 
-    return
   end subroutine geo_data_collate
   
   subroutine geo_data_sort(DATA, RANK)
     use parallel_scope
-    implicit none
     type (LONG_EDIT_GEO_DATA), intent(INOUT) :: Data
-    integer(int_kind),         dimension(:),  &
-                               intent(IN   ) :: Rank
+    integer,         dimension(:),  &
+                               intent(IN) :: Rank
 
     ! Local variables
     type (LONG_EDIT_GEO_DATA) :: Temp_Data
@@ -1451,12 +1321,10 @@ CONTAINS
     ! Now get rid of temporary and go home
     call DESTROY(Temp_Data)
 
-    return
   end subroutine geo_data_sort
 
   subroutine list_collate(COLLATED_LIST, LOCAL_LIST)
     use pgslib_module, only : pgslib_collate
-    implicit none
     type (LONG_EDIT_LIST), intent(INOUT) :: LOCAL_LIST
     type (LONG_EDIT_LIST), intent(INOUT) :: COLLATED_LIST
 
@@ -1468,12 +1336,10 @@ CONTAINS
 
     call COLLATE(COLLATED_LIST%Geo_Data,  LOCAL_LIST%Geo_Data)    
     
-    return
   end subroutine list_collate
 
   subroutine mech_list_collate(COLLATED_LIST, LOCAL_LIST)
     use pgslib_module, only : pgslib_collate
-    implicit none
     type (MECH_EDIT_LIST), intent(INOUT) :: LOCAL_LIST
     type (MECH_EDIT_LIST), intent(INOUT) :: COLLATED_LIST
 
@@ -1484,19 +1350,17 @@ CONTAINS
     call PGSLib_COLLATE(COLLATED_LIST%Mech_Data%mean_stress, LOCAL_LIST%Mech_Data%mean_stress) 
     call PGSLib_COLLATE(COLLATED_LIST%Mech_Data%volumetric_strain, LOCAL_LIST%Mech_Data%volumetric_strain) 
     
-    return
   end subroutine mech_list_collate
     
   subroutine list_sort(LIST)
     ! This is a local sort, stuff gets sorted locally on each processor only
     use pgslib_module
-    implicit none
     type (LONG_EDIT_LIST), target, intent(INOUT) :: LIST
 
     ! Local variables
     integer :: i
-    integer(int_kind), allocatable, dimension(:) :: ItemRank
-    integer(int_kind), allocatable, dimension(:) :: Temp_Cell_Number
+    integer, allocatable, dimension(:) :: ItemRank
+    integer, allocatable, dimension(:) :: Temp_Cell_Number
     type(LONG_EDIT_PHYS_DATA),  POINTER          :: P_Data => NULL()
     type(LONG_EDIT_GEO_DATA),   POINTER          :: L_Geo_Data => NULL()
     integer                                      :: status
@@ -1525,19 +1389,17 @@ CONTAINS
     deallocate (Temp_Cell_Number)
     deallocate (ItemRank)
 
-    return
   end subroutine list_sort
     
   subroutine mech_list_sort(LIST)
     ! This is a local sort, stuff gets sorted locally on each processor only
     use pgslib_module
-    implicit none
     type (MECH_EDIT_LIST), intent(INOUT) :: LIST
 
     ! Local variables
     integer :: i
-    integer(int_kind), allocatable, dimension(:) :: ItemRank
-    integer(int_kind), allocatable, dimension(:) :: Temp_Cell_Number
+    integer, allocatable, dimension(:) :: ItemRank
+    integer, allocatable, dimension(:) :: Temp_Cell_Number
     type(CELL_MECH_INVARIANT),allocatable, dimension(:) :: M_Data
     integer                                      :: status
 
@@ -1568,7 +1430,6 @@ CONTAINS
     deallocate (ItemRank)
     deallocate (M_Data)
 
-    return
   end subroutine mech_list_sort
     
   

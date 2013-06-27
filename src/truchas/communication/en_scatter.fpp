@@ -33,11 +33,8 @@
     !
     !=======================================================================
     use gs_info_module, only: EN, EN_TRACE
-    use kind_module
     use mesh_module,    only: Mesh
     use pgslib_module,  only: PGSLib_GS_Trace_Setup_P
-
-    implicit none
 
     ! Incoming Arguments
     _DATA_TYPE_ , intent(IN   ),                               &
@@ -47,12 +44,12 @@
     _DATA_TYPE_ , dimension(:),                                &         
                   POINTER,                                     &
                   OPTIONAL                                     :: BOUNDARY
-    integer(KIND = int_kind), intent(IN), optional :: node
+    integer, intent(IN), optional :: node
 
     ! Local Variables
-    logical(KIND = log_kind) :: present_mask
-    logical(KIND = log_kind), dimension(:,:), allocatable :: Node_Mask
-    integer(KIND = int_kind) :: memstat, v
+    logical :: present_mask
+    logical, dimension(:,:), allocatable :: Node_Mask
+    integer :: memstat, v
 
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -77,8 +74,6 @@
        call _OP_NAME_ (Dest, Src, Mesh, TYPE = EN, TRACE = EN_TRACE, &
                                 BOUNDARY = BOUNDARY)
     end if
-
-    return
 
   END SUBROUTINE _ROUTINE_NAME_
 

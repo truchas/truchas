@@ -22,11 +22,8 @@ MODULE VAR_VECTOR_TYPES
   !
   ! Author(s): Robert C. Ferrell, CPCA (ferrell@cpca.com)
   !=======================================================================
-
-  use kind_module,      only: int_kind, log_kind, real_kind
-
+  use kinds, only: r8
   implicit none
-
   private
 
   ! Public variables and types
@@ -39,21 +36,21 @@ MODULE VAR_VECTOR_TYPES
 
   ! Define varying vectors
   type INT_VAR_VECTOR
-     integer (int_kind)                        :: L
-     integer (int_kind), POINTER, DIMENSION(:) :: V => NULL()
-     integer (int_kind), POINTER, DIMENSION(:) :: CONTAINER => NULL()
+     integer                        :: L
+     integer, POINTER, DIMENSION(:) :: V => NULL()
+     integer, POINTER, DIMENSION(:) :: CONTAINER => NULL()
   end type INT_VAR_VECTOR
   
   type REAL_VAR_VECTOR
-     integer (int_kind)                        :: L
-     REAL (REAL_kind),   POINTER, DIMENSION(:) :: V => NULL()
-     REAL (REAL_kind),   POINTER, DIMENSION(:) :: CONTAINER => NULL()
+     integer                        :: L
+     real(r8),   POINTER, DIMENSION(:) :: V => NULL()
+     real(r8),   POINTER, DIMENSION(:) :: CONTAINER => NULL()
   end type REAL_VAR_VECTOR
   
   type LOG_VAR_VECTOR
-     integer (int_kind)                        :: L
-     logical (log_kind), POINTER, DIMENSION(:) :: V => NULL()
-     logical (log_kind), POINTER, DIMENSION(:) :: CONTAINER => NULL()
+     integer                        :: L
+     logical, POINTER, DIMENSION(:) :: V => NULL()
+     logical, POINTER, DIMENSION(:) :: CONTAINER => NULL()
   end type LOG_VAR_VECTOR
   
 end MODULE VAR_VECTOR_TYPES

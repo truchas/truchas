@@ -25,36 +25,36 @@
 
     interface
        subroutine MATVEC (X, Y, status)
-          use kind_module, only: int_kind, real_kind
-          use UbikSolve_module
-          type (Ubik_vector_type),                intent(INOUT) :: X
-          real (real_kind), dimension(:), target, intent(INOUT) :: Y
-          integer (int_kind),                     intent(OUT)   :: status
+          use kinds, only: r8
+          use UbikSolve_module, only: Ubik_vector_type
+          type(Ubik_vector_type), intent(INOUT) :: X
+          real(r8), target, intent(INOUT) :: Y(:)
+          integer, intent(OUT) :: status
        end subroutine MATVEC
     end interface
 
     interface
        subroutine PRECONDITIONER (B, X, status)
-          use kind_module, only: int_kind, real_kind
-          use UbikSolve_module
-          real (real_kind), dimension(:), target, intent(IN)    :: B
-          type (Ubik_vector_type),                intent(INOUT) :: X
-          integer (int_kind),                     intent(OUT)   :: status
+          use kinds, only: r8
+          use UbikSolve_module, only: Ubik_vector_type
+          real(r8), target, intent(IN) :: B(:)
+          type(Ubik_vector_type), intent(INOUT) :: X
+          integer, intent(OUT) :: status
        end subroutine PRECONDITIONER
     end interface
 
     interface
        subroutine PRECONDITIONER_UPDATE (x)
-          use kind_module, only: real_kind
-          real (real_kind), dimension(:), intent(IN) :: x
+          use kinds, only: r8
+          real(r8), intent(IN) :: x(:)
        end subroutine PRECONDITIONER_UPDATE
     end interface
 
     interface
        subroutine RESIDUAL (x_old, x, r)
-          use kind_module,                only: real_kind
-          real (real_kind), dimension(:), intent(IN)  :: x_old
-          real (real_kind), dimension(:), intent(IN)  :: x
-          real (real_kind), dimension(:), intent(OUT) :: r
+          use kinds, only: r8
+          real(r8), intent(IN)  :: x_old(:)
+          real(r8), intent(IN)  :: x(:)
+          real(r8), intent(OUT) :: r(:)
        end subroutine RESIDUAL
     end interface

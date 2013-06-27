@@ -20,16 +20,12 @@ MODULE NUMERICS_INPUT_MODULE
   ! Author(s): The Telluridians (telluride-info@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: NUMERICS_INPUT
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
   
 CONTAINS
 
@@ -51,9 +47,7 @@ CONTAINS
     use flux_volume_module,     only: flux_vol_iter_max
     use input_utilities,        only: seek_to_namelist
     use interface_module,       only: interface_topology_model
-    use kind_module,            only: log_kind, int_kind, real_kind
     use parallel_info_module,   only: p_info
-    use parameter_module,       only: string_dim, string_len
     use porous_drag_data,       only: porous_implicitness
     use projection_data_module, only: projection_linear_solution
     use mollify,                only: interface_smoothing_length
@@ -90,8 +84,8 @@ CONTAINS
 
     ! Local Variables
     character(128) :: message
-    logical(KIND = log_kind)                           :: fatal, found
-    integer(KIND = int_kind)                           :: ioerror
+    logical :: fatal, found
+    integer :: ioerror
 
     ! Define NUMERICS namelist.
     namelist /NUMERICS/                                          &
@@ -187,8 +181,6 @@ CONTAINS
     call NUMERICS_CHECK (fatal)
     call TLS_fatal_if_any (fatal, 'NUMERICS_INPUT: NUMERICS namelist input error!')
 
-    return
-
   END SUBROUTINE NUMERICS_INPUT
 
   SUBROUTINE NUMERICS_CHECK (fatal)
@@ -198,13 +190,11 @@ CONTAINS
     !   Check NUMERICS namelist.
     !
     !=======================================================================
-    use constants_module,         only: one, preset, one_sixth, zero,         &
-                                        one_fourth, ten_tominus3
+    use input_utilities,          only: NULL_R
     use cutoffs_module,           only: cutvof
     use discrete_ops_data,        only: use_ortho_face_gradient,              &
                                         discrete_ops_type
     use ff_discrete_ops_data,     only: use_ff_ortho_face_gradient,           &
-                                        use_ff_support_operators,             &
                                         ff_discrete_ops_type
     use body_data_module,         only: body_force_implicitness
     use fluid_data_module,        only: fluid_flow, MinFaceFraction,          &
@@ -214,7 +204,6 @@ CONTAINS
     use interface_module,         only: interface_topology_model,             &
                                         interface_model_forms,                &
                                         interface_model_default
-    use kind_module,              only: log_kind, int_kind, real_kind
     use linear_solution,          only: UBIK_PRESSURE_DEFAULT,                &
                                         ubik_viscous_default,                 &
                                         UBIK_NK_DEFAULT,                      &
@@ -258,17 +247,14 @@ CONTAINS
                                       advection_order_momentum,   &
                                       advection_order_species
 
-    implicit none
-
     ! Argument List
-    logical(KIND = log_kind), intent(INOUT) :: fatal
+    logical, intent(INOUT) :: fatal
 
     ! Local Variables
-    logical(KIND = log_kind)    :: strings_match, this_string_matches
-    character(LEN = 80)         :: initialized_string
-    character(LEN = string_len) :: string
-    integer(KIND = int_kind)    :: i, j, k, l
-    real(KIND = real_kind)      :: tmp
+    logical :: strings_match, this_string_matches
+    character(80) :: initialized_string
+    character(string_len) :: string
+    integer :: i, j, k, l
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -277,7 +263,7 @@ CONTAINS
     fatal = .false.
 
     ! Start time should be >= 0.0
-    if (t < zero) then
+    if (t < 0) then
        write (message, 5) t
 5      format ('time = ',1pe13.5,' is invalid; must be >= 0.0!')
        call TLS_error (message)
@@ -310,7 +296,7 @@ CONTAINS
 
     ! cutoff parameters
     ! Check cutvof
-    if (cutvof < zero .or. cutvof > one) then
+    if (cutvof < 0 .or. cutvof > 1) then
        write (message, 15) cutvof
 15     format ('Invalid cutvof = ',1pe13.5)
        call TLS_error (message)
@@ -320,10 +306,10 @@ CONTAINS
     ! Mass limiter option -- try to set some sane defaults
     ! Use an exponential function over 3-decades of volume-fraction
     if (mass_limiter) then
-       if (mass_limiter_cutoff <= cutvof .or. mass_limiter_cutoff > one) then
+       if (mass_limiter_cutoff <= cutvof .or. mass_limiter_cutoff > 1) then
           mass_limiter_cutoff = 1.0e3*cutvof
-          if (cutvof > ten_tominus3) then
-             mass_limiter_cutoff = one
+          if (cutvof > 1.0d-3) then
+             mass_limiter_cutoff = 1
           endif
           write (message, 16) mass_limiter_cutoff
 16        format ('Invalid mass_limiter_cutoff -- reset to = ',1pe13.5)
@@ -333,7 +319,7 @@ CONTAINS
 
     ! timestep parameters
     ! Check dt_grow
-    if (dt_grow < one) then
+    if (dt_grow < 1) then
        write (message, 20) dt_grow
 20     format ('Invalid dt_grow = ',1pe13.5)
        call TLS_error (message)
@@ -341,7 +327,7 @@ CONTAINS
     end if
 
     ! Check dt_constant
-    if (dt_constant <= zero .and. dt_constant /= preset) then
+    if (dt_constant <= 0 .and. dt_constant /= NULL_R) then
        write (message, 25) dt_constant
 25     format ('dt_constant = ',1pe13.5,' is invalid; must be > 0.0!')
        call TLS_error (message)
@@ -349,7 +335,7 @@ CONTAINS
     end if
 
     ! Check dt_init
-    if (dt_init <= zero) then
+    if (dt_init <= 0) then
        write (message, 26) dt_init
 26     format ('dt_init = ',1pe13.5,' is invalid; must be > 0.0!')
        call TLS_error (message)
@@ -357,7 +343,7 @@ CONTAINS
     end if
 
     ! Check dt_max
-    if (dt_max <= zero) then
+    if (dt_max <= 0) then
        write (message, 27) dt_max
 27     format ('dt_max = ',1pe13.5,' is invalid; must be > 0.0!')
        call TLS_error (message)
@@ -365,7 +351,7 @@ CONTAINS
     end if
 
     ! Check dt_min
-    if (dt_min <= zero) then
+    if (dt_min <= 0) then
        write (message, 28) dt_min
 28     format ('dt_min = ',1pe13.5,' is invalid; must be > 0.0!')
        call TLS_error (message)
@@ -374,7 +360,7 @@ CONTAINS
 
     ! fluid flow parameters
     ! Check Courant Number; should be 0.0 < C <= 1.0
-    if (courant_number <= zero .or. courant_number > one) then
+    if (courant_number <= 0 .or. courant_number > 1) then
        write (message, 30) courant_number
 30     format ('Invalid courant_number = ',1pe13.5)
        call TLS_error (message)
@@ -382,7 +368,7 @@ CONTAINS
     end if
 
     ! Check MinFaceFraction
-    if (MinFaceFraction <= zero) then
+    if (MinFaceFraction <= 0) then
        write (message, 29) MinFaceFraction
 29     format ('MinFaceFraction = ',1pe13.5,' is invalid; must be > 0.0!')
        call TLS_error (message)
@@ -391,7 +377,7 @@ CONTAINS
 
     ! mollification/surface tension parameters
     ! Check interface_smoothing_length; should be > 0.0.
-    if (interface_smoothing_length <= zero ) then
+    if (interface_smoothing_length <= 0 ) then
        write (message, 32) interface_smoothing_length
 32     format ('interface_smoothing_length = ',1pe13.5,' is invalid; must be > 0.0!')
        call TLS_error (message)
@@ -400,7 +386,7 @@ CONTAINS
 
     ! surften_number used as a coefficient in front of dt_surften
     ! 0 < surften_number <=1 
-    if (surften_number <= zero .or. surften_number > one) then
+    if (surften_number <= 0 .or. surften_number > 1) then
        write (message, 33) surften_number
 33     format ('Invalid surften_number = ',1pe13.5)
        call TLS_error (message)
@@ -411,7 +397,7 @@ CONTAINS
 
     ! momentum solidification time weighting
     ! check momentum_solidify_implicitness
-    if (momentum_solidify_implicitness<zero .or. momentum_solidify_implicitness>one) then
+    if (momentum_solidify_implicitness<0 .or. momentum_solidify_implicitness>1) then
        write (message, 41) momentum_solidify_implicitness
 41     format ('Invalid momentum_solidify_implicitness = ',1pe13.5)
        call TLS_error (message)
@@ -420,7 +406,7 @@ CONTAINS
 
     ! body force time weighting
     ! check body_force_implicitness
-    if (body_force_implicitness<zero .or. body_force_implicitness>one) then
+    if (body_force_implicitness<0 .or. body_force_implicitness>1) then
        write (message, 42) body_force_implicitness
 42     format ('Invalid body_force_implicitness = ',1pe13.5)
        call TLS_error (message)
@@ -429,7 +415,7 @@ CONTAINS
 
     ! porous drag parameters
     ! check porous_implicitness
-    if (porous_implicitness < zero .or. porous_implicitness > one) then
+    if (porous_implicitness < 0 .or. porous_implicitness > 1) then
        write (message, 43) porous_implicitness
 43     format ('Invalid porous_implicitness = ',1pe13.5)
        call TLS_error (message)
@@ -438,7 +424,7 @@ CONTAINS
 
     ! viscous parameters
     ! Check Viscous Implicitness
-    if (viscous_implicitness < zero .or. viscous_implicitness > one) then
+    if (viscous_implicitness < 0 .or. viscous_implicitness > 1) then
        write (message, 45) viscous_implicitness
 45     format ('Invalid viscous_implicitness = ',1pe13.5)
        call TLS_error (message)
@@ -446,27 +432,27 @@ CONTAINS
     end if
 
     ! Set Viscous Number
-    if (viscous_number == preset) then
-      viscous_number = zero
-      if (viscous_implicitness == zero) then
-        if (ndim == 2) viscous_number = one_fourth
-        if (ndim == 3) viscous_number = one_sixth
-       else if (viscous_implicitness > zero .and. viscous_implicitness < one) then
-        if (ndim == 2) viscous_number = one_fourth/(one - viscous_implicitness)
-        if (ndim == 3) viscous_number = one_sixth/(one - viscous_implicitness)
+    if (viscous_number == NULL_R) then
+      viscous_number = 0
+      if (viscous_implicitness == 0) then
+        if (ndim == 2) viscous_number = 0.25_r8
+        if (ndim == 3) viscous_number = 1.0_r8/6.0_r8
+       else if (viscous_implicitness > 0 .and. viscous_implicitness < 1) then
+        if (ndim == 2) viscous_number = 0.25_r8/(1 - viscous_implicitness)
+        if (ndim == 3) viscous_number = (1.0_r8/6.0_r8)/(1 - viscous_implicitness)
       end if
     else 
-      if (viscous_implicitness == zero) then
-        if (ndim == 2) viscous_number = MIN(one_fourth, viscous_number)
-        if (ndim == 3) viscous_number = MIN(one_sixth, viscous_number)
-      else if (viscous_implicitness > zero .and. viscous_implicitness < one) then
-        if (ndim == 2) viscous_number = MIN(one_fourth/(one - viscous_implicitness), viscous_number)
-        if (ndim == 3) viscous_number = MIN(one_sixth/(one - viscous_implicitness), viscous_number)
+      if (viscous_implicitness == 0) then
+        if (ndim == 2) viscous_number = MIN(0.25_r8, viscous_number)
+        if (ndim == 3) viscous_number = MIN((1.0_r8/6.0_r8), viscous_number)
+      else if (viscous_implicitness > 0 .and. viscous_implicitness < 1) then
+        if (ndim == 2) viscous_number = MIN(0.25_r8/(1 - viscous_implicitness), viscous_number)
+        if (ndim == 3) viscous_number = MIN((1.0_r8/6.0_r8)/(1 - viscous_implicitness), viscous_number)
       end if
     endif
 
     ! Check Viscouus Number
-    if (viscous_number < zero) then
+    if (viscous_number < 0) then
        write (message, 50) viscous_number
 50     format ('Invalid viscous_number = ',1pe13.5)
        call TLS_error (message)
@@ -474,7 +460,7 @@ CONTAINS
     end if
 
     ! Check Strain Limit
-    if (strain_limit < zero) then
+    if (strain_limit < 0) then
        write (message, 55) strain_limit
 55     format ('Invalid strain_limit = ',1pe13.5)
        call TLS_error (message)
@@ -482,11 +468,12 @@ CONTAINS
     end if
 
     ! Set initial time step.
-    if (dt_constant /= preset) then
+    if (dt_constant /= NULL_R) then
        constant_dt = .true.
        dt = dt_constant
        dt_constraint = 'constant'
     else
+       dt_constant = 0
        dt = dt_init
        dt_constraint = 'initial'
     end if
@@ -557,13 +544,6 @@ CONTAINS
     if (this_string_matches) then
        use_ff_ortho_face_gradient = .false.
        use_ortho_face_gradient = .false.
-       strings_match = .true.
-    endif
-    call STRING_COMPARE (TRIM(string), 'SO', this_string_matches)
-    if (this_string_matches) then
-       use_ff_ortho_face_gradient = .false.		
-       use_ortho_face_gradient = .false.
-       use_ff_support_operators = .true.
        strings_match = .true.
     endif
     if (.not. strings_match) then
@@ -871,8 +851,6 @@ CONTAINS
        fatal = .true.
     end if
 
-    return
-
   END SUBROUTINE NUMERICS_CHECK
 
   SUBROUTINE NUMERICS_DEFAULT
@@ -882,9 +860,7 @@ CONTAINS
     !   Default NUMERICS namelist and related variables.
     !
     !=======================================================================
-    use constants_module,       only: one, preset, ipreset, ten, one_half,  &
-                                      ten_tominus5, ten_tominus6,           &
-                                      ten_tominus8, ten_toplus10, zero
+    use input_utilities,        only: NULL_R
     use cutoffs_module,         only: cutvof
     use discrete_ops_data,      only: discrete_ops_type
     use ff_discrete_ops_data,   only: ff_discrete_ops_type
@@ -895,7 +871,6 @@ CONTAINS
                                       mass_limiter, mass_limiter_cutoff
     use flux_volume_module,     only: flux_vol_iter_max
     use interface_module,       only: interface_topology_model
-    use kind_module,            only: real_kind
     use linear_solution,        only: UBIK_PRESSURE_DEFAULT, UBIK_DISPLACEMENT_DEFAULT, ubik_viscous_default
     use nonlinear_solution,     only: NK_DEFAULT
     use parameter_module,       only: nmat
@@ -944,35 +919,35 @@ CONTAINS
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Times.
-    t =  zero                       ! current time
+    t =  0                          ! current time
 
     ! Time step information.
     cycle_number         = 0        ! current cycle number
     cycle_number_restart = 0        ! restart cycle number
     cycle_max            = 1000000  ! maximum cycle number
 
-    dt_init       = ten_tominus6    ! initial dt
-    dt_min        = ten_tominus6    ! min dt
-    dt_max        = ten             ! max dt
+    dt_init       = 1.0d-6    ! initial dt
+    dt_min        = 1.0d-6    ! min dt
+    dt_max        = 10.0            ! max dt
     dt_grow       = 1.05            ! dt growth factor
 
-    dt_constant   = preset          ! constant dt
+    dt_constant   = NULL_R          ! constant dt
     constant_dt   = .false.         ! constant dt flag
 
-    dt_courant    = ten_toplus10    ! courant time step
-    dt_viscous    = ten_toplus10    ! viscous time step
-    dt_surften    = ten_toplus10    ! surface tension time step
+    dt_courant    = 1.0d10    ! courant time step
+    dt_viscous    = 1.0d10    ! viscous time step
+    dt_surften    = 1.0d10    ! surface tension time step
 
     courant_number          = 0.50      ! max courant number
-    viscous_number          = preset    ! max viscous number
+    viscous_number          = NULL_R    ! max viscous number
 
     ! Defaults for time-weighting for flow switched to 1/2    9/19/07 (MAC)
     ! with the exception of momentum_solidy_implicitness
     ! which is forced to default to 1.0.                     12/06/07 (MAC)
-    viscous_implicitness           = one_half  ! viscous implicitness (Crank-Nicolson)
-    porous_implicitness            = one_half  ! porous implicitness
-    momentum_solidify_implicitness = one       ! momentum treatment
-    body_force_implicitness        = one_half  ! body force centering
+    viscous_implicitness           = 0.5_r8  ! viscous implicitness (Crank-Nicolson)
+    porous_implicitness            = 0.5_r8  ! porous implicitness
+    momentum_solidify_implicitness = 1.0_r8       ! momentum treatment
+    body_force_implicitness        = 0.5_r8  ! body force centering
     !body_force_face_method         = .false.   ! cell-centered body force
    
     ! mmfran 07/22/11
@@ -984,7 +959,7 @@ CONTAINS
     body_force_face_method         = .true. 
 
     strain_limit            = 1.0e-10   ! minimum plastic strain increment
-    surften_number          = one       ! surface tension number
+    surften_number          = 1       ! surface tension number
 
     ! Displacement linear solution parameters.
     displacement_linear_solution = 'default'       ! linear solver to use
@@ -1004,11 +979,11 @@ CONTAINS
     NK_DISPLACEMENT = NK_DEFAULT
 
     ! Cutoff parameters.
-    cutvof  = ten_tominus8 ! volume fraction cutoff
+    cutvof  = 1.0d-8 ! volume fraction cutoff
 
     ! Mass limiter parameters
     mass_limiter                   = .true.       ! mass limiter
-    mass_limiter_cutoff            = ten_tominus5 ! cutoff for exponential mass
+    mass_limiter_cutoff            = 1.0d-5 ! cutoff for exponential mass
 
     ! Volume Track Parameters
     if(nmat==1) then
@@ -1016,7 +991,7 @@ CONTAINS
       else
         volume_track_interfaces    = .true.
     endif
-    volume_track_iter_tol      = ten_tominus8       ! Interface location tolerance.
+    volume_track_iter_tol      = 1.0d-8       ! Interface location tolerance.
     volume_track_subcycles     = 2                  ! Number of time subcycles.
     volume_track_iter_max      = 20                 ! Interface location max iterations.
     volume_track_brents_method = .true.             ! Use Brent's method for plane location iteration.
@@ -1024,10 +999,10 @@ CONTAINS
     count_cases                = .false.            ! Truncation case counting flag.
     interface_geometry         = 'piecewise linear' ! Reconstruction geometry
     interface_area             =  .false.           ! Find Interface Areas
-    Eps(1) = +one                                   ! Permutation parameters.
-    Eps(2) = -one
-    Eps(3) = +one
-    Eps(4) = -one
+    Eps(1) = +1.0_r8                                   ! Permutation parameters.
+    Eps(2) = -1.0_r8
+    Eps(3) = +1.0_r8
+    Eps(4) = -1.0_r8
 
     ! Limiter parameters.
     limiter_type = 'Barth'
@@ -1038,8 +1013,8 @@ CONTAINS
     advection_order_momentum    = 1
     advection_order_species     = 1
 
-    ! default energy bounds to preset.
-    mechanical_energy_bound     = preset
+    ! default energy bounds.
+    mechanical_energy_bound     = NULL_R
 
     ! Surface tension parameters.
     interface_topology_model = 'least squares model'  ! topology model
@@ -1067,8 +1042,6 @@ CONTAINS
     ! Projection parameters
     MinFaceFraction               = 1.0e-3
 
-    return
-
   END SUBROUTINE NUMERICS_DEFAULT
 
   SUBROUTINE NUMERICS_INPUT_PARALLEL
@@ -1078,7 +1051,6 @@ CONTAINS
     !   Broadcast all elements of numerics namelist.
     !
     !======================================================================
-    use kind_module,            only: real_kind
     use cutoffs_module,         only: alittle, cutvof
     use discrete_ops_data,      only: discrete_ops_type
     use ff_discrete_ops_data,   only: ff_discrete_ops_type
@@ -1194,8 +1166,6 @@ CONTAINS
        call PGSLIB_BCAST (dt_constraint)
 
     end if BROADCAST_VARIABLES
-
-    return
 
   END SUBROUTINE NUMERICS_INPUT_PARALLEL
 

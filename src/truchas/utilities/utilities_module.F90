@@ -56,26 +56,21 @@ CONTAINS
       !    subroutine
       !-------------------------------------------------------------------------
 
-      use kind_module, only: log_kind
-
-      implicit none
-
       ! argument list
-      character (LEN=*), intent(IN) :: string1
-      character (LEN=*), intent(IN) :: string2
+      character(*), intent(IN) :: string1
+      character(*), intent(IN) :: string2
 
       ! local variables
-      logical (log_kind) :: status
+      logical :: status
 
       ! function return
-      logical (log_kind) :: fstring_compare
+      logical :: fstring_compare
 
       !-------------------------------------------------------------------------
 
       call STRING_COMPARE (string1, string2, status)
 
       fstring_compare = status
-      return
 
    end function fstring_compare
 
@@ -87,11 +82,10 @@ CONTAINS
     !   and returns true or false for the comparison result.
     !
     !=======================================================================
-    use kind_module, only: log_kind
     use string_utilities, only: lower_case
 
-    character(len=*),  intent(in)  :: string1, string2
-    logical(log_kind), intent(out) :: strings_match
+    character(*), intent(in) :: string1, string2
+    logical, intent(out) :: strings_match
 
     strings_match = (lower_case(trim(string1)) == lower_case(trim(string2)))
 
@@ -112,19 +106,16 @@ CONTAINS
     !   Fortran 90" by James F. Kerrigan.
     !
     !=======================================================================
-    use kind_module, only: int_kind
-
-    implicit none
 
     ! Argument List
-    character(LEN = *), intent(OUT) :: date_time
+    character(*), intent(OUT) :: date_time
 
     ! Local Variables
-    character(LEN = 3), dimension(0:6) :: days
-    character(LEN = 3), dimension(12)  :: months
+    character(3), dimension(0:6) :: days
+    character(3), dimension(12)  :: months
 
-    integer(KIND = int_kind), dimension(8) :: elements
-    integer(KIND = int_kind)               :: m, y, w
+    integer, dimension(8) :: elements
+    integer :: m, y, w
 
     ! Define Days and Months
     data days   / 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' /  
@@ -163,8 +154,6 @@ CONTAINS
        date_time = ' '
     end if INVALID
 
-    return
-
   END SUBROUTINE TIMESTAMP
 
   !-----------------------------------------------------------------------------
@@ -173,11 +162,10 @@ CONTAINS
 
      use parallel_info_module, only: p_info
 
-     implicit none
-     character (LEN=*)    :: path
-     integer              :: status
-     character (LEN=1024) :: path2
-     integer              :: MAKE_DIRECTORY
+     character(*) :: path
+     integer :: status
+     character(1024) :: path2
+     integer :: MAKE_DIRECTORY
 
      interface MAKE_DIRECTORY_C
         subroutine MAKE_DIRECTORY_C (path, status)
@@ -205,7 +193,6 @@ CONTAINS
 
      ! return status
      MAKE_DIRECTORY = status
-     return
 
   end function MAKE_DIRECTORY
 
@@ -213,11 +200,10 @@ CONTAINS
 
      use parallel_info_module, only: p_info
 
-     implicit none
-     character (LEN=*)    :: path
-     integer              :: status
-     character (LEN=1024) :: path2
-     integer              :: MAKE_DIRECTORY_HIERARCHY
+     character(*) :: path
+     integer :: status
+     character(1024) :: path2
+     integer :: MAKE_DIRECTORY_HIERARCHY
 
      interface MAKE_DIRECTORY_HIER_C
         subroutine MAKE_DIRECTORY_HIER_C (path, status)
@@ -245,7 +231,6 @@ CONTAINS
 
      ! return status
      MAKE_DIRECTORY_HIERARCHY = status
-     return
 
   end function MAKE_DIRECTORY_HIERARCHY
 
@@ -264,18 +249,14 @@ CONTAINS
      !
      !--------------------------------------------------------------------------
 
-     use kind_module, only: int_kind
-
-     implicit none
-
      ! arguments
-     integer(KIND = int_kind), dimension(:)            :: Vector
+     integer, dimension(:) :: Vector
 
      ! function return
-     integer(KIND = int_kind), dimension(SIZE(Vector)) :: BUBBLE_PERMUTE
+     integer, dimension(SIZE(Vector)) :: BUBBLE_PERMUTE
 
      ! local variables
-     integer(KIND = int_kind) :: i, j, n, tmp
+     integer :: i, j, n, tmp
 
      !--------------------------------------------------------------------------
 
@@ -297,8 +278,6 @@ CONTAINS
            end if
         end do
      end do
-
-     return
 
   end function BUBBLE_PERMUTE
 

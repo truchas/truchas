@@ -10,7 +10,7 @@ Module BC_ATLASES_DATA_TYPES
   !
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
-  use kind_module, only: int_kind, real_kind, log_kind
+  use kinds, only: r8
   use bc_atlases_internal
   use bc_enum_types
   Implicit None
@@ -56,14 +56,14 @@ Module BC_ATLASES_DATA_TYPES
   type BC_Atlas
      PRIVATE
      ! These fields cannot change unless the atlas is re-allocated
-     type (BC_Atlas_Max_Extents) :: MaxSizes
+     type(BC_Atlas_Max_Extents) :: MaxSizes
      ! These fields change depending on data and use of the atlas
-     type (BC_Atlas_Current)     :: Current
+     type(BC_Atlas_Current) :: Current
 
-     type (BC_Atlas_Spec)        :: Spec
-     type (BC_Atlas_Data)        :: Data
+     type(BC_Atlas_Spec) :: Spec
+     type(BC_Atlas_Data) :: Data
 
-     CHARACTER(LEN=BC_STRING_LEN)         :: Name = 'NO NAME'
+     CHARACTER(BC_STRING_LEN) :: Name = 'NO NAME'
   end type BC_ATLAS
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -207,8 +207,7 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine InitializeAtlas(Atlas)
     ! Set the size of an atlas to -1, do not allocate any memory.
-    implicit none
-    type (BC_Atlas), intent(INOUT) :: Atlas
+    type(BC_Atlas), intent(INOUT) :: Atlas
 
     call INITIALIZE(Atlas%MaxSizes)
     call INITIALIZE(Atlas%Current)
@@ -216,15 +215,13 @@ CONTAINS
     call INITIALIZE(Atlas%Data)
     call BC_Set_Name(Atlas, BC_NO_NAME)
 
-    return
   end subroutine InitializeAtlas
 
   subroutine AllocAtlas(Atlas, MaxNumberOfCharts, MaxAtlasDataSize, Dimensionality, DOF)
     ! Alloc memory for chart data and specifiers
-    implicit none
-    type (BC_Atlas), intent(INOUT) :: Atlas
-    integer( int_kind),         intent(IN   ) :: MaxNumberOfCharts, MaxAtlasDataSize
-    integer( int_kind),         intent(IN   ) :: DIMENSIONALITY, DOF
+    type(BC_Atlas), intent(INOUT) :: Atlas
+    integer, intent(IN) :: MaxNumberOfCharts, MaxAtlasDataSize
+    integer, intent(IN) :: DIMENSIONALITY, DOF
 
     call ALLOC(Atlas%Spec, SIZE=MaxNumberOfCharts)
     call ALLOC(Atlas%Data, SIZE=MaxAtlasDataSize, DIMENSIONALITY=DIMENSIONALITY, DOF = DOF)
@@ -238,18 +235,14 @@ CONTAINS
     Atlas%Current%NumberOfCharts    = 0
     Atlas%Current%Scope             = BC_Cells_No_Scope
 
-    return
   end subroutine AllocAtlas
 
   subroutine FreeAtlas(Atlas)
     ! Free memory for chart data and specifiers
-    implicit none
-    type (BC_Atlas), intent(INOUT) :: Atlas
-
+    type(BC_Atlas), intent(INOUT) :: Atlas
     call FREE(Atlas%Spec)
     call FREE(Atlas%Data)
     call INITIALIZE(Atlas)
-    return
   end subroutine FreeAtlas
 
   subroutine AtlasCopy(AtlasDest, AtlasSrc)
@@ -258,9 +251,8 @@ CONTAINS
     ! This does not do any memory allocation.  Assumes that is already done.
     ! Since memory allocation has been done, and associated fields filed in,
     ! AtlasDest must be INOUT.
-    implicit none
     type(BC_Atlas), intent(INOUT) :: AtlasDest
-    type(BC_Atlas), intent(IN   ) :: AtlasSrc
+    type(BC_Atlas), intent(IN) :: AtlasSrc
 
     ! Copy the specs
     AtlasDest%Spec = AtlasSrc%Spec
@@ -273,7 +265,6 @@ CONTAINS
 
     AtlasDest%Name = BC_Get_Name(AtlasSrc)
 
-    return
   end subroutine AtlasCopy
 
   subroutine AtlasClone(AtlasDest, AtlasSrc)
@@ -282,9 +273,8 @@ CONTAINS
     ! all Src data into it.
     ! The cloned Atlas has all of its own memory, and is fully
     ! indepenent of the src.  
-    implicit none
-    type(BC_Atlas), intent(  OUT) :: AtlasDest
-    type(BC_Atlas), intent(IN   ) :: AtlasSrc
+    type(BC_Atlas), intent(OUT) :: AtlasDest
+    type(BC_Atlas), intent(IN) :: AtlasSrc
 
     ! First we have to initialize the dest
     call INITIALIZE(AtlasDest)
@@ -298,18 +288,16 @@ CONTAINS
     ! Finally, just copy the data from Src into Dest
     AtlasDest = AtlasSrc
 
-    return
   end subroutine AtlasClone
 
   subroutine ReAllocAtlas(Atlas, MaxNumberOfCharts, MaxAtlasDataSize)
     ! Resize Atlas to hold more charts, and more chart data space.
     ! Returned Atlas has original data at head of all lists
-    implicit none
     type(BC_Atlas), intent(INOUT) :: Atlas
-    integer( int_kind),        intent(IN   ) :: MaxNumberOfCharts, MaxAtlasDataSize
+    integer, intent(IN) :: MaxNumberOfCharts, MaxAtlasDataSize
 
     ! Local variables
-    type (BC_Atlas) :: OrigAtlas
+    type(BC_Atlas) :: OrigAtlas
 
     ! Make space to hold the original data
     call INITIALIZE(OrigAtlas)
@@ -336,23 +324,21 @@ CONTAINS
     ! Destroy the temp
     call FREE(OrigAtlas)
 
-    return
   end subroutine ReAllocAtlas
   
   subroutine AtlasAppend(Atlas, Values, Positions, ValueIndex, UseFunction, Cell, Face)
     ! Append a chart of data onto an Atlas
-    implicit none
     type(BC_Atlas),       intent(INOUT) :: Atlas
-    real(real_kind), dimension(:,:), intent(IN   ) :: Values
-    real(real_kind), dimension(:,:), intent(IN   ) :: Positions
-    integer( int_kind),dimension(:), intent(IN   ) :: ValueIndex
-    logical( log_kind),dimension(:), intent(IN   ) :: UseFunction
-    integer( int_kind),              intent(IN   ) :: Cell
-    integer( int_kind), OPTIONAL,    intent(IN   ) :: Face
+    real(r8), dimension(:,:), intent(IN) :: Values
+    real(r8), dimension(:,:), intent(IN) :: Positions
+    integer,dimension(:), intent(IN) :: ValueIndex
+    logical,dimension(:), intent(IN) :: UseFunction
+    integer, intent(IN) :: Cell
+    integer, OPTIONAL, intent(IN) :: Face
 
     ! Local variables
-    integer( int_kind) :: Offset, Length, AtlasIndex, NewAtlasDataSize
-    integer( int_kind) :: NewMaxAtlasDataSize, NewMaxNumberOfCharts
+    integer :: Offset, Length, AtlasIndex, NewAtlasDataSize
+    integer :: NewMaxAtlasDataSize, NewMaxNumberOfCharts
     
     ! The offset is just one more than the current chart data size
     Offset = SIZE(Atlas) + 1
@@ -394,7 +380,6 @@ CONTAINS
                             CELL=Cell,                  &
                             FACE=Face)
     Atlas%Current%AtlasDataSize = NewAtlasDataSize
-    return
   end subroutine AtlasAppend
     
 
@@ -403,292 +388,224 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   function AtlasData(Atlas)
-    implicit none
-    type (BC_Atlas), TARGET,       &
-                     intent(IN   ):: Atlas
-    type (BC_Atlas_Data), POINTER :: AtlasData
+    type(BC_Atlas), TARGET, intent(IN):: Atlas
+    type(BC_Atlas_Data), POINTER :: AtlasData
     AtlasData => Atlas%Data
-    return
   end function AtlasData
 
   function AtlasNumberOfCharts(Atlas)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind)                       :: AtlasNumberOfCharts
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer :: AtlasNumberOfCharts
     AtlasNumberOfCharts = Atlas%Current%NumberOfCharts
-    return
   end function AtlasNumberOfCharts
 
   function AtlasMaxNumberOfCharts(Atlas)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind)                       :: AtlasMaxNumberOfCharts
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer :: AtlasMaxNumberOfCharts
     AtlasMaxNumberOfCharts = Atlas%MaxSizes%MaxNumberOfCharts
-    return
   end function AtlasMaxNumberOfCharts
 
   function AtlasDimensionality(Atlas)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind)                       :: AtlasDimensionality
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer :: AtlasDimensionality
     AtlasDimensionality = Atlas%MaxSizes%Dimensionality
-    return
   end function AtlasDimensionality
 
   subroutine AtlasSetDOF(Atlas, DOF)
-    implicit none
-    type (BC_Atlas), intent(INOUT) :: Atlas
+    type(BC_Atlas), intent(INOUT) :: Atlas
     integer, intent(IN) :: DOF
-
     call BC_Set_DOF(Atlas%MaxSizes, DOF)
-    return
   end subroutine AtlasSetDOF
 
   function AtlasGetDOF(Atlas) RESULT(DOF)
-    implicit none
-    type (BC_Atlas), intent(IN) :: Atlas
+    type(BC_Atlas), intent(IN) :: Atlas
     integer :: DOF
     DOF = BC_Get_DOF(Atlas%MaxSizes)
-    return
   end function AtlasGetDOF
 
   function AtlasFaceFromIndex(Atlas, AtlasIndex) RESULT(Face)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    integer( int_kind)                       :: Face
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    integer :: Face
     Face = Atlas%Data%Face(BC_Get_Offset(Atlas, AtlasIndex))
-    return
   end function AtlasFaceFromIndex
 
   function AtlasFaceFromAtlas(Atlas) RESULT(Faces)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind), dimension(:), POINTER:: Faces
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, dimension(:), POINTER:: Faces
     Faces => Atlas%Data%Face
-    return
   end function AtlasFaceFromAtlas
 
   function AtlasCellFromIndex(Atlas, AtlasIndex) RESULT(Cell)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    integer( int_kind)                       :: Cell
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    integer :: Cell
     Cell = Atlas%Data%Cell(BC_Get_Offset(Atlas, AtlasIndex))
-    return
   end function AtlasCellFromIndex
 
   function AtlasCellFromAtlas(Atlas) RESULT(Cells)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind), dimension(:), POINTER:: Cells
+    type(BC_Atlas), intent(IN)   :: Atlas
+    integer, dimension(:), POINTER:: Cells
     Cells => Atlas%Data%Cell
-    return
   end function AtlasCellFromAtlas
 
   function AtlasOffsetFromIndex(Atlas, AtlasIndex) RESULT(Offset)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    integer( int_kind)                       :: Offset
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    integer :: Offset
     Offset = Atlas%Spec%Offset(AtlasIndex)
-    return
   end function AtlasOffsetFromIndex
 
   function AtlasOffsetFromAtlas(Atlas) RESULT(Offsets)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind), dimension(:), POINTER:: Offsets
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, dimension(:), POINTER:: Offsets
     Offsets => Atlas%Spec%Offset
-    return
   end function AtlasOffsetFromAtlas
 
   function AtlasLengthFromIndex(Atlas, AtlasIndex) RESULT(Length)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    integer( int_kind)                       :: Length
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    integer :: Length
     Length = Atlas%Spec%Lengths(AtlasIndex)
-    return
   end function AtlasLengthFromIndex
 
   function AtlasLengthFromAtlas(Atlas) RESULT(Lengths)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind), dimension(:), POINTER:: Lengths
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, dimension(:), POINTER:: Lengths
     Lengths => Atlas%Spec%Lengths
-    return
   end function AtlasLengthFromAtlas
 
   function AtlasMaxAtlasDataSize(Atlas)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind)                       :: AtlasMaxAtlasDataSize
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer :: AtlasMaxAtlasDataSize
     AtlasMaxAtlasDataSize = SIZE(Atlas%Data)
-    return
   end function AtlasMaxAtlasDataSize
 
   function AtlasAtlasDataSize(Atlas)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind)                       :: AtlasAtlasDataSize
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer :: AtlasAtlasDataSize
     AtlasAtlasDataSize = Atlas%Current%AtlasDataSize
-    return
   end function AtlasAtlasDataSize
 
   subroutine AtlasSetAtlasDataSize(Atlas, SIZE)
-    implicit none
-    type (BC_Atlas), intent(INOUT)   :: Atlas
-    integer( int_kind)                          :: SIZE
+    type(BC_Atlas), intent(INOUT) :: Atlas
+    integer :: SIZE
     Atlas%Current%AtlasDataSize = SIZE
-    return
   end subroutine AtlasSetAtlasDataSize
 
   function AtlasValuesFromIndex(Atlas, AtlasIndex) RESULT(Values)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    real(real_kind), dimension(:,:), POINTER :: Values
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    real(r8), dimension(:,:), POINTER :: Values
 
     ! Local variables
-    integer( int_kind) :: Offset, Length
+    integer :: Offset, Length
 
     Offset = BC_Get_Offset(Atlas, AtlasIndex)
     Length = BC_Get_Length(Atlas, AtlasIndex)
     
     Values => Atlas%Data%Values(:,Offset: Offset+Length-1)
 
-    return
   end function AtlasValuesFromIndex
 
   function AtlasValuesFromAtlas(Atlas) RESULT(Values)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    real(real_kind), dimension(:,:), POINTER :: Values
+    type(BC_Atlas), intent(IN) :: Atlas
+    real(r8), dimension(:,:), POINTER :: Values
 
     Values => Atlas%Data%Values
 
-    return
   end function AtlasValuesFromAtlas
 
   function AtlasValueIndexFromIndex(Atlas, AtlasIndex) RESULT(ValueIndex)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    integer( int_kind), dimension(:), POINTER:: ValueIndex
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    integer, dimension(:), POINTER:: ValueIndex
 
     ! Local variables
-    integer( int_kind) :: Offset, Length
+    integer :: Offset, Length
 
     Offset = BC_Get_Offset(Atlas, AtlasIndex)
     Length = BC_Get_Length(Atlas, AtlasIndex)
     
     ValueIndex => Atlas%Data%ValueIndex(Offset: Offset+Length-1)
 
-    return
   end function AtlasValueIndexFromIndex
 
   function AtlasValueIndexFromAtlas(Atlas) RESULT(ValueIndex)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind), dimension(:), POINTER:: ValueIndex
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, dimension(:), POINTER:: ValueIndex
 
     ValueIndex => Atlas%Data%ValueIndex
 
-    return
   end function AtlasValueIndexFromAtlas
 
   function AtlasUseFunctionFromIndex(Atlas, AtlasIndex) RESULT(UseFunction)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    logical( log_kind), dimension(:), POINTER:: UseFunction
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    logical, dimension(:), POINTER:: UseFunction
 
     ! Local variables
-    integer( int_kind) :: Offset, Length
+    integer :: Offset, Length
 
     Offset = BC_Get_Offset(Atlas, AtlasIndex)
     Length = BC_Get_Length(Atlas, AtlasIndex)
     
     UseFunction => Atlas%Data%UseFunction(Offset: Offset+Length-1)
 
-    return
   end function AtlasUseFunctionFromIndex
 
   function AtlasUseFunctionFromAtlas(Atlas) RESULT(UseFunction)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    logical( log_kind), dimension(:), POINTER:: UseFunction
-
+    type(BC_Atlas), intent(IN) :: Atlas
+    logical, dimension(:), POINTER:: UseFunction
     UseFunction => Atlas%Data%UseFunction
-
-    return
   end function AtlasUseFunctionFromAtlas
 
   function AtlasPositionsFromIndex(Atlas, AtlasIndex) RESULT(Positions)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind),         intent(IN)   :: AtlasIndex
-    real(real_kind),dimension(:,:), POINTER  :: Positions
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer, intent(IN) :: AtlasIndex
+    real(r8),dimension(:,:), POINTER  :: Positions
 
     ! Local variables
-    integer( int_kind) :: Offset, Length
+    integer :: Offset, Length
 
     Offset = BC_Get_Offset(Atlas, AtlasIndex)
     Length = BC_Get_Length(Atlas, AtlasIndex)
     
     Positions => Atlas%Data%Positions(:, Offset: Offset+Length-1)
 
-    return
   end function AtlasPositionsFromIndex
 
   function AtlasPositionsFromAtlas(Atlas) RESULT(Positions)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    real(real_kind),dimension(:,:), POINTER  :: Positions
-
+    type(BC_Atlas), intent(IN) :: Atlas
+    real(r8),dimension(:,:), POINTER  :: Positions
     Positions => Atlas%Data%Positions
-
-    return
   end function AtlasPositionsFromAtlas
 
   function AtlasGetScope(Atlas) RESULT(SCOPE)
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    integer( int_kind)                       :: SCOPE
-
+    type(BC_Atlas), intent(IN) :: Atlas
+    integer :: SCOPE
     SCOPE = Atlas%Current%Scope
-    return
   end function AtlasGetScope
 
   subroutine AtlasSetScope(Atlas, SCOPE)
-    implicit none
-    type (BC_Atlas), intent(INOUT)   :: Atlas
-    integer( int_kind),         intent(IN   )   :: SCOPE
-
+    type(BC_Atlas), intent(INOUT) :: Atlas
+    integer, intent(IN) :: SCOPE
     Atlas%Current%Scope = SCOPE
-    return
   end subroutine AtlasSetScope
     
 
   subroutine AtlasSetName(Atlas, Name)
     ! Set the name field in the Atlas
-    implicit none
-    type (BC_Atlas), intent(INOUT)   :: Atlas
-    character (LEN=*), INTENT(IN)    :: Name
-
+    type(BC_Atlas), intent(INOUT) :: Atlas
+    character(*), INTENT(IN) :: Name
     Atlas%Name = Name
-    return
   end subroutine AtlasSetName
   
   function AtlasGetName(Atlas) RESULT(Name)
     ! Get the name field in the Atlas
-    implicit none
-    type (BC_Atlas), intent(IN)   :: Atlas
-    character (LEN=BC_STRING_LEN) :: Name
-
+    type(BC_Atlas), intent(IN) :: Atlas
+    character(BC_STRING_LEN) :: Name
     Name = TRIM(Atlas%Name)
-    return
   end function AtlasGetName
     
 

@@ -2,7 +2,7 @@
 
 module solenoid_fields
 
-  use kind_module, only: r8=>real_kind
+  use kinds, only: r8
   implicit none
   private
   

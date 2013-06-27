@@ -19,25 +19,20 @@ MODULE INTERFACE_OUTPUT_MODULE
   !            Douglas B. Kothe, LANL T-3 (dbk@lanl.gov)
   !
   !=======================================================================
-  use kind_module,      only: int_kind, log_kind
+  use kinds, only: r8
   use parameter_module, only: mops
-
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: INTERFACE_OUTPUT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! OUTPUTS namelist interface variables.
-  integer(KIND = int_kind), dimension(mops), save, public :: &
-                                             Int_Output_Dt_Multiplier
+  integer, dimension(mops), save, public :: Int_Output_Dt_Multiplier
  
   ! Logical flags.
-  logical(KIND = log_kind), save, public :: interface_dump, time_for_int_dump
+  logical, save, public :: interface_dump, time_for_int_dump
   
   integer, save :: int_lun = -1
   logical, save :: int_file_opened = .false.
@@ -56,7 +51,6 @@ CONTAINS
     !=======================================================================
     use parallel_info_module, only: p_info
     use interface_module, only: Int_Geom
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: orthogonal_mesh
     use parameter_module, only: ndim, nicells, nvc
     use pgslib_module,    only: PGSLib_GLOBAL_SUM, pgslib_collate
@@ -67,14 +61,11 @@ CONTAINS
 #else
     use truchas_env, only: output_file_name, new_unit
 #endif
-
- 
-    implicit none
  
     ! Local Variables
-    integer(KIND = int_kind) :: v, n, nicells_tot
-    real(KIND = real_kind)   :: dump_time
-    real(real_kind), allocatable :: array(:)
+    integer  :: v, n, nicells_tot
+    real(r8) :: dump_time
+    real(r8), allocatable :: array(:)
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     

@@ -10,7 +10,7 @@
 
 module MaxwellBoundaryData
 
-  use kind_module, only: rk => real_kind
+  use kinds, only: rk => r8
   use distributed_mesh
   implicit none
   private
@@ -113,7 +113,7 @@ contains
     
     interface
       function f (x) result (fx)
-        use kind_module, only: rk => real_kind
+        use kinds, only: rk => r8
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f
@@ -166,7 +166,7 @@ contains
     
     interface
       function f (x) result (fx)
-        use kind_module, only: rk => real_kind
+        use kinds, only: rk => r8
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f
@@ -194,7 +194,7 @@ contains
     
     interface
       function f (x) result (fx)
-        use kind_module, only: rk => real_kind
+        use kinds, only: rk => r8
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f
@@ -223,7 +223,7 @@ contains
     real(kind=rk) :: avg(size(x1))
     interface
       function f (x) result (fx)
-        use kind_module, only: rk => real_kind
+        use kinds, only: rk => r8
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f

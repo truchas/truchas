@@ -8,19 +8,13 @@ MODULE CUTOFFS_MODULE
   ! Author(s): The Telluridians (telluride-info@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: real_kind
-
+  use kinds, only: r8
   implicit none
-  save
-
-  ! Public Module
-  public
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+  private
 
   ! Define cutoff quantities
-  real(KIND = real_kind) :: alittle = EPSILON(1.0_REAL_KIND) ! Relative zero for REAL_KIND
-                                                             ! Can be overwritten in Numerics namelist
-  real(KIND = real_kind) :: cutvof  ! Volume fraction cutoff
+  real(r8), public, save :: alittle = EPSILON(1.0_r8) ! Relative zero for real values
+                                                      ! Can be overwritten in Numerics namelist
+  real(r8), public, save :: cutvof  ! Volume fraction cutoff
 
 END MODULE CUTOFFS_MODULE

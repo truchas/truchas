@@ -6,7 +6,7 @@ module bdf2_integrator
   use bdf2_controller
   use bdf2_profiling
   use solution_history
-  use fixed_point_accelerator
+  use nka_type
   implicit none
   private
 
@@ -46,7 +46,7 @@ module bdf2_integrator
     real(kind=rk), pointer :: dfdu(:,:) => null()
     integer       :: freeze_count   ! Don't increase step size for this number of steps
 
-    type(fpa_state), pointer :: fpa => null()
+    type(nka), pointer :: fpa => null()
     
     integer :: state = STATE_UNDEF
     type(bdf2_profile), pointer :: profile => null()
@@ -108,7 +108,7 @@ contains
     type(bdf2_state), intent(inout) :: state
     call destroy (state%uhist)
     if (associated(state%fpa)) then
-      call fpa_destroy (state%fpa)
+      call nka_delete (state%fpa)
       deallocate(state%fpa)
     end if
     if (associated(state%profile)) deallocate(state%profile)
@@ -174,16 +174,17 @@ contains
       renew_jacobian = .false.
     end if
     
-    !! Initialize the FPA structure.
+    !! Initialize the NKA structure.
     if (control%mvec > 0) then
       if (.not.associated(state%fpa)) then
         allocate(state%fpa)
         mv = min(control%mvec, control%mitr-1, state%n)
-        call fpa_create (state%fpa, size(u), mv, control%vtol)
+        call nka_init (state%fpa, size(u), mv)
+        call nka_set_vec_tol (state%fpa, control%vtol)
       end if
     else
       if (associated(state%fpa)) then
-        call fpa_destroy (state%fpa)
+        call nka_delete (state%fpa)
         deallocate(state%fpa)
       end if
     end if
@@ -385,14 +386,14 @@ contains
  !!    u given
  !!    Do until converged
  !!      du <-- R(u)
- !!      du <-- FPA(du)                      
+ !!      du <-- NKA(du)                      
  !!      u  <-- u - du
  !!    End do
  !!
  !! The Newton correction equation R'(u) du = R(u), R'(u) = I - h * df/du,
  !! has been approximated by entirely neglecting the Jacobian matrix of f.
  !! The inferior correction du that results is accelerated by the procedure
- !! FPA which uses information about the true R' gleaned from the sequence
+ !! NKA which uses information about the true R' gleaned from the sequence
  !! of previous R values.
  !!
  !! [1] N.N.Carlson and K.Miller, "Design and application of a gradient-
@@ -415,7 +416,7 @@ contains
     integer  :: itr
     real(kind=rk) :: error, du(size(u)), ddu(size(u))
     
-    if (associated(state%fpa)) call fpa_restart (state%fpa)
+    if (associated(state%fpa)) call nka_restart (state%fpa)
  
     itr = 0
     u = up
@@ -438,7 +439,7 @@ contains
       ddu = u - u0 - h*ddu
 
       !! Accelerated correction.
-      if (associated(state%fpa)) call fpa_correction (state%fpa, ddu)
+      if (associated(state%fpa)) call nka_accel_update (state%fpa, ddu)
 
 
       !! Next solution iterate.

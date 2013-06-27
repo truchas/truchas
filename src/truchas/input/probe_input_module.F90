@@ -19,10 +19,9 @@ MODULE PROBE_INPUT_MODULE
   ! Author(s): Sharen Cummins (scummins@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Subroutines
@@ -40,27 +39,23 @@ CONTAINS
     !
     !=======================================================================
 
-    use kind_module,            only: int_kind, log_kind
     use probe_data_module,      only: probe_name, probe_description, &
                                       probe_coords, probe_coords_scale
     use mesh_input_module,      only: coordinate_scale_factor
-    use constants_module,       only: one, preset
+    use input_utilities,        only: NULL_R
     use parameter_module,       only: nprobes
-    implicit none
  
     ! Arguments
-
-    logical(log_kind), intent(INOUT)  :: fatal
+    logical, intent(INOUT)  :: fatal
 
     ! Local Variables
-
-    integer(KIND = int_kind)                    :: i
-    CHARACTER(LEN=256)                          :: myName 
+    integer :: i
+    character(256) :: myName 
     character(128) :: message
 
    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    fatal         = .false.
+    fatal = .false.
 
     write (message, 10) nprobes
 10  format(9x,'Identified ',i0,' probe(s)')
@@ -82,9 +77,9 @@ CONTAINS
       end if
 
 
-      if ((probe_coords(1, i)  == preset) .or. &
-           (probe_coords(2, i) == preset) .or. &
-           (probe_coords(3, i) == preset)) then
+      if ((probe_coords(1, i)  == NULL_R) .or. &
+           (probe_coords(2, i) == NULL_R) .or. &
+           (probe_coords(3, i) == NULL_R)) then
          write (message, 30) i
 30       format ('probe coordinates in PROBE namelist ',i2,' is invalid')
          call TLS_error (message)
@@ -92,7 +87,7 @@ CONTAINS
          exit 
       end if
 
-      if (coordinate_scale_factor /= one .and. probe_coords_scale(i) == preset) then
+      if (coordinate_scale_factor /= 1 .and. probe_coords_scale(i) == NULL_R) then
          write (message, 40) i
 40       format ('Mesh coordinate_scale_factor is specified, so probe_coords_scale factor reqd in PROBE namelist ',i2)
          call TLS_error (message)
@@ -100,14 +95,11 @@ CONTAINS
          exit 
       end if
 
-      if (coordinate_scale_factor == one .and. probe_coords_scale(i) == preset) then
-         probe_coords_scale(i) = one
+      if (coordinate_scale_factor == 1 .and. probe_coords_scale(i) == NULL_R) then
+         probe_coords_scale(i) = 1
       end if
 
-
    end do
-
-   return
 
  END SUBROUTINE PROBE_CHECK
   
@@ -120,21 +112,15 @@ CONTAINS
     !=======================================================================
      use probe_data_module,   only: probe_name, probe_description, &
                                     probe_coords, probe_coords_scale
-
-     use constants_module, only: preset
-    
-     implicit none
+     use input_utilities,     only: NULL_R
 
      ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
      ! Default probe variables
-
      probe_name         = 'Unnamed'
      probe_description  = 'None'
-     probe_coords       = preset 
-     probe_coords_scale = preset
-
-    return
+     probe_coords       = NULL_R 
+     probe_coords_scale = NULL_R
 
   END SUBROUTINE PROBE_DEFAULT
 
@@ -151,9 +137,7 @@ CONTAINS
 
     use probe_data_module,      only: probe_name, probe_description, &
                                       probe_coords, probe_coords_scale
-    use constants_module,       only: ipreset, preset
-    use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind
+    use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R
     use parallel_info_module,   only: p_info
     use parameter_module,       only: string_dim, string_len, nprobes
     use pgslib_module,          only: PGSLIB_BCAST
@@ -161,10 +145,10 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! Local Variables
-    character(LEN = string_len), dimension(string_dim) :: Fatal_Error_String
-    logical(KIND = log_kind) :: fatal, read_done, found
-    integer(KIND = int_kind) :: probe_number
-    integer(KIND = int_kind) :: ioerror
+    character(string_len), dimension(string_dim) :: Fatal_Error_String
+    logical :: fatal, read_done, found
+    integer :: probe_number
+    integer :: ioerror
     character(128) :: message
 
     ! Define PROBE  Namelist
@@ -173,8 +157,6 @@ CONTAINS
                        probe_description,      &
                        probe_coords_scale,     &
                        probe_coords
-
-
    
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -204,12 +186,12 @@ CONTAINS
 
        ! Re-initialize critical input values
 
-       probe_number              = ipreset
+       probe_number              = NULL_I
 
        probe_name(0)             = 'Unnamed'
        probe_description(0)      = 'None'
-       probe_coords(:,0)         = preset
-       probe_coords_scale(0)     = preset
+       probe_coords(:,0)         = NULL_R
+       probe_coords_scale(0)     = NULL_R
 
        ! Read next PROBE
        READ_IO_PE_ONLY: if (p_info%IOP) then
@@ -259,7 +241,7 @@ CONTAINS
        ! separate routine with checking & error msgs, etc. later
 
        nprobes  = nprobes + 1
-       PROBE_ASSIGNED: if (probe_number == ipreset) then
+       PROBE_ASSIGNED: if (probe_number == NULL_I) then
           probe_number  = nprobes 
           write (message, 15) nprobes , nprobes 
 15        format (9x,'INFO: Assigned probe_number ',i0,' to PROBE namelist ',i0)
@@ -302,8 +284,6 @@ CONTAINS
 
     use pgslib_module,        only: PGSLIB_BCAST
 
-    implicit none
-
     ! Argument List
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -312,8 +292,6 @@ CONTAINS
        call PGSLIB_BCAST (probe_description(0))
        call PGSLIB_BCAST (probe_coords(:,0))
        call PGSLIB_BCAST (probe_coords_scale(0))
-
-    return
 
   END SUBROUTINE PROBE_INPUT_PARALLEL
 

@@ -17,13 +17,11 @@ MODULE RANDOM_MODULE
   ! Author(s): Jim Sicilian, CCS-2, sicilian@lanl.gov
   !
   !=======================================================================
-  use kind_module,    only: int_kind
-
+  use kinds, only: r8
   implicit none
-  ! Private Module
   private
-  ! Private Data
-  integer(KIND = int_kind), save :: local_random_seed
+
+  integer, save :: local_random_seed
 
   ! Public Procedures and Data
   public :: GENERATE_RANDOM, INITIALIZE_RANDOM
@@ -32,10 +30,9 @@ CONTAINS
     ! <><><><><><><><><><><><> PUBLIC ROUTINES <><><><><><><><><><><><><><><>
     SUBROUTINE INITIALIZE_RANDOM()
 #ifdef SYSTEM_RANDOM_GEN
-    use kind_module,    only: int_kind
 
     ! Local Variables
-    integer(KIND = int_kind) :: kr, seedsize
+    integer :: kr, seedsize
 
     ! initialize the random number sequence using the FORTRAN 90 syntax
          call RANDOM_SEED (SIZE = seedsize)
@@ -44,27 +41,21 @@ CONTAINS
 #ifdef LOCAL_RANDOM_GEN
          local_random_seed = 61
 #endif
-    return
     END SUBROUTINE INITIALIZE_RANDOM
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     SUBROUTINE GENERATE_RANDOM(Rlow, RHigh, N, Rand)
-    use kind_module,    only: int_kind, real_kind
-
-    implicit none
 
     ! Local Variables
-    integer(KIND= int_kind), parameter  :: k1 = 714025, &
-                                           k2 = 150889,  &
-                                           MaxSize = 1366
+    integer, parameter :: k1 = 714025, k2 = 150889, MaxSize = 1366
     ! rMaxSize is the reciprocal of MaxSize
-    real(KIND= real_kind), parameter    :: rMaxSize = 7.32064421e-4
-    integer(KIND= int_kind)             :: i
+    real(r8), parameter :: rMaxSize = 7.32064421e-4
+    integer :: i
 
     ! Arguments
-    integer(Kind= int_kind)             :: N
-    real(Kind= real_kind)               :: Rlow, Rhigh
-    real(Kind= real_kind), dimension(N) :: Rand
+    integer :: N
+    real(r8) :: Rlow, Rhigh
+    real(r8), dimension(N) :: Rand
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 #ifdef SYSTEM_RANDOM_GEN
@@ -78,8 +69,7 @@ CONTAINS
          do i = 1,N
              local_random_seed = MOD(local_random_seed*k1 + k2, MaxSize)
              Rand(i)=local_random_seed*(Rhigh-Rlow)*rMaxSize + Rlow
-         enddo
+         end do
 #endif
-    return
   END SUBROUTINE GENERATE_RANDOM
 END MODULE RANDOM_MODULE

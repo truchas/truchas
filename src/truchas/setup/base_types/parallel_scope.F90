@@ -10,7 +10,6 @@ MODULE PARALLEL_SCOPE
   ! Author(s): Robert Ferrell (ferrell@cpca.com)
   !
   !=======================================================================
-  use kind_module
   implicit none
   save
 
@@ -21,7 +20,7 @@ MODULE PARALLEL_SCOPE
 
   ! SCOPE definitions
   type PL_SCOPE
-     integer(int_kind) :: SCOPE
+     integer :: SCOPE
   end type PL_SCOPE
   ! SCOPE Parameters
   type (PL_SCOPE), parameter :: GLOBAL_SCOPE = PL_SCOPE(1)
@@ -38,24 +37,17 @@ MODULE PARALLEL_SCOPE
 CONTAINS
 
   function EQ_SCOPE(A, B)
-    implicit none
-    type (PL_SCOPE), intent(IN) :: A, B
-    logical (Log_kind)          :: EQ_SCOPE
-
+    type(PL_SCOPE), intent(IN) :: A, B
+    logical :: EQ_SCOPE
     EQ_SCOPE = (A%Scope == B%Scope)
-
-    RETURN
   end function EQ_SCOPE
   
   function NEQ_SCOPE(A, B)
-    implicit none
     type (PL_SCOPE), intent(IN) :: A, B
-    logical (Log_kind)          :: NEQ_SCOPE
-
+    logical:: NEQ_SCOPE
     NEQ_SCOPE = (A%Scope /= B%Scope)
-
-    RETURN
   end function NEQ_SCOPE
+
 END MODULE PARALLEL_SCOPE
 
   

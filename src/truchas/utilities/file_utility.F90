@@ -1,11 +1,14 @@
 module file_utility
+
   implicit none
   private
-   public :: MAKE_FILE_NAME
-   public :: COUNT_TOKENS
-   public :: GET_TOKEN
+  
+  public :: MAKE_FILE_NAME
+  public :: COUNT_TOKENS
+  public :: GET_TOKEN
 
- contains
+contains
+
   FUNCTION MAKE_FILE_NAME (string, number, path, suffix)
     !---------------------------------------------------------------------------
     ! Purpose:
@@ -20,25 +23,21 @@ module file_utility
     !
     !    Added Suffix so that you can send .gmv or whatever --Sriram
     !---------------------------------------------------------------------------
-    use kind_module,   only: int_kind
     use output_data_module, only: prefix
-    implicit none
 
     ! argument list
-    character (LEN=*),            intent(IN) :: string
-    integer (int_kind), optional, intent(IN) :: number
-    character (LEN=*),  optional, intent(IN) :: path
-    character (LEN=*),  optional, intent(IN) :: suffix
+    character(*), intent(IN) :: string
+    integer, optional, intent(IN) :: number
+    character(*), optional, intent(IN) :: path
+    character(*), optional, intent(IN) :: suffix
 
     ! function return
-    character (LEN=1024) :: MAKE_FILE_NAME
+    character(1024) :: MAKE_FILE_NAME
 
     ! local variables
-    character (LEN=5)    :: number_string
-    character (LEN=1024) :: root
-    character (LEN=1024) :: buff
-    integer              :: start
-    integer              :: end
+    character(5)    :: number_string
+    character(1024) :: root, buff
+    integer :: start, end
 
     !---------------------------------------------------------------------------
 
@@ -54,17 +53,9 @@ module file_utility
        if (end > 0) then
           ! make sure buff is terminated with a /
           if (buff(end:end) /= '/') then
-#if ( defined(DARWIN_NAG_COMPILER_WORKAROUND) )
-             buff = buff(1:len_trim(buff)) // '/'
-#else
              buff = TRIM(buff) // '/'
-#endif
           end if
-#if ( defined(DARWIN_NAG_COMPILER_WORKAROUND) )
-          buff = buff(1:len_trim(buff)) // TRIM(root)
-#else
           buff = TRIM(buff) // TRIM(root)
-#endif
        else
           ! don't append, just copy
           buff = TRIM(root)
@@ -78,36 +69,22 @@ module file_utility
 
     ! conditionally append string
     if (LEN_TRIM(string) /= 0) then
-#if ( defined(DARWIN_NAG_COMPILER_WORKAROUND) )
-       buff = buff(1:len_trim(buff)) //  '.' // TRIM(string)
-#else
        buff = TRIM(buff) // '.' // TRIM(string)
-#endif
     end if
 
     ! conditionally append number
     if (present(number)) then
        write (number_string,'(i5.5)') number
-#if ( defined(DARWIN_NAG_COMPILER_WORKAROUND) )
-       buff = buff(1:len_trim(buff)) // '.' // number_string
-#else
        buff = TRIM(buff) // '.' // number_string
-#endif
     end if
 
     ! conditionally append suffix
     if ( present(suffix) ) then
-#if ( defined(DARWIN_NAG_COMPILER_WORKAROUND) )
-       buff = buff(1:len_trim(buff)) // '.' // TRIM(suffix)
-#else
        buff = TRIM(buff) // '.' // TRIM(suffix)
-#endif
     end if
 
     ! return file name
     MAKE_FILE_NAME = TRIM(ADJUSTL(buff))
-
-    return
 
   END FUNCTION MAKE_FILE_NAME
 
@@ -120,14 +97,13 @@ module file_utility
     !    
     !    Fixed bug in token count --Sriram
     !---------------------------------------------------------------------------
-    implicit none
 
     ! function result
     Integer :: COUNT_TOKENS
 
     ! Arguments
-    character (LEN=*), Intent(IN) :: string
-    character (LEN=*), Intent(IN) :: separator
+    character(*), Intent(IN) :: string
+    character(*), Intent(IN) :: separator
 
     ! Local Variables
     Integer :: i, j
@@ -149,8 +125,6 @@ module file_utility
        end if
     end do
 
-    return
-
   END FUNCTION COUNT_TOKENS
 
 
@@ -164,13 +138,12 @@ module file_utility
     !    
     !    Generalized to tokens of arbitrary length --Sriram
     !---------------------------------------------------------------------------
-    implicit none
 
     ! arguments
-    integer,           intent(IN)  :: n
-    character (LEN=*), intent(IN)  :: string
-    character (LEN=*), intent(IN)  :: separator
-    character (LEN=*), Intent(OUT) :: token
+    integer, intent(IN)  :: n
+    character(*), intent(IN)  :: string
+    character(*), intent(IN)  :: separator
+    character(*), Intent(OUT) :: token
 
     ! local variables
     integer :: i
@@ -211,94 +184,7 @@ module file_utility
           e=is+1
        end if
     end if
-    return
 
   END SUBROUTINE GET_TOKEN
-
-!!$  FUNCTION COUNT_TOKENS (string, seperator)
-!!$    !---------------------------------------------------------------------------
-!!$    ! Purpose:
-!!$    !
-!!$    !    count tokens in a string
-!!$    !---------------------------------------------------------------------------
-!!$    implicit none
-!!$
-!!$    ! function result
-!!$    Integer :: COUNT_TOKENS
-!!$
-!!$    ! Arguments
-!!$    character (LEN=*), Intent(IN) :: string
-!!$    character (LEN=*), Intent(IN) :: seperator
-!!$
-!!$    ! Local Variables
-!!$    logical :: lcwt     ! true if Last character Was Token
-!!$    Integer :: i
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    COUNT_TOKENS = 0
-!!$    lcwt = .true.
-!!$
-!!$    do i = 1, LEN_TRIM(string)
-!!$       if (string(i:i) == seperator(1:1)) then
-!!$          lcwt = .true.
-!!$       else
-!!$          if (lcwt) COUNT_TOKENS = COUNT_TOKENS + 1
-!!$          lcwt = .false.
-!!$       end if
-!!$    end do
-!!$
-!!$    return
-!!$
-!!$  END FUNCTION COUNT_TOKENS
-!!$
-!!$  !-----------------------------------------------------------------------------
-!!$
-!!$  SUBROUTINE GET_TOKEN (token, n, string, seperator)
-!!$    !---------------------------------------------------------------------------
-!!$    ! Purpose:
-!!$    !
-!!$    !    return the n'th token in a string
-!!$    !---------------------------------------------------------------------------
-!!$    implicit none
-!!$
-!!$    ! arguments
-!!$    integer,           intent(IN)  :: n
-!!$    character (LEN=*), intent(IN)  :: string
-!!$    character (LEN=*), intent(IN)  :: seperator
-!!$    character (LEN=*), Intent(OUT) :: token
-!!$
-!!$    ! local variables
-!!$    character (LEN=1024) :: tmpstring
-!!$    integer :: i
-!!$    integer :: s ! start
-!!$    integer :: e ! end
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    tmpstring = string
-!!$    s = 1
-!!$    e = SCAN(tmpstring(1:), seperator)
-!!$    if (e == 0) then
-!!$       e = LEN_TRIM(tmpstring(1:))
-!!$    else
-!!$       e = e - 1
-!!$    end if
-!!$
-!!$    do i = 1, n-1
-!!$       s = e + 2
-!!$       e = SCAN(tmpstring(s:), seperator)
-!!$       if (e == 0) then
-!!$          e = LEN_TRIM(tmpstring(1:))
-!!$       else
-!!$          e = e - 1
-!!$       end if
-!!$    end do
-!!$
-!!$    token = tmpstring(s:e)
-!!$
-!!$    return
-!!$
-!!$  END SUBROUTINE GET_TOKEN
 
 end module file_utility

@@ -12,12 +12,9 @@ MODULE FLUID_DATA_MODULE
   !            M. A. Christon, LANL CCS-2 (christon@lanl.gov) Sep 2007
   !
   !=======================================================================
-  use kind_module,      only: log_kind, real_kind, int_kind
+  use kinds, only: r8
   use parameter_module, only: maxmat, ndim
-
   implicit none
-
-  ! Private Module
   private
 
   public read_flow_data
@@ -25,72 +22,72 @@ MODULE FLUID_DATA_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Flag for enabling/disabling fluid flow.
-  logical(KIND = log_kind),        public, save                    :: fluid_flow
-  logical(KIND = log_kind),        public, save                    :: fluid_to_move
-  logical(KIND = log_kind),        public, save                    :: mass_limiter
-  real(KIND = real_kind),          public, save                    :: mass_limiter_cutoff
+  logical,  public, save :: fluid_flow
+  logical,  public, save :: fluid_to_move
+  logical,  public, save :: mass_limiter
+  real(r8), public, save :: mass_limiter_cutoff
 
   ! Flag for applying a prescribed velocity field.
-  logical(KIND = log_kind),        public, save                    :: applyflow
+  logical, public, save :: applyflow
 
   ! Flag that defines whether a material flows.
-  logical(KIND = log_kind),        public, save, dimension(maxmat) :: isImmobile
+  logical, public, save, dimension(maxmat) :: isImmobile
 
   ! Flag that defines the existance of a void material in this calculation and its index
-  logical(log_kind),               public, save                    :: Void_Material_Exists
-  integer(int_kind),               public, save, dimension(maxmat) :: Void_Material_Index
-  integer(int_kind),               public, save                    :: Void_material_Count
+  logical, public, save :: Void_Material_Exists
+  integer, public, save, dimension(maxmat) :: Void_Material_Index
+  integer, public, save :: Void_material_Count
 
   ! Value of pressure in the void.
-  real(KIND = real_kind),          public, save                    :: void_pressure
+  real(r8), public, save :: void_pressure
 
   ! Boussinesq approximation
-  logical(KIND = log_kind),        public, save                    :: boussinesq_approximation
+  logical, public, save :: boussinesq_approximation
 
   ! Total volume flowing into and out of the domain.
-  real(KIND = real_kind),          public, save                    :: qin, qout
+  real(r8), public, save :: qin, qout
 
   ! Volume Fraction Cutoff Value  (no flow solution if Vof < fluid_cutoff)
-  real(KIND = real_kind),          public, parameter               :: fluid_cutoff = 0.01
+  real(r8), public, parameter :: fluid_cutoff = 0.01
 
   ! Time-weighting for treatment of momentum deposition due to solidification
-  real(real_kind),                 public, save        :: momentum_solidify_implicitness
+  real(r8), public, save :: momentum_solidify_implicitness
 
   ! Flow arrays.
-  real(KIND = real_kind), pointer, public, save, dimension(:,:)     :: Fluxing_Velocity
-  real(KIND = real_kind), pointer, public, save, dimension(:,:)     :: Face_Interpolation_Factor
-  real(KIND = real_kind), pointer, public, save, dimension(:,:)     :: Momentum_by_Volume
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: fluidVof, fluidVof_n
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: fluidRho
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: fluidRho_n
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: fluidDeltaRho
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: realfluidVof
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: cutRho
+  real(r8), pointer, public, save, dimension(:,:) :: Fluxing_Velocity
+  real(r8), pointer, public, save, dimension(:,:) :: Face_Interpolation_Factor
+  real(r8), pointer, public, save, dimension(:,:) :: Momentum_by_Volume
+  real(r8), pointer, public, save, dimension(:)   :: fluidVof, fluidVof_n
+  real(r8), pointer, public, save, dimension(:)   :: fluidRho
+  real(r8), pointer, public, save, dimension(:)   :: fluidRho_n
+  real(r8), pointer, public, save, dimension(:)   :: fluidDeltaRho
+  real(r8), pointer, public, save, dimension(:)   :: realfluidVof
+  real(r8), pointer, public, save, dimension(:)   :: cutRho
 
 ! Volume-fraction averaged density at n, n+1 for body force terms
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: avgRho
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: avgRho_n
+  real(r8), pointer, public, save, dimension(:) :: avgRho
+  real(r8), pointer, public, save, dimension(:) :: avgRho_n
 
-  real(KIND = real_kind), allocatable, public, save, dimension(:,:) :: Drag_Coefficient
-  real(KIND = real_kind), pointer, public, save, dimension(:)       :: courant
+  real(r8), allocatable, public, save, dimension(:,:) :: Drag_Coefficient
+  real(r8), pointer, public, save, dimension(:)       :: courant
 
   ! Arrays related to partially/totally solidified cells.
-  logical(log_kind),      pointer, public, save, dimension(:)      :: isPureImmobile
-  logical(log_kind),      pointer, public, save, dimension(:,:)    :: Solid_Face
+  logical, pointer, public, save, dimension(:)   :: isPureImmobile
+  logical, pointer, public, save, dimension(:,:) :: Solid_Face
  
   ! Non-Void Cell list
-  logical(KIND = log_kind), pointer, public, save, dimension(:)   :: Cell_isnt_Void
-  logical(KIND = log_kind), pointer, public, save, dimension(:,:) :: Ngbr_isnt_Void
+  logical, pointer, public, save, dimension(:)   :: Cell_isnt_Void
+  logical, pointer, public, save, dimension(:,:) :: Ngbr_isnt_Void
 
   ! Projection / Predictor Communication Arrays
-  real(KIND = real_kind),   public, allocatable, save, dimension(:,:) :: Centered_GradP_Dynamic
-  real(KIND = real_kind),   public, allocatable, save, dimension(:,:) :: Rho_Face, Rho_Face_n
-  real(real_kind), public, save                                       :: MinFluidRho, MinFaceFraction
+  real(r8), public, allocatable, save, dimension(:,:) :: Centered_GradP_Dynamic
+  real(r8), public, allocatable, save, dimension(:,:) :: Rho_Face, Rho_Face_n
+  real(r8), public, save                              :: MinFluidRho, MinFaceFraction
 
   ! Storage moved to a single-allocation per run, rather than once per time-step (MAC)
-  real(real_kind), public, allocatable, save, dimension(:,:)  :: Mom_Delta
-  real(real_kind), public, allocatable, save, dimension(:)    :: pc_delta_rho
-  real(real_kind),          public, save, dimension(ndim) :: minVel, maxVel   
+  real(r8), public, allocatable, save, dimension(:,:) :: Mom_Delta
+  real(r8), public, allocatable, save, dimension(:)   :: pc_delta_rho
+  real(r8), public, save, dimension(ndim) :: minVel, maxVel   
 
  contains 
 
@@ -113,7 +110,6 @@ MODULE FLUID_DATA_MODULE
     use restart_utilities, only: read_dist_array
 
     integer, intent(in) :: unit, version
-
 
     call read_dist_array (unit, Fluxing_Velocity, pcell, 'READ_FLOW_DATA: error reading Fluxing_Velocity records')
 

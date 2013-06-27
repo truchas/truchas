@@ -91,8 +91,6 @@ MODULE DO_INTERFACE
                                    DO_GET_cM_full, DO_DESTROY_cM_full
 
   implicit none
-
-  ! Private Module
   private
 
   ! Public Data Structures
@@ -115,8 +113,6 @@ MODULE DO_INTERFACE
   ! Public Functions
   public :: DO_GoodSolution, DO_GoodPhiSolution
   public :: DO_GET_cM_compressed, DO_GET_cM_full
-
-
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

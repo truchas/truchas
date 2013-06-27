@@ -9,22 +9,17 @@ MODULE ADVECTION_DATA
   ! Author(s):  Ed Dendy     (dendy@lanl.gov)
   !
   !=======================================================================
-  use kind_module, only: int_kind, real_kind
-
+  use kinds, only: r8
   implicit none
-
   private
 
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+  character(80),  public, save :: limiter_type
+  integer, public, save :: advection_order_vol
+  integer, public, save :: advection_order_energy
+  integer, public, save :: advection_order_momentum
+  integer, public, save :: advection_order_species
 
-  character(LEN=80),  public, save                                :: limiter_type
-
-  integer (int_kind), public, save                                :: advection_order_vol
-  integer (int_kind), public, save                                :: advection_order_energy
-  integer (int_kind), public, save                                :: advection_order_momentum
-  integer (int_kind), public, save                                :: advection_order_species
-
-  real(real_kind),    public, save, dimension(:,:),   allocatable :: Momentum_Delta
-  real(real_kind),    public, save, dimension(:,:,:), allocatable :: Volume_Flux
+  real(r8), public, save, dimension(:,:),   allocatable :: Momentum_Delta
+  real(r8), public, save, dimension(:,:,:), allocatable :: Volume_Flux
 
 END MODULE ADVECTION_DATA

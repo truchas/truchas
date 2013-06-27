@@ -30,13 +30,9 @@ MODULE TEMPGRAD_MODULE
   ! Modified by Dave Korzekwa to add the two polynomials instead of 
   !  multiplying them.
   !======================================================================
-
-  USE kind_module,      ONLY: real_kind, int_kind, log_kind
+  use kinds, only: r8
   USE parameter_module, ONLY: ndim, mbody
-  USE constants_module, ONLY: one, preset, zero
-
   IMPLICIT NONE
-
   PRIVATE
 
   ! Public Functions
@@ -46,26 +42,23 @@ MODULE TEMPGRAD_MODULE
   PUBLIC:: TEMP_GRADIENT
 
   ! Internals:
-  INTEGER(KIND = int_kind), PARAMETER            :: maxTerms = 3
+  integer, PARAMETER            :: maxTerms = 3
 
   TYPE TEMP_GRADIENT
-    REAL(KIND = real_kind), DIMENSION(ndim)      :: Origin
-    REAL(KIND = real_kind), DIMENSION(ndim)      :: Axis
-    REAL(KIND = real_kind), DIMENSION(maxTerms)  :: Z_Constants
-    REAL(KIND = real_kind), DIMENSION(maxTerms)  :: R_Constants
-    REAL(KIND = real_kind), DIMENSION(2)         :: Z_Bound
-    REAL(KIND = real_kind), DIMENSION(2)         :: R_Bound
-    INTEGER(KIND = int_kind), DIMENSION(maxTerms):: Z_Exponents
-    INTEGER(KIND = int_kind), DIMENSION(maxTerms):: R_Exponents
-    LOGICAL(kind = log_kind)                     :: On
+    real(r8), DIMENSION(ndim)      :: Origin = [0.0_r8, 0.0_r8, 0.0_r8]
+    real(r8), DIMENSION(ndim)      :: Axis   = [0.0_r8, 0.0_r8, 1.0_r8]
+    real(r8), DIMENSION(maxTerms)  :: Z_Constants = [0.0_r8, 0.0_r8, 0.0_r8]
+    real(r8), DIMENSION(maxTerms)  :: R_Constants = [0.0_r8, 0.0_r8, 0.0_r8]
+    real(r8), DIMENSION(2)         :: Z_Bound = [-huge(1.0_r8), huge(1.0_r8)]
+    real(r8), DIMENSION(2)         :: R_Bound = [-huge(1.0_r8), huge(1.0_r8)]
+    integer, DIMENSION(maxTerms):: Z_Exponents = [1, 2, 3]
+    integer, DIMENSION(maxTerms):: R_Exponents = [1, 2, 3]
+    logical                     :: On = .false.
   END TYPE TEMP_GRADIENT
 
   ! Public Variable
   TYPE(TEMP_GRADIENT), DIMENSION(mbody), PUBLIC  :: Body_Temp_Grad
-  TYPE(TEMP_GRADIENT), PUBLIC, parameter         :: BTG_Default = &
-    TEMP_GRADIENT (  (/zero,zero,zero/),(/zero,zero,one/),(/zero,zero,zero/),&
-                     (/zero,zero,zero/),(/preset,-preset/),(/zero,-preset/), &
-                     (/1,2,3/), (/1,2,3/), .false.)
+
 CONTAINS
 
   PURE FUNCTION BODY_TEMPERATURE(ibody, TempOrigin, Zone, Cell) RESULT(NewTemp)
@@ -75,25 +68,24 @@ CONTAINS
     ! Note: This function assumes the input Zone and Cell
     !       refer to the same location
 
-    USE constants_module,  ONLY: zero, one
     USE cutoffs_module,    ONLY: alittle
     USE zone_module,       ONLY: CELL_AVG
     USE mesh_module,       ONLY: CELL_GEOMETRY
 
     ! Arguments
-    INTEGER(KIND = int_kind), INTENT(in) :: ibody
-    REAL(KIND = real_kind),   INTENT(in) :: TempOrigin
-    TYPE(CELL_AVG),           INTENT(in) :: Zone
-    TYPE(CELL_GEOMETRY),      INTENT(in) :: Cell
+    integer, INTENT(in) :: ibody
+    real(r8),   INTENT(in) :: TempOrigin
+    TYPE(CELL_AVG), INTENT(in) :: Zone
+    TYPE(CELL_GEOMETRY), INTENT(in) :: Cell
 
     ! Result
-    REAL(KIND = real_kind)   :: NewTemp
+    real(r8) :: NewTemp
 
     ! Locals
-    REAL(KIND = real_kind)   :: cnt(ndim), tga(ndim)
-    REAL(KIND = real_kind)   :: dR, dZ, pR, pZ
-    INTEGER(kind = int_kind) :: ip
-    TYPE(TEMP_GRADIENT)      :: BTG
+    real(r8) :: cnt(ndim), tga(ndim)
+    real(r8) :: dR, dZ, pR, pZ
+    integer :: ip
+    TYPE(TEMP_GRADIENT) :: BTG
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     BTG = Body_Temp_Grad(ibody)
@@ -103,7 +95,7 @@ CONTAINS
 
     ! dZ: offset from gradient origin along gradient axis
     dZ = DOT_PRODUCT(tga,cnt)
-    IF (ABS(dZ) < alittle) dZ = zero
+    IF (ABS(dZ) < alittle) dZ = 0
     IF (dZ < BTG%Z_Bound(1)) dZ = BTG%Z_Bound(1)
     IF (dZ > BTG%Z_Bound(2)) dZ = BTG%Z_Bound(2)
 
@@ -113,22 +105,20 @@ CONTAINS
     dR = dR + ( tga(1)*cnt(3) - tga(3)*cnt(1) ) ** 2
     dR = dR + ( tga(1)*cnt(2) - tga(2)*cnt(1) ) ** 2
     dR = SQRT(dR)
-    IF (dR < alittle) dR = zero
+    IF (dR < alittle) dR = 0
     IF (dR < BTG%R_Bound(1)) dR = BTG%R_Bound(1)
     IF (dR > BTG%R_Bound(2)) dR = BTG%R_Bound(2)
 
     ! Polynomial values
-    pZ = one
-    pR = zero
+    pZ = 1
+    pR = 0
     DO ip = 1, maxTerms
       pZ = pZ + BTG%Z_Constants(ip) * dZ**BTG%Z_Exponents(ip)
       pR = pR + BTG%R_Constants(ip) * dR**BTG%R_Exponents(ip)
     END DO
 
     NewTemp = TempOrigin * (pZ + pR)
-    IF (NewTemp < alittle) NewTemp = zero
-
-    RETURN
+    IF (NewTemp < alittle) NewTemp = 0
 
   END FUNCTION BODY_TEMPERATURE
 

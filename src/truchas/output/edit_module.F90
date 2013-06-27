@@ -24,41 +24,36 @@ MODULE EDIT_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use long_edit_data_types
-  use kind_module,      only: int_kind, log_kind, real_kind
-  use parameter_module, only: max_long_edit_boxes, max_long_edit_cells, &
-                              mops, ndim
+  use parameter_module, only: max_long_edit_boxes, max_long_edit_cells, mops, ndim
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: EDIT_LONG, EDIT_SHORT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! OUTPUTS namelist edit variables.
-  integer(KIND = int_kind), dimension(mops), &
+  integer, dimension(mops), &
                             save, public :: Long_Output_Dt_Multiplier
-  integer(KIND = int_kind), dimension(mops), &
+  integer, dimension(mops), &
                             save, public :: Short_Output_Dt_Multiplier
 
-  real(KIND = real_kind), dimension(2,ndim,max_long_edit_boxes), &
+  real(r8), dimension(2,ndim,max_long_edit_boxes), &
                           save, public :: Long_Edit_Bounding_Coords
 
   ! Edit flags.
-  logical(KIND = log_kind), save, public :: long_edit
-  logical(KIND = log_kind), save, public :: short_edit
+  logical, save, public :: long_edit
+  logical, save, public :: short_edit
 
   ! Long edit variables.
-  integer(KIND = int_kind), save, public :: long_edit_cells
-  integer(KIND = int_kind), dimension(max_long_edit_cells), &
-                            save, public :: Long_Edit_Cell_List
+  integer, save, public :: long_edit_cells
+  integer, dimension(max_long_edit_cells), save, public :: Long_Edit_Cell_List
 
-  integer(int_kind), save :: num_local_long_edits
-  integer(int_kind), save :: tot_local_long_edits
+  integer, save :: num_local_long_edits
+  integer, save :: tot_local_long_edits
   
   type (LONG_EDIT_LIST), target, save, public :: Local_Long_Edit_List
   type (LONG_EDIT_LIST), target, save, public :: Collated_Long_Edit_List
@@ -77,7 +72,6 @@ CONTAINS
     !   base derived types in specified cells.
     !
     !=======================================================================
-    use kind_module,      only: int_kind, log_kind
     use matl_module,      only: Matl
     use mesh_module,      only: UnPermute_Mesh_Vector
     use truchas_env,      only: output_file_name
@@ -90,22 +84,20 @@ CONTAINS
     use property_module,  only: Get_User_Material_ID
     use gap_output,   only: SET_GAP_ELEMENT_OUTPUT
 
-    implicit none
-
     ! Argument List
 
     ! Local Variables
-    logical(KIND = log_kind), save :: first_time = .true.
-    logical (log_kind), save :: no_long_edit_cells
-    integer(KIND = int_kind) :: i, j, s
-    integer                  :: status
+    logical, save :: first_time = .true.
+    logical, save :: no_long_edit_cells
+    integer :: i, j, s
+    integer :: status
 
     type(CELL_AVG), POINTER :: zone_info => NULL()
     type(MATERIAL), POINTER :: matl_info => NULL()
     ! Solid mechanics data
     type(CELL_MECH_INVARIANT), pointer, dimension(:) :: mech_info => NULL()
     type(CELL_MECH_INVARIANT), pointer               :: mech_item => NULL()
-    integer(int_kind) :: cell_number
+    integer :: cell_number
     character(128) :: string1, string2
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -240,8 +232,6 @@ CONTAINS
 
 999 continue
 
-    return
-
   END SUBROUTINE EDIT_LONG
 
   SUBROUTINE EDIT_LONG_INIT (no_long_edit_cells)
@@ -253,7 +243,6 @@ CONTAINS
     !=======================================================================
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
     use gs_module,            only: EN_GATHER, EE_Gather
-    use kind_module,          only: int_kind, log_kind, real_kind
     use mesh_module,          only: Cell, Mesh, Vertex, Vrtx_Bdy, &
                                     UnPermute_Mesh_Vector,        &
                                     UnPermute_Vertex_Vector
@@ -267,32 +256,30 @@ CONTAINS
     use zone_module,          only: CELL_AVG
     use matl_module,          only: MATERIAL
 
-    implicit none
-
     ! Argument List
-    logical(log_kind), intent(OUT) :: no_long_edit_cells
+    logical, intent(OUT) :: no_long_edit_cells
 
     ! Local Variables
-    logical(log_kind) :: long_edit_cell
-    integer(int_kind) :: b, f, i, j, n, v, cell_number, long_edit_cells_old, s
-    real(real_kind)   :: distance
-    type(CELL_GEOMETRY), pointer                      :: Cell_Info => NULL()
-    type(VERTEX_DATA),   pointer                      :: Vrtx_Info => NULL()
-    type(FACE_DATA),     pointer                      :: Face_Info => NULL()
-    type(CELL_AVG)                                    :: zone_zero
-    type(MATERIAL)                                    :: matl_zero
-    logical(log_kind), dimension(max_long_edit_boxes) :: Long_Edit_Point
-    logical(log_kind), dimension(ncells)              :: Long_Edit_Cell_Mask
-    logical(log_kind), dimension(ncells)              :: Long_Edit_Cell_Mask_Ordered
-    integer(int_kind), dimension(:,:), pointer        :: Mesh_Ngbr_Vrtx_Orig_Order => NULL()
-    integer(int_kind), dimension(:,:), pointer        :: Mesh_Ngbr_Cell_Orig_Order => NULL()
-    integer(int_kind), dimension(max_long_edit_boxes) :: Distance_Min_Loc = 0
-    integer(int_kind), dimension(ncells)              :: Long_Edit_Cells_Orig_Number
-    integer(int_kind), dimension(ncells)              :: Long_Edit_Cells_Ordered
-    integer(int_kind), dimension(ncells)              :: Cell_Rank
-    integer(int_kind), dimension(ncells)              :: Global_Cell_Count
-    real(real_kind),   dimension(max_long_edit_boxes) :: Distance_Min     = HUGE(1_real_kind)
-    real(real_kind), pointer, dimension(:,:,:)        :: Xv => NULL()
+    logical :: long_edit_cell
+    integer :: b, f, i, j, n, v, cell_number, long_edit_cells_old, s
+    real(r8)   :: distance
+    type(CELL_GEOMETRY), pointer :: Cell_Info => NULL()
+    type(VERTEX_DATA),   pointer :: Vrtx_Info => NULL()
+    type(FACE_DATA),     pointer :: Face_Info => NULL()
+    type(CELL_AVG) :: zone_zero
+    type(MATERIAL) :: matl_zero
+    logical, dimension(max_long_edit_boxes) :: Long_Edit_Point
+    logical, dimension(ncells)              :: Long_Edit_Cell_Mask
+    logical, dimension(ncells)              :: Long_Edit_Cell_Mask_Ordered
+    integer, dimension(:,:), pointer        :: Mesh_Ngbr_Vrtx_Orig_Order => NULL()
+    integer, dimension(:,:), pointer        :: Mesh_Ngbr_Cell_Orig_Order => NULL()
+    integer, dimension(max_long_edit_boxes) :: Distance_Min_Loc = 0
+    integer, dimension(ncells)              :: Long_Edit_Cells_Orig_Number
+    integer, dimension(ncells)              :: Long_Edit_Cells_Ordered
+    integer, dimension(ncells)              :: Cell_Rank
+    integer, dimension(ncells)              :: Global_Cell_Count
+    real(r8), dimension(max_long_edit_boxes) :: Distance_Min     = HUGE(1_r8)
+    real(r8), pointer, dimension(:,:,:) :: Xv => NULL()
     character(LEN = 256) :: tmp_string
     character(LEN = 256) :: tmp_string2
 
@@ -317,7 +304,7 @@ CONTAINS
        LONG_EDIT_BOXES: do b = 1,max_long_edit_boxes
           if (Long_Edit_Point(b)) then
              long_edit_cell = .false.
-             distance = 0_real_kind
+             distance = 0.0_r8
              do n = 1,ndim
                 distance = distance + (Cell(i)%Centroid(n) - Long_Edit_Bounding_Coords(1,n,b))**2
              end do
@@ -556,8 +543,6 @@ CONTAINS
     call ARRAYDESTROY (mesh_ngbr_vrtx_orig_order, 'Array mesh_ngbr_vrtx_orig_order(nvc,ncells)')
     call ARRAYDESTROY (mesh_ngbr_cell_orig_order, 'Array mesh_ngbr_cell_orig_order(nfc,ncells)')
 
-    return
-
   END SUBROUTINE EDIT_LONG_INIT
 
   SUBROUTINE EDIT_SHORT ()
@@ -567,12 +552,9 @@ CONTAINS
     !   Perform a "short edit" by computing and printing global diagnostics.
     !
     !=======================================================================
-    use kinds, only: r8
-    use constants_module,       only: one_half, zero
     use cutoffs_module,         only: alittle
     use fluid_data_module,      only: fluid_flow, qin, qout, isImmobile
     use fluid_type_module,      only: Div_c
-    use kind_module,            only: int_kind, real_kind
     use matl_module,            only: GATHER_VOF
     use mesh_module,            only: Cell
     use nonlinear_solution,     only: NKuser, nonlinear_solutions, DEFAULT_NK_CONTROLS
@@ -596,19 +578,12 @@ CONTAINS
     use solid_mechanics_data,   only: Cell_Mech_Invariant, solid_mechanics
     use gap_output,         only: SET_GAP_ELEMENT_OUTPUT
 
-    implicit none
-
-    ! Argument List
-
     ! Local Variables
-    character(LEN = 128)                        :: string, string2
-    integer(KIND = int_kind)                    :: i, m, n, &
-                                                   variables = 2*ndim + 6, &
-                                                   nmechvar = 4
-    integer(KIND = int_kind), dimension(1)      :: MaxLoc_L, MinLoc_L
-    real(KIND = real_kind),   dimension(ncells) :: Enthalpy, KE, Mass, &
-                                                   Matl_Mass, Tmp, Matl_Vol
-    real(KIND = real_kind) :: Temperature
+    character(LEN = 128) :: string, string2
+    integer :: i, m, n, variables = 2*ndim + 6, nmechvar = 4
+    integer, dimension(1) :: MaxLoc_L, MinLoc_L
+    real(r8), dimension(ncells) :: Enthalpy, KE, Mass, Matl_Mass, Tmp, Matl_Vol
+    real(r8) :: Temperature
     type(CELL_MECH_INVARIANT), pointer, dimension(:) :: mech_info => NULL()
 
     real(r8), dimension(nmat) :: Material_Enthalpy, Material_KE, Material_Volume, Material_Mass
@@ -681,15 +656,15 @@ CONTAINS
     call TLS_info (' ----    ----     ------      ----               ----------------               --        --------')
 
     ! Preinitialize
-    Mass = zero; Enthalpy = zero; KE = zero
-    total_mass = zero; total_momentum = zero
-    total_KE = zero; total_enthalpy = zero
+    Mass = 0.0_r8; Enthalpy = 0.0_r8; KE = 0.0_r8
+    total_mass = 0.0_r8; total_momentum = 0.0_r8
+    total_KE = 0.0_r8; total_enthalpy = 0.0_r8
  
     ! Zone kinetic energy density
     do n = 1,ndim
        KE = KE + Zone%Vc(n)**2
     end do
-    KE = one_half*KE
+    KE = 0.5_r8*KE
 
     ! Loop over each material
     MATERIAL_SUMS: do m = 1,nmat
@@ -700,12 +675,12 @@ CONTAINS
        ! Sum material volume.
        Matl_Vol = Cell%Volume * Tmp
        Material_Volume(m) = PGSLIB_GLOBAL_SUM(Matl_Vol)
-       if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = zero
+       if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
 
        ! Sum material mass.
        Matl_Mass = Matl_Vol*DENSITY_MATERIAL(m)
        Material_Mass(m) = PGSLIB_GLOBAL_SUM(Matl_Mass)
-       if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = zero
+       if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = 0.0_r8
 
        ! Accumulate the total mass.
        Mass = Mass + Matl_Mass
@@ -714,13 +689,13 @@ CONTAINS
        ! Compute material momentum.
        MOMENTUM: do n = 1,ndim
           Material_Momentum(n,m) = PGSLIB_GLOBAL_SUM(Matl_Mass*Zone%Vc(n))
-          if (ABS(Material_Momentum(n,m)) <= alittle .or. isImmobile(m)) Material_Momentum(n,m) = zero
+          if (ABS(Material_Momentum(n,m)) <= alittle .or. isImmobile(m)) Material_Momentum(n,m) = 0.0_r8
           Total_Momentum(n) = Total_Momentum(n) + Material_Momentum(n,m)
        end do MOMENTUM
 
        ! Compute material kinetic energy.
        Material_KE(m) = PGSLIB_GLOBAL_SUM(Matl_Mass*KE)
-       if (ABS(Material_KE(m)) <= alittle .or. isImmobile(m)) Material_KE(m) = zero
+       if (ABS(Material_KE(m)) <= alittle .or. isImmobile(m)) Material_KE(m) = 0.0_r8
        total_KE = total_KE + Material_KE(m)
 
        ! Get the material enthalpy.
@@ -730,7 +705,7 @@ CONTAINS
 
        ! Accumulate the material enthalpy.
        Material_Enthalpy(m) = PGSLIB_GLOBAL_SUM(Tmp)
-       if (ABS(Material_Enthalpy(m)) <= alittle) Material_Enthalpy(m) = zero
+       if (ABS(Material_Enthalpy(m)) <= alittle) Material_Enthalpy(m) = 0.0_r8
 
        ! Accumulate the total enthalpy.
        Enthalpy = Enthalpy + Tmp
@@ -882,7 +857,7 @@ CONTAINS
        call TLS_info (string)
        call TLS_info ('')
 
-       if (qin /= zero .or. qout /= zero) then
+       if (qin /= 0.0_r8 .or. qout /= 0.0_r8) then
           call TLS_info ('')
           call TLS_info ('                                   Inflow-Outflow Summary')
           call TLS_info ('')
@@ -902,8 +877,6 @@ CONTAINS
     call TLS_info ('')
 
     call ANNOUNCE_FILE_WRITE ('Short edit', output_file_name('log'))
-
-    return
 
   END SUBROUTINE EDIT_SHORT
 

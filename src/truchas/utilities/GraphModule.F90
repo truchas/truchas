@@ -275,11 +275,7 @@ module GraphModule
     subroutine GetNeighborStructure (g, xnbr, nbr)
 
       type(NGraphType), intent(in) :: g
-#ifdef SUPPORTS_TR15581
       integer, dimension(:), allocatable :: xnbr, nbr
-#else
-      integer, dimension(:), pointer :: xnbr, nbr
-#endif
 
       integer :: i
 

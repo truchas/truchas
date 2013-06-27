@@ -17,14 +17,12 @@ MODULE LINEAR_SOLUTION
   ! Author(s): The Telluridians (telluride-info@lanl.gov)
   !
   !=======================================================================
-  use constants_module, only: ipreset
-  use kind_module,      only: int_kind, real_kind, log_kind
+  use kinds, only: r8
+  use input_utilities,  only: NULL_I
   use parameter_module, only: string_len
   use UbikSolve_module
-
+  use truchas_logging_services
   implicit none
-
-  ! Default private module
   private
  
   ! Public procedures
@@ -37,44 +35,44 @@ MODULE LINEAR_SOLUTION
 
   ! Number of Ubik_user elements that are used for default parameters.
   ! NOTE: remember to increment this if another default solver is added!
-  integer(int_kind), parameter, public :: DEFAULT_UBIK_CONTROLS = 9
+  integer, parameter, public :: DEFAULT_UBIK_CONTROLS = 9
 
   ! Position of default solver parameters in the Ubik_user array.
-  integer(int_kind), parameter, public :: UBIK_PRESSURE_DEFAULT     = 1
-  integer(int_kind), parameter, public :: UBIK_ENERGY_DEFAULT       = 2
-  integer(int_kind), parameter, public :: UBIK_ENERGY_NK_DEFAULT    = 3
-  integer(int_kind), parameter, public :: UBIK_NK_DEFAULT           = 4
-  integer(int_kind), parameter, public :: UBIK_DISPLACEMENT_DEFAULT = 5
-  integer(int_kind), parameter, public :: UBIK_VISCOUS_DEFAULT      = 6 
-  integer(int_kind), parameter, public :: UBIK_VIEWFACTOR_DEFAULT   = 7 
-  integer(int_kind), parameter, public :: UBIK_SENSITIVITY_DEFAULT   = 8
+  integer, parameter, public :: UBIK_PRESSURE_DEFAULT     = 1
+  integer, parameter, public :: UBIK_ENERGY_DEFAULT       = 2
+  integer, parameter, public :: UBIK_ENERGY_NK_DEFAULT    = 3
+  integer, parameter, public :: UBIK_NK_DEFAULT           = 4
+  integer, parameter, public :: UBIK_DISPLACEMENT_DEFAULT = 5
+  integer, parameter, public :: UBIK_VISCOUS_DEFAULT      = 6 
+  integer, parameter, public :: UBIK_VIEWFACTOR_DEFAULT   = 7 
+  integer, parameter, public :: UBIK_SENSITIVITY_DEFAULT   = 8
 
   ! Solver parameters
-  integer(int_kind), parameter, public :: SOLVER_NONE    = -1
-  integer(int_kind), parameter, public :: SOLVER_CG      = 0
-  integer(int_kind), parameter, public :: SOLVER_GMRES   = 1
-  integer(int_kind), parameter, public :: SOLVER_TFQMR   = 2
-  integer(int_kind), parameter, public :: SOLVER_BCGSTAB = 3
-  integer(int_kind), parameter, public :: SOLVER_DIRECT  = 4
-  integer(int_kind), parameter, public :: SOLVER_FGMRES  = 5
+  integer, parameter, public :: SOLVER_NONE    = -1
+  integer, parameter, public :: SOLVER_CG      = 0
+  integer, parameter, public :: SOLVER_GMRES   = 1
+  integer, parameter, public :: SOLVER_TFQMR   = 2
+  integer, parameter, public :: SOLVER_BCGSTAB = 3
+  integer, parameter, public :: SOLVER_DIRECT  = 4
+  integer, parameter, public :: SOLVER_FGMRES  = 5
 
   ! Preconditioning parameters
-  integer(int_kind), parameter, public :: PRECOND_NONE     = 0
-  integer(int_kind), parameter, public :: PRECOND_JACOBI   = 1
-  integer(int_kind), parameter, public :: PRECOND_SSOR     = 2
-  integer(int_kind), parameter, public :: PRECOND_ILU0     = 3
-  integer(int_kind), parameter, public :: PRECOND_LU       = 4
-  integer(int_kind), parameter, public :: PRECOND_2LEVEL   = 5
-  integer(int_kind), parameter, public :: PRECOND_TM_SSOR  = 6
-  integer(int_kind), parameter, public :: PRECOND_TM_DIAG  = 7
-  integer(int_kind), parameter, public :: PRECOND_DIAGONAL = 8
+  integer, parameter, public :: PRECOND_NONE     = 0
+  integer, parameter, public :: PRECOND_JACOBI   = 1
+  integer, parameter, public :: PRECOND_SSOR     = 2
+  integer, parameter, public :: PRECOND_ILU0     = 3
+  integer, parameter, public :: PRECOND_LU       = 4
+  integer, parameter, public :: PRECOND_2LEVEL   = 5
+  integer, parameter, public :: PRECOND_TM_SSOR  = 6
+  integer, parameter, public :: PRECOND_TM_DIAG  = 7
+  integer, parameter, public :: PRECOND_DIAGONAL = 8
 
   ! Scope parameters.
-  integer(int_kind), parameter, public :: PRECOND_SCOPE_GLOBAL = 0
-  integer(int_kind), parameter, public :: PRECOND_SCOPE_LOCAL  = 1
+  integer, parameter, public :: PRECOND_SCOPE_GLOBAL = 0
+  integer, parameter, public :: PRECOND_SCOPE_LOCAL  = 1
 
   ! Parameter to tell linear solver that it is part of a nonlinear NK solve.
-  integer(int_kind), parameter, public :: COMING_FROM_INSIDE_NK = ipreset
+  integer, parameter, public :: COMING_FROM_INSIDE_NK = NULL_I
 
   ! Define a UbikSolve derived type which will contain control
   ! parameters and arrays needed by UbikSolve.
@@ -86,31 +84,31 @@ MODULE LINEAR_SOLUTION
      ! signals within Telluride such as whether the linear solve is part
      ! of a nonlinear solve - now it is used only for Telluride signals,
      ! since solver status is now encapsulated with in the control type
-     integer(int_kind) :: status
+     integer :: status
  
      ! solver type
-     integer(int_kind) :: solver
+     integer :: solver
  
      ! Name for this particular instance of Ubik_type
      character(string_len) :: name
  
      ! Use preconditioning? If so, then specify solution
      ! method for the preconditioning equation.
-     integer(int_kind) :: precond
+     integer :: precond
  
      ! preconditioner used for the preconditioning equation
-     integer(int_kind) :: precond_pre
+     integer :: precond_pre
  
      ! number of preconditioning iterations
-     integer(int_kind) :: precond_iter
+     integer :: precond_iter
  
      ! scope flag - local (on processor) or global (all processors)
-     integer(int_kind) :: precond_scope
+     integer :: precond_scope
 
      ! factor flag -
      ! TRUE means ILU or LU should factor the preconditioning matrix,
      ! FALSE means just do the back solve
-     logical(log_kind) :: factor
+     logical :: factor
 
      ! UbikSolve control parameters
      type(Ubik_control_type) :: control
@@ -125,7 +123,7 @@ MODULE LINEAR_SOLUTION
   type(Ubik_type), pointer, dimension(:), save :: Ubik_user
  
   ! Number of user-specified linear solution control parameters.
-  integer(int_kind), public, save :: linear_solutions
+  integer, public, save :: linear_solutions
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -139,16 +137,13 @@ CONTAINS
     !
     !======================================================================
     use debug_control_data
-    use kind_module,     only: int_kind, real_kind
-    use UbikSolve_module
-    use truchas_logging_services
 #ifdef USE_TBROOK
     use output_data_module, only: enable_tbrook_output
 #endif
  
     ! Arguments
-    real(real_kind), dimension(:), intent(INOUT), target :: Solution
-    real(real_kind), dimension(:), intent(INOUT) :: RHS
+    real(r8), dimension(:), intent(INOUT), target :: Solution
+    real(r8), dimension(:), intent(INOUT) :: RHS
     type(Ubik_type), intent(INOUT) :: Ubik
 
     ! Interface blocks for external routines:
@@ -159,11 +154,11 @@ CONTAINS
 #include "solver_function_prototypes.fpp"
 
     ! Local Variables (for residual visualization)
-    real(real_kind), dimension(:), allocatable :: Residuals
+    real(r8), dimension(:), allocatable :: Residuals
     type(Ubik_vector_type), target :: Solution_vec
 
     ! Local Variables
-    integer(int_kind) :: nunknowns, status
+    integer :: nunknowns, status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -256,7 +251,6 @@ CONTAINS
     Ubik%precond_iter = Ubik_solver%precond_iter
     call Ubik_destroy (Ubik_solver%control)
 
-    return
   END SUBROUTINE LINEAR_SOLVER
  
   SUBROUTINE POST_SOLVE (Ubik, routine)
@@ -266,13 +260,9 @@ CONTAINS
     !   take appropriate action after a linear solve has been completed
     !   (successfully or unsuccessfully)
     !======================================================================
-    use UbikSolve_module
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    type (Ubik_type), intent(INOUT) :: Ubik
+    type(Ubik_type), intent(INOUT) :: Ubik
     character(*), intent(IN) :: routine
     
     character(256) :: message
@@ -319,7 +309,6 @@ CONTAINS
 
     end if
 
-    return
   END SUBROUTINE POST_SOLVE
 
 #ifdef USE_TBROOK
@@ -347,14 +336,14 @@ CONTAINS
     use string_utilities, only: i_to_c
     use parameter_module, only: ncells, nnodes
 
-    character(len=*), intent(in) :: name
-    real(real_kind),  intent(in) :: r(:), x(:)
+    character(*), intent(in) :: name
+    real(r8),  intent(in) :: r(:), x(:)
 
     integer :: status, dim
     integer, save :: df_num = 0
-    character(len=256) :: df_name
+    character(256) :: df_name
     type(brook), target :: df_brook
-    real(real_kind), allocatable :: tmp(:,:)
+    real(r8), allocatable :: tmp(:,:)
 
     ASSERT( size(r) == size(x) )
 
@@ -456,8 +445,8 @@ CONTAINS
     !!
 
     subroutine copy_to_rank_2 (in, out)
-      real(real_kind), intent(in)  :: in(:)
-      real(real_kind), intent(out) :: out(:,:)
+      real(r8), intent(in)  :: in(:)
+      real(r8), intent(out) :: out(:,:)
       integer :: i, j, n
       ASSERT( size(in) == size(out) )
       n = 0

@@ -21,17 +21,13 @@ MODULE LIN_SOLVER_INPUT
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use constants_module, only: preset, ipreset
-  use kind_module,      only: int_kind, real_kind
+  use kinds, only: r8
+  use input_utilities,  only: NULL_I, NULL_R, NULL_C
   use parameter_module, only: string_len
   use truchas_logging_services
-
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: LINEAR_SOLVER_INPUT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -51,13 +47,13 @@ MODULE LIN_SOLVER_INPUT
   character(string_len) :: preconditioning_preconditioner
 
   ! Preconditioner steps.
-  integer(int_kind)     :: preconditioning_steps
+  integer :: preconditioning_steps
 
   ! Solver/preconditioner scope.
   character(string_len) :: preconditioning_scope
 
   ! Maximum iterations.
-  integer(int_kind)     :: maximum_iterations
+  integer :: maximum_iterations
 
   ! Stopping test.
   character(string_len) :: stopping_criterion 
@@ -66,29 +62,24 @@ MODULE LIN_SOLVER_INPUT
   character(string_len) :: output_mode
 
   ! Frequency of solver status reports to the tty.
-  integer(int_kind)     :: status_frequency
+  integer :: status_frequency
 
   ! Convergence criterion.
-  real(real_kind)       :: convergence_criterion
+  real(r8) :: convergence_criterion
 
   ! Krylov subspace vector size.
-  integer(int_kind)     :: krylov_vectors
+  integer :: krylov_vectors
 
   ! Preconditioner relaxation parameter (for Jacobi or SSOR).
-  real(real_kind)       :: relaxation_parameter
+  real(r8) :: relaxation_parameter
 
-  ! Parameters signifying no input.
-  real(real_kind),       parameter :: NO_REAL_INPUT    = -preset
-  integer(int_kind),     parameter :: NO_INTEGER_INPUT = -ipreset
-  character(string_len), parameter :: NO_CHAR_INPUT    = ''
-  
   ! Derived quantities.
 
   ! linear solution stopping criterion flag
-  integer(int_kind) :: linear_solve_stop
+  integer :: linear_solve_stop
 
   ! linear solution output mode
-  integer(int_kind) :: linear_solve_output
+  integer :: linear_solve_output
 
 CONTAINS
 
@@ -100,7 +91,6 @@ CONTAINS
     !
     !=======================================================================
     use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind
     use linear_solution,        only: Ubik_user, DEFAULT_UBIK_CONTROLS, linear_solutions
     use parallel_info_module,   only: p_info
     use parameter_module,       only: string_len, string_dim
@@ -109,9 +99,9 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! Local Variables
-    character(string_len)                        :: line
-    logical(log_kind)                            :: fatal, found
-    integer(int_kind)                            :: ioerror, i, j
+    character(string_len) :: line
+    logical :: fatal, found
+    integer :: ioerror, i, j
     character(128) :: message
 
     ! Define NUMERICS namelist.
@@ -215,7 +205,6 @@ CONTAINS
 
     end do LS_NAMELIST_LOOP
 
-    return
   END SUBROUTINE LINEAR_SOLVER_INPUT
 
   SUBROUTINE LINEAR_SOLVER_CHECK (fatal)
@@ -226,37 +215,33 @@ CONTAINS
     !   and inconsistencies.
     !
     !=======================================================================
-    use constants_module, only: zero, one_tenth, two
-    use kind_module,      only: log_kind
     use parameter_module, only: ncells_tot, nnodes_tot, ndim
     use utilities_module, only: STRING_COMPARE
     use solid_mechanics_data, only: solid_mechanics
 
-    implicit none
-
     ! Argument List
-    logical(log_kind), intent(INOUT) :: fatal
+    logical, intent(INOUT) :: fatal
 
     ! Local Variables
-    logical(log_kind)     :: strings_match, this_string_matches
+    logical :: strings_match, this_string_matches
     character(string_len) :: string, string_default
-    integer(int_kind)     :: i, krylov_vectors_max
+    integer :: i, krylov_vectors_max
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Convergence criterion.
-    if (convergence_criterion /= NO_REAL_INPUT) then
-       if (convergence_criterion <= zero .or. &
-           convergence_criterion > one_tenth) then
-          write (message,'(a,es13.5)') 'Invalid convergence criterion: Must be <= 0.10 and > ', zero
+    if (convergence_criterion /= NULL_R) then
+       if (convergence_criterion <= 0 .or. &
+           convergence_criterion > 0.1_r8) then
+          write (message,'(a,es13.5)') 'Invalid convergence criterion: Must be <= 0.10 and > ', 0
           call TLS_error (message)
           fatal = .true.
        end if   
     end if
 
     ! Krylov vectors.
-    if (krylov_vectors /= NO_INTEGER_INPUT) then
+    if (krylov_vectors /= NULL_I) then
        if (krylov_vectors <= 0) then
           call TLS_error ('Invalid Krylov vector size: must be positive!')
           fatal = .true.
@@ -272,7 +257,7 @@ CONTAINS
    end if
    
     ! Maximum iterations.
-    if (maximum_iterations /= NO_INTEGER_INPUT) then
+    if (maximum_iterations /= NULL_I) then
        if (maximum_iterations <= 0) then
           call TLS_error ('Invalid allowed maximum iterations: must be positive!')
           fatal = .true.
@@ -280,7 +265,7 @@ CONTAINS
     end if
    
     ! Solution method.
-    if (method /= NO_CHAR_INPUT) then
+    if (method /= NULL_C) then
 
        ! Check for valid strings.
        method = ADJUSTL(method)
@@ -326,7 +311,7 @@ CONTAINS
     end if
 
     ! Solution name (can be any non-null character string).
-    if (name == NO_CHAR_INPUT) then
+    if (name == NULL_C) then
        call TLS_error ('Solution must be given a name (arbitrary string).')
        fatal = .true.
     else  
@@ -339,7 +324,7 @@ CONTAINS
     end if
 
     ! Output mode.
-    if (output_mode /= NO_CHAR_INPUT) then
+    if (output_mode /= NULL_C) then
 
        ! Check for valid strings.
        output_mode = ADJUSTL(output_mode)
@@ -412,7 +397,7 @@ CONTAINS
     end if
 
     ! Frequency of status updates
-    if (status_frequency /= NO_INTEGER_INPUT) then
+    if (status_frequency /= NULL_I) then
        if (status_frequency < 0) then
           call TLS_error ('Invalid value for frequency of status updates: must be non-negative!')
           fatal = .true.
@@ -425,10 +410,10 @@ CONTAINS
        select case (i)
        case (1)
           string         = preconditioning_method
-          string_default = NO_CHAR_INPUT
+          string_default = NULL_C
        case (2)
           string         = preconditioning_preconditioner
-          string_default = NO_CHAR_INPUT
+          string_default = NULL_C
        end select
 
        if (string /= string_default) then
@@ -483,7 +468,7 @@ CONTAINS
     end do PRECONDITIONER_CHECK
 
     ! Preconditioning scope.
-    if (preconditioning_scope /= NO_CHAR_INPUT) then
+    if (preconditioning_scope /= NULL_C) then
 
        ! Check for valid strings.
        preconditioning_scope = ADJUSTL(preconditioning_scope)
@@ -505,7 +490,7 @@ CONTAINS
     end if
 
     ! Preconditioning steps.
-    if (preconditioning_steps /= NO_INTEGER_INPUT) then
+    if (preconditioning_steps /= NULL_I) then
        if (preconditioning_steps <= 0) then
           call TLS_error ('Invalid number of preconditioning steps: must be positive!')
           fatal = .true.
@@ -513,15 +498,15 @@ CONTAINS
     end if
 
     ! Relaxation parameter.
-    if (relaxation_parameter /= NO_REAL_INPUT) then
-       if (relaxation_parameter <= zero .or. relaxation_parameter >= two) then
+    if (relaxation_parameter /= NULL_R) then
+       if (relaxation_parameter <= 0 .or. relaxation_parameter >= 2) then
           call TLS_error ('Relaxation parameter must be > 0.0 and < 2.0!')
           fatal = .true.
        end if
     end if
 
     ! Stopping criterion.
-    if (stopping_criterion /= NO_CHAR_INPUT) then
+    if (stopping_criterion /= NULL_C) then
 
        ! Check for valid strings.
        stopping_criterion = ADJUSTL(stopping_criterion)
@@ -576,7 +561,6 @@ CONTAINS
 
     end if
    
-    return
   END SUBROUTINE LINEAR_SOLVER_CHECK
 
   SUBROUTINE LINEAR_SOLVER_DEFAULT ()
@@ -588,25 +572,21 @@ CONTAINS
     !   namelist.
     !
     !=======================================================================
-    implicit none
 
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    convergence_criterion          = NULL_R
+    krylov_vectors                 = NULL_I
+    maximum_iterations             = NULL_I
+    method                         = NULL_C
+    name                           = NULL_C
+    output_mode                    = NULL_C
+    preconditioning_method         = NULL_C
+    preconditioning_preconditioner = NULL_C
+    preconditioning_scope          = NULL_C
+    preconditioning_steps          = NULL_I
+    relaxation_parameter           = NULL_R
+    stopping_criterion             = NULL_C
+    status_frequency               = NULL_I
 
-    convergence_criterion          = NO_REAL_INPUT
-    krylov_vectors                 = NO_INTEGER_INPUT
-    maximum_iterations             = NO_INTEGER_INPUT
-    method                         = NO_CHAR_INPUT
-    name                           = NO_CHAR_INPUT
-    output_mode                    = NO_CHAR_INPUT
-    preconditioning_method         = NO_CHAR_INPUT
-    preconditioning_preconditioner = NO_CHAR_INPUT
-    preconditioning_scope          = NO_CHAR_INPUT
-    preconditioning_steps          = NO_INTEGER_INPUT
-    relaxation_parameter           = NO_REAL_INPUT
-    stopping_criterion             = NO_CHAR_INPUT
-    status_frequency               = NO_INTEGER_INPUT
-
-    return
   END SUBROUTINE LINEAR_SOLVER_DEFAULT
 
   SUBROUTINE LINEAR_SOLVER_INPUT_PARALLEL ()
@@ -618,10 +598,6 @@ CONTAINS
     !======================================================================
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLib_BCAST
-
-    implicit none
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     if (.NOT. p_info%UseGlobalServices) then
        call PGSLib_BCAST (convergence_criterion)
@@ -639,7 +615,6 @@ CONTAINS
        call PGSLib_BCAST (status_frequency)
     end if
 
-    return
   END SUBROUTINE LINEAR_SOLVER_INPUT_PARALLEL
 
   SUBROUTINE SET_UBIK (Ubik, solution)
@@ -650,9 +625,6 @@ CONTAINS
     !
     !   We select a default solver here, but always defer to the users wishes
     !=======================================================================
-    use constants_module,     only: one_tenth, two, zero,       &
-                                    ten_tominus10, ten_tominus3, ten_tominus8
-    use kind_module,          only: int_kind, real_kind
     use linear_solution,      only: Ubik_type, &
                                     SOLVER_NONE, &
                                     SOLVER_CG, SOLVER_GMRES, SOLVER_FGMRES,     &
@@ -674,27 +646,25 @@ CONTAINS
     use UbikSolve_module
     use input_utilities, only: NULL_C
 
-    implicit none
-
     ! Arguments
     type(Ubik_type), intent(INOUT) :: Ubik
-    integer(int_kind), intent(IN)  :: solution
+    integer, intent(IN) :: solution
  
     ! Input variable defaults.
-    real(KIND = real_kind),      parameter :: CONVERGENCE_CRITERION_DEFAULT   = ten_tominus8
-    character(LEN = string_len), parameter :: METHOD_DEFAULT                  = 'fgmres'
-    character(LEN = string_len), parameter :: NAME_DEFAULT                    = 'default'
-    character(LEN = string_len), parameter :: PRECONDITIONING_METHOD_DEFAULT  = 'none'
-    character(LEN = string_len), parameter :: PRECONDITIONING_PRECOND_DEFAULT = 'none'
-    character(LEN = string_len), parameter :: PRECONDITIONING_SCOPE_DEFAULT   = 'global'
-    integer(KIND = int_kind),    parameter :: PRECONDITIONING_STEPS_DEFAULT   = 1
-    real(KIND = real_kind),      parameter :: RELAXATION_PARAMETER_DEFAULT    = 0.90
-    integer(KIND = int_kind),    parameter :: LINEAR_SOLVE_STOP_DEFAULT       = 5  ! ||r||
-    integer(KIND = int_kind),    parameter :: LINEAR_SOLVE_R_B_STOP_DEFAULT   = 2  ! ||r||/||b||
-    integer(KIND = int_kind),    parameter :: LINEAR_SOLVE_OUTPUT_DEFAULT     = 2
-    integer(KIND = int_kind),    parameter :: STATUS_FREQUENCY_DEFAULT        = 0
-    integer(KIND = int_kind)               :: KRYLOV_VECTORS_DEFAULT
-    integer(KIND = int_kind)               :: MAXIMUM_ITERATIONS_DEFAULT
+    real(r8), parameter :: CONVERGENCE_CRITERION_DEFAULT = 1.0d-8
+    character(string_len), parameter :: METHOD_DEFAULT                  = 'fgmres'
+    character(string_len), parameter :: NAME_DEFAULT                    = 'default'
+    character(string_len), parameter :: PRECONDITIONING_METHOD_DEFAULT  = 'none'
+    character(string_len), parameter :: PRECONDITIONING_PRECOND_DEFAULT = 'none'
+    character(string_len), parameter :: PRECONDITIONING_SCOPE_DEFAULT   = 'global'
+    integer,  parameter :: PRECONDITIONING_STEPS_DEFAULT   = 1
+    real(r8), parameter :: RELAXATION_PARAMETER_DEFAULT    = 0.90
+    integer,  parameter :: LINEAR_SOLVE_STOP_DEFAULT       = 5  ! ||r||
+    integer,  parameter :: LINEAR_SOLVE_R_B_STOP_DEFAULT   = 2  ! ||r||/||b||
+    integer,  parameter :: LINEAR_SOLVE_OUTPUT_DEFAULT     = 2
+    integer,  parameter :: STATUS_FREQUENCY_DEFAULT        = 0
+    integer             :: KRYLOV_VECTORS_DEFAULT
+    integer             :: MAXIMUM_ITERATIONS_DEFAULT
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -714,7 +684,7 @@ CONTAINS
        method                         = METHOD_DEFAULT
        linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
        linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = ten_tominus10
+       convergence_criterion          = 1.0d-10
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        preconditioning_method         = 'jacobi'
        preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
@@ -742,7 +712,7 @@ CONTAINS
        method                         = METHOD_DEFAULT
        linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
        linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = ten_tominus3
+       convergence_criterion          = 1.0d-3
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
        preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
@@ -756,7 +726,7 @@ CONTAINS
        method                         = METHOD_DEFAULT
        linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
        linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = ten_tominus3
+       convergence_criterion          = 1.0d-3
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
        preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
@@ -824,40 +794,40 @@ CONTAINS
        status_frequency               = STATUS_FREQUENCY_DEFAULT
     case DEFAULT
        ! If variables haven't been provided, set defaults.
-       if (method == NO_CHAR_INPUT) then
+       if (method == NULL_C) then
           method = METHOD_DEFAULT
        end if
-       if (output_mode == NO_CHAR_INPUT) then
+       if (output_mode == NULL_C) then
           linear_solve_output = LINEAR_SOLVE_OUTPUT_DEFAULT
        end if
-       if (stopping_criterion == NO_CHAR_INPUT) then
+       if (stopping_criterion == NULL_C) then
           linear_solve_stop = LINEAR_SOLVE_STOP_DEFAULT
        end if
-       if (convergence_criterion == NO_REAL_INPUT) then
+       if (convergence_criterion == NULL_R) then
           convergence_criterion = CONVERGENCE_CRITERION_DEFAULT
        end if
-       if (maximum_iterations == NO_INTEGER_INPUT) then
+       if (maximum_iterations == NULL_I) then
           maximum_iterations = MAXIMUM_ITERATIONS_DEFAULT
        end if
-       if (preconditioning_method == NO_CHAR_INPUT) then
+       if (preconditioning_method == NULL_C) then
           preconditioning_method = PRECONDITIONING_METHOD_DEFAULT
        end if
-       if (preconditioning_preconditioner == NO_CHAR_INPUT) then
+       if (preconditioning_preconditioner == NULL_C) then
           preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
        end if
-       if (preconditioning_scope == NO_CHAR_INPUT) then
+       if (preconditioning_scope == NULL_C) then
           preconditioning_scope = PRECONDITIONING_SCOPE_DEFAULT
        end if
-       if (preconditioning_steps == NO_INTEGER_INPUT) then
+       if (preconditioning_steps == NULL_I) then
           preconditioning_steps = PRECONDITIONING_STEPS_DEFAULT
        end if
-       if (relaxation_parameter == NO_REAL_INPUT) then
+       if (relaxation_parameter == NULL_R) then
           relaxation_parameter = RELAXATION_PARAMETER_DEFAULT
        end if
-       if (krylov_vectors == NO_INTEGER_INPUT) then
+       if (krylov_vectors == NULL_I) then
           krylov_vectors = KRYLOV_VECTORS_DEFAULT
        end if
-       if (status_frequency == NO_INTEGER_INPUT) then
+       if (status_frequency == NULL_I) then
           status_frequency = STATUS_FREQUENCY_DEFAULT
        end if
     end select
@@ -1024,12 +994,12 @@ CONTAINS
     end if
  
     ! Convergence criteria.
-    if (convergence_criterion > zero .and. convergence_criterion < one_tenth) then
+    if (convergence_criterion > 0 .and. convergence_criterion < 0.1_r8) then
        call Ubik_set_eps (Ubik%Control, convergence_criterion)
     end if
  
     ! Preconditioner relaxation.
-    if (relaxation_parameter > zero .and. relaxation_parameter < two) then
+    if (relaxation_parameter > 0 .and. relaxation_parameter < 2) then
        call Ubik_set_omega (Ubik%Control, relaxation_parameter)
     end if
  
@@ -1041,7 +1011,6 @@ CONTAINS
        call Ubik_set_scope_local (Ubik%Control)
     end if
 
-    return
   END SUBROUTINE SET_UBIK
 
 END MODULE LIN_SOLVER_INPUT

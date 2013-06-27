@@ -22,18 +22,14 @@ MODULE NONLIN_SOLVER_INPUT
   !            Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use constants_module,   only: preset, ipreset
-  use kind_module,        only: int_kind, real_kind, log_kind
+  use kinds, only: r8
+  use input_utilities,    only: NULL_I, NULL_R, NULL_C
   use nonlinear_solution, only: ndampers
   use parameter_module,   only: string_len
   use truchas_logging_services
-
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: NONLINEAR_SOLVER_INPUT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -41,42 +37,37 @@ MODULE NONLIN_SOLVER_INPUT
   ! NONLINEAR_SOLVER Namelist input variables.
 
   ! Name for this solver.
-  character(LEN = string_len) :: name
+  character(string_len) :: name
 
   ! Solution method
-  character(LEN = string_len) :: method
+  character(string_len) :: method
 
   ! Linear solver name.
-  character(LEN = string_len) :: linear_solver_name
+  character(string_len) :: linear_solver_name
 
   ! Output mode
-  character(LEN = string_len) :: output_mode
+  character(string_len) :: output_mode
 
   ! Flag for using NK damper.
-  logical(KIND = log_kind) :: use_damper
+  logical :: use_damper
 
   ! Maximum iterations.
-  integer(KIND = int_kind) :: maximum_iterations
+  integer :: maximum_iterations
 
   ! NLK method --- maximum number of acceleration vectors
-  integer(KIND = int_kind) :: NLK_Max_Vectors
+  integer :: NLK_Max_Vectors
 
   ! NLK method --- tolerance for rejection of vectors
-  real(KIND = real_kind) :: NLK_Vector_Tolerance
+  real(r8) :: NLK_Vector_Tolerance
 
   ! Convergence criterion.
-  real(KIND = real_kind) :: convergence_criterion
+  real(r8) :: convergence_criterion
 
   ! NK damper parameters.
-  real(KIND = real_kind), dimension(ndampers) :: Damper_Parameters
+  real(r8), dimension(ndampers) :: Damper_Parameters
 
   ! NK perturbation parameter.
-  real(KIND = real_kind) :: perturbation_parameter
-
-  ! Parameters signifying no input.
-  real(KIND = real_kind),      parameter :: NO_REAL_INPUT    = -preset
-  integer(KIND = int_kind),    parameter :: NO_INTEGER_INPUT = -ipreset
-  character(LEN = string_len), parameter :: NO_CHAR_INPUT    = ''
+  real(r8) :: perturbation_parameter
 
 CONTAINS
 
@@ -88,7 +79,6 @@ CONTAINS
     !
     !=======================================================================
     use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind
     use nonlinear_solution,     only: NKuser, DEFAULT_NK_CONTROLS, nonlinear_solutions
     use parallel_info_module,   only: p_info
     use parameter_module,       only: string_len
@@ -98,9 +88,9 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! Local Variables
-    character(LEN = string_len) :: line
-    logical(KIND = log_kind)    :: fatal, found
-    integer(KIND = int_kind)    :: ioerror, i, j
+    character(string_len) :: line
+    logical :: fatal, found
+    integer :: ioerror, i, j
 
     ! Define NUMERICS namelist.
     namelist /NONLINEAR_SOLVER/ name, method, linear_solver_name, use_damper, &
@@ -196,8 +186,6 @@ CONTAINS
 
     end do NLS_NAMELIST_LOOP
 
-    return
-
   END SUBROUTINE NONLINEAR_SOLVER_INPUT
 
   SUBROUTINE NONLINEAR_SOLVER_CHECK (fatal)
@@ -208,26 +196,22 @@ CONTAINS
     !   and inconsistencies.
     !
     !=======================================================================
-    use constants_module,   only: zero, one
-    use kind_module,        only: log_kind, real_kind
     use nonlinear_solution, only: ndampers
     use utilities_module,   only: STRING_COMPARE
 
-    implicit none
-
     ! Argument List
-    logical(KIND = log_kind), intent(INOUT) :: fatal
+    logical, intent(INOUT) :: fatal
 
     ! Local Variables
-    logical(KIND = log_kind)    :: strings_match, this_string_matches
-    real(KIND = real_kind)      :: x
-    integer(KIND = int_kind)    :: i
+    logical :: strings_match, this_string_matches
+    real(r8) :: x
+    integer :: i
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Solution method.
-    if (method /= NO_CHAR_INPUT) then
+    if (method /= NULL_C) then
 
        ! Check for valid strings.
        method = ADJUSTL(method)
@@ -253,7 +237,7 @@ CONTAINS
     end if
 
     ! Solution name (can be any non-null character string).
-    if (name == NO_CHAR_INPUT) then
+    if (name == NULL_C) then
        call TLS_error ('Solution must be given a name (arbitrary string).')
        fatal = .true.
     else  
@@ -266,7 +250,7 @@ CONTAINS
     end if
 
     ! Linear solver name (can be any non-null character string).
-    if (linear_solver_name == NO_CHAR_INPUT) then
+    if (linear_solver_name == NULL_C) then
        call TLS_error ('Linear solver must be given a valid name.')
        fatal = .true.
     else  
@@ -279,7 +263,7 @@ CONTAINS
     end if
 
     ! Convergence criterion.
-    if (convergence_criterion /= NO_REAL_INPUT) then
+    if (convergence_criterion /= NULL_R) then
        if (convergence_criterion <= EPSILON(x) .or. &
            convergence_criterion > 10.0) then
           write (message, 1) EPSILON(x)
@@ -290,7 +274,7 @@ CONTAINS
     end if
 
     ! Maximum iterations.
-    if (maximum_iterations /= NO_INTEGER_INPUT) then
+    if (maximum_iterations /= NULL_I) then
        if (maximum_iterations <= 0) then
           call TLS_error ('Invalid allowed maximum iterations: must be positive!')
           fatal = .true.
@@ -298,7 +282,7 @@ CONTAINS
     end if
    
     ! NLK_Vector_Tolerance
-    if (NLK_Vector_Tolerance /= NO_REAL_INPUT) then
+    if (NLK_Vector_Tolerance /= NULL_R) then
        if (NLK_Vector_Tolerance <= 0.0 .or. &
            NLK_Vector_Tolerance >= 1.0) then
           call TLS_error ('NLK_Vector_Tolerance: Must be > 0 and < 1')
@@ -307,7 +291,7 @@ CONTAINS
     end if
 
     ! NLK_Max_Vectors
-    if (NLK_Max_Vectors /= NO_INTEGER_INPUT) then
+    if (NLK_Max_Vectors /= NULL_I) then
        if (NLK_Max_Vectors < 1) then
           call TLS_error ('Invalid allowed NLK_Max_Vectors: must be positive!')
           fatal = .true.
@@ -315,7 +299,7 @@ CONTAINS
     end if
    
     ! Output mode.
-    if (output_mode /= NO_CHAR_INPUT) then
+    if (output_mode /= NULL_C) then
 
        ! Check for valid strings.
        output_mode = ADJUSTL(output_mode)
@@ -377,8 +361,8 @@ CONTAINS
     end if
 
     ! Perturbation parameter.
-    if (perturbation_parameter /= NO_REAL_INPUT) then
-       if (perturbation_parameter <= zero .or. perturbation_parameter >= one) then
+    if (perturbation_parameter /= NULL_R) then
+       if (perturbation_parameter <= 0 .or. perturbation_parameter >= 1) then
           call TLS_error ('Perturbation parameter must be > 0.0 and < 1.0!')
           fatal = .true.
        end if
@@ -386,8 +370,8 @@ CONTAINS
 
     ! Damper parameters.
     do i = 1,ndampers
-       if (Damper_Parameters(i) /= NO_REAL_INPUT) then
-          if (Damper_Parameters(i) <= zero) then
+       if (Damper_Parameters(i) /= NULL_R) then
+          if (Damper_Parameters(i) <= 0) then
              write (message, 12) i
 12           format ('Damper parameter ',i1,' must be > 0.0!')
              call TLS_error (message)
@@ -395,8 +379,6 @@ CONTAINS
           end if
        end if   
     end do
-
-    return
 
   END SUBROUTINE NONLINEAR_SOLVER_CHECK
 
@@ -409,23 +391,18 @@ CONTAINS
     !   namelist.
     !
     !=======================================================================
-    implicit none
 
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    convergence_criterion  = NO_REAL_INPUT
-    maximum_iterations     = NO_INTEGER_INPUT
-    method                 = NO_CHAR_INPUT
-    name                   = NO_CHAR_INPUT
-    linear_solver_name     = NO_CHAR_INPUT
-    output_mode            = NO_CHAR_INPUT
-    perturbation_parameter = NO_REAL_INPUT
-    Damper_Parameters      = NO_REAL_INPUT
-    NLK_Max_Vectors        = NO_INTEGER_INPUT
-    NLK_Vector_Tolerance   = NO_REAL_INPUT
+    convergence_criterion  = NULL_R
+    maximum_iterations     = NULL_I
+    method                 = NULL_C
+    name                   = NULL_C
+    linear_solver_name     = NULL_C
+    output_mode            = NULL_C
+    perturbation_parameter = NULL_R
+    Damper_Parameters      = NULL_R
+    NLK_Max_Vectors        = NULL_I
+    NLK_Vector_Tolerance   = NULL_R
     use_damper             = .true.
-
-    return
 
   END SUBROUTINE NONLINEAR_SOLVER_DEFAULT
 
@@ -438,8 +415,6 @@ CONTAINS
     !======================================================================
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLib_BCAST
-
-    implicit none
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -457,8 +432,6 @@ CONTAINS
        call PGSLib_BCAST (NLK_Vector_Tolerance)
     end if
 
-    return
-
   END SUBROUTINE NONLINEAR_SOLVER_INPUT_PARALLEL
 
   SUBROUTINE SET_NK_CONTROLS (NK, solution)
@@ -469,30 +442,26 @@ CONTAINS
     !
     !   We select a default solver here, but always defer to the users wishes
     !=======================================================================
-    use constants_module,   only: ten_tominus5, one, ten_tominus6, zero
-    use kind_module,        only: int_kind, real_kind
     use linear_solution,    only: UBIK_NK_DEFAULT
     use nonlinear_solution, only: NK_CONTROL, NK_DEFAULT, ndampers
 
-    implicit none
-
     ! Arguments
-    type(NK_CONTROL),         intent(INOUT) :: NK
-    integer(KIND = int_kind), intent(IN)    :: solution
+    type(NK_CONTROL), intent(INOUT) :: NK
+    integer, intent(IN) :: solution
  
     ! Input variable defaults.
-    character(LEN = string_len),          parameter :: METHOD_DEFAULT                    = 'nk'
-    character(LEN = string_len),          parameter :: NAME_DEFAULT                      = 'default'
-    character(LEN = string_len),          parameter :: LINEAR_SOLVER_NAME_DEFAULT        = 'default'
-    character(LEN = string_len),          parameter :: OUTPUT_MODE_DEFAULT               = 'none'
-    integer(KIND = int_kind),             parameter :: LINEAR_SOLVER_INDEX_DEFAULT       = UBIK_NK_DEFAULT
-    integer(KIND = int_kind),             parameter :: MAXIMUM_ITERATIONS_DEFAULT        = 30
-    real(KIND = real_kind),               parameter :: CONVERGENCE_CRITERION_DEFAULT     = ten_tominus5
-    real(KIND = real_kind),               parameter :: PERTURBATION_PARAMETER_DEFAULT    = ten_tominus6
-    real(KIND = real_kind), dimension(ndampers), parameter :: DAMPER_PARAMETERS_DEFAULT  = one
-    real(KIND = real_kind),               parameter :: NLK_Vector_Tolerance_DEFAULT      = 0.01d0
-    integer(KIND = int_kind),             parameter :: NLK_Max_Vectors_DEFAULT           = 20
-    integer(KIND = int_kind) :: i, linear_solver_index
+    character(string_len), parameter :: METHOD_DEFAULT             = 'nk'
+    character(string_len), parameter :: NAME_DEFAULT               = 'default'
+    character(string_len), parameter :: LINEAR_SOLVER_NAME_DEFAULT = 'default'
+    character(string_len), parameter :: OUTPUT_MODE_DEFAULT        = 'none'
+    integer,  parameter :: LINEAR_SOLVER_INDEX_DEFAULT    = UBIK_NK_DEFAULT
+    integer,  parameter :: MAXIMUM_ITERATIONS_DEFAULT     = 30
+    real(r8), parameter :: CONVERGENCE_CRITERION_DEFAULT  = 1.0d-5
+    real(r8), parameter :: PERTURBATION_PARAMETER_DEFAULT = 1.0d-6
+    real(r8), dimension(ndampers), parameter :: DAMPER_PARAMETERS_DEFAULT  = 1
+    real(r8), parameter :: NLK_Vector_Tolerance_DEFAULT = 0.01d0
+    integer,  parameter :: NLK_Max_Vectors_DEFAULT      = 20
+    integer :: i, linear_solver_index
  
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
  
@@ -517,16 +486,16 @@ CONTAINS
        case DEFAULT
 
           ! If variables haven't been provided, set defaults.
-          if (name == NO_CHAR_INPUT)                   name                   = NAME_DEFAULT
-          if (linear_solver_name == NO_CHAR_INPUT)     linear_solver_name     = LINEAR_SOLVER_NAME_DEFAULT
-          if (method == NO_CHAR_INPUT)                 method                 = METHOD_DEFAULT
-          if (output_mode == NO_CHAR_INPUT)            output_mode            = OUTPUT_MODE_DEFAULT
-          if (convergence_criterion == NO_REAL_INPUT)  convergence_criterion  = CONVERGENCE_CRITERION_DEFAULT
-          if (maximum_iterations == NO_INTEGER_INPUT)  maximum_iterations     = MAXIMUM_ITERATIONS_DEFAULT
-          if (perturbation_parameter == NO_REAL_INPUT) perturbation_parameter = PERTURBATION_PARAMETER_DEFAULT
-          if (ALL(Damper_Parameters == NO_REAL_INPUT)) Damper_Parameters      = DAMPER_PARAMETERS_DEFAULT
-          if (NLK_Vector_Tolerance == NO_REAL_INPUT)   NLK_Vector_Tolerance   = NLK_Vector_Tolerance_DEFAULT
-          if (NLK_Max_Vectors == NO_INTEGER_INPUT)     NLK_Max_Vectors        = NLK_Max_Vectors_DEFAULT
+          if (name == NULL_C)                   name                   = NAME_DEFAULT
+          if (linear_solver_name == NULL_C)     linear_solver_name     = LINEAR_SOLVER_NAME_DEFAULT
+          if (method == NULL_C)                 method                 = METHOD_DEFAULT
+          if (output_mode == NULL_C)            output_mode            = OUTPUT_MODE_DEFAULT
+          if (convergence_criterion == NULL_R)  convergence_criterion  = CONVERGENCE_CRITERION_DEFAULT
+          if (maximum_iterations == NULL_I)     maximum_iterations     = MAXIMUM_ITERATIONS_DEFAULT
+          if (perturbation_parameter == NULL_R) perturbation_parameter = PERTURBATION_PARAMETER_DEFAULT
+          if (ALL(Damper_Parameters == NULL_R)) Damper_Parameters      = DAMPER_PARAMETERS_DEFAULT
+          if (NLK_Vector_Tolerance == NULL_R)   NLK_Vector_Tolerance   = NLK_Vector_Tolerance_DEFAULT
+          if (NLK_Max_Vectors == NULL_I)        NLK_Max_Vectors        = NLK_Max_Vectors_DEFAULT
           linear_solver_index = LINEAR_SOLVER_INDEX_DEFAULT
 
     end select
@@ -577,12 +546,10 @@ CONTAINS
     NK%linear_tot  = 0
     NK%newton_tot = 0
     do i = 0,maximum_iterations
-       NK%L2(i)          = zero
-       NK%LI(i)          = zero
+       NK%L2(i)          = 0
+       NK%LI(i)          = 0
        NK%LI_Location(i) = 0
     end do    
-
-    return
 
   END SUBROUTINE SET_NK_CONTROLS
 

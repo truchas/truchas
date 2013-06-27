@@ -3,7 +3,7 @@
 module diffusion_solver_data
 
   use kinds
-  use ds_utilities
+  use truchas_logging_services
   implicit none
   private
   save
@@ -110,8 +110,8 @@ contains
     end select
     nconc = num_species
     
-    call ds_info ('')
-    call ds_info ('Reading DIFFUSION_SOLVER namelist ...')
+    call TLS_info ('')
+    call TLS_info ('Reading DIFFUSION_SOLVER namelist ...')
 
     !! Locate the DIFFUSION_SOLVER namelist (first occurence).
     if (is_IOP) then
@@ -120,10 +120,10 @@ contains
     end if
 
     call broadcast (ios)
-    if (ios /= 0) call ds_halt ('error reading input file')
+    if (ios /= 0) call TLS_fatal ('error reading input file')
 
     call broadcast (found)
-    if (.not.found) call ds_halt ('DIFFUSION_SOLVER namelist not found')
+    if (.not.found) call TLS_fatal ('DIFFUSION_SOLVER namelist not found')
 
     !! Read the namelist.
     if (is_IOP) then
@@ -153,7 +153,7 @@ contains
       read(lun,nml=diffusion_solver,iostat=ios)
     end if
     call broadcast (ios)
-    if (ios /= 0) call ds_halt ('error reading DIFFUSION_SOLVER namelist')
+    if (ios /= 0) call TLS_fatal ('error reading DIFFUSION_SOLVER namelist')
 
     !! Broadcast the namelist variables.
     call broadcast (max_nlk_itr)
@@ -182,7 +182,7 @@ contains
     
     if (stepping_method == NULL_C) then
       stepping_method = 'Adaptive BDF2'
-      call ds_info ('  using default STEPPING_METHOD value: "' // trim(stepping_method) // '"')
+      call TLS_info ('  using default STEPPING_METHOD value: "' // trim(stepping_method) // '"')
     end if
     select case (stepping_method)
     case ('Adaptive BDF2')
@@ -190,14 +190,14 @@ contains
     case ('Non-adaptive BDF1')
       integrator = DS_NONADAPTIVE_BDF1
     case default
-      call ds_halt ('unknown value for STEPPING_METHOD: "' // trim(stepping_method) // '"')
+      call TLS_fatal ('unknown value for STEPPING_METHOD: "' // trim(stepping_method) // '"')
     end select
 
     if (max_nlk_itr == NULL_I) then
       max_nlk_itr = 5
-      call ds_info ('  using default MAX_NLK_ITR value: ' // i_to_c(max_nlk_itr))
+      call TLS_info ('  using default MAX_NLK_ITR value: ' // i_to_c(max_nlk_itr))
     else if (max_nlk_itr < 2) then
-      call ds_halt ('MAX_NLK_ITR must be > 1')
+      call TLS_fatal ('MAX_NLK_ITR must be > 1')
     end if
 
     select case (integrator)
@@ -205,41 +205,41 @@ contains
       if (nlk_tol == NULL_R) then
         nlk_tol = 0.1_r8
         write(string,'(es8.2)') nlk_tol
-        call ds_info ('  using default NLK_TOL value: ' // string)
+        call TLS_info ('  using default NLK_TOL value: ' // string)
       else if (nlk_tol <= 0.0_r8 .or. nlk_tol >= 1.0_r8) then
-        call ds_halt ('NLK_TOL must be positive and < 1')
+        call TLS_fatal ('NLK_TOL must be positive and < 1')
       end if
       if (max_step_tries == NULL_I) then
         max_step_tries = 10
-        call ds_info ('  using default MAX_STEP_TRIES value: ' // i_to_c(max_step_tries))
+        call TLS_info ('  using default MAX_STEP_TRIES value: ' // i_to_c(max_step_tries))
       else if (max_step_tries < 1) then
-        call ds_halt ('MAX_STEP_TRIES must be > 0')
+        call TLS_fatal ('MAX_STEP_TRIES must be > 0')
       end if
     case default
       if (nlk_tol /= NULL_R) then
-        call ds_info ('  ignoring NLK_TOL value; not relevant to STEPPING_METHOD choice.')
+        call TLS_info ('  ignoring NLK_TOL value; not relevant to STEPPING_METHOD choice.')
       end if
       if (max_step_tries /= NULL_I) then
-        call ds_info ('  ignoring MAX_STEP_TRIES value; not relevant to STEPPING_METHOD choice.')
+        call TLS_info ('  ignoring MAX_STEP_TRIES value; not relevant to STEPPING_METHOD choice.')
       end if
     end select
 
     if (max_nlk_vec == NULL_I) then
       max_nlk_vec = max_nlk_itr-1
-      call ds_info ('  using default MAX_NLK_VEC value: MAX_NLK_ITR - 1')
+      call TLS_info ('  using default MAX_NLK_VEC value: MAX_NLK_ITR - 1')
     else if (max_nlk_vec < 1) then
-      call ds_halt ('MAX_NLK_VEC must be > 0')
+      call TLS_fatal ('MAX_NLK_VEC must be > 0')
     else if (max_nlk_vec >= max_nlk_itr) then
       max_nlk_vec = max_nlk_itr - 1
-      call ds_info ('  reducing MAX_NLK_VEC to MAX_NLK_ITR - 1')
+      call TLS_info ('  reducing MAX_NLK_VEC to MAX_NLK_ITR - 1')
     end if
 
     if (nlk_vec_tol == NULL_R) then
       nlk_vec_tol = 1.0d-3
       write(string,'(es8.2)') nlk_vec_tol
-      call ds_info ('  using default NLK_VEC_TOL value: ' // string)
+      call TLS_info ('  using default NLK_VEC_TOL value: ' // string)
     else if (nlk_vec_tol <= 0.0_r8) then
-      call ds_halt ('NLK_VEC_TOL must be > 0')
+      call TLS_fatal ('NLK_VEC_TOL must be > 0')
     end if
 
     select case (integrator)
@@ -249,35 +249,35 @@ contains
       case (DS_SPEC_SYS, DS_TEMP_SPEC_SYS)
 
         if (abs_conc_tol == NULL_R) then
-          call ds_halt ('ABS_CONC_TOL must be assigned a value')
+          call TLS_fatal ('ABS_CONC_TOL must be assigned a value')
         else if (abs_conc_tol < 0.0_r8) then
-          call ds_halt ('ABS_CONC_TOL must be >= 0')
+          call TLS_fatal ('ABS_CONC_TOL must be >= 0')
         end if
 
         if (rel_conc_tol == NULL_R) then
           rel_conc_tol = 0.0_r8
           write(string,'(es8.2)') rel_conc_tol
-          call ds_info ('  using default REL_CONC_TOL value: ' // string)
+          call TLS_info ('  using default REL_CONC_TOL value: ' // string)
         else if (rel_conc_tol < 0.0_r8 .or. rel_conc_tol >= 1.0_r8) then
-          call ds_halt ('REL_CONC_TOL must be in [0,1)')
+          call TLS_fatal ('REL_CONC_TOL must be in [0,1)')
         end if
 
         if (abs_conc_tol == 0.0_r8) then
           if (rel_conc_tol == 0.0_r8) then
-            call ds_halt ('ABS_CONC_TOL and REL_CONC_TOL are both 0')
+            call TLS_fatal ('ABS_CONC_TOL and REL_CONC_TOL are both 0')
           else
-            call ds_info ('  WARNING: using a pure relative error norm; conc must be bounded away from 0')
+            call TLS_info ('  WARNING: using a pure relative error norm; conc must be bounded away from 0')
           end if
         end if
 
       case default  ! system doesn't involve species concentration
 
         if (abs_conc_tol /= NULL_R) then
-          call ds_info ('  ignoring ABS_CONC_TOL value; concentration is not a dependent variable')
+          call TLS_info ('  ignoring ABS_CONC_TOL value; concentration is not a dependent variable')
         end if
 
         if (rel_conc_tol /= NULL_R) then
-          call ds_info ('  ignoring REL_CONC_TOL value; concentration is not a dependent variable')
+          call TLS_info ('  ignoring REL_CONC_TOL value; concentration is not a dependent variable')
         end if
 
       end select
@@ -286,65 +286,65 @@ contains
       case (DS_TEMP_SYS, DS_TEMP_SPEC_SYS)
 
         if (abs_temp_tol == NULL_R) then
-          call ds_halt ('ABS_TEMP_TOL must be assigned a value')
+          call TLS_fatal ('ABS_TEMP_TOL must be assigned a value')
         else if (abs_temp_tol < 0.0_r8) then
-          call ds_halt ('ABS_TEMP_TOL must be >= 0')
+          call TLS_fatal ('ABS_TEMP_TOL must be >= 0')
         end if
 
         if (rel_temp_tol == NULL_R) then
           rel_temp_tol = 0.0_r8
           write(string,'(es8.2)') rel_temp_tol
-          call ds_info ('  using default REL_TEMP_TOL value: ' // string)
+          call TLS_info ('  using default REL_TEMP_TOL value: ' // string)
         else if (rel_temp_tol < 0.0_r8 .or. rel_temp_tol >= 1.0_r8) then
-          call ds_halt ('REL_TEMP_TOL must be in [0,1)')
+          call TLS_fatal ('REL_TEMP_TOL must be in [0,1)')
         end if
 
         if (abs_temp_tol == 0.0_r8) then
           if (rel_temp_tol == 0.0_r8) then
-            call ds_halt ('ABS_TEMP_TOL and Rel_Temp_Tol are both 0')
+            call TLS_fatal ('ABS_TEMP_TOL and Rel_Temp_Tol are both 0')
           else
-            call ds_info ('  WARNING: using a pure relative error norm; temp must be bounded away from 0')
+            call TLS_info ('  WARNING: using a pure relative error norm; temp must be bounded away from 0')
           end if
         end if
 
         if (abs_enthalpy_tol == NULL_R) then
-          call ds_halt ('ABS_ENTHALPY_TOL must be assigned a value')
+          call TLS_fatal ('ABS_ENTHALPY_TOL must be assigned a value')
         else if (abs_enthalpy_tol < 0.0_r8) then
-          call ds_halt ('ABS_ENTHALPY_TOL must be >= 0')
+          call TLS_fatal ('ABS_ENTHALPY_TOL must be >= 0')
         end if
 
         if (rel_enthalpy_tol == NULL_R) then
           rel_enthalpy_tol = 0.0_r8
           write(string,'(es8.2)') rel_enthalpy_tol
-          call ds_info ('  using default REL_ENTHALPY_TOL value: ' // string)
+          call TLS_info ('  using default REL_ENTHALPY_TOL value: ' // string)
         else if (rel_enthalpy_tol < 0.0_r8 .or. rel_enthalpy_tol >= 1.0_r8) then
-          call ds_halt ('REL_ENTHALPY_TOL must be in [0,1)')
+          call TLS_fatal ('REL_ENTHALPY_TOL must be in [0,1)')
         end if
 
         if (abs_enthalpy_tol == 0.0_r8) then
           if (rel_enthalpy_tol == 0.0_r8) then
-            call ds_halt ('ABS_ENTHALPY_TOL and REL_ENTHALPY_TOL are both 0')
+            call TLS_fatal ('ABS_ENTHALPY_TOL and REL_ENTHALPY_TOL are both 0')
           else
-            call ds_info ('  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0')
+            call TLS_info ('  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0')
           end if
         end if
 
       case default  ! system doesn't involve temperature
 
         if (abs_temp_tol /= NULL_R) then
-          call ds_info ('  ignoring ABS_TEMP_TOL value; temperature is not a dependent variable')
+          call TLS_info ('  ignoring ABS_TEMP_TOL value; temperature is not a dependent variable')
         end if
 
         if (rel_temp_tol /= NULL_R) then
-          call ds_info ('  ignoring REL_TEMP_TOL value; temperature is not a dependent variable')
+          call TLS_info ('  ignoring REL_TEMP_TOL value; temperature is not a dependent variable')
         end if
 
         if (abs_enthalpy_tol /= NULL_R) then
-          call ds_info ('  ignoring ABS_ENTHALPY_TOL value; enthalpy is not a dependent variable')
+          call TLS_info ('  ignoring ABS_ENTHALPY_TOL value; enthalpy is not a dependent variable')
         end if
 
         if (rel_enthalpy_tol /= NULL_R) then
-          call ds_info ('  ignoring REL_ENTHALPY_TOL value; enthalpy is not a dependent variable')
+          call TLS_info ('  ignoring REL_ENTHALPY_TOL value; enthalpy is not a dependent variable')
         end if
 
       end select
@@ -352,27 +352,27 @@ contains
     case default
     
       if (abs_conc_tol /= NULL_R) then
-        call ds_info ('  ignoring ABS_CONC_TOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring ABS_CONC_TOL value; not relevant to STEPPING_METHOD choice')
       end if
 
       if (rel_conc_tol /= NULL_R) then
-        call ds_info ('  ignoring REL_CONC_TOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring REL_CONC_TOL value; not relevant to STEPPING_METHOD choice')
       end if
 
       if (abs_temp_tol /= NULL_R) then
-        call ds_info ('  ignoring ABS_TEMP_TOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring ABS_TEMP_TOL value; not relevant to STEPPING_METHOD choice')
       end if
 
       if (rel_temp_tol /= NULL_R) then
-        call ds_info ('  ignoring REL_TEMP_TOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring REL_TEMP_TOL value; not relevant to STEPPING_METHOD choice')
       end if
 
       if (abs_enthalpy_tol /= NULL_R) then
-        call ds_info ('  ignoring ABS_ENTHALPY_TOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring ABS_ENTHALPY_TOL value; not relevant to STEPPING_METHOD choice')
       end if
 
       if (rel_enthalpy_tol /= NULL_R) then
-        call ds_info ('  ignoring REL_ENTHALPY_TOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring REL_ENTHALPY_TOL value; not relevant to STEPPING_METHOD choice')
       end if
     
     end select
@@ -386,34 +386,34 @@ contains
     case (NULL_C)
       ds_nlk_pc = DS_NLK_PC_SSOR
     case default
-      call ds_halt ('unknown value for NLK_PRECONDITIONER: ' // trim(nlk_preconditioner))
+      call TLS_fatal ('unknown value for NLK_PRECONDITIONER: ' // trim(nlk_preconditioner))
     end select
 
     if (ds_nlk_pc == DS_NLK_PC_SSOR) then
 
       if (pc_ssor_sweeps == NULL_I) then
         pc_ssor_sweeps = 4
-        call ds_info ('  using default PC_SSOR_SWEEPS value: ' // i_to_c(pc_ssor_sweeps))
+        call TLS_info ('  using default PC_SSOR_SWEEPS value: ' // i_to_c(pc_ssor_sweeps))
       else if (pc_ssor_sweeps < 1) then
-        call ds_halt ('PC_SSOR_SWEEPS must be > 0')
+        call TLS_fatal ('PC_SSOR_SWEEPS must be > 0')
       end if
 
       if (pc_ssor_relax == NULL_R) then
         pc_ssor_relax = 1.0_r8
         write(string,'(es8.2)') pc_ssor_relax
-        call ds_info ('  using default PC_SSOR_RELAX value: ' // string)
+        call TLS_info ('  using default PC_SSOR_RELAX value: ' // string)
       else if (pc_ssor_relax <= 0.0_r8 .or. pc_ssor_relax >= 2.0_r8) then
-        call ds_halt ('PC_SSOR_RELAX must be in (0, 2)')
+        call TLS_fatal ('PC_SSOR_RELAX must be in (0, 2)')
       end if
 
     else
 
       if (pc_ssor_sweeps /= NULL_I) then
-        call ds_info ('  ignoring PC_SSOR_SWEEPS value; unused when NLK_PRECONDITIONER /= "SSOR"')
+        call TLS_info ('  ignoring PC_SSOR_SWEEPS value; unused when NLK_PRECONDITIONER /= "SSOR"')
       end if
 
       if (pc_ssor_relax /= NULL_R) then
-        call ds_info ('  ignoring PC_SSOR_RELAX value; unused when NLK_PRECONDITIONER /= "SSOR"')
+        call TLS_info ('  ignoring PC_SSOR_RELAX value; unused when NLK_PRECONDITIONER /= "SSOR"')
       end if
 
     end if
@@ -422,21 +422,21 @@ contains
 
       if (pc_amg_cycles == NULL_I) then
         pc_amg_cycles = 1
-        call ds_info ('  using default PC_AMG_CYCLES value: ' // i_to_c(pc_amg_cycles))
+        call TLS_info ('  using default PC_AMG_CYCLES value: ' // i_to_c(pc_amg_cycles))
       else if (pc_amg_cycles < 1) then
-        call ds_halt ('PC_AMG_CYCLES must be > 0')
+        call TLS_fatal ('PC_AMG_CYCLES must be > 0')
       endif
 
       if (hypre_amg_print_level == NULL_I) then
         hypre_amg_print_level = 0
       else if (hypre_amg_print_level < 0 .or. hypre_amg_print_level > 4) then
-        call ds_halt ('HYPRE_AMG_PRINT_LEVEL must be >= 0 and <= 3')
+        call TLS_fatal ('HYPRE_AMG_PRINT_LEVEL must be >= 0 and <= 3')
       end if
 
       if (hypre_amg_logging_level == NULL_I) then
         hypre_amg_logging_level = 0
       else if (hypre_amg_logging_level < 0) then
-        call ds_halt ('HYPRE_AMG_LOGGING_LEVEL must be >= 0')
+        call TLS_fatal ('HYPRE_AMG_LOGGING_LEVEL must be >= 0')
       end if
       
       hypre_amg_debug_level = 0
@@ -445,15 +445,15 @@ contains
     else
 
       if (pc_amg_cycles /= NULL_I) then
-        call ds_info ('  ignoring PC_AMG_CYCLES value; unused when NLK_PRECONDITIONER /= "HYPRE_AMG"')
+        call TLS_info ('  ignoring PC_AMG_CYCLES value; unused when NLK_PRECONDITIONER /= "HYPRE_AMG"')
       end if
 
       if (hypre_amg_print_level /= NULL_I) then
-        call ds_info ('  ignoring HYPRE_AMG_PRINT_LEVEL value; unused when NLK_PRECONDITIONER /= "HYPRE_AMG"')
+        call TLS_info ('  ignoring HYPRE_AMG_PRINT_LEVEL value; unused when NLK_PRECONDITIONER /= "HYPRE_AMG"')
       end if
 
       if (hypre_amg_logging_level /= NULL_I) then
-        call ds_info ('  ignoring HYPRE_AMG_LOGGING_LEVEL value; unused when NLK_PRECONDITIONER /= "HYPRE_AMG"')
+        call TLS_info ('  ignoring HYPRE_AMG_LOGGING_LEVEL value; unused when NLK_PRECONDITIONER /= "HYPRE_AMG"')
       end if
 
     end if
@@ -461,29 +461,29 @@ contains
     if (integrator == DS_NONADAPTIVE_BDF1) then
       if (residual_atol == NULL_R) then
         residual_atol = 0.0d0
-        call ds_info ('  using default RESIDUAL_ATOL value: 0.0')
+        call TLS_info ('  using default RESIDUAL_ATOL value: 0.0')
       else if (residual_atol < 0.0d0) then
-        call ds_halt ('RESIDUAL_ATOL must be >= 0')
+        call TLS_fatal ('RESIDUAL_ATOL must be >= 0')
       end if
       if (residual_rtol == NULL_R) then
-        call ds_halt ('RESIDUAL_RTOL must be assigned a value')
+        call TLS_fatal ('RESIDUAL_RTOL must be assigned a value')
       else if (residual_rtol <= 0.0d0 .or. residual_rtol >= 1.0d0) then
-        call ds_halt ('RESIDUAL_RTOL must be > 0 and < 1')
+        call TLS_fatal ('RESIDUAL_RTOL must be > 0 and < 1')
       end if
       if (cond_vfrac_threshold == NULL_R) then
         cond_vfrac_threshold = 1.0d-3
       else if (cond_vfrac_threshold <= 0.0d0 .or. cond_vfrac_threshold >= 1.0d0) then
-        call ds_halt ('COND_VFRAC_THRESHOLD must be > 0 and < 1')
+        call TLS_fatal ('COND_VFRAC_THRESHOLD must be > 0 and < 1')
       end if
     else
       if (residual_atol /= NULL_R) then
-        call ds_info ('  ignoring RESIDUAL_ATOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring RESIDUAL_ATOL value; not relevant to STEPPING_METHOD choice')
       end if
       if (residual_rtol /= NULL_R) then
-        call ds_info ('  ignoring RESIDUAL_RTOL value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring RESIDUAL_RTOL value; not relevant to STEPPING_METHOD choice')
       end if
       if (cond_vfrac_threshold /= NULL_R) then
-        call ds_info ('  ignoring COND_VFRAC_THRESHOLD value; not relevant to STEPPING_METHOD choice')
+        call TLS_info ('  ignoring COND_VFRAC_THRESHOLD value; not relevant to STEPPING_METHOD choice')
       end if
     end if
 

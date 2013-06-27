@@ -22,10 +22,7 @@ MODULE GS_MODULE
 
   use nn_gather_module, only: NN_Gather, NN_Gather_BoundaryData
 
-
   implicit none
-
-  ! Private Module
   private
 
   ! Public procedures
@@ -44,10 +41,5 @@ MODULE GS_MODULE
             NN_GS_INIT,     &
             Gather_BoundaryData, &
             NN_Gather_BoundaryData
-
-  ! Arrays and variables used only inside this module
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
 
 END MODULE GS_MODULE

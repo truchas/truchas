@@ -20,7 +20,7 @@ Module BC_Displacement_Init
   use bc_module
   use mech_bc_data_module
   use bc_initialize
-  use kind_module, only : int_kind, real_kind, log_kind
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
   Private
@@ -37,15 +37,14 @@ CONTAINS
     ! Author: Dave Korzekwa
     !-----------------------------------------------------------------------------
     use mech_bc_data_module
-    use parameter_module,        only: ndim,  mbc_surfaces, mbc_nodes
-    use truchas_logging_services
+    use parameter_module, only: ndim, mbc_surfaces, mbc_nodes
     !
     !
     ! Arguments
     ! Local variables
-    integer(int_kind) :: status
-    type (BC_Operator), POINTER    :: Operator
-    type (BC_Region),   POINTER    :: Region
+    integer :: status
+    type (BC_Operator), POINTER :: Operator
+    type (BC_Region),   POINTER :: Region
     !
     ! Announce what is going on
     call TLS_info (' Initializing Displacement Boundary Conditions ')
@@ -154,7 +153,6 @@ CONTAINS
     Node_Disp_BC_Temp%Combination = 0
     Node_Disp_BC_Temp%Value       = 0.0
     !
-    RETURN
   end SUBROUTINE Initialize_Displacement_BC
   !
   !
@@ -168,20 +166,20 @@ CONTAINS
     ! Author: Dave Korzekwa
     !---------------------------------------------------------------------
     !
-    use parameter_module,   only: ndim, nfc, ncells
-    use bc_data_module,     only: BC_Type, BC_Value
-    use mesh_module,          only: Cell
+    use parameter_module, only: ndim, nfc, ncells
+    use bc_data_module, only: BC_Type, BC_Value
+    use mesh_module, only: Cell
     !
     ! Arguments
     logical, dimension(nfc,ncells), intent(IN) :: BC_Mask
-    integer(int_kind), intent(IN)              :: n, f ! The index for this bc namelist, and the face
+    integer, intent(IN) :: n, f ! The index for this bc namelist, and the face
     !
     ! Local Variables
-    type (BC_Operator), POINTER    :: Operator
-    type (BC_Region),   POINTER    :: Region
-    real(real_kind),    dimension(1,nfc,ncells) :: BC_Values
-    logical(log_kind),  dimension(nfc,ncells) :: BC_UseFunction
-    real(real_kind),    dimension(ndim, nfc, ncells) :: BC_Positions
+    type (BC_Operator), POINTER :: Operator
+    type (BC_Region),   POINTER :: Region
+    real(r8), dimension(1,nfc,ncells) :: BC_Values
+    logical,  dimension(nfc,ncells) :: BC_UseFunction
+    real(r8), dimension(ndim, nfc, ncells) :: BC_Positions
     !
     ! Initialize local arrays
     !
@@ -245,7 +243,6 @@ CONTAINS
     !
     nullify(Operator)
     nullify(Region)
-    RETURN
   end SUBROUTINE Append_to_Displacement_BC
   !
   !
@@ -261,9 +258,9 @@ CONTAINS
     !----------------------------------------------------------------
 
     ! Local Variables
-    type (BC_Operator), POINTER    :: Operator
-    type (BC_Region),   POINTER    :: Region
-    type (BC_Atlas),    POINTER    :: Atlas
+    type(BC_Operator), POINTER :: Operator
+    type(BC_Region),   POINTER :: Region
+    type(BC_Atlas),    POINTER :: Atlas
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_X_TRACTION_OP)
     Region => BC_OP_Get_Region(Operator)
@@ -360,20 +357,18 @@ CONTAINS
                                     Node_Disp_Coords
     use mech_bc_data_module,  only: Node_Disp_BC_Temp, X_DISPLACEMENT, Y_DISPLACEMENT, Z_DISPLACEMENT, &
                                     NORMAL_DISPLACEMENT
-    use constants_module,     only: ten_toplus10
     use parameter_module,     only: ndim, nnodes, mbc_nodes
     use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_COLLATE
     use parallel_info_module
-    use truchas_logging_services
     !
     ! Arguments
-    integer (KIND=int_kind), intent(IN)                :: m, n
+    integer, intent(IN) :: m, n
     ! Local variables
-    integer (KIND=int_kind)                            :: status, i, j, idim, inode, bc_gnode
-    integer (KIND=int_kind), pointer, dimension(:)     :: Collated_Nodes
-    real (KIND=real_kind)                              :: dist
-!    real(KIND = real_kind), pointer, dimension(:,:,:)  :: Xv
-    logical(log_kind)                                  :: node_found
+    integer :: status, i, j, idim, inode, bc_gnode
+    integer, pointer, dimension(:) :: Collated_Nodes
+    real(r8) :: dist
+!    real(r8), pointer, dimension(:,:,:)  :: Xv
+    logical :: node_found
     character(128) :: message
     !
 !    allocate(Xv(ndim,nvc,ncells), stat=status)
@@ -390,7 +385,7 @@ CONTAINS
     end if
     NODAL_BC_LOOP: do i = 1,mbc_nodes
        ! See if data has been changed from default
-       NODE_COORDS: if ((Node_Disp_Coords(1,i,n) > -ten_toplus10)) then
+       NODE_COORDS: if ((Node_Disp_Coords(1,i,n) > -1.0d10)) then
           node_found = .false.
           bc_gnode = 0
           ! Loop over cells and vertices
@@ -465,16 +460,15 @@ CONTAINS
     use mech_bc_data_module,  only: Interface_ID, Interface_List
     use parameter_module,     only: ncells,nfc
     use parallel_info_module
-    use truchas_logging_services
 !    use mesh_module,          only: Mesh, GAP_ELEMENT_1
     !
     ! Arguments
-    integer (KIND=int_kind), intent(IN)        :: p, f, msrf
+    integer, intent(IN) :: p, f, msrf
     logical, dimension(nfc,ncells), intent(IN) :: Mask
     character(128) :: message
 
     ! Local Variables
-    integer (int_kind)       :: n, icell, status
+    integer :: n, icell, status
 
     if (.not. ASSOCIATED(Interface_ID)) then
        allocate(Interface_ID(nfc,ncells), stat = status)

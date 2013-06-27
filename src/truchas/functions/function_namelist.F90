@@ -9,7 +9,7 @@ module function_namelist
   use input_utilities, only: seek_to_namelist
   use scalar_functions
   use function_table
-  use ds_utilities
+  use truchas_logging_services
 
   implicit none
   private
@@ -47,8 +47,8 @@ contains
         poly_coefficients, poly_exponents, poly_refvars, &
         smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1
 
-    call ds_info ('')
-    call ds_info ('Reading FUNCTION namelists ...')
+    call TLS_info ('')
+    call TLS_info ('Reading FUNCTION namelists ...')
 
     if (is_IOP) rewind(lun)
     n = 0
@@ -57,13 +57,13 @@ contains
 
       if (is_IOP) call seek_to_namelist(lun, 'FUNCTION', found, iostat=stat)
       call broadcast(stat)
-      if (stat /= 0) call ds_halt ('error reading input file')
+      if (stat /= 0) call TLS_fatal ('error reading input file')
 
       call broadcast (found)
       if (.not.found) return  ! no further FUNCTION namelists found
 
       n = n + 1
-      call ds_info ('  Reading FUNCTION namelist #' // i_to_c(n))
+      call TLS_info ('  Reading FUNCTION namelist #' // i_to_c(n))
 
       !! Read the namelist variables, assigning default values first.
       if (is_IOP) then
@@ -83,7 +83,7 @@ contains
       end if
 
       call broadcast(stat)
-      if (stat /= 0) call ds_halt ('error reading FUNCTION namelist')
+      if (stat /= 0) call TLS_fatal ('error reading FUNCTION namelist')
 
       !! Broadcast the namelist variables.
       call broadcast (name)
@@ -100,9 +100,9 @@ contains
       call broadcast (smooth_step_y1)
 
       !! Check the user-supplied name.
-      if (name == NULL_C .or. name == '') call ds_halt ('NAME must be assigned a nonempty value')
+      if (name == NULL_C .or. name == '') call TLS_fatal ('NAME must be assigned a nonempty value')
       if (ft_has_function(name)) then
-        call ds_halt ('already read a FUNCTION namelist with this name: ' // trim(name))
+        call TLS_fatal ('already read a FUNCTION namelist with this name: ' // trim(name))
       end if
       
       !! Identify the number of parameters.
@@ -116,38 +116,38 @@ contains
       case ('LIBRARY')
       case ('SMOOTH STEP')
       case (NULL_C)
-        call ds_halt('TYPE must be assigned a value')
+        call TLS_fatal ('TYPE must be assigned a value')
       case default
-        call ds_halt('unknown value for TYPE: ' // trim(type))
+        call TLS_fatal ('unknown value for TYPE: ' // trim(type))
       end select
 
       if (raise_case(type) /= 'POLYNOMIAL') then
         if (any(poly_coefficients /= NULL_R)) &
-            call ds_warn ('POLY_COEFFICIENTS is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('POLY_COEFFICIENTS is ignored when TYPE="' // trim(type) // '"')
         if (any(poly_exponents /= NULL_I)) &
-            call ds_warn ('POLY_EXPONENTS is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('POLY_EXPONENTS is ignored when TYPE="' // trim(type) // '"')
         if (any(poly_refvars /= NULL_R)) &
-            call ds_warn ('POLY_REFVARS is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('POLY_REFVARS is ignored when TYPE="' // trim(type) // '"')
       end if
 
       if (raise_case(type) /= 'LIBRARY') then
         if (library_path /= NULL_C) &
-            call ds_warn ('LIBRARY_PATH is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('LIBRARY_PATH is ignored when TYPE="' // trim(type) // '"')
         if (library_symbol /= NULL_C) &
-            call ds_warn ('LIBRARY_SYMBOL is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('LIBRARY_SYMBOL is ignored when TYPE="' // trim(type) // '"')
         if (npar /= 0) &
-            call ds_warn ('PARAMETERS is not used when TYPE="' // trim(type) // '"')
+            call TLS_warn ('PARAMETERS is not used when TYPE="' // trim(type) // '"')
       end if
 
       if (raise_case(type) /= 'SMOOTH STEP') then
         if (smooth_step_x0 /= NULL_R) &
-            call ds_warn ('SMOOTH_STEP_X0 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('SMOOTH_STEP_X0 is ignored when TYPE="' // trim(type) // '"')
         if (smooth_step_y0 /= NULL_R) &
-            call ds_warn ('SMOOTH_STEP_Y0 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('SMOOTH_STEP_Y0 is ignored when TYPE="' // trim(type) // '"')
         if (smooth_step_x1 /= NULL_R) &
-            call ds_warn ('SMOOTH_STEP_X1 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('SMOOTH_STEP_X1 is ignored when TYPE="' // trim(type) // '"')
         if (smooth_step_y1 /= NULL_R) &
-            call ds_warn ('SMOOTH_STEP_Y1 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn ('SMOOTH_STEP_Y1 is ignored when TYPE="' // trim(type) // '"')
       end if
 
       !! Create the specified function and add it to the function table.
@@ -167,10 +167,10 @@ contains
           if (poly_coefficients(ncoef) /= NULL_R) exit
         end do
         if (ncoef == 0) then
-          call ds_halt ('POLY_COEFFICIENTS must be assigned at least one value; none found')
+          call TLS_fatal ('POLY_COEFFICIENTS must be assigned at least one value; none found')
         end if
         if (any(poly_coefficients(:ncoef) == NULL_R)) then
-          call ds_halt ('values assigned to POLY_COEFFICIENTS are not packed')
+          call TLS_fatal ('values assigned to POLY_COEFFICIENTS are not packed')
         end if
 
         !! Identify the user-specified number of variables and exponents.
@@ -179,18 +179,18 @@ contains
           if (any(poly_exponents(nvar,:ncoef) /= NULL_I)) exit
         end do
         if (nvar == 0) then
-          call ds_halt ('POLY_EXPONENTS must be assigned values; none found')
+          call TLS_fatal ('POLY_EXPONENTS must be assigned values; none found')
         end if
         if (any(poly_exponents(:nvar,:ncoef) == NULL_I)) then
-          call ds_halt ('not all required POLY_EXPONENTS values have been assigned')
+          call TLS_fatal ('not all required POLY_EXPONENTS values have been assigned')
         end if
         if (any(poly_exponents(:,ncoef+1:) /= NULL_I)) then
-          call ds_warn ('some values assigned to POLY_EXPONENTS are unused')
+          call TLS_warn ('some values assigned to POLY_EXPONENTS are unused')
         end if
 
         !! Set the default for the reference variables.
         if (any(poly_refvars(nvar+1:) /= NULL_R)) then
-          call ds_warn ('some values assigned to POLY_REFVARS are unused')
+          call TLS_warn ('some values assigned to POLY_REFVARS are unused')
         else
           where (poly_refvars == NULL_R) poly_refvars = 0.0_r8
         end if
@@ -211,11 +211,11 @@ contains
 
       case ('SMOOTH STEP')
 
-        if (smooth_step_x0 == NULL_R) call ds_halt ('SMOOTH_STEP_X0 must be assigned a value')
-        if (smooth_step_y0 == NULL_R) call ds_halt ('SMOOTH_STEP_Y0 must be assigned a value')
-        if (smooth_step_x1 == NULL_R) call ds_halt ('SMOOTH_STEP_X1 must be assigned a value')
-        if (smooth_step_y1 == NULL_R) call ds_halt ('SMOOTH_STEP_Y1 must be assigned a value')
-        if (smooth_step_x0 >= smooth_step_x1) call ds_halt ('require SMOOTH_STEP_X0 < SMOOTH_STEP_X1')
+        if (smooth_step_x0 == NULL_R) call TLS_fatal ('SMOOTH_STEP_X0 must be assigned a value')
+        if (smooth_step_y0 == NULL_R) call TLS_fatal ('SMOOTH_STEP_Y0 must be assigned a value')
+        if (smooth_step_x1 == NULL_R) call TLS_fatal ('SMOOTH_STEP_X1 must be assigned a value')
+        if (smooth_step_y1 == NULL_R) call TLS_fatal ('SMOOTH_STEP_Y1 must be assigned a value')
+        if (smooth_step_x0 >= smooth_step_x1) call TLS_fatal ('require SMOOTH_STEP_X0 < SMOOTH_STEP_X1')
         call create_scafun_sstep (f, smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1)
         call ft_add_function (name, f)
         call destroy (f)

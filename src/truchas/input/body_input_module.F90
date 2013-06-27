@@ -15,16 +15,12 @@ MODULE BODY_INPUT_MODULE
   !            Larry J. Cox, LANL (ljcox@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Subroutines
   public :: BODY_CHECK, BODY_DEFAULT, BODY_INPUT
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
@@ -35,7 +31,7 @@ CONTAINS
     !   Check BODY namelist.
     !
     !=======================================================================
-    use constants_module,  only: ipreset, one, preset, zero, two, three
+    use input_utilities,   only: NULL_I, NULL_R
     use interfaces_module, only: Axis, Body_temp,                      &
                                  File_Name, Fill, Height, Isrftype,    &
                                  Matnum, nbody, Nsurf, Offset,         &
@@ -43,26 +39,24 @@ CONTAINS
                                  Rtheta_Tabular_Pt, RZ_Tabular_Pt,     &
                                  Sgeom, Surface_Name, Tab_Type,        &
                                  Length, Ztab, Mesh_Matnum
-    use kind_module,       only: int_kind, log_kind, real_kind
     use parameter_module,  only: msurf, mtab, mtype, ndim, nmat
     use property_module,   only: Get_User_Material_ID
-    implicit none
 
     ! Argument List
-    logical(KIND = log_kind) :: fatal
+    logical :: fatal
 
     ! Local Variables
-    integer(KIND = int_kind)            :: is, j, l, m, n
-    integer(KIND = int_kind), parameter :: maxforms = 16
-    real(KIND = real_kind)              :: degree, rtheta_flag
+    integer :: is, j, l, m, n
+    integer, parameter :: maxforms = 16
+    real(r8) :: degree, rtheta_flag
 
-    character(LEN = 32), dimension(maxforms)         :: Axis_Form,    &
-                                                        Fill_Inside,  &
-                                                        Fill_Outside, &
-                                                        Tab_Type_Form
-    character(LEN = 32), dimension(maxforms,0:mtype) :: Srf_Forms
+    character(32), dimension(maxforms) :: Axis_Form,    &
+                                          Fill_Inside,  &
+                                          Fill_Outside, &
+                                          Tab_Type_Form
+    character(32), dimension(maxforms,0:mtype) :: Srf_Forms
 
-    character(LEN = 1), dimension(ndim) :: Axis_Label
+    character, dimension(ndim) :: Axis_Label
     character(128) :: message
 
     ! Axis labels
@@ -147,7 +141,7 @@ CONTAINS
     Srf_Forms(5,8) = 'in mesh file'
 
     ! Initialize variables
-    degree = ACOS(-one)/180.0
+    degree = ACOS(-1.0_r8)/180.0
     fatal = .false.
 
     ! Check material number
@@ -159,7 +153,7 @@ CONTAINS
        fatal = .true.
        goto 300
     end if
-    if (m == ipreset) then
+    if (m == NULL_I) then
        write (message, 15) nbody
 15     format('Body ',i2,' material number not defined!')
        call TLS_error (message)
@@ -168,7 +162,7 @@ CONTAINS
     end if
 
     ! Validate body temperature
-    if (Body_Temp(nbody) == preset) then
+    if (Body_Temp(nbody) == NULL_R) then
        write (message, 30) nbody
 30     format ('Temperature for body ',i2,' is undefined!')
        call TLS_error (message)
@@ -218,11 +212,11 @@ CONTAINS
 
 55           continue
              if (l >= 1 .and. l <= 3) then
-                Sgeom(1,m,nbody) = one
+                Sgeom(1,m,nbody) = 1
              else if (l >= 4 .and. l <= 6) then
-                Sgeom(1,m,nbody) = two
+                Sgeom(1,m,nbody) = 2
              else if (l >= 7 .and. l <= 9) then
-                Sgeom(1,m,nbody) = three
+                Sgeom(1,m,nbody) = 3
              end if
 
           else if (ABS(Isrftype(m,nbody)) == 2) then
@@ -230,7 +224,7 @@ CONTAINS
              ! Box
              do n = 1,3
                 Sgeom(n,m,nbody) = Length(n,m)
-                if (Length(n,m) == preset) then
+                if (Length(n,m) == NULL_R) then
                    write (message,60) Axis_label(n),m,nbody
 60                 format('No ',a1,'-Length specified for box surface ',i3,' of body ',i3)
                    call TLS_error (message)
@@ -242,7 +236,7 @@ CONTAINS
 
              ! Sphere
              Sgeom(1,m,nbody) = ABS(Radius(1,m))
-             if (Radius(1,m) == preset) then
+             if (Radius(1,m) == NULL_R) then
                 write (message,65) m,nbody
 65              format('No radius specified for sphere surface ',i3,' of body ',i3)
                 call TLS_error (message)
@@ -254,7 +248,7 @@ CONTAINS
              ! Ellipsoid
              do n = 1,3
                 Sgeom(n,m,nbody) = ABS(Radius(n,m))
-                if (Radius(n,m) == preset) then
+                if (Radius(n,m) == NULL_R) then
                    write (message,70) n,m,nbody
 70                 format('No radius(',i1,') specified for ellipsoid surface ',i3,' of body ',i3)
                    call TLS_error (message)
@@ -277,15 +271,15 @@ CONTAINS
 
 80           continue
              if (l >= 1 .and. l <= 3) then
-                Sgeom(1,m,nbody) = one
+                Sgeom(1,m,nbody) = 1
              else if (l >= 4 .and. l <= 6) then
-                Sgeom(1,m,nbody) = two
+                Sgeom(1,m,nbody) = 2
              else if (l >= 7 .and. l <= 9) then
-                Sgeom(1,m,nbody) = three
+                Sgeom(1,m,nbody) = 3
              end if
 
              Sgeom(2,m,nbody) = ABS(Radius(1,m))
-             if (Radius(1,m) == preset) then
+             if (Radius(1,m) == NULL_R) then
                 write (message,85) m,nbody
 85              format('No radius specified for cylinder surface ',i3,' of body ',i3)
                 call TLS_error (message)
@@ -293,7 +287,7 @@ CONTAINS
              end if
 
              Sgeom(3,m,nbody) = Height(m)
-             if (Height(m) == preset) then
+             if (Height(m) == NULL_R) then
                 write (message,90) m,nbody
 90              format('No height specified for cylinder surface ',i3,' of body ',i3)
                 call TLS_error (message)
@@ -315,15 +309,15 @@ CONTAINS
 
 100          continue
              if (l >= 1 .and. l <= 3) then
-                Sgeom(1,m,nbody) = one
+                Sgeom(1,m,nbody) = 1
              else if (l >= 4 .and. l <= 6) then
-                Sgeom(1,m,nbody) = two
+                Sgeom(1,m,nbody) = 2
              else if (l >= 7 .and. l <= 9) then
-                Sgeom(1,m,nbody) = three
+                Sgeom(1,m,nbody) = 3
              end if
 
              Sgeom(2,m,nbody) = Height(m)
-             if (Height(m) == preset) then
+             if (Height(m) == NULL_R) then
                 write (message,105) m,nbody
 105             format('No height specified for cone surface ',i3,' of body ',i3)
                 call TLS_error (message)
@@ -331,7 +325,7 @@ CONTAINS
              end if
 
              Sgeom(3,m,nbody) = ABS(Radius(1,m))
-             if (Radius(1,m) == preset) then
+             if (Radius(1,m) == NULL_R) then
                 write (message,110) m,nbody
 110             format('No radius specified for cone surface ',i3,' of body ',i3)
                 call TLS_error (message)
@@ -354,7 +348,7 @@ CONTAINS
              cycle SURFACE
 
 120          continue
-             if (l <= 6 .and. l >= 4) Sgeom(1,m,nbody) = one
+             if (l <= 6 .and. l >= 4) Sgeom(1,m,nbody) = 1
 
              ! Axis
              do l = 1,maxforms
@@ -369,11 +363,11 @@ CONTAINS
 
 130          continue
              if (l >= 1 .and. l <= 3) then
-                Sgeom(2,m,nbody) = one
+                Sgeom(2,m,nbody) = 1
              else if (l >= 4 .and. l <= 6) then
-                Sgeom(2,m,nbody) = two
+                Sgeom(2,m,nbody) = 2
              else if (l >= 7 .and. l <= 9) then
-                Sgeom(2,m,nbody) = three
+                Sgeom(2,m,nbody) = 3
              end if
 
              ! Set Up Data ...
@@ -383,10 +377,10 @@ CONTAINS
              end if
 
              ! (r,theta) data
-             rtheta_flag = zero
+             rtheta_flag = 0
              do n = 1,mtab
-                if(Rtheta_Tabular_Pt(1,n) /= preset) then
-                   rtheta_flag = one
+                if(Rtheta_Tabular_Pt(1,n) /= NULL_R) then
+                   rtheta_flag = 1
                    do j = 1,mtab
                       RZ_Tabular_Pt(1,j) = Rtheta_Tabular_Pt(1,j)
                       RZ_Tabular_Pt(2,j) = Rtheta_Tabular_Pt(2,j)
@@ -397,10 +391,10 @@ CONTAINS
 
              ! Count points and load
              do n = mtab,1,-1
-                if(RZ_Tabular_Pt(1,n) /= preset) then
+                if(RZ_Tabular_Pt(1,n) /= NULL_R) then
                    Sgeom(3,m,nbody) = n
                    do l=1,n
-                      if (Rtheta_flag /= zero) then
+                      if (Rtheta_flag /= 0) then
                          Rtab(l,nbody) = RZ_Tabular_Pt(1,l) &
                                        * COS(degree*RZ_Tabular_Pt(2,l))
                          Ztab(l,nbody) = RZ_Tabular_Pt(1,l) &
@@ -417,7 +411,7 @@ CONTAINS
           else if (ABS(Isrftype(m,nbody)) == 8) then
 
              ! Read body from mesh file; make sure mesh_matnum has been assigned.
-             if (Mesh_Matnum(nbody) == ipreset) then
+             if (Mesh_Matnum(nbody) == NULL_I) then
                 write (message,126) nbody
 126             format('mesh_material_number for body ',i2,' has not been assigned')
                 call TLS_error (message)
@@ -493,8 +487,6 @@ CONTAINS
        call TLS_info (message)
     end if
 
-    return
-
   END SUBROUTINE BODY_CHECK
 
   SUBROUTINE BODY_DEFAULT ()
@@ -504,33 +496,28 @@ CONTAINS
     !   Default BODY namelist.
     !
     !=======================================================================
-    use constants_module,    only: zero
     use interfaces_module,   only: Ar, Body_mass, Body_vel, Cosa, Offset, &
                                    old_Body_mass, Rotangl, Rotpt, Rtab,   &
                                    Sgeom, Sina, Surface_Name, Ztab
-    implicit none
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Constants
-    Ar = zero
+    Ar = 0
 
-    Body_mass     = zero
-    Body_Vel      = zero
-    Old_Body_Mass = zero
+    Body_mass     = 0
+    Body_Vel      = 0
+    Old_Body_Mass = 0
     Surface_Name  = ' '
 
-    Cosa   = zero
-    Offset = zero
+    Cosa   = 0
+    Offset = 0
 
-    Rotangl = zero
-    Rotpt   = zero
-    Sgeom   = zero
-    Sina    = zero
+    Rotangl = 0
+    Rotpt   = 0
+    Sgeom   = 0
+    Sina    = 0
 
-    Rtab = zero
-    Ztab = zero
-
-    return
+    Rtab = 0
+    Ztab = 0
 
   END SUBROUTINE BODY_DEFAULT
 
@@ -545,7 +532,6 @@ CONTAINS
     !   then nbody -> nbody + 1.
     !
     !=======================================================================
-    use constants_module,       only: ipreset, preset, zero
     use interfaces_module,      only: Axis, body_phi, body_surfaces,            &
                                       body_temp, body_vel, File_Name, Fill,     &
                                       Height, material_number, Matnum, nbody,   &
@@ -555,39 +541,36 @@ CONTAINS
                                       Length, Rotation_Angle, Rotation_Pt,      &
                                       Translation_Pt, Mesh_Matnum,              &
                                       mesh_material_number
-    use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind, real_kind
+    use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R
     use parallel_info_module,   only: p_info
     use parameter_module,       only: mbody, msurf, mtab, ndim, string_dim,     &
                                       nrot, mphi
     use property_module,        only: Get_Truchas_Material_ID
 
-    use tempGrad_module,        only: Body_Temp_Grad, TEMP_GRADIENT, BTG_Default
-
-    implicit none
+    use tempGrad_module,        only: Body_Temp_Grad, TEMP_GRADIENT
 
     ! Argument List
     integer, intent(in) :: lun
-    logical(KIND = log_kind) :: body_namelist
+    logical :: body_namelist
 
     ! Local Variables
-    character(LEN = 80),  dimension(msurf)      :: tabular_type
-    character(LEN = 120)                        :: fatal_error_string
-    logical(KIND = log_kind)                    :: fatal
-    integer(KIND = int_kind)                    :: ioerror, is, n
-    real(KIND = real_kind)                      :: phi(mphi), temperature
-    real(KIND = real_kind), dimension(ndim)     :: Velocity
-    real(KIND = real_kind) :: scratch
+    character(80),  dimension(msurf) :: tabular_type
+    character(120) :: fatal_error_string
+    logical :: fatal
+    integer :: ioerror, is, n
+    real(r8) :: phi(mphi), temperature
+    real(r8), dimension(ndim) :: Velocity
+    real(r8) :: scratch
     character(128) :: message
 
     ! Body Temperature Gradient (TG) Variables
-    type(TEMP_GRADIENT)                         :: BTG
-    logical(kind = log_kind)                    :: TG_On
+    type(TEMP_GRADIENT) :: BTG
+    logical :: TG_On
     ! Appended to the BODY Namelist
-    real(kind = real_kind),   dimension(3)      :: TG_Origin,      TG_Axis
-    real(kind = real_kind),   dimension(3)      :: TG_Z_Constants, TG_R_Constants
-    integer(KIND = int_kind), dimension(3)      :: TG_Z_Exponents, TG_R_Exponents
-    real(KIND = real_kind),   dimension(2)      :: TG_Z_Bounds,    TG_R_Bounds
+    real(r8), dimension(3) :: TG_Origin,      TG_Axis
+    real(r8), dimension(3) :: TG_Z_Constants, TG_R_Constants
+    integer,  dimension(3) :: TG_Z_Exponents, TG_R_Exponents
+    real(r8), dimension(2) :: TG_Z_Bounds,    TG_R_Bounds
 
     ! Define BODY Namelist
     namelist /BODY/ Axis, Fill, Height, Radius, material_number, tabular_type,     &
@@ -607,16 +590,16 @@ CONTAINS
     fatal = .false.
     fatal_error_string = 'BODY namelist input error!'
 
-    ! Preset the surface input
+    ! Initialize the surface input
     body_surfaces        = 0
-    material_number      = ipreset
-    mesh_material_number = ipreset
-    temperature          = preset
-    phi                  = zero
-    Velocity             = zero
+    material_number      = NULL_I
+    mesh_material_number = NULL_I
+    temperature          = NULL_R
+    phi                  = 0
+    Velocity             = 0
 
     do is = 1,msurf
-       Height(is)       = preset
+       Height(is)       = NULL_R
        Surface_Name(is) = 'none'
        Axis(is)         = 'none'
        Fill(is)         = 'none'
@@ -624,25 +607,25 @@ CONTAINS
        Tab_Type(is)     = 'none'
 
        do n = 1,nrot
-          Rotation_Angle(n,is) = zero
+          Rotation_Angle(n,is) = 0
        end do
        do n = 1,ndim
-          Translation_Pt(n,is) = zero
-          Rotation_Pt(n,is)    = zero
-          Length(n,is)         = preset
-          Radius(n,is)         = preset
+          Translation_Pt(n,is) = 0
+          Rotation_Pt(n,is)    = 0
+          Length(n,is)         = NULL_R
+          Radius(n,is)         = NULL_R
        end do
     end do
 
     do is = 1,mtab
        do n = 1,2
-          RZ_Tabular_Pt(n,is)     = preset
-          Rtheta_Tabular_Pt(n,is) = preset
+          RZ_Tabular_Pt(n,is)     = NULL_R
+          Rtheta_Tabular_Pt(n,is) = NULL_R
        end do
     end do
 
     ! Initialize local structure elements
-    BTG            = BTG_Default
+    ! BTG is default initialized
     TG_On          = BTG%On
     TG_Origin      = BTG%Origin
     TG_Axis        = BTG%Axis
@@ -671,14 +654,14 @@ CONTAINS
          ! Check if valid gradient parameters are provided
 
          ! A gradient exists if there is any non-zero constant provided
-         TG_On = ((sum(abs(TG_Z_Constants))+sum(abs(TG_R_Constants))) /= zero)
+         TG_On = ((sum(abs(TG_Z_Constants))+sum(abs(TG_R_Constants))) /= 0)
          BTG%On = TG_On
 
          if (TG_On) then
            ! normalize the gradient axis unit vector
            scratch = sqrt(DOT_PRODUCT(TG_Axis,TG_Axis))
 
-           if (scratch == zero) then
+           if (scratch == 0) then
              ! Invalid unit vector
              fatal = .true.
              body_namelist = .false.
@@ -782,8 +765,6 @@ CONTAINS
     ! Now need to check for a fatal error
     call TLS_fatal_if_any (fatal, fatal_error_string)
 
-    return
-
   END SUBROUTINE BODY_INPUT
 
   SUBROUTINE BODY_INPUT_PARALLEL (body_namelist, phi, tabular_type, &
@@ -801,22 +782,18 @@ CONTAINS
                                     Surface_Name, Length, Rotation_Angle, &
                                     Translation_Pt, Rotation_Pt,          &
                                     mesh_material_number
-    use kind_module,          only: log_kind, real_kind
     use parameter_module,     only: msurf, ndim
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_BCAST
-
     use tempGrad_module,      only: TEMP_GRADIENT
 
-    implicit none
-
     ! Argument List
-    character(LEN = 80), dimension(msurf)  :: tabular_type
-    logical(KIND = log_kind)               :: body_namelist
-    real(KIND = real_kind)                 :: phi(:)
-    real(KIND = real_kind)                 :: temperature
-    real(KIND = real_kind),dimension(ndim) :: Velocity
-    type(TEMP_GRADIENT), intent(InOut)     :: BTG ! body temperature gradient
+    character(80), dimension(msurf) :: tabular_type
+    logical :: body_namelist
+    real(r8) :: phi(:)
+    real(r8) :: temperature
+    real(r8), dimension(ndim) :: Velocity
+    type(TEMP_GRADIENT), intent(InOut) :: BTG ! body temperature gradient
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Broadcast Data
@@ -859,8 +836,6 @@ CONTAINS
 
     end if
 
-    return
-
   END SUBROUTINE BODY_INPUT_PARALLEL
 
 
@@ -871,21 +846,18 @@ CONTAINS
     !   Read tabular data from TABULAR_DATA namelist.
     !
     !=======================================================================
-    use interfaces_module,      only: File_Name, RZ_Tabular_Pt, &
-                                      Rtheta_Tabular_Pt
-    use input_utilities,        only: seek_to_namelist
-    use kind_module,            only: int_kind, log_kind
+    use interfaces_module, only: File_Name, RZ_Tabular_Pt, Rtheta_Tabular_Pt
+    use input_utilities, only: seek_to_namelist
 #ifndef SUPPORTS_NEWUNIT
     use truchas_env, only: new_unit
 #endif
 
     ! Argument List
-    integer(KIND = int_kind) :: m
+    integer :: m
 
     ! Local Variables
-    logical(KIND = log_kind) :: file_exist, found
-    integer(KIND = int_kind) :: l
-    integer :: tab_lun
+    logical :: file_exist, found
+    integer :: l, tab_lun
     character(128) :: message
 
     ! Define TABULAR_DATA namelist
@@ -917,9 +889,6 @@ CONTAINS
 
 20  continue
 
-    return
-
   END SUBROUTINE TAB_DATA_INPUT
-
 
 END MODULE BODY_INPUT_MODULE

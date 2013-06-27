@@ -9,8 +9,8 @@ MODULE DEBUG_CONTROL_DATA
   !=======================================================================
 
   implicit none
-
   private
+
   public :: verbose, VERBOSE_QUIET, VERBOSE_NORMAL, VERBOSE_NOISY, VERBOSE_DEFAULT, VERBOSE_DEFAULT_SET
   public :: debug, DEBUG_NONE, DEBUG_QUIET, DEBUG_NOISY, DEBUG_DEFAULT, DEBUG_DEFAULT_SET
 

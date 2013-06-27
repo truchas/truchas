@@ -35,9 +35,9 @@ MODULE OVERWRITE_MODULE
   ! Author(s): Bryan Lally, (lally@lanl.gov)
   !
   !=======================================================================
+  use kinds, only: r8
+  use truchas_logging_services
   implicit none
-
-  ! Private Module
   private
 
   ! Public Procedures
@@ -62,26 +62,22 @@ CONTAINS
                                       BC
     use constants_module,       only: zero
     use cell_geometry_module,   only: FACE_CENTROID_PHYS
-    use kind_module,            only: int_kind, log_kind, real_kind
     use matl_module,            only: MATL_SLOT
     use mesh_module, only: Cell, Mesh, Vertex
     use output_module,          only: blank_line, Output_String
     use parameter_module,       only: max_slots, ncells, ndim, nfc, nnodes
     use projection_data_module, only: dirichlet_pressure
     use zone_module,            only: CELL_AVG
-    use truchas_logging_services
-
-    implicit none
 
     ! Arguments
-    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
-    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
+    type(CELL_AVG),  dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT), dimension(max_slots), intent(IN) :: Matl
 
     ! Local Variables
-    logical(KIND = log_kind), dimension(ncells)          :: Mask
-    integer(KIND = int_kind)                             :: f, faces
-    real(KIND = real_kind),   dimension(ncells)          :: Radius_XZ
-    real(KIND = real_kind),   dimension(ndim,nfc,ncells) :: Xf
+    logical, dimension(ncells) :: Mask
+    integer :: f, faces
+    real(r8), dimension(ncells) :: Radius_XZ
+    real(r8), dimension(ndim,nfc,ncells) :: Xf
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -190,8 +186,6 @@ CONTAINS
     ! Set the Dirichet pressure flag; this MUST remain uncommented!
     dirichlet_pressure = ASSOCIATED(BC_Prs)
 
-    return
-
   END SUBROUTINE OVERWRITE_BC
 
   SUBROUTINE OVERWRITE_MATL (Zone, Matl)
@@ -203,17 +197,14 @@ CONTAINS
     !
     !=======================================================================
     use constants_module, only: one
-    use kind_module,      only: int_kind, real_kind
     use mesh_module, only: Cell, Mesh, Vertex
     use matl_module,      only: MATL_SLOT
     use parameter_module, only: max_slots, ncells, nnodes
     use zone_module,      only: CELL_AVG
 
-    implicit none
-
     ! Arguments
-    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
-    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
+    type(CELL_AVG),  dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT), dimension(max_slots), intent(IN) :: Matl
 
     ! Local Variables
 
@@ -224,8 +215,6 @@ CONTAINS
     ! Matl(1)%Cell(:)%Cp    = one
     ! Matl(1)%Cell(:)%Rho   = one
     ! Matl(1)%Cell(:)%Kappa = one
-
-    return
 
   END SUBROUTINE OVERWRITE_MATL
 
@@ -242,17 +231,9 @@ CONTAINS
     use mesh_module, only: Mesh, Cell, Vertex
     use matl_module,      only: MATL_SLOT
 
-    implicit none
-
     ! Arguments
-    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
-    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
-
-    ! Local Variables
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    return
+    type(CELL_AVG),  dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT), dimension(max_slots), intent(IN) :: Matl
 
   END SUBROUTINE OVERWRITE_VEL
 
@@ -265,21 +246,18 @@ CONTAINS
     !
     !=======================================================================
     use constants_module, only: one, pi, two, zero
-    use kind_module,      only: int_kind, real_kind
     use mesh_module, only: Cell, Mesh, Vertex
     use matl_module,      only: MATL_SLOT
     use parameter_module, only: max_slots, ncells, ndim, nnodes
     use zone_module,      only: CELL_AVG
 
-    implicit none
-
     ! Arguments
-    type(CELL_AVG),          dimension(ncells),    intent(IN) :: Zone
-    type(MATL_SLOT),         dimension(max_slots), intent(IN) :: Matl
+    type(CELL_AVG),  dimension(ncells),    intent(IN) :: Zone
+    type(MATL_SLOT), dimension(max_slots), intent(IN) :: Matl
 
     ! Local Variables
-    integer(KIND = int_kind)  :: n
-    real(KIND = real_kind)    :: omega
+    integer :: n
+    real(r8) :: omega
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -329,8 +307,6 @@ CONTAINS
     !       Zone%Vc(n) = 0.80
     !    end select
     ! end do
-
-    return
 
   END SUBROUTINE OVERWRITE_ZONE
 

@@ -17,8 +17,6 @@ MODULE PARALLEL_UTIL_MODULE
   !=======================================================================
   use parallel_info_module
   implicit none
-
-  ! Private Module
   private
 
   ! Public Procedures
@@ -47,14 +45,12 @@ CONTAINS
                                     PGSLib_CL_MAX_TOKEN_LENGTH
 #endif
 
-    implicit none
-
 #ifdef USE_PGSLIB
-    character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
+    character(PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
 #endif
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-    ! Preset the PEInfo structure
+    ! Initialize the PEInfo structure
 #ifndef USE_PGSLIB
     p_info%GlobalServicesFlag = -1
     p_info%nPE                =  1
@@ -82,23 +78,12 @@ CONTAINS
 
 #endif
 
-    return
-
   END SUBROUTINE PARALLEL_INIT
         
   Function Is_IO_PE()
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !      Returns .TRUE. for the IO_PE, .FALSE. otherwise.
-    !
-    !=======================================================================
     use parallel_info_module, only: p_info
     LOGICAL :: Is_IO_PE
-    
     Is_IO_PE = p_info%IOP
-    return
   end Function Is_IO_PE
   
-
 END MODULE PARALLEL_UTIL_MODULE

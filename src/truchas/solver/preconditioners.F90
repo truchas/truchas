@@ -75,16 +75,14 @@ MODULE PRECONDITIONERS
   !          Dave Korzekwa, LANL (dak@lanl.gov) (solid mechanics only)
   !
   !=============================================================================
-  use kind_module, only: real_kind
+  use kinds, only: r8
   use var_vector_module
+  use UbikSolve_module
+  use timing_tree
   use truchas_logging_services
-
   implicit none
-
-  ! Private Module
   private
 
-  ! Public procedures
   public :: PRECONDITION
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -93,10 +91,10 @@ MODULE PRECONDITIONERS
   ! a matrix of dimension (0:nfc,nunk) which approximates the actual physics,
   ! where nunk = number of unknowns (an integer multiple of nnodes or ncells)
 
-  real(real_kind), pointer, public, save, dimension(:,:) :: P => null()
+  real(r8), pointer, public, save, dimension(:,:) :: P => null()
 
   ! Simple diagonal scaling using the diagonal of the preconditioner
-  real(real_kind), pointer, public, save, dimension(:) :: DIAG_P => null()
+  real(r8), pointer, public, save, dimension(:) :: DIAG_P => null()
 
   ! Preconditioning matrix and connectivity map for solid mechanics (thermo-mechanics)
   ! preconditioners.  Since the number of nodes adjacent to a given node can be highly
@@ -114,28 +112,20 @@ CONTAINS
     !
     !   Preconditioner driver
     !===========================================================================
-    use kind_module,     only: int_kind, real_kind
     use linear_solution, only: Ubik_solver, &
                                PRECOND_DIAGONAL, PRECOND_JACOBI, &
                                PRECOND_SSOR, PRECOND_ILU0, PRECOND_LU, &
                                PRECOND_NONE, PRECOND_2LEVEL, &
                                PRECOND_TM_SSOR, PRECOND_TM_DIAG
-    use timing_tree
-    use UbikSolve_module
-
-!   for dump_system call
-!    use time_step_module,     only: cycle_number
-
-    implicit none
  
     ! arguments
-    real (real_kind), dimension(:), target, intent(IN)    :: B
-    type (Ubik_vector_type),                intent(INOUT) :: X_vec
-    integer (int_kind),                     intent(OUT)   :: status
+    real(r8), dimension(:), target, intent(IN) :: B
+    type(Ubik_vector_type), intent(INOUT) :: X_vec
+    integer, intent(OUT) :: status
 
     ! local variables
-    integer(int_kind) :: n1, n2, n3
-    real(real_kind), dimension(:), pointer :: X =>NULL()
+    integer :: n1, n2, n3
+    real(r8), dimension(:), pointer :: X =>NULL()
  
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -212,7 +202,6 @@ CONTAINS
     call stop_timer ("Solver TMP1")
     
     status = 0
-    return
 
   END SUBROUTINE PRECONDITION
 
@@ -226,21 +215,16 @@ CONTAINS
     !   in ELL format.
     !=======================================================================
     use gs_module,        only: EE_GATHER
-    use kind_module,      only: int_kind
     use parameter_module, only: nfc, ncells
-    use timing_tree
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments
-    type(Ubik_vector_type),        target, intent(INOUT) :: X_vec
-    real(real_kind), dimension(:), target, intent(INOUT) :: Y
-    integer(int_kind),                     intent(OUT)   :: status
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(:), target, intent(INOUT) :: Y
+    integer, intent(OUT)   :: status
 
     ! Local Variables
-    real(real_kind), dimension(nfc,ncells) :: X_Neighbors
-    integer(int_kind) :: f
+    real(r8), dimension(nfc,ncells) :: X_Neighbors
+    integer :: f
     real(Ubik_real_type), dimension(:), pointer :: X
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -266,7 +250,6 @@ CONTAINS
     call stop_timer ("Solver TMP2")
 
     status = 0
-    return
 
   END SUBROUTINE Y_EQ_AX_ORTHOGONAL
 
@@ -276,24 +259,20 @@ CONTAINS
     !
     !   Diagonal scaling using diagonal elements of the preconditioning matrix
     !===========================================================================
-    use constants_module, only: zero
-    use kind_module,      only: int_kind, real_kind
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
-    use UbikSolve_module
-    implicit none
 
     ! arguments
-    real    (real_kind), dimension(:),    intent(IN)    :: A
-    type    (Ubik_vector_type), target,   intent(INOUT) :: X_vec
-    real    (real_kind), dimension(:),    intent(IN)    :: B
-    integer (int_kind),                   intent(IN)    :: steps
-    real    (real_kind),                  intent(IN)    :: omega
-    integer (int_kind),                   intent(IN)    :: scope
+    real(r8), dimension(:), intent(IN) :: A
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(:), intent(IN) :: B
+    integer,  intent(IN) :: steps
+    real(r8), intent(IN) :: omega
+    integer,  intent(IN) :: scope
 
     ! local variables
-    integer(int_kind)                       :: i,j
-    real(real_kind), dimension(UBOUND(A,1)) :: Dot
-    real(real_kind), dimension(:), pointer  :: X
+    integer :: i,j
+    real(r8), dimension(UBOUND(A,1)) :: Dot
+    real(r8), dimension(:), pointer  :: X
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -310,7 +289,7 @@ CONTAINS
        end select
 
        ! Diagonal scaling
-       Dot = zero
+       Dot = 0.0_r8
        !
        ! update iterate
        do j = 1,UBOUND(A,1)
@@ -320,7 +299,6 @@ CONTAINS
 
     end do
 
-    return
   END SUBROUTINE DIAGONAL
 
   SUBROUTINE JACOBI (A, X_vec, B, steps, omega, scope)
@@ -329,32 +307,27 @@ CONTAINS
     !
     !   perform Jacobi iterations
     !===========================================================================
-    use constants_module, only: zero
-    use kind_module,      only: int_kind, real_kind
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
     use mesh_module,      only: DEGENERATE_FACE, Mesh
     use parameter_module, only: nfc, ncells
     use gs_module,        only: EE_GATHER
-    use UbikSolve_module
-
-    implicit none
 
     ! arguments
-    real    (real_kind), dimension(0:,:), intent(IN)    :: A
-    type    (Ubik_vector_type), target,   intent(INOUT) :: X_vec
-    real    (real_kind), dimension(:),    intent(IN)    :: B
-    integer (int_kind),                   intent(IN)    :: steps
-    real    (real_kind),                  intent(IN)    :: omega
-    integer (int_kind),                   intent(IN)    :: scope
+    real(r8), dimension(0:,:), intent(IN) :: A
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(:), intent(IN) :: B
+    integer,  intent(IN) :: steps
+    real(r8), intent(IN) :: omega
+    integer,  intent(IN) :: scope
 
     ! local variables
-    integer (int_kind)                         :: f
-    integer (int_kind)                         :: i
-    integer (int_kind)                         :: c
-    real    (real_kind), dimension(nfc,ncells) :: X_Neighbors
-    integer(int_kind)                          :: neq
-    real(real_kind), dimension(:), pointer     :: Dot
-    real(real_kind), dimension(:), pointer     :: X
+    integer :: f
+    integer :: i
+    integer :: c
+    real(r8), dimension(nfc,ncells) :: X_Neighbors
+    integer :: neq
+    real(r8), dimension(:), pointer :: Dot
+    real(r8), dimension(:), pointer :: X
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -381,7 +354,7 @@ CONTAINS
 
        ! perform a matrix-vector multiply using coefficients from the orthogonal
        ! operator, except for the diagonal
-       Dot = zero
+       Dot = 0.0_r8
        do f = 1, nfc
           do c = 1,ncells
              if (Mesh(c)%Ngbr_Cell(f) == DEGENERATE_FACE) then
@@ -400,7 +373,6 @@ CONTAINS
     ! Deallocate -- nicer if this were allocated once
     deallocate(Dot)
 
-    return
   END SUBROUTINE JACOBI
 
   SUBROUTINE xSSORx (A, X_vec, B, steps, omega, scope)
@@ -410,30 +382,26 @@ CONTAINS
     !   perform symmetric successive-over-relaxation (SSOR) iterations
     !===========================================================================
     use gs_module,        only: Gather_BoundaryData
-    use kind_module,      only: int_kind, real_kind
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
     use mesh_module,      only: Mesh, DEGENERATE_FACE
     use parameter_module, only: nfc, ncells
-    use UbikSolve_module
-
-    implicit none
 
     ! arguments
-    real    (real_kind), dimension(0:,:), intent(IN)    :: A
-    type    (Ubik_vector_type), target,   intent(INOUT) :: X_vec
-    real    (real_kind), dimension(:),    intent(IN)    :: B
-    integer (int_kind),                   intent(IN)    :: steps
-    real    (real_kind),                  intent(IN)    :: omega
-    integer (int_kind),                   intent(IN)    :: scope
+    real(r8), dimension(0:,:), intent(IN) :: A
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(:), intent(IN) :: B
+    integer,  intent(IN) :: steps
+    real(r8), intent(IN) :: omega
+    integer,  intent(IN) :: scope
 
     ! local variables
-    integer (int_kind)                  :: i
-    integer (int_kind)                  :: c
-    integer (int_kind)                  :: f
-    real    (real_kind)                 :: dot
-    real    (real_kind), dimension(nfc) :: LoopTmp
-    integer (int_kind), parameter       :: BOUNDARY = 0
-    real    (real_kind), dimension(:), pointer :: X
+    integer :: i
+    integer :: c
+    integer :: f
+    real(r8) :: dot
+    real(r8), dimension(nfc) :: LoopTmp
+    integer, parameter :: BOUNDARY = 0
+    real(r8), dimension(:), pointer :: X
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -499,8 +467,6 @@ CONTAINS
 
     end do
 
-    return
-
   END SUBROUTINE xSSORx
 
   SUBROUTINE SSOR (A, X_vec, B, steps, omega, scope)
@@ -509,9 +475,7 @@ CONTAINS
     !
     !   perform symmetric successive-over-relaxation (SSOR) iterations
     !===========================================================================
-    use constants_module,     only: zero
     use gs_module,            only: Gather_BoundaryData
-    use kind_module,          only: int_kind, real_kind
     use linear_solution,      only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
     use mesh_module,          only: Mesh
     use parameter_module,     only: nfc
@@ -525,43 +489,40 @@ CONTAINS
                                     Get_Head_Partitions, &
                                     Get_Head_Local, &
                                     Get_Head_Available
-    use UbikSolve_module
-
-    implicit none
 
     ! arguments
-    real    (real_kind), dimension(0:,:), intent(IN)    :: A
-    type    (Ubik_vector_type), target,   intent(INOUT) :: X_vec
-    real    (real_kind), dimension(:),    intent(IN)    :: B
-    integer (int_kind),                   intent(IN)    :: steps
-    real    (real_kind),                  intent(IN)    :: omega
-    integer (int_kind),                   intent(IN)    :: scope
+    real(r8), dimension(0:,:), intent(IN) :: A
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(:), intent(IN) :: B
+    integer,  intent(IN) :: steps
+    real(r8), intent(IN) :: omega
+    integer,  intent(IN) :: scope
 
     ! local variables
-    integer (int_kind)                     :: i
-    integer (int_kind)                     :: c
-    integer (int_kind)                     :: f
-    integer (int_kind)                     :: p
-    integer (int_kind)                     :: nPartitions_Avail
-    integer (int_kind)                     :: Edge
-    integer (int_kind)                     :: NgbrCell
-    real    (real_kind)                    :: dot
-    real    (real_kind), dimension(nfc)    :: LoopTmp
-    integer (int_kind), parameter          :: BOUNDARY = 0
-    integer(int_kind)                      :: neq
+    integer  :: i
+    integer  :: c
+    integer  :: f
+    integer  :: p
+    integer  :: nPartitions_Avail
+    integer  :: Edge
+    integer  :: NgbrCell
+    real(r8) :: dot
+    real(r8), dimension(nfc) :: LoopTmp
+    integer, parameter :: BOUNDARY = 0
+    integer :: neq
 
-    real    (real_kind), dimension(:), pointer :: x_old
-    real    (real_kind), dimension(:), pointer :: X
+    real(r8), dimension(:), pointer :: x_old
+    real(r8), dimension(:), pointer :: X
 
     ! This stuff gets loaded by accessing the partitioning
     
-    integer(int_kind), pointer, dimension(:) :: partition_start
-    integer(int_kind), pointer, dimension(:) :: partition_end
-    integer(int_kind), pointer, dimension(:) :: NgbrPartitions
-    logical(int_kind), pointer, dimension(:) :: NgbrLocal
-    logical(int_kind), pointer, dimension(:) :: NgbrAvailable
-    integer(int_kind), pointer, dimension(:) :: edge_partition_start
-    integer(int_kind), pointer, dimension(:) :: edge_partition_end
+    integer, pointer, dimension(:) :: partition_start
+    integer, pointer, dimension(:) :: partition_end
+    integer, pointer, dimension(:) :: NgbrPartitions
+    logical, pointer, dimension(:) :: NgbrLocal
+    logical, pointer, dimension(:) :: NgbrAvailable
+    integer, pointer, dimension(:) :: edge_partition_start
+    integer, pointer, dimension(:) :: edge_partition_end
 
     !---------------------------------------------------------------------------
 
@@ -641,7 +602,7 @@ CONTAINS
              end do
 
              dot = DOT_PRODUCT (A(1:,c), LoopTmp)
-             if(ABS(A(0,c)) > zero) then
+             if(ABS(A(0,c)) > 0.0_r8) then
                  dot = (B(c) - dot) / A(0,c)
              endif
              X(c) = X(c) + omega*(dot - X(c))
@@ -687,7 +648,7 @@ CONTAINS
              end do
 
              dot = DOT_PRODUCT (A(1:,c), LoopTmp)
-             if(ABS(A(0,c)) > zero) then
+             if(ABS(A(0,c)) > 0.0_r8) then
                  dot = (B(c) - dot) / A(0,c)
              endif
              X(c) = X(c) + omega*(dot - X(c))
@@ -697,7 +658,6 @@ CONTAINS
 
     deallocate(x_old)
 
-    return
   END SUBROUTINE SSOR
 
   !-----------------------------------------------------------------------------
@@ -709,23 +669,20 @@ CONTAINS
     !   do a full LU factorization - FOR TESTING ONLY!!
     !   this could be really expensive
     !===========================================================================
-    use kind_module,      only: real_kind
     use linear_solution,  only: Ubik_type
     use parameter_module, only: nfc, ncells
 
-    implicit none
-
     ! Arguments
-    real(real_kind), dimension(0:,:), intent(IN)    :: A_arg
-    real(real_kind), dimension(:),    intent(INOUT) :: X
-    real(real_kind), dimension(:),    intent(IN)    :: B_arg
-    type(Ubik_type), target,          intent(INOUT) :: Ubik
+    real(r8), dimension(0:,:), intent(IN)    :: A_arg
+    real(r8), dimension(:),    intent(INOUT) :: X
+    real(r8), dimension(:),    intent(IN)    :: B_arg
+    type(Ubik_type), target, intent(INOUT)   :: Ubik
 
     ! Local Variables
-    logical, save                                       :: first_time = .true.
-    real (real_kind), dimension(:,:), allocatable, save :: A
-    real (real_kind), dimension(:),   allocatable, save :: B
-    integer                                             :: status
+    logical, save :: first_time = .true.
+    real(r8), dimension(:,:), allocatable, save :: A
+    real(r8), dimension(:),   allocatable, save :: B
+    integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -766,7 +723,6 @@ CONTAINS
     ! back substitute (find new x)
     call LU_SOLVE (A, X, B)
 
-    return
   END SUBROUTINE LU_PRECONDITION
 
   SUBROUTINE ILU0_PRECONDITION (A_arg, X, B_arg, Ubik)
@@ -775,23 +731,20 @@ CONTAINS
     !
     !   do ILU0 preconditioning
     !===========================================================================
-    use kind_module,      only: real_kind
     use linear_solution,  only: Ubik_type
     use parameter_module, only: nfc, ncells
 
-    implicit none
-
     ! arguments
-    real    (real_kind), dimension(0:,:), intent(IN)    :: A_arg
-    real    (real_kind), dimension(:),    intent(INOUT) :: X
-    real    (real_kind), dimension(:),    intent(IN)    :: B_arg
-    type    (Ubik_type), target,          intent(INOUT) :: Ubik
+    real(r8), dimension(0:,:), intent(IN)    :: A_arg
+    real(r8), dimension(:),    intent(INOUT) :: X
+    real(r8), dimension(:),    intent(IN)    :: B_arg
+    type(Ubik_type), target,   intent(INOUT) :: Ubik
 
     ! local variables
-    logical, save                                       :: first_time = .true.
-    real (real_kind), dimension(:,:), allocatable, save :: A
-    real (real_kind), dimension(:),   allocatable, save :: B
-    integer                                             :: status
+    logical, save :: first_time = .true.
+    real(r8), dimension(:,:), allocatable, save :: A
+    real(r8), dimension(:),   allocatable, save :: B
+    integer :: status
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -832,7 +785,6 @@ CONTAINS
     ! back substitute (find new x)
     call ILU0_SOLVE (nfc, ncells, A, X, B)
 
-    return
   END SUBROUTINE ILU0_PRECONDITION
 
   SUBROUTINE TWO_LEVEL (A_f, X_f_vec, B_f, Ubik)
@@ -849,15 +801,11 @@ CONTAINS
     !   for varying the behavior of the algorithm.  The defaults in
     !   the repository are for production code - don't mess this up.
     !===========================================================================
-    use constants_module,     only: zero
     use cutoffs_module,       only: alittle
-    use kind_module,          only: int_kind, real_kind
     use linear_solution,      only: Ubik_type, PRECOND_JACOBI, PRECOND_SSOR,     &
                                     PRECOND_ILU0, PRECOND_LU
     use parallel_info_module, only: p_info
     use parameter_module,     only: nfc, ncells
-    use timing_tree
-    use truchas_logging_services
     use two_level_partition,  only: Cell_Two_Level_Partitioning, &
                                     Cell_Cell_Two_Level_Partitioned, &
                                     Cell_Cell_Two_Level_Edges_Part
@@ -869,55 +817,52 @@ CONTAINS
                                     TRANSLATE,                    &
                                     PARTITION_INVALID_PARTITIONS, &
                                     PGSLib_Collate, PGSLib_Dist
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments
-    real(real_kind), dimension(0:nfc,ncells), intent(IN)    :: A_f      ! A, fine
-    type(Ubik_vector_type), target,           intent(INOUT) :: X_f_vec  ! x, fine
-    real(real_kind), dimension(ncells),       intent(IN)    :: B_f      ! b, fine
-    type(Ubik_type), target,                  intent(INOUT) :: Ubik     ! controls
+    real(r8), dimension(0:nfc,ncells), intent(IN)    :: A_f      ! A, fine
+    type(Ubik_vector_type), target,    intent(INOUT) :: X_f_vec  ! x, fine
+    real(r8), dimension(ncells),       intent(IN)    :: B_f      ! b, fine
+    type(Ubik_type), target,           intent(INOUT) :: Ubik     ! controls
 
     ! Local Variables
-    real(real_kind), dimension(:,:), allocatable :: a_c_local_rows    ! A, coarse, local, one row only
-    real(real_kind), dimension(:)  , allocatable :: x_c_local         ! x, coarse, local
-    real(real_kind), dimension(:)  , allocatable :: b_c_local         ! b, coarse, local
+    real(r8), dimension(:,:), allocatable :: a_c_local_rows    ! A, coarse, local, one row only
+    real(r8), dimension(:)  , allocatable :: x_c_local         ! x, coarse, local
+    real(r8), dimension(:)  , allocatable :: b_c_local         ! b, coarse, local
     type(Ubik_vector_type)                       :: X_f_delta_vec     ! delta correction for x fine
-    real(real_kind), dimension(:),   allocatable :: Delta             ! a delta quantity
-    real(real_kind), dimension(:),   allocatable :: Res               ! residual, fine
-    real(real_kind), dimension(:,:), allocatable :: A_c               ! A, coarse, global
-    real(real_kind), dimension(:),   allocatable :: X_c               ! x, coarse, global
-    real(real_kind), dimension(:),   allocatable :: B_c               ! b, coarse, global
-    integer(int_kind)                            :: nPartitions       ! number of partitions
-    integer(int_kind)                            :: nPartitions_Avail ! number of partitions on each process
-    integer(int_kind)                            :: nPartitions_Full  ! 
-    integer(int_kind), dimension(:),     pointer :: partition_start   ! List of start offsets for partitions
-    integer(int_kind), dimension(:),     pointer :: partition_end     ! List of end offsets for partitions
-    integer(int_kind)                            :: i, c, f, d, status, edge, part
-    integer(int_kind)                            :: j, neq
-    real(real_kind)                              :: det
-    integer(int_kind)                            :: NgbrCell_Part, Global_PartNum
-    integer(int_kind), dimension(:),     pointer :: NgbrPartitions
-    integer(int_kind), dimension(:),     pointer :: edge_partition_start
-    real(real_kind),   dimension(:),     pointer :: X_f               ! alias for contents of X_f_vec
-    real(real_kind),   dimension(:),     pointer :: X_f_delta         ! alias for contents of X_f_delta_vec
+    real(r8), dimension(:),   allocatable :: Delta             ! a delta quantity
+    real(r8), dimension(:),   allocatable :: Res               ! residual, fine
+    real(r8), dimension(:,:), allocatable :: A_c               ! A, coarse, global
+    real(r8), dimension(:),   allocatable :: X_c               ! x, coarse, global
+    real(r8), dimension(:),   allocatable :: B_c               ! b, coarse, global
+    integer :: nPartitions       ! number of partitions
+    integer :: nPartitions_Avail ! number of partitions on each process
+    integer :: nPartitions_Full  ! 
+    integer, dimension(:),     pointer :: partition_start   ! List of start offsets for partitions
+    integer, dimension(:),     pointer :: partition_end     ! List of end offsets for partitions
+    integer  :: i, c, f, d, status, edge, part
+    integer  :: j, neq
+    real(r8) :: det
+    integer  :: NgbrCell_Part, Global_PartNum
+    integer,  dimension(:), pointer :: NgbrPartitions
+    integer,  dimension(:), pointer :: edge_partition_start
+    real(r8), dimension(:), pointer :: X_f               ! alias for contents of X_f_vec
+    real(r8), dimension(:), pointer :: X_f_delta         ! alias for contents of X_f_delta_vec
 
     ! control parameters
-    logical                                       :: Verbose_Local
-    integer(int_kind), save                       :: iteration = 0 ! iteration counter
+    logical :: Verbose_Local
+    integer, save :: iteration = 0 ! iteration counter
     ! choose one
-!   integer(int_kind), parameter                  :: FineGridPreconditioner = PRECOND_JACOBI    
-    integer(int_kind), parameter                  :: FineGridPreconditioner = PRECOND_SSOR
-!   integer(int_kind), parameter                  :: FineGridPreconditioner = PRECOND_ILU0
-!   integer(int_kind), parameter                  :: FineGridPreconditioner = PRECOND_LU
-    integer(int_kind), parameter                  :: PSPS = 1    ! post smoothing passes
+!   integer, parameter :: FineGridPreconditioner = PRECOND_JACOBI    
+    integer, parameter :: FineGridPreconditioner = PRECOND_SSOR
+!   integer, parameter :: FineGridPreconditioner = PRECOND_ILU0
+!   integer, parameter :: FineGridPreconditioner = PRECOND_LU
+    integer, parameter :: PSPS = 1    ! post smoothing passes
 !   magic grid size correction
-!   real    (real_kind)                           :: magic
+!   real(r8) :: magic
     ! pick prolongation method - linear _ONLY_ for 2D Poisson problem
-    logical, parameter                            :: PieceWiseConstant = .true.
-    logical, parameter                            :: PieceWiseLinear   = .false.
-    logical, parameter                            :: InverseDistance   = .false.
+    logical, parameter :: PieceWiseConstant = .true.
+    logical, parameter :: PieceWiseLinear   = .false.
+    logical, parameter :: InverseDistance   = .false.
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -1180,12 +1125,12 @@ CONTAINS
        select case (FineGridPreconditioner)
        case (PRECOND_JACOBI)
           call TLS_panic ('TWO_LEVEL: Do not support Jacobi preconditioning, only SSOR')
-          X_f_delta = zero
+          X_f_delta = 0.0_r8
           call JACOBI (A_f, X_f_delta_vec, Res, Ubik_steps(Ubik%control), &
                Ubik_omega(Ubik%control), Ubik%precond_scope)
           Ubik%precond_iter = Ubik%precond_iter + Ubik_steps(Ubik%Control)
        case (PRECOND_SSOR)
-          X_f_delta = zero
+          X_f_delta = 0.0_r8
           call SSOR (A_f, X_f_delta_vec, Res, Ubik_steps(Ubik%control), &
                Ubik_omega(Ubik%control), Ubik%precond_scope)
           Ubik%precond_iter = Ubik%precond_iter + Ubik_steps(Ubik%Control)
@@ -1243,25 +1188,20 @@ CONTAINS
     !
     !   Diagonal scaling using diagonal elements of the preconditioning matrix
     !===========================================================================
-    use constants_module, only: zero
-    use kind_module,      only: int_kind, real_kind
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
-    use UbikSolve_module
-    use timing_tree
-    implicit none
 
     ! arguments
-    type(real_var_vector), dimension(:),  intent(IN)    :: A
-    type    (Ubik_vector_type), target,   intent(INOUT) :: X_vec
-    real    (real_kind), dimension(:),    intent(IN)    :: B
-    integer (int_kind),                   intent(IN)    :: steps
-    real    (real_kind),                  intent(IN)    :: omega
-    integer (int_kind),                   intent(IN)    :: scope
+    type(real_var_vector), dimension(:), intent(IN) :: A
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(:), intent(IN) :: B
+    integer,  intent(IN) :: steps
+    real(r8), intent(IN) :: omega
+    integer,  intent(IN) :: scope
 
     ! local variables
-    integer (int_kind)                         :: i,j
-    real    (real_kind), dimension(UBOUND(A,1))     :: Dot
-    real(real_kind), dimension(:), pointer     :: X
+    integer :: i,j
+    real(r8), dimension(UBOUND(A,1)) :: Dot
+    real(r8), dimension(:), pointer :: X
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1279,7 +1219,7 @@ CONTAINS
        end select
 
        ! Diagonal scaling
-       Dot = zero
+       Dot = 0.0_r8
        !
        ! update iterate
        do j = 1,UBOUND(A,1)
@@ -1291,7 +1231,6 @@ CONTAINS
 
     call stop_timer("Precondition")
     
-    return
   END SUBROUTINE TM_DIAG
 
   SUBROUTINE TM_SSOR (A, A_Map, X_vec, B, steps, omega, scope)
@@ -1302,34 +1241,29 @@ CONTAINS
     ! (SSOR) iterations.
     !===========================================================================
     use gs_module,        only: NN_Gather_BoundaryData
-    use kind_module,      only: int_kind, real_kind
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
-    use UbikSolve_module
     Use parameter_module, Only: ndim, nnodes
-    use timing_tree
-
-    implicit none
 
     ! arguments
-    type(real_var_vector), dimension(:),  intent(IN)    :: A
-    type(int_var_vector), dimension(:),   intent(IN)    :: A_Map
-    type    (Ubik_vector_type), target,   intent(INOUT) :: X_vec
-    real    (real_kind), dimension(:),    intent(IN)    :: B
-    integer (int_kind),                   intent(IN)    :: steps
-    real    (real_kind),                  intent(IN)    :: omega
-    integer (int_kind),                   intent(IN)    :: scope
+    type(real_var_vector), dimension(:), intent(IN) :: A
+    type(int_var_vector), dimension(:), intent(IN) :: A_Map
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(:), intent(IN) :: B
+    integer,  intent(IN) :: steps
+    real(r8), intent(IN) :: omega
+    integer,  intent(IN) :: scope
 
     ! local variables
-    integer (int_kind)                           :: i, j
-    integer (int_kind)                           :: c
-    integer (int_kind)                           :: f
-    integer (int_kind)                           :: status
-    real    (real_kind)                          :: dot
-    real    (real_kind), dimension(:), pointer   :: LoopTmp
-    integer (int_kind), parameter                :: BOUNDARY = 0
-    real    (real_kind), dimension(:), pointer   :: X
-    real    (real_kind), dimension(:), pointer   :: A_Vec
-    integer (int_kind), dimension(:), pointer    :: A_Map_Vec
+    integer :: i, j
+    integer :: c
+    integer :: f
+    integer :: status
+    real(r8) :: dot
+    real(r8), dimension(:), pointer   :: LoopTmp
+    integer, parameter                :: BOUNDARY = 0
+    real(r8), dimension(:), pointer   :: X
+    real(r8), dimension(:), pointer   :: A_Vec
+    integer, dimension(:), pointer    :: A_Map_Vec
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     
@@ -1407,8 +1341,6 @@ CONTAINS
     
     call stop_timer("Precondition")
 
-    return
-
   END SUBROUTINE TM_SSOR
 
   SUBROUTINE PIECEWISE_LINEAR_PROLONGATION (X_f, X_c, Delta, ndomains, thisdomain)
@@ -1420,31 +1352,26 @@ CONTAINS
     !
     !   *** ONLY FOR THE 2D POISSON PROBLEM ***
     !===========================================================================
-    use constants_module, only: one, zero
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: Cell
     use parameter_module, only: ncells
     use pgslib_module,    only: PGSLIB_BCAST
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments.
-    real (real_kind), dimension(:), intent(INOUT) :: X_f
-    real (real_kind), dimension(:), intent(INOUT) :: X_c
-    real (real_kind), dimension(:), intent(INOUT) :: Delta
-    integer(int_kind),              intent(IN)    :: ndomains
-    integer(int_kind),              intent(IN)    :: thisdomain
+    real(r8), dimension(:), intent(INOUT) :: X_f
+    real(r8), dimension(:), intent(INOUT) :: X_c
+    real(r8), dimension(:), intent(INOUT) :: Delta
+    integer, intent(IN) :: ndomains
+    integer, intent(IN) :: thisdomain
 
     ! Local Variables.
-    integer(int_kind) :: n, i
-    real (real_kind)  :: h, x, y
+    integer :: n, i
+    real(r8)  :: h, x, y
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! set up constants
     n = IFIX(SQRT(FLOAT(nDomains)))
-    h = one / float(n)
+    h = 1.0_r8 / float(n)
     ! distribute X_c to all processors
     call PGSLib_BCAST (X_c)
 
@@ -1456,53 +1383,53 @@ CONTAINS
        if (thisDomain == 1) then
           ! corner 1
           if (X < 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, zero, zero, X_c(1), X*2.0, Y*2.0)
+             Delta(i) = BLI(0.0_r8, 0.0_r8, 0.0_r8, X_c(1), X*2.0, Y*2.0)
           else if (X >= 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, zero, X_c(1), X_c(2), X-0.5, Y*2.0)
+             Delta(i) = BLI(0.0_r8, 0.0_r8, X_c(1), X_c(2), X-0.5, Y*2.0)
           else if (X < 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(zero, X_c(1), zero, X_c(n+1), X*2.0, Y-0.5)
+             Delta(i) = BLI(0.0_r8, X_c(1), 0.0_r8, X_c(n+1), X*2.0, Y-0.5)
           else if (X >= 0.5 .And. Y >= 0.5) then
              Delta(i) = BLI(X_c(1), X_c(2), X_c(n+1), X_c(n+2), X-0.5, Y-0.5)
           end if
        else if (thisDomain == n) then
           ! corner 2
           if (X < 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, zero, X_c(n-1), X_c(n), X+0.5, Y*2.0)
+             Delta(i) = BLI(0.0_r8, 0.0_r8, X_c(n-1), X_c(n), X+0.5, Y*2.0)
           else if (X >= 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, zero, X_c(n), zero, (X-0.5)*2.0, Y*2.0)
+             Delta(i) = BLI(0.0_r8, 0.0_r8, X_c(n), 0.0_r8, (X-0.5)*2.0, Y*2.0)
           else if (X < 0.5 .And. Y >= 0.5) then
              Delta(i) = BLI(X_c(n-1), X_c(n), X_c(2*n-1), X_c(2*n), X+0.5, Y-0.5)
           else if (X >= 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(X_c(n), zero, X_c(2*n), zero, (X-0.5)*2.0, Y-0.5)
+             Delta(i) = BLI(X_c(n), 0.0_r8, X_c(2*n), 0.0_r8, (X-0.5)*2.0, Y-0.5)
           end if
        else if (thisDomain == nDomains - n + 1) then
           ! corner 3
           if (X < 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, X_c(nDomains-2*n+1), zero, X_c(nDomains-n+1), X*2.0, Y+0.5)
+             Delta(i) = BLI(0.0_r8, X_c(nDomains-2*n+1), 0.0_r8, X_c(nDomains-n+1), X*2.0, Y+0.5)
           else if (X >= 0.5 .And. Y < 0.5) then
              Delta(i) = BLI(X_c(nDomains-2*n+1), X_c(nDomains-2*n+2), X_c(nDomains-n+1), X_c(nDomains-n+2), X-0.5, Y+0.5)
           else if (X < 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(zero, X_c(nDomains-n+1), zero, zero, X*2.0, (Y-0.5)*2.0)
+             Delta(i) = BLI(0.0_r8, X_c(nDomains-n+1), 0.0_r8, 0.0_r8, X*2.0, (Y-0.5)*2.0)
           else if (X >= 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(X_c(nDomains-n+1), X_c(nDomains-n+2), zero, zero, X-0.5, (Y-0.5)*2.0)
+             Delta(i) = BLI(X_c(nDomains-n+1), X_c(nDomains-n+2), 0.0_r8, 0.0_r8, X-0.5, (Y-0.5)*2.0)
           end if
        else if (thisDomain == nDomains) then
           ! corner 4
           if (X < 0.5 .And. Y < 0.5) then
              Delta(i) = BLI(X_c(nDomains-n-1), X_c(nDomains-n), X_c(nDomains-1), X_c(nDomains), X+0.5, Y+0.5)
           else if (X >= 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(X_c(nDomains-n), zero, X_c(nDomains), zero, (X-0.5)*2.0, Y+0.5)
+             Delta(i) = BLI(X_c(nDomains-n), 0.0_r8, X_c(nDomains), 0.0_r8, (X-0.5)*2.0, Y+0.5)
           else if (X < 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(X_c(nDomains-1), X_c(nDomains), zero, zero, X+0.5, (Y-0.5)*2.0)
+             Delta(i) = BLI(X_c(nDomains-1), X_c(nDomains), 0.0_r8, 0.0_r8, X+0.5, (Y-0.5)*2.0)
           else if (X >= 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(X_c(nDomains), zero, zero, zero, (X-0.5)*2.0, (Y-0.5)*2.0)
+             Delta(i) = BLI(X_c(nDomains), 0.0_r8, 0.0_r8, 0.0_r8, (X-0.5)*2.0, (Y-0.5)*2.0)
           end if
        else if ((thisDomain-1)/n == 0) then
           ! side 1
           if (X < 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, zero, X_c(thisDomain-1), X_c(thisDomain), X+0.5, Y*2.0)
+             Delta(i) = BLI(0.0_r8, 0.0_r8, X_c(thisDomain-1), X_c(thisDomain), X+0.5, Y*2.0)
           else if (X >= 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, zero, X_c(thisDomain), X_c(thisDomain+1), X-0.5, Y*2.0)
+             Delta(i) = BLI(0.0_r8, 0.0_r8, X_c(thisDomain), X_c(thisDomain+1), X-0.5, Y*2.0)
           else if (X < 0.5 .And. Y >= 0.5) then
              Delta(i) = BLI(X_c(thisDomain-1), X_c(thisDomain), X_c(thisDomain+n-1), X_c(thisDomain+n), X+0.5, Y-0.5)
           else if (X >= 0.5 .And. Y >= 0.5) then
@@ -1515,18 +1442,18 @@ CONTAINS
           else if (X >= 0.5 .And. Y < 0.5) then
              Delta(i) = BLI(X_c(thisDomain-n), X_c(thisDomain-n+1), X_c(thisDomain), X_c(thisDomain+1), X-0.5, Y+0.5)
           else if (X < 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(X_c(thisDomain-1), X_c(thisDomain), zero, zero, X+0.5, (Y-0.5)*2.0)
+             Delta(i) = BLI(X_c(thisDomain-1), X_c(thisDomain), 0.0_r8, 0.0_r8, X+0.5, (Y-0.5)*2.0)
           else if (X >= 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(X_c(thisDomain), X_c(thisDomain+1), zero, zero, X-0.5, (Y-0.5)*2.0)
+             Delta(i) = BLI(X_c(thisDomain), X_c(thisDomain+1), 0.0_r8, 0.0_r8, X-0.5, (Y-0.5)*2.0)
           end if
        else if (MOD(thisDomain-1,n) == 0) then
           ! side 3
           if (X < 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(zero, X_c(thisDomain-n), zero, X_c(thisDomain), X*2.0, Y+0.5)
+             Delta(i) = BLI(0.0_r8, X_c(thisDomain-n), 0.0_r8, X_c(thisDomain), X*2.0, Y+0.5)
           else if (X >= 0.5 .And. Y < 0.5) then
              Delta(i) = BLI(X_c(thisDomain-n), X_c(thisDomain-n+1), X_c(thisDomain), X_c(thisDomain+1), X-0.5, Y+0.5)
           else if (X < 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(zero, X_c(thisDomain), zero, X_c(thisDomain+n), X*2.0, Y-0.5)
+             Delta(i) = BLI(0.0_r8, X_c(thisDomain), 0.0_r8, X_c(thisDomain+n), X*2.0, Y-0.5)
           else if (X >= 0.5 .And. Y >= 0.5) then
              Delta(i) = BLI(X_c(thisDomain), X_c(thisDomain+1), X_c(thisDomain+n), X_c(thisDomain+n+1), X-0.5, Y-0.5)
           end if
@@ -1535,11 +1462,11 @@ CONTAINS
           if (X < 0.5 .And. Y < 0.5) then
              Delta(i) = BLI(X_c(thisDomain-n-1), X_c(thisDomain-n), X_c(thisDomain-1), X_c(thisDomain), X+0.5, Y+0.5)
           else if (X >= 0.5 .And. Y < 0.5) then
-             Delta(i) = BLI(X_c(thisDomain-n), zero, X_c(thisDomain), zero, (X-0.5)*2.0, Y+0.5)
+             Delta(i) = BLI(X_c(thisDomain-n), 0.0_r8, X_c(thisDomain), 0.0_r8, (X-0.5)*2.0, Y+0.5)
           else if (X < 0.5 .And. Y >= 0.5) then
              Delta(i) = BLI(X_c(thisDomain-1), X_c(thisDomain), X_c(thisDomain+n-1), X_c(thisDomain+n), X+0.5, Y-0.5)
           else if (X >= 0.5 .And. Y >= 0.5) then
-             Delta(i) = BLI(X_c(thisDomain), zero, X_c(thisDomain+n), zero, (X-0.5)*2.0, Y-0.5)
+             Delta(i) = BLI(X_c(thisDomain), 0.0_r8, X_c(thisDomain+n), 0.0_r8, (X-0.5)*2.0, Y-0.5)
           end if
        else
           ! internal
@@ -1557,8 +1484,6 @@ CONTAINS
 
     X_f = X_f + Delta
 
-    return
-
   END SUBROUTINE PIECEWISE_LINEAR_PROLONGATION
 
   SUBROUTINE INVERSE_DISTANCE_PROLONGATION (X_f, X_c, ndomains, thisdomain)
@@ -1568,28 +1493,23 @@ CONTAINS
     !   Perform inverse-distance prolongation.
     !
     !===========================================================================
-    use constants_module,     only: zero, one
     use cutoffs_module,       only: alittle
-    use kind_module,          only: int_kind, real_kind
     use mesh_module,          only: Cell
     use parameter_module,     only: ndim, ncells
     use pgslib_module,        only: PGSLib_BCAST, PGSLib_COLLATE
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments
-    integer(int_kind),             intent(IN)    :: ndomains
-    integer(int_kind),             intent(IN)    :: thisdomain
-    real(real_kind), dimension(:), intent(INOUT) :: X_f
-    real(real_kind), dimension(:), intent(INOUT) :: X_c
+    integer, intent(IN) :: ndomains
+    integer, intent(IN) :: thisdomain
+    real(r8), dimension(:), intent(INOUT) :: X_f
+    real(r8), dimension(:), intent(INOUT) :: X_c
 
     ! Local Variables
-    integer(int_kind)                         :: n, p
-    real(real_kind)                           :: volume
-    real(real_kind), dimension(ndim)          :: Centroid
-    real(real_kind), dimension(ndim,ndomains) :: All_Centroids
-    real(real_kind), dimension(ncells)        :: Distance, Weight, X_cell
+    integer :: n, p
+    real(r8) :: volume
+    real(r8), dimension(ndim)          :: Centroid
+    real(r8), dimension(ndim,ndomains) :: All_Centroids
+    real(r8), dimension(ncells)        :: Distance, Weight, X_cell
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1603,7 +1523,7 @@ CONTAINS
     end do
 
     ! Collate and broadcast centroids to all processors.
-    All_Centroids = zero
+    All_Centroids = 0.0_r8
     do n = 1,ndim
        call PGSLib_COLLATE (All_Centroids(n,:), Centroid(n))
        call PGSLib_BCAST (All_Centroids(n,:))
@@ -1611,14 +1531,14 @@ CONTAINS
 
     ! Compute cell coarse grid corrections in cell based on the
     ! distance from each cell centroid to each processor centroid.
-    X_cell = zero
-    Weight = zero
+    X_cell = 0.0_r8
+    Weight = 0.0_r8
     do p = 1,ndomains
-       Distance = zero
+       Distance = 0.0_r8
        do n = 1,ndim
           Distance = Distance + (Cell%Centroid(n) - All_Centroids(n,p))**2
        end do
-       Distance = one/(SQRT(Distance) + alittle)
+       Distance = 1.0_r8/(SQRT(Distance) + alittle)
        X_cell = X_cell + Distance*X_c(p)
        Weight  = Weight + Distance
     end do
@@ -1627,7 +1547,6 @@ CONTAINS
     ! Add in the coarse grid correction.
     X_f = X_f + X_cell
 
-    return
   END SUBROUTINE INVERSE_DISTANCE_PROLONGATION
 
   REAL FUNCTION BLI (v1, v2, v3, v4, x, y)
@@ -1636,26 +1555,20 @@ CONTAINS
     !
     !    Perform a bilinear interpolation on the unit square
     !===========================================================================
-    use constants_module, only: one
-    use kind_module,      only: real_kind
-
-    implicit none
-
     ! Arguments
-    real(real_kind), intent(IN) :: v1
-    real(real_kind), intent(IN) :: v2
-    real(real_kind), intent(IN) :: v3
-    real(real_kind), intent(IN) :: v4
-    real(real_kind), intent(IN) :: x
-    real(real_kind), intent(IN) :: y
+    real(r8), intent(IN) :: v1
+    real(r8), intent(IN) :: v2
+    real(r8), intent(IN) :: v3
+    real(r8), intent(IN) :: v4
+    real(r8), intent(IN) :: x
+    real(r8), intent(IN) :: y
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    BLI = v1 * (one - x) * (one - y) &
-                        + v2 * x       * (one - y) &
-                        + v3 * (one - x) * y       &
+    BLI = v1 * (1.0_r8 - x) * (1.0_r8 - y) &
+                        + v2 * x       * (1.0_r8 - y) &
+                        + v3 * (1.0_r8 - x) * y       &
                         + v4 * x       * y
-    return
 
   END FUNCTION BLI
 
@@ -1666,24 +1579,20 @@ CONTAINS
     !   determine the residual from our equation system, b - Ax
     !===========================================================================
     use gs_module,        only: EE_GATHER
-    use kind_module,      only: int_kind, real_kind
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
     use parameter_module, only: nfc, ncells
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments
-    real(real_kind), dimension(ncells),       intent(OUT)   :: Res
-    real(real_kind), dimension(0:nfc,ncells), intent(IN)    :: A
-    type(Ubik_vector_type), target,           intent(INOUT) :: X_vec
-    real(real_kind), dimension(ncells),       intent(IN)    :: B
-    integer(int_kind),                        intent(IN)    :: scope
+    real(r8), dimension(ncells), intent(OUT) :: Res
+    real(r8), dimension(0:nfc,ncells), intent(IN) :: A
+    type(Ubik_vector_type), target, intent(INOUT) :: X_vec
+    real(r8), dimension(ncells), intent(IN) :: B
+    integer, intent(IN) :: scope
 
     ! Local Variables
-    integer(int_kind) :: i
-    real(real_kind), dimension(nfc, ncells) :: X_Neighbors
-    real(real_kind), dimension(:), pointer  :: X
+    integer :: i
+    real(r8), dimension(nfc, ncells) :: X_Neighbors
+    real(r8), dimension(:), pointer  :: X
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1711,7 +1620,6 @@ CONTAINS
        Res = Res - A(i,:)*X_Neighbors(i,:)
     end do
 
-    return
   END SUBROUTINE RESIDUAL
 
   SUBROUTINE REPORT_NORMS (X, i)
@@ -1720,15 +1628,13 @@ CONTAINS
     !
     !   calculate and report some norms
     !---------------------------------------------------------------------------
-    use kind_module,          only: int_kind, real_kind
     use parameter_module,     only: ncells, ncells_tot
     use pgslib_module,        only: PGSLIB_GLOBAL_SUM, PGSLIB_GLOBAL_MAXVAL
-    use truchas_logging_services
 
-    real(real_kind), dimension(ncells), intent(IN) :: X
-    integer(int_kind),                  intent(IN) :: i
+    real(r8), dimension(ncells), intent(IN) :: X
+    integer, intent(IN) :: i
 
-    real(real_kind) :: L2, Linf
+    real(r8) :: L2, Linf
     character(128) message
 
     L2   = SQRT(PGSLIB_GLOBAL_SUM(X**2)) / ncells_tot
@@ -1743,25 +1649,21 @@ CONTAINS
     !===========================================================================
     ! Purpose:
     !===========================================================================
-    use constants_module, only: zero
-    use kind_module,      only: real_kind, int_kind
     use mesh_module,      only: Mesh
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                     intent(IN)    :: ncoef
-    integer(int_kind),                     intent(IN)    :: n
-    real(real_kind), dimension(n,n),       intent(INOUT) :: A
-    real(real_kind), dimension(0:ncoef,n), intent(IN)    :: A_arg
+    integer, intent(IN) :: ncoef
+    integer, intent(IN) :: n
+    real(r8), dimension(n,n), intent(INOUT) :: A
+    real(r8), dimension(0:ncoef,n), intent(IN) :: A_arg
 
     ! Local Variables
-    integer(int_kind) :: col, i, row
+    integer :: col, i, row
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! make a dense copy of the local parts of the sparse matrix
-    A = zero
+    A = 0.0_r8
     do row = 1, n
        A(row,row) = A_arg(0,row)
        do i = 1, ncoef
@@ -1772,32 +1674,27 @@ CONTAINS
        end do
     end do
 
-    return
   END SUBROUTINE GET_A_COEFFICIENTS_FULL
 
   SUBROUTINE GET_A_COEFFICIENTS_SPARSE (ncoef, n, A, A_arg)
     !===========================================================================
     ! Purpose:
     !===========================================================================
-    use constants_module, only: zero
-    use kind_module,      only: real_kind, int_kind
     use mesh_module,      only: Mesh
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                     intent(IN)    :: ncoef
-    integer(int_kind),                     intent(IN)    :: n
-    real(real_kind), dimension(0:ncoef,n), intent(INOUT) :: A
-    real(real_kind), dimension(0:ncoef,n), intent(IN)    :: A_arg
+    integer, intent(IN) :: ncoef
+    integer, intent(IN) :: n
+    real(r8), dimension(0:ncoef,n), intent(INOUT) :: A
+    real(r8), dimension(0:ncoef,n), intent(IN)    :: A_arg
 
     ! Local Variables
-    integer(int_kind) :: i, row
+    integer :: i, row
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! make a copy of the local parts of the sparse matrix
-    A = zero
+    A = 0.0_r8
     do row = 1, n
        A(0,row) = A_arg(0,row)
        do i = 1, ncoef
@@ -1807,22 +1704,13 @@ CONTAINS
        end do
     end do
 
-    return
-
   END SUBROUTINE GET_A_COEFFICIENTS_SPARSE
 
   SUBROUTINE GET_B_COEFFICIENTS (B, B_arg)
-    !===========================================================================
-    ! Purpose:
-    !===========================================================================
-    use kind_module,      only: real_kind
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments
-    real(real_kind), dimension(:), intent(INOUT) :: B
-    real(real_kind), dimension(:), intent(IN)    :: B_arg
+    real(r8), dimension(:), intent(INOUT) :: B
+    real(r8), dimension(:), intent(IN)    :: B_arg
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1859,8 +1747,6 @@ CONTAINS
 !!$=======
 !!$>>>>>>> 1.25
 
-    return
-
   END SUBROUTINE GET_B_COEFFICIENTS
 
   SUBROUTINE LU_FACTOR_A_RF (A)
@@ -1869,20 +1755,17 @@ CONTAINS
     !
     !   do a full LU factorization - go across rows first
     !===========================================================================
-    use kind_module,      only: int_kind, real_kind
     use cutoffs_module,   only: alittle
 
-    implicit none
-
     ! Arguments
-    real(real_kind), dimension(:,:), intent(INOUT) :: A
+    real(r8), dimension(:,:), intent(INOUT) :: A
 
     ! Local Variables
-    integer(int_kind) :: row
-    integer(int_kind) :: col
-    integer(int_kind) :: i
-    integer(int_kind) :: n
-    real(real_kind)   :: m
+    integer :: row
+    integer :: col
+    integer :: i
+    integer :: n
+    real(r8)   :: m
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -1927,8 +1810,6 @@ CONTAINS
        call TLS_panic ('LU_Factor_A_RF: zero pivot')
     end if
 
-    return
-
   END SUBROUTINE LU_FACTOR_A_RF
 
   SUBROUTINE LU_FACTOR_A_CF (A)
@@ -1937,21 +1818,18 @@ CONTAINS
     !
     !   do a full LU factorization - go down columns first
     !===========================================================================
-    use kind_module,      only: int_kind, real_kind
     use cutoffs_module,   only: alittle
 
-    implicit none
-
     ! Arguments
-    real(real_kind), dimension(:,:), intent(INOUT) :: A
+    real(r8), dimension(:,:), intent(INOUT) :: A
 
     ! Local Variables
-    integer(int_kind) :: row
-    integer(int_kind) :: col
-    integer(int_kind) :: i
-    integer(int_kind) :: n
-    real(real_kind)   :: m
-    real(real_kind)   :: colmax, amax
+    integer :: row
+    integer :: col
+    integer :: i
+    integer :: n
+    real(r8)   :: m
+    real(r8)   :: colmax, amax
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -2004,8 +1882,6 @@ CONTAINS
        call TLS_panic ('LU_Factor_A_CF: zero pivot')
     end if
 
-    return
-
   END SUBROUTINE LU_FACTOR_A_CF
 
   SUBROUTINE LU_FACTOR_B (A, b)
@@ -2014,17 +1890,14 @@ CONTAINS
     !
     !   do a full LU factorization
     !===========================================================================
-    use kind_module, only: int_kind, real_kind
-
-    implicit none
 
     ! Arguments
-    real(real_kind), dimension(:,:), intent(IN)    :: A
-    real(real_kind), dimension(:),   intent(INOUT) :: b
+    real(r8), dimension(:,:), intent(IN)    :: A
+    real(r8), dimension(:),   intent(INOUT) :: b
 
     ! Local Variables
-    integer(int_kind) :: row
-    integer(int_kind) :: col
+    integer :: row
+    integer :: col
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -2034,8 +1907,6 @@ CONTAINS
        end do
     end do
 
-    return
-
   END SUBROUTINE LU_FACTOR_B
 
   SUBROUTINE LU_SOLVE (A, x, b)
@@ -2044,33 +1915,26 @@ CONTAINS
     !
     !   do a full LU factorization
     !===========================================================================
-    use constants_module, only: zero
-    use kind_module,      only: int_kind, real_kind
-
-    implicit none
-
     ! Arguments
-    real(real_kind), dimension(:,:), intent(IN)    :: A
-    real(real_kind), dimension(:),   intent(INOUT) :: x
-    real(real_kind), dimension(:),   intent(IN)    :: b
+    real(r8), dimension(:,:), intent(IN)    :: A
+    real(r8), dimension(:),   intent(INOUT) :: x
+    real(r8), dimension(:),   intent(IN)    :: b
 
     ! Local Variables
-    integer(int_kind) :: row
-    integer(int_kind) :: col
-    real (real_kind)   :: sum
+    integer :: row
+    integer :: col
+    real(r8)   :: sum
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! back substitute (find new x)
     do row = SIZE(A,1), 1, -1
-       sum = zero
+       sum = 0.0_r8
        do col = row+1, SIZE(A,1)
           sum = sum + A(row,col) * x(col)
        end do
        x(row) = (b(row) - sum) / A(row,row)
     end do
-
-    return
 
   END SUBROUTINE LU_SOLVE
 
@@ -2080,28 +1944,25 @@ CONTAINS
     !
     !   do an Incomplete LU factorization, fill in 0
     !===========================================================================
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: Mesh
     use cutoffs_module,   only: alittle
     use utilities_module, only: bubble_permute
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                     intent(IN)    :: ncoef
-    integer(int_kind),                     intent(IN)    :: n
-    real(real_kind), dimension(0:ncoef,n), intent(INOUT) :: A
+    integer, intent(IN) :: ncoef
+    integer, intent(IN) :: n
+    real(r8), dimension(0:ncoef,n), intent(INOUT) :: A
 
     ! Local Variables
-    integer(int_kind),  dimension(ncoef) :: p    ! permutation vector
-    integer(int_kind)                    :: i    ! index
-    integer(int_kind)                    :: j    ! index
-    integer(int_kind)                    :: k    ! index
-    integer(int_kind)                    :: face ! face number
-    integer(int_kind)                    :: row  ! row number
-    integer(int_kind)                    :: col  ! column number
-    integer(int_kind)                    :: colj ! column number
-    real(real_kind)                      :: m    ! multiplier
+    integer,  dimension(ncoef) :: p    ! permutation vector
+    integer  :: i    ! index
+    integer  :: j    ! index
+    integer  :: k    ! index
+    integer  :: face ! face number
+    integer  :: row  ! row number
+    integer  :: col  ! column number
+    integer  :: colj ! column number
+    real(r8) :: m    ! multiplier
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -2166,7 +2027,6 @@ CONTAINS
        end do ! face
     end do ! row
 
-    return
   END SUBROUTINE ILU0_FACTOR_A
 
   SUBROUTINE ILU0_FACTOR_B (ncoef, n, A, B)
@@ -2175,24 +2035,21 @@ CONTAINS
     !
     !   do an Incomplete LU factorization, fill in 0
     !===========================================================================
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: Mesh
     use utilities_module, only: bubble_permute
 
-    implicit none
-
     ! Arguments
-    integer(int_kind),                intent(IN)    :: ncoef
-    integer(int_kind),                intent(IN)    :: n
-    real(real_kind), dimension(0:,:), intent(IN)    :: A
-    real(real_kind), dimension(:),    intent(INOUT) :: B
+    integer, intent(IN) :: ncoef
+    integer, intent(IN) :: n
+    real(r8), dimension(0:,:), intent(IN)    :: A
+    real(r8), dimension(:),    intent(INOUT) :: B
 
     ! Local Variables
-    integer(int_kind)                   :: row  ! row number
-    integer(int_kind)                   :: col  ! column number
-    integer(int_kind)                   :: face ! index
-    integer(int_kind)                   :: i    ! index
-    integer(int_kind), dimension(ncoef) :: p    ! permutation vector
+    integer :: row  ! row number
+    integer :: col  ! column number
+    integer :: face ! index
+    integer :: i    ! index
+    integer, dimension(ncoef) :: p    ! permutation vector
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -2208,8 +2065,6 @@ CONTAINS
        end do
     end do
 
-    return
-
   END SUBROUTINE ILU0_FACTOR_B
 
   SUBROUTINE ILU0_SOLVE (ncoef, n, A, X, B)
@@ -2218,31 +2073,26 @@ CONTAINS
     !
     !   do an Incomplete LU factorization, fill in 0
     !===========================================================================
-    use constants_module, only: zero
-    use kind_module,      only: int_kind, real_kind
     use mesh_module,      only: Mesh
-    use UbikSolve_module
-
-    implicit none
 
     ! Arguments
-    integer(int_kind),                     intent(IN)    :: ncoef
-    integer(int_kind),                     intent(IN)    :: n
-    real(real_kind), dimension(0:,:),      intent(IN)    :: A
-    real(real_kind), dimension(:),         intent(INOUT) :: X
-    real(real_kind), dimension(:),         intent(IN)    :: B
+    integer, intent(IN) :: ncoef
+    integer, intent(IN) :: n
+    real(r8), dimension(0:,:), intent(IN)    :: A
+    real(r8), dimension(:),    intent(INOUT) :: X
+    real(r8), dimension(:),    intent(IN)    :: B
 
     ! Local Variables
-    integer(int_kind) :: row  ! row number
-    integer(int_kind) :: col  ! column number
-    integer(int_kind) :: i    ! index
-    real(real_kind)   :: sum  ! dot product result
+    integer :: row  ! row number
+    integer :: col  ! column number
+    integer :: i    ! index
+    real(r8)   :: sum  ! dot product result
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! back substitute (find new x)
     do row = n, 1, -1
-       sum = zero
+       sum = 0.0_r8
        do i = 1, ncoef
           col = Mesh(row)%Ngbr_Cell(i)
           if (col > row) then
@@ -2251,8 +2101,6 @@ CONTAINS
        end do
        X(row) = (B(row) - sum) / A(0,row)
     end do
-
-    return
 
   END SUBROUTINE ILU0_SOLVE
 

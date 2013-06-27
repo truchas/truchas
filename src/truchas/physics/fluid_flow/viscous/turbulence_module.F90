@@ -15,27 +15,23 @@ MODULE TURBULENCE_MODULE
   ! Author(s): Kin L. Lam, LANL ESA-EA (klam@lanl.gov)
   !           
   !=======================================================================
-  use kind_module,      only: int_kind, log_kind, real_kind
+  use kinds, only: r8
   use parameter_module, only: string_len, ncells
-
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures
   public :: TURBULENCE, TURBULENCE_ALLOCATE, read_turbulence_namelist
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Turbulent diffusivity at cell centers
-  real(KIND = real_kind), dimension(:), pointer, save, public :: Nu_Turb
+  real(r8), dimension(:), pointer, save, public :: Nu_Turb
 
   ! Physics Namelist Variables
-  character(LEN = string_len), save, public :: turbulence_model = 'none'
-  real(KIND = real_kind),      save, public :: turbulence_length
-  real(KIND = real_kind),      save, public :: turbulence_cmu
-  real(KIND = real_kind),      save, public :: turbulence_ke_fraction
+  character(string_len), save, public :: turbulence_model = 'none'
+  real(r8), save, public :: turbulence_length
+  real(r8), save, public :: turbulence_cmu
+  real(r8), save, public :: turbulence_ke_fraction
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -48,17 +44,14 @@ CONTAINS
     !   Driver routine for all turbulence models.
     !
     !======================================================================= 
-    use constants_module, only: zero
     use parameter_module, only: string_len
 
-    implicit none
-
     ! Argument List
-    character(LEN = *), optional, intent(IN) :: specified_model
+    character(*), optional, intent(IN) :: specified_model
 
     ! Local Variables
-    character(LEN = string_len) :: model
-    logical(KIND = log_kind)    :: model_is_specified
+    character(string_len) :: model
+    logical :: model_is_specified
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -86,12 +79,10 @@ CONTAINS
 
           ! Algebraic model
           ! Initialize the turbulent diffusivity array
-          Nu_Turb = zero
+          Nu_Turb = 0.0_r8
           call ALG_TURB_MODEL ()
 
     end select
-
-    return
 
   END SUBROUTINE TURBULENCE
 
@@ -120,38 +111,30 @@ CONTAINS
     !   In the case of momentum transport, the diffusivity is also called
     !   kinematic viscosity (nu), which is given by mu / rho.
     !======================================================================= 
-    use constants_module, only: one_half, zero
     use parameter_module, only: ncells, ndim
     use zone_module,      only: Zone
 
-    implicit none
-
-    ! Argument List
-
     ! Local Variables
-    integer(KIND = int_kind)                    :: n
-    real(KIND = real_kind),   dimension(ncells) :: Vel_Sq
+    integer :: n
+    real(r8), dimension(ncells) :: Vel_Sq
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Calculate sum of cell-centered velocity squared
-    Vel_Sq = zero
+    Vel_Sq = 0.0_r8
     do n = 1, ndim
        Vel_Sq = Vel_Sq + Zone%Vc_old(n)**2
     end do
 
     ! Calculate turbulent diffusivity
     Nu_Turb =  turbulence_cmu * turbulence_length &
-               * SQRT(one_half * turbulence_ke_fraction * Vel_Sq)
-
-    return
+               * SQRT(0.5_r8 * turbulence_ke_fraction * Vel_Sq)
 
   END SUBROUTINE ALG_TURB_MODEL
 
   !-----------------------------------------------------------------------------
 
   subroutine turbulence_allocate ()
-     use constants_module,     only: zero
      use ArrayAllocate_Module, only: ARRAYCREATE
 
      ! use turbulence_model as a flag to determine whether Nu_Turb should be allocated
@@ -160,7 +143,7 @@ CONTAINS
 
      if (turbulence_model == 'alg') then
         call ARRAYCREATE (Nu_Turb, 1, ncells, 'Allocation of Nu_Turb(ncells) failed')
-        Nu_Turb = zero
+        Nu_Turb = 0.0_r8
      end if
 
   end subroutine turbulence_allocate

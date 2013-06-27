@@ -18,6 +18,7 @@ MODULE Mesh_Tests
   !
   !======================================================================
 
+  use truchas_logging_services
   implicit none
   PRIVATE
 
@@ -51,30 +52,26 @@ CONTAINS
     !   and the return value is TRUE.
     !====================================================================
     use debug_control_data
-    use kind_module,          only: log_kind, int_kind
     use gs_module,            only: EE_Gather
     use mesh_module,          only: Mesh
     use parameter_module,     only: ncells, nvc
     use pgslib_module,        only: PGSLib_Global_All
     use var_vector_module
-    use truchas_logging_services
-    
-    implicit none
 
     ! Arguments and return values
-    logical  (log_kind) :: Passed
+    logical :: Passed
 
     ! Local variables
     integer, dimension(ncells)  :: donor_vrtx
     type (int_var_vector), dimension(ncells) :: gathered_vrtx
     type (log_var_vector), dimension(ncells) :: confirmed_ngbrs
-    integer(int_kind), POINTER, dimension(:) :: ngbr_vrtx
-    integer(int_kind), POINTER, dimension(:) :: ngbr_cells_orig
-    logical(log_kind), POINTER, dimension(:) :: ngbr_check
+    integer, POINTER, dimension(:) :: ngbr_vrtx
+    integer, POINTER, dimension(:) :: ngbr_cells_orig
+    logical, POINTER, dimension(:) :: ngbr_check
 
-    integer(int_kind) :: donor_v, owner_c, owner_v, c, last_false, last_false_cell, n
-    integer(int_kind) :: given_size, found_size, bad_neighbor
-    integer(int_kind) :: out_stat
+    integer :: donor_v, owner_c, owner_v, c, last_false, last_false_cell, n
+    integer :: given_size, found_size, bad_neighbor
+    integer :: out_stat
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     
@@ -164,7 +161,6 @@ CONTAINS
         call TLS_info ('done.')
      end if
 
-    return
   end function Test_All_Neighbors
 
 end MODULE Mesh_tests

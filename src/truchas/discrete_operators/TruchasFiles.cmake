@@ -12,7 +12,6 @@ set(DISOP_TARGET_NAME ProcessTruchasDisOpFiles)
 
 
 set(DISOP_FILES
-         discrete_operators/Augustus.F90
          discrete_operators/discrete_derivatives.F90
          discrete_operators/discrete_op_module.F90
          discrete_operators/discrete_ops_data.F90
@@ -22,8 +21,7 @@ set(DISOP_FILES
          discrete_operators/do_solve_module.F90
          discrete_operators/do_solve_specifier.F90
          discrete_operators/do_update_module.F90
-         discrete_operators/ff_discrete_ops_data.F90
-         discrete_operators/support_operators.F90)
+         discrete_operators/ff_discrete_ops_data.F90)
 
 set(DISOP_FPP_FLAGS 
 	${Truchas_FPP_FLAGS})

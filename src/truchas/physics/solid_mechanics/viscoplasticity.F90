@@ -15,13 +15,13 @@ Module VISCOPLASTICITY
 !     Call MATERIAL_STRESSES (Strain, Stress)
 !
 !Authors: Dave Korzekwa (dak@lanl.gov)
-!-----------------------------------------------------------------------------  
+!----------------------------------------------------------------------------- 
+  use kinds, only: r8
   Use parameter_module, only: ncomps
   use time_step_module, only: dt
-  Use kind_module,      only: int_kind, real_kind
   use truchas_logging_services
-
-  Private
+  implicit none
+  private
 
   ! Public procedures
   Public :: MATERIAL_STRESSES,        &
@@ -39,16 +39,16 @@ Module VISCOPLASTICITY
   ! Data needed by the strain rate routine for the bdf2 integrator,
   ! that cannot be passed to the bdf2 routine directly
   ! Cell number - needed for temperatue and material data
-  integer(KIND = int_kind)                   :: cell_no, bdf2_unit
-  integer(KIND = int_kind), save             :: bdf2_seq = 0
+  integer :: cell_no, bdf2_unit
+  integer, save :: bdf2_seq = 0
   ! Effective stress at the beginning of the time step
-  Real(KIND = real_kind)                     :: E_Stress_0
-  Real(KIND = real_kind),dimension(ncomps)   :: D_Stress_0
+  real(r8) :: E_Stress_0
+  real(r8), dimension(ncomps) :: D_Stress_0
   ! Total strain tensors for a single cell at the beginning and end of the time step
-  Real(KIND = real_kind),dimension(ncomps)   :: T_Strain_0
-  Real(KIND = real_kind),dimension(ncomps)   :: T_Strain_1
+  real(r8), dimension(ncomps) :: T_Strain_0
+  real(r8), dimension(ncomps) :: T_Strain_1
   ! Plastic strain tensor for a single cell at the beginning of the time step
-  Real(KIND = real_kind),dimension(ncomps)   :: P_Strain_0
+  real(r8), dimension(ncomps) :: P_Strain_0
 
 Contains
 
@@ -69,26 +69,26 @@ Contains
     use mesh_module,          only: Mesh, GAP_ELEMENT_1
 
     !Arguments
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(OUT)   :: Pl_Strain_Inc
-    Real(KIND = real_kind), Dimension(ncells),        Intent(OUT)   :: Strain_Rate
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(OUT)   :: Stress
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(OUT)   :: LHS_Stress
+    real(r8), Dimension(ncomps,ncells), Intent(OUT)   :: Pl_Strain_Inc
+    real(r8), Dimension(ncells),        Intent(OUT)   :: Strain_Rate
+    real(r8), Dimension(ncomps,ncells), Intent(OUT)   :: Stress
+    real(r8), Dimension(ncomps,ncells), Intent(OUT)   :: LHS_Stress
 
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(IN)    :: Dev_Stress_old
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(IN)    :: Stress_old
-    Real(KIND = real_kind), Dimension(ncells),        Intent(IN)    :: Strain_Rate_old
-    Real(KIND = real_kind), Dimension(ncells),        Intent(IN)    :: Eff_Stress_old
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(IN)    :: Tot_Strain_new
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(IN)    :: Tot_Strain_old
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(IN)    :: Plastic_Strain_old
+    real(r8), Dimension(ncomps,ncells), Intent(IN)    :: Dev_Stress_old
+    real(r8), Dimension(ncomps,ncells), Intent(IN)    :: Stress_old
+    real(r8), Dimension(ncells),        Intent(IN)    :: Strain_Rate_old
+    real(r8), Dimension(ncells),        Intent(IN)    :: Eff_Stress_old
+    real(r8), Dimension(ncomps,ncells), Intent(IN)    :: Tot_Strain_new
+    real(r8), Dimension(ncomps,ncells), Intent(IN)    :: Tot_Strain_old
+    real(r8), Dimension(ncomps,ncells), Intent(IN)    :: Plastic_Strain_old
 
     ! Local Variables
-    Real(KIND = real_kind), Dimension(ncells)         :: Eff_Stress
-    Real(KIND = real_kind), Dimension(ncomps,ncells)  :: Strain
-    Real(KIND = real_kind), Dimension(ncomps,ncells)  :: Dev_Stress
-    integer(KIND = int_kind)                          :: icomp, icell
-    Real(KIND = real_kind)                            :: max_strain, rate_change
-    integer(KIND = int_kind)                          :: nplas, nbdf
+    real(r8), Dimension(ncells)         :: Eff_Stress
+    real(r8), Dimension(ncomps,ncells)  :: Strain
+    real(r8), Dimension(ncomps,ncells)  :: Dev_Stress
+    integer  :: icomp, icell
+    real(r8) :: max_strain, rate_change
+    integer  :: nplas, nbdf
 
     ! bdf2 integrator
     type(bdf2_control) :: control
@@ -321,20 +321,19 @@ Contains
     !-----------------------------------------------------------------------------  
 
     use bdf2_kinds
-    use solid_mechanics_data, only: Thermal_Strain, PC_Strain, &
-                                    Thermal_Strain_Inc
+    use solid_mechanics_data, only: Thermal_Strain, PC_Strain, Thermal_Strain_Inc
     
     real(kind=rk), intent(in)  :: t
     real(kind=rk), intent(in), dimension(:)  :: depsilon
     real(kind=rk), intent(out), dimension(:) :: depsdt
 
     ! Local variables
-    integer(kind=int_kind)                  :: icomp
-    real(kind=real_kind), dimension(ncomps) :: T_Strain_t
-    real(kind=real_kind), dimension(ncomps) :: Stress_t
-    real(kind=real_kind), dimension(ncomps) :: D_Stress_t
-    real(kind=real_kind)                    :: E_Stress_t
-    real(kind=real_kind)                    :: epsdot_eff
+    integer :: icomp
+    real(r8), dimension(ncomps) :: T_Strain_t
+    real(r8), dimension(ncomps) :: Stress_t
+    real(r8), dimension(ncomps) :: D_Stress_t
+    real(r8) :: E_Stress_t
+    real(r8) :: epsdot_eff
 
     ! Elastic strain and elastic stress at the current time - using the assumption 
     ! that elastic strain components at the beginning and end of the time step 
@@ -380,13 +379,13 @@ Contains
     use property_data_module, only: Viscoplastic_Model
     Use time_step_module,     Only: dt
 
-    Real(KIND = real_kind),Intent(OUT)   :: Strain_Rate
-    integer(KIND = int_kind),Intent(IN)  :: icell             
-    Real(KIND = real_kind),Intent(IN)    :: Stress
+    real(r8),Intent(OUT)   :: Strain_Rate
+    integer,Intent(IN)  :: icell             
+    real(r8),Intent(IN)    :: Stress
 
-    Real(KIND = real_kind)               :: Mid_Temp
-    Real(KIND = real_kind)               :: rate_mat
-    integer(KIND = int_kind)             :: imat, islot
+    real(r8)               :: Mid_Temp
+    real(r8)               :: rate_mat
+    integer             :: imat, islot
 
     ! Initialize Strain_Rate
     Strain_Rate = 0.0
@@ -433,14 +432,14 @@ Contains
                                      MTS_p_i, MTS_sig_i
 
     ! Argument list
-    Real(KIND = real_kind),intent(IN)        :: stress, temp
-    Integer(KIND = int_kind),intent(IN)      :: mm
-    Real(KIND = real_kind),intent(IN)        :: dt
-    Real(KIND = real_kind),intent(OUT)       :: strain_rate
+    real(r8),intent(IN)        :: stress, temp
+    integer,intent(IN)      :: mm
+    real(r8),intent(IN)        :: dt
+    real(r8),intent(OUT)       :: strain_rate
 
     ! Local Variables
-    Real(KIND = real_kind)        :: a, c, mu, epsdot_min, eps_sig_a, k
-    real (real_kind)              :: tmp
+    real(r8) :: a, c, mu, epsdot_min, eps_sig_a, k
+    real(r8) :: tmp
 
     ! Temperature dependent shear modulus
     mu = MTS_mu_0(mm) - MTS_d(mm)/(exp(MTS_temp_0(mm)/temp) - 1.0)
@@ -469,13 +468,13 @@ Contains
 
     ! Rate dependence of the flow (yield) strength
        a = MTS_mu_0(mm)/mu/MTS_sig_i(mm)
-       if (a*(stress-MTS_sig_a(mm)) < 0.0_real_kind &
-       .or. (a*(stress-MTS_sig_a(mm)) == 0.0_real_kind .and. MTS_p_i(mm) == 0.0_real_kind)) then
+       if (a*(stress-MTS_sig_a(mm)) < 0.0_r8 &
+       .or. (a*(stress-MTS_sig_a(mm)) == 0.0_r8 .and. MTS_p_i(mm) == 0.0_r8)) then
           call TLS_panic ('MTS_STRAIN_RATE: invalid exponentiation')
        else
           tmp = 1.0-(a*(stress - MTS_sig_a(mm)))**MTS_p_i(mm)
        end if
-       if (tmp < 0.0_real_kind .or. (tmp == 0.0_real_kind .and. MTS_q_i(mm) == 0.0_real_kind)) then
+       if (tmp < 0.0_r8 .or. (tmp == 0.0_r8 .and. MTS_q_i(mm) == 0.0_r8)) then
           call TLS_panic ('MTS_STRAIN_RATE: invalid exponentiation')
        else
           strain_rate = MTS_edot_0i(mm) / (exp(tmp**MTS_q_i(mm) /c))
@@ -502,13 +501,13 @@ Contains
     Use property_data_module, only : Pwr_Law_A, Pwr_Law_N, Pwr_Law_Q, Pwr_Law_R
 
     ! Argument list
-    Real(KIND = real_kind),intent(IN)        :: stress, temp
-    Integer(KIND = int_kind),intent(IN)      :: mm
-    Real(KIND = real_kind),intent(IN)      :: dt
-    Real(KIND = real_kind),intent(OUT)       :: strain_rate
+    real(r8),intent(IN)        :: stress, temp
+    integer,intent(IN)      :: mm
+    real(r8),intent(IN)      :: dt
+    real(r8),intent(OUT)       :: strain_rate
 
     ! Local Variables
-    Real(KIND = real_kind)        :: epsdot_min
+    real(r8)        :: epsdot_min
     
     strain_rate = Pwr_Law_A(mm) * stress**Pwr_Law_N(mm) * exp(- Pwr_Law_Q(mm) / Pwr_Law_R(mm) / temp)
 
@@ -532,19 +531,17 @@ Contains
 
     Use parameter_module, Only: ndim, nnodes, ncells
 
-    Implicit None
-
     ! Argument list
-    Real(KIND = real_kind), Dimension(ndim*nnodes),   Intent(IN)  :: u
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(OUT)  :: Strain
-    Real(KIND = real_kind), Dimension(ncells), Intent(OUT), Optional  :: Rotation
+    real(r8), Dimension(ndim*nnodes),   Intent(IN)  :: u
+    real(r8), Dimension(ncomps,ncells), Intent(OUT)  :: Strain
+    real(r8), Dimension(ncells), Intent(OUT), Optional  :: Rotation
 
     ! Local variables
-    Integer(KIND =  int_kind)                              :: inodes
-    Real   (KIND = real_kind), Dimension(nnodes)           :: Q
-    Real   (KIND = real_kind), Dimension(ncells)           :: dQ_dx, dQ_dy, dQ_dz
-    Real   (KIND = real_kind), Dimension(ndim,ndim,ncells) :: Grad_u
-    Real   (KIND = real_kind), Allocatable, Dimension(:)   :: R1, R2, R3
+    integer                              :: inodes
+    real(r8), Dimension(nnodes)           :: Q
+    real(r8), Dimension(ncells)           :: dQ_dx, dQ_dy, dQ_dz
+    real(r8), Dimension(ndim,ndim,ncells) :: Grad_u
+    real(r8), Allocatable, Dimension(:)   :: R1, R2, R3
 
     !---------------------------------------------------------------------------
 
@@ -598,7 +595,6 @@ Contains
        Rotation(:) = sqrt(R1(:)*R1(:) + R2(:)*R2(:) + R3(:)*R3(:))
        Deallocate(R1, R2, R3)
     end if
-    Return
 
   End Subroutine MATERIAL_STRAINS
   !
@@ -616,27 +612,23 @@ Contains
     !   ratio of Jacobian-like determinants.
     !
     !---------------------------------------------------------------------------
-
-    Use constants_module,   Only: one
     Use discrete_op_module, Only: DETERMINANT_VOL_AVG
     Use gs_module,          Only: EN_GATHER
     Use mesh_module,        Only: Cell, Vertex, Vrtx_Bdy
     Use parameter_module,   Only: nnodes, ncells, nvc
 
-    Implicit None
-
     ! Argument list
-    Real(KIND = real_kind), Dimension(nnodes), Intent(IN)  :: Q
-    Real(KIND = real_kind), Dimension(ncells), Intent(OUT) :: dQ_dx
-    Real(KIND = real_kind), Dimension(ncells), Intent(OUT) :: dQ_dy
-    Real(KIND = real_kind), Dimension(ncells), Intent(OUT) :: dQ_dz
+    real(r8), Dimension(nnodes), Intent(IN)  :: Q
+    real(r8), Dimension(ncells), Intent(OUT) :: dQ_dx
+    real(r8), Dimension(ncells), Intent(OUT) :: dQ_dy
+    real(r8), Dimension(ncells), Intent(OUT) :: dQ_dz
 
     ! Local Variables
-    Real(KIND = real_kind), Dimension(ncells)     :: Q_f
-    Real(KIND = real_kind), Dimension(nvc,ncells) :: Q_v
-    Real(KIND = real_kind), Dimension(nvc,ncells) :: X_v
-    Real(KIND = real_kind), Dimension(nvc,ncells) :: Y_v
-    Real(KIND = real_kind), Dimension(nvc,ncells) :: Z_v
+    real(r8), Dimension(ncells)     :: Q_f
+    real(r8), Dimension(nvc,ncells) :: Q_v
+    real(r8), Dimension(nvc,ncells) :: X_v
+    real(r8), Dimension(nvc,ncells) :: Y_v
+    real(r8), Dimension(nvc,ncells) :: Z_v
     !
     !---------------------------------------------------------------------------
     !
@@ -654,12 +646,10 @@ Contains
     Call DETERMINANT_VOL_AVG (X_v, Y_v, Q_v, dQ_dz)
 
     ! Normalize the volume-averaged gradient by the cell volume
-    Q_f(:)   = one/Cell(:)%Volume
+    Q_f(:)   = 1.0_r8/Cell(:)%Volume
     dQ_dx(:) = dQ_dx(:)*Q_f(:)
     dQ_dy(:) = dQ_dy(:)*Q_f(:)
     dQ_dz(:) = dQ_dz(:)*Q_f(:)
-
-    Return
 
   End Subroutine DISPLACEMENT_GRADIENT
   !
@@ -672,25 +662,22 @@ Contains
     !    Calculate the cell-centered solid material stress field - all cells
     !
     !---------------------------------------------------------------------------
-
-    Use constants_module,     Only: zero
     Use parameter_module,     Only: ncells, ndim, ncomps
     use solid_mechanics_data, only: Lame1, Lame2
     use mesh_module,          only: Mesh, GAP_ELEMENT_1
-    Implicit None
 
     ! Argument list
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(IN) :: Strain
-    Real(KIND = real_kind), Dimension(ncomps,ncells), Intent(out):: Stress
+    real(r8), Dimension(ncomps,ncells), Intent(IN) :: Strain
+    real(r8), Dimension(ncomps,ncells), Intent(out):: Stress
     !
     ! Local variables
-    Integer(KIND =  int_kind)                    :: icomps
-    Real   (KIND = real_kind), Dimension(ncells) :: Dilatation
+    integer                    :: icomps
+    real(r8), Dimension(ncells) :: Dilatation
     !
     !---------------------------------------------------------------------------
     !
     ! Compute the dilatation
-    Dilatation(:) = zero
+    Dilatation(:) = 0.0_r8
 
     Do icomps = 1, ndim
      Dilatation(:) = Dilatation(:) + Strain(icomps,:)
@@ -710,8 +697,6 @@ Contains
        where (Mesh(:)%Cell_Shape >= GAP_ELEMENT_1) Stress(icomps,:) = 0.0
     End Do
 
-    Return
-
   End Subroutine MATERIAL_STRESSES_ALL_CELLS
   !-----------------------------------------------------------------------------
   !
@@ -722,21 +707,18 @@ Contains
     !    Calculate the cell-centered solid material stress field - all cells
     !
     !---------------------------------------------------------------------------
-
-    Use constants_module,     Only: zero
     Use parameter_module,     Only: ndim, ncomps
     use solid_mechanics_data, only: Lame1, Lame2
     use mesh_module,          only: Mesh, GAP_ELEMENT_1
-    Implicit None
 
     ! Argument list
-    Real(KIND = real_kind), Dimension(ncomps), Intent(IN) :: Strain
-    Real(KIND = real_kind), Dimension(ncomps), Intent(out):: Stress
-    Integer(KIND =  int_kind),Intent(IN)                  :: icell
+    real(r8), Dimension(ncomps), Intent(IN) :: Strain
+    real(r8), Dimension(ncomps), Intent(out):: Stress
+    integer,Intent(IN)                  :: icell
     !
     ! Local variables
-    Integer(KIND =  int_kind)                    :: icomps
-    Real   (KIND = real_kind)                    :: Dilatation
+    integer                    :: icomps
+    real(r8)                    :: Dilatation
     !
     !---------------------------------------------------------------------------
     !
@@ -746,7 +728,7 @@ Contains
        Stress = 0.0
     else
        ! Compute the dilatation
-       Dilatation = zero
+       Dilatation = 0.0_r8
 
        Do icomps = 1, ndim
           Dilatation = Dilatation + Strain(icomps)
@@ -762,22 +744,19 @@ Contains
        End Do
     end if
 
-    Return
-
   End Subroutine MATERIAL_STRESSES_ONE_CELL
 
   Subroutine DEVIATORIC_STRESS(Stress, Dev_Stress)
     ! Calculate the deviatoric stress tensor from the elastic stress tensor
     Use parameter_module,     Only: ndim, ncomps
-    Implicit None
 
     ! Argument list
-    Real(KIND = real_kind), Dimension(ncomps), Intent(IN) :: Stress
-    Real(KIND = real_kind), Dimension(ncomps), Intent(out):: Dev_Stress
+    real(r8), Dimension(ncomps), Intent(IN) :: Stress
+    real(r8), Dimension(ncomps), Intent(out):: Dev_Stress
     !
     ! Local variables
-    Integer(KIND =  int_kind)                    :: idim
-    Real   (KIND = real_kind)                    :: Mean_Stress
+    integer                    :: idim
+    real(r8)                    :: Mean_Stress
 
     Mean_Stress = (Stress(1) + Stress(2) + Stress(3))/3.0
     do idim = 1,ndim

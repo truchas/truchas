@@ -10,6 +10,7 @@
 
 module gap_output
 
+  use kinds, only: r8
   implicit none
   private
   
@@ -29,12 +30,11 @@ contains
     use mesh_module,                 only: Mesh, GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5 
     use pgslib_module,               only: PGSLib_GLOBAL_ANY 
     use gs_module,                   only: EE_GATHER 
-    use kind_module,                 only: int_kind, real_kind
     use physics_module, only: heat_transport, heat_species_transport
-    implicit none 
-    integer(int_kind)          :: icomp 
-    real(real_kind)            :: Tstemp(nfc, ncells), Estemp(nfc, ncells), Pstemp(nfc, ncells), &
-                                  Prtemp(nfc, ncells), Rtemp(nfc, ncells) 
+
+    integer :: icomp 
+    real(r8) :: Tstemp(nfc, ncells), Estemp(nfc, ncells), Pstemp(nfc, ncells), &
+                Prtemp(nfc, ncells), Rtemp(nfc, ncells) 
     !--------------------------------------------------------------------------- 
     if (.not. PGSLib_GLOBAL_ANY(Mesh%Cell_Shape >= GAP_ELEMENT_1)) return 
     SOLID_MECH: if (solid_mechanics) then 

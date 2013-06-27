@@ -20,10 +20,7 @@ MODULE DRIVERS
   !-----------------------------------------------------------------------------
   use parameter_module,  only: string_len
   use process_info_module
- 
   implicit none
- 
-  ! Default private module
   private
 
   ! Public Procedures
@@ -181,7 +178,6 @@ CONTAINS
                                         CYCLE_OUTPUT_DRIVER
     use fluid_flow_module,        only: FLUID_FLOW_DRIVER
     use EM,                       only: INDUCTION_HEATING
-    use kind_module,              only: log_kind
     use solid_mechanics_module,   only: THERMO_MECHANICS
     use pgslib_module,            only: PGSLib_GLOBAL_ANY
     use restart_variables,        only: restart
@@ -206,7 +202,7 @@ CONTAINS
 #endif
 
     ! Local Variables
-    Logical (KIND=log_kind) :: quit = .False.
+    Logical :: quit = .False.
     integer :: errc
     Integer :: c
     Integer :: HUP                      ! signal flag
@@ -323,8 +319,6 @@ CONTAINS
     ! stop the main cycle timer
     call  stop_timer ("Main Cycle")
 
-    return
-
   END SUBROUTINE CYCLE_DRIVER
 
   SUBROUTINE CLEANUP ()
@@ -342,8 +336,6 @@ CONTAINS
     use truchas_timing
     use diffusion_solver,       only: ds_delete
     use truchas_logging_services
-
-    implicit none
     
     character(128) :: message
 
@@ -376,8 +368,6 @@ CONTAINS
     ! report the timing info
     call REPORT_MEMORY
 
-    return
-
   END SUBROUTINE CLEANUP
 
   SUBROUTINE PROGRAM_SPECIFICATIONS ()
@@ -394,7 +384,7 @@ CONTAINS
     use truchas_logging_services
     use string_utilities, only: i_to_c
 
-    character (LEN=32)  :: run_date
+    character(LEN=32)  :: run_date
 
     run_architecture = ""
     run_host         = ""
@@ -466,7 +456,7 @@ CONTAINS
 #endif
 
     ! arguments
-    character(len=*), dimension(:), pointer :: argv
+    character(*), dimension(:), pointer :: argv
 
     ! local variables
     integer :: status
@@ -842,8 +832,6 @@ CONTAINS
     use code_module, only: code_name, code_version, libraries,                      &
                            build_date, build_architecture, build_flags, build_host
 
-    implicit none
-
     !---------------------------------------------------------------------------
 
     ! Get the preprocessor definitions into variables.
@@ -861,10 +849,7 @@ CONTAINS
                           FFLAGS_TRIMMED_2
     build_host          = HOST_NAME
 
-    return
-
   END SUBROUTINE PREPROCESSOR_DEFS
-
 
 
   SUBROUTINE CYCLE_INIT()
@@ -885,7 +870,6 @@ CONTAINS
     call Update_Dirichlet_BC(t)
     call Update_HTC_External_BC(t)
 
-!    call Close_BC_XML_Element()
-    return
   END SUBROUTINE CYCLE_INIT
+
 END MODULE DRIVERS

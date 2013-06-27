@@ -1,11 +1,5 @@
 #include "f90_assert.fpp"
 
-#ifdef SUPPORTS_TR15581
-# define ASSOCIATED_MACRO allocated
-#else
-# define ASSOCIATED_MACRO associated
-#endif
-
 #ifdef PGI_COMPILER_WORKAROUND
 #define PGI_WORKAROUND
 #endif
@@ -30,7 +24,6 @@ use debug_EM
   public :: initialize_system, set_initial_values, set_param, step, interpolate_fields
   public :: joule_heat, destroy_system
   
-#ifdef SUPPORTS_TR15581
   type, public :: system
     type(dist_mesh), pointer :: mesh => null() ! spatial discretization
     
@@ -58,35 +51,6 @@ use debug_EM
     logical, allocatable :: w1mask(:)
     type(msr_matrix) :: a0, a1
   end type system
-#else
-  type, public :: system
-    type(dist_mesh), pointer :: mesh => null() ! spatial discretization
-    
-    !! Solution history
-    real(kind=r8) :: t, dt
-    type(history) :: ehist, bhist
-    real(kind=r8), pointer :: g0(:) => null()
-    
-    !! CG control parameters
-    type(cg_desc) :: cg = cg_desc(0, 1000, 1, 0.0_r8, 1.0e-6_r8)
-    
-    real(kind=r8), pointer :: eps(:) => null()
-    real(kind=r8), pointer :: mu(:) => null()
-    real(kind=r8), pointer :: sigma(:) => null()
-    real(kind=r8) :: etasq, delta
-    
-    integer, pointer :: emask(:) => null()
-    
-    real(kind=r8), pointer :: mtr1(:,:) => null()
-    real(kind=r8), pointer :: mtr2(:,:) => null()
-    real(kind=r8), pointer :: mtr3(:,:,:) => null()
-    
-    !! Hiptmair relaxation data
-    logical, pointer :: w0mask(:) => null()
-    logical, pointer :: w1mask(:) => null()
-    type(msr_matrix) :: a0, a1
-  end type system
-#endif
   
   !! Look-aside data for CG-called procedures
   type(system), pointer :: cg_sys => null()
@@ -97,16 +61,16 @@ contains
     type(system), intent(inout) :: sys
     type(system) :: default
     nullify(sys%mesh)
-    if (ASSOCIATED_MACRO(sys%g0)) deallocate(sys%g0)
-    if (ASSOCIATED_MACRO(sys%eps)) deallocate(sys%eps)
-    if (ASSOCIATED_MACRO(sys%mu)) deallocate(sys%mu)
-    if (ASSOCIATED_MACRO(sys%sigma)) deallocate(sys%sigma)
-    if (ASSOCIATED_MACRO(sys%emask)) deallocate(sys%emask)
-    if (ASSOCIATED_MACRO(sys%mtr1)) deallocate(sys%mtr1)
-    if (ASSOCIATED_MACRO(sys%mtr2)) deallocate(sys%mtr2)
-    if (ASSOCIATED_MACRO(sys%mtr3)) deallocate(sys%mtr3)
-    if (ASSOCIATED_MACRO(sys%w0mask)) deallocate(sys%w0mask)
-    if (ASSOCIATED_MACRO(sys%w1mask)) deallocate(sys%w1mask)
+    if (allocated(sys%g0)) deallocate(sys%g0)
+    if (allocated(sys%eps)) deallocate(sys%eps)
+    if (allocated(sys%mu)) deallocate(sys%mu)
+    if (allocated(sys%sigma)) deallocate(sys%sigma)
+    if (allocated(sys%emask)) deallocate(sys%emask)
+    if (allocated(sys%mtr1)) deallocate(sys%mtr1)
+    if (allocated(sys%mtr2)) deallocate(sys%mtr2)
+    if (allocated(sys%mtr3)) deallocate(sys%mtr3)
+    if (allocated(sys%w0mask)) deallocate(sys%w0mask)
+    if (allocated(sys%w1mask)) deallocate(sys%w1mask)
     call destroy_msr_matrix (sys%a0)
     call destroy_msr_matrix (sys%a1)
     call destroy (sys%ehist)
@@ -146,42 +110,23 @@ contains
 
   subroutine step (sys, t, e, b, status, set_bv, bndry_src)
   
-#ifdef PGI_WORKAROUND
-    use kind_module, only: real_kind
-#endif
-  
     type(system), intent(inout), target :: sys
     real(kind=r8), intent(out) :: t, e(:), b(:)
     integer, intent(out) :: status
     optional :: bndry_src
 
-#ifdef PGI_WORKAROUND
     interface
       subroutine set_bv (t, e)
-        import real_kind
-        real(kind=real_kind), intent(in) :: t
-        real(kind=real_kind), intent(inout) :: e(:)
-      end subroutine set_bv
-      subroutine bndry_src (t, s)
-        import real_kind
-        real(kind=real_kind), intent(in) :: t
-        real(kind=real_kind), intent(out) :: s(:)
-      end subroutine bndry_src
-    end interface
-#else
-    interface
-      subroutine set_bv (t, e)
-        use kind_module, only: r8 => real_kind
+        use kinds, only: r8
         real(kind=r8), intent(in) :: t
         real(kind=r8), intent(inout) :: e(:)
       end subroutine set_bv
       subroutine bndry_src (t, s)
-        use kind_module, only: r8 => real_kind
+        use kinds, only: r8
         real(kind=r8), intent(in) :: t
         real(kind=r8), intent(out) :: s(:)
       end subroutine bndry_src
     end interface
-#endif
     
     real(kind=r8) :: r(sys%mesh%nedge), de(sys%mesh%nedge), g(sys%mesh%nedge)
     real(kind=r8), pointer :: e0(:), b0(:)
@@ -197,12 +142,12 @@ contains
     b0 => most_recent_solution(sys%bhist)
     
     if (present(bndry_src)) then        ! We have a boundary source term:
-      if (.not.ASSOCIATED_MACRO(sys%g0)) then
+      if (.not.allocated(sys%g0)) then
         allocate(sys%g0(sys%mesh%nedge))   !   allocate the component vector
         call bndry_src (sys%t, sys%g0)  !   compute the previous boundary source vector
       end if
       call bndry_src (t, g)
-    else if (ASSOCIATED_MACRO(sys%g0)) then    ! deallocate the component vector, so we know that
+    else if (allocated(sys%g0)) then    ! deallocate the component vector, so we know that
       deallocate(sys%g0)                 ! the 'previous' value will need to be computed
     end if
     

@@ -44,6 +44,7 @@ MODULE BASE_TYPES_MODULE
   !            Robert Ferrell (CPCA, Ltd., ferrell@cpca.com)
   !
   !=======================================================================
+  use kinds, only: r8
   use truchas_logging_services
   implicit none
   private
@@ -231,7 +232,6 @@ CONTAINS
     !   Default the base types.
     !
     !=======================================================================
-    use constants_module,  only: zero
     use mesh_module,       only: Cell
     use parameter_module,  only: ndim, nfc
     use zone_module,       only: Zone
@@ -242,30 +242,30 @@ CONTAINS
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Cell base type.
-    Cell%Volume = zero
+    Cell%Volume = 0.0_r8
     do n = 1,ndim
-       Cell%Centroid(n) = zero
+       Cell%Centroid(n) = 0.0_r8
        do f = 1,nfc
-          Cell%Face_Normal(n,f) = zero
-          Cell%Face_Centroid_L(n,f) = zero
+          Cell%Face_Normal(n,f) = 0.0_r8
+          Cell%Face_Centroid_L(n,f) = 0.0_r8
        end do
     end do
     do f = 1,nfc
-       Cell%Face_Area(f) = zero
-       Cell%Halfwidth(f) = zero
+       Cell%Face_Area(f) = 0.0_r8
+       Cell%Halfwidth(f) = 0.0_r8
     end do
 
     ! Zone base type.
-    Zone%Rho          = zero
-    Zone%Rho_old      = zero
-    Zone%Temp         = zero
-    Zone%Temp_old     = zero
-    Zone%Enthalpy     = zero
-    Zone%Enthalpy_old = zero
-    Zone%P            = zero
+    Zone%Rho          = 0.0_r8
+    Zone%Rho_old      = 0.0_r8
+    Zone%Temp         = 0.0_r8
+    Zone%Temp_old     = 0.0_r8
+    Zone%Enthalpy     = 0.0_r8
+    Zone%Enthalpy_old = 0.0_r8
+    Zone%P            = 0.0_r8
     do n = 1,ndim
-       Zone%Vc(n)     = zero
-       Zone%Vc_old(n) = zero
+       Zone%Vc(n)     = 0.0_r8
+       Zone%Vc_old(n) = 0.0_r8
     end do
 
   END SUBROUTINE BASE_TYPES_DEFAULT

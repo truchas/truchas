@@ -9,7 +9,7 @@ Module BC_Regions
   !
   ! Author: Robert Ferrell (ferrell@lanl.gov)
   !-----------------------------------------------------------------------------
-  use kind_module, only: int_kind, real_kind, log_kind
+  use kinds, only: r8
   use bc_enum_types
   Implicit None
   Private
@@ -49,14 +49,14 @@ Module BC_Regions
 
   ! Type to define a region
   type BC_Region
-     integer( int_kind)                          :: NumberOfEntries
-     integer( int_kind)                          :: DegreesOfFreedom
-     integer( int_kind), pointer, dimension(:)   :: OwnerCell => null()
-     integer( int_kind), pointer, dimension(:)   :: Face => null()
-     real(real_kind),    pointer, dimension(:,:) :: Value => null()
-     real(real_kind),    pointer, dimension(:,:) :: Position => null()
-     logical(log_kind),  pointer, dimension(:)   :: UseFunction => null()
-     character(LEN=BC_STRING_LEN)                :: NAME = BC_NO_NAME
+     integer                           :: NumberOfEntries
+     integer                           :: DegreesOfFreedom
+     integer,  pointer, dimension(:)   :: OwnerCell => null()
+     integer,  pointer, dimension(:)   :: Face => null()
+     real(r8), pointer, dimension(:,:) :: Value => null()
+     real(r8), pointer, dimension(:,:) :: Position => null()
+     logical,  pointer, dimension(:)   :: UseFunction => null()
+     character(BC_STRING_LEN)          :: NAME = BC_NO_NAME
   end type BC_Region
     
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -149,103 +149,69 @@ CONTAINS
   !====================================================================
 
   function BC_Region_Size(Region)
-    implicit none
-    type (BC_Region), intent(IN) :: Region
-    integer( int_kind)                      :: BC_Region_Size
-
+    type(BC_Region), intent(IN) :: Region
+    integer :: BC_Region_Size
     BC_Region_Size = Region%NumberOfEntries
-    RETURN
   end function BC_Region_Size
   
   function BC_Region_Dimension(Region)
-    implicit none
-    type (BC_Region), intent(IN) :: Region
-    integer( int_kind)                      :: BC_Region_Dimension
-
+    type(BC_Region), intent(IN) :: Region
+    integer :: BC_Region_Dimension
     BC_Region_Dimension = SIZE(BC_Region_Positions(Region),1)
-    RETURN
   end function BC_Region_Dimension
   
   function BC_Region_OwnerCells(Region)
-    implicit none
-    type (BC_Region), intent(IN)  :: Region
-    integer( int_kind), POINTER, dimension(:)        :: BC_Region_OwnerCells
-
+    type(BC_Region), intent(IN) :: Region
+    integer, POINTER, dimension(:) :: BC_Region_OwnerCells
     BC_Region_OwnerCells => Region%OwnerCell
-    RETURN
   end function BC_Region_OwnerCells
 
   function BC_Region_Faces(Region)
-    implicit none
-    type (BC_Region), intent(IN)  :: Region
-    integer( int_kind), POINTER, dimension(:)        :: BC_Region_Faces
-
+    type(BC_Region), intent(IN) :: Region
+    integer, POINTER, dimension(:) :: BC_Region_Faces
     BC_Region_Faces => Region%Face
-    RETURN
   end function BC_Region_Faces
 
   function BC_Region_Values(Region)
-    implicit none
-    type (BC_Region), intent(IN)  :: Region
-    real(real_kind), POINTER, dimension(:,:)           :: BC_Region_Values
-
+    type(BC_Region), intent(IN) :: Region
+    real(r8), POINTER, dimension(:,:) :: BC_Region_Values
     BC_Region_Values => Region%Value
-    RETURN
   end function BC_Region_Values
 
   function UseFunction(Region) 
-    implicit none
-    type (BC_Region), intent(IN)     :: Region
-    logical(log_kind), POINTER, dimension(:) :: UseFunction
-
+    type(BC_Region), intent(IN) :: Region
+    logical, POINTER, dimension(:) :: UseFunction
     UseFunction => Region%UseFunction
-    RETURN
   end function UseFunction
 
   function BC_Region_Positions(Region)
-    implicit none
-    type (BC_Region), intent(IN)  :: Region
-    real(real_kind), POINTER, dimension(:,:)         :: BC_Region_Positions
-
+    type(BC_Region), intent(IN)  :: Region
+    real(r8), POINTER, dimension(:,:) :: BC_Region_Positions
     BC_Region_Positions => Region%Position
-    RETURN
   end function BC_Region_Positions
 
   function RegionGetName(Region) RESULT(NAME)
-    implicit none
-    type (BC_Region), intent(IN)  :: Region
-    character (LEN=BC_STRING_LEN) :: NAME
-    
+    type(BC_Region), intent(IN) :: Region
+    character(BC_STRING_LEN) :: NAME
     NAME = TRIM(Region%Name)
-    RETURN
   END function RegionGetName
 
   subroutine RegionSetName(Region, NAME)
-    implicit none
-    type (BC_Region), intent(INOUT)  :: Region
-    character (LEN=*), intent(IN) :: NAME
-    
+    type(BC_Region), intent(INOUT)  :: Region
+    character(*), intent(IN) :: NAME
     Region%Name = TRIM(NAME)
-    RETURN
   END subroutine RegionSetName
 
   function RegionGetDegreesOfFreedom(Region) RESULT(DOF)
-    implicit none
-    type (BC_Region), intent(IN)  :: Region
-    integer( int_kind)            :: DOF
-    
+    type(BC_Region), intent(IN) :: Region
+    integer :: DOF
     DOF = Region%DegreesOfFreedom
-    RETURN
   END function RegionGetDegreesOfFreedom
 
   subroutine RegionSetDegreesOfFreedom(Region, DOF)
-    implicit none
-    type (BC_Region),   intent(INOUT)  :: Region
-    integer( int_kind), intent(IN)     :: DOF
-
-    
+    type(BC_Region), intent(INOUT) :: Region
+    integer, intent(IN) :: DOF
     Region%DegreesOfFreedom = DOF
-    RETURN
   END subroutine RegionSetDegreesOfFreedom
 
   subroutine BC_Region_Initialize(Region)
@@ -253,8 +219,7 @@ CONTAINS
     ! This does not deallocate any memory, so it is appropraite to call
     ! this routine on new structure.  It is an error to call this routine on
     ! a Region which has allocated memory.  Call FreeBC_Region instead.
-    implicit none
-    type (BC_Region), intent(INOUT) :: Region
+    type(BC_Region), intent(INOUT) :: Region
 
     Region%NumberOfEntries = BC_INVALID_COUNT
     Region%DegreesOfFreedom = BC_INVALID_COUNT
@@ -266,14 +231,12 @@ CONTAINS
     NULLIFY(Region%Position)
     Call BC_Set_Name(Region, BC_NO_NAME)
 
-    RETURN
   end subroutine BC_Region_Initialize
   
   subroutine BC_Region_Free(Region)
     ! Free the memory used by a BC_Region, and initialize the
     ! region to be empty.
-    implicit none
-    type (BC_Region), intent(INOUT) :: Region
+    type(BC_Region), intent(INOUT) :: Region
 
     if (ASSOCIATED(Region%OwnerCell)) DEALLOCATE(Region%OwnerCell)
     if (ASSOCIATED(Region%Face))      DEALLOCATE(Region%Face)
@@ -283,17 +246,14 @@ CONTAINS
 
     call BC_Region_Initialize(Region)
 
-    RETURN
   end subroutine BC_Region_Free
 
   subroutine BC_Region_Alloc(Region, SIZE, DIMENSIONALITY, DOF)
     ! ALLOCATE memory internal to a BC_Region
-
-    implicit none
-    type (BC_Region), intent(INOUT) :: Region
-    integer( int_kind),          intent(IN)    :: SIZE
-    integer( int_kind),          intent(IN)    :: DIMENSIONALITY
-    integer( int_kind),          intent(IN)    :: DOF
+    type(BC_Region), intent(INOUT) :: Region
+    integer, intent(IN) :: SIZE
+    integer, intent(IN) :: DIMENSIONALITY
+    integer, intent(IN) :: DOF
 
     Region%NumberOfEntries = SIZE
     Region%DegreesOfFreedom = DOF
@@ -305,16 +265,14 @@ CONTAINS
     ALLOCATE(Region%UseFunction(SIZE))
     ALLOCATE(Region%Position(DIMENSIONALITY, SIZE))
 
-    RETURN
   end subroutine BC_Region_Alloc
 
   subroutine BC_Region_Copy(Dest_Region, Src_Region)
     ! Copy Dest_Region into Src_Region
     ! The Dest_Region must have data fields previously allocated.
     ! The Dest_Region must be at least as big as the Src_Region.
-    implicit none
-    type (BC_Region), intent(INOUT) :: Dest_Region
-    type (BC_Region), intent(IN   ) :: Src_Region
+    type(BC_Region), intent(INOUT) :: Dest_Region
+    type(BC_Region), intent(IN   ) :: Src_Region
 
     integer :: DestSize, SrcSize
     DestSize = SIZE(Dest_Region)
@@ -331,7 +289,6 @@ CONTAINS
     end if
 #endif
 
-
     Dest_Region%OwnerCell(1:SrcSize)   = BC_Region_OwnerCells(Src_Region)
     Dest_Region%Face(1:SrcSize)        = BC_Region_Faces(Src_Region)
     Dest_Region%Value(:,1:SrcSize)     = BC_Region_Values(Src_Region)
@@ -339,7 +296,6 @@ CONTAINS
     Dest_Region%Position(:,1:SrcSize)  = BC_Region_Positions(Src_Region)
 
     Call BC_Set_Name(Dest_Region, BC_Get_Name(Src_Region))
-    return
   end subroutine BC_Region_Copy
   
   subroutine BC_Region_Insert(Region, CellList, FaceList, ValueList, UseFunctionList, PositionList)
@@ -347,22 +303,16 @@ CONTAINS
     ! If Region has slots for REGION_SIZE entries, the lists must have at least REGION_SIZE
     ! items.  This routine inserts the first REGION_SIZE items from each list into Region
 
-    implicit none
     ! Parameter List
     type (BC_Region), intent(INOUT) :: Region
-    integer( int_kind),          dimension(:),  &
-                      intent(IN   ) :: CellList
-    integer( int_kind),          dimension(:),  &
-                      intent(IN   ) :: FaceList
-    real(real_kind),             dimension(:,:),  &
-                      intent(IN   ) :: ValueList
-    logical(log_kind),           dimension(:),  &
-                      intent(IN   ) :: UseFunctionList
-    real(real_kind),             dimension(:,:),&
-                      intent(IN   ) :: PositionList
+    integer,  intent(IN) :: CellList(:)
+    integer,  intent(IN) :: FaceList(:)
+    real(r8), intent(IN) :: ValueList(:,:)
+    logical,  intent(IN) :: UseFunctionList(:)
+    real(r8), intent(IN) :: PositionList(:,:)
 
     ! Local variables
-    integer( int_kind) :: region_size, insert_size
+    integer :: region_size, insert_size
 
     region_size = BC_Region_Size(Region)
     insert_size = SIZE(CellList)
@@ -391,21 +341,18 @@ CONTAINS
     Region%UseFunction(1:insert_size)= UseFunctionList(1:insert_size)
     Region%Position(:,1:insert_size) = PositionList(:,1:insert_size)
 
-    RETURN
   end subroutine BC_Region_Insert
 
   subroutine BC_Region_REAlloc(Region, SIZE)
     ! RE-Allocate a BC_Region.  The returned region has the data
     ! of the input region as the first items in its lists.  The
     ! tails of the lists are empty.
-
-    implicit none
     ! Parameter list
-    type (BC_Region), intent(INOUT) :: Region
-    integer( int_kind),          intent(IN)    :: SIZE
+    type(BC_Region), intent(INOUT) :: Region
+    integer, intent(IN) :: SIZE
 
     ! Local variables
-    integer( int_kind) :: old_size, region_dim, region_DOF
+    integer :: old_size, region_dim, region_DOF
     type(BC_Region) :: Temp_Region
 
     old_size   = BC_Region_Size(Region)
@@ -427,7 +374,6 @@ CONTAINS
     ! Done with Temp_Region, so release it
     call FREE(Temp_Region)
 
-    RETURN
   end subroutine BC_Region_REAlloc
 
   subroutine BC_Region_Append(Region, CellList, FaceList, ValueList, UseFunctionList, PositionList)
@@ -435,24 +381,17 @@ CONTAINS
     ! to hold all the original data and the new data.  The returned list
     ! has the original data at the head of each internal list, and the new
     ! list data at the tail of each list.
-
-    implicit none
     ! Parameter List
     type (BC_Region), intent(INOUT) :: Region
-    integer( int_kind),          dimension(:),  &
-                      intent(IN   ):: CellList
-    integer( int_kind),          dimension(:),  &
-                      intent(IN   ) :: FaceList
-    real(real_kind),             dimension(:,:),  &
-                      intent(IN   ) :: ValueList
-    logical(log_kind),           dimension(:),  &
-                      intent(IN   ) :: UseFunctionList
-    real(real_kind),             dimension(:,:),&
-                      intent(IN   ) :: PositionList
+    integer,  intent(IN) :: CellList(:)
+    integer,  intent(IN) :: FaceList(:)
+    real(r8), intent(IN) :: ValueList(:,:)
+    logical,  intent(IN) :: UseFunctionList(:)
+    real(r8), intent(IN) :: PositionList(:,:)
 
     ! Local variables
-    integer( int_kind) :: old_size, increment, new_size, region_dim
-    integer( int_kind) :: start, end
+    integer :: old_size, increment, new_size, region_dim
+    integer :: start, end
 
     ! Start of subroutine
     old_size    = BC_Region_Size(Region)
@@ -490,32 +429,22 @@ CONTAINS
     Region%UseFunction(start:end)= UseFunctionList
     Region%Position(:,start:end) = PositionList
 
-    ! All finished
-
-    RETURN
   end subroutine BC_Region_Append
 
   function ListAllSameSize(CellList, FaceList, ValueList, UseFunctionList, PositionList)
     ! Test that all the given lists have the same size.
     ! This returns TRUE if that is the case, otherwise FALSE.
-
-    implicit none
     ! Parameter List
-    logical                         :: ListAllSameSize
-    integer( int_kind),          dimension(:),  &
-                      intent(IN   ) :: CellList
-    integer( int_kind),          dimension(:),  &
-                      intent(IN   ) :: FaceList
-    real(real_kind),             dimension(:,:),  &
-                      intent(IN   ) :: ValueList
-    logical(log_kind),           dimension(:),  &
-                      intent(IN   ) :: UseFunctionList
-    real(real_kind),             dimension(:,:),&
-                      intent(IN   ) :: PositionList
+    logical :: ListAllSameSize
+    integer,  intent(IN) :: CellList(:)
+    integer,  intent(IN) :: FaceList(:)
+    real(r8), intent(IN) :: ValueList(:,:)
+    logical,  intent(IN) :: UseFunctionList(:)
+    real(r8), intent(IN) :: PositionList(:,:)
 
     ! Local variables
-    integer( int_kind) :: CellList_Size, FaceList_Size
-    integer( int_kind) :: ValueList_Size, UseFunctionList_Size, PositionList_Size
+    integer :: CellList_Size, FaceList_Size
+    integer :: ValueList_Size, UseFunctionList_Size, PositionList_Size
 
     ! Start of subroutine
     CellList_Size        = SIZE(CellList)
@@ -530,22 +459,16 @@ CONTAINS
                       .AND. (CellList_Size == UseFunctionList_Size) &
                       .AND. (CellList_Size == PositionList_Size) 
 
-    return
   end function ListAllSameSize
 
   function ConsistentDimensions(Region, PositionList)
     ! Returns true if the Position field of Region and the PositionList
     ! have the same first dimension
-    implicit none
     ! Parameter List
-    logical                         :: ConsistentDimensions
-    type (BC_Region), intent(INOUT) :: Region
-    real(real_kind),             dimension(:,:),&
-                      intent(IN   ) :: PositionList
-    
+    logical :: ConsistentDimensions
+    type(BC_Region), intent(INOUT) :: Region
+    real(r8), dimension(:,:), intent(IN) :: PositionList
     ConsistentDimensions = BC_Region_Dimension(Region) == SIZE(PositionList,1)
-
-    return
   end function ConsistentDimensions
 
   subroutine BC_Region_Canonical(Region)
@@ -555,8 +478,7 @@ CONTAINS
     !   At the moment that means that the entries are in (cell,face) order.
     !-----------------------------------------------------------------------------
     ! Arguments
-    type (BC_Region), intent(INOUT) :: Region
-
+    type(BC_Region), intent(INOUT) :: Region
     call ORDER(Region)
   end subroutine BC_Region_Canonical
   
@@ -573,11 +495,11 @@ CONTAINS
                        PGSLIB_PARITY_PREFIX
 
     ! Arguments
-    type (BC_Region), intent(INOUT) :: Region
+    type(BC_Region), intent(INOUT) :: Region
 
     ! Local variables
-    integer( int_kind), dimension(:), pointer :: Cells
-    integer( int_kind), dimension(:), pointer :: Rank
+    integer, dimension(:), pointer :: Cells
+    integer, dimension(:), pointer :: Rank
     logical, dimension(:), pointer :: Mask, Segment
 
     ! Before we stuff this into an Atlas, want to get data into (Face,Cell) order.
@@ -602,7 +524,6 @@ CONTAINS
     ! Done with everything
     DEALLOCATE(Segment, Mask, Rank)
 
-    RETURN
   end subroutine BC_Region_Order
 
   subroutine BC_Region_Collate(Collated_Region, Local_Region)
@@ -612,17 +533,16 @@ CONTAINS
 
     use parallel_util_module
     use pgslib_module,       ONLY: PGSLib_Global_SUM, PGSlib_Collate
-    implicit none
-    type (BC_Region), intent(INOUT) :: Collated_Region
-    type (BC_Region), intent(IN   ) :: Local_Region
+    type(BC_Region), intent(INOUT) :: Collated_Region
+    type(BC_Region), intent(IN   ) :: Local_Region
 
     ! Local variables
-    integer( int_kind) :: Collated_Size, d, DOF
-    integer( int_kind), pointer, dimension(:)   :: CollatedCell, LocalCell
-    integer( int_kind), pointer, dimension(:)   :: CollatedFace, LocalFace
-    real(real_kind),    pointer, dimension(:,:) :: CollatedValue, LocalValue
-    logical(log_kind),  pointer, dimension(:)   :: CollatedUseF, LocalUseF
-    real(real_kind),    pointer, dimension(:,:) :: CollatedPosition, LocalPosition
+    integer :: Collated_Size, d, DOF
+    integer,  pointer, dimension(:)   :: CollatedCell, LocalCell
+    integer,  pointer, dimension(:)   :: CollatedFace, LocalFace
+    real(r8), pointer, dimension(:,:) :: CollatedValue, LocalValue
+    logical,  pointer, dimension(:)   :: CollatedUseF, LocalUseF
+    real(r8), pointer, dimension(:,:) :: CollatedPosition, LocalPosition
 
     Collated_Size = PGSLib_Global_SUM(SIZE(Local_Region))
     if (.NOT. Is_IO_PE()) Collated_Size = 0
@@ -667,28 +587,26 @@ CONTAINS
     DEALLOCATE(CollatedFace)
     DEALLOCATE(CollatedCell)
 
-    RETURN
   END subroutine BC_Region_Collate    
 
   subroutine RegionPermute(Region, Rank)
     ! Permute a region by permute vector rank.  By default permuting means
     ! to re-order the data.
-    use pgslib_module,        ONLY: PGSLib_GS_Trace, PGSLib_Permute, PGSLib_DEALLOCATE_TRACE
-    implicit none
-    type (BC_Region), intent(INOUT)   :: Region
-    integer( int_kind), dimension(:), intent(IN) :: Rank
+    use pgslib_module, ONLY: PGSLib_GS_Trace, PGSLib_Permute, PGSLib_DEALLOCATE_TRACE
+    type(BC_Region), intent(INOUT) :: Region
+    integer, dimension(:), intent(IN) :: Rank
 
     ! Local variables
-    integer( int_kind) :: d
-    integer( int_kind), pointer, dimension(:)    :: Cell, Face
-    real(real_kind),    pointer, dimension(:,:)  :: Value
-    logical(log_kind),  pointer, dimension(:)    :: UseF
-    real(real_kind),    pointer, dimension(:,:)  :: Position
+    integer :: d
+    integer,  pointer, dimension(:)   :: Cell, Face
+    real(r8), pointer, dimension(:,:) :: Value
+    logical,  pointer, dimension(:)   :: UseF
+    real(r8), pointer, dimension(:,:) :: Position
 
-    integer( int_kind), dimension(SIZE(Region%Face))  :: TempCell, TempFace
-    real(real_kind),    dimension(SIZE(Region%Value,1),SIZE(Region%Value,2)) :: TempValue
-    logical(log_kind),  dimension(SIZE(Region%Value,2)) :: TempLog
-    real(real_kind),    dimension(SIZE(Region%Position,1), SIZE(Region%Position,2))  :: TempPosition
+    integer,  dimension(SIZE(Region%Face)) :: TempCell, TempFace
+    real(r8), dimension(SIZE(Region%Value,1),SIZE(Region%Value,2)) :: TempValue
+    logical,  dimension(SIZE(Region%Value,2)) :: TempLog
+    real(r8), dimension(SIZE(Region%Position,1), SIZE(Region%Position,2)) :: TempPosition
     
     type (PGSLib_GS_Trace), POINTER :: Permute_Trace
 
@@ -738,9 +656,7 @@ CONTAINS
     !Done with trace
     call PGSLib_DEALLOCATE_TRACE(Permute_Trace)
     
-    return
   end subroutine RegionPermute
-
 
 END Module BC_Regions
 

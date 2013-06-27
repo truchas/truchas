@@ -12,7 +12,7 @@
 
 module restart_variables
 
-  use kind_module, only: real_kind
+  use kinds, only: r8
   use parameter_module, only: string_len
   implicit none
   private
@@ -31,7 +31,7 @@ module restart_variables
 
   !! Common data read by OPEN_RESTART_FILE.
   integer, public :: restart_cycle_number, restart_ncells, restart_nnodes
-  real(real_kind), public :: restart_t, restart_dt
+  real(r8), public :: restart_t, restart_dt
 
   !! Optional restart file data segments; redefined by OPEN_RESTART_FILE.
   logical, public :: have_fluid_flow_data = .false.

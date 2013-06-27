@@ -7,7 +7,7 @@ MODULE GATHER_MODULE
   !=======================================================================
   use truchas_logging_services
   use gs_info_module
-  use kind_module
+  use kinds, only: r8
   use mesh_module,  only: MESH_CONNECTIVITY
   use pgslib_module,only: PGSLib_GS_Trace,      &
                           PGSLib_Size_Of_Dup,   &
@@ -16,10 +16,8 @@ MODULE GATHER_MODULE
                           PGSLib_Gather_Buffer
 
   implicit none
-  save
-
-  ! Default private module
   private
+  save
 
   ! Public
   public :: GATHER
@@ -61,8 +59,8 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_INT
-#define _DATA_TYPE_    integer (int_kind)
-#define _OP_ID_        INT(0,   int_kind)
+#define _DATA_TYPE_    integer
+#define _OP_ID_        0
 
 #include "gather_parallel_v_s_include.fpp"
 
@@ -73,8 +71,8 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_SINGLE
-#define _DATA_TYPE_    real (single_kind)
-#define _OP_ID_        REAL(0.0,single_kind)
+#define _DATA_TYPE_    real
+#define _OP_ID_        0.0
 
 #include "gather_parallel_v_s_include.fpp"
   
@@ -85,8 +83,8 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_DOUBLE
-#define _DATA_TYPE_    real (double_kind)
-#define _OP_ID_        REAL(0.0, double_kind)
+#define _DATA_TYPE_    real(r8)
+#define _OP_ID_        0.0_r8
 
 #include "gather_parallel_v_s_include.fpp"
   
@@ -97,7 +95,7 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_LOG
-#define _DATA_TYPE_    logical (log_kind)
+#define _DATA_TYPE_    logical
 #define _OP_ID_        .FALSE.
 
 #include "gather_parallel_v_s_include.fpp"
@@ -109,8 +107,8 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_V_V_INT
-#define _DATA_TYPE_    integer (int_kind)
-#define _OP_ID_        INT(0,   int_kind)
+#define _DATA_TYPE_    integer
+#define _OP_ID_        0
 
 #include "gather_parallel_v_v_include.fpp"
 
@@ -121,8 +119,8 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_V_V_SINGLE
-#define _DATA_TYPE_    real (single_kind)
-#define _OP_ID_        REAL(0.0,single_kind)
+#define _DATA_TYPE_    real
+#define _OP_ID_        0.0
 
 #include "gather_parallel_v_v_include.fpp"
 
@@ -133,8 +131,8 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_V_V_DOUBLE
-#define _DATA_TYPE_    real (double_kind)
-#define _OP_ID_        REAL(0.0, double_kind)
+#define _DATA_TYPE_    real(r8)
+#define _OP_ID_        0.0_r8
 
 #include "gather_parallel_v_v_include.fpp"
   
@@ -145,7 +143,7 @@ CONTAINS
     !=======================================================================
 
 #define _ROUTINE_NAME_ GATHER_V_V_LOG
-#define _DATA_TYPE_    logical (log_kind)
+#define _DATA_TYPE_    logical
 #define _OP_ID_        .FALSE.
 
 #include "gather_parallel_v_v_include.fpp"
@@ -179,15 +177,13 @@ CONTAINS
     !---------------------------------------------------------------------------
 
     ! arguments
-    Real (Real_Kind), Dimension(:), &
-                      INTENT(IN   ) :: SOURCE
-    Real (Real_Kind), Dimension(:), &
-                      POINTER       :: BOUNDARY
+    real(r8), INTENT(IN) :: SOURCE(:)
+    real(r8), POINTER :: BOUNDARY(:)
     
 
     ! local variables
-    Integer (KIND=int_kind)                 :: status
-    Real (real_kind), POINTER, Dimension(:) :: Duplicate_Data
+    integer :: status
+    real(r8), POINTER, Dimension(:) :: Duplicate_Data
 
     !---------------------------------------------------------------------------
 

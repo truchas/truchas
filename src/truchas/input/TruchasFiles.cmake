@@ -29,8 +29,7 @@ set(INPUT_FILES
          input/probe_data_module.F90
          input/probe_input_module.F90
          input/region_data.F90
-         input/region_input_module.F90
-         input/so_lin_solver_input.F90)
+         input/region_input_module.F90)
 
 set(INPUT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities

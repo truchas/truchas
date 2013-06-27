@@ -12,22 +12,17 @@ MODULE FLUID_UTILITIES_MODULE
   ! Author(s): Jim Sicilian, LANL CCS-2 (sicilian@lanl.gov)   Jan 2003
   !
   !=======================================================================
-  use kind_module,      only: int_kind
+  use kinds, only: r8
   use truchas_logging_services
-  
   implicit none
-
-  ! Private Module
   private
 
-  ! Public Procedures and Types
   public :: FLUID_INIT,         &
             FLUID_DEALLOCATE,   &
             FLUIDDENSITYFACE,   &
             CC_GRADP_DYNAMIC,   &
             calcVelLimits
 
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 CONTAINS
 
   SUBROUTINE FLUID_INIT ()
@@ -46,7 +41,6 @@ CONTAINS
     use advection_data,         only: Momentum_Delta
     use bc_module,              only: BC, DIRICHLET, DIRICHLET_VEL,       &
                                       FREE_SLIP, INTERNAL_BC, Prs, Vel
-    use constants_module,       only: zero
     use cutoffs_module,         only: alittle
     use fluid_data_module,      only: fluidVof, fluidVof_n,               &
                                       realfluidVof, cutRho,               &
@@ -64,7 +58,6 @@ CONTAINS
                                       Mom_Delta,                          &
                                       courant
     use fluid_type_module,      only: NORMS, DIV_NORMS, Div_c, Div_f
-    use kind_module,            only: int_kind, log_kind, real_kind
     use mesh_module,            only: Cell
     use parameter_module,       only: ncells, ndim, nfc
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
@@ -72,13 +65,11 @@ CONTAINS
     use gs_module,              only: EE_GATHER
     use restart_variables,      only: restart, have_fluid_flow_data
 
-    implicit none
-
     ! local variables
-    integer (int_kind)                            :: n, status, f
-    logical (log_kind)                            :: abort
-    real(real_kind),   dimension(:,:), allocatable :: Intercell_Distance_Sq, Ngbr_Centroid
-    real(real_kind),   dimension(:),   allocatable :: Cell_Centroid_C
+    integer :: n, status, f
+    logical :: abort
+    real(r8), dimension(:,:), allocatable :: Intercell_Distance_Sq, Ngbr_Centroid
+    real(r8), dimension(:),   allocatable :: Cell_Centroid_C
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -122,7 +113,7 @@ CONTAINS
     avgRho_n = fluidVof*(fluidRho+fluidDeltaRho)
     
     ! Initialise courant number array
-    courant = zero
+    courant = 0.0_r8
 
     ! Give initial values to Div_c, and Div_f (they'll be printed before computed :-/
     Div_c = DIV_NORMS(NORMS(0.0, 0.0, 0.0, 0))
@@ -147,8 +138,8 @@ CONTAINS
 
     ! Define the interpolation factors for transferring cell centered data to faces
     !     (used in INTERPOLATE_TO_FACES)
-    Face_Interpolation_Factor = zero
-    Intercell_Distance_Sq     = zero
+    Face_Interpolation_Factor = 0.0_r8
+    Intercell_Distance_Sq     = 0.0_r8
     do n = 1, ndim
         Cell_Centroid_C(:) = Cell(:)%Centroid(n)
         call EE_GATHER(Ngbr_Centroid, Cell_Centroid_C)
@@ -169,22 +160,22 @@ CONTAINS
     if(fluid_flow .and. restart .and. have_fluid_flow_data) then
        call RESTART_FLOW
     else
-       Fluxing_Velocity = zero
-       Centered_GradP_Dynamic = zero
-       Rho_Face_n = zero
+       Fluxing_Velocity = 0.0_r8
+       Centered_GradP_Dynamic = 0.0_r8
+       Rho_Face_n = 0.0_r8
     endif
 
     fluidRho_n = fluidRho
     fluidVof_n = fluidVof
 
     !  Initialize Momentum Advection
-    Momentum_Delta = zero
+    Momentum_Delta = 0.0_r8
 
     !  Initialize volume Change Rate Array
-    DVol_by_Dt_over_Vol = zero
+    DVol_by_Dt_over_Vol = 0.0_r8
 
     !  Initialize old time momentum storage
-    Momentum_by_Volume = zero
+    Momentum_by_Volume = 0.0_r8
 
     DEALLOCATE (fluidDeltaRho)
     DEALLOCATE (isPureImmobile)
@@ -193,7 +184,6 @@ CONTAINS
     DEALLOCATE (Cell_Centroid_C)
     DEALLOCATE (Ngbr_Centroid)
 
-    return
   END SUBROUTINE FLUID_INIT
 
   SUBROUTINE FLUID_DEALLOCATE ()
@@ -210,12 +200,9 @@ CONTAINS
                                       fluidrho, Momentum_by_Volume, Face_Interpolation_Factor, &
                                       Drag_Coefficient, Mom_Delta, courant
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
-    use kind_module,            only: int_kind
-    use ff_discrete_ops_data,   only: FF_SO_Control_Data
 
-    implicit none
     ! Local Variables
-    integer(KIND = int_kind) :: memstat
+    integer :: memstat
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -251,15 +238,6 @@ CONTAINS
 
      DEALLOCATE (Rho_Face_n)
 
-     if (ASSOCIATED(FF_SO_Control_Data)) then
-        if (ASSOCIATED(FF_SO_Control_Data%BdyInfo)) DEALLOCATE (FF_SO_Control_Data%BdyInfo)
-        if (ASSOCIATED(FF_SO_Control_Data%S)) DEALLOCATE (FF_SO_Control_Data%S)
-        if (ASSOCIATED(FF_SO_Control_Data%D)) DEALLOCATE (FF_SO_Control_Data%D)
-        if (ASSOCIATED(FF_SO_Control_Data%Cell_isnt_treated_as_void)) DEALLOCATE (FF_SO_Control_Data%Cell_isnt_treated_as_void)
-        if (ASSOCIATED(FF_SO_Control_Data%Ngbr_isnt_treated_as_void)) DEALLOCATE (FF_SO_Control_Data%Ngbr_isnt_treated_as_void)
-        DEALLOCATE (FF_SO_Control_Data)
-    end if
-
     DEALLOCATE (Boundary_Flag)
     
     if (ALLOCATED(DVol_by_Dt_over_Vol)) DEALLOCATE(DVol_by_Dt_over_Vol)
@@ -281,12 +259,10 @@ CONTAINS
     use bc_module,             only: BC_Prs
     use bc_data_module,        only: BC_Pressure, BC_Zero
     use body_data_module,      only: body_force_face_method
-    use constants_module,      only: zero
     use discrete_ops_data,     only: use_ortho_face_gradient
     use fluid_data_module,     only: fluidRho, fluidDeltaRho,    &
                                      fluidvof, avgRho_n,           &
                                      Rho_Face, Rho_Face_n
-    use kind_module,           only: int_kind, log_kind, real_kind
     use parameter_module,      only: ncells, ndim, nfc
 
     use projection_data_module, only: dt_gradP_over_Rho, ghc, ghn,dtCsf_over_Rho, &
@@ -297,18 +273,16 @@ CONTAINS
     use cutoffs_module,        only: alittle
     use surface_tension_module, only: CSF_FACE, csf_normal
 
-    implicit none
-
     ! Local Variables
-    integer(KIND = int_kind)       :: n, f, status
+    integer       :: n, f, status
 
-    logical(log_kind), dimension(:),   allocatable       :: Mask
-    real(real_kind),   dimension(:),   allocatable       :: Scalar_Cell_Center
-    real(real_kind),   dimension(:),   allocatable       :: dt_over_Rho, Grad_Dot_N
-    real(real_kind),   dimension(:,:), allocatable       :: Grad
-    real(real_kind),   dimension(:,:,:), allocatable     :: Gradient
+    logical,  dimension(:),   allocatable       :: Mask
+    real(r8), dimension(:),   allocatable       :: Scalar_Cell_Center
+    real(r8), dimension(:),   allocatable       :: dt_over_Rho, Grad_Dot_N
+    real(r8), dimension(:,:), allocatable       :: Grad
+    real(r8), dimension(:,:,:), allocatable     :: Gradient
 !-mf Jan04
-    real(real_kind),   dimension(:,:,:), allocatable     :: Fcsf    
+    real(r8), dimension(:,:,:), allocatable     :: Fcsf    
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -370,7 +344,7 @@ CONTAINS
         do n=1,ndim 
           !-particular case when void cells. density = zero
           where (Rho_Face(f,:) <= alittle) 
-            dtCsf_over_Rho(n,f,:)=zero
+            dtCsf_over_Rho(n,f,:)=0.0_r8
           elsewhere 
             dtCsf_over_Rho(n,f,:)=dt*Fcsf(n,f,:)/Rho_Face(f,:)
           endwhere
@@ -397,8 +371,6 @@ CONTAINS
 
     DEALLOCATE(Mask, Scalar_Cell_Center, Gradient, Grad, Grad_Dot_N, dt_over_Rho)
 
-    return
-
     END SUBROUTINE RESTART_FLOW
 
     SUBROUTINE FLUIDDENSITYFACE
@@ -411,21 +383,17 @@ CONTAINS
     !    Jim Sicilian (CCS-2)  October, 2002
     !
     !=======================================================================
-    use constants_module,       only: zero
     use fluid_data_module
     use gs_module,              only: EE_GATHER
-    use kind_module,            only: int_kind, real_kind
     use mesh_module,            only: Mesh, Cell, DEGENERATE_FACE
     use parameter_module,       only: ncells,  nfc
 
-    implicit none
-
     ! Local Variables
-    integer                                        :: status
-    integer(int_kind)                              :: f, i
-    real(real_kind)                                :: weight, weight_ngbr
-    real(real_kind),   dimension(:),   allocatable :: CellVolume
-    real(real_kind),   dimension(:,:), allocatable :: fluidrho_Ngbr, Volume_Ngbr, fluidvof_Ngbr
+    integer :: status
+    integer :: f, i
+    real(r8) :: weight, weight_ngbr
+    real(r8), dimension(:),   allocatable :: CellVolume
+    real(r8), dimension(:,:), allocatable :: fluidrho_Ngbr, Volume_Ngbr, fluidvof_Ngbr
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -461,7 +429,7 @@ CONTAINS
              rho_face(f,i) = (fluidrho(i)*weight + fluidrho_Ngbr(f,i)*weight_ngbr)/    &
                              (weight + weight_ngbr)
           end if
-          if(rho_face(f,i) > zero) rho_face(f,i) = MAX(MinFaceFraction*MinFluidRho, rho_face(f,i))
+          if(rho_face(f,i) > 0.0_r8) rho_face(f,i) = MAX(MinFaceFraction*MinFluidRho, rho_face(f,i))
        end do
    end do
 
@@ -469,8 +437,6 @@ CONTAINS
     DEALLOCATE (Volume_Ngbr)
     DEALLOCATE (fluidvof_Ngbr)
     DEALLOCATE (CellVolume)
-
-    return
 
   END SUBROUTINE FLUIDDENSITYFACE
 
@@ -485,13 +451,11 @@ CONTAINS
     use bc_module,              only: BC, DIRICHLET, Prs, BC_Prs
     use bc_data_module,         only: BC_Pressure, BC_Zero
     use bc_operations,          only: Pressure_BC
-    use constants_module,       only: zero
     use do_interface,           only: DO_Specifier, do_init_ss, &
                                       do_gradient_face, DO_SOLVE_ORTHO, &
                                       DO_SOLVE_LU_LSLR
     use discrete_ops_data,      only: use_ortho_face_gradient
-    use fluid_data_module,      only: Solid_Face, Centered_GradP_Dynamic, Rho_Face, FluidRho
-    use kind_module,            only: int_kind, real_kind, log_kind
+    use fluid_data_module,      only: Solid_Face, Centered_GradP_Dynamic, Rho_Face
     use mesh_module,            only: Cell, Mesh
     use parameter_module,       only: ncells, ndim, nfc
     use projection_data_module, only: Boundary_Flag, dirichlet_pressure, &
@@ -503,28 +467,18 @@ CONTAINS
     use discrete_op_module,     only: DYNAMIC_PRESSURE_FACE_GRADIENT
 !-mf Jan04
     use surface_tension_module, only: csf_normal
-    use support_operators ,     only: CALCULATE_FLUX
-    use ff_discrete_ops_data,   only: use_ff_support_operators, FF_SO_Control_Data
-
-    implicit none
-
-    ! Argument List
 
     ! Local Variables                            :: i
+    integer :: status
+    integer :: f, n
+    integer :: PCSolveTech
 
-    integer                                          :: status
-    integer(int_kind)                                :: f, n
-    integer(int_kind)                                :: PCSolveTech
+    type(DO_Specifier), pointer, save :: PCorrector_SS =>NULL()
 
-    type(DO_Specifier),pointer,save                  :: PCorrector_SS =>NULL()
-
-    logical(log_kind), dimension(:),   allocatable   :: Mask
-    real(real_kind),   dimension(:),   allocatable   :: cell_vol, Weight, Scalar_Cell_Center, &
-                                                        Grad_Dot_N
-    real(real_kind),   dimension(:,:), allocatable   :: Grad
-    real(real_kind),   dimension(:,:,:), allocatable :: Gradient
-    real(real_kind), dimension(nfc,ncells)               :: SO_FluidRho_Face
-    real(real_kind), dimension(nfc,ncells)               :: Flux
+    logical,  dimension(:), allocatable :: Mask
+    real(r8), dimension(:), allocatable :: cell_vol, Weight, Scalar_Cell_Center, Grad_Dot_N
+    real(r8), dimension(:,:), allocatable   :: Grad
+    real(r8), dimension(:,:,:), allocatable :: Gradient
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -539,148 +493,83 @@ CONTAINS
               Gradient(ndim,nfc,ncells), &
               Grad_Dot_N(ncells), STAT = status)
     if (status /= 0) call TLS_panic ('CC_GRADP_DYNAMIC: allocation failed')
+       
+    if(.not.ASSOCIATED(PCorrector_SS))then
+       PCSolveTech=DO_SOLVE_LU_LSLR; if(use_ortho_face_gradient)PCSolveTech=DO_SOLVE_ORTHO
+       call do_init_ss(PCorrector_SS,SOLVETECH=PCSolveTech,BC_SPEC=Pressure_BC)
+    endif
 
-    if ( use_ff_support_operators ) then
+    ! Use the real Pressures at Dirichlet boundaries in this pressure gradient calculation
+    BC_Prs => BC_Pressure
 
-       ! This should be the first place FF_SO_Control_Data is encountered, so allocate it
-       IF ( .not. ASSOCIATED(FF_SO_Control_Data) ) THEN
-          ALLOCATE(FF_SO_Control_Data)
-          
-          ALLOCATE(FF_SO_Control_Data%BdyInfo(nfc,ncells))
-          
-          ! where there is no boundary condition or dirichlet pressure bc
-          FF_SO_Control_Data%BdyInfo = 1 
-          
-          ! where there is solid face
-          where (Boundary_Flag == 0) FF_SO_Control_Data%BdyInfo = 0 
-          
-          ! or a dirichlet velocity bc
-          where (Boundary_Flag == 2) FF_SO_Control_Data%BdyInfo = 0           
-
-          ! reinitialize the mass matrix
-          FF_SO_Control_Data%ReInitialize_SO_Matrix = .TRUE. 
-       ENDIF
-
-       ! Use the real Pressures at Dirichlet boundaries in this pressure gradient calculation
-       BC_Prs => BC_Pressure
-       
-       ! Now add in the explicit pressure gradient and buoyant term at this face
-       Scalar_Cell_Center = Zone%P
-       
-       SO_FluidRho_Face = zero
-       DO f=1,nfc
-          where (FluidRho(:) /= zero) 
-             SO_FluidRho_Face(f,:) = 1.0/FluidRho(:)
-          end where
-       END DO
-          
-       
-       Flux = zero
-       
-       CALL CALCULATE_FLUX(PHI = Scalar_Cell_Center,      &
-            FLUX = Flux,                   &
-            COND_FACE = SO_FluidRho_Face,  &
-            DIRBDY = BC_Prs,               &
-            SO_CONTROL_DATA = FF_SO_Control_Data )
-       
-       DO f=1,nfc
-          WHERE (Cell%Face_Area(f) .ne. 0d0 )
-             Flux(f,:) = Flux(f,:) / Cell%Face_Area(f)
-          ENDWHERE
-       END DO
-       
+    ! Now add in the explicit pressure gradient and buoyant term at this face
+    Scalar_Cell_Center = Zone%P
+    if (.not. use_ortho_face_gradient) then
+       ! calculate the gradient of the total pressure.
+       call DO_GRADIENT_FACE(PHI=Scalar_Cell_Center, SOLVESPEC=PCorrector_SS, GRAD=Gradient)
     else
-       
-       if(.not.ASSOCIATED(PCorrector_SS))then
-          PCSolveTech=DO_SOLVE_LU_LSLR; if(use_ortho_face_gradient)PCSolveTech=DO_SOLVE_ORTHO
-          call do_init_ss(PCorrector_SS,SOLVETECH=PCSolveTech,BC_SPEC=Pressure_BC)
-       endif
-       
-       ! Use the real Pressures at Dirichlet boundaries in this pressure gradient calculation
-       BC_Prs => BC_Pressure
-       
-       ! Now add in the explicit pressure gradient and buoyant term at this face
-       Scalar_Cell_Center = Zone%P
-       if (.not. use_ortho_face_gradient) then
-          ! calculate the gradient of the total pressure.
-          call DO_GRADIENT_FACE(PHI=Scalar_Cell_Center, SOLVESPEC=PCorrector_SS, GRAD=Gradient)
-       else
-          ! calculate the gradient of the dynamic pressure
-          ! ie; the total pressure less the gravity  head. 
-          call DYNAMIC_PRESSURE_FACE_GRADIENT(Gradient, Scalar_Cell_Center, ghc, ghn)
-       end if
-       
+       ! calculate the gradient of the dynamic pressure
+       ! ie; the total pressure less the gravity  head. 
+       call DYNAMIC_PRESSURE_FACE_GRADIENT(Gradient, Scalar_Cell_Center, ghc, ghn)
     end if
     
-    dt_gradP_over_Rho = zero
+    dt_gradP_over_Rho = 0.0_r8
 
     FACE_LOOP : do f = 1,nfc   
       
-       if ( .not. use_ff_support_operators ) then
-          
-          do n = 1,ndim
-             Grad(n,:) = Gradient(n,f,:)
-          enddo
-          
-          ! Recompute the face gradient at Dirichlet faces
-          if (dirichlet_pressure) then
-             
-             if (use_ortho_face_gradient) then
-                Grad_Dot_N = (BC_Prs(f,:)+ghn(f,:) - (Scalar_Cell_Center+ghc(f,:)))/Cell%Halfwidth(f)**2
-             else
-                Grad_Dot_N = (BC_Prs(f,:) - Scalar_Cell_Center)/Cell%Halfwidth(f)**2
-             end if
-             
-             do n = 1,ndim
-                where (Boundary_Flag(f,:) == 1) &
-                     Grad(n,:) = Grad_Dot_N*(Cell(:)%face_centroid(n,f) - Cell(:)%Centroid(n))
-             end do
+       do n = 1,ndim
+          Grad(n,:) = Gradient(n,f,:)
+       enddo
+
+       ! Recompute the face gradient at Dirichlet faces
+       if (dirichlet_pressure) then
+
+          if (use_ortho_face_gradient) then
+             Grad_Dot_N = (BC_Prs(f,:)+ghn(f,:) - (Scalar_Cell_Center+ghc(f,:)))/Cell%Halfwidth(f)**2
+          else
+             Grad_Dot_N = (BC_Prs(f,:) - Scalar_Cell_Center)/Cell%Halfwidth(f)**2
           end if
-          
-          ! Kill the gradient at solid faces.
+
           do n = 1,ndim
-             where (Solid_Face(f,:)) Grad(n,:) = zero
+             where (Boundary_Flag(f,:) == 1) &
+                  Grad(n,:) = Grad_Dot_N*(Cell(:)%face_centroid(n,f) - Cell(:)%Centroid(n))
           end do
+       end if
+
+       ! Kill the gradient at solid faces.
+       do n = 1,ndim
+          where (Solid_Face(f,:)) Grad(n,:) = 0.0_r8
+       end do
+
+       ! Get the normal component of the gradient.
+       Grad_Dot_N = 0.0_r8
+       do n = 1,ndim
+          Grad_Dot_N = Grad_Dot_N + Grad(n,:)*Cell%Face_Normal(n,f)
+       end do
+
+
+       ! Correct the face velocities.
+       do n = 1,ndim
+          ! Kill the normal component of the gradient where appropriate.
+          where (Boundary_Flag(f,:) == 0 .or. Boundary_Flag(f,:) == 2) &
+               Grad(n,:) = Grad(n,:) - Grad_Dot_N*Cell%Face_Normal(n,f)
+       end do
+
+       ! Store the inverse face density.
+       do n = 1,ndim
+          where (Rho_Face(f,:) /= 0.0_r8) &
+               dt_gradP_over_Rho(n,f,:) = dt*Grad(n,:)/Rho_Face(f,:)
+       enddo
           
-          ! Get the normal component of the gradient.
-          Grad_Dot_N = zero
-          do n = 1,ndim
-             Grad_Dot_N = Grad_Dot_N + Grad(n,:)*Cell%Face_Normal(n,f)
-          end do
-          
-          
-          ! Correct the face velocities.
-          do n = 1,ndim
-             ! Kill the normal component of the gradient where appropriate.
-             where (Boundary_Flag(f,:) == 0 .or. Boundary_Flag(f,:) == 2) &
-                  Grad(n,:) = Grad(n,:) - Grad_Dot_N*Cell%Face_Normal(n,f)
-          end do
-          
-          ! Store the inverse face density.
-          do n = 1,ndim
-             where (Rho_Face(f,:) /= zero) &
-                  dt_gradP_over_Rho(n,f,:) = dt*Grad(n,:)/Rho_Face(f,:)
-          enddo
-          
-       else
-          
-          ! Store the inverse face density.
-          do n = 1,ndim
-             where (Rho_Face(f,:) /= zero) &
-                  dt_gradP_over_Rho(n,f,:) = dt* Flux(f,:) * Cell%Face_Normal(n,f)
-          enddo
-          
-       endif
-       
     enddo FACE_LOOP
     
-    Centered_GradP_Dynamic = zero
-    Grad = zero
+    Centered_GradP_Dynamic = 0.0_r8
+    Grad = 0.0_r8
     
-    if (.not. use_ortho_face_gradient .or. use_ff_support_operators) then
+    if (.not. use_ortho_face_gradient) then
       ! we are working with the total pressure...
       do n = 1,ndim
-         cell_vol = zero
+         cell_vol = 0.0_r8
          do f = 1,nfc
             Mask = (Mesh%Ngbr_cell(f) /= 0 .OR. DIRICHLET (BC%Flag, Prs%Face_bit(f))) & 
                     .AND. .NOT. Solid_Face(f,:)
@@ -698,7 +587,7 @@ CONTAINS
             endif                         
 
          end do
-         where (cell_vol > zero) 
+         where (cell_vol > 0.0_r8) 
             Grad(n,:) = Grad(n,:)/cell_vol
             Centered_GradP_Dynamic(n,:) = Centered_GradP_Dynamic(n,:) + Grad(n,:) / dt
          endwhere
@@ -706,7 +595,7 @@ CONTAINS
     else
       ! we are working with the dynamic pressure...
       do n = 1,ndim
-         cell_vol = zero
+         cell_vol = 0.0_r8
          do f = 1,nfc
             Mask = (Mesh%Ngbr_cell(f) /= 0 .OR. DIRICHLET (BC%Flag, Prs%Face_bit(f))) &
                     .AND. .NOT. Solid_Face(f,:)
@@ -723,7 +612,7 @@ CONTAINS
               end where 
             endif
          end do
-         where (cell_vol > zero) 
+         where (cell_vol > 0.0_r8) 
              Grad(n,:) = Grad(n,:)/cell_vol
              Centered_GradP_Dynamic(n,:) = Centered_GradP_Dynamic(n,:) + Grad(n,:) / dt
           endwhere
@@ -738,8 +627,6 @@ CONTAINS
     ! Stop the projection_corrector timer.
     call stop_timer("timer_projection_corrector")
     
-    return
-    
   END SUBROUTINE CC_GRADP_DYNAMIC
 
   subroutine calcVelLimits()
@@ -750,18 +637,16 @@ CONTAINS
 ! Author(s): M. A. Christon, LANL CCS-2 (christon@lanl.gov)
 !
 !===============================================================================
-
-    use constants_module,    only: zero
     use parameter_module,    only: ndim, ncells
     use fluid_data_module,   only: minVel, maxVel
     use pgslib_module,       only: pgslib_global_minval, pgslib_global_maxval
     use zone_module,         only: Zone
 
     ! Local Variables
-    integer(int_kind) :: i, j
+    integer :: i, j
 
-    minVel(:) =  huge(zero)
-    maxVel(:) = -huge(zero)
+    minVel(:) =  huge(0.0_r8)
+    maxVel(:) = -huge(0.0_r8)
     do i = 1, ncells
        do j = 1, ndim
           if( Zone(i)%Vc(j) .le. minVel(j)) then 

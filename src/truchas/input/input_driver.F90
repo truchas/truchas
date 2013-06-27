@@ -40,7 +40,6 @@ contains
     use restart_variables,         only: restart, read_restart_namelist
     use restart_driver,            only: open_restart_file
     use lin_solver_input,          only: linear_solver_input
-    use so_lin_solver_input,       only: so_solver_input
     use EM_data_proxy,             only: em_is_on
     use region_input_module,       only: region_read
     use mesh_broker,               only: peek_truchas_mesh_namelists
@@ -132,9 +131,6 @@ contains
 
     ! read linear solution input
     call linear_solver_input (lun)
-
-    ! read linear solution input for the support operator discrete gradient
-    call so_solver_input (lun)
 
     ! read nonlinear solution input
     call nonlinear_solver_input (lun)

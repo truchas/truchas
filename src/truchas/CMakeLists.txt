@@ -42,9 +42,9 @@ include(drivers/TruchasFiles.cmake)
 message(STATUS "Processing exodus")
 include(exodus/TruchasFiles.cmake)
 
-# - fpa
-message(STATUS "Processing fpa")
-include(fpa/TruchasFiles.cmake)
+# - nka
+message(STATUS "Processing nka")
+include(nka/TruchasFiles.cmake)
 
 # - functions
 message(STATUS "Processing functions")

@@ -15,21 +15,11 @@ module sparse_matrix
   implicit none
   private
   
-#ifdef SUPPORTS_TR15581
   type, public :: msr_matrix
     integer :: nrow, ncol
     integer, allocatable :: xadj(:), adjncy(:)
     real(kind=r8), allocatable :: diag(:), nonz(:)
   end type msr_matrix
-#else
-  type, public :: msr_matrix
-    integer :: nrow, ncol
-    integer, pointer :: xadj(:) => null()
-    integer, pointer :: adjncy(:) => null()
-    real(kind=r8), pointer :: diag(:) => null()
-    real(kind=r8), pointer :: nonz(:) => null()
-  end type msr_matrix
-#endif
   
   public :: create_msr_matrix, destroy_msr_matrix, increment_msr_matrix_value
   public :: matmul, matmul_msr, gs_relaxation

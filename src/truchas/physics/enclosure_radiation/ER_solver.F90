@@ -8,7 +8,7 @@ module ER_solver
   use ER_encl_func
   use scalar_functions
   use parallel_communication
-  use ds_utilities
+  use truchas_logging_services
   implicit none
   private
 
@@ -323,7 +323,7 @@ contains
     integer, allocatable :: prn_seed(:)
     character(len=255) :: msg
 
-    call ds_info ('    Calculating Chebyshev iteration parameters ...')
+    call TLS_info ('    Calculating Chebyshev iteration parameters ...')
 
     call EF_eval(this%eps, time)
 
@@ -341,14 +341,14 @@ contains
     tol = 1.0d-4; maxitr = 10000 !TODO! MAKE THESE PARAMETERS
     call system_lambda_min (this%sys, this%eps%values, tol, maxitr, z, lmin, n, err)
     write(msg,'(6x,a,i0,a,f8.6,a,es9.3)') 'eigenvalue calculation: lmin(', n, ')=', lmin,  ', error=', err
-    call ds_info (trim(msg))
+    call TLS_info (trim(msg))
     
     !! It is not expected that the preceding eigenvalue calculation should ever
     !! not converge.  But if it doesn't we'll plunge ahead, using the most
     !! pessimistic value, and write a warning message to that effect.
     !INSIST(n <= maxitr)
     if (n > maxitr) then
-      call ds_warn ('Min eigenvalue calculation failed to converge; setting lmin=0 and continuing.')
+      call TLS_warn ('Min eigenvalue calculation failed to converge; setting lmin=0 and continuing.')
       lmin = 0.0_r8
     end if
 
@@ -356,7 +356,7 @@ contains
     this%c = 1.0_r8 - lmin
 
     write(msg,'(6x,2(a,f8.6))') 'setting d=', this%d, ', c=', this%c
-    call ds_info (trim(msg))
+    call TLS_info (trim(msg))
 
   end subroutine ERS_set_cheby_param
 

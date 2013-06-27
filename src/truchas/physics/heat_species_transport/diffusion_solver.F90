@@ -14,7 +14,7 @@ module diffusion_solver
   use mesh_broker
   use parallel_permutations
   use parallel_communication
-  use ds_utilities
+  use truchas_logging_services
   use mfd_disc_type
   use material_mesh_function
   use string_utilities, only: i_to_c
@@ -343,8 +343,8 @@ contains
     integer :: stat
     character(len=200) :: errmsg
 
-    call ds_info ('')
-    call ds_info ('Initializing diffusion solver ...')
+    call TLS_info ('')
+    call TLS_info ('Initializing diffusion solver ...')
     
     !! Common initialization.
     this%mesh => named_mesh_ptr(mesh_name)
@@ -356,10 +356,10 @@ contains
     
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg)
-    if (stat /= 0) call ds_halt ('DS_INIT: ' // trim(errmsg))
+    if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
     
     call verify_material_compatibility (this%mmf, stat, errmsg)
-    if (stat /= 0) call ds_halt ('DS_INIT: ' // trim(errmsg))
+    if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
     
     !! Problem attributes
     this%have_heat_transfer = heat_eqn
@@ -379,28 +379,28 @@ contains
       end if
       this%solver_type = SOLVER2
       if (integrator /= DS_NONADAPTIVE_BDF1) then
-        call ds_halt ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
+        call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
     else
       !! Void (if any) is fixed; use standard solver
       this%solver_type = SOLVER1
       if (integrator /= DS_ADAPTIVE_BDF2) then
-        call ds_halt ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
+        call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
     end if
     
     select case (this%solver_type)
     case (SOLVER1)
       this%mod1 => create_HTSD_model (this%disc, this%mmf, stat, errmsg)
-      if (stat /= 0) call ds_halt ('DS_INIT: ' // trim(errmsg))
+      if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
       if (this%have_species_diffusion) this%sd_source => this%mod1%sd%source
       this%sol1 => create_HTSD_solver (this%mmf, this%mod1, stat, errmsg)
-      if (stat /= 0) call ds_halt ('DS_INIT: ' // trim(errmsg))
+      if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       
     case (SOLVER2)
       this%mod2 => create_FHT_model (this%disc, this%mmf, stat, errmsg)
-      if (stat /= 0) call ds_halt ('DS_INIT: ' // trim(errmsg))
+      if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
       this%sol2 => create_FHT_solver(this%mmf, this%mod2, stat, errmsg)
       
@@ -408,7 +408,7 @@ contains
       INSIST(.false.)
     end select
     
-    call ds_info ('  Diffusion solver initialized.')
+    call TLS_info ('  Diffusion solver initialized.')
 
   contains
   
@@ -648,7 +648,7 @@ contains
     end do
     cell_count = global_sum(cell_count)
     if (cell_count > 0) &
-        call ds_info ('DS: culled material fragments from ' // i_to_c(cell_count) // ' cells.')
+        call TLS_info ('DS: culled material fragments from ' // i_to_c(cell_count) // ' cells.')
     if (present(culled)) culled = (cell_count > 0)
 
   end subroutine cull_material_fragments
