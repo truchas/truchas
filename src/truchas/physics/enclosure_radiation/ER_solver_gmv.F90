@@ -16,13 +16,13 @@ contains
   subroutine ERS_gmv_open (file)
     character(len=*) :: file
     !! 4-byte integer data and 8-byte real data.
-    if (is_IOP) call gmvwrite_openfile_ir_ascii (file, 4, 8)
+    if (is_IOP) call gmvwrite_openfile_ir_ascii_f (file, 4, 8)
     !! GMV has a bug with binary nodeids data.
-    !if (is_IOP) call gmvwrite_openfile_ir (file, 4, 8)
+    !if (is_IOP) call gmvwrite_openfile_ir_f (file, 4, 8)
   end subroutine ERS_gmv_open
 
   subroutine ERS_gmv_close ()
-    if (is_IOP) call gmvwrite_closefile ()
+    if (is_IOP) call gmvwrite_closefile_f ()
   end subroutine ERS_gmv_close
 
   subroutine ERS_gmv_write_enclosure (this)
@@ -48,7 +48,7 @@ contains
     call collate (x, this%encl%coord(1,:this%encl%nnode_onP))
     call collate (y, this%encl%coord(2,:this%encl%nnode_onP))
     call collate (z, this%encl%coord(3,:this%encl%nnode_onP))
-    if (is_IOP) call gmvwrite_node_data (nnode, x, y, z)
+    if (is_IOP) call gmvwrite_node_data_f (nnode, x, y, z)
     deallocate(x, y, z)
 
     !! Write the cell data.
@@ -57,15 +57,15 @@ contains
     call allocate_collated_array (fnode, sum(fsize))
     call collate (fnode, global_index(this%encl%node_ip, this%encl%fnode))
     if (is_IOP) then
-      call gmvwrite_cell_header (nface)
+      call gmvwrite_cell_header_f (nface)
       offset = 0
       do j = 1, nface
         list => fnode(offset+1:offset+fsize(j))
         select case (fsize(j))
         case (3)
-          call gmvwrite_cell_type ('tri', 3, list)
+          call gmvwrite_cell_type_f ('tri', 3, list)
         case (4)
-          call gmvwrite_cell_type ('quad', 4, list)
+          call gmvwrite_cell_type_f ('quad', 4, list)
         case default
           INSIST(.false.)
         end select
@@ -77,25 +77,25 @@ contains
     !! Write the node map as the nodeids -- GMV uses these for display.
     call allocate_collated_array (map, nnode)
     call collate (map, this%encl%node_map(:this%encl%nnode_onP))
-    if (is_IOP) call gmvwrite_nodeids (map)
+    if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map)
 
     !! Write the face map as the cellids -- GMV uses these for display.
     call allocate_collated_array (map, nface)
     call collate (map, this%encl%face_map)
-    if (is_IOP) call gmvwrite_cellids (map)
+    if (is_IOP) call gmvwrite_cellids_f (map)
     deallocate (map)
 
     !! Write the face block IDs as the cell material.
     call allocate_collated_array (map, nface)
     call collate (map, this%encl%face_block)
     if (is_IOP) then
-      call gmvwrite_material_header (size(this%encl%face_block_id), CELLDATA)
+      call gmvwrite_material_header_f (size(this%encl%face_block_id), CELLDATA)
       do j = 1, size(this%encl%face_block_id)
         write(name,'(a,i0)') 'Block', this%encl%face_block_id(j)
-        call gmvwrite_material_name (name)
+        call gmvwrite_material_name_f (name)
       end do
-      call gmvwrite_material_ids (map, CELLDATA)
+      call gmvwrite_material_ids_f (map, CELLDATA)
     end if
     deallocate(map)
 
@@ -104,14 +104,14 @@ contains
       call allocate_collated_array (map, nface)
       call collate (map, spread(this_PE, dim=1, ncopies=this%nface))
       if (is_IOP) then
-        call gmvwrite_flag_header ()
-        call gmvwrite_flag_name ('par-part', nPE, CELLDATA)
+        call gmvwrite_flag_header_f ()
+        call gmvwrite_flag_name_f ('par-part', nPE, CELLDATA)
         do j = 1, nPE
           write(name,'(a,i0)') 'P', j
-          call gmvwrite_flag_subname (name)
+          call gmvwrite_flag_subname_f (name)
         end do
-        call gmvwrite_flag_data (CELLDATA, map)
-        call gmvwrite_flag_endflag ()
+        call gmvwrite_flag_data_f (CELLDATA, map)
+        call gmvwrite_flag_endflag_f ()
       end if
       deallocate(map)
     end if
@@ -122,14 +122,14 @@ contains
     real(r8), intent(in), optional :: time
     integer,  intent(in), optional :: seq
     if (is_IOP) then
-      if (present(time)) call gmvwrite_probtime (time)
-      if (present(seq))  call gmvwrite_cycleno (seq)
-      call gmvwrite_variable_header()
+      if (present(time)) call gmvwrite_probtime_f (time)
+      if (present(seq))  call gmvwrite_cycleno_f (seq)
+      call gmvwrite_variable_header_f()
     end if
   end subroutine ERS_gmv_begin_variables
 
   subroutine ERS_gmv_end_variables ()
-    if (is_IOP) call gmvwrite_variable_endvars()
+    if (is_IOP) call gmvwrite_variable_endvars_f()
   end subroutine ERS_gmv_end_variables
 
   subroutine ERS_gmv_write_var (this, u, name)
@@ -147,7 +147,7 @@ contains
 
     call allocate_collated_array (u_global, global_size(this%encl%face_ip))
     call collate (u_global, u)
-    if (is_IOP) call gmvwrite_variable_name_data (CELLDATA, name, u_global)
+    if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
     deallocate(u_global)
 
   end subroutine ERS_gmv_write_var

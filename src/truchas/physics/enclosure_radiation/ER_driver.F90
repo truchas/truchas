@@ -833,8 +833,8 @@ contains
     ASSERT(global_all(faces >= 1))
     ASSERT(global_all(faces <= onP_size(mesh%face_ip)))
 
-    !if (is_IOP) call gmvwrite_openfile_ir (file, 4, 8) ! bug with node ids
-    if (is_IOP) call gmvwrite_openfile_ir_ascii (file, 4, 8)
+    !if (is_IOP) call gmvwrite_openfile_ir_f (file, 4, 8) ! bug with node ids
+    if (is_IOP) call gmvwrite_openfile_ir_ascii_f (file, 4, 8)
 
     !! Tag the nodes belonging to the specified faces.
     allocate(tag(mesh%nnode))
@@ -878,7 +878,7 @@ contains
     call collate (x, mesh%x(1,nodes))
     call collate (y, mesh%x(2,nodes))
     call collate (z, mesh%x(3,nodes))
-    if (is_IOP) call gmvwrite_node_data (num_nodes, x, y, z)
+    if (is_IOP) call gmvwrite_node_data_f (num_nodes, x, y, z)
     deallocate(x, y, z)
 
     !! Collate the surface face node array, ...
@@ -898,7 +898,7 @@ contains
 
     !! Write the cell data.
     if (is_IOP) then
-      call gmvwrite_cell_header (num_faces)
+      call gmvwrite_cell_header_f (num_faces)
       select case (size(fnode,dim=1))
       case (3)
         name = 'tri'
@@ -908,7 +908,7 @@ contains
         INSIST(.false.)
       end select
       do j = 1, num_faces
-        call gmvwrite_cell_type (name, size(fnode,dim=1), fnode(:,j))
+        call gmvwrite_cell_type_f (name, size(fnode,dim=1), fnode(:,j))
       end do
     end if
     deallocate (fnode)
@@ -917,13 +917,13 @@ contains
     call allocate_collated_array (map, num_nodes)
     !call collate (map, global_index(mesh%node_ip, nodes))  ! internal mesh node numbers
     call collate (map, mesh%xnode(nodes)) ! external mesh node numbers
-    if (is_IOP) call gmvwrite_nodeids (map)
+    if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map, nodes)
 
     !! Write the enclosure face indices as the cellids -- GMV uses these for display.
     call allocate_collated_array (map, num_faces)
     call collate (map, efaces)
-    if (is_IOP) call gmvwrite_cellids (map)
+    if (is_IOP) call gmvwrite_cellids_f (map)
     deallocate (map)
 
     if (nPE > 1) then
@@ -931,19 +931,19 @@ contains
       call allocate_collated_array (map, num_faces)
       call collate (map, spread(this_PE, dim=1, ncopies=size(faces)))
       if (is_IOP) then
-        call gmvwrite_flag_header ()
-        call gmvwrite_flag_name ('facepart', nPE, CELLDATA)
+        call gmvwrite_flag_header_f ()
+        call gmvwrite_flag_name_f ('facepart', nPE, CELLDATA)
         do j = 1, nPE
           write(name,'(a,i0)') 'P', j
-          call gmvwrite_flag_subname (name)
+          call gmvwrite_flag_subname_f (name)
         end do
-        call gmvwrite_flag_data (CELLDATA, map)
-        call gmvwrite_flag_endflag ()
+        call gmvwrite_flag_data_f (CELLDATA, map)
+        call gmvwrite_flag_endflag_f ()
       end if
       deallocate(map)
     end if
 
-    if (is_IOP) call gmvwrite_closefile
+    if (is_IOP) call gmvwrite_closefile_f
 
   end subroutine write_mesh_surface
 
