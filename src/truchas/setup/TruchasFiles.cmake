@@ -124,7 +124,7 @@ list(APPEND Truchas_PROCESS_TARGETS ${SETUP_TARGET_NAME})
 list(APPEND Truchas_LIBRARY_SOURCE_FILES
                     setup/mesh/chaco_f90_wrapper.c)
 set(chaco_cflags "-I${Truchas_FCIface_INCLUDE_DIR}")
-if(ENABLE_CHACO)
+if(ENABLE_Chaco)
   set(chaco_cflags "${chaco_cflags} -DUSE_CHACO")
 endif()  
 set_source_files_properties(setup/mesh/chaco_f90_wrapper.c PROPERTIES
