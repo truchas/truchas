@@ -1,6 +1,6 @@
 project(TruchasToolsMesh)
 
-message(STATUS "configuring the Truchas post_processors directory")
+message(STATUS "configuring the Truchas mesh_processors directory")
 
 # --- CMake modules
 include(FortranPreprocessFiles)

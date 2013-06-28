@@ -1,6 +1,6 @@
 project(TruchasToolsRade)
 
-message(STATUS "configuring the Truchas post_processors directory")
+message(STATUS "configuring the Truchas RadE directory")
 
 # --- CMake modules
 include(FortranPreprocessFiles)

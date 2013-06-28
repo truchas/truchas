@@ -1,6 +1,6 @@
 project(TruchasToolsAddgaps)
 
-message(STATUS "configuring the Truchas post_processors directory")
+message(STATUS "configuring the Truchas addgaps directory")
 
 # --- CMake modules
 include(FortranPreprocessFiles)
