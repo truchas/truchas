@@ -102,6 +102,22 @@ set(Truchas_FCIface_INCLUDE_DIR ${Truchas_BINARY_DIR})
 FortranCInterface_VERIFY(QUIET)
 
 # ---------------------------------------------------------------------------- #
+# Setting Some Useful Language Variables 
+# ---------------------------------------------------------------------------- #
+
+# Because I get tried typing CMAKE_<LANG>_COMPILER_ID MATHCHES blah
+# Set all to FALSE initially
+foreach ( id GNU G95 INTEL NAG PGI ABSOFT )
+  set(var_name Fortran_COMPILER_IS_${id})
+  set(${var_name} FALSE)
+endforeach()
+
+# Now set the correct variable to true
+string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}" uc_id)
+set(Fortran_COMPILER_IS_${uc_id} TRUE)
+
+
+# ---------------------------------------------------------------------------- #
 # External Dependencies 
 # ---------------------------------------------------------------------------- #
 
@@ -184,13 +200,16 @@ endif()
 
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "-D${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
-add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
-list(APPEND Truchas_PREPROCESSOR 
-            ${Truchas_Compiler_Define}
-	    ${Truchas_Compiler_Define}_WORKAROUND)
-#add_definitions(${Truchas_Compiler_Define})
-#list(APPEND Truchas_PREPROCESSOR 
-#            ${Truchas_Compiler_Define})
+if ( Fortran_COMPILER_IS_NAG )
+  add_definitions(${Truchas_Compiler_Define})
+  list(APPEND Truchas_PREPROCESSOR 
+             ${Truchas_Compiler_Define})
+else()
+  add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
+  list(APPEND Truchas_PREPROCESSOR 
+              ${Truchas_Compiler_Define}
+              ${Truchas_Compiler_Define}_WORKAROUND)
+endif()
 
 # Add USE_PGSLIB
 if (ENABLE_PGSLib)
