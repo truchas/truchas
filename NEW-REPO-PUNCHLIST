@@ -38,11 +38,6 @@ Remove items as they are fixed.
   This warning is for project developers.  Use -Wno-dev to suppress it.
   THIS FAILURE IS CAUSED BY "-g90"
 
-* The "sharen" target under parallel builds isn't running the executable
-  under mpirun (with 4 processors), but just directly which is equivalent
-  to a serial run.  This accounts for many of the tests failing, as the
-  (serial) results are being compared against parallel golden results.
-
 * The old build conditionally sets the preprocessor macro SUPPORTS_NEWUNIT
   when compiling truchas source.  We need to replicate this in the new build.
   Here's the relevant makefile snippet:
@@ -70,4 +65,27 @@ Remove items as they are fixed.
     fi
     exit $status
   
-  
+* The 'make package' target should create tar files and a shell script that builds
+  the code and creates a binary ditrubtion. Not working at all.
+
+* The prefices for each of the external packages should be changed to include
+  the version number. Also ExternalProject_Add is generating a spruious src/
+  but this is NOT the code source directory.
+
+* Orignal test suite test is integrated into CTest, however due to the exit status of the 
+  test harness all tests show PASS. Need to add a search capability to find the
+  correct status. DO NOT RUN 'ctest -j n' or 'make -jn test'. Will kill the file
+  system with stupid recursive copies.
+
+* Need to move the -DPGSLIB, -DVERSION, etc. down to the drivers directory and 
+  use configure_file to create the file instead of loading up the FPP flags.
+
+* Need a C-coded executable return a build date string. C code to promote
+  protability 'cuz 'date' is not supported on Windows.
+
+* Add the python unittest harness.
+
+* Need to configure Hypre with system LAPACK/BLAS or possibly MKL instead
+  of building these with Hypre
+
+* Change PGSLib Process* target to include PGSLib name.
