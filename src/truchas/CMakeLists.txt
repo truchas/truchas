@@ -174,10 +174,12 @@ endif()
 # To pick up the dlopen and dlclose symbols
 list(APPEND Truchas_LINK_LIBS ${CMAKE_DL_LIBS})
 
-link_libraries(truchas ${Truchas_LINK_LIBS})
+target_link_libraries(truchas ${Truchas_LINK_LIBS})
 
-# The linking of external packages is broken. Need 
-# to push this variable definition up one level as
+# The linking of external packages is broken. Binaries
+# and libraries that link to truchas library should not
+# need to explicitly add the Truchas_LINK_LIBS. 
+# Push this variable definition up one level as
 # a work-around until this is fixed.
 set(Truchas_LINK_LIBS ${Truchas_LINK_LIBS} PARENT_SCOPE)
        
@@ -210,9 +212,10 @@ add_dependencies(truchas_exe ProcessTruchasMainFiles)
 target_link_libraries(truchas_exe truchas ${Truchas_LINK_LIBS})
 
 # Kep binary name consistent with old naming convention 
+set(truchas_exe_name t-${Truchas_BUILD_ID}-${Truchas_VERSION})
 set_target_properties(truchas_exe PROPERTIES
-                      OUTPUT_NAME t-${Truchas_BUILD_ID}
-		      EchoString "Built Truchas executable t-${Truchas_BUILD_ID}")
+                      OUTPUT_NAME ${truchas_exe_name}
+		      EchoString "Built Truchas executable ${truchas_exe_name}")
 
 # --- Install rules 		    
 install(TARGETS truchas truchas_exe
