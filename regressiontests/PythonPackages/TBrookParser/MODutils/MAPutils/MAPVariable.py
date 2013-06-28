@@ -89,7 +89,7 @@ class mapVariable:
                              %(oldvar.name,len(self.oldata),self.meshspace,meshspace.size)
                        print >> self.fp, 'We cannot modify this variable..please consult postprocessor',\
                              'support with this error'
-                       sys.exit()
+                       sys.exit(1)
                 if oldvar.name == 'RHS':
                     #special care for the solid mechanics RHS variable
                     try:
@@ -100,7 +100,7 @@ class mapVariable:
                               %(self.meshspace,meshspace.size)
                         print >> self.fp, 'We cannot modify this variable..please consult postprocessor',\
                               'support with this error'
-                        sys.exit()
+                        sys.exit(1)
 
         try:
             assert self.meshspace != 'EDGE'
@@ -108,7 +108,7 @@ class mapVariable:
             print >> self.fp, 'Currently we cannot modify variables that live on the %s meshspace' \
                   %(self.meshspace)
             print >> self.fp, 'This feature will be made available in future releases'
-            sys.exit()
+            sys.exit(1)
     
     def getData(self):
 
@@ -360,7 +360,7 @@ class mapVariable:
                       ' used in the original Truchas simulation is consistent \n',\
                       ' with what you chose in the postprocessor.'
                 print >> self.fp
-                sys.exit()
+                sys.exit(1)
 
         else:
 
@@ -480,7 +480,7 @@ if __name__== '__main__':
     (opt,a) = o.parse_args()
     if (opt.H):
         print docstr
-        sys.exit()
+        sys.exit(0)
         
     fpwatch = sys.stdout  
     "Import the parameters file"

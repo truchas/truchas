@@ -73,7 +73,6 @@ void_collapse
 )
 build_whitespace_string(Truchas_REGRESSION_TESTS_STRING 
                         ${Truchas_REGRESSION_TESTS})
-print_variable(Truchas_REGRESSION_TESTS_STRING)
 
 # Need the name of the executable
 get_target_property(EXECUTABLE_NAME truchas_exe OUTPUT_NAME)
@@ -81,11 +80,24 @@ get_target_property(EXECUTABLE_NAME truchas_exe OUTPUT_NAME)
 # Need the location of the executable, will use the build directory
 set(EXECUTABLE_DIR ${TruchasExe_BINARY_DIR})
 
-# Now create the custom target
+# Test harness command that runs the list of tests
+set(TestHarness_COMMAND
+    ${PYTHON_EXECUTABLE} ${TestHarness}
+    -b ${EXECUTABLE_DIR} -e ${EXECUTABLE_NAME}
+    -o ${TruchasRegTests_BINARY_DIR}/regressiontests_output
+)
+if(ENABLE_MPI)
+  list(APPEND TestHarness_COMMAND -n 4)
+endif()
+
+# Now create the custom target that runs the entire test suite
 add_custom_target(sharen
                   DEPENDS truchas_exe
-                  COMMAND ${PYTHON_EXECUTABLE} ${TestHarness} -b ${EXECUTABLE_DIR} -e ${EXECUTABLE_NAME} -o ${TruchasRegTests_BINARY_DIR}/regressiontests_output -l ${Truchas_REGRESSION_TESTS_STRING}
+                  COMMAND ${TestHarness_COMMAND} -l ${Truchas_REGRESSION_TESTS_STRING}
                   VERBATIM
                   COMMENT "Running old regression test suite")
 
-
+# Run the tests through the CTest Package
+foreach( test ${Truchas_REGRESSION_TESTS})
+  add_test(NAME ${test} COMMAND ${TestHarness_COMMAND} -l ${test})
+endforeach()

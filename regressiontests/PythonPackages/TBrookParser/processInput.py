@@ -225,7 +225,7 @@ class processInput:
                         print >> fp, 'a comma and no spaces seperating the files.'
                         print >> fp, 'Input should be in the form: file1,file2'
                         print >> fp 
-                        sys.exit()
+                        sys.exit(1)
                     rinFiles = string.replace(rinFiles,' ','')
                     rinFiles = string.split(rinFiles,',')
                     Xs       = []

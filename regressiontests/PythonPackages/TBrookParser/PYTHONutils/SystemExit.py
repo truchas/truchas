@@ -7,5 +7,5 @@ def SystemExit(fpwatch=sys.stdout):
     print >> fpwatch
     print >> fpwatch, "Will not continue to postprocess this particular file."
     print >> fpwatch
-    sys.exit()
+    sys.exit(0)
 

@@ -63,7 +63,7 @@ o = uTestOpts('fdH',
 
 if (opt.H):
    print docstr
-   sys.exit()
+   sys.exit(0)
 debug = opt.d
 p = __import__(opt.f) # a bunch of parameters
 

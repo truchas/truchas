@@ -170,7 +170,7 @@ class getFileObject:
             print >> self.fpwatch, 'Either the file does not exist, ',
 	    print >> self.fpwatch, 'or it is not an XML or Exodus II file.'
             print >> self.fpwatch
-            sys.exit()
+            sys.exit(1)
 
     def chooseMesh(self,storage):
 
@@ -199,7 +199,7 @@ class getFileObject:
 		print >> self.fpwatch,  meshes
                 print >> self.fpwatch, 'Aborting this region definer.'
                 print >> self.fpwatch
-                sys.exit()
+                sys.exit(1)
 
         mesh = storage.mlist[count]
 

@@ -90,7 +90,7 @@ class modFieldVariable(baseVariable):
             print >> self.fp, 'Please check your source and target meshes for',\
                   'internal consistencies and consistency with each other.'
             print >> self.fp
-            sys.exit()
+            sys.exit(1)
 
         self.data          = var.data
         self.shape         = var.shape
@@ -187,7 +187,7 @@ if __name__=='__main__':
                 print >> fpwatch, 'Exiting this component test\n'
 
                 uTcleanUp(meshfile)
-                sys.exit()
+                sys.exit(1)
 
         else:
             #get mesh 'a' from Truchas output        
@@ -212,7 +212,7 @@ if __name__=='__main__':
                 print >> fpwatch, 'Exiting this component test'
                 print >> fpwatch
                 uTcleanUp(meshfile)
-                sys.exit()
+                sys.exit(1)
         else:
             meshb = tstorage.mlist[0]
             #now obtain the data on the mesh 'b'

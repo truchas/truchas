@@ -104,7 +104,7 @@ class getBlockIndicies:
             print >> self.fp, 'We will not continue extracting block connectivity for block %i ' %(self.ID)
             print >> self.fp, 'as the block cell IDs were not obtained.'
             print >> self.fp
-            sys.exit()
+            sys.exit(1)
         
     def str(self):
         print >> self.fp, 'for block:'
@@ -155,7 +155,7 @@ if __name__== '__main__':
         print >> fpwatch, 'Problems occurred in creating the indices from meshblock %i in %s' %(blockid,filename)
         print >> fpwatch, 'Exiting this component test'
         print >> fpwatch
-        sys.exit()
+        sys.exit(1)
 
     blockinds.str()
 

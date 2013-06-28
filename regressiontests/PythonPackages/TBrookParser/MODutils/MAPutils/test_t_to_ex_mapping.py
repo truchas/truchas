@@ -40,7 +40,7 @@ o = uTestOpts('fdH',
 (opt,a) = o.parse_args()
 if (opt.H):
    print docstr
-   sys.exit()
+   sys.exit(0)
 
 "Import the parameters file"
 try:

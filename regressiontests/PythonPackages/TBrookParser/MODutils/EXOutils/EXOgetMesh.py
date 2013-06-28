@@ -82,7 +82,7 @@ class getEXOMesh:
             print >> self.fp, 'We will not continue extracting exodus mesh from %s' %(self.filename)
             print >> self.fp, 'as the mesh coordinates were not obtained.'
             print >> self.fp 
-            sys.exit()
+            sys.exit(1)
         
         #additional geometry fields
         self.cellcentroids    = Numeric.array([0],'d')

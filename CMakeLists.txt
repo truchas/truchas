@@ -78,6 +78,9 @@ option(ENABLE_Chaco "Build with Chaco support"  True)
 # Build with Chaparral
 option(ENABLE_Chaparral "Build with Chaparral support"  True)
 
+# Test - need a swith here to enable testing
+enable_testing()
+
 
 # Define the build id
 include(GetTruchasBuildId)

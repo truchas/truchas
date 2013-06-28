@@ -67,7 +67,7 @@ class getProbe(baseProbe):
             print >> self.__fp, "We will continue to postprocess",
             print >> self.__fp, "but will not include this probe in further diagnostics"
             print >> self.__fp
-            sys.exit()
+            sys.exit(1)
 
         try:
             descnode         = parse().getElement(node,'DESCRIPTION')

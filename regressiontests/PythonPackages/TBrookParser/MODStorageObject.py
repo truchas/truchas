@@ -94,7 +94,7 @@ class modStorageObject:
             print >> self.fp, 'Will not continue to map onto the target mesh',\
                   'as it is not in Exodus II format.'
             print >> self.fp
-            sys.exit()
+            sys.exit(1)
 
         """
         ensure numbers of inputted T storage objects,
@@ -107,7 +107,7 @@ class modStorageObject:
             print >> self.fp, 'Number of ids inputted (%i) does not ',\
 			      'correspond to number of Truchas simulations',\
 			      'inputted (%i)' %(len(stepids),len(TSObjects))
-            sys.exit()
+            sys.exit(1)
 
         try:
             assert len(TSObjects) == len(TMeshs)
@@ -116,7 +116,7 @@ class modStorageObject:
             print >> self.fp, 'Number of meshes inputted (%i) does not ', \
 			      'correspond to number of Truchas simulations ',\
 			      'inputted (%i)' %(len(TMeshs),len(TSObjects))
-            sys.exit()
+            sys.exit(1)
 
         """
         get the simulation specifications
