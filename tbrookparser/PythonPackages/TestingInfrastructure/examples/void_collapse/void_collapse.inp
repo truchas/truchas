@@ -1,0 +1,150 @@
+  One Dimensional Piston Flow 
+      this calculation is to test out the void collapse model
+      initially there are three void cells at one end of a 1D channel and an inlet velocity at the other
+         
+&MESH
+ 
+       Ncell = 10, 1, 1, 
+       Coord = 3*0.0, 1.0, 0.1, 0.1,
+       Ratio = 1.0, 1.0, 1.0 
+       Fuzz  = 3*0.0,
+ 
+/
+ 
+&OUTPUTS
+ 
+       Output_T = 0.0, 0.4, Output_Dt = 0.01,
+ 
+       XML_Output_Dt_Multiplier      =  -1,
+
+/
+
+&LINEAR_SOLVER
+
+      name                   = 'projection',
+      method                 = 'gmres',
+      convergence_criterion  = 1.0e-10
+      preconditioning_method = 'ssor',
+      relaxation_parameter   = 1.4,
+      preconditioning_steps  = 3,
+      stopping_criterion     = '||r||'
+      maximum_iterations     = 100,
+
+/
+
+
+&NUMERICS
+ 
+       cycle_max = 30,
+
+       projection_linear_solution = 'projection',
+       volume_track_interfaces = .true.
+       volume_track_Brents_Method = .true.
+       volume_track_subcycles   = 1,
+       volume_track_iter_Tol    = 1.0e-9,
+
+       cutvof = 1.0e-8, 
+
+       courant_number             = 0.4,
+       dt_constant                = 0.01
+       discrete_ops_type          = 'ortho' 
+/
+
+&PHYSICS
+ 
+       Body_Force      = 0.0, 0.0, 0.0,
+ 
+       fluid_flow      = .true.,
+       heat_conduction = .false.,
+       inviscid        = .true.,
+       stokes          = .false.,
+ 
+       surface_tension_model = 'off',
+       csf_normal      = .false.,
+       csf_tangential  = .false.,
+
+/
+
+
+BC #1. Velocity BC: Inlet
+&BC
+
+       Surface_Name       = 'conic',
+       Conic_Relation     = '=',
+       Conic_X            =  1.0,
+       Conic_Constant     =  0.0,
+       Conic_Tolerance    = 1.0e-6,
+       BC_Variable        = 'velocity',
+       BC_Type            = 'dirichlet',
+       BC_Value           =  1.0, 0.0, 0.0,  
+
+/
+
+ 
+
+&BODY
+ 
+       Material_number = 1,
+       Surface_Name    = 'background',
+       Velocity        = 1.0, 0.0, 0.0,
+       Temperature     = 273.0
+
+
+/
+
+&BODY
+ 
+       Material_number = 2,
+       Surface_Name    = 'box',
+       length = 0.3, 0.1, 0.1,
+       translation_pt  = 0.85, 0.05, 0.05,
+       Temperature     = 273.0
+
+
+/
+
+&MATERIAL
+ 
+       Material_Name      = 'fluid',
+       Material_Number    = 1,
+       Material_Feature   = 'background'
+       priority           = 1,
+       Density            = 1.0,
+ 
+       Cp_Relation        = 'constant',
+       Cp_Constants       = 1.0,
+       Cp_Exponents       = 0,
+ 
+       Conductivity_Relation  = 'constant',
+       Conductivity_Constants = 1.0,
+       Conductivity_Exponents = 0,
+ 
+
+
+/
+
+&MATERIAL
+ 
+       Material_Name      = 'void',
+       Material_Number    = 2,
+       priority           = 2,
+       Density            = 0.0,
+ 
+       Cp_Relation        = 'constant',
+       Cp_Constants       = 1.0,
+       Cp_Exponents       = 0,
+ 
+       Conductivity_Relation  = 'constant',
+       Conductivity_Constants = 1.0,
+       Conductivity_Exponents = 0,
+ 
+       Sound_Speed = 1000.0,
+
+
+/
+
+&PARALLEL_PARAMETERS
+
+        Partitioner = 'Chaco',
+
+/

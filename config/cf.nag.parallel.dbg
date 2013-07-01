@@ -9,14 +9,14 @@ set(CMAKE_C_COMPILER gcc CACHE STRING "C Compiler")
 set(CMAKE_CXX_COMPILER g++ CACHE STRING "C++ Compiler")
 set(CMAKE_Fortran_COMPILER nagfor CACHE STRING "Fortran Compiler")
 
-# Optimized
+# Debug
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "Debug build")
 
-# Disbale MPI (Parallel) build
+# Enable MPI (Parallel) build
 set(ENABLE_MPI True CACHE BOOL "MPI build control flag")
 
 # Fortran Flags
-set(CMAKE_Fortran_FLAGS "-gline -nan -maxcontin=99" CACHE STRING "Nag Fortran compile flags")
-#set(CMAKE_Fortran_FLAGS "-u -C=all -g90 -gline -nan -maxcontin=99" CACHE STRING "Nag Fortran compile flags")
+set(CMAKE_Fortran_FLAGS "-gline -nan -maxcontin=99 -PIC" CACHE STRING "Nag Fortran compile flags")
+#set(CMAKE_Fortran_FLAGS "-u -C=all -g90 -gline -nan -maxcontin=99 -PIC" CACHE STRING "Nag Fortran compile flags")
 
 

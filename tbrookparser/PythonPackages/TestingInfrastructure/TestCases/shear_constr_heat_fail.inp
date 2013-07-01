@@ -1,0 +1,335 @@
+Solid Mechanics Test Problem
+Initial traction boundary conditions:
+x - z shear imposed with tractions on surfaces 1,2 and 5, surface 4 
+is fixed with zero displacements for all three components.
+
+The block is then heated from the bottom with a Dirichlet temperature BC.
+The problems runs to a uniform steady state temperature.  Thermal stresses 
+arise from the fact that the top and bottom are constrained in the normal 
+z direction.
+================================================================================
+
+Dave Korzekwa, MST6, dak@lanl.gov
+
+================================================================================
+
+define a three-dimensional mesh
+
+ 4 x  6 x 8  cells
+ 2 x  3 x 4  cm
+
+
+&MESH
+
+    ncell  = 2, 3, 4, 
+    coord  = 0.0, 0.0, 0.0, 2.0e-2, 3.0e-2, 4.0e-2
+
+/
+
+define the solid material geometry and the initial conditions
+
+&BODY
+
+    surface_name     = 'background'
+    material_number  = 1
+    temperature      = 2.98e+02, 
+
+/
+
+define the boundary conditions (tractions specified in MPa):
+
+x = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'z-traction', 
+    bc_value         = -5.0e+2
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+x = 2.0e-2 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = -2.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'z-traction', 
+    bc_value         = 5.0e+2
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_x          = 1.0e+00, 
+    conic_constant   = -2.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+y = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_y          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'y-displacement', 
+    bc_value         = 0.0e+00
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_y          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+y = 3.0e-2 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_y          = 1.0e+00, 
+    conic_constant   = -3.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+z = 0.0e+00 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'x-traction'
+    bc_value         = -5.0e+02
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'z-displacement'
+    bc_value         = 0.0e+00
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = 0.0e+00, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'dirichlet'
+    bc_value         = 3.98e+02
+
+/
+
+z = 4.0 boundary
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = -4.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'x-traction', 
+    bc_value         = 5.0e+02
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = -4.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'displacement', 
+    bc_type          = 'z-displacement'
+    bc_value         = 0.0e+00
+
+/
+
+&BC
+
+    surface_name     = 'conic', 
+    conic_relation   = '=', 
+    conic_z          = 1.0e+00, 
+    conic_constant   = -4.0e-2, 
+    conic_tolerance  = 1.0e-06, 
+    bc_variable      = 'temperature', 
+    bc_type          = 'hneumann', 
+
+/
+
+&BC
+
+    surface_name      = 'node set', 
+    bc_variable       = 'displacement', 
+    bc_type           = 'x-displacement', 
+    bc_value          = 0.0, 
+    Node_Disp_Coords  = 0.0, 0.0, 0.0, 
+                        0.0, 3.0e-2, 0.0, 
+
+/
+
+define the material properties (aluminum, SI units)
+Elastic constants (stresses) in MPa to make test checking easier 
+&MATERIAL
+
+    material_number               = 1, 
+    priority                      = 1, 
+    material_name                 = 'aluminum', 
+    material_feature              = 'background', 
+    density                       = 2.70e+03, 
+    cp_constants                  = 9.00e+02, 
+    conductivity_constants        = 2.40e+02, 
+    Lame1_Constants               = 5.20e+4, 
+    Lame2_Constants               = 2.60e+4, 
+    CTE_Constants                 = 2.20e-05, 
+    Stress_Reference_Temperature  = 2.98e+02, 
+
+/
+
+solid mechanics only
+
+&PHYSICS
+
+    fluid_flow       = .false., 
+    heat_conduction  = .true., 
+    solid_mechanics  = .true.
+    phase_change     = .false., 
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'nk', 
+    method                  = 'fgmres', 
+    preconditioning_method  = 'ssor', 
+    preconditioning_steps   = 2, 
+    stopping_criterion      = '||r||/||r0||'
+    convergence_criterion   = 1.0e-3, 
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'displacement nk', 
+    method                  = 'fgmres', 
+    preconditioning_steps   = 4, 
+    relaxation_parameter    = 1.0, 
+    preconditioning_method  = 'tm_ssor', 
+    convergence_criterion   = 1.0e-4, 
+    stopping_criterion      = '||r||/||r0||'
+    output_mode             = 'none'
+
+/
+    maximum_iterations      = 10, 
+
+  
+&NONLINEAR_SOLVER 
+
+    name                    = 'ht-pc solve', 
+    method                  = 'nk', 
+    linear_solver_name      = 'nk', 
+    convergence_criterion   = 1.0e-6,
+    output_mode             = 'none', 
+    use_damper              = .false., 
+    Damper_Parameters       = 0.5, 2, 1, 1, 
+    perturbation_parameter  = 1e-6, 
+
+/
+
+&NONLINEAR_SOLVER 
+
+    name                    = 'displacement solve', 
+    method                  = 'nk', 
+    linear_solver_name      = 'displacement nk', 
+    convergence_criterion   = 1.0e-11, 
+    use_damper              = .false., 
+    Damper_Parameters       = 0.5, 2, 1, 1, 
+    perturbation_parameter  = 1.0e-6, 
+    maximum_iterations      = 1
+
+/
+
+constant time increment
+loose solver tolerance
+
+&NUMERICS
+
+    dt_constant                      = 0.1e+0, 
+    energy_nonlinear_solution        = 'ht-pc solve', 
+    displacement_nonlinear_solution  = 'displacement solve', 
+/
+
+Run for 100 sec
+
+&OUTPUTS
+
+    output_t                    = 0.0e+00, 100.0e+00, 
+    output_dt                   = 2.0e+0, 
+    short_output_dt_multiplier  = 5, 
+    long_output_dt_multiplier   = 5, 
+    Long_Edit_Bounding_Coords   = 0.0, 2.0e-2, 0.00, 3.0e-2, 0.00, 4.0e-2, 
+
+/
+
+&PARALLEL_PARAMETERS
+
+    Partitioner  = 'automatic', 
+
+/

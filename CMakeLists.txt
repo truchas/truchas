@@ -37,6 +37,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}"
 set(Truchas_MODULE_DIR ${Truchas_BINARY_DIR}/modules)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${Truchas_MODULE_DIR})
 
+# Modules/Compiler/NAG-Fortran.cmake is missing this.
+if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
+  set(CMAKE_Fortran_COMPILE_OPTIONS_PIC "-PIC")
+endif()
+
 # ---------------------------------------------------------------------------- #
 # Global CMake Utilities 
 # ---------------------------------------------------------------------------- #
@@ -198,6 +203,11 @@ if ( NOT Truchas_PREPROCESSOR )
   set(Truchas_PREPROCESSOR cpp -ansi)
 endif()
 
+# Turn off assertions in Truchas Fortran code
+if ( ${CMAKE_BUILD_TYPE} STREQUAL "Release" )
+  list(APPEND Truchas_PREPROCESSOR -DNDEBUG)
+endif()
+
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "-D${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
 if ( Fortran_COMPILER_IS_NAG )
@@ -230,9 +240,6 @@ endif()
 if (ENABLE_Chaparral)
   list(APPEND Truchas_PREPROCESSOR -DCHAPARRAL_SUPPORT)
 endif()
-
-# SUPPORTS_TR1558 if nag or intel --hard code for now
-list(APPEND Truchas_PREPROCESSOR -DSUPPORTS_TR15581)
 
 # Arch x86_64 flag hard code for now
 list(APPEND Truchas_PREPROCESSOR -DM64)
@@ -319,6 +326,11 @@ add_subdirectory(src)
 
 # Old regression tests
 add_subdirectory(regressiontests)
+
+# Old TBrook parser crap
+if (ENABLE_TBROOK)
+  add_subdirectory(tbrookparser)
+endif()
 
 # ---------------------------------------------------------------------------- #
 # Export Definitions 
@@ -444,7 +456,7 @@ if (CMAKE_BUILD_TYPE_UC)
   message(STATUS "\tCMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UC}\t"
                       "=${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
 endif()		    
-if (CMAKE_C_FLAGS)
+if (CMAKE_Fortran_FLAGS)
   message(STATUS "\tCMAKE_Fortran_FLAGS\t"
                       "=${CMAKE_Fortran_FLAGS}")
 endif()		

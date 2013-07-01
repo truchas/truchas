@@ -1,0 +1,104 @@
+ vfParallelSize =          10000000
+         WARNING: Material  1 priority not initialized; set to  1
+
+         WARNING: Material  2 priority not initialized; set to  2
+
+         WARNING: Material  3 priority not initialized; set to  3
+
+ PHASE_CHANGE_PROPERTIES Namelist:
+         WARNING: Phase changes not activated in physics namelist,
+         All phase changes have been disabled.
+
+         WARNING: INTERFACES namelist not found: using defaults
+
+         Using nonlinear solver "HT NLS" for energy nonlinear solution.
+
+         Using linear solver "AIN PC" for nonlinear solver "HT NLS".
+
+         Reading BC namelist #  1: Unnamed
+
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.92126E-02 (   224 faces)
+
+          1: t =   0.00000E+00, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          2: t =   5.00000E+00, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          3: t =   1.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          4: t =   1.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          5: t =   2.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          6: t =   2.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          7: t =   3.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          8: t =   3.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+          9: t =   4.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         10: t =   4.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         11: t =   5.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         12: t =   5.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         13: t =   6.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         14: t =   6.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         15: t =   7.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         16: t =   7.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         17: t =   8.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         18: t =   8.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         19: t =   9.00000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+         20: t =   9.50000E+01, dt(constant) =   5.00000E+00
+            0 Energy iterations (linear)
+            5 Energy iterations (nonlinear)
+
+
+truchas terminated normally on 12 Dec 06 at 15:40:03

@@ -1,0 +1,255 @@
+Reference:  G. de Vahl Davis, "Natural Convection of Air in a Square
+            Cavity:  A Bench Mark Numerical Solution," IJNMF, v. 3,            
+            pp. 249-264 (1983).
+
+A standard benchmark problem of boussinesq flow + heat transfer in a 
+2D square cavity, cooled at one side, heated from the opposite, 
+otherwise insulated. No-slip conditions applied at the four walls. 
+
+de Vahl Davis ran the problem for several Rayleigh numbers; this input 
+file corresponds to Ra = 1000.  The paper presents various steady state 
+results against which to compare, including:
+
+   maximum u velocity along the vertical centerline   = 3.649 @ z = 0.813
+   maximum w velocity along the horizontal centerline = 3.697 @ x = 0.178
+   average Nusselt number along any vertical plane    = 1.118
+
+To scale the Telluride results to the de Vahl Davis ones:
+   divide Telluride velocities by 2.07866104E-5
+
+To calculate the Nusselt number at the left edge of the domain:
+
+   Nu = 0
+   do for every face at the left edge
+     Nu = Nu + 2.0 * (1.0 - Zone(n)%Temp) 
+   end do
+   ... where Zone(n)%Temp is the cell-centered temperature next to each
+       face at the left edge
+
+The output file issues results for the vertical and horizontal centerline 
+cells at each long_edit interval.
+
+
+ &MESH
+
+    Ncell  = 5, 1, 5
+    Coord  = 3*0.0, 1.0, 0.05, 1.0
+    Ratio  = 3*1.0
+    Fuzz   = 3*0.0
+ 
+ /
+ 
+ &PHYSICS
+
+    fluid_flow                = .true.
+    inviscid                  = .false.
+    stokes                    = .false.
+    surface_tension_model     = 'off'
+    heat_conduction           = .true.
+    body_force                = 0.0, 0.0, -9.34142216E-5
+    phase_change              = .false., 
+ /
+
+
+ &OUTPUTS
+
+    Output_T                      = 60000.0,61000.0
+    Output_Dt                     = 200.0
+    Short_Output_Dt_Multiplier    = 1,
+    XML_Output_Dt_Multiplier      = 1,
+ /
+
+
+ &PROBE
+    Probe_Description = 'Maximum Horizontal Velocity'
+    Probe_Name        = 'VhMax',
+    Probe_Coords      = 0.5, 0.025, 0.813,
+/
+
+ &PROBE
+    Probe_Description = 'Maximum Vertical Velocity'
+    Probe_Name        = 'VvMax',
+    Probe_Coords      = 0.178, 0.025, 0.5,
+/
+
+&NUMERICS
+
+    dt_init                     = 30.0
+    dt_grow                     = 1.05
+    dt_min                      = 1.0e-05
+    dt_max                      = 1000.0
+    viscous_implicitness        = 1.0
+    viscous_number              = 0.3
+    courant_number              = 0.5
+    fourier_number              = 10.0
+    energy_nonlinear_solution   = 'nk'
+    projection_linear_solution  = 'projection'
+    viscous_linear_solution     = 'viscous', 
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'projection'
+    method                  = 'fgmres'
+    preconditioning_method  = 'ssor'
+    preconditioning_steps   = 2
+    relaxation_parameter    = 1.4
+    convergence_criterion   = 1.0e-12
+
+/
+
+&NONLINEAR_SOLVER
+
+    name                    = 'nk'
+    method                  = 'nk'
+    linear_solver_name      = 'nk'
+    convergence_criterion   = 1.0e-6
+    use_damper              = .true.
+    perturbation_parameter  = 1.0e-6
+    damper_parameters       = 0.8, 1.5, 1.0, 1.0
+    maximum_iterations      = 100
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'nk'
+    method                  = 'fgmres'
+    preconditioning_method  = 'ssor'
+    preconditioning_steps   = 1
+    relaxation_parameter    = 0.9
+    convergence_criterion   = 1.0e-3
+    krylov_vectors          = 10
+    stopping_criterion      = '||r||/||r0||'
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'viscous', 
+    method                  = 'fgmres', 
+    convergence_criterion   = 1.0e-8, 
+    preconditioning_method  = 'none', 
+    stopping_criterion      = '||r||/||b||'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'temperature'
+    BC_Type          = 'dirichlet'
+    BC_Value         = 1.0
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = -1.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'temperature'
+    BC_Type          = 'dirichlet'
+    BC_Value         = 0.0
+
+/
+
+&BC
+
+    Surface_Name       = 'external material boundary'
+    Surface_Materials  = 1
+    BC_Variable        = 'temperature'
+    BC_Type            = 'hneumann'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_X          = 1.0
+    Conic_Constant   = -1.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_Z          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Relation   = '='
+    Conic_Z          = 1.0
+    Conic_Constant   = -1.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BODY
+
+    Material_Number  = 1
+    Surface_Name     = 'box'
+    Length           = 3*16.0
+    Fill             = 'inside'
+    Velocity         = 3*0.0
+    Temperature      = 0.0
+
+/
+
+&MATERIAL
+
+    Material_Number                = 1
+    Material_Name                  = 'Liquid'
+    Material_Feature               = 'background'
+
+    Density                        = 1.2180, 
+    Reference_Temperature          = 0.0, 
+    Density_change_relation        = 'temperature_polynomial'
+    Density_change_coefficients_T  = -0.003284072, 
+    Density_change_exponents_T     = 1
+
+    Cp_Constants                   = 1.006
+    Conductivity_Constants         = 25.470e-6
+    Viscosity_Constants            = 17.975845e-6
+
+/
+
+&PARALLEL_PARAMETERS
+
+    Partitioner  = 'automatic'
+
+/
+
