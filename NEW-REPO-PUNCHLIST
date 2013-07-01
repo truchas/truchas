@@ -89,3 +89,17 @@ Remove items as they are fixed.
   of building these with Hypre
 
 * Change PGSLib Process* target to include PGSLib name.
+
+* Need -DNDEBUG added to preprocessor defines for C code with "Release" build type.
+
+* The TBrookParse post-processor extensions (shared libraries) link against the truchas
+  library.  For this to work, the truchas code needed to be compiled with the "PIC"
+  option.  I've added this (-fPIC for intel and -PIC for nag) to the CMAKE_Fortran_FLAGS
+  variable in the cf.* files in the config directory.  I don't think this is the right
+  way to do this.  Should we be building a shared truchas library instead?  (CMake
+  then adds the necessary "PIC" options automatically.)
+
+* The current CMake doesn't provide the correct "PIC" option for the NAG compiler (uses
+  -fPIC instead of -PIC)  I've added a fix to the top-level CMakeLists.txt near the top.
+  Is that the right place to put it?  (I think this bug is fixed in 2.8.11, but I don't
+  want to require that version.)
