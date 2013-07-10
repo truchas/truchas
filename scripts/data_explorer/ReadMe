@@ -1,0 +1,9 @@
+OpenDX network files (*.net) for visualizing the graphics output files
+(*.dx) from the electromagnetic simulation.
+
+For example, try:
+
+  dx -image -macros . -program EM-fields.net
+  dx -image -macros . -program EM-joule.net
+  
+See www.opendx.org for information on OpenDX.

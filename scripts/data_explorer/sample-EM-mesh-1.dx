@@ -1,0 +1,49 @@
+data mode lsb binary
+
+object 1 class array type int rank 1 shape 4 items 240 data file sample-EM-mesh-1.bin,4
+  attribute "element type" string "tetrahedra"
+  attribute "ref" string "positions"
+
+object 2 class array type float rank 1 shape 3 items 87 data file sample-EM-mesh-1.bin,3852
+
+object 3 class array type float items 240 data file sample-EM-mesh-1.bin,4904
+  attribute "dep" string "connections"
+
+object "partition" class field
+  component "connections" value 1
+  component "positions" value 2
+  component "data" value 3
+
+object 4 class array type float items 240 data file sample-EM-mesh-1.bin,5872
+  attribute "dep" string "connections"
+
+object "region" class field
+  component "connections" value 1
+  component "positions" value 2
+  component "data" value 4
+
+object 5 class array type float items 240 data file sample-EM-mesh-1.bin,6840
+  attribute "dep" string "connections"
+
+object "epsilon" class field
+  component "connections" value 1
+  component "positions" value 2
+  component "data" value 5
+
+object 6 class array type float items 240 data file sample-EM-mesh-1.bin,7808
+  attribute "dep" string "connections"
+
+object "mu" class field
+  component "connections" value 1
+  component "positions" value 2
+  component "data" value 6
+
+object 7 class array type float items 240 data file sample-EM-mesh-1.bin,8776
+  attribute "dep" string "connections"
+
+object "sigma" class field
+  component "connections" value 1
+  component "positions" value 2
+  component "data" value 7
+
+end

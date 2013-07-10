@@ -1,0 +1,193 @@
+data mode lsb binary
+
+object 1 class array type float items 240 data file sample-EM-Qfield-1.4.bin,4
+  attribute "dep" string "connections"
+
+object 2 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 1
+
+object 3 class array type float items 240 data file sample-EM-Qfield-1.4.bin,972
+  attribute "dep" string "connections"
+
+object 4 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 3
+
+object 5 class array type float items 240 data file sample-EM-Qfield-1.4.bin,1940
+  attribute "dep" string "connections"
+
+object 6 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 5
+
+object 7 class array type float items 240 data file sample-EM-Qfield-1.4.bin,2908
+  attribute "dep" string "connections"
+
+object 8 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 7
+
+object 9 class array type float items 240 data file sample-EM-Qfield-1.4.bin,3876
+  attribute "dep" string "connections"
+
+object 10 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 9
+
+object 11 class array type float items 240 data file sample-EM-Qfield-1.4.bin,4844
+  attribute "dep" string "connections"
+
+object 12 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 11
+
+object 13 class array type float items 240 data file sample-EM-Qfield-1.4.bin,5812
+  attribute "dep" string "connections"
+
+object 14 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 13
+
+object 15 class array type float items 240 data file sample-EM-Qfield-1.4.bin,6780
+  attribute "dep" string "connections"
+
+object 16 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 15
+
+object 17 class array type float items 240 data file sample-EM-Qfield-1.4.bin,7748
+  attribute "dep" string "connections"
+
+object 18 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 17
+
+object 19 class array type float items 240 data file sample-EM-Qfield-1.4.bin,8716
+  attribute "dep" string "connections"
+
+object 20 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 19
+
+object 21 class array type float items 240 data file sample-EM-Qfield-1.4.bin,9684
+  attribute "dep" string "connections"
+
+object 22 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 21
+
+object 23 class array type float items 240 data file sample-EM-Qfield-1.4.bin,10652
+  attribute "dep" string "connections"
+
+object 24 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 23
+
+object 25 class array type float items 240 data file sample-EM-Qfield-1.4.bin,11620
+  attribute "dep" string "connections"
+
+object 26 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 25
+
+object 27 class array type float items 240 data file sample-EM-Qfield-1.4.bin,12588
+  attribute "dep" string "connections"
+
+object 28 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 27
+
+object 29 class array type float items 240 data file sample-EM-Qfield-1.4.bin,13556
+  attribute "dep" string "connections"
+
+object 30 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 29
+
+object 31 class array type float items 240 data file sample-EM-Qfield-1.4.bin,14524
+  attribute "dep" string "connections"
+
+object 32 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 31
+
+object 33 class array type float items 240 data file sample-EM-Qfield-1.4.bin,15492
+  attribute "dep" string "connections"
+
+object 34 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 33
+
+object 35 class array type float items 240 data file sample-EM-Qfield-1.4.bin,16460
+  attribute "dep" string "connections"
+
+object 36 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 35
+
+object 37 class array type float items 240 data file sample-EM-Qfield-1.4.bin,17428
+  attribute "dep" string "connections"
+
+object 38 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 37
+
+object 39 class array type float items 240 data file sample-EM-Qfield-1.4.bin,18396
+  attribute "dep" string "connections"
+
+object 40 class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 39
+
+object 41 class array type float items 240 data file sample-EM-Qfield-1.4.bin,19364
+  attribute "dep" string "connections"
+
+object "Qavg" class field
+  component "connections" value file sample-EM-mesh-1.dx,1
+  component "positions" value file sample-EM-mesh-1.dx,2
+  component "data" value 41
+
+object "Q" class series
+  member 0 position   3.05000E+00 value 2
+  member 1 position   3.10000E+00 value 4
+  member 2 position   3.15000E+00 value 6
+  member 3 position   3.20000E+00 value 8
+  member 4 position   3.25000E+00 value 10
+  member 5 position   3.30000E+00 value 12
+  member 6 position   3.35000E+00 value 14
+  member 7 position   3.40000E+00 value 16
+  member 8 position   3.45000E+00 value 18
+  member 9 position   3.50000E+00 value 20
+  member 10 position   3.55000E+00 value 22
+  member 11 position   3.60000E+00 value 24
+  member 12 position   3.65000E+00 value 26
+  member 13 position   3.70000E+00 value 28
+  member 14 position   3.75000E+00 value 30
+  member 15 position   3.80000E+00 value 32
+  member 16 position   3.85000E+00 value 34
+  member 17 position   3.90000E+00 value 36
+  member 18 position   3.95000E+00 value 38
+  member 19 position   4.00000E+00 value 40
+
+end

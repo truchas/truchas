@@ -1,0 +1,138 @@
+//
+// time: Thu Jun 27 11:39:55 2002
+//
+// version: 3.1.2 (format), 4.2.0 (DX)
+//
+//
+// Begin MDF
+// MODULE SeriesStatistics
+// CATEGORY Macros
+// INPUT input_1; object; (no default);  
+// OUTPUT min; value or value list or field;  
+// OUTPUT max; value or value list or field;  
+// End MDF
+// workspace: width = 454, height = 491
+// layout: snap = 1, width = 40, height = 40, align = CC
+//
+macro SeriesStatistics(
+ input_1
+) -> (
+ min
+,max
+) {
+    // 
+    // node Input[1]: x = 239, y = 29, inputs = 0, label = Input
+    // parameter: position = 1, name = 'input_1', value = '(no default)', descriptive = 1, description = ' ', required = 0, visible = 1
+    //
+SeriesStatistics_Input_1_out_1 = input_1;
+    // 
+    // node ForEachMember[1]: x = 200, y = 109, inputs = 1, label = ForEachMember
+    // output[2]: visible = 0
+    // output[3]: visible = 0
+    //
+SeriesStatistics_ForEachMember_1_out_1,
+SeriesStatistics_ForEachMember_1_out_2,
+SeriesStatistics_ForEachMember_1_out_3 = 
+    ForEachMember(
+    SeriesStatistics_Input_1_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node Statistics[1]: x = 225, y = 189, inputs = 1, label = Statistics
+    // output[1]: visible = 0
+    // output[2]: visible = 0
+    // output[3]: visible = 0
+    //
+SeriesStatistics_Statistics_1_out_1,
+SeriesStatistics_Statistics_1_out_2,
+SeriesStatistics_Statistics_1_out_3,
+SeriesStatistics_Statistics_1_out_4,
+SeriesStatistics_Statistics_1_out_5 = 
+    Statistics(
+    SeriesStatistics_ForEachMember_1_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node GetLocal[1]: x = 387, y = 269, inputs = 3, label = GetLocal
+    // input[2]: visible = 0
+    //
+SeriesStatistics_GetLocal_1_out_1,
+SeriesStatistics_GetLocal_1_out_2 = 
+    GetLocal(
+    SeriesStatistics_Statistics_1_out_5,
+    NULL,
+    NULL
+    ) [instance: 1, cache: 1];
+    // 
+    // node Compute[1]: x = 306, y = 349, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "max($0,$1)"
+    // expression: value = max(a,b)
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+SeriesStatistics_Compute_1_out_1 = 
+    Compute(
+    "max($0,$1)",
+    SeriesStatistics_Statistics_1_out_5,
+    SeriesStatistics_GetLocal_1_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node GetLocal[2]: x = 187, y = 269, inputs = 3, label = GetLocal
+    // input[2]: visible = 0
+    //
+SeriesStatistics_GetLocal_2_out_1,
+SeriesStatistics_GetLocal_2_out_2 = 
+    GetLocal(
+    SeriesStatistics_Statistics_1_out_4,
+    NULL,
+    NULL
+    ) [instance: 2, cache: 1];
+    // 
+    // node Compute[2]: x = 106, y = 349, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "min($0,$1) "
+    // expression: value = min(a,b) 
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+SeriesStatistics_Compute_2_out_1 = 
+    Compute(
+    "min($0,$1) ",
+    SeriesStatistics_Statistics_1_out_4,
+    SeriesStatistics_GetLocal_2_out_1
+    ) [instance: 2, cache: 1];
+    // 
+    // node Output[1]: x = 313, y = 429, inputs = 1, label = Output
+    // parameter: position = 2, name = 'max', value = ' ', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+max = SeriesStatistics_Compute_1_out_1;
+    // 
+    // node Output[2]: x = 113, y = 429, inputs = 1, label = Output
+    // parameter: position = 1, name = 'min', value = ' ', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+min = SeriesStatistics_Compute_2_out_1;
+    // 
+    // node SetLocal[1]: x = 387, y = 429, inputs = 3, label = SetLocal
+    //
+    SetLocal(
+    SeriesStatistics_Compute_1_out_1,
+    SeriesStatistics_GetLocal_1_out_2,
+    NULL
+    ) [instance: 1, cache: 1];
+    // 
+    // node SetLocal[2]: x = 187, y = 429, inputs = 3, label = SetLocal
+    //
+    SetLocal(
+    SeriesStatistics_Compute_2_out_1,
+    SeriesStatistics_GetLocal_2_out_2,
+    NULL
+    ) [instance: 2, cache: 1];
+// network: end of macro body
+}
+SeriesStatistics_Input_1_out_1 = NULL;
+SeriesStatistics_ForEachMember_1_out_1 = NULL;
+SeriesStatistics_Statistics_1_out_4 = NULL;
+SeriesStatistics_Statistics_1_out_5 = NULL;
+SeriesStatistics_GetLocal_1_out_1 = NULL;
+SeriesStatistics_GetLocal_1_out_2 = NULL;
+SeriesStatistics_Compute_1_out_1 = NULL;
+SeriesStatistics_GetLocal_2_out_1 = NULL;
+SeriesStatistics_GetLocal_2_out_2 = NULL;
+SeriesStatistics_Compute_2_out_1 = NULL;
