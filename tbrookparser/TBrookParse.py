@@ -49,8 +49,8 @@ except ImportError:
 #     ${TRUCHAS_ROOT}/tools    location of various python modules
 
 scriptdir = os.path.abspath(os.path.dirname(sys.argv[0]))
-bindir    = @Truchas_BIN_INSTALL_DIR@
-tooldir   = @TBrookParser_SOURCE_DIR@
+bindir    = '@Truchas_BIN_INSTALL_DIR@'
+tooldir   = '@TBrookParser_SOURCE_DIR@'
 sys.path.append(bindir)
 sys.path.append(tooldir)
 # print 'sys.path:', sys.path
