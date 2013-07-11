@@ -38,33 +38,6 @@ Remove items as they are fixed.
   This warning is for project developers.  Use -Wno-dev to suppress it.
   THIS FAILURE IS CAUSED BY "-g90"
 
-* The old build conditionally sets the preprocessor macro SUPPORTS_NEWUNIT
-  when compiling truchas source.  We need to replicate this in the new build.
-  Here's the relevant makefile snippet:
-  
-    ifeq ($(shell $(optdir)/newunit-test.sh $(FC)),YES)
-      CPPFLAGS += -DSUPPORTS_NEWUNIT
-    endif
-    
-  It invokes a script to test whether the compiler supports this feature.
-  Here's the script:
-  
-    #!/bin/sh
-    cat > conftest.f90 << EOF
-    subroutine conftest
-    open(newunit=n,file='conftest.out')
-    end subroutine
-    EOF
-    $1 -c conftest.f90 > /dev/null 2>&1
-    status=$?
-    rm -f conftest.o conftest.f90 conftest.out
-    if [[ $status == 0 ]]; then
-      echo YES
-    else
-      echo NO
-    fi
-    exit $status
-  
 * The 'make package' target should create tar files and a shell script that builds
   the code and creates a binary ditrubtion. Not working at all.
 
