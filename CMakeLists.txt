@@ -107,6 +107,15 @@ set(Truchas_FCIface_INCLUDE_DIR ${Truchas_BINARY_DIR})
 FortranCInterface_VERIFY(QUIET)
 
 # ---------------------------------------------------------------------------- #
+# Configuration Tests 
+# ---------------------------------------------------------------------------- #
+
+# newunit
+try_compile(SUPPORTS_NEWUNIT
+            ${Truchas_BINARY_DIR}
+            ${Truchas_SOURCE_DIR}/cmake/newunit.f90)
+
+# ---------------------------------------------------------------------------- #
 # Setting Some Useful Language Variables 
 # ---------------------------------------------------------------------------- #
 
@@ -239,6 +248,11 @@ endif()
 # Chaparral defines
 if (ENABLE_Chaparral)
   list(APPEND Truchas_PREPROCESSOR -DCHAPARRAL_SUPPORT)
+endif()
+
+# NEWUNIT support
+if (SUPPORTS_NEWUNIT)
+  list(APPEND Truchas_PREPROCESSOR -DSUPPORTS_NEWUNIT)
 endif()
 
 # Arch x86_64 flag hard code for now
