@@ -42,7 +42,7 @@ class CLError(Exception):
   def __str__(self):
     return self.msg
 
-class CLOptions:
+class CL_Options:
 
   _usage = '''Usage: %prog [options] DANU_FILE
 
