@@ -119,16 +119,38 @@ class RunListTestSuite(RunBaseTestSuite):
             self.outputdir = self.options.outputdir
             
         otptdr = os.path.abspath(self.outputdir)
-        try:
-            os.chdir(otptdr)
-        except:
-            os.mkdir(otptdr)
-            os.chdir(otptdr)
 
-        #cmd = 'cp -r %s/* %s/.' %(self.currdir,otptdr)
-        #os.system(cmd)
+        # NNC, 15 Jul 2013.  This is a replacement for the original code below
+        # that uses shutil to copy the tree.  Something is messed up in __myDirCopy
+        # that is causing problems on some platforms.  This behaves somewhat
+        # differently in that the output directory is removed and recreated afresh,
+        # whereas the original code would effectively merge the source tree with
+        # whatever happened to be in the destination tree.  It doesn't much matter
+        # now though since we no longer attempt to write results from multiple
+        # build types to the same output directory.  Hopefully this patch is good
+        # enough to hold us until we can get rid of this old testing infrastructure
+        # entirely.
 
-        self.__recursiveCopy(self.currdir,otptdr)
+        if os.path.isdir(otptdr):
+            shutil.rmtree(otptdr)
+        if os.path.isfile(otptdr):
+            os.remove(otptdir)
+
+        shutil.copytree(self.currdir,otptdr,
+            ignore=shutil.ignore_patterns('*_golden','*_pgolden','[.]svn',
+                'testdoc','UNUSED','PythonPackages'))
+        os.chdir(otptdr)
+       
+#        try:
+#            os.chdir(otptdr)
+#        except:
+#            os.mkdir(otptdr)
+#            os.chdir(otptdr)
+#
+#        #cmd = 'cp -r %s/* %s/.' %(self.currdir,otptdr)
+#        #os.system(cmd)
+#
+#        self.__recursiveCopy(self.currdir,otptdr)
 
         self.outptdr = os.getcwd()
         
@@ -199,7 +221,7 @@ class RunListTestSuite(RunBaseTestSuite):
             return
 
 
-    def __myDirCopy(self,currdir,otptdir,exclude_patterns=['*_golden','CVS*','testdoc']):
+    def __myDirCopy(self,currdir,otptdir,exclude_patterns=['*_golden','[.]svn*','CVS*','testdoc']):
 
         files = os.listdir(currdir)
         for file in files:
