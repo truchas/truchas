@@ -76,3 +76,4 @@ Remove items as they are fixed.
   -fPIC instead of -PIC)  I've added a fix to the top-level CMakeLists.txt near the top.
   Is that the right place to put it?  (I think this bug is fixed in 2.8.11, but I don't
   want to require that version.)
+
