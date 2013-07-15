@@ -45,7 +45,9 @@ if ( ENABLE_MPI )
                           --with-MPI 
                           --with-MPI-include='${mpi_include}'
 			  --with-MPI-libs='${mpi_libs}')
-  set(hypre_mpi_cflags -I${MPI_C_INCLUDE_PATH})
+  foreach(dir ${MPI_C_INCLUDE_PATH})
+    set(hypre_mpi_cflags " -I${dir} ${hypre_mpi_cflags}")
+  endforeach()  
 else()
   set(hypre_mpi_opt --without-MPI)
   set(hypre_mpi_cflags)
