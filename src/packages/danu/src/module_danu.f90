@@ -1902,7 +1902,6 @@ subroutine df90_simulation_open(fid,sim_name,sid,stat)
       name_len = len(sim_name)
       call simulation_open_f(fid, sim_name, name_len, sid, ierr)
       if (present(stat)) then
-        write(*,*) 'ierr=',ierr
           call define_return_status(ierr,stat)
       end if 
 
