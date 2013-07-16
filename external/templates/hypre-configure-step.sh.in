@@ -7,7 +7,7 @@
 # Useful environment variables
 export CC=@CMAKE_C_COMPILER@
 export CXX=@CMAKE_CXX_COMPILER@
-export F77=''
+export F77=@CMAKE_Fortran_COMPILER@
 export CFLAGS='@hypre_cflags@'
 
 
