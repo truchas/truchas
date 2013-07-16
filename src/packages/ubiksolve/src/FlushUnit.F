@@ -22,9 +22,6 @@
 !
 !*********************************************************************
 module Ubik_FlushUnit_module
-#ifdef NAG_COMPILER
-  use f90_unix
-#endif
 
   implicit none
 
@@ -42,11 +39,7 @@ contains
     ! </arguments>
 
     status = 0
-#if defined(nag)
     flush lu
-#else
-    call FLUSH (lu)
-#endif
 
     return
   end subroutine FlushUnit
