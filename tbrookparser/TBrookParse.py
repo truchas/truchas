@@ -5,24 +5,11 @@
 
 import os, sys, getopt
 
-# this won't work with python v3.x
-if sys.version[0] == '3':
-    print
-    print 'fatal: TBrookParse.py has not been ported to python version 3.x'
-    print '    can\'t continue'
-    print
-    sys.exit(1)
-
-# this has only been tested with python v2.5 and 2.6
-if sys.version[:3] == '2.5':
-    pass
-elif sys.version[:3] == '2.6':
+if (sys.version[0:3] == '2.6' or sys.version[0:3] == '2.7'):
     pass
 else:
-    print
-    print 'warning: TBrookParse.py has only been tested with python versions 2.5 and 2.6'
-    print '    you have version ' + sys.version[:3]
-    print '    this might work, or it might not'
+    print 'FATAL: TBrookParse.py requires Python 2.6 or 2.7'
+    sys.exit(1)
 
 # check if we have numpy.oldnumeric available - this is what we really want
 try:
