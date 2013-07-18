@@ -39,7 +39,7 @@ Remove items as they are fixed.
   THIS FAILURE IS CAUSED BY "-g90"
 
 * The 'make package' target should create tar files and a shell script that builds
-  the code and creates a binary ditrubtion. Not working at all.
+  the code and creates a binary distribution. Not working at all.
 
 * The prefices for each of the external packages should be changed to include
   the version number. Also ExternalProject_Add is generating a spruious src/

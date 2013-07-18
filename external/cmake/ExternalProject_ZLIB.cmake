@@ -34,7 +34,7 @@ set(zlib_install_dir  ${TruchasExternal_INSTALL_PREFIX})
 # --- Add the -fPIC or -PIC (Position in code flag)
 include(FindPICFlag)
 find_pic_flag(zlib_pic_flag)
-set(zlib_c_flags ${CMAKE_C_FLAGS} ${zlib_pic_flag})
+set(zlib_c_flags "${CMAKE_C_FLAGS} ${zlib_pic_flag}")
 
 
 # --- Add the external project

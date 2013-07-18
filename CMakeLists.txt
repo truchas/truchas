@@ -83,6 +83,9 @@ option(ENABLE_Chaco "Build with Chaco support"  True)
 # Build with Chaparral
 option(ENABLE_Chaparral "Build with Chaparral support"  True)
 
+# Build with PIC (position in code)
+option(WITH_PIC "Build with PIC support" True)
+
 # Test - need a swith here to enable testing
 enable_testing()
 
@@ -107,15 +110,6 @@ set(Truchas_FCIface_INCLUDE_DIR ${Truchas_BINARY_DIR})
 FortranCInterface_VERIFY(QUIET)
 
 # ---------------------------------------------------------------------------- #
-# Configuration Tests 
-# ---------------------------------------------------------------------------- #
-
-# newunit
-try_compile(SUPPORTS_NEWUNIT
-            ${Truchas_BINARY_DIR}
-            ${Truchas_SOURCE_DIR}/cmake/newunit.f90)
-
-# ---------------------------------------------------------------------------- #
 # Setting Some Useful Language Variables 
 # ---------------------------------------------------------------------------- #
 
@@ -129,6 +123,82 @@ endforeach()
 # Now set the correct variable to true
 string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}" uc_id)
 set(Fortran_COMPILER_IS_${uc_id} TRUE)
+# ---------------------------------------------------------------------------- #
+# Configuration Tests 
+# ---------------------------------------------------------------------------- #
+
+# newunit
+try_compile(SUPPORTS_NEWUNIT
+            ${Truchas_BINARY_DIR}
+            ${Truchas_SOURCE_DIR}/cmake/newunit.f90)
+
+# PIC support
+if ( WITH_PIC OR ENABLE_TBROOK )
+  include(CheckCCompilerFlag)
+  include(UpdateCompilerFlags)
+  set(test_pic_flags -fPIC -fpic -PIC -pic)
+  set(pic_flag pic_flag-NOTFOUND)
+  foreach(flag ${test_pic_flags})
+    set(res_var pic_flag_ctest${flag})
+    check_c_compiler_flag(${flag} ${res_var})
+    if ( ${${res_var}} )
+      set(pic_flag ${flag})
+      break()
+    endif(${${res_var}})
+  endforeach()
+
+  if(pic_flag)
+    message(STATUS "Adding ${pic_flag} to CMAKE_C_FLAGS")
+    update_compiler_flags(C FLAGS ${pic_flag})
+  else()
+    message(FATAL_ERROR "Could not determine the PIC flag for this C compiler. "
+                        "Tried: ${test_pic_flags} all failed")
+  endif()
+
+  include(CheckCXXCompilerFlag)
+  set(test_pic_flags -fPIC -fpic -PIC -pic)
+  set(pic_flag pic_flag-NOTFOUND)
+  foreach(flag ${test_pic_flags})
+    set(res_var pic_flag_cxxtest${flag})
+    check_cxx_compiler_flag(${flag} ${res_var})
+    if ( ${${res_var}} )
+      set(pic_flag ${flag})
+      break()
+    endif(${${res_var}})
+  endforeach()
+
+  if(pic_flag)
+    message(STATUS "Adding ${pic_flag} to CMAKE_CXX_FLAGS")
+    update_compiler_flags(CXX FLAGS ${pic_flag})
+  else()
+    message(FATAL_ERROR "Could not determine the PIC flag for this C++ compiler. "
+                        "Tried: ${test_pic_flags} all failed")
+  endif()
+
+  # CMake does not have equivalent CheckFortran*.cmake modules
+  # for now we'll hard code these flags by compiler type.
+  set(pic_flag pic_flag-NOTFOUND)
+  if(CMAKE_Fortran_COMPILE_OPTIONS_PIC)
+    set(pic_flag ${CMAKE_Fortran_COMPILE_OPTIONS_PIC})
+  else()
+    if (Fortran_COMPILER_IS_NAG)
+      set(pic_flag -PIC)
+    elseif(Fortran_COMPILER_IS_INTEL)
+      set(pic_flag -fpic)
+    else()
+      message(STATUS "PIC (position in code) compiler flag is not set for ${CMAKE_Fortran_COMPILER+ID}")
+    endif()
+  endif()
+
+  if(pic_flag)
+    message(STATUS "Adding ${pic_flag} to CMAKE_Fortran_FLAGS")
+    update_compiler_flags(Fortran FLAGS ${pic_flag})
+  else()
+    message(FATAL_ERROR "Could not determine the PIC flag for this Fortran compiler.")
+  endif()
+  
+endif()
+
 
 
 # ---------------------------------------------------------------------------- #

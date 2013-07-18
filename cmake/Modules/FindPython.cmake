@@ -108,7 +108,7 @@ if ( PYTHON_VERSION_STRING )
     list(GET _tmp_list 2 PYTHON_VERSION_PATCH)
   endif()
 else()
-  print_variable(python_version_out)
+  #print_variable(python_version_out)
 endif()
 
 

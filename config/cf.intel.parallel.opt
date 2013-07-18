@@ -16,6 +16,6 @@ set(CMAKE_BUILD_TYPE Release CACHE STRING "Optimized build")
 set(ENABLE_MPI True CACHE BOOL "MPI build control flag")
 
 # Fortran Flags
-set(CMAKE_Fortran_FLAGS "-O -fPIC" CACHE STRING "Intel Fortran compile flags")
+set(CMAKE_Fortran_FLAGS "-O" CACHE STRING "Intel Fortran compile flags")
 
 
