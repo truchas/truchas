@@ -7,14 +7,15 @@
 # Useful environment variables
 export CC=@CMAKE_C_COMPILER@
 export CXX=@CMAKE_CXX_COMPILER@
-export F77=@CMAKE_Fortran_COMPILER@
 export CFLAGS='@hypre_cflags@'
+export LDFLAGS='@hypre_ldflags@'
 
 
 cd @hypre_source_dir@/src
 ./configure --prefix=@hypre_install_dir@ \
             --without-fei \
-	    @hypre_openmp_opt@ \
+            --disable-fortran \
+            @TruchasExternal_SHARED_SWITCH@ \
             @hypre_mpi_opt@ \
 	    @hypre_blas_opt@ \
 	    @hypre_lapack_opt@ 

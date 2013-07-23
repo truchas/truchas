@@ -41,10 +41,12 @@ set(hypre_install_dir  ${TruchasExternal_INSTALL_PREFIX})
 if ( ENABLE_MPI )
   build_whitespace_string(mpi_include ${MPI_C_INCLUDE_PATH})
   build_whitespace_string(mpi_libs ${MPI_C_LIBRARIES})
+#BROKEN  build_whitespace_string(hypre_mpi_opt
+#BROKEN                          --with-MPI 
+#BROKEN                          --with-MPI-include='${mpi_include}'
+#BROKEN			  --with-MPI-libs='${mpi_libs}')
   build_whitespace_string(hypre_mpi_opt
-                          --with-MPI 
-                          --with-MPI-include='${mpi_include}'
-			  --with-MPI-libs='${mpi_libs}')
+                          --with-MPI) 
   foreach(dir ${MPI_C_INCLUDE_PATH})
     set(hypre_mpi_cflags " -I${dir} ${hypre_mpi_cflags}")
   endforeach()  
@@ -85,6 +87,12 @@ endif()
 build_whitespace_string(hypre_cflags
                         ${hypre_mpi_cflags}
 			${hypre_openmp_flags})
+
+set(ldflags_list)
+if(ENABLE_MPI)
+  list(APPEND ldflags_list ${MPI_C_LIBRARIES})
+endif()
+build_whitespace_string(hypre_ldflags ${ldflags_list})
 
 # --- Create the configure scripts and command		      
 
@@ -181,6 +189,7 @@ global_set(HYPRE_INCLUDE_DIRS ${inc_dirs})
 # Library
 build_library_name(HYPRE HYPRE_LIBRARY APPEND_PATH ${hypre_install_dir}/lib)
 global_set(HYPRE_LIBRARY ${HYPRE_LIBRARY})
+#global_set(HYPRE_LIBRARY ${hypre_install_dir}/lib/libHYPRE.a)
 set(libs ${HYPRE_LIBRARY})
 if(ENABLE_MPI)
   list(APPEND libs ${MPI_C_LIBRARIES})

@@ -86,9 +86,16 @@ option(ENABLE_Chaparral "Build with Chaparral support"  True)
 # Build with PIC (position in code)
 option(WITH_PIC "Build with PIC support" True)
 
+# Build shared libs
+option(ENABLE_SHARED "Build shared libraries" False)
+
 # Test - need a swith here to enable testing
 enable_testing()
 
+# Set the BUILD_SHARED_LIBS variable
+if(ENABLE_SHARED)
+  set(BUILD_SHARED_LIBS True)
+endif()
 
 # Define the build id
 include(GetTruchasBuildId)
@@ -198,7 +205,6 @@ if ( WITH_PIC OR ENABLE_TBROOK )
   endif()
   
 endif()
-
 
 
 # ---------------------------------------------------------------------------- #

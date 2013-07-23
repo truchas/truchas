@@ -6,6 +6,7 @@
 # HYPRE recommends running with the make configure target
 cd @hypre_source_dir@/src
 make install
-echo "make install returned $?"
+make_ret=$?
+echo "make install returned $make_ret"
 
-exit $?
+exit $make_ret

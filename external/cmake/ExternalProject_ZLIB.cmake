@@ -36,7 +36,6 @@ include(FindPICFlag)
 find_pic_flag(zlib_pic_flag)
 set(zlib_c_flags "${CMAKE_C_FLAGS} ${zlib_pic_flag}")
 
-
 # --- Add the external project
 
 ExternalProject_Add(${ZLIB_BUILD_TARGET}

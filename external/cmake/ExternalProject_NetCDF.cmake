@@ -111,11 +111,11 @@ ExternalProject_Add(${NetCDF_BUILD_TARGET}
                     # -- Configure
 		    CONFIGURE_COMMAND <SOURCE_DIR>/configure
 		                          --prefix=<INSTALL_DIR>
-		    			  --disable-shared
 		        		  --disable-dap
 		    			  --disable-netcdf-4
 		    			  --disable-cxx
 		    			  --with-pic
+                                          ${TruchasExternal_SHARED_SWITCH}
 		    			  CC=${CMAKE_C_COMPILER_NAME}
 		    			  CXX=""
 		    			  FC=${CMAKE_Fortran_COMPILER_NAME}

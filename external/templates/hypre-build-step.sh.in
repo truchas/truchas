@@ -12,6 +12,7 @@ export F77=''
 # HYPRE in-source build under src 
 cd @hypre_source_dir@/src
 make all 
-echo "make all returned $?"
+make_ret=$?
+echo "make all returned $make_ret"
 
-exit $?
+exit $make_ret
