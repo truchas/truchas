@@ -35,24 +35,32 @@ set(hypre_stamp_dir    ${hypre_prefix_dir}/hypre-timestamps)
 set(hypre_tmp_dir      ${hypre_prefix_dir}/hypre-tmp)
 set(hypre_install_dir  ${TruchasExternal_INSTALL_PREFIX})
 
-# --- Configure parameters
+# --- Compile/Build Environment Variables
+set(cflags_list)
+set(ldflags_list)
 
 # MPI flags and opts
 if ( ENABLE_MPI )
-  build_whitespace_string(mpi_include ${MPI_C_INCLUDE_PATH})
-  build_whitespace_string(mpi_libs ${MPI_C_LIBRARIES})
-#BROKEN  build_whitespace_string(hypre_mpi_opt
-#BROKEN                          --with-MPI 
-#BROKEN                          --with-MPI-include='${mpi_include}'
-#BROKEN			  --with-MPI-libs='${mpi_libs}')
-  build_whitespace_string(hypre_mpi_opt
-                          --with-MPI) 
+
+  # Configure option
+  set(hypre_mpi_opt --with-MPI)
+
+  # MPI flags for CFLAGS
   foreach(dir ${MPI_C_INCLUDE_PATH})
-    set(hypre_mpi_cflags " -I${dir} ${hypre_mpi_cflags}")
-  endforeach()  
+    list(APPEND cflags_list -I${dir})
+  endforeach()
+  list(APPEND cflags_list ${MPI_C_COMPILE_FLAGS})
+
+  # MPI flags for LDFLAGS
+  include(SplitLibraryName)
+  foreach(lib ${MPI_C_LIBRARIES})
+    split_library_name(${lib} PATH lib_path LIBNAME lib_name EXT lib_ext)
+    list(APPEND ldflags_list -L${lib_path} -l${lib_name})
+  endforeach()
+  list(APPEND ldflags_list ${MPI_C_LINK_FLAGS})
+
 else()
   set(hypre_mpi_opt --without-MPI)
-  set(hypre_mpi_cflags)
 endif()
 
 #BROKEN# BLAS options
@@ -83,15 +91,8 @@ endif()
 #BROKEN  set(hypre_openmp_flags ${OpenMP_C_FLAGS})
 #BROKENendif()
 
-# Compile flags 
-build_whitespace_string(hypre_cflags
-                        ${hypre_mpi_cflags}
-			${hypre_openmp_flags})
-
-set(ldflags_list)
-if(ENABLE_MPI)
-  list(APPEND ldflags_list ${MPI_C_LIBRARIES})
-endif()
+# Whitespace strings for the shell scripts
+build_whitespace_string(hypre_cflags ${cflags_list})
 build_whitespace_string(hypre_ldflags ${ldflags_list})
 
 # --- Create the configure scripts and command		      
