@@ -160,9 +160,8 @@ add_dependencies(_GMV ${SWIG_BUILD_TARGET})
     list(APPEND PyDanu_SCRIPTS ${output_target})
   endforeach()  
 
-  install(FILES ${PyDanu_SCRIPTS} 
-          DESTINATION ${Danu_BIN_INSTALL_DIR}
-          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+  install(PROGRAMS ${PyDanu_SCRIPTS} 
+          DESTINATION ${Danu_BIN_INSTALL_DIR})
 
 
 
