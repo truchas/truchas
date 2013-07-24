@@ -55,6 +55,7 @@ FUNCTION(FORTRAN_PREPROCESS_FILES mylist)
     #message(STATUS "fullname=${fullname}")
     add_custom_command(OUTPUT "${outfile}"
         COMMAND ${MY_FPP_EXECUTABLE} ${MY_FPP_FLAGS} ${fullname} | ${grep_filter} > ${outfile}
+	DEPENDS ${fullname}
 	COMMENT "Preprocessing ${infile}"
 	VERBATIM)
     list(APPEND outfiles ${outfile})  
