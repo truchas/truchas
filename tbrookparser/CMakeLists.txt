@@ -2,6 +2,9 @@ project(TBrookParser)
 
 message(STATUS "configuring the tbrookparser directory")
 
+# Add the Python and NumPy include directories
+include_directories(${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIRS})
+
 add_subdirectory(PythonPackages/TBrookParser/Extensions)
 
 # Scripts to install
