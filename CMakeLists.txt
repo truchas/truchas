@@ -278,6 +278,12 @@ find_package(Python)
 # NumPy - Numerical Python
 find_package(NumPy)
 
+# LAPACK
+find_package(LAPACK)
+
+# BLAS
+find_package(BLAS)
+
 
 # ---------------------------------------------------------------------------- #
 # Preprocessor definitions 
@@ -579,6 +585,25 @@ message(STATUS "\tHDF5_VERSION=${HDF5_VERSION}")
 message(STATUS "\tHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}")
 message(STATUS "\tHDF5_INCLUDE_DIRS=${HDF5_INCLUDE_DIRS}")
 message(STATUS "\tHDF5_LIBRARIES=${HDF5_LIBRARIES}")
+message(STATUS)
+message(STATUS "Python")
+message(STATUS "\tPYTHON_VERSION=${PYTHON_VERSION}")
+message(STATUS "\tPYTHON_INCLUDE_DIRS=${PYTHON_INCLUDE_DIRS}")
+message(STATUS "\tPYTHON_LIBRARIES=${PYTHON_LIBRARIES}")
+message(STATUS)
+message(STATUS "NumPy")
+message(STATUS "\tNUMPY_VERSION=${NUMPY_VERSION}")
+message(STATUS "\tNUMPY_INCLUDE_DIRS=${NUMPY_INCLUDE_DIRS}")
+message(STATUS)
+message(STATUS "LAPACK")
+message(STATUS "\tLAPACK_FOUND=${LAPACK_FOUND}")
+message(STATUS "\tLAPACK_LINKER_FLAGS=${LAPACK_LINKER_FLAGS}")
+message(STATUS "\tLAPACK_LIBRARIES=${LAPACK_LIBRARIES}")
+message(STATUS)
+message(STATUS "BLAS")
+message(STATUS "\tBLAS_FOUND=${BLAS_FOUND}")
+message(STATUS "\tBLAS_LINKER_FLAGS=${BLAS_LINKER_FLAGS}")
+message(STATUS "\tBLAS_LIBRARIES=${BLAS_LIBRARIES}")
 message(STATUS)
 message(STATUS "Preprocessor Command:${Truchas_PREPROCESSOR_STRING}")
 message(STATUS "-------------------------------------------------------") 

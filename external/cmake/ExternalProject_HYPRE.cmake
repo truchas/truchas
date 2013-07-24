@@ -63,32 +63,30 @@ else()
   set(hypre_mpi_opt --without-MPI)
 endif()
 
-#BROKEN# BLAS options
-#BROKENset(hypre_blas_opt)
-#BROKENfind_package(BLAS)
-#BROKENif (BLAS_FOUND)
-#BROKEN  build_whitespace_string(blas_libs ${BLAS_LIBRARIES}) 
-#BROKEN  build_whitespace_string(hypre_blas_opt
-#BROKEN                         --with-blas-libs='${blas_libs}')
-#BROKENelse()  
-#BROKENendif()
-#BROKEN
-#BROKEN# LAPACK options
-#BROKENset(hypre_lapack_opt)
-#BROKENfind_package(LAPACK)
-#BROKENif (LAPACK_FOUND)
-#BROKEN  build_whitespace_string(lapack_libs ${BLAS_LIBRARIES}) 
-#BROKEN  build_whitespace_string(hypre_lapack_opt
-#BROKEN                         --with-lapack-libs='${blas_libs}')
-#BROKENendif()
-#BROKEN
-#BROKEN# OpenMP
+# BLAS options
+set(hypre_blas_opt)
+find_package(BLAS)
+if (BLAS_FOUND)
+  list(APPEND ldflags_list ${BLAS_LIBRARIES})
+  list(APPEND ldflags_list ${BLAS_LINKER_FLAGS})
+  set(hypre_blas_opt --with-blas)
+endif()  
+
+# LAPACK options
+set(hypre_lapack_opt)
+find_package(LAPACK)
+if (LAPACK_FOUND)
+  list(APPEND ldflags_list ${LAPACK_LIBRARIES})
+  list(APPEND ldflags_list ${LAPACK_LINKER_FLAGS})
+  set(hypre_lapack_opt --with-lapack)
+endif()
+
+# OpenMP
 #BROKENset(hypre_openmp_opt)
-#BROKENset(hypre_openmp_flags)
 #BROKENfind_package(OpenMP)
 #BROKENif (OPENMP_FOUND)
 #BROKEN  set(hypre_openmp_opt --with-openmp)
-#BROKEN  set(hypre_openmp_flags ${OpenMP_C_FLAGS})
+#BROKEN  set(cflags_list ${OpenMP_C_FLAGS})
 #BROKENendif()
 
 # Whitespace strings for the shell scripts
@@ -190,10 +188,15 @@ global_set(HYPRE_INCLUDE_DIRS ${inc_dirs})
 # Library
 build_library_name(HYPRE HYPRE_LIBRARY APPEND_PATH ${hypre_install_dir}/lib)
 global_set(HYPRE_LIBRARY ${HYPRE_LIBRARY})
-#global_set(HYPRE_LIBRARY ${hypre_install_dir}/lib/libHYPRE.a)
 set(libs ${HYPRE_LIBRARY})
 if(ENABLE_MPI)
   list(APPEND libs ${MPI_C_LIBRARIES})
+endif()
+if(LAPACK_FOUND)
+  list(APPEND libs ${LAPACK_LIBRARIES})
+endif()
+if(BLAS_FOUND)
+  list(APPEND libs ${BLAS_LIBRARIES})
 endif()
 global_set(HYPRE_LIBRARIES ${libs})
 
