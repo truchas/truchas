@@ -54,14 +54,14 @@ ExternalProject_Add(${SWIG_BUILD_TARGET}
                     TMP_DIR     ${swig_tmp_dir}     
                     STAMP_DIR   ${swig_stamp_dir}
                     SOURCE_DIR  ${swig_source_dir}
-		    INSTALL_DIR ${swig_install_dir}
+		    #INSTALL_DIR ${swig_install_dir}
 		    # -- Archive file definitions
                     URL          ${swig_url_file}
                     URL_MD5      ${SWIG_MD5_SUM}   
                     # -- Configure
 		    CONFIGURE_COMMAND
                         <SOURCE_DIR>/configure
-                                          --prefix=<INSTALL_DIR>
+                                          --prefix=${swig_install_dir}
 					  --without-pcre
 					  --with-python=${PYTHON_EXECUTABLE}
                                           ${TruchasExternal_SHARED_SWITCH}

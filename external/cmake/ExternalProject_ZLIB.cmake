@@ -44,7 +44,7 @@ ExternalProject_Add(${ZLIB_BUILD_TARGET}
                     TMP_DIR     ${zlib_tmp_dir}     
                     STAMP_DIR   ${zlib_stamp_dir}
                     SOURCE_DIR  ${zlib_source_dir}
-		    INSTALL_DIR ${zlib_install_dir}
+		    #INSTALL_DIR ${zlib_install_dir}
 		    # -- Archive file definitions
                     URL          ${zlib_url_file}
                     URL_MD5      ${ZLIB_MD5_SUM}   
@@ -54,7 +54,7 @@ ExternalProject_Add(${ZLIB_BUILD_TARGET}
 			  ${TruchasExternal_CMAKE_BUILD_ARGS}
 			  -DCMAKE_C_FLAGS:STRING=${zlib_c_flags}
 	            CMAKE_ARGS
-		          -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+		          -DCMAKE_INSTALL_PREFIX:PATH=${zlib_install_dir}
                     # -- Output control
                     ${zlib_logging})
 

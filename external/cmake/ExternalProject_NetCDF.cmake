@@ -102,7 +102,7 @@ ExternalProject_Add(${NetCDF_BUILD_TARGET}
                     TMP_DIR     ${netcdf_tmp_dir}     
                     STAMP_DIR   ${netcdf_stamp_dir}
                     SOURCE_DIR  ${netcdf_source_dir}
-		    INSTALL_DIR ${netcdf_install_dir}
+		    #INSTALL_DIR ${netcdf_install_dir}
 		    # -- Archive file definitions
                     URL          ${netcdf_url_file}
                     URL_MD5      ${NetCDF_MD5_SUM}   
@@ -110,7 +110,7 @@ ExternalProject_Add(${NetCDF_BUILD_TARGET}
 		    PATCH_COMMAND ${NetCDF_PATCH_COMMAND}
                     # -- Configure
 		    CONFIGURE_COMMAND <SOURCE_DIR>/configure
-		                          --prefix=<INSTALL_DIR>
+		                          --prefix=${netcdf_install_dir}
 		        		  --disable-dap
 		    			  --disable-netcdf-4
 		    			  --disable-cxx

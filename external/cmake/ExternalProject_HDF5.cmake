@@ -65,14 +65,14 @@ ExternalProject_Add(${HDF5_BUILD_TARGET}
                     TMP_DIR     ${hdf5_tmp_dir}     
                     STAMP_DIR   ${hdf5_stamp_dir}
                     SOURCE_DIR  ${hdf5_source_dir}
-		    INSTALL_DIR ${hdf5_install_dir}
+		    #INSTALL_DIR ${hdf5_install_dir}
 		    # -- Archive file definitions
                     URL          ${hdf5_url_file}
                     URL_MD5      ${HDF5_MD5_SUM}   
                     # -- Configure
 		    CONFIGURE_COMMAND
                         <SOURCE_DIR>/configure
-                                          --prefix=<INSTALL_DIR>
+                                          --prefix=${hdf5_install_dir}
                                           --enable-option-checking
 					  --with-pic
                                           --disable-parallel

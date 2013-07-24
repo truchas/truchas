@@ -169,7 +169,7 @@ ExternalProject_Add(${HYPRE_BUILD_TARGET}
                     BUILD_COMMAND     ${HYPRE_BUILD_COMMAND}   
                     BUILD_IN_SOURCE   TRUE                    
                     # -- Install
-                    INSTALL_DIR      ${hypre_install_dir}
+		    #INSTALL_DIR      ${hypre_install_dir}
 		    INSTALL_COMMAND  ${HYPRE_INSTALL_COMMAND}
                     # -- Output control
 		    ${TruchasExternal_LOG_OPTS})
