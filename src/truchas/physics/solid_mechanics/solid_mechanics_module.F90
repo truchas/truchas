@@ -193,14 +193,13 @@ Contains
     use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
     use timing_tree
     use UbikSolve_module
-    use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
+    use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
     use linear_module,        only: LINEAR_GRAD
     Use gs_module,            Only: EN_GATHER, EN_SUM_SCATTER
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
     use fluid_data_module,    only: isImmobile
     use matl_module,          only: Matl
-    use property_data_module, only: Viscoplastic_Model
     use mesh_module,            only: Cell, Mesh, GAP_ELEMENT_1
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
     use pgslib_module,        only: PGSLib_Global_MAXVAL
@@ -237,14 +236,9 @@ Contains
        call stop_timer("Solid Mech Init")
        call stop_timer("Initialization")
     end if
-    
+
     ! Determine if plastic flow is to be included
-    plasticity = .false.
-    do i = 1,nmat
-       if ((TRIM(Viscoplastic_Model(i)) == 'mts') .or. &
-          (TRIM(Viscoplastic_Model(i)) == 'power_law')) &
-          plasticity = .true.
-    end do
+    call viscoplasticity_init (plasticity)
 
     call define_tm_density_property (status, errmsg)
     if (status /= 0) call TLS_fatal ('SOLID_MECH_INIT: ' // trim(errmsg))
@@ -365,9 +359,7 @@ Contains
 
        ! Initial strain rate
        do ip = 1,nipc
-          do icell = 1, ncells
-             Call VISCOPLASTIC_STRAIN_RATE(SMech_IP(ip)%Plastic_Strain_Rate(icell), Eff_Stress_IP_old(icell,ip), icell)
-          end do
+          call viscoplastic_strain_rate (Eff_Stress_IP_old(:,ip), zone%temp, SMech_IP(ip)%Plastic_Strain_Rate)
        end do
 
        ! Initialize cell centered stresses, strains and strain rates for output
@@ -389,9 +381,7 @@ Contains
             SMech_Cell%Elastic_Stress(6,:)**2))/2.)
 
        ! Cell centered plastic strain rate
-       do icell = 1, ncells
-          Call VISCOPLASTIC_STRAIN_RATE(SMech_Cell%Plastic_Strain_Rate(icell), Eff_Stress_Cell_old(icell), icell)
-       end do
+       call viscoplastic_strain_rate (Eff_Stress_Cell_old, zone%temp, SMech_Cell%Plastic_Strain_Rate)
 
        call TLS_info (' Done.')
        
@@ -441,6 +431,7 @@ Contains
     use fluid_data_module,    only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_UPDATE
+    use zone_module, only: zone
 
     integer :: idim, inodes, ip, icell, imat, islot
     real(r8), Dimension(ndim*nnodes) :: Temp
@@ -494,9 +485,7 @@ Contains
     tm_dens(:) = 0.0
     
     do ip = 1,nipc
-       do icell = 1, ncells
-          Call VISCOPLASTIC_STRAIN_RATE(SMech_IP_Old(ip)%Plastic_Strain_Rate(icell), Eff_Stress_IP_old(icell,ip), icell)
-       end do
+       call viscoplastic_strain_rate (Eff_Stress_IP_old(:,ip), zone%temp, SMech_IP_Old(ip)%Plastic_Strain_Rate)
     end do
 
     ! Deviatoric stress components for all integration points - used to set the direction of the 

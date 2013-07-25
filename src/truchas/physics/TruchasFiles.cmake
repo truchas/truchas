@@ -158,6 +158,10 @@ list(APPEND PHYSICS_FILES
            physics/solid_mechanics/solid_mech_constraints.F90
            physics/solid_mechanics/solid_mechanics_data.F90
            physics/solid_mechanics/solid_mechanics_module.F90
+           physics/solid_mechanics/VP_model_class.F90
+           physics/solid_mechanics/MTS_VP_model_type.F90
+           physics/solid_mechanics/power_law_VP_model_type.F90
+           physics/solid_mechanics/viscoplastic_model_namelist.F90
            physics/solid_mechanics/viscoplasticity.F90)
 
 # Preprocess flags	 

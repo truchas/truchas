@@ -20,19 +20,11 @@ MODULE PROPERTY_DATA_MODULE
   ! Material Namelist Variables
   integer, save :: background_material
 
-  character(80), dimension(0:maxmat), save :: Material_Name, Material_Feature, Viscoplastic_Model
+  character(80), dimension(0:maxmat), save :: Material_Name, Material_Feature
   
   real(r8), dimension(0:maxmat), save :: density, Sound_Speed, Void_Temperature
 
   integer, dimension(0:maxmat), save :: Priority
-
-  ! Solid Mechanics input - not temperature dependent                     
-  real(r8), dimension(0:maxmat), save :: &
-                       MTS_k, MTS_mu_0, MTS_sig_a,     &
-                       MTS_d, MTS_temp_0, MTS_b,       &
-                       MTS_edot_0i, MTS_g_0i, MTS_q_i, &
-                       MTS_p_i, MTS_sig_i, Pwr_Law_A,  &
-                       Pwr_Law_N, Pwr_Law_Q, Pwr_Law_R
 
   real(r8), dimension(ndim,0:maxmat), save :: Permeability_Constant
 

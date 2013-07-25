@@ -45,13 +45,11 @@ CONTAINS
     !=======================================================================
     use input_utilities,      only: NULL_I, NULL_R
     use matl_module,          only: relation_forms
-    use solid_mechanics_data, only: Viscoplastic_Model_Forms, maxvpforms
     use parameter_module,     only: maxcon, maxmat, max_Relation_forms , nmat
     use property_data_module, only: background_material,                          &
                                     density, material_name, matpri, priority,     &
                                     Permeability_Constant,                        &
                                     Material_Feature,                             &
-                                    Viscoplastic_Model,                           &
                                     Sound_Speed
     use utilities_module,     only: STRING_COMPARE
     use property_module,      only: Get_User_Material_ID
@@ -208,32 +206,6 @@ CONTAINS
 
     end do SOUNDSPEED
 
-    VISCOPLASTICMODEL: do m = 1,nmat
-
-       do l = 1,maxvpforms       
-          call STRING_COMPARE (Viscoplastic_Model(m), Viscoplastic_Model_Forms(l), strings_match)
-          if(strings_match) then
-             select case(l)
-             case(1)
-                Viscoplastic_Model(m) = 'elastic_only'
-             case(2,3)
-                Viscoplastic_Model(m) = 'mts'
-             case(4)
-                Viscoplastic_Model(m) = 'power_law'
-             end select
-
-             cycle VISCOPLASTICMODEL
-          end if
-       end do
-
-       ! Invalid material.
-       write (message,170) TRIM(Viscoplastic_Model(m))
-170    format('Viscoplastic Model = ''',a,''' is invalid ')
-       call TLS_error (message)
-       fatal = .true.
-
-    end do VISCOPLASTICMODEL
-
   END SUBROUTINE MATERIAL_CHECK
 
   SUBROUTINE MATERIAL_DEFAULT ()
@@ -246,7 +218,6 @@ CONTAINS
     use parameter_module,     only: nmat
     use input_utilities,      only: NULL_I, NULL_R
     use matl_module,          only: relation_forms
-    use solid_mechanics_data, only: Viscoplastic_Model_Forms
     use property_data_module, only: background_material,                          &
                                     density, material_name, matpri,               &
                                     Permeability_Constant, Material_Feature,      &
@@ -281,12 +252,6 @@ CONTAINS
     relation_forms(4) = 'temperature_polynomial'
     relation_forms(5) = 'temp polynomial'
 
-    ! Valid character strings for the viscoplastic model
-    Viscoplastic_Model_Forms(1) = 'elastic_only'
-    Viscoplastic_Model_Forms(2) = 'mts'
-    Viscoplastic_Model_Forms(3) = 'MTS'
-    Viscoplastic_Model_Forms(4) = 'power_law'
-
   END SUBROUTINE MATERIAL_DEFAULT
 
   SUBROUTINE MATERIAL_INPUT (lun)
@@ -303,11 +268,7 @@ CONTAINS
     use property_data_module,   only: density, material_name, priority,               &
                                       Permeability_Constant,                          &
                                       Material_Feature,                               &
-                                      Sound_Speed, Void_Temperature,                  &
-                                      Viscoplastic_Model, MTS_k, MTS_mu_0, MTS_sig_a, &
-                                      MTS_d, MTS_temp_0, MTS_b, MTS_edot_0i, MTS_g_0i,&
-                                      MTS_q_i, MTS_p_i, MTS_sig_i, Pwr_Law_A,         &
-                                      Pwr_Law_N, Pwr_Law_Q, Pwr_Law_R
+                                      Sound_Speed, Void_Temperature
     use fluid_data_module,      only: isImmobile
   
     integer, intent(in) :: lun
@@ -324,11 +285,7 @@ CONTAINS
                         material_name, material_number, priority,         &
                         Permeability_Constant,                            &
                         Material_Feature,                                 &
-                        Sound_Speed, Void_Temperature,                    &
-                        MTS_k, MTS_mu_0, MTS_sig_a, MTS_d, MTS_temp_0,    &
-                        MTS_b, MTS_edot_0i, MTS_g_0i, MTS_q_i, MTS_p_i,   &
-                        MTS_sig_i, Viscoplastic_Model, Pwr_Law_A,         &
-                        Pwr_Law_N, Pwr_Law_Q, Pwr_Law_R
+                        Sound_Speed, Void_Temperature
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     read_done = .false.
@@ -354,28 +311,12 @@ CONTAINS
 
        material_name(0)                  = 'none'
        Material_Feature(0)               = 'normal'
-       Viscoplastic_Model(0)             = 'elastic_only'
 
        density(0)                           = NULL_R
        Permeability_Constant(:,0)           = 0
        
        Void_Temperature(0)             = 0
        Sound_Speed(0)                  = 0
-       MTS_k(0)                        = 0                       
-       MTS_mu_0(0)                     = 0
-       MTS_sig_a(0)                    = 0
-       MTS_d(0)                        = 0
-       MTS_temp_0(0)                   = 0
-       MTS_b(0)                        = 0
-       MTS_edot_0i(0)                  = 0
-       MTS_g_0i(0)                     = 0
-       MTS_q_i(0)                      = 0
-       MTS_p_i(0)                      = 0
-       MTS_sig_i(0)                    = 0
-       Pwr_Law_A(0)                    = 0
-       Pwr_Law_N(0)                    = 0
-       Pwr_Law_Q(0)                    = 0
-       Pwr_Law_R(0)                    = 0
 
        ! Read next MATERIAL
        READ_IO_PE_ONLY: if (p_info%IOP) then
@@ -435,22 +376,6 @@ CONTAINS
 
        Void_Temperature(nmat)                  = Void_Temperature(0)
        Sound_Speed(nmat)                       = Sound_Speed(0)
-       Viscoplastic_Model(nmat)                = Viscoplastic_Model(0)
-       MTS_k(nmat)                             = MTS_k(0)                             
-       MTS_mu_0(nmat)                          = MTS_mu_0(0)   
-       MTS_sig_a(nmat)                         = MTS_sig_a(0)  
-       MTS_d(nmat)                             = MTS_d(0)      
-       MTS_temp_0(nmat)                        = MTS_temp_0(0) 
-       MTS_b(nmat)                             = MTS_b(0)      
-       MTS_edot_0i(nmat)                       = MTS_edot_0i(0)
-       MTS_g_0i(nmat)                          = MTS_g_0i(0)   
-       MTS_q_i(nmat)                           = MTS_q_i(0)    
-       MTS_p_i(nmat)                           = MTS_p_i(0)    
-       MTS_sig_i(nmat)                         = MTS_sig_i(0)  
-       Pwr_Law_A(nmat)                         = Pwr_Law_A(0)
-       Pwr_Law_N(nmat)                         = Pwr_Law_N(0)
-       Pwr_Law_Q(nmat)                         = Pwr_Law_Q(0)
-       Pwr_Law_R(nmat)                         = Pwr_Law_R(0)
 
        if (material_name(nmat) == 'none') then
           write (message, 25) nmat
@@ -481,11 +406,7 @@ CONTAINS
                                     density, material_name, priority,               &
                                     Permeability_Constant,                          &
                                     Material_Feature,                               &
-                                    Sound_Speed, Void_Temperature,                  &
-                                    MTS_k, MTS_mu_0, MTS_sig_a, MTS_d, MTS_temp_0,  &
-                                    MTS_b, MTS_edot_0i, MTS_g_0i, MTS_q_i, MTS_p_i, &
-                                    MTS_sig_i, Viscoplastic_Model, Pwr_Law_A,       &
-                                    Pwr_Law_N, Pwr_Law_Q, Pwr_Law_R
+                                    Sound_Speed, Void_Temperature
 
     ! Argument List
     logical, intent(inout) :: read_done
@@ -517,22 +438,6 @@ CONTAINS
 
        call PGSLIB_BCAST (Void_Temperature(0))
        call PGSLIB_BCAST (Sound_Speed(0))
-       call PGSLIB_BCAST (Viscoplastic_Model(0))
-       call PGSLIB_BCAST (MTS_k(0))    
-       call PGSLIB_BCAST (MTS_mu_0(0))  
-       call PGSLIB_BCAST (MTS_sig_a(0)) 
-       call PGSLIB_BCAST (MTS_d(0))     
-       call PGSLIB_BCAST (MTS_temp_0(0))
-       call PGSLIB_BCAST (MTS_b(0))     
-       call PGSLIB_BCAST (MTS_edot_0i(0))
-       call PGSLIB_BCAST (MTS_g_0i(0))  
-       call PGSLIB_BCAST (MTS_q_i(0))   
-       call PGSLIB_BCAST (MTS_p_i(0))   
-       call PGSLIB_BCAST (MTS_sig_i(0))
-       call PGSLIB_BCAST (Pwr_Law_A(0))
-       call PGSLIB_BCAST (Pwr_Law_N(0))
-       call PGSLIB_BCAST (Pwr_Law_Q(0))
-       call PGSLIB_BCAST (Pwr_Law_R(0))
        
     end if BROADCAST_VARIABLES
     

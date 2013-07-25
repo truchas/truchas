@@ -183,7 +183,6 @@ define the plug material properties
     material_name                 = 'graphite', 
     density                       = 1.7e+03, 
     Material_Feature              = 'background'
-    Viscoplastic_Model            = 'elastic_only'
 
 /
 
@@ -213,23 +212,27 @@ define the ring material properties
 &MATERIAL
 
     Immobile                      = .true.
-    material_number               = 2, 
-    priority                      = 2, 
-    material_name                 = '5754 aluminum', 
-    density                       = 2.70e+03, 
-    Viscoplastic_Model            = 'mts', 
-    MTS_k                         = 1.38e-23, 
-    MTS_mu_0                      = 28.815e9, 
-    MTS_sig_a                     = 10.0e6, 
-    MTS_d                         = 3.440e9, 
-    MTS_temp_0                    = 215.0, 
-    MTS_b                         = 2.86e-10, 
-    MTS_edot_0i                   = 1.0e7, 
-    MTS_g_0i                      = 3.6, 
-    MTS_q_i                       = 1.5, 
-    MTS_p_i                       = 0.5, 
-    MTS_sig_i                     = 107.2e6
+    material_number               = 2
+    priority                      = 2
+    material_name                 = '5754 aluminum' 
+    density                       = 2.70e+03 
 
+/
+
+&VISCOPLASTIC_MODEL
+    phase = '5754 aluminum'
+    model = 'MTS'
+    MTS_k       = 1.38e-23
+    MTS_mu_0    = 28.815e9
+    MTS_sig_a   = 10.0e6
+    MTS_d       = 3.440e9
+    MTS_temp_0  = 215.0
+    MTS_b       = 2.86e-10
+    MTS_edot_0i = 1.0e7
+    MTS_g_0i    = 3.6
+    MTS_q_i     = 1.5
+    MTS_p_i     = 0.5
+    MTS_sig_i   = 107.2e6
 /
 
 &PHASE

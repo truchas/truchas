@@ -1,5 +1,7 @@
 #define VERBOSE_BDF2 .false.
 
+#include "f90_assert.fpp"
+
 Module VISCOPLASTICITY
 !-----------------------------------------------------------------------------
 !Purpose:
@@ -19,12 +21,14 @@ Module VISCOPLASTICITY
   use kinds, only: r8
   Use parameter_module, only: ncomps
   use time_step_module, only: dt
+  use VP_model_class
   use truchas_logging_services
   implicit none
   private
 
   ! Public procedures
-  Public :: MATERIAL_STRESSES,        &
+  Public :: VISCOPLASTICITY_INIT,     &
+            MATERIAL_STRESSES,        &
             MATERIAL_STRAINS,         &
             VISCOPLASTIC_STRAIN_RATE, &
             PLASTIC_STRAIN_INCREMENT, &
@@ -35,6 +39,10 @@ Module VISCOPLASTICITY
      MODULE PROCEDURE MATERIAL_STRESSES_ALL_CELLS
   END INTERFACE
 
+  interface viscoplastic_strain_rate
+    procedure viscoplastic_strain_rate_one
+    procedure viscoplastic_strain_rate_all
+  end interface
 
   ! Data needed by the strain rate routine for the bdf2 integrator,
   ! that cannot be passed to the bdf2 routine directly
@@ -50,7 +58,36 @@ Module VISCOPLASTICITY
   ! Plastic strain tensor for a single cell at the beginning of the time step
   real(r8), dimension(ncomps) :: P_Strain_0
 
+  ! The VP array holds the viscoplastic model for each of the materials.
+  type :: VP_model_box
+    class(VP_model), pointer :: model => null()
+  end type
+  type(VP_model_box), allocatable, save :: vp(:)
+
 Contains
+
+  subroutine viscoplasticity_init (plastic)
+
+    use parameter_module, only: nmat
+    use material_interop, only: void_material_index, material_to_phase
+    use phase_property_table
+    use viscoplastic_model_namelist
+
+    logical, intent(out) :: plastic
+
+    integer :: m, phase_id
+
+    allocate(vp(nmat))
+    plastic = .false.
+    do m = 1, nmat
+      if (m == void_material_index) cycle
+      phase_id = material_to_phase(m)
+      ASSERT(phase_id > 0)
+      vp(m)%model => get_VP_model(ppt_phase_name(phase_id))
+      plastic = plastic .or. associated(vp(m)%model)
+    end do
+
+  end subroutine viscoplasticity_init
 
   !----------------------------------------------------------------------------
   !
@@ -63,6 +100,7 @@ Contains
 
     use parameter_module,     only: ncells
     use solid_mechanics_data, only: Thermal_Strain, PC_Strain, plasticity, strain_limit
+    Use zone_module,          only: zone
     Use time_step_module,     Only: cycle_number
     use bdf2_kinds
     use bdf2_integrator
@@ -144,7 +182,7 @@ Contains
 
              Call DEVIATORIC_STRESS(Stress(:,icell), Dev_Stress(:,icell))
 
-             Call VISCOPLASTIC_STRAIN_RATE(Strain_Rate(icell), Eff_Stress(icell), icell)
+             Call VISCOPLASTIC_STRAIN_RATE(icell, Eff_Stress(icell), Zone(icell)%temp, Strain_Rate(icell))
 
              rate_change = Strain_Rate(icell)/ Strain_Rate_old(icell)
              if (rate_change == 0.0) then
@@ -246,9 +284,7 @@ Contains
          (Stress(3,:) - Stress(1,:))**2 + &
          6.0 * (Stress(4,:)**2 + Stress(5,:)**2 + Stress(6,:)**2))/2.)
 
-    do icell = 1, ncells
-       Call VISCOPLASTIC_STRAIN_RATE(Strain_Rate(icell), Eff_Stress(icell), icell)
-    end do
+    call viscoplastic_strain_rate (eff_stress, zone%temp, strain_rate)
 
     ! Finally, we need to remove the thermal stress before returning the LHS_stress values to 
     ! the residual calculation (thermal stresses are already included in the RHS).
@@ -322,6 +358,7 @@ Contains
 
     use bdf2_kinds
     use solid_mechanics_data, only: Thermal_Strain, PC_Strain, Thermal_Strain_Inc
+    use zone_module, only: Zone
     
     real(kind=rk), intent(in)  :: t
     real(kind=rk), intent(in), dimension(:)  :: depsilon
@@ -351,7 +388,7 @@ Contains
                  (Stress_t(3) - Stress_t(1))**2 + &
                  6.0 * (Stress_t(4)**2 + Stress_t(5)**2 + Stress_t(6)**2))/2.)
 
-    Call VISCOPLASTIC_STRAIN_RATE(epsdot_eff, E_Stress_t, cell_no)
+    Call VISCOPLASTIC_STRAIN_RATE(cell_no, E_Stress_t, Zone(cell_no)%temp, epsdot_eff)
 
     Call DEVIATORIC_STRESS(Stress_t, D_Stress_t)
 
@@ -361,163 +398,76 @@ Contains
    
   END Subroutine DSTRAIN_DT
 
-  !
-  !--------------------------------------------------------------------------
-  !
-  Subroutine VISCOPLASTIC_STRAIN_RATE(Strain_Rate, Stress, icell)
-  !
-  !--------------------------------------------------------------------------
-  !
-  ! Purpose:
-  !   Calculate the plastic strain rate in a cell averaged by volume fraction.
-  !
-  !--------------------------------------------------------------------------
-    use fluid_data_module,    only: isImmobile
-    use parameter_module,     only: nmat, mat_slot
-    Use matl_module,          Only: Matl
-    Use zone_module,          Only: Zone
-    use property_data_module, only: Viscoplastic_Model
-    Use time_step_module,     Only: dt
+  !!
+  !! Calculate the average plastic strain rate on a single cell.
+  !! Volume fraction weighted average over cell materials.
+  !!
 
-    real(r8),Intent(OUT)   :: Strain_Rate
-    integer,Intent(IN)  :: icell             
-    real(r8),Intent(IN)    :: Stress
+  subroutine viscoplastic_strain_rate_one (icell, stress, temp, strain_rate)
 
-    real(r8)               :: Mid_Temp
-    real(r8)               :: rate_mat
-    integer             :: imat, islot
+    use fluid_data_module, only: isImmobile
+    use parameter_module, only: mat_slot
+    use matl_module, only: matl
+    use time_step_module, Only: dt
 
-    ! Initialize Strain_Rate
-    Strain_Rate = 0.0
-    Mid_Temp = 0.5 * (Zone(icell)%Temp + Zone(icell)%Temp_old)
-    do imat = 1,nmat
-       if (isImmobile(imat)) then
-          MAT_SLOT_LOOP: do islot = 1, mat_slot
-             if (Matl(islot)%Cell(icell)%Id == imat) then
-                select case (Viscoplastic_Model(imat))
-                case('elastic_only')
-                   exit MAT_SLOT_LOOP
-                case('mts')
-                   Call MTS_STRAIN_RATE(Stress, Zone(icell)%Temp, &
-                        imat, rate_mat, dt)
-                   Strain_Rate = Strain_Rate + &
-                        Matl(islot)%Cell(icell)%Vof * rate_mat
-                case('power_law')
-                   Call POWER_LAW_STRAIN_RATE(Stress, Zone(icell)%Temp, &
-                        imat, rate_mat, dt)
-                   Strain_Rate = Strain_Rate + &
-                        Matl(islot)%Cell(icell)%Vof * rate_mat
-                end select
-             end if
-          end do MAT_SLOT_LOOP
-       end if
+    integer,  intent(in)  :: icell
+    real(r8), intent(in)  :: stress
+    real(r8), intent(in)  :: temp
+    real(r8), intent(out) :: strain_rate
+
+    integer :: s, m
+    real(r8) :: rate_mat
+
+    strain_rate = 0.0_r8
+    do s = 1, mat_slot
+      m = matl(s)%cell(icell)%id
+      if (m == 0) cycle ! TODO: can we exit?  Are the unused slots always at the end?
+      if (.not.associated(vp(m)%model)) cycle
+      rate_mat = vp(m)%model%strain_rate(stress, temp, dt)
+      strain_rate = strain_rate + matl(s)%cell(icell)%vof * rate_mat
     end do
 
-  end Subroutine VISCOPLASTIC_STRAIN_RATE
-  !
-  !--------------------------------------------------------------------------
-  !
-  Subroutine MTS_STRAIN_RATE(stress, temp, mm, strain_rate, dt)
-  !
-  !--------------------------------------------------------------------------
-  !
-  ! Purpose:
-  !
-  !    Calculate the strain rate for a material using the MTS model
-  !
-  !--------------------------------------------------------------------------
-    Use property_data_module, only : MTS_k, MTS_mu_0, MTS_sig_a,     &
-                                     MTS_d, MTS_temp_0, MTS_b,       &
-                                     MTS_edot_0i, MTS_g_0i, MTS_q_i, &
-                                     MTS_p_i, MTS_sig_i
+  end subroutine viscoplastic_strain_rate_one
 
-    ! Argument list
-    real(r8),intent(IN)        :: stress, temp
-    integer,intent(IN)      :: mm
-    real(r8),intent(IN)        :: dt
-    real(r8),intent(OUT)       :: strain_rate
+  !!
+  !! Calculate the average plastic strain rate for all cells.
+  !! Volume fraction weighted average over cell materials.
+  !!
 
-    ! Local Variables
-    real(r8) :: a, c, mu, epsdot_min, eps_sig_a, k
-    real(r8) :: tmp
+  subroutine viscoplastic_strain_rate_all (stress, temp, strain_rate)
 
-    ! Temperature dependent shear modulus
-    mu = MTS_mu_0(mm) - MTS_d(mm)/(exp(MTS_temp_0(mm)/temp) - 1.0)
+    use parameter_module, only: ncells, nmat
+    use fluid_data_module, only: isImmobile
+    use material_interop, only: void_material_index
+    use matl_module, only: gather_vof
+    use time_step_module, only: dt
 
-    if (stress > (MTS_sig_a(mm) + MTS_sig_i(mm)*mu/MTS_mu_0(mm))) then
-       strain_rate = MTS_edot_0i(mm)
-       return
-    end if
+    real(r8), intent(in)  :: stress(:)
+    real(r8), intent(in)  :: temp(:)
+    real(r8), intent(out) :: strain_rate(:)
 
-    ! We need these terms in any case
-    c = MTS_k(mm) * temp / (mu * MTS_b(mm)**3 * MTS_g_0i(mm))
-    epsdot_min = 1.0e-20 / dt
+    integer  :: m, j
+    real(r8) :: mrate, vofm(ncells)
 
-    if (stress < MTS_sig_a(mm)) then
-       ! Get strain rate for the athermal stress MTS_sig_a
-       eps_sig_a = MTS_edot_0i(mm) / exp(1.0 /c)
-       if (eps_sig_a < epsdot_min) then
-          strain_rate = 0.0
-          return
-       end if
-       ! Assume a sigma^5 relationship for strain rate
-       k = log(eps_sig_a) - 5 * log(MTS_sig_a(mm))
-       k = exp(k)
-       strain_rate = k * stress**5
-    else
+    ASSERT(size(stress) == ncells)
+    ASSERT(size(temp) == ncells)
+    ASSERT(size(strain_rate) == ncells)
 
-    ! Rate dependence of the flow (yield) strength
-       a = MTS_mu_0(mm)/mu/MTS_sig_i(mm)
-       if (a*(stress-MTS_sig_a(mm)) < 0.0_r8 &
-       .or. (a*(stress-MTS_sig_a(mm)) == 0.0_r8 .and. MTS_p_i(mm) == 0.0_r8)) then
-          call TLS_panic ('MTS_STRAIN_RATE: invalid exponentiation')
-       else
-          tmp = 1.0-(a*(stress - MTS_sig_a(mm)))**MTS_p_i(mm)
-       end if
-       if (tmp < 0.0_r8 .or. (tmp == 0.0_r8 .and. MTS_q_i(mm) == 0.0_r8)) then
-          call TLS_panic ('MTS_STRAIN_RATE: invalid exponentiation')
-       else
-          strain_rate = MTS_edot_0i(mm) / (exp(tmp**MTS_q_i(mm) /c))
-       end if
-    end if
+    strain_rate = 0.0_r8
+    do m = 1, nmat
+      if (m == void_material_index .or. .not.isImmobile(m)) cycle
+      if (.not.associated(vp(m)%model)) cycle
+      call gather_vof (m, vofm)
+      do j = 1, ncells
+        if (vofm(j) > 0.0_r8) then
+          mrate = vp(m)%model%strain_rate(stress(j), temp(j), dt)
+          strain_rate(j) = strain_rate(j) + mrate * vofm(j)
+        end if
+      end do
+    end do
 
-    if (strain_rate < epsdot_min) strain_rate = 0.0
-    return
+  end subroutine viscoplastic_strain_rate_all
 
-  end Subroutine MTS_STRAIN_RATE
-  !
-  !
-  !--------------------------------------------------------------------------
-  !
-  Subroutine POWER_LAW_STRAIN_RATE(stress, temp, mm, strain_rate, dt)
-  !
-  !--------------------------------------------------------------------------
-  !
-  ! Purpose:
-  !
-  !    Calculate the strain rate for a material using power law model
-  !
-  !--------------------------------------------------------------------------
-    Use property_data_module, only : Pwr_Law_A, Pwr_Law_N, Pwr_Law_Q, Pwr_Law_R
-
-    ! Argument list
-    real(r8),intent(IN)        :: stress, temp
-    integer,intent(IN)      :: mm
-    real(r8),intent(IN)      :: dt
-    real(r8),intent(OUT)       :: strain_rate
-
-    ! Local Variables
-    real(r8)        :: epsdot_min
-    
-    strain_rate = Pwr_Law_A(mm) * stress**Pwr_Law_N(mm) * exp(- Pwr_Law_Q(mm) / Pwr_Law_R(mm) / temp)
-
-    if (strain_rate > 1.0e7) strain_rate = 1.0e7
-
-    epsdot_min = 1.0e-20 / dt
-
-    if (strain_rate < epsdot_min) strain_rate = 0.0
-
-  end Subroutine POWER_LAW_STRAIN_RATE
   !
   !-----------------------------------------------------------------------------
   !

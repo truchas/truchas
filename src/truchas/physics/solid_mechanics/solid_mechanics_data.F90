@@ -56,8 +56,6 @@ Module SOLID_MECHANICS_DATA
             NK_DISPLACEMENT,                  &
             RHS,                              &
             Src,                              &
-            Viscoplastic_Model_Forms,         &
-            maxvpforms,                       &
             plasticity,                       &
             Node_Gap,                         &
             Node_Norm_Trac,                   &
@@ -98,10 +96,6 @@ Module SOLID_MECHANICS_DATA
      real(r8) :: mean_stress
      real(r8) :: volumetric_strain
   end type CELL_MECH_INVARIANT
-  !
-  ! Needed in processing the namelist input
-  integer, parameter                     :: maxvpforms = 4
-  character(80), dimension(maxvpforms), save :: Viscoplastic_Model_Forms
   ! This data type is used to store the solid mechanics state at integration points and 
   ! cell centers
   type MECH_DATA

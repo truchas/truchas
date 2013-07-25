@@ -53,6 +53,8 @@ contains
     use fluid_data_module,         only: fluid_flow
     use viscous_data_module,       only: inviscid
     use turbulence_module,         only: read_turbulence_namelist
+    use solid_mechanics_data,      only: solid_mechanics
+    use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use timing_tree
     use truchas_logging_services
     use string_utilities, only: i_to_c
@@ -124,6 +126,11 @@ contains
     if (fluid_flow) then
       if (.not.inviscid)   call read_turbulence_namelist (lun)
       if (surface_tension) call read_surface_tension_namelist (lun)
+    end if
+    
+    ! read namelists for solid mechanics options
+    if (solid_mechanics) then
+      call read_viscoplastic_model_namelists (lun)
     end if
 
     ! read volume fraction data
