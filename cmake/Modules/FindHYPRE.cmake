@@ -47,22 +47,16 @@ ENDFUNCTION()
 # --- Begin main
 
 # Search for HYPRE.h
-if ( NOT HYPRE_INCLUDE_DIR )
-
-  find_path(HYPRE_INCLUDE_DIR
-            NAMES HYPRE.h
-	    HINTS ENV HYPRE_ROOT ${HYPRE_INSTALL_PREFIX}
-	    PATH_SUFFIXES include)
-
-endif()
+find_path(HYPRE_INCLUDE_DIR
+          NAMES HYPRE.h
+          HINTS ENV HYPRE_ROOT ${HYPRE_INSTALL_PREFIX}
+	  PATH_SUFFIXES include)
 
 # Search for HYPRE library
-if (NOT HYPRE_LIBRARY )
-  find_library(HYPRE_LIBRARY
-               NAMES HYPRE
-	       HINTS ENV HYPRE_ROOT ${HYPRE_INSTALL_PREFIX}
-	       PATH_SUFFIXES lib)
-endif()
+find_library(HYPRE_LIBRARY
+             NAMES HYPRE
+             HINTS ENV HYPRE_ROOT ${HYPRE_INSTALL_PREFIX}
+	     PATH_SUFFIXES lib)
 
 # Define the cofig header file, will mine this to determine version
 # and build type (MPI, non-MPI)

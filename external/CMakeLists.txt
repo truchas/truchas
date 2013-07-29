@@ -7,6 +7,8 @@
 
 project(TruchasExternal)
 
+message(STATUS "configuring Truchas external projects")
+
 # --- Add the local cmake directory 
 list(APPEND CMAKE_MODULE_PATH ${TruchasExternal_SOURCE_DIR}/cmake)
 
@@ -14,6 +16,7 @@ list(APPEND CMAKE_MODULE_PATH ${TruchasExternal_SOURCE_DIR}/cmake)
 if (NOT TruchasExternal_INSTALL_PREFIX)
   set(TruchasExternal_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/external
       CACHE PATH "Truchas external projects install prefix")
+  set(TruchasExternal_INSTALL_PREFIX ${TruchasExternal_INSTALL_PREFIX} PARENT_SCOPE)  
 endif()
 
 # --- Useful directory variables
@@ -69,20 +72,52 @@ set(TruchasExternal_LOG_OPTS
 
 
 
-# HYPRE
-#BROKENfind_package(HYPRE)
-
-#BROKENif ( NOT HYPRE_FOUND )
-#BROKEN  include(ExternalProject_HYPRE)
-#BORKENendif()  
-include(ExternalProject_HYPRE)
+# HYPRE 
+set(HYPRE_REQUIRED_VERSION 2.6.0b)
+set(HYPRE_INSTALL_PREFIX ${TruchasExternal_INSTALL_PREFIX})
+find_package(HYPRE)
+if ( HYPRE_FOUND )
+  if ( NOT ${HYPRE_VERSION} VERSION_EQUAL ${HYPRE_REQUIRED_VERSION} )
+    message(STATUS "Incorrect HYPRE version ${HYPRE_VERSION} != ${HYPRE_REQUIRED_VERSION}")
+    include(ExternalProject_HYPRE)
+  elseif( ENABLE_MPI AND NOT HYPRE_IS_PARALLEL )
+    message(STATUS "Require parallel HYPRE will add to the build")
+    include(ExternalProject_HYPRE)
+  else()  
+    message(STATUS "Located HYPRE will not add to the build.")
+    set(HYPRE_FOUND ${HYPRE_FOUND} PARENT_SCOPE)
+    set(HYPRE_VERSION ${HYPRE_VERSION} PARENT_SCOPE)
+    set(HYPRE_IS_PARALLEL ${HYPRE_IS_PARALLEL} PARENT_SCOPE)
+    set(HYPRE_INCLUDE_DIR ${HYPRE_INCLUDE_DIR} PARENT_SCOPE)
+    set(HYPRE_INCLUDE_DIRS ${HYPRE_INCLUDE_DIRS} PARENT_SCOPE)
+    set(HYPRE_LIBRARY ${HYPRE_LIBRARY} PARENT_SCOPE)
+    set(HYPRE_LIBRARIES ${HYPRE_LIBRARIES} PARENT_SCOPE)
+  endif()  
+else()  
+  message(STATUS "Could not locate HYPRE will add HYPRE to build.")
+  include(ExternalProject_HYPRE)
+endif()  
 
 # HDF5
 include(ExternalProject_ZLIB)
 include(ExternalProject_HDF5)
 
 # SWIG
-include(ExternalProject_SWIG)
+find_package(SWIG)
+if ( SWIG_FOUND )
+  if  ( "${SWIG_VERSION}" VERSION_GREATER 2.0  )
+    message(STATUS "Located Swig will not build.")
+    #set(SWIG_FOUND ${SWIG_FOUND} PARENT_SCOPE)
+    #set(SWIG_EXECUTABLE ${SWIG_EXECUTABLE} PARENT_SCOPE)
+    #set(SWIG_VERSION ${SWIG_VERSION} PARENT_SCOPE)
+  else()  
+    message(STATUS "Swig version ${SWIG_VERSION} is not sufficient")
+    include(ExternlProject_SWIG)
+  endif()  
+else()
+  message(STATUS "Can not locate Swig will add Swig to build.")
+  include(ExternalProject_SWIG)
+endif()
 
 # NetCDF
 include(ExternalProject_NetCDF)

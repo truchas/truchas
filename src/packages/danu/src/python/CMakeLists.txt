@@ -7,7 +7,6 @@
 # ############################################################################ #
 if (ENABLE_Python)
   project(PyDanu C)
-  print_variable(SWIG_BUILD_TARGET)
 
 # ---------------------------------------------------------------------------- #
 # Python Interfaces built with SWIG www.swig.org
@@ -130,7 +129,9 @@ SWIG_ADD_MODULE(GMV python GMV.i ${GMV_C_SOURCE})
 set_target_properties(_GMV
                       PROPERTIES
                       LINK_FLAGS "${EXTRA_LINK_FLAGS}")
-add_dependencies(_GMV ${SWIG_BUILD_TARGET})
+if (BUILD_SWIG)		    
+  add_dependencies(_GMV ${SWIG_BUILD_TARGET})
+endif()
 
 # ---------------------------------------------------------------------------- #
 # Danu Python install path
