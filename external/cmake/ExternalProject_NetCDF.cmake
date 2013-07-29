@@ -31,6 +31,7 @@ set(netcdf_source_dir   ${netcdf_prefix_dir}/netcdf-${NetCDF_VERSION}-source)
 set(netcdf_stamp_dir    ${netcdf_prefix_dir}/netcdf-timestamps)
 set(netcdf_tmp_dir      ${netcdf_prefix_dir}/netcdf-tmp)
 set(netcdf_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(patch_file_dir      ${TruchasExternal_SOURCE_DIR}/patches)
 
 # Need the Compiler names without the full path
 get_filename_component(CMAKE_C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)

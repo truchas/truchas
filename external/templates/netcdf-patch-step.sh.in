@@ -25,3 +25,9 @@ do
 
 done  
 
+# Fix libtools.m4 so it knows how to deal correctly with nagfor and shared libraries.
+patch_file_list=netcdf-libtool-nag.patch
+for file in ${patch_file_list}
+do
+  patch -d @netcdf_source_dir@ -p1 < @patch_file_dir@/$file
+done
