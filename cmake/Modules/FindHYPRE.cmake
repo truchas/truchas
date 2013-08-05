@@ -101,10 +101,9 @@ if ( NOT HYPRE_LIBRARIES )
 endif()  
 
 # Send a useful message if everything is found
-find_package_handle_standard_args(HYPRE DEFAULT_MSG
-				  HYPRE_LIBRARIES
-				  HYPRE_INCLUDE_DIRS
-                                  HYPRE_VERSION)
+find_package_handle_standard_args(HYPRE 
+                                  VERSION_VAR HYPRE_VERSION
+				  REQUIRED_VARS HYPRE_LIBRARY HYPRE_INCLUDE_DIRS HYPRE_LIBRARIES)
 
 mark_as_advanced(
                  HYPRE_INCLUDE_DIR

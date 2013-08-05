@@ -25,8 +25,16 @@ fortran_preprocess_files(EXODUS_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${EXODUS_FPP_FLAGS}
 			 PROCESS_TARGET ProcessTruchasExodusFiles)
-set_source_files_properties(${EXODUS_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS -I${NetCDF_INCLUDE_DIR})
+
+# Source file properties		       
+set(EXODUS_SOURCE_FILES_PROPS COMPILE_FLAGS -I${NETCDF_INCLUDE_DIR})
+if ( TARGET ${NETCDF_BUILD_TARGET} )
+  list(APPEND EXODUS_SOURCE_FILE_PROPS 
+              OBJECT_DEPENDS ${NETCDF_BUILD_TARGET})
+endif()	    
+set_source_files_properties(${EXODUS_SOURCE_FILES} 
+                            PROPERTIES ${EXODUS_SOURCE_FILES_PROPS})
+                            
 
 # Update the Truchas library file list and targets		       
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${EXODUS_SOURCE_FILES})		       

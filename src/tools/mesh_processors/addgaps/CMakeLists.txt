@@ -28,7 +28,7 @@ fortran_preprocess_files(ADDGAPS_SOURCE_FILES
 			 FPP_EXECUTABLE ${ADDGAPS_PREPROCESSOR}
 			 FPP_FLAGS -I${TruchasToolsAddgaps_SOURCE_DIR}
 			 PROCESS_TARGET ProcessAddgapsFiles)
-set(fc_flags -I${NetCDF_INCLUDE_DIR})
+set(fc_flags -I${NETCDF_INCLUDE_DIR})
 build_whitespace_string(ADDGAPS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${ADDGAPS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${ADDGAPS_COMPILE_FLAGS})

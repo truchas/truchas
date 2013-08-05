@@ -33,11 +33,30 @@ set(hdf5_tmp_dir      ${hdf5_prefix_dir}/hdf5-tmp)
 set(hdf5_install_dir  ${TruchasExternal_INSTALL_PREFIX})
 
 # --- Configure flags
+
+# MPI
 if(ENABLE_MPI)
   set(hdf5_parallel_opt --enable-parallel)
 else()
   set(hdf5_parallel_opt --disable-parallel)
 endif()
+
+# ZLIB (Required)
+set(zlib_library_dir)
+set(zlib_inc_dir)
+if ( NOT TARGET ${ZLIB_BUILD_TARGET} )
+  include(Verify_ZLIB)
+
+  if (NOT ZLIB_VERIFIED)
+    include(ExternalProject_ZLIB)
+  endif(NOT ZLIB_VERIFIED)  
+
+endif(NOT TARGET ${ZLIB_BUILD_TARGET})
+
+get_filename_component(zlib_library_dir ${ZLIB_LIBRARY} PATH)
+set(zlib_inc_dir ${ZLIB_INCLUDE_DIR})
+set(hdf5_zlib_opt --with-zlib=${zlib_inc_dir},${zlib_library_dir})
+
 
 # --- Compile flags
 string(TOUPPER "CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_FLAGS)
@@ -81,7 +100,7 @@ ExternalProject_Add(${HDF5_BUILD_TARGET}
                                           --enable-largefile
                                           --enable-production
                                           --enable-hl
-                                          --with-zlib=${zlib_install_dir}
+                                          ${hdf5_zlib_opt}
                                           ${TruchasExternal_SHARED_SWITCH}
 					  CC=${CMAKE_C_COMPILER}
                                           CFLAGS=${hdf5_cflags}

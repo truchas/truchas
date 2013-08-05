@@ -110,12 +110,10 @@ endif()
 if(ENABLE_UbikSolve)
   list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 endif()
-list(APPEND fc_flags -I${NetCDF_INCLUDE_DIR})
+list(APPEND fc_flags -I${NETCDF_INCLUDE_DIR})
 build_whitespace_string(SETUP_COMPILE_FLAGS ${fc_flags})
-if (SETUP_COMPILE_FLAGS)
-  set_source_files_properties(${SETUP_SOURCE_FILES} PROPERTIES
+set_source_files_properties(${SETUP_SOURCE_FILES} PROPERTIES
                               COMPILE_FLAGS ${SETUP_COMPILE_FLAGS})
-endif(SETUP_COMPILE_FLAGS)			    
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${SETUP_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ${SETUP_TARGET_NAME})

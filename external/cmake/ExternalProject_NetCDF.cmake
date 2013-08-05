@@ -9,8 +9,9 @@
 # --- Setup
 
 # Projects/targets dependent on NetCDF need this target
-set(NetCDF_BUILD_TARGET netcdf)
-global_set(NetCDF_BUILD_TARGET ${NetCDF_BUILD_TARGET})
+set(NETCDF_BUILD_TARGET netcdf)
+global_set(NETCDF_BUILD_TARGET ${NETCDF_BUILD_TARGET})
+
 
 # Define the version and archive file
 include(ExternalProjectVersions)
@@ -36,6 +37,17 @@ set(patch_file_dir      ${TruchasExternal_SOURCE_DIR}/patches)
 # Need the Compiler names without the full path
 get_filename_component(CMAKE_C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
 get_filename_component(CMAKE_Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
+
+# --- Project dependencies
+
+# ZLIB
+if ( NOT TARGET ${ZLIB_BUILD_TARGET} )
+  include(Verify_ZLIB)
+
+  if ( NOT ZLIB_VERIFIED )
+    include(ExternalProject_ZLIB)
+  endif( NOT ZLIB_VERIFIED )  
+endif(NOT TARGET ${ZLIB_BUILD_TARGET})  
 
 # --- Patch defines
 
@@ -96,7 +108,7 @@ build_whitespace_string(netcdf_ldflags -L${zlib_install_dir}/lib)
 
 # --- Add the external project
 
-ExternalProject_Add(${NetCDF_BUILD_TARGET}
+ExternalProject_Add(${NETCDF_BUILD_TARGET}
                     DEPENDS ${ZLIB_BUILD_TARGET}
                     # -- Project directories
                     PREFIX      ${netcdf_prefix_dir}   
@@ -133,29 +145,29 @@ ExternalProject_Add(${NetCDF_BUILD_TARGET}
 # --- Set the variables for other targets that need NetCDF
 
 # Version
-global_set(NetCDF_VERSION ${NetCDF_VERSION})
+global_set(NETCDF_VERSION ${NETCDF_VERSION})
 
 # Include directory
-global_set(NetCDF_INCLUDE_DIR ${netcdf_install_dir}/include)
-global_set(NetCDF_INCLUDE_DIRS ${NetCDF_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
+global_set(NETCDF_INCLUDE_DIR ${netcdf_install_dir}/include)
+global_set(NETCDF_INCLUDE_DIRS ${NETCDF_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
 
 # Library
-global_set(NetCDF_LIBRARY_DIRS ${netcdf_install_dir}/lib)
+global_set(NETCDFLIBRARY_DIRS ${netcdf_install_dir}/lib)
 
 build_library_name(netcdf
-                   NetCDF_C_LIBRARY 
+                   NETCDF_C_LIBRARY 
                    APPEND_PATH ${netcdf_install_dir}/lib)
-global_set(NetCDF_C_LIBRARY ${NetCDF_C_LIBRARY})
+global_set(NETCDFC_LIBRARY ${NETCDF_C_LIBRARY})
 
 build_library_name(netcdff
-                   NetCDF_Fortran_LIBRARY 
+                   NETCDF_Fortran_LIBRARY 
                    APPEND_PATH ${netcdf_install_dir}/lib)
-global_set(NetCDF_Fortran_LIBRARY ${NetCDF_Fortran_LIBRARY})
+global_set(NETCDF_Fortran_LIBRARY ${NETCDF_Fortran_LIBRARY})
 
-global_set(NetCDF_C_LIBRARIES 
-           ${NetCDF_C_LIBRARY} ${ZLIB_LIBRARIES})
+global_set(NETCDF_C_LIBRARIES 
+           ${NETCDFC_LIBRARY} ${ZLIB_LIBRARIES})
 
-global_set(NetCDF_Fortran_LIBRARIES 
-           ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARIES})
+global_set(NETCDF_Fortran_LIBRARIES 
+           ${NETCDF_Fortran_LIBRARY} ${NETCDF_C_LIBRARIES})
 
 

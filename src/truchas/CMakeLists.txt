@@ -133,7 +133,7 @@ endif()
 
 # Various build targets
 list(APPEND Truchas_DEPENDS 
-            ${NetCDF_BUILD_TARGET}
+            ${NETCDF_BUILD_TARGET}
 	    ${HYPRE_BUILD_TARGETS})
 
 # Force the completion of the targets defined 
@@ -143,7 +143,7 @@ add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
 set(Truchas_LINK_LIBS
-            ${NetCDF_Fortran_LIBRARIES}
+            ${NETCDF_Fortran_LIBRARIES}
 	    ${HYPRE_LIBRARY})
 
 if(ENABLE_PGSLib)
@@ -192,7 +192,7 @@ fortran_preprocess_files(MAIN_SOURCE_FILES
 			 FPP_FLAGS ${Truchas_FPP_FLAGS}
 			 PROCESS_TARGET ProcessTruchasMainFiles)
 
-set(fc_flags -I${NetCDF_INCLUDE_DIR})
+set(fc_flags -I${NETCDF_INCLUDE_DIR})
 if(ENABLE_PGSLib)
   list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
 endif()

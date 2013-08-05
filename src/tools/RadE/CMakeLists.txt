@@ -13,8 +13,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR True)
 # Truchas module directory
 include_directories(${Truchas_MODULE_DIR})
 
-# NetCDF
-include_directories(${NetCDF_INCLUDE_DIR})
+# NETCDF
+include_directories(${NETCDF_INCLUDE_DIR})
 
 # Chaparral
 if(ENABLE_Chaparral)

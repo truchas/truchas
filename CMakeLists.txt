@@ -89,6 +89,9 @@ option(WITH_PIC "Build with PIC support" True)
 # Build shared libs
 option(ENABLE_SHARED "Build shared libraries" False)
 
+# Enable search for external packages
+option(ENABLE_ExternalSearch "Enable external (NetCDF,HDF5,etc.) search" True)
+
 # Test - need a swith here to enable testing
 enable_testing()
 

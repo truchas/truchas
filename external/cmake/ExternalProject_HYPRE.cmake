@@ -10,6 +10,7 @@
 
 # Projects/targets dependent on HYPRE need this target
 set(HYPRE_BUILD_TARGET hypre)
+global_set(HYPRE_BUILD_TARGET ${HYPRE_BUILD_TARGET})
 
 # Define the version and archive file
 include(ExternalProjectVersions)

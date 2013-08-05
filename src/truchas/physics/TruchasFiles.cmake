@@ -188,12 +188,12 @@ endif()
 if(ENABLE_Danu)
   list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 endif()
-build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags} -I${NetCDF_INCLUDE_DIR})
+build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags} -I${NETCDF_INCLUDE_DIR})
 set_source_files_properties(${PHYSICS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${PHYSICS_COMPILE_FLAGS})
 
 set_source_files_properties(${TruchasExe_BINARY_DIR}/ER_file.f90 PROPERTIES
-                            COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS} -I${NetCDF_INCLUDE_DIR}")
+                            COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS} -I${NETCDF_INCLUDE_DIR}")
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${PHYSICS_SOURCE_FILES})		       
 list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasPhysicsFiles)

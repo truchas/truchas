@@ -62,6 +62,7 @@ ExternalProject_Add(${ZLIB_BUILD_TARGET}
 
 # Version
 global_set(ZLIB_VERSION ${ZLIB_VERSION})
+global_set(ZLIB_VERSION_STRING ${ZLIB_VERSION})
 
 # Include directory
 global_set(ZLIB_INCLUDE_DIR ${zlib_install_dir}/include)

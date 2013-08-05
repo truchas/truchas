@@ -16,7 +16,6 @@
 include(FindPackageHandleStandardArgs)
 
 include(PrintVariable)
-include(AddImportedLibrary)
 
 # ---------------------------------------------------------------------------- #
 # Functions/Macros
@@ -45,24 +44,26 @@ endfunction(_HDF5_CHOMP_STRING)
 function(_HDF5_PARSE_SETTINGS_FILE _file _key _value)
   
   set(_tmp ${_value}-NOTFOUND)
-  file(STRINGS ${_file} _output 
-       REGEX "^[ \t]*${_key}:|^${_key}")
+  if ( EXISTS ${_file} )
+    file(STRINGS ${_file} _output 
+         REGEX "^[ \t]*${_key}:|^${_key}")
   
-  if(_output)
-    # _HDF5_CHOMP_STRING will remove all tabs, newlines and returns
-    # It also removes leading  and trailing whitespace
-    _HDF5_CHOMP_STRING(${_output} _output)
-    # Remove the key signature
-    string(REGEX REPLACE "${_key}:" "" _output "${_output}")
-    # CHOMP again to remove leading and trailing whitespace
-    if (_output)
+    if(_output)
+      # _HDF5_CHOMP_STRING will remove all tabs, newlines and returns
+      # It also removes leading  and trailing whitespace
       _HDF5_CHOMP_STRING(${_output} _output)
-    endif()  
-    # Entry is non-empty if ANY non-space character is left
-    if ( "${_output}" MATCHES "[^ ]" )
-      set(_tmp ${_output})
+      # Remove the key signature
+      string(REGEX REPLACE "${_key}:" "" _output "${_output}")
+      # CHOMP again to remove leading and trailing whitespace
+      if (_output)
+        _HDF5_CHOMP_STRING(${_output} _output)
+      endif()  
+      # Entry is non-empty if ANY non-space character is left
+      if ( "${_output}" MATCHES "[^ ]" )
+        set(_tmp ${_output})
+      endif()
     endif()
-  endif()
+  endif()  
   
   set(${_value} ${_tmp} PARENT_SCOPE)
 
@@ -189,7 +190,10 @@ function(_HDF5_EXTRA_INCLUDE_DIRS _file _var)
   endforeach()  
 
   # Now match all the -I flags
-  string(REGEX MATCHALL "-I([^\" ]+|\"[^\"]+\")" _inc_path_flags ${_cflags})
+  #print_variable(_cflags)
+  if(_cflags)
+    string(REGEX MATCHALL "-I([^\" ]+|\"[^\"]+\")" _inc_path_flags ${_cflags})
+  endif(_cflags)  
 
   # Loop through each
   set(_directories)
@@ -205,6 +209,72 @@ function(_HDF5_EXTRA_INCLUDE_DIRS _file _var)
   set(${_var} ${_directories} PARENT_SCOPE)
 
 endfunction(_HDF5_EXTRA_INCLUDE_DIRS _file _var)
+#
+# _HDF5_ADD_IMPORTED_LIBRARY(name [SHARED | STATIC]
+#                      LOCATION <path>
+#                      [ LINK_LANGUAGES <lang1> <lang2> <lang3> ... ]
+#                      [ LINK_INTERFACE_LIBRARIES <lib1> <lib2> ... ]
+#                     )
+#                    
+#                      
+function(_HDF5_ADD_IMPORTED_LIBRARY target_name)
+
+  include(CMakeParseArguments)
+  set(_options SHARED STATIC)
+  set(_oneValueArgs LOCATION)
+  set(_multiValueArgs LINK_LANGUAGES LINK_INTERFACE_LIBRARIES)
+
+  cmake_parse_arguments(PARSE "${_options}" "${_oneValueArgs}" "${_multiValueArgs}" ${ARGN} ) 
+
+  # --- Check what has been passed in
+
+  # SHARED and STATIC can not be set at the same time
+  if ( "${PARSE_STATIC}" AND "${PARSE_SHARED}" )
+    message(FATAL_ERROR "Can not specify imported library as shared and static.")
+  endif()
+
+  # Require a location
+  if ( NOT PARSE_LOCATION )
+    message(FATAL_ERROR "Must specify a location to define an imported library target.")
+  endif()
+
+  # Check to see if name already exists as a target
+  if ( TARGET "${target_name}" )
+    message(FATAL_ERROR "Target ${name} is already defined.")
+  endif()
+
+
+  # --- Set the library type
+  set(lib_type UNKNOWN)
+  if(PARSE_STATIC)
+    set(lib_type STATIC)
+  endif()  
+  if(PARSE_SHARED)
+    set(lib_type SHARED)
+  endif()
+
+  # --- Add the library target 
+  add_library(${target_name} ${lib_type} IMPORTED)
+
+  # --- Update the global property that tracks imported targets
+  set(prop_name IMPORTED_${lib_type}_LIBRARIES)
+  get_property(prop_value GLOBAL PROPERTY ${prop_name})
+  set_property(GLOBAL PROPERTY ${prop_name} ${prop_value} ${target_name})
+
+  # --- Set the properties
+  set_target_properties(${target_name} PROPERTIES
+                        IMPORTED_LOCATION ${PARSE_LOCATION})
+  if ( PARSE_LINK_LANGUAGES )
+    set_target_properties(${target_name} PROPERTIES
+                        IMPORTED_LINK_INTERFACE_LANGUAGES "${PARSE_LINK_LANGUAGES}")
+  endif()
+  if ( PARSE_LINK_INTERFACE_LIBRARIES )
+    set_target_properties(${target_name} PROPERTIES
+                          IMPORTED_LINK_INTERFACE_LIBRARIES "${PARSE_LINK_INTERFACE_LIBRARIES}")
+  endif()
+     
+  
+endfunction(_HDF5_ADD_IMPORTED_LIBRARY)
 
 #
 # End Functions/Macros
@@ -216,33 +286,26 @@ endfunction(_HDF5_EXTRA_INCLUDE_DIRS _file _var)
 
 # If HDF5_ROOT was defined in the environment, use it.
 # Definition from the command line will take precedence.
-if (NOT HDF5_ROOT AND NOT $ENV{HDF5_ROOT} STREQUAL "")
-  set(HDF5_ROOT $ENV{HDF5_ROOT})
+if (NOT HDF5_INSTALL_PREFIX AND NOT $ENV{HDF5_ROOT} STREQUAL "")
+  set(HDF5_INSTALL_PREFIX $ENV{HDF5_INSTALL_PREFIX})
 endif()
 
-# HDF5_DIR is DEPRECATED WARN THE USER if it is set
-if (NOT HDF5_ROOT AND HDF5_DIR )
-  message(WARNING "The configuration parameter HDF5_DIR is deprecated."
-                  " Please use HDF5_ROOT instead to define the HDF5 installation")
-  set(HDF5_ROOT ${HDF5_DIR})
-endif()  
-
-# Add the usual paths for searching using the HDF5_ROOT variable
-if (HDF5_ROOT)
+# Add the usual paths for searching using the HDF5_INSTALL_PREFIX variable
+if (HDF5_INSTALL_PREFIX)
   list(APPEND _hdf5_INCLUDE_SEARCH_DIRS 
-              ${HDF5_ROOT}/include
-              ${HDF5_ROOT})
+              ${HDF5_INSTALL_PREFIX}/include
+              ${HDF5_INSTALL_PREFIX})
  
   list(APPEND _hdf5_LIBRARY_SEARCH_DIRS 
-              ${HDF5_ROOT}/lib
-              ${HDF5_ROOT})
+              ${HDF5_INSTALL_PREFIX}/lib
+              ${HDF5_INSTALL_PREFIX})
   
             list(APPEND _hdf5_BINARY_SEARCH_DIRS 
-              ${HDF5_ROOT}/bin
-              ${HDF5_ROOT})
+              ${HDF5_INSTALL_PREFIX}/bin
+              ${HDF5_INSTALL_PREFIX})
 endif()
  
-# Restrict the search to HDF5_ROOT if user does not want other
+# Restrict the search to HDF5_INSTALL_PREFIX if user does not want other
 # directories searched.
 if ( HDF5_NO_SYSTEM_PATHS )
   set(_hdf5_FIND_OPTIONS NO_CMAKE_SYSTEM_PATH)
@@ -258,7 +321,7 @@ else()
   foreach ( component ${HDF5_FIND_COMPONENTS} )
     list(FIND HDF5_VALID_COMPONENTS ${component} component_idx)
     if ( ${component_idx} EQUAL -1 )
-      message(SEND_ERROR "${component} is not a valid HDF5 component")
+      message(FATAL_ERROR "${component} is not a valid HDF5 component")
     else()
       list(APPEND HDF5_SEARCH_COMPONENTS ${component})
     endif()
@@ -273,7 +336,7 @@ endif()
 
 
 if ( HDF5_INCLUDE_DIRS AND HDF5_LIBRARIES )
-  # Do nothing is the user has defined these
+  # Do nothing the user has defined these
 else()
 
   # --- Target names used in both the CMake configure files
@@ -338,8 +401,7 @@ else()
               HINTS ${_hdf5_LIBRARY_SEARCH_DIRS}
               ${_hdf5_FIND_OPTIONS})
   endif()    
-     
-
+ 
   # --- Now search by file name. HDF5_INCLUDE_DIRS and HD5_LIBRARIES will
   #     not be set if the CMake configuration search was successful.
 
@@ -349,10 +411,6 @@ else()
               NAMES hdf5.h
               HINTS ${_hdf5_INCLUDE_SEARCH_DIRS}
               ${_hdf5_FIND_OPTIONS})
-
-    if ( NOT HDF5_INCLUDE_DIR )
-      message(FATAL_ERROR "Failed to locate HDF5 include file")
-    endif()  
 
     # Check the settings file for other include directories
     if ( HDF5_SETTINGS_FILE )
@@ -369,27 +427,29 @@ else()
 
   if ( NOT HDF5_LIBRARIES )
 
+    # Check the settings file to find extra link libraries
+    if(HDF5_SETTINGS_FILE)
+      _HDF5_EXTRA_LIBRARIES(${HDF5_SETTINGS_FILE} HDF5_LINK_LIBRARIES)
+    else()  
+      set(HDF5_LINK_LIBRARIES HDF5_LINK_LIBRARIES-NOTFOUND)
+    endif() 
+
     # --- Search for the C library 
     find_library(_HDF5_C_LIBRARY
                  NAMES hdf5
                  HINTS ${_hdf5_LIBRARY_SEARCH_DIRS}
                  ${_hdf5_FIND_OPTIONS})
 
-    # Since all other libraries need this core library, throw a
-    # fatal error her if it is not found.
-    if ( NOT _HDF5_C_LIBRARY )
-      message(FATAL_ERROR "Could not locate the C HDF5 library")
-    endif()
-
-    # Define the target for the C library
-    if (HDF5_SETTINGS_FILE)
-      _HDF5_EXTRA_LIBRARIES(${HDF5_SETTINGS_FILE} HDF5_LINK_LIBRARIES)
+    # Define the link libraries for the C library
+    if (HDF5_USE_IMPORTED_TARGETS AND _HDF5_C_LIBRARY )
+      _hdf5_add_imported_library(${HDF5_C_TARGET}
+                                 LOCATION ${_HDF5_C_LIBRARY}
+                                 LINK_LANGUAGES "C"
+                                 LINK_INTERFACE_LIBRARIES "${HDF5_LINK_LIBRARIES}")
+      set(HDF5_C_LIBRARY ${HDF5_C_TARGET})		       
+    else()  
+      set(HDF5_C_LIBRARY ${_HDF5_C_LIBRARY})
     endif()  
-    add_imported_library(${HDF5_C_TARGET}
-                         LOCATION ${_HDF5_C_LIBRARY}
-                         LINK_LANGUAGES "C"
-                         LINK_INTERFACE_LIBRARIES "${HDF5_LINK_LIBRARIES}")
-    set(HDF5_C_LIBRARY ${HDF5_C_TARGET})		       
 
     # --- Search for the other possible compnent libraries
 
@@ -421,57 +481,66 @@ else()
     #     and update HDF5_LIBRARIES.
 
     # HL Library
-    if ( _HDF5_HL_LIBRARY )
-      add_imported_library(${HDF5_HL_TARGET}
+    if ( _HDF5_HL_LIBRARY AND HDF5_USE_IMPORTED_TARGETS )
+      _hdf5_add_imported_library(${HDF5_HL_TARGET}
                    LOCATION ${_HDF5_HL_LIBRARY}
                    LINK_LANGUAGES "C"
-                   LINK_INTERFACE_LIBRARIES "${HDF5_C_TARGET}")
+                   LINK_INTERFACE_LIBRARIES "${HDF5_C_LIBRARY}")
+      set(HDF5_HL_LIBRARY ${HDF5_HL_TARGET})
+    else()
+      set(HDF5_HL_LIBRARY ${_HDF5_HL_LIBRARY})
     endif() 
       
     # CXX Library
-    if ( _HDF5_CXX_LIBRARY )
-      add_imported_library(${HDF5_CXX_TARGET}
+    if ( _HDF5_CXX_LIBRARY AND HDF5_USE_IMPORTED_TARGETS )
+      _hdf5_add_imported_library(${HDF5_CXX_TARGET}
                    LOCATION ${_HDF5_CXX_LIBRARY}
                    LINK_LANGUAGES "CXX"
-                   LINK_INTERFACE_LIBRARIES "${HDF5_C_TARGET}")
+                   LINK_INTERFACE_LIBRARIES "${HDF5_C_LIBRARY}")
       set(HDF5_CXX_LIBRARY ${HDF5_CXX_TARGET})
+    else()
+      set(HDF5_CXX_LIBRARY ${_HDF5_CXX_LIBRARY})
     endif() 
       
     # Fortran Library
-    if ( _HDF5_Fortran_LIBRARY )
-      add_imported_library(${HDF5_Fortran_TARGET}
+    if ( _HDF5_Fortran_LIBRARY AND HDF5_USE_IMPORTED_TARGETS )
+      _hdf5_add_imported_library(${HDF5_Fortran_TARGET}
                    LOCATION ${_HDF5_Fortran_LIBRARY}
                    LINK_LANGUAGES "Fortran"
-                   LINK_INTERFACE_LIBRARIES "${HDF5_C_TARGET}")
+                   LINK_INTERFACE_LIBRARIES "${HDF5_C_LIBRARY}")
       set(HDF5_Fortran_LIBRARY ${HDF5_Fortran_TARGET})
+    else()
+      set(HDF5_Fortran_LIBRARY ${_HDF5_Fortran_LIBRARY})
     endif() 
       
     # Fortran HL Library
-    if ( _HDF5_Fortran_HL_LIBRARY )
-      add_imported_library(${HDF5_Fortran_HL_TARGET}
+    if ( _HDF5_Fortran_HL_LIBRARY AND HDF5_USE_IMPORTED_TARGETS )
+      _hdf5_add_imported_library(${HDF5_Fortran_HL_TARGET}
                    LOCATION ${_HDF5_Fortran_HL_LIBRARY}
                    LINK_LANGUAGES "Fortran"
-                   LINK_INTERFACE_LIBRARIES "${HDF5_Fortran_TARGET}")
-      set(HDF5_Fortran_LIBRARY ${HDF5_Fortran_HL_TARGET})
+                   LINK_INTERFACE_LIBRARIES "${HDF5_Fortran_LIBRARY}")
+      set(HDF5_Fortran_HL_LIBRARY ${HDF5_Fortran_HL_TARGET})
+    else()	
+      set(HDF5_Fortran_HL_LIBRARY ${_HDF5_Fortran_HL_LIBRARY})
     endif()
 
-    # Define the HDF5_<component>_LIBRARY to point to the target
-    foreach ( _component ${HDF5_VALID_COMPONENTS} )
-      if ( TARGET ${HDF5_${_component}_TARGET} )
-	set(HDF5_${_component}_LIBRARY ${HDF5_${_component}_TARGET})
-      endif()
-    endforeach()
 
     # Define the HDF5_LIBRARIES variable
-    set(HDF5_LIBRARIES
-        ${HDF5_C_LIBRARY}
-        ${HDF5_HL_LIBRARY}
-	${HDF5_CXX_LIBRARY}
-	${HDF5_Fortran_LIBRARY}
-	${HDF5_Fortran_HL_LIBRARY})
+    foreach(a C HL CXX Fortran Fortran_HL)
+      set(var HDF5_${a}_LIBRARY)
+      if ( ${var} )
+	list(APPEND HDF5_LIBRARIES ${var})
+      endif()
+    endforeach()  
+    if(HDF5_LINK_LIBRARIES AND NOT HDF5_USE_IMPORTED_TARGETS)
+      list(APPEND HDF5_LIBRARIES ${HDF5_LINK_LIBRARIES})
+    endif()  
 
     # Define the HDF5_C_LIBRARIES variable
     set(HDF5_C_LIBRARIES ${HDF5_C_LIBRARY} ${HDF5_HL_LIBRARY})
+    if(HDF5_LINK_LIBRARIES AND NOT HDF5_USE_IMPORTED_TARGETS)
+      list(APPEND HDF5_C_LIBRARIES ${HDF5_LINK_LIBRARIES})
+    endif()  
 
 
   endif(NOT HDF5_LIBRARIES)
@@ -481,6 +550,8 @@ endif()
 # --- Define the version string from the settings file if not already set
 if ( NOT HDF5_VERSION AND HDF5_SETTINGS_FILE )
   _HDF5_DEFINE_VERSION(${HDF5_SETTINGS_FILE} HDF5_VERSION)
+else()  
+  set(HDF5_VERSION HDF5_VERSION-NOTFOUND)
 endif()
 
 # --- Define HDF5_IS_PARALLEL from the settings file if not already set
@@ -541,7 +612,8 @@ if ( NOT HDF5_FIND_QUIETLY )
 
 endif()
 
-find_package_handle_standard_args( HDF5 DEFAULT_MESSAGE
-                                   HDF5_INCLUDE_DIRS
-                                   HDF5_LIBRARIES
-                                   HDF5_VERSION)
+
+find_package_handle_standard_args(HDF5
+                                  REQUIRED_VARS HDF5_INCLUDE_DIRS HDF5_C_LIBRARY
+				  VERSION_VAR HDF5_VERSION
+				  HANDLE_COMPONENTS)

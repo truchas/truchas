@@ -41,7 +41,7 @@ fortran_preprocess_files(INPUT_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${INPUT_FPP_FLAGS}
 			 PROCESS_TARGET ${INPUT_TARGET_NAME})
-set(fc_flags -I${NetCDF_INCLUDE_DIR})
+set(fc_flags -I${NETCDF_INCLUDE_DIR})
 if(ENABLE_UbikSolve)
   list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 endif()

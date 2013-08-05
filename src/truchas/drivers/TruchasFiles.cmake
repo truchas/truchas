@@ -25,7 +25,10 @@ fortran_preprocess_files(DRIVERS_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${DRIVERS_FPP_FLAGS}
 			 PROCESS_TARGET ${DRIVERS_TARGET_NAME})
-set(fc_flags -I${NetCDF_INCLUDE_DIR})
+
+# Set compile flags		       
+include(BuildWhitespaceString)
+set(fc_flags -I${NETCDF_INCLUDE_DIR})
 if(ENABLE_PGSLib)
   list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
 endif()
