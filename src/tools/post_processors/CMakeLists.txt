@@ -36,7 +36,7 @@ fortran_preprocess_files(WRITE_RESTART_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${fpp_flags_list}
 			 PROCESS_TARGET ProcessWriteRestartFiles)
-set(fc_flags -I${NetCDF_INCLUDE_DIR})
+set(fc_flags -I${NETCDF_INCLUDE_DIR})
 if(ENABLE_Danu)
   list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 endif()
@@ -56,8 +56,9 @@ fortran_preprocess_files(WRITE_PROBES_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${fpp_flags_list}
 			 PROCESS_TARGET ProcessWriteProbeFiles)
-
-add_executable(write_probe ${WRITE_RESTART_FILES})
+set_source_files_properties(${WRITE_PROBE_FILES} PROPERTIES
+                            COMPILE_FLAGS ${WRITE_RESTART_COMPILE_FLAGS})
+add_executable(write_probe ${WRITE_PROBES_FILES})
 add_dependencies(write_probe ProcessWriteProbeFiles)
 target_link_libraries(write_probe truchas ${Truchas_LINK_LIBS})
 
