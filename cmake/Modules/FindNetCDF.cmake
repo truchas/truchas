@@ -174,30 +174,37 @@ endif()
 if ( NETCDF_INCLUDE_DIR ) 
        
   set(netcdf_h "${NETCDF_INCLUDE_DIR}/netcdf.h" )
-  #_netcdf_status( "NetCDF include file ${netcdf_h} will be searched for define values")
+  if ( EXISTS ${netcdf_h} )
+    #_netcdf_status( "NetCDF include file ${netcdf_h} will be searched for define values")
 
-  file(STRINGS "${netcdf_h}" netcdf_max_dims_string REGEX "^#define NC_MAX_DIMS")
-  string(REGEX REPLACE "[^0-9]" "" netcdf_max_dims "${netcdf_max_dims_string}")
+    file(STRINGS "${netcdf_h}" netcdf_max_dims_string REGEX "^#define NC_MAX_DIMS")
+    string(REGEX REPLACE "[^0-9]" "" netcdf_max_dims "${netcdf_max_dims_string}")
 
-  file(STRINGS "${netcdf_h}" netcdf_max_vars_string REGEX "^#define NC_MAX_VARS")
-  string(REGEX REPLACE "[^0-9]" "" netcdf_max_vars "${netcdf_max_vars_string}")
+    file(STRINGS "${netcdf_h}" netcdf_max_vars_string REGEX "^#define NC_MAX_VARS")
+    string(REGEX REPLACE "[^0-9]" "" netcdf_max_vars "${netcdf_max_vars_string}")
 
-  file(STRINGS "${netcdf_h}" netcdf_max_var_dims_string REGEX "^#define NC_MAX_VAR_DIMS")
-  string(REGEX REPLACE "[^0-9]" "" netcdf_max_var_dims "${netcdf_max_var_dims_string}")
+    file(STRINGS "${netcdf_h}" netcdf_max_var_dims_string REGEX "^#define NC_MAX_VAR_DIMS")
+    string(REGEX REPLACE "[^0-9]" "" netcdf_max_var_dims "${netcdf_max_var_dims_string}")
 
 
-  if ( 
-       ( (netcdf_max_dims EQUAL 65536)  OR (netcdf_max_dims GREATER 65536)  ) AND
-       ( (netcdf_max_vars EQUAL 524288) OR (netcdf_max_vars GREATER 524288) ) AND
-       ( (netcdf_max_var_dims EQUAL 8)  OR  (netcdf_max_var_dims GREATER 8) )
+    if ( 
+         ( (netcdf_max_dims EQUAL 65536)  OR (netcdf_max_dims GREATER 65536)  ) AND
+         ( (netcdf_max_vars EQUAL 524288) OR (netcdf_max_vars GREATER 524288) ) AND
+         ( (netcdf_max_var_dims EQUAL 8)  OR  (netcdf_max_var_dims GREATER 8) )
 
-     )
-       set(NETCDF_LARGE_DIMS TRUE)
-  else()
-       message(WARNING "The NetCDF found in ${NetCDF_INSTALL_PREFIX} does not have the correct NC_MAX_DIMS, NC_MAX_VARS and NC_MAX_VAR_DIMS\n"
-                       "It may not be compatible with other TPL libraries such MOAB and ExodusII\n" )
+       )
+         set(NETCDF_LARGE_DIMS TRUE)
+    else()
+         message(WARNING "The NetCDF found in ${NetCDF_INSTALL_PREFIX} does not have the correct NC_MAX_DIMS, NC_MAX_VARS and NC_MAX_VAR_DIMS\n"
+                         "It may not be compatible with other TPL libraries such MOAB and ExodusII\n" )
        set(NETCDF_LARGE_DIMS FALSE)
-  endif()
+    endif()
+
+  else() 
+
+    set(NETCDF_LARGE_DIMS NETCDF_LARGE_DIMS-NOTFOUND)
+
+  endif()  
 else()
   set(NETCDF_LARGE_DIMS NETCDF_LARGE_DIMS-NOTFOUND)
 endif()    
