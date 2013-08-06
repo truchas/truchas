@@ -453,6 +453,9 @@ endif()
 # Package Definitions 
 # ---------------------------------------------------------------------------- #
 
+# This will add a 'package' and 'package_source' targets
+include(CPack)
+
 # Package name
 set(CPACK_PACKAGE_NAME truchas)
 
@@ -490,8 +493,6 @@ set(CPACK_SOURCE_IGNORE_FILES
      "CMakeCache.txt"
      "cmake_install.cmake")
 
-# This will add a 'package' and 'package_source' targets
-include(CPack)
 
 # ---------------------------------------------------------------------------- #
 # Status 
