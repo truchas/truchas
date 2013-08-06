@@ -7,7 +7,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 
 # For the Fortran interface code
 include_directories(${Truchas_MODULE_DIR})
-include_directories(${NetCDF_INCLUDE_DIR})
+include_directories(${NETCDF_INCLUDE_DIR})
 
 # The asciiwriter extension
 add_library(asciiwriter SHARED asciiwriter.c)
