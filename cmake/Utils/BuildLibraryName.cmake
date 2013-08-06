@@ -10,7 +10,6 @@
 # and prefix are defined by BUILD_SHARED_LIBS flag.
 # Default is static.
 include(CMakeParseArguments)
-include(PrintVariable)
 function(BUILD_LIBRARY_NAME library output_name)
 
   set(options "SHARED;STATIC")
