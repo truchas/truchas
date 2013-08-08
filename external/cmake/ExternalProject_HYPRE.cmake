@@ -13,7 +13,12 @@ set(HYPRE_BUILD_TARGET hypre)
 global_set(HYPRE_BUILD_TARGET ${HYPRE_BUILD_TARGET})
 
 # Define the version and archive file
-include(ExternalProjectVersions)
+set(EP_HYPRE_VERSION_MAJOR  2)
+set(EP_HYPRE_VERSION_MINOR  6)
+set(EP_HYPRE_VERSION_PATCH  0b)
+set(EP_HYPRE_VERSION  ${EP_HYPRE_VERSION_MAJOR}.${EP_HYPRE_VERSION_MINOR}.${EP_HYPRE_VERSION_PATCH})
+set(EP_HYPRE_ARCHIVE_FILE   hypre-${EP_HYPRE_VERSION}.tar.gz)
+set(EP_HYPRE_MD5_SUM        84381005bdddff69b62b43ca025070fd) 
 
 # Useful utility to build *FLAGS strings
 include(BuildWhitespaceString)
@@ -25,7 +30,7 @@ include(MakeCMakeCommandFile)
 include(BuildLibraryName)
 
 # ExternalProject directories, file and log settings
-set(hypre_url_file     ${TruchasExternal_ARCHIVE_DIR}/${HYPRE_ARCHIVE_FILE})
+set(hypre_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_HYPRE_ARCHIVE_FILE})
 if (ENABLE_MPI)
   set(hypre_prefix_dir   ${TruchasExternal_BINARY_DIR}/hypre-mpi)
 else()
@@ -159,7 +164,7 @@ ExternalProject_Add(${HYPRE_BUILD_TARGET}
                     STAMP_DIR  ${hypre_stamp_dir}
 		    # -- Archive file definitions
                     URL          ${hypre_url_file}
-                    URL_MD5      ${HYPRE_MD5_SUM}   
+                    URL_MD5      ${EP_HYPRE_MD5_SUM}   
                     # -- Configure
                     SOURCE_DIR        ${hypre_source_dir}
                     CONFIGURE_COMMAND ${HYPRE_CONFIGURE_COMMAND}
@@ -176,19 +181,19 @@ ExternalProject_Add(${HYPRE_BUILD_TARGET}
 # --- Set the variables for other targets that need HYPRE
 
 # Version
-global_set(HYPRE_VERSION ${HYPRE_VERSION})
+set(HYPRE_VERSION ${EP_HYPRE_VERSION})
 
 # Include directory
-global_set(HYPRE_INCLUDE_DIR ${hypre_install_dir}/include)
+set(HYPRE_INCLUDE_DIR ${hypre_install_dir}/include)
 set(inc_dirs ${HYPRE_INCLUDE_DIR})
 if (ENABLE_MPI)
   list(APPEND inc_dir ${MPI_C_INCLUDE_PATH})
 endif()
-global_set(HYPRE_INCLUDE_DIRS ${inc_dirs})
+set(HYPRE_INCLUDE_DIRS ${inc_dirs})
 
 # Library
 build_library_name(HYPRE HYPRE_LIBRARY APPEND_PATH ${hypre_install_dir}/lib)
-global_set(HYPRE_LIBRARY ${HYPRE_LIBRARY})
+set(HYPRE_LIBRARY ${HYPRE_LIBRARY})
 set(libs ${HYPRE_LIBRARY})
 if(ENABLE_MPI)
   list(APPEND libs ${MPI_C_LIBRARIES})
@@ -199,12 +204,12 @@ endif()
 if(BLAS_FOUND)
   list(APPEND libs ${BLAS_LIBRARIES})
 endif()
-global_set(HYPRE_LIBRARIES ${libs})
+set(HYPRE_LIBRARIES ${libs})
 
 # Flags
 if (ENABLE_MPI)
-  global_set(HYPRE_IS_PARALLEL True)
+  set(HYPRE_IS_PARALLEL True)
 else()
-  global_set(HYPRE_IS_PARALLEL False)
+  set(HYPRE_IS_PARALLEL False)
 endif()
 

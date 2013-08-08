@@ -13,7 +13,12 @@ set(SWIG_BUILD_TARGET swig)
 global_set(SWIG_BUILD_TARGET ${SWIG_BUILD_TARGET})
 
 # Define the version and archive file
-include(ExternalProjectVersions)
+set(EP_SWIG_VERSION_MAJOR  2)
+set(EP_SWIG_VERSION_MINOR  0)
+set(EP_SWIG_VERSION_PATCH  4)
+set(EP_SWIG_VERSION  ${EP_SWIG_VERSION_MAJOR}.${EP_SWIG_VERSION_MINOR}.${EP_SWIG_VERSION_PATCH})
+set(EP_SWIG_ARCHIVE_FILE   swig-${EP_SWIG_VERSION}.tar.gz)
+set(EP_SWIG_MD5_SUM       4319c503ee3a13d2a53be9d828c3adc0) 
 
 # Useful utility to build *FLAGS strings
 include(BuildWhitespaceString)
@@ -25,7 +30,7 @@ include(MakeCMakeCommandFile)
 include(BuildLibraryName)
 
 # ExternalProject directories, file and log settings
-set(swig_url_file     ${TruchasExternal_ARCHIVE_DIR}/${SWIG_ARCHIVE_FILE})
+set(swig_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_SWIG_ARCHIVE_FILE})
 set(swig_prefix_dir   ${TruchasExternal_BINARY_DIR}/swig)
 set(swig_source_dir   ${swig_prefix_dir}/swig-${SWIG_VERSION}-source)
 set(swig_stamp_dir    ${swig_prefix_dir}/swig-timestamps)
@@ -57,7 +62,7 @@ ExternalProject_Add(${SWIG_BUILD_TARGET}
 		    #INSTALL_DIR ${swig_install_dir}
 		    # -- Archive file definitions
                     URL          ${swig_url_file}
-                    URL_MD5      ${SWIG_MD5_SUM}   
+                    URL_MD5      ${EP_SWIG_MD5_SUM}   
                     # -- Configure
 		    CONFIGURE_COMMAND
                         <SOURCE_DIR>/configure
@@ -76,10 +81,10 @@ ExternalProject_Add(${SWIG_BUILD_TARGET}
 # --- Set the variables for other targets that need SWIG
 
 # Version
-global_set(SWIG_VERSION ${SWIG_VERSION})
+set(SWIG_VERSION ${EP_SWIG_VERSION})
 
 # Installation directory
-global_set(SWIG_DIR ${swig_install_dir})
+set(SWIG_DIR ${swig_install_dir})
 
 # SWIG executable
-global_set(SWIG_EXECUTABLE ${swig_install_dir}/bin/swig)
+set(SWIG_EXECUTABLE ${swig_install_dir}/bin/swig)

@@ -12,7 +12,13 @@
 set(ZLIB_BUILD_TARGET zlib)
 
 # Define the version and archive file
-include(ExternalProjectVersions)
+set(EP_ZLIB_VERSION_MAJOR 1)
+set(EP_ZLIB_VERSION_MINOR 2)
+set(EP_ZLIB_VERSION_PATCH 8)
+set(EP_ZLIB_VERSION ${EP_ZLIB_VERSION_MAJOR}.${EP_ZLIB_VERSION_MINOR}.${EP_ZLIB_VERSION_PATCH})
+set(EP_ZLIB_ARCHIVE_FILE   zlib-${EP_ZLIB_VERSION}.tar.gz)
+set(EP_ZLIB_MD5_SUM        44d667c142d7cda120332623eab69f40) 
+
 
 # Useful utility to build *FLAGS strings
 include(BuildWhitespaceString)
@@ -24,9 +30,9 @@ include(MakeCMakeCommandFile)
 include(BuildLibraryName)
 
 # ExternalProject directories, file and log settings
-set(zlib_url_file     ${TruchasExternal_ARCHIVE_DIR}/${ZLIB_ARCHIVE_FILE})
+set(zlib_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_ZLIB_ARCHIVE_FILE})
 set(zlib_prefix_dir   ${TruchasExternal_BINARY_DIR}/zlib)
-set(zlib_source_dir   ${zlib_prefix_dir}/zlib-${ZLIB_VERSION}-source)
+set(zlib_source_dir   ${zlib_prefix_dir}/zlib-${EP_ZLIB_VERSION}-source)
 set(zlib_stamp_dir    ${zlib_prefix_dir}/zlib-timestamps)
 set(zlib_tmp_dir      ${zlib_prefix_dir}/zlib-tmp)
 set(zlib_install_dir  ${TruchasExternal_INSTALL_PREFIX})
@@ -47,7 +53,7 @@ ExternalProject_Add(${ZLIB_BUILD_TARGET}
 		    #INSTALL_DIR ${zlib_install_dir}
 		    # -- Archive file definitions
                     URL          ${zlib_url_file}
-                    URL_MD5      ${ZLIB_MD5_SUM}   
+                    URL_MD5      ${EP_ZLIB_MD5_SUM}   
                     # -- Configure (CMake)
 		    CMAKE_CACHE_ARGS
 		          ${TruchasExternal_CMAKE_COMPILER_ARGS}
@@ -61,14 +67,14 @@ ExternalProject_Add(${ZLIB_BUILD_TARGET}
 # --- Set the variables for other targets that need ZLIB
 
 # Version
-global_set(ZLIB_VERSION ${ZLIB_VERSION})
-global_set(ZLIB_VERSION_STRING ${ZLIB_VERSION})
+set(ZLIB_VERSION ${EP_ZLIB_VERSION})
+set(ZLIB_VERSION_STRING ${EP_ZLIB_VERSION})
 
 # Include directory
-global_set(ZLIB_INCLUDE_DIR ${zlib_install_dir}/include)
-global_set(ZLIB_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
+set(ZLIB_INCLUDE_DIR ${zlib_install_dir}/include)
+set(ZLIB_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
 
 # Library
 build_library_name(z library APPEND_PATH ${zlib_install_dir}/lib)
-global_set(ZLIB_LIBRARY ${library})
-global_set(ZLIB_LIBRARIES ${library})
+set(ZLIB_LIBRARY ${library})
+set(ZLIB_LIBRARIES ${library})

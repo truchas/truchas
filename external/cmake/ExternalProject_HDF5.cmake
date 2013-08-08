@@ -13,7 +13,12 @@ set(HDF5_BUILD_TARGET hdf5)
 global_set(HDF5_BUILD_TARGET ${HDF5_BUILD_TARGET})
 
 # Define the version and archive file
-include(ExternalProjectVersions)
+set(EP_HDF5_VERSION_MAJOR 1)
+set(EP_HDF5_VERSION_MINOR 8)
+set(EP_HDF5_VERSION_PATCH 11)
+set(EP_HDF5_VERSION ${EP_HDF5_VERSION_MAJOR}.${EP_HDF5_VERSION_MINOR}.${EP_HDF5_VERSION_PATCH})
+set(EP_HDF5_ARCHIVE_FILE   hdf5-${EP_HDF5_VERSION}.tar.gz)
+set(EP_HDF5_MD5_SUM       1a4cc04f7dbe34e072ddcf3325717504)  
 
 # Useful utility to build *FLAGS strings
 include(BuildWhitespaceString)
@@ -25,7 +30,7 @@ include(MakeCMakeCommandFile)
 include(BuildLibraryName)
 
 # ExternalProject directories, file and log settings
-set(hdf5_url_file     ${TruchasExternal_ARCHIVE_DIR}/${HDF5_ARCHIVE_FILE})
+set(hdf5_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_HDF5_ARCHIVE_FILE})
 set(hdf5_prefix_dir   ${TruchasExternal_BINARY_DIR}/hdf5)
 set(hdf5_source_dir   ${hdf5_prefix_dir}/hdf5-${HDF5_VERSION}-source)
 set(hdf5_stamp_dir    ${hdf5_prefix_dir}/hdf5-timestamps)
@@ -87,7 +92,7 @@ ExternalProject_Add(${HDF5_BUILD_TARGET}
 		    #INSTALL_DIR ${hdf5_install_dir}
 		    # -- Archive file definitions
                     URL          ${hdf5_url_file}
-                    URL_MD5      ${HDF5_MD5_SUM}   
+                    URL_MD5      ${EP_HDF5_MD5_SUM}   
                     # -- Configure
 		    CONFIGURE_COMMAND
                         <SOURCE_DIR>/configure
@@ -114,17 +119,16 @@ ExternalProject_Add(${HDF5_BUILD_TARGET}
 # --- Set the variables for other targets that need HDF5
 
 # Version
-global_set(HDF5_VERSION ${HDF5_VERSION})
+set(HDF5_VERSION ${EP_HDF5_VERSION})
 
 # Include directory
-global_set(HDF5_INCLUDE_DIR ${hdf5_install_dir}/include)
-global_set(HDF5_INCLUDE_DIRS ${HDF5_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR})
+set(HDF5_INCLUDE_DIR ${hdf5_install_dir}/include)
+set(HDF5_INCLUDE_DIRS ${HDF5_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR})
 
 # Library
-global_set(HDF5_LIBRARY_DIRS ${hdf5_install_dir}/lib)
 
 # Debug or not, need to worry about this with CMake builds
-set(debug_suffix)
+#set(debug_suffix)
 #string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type_lc) 
 #if ( "${build_type_lc}" STREQUAL "debug" )
 #  set(debug_suffix _debug)
@@ -134,19 +138,18 @@ build_library_name(hdf5_hl${debug_suffix}
                    HDF5_HL_LIBRARY 
                    APPEND_PATH ${hdf5_install_dir}/lib
                    ${lib_type})
-global_set(HDF5_HL_LIBRARY ${HDF5_HL_LIBRARY})		 
+set(HDF5_HL_LIBRARY ${HDF5_HL_LIBRARY})		 
 
 build_library_name(hdf5${debug_suffix}
                    HDF5_C_LIBRARY
                    APPEND_PATH ${hdf5_install_dir}/lib
                    ${lib_type})
-global_set(HDF5_C_LIBRARY ${HDF5_C_LIBRARY})		 
+set(HDF5_C_LIBRARY ${HDF5_C_LIBRARY})		 
 
-global_set(HDF5_LINK_LIBRARIES ${ZLIB_LIBRARIES})
+set(HDF5_LINK_LIBRARIES ${ZLIB_LIBRARIES})
 
-global_set(HDF5_LIBRARIES 
+set(HDF5_C_LIBRARIES 
            ${HDF5_HL_LIBRARY}
            ${HDF5_C_LIBRARY}
            ${HDF5_LINK_LIBRARIES})
-
 

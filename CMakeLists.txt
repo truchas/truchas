@@ -27,6 +27,12 @@ set(Truchas_MINOR_VERSION 8)
 set(Truchas_PATCH_VERSION dev)
 set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
 
+# Copyright file
+set(Truchas_COPYRIGHT_FILE ${Truchas_SOURCE_DIR}/COPYRIGHT)
+
+# License file
+set(Truchas_LICENSE_FILE ${Truchas_SOURCE_DIR}/LICENSE)
+
 # Location of project defined include and FindXXX.cmake files
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" 
                       "${Truchas_SOURCE_DIR}/cmake"
@@ -632,7 +638,7 @@ if(HDF5_FOUND)
   message(STATUS "\tHDF5_VERSION=${HDF5_VERSION}")
   message(STATUS "\tHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}")
   message(STATUS "\tHDF5_INCLUDE_DIRS=${HDF5_INCLUDE_DIRS}")
-  message(STATUS "\tHDF5_LIBRARIES=${HDF5_LIBRARIES}")
+  message(STATUS "\tHDF5_C_LIBRARIES=${HDF5_C_LIBRARIES}")
 else()  
   message(STATUS "\tAdded to the build")
   message(STATUS "\tBuild Target: ${HDF5_BUILD_TARGET}")
@@ -645,7 +651,7 @@ if(NETCDF_FOUND)
   message(STATUS "\tNETCDF_VERSION=${NETCDF_VERSION}")
   message(STATUS "\tNETCDF_INCLUDE_DIR=${NETCDF_INCLUDE_DIR}")
   message(STATUS "\tNETCDF_INCLUDE_DIRS=${NETCDF_INCLUDE_DIRS}")
-  message(STATUS "\tNETCDF_LIBRARIES=${NETCDF_LIBRARIES}")
+  message(STATUS "\tNETCDF_Fortran_LIBRARIES=${NETCDF_Fortran_LIBRARIES}")
 else()  
   message(STATUS "\tAdded to the build")
   message(STATUS "\tBuild Target: ${NETCDF_BUILD_TARGET}")
