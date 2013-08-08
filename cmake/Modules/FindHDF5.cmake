@@ -548,15 +548,21 @@ else()
 endif()
 
 # --- Define the version string from the settings file if not already set
-if ( NOT HDF5_VERSION AND HDF5_SETTINGS_FILE )
-  _HDF5_DEFINE_VERSION(${HDF5_SETTINGS_FILE} HDF5_VERSION)
-else()  
-  set(HDF5_VERSION HDF5_VERSION-NOTFOUND)
+if ( NOT HDF5_VERSION )
+  if ( HDF5_SETTINGS_FILE )
+    _HDF5_DEFINE_VERSION(${HDF5_SETTINGS_FILE} HDF5_VERSION)
+  else() 
+    set(HDF5_VERSION HDF5_VERSION-NOTFOUND)
+  endif()  
 endif()
 
 # --- Define HDF5_IS_PARALLEL from the settings file if not already set
-if ( NOT HDF5_IS_PARALLEL AND HDF5_SETTINGS_FILE )
-  _HDF5_DEFINE_PARALLEL_BUILD(${HDF5_SETTINGS_FILE} HDF5_IS_PARALLEL)
+if ( NOT HDF5_IS_PARALLEL )
+  if( HDF5_SETTINGS_FILE )
+    _HDF5_DEFINE_PARALLEL_BUILD(${HDF5_SETTINGS_FILE} HDF5_IS_PARALLEL)
+  else()
+    set(HDF5_IS_PARALLEL HDF5_IS_PARALLEL-NOTFOUND)
+  endif()  
 endif()
 
 # --- Search for HDF5 tools
