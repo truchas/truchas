@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+# ############################################################################ #
+#
+#  A sample Python script to run truchas
+#
+# ############################################################################ #
+
+# Standard Python modules
+import os
+import sys
+
+# Need Numerical Python
+import numpy
+
+# Either add the Truchas Python install location to the environment variable
+# PYTHONPATH, or use the hard coded path here
+try:
+  from Truchas import *
+except ImportError:
+  sys.path.append('@TruchasPython_INSTALL_PREFIX@')
+  from Truchas import *
+except ImportError:
+  print 'Attempted to import Truchas from @TruchasPython_INSTALL_PREFIX@ failed'
+  raise
+
+
+# Define an instance to run truchas
+parallel=False
+truchas=SelectTruchasBinary(parallel)
+
+# Need the input file 
+truchas.input='ds11'
+
+# Now run an exception is raised if run fails
+truchas.run()
+
+# Grab the output
+#output_file=truchas.outdir+os.path.sep+'ds11.h5'
+output_file='ds11_output'+os.path.sep+'ds11.h5'
+output=TruchasOutput(output_file)
+
+# Simulation, dataset organized by simulation
+simulation=output.get_simulation()
+
+# Temperature (numpy array) at the last cycle 109
+final_temp_data=simulation.get_series_data('Z_TEMP',cycle=109)
+print 'Final temperature data:'
+print final_temp_data
+
+# Grab the last series group
+final_series=TruchasSeries(simulation,id=4)
+
+# Example of a region
+mold=TruchasRegion(simulation,1)
+gaps=TruchasRegion(simulation,10)
+
+# And how to grab the temperature data for these regions
+mold_temp=final_series.get_data('Z_TEMP',region=mold)
+gaps_temp=final_series.get_data('Z_TEMP',region=gaps)
+
+print 'Final temperature in the mold region'
+print mold_temp
+
+print 'Final temperature in the gaps region'
+print gaps_temp
+
+
+
+
+

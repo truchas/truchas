@@ -1,0 +1,534 @@
+################################################################################
+
+# - Sta
+import sys
+import os
+
+import numpy
+import logging
+
+import Danu
+
+from  .error import TruchasError, TruchasOutputError, TruchasIOError
+
+# --- Truchas Output classes
+
+class TruchasRegion(object):
+
+  def __init__(self,simulation,matids):
+
+    '''Use the NumPy masked array capability'''
+    from numpy import ma as ma
+
+    # Input matids can be either a single int or an array of ints
+    self.matids=[]
+    if isinstance(matids,int):
+      self.matids.append(matids)
+    elif isinstance(matids,list) or isinstance(matids,numpy.ndarray):
+      self.matids=matids
+    else:
+      raise TruchasError('Invalid material id choice')
+
+    # Mask is an ncx1 array
+    blockids=simulation.blockid()
+    self.mask=numpy.ones(blockids.shape)
+    idx=0
+    for n in blockids:
+      if n in self.matids:
+	self.mask[idx]=0
+      idx+=1
+
+    # Cellmap is array mapping the orginal cell indices to the region
+    self.cellmap = ma.array(simulation.cellmap(),mask=self.mask).compressed()
+
+    # Number cells in this region 
+    self.nc=len(self.cellmap)
+
+    # Reshape the cellmap to match the blockid and original cellmap dimensions
+    self.cellmap.reshape(self.nc,1)
+
+  def apply_mask(self,data):
+
+    ''' Masked array module'''
+    from numpy import ma as ma
+
+    # Check the data array size
+    nc=data.shape[0]
+    if nc != len(self.mask): raise TruchasError('Mismatched mask and data array size')
+
+    # Define the dimension of the field variable
+    if data.ndim == 1:
+      field_dim=1
+    else:
+      field_dim=data.shape[1]
+    
+    # Initialize the masked data to garbage data
+    masked_data=numpy.tile(1.0e90,(self.nc,field_dim))
+   
+    if field_dim > 1:
+      for d in range(field_dim):
+        masked_data[:,d]=ma.array(data[:,d],mask=self.mask).compressed().reshape(self.nc,1)
+    else:
+      masked_data=ma.array(data,mask=self.mask).compressed().reshape(self.nc,1)
+
+    return masked_data
+
+
+
+class TruchasProbe:
+
+  # Probe dataset name regular  expression
+  DATASET_REGEX_PATTERN = '^P\d+:(?P<field>\w+)'
+
+  # Array nc x M where  3<=M<=5, and nc number of cycles
+  CYCLE_INDEX      = 0
+  TIME_INDEX       = 1
+  DATA_START_INDEX = 2
+
+  # Probe name
+  NAME_ATTR_NAME = 'NAME'
+
+  # Probe location
+  X_ATTR_NAME    = 'X'
+  Y_ATTR_NAME    = 'Y'
+  Z_ATTR_NAME    = 'Z'
+ 
+  # Probe cell location
+  CELL_INDEX_ATTR_NAME = 'CELL_INDEX'
+  CELL_X_ATTR_NAME     = 'CELL_X'
+  CELL_Y_ATTR_NAME     = 'CELL_Y'
+  CELL_Z_ATTR_NAME     = 'CELL_Z'
+  
+  # Probe node location
+  NODE_INDEX_ATTR_NAME = 'NODE_INDEX'
+  NODE_X_ATTR_NAME     = 'NODE_X'
+  NODE_Y_ATTR_NAME     = 'NODE_Y'
+  NODE_Z_ATTR_NAME     = 'NODE_Z'
+
+  def __init__(self,sim,name):
+
+    # Probe name - dataset name NOT the Truchas name
+    self.pname = name
+
+    # Danu probe instance
+    try:  
+      self.danu_probe=sim.danu_sim.probe_open(name)
+    except Exception,e:
+      raise TruchasOutputError(str(e))
+
+    # Danu attributes
+    try:
+      self.danu_attr=self.danu_probe.attributes()
+    except Exception,e:
+      msg='Probe dataset is required to have attributes: '+str(e)
+      raise TruchasOutputError(msg)
+
+    try:
+      # Truchas probe name 
+      self.name=self.danu_attr[TruchasProbe.NAME_ATTR_NAME]
+
+      # Probe location coordinates
+      self.x=self.danu_attr[TruchasProbe.X_ATTR_NAME]
+      self.y=self.danu_attr[TruchasProbe.Y_ATTR_NAME]
+      self.z=self.danu_attr[TruchasProbe.Z_ATTR_NAME]
+     
+      # Probe cell index and location
+      self.cell_index=self.danu_attr[TruchasProbe.CELL_INDEX_ATTR_NAME]
+      self.cell_x=self.danu_attr[TruchasProbe.CELL_X_ATTR_NAME]
+      self.cell_y=self.danu_attr[TruchasProbe.CELL_Y_ATTR_NAME]
+      self.cell_z=self.danu_attr[TruchasProbe.CELL_Z_ATTR_NAME]
+     
+      # Probe node index and location
+      self.node_index=self.danu_attr[TruchasProbe.NODE_INDEX_ATTR_NAME]
+      self.node_x=self.danu_attr[TruchasProbe.NODE_X_ATTR_NAME]
+      self.node_y=self.danu_attr[TruchasProbe.NODE_Y_ATTR_NAME]
+      self.node_z=self.danu_attr[TruchasProbe.NODE_Z_ATTR_NAME]
+
+    except AttributeError,e:
+      mess='Undefined attribute for probe %s:'%name
+      mess+=str(e)
+      raise TruchasOutputError(mess)
+
+    # Define the field member data from the name
+    import re
+    probe_name=re.compile(TruchasProbe.DATASET_REGEX_PATTERN)
+    self.field=probe_name.match(self.pname).group('field')
+
+  def get_data(self):
+    return self.danu_probe.read()
+
+  def get_cycle_data(self):
+    return self.danu_probe.read()[:,TruchasProbe.CYCLE_INDEX]
+
+  def get_time_data(self):
+    return self.danu_probe.read()[:,TruchasProbe.TIME_INDEX]
+
+  def find_cycle_data(self,cycle):
+    ret_data=[]
+    data=self.get_data()
+    (nc,d)=data.shape
+    idx=0
+    for nc in data[:,TruchasProbe.CYCLE_INDEX]:
+      if nc == cycle:
+	ret_data=data[idx,TruchasProbe.DATA_START_INDEX:]
+	break
+      idx+=1
+    return ret_data
+
+  def find_time_data(self,time,tol=1.0e-9):
+    ret_data=[]
+    data=self.get_data()
+    (nc,d)=data.shape
+    for c in range(nc+1):
+      t=data[c,TruchasProbe.TIME_INDEX]
+      if abs(time-t) <= tol:
+	ret_data=data[c,TruchasProbe.DATA_START_INDEX:]
+	break
+    return ret_data
+
+
+class TruchasSeries(object):
+  
+  FIELDTYPE_ATTR_NAME = 'FIELDTYPE'
+  CELLTYPE_NAME       = 'CELL'
+  NODETYPE_NAME       = 'NODE'
+
+  def __init__(self,simulation,name=None,id=None):
+    
+    # Can create a TruchasSeries instance from the name or id number
+    # Define the name if id is used.
+    if name == None and id == None:
+      raise TruchasOutputError('Must specify name or id number when creating a series object')
+    elif name == None:
+      name=simulation.danu_sim.get_sequence_name(id)
+    self.name=name
+
+    # Danu series instance
+    try:  
+      self.danu_seq=simulation.danu_sim.get_sequence(name)
+    except Exception, e:
+      msg='Failed to open series group %s in simulation %s: %s' % (name,simulation.name,str(e))
+      raise TruchasOutputError(msg)
+
+    # Danu attributes
+    self.danu_attr={}
+    try:
+      self.danu_attr=self.danu_seq.attributes()
+    except:
+      pass
+
+    # Copy useful member data to this level to improve code readability
+    self.time=self.danu_seq.time
+    self.cycle=self.danu_seq.cycle
+
+    # List of all dataset names under this group
+    self.datasets=self.danu_seq.data_list()
+
+    # Separate the datasets into node or cell based datasets
+    self.cell_field_names=[]
+    self.node_field_names=[]
+    for d in self.datasets:
+      if self.danu_seq.data_attribute_exists(d,TruchasSeries.FIELDTYPE_ATTR_NAME):
+	type=self.danu_seq.get_data_attribute(d,TruchasSeries.FIELDTYPE_ATTR_NAME)
+	if type == TruchasSeries.CELLTYPE_NAME:
+	  self.cell_field_names.append(d)
+	elif type == TruchasSeries.NODETYPE_NAME:
+	  self.node_field_names.append(d)
+	else:
+	  print 'W A R N I N G!!! Dataset %d is not a %s or %s type' % (d,TruchasSeries.CELLTYPE_NAME,TruchasSeries.NODETYPE_NAME)
+  
+  def get_data(self,dataname,region=None):
+    if region == None:
+      return self.danu_seq.data_read(dataname)
+    else:
+      return region.apply_mask(self.danu_seq.data_read(dataname))
+
+
+
+class TruchasBaseSimulation(object):
+  '''Base class that for both MAIN and EM simulation groups'''
+
+  def __init__(self,file,name):
+
+    # Simulation name
+    self.name=name
+
+    # Danu simulation instance
+    try:
+      self.danu_sim=file.danu_file.get_simulation(name)
+    except:
+      msg='Failed to open simulation %s in file %s' % (name,file.name)
+      raise TruchasOutputError(msg)
+
+    # Danu attributes
+    self.danu_attr={}
+    try:
+      self.danu_attr=self.danu_sim.attributes()
+    except:
+      pass
+
+    # Non-series dataset names
+    try:
+      self.dataset_names=self.danu_sim.data_list()
+    except Exception, e:
+      msg='Failed to read the non-series dataset names in %s: %s' % (name,str(e))
+      raise TruchasOutputError(msg)
+
+    # Probe dataset names
+    try:
+      self.probe_names=self.danu_sim.probe_list()
+    except Exception,e:
+      msg='Failed to read the probe name list in %s: %s' % (name,str(e))
+      raise TruchasOutputError(msg)
+
+    # Series group names
+    try:
+      self.series_names=self.danu_sim.sequence_list()
+    except Exception, e:
+      msg='Failed to read the sequence group name list in %s' % name
+      raise TruchasOutputError(msg)
+
+  # Return TruchasSeries instance by id
+  def get_series(self,id):
+    series_name=self.danu_sim.get_sequence_name(id)
+    if series_name not in self.series_names:
+      msg='Series %s is not found in %s' % (series_name,self.name)
+      raise TruchasOutputError(msg)
+    return TruchasSeries(self.sim,series_name)
+
+  # Return a NumPy array of data stored under a series group
+  # Series group is selected by id or cycle or time. The tolerance parameter
+  # controls the time search. 
+  def get_series_data(self,dataname,id=None,cycle=None,time=None,tol=1.0e-9):
+    data=[]
+    series=self.find_series(id,cycle,time,tol)
+    try:
+      data=series.get_data(dataname)
+    except:
+      pass
+    return data
+
+  # Return a TruchasSeries instance that satifies the search criteria
+  # of id or cycle or time. Tolerance parameter controls the time
+  # search. 
+  def find_series(self,id=None,cycle=None,time=None,tol=1.0e-9):
+    series=None
+    if id == None and cycle == None and time == None:
+      raise TruchasError('Must specify id or cycle or time to search series')
+    elif id != None:
+      series_name=self.danu_sim.get_sequence_name(int(id))
+      if series_name in self.series_names:
+	series=TruchasSeries(self,series_name)
+    elif cycle != None:
+      for s in self.series_names:
+	so=TruchasSeries(self,name=s)
+	if so.cycle == cycle:
+	  series=so
+	  break
+    else:
+      for s in self.series_names:
+	so=TruchasSeries(self,name=s)
+	if abs(so.time-time) <= tol:
+	  series=so
+	  break
+    return series	
+
+  # Return a TruchasProbe instance that matches the 
+  # name attribute and field.
+  def get_probe(self,name,field):
+    import re
+    p_ret=None
+    # Build the regular expression matching object
+    # and create a list of field probes
+    str_regex='P\d+:'+field
+    field_pattern=re.compile(str_regex)
+    field_probes=[p for p in self.probe_names if field_pattern.match(p)]
+    for p in field_probes:
+      po=TruchasProbe(self,p)
+      if po.name == name:
+	p_ret=po
+	break
+    return p_ret  
+
+  def get_data(self,name):
+    return self.danu_sim.data_read(name)
+
+class TruchasEMSimulation(TruchasBaseSimulation):
+
+  TIME_ATTR_NAME = 'TIME' 
+
+  def __init__(self,file,name):
+    TruchasBaseSimulation.__init__(self,file,name)
+    try:
+      self.time=float(self.danu_attr[TruchasEMSimulation.TIME_ATTR_NAME])
+    except Exception, e:
+      raise TruchasOutputError(str(e))
+
+	  
+class TruchasSimulation(TruchasBaseSimulation):
+
+  BLOCKID_DATA_NAME  = 'BLOCKID'
+  CELLMAP_DATA_NAME  = 'CELLMAP'
+  NODEMAP_DATA_NAME  = 'NODEMAP'
+  NPROC_DATA_NAME    = 'NUMPROCS'
+  CELLPART_DATA_NAME = 'CELLPART'
+  
+  def __init__(self,file,name):
+
+    # Init with the base class constructor
+    TruchasBaseSimulation.__init__(self,file,name)
+
+    # Define the number of processors
+    try:
+      np=self.danu_sim.data_read(TruchasSimulation.NPROC_DATA_NAME)
+    except:
+      msg='Failed to determine the number of processors in %s' % name
+      raise TruchasOutputError(msg)
+    self.numprocs=int(np[0]) # NumPy returns an ndarray array, just want an int type
+ 
+  def blockid(self):
+    blockid=[]
+    try:
+      blockid=self.danu_sim.data_read(TruchasSimulation.BLOCKID_DATA_NAME)
+    except RuntimeError:
+      msg='Failed to read the block id (%s) dataset from %s' % (TruchasSimulation.BLOCKID_DATA_NAME,self.name)
+      raise TruchasOutputError(msg)
+    except:
+      raise
+    return blockid
+
+  def cellmap(self):
+    cellmap=[]
+    try:
+      cellmap=self.danu_sim.data_read(TruchasSimulation.CELLMAP_DATA_NAME)
+    except RuntimeError:
+      msg='Failed to read the cell map (%s) dataset from %s' % (TruchasSimulation.CELLMAP_DATA_NAME,self.name)
+      raise TruchasOutputError(msg)
+    except:
+      raise
+    return cellmap
+
+  def cellpart(self):
+    cellpart=[]
+    if self.numprocs > 1:
+      try:
+        cellpart=self.danu_sim.data_read(TruchasSimulaton.CELLPART_DATA_NAME)
+      except RuntimeError:
+        msg='Failed to read the cell partition (%s) dataset from %s' % (TruchasSimulation.CELLPART_DATA_NAME,self.name)
+        raise TruchasOutputError(msg)
+      except:
+        raise
+    return cellpart
+
+  def nodemap(self):
+    nodemap=[]
+    try:
+      nodemap=self.danu_sim.data_read(_NODEMAP_NAME)
+    except RuntimeError:
+      msg='Failed to read the node map (%s) dataset from %s' % (TruchasSimulation.NODEMAP_DATA_NAME,self.name)
+      raise TruchasOutputError(msg)
+    except:
+      raise
+    return nodemap
+  
+
+    
+class TruchasMesh(object):
+
+ 
+  def __init__(self,file,name):
+
+    # Mesh name
+    self.name=name
+   
+    # Danu Mesh Instance
+    try:
+      self.danu_mesh=file.danu_file.get_mesh(name)
+    except Exception, e:
+      raise TruchasOutputError(str(e))
+ 
+    # Danu attributes
+    self.danu_attr={}
+    try:
+      self.danu_attr=self.danu_mesh.atributes()
+    except:
+      pass
+
+    # Number of nodes
+    try:
+      self.nnodes=self.danu_mesh.nnodes()
+    except Exception,e:
+      raise TruchasOutputError(str(e))
+    
+    # Number of cells (elements)
+    try:
+      self.ncells=self.danu_mesh.nelem()
+    except Exception,e:
+      raise TruchasOutputError(str(e))
+
+    # Dimension 
+    self.dim=self.danu_mesh.dim
+
+    # Mesh type (UNSTRUCTURED or STRUCUTURED) 
+    self.mesh_type=self.danu_mesh.mesh_type
+
+    # Element type (HEX, TET, QUAD, TRI or LINE
+    self.elem_type=self.danu_mesh.elem_type
+
+
+  def coordinates(self):
+    return self.danu_mesh.coordinates()
+
+  def connectivity(self):
+    return self.danu_mesh.get_connectivity()
+
+
+class TruchasOutput(object):
+
+  def __init__(self,name):
+
+    # File name
+    self.name=name
+
+    # Danu output object (READ_ONLY)
+    try:
+      self.danu_file=Danu.Output(name,'r')
+    except Exception,e:
+      msg='Failed to open %s: %s' % (name,str(e))
+      raise TruchasIOError(msg)
+
+    # Danu attributes
+    self.danu_attr={}
+    try:
+      self.danu_attr=self.danu_file.attributes()
+    except:
+      pass
+
+    # List of mesh names  
+    self.mesh_names=[]
+    try:
+      self.mesh_names=self.danu_file.mesh_list()
+    except:
+      pass
+
+    # List of simulation names
+    self.simulation_names=[]
+    try:
+      self.simulation_names=self.danu_file.simulation_list()
+    except:
+      pass
+
+  def get_simulation(self,name='MAIN'):
+    return TruchasSimulation(self,name)
+
+  def get_em_simulation(self,name):
+    return TruchasEMSimulation(self,name)
+
+  def get_mesh(self,name='DEFAULT'):
+    return TruchasMesh(self,name)
+
+
+
+
+
+

@@ -1,0 +1,86 @@
+###############################################################################
+#
+# Truchas Python Main Program
+#
+###############################################################################
+
+import sys
+import os
+
+from Truchas import __version__
+from Truchas import _TRUCHAS_INSTALL_PREFIX
+from Truchas import _OS, _COMPILER, _ARCH, _EXT
+from .binary import SelectTruchasBinary
+
+_USAGE="%prog [OPTIONS] INPFILE|NAME"
+
+_DESCRIPTION="Python harness to run Truchas binaries located in %s/bin" % _TRUCHAS_INSTALL_PREFIX
+
+class CLOptions:
+  '''Command line option handler'''
+
+  def __init__(self):
+    from optparse import OptionParser, OptionGroup
+    
+    parser=OptionParser(usage=_USAGE,description=_DESCRIPTION,version=__version__,prog='truchas')
+    parser.add_option("-n","--nprocs",dest="nprocs",
+                      help="Number of processors", type="int", default=0, metavar="NUM")
+    parser.add_option("-o","--outdir",dest="outdir",
+                      help="Output directory", type="string", metavar="DIR")
+    parser.add_option("-r","--restart",dest="restart",
+                      help="Restart file", type="string", metavar="FILE")
+    parser.add_option("-d","--debug",dest="debug",action="store_true",
+                      help="Run the debug Truchas binary")
+    group=OptionGroup(parser,"Dangerous Options", "Should ONLY be used for testing")
+    group.add_option("--compiler",dest="compiler",
+	              help="Define the compiler type [%default]", default=_COMPILER, metavar="NAME")
+    group.add_option("--arch",dest="arch",
+	              help="Define the articheture [%default]", default=_ARCH, metavar="NAME")
+    group.add_option("--os", dest="os",
+	              help="Define the OS [%default]", default=_OS, metavar="OS")
+    parser.add_option_group(group)
+
+    (options,args)=parser.parse_args()
+    
+    self.nprocs=options.nprocs
+    self.outdir=options.outdir
+    self.restart=options.restart
+    self.debug=options.debug
+    
+    self.os_type=options.os
+    self.arch=options.arch
+    self.compiler=options.compiler
+
+    try:
+      self.input=args[0]
+      if not os.path.isfile(self.input):
+	raise IOError
+    except IndexError:
+      print ("Need an input (*.inp) file or problem name\n%s") % parser.print_usage()
+      sys.exit(1)
+    except IOError:
+      self.input+='.inp'  # Assume problem name passed in
+      try:
+        if not os.path.isfile(self.input):
+	  raise IOError
+      except IOError:
+        print ("%s is not a file\n%s") % (self.input,parser.print_usage())
+        sys.exit(1)
+
+    if self.nprocs > 0:
+      self.parallel=True
+    else:
+      self.parallel=False
+
+
+def main():
+  options=CLOptions()
+  truchas=SelectTruchasBinary(options.parallel,options.debug,
+                              options.os_type,options.arch,options.compiler)
+  truchas.input=options.input
+  truchas.outdir=options.outdir
+  truchas.restart=options.restart
+  if options.parallel:
+    truchas.nprocs=options.nprocs
+  return truchas.run()
+

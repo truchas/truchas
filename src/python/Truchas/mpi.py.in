@@ -1,0 +1,163 @@
+################################################################################
+
+import sys, os
+import types
+
+try:
+  import subprocess as process
+except ImportError:
+  print 'Current Python version ' + str(sys.version) + 'does not have subprocess module'
+  raise ImportError, 'Module requires subprocess found in Python 2.4 and higher'
+
+################################################################################
+
+class MpiInterface(object):
+
+    def __init__(self,mpirun_exe='mpiexec',
+	              nproc_flag='-n',
+		      mpirun_preflags=None, mpirun_postflags=None):
+        
+        self.mpirun_exe = mpirun_exe
+	self.nproc_flag = nproc_flag
+	self.mpirun_preflags = mpirun_preflags
+	self.mpirun_postflags = mpirun_postflags
+
+	self.nprocs=1
+	self.stdout=None
+	self.stderr=None
+	self.exit_code=None
+
+    def _dump_state(self):
+        print ''
+        print '################################################################################'
+        print ''
+        print 'mpirun_exe:', self.mpirun_exe
+        print 'nproc_flag:', self.nproc_flag
+        print 'mpirun_preflags:', self.mpirun_preflags
+        print 'mpirun_postflags:', self.mpirun_postflags
+        print 'nprocs:', self.nprocs
+	print 'stdout (PIPE):',str(self.stdout)
+	print 'stderr (PIPE):',str(self.stderr)
+        print 'exit_code:', self.exit_code
+        print ''
+        print '################################################################################'
+        print ''
+
+    	
+    def _launch_command_args(self,executable,exe_args=None):
+
+        args=[]
+	args.append(self.mpirun_exe)
+	args.append(self.nproc_flag)
+	args.append(str(self.nprocs))
+	if self.mpirun_preflags is not None:
+	  if isinstance(self.mpirun_preflags,list):
+	    args = args + self.mpirun_preflags
+	  elif isinstance(self.mpirun_preflags,str):
+	    args.append(self.mpirun_preflags)
+	  else:
+	    raise TypeError, 'mpirun_preflags must either be a string or list'
+	args.append(executable)  
+        if self.mpirun_postflags is not None:
+	  if isinstance(self.mpirun_postflags,list):
+	    args = args + self.mpirun_postflags
+	  elif isinstance(self.mpirun_postflags,str):
+	    args.append(self.mpirun_postflags)
+	  else:
+	    raise TypeError, 'mpirun_postflags must either be a string or list'
+        if exe_args is not None:
+	  if isinstance(exe_args,list):
+	    args = args + exe_args
+	  elif isinstance(exe_args,str):
+	    args.append(exe_args)
+	  else:
+	    raise TypeError, 'executable args must either be a string or list'
+	  
+        return args
+
+    
+    def run(self,executable,exe_args=None):
+      import time
+      import signal
+
+      args=self._launch_command_args(executable,exe_args)
+      try:
+	pipe = process.Popen(args,executable=self.mpirun_exe,bufsize=-1,stdout=self.stdout,stderr=self.stderr)
+      except ValueError:
+	raise ValueError, 'Popen call with incorrect arguments'
+      except OSError:
+	print 'Command failed ' + self.mpirun_exe + ' ' + str(args)
+	raise OSError, 'Failed to run ' + executable
+      except:
+	raise
+      else:
+	try:
+	  pipe.wait()
+	except KeyboardInterrupt:
+	  print 'Sending SIGTERM to MPIEXEC PID='+str(pipe.pid)
+	  os.kill(pipe.pid,signal.SIGTERM)
+	  time.sleep(1)
+	  while pipe.poll() == None:
+	    print 'PID='+str(pipe.pid)+' still alive. Sending SIGKILL '+str(signal.SIGKILL)
+	    os.kill(pipe.pid,signal.SIGKILL)
+	    time.sleep(5)
+
+      # Set the exit code attribute
+      self.exit_code=pipe.returncode
+
+      return pipe.returncode
+
+
+class OpenmpiInterface(MpiInterface):
+
+  def __init__(self):
+    MpiInterface.__init__(self,'mpirun','-n')
+
+class MpichInterface(MpiInterface):
+
+  def __init__(self):
+    MpiInterface.__init__(self,'mpiexec','-np')
+
+class CceInterface(MpiInterface):
+
+  def __init__(self):
+    MpiInterface.__init__(self,'aprun','-n')
+
+
+def SelectMpiInterface():
+  print 'Eventaully will have logic to find the right MPI'
+  print 'and return a MpiInterface object'
+
+
+        
+################################################################################
+if __name__ == '__main__':
+
+    mpi = MpiInterface()
+
+    # Passing args as a list
+    mpi.nprocs = 4
+    mpi._dump_state()
+
+    binary='dummy.x'
+    args='-a dummy -n 1 -v'
+    mpi.run(binary,args)
+    print 'Return code '+str(mpi.exit_code)
+
+    try:
+      os.path.exists(sys.argv[1])
+    except:
+      pass
+    else:
+      binary=sys.argv[1]
+      args=[]
+      if len(sys.argv) > 2:
+	args=sys.argv[2:]
+      mpi.run(binary,args)
+      print 'Return code ' + str(mpi.exit_code)
+
+    openmpi=OpenmpiInterface()
+    openmpi._dump_state()
+    print dir(openmpi)
+
+      

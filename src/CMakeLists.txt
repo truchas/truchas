@@ -25,4 +25,7 @@ add_subdirectory(truchas)
 # Tools
 add_subdirectory(tools)
 
+# Python
+add_subdirectory(python)
+
 

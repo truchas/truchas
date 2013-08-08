@@ -1,0 +1,7 @@
+'''
+Main entry point for the Truchas Python package
+'''
+import sys
+from .main import main
+
+sys.exit(main())

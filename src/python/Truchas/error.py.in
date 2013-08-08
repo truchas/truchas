@@ -1,0 +1,48 @@
+################################################################################
+
+# --- Truchas Exception Classes
+class TruchasError(Exception):
+  ''' Base Exception Class for this module'''
+  pass
+
+class TruchasInputError(TruchasError):
+  '''
+  Raise an exception when the input file does not exist
+  '''
+  def __init__(self,value):
+    self.value=value
+
+  def __str__(self):
+    return repr(self.value)
+
+class TruchasRuntimeError(TruchasError):
+  '''
+  Raise this error when the truchas binary returns a non-zero value
+  '''
+  def __init__(self,value):
+    self.value=value
+  
+  def __str__(self):
+    return repr(self.value)
+
+class TruchasOutputError(TruchasError):
+  '''
+  Raise this error when an error is detected with an output file
+  '''
+  def __init__(self,value):
+    self.value=value
+  
+  def __str__(self):
+    return repr(self.value)
+
+class TruchasIOError(TruchasError):
+  '''
+  Raise this error when fail to open or stat a Truchas output file
+  '''
+  def __init__(self,value):
+    self.value=value
+  
+  def __str__(self):
+    return repr(self.value)
+
+
