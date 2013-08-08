@@ -10,7 +10,6 @@
 
 # Projects/targets dependent on NetCDF need this target
 set(NETCDF_BUILD_TARGET netcdf)
-global_set(NETCDF_BUILD_TARGET ${NETCDF_BUILD_TARGET})
 
 
 # Define the version and archive file

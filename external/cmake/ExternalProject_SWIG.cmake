@@ -10,7 +10,6 @@
 
 # Projects/targets dependent on SWIG need this target
 set(SWIG_BUILD_TARGET swig)
-global_set(SWIG_BUILD_TARGET ${SWIG_BUILD_TARGET})
 
 # Define the version and archive file
 set(EP_SWIG_VERSION_MAJOR  2)

@@ -10,7 +10,6 @@
 
 # Projects/targets dependent on HDF5 need this target
 set(HDF5_BUILD_TARGET hdf5)
-global_set(HDF5_BUILD_TARGET ${HDF5_BUILD_TARGET})
 
 # Define the version and archive file
 set(EP_HDF5_VERSION_MAJOR 1)
