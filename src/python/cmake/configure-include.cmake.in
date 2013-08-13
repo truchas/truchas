@@ -11,12 +11,20 @@ set(CMAKE_SYSTEM_PROCESSOR    @CMAKE_SYSTEM_PROCESSOR@)
 set(CMAKE_Fortran_COMPILER_ID @CMAKE_Fortran_COMPILER_ID@)
 
 # Truchas variables
+set(Truchas_SOURCE_DIR                @Truchas_SOURCE_DIR@)
+set(Truchas_BINARY_DIR                @Truchas_BINARY_DIR@)
 set(Truchas_VERSION                   @Truchas_VERSION@)
 set(Truchas_EXECUTABLE                @Truchas_EXECUTABLE@)
 set(Truchas_BUILD_ID                  @Truchas_BUILD_ID@)
 set(TruchasPython_INSTALL_PREFIX      @TruchasPython_INSTALL_PREFIX@)
 set(Truchas_COPYRIGHT_FILE            @Truchas_COPYRIGHT_FILE@)
 set(Truchas_LICENSE_FILE              @Truchas_LICENSE_FILE@)
+
+# Configuration variables
+set(ENABLE_MPI_FLAG                   @ENABLE_MPI_FLAG@)
+set(TruchasExe_BINARY_DIR             @TruchasExe_BINARY_DIR@)
+set(TruchasTest_SOURCE_DIR            @TruchasTest_SOURCE_DIR@)
+set(TruchasTest_BINARY_DIR            @TruchasTest_BINARY_DIR@)
 
 # Define the copyright statement
 file(READ ${Truchas_COPYRIGHT_FILE} Truchas_COPYRIGHT_STATEMENT)

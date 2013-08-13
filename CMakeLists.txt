@@ -439,6 +439,8 @@ if (ENABLE_TBROOK)
   add_subdirectory(tbrookparser)
 endif()
 
+add_subdirectory(test)
+
 # ---------------------------------------------------------------------------- #
 # Export Definitions 
 # ---------------------------------------------------------------------------- #

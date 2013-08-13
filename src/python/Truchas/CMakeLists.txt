@@ -15,15 +15,10 @@ set(TruchasHarness_FILES
 		  mpi
 		  output)
 
-# --- Setup the configure include file and script
-
-# Need the Truchas binary
-get_target_property(Truchas_EXECUTABLE truchas_exe OUTPUT_NAME)
-
-configure_file(${TruchasHarness_SOURCE_DIR}/cmake/configure-include.cmake.in
+# --- Setup the configure include file
+configure_file(${TruchasPython_CONFIGURE_INCLUDE}
                ${TruchasHarness_BINARY_DIR}/configure-include.cmake
 	       @ONLY)
-set(TruchasHarness_CONFIGURE_SCRIPT ${TruchasHarness_SOURCE_DIR}/cmake/configure-files.cmake)
 
 # --- Process the files
 foreach(f ${TruchasHarness_FILES})
@@ -34,7 +29,7 @@ foreach(f ${TruchasHarness_FILES})
   add_custom_command(OUTPUT ${py_file} ${pyc_file}
                      DEPENDS ${in_file}
                      COMMAND
-		     ${CMAKE_COMMAND} ${config_args} -P ${TruchasHarness_CONFIGURE_SCRIPT}
+		     ${CMAKE_COMMAND} ${config_args} -P ${TruchasPython_CONFIGURE_FILES}
 		     COMMAND
 		     ${PYTHON_EXECUTABLE} ${TruchasPython_COMPILE_SCRIPT} ${py_file}
 		     COMMENT "Processing ${f}")

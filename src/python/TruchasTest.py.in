@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+import logging
+import unittest
+
+import Truchas
+
+'''
+Simple functions to query ti find the 
+executable, build and source directories.
+'''
+def get_executable_directory():
+  return '@TruchasExe_BINARY_DIR@'
+
+def get_executable():
+  dir=get_executable_directory()
+  return dir + os.path.sep + '@Truchas_EXECUTABLE@' 
+
+def get_source_rootdir():
+  return '@Truchas_SOURCE_DIR@'
+
+def get_build_rootdir():
+  return '@Truchas_BINARY_DIR@'
+
+def get_test_source_rootdir():
+  return '@TruchasTest_SOURCE_DIR@'
+
+def get_test_build_rootdir():
+  return '@TruchasTest_BINARY_DIR@'
+
+
+'''
+Base Test Case Class
+'''
+class BaseTestCase(unittest.TestCase):
+
+  '''Flag that the class has been initialized'''
+  _is_initialized = False
+
+  '''Truchas object'''
+  truchas=None
+
+  '''Flag for parallel builds'''
+  truchas_is_parallel=None
+
+  @classmethod
+  def setUpClass(cls):
+    cls.truchas_is_paralel=@ENABLE_MPI_FLAG@
+    executable=get_executable() 
+    cls.truchas=Truchas.SelectTruchasBinary(parallel=@ENABLE_MPI_FLAG@,filename=executable)
+    cls._is_initialized = True
+
+  @classmethod
+  def tearDownClass(cls):
+    pass
+
+  def setUp(self):
+    if self._is_initialized is False:
+      self.setUpClass()
+
+  def tearDown(self):
+    pass
+

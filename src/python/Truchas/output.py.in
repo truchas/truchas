@@ -294,7 +294,8 @@ class TruchasBaseSimulation(object):
     if series_name not in self.series_names:
       msg='Series %s is not found in %s' % (series_name,self.name)
       raise TruchasOutputError(msg)
-    return TruchasSeries(self.sim,series_name)
+    #return TruchasSeries(self.sim,series_name)
+    return TruchasSeries(self,series_name)
 
   # Return a NumPy array of data stored under a series group
   # Series group is selected by id or cycle or time. The tolerance parameter

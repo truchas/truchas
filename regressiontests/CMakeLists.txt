@@ -76,6 +76,6 @@ add_custom_target(sharen
                   COMMENT "Running old regression test suite")
 
 # Run the tests through the CTest Package
-foreach( test ${Truchas_REGRESSION_TESTS})
-  add_test(NAME ${test} COMMAND ${TestHarness_COMMAND} -l ${test})
-endforeach()
+#foreach( test ${Truchas_REGRESSION_TESTS})
+#  add_test(NAME ${test} COMMAND ${TestHarness_COMMAND} -l ${test})
+#endforeach()

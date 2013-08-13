@@ -156,11 +156,14 @@ class TruchasBinary(object):
     normal_exit=re.compile('truchas terminated normally')
     exit_code=0
 
+    print 'self.stdout=',str(self.stdout)
+    print 'isinstance=',str(isinstance(self.stdout,str))
     if self.stdout != None and isinstance(self.stdout,str):
       if os.path.exists(self.stdout):
 	fh=open(self.stdout,'r')
 	last_line=tail(fh,1)
 	fh.close()
+	print 'last_line=', last_line
 	if normal_exit.match(last_line):
 	  exit_code=0
 	else:
@@ -233,17 +236,19 @@ class TruchasSerialBinary(TruchasBinary):
           num_kills=num_kills+1
         if pipe.poll() == None and num_kills >= 100:
           print 'W A R N I N G!!!!!! Could not kill PID ' + str(pipe.pid)
+    print 'exit from text=',str(self._exit_from_text())
+    print 'pipe return code=', str(pipe.returncode)	
     exit_code=pipe.returncode or self._exit_from_text()
     if exit_code != 0:
       msg='Truchas returned non-zero exit status %i'%exit_code
       raise TruchasRuntimeError(msg)
     return exit_code 
 
-def SelectTruchasBinary(parallel=False):
+def SelectTruchasBinary(parallel=False,filename=None):
   if parallel:
-    return TruchasMpiBinary()
+    return TruchasMpiBinary(filename)
   else:
-    return TruchasSerialBinary()
+    return TruchasSerialBinary(filename)
 
 '''
 def SelectTruchasBinary(parallel=False,debug=False,os_type=_OS,arch=_ARCH,compiler=_COMPILER):
