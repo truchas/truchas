@@ -83,3 +83,30 @@ class BaseTestCase(unittest.TestCase):
   def tearDown(self):
     pass
 
+  '''
+  unittest ignores any method that does not begin with
+  'test_' or 'runTest'
+  '''
+  def get_input_rootdir(self,test_name):
+    return os.path.join(get_test_source_rootdir(),test_name)
+
+  def get_output_rootdir(self,test_name):
+    return os.path.join(get_test_build_rootdir(), test_name)
+
+  def clean_output_directory(self,test_name,outdir):
+    path=os.path.join(self.get_output_rootdir(test_name),outdir)
+    for f in os.listdir(path):
+      f_path=os.path.join(path,f)
+      if os.path.isfile(f_path):
+        os.unlink(f_path)
+
+  def build_output_directory(self,test_name,outdir):
+    path=os.path.join(self.get_output_rootdir(test_name),outdir)
+    verify_directory(path)
+    return path
+
+  def build_output_filename(self,test_name,outdir,file):
+    return self.get_output_rootdir(test_name) + \
+	   os.path.sep + outdir + \
+	   os.path.sep + file
+
