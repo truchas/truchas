@@ -176,10 +176,11 @@ PyObject * readPythonAllAttributes(H5Obj *h5)
 	if ( H5_RETURN_FAIL(err) ) {
 	    DANU_ERROR_MESS("Failed to count number of attributes");
 	}
-
+#if 0
 	if ( num == 0 ) {
 	    DANU_ERROR_MESS("No attributes present");
 	}
+#endif
     }
 
     return dict;
