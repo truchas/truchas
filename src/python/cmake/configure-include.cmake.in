@@ -22,9 +22,12 @@ set(Truchas_LICENSE_FILE              @Truchas_LICENSE_FILE@)
 
 # Configuration variables
 set(ENABLE_MPI_FLAG                   @ENABLE_MPI_FLAG@)
+set(TruchasExe_SOURCE_DIR             @TruchasExe_SOURCE_DIR@)
 set(TruchasExe_BINARY_DIR             @TruchasExe_BINARY_DIR@)
 set(TruchasTest_SOURCE_DIR            @TruchasTest_SOURCE_DIR@)
 set(TruchasTest_BINARY_DIR            @TruchasTest_BINARY_DIR@)
+set(TruchasToolsPP_SOURCE_DIR         @TruchasToolsPP_SOURCE_DIR@)
+set(TruchasToolsPP_BINARY_DIR         @TruchasToolsPP_BINARY_DIR@)
 
 # Define the copyright statement
 file(READ ${Truchas_COPYRIGHT_FILE} Truchas_COPYRIGHT_STATEMENT)

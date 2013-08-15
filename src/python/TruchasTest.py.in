@@ -9,7 +9,7 @@ import unittest
 import Truchas
 
 '''
-Simple functions to query ti find the 
+Simple functions to query the 
 executable, build and source directories.
 '''
 def get_executable_directory():
@@ -18,6 +18,10 @@ def get_executable_directory():
 def get_executable():
   dir=get_executable_directory()
   return dir + os.path.sep + '@Truchas_EXECUTABLE@' 
+
+def get_restart_executable():
+  dir='@TruchasToolsPP_BINARY_DIR@' 
+  return dir + os.path.sep + 'write_restart' 
 
 def get_source_rootdir():
   return '@Truchas_SOURCE_DIR@'
@@ -31,6 +35,20 @@ def get_test_source_rootdir():
 def get_test_build_rootdir():
   return '@TruchasTest_BINARY_DIR@'
 
+def verify_directory(dir):
+  try:
+    os.stat(dir)
+  except:
+    try:
+      os.makedirs(dir)
+    except:
+      raise TruchasIOError("Failed to create " + dir)
+
+def verify_file(f):
+  try:
+    os.stat(f)
+  except:
+    raise TruchasIOError("Failed state the file " + f)
 
 '''
 Base Test Case Class
@@ -48,9 +66,10 @@ class BaseTestCase(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls.truchas_is_paralel=@ENABLE_MPI_FLAG@
+    cls.truchas_is_parallel=@ENABLE_MPI_FLAG@
     executable=get_executable() 
     cls.truchas=Truchas.SelectTruchasBinary(parallel=@ENABLE_MPI_FLAG@,filename=executable)
+    cls.truchas.restart_executable=get_restart_executable()
     cls._is_initialized = True
 
   @classmethod

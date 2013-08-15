@@ -11,7 +11,7 @@ import TruchasTest
 class RestartTest(TruchasTest.BaseTestCase):
 
   input = 'ds11.inp'
-
+  num_procs = 4
 
   def test_simple(self):
 
@@ -20,9 +20,15 @@ class RestartTest(TruchasTest.BaseTestCase):
 	            os.path.sep + 'restart'
     output_rootdir = TruchasTest.get_test_build_rootdir() + \
 	             os.path.sep + 'restart'
+    
+    # Set the number of processors if this a parallel binary
+    if self.truchas_is_parallel:
+      self.truchas.nprocs = self.num_procs
 
     # First run
     outdir1=output_rootdir+os.path.sep+'out1'
+    TruchasTest.verify_directory(outdir1)
+
     self.truchas.input = input_rootdir + os.path.sep + self.input
     self.truchas.outdir = outdir1
     self.truchas.h5file = outdir1 + os.path.sep + 'ds11.h5'
@@ -32,17 +38,15 @@ class RestartTest(TruchasTest.BaseTestCase):
 
     # Second run, direct output to another directory 
     outdir2=output_rootdir+os.path.sep+'out2'
+    TruchasTest.verify_directory(outdir2)
 
     # Write a restart file
-    truchas_restart = Truchas.TruchasWriteRestart()
-    truchas_restart.h5file=self.truchas.h5file
-    truchas_restart.cycle=45
-    truchas_restart.output=outdir2 + \
-	                   os.path.sep + 'restart.%i'%truchas_restart.cycle
-    truchas_restart.run()
+    restart_cycle=45
+    restart_file=outdir2 + \
+	         os.path.sep + 'restart.%i'%restart_cycle
+    self.truchas.write_restart(restart_cycle,output=restart_file)
 
     # Now pick up the restart file
-    self.truchas.restart=truchas_restart.output
     self.truchas.outdir = outdir2
     self.truchas.h5file = outdir2 + os.path.sep + 'ds11.h5'
     self.truchas.stdout = outdir2 + os.path.sep + 'ds11.tty'
