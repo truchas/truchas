@@ -16,6 +16,8 @@ The input file has the following format:
                         ! Mirror<a>, a = X, Y, Z; e.g. MirrorZ
                         ! Rot<a><n>, a = X, Y, Z; n integer; e.g., RotZ3, RotX16
     partial_enclosure = ! is the enclosure partial? T/F
+    displace_side_set_ids = ! list of side sets whose surfaces will be displaced
+    displacement          = ! (x,y,z) displacement vector.
   /
 
   &CHAPARRAL
@@ -40,6 +42,13 @@ o There must be a single ENCLOSURE namelist, and at most one CHAPARRAL
   calculated view factors, otherwise just the enclosure surface is written;
   this is useful for examining the surface for correctness prior to performing
   the expensive view factor calculation.
+o Displacing surfaces is optional.  Any displaced surfaces must be totally
+  disconnected from the remaining enclosure surfaces (this is checked).  The
+  constant displacement must be compatibile with the specified symmetries
+  (this is not checked).  This is useful when the mesh consists of disconnected
+  parts that will be shifted relative to one another.  Instead of generating
+  multiple 3D meshes, a single 3D mesh plus use of this displacement option
+  is all that is needed.
 
 
 COMPARING TWO RADIATION ENCLOSURE DATASETS

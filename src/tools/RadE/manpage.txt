@@ -13,6 +13,8 @@ The following namelist is required:
                        ! Mirror<a>, a = X, Y, Z; e.g. MirrorZ
                        ! Rot<a><n>, a = X, Y, Z; n integer; e.g., RotZ3, RotX16
   coord_scale_factor = ! scale coord data by this factor (opt)
+  displace_side_set_ids = ! list of side sets whose surfaces will be displaced (opt)
+  displacement          = ! the (x,y,z) displacement vector  (opt)
 /
 
 The following namelist is optional:
@@ -43,6 +45,10 @@ o There must be a single ENCLOSURE namelist, and at most one CHAPARRAL
   otherwise just the enclosure surface is written; this is useful for
   examining the surface for correctness prior to performing the expensive
   view factor calculation.
+
+o Any surfaces that are displaced must be totally disconnected from the
+  remaining surfaces.  The displacement is done after the surfaces are
+  extracted from the mesh and AFTER the coordinate scale factor applied.
 
 o Accuracy of the raw VF calculation is controlled by min_separation
   and hemicube_resolution.

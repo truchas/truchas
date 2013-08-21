@@ -28,6 +28,8 @@
 !!      symmetries ~ list of up to 3 symmetry operations (opt):
 !!                   Mirror<a>, a = X, Y, Z; e.g. MirrorZ
 !!                   Rot<a><n>, a = X, Y, Z, n integer; e.g., RotZ3, RotX16
+!!      displace_side_set_IDs ~ list of surface side sets to displace;
+!!      displacement ~ the constant (x,y,z) displacement amount.
 !!
 !!  CALL GENERATE_ENCL (SPEC, E) generates the enclosure E using the enclosure
 !!    specification SPEC.  This is a collective procedure.  SPEC is only
@@ -72,6 +74,8 @@ module re_exodus_encl
     integer, pointer :: ebid(:) => null()
     logical :: mirror(3)
     integer :: rot_axis, num_rot
+    integer, pointer :: disp_ssid(:) => null()
+    real(r8) :: disp(3)
   end type encl_spec
 
   interface destroy
@@ -92,10 +96,10 @@ contains
     character(len=MAX_NAME_LEN) :: name
     character(len=MAX_FILE_LEN) :: mesh_file
     character(len=7) :: symmetries(3)
-    integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS)
-    real(r8) :: coord_scale_factor
+    integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS), displace_side_set_ids(MAX_IDS)
+    real(r8) :: coord_scale_factor, displacement(3)
     namelist /enclosure/ name, mesh_file, side_set_ids, ignore_block_ids, symmetries, &
-        coord_scale_factor
+        coord_scale_factor, displace_side_set_ids, displacement
 
     integer :: j, n, ios, stat, rot_axis, num_rot
     logical :: is_IOP, found, file_exists, mirror(3)
@@ -125,6 +129,8 @@ contains
       ignore_block_ids = NULL_I
       symmetries = NULL_C
       coord_scale_factor = 1.0_r8
+      displace_side_set_ids = NULL_I
+      displacement = 0.0_r8
       read(lun,nml=enclosure,iostat=ios)
     end if
     call scl_bcast (ios)
@@ -189,6 +195,8 @@ contains
       spec%mirror = mirror
       spec%rot_axis = rot_axis
       spec%num_rot  = num_rot
+      spec%disp_ssid => ptr_to_packed(displace_side_set_ids, mask=(displace_side_set_ids /= NULL_I))
+      spec%disp = displacement
     end if
 
   contains
@@ -234,6 +242,7 @@ contains
         e%rot_axis = spec%rot_axis
         e%num_rot  = spec%num_rot
         if (spec%scale /= 1.0_r8) e%x = spec%scale * e%x
+        call displace_surfaces (e, spec%disp, spec%disp_ssid, stat, errmsg)
       end if
     end if
     call scl_bcast (stat)
@@ -650,5 +659,68 @@ contains
     end function
 
   end subroutine extract_surface_from_exodus
+
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !!
+ !! DISPLACE_SURFACES
+ !!
+ !! Displaces the position of the of the given enclosure surfaces by a constant
+ !! amount.  Those surfaces must be disconnected from the remaining enclosure
+ !! surfaces.
+ !!
+
+  subroutine displace_surfaces (surf, disp, ssid, stat, errmsg)
+
+    use re_encl_type
+    use string_utilities, only: i_to_c
+
+    type(encl), intent(inout) :: surf
+    real(r8), intent(in) :: disp(:)
+    integer, intent(in) :: ssid(:)
+    integer, intent(out) :: stat
+    character(len=*), intent(out) :: errmsg
+
+    integer :: j
+    logical, allocatable :: gmask(:), mask(:)
+
+    stat = 0
+
+    if (size(ssid) == 0) return ! nothing to do
+
+    !! Tag the surface face groups (== side sets) that are to be displaced.
+    allocate(gmask(size(surf%group_id_list)))
+    do j = 1, size(surf%group_id_list)
+      gmask(j) = any(surf%group_id_list(j) == ssid)
+    end do
+
+    if (.not.any(gmask)) then ! nothing to do
+      call re_info ('Warning: directed to displace side sets but none found!')
+      return
+    end if
+
+    !! Tag all nodes belonging to the displaced surface faces.
+    allocate(mask(surf%nnode))
+    mask = .false.
+    do j = 1, surf%nface
+      if (gmask(surf%gnum(j))) mask(surf%fnode(surf%xface(j):surf%xface(j+1)-1)) = .true.
+    end do
+
+    !! Check that no nodes belonging to undisplaced surface faces are tagged.
+    do j = 1, surf%nface
+      if (gmask(surf%gnum(j))) cycle
+      if (any(mask(surf%fnode(surf%xface(j):surf%xface(j+1)-1)))) then
+        stat = -1
+        errmsg = 'undisplaced side set ' // i_to_c(surf%gnum(j)) // &
+                 ' shares nodes with a displaced side set'
+        return
+      end if
+    end do
+
+    !! Displace the tagged nodes.
+    do j = 1, surf%nnode
+      if (mask(j)) surf%x(:,j) = surf%x(:,j) + disp
+    end do
+
+  end subroutine displace_surfaces
 
 end module re_exodus_encl
