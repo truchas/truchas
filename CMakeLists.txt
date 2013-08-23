@@ -125,6 +125,12 @@ set(Truchas_FCIface_INCLUDE_DIR ${Truchas_BINARY_DIR})
 # Test does fail when it shouldn't, hence QUIET
 FortranCInterface_VERIFY(QUIET)
 
+# Handle errors here
+if ( NOT FortranCInterface_GLOBAL_FOUND )
+  message(FATAL_ERROR "Could not find the global name-mangling for Fortran/C")
+endif(NOT FortranCInterface_GLOBAL_FOUND )
+
+
 # ---------------------------------------------------------------------------- #
 # Setting Some Useful Language Variables 
 # ---------------------------------------------------------------------------- #

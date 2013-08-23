@@ -24,6 +24,15 @@ global_set(PGSLib_MODULE_DIR ${PGSLib_MODULE_DIR})
 set(CMAKE_Fortran_MODULE_DIRECTORY ${PGSLib_MODULE_DIR})
 
 # ---------------------------------------------------------------------------- #
+# Compiler flags and definitions
+# ---------------------------------------------------------------------------- #
+
+if (CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG)
+  set(_tmp_flag_str ${CMAKE_Fortran_FLAGS})
+  string(REPLACE "-C=all" "" CMAKE_Fortran_FLAGS "${_tmp_flag_str}")
+endif(CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG)
+
+# ---------------------------------------------------------------------------- #
 # Preprocessor definitions 
 # ---------------------------------------------------------------------------- #
 
