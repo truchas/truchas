@@ -33,6 +33,32 @@ set(Truchas_COPYRIGHT_FILE ${Truchas_SOURCE_DIR}/COPYRIGHT)
 # License file
 set(Truchas_LICENSE_FILE ${Truchas_SOURCE_DIR}/LICENSE)
 
+# Build date
+try_run(BUILD_DATE_FAILED BUILD_DATE_COMPILED
+        ${Truchas_BINARY_DIR} ${Truchas_SOURCE_DIR}/cmake/build_date.c
+        RUN_OUTPUT_VARIABLE Truchas_BUILD_DATE)
+
+if (BUILD_DATE_FAILED)
+  message(WARNING "Failed to determine the build date stamp")
+  if (NOT BUILD_DATE_COMPILED)
+    message(WARNING "Could not compile build_date.c")
+  endif()
+  set(Truchas_BUILD_DATE NOW)
+endif()
+
+# Build hostname
+try_run(HOSTNAME_FAILED HOSTNAME_COMPILED
+        ${Truchas_BINARY_DIR} ${Truchas_SOURCE_DIR}/cmake/get_hostname.c
+        RUN_OUTPUT_VARIABLE Truchas_HOSTNAME)
+
+if (HOSTNAME_FAILED)
+  message(WARNING "Failed to define hostname")
+  if(NOT HOSTNAME_COMPILED)
+    message(WARNING "Could not compile get_hostname.c")
+  endif()
+  set(Truchas_HOSTNAME ${CMAKE_HOST_SYSTEM_NAME}-generic)
+endif()
+
 # Location of project defined include and FindXXX.cmake files
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" 
                       "${Truchas_SOURCE_DIR}/cmake"
@@ -47,6 +73,7 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${Truchas_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   set(CMAKE_Fortran_COMPILE_OPTIONS_PIC "-PIC")
 endif()
+
 
 # ---------------------------------------------------------------------------- #
 # Global CMake Utilities 
@@ -372,12 +399,12 @@ endif()
 
 # More hardcoded defines - only used in drivers.f90 need to move
 list(APPEND Truchas_PREPROCESSOR -DCODE_NAME='DUMMY')
-list(APPEND Truchas_PREPROCESSOR -DUBIKSOLVE='UBIKSOLVE')
-list(APPEND Truchas_PREPROCESSOR -DPGSLIB='PGSLIB')
-list(APPEND Truchas_PREPROCESSOR -DCHACO='CHACO')
+list(APPEND Truchas_PREPROCESSOR -DUBIKSOLVE='UbikSolve')
+list(APPEND Truchas_PREPROCESSOR -DPGSLIB='PGSLib')
+list(APPEND Truchas_PREPROCESSOR -DCHACO='Chaco')
 list(APPEND Truchas_PREPROCESSOR -DVERSION='${Truchas_VERSION}')
-list(APPEND Truchas_PREPROCESSOR -DBUILD_DATE='TODAY')
-list(APPEND Truchas_PREPROCESSOR -DHOST_NAME='SOMEMACHINE')
+list(APPEND Truchas_PREPROCESSOR -DBUILD_DATE='${Truchas_BUILD_DATE}')
+list(APPEND Truchas_PREPROCESSOR -DHOST_NAME='${Truchas_HOSTNAME}')
 list(APPEND Truchas_PREPROCESSOR -DARCHITECTURE='${CMAKE_SYSTEM_PROCESSOR}')
 list(APPEND Truchas_PREPROCESSOR -DFFLAGS_TRIMMED_1='${CMAKE_Fortran_FLAGS}')
 list(APPEND Truchas_PREPROCESSOR -DFFLAGS_TRIMMED_2='${CMAKE_Fortran_FLAGS_RELEASE}')
@@ -530,7 +557,9 @@ message(STATUS "Version: ${Truchas_VERSION}")
 message(STATUS)
 message(STATUS "Build identifier: ${Truchas_BUILD_ID}")
 message(STATUS)
-message(STATUS "Installation prefix ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "Build date: ${Truchas_BUILD_DATE}")
+message(STATUS)
+message(STATUS "Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS)
 if (CMAKE_BUILD_TYPE)
 message(STATUS "CMAKE_BUILD_TYPE:\t${CMAKE_BUILD_TYPE}")
