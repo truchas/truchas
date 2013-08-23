@@ -3,16 +3,12 @@ Things in the new repo that need to be fixed
 
 Remove items as they are fixed.
 
-* Still have issues with .f90 not depending on .F90 file.  For example,
-  I modified src/truchas/physics/enclosure/radiation/ER_solver.F90 but
-  a new 'make' wouldn't generate a new .f90 file -- needed to manually
-  remove the .f90 file.
-
 * Had to remove the -C=all nagfor flag from the debug build as it
   triggers an internal compiler error on pgslib_init.  Old build had
   a separate set of compiler flags for pgslib and ubiksolve.  Need to
   address this issue somehow; we want to get back to using -C=all for
-  the source in truchas.
+  the source in truchas. The flag is now removed from the pgslib
+  and ubiksolve directories. Compile errors in truchas need to be addressed.
    
 * Some NAG Fortran debug compiler flags are causing runtime cmake failures.
   I've had to drop "-u -g90" in order for cmake to properly generate a
