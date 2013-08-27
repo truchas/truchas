@@ -4,8 +4,8 @@ message(STATUS "configuring the Truchas test directory")
 
 include(AddPythonTest)
 
-add_python_test(restart 
-                ${TruchasTest_SOURCE_DIR}/restart/restart.py
+add_python_test(RestartSuite
+                ${TruchasTest_SOURCE_DIR}/restart/testRestartSuite.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
 add_python_test(remap
