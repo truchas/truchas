@@ -20,7 +20,7 @@ fortran_preprocess_files(PGSLibSerial_SOURCE_FILES
 			 FPP_EXECUTABLE ${PGSLib_PREPROCESSOR}
 			 FPP_FLAGS -I${PGSLibSerial_SOURCE_DIR}/scans
 			 GREP_FILTERS !!CPP!!
-			 PROCESS_TARGET ProcessSerialFiles)
+			 PROCESS_TARGET ProcessPGSLibSerialFiles)
 
 # --- Define the library target
 add_library(pgslib_serial ${PGSLibSerial_SOURCE_FILES})
