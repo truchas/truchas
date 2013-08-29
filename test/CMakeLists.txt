@@ -19,3 +19,7 @@ add_python_test(em1
 add_python_test(ds11
                 ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(static_wall
+                ${TruchasTest_SOURCE_DIR}/static-wall/testStaticWall.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
