@@ -168,7 +168,7 @@ set_source_files_properties(utility/get_process_info.c PROPERTIES
 # Force the preprocessing to occur before building the library
 add_library(pgslib_fe ${PGSLibIface_SOURCE_FILES})
 add_custom_target(ProcessPGSLibIfaceFiles ALL DEPENDS ${PGSLibIface_SOURCE_FILES})
-add_dependencies(pgslib_fe ProcessIfaceFiles)
+add_dependencies(pgslib_fe ProcessPGSLibIfaceFiles)
 
 # Set the library properties
 set_target_properties(pgslib_fe PROPERTIES

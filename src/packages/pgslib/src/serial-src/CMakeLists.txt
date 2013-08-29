@@ -24,7 +24,7 @@ fortran_preprocess_files(PGSLibSerial_SOURCE_FILES
 
 # --- Define the library target
 add_library(pgslib_serial ${PGSLibSerial_SOURCE_FILES})
-add_dependencies(pgslib_serial ProcessSerialFiles)
+add_dependencies(pgslib_serial ProcessPGSLibSerialFiles)
 
 # Change name if Debug build
 set_target_properties(pgslib_serial PROPERTIES
