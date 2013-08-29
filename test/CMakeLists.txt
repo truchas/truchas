@@ -11,3 +11,7 @@ add_python_test(RestartSuite
 add_python_test(remap
                 ${TruchasTest_SOURCE_DIR}/remap/testRemap.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(em1
+                ${TruchasTest_SOURCE_DIR}/em1/testEM1.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
