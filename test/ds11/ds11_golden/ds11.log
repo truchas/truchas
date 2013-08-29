@@ -1,0 +1,776 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                truchas
+   version:             2.8.dev
+   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
+   build architecture:  Linux ccscs9.lanl.gov 2.6.18-164.2.1.el5 #1 SMP Mon Sep 21 04:37:42 EDT 2009 x86_64 x86_64 x86_64 GNU/Linux
+   build date/time:     10 Apr 13 17:51:22
+   build flags:         -O
+   build host:          ccscs9.lanl.gov
+   run architecture:    Linux elway.lanl.gov 2.6.18-348.3.1.el5 #1 SMP Tue Mar 5 13:19:32 EST 2013 x86_64
+   run host:            elway.lanl.gov
+   run date/time:       25 Apr 13 13:25:45
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007-2013. Los Alamos National Security, LLC.
+
+   This material was produced under U.S. Government contract DE-AC52-06NA25396
+   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+   National Security, LLC for the U.S. Department of Energy. The U.S. Government
+   has rights to use, reproduce, and distribute this software.  NEITHER THE
+   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+   is modified to produce derivative works, such modified software should be
+   clearly marked, so as not to confuse it with the version available from LANL.
+
+   Additionally, this program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or (at your
+   option) any later version. Accordingly, this program is distributed in the
+   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
+DANU: Opening h5 output file
+
+================================================================================
+
+INPUT
+
+Opening input file ds11.inp ...
+ Reading PARALLEL_PARAMETERS Namelist ...
+PARALLEL_PARAMETERS namelist not found; using defaults.
+
+ Reading PHYSICAL_CONSTANTS namelist ...
+
+Reading FUNCTION namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+  Reading PHASE namelist #2
+  Reading PHASE namelist #3
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+  Reading MATERIAL_SYSTEM namelist #2
+    using default SMOOTHING_RADIUS(1) = 2.5000E-02
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+Reading PHYSICS namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading MESH Namelist ...
+         Opened mesh file ./ds11-gaps.g
+           containing 1995 nodes and 1226 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+ Reading MATERIAL Namelist # 2 ...
+
+ Reading MATERIAL Namelist # 3 ...
+This is the last MATERIAL Namelist.
+Identified 3 material(s)
+Warning: Material  1 priority not initialized; set to  1
+Warning: Material  2 priority not initialized; set to  2
+Warning: Material  3 priority not initialized; set to  3
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1         mold        1
+             2     metal-so        2
+             3     metal-li        3
+
+Reading INTERFACES namelist ...
+  INTERFACES namelist not found; using defaults
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       3    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 3 ...
+            3       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+         BODY Namelist number  3 will be used for background material ( 1)
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+Warning: LINEAR_SOLVER namelist not found! Using defaults.
+
+ Reading SO_SOLVER Namelist ...
+         SO_SOLVER namelist not found! Using defaults.
+
+Reading NONLINEAR_SOLVER Namelists ...
+  NONLINEAR_SOLVER namelist not found; using defaults.
+
+ Reading NUMERICS Namelist ...
+
+ Reading BC Namelists ...
+BC namelists not found; using defaults.
+
+Reading DIFFUSION_SOLVER namelist ...
+  using default STEPPING_METHOD value: "Adaptive BDF2"
+  using default MAX_NLK_ITR value: 5
+  using default MAX_STEP_TRIES value: 10
+  using default MAX_NLK_VEC value: MAX_NLK_ITR - 1
+  using default NLK_VEC_TOL value: 1.00E-03
+  WARNING: using a pure relative error norm; temp must be bounded away from 0
+  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
+
+Reading DS_BOUNDARY_CONDITION namelists ...
+  [symmetry planes] "flux" condition for "temperature" variable
+  [inner surface] "flux" condition for "temperature" variable
+  [outer surface] "radiation" condition for "temperature" variable
+
+Reading DS_INTERFACE_CONDITION namelists ...
+  [mold/metal interface] read "htc" condition for "temperature" variable
+
+Reading DS_SOURCE namelists ...
+  No DS_SOURCE namelists found.
+
+Reading ENCLOSURE_RADIATION namelists ...
+
+Reading ENCLOSURE_SURFACE namelists ...
+
+ Reading PROBE namelists ...
+         This is the last PROBE Namelist.
+
+         Identified 0 probe(s)
+
+Input file ds11.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+Allocating mesh derived types ... done.
+ Automatic partitioner selection: None
+
+Reading ExodusII mesh file ./ds11-gaps.g ...
+ Closed ExodusII mesh file ./ds11-gaps.g
+
+ Determining mesh partitions and permutation vectors.
+
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+ Establishing mesh connectivity for      7356 faces ...
+
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are       1430 external boundary faces.
+ Mesh connectivity established.
+
+ Finding all cell neighbors ... done.
+
+Allocating base derived types ...done.
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type   Number     Face Type   Number
+                   ------------   ------     ---------   ------
+                      Hex          1226       Point           0
+                      Prism           0       Line            0
+                      Pyramid         0       Triangle        0
+                      Tet             0       Quad         7356
+
+                            Nodes               Cells
+                            -----               -----
+                                8 are shared by   1
+                              200 are shared by   2
+                               12 are shared by   3
+                             1200 are shared by   4
+                               12 are shared by   5
+                                6 are shared by   6
+                              551 are shared by   8
+                                6 are shared by  10
+
+Computing cell geometry ... 
+                    Min        Cell       Max        Cell       Total
+                    ---        ----       ---        ----       -----
+       Volumes   4.4409E-16      1179   7.4631E-06       961    5.7987E-03
+
+
+                0 out of     1226 total cells are orthogonal
+
+    use_ortho_face_gradient = F
+
+    Using full pivoting for LSLR_ operators
+
+done.
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                   3.2193E-01       1.0000E+00
+                  -2.5882E-01       2.5882E-01
+                  -1.7452E-02       1.7452E-02
+
+ Finding face neighbors ... done.
+
+Initializing distributed mesh MAIN ...
+  Reading ExodusII mesh file ./ds11-gaps.g
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell
+    ---+------------------------------------
+      1|     1995        0     4271     1178
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+----------------------------------------------------------------
+      1|      0     1995      0        0      0     4271      0     1178
+  Distributed mesh MAIN initialized.
+DANU: adding default mesh entry
+DANU: writing mesh node coordinates
+DANU: adding main simulation entry
+
+Computing initial volume fractions ...
+
+    Volume fractions will be computed in       1226 total cells with   5**3 particles/cell
+
+    Tallying        5**3 =    125 interface particles
+
+    Tallied   1 x   5**2 =     25 interface particles
+    Tallied   2 x   5**2 =     50 interface particles
+    Tallied   3 x   5**2 =     75 interface particles
+    Tallied   4 x   5**2 =    100 interface particles
+    Tallied   5 x   5**2 =    125 interface particles
+ERROR: volume fraction sum < 1 in cells: 2 5 6 8 12 [509 more items omitted]
+       minimum volume fraction sum less 1: -3.44169E-15
+  Computed volume fractions are invalid; attempting to normalize.
+  Normalization was successful.
+  Initial volume fractions computed.
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 1430 boundary points
+   EXTERIOR: 1430 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 1430 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+  Using default value "density deviation" = 0.000E+00 for phase "mold"
+  Using default value "density deviation" = 0.000E+00 for phase "metal-solid"
+  Using default value "density deviation" = 0.000E+00 for phase "metal-liquid"
+
+Initializing diffusion solver ...
+  Generating external source for "temperature" equation
+  Generating "HTC" interface condition for "temperature" variable
+    using DS_INTERFACE_CONDITION[1]: mold/metal interface
+  Generating "radiation" interface condition for "temperature" variable
+  Generating "HTC" boundary condition for "temperature" variable
+  Generating "radiation" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[3]: outer surface
+  Generating "dirichlet" boundary condition for "temperature" variable
+  Generating "flux" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[1]: symmetry planes
+    using DS_BOUNDARY_CONDITION[2]: inner surface
+  Diffusion solver initialized.
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(initial) =   5.00000E-05
+
+DS: dt=5.000E-05, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
+
+          2: t =   5.00000E-05, dt(diffusion solver) =   5.00000E-05
+
+DS: dt=5.000E-05, NFUN:NPC=0000005:00001, NNR:NNF:NSR=0000:0000:0000
+
+          3: t =   1.00000E-04, dt(diffusion solver) =   5.00000E-05
+
+DS: dt=5.000E-05, NFUN:NPC=0000007:00001, NNR:NNF:NSR=0000:0000:0000
+
+          4: t =   1.50000E-04, dt(diffusion solver) =   5.00000E-05
+
+DS: dt=5.000E-05, NFUN:NPC=0000009:00001, NNR:NNF:NSR=0000:0000:0000
+
+          5: t =   2.00000E-04, dt(diffusion solver) =   2.00000E-04
+
+DS: dt=2.000E-04, NFUN:NPC=0000011:00002, NNR:NNF:NSR=0000:0000:0000
+
+          6: t =   4.00000E-04, dt(diffusion solver) =   4.02203E-04
+
+DS: dt=4.022E-04, NFUN:NPC=0000013:00002, NNR:NNF:NSR=0000:0000:0000
+
+          7: t =   8.02203E-04, dt(diffusion solver) =   1.39266E-03
+
+DS: dt=1.393E-03, NFUN:NPC=0000015:00003, NNR:NNF:NSR=0000:0000:0000
+
+          8: t =   2.19486E-03, dt(diffusion solver) =   1.03092E-03
+
+DS: dt=1.031E-03, NFUN:NPC=0000017:00003, NNR:NNF:NSR=0000:0000:0000
+
+          9: t =   3.22579E-03, dt(diffusion solver) =   1.57979E-03
+
+DS: dt=1.580E-03, NFUN:NPC=0000020:00003, NNR:NNF:NSR=0000:0000:0000
+
+         10: t =   4.80558E-03, dt(diffusion solver) =   1.69269E-03
+
+DS: dt=1.693E-03, NFUN:NPC=0000023:00003, NNR:NNF:NSR=0000:0000:0000
+
+         11: t =   6.49827E-03, dt(diffusion solver) =   2.16770E-03
+
+DS: dt=2.168E-03, NFUN:NPC=0000026:00003, NNR:NNF:NSR=0000:0000:0000
+
+         12: t =   8.66597E-03, dt(diffusion solver) =   2.60657E-03
+
+DS: dt=2.607E-03, NFUN:NPC=0000029:00003, NNR:NNF:NSR=0000:0000:0000
+
+         13: t =   1.12725E-02, dt(diffusion solver) =   3.29867E-03
+
+DS: dt=3.299E-03, NFUN:NPC=0000032:00003, NNR:NNF:NSR=0000:0000:0000
+
+         14: t =   1.45712E-02, dt(diffusion solver) =   4.05580E-03
+
+DS: dt=4.056E-03, NFUN:NPC=0000035:00003, NNR:NNF:NSR=0000:0000:0000
+
+         15: t =   1.86270E-02, dt(diffusion solver) =   5.00148E-03
+
+DS: dt=5.001E-03, NFUN:NPC=0000037:00004, NNR:NNF:NSR=0000:0000:0000
+
+         16: t =   2.36285E-02, dt(diffusion solver) =   6.05821E-03
+
+DS: dt=6.058E-03, NFUN:NPC=0000040:00004, NNR:NNF:NSR=0000:0000:0000
+
+         17: t =   2.96867E-02, dt(diffusion solver) =   7.30704E-03
+
+DS: dt=7.307E-03, NFUN:NPC=0000043:00004, NNR:NNF:NSR=0000:0000:0000
+
+         18: t =   3.69937E-02, dt(diffusion solver) =   8.91492E-03
+
+DS: dt=8.915E-03, NFUN:NPC=0000046:00004, NNR:NNF:NSR=0000:0000:0000
+
+         19: t =   4.59086E-02, dt(diffusion solver) =   1.08284E-02
+
+DS: dt=1.083E-02, NFUN:NPC=0000049:00004, NNR:NNF:NSR=0000:0000:0000
+
+         20: t =   5.67371E-02, dt(diffusion solver) =   1.31760E-02
+
+DS: dt=1.318E-02, NFUN:NPC=0000052:00004, NNR:NNF:NSR=0000:0000:0000
+
+         21: t =   6.99131E-02, dt(diffusion solver) =   1.57893E-02
+
+DS: dt=1.579E-02, NFUN:NPC=0000055:00004, NNR:NNF:NSR=0000:0000:0000
+
+         22: t =   8.57024E-02, dt(diffusion solver) =   1.86186E-02
+
+DS: dt=1.862E-02, NFUN:NPC=0000058:00004, NNR:NNF:NSR=0000:0000:0000
+
+         23: t =   1.04321E-01, dt(diffusion solver) =   2.16147E-02
+
+DS: dt=2.161E-02, NFUN:NPC=0000060:00005, NNR:NNF:NSR=0000:0000:0000
+
+         24: t =   1.25936E-01, dt(diffusion solver) =   2.48090E-02
+
+DS: dt=2.481E-02, NFUN:NPC=0000063:00005, NNR:NNF:NSR=0000:0000:0000
+
+         25: t =   1.50745E-01, dt(diffusion solver) =   2.85758E-02
+
+DS: dt=2.858E-02, NFUN:NPC=0000066:00005, NNR:NNF:NSR=0000:0000:0000
+
+         26: t =   1.79320E-01, dt(diffusion solver) =   3.27454E-02
+
+DS: dt=3.275E-02, NFUN:NPC=0000069:00005, NNR:NNF:NSR=0000:0000:0000
+
+         27: t =   2.12066E-01, dt(diffusion solver) =   3.75682E-02
+
+DS: dt=3.757E-02, NFUN:NPC=0000072:00005, NNR:NNF:NSR=0000:0000:0000
+
+         28: t =   2.49634E-01, dt(diffusion solver) =   4.30656E-02
+
+DS: dt=4.307E-02, NFUN:NPC=0000075:00005, NNR:NNF:NSR=0000:0000:0000
+
+         29: t =   2.92700E-01, dt(diffusion solver) =   4.92772E-02
+
+DS: dt=4.928E-02, NFUN:NPC=0000078:00005, NNR:NNF:NSR=0000:0000:0000
+
+         30: t =   3.41977E-01, dt(diffusion solver) =   5.63239E-02
+
+DS: dt=5.632E-02, NFUN:NPC=0000081:00005, NNR:NNF:NSR=0000:0000:0000
+
+         31: t =   3.98301E-01, dt(diffusion solver) =   6.43228E-02
+
+DS: dt=6.432E-02, NFUN:NPC=0000084:00005, NNR:NNF:NSR=0000:0000:0000
+
+         32: t =   4.62624E-01, dt(diffusion solver) =   7.33645E-02
+
+DS: dt=7.336E-02, NFUN:NPC=0000088:00005, NNR:NNF:NSR=0000:0000:0000
+
+         33: t =   5.35988E-01, dt(diffusion solver) =   8.34415E-02
+
+DS: dt=8.344E-02, NFUN:NPC=0000092:00005, NNR:NNF:NSR=0000:0000:0000
+
+         34: t =   6.19430E-01, dt(diffusion solver) =   9.49759E-02
+
+DS: dt=9.498E-02, NFUN:NPC=0000095:00006, NNR:NNF:NSR=0000:0000:0000
+
+         35: t =   7.14406E-01, dt(diffusion solver) =   1.00062E-01
+
+DS: dt=1.001E-01, NFUN:NPC=0000098:00006, NNR:NNF:NSR=0000:0000:0000
+
+         36: t =   8.14468E-01, dt(diffusion solver) =   1.03332E-01
+
+DS: dt=1.033E-01, NFUN:NPC=0000101:00006, NNR:NNF:NSR=0000:0000:0000
+
+         37: t =   9.17800E-01, dt(diffusion solver) =   1.13327E-01
+
+DS: dt=1.133E-01, NFUN:NPC=0000104:00006, NNR:NNF:NSR=0000:0000:0000
+
+         38: t =   1.03113E+00, dt(diffusion solver) =   1.24555E-01
+
+DS: dt=1.246E-01, NFUN:NPC=0000107:00006, NNR:NNF:NSR=0000:0000:0000
+
+         39: t =   1.15568E+00, dt(diffusion solver) =   1.43189E-01
+
+DS: dt=1.432E-01, NFUN:NPC=0000110:00006, NNR:NNF:NSR=0000:0000:0000
+
+         40: t =   1.29887E+00, dt(diffusion solver) =   1.67549E-01
+
+DS: dt=8.377E-02, NFUN:NPC=0000117:00006, NNR:NNF:NSR=0000:0000:0001
+
+         41: t =   1.38265E+00, dt(diffusion solver) =   8.37745E-02
+
+DS: dt=4.189E-02, NFUN:NPC=0000125:00006, NNR:NNF:NSR=0000:0000:0002
+
+         42: t =   1.42453E+00, dt(diffusion solver) =   4.18872E-02
+
+DS: dt=2.094E-02, NFUN:NPC=0000137:00007, NNR:NNF:NSR=0001:0000:0003
+
+         43: t =   1.44548E+00, dt(diffusion solver) =   2.01808E-02
+
+DS: dt=2.018E-02, NFUN:NPC=0000140:00007, NNR:NNF:NSR=0001:0000:0003
+
+         44: t =   1.46566E+00, dt(diffusion solver) =   2.39759E-02
+
+DS: dt=2.398E-02, NFUN:NPC=0000143:00007, NNR:NNF:NSR=0001:0000:0003
+
+         45: t =   1.48963E+00, dt(diffusion solver) =   3.15418E-02
+
+DS: dt=3.154E-02, NFUN:NPC=0000147:00007, NNR:NNF:NSR=0001:0000:0003
+
+         46: t =   1.52117E+00, dt(diffusion solver) =   1.42853E-02
+
+DS: dt=1.429E-02, NFUN:NPC=0000151:00007, NNR:NNF:NSR=0001:0000:0003
+
+         47: t =   1.53546E+00, dt(diffusion solver) =   2.10161E-02
+
+DS: dt=2.102E-02, NFUN:NPC=0000156:00007, NNR:NNF:NSR=0001:0000:0003
+
+         48: t =   1.55648E+00, dt(diffusion solver) =   2.48015E-02
+
+DS: dt=2.480E-02, NFUN:NPC=0000160:00007, NNR:NNF:NSR=0001:0000:0003
+
+         49: t =   1.58128E+00, dt(diffusion solver) =   3.28791E-02
+
+DS: dt=3.288E-02, NFUN:NPC=0000164:00007, NNR:NNF:NSR=0001:0000:0003
+
+         50: t =   1.61416E+00, dt(diffusion solver) =   1.66496E-02
+
+DS: dt=1.665E-02, NFUN:NPC=0000169:00007, NNR:NNF:NSR=0001:0000:0003
+
+         51: t =   1.63081E+00, dt(diffusion solver) =   2.27275E-02
+
+DS: dt=2.273E-02, NFUN:NPC=0000174:00007, NNR:NNF:NSR=0001:0000:0003
+
+         52: t =   1.65353E+00, dt(diffusion solver) =   2.55922E-02
+
+DS: dt=2.559E-02, NFUN:NPC=0000178:00007, NNR:NNF:NSR=0001:0000:0003
+
+         53: t =   1.67913E+00, dt(diffusion solver) =   1.64466E-02
+
+DS: dt=1.645E-02, NFUN:NPC=0000185:00008, NNR:NNF:NSR=0002:0000:0003
+
+         54: t =   1.69557E+00, dt(diffusion solver) =   1.97976E-02
+
+DS: dt=1.980E-02, NFUN:NPC=0000188:00008, NNR:NNF:NSR=0002:0000:0003
+
+         55: t =   1.71537E+00, dt(diffusion solver) =   2.22804E-02
+
+DS: dt=2.228E-02, NFUN:NPC=0000192:00008, NNR:NNF:NSR=0002:0000:0003
+
+         56: t =   1.73765E+00, dt(diffusion solver) =   1.23425E-02
+
+DS: dt=1.234E-02, NFUN:NPC=0000195:00008, NNR:NNF:NSR=0002:0000:0003
+
+         57: t =   1.74999E+00, dt(diffusion solver) =   2.61966E-02
+
+DS: dt=2.620E-02, NFUN:NPC=0000199:00008, NNR:NNF:NSR=0002:0000:0003
+
+         58: t =   1.77619E+00, dt(diffusion solver) =   1.73185E-02
+
+DS: dt=1.732E-02, NFUN:NPC=0000203:00008, NNR:NNF:NSR=0002:0000:0003
+
+         59: t =   1.79351E+00, dt(diffusion solver) =   1.89852E-02
+
+DS: dt=1.899E-02, NFUN:NPC=0000208:00008, NNR:NNF:NSR=0002:0000:0003
+
+         60: t =   1.81249E+00, dt(diffusion solver) =   2.34921E-02
+
+DS: dt=2.349E-02, NFUN:NPC=0000215:00009, NNR:NNF:NSR=0003:0000:0003
+
+         61: t =   1.83599E+00, dt(diffusion solver) =   1.09618E-02
+
+DS: dt=1.096E-02, NFUN:NPC=0000218:00009, NNR:NNF:NSR=0003:0000:0003
+
+         62: t =   1.84695E+00, dt(diffusion solver) =   2.05162E-02
+
+DS: dt=2.052E-02, NFUN:NPC=0000221:00009, NNR:NNF:NSR=0003:0000:0003
+
+         63: t =   1.86746E+00, dt(diffusion solver) =   1.81208E-02
+
+DS: dt=1.812E-02, NFUN:NPC=0000226:00009, NNR:NNF:NSR=0003:0000:0003
+
+         64: t =   1.88558E+00, dt(diffusion solver) =   1.77438E-02
+
+DS: dt=1.774E-02, NFUN:NPC=0000231:00009, NNR:NNF:NSR=0003:0000:0003
+
+         65: t =   1.90333E+00, dt(diffusion solver) =   2.17924E-02
+
+DS: dt=2.179E-02, NFUN:NPC=0000236:00009, NNR:NNF:NSR=0003:0000:0003
+
+         66: t =   1.92512E+00, dt(diffusion solver) =   1.10100E-02
+
+DS: dt=1.101E-02, NFUN:NPC=0000240:00009, NNR:NNF:NSR=0003:0000:0003
+
+         67: t =   1.93613E+00, dt(diffusion solver) =   1.67384E-02
+
+DS: dt=1.674E-02, NFUN:NPC=0000247:00010, NNR:NNF:NSR=0004:0000:0003
+
+         68: t =   1.95287E+00, dt(diffusion solver) =   1.87650E-02
+
+DS: dt=1.876E-02, NFUN:NPC=0000250:00010, NNR:NNF:NSR=0004:0000:0003
+
+         69: t =   1.97163E+00, dt(diffusion solver) =   1.62707E-02
+
+DS: dt=1.627E-02, NFUN:NPC=0000254:00010, NNR:NNF:NSR=0004:0000:0003
+
+         70: t =   1.98790E+00, dt(diffusion solver) =   1.76427E-02
+
+DS: dt=1.764E-02, NFUN:NPC=0000258:00010, NNR:NNF:NSR=0004:0000:0003
+
+         71: t =   2.00555E+00, dt(diffusion solver) =   1.21082E-02
+
+DS: dt=1.211E-02, NFUN:NPC=0000263:00010, NNR:NNF:NSR=0004:0000:0003
+
+         72: t =   2.01766E+00, dt(diffusion solver) =   1.35166E-02
+
+DS: dt=1.352E-02, NFUN:NPC=0000268:00010, NNR:NNF:NSR=0004:0000:0003
+
+         73: t =   2.03117E+00, dt(diffusion solver) =   1.87585E-02
+
+DS: dt=1.876E-02, NFUN:NPC=0000273:00010, NNR:NNF:NSR=0004:0000:0003
+
+         74: t =   2.04993E+00, dt(diffusion solver) =   1.61871E-02
+
+DS: dt=1.619E-02, NFUN:NPC=0000278:00010, NNR:NNF:NSR=0004:0000:0003
+
+         75: t =   2.06612E+00, dt(diffusion solver) =   1.37037E-02
+
+DS: dt=1.370E-02, NFUN:NPC=0000285:00011, NNR:NNF:NSR=0005:0000:0003
+
+         76: t =   2.07982E+00, dt(diffusion solver) =   1.29487E-02
+
+DS: dt=1.295E-02, NFUN:NPC=0000288:00011, NNR:NNF:NSR=0005:0000:0003
+
+         77: t =   2.09277E+00, dt(diffusion solver) =   1.32527E-02
+
+DS: dt=1.325E-02, NFUN:NPC=0000291:00011, NNR:NNF:NSR=0005:0000:0003
+
+         78: t =   2.10602E+00, dt(diffusion solver) =   1.28132E-02
+
+DS: dt=1.281E-02, NFUN:NPC=0000294:00011, NNR:NNF:NSR=0005:0000:0003
+
+         79: t =   2.11884E+00, dt(diffusion solver) =   1.64403E-02
+
+DS: dt=1.644E-02, NFUN:NPC=0000298:00011, NNR:NNF:NSR=0005:0000:0003
+
+         80: t =   2.13528E+00, dt(diffusion solver) =   1.18532E-02
+
+DS: dt=1.185E-02, NFUN:NPC=0000303:00011, NNR:NNF:NSR=0005:0000:0003
+
+         81: t =   2.14713E+00, dt(diffusion solver) =   1.34496E-02
+
+DS: dt=1.345E-02, NFUN:NPC=0000308:00011, NNR:NNF:NSR=0005:0000:0003
+
+         82: t =   2.16058E+00, dt(diffusion solver) =   1.26850E-02
+
+DS: dt=1.268E-02, NFUN:NPC=0000313:00011, NNR:NNF:NSR=0005:0000:0003
+
+         83: t =   2.17326E+00, dt(diffusion solver) =   1.27032E-02
+
+DS: dt=1.270E-02, NFUN:NPC=0000318:00011, NNR:NNF:NSR=0005:0000:0003
+
+         84: t =   2.18597E+00, dt(diffusion solver) =   1.22535E-02
+
+DS: dt=1.225E-02, NFUN:NPC=0000323:00011, NNR:NNF:NSR=0005:0000:0003
+
+         85: t =   2.19822E+00, dt(diffusion solver) =   1.27235E-02
+
+DS: dt=1.272E-02, NFUN:NPC=0000326:00011, NNR:NNF:NSR=0005:0000:0003
+
+         86: t =   2.21094E+00, dt(diffusion solver) =   1.39451E-02
+
+DS: dt=1.395E-02, NFUN:NPC=0000331:00011, NNR:NNF:NSR=0005:0000:0003
+
+         87: t =   2.22489E+00, dt(diffusion solver) =   1.10121E-02
+
+DS: dt=1.101E-02, NFUN:NPC=0000336:00011, NNR:NNF:NSR=0005:0000:0003
+
+         88: t =   2.23590E+00, dt(diffusion solver) =   1.34192E-02
+
+DS: dt=1.342E-02, NFUN:NPC=0000343:00012, NNR:NNF:NSR=0006:0000:0003
+
+         89: t =   2.24932E+00, dt(diffusion solver) =   1.20362E-02
+
+DS: dt=1.204E-02, NFUN:NPC=0000346:00012, NNR:NNF:NSR=0006:0000:0003
+
+         90: t =   2.26136E+00, dt(diffusion solver) =   1.21319E-02
+
+DS: dt=1.213E-02, NFUN:NPC=0000349:00012, NNR:NNF:NSR=0006:0000:0003
+
+         91: t =   2.27349E+00, dt(diffusion solver) =   1.33602E-02
+
+DS: dt=1.336E-02, NFUN:NPC=0000353:00012, NNR:NNF:NSR=0006:0000:0003
+
+         92: t =   2.28685E+00, dt(diffusion solver) =   1.19325E-02
+
+DS: dt=1.193E-02, NFUN:NPC=0000357:00012, NNR:NNF:NSR=0006:0000:0003
+
+         93: t =   2.29878E+00, dt(diffusion solver) =   1.28089E-02
+
+DS: dt=1.281E-02, NFUN:NPC=0000362:00012, NNR:NNF:NSR=0006:0000:0003
+
+         94: t =   2.31159E+00, dt(diffusion solver) =   1.23598E-02
+
+DS: dt=1.236E-02, NFUN:NPC=0000367:00012, NNR:NNF:NSR=0006:0000:0003
+
+         95: t =   2.32395E+00, dt(diffusion solver) =   1.21407E-02
+
+DS: dt=1.214E-02, NFUN:NPC=0000372:00012, NNR:NNF:NSR=0006:0000:0003
+
+         96: t =   2.33609E+00, dt(diffusion solver) =   1.21983E-02
+
+DS: dt=1.220E-02, NFUN:NPC=0000377:00012, NNR:NNF:NSR=0006:0000:0003
+
+         97: t =   2.34829E+00, dt(diffusion solver) =   1.28834E-02
+
+DS: dt=1.288E-02, NFUN:NPC=0000382:00012, NNR:NNF:NSR=0006:0000:0003
+
+         98: t =   2.36117E+00, dt(diffusion solver) =   1.19427E-02
+
+DS: dt=1.194E-02, NFUN:NPC=0000387:00012, NNR:NNF:NSR=0006:0000:0003
+
+         99: t =   2.37311E+00, dt(diffusion solver) =   1.28315E-02
+
+DS: dt=1.283E-02, NFUN:NPC=0000392:00012, NNR:NNF:NSR=0006:0000:0003
+
+        100: t =   2.38595E+00, dt(diffusion solver) =   1.18039E-02
+
+DS: dt=1.180E-02, NFUN:NPC=0000397:00012, NNR:NNF:NSR=0006:0000:0003
+
+        101: t =   2.39775E+00, dt(diffusion solver) =   1.28458E-02
+
+DS: dt=1.285E-02, NFUN:NPC=0000404:00013, NNR:NNF:NSR=0007:0000:0003
+
+        102: t =   2.41060E+00, dt(diffusion solver) =   1.14960E-02
+
+DS: dt=1.150E-02, NFUN:NPC=0000407:00013, NNR:NNF:NSR=0007:0000:0003
+
+        103: t =   2.42209E+00, dt(diffusion solver) =   1.32290E-02
+
+DS: dt=1.323E-02, NFUN:NPC=0000410:00013, NNR:NNF:NSR=0007:0000:0003
+
+        104: t =   2.43532E+00, dt(diffusion solver) =   1.18637E-02
+
+DS: dt=1.186E-02, NFUN:NPC=0000414:00013, NNR:NNF:NSR=0007:0000:0003
+
+        105: t =   2.44718E+00, dt(diffusion solver) =   1.23912E-02
+
+DS: dt=1.239E-02, NFUN:NPC=0000418:00013, NNR:NNF:NSR=0007:0000:0003
+
+        106: t =   2.45958E+00, dt(diffusion solver) =   1.19846E-02
+
+DS: dt=1.198E-02, NFUN:NPC=0000423:00013, NNR:NNF:NSR=0007:0000:0003
+
+        107: t =   2.47156E+00, dt(diffusion solver) =   1.23156E-02
+
+DS: dt=1.232E-02, NFUN:NPC=0000427:00013, NNR:NNF:NSR=0007:0000:0003
+
+        108: t =   2.48388E+00, dt(diffusion solver) =   1.19564E-02
+
+DS: dt=1.196E-02, NFUN:NPC=0000432:00013, NNR:NNF:NSR=0007:0000:0003
+
+        109: t =   2.49583E+00, dt(diffusion solver) =   1.23030E-02
+
+DS: dt=1.230E-02, NFUN:NPC=0000437:00013, NNR:NNF:NSR=0007:0000:0003
+
+================================================================================
+
+TERMINATION
+
+DANU: Closing h5 output file
+Warning: DANU: Danu fid is still associated
+                 Final Time:  2.5081E+00 after   109 steps
+
+
+  TIMING SUMMARY                       AVERAGE        MIN          MAX
+  --------------                      ---------    ---------    ---------
+  Total                               8.689E-01    8.689E-01    8.689E-01
+    Input                               5.000E-03    5.000E-03    5.000E-03
+    Initialization                      1.700E-01    1.700E-01    1.700E-01
+      HTSD function                       1.000E-03    1.000E-03    1.000E-03
+        HT function                         1.000E-03    1.000E-03    1.000E-03
+    Main Cycle                          6.929E-01    6.929E-01    6.929E-01
+      Output                              7.000E-03    7.000E-03    7.000E-03
+      Time Step                           3.000E-03    3.000E-03    3.000E-03
+      Diffusion Solver                    6.819E-01    6.819E-01    6.819E-01
+        HTSD precon compute                 1.140E-01    1.140E-01    1.140E-01
+        HTSD function                       1.420E-01    1.420E-01    1.420E-01
+          HT function                         1.410E-01    1.410E-01    1.410E-01
+        HTSD precon apply                   3.320E-01    3.320E-01    3.320E-01
+          HT precon apply                     3.320E-01    3.320E-01    3.320E-01
+
+                  Process virtual memory used: 5.17E+01 mB
+                                   words/cell: 5522
+
+truchas terminated normally on 25 Apr 13 at 13:25:46

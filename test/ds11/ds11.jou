@@ -1,0 +1,40 @@
+## /opt/cubit/11.1/bin/clarox
+## Cubit Version 11.1
+## Cubit Build 39271
+## Revised 2009-02-17 11:06:39 -0700 (Tue, 17 Feb 2009)
+## Running 07/28/2009 12:38:56 PM
+## Command Options:
+## -warning = On
+## -information = On
+create sphere radius 1 inner radius 0.333333 xpositive
+webcut volume 1 with plane yplane offset 0 rotate 15 about z noimprint nomerge
+webcut volume 1 with plane yplane offset 0 rotate -15 about z noimprint nomerge
+delete volume 2 1
+webcut volume 3 with plane zplane offset 0 rotate 1 about y noimprint nomerge
+webcut volume 3 with plane zplane offset 0 rotate -1 about y noimprint nomerge
+delete volume 3 4
+create sphere radius 0.9
+chop volume 5 with volume 6
+compress all
+imprint volume all
+merge volume all
+surface 5 size 0.02
+surface 5 scheme pave
+mesh surface 5
+surface 5 smooth scheme centroid area pull
+smooth surface 5
+curve 6 interval 2
+curve 6 scheme equal
+volume 1 scheme sweep source surface 5 target surface 7 rotate off
+volume 1 sweep smooth auto
+mesh volume 1
+volume 2 size 0.02
+volume 2 scheme auto
+mesh volume 2
+block 1 volume 1
+block 2 volume 2
+sideset 1 surface 5 10 4 9 7 12 6 11
+sideset 2 surface 1
+sideset 3 surface 2
+sideset 10 surface 3
+export genesis "ds11.g" overwrite
