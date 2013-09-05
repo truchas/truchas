@@ -8,7 +8,7 @@ import numpy
 import Truchas
 import TruchasTest
 
-class EM1(TruchasTest.GoldenTestCase):
+class DS11(TruchasTest.GoldenTestCase):
 
   test_name='ds11'
 
