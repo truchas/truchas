@@ -23,3 +23,7 @@ add_python_test(ds11
 add_python_test(static_wall
                 ${TruchasTest_SOURCE_DIR}/static-wall/testStaticWall.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(gap_rad
+                ${TruchasTest_SOURCE_DIR}/gap-rad/testGapRad.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 

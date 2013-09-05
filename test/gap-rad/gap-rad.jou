@@ -1,0 +1,25 @@
+## /opt/cubit/13.2-48137/bin/clarox
+## Cubit Version 13.2
+## Cubit Build 48137
+## Revised 2012-05-31 10:27:28 -0600 (Thu, 31 May 2012)
+## Running 07/30/2012 12:45:59 PM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 2 y 0.0625 z 0.0625
+webcut volume 1 with plane xplane offset 0 noimprint nomerge
+imprint volume all
+merge volume all
+compress all
+
+volume all size 0.0625
+mesh volume all
+
+set duplicate block elements off
+block 1 volume 2
+block 2 volume 1
+sideset 1 surface 1 2 4 5 6 7 8 9 10 11
+sideset 2 surface 3
+
+set large exodus file off
+export genesis "gap-rad.g" overwrite
