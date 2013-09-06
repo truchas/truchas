@@ -14,7 +14,7 @@ class DS1(TruchasTest.GoldenTestCase):
   num_procs = 4 # with a parallel executable
 
   def runTest(self):
-    '''DS2: verifying the final concentration field'''
+    '''DS1: verifying the final concentration field'''
 
     # TODO: want to check that the final cycle number is 209
 
