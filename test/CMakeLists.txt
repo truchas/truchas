@@ -28,6 +28,18 @@ add_python_test(ds3
                 ${TruchasTest_SOURCE_DIR}/ds3/testDS3.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(ds4
+                ${TruchasTest_SOURCE_DIR}/ds4/testDS4.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(ds5
+                ${TruchasTest_SOURCE_DIR}/ds5/testDS5.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(ds6
+                ${TruchasTest_SOURCE_DIR}/ds6/testDS6.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(ds11
                 ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
