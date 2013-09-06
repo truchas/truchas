@@ -40,6 +40,19 @@ add_python_test(ds6
                 ${TruchasTest_SOURCE_DIR}/ds6/testDS6.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(ds7
+                ${TruchasTest_SOURCE_DIR}/ds7/testDS7.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(ds8
+                ${TruchasTest_SOURCE_DIR}/ds8/testDS8.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+# Not working -- problems with coordinates and connectivity functions
+#add_python_test(ds9
+#                ${TruchasTest_SOURCE_DIR}/ds9/testDS9.py
+#		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(ds11
                 ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
