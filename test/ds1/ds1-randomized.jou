@@ -1,0 +1,25 @@
+brick x .75 y .25 z .015
+volume 1 move y .125 z .005
+surface 1  size .015
+surface 1  scheme Map
+mesh surface 1 
+curve 9  interval 1
+curve 9  scheme equal
+mesh curve 9 
+volume 1  scheme Sweep  source surface 1  target surface 2  rotate off
+volume 1  sweep smooth Auto
+mesh volume 1 
+set developer commands on
+curve all smooth scheme randomize 0.1
+smooth curve all
+surface all smooth scheme randomize 0.1
+smooth surface all
+block 1 volume 1 
+Sideset 1 surface 4  
+Sideset 2 surface 6  
+Sideset 3 surface 2 5 1 3  
+set large exodus file off
+export Genesis  "ds1.gen" overwrite
+
+
+
