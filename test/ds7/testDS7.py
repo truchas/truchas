@@ -12,12 +12,21 @@ class DS7(TruchasTest.GoldenTestCase):
 
   test_name = 'ds7'
   num_procs = 4 # with a parallel executable
+  
+  def test_early_cycle_number(self):
+    '''DS7: checking the final cycle number'''
+    test_series = self.test_output.get_simulation().find_series(id=2)
+    gold_series = self.gold_output.get_simulation().find_series(id=2)
+    self.assertTrue(test_series.cycle == gold_series.cycle)
+  
+  def test_final_cycle_number(self):
+    '''DS7: checking the final cycle number'''
+    test_series = self.test_output.get_simulation().find_series(id=3)
+    gold_series = self.gold_output.get_simulation().find_series(id=3)
+    self.assertTrue(test_series.cycle == gold_series.cycle)
 
   def test_early_temperature(self):
     '''DS7: verifying the early temperature field'''
-
-    # TODO: want to check that the final cycle number is 21
-
     tol = 1.0e-10
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
@@ -26,9 +35,6 @@ class DS7(TruchasTest.GoldenTestCase):
 
   def test_final_temperature(self):
     '''DS7: verifying the final temperature field'''
-
-    # TODO: want to check that the final cycle number is 48
-
     tol = 1.0e-10
     test = self.test_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_TEMP')

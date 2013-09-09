@@ -13,11 +13,14 @@ class DS1(TruchasTest.GoldenTestCase):
   test_name = 'ds1'
   num_procs = 4 # with a parallel executable
 
-  def runTest(self):
+  def test_final_cycle_number(self):
+    '''DS1: checking the final cycle number'''
+    test_series = self.test_output.get_simulation().find_series(id=2)
+    gold_series = self.gold_output.get_simulation().find_series(id=2)
+    self.assertTrue(test_series.cycle == gold_series.cycle)
+
+  def test_final_concentration(self):
     '''DS1: verifying the final concentration field'''
-
-    # TODO: want to check that the final cycle number is 209
-
     tol = 1.0e-10
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')

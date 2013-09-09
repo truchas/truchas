@@ -12,10 +12,16 @@ class DS8(TruchasTest.GoldenTestCase):
 
   test_name = 'ds8'
   num_procs = 4 # with a parallel executable
+  
+  def test_cycle_numbers(self):
+    '''DS8: checking the cycle numbers'''
+    for n in [2,4]:
+      test_series = self.test_output.get_simulation().find_series(id=n)
+      gold_series = self.gold_output.get_simulation().find_series(id=n)
+      self.assertTrue(test_series.cycle == gold_series.cycle)
 
   def test_early_temp(self):
     '''DS8: verifying the temperature field at early time'''
-    # TODO: want to check that the final cycle number is 94
     tol = 1.0e-10
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
@@ -24,7 +30,6 @@ class DS8(TruchasTest.GoldenTestCase):
 
   def test_final_temp(self):
     '''DS8: verifying the temperature field at final time'''
-    # TODO: want to check that the final cycle number is 290
     tol = 1.0e-10
     test = self.test_output.get_simulation().find_series(id=4).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=4).get_data('Z_TEMP')
