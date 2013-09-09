@@ -457,10 +457,10 @@ CONTAINS
 
     ! Local Variables 
     integer :: i, j, count, scalarsize, vectorsize, tensorsize, stat
-    real, pointer, dimension(:) :: probe_cycle, probe_cycleV, probe_cycleT
+    real(r8), pointer, dimension(:) :: probe_cycle, probe_cycleV, probe_cycleT
     type(c_ptr) :: pid
     character(64) :: dataset
-    real, allocatable :: probe_data(:,:)
+    real(r8), allocatable :: probe_data(:,:)
 
     call PROBES_POSITIONS ()
 

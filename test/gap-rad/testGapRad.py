@@ -18,9 +18,9 @@ class GapRadTest(TruchasTest.GoldenTestCase):
   probe_field='TEMP'
   probe_names=['left end', 'right end', 'gap left', 'gap right']
   probe={}
-  probe['left end']   = [1.4999998474, 1.371828885]
-  probe['right end']  = [0.500001526, 0.628171115 ]
-  probe['gap left']   = [1.498533630, 1.370837833]
+  probe['left end']   = [1.499998474,  1.371828885]
+  probe['right end']  = [0.500001526,  0.628171115]
+  probe['gap left']   = [1.498533630,  1.370837833]
   probe['gap right']  = [0.5014663700, 0.629162167]
 
   def setUp(self):
