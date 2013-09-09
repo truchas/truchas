@@ -53,6 +53,22 @@ add_python_test(ds8
 #                ${TruchasTest_SOURCE_DIR}/ds9/testDS9.py
 #		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(htvoid1
+                ${TruchasTest_SOURCE_DIR}/htvoid1/testHTVoid1.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(htvoid2
+                ${TruchasTest_SOURCE_DIR}/htvoid2/testHTVoid2.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(htvoid3
+                ${TruchasTest_SOURCE_DIR}/htvoid3/testHTVoid3.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(htvoid4
+                ${TruchasTest_SOURCE_DIR}/htvoid4/testHTVoid4.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(ds11
                 ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 

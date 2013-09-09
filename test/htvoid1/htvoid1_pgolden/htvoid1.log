@@ -1,0 +1,1307 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                DUMMY
+   version:             2.8.dev
+   libraries:           UbikSolve, PGSLib, Chaco
+   build architecture:  x86_64
+   build date/time:      6 Sep 2013 14:40:39
+   build flags:         -O2 -maxcontin=99 -PIC
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 3.8.13-100.fc17.x86_64 #1 SMP Mon May 13 13:36:17 UTC 2013 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       09 Sep 13 08:40:37
+   processors:          4 (processor 1 is performing I/O)
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007-2013. Los Alamos National Security, LLC.
+
+   This material was produced under U.S. Government contract DE-AC52-06NA25396
+   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+   National Security, LLC for the U.S. Department of Energy. The U.S. Government
+   has rights to use, reproduce, and distribute this software.  NEITHER THE
+   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+   is modified to produce derivative works, such modified software should be
+   clearly marked, so as not to confuse it with the version available from LANL.
+
+   Additionally, this program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or (at your
+   option) any later version. Accordingly, this program is distributed in the
+   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
+DANU: Opening h5 output file
+
+================================================================================
+
+INPUT
+
+Opening input file htvoid1.inp ...
+ Reading PARALLEL_PARAMETERS Namelist ...
+PARALLEL_PARAMETERS namelist not found; using defaults.
+
+Reading FUNCTION namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+Reading PHYSICS namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading MESH Namelist ...
+         Opened mesh file ./channel-3.gen
+           containing 400 nodes and 216 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+ Reading MATERIAL Namelist # 2 ...
+This is the last MATERIAL Namelist.
+Identified 2 material(s)
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1        fluid        1
+             2         void        2
+
+Reading INTERFACES namelist ...
+  INTERFACES namelist not found; using defaults
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       1    box       -1.500E+00   0.000E+00    0.0    3.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    2.000E+00
+                                    0.000E+00   0.000E+00    0.0    2.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       2    background
+         BODY Namelist number  2 will be used for background material ( 2)
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+
+         Reading LINEAR_SOLVER Namelist # 1 ...
+
+Reading NONLINEAR_SOLVER Namelists ...
+  NONLINEAR_SOLVER namelist not found; using defaults.
+
+ Reading NUMERICS Namelist ...
+Using linear solver "projection" for projection linear solution.
+Warning: Linear solver "default" for viscous linear solution not found!Reverting to default linear solver parameters.
+
+ Reading BC Namelists ...
+BC namelists not found; using defaults.
+
+Reading DIFFUSION_SOLVER namelist ...
+  using default MAX_NLK_VEC value: MAX_NLK_ITR - 1
+  using default NLK_VEC_TOL value: 1.00E-03
+  using default PC_AMG_CYCLES value: 1
+
+Reading DS_BOUNDARY_CONDITION namelists ...
+  [whole boundary] "flux" condition for "temperature" variable
+
+Reading DS_INTERFACE_CONDITION namelists ...
+
+Reading DS_SOURCE namelists ...
+  No DS_SOURCE namelists found.
+
+Reading ENCLOSURE_RADIATION namelists ...
+
+Reading ENCLOSURE_SURFACE namelists ...
+
+ Reading PROBE namelists ...
+         This is the last PROBE Namelist.
+
+         Identified 0 probe(s)
+
+Input file htvoid1.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+Allocating mesh derived types ... done.
+ Automatic partitioner selection: Chaco
+
+Reading ExodusII mesh file ./channel-3.gen ...
+ Closed ExodusII mesh file ./channel-3.gen
+
+ Determining mesh partitions and permutation vectors.
+ Using 4 partitions.
+ Partitioning with Chaco.
+
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+ Establishing mesh connectivity for      1296 faces ...
+
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are        306 external boundary faces.
+ Mesh connectivity established.
+
+ Finding all cell neighbors ... done.
+
+Allocating base derived types ...done.
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type   Number     Face Type   Number
+                   ------------   ------     ---------   ------
+                      Hex           216       Point           0
+                      Prism           0       Line            0
+                      Pyramid         0       Triangle        0
+                      Tet             0       Quad         1296
+
+                            Nodes               Cells
+                            -----               -----
+                                8 are shared by   1
+                              108 are shared by   2
+                              192 are shared by   4
+                               92 are shared by   8
+
+Computing cell geometry ... 
+                    Min        Cell       Max        Cell       Total
+                    ---        ----       ---        ----       -----
+       Volumes   2.8717E-02       169   4.7802E-02       176    8.0000E+00
+
+
+                0 out of      216 total cells are orthogonal
+
+    use_ortho_face_gradient = T
+
+    Using full pivoting for LSLR_ operators
+
+done.
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                  -4.0000E+00       4.0000E+00
+                  -5.0000E-01       5.0000E-01
+                  -5.0000E-01       5.0000E-01
+
+ Finding face neighbors ... done.
+
+Initializing distributed mesh MAIN ...
+  Reading ExodusII mesh file ./channel-3.gen
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell
+    ---+------------------------------------
+      1|      144        0      273       72
+      2|      112        0      207       54
+      3|      128        0      240       63
+      4|      112        0      207       54
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+----------------------------------------------------------------
+      1|     32      112      0        0     66      207     18       54
+      2|     16       96      0        0      9      198      0       54
+      3|     16      112      0        0     33      207      9       54
+      4|     32       80      0        0     18      189      0       54
+  Distributed mesh MAIN initialized.
+DANU: adding default mesh entry
+DANU: writing mesh node coordinates
+DANU: adding main simulation entry
+
+Computing initial volume fractions ...
+
+    Volume fractions will be computed in        216 total cells with   5**3 particles/cell
+
+    Tallying        5**3 =    125 interface particles
+
+    Tallied   1 x   5**2 =     25 interface particles
+    Tallied   2 x   5**2 =     50 interface particles
+    Tallied   3 x   5**2 =     75 interface particles
+    Tallied   4 x   5**2 =    100 interface particles
+    Tallied   5 x   5**2 =    125 interface particles
+
+    Body # 2 was clipped in     45 cells because of previously defined bodies
+ERROR: volume fraction sum < 1 in cells: 57 62 63 66 73 [26 more items omitted]
+       minimum volume fraction sum less 1: -3.21965E-15
+  Computed volume fractions are invalid; attempting to normalize.
+  Normalization was successful.
+  Initial volume fractions computed.
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 306 boundary points
+   EXTERIOR: 306 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 306 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+  Using default value "density deviation" = 0.000E+00 for phase "fluid"
+
+Initializing diffusion solver ...
+  Generating external source for "temperature" equation
+  Generating "HTC" interface condition for "temperature" variable
+  Generating "radiation" interface condition for "temperature" variable
+  Generating "HTC" boundary condition for "temperature" variable
+  Generating "radiation" boundary condition for "temperature" variable
+  Generating "dirichlet" boundary condition for "temperature" variable
+  Generating "flux" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[1]: whole boundary
+  Diffusion solver initialized.
+
+================================================================================
+
+EXECUTION
+
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.34163E+00    0.34163E+00
+          1      0.12932E-01    0.12932E-01
+          2      0.49166E-02    0.49166E-02
+          3      0.89345E-03    0.89345E-03
+          4      0.64956E-04    0.64956E-04
+          5      0.46845E-05    0.46845E-05
+          6      0.16109E-06    0.16109E-06
+          7      0.36982E-08    0.36982E-08
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E-02
+Warning: excessive volume adjustment: cell=1, matid=1, adjustment fraction= -3.588E-10
+Warning: excessive volume adjustment: cell=2, matid=1, adjustment fraction= -5.428E-10
+Warning: excessive volume adjustment: cell=3, matid=1, adjustment fraction= -8.924E-10
+Warning: excessive volume adjustment: cell=4, matid=1, adjustment fraction=  3.810E-11
+Warning: excessive volume adjustment: cell=5, matid=1, adjustment fraction= -6.333E-10
+Warning: excessive volume adjustment: cell=6, matid=1, adjustment fraction=  4.040E-10
+Warning: excessive volume adjustment: cell=7, matid=1, adjustment fraction= -9.732E-10
+Warning: excessive volume adjustment: cell=8, matid=1, adjustment fraction= -3.956E-10
+Warning: excessive volume adjustment: cell=9, matid=1, adjustment fraction=  3.328E-10
+Warning: excessive volume adjustment: cell=10, matid=1, adjustment fraction= -7.286E-10
+Warning: excessive volume adjustment: cell=11, matid=1, adjustment fraction=  1.245E-09
+Warning: excessive volume adjustment: cell=12, matid=1, adjustment fraction=  5.517E-11
+Warning: excessive volume adjustment: cell=13, matid=1, adjustment fraction= -5.431E-10
+Warning: excessive volume adjustment: cell=14, matid=1, adjustment fraction=  7.560E-10
+Warning: excessive volume adjustment: cell=15, matid=1, adjustment fraction= -3.768E-10
+Warning: excessive volume adjustment: cell=16, matid=1, adjustment fraction=  1.751E-10
+Warning: excessive volume adjustment: cell=17, matid=1, adjustment fraction=  5.600E-10
+Warning: excessive volume adjustment: cell=18, matid=1, adjustment fraction=  1.328E-10
+Warning: excessive volume adjustment: cell=19, matid=1, adjustment fraction=  9.222E-10
+Warning: excessive volume adjustment: cell=20, matid=1, adjustment fraction= -7.109E-10
+Warning: excessive volume adjustment: cell=21, matid=1, adjustment fraction=  1.544E-10
+DS: totally/essentially/non-void cell counts = 119/1/96
+DS: T(H) iterations:  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
+
+DS: dt=1.000E-02, NFUN:NPC:NPA=0000005:0000001:0000004
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.15760E-02    0.15760E-02
+          1      0.14221E-03    0.14221E-03
+          2      0.49818E-04    0.49818E-04
+          3      0.10033E-04    0.10033E-04
+          4      0.49909E-06    0.49909E-06
+          5      0.22681E-07    0.22681E-07
+          6      0.68326E-09    0.68326E-09
+            7 Preliminary projection iterations (linear)
+            6 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -4.6671E-03, -5.1620E-03)
+            Max Velocity: ( 6.0586E-02,  1.0956E-02,  5.1125E-03)
+
+          2: t =   1.00000E-02, dt(growth) =   1.05000E-02
+DS: totally/essentially/non-void cell counts = 119/1/96
+DS: T(H) iterations:  2.00(avg), 3(max)
+DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
+
+DS: dt=1.050E-02, NFUN:NPC:NPA=0000012:0000002:0000010
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.22089E+00    0.22089E+00
+          1      0.78910E-01    0.78910E-01
+          2      0.20826E-01    0.20826E-01
+          3      0.25391E-02    0.25391E-02
+          4      0.62027E-04    0.62027E-04
+          5      0.28264E-05    0.28264E-05
+          6      0.83169E-07    0.83169E-07
+          7      0.20403E-08    0.20403E-08
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -8.0820E-03, -8.8708E-03)
+            Max Velocity: ( 1.2348E-01,  1.4532E-02,  9.0012E-03)
+
+          3: t =   2.05000E-02, dt(growth) =   1.10250E-02
+DS: totally/essentially/non-void cell counts = 119/0/97
+DS: T(H) iterations:  1.67(avg), 3(max)
+DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
+
+DS: dt=1.103E-02, NFUN:NPC:NPA=0000016:0000003:0000013
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.60322E-01    0.60322E-01
+          1      0.22274E-01    0.22274E-01
+          2      0.47825E-02    0.47825E-02
+          3      0.40085E-03    0.40085E-03
+          4      0.16966E-04    0.16966E-04
+          5      0.88302E-06    0.88302E-06
+          6      0.16198E-07    0.16198E-07
+          7      0.42430E-09    0.42430E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.0649E-02, -1.1909E-02)
+            Max Velocity: ( 1.8958E-01,  1.2132E-02,  1.2229E-02)
+
+          4: t =   3.15250E-02, dt(growth) =   1.15763E-02
+DS: totally/essentially/non-void cell counts = 119/0/97
+DS: T(H) iterations:  1.67(avg), 3(max)
+DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
+
+DS: dt=1.158E-02, NFUN:NPC:NPA=0000020:0000004:0000016
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.32806E-01    0.32806E-01
+          1      0.13985E-01    0.13985E-01
+          2      0.11058E-02    0.11058E-02
+          3      0.24740E-04    0.24740E-04
+          4      0.26627E-05    0.26627E-05
+          5      0.12919E-06    0.12919E-06
+          6      0.61327E-08    0.61327E-08
+            6 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.2774E-02, -1.4552E-02)
+            Max Velocity: ( 2.5940E-01,  1.4925E-02,  1.5056E-02)
+
+          5: t =   4.31013E-02, dt(growth) =   1.21551E-02
+DS: totally/essentially/non-void cell counts = 117/3/96
+DS: T(H) iterations:  1.83(avg), 4(max)
+DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
+
+DS: dt=1.216E-02, NFUN:NPC:NPA=0000024:0000005:0000019
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.10895E-01    0.10895E-01
+          1      0.47368E-02    0.47368E-02
+          2      0.42392E-03    0.42392E-03
+          3      0.18560E-04    0.18560E-04
+          4      0.15199E-05    0.15199E-05
+          5      0.99232E-07    0.99232E-07
+          6      0.47018E-08    0.47018E-08
+            6 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.4705E-02, -1.6914E-02)
+            Max Velocity: ( 3.3376E-01,  1.7395E-02,  1.7627E-02)
+
+          6: t =   5.52563E-02, dt(growth) =   1.27628E-02
+DS: totally/essentially/non-void cell counts = 117/1/98
+DS: T(H) iterations:  1.78(avg), 4(max)
+DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
+
+DS: dt=1.276E-02, NFUN:NPC:NPA=0000028:0000006:0000022
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.53765E-01    0.53765E-01
+          1      0.20696E-01    0.20696E-01
+          2      0.51821E-02    0.51821E-02
+          3      0.57904E-03    0.57904E-03
+          4      0.12713E-04    0.12713E-04
+          5      0.59954E-06    0.59954E-06
+          6      0.17014E-07    0.17014E-07
+          7      0.36414E-09    0.36414E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.6372E-02, -1.9060E-02)
+            Max Velocity: ( 4.1371E-01,  1.9715E-02,  2.0031E-02)
+
+          7: t =   6.80191E-02, dt(growth) =   1.34010E-02
+Warning: excessive volume adjustment: cell=44, matid=1, adjustment fraction=  4.354E-07
+Warning: excessive volume adjustment: cell=1, matid=1, adjustment fraction=  4.501E-13
+Warning: excessive volume adjustment: cell=2, matid=1, adjustment fraction=  3.000E-12
+Warning: excessive volume adjustment: cell=3, matid=1, adjustment fraction= -3.213E-12
+Warning: excessive volume adjustment: cell=4, matid=1, adjustment fraction= -1.759E-13
+Warning: excessive volume adjustment: cell=5, matid=1, adjustment fraction=  7.049E-12
+Warning: excessive volume adjustment: cell=6, matid=1, adjustment fraction= -7.508E-12
+Warning: excessive volume adjustment: cell=7, matid=1, adjustment fraction=  1.160E-12
+Warning: excessive volume adjustment: cell=8, matid=1, adjustment fraction=  3.770E-12
+Warning: excessive volume adjustment: cell=9, matid=1, adjustment fraction=  1.669E-12
+Warning: excessive volume adjustment: cell=10, matid=1, adjustment fraction=  1.604E-12
+DS: totally/essentially/non-void cell counts = 118/2/96
+DS: T(H) iterations:  1.64(avg), 4(max)
+DS: T(H) salvage rate = 0.182; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.340E-02, NFUN:NPC:NPA=0000032:0000007:0000025
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.56783E-01    0.56783E-01
+          1      0.44973E-02    0.44973E-02
+          2      0.17829E-02    0.17829E-02
+          3      0.16566E-03    0.16566E-03
+          4      0.79881E-05    0.79881E-05
+          5      0.37831E-06    0.37831E-06
+          6      0.12453E-07    0.12453E-07
+          7      0.26414E-09    0.26414E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.8294E-02, -2.1002E-02)
+            Max Velocity: ( 4.8679E-01,  2.1729E-02,  2.2314E-02)
+
+          8: t =   8.14201E-02, dt(growth) =   1.40710E-02
+DS: totally/essentially/non-void cell counts = 120/2/94
+DS: T(H) iterations:  1.69(avg), 4(max)
+DS: T(H) salvage rate = 0.154; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.407E-02, NFUN:NPC:NPA=0000036:0000008:0000028
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.12552E+00    0.12552E+00
+          1      0.18268E-01    0.18268E-01
+          2      0.37969E-02    0.37969E-02
+          3      0.32673E-03    0.32673E-03
+          4      0.22096E-04    0.22096E-04
+          5      0.78556E-06    0.78556E-06
+          6      0.17264E-07    0.17264E-07
+          7      0.29751E-09    0.29751E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.0332E-02, -2.4712E-02)
+            Max Velocity: ( 5.5960E-01,  3.0255E-02,  2.4512E-02)
+
+          9: t =   9.54911E-02, dt(growth) =   1.47746E-02
+DS: totally/essentially/non-void cell counts = 121/2/93
+DS: T(H) iterations:  1.60(avg), 4(max)
+DS: T(H) salvage rate = 0.133; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.477E-02, NFUN:NPC:NPA=0000040:0000009:0000031
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.10856E+00    0.10856E+00
+          1      0.28562E-01    0.28562E-01
+          2      0.71283E-02    0.71283E-02
+          3      0.51094E-03    0.51094E-03
+          4      0.21661E-04    0.21661E-04
+          5      0.10407E-05    0.10407E-05
+          6      0.27203E-07    0.27203E-07
+          7      0.54150E-09    0.54150E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.5463E-02, -2.4403E-02)
+            Max Velocity: ( 6.4632E-01,  2.5842E-02,  2.6677E-02)
+
+         10: t =   1.10266E-01, dt(growth) =   1.55133E-02
+DS: totally/essentially/non-void cell counts = 123/3/90
+DS: T(H) iterations:  1.50(avg), 4(max)
+DS: T(H) salvage rate = 0.111; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.551E-02, NFUN:NPC:NPA=0000044:0000010:0000034
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.47276E-01    0.47276E-01
+          1      0.45341E-02    0.45341E-02
+          2      0.12822E-02    0.12822E-02
+          3      0.15574E-03    0.15574E-03
+          4      0.96801E-05    0.96801E-05
+          5      0.29230E-06    0.29230E-06
+          6      0.51750E-08    0.51750E-08
+          7      0.11000E-09    0.11000E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.6772E-02, -2.5848E-02)
+            Max Velocity: ( 7.3734E-01,  2.8202E-02,  2.8805E-02)
+
+         11: t =   1.25779E-01, dt(growth) =   1.62889E-02
+DS: totally/essentially/non-void cell counts = 125/1/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.629E-02, NFUN:NPC:NPA=0000048:0000011:0000037
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.84771E-01    0.84771E-01
+          1      0.78390E-02    0.78390E-02
+          2      0.18090E-02    0.18090E-02
+          3      0.19243E-03    0.19243E-03
+          4      0.11864E-04    0.11864E-04
+          5      0.51428E-06    0.51428E-06
+          6      0.18073E-07    0.18073E-07
+          7      0.27690E-09    0.27690E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.8462E-02, -2.7103E-02)
+            Max Velocity: ( 8.3286E-01,  3.0982E-02,  3.0899E-02)
+
+         12: t =   1.42068E-01, dt(growth) =   1.71034E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.710E-02, NFUN:NPC:NPA=0000052:0000012:0000040
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.10294E+00    0.10294E+00
+          1      0.13098E-01    0.13098E-01
+          2      0.27224E-02    0.27224E-02
+          3      0.30051E-03    0.30051E-03
+          4      0.27050E-04    0.27050E-04
+          5      0.73200E-06    0.73200E-06
+          6      0.20316E-07    0.20316E-07
+          7      0.41337E-09    0.41337E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.0457E-02, -2.8147E-02)
+            Max Velocity: ( 9.3306E-01,  3.3828E-02,  3.2964E-02)
+
+         13: t =   1.59171E-01, dt(growth) =   1.79586E-02
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.796E-02, NFUN:NPC:NPA=0000056:0000013:0000043
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.71852E-01    0.71852E-01
+          1      0.20878E-01    0.20878E-01
+          2      0.67300E-02    0.67300E-02
+          3      0.52766E-03    0.52766E-03
+          4      0.20710E-04    0.20710E-04
+          5      0.84915E-06    0.84915E-06
+          6      0.20350E-07    0.20350E-07
+          7      0.57459E-09    0.57459E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.2015E-02, -2.8934E-02)
+            Max Velocity: ( 1.0379E+00,  3.6623E-02,  3.4977E-02)
+
+         14: t =   1.77130E-01, dt(growth) =   1.88565E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.886E-02, NFUN:NPC:NPA=0000060:0000014:0000046
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.39777E-01    0.39777E-01
+          1      0.15221E-01    0.15221E-01
+          2      0.35534E-02    0.35534E-02
+          3      0.27446E-03    0.27446E-03
+          4      0.12364E-04    0.12364E-04
+          5      0.54599E-06    0.54599E-06
+          6      0.11286E-07    0.11286E-07
+          7      0.28939E-09    0.28939E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.3381E-02, -2.9788E-02)
+            Max Velocity: ( 1.1479E+00,  3.9359E-02,  3.6951E-02)
+
+         15: t =   1.95986E-01, dt(growth) =   1.97993E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=1.980E-02, NFUN:NPC:NPA=0000064:0000015:0000049
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.62126E-02    0.62126E-02
+          1      0.26656E-02    0.26656E-02
+          2      0.80252E-03    0.80252E-03
+          3      0.51974E-04    0.51974E-04
+          4      0.20420E-05    0.20420E-05
+          5      0.11050E-06    0.11050E-06
+          6      0.26530E-08    0.26530E-08
+          7      0.79382E-10    0.79382E-10
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.4657E-02, -3.0414E-02)
+            Max Velocity: ( 1.2631E+00,  4.1984E-02,  3.8877E-02)
+
+         16: t =   2.15786E-01, dt(growth) =   2.07893E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.079E-02, NFUN:NPC:NPA=0000068:0000016:0000052
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.14474E-01    0.14474E-01
+          1      0.54593E-02    0.54593E-02
+          2      0.12008E-02    0.12008E-02
+          3      0.10230E-03    0.10230E-03
+          4      0.54454E-05    0.54454E-05
+          5      0.23373E-06    0.23373E-06
+          6      0.45461E-08    0.45461E-08
+          7      0.12727E-09    0.12727E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.6534E-02, -3.0755E-02)
+            Max Velocity: ( 1.3837E+00,  4.4421E-02,  4.0738E-02)
+
+         17: t =   2.36575E-01, dt(growth) =   2.18287E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.183E-02, NFUN:NPC:NPA=0000072:0000017:0000055
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.17938E-01    0.17938E-01
+          1      0.86546E-03    0.86546E-03
+          2      0.33392E-03    0.33392E-03
+          3      0.10062E-03    0.10062E-03
+          4      0.92527E-05    0.92527E-05
+          5      0.28183E-06    0.28183E-06
+          6      0.63122E-08    0.63122E-08
+          7      0.20246E-09    0.20246E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.8862E-02, -3.1518E-02)
+            Max Velocity: ( 1.5101E+00,  4.6584E-02,  4.2514E-02)
+
+         18: t =   2.58404E-01, dt(growth) =   2.29202E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.292E-02, NFUN:NPC:NPA=0000076:0000018:0000058
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.23756E-01    0.23756E-01
+          1      0.10758E-01    0.10758E-01
+          2      0.17573E-02    0.17573E-02
+          3      0.18700E-03    0.18700E-03
+          4      0.77138E-05    0.77138E-05
+          5      0.24816E-06    0.24816E-06
+          6      0.85819E-08    0.85819E-08
+          7      0.21371E-09    0.21371E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -3.1211E-02, -3.2730E-02)
+            Max Velocity: ( 1.6423E+00,  4.8377E-02,  4.4175E-02)
+
+         19: t =   2.81324E-01, dt(growth) =   2.40662E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.105; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.407E-02, NFUN:NPC:NPA=0000080:0000019:0000061
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.59024E-02    0.59024E-02
+          1      0.57508E-03    0.57508E-03
+          2      0.15947E-03    0.15947E-03
+          3      0.52301E-04    0.52301E-04
+          4      0.16928E-05    0.16928E-05
+          5      0.52943E-07    0.52943E-07
+          6      0.19835E-08    0.19835E-08
+          7      0.71876E-10    0.71876E-10
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -3.3512E-02, -3.3777E-02)
+            Max Velocity: ( 1.7806E+00,  4.9697E-02,  4.5680E-02)
+
+         20: t =   3.05390E-01, dt(growth) =   2.52695E-02
+DS: totally/essentially/non-void cell counts = 125/1/90
+DS: T(H) iterations:  1.50(avg), 4(max)
+DS: T(H) salvage rate = 0.100; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.527E-02, NFUN:NPC:NPA=0000084:0000020:0000064
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.33890E-01    0.33890E-01
+          1      0.21664E-02    0.21664E-02
+          2      0.47080E-03    0.47080E-03
+          3      0.16152E-03    0.16152E-03
+          4      0.10810E-04    0.10810E-04
+          5      0.40507E-06    0.40507E-06
+          6      0.17184E-07    0.17184E-07
+          7      0.46546E-09    0.46546E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -3.5664E-02, -3.4464E-02)
+            Max Velocity: ( 1.9253E+00,  5.0437E-02,  4.6978E-02)
+
+         21: t =   3.30660E-01, dt(growth) =   2.65330E-02
+DS: totally/essentially/non-void cell counts = 118/3/95
+DS: T(H) iterations:  1.52(avg), 4(max)
+DS: T(H) salvage rate = 0.226; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.653E-02, NFUN:NPC:NPA=0000088:0000021:0000067
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.21386E+01    0.21386E+01
+          1      0.18103E+00    0.18103E+00
+          2      0.28542E-01    0.28542E-01
+          3      0.99689E-02    0.99689E-02
+          4      0.68846E-03    0.68846E-03
+          5      0.25056E-04    0.25056E-04
+          6      0.10007E-05    0.10007E-05
+          7      0.33154E-07    0.33154E-07
+          8      0.92280E-09    0.92280E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -4.0896E-02, -6.5046E-02)
+            Max Velocity: ( 2.0773E+00,  5.0376E-02,  4.7957E-02)
+
+         22: t =   3.57193E-01, dt(growth) =   2.78596E-02
+DS: totally/essentially/non-void cell counts = 122/4/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.222; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.786E-02, NFUN:NPC:NPA=0000092:0000022:0000070
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.34130E+00    0.34130E+00
+          1      0.45079E-01    0.45079E-01
+          2      0.11207E-01    0.11207E-01
+          3      0.22332E-02    0.22332E-02
+          4      0.12763E-03    0.12763E-03
+          5      0.77066E-05    0.77066E-05
+          6      0.20434E-06    0.20434E-06
+          7      0.74140E-08    0.74140E-08
+          8      0.23150E-09    0.23150E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -5.2391E-02, -9.4563E-02)
+            Max Velocity: ( 2.2439E+00,  4.9687E-02,  4.8553E-02)
+
+         23: t =   3.85052E-01, dt(growth) =   2.92526E-02
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 124/2/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.237; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.925E-02, NFUN:NPC:NPA=0000097:0000023:0000074
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.10568E+00    0.10568E+00
+          1      0.69747E-02    0.69747E-02
+          2      0.21250E-02    0.21250E-02
+          3      0.78977E-03    0.78977E-03
+          4      0.56598E-04    0.56598E-04
+          5      0.22340E-05    0.22340E-05
+          6      0.66543E-07    0.66543E-07
+          7      0.21425E-08    0.21425E-08
+          8      0.90957E-10    0.90957E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.1863E-01, -6.4663E-02)
+            Max Velocity: ( 2.4197E+00,  6.7396E-02,  4.8637E-02)
+
+         24: t =   4.14305E-01, dt(growth) =   3.07152E-02
+DS: culled material fragments from 2 cells.
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.237; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.072E-02, NFUN:NPC:NPA=0000101:0000024:0000077
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.16824E+00    0.16824E+00
+          1      0.54240E-01    0.54240E-01
+          2      0.15642E-01    0.15642E-01
+          3      0.17865E-02    0.17865E-02
+          4      0.87062E-04    0.87062E-04
+          5      0.23306E-05    0.23306E-05
+          6      0.70448E-07    0.70448E-07
+          7      0.20875E-08    0.20875E-08
+          8      0.80396E-10    0.80396E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -4.0520E-02, -4.4632E-02)
+            Max Velocity: ( 2.5857E+00,  4.7431E-02,  4.8188E-02)
+
+         25: t =   4.45020E-01, dt(growth) =   3.22510E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.237; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.225E-02, NFUN:NPC:NPA=0000105:0000025:0000080
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.83342E-01    0.83342E-01
+          1      0.14297E-01    0.14297E-01
+          2      0.41058E-02    0.41058E-02
+          3      0.10177E-02    0.10177E-02
+          4      0.42117E-04    0.42117E-04
+          5      0.11315E-05    0.11315E-05
+          6      0.43087E-07    0.43087E-07
+          7      0.18437E-08    0.18437E-08
+          8      0.29456E-10    0.29456E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -4.0038E-02, -4.5187E-02)
+            Max Velocity: ( 2.7733E+00,  4.5999E-02,  4.6933E-02)
+
+         26: t =   4.77271E-01, dt(growth) =   3.38635E-02
+DS: totally/essentially/non-void cell counts = 119/0/97
+DS: T(H) iterations:  1.49(avg), 4(max)
+DS: T(H) salvage rate = 0.255; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.386E-02, NFUN:NPC:NPA=0000108:0000026:0000082
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.11696E+01    0.11696E+01
+          1      0.16558E+00    0.16558E+00
+          2      0.42001E-01    0.42001E-01
+          3      0.10583E-01    0.10583E-01
+          4      0.47958E-03    0.47958E-03
+          5      0.13890E-04    0.13890E-04
+          6      0.52096E-06    0.52096E-06
+          7      0.19631E-07    0.19631E-07
+          8      0.27726E-09    0.27726E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -3.8505E-02, -3.0063E-02)
+            Max Velocity: ( 2.9700E+00,  4.8463E-02,  4.4923E-02)
+
+         27: t =   5.11135E-01, dt(growth) =   3.55567E-02
+DS: totally/essentially/non-void cell counts = 123/3/90
+DS: T(H) iterations:  1.52(avg), 4(max)
+DS: T(H) salvage rate = 0.240; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.556E-02, NFUN:NPC:NPA=0000111:0000027:0000084
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.12029E+00    0.12029E+00
+          1      0.22652E-01    0.22652E-01
+          2      0.53375E-02    0.53375E-02
+          3      0.37422E-03    0.37422E-03
+          4      0.37160E-04    0.37160E-04
+          5      0.16807E-05    0.16807E-05
+          6      0.64200E-07    0.64200E-07
+          7      0.21109E-08    0.21109E-08
+          8      0.68397E-10    0.68397E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -6.9451E-02, -8.1221E-02)
+            Max Velocity: ( 3.1756E+00,  8.9526E-02,  6.8227E-02)
+
+         28: t =   5.46691E-01, dt(growth) =   3.73346E-02
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.52(avg), 4(max)
+DS: T(H) salvage rate = 0.240; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.733E-02, NFUN:NPC:NPA=0000114:0000028:0000086
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.10488E+00    0.10488E+00
+          1      0.22820E-01    0.22820E-01
+          2      0.63590E-02    0.63590E-02
+          3      0.83600E-03    0.83600E-03
+          4      0.41542E-04    0.41542E-04
+          5      0.11966E-05    0.11966E-05
+          6      0.43184E-07    0.43184E-07
+          7      0.10537E-08    0.10537E-08
+          8      0.20545E-10    0.20545E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -3.3025E-02, -2.7774E-02)
+            Max Velocity: ( 3.3897E+00,  4.2392E-02,  3.8732E-02)
+
+         29: t =   5.84026E-01, dt(courant) =   3.78198E-02 (cell       93)
+DS: totally/essentially/non-void cell counts = 119/2/95
+DS: T(H) iterations:  1.48(avg), 4(max)
+DS: T(H) salvage rate = 0.344; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.782E-02, NFUN:NPC:NPA=0000117:0000029:0000088
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.13466E+01    0.13466E+01
+          1      0.16440E+00    0.16440E+00
+          2      0.50956E-01    0.50956E-01
+          3      0.90128E-02    0.90128E-02
+          4      0.33241E-03    0.33241E-03
+          5      0.11468E-04    0.11468E-04
+          6      0.41289E-06    0.41289E-06
+          7      0.99190E-08    0.99190E-08
+          8      0.11947E-09    0.11947E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -3.0158E-02, -2.9269E-02)
+            Max Velocity: ( 3.5915E+00,  5.7634E-02,  4.1421E-02)
+
+         30: t =   6.21846E-01, dt(courant) =   3.36339E-02 (cell       93)
+DS: totally/essentially/non-void cell counts = 124/2/90
+DS: T(H) iterations:  1.46(avg), 4(max)
+DS: T(H) salvage rate = 0.333; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.363E-02, NFUN:NPC:NPA=0000120:0000030:0000090
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.29197E+00    0.29197E+00
+          1      0.43367E-01    0.43367E-01
+          2      0.10168E-01    0.10168E-01
+          3      0.78751E-03    0.78751E-03
+          4      0.24502E-04    0.24502E-04
+          5      0.74942E-06    0.74942E-06
+          6      0.14985E-07    0.14985E-07
+          7      0.34171E-09    0.34171E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.5817E-02, -3.6914E-02)
+            Max Velocity: ( 3.7844E+00,  8.1305E-02,  4.4603E-02)
+
+         31: t =   6.55479E-01, dt(courant) =   3.21412E-02 (cell       92)
+DS: totally/essentially/non-void cell counts = 126/0/90
+DS: T(H) iterations:  1.46(avg), 4(max)
+DS: T(H) salvage rate = 0.333; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.214E-02, NFUN:NPC:NPA=0000123:0000031:0000092
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.14608E+00    0.14608E+00
+          1      0.19956E-01    0.19956E-01
+          2      0.64963E-02    0.64963E-02
+          3      0.45344E-03    0.45344E-03
+          4      0.20481E-04    0.20481E-04
+          5      0.46018E-06    0.46018E-06
+          6      0.14499E-07    0.14499E-07
+          7      0.38855E-09    0.38855E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.2030E-02, -2.8268E-02)
+            Max Velocity: ( 3.9736E+00,  4.5568E-02,  4.4637E-02)
+
+         32: t =   6.87621E-01, dt(courant) =   3.21489E-02 (cell       93)
+DS: totally/essentially/non-void cell counts = 119/3/94
+DS: T(H) iterations:  1.36(avg), 4(max)
+DS: T(H) salvage rate = 0.347; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.215E-02, NFUN:NPC:NPA=0000126:0000032:0000094
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.37570E+00    0.37570E+00
+          1      0.59586E-01    0.59586E-01
+          2      0.18607E-01    0.18607E-01
+          3      0.91736E-03    0.91736E-03
+          4      0.25334E-04    0.25334E-04
+          5      0.71128E-06    0.71128E-06
+          6      0.25684E-07    0.25684E-07
+          7      0.62571E-09    0.62571E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.1576E-02, -2.4063E-02)
+            Max Velocity: ( 4.1467E+00,  5.3493E-02,  6.0855E-02)
+
+         33: t =   7.19770E-01, dt(courant) =   3.06382E-02 (cell       92)
+DS: totally/essentially/non-void cell counts = 122/4/90
+DS: T(H) iterations:  1.43(avg), 5(max)
+DS: T(H) salvage rate = 0.354; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=3.064E-02, NFUN:NPC:NPA=0000129:0000033:0000096
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.28620E+00    0.28620E+00
+          1      0.39942E-01    0.39942E-01
+          2      0.95552E-02    0.95552E-02
+          3      0.54415E-03    0.54415E-03
+          4      0.15696E-04    0.15696E-04
+          5      0.62173E-06    0.62173E-06
+          6      0.20322E-07    0.20322E-07
+          7      0.34021E-09    0.34021E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.9953E-02, -2.5719E-02)
+            Max Velocity: ( 4.3217E+00,  5.9077E-02,  5.3644E-02)
+
+         34: t =   7.50408E-01, dt(courant) =   2.98104E-02 (cell      144)
+DS: totally/essentially/non-void cell counts = 120/3/93
+DS: T(H) iterations:  1.44(avg), 5(max)
+DS: T(H) salvage rate = 0.353; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.981E-02, NFUN:NPC:NPA=0000132:0000034:0000098
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.38405E+00    0.38405E+00
+          1      0.79913E-01    0.79913E-01
+          2      0.15537E-01    0.15537E-01
+          3      0.81702E-03    0.81702E-03
+          4      0.23198E-04    0.23198E-04
+          5      0.89723E-06    0.89723E-06
+          6      0.28345E-07    0.28345E-07
+          7      0.48799E-09    0.48799E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -4.0376E-02, -4.8261E-02)
+            Max Velocity: ( 4.4535E+00,  3.9940E-02,  6.6132E-02)
+
+         35: t =   7.80218E-01, dt(courant) =   2.87480E-02 (cell       21)
+DS: totally/essentially/non-void cell counts = 117/3/96
+DS: T(H) iterations:  1.46(avg), 5(max)
+DS: T(H) salvage rate = 0.340; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.875E-02, NFUN:NPC:NPA=0000135:0000035:0000100
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.41949E+00    0.41949E+00
+          1      0.48126E-01    0.48126E-01
+          2      0.70542E-02    0.70542E-02
+          3      0.57238E-03    0.57238E-03
+          4      0.28969E-04    0.28969E-04
+          5      0.64445E-06    0.64445E-06
+          6      0.18732E-07    0.18732E-07
+          7      0.58749E-09    0.58749E-09
+            7 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.2965E-02, -5.2880E-02)
+            Max Velocity: ( 4.6106E+00,  2.3073E-02,  4.6950E-02)
+
+         36: t =   8.08966E-01, dt(courant) =   2.77762E-02 (cell       21)
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 121/5/90
+DS: T(H) iterations:  1.47(avg), 5(max)
+DS: T(H) salvage rate = 0.333; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.778E-02, NFUN:NPC:NPA=0000138:0000036:0000102
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.58509E+00    0.58509E+00
+          1      0.13705E+00    0.13705E+00
+          2      0.46813E-01    0.46813E-01
+          3      0.24828E-02    0.24828E-02
+          4      0.75312E-04    0.75312E-04
+          5      0.28964E-05    0.28964E-05
+          6      0.81569E-07    0.81569E-07
+          7      0.26253E-08    0.26253E-08
+          8      0.65370E-10    0.65370E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -9.5744E-02, -7.2793E-02)
+            Max Velocity: ( 4.7637E+00,  1.6651E-02,  3.8094E-02)
+
+         37: t =   8.36742E-01, dt(courant) =   2.65900E-02 (cell       15)
+Warning: excessive volume adjustment: cell=8, matid=1, adjustment fraction= -1.709E-05
+Warning: excessive volume adjustment: cell=25, matid=1, adjustment fraction=  4.002E-13
+Warning: excessive volume adjustment: cell=26, matid=1, adjustment fraction=  3.055E-13
+Warning: excessive volume adjustment: cell=28, matid=1, adjustment fraction= -1.514E-13
+Warning: excessive volume adjustment: cell=29, matid=1, adjustment fraction=  7.900E-13
+Warning: excessive volume adjustment: cell=30, matid=1, adjustment fraction= -2.680E-13
+Warning: excessive volume adjustment: cell=31, matid=1, adjustment fraction=  3.744E-13
+Warning: excessive volume adjustment: cell=32, matid=1, adjustment fraction= -7.975E-13
+Warning: excessive volume adjustment: cell=33, matid=1, adjustment fraction= -5.524E-14
+Warning: excessive volume adjustment: cell=34, matid=1, adjustment fraction=  5.238E-13
+Warning: excessive volume adjustment: cell=35, matid=1, adjustment fraction= -3.277E-13
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 116/3/97
+DS: T(H) iterations:  1.48(avg), 5(max)
+DS: T(H) salvage rate = 0.345; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.659E-02, NFUN:NPC:NPA=0000141:0000037:0000104
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.44730E+00    0.44730E+00
+          1      0.13623E+00    0.13623E+00
+          2      0.22166E-01    0.22166E-01
+          3      0.18133E-02    0.18133E-02
+          4      0.75366E-04    0.75366E-04
+          5      0.19119E-05    0.19119E-05
+          6      0.52399E-07    0.52399E-07
+          7      0.16900E-08    0.16900E-08
+          8      0.52348E-10    0.52348E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -4.5741E-02, -7.4843E-02)
+            Max Velocity: ( 4.9103E+00,  3.8087E-02,  3.1966E-02)
+
+         38: t =   8.63332E-01, dt(courant) =   2.43063E-02 (cell      169)
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 118/7/91
+DS: T(H) iterations:  1.52(avg), 5(max)
+DS: T(H) salvage rate = 0.331; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.431E-02, NFUN:NPC:NPA=0000144:0000038:0000106
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.66341E+00    0.66341E+00
+          1      0.22149E+00    0.22149E+00
+          2      0.59583E-01    0.59583E-01
+          3      0.48688E-02    0.48688E-02
+          4      0.19129E-03    0.19129E-03
+          5      0.51480E-05    0.51480E-05
+          6      0.21892E-06    0.21892E-06
+          7      0.59503E-08    0.59503E-08
+          8      0.18477E-09    0.18477E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -5.1397E-02, -1.1834E-01)
+            Max Velocity: ( 5.0476E+00,  3.8706E-02,  5.1641E-02)
+
+         39: t =   8.87639E-01, dt(courant) =   2.36603E-02 (cell      169)
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 121/4/91
+DS: T(H) iterations:  1.50(avg), 5(max)
+DS: T(H) salvage rate = 0.325; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.366E-02, NFUN:NPC:NPA=0000147:0000039:0000108
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.17154E+00    0.17154E+00
+          1      0.12509E-01    0.12509E-01
+          2      0.41486E-02    0.41486E-02
+          3      0.80085E-03    0.80085E-03
+          4      0.49522E-04    0.49522E-04
+          5      0.15029E-05    0.15029E-05
+          6      0.65430E-07    0.65430E-07
+          7      0.21209E-08    0.21209E-08
+          8      0.33491E-10    0.33491E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.2998E-01, -1.0589E-01)
+            Max Velocity: ( 5.1790E+00,  1.1658E-01,  8.1629E-02)
+
+         40: t =   9.11299E-01, dt(courant) =   2.30461E-02 (cell      169)
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 116/3/97
+DS: T(H) iterations:  1.50(avg), 5(max)
+DS: T(H) salvage rate = 0.336; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.305E-02, NFUN:NPC:NPA=0000150:0000040:0000110
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.51499E+00    0.51499E+00
+          1      0.17511E-01    0.17511E-01
+          2      0.26399E-02    0.26399E-02
+          3      0.78420E-03    0.78420E-03
+          4      0.20210E-03    0.20210E-03
+          5      0.66193E-05    0.66193E-05
+          6      0.32178E-06    0.32178E-06
+          7      0.72772E-08    0.72772E-08
+          8      0.13641E-09    0.13641E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.6998E-01, -1.0083E-01)
+            Max Velocity: ( 5.3228E+00,  1.1455E-01,  9.7812E-02)
+
+         41: t =   9.34345E-01, dt(courant) =   2.24832E-02 (cell      169)
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 119/7/90
+DS: T(H) iterations:  1.49(avg), 5(max)
+DS: T(H) salvage rate = 0.348; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.248E-02, NFUN:NPC:NPA=0000153:0000041:0000112
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.55249E+00    0.55249E+00
+          1      0.70183E-01    0.70183E-01
+          2      0.22286E-01    0.22286E-01
+          3      0.44808E-02    0.44808E-02
+          4      0.28380E-03    0.28380E-03
+          5      0.90567E-05    0.90567E-05
+          6      0.37337E-06    0.37337E-06
+          7      0.95509E-08    0.95509E-08
+          8      0.19318E-09    0.19318E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -2.9944E-02, -2.9285E-02)
+            Max Velocity: ( 5.4250E+00,  1.1146E-01,  1.4803E-01)
+
+         42: t =   9.56828E-01, dt(courant) =   2.19855E-02 (cell      169)
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 120/4/92
+DS: T(H) iterations:  1.48(avg), 5(max)
+DS: T(H) salvage rate = 0.347; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.199E-02, NFUN:NPC:NPA=0000156:0000042:0000114
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.41875E+00    0.41875E+00
+          1      0.56885E-01    0.56885E-01
+          2      0.17062E-01    0.17062E-01
+          3      0.27713E-02    0.27713E-02
+          4      0.13877E-03    0.13877E-03
+          5      0.49677E-05    0.49677E-05
+          6      0.18471E-06    0.18471E-06
+          7      0.45509E-08    0.45509E-08
+          8      0.71146E-10    0.71146E-10
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.4792E-02, -2.5089E-02)
+            Max Velocity: ( 5.5529E+00,  1.0735E-01,  1.5414E-01)
+
+         43: t =   9.78814E-01, dt(courant) =   2.15266E-02 (cell      169)
+DS: totally/essentially/non-void cell counts = 116/3/97
+DS: T(H) iterations:  1.47(avg), 5(max)
+DS: T(H) salvage rate = 0.357; interval adjustments =  1.00(avg), 1(max)
+
+DS: dt=2.153E-02, NFUN:NPC:NPA=0000159:0000043:0000116
+ Linear solver name: projection
+       iter         ||r||           err
+          0      0.25836E+01    0.25836E+01
+          1      0.40300E+00    0.40300E+00
+          2      0.13474E+00    0.13474E+00
+          3      0.25183E-01    0.25183E-01
+          4      0.12028E-02    0.12028E-02
+          5      0.58493E-04    0.58493E-04
+          6      0.26494E-05    0.26494E-05
+          7      0.44491E-07    0.44491E-07
+          8      0.60546E-09    0.60546E-09
+            8 Projection iterations (linear)
+
+            Min Velocity: ( 0.0000E+00, -1.9563E-02, -5.8066E-02)
+            Max Velocity: ( 5.6992E+00,  9.7853E-02,  1.1339E-01)
+
+================================================================================
+
+TERMINATION
+
+DANU: Closing h5 output file
+Warning: DANU: Danu fid is still associated
+                 Final Time:  1.0003E+00 after    43 steps
+
+
+  TIMING SUMMARY                       AVERAGE        MIN          MAX
+  --------------                      ---------    ---------    ---------
+  Total                               1.010E+00    8.890E-01    1.063E+00
+    Input                               5.975E-02    4.100E-02    6.900E-02
+    Initialization                      1.195E-01    1.100E-01    1.240E-01
+      FHT function                        0.000E+00    0.000E+00    0.000E+00
+    Main Cycle                          7.660E-01    7.330E-01    7.870E-01
+      Predictor                           1.000E-03    0.000E+00    2.000E-03
+      timer_projection                    1.260E-01    1.210E-01    1.300E-01
+        timer_projection_mac                9.800E-02    9.300E-02    1.040E-01
+          timer_projection_solver             7.950E-02    7.800E-02    8.100E-02
+            Timer_Solver_TMP2                   2.025E-02    1.900E-02    2.100E-02
+            Solver TMP1                         3.425E-02    3.100E-02    3.600E-02
+          Timer_Solver_TMP2                   2.250E-03    0.000E+00    5.000E-03
+        timer_projection_corrector          1.050E-02    4.000E-03    1.400E-02
+          timer_projection_corrector          9.750E-03    4.000E-03    1.200E-02
+      Output                              6.500E-03    6.000E-03    8.000E-03
+      Time Step                           6.250E-03    4.000E-03    9.000E-03
+      Mass Advection                      4.800E-01    4.700E-01    4.920E-01
+        Volume Tracking                     4.668E-01    4.500E-01    4.810E-01
+          Reconstruct/Advect                  2.508E-01    1.420E-01    3.620E-01
+            Locate Plane                        1.337E-01    4.900E-02    2.180E-01
+        Momentum Advection                  8.250E-03    5.000E-03    1.300E-02
+      Diffusion Solver                    1.260E-01    1.150E-01    1.320E-01
+        FHT precon compute                  5.475E-02    4.800E-02    5.900E-02
+        FHT function                        9.000E-03    6.000E-03    1.300E-02
+        FHT precon apply                    3.325E-02    2.900E-02    3.800E-02
+
+         Smallest process virtual memory used: 1.84E+02 mB
+          Largest process virtual memory used: 1.87E+02 mB
+                    Total virtual memory used: 7.40E+02 mB
+                                   words/cell: 448912
+
+truchas terminated normally on 09 Sep 13 at 08:40:38

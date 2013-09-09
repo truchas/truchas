@@ -1,0 +1,398 @@
+gmv_attributes2
+
+filename /home/nnc/Telluride/truchas/trunk/regressiontests/htvoid1/run_output/run.gmv.000020
+
+matrgba 4 0.000000e+00 1.000000e+00 0.000000e+00 1.000000e+00 
+
+
+angles -1.270000e+02 2.250000e+01 0.000000e+00
+
+magnify 1.371514e+00
+
+range 8.160000e+00 1.020000e+00 1.020000e+00
+
+span 8.286518e+00
+
+aspect 1.285714e+00
+
+pan 2.483882e-01 1.639938e-01
+
+translate -0.000000e+00 -0.000000e+00 -0.000000e+00
+
+plotbox_mins -4.080000e+00 -5.100000e-01 -5.100000e-01
+
+plotbox_maxs 4.080000e+00 5.100000e-01 5.100000e-01
+
+explodefact 0.000000e+00 0.000000e+00 0.000000e+00
+
+velscale 1.000000e+00
+
+velarrowsize 1.000000e+00
+
+axisflag 1
+
+nodesflag 0
+
+linesflag 0
+
+polysflag 0
+
+cellsflag 1
+
+celledgesflag 1
+
+cellhiddenedgesflag 0
+
+cellexpflag -1
+
+timeflag 1
+
+cycleflag 0
+
+distscaleflag 0
+
+textureflag 1
+
+tracerflag 0
+
+nodefieldactive MATERIAL  
+
+cellfieldactive Cell T
+
+backgroundcolor 255 255 255
+
+light  0.000000e+00 0.000000e+00
+
+xscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+yscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+zscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+scaleaxis 1.000000e+00 1.000000e+00 1.000000e+00
+
+nodefield_limits 30
+     Centx -3.840595e+00 3.835636e+00
+     Centy -3.458648e-01 3.474691e-01
+     Centz -3.422182e-01 3.481086e-01
+     Ngbrs 8.000000e+00 1.875000e+01
+     T 0.000000e+00 5.802254e+00
+     Enthalpy 0.000000e+00 5.773469e+00
+     P -4.183357e+00 3.688701e+00
+     Density 0.000000e+00 1.000000e+00
+     Face_Vel -1.351231e+00 3.025971e+00
+     COURANT 0.000000e+00 1.869187e-01
+     VOF0001 0.000000e+00 1.000000e+00
+     VOF0002 0.000000e+00 1.000000e+00
+     delrho 0.000000e+00 1.000000e-05
+     Volume_E -3.108225e-11 7.939238e-12
+     Grad_T_1 -8.561119e+00 8.376949e+00
+     Grad_T_2 -6.958593e+00 6.351063e+00
+     Grad_T_3 -6.695641e+00 3.725984e+00
+     ||Grad_T 0.000000e+00 1.749182e+01
+     ^U       ^ -6.083278e+00 6.841960e+00
+     ^V       ^ -2.620086e+00 5.613023e+00
+     ^W       ^ -4.448445e+00 4.160750e+00
+     ^Vect Mag^ 0.000000e+00 8.568699e+00
+     FldCalc1 0.000000e+00 1.588915e-320
+     FldCalc2 0.000000e+00 1.588915e-320
+     FldCalc3 0.000000e+00 1.588915e-320
+     FldCalc4 0.000000e+00 1.588915e-320
+     FldCalc5 0.000000e+00 1.588915e-320
+     X-Coords -4.000000e+00 4.000000e+00
+     Y-Coords -5.000000e-01 5.000000e-01
+     Z-Coords -5.000000e-01 5.000000e-01
+nodefield_nice_limits 30
+     Centx -3.840595e+00 3.835636e+00
+     Centy -3.458648e-01 3.474691e-01
+     Centz -3.422182e-01 3.481086e-01
+     Ngbrs 8.000000e+00 1.875000e+01
+     T 0.000000e+00 5.802254e+00
+     Enthalpy 0.000000e+00 5.773469e+00
+     P -4.183357e+00 3.688701e+00
+     Density 0.000000e+00 1.000000e+00
+     Face_Vel -1.351231e+00 3.025971e+00
+     COURANT 0.000000e+00 1.869187e-01
+     VOF0001 0.000000e+00 1.000000e+00
+     VOF0002 0.000000e+00 1.000000e+00
+     delrho 0.000000e+00 1.000000e-05
+     Volume_E -3.108225e-11 7.939238e-12
+     Grad_T_1 -8.561119e+00 8.376949e+00
+     Grad_T_2 -6.958593e+00 6.351063e+00
+     Grad_T_3 -6.695641e+00 3.725984e+00
+     ||Grad_T 0.000000e+00 1.749182e+01
+     ^U       ^ -6.083278e+00 6.841960e+00
+     ^V       ^ -2.620086e+00 5.613023e+00
+     ^W       ^ -4.448445e+00 4.160750e+00
+     ^Vect Mag^ 0.000000e+00 8.568699e+00
+     FldCalc1 0.000000e+00 1.588915e-320
+     FldCalc2 0.000000e+00 1.588915e-320
+     FldCalc3 0.000000e+00 1.588915e-320
+     FldCalc4 0.000000e+00 1.588915e-320
+     FldCalc5 0.000000e+00 1.588915e-320
+     X-Coords -4.000000e+00 4.000000e+00
+     Y-Coords -5.000000e-01 5.000000e-01
+     Z-Coords -5.000000e-01 5.000000e-01
+nodefield_lim_flags 30  
+     Centx 0 0 0
+     Centy 0 0 0
+     Centz 0 0 0
+     Ngbrs 0 0 0
+     T 0 0 0
+     Enthalpy 0 0 0
+     P 0 0 0
+     Density 0 0 0
+     Face_Vel 0 0 0
+     COURANT 0 0 0
+     VOF0001 0 0 0
+     VOF0002 0 0 0
+     delrho 0 0 0
+     Volume_E 0 0 0
+     Grad_T_1 0 0 0
+     Grad_T_2 0 0 0
+     Grad_T_3 0 0 0
+     ||Grad_T 0 0 0
+     ^U       ^ 0 0 0
+     ^V       ^ 0 0 0
+     ^W       ^ 0 0 0
+     ^Vect Mag^ 0 0 0
+     FldCalc1 0 0 0
+     FldCalc2 0 0 0
+     FldCalc3 0 0 0
+     FldCalc4 0 0 0
+     FldCalc5 0 0 0
+     X-Coords 0 0 0
+     Y-Coords 0 0 0
+     Z-Coords 0 0 0
+ 
+cellfield_limits 32
+     Centx -3.840595e+00 3.836788e+00
+     Centy -3.489684e-01 3.528526e-01
+     Centz -3.454280e-01 3.506426e-01
+     Ngbrs 8.000000e+00 2.700000e+01
+     T 3.500000e+00 6.500000e+00
+     Enthalpy 0.000000e+00 5.793653e+00
+     P -8.383367e+00 6.637529e+00
+     Density 0.000000e+00 1.000000e+00
+     Face_Vel -4.209722e+00 5.795733e+00
+     Face_Vel -5.795733e+00 4.209722e+00
+     Face_Vel -6.709530e+00 5.190380e+00
+     Face_Vel -5.190380e+00 6.709530e+00
+     Face_Vel -8.798943e+00 1.040274e+01
+     Face_Vel -1.040274e+01 8.798943e+00
+     COURANT 0.000000e+00 2.000000e-01
+     VOF0001 0.000000e+00 1.000000e+00
+     VOF0002 0.000000e+00 1.000000e+00
+     delrho 0.000000e+00 1.000000e-05
+     Volume_E -6.216449e-11 3.146223e-11
+     Grad_T_1 -1.749207e+01 1.675390e+01
+     Grad_T_2 -1.417998e+01 1.398836e+01
+     Grad_T_3 -1.551941e+01 1.490394e+01
+     ||Grad_T 0.000000e+00 2.378527e+01
+     ^U       ^ -9.960262e+00 8.854229e+00
+     ^V       ^ -3.904882e+00 5.915868e+00
+     ^W       ^ -6.703369e+00 5.065298e+00
+     ^Vect Mag^ 0.000000e+00 1.113342e+01
+     FldCalc1 0.000000e+00 0.000000e+00
+     FldCalc2 0.000000e+00 0.000000e+00
+     FldCalc3 0.000000e+00 0.000000e+00
+     FldCalc4 0.000000e+00 0.000000e+00
+     FldCalc5 0.000000e+00 0.000000e+00
+ 
+cellfield_nice_limits 32
+     Centx -3.840595e+00 3.836788e+00
+     Centy -3.489684e-01 3.528526e-01
+     Centz -3.454280e-01 3.506426e-01
+     Ngbrs 8.000000e+00 2.700000e+01
+     T 3.500000e+00 6.500000e+00
+     Enthalpy 0.000000e+00 5.793653e+00
+     P -8.383367e+00 6.637529e+00
+     Density 0.000000e+00 1.000000e+00
+     Face_Vel -4.209722e+00 5.795733e+00
+     Face_Vel -5.795733e+00 4.209722e+00
+     Face_Vel -6.709530e+00 5.190380e+00
+     Face_Vel -5.190380e+00 6.709530e+00
+     Face_Vel -8.798943e+00 1.040274e+01
+     Face_Vel -1.040274e+01 8.798943e+00
+     COURANT 0.000000e+00 2.000000e-01
+     VOF0001 0.000000e+00 1.000000e+00
+     VOF0002 0.000000e+00 1.000000e+00
+     delrho 0.000000e+00 1.000000e-05
+     Volume_E -6.216449e-11 3.146223e-11
+     Grad_T_1 -1.749207e+01 1.675390e+01
+     Grad_T_2 -1.417998e+01 1.398836e+01
+     Grad_T_3 -1.551941e+01 1.490394e+01
+     ||Grad_T 0.000000e+00 2.378527e+01
+     ^U       ^ -9.960262e+00 8.854229e+00
+     ^V       ^ -3.904882e+00 5.915868e+00
+     ^W       ^ -6.703369e+00 5.065298e+00
+     ^Vect Mag^ 0.000000e+00 1.113342e+01
+     FldCalc1 0.000000e+00 0.000000e+00
+     FldCalc2 0.000000e+00 0.000000e+00
+     FldCalc3 0.000000e+00 0.000000e+00
+     FldCalc4 0.000000e+00 0.000000e+00
+     FldCalc5 0.000000e+00 0.000000e+00
+cellfield_lim_flags 32  
+     Centx 0 0 0
+     Centy 0 0 0
+     Centz 0 0 0
+     Ngbrs 0 0 0
+     T 0 0 0
+     Enthalpy 0 0 0
+     P 0 0 0
+     Density 0 0 0
+     Face_Vel 0 0 0
+     Face_Vel 0 0 0
+     Face_Vel 0 0 0
+     Face_Vel 0 0 0
+     Face_Vel 0 0 0
+     Face_Vel 0 0 0
+     COURANT 0 0 0
+     VOF0001 0 0 0
+     VOF0002 0 0 0
+     delrho 0 0 0
+     Volume_E 0 0 0
+     Grad_T_1 0 0 0
+     Grad_T_2 0 0 0
+     Grad_T_3 0 0 0
+     ||Grad_T 0 0 0
+     ^U       ^ 0 0 0
+     ^V       ^ 0 0 0
+     ^W       ^ 0 0 0
+     ^Vect Mag^ 0 0 0
+     FldCalc1 0 0 0
+     FldCalc2 0 0 0
+     FldCalc3 0 0 0
+     FldCalc4 0 0 0
+     FldCalc5 0 0 0
+ 
+plotbox_mins_prev -4.080000e+00 -5.100000e-01 -5.100000e-01
+
+plotbox_maxs_prev 4.080000e+00 5.100000e-01 5.100000e-01
+
+cliponbox 0
+
+nrefl_loops 1
+
+reflect 0 0 0
+
+clipvalue 0.000000e+00 1.000000e+00
+
+polysubset_mins -4.080000e+00 -5.100000e-01 -5.100000e-01
+
+polysubset_maxs 4.080000e+00 5.100000e-01 5.100000e-01
+
+subset_mins -4.080000e+00 -5.100000e-01 -5.100000e-01
+
+subset_maxs 4.080000e+00 5.100000e-01 5.100000e-01
+
+mat_order 0 
+
+nodeselflag Material ALL
+nodeselflag Flag vertpart ALL
+
+nodeandorflag 2 0 0 
+
+
+cellandorflag 3 0 0 0 
+
+colorbarflag 1
+
+colorbarpref 0
+
+boundingboxflag 0
+
+boundingbox_mins -4.000000e+00 -5.000000e-01 -5.000000e-01
+
+boundingbox_maxs 4.000000e+00 5.000000e-01 5.000000e-01
+
+boundingbox_mins_prev -4.000000e+00 -5.000000e-01 -5.000000e-01
+
+boundingbox_maxs_prev 4.000000e+00 5.000000e-01 5.000000e-01
+
+viewflag 0
+
+flypos 0.000000e+00 0.000000e+00 0.000000e+00 
+
+cellcontflag 0
+
+cliponcellsel 0
+
+vectfld_ ^U       ^ ^V       ^ ^W       ^
+
+maxspeed 8.568699e+00
+
+vectorflag 0
+
+vectorarrow 1
+
+vectorlog 0
+
+cvectfld_ ^U       ^ ^V       ^ ^W       ^
+
+cmaxspeed 1.113342e+01
+
+cvectorflag 0
+
+titleflag 0
+
+nodeselmat_on 0
+
+cellselmat_on 0
+
+cellselcfld_on 1
+  cellselfield VOF0001
+  cfldselmin 1.000000e-07
+  cfldselmax 1.000000e+00
+
+bboxcoordflag 1
+
+nodenumflag 0
+
+cellnumflag 0
+
+pnt_size 2 0
+
+line_size 1 0
+
+node0matflag 0
+
+cell0matflag 0
+
+tracehistflag 0
+
+tracehiststop 0
+
+tracehiststride 1
+
+tracehistpoints 1
+
+cellshadeflag 1
+
+fieldcolortype 0
+
+nset_contours 10
+
+facerefineflag 0
+
+cellnormflag 0
+
+cellmedianedgeflag 0
+
+cellnodenumflag 0
+
+cellfacenumflag 0
+
+polystiplflag 0
+
+drawunselnodes 0
+
+drawunselcells 1
+
+distscale_x 120
+distscale_y 60
+orient_axisflag 0
+orient_axis_x 840
+orient_axis_y 60
+end_attributes
+

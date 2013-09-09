@@ -1,0 +1,20 @@
+&ENCLOSURE
+  name = 'lower wall cavity'
+  mesh_file = 'htvoid4.gen'
+  side_set_ids = 8
+  ignore_block_ids = 4
+  symmetries = 'mirrory'
+/
+
+&CHAPARRAL
+  blocking_enclosure  = .false.
+  partial_enclosure   = .false.
+  BSP_max_tree_depth  = 10
+  BSP_min_leaf_length = 25
+  spatial_tolerance   = 1.0e-8
+  hemicube_resolution = 400
+  min_separation      = 20.0
+  max_subdivisions    = 50
+  smoothing_tolerance = 1.0e-8
+  smoothing_max_iter  = 100
+/

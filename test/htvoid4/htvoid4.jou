@@ -1,0 +1,51 @@
+## /opt/cubit/12.2-44513/bin/clarox
+## Cubit Version 12.2
+## Cubit Build 44513
+## Revised 2010-10-07 12:42:34 -0600 (Thu, 07 Oct 2010)
+## Running 12/20/2011 10:09:35 AM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 8 y 3 z 1
+webcut volume 1 with plane zplane offset 0 noimprint nomerge
+delete volume 1
+brick x 7.5 y 0.5 z 0.5
+volume 3 move y 1
+chop volume 2 with volume 3 keep
+volume 3 move y -2
+chop volume 5 with volume 3
+delete volume 4
+delete volume 2
+webcut volume 7 with plane yplane offset 0.5 noimprint nomerge
+webcut volume 7 with plane yplane offset -0.5 noimprint nomerge
+rotate volume all about x angle 90
+compress volume all
+webcut volume 3 with plane zplane offset 1 noimprint nomerge
+webcut volume 2 with plane zplane offset -1 noimprint nomerge
+imprint volume all
+merge volume all
+
+volume all size 0.25
+mesh volume all
+
+block 1 volume 4   # fluid channel
+block 2 volume 3 5 # upper wall body
+block 3 volume 2 6 # lower wall body
+block 4 volume 1   # lower wall body cavity (upper cavity not meshed)
+
+sideset 1 surface 39 47 33 55 61 13 # y=0 symmetry plane
+sideset 2 surface 7 41 42 46 45 40 44  # external boundary of the upper wall body
+sideset 3 surface 8 60 65 52 56 53 64  # external boundary of the lower wall body
+sideset 4 surface 32  # lateral external boundary of the channel
+sideset 5 surface 34  # left end of the channel
+sideset 6 surface 31  # right end of the channel
+sideset 7 surface 37 3 36 49 50 6 48 38 # surface of the upper wall body cavity
+sideset 8 surface 9 57 54 58 wrt volume 2 # surface of the lower wall body cavity
+sideset 8 surface 63 66 11 62 wrt volume 6 # surface of the lower wall body cavity
+sideset 10 surface 19 both  # upper wall body/channel interface
+sideset 11 surface 25 both  # lower wall body/channel interface
+sideset 20 surface 35 both  # upper wall body join
+sideset 21 surface 51 both  # lower wall body join
+
+set large exodus file off
+export genesis "htvoid4.gen" overwrite

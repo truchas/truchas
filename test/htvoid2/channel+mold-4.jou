@@ -1,0 +1,35 @@
+## /opt/cubit/12.2-44513/bin/clarox
+## Cubit Version 12.2
+## Cubit Build 44513
+## Revised 2010-10-07 12:42:34 -0600 (Thu, 07 Oct 2010)
+## Running 03/23/2011 07:44:17 AM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 8 y 1.5 z 1
+webcut volume 1 with plane yplane offset 0.5 noimprint nomerge
+webcut volume 1 with plane yplane offset -0.5 noimprint nomerge
+webcut volume 3 with plane xplane offset 0 noimprint nomerge
+webcut volume 4 with plane xplane offset -3 noimprint nomerge
+rotate volume all about x angle 90
+imprint volume all
+merge volume all
+
+volume all size 0.25
+mesh volume all
+
+block 1 volume 4    # fluid plug in channel
+block 2 volume 5 3  # remaining part of channel
+block 3 volume 1    # lower wall body
+block 4 volume 2    # upper wall body
+
+sideset 1 surface 23              # left end of channel
+sideset 2 surface 26              # right end of channel
+sideset 3 surface 46 38 29        # front side of channel
+sideset 4 surface 31 40 44        # back side of channel
+sideset 5 surface 30 39 45 both   # lower channel-wall interface
+sideset 6 surface 43 41 28 both   # upper channel-wall interface
+sideset 7 surface 21 18 3 20 19 13 15 5 16 14   # exterior wall body boundaries
+
+set large exodus file off
+export genesis "channel+mold-4.gen" overwrite
