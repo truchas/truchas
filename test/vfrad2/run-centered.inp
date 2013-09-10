@@ -1,0 +1,120 @@
+VIEW FACTOR RADIATION TEST 2
+----------------------------
+
+Solid ball radiating to a cooler spherical shell.  In this simulation the ball
+is centered, but the radiation enclosure view factors were computed using a
+mesh where the ball was shifted off-center.  The ENCLOSURE_RADIATION namelist
+variable Skip_Geometry_Check=.true. allows the simulation to proceed.  The
+resulting temperature profile should be identical to that from the simulation
+with the off-center ball that actually matches the view factors.
+
+&MESH
+  mesh_file = 'mesh-centered.gen'
+  mesh_file_format = 'ExodusII'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 0.5
+  Output_Dt = 0.1
+/
+
+&PHYSICS
+  heat_transport = .true.
+  fluid_flow = .false.
+/
+
+&PHYSICAL_CONSTANTS
+  stefan_boltzmann = 0.1
+  absolute_zero = 0.0
+/
+
+&NUMERICS
+  dt_init = 1.0d-3
+  dt_min  = 1.0d-5
+  dt_grow = 10.0
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 0.05
+  max_nlk_itr        = 5
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&ENCLOSURE_RADIATION
+  name = 'shifted-enclosure'
+  enclosure_file = 'shifted-enclosure.nc' ! geometrically mismatched with the mesh
+  error_tolerance = 1.0e-8
+  ambient_constant = 1.0
+  skip_geometry_check = .true.  ! disable the usual comparing of geometries
+/
+
+&ENCLOSURE_SURFACE
+  name = 'interior surfaces'
+  enclosure_name = 'shifted-enclosure'
+  face_block_ids = 2, 3
+  emissivity_constant = 0.8
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'symmetry planes'
+  variable = 'temperature'
+  condition = 'flux'
+  data_constant = 0.0
+  face_set_ids = 1, 4
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 2.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  temperature = 1.0
+/
+
+&MATERIAL
+  material_number  = 1
+  material_name    = 'solid'
+  material_feature = 'background'
+  Density          = 4.0
+/
+
+&PHASE
+  name = 'solid'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 0.5
+/
+
+&MATERIAL_SYSTEM
+  name   = 'solid'
+  phases = 'solid'
+/
+
+&MATERIAL
+  material_number  = 2
+  material_name    = 'solid2'
+  Density          = 4.0
+/
+
+&PHASE
+  name = 'solid2'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 0.05
+/
+
+&MATERIAL_SYSTEM
+  name   = 'solid2'
+  phases = 'solid2'
+/

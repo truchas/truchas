@@ -1,0 +1,21 @@
+&ENCLOSURE
+  name = 'centered-enclosure'
+  mesh_file = 'mesh-centered.gen'
+  side_set_ids = 2, 3
+  symmetries = 'mirrorx', 'mirrory'
+  displace_side_set_ids = 2
+  displacement = 0.0, 0.0, 0.1
+/
+
+x&CHAPARRAL
+  blocking_enclosure  = .true.
+  partial_enclosure   = .false.
+  BSP_max_tree_depth  = 10
+  BSP_min_leaf_length = 25
+  spatial_tolerance   = 1.0e-8
+  hemicube_resolution = 400
+  min_separation      = 40.0
+  max_subdivisions    = 20
+  smoothing_tolerance = 1.0e-8
+  smoothing_max_iter  = 100
+/

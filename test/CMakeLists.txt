@@ -84,3 +84,12 @@ add_python_test(static_wall
 add_python_test(gap-rad
                 ${TruchasTest_SOURCE_DIR}/gap-rad/testGapRad.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(vfrad1
+                ${TruchasTest_SOURCE_DIR}/vfrad1/testVFRad1.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(vfrad2
+                ${TruchasTest_SOURCE_DIR}/vfrad2/testVFRad2.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
