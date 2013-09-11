@@ -67,6 +67,8 @@ void * danu_malloc(size_t num)
     else {
       ptr = malloc(num);
       if ( ptr == NULL ) {
+	danu_debug_printf("Attempted to allocated num=%lu bytes\n",
+			  (unsigned long) num);
 	DANU_ERROR_MESS("Malloc failed ... memory exhausted?");
       }
     }

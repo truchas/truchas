@@ -449,14 +449,18 @@ char * sequence_get_name(int num)
   char base_series_name[] = SEQUENCE_BASE_NAME;
 
   ptr = NULL;
-  if ( num >= 0 ) {
+  if ( num > 0 ) {
     bytes = strlen(base_series_name);
     bytes++;
     bytes+=  ( (size_t) ( log10((double)num) ) + 1);
     bytes++;
     ptr = DANU_MALLOC(char, bytes);
-    sprintf(ptr,"%s %d",base_series_name,num);
+    if ( ptr != NULL)
+      sprintf(ptr,"%s %d",base_series_name,num);
+  } else {
+    DANU_ERROR_MESS("Invalid sequence number");
   }
+  
 
   return ptr;
 }
