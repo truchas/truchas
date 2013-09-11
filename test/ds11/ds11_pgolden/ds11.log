@@ -3,16 +3,16 @@
 
 PROGRAM INFORMATION
 
-   code:                truchas
+   code:                DUMMY
    version:             2.8.dev
-   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
-   build architecture:  Linux ccscs8.lanl.gov 2.6.18-194.3.1.el5 #1 SMP Sun May 2 04:17:42 EDT 2010 x86_64 x86_64 x86_64 GNU/Linux
-   build date/time:     25 Apr 13 08:43:36
-   build flags:         -O
-   build host:          ccscs8.lanl.gov
-   run architecture:    Linux elway.lanl.gov 2.6.18-348.3.1.el5 #1 SMP Tue Mar 5 13:19:32 EST 2013 x86_64
-   run host:            elway.lanl.gov
-   run date/time:       25 Apr 13 08:55:47
+   libraries:           UbikSolve, PGSLib, Chaco
+   build architecture:  x86_64
+   build date/time:     11 Sep 2013 19:22:04
+   build flags:         -O2 -maxcontin=99 -PIC
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 3.8.13-100.fc17.x86_64 #1 SMP Mon May 13 13:36:17 UTC 2013 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       11 Sep 13 13:25:04
    processors:          4 (processor 1 is performing I/O)
 
 ================================================================================
@@ -126,9 +126,6 @@ Reading INTERFACES namelist ...
 
  Reading LINEAR_SOLVER Namelist(s) ...
 Warning: LINEAR_SOLVER namelist not found! Using defaults.
-
- Reading SO_SOLVER Namelist ...
-         SO_SOLVER namelist not found! Using defaults.
 
 Reading NONLINEAR_SOLVER Namelists ...
   NONLINEAR_SOLVER namelist not found; using defaults.
@@ -763,24 +760,24 @@ Warning: DANU: Danu fid is still associated
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               5.234E-01    4.759E-01    5.399E-01
-    Input                               2.000E-02    1.700E-02    2.100E-02
-    Initialization                      1.095E-01    1.050E-01    1.110E-01
-      HTSD function                       0.000E+00    0.000E+00    0.000E+00
-        HT function                         0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          3.509E-01    3.509E-01    3.509E-01
-      Output                              6.249E-03    5.998E-03    6.999E-03
-      Time Step                           5.000E-04    0.000E+00    1.000E-03
-      Diffusion Solver                    3.412E-01    3.409E-01    3.419E-01
-        HTSD precon compute                 5.999E-02    5.899E-02    6.099E-02
-        HTSD function                       4.549E-02    3.699E-02    5.399E-02
-          HT function                         4.499E-02    3.699E-02    5.299E-02
-        HTSD precon apply                   2.000E-01    1.940E-01    2.060E-01
-          HT precon apply                     1.997E-01    1.940E-01    2.050E-01
+  Total                               2.552E+00    2.400E+00    2.700E+00
+    Input                               2.325E-02    2.300E-02    2.400E-02
+    Initialization                      3.830E-01    3.490E-01    4.310E-01
+      HTSD function                       5.000E-04    0.000E+00    1.000E-03
+        HT function                         5.000E-04    0.000E+00    1.000E-03
+    Main Cycle                          2.142E+00    2.016E+00    2.279E+00
+      Output                              1.825E-02    1.700E-02    2.000E-02
+      Time Step                           1.500E-03    9.999E-04    2.000E-03
+      Diffusion Solver                    2.074E+00    1.973E+00    2.197E+00
+        HTSD precon compute                 2.913E-01    2.780E-01    3.000E-01
+        HTSD function                       1.190E-01    1.150E-01    1.230E-01
+          HT function                         1.118E-01    1.050E-01    1.180E-01
+        HTSD precon apply                   1.503E+00    1.403E+00    1.600E+00
+          HT precon apply                     1.502E+00    1.400E+00    1.600E+00
 
-         Smallest process virtual memory used: 1.33E+02 mB
-          Largest process virtual memory used: 1.38E+02 mB
-                    Total virtual memory used: 5.39E+02 mB
-                                   words/cell: 57571
+         Smallest process virtual memory used: 1.91E+02 mB
+          Largest process virtual memory used: 1.98E+02 mB
+                    Total virtual memory used: 7.73E+02 mB
+                                   words/cell: 82654
 
-truchas terminated normally on 25 Apr 13 at 08:55:48
+truchas terminated normally on 11 Sep 13 at 13:25:07

@@ -14,32 +14,36 @@ class DS11(TruchasTest.GoldenTestCase):
 
   num_procs=4
 
-  def runTest(self):
-    '''EM1 Test compare temperature and VOF fields'''
+  def test_temperature(self):
+    '''Verifying the temperature field'''
+    tol = 1.0e-9
+    fail = 0
+    for n in [45,109]:
+      gold=self.gold_output.get_simulation().find_series(cycle=n).get_data('Z_TEMP')
+      test=self.test_output.get_simulation().find_series(cycle=n).get_data('Z_TEMP')
+      error=max(abs((test-gold)/gold))
+      if (error > tol):
+        fail += 1
+        print 'Cycle %3d: max rel error = %8.2e: FAIL (tol=%8.2e)'%(n,error,tol)
+      else:
+        print 'Cycle %3d: max rel error = %8.2e: PASS (tol=%8.2e)'%(n,error,tol)
+    self.assertTrue(fail == 0)
 
-    fails = 0
 
-    field='Z_TEMP'
-    tol=1.0e-9
-    for i in range(4):
-      gold_data=self.gold_output.get_simulation().find_series(id=4).get_data(field)
-      test_data=self.test_output.get_simulation().find_series(id=4).get_data(field)
-      error=max(abs(test_data-gold_data)/gold_data)
-      if error > tol:
-	fails+=1
-
-    field='VOF' 
-    tol=1.0e-8
-    for i in range(4):
-      id=i+1
-      print 'Compare sequence %d' % id
-      gold_data=self.gold_output.get_simulation().find_series(id=id).get_data(field)
-      test_data=self.test_output.get_simulation().find_series(id=id).get_data(field)
-      error=max(abs(test_data[:,2]-gold_data[:,2]))
-      if error > tol:
-	fails+=1
-
-    self.assertTrue(fails == 0)	
+  def test_fluid_fraction(self):
+    '''Verifying the fluid volume fraction field'''
+    tol = 1.0e-8
+    fail = 0
+    for n in [45,109]:
+      gold=self.gold_output.get_simulation().find_series(cycle=n).get_data('VOF')
+      test=self.test_output.get_simulation().find_series(cycle=n).get_data('VOF')
+      error=max(abs((test[:,2]-gold[:,2])/gold[:,2]))  # comp 2 is fluid
+      if (error > tol):
+        fail += 1
+        print 'Cycle %3d: max rel error = %8.2e: FAIL (tol=%8.2e)'%(n,error,tol)
+      else:
+        print 'Cycle %3d: max rel error = %8.2e: PASS (tol=%8.2e)'%(n,error,tol)
+    self.assertTrue(fail == 0)
 
 if __name__ == '__main__':
   import unittest

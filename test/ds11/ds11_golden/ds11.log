@@ -3,16 +3,16 @@
 
 PROGRAM INFORMATION
 
-   code:                truchas
+   code:                DUMMY
    version:             2.8.dev
-   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
-   build architecture:  Linux ccscs9.lanl.gov 2.6.18-164.2.1.el5 #1 SMP Mon Sep 21 04:37:42 EDT 2009 x86_64 x86_64 x86_64 GNU/Linux
-   build date/time:     10 Apr 13 17:51:22
-   build flags:         -O
-   build host:          ccscs9.lanl.gov
-   run architecture:    Linux elway.lanl.gov 2.6.18-348.3.1.el5 #1 SMP Tue Mar 5 13:19:32 EST 2013 x86_64
-   run host:            elway.lanl.gov
-   run date/time:       25 Apr 13 13:25:45
+   libraries:           UbikSolve, PGSLib, Chaco
+   build architecture:  x86_64
+   build date/time:     10 Sep 2013 22:02:27
+   build flags:         -O2 -maxcontin=99 -PIC
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 3.8.13-100.fc17.x86_64 #1 SMP Mon May 13 13:36:17 UTC 2013 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       11 Sep 13 13:21:29
    processors:          1
 
 ================================================================================
@@ -126,9 +126,6 @@ Reading INTERFACES namelist ...
 
  Reading LINEAR_SOLVER Namelist(s) ...
 Warning: LINEAR_SOLVER namelist not found! Using defaults.
-
- Reading SO_SOLVER Namelist ...
-         SO_SOLVER namelist not found! Using defaults.
 
 Reading NONLINEAR_SOLVER Namelists ...
   NONLINEAR_SOLVER namelist not found; using defaults.
@@ -755,22 +752,22 @@ Warning: DANU: Danu fid is still associated
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               8.689E-01    8.689E-01    8.689E-01
-    Input                               5.000E-03    5.000E-03    5.000E-03
-    Initialization                      1.700E-01    1.700E-01    1.700E-01
+  Total                               1.578E+00    1.578E+00    1.578E+00
+    Input                               8.000E-03    8.000E-03    8.000E-03
+    Initialization                      3.520E-01    3.520E-01    3.520E-01
       HTSD function                       1.000E-03    1.000E-03    1.000E-03
         HT function                         1.000E-03    1.000E-03    1.000E-03
-    Main Cycle                          6.929E-01    6.929E-01    6.929E-01
-      Output                              7.000E-03    7.000E-03    7.000E-03
-      Time Step                           3.000E-03    3.000E-03    3.000E-03
-      Diffusion Solver                    6.819E-01    6.819E-01    6.819E-01
-        HTSD precon compute                 1.140E-01    1.140E-01    1.140E-01
-        HTSD function                       1.420E-01    1.420E-01    1.420E-01
-          HT function                         1.410E-01    1.410E-01    1.410E-01
-        HTSD precon apply                   3.320E-01    3.320E-01    3.320E-01
-          HT precon apply                     3.320E-01    3.320E-01    3.320E-01
+    Main Cycle                          1.214E+00    1.214E+00    1.214E+00
+      Output                              2.200E-02    2.200E-02    2.200E-02
+      Time Step                           4.000E-03    4.000E-03    4.000E-03
+      Diffusion Solver                    1.182E+00    1.182E+00    1.182E+00
+        HTSD precon compute                 2.150E-01    2.150E-01    2.150E-01
+        HTSD function                       2.330E-01    2.330E-01    2.330E-01
+          HT function                         2.300E-01    2.300E-01    2.300E-01
+        HTSD precon apply                   5.120E-01    5.120E-01    5.120E-01
+          HT precon apply                     5.100E-01    5.100E-01    5.100E-01
 
-                  Process virtual memory used: 5.17E+01 mB
-                                   words/cell: 5522
+                  Process virtual memory used: 6.35E+01 mB
+                                   words/cell: 6784
 
-truchas terminated normally on 25 Apr 13 at 13:25:46
+truchas terminated normally on 11 Sep 13 at 13:21:31
