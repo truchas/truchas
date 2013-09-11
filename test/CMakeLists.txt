@@ -109,3 +109,7 @@ add_python_test(viscoplastic-ring
                 ${TruchasTest_SOURCE_DIR}/viscoplastic-ring/testViscoplasticRing.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(shear-constr-heat
+                ${TruchasTest_SOURCE_DIR}/shear-constr-heat/testShearConstrHeat.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
