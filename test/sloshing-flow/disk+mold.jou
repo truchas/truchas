@@ -1,0 +1,40 @@
+## /opt/cubit/12.1-43317/bin/clarox
+## Cubit Version 12.1
+## Cubit Build 43317
+## Revised 2010-05-10 14:55:38 -0600 (Mon, 10 May 2010)
+## Running 03/20/2011 11:45:48 AM
+## Command Options:
+## -warning = On
+## -information = On
+create cylinder height 0.05 radius 1.0
+webcut volume 1 with cylinder radius 0.8 axis z
+webcut volume 1 with plane xplane noimprint nomerge
+webcut volume 2 with plane yplane noimprint nomerge
+imprint volume all
+merge volume all
+
+surface 23 29 size 0.08
+surface 23 29 scheme auto
+mesh surface 23 29
+
+volume 2 4 size 0.05
+volume 2 4 scheme auto
+mesh volume 2 4
+
+curve 8 14 interval 4
+curve 8 14 scheme equal
+volume 1 3 scheme map
+mesh volume 1 3
+
+block 1 volume 2    # fluid
+block 2 volume 4    # void
+block 3 volume 1 3  # mold
+
+sideset 1 surface 29 18 23 15 27 25 12 21   # symmetry planes
+sideset 2 surface 14 19         # external mold
+sideset 11 surface 11 10 both   # mold-mold interface
+#sideset 13 surface 31 30 both   # left mold-fluid interface
+sideset 12 surface 31 30 35 33 both   # mold-fluid interface
+
+set large exodus file off
+export genesis "disk+mold.g" overwrite
