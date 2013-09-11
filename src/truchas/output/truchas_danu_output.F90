@@ -199,7 +199,7 @@ contains
     use physics_module, only: heat_transport, species_transport, heat_species_transport
     use EM_data_proxy, only: EM_is_on
     use solid_mechanics_data, only: solid_mechanics
-    !use gap_output, only: set_gap_element_output
+    use gap_output, only: set_gap_element_output
     
     integer :: stat
   
@@ -217,7 +217,7 @@ contains
     !! something reasonable.  This doesn't belong here and should be moved.
     !! Currently commented out, because the TBrook output does this.  When
     !! the TBrook output is disabled, this should be uncommented.
-    !call set_gap_element_output
+    call set_gap_element_output
 
     !! Cell density, temperature, enthalpy, phase volume fractions.
     call write_common_data

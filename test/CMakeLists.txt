@@ -93,3 +93,11 @@ add_python_test(vfrad2
                 ${TruchasTest_SOURCE_DIR}/vfrad2/testVFRad2.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(sloshing-flow
+                ${TruchasTest_SOURCE_DIR}/sloshing-flow/testSloshingFlow.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(contact-box-close
+                ${TruchasTest_SOURCE_DIR}/contact-box-close/testContactBoxClose.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
