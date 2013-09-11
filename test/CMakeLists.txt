@@ -49,9 +49,9 @@ add_python_test(ds8
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
 # Not working -- problems with coordinates and connectivity functions
-#add_python_test(ds9
-#                ${TruchasTest_SOURCE_DIR}/ds9/testDS9.py
-#		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_python_test(ds9
+                ${TruchasTest_SOURCE_DIR}/ds9/testDS9.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
 add_python_test(htvoid1
                 ${TruchasTest_SOURCE_DIR}/htvoid1/testHTVoid1.py

@@ -21,13 +21,18 @@ class DS9(TruchasTest.GoldenTestCase):
 
   def test_final_temp(self):
     '''DS9: verifying the final temperature field'''
-    tol = 1.0e-10
-    coord = self.test_output.get_mesh().coordinates()
-    cnode = self.test_output.get_mesh().connectivity()
-    print coord.shape
-    print cnode.shape
-    # compute cell centroids using the coord and cnode arrays.
-    # TODO: want to check that the final cycle number is 67
+    #FAILtol = 1.0e-10
+    tol = 5.0e-4
+    mesh=self.test_output.get_mesh()
+    centroids=mesh.centroids()
+    x=centroids[:,0]
+    y=centroids[:,1]
+    z=centroids[:,2]
+    Tref = 9.0 + 6*x*y -x*x - y*y
+    T = self.test_output.get_simulation().get_last_series().get_data('Z_TEMP')
+    error = max(abs(T -Tref)/Tref)
+    print 'error=%1.9e tol=%1.9e\n' %(error,tol)
+    self.assertTrue( error <= tol )
 
 if __name__ == '__main__':
   import unittest
