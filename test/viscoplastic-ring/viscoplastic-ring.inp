@@ -1,0 +1,337 @@
+-----------------
+Ring-Plug Assembly Viscoplastic Residual Stress Calculation, MTS version
+
+
+================================================================================
+
+David Korzekwa, MST6
+
+================================================================================
+
+*All units are SI, with temperatures in degrees K
+*Mesh file coordinates are in meters
+*This mesh contains two materials
+	#1 Graphite plug with elastic properties (no temperature dependence)
+	#2 5754 Aluminum ring with elastic-viscoplastic properties
+
+This problem uses a coarse quarter symmetry mesh. The problem starts with both
+materials below their stress reference temperature.  The initial stress is
+calculated and a small amount of plastic relaxation occurs.  If the total time is
+increased, the assembly will continue to cool and the elastic stress and plastic
+strain will continue to evolve.  This version for the test suite runs for a
+short time, exercising the initial elastic stress calculation, viscoplastic flow
+and heat conduction.  This version uses the MTS model for the viscoplastic model
+
+define a three-dimensional mesh
+
+&MESH
+
+    mesh_file         = 'hytec_quarter_coarse_g.exo', 
+    mesh_file_format  = 'ExodusII', 
+    gap_element_blocks = 3
+/
+
+define the plug geometry and initial conditions
+
+&BODY
+
+    material_number       = 1, 
+    mesh_material_number  = 1, 
+    surface_name          = 'from mesh file', 
+    temperature           = 5.50e+02, 
+
+/
+  
+define the ring geometry and initial conditions
+
+&BODY
+
+    material_number       = 2, 
+    mesh_material_number  = 2, 
+    surface_name          = 'from mesh file', 
+    temperature           = 5.50e+02, 
+
+/
+Gap block
+&BODY
+
+    material_number       = 3, 
+    mesh_material_number  = 3, 
+    surface_name          = 'from mesh file', 
+    temperature           = 5.50e+02, 
+
+/
+
+
+define the boundary conditions:
+
+z = 0.0 insulated with zero z displacement (symmetry plane)
+
+&DS_BOUNDARY_CONDITION
+
+    name           = 'bottom surface'
+    variable       = 'temperature'
+    condition      = 'flux'
+    data_constant  = 0.0
+    face_set_ids   = 6
+
+/
+
+&BC
+
+    surface_name   = 'from mesh file'
+    mesh_surface   = 6, 
+    bc_variable    = 'displacement', 
+    bc_type        = 'z-displacement', 
+    bc_value       = 0.0e0, 
+
+/
+
+z = 0.0127 heat transfer and all traction components zero (default)
+
+&DS_BOUNDARY_CONDITION
+    name          = 'top surface'
+    variable      = 'temperature'
+    condition     = 'HTC'
+    data_constant = 1.0e2, 2.98e+02
+    face_set_ids  = 5
+/
+
+x = 0.0 insulated with zero x displacement (symmetry plane)
+
+&DS_BOUNDARY_CONDITION
+    name          = 'x=0 symmetry plane'
+    variable      = 'temperature'
+    condition     = 'flux'
+    data_constant = 0.0
+    face_set_ids  = 3
+/
+
+&BC
+
+    surface_name   = 'from mesh file'
+    mesh_surface   = 3, 
+    bc_variable    = 'displacement', 
+    bc_type        = 'x-displacement', 
+    bc_value       = 0.0e0, 
+
+/
+
+y = 0.0 insulated with zero y displacement (symmetry plane)
+
+&DS_BOUNDARY_CONDITION
+
+    name = 'y=0 symmetry plane'
+    variable = 'temperature'
+    condition = 'flux'
+    data_constant = 0.0
+    face_set_ids  = 2
+
+/
+
+&BC
+
+    surface_name   = 'from mesh file'
+    mesh_surface   = 2, 
+    bc_variable    = 'displacement', 
+    bc_type        = 'y-displacement', 
+    bc_value       = 0.0e0, 
+
+/
+
+Outer radius = 0.0508 heat transfer and all tractions zero
+
+&DS_BOUNDARY_CONDITION
+
+    name           = 'outer radius'
+    variable       = 'temperature'
+    condition      = 'HTC'
+    data_constant  = 1.0e2, 2.98e+02
+    face_set_ids   = 4
+
+/
+
+Interface between plug and ring
+
+&DS_INTERFACE_CONDITION
+
+    name           = 'plug/ring interface'
+    variable       = 'temperature'
+    condition      = 'HTC'
+    data_constant  = 1.0e3
+    face_set_ids   = 3
+ 
+/
+
+&BC
+
+    surface_name   = 'from mesh file'
+    mesh_surface   = 1, 
+    bc_variable    = 'displacement', 
+    bc_type        = 'normal-constraint', 
+    bc_value       = 0.0e0, 
+
+/
+
+define the plug material properties
+ 
+&MATERIAL
+
+    Immobile                      = .true.
+    material_number               = 1, 
+    priority                      = 1, 
+    material_name                 = 'graphite', 
+    density                       = 1.7e+03, 
+    Material_Feature              = 'background'
+
+/
+
+&PHASE
+
+   name = 'graphite'
+   property_name(1) = 'density',              property_constant(1) = 1.7e3
+   property_name(2) = 'specific heat',        property_constant(2) = 1.925e3
+   property_name(3) = 'conductivity',         property_constant(3) = 1.95e2
+   property_name(4) = 'TM reference density',     property_constant(4) = 1.7e3
+   property_name(5) = 'TM reference temperature', property_constant(5) = 800.0 
+   property_name(6) = 'TM linear CTE',            property_constant(6) = 7.0e-6
+   property_name(7) = 'Lame1', property_constant(7) = 3.4e+9
+   property_name(8) = 'Lame2', property_constant(8) = 2.76e+9
+
+/
+
+&MATERIAL_SYSTEM
+
+   name = 'graphite'
+   phases = 'graphite'
+
+/
+
+define the ring material properties
+ 
+&MATERIAL
+
+    Immobile                      = .true.
+    material_number               = 2
+    priority                      = 2
+    material_name                 = '5754 aluminum' 
+    density                       = 2.70e+03 
+
+/
+
+&VISCOPLASTIC_MODEL
+    phase = '5754 aluminum'
+    model = 'MTS'
+    MTS_k       = 1.38e-23
+    MTS_mu_0    = 28.815e9
+    MTS_sig_a   = 10.0e6
+    MTS_d       = 3.440e9
+    MTS_temp_0  = 215.0
+    MTS_b       = 2.86e-10
+    MTS_edot_0i = 1.0e7
+    MTS_g_0i    = 3.6
+    MTS_q_i     = 1.5
+    MTS_p_i     = 0.5
+    MTS_sig_i   = 107.2e6
+/
+
+&PHASE
+
+    name = '5754 aluminum'
+    property_name(1) = 'density',              property_constant(1) = 2.7e3
+    property_name(2) = 'specific heat',        property_constant(2) = 8.5e2
+    property_name(3) = 'conductivity',         property_constant(3) = 2.4e2
+    property_name(4) = 'TM reference density',     property_constant(4) = 1.7e3
+    property_name(5) = 'TM reference temperature', property_constant(5) = 800.0 
+    property_name(6) = 'TM linear CTE',            property_constant(6) = 2.2e-5
+    property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
+    property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
+
+/
+
+&MATERIAL_SYSTEM
+
+    name = '5754 aluminum'
+    phases = '5754 aluminum'
+
+/
+
+Gap material
+ 
+&MATERIAL
+
+    Immobile                      = .true.
+    material_number               = 3, 
+    priority                      = 3, 
+    material_name                 = 'gap', 
+    density                       = 0.0,
+/
+
+solid mechanics and heat transfer
+
+&PHYSICS
+
+    fluid_flow       = .false., 
+    heat_transport  = .true., 
+    solid_mechanics  = .true., 
+
+/
+
+&DIFFUSION_SOLVER
+
+    abs_temp_tol       = 0.0
+    rel_temp_tol       = 1.0e-4
+    abs_enthalpy_tol   = 0.0
+    rel_enthalpy_tol   = 1.0e-4
+    nlk_tol            = 0.05
+    nlk_preconditioner = 'hypre_amg'
+    verbose_stepping   = .true.
+
+/
+
+&LINEAR_SOLVER
+
+    name                    = 'displacement precon', 
+    method                  = 'none', 
+    preconditioning_steps   = 4, 
+    relaxation_parameter    = 1.6, 
+    preconditioning_method  = 'tm_ssor', 
+/
+
+&NONLINEAR_SOLVER 
+
+    name                    = 'displacement nonlin', 
+    method                  = 'nlk', 
+    linear_solver_name      = 'displacement precon', 
+    convergence_criterion   = 1e-13, 
+    nlk_max_vectors         = 40
+    nlk_vector_tolerance    = 0.01
+    maximum_iterations      = 1000
+/
+
+Transient heat transfer and elastic_viscoplasticity
+
+&NUMERICS
+
+    dt_max                           = 1.0e0, 
+    dt_grow                          = 5.0, 
+    dt_init                          = 1.0e-1, 
+    dt_min                           = 1.0e-8, 
+    strain_limit                     = 1.0e-10, 
+    displacement_nonlinear_solution  = 'displacement nonlin', 
+
+/
+
+&OUTPUTS
+
+    output_t                    = 0.0, 0.5 !5.0 
+    output_dt                   = 1.0
+    !short_output_dt_multiplier  = 1, 
+
+/
+
+&PARALLEL_PARAMETERS
+
+    Partitioner  = 'automatic', 
+
+/

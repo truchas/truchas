@@ -1,0 +1,37 @@
+
+TRAP step      1: T= 0.00000E+00, H= 1.00000E-01, ETAH= 5.00000E-02
+  Preconditioner updated at T= 1.00000E-01, ETAH= 5.00000E-02
+    1: error= 7.89631E+00
+    2: error= 2.32235E-01
+    3: error= 2.60439E-02
+  AIN BCE solve succeeded:   3 iterations, error= 2.60439E-02
+  Step accepted: no local error control
+
+BDF2 step      2: T= 1.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
+    1: error= 1.71708E+01
+    2: error= 1.81099E+00
+    3: error= 1.09167E-01
+    4: error= 9.27147E-03
+  AIN BCE solve succeeded:   4 iterations, error= 9.27147E-03
+  Step accepted: no local error control
+
+BDF2 step      3: T= 2.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
+    1: error= 4.46833E+00
+    2: error= 4.42141E-01
+    3: error= 2.83439E-02
+  AIN BCE solve succeeded:   3 iterations, error= 2.83439E-02
+  Step accepted: no local error control
+
+BDF2 step      4: T= 3.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
+    1: error= 3.59790E-01
+    2: error= 9.51322E-02
+    3: error= 3.55798E-03
+  AIN BCE solve succeeded:   3 iterations, error= 3.55798E-03
+  Step accepted: perr= 4.51518E-01
+
+BDF2 step      5: T= 4.00000E-01, H= 1.05679E-01, ETAH= 6.98103E-02
+    1: error= 2.07007E-01
+    2: error= 6.10335E-02
+    3: error= 3.99204E-03
+  AIN BCE solve succeeded:   3 iterations, error= 3.99204E-03
+  Step accepted: perr= 2.63996E-01
