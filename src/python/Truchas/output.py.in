@@ -67,7 +67,7 @@ class TruchasRegion(object):
    
     if field_dim > 1:
       for d in range(field_dim):
-        masked_data[:,d]=ma.array(data[:,d],mask=self.mask).compressed().reshape(self.nc,1)
+        masked_data[:,d]=ma.array(data[:,d],mask=self.mask).compressed()
     else:
       masked_data=ma.array(data,mask=self.mask).compressed().reshape(self.nc,1)
 
