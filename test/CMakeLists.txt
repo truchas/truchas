@@ -101,3 +101,7 @@ add_python_test(contact-box-close
                 ${TruchasTest_SOURCE_DIR}/contact-box-close/testContactBoxClose.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(contact-box-open
+                ${TruchasTest_SOURCE_DIR}/contact-box-open/testContactBoxOpen.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
