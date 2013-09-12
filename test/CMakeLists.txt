@@ -77,6 +77,10 @@ add_python_test(diverging-duct
                 ${TruchasTest_SOURCE_DIR}/diverging-duct/testDivergingDuct.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(hydrostatic
+                ${TruchasTest_SOURCE_DIR}/hydrostatic/testHydrostatic.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(ds11
                 ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
@@ -87,6 +91,10 @@ add_python_test(static_wall
 
 add_python_test(gap-rad
                 ${TruchasTest_SOURCE_DIR}/gap-rad/testGapRad.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(gap-rad-flow
+                ${TruchasTest_SOURCE_DIR}/gap-rad-flow/testGapRadFlow.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
 add_python_test(vfrad1
