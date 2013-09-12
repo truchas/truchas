@@ -26,13 +26,7 @@ class ContactBoxOpen(TruchasTest.GoldenTestCase):
     self.gold_output=Truchas.TruchasOutput(self.get_golden_output_file())
     self.test_sim = self.test_output.get_simulation()
     self.gap_cells  = Truchas.TruchasRegion(self.test_sim,self.gap_block_id)
-
-    # TODO: get_data with region is currently broken for vector field data, so we go
-    # ahead and do comparisons on all cells, including gap cells, instead of using
-    # the true_cells region.  This only works because Truchas supplies appropriate
-    # dummy values on gap cells.  Eventually we want to test only on real cells and
-    # not rely on the current Truchas behavior.
-    # self.true_cells = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
+    self.true_cells = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
 
   def get_test_field(self,field,cycle,region=None):
     return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region)

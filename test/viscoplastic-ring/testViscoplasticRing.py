@@ -28,13 +28,7 @@ class ViscoplasticRing(TruchasTest.GoldenTestCase):
     
     # TODO: Original test tested NTRAC_04 over the entire mesh -- we probably
     # only want to do this over gap elements, right?
-    self.gap_cells  = Truchas.TruchasRegion(self.test_sim,self.gap_block_id)
-
-    # TODO: get_data with region is currently broken for vector field data, so we go
-    # ahead and do comparisons on all cells, including gap cells, instead of using
-    # the true_cells region.  This only works because Truchas supplies appropriate
-    # dummy values on gap cells.  Eventually we want to test only on real cells and
-    # not rely on the current Truchas behavior.
+    #self.gap_cells  = Truchas.TruchasRegion(self.test_sim,self.gap_block_id)
     self.true_cells = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
 
   def get_test_field(self,field,cycle,region=None):
@@ -78,7 +72,7 @@ class ViscoplasticRing(TruchasTest.GoldenTestCase):
         print 'Cycle %2d, epsilon%1d: max abs error = %8.2e: PASS (tol=%8.2e)'%(n,j+1,error,tol)
     self.assertTrue(fail == 0)
 
-  def SKIP_test_initial_traction(self):
+  def test_initial_traction(self):
     '''Verify initial normal traction'''
     n = 0
     tol = 0.1
