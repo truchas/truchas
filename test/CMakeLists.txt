@@ -117,3 +117,7 @@ add_python_test(simple-gap
                 ${TruchasTest_SOURCE_DIR}/simple-gap/testSimpleGap.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(tm-pc
+                ${TruchasTest_SOURCE_DIR}/tm-pc/testTMPC.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
