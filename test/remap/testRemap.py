@@ -59,21 +59,17 @@ class RemapTest(TruchasTest.BaseTestCase):
     h5_4pe = Truchas.TruchasOutput(h5file_4pe)
     h5_2pe = Truchas.TruchasOutput(h5file_2pe)
 
-    # Get te cell maps
-    cellmap_4pe = h5_4pe.get_simulation().cellmap()
-    cellmap_2pe = h5_2pe.get_simulation().cellmap()
+    # Grab the last series for each run
+    series_4pe = h5_4pe.get_simulation().get_last_series()
+    series_2pe = h5_2pe.get_simulation().get_last_series()
 
     # Grab the last temperature field, and loose tolerance
     cell_field='Z_TEMP'
     tol=1.0e-2
-    num_series = len(h5_4pe.get_simulation().series_names)
-
-    temp_4pe = h5_4pe.get_simulation().get_series_data(cell_field,id=num_series)
-    temp_2pe = h5_2pe.get_simulation().get_series_data(cell_field,id=num_series)
 
     # Serialize the arrays
-    temp_4pe_serial = self.serialize_data(cellmap_4pe,temp_4pe)
-    temp_2pe_serial = self.serialize_data(cellmap_2pe,temp_2pe)
+    temp_4pe_serial = series_4pe.get_data(cell_field,serialize=True)
+    temp_2pe_serial = series_2pe.get_data(cell_field,serialize=True)
 
     # Compute the norms
     max = numpy.linalg.norm(temp_4pe_serial-temp_2pe_serial,numpy.inf)
@@ -83,6 +79,22 @@ class RemapTest(TruchasTest.BaseTestCase):
     print '%s min %.4e max %.4e L2 %.4e' % (cell_field,min,max,l2)
     msg='Fail to satisfy the tol of %.4f'%tol
     self.failUnless(max < tol, msg)
+
+    cell_field='Grad_T'
+
+    # Serialize the arrays
+    gtemp_4pe_serial = series_4pe.get_data(cell_field,serialize=True)
+    gtemp_2pe_serial = series_2pe.get_data(cell_field,serialize=True)
+    gtemp_2pe_serial_max=numpy.linalg.norm(gtemp_2pe_serial,numpy.inf)
+
+    # Compute the norms
+    max = numpy.linalg.norm(gtemp_4pe_serial-gtemp_2pe_serial,numpy.inf)
+    min = numpy.linalg.norm(gtemp_4pe_serial-gtemp_2pe_serial,-numpy.inf)
+    l2 = numpy.linalg.norm(gtemp_4pe_serial-gtemp_2pe_serial)
+
+    print 'max of 2pe = %1.9e %s min %.4e max %.4e L2 %.4e' % (gtemp_2pe_serial_max,cell_field,min,max,l2)
+    msg='Fail (%1.9e) to satisfy the tol of %.4f'%(max/gtemp_2pe_serial_max,tol)
+    self.failUnless(max/gtemp_2pe_serial_max < tol, msg)
 
 if __name__ == '__main__':
   unittest.main()

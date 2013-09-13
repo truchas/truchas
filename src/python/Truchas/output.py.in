@@ -11,6 +11,25 @@ import Danu
 
 from  .error import TruchasError, TruchasOutputError, TruchasIOError
 
+# --- Order data by global id
+def remap_data(data,map):
+  if data.ndim > 1:
+    (n,dim)=data.shape
+  else:
+    dim=1
+    (n,)=data.shape
+  ordered=numpy.empty(data.shape,data.dtype)  
+  if data.ndim > 1:
+    for i in range(n):
+      gid=map[i]-1
+      ordered[gid,:]=data[i,:]
+  else:
+    for i in range(n):
+      gid=map[i]-1
+      ordered[gid]=data[i]
+  return ordered    
+
+
 # --- Truchas Output classes
 
 class TruchasRegion(object):
@@ -194,6 +213,9 @@ class TruchasSeries(object):
   NODETYPE_NAME       = 'NODE'
 
   def __init__(self,simulation,name=None,id=None):
+
+    # Save a copy of the simulation instance
+    self.simulation=simulation
     
     # Can create a TruchasSeries instance from the name or id number
     # Define the name if id is used.
@@ -237,11 +259,23 @@ class TruchasSeries(object):
 	else:
 	  print 'W A R N I N G!!! Dataset %d is not a %s or %s type' % (d,TruchasSeries.CELLTYPE_NAME,TruchasSeries.NODETYPE_NAME)
   
-  def get_data(self,dataname,region=None):
+  def get_data(self,dataname,serialize=True,region=None):
+    data=self.danu_seq.data_read(dataname)
+    if serialize is True:
+      save=data
+      if dataname in self.cell_field_names:
+	map=self.simulation.cellmap()
+      elif dataname in self.node_field_names:
+	map=self.simulation.nodemap()
+      else:
+	raise TruchasError('Series data not node or cell')
+      data=remap_data(save,map)
+      del save 
+      del map
     if region == None:
-      return self.danu_seq.data_read(dataname)
+      return data
     else:
-      return region.apply_mask(self.danu_seq.data_read(dataname))
+      return region.apply_mask(data)
 
 
 
@@ -371,8 +405,7 @@ class TruchasBaseSimulation(object):
   def get_last_time(self):
     return self.get_last_series().time
 
-
-
+  
 
 class TruchasEMSimulation(TruchasBaseSimulation):
 
@@ -406,6 +439,7 @@ class TruchasSimulation(TruchasBaseSimulation):
       msg='Failed to determine the number of processors in %s' % name
       raise TruchasOutputError(msg)
     self.numprocs=int(np[0]) # NumPy returns an ndarray array, just want an int type
+    
  
   def blockid(self):
     blockid=[]
@@ -451,9 +485,7 @@ class TruchasSimulation(TruchasBaseSimulation):
     except:
       raise
     return nodemap
-  
 
-    
 class TruchasMesh(object):
 
  
