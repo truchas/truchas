@@ -29,7 +29,7 @@ class DS9(TruchasTest.GoldenTestCase):
     y=centroids[:,1]
     z=centroids[:,2]
     Tref = 9.0 + 6*x*y -x*x - y*y
-    T = self.test_output.get_simulation().get_last_series().get_data('Z_TEMP')
+    T = self.test_output.get_simulation().get_last_series().get_data('Z_TEMP',serialize=False)
     error = max(abs(T -Tref)/Tref)
     print 'error=%1.9e tol=%1.9e\n' %(error,tol)
     self.assertTrue( error <= tol )
