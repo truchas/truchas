@@ -478,13 +478,14 @@ class TruchasSimulation(TruchasBaseSimulation):
   def nodemap(self):
     nodemap=[]
     try:
-      nodemap=self.danu_sim.data_read(_NODEMAP_NAME)
+      nodemap=self.danu_sim.data_read(TruchasSimulation.NODEMAP_DATA_NAME)
     except RuntimeError:
       msg='Failed to read the node map (%s) dataset from %s' % (TruchasSimulation.NODEMAP_DATA_NAME,self.name)
       raise TruchasOutputError(msg)
     except:
       raise
     return nodemap
+
 
 class TruchasMesh(object):
 

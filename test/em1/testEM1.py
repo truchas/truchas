@@ -24,10 +24,10 @@ class EM1(TruchasTest.GoldenTestCase):
   # Python unittest skips these function because they do not
   # match test* or runTest patterns.
   def get_joule_test_data(self,cyc,region=None):
-    return self.test_output.get_simulation().find_series(cycle=cyc).get_data('Joule_P',region)
+    return self.test_output.get_simulation().find_series(cycle=cyc).get_data('Joule_P',region=region)
   
   def get_joule_gold_data(self,cyc,region=None):
-    return self.gold_output.get_simulation().find_series(cycle=cyc).get_data('Joule_P',region)
+    return self.gold_output.get_simulation().find_series(cycle=cyc).get_data('Joule_P',region=region)
 
   # Run before each test, must call the base class setUp
   # to ensure all the truchas binary instance is set up correctly
@@ -129,6 +129,7 @@ class EM1(TruchasTest.GoldenTestCase):
       q=self.get_joule_test_data(cyc,self.freespace_region)
       q_norm=numpy.linalg.norm(q,numpy.inf)
       if q_norm != 0.0:
+	print 'cycle %d q_norm=%1.9e'%(cyc,q_norm)
 	fails+=1
     self.assertTrue(fails == 0)
 

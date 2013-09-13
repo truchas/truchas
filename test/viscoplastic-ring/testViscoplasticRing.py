@@ -32,10 +32,10 @@ class ViscoplasticRing(TruchasTest.GoldenTestCase):
     self.true_cells = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
 
   def get_test_field(self,field,cycle,region=None):
-    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region)
+    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
 
   def get_gold_field(self,field,cycle,region=None):
-    return self.gold_output.get_simulation().find_series(cycle=cycle).get_data(field,region)
+    return self.gold_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
 
   # TODO: The SKIP_* tests below need to be enabled (delete the SKIP_) once
   # regions can be used with node-based fields.
