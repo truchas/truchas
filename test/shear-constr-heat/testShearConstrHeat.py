@@ -19,8 +19,8 @@ class ShearConstrHeat(TruchasTest.GoldenTestCase):
       self.setUpClass() # This runs Truchas
     self.test_output = Truchas.TruchasOutput(self.get_output_file())
 
-  def get_test_field(self,field,cycle,region=None):
-    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region)
+  def get_test_field(self,field,cycle,serialize=True,region=None):
+    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,serialize,region=region)
 
   def test_initial_stress(self):
     '''Verify the initial stress field'''
@@ -159,7 +159,8 @@ class ShearConstrHeat(TruchasTest.GoldenTestCase):
     xgold = exx * x + (2*exz) * z
     ygold = eyy * y
     
-    test = self.get_test_field('Displacement',cycle=0)
+    # The coordinates function does not serialize , so we don't want to here either.
+    test = self.get_test_field('Displacement',cycle=0,serialize=False)
     
     error = max(abs(test[:,0]-xgold))
     if error > tol:

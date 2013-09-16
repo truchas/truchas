@@ -1,0 +1,255 @@
+
+Pressure Driven Inviscid Flow with Porous Drag:
+Constant Property, Othogonal Mesh
+
+       Uni-directional flow
+
+Basically, flow through a straight channel of width 2h
+
+-----------------------------------------------------
+       ^y           |---->             / \
+       |            |---->              |
+p1     |--->x       |---->  U           | 2h         p2 
+                    |---->              |
+                    |---->             \ / 
+----------------------------------------------------
+
+Half of the single cell in the z-direction is filled with fluid
+    and the remaining half with solid
+
+The Darcy Law states that 
+
+gradP = -C(1-lambda)^2/lambda^3u
+
+lambda is the porosity constant
+C is the permeability constant
+gradP is the presure gradient
+
+The porous source terms are given by
+Sy = -Av     Sz = -Aw
+
+where A can be ascertained
+
+A = C(1-lambda)^2/lambda^3
+ 
+----------------------------------------------------------------------                     
+&MESH
+ 
+       Ncell = 20, 5, 1, 
+       Coord = 3*0.0, 20.0, 1.0, 1.0,
+       Ratio = 1.0, 1.0, 1.0 
+       Fuzz  = 3*0.0,
+       partitions_total = 1,
+ 
+/
+ 
+&OUTPUTS
+ 
+       Output_T = 0.0, 0.500, 
+       Output_Dt = 0.01,
+       output_dt_Multiplier  =  1,
+
+/
+
+&LINEAR_SOLVER
+
+      name                   = 'ssor-gmres',
+      method                 = 'gmres',
+      convergence_criterion  = 1.0e-8 
+      preconditioning_method = 'ssor',
+      maximum_iterations     = 200
+      relaxation_parameter   = 1.4,
+      preconditioning_steps  = 4,
+      stopping_criterion     = '||r||/||x||'
+
+/
+
+&LINEAR_SOLVER
+
+      name                   = 'projection',
+      method                 = 'fgmres',
+      convergence_criterion  = 1.0e-14,
+      preconditioning_method = 'ssor',
+      maximum_iterations     = 200
+      relaxation_parameter   = 1.4,
+      preconditioning_steps  = 4,
+      stopping_criterion     = '||r||'
+
+/
+
+
+&NUMERICS
+ 
+       projection_linear_solution = 'projection',
+
+       courant_number       = 0.4,
+       dt_init              = 0.0001
+       discrete_ops_type    = 'ortho' 
+       porous_implicitness  = 0.5
+/
+
+&PHYSICS
+ 
+       Body_Force      = 0.0, 0.0, 0.0,
+ 
+       fluid_flow      = .true.,
+       inviscid        = .true.,
+       stokes          = .false.,
+       porous_flow     = .true.,
+
+/
+
+
+Velocity BC: Free slip on front and back of box; z=0 and z=dx
+
+
+Pressure  BC:  on x=0 face  
+
+
+&BC
+
+       Surface_Name       = 'conic',
+       Conic_X            =  1.0,
+       Conic_Constant     =  0.0,
+       Conic_Tolerance    = 1.0e-6,
+       BC_Variable        = 'pressure',
+       BC_Type            = 'dirichlet',
+       BC_Value           =  20000.0,  
+
+/
+
+Pressure  BC:  on x=20.0 face  
+
+&BC
+
+       Surface_Name       = 'conic',
+       Conic_X            =  1.0,
+       Conic_Constant     =  -20.0,
+       Conic_Tolerance    = 1.0e-6,
+       BC_Variable        = 'pressure',
+       BC_Type            = 'dirichlet',
+       BC_Value           =  0.0,  
+
+
+/
+
+
+Velocity BC: No slip on y=0  and y=1 face
+
+&BC
+
+       Surface_Name    = 'conic',
+       Conic_Y         =  1.0,
+       Conic_Constant  =  0.0,
+       Conic_Tolerance = 1.0e-6,
+ 
+       BC_Variable     = 'velocity',
+       BC_Type         = 'no-slip',
+       BC_Value        =    0.0,
+
+/
+
+
+&BC
+
+       Surface_Name    = 'conic',
+       Conic_Y         =  1.0,
+       Conic_Constant  = -1.0,
+       Conic_Tolerance = 1.0e-6,
+ 
+       BC_Variable     = 'velocity',
+       BC_Type         = 'no-slip',
+       BC_Value        =    0.0, 
+
+/
+ 
+&BODY
+ 
+       Material_number = 1,
+       Surface_Name    = 'background',
+       Velocity        = 0.0, 0.0, 0.0,
+       Temperature     = 273.0
+
+/
+
+&BODY
+ 
+       Material_number = 2,
+       Surface_Name    = 'box',
+       Fill            = 'inside'
+       Length          = 20.0, 1.0, 1.0
+       Velocity        = 0.0, 0.0, 0.0,
+       Temperature     = 273.0
+       Translation_Pt  = 10.0, 0.5, 0.00
+
+/
+
+&INTERFACES
+
+        vof_particles = 10,
+        int_particles = 10,
+
+/
+
+&MATERIAL
+ 
+       Material_Name      = 'fluid',
+       Material_Number    = 1,
+       Material_Feature   = 'background'
+       priority           = 1,
+       Density            = 1.0,
+
+/
+
+&PHASE
+  name = 'fluid'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'fluid'
+  phases = 'fluid'
+/
+
+
+&MATERIAL
+ 
+       Material_Name      = 'solid',
+       Material_Number    = 2,
+       priority           = 2,
+       Density            = 1.0,
+ 
+       Permeability_Constant  = 1000.0,
+
+       Immobile               = .true.
+/
+       Permeability_Constant  = 3*1000.0,
+
+&PHASE
+  name = 'solid'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'solid'
+  phases = 'solid'
+/
+
+
+
+&PARALLEL_PARAMETERS
+
+        Partitioner = 'Chaco',
+
+/
+
+&PROBE
+       probe_name         = 'downstream'
+       probe_description  = 'downstream centerline'
+       probe_coords       = 15.0, 0.5, 0.5
+       probe_coords_scale = 1.0
+
+/

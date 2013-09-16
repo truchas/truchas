@@ -1,0 +1,117 @@
+1D AXISYMMETRIC INDUCTION HEATING WITH TEMPERATURE-DEPENDENT EM PARAMETERS
+
+Cylindrical conductor in a uniform, alternating magnetic field.  Domain is
+one quarter of a thin cross-sectional slab, surrounded by some free-space.
+The EM permeability and conductivity are temperature dependent.  The hex mesh
+does not include any free space region.  The tet mesh conforms to the hex
+mesh in the conductor, being obtained by subdivision of the hex cells.
+
+&MESH
+  mesh_file = 'em-qcyl-hex.gen'
+  mesh_file_format = 'ExodusII'
+  coordinate_scale_factor = 0.01
+/
+
+&ALTMESH
+  altmesh_file = 'em-qcyl-tet.gen'
+  altmesh_coordinate_scale_factor = 0.01
+/
+
+&PHYSICS
+  fluid_flow = .false.
+  heat_transport = .true.
+  electromagnetics = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 5.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 5.0e-3
+  nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles      = 2
+  nlk_tol = 0.001
+/
+
+&OUTPUTS
+  Output_T = 0.0, 100.0
+  Output_Dt = 5.0
+/
+
+&NUMERICS
+  dt_constant = 5.0
+/
+
+&ELECTROMAGNETICS
+  EM_Domain_Type = 'quarter_cylinder'
+  Uniform_Source = 2.3e4
+  Source_Frequency = 500.0
+  Steps_Per_Cycle = 12
+  Maximum_Source_Cycles = 4
+  SS_Stopping_Tolerance = 0.1
+  Maximum_CG_Iterations = 100
+  CG_Stopping_Tolerance = 1.0e-8
+  Material_Change_Threshold = 0.6
+  Output_Level = 2
+/
+
+Core of the conducting cylinder
+&BODY
+  Surface_Name = 'from mesh file'
+  Mesh_Material_Number = 11
+  Material_Number = 1
+  Temperature = 301.0
+/
+
+Outer layer of the conducting cylinder
+&BODY
+  Surface_Name = 'from mesh file'
+  Mesh_Material_Number = 12
+  Material_Number = 1
+  Temperature = 301.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'whole boundary insulated'
+  variable = 'temperature'
+  condition = 'flux'
+  data_constant = 0.0
+  face_set_ids = 1, 2
+/
+
+&MATERIAL
+  Material_Number = 1
+  Material_Name = 'conductor'
+  Material_Feature = 'background'
+  Density = 200.0
+/
+
+&PHASE
+  name = 'conductor'
+  property_name(1) = 'density',       property_constant(1) = 200.0
+  property_name(2) = 'specific heat', property_constant(2) = 150.0
+  property_name(3) = 'conductivity',  property_constant(3) = 0.1
+  property_name(4) = 'electrical conductivity', property_function(4) = 'sigma'
+  property_name(5) = 'magnetic susceptibility', property_function(5) = 'mag-susc'
+/
+
+&FUNCTION
+  name = 'sigma'
+  type = 'polynomial'
+  poly_coefficients   = 0.25e4, 0.75e-4
+  poly_exponents(1,:) = 0,      4
+  poly_refvars = 300.0
+/
+
+&FUNCTION
+  name = 'mag-susc'
+  type = 'polynomial'
+  poly_coefficients   = 1.0, -4.0e-2, 6.0e-4, -4.0e-6, 1.0e-8
+  poly_exponents(1,:) =   0,       1,      2,       3,      4
+  poly_refvars = 300.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'conductor'
+  phases = 'conductor'
+/

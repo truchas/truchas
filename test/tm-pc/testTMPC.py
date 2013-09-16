@@ -14,10 +14,10 @@ class TMPC(TruchasTest.GoldenTestCase):
   num_procs = 4 # with a parallel executable
 
   def get_test_field(self,field,cycle,region=None):
-    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region)
+    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
 
   def get_gold_field(self,field,cycle,region=None):
-    return self.gold_output.get_simulation().find_series(cycle=cycle).get_data(field,region)
+    return self.gold_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
 
   def test_final_temperature(self):
     '''Verify final temperature'''

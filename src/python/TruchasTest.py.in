@@ -117,6 +117,9 @@ class GoldenTestCase(BaseTestCase):
 
   '''Number of processors for parallel tests'''
   num_procs=None
+  
+  '''Name of the restart file (optional)'''
+  restart_file=None
 
   '''Danu object of the test output file'''
   test_output=None
@@ -133,6 +136,9 @@ class GoldenTestCase(BaseTestCase):
     cls.truchas.restart_executable=get_restart_executable()
     # Define the input file
     cls.truchas.input=os.path.join(get_test_source_rootdir(),cls.test_name,cls.test_name+'.inp')
+    # Define the restart file if specified
+    if cls.restart_file:
+      cls.truchas.restart=os.path.join(get_test_source_rootdir(),cls.test_name,cls.restart_file)
     # Define the output directory, verify and clean
     outroot=os.path.join(get_test_build_rootdir(),cls.test_name)
     if cls.truchas_is_parallel and cls.num_procs > 1:
