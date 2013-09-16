@@ -105,7 +105,7 @@ option(ENABLE_PGSLib "Build with PGSLib support"  True)
 option(ENABLE_UbikSolve "Build with UbikSolve support"  True)
 
 # Build with Tbrook 
-option(ENABLE_TBROOK "Build with TBROOK support"  True)
+option(ENABLE_TBROOK "Build with TBROOK support"  False)
 
 # Build with Danu
 option(ENABLE_Danu "Build with Danu support"  True)
@@ -465,7 +465,9 @@ add_subdirectory(external)
 add_subdirectory(src)
 
 # Old regression tests
-add_subdirectory(regressiontests)
+if (ENABLE_TBROOK)
+  add_subdirectory(regressiontests)
+endif()
 
 # Old TBrook parser crap
 if (ENABLE_TBROOK)

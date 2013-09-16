@@ -12,7 +12,6 @@ set(OUTPUT_TARGET_NAME ProcessTruchasOutputFiles)
 
 
 set(OUTPUT_FILES
-          output/brook_module.F90
           output/cycle_output_module.F90
           output/diagnostics_module.F90
           output/edit_module.F90
@@ -20,14 +19,19 @@ set(OUTPUT_FILES
           output/interface_output_module.F90
           output/long_edit_data_types.F90
           output/output_control.F90
-          output/output_data_module.F90
-          output/output_module.F90
           output/output_utilities.F90
           output/probe_output_module.F90
-          output/tbrook_module.F90
-          output/tbrook_utility.F90
           output/truchas_danu_output.F90
           output/truchas_danu_output_data.F90)
+
+if (ENABLE_TBROOK)
+  list(APPEND OUTPUT_FILES
+          output/brook_module.F90
+          output/output_data_module.F90
+          output/output_module.F90
+          output/tbrook_module.F90
+          output/tbrook_utility.F90)
+endif()
 
 set(OUTPUT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities

@@ -138,11 +138,14 @@ list(APPEND PHYSICS_FILES
            physics/induction_heating/debug_EM.F90
            physics/induction_heating/elliptic_integrals.F90
            physics/induction_heating/field_probes.F90
-           physics/induction_heating/joule_xml_utilities.F90
            physics/induction_heating/mimetic_discretization.F90
            physics/induction_heating/solenoid_fields.F90
            physics/induction_heating/sparse_matrix.F90
            physics/induction_heating/system_io.F90)
+if (ENABLE_TBROOK)
+  list(APPEND PHYSICS_FILES
+           physics/induction_heating/joule_xml_utilities.F90)
+endif()
 
 # - properties	 
 list(APPEND PHYSICS_FILES

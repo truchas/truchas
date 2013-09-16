@@ -23,7 +23,7 @@ contains
     !
     !    Added Suffix so that you can send .gmv or whatever --Sriram
     !---------------------------------------------------------------------------
-    use output_data_module, only: prefix
+    use truchas_env, only: prefix
 
     ! argument list
     character(*), intent(IN) :: string
