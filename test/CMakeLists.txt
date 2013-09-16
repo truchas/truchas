@@ -109,6 +109,10 @@ add_python_test(porous-drag
                 ${TruchasTest_SOURCE_DIR}/porous-drag/testPorousDrag.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(turbulence
+                ${TruchasTest_SOURCE_DIR}/turbulence/testTurbulence.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(void-collapse
                 ${TruchasTest_SOURCE_DIR}/void-collapse/testVoidCollapse.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 

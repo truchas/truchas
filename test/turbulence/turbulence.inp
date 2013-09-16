@@ -1,0 +1,203 @@
+
+1D Flow Between Parallel Plates - driven by a given pressure gradient
+
+This problem provides a very rudimentary regression test for 
+the algebraic turbulence model in truchas.  In order to make the
+problem run quickly, it's setup with a large pressure gradient via
+inlet/outlet pressures of 1.0e+5 and 0.0 respectively.
+
+The pressure field will be linear in the x-coordinate, and constant
+at -1.0e+5.  There is, of course, no analytic solution for the velocities
+in this problem.  So, things have been tuned to for the min/max velocities 
+to be
+
+umin = 450.86   in the first cell at the wall
+umax = 1471.83  along the centerline
+
+White provides two correlations that can be usesd to estimate the average
+velocity, but there is no satisfactory way to check the velocity profile.
+
+     --------------------------------------
+                 ->
+                 ---->
+                 ------>
+     P_in        ------>              P_out
+                 ------>
+                 ------>
+                 ---->
+                 ->
+     --------------------------------------
+
+&MESH
+
+    Ncell             = 2, 11, 1
+    Coord             = 3*0.0, 5.0, 1.0, 1.0
+    Fuzz              = 3*0.0
+    Ratio             = 1.0, 1.0, 1.0
+    Partitions_Total  = 1
+
+/
+
+&OUTPUTS
+
+    Output_T                    = 0.0, 0.25
+    Output_Dt                   = 0.1
+    Int_Output_Dt_Multiplier    = 0
+    Short_Output_Dt_Multiplier  = 1
+    Long_Output_Dt_Multiplier   = 1
+    Long_Edit_Bounding_Coords   = 0., 5.0, 0., 1.0, 0., 1.0
+
+/
+
+&LINEAR_SOLVER
+
+    name                            = 'projection'
+    method                          = 'fgmres'
+    preconditioning_method          = '2level'
+    preconditioning_preconditioner  = 'ssor'
+    preconditioning_steps           = 2
+    relaxation_parameter            = 1.4
+    convergence_criterion           = 1.0e-12
+
+/
+
+&NUMERICS
+
+    volume_track_interfaces     = .false.
+    volume_track_brents_method  = .true.
+    volume_track_iter_tol       = 1.0e-12
+    projection_linear_solution  = 'projection'
+    discrete_ops_type           = 'ortho'
+    courant_number              = 0.5
+    viscous_implicitness        = 0.0
+    dt_init                     = 1.0e-03
+    dt_grow                     = 1.1
+    dt_min                      = 1.0e-05
+    dt_max                      = 1.0
+
+/
+
+&PHYSICS
+
+    Body_Force             = 0.0, 0.0, 0.0
+    fluid_flow             = .true.
+    inviscid               = .false.
+    stokes                 = .false.
+
+/
+
+&TURBULENCE
+
+    turbulence_length      = 0.1
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_X          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'pressure'
+    BC_Type          = 'dirichlet'
+    BC_Value         = 100000.0
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_X          = 1.0
+    Conic_Constant   = -5.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'pressure'
+    BC_Type          = 'dirichlet'
+    BC_Value         = 0.0
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Y          = 1.0
+    Conic_Constant   = 0.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BC
+
+    Surface_Name     = 'conic'
+    Conic_Y          = 1.0
+    Conic_Constant   = -1.0
+    Conic_Tolerance  = 1.0e-6
+    BC_Variable      = 'velocity'
+    BC_Type          = 'no-slip'
+
+/
+
+&BODY
+
+    Material_number  = 1
+    Surface_Name     = 'background'
+    Velocity         = 0.0, 0.0, 0.0
+    Temperature      = 0.0
+
+/
+
+&MATERIAL
+
+    Material_Name           = 'water'
+    Material_Number         = 1
+    Material_Feature        = 'background'
+    priority                = 1
+
+    Density                 = 1.0
+
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0e-5
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&PARALLEL_PARAMETERS
+
+    Partitioner  = 'chaco'
+
+/
+
+&PROBE
+
+   probe_name         = 'umin'
+   probe_description  = 'cell at wall'
+   probe_coords       = 1.25, 0.0455, 0.5
+   probe_coords_scale = 1.0
+/
+
+&PROBE
+
+   probe_name         = 'umax'
+   probe_description  = 'upstream centerline'
+   probe_coords       = 1.25, 0.5, 0.5
+   probe_coords_scale = 1.0
+
+/ 
+
+&PROBE
+
+   probe_name         = 'pdown'
+   probe_description  = 'downstream centerline'
+   probe_coords       = 3.75, 0.5, 0.5
+   probe_coords_scale = 1.0
+
+/ 
