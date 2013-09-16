@@ -25,7 +25,7 @@ class VoidCollapse(TruchasTest.GoldenTestCase):
 # NNC, Sept 2013.  I've kept comments by DAK about the test for reference.
 # I've migrated the test as it was.  I don't understant it at all.
 
-  def foo_test_velocity(self):
+  def test_velocity(self):
     '''Verify velocity field'''
 
     n = 113

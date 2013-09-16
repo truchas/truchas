@@ -81,6 +81,10 @@ add_python_test(broken-dam
                 ${TruchasTest_SOURCE_DIR}/broken-dam/testBrokenDam.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(channel-flow
+                ${TruchasTest_SOURCE_DIR}/channel-flow/testChannelFlow.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(diverging-duct
                 ${TruchasTest_SOURCE_DIR}/diverging-duct/testDivergingDuct.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
