@@ -1,0 +1,28 @@
+## /opt/cubit/11.1/bin/clarox
+## Cubit Version 11.1
+## Cubit Build 39271
+## Revised 2009-02-17 11:06:39 -0700 (Tue, 17 Feb 2009)
+## Running 07/21/2009 08:23:35 AM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 1 y 1 z 0.25
+webcut volume 1 with plane xplane noimprint nomerge
+webcut volume 1 2 with plane yplane noimprint nomerge
+imprint volume all
+merge volume all
+volume all size 0.125
+volume all size 0.125
+mesh volume all
+block 1 volume all
+sideset 1 surface 36 28
+sideset 2 surface 26 18
+sideset 3 surface 16 9
+sideset 4 surface 13 11
+sideset 5 surface 29 21 23 35 33 25 19 31
+sideset 11 surface 27
+sideset 12 surface 17
+sideset 13 surface 20
+sideset 14 surface 24
+set large exodus file off
+export genesis "ds10.g"

@@ -61,6 +61,14 @@ add_python_test(ds9
                 ${TruchasTest_SOURCE_DIR}/ds9/testDS9.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(ds10
+                ${TruchasTest_SOURCE_DIR}/ds10/testDS10.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(ds11
+                ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(htvoid1
                 ${TruchasTest_SOURCE_DIR}/htvoid1/testHTVoid1.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
@@ -103,10 +111,6 @@ add_python_test(porous-drag
 
 add_python_test(void-collapse
                 ${TruchasTest_SOURCE_DIR}/void-collapse/testVoidCollapse.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(ds11
-                ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
 add_python_test(static_wall
