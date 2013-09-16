@@ -29,6 +29,21 @@ def remap_data(data,map):
       ordered[gid]=data[i]
   return ordered    
 
+# --- Eliminate masked data
+def mask_data(data,mask):
+  if data.ndim > 1:
+    (n,dim)=data.shape
+    n = mask.size - numpy.count_nonzero(mask)
+    mdata=numpy.empty((n,dim),data.dtype)
+    j = 0
+    for i in range(n):
+      if mask[i] == 0:
+        mdata[j,:] = data[i,:]
+        j += 1
+    return mdata
+  else:
+    return numpy.ma.masked_array(data,mask=mask).compressed()
+
 
 # --- Truchas Output classes
 
@@ -48,49 +63,27 @@ class TruchasRegion(object):
     else:
       raise TruchasError('Invalid material id choice')
 
-    # Mask is an ncx1 array
+    # Cellmask array
     blockids=simulation.blockid()
-    self.mask=numpy.ones(blockids.shape)
-    idx=0
-    for n in blockids:
-      if n in self.matids:
-	self.mask[idx]=0
-      idx+=1
+    ncell = blockids.size
+    self.cellmask=numpy.ones(ncell)
+    for n in range(ncell):
+      if blockids[n] in self.matids:
+	self.cellmask[n]=0
 
-    # Cellmap is array mapping the orginal cell indices to the region
-    self.cellmap = ma.array(simulation.cellmap(),mask=self.mask).compressed()
-
-    # Number cells in this region 
-    self.nc=len(self.cellmap)
-
-    # Reshape the cellmap to match the blockid and original cellmap dimensions
-    self.cellmap.reshape(self.nc,1)
-
-  def apply_mask(self,data):
-
-    ''' Masked array module'''
-    from numpy import ma as ma
-
-    # Check the data array size
-    nc=data.shape[0]
-    if nc != len(self.mask): raise TruchasError('Mismatched mask and data array size')
-
-    # Define the dimension of the field variable
-    if data.ndim == 1:
-      field_dim=1
-    else:
-      field_dim=data.shape[1]
-    
-    # Initialize the masked data to garbage data
-    masked_data=numpy.tile(1.0e90,(self.nc,field_dim))
-   
-    if field_dim > 1:
-      for d in range(field_dim):
-        masked_data[:,d]=ma.array(data[:,d],mask=self.mask).compressed()
-    else:
-      masked_data=ma.array(data,mask=self.mask).compressed().reshape(self.nc,1)
-
-    return masked_data
+    # Nodemask array
+    nnode=simulation.nodemap().size # poor way of getting the number of nodes
+    self.nodemask=None  # for now until we resolve the following problem; see also get_data
+#    self.nodemask=numpy.ones(nnode)
+#    connect = ... we have no access to the mesh from the input!
+#    for i in range(ncell)
+#      if self.cellmask(i) == 0:
+#        for j in connect[i,:]:  # N.B. connect values (node indices) are 1-based
+#          self.nodemask[j-1] = 0
+      
+    # These will be computed on the fly
+    self.cellmask_serial = None
+    self.nodemask_serial = None
 
 
 
@@ -261,21 +254,37 @@ class TruchasSeries(object):
   
   def get_data(self,dataname,serialize=True,region=None):
     data=self.danu_seq.data_read(dataname)
-    if serialize is True:
-      save=data
-      if dataname in self.cell_field_names:
-	map=self.simulation.cellmap()
-      elif dataname in self.node_field_names:
-	map=self.simulation.nodemap()
+    # We may need to return the data in the serial order (map)
+    # and/or mask out certain data elements (mask) 
+    map=None
+    mask=None
+    if dataname in self.cell_field_names:
+      if serialize is True:
+        map=self.simulation.cellmap()
+        if region is not None:
+          if region.cellmask_serial is None:
+            region.cellmask_serial=remap_data(region.cellmask,map)
+          mask=region.cellmask_serial
       else:
-	raise TruchasError('Series data not node or cell')
-      data=remap_data(save,map)
-      del save 
-      del map
-    if region == None:
-      return data
-    else:
-      return region.apply_mask(data)
+        if region is not None:
+          mask=region.cellmask
+    elif dataname in self.node_field_names:
+      if serialize is True:
+        map=self.simulation.nodemap()
+        if region is not None:
+          raise TruchasError('regions not yet implement for node-based fields')
+          if region.nodemask_serial is None:
+            region.nodemask_serial=remap_data(region.nodemask,map)
+          mask=region.nodemask_serial
+      else:
+        if region is not None:
+          raise TruchasError('regions not yet implement for node-based fields')
+          mask=region.nodemask
+    if map is not None:
+      data=remap_data(data,map)
+    if mask is not None:
+      data=mask_data(data,mask)
+    return data
 
 
 

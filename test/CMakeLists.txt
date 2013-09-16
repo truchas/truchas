@@ -16,6 +16,14 @@ add_python_test(em1
                 ${TruchasTest_SOURCE_DIR}/em1/testEM1.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(em2
+                ${TruchasTest_SOURCE_DIR}/em2/testEM2.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(em3
+                ${TruchasTest_SOURCE_DIR}/em3/testEM3.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(ds1
                 ${TruchasTest_SOURCE_DIR}/ds1/testDS1.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
@@ -79,6 +87,18 @@ add_python_test(diverging-duct
 
 add_python_test(hydrostatic
                 ${TruchasTest_SOURCE_DIR}/hydrostatic/testHydrostatic.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(natural-convection
+                ${TruchasTest_SOURCE_DIR}/natural-convection/testNaturalConvection.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(porous-drag
+                ${TruchasTest_SOURCE_DIR}/porous-drag/testPorousDrag.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
+add_python_test(void-collapse
+                ${TruchasTest_SOURCE_DIR}/void-collapse/testVoidCollapse.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
 add_python_test(ds11
