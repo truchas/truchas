@@ -101,6 +101,10 @@ add_python_test(hydrostatic
                 ${TruchasTest_SOURCE_DIR}/hydrostatic/testHydrostatic.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
+add_python_test(static-wall
+                ${TruchasTest_SOURCE_DIR}/static-wall/testStaticWall.py
+		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+
 add_python_test(natural-convection
                 ${TruchasTest_SOURCE_DIR}/natural-convection/testNaturalConvection.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
@@ -115,10 +119,6 @@ add_python_test(turbulence
 
 add_python_test(void-collapse
                 ${TruchasTest_SOURCE_DIR}/void-collapse/testVoidCollapse.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(static_wall
-                ${TruchasTest_SOURCE_DIR}/static-wall/testStaticWall.py
 		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
 add_python_test(gap-rad

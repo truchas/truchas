@@ -9,43 +9,34 @@ import numpy
 import Truchas
 import TruchasTest
 
-class StaticWallTest(TruchasTest.BaseTestCase):
+class StaticWall(TruchasTest.GoldenTestCase):
+
+  test_name = 'static-wall'
+  num_procs = 4 # with a parallel executable
+
+  def setUp(self):
+    if self._is_initialized is False:
+      self.setUpClass()
+    self.test_output=Truchas.TruchasOutput(self.get_output_file())
+
+  def get_test_field(self,field,cycle,serialize=True,region=None):
+    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,serialize,region=region)
 
   def runTest(self):
-    '''Test static wall zero velocity'''
+    '''Verify zero velocity'''
 
-    test_name='static-wall'
-
-    tol=1.0e-11
-
-    # Same input file, notice pointing to the restart directory
-    self.truchas.input=os.path.join(self.get_input_rootdir(test_name),'static-wall.inp')
-
-    # Root directory for output
-    output_rootdir=self.get_output_rootdir('static-wall')
-    self.truchas.outdir=output_rootdir
-
-    # Setup for parallel test
-    if self.truchas_is_parallel:
-      self.truchas.nprocs=4
-
-    # Run
-    self.truchas.run()
-
-    # Grab the velocity field
-    field='Z_VC'
-    h5_file=os.path.join(output_rootdir,'static-wall.h5')
-    o=Truchas.TruchasOutput(h5_file)
-
-    v=o.get_simulation().get_series_data(field,cycle=1)
-    (nc,d)=v.shape
-    v_norm=numpy.ones(nc,dtype=numpy.float64)
-    for c in range(nc):
-      v_norm[c]=numpy.linalg.norm(v[c,:],2)
-    v_max=numpy.linalg.norm(v_norm,numpy.inf)  
-
-    self.assertTrue(v_max<tol)
-
+    tol = 1.0e-11
+    
+    v = self.get_test_field('Z_VC',cycle=1)
+    vmag = numpy.empty(v.shape[0],v.dtype)
+    for j in range(vmag.size):
+      vmag[j] = (v[j,0]**2 + v[j,1]**2 + v[j,2]**2)**0.5
+    error = max(vmag)
+    if error > tol:
+      print 'velocity max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      self.assertTrue(False)
+    else:
+      print 'velocity max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
     
 
 if __name__ == '__main__':
