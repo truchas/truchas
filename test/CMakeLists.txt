@@ -2,166 +2,155 @@ project(TruchasTest)
 
 message(STATUS "configuring the Truchas test directory")
 
-include(AddPythonTest)
+set(CMAKE_MODULE_PATH ${TruchasTest_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
-add_python_test(RestartSuite
-                ${TruchasTest_SOURCE_DIR}/restart/testRestartSuite.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+include(AddPytruchasTest)
 
-add_python_test(remap
-                ${TruchasTest_SOURCE_DIR}/remap/testRemap.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(RestartSuite restart/testRestartSuite.py 
+                   PROCESSORS 4)
 
-add_python_test(em1
-                ${TruchasTest_SOURCE_DIR}/em1/testEM1.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(remap remap/testRemap.py PROCESSORS 4)
 
-add_python_test(em2
-                ${TruchasTest_SOURCE_DIR}/em2/testEM2.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(em1 em1/testEM1.py
+                   DEPENDS RestartSuite remap # Just a demo of how this works
+		   PROCESSORS 4
+		   LABELS DEMO ELECTROMAGNETIC)
 
-add_python_test(em3
-                ${TruchasTest_SOURCE_DIR}/em3/testEM3.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
-add_python_test(ds1
-                ${TruchasTest_SOURCE_DIR}/ds1/testDS1.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds1 ds1/testDS1.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(ds2
-                ${TruchasTest_SOURCE_DIR}/ds2/testDS2.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds2 ds2/testDS2.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(ds3
-                ${TruchasTest_SOURCE_DIR}/ds3/testDS3.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds3 ds3/testDS3.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(ds4
-                ${TruchasTest_SOURCE_DIR}/ds4/testDS4.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds4 ds4/testDS4.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(ds5
-                ${TruchasTest_SOURCE_DIR}/ds5/testDS5.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
 
-add_python_test(ds6
-                ${TruchasTest_SOURCE_DIR}/ds6/testDS6.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds5 ds5/testDS5.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(ds7
-                ${TruchasTest_SOURCE_DIR}/ds7/testDS7.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds6 ds6/testDS6.py
+                   PROCESSORS 4 
+		   LABELS DIFFUSION)
 
-add_python_test(ds8
-                ${TruchasTest_SOURCE_DIR}/ds8/testDS8.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds7 ds7/testDS7.py
+                   PROCESSORS 4 
+		   LABELS DIFFUSION)
+
+add_pytruchas_test(ds8 ds8/testDS8.py
+                   PROCESSORS 4 
+		   LABELS DIFFUSION)
 
 # Not working -- problems with coordinates and connectivity functions
-add_python_test(ds9
-                ${TruchasTest_SOURCE_DIR}/ds9/testDS9.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds9 ds9/testDS9.py
+                   PROCESSORS 4 
+		   LABELS DIFFUSION)
 
-add_python_test(ds10
-                ${TruchasTest_SOURCE_DIR}/ds10/testDS10.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(ds11 ds11/testDS11.py
+                   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(ds11
-                ${TruchasTest_SOURCE_DIR}/ds11/testDS11.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(htvoid1
+                   htvoid1/testHTVoid1.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(htvoid1
-                ${TruchasTest_SOURCE_DIR}/htvoid1/testHTVoid1.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(htvoid2
+                   htvoid2/testHTVoid2.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(htvoid2
-                ${TruchasTest_SOURCE_DIR}/htvoid2/testHTVoid2.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(htvoid3
+                   htvoid3/testHTVoid3.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(htvoid3
-                ${TruchasTest_SOURCE_DIR}/htvoid3/testHTVoid3.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(htvoid4
+                   htvoid4/testHTVoid4.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(htvoid4
-                ${TruchasTest_SOURCE_DIR}/htvoid4/testHTVoid4.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(broken-dam
+                   broken-dam/testBrokenDam.py
+		   PROCESSORS 4
+		   LABELS FLOW)
 
-add_python_test(broken-dam
-                ${TruchasTest_SOURCE_DIR}/broken-dam/testBrokenDam.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(diverging-duct
+                   diverging-duct/testDivergingDuct.py
+		   PROCESSORS 4
+		   LABELS FLOW)
 
-add_python_test(channel-flow
-                ${TruchasTest_SOURCE_DIR}/channel-flow/testChannelFlow.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(hydrostatic
+                   hydrostatic/testHydrostatic.py
+		   PROCESSORS 4
+		   LABELS FLOW)
 
-add_python_test(diverging-duct
-                ${TruchasTest_SOURCE_DIR}/diverging-duct/testDivergingDuct.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(static_wall
+                   static-wall/testStaticWall.py
+		   PROCESSORS 4
+		   LABELS FLOW)
 
-add_python_test(hydrostatic
-                ${TruchasTest_SOURCE_DIR}/hydrostatic/testHydrostatic.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(gap-rad
+                   gap-rad/testGapRad.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(static-wall
-                ${TruchasTest_SOURCE_DIR}/static-wall/testStaticWall.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(gap-rad-flow
+                   gap-rad-flow/testGapRadFlow.py
+		   PROCESSORS 4
+                   LABELS DIFFUSION FLOW)
 
-add_python_test(natural-convection
-                ${TruchasTest_SOURCE_DIR}/natural-convection/testNaturalConvection.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(vfrad1
+                   vfrad1/testVFRad1.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(porous-drag
-                ${TruchasTest_SOURCE_DIR}/porous-drag/testPorousDrag.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(vfrad2
+                   vfrad2/testVFRad2.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION)
 
-add_python_test(turbulence
-                ${TruchasTest_SOURCE_DIR}/turbulence/testTurbulence.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(sloshing-flow
+                   sloshing-flow/testSloshingFlow.py
+		   PROCESSORS 4
+		   LABELS FLOW)
 
-add_python_test(void-collapse
-                ${TruchasTest_SOURCE_DIR}/void-collapse/testVoidCollapse.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(contact-box-close
+                   contact-box-close/testContactBoxClose.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
 
-add_python_test(gap-rad
-                ${TruchasTest_SOURCE_DIR}/gap-rad/testGapRad.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(contact-box-open
+                   contact-box-open/testContactBoxOpen.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
 
-add_python_test(gap-rad-flow
-                ${TruchasTest_SOURCE_DIR}/gap-rad-flow/testGapRadFlow.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(viscoplastic-ring
+                   viscoplastic-ring/testViscoplasticRing.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
 
-add_python_test(vfrad1
-                ${TruchasTest_SOURCE_DIR}/vfrad1/testVFRad1.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(shear-constr-heat
+                   shear-constr-heat/testShearConstrHeat.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
 
-add_python_test(vfrad2
-                ${TruchasTest_SOURCE_DIR}/vfrad2/testVFRad2.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(simple-gap
+                   simple-gap/testSimpleGap.py
+		   PROCESSORS 4
+		   LABELS FLOW)
 
-add_python_test(sloshing-flow
-                ${TruchasTest_SOURCE_DIR}/sloshing-flow/testSloshingFlow.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(contact-box-close
-                ${TruchasTest_SOURCE_DIR}/contact-box-close/testContactBoxClose.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(contact-box-open
-                ${TruchasTest_SOURCE_DIR}/contact-box-open/testContactBoxOpen.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(viscoplastic-ring
-                ${TruchasTest_SOURCE_DIR}/viscoplastic-ring/testViscoplasticRing.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(shear-constr-heat
-                ${TruchasTest_SOURCE_DIR}/shear-constr-heat/testShearConstrHeat.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(simple-gap
-                ${TruchasTest_SOURCE_DIR}/simple-gap/testSimpleGap.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
-
-add_python_test(tm-pc
-                ${TruchasTest_SOURCE_DIR}/tm-pc/testTMPC.py
-		PYTHON_PATH ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR}) 
+add_pytruchas_test(tm-pc
+                   tm-pc/testTMPC.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
 
