@@ -27,7 +27,8 @@
 #                                         the variables passed in.
 #
 # PROCESSORS n                            Number of processors required for
-#                                         MPI (parallel) tests.
+#                                         MPI (parallel) tests. Ignored if
+#                                         ENABLE_MPI=False
 #
 # RUN_SERIAL                              Flag that forces CTest to NOT run other
 #                                         tests in parallel while this test is
@@ -86,7 +87,7 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
     list(APPEND test_properties WILL_FAIL TRUE)
   endif()
 
-  if ( MY_ARG_PROCESSORS )
+  if ( MY_ARG_PROCESSORS AND ENABLE_MPI )
     list(APPEND test_properties PROCESSORS ${MY_ARG_PROCESSORS})
   endif()
 
