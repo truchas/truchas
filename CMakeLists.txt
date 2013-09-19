@@ -496,9 +496,6 @@ add_subdirectory(test)
 # Package Definitions 
 # ---------------------------------------------------------------------------- #
 
-# This will add a 'package' and 'package_source' targets
-include(CPack)
-
 # Package name
 set(CPACK_PACKAGE_NAME truchas)
 
@@ -509,32 +506,33 @@ set(CPACK_PACKAGE_VERSION_PATCH "${Truchas_PATCH_LEVEL}")
 set(CPACK_PACKAGE_VERSION       "${Truchas_VERSION}")
 
 # Basic package information
+set(CPACK_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}-${CMAKE_SYSTEM_NAME}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Truchas: Cool code package")
 set(CPACK_PACKAGE_VENDOR "Los Alamos National Laboratory")
 set(CPACK_RESOURCE_FILE_LICENSE ${Truchas_SOURCE_DIR}/LICENSE)
 
-# Gzip tar files are defined as my generator, many other options are available
+# Name of the source file distribution 
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}"
     CACHE INTERNAL "Distribution base file name")
 
-
+# Gzip tar files are defined as my generator, many other options are available
+set(CPACK_SOURCE_GENERATOR TGZ)  
   
 # Files to ignore regular expressions are allowed
 set(CPACK_SOURCE_IGNORE_FILES
-     ".hg"
-     ".hg/*"
-     "CVS/"
-     ".cvs"
-     ".cvs/*"
-     ".svn"
-     ".svn/*"
-     ".*.swp"
-     "^${Truchas_SOURCE_DIR}/install"
-     "^${Truchas_SOURCE_DIR}/build*"
+     "/\\\\.hg/"
+     "/CVS/"
+     "/\\\\.svn/"
+     "\\\\.swp$"
+     "/install/"
+     "/build/"
      "Makefile"
-     "CMakeFiles"
+     "/CMakeFiles/"
      "CMakeCache.txt"
      "cmake_install.cmake")
+
+# This will add a 'package' and 'package_source' targets
+include(CPack)
 
 
 # ---------------------------------------------------------------------------- #
