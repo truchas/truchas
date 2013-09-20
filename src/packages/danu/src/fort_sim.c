@@ -179,7 +179,7 @@ void simulation_open_f(const hid_t_ptr *fptr,
 
 void simulation_link_mesh_f(const hid_t_ptr *fptr,
                             const hid_t_ptr *sptr,
-                            const char *sim_name,
+                            const char *mesh_name,
                             const int  *flen,
                             int *ierr)
 {
@@ -188,7 +188,7 @@ void simulation_link_mesh_f(const hid_t_ptr *fptr,
     herr_t err;
     int  c_len        = *flen+1;
     char *c_name      = DANU_MALLOC(char, c_len);
-    danu_err_t status = convert_string_f2c(sim_name,*flen,c_name,c_len);
+    danu_err_t status = convert_string_f2c(mesh_name,*flen,c_name,c_len);
 
     if ( status == DANU_SUCCESS ) {
       err = simulation_link_mesh(fid,sid,c_name);
@@ -202,6 +202,42 @@ void simulation_link_mesh_f(const hid_t_ptr *fptr,
     error_translate(err,ierr);
 
 }
+
+void simulation_open_mesh_link_f(const hid_t_ptr *sptr,
+                                 hid_t_ptr *mptr,
+                                 int *ierr)
+{
+   hid_t sid = GET_HID_VALUE(sptr);
+   hid_t mid;
+   herr_t err;
+
+   mid = simulation_open_mesh_link(sid);
+   if ( H5_ISA_VALID_ID(mid) ) {
+     *mptr= create_hid_struct(mid);
+     err = DANU_SUCCESS;
+   }
+   else {
+     err = DANU_FAILURE;
+   }
+
+   error_translate(err,ierr);
+
+}
+
+void simulation_mesh_link_exists_f(const hid_t_ptr *sptr,
+                                  int *flag,
+                                  int *ierr)
+{
+   hid_t sid = GET_HID_VALUE(sptr);
+   hid_t mid;
+   herr_t err;
+
+   err = simulation_mesh_link_exists(sid,flag);
+   error_translate(err,ierr);
+
+}
+
+
 
 
 

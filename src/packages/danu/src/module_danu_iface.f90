@@ -654,6 +654,25 @@ interface
     end subroutine simulation_link_mesh_f
 end interface
 
+interface
+    subroutine simulation_open_mesh_link_f(sptr,mptr,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                  intent(in)  :: sptr
+    type(C_PTR),                  intent(out) :: mptr
+    integer(kind=C_INT),          intent(out) :: ierr
+    end subroutine simulation_open_mesh_link_f
+end interface
+
+interface
+    subroutine simulation_mesh_link_exists_f(sptr,flag,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                  intent(in)  :: sptr
+    integer(kind=C_INT),          intent(out) :: flag
+    integer(kind=C_INT),          intent(out) :: ierr
+    end subroutine simulation_mesh_link_exists_f
+end interface
+
+
 ! --- Non-series Datasets
 
 interface

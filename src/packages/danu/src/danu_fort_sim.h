@@ -42,6 +42,8 @@ void simulation_add_f(const hid_t_ptr *fid, const char *name, const int *flen, h
 void simulation_open_f(const hid_t_ptr *fid, const char *name, const int *flen, hid_t_ptr *sid, int *ierr); 
 
 void simulation_link_mesh_f(const hid_t_ptr *fid, const hid_t_ptr *sid, const char * mesh_name, const int *flen, int *ierr); 
+void simulation_open_mesh_link_f(const hid_t_ptr *sid, hid_t_ptr *mid, int *ierr); 
+void simulation_mesh_link_exists_f(const hid_t_ptr *sid, int *flag, int *ierr); 
 
                               
 

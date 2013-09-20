@@ -252,6 +252,53 @@
 
           return list;
         }
+
+        Mesh * link_mesh(Output * fo, const char * mesh_name) {
+          hid_t sid = GET_SIMOBJ_HID($self);
+          hid_t fid = GET_OUTPUT_OBJ_HID(fo);
+          hid_t mid;
+          herr_t r1,r2;
+          Mesh * mesh = NULL;
+          tmesh_t m_type;
+          telem_t e_type;
+
+          mid = simulation_link_mesh(fid,sid,mesh_name);
+          if ( H5_ISA_INVALID_ID(mid) ) {
+            throw_exception("Failed to link mesh");
+          }
+          else {
+             r1 = mesh_get_type(mid,&m_type);
+             r2 = mesh_get_elementtype(mid,&e_type);
+          }
+            
+          return mesh;
+        }
+        
+        Mesh * open_mesh_link() {
+          hid_t sid = GET_SIMOBJ_HID($self);
+          hid_t mid;
+          Mesh * mesh = NULL;
+          herr_t r1,r2;
+
+          mid = simulation_open_mesh_link(sid);
+          if ( H5_ISA_VALID_ID(mid) ) {
+            mesh = construct_mesh_object_by_id(mid);
+          }
+          else {
+            throw_exception("Failed to opne link mesh");
+          }
+
+          return mesh;
+        }
+        int mesh_link_exists() {
+          hid_t sid = GET_SIMOBJ_HID($self);
+          int flag=0;
+          
+          if ( DANU_RETURN_FAIL(simulation_mesh_link_exists(sid,&flag) ) ) {
+            throw_exception("Failed to stat mesh link");
+          }
+          return flag;
+        }
 };
 
 /* Methods related to Simulations for the Output Objects */
@@ -645,7 +692,6 @@
           }
           return num;
         }
-
 
 
 

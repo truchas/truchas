@@ -458,6 +458,86 @@ herr_t simulation_link_mesh(hid_t fid, hid_t sid, const char * meshname)
     return status;
 }
 
+/*
+ * Routine: hid_t simulation_open_mesh_link(hid_t sid)
+ * Purpose: Open soft-link mesh group. 
+ * Description: Open a soft linked mesh group under the simulation id sid
+ *              Since the link is soft, only a warning
+ *              will occur if the mesh does not exist.  
+ *
+ * Parameters:
+ *           sid       IN     Simulation identifier
+ *           mid       OUT    HDF5 identifier for the mesh
+ *                              
+ * Returns: An identifier (hid_t) is returned. A negative return value 
+ *          indicates an error.
+ *          
+ * Errors: An error is raised if sid is not a valid, or if the link fails.
+ *         Since the link is a soft link, only a warning will be issued if meshname
+ *         does not exist.
+ *        
+ */
+
+hid_t simulation_open_mesh_link(hid_t sid)
+{
+  hid_t mid = H5I_BADID;
+  char  mesh_link_name[] = SIM_MESH_LINK_NAME;
+
+  if ( danu_group_exists(sid,mesh_link_name) ) {
+    mid = danu_group_open(sid,mesh_link_name);
+  }
+  else {
+    DANU_WARN_MESS("Link mesh group does not exist");
+  }
+
+  return mid;
+
+}
+
+/*
+ * Routine: hid_t simulation_mesh_link_exists(hid_t sid)
+ * Purpose: Check the existence of the soft link mesh group
+ * Description: Check the existence of a soft linked mesh group
+ *              under the simulation id sid.
+ *
+ * Parameters:
+ *           sid       IN     Simulation identifier
+ *           *exists   OUT    Flag TRUE (!=0) or FALSE(=0) if
+ *                            mesh link group exists
+ *                              
+ * Returns: A flag (hid_t) is returned to indicate status.
+ *           A negative return value indicates an error.
+ *          
+ * Errors: An error is raised if sid is not a valid.
+ *        
+ */
+herr_t simulation_mesh_link_exists(hid_t sid, int *exists)
+{
+
+  herr_t status = DANU_FAILURE;
+  char  mesh_link_name[] = SIM_MESH_LINK_NAME;
+
+  if ( H5_ISA_INVALID_ID(sid) ) {
+     DANU_ERROR_MESS("Invalid simulation id");
+     return status;
+  }
+
+  status = 0;
+  if ( danu_group_exists(sid,mesh_link_name) ) {
+    *exists = TRUE;
+  }
+  else {
+    *exists = FALSE;
+  }
+
+  return status;
+
+}
+
+
+
+
+
 
 
 

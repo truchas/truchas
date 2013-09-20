@@ -183,6 +183,15 @@ contains
     end if
     call broadcast (stat)
     INSIST(stat == DANU_SUCCESS)
+
+    !! Hard-wired for the moment. Need to accomodate EM simulation 
+    if (is_IOP) then
+      INSIST(c_associated(fid))
+      INSIST(c_associated(sid))
+      call simulation_link_mesh(fid,sid,'DEFAULT',stat)
+    end if
+    call broadcast (stat)
+    INSIST(stat == DANU_SUCCESS)
     
     if (species_transport .or. heat_species_transport) then
       if (is_IOP) call attribute_write (sid, 'NUM_SPECIES', number_of_species, stat)

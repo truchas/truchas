@@ -36,5 +36,8 @@ herr_t  simulation_list(hid_t fid, int num, char **sim_names, int *num_found);
 herr_t  simulation_exists(hid_t fid, const char * sim_name, int *exists);
 
 herr_t  simulation_link_mesh(hid_t fid, hid_t sid, const char * meshname);
+hid_t   simulation_open_mesh_link(hid_t sid);
+herr_t  simulation_mesh_link_exists(hid_t sid, int *exists);
+
 
 #endif

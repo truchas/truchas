@@ -138,7 +138,9 @@ module danu_module
         simulation_list,              &
         simulation_add,               &
         simulation_open,              &
-        simulation_link_mesh    
+        simulation_link_mesh,         &
+        simulation_open_mesh_link,    &
+        simulation_mesh_link_exists
    
     ! Non-series datasets
     public ::                         &
@@ -363,6 +365,14 @@ end interface simulation_list
 interface simulation_link_mesh
   module procedure df90_simulation_link_mesh  
 end interface simulation_link_mesh  
+
+interface simulation_open_mesh_link
+  module procedure df90_simulation_open_mesh_link  
+end interface simulation_open_mesh_link 
+
+interface simulation_mesh_link_exists
+  module procedure df90_simulation_mesh_link_exists  
+end interface simulation_mesh_link_exists 
 
 interface data_open_dataset
   module procedure df90_data_open_dataset
@@ -616,7 +626,7 @@ logical function df90_attribute_exists(fid, attr_name)
       call danu_attr_exists_f(fid, attr_name, name_len, flag,ierr)
       call define_return_status(ierr,stat)
 
-      if ( stat == DANU_SUCCESS ) then
+      if ( stat .eq. DANU_SUCCESS ) then
           if ( flag .gt. 0 ) then
               df90_attribute_exists = .true.
           else
@@ -645,7 +655,7 @@ logical function df90_group_exists(fid, grp_name)
       call danu_group_exists_f(fid, grp_name, name_len, flag,ierr)
       call define_return_status(ierr,stat)
 
-      if ( stat == DANU_SUCCESS ) then
+      if ( stat .eq. DANU_SUCCESS ) then
           if ( flag .gt. 0 ) then
               df90_group_exists = .true.
           else
@@ -674,7 +684,7 @@ logical function df90_simulation_exists(fid, sim_name)
       call simulation_exists_f(fid, sim_name, name_len, flag,ierr)
       call define_return_status(ierr,stat)
 
-      if ( stat == DANU_SUCCESS ) then
+      if ( stat .eq. DANU_SUCCESS ) then
           if ( flag .gt. 0 ) then
               df90_simulation_exists = .true.
           else
@@ -703,7 +713,7 @@ logical function df90_data_exists(sid, data_name)
       call data_exists_f(sid, data_name, name_len, flag,ierr)
       call define_return_status(ierr,stat)
 
-      if ( stat == DANU_SUCCESS ) then
+      if ( stat .eq. DANU_SUCCESS ) then
           if ( flag .gt. 0 ) then
               df90_data_exists = .true.
           else
@@ -732,7 +742,7 @@ logical function df90_sequence_exists(sid, sname)
       call sequence_exists_f(sid, sname, name_len, flag,ierr)
       call define_return_status(ierr,stat)
 
-      if ( stat == DANU_SUCCESS ) then
+      if ( stat .eq. DANU_SUCCESS ) then
           if ( flag .gt. 0 ) then
               df90_sequence_exists = .true.
           else
@@ -761,7 +771,7 @@ logical function df90_simulation_data_exists(nid, dname)
       call simulation_data_exists_f(nid, dname, name_len, flag, ierr)
       call define_return_status(ierr,stat)
 
-      if ( stat == DANU_SUCCESS ) then
+      if ( stat .eq. DANU_SUCCESS ) then
           if ( flag .gt. 0 ) then
               df90_simulation_data_exists = .true.
           else
@@ -790,7 +800,7 @@ logical function df90_probe_data_exists(sid, pname)
       call probe_data_exists_f(sid, pname, name_len, flag, ierr)
       call define_return_status(ierr,stat)
 
-      if ( stat == DANU_SUCCESS ) then
+      if ( stat .eq. DANU_SUCCESS ) then
           if ( flag .gt. 0 ) then
               df90_probe_data_exists = .true.
           else
@@ -1954,6 +1964,57 @@ subroutine df90_simulation_link_mesh(fid,sid,mesh_name,stat)
       end if 
 
 end subroutine df90_simulation_link_mesh
+
+! ------------------------------------------------------------------------------
+
+subroutine df90_simulation_open_mesh_link(sid,mid,stat)
+
+! --- Calling Arguments
+ 
+      type(C_PTR),                       intent(in)  :: sid
+      type(C_PTR),                       intent(out) :: mid
+
+      integer, intent(out), optional :: stat
+
+! --- Local variables
+      integer(C_INT) :: ierr
+
+! --- code
+
+      call simulation_open_mesh_link_f(sid, mid, ierr)
+      if (present(stat)) then
+          call define_return_status(ierr,stat)
+      end if 
+
+end subroutine df90_simulation_open_mesh_link
+
+! ------------------------------------------------------------------------------
+
+logical function df90_simulation_mesh_link_exists(sid)
+
+! --- Calling Arguments
+ 
+      type(C_PTR),                       intent(in)  :: sid
+
+! --- Local variables
+      integer(C_INT) :: flag, ierr, stat
+
+! --- code
+
+      call simulation_mesh_link_exists_f(sid, flag, ierr)
+      call define_return_status(ierr,stat)
+
+      if ( stat .eq. DANU_SUCCESS ) then
+        if ( flag .gt. 0 ) then
+          df90_simulation_mesh_link_exists = .true.
+        else
+          df90_simulation_mesh_link_exists = .false.
+        endif
+      else    
+        df90_simulation_mesh_link_exists = .false.
+      endif
+
+end function df90_simulation_mesh_link_exists
 
 ! ------------------------------------------------------------------------------
 
