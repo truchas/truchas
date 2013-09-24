@@ -449,7 +449,13 @@ herr_t simulation_link_mesh(hid_t fid, hid_t sid, const char * meshname)
 
         sprintf(mesh_fullname,"/%s/%s",mesh_root_name,meshname);
 
-        status = danu_link_create_soft(sid,mesh_link_name,mesh_fullname);
+        /* Create a soft link if the mesh does not exist, hard otherwise */
+	if ( exists ) {
+	  status = danu_link_create_hard(sid,mesh_link_name,fid,mesh_fullname);
+        }
+	else {
+          status = danu_link_create_soft(sid,mesh_link_name,mesh_fullname);
+	}
 
         DANU_FREE(mesh_fullname);
 
@@ -516,18 +522,20 @@ herr_t simulation_mesh_link_exists(hid_t sid, int *exists)
 
   herr_t status = DANU_FAILURE;
   char  mesh_link_name[] = SIM_MESH_LINK_NAME;
+  hid_t gid;
+  hbool_t flag;
 
   if ( H5_ISA_INVALID_ID(sid) ) {
      DANU_ERROR_MESS("Invalid simulation id");
      return status;
   }
 
-  status = 0;
-  if ( danu_group_exists(sid,mesh_link_name) ) {
-    *exists = TRUE;
+  status = danu_link_exists(sid,mesh_link_name,&flag);
+  if ( flag == TRUE ) {
+    *exists=1;
   }
   else {
-    *exists = FALSE;
+    *exists=0;
   }
 
   return status;

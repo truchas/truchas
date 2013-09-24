@@ -35,7 +35,7 @@
 
 
 /* Prototypes */
-Mesh * allocate_mesh_object(Output *fh,hid_t mid, const char *meshname,tmesh_t mtype,telem_t etype);
+Mesh * allocate_mesh_object(hid_t mid, const char *meshname,tmesh_t mtype,telem_t etype);
 void   deallocate_mesh_object(Mesh *m);
 
 Mesh * construct_mesh_object(Output *fh, const char *meshname, tmesh_t mtype, telem_t etype);

@@ -65,21 +65,20 @@ class TruchasRegion(object):
 
     # Cellmask array
     blockids=simulation.blockid()
-    ncell = blockids.size
+    ncell = simulation.mesh_ncells()
     self.cellmask=numpy.ones(ncell)
     for n in range(ncell):
       if blockids[n] in self.matids:
 	self.cellmask[n]=0
 
     # Nodemask array
-    nnode=simulation.nodemap().size # poor way of getting the number of nodes
-    self.nodemask=None  # for now until we resolve the following problem; see also get_data
-#    self.nodemask=numpy.ones(nnode)
-#    connect = ... we have no access to the mesh from the input!
-#    for i in range(ncell)
-#      if self.cellmask(i) == 0:
-#        for j in connect[i,:]:  # N.B. connect values (node indices) are 1-based
-#          self.nodemask[j-1] = 0
+    nnode=simulation.mesh_nnodes()
+    self.nodemask=numpy.ones(nnode)
+    connect = simulation.get_mesh_connectivity()
+    for i in range(ncell):
+      if self.cellmask[i] == 0:
+        for j in connect[i,:]:  # N.B. connect values (node indices) are 1-based
+          self.nodemask[j-1] = 0
       
     # These will be computed on the fly
     self.cellmask_serial = None
@@ -272,13 +271,11 @@ class TruchasSeries(object):
       if serialize is True:
         map=self.simulation.nodemap()
         if region is not None:
-          raise TruchasError('regions not yet implement for node-based fields')
           if region.nodemask_serial is None:
             region.nodemask_serial=remap_data(region.nodemask,map)
           mask=region.nodemask_serial
       else:
         if region is not None:
-          raise TruchasError('regions not yet implement for node-based fields')
           mask=region.nodemask
     if map is not None:
       data=remap_data(data,map)
@@ -448,6 +445,13 @@ class TruchasSimulation(TruchasBaseSimulation):
       msg='Failed to determine the number of processors in %s' % name
       raise TruchasOutputError(msg)
     self.numprocs=int(np[0]) # NumPy returns an ndarray array, just want an int type
+
+    # Define the mesh link if it exists
+    self.mesh_link_exists=self.danu_sim.mesh_link_exists()
+    if self.mesh_link_exists:
+      self.danu_mesh=self.danu_sim.open_mesh_link()
+    else:
+      self.danu_mesh=None
     
  
   def blockid(self):
@@ -494,6 +498,30 @@ class TruchasSimulation(TruchasBaseSimulation):
     except:
       raise
     return nodemap
+
+  def mesh_nnodes(self):
+    if self.mesh_link_exists:
+      return self.danu_mesh.nnodes()
+    else:
+      return self.nodemap().size[0]
+
+  def mesh_ncells(self):
+    if self.mesh_link_exists:
+      return self.danu_mesh.nelem()
+    else:
+      return self.cellmap().size[0]
+  
+  def get_mesh_connectivity(self):
+    try:
+      connect=self.danu_mesh.read_connectivity()
+    except:
+      raise TruchasError('No mesh link')
+    return connect
+
+  def get_mesh_coordinates(self):
+    coordinates=None
+    if self.danu_mesh is not None:
+      coordinates=self.danu_mesh.coordinates()
 
 
 class TruchasMesh(object):
