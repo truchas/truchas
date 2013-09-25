@@ -52,7 +52,7 @@ configure_file(${TruchasPython_CONFIGURE_INCLUDE}
 # --- Add the directories
 add_subdirectory(Truchas)
 
-# --- Copy Python files
+# --- Python module files
 set(TruchasPython_FILES
                  FileFilter
 		 TruchasTest)
@@ -74,9 +74,35 @@ foreach(f ${TruchasPython_FILES})
   add_custom_target(${mod_target} ALL DEPENDS ${py_file} ${pyc_file})	
   list(APPEND TruchasPython_INSTALL_FILES ${py_file} ${pyc_file})
 endforeach()		  
-                 
+
+# --- Python script files
+set(TruchasPython_SCRIPT_FILES
+                  sample-truchas)
+#set(TruchasPython_SCRIPT_FILES
+#                  sample-truchas
+#		  xdmf-writer)
+
+		# Each target is <file> with out the extension
+foreach(f ${TruchasPython_SCRIPT_FILES})
+  set(mod_target ${f})
+  set(in_file ${TruchasPython_SOURCE_DIR}/${f}.py.in)
+  set(py_file ${TruchasPython_BINARY_DIR}/${f}.py)
+  set(pyc_file ${py_file}c)
+  set(config_args -DINFILE:STRING=${in_file} -DOUTFILE:STRING=${py_file})
+  add_custom_command(OUTPUT ${py_file} ${pyc_file}
+                     DEPENDS ${in_file}
+                     COMMAND
+		     ${CMAKE_COMMAND} ${config_args} -P ${TruchasPython_CONFIGURE_FILES}
+		     COMMAND
+		     ${PYTHON_EXECUTABLE} ${TruchasPython_COMPILE_SCRIPT} ${py_file}
+		     COMMENT "Processing ${f}")
+  add_custom_target(${mod_target} ALL DEPENDS ${py_file} ${pyc_file})	
+  list(APPEND TruchasPython_INSTALL_SCRIPT_FILES ${py_file} ${pyc_file})
+endforeach()
+
+# --- Define the install locations
 install(PROGRAMS ${TruchasPython_INSTALL_FILES}
         DESTINATION ${TruchasPython_INSTALL_PREFIX})
 
-install(PROGRAMS sample-truchas.py.in
+install(PROGRAMS ${TruchasPython_INSTALL_SCRIPT_FILES}
         DESTINATION bin)
