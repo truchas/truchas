@@ -73,10 +73,12 @@ function(_HDF5_DEFINE_VERSION _file _var)
 
   set(_search_key "HDF5 Version")
   _HDF5_PARSE_SETTINGS_FILE(${_file} ${_search_key} _tmp)
+  if (_tmp)
+    set(${_var} ${_tmp} PARENT_SCOPE)
+  endif()
 
-  set(${_var} ${_tmp} PARENT_SCOPE)
   
-endfunction(_HDF5_DEFINE_VERSION _var)
+endfunction(_HDF5_DEFINE_VERSION _file _var)
 
 function(_HDF5_DEFINE_PARALLEL_BUILD _file _var)
 
@@ -300,7 +302,7 @@ if (HDF5_INSTALL_PREFIX)
               ${HDF5_INSTALL_PREFIX}/lib
               ${HDF5_INSTALL_PREFIX})
   
-            list(APPEND _hdf5_BINARY_SEARCH_DIRS 
+ list(APPEND _hdf5_BINARY_SEARCH_DIRS 
               ${HDF5_INSTALL_PREFIX}/bin
               ${HDF5_INSTALL_PREFIX})
 endif()
@@ -393,14 +395,6 @@ else()
     
   endif(NOT HDF5_NO_HDF5_CMAKE)
 
-  # --- If HDF5 is NOT found search for the settings file installed with the libraries
-  #     Will allow the user to define the HDF5_SETTINGS_FILE before attempting a search. 
-  if ( NOT HDF5_FOUND AND ( NOT HDF5_SETTINGS_FILE ) )
-    find_file(HDF5_SETTINGS_FILE
-              NAMES libhdf5.settings
-              HINTS ${_hdf5_LIBRARY_SEARCH_DIRS}
-              ${_hdf5_FIND_OPTIONS})
-  endif()    
  
   # --- Now search by file name. HDF5_INCLUDE_DIRS and HD5_LIBRARIES will
   #     not be set if the CMake configuration search was successful.
@@ -411,28 +405,15 @@ else()
               NAMES hdf5.h
               HINTS ${_hdf5_INCLUDE_SEARCH_DIRS}
               ${_hdf5_FIND_OPTIONS})
+    set(HDF5_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})	    
 
-    # Check the settings file for other include directories
-    if ( HDF5_SETTINGS_FILE )
-      _HDF5_EXTRA_INCLUDE_DIRS(${HDF5_SETTINGS_FILE} extra_inc_dirs)
-    endif()
-
-    # Build HDF5_INCLUDE_DIRS
-    set(HDF5_INCLUDE_DIRS ${HDF5_INCLUDE_DIR} ${extra_inc_dirs})
-    list(REMOVE_DUPLICATES HDF5_INCLUDE_DIRS)
-
+   
   endif(NOT HDF5_INCLUDE_DIRS)
 
   # Search for the libraries
 
   if ( NOT HDF5_LIBRARIES )
 
-    # Check the settings file to find extra link libraries
-    if(HDF5_SETTINGS_FILE)
-      _HDF5_EXTRA_LIBRARIES(${HDF5_SETTINGS_FILE} HDF5_LINK_LIBRARIES)
-    else()  
-      set(HDF5_LINK_LIBRARIES HDF5_LINK_LIBRARIES-NOTFOUND)
-    endif() 
 
     # --- Search for the C library 
     find_library(_HDF5_C_LIBRARY
@@ -440,7 +421,23 @@ else()
                  HINTS ${_hdf5_LIBRARY_SEARCH_DIRS}
                  ${_hdf5_FIND_OPTIONS})
 
-    # Define the link libraries for the C library
+    # --- Determine the library path, need this to find the settings file
+    get_filename_component(HDF5_LIBRARY_PATH ${_HDF5_C_LIBRARY} PATH)
+
+    # --- Define the settings file
+    #     User can bypass by setting HDF5_SETTINGS_FILE. 
+    #     This file is typically located with the libraries.
+    find_file(HDF5_SETTINGS_FILE
+                NAMES libhdf5.settings
+                HINTS ${HDF5_LIBRARY_PATH}
+                ${_hdf5_FIND_OPTIONS})
+
+    # --- Search the settings file for additional link libraries
+    if (HDF5_SETTINGS_FILE)
+      _HDF5_EXTRA_LIBRARIES(${HDF5_SETTINGS_FILE} HDF5_LINK_LIBRARIES)
+    endif()  
+
+    # --- Set HDF5_C_LIBRARY
     if (HDF5_USE_IMPORTED_TARGETS AND _HDF5_C_LIBRARY )
       _hdf5_add_imported_library(${HDF5_C_TARGET}
                                  LOCATION ${_HDF5_C_LIBRARY}
@@ -547,11 +544,20 @@ else()
 
 endif()
 
+# --- It is possible user has defined HDF5_INCLUDE_DIR and HDF5_*_LIBRARIES
+#     we still want other configuration infor mation. This search will ensure the
+#     HDF5_SETTINGS_FILE is set is this instance. It will be ignored if already
+#     FOUND or defined.
+find_file(HDF5_SETTINGS_FILE
+                NAMES libhdf5.settings
+                HINTS ${HDF5_LIBRARY_PATH}
+                ${_hdf5_FIND_OPTIONS})
+
 # --- Define the version string from the settings file if not already set
 if ( NOT HDF5_VERSION )
   if ( HDF5_SETTINGS_FILE )
     _HDF5_DEFINE_VERSION(${HDF5_SETTINGS_FILE} HDF5_VERSION)
-  else() 
+  else()
     set(HDF5_VERSION HDF5_VERSION-NOTFOUND)
   endif()  
 endif()
@@ -563,6 +569,15 @@ if ( NOT HDF5_IS_PARALLEL )
   else()
     set(HDF5_IS_PARALLEL HDF5_IS_PARALLEL-NOTFOUND)
   endif()  
+endif()
+
+# --- Check the settings file for other include directories
+if ( HDF5_SETTINGS_FILE )
+  _HDF5_EXTRA_INCLUDE_DIRS(${HDF5_SETTINGS_FILE} extra_inc_dirs)
+  if (extra_inc_dirs)
+    list(APPEND HDF5_INCLUDE_DIRS ${extra_include_dirs})
+    list(REMOVE_DUPLICATES HDF5_INCLUDE_DIRS)
+  endif()
 endif()
 
 # --- Search for HDF5 tools
