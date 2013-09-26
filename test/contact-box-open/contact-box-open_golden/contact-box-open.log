@@ -7,12 +7,12 @@ PROGRAM INFORMATION
    version:             2.8.dev
    libraries:           UbikSolve, PGSLib, Chaco
    build architecture:  x86_64
-   build date/time:     10 Sep 2013 22:02:27
+   build date/time:     26 Sep 2013 15:14:13
    build flags:         -O2 -maxcontin=99 -PIC
    build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 3.8.13-100.fc17.x86_64 #1 SMP Mon May 13 13:36:17 UTC 2013 x86_64
+   run architecture:    Linux noether.lanl.gov 3.6.11-5.fc17.x86_64 #1 SMP Tue Jan 8 21:40:51 UTC 2013 x86_64
    run host:            noether.lanl.gov
-   run date/time:       11 Sep 13 11:55:26
+   run date/time:       26 Sep 13 10:12:02
    processors:          1
 
 ================================================================================
@@ -637,42 +637,42 @@ Warning: DANU: Danu fid is still associated
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               4.422E+00    4.422E+00    4.422E+00
-    Input                               9.000E-03    9.000E-03    9.000E-03
-    Initialization                      4.460E-01    4.460E-01    4.460E-01
-      Solid Mechanics                     3.990E-01    3.990E-01    3.990E-01
+  Total                               3.300E+00    3.300E+00    3.300E+00
+    Input                               4.999E-03    4.999E-03    4.999E-03
+    Initialization                      3.519E-01    3.519E-01    3.519E-01
+      Solid Mechanics                     3.160E-01    3.160E-01    3.160E-01
         Precondition                        0.000E+00    0.000E+00    0.000E+00
-        NK                                  3.980E-01    3.980E-01    3.980E-01
-          NK Residual                         1.000E-03    1.000E-03    1.000E-03
-          Newton Loop                         3.970E-01    3.970E-01    3.970E-01
-            NK LS                               1.360E-01    1.360E-01    1.360E-01
-              Solver TMP1                         1.360E-01    1.360E-01    1.360E-01
-                Precondition                        1.350E-01    1.350E-01    1.350E-01
-            NK Residual                         2.280E-01    2.280E-01    2.280E-01
-      Initialization                      4.000E-03    4.000E-03    4.000E-03
-        Solid Mech Init                     4.000E-03    4.000E-03    4.000E-03
+        NK                                  3.160E-01    3.160E-01    3.160E-01
+          NK Residual                         0.000E+00    0.000E+00    0.000E+00
+          Newton Loop                         3.160E-01    3.160E-01    3.160E-01
+            NK LS                               1.210E-01    1.210E-01    1.210E-01
+              Solver TMP1                         1.210E-01    1.210E-01    1.210E-01
+                Precondition                        1.200E-01    1.200E-01    1.200E-01
+            NK Residual                         1.700E-01    1.700E-01    1.700E-01
+      Initialization                      3.999E-03    3.999E-03    3.999E-03
+        Solid Mech Init                     3.999E-03    3.999E-03    3.999E-03
       HTSD function                       0.000E+00    0.000E+00    0.000E+00
         HT function                         0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          3.964E+00    3.964E+00    3.964E+00
-      Output                              2.650E-01    2.650E-01    2.650E-01
-      Time Step                           0.000E+00    0.000E+00    0.000E+00
-      Diffusion Solver                    2.400E-02    2.400E-02    2.400E-02
-        HTSD precon compute                 3.000E-03    3.000E-03    3.000E-03
-        HTSD function                       5.000E-03    5.000E-03    5.000E-03
-          HT function                         5.000E-03    5.000E-03    5.000E-03
-        HTSD precon apply                   1.100E-02    1.100E-02    1.100E-02
-          HT precon apply                     1.100E-02    1.100E-02    1.100E-02
-      Solid Mechanics                     3.672E+00    3.672E+00    3.672E+00
-        Precondition                        1.200E-02    1.200E-02    1.200E-02
-        NK                                  3.636E+00    3.636E+00    3.636E+00
-          NK Residual                         3.900E-02    3.900E-02    3.900E-02
-          Newton Loop                         3.596E+00    3.596E+00    3.596E+00
-            NK LS                               1.278E+00    1.278E+00    1.278E+00
-              Solver TMP1                         1.275E+00    1.275E+00    1.275E+00
-                Precondition                        1.272E+00    1.272E+00    1.272E+00
-            NK Residual                         2.101E+00    2.101E+00    2.101E+00
+    Main Cycle                          2.940E+00    2.940E+00    2.940E+00
+      Output                              1.990E-01    1.990E-01    1.990E-01
+      Time Step                           9.999E-04    9.999E-04    9.999E-04
+      Diffusion Solver                    2.100E-02    2.100E-02    2.100E-02
+        HTSD precon compute                 1.999E-03    1.999E-03    1.999E-03
+        HTSD function                       9.999E-04    9.999E-04    9.999E-04
+          HT function                         9.999E-04    9.999E-04    9.999E-04
+        HTSD precon apply                   1.300E-02    1.300E-02    1.300E-02
+          HT precon apply                     1.300E-02    1.300E-02    1.300E-02
+      Solid Mechanics                     2.715E+00    2.715E+00    2.715E+00
+        Precondition                        7.998E-03    7.998E-03    7.998E-03
+        NK                                  2.694E+00    2.694E+00    2.694E+00
+          NK Residual                         3.200E-02    3.200E-02    3.200E-02
+          Newton Loop                         2.662E+00    2.662E+00    2.662E+00
+            NK LS                               9.779E-01    9.779E-01    9.779E-01
+              Solver TMP1                         9.769E-01    9.769E-01    9.769E-01
+                Precondition                        9.749E-01    9.749E-01    9.749E-01
+            NK Residual                         1.517E+00    1.517E+00    1.517E+00
 
                   Process virtual memory used: 5.97E+01 mB
-                                   words/cell: 97747
+                                   words/cell: 97753
 
-truchas terminated normally on 11 Sep 13 at 11:55:30
+truchas terminated normally on 26 Sep 13 at 10:12:05

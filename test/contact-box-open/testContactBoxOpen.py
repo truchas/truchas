@@ -34,9 +34,6 @@ class ContactBoxOpen(TruchasTest.GoldenTestCase):
   def get_gold_field(self,field,cycle,region=None):
     return self.gold_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
 
-  # TODO: The SKIP_* tests below need to be enabled (delete the SKIP_) once
-  # regions can be used with node-based fields.
-
   def test_open_stress(self):
     '''Verify stresses just after gap opening'''
     n = 21
@@ -69,7 +66,7 @@ class ContactBoxOpen(TruchasTest.GoldenTestCase):
         print 'Cycle %2d, epsilon%1d: max abs error = %8.2e: PASS (tol=%8.2e)'%(n,j+1,error,tol)
     self.assertTrue(fail == 0)
 
-  def SKIP_test_open_traction(self):
+  def test_open_traction(self):
     '''Verify normal traction just after gap opening'''
     n = 21
     tol = 1.0e-4
@@ -175,13 +172,13 @@ class ContactBoxOpen(TruchasTest.GoldenTestCase):
         print 'Cycle %2d, epsilon%1d: max abs error = %8.2e: PASS (tol=%8.2e)'%(n,j+1,error,tol)
     self.assertTrue(fail == 0)
 
-  def SKIP_test_initial_traction(self):
+  def test_initial_traction(self):
     '''Verify initial normal traction'''
     n = 0
     tol = 1.0e-6
     gold = -2.288e7
     test = self.get_test_field('NTRAC_02',cycle=n,region=self.gap_cells)
-    error = max(abs(test-gold))
+    error = max(abs((test-gold)/gold))
     if error > tol:
       print 'Cycle %2d: max abs error = %8.2e: FAIL (tol=%8.2e)'%(n,error,tol)
       self.assertTrue(False)
@@ -220,7 +217,7 @@ class ContactBoxOpen(TruchasTest.GoldenTestCase):
         print 'Cycle %2d, epsilon%1d: max abs error = %8.2e: PASS (tol=%8.2e)'%(n,j+1,error,tol)
     self.assertTrue(fail == 0)
 
-  def SKIP_test_final_traction(self):
+  def test_final_traction(self):
     '''Verify final normal traction'''
     n = 49
     tol = 1.0e-4
