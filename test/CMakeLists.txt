@@ -11,11 +11,22 @@ add_pytruchas_test(RestartSuite restart/testRestartSuite.py
 
 add_pytruchas_test(remap remap/testRemap.py PROCESSORS 4)
 
-add_pytruchas_test(em1 em1/testEM1.py
-                   DEPENDS RestartSuite remap # Just a demo of how this works
-		   PROCESSORS 4
-		   LABELS DEMO ELECTROMAGNETIC)
+#add_pytruchas_test(em1 em1/testEM1.py
+#                   DEPENDS RestartSuite remap # Just a demo of how this works
+#		   PROCESSORS 4
+#		   LABELS DEMO ELECTROMAGNETIC)
 
+add_pytruchas_test(em1 em1/testEM1.py
+		   PROCESSORS 4
+		   LABELS ELECTROMAGNETICS)
+
+add_pytruchas_test(em2 em2/testEM2.py
+		   PROCESSORS 4
+		   LABELS ELECTROMAGNETICS)
+
+add_pytruchas_test(em3 em3/testEM3.py
+		   PROCESSORS 4
+		   LABELS ELECTROMAGNETICS)
 
 add_pytruchas_test(ds1 ds1/testDS1.py
 		   PROCESSORS 4
@@ -33,7 +44,6 @@ add_pytruchas_test(ds4 ds4/testDS4.py
 		   PROCESSORS 4
 		   LABELS DIFFUSION)
 
-
 add_pytruchas_test(ds5 ds5/testDS5.py
 		   PROCESSORS 4
 		   LABELS DIFFUSION)
@@ -50,9 +60,12 @@ add_pytruchas_test(ds8 ds8/testDS8.py
                    PROCESSORS 4 
 		   LABELS DIFFUSION)
 
-# Not working -- problems with coordinates and connectivity functions
 add_pytruchas_test(ds9 ds9/testDS9.py
                    PROCESSORS 4 
+		   LABELS DIFFUSION)
+
+add_pytruchas_test(ds10 ds10/testDS10.py
+                   PROCESSORS 4
 		   LABELS DIFFUSION)
 
 add_pytruchas_test(ds11 ds11/testDS11.py
@@ -84,6 +97,11 @@ add_pytruchas_test(broken-dam
 		   PROCESSORS 4
 		   LABELS FLOW)
 
+add_pytruchas_test(channel-flow
+                   channel-flow/testChannelFlow.py
+		   PROCESSORS 4
+		   LABELS FLOW)
+
 add_pytruchas_test(diverging-duct
                    diverging-duct/testDivergingDuct.py
 		   PROCESSORS 4
@@ -94,8 +112,33 @@ add_pytruchas_test(hydrostatic
 		   PROCESSORS 4
 		   LABELS FLOW)
 
-add_pytruchas_test(static_wall
+add_pytruchas_test(static-wall
                    static-wall/testStaticWall.py
+		   PROCESSORS 4
+		   LABELS FLOW)
+
+add_pytruchas_test(natural-convection
+                   natural-convection/testNaturalConvection.py
+		   PROCESSORS 4
+		   LABELS FLOW)
+
+add_pytruchas_test(porous-drag
+                   porous-drag/testPorousDrag.py
+		   PROCESSORS 4
+		   LABELS FLOW)
+
+add_pytruchas_test(sloshing-flow
+                   sloshing-flow/testSloshingFlow.py
+		   PROCESSORS 4
+		   LABELS FLOW)
+
+add_pytruchas_test(void-collapse
+                   void-collapse/testVoidCollapse.py
+		   PROCESSORS 4
+		   LABELS FLOW)
+
+add_pytruchas_test(turbulence
+                   turbulence/testTurbulence.py
 		   PROCESSORS 4
 		   LABELS FLOW)
 
@@ -118,11 +161,6 @@ add_pytruchas_test(vfrad2
                    vfrad2/testVFRad2.py
 		   PROCESSORS 4
 		   LABELS DIFFUSION)
-
-add_pytruchas_test(sloshing-flow
-                   sloshing-flow/testSloshingFlow.py
-		   PROCESSORS 4
-		   LABELS FLOW)
 
 add_pytruchas_test(contact-box-close
                    contact-box-close/testContactBoxClose.py
