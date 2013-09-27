@@ -12,13 +12,6 @@ message(STATUS "configuring Truchas external projects")
 # --- Add the local cmake directory 
 list(APPEND CMAKE_MODULE_PATH ${TruchasExternal_SOURCE_DIR}/cmake)
 
-# --- Define the external project installation  
-if (NOT TruchasExternal_INSTALL_PREFIX)
-  set(TruchasExternal_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/external
-      CACHE PATH "Truchas external projects install prefix")
-  set(TruchasExternal_INSTALL_PREFIX ${TruchasExternal_INSTALL_PREFIX} PARENT_SCOPE)  
-endif()
-
 # --- Useful directory variables
 set(TruchasExternal_TEMPLATES_DIR ${TruchasExternal_SOURCE_DIR}/templates)
 set(TruchasExternal_ARCHIVE_DIR   ${TruchasExternal_SOURCE_DIR}/tarfiles)

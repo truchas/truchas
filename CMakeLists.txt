@@ -10,7 +10,7 @@
 cmake_minimum_required( VERSION 2.8.8 )
 
 # allow more human readable "if then else" constructs
-set( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE )
+set( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS True )
 
 if("${CMAKE_PATCH_VERSION}" GREATER 3 )
   cmake_policy(SET CMP0017 NEW)
@@ -125,6 +125,9 @@ option(ENABLE_SHARED "Build shared libraries" False)
 # Enable search for external packages
 option(ENABLE_ExternalSearch "Enable external (NetCDF,HDF5,etc.) search" True)
 
+# Strip RPATH from installed binaries/libraries 
+option(ENABLE_INSTALL_RPATH "Use RPATH in installed binaries and libraries" True)
+
 # Test - need a swith here to enable testing
 enable_testing()
 
@@ -171,7 +174,7 @@ endforeach()
 
 # Now set the correct variable to true
 string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}" uc_id)
-set(Fortran_COMPILER_IS_${uc_id} TRUE)
+set(Fortran_COMPILER_IS_${uc_id} True)
 # ---------------------------------------------------------------------------- #
 # Configuration Tests 
 # ---------------------------------------------------------------------------- #
@@ -247,7 +250,6 @@ if ( WITH_PIC OR ENABLE_TBROOK )
   endif()
   
 endif()
-
 
 # ---------------------------------------------------------------------------- #
 # External Dependencies 
@@ -325,9 +327,6 @@ find_package(LAPACK)
 
 # BLAS
 find_package(BLAS)
-
-
-
 
 # ---------------------------------------------------------------------------- #
 # Preprocessor definitions 
@@ -414,8 +413,6 @@ if (Truchas_FPP_FLAGS)
   list(APPEND Truchas_PREPROCESSOR ${Truchas_FPP_FLAGS})
 endif()
 
-
-
 # ---------------------------------------------------------------------------- #
 # Installation Definitions 
 # ---------------------------------------------------------------------------- #
@@ -450,10 +447,49 @@ install(CODE
         "EXECUTE_PROCESS ( COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"${Truchas_MODULE_DIR}\" \"${Truchas_MODULE_INSTALL_DIR}\")"
 )
 
+# Configuration (CMake) file installation location
 if (NOT Truchas_CONFIG_INSTALL_DIR)
   set(Truchas_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/cmake/truchas)
 endif()
 
+# External project (netCDF, HDF5, HYPRE,etc.) install prefix
+if (NOT TruchasExternal_INSTALL_PREFIX)
+  set(TruchasExternal_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/external)
+endif()
+
+# ---------------------------------------------------------------------------- #
+# RPATH handling  (http://www.cmake.org/Wiki/CMake_RPATH_handling) 
+# ---------------------------------------------------------------------------- #
+
+# use, i.e. don't skip the full RPATH for the build tree
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+
+# Library install directories
+set(Truchas_LIBRARY_INSTALL_DIRS
+     ${Truchas_LIBRARY_INSTALL_DIR}
+     ${TruchasExternal_INSTALL_PREFIX}/lib)
+
+# Add RPATH to binaries,libraries, *so, etc.   
+if (ENABLE_INSTALL_RPATH)
+
+  # Only want non-system paths 
+  foreach(dir ${Truchas_LIBRARY_INSTALL_DIRS})
+    list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${dir}" isSystemDir)
+    if("${isSystemDir}" STREQUAL "-1")
+       list(APPEND CMAKE_INSTALL_RPATH "${dir}")
+    endif("${isSystemDir}" STREQUAL "-1")
+  endforeach()
+
+  # add the automatically determined parts of the RPATH
+  # which point to directories outside the build tree to the install RPATH
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
+
+endif()  
+ 
 # ---------------------------------------------------------------------------- #
 # Source Directories 
 # ---------------------------------------------------------------------------- #
@@ -606,6 +642,11 @@ if (CMAKE_Fortran_FLAGS)
                       "=${CMAKE_Fortran_FLAGS}")
 endif()		
 message(STATUS)
+if(ENABLE_SHARED AND ENABLE_INSTALL_RPATH)
+   message(STATUS "Add install locations to RPATH enabled")
+   message(STATUS "\tCMAKE_INSTALL_RPATH\t=${CMAKE_INSTALL_RPATH}")
+   message(STATUS)
+endif()
 if(ENABLE_MPI)
 message(STATUS "MPI")
 message(STATUS "\tC include and libraries found: ${MPI_C_FOUND}")
