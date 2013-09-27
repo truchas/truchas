@@ -22,6 +22,9 @@ set(Truchas_LICENSE_FILE              @Truchas_LICENSE_FILE@)
 
 # Configuration variables
 set(ENABLE_MPI_FLAG                   @ENABLE_MPI_FLAG@)
+set(Python_INSTALL_PREFIX             @Python_INSTALL_PREFIX@)
+set(TruchasPython_INSTALL_PREFIX      @Python_INSTALL_PREFIX@)
+set(Truchas_LIBRARY_INSTALL_DIRS      @Truchas_LIBRARY_INSTALL_DIRS@)
 set(TruchasExe_SOURCE_DIR             @TruchasExe_SOURCE_DIR@)
 set(TruchasExe_BINARY_DIR             @TruchasExe_BINARY_DIR@)
 set(TruchasTest_SOURCE_DIR            @TruchasTest_SOURCE_DIR@)
