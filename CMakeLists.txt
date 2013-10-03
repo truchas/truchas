@@ -16,6 +16,21 @@ if("${CMAKE_PATCH_VERSION}" GREATER 3 )
   cmake_policy(SET CMP0017 NEW)
 endif()
 
+# Disallow in-source builds
+if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+  message(FATAL_ERROR "ERROR! Truchas does not allow in-source builds! "
+    "Please create a separate directory and configure Truchas there; for example:\n"
+    "  $ mkdir MY_BUILD\n"
+    "  $ cd MY_BUILD\n"
+    "  $ cmake [OPTIONS] .."
+    "\n"
+    "NOTE: You must first delete the newly created CMakeCache.txt file and "
+    "CMakeFiles directory under the source directory or you will not be able to "
+    "configure Truchas correctly!  For example:\n"
+    "  $ rm -r CMakeCache.txt CMakeFiles"
+    )
+endif()
+
 # ---------------------------------------------------------------------------- #
 # Project definitions
 # ---------------------------------------------------------------------------- #
