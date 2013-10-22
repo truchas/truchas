@@ -1,1 +1,0 @@
-from MAPVariable  import mapVariable

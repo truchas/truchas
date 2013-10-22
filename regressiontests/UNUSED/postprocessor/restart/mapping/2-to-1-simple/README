@@ -1,5 +1,0 @@
-We really only want to run this test in serial using the single-cell meshes
-boxA.exo.save and boxB.exo.save and the 2-cell mesh boxAB.exo.save, but there
-seems no way to prevent it running in parallel, and the partioner and/or
-Truchas isn't able to handle such small meshes (segfaults).  So instead we're
-using bigger meshes that work in parallel.

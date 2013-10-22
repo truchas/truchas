@@ -1,2 +1,0 @@
-from EXOgetMesh   import getEXOMesh
-

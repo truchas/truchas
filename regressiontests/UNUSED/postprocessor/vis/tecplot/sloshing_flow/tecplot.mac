@@ -1,9 +1,0 @@
-write 
-tecplot
-sloshing_flow_output/sloshing_flow.TBrook.xml
--
--
-ascii
-tecplot.ascii
-all
-q

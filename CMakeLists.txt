@@ -515,11 +515,6 @@ add_subdirectory(external)
 # Main source directory
 add_subdirectory(src)
 
-# Old regression tests
-if (ENABLE_TBROOK)
-  add_subdirectory(regressiontests)
-endif()
-
 # Old TBrook parser crap
 if (ENABLE_TBROOK)
   add_subdirectory(tbrookparser)
