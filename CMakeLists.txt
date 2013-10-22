@@ -31,6 +31,12 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
     )
 endif()
 
+# Location of project defined include and FindXXX.cmake files
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" 
+                      "${CMAKE_SOURCE_DIR}/cmake"
+                      "${CMAKE_SOURCE_DIR}/cmake/Modules"
+                      "${CMAKE_SOURCE_DIR}/cmake/Utils")
+
 # ---------------------------------------------------------------------------- #
 # Project definitions
 # ---------------------------------------------------------------------------- #
@@ -73,12 +79,6 @@ if (HOSTNAME_FAILED)
   endif()
   set(Truchas_HOSTNAME ${CMAKE_HOST_SYSTEM_NAME}-generic)
 endif()
-
-# Location of project defined include and FindXXX.cmake files
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" 
-                      "${Truchas_SOURCE_DIR}/cmake"
-                      "${Truchas_SOURCE_DIR}/cmake/Modules"
-                      "${Truchas_SOURCE_DIR}/cmake/Utils")
 
 # Create all the Fortran module files in a directory at the root build directory
 set(Truchas_MODULE_DIR ${Truchas_BINARY_DIR}/modules)
