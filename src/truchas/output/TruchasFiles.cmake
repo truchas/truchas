@@ -24,15 +24,6 @@ set(OUTPUT_FILES
           output/truchas_danu_output.F90
           output/truchas_danu_output_data.F90)
 
-if (ENABLE_TBROOK)
-  list(APPEND OUTPUT_FILES
-          output/brook_module.F90
-          output/output_data_module.F90
-          output/output_module.F90
-          output/tbrook_module.F90
-          output/tbrook_utility.F90)
-endif()
-
 set(OUTPUT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities
         -I${TruchasExe_SOURCE_DIR}/output
@@ -45,11 +36,9 @@ fortran_preprocess_files(OUTPUT_SOURCE_FILES
 			 FPP_FLAGS ${OUTPUT_FPP_FLAGS}
 			 PROCESS_TARGET ${OUTPUT_TARGET_NAME})
 set(fc_flags -I${NETCDF_INCLUDE_DIR})
+list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 if (ENABLE_PGSLib)
   list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
-endif()
-if (ENABLE_Danu)
-  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 endif()
 if(ENABLE_UbikSolve)
   list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})

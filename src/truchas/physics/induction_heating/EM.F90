@@ -29,9 +29,6 @@ contains
     use restart_variables, only: restart
     use restart_driver, only: restart_joule_heat
     use property_module, only:  EM_permittivity, EM_permeability, EM_conductivity
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-#endif
 
     real(kind=rk), intent(in) :: t
 
@@ -100,9 +97,6 @@ contains
     end if
 
     !! Write the initial Joule heat to the xml output file.
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) call xml_write_joule ()
-#endif
     call danu_write_joule (t)
 
     call EM_info (' Electromagnetics initialized.')
@@ -177,9 +171,6 @@ contains
   subroutine induction_heating (t1, t2)
 
     use property_module, only:  EM_permittivity, EM_permeability, EM_conductivity
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-#endif
 
     real(kind=rk), intent(in) :: t1, t2
 
@@ -198,17 +189,11 @@ contains
       if (source_has_changed()) then
         call EM_info (' No magnetic source field; setting the Joule heat to zero.')
         call zero_joule_power_density ()
-#ifdef USE_TBROOK
-        if (enable_tbrook_output) call xml_write_joule ()
-#endif
         call danu_write_joule (t1)
       end if
     else if (material_has_changed()) then
       call EM_info (' EM material parameters have changed; computing the Joule heat ...')
       call compute_joule_heat ()
-#ifdef USE_TBROOK
-      if (enable_tbrook_output) call xml_write_joule ()
-#endif
       call danu_write_joule (t1)
     else if (source_has_changed()) then
       if (source_is_scaled(s)) then
@@ -219,9 +204,6 @@ contains
         call EM_info (' Magnetic source field has changed; computing the Joule heat ...')
         call compute_joule_heat ()
       end if
-#ifdef USE_TBROOK
-      if (enable_tbrook_output) call xml_write_joule ()
-#endif
       call danu_write_joule (t1)
     end if
 

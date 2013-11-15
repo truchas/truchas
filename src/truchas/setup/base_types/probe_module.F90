@@ -9,13 +9,8 @@ MODULE probe_module
   !======================================================================= 
  
   use kinds, only: r8
-#ifdef USE_TBROOK
-  use tbrook_module,    only: brook
-#endif
   use parameter_module, only: ndim, string_len
-#ifdef USE_DANU
   use,intrinsic :: iso_c_binding, only: c_ptr
-#endif
   implicit none 
   private 
  
@@ -60,12 +55,7 @@ MODULE probe_module
      type(probe_node) :: node                !nearest node (index,coords) to probe
      type(probe_cell) :: cell                !nearest cell (index,coords) to probe
 
-#ifdef USE_DANU
      type(c_ptr), dimension(:), pointer :: pid        ! Danu probe data set id
-#endif
-#ifdef USE_TBROOK
-     type(Brook), dimension(:), pointer ::BrookLU     !list containing all brook pointers to the probe's field output files
-#endif
      character(LEN=string_len), dimension(:), pointer ::NameLU      !list containing names of all probe's fields
      type(probe_scalarfield), dimension(:), pointer   ::ScalarVarLU !list containing the probe's scalar fields
      type(probe_vectorfield), dimension(:), pointer   ::VectorVarLU !list containing the probe's vector fields

@@ -6,14 +6,12 @@
 !! Prototype module for developing new HDF5 output using the Danu package.
 !! This is organized very much like Tbrook_Utilities so that we can more
 !! easily drop this in as a replacement -- just the first step in reworking the
-!! output.  Compiles to an empty module unless the macro USE_DANU is defined.
+!! output.
 !!
 
 #include "f90_assert.fpp"
 
 module truchas_danu_output
-
-#ifdef USE_DANU
 
   use truchas_danu_output_data
   use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
@@ -652,7 +650,5 @@ contains
     end if
     
   end subroutine write_node_field_r1
-  
-#endif
 
 end module truchas_danu_output

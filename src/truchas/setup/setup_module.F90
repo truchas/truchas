@@ -58,16 +58,7 @@ CONTAINS
     use tensor_module,          only: TENSOR_MATRIX
     use mesh_broker,            only: init_mesh_broker
     use EM,                     only: initialize_EM
-#ifdef USE_DANU
-    use truchas_danu_output, only: TDO_write_default_mesh
-#endif
-#ifdef USE_TBROOK
-    use output_data_module,     only: enable_tbrook_output
-    use tbrook_module,          only: BaseBrook
-    use tbrook_utility,         only: TBU_WriteDefaultMesh
-    
-    integer :: status
-#endif
+    use truchas_danu_output,    only: TDO_write_default_mesh
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -125,19 +116,9 @@ CONTAINS
     ! Setup the distributed tet mesh used by the EM solver.
     call init_mesh_broker ()
 
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) then
-    ! Write the primary truchas mesh.
-    status = 0
-    call TBU_WriteDefaultMesh (BaseBrook, status)
-    end if
-#endif
-
-#ifdef USE_DANU
     ! Write the primary truchas mesh.
     call TDO_write_default_mesh
 
-#endif
     ! Initialize cell-centered fluid variables and thermodynamic quantities.
     call INITIAL ()
 

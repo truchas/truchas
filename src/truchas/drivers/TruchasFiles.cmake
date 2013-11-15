@@ -37,9 +37,7 @@ set_source_files_properties(${DRIVERS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
 
 # drivers.F90 requires extra flags
-if(ENABLE_Danu)
-  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
-endif()
+list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 if(ENABLE_UbikSolve)
   list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 endif()

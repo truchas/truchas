@@ -154,11 +154,9 @@
 !! IMPLEMENTATION NOTES
 !!
 !! * I've continued the tradition of logging to both the terminal (stdout) and
-!!   the .log file.  It was not possible (for some reason I don't understand)
-!!   to directly write to the existing .out file which is owned by TBrook.
-!!   Hence the name change.  Once TBrook is removed we can revert to .out.
-!!   We should revisit this choice of two output devices at some point.
-!!   It would be simpler to limit to a single device, terminal or disk file.
+!!   the .log file. We should revisit this choice of two output devices at some
+!!   point. It would be simpler to limit to a single device, terminal or disk
+!!   file.
 !!
 !! * I would like the routines that terminate execution to return a status
 !!   code to the OS (via the system exit command, for example).  This would
@@ -172,11 +170,6 @@
 !!     info to stderr.  The situation is effectively the same for MPI_Abort,
 !!     though it's not clear that it returns control to the caller.
 !!   As a consequence, I'm not bothering with calling exit at this time.
-!!
-!! * The hardwired logical unit needs to be replaced by a call to retrieve
-!!   an unused unit number.  This can be done after TBrook is removed.  It
-!!   silently reserves units for itself (unknown to the system) and requires
-!!   everything else to ask it for a free unit.  Ughh!
 !!
 !! POSSIBLE TO-DOS
 !! * Create debug files in output file directory along with everything else.
@@ -263,19 +256,12 @@ module truchas_logging_services
 contains
 
   subroutine TLS_initialize
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-    use output_module, only: initialize_io
-#endif
 #ifdef SUPPORTS_NEWUNIT
     use truchas_env, only: output_file_name
 #else
     use truchas_env, only: output_file_name, new_unit
 #endif
     use,intrinsic :: iso_fortran_env, only: output_unit
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) call initialize_io
-#endif
     !! Initialize the devices the log messages will be written to.
     if (is_IOP) then
       allocate(log_unit(2))
@@ -438,10 +424,6 @@ contains
   end subroutine labeled_message_array
 
   subroutine TLS_fatal (message)
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-    use output_module, only: terminate_io
-#endif
     use pgslib_module, only: pgslib_finalize
     use utilities_module, only: timestamp
     character(*), intent(in) :: message
@@ -449,9 +431,6 @@ contains
     call labeled_message_scalar ('FATAL: ', message)
     call timestamp (date_time)
     call TLS_info ('truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22))
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) call terminate_io
-#endif
     call TLS_finalize
     call pgslib_finalize
     stop
@@ -475,19 +454,12 @@ contains
   end subroutine TLS_fatal_if_IOP
 
   subroutine TLS_exit
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-    use output_module, only: terminate_io
-#endif
     use pgslib_module, only: pgslib_finalize
     use utilities_module, only: timestamp
     character(32) :: date_time
     call timestamp (date_time)
     call TLS_info ('')
     call TLS_info ('truchas terminated normally on '//date_time(5:13)//' at '//date_time(15:22))
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) call terminate_io
-#endif
     call TLS_finalize
     call pgslib_finalize
     stop

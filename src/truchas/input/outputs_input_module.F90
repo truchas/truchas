@@ -46,9 +46,6 @@ CONTAINS
     use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
-#ifdef USE_TBROOK
-    use output_data_module,      only: XML_Data_Format
-#endif
          
     integer, intent(in) :: lun
 
@@ -59,9 +56,6 @@ CONTAINS
 
     ! Define OUTPUTS namelist
     namelist /OUTPUTS/ Output_Dt_Multiplier,       &
-#ifdef USE_TBROOK
-                       XML_Data_Format,                &
-#endif
                        Int_Output_Dt_Multiplier,       &
                        Long_Edit_Bounding_Coords,      &
                        Long_Output_Dt_Multiplier,      &
@@ -131,9 +125,6 @@ CONTAINS
     use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
-#ifdef USE_TBROOK
-    use output_data_module,      only: XML_Data_Format
-#endif
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -160,11 +151,6 @@ CONTAINS
 
     ! User output
     retain_last_step          = .false.
-
-    ! XML output, always produced
-#ifdef USE_TBROOK
-    XML_Data_Format           = 'binary'
-#endif
     Output_Dt_Multiplier  = 1
     Probe_Output_Cycle_Multiplier = 1
 
@@ -187,9 +173,6 @@ CONTAINS
     use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier  
-#ifdef USE_TBROOK
-    use output_data_module,      only: XML_Data_Format
-#endif
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -205,9 +188,6 @@ CONTAINS
        call PGSLIB_BCAST (retain_last_step)
        call PGSLIB_BCAST (Output_Dt_Multiplier)
        call PGSLIB_BCAST (Probe_Output_Cycle_Multiplier)
-#ifdef USE_TBROOK
-       call PGSLIB_BCAST (XML_DATA_FORMAT)
-#endif
     end if
 
   END SUBROUTINE OUTPUTS_INPUT_PARALLEL
@@ -226,10 +206,6 @@ CONTAINS
     use parameter_module,        only: mops
     use time_step_module,        only: t
     use utilities_module,        only: STRING_COMPARE
-#ifdef USE_TBROOK
-    use tbrook_module,           only: B_IFORM_BINARY, B_IFORM_XML
-    use output_data_module,      only: XML_Data_Format, XML_iFormat, enable_tbrook_output
-#endif
 
     ! Arguments
     logical, intent(INOUT) :: fatal
@@ -303,27 +279,6 @@ CONTAINS
     interface_dump   = .false.
     long_edit        = .false.
     short_edit       = .false.
-
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) then
-    XML_IFORMAT=B_IFORM_BINARY
-    if (XML_Data_Format /= 'binary') then
-       XML_Data_Format = ADJUSTL(XML_Data_Format)
-       call STRING_COMPARE (TRIM(XML_Data_Format), 'binary', strings_match)
-       if (.not. strings_match) then
-          call STRING_COMPARE (TRIM(XML_Data_Format), 'xml', strings_match)
-          XML_IFORMAT=B_IFORM_XML
-       end if
-       if (.not. strings_match) then
-          write (message,637) TRIM(XML_Data_Format)
-637       format ('xml Data file format XML_Data_Format = ',a,' not valid! Valid formats are "binary", or "xml"')
-          call TLS_error (message)
-          fatal = .true.
-          return
-       end if
-    end if
-    end if
-#endif
 
     ! Interface output flag.
     if (ANY(Int_Output_Dt_Multiplier      /= 0)) interface_dump = .true.

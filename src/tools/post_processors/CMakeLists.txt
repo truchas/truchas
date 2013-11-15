@@ -14,16 +14,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR True)
 include_directories(${Truchas_MODULE_DIR})
 
 # Add the Danu module directory
-if(ENABLE_Danu)
-  include_directories(${Danu_Fortran_MODULE_DIR})
-endif()
+include_directories(${Danu_Fortran_MODULE_DIR})
 
 # --- Preprocessing flags
 set(fpp_flags_list 
     ${Truchas_FPP_FLAGS} -I${TruchasToolsPP_SOURCE_DIR})
-if(ENABLE_Danu)
-  list(APPEND fpp_flags_list -I${Danu_Fortran_MODULE_DIR})
-endif()
+list(APPEND fpp_flags_list -I${Danu_Fortran_MODULE_DIR})
 build_whitespace_string(fpp_flags ${fpp_flags_list})
 
 # --- write_restart binary
@@ -37,9 +33,7 @@ fortran_preprocess_files(WRITE_RESTART_FILES
 			 FPP_FLAGS ${fpp_flags_list}
 			 PROCESS_TARGET ProcessWriteRestartFiles)
 set(fc_flags -I${NETCDF_INCLUDE_DIR})
-if(ENABLE_Danu)
-  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
-endif()
+list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 build_whitespace_string(WRITE_RESTART_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${WRITE_RESTART_FILES} PROPERTIES
                             COMPILE_FLAGS ${WRITE_RESTART_COMPILE_FLAGS})

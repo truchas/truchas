@@ -101,11 +101,9 @@ fortran_preprocess_files(SETUP_SOURCE_FILES
 			 PROCESS_TARGET ${SETUP_TARGET_NAME})
 
 include(BuildWhitespaceString)
+set(fc_flags -I${Danu_Fortran_MODULE_DIR})
 if(ENABLE_PGSLib)
-  set(fc_flags -I${PGSLib_MODULE_DIR})
-endif()
-if(ENABLE_Danu)
-  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
+  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
 endif()
 if(ENABLE_UbikSolve)
   list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})

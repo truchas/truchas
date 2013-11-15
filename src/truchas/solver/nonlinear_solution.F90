@@ -150,9 +150,6 @@ CONTAINS
     use lnorm_module,          only: L2NORM, LINORM
     use pgslib_module,         only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL,    &
                                      PGSLib_Global_All
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-#endif
 
     ! Arguments
     type(NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
@@ -380,9 +377,6 @@ CONTAINS
     ! Check for convergence failure; if so, write out residual and normalized
     ! delta solution and punt.
     if (i >= NK%newton_itmax + 1) then
-#ifdef USE_TBROOK
-       if (enable_tbrook_output) call xml_write_residual ('NK', p_residual, p_future, solution_delta)
-#endif
        call TLS_fatal ('NK_BB: Newton-Krylov iteration limit! Examine .err file for details')
     end if
     if (TLS_verbosity >= TLS_VERB_NOISY) then
@@ -428,9 +422,6 @@ CONTAINS
     use linear_solution, only: Ubik_type, Ubik_solver, PRECOND_NONE, SOLVER_NONE
     use lnorm_module, only: L2NORM, LINORM
     use pgslib_module, only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL, PGSLib_Global_All
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-#endif
 
     ! Arguments
     type(NK_SOLUTION_FIELD), intent(INOUT) :: NK_Data
@@ -719,9 +710,6 @@ CONTAINS
 
     ! Check for convergence failure; if so, write out residual and punt.
     if (i >= NLS%newton_itmax + 1) then
-#ifdef USE_TBROOK
-       if (enable_tbrook_output) call xml_write_residual ('nlk', p_residual, p_future, solution_delta)
-#endif
 
 ! Print residual norms on failure
        call TLS_info ('')
@@ -988,159 +976,4 @@ CONTAINS
 
   END SUBROUTINE NK_FINALIZE
 
-#ifdef USE_TBROOK
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! XML_WRITE_RESIDUAL
- !!
- !! Neil N. Carlson <nnc@lanl.gov>
- !! 19 Jul 2005
- !!
- !! Write the passed residual vector to the XML output file.  This creates
- !! a 'NONLIN_RESIDUAL' xml element in the output file; the data itself is
- !! written to a binary lookaside file.
- !!
- !! NB: This is extremely similar to a procedure of the same name from the
- !! LINEAR_SOLUTION module; the two ought to be consolidated into a common
- !! code base somehow.
- !!
-
-  subroutine xml_write_residual (name, r, x, d)
-
-    use brook_module
-    use tbrook_module
-    use output_module, only: prefix
-    use string_utilities, only: i_to_c
-    use parameter_module, only: ncells, nnodes
-
-    character(*), intent(in) :: name
-    real(r8), intent(in) :: r(:), x(:), d(:)
-
-    integer :: status, dim
-    integer, save :: df_num = 0
-    character(256) :: df_name
-    type(brook), target :: df_brook
-    real(r8), allocatable :: tmp(:,:)
-
-    status = 0 ! for some insane reason, this is intent(in) for all the tbrook stuff.
-
-    df_num = df_num + 1
-    df_name = trim(prefix) // '.nonlin_res.' // i_to_c(df_num) // '.bin'
-
-    !! Create the binary look-aside file.
-    call tbrook_set (df_brook, file=trim(df_name), form='binary', istatus=status)
-    if (status /= 0) return
-
-    !! Open the NONLIN_RESIDUAL tag.
-    call tbrook_openxmltag (BaseBrook, XMLTag='NONLIN_RESIDUAL', &
-        XMLAttributes='SEQ="' // i_to_c(df_num) // '" SOLVER="' // trim(name) // '"', &
-        istatus=status)
-        if (status /= 0) return
-
-    !! Write the FILE tag which specifies the look-aside data file.
-    call tbrook_writexmltag (BaseBrook, XMLTag='FILE', &
-        XMLAttributes='FORMAT="binary"', XMLStringData=trim(df_name), istatus=status)
-        if (status /= 0) return
-
-    !! Write the residual data.
-    if (mesh_based_scalar_data(size(r),ncells)) then ! scalar, cell-based data
-      call tbu_make_file_entry (BaseBrook, df_brook, 'residual', r, status, map='cell')
-      call tbu_make_file_entry (BaseBrook, df_brook, 'solution', x, status, map='cell')
-      call tbu_make_file_entry (BaseBrook, df_brook, 'delta',    d, status, map='cell')
-    else if (mesh_based_scalar_data(size(r),nnodes)) then ! scalar, node-based data
-      call tbu_make_file_entry (BaseBrook, df_brook, 'residual', r, status, map='node')
-      call tbu_make_file_entry (BaseBrook, df_brook, 'solution', x, status, map='node')
-      call tbu_make_file_entry (BaseBrook, df_brook, 'delta',    d, status, map='node')
-    else if (mesh_based_vector_data(size(r),ncells,dim)) then ! vector, cell-based data
-      allocate(tmp(dim,ncells))
-      call copy_to_rank_2 (r, tmp)
-      call tbu_make_file_entry (BaseBrook, df_brook, 'residual', tmp, status, map='cell')
-      call copy_to_rank_2 (x, tmp)
-      call tbu_make_file_entry (BaseBrook, df_brook, 'solution', tmp, status, map='cell')
-      call copy_to_rank_2 (d, tmp)
-      call tbu_make_file_entry (BaseBrook, df_brook, 'delta',    tmp, status, map='cell')
-      deallocate(tmp)
-    else if (mesh_based_vector_data(size(r),nnodes,dim)) then ! vector, node-based data
-      allocate(tmp(dim,nnodes))
-      call copy_to_rank_2 (r, tmp)
-      call tbu_make_file_entry (BaseBrook, df_brook, 'residual', tmp, status, map='node')
-      call copy_to_rank_2 (x, tmp)
-      call tbu_make_file_entry (BaseBrook, df_brook, 'solution', tmp, status, map='node')
-      call copy_to_rank_2 (d, tmp)
-      call tbu_make_file_entry (BaseBrook, df_brook, 'delta',    tmp, status, map='node')
-      deallocate(tmp)
-    else ! we have no clue what it is ...
-      call tbu_make_file_entry (BaseBrook, df_brook, 'residual', r, status, map='none')
-      call tbu_make_file_entry (BaseBrook, df_brook, 'solution', x, status, map='none')
-      call tbu_make_file_entry (BaseBrook, df_brook, 'delta',    d, status, map='none')
-    end if
-    if (status /= 0) return
-
-    !! Close the NONLIN_RESIDUAL tag.
-    call tbrook_closexmltag (BaseBrook, XMLTag='NONLIN_RESIDUAL', istatus=status)
-        if (status /= 0) return
-
-    !! Close the binary look-aside file.
-    call tbrook_close   (df_brook, istatus=status)
-    call tbrook_destroy (df_brook, istatus=status)
-
-  contains
-
-    !!
-    !! Auxillary functions that infer whether the data, which is stored in a
-    !! rank-1 array, is mesh-based scalar or vector data.  NDATA is the number
-    !! of data elements, and NMESH is the number of mesh objects -- either
-    !! NCELLS or NNODES, typically.  For vector data we need to be careful as
-    !! it is possible for the number of nodes/cells on a processor to be zero.
-    !! These are parallel procedures, returning global results.  The vector
-    !! procedure returns the dimension of the vector data in DIM, which is
-    !! only meaningful when the function returns the value true.
-    !!
-
-    logical function mesh_based_scalar_data (ndata, nmesh)
-      use pgslib_module, only: pgslib_global_all
-      integer, intent(in) :: ndata, nmesh
-      mesh_based_scalar_data = pgslib_global_all(ndata == nmesh)
-    end function mesh_based_scalar_data
-
-    logical function mesh_based_vector_data (ndata, nmesh, dim)
-      use pgslib_module, only: pgslib_global_all, pgslib_global_maxval
-      integer, intent(in) :: ndata, nmesh
-      integer, intent(out) :: dim
-      integer :: d
-      if (nmesh == 0) then
-        mesh_based_vector_data = (ndata == 0)
-        d = 0
-      else
-        mesh_based_vector_data = (modulo(ndata,nmesh) == 0)
-        d = ndata / nmesh
-      end if
-      mesh_based_vector_data = pgslib_global_all(mesh_based_vector_data)
-      if (.not.mesh_based_vector_data) return
-      dim = pgslib_global_maxval(d)
-      mesh_based_vector_data = (dim > 1) .and. pgslib_global_all(d == dim .or. d == 0)
-    end function mesh_based_vector_data
-
-    !!
-    !! Auxillary subroutine to copy the contents of a rank-1 array into a
-    !! same-sized rank-2 array.  Works for zero-sized arrays too.
-    !!
-
-    subroutine copy_to_rank_2 (in, out)
-      real(r8), intent(in)  :: in(:)
-      real(r8), intent(out) :: out(:,:)
-      integer :: i, j, n
-      ASSERT( size(in) == size(out) )
-      n = 0
-      do j = 1, size(out,2)
-        do i = 1, size(out,1)
-          n = n + 1
-          out(i,j) = in(n)
-        end do
-      end do
-    end subroutine copy_to_rank_2
-
-  end subroutine xml_write_residual
-
-#endif
 END MODULE NONLINEAR_SOLUTION

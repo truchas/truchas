@@ -75,13 +75,8 @@ CONTAINS
     use signal_module,          only: SignalSet
     use pgslib_module,          only: PGSLib_CL_MAX_TOKEN_LENGTH
     use output_utilities,       only: announce
-#ifdef USE_TBROOK
-    use tbrook_module,          only: tbrook_initialize
-#endif
     use truchas_logging_services
-#ifdef USE_DANU
     use truchas_danu_output, only: TDO_open, TDO_close
-#endif
     implicit none
 
     character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
@@ -97,11 +92,6 @@ CONTAINS
     call PARALLEL_INIT (argv)
     call init_parallel_communication ()
 
-#ifdef USE_TBROOK
-    ! Initialize the basic output subroutines
-    call tbrook_initialize(iStatus=i)
-
-#endif
 !   you can use this to debug in parallel under Linux with LAM and Totalview
 !   see the comments in src/utility/wait_for_debugger.tv
 !   call wait_for_debugger ()
@@ -128,11 +118,9 @@ CONTAINS
     call ANNOUNCE ('DISCLAIMER')
     call TLS_info (disclaimer)
 
-#ifdef USE_DANU
     ! open the danu output file
     call TDO_open
 
-#endif
     ! initialize the random number generator
     call INITIALIZE_RANDOM()
     
@@ -154,11 +142,9 @@ CONTAINS
     !Stop main timer
     call stop_timer("Total")
     
-#ifdef USE_DANU
     ! close the danu output file
     call TDO_close
 
-#endif
     ! Clean up
     call CLEANUP ()
 
@@ -189,17 +175,8 @@ CONTAINS
     use diffusion_solver_data,    only: ds_enabled
     use truchas_logging_services
     use string_utilities, only: i_to_c
-#ifdef USE_DANU
     use truchas_danu_output, only: TDO_write_timestep
     use probe_output_module, only: probe_init_danu
-#endif
-#ifdef USE_TBROOK
-    use output_data_module,       only: enable_tbrook_output
-    use tbrook_module,            only: BaseBrook
-    use tbrook_utility,           only: TBU_WriteBasicData, TBU_Timestep_Output
-    
-    integer :: iStatus
-#endif
 
     ! Local Variables
     Logical :: quit = .False.
@@ -213,17 +190,7 @@ CONTAINS
     
     if (mem_on) call mem_diag_open
 
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) then
-    ! Write Information about simulation to basic output
-    iStatus=0
-    call TBU_WriteBasicData(BaseBrook, Copyright=copyright, Disclaimer=disclaimer, iStatus=iStatus)
-    if (iStatus /= 0 )  call TLS_panic ('CYCLE_DRIVER: unable to write initialization data')
-    end if
-#endif
-#ifdef USE_DANU
     call PROBE_INIT_DANU  ! for Tbrook output this was done in TBU_writebasicdata
-#endif
 
     ! start the cycle timer
     call start_timer ("Main Cycle")
@@ -244,12 +211,7 @@ CONTAINS
        if (PGSLib_Global_Any(URG  /= 0)) then
           call TLS_info ('')
           call TLS_info ('received signal URG, writing timestep data and terminating')
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) call TBU_TIMESTEP_OUTPUT()
-#endif
-#ifdef USE_DANU
           call TDO_write_timestep
-#endif
           exit MAIN_CYCLE
        end if
 
@@ -451,9 +413,6 @@ CONTAINS
     use debug_control_data
     use restart_variables,    only: restart_file, restart
     use file_utility,         only: count_tokens, get_token
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-#endif
 
     ! arguments
     character(*), dimension(:), pointer :: argv
@@ -475,11 +434,7 @@ CONTAINS
     logical :: h
     logical :: f
     logical :: m
-#ifdef USE_TBROOK
-    character (LEN=string_len), dimension(10) :: usage = (/                      &
-#else
     character (LEN=string_len), dimension(9) :: usage = (/                       &
-#endif
        'usage: truchas [options] infile                                       ', &
        '                                                                      ', &
        'options:                                                              ', &
@@ -488,9 +443,6 @@ CONTAINS
        '  -o:filename   output filename root                                  ', &
        '  -r:filename   restart path/filename                                 ', &
        '  -m            turn on memory diagnostics                            ', &
-#ifdef USE_TBROOK
-       '  -t            enable TBrook output (required by regression tests)   ', &
-#endif
        '  -h            help                                                  ' /)
 
     !---------------------------------------------------------------------------
@@ -568,10 +520,6 @@ CONTAINS
 
           ! act on it
           select case (token(2:2))
-#ifdef USE_TBROOK
-          case ('t')
-             enable_tbrook_output = .true.
-#endif
           case ('m')
              ! Turn memory diagnostics on. - Added August 3rd, 2007.
              mem_on = .true.
@@ -783,10 +731,8 @@ CONTAINS
     !! because the output directory hasn't been created yet (that's one of the things
     !! this routine sets) and the logging can't be initialized until that's done
     !! (assuming we continue to insist upon logging to a file there, and not just stdout).
-    !! TBrook got around this by adjusting where a brook was sending things while truchas
-    !! is running -- we don't want to reproduce this behavior.  In any case, this routine
-    !! is processing the command line and any errors ought to be sent directly to stderr.
-    !! THIS ROUTINE NEEDS TO BE REFACTORED.
+    !! This routine is processing the command line and any errors ought to be sent
+    !! directly to stderr.  THIS ROUTINE NEEDS TO BE REFACTORED.
   
     subroutine ERROR_CHECK (flag, message, name)
       use,intrinsic :: iso_fortran_env, only: error_unit

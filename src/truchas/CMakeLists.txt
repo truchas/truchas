@@ -127,9 +127,7 @@ if (ENABLE_Chaparral)
 endif()  
 
 # Danu
-if (ENABLE_Danu)
-  list(APPEND Truchas_DEPENDS danu_f)
-endif()
+list(APPEND Truchas_DEPENDS danu_f)
 
 # Various build targets
 list(APPEND Truchas_DEPENDS 
@@ -167,9 +165,7 @@ if (ENABLE_Chaparral)
   list(APPEND Truchas_LINK_LIBS vflib)
 endif()
 
-if (ENABLE_Danu)
-  list(APPEND Truchas_LINK_LIBS danu_f)
-endif()
+list(APPEND Truchas_LINK_LIBS danu_f)
 
 # To pick up the dlopen and dlclose symbols
 list(APPEND Truchas_LINK_LIBS ${CMAKE_DL_LIBS})
@@ -193,14 +189,12 @@ fortran_preprocess_files(MAIN_SOURCE_FILES
 			 PROCESS_TARGET ProcessTruchasMainFiles)
 
 set(fc_flags -I${NETCDF_INCLUDE_DIR})
+list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 if(ENABLE_PGSLib)
   list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
 endif()
 if(ENABLE_UbikSolve)
   list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
-endif()
-if(ENABLE_Danu)
-  list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 endif()
 build_whitespace_string(MAIN_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${MAIN_SOURCE_FILES} PROPERTIES

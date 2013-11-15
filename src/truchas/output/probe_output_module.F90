@@ -20,9 +20,7 @@ MODULE PROBE_OUTPUT_MODULE
 
   ! public procedures
   public :: PROBES_OUTPUT, PROBE_INIT
-#ifdef USE_DANU
   public :: PROBE_INIT_DANU
-#endif
 
   integer, Save, Public :: Probe_Output_Cycle_Multiplier = 1
 
@@ -45,24 +43,16 @@ CONTAINS
     use parameter_module,       only: nprobes
     use parallel_info_module,   only: p_info
     use time_step_module,       only: t2, cycle_number
-#ifdef USE_TBROOK
-    use output_data_module,     only: enable_tbrook_output
-    use tbrook_module,          only: TBROOK_WRITE, TB_SCOPE_LOCAL
-#endif
     use diagnostics_module,     only: PROBES_FIELDS
-#ifdef USE_DANU
     use truchas_danu_output_data, only: sid
     use danu_module
     use parallel_communication, only: is_IOP, broadcast
-#endif
 
     ! Local Variables
     integer :: iStatus, i, j, count, thesize
     real(r8), pointer, dimension(:) :: probe_cycle
-#ifdef USE_DANU
     integer :: stat
     real(r8), allocatable :: probe_data(:,:)
-#endif
 
     call PROBES_FIELDS ()
 
@@ -82,15 +72,6 @@ CONTAINS
           probe_cycle(2)           = t2
           probe_cycle(3:thesize+2) = probes(i)%ScalarVarLU(j)%field
 
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) then
-          if ( iStatus == 0 .and. p_info%iop) then
-             call TBrook_Write(probes(i)%BrookLU(count),probe_cycle,iStatus=iStatus,SCOPE=TB_SCOPE_LOCAL)
-          end if
-          end if
-#endif
-          
-#ifdef USE_DANU
           ! Create the probe data set in the HDF file
           allocate(probe_data(size(probe_cycle),1))
           probe_data(:,1) = probe_cycle
@@ -98,7 +79,6 @@ CONTAINS
           call broadcast (stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
-#endif
 
           if (ASSOCIATED(probe_cycle)) DEALLOCATE(probe_cycle)
 
@@ -115,15 +95,6 @@ CONTAINS
           probe_cycle(2)           = t2
           probe_cycle(3:thesize+2) = probes(i)%VectorVarLU(j)%field(:)
 
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) then
-          if ( iStatus == 0 .and. p_info%iop) then
-             call TBrook_Write(probes(i)%BrookLU(count),probe_cycle,iStatus=iStatus,SCOPE=TB_SCOPE_LOCAL)
-          end if
-          end if
-#endif
-          
-#ifdef USE_DANU
           ! Create the probe data set in the HDF file
           allocate(probe_data(size(probe_cycle),1))
           probe_data(:,1) = probe_cycle
@@ -131,7 +102,6 @@ CONTAINS
           call broadcast (stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
-#endif
 
           if (ASSOCIATED(probe_cycle)) DEALLOCATE(probe_cycle)
 
@@ -148,15 +118,6 @@ CONTAINS
           probe_cycle(2)           = t2
           probe_cycle(3:thesize+2) = probes(i)%TensorVarLU(j)%field(:)
 
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) then
-          if ( iStatus == 0 .and. p_info%iop) then
-             call TBrook_Write(probes(i)%BrookLU(count),probe_cycle,iStatus=iStatus,SCOPE=TB_SCOPE_LOCAL)
-          end if
-          end if
-#endif
-
-#ifdef USE_DANU
           ! Create the probe data set in the HDF file
           allocate(probe_data(size(probe_cycle),1))
           probe_data(:,1) = probe_cycle
@@ -164,7 +125,6 @@ CONTAINS
           call broadcast (stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
-#endif
           
           if (ASSOCIATED(probe_cycle)) DEALLOCATE(probe_cycle)
 
@@ -195,23 +155,12 @@ CONTAINS
     use property_module,            only: GET_USER_MATERIAL_ID
     use probe_data_module
     use probe_module
-#ifdef USE_TBROOK
-    use output_data_module,         only: enable_tbrook_output
-    use tbrook_module,              only: Brook
-#endif
 
     ! Local Variables
     integer :: i, j, count, index,               &
                cellf_count, nodef_count,cellv_count, nodev_count, &
                cellt_count, nodet_count
     character(LEN=256) :: str
-#ifdef USE_TBROOK
-    type(Brook) :: RHOB, DELTA_RHOB, TEMPB, dT_dtB, GRADTB,           &
-                   ENTHALPYB, PB, JOULE_PB, EPSDOTB, GAPDISPB,        &
-                   GAPFORCEB, VCB, DISPLACEMENTB, SIGMAB, EPSILONB,   &
-                   EPSTHERMB, EPSPCB
-    type(Brook), pointer, dimension(:) :: VOF_Bs
-#endif
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     ! A given probe contains :
@@ -341,64 +290,6 @@ CONTAINS
       !node centered tensor fields...
       nodet_count              = 0                                   !number of node centered tensor fields
 
-#ifdef USE_TBROOK
-      if (enable_tbrook_output) then
-      !store all scalar field brooks, all vector field brooks and all tensor field brooks for each probe in a BrookLU table
-
-      VOF_Bs       => NULL()
-
-      !first all scalar field brooks...
-      probes(i)%BrookLU(1)     = RHOB
-      probes(i)%BrookLU(2)     = DELTA_RHOB
-      probes(i)%BrookLU(3)     = TEMPB
-      probes(i)%BrookLU(4)     = dT_dtB
-      probes(i)%BrookLU(5)     = GRADTB
-      probes(i)%BrookLU(6)     = ENTHALPYB
-      probes(i)%BrookLU(7)     = PB
-
-      count = 8
-
-      index = 1
-      ALLOCATE(VOF_Bs(nmat))
-       do j=1,nmat
-         probes(i)%BrookLU(count) = VOF_Bs(index)
-         count = count + 1
-         index = index + 1
-      end do
-      if (ASSOCIATED(VOF_Bs))       DEALLOCATE(VOF_Bs)
-
-      if (EM_is_on()) then
-         probes(i)%BrookLU(count)  = JOULE_PB
-         count = count + 1
-      end if
-      if (solid_mechanics) then
-         probes(i)%BrookLU(count)  = EPSDOTB
-         count = count + 1
-      end if
-
-      if (solid_mechanics) then
-         probes(i)%BrookLU(count)  = GAPDISPB
-         count = count + 1
-         probes(i)%BrookLU(count)  = GAPFORCEB
-         count = count + 1
-      end if
-      probes(i)%BrookLU(count)  = VCB
-      count = count + 1
-      if (solid_mechanics) then
-         probes(i)%BrookLU(count)  = DISPLACEMENTB
-         count = count + 1
-         probes(i)%BrookLU(count)  = SIGMAB
-         count = count + 1
-         probes(i)%BrookLU(count)  = EPSILONB
-         count = count + 1
-         probes(i)%BrookLU(count)  = EPSTHERMB
-         count = count + 1
-         probes(i)%BrookLU(count)  = EPSPCB
-         count = count + 1
-      end if
-      end if
-#endif
-
       !initialise all scalar probe variables for each probe
       !cell centered variables...
       do j=1,cellf_count
@@ -434,7 +325,6 @@ CONTAINS
          probes(i)%TensorVarLU(j+cellt_count)%meshspace = 'node'
       end do
 
-      !Each brook in BrookLU is prepared for output in the tbrook_utility 'TBU_WRITEPROBES' subroutine
       !probes(i)%ScalarVarLU, VectorVarLU, TensorVarLU recalculated
       !at each cycle in the diagnostics_module subroutine 'PROBES_FIELDS'
 
@@ -442,7 +332,6 @@ CONTAINS
 
   END SUBROUTINE PROBE_INIT
 
-#ifdef USE_DANU
   ! A version of TBU_WRITEPROBES that writes to HDF5 output instead
   SUBROUTINE PROBE_INIT_DANU
 
@@ -608,6 +497,5 @@ CONTAINS
     end do
 
   END SUBROUTINE PROBE_INIT_DANU
-#endif
 
 END MODULE PROBE_OUTPUT_MODULE

@@ -39,10 +39,6 @@ CONTAINS
     !=======================================================================
     use time_step_module, only: cycle_number, dt, dt_courant, dt_constraint, &
                                 min_dt_overall_cell, t
-#ifdef USE_TBROOK
-    use tbrook_module,    only: BaseBrook, TBrook_OpenXMLTag
-    use output_data_module, only: Cycle_tag_open, enable_tbrook_output
-#endif
 
     integer :: iStatus
     character(128) :: string
@@ -58,106 +54,8 @@ CONTAINS
     call TLS_info ('')
     call TLS_info (string)
 
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) then
-    !! Write out the same info to the XML file CYCLE tag.
-    if (dt == dt_courant) then
-      write(string,110) cycle_number, t, dt, trim(dt_constraint), min_dt_overall_cell
-      110 format('ID="',i10,'" t="',1pe13.5,'" dt="',1pe13.5,'" limiter="',a,'" cell="',i10,'"')
-    else
-      write(string,120) cycle_number, t, dt, Trim(dt_constraint)
-      120 format('ID="',i10,'" t="',1pe13.5,'" dt="',1pe13.5,'" limiter="',a,'"')
-    end if
-    call TBrook_OpenXMLTag(BaseBrook, XMLTag="CYCLE", XMLAttributes=string, iStatus=iStatus)
-    cycle_tag_open = .true.
-    end if
-#endif
-
   END SUBROUTINE CYCLE_OUTPUT_PRE
 
-#ifdef USE_TBROOK
-  SUBROUTINE CYCLE_OUTPUT_POST_TB ()
-    !=======================================================================
-    ! Purpose:
-    !
-    !   write cycle information that is known after the cycle ends
-    !   (iteration counts) to stdout and various output files
-    !=======================================================================
-    use debug_control_data
-    use fluid_data_module,      only: fluid_flow
-    use time_step_module,       only: cycle_number
-    use process_info_module,    only: get_process_size
-    use projection_data_module, only: mac_projection_iterations, &
-                                      prelim_projection_iterations
-    use viscous_data_module,    only: viscous_implicitness, viscous_iterations, &
-                                      prelim_viscous_iterations
-    use solid_mechanics_data,   only: solid_mechanics, thermo_elastic_iterations, viscoplastic_iterations
-    use output_data_module,     only: cycle_tag_open
-    use tbrook_module,          only: tbrook_writexmltag,  &
-                                      b_strlen,            &
-                                      TBrook_CloseXMLTag,  &
-                                      TBrook_Flush,        &
-                                      BaseBrook
-
-    ! Local variables.
-    integer :: vmsize, rssize, dsize, inext
-    integer :: iStatus
-    character(LEN=B_STRLEN) :: string
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    inext = 0
-    iStatus=0
-
-110 format ('SOLVER="',a,'" COUNT="',i10,'"')
-
-    ! Count the linear and nonlinear iterations.
-    if (fluid_flow) then
-       if(cycle_number == 1) then
-         inext = inext + 1
-         write(string, 110) 'Preliminary projection iterations (linear)',prelim_projection_iterations
-         call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-         if (viscous_implicitness > 0) then
-               inext = inext + 1
-               write(string, 110) 'Preliminary projection iterations (linear)',prelim_viscous_iterations
-               call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-         end if
-       endif
-       inext = inext + 1
-       write(string, 110) 'projection iterations (linear)',mac_projection_iterations
-       call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-       if (viscous_implicitness > 0) then
-             inext = inext + 1
-             write(string, 110) 'Viscous iterations (linear)',viscous_iterations
-             call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-       end if
-    end if
-    if (solid_mechanics) then
-       inext = inext + 1
-       write(string, 110) 'Solid mechanics iterations (linear)',thermo_elastic_iterations
-       call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-       inext = inext + 1
-       write(string, 110) 'Solid mechanics iterations (nonlinear)',viscoplastic_iterations
-       call TBrook_WriteXMLTag(BaseBrook, XMLTag='ITERATION',XMLAttributes=string, iStatus=iStatus)
-    end if
-10  format (8x,i5,1x,a)
-
-!    ! If debug, write out additional memory usage info.
-!    if (debug >= DEBUG_NOISY) then
-!       call get_process_size (vmsize, rssize, dsize)
-!       if (vmsize /= -1) Then
-!          call TBrook_WriteXMLTag(BaseBrook, XMLTag='MEMORYINFO',XMLStringData=Output_String(4), iStatus=iStatus)
-!20        format (8x,'vmsize, largest, total: ',i12,', ',i12,' kb')
-!       end if
-!    end if
-
-    ! Close the CYCLE tag
-    if (cycle_tag_open) call TBrook_CloseXMLTag(BaseBrook, XMLTag="CYCLE", iStatus=iStatus)
-    cycle_tag_open = .false.
-    call TBrook_Flush(BaseBrook, iStatus)
-
-  END SUBROUTINE CYCLE_OUTPUT_POST_TB
-#endif
 
   SUBROUTINE CYCLE_OUTPUT_POST ()
     !=======================================================================
@@ -179,19 +77,12 @@ CONTAINS
     use solid_mechanics_data, only: solid_mechanics, thermo_elastic_iterations, viscoplastic_iterations
     use time_step_module,       only: cycle_number
     use fluid_utilities_module
-#ifdef USE_TBROOK
-    use output_data_module, only: enable_tbrook_output
-#endif
 
     ! Local variables.
     integer :: vmsize, rssize, dsize
     character(128) :: string
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-    
-#ifdef USE_TBROOK
-    if (enable_tbrook_output) call CYCLE_OUTPUT_POST_TB
-#endif
 
 110 format ('SOLVER="',a,'" COUNT="',i10,'"')
 
@@ -262,14 +153,8 @@ CONTAINS
     use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use diagnostics_module,      only: DIAGNOSTICS
-#ifdef USE_TBROOK
-    use output_data_module,      only: enable_tbrook_output
-    use tbrook_utility,          only: TBU_Timestep_Output, TBU_LASTSTEP_OUTPUT
-#endif
     use probe_output_module,     only: PROBES_OUTPUT, Probe_Output_Cycle_Multiplier
-#ifdef USE_DANU
-    use truchas_danu_output, only: TDO_write_timestep
-#endif
+    use truchas_danu_output,     only: TDO_write_timestep
 
     ! Argument List
     integer, intent(IN)    :: cycle
@@ -306,21 +191,12 @@ CONTAINS
           do_edit_long = .false.
        end if
 
-       ! Initial XML output
-#ifdef USE_TBROOK
-       if (enable_tbrook_output) call TBU_TIMESTEP_OUTPUT()
-#endif
-#ifdef USE_DANU
+       ! Initial output
        call TDO_write_timestep
-#endif
        do_xml_output = .false.
-       
 
        if (retain_last_step) then
           !TODO: need Danu version of "last step" output
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) call TBU_LASTSTEP_OUTPUT()
-#endif
        end if
 
        ! Interface dump is not yet integrated into main output
@@ -375,12 +251,7 @@ CONTAINS
 
        if (Output_Dt_Multiplier (next_op) /= 0 .or. &
             Output_Dt_Multiplier (MAX(next_op-1,1)) /= 0) then
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) call TBU_TIMESTEP_OUTPUT()
-#endif
-#ifdef USE_DANU
           call TDO_write_timestep
-#endif
           do_xml_output = .false.
        end if
 
@@ -426,12 +297,7 @@ CONTAINS
           if (MOD(next, Output_Dt_Multiplier(next_op)) <= &
                MOD(last, Output_Dt_Multiplier(next_op)) .or. &
                idiff >= Output_Dt_Multiplier(next_op)) then
-#ifdef USE_TBROOK
-             if (enable_tbrook_output) call TBU_TIMESTEP_OUTPUT()
-#endif
-#ifdef USE_DANU
              call TDO_write_timestep
-#endif
              do_xml_output = .false.
           end if
        end if
@@ -461,12 +327,7 @@ CONTAINS
        end if
 
        if (Output_Dt_Multiplier(next_op) < 0) then
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) call TBU_TIMESTEP_OUTPUT()
-#endif
-#ifdef USE_DANU
           call TDO_write_timestep
-#endif
           do_xml_output=.false.
        end if
              
@@ -479,9 +340,6 @@ CONTAINS
        end if
 
        if (retain_last_step) then
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) call TBU_LASTSTEP_OUTPUT()
-#endif
        end if
 
 
@@ -514,12 +372,7 @@ CONTAINS
        end if
 
        if (do_xml_output) then
-#ifdef USE_TBROOK
-          if (enable_tbrook_output) call TBU_TIMESTEP_OUTPUT()
-#endif
-#ifdef USE_DANU
           call TDO_write_timestep
-#endif
        end if
 
     end if TERMINATION_OUTPUT

@@ -119,12 +119,6 @@ option(ENABLE_PGSLib "Build with PGSLib support"  True)
 # Build with UbikSolve
 option(ENABLE_UbikSolve "Build with UbikSolve support"  True)
 
-# Build with Tbrook 
-option(ENABLE_TBROOK "Build with TBROOK support"  False)
-
-# Build with Danu
-option(ENABLE_Danu "Build with Danu support"  True)
-
 # Build with Chaco
 option(ENABLE_Chaco "Build with Chaco support"  True)
 
@@ -203,7 +197,7 @@ try_compile(SUPPORTS_NEWUNIT
             ${Truchas_SOURCE_DIR}/cmake/newunit.f90)
 
 # PIC support
-if ( WITH_PIC OR ENABLE_TBROOK )
+if ( WITH_PIC )
   include(CheckCCompilerFlag)
   include(UpdateCompilerFlags)
   set(test_pic_flags -fPIC -fpic -PIC -pic)
@@ -408,16 +402,6 @@ list(APPEND Truchas_PREPROCESSOR -DM64)
 # OS defines -- hard code for now
 list(APPEND Truchas_PREPROCESSOR -DLINUX)
 
-# TBrook defines
-if (ENABLE_TBROOK)
-  list(APPEND Truchas_PREPROCESSOR -DUSE_TBROOK)
-endif()
-
-# Danu defines
-if (ENABLE_Danu)
-  list(APPEND Truchas_PREPROCESSOR -DUSE_DANU)
-endif()
-
 # More hardcoded defines - only used in drivers.f90 need to move
 list(APPEND Truchas_PREPROCESSOR -DCODE_NAME='DUMMY')
 list(APPEND Truchas_PREPROCESSOR -DUBIKSOLVE='UbikSolve')
@@ -521,11 +505,6 @@ add_subdirectory(external)
 
 # Main source directory
 add_subdirectory(src)
-
-# Old TBrook parser crap
-if (ENABLE_TBROOK)
-  add_subdirectory(tbrookparser)
-endif()
 
 add_subdirectory(test)
 

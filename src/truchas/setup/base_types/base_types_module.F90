@@ -154,13 +154,8 @@ CONTAINS
        nprobevars     = nprobescavars + nprobevecvars + nprobetensvars
 
        do i=1,nprobes
-#ifdef USE_DANU
           ALLOCATE(probes(i)%pid(nprobevars), STAT = memstat)
-#endif
           ALLOCATE(probes(i)%NameLU(nprobevars), STAT = memstat)
-#ifdef USE_TBROOK
-          ALLOCATE(probes(i)%BrookLU(nprobevars), STAT = memstat)
-#endif
           ALLOCATE(probes(i)%ScalarVarLU(nprobescavars), STAT = memstat)
           ALLOCATE(probes(i)%VectorVarLU(nprobevecvars), STAT = memstat)
           ALLOCATE(probes(i)%TensorVarLU(nprobetensvars), STAT = memstat)
@@ -213,9 +208,6 @@ CONTAINS
     if (nprobes > 0) then
        do i=1,nprobes
           if (ASSOCIATED(probes(i)%NameLU))      DEALLOCATE(probes(i)%NameLU)
-#ifdef USE_TBROOK
-          if (ASSOCIATED(probes(i)%BrookLU))     DEALLOCATE(probes(i)%BrookLU)
-#endif
           if (ASSOCIATED(probes(i)%ScalarVarLU)) DEALLOCATE(probes(i)%ScalarVarLU)
           if (ASSOCIATED(probes(i)%VectorVarLU)) DEALLOCATE(probes(i)%VectorVarLU)
           if (ASSOCIATED(probes(i)%TensorVarLU)) DEALLOCATE(probes(i)%TensorVarLU)

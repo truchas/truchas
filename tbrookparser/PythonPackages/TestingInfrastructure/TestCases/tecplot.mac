@@ -1,9 +1,0 @@
-write
-tecplot
-static_drop_output/static_drop.TBrook.xml
--
--
-ascii
-tecplot.ascii
-all
-q

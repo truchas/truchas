@@ -229,9 +229,6 @@ module EM_data_proxy
   
   !! Restart procedures
   public :: read_joule_data, skip_joule_data, danu_write_joule
-#ifdef USE_TBROOK
-  public :: xml_write_joule
-#endif
   
   !! Container for the description of a driving coil
   type, public :: solenoid
@@ -978,198 +975,13 @@ CONTAINS
     call skip_records (unit, 5*n + 6, 'SKIP_JOULE_DATA: error skipping the Joule heat data')
   end subroutine skip_joule_data
 
-#ifdef USE_TBROOK
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! XML_WRITE_JOULE
- !!
- !! This subroutine writes the Joule heat array, and associated data used to
- !! compute it, to the XML output file.  This is a global procedure.
- !!
- !! Any I/O error that occurs is considered fatal, and this subroutine will
- !! abort execution of the code in such an event.
- !!
- !! NB: At this time the tet mesh is not written to the xml file, thus the
- !! fields over the tet mesh must be permuted to the external ordering prior
- !! to being written.  Conventionally, the xml parser would handle the
- !! permutation to external ordering using data written with the mesh.
- !!
-
-  subroutine xml_write_joule ()
-
-    use parallel_communication
-    use permutations
-    use mesh_broker, only: dist_mesh, named_mesh_ptr
-    use EM_utilities, only: EM_error
-
-    integer :: status, n
-    type(dist_mesh), pointer :: mesh => null()
-    integer, pointer :: cell_perm(:) => null()
-    real(kind=rk), pointer :: col_mu(:)    => null()
-    real(kind=rk), pointer :: col_sigma(:) => null()
-    real(kind=rk), pointer :: col_joule(:) => null()
-
-    ASSERT( allocated(mu_q) )
-    ASSERT( allocated(sigma_q) )
-    ASSERT( size(mu_q) == size(sigma_q) )
-    ASSERT( allocated(joule) )
-    ASSERT( associated(coil_q) )
-    
-    mesh => named_mesh_ptr('alt')
-    n = global_sum(mesh%ncell_onP)
-
-    !! Collate the cell permutation array.
-    call allocate_collated_array (cell_perm, n)
-    call collate (cell_perm, mesh%xcell(:mesh%ncell_onP))
-
-    !! Collate the cell-based MU array on the tet mesh, and restore it to the external order.
-    call allocate_collated_array (col_mu, n)
-    call collate (col_mu, mu_q(:mesh%ncell_onP))
-    if (is_IOP) call reorder (col_mu, cell_perm, forward=.true.)
-
-    !! Collate the cell-based SIGMA array on the tet mesh, and restore it to the external order.
-    call allocate_collated_array (col_sigma, n)
-    call collate (col_sigma, sigma_q(:mesh%ncell_onP))
-    if (is_IOP) call reorder (col_sigma, cell_perm, forward=.true.)
-
-    !! Collate the cell-based JOULE array; the XML parser will handle the permutation.
-    call allocate_collated_array (col_joule, global_sum(size(joule)))
-    call collate (col_joule, joule)
-
-    !! Write the data.
-    if (is_IOP) call write_data (status)
-    call broadcast (status)
-
-    deallocate(cell_perm, col_mu, col_sigma, col_joule)
-
-    if (status /= 0) call EM_error ('XML_WRITE_JOULE', 'Error writing Joule data to XML file')
-
-  contains
-
-    !!
-    !! Auxillary procedure (serial) that writes the data, returning a non-zero
-    !! STATUS value in the event of any I/O error.  Writes a JOULEHEAT tag to
-    !! the xml output file.  The data itself is written to a binary look-aside
-    !! file (a new one for each call).
-    !!
-
-    subroutine write_data (status)
-
-      use brook_module
-      use tbrook_module
-      use joule_xml_utilities
-      use truchas_env, only: output_file_name
-      use string_utilities, only: i_to_c
-
-      integer, intent(out) :: status
-
-      integer :: n
-      integer, save :: df_num = 0
-      character(len=256)  :: df_name
-      type(brook), target :: df_brook ! where the binary data will be written
-
-      df_num = df_num + 1
-      df_name = output_file_name('joule.' // i_to_c(df_num) // '.bin')
-
-      !! Create the binary look-aside file.
-      call tbrook_set (df_brook, file=trim(df_name), form='binary', istatus=status)
-      if (status /= 0) return
-
-      !! Open the JOULEHEAT tag.
-      call tbrook_openxmltag (BaseBrook, XMLTag='JOULEHEAT', &
-          XMLAttributes='SEQ="' // i_to_c(df_num) // '"', &
-          scope=TB_SCOPE_LOCAL, istatus=status)
-          if (status /= 0) return
-
-      !! Write the FILE tag which specifies the look-aside data file.
-      call tbrook_writexmltag (BaseBrook, XMLTag='FILE', &
-          XMLAttributes='FORMAT="binary"', XMLStringData=trim(df_name), &
-          scope=TB_SCOPE_LOCAL, istatus=status)
-          if (status /= 0) return
-
-      call write_var (BaseBrook, df_brook, 'FREQ', freq_q, status)
-          if (status /= 0) return
-      call write_var (BaseBrook, df_brook, 'UHFS', uhfs_q, status)
-          if (status /= 0) return
-
-      do n = 1, size(coil_q)
-        call write_coil (BaseBrook, df_brook, 'COIL ' // i_to_c(n), coil_q(n), status)
-          if (status /= 0) return
-      end do
-
-      call write_var (BaseBrook, df_brook, 'MU', col_mu, status)
-          if (status /= 0) return
-      call write_var (BaseBrook, df_brook, 'SIGMA', col_sigma, status)
-          if (status /= 0) return
-
-      call tbu_make_file_entry (BaseBrook, df_brook, 'JOULE', col_joule, status, scope=TB_SCOPE_LOCAL)
-          if (status /= 0) return
-
-      !! Close the JOULEHEAT tag.
-      call tbrook_closexmltag (BaseBrook, XMLTag='JOULEHEAT', &
-          scope=TB_SCOPE_LOCAL, istatus=status)
-          if (status /= 0) return
-
-      !! Close the binary look-aside file.
-      call tbrook_close   (df_brook, istatus=status)
-      call tbrook_destroy (df_brook, istatus=status)
-
-    end subroutine write_data
-
-    !!
-    !! Auxillary procedure (serial) that writes a coil data structure.  A COIL
-    !! tag is written to the xml brook BXML, and the data itself is written to
-    !! the look-aside brook BBIN.  A non-zero STATUS value is returned in the
-    !! event of any I/O error.
-    !!
-
-    subroutine write_coil (bxml, bbin, name, coil, status)
-
-      use brook_module
-      use tbrook_module
-      use joule_xml_utilities
-
-      type(brook), intent(inout), target :: bxml, bbin
-      character(len=*), intent(in) :: name
-      type(solenoid), intent(in) :: coil
-      integer, intent(out) :: status
-
-      !! Open the COIL tag.
-      call tbrook_openxmltag (bxml, XMLTag='COIL', &
-          XMLAttributes='NAME="' // trim(name) // '"', &
-          scope=TB_SCOPE_LOCAL, istatus=status)
-      if (status /= 0) return
-
-      !! Write the components of the structure.
-      call write_var (bxml, bbin, 'CURRENT', coil%current, status)
-      if (status /= 0) return
-      call write_var (bxml, bbin, 'CENTER', coil%center, status)
-      if (status /= 0) return
-      call write_var (bxml, bbin, 'LENGTH', coil%length, status)
-      if (status /= 0) return
-      call write_var (bxml, bbin, 'RADIUS', coil%radius, status)
-      if (status /= 0) return
-      call write_var (bxml, bbin, 'NTURNS', coil%nturns, status)
-      if (status /= 0) return
-
-      !! Close the COIL tag.
-      call tbrook_closexmltag (bxml, XMLTag='COIL', &
-          scope=TB_SCOPE_LOCAL, istatus=status)
-      if (status /= 0) return
-
-    end subroutine write_coil
-
-  end subroutine XML_write_joule
-
-#endif
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! DANU_WRITE_JOULE
  !!
  !! This subroutine writes the Joule heat array, and associated data used to
  !! compute it, to the HDF output file.  This is a global procedure.
- !! This is the direct analog of XML_WRITE_JOULE.  This compiles to an
- !! empty procedure unless USE_DANU is defined during compilation.
+ !! This is the direct analog of XML_WRITE_JOULE.
  !!
  !! Any I/O error that occurs is considered fatal, and this subroutine will
  !! abort execution of the code in such an event.
@@ -1182,7 +994,6 @@ CONTAINS
 
   subroutine danu_write_joule (t)
 
-#ifdef USE_DANU
     use parallel_communication
     use permutations
     use mesh_broker, only: dist_mesh, named_mesh_ptr
@@ -1279,9 +1090,6 @@ CONTAINS
           if (status /= DANU_SUCCESS) return
 
     end subroutine write_data
-#else
-    real(rk), intent(in) :: t
-#endif
 
   end subroutine danu_write_joule
   
