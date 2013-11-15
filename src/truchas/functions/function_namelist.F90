@@ -114,6 +114,9 @@ contains
       select case (raise_case(type))
       case ('POLYNOMIAL')
       case ('LIBRARY')
+#ifndef ENABLE_DYNAMIC_LOADING
+        call TLS_fatal ('the configuration of this executable does not support TYPE="LIBRARY"')
+#endif
       case ('SMOOTH STEP')
       case (NULL_C)
         call TLS_fatal ('TYPE must be assigned a value')
@@ -130,6 +133,7 @@ contains
             call TLS_warn ('POLY_REFVARS is ignored when TYPE="' // trim(type) // '"')
       end if
 
+#ifdef ENABLE_DYNAMIC_LOADING
       if (raise_case(type) /= 'LIBRARY') then
         if (library_path /= NULL_C) &
             call TLS_warn ('LIBRARY_PATH is ignored when TYPE="' // trim(type) // '"')
@@ -138,6 +142,7 @@ contains
         if (npar /= 0) &
             call TLS_warn ('PARAMETERS is not used when TYPE="' // trim(type) // '"')
       end if
+#endif
 
       if (raise_case(type) /= 'SMOOTH STEP') then
         if (smooth_step_x0 /= NULL_R) &
@@ -153,12 +158,14 @@ contains
       !! Create the specified function and add it to the function table.
 
       select case (raise_case(type))
+#ifdef ENABLE_DYNAMIC_LOADING
       case ('LIBRARY')
 
         call create_scafun_dll (f, lib=library_path, sym=library_symbol, p=parameters(:npar))
         call ft_add_function (name, f)
         call destroy (f)
 
+#endif
       case ('POLYNOMIAL')
 
         !! Identify the user-specified coefficients.  We require at least one,

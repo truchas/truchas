@@ -130,7 +130,9 @@
 module scalar_functions
 
   use kinds
+#ifdef ENABLE_DYNAMIC_LOADING
   use dynamic_linking_loader
+#endif
   implicit none
   private
 
@@ -138,7 +140,9 @@ module scalar_functions
   public :: eval, destroy, defined
   public :: create_scafun_const
   public :: create_scafun_user
+#ifdef ENABLE_DYNAMIC_LOADING
   public :: create_scafun_dll
+#endif
   public :: create_scafun_poly
   public :: create_scafun_mpoly
   public :: create_scafun_sstep
@@ -146,7 +150,11 @@ module scalar_functions
   public :: create_scafun_antideriv, is_const_scafun, create_scafun_product
   public :: scafun_list, scafun_vector_list, append_to_list, convert_list_to_array
 
-  public :: user_scafun, dll_scafun ! external interface definitions
+  !! external interface definitions
+  public :: user_scafun
+#ifdef ENABLE_DYNAMIC_LOADING
+  public :: dll_scafun
+#endif
 
   !! Abstract base type (poor man's polymorphism).
   !! Deferred type-bound procedures: eval, destroy, defined
@@ -155,7 +163,9 @@ module scalar_functions
     integer :: dyn_type = 0
     type(scafun_const), pointer :: const => null()
     type(scafun_user),  pointer :: user  => null()
+#ifdef ENABLE_DYNAMIC_LOADING
     type(scafun_dll),   pointer :: dll   => null()
+#endif
     type(scafun_poly),  pointer :: poly  => null()
     type(scafun_mpoly), pointer :: mpoly => null()
     type(scafun_sstep), pointer :: sstep => null()
@@ -177,6 +187,7 @@ module scalar_functions
   end type scafun_user
   integer, parameter :: TYPE_IS_USER = 2
 
+#ifdef ENABLE_DYNAMIC_LOADING
   !! Extended type: dynamically-linked user-provided function.
   type :: scafun_dll
     private
@@ -185,6 +196,7 @@ module scalar_functions
     real(r8), pointer :: p(:) => null()
   end type scafun_dll
   integer, parameter :: TYPE_IS_DLL  = 3
+#endif
 
   !! Extended type: single-variable polynomial function.
   type :: scafun_poly
@@ -245,6 +257,7 @@ module scalar_functions
     end function
   end interface
 
+#ifdef ENABLE_DYNAMIC_LOADING
   interface ! for the dynamically-linked function.
     function dll_scafun (x, p) result (f)
       use kinds, only: r8
@@ -266,6 +279,7 @@ module scalar_functions
       real(r8) :: f
     end function
   end interface
+#endif
 
   !!
   !! Types and generic procedures dealing with lists of scafun-type variables.
@@ -319,6 +333,7 @@ contains
     call define_scafun_user (this%user, index, p)
   end subroutine create_scafun_user
 
+#ifdef ENABLE_DYNAMIC_LOADING
   subroutine create_scafun_dll (this, lib, sym, p)
     type(scafun), intent(out) :: this
     character(*), intent(in) :: lib, sym
@@ -327,6 +342,7 @@ contains
     allocate(this%dll)
     call define_scafun_dll (this%dll, lib, sym, p)
   end subroutine create_scafun_dll
+#endif
 
   subroutine create_scafun_poly (this, c, e, x0)
     type(scafun), intent(out) :: this
@@ -385,8 +401,10 @@ contains
       if (associated(this%const)) defined_scafun_aux = defined_scafun_const(this%const)
     case (TYPE_IS_USER)
       if (associated(this%user))  defined_scafun_aux = defined_scafun_user(this%user)
+#ifdef ENABLE_DYNAMIC_LOADING
     case (TYPE_IS_DLL)
       if (associated(this%dll))   defined_scafun_aux = defined_scafun_dll(this%dll)
+#endif
     case (TYPE_IS_POLY)
       if (associated(this%poly))  defined_scafun_aux = defined_scafun_poly(this%poly)
     case (TYPE_IS_MPOLY)
@@ -414,10 +432,12 @@ contains
       call destroy_scafun_user (this%user)
       deallocate(this%user)
     end if
+#ifdef ENABLE_DYNAMIC_LOADING
     if (associated(this%dll)) then
       call destroy_scafun_dll (this%dll)
       deallocate(this%dll)
     end if
+#endif
     if (associated(this%poly)) then
       call destroy_scafun_poly (this%poly)
       deallocate(this%poly)
@@ -447,8 +467,10 @@ contains
       f = eval_scafun_const(this%const, x)
     case (TYPE_IS_USER)
       f = eval_scafun_user(this%user, x)
+#ifdef ENABLE_DYNAMIC_LOADING
     case (TYPE_IS_DLL)
       f = eval_scafun_dll(this%dll, x)
+#endif
     case (TYPE_IS_POLY)
       f = eval_scafun_poly(this%poly, x)
     case (TYPE_IS_MPOLY)
@@ -481,11 +503,13 @@ contains
         allocate(dest%user)
         call scafun_user_copy (dest%user, src%user)
       end if
+#ifdef ENABLE_DYNAMIC_LOADING
     case (TYPE_IS_DLL)
       if (associated(src%dll)) then
         allocate(dest%dll)
         call scafun_dll_copy (dest%dll, src%dll)
       end if
+#endif
     case (TYPE_IS_POLY)
       if (associated(src%poly)) then
         allocate(dest%poly)
@@ -590,6 +614,7 @@ contains
     end if
   end subroutine scafun_user_copy
 
+#ifdef ENABLE_DYNAMIC_LOADING
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! SPECIFIC PROCEDURES FOR USER-PROVIDED, DYNAMICALLY-LOADED FUNCTIONS
@@ -662,6 +687,7 @@ contains
       dest%p = src%p
     end if
   end subroutine scafun_dll_copy
+#endif
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

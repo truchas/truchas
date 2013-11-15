@@ -131,6 +131,9 @@ option(ENABLE_Chaco "Build with Chaco support"  True)
 # Build with Chaparral
 option(ENABLE_Chaparral "Build with Chaparral support"  True)
 
+# Build with support for dynamic loading of user functions
+option(ENABLE_DYNAMIC_LOADING "Build with support for dynamic loading of user functions" True)
+
 # Build with PIC (position in code)
 option(WITH_PIC "Build with PIC support" True)
 
@@ -388,6 +391,10 @@ endif()
 # Chaparral defines
 if (ENABLE_Chaparral)
   list(APPEND Truchas_PREPROCESSOR -DCHAPARRAL_SUPPORT)
+endif()
+
+if (ENABLE_DYNAMIC_LOADING)
+  list(APPEND Truchas_PREPROCESSOR -DENABLE_DYNAMIC_LOADING)
 endif()
 
 # NEWUNIT support
