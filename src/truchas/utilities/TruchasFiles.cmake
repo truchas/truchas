@@ -31,8 +31,13 @@ set(UTIL_FILES
          utilities/truchas_timing.F90
          utilities/utilities_module.F90
          utilities/var_vector_module.F90
-	 utilities/gmv/fgmvwrite.F90
-	 utilities/dll/dynamic_linking_loader.F90)
+	 utilities/gmv/fgmvwrite.F90)
+
+# Add the dynamic loader files
+if (ENABLE_DYNAMIC_LOADING)
+  list(APPEND UTIL_FILES utilities/dll/dynamic_linking_loader.F90)
+endif(ENABLE_DYNAMIC_LOADING)
+
 set(UTIL_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities
 	${Truchas_FPP_FLAGS})
@@ -51,13 +56,19 @@ list(APPEND UTIL_SOURCE_FILES
             utilities/get_process_size.c
             utilities/make_directory.c
             utilities/gmv/fgmvwrite_c.c
-            utilities/gmv/gmvwrite.c
-	    utilities/dll/dlwrap.c)
+            utilities/gmv/gmvwrite.c)
 set(gmv_compile_flags "-I${Truchas_FCIface_INCLUDE_DIR} -I${TruchasExe_SOURCE_DIR}/utilities/gmv")	  
 set_source_files_properties(utilities/gmv/fgmvwrite_c.c PROPERTIES
                             COMPILE_FLAGS ${gmv_compile_flags})
-set_source_files_properties(utilities/dll/dlwrap.c utilities/make_directory.c PROPERTIES
+set_source_files_properties(utilities/make_directory.c PROPERTIES
                             COMPILE_FLAGS -I${Truchas_FCIface_INCLUDE_DIR})
+
+# Add the dynamic loader files
+if (ENABLE_DYNAMIC_LOADING)
+  list(APPEND UTIL_SOURCE_FILES utilities/dll/dlwrap.c)
+  set_source_files_properties(utilities/dll/dlwrap.c PROPERTIES
+                              COMPILE_FLAGS -I${Truchas_FCIface_INCLUDE_DIR})
+endif(ENABLE_DYNAMIC_LOADING)
 
 include(CheckFunctionExists)
 check_function_exists(getpid HAVE_GETPID)
