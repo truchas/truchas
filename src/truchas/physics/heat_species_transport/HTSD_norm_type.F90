@@ -83,7 +83,7 @@ contains
   
   subroutine HTSD_norm_compute (this, u, du, du_norm)
 
-#if (defined(PATHSCALE_COMPILER_WORKAROUND) || defined(G95_COMPILER_WORKAROUND))
+#ifdef G95_COMPILER_WORKAROUND
     type(HTSD_norm), intent(inout) :: this
 #else
     type(HTSD_norm), intent(in) :: this

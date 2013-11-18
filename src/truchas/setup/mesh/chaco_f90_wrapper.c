@@ -43,17 +43,7 @@ int     *status;         /* Return status */
   /* ifdef this out if we aren't using Chaco, to avoid link thime error */
 #ifdef USE_CHACO
 
-#ifdef DARWIN_NAG_COMPILER_WORKAROUND
-  if ( nvtxs / mesh_dims[0] < 20 ) {
-    /* Tighten the tolerance for small graphs */
-    eigtol = (double)0.000001;
-  }
-  else {
-    eigtol = (double)0.0001;
-  }
-#else
   eigtol = (double)0.0001;
-#endif
     
   interface(nvtxs, start, adjacency,
 	    /* vwgts  */        (int *)NULL,

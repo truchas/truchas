@@ -328,7 +328,7 @@ contains
   
     use mfd_disc_type
 
-#if (defined(PATHSCALE_COMPILER_WORKAROUND) || defined(G95_COMPILER_WORKAROUND))
+#ifdef G95_COMPILER_WORKAROUND
     type(HTSD_precon), intent(inout) :: this
 #else
     type(HTSD_precon), intent(in) :: this

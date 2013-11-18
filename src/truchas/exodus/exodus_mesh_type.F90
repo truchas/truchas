@@ -27,10 +27,6 @@
 !!     http://endo.sandia.gov/SEACAS/Documentation/exodusII.pdf
 !!
 
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-#define NO_LOGICAL_OPERATORS
-#endif
-
 module exodus_mesh_type
 
   implicit none
@@ -39,11 +35,7 @@ module exodus_mesh_type
   public :: defined, destroy
 
   !! These are really only useful in testing situations.
-#ifdef NO_LOGICAL_OPERATORS
-  public :: dump_type ! Sorry, no defined == or /=
-#else
   public :: operator(.eq.), operator(.ne.), dump_type
-#endif
 
   integer, parameter :: r64 = selected_real_kind(10,50) ! 64-bit IEEE float (hopefully!)
 
@@ -93,7 +85,6 @@ module exodus_mesh_type
     module procedure destroy_exodus_mesh, destroy_elem_blk, destroy_node_set, destroy_side_set
   end interface
 
-#ifndef NO_LOGICAL_OPERATORS
   interface operator(.eq.)
     module procedure eq_exodus_mesh, eq_elem_blk, eq_node_set, eq_side_set
   end interface
@@ -101,7 +92,6 @@ module exodus_mesh_type
   interface operator(.ne.)
     module procedure ne_exodus_mesh, ne_elem_blk, ne_node_set, ne_side_set
   end interface
-#endif
 
   interface dump_type
     module procedure dump_exodus_mesh, dump_elem_blk, dump_node_set, dump_side_set
@@ -337,7 +327,6 @@ contains
  !! defined by this module.
  !!
 
-#ifndef NO_LOGICAL_OPERATORS
   logical function eq_exodus_mesh (a, b)
     type(exodus_mesh), intent(in) :: a, b
     eq_exodus_mesh = .false.
@@ -434,7 +423,6 @@ contains
     type(side_set), intent(in) :: a, b
     ne_side_set = .not. (a == b)
   end function ne_side_set
-#endif
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

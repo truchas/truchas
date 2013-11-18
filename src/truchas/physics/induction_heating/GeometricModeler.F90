@@ -78,11 +78,7 @@ contains
     end if
   end subroutine GMTune
 
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-  logical function SurfaceExists (gm, id)
-#else
   elemental logical function SurfaceExists (gm, id)
-#endif
     type(GeometricModel), intent(in) :: gm
     integer, intent(in) :: id
     integer :: n

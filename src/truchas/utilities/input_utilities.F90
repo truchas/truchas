@@ -67,11 +67,7 @@ contains
 
     integer :: ios
     character(len=1) :: c
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-    character(len=33) :: name, string
-#else
     character(len=1+len_trim(adjustl(nml))) :: name, string
-#endif
 
     found = .false.
     if (present(iostat)) iostat = 0

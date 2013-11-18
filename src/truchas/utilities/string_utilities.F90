@@ -172,11 +172,7 @@ contains
 
   pure function concat (array) result (s)
     character(len=*), intent(in) :: array(:)
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-    character(len=size(array)*len(array)) :: s
-#else
     character(len=len_concat(array)) :: s
-#endif
     character(len(array)) :: tmp
     integer :: j, m, n
     m = 0
@@ -191,7 +187,6 @@ contains
     end do
   end function concat
 
-#ifndef PATHSCALE_COMPILER_WORKAROUND
   pure integer function len_concat (array) result (m)
     character(len=*), intent(in) :: array(:)
     integer :: j, n
@@ -203,7 +198,6 @@ contains
       m = m + n
     end do
   end function len_concat
-#endif
 
 end module string_utilities
 

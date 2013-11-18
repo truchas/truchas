@@ -248,9 +248,6 @@ module truchas_logging_services
     module procedure verb_level_ge
   end interface
 
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-  public :: verb_level
-#endif
   public :: operator(==), operator(/=), operator(<), operator(<=), operator(>), operator(>=)
 
 contains
@@ -524,7 +521,6 @@ contains
                                     '": iostat=' // i_to_c(ios))
     end if
     write(dbg_unit,'(a)') message
-    !flush(dbg_unit) not available with pathscale; need to do something else.
   end subroutine TLS_debug
 
  !!

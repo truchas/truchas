@@ -115,20 +115,12 @@ module data_explorer
   
 contains
 
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-  logical function is_defined_object (this)
-#else
   elemental logical function is_defined_object (this)
-#endif
     type(dx_object), intent(in) :: this
     is_defined_object = associated(this % file)
   end function is_defined_object
 
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-  logical function is_defined_file (this)
-#else
   elemental logical function is_defined_file (this)
-#endif
     type(dx_file), intent(in) :: this
     is_defined_file = (this % object > 0)
   end function is_defined_file

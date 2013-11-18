@@ -27,15 +27,8 @@ module truchas_danu_output
   public :: TDO_start_simulation
   public :: TDO_write_timestep
   
-#ifdef PATHSCALE_COMPILER_WORKAROUND
-  type(c_ptr), save :: mid ! Danu mesh id
-  type(c_ptr), save :: seq_id ! Danu sequence id
-#else
-  !moved to truchas_danu_output_data! type(c_ptr), save :: fid = C_NULL_PTR ! h5 file id
   type(c_ptr), save :: mid = C_NULL_PTR ! Danu mesh id
-  !moved to truchas_danu_output_data! type(c_ptr), save :: sid = C_NULL_PTR ! Danu simulation id
   type(c_ptr), save :: seq_id = C_NULL_PTR ! Danu sequence id
-#endif
   
   public :: fid ! others may want to write here
   
