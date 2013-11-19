@@ -25,6 +25,7 @@ module restart_variables
   character(len=string_len), public :: restart_file
 
   !! The namelist variables.
+  logical, public :: ignore_t  = .false.
   logical, public :: ignore_dt = .false.
   logical, public :: ignore_solid_mechanics = .false.
   logical, public :: ignore_joule_heat = .false.
@@ -49,7 +50,7 @@ contains
     
     integer, intent(in) :: lun
 
-    namelist /restart/ ignore_dt, ignore_solid_mechanics, ignore_joule_heat
+    namelist /restart/ ignore_t, ignore_dt, ignore_solid_mechanics, ignore_joule_heat
 
     logical :: found
     integer :: ios
@@ -70,6 +71,7 @@ contains
     if (ios /= 0) call input_error ('Error reading the RESTART namelist')
 
     !! Broadcast the namelist variables to the other processors.
+    call pgslib_bcast (ignore_t)
     call pgslib_bcast (ignore_dt)
     call pgslib_bcast (ignore_solid_mechanics)
     call pgslib_bcast (ignore_joule_heat)

@@ -49,7 +49,7 @@ CONTAINS
                                       Mesh, Vrtx, Vertex,         &
                                       ASSIGN_CELL_EDGES, CELL_EDGE
     use output_control,         only: next_op
-    use restart_variables,      only: restart, ignore_dt, restart_t, restart_dt, &
+    use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
     use restart_driver,         only: close_restart_file
     use time_step_module,       only: cycle_number, cycle_number_restart, &
@@ -127,8 +127,10 @@ CONTAINS
     ! then they've already set on input.
     if (restart) then
       if (.not.ignore_dt) dt = restart_dt
-       t = restart_t
-       cycle_number = restart_cycle_number
+      if (.not.ignore_t) then
+        t = restart_t
+        cycle_number = restart_cycle_number
+      end if
     end if
 
     ! Initialize electromagnetics.
