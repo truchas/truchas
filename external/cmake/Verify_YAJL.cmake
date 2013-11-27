@@ -8,7 +8,7 @@
 #
 # YAJL Requirements
 #
-#  o Version >= 2.0.0 
+#  o Version >= 2.0.1 
 
 # Boolean evaluator
 include(BoolEval)
@@ -23,7 +23,7 @@ if (YAJL_FOUND)
 
   # Version verification
   bool_eval(YAJL_VERIFIED 
-            NOT "${YAJL_VERSION_STRING}" VERSION_LESS "3.0")
+            NOT "${YAJL_VERSION_STRING}" VERSION_LESS "2.0.1")
 
 endif(YAJL_FOUND)
 
