@@ -33,7 +33,10 @@ def remap_data(data,map):
 def mask_data(data,mask):
   if data.ndim > 1:
     (n,dim)=data.shape
-    n = mask.size - numpy.count_nonzero(mask)
+    # Numpy 1.6 is required to use the count_nonzero function.
+    #n = mask.size - numpy.count_nonzero(mask)
+    # This version works with numpy 1.4
+    n = mask.size - (mask != 0).sum()
     mdata=numpy.empty((n,dim),data.dtype)
     j = 0
     for i in range(n):
