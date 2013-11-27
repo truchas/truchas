@@ -33,7 +33,7 @@ if (HDF5_FOUND)
   message(STATUS "Verify HDF5 package")
 
   # Version verification
-  bool_eval(HDF5_VERSION_OK NOT ${HDF5_VERSION} VERSION_LESS 1.8.3)
+  bool_eval(HDF5_VERSION_OK NOT ${HDF5_VERSION} VERSION_LESS 1.8.8)
 
   # Need the high level library
   bool_eval(HDF5_VERIFIED HDF5_HL_LIBRARY AND HDF5_VERSION_OK)
