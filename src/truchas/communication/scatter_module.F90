@@ -8,7 +8,6 @@ MODULE SCATTER_MODULE
   use kinds, only: r8
   use truchas_logging_services
   use gs_info_module
-  use mesh_module,  only: MESH_CONNECTIVITY, CllNgbr, Vrtx
   use pgslib_module,only: PGSLib_GS_Trace,      &
                           PGSLib_Size_Of_Dup,   &
                           PGSLib_Size_Of_Sup,   &
@@ -17,7 +16,7 @@ MODULE SCATTER_MODULE
 
   implicit none
   save
-!  private
+  private
   public :: Sum_Scatter, Min_Scatter, Max_Scatter, Or_Scatter
 
 

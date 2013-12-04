@@ -36,7 +36,7 @@ MODULE MESH_MODULE
   private
 
   ! Public Variables and Types
-  public :: CELL_BIT, MESH_CONNECTIVITY, VERTEX_BIT, CELL_EDGE, &
+  public :: MESH_CONNECTIVITY, CELL_EDGE, &
             CELL_GEOMETRY, VERTEX_DATA, BOUNDARY, Vrtx_Bdy, &
             Cell, Mesh, Vertex, Mesh_Connectivity_Preset, & 
             CELL_TET, CELL_PYRAMID, CELL_PRISM, CELL_HEX, &
@@ -46,7 +46,7 @@ MODULE MESH_MODULE
   public :: MESH_COLLATE_VERTEX, VERTEX_COLLATE
 
   ! Public Subroutines
-  public :: ASSIGN_CELL_BITS, ASSIGN_VRTX_BITS, ASSIGN_CELL_EDGES, &
+  public :: ASSIGN_CELL_EDGES, &
             Vertex_Data_Preset
   public :: Initialize_Face_Bit_Mask,        &
             Set_Face_Neighbor,               &
@@ -137,22 +137,6 @@ MODULE MESH_MODULE
                      dimension(:) :: Permute_Vertex_Vector => NULL()
   logical, SAVE,         &
                      PUBLIC       :: UnPermute_Vertex_Initialized = .FALSE.
-
-  ! Define VERTEX_BIT structure
-  type VERTEX_BIT
-     integer, dimension(nvc) :: Bit
-  end type VERTEX_BIT
-
-  ! Declare a VERTEX_BIT type
-  type(VERTEX_BIT), public, save :: Vrtx
-
-  ! Define CELL_BIT structure
-  type CELL_BIT
-     integer, dimension(nfc) :: Bit
-  end type CELL_BIT
-
-  ! Declare a CELL_BIT instance
-  type(CELL_BIT), public, save :: CllNgbr
 
   ! Define the edges surrounding a cell
   integer, dimension(2,nec) :: Cell_Edge
@@ -294,72 +278,6 @@ CONTAINS
     end do
 
   END FUNCTION VERTEX_PRESET_SCALAR
-
-  SUBROUTINE ASSIGN_CELL_BITS (Cell_Bit)
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Assign bit positions for the integer Ngbr_CELL_pe_flag which
-    !   is part of the Mesh structure. Bits 8-13 of 
-    !   Ngbr_pe_flag correspond to the 6 cells surrounding each cell
-    !   A bit set to 1 means the cell is on-processor.
-    !
-    !=======================================================================
-    use parameter_module, only: nfc
-
-    ! Arguments
-    integer, dimension(nfc), intent(OUT) :: Cell_Bit
-
-    ! Local Variables
-    integer :: c
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! The following convention holds for the bits in Mesh%Ngbr_pe_flag:
-    !
-    !      Bit     Cell
-    !      ---     ------
-    !      8-14      1-6   (1 bit per cell)
-
-    ! Assign bit locations for the CELL type
-    do c = 1,nfc
-       Cell_Bit(c) = c - 1 + SIZE(Vrtx%Bit,1)
-    end do
-
-  END SUBROUTINE ASSIGN_CELL_BITS
-
-  SUBROUTINE ASSIGN_VRTX_BITS (Vrtx_bit)
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Assign bit positions for the integer Ngbr_vrtx_pe_flag which
-    !   is part of the Mesh structure. The first 8 bits in
-    !   Ngbr_pe_flag correspond to the 8 vertices of each cell;
-    !   A bit set to 1 means the vertex is on-processor.
-    !
-    !=======================================================================
-    use parameter_module, only: nvc
-
-    ! Argument List
-    integer, dimension(nvc), intent(OUT) :: Vrtx_bit
-
-    ! Local Variables
-    integer :: v
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! The following convention holds for the bits in Mesh%Vrtx_pe_flag:
-    !
-    !      Bit     Vertex
-    !      ---     ------
-    !      0-7      1-8   (1 bit per vertex)
-
-    ! Assign bit locations for the Vrtx type
-    do v = 1,nvc
-       Vrtx_bit(v) = v - 1
-    end do
-
-  END SUBROUTINE ASSIGN_VRTX_BITS
 
   SUBROUTINE ASSIGN_CELL_EDGES (Cell_Edge)
     !=======================================================================
