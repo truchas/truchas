@@ -38,7 +38,7 @@ MODULE MESH_MODULE
   ! Public Variables and Types
   public :: MESH_CONNECTIVITY, CELL_EDGE, &
             CELL_GEOMETRY, VERTEX_DATA, BOUNDARY, Vrtx_Bdy, &
-            Cell, Mesh, Vertex, Mesh_Connectivity_Preset, & 
+            Cell, Mesh, Vertex, & 
             CELL_TET, CELL_PYRAMID, CELL_PRISM, CELL_HEX, &
             GAP_ELEMENT_1,GAP_ELEMENT_3,GAP_ELEMENT_5
 
@@ -46,7 +46,6 @@ MODULE MESH_MODULE
   public :: MESH_COLLATE_VERTEX, VERTEX_COLLATE
 
   ! Public Subroutines
-  public :: Vertex_Data_Preset
   public :: Initialize_Face_Bit_Mask,        &
             Set_Face_Neighbor,               &
             Clear_Face_Neighbor,             &
@@ -85,13 +84,13 @@ MODULE MESH_MODULE
   
   ! MESH_CONNECTIVITY structure
   Type MESH_CONNECTIVITY
-     integer, Dimension(nfc)  :: Ngbr_Cell      ! cell number across each face
-     integer, Dimension(nfc)  :: Ngbr_Cell_PE   ! holding data for Ngbr_Cell
-     integer, Dimension(nfc)  :: Ngbr_Cell_Orig ! original cell numbers across each face
-     integer, Dimension(nfc)  :: Ngbr_Face      ! face number of cell across each face
-     integer, Dimension(nvc)  :: Ngbr_Vrtx      ! cell vertex numbers
-     integer, Dimension(nvc)  :: Ngbr_Vrtx_PE   ! holding data for Ngbr_Vrtx
-     integer, Dimension(nvc)  :: Ngbr_Vrtx_Orig ! original vertex numbers
+     integer :: Ngbr_Cell(nfc)      = DEFAULT_CELL   ! cell number across each face
+     integer :: Ngbr_Cell_PE(nfc)   = DEFAULT_PE     ! holding data for Ngbr_Cell
+     integer :: Ngbr_Cell_Orig(nfc) = DEFAULT_CELL   ! original cell numbers across each face
+     integer :: Ngbr_Face(nfc)      = DEFAULT_FACE   ! face number of cell across each face
+     integer :: Ngbr_Vrtx(nvc)      = DEFAULT_VERTEX ! cell vertex numbers
+     integer :: Ngbr_Vrtx_PE(nvc)   = DEFAULT_PE     ! holding data for Ngbr_Vrtx
+     integer :: Ngbr_Vrtx_Orig(nvc) = DEFAULT_VERTEX ! original vertex numbers
      Type (int_var_vector)                    :: Ngbr_Cells_ALL ! all neighbor cells
      Type (int_var_vector)                    :: Ngbr_Cells_ALL_Orig ! Orig, global, cell numbers, 
      Type (int_var_vector)                    :: Ngbr_Cells_Face ! Bits to identify face ngbrs
@@ -162,8 +161,8 @@ MODULE MESH_MODULE
 
   ! VERTEX_DATA structure
   Type VERTEX_DATA
-     real(r8) :: Coord(ndim)   ! vertex coordinates
-     real(r8) :: Rsum_rvol     ! reciprocal sum of inverse volumes around vertices
+     real(r8) :: Coord(ndim) = 0.0_r8  ! vertex coordinates
+     real(r8) :: Rsum_rvol   = 0.0_r8  ! reciprocal sum of inverse volumes around vertices
   End Type VERTEX_DATA
 
   ! Ghost cells for the vertex data
@@ -173,22 +172,7 @@ MODULE MESH_MODULE
     real(r8), dimension(:), pointer :: Data => NULL()
   end type BOUNDARY
 
-  ! This is needed because F90 may not put pointers into known state
-  ! When we have gone fully to F95 this will no longer be necessary.
-  ! Only place this is used is in Vertex_Preset_Scalar%
-  logical, dimension(ndim), SAVE :: Bdy_Initialized = .false.
-  
   type(BOUNDARY), dimension(ndim), SAVE :: Vrtx_Bdy
-
-  ! Default Mesh Connectivity Data
-  interface Mesh_Connectivity_Preset
-     module procedure Mesh_Preset_Scalar
-  end interface
-
-  ! Default Vertex Data
-  interface VERTEX_DATA_PRESET
-     module procedure VERTEX_PRESET_SCALAR
-  end interface
 
   ! Define instance of VERTEX_DATA type.
   type(VERTEX_DATA), dimension(:), pointer, save :: Vertex => NULL()
@@ -214,70 +198,6 @@ MODULE MESH_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
-
-  FUNCTION MESH_PRESET_SCALAR () RESULT(MESH_PRESET)
-    !====================================================================
-    ! Purpose(s):
-    !
-    !   Default scalar for mesh connectivity
-    !   This is a funciton so we can nullify the Ngbr_Cells_All field
-    !====================================================================
-
-    ! Return value
-    type(MESH_CONNECTIVITY)        :: Mesh_Preset
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Initialize.
-    Mesh_Preset%Ngbr_Cell      = DEFAULT_CELL
-    Mesh_Preset%Ngbr_Cell_PE   = DEFAULT_PE
-
-    Mesh_Preset%Ngbr_Face      = DEFAULT_FACE
-
-    Mesh_Preset%Ngbr_Vrtx      = DEFAULT_VERTEX
-    Mesh_Preset%Ngbr_Vrtx_PE   = DEFAULT_PE
-
-    Mesh_Preset%Ngbr_Cell_Orig = DEFAULT_CELL
-    Mesh_Preset%Ngbr_Vrtx_Orig = DEFAULT_VERTEX
-    NULLIFY(Mesh_Preset%Ngbr_Cells_All%v)
-
-  END FUNCTION MESH_PRESET_SCALAR
-
-  FUNCTION VERTEX_PRESET_SCALAR ()
-    !====================================================================
-    ! Purpose(s):
-    !
-    !   Assign Vertex_Data a default value
-    !   This is a function so we can nullify the boundary stuff
-    !
-    !====================================================================
-
-    ! Local Variables
-    integer :: n
-    type(VERTEX_DATA)        :: Vertex_Preset_Scalar
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Initialize.
-    Vertex_Preset_Scalar%Coord     = 0
-    Vertex_Preset_Scalar%Rsum_rvol = 0
-
-    do n = 1, ndim
-
-       if (.not.Bdy_Initialized(n)) then
-          NULLIFY(Vrtx_Bdy(n)%Data)
-          Bdy_Initialized(n) = .true.
-       else
-          if (ASSOCIATED(Vrtx_Bdy(n)%Data)) then
-             DEALLOCATE(Vrtx_Bdy(n)%Data)
-          else
-             NULLIFY(Vrtx_Bdy(n)%Data)
-          end if
-       end if
-
-    end do
-
-  END FUNCTION VERTEX_PRESET_SCALAR
 
   SUBROUTINE Initialize_Face_Bit_Mask()
     !==================================================================

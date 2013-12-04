@@ -159,9 +159,7 @@ CONTAINS
     use mesh_partition_module,  only: MESH_PARTITIONS
     use mesh_module,            only: Mesh, Vertex,             &
                                       MESH_CONNECTIVITY,        &
-                                      VERTEX_DATA,              &
-                                      MESH_CONNECTIVITY_PRESET, &
-                                      VERTEX_DATA_PRESET,       &
+                                      VERTEX_DATA, Vrtx_Bdy,    &
                                       Permute_Mesh_Vector,      &
                                       Permute_Vertex_Vector,    &
                                       OPERATOR(.DISTRIBUTE.),   &
@@ -229,8 +227,14 @@ CONTAINS
           fatal = (memerror /= 0)
           call TLS_fatal_if_any (fatal, 'MESH_GEN: could not allocate space for mesh temporary arrays')
 
-          Mesh_Tot   = MESH_CONNECTIVITY_PRESET()
-          Vertex_tot = VERTEX_DATA_PRESET()
+          !! NNC, Dec 2013.  The Vertex_Data type is now default initialized
+          !! making the following assignment unnecessary.  However the rhs
+          !! function reference had the side effect of resetting the Vrtx_Bdy
+          !! structure to its initial state (unbelievable!)  That is now done here.
+          !! Vertex_tot = VERTEX_DATA_PRESET()
+          do n = 1, ndim
+            if (associated(Vrtx_Bdy(n)%data)) deallocate(Vrtx_Bdy(n)%data)
+          end do
 
           ! Set flag if mesh file has cell 'material' data: IDEAS, PATRAN, TOPAZ, EXODUSII.
           mesh_has_cblockid_data = .true.
@@ -269,7 +273,18 @@ CONTAINS
        if (p_info%IOP) then
           call CREATE_MESH (Mesh_Tot, Vertex_Tot)
        end if
-       
+       !! NNC, Dec 2013.  The Vertex_Data type is now default initialized
+       !! making the following assignment unnecessary.  However the rhs
+       !! function reference had the side effect of resetting the Vrtx_Bdy
+       !! structure to its initial state (unbelievable!)  That is now done here.
+       !! The assignment was originally done in CREATE_MESH, meaning it was
+       !! only done on the IO process -- probably not correct, but it didn't
+       !! matter because in this execution path the data structure had never
+       !! been allocated.
+       !! Vertex_tot = VERTEX_DATA_PRESET() ! moved from inside create_mesh
+       do n = 1, ndim
+         if (associated(Vrtx_Bdy(n)%data)) deallocate(Vrtx_Bdy(n)%data)
+       end do
 
        Mesh   = .DISTRIBUTE. Mesh_Tot
        Vertex = .DISTRIBUTE. Vertex_Tot
@@ -390,9 +405,7 @@ CONTAINS
                                       Fuzz, Ncell, Nseg, Ratio,   &
                                       Coord_label
     use mesh_module,            only: MESH_CONNECTIVITY,          &
-                                      MESH_CONNECTIVITY_PRESET,   &
-                                      VERTEX_DATA,                &
-                                      VERTEX_DATA_PRESET
+                                      VERTEX_DATA
     use parameter_module,       only: ncells_tot, nnodes_tot,     &
                                       Nx_tot, Mx_tot,             &
                                       ndim, nvc, nvf
@@ -421,10 +434,6 @@ CONTAINS
     end if
     
     PI  = 4.0*atan(1.0)
-
-    ! Initialize
-    Mesh_Tot   = MESH_CONNECTIVITY_PRESET()
-    Vertex_tot = VERTEX_DATA_PRESET()
 
     ! Scale Heps so not too large
     Heps = 0.5*Heps

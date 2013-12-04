@@ -273,8 +273,8 @@ CONTAINS
     !   Allocate the mesh types.
     !
     !=======================================================================
-    use mesh_module,          only: MESH_CONNECTIVITY, VERTEX_DATA
-    use parameter_module,     only: ncells, nnodes
+    use mesh_module,          only: MESH_CONNECTIVITY, VERTEX_DATA, Vrtx_Bdy
+    use parameter_module,     only: ncells, nnodes, ndim
 
     ! Arguments
     type(MESH_CONNECTIVITY),  dimension(:),  pointer :: Mesh
@@ -283,7 +283,7 @@ CONTAINS
     integer, optional, intent(IN)   :: nnodes_input
 
     ! Local Variables
-    integer :: ncells_local, nnodes_local
+    integer :: ncells_local, nnodes_local, n
     logical, save :: first_time = .true.
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -309,6 +309,11 @@ CONTAINS
     ! Allocate the Mesh & Vertex derived type.
     call ALLOCATE_MESH (Mesh, ncells_local)
     call ALLOCATE_VERTEX (Vertex, nnodes_local)
+
+    ! Formerly a side effect of VERTEX_DATA_PRESET() (called from allocate_vertex)
+    do n = 1, ndim
+      if (associated(Vrtx_Bdy(n)%data)) deallocate(Vrtx_Bdy(n)%data)
+    end do
 
     ! Inform the user of allocation.
     if (first_time) then
@@ -360,7 +365,7 @@ CONTAINS
     !   Sets all components to default values
     !
     !=======================================================================
-    use mesh_module, only: MESH_CONNECTIVITY, MESH_CONNECTIVITY_PRESET
+    use mesh_module, only: MESH_CONNECTIVITY
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(:), pointer :: Mesh
@@ -375,9 +380,6 @@ CONTAINS
     ALLOCATE (Mesh(ncells_input), STAT = memstat)
     if (memstat /= 0) call TLS_panic ('BASE_TYPES_ALLOCATE: Mesh derived type memory allocation error')
 
-    ! Set mesh to default.
-    Mesh = MESH_CONNECTIVITY_PRESET()
-
   END SUBROUTINE ALLOCATE_MESH
 
   SUBROUTINE ALLOCATE_VERTEX (Vertex, nnodes_input)
@@ -387,25 +389,20 @@ CONTAINS
     !   Allocate the mesh types.
     !
     !=======================================================================
-    use mesh_module, only: VERTEX_DATA, VERTEX_DATA_PRESET
+    use mesh_module, only: VERTEX_DATA
 
     ! Arguments
     type(VERTEX_DATA), dimension(:), pointer :: Vertex
     integer, optional, intent(IN) :: nnodes_input
 
     ! Local Variables
-    integer :: memstat, v
+    integer :: memstat
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Allocate the Vertex derived type.
     ALLOCATE (Vertex(nnodes_input), STAT = memstat)
     if (memstat /= 0) call TLS_panic ('ALLOCATE_VERTEX: Vertex derived type memory allocation error')
-
-    ! Set mesh vertex to default.
-    do v = 1, nnodes_input
-       Vertex(v) = VERTEX_DATA_PRESET()
-    end do
 
   END SUBROUTINE ALLOCATE_VERTEX
 
@@ -596,8 +593,7 @@ CONTAINS
     !=======================================================================
     use mesh_module,   only: MESH_CONNECTIVITY, UnPermute_Mesh_Vector, &
                              Permute_Mesh_Vector,               &
-                             UnPermute_Mesh_Initialized,        &
-                             Mesh_Connectivity_Preset
+                             UnPermute_Mesh_Initialized
     use parameter_module, only: ncells
     use pgslib_module, only: PGSLib_Deallocate_Trace,     &
          &                   PGSLib_GS_Trace,             &
@@ -665,7 +661,6 @@ CONTAINS
     ! Now we are ready to start the Permuting.  We need to make some space
     call ALLOCATE_MESH (Mesh_New, SIZE(MeshPermutation, 1))
     
-    Mesh_New = Mesh_Connectivity_Preset()
     ! Since we use the same pattern repeatedly, save the trace, but
     ! first put it into known state.
     NULLIFY(Mesh_Permute_Trace)
@@ -808,10 +803,9 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,   only: Vertex_Data, UnPermute_Vertex_Vector, &
-                             Permute_Vertex_Vector,                &
-                             UnPermute_Vertex_Initialized,  &
-                             VERTEX_DATA_PRESET
-    use parameter_module, only: nnodes
+                             Permute_Vertex_Vector, Vrtx_Bdy,      &
+                             UnPermute_Vertex_Initialized
+    use parameter_module, only: nnodes, ndim
     use pgslib_module, only: PGSLib_Deallocate_Trace,     &
          &                   PGSLib_GS_Trace,             &
          &                   PGSLib_Permute,              &
@@ -836,7 +830,7 @@ CONTAINS
     type (VERTEX_DATA), dimension(:), &
                         POINTER       :: Vertex_Old
     type (PGSLib_GS_Trace), POINTER   :: Vertex_Permute_Trace
-    integer :: i
+    integer :: i, n
     logical :: LocalPermuter
 
     call TLS_info (' Permuting vertices ... ', advance=.false.)
@@ -864,8 +858,12 @@ CONTAINS
 
     ! Now we are ready to start the Permuting.  We need to make some space
     call ALLOCATE_Vertex(Vertex_New, SIZE(VertexPermutation, 1))
+
+    ! Formerly a side effect of VERTEX_DATA_PRESET() (called from allocate_vertex)
+    do n = 1, ndim
+      if (associated(Vrtx_Bdy(n)%data)) deallocate(Vrtx_Bdy(n)%data)
+    end do
     
-    Vertex_New = VERTEX_DATA_PRESET()
     ! Since we use the same pattern repeatedly, save the trace, but
     ! first put it into known state.
     NULLIFY(Vertex_Permute_Trace)
