@@ -45,7 +45,7 @@ CONTAINS
     use mesh_gen_module,        only: MESH_GEN,                    &
                                       Flag_Face_Neighbors
     use mesh_utilities,         only: MESH_DIAGNOSTICS
-    use mesh_module,            only: Mesh, Vertex, ASSIGN_CELL_EDGES, CELL_EDGE
+    use mesh_module,            only: Mesh, Vertex
     use output_control,         only: next_op
     use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
@@ -68,8 +68,6 @@ CONTAINS
     
     ! Assign bc bits.
     call ASSIGN_BC_BITS (Prs%Face_bit, Vel%Face_bit, Conc%Face_bit)
-
-    call ASSIGN_CELL_EDGES (Cell_Edge)
 
     ! Setup the tensor matrix.
     call TENSOR_MATRIX ()

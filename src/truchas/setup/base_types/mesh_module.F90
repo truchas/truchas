@@ -46,8 +46,7 @@ MODULE MESH_MODULE
   public :: MESH_COLLATE_VERTEX, VERTEX_COLLATE
 
   ! Public Subroutines
-  public :: ASSIGN_CELL_EDGES, &
-            Vertex_Data_Preset
+  public :: Vertex_Data_Preset
   public :: Initialize_Face_Bit_Mask,        &
             Set_Face_Neighbor,               &
             Clear_Face_Neighbor,             &
@@ -138,8 +137,9 @@ MODULE MESH_MODULE
   logical, SAVE,         &
                      PUBLIC       :: UnPermute_Vertex_Initialized = .FALSE.
 
-  ! Define the edges surrounding a cell
-  integer, dimension(2,nec) :: Cell_Edge
+  ! Define the edges surrounding a hex cell
+  integer :: Cell_Edge(2,12)
+  data Cell_Edge/1,2, 2,3, 3,4, 4,1, 2,6, 3,7, 4,8, 1,5, 5,6, 6,7, 7,8, 8,5/
 
   ! define CELL_GEOMETRY derived type
   Type CELL_GEOMETRY
@@ -278,54 +278,6 @@ CONTAINS
     end do
 
   END FUNCTION VERTEX_PRESET_SCALAR
-
-  SUBROUTINE ASSIGN_CELL_EDGES (Cell_Edge)
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !    Assign cell edges.
-    !
-    !=======================================================================
-    use parameter_module, only: nec
-
-    ! Argument List
-    integer, dimension(2,nec), intent(OUT) :: Cell_Edge
-
-    ! Local Variables
-    integer :: edge
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    do edge = 1,nec
-       select case (edge)
-          case (1)
-             Cell_Edge(:,edge) = (/1,2/)
-          case (2)
-             Cell_Edge(:,edge) = (/2,3/)
-          case (3)
-             Cell_Edge(:,edge) = (/3,4/)
-          case (4)
-             Cell_Edge(:,edge) = (/4,1/)
-          case (5)
-             Cell_Edge(:,edge) = (/2,6/)
-          case (6)
-             Cell_Edge(:,edge) = (/3,7/)
-          case (7)
-             Cell_Edge(:,edge) = (/4,8/)
-          case (8)
-             Cell_Edge(:,edge) = (/1,5/)
-          case (9)
-             Cell_Edge(:,edge) = (/5,6/)
-          case (10)
-             Cell_Edge(:,edge) = (/6,7/)
-          case (11)
-             Cell_Edge(:,edge) = (/7,8/)
-          case (12)
-             Cell_Edge(:,edge) = (/8,5/)
-       end select
-    end do
-
-  END SUBROUTINE ASSIGN_CELL_EDGES
 
   SUBROUTINE Initialize_Face_Bit_Mask()
     !==================================================================
