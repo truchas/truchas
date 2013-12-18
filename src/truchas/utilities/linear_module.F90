@@ -10,7 +10,6 @@ MODULE LINEAR_MODULE
   !           LINEAR_PROP_FACE   <- Procedure(s)
   !           LINEAR_PROP_VECTOR
   !           LINEAR_GRAD_VECTOR
-  !           LINEAR_COEF
   !
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
@@ -21,7 +20,6 @@ MODULE LINEAR_MODULE
   private
 
   ! Public Subroutines
-  public :: LINEAR_COEF
   public :: LINEAR_GRAD
   public :: LINEAR_PROP
 
@@ -39,7 +37,25 @@ MODULE LINEAR_MODULE
   END INTERFACE
 
   ! Components of Linear Interpolation Coefficients
-  real(r8), dimension(ndim,nvc) :: LC1, LC2
+  real(r8), parameter :: LC1(3,8) = reshape( &
+      [ 0.0_r8,  1.0_r8,  1.0_r8, &
+        0.0_r8,  0.0_r8,  1.0_r8, &
+        1.0_r8,  0.0_r8,  1.0_r8, &
+        1.0_r8,  1.0_r8,  1.0_r8, &
+        0.0_r8,  1.0_r8,  0.0_r8, &
+        0.0_r8,  0.0_r8,  0.0_r8, &
+        1.0_r8,  0.0_r8,  0.0_r8, &
+        1.0_r8,  1.0_r8,  0.0_r8 ], shape=[3,8])
+  
+  real(r8), parameter :: LC2(3,8) = reshape( &
+      [ 1.0_r8, -1.0_r8, -1.0_r8, &
+        1.0_r8,  1.0_r8, -1.0_r8, &
+       -1.0_r8,  1.0_r8, -1.0_r8, &
+       -1.0_r8, -1.0_r8, -1.0_r8, &
+        1.0_r8, -1.0_r8,  1.0_r8, &
+        1.0_r8,  1.0_r8,  1.0_r8, &
+       -1.0_r8,  1.0_r8,  1.0_r8, &
+       -1.0_r8, -1.0_r8,  1.0_r8 ], shape=[3,8])
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -307,158 +323,5 @@ CONTAINS
     end do Ndim_Loop
 
   END SUBROUTINE LINEAR_GRAD_VECTOR
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  SUBROUTINE LINEAR_COEF ()
-    !=======================================================================
-    ! Purpose(s):
-    !   Evaluate components of linear interpolation coefficients.
-    !
-    !               ndim
-    !               ___
-    !               | |
-    !   Coef_v(:) = | | [LC1(n,v) + LC2(n,v)*Xi(n,:)]
-    !               | |
-    !               n=1
-    !
-    !   LC1: v\n|  1  2  3       LC2: v\n|  1  2  3
-    !        ___|___________          ___|___________
-    !         1 |  0  1  1             1 |  1 -1 -1
-    !         2 |  0  0  1             2 |  1  1 -1
-    !         3 |  1  0  1             3 | -1  1 -1
-    !         4 |  1  1  1             4 | -1 -1 -1
-    !         5 |  0  1  0             5 |  1 -1  1
-    !         6 |  0  0  0             6 |  1  1  1
-    !         7 |  1  0  0             7 | -1  1  1
-    !         8 |  1  1  0             8 | -1 -1  1
-    !
-    !=======================================================================
-    use parameter_module, only: ndim, nvc
-
-    ! Local Variables
-    integer :: n, v
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Evaluate Components
-    Vrtx_Loop : do v = 1, nvc
-       select case (v)
-       case (1) ! Vertex One
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             end select
-          end do
-       case (2) ! Vertex Two
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             end select
-          end do
-       case (3) ! Vertex Three
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             end select
-          end do
-       case (4) ! Vertex Four
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             end select
-          end do
-       case (5) ! Vertex Five
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             end select
-          end do
-       case (6) ! Vertex Six
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             end select
-          end do
-       case (7) ! Vertex Seven
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             end select
-          end do
-       case (8) ! Vertex Eight
-          do n = 1, ndim
-             select case (n)
-             case (1) ! 1-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (2) ! 2-D Coefficients
-                LC1(n,v) = + 1.0_r8
-                LC2(n,v) = - 1.0_r8
-             case (3) ! 3-D Coefficients
-                LC1(n,v) = + 0.0_r8
-                LC2(n,v) = + 1.0_r8
-             end select
-          end do
-       end select
-    end do Vrtx_Loop
-
-  END SUBROUTINE LINEAR_COEF
 
 END MODULE LINEAR_MODULE

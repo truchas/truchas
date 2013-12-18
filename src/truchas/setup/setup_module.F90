@@ -41,7 +41,6 @@ CONTAINS
     use cell_geometry_module,   only: GET_CELL_GEOMETRY
     use gs_module,              only: EE_GS_INIT, EN_GS_INIT, NN_GS_INIT
     use init_module,            only: INITIAL
-    use linear_module,          only: LINEAR_COEF
     use mesh_gen_module,        only: MESH_GEN,                    &
                                       Flag_Face_Neighbors
     use mesh_utilities,         only: MESH_DIAGNOSTICS
@@ -71,9 +70,6 @@ CONTAINS
 
     ! Setup the tensor matrix.
     call TENSOR_MATRIX ()
-
-    ! Setup linear interpolation coefficients.
-    call LINEAR_COEF ()
 
     ! Allocate and default the Mesh and Vertex derived types.
     call MESH_VERTEX_ALLOCATE (Mesh, Vertex)
