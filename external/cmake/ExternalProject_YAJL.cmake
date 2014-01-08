@@ -12,22 +12,9 @@
 set(YAJL_BUILD_TARGET yajl)
 
 # Define the version and archive file
-set(EP_YAJL_VERSION_MAJOR 2)
-set(EP_YAJL_VERSION_MINOR 0)
-set(EP_YAJL_VERSION_PATCH 4)
-set(EP_YAJL_VERSION ${EP_YAJL_VERSION_MAJOR}.${EP_YAJL_VERSION_MINOR}.${EP_YAJL_VERSION_PATCH})
+set(EP_YAJL_VERSION 2.0.4)
 set(EP_YAJL_ARCHIVE_FILE   yajl-${EP_YAJL_VERSION}.tar.gz)
 set(EP_YAJL_MD5_SUM        204ed61f844ca49009f5edefa405f3e7) 
-
-
-# Useful utility to build *FLAGS strings
-include(BuildWhitespaceString)
-
-# Make CMake files to run scripts and exit correctly 
-include(MakeCMakeCommandFile)
-
-# Construct library names
-include(BuildLibraryName)
 
 # ExternalProject directories, file and log settings
 set(yajl_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_YAJL_ARCHIVE_FILE})
@@ -66,15 +53,10 @@ ExternalProject_Add(${YAJL_BUILD_TARGET}
 
 # --- Set the variables for other targets that need YAJL
 
-# Version
-set(YAJL_VERSION ${EP_YAJL_VERSION})
 set(YAJL_VERSION_STRING ${EP_YAJL_VERSION})
-
-# Include directory
 set(YAJL_INCLUDE_DIR ${yajl_install_dir}/include)
-set(YAJL_INCLUDE_DIRS ${YAJL_INCLUDE_DIRS})
-
-# Library
-build_library_name(yajl library APPEND_PATH ${yajl_install_dir}/lib)
-set(YAJL_LIBRARY ${library})
-set(YAJL_LIBRARIES ${library})
+set(YAJL_LIBRARY_DIR ${yajl_install_dir}/lib)
+set_target_properties(yajl PROPERTIES
+                      IMPORTED_LOCATION ${YAJL_LIBRARY_DIR}
+                      IMPORTED_INCLUDE_DIRECTORIES ${YAJL_INCLUDE_DIR})
+                      
