@@ -142,7 +142,14 @@ endif()
             ${PyDanu_BINARY_DIR}/Danu.py
             ${PyDanu_BINARY_DIR}/_Danu.so
             ${PyDanu_BINARY_DIR}/GMV.py
-            ${PyDanu_BINARY_DIR}/_GMV.so)
+            ${PyDanu_BINARY_DIR}/_GMV.so
+            ${PyDanu_BINARY_DIR}/Xdmf.py)
+
+  # Process the Xdmf module
+  get_filename_component(base ${PyDanu_SOURCE_DIR}/Xdmf.py NAME)
+  set(output_target ${CMAKE_CURRENT_BINARY_DIR}/${base})
+  configure_file(${PyDanu_SOURCE_DIR}/Xdmf.py ${output_target} @ONLY)
+
 
   install(FILES ${PyDanu_MODULES} 
           DESTINATION ${Danu_Python_INSTALL_DIR})
@@ -150,7 +157,8 @@ endif()
   # Scripts to install
   set(PyDanu_SOURCE_SCRIPTS
       ${PyDanu_SOURCE_DIR}/danu_report.py
-      ${PyDanu_SOURCE_DIR}/truchas-gmv-parser.py)
+      ${PyDanu_SOURCE_DIR}/truchas-gmv-parser.py
+      ${PyDanu_SOURCE_DIR}/xdmf-parser.py)
 
     # Process the scripts  
   set(PyDanu_SCRIPTS)

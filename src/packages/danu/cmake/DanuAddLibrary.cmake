@@ -48,7 +48,7 @@ function(DANU_ADD_LIBRARY library_name)
     if(ARG_DESTINATION)
       set(lib_dest ${ARG_DESTINATION})
     endif()
-    install(TARGETS ${library_name} DESTINATION ${lib_dest})  
+    install(TARGETS ${library_name} EXPORT ${library_name} DESTINATION ${lib_dest})  
   endif()  
 
   # Add headers files to the install target

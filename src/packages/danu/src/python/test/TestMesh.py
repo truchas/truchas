@@ -300,7 +300,7 @@ class TestConnectivity(unittest.TestCase):
       self.fh.close()
       #os.remove(self.filename)
 
-  def runTest(self):
+  def test_basic(self):
     import numpy
     import random
 
@@ -313,6 +313,16 @@ class TestConnectivity(unittest.TestCase):
     self.mesh.write_connectivity(self.data)  
     read_data=self.mesh.read_connectivity()
     self.assertEqual(read_data.all(),self.data.all())
+
+  def test_offset(self):
+    import numpy
+    import random
+
+    self.mesh.write_connectivity(self.data)  
+
+    offset=self.mesh.connectivity_offset()
+    self.assertEqual(offset,0)
+
 
 class TestAttributes(unittest.TestCase):
 

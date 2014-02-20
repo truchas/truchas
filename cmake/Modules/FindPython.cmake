@@ -141,7 +141,7 @@ string(REGEX REPLACE "[\n\r]+" ";" _python_out ${_python_out})
 # Define the include directory
 list(GET _python_out 1 _inc_search_dir)
 find_path(PYTHON_include_DIR
-          Python.h
+          Python.h pyconfig-64.h
           PATHS ${_inc_search_dir}
           NO_DEFAULT_PATH)
 

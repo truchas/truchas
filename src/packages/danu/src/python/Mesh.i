@@ -190,6 +190,16 @@
           }
           return array;
         }
+        int connectivity_offset() {
+          hid_t mid = GET_MOBJECT_HID($self);
+          herr_t stat;
+          int offset;
+          stat=mesh_connectivity_get_offset(mid,&offset);
+          if ( DANU_RETURN_FAIL(stat) ) {
+            throw_exception("Failed to read connectivity offset");
+          }
+          return offset;
+        }
         int nnodes(){
           hid_t mid = GET_MOBJECT_HID($self);
           herr_t stat;

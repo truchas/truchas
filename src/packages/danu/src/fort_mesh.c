@@ -298,6 +298,7 @@ void mesh_write_connectivity_f(const hid_t_ptr *mptr,
     herr_t err;
 
     err = mesh_write_connectivity(mid,*nelem,data);
+    err &= mesh_connectivity_set_offset(mid,1);
 
     error_translate(err,ierr);
 

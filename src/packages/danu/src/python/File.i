@@ -47,7 +47,25 @@
         PyObject * attributes() {
           return readPythonAllAttributes($self->h5);
         }
-
-
+        void set_offset(const char *dataset_name,int offset) {
+          hid_t fid = $self->h5->hid;
+          hid_t id = danu_dataset_open(fid,dataset_name);
+          herr_t err = danu_set_offset(id,offset);
+          if ( DANU_RETURN_FAIL(err) ) {
+            throw_exception("Failed to set offset");
+          }
+          danu_dataset_close(id);
+        }
+        int get_offset(const char *dataset_name) {
+          int offset;
+          hid_t fid = $self->h5->hid;
+          hid_t id = danu_dataset_open(fid,dataset_name);
+          herr_t err = danu_get_offset(id,&offset);
+          danu_dataset_close(id);
+          if ( DANU_RETURN_FAIL(err) ) {
+            throw_exception("Failed to read offset");
+          }
+          return offset;
+        }
 
 };

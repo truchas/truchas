@@ -8,7 +8,7 @@
 # ----- Import modules
 import sys
 import os
-from optparse import OptionParser as OptParse 
+from optparse import OptionParser as OptParse
 
 # --- Attempt to import Danu. Exit gracefully
 try:
@@ -58,7 +58,7 @@ class CL_Options:
 		  help="Danu simulation name",
 		  metavar="STRING")
     p.add_option("-m", "--mesh", dest="mesh_name", action="store",
-                  default="DEFAULT", 
+                  default="DEFAULT",
 		  help="Danu mesh name",
 		  metavar="STRING")
     p.add_option("-b", "--binary", dest="binary", action="store_true",
@@ -96,12 +96,12 @@ class CL_Options:
 #
 # Truchas Danu Class
 #
-# Someday this class will  grow up and 
+# Someday this class will  grow up and
 # live as a separate module in the Truchas area
-#    
+#
 # ---------------------------------------------------------------------------
- 
-# From a Google search on creating nested dicts 
+
+# From a Google search on creating nested dicts
 class AutoVivification(dict):
     """Implementation of perl's autovivification feature."""
     def __getitem__(self, item):
@@ -150,7 +150,7 @@ class TruchasDanuFile:
 	del seq
       del sim
 
-  # For debugging 
+  # For debugging
   def pretty_print(self):
     from operator import attrgetter
 
@@ -163,7 +163,7 @@ class TruchasDanuFile:
       print '\tDatasets'
       for ds in self.datasets[sim]:
 	print '\t\t%s' % (ds)
-      print 
+      print
       print '\tSeries'
       print self.series[sim]
       num_names=range(1,1+len(self.series[sim]))
@@ -171,7 +171,7 @@ class TruchasDanuFile:
       for g in ordered_series:
 	print '\t\t%s t=%1.5e cycle=%d' % (g,self.series[sim][g]['time'],self.series[sim][g]['cycle'])
 	print '\t\t\tDatasets: ' + str(self.series[sim][g]['datasets'])
-    
+
   def series_data_search(self,sim_name,series_name,key_name,key_value):
     return_datasets=[]
     try:
@@ -185,7 +185,7 @@ class TruchasDanuFile:
 	  value=seq.get_data_attribute(data,key_name)
 	  if value == key_value:
 	    return_datasets.append(data)
-      del seq	 
+      del seq
     return return_datasets
 
   def get_series_data_ndim(self,sim_name,series_name,data_name):
@@ -215,7 +215,7 @@ class TruchasDanuFile:
 	scalar_fields.append(field)
     del seq
     return scalar_fields
-    
+
   def get_cell_fields_vectors(self,sim_name,series_name):
     vector_fields=[]
     seq=self.file.get_simulation(sim_name).get_sequence(series_name)
@@ -224,7 +224,7 @@ class TruchasDanuFile:
 	vector_fields.append(field)
     del seq
     return vector_fields
-    
+
 
   def get_node_fields(self,sim_name,series_name):
     key_name='FIELDTYPE'
@@ -239,7 +239,7 @@ class TruchasDanuFile:
 	scalar_fields.append(field)
     del seq
     return scalar_fields
-    
+
   def get_node_fields_vectors(self,sim_name,series_name):
     vector_fields=[]
     seq=self.file.get_simulation(sim_name).get_sequence(series_name)
@@ -260,7 +260,7 @@ class TruchasDanuFile:
 	if field_attrs.has_key(fname_key):
 	  names.append(seq.get_data_attribute(field,fname_key))
 	i=i+1
-    return names	
+    return names
 
 
 
@@ -294,9 +294,9 @@ except:
   raise
 
 # ----- Create the GMV mesh file
-# TypeError rasied if base_name is None 
+# TypeError rasied if base_name is None
 try:
-  gmv_meshname=options.base_name+'-mesh'+'.gmv' 
+  gmv_meshname=options.base_name+'-mesh'+'.gmv'
 except TypeError:
   gmv_meshname=options.sim_name+'-mesh'+'.gmv'
 except:
@@ -370,7 +370,7 @@ else:
   print 'Number of materials: ' + str(nmats)
   print 'Materials: ' + str(materials)
 
-# --- The cell partition array 
+# --- The cell partition array
 cellpart=[]
 if numprocs > 1:
   try:
@@ -401,7 +401,7 @@ except TypeError:
 except:
   raise
 
-# --- Loop through each time series and generate a data file 
+# --- Loop through each time series and generate a data file
 cnt=options.start
 num_names=range(1,1+len(truchas_file.series[options.sim_name]))
 ordered_groups=map(build_series_name,num_names)
@@ -488,6 +488,8 @@ for group in ordered_groups:
   for field in node_fields['vectors']:
     #print '\tWriting %s to %s'%(field,gmv_data_filename)
     data=seq.data_read(field).transpose()
+    (ncomp,nnodes)=data.shape
+    print 'ncomp=%d nnodes=%d\n'%(ncomp,nnodes)
     data_names=truchas_file.get_field_names(options.sim_name,group,field,ncomp)
     gmv_data.write_node_data_vectors(field,data_names,data)
   gmv_data.end_vector_block()
@@ -502,6 +504,6 @@ for group in ordered_groups:
   cnt=cnt+options.stride
 
 
-#  
+#
 # And exit .....
 sys.exit()

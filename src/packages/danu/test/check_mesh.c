@@ -489,17 +489,14 @@ START_TEST(test_unstruct_mesh_connectivity)
 
   if ( status == DANU_SUCCESS ) {
     /* Generate the connectivity data */
-    //num = generate_random_bound_int(2048,10000,&iseed);
     num=10;
     data = DANU_MALLOC(int,num*HEX_ELEM_ORDER);
     generate_random_connectivity(num*HEX_ELEM_ORDER,data);
 
     /* Calls that should fail */
-#if 0
     status = mesh_write_connectivity(mid,num,data);
     fail_unless(status != DANU_SUCCESS,
 	        "Failed flag bad mesh HDF5 id");
-#endif    
 
     status = mesh_add_unstructured(fid,mesh_name,HEX_ELEM_ORDER,3,&mid);
     fail_unless(status == DANU_SUCCESS,
@@ -555,6 +552,59 @@ START_TEST(test_unstruct_mesh_connectivity)
 
   }
 
+}
+END_TEST
+
+START_TEST(test_mesh_connectivity_offset)
+{
+  const char test_file[] = FILENAME;
+  char mesh_name[32];
+  hid_t  fid, mid,id;
+  herr_t status;
+  int iseed = 0xABCD0123;
+  int *data;
+  int num,offset,offset_r;
+
+  status = output_file_create(test_file,&fid);
+  fail_unless ( status == DANU_SUCCESS,
+                "Failed to create output file");
+
+  if ( status == DANU_SUCCESS ) {
+    sprintf(mesh_name, "Test 3D Mesh");
+    status = mesh_add_unstructured(fid,mesh_name,TET_ELEM_ORDER,3,&mid);
+    fail_unless(status == DANU_SUCCESS,
+		"Failed to create a test 3D mesh");
+  }
+ 
+  /* Generate the connectivity data */
+  num=10;
+  data = DANU_MALLOC(int,num*HEX_ELEM_ORDER);
+  generate_random_connectivity(num*HEX_ELEM_ORDER,data);
+
+  /* Can not set offset before connectivity is defined */
+  offset=0;
+  fail_unless( mesh_connectivity_set_offset(mid,offset) == DANU_FAILURE,
+	       "Failed to set offset in connectivity dataset");
+
+  status = mesh_write_connectivity(mid,num,data);
+  fail_unless(status == DANU_SUCCESS,
+	        "Failed to write connectivity data");
+  
+  offset=1;
+  fail_unless( mesh_connectivity_set_offset(mid,offset) == DANU_SUCCESS,
+	       "Failed to set offset in connectivity dataset");
+
+
+  fail_unless(mesh_connectivity_get_offset(mid,&offset_r) == DANU_SUCCESS,
+	      "Failed to read offset attribute");
+
+  fail_unless(offset == offset_r,
+	      "Incorrect offset value read in");
+
+  /* Cleanup */
+  output_file_close(&fid);
+
+  DANU_FREE(data);
 }
 END_TEST
 
@@ -699,6 +749,7 @@ mesh_suite (void)
 
     TCase *mesh_unstruct_con = tcase_create("Unstructured Mesh Conectivity");
     tcase_add_test(mesh_unstruct_con,test_unstruct_mesh_connectivity);
+    tcase_add_test(mesh_unstruct_con,test_mesh_connectivity_offset);
     suite_add_tcase(s,mesh_unstruct_con);
 
     return s;

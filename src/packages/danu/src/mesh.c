@@ -32,6 +32,7 @@
 #include <danu_group.h>
 #include <danu_dataset.h>
 #include <danu_attribute.h>
+#include <danu_offset.h>
 #include <danu_mesh.h>
 
 /* Private Defines */
@@ -54,6 +55,9 @@
 /* Specific connectivity hyperslab indices */
 #define CONNECT_NELEM_IDX     0
 #define CONNECT_ELEMORDER_IDX 1
+
+/* Default connectivity index */
+#define CONNECT_OFFSET_DFLT 0
 
 /* Private function prototypes */ 
 herr_t elem_order_to_name(int elem_order, int dim, char * elem_name);
@@ -852,6 +856,7 @@ herr_t mesh_add_unstructured(hid_t fid,
     herr_t status = DANU_FAILURE;
     telem_t elem;
     tmesh_t type = UNSTRUCTURED_MESH;
+    hid_t id;
     herr_t err;
 
     if ( DIM_IS_INVALID(dim) ) {
@@ -1542,11 +1547,17 @@ herr_t mesh_create_connectivity(hid_t mid, int nelem)
       return cid;
     }
 
+
     /* Define the dimensions of the dataset */
     size[CONNECT_SIZE_NELEM_IDX] = (hsize_t) nelem;
     size[CONNECT_SIZE_ELEMORDER_IDX] = (hsize_t) elem_order;
 
     cid = danu_dataset_create_int(mid,conn_name,CONNECT_SIZE_DIM,size);
+    
+    /* Default offset is 0, can be changed with another set call */
+    if ( DANU_RETURN_FAIL(danu_set_offset(cid,0)) ) {
+      DANU_ERROR_MESS("Failed to write the offset for connectivity dataset");
+    }
 
     return cid;
 }
@@ -1603,6 +1614,7 @@ herr_t mesh_write_connectivity(hid_t mid, int nelem, const int *data)
     
     herr_t status = DANU_FAILURE;
     hsize_t size[CONNECT_SIZE_DIM];
+    hid_t id;
     int elem_order;
 
     /* Check the input */
@@ -1620,7 +1632,15 @@ herr_t mesh_write_connectivity(hid_t mid, int nelem, const int *data)
       size[CONNECT_SIZE_NELEM_IDX]=(hsize_t)nelem;
       size[CONNECT_SIZE_ELEMORDER_IDX]=(hsize_t)elem_order;
       status = danu_data_write_int(mid,MESH_CONNECT_DATA_NAME,CONNECT_SIZE_DIM,size,data);
+
+      if ( status == DANU_SUCCESS ) {
+	id = mesh_open_connectivity(mid);
+	status &= danu_set_offset(id,0);
+	danu_dataset_close(id);
+      }
+
       status &= mesh_set_nelem(mid,nelem);
+
     }
 
     return status;
@@ -1697,6 +1717,77 @@ herr_t mesh_connectivity_size(hid_t mid, int *nelem, int *elem_order)
   stat &= mesh_get_elem_order(mid,elem_order);
   return stat;
 }
+/*
+* Routine: herr_t mesh_connectivity_set_offset(hid_t mid, int offset)
+* Purpose: Set the offset attribute in the connectivity dataset
+* Description: Open an existing connectivity data set and set the
+*              offset attribute. 
+*
+* Parameters:
+*           mid               IN    HDF5 identifier for the mesh group
+*           offset            IN    Offset value
+*                              
+* Returns: Returns a negative value if an error occurs, otherwise returns a zero.
+*     
+* Errors: Possible error conditions are invalid HDF5 identifier, invalid pointers, the
+*         dataset does not exist, fail to open the mesh or connectivity dataset.
+*/
+herr_t mesh_connectivity_set_offset(hid_t mid, int offset)
+{
+  herr_t stat = DANU_FAILURE;
+  hid_t id;
+
+  id = mesh_open_connectivity(mid);
+  if (H5_ISA_VALID_ID(id)) {
+    stat = danu_set_offset(id,offset);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to open Connectivity dataset");
+  }
+ 
+  return stat;
+}
+/*
+* Routine: herr_t mesh_connectivity_get_offset(hid_t mid, int *offset)
+* Purpose: Fetch the offset attribute in the connectivity dataset
+* Description: Open an existing connectivity data set and get the
+*              offset attribute value. Calling routine should check 
+*              the return before using the offset value.
+*
+* Parameters:
+*           mid              IN    HDF5 identifier for the mesh group
+*           *offset          OUT    Pointer to the offset value
+*                              
+* Returns: Returns a negative value if an error occurs, otherwise returns a zero.
+*     
+* Errors: Possible error conditions are invalid HDF5 identifier, invalid pointers, the
+*         dataset does not exist, fail to open the mesh or connectivity dataset.
+*/
+herr_t mesh_connectivity_get_offset(hid_t mid, int *offset)
+{
+  herr_t stat = DANU_FAILURE;
+  hid_t id;
+
+  if (DANU_BAD_PTR(offset)) {
+    DANU_ERROR_MESS("Invalid offset pointer");
+    return stat;
+  }
+
+  /* Set to dummy value */
+  *offset=0xFFFF;
+
+  id = mesh_open_connectivity(mid);
+  if (H5_ISA_VALID_ID(id)) {
+    stat = danu_get_offset(id,offset);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to open Connectivity dataset");
+  }
+ 
+  return stat;
+}
+
+
 /*
 * Routine: herr_t mesh_set_type(hid_t mid, tmesh_t type) 
 * Purpose: Set the mesh type to STRUCTURED or UNSTRUCTURED

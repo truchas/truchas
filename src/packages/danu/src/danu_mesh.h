@@ -91,6 +91,8 @@ hid_t  mesh_open_connectivity(hid_t mid);
 herr_t mesh_write_connectivity(hid_t mid, int nelem, const int *data);
 herr_t mesh_read_connectivity(hid_t mid,  int *data);
 herr_t mesh_connectivity_size(hid_t mid, int *nelem, int *elem_order);
+herr_t mesh_connectivity_set_offset(hid_t mid, int offset);
+herr_t mesh_connectivity_get_offset(hid_t mid, int *offset);
 
 /* Mesh Attributes */
 herr_t mesh_get_type(hid_t mid, tmesh_t *type);

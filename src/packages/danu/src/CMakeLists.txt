@@ -43,6 +43,7 @@ set(DANU_SRC
         mesh.c
         non-series_data.c
         probes.c
+	offset.c
         output.c
         series_data.c
         series_group.c
@@ -68,6 +69,7 @@ set(DANU_HEADERS
          danu_mesh.h
          danu_non-series.h
          danu_probes.h
+         danu_offset.h
          danu_output.h
          danu_series-data.h
          danu_series-group.h

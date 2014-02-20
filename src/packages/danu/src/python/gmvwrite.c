@@ -3906,7 +3906,84 @@ void gmvwrite_vector_data(int data_type, int ncomps, void *vids)
  }
 
 /* --------------------------------------------------------- */
+#if 0
+void gmvwrite_vector_data_node(int data_type, int ncomps, void *vids)
+{
+   int *tmpdata;
+   long numthings, i, j;
+   long count, npts, save;
+   float *tempvids, *f_ptr;
+   double *tempvids64, *d_ptr;
 
+   npts = n_nodes;
+   save = n_nodes;
+
+ if (rflag64)
+     {
+      tempvids64 = (double*)malloc(sizeof(double)*npts);
+     }
+   else
+     {
+      tempvids = (float*)malloc(sizeof(float)*npts);
+     }
+
+   if (rflag64)
+     {
+       j=0;
+       d_ptr=vids + j;
+       for (count = 0; count < npts; count++ ) {
+	     tempvids64[count] = *((double*) d_ptr);
+	     if ( count % save == 0 ) {
+	       j++;
+	       d_ptr=vids+j;
+	     }
+         printf("%s %d: count =%d 0x%08lX=>%f\n", __FILE__, __LINE__,
+	         count, d_ptr, tempvids64[count]);
+	     d_ptr+=ncomps;
+       }
+#if 0     
+      for (count = 0; count < npts; count++)
+        {
+         tempvids64[count] = *((double *) vids + count);
+        }
+#endif
+     }
+   else
+     {
+      for (count = 0; count < npts; count++)
+        {
+         tempvids[count] = *((float *) vids + count);
+        }
+     }
+
+   if (rflag64)
+     {
+      if (filetype == IEEE_F)
+         fwrite(tempvids64, FLOAT64, npts, fp);
+      else
+        {
+         write_ascii_double(npts, tempvids64);
+        }
+      free(tempvids64);
+     }
+   else
+     {
+      if (filetype == IEEE_F)
+         fwrite(tempvids, FLOAT32, npts, fp);
+      else
+        {
+         write_ascii_float(npts, tempvids);
+        }
+      free(tempvids);
+     }
+ }
+
+
+
+
+    return 0;
+}
+#endif
 void gmvwrite_vector_data_try(int data_type, int ncomps, void *vids)
 {
   int *tmpdata;
@@ -3955,7 +4032,7 @@ void gmvwrite_vector_data_try(int data_type, int ncomps, void *vids)
 	         count, d_ptr, tempvids64[count]);
 	 d_ptr+=ncomps;
        }
-#if 0      
+#if 0     
       for (count = 0; count < npts; count++)
         {
          tempvids64[count] = *((double *) vids + count);
