@@ -45,7 +45,7 @@ project(Truchas C CXX Fortran)
 # Version
 set(Truchas_MAJOR_VERSION 2)
 set(Truchas_MINOR_VERSION 8)
-set(Truchas_PATCH_VERSION 1)
+set(Truchas_PATCH_VERSION 2)
 set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
 
 # Copyright file
