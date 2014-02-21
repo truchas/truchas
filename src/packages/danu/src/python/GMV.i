@@ -197,7 +197,7 @@ import_array();
   %apply(int* IN_ARRAY1, int DIM1){(int* cell_ids, int in_ncells),
                                    (int* node_ids, int in_nnodes)}
   %apply(double* IN_ARRAY2, int DIM1, int DIM2){(double* cell_vdata, int in_ndims, int in_ncells)}
-  %apply(double* IN_ARRAY2, int DIM1, int DIM2){(double* node_vdata, int in_ndims, int in_nodes)} 
+  %apply(double* IN_ARRAY2, int DIM1, int DIM2){(double* node_vdata, int in_ndims, int in_nnodes)} 
 
   DataFile(const char * filename, 
            MeshFile *mesh,
@@ -364,13 +364,13 @@ import_array();
         throw_exception("Mismatched number of nodes. Expecting ndim x nnodes array.");
       }
       else {
-        gmvwrite_vector_name(varname,GMV_DATA_NODE,in_ndims,0);
+        gmvwrite_vector_name(varname,GMV_DATA_NODE,in_ndims,1);
         i=0;
         while(comp_names[i]) {
           gmvwrite_vector_compname(comp_names[i]);
           i++;
         }
-        gmvwrite_vector_data_try(GMV_DATA_NODE,in_ndims,node_vdata);
+        gmvwrite_vector_data(GMV_DATA_NODE,in_ndims,node_vdata);
       }
     }
     else {

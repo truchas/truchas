@@ -31,7 +31,7 @@ include(BuildLibraryName)
 # ExternalProject directories, file and log settings
 set(hdf5_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_HDF5_ARCHIVE_FILE})
 set(hdf5_prefix_dir   ${TruchasExternal_BINARY_DIR}/hdf5)
-set(hdf5_source_dir   ${hdf5_prefix_dir}/hdf5-${HDF5_VERSION}-source)
+set(hdf5_source_dir   ${hdf5_prefix_dir}/hdf5-${EP_HDF5_VERSION}-source)
 set(hdf5_stamp_dir    ${hdf5_prefix_dir}/hdf5-timestamps)
 set(hdf5_tmp_dir      ${hdf5_prefix_dir}/hdf5-tmp)
 set(hdf5_install_dir  ${TruchasExternal_INSTALL_PREFIX})
