@@ -182,14 +182,14 @@ class XdmfAttribute(XdmfElementName):
   tag = 'Attribute'
 
   def __init__(self,name,type='Scalar',center='Node'):
-    attr={'AttributeType' : type, 'Center' : center}
+    attr={'Type' : type, 'Center' : center}
     XdmfElementName.__init__(self,name,attr)
 
   def set_type(self,type):
-    return self.set_attribute('AttributeType',type)
+    return self.set_attribute('Type',type)
 
   def get_type(self):
-    return self.get_attribute('AttributeType')
+    return self.get_attribute('Type')
 
   def set_center(self,center):
     return self.set_attribute('Center',center)
@@ -202,68 +202,72 @@ XDMF DataItem
 '''
 class XdmfDataItem(XdmfElementName):
 
-  tag = 'DataItem'
+    tag = 'DataItem'
 
-  def __init__(self,name,num_type='Float',precision=4,format='XML'):
-    attr={'DataType' : num_type, 'Precision' : precision, 'Format' : format}
-    XdmfElementName.__init__(self,name,attr)
+    def __init__(self,name,num_type='Float',precision=4,format='XML'):
+      attr={'DataType' : num_type, 'Precision' : precision, 'Format' : format}
+      XdmfElementName.__init__(self,name,attr)
 
-  def set_type(self,type):
-    return self.set_attribute('ItemType',type)
+    def set_type(self,type):
+      return self.set_attribute('ItemType',type)
 
-  def get_type(self):
-    return self.get_attribute('ItemType')
+    def get_type(self):
+      return self.get_attribute('ItemType')
 
-  def set_dimensions(self,dims):
-    if isinstance(dims,list):
-      string=''
-      i=0
-      while i < len(dims)-1:
-	string+='%s '%(dims[i])
-	i=i+1
-      string+='%s'%(dims[-1])
+    def set_dimensions(self,dims):
+      try:
+        l=len(dims)
+      except TypeError:
+        string=str(dims)
+      except:
+        raise
+      else:
+        string=''
+        i=0
+        while i < l-1:
+          string+='%s '%(str(dims[i]))
+          i=i+1
+        string+='%s'%(str(dims[-1]))
       return self.set_attribute('Dimensions',string)
-    else:
-      return self.set_attribute('Dimensions',dims)
 
-  def get_dimensions(self):
-    l=self.get_attribute('Dimensions').split()
-    i=0
-    while i < len(l):
-      l[i] = int(l[i])
-      i=i+1
-    if len(l) > 1:
-      return l
-    elif len(l) == 1:
-      return l[0]
-    else:
-      return []
-    return list
+    def get_dimensions(self):
+      l=self.get_attribute('Dimensions').split()
+      i=0
+      while i < len(l):
+        l[i] = int(l[i])
+        i=i+1
+      if len(l) > 1:
+        return l
+      elif len(l) == 1:
+        return l[0]
+      else:
+        return []
+      return list
 
-  def set_num_type(self,num_type):
-    return self.set_attribute('DataType',num_type)
+    def set_num_type(self,num_type):
+      return self.set_attribute('DataType',num_type)
 
-  def get_num_type(self):
-    return self.get_attribute('DataType')
+    def get_num_type(self):
+      return self.get_attribute('DataType')
 
-  def set_precision(self,num):
-    return self.set_attribute('Precision',num)
+    def set_precision(self,num):
+      return self.set_attribute('Precision',num)
 
-  def get_precision(self):
-    return int(self.get_attribute('Precision'))
+    def get_precision(self):
+      return int(self.get_attribute('Precision'))
 
-  def set_format(self,format):
-    return self.set_attribute('Format',format)
+    def set_format(self,format):
+      return self.set_attribute('Format',format)
 
-  def get_format(self):
-    return self.get_attribute('Format')
+    def get_format(self):
+      return self.get_attribute('Format')
 
 '''
 XDMF Domain Element
 '''
 class XdmfDomain(XdmfElementName):
 
-  tag = 'Domain'
+    tag = 'Domain'
 
 
 '''
@@ -271,18 +275,18 @@ XDMF Geometry Element
 '''
 class XdmfGeometry(XdmfElementName):
 
-  tag = 'Geometry'
+    tag = 'Geometry'
 
-  def __init__(self,name,type='XYZ'):
-    attr={}
-    attr['Type'] = str(type)
-    XdmfElementName.__init__(self,name,attr)
+    def __init__(self,name,type='XYZ'):
+      attr={}
+      attr['Type'] = str(type)
+      XdmfElementName.__init__(self,name,attr)
 
-  def set_type(self,type):
-    return self.set_attribute('Type',type)
+    def set_type(self,type):
+      return self.set_attribute('Type',type)
 
-  def get_type(self):
-    return self.get_attribute('Type')
+    def get_type(self):
+      return self.get_attribute('Type')
 
 '''
 XDMF Include Element
@@ -355,12 +359,6 @@ class XdmfTopology(XdmfElementName):
   def get_offset(self):
     return int(self.get_attribute('BaseOffset'))
 
-  def set_dimensions(self,dim):
-    return self.set_attribute('Dimensions',dim)
-
-  def get_dimensions(self):
-    return int(self.get_attribute('Dimensions'))
-
   def set_order(self,num):
     return self.set_attribute('Order',num)
 
@@ -374,10 +372,10 @@ class XdmfTopology(XdmfElementName):
     return int(self.get_attribute('NodesPerElement'))
 
   def set_nelem(self,num):
-    return self.set_attribute('NumberOfElement',num)
+    return self.set_attribute('NumberOfElements',num)
 
   def get_nelem(self):
-    return int(self.get_attribute('NumberOfElement'))
+    return int(self.get_attribute('NumberOfElements'))
 
 '''
 XDMF Time Element
@@ -431,7 +429,6 @@ class XdmfGrid(XdmfElementName):
 
   def get_type(self):
     return self.get_attribute('GridType')
-
 
 '''
 XdmfTree -- Base class for the XML trees
@@ -495,7 +492,88 @@ class XdmfTemporalCollection(XdmfTree):
     self.grid.append(x)
 
 
+def DanuSimulationLocation(sim_name='MAIN'):
+  return '/Simulations/'+sim_name
 
+def DanuSeriesLocation(id,sim_name='MAIN'):
+  sim_loc=DanuSimulationLocation(sim_name)
+  seq_grp_name=sim_loc+'/Series Data'
+  seq_name='%s %d'%(seq_grp_name,id)
+  return seq_name
+
+'''
+XdmfDanuDataset
+'''
+class XdmfDanuDataset(XdmfAttribute):
+
+
+  def __init__(self,danu_seq,data_name):
+    # Verify data is a field type
+    try:
+      data_attr=danu_seq.data_attributes(data_name)
+    except:
+      msg='Failed to read dataset %s attributes'%(data_name)
+      raise Exception(msg)
+    try:
+      field_type=data_attr['FIELDTYPE']
+    except KeyError:
+      msg='Dataset %s is not a field type dataset'%(data_name)
+      raise KeyError(msg)
+    # Convert to the Xdmf center type
+    if field_type == 'CELL':
+      center='Cell'
+    elif field_type == 'NODE':
+       center='Node'
+    else:
+       msg='Invalid field type %s'%(field_type)
+       raise ValueError(msg)
+    # Find the dataset dimensions and set the type Scalar, Vector
+    dims=danu_seq.get_data_dimensions(data_name)
+    if len(dims) > 1:
+      type='Vector'
+    else:
+      type='Scalar'
+    # For now assume all data types are REAL8
+    data_type='Float'
+    precision=8
+    # For Danu, file format is always HDF5
+    format='HDF5'
+    # Tricky to handle scalar and vector data field names
+    # need the attribute name to appear correctly in the viewer (ParaView VisIt)
+    import re
+    field_names_re=re.compile('FIELDNAME')
+    field_names=[n for n in data_attr if field_names_re.match(n)]
+    if len(field_names) == 1 :
+      aname=data_attr[field_names[0]]
+    elif len(field_names) == 2:
+      aname='[%s,%s]'%(data_attr[field_names[0]],data_attr[field_names[1]])
+    elif len(field_names) == 3:
+      aname='[%s,%s,%s]'%(data_attr[field_names[0]],
+                         data_attr[field_names[1]],
+                         data_attr[field_names[2]])
+    else:
+      msg='Dataset dims (%d) greater than 3 are not supported'%(len(field_names))
+      raise Exception(msg)
+    # Now ready to construct the XDMF Elements
+    XdmfAttribute.__init__(self,aname,type,center)
+    self.data_item=XdmfDataItem(data_name,data_type,precision,format)
+    self.data_item.set_dimensions(dims)
+    self.append(self.data_item)
+
+  def set_data_location(self,loc):
+    return self.data_item.set_text(loc)
+
+  def get_data_location(self):
+    return self.data_item.get_text()
+
+
+
+
+def buildDanuDatastLocation(dname,seqname,simname='MAIN'):
+  simulation_group_name='/Simulations/'+simname
+  seq_group_name=simulation_group_name+'/Series Data'
+  loc='%s/%s/%s'%(seq_group_name,seqname,dname)
+  return loc
 
 
 

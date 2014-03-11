@@ -528,8 +528,35 @@
         }
         int get_data_ndims(const char *data_name) {
           hid_t nsid = GET_SEQOBJ_HID($self);
-          int rank = danu_dataset_rank(nsid,data_name);
+          int rank = simulation_data_rank(nsid,data_name);
           return rank;
+        }
+        PyObject * get_data_dimensions(const char *data_name) {
+            hid_t nsid = GET_SEQOBJ_HID($self);
+            herr_t stat;
+            int i;
+            int rank = simulation_data_rank(nsid,data_name);
+            hsize_t *dims;
+            int * data;
+            PyObject *array=NULL;
+            if ( rank > 0 ) {
+                dims=DANU_MALLOC(hsize_t,rank);
+                data=DANU_MALLOC(int,rank);
+                stat = simulation_data_dimensions(nsid,data_name,rank,dims);
+                for(i=0;i<rank;i++)
+                    data[i]=(int)dims[i];
+                if ( DANU_RETURN_FAIL(stat) ) {
+                    throw_exception("Failed to determine data set dimensions");
+                    return array;
+                }
+                array=convertIntListToPyList(data,rank);
+                DANU_FREE(dims);
+                DANU_FREE(data);
+            }
+            else {
+                throw_exception("Failed to determine data set rank");
+            }
+            return array;
         }
         int data_attribute_exists(const char *data_name, const char * attr_name) {
           hid_t nsid = GET_SEQOBJ_HID($self);

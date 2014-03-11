@@ -38,6 +38,27 @@ PyObject * convertCharListToPyList(const char * const * names, int num)
   return list;
 }
 
+PyObject * convertIntListToPyList(int *int_list, int num)
+{
+  PyObject *list = NULL;
+  int err;
+  Py_ssize_t idx;
+  Py_ssize_t py_num = (Py_ssize_t) num;
+
+  if ( num >= 0 ) {
+    list = PyList_New(py_num);
+    idx = 0;
+    err = 0;
+    while ( (idx < num) && ( err == 0 )) {
+      err = PyList_SetItem(list,idx,PyInt_FromLong((long)int_list[idx]));
+      idx++;
+    }
+  }
+
+  return list;
+}
+
+
 PyObject * buildPyList(PyObject **objects, int num)
 {
   PyObject *list=NULL;

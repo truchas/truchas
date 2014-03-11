@@ -89,79 +89,50 @@ def main(filename):
   type=Xdmf.xdmf_mesh_type(elem_type)
   top=Xdmf.XdmfTopology('topo',type)
   top.set_offset(offset)
-  top.set_dimensions(nelem)
+  top.set_nelem(nelem)
   grid.append(top)
   data = Xdmf.XdmfDataItem('Connectivity')
   data.set_num_type('Int')
   data.set_precision(4)
   data.set_format('HDF')
-  d='%s %s'%(nelem,elem_order)
-  data.set_dimensions(d)
+  data.set_dimensions([nelem,elem_order])
   loc=Xdmf.munge_hdf5_dataset(filename,connect_dataset_name)
   data.set_text(loc)
   top.append(data)
 
-
   # Loop through the sequences
   time_files=[]
+  series_group_name=simulation_group_name+'/Series Data'
   id=1
   while id <= sim.sequence_count():
     model_file=setSequenceFilename(id,sim_name,filename)
     print 'Creating file: %s'%(model_file)
     fh=open(model_file,'w')
-    seq_group_name=simulation_group_name+'/Series Data'
     seq_name=sim.get_sequence_name(id)
-    seq = sim.get_sequence(seq_name)
+    seq=sim.get_sequence(seq_name)
     grid.set_time(seq.time)
+    # Now loop through each dataset
     for dname in seq.data_list():
-      file_attr=seq.data_attributes(dname)
-      ndims=seq.get_data_ndims(dname)
+      print '\tAdding %s to %s'%(dname,model_file)
       try:
-        aname=file_attr['FIELDNAME']
-      except KeyError:
-        try:
-          aname='['
-	  i=1
-	  while i < ndims:
-	    field_key='FIELDNAME%d'%(i)
-	    aname+='%s,'%(file_attr[field_key])
-	    i=i+1
-	  field_key='FIELDNAME%d'%(ndims)
-	  aname+='%s]'%(file_attr[field_key])
-        except:
-	  raise
-      a=Xdmf.XdmfAttribute(aname)
-      if file_attr['FIELDTYPE'] == 'CELL':
-        a.set_center('Cell')
-        nvalues=nelem
+        d=Xdmf.XdmfDanuDataset(seq,dname)
+      except:
+        msg='\t\tFailed to read data set %s will skip'%(dname)
+        print msg
       else:
-        a.set_center('Node')
-        nvalues=nnodes
-      if ndims == 1:
-        a.set_type('Scalar')
-        dims=str(nvalues)
-      else:
-        a.set_type('Vector')
-        dims=[str(nvalues),str(mesh.dim)]
-      data=Xdmf.XdmfDataItem(dname)
-      data.set_num_type('Float')
-      data.set_precision(8)
-      data.set_format('HDF')
-      data.set_dimensions(dims)
-      loc='%s/%s/%s'%(seq_group_name,seq_name,dname)
-      data.set_text(Xdmf.munge_hdf5_dataset(filename,loc))
-      a.append(data)
-      grid.append(a)
+        data_loc='%s/Series %d/%s'%(series_group_name,id,dname)
+        d.set_data_location(Xdmf.munge_hdf5_dataset(filename,data_loc))
+        grid.append(d)
     model.write(fh)
     fh.close()
     time_files.append(model_file)
+    print
     id=id+1
 
   # Now loop through the time step files to create the movie file
   movie_file=setCollectionFilename(sim_name,filename)
   mf=open(movie_file,'w')
   movie=Xdmf.XdmfTemporalCollection()
-  movie.write()
   xpath='/Xdmf/Domain/Grid'
   for f in time_files:
     print 'Adding %s to the movie file:%s'%(f,movie_file)

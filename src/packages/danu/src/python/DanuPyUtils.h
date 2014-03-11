@@ -20,6 +20,7 @@
 #include <Python.h>
 
 PyObject * convertCharListToPyList(const char * const * names, int num);
+PyObject * convertIntListToPyList(int *int_list, int num);
 PyObject * buildPyList(PyObject **objects, int num);
 
 #endif
