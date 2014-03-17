@@ -23,10 +23,10 @@ module hypre_pcg_type
     type(pcsr_matrix), pointer :: Asrc => null()
     integer :: nrows = 0, ilower = 0, iupper = 0
     integer, pointer :: rows(:) => null()
-    integer(hypre_obj) :: solver = 0    ! HYPRE_Solver object handle
-    integer(hypre_obj) :: precon = 0    ! HYPRE_Solver object handle
-    integer(hypre_obj) :: A = 0         ! HYPRE_IJMatrix object handle
-    integer(hypre_obj) :: b = 0, x = 0  ! HYPRE_IJVector object handles
+    type(hypre_obj) :: solver = hypre_null_obj    ! HYPRE_Solver object handle
+    type(hypre_obj) :: precon = hypre_null_obj    ! HYPRE_Solver object handle
+    type(hypre_obj) :: A = hypre_null_obj         ! HYPRE_IJMatrix object handle
+    type(hypre_obj) :: b = hypre_null_obj, x = hypre_null_obj  ! HYPRE_IJVector object handles
     !! PCG parameters -- these are set at initialization
     integer  :: print_level       ! ??? OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
     integer  :: max_iter          ! maximum number of iterations
@@ -76,11 +76,11 @@ contains
     call fHYPRE_ClearAllErrors
 
     call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%b, ierr)
-    call fHYPRE_IJVectorSetMaxOffPValues (this%b, 0, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%b, 0, ierr)
     INSIST(ierr == 0)
 
     call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%x, ierr)
-    call fHYPRE_IJVectorSetMaxOffPValues (this%x, 0, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%x, 0, ierr)
     INSIST(ierr == 0)
 
     !! Process the parameters.
@@ -105,11 +105,11 @@ contains
     integer :: ierr
     ierr = 0
     if (associated(this%rows)) deallocate(this%rows)
-    if (this%A /= 0) call fHYPRE_IJMatrixDestroy (this%A, ierr)
-    if (this%b /= 0) call fHYPRE_IJVectorDestroy (this%b, ierr)
-    if (this%x /= 0) call fHYPRE_IJVectorDestroy (this%x, ierr)
-    if (this%solver /= 0) call fHYPRE_PCGDestroy (this%solver, ierr)
-    if (this%precon /= 0) call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
+    if (hypre_associated(this%A)) call fHYPRE_IJMatrixDestroy (this%A, ierr)
+    if (hypre_associated(this%b)) call fHYPRE_IJVectorDestroy (this%b, ierr)
+    if (hypre_associated(this%x)) call fHYPRE_IJVectorDestroy (this%x, ierr)
+    if (hypre_associated(this%solver)) call fHYPRE_PCGDestroy (this%solver, ierr)
+    if (hypre_associated(this%precon)) call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
     INSIST(ierr == 0)
     this = default  ! assign default initialization values
   end subroutine hypre_pcg_delete
@@ -124,7 +124,7 @@ contains
     type(hypre_pcg), intent(in) :: this
     integer, intent(out), optional :: num_itr
     integer :: ierr
-    INSIST(this%solver /= 0)
+    INSIST(hypre_associated(this%solver))
     if (present(num_itr)) then
       call fHYPRE_PCGGetNumIterations (this%solver, num_itr, ierr)
       INSIST(ierr == 0)
@@ -144,10 +144,7 @@ contains
     !! Create the Hypre BoomerAMG solver object (preconditioner).  Note that
     !! once the solver has been setup, it is not possible to change the matrix
     !! values without completely destroying the solver and recreating it.
-    if (this%precon /= 0) then
-      call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
-      this%precon = 0
-    end if
+    if (hypre_associated(this%precon)) call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
     call fHYPRE_BoomerAMGCreate (this%precon, ierr)
     INSIST(ierr == 0)
 
@@ -164,7 +161,7 @@ contains
     call fHYPRE_BoomerAMGSetMaxLevels   (this%precon, this%max_levels, ierr)
     call fHYPRE_BoomerAMGSetMaxIter     (this%precon, this%num_cycles, ierr)
     call fHYPRE_BoomerAMGSetTol         (this%precon, 0.0_r8, ierr)
-    call fHYPRE_BoomerAMGSetStrongThld  (this%precon, this%strong_threshold, ierr)
+    call fHYPRE_BoomerAMGSetStrongThreshold  (this%precon, this%strong_threshold, ierr)
     call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 3, 1, ierr)
     call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 4, 2, ierr)
     call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 9, 3, ierr)
@@ -173,10 +170,7 @@ contains
     !! Create the Hypre PCG solver object. This supposes that once the solver
     !! has been setup, it is not possible to change the matrix values without
     !! completely destroying the solver and recreating it.  VERIFY THIS.
-    if (this%solver /= 0) then
-      call fHYPRE_PCGDestroy (this%solver, ierr)
-      this%solver = 0
-    end if
+    if (hypre_associated(this%solver)) call fHYPRE_PCGDestroy (this%solver, ierr)
     call fHYPRE_PCGCreate (this%solver, ierr)
     INSIST(ierr == 0)
 
@@ -184,7 +178,7 @@ contains
     call fHYPRE_PCGSetPrintLevel (this%solver, this%print_level, ierr)
     call fHYPRE_PCGSetTwoNorm (this%solver, 1, ierr)
     call fHYPRE_PCGSetTol (this%solver, this%err_tol, ierr)
-    call fHYPRE_PCGSetAbsTol (this%solver, 0.0_r8, ierr)
+    call fHYPRE_PCGSetAbsoluteTol (this%solver, 0.0_r8, ierr)
     call fHYPRE_PCGSetMaxIter (this%solver, this%max_iter, ierr)
     INSIST(ierr == 0)
 
@@ -256,7 +250,7 @@ contains
   subroutine copy_to_ijmatrix (src, matrix)
 
     type(pcsr_matrix), intent(in) :: src
-    integer(hypre_obj), intent(inout) :: matrix
+    type(hypre_obj), intent(inout) :: matrix
 
     integer :: j, ierr, ilower, iupper, nrows, nnz
     integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
@@ -267,7 +261,7 @@ contains
 
     call fHYPRE_ClearAllErrors
 
-    if (matrix == 0) then
+    if (.not.hypre_associated(matrix)) then
       call fHYPRE_IJMatrixCreate (ilower, iupper, ilower, iupper, matrix, ierr)
       !! For each row we know how many column entries are on-process and how many
       !! are off-process.  HYPRE is allegedly much faster at forming its CSR matrix
@@ -280,7 +274,7 @@ contains
       call fHYPRE_IJMatrixSetDiagOffdSizes (matrix, ncols_onP, ncols_offP, ierr)
       deallocate(ncols_onP, ncols_offP)
       !! Let HYPRE know that we won't be setting any off-process matrix values.
-      call fHYPRE_IJMatrixSetMaxOffPValues (matrix, 0, ierr)
+      call fHYPRE_IJMatrixSetMaxOffProcElmts (matrix, 0, ierr)
       INSIST(ierr == 0)
     end if
 

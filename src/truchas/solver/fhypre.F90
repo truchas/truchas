@@ -1,52 +1,54 @@
 !!
 !! FHYPRE
 !!
-!!  A Fortran interface to the Hypre package.
+!!  A Fortran interface to a subset of the Hypre linear solver library.
 !!
-!!    Markus Berndt <berndt@lanl.gov>
-!!    Neil N. Carlson <nnc@lanl.gov>
+!!  Neil N. Carlson <nnc@lanl.gov>
+!!  March 2014
 !!
 !! PROGRAMMING INTERFACE
 !!
 !!  This module provides a Fortran interface to a portion of the Hypre v2.x
-!!  package from LLNL.  This interface is somewhat different than the optional
+!!  library from LLNL.  This interface is somewhat different than the optional
 !!  Fortran interface that may be included in the build of Hypre.  It depends
-!!  only on the Hypre C library and the C-source file "fhypre_c.c" that provides
-!!  some necessary glue code.  Included is most of the IJMatrix/Vector system
-!!  interface and the ParCSR BoomerAMG solver interface.
+!!  only on the Hypre C library.  Included is most of the IJMatrix/Vector system
+!!  interface, and the ParCSR BoomerAMG and PCG solver interfaces.
 !!
-!!  Except in a few cases, the names of the Fortran procedures are the same as
-!!  their C counterpart but with an "f" prefixed.  They are also subroutines
-!!  with the integer error return value returned as a new final argument.  The
-!!  following procedure names were altered in order to remain within the 31
-!!  character limit:
+!!  Except in a few cases highlighted below, the Fortran procedures have the
+!!  same name and signature as their C counterparts, except that the name is
+!!  prefixed with an "f" and they are subroutines with the integer error return
+!!  value returned as the final argument.  The C function arguments that are
+!!  pointers to structures (usually hidden as a typedef) are replaced by
+!!  TYPE(HYPRE_OBJ) arguments in the Fortran interface, and should be regarded
+!!  as opaque handles.  Specific procedure differences follow.
 !!
-!!    HYPRE IJMatrixSetMaxOffProcElmts  --> fHYPRE_IJMatrixSetMaxOffPValues
-!!    HYPRE IJVectorSetMaxOffProcElmts  --> fHYPRE_IJVectorSetMaxOffPValues
-!!    HYPRE_BoomerAMGSetStrongThreshold --> fHYPRE_BoomerAMGSetStrongThld
+!!  * The MPI communicator argument has been omitted from IJVectorCreate,
+!!    IJMatrixCreate, and ParCSRPCGCreate; MPI_COMM_WORLD will be used.
 !!
-!!  The routines have the same arguments with the following exceptions:
-!!  * The MPI_Comm argument of the IJMatrixCreate and IJVectorCreate procedures
-!!    is omitted.  The Hypre routines will implicitly use MPI_COMM_WORLD.
-!!  * The vector, matrix and solver arguments, which in the C interface are
-!!    pointers to C structures, are replaced by INTEGER(HYPRE_OBJ) arguments
-!!    that are opaque handles.
+!!  * IJVectorCreate and IJMatrixCreate create HYPRE_PARCSR type objects.
+!!    A second call is required in the C interface to set the object type.
 !!
-!!  In the C interface the BoomerAMGSetup and BoomerAMGSolve functions take
-!!  "constructed" matrix and vector objects (as returned by the GetObject
-!!  methods) as arguments.  This distinction has been eliminated in the
-!!  Fortran interface.  The Setup and Solve subroutines accept the matrix
-!!  and vector handles returned by the Create subroutines as arguments;
-!!  the GetObject method is not needed.
+!!  * In the C interface, the BoomerAMGSetup, BoomerAMGSolve, PCGSetup, and
+!!    PCGSolve functions take "constructed" matrix and vector objects (as
+!!    returned by the GetObject methods) as arguments.  This distinction has
+!!    been eliminated in the Fortran interface. The Setup and Solve subroutines
+!!    accept the matrix and vector handles returned by the Create subroutines
+!!    as arguments; the GetObject method is not needed.
 !!
-!!  The IJMatrixCreate and IJVectorCreate subroutines automatically create
-!!  objects of HYPRE_PARCSR storage type; the SetObjectType methods are
-!!  not needed.
+!!  * PCGSetPrecond is implemented in the Fortran interface as
+!!    PCGSetBoomerAMGPrecond.  The function pointer arguments have been omitted
+!!    and the preconditioner is hardwired to BoomerAMG.
 !!
-!!  A 0-valued handle for a Hypre matrix/vector/solver object signifies an
-!!  undefined object.
+!!  TYPE(HYPRE_OBJ) variables can be assigned the named constant HYPRE_NULL_OBJ
+!!  to initialize them to a state that references no Hypre object, and the
+!!  logical function HYPRE_ASSOCIATED() can be used to test whether such a
+!!  a variable references a Hypre object as returned by one of the creation
+!!  subroutines. 
 !!
 !! IMPLEMENTATION NOTES
+!!
+!!  HYPRE_OBJ, HYPRE_NULL_OBJ, and HYPRE_ASSOCIATED are just aliases to C_PTR,
+!!  C_NULL_PTR, and C_ASSOCIATED from the intrinsic ISO_C_BINDING module.
 !!
 !!  We need to expose some of the error handling methods of Hypre (not all
 !!  documented, btw).  Right now we limit ourselves to ==0 is good and !=0
@@ -55,275 +57,387 @@
 
 module fhypre
 
-  use kinds, only: hypre_obj => c_intptr_t
+  use kinds, only: r8
+  use hypre_c_binding
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
+  use,intrinsic :: iso_c_binding, only: hypre_obj => c_ptr
+  use,intrinsic :: iso_c_binding, only: hypre_null_obj => c_null_ptr
+  use,intrinsic :: iso_c_binding, only: hypre_associated => c_associated
   implicit none
-  public
+  private
   
- !!
- !! IJMATRIX INTERFACE
- !!
+  !! Hide the face
+  public :: hypre_obj, hypre_null_obj, hypre_associated
+  
+  !! IJVector interface procedures
+  public :: fHYPRE_IJVectorCreate
+  public :: fHYPRE_IJVectorDestroy
+  public :: fHYPRE_IJVectorSetMaxOffProcElmts
+  public :: fHYPRE_IJVectorInitialize
+  public :: fHYPRE_IJVectorSetValues
+  public :: fHYPRE_IJVectorGetValues
+  public :: fHYPRE_IJVectorAssemble
 
-  interface
-    subroutine fHYPRE_IJMatrixCreate (ilower, iupper, jlower, jupper, matrix, ierr)
-      use kinds
-      integer :: ilower, iupper, jlower, jupper, ierr
-      integer(c_intptr_t) :: matrix
-    end subroutine
-    subroutine fHYPRE_IJMatrixDestroy (matrix, ierr)
-      use kinds
-      integer(c_intptr_t) :: matrix
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_IJMatrixSetRowSizes (matrix, sizes, ierr)
-      use kinds
-      integer(c_intptr_t) :: matrix
-      integer :: sizes(*), ierr
-    end subroutine
-    subroutine fHYPRE_IJMatrixSetDiagOffdSizes (matrix, diag_sizes, offd_sizes, ierr)
-      use kinds
-      integer(c_intptr_t) :: matrix
-      integer :: diag_sizes(*), offd_sizes(*), ierr
-    end subroutine
-    subroutine fHYPRE_IJMatrixSetMaxOffPValues (matrix, max_offp_values, ierr)
-      use kinds
-      integer(c_intptr_t) :: matrix
-      integer :: max_offp_values, ierr
-    end subroutine
-    subroutine fHYPRE_IJMatrixInitialize (matrix, ierr)
-      use kinds
-      integer(c_intptr_t) :: matrix
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_IJMatrixAssemble (matrix, ierr)
-      use kinds
-      integer(c_intptr_t) :: matrix
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, values, ierr)
-      use kinds
-      integer(c_intptr_t) :: matrix
-      integer :: nrows, ncols(*), rows(*), cols(*), ierr
-      real(r8) :: values(*)
-    end subroutine
-  end interface
+  !! IJMatrix interface procedures
+  public :: fHYPRE_IJMatrixCreate
+  public :: fHYPRE_IJMatrixDestroy
+  public :: fHYPRE_IJMatrixSetRowSizes
+  public :: fHYPRE_IJMatrixSetDiagOffdSizes
+  public :: fHYPRE_IJMatrixSetMaxOffProcElmts
+  public :: fHYPRE_IJMatrixInitialize
+  public :: fHYPRE_IJMatrixAssemble
+  public :: fHYPRE_IJMatrixSetValues
+  
+  !! BoomerAMG interface procedures
+  public :: fHYPRE_BoomerAMGCreate
+  public :: fHYPRE_BoomerAMGDestroy
+  public :: fHYPRE_BoomerAMGSetup
+  public :: fHYPRE_BoomerAMGSolve
+  public :: fHYPRE_BoomerAMGSetStrongThreshold
+  public :: fHYPRE_BoomerAMGSetMaxIter
+  public :: fHYPRE_BoomerAMGSetCoarsenType
+  public :: fHYPRE_BoomerAMGSetTol
+  public :: fHYPRE_BoomerAMGSetNumSweeps
+  public :: fHYPRE_BoomerAMGSetRelaxType
+  public :: fHYPRE_BoomerAMGSetPrintLevel
+  public :: fHYPRE_BoomerAMGSetMaxLevels
+  public :: fHYPRE_BoomerAMGSetCycleNumSweeps
+  public :: fHYPRE_BoomerAMGSetCycleRelaxType
+  public :: fHYPRE_BoomerAMGSetCycleType
+  public :: fHYPRE_BoomerAMGSetDebugFlag
+  public :: fHYPRE_BoomerAMGSetLogging
+  
+  !! PCG interface procedures
+  public :: fHYPRE_PCGCreate
+  public :: fHYPRE_PCGDestroy
+  public :: fHYPRE_PCGSetup
+  public :: fHYPRE_PCGSolve
+  public :: fHYPRE_PCGSetPrecond
+  public :: fHYPRE_PCGSetMaxIter
+  public :: fHYPRE_PCGGetNumIterations
+  public :: fHYPRE_PCGSetTol
+  public :: fHYPRE_PCGSetAbsoluteTol
+  public :: fHYPRE_PCGSetTwoNorm
+  public :: fHYPRE_PCGGetFinalRelRes
+  public :: fHYPRE_PCGSetPrintLevel
+  
+  !! Miscellaneous procedures
+  public :: fHYPRE_ClearAllErrors
 
- !!
- !! IJVECTOR INTERFACE
- !!
+contains
+  
+  !!!! IJVECTOR INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  interface
-    subroutine fHYPRE_IJVectorCreate (jlower, jupper, vector, ierr)
-      use kinds
-      integer :: jlower, jupper, ierr
-      integer(c_intptr_t) :: vector
-    end subroutine
-    subroutine fHYPRE_IJVectorDestroy (vector, ierr)
-      use kinds
-      integer(c_intptr_t) :: vector
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_IJVectorSetMaxOffPValues (vector, max_offp_values, ierr)
-      use kinds
-      integer(c_intptr_t) :: vector
-      integer :: max_offp_values, ierr
-    end subroutine
-    subroutine fHYPRE_IJVectorInitialize (vector, ierr)
-      use kinds
-      integer(c_intptr_t) :: vector
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_IJVectorSetValues (vector, nvalues, indices, values, ierr)
-      use kinds
-      integer(c_intptr_t) :: vector
-      integer :: nvalues, indices(*), ierr
-      real(r8) :: values(*)
-    end subroutine
-    subroutine fHYPRE_IJVectorGetValues (vector, nvalues, indices, values, ierr)
-      use kinds
-      integer(c_intptr_t) :: vector
-      integer :: nvalues, indices(*), ierr
-      real(r8) :: values(*)
-    end subroutine
-    subroutine fHYPRE_IJVectorAssemble (vector, ierr)
-      use kinds
-      integer(c_intptr_t) :: vector
-      integer :: ierr
-    end subroutine
-  end interface
+  subroutine fHYPRE_IJVectorCreate (jlower, jupper, vector, ierr)
+    integer, intent(in) :: jlower, jupper
+    type(c_ptr), intent(inout) :: vector
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_IJVectorCreate(jlower, jupper, vector)
+  end subroutine
 
- !!
- !! BOOMERAMG INTERFACE
- !!
+  subroutine fHYPRE_IJVectorDestroy (vector, ierr)
+    type(c_ptr), intent(inout) :: vector
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorDestroy(vector)
+    vector = c_null_ptr
+  end subroutine
 
-  interface
-    subroutine fHYPRE_BoomerAMGCreate (solver, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGDestroy (solver, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetup (solver, A, b, x, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver, A, b, x
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSolve (solver, A, b, x, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver, A, b, x
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetStrongThld (solver, strong_threshold, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      real(r8) :: strong_threshold
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetMaxIter (solver, max_iter, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: max_iter, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetCoarsenType (solver, coarsen_type, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: coarsen_type, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetTol (solver, tol, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      real(r8) :: tol
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetNumSweeps (solver, num_sweeps, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: num_sweeps, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetRelaxType (solver, relax_type, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: relax_type, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetPrintLevel (solver, print_level, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: print_level, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetMaxLevels (solver, max_levels, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: max_levels, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetCycleNumSweeps (solver, num_sweeps, k, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: num_sweeps, k, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetCycleRelaxType (solver, relax_type, k, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: relax_type, k, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetCycleType (solver, cycle_type, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: cycle_type, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetDebugFlag (solver, debug, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: debug, ierr
-    end subroutine
-    subroutine fHYPRE_BoomerAMGSetLogging (solver, logging, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: logging, ierr
-    end subroutine
-  end interface
+  subroutine fHYPRE_IJVectorSetMaxOffProcElmts (vector, max_offp_values, ierr)
+    type(c_ptr), intent(in) :: vector
+    integer, intent(in) :: max_offp_values
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorSetMaxOffProcElmts(vector, max_offp_values)
+  end subroutine
+  
+  subroutine fHYPRE_IJVectorInitialize (vector, ierr)
+    type(c_ptr), intent(in) :: vector
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorInitialize(vector)
+  end subroutine
+  
+  subroutine fHYPRE_IJVectorSetValues (vector, nvalues, indices, values, ierr)
+    type(c_ptr), intent(in) :: vector
+    integer, intent(in) :: nvalues, indices(:)
+    real(r8), intent(in) :: values(:)
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorSetValues(vector, nvalues, indices, values)
+  end subroutine
+  
+  subroutine fHYPRE_IJVectorGetValues (vector, nvalues, indices, values, ierr)
+    type(c_ptr), intent(in) :: vector
+    integer, intent(in) :: nvalues, indices(:)
+    real(r8), intent(out) :: values(:)
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorGetValues(vector, nvalues, indices, values)
+  end subroutine
+  
+  subroutine fHYPRE_IJVectorAssemble (vector, ierr)
+    type(c_ptr), intent(in) :: vector
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorAssemble(vector)
+  end subroutine
 
- !!
- !! PCG INTERFACE
- !!
+  !!!! IJMATRIX INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  interface
-    subroutine fHYPRE_PCGCreate (solver, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_PCGDestroy (solver, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_PCGSetup (solver, A, b, x, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver, A, b, x
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_PCGGSolve (solver, A, b, x, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver, A, b, x
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_PCGSetMaxIter (solver, max_iter, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: max_iter, ierr
-    end subroutine
-    subroutine fHYPRE_PCGGetNumIterations (solver, iters, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: iters, ierr
-    end subroutine fHYPRE_PCGGetNumIterations
-    subroutine fHYPRE_PCGSetTol (solver, tol, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      real(r8) :: tol
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_PCGSetAbsTol (solver, tol, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      real(r8) :: tol
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_PCGSetTwoNorm (solver, twonorm, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: twonorm
-      integer :: ierr
-    end subroutine
-    subroutine fHYPRE_PCGGetFinalRelRes (solver, tol, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      real(r8) :: tol
-      integer :: ierr
-    end subroutine   
-    subroutine fHYPRE_PCGSetPrintLevel (solver, print_level, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer :: print_level, ierr
-    end subroutine
-    subroutine fHYPRE_PCGSetPrecond (solver, precond, ierr)
-      use kinds
-      integer(c_intptr_t) :: solver
-      integer(c_intptr_t) :: precond
-      integer :: ierr
-    end subroutine fHYPRE_PCGSetPrecond
-  end interface
+  subroutine fHYPRE_IJMatrixCreate (ilower, iupper, jlower, jupper, matrix, ierr)
+    integer, intent(in) :: ilower, iupper, jlower, jupper
+    type(c_ptr), intent(inout) :: matrix
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix)
+  end subroutine
+    
+  subroutine fHYPRE_IJMatrixDestroy (matrix, ierr)
+    type(c_ptr), intent(inout) :: matrix
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixDestroy(matrix)
+    matrix = c_null_ptr
+  end subroutine
 
- !!
- !! UTILITIES INTERFACE
- !!
+  subroutine fHYPRE_IJMatrixSetRowSizes (matrix, sizes, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in)  :: sizes(:)
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixSetRowSizes(matrix, sizes)
+  end subroutine
 
-  interface
-    subroutine fHYPRE_ClearAllErrors ()
-    end subroutine
-  end interface
+  subroutine fHYPRE_IJMatrixSetDiagOffdSizes (matrix, diag_sizes, offd_sizes, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in) :: diag_sizes(:), offd_sizes(:)
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixSetDiagOffdSizes(matrix, diag_sizes, offd_sizes)
+  end subroutine
 
+  subroutine fHYPRE_IJMatrixSetMaxOffProcElmts (matrix, max_offp_values, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in)  :: max_offp_values
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixSetMaxOffProcElmts(matrix, max_offp_values)
+  end subroutine
+
+  subroutine fHYPRE_IJMatrixInitialize (matrix, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixInitialize(matrix)
+  end subroutine
+
+  subroutine fHYPRE_IJMatrixAssemble (matrix, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixAssemble(matrix)
+  end subroutine
+
+  subroutine fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, values, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in)  :: nrows, ncols(:), rows(:), cols(:)
+    real(r8), intent(in) :: values(:)
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixSetValues(matrix, nrows, ncols, rows, cols, values)
+  end subroutine
+  
+  !!!! BOOMER AMG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+  subroutine fHYPRE_BoomerAMGCreate (solver, ierr)
+    type(c_ptr), intent(out) :: solver
+    integer, intent(out) :: ierr
+    ierr =  HYPRE_BoomerAMGCreate(solver)
+  end subroutine
+  
+  subroutine fHYPRE_BoomerAMGDestroy (solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGDestroy(solver)
+    solver = c_null_ptr
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetup (solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_BoomerAMGSetup(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSolve (solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_BoomerAMGSolve(solver, A, b, x)
+  end subroutine
+    
+  subroutine fHYPRE_BoomerAMGSetStrongThreshold (solver, strong_threshold, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: strong_threshold
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetStrongThreshold(solver, strong_threshold)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetMaxIter (solver, max_iter, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: max_iter
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetMaxIter(solver, max_iter)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetCoarsenType (solver, coarsen_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: coarsen_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetCoarsenType(solver, coarsen_type)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetTol (solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetTol(solver, tol)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetNumSweeps (solver, num_sweeps, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: num_sweeps
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetNumSweeps(solver, num_sweeps)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetRelaxType (solver, relax_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: relax_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetRelaxType(solver, relax_type)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetPrintLevel (solver, print_level, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: print_level
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetPrintLevel(solver, print_level)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetMaxLevels (solver, max_levels, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: max_levels
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetMaxLevels(solver, max_levels)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetCycleNumSweeps (solver, num_sweeps, k, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: num_sweeps, k
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetCycleNumSweeps(solver, num_sweeps, k)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetCycleRelaxType (solver, relax_type, k, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: relax_type, k
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetCycleRelaxType(solver, relax_type, k)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetCycleType (solver, cycle_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: cycle_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetCycleType(solver, cycle_type)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetDebugFlag (solver, debug, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: debug
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetDebugFlag(solver, debug)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetLogging (solver, logging, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: logging
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetLogging(solver, logging)
+  end subroutine
+  
+  !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+  subroutine fHYPRE_PCGCreate (solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_ParCSRPCGCreate(solver)
+  end subroutine
+    
+  subroutine fHYPRE_PCGDestroy (solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_PCGDestroy(solver)
+    solver = c_null_ptr
+  end subroutine
+
+  subroutine fHYPRE_PCGSetup (solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_PCGSetup(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_PCGSolve (solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_PCGSolve(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_PCGSetPrecond (solver, precond, ierr)
+    type(c_ptr), intent(in) :: solver, precond
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_PCGSetBoomerAMGPrecond(solver, precond)
+  end subroutine fHYPRE_PCGSetPrecond
+  
+  subroutine fHYPRE_PCGSetMaxIter (solver, max_iter, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: max_iter
+    integer, intent(out) :: ierr
+    ierr = HYPRE_PCGSetMaxIter(solver, max_iter)
+  end subroutine
+  
+  subroutine fHYPRE_PCGGetNumIterations (solver, iters, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: iters, ierr
+    ierr = HYPRE_PCGGetNumIterations(solver, iters)
+  end subroutine fHYPRE_PCGGetNumIterations
+  
+  subroutine fHYPRE_PCGSetTol (solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_PCGSetTol(solver, tol)
+  end subroutine
+  
+  subroutine fHYPRE_PCGSetAbsoluteTol (solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_PCGSetAbsoluteTol(solver, tol)
+  end subroutine
+  
+  subroutine fHYPRE_PCGSetTwoNorm (solver, twonorm, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: twonorm
+    integer, intent(out) :: ierr
+    ierr = HYPRE_PCGSetTwoNorm (solver, twonorm)
+  end subroutine
+  
+  subroutine fHYPRE_PCGGetFinalRelRes (solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(out) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_PCGGetFinalRelativeResidualNorm(solver, tol)
+  end subroutine   
+  
+  subroutine fHYPRE_PCGSetPrintLevel (solver, print_level, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: print_level
+    integer, intent(out) :: ierr
+    ierr = HYPRE_PCGSetPrintLevel(solver, print_level)
+  end subroutine
+  
+  !!!! MISCELLANEOUS PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+  subroutine fHYPRE_ClearAllErrors ()
+    integer :: ierr
+    ierr = HYPRE_ClearAllErrors ()  ! ignore return code
+  end subroutine
+  
 end module fhypre

@@ -216,3 +216,6 @@ install(TARGETS truchas truchas_exe
         RUNTIME DESTINATION ${Truchas_BIN_INSTALL_DIR}
         LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
 	ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
+
+# --- Unit tests
+add_subdirectory(solver/Test)

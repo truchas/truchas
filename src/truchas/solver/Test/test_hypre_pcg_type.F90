@@ -1,5 +1,8 @@
 program test_hypre_pcg_type
 
+#ifdef NAGFOR
+  use,intrinsic :: f90_unix, only: exit
+#endif
   use kinds
   use parallel_util_module, only: parallel_init
   use pgslib_module
@@ -9,8 +12,8 @@ program test_hypre_pcg_type
   use hypre_pcg_type
   implicit none
   
-  integer, parameter :: NX = 128, NY = 128, NZ = 128
-  !integer, parameter :: NX = 19, NY = 13, NZ = 17
+  !integer, parameter :: NX = 128, NY = 128, NZ = 128
+  integer, parameter :: NX = 19, NY = 13, NZ = 17
   !integer, parameter :: NX = 7, NY = 5, NZ = 3
   
   character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
@@ -19,17 +22,17 @@ program test_hypre_pcg_type
   type(hypre_pcg_params) :: params
   real(r8), allocatable :: x(:), b(:), u(:)
   integer :: nrow, kx, ky, kz, num_itr
-  real(r8) :: a
+  real(r8) :: a, maxerr, l2err
   real(r8), parameter :: PI = 3.1415926535897931_r8
   
   call parallel_init (argv)
   call init_parallel_communication
   
-  a = 1.0e-6
+  a = 1.0e-6_r8
   call create_matrix (a, matrix)
   params%err_tol = 1.0e-12_r8
   params%num_cycles = 1
-  params%print_level = 1
+  params%print_level = 0 !1
   call hypre_pcg_init (solver, matrix, params)
   call hypre_pcg_compute (solver)
   
@@ -42,10 +45,18 @@ program test_hypre_pcg_type
   x = 0.0_r8
   call hypre_pcg_solve (solver, b, x)
   call hypre_pcg_get_metrics (solver, num_itr)
-  print *, num_itr, maxval(abs(u-x))
 
-  
+  maxerr = global_maxval(abs(u-x))
+  l2err = sqrt(global_sum((u-x)**2) / global_size(matrix%graph%row_ip))
+  if (is_IOP) print '(a,i2,2(a,es9.2))', 'itr=', num_itr, ', maxerr=', maxerr, ', l2err=', l2err
+
   call pgslib_finalize
+
+  if (num_itr <= 9 .and. l2err <= 10*params%err_tol) then
+    call exit (0)
+  else
+    call exit (1)
+  end if
 
 contains
 

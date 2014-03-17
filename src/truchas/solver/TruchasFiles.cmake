@@ -12,6 +12,7 @@ set(SOLVER_TARGET_NAME ProcessTruchasSolverFiles)
 
 
 set(SOLVER_FILES
+          solver/hypre_c_binding.F90
           solver/fhypre.F90
           solver/hypre_pcg_type.F90
           solver/linear_solution.F90
@@ -43,17 +44,17 @@ set(SOLVER_COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR}")
 set_source_files_properties(${SOLVER_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${SOLVER_COMPILE_FLAGS})
 
-list(APPEND SOLVER_SOURCE_FILES solver/fhypre_c.c)
-set(fhypre_cflags "-I${Truchas_FCIface_INCLUDE_DIR}")
+list(APPEND SOLVER_SOURCE_FILES solver/hypre_ext.c)
+set(hypre_ext_cflags "")
 foreach (dir ${HYPRE_INCLUDE_DIRS})
-  set(fhypre_cflags "${fhypre_cflags} -I${dir}")
+  set(hypre_ext_cflags "${hypre_ext_cflags} -I${dir}")
 endforeach()
 if (ENABLE_MPI)
-  set(fhypre_cflags "${fhypre_cflags} -I${MPI_C_INCLUDE_PATH}")
+  set(hypre_ext_cflags "${hypre_ext_cflags} -I${MPI_C_INCLUDE_PATH}")
 endif() 
-print_variable(fhypre_cflags)
-set_source_files_properties(solver/fhypre_c.c PROPERTIES
-                            COMPILE_FLAGS ${fhypre_cflags})
+print_variable(hypre_ext_cflags)
+set_source_files_properties(solver/hypre_ext.c PROPERTIES
+                            COMPILE_FLAGS ${hypre_ext_cflags})
 
 
 

@@ -81,9 +81,9 @@ module boomer_amg_precon_type
     private
     type(pcsr_matrix), pointer :: Asrc => null()
     integer :: nrows = 0, ilower = 0, iupper = 0
-    integer(hypre_obj) :: solver = 0    ! HYPRE_Solver object handle
-    integer(hypre_obj) :: A = 0         ! HYPRE_IJMatrix object handle
-    integer(hypre_obj) :: b = 0, x = 0  ! HYPRE_IJVector handles
+    type(hypre_obj) :: solver = hypre_null_obj    ! HYPRE_Solver object handle
+    type(hypre_obj) :: A = hypre_null_obj         ! HYPRE_IJMatrix object handle
+    type(hypre_obj) :: b = hypre_null_obj, x = hypre_null_obj  ! HYPRE_IJVector handles
     !! BoomerAMG parameters -- these are set at initialization
     integer  :: max_iter          ! number of cycles -- using as a preconditioner
     integer  :: print_level       ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
@@ -127,11 +127,11 @@ contains
     call fHYPRE_ClearAllErrors
 
     call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%b, ierr)
-    call fHYPRE_IJVectorSetMaxOffPValues (this%b, 0, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%b, 0, ierr)
     INSIST(ierr == 0)
 
     call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%x, ierr)
-    call fHYPRE_IJVectorSetMaxOffPValues (this%x, 0, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%x, 0, ierr)
     INSIST(ierr == 0)
 
     !! Process the parameters.
@@ -151,10 +151,10 @@ contains
     integer :: ierr
     ierr = 0
     call fHYPRE_ClearAllErrors
-    if (this%A /= 0) call fHYPRE_IJMatrixDestroy (this%A, ierr)
-    if (this%b /= 0) call fHYPRE_IJVectorDestroy (this%b, ierr)
-    if (this%x /= 0) call fHYPRE_IJVectorDestroy (this%x, ierr)
-    if (this%solver /= 0) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
+    if (hypre_associated(this%A)) call fHYPRE_IJMatrixDestroy (this%A, ierr)
+    if (hypre_associated(this%b)) call fHYPRE_IJVectorDestroy (this%b, ierr)
+    if (hypre_associated(this%x)) call fHYPRE_IJVectorDestroy (this%x, ierr)
+    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
     INSIST(ierr == 0)
   end subroutine bamg_precon_delete
 
@@ -175,10 +175,7 @@ contains
     !! Create the Hypre solver object.  Note that once the solver has
     !! been setup, it is not possible to change the matrix values without
     !! completely destroying the solver and recreating it from scratch.
-    if (this%solver /= 0) then
-      call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
-      this%solver = 0
-    end if
+    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
     call fHYPRE_BoomerAMGCreate (this%solver, ierr)
     INSIST(ierr == 0)
 
@@ -195,7 +192,7 @@ contains
     call fHYPRE_BoomerAMGSetMaxLevels   (this%solver, this%max_levels, ierr)
     call fHYPRE_BoomerAMGSetMaxIter     (this%solver, this%max_iter, ierr)
     call fHYPRE_BoomerAMGSetTol         (this%solver, this%tol, ierr)
-    call fHYPRE_BoomerAMGSetStrongThld  (this%solver, this%strong_threshold, ierr)
+    call fHYPRE_BoomerAMGSetStrongThreshold  (this%solver, this%strong_threshold, ierr)
     INSIST(ierr == 0)
 
     !! After setup the solver is ready to go.  Note that B and X are ignored here.
@@ -258,7 +255,7 @@ contains
   subroutine copy_to_ijmatrix (src, matrix)
 
     type(pcsr_matrix), intent(in) :: src
-    integer(hypre_obj), intent(inout) :: matrix
+    type(hypre_obj), intent(inout) :: matrix
 
     integer :: j, ierr, ilower, iupper, nrows, nnz
     integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
@@ -269,7 +266,7 @@ contains
 
     call fHYPRE_ClearAllErrors
 
-    if (matrix == 0) then
+    if (.not.hypre_associated(matrix)) then
       call fHYPRE_IJMatrixCreate (ilower, iupper, ilower, iupper, matrix, ierr)
       !! For each row we know how many column entries are on-process and how many
       !! are off-process.  HYPRE is allegedly much faster at forming its CSR matrix
@@ -282,7 +279,7 @@ contains
       call fHYPRE_IJMatrixSetDiagOffdSizes (matrix, ncols_onP, ncols_offP, ierr)
       deallocate(ncols_onP, ncols_offP)
       !! Let HYPRE know that we won't be setting any off-process matrix values.
-      call fHYPRE_IJMatrixSetMaxOffPValues (matrix, 0, ierr)
+      call fHYPRE_IJMatrixSetMaxOffProcElmts (matrix, 0, ierr)
       INSIST(ierr == 0)
     end if
 
