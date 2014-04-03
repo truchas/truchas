@@ -52,6 +52,7 @@ contains
     integer, pointer :: cnode(:,:), cface(:,:), lface(:,:), node_perm(:), cell_perm(:)
     integer, dimension(nPE) :: node_bsize, face_bsize, cell_bsize, bsize
     type(bitfield), pointer :: face_set_mask(:)
+    integer, pointer :: node_set_mask(:)
     integer, allocatable :: face_perm(:), offP_size(:), lnhbr(:,:), cnhbr(:,:), perm(:)
     integer, pointer :: cfpar(:), array(:), offP_index(:)
     type(integer_set), allocatable :: xcells(:)
@@ -102,10 +103,15 @@ contains
       !! Partition and order the nodes.
       call organize_facets (mesh%cnode, cell_bsize, node_bsize, node_perm)
       call reorder (mesh%x, node_perm)  ! array is node-based.
+      
+      !! Map the values of node-valued arrays.
       allocate(perm(mesh%nnode))
       call invert_perm (node_perm, perm)
       do j = 1, size(mesh%lnode,dim=2)
         mesh%lnode(:,j) = perm(mesh%lnode(:,j))
+      end do
+      do n = 1, size(mesh%nset)
+        mesh%nset(n)%node = perm(mesh%nset(n)%node)
       end do
       deallocate(perm)
 
@@ -147,6 +153,10 @@ contains
       !face_set_mask(lface(1,:)) = ibclr(face_set_mask(lface(1,:)), pos=0)
       !face_set_mask(lface(2,:)) = ibclr(face_set_mask(lface(2,:)), pos=0)
     end if
+    
+    !! Generate the node set mask array; need to tag boundary nodes later.
+    call allocate_collated_array (node_set_mask, mesh%nnode)
+    if (is_IOP) call generate_node_set_mask (node_set_mask, mesh%nset)
 
     !!
     !! At this point, the mesh is fully fleshed out on the IO processor, and
@@ -308,6 +318,12 @@ contains
     call distribute (this%face_set_mask(:this%nface_onP), face_set_mask)
     call gather_boundary (this%face_ip, this%face_set_mask)
     deallocate(face_set_mask)
+
+    !! Distribute the node set bitmask array.
+    allocate(this%node_set_mask(this%nnode))
+    call distribute (this%node_set_mask(:this%nnode_onP), node_set_mask)
+    call gather_boundary (this%node_ip, this%node_set_mask)
+    deallocate(node_set_mask)
     
     !! Mark all link faces as boundary faces.  Note that this may leave off-P
     !! values inconsistent with the corresponding on-P value.  This is deliberatte
@@ -344,6 +360,18 @@ contains
     call assemble_face_node_list (this%cface, this%cnode, this%fnode)
     !call assemble_face_edge_list (this%cface, this%cedge, this%fedge)
     !call assemble_edge_node_list (this%cedge, this%cnode, this%enode)
+    
+    !! Tag boundary nodes in the node set mask.
+    do j = 1, this%nface
+      if (btest(this%face_set_mask(j),pos=0)) then
+        this%node_set_mask(this%fnode(:,j)) = ibset(this%node_set_mask(this%fnode(:,j)),pos=0)
+      end if
+    end do
+    !! NB: I don't *think* it is necessary to do a gather_boundary on node_set_mask.
+    !! The issue is whether a node could be seen to belong to a boundary face on one
+    !! process but not another.  This isn't possible except *perhaps* for a node on
+    !! a internal interface.  In any case, if it were possible, then a gather would
+    !! not necessarily fix things, and may actually break things.  NNC, Apr 2014.
 
     !! Edge lengths (THIS SUBDOMAIN MESH)
     !allocate(this%length(this%nedge))
@@ -894,6 +922,44 @@ contains
     end do
 
   end subroutine generate_face_set_mask
+
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !!
+ !! GENERATE_NODE_SET_MASK
+ !!
+ !! This routine generates the node-based, bitmask vector NODE_SET_MASK. Bit n,
+ !! n>0, is set if the node belongs to the nth node set.  Bit 0 will be set
+ !! (later) for nodes lying on the boundary of the global domain. Note that the
+ !! relationship between this implicit internal node set numbering and the user-
+ !! assigned ID is stored separately.
+ !!
+ !! N.B.  The number of node sets is limited to 31 for the typical default
+ !! 4-byte integer, but this can easily be amended by going to 8-byte integers
+ !! or by using a general 'bit field' derived data type.
+ !!
+
+  subroutine generate_node_set_mask (node_set_mask, nset)
+
+    use mesh_importer, only: node_set
+
+    integer, intent(out) :: node_set_mask(:) ! node set bitmask array
+    type(node_set), intent(in) :: nset(:) ! node set array
+
+    integer :: i, j, k
+
+    INSIST(size(nset) <= bit_size(node_set_mask)-1)
+
+    node_set_mask = 0
+    do k = 1, size(nset)
+      ASSERT(minval(nset(k)%node) >= 1)
+      ASSERT(maxval(nset(k)%node) <= size(node_set_mask))
+      do j = 1, nset(k)%num_node
+        i = nset(k)%node(j)
+        node_set_mask(i) = ibset(node_set_mask(i),pos=k)
+      end do
+    end do
+
+  end subroutine generate_node_set_mask
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

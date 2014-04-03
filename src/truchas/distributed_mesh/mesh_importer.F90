@@ -50,7 +50,7 @@ module mesh_importer
   public :: collect_main_mesh
   public :: side_set_node_list
 
-  public :: side_set  ! export this exodus type
+  public :: side_set, node_set  ! export these exodus types
 
   type, public :: external_mesh
     integer :: ncell=0, nnode=0                     ! number of cells and nodes
@@ -67,6 +67,9 @@ module mesh_importer
 
     !! Exodus side set data; just use the exodus-provided type.
     type(side_set), pointer :: sset(:) => null()
+
+    !! Exodus node set data; just use the exodus-provided type.
+    type(node_set), pointer :: nset(:) => null()
     
     !! Link data
     integer :: nlink=0, nlblock=0                   ! number of link blocks
@@ -147,7 +150,7 @@ contains
       allocate(mesh%x(dimen,0))
       allocate(mesh%cnode(nvert,0))
       allocate(mesh%block_id(0), mesh%cell_block(0))
-      allocate(mesh%sset(0))
+      allocate(mesh%sset(0), mesh%nset(0))
     end if
 
   end subroutine import_exodus_mesh
@@ -213,6 +216,11 @@ contains
     nullify(exo_mesh%sset)
     if (.not.associated(mesh%sset)) allocate(mesh%sset(0))
 
+    !! Take the node set data.
+    mesh%nset => exo_mesh%nset
+    nullify(exo_mesh%nset)
+    if (.not.associated(mesh%nset)) allocate(mesh%nset(0))
+
     !! Translate Exodus face numbering to Truchas face numbering.
     do n = 1, size(mesh%sset)
       do j = 1, mesh%sset(n)%num_side
@@ -269,6 +277,10 @@ contains
     if (associated(mesh%sset)) then
       call destroy (mesh%sset)
       deallocate(mesh%sset)
+    end if
+    if (associated(mesh%nset)) then
+      call destroy (mesh%nset)
+      deallocate(mesh%nset)
     end if
     if (associated(mesh%lnode)) deallocate(mesh%lnode)
     if (associated(mesh%link_block)) deallocate(mesh%link_block)
@@ -384,6 +396,14 @@ contains
       end do
     else
       write(unit,fmt='(t4,a)') 'SSET => NULL()'
+    end if
+    if (associated(mesh%nset)) then
+      write(unit,fmt='(t4,a)') 'NSET= ...'
+      do j = 1, size(mesh%nset)
+        call dump_type (mesh%nset(j), unit)
+      end do
+    else
+      write(unit,fmt='(t4,a)') 'NSET => NULL()'
     end if
     write(unit,fmt='(a)') ')'
   end subroutine dump_external_mesh

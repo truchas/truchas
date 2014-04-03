@@ -169,6 +169,10 @@ module distributed_mesh
     !! Face set arrays.
     integer, pointer :: face_set_id(:) => null()
     type(bitfield), pointer :: face_set_mask(:) => null()
+
+    !! Node set arrays; not going to use a BITFIELD until proved necessary.
+    integer, pointer :: node_set_id(:) => null()
+    integer, pointer :: node_set_mask(:) => null()
     
     !! Mesh interface links.
     integer :: nlink = 0, nlink_onP = 0
@@ -225,6 +229,8 @@ contains
     if (associated(this%cell_set_mask)) deallocate(this%cell_set_mask)
     if (associated(this%face_set_ID)) deallocate(this%face_set_ID)
     if (associated(this%face_set_mask)) deallocate(this%face_set_mask)
+    if (associated(this%node_set_ID)) deallocate(this%node_set_ID)
+    if (associated(this%node_set_mask)) deallocate(this%node_set_mask)
 
     if (associated(this%x)) deallocate(this%x)
     if (associated(this%length)) deallocate(this%length)
