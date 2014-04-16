@@ -13,8 +13,8 @@ set(Petaca_BUILD_TARGET petaca)
 
 # Define the version and archive file
 set(EP_Petaca_VERSION 0768bc4)
-set(EP_Petaca_ARCHIVE_FILE   petaca-${EP_Petaca_VERSION}.tar.gz)
-set(EP_Petaca_MD5_SUM        3b3088f7f54fdffd9c2eef45436a88b3)  
+set(EP_Petaca_ARCHIVE_FILE   petaca-${EP_Petaca_VERSION}.tgz)
+set(EP_Petaca_MD5_SUM        bc7742d53d377d3b6727d0b439b2177d)  
 
 # Useful utility to build *FLAGS strings
 include(BuildWhitespaceString)
@@ -34,12 +34,12 @@ set(petaca_tmp_dir      ${petaca_prefix_dir}/petaca-tmp)
 set(petaca_install_dir  ${TruchasExternal_INSTALL_PREFIX})
 
 # YAJL (Required)
-if ( NOT TARGET ${YAJL_BUILD_TARGET} )
-  include(Verify_YAJL)
-  if (NOT YAJL_VERIFIED)
-    include(ExternalProject_YAJL)
-  endif(NOT YAJL_VERIFIED)  
-endif(NOT TARGET ${YAJL_BUILD_TARGET})
+#if ( NOT TARGET ${YAJL_BUILD_TARGET} )
+#  include(Verify_YAJL)
+#  if (NOT YAJL_VERIFIED)
+#    include(ExternalProject_YAJL)
+#  endif(NOT YAJL_VERIFIED)  
+#endif(NOT TARGET ${YAJL_BUILD_TARGET})
 
 # --- Add the -fPIC or -PIC (Position in code flag)
 include(FindPICFlag)
@@ -81,5 +81,5 @@ set(Petaca_INCLUDE_DIRS ${Petaca_INCLUDE_DIR})
 
 # Library
 build_library_name(petaca Petaca_LIBRARY APPEND_PATH ${petaca_install_dir}/lib)
-set(Petaca_LIBRARIES ${Petaca_LIBRARY} yajl)
+set(Petaca_LIBRARIES ${Petaca_LIBRARY} -lyajl)
 
