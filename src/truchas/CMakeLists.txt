@@ -11,7 +11,7 @@ include(FortranPreprocessFiles)
 set(CMAKE_INCLUDE_CURRENT_DIR True)
 
 # Truchas module directory
-include_directories(${Truchas_MODULE_DIR})
+include_directories(${Truchas_MODULE_DIR} ${Petaca_INCLUDE_DIR})
 
 
 # --- Define the source files
@@ -132,7 +132,8 @@ list(APPEND Truchas_DEPENDS danu_f)
 # Various build targets
 list(APPEND Truchas_DEPENDS 
             ${NETCDF_BUILD_TARGET}
-	    ${HYPRE_BUILD_TARGETS})
+	    ${HYPRE_BUILD_TARGETS}
+            petaca)
 
 # Force the completion of the targets defined 
 # in Truchas_DEPENDS before compiling source for
@@ -142,7 +143,8 @@ add_dependencies(truchas ${Truchas_DEPENDS})
 # - Link libraries
 set(Truchas_LINK_LIBS
             ${NETCDF_Fortran_LIBRARIES}
-	    ${HYPRE_LIBRARY})
+	    ${HYPRE_LIBRARY}
+            ${Petaca_LIBRARIES})
 
 if(ENABLE_PGSLib)
   list(APPEND Truchas_LINK_LIBS pgslib_fe)

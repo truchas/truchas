@@ -12,13 +12,9 @@
 set(Petaca_BUILD_TARGET petaca)
 
 # Define the version and archive file
-#set(EP_Petaca_VERSION_MAJOR 1)
-#set(EP_Petaca_VERSION_MINOR 8)
-#set(EP_Petaca_VERSION_PATCH 11)
-#set(EP_Petaca_VERSION ${EP_Petaca_VERSION_MAJOR}.${EP_Petaca_VERSION_MINOR}.${EP_Petaca_VERSION_PATCH})
-set(EP_Petaca_VERSION ab2daea)
+set(EP_Petaca_VERSION 0768bc4)
 set(EP_Petaca_ARCHIVE_FILE   petaca-${EP_Petaca_VERSION}.tar.gz)
-set(EP_Petaca_MD5_SUM       aee6485df030841c87c18d908a715d80)  
+set(EP_Petaca_MD5_SUM        3b3088f7f54fdffd9c2eef45436a88b3)  
 
 # Useful utility to build *FLAGS strings
 include(BuildWhitespaceString)
@@ -69,8 +65,8 @@ ExternalProject_Add(${Petaca_BUILD_TARGET}
 			  -DCMAKE_C_FLAGS:STRING=${petaca_c_flags}
 	            CMAKE_ARGS
 		          -DCMAKE_INSTALL_PREFIX:PATH=${petaca_install_dir}
-                          -DYAJL_INCLUDE_DIR:PATH=${YAJL_INCLUDE_DIR}
-                          -DYAJL_LIBRARY:FILE=${YAJL_LIBRARY}
+                          #-DYAJL_INCLUDE_DIR:PATH=${YAJL_INCLUDE_DIR}
+                          #-DYAJL_LIBRARY_DIR:PATH=${YAJL_LIBRARY_DIR}
                     # -- Output control
                     ${TruchasExternal_LOG_OPTS})
 
@@ -85,5 +81,5 @@ set(Petaca_INCLUDE_DIRS ${Petaca_INCLUDE_DIR})
 
 # Library
 build_library_name(petaca Petaca_LIBRARY APPEND_PATH ${petaca_install_dir}/lib)
-set(Petaca_LIBRARIES ${Petaca_LIBRARY} ${YAJL_LIBRARIES})
+set(Petaca_LIBRARIES ${Petaca_LIBRARY} yajl)
 

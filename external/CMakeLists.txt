@@ -18,7 +18,6 @@ set(TruchasExternal_ARCHIVE_DIR   ${TruchasExternal_SOURCE_DIR}/tarfiles)
 set(TruchasExternal_PATCHES_DIR   ${TruchasExternal_SOURCE_DIR}/patches)
 
 # --- Search and verify the external packages
-#set(Petaca_VERIFIED False)
 if ( ENABLE_ExternalSearch )
   include(Verify_HYPRE)
   include(Verify_SWIG)
@@ -30,6 +29,7 @@ else(ENABLE_ExternalSearch)
   set(HDF5_VERIFIED False)
   set(NETCDF_VERIFIED False)
 endif(ENABLE_ExternalSearch)
+set(Petaca_VERIFIED False)
 
 # Set a flag to indicate that builds are required
 include(BoolEval)
@@ -37,8 +37,8 @@ bool_eval(BUILD_EXTERNAL
           NOT HYPRE_VERIFIED OR
 	  NOT SWIG_VERIFIED OR
 	  NOT HDF5_VERIFIED OR
-	  NOT NETCDF_VERIFIED) # OR
-          #NOT Petaca_VERIFIED)
+	  NOT NETCDF_VERIFIED OR
+          NOT Petaca_VERIFIED)
 
 # --- External projects built for Truchas
 
@@ -90,7 +90,7 @@ if(BUILD_EXTERNAL)
   )
 
   # Loop through and add ExternalProject_* if not verified
-  foreach(proj HDF5 NetCDF HYPRE SWIG) # Petaca)
+  foreach(proj HDF5 NetCDF HYPRE SWIG Petaca)
     if ( NOT "${${proj}_VERIFIED}")
       include(ExternalProject_${proj})
     endif(NOT "${${proj}_VERIFIED}")
@@ -155,20 +155,10 @@ set(NETCDF_INCLUDE_DIR       ${NETCDF_INCLUDE_DIR} PARENT_SCOPE)
 set(NETCDF_INCLUDE_DIRS      ${NETCDF_INCLUDE_DIRS} PARENT_SCOPE)
 
 # Petaca
-#set(Petaca_BUILD_TARGET   ${Petaca_BUILD_TARGET} PARENT_SCOPE)
-#set(Petaca_VERSION        ${Petaca_VERSION} PARENT_SCOPE)
-#set(Petaca_VERSION_STRING ${Petaca_VERSION} PARENT_SCOPE)
-#set(Petaca_LIBRARY        ${Petaca_LIBRARY} PARENT_SCOPE)
-#set(Petaca_LIBRARIES      ${Petaca_LIBRARIES} PARENT_SCOPE)
-#set(Petaca_INCLUDE_DIR    ${Petaca_INCLUDE_DIR} PARENT_SCOPE)
-#set(Petaca_INCLUDE_DIRS   ${Petaca_INCLUDE_DIRS} PARENT_SCOPE)
-
-# YAJL
-#set(YAJL_FOUND          ${YAJL_FOUND} PARENT_SCOPE)
-#set(YAJL_BUILD_TARGET   ${YAJL_BUILD_TARGET} PARENT_SCOPE)
-#set(YAJL_VERSION        ${YAJL_VERSION} PARENT_SCOPE)
-#set(YAJL_VERSION_STRING ${YAJL_VERSION_STRING} PARENT_SCOPE)
-#set(YAJL_LIBRARY        ${YAJL_LIBRARY} PARENT_SCOPE)
-#set(YAJL_LIBRARIES      ${YAJL_LIBRARIES} PARENT_SCOPE)
-#set(YAJL_INCLUDE_DIR    ${YAJL_INCLUDE_DIR} PARENT_SCOPE)
-#set(YAJL_INCLUDE_DIRS   ${YAJL_INCLUDE_DIRS} PARENT_SCOPE)
+set(Petaca_BUILD_TARGET   ${Petaca_BUILD_TARGET} PARENT_SCOPE)
+set(Petaca_VERSION        ${Petaca_VERSION} PARENT_SCOPE)
+set(Petaca_VERSION_STRING ${Petaca_VERSION} PARENT_SCOPE)
+set(Petaca_LIBRARY        ${Petaca_LIBRARY} PARENT_SCOPE)
+set(Petaca_LIBRARIES      ${Petaca_LIBRARIES} PARENT_SCOPE)
+set(Petaca_INCLUDE_DIR    ${Petaca_INCLUDE_DIR} PARENT_SCOPE)
+set(Petaca_INCLUDE_DIRS   ${Petaca_INCLUDE_DIRS} PARENT_SCOPE)
