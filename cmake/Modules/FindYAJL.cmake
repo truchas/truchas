@@ -40,10 +40,16 @@ find_library(YAJL_LIBRARY_SHARED
              PATH_SUFFIXES lib)
 
 # --- Define the library directory
-find_path(YAJL_LIBRARY_DIR
-          ${YAJL_LIBRARY_SHARED}
-          HINTS ${_yajl_search_paths}
-          PATH_SUFFIXES lib)
+if ( YAJL_LIBRARY_STATIC OR YAJL_LIBRARY_SHARED )
+  if ( YAJL_LIBRARY_STATIC )
+    get_filename_component(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_STATIC} DIRECTORY)
+  endif()
+  if ( YAJL_LIBRARY_SHARED )
+    get_filename_component(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_SHARED} DIRECTORY)
+  endif()
+else ()  
+  set(YAJL_LIBRARY_DIR YAJL_LIBRARY_DIR-NOTFOUND)
+endif()
 
 # --- Define the version
 
