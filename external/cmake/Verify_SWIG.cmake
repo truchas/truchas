@@ -32,6 +32,6 @@ endif(SWIG_FOUND)
 if(SWIG_VERIFIED)
   message(STATUS "Verify SWIG package -- ok")
 else(SWIG_VERIFIED)
-  message(STATUS "Verify SWIG package -- ok")
+  message(STATUS "Verify SWIG package -- failed")
 endif(SWIG_VERIFIED)
 
