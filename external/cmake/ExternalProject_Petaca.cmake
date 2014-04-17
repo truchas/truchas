@@ -8,11 +8,11 @@
 
 # --- Setup
 
-# Projects/targets dependent on Petaca need this target
+# Project build target name
 set(Petaca_BUILD_TARGET petaca)
 
 # Define the version and archive file
-set(EP_Petaca_VERSION 0768bc4)
+set(EP_Petaca_VERSION        0768bc4)
 set(EP_Petaca_ARCHIVE_FILE   petaca-${EP_Petaca_VERSION}.tgz)
 set(EP_Petaca_MD5_SUM        bc7742d53d377d3b6727d0b439b2177d)  
 
@@ -34,12 +34,12 @@ set(petaca_tmp_dir      ${petaca_prefix_dir}/petaca-tmp)
 set(petaca_install_dir  ${TruchasExternal_INSTALL_PREFIX})
 
 # YAJL (Required)
-#if ( NOT TARGET ${YAJL_BUILD_TARGET} )
-#  include(Verify_YAJL)
-#  if (NOT YAJL_VERIFIED)
-#    include(ExternalProject_YAJL)
-#  endif(NOT YAJL_VERIFIED)  
-#endif(NOT TARGET ${YAJL_BUILD_TARGET})
+if ( NOT TARGET ${YAJL_BUILD_TARGET} )
+  include(Verify_YAJL)
+  if (NOT YAJL_VERIFIED)
+    include(ExternalProject_YAJL)
+  endif(NOT YAJL_VERIFIED)  
+endif(NOT TARGET ${YAJL_BUILD_TARGET})
 
 # --- Add the -fPIC or -PIC (Position in code flag)
 include(FindPICFlag)
@@ -54,19 +54,19 @@ ExternalProject_Add(${Petaca_BUILD_TARGET}
                     TMP_DIR     ${petaca_tmp_dir}     
                     STAMP_DIR   ${petaca_stamp_dir}
                     SOURCE_DIR  ${petaca_source_dir}
-		    #INSTALL_DIR ${petaca_install_dir}
-		    # -- Archive file definitions
+                    #INSTALL_DIR ${petaca_install_dir}
+                    # -- Archive file definitions
                     URL          ${petaca_url_file}
                     URL_MD5      ${EP_Petaca_MD5_SUM}   
                     # -- Configure (CMake)
-		    CMAKE_CACHE_ARGS
-		          ${TruchasExternal_CMAKE_COMPILER_ARGS}
-			  ${TruchasExternal_CMAKE_BUILD_ARGS}
-			  -DCMAKE_C_FLAGS:STRING=${petaca_c_flags}
-	            CMAKE_ARGS
-		          -DCMAKE_INSTALL_PREFIX:PATH=${petaca_install_dir}
-                          #-DYAJL_INCLUDE_DIR:PATH=${YAJL_INCLUDE_DIR}
-                          #-DYAJL_LIBRARY_DIR:PATH=${YAJL_LIBRARY_DIR}
+                    CMAKE_CACHE_ARGS
+                        ${TruchasExternal_CMAKE_COMPILER_ARGS}
+                        ${TruchasExternal_CMAKE_BUILD_ARGS}
+                        -DCMAKE_C_FLAGS:STRING=${petaca_c_flags}
+                    CMAKE_ARGS
+                        -DCMAKE_INSTALL_PREFIX:PATH=${petaca_install_dir}
+                        -DYAJL_INCLUDE_DIR:PATH=${YAJL_INCLUDE_DIR}
+                        -DYAJL_LIBRARY_DIR:PATH=${YAJL_LIBRARY_DIR}
                     # -- Output control
                     ${TruchasExternal_LOG_OPTS})
 
@@ -81,5 +81,5 @@ set(Petaca_INCLUDE_DIRS ${Petaca_INCLUDE_DIR})
 
 # Library
 build_library_name(petaca Petaca_LIBRARY APPEND_PATH ${petaca_install_dir}/lib)
-set(Petaca_LIBRARIES ${Petaca_LIBRARY} -lyajl)
+set(Petaca_LIBRARIES ${Petaca_LIBRARY} ${YAJL_LIBRARY_SHARED})
 

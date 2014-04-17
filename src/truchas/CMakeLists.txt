@@ -129,11 +129,11 @@ endif()
 # Danu
 list(APPEND Truchas_DEPENDS danu_f)
 
-# Various build targets
+# Various build targets from the external projects
 list(APPEND Truchas_DEPENDS 
             ${NETCDF_BUILD_TARGET}
-	    ${HYPRE_BUILD_TARGETS}
-            petaca)
+	          ${HYPRE_BUILD_TARGET}
+            ${Petaca_BUILD_TARGET})
 
 # Force the completion of the targets defined 
 # in Truchas_DEPENDS before compiling source for
@@ -143,7 +143,7 @@ add_dependencies(truchas ${Truchas_DEPENDS})
 # - Link libraries
 set(Truchas_LINK_LIBS
             ${NETCDF_Fortran_LIBRARIES}
-	    ${HYPRE_LIBRARY}
+	          ${HYPRE_LIBRARY}
             ${Petaca_LIBRARIES})
 
 if(ENABLE_PGSLib)
