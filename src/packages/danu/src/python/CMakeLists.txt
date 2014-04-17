@@ -88,7 +88,7 @@ if (ENABLE_Python)
   set_target_properties(_Danu
                         PROPERTIES
                         LINK_FLAGS "${EXTRA_LINK_FLAGS}")
-  if ( BUILD_SWIG )
+  if ( TARGET ${SWIG_BUILD_TARGET} )
     add_dependencies(_Danu ${SWIG_BUILD_TARGET})
   endif()
 
@@ -129,7 +129,7 @@ SWIG_ADD_MODULE(GMV python GMV.i ${GMV_C_SOURCE})
 set_target_properties(_GMV
                       PROPERTIES
                       LINK_FLAGS "${EXTRA_LINK_FLAGS}")
-if (BUILD_SWIG)		    
+if (TARGET ${SWIG_BUILD_TARGET} )		    
   add_dependencies(_GMV ${SWIG_BUILD_TARGET})
 endif()
 
