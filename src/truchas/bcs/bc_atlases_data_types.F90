@@ -223,8 +223,8 @@ CONTAINS
     integer, intent(IN) :: MaxNumberOfCharts, MaxAtlasDataSize
     integer, intent(IN) :: DIMENSIONALITY, DOF
 
-    call ALLOC(Atlas%Spec, SIZE=MaxNumberOfCharts)
-    call ALLOC(Atlas%Data, SIZE=MaxAtlasDataSize, DIMENSIONALITY=DIMENSIONALITY, DOF = DOF)
+    call ALLOC(Atlas%Spec, SIZE_=MaxNumberOfCharts)
+    call ALLOC(Atlas%Data, SIZE_=MaxAtlasDataSize, DIMENSIONALITY=DIMENSIONALITY, DOF = DOF)
 
     Atlas%MaxSizes%MaxNumberOfCharts = MaxNumberOfCharts
     Atlas%MaxSizes%MaxAtlasDataSize  = MaxAtlasDataSize
@@ -353,7 +353,7 @@ CONTAINS
     if (NewAtlasDataSize > BC_MaxAtlasDataSize(Atlas)) then
        ! Grow by doubling size
        NewMaxAtlasDataSize = 2 * BC_MaxAtlasDataSize(Atlas)
-       call REALLOC(Atlas%Data, SIZE=NewMaxAtlasDataSize)
+       call REALLOC(Atlas%Data, SIZE_=NewMaxAtlasDataSize)
        Atlas%MaxSizes%MaxAtlasDataSize = NewMaxAtlasDataSize
     end if
 
@@ -364,7 +364,7 @@ CONTAINS
     if (AtlasIndex > BC_MaxNumberOfCharts(Atlas)) then
        ! Grow by doubling
        NewMaxNumberOfCharts = 2*BC_MaxNumberOfCharts(Atlas)
-       call REALLOC(Atlas%Spec, SIZE=NewMaxNumberOfCharts)
+       call REALLOC(Atlas%Spec, SIZE_=NewMaxNumberOfCharts)
        Atlas%MaxSizes%MaxNumberOfCharts = 2* NewMaxNumberOfCharts
     end if
     
