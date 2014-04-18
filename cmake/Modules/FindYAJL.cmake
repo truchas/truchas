@@ -23,9 +23,8 @@ set(_yajl_search_paths
 
 # --- Locate include path
 find_path(YAJL_INCLUDE_DIR
-          NAMES yajl_common.h
-          HINTS ${_yajl_search_paths}
-          PATH_SUFFIXES include include/yajl)
+          NAMES yajl/yajl_common.h
+          HINTS ${_yajl_search_paths})
 
 # --- Locate the static library
 find_library(YAJL_LIBRARY_STATIC
@@ -60,7 +59,7 @@ if ( NOT DEFINED YAJL_VERSION )
   set(YAJL_VERSION YAJL_VERSION-NOTFOUND)
 
   find_file(_yajl_version_h
-            NAMES yajl_version.h
+            NAMES yajl/yajl_version.h
             HINTS ${YAJL_INCLUDE_DIR})
 
   if ( _yajl_version_h )
