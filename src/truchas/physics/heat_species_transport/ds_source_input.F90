@@ -83,7 +83,7 @@
 module ds_source_input
 
   use kinds
-  use scalar_functions
+  use scalar_func_class
   use source_mesh_function
   use distributed_mesh
   use truchas_logging_services
@@ -105,7 +105,7 @@ module ds_source_input
     integer :: seq
     character(len=MAX_NAME_LEN) :: equation
     integer, pointer :: cell_set_ids(:) => null()
-    type(scafun), pointer :: srcf => null()
+    class(scalar_func), allocatable :: srcf
     type(list_node), pointer :: next => null()
   end type list_node
   type(list_node), pointer, save :: list => null(), last => null()
@@ -120,13 +120,14 @@ contains
   subroutine read_ds_source (lun)
 
     use input_utilities, only: seek_to_namelist
-    use function_table
+    use scalar_func_factories, only: alloc_const_scalar_func
+    use function_namelist, only: lookup_func
 
     integer, intent(in) :: lun
 
     logical :: found
     integer :: n, stat
-    type(scafun), pointer :: srcf
+    class(scalar_func), allocatable :: srcf
     character(len=7) :: label
     character(len=127) :: errmsg
 
@@ -135,8 +136,6 @@ contains
     real(r8) :: source_constant
     character(len=MAX_NAME_LEN) :: equation, source_function
     namelist /ds_source/ equation, cell_set_ids, source_constant, source_function
-
-    ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
 
     call TLS_info ('')
     call TLS_info ('Reading DS_SOURCE namelists ...')
@@ -204,13 +203,11 @@ contains
       end if
 
       !! Create or get the source function.
-      allocate(srcf)
       if (source_constant /= NULL_R) then
-        call create_scafun_const (srcf, source_constant)
+        call alloc_const_scalar_func (srcf, source_constant)
       else
-        if (ft_has_function(source_function)) then
-          srcf = ft_get_function(source_function)
-        else
+        call lookup_func (source_function, srcf)
+        if (.not.allocated(srcf)) then
           stat = -1
           errmsg = trim(label) // ' error: unknown function name: ' // trim(source_function)
           exit
@@ -227,7 +224,7 @@ contains
       end if
       last%seq = n
       last%equation = equation
-      last%srcf => srcf
+      call move_alloc (srcf, last%srcf)
       allocate(last%cell_set_ids(count(cell_set_ids /= NULL_I)))
       last%cell_set_ids = pack(cell_set_ids, mask=(cell_set_ids /= NULL_I))
 

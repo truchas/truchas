@@ -48,7 +48,7 @@ contains
     use ER_input
     use distributed_mesh, only: dist_mesh
     use physical_constants, only: stefan_boltzmann, absolute_zero
-    use scalar_functions, only: scafun
+    use scalar_func_class
     use ER_encl_func,  only: encl_func
     use truchas_logging_services
 
@@ -62,7 +62,7 @@ contains
     character(len=32)  :: method
     integer, pointer :: color(:), color_l(:), setids(:)
     real(r8) :: csf, tol
-    type(scafun), pointer :: tamb
+    class(scalar_func), allocatable :: tamb
     type(encl_func), pointer :: eps
 
     call ERI_get_file (name, file)

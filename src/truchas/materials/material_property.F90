@@ -29,7 +29,7 @@
 module material_property
 
   use kinds, only: r8
-  use scalar_functions
+  use scalar_func_class
   use phase_property_table
   use material_system
   use material_table
@@ -38,19 +38,19 @@ module material_property
 
   public :: mp_create, mp_eval, mp_eval_deriv, destroy
 
+  type :: box
+    integer :: id = 0
+    class(scalar_func), allocatable :: prop
+  end type box
+
   type, public :: mat_prop
     private
     integer :: material_id = -1
     integer :: property_id = -1
     integer :: eval_type = -1
     type(mat_system), pointer :: ms => null()
-    type(box), pointer :: phase(:) => null()
+    type(box), allocatable :: phase(:)
   end type mat_prop
-
-  type :: box
-    integer :: id = 0
-    type(scafun), pointer :: prop => null()
-  end type box
 
   !! Values for EVAL_TYPE.
   integer, parameter :: SINGLE_PHASE = 1
@@ -96,7 +96,7 @@ contains
     do j = 1, size(phase_id)
       this%phase(j)%id = phase_id(j)
       call ppt_get_phase_property (phase_id(j), property_id, this%phase(j)%prop)
-      if (.not.associated(this%phase(j)%prop)) then
+      if (.not.allocated(this%phase(j)%prop)) then
         stat = 1
         errmsg = 'no property for phase: ' // trim(ppt_phase_name(phase_id(j)))
         return
@@ -131,7 +131,7 @@ contains
     case (SINGLE_PHASE)
 
       !! Straight pass-through to the phase property.
-      value = eval(this%phase(1)%prop, state)
+      value = this%phase(1)%prop%eval(state)
 
     case (MULTI_PHASE_SINGLE_COMPONENT)
 
@@ -140,7 +140,7 @@ contains
       call ms_phase_mixture (this%ms, state, beta)
       value = 0.0_r8
       do i = 1, size(beta)
-        if (beta(i) > 0.0_r8) value = value + beta(i) * eval(this%phase(i)%prop, state)
+        if (beta(i) > 0.0_r8) value = value + beta(i) * this%phase(i)%prop%eval(state)
       end do
       deallocate(beta)
 
@@ -181,7 +181,7 @@ contains
     !! N.B.  The MAT_PROP structure does not own the targets of the
     !! MAT_SYSTEM and SCAFUN pointer components and so this routine
     !! must not deallocate/destroy them.
-    if (associated(this%phase)) deallocate(this%phase)
+    if (allocated(this%phase)) deallocate(this%phase)
     this = default  ! assign default initialization values
   end subroutine destroy_mat_prop
 

@@ -69,7 +69,7 @@
 module ER_encl_func
 
   use kinds
-  use scalar_functions
+  use scalar_func_containers
   use ER_dist_encl, only: dist_encl
   implicit none
   private
@@ -84,11 +84,11 @@ module ER_encl_func
     integer :: ngroup = -1
     integer, pointer :: group(:) => null()
     integer, pointer :: faces(:) => null()
-    type(scafun), pointer :: f(:) => null()
+    type(scalar_func_box), allocatable :: farray(:)
     integer, pointer :: hint(:) => null()
     !! temporary components used during initialization
     integer, pointer :: tag(:) => null()
-    type(scafun_list), pointer :: flist => null()
+    type(scalar_func_list) :: flist
   end type encl_func
 
   !! Optimization hint values.
@@ -124,7 +124,7 @@ contains
   subroutine EF_add_function (this, f, blockID, stat, errmsg)
 
     type(encl_func), intent(inout) :: this
-    type(scafun), intent(in) :: f
+    class(scalar_func), allocatable, intent(inout) :: f
     integer, intent(in) :: blockID(:)
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -137,7 +137,7 @@ contains
     if (stat /= 0) return
 
     !! Append the function to the temporary list.
-    call append_to_list (this%flist, f)
+    call this%flist%append (f)
 
   end subroutine EF_add_function
 
@@ -195,6 +195,8 @@ contains
  !!
 
   subroutine EF_done (this, stat, errmsg)
+  
+    use const_scalar_func_type
 
     type(encl_func), intent(inout) :: this
     integer, intent(out) :: stat
@@ -238,18 +240,20 @@ contains
     end do
     this%group(1) = 1
 
-    !! Copy the list of boundary data functions into an array.
-    allocate(this%f(this%ngroup))
-    call convert_list_to_array (this%flist, this%f)
+    !! Convert the function list into the final function array.
+    call scalar_func_list_to_box_array (this%flist, this%farray)
 
     !! For now we don't expose optimization hinting to the user,
     !! but we can determine directly which functions are constant.
     allocate(this%hint(this%ngroup))
-    where (is_const_scafun(this%f))
-      this%hint = EF_HINT_CONST
-    elsewhere
-      this%hint = EF_HINT_NONE
-    end where
+    do n = 1, this%ngroup
+      select type (f => this%farray(n)%f)
+      type is (const_scalar_func)
+        this%hint(n) = EF_HINT_CONST
+      class default
+        this%hint(n) = EF_HINT_NONE
+      end select
+    end do
 
     stat = 0
     errmsg = ''
@@ -283,22 +287,22 @@ contains
         faces => this%faces(this%group(n):this%group(n+1)-1)
         select case (this%hint(n))
         case (EF_HINT_CONST)
-          if (unevaluated) this%values(faces) = eval(this%f(n), args)
+          if (unevaluated) this%values(faces) = this%farray(n)%f%eval(args)
         case (EF_HINT_X_INDEP)
-          this%values(faces) = eval(this%f(n), args)
+          this%values(faces) = this%farray(n)%f%eval(args)
         case (EF_HINT_T_INDEP)
           if (unevaluated) then
             do j = 1, size(faces)
               fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1)
               args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
-              this%values(faces(j)) = eval(this%f(n), args)
+              this%values(faces(j)) = this%farray(n)%f%eval(args)
             end do
           end if
         case default
           do j = 1, size(faces)
             fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1)
             args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
-            this%values(faces(j)) = eval(this%f(n), args)
+            this%values(faces(j)) = this%farray(n)%f%eval(args)
           end do
         end select
       end do
@@ -321,13 +325,8 @@ contains
     if (associated(this%faces)) deallocate(this%faces)
     if (associated(this%values)) deallocate(this%values)
     if (associated(this%group)) deallocate(this%group)
-    if (associated(this%f)) then
-      call destroy (this%f)
-      deallocate(this%f)
-    end if
     if (associated(this%hint)) deallocate(this%hint)
     if (associated(this%tag)) deallocate(this%tag)
-    call destroy (this%flist)
 
     this = default  ! assign default initialization values
 

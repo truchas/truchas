@@ -76,7 +76,7 @@ module material_interop
   use phase_property_table
   use parameter_module, only: nmat
   use property_data_module, only: material_name, density
-  use scalar_functions
+  use scalar_func_containers
 
   implicit none
   private
@@ -90,10 +90,7 @@ module material_interop
   integer, public :: void_material_index
 
   !! Private module data used by the enthalpy and density routines.
-  type :: box
-    type(scafun), pointer :: fn => null()
-  end type box
-  type(box), allocatable :: enthalpy_mat(:), density_mat(:), enthalpy_density_mat(:)
+  type(scalar_func_box), allocatable :: enthalpy_mat(:), density_mat(:), enthalpy_density_mat(:)
 
 contains
 
@@ -224,15 +221,15 @@ contains
       do i = 1, nmat
         if (i == void_material_index) cycle
         phase_id = material_to_phase(i)
-        call ppt_get_phase_property (phase_id, property_id, enthalpy_mat(i)%fn)
+        call ppt_get_phase_property (phase_id, property_id, enthalpy_mat(i)%f)
       end do
     end if
 
     if (t_matn == void_material_index) then
       value = 0.0_r8
     else
-      ASSERT(associated(enthalpy_mat(t_matn)%fn))
-      value = eval(enthalpy_mat(t_matn)%fn, state)
+      ASSERT(allocated(enthalpy_mat(t_matn)%f))
+      value = enthalpy_mat(t_matn)%f%eval(state)
     end if
 
   end function ds_enthalpy
@@ -258,15 +255,15 @@ contains
       do i = 1, nmat
         if (i == void_material_index) cycle
         phase_id = material_to_phase(i)
-        call ppt_get_phase_property (phase_id, property_id, density_mat(i)%fn)
+        call ppt_get_phase_property (phase_id, property_id, density_mat(i)%f)
       end do
     end if
 
     if (t_matn == void_material_index) then
       value = 0.0_r8
     else
-      ASSERT(associated(density_mat(t_matn)%fn))
-      value = eval(density_mat(t_matn)%fn, state)
+      ASSERT(allocated(density_mat(t_matn)%f))
+      value = density_mat(t_matn)%f%eval(state)
     end if
 
   end function ds_density
@@ -292,15 +289,15 @@ contains
       do i = 1, nmat
         if (i == void_material_index) cycle
         phase_id = material_to_phase(i)
-        call ppt_get_phase_property (phase_id, property_id, enthalpy_density_mat(i)%fn)
+        call ppt_get_phase_property (phase_id, property_id, enthalpy_density_mat(i)%f)
       end do
     end if
 
     if (t_matn == void_material_index) then
       value = 0.0_r8
     else
-      ASSERT(associated(enthalpy_density_mat(t_matn)%fn))
-      value = eval(enthalpy_density_mat(t_matn)%fn, state)
+      ASSERT(allocated(enthalpy_density_mat(t_matn)%f))
+      value = enthalpy_density_mat(t_matn)%f%eval(state)
     end if
 
   end function ds_enthalpy_density

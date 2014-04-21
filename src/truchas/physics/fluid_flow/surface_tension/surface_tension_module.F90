@@ -29,7 +29,7 @@ module surface_tension_module
   !=======================================================================
   use kinds, only: r8
   use truchas_logging_services
-  use scalar_functions
+  use scalar_func_class
   implicit none
   private
 
@@ -43,7 +43,7 @@ module surface_tension_module
   logical, public, save :: csf_normal = .false.
   logical, public, save :: csf_tangential = .false.
   integer, public, save :: surfmat1, surfmat2
-  type(scafun), public, save :: sigma_func ! surface tension coefficient
+  class(scalar_func), allocatable, public :: sigma_func ! surface tension coefficient
   integer :: kernel = 0  ! initialized to one of the following values
   integer, parameter :: WILLIAMS_KERNEL = 1
   integer, parameter :: RUDMAN_KERNEL   = 2
@@ -117,7 +117,7 @@ contains
     !call PROPERTY (Zone%Temp_Old, m, 'surface_tension', Value = Sigma)
     do j = 1, ncells
       state(1) = Zone(j)%Temp_Old
-      sigma(j) = eval(sigma_func, state)
+      sigma(j) = sigma_func%eval(state)
     end do
 
     ! Density weighting of the delta function 
@@ -448,7 +448,7 @@ contains
     !call PROPERTY (Zone%Temp_Old, surfmat1, 'surface_tension', Value = Sigma)
     do j = 1, ncells
       state(1) = Zone(j)%Temp_Old
-      Sigma(j) = eval(sigma_func, state)
+      Sigma(j) = sigma_func%eval(state)
     end do
 
     !-Interpolate surface tension coefficient at faces
@@ -644,7 +644,8 @@ contains
     use input_utilities
     use string_utilities, only: i_to_c, raise_case
     use parallel_communication, only: is_IOP, broadcast
-    use function_table
+    use scalar_func_factories, only: alloc_const_scalar_func
+    use function_namelist, only: lookup_func
     use property_module, only: get_truchas_material_id
     use fluid_data_module, only: IsImmobile
 
@@ -741,11 +742,10 @@ contains
       if (sigma_constant < 0.0_r8) then
         call TLS_fatal ('SIGMA_CONSTANT must be >= 0')
       end if
-      call create_scafun_const (sigma_func, sigma_constant)
+      call alloc_const_scalar_func (sigma_func, sigma_constant)
     else
-      if (ft_has_function(sigma_function)) then
-        sigma_func = ft_get_function(sigma_function)
-      else
+      call lookup_func (sigma_function, sigma_func)
+      if (.not.allocated(sigma_func)) then
         call TLS_fatal ('Unknown SIGMA_FUNCTION name: "' // trim(sigma_function) // '"')
       end if
     end if

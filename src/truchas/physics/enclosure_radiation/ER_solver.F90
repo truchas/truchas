@@ -6,7 +6,7 @@ module ER_solver
   use ER_system
   use ER_dist_encl
   use ER_encl_func
-  use scalar_functions
+  use scalar_func_class
   use parallel_communication
   use truchas_logging_services
   implicit none
@@ -23,7 +23,7 @@ module ER_solver
   type, public :: solver
     integer :: nface
     type(dist_encl), pointer :: encl => null()  ! radiation enclosure surface
-    type(scafun),    pointer :: tamb => null()  ! ambient temperature function
+    class(scalar_func), allocatable :: tamb     ! ambient temperature function
     type(encl_func), pointer :: eps  => null()  ! emissivity enclosure function
     type(system) :: sys
     !! Chebyshev solver parameters
@@ -174,10 +174,6 @@ contains
       call destroy_dist_encl (this%encl)
       deallocate(this%encl)
     end if
-    if (associated(this%tamb)) then
-      call destroy (this%tamb)
-      deallocate(this%tamb)
-    end if
     if (associated(this%eps)) then
       call EF_destroy (this%eps)
       deallocate(this%eps)
@@ -187,8 +183,8 @@ contains
 
   subroutine ERS_set_ambient (this, tamb)
     type(solver), intent(inout) :: this
-    type(scafun), pointer :: tamb
-    this%tamb => tamb
+    class(scalar_func), allocatable, intent(inout) :: tamb
+    call move_alloc (tamb, this%tamb)
   end subroutine ERS_set_ambient
 
   subroutine ERS_set_emissivity (this, eps)
@@ -261,7 +257,7 @@ contains
     ASSERT(size(temp) == this%nface)
     ASSERT(size(qrad) == this%nface)
 
-    tamb = eval(this%tamb, (/time/))
+    tamb = this%tamb%eval ([time])
     call EF_eval(this%eps, time)
 
     call system_cheby_solve (this%sys, temp, tamb, this%eps%values, &
@@ -383,7 +379,7 @@ contains
     ASSERT(size(temp) == this%nface)
     ASSERT(size(flux) == this%nface)
 
-    tamb = eval(this%tamb, (/time/))
+    tamb = this%tamb%eval([time])
     call EF_eval (this%eps, time)
     call system_flux (this%sys, qrad, temp, tamb, this%eps%values, flux)
 
@@ -412,7 +408,7 @@ contains
     ASSERT(size(temp) == this%nface)
     ASSERT(size(res)  == this%nface)
 
-    tamb = eval(this%tamb, (/time/))
+    tamb = this%tamb%eval([time])
     call EF_eval (this%eps, time)
     call system_residual (this%sys, qrad, temp, tamb, this%eps%values, res)
 
@@ -454,7 +450,7 @@ contains
     ASSERT(size(temp) == this%nface)
     ASSERT(size(rhs) == this%nface)
 
-    tamb = eval(this%tamb, (/time/))
+    tamb = this%tamb%eval([time])
     call EF_eval (this%eps, time)
     call system_rhs (this%sys, temp, tamb, this%eps%values, rhs)
 

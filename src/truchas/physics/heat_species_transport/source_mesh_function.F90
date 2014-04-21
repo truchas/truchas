@@ -97,7 +97,7 @@
 module source_mesh_function
 
   use kinds
-  use scalar_functions
+  use scalar_func_containers
   use distributed_mesh, only: dist_mesh
   implicit none
   private
@@ -116,12 +116,12 @@ module source_mesh_function
     integer :: ngroup = -1
     integer, pointer :: xgroup(:) => null()
     integer, pointer :: index(:) => null()
-    type(scafun), pointer :: f(:) => null()
+    type(scalar_func_box), allocatable :: farray(:)
     integer, pointer :: hint(:) => null()
     !! temporary components used during initialization
     logical :: no_default = .true.
     integer, pointer :: tag(:) => null()
-    type(scafun_list), pointer :: flist => null()
+    type(scalar_func_list) :: flist
   end type source_mf
 
   integer, parameter, public :: SMF_HINT_NONE    = 0
@@ -156,7 +156,7 @@ contains
   subroutine smf_add_function (this, f, setID, stat, errmsg)
 
     type(source_mf), intent(inout) :: this
-    type(scafun), intent(in) :: f
+    class(scalar_func), allocatable, intent(inout) :: f
     integer, intent(in) :: setID(:)
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -169,7 +169,7 @@ contains
     if (stat /= 0) return
 
     !! Append this function to the function list.
-    call append_to_list (this%flist, f)
+    call this%flist%append (f)
 
   end subroutine smf_add_function
 
@@ -246,6 +246,8 @@ contains
  !!
 
   subroutine smf_done (this, stat, errmsg)
+  
+    use const_scalar_func_type
 
     type(source_mf), intent(inout) :: this
     integer, intent(out) :: stat
@@ -289,18 +291,20 @@ contains
     end do
     this%xgroup(1) = 1
 
-    !! Copy the list of functions into an array.
-    allocate(this%f(this%ngroup))
-    call convert_list_to_array(this%flist, this%f)
+    !! Convert the function list into the final function array.
+    call scalar_func_list_to_box_array (this%flist, this%farray)
 
     !! For now we don't expose optimization hinting to the user,
     !! but we can determine directly which functions are constant.
     allocate(this%hint(this%ngroup))
-    where (is_const_scafun(this%f))
-      this%hint = SMF_HINT_CONST
-    elsewhere
-      this%hint = SMF_HINT_NONE
-    end where
+    do n = 1, this%ngroup
+      select type (f => this%farray(n)%f)
+      type is (const_scalar_func)
+        this%hint(n) = SMF_HINT_CONST
+      class default
+        this%hint(n) = SMF_HINT_NONE
+      end select
+    end do
 
     stat = 0
     errmsg = ''
@@ -360,22 +364,22 @@ contains
         cells => this%index(this%xgroup(n):this%xgroup(n+1)-1)
         select case (this%hint(n))
         case (SMF_HINT_CONST)
-          if (unevaluated) this%fvalue(cells) = eval(this%f(n), args)
+          if (unevaluated) this%fvalue(cells) = this%farray(n)%f%eval(args)
         case (SMF_HINT_X_INDEP)
-          this%fvalue(cells) = eval(this%f(n), args)
+          this%fvalue(cells) = this%farray(n)%f%eval(args)
         case (SMF_HINT_T_INDEP)
           if (unevaluated) then
             do j = 1, size(cells)
               args(1:) = sum(this%mesh%x(:,this%mesh%cnode(:,cells(j))),dim=2) &
                        / size(this%mesh%cnode,dim=1)
-              this%fvalue(cells(j)) = eval(this%f(n), args)
+              this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
             end do
           end if
         case default
           do j = 1, size(cells)
             args(1:) = sum(this%mesh%x(:,this%mesh%cnode(:,cells(j))),dim=2) &
                      / size(this%mesh%cnode,dim=1)
-            this%fvalue(cells(j)) = eval(this%f(n), args)
+            this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
           end do
         end select
       end do
@@ -406,13 +410,8 @@ contains
     if (associated(this%xvalue)) deallocate(this%xvalue)
     if (associated(this%xgroup)) deallocate(this%xgroup)
     if (associated(this%index)) deallocate(this%index)
-    if (associated(this%f)) then
-      call destroy(this%f)
-      deallocate(this%f)
-    end if
     if (associated(this%hint)) deallocate(this%hint)
     if (associated(this%tag)) deallocate(this%tag)
-    call destroy (this%flist)
 
     this = default  ! assign default initialization values
 

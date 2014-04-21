@@ -34,7 +34,7 @@ MODULE INIT_MODULE
 
   ! Public Procedures
   public :: INITIAL
-  
+
   ! For testing:
   public :: check_vof_aux
 
@@ -87,7 +87,7 @@ CONTAINS
     real(r8), allocatable :: phi(:,:)
     character(200) :: errmsg
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-    
+
     !! Initialize the MATERIAL_INTEROP module which provides tools for moving
     !! between Truchas materials and the new material software model introduced
     !! with the diffusion solver.
@@ -169,7 +169,7 @@ CONTAINS
 
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
     if (solid_mechanics) Call SOLID_MECH_INIT
-   
+
     ! Get the initial species concentration fields.
     if (ds_enabled .and. num_species > 0) then
       allocate(phi(ncells,num_species))
@@ -199,27 +199,27 @@ CONTAINS
     end if
 
   END SUBROUTINE INITIAL
-  
+
   subroutine property_init
-  
+
     use material_table
     use material_utilities
     use physics_module
-    
+
     integer :: stat
-    character(128) :: errmsg
-    
+    character(:), allocatable :: errmsg
+
     integer, allocatable :: matids(:)
-    
+
     allocate(matids(mt_num_material()))
     call mt_get_material_ids (matids)
-    
+
     call required_property_check (matids, 'density', stat, errmsg)
     if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
-    
+
     call constant_property_check (matids, 'density', stat, errmsg)
     if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
-    
+
     if (heat_transport .or. heat_species_transport) then
       call required_property_check (matids, 'specific heat', stat, errmsg)
       if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
@@ -231,23 +231,23 @@ CONTAINS
       call define_enthalpy_density_property (matids, stat, errmsg)
       if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
     end if
-    
+
   end subroutine property_init
-  
+
   subroutine flow_property_init
-  
+
     use fluid_data_module, only: boussinesq_approximation
     use viscous_data_module, only: inviscid
     use property_module, only: request_fluid_property
-    
+
     if (boussinesq_approximation) then
       call request_fluid_property ('density deviation', default=0.0_r8)
     end if
-    
+
     if (.not.inviscid) then
       call request_fluid_property ('viscosity')
     end if
-    
+
   end subroutine flow_property_init
 
   subroutine init_conc (hits_vol, phi)
@@ -912,7 +912,7 @@ CONTAINS
           Matl(s)%Cell%Vof = Vofm
        end where
     end do
-    
+
     !! NNC, Feb 2013.  At this point (original commented-out code below) we
     !! check that computed volume fractions (matl) are valid and then go-ahead
     !! and normalize them anyway!  Why the vofs can't be expected to valid at
@@ -1018,7 +1018,7 @@ CONTAINS
     NULLIFY(vof)
 
     RESTARTCHECK: if (restart) then
-      
+
       if (heat_transport .or. heat_species_transport) then
         !FIXME: compute Zone%Enthalpy or is it read from the restart file?
         Zone%Enthalpy_old = Zone%Enthalpy
@@ -1028,7 +1028,7 @@ CONTAINS
       end if
 
     else
-    
+
       !! NNC, 4 May 2012.  Here we need to compute cell values for temperature,
       !! density, and enthalpy.  The latter two are average quantities based on
       !! the volume fraction of material phases present in a cell -- averaged
@@ -1133,7 +1133,7 @@ CONTAINS
 
       DEALLOCATE (bzRho)
 
-      ! Complete and store Enthaply 
+      ! Complete and store Enthaply
       where(mass_sum(:) .gt. alittle)
         enth_sum(:) = enth_sum(:)/mass_sum(:)
       elsewhere
@@ -1143,7 +1143,7 @@ CONTAINS
       Zone(:)%Enthalpy_Old = Zone%Enthalpy
       Zone(:)%Temp_Old = Zone(:)%Temp
       NULLIFY(mass_sum)
-      
+
       call update_matl (Volume_Fraction)
 
       DEALLOCATE (enth_sum)
@@ -1301,7 +1301,7 @@ CONTAINS
         this%m = this%m + 1
       end if
     end subroutine
-    
+
     pure integer function size_vector (this)
       type(vector), intent(in) :: this
       size_vector = this%n
@@ -1341,7 +1341,7 @@ CONTAINS
     !    string = string // ' [' // i_to_c(size(list)+omitted-MAX_REPORT) // ' more items omitted]'
     !  end if
     !end function
-    
+
     !! This version does not require the more advanced F2003/F2003 features.
 
     subroutine append_list_to_string (list, omitted, string)
@@ -1578,7 +1578,7 @@ CONTAINS
     end do
 
   END SUBROUTINE MESHBCFACES
-  
+
  !!
  !! COMPUTE_CELL_ENTHALPY
  !!
@@ -1590,21 +1590,21 @@ CONTAINS
  !! In addition, material phases could have been assigned to cells that were
  !! inconsistent with the temperature.  This routine also reapportions the
  !! material phase fractions so they are consistent with the temperature.
- !! 
+ !!
 
   subroutine compute_cell_enthalpy (T, vof, H)
-  
+
     use parameter_module, only: nmat
     use phase_property_table
     use material_table
     use material_system
     use material_property
     use material_interop, only: void_material_index, material_to_system, phase_to_material
-    
+
     real(r8), intent(in)    :: T(:)     ! cell temperature
     real(r8), intent(inout) :: vof(:,:) ! Truchas material phase volume fractions
     real(r8), intent(out)   :: H(:)     ! enthalpy density
-    
+
     integer :: ncell, m, i, j, k, stat
     integer, allocatable :: matids(:)
     real(r8), allocatable :: vfrac(:,:), pfrac(:)
@@ -1613,13 +1613,13 @@ CONTAINS
     type(mat_prop) :: mp
     integer, pointer :: phase_id(:)
     character(128) :: errmsg
-    
+
     ncell = size(vof,dim=2)
-    
+
     ASSERT(size(vof,dim=1) == nmat)
     ASSERT(size(T) == ncell)
     ASSERT(size(H) == ncell)
-    
+
     !! Map material volume fractions (VOF) to material system volume fractions (VFRAC).
     allocate(matids(mt_num_material()), vfrac(ncell,mt_num_material()))
     call mt_get_material_ids (matids)
@@ -1632,11 +1632,11 @@ CONTAINS
       INSIST(i > 0)
       vfrac(:,i) = vfrac(:,i) + vof(m,:)
     end do
-    
+
     ASSERT(ppt_has_property('enthalpy density'))
-    
+
     H = 0.0_r8
-    
+
     do i = 1, size(matids) ! loop over material systems
       !! Create the enthalpy density property MP for this material system.
       call mp_create (mp, matids(i), ppt_property_id('enthalpy density'), stat, errmsg)
@@ -1669,7 +1669,7 @@ CONTAINS
       deallocate(phase_id)
       call destroy (mp)
     end do
-      
+
   end subroutine compute_cell_enthalpy
 
 END MODULE INIT_MODULE

@@ -73,7 +73,7 @@
 module interface_data
 
   use kinds
-  use scalar_functions
+  use scalar_func_containers
   use distributed_mesh, only: dist_mesh
   use string_utilities, only: i_to_c
   implicit none
@@ -91,10 +91,10 @@ module interface_data
     real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup = -1
     integer, pointer :: xgroup(:) => null()
-    type(scafun), pointer :: f(:,:) => null()
+    type(scalar_func_box), allocatable :: farray(:,:)
     integer, pointer :: hint(:,:) => null()
     integer, pointer :: tag(:) => null()
-    type(scafun_vector_list), pointer :: flist => null()
+    type(scalar_func_vlist) :: flist
   end type if_data
 
   !! Optimization hint values.
@@ -135,12 +135,10 @@ contains
   subroutine if_data_add (this, f, setID, stat, errmsg)
 
     type(if_data), intent(inout) :: this
-    type(scafun), intent(in) :: f(:)
+    type(scalar_func_box), allocatable, intent(inout) :: f(:)
     integer, intent(in) :: setID(:)
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
-
-    type(scafun), pointer :: fcopy(:)
 
     !! Verify that THIS is in the correct state.
     INSIST(this%ngroup>=0 .and. associated(this%tag))
@@ -151,9 +149,7 @@ contains
     if (stat /= 0) return
 
     !! Append the function array F to the temporary list.
-    allocate(fcopy(this%npar))
-    fcopy = f
-    call append_to_list (this%flist, fcopy)
+    call this%flist%append (f)
 
   end subroutine if_data_add
 
@@ -214,6 +210,8 @@ contains
  !!
 
   subroutine if_data_done (this)
+  
+    use const_scalar_func_type
 
     type(if_data), intent(inout) :: this
 
@@ -247,18 +245,22 @@ contains
     end do
     this%xgroup(1) = 1
 
-    !! Copy the list of boundary data functions into an array.
-    allocate(this%f(this%npar,this%ngroup))
-    call convert_list_to_array (this%flist, this%f)
+    !! Convert the function list into the final function array.
+    call scalar_func_vlist_to_box_array (this%flist, this%farray)
 
     !! For now we don't expose optimization hinting to the user,
     !! but we can determine directly which functions are constant.
     allocate(this%hint(this%npar,this%ngroup))
-    where (is_const_scafun(this%f)) 
-      this%hint = IF_DATA_HINT_CONST
-    elsewhere
-      this%hint = IF_DATA_HINT_NONE
-    end where
+    do n = 1, this%ngroup
+      do j = 1, this%npar
+        select type (f => this%farray(j,n)%f)
+        type is (const_scalar_func)
+          this%hint(j,n) = IF_DATA_HINT_CONST
+        class default
+          this%hint(j,n) = IF_DATA_HINT_NONE
+        end select
+      end do
+    end do
     
     deallocate(this%tag)
 
@@ -291,16 +293,16 @@ contains
       do i = 1, this%npar
         select case (this%hint(i,n))
         case (IF_DATA_HINT_CONST)
-          if (.not.this%evaluated) values(i,:) = eval(this%f(i,n), args)
+          if (.not.this%evaluated) values(i,:) = this%farray(i,n)%f%eval(args)
         case (IF_DATA_HINT_X_INDEP)
-          values(i,:) = eval(this%f(i,n), args)
+          values(i,:) = this%farray(i,n)%f%eval(args)
         case (IF_DATA_HINT_T_INDEP)
           if (.not.this%evaluated) then
             do j = 1, size(faces,dim=2)
               args(1:) = (sum(this%mesh%x(:,this%mesh%fnode(:,faces(1,j))),dim=2) +  &
                           sum(this%mesh%x(:,this%mesh%fnode(:,faces(2,j))),dim=2)) / &
                           (2*size(this%mesh%fnode,dim=1))
-              values(i,j) = eval(this%f(i,n), args)
+              values(i,j) = this%farray(i,n)%f%eval(args)
             end do
           end if
         case default
@@ -308,7 +310,7 @@ contains
             args(1:) = (sum(this%mesh%x(:,this%mesh%fnode(:,faces(1,j))),dim=2) +  &
                         sum(this%mesh%x(:,this%mesh%fnode(:,faces(2,j))),dim=2)) / &
                         (2*size(this%mesh%fnode,dim=1))
-            values(i,j) = eval(this%f(i,n), args)
+            values(i,j) = this%farray(i,n)%f%eval(args)
           end do
         end select
       end do
@@ -333,13 +335,8 @@ contains
     if (associated(this%faces))  deallocate(this%faces)
     if (associated(this%values)) deallocate(this%values)
     if (associated(this%xgroup))  deallocate(this%xgroup)
-    if (associated(this%f)) then
-      call destroy (this%f)
-      deallocate(this%f)
-    end if
     if (associated(this%hint)) deallocate(this%hint)
     if (associated(this%tag)) deallocate(this%tag)
-    call destroy (this%flist)
 
     this = default  ! assign default initialization values
 

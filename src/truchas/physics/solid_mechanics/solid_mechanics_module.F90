@@ -1822,15 +1822,17 @@ Contains
     use material_interop, only: void_material_index, material_to_phase
     use fluid_data_module, only: isImmobile
     use phase_property_table
-    use scalar_functions
+    use scalar_func_class
+    use scalar_func_tools, only: is_const
+    use tm_density, only: alloc_tm_density_func
     
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
+    character(:), allocatable :: errm
     
     integer :: m, ref_dens_id, ref_temp_id, cte_id, dens_id, phase_id
     real(r8) :: dens0, temp0, state(0)
-    type(scafun), pointer :: temp0_fun, dens0_fun, cte_fun
-    type(scafun) :: rho_fun
+    class(scalar_func), allocatable :: temp0_fun, dens0_fun, cte_fun, rho_fun
     
     ASSERT(ppt_has_property('TM reference density'))
     ref_dens_id = ppt_property_id('TM reference density')
@@ -1850,24 +1852,24 @@ Contains
       
       !! Get the value of the (constant) reference density.
       call ppt_get_phase_property (phase_id, ref_dens_id, dens0_fun)
-      ASSERT(associated(dens0_fun))
-      ASSERT(is_const_scafun(dens0_fun))
-      dens0 = eval(dens0_fun, state)
+      ASSERT(allocated(dens0_fun))
+      ASSERT(is_const(dens0_fun))
+      dens0 = dens0_fun%eval(state)
       
       !! Get the value of the (constant) reference temperature.
       call ppt_get_phase_property (phase_id, ref_temp_id, temp0_fun)
-      ASSERT(associated(temp0_fun))
-      ASSERT(is_const_scafun(temp0_fun))
-      temp0 = eval(temp0_fun, state)
+      ASSERT(allocated(temp0_fun))
+      ASSERT(is_const(temp0_fun))
+      temp0 = temp0_fun%eval(state)
       
       !! Get the CTE function.
       call ppt_get_phase_property (phase_id, cte_id, cte_fun)
-      ASSERT(associated(cte_fun))
+      ASSERT(allocated(cte_fun))
       
       !! Create the temperature-dependent density function.
-      call create_scafun_tm_density (rho_fun, dens0, temp0, cte_fun, stat, errmsg)
+      call alloc_tm_density_func (rho_fun, dens0, temp0, cte_fun, stat, errm)
       if (stat /= 0) then
-        errmsg = 'problem with the "TM linear CTE" property: ' // trim(errmsg)
+        errmsg = 'problem with the "TM linear CTE" property: ' // trim(errm)
         return
       end if
       
@@ -1879,7 +1881,6 @@ Contains
         return
       end if
       call ppt_assign_phase_property (phase_id, dens_id, rho_fun)
-      call destroy (rho_fun)
     end do
     
     stat = 0
@@ -1906,8 +1907,9 @@ Contains
     use fluid_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
-    use scalar_functions
     use matl_module, only: gather_vof
+    use scalar_func_class
+    use scalar_func_tools, only: is_const
     
     character(*), intent(in) :: prop
     real(r8), intent(in) :: temp(:)
@@ -1915,7 +1917,7 @@ Contains
     
     integer :: m, j, phase_id, prop_id
     real(r8) ::vofm (ncells), state(1), mval
-    type(scafun), pointer :: prop_fun
+    class(scalar_func), allocatable :: prop_fun
     
     ASSERT(size(temp) == ncells)
     ASSERT(size(value) == ncells)
@@ -1929,16 +1931,16 @@ Contains
       phase_id = material_to_phase(m)
       ASSERT(phase_id > 0)
       call ppt_get_phase_property (phase_id, prop_id, prop_fun)
-      ASSERT(associated(prop_fun))
+      ASSERT(allocated(prop_fun))
       call gather_vof (m, vofm)
-      if (is_const_scafun(prop_fun)) then
-        mval = eval(prop_fun, state)  ! state is ignored, but required
+      if (is_const(prop_fun)) then
+        mval = prop_fun%eval(state)  ! state is ignored, but required
         value = value + mval*vofm
       else
         do j = 1, ncells
           if (vofm(j) > 0.0_r8) then
             state(1) = temp(j)
-            mval = eval(prop_fun, state)
+            mval = prop_fun%eval(state)
             value(j) = value(j) + mval*vofm(j)
           end if
         end do

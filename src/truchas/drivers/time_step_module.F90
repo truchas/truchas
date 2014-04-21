@@ -560,7 +560,6 @@ CONTAINS
     use PGSLib_module,               only: PGSLib_GLOBAL_MINLOC, PGSLib_GLOBAL_MINVAL
     use zone_module,                 only: Zone
     use surface_tension_module,      only: sigma_func
-    use scalar_functions,            only: eval
 
     ! Local Variables
     real(r8) :: state(1)
@@ -575,7 +574,7 @@ CONTAINS
     ! Get the cell-centered surface tension coefficient.
     do n = 1, ncells
       state(1) = Zone(n)%Temp_Old
-      Sigma(n) = eval(sigma_func, state)
+      Sigma(n) = sigma_func%eval(state)
     end do
 
     ! Compute Dl

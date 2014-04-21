@@ -195,7 +195,7 @@
 
 module phase_property_table
 
-  use scalar_functions
+  use scalar_func_class
   implicit none
   private
 
@@ -217,7 +217,7 @@ module phase_property_table
     integer :: row_id = 0
     integer :: col_id = 0
     character(len=PPT_MAX_NAME_LEN) :: name = ''
-    type(scafun) :: f
+    class(scalar_func), allocatable :: f
     type(node), pointer :: row_next => null()
     type(node), pointer :: col_next => null()
   end type
@@ -343,7 +343,7 @@ contains
   subroutine ppt_assign_phase_property (phase_id, property_id, f) !, stat, errmsg)
 
     integer, intent(in) :: phase_id, property_id
-    type(scafun), intent(in) :: f
+    class(scalar_func), allocatable, intent(inout) :: f
     !integer, intent(out), optional :: stat
     !character(len=*), intent(out), optional errmsg
 
@@ -357,7 +357,7 @@ contains
     allocate(new)
     new%row_id = phase_id
     new%col_id = property_id
-    new%f = f
+    call move_alloc (f, new%f)
 
     !! Insert the new node into the row list.
     p => scan_col_for_row_id(table, phase_id)
@@ -378,7 +378,7 @@ contains
   subroutine ppt_reassign_phase_property (phase_id, property_id, f) !, stat, errmsg)
 
     integer, intent(in) :: phase_id, property_id
-    type(scafun), intent(in) :: f
+    class(scalar_func), allocatable, intent(inout) :: f
     !integer, intent(out), optional :: stat
     !character(len=*), intent(out), optional errmsg
 
@@ -388,15 +388,14 @@ contains
     INSIST(associated(p))
 
     !! Reassign the function.
-    call destroy (p%f)
-    p%f = f
+    call move_alloc (f, p%f)
 
   end subroutine ppt_reassign_phase_property
 
   subroutine ppt_get_phase_property (phase_id, property_id, f)  !, stat, errmsg)
 
     integer, intent(in) :: phase_id, property_id
-    type(scafun), pointer :: f
+    class(scalar_func), allocatable, intent(out) :: f
     !integer, intent(out), optional :: stat
     !character(len=*), intent(out), optional errmsg
 
@@ -406,11 +405,7 @@ contains
     INSIST(valid_property_id(table,property_id))
 
     p => scan_table(table, phase_id, property_id)
-    if (associated(p)) then
-      f => p%f
-    else
-      f => null()
-    end if
+    if (associated(p)) allocate(f, source=p%f)
 
   end subroutine ppt_get_phase_property
 
@@ -830,10 +825,7 @@ contains
 
   subroutine deallocate_node (this)
     type(node), pointer :: this
-    if (associated(this)) then
-      call destroy (this%f)
-      deallocate(this)
-    end if
+    if (associated(this)) deallocate(this)
   end subroutine deallocate_node
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

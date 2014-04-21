@@ -21,8 +21,8 @@ contains
 
   subroutine read_phase_namelists (lun)
 
-    use scalar_functions
-    use function_table
+    use scalar_func_factories
+    use function_namelist, only: lookup_func
     use phase_property_table
     use input_utilities, only: seek_to_namelist
     use string_utilities, only: i_to_c
@@ -33,14 +33,14 @@ contains
     !! namelist variables
     character(len=PPT_MAX_NAME_LEN) :: name
     character(len=PPT_MAX_NAME_LEN) :: property_name(MAX_PHASE_PROPS)
-    character(len=FT_MAX_NAME_LEN)  :: property_function(MAX_PHASE_PROPS)
+    character(len=PPT_MAX_NAME_LEN) :: property_function(MAX_PHASE_PROPS)
     real(r8)                        :: property_constant(MAX_PHASE_PROPS)
 
     namelist /phase/ name, property_name, property_function, property_constant
 
     integer :: n, stat, phase_id, prop_id, i
     logical :: found
-    type(scafun) :: f
+    class(scalar_func), allocatable :: f
 
     call TLS_info ('')
     call TLS_info ('Reading PHASE namelists ...')
@@ -114,16 +114,12 @@ contains
 
         !! Assign the specified phase property.
         if (property_constant(i) /= NULL_R) then
-          call create_scafun_const (f, c=property_constant(i))
-          call ppt_assign_phase_property (phase_id, prop_id, f)
-          call destroy (f)
+          call alloc_const_scalar_func (f, property_constant(i))
         else
-          if (ft_has_function(property_function(i))) then
-            call ppt_assign_phase_property (phase_id, prop_id, ft_get_function(property_function(i)))
-          else
-            call TLS_fatal ('unknown function name: ' // trim(property_function(i)))
-          end if
+          call lookup_func (property_function(i), f)
+          if (.not.allocated(f)) call TLS_fatal ('unknown function name: ' // trim(property_function(i)))
         end if
+        call ppt_assign_phase_property (phase_id, prop_id, f)
 
       end do
     end do

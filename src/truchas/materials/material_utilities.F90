@@ -118,7 +118,8 @@ contains
   subroutine constant_property_check (matids, prop, stat, errmsg)
 
     use kinds, only: r8
-    use scalar_functions
+    use scalar_func_class
+    use scalar_func_tools, only: is_const
 
     integer, intent(in)  :: matids(:)
     character(*), intent(in) :: prop
@@ -128,7 +129,7 @@ contains
     integer :: i, n, propid
     real(r8) :: value, state(0)
     integer, pointer :: phaseid(:)
-    type(scafun), pointer :: propfun
+    class(scalar_func), allocatable :: propfun
 
     ASSERT(ppt_has_property(prop))
     propid = ppt_property_id(prop)
@@ -140,7 +141,7 @@ contains
         ASSERT(ppt_valid_phase(phaseid(n)))
         call ppt_get_phase_property (phaseid(n), propid, propfun)
         ASSERT(associated(propfun))
-        if (.not.is_const_scafun(propfun)) then
+        if (.not.is_const(propfun)) then
           stat = -2
           errmsg = 'property "' // trim(prop) // '" for phase "' // &
               trim(ppt_phase_name(phaseid(n))) // '" is required to be constant'
@@ -148,8 +149,8 @@ contains
           return
         end if
         if (n == 1) then  ! save its value for comparison with remaining phases
-          value = eval(propfun, state)
-        else if (value /= eval(propfun, state)) then
+          value = propfun%eval(state)
+        else if (value /= propfun%eval(state)) then
           stat = -1
           errmsg = 'property "' // trim(prop) // '" for material system "' // &
               trim(mt_material_name(i)) // '" is required to be uniformly constant'
@@ -171,7 +172,7 @@ contains
   subroutine request_property (matids, prop, default)
 
     use kinds, only: r8
-    use scalar_functions
+    use scalar_func_factories
     use truchas_logging_services
 
     integer, intent(in)  :: matids(:)
@@ -180,7 +181,7 @@ contains
 
     integer :: i, n, propid
     integer, pointer :: phaseid(:)
-    type(scafun) :: f_default
+    class(scalar_func), allocatable :: f_default
     character(128) :: message
     
     if (ppt_has_property(prop)) then
@@ -193,8 +194,6 @@ contains
       end if
     end if
 
-    if (present(default)) call create_scafun_const (f_default, default)
-
     do i = 1, size(matids)  ! for each material system
       ASSERT(mt_valid_material(matids(i)))
       call ms_get_phase_id (mt_get_material(matids(i)), phaseid)
@@ -202,6 +201,7 @@ contains
         ASSERT(ppt_valid_phase(phaseid(n)))
         if (ppt_has_phase_property(phaseid(n),propid)) cycle  ! we're good
         if (present(default)) then  ! go ahead and define the property
+          call alloc_const_scalar_func (f_default, default)
           call ppt_assign_phase_property (phaseid(n), propid, f_default)
           write(message, '(2x,3a,es10.3,3a)') 'Using default value "', trim(prop), &
               '" =', default, ' for phase "', trim(ppt_phase_name(phaseid(n))), '"'
@@ -215,26 +215,24 @@ contains
       end do
       deallocate(phaseid)
     end do
-
-    if (present(default)) call destroy (f_default)
       
   end subroutine request_property
 
   subroutine define_enthalpy_density_property (matid, stat, errmsg)
 
     use kinds, only: r8
-    use scalar_functions
+    use scalar_func_class
+    use scalar_func_tools
 
     integer, intent(in)  :: matid(:)
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: i, n, cpid, hid, rhoid, hdid
     integer, pointer :: phaseid(:)
     real(r8) :: t0, h0
     type(mat_system), pointer :: ms
-    type(scafun) :: h, hd
-    type(scafun), pointer :: cp, rho
+    class(scalar_func), allocatable :: h, hd, cp, rho
 
     ASSERT(ppt_has_property('specific heat'))
     cpid = ppt_property_id('specific heat')
@@ -253,7 +251,7 @@ contains
         ASSERT(ppt_valid_phase(phaseid(n)))
         call ppt_get_phase_property (phaseid(n), cpid, cp)
         ASSERT(associated(cp))
-        call create_scafun_antideriv (cp, t0, h0, h, stat, errmsg)
+        call alloc_scalar_func_antideriv (cp, t0, h0, h, stat, errmsg)
         if (stat /= 0) then
           stat = -1
           errmsg = 'unable to integrate the "specific heat" property for phase "' // &
@@ -261,6 +259,14 @@ contains
           deallocate(phaseid)
           return
         end if
+        if (n < size(phaseid)) then
+          t0 = ms_temp_hi(ms, n)
+          h0 = ms_latent_heat(ms, n) + h%eval([t0])
+        end if
+        call ppt_get_phase_property (phaseid(n), rhoid, rho)
+        ASSERT(associated(rho))
+        call alloc_scalar_func_product (rho, h, hd, stat, errmsg)
+        ASSERT(stat == 0)
         if (ppt_has_phase_property(phaseid(n), hid)) then
           stat = -2
           errmsg = 'found conflicting "enthalpy" property for phase "' // &
@@ -269,14 +275,6 @@ contains
           return
         end if
         call ppt_assign_phase_property (phaseid(n), hid, h)
-        if (n < size(phaseid)) then
-          t0 = ms_temp_hi(ms, n)
-          h0 = ms_latent_heat(ms, n) + eval(h, (/t0/))
-        end if
-        call ppt_get_phase_property (phaseid(n), rhoid, rho)
-        ASSERT(associated(rho))
-        call create_scafun_product (rho, h, hd, stat, errmsg)
-        ASSERT(stat == 0)
         if (ppt_has_phase_property(phaseid(n), hdid)) then
           stat = -3
           errmsg = 'found conflicting "enthalpy density" property for phase "' // &
@@ -285,10 +283,7 @@ contains
           return
         end if
         call ppt_assign_phase_property (phaseid(n), hdid, hd)
-        call destroy (hd)
-        call destroy (h)
       end do
-      call destroy (h)
       deallocate(phaseid)
     end do
 

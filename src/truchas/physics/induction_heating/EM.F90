@@ -125,13 +125,13 @@ contains
       use phase_property_table
       use parameter_module, only: nmat
       use material_interop, only: void_material_index, material_to_phase
-      use scalar_functions
+      use scalar_func_factories
       
       character(*),  intent(in) :: prop
       real(kind=rk), intent(in) :: default
       
       integer :: prop_id, phase_id, m
-      type(scafun) :: f_default
+      class(scalar_func), allocatable :: f_default
       character(128) :: message
 
       if (ppt_has_property(prop)) then
@@ -140,21 +140,18 @@ contains
         call ppt_add_property (prop, prop_id)
       end if
       
-      call create_scafun_const (f_default, default)
-      
       do m = 1, nmat
         if (m == void_material_index) cycle
         phase_id = material_to_phase(m)
         ASSERT(phase_id > 0)
         if (ppt_has_phase_property (phase_id, prop_id)) cycle
+        call alloc_const_scalar_func (f_default, default)
         call ppt_assign_phase_property (phase_id, prop_id, f_default)
         write(message,'(2x,3a,es10.3,3a)') 'Using default value "', trim(prop), '" =', &
             default, ' for phase "', trim(ppt_phase_name(phase_id)), '"'
         call EM_info (message)
       end do
       
-      call destroy (f_default)
-
     end subroutine add_property
 
   end subroutine init_material_properties

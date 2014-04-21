@@ -96,8 +96,7 @@ module ds_interface_condition_input
   use parallel_communication
   use distributed_mesh
   use interface_data
-  use scalar_functions
-  use function_table
+  use scalar_func_containers
   use truchas_logging_services
   use string_utilities, only: raise_case, i_to_c
   implicit none
@@ -117,7 +116,7 @@ module ds_interface_condition_input
     character(len=MAX_NAME_LEN) :: variable
     character(len=MAX_NAME_LEN) :: condition
     integer, pointer :: face_set_ids(:) => null()
-    type(scafun), pointer :: f(:) => null()
+    type(scalar_func_box), allocatable :: farray(:)
     type(list_node), pointer :: next => null()
   end type list_node
   type(list_node), pointer, save :: list => null(), last => null()
@@ -132,12 +131,14 @@ contains
   subroutine read_ds_interface_condition (lun)
 
     use input_utilities, only: seek_to_namelist
+    use scalar_func_factories, only: alloc_const_scalar_func
+    use function_namelist, only: lookup_func
 
     integer, intent(in) :: lun
 
     logical :: found
     integer :: i, n, npar, stat
-    type(scafun), pointer :: f(:)
+    type(scalar_func_box), allocatable :: farray(:)
     character(len=8+MAX_NAME_LEN) :: label
     character(len=127) :: errmsg
 
@@ -239,7 +240,7 @@ contains
         if (data_constant(npar) /= NULL_R .or. data_function(npar) /= NULL_C) exit
       end do
 
-      allocate(f(npar))
+      allocate(farray(npar))
       do i = 1, npar
         !! Verify that only one of DATA_CONSTANT and DATA_FUNCTION were specified.
         if (data_constant(i) == NULL_R .eqv. data_function(i) == NULL_C) then
@@ -249,11 +250,10 @@ contains
           exit
         end if
         if (data_constant(i) /= NULL_R) then
-          call create_scafun_const (f(i), data_constant(i))
+          call alloc_const_scalar_func (farray(i)%f, data_constant(i))
         else
-          if (ft_has_function(data_function(i))) then
-            f(i) = ft_get_function(data_function(i))
-          else
+          call lookup_func (data_function(i), farray(i)%f)
+          if (.not.allocated(farray(i)%f)) then
             stat = -1
             errmsg = trim(label) // ' error: unknown function name: ' // trim(data_function(i))
             exit
@@ -274,7 +274,7 @@ contains
       last%name = name
       last%variable = variable
       last%condition = condition
-      last%f => f
+      call move_alloc (farray, last%farray)
       allocate(last%face_set_ids(count(face_set_ids /= NULL_I)))
       last%face_set_ids = pack(face_set_ids, mask=(face_set_ids /= NULL_I))
 
@@ -331,12 +331,12 @@ contains
         if (raise_case(l%condition) == raise_case(condition)) then
           write(errmsg,'(4x,a,i0,2a)') 'using DS_INTERFACE_CONDITION[', l%seq, ']: ', trim(l%name)
           call TLS_info (trim(errmsg)) ! not an error message!
-          if (size(l%f) /= npar) then
+          if (size(l%farray) /= npar) then
             stat = -1
-            write(errmsg,'(6x,2(a,i0))') 'condition requires ', npar, ' data values but read ', size(l%f)
+            write(errmsg,'(6x,2(a,i0))') 'condition requires ', npar, ' data values but read ', size(l%farray)
             exit
           end if
-          call if_data_add (idata, l%f, l%face_set_ids, stat, errmsg)
+          call if_data_add (idata, l%farray, l%face_set_ids, stat, errmsg)
           if (stat /= 0) exit
         end if
       end if

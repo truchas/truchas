@@ -4,8 +4,8 @@ module ER_input
 
   use kinds
   use parallel_communication
-  use scalar_functions
-  use function_table
+  use function_namelist, only: lookup_func
+  use scalar_func_class
   use truchas_logging_services
   use string_utilities, only: i_to_c, raise_case
   implicit none
@@ -32,7 +32,7 @@ module ER_input
     character(len=MAX_NAME_LEN) :: name
     character(len=MAX_FILE_LEN) :: file
     real(r8) :: csf
-    type(scafun), pointer :: tamb => null()
+    class(scalar_func), allocatable :: tamb
     real(r8) :: tol
     character(len=MAX_NAME_LEN) :: pm, pcm
     integer :: numitr
@@ -46,7 +46,7 @@ module ER_input
     integer :: seq
     character(len=MAX_NAME_LEN) :: name, encl_name
     integer, pointer :: face_block_ids(:) => null()
-    type(scafun), pointer :: eps => null()
+    class(scalar_func), allocatable :: eps
     type(es_list_node), pointer :: next => null()
   end type es_list_node
   type(es_list_node), pointer, save :: es_list => null(), es_last => null()
@@ -57,12 +57,13 @@ contains
 
     use input_utilities, only: seek_to_namelist
     use truchas_env, only: input_dir
+    use scalar_func_factories, only: alloc_const_scalar_func
 
     integer, intent(in) :: lun
 
     logical :: found
     integer :: n, stat
-    type(scafun), pointer :: f
+    class(scalar_func), allocatable :: f
     character(len=7) :: label
     character(len=127) :: errmsg
 
@@ -75,8 +76,6 @@ contains
     namelist /enclosure_radiation/ name, enclosure_file, coord_scale_factor, skip_geometry_check, &
                                    ambient_constant, ambient_function, error_tolerance, &
                                    precon_method, precon_iter, precon_coupling_method
-
-    ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
 
     call TLS_info ('')
     call TLS_info ('Reading ENCLOSURE_RADIATION namelists ...')
@@ -187,13 +186,10 @@ contains
 
       !! Get or create the specified ambient temperature function.
       if (ambient_constant /= NULL_R) then
-        allocate(f)
-        call create_scafun_const (f, ambient_constant)
+        call alloc_const_scalar_func (f, ambient_constant)
       else
-        if (ft_has_function(ambient_function)) then
-          allocate(f)
-          f = ft_get_function(ambient_function)
-        else
+        call lookup_func (ambient_function, f)
+        if (.not.allocated(f)) then
           stat = -1
           errmsg = trim(label) // ' error: unknown function name: ' // trim(ambient_function)
           exit
@@ -265,7 +261,7 @@ contains
       er_last%file = enclosure_file
       er_last%csf  = coord_scale_factor
       er_last%geom = .not.skip_geometry_check
-      er_last%tamb => f
+      call move_alloc (f, er_last%tamb)
       er_last%tol  = error_tolerance
       er_last%pm   = precon_method
       er_last%pcm  = precon_coupling_method
@@ -348,11 +344,11 @@ contains
 
   subroutine ERI_get_ambient (name, tamb)
     character(len=*), intent(in)  :: name
-    type(scafun), pointer :: tamb
+    class(scalar_func), allocatable, intent(out) :: tamb
     type(er_list_node), pointer :: nml
     nml => er_namelist_with_name(name)
     INSIST(associated(nml))
-    tamb => nml%tamb
+    call move_alloc (nml%tamb, tamb)
   end subroutine ERI_get_ambient
 
   subroutine ERI_get_error_tolerance (name, tol)
@@ -407,12 +403,13 @@ contains
   subroutine ERI_read_enclosure_surface (lun)
 
     use input_utilities, only: seek_to_namelist
+    use scalar_func_factories, only: alloc_const_scalar_func
 
     integer, intent(in) :: lun
 
     logical :: found
     integer :: n, stat
-    type(scafun), pointer :: f
+    class(scalar_func), allocatable :: f
     character(len=7) :: label
     character(len=127) :: errmsg
 
@@ -422,8 +419,6 @@ contains
     character(len=MAX_NAME_LEN) :: name, enclosure_name, emissivity_function
     namelist /enclosure_surface/ name, enclosure_name, face_block_ids, &
                                  emissivity_constant, emissivity_function
-
-    ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
 
     call TLS_info ('')
     call TLS_info ('Reading ENCLOSURE_SURFACE namelists ...')
@@ -513,13 +508,10 @@ contains
         else if (emissivity_constant == 0.0_r8) then
           call TLS_info (trim(label) // ' warning: emissivity is 0')
         end if
-        allocate(f)
-        call create_scafun_const (f, emissivity_constant)
+        call alloc_const_scalar_func (f, emissivity_constant)
       else
-        if (ft_has_function(emissivity_function)) then
-          allocate(f)
-          f = ft_get_function(emissivity_function)
-        else
+        call lookup_func (emissivity_function, f)
+        if (.not.allocated(f)) then
           stat = -1
           errmsg = trim(label) // 'error: unknown function name: ' // trim(emissivity_function)
           exit
@@ -537,7 +529,7 @@ contains
       es_last%seq = n
       es_last%name = name
       es_last%encl_name = enclosure_name
-      es_last%eps => f
+      call move_alloc (f, es_last%eps)
       allocate(es_last%face_block_ids(count(face_block_ids /= NULL_I)))
       es_last%face_block_ids = pack(face_block_ids, mask=(face_block_ids /= NULL_I))
 

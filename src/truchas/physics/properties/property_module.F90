@@ -80,14 +80,15 @@ contains
     use material_interop, only: void_material_index, material_to_phase
     use matl_module, only: gather_vof
     use fluid_data_module, only: isImmobile
-    use scalar_functions
+    use scalar_func_class
+    use scalar_func_tools, only: is_const
 
     real(r8), intent(in)  :: temp(:)
     real(r8), intent(out) :: drho(:)
 
     integer :: m, j, phase_id, prop_id
     real(r8) :: vofm(ncells), state(1), mval, rhom
-    type(scafun), pointer :: prop_fun
+    class(scalar_func), allocatable :: prop_fun
 
     ASSERT(size(temp) == ncells)
     ASSERT(size(drho) == ncells)
@@ -101,17 +102,17 @@ contains
       phase_id = material_to_phase(m)
       ASSERT(phase_id > 0)
       call ppt_get_phase_property (phase_id, prop_id, prop_fun)
-      ASSERT(associated(prop_fun))
+      ASSERT(allocated(prop_fun))
       call gather_vof (m, vofm)
       rhom = density_material(m)
-      if (is_const_scafun(prop_fun)) then
-        mval = eval(prop_fun, state)  ! state is ignored, but required
+      if (is_const(prop_fun)) then
+        mval = prop_fun%eval(state)  ! state is ignored, but required
         drho = drho + (rhom*mval)*vofm
       else
         do j = 1, ncells
           if (vofm(j) > 0.0_r8) then
             state(1) = temp(j)
-            mval = eval(prop_fun, state)
+            mval = prop_fun%eval(state)
             drho(j) = drho(j) + rhom*mval*vofm(j)
           end if
         end do
@@ -498,7 +499,8 @@ contains
     use fluid_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
-    use scalar_functions
+    use scalar_func_class
+    use scalar_func_tools, only: is_const
     use matl_module, only: gather_vof
 
     character(*), intent(in) :: prop
@@ -508,7 +510,7 @@ contains
 
     integer :: m, j, phase_id, prop_id
     real(r8) :: vofm (ncells), state(1), mval
-    type(scafun), pointer :: prop_fun
+    class(scalar_func), allocatable :: prop_fun
     logical :: fluids_only
 
     ASSERT(size(temp) == ncells)
@@ -527,16 +529,16 @@ contains
       phase_id = material_to_phase(m)
       ASSERT(phase_id > 0)
       call ppt_get_phase_property (phase_id, prop_id, prop_fun)
-      ASSERT(associated(prop_fun))
+      ASSERT(allocated(prop_fun))
       call gather_vof (m, vofm)
-      if (is_const_scafun(prop_fun)) then
-        mval = eval(prop_fun, state)  ! state is ignored, but required
+      if (is_const(prop_fun)) then
+        mval = prop_fun%eval(state)  ! state is ignored, but required
         value = value + mval*vofm
       else
         do j = 1, ncells
           if (vofm(j) > 0.0_r8) then
             state(1) = temp(j)
-            mval = eval(prop_fun, state)
+            mval = prop_fun%eval(state)
             value(j) = value(j) + mval*vofm(j)
           end if
         end do
@@ -560,17 +562,16 @@ contains
     use parameter_module, only: nmat
     use fluid_data_module, only: isImmobile
     use material_interop, only: void_material_index, material_to_phase
-    use scalar_functions
+    use scalar_func_factories
 
     character(*), intent(in) :: prop
     real(r8), intent(in), optional :: default
 
     integer :: prop_id, phase_id, m
-    type(scafun) :: f_default
+    class(scalar_func), allocatable :: f_default
     character(128) :: message
 
     call ppt_add_property (prop, prop_id)
-    if (present(default)) call create_scafun_const (f_default, default)
 
     do m = 1, nmat
       if (m == void_material_index .or. isImmobile(m)) cycle
@@ -578,6 +579,7 @@ contains
       ASSERT(phase_id > 0)
       if (ppt_has_phase_property(phase_id, prop_id)) cycle
       if (present(default)) then
+        call alloc_const_scalar_func (f_default, default)
         call ppt_assign_phase_property (phase_id, prop_id, f_default)
         write(message, '(2x,3a,es10.3,3a)') 'Using default value "', trim(prop), &
             '" =', default, ' for phase "', trim(ppt_phase_name(phase_id)), '"'
@@ -588,8 +590,6 @@ contains
         call TLS_fatal (message)
       end if
     end do
-
-    if (present(default)) call destroy (f_default)
 
   end subroutine request_fluid_property
 
