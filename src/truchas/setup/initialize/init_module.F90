@@ -207,7 +207,8 @@ CONTAINS
     use physics_module
 
     integer :: stat
-    character(:), allocatable :: errmsg
+    character(128) :: errmsg
+    character(:), allocatable :: errmsg1
 
     integer, allocatable :: matids(:)
 
@@ -224,12 +225,12 @@ CONTAINS
       call required_property_check (matids, 'specific heat', stat, errmsg)
       if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
 
-      call define_enthalpy_density_property (matids, stat, errmsg)
-      if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
+      call define_enthalpy_density_property (matids, stat, errmsg1)
+      if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg1)
     else ! unused but expected for initialization and output.
       call request_property (matids, 'specific heat', default = 0.0_r8)
-      call define_enthalpy_density_property (matids, stat, errmsg)
-      if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
+      call define_enthalpy_density_property (matids, stat, errmsg1)
+      if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg1)
     end if
 
   end subroutine property_init

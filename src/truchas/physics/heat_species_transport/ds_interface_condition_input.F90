@@ -149,8 +149,6 @@ contains
     namelist /ds_interface_condition/ name, variable, condition, face_set_ids, &
                                       data_constant, data_function
 
-    ASSERT(FT_MAX_NAME_LEN >= MAX_NAME_LEN)
-
     call TLS_info ('')
     call TLS_info ('Reading DS_INTERFACE_CONDITION namelists ...')
 

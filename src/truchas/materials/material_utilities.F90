@@ -140,7 +140,7 @@ contains
       do n = 1, size(phaseid)  ! loop through the phases of the material
         ASSERT(ppt_valid_phase(phaseid(n)))
         call ppt_get_phase_property (phaseid(n), propid, propfun)
-        ASSERT(associated(propfun))
+        ASSERT(allocated(propfun))
         if (.not.is_const(propfun)) then
           stat = -2
           errmsg = 'property "' // trim(prop) // '" for phase "' // &
@@ -250,7 +250,7 @@ contains
       do n = 1, size(phaseid)  ! loop through the phases of the material
         ASSERT(ppt_valid_phase(phaseid(n)))
         call ppt_get_phase_property (phaseid(n), cpid, cp)
-        ASSERT(associated(cp))
+        ASSERT(allocated(cp))
         call alloc_scalar_func_antideriv (cp, t0, h0, h, stat, errmsg)
         if (stat /= 0) then
           stat = -1
@@ -264,7 +264,7 @@ contains
           h0 = ms_latent_heat(ms, n) + h%eval([t0])
         end if
         call ppt_get_phase_property (phaseid(n), rhoid, rho)
-        ASSERT(associated(rho))
+        ASSERT(allocated(rho))
         call alloc_scalar_func_product (rho, h, hd, stat, errmsg)
         ASSERT(stat == 0)
         if (ppt_has_phase_property(phaseid(n), hid)) then
