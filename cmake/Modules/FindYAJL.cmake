@@ -16,6 +16,20 @@
 # --- Standard CMake modules see CMAKE_ROOT/Modules
 include(FindPackageHandleStandardArgs)
 
+# --- Function to handle the get_filename_component change in 2.8.11
+function(get_directory var f)
+
+  set(_comp_type)
+  if ( ${CMAKE_VERSION} VERSION_LESS 2.8.11 )
+    set(_comp_type PATH)
+  else()
+    set(_comp_type DIRECTORY)
+  endif()
+  get_filename_component(tmp ${f} ${_comp_type})
+  set(${var} ${tmp} PARENT_SCOPE)
+
+endfunction(get_directory var f)
+
 # --- Search paths
 set(_yajl_search_paths
     ${YAJL_INSTALL_PREFIX}
@@ -24,7 +38,8 @@ set(_yajl_search_paths
 # --- Locate include path
 find_path(YAJL_INCLUDE_DIR
           NAMES yajl/yajl_common.h
-          HINTS ${_yajl_search_paths})
+          HINTS ${_yajl_search_paths}
+          PATH_SUFFIXES include)
 
 # --- Locate the static library
 find_library(YAJL_LIBRARY_STATIC
@@ -41,10 +56,12 @@ find_library(YAJL_LIBRARY_SHARED
 # --- Define the library directory
 if ( YAJL_LIBRARY_STATIC OR YAJL_LIBRARY_SHARED )
   if ( YAJL_LIBRARY_STATIC )
-    get_filename_component(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_STATIC} DIRECTORY)
+    #get_filename_component(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_STATIC} DIRECTORY)
+    get_directory(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_STATIC})
   endif()
   if ( YAJL_LIBRARY_SHARED )
-    get_filename_component(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_SHARED} DIRECTORY)
+    #get_filename_component(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_SHARED} DIRECTORY)
+    get_directory(YAJL_LIBRARY_DIR ${YAJL_LIBRARY_SHARED})
   endif()
 else ()  
   set(YAJL_LIBRARY_DIR YAJL_LIBRARY_DIR-NOTFOUND)

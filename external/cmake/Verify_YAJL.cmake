@@ -9,7 +9,7 @@
 # YAJL Requirements
 #
 #  o Version >= 2.0.4
-# FindNETCDF relies on NETCDF_INSTALL_PREFIX to locate 
+# FindYAJL relies on YAJL_INSTALL_PREFIX to locate 
 
 # User defined YAJL install prefix
 if (NOT YAJL_INSTALL_PREFIX)
