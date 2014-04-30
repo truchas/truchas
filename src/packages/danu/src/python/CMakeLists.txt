@@ -11,7 +11,7 @@ if (ENABLE_Python)
 # ---------------------------------------------------------------------------- #
 # Python Interfaces built with SWIG www.swig.org
 # ---------------------------------------------------------------------------- #
-  if(NOT BUILD_SWIG)
+  if(NOT TARGET ${SWIG_BUILD_TARGET}) # SWIG is part of the build, no search
     find_package(SWIG)
     if ( NOT SWIG_FOUND )
       message(FATAL_ERROR "Can not locate SWIG. Can not build Python interfaces")

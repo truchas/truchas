@@ -52,7 +52,7 @@ endforeach()
 if (ENABLE_MPI)
   set(hypre_ext_cflags "${hypre_ext_cflags} -I${MPI_C_INCLUDE_PATH}")
 endif() 
-print_variable(hypre_ext_cflags)
+
 set_source_files_properties(solver/hypre_ext.c PROPERTIES
                             COMPILE_FLAGS ${hypre_ext_cflags})
 

@@ -31,7 +31,7 @@ include(BuildLibraryName)
 # ExternalProject directories, file and log settings
 set(swig_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_SWIG_ARCHIVE_FILE})
 set(swig_prefix_dir   ${TruchasExternal_BINARY_DIR}/swig)
-set(swig_source_dir   ${swig_prefix_dir}/swig-${SWIG_VERSION}-source)
+set(swig_source_dir   ${swig_prefix_dir}/swig-${EP_SWIG_VERSION}-source)
 set(swig_stamp_dir    ${swig_prefix_dir}/swig-timestamps)
 set(swig_tmp_dir      ${swig_prefix_dir}/swig-tmp)
 set(swig_install_dir  ${TruchasExternal_INSTALL_PREFIX})
