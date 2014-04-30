@@ -37,6 +37,7 @@ set(yajl_source_dir   ${yajl_prefix_dir}/yajl-${EP_YAJL_VERSION}-source)
 set(yajl_stamp_dir    ${yajl_prefix_dir}/yajl-timestamps)
 set(yajl_tmp_dir      ${yajl_prefix_dir}/yajl-tmp)
 set(yajl_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(yajl_download_dir ${TruchasExternal_ARCHIVE_DIR})
 
 # --- Add the -fPIC or -PIC (Position in code flag)
 include(FindPICFlag)
@@ -53,6 +54,7 @@ ExternalProject_Add(${YAJL_BUILD_TARGET}
                     SOURCE_DIR  ${yajl_source_dir}
                     #INSTALL_DIR ${yajl_install_dir}
                     # -- Archive file definitions
+                    DOWNLOAD_DIR ${yajl_download_dir}
                     URL          ${yajl_url_file}
                     URL_MD5      ${EP_yajl_MD5_SUM}   
                     # -- Configure (CMake)

@@ -35,6 +35,7 @@ set(swig_source_dir   ${swig_prefix_dir}/swig-${SWIG_VERSION}-source)
 set(swig_stamp_dir    ${swig_prefix_dir}/swig-timestamps)
 set(swig_tmp_dir      ${swig_prefix_dir}/swig-tmp)
 set(swig_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(swig_download_dir ${TruchasExternal_ARCHIVE_DIR})
 
 # --- Configure flags
 if(ENABLE_MPI)
@@ -48,7 +49,7 @@ string(TOUPPER "CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_FLAGS)
 
 build_whitespace_string(swig_cflags 
                         ${CMAKE_C_FLAGS}
-			${${CMAKE_BUILD_TYPE_FLAGS}})
+${${CMAKE_BUILD_TYPE_FLAGS}})
 
 # --- Add the external project
 
@@ -58,21 +59,22 @@ ExternalProject_Add(${SWIG_BUILD_TARGET}
                     TMP_DIR     ${swig_tmp_dir}     
                     STAMP_DIR   ${swig_stamp_dir}
                     SOURCE_DIR  ${swig_source_dir}
-		    #INSTALL_DIR ${swig_install_dir}
-		    # -- Archive file definitions
+                    #INSTALL_DIR ${swig_install_dir}
+                    # -- Archive file definitions
+                    DOWNLOAD_DIR ${swig_download_dir}
                     URL          ${swig_url_file}
                     URL_MD5      ${EP_SWIG_MD5_SUM}   
                     # -- Configure
-		    CONFIGURE_COMMAND
+                    CONFIGURE_COMMAND
                         <SOURCE_DIR>/configure
                                           --prefix=${swig_install_dir}
-					  --without-pcre
-					  --with-python=${PYTHON_EXECUTABLE}
+                                          --without-pcre
+                                          --with-python=${PYTHON_EXECUTABLE}
                                           ${TruchasExternal_SHARED_SWITCH}
-					  CC=${CMAKE_C_COMPILER}
-					  CXX=${CMAKE_CXX_COMPILER}
+                                          CC=${CMAKE_C_COMPILER}
+                                          CXX=${CMAKE_CXX_COMPILER}
                                           CPPFLAGS=${swig_cflags}
-                    # -- Build					  
+                    # -- Build  
                     BUILD_COMMAND $(MAKE)             
                     # -- Output control
                     ${TruchasExternal_LOG_OPTS})

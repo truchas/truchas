@@ -39,6 +39,7 @@ set(hypre_source_dir   ${hypre_prefix_dir}/hypre-${EP_HYPRE_VERSION}-source)
 set(hypre_stamp_dir    ${hypre_prefix_dir}/hypre-timestamps)
 set(hypre_tmp_dir      ${hypre_prefix_dir}/hypre-tmp)
 set(hypre_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(hypre_download_dir ${TruchasExternal_ARCHIVE_DIR})
 
 # --- Compile/Build Environment Variables
 set(cflags_list)
@@ -161,7 +162,8 @@ ExternalProject_Add(${HYPRE_BUILD_TARGET}
                     PREFIX     ${hypre_prefix_dir}   
                     TMP_DIR    ${hypre_tmp_dir}     
                     STAMP_DIR  ${hypre_stamp_dir}
-		    # -- Archive file definitions
+		                # -- Archive file definitions
+                    DOWNLOAD_DIR ${hypre_download_dir}
                     URL          ${hypre_url_file}
                     URL_MD5      ${EP_HYPRE_MD5_SUM}   
                     # -- Configure
@@ -172,8 +174,8 @@ ExternalProject_Add(${HYPRE_BUILD_TARGET}
                     BUILD_COMMAND     ${HYPRE_BUILD_COMMAND}   
                     BUILD_IN_SOURCE   TRUE                    
                     # -- Install
-		    #INSTALL_DIR      ${hypre_install_dir}
-		    INSTALL_COMMAND  ${HYPRE_INSTALL_COMMAND}
+		                #INSTALL_DIR      ${hypre_install_dir}
+		                INSTALL_COMMAND  ${HYPRE_INSTALL_COMMAND}
                     # -- Output control
 		    ${TruchasExternal_LOG_OPTS})
 

@@ -33,10 +33,11 @@ include(BuildLibraryName)
 # ExternalProject directories, file and log settings
 set(netcdf_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_NETCDF_ARCHIVE_FILE})
 set(netcdf_prefix_dir   ${TruchasExternal_BINARY_DIR}/netcdf)
-set(netcdf_source_dir   ${netcdf_prefix_dir}/netcdf-${NetCDF_VERSION}-source)
+set(netcdf_source_dir   ${netcdf_prefix_dir}/netcdf-${EP_NETCDF_VERSION}-source)
 set(netcdf_stamp_dir    ${netcdf_prefix_dir}/netcdf-timestamps)
 set(netcdf_tmp_dir      ${netcdf_prefix_dir}/netcdf-tmp)
 set(netcdf_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(netcdf_download_dir ${TruchasExternal_ARCHIVE_DIR})
 set(patch_file_dir      ${TruchasExternal_SOURCE_DIR}/patches)
 
 # Need the Compiler names without the full path
@@ -116,10 +117,11 @@ build_whitespace_string(netcdf_ldflags -L${zlib_install_dir}/lib)
 ExternalProject_Add(${NETCDF_BUILD_TARGET}
                     DEPENDS ${ZLIB_BUILD_TARGET}
                     # -- Project directories
-                    PREFIX      ${netcdf_prefix_dir}   
-                    TMP_DIR     ${netcdf_tmp_dir}     
-                    STAMP_DIR   ${netcdf_stamp_dir}
-                    SOURCE_DIR  ${netcdf_source_dir}
+                    PREFIX       ${netcdf_prefix_dir}   
+                    TMP_DIR      ${netcdf_tmp_dir}     
+                    STAMP_DIR    ${netcdf_stamp_dir}
+                    SOURCE_DIR   ${netcdf_source_dir}
+                    DOWNLOAD_DIR ${netcdf_download_dir}
 		    #INSTALL_DIR ${netcdf_install_dir}
 		    # -- Archive file definitions
                     URL          ${netcdf_url_file}

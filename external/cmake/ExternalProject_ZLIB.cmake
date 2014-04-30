@@ -36,6 +36,7 @@ set(zlib_source_dir   ${zlib_prefix_dir}/zlib-${EP_ZLIB_VERSION}-source)
 set(zlib_stamp_dir    ${zlib_prefix_dir}/zlib-timestamps)
 set(zlib_tmp_dir      ${zlib_prefix_dir}/zlib-tmp)
 set(zlib_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(zlib_download_dir ${TruchasExternal_ARCHIVE_DIR})
 
 # --- Add the -fPIC or -PIC (Position in code flag)
 include(FindPICFlag)

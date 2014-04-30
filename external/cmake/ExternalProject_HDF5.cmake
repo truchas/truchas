@@ -35,6 +35,7 @@ set(hdf5_source_dir   ${hdf5_prefix_dir}/hdf5-${EP_HDF5_VERSION}-source)
 set(hdf5_stamp_dir    ${hdf5_prefix_dir}/hdf5-timestamps)
 set(hdf5_tmp_dir      ${hdf5_prefix_dir}/hdf5-tmp)
 set(hdf5_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(hdf5_download_dir ${TruchasExternal_ARCHIVE_DIR})
 
 # --- Configure flags
 
@@ -84,10 +85,11 @@ build_whitespace_string(hdf5_ldflags ${ldflags})
 ExternalProject_Add(${HDF5_BUILD_TARGET}
                     DEPENDS ${ZLIB_BUILD_TARGET}
                     # -- Project directories
-                    PREFIX      ${hdf5_prefix_dir}   
-                    TMP_DIR     ${hdf5_tmp_dir}     
-                    STAMP_DIR   ${hdf5_stamp_dir}
-                    SOURCE_DIR  ${hdf5_source_dir}
+                    PREFIX       ${hdf5_prefix_dir}   
+                    TMP_DIR      ${hdf5_tmp_dir}     
+                    STAMP_DIR    ${hdf5_stamp_dir}
+                    SOURCE_DIR   ${hdf5_source_dir}
+                    DOWNLOAD_DIR ${hdf5_download_dir}
 		    #INSTALL_DIR ${hdf5_install_dir}
 		    # -- Archive file definitions
                     URL          ${hdf5_url_file}

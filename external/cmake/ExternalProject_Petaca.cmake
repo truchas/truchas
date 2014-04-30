@@ -29,9 +29,11 @@ include(BuildLibraryName)
 set(petaca_url_file     ${TruchasExternal_ARCHIVE_DIR}/${EP_Petaca_ARCHIVE_FILE})
 set(petaca_prefix_dir   ${TruchasExternal_BINARY_DIR}/petaca)
 set(petaca_source_dir   ${petaca_prefix_dir}/petaca-${EP_Petaca_VERSION}-source)
+set(petaca_binary_dir   ${petaca_prefix_dir}/petaca-${EP_Petaca_VERSION}-build)
 set(petaca_stamp_dir    ${petaca_prefix_dir}/petaca-timestamps)
 set(petaca_tmp_dir      ${petaca_prefix_dir}/petaca-tmp)
 set(petaca_install_dir  ${TruchasExternal_INSTALL_PREFIX})
+set(petaca_download_dir ${TruchasExternal_ARCHIVE_DIR})
 
 # YAJL (Required)
 if ( NOT TARGET ${YAJL_BUILD_TARGET} )
@@ -50,12 +52,14 @@ set(petaca_c_flags "${CMAKE_C_FLAGS} ${petaca_pic_flag}")
 ExternalProject_Add(${Petaca_BUILD_TARGET}
                     DEPENDS ${YAJL_BUILD_TARGET}
                     # -- Project directories
-                    PREFIX      ${petaca_prefix_dir}   
-                    TMP_DIR     ${petaca_tmp_dir}     
-                    STAMP_DIR   ${petaca_stamp_dir}
-                    SOURCE_DIR  ${petaca_source_dir}
+                    PREFIX       ${petaca_prefix_dir}   
+                    TMP_DIR      ${petaca_tmp_dir}     
+                    STAMP_DIR    ${petaca_stamp_dir}
+                    SOURCE_DIR   ${petaca_source_dir}
+                    BINARY_DIR   ${petaca_binary_dir}
                     #INSTALL_DIR ${petaca_install_dir}
                     # -- Archive file definitions
+                    DOWNLOAD_DIR ${petaca_download_dir}
                     URL          ${petaca_url_file}
                     URL_MD5      ${EP_Petaca_MD5_SUM}   
                     # -- Configure (CMake)
