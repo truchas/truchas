@@ -44,17 +44,23 @@ set(SOLVER_COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR}")
 set_source_files_properties(${SOLVER_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${SOLVER_COMPILE_FLAGS})
 
+# HYPRE C File, needs compile flags                           
 list(APPEND SOLVER_SOURCE_FILES solver/hypre_ext.c)
-set(hypre_ext_cflags "")
-foreach (dir ${HYPRE_INCLUDE_DIRS})
-  set(hypre_ext_cflags "${hypre_ext_cflags} -I${dir}")
+
+# Build compile flags string from list HYPRE_INCLUDE_DIRS and
+# MPI_C_COMPILE_FLAGS
+set(hypre_compile_flags)
+set(hypre_flag_list)
+foreach ( dir ${HYPRE_INCLUDE_DIRS} )
+  list(APPEND hypre_flag_list "-I${dir}")
 endforeach()
-if (ENABLE_MPI)
-  set(hypre_ext_cflags "${hypre_ext_cflags} -I${MPI_C_INCLUDE_PATH}")
-endif() 
+if(ENABLE_MPI AND DEFINED MPI_C_COMPILE_FLAGS)
+  list(APPEND hypre_flag_list ${MPI_C_COMPILE_FLAGS})
+endif()
+build_whitespace_string(hypre_compile_flags ${hypre_flag_list})
 
 set_source_files_properties(solver/hypre_ext.c PROPERTIES
-                            COMPILE_FLAGS ${hypre_ext_cflags})
+                            COMPILE_FLAGS ${hypre_compile_flags})
 
 
 

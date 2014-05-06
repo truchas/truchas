@@ -188,7 +188,7 @@ set(HYPRE_VERSION ${EP_HYPRE_VERSION})
 set(HYPRE_INCLUDE_DIR ${hypre_install_dir}/include)
 set(inc_dirs ${HYPRE_INCLUDE_DIR})
 if (ENABLE_MPI)
-  list(APPEND inc_dir ${MPI_C_INCLUDE_PATH})
+  list(APPEND inc_dirs ${MPI_C_INCLUDE_PATH})
 endif()
 set(HYPRE_INCLUDE_DIRS ${inc_dirs})
 
