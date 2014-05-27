@@ -11,7 +11,7 @@ include(FortranPreprocessFiles)
 set(CMAKE_INCLUDE_CURRENT_DIR True)
 
 # Truchas module directory
-include_directories(${Truchas_MODULE_DIR} ${Petaca_INCLUDE_DIR})
+include_directories(${Truchas_MODULE_DIR} ${PETACA_MODULE_DIR})
 
 
 # --- Define the source files
