@@ -23,16 +23,14 @@ if ( ENABLE_ExternalSearch )
   include(Verify_SWIG)
   include(Verify_HDF5)
   include(Verify_NetCDF)
-  include(Verify_YAJL)
-  #include(Verify_Petaca)
+  include(Verify_PETACA)
 else(ENABLE_ExternalSearch)  
   set(HYPRE_VERIFIED False)
   set(SWIG_VERIFIED False)
   set(HDF5_VERIFIED False)
   set(NETCDF_VERIFIED False)
-  set(YAJL_VERIFIED False)
+  set(PETACA_VERIFIED False)
 endif(ENABLE_ExternalSearch)
-set(Petaca_VERIFIED False)
 
 # Set a flag to indicate that builds are required
 include(BoolEval)
@@ -41,7 +39,7 @@ bool_eval(BUILD_EXTERNAL
 	        NOT SWIG_VERIFIED OR
 	        NOT HDF5_VERIFIED OR
 	        NOT NETCDF_VERIFIED OR
-          NOT Petaca_VERIFIED)
+          NOT PETACA_VERIFIED)
 
 # --- External projects built for Truchas
 
@@ -93,7 +91,7 @@ if(BUILD_EXTERNAL)
   )
 
   # Loop through and add ExternalProject_* if not verified
-  foreach(proj HDF5 NetCDF HYPRE SWIG YAJL Petaca)
+  foreach(proj HDF5 NetCDF HYPRE SWIG PETACA)
     if ( NOT "${${proj}_VERIFIED}")
       include(ExternalProject_${proj})
     endif(NOT "${${proj}_VERIFIED}")
@@ -166,11 +164,11 @@ set(YAJL_LIBRARY_SHARED ${YAJL_LIBRARY_SHARED} PARENT_SCOPE)
 set(YAJL_INCLUDE_DIR    ${YAJL_INCLUDE_DIR} PARENT_SCOPE)
 set(YAJL_LIBRARY_DIR    ${YAJL_LIBRARY_DIR} PARENT_SCOPE)
 
-# Petaca
-set(Petaca_BUILD_TARGET   ${Petaca_BUILD_TARGET} PARENT_SCOPE)
-set(Petaca_VERSION        ${Petaca_VERSION} PARENT_SCOPE)
-set(Petaca_VERSION_STRING ${Petaca_VERSION} PARENT_SCOPE)
-set(Petaca_LIBRARY        ${Petaca_LIBRARY} PARENT_SCOPE)
-set(Petaca_LIBRARIES      ${Petaca_LIBRARIES} PARENT_SCOPE)
-set(Petaca_INCLUDE_DIR    ${Petaca_INCLUDE_DIR} PARENT_SCOPE)
-set(Petaca_INCLUDE_DIRS   ${Petaca_INCLUDE_DIRS} PARENT_SCOPE)
+# PETACA
+set(PETACA_FOUND          ${PETACA_FOUND} PARENT_SCOPE)
+set(PETACA_BUILD_TARGET   ${PETACA_BUILD_TARGET} PARENT_SCOPE)
+set(PETACA_VERSION        ${PETACA_VERSION} PARENT_SCOPE)
+set(PETACA_LIBRARY        ${PETACA_LIBRARY} PARENT_SCOPE)
+set(PETACA_LIBRARIES      ${PETACA_LIBRARIES} PARENT_SCOPE)
+set(PETACA_MODULE_DIR     ${PETACA_MODULE_DIR} PARENT_SCOPE)
+set(PETACA_INCLUDE_DIRS   ${PETACA_INCLUDE_DIRS} PARENT_SCOPE)

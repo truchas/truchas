@@ -24,18 +24,24 @@ set(MAT_FILES
 
 set(MAT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities
-	${Truchas_FPP_FLAGS})
+        ${Truchas_FPP_FLAGS})
 
 # Process files
 fortran_preprocess_files(MAT_SOURCE_FILES
                          FILES ${MAT_FILES}
-			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
-			 FPP_FLAGS ${MAT_FPP_FLAGS}
-			 PROCESS_TARGET ${MAT_TARGET_NAME})
-set_source_files_properties(${MAT_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
+                         FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
+                         FPP_FLAGS ${MAT_FPP_FLAGS}
+                         PROCESS_TARGET ${MAT_TARGET_NAME})
 
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${MAT_SOURCE_FILES})		       
+                       
+# Define compile flags                       
+include(BuildWhitespaceString)
+build_whitespace_string(mat_source_flags_string 
+                        -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR})
+set_source_files_properties(${MAT_SOURCE_FILES} PROPERTIES
+                            COMPILE_FLAGS ${mat_source_flags_string})
+
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${MAT_SOURCE_FILES})       
 list(APPEND Truchas_PROCESS_TARGETS ${MAT_TARGET_NAME})
 
 
