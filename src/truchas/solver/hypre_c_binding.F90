@@ -12,8 +12,8 @@
 !!  to Hypre's C API functions, and it replaces the fragile F77-callable C glue
 !!  code from fhypre_c.c
 !!
-!!  Bindings to just a very small part of the Hypre library are defined; only
-!!  the things used by Truchas.
+!!  Bindings to just a small part of the Hypre library are defined; only the
+!!  things used by Truchas.
 !!
 !!  The various typedefs used in the C function signatures, like HYPRE_Solver
 !!  and HYPRE_IJMatrix, are structure pointers and on the Fortran side should
@@ -34,6 +34,11 @@ module hypre_c_binding
   use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
   implicit none
   private
+  
+  integer(c_int), parameter, public :: HYPRE_ERROR_GENERIC = 1
+  integer(c_int), parameter, public :: HYPRE_ERROR_MEMORY  = 2
+  integer(c_int), parameter, public :: HYPRE_ERROR_ARG     = 4
+  integer(c_int), parameter, public :: HYPRE_ERROR_CONV    = 256
 
   !! Functions from the IJVector interface.
   public :: HYPRE_IJVectorDestroy
@@ -79,6 +84,30 @@ module hypre_c_binding
   public :: HYPRE_PCGGetFinalRelativeResidualNorm
   public :: HYPRE_PCGSetPrintLevel
 
+  !! Functions from the ParCSR Hybrid interface
+  public :: HYPRE_ParCSRHybridCreate
+  public :: HYPRE_ParCSRHybridDestroy
+  public :: HYPRE_ParCSRHybridSetTol
+  public :: HYPRE_ParCSRHybridSetAbsoluteTol
+  public :: HYPRE_ParCSRHybridSetConvergenceTol
+  public :: HYPRE_ParCSRHybridSetDSCGMaxIter
+  public :: HYPRE_ParCSRHybridSetPCGMaxIter
+  public :: HYPRE_ParCSRHybridSetSolverType
+  public :: HYPRE_ParCSRHybridSetKDim
+  public :: HYPRE_ParCSRHybridSetTwoNorm
+  public :: HYPRE_ParCSRHybridSetLogging
+  public :: HYPRE_ParCSRHybridSetPrintLevel
+  public :: HYPRE_ParCSRHybridSetStrongThreshold
+  public :: HYPRE_ParCSRHybridSetMaxLevels
+  public :: HYPRE_ParCSRHybridSetCoarsenType
+  public :: HYPRE_ParCSRHybridSetInterpType
+  public :: HYPRE_ParCSRHybridSetNumSweeps
+  public :: HYPRE_ParCSRHybridSetRelaxType
+  public :: HYPRE_ParCSRHybridGetNumIterations
+  public :: HYPRE_ParCSRHybridGetDSCGNumIterations
+  public :: HYPRE_ParCSRHybridGetPCGNumIterations
+  public :: HYPRE_ParCSRHybridGetFinalRelativeResidualNorm
+
   !! Miscelaneous functions
   public :: HYPRE_ClearAllErrors
 
@@ -91,6 +120,8 @@ module hypre_c_binding
   public :: HYPRE_Ext_PCGSetup
   public :: HYPRE_Ext_PCGSolve
   public :: HYPRE_Ext_PCGSetBoomerAMGPrecond
+  public :: HYPRE_Ext_HybridSetup
+  public :: HYPRE_Ext_HybridSolve
 
  !!
  !! IJVECTOR INTERFACES
@@ -377,6 +408,167 @@ module hypre_c_binding
   end interface
 
  !!
+ !! ParCSR Hybrid SOLVER INTERFACES
+ !!
+
+  interface
+    function HYPRE_ParCSRHybridCreate (solver) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridCreate")
+      import c_ptr, c_int
+      type(c_ptr), intent(inout) :: solver
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridDestroy (solver) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridDestroy")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int) :: ierr
+    end function
+    ! HYPRE_ParCSRHybridSetup: use HYPRE_Ext_HybridSetup below.
+    ! HYPRE_ParCSRHybridSolve: use HYPRE_Ext_HybridSolve below.
+    function HYPRE_ParCSRHybridSetTol (solver, tol) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetTol")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: tol
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetAbsoluteTol (solver, tol) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetAbsoluteTol")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: tol
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetConvergenceTol (solver, cf_tol) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetConvergenceTol")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: cf_tol
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetDSCGMaxIter (solver, dscg_max_its) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetDSCGMaxIter")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: dscg_max_its
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetPCGMaxIter (solver, pcg_max_its) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetPCGMaxIter")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: pcg_max_its
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetSolverType (solver, solver_type) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetSolverType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: solver_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetKDim (solver, k_dim) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetKDim")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: k_dim
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetTwoNorm (solver, two_norm) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetTwoNorm")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: two_norm
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetLogging (solver, logging) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetLogging")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: logging
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetPrintLevel (solver, print_level) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetPrintLevel")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: print_level
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetStrongThreshold (solver, strong_threshold) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetStrongThreshold")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: strong_threshold
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetMaxLevels (solver, max_levels) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetMaxLevels")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: max_levels
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetCoarsenType (solver, coarsen_type) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetCoarsenType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: coarsen_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetInterpType (solver, interp_type) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetInterpType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: interp_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetNumSweeps (solver, num_sweeps) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetNumSweeps")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: num_sweeps
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridSetRelaxType (solver, relax_type) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridSetRelaxType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: relax_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridGetNumIterations (solver, num_its) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridGetNumIterations")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), intent(out) :: num_its
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridGetDSCGNumIterations (solver, dscg_num_its) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridGetDSCGNumIterations")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), intent(out) :: dscg_num_its
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridGetPCGNumIterations (solver, pcg_num_its) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridGetPCGNumIterations")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), intent(out) :: pcg_num_its
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ParCSRHybridGetFinalRelativeResidualNorm (solver, norm) &
+        result(ierr) bind(c, name="HYPRE_ParCSRHybridGetFinalRelativeResidualNorm")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), intent(out) :: norm
+      integer(c_int) :: ierr
+    end function
+  end interface
+
+ !!
  !! HYPRE UTILITIES
  !!
 
@@ -419,6 +611,7 @@ module hypre_c_binding
       type(c_ptr), value :: solver, A, b, x
       integer(c_int) :: ierr
     end function
+    !! PCG Interfaces
     function HYPRE_Ext_ParCSRPCGCreate(solver) &
         result(ierr) bind(c, name="HYPRE_Ext_ParCSRPCGCreate")
       import c_ptr, c_int
@@ -441,6 +634,19 @@ module hypre_c_binding
         result(ierr) bind(c, name="HYPRE_Ext_PCGSetBoomerAMGPrecond")
       import c_ptr, c_int
       type(c_ptr), value :: solver, precond
+      integer(c_int) :: ierr
+    end function
+    !! ParCSRHybrid Interfaces
+    function HYPRE_Ext_HybridSetup(solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_HybridSetup")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_HybridSolve(solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_HybridSolve")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
       integer(c_int) :: ierr
     end function
   end interface

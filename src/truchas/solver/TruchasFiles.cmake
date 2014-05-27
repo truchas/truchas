@@ -15,6 +15,7 @@ set(SOLVER_FILES
           solver/hypre_c_binding.F90
           solver/fhypre.F90
           solver/hypre_pcg_type.F90
+          solver/hypre_hybrid_type.F90
           solver/linear_solution.F90
           solver/nonlinear_solution.F90
           solver/ortho_matvec.F90

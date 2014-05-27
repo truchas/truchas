@@ -43,7 +43,7 @@
 !!  to initialize them to a state that references no Hypre object, and the
 !!  logical function HYPRE_ASSOCIATED() can be used to test whether such a
 !!  a variable references a Hypre object as returned by one of the creation
-!!  subroutines. 
+!!  subroutines.
 !!
 !! IMPLEMENTATION NOTES
 !!
@@ -66,9 +66,12 @@ module fhypre
   implicit none
   private
   
+  !! Error codes
+  public :: HYPRE_ERROR_GENERIC, HYPRE_ERROR_MEMORY, HYPRE_ERROR_ARG, HYPRE_ERROR_CONV
+
   !! Hide the face
   public :: hypre_obj, hypre_null_obj, hypre_associated
-  
+
   !! IJVector interface procedures
   public :: fHYPRE_IJVectorCreate
   public :: fHYPRE_IJVectorDestroy
@@ -87,7 +90,7 @@ module fhypre
   public :: fHYPRE_IJMatrixInitialize
   public :: fHYPRE_IJMatrixAssemble
   public :: fHYPRE_IJMatrixSetValues
-  
+
   !! BoomerAMG interface procedures
   public :: fHYPRE_BoomerAMGCreate
   public :: fHYPRE_BoomerAMGDestroy
@@ -106,7 +109,7 @@ module fhypre
   public :: fHYPRE_BoomerAMGSetCycleType
   public :: fHYPRE_BoomerAMGSetDebugFlag
   public :: fHYPRE_BoomerAMGSetLogging
-  
+
   !! PCG interface procedures
   public :: fHYPRE_PCGCreate
   public :: fHYPRE_PCGDestroy
@@ -120,12 +123,38 @@ module fhypre
   public :: fHYPRE_PCGSetTwoNorm
   public :: fHYPRE_PCGGetFinalRelRes
   public :: fHYPRE_PCGSetPrintLevel
-  
+
+  !! ParCSR Hybrid interface procedures
+  public :: fHYPRE_ParCSRHybridCreate
+  public :: fHYPRE_ParCSRHybridDestroy
+  public :: fHYPRE_ParCSRHybridSetup
+  public :: fHYPRE_ParCSRHybridSolve
+  public :: fHYPRE_ParCSRHybridSetTol
+  public :: fHYPRE_ParCSRHybridSetAbsoluteTol
+  public :: fHYPRE_ParCSRHybridSetConvergenceTol
+  public :: fHYPRE_ParCSRHybridSetDSCGMaxIter
+  public :: fHYPRE_ParCSRHybridSetPCGMaxIter
+  public :: fHYPRE_ParCSRHybridSetSolverType
+  public :: fHYPRE_ParCSRHybridSetKDim
+  public :: fHYPRE_ParCSRHybridSetTwoNorm
+  public :: fHYPRE_ParCSRHybridSetLogging
+  public :: fHYPRE_ParCSRHybridSetPrintLevel
+  public :: fHYPRE_ParCSRHybridSetStrongThreshold
+  public :: fHYPRE_ParCSRHybridSetMaxLevels
+  public :: fHYPRE_ParCSRHybridSetCoarsenType
+  public :: fHYPRE_ParCSRHybridSetInterpType
+  public :: fHYPRE_ParCSRHybridSetNumSweeps
+  public :: fHYPRE_ParCSRHybridSetRelaxType
+  public :: fHYPRE_ParCSRHybridGetNumIterations
+  public :: fHYPRE_ParCSRHybridGetDSCGNumIterations
+  public :: fHYPRE_ParCSRHybridGetPCGNumIterations
+  public :: fHYPRE_ParCSRHybridGetFinalRelativeResidualNorm
+
   !! Miscellaneous procedures
   public :: fHYPRE_ClearAllErrors
 
 contains
-  
+
   !!!! IJVECTOR INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine fHYPRE_IJVectorCreate (jlower, jupper, vector, ierr)
@@ -148,13 +177,13 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_IJVectorSetMaxOffProcElmts(vector, max_offp_values)
   end subroutine
-  
+
   subroutine fHYPRE_IJVectorInitialize (vector, ierr)
     type(c_ptr), intent(in) :: vector
     integer, intent(out) :: ierr
     ierr = HYPRE_IJVectorInitialize(vector)
   end subroutine
-  
+
   subroutine fHYPRE_IJVectorSetValues (vector, nvalues, indices, values, ierr)
     type(c_ptr), intent(in) :: vector
     integer, intent(in) :: nvalues, indices(:)
@@ -162,7 +191,7 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_IJVectorSetValues(vector, nvalues, indices, values)
   end subroutine
-  
+
   subroutine fHYPRE_IJVectorGetValues (vector, nvalues, indices, values, ierr)
     type(c_ptr), intent(in) :: vector
     integer, intent(in) :: nvalues, indices(:)
@@ -170,7 +199,7 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_IJVectorGetValues(vector, nvalues, indices, values)
   end subroutine
-  
+
   subroutine fHYPRE_IJVectorAssemble (vector, ierr)
     type(c_ptr), intent(in) :: vector
     integer, intent(out) :: ierr
@@ -185,7 +214,7 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix)
   end subroutine
-    
+
   subroutine fHYPRE_IJMatrixDestroy (matrix, ierr)
     type(c_ptr), intent(inout) :: matrix
     integer, intent(out) :: ierr
@@ -233,15 +262,15 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_IJMatrixSetValues(matrix, nrows, ncols, rows, cols, values)
   end subroutine
-  
+
   !!!! BOOMER AMG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   subroutine fHYPRE_BoomerAMGCreate (solver, ierr)
     type(c_ptr), intent(out) :: solver
     integer, intent(out) :: ierr
     ierr =  HYPRE_BoomerAMGCreate(solver)
   end subroutine
-  
+
   subroutine fHYPRE_BoomerAMGDestroy (solver, ierr)
     type(c_ptr), intent(inout) :: solver
     integer, intent(out) :: ierr
@@ -260,7 +289,7 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_Ext_BoomerAMGSolve(solver, A, b, x)
   end subroutine
-    
+
   subroutine fHYPRE_BoomerAMGSetStrongThreshold (solver, strong_threshold, ierr)
     type(c_ptr), intent(in) :: solver
     real(r8), intent(in) :: strong_threshold
@@ -351,15 +380,15 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_BoomerAMGSetLogging(solver, logging)
   end subroutine
-  
+
   !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
   subroutine fHYPRE_PCGCreate (solver, ierr)
     type(c_ptr), intent(inout) :: solver
     integer, intent(out) :: ierr
     ierr = HYPRE_Ext_ParCSRPCGCreate(solver)
   end subroutine
-    
+
   subroutine fHYPRE_PCGDestroy (solver, ierr)
     type(c_ptr), intent(inout) :: solver
     integer, intent(out) :: ierr
@@ -384,60 +413,227 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_Ext_PCGSetBoomerAMGPrecond(solver, precond)
   end subroutine fHYPRE_PCGSetPrecond
-  
+
   subroutine fHYPRE_PCGSetMaxIter (solver, max_iter, ierr)
     type(c_ptr), intent(in) :: solver
     integer, intent(in) :: max_iter
     integer, intent(out) :: ierr
     ierr = HYPRE_PCGSetMaxIter(solver, max_iter)
   end subroutine
-  
+
   subroutine fHYPRE_PCGGetNumIterations (solver, iters, ierr)
     type(c_ptr), intent(in) :: solver
     integer, intent(out) :: iters, ierr
     ierr = HYPRE_PCGGetNumIterations(solver, iters)
   end subroutine fHYPRE_PCGGetNumIterations
-  
+
   subroutine fHYPRE_PCGSetTol (solver, tol, ierr)
     type(c_ptr), intent(in) :: solver
     real(r8), intent(in) :: tol
     integer, intent(out) :: ierr
     ierr = HYPRE_PCGSetTol(solver, tol)
   end subroutine
-  
+
   subroutine fHYPRE_PCGSetAbsoluteTol (solver, tol, ierr)
     type(c_ptr), intent(in) :: solver
     real(r8), intent(in) :: tol
     integer, intent(out) :: ierr
     ierr = HYPRE_PCGSetAbsoluteTol(solver, tol)
   end subroutine
-  
+
   subroutine fHYPRE_PCGSetTwoNorm (solver, twonorm, ierr)
     type(c_ptr), intent(in) :: solver
     integer, intent(in) :: twonorm
     integer, intent(out) :: ierr
     ierr = HYPRE_PCGSetTwoNorm (solver, twonorm)
   end subroutine
-  
+
   subroutine fHYPRE_PCGGetFinalRelRes (solver, tol, ierr)
     type(c_ptr), intent(in) :: solver
     real(r8), intent(out) :: tol
     integer, intent(out) :: ierr
     ierr = HYPRE_PCGGetFinalRelativeResidualNorm(solver, tol)
-  end subroutine   
-  
+  end subroutine
+
   subroutine fHYPRE_PCGSetPrintLevel (solver, print_level, ierr)
     type(c_ptr), intent(in) :: solver
     integer, intent(in) :: print_level
     integer, intent(out) :: ierr
     ierr = HYPRE_PCGSetPrintLevel(solver, print_level)
   end subroutine
-  
+
+  !!!! ParCSR Hybrid INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine fHYPRE_ParCSRHybridCreate (solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridCreate (solver)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridDestroy (solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridDestroy (solver)
+    solver = c_null_ptr
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetup(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_HybridSetup(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSolve(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_HybridSolve(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetTol (solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetTol (solver, tol)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetAbsoluteTol (solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetAbsoluteTol (solver, tol)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetConvergenceTol (solver, cf_tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: cf_tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetConvergenceTol (solver, cf_tol)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetDSCGMaxIter (solver, dscg_max_its, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: dscg_max_its
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetDSCGMaxIter (solver, dscg_max_its)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetPCGMaxIter (solver, pcg_max_its, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: pcg_max_its
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetPCGMaxIter (solver, pcg_max_its)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetSolverType (solver, solver_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: solver_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetSolverType (solver, solver_type)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetKDim (solver, k_dim, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: k_dim
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetKDim (solver, k_dim)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetTwoNorm (solver, two_norm, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: two_norm
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetTwoNorm (solver, two_norm)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetLogging (solver, logging, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: logging
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetLogging (solver, logging)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetPrintLevel (solver, print_level, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: print_level
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetPrintLevel (solver, print_level)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetStrongThreshold (solver, strong_threshold, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: strong_threshold
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetStrongThreshold (solver, strong_threshold)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetMaxLevels (solver, max_levels, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: max_levels
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetMaxLevels (solver, max_levels)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetCoarsenType (solver, coarsen_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: coarsen_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetCoarsenType (solver, coarsen_type)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetInterpType (solver, interp_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: interp_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetInterpType (solver, interp_type)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetNumSweeps (solver, num_sweeps, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: num_sweeps
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetNumSweeps (solver, num_sweeps)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridSetRelaxType (solver, relax_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: relax_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridSetRelaxType (solver, relax_type)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridGetNumIterations (solver, num_its, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: num_its
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridGetNumIterations (solver, num_its)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridGetDSCGNumIterations (solver, dscg_num_its, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: dscg_num_its
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridGetDSCGNumIterations (solver, dscg_num_its)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridGetPCGNumIterations (solver, pcg_num_its, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: pcg_num_its
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridGetPCGNumIterations (solver, pcg_num_its)
+  end subroutine
+
+  subroutine fHYPRE_ParCSRHybridGetFinalRelativeResidualNorm (solver, norm, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(out) :: norm
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRHybridGetFinalRelativeResidualNorm (solver, norm)
+  end subroutine
+
   !!!! MISCELLANEOUS PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   subroutine fHYPRE_ClearAllErrors ()
     integer :: ierr
     ierr = HYPRE_ClearAllErrors ()  ! ignore return code
   end subroutine
-  
+
 end module fhypre

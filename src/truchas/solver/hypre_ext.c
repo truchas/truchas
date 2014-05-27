@@ -95,3 +95,26 @@ HYPRE_Ext_PCGSetBoomerAMGPrecond(HYPRE_Solver solver, HYPRE_Solver precond)
 {
   return HYPRE_ParCSRPCGSetPrecond(solver, HYPRE_BoomerAMGSolve, HYPRE_BoomerAMGSetup, precond);
 }
+
+int
+HYPRE_Ext_HybridSetup(HYPRE_Solver solver, HYPRE_IJMatrix A, HYPRE_IJVector b, HYPRE_IJVector x)
+{
+  HYPRE_ParCSRMatrix par_A;
+  HYPRE_ParVector par_b, par_x;
+  HYPRE_IJMatrixGetObject(A, (void**) &par_A);
+  HYPRE_IJVectorGetObject(b, (void**) &par_b);
+  HYPRE_IJVectorGetObject(x, (void**) &par_x);
+  return HYPRE_ParCSRHybridSetup(solver, par_A, par_b, par_x);
+}
+
+int
+HYPRE_Ext_HybridSolve(HYPRE_Solver solver, HYPRE_IJMatrix A, HYPRE_IJVector b, HYPRE_IJVector x)
+{
+  HYPRE_ParCSRMatrix par_A;
+  HYPRE_ParVector par_b, par_x;
+  HYPRE_IJMatrixGetObject(A, (void**) &par_A);
+  HYPRE_IJVectorGetObject(b, (void**) &par_b);
+  HYPRE_IJVectorGetObject(x, (void**) &par_x);
+  return HYPRE_ParCSRHybridSolve(solver, par_A, par_b, par_x);
+}
+
