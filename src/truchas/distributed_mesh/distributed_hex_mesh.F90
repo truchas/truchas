@@ -357,7 +357,7 @@ contains
     !! Construct the secondary indexing arrays (THIS SUBDOMAIN MESH).
     !allocate(this%fnode(4,this%nface), this%fedge(3,this%nface), this%enode(2,this%nedge))
     allocate(this%fnode(4,this%nface))
-    call assemble_face_node_list (this%cface, this%cnode, this%fnode)
+    call assemble_face_node_list (this%cface, this%cfpar, this%cnode, this%fnode)
     !call assemble_face_edge_list (this%cface, this%cedge, this%fedge)
     !call assemble_edge_node_list (this%cedge, this%cnode, this%enode)
     

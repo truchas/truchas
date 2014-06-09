@@ -493,29 +493,33 @@ contains
   end subroutine label_cell_faces
 
   
-  subroutine assemble_face_node_list (cface, cnode, fnode)
+  subroutine assemble_face_node_list (cface, cfpar, cnode, fnode)
   
     use cell_topology
     
     integer, intent(in)  :: cface(:,:)
+    integer, intent(in)  :: cfpar(:)
     integer, intent(in)  :: cnode(:,:)
     integer, intent(out) :: fnode(:,:)
     
-    integer :: i, j, k
+    integer :: j, k
     
     ASSERT( size(cface,dim=1) == 6 )
     ASSERT( size(cnode,dim=1) == 8 )
     ASSERT( size(cnode,dim=2) == size(cface,dim=2) )
+    ASSERT( size(cfpar) == size(cface,dim=2) )
     ASSERT( size(fnode,dim=1) == 4 )
     ASSERT( minval(cnode) > 0 )
-    ASSERT( minval(abs(cface)) >= 1 )
-    ASSERT( maxval(abs(cface)) <= size(fnode,dim=2) )
+    ASSERT( minval(cface) >= 1 )
+    ASSERT( maxval(cface) <= size(fnode,dim=2) )
 
     fnode = 0
     do j = 1, size(cface,dim=2)
       do k = 1, size(cface,dim=1)
-        i = abs(cface(k,j))
-        if (fnode(1,i) <= 0) fnode(:,i) = cnode(HEX8_FACE_VERT(:,k),j)
+        if (fnode(1,cface(k,j)) == 0) then
+          fnode(:,cface(k,j)) =  cnode(HEX8_FACE_VERT(:,k),j)
+          if (btest(cfpar(j),pos=k)) call reverse_facet (fnode(:,cface(k,j)))
+        end if
       end do
     end do
     
