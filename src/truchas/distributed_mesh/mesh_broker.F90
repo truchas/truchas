@@ -48,6 +48,10 @@ module mesh_broker
   end type mesh_list_item
 
   type(mesh_list), save :: meshes
+  
+  interface init_mesh_broker
+    module procedure init_mesh_broker, init_mesh_broker_plist
+  end interface
 
 contains
 
@@ -61,6 +65,7 @@ contains
     do while (associated(l%first))
       if (l%first%mesh%enabled) then
         if (l%first%mesh%name == raise_case(name)) then
+        !if (trim(l%first%mesh%name) == intel_name) then
           named_mesh_ptr => l%first%mesh%mesh
           exit
         end if
@@ -95,8 +100,8 @@ contains
 
     use mesh_importer
     use mesh_modification, only: convert_cells_to_links, create_internal_interfaces
-    use distributed_hex_mesh
-    use distributed_tet_mesh
+    use distributed_hex_mesh, only: create_dist_hex_mesh
+    use distributed_tet_mesh, only: create_dist_tet_mesh
 #ifdef DEBUG_WRITE_MESH
     use distributed_mesh_gmv
 #endif
@@ -346,5 +351,62 @@ contains
     call collate (node_perm, unpermute_vertex_vector)
 
   end subroutine peek_truchas_partition
+
+  !! NNC, Jun 2014.  A new initialization routine that takes a parameter list
+  !! to specify the mesh files and parameters.  This is an alternative to
+  !! using READ_MESH_NAMELISTS to read the data from an input file, and was
+  !! added to simplify the development of unit tests requiring a mesh.  The
+  !! expected syntax of the parameter list is a list of sublists.  The name
+  !! of a sublist is taken as the name of the mesh, and the sublist has the
+  !! following parameters:
+  !!
+  !!              'mesh-file' : string (required)
+  !!     'coord-scale-factor' : real-scalar (optional; default 1.0)
+  !!    'interface-side-sets' : integer-array (optional)
+
+  subroutine init_mesh_broker_plist (plist)
+
+    use parameter_list_type
+    use string_utilities, only: raise_case
+
+    type(parameter_list) :: plist
+
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: params
+    type(mesh_list) :: old_meshes
+    character(:), allocatable :: file
+#ifdef INTEL_COMPILER_WORKAROUND
+    character(:), allocatable :: name
+#endif
+    integer, allocatable :: side_sets(:)
+
+    !! Generate the internal mesh specification list ...
+    piter = parameter_list_iterator(plist, sublists_only=.true.)
+    do while (.not.piter%at_end())
+      old_meshes = meshes
+      allocate(meshes%first)
+      meshes%first%rest = old_meshes
+#ifdef INTEL_COMPILER_WORKAROUND
+      name = piter%name()
+      meshes%first%mesh%name = raise_case(name)
+#else
+      meshes%first%mesh%name = raise_case(piter%name())
+#endif
+      params => piter%sublist()
+      call params%get ('mesh-file', file)
+      meshes%first%mesh%file = file
+      call params%get ('coord-scale-factor', meshes%first%mesh%coord_scale_factor, default=1.0_r8)
+      call params%get ('interface-side-sets', side_sets, default=[integer::])
+      allocate(meshes%first%mesh%iface_sset_id(size(side_sets)))
+      meshes%first%mesh%iface_sset_id = side_sets
+      allocate(meshes%first%mesh%gap_blocks(0))
+      meshes%first%mesh%enabled = .true.
+      call piter%next
+    end do
+
+    !! and then call the original initialization procedure.
+    call init_mesh_broker
+
+  end subroutine init_mesh_broker_plist
 
 end module mesh_broker

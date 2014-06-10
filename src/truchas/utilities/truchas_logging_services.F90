@@ -421,6 +421,9 @@ contains
   end subroutine labeled_message_array
 
   subroutine TLS_fatal (message)
+#ifdef NAG_COMPILER
+    use,intrinsic :: f90_unix, only: exit
+#endif
     use pgslib_module, only: pgslib_finalize
     use utilities_module, only: timestamp
     character(*), intent(in) :: message
@@ -430,7 +433,7 @@ contains
     call TLS_info ('truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22))
     call TLS_finalize
     call pgslib_finalize
-    stop
+    call exit (1)
   end subroutine TLS_fatal
 
   subroutine TLS_fatal_if_any (errc, message)
@@ -451,6 +454,9 @@ contains
   end subroutine TLS_fatal_if_IOP
 
   subroutine TLS_exit
+#ifdef NAG_COMPILER
+    use,intrinsic :: f90_unix, only: exit
+#endif
     use pgslib_module, only: pgslib_finalize
     use utilities_module, only: timestamp
     character(32) :: date_time
@@ -459,7 +465,7 @@ contains
     call TLS_info ('truchas terminated normally on '//date_time(5:13)//' at '//date_time(15:22))
     call TLS_finalize
     call pgslib_finalize
-    stop
+    call exit (0)
   end subroutine TLS_exit
 
  !!
@@ -478,6 +484,9 @@ contains
  !!
 
   subroutine TLS_panic (message)
+#ifdef NAG_COMPILER
+    use,intrinsic :: f90_unix, only: exit
+#endif
     use,intrinsic :: iso_fortran_env, only: output_unit
     use parallel_communication, only: this_PE
     use pgslib_module, only: pgslib_abort
@@ -488,7 +497,7 @@ contains
     call timestamp (date_time)
     write(output_unit,'(a)') 'Truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22)
     call pgslib_abort
-    stop
+    call exit (1)
   end subroutine TLS_panic
 
  !!

@@ -106,6 +106,10 @@ contains
  !!
 
   subroutine import_exodus_mesh (path, mesh)
+#ifdef NAG_COMPILER
+
+    use,intrinsic :: f90_unix, only: exit
+#endif
 
     character(len=*),    intent(in)  :: path
     type(external_mesh), intent(out) :: mesh
@@ -125,7 +129,7 @@ contains
     call broadcast (stat)
     if (stat /= 0) then
       call halt_parallel_communication ()
-      stop
+      call exit (1)
     end if
 
     !! Create 0-sized companion meshes on all the other processors.
