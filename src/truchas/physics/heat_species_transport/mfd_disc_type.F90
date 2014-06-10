@@ -69,6 +69,9 @@ module mfd_disc_type
   public :: mfd_disc_delete
   public :: mfd_disc_apply_diff
   public :: mfd_disc_compute_cell_grad
+  interface mfd_disc_compute_cell_grad
+    procedure mfd_disc_compute_cell_grad1, mfd_disc_compute_cell_grad2
+  end interface
   
   !! Private type for internal use.
   type :: mfd_hex
@@ -141,7 +144,7 @@ contains
  !! and n_f is the (average) outward normal to face f with magnitude equal
  !! to the area of the face.
   
-  subroutine mfd_disc_compute_cell_grad (this, uface, grad)
+  subroutine mfd_disc_compute_cell_grad1 (this, uface, grad)
   
     type(mfd_disc), intent(in) :: this
     real(r8), intent(in) :: uface(:)
@@ -159,7 +162,33 @@ contains
       grad(:,j) = matmul(tmp%face_normals, uface(this%mesh%cface(:,j))) / tmp%volume
     end do
 
-  end subroutine mfd_disc_compute_cell_grad
+  end subroutine mfd_disc_compute_cell_grad1
+  
+  subroutine mfd_disc_compute_cell_grad2 (this, uface, mask, grad)
+  
+    type(mfd_disc), intent(in) :: this
+    real(r8), intent(in) :: uface(:)
+    logical,  intent(in) :: mask(:)
+    real(r8), intent(out) :: grad(:,:)
+    
+    integer :: j
+    type(mfd_hex) :: tmp
+    
+    INSIST(size(grad,1) == 3)
+    INSIST(size(uface) == this%mesh%nface)
+    INSIST(size(grad,2) <= this%mesh%ncell)
+    INSIST(size(mask) == size(grad,2))
+    
+    do j = 1, size(grad,2)
+      if (mask(j)) then
+        call mfd_hex_init (tmp, this%mesh%x(:,this%mesh%cnode(:,j)))
+        grad(:,j) = matmul(tmp%face_normals, uface(this%mesh%cface(:,j))) / tmp%volume
+      else
+        grad(:,j) = 0.0_r8
+      end if
+    end do
+
+  end subroutine mfd_disc_compute_cell_grad2
 
   subroutine mfd_hex_init (this, vertices)
     use cell_geometry, only: eval_hex_volumes, hex_face_normals

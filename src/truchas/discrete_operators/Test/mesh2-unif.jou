@@ -1,0 +1,23 @@
+## /opt/cubit/13.2-48137/bin/clarox
+## Cubit Version 13.2
+## Cubit Build 48137
+## Revised 2012-05-31 10:27:28 -0600 (Thu, 31 May 2012)
+## Running 06/09/2014 12:16:25 PM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 2.4 y 2.4 z 0.05
+brick x 2 y 2 z 1
+chop volume 1 with volume 2
+imprint volume all
+merge volume all
+volume all size 0.05
+mesh volume all
+set duplicate block elements off
+block 1 volume 3
+set duplicate block elements off
+block 2 volume 4
+sideset 1 surface 17 18
+sideset 2 surface 14 15 16
+set large exodus file off
+export genesis "mesh2-unif.gen" overwrite

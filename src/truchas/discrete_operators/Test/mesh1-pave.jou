@@ -1,0 +1,27 @@
+## /opt/cubit/13.2-48137/bin/clarox
+## Cubit Version 13.2
+## Cubit Build 48137
+## Revised 2012-05-31 10:27:28 -0600 (Thu, 31 May 2012)
+## Running 06/07/2014 07:08:49 AM
+## Command Options:
+## -warning = On
+## -information = On
+brick x 2 y 2 z 0.05
+webcut volume 1 with cylinder radius 0.6 axis z center 0 0 0
+imprint volume all
+merge volume all
+
+volume 1 2 size 0.05
+mesh volume 1 2
+
+set duplicate block elements off
+block 1 volume 1 2
+sideset 1 surface 4
+sideset 2 surface 6
+sideset 3 surface 3
+sideset 4 surface 5
+sideset 5 surface 12 9
+sideset 6 surface 11 8
+
+set large exodus file off
+export genesis "mesh1-pave.gen" overwrite

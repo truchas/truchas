@@ -221,3 +221,4 @@ install(TARGETS truchas truchas_exe
 
 # --- Unit tests
 add_subdirectory(solver/Test)
+add_subdirectory(discrete_operators/Test)

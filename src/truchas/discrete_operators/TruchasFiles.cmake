@@ -21,10 +21,11 @@ set(DISOP_FILES
          discrete_operators/do_solve_module.F90
          discrete_operators/do_solve_specifier.F90
          discrete_operators/do_update_module.F90
-         discrete_operators/ff_discrete_ops_data.F90)
+         discrete_operators/ff_discrete_ops_data.F90
+         discrete_operators/cell_grad_type.F90)
 
 set(DISOP_FPP_FLAGS 
-	${Truchas_FPP_FLAGS})
+	-I${TruchasExe_SOURCE_DIR}/utilities ${Truchas_FPP_FLAGS})
 
 # Process files
 fortran_preprocess_files(DISOP_SOURCE_FILES
@@ -32,9 +33,16 @@ fortran_preprocess_files(DISOP_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${DISOP_FPP_FLAGS}
 			 PROCESS_TARGET ${DISOP_TARGET_NAME})
-set(DISOP_COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR}")		       
+# Define compile flags
+include(BuildWhitespaceString)
+set(DISOP_COMPILE_FLAGS -I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR} -I${PETACA_MODULE_DIR})
+if(Fortran_COMPILER_IS_INTEL)
+  list(APPEND DISOP_COMPILE_FLAGS "-assume realloc_lhs") # for cell_grad_type.F90
+endif()
+
+build_whitespace_string(DISOP_COMPILE_FLAGS_STR ${DISOP_COMPILE_FLAGS})
 set_source_files_properties(${DISOP_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS ${DISOP_COMPILE_FLAGS})
+                            COMPILE_FLAGS ${DISOP_COMPILE_FLAGS_STR})
 
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DISOP_SOURCE_FILES})		       
