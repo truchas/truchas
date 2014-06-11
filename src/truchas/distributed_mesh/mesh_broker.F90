@@ -65,7 +65,6 @@ contains
     do while (associated(l%first))
       if (l%first%mesh%enabled) then
         if (l%first%mesh%name == raise_case(name)) then
-        !if (trim(l%first%mesh%name) == intel_name) then
           named_mesh_ptr => l%first%mesh%mesh
           exit
         end if
@@ -387,6 +386,7 @@ contains
       allocate(meshes%first)
       meshes%first%rest = old_meshes
 #ifdef INTEL_COMPILER_WORKAROUND
+      !Intel tracking ID: DPD200357444
       name = piter%name()
       meshes%first%mesh%name = raise_case(name)
 #else
