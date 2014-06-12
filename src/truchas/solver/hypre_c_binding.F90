@@ -45,6 +45,7 @@ module hypre_c_binding
   public :: HYPRE_IJVectorSetMaxOffProcElmts
   public :: HYPRE_IJVectorInitialize
   public :: HYPRE_IJVectorSetValues
+  public :: HYPRE_IJVectorAddToValues
   public :: HYPRE_IJVectorGetValues
   public :: HYPRE_IJVectorAssemble
 
@@ -56,6 +57,7 @@ module hypre_c_binding
   public :: HYPRE_IJMatrixInitialize
   public :: HYPRE_IJMatrixAssemble
   public :: HYPRE_IJMatrixSetValues
+  public :: HYPRE_IJMatrixAddToValues
 
   !! Functions from the BoomerAMG interface.
   public :: HYPRE_BoomerAMGCreate
@@ -157,6 +159,15 @@ module hypre_c_binding
       real(c_double), intent(in) :: values(*)
       integer(c_int) :: ierr
     end function
+    function HYPRE_IJVectorAddToValues(vector, nvalues, indices, values) &
+        result(ierr) bind(c, name="HYPRE_IJVectorAddToValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: vector
+      integer, value :: nvalues
+      integer(c_int), intent(in) :: indices(*)
+      real(c_double), intent(in) :: values(*)
+      integer(c_int) :: ierr
+    end function
     function HYPRE_IJVectorGetValues(vector, nvalues, indices, values) &
         result(ierr) bind(c, name="HYPRE_IJVectorGetValues")
       import c_ptr, c_int, c_double
@@ -221,6 +232,15 @@ module hypre_c_binding
     end function
     function HYPRE_IJMatrixSetValues(matrix, nrows, ncols, rows, cols, values) &
         result(ierr) bind(c, name="HYPRE_IJMatrixSetValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: matrix
+      integer(c_int), value :: nrows
+      integer(c_int), intent(in) :: ncols(*), rows(*), cols(*)
+      real(c_double) :: values(*)
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_IJMatrixAddToValues(matrix, nrows, ncols, rows, cols, values) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixAddToValues")
       import c_ptr, c_int, c_double
       type(c_ptr), value :: matrix
       integer(c_int), value :: nrows

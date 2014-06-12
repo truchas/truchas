@@ -78,6 +78,7 @@ module fhypre
   public :: fHYPRE_IJVectorSetMaxOffProcElmts
   public :: fHYPRE_IJVectorInitialize
   public :: fHYPRE_IJVectorSetValues
+  public :: fHYPRE_IJVectorAddToValues
   public :: fHYPRE_IJVectorGetValues
   public :: fHYPRE_IJVectorAssemble
 
@@ -90,6 +91,7 @@ module fhypre
   public :: fHYPRE_IJMatrixInitialize
   public :: fHYPRE_IJMatrixAssemble
   public :: fHYPRE_IJMatrixSetValues
+  public :: fHYPRE_IJMatrixAddToValues
 
   !! BoomerAMG interface procedures
   public :: fHYPRE_BoomerAMGCreate
@@ -192,6 +194,14 @@ contains
     ierr = HYPRE_IJVectorSetValues(vector, nvalues, indices, values)
   end subroutine
 
+  subroutine fHYPRE_IJVectorAddToValues (vector, nvalues, indices, values, ierr)
+    type(c_ptr), intent(in) :: vector
+    integer, intent(in) :: nvalues, indices(:)
+    real(r8), intent(in) :: values(:)
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorAddToValues(vector, nvalues, indices, values)
+  end subroutine
+
   subroutine fHYPRE_IJVectorGetValues (vector, nvalues, indices, values, ierr)
     type(c_ptr), intent(in) :: vector
     integer, intent(in) :: nvalues, indices(:)
@@ -261,6 +271,14 @@ contains
     real(r8), intent(in) :: values(:)
     integer, intent(out) :: ierr
     ierr = HYPRE_IJMatrixSetValues(matrix, nrows, ncols, rows, cols, values)
+  end subroutine
+
+  subroutine fHYPRE_IJMatrixAddToValues (matrix, nrows, ncols, rows, cols, values, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in)  :: nrows, ncols(:), rows(:), cols(:)
+    real(r8), intent(in) :: values(:)
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixAddToValues(matrix, nrows, ncols, rows, cols, values)
   end subroutine
 
   !!!! BOOMER AMG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
