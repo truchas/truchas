@@ -14,9 +14,11 @@ set(DRIVERS_FILES
            drivers/drivers.F90
            drivers/physics_module.F90
            drivers/signal_module.F90
-           drivers/time_step_module.F90)
+           drivers/time_step_module.F90
+           drivers/hijack_truchas.F90)
 
 set(DRIVERS_FPP_FLAGS 
+        -I${TruchasExe_SOURCE_DIR}/utilities
 	${Truchas_FPP_FLAGS})
 
 # Process files

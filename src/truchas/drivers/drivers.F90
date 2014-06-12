@@ -131,10 +131,17 @@ CONTAINS
     ! set up the problem
     call ANNOUNCE ('INITIALIZATION')
     call SETUP ()
+
+! now go off and run my own code
+!#define HIJACK
+#ifdef HIJACK
+call hijack_truchas ()
+#else
     
     ! cycle through the problem
     call ANNOUNCE ('EXECUTION')
     call CYCLE_DRIVER ()
+#endif
 
     ! prepare to terminate
     call ANNOUNCE ('TERMINATION')
