@@ -39,7 +39,7 @@ set(UbikSolve_F_FILES
               TFQMR.F
               Ubik.F
               UbikBase.F
-	      UbikConstants.F
+	            UbikConstants.F
               UbikMatrix.F
               UbikSolve.F
               UbikUtil.F
@@ -66,7 +66,7 @@ fortran_preprocess_files(UbikSolve_SOURCE_FILES
 add_library(ubiksolve ${UbikSolve_SOURCE_FILES})
 
 # Force the preprocessing to occur before building the library
-add_dependencies(ubiksolve ProcessUbikSolveSrcFiles pgslib_fe)
+add_dependencies(ubiksolve ProcessUbikSrcFiles pgslib_fe)
 
 # Add the PGSLib target if needed
 if ( ENABLE_PGSLib )

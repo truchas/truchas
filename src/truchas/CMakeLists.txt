@@ -123,7 +123,7 @@ endif()
 
 # Chaparral
 if (ENABLE_Chaparral)
-  list(APPEND Truchas_DEPENDS chaparral)
+  list(APPEND Truchas_DEPENDS vflib)
 endif()  
 
 # Danu
