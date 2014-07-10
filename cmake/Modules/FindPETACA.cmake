@@ -21,10 +21,6 @@
 # controlled by PETACA_INSTALL_PREFIX, otherwise find_library looks in the 
 # standard CMake locations. See the cmake --help documentation for details.
 #
-# The boolean variable PETACA_USE_YAJL_STATIC will add the static YAJL library
-# to PETACA_LIBRARIES, otherwise the shared library will be used. This variable
-# should be set before the find_package(PETACA) call.
-# 
 # ############################################################################ #
 
 # --- Standard CMake modules see CMAKE_ROOT/Modules
@@ -85,12 +81,10 @@ endif()
 
 # --- Define PETACA_LIBRARIES
 set(PETACA_LIBRARIES ${PETACA_LIBRARY})
-if ( YAJL_FOUND  AND PETACA_LIBRARY)
-  if ( PETACA_USE_YAJL_STATIC )
-    list(APPEND PETACA_LIBRARIES ${YAJL_LIBRARY_STATIC})
-  else()
-    list(APPEND PETACA_LIBRARIES ${YAJL_LIBRARY_SHARED})
-  endif()  
+if ( YAJL_FOUND AND PETACA_LIBRARY)
+    list(APPEND PETACA_LIBRARIES ${YAJL_LIBRARY})
+else()
+    message(WARNING "PETACA_LIBRARIES does not contain YAJL library")
 endif()
 
 

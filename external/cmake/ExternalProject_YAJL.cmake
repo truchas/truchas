@@ -56,7 +56,7 @@ ExternalProject_Add(${YAJL_BUILD_TARGET}
                     # -- Archive file definitions
                     DOWNLOAD_DIR ${yajl_download_dir}
                     URL          ${yajl_url_file}
-                    URL_MD5      ${EP_yajl_MD5_SUM}   
+                    URL_MD5      ${EP_YAJL_MD5_SUM}   
                     # -- Configure (CMake)
                     CMAKE_CACHE_ARGS
                         ${TruchasExternal_CMAKE_COMPILER_ARGS}
@@ -70,7 +70,7 @@ ExternalProject_Add(${YAJL_BUILD_TARGET}
 # --- Set the variables for other targets that need yajl
 
 # Version
-set(YAJL_VERSION ${EP_yajl_VERSION})
+set(YAJL_VERSION ${EP_YAJL_VERSION})
 
 # Include directory
 set(YAJL_INCLUDE_DIR ${yajl_install_dir}/include)
@@ -78,8 +78,8 @@ set(YAJL_INCLUDE_DIR ${yajl_install_dir}/include)
 # Library directory
 set(YAJL_LIBRARY_DIR ${yajl_install_dir}/lib)
 
-# Library, both static and shared
+# Library, both static and shared are built
 build_library_name(yajl_s library STATIC APPEND_PATH ${yajl_install_dir}/lib)
 set(YAJL_LIBRARY_STATIC ${library})
 build_library_name(yajl library SHARED APPEND_PATH ${yajl_install_dir}/lib)
-set(YAJL_LIBRARY_SHARED ${library})
+set(YAJL_LIBRARY ${library})
