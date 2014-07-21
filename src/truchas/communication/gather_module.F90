@@ -47,6 +47,11 @@ MODULE GATHER_MODULE
      MODULE PROCEDURE Gather_V_V_DOUBLE
      MODULE PROCEDURE Gather_V_V_LOG
   END INTERFACE
+  
+  INTERFACE Gather_BoundaryData
+    MODULE PROCEDURE Gather_BoundaryData_Int
+    MODULE PROCEDURE Gather_BoundaryData_Double
+  END INTERFACE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -151,7 +156,60 @@ CONTAINS
   
   !-----------------------------------------------------------------------------
 
-  subroutine Gather_BoundaryData (BOUNDARY, SOURCE)
+  subroutine Gather_BoundaryData_Int (BOUNDARY, SOURCE)
+    !---------------------------------------------------------------------------
+    ! RCF June 24, 1998
+    ! Moved this from preconditioner_module.F90.
+    ! May/Will modify/generalize/streamline as we clean up solver/precond code
+    !---------------------------------------------------------------------------    
+
+    !---------------------------------------------------------------------------
+    ! Purpose:
+    !
+    !   update the X values from neighboring domains
+    !
+    !   The functionality of this bit of code is included in
+    !   EE_GATHER, but EE_GATHER does more.  This bit gets the
+    !   neighboring domain x values and puts them in x%aux1.
+    !   EE_GATHER continues by filling them into an ncells x nfc
+    !   temporary.  Use EE_GATHER if you want to do vector operations
+    !   with the temporary.  Use this if you have to do indirect
+    !   addressing yourself.
+    !
+    !   This code should probably reside in PGSLIB somewhere, but for
+    !   now it stays here.  It is only called locally from other
+    !   routines in preconditioner_module, and is not public.
+    !---------------------------------------------------------------------------
+
+    ! arguments
+    integer, INTENT(IN) :: SOURCE(:)
+    integer, POINTER :: BOUNDARY(:)
+    
+
+    ! local variables
+    integer :: status
+    integer, POINTER, Dimension(:) :: Duplicate_Data
+
+    !---------------------------------------------------------------------------
+
+    ! if BOUNDARY doesn't point at anything, get some space
+    ! if BOUNDARY is already allocated, don't do anything.
+    If (.Not. Associated(BOUNDARY)) Then
+       ALLOCATE(Duplicate_Data(PGSLib_Size_Of_Dup(EE_Trace)))
+       Duplicate_Data = SOURCE(PGSLib_Dup_Index(EE_Trace))
+       Allocate(BOUNDARY(PGSLib_Size_OF_Sup(EE_Trace)), STAT=status)
+       Call TLS_fatal_if_any ((status /= 0), 'Gather_BoundaryData: error allocating BOUNDARY')
+
+       ! the communication, takes data from Duplicate buffer, puts data into BOUNDARY
+       BOUNDARY = PGSLib_gather_Buffer(Duplicate_Data, EE_Trace)
+       ! Clean up
+       DEALLOCATE(Duplicate_Data)
+    End If
+
+  End subroutine Gather_BoundaryData_Int
+
+
+  subroutine Gather_BoundaryData_Double (BOUNDARY, SOURCE)
     !---------------------------------------------------------------------------
     ! RCF June 24, 1998
     ! Moved this from preconditioner_module.F90.
@@ -201,6 +259,6 @@ CONTAINS
        DEALLOCATE(Duplicate_Data)
     End If
 
-  End subroutine Gather_BoundaryData
+  End subroutine Gather_BoundaryData_Double
 
 END MODULE GATHER_MODULE

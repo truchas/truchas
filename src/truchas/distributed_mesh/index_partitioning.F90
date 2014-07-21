@@ -280,7 +280,7 @@ module index_partitioning
   end interface
 
   interface localize_index_array
-    module procedure localize_index_array_1, localize_index_array_2
+    module procedure localize_index_array_1, localize_index_array_2, localize_index_array_3
   end interface
 
   interface gather_boundary
@@ -429,8 +429,7 @@ contains
     if (associated(this%offP_index)) deallocate(this%offP_index)
     if (associated(this%dup_index))  deallocate(this%dup_index)
     if (associated(this%sup_index))  deallocate(this%sup_index)
-    !! There seems to be a bug in here that causes a segfault; NNC (3/20/06).
-    !call PGSLib_Deallocate_Trace (this%trace)
+    if (associated(this%trace)) call PGSLib_Deallocate_Trace (this%trace)
 
     this = default  ! assign default initialization values
 
@@ -553,8 +552,7 @@ contains
     if (associated(this%sup_index)) deallocate(this%sup_index)
     allocate(this%sup_index(size(this%offP_index)))
     this%sup_index = this%offP_index
-    ! There seems to be a bug in here that causes a segfault; NNC (3/20/06).
-    !if (associated(this%trace)) call PGSLib_Deallocate_Trace (this%trace)
+    if (associated(this%trace)) call PGSLib_Deallocate_Trace (this%trace)
     this%trace => pgslib_setup_trace(this%sup_index, this%onP_size)
 
     if (associated(this%dup_index)) deallocate(this%dup_index)
@@ -610,12 +608,9 @@ contains
     integer, allocatable :: map(:)
 
     ASSERT( defined(domain) )
-    ASSERT( defined(range) )
 
     if (is_IOP) then
       ASSERT( size(g_index) == domain%global_size )
-      ASSERT( minval(g_index) >= 0 )
-      ASSERT( maxval(g_index) <= range%global_size )
     end if
 
     !! Distribute the global indexing array according to the domain partition.
@@ -623,11 +618,29 @@ contains
     call distribute (l_index(:domain%onP_size), g_index)
     if(associated(domain%offP_index)) call gather_boundary (domain, l_index)
 
+    call localize_index_array_2 (range, l_index, offP_index)
+
+  end subroutine localize_index_array_1
+
+
+  subroutine localize_index_array_2 (range, index, offP_index)
+
+    type(ip_desc), intent(in) :: range
+    integer, intent(inout) :: index(:)
+    integer, pointer :: offP_index(:)
+
+    integer :: j
+    integer, allocatable :: map(:)
+
+    ASSERT( defined(range) )
+    ASSERT( minval(index) >= 0 )
+    ASSERT( maxval(index) <= range%global_size )
+
     !! Identify all unknown off-process index references (map>0).
     allocate(map(0:range%global_size))
     map = 0
-    do j = 1, size(l_index)
-      map(l_index(j)) = l_index(j)
+    do j = 1, size(index)
+      map(index(j)) = index(j)
     end do
     map(range%first:range%last) = 0   ! on-process indices are known
     if (associated(range%offP_index)) then  ! known off-process indices
@@ -655,21 +668,21 @@ contains
     end do
 
     !! Remap the local index array values to the local numbering.
-    do j = 1, size(l_index)
-      if ((l_index(j) < range%first) .or. (l_index(j) > range%last)) then
-        l_index(j) = map(l_index(j))
+    do j = 1, size(index)
+      if ((index(j) < range%first) .or. (index(j) > range%last)) then
+        index(j) = map(index(j))
       else
         !! 1-based numbering of the on-process indices.
-        l_index(j) = l_index(j) - range%first + 1
+        index(j) = index(j) - range%first + 1
       end if
     end do
 
     deallocate(map)
 
-  end subroutine localize_index_array_1
+  end subroutine localize_index_array_2
 
 
-  subroutine localize_index_array_2 (g_index, domain, range, l_index, offP_index)
+  subroutine localize_index_array_3 (g_index, domain, range, l_index, offP_index)
 
     integer, intent(in) :: g_index(:,:)
     type(ip_desc), intent(in) :: domain, range
@@ -740,7 +753,7 @@ contains
 
     deallocate(map)
 
-  end subroutine localize_index_array_2
+  end subroutine localize_index_array_3
 
 
   subroutine localize_index_struct (g_count, g_index, domain, range, l_count, l_index, offP_index)
