@@ -186,11 +186,11 @@ CONTAINS
     NULLIFY(AtlasSpec%Lengths)
   end subroutine InitializeAtlasSpec
 
-  subroutine AllocAtlasSpec(AtlasSpec, SIZE)
+  subroutine AllocAtlasSpec(AtlasSpec, SIZE_)
     type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
-    integer, intent(IN) :: SIZE
-    ALLOCATE(AtlasSpec%Offset(SIZE))
-    ALLOCATE(AtlasSpec%Lengths(SIZE))
+    integer, intent(IN) :: SIZE_
+    ALLOCATE(AtlasSpec%Offset(SIZE_))
+    ALLOCATE(AtlasSpec%Lengths(SIZE_))
     AtlasSpec%Offset = BC_INVALID_OFFSET
     AtlasSpec%Lengths = BC_INVALID_LENGTH
   end subroutine AllocAtlasSpec
@@ -242,32 +242,32 @@ CONTAINS
     call INITIALIZE(AtlasSpecDest)
 
     ! Now make Dest have that size
-    call ALLOC(AtlasSpecDest, SIZE=SIZE(AtlasSpecSrc))
+    call ALLOC(AtlasSpecDest, SIZE_=SIZE(AtlasSpecSrc))
     
     ! Finally, just copy the data from Src into Dest
     AtlasSpecDest = AtlasSpecSrc
   end subroutine AtlasSpecClone
   
-  subroutine AtlasSpecRealloc(AtlasSpec, SIZE)
+  subroutine AtlasSpecRealloc(AtlasSpec, SIZE_)
     ! Reallocate AtlasSpec to the new size.  If the new size is larger
     ! than the current size, then the new spec contains the original
     ! data at the beginning of it's lists.  
     type(BC_Atlas_Spec), intent(INOUT) :: AtlasSpec
-    integer, intent(IN) :: SIZE
+    integer, intent(IN) :: SIZE_
 
     ! Local variables
     type(BC_Atlas_Spec) :: Orig_Spec
 
     ! Make a copy of the original
     call INITIALIZE(Orig_Spec)
-    call ALLOC(Orig_Spec, SIZE=AtlasSpecSize(AtlasSpec))
+    call ALLOC(Orig_Spec, SIZE_=AtlasSpecSize(AtlasSpec))
     Orig_Spec = AtlasSpec
 
     ! Now get rid of the input
     call FREE(AtlasSpec)
 
     ! Re-Create in the new size
-    call ALLOC(AtlasSpec, SIZE=SIZE)
+    call ALLOC(AtlasSpec, SIZE_=SIZE_)
     
     ! Set the fields to BC_INVALID
     AtlasSpec%Lengths = BC_INVALID_LENGTH
@@ -306,16 +306,16 @@ CONTAINS
     NULLIFY(AtlasData%Positions)
   end subroutine InitializeAtlasDATA
 
-  subroutine AllocAtlasDATA(AtlasDATA, SIZE, DIMENSIONALITY, DOF)
+  subroutine AllocAtlasDATA(AtlasDATA, SIZE_, DIMENSIONALITY, DOF)
     type(BC_Atlas_Data), intent(INOUT) :: AtlasDATA
-    integer, intent(IN) :: SIZE, DIMENSIONALITY, DOF
+    integer, intent(IN) :: SIZE_, DIMENSIONALITY, DOF
 
-    ALLOCATE(AtlasData%Face(SIZE))
-    ALLOCATE(AtlasData%Cell(SIZE))
-    ALLOCATE(AtlasData%Values(DOF, SIZE))
-    ALLOCATE(AtlasData%ValueIndex(SIZE))
-    ALLOCATE(AtlasData%UseFunction(SIZE))
-    ALLOCATE(AtlasData%Positions(Dimensionality, SIZE))
+    ALLOCATE(AtlasData%Face(SIZE_))
+    ALLOCATE(AtlasData%Cell(SIZE_))
+    ALLOCATE(AtlasData%Values(DOF, SIZE_))
+    ALLOCATE(AtlasData%ValueIndex(SIZE_))
+    ALLOCATE(AtlasData%UseFunction(SIZE_))
+    ALLOCATE(AtlasData%Positions(Dimensionality, SIZE_))
     AtlasData%Face = BC_INVALID_FACE
     AtlasData%Cell = BC_INVALID_CELL
     AtlasData%ValueIndex = BC_INVALID_CELL
@@ -411,7 +411,7 @@ CONTAINS
     call INITIALIZE(AtlasDataDest)
 
     ! Now make Dest of the size of the Src
-    call ALLOC(AtlasDataDest, SIZE=SIZE(AtlasDataSrc) , &
+    call ALLOC(AtlasDataDest, SIZE_=SIZE(AtlasDataSrc) , &
                               DIMENSIONALITY=DIMENSIONALITY(AtlasDataSrc),&
                               DOF = BC_Get_DOF(AtlasDataSrc))
     
@@ -419,19 +419,19 @@ CONTAINS
     AtlasDataDest = AtlasDataSrc
   end subroutine AtlasDataClone
   
-  subroutine AtlasDataRealloc(AtlasData, SIZE)
+  subroutine AtlasDataRealloc(AtlasData, SIZE_)
     ! Reallocate AtlasData to the new size.  If the new size is larger
     ! than the current size, then the new Data contains the original
     ! data at the beginning of it's lists.  
     type(BC_Atlas_Data), intent(INOUT) :: AtlasData
-    integer, intent(IN) :: SIZE
+    integer, intent(IN) :: SIZE_
 
     ! Local variables
     type(BC_Atlas_Data) :: Orig_Data
 
     ! Make a copy of the original
     call INITIALIZE(Orig_Data)
-    call ALLOC(Orig_Data, SIZE=AtlasDataSize(AtlasData), &
+    call ALLOC(Orig_Data, SIZE_=AtlasDataSize(AtlasData), &
                           DIMENSIONALITY = DIMENSIONALITY(AtlasData), &
                           DOF = BC_Get_DOF(AtlasData))
     Orig_Data = AtlasData
@@ -440,7 +440,7 @@ CONTAINS
     call FREE(AtlasData)
 
     ! Re-Create in the new size
-    call ALLOC(AtlasData, SIZE=SIZE, &
+    call ALLOC(AtlasData, SIZE_=SIZE_, &
                           DIMENSIONALITY = DIMENSIONALITY(Orig_Data),&
                           DOF = BC_Get_DOF(Orig_Data))
     
