@@ -65,12 +65,12 @@ CONTAINS
                                       volume_track_interfaces,    &
                                       interface_geometry,         &
                                       interface_area
-    use solid_mechanics_data,   only: displacement_linear_solution,    &
+    use solid_mechanics_input,  only: displacement_linear_solution,    &
                                       displacement_nonlinear_solution, &
                                       contact_distance,                &
-                                      contact_norm_trac,                  &
-                                      contact_penalty, strain_limit
-    use node_operator_module,   only: stress_reduced_integration
+                                      contact_norm_trac,               &
+                                      contact_penalty, strain_limit,   &
+                                      stress_reduced_integration
     use advection_data,         only: limiter_type,               &
                                       advection_order_vol,        &  
                                       advection_order_energy,     &
@@ -237,11 +237,11 @@ CONTAINS
                                         volume_track_subcycles,               &
                                         volume_track_iter_tol,                &
                                         volume_track_iter_max
-    use solid_mechanics_data,     only: solid_mechanics, UBIK_DISPLACEMENT, &
+    use solid_mechanics_input,    only: solid_mechanics,                  &
+                                        UBIK_DISPLACEMENT,                &
                                         displacement_linear_solution,     &
                                         displacement_nonlinear_solution,  &
                                         NK_DISPLACEMENT, strain_limit
-
     use advection_data,         only: limiter_type,               &
                                       advection_order_energy,     &
                                       advection_order_momentum,   &
@@ -903,12 +903,10 @@ CONTAINS
                                       volume_track_interfaces,    &
                                       interface_geometry,         &
                                       interface_area
-    use solid_mechanics_data,   only: UBIK_DISPLACEMENT, displacement_linear_solution, &
+    use solid_mechanics_input,  only: UBIK_DISPLACEMENT, displacement_linear_solution, &
                                       NK_DISPLACEMENT, displacement_nonlinear_solution, &
                                       contact_distance, contact_norm_trac, contact_penalty, &
-                                      strain_limit
-    use node_operator_module,   only: stress_reduced_integration
-
+                                      strain_limit, stress_reduced_integration
     use advection_data,         only: limiter_type,               &
                                       advection_order_vol,        &  
                                       advection_order_energy,     &
@@ -1080,16 +1078,13 @@ CONTAINS
                                       volume_track_interfaces,    &
                                       interface_geometry,         &
                                       interface_area
-    use solid_mechanics_data,   only: displacement_linear_solution,    &
+    use solid_mechanics_input,  only: displacement_linear_solution,    &
                                       displacement_nonlinear_solution, &
                                       contact_distance,                & 
-                                      contact_norm_trac,                  &
+                                      contact_norm_trac,               &
                                       contact_penalty,                 &
-                                      strain_limit
-
-
-    use node_operator_module,   only: stress_reduced_integration
-
+                                      strain_limit,                    &
+                                      stress_reduced_integration
     use advection_data,         only: limiter_type,               &
                                       advection_order_vol,        &  
                                       advection_order_energy,     &

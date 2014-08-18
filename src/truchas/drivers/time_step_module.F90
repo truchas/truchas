@@ -90,7 +90,6 @@ CONTAINS
     use restart_variables,        only: restart
     use timing_tree
     use zone_module,              only: Zone
-    !use solid_mechanics_data,     only: solid_mechanics 
     use surface_tension_module,   only: surface_tension
     use diffusion_solver_data,    only: ds_enabled
     use truchas_logging_services

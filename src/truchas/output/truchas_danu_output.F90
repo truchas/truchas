@@ -198,7 +198,7 @@ contains
     use fluid_data_module, only: fluid_flow
     use physics_module, only: heat_transport, species_transport, heat_species_transport
     use EM_data_proxy, only: EM_is_on
-    use solid_mechanics_data, only: solid_mechanics
+    use solid_mechanics_input, only: solid_mechanics
     use gap_output, only: set_gap_element_output
     
     integer :: stat
@@ -353,70 +353,106 @@ contains
   
     subroutine write_solid_mech_data
     
-      use parameter_module, only: ndim, nnodes
-      use node_operator_module, only: nipc
-      use solid_mechanics_data, only: smech_cell, smech_ip, rhs, displacement, thermal_strain, &
-                                      pc_strain, rotation_magnitude, node_gap, node_norm_trac
+      use parameter_module, only: ndim, nnodes, ncomps, ncells
+      use solid_mechanics_output, only: get_sm_displacement, get_sm_thermal_strain,get_sm_rhs, &
+          get_sm_rotation_magnitude, get_sm_pc_strain, get_smech_cell_total_strain, &
+          get_smech_cell_elastic_stress, get_smech_cell_plastic_strain, &
+          get_smech_cell_plastic_strain_rate, smech_num_int_pts, get_smech_ip_total_strain, &
+          get_smech_ip_elastic_stress, get_smech_ip_plastic_strain, &
+          get_smech_ip_plastic_strain_rate, sm_node_gap_isize, get_sm_node_gap, &
+          get_sm_node_norm_trac
       use mech_bc_data_module, only: interface_list
       
-      integer :: n
+      integer :: n, nipc, isize
       character(32) :: name
-      real(r8), allocatable :: tmp(:,:)
+      real(r8), allocatable :: scratch1(:), scratch2(:,:),  node_gap(:), node_norm_trac(:)
       
       !! This is restart data only.
+      allocate(scratch1(ncells))
+      allocate(scratch2(ncomps,ncells))
+      nipc = smech_num_int_pts()
       do n = 1, nipc
+        call get_smech_ip_total_strain(n,scratch2)
         write(name,'(a,i2.2)') 'TOTAL_STRAIN_', n
-        call write_cell_field (smech_ip(n)%total_strain, name, for_viz=.false.)
+        call write_cell_field (scratch2, name, for_viz=.false.)
+        call get_smech_ip_elastic_stress(n,scratch2)
         write(name,'(a,i2.2)') 'ELASTIC_STRESS_', n
-        call write_cell_field (smech_ip(n)%elastic_stress, name, for_viz=.false.)
+        call write_cell_field (scratch2, name, for_viz=.false.)
+        call get_smech_ip_plastic_strain(n,scratch2)
         write(name,'(a,i2.2)') 'PLASTIC_STRAIN_', n
-        call write_cell_field (smech_ip(n)%plastic_strain, name, for_viz=.false.)
+        call write_cell_field (scratch2, name, for_viz=.false.)
+        call get_smech_ip_plastic_strain_rate(n,scratch1)
         write(name,'(a,i2.2)') 'PLASTIC_STRAIN_RATE_', n
-        call write_cell_field (smech_ip(n)%plastic_strain_rate, name, for_viz=.false.)
+        call write_cell_field (scratch1, name, for_viz=.false.)
       end do
+      deallocate(scratch1)
+      deallocate(scratch2)
       
-      !! More restart data.  Rhs is ndim-vector node-based data but
-      !! stored in a flat array.  We've got to unflatten it, argh!
-      allocate(tmp(ndim,nnodes))
-      do n = 1, ndim
-        tmp(n,:) = rhs(n::ndim)
-      end do
-      call write_node_field (tmp, 'RHS', for_viz=.false.)
-      deallocate(tmp)
+      !! More restart-only data
+      allocate(scratch2(ndim,nnodes))
+      call get_sm_rhs(scratch2)
+      call write_node_field (scratch2, 'RHS', for_viz=.false.)
+      deallocate(scratch2)
       
-      !! Restart and viz data.
-      call write_cell_field (smech_cell%elastic_stress, 'sigma', for_viz=.true., &
+      !! Restart and viz data (cell based).
+      allocate(scratch2(ncomps,ncells))
+      call get_smech_cell_elastic_stress(scratch2)
+      call write_cell_field (scratch2, 'sigma', for_viz=.true., &
           viz_name=['sigxx', 'sigyy', 'sigzz', 'sigxy', 'sigxz', 'sigyz'])
-      call write_cell_field (smech_cell%total_strain, 'epsilon', for_viz=.true., &
+      call get_smech_cell_total_strain(scratch2)
+      call write_cell_field (scratch2, 'epsilon', for_viz=.true., &
           viz_name=['epsxx', 'epsyy', 'epszz', 'epsxy', 'epsxz', 'epsyz'])
-      call write_cell_field (smech_cell%plastic_strain, 'e_plastic', for_viz=.true., &
+      call get_smech_cell_plastic_strain(scratch2)
+      call write_cell_field (scratch2, 'e_plastic', for_viz=.true., &
           viz_name=['eplxx', 'eplyy', 'eplzz', 'eplxy', 'eplxz', 'eplyz'])
-      call write_cell_field (smech_cell%plastic_strain_rate, 'epsdot', for_viz=.true.)
-      call write_cell_field (thermal_strain, 'epstherm', for_viz=.true., &
+      call get_sm_thermal_strain(scratch2)
+      call write_cell_field (scratch2, 'epstherm', for_viz=.true., &
           viz_name=['epsthxx', 'epsthyy', 'epsthzz', 'epsthxy', 'epsthxz', 'epsthyz'])
-      call write_cell_field (pc_strain, 'epspc', for_viz=.true., &
+      call get_sm_pc_strain(scratch2)  
+      call write_cell_field (scratch2, 'epspc', for_viz=.true., &
           viz_name=['epspcxx', 'epspcyy', 'epspczz', 'epspcxy', 'epspcxz', 'epspcyz'])
-      call write_node_field (displacement, 'Displacement', for_viz=.true., &
-          viz_name=['Dx', 'Dy', 'Dz'])
+      deallocate(scratch2)
+      allocate(scratch1(ncells))
+      call get_smech_cell_plastic_strain_rate(scratch1)  
+      call write_cell_field (scratch1, 'epsdot', for_viz=.true.)
       
+      !! Restart and viz data (node based)
+      allocate(scratch2(ndim,nnodes))
+      call get_sm_displacement(scratch2)
+      call write_node_field (scratch2, 'Displacement', for_viz=.true., &
+          viz_name=['Dx', 'Dy', 'Dz'])
+      deallocate(scratch2)  
+
+ 
       !! Viz data only.
-      call write_cell_field (rotation_magnitude, 'Rotation', for_viz=.true.)
+      call get_sm_rotation_magnitude(scratch1)
+      call write_cell_field (scratch1, 'Rotation', for_viz=.true.)
+     
+      deallocate(scratch1)
       
       !! Gap displacements and scaled forces.  For each 'interface' (likely a
       !! gap element block?) there is an entire node-based field for the gap
       !! displacement and normal traction, with non-zero values only along the
       !! actual interface.  This REALLY needs to be re-implemented using a more
       !! efficient design.  This is viz data only.
-      
-      do n = 1, size(node_gap,2)
-        if (global_any((node_gap(:,n) /= 0.0_r8) .or. (node_norm_trac(:,n) /= 0.0_r8))) then
+    
+      ! Both node_gap and node_norm_trac are nnodes x isize
+      isize = sm_node_gap_isize()
+      allocate(node_gap(nnodes))
+      allocate(node_norm_trac(nnodes))
+      do n = 1, isize
+        call get_sm_node_gap(n,node_gap)
+        call get_sm_node_norm_trac(n,node_norm_trac)
+        if (global_any((node_gap /= 0.0_r8) .or. (node_norm_trac /= 0.0_r8))) then
           write(name,'(a,i2.2)') 'GAP_', interface_list(n)
-          call write_node_field (node_gap(:,n), name, for_viz=.true.)
+          call write_node_field (node_gap, name, for_viz=.true.)
           write(name,'(a,i2.2)') 'NTRAC_', interface_list(n)
-          call write_node_field (node_norm_trac(:,n), name, for_viz=.true.)
+          call write_node_field (node_norm_trac, name, for_viz=.true.)
         end if
       end do
-      
+      deallocate(node_gap)
+      deallocate(node_norm_trac)
+
     end subroutine write_solid_mech_data
     
     subroutine write_species_data

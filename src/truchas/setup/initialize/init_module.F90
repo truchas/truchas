@@ -68,7 +68,7 @@ CONTAINS
     use zone_module,            only: Zone
     use var_vector_module
     use gs_module
-    use solid_mechanics_data,   only: solid_mechanics
+    use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use vof_init,               only: VOF_INITIALIZE
     use diffusion_solver_data,  only: ds_enabled, num_species, &
@@ -312,7 +312,7 @@ CONTAINS
     use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
     use projection_data_module, only: dirichlet_pressure
     use property_module,        only: Get_Truchas_Material_Id
-    use solid_mechanics_data,   only: solid_mechanics
+    use solid_mechanics_input,  only: solid_mechanics
     use physics_module,         only: heat_transport, heat_species_transport
 
     ! Local Variables

@@ -156,7 +156,10 @@ list(APPEND PHYSICS_FILES
            physics/solid_mechanics/node_operator_module.F90
            physics/solid_mechanics/solid_mech_constraints.F90
            physics/solid_mechanics/solid_mechanics_data.F90
+           physics/solid_mechanics/solid_mechanics_input.F90
+           physics/solid_mechanics/solid_mechanics_mesh.F90
            physics/solid_mechanics/solid_mechanics_module.F90
+           physics/solid_mechanics/solid_mechanics_output.F90
            physics/solid_mechanics/VP_model_class.F90
            physics/solid_mechanics/MTS_VP_model_type.F90
            physics/solid_mechanics/power_law_VP_model_type.F90

@@ -22,8 +22,7 @@ MODULE LONG_EDIT_DATA_TYPES
   use mesh_module,      only: CELL_GEOMETRY, COLLATE, PERMUTE_CELL
   use parameter_module, only: max_slots, mat_slot, nvc, ndim, nfc
   use zone_module,      only: CELL_AVG, Zone, COLLATE, PERMUTE_ZONE
-  use solid_mechanics_data, only: CELL_MECH_INVARIANT
-  use solid_mechanics_module, only: STRESS_STRAIN_INVARIANTS
+  use solid_mechanics_output, only: CELL_MECH_INVARIANT
   use truchas_logging_services
   implicit none
   public

@@ -47,7 +47,7 @@ CONTAINS
                                 Node_Disp_Coords, Mesh_Surface
     use parameter_module, only: bc_forms, maxmat, ndim, nvar, mbc_surfaces, mbcsrf
     use utilities_module, only: STRING_COMPARE
-    use solid_mechanics_data, only: solid_mechanics
+    use solid_mechanics_input, only: solid_mechanics
     use property_module,      only: Get_Truchas_Material_ID
     
     ! Argument List

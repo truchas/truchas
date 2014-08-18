@@ -79,8 +79,9 @@ CONTAINS
     use time_step_module, only: cycle_number, t
     use zone_module,      only: Zone
     use output_utilities, only: ANNOUNCE_FILE_WRITE
-    use solid_mechanics_module, only: STRESS_STRAIN_INVARIANTS
-    use solid_mechanics_data, only:  solid_mechanics, Cell_Mech_Invariant
+    use solid_mechanics_output, only:  Cell_Mech_Invariant, &
+                                       STRESS_STRAIN_INVARIANTS
+    use solid_mechanics_input, only: solid_mechanics
     use property_module,  only: Get_User_Material_ID
     use gap_output,   only: SET_GAP_ELEMENT_OUTPUT
 
@@ -241,20 +242,20 @@ CONTAINS
     !   Perform the first-time portion of a "long edit" by printing
     !   all components of the Mesh, Cell, and Vertex derived types.
     !=======================================================================
-    use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
-    use gs_module,            only: EN_GATHER, EE_Gather
-    use mesh_module,          only: Cell, Mesh, Vertex, Vrtx_Bdy, &
-                                    UnPermute_Mesh_Vector,        &
-                                    UnPermute_Vertex_Vector
-    use parameter_module,     only: max_long_edit_boxes, max_long_edit_cells, &
-                                    ncells, ncells_tot, ndim, nfc, nvc
-    use parallel_util_module, only: Is_IO_PE
-    use pgslib_module,        only: PGSLIB_GLOBAL_ALL, PGSLIB_GLOBAL_SUM,     &
-                                    PGSLIB_GLOBAL_MINVAL, PGSLIB_SUM_PREFIX,  &
-                                    PGSLIB_PERMUTE, PGSLIB_GATHER, PGSLIB_GRADE_UP
-    use solid_mechanics_data, only: solid_mechanics
-    use zone_module,          only: CELL_AVG
-    use matl_module,          only: MATERIAL
+    use ArrayAllocate_Module,  only: ARRAYCREATE, ARRAYDESTROY
+    use gs_module,             only: EN_GATHER, EE_Gather
+    use mesh_module,           only: Cell, Mesh, Vertex, Vrtx_Bdy, &
+                                     UnPermute_Mesh_Vector,        &
+                                     UnPermute_Vertex_Vector
+    use parameter_module,      only: max_long_edit_boxes, max_long_edit_cells, &
+                                     ncells, ncells_tot, ndim, nfc, nvc
+    use parallel_util_module,  only: Is_IO_PE
+    use pgslib_module,         only: PGSLIB_GLOBAL_ALL, PGSLIB_GLOBAL_SUM,     &
+                                     PGSLIB_GLOBAL_MINVAL, PGSLIB_SUM_PREFIX,  &
+                                     PGSLIB_PERMUTE, PGSLIB_GATHER, PGSLIB_GRADE_UP
+    use solid_mechanics_input, only: solid_mechanics
+    use zone_module,           only: CELL_AVG
+    use matl_module,           only: MATERIAL
 
     ! Argument List
     logical, intent(OUT) :: no_long_edit_cells
@@ -574,8 +575,9 @@ CONTAINS
     use viscous_data_module,    only: viscous_iterations
     use zone_module,            only: Zone
     use output_utilities,       only: ANNOUNCE_FILE_WRITE
-    use solid_mechanics_module, only: STRESS_STRAIN_INVARIANTS
-    use solid_mechanics_data,   only: Cell_Mech_Invariant, solid_mechanics
+    use solid_mechanics_output, only: Cell_Mech_Invariant, &
+                                      STRESS_STRAIN_INVARIANTS
+    use solid_mechanics_input,  only: solid_mechanics
     use gap_output,         only: SET_GAP_ELEMENT_OUTPUT
 
     ! Local Variables
@@ -802,7 +804,7 @@ CONTAINS
     end do VARIABLE_EXTREMA
 
     ! Write out solid mechanics extrema if appropriate
-    SOLID_MECHANICS_OUTPUT: if(solid_mechanics) then
+    SOLID_MECHANICS_OUTPUT_LOOP: if(solid_mechanics) then
        ! Put reasonable values in gap_elements
        call SET_GAP_ELEMENT_OUTPUT()
        ! Calculate data
@@ -841,7 +843,7 @@ CONTAINS
        end do
        DEALLOCATE(mech_info)
 
-    end if SOLID_MECHANICS_OUTPUT
+    end if SOLID_MECHANICS_OUTPUT_LOOP
 
 
     ! If fluid flow is on, write out velocity divergence norms

@@ -35,7 +35,9 @@ Contains
     !=============================================================================
 
     use mech_bc_data_module
-    use parameter_module,     only: ndim
+    !use parameter_module,     only: ndim
+    use solid_mechanics_input,    only: contact_penalty
+    use solid_mechanics_mesh,     only: ndim
     use bc_data_types
 
     ! Local variables
@@ -122,10 +124,13 @@ Contains
     !=============================================================================
 
     use mech_bc_data_module
-    use parameter_module,     only: ndim, nnodes
+    !use parameter_module,     only: ndim, nnodes
+    use parameter_module,      only: nnodes
     use bc_data_types
-    use gs_module,            only: NN_Gather_BoundaryData
-    use mesh_module,          only: Vertex
+    use gs_module,             only: NN_Gather_BoundaryData
+    use mesh_module,           only: Vertex
+    use solid_mechanics_input, only: contact_penalty
+    use solid_mechanics_mesh,  only: ndim
 
     ! Arguments
     real(r8), Dimension(:), Intent(IN)    :: X
@@ -756,7 +761,8 @@ Contains
   SUBROUTINE CONTACT_FUNCTION(U, F, U_Bound, XC_Bound)
 
     use mech_bc_data_module
-    use parameter_module, only: ndim
+    !use parameter_module, only: ndim
+    use solid_mechanics_mesh, only: ndim
     use mesh_module, only: Vertex
 
     real(r8), dimension(:), intent(IN) :: F, U
@@ -926,6 +932,9 @@ Contains
 
   FUNCTION GET_LAMBDA(ndotudiff, normtrac) result (lam)
 
+    use solid_mechanics_input, only : contact_distance, &
+                                      contact_norm_trac
+
     real(r8), intent(IN) :: ndotudiff, normtrac
     real(r8) :: lam
 
@@ -971,7 +980,9 @@ Contains
     !=============================================================================
 
     use mech_bc_data_module
-    use parameter_module, only: ndim
+    !use parameter_module, only: ndim
+    use solid_mechanics_mesh, only: ndim
+    use solid_mechanics_input, only: contact_penalty
     use mesh_module, only: Vertex_Ngbr_All
 
     ! Arguments
@@ -1110,7 +1121,8 @@ Contains
     !=============================================================================
     use mech_bc_data_module
     use bc_operations
-    use parameter_module, only: nvf
+    !use parameter_module, only: nvf
+    use solid_mechanics_mesh, only: nvf
     use pgslib_module, only: PGSLib_GLOBAL_ANY
 
     TYPE(BC_Operator), POINTER :: HTC_GAP_Operator
@@ -1197,9 +1209,11 @@ Contains
 
     use bc_operations
     use mech_bc_data_module
-    use parameter_module, only: nvf, nvc, ncells
+    !use parameter_module, only: nvf, nvc, ncells
+    use parameter_module, only: ncells
     use pgslib_module, only: PGSLib_GLOBAL_ANY
     use gs_module, only: EN_Gather
+    use solid_mechanics_mesh, only: nvf, nvc
 
     TYPE(BC_Operator), POINTER :: HTC_GAP_Operator
     TYPE(BC_Atlas),    POINTER :: HTC_GAP_Atlas

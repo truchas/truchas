@@ -217,7 +217,7 @@ CONTAINS
     !=======================================================================
     use parameter_module, only: ncells_tot, nnodes_tot, ndim
     use utilities_module, only: STRING_COMPARE
-    use solid_mechanics_data, only: solid_mechanics
+    use solid_mechanics_input, only: solid_mechanics
 
     ! Argument List
     logical, intent(INOUT) :: fatal

@@ -34,9 +34,11 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use node_operator_module,     only: CV_Internal, Nodal_Volume, nipc, &
-         stress_reduced_integration
-    use parameter_module,         only: ndim, ncells, nnodes
+    use node_operator_module,     only: CV_Internal, Nodal_Volume, nipc
+    !use parameter_module,         only: ndim, ncells, nnodes
+    use parameter_module,         only: ncells, nnodes
+    use solid_mechanics_mesh,     only: ndim
+    use solid_mechanics_input,    only: stress_reduced_integration
 
     ! Local variables
     integer :: status
@@ -82,7 +84,9 @@ CONTAINS
     use bc_data_types
     use mech_bc_data_module
     use gs_module,                only: EN_OR_Scatter, EN_MAX_Scatter
-    use parameter_module,         only: ndim, nvc, ncells, nnodes
+    !use parameter_module,         only: ndim, nvc, ncells, nnodes
+    use parameter_module,         only: ncells, nnodes
+    use solid_mechanics_mesh,     only: ndim, nvc
     use var_vector_module
 
     ! Local variables
@@ -335,15 +339,18 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use mesh_module,          only: Vertex, Vrtx_Bdy, Mesh, CELL_TET,&
+    use mesh_module,           only: Vertex, Vrtx_Bdy, Mesh, CELL_TET,&
          CELL_PYRAMID, CELL_PRISM, CELL_EDGE, &
          GAP_ELEMENT_1
-    use parameter_module,     only: ndim, nvc, nec, nvf, ncells
-    use cutoffs_module,       only: alittle
-    use linear_module,        only: LINEAR_PROP, LINEAR_GRAD
-    use lu_solve_module,      only: LU_SOLVE, factsolve, backsolve
-    use gs_module,            only: EN_GATHER, EN_SUM_Scatter
-    use node_operator_module, only: CV_Internal, nipc, stress_reduced_integration, Nodal_Volume
+    !use parameter_module,     only: ndim, nvc, nec, nvf, ncells
+    use parameter_module,      only: ncells
+    use cutoffs_module,        only: alittle
+    use linear_module,         only: LINEAR_PROP, LINEAR_GRAD
+    use lu_solve_module,       only: LU_SOLVE, factsolve, backsolve
+    use gs_module,             only: EN_GATHER, EN_SUM_Scatter
+    use node_operator_module,  only: CV_Internal, nipc, Nodal_Volume
+    use solid_mechanics_input, only: stress_reduced_integration
+    use solid_mechanics_mesh,  only: ndim, nvc, nec, nvf
 
     ! Local Variables
     integer :: status
@@ -609,11 +616,13 @@ CONTAINS
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
-    use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes
+    !use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes
+    use parameter_module,     only: ncells, nnodes
     use cutoffs_module,       only: alittle
     use gs_module,            only: EN_GATHER
     use pgslib_module,        only: PGSLib_GLOBAL_ANY
     use node_operator_module, only: CV_Boundary, nbnode, nbface
+    use solid_mechanics_mesh, only: ndim, nvc, nvf
     use bc_data_types
     use mech_bc_data_module
     use var_vector_module
@@ -1009,7 +1018,8 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use parameter_module,     only: ndim
+    !use parameter_module,     only: ndim
+    use solid_mechanics_mesh,     only: ndim
 
     !Arguments
     integer, intent(IN) :: inode, jface, ICell, Face
@@ -1252,8 +1262,10 @@ CONTAINS
     use mech_bc_data_module
     use gs_module,            only: EN_SUM_SCATTER, NN_Gather_BoundaryData
     use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_Global_MAXVAL
-    use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes, nfc
+    !use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes, nfc
+    use parameter_module,     only: ncells, nnodes
     use mesh_module,          only: Vertex, Vertex_Ngbr_All, Mesh, GAP_ELEMENT_1, Cell
+    use solid_mechanics_mesh, only: ndim, nvc, nvf, nfc
     use var_vector_module
 
     ! Arguments
@@ -1829,8 +1841,10 @@ CONTAINS
     !---------------------------------------------------------------------------------
     use mech_bc_data_module
     use bc_data_types
-    use parameter_module,     only: ndim, nnodes
+    !use parameter_module,     only: ndim, nnodes
+    use parameter_module,     only: nnodes
     use lu_solve_module,      only: LU_SOLVE, factsolve
+    use solid_mechanics_mesh, only: ndim
 
     ! Local variables
     integer :: inode, idim, solve_flag, nnum, status
@@ -2060,8 +2074,10 @@ CONTAINS
     !
     ! Author: David Korzekwa
     !---------------------------------------------------------------------------------
-    use parameter_module,     only: ndim, nrot, ncells
+    !use parameter_module,     only: ndim, nrot, ncells
+    use parameter_module,     only: ncells
     use mesh_module,          only: Cell
+    use solid_mechanics_mesh, only: ndim, nrot
 
     ! Arguments
     real(r8), Dimension(:,:,:), intent(IN) :: Xv

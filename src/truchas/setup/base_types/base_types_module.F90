@@ -80,7 +80,7 @@ CONTAINS
     use zone_module,            only: Zone
     use fluid_data_module,       only: Fluxing_Velocity
     use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
-    use solid_mechanics_data,   only: solid_mechanics
+    use solid_mechanics_input,  only: solid_mechanics
     use turbulence_module,      only: TURBULENCE_ALLOCATE
 
     use probe_module,           only: probes

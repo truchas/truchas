@@ -74,7 +74,8 @@ CONTAINS
                                       viscous_implicitness, &
                                       viscous_iterations,   &
                                       prelim_viscous_iterations
-    use solid_mechanics_data, only: solid_mechanics, thermo_elastic_iterations, viscoplastic_iterations
+    use solid_mechanics_module, only: thermo_elastic_iterations, viscoplastic_iterations
+    use solid_mechanics_input,  only: solid_mechanics
     use time_step_module,       only: cycle_number
     use fluid_utilities_module
 

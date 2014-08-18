@@ -148,11 +148,11 @@ CONTAINS
     !
     ! Author(s): Sharen Cummins (scummins@lanl.gov)
     !=======================================================================
-    use parameter_module,           only: nprobes, nmat
-    use solid_mechanics_data,       only: solid_mechanics
-    use EM_data_proxy,              only: EM_is_on
-    use input_utilities,            only: NULL_I
-    use property_module,            only: GET_USER_MATERIAL_ID
+    use parameter_module,            only: nprobes, nmat
+    use solid_mechanics_input,       only: solid_mechanics
+    use EM_data_proxy,               only: EM_is_on
+    use input_utilities,             only: NULL_I
+    use property_module,             only: GET_USER_MATERIAL_ID
     use probe_data_module
     use probe_module
 

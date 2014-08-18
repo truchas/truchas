@@ -106,7 +106,8 @@ CONTAINS
     use porous_drag_data,       only: porous_flow
     use surface_tension_module, only: surface_tension
     use viscous_data_module,    only: inviscid, stokes
-    use solid_mechanics_data,   only: solid_mechanics, solid_mechanics_body_force
+    use solid_mechanics_input,  only: solid_mechanics,                      &
+                                      solid_mechanics_body_force
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
  
@@ -157,7 +158,8 @@ CONTAINS
     use porous_drag_data,       only: porous_flow
     use surface_tension_module, only: surface_tension
     use viscous_data_module,    only: inviscid, stokes
-    use solid_mechanics_data,   only: solid_mechanics, solid_mechanics_body_force
+    use solid_mechanics_input,  only: solid_mechanics, &
+                                      solid_mechanics_body_force
     use diffusion_solver_data,  only: ds_enabled, system_type, num_species
     
     integer, intent(in) :: lun
@@ -260,7 +262,7 @@ CONTAINS
     else
       ds_enabled = .false.
     end if
- 
+
   END SUBROUTINE PHYSICS_INPUT
  
   SUBROUTINE PHYSICS_INPUT_PARALLEL ()
@@ -279,7 +281,8 @@ CONTAINS
     use porous_drag_data,       only: porous_flow
     use surface_tension_module, only: surface_tension
     use viscous_data_module,    only: inviscid, stokes
-    use solid_mechanics_data,   only: solid_mechanics, solid_mechanics_body_force
+    use solid_mechanics_input,  only: solid_mechanics,                      &
+                                      solid_mechanics_body_force
  
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
  

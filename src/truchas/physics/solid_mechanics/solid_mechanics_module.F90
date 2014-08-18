@@ -25,22 +25,25 @@ Module SOLID_MECHANICS_MODULE
   !                     TET_GRADIENT_FACTORS()
   !               ELAS_VP_RESIDUAL ()
   !               VP_MATVEC 
-  !            STRESS_STRAIN_INVARIANTS
   !             
   ! Authors:  Dave Korzekwa (dak@lanl.gov), Mark Schraad (schraad@lanl.gov)
   !-----------------------------------------------------------------------------
   use kinds, only: r8
   Use var_vector_module
   use solid_mechanics_data
+  use solid_mechanics_input, only: solid_mechanics_body_force
   use nonlinear_solution, only: NK_SOLUTION_FIELD
   use truchas_logging_services
   Implicit None
   Private
 
+  integer, save, public :: thermo_elastic_iterations ! linear iteration count
+  integer, save, public :: viscoplastic_iterations ! nonlinear iteration count
+
+
   ! Public procedures
   Public :: SOLID_MECHANICS_ALLOCATE,   &
             THERMO_MECHANICS,           &
-            STRESS_STRAIN_INVARIANTS,   &
             SOLID_MECH_INIT
 
   ! Reference temperature for thermal stress/strain
@@ -64,8 +67,11 @@ Contains
     !    strain, and stress arrays
     !
     !---------------------------------------------------------------------------
-    Use parameter_module, Only: ncells, ndim, nnodes, ncomps
+    !Use parameter_module, Only: ncells, ndim, nnodes, ncomps
+    Use parameter_module, Only: ncells, nnodes
     Use node_operator_module, Only: nipc
+    use solid_mechanics_input, only: solid_mechanics
+    use solid_mechanics_mesh, only: ndim, ncomps
     use timing_tree
 
     Integer :: ip
@@ -188,7 +194,8 @@ Contains
     !
     !---------------------------------------------------------------------------
 
-    Use parameter_module,     Only: ndim, nnodes, ncells, nvc, nfc, nmat, mat_slot
+    !Use parameter_module,     Only: ndim, nnodes, ncells, nvc, nfc, nmat, mat_slot
+    Use parameter_module,     Only: nnodes, ncells, nmat, mat_slot
     use node_operator_module, only: cv_init, CV_Internal, nipc
     use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
     use timing_tree
@@ -202,6 +209,8 @@ Contains
     use matl_module,          only: Matl
     use mesh_module,            only: Cell, Mesh, GAP_ELEMENT_1
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
+    use solid_mechanics_input,  only: solid_mechanics
+    use solid_mechanics_mesh,   only: SM_MESH_INIT, ndim, nvc, nfc
     use pgslib_module,        only: PGSLib_Global_MAXVAL
     Use zone_module,          Only: Zone
 
@@ -221,6 +230,9 @@ Contains
 
     ! If not calculating solid mechanics, then skip the rest
     If (.not. solid_mechanics) Return
+
+    ! Initialize the solid mechanics mesh pointer
+    call SM_MESH_INIT
     
     ! Allocate and calculate control volume structures
     
@@ -422,7 +434,8 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    Use parameter_module,     Only: ndim, nnodes, ncells, ncomps, nmat, mat_slot
+    !Use parameter_module,     Only: ndim, nnodes, ncells, ncomps, nmat, mat_slot
+    use parameter_module,     Only:  nnodes, ncells, nmat, mat_slot
     Use node_operator_module, Only: nipc
     use timing_tree
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
@@ -431,6 +444,8 @@ Contains
     use fluid_data_module,    only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_UPDATE
+    use solid_mechanics_input, only: solid_mechanics
+    use solid_mechanics_mesh, only: ndim, ncomps
     use zone_module, only: zone
 
     integer :: idim, inodes, ip, icell, imat, islot
@@ -593,11 +608,14 @@ Contains
     !---------------------------------------------------------------------------
     !
     Use linear_solution, Only: Ubik_user, PRECOND_NONE, PRECOND_TM_SSOR, PRECOND_TM_DIAG
-    Use parameter_module, Only: ndim, nnodes
+    !Use parameter_module, Only: ndim, nnodes
+    Use parameter_module, Only: nnodes
     Use preconditioners, Only: PRECONDITION
     use UbikSolve_module
     use nonlinear_solution, only: Nonlinear_Solve, NKuser,                     &
                                   NK_GET_SOLUTION_FIELD, NK_INITIALIZE, NK_FINALIZE
+    use solid_mechanics_input, only: NK_DISPLACEMENT                            
+    use solid_mechanics_mesh, only: ndim                            
     use string_utilities, only: i_to_c
 
     real(r8), Dimension(ndim*nnodes) :: Solution
@@ -674,7 +692,8 @@ Contains
     !   of the nonlinear residual.
     !---------------------------------------------------------------------------
     Use mesh_module,                 Only: Cell_Edge, Cell
-    Use parameter_module,            Only: ndim, nnodes, ncells, nvc, ncomps, nvf
+    !Use parameter_module,            Only: ndim, nnodes, ncells, nvc, ncomps, nvf
+    Use parameter_module,            Only: nnodes, ncells
     Use zone_module,                 Only: Zone
     use node_operator_module,        only: CV_Internal, CV_Boundary, nipc, nbface, Nodal_Volume
     Use gs_module,                   Only: EN_SUM_Scatter
@@ -682,6 +701,7 @@ Contains
     use mech_bc_data_module
     use viscoplasticity,             only: MATERIAL_STRESSES
     use solid_mech_constraints,      only: RHS_DISPLACEMENT_CONSTRAINTS
+    use solid_mechanics_mesh,        only: ndim, nvc, ncomps, nvf
     use body_data_module,            only: Body_Force
 
     ! Local variables
@@ -867,7 +887,8 @@ Contains
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
     use preconditioners,        only: TM_P, TM_P_Map
-    use parameter_module,       only: ndim, nnodes, ncells
+    !use parameter_module,       only: ndim, nnodes, ncells
+    use parameter_module,       only: nnodes, ncells
     use node_operator_module,   only: mech_precond_init
     use mesh_module,            only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig, Cell, Mesh, &
                                       GAP_ELEMENT_1
@@ -875,6 +896,7 @@ Contains
     use timing_tree
     Use gs_module,              Only: EN_SUM_Scatter
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
+    use solid_mechanics_mesh,   only: ndim
 
     ! Preconditioning matrix.  TM_P will be pointed at this.
     type(real_var_vector), pointer, save, dimension(:) :: A_Elas
@@ -1066,13 +1088,15 @@ Contains
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use parameter_module, only: ndim, nvc, ncells_tot, nnodes, nnodes_tot
+    !use parameter_module, only: ndim, nvc, ncells_tot, nnodes, nnodes_tot
+    use parameter_module, only: ncells_tot, nnodes, nnodes_tot
     use mesh_module, only: Mesh, Vertex, CELL_TET,&
          CELL_PYRAMID, CELL_PRISM, CELL_HEX, MESH_COLLATE_VERTEX, VERTEX_COLLATE, &
           Vertex_Ngbr_All_Orig, VERTEX_DATA, GAP_ELEMENT_1, GAP_ELEMENT_3
     use node_operator_module, only: CV_Internal, nipc
     use parallel_info_module
     use pgslib_module, only: PGSLib_DIST, PGSLib_COLLATE, PGSLib_Global_Sum
+    use solid_mechanics_mesh, only: ndim, nvc
 
     integer, parameter :: nnt = ndim + 1
 
@@ -1470,7 +1494,8 @@ Contains
     ! Tc are the coordinates of the nodes
     ! Tcen are the coordinates of the centroid of the tet
 
-    use parameter_module, only: ndim
+    !use parameter_module, only: ndim
+    use solid_mechanics_mesh, only: ndim
 
     real(r8), Dimension(ndim+1,ndim) :: Tc
     real(r8), Dimension(ndim,ndim+1) :: A
@@ -1553,42 +1578,6 @@ Contains
     end do DIM_LOOP
   END SUBROUTINE TET_GRADIENT_FACTORS
 
-  !
-  FUNCTION STRESS_STRAIN_INVARIANTS () RESULT(STRESS_STRAIN)
-    !=============================================================================
-    !
-    ! Calculate invariants of stress and strain tensors at cell centers, which are
-    ! returned in Stress_Strain.  Right now this should only be called for long 
-    ! edit output.
-    ! 
-    !=============================================================================
-    use parameter_module, only: ncells
-
-    integer :: status
-
-    type(CELL_MECH_INVARIANT), pointer, dimension(:) :: Stress_Strain
-
-    allocate(stress_strain(ncells),stat = status)
-    if (status /= 0) call TLS_panic ( 'STRESS_STRAIN_INVARIANTS: allocation error: Stress_Strain')
-
-    ! Von Mises stress
-    Stress_Strain(:)%mises_stress = sqrt(((SMech_Cell%Elastic_Stress(1,:) - SMech_Cell%Elastic_Stress(2,:))**2 + &
-         (SMech_Cell%Elastic_Stress(2,:) - SMech_Cell%Elastic_Stress(3,:))**2 + &
-         (SMech_Cell%Elastic_Stress(3,:) - SMech_Cell%Elastic_Stress(1,:))**2 + &
-         6.0 * (SMech_Cell%Elastic_Stress(4,:)**2 + SMech_Cell%Elastic_Stress(5,:)**2 + SMech_Cell%Elastic_Stress(6,:)**2))/2.)
-    ! Not sure how to define this yet
-    Stress_Strain(:)%eff_plastic_strain = sqrt(((SMech_Cell%Plastic_Strain(1,:) - SMech_Cell%Plastic_Strain(2,:))**2 + &
-                                           (SMech_Cell%Plastic_Strain(2,:) - SMech_Cell%Plastic_Strain(3,:))**2 + &
-                                           (SMech_Cell%Plastic_Strain(3,:) - SMech_Cell%Plastic_Strain(1,:))**2) * 2.0/9.0 + &
-                                          (SMech_Cell%Plastic_Strain(4,:)**2 + SMech_Cell%Plastic_Strain(5,:)**2 + &
-                                           SMech_Cell%Plastic_Strain(6,:)**2) * 4.0/3.0)
-    ! Mean stress and strain
-    Stress_Strain(:)%mean_stress = (SMech_Cell%Elastic_Stress(1,:) + SMech_Cell%Elastic_Stress(2,:) + &
-                                    SMech_Cell%Elastic_Stress(3,:))/3.0
-    Stress_Strain(:)%volumetric_strain =  SMech_Cell%Total_Strain(1,:) + SMech_Cell%Total_Strain(2,:) + &
-                                          SMech_Cell%Total_Strain(3,:)
-  end FUNCTION STRESS_STRAIN_INVARIANTS
-  !
   !-----------------------------------------------------------------------------
   !
   Subroutine ELAS_VP_RESIDUAL (X_old, X, Residual)
@@ -1604,14 +1593,17 @@ Contains
     !
     !---------------------------------------------------------------------------
     Use mesh_module,            Only: Mesh, Cell_Edge, GAP_ELEMENT_1
-    Use parameter_module,       Only: ndim, ncells, nnodes, nvc, ncomps
-    use node_operator_module,   only: CV_Internal, nipc, stress_reduced_integration
+    !Use parameter_module,       Only: ndim, ncells, nnodes, nvc, ncomps
+    Use parameter_module,       Only: ncells, nnodes
+    use node_operator_module,   only: CV_Internal, nipc
     use linear_module,          only: LINEAR_GRAD
     Use gs_module,              Only: EN_GATHER, EN_SUM_Scatter
     use mech_bc_data_module
     Use UbikSolve_module
     Use viscoplasticity,        only: PLASTIC_STRAIN_INCREMENT
     use solid_mech_constraints, only: DISPLACEMENT_CONSTRAINTS
+    use solid_mechanics_input, only: stress_reduced_integration
+    use solid_mechanics_mesh,   only: ndim, nvc, ncomps
 
     ! Argument list
     real(r8), Dimension(:), Intent(IN) :: X, X_old
@@ -1773,7 +1765,9 @@ Contains
     !=======================================================================
     use lnorm_module,       only: L1NORM, L2NORM
     use nonlinear_solution, only: P_Residual, P_Future, p_control, P_Past
-    use parameter_module,   only: ndim, nnodes, nnodes_tot
+    !use parameter_module,   only: ndim, nnodes, nnodes_tot
+    use parameter_module,   only: nnodes, nnodes_tot
+    use solid_mechanics_mesh, only: ndim
     use UbikSolve_module
 
     ! arguments

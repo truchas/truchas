@@ -7,7 +7,8 @@ MODULE NODE_OPERATOR_MODULE
   !=======================================================================
   ! Nxtot is for the boundary kludge
   use kinds, only: r8
-  use parameter_module, only: ndim, nvc, nvf
+  !use parameter_module, only: ndim, nvc, nvf
+  use solid_mechanics_mesh, only: ndim, nvc, nvf
   use bc_data_types,    only: BC_MAX_OPERATORS 
   implicit none
   private
@@ -18,7 +19,6 @@ MODULE NODE_OPERATOR_MODULE
             CV_Internal,      &
             CV_Boundary,      &
             nipc, nipbf,      &
-            stress_reduced_integration, &
             cv_init, &
             Nodal_Volume, &
             mech_precond_init
@@ -37,8 +37,6 @@ MODULE NODE_OPERATOR_MODULE
   !
   ! Flag to call setup routines only once
   logical, save :: cv_init=.false.
-  ! Reduced integration flag
-  logical, save :: stress_reduced_integration
   ! Flag to call precondition setup routines only when needed
   logical, save :: mech_precond_init=.false.
   ! Control volume faces internal to the mesh cells

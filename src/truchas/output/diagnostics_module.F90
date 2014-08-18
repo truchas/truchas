@@ -132,10 +132,19 @@ CONTAINS
     use discrete_op_module,   only: GRADIENT_CELL
     use matl_module,          only: GATHER_VOF
     use EM_data_proxy,        only: joule_power_density, EM_is_on
-    use solid_mechanics_data, only: SMech_Cell, Thermal_Strain, PC_Strain, &
-                                    Displacement, Node_Gap, Node_Norm_Trac, solid_mechanics
-    use probe_module,         only: probes
-    use parameter_module,     only: string_len, ncells, ndim, nmat, nprobes
+    use solid_mechanics_input,  only: solid_mechanics
+    use solid_mechanics_output, only: get_smech_cell_plastic_strain_rate, &
+                                      get_smech_cell_elastic_stress,      &
+                                      get_smech_cell_total_strain,        &
+                                      get_sm_displacement,                &
+                                      get_sm_thermal_strain,              &
+                                      get_sm_pc_strain,                   &
+                                      sm_node_gap_isize,                  &
+                                      get_sm_node_gap,                    &
+                                      get_sm_node_norm_trac
+    use probe_module,           only: probes
+    use parameter_module,       only: string_len, ncells, ndim, nmat, nprobes, &
+                                      nnodes, ncomps
 
     ! Local variables.
     integer :: i, j, k, n, m, count, theindex, vfieldsize, tfieldsize
@@ -155,6 +164,16 @@ CONTAINS
 
     real(r8), dimension(ncells) :: mVOF
     logical, dimension(ncells) :: mMask
+
+    integer :: idx, isize
+    real(r8), dimension(:), allocatable, target :: plastic_strain_rate
+    real(r8), dimension(:,:), allocatable, target :: displacement
+    real(r8), dimension(:,:), allocatable, target :: thermal_strain
+    real(r8), dimension(:,:), allocatable, target :: pc_strain
+    real(r8), dimension(:,:), allocatable, target :: total_strain
+    real(r8), dimension(:,:), allocatable, target :: elastic_stress
+    real(r8), dimension(:,:), allocatable, target :: node_gap
+    real(r8), dimension(:,:), allocatable, target :: node_norm_trac
 
     scalarfields => NULL()
     vectorfields => NULL()
@@ -180,7 +199,34 @@ CONTAINS
     !
     !***********************************************************************************
 
+    
     if (nprobes > 0) then
+
+       ! The solid mechanics ouput module only returns arrays, not pointers
+       ! Need these arrays allocated and ready to use if solid_mechanics is
+       ! .true.
+       if ( solid_mechanics ) then
+         allocate(plastic_strain_rate(ncells))
+         call get_smech_cell_plastic_strain_rate(plastic_strain_rate)
+         allocate(total_strain(ncomps,ncells))
+         call get_smech_cell_total_strain(total_strain)
+         allocate(elastic_stress(ncomps,ncells))
+         call get_smech_cell_elastic_stress(elastic_stress)
+         allocate(displacement(ndim,nnodes))
+         call get_sm_displacement(displacement)
+         allocate(thermal_strain(ncomps,ncells))
+         call get_sm_thermal_strain(thermal_strain)
+         allocate(pc_strain(ncomps,ncells))
+         call get_sm_pc_strain(pc_strain)
+         isize = sm_node_gap_isize()
+         allocate(node_gap(nnodes,isize))
+         allocate(node_norm_trac(nnodes,isize))
+         do idx=1,isize
+           call get_sm_node_gap(idx,node_gap(:,idx))
+           call get_sm_node_norm_trac(idx,node_norm_trac(:,idx))
+         end do  
+       endif 
+
 
        if (SIZE(probes(1)%ScalarVarLU) > 0) then
 
@@ -219,7 +265,7 @@ CONTAINS
              count = count + 1
           end if
           if (solid_mechanics) then
-             scalarfields(count)%field      => SMech_Cell%Plastic_Strain_Rate(:)
+             scalarfields(count)%field      => plastic_strain_rate
              count = count + 1
           end if
 
@@ -250,7 +296,7 @@ CONTAINS
           !get all node-centered vector fields
           if (solid_mechanics) then
              do j=1,vfieldsize
-                vectorfields(count,j)%field => Displacement(j,:) 
+                vectorfields(count,j)%field => displacement(j,:) 
              end do
              count = count + 1 
           end if
@@ -267,11 +313,11 @@ CONTAINS
 
           if (solid_mechanics) then
              do j=1,tfieldsize
-                tensorfields(count,j)%field => SMech_Cell%Elastic_Stress(j,:)
+                tensorfields(count,j)%field => Elastic_Stress(j,:)
              end do
              count = count + 1
              do j=1,tfieldsize
-                tensorfields(count,j)%field => SMech_Cell%Total_Strain(j,:)
+                tensorfields(count,j)%field => Total_Strain(j,:)
              end do
              count = count + 1
              do j=1,tfieldsize
@@ -316,7 +362,6 @@ CONTAINS
     if (ASSOCIATED(scalarfields)) DEALLOCATE(scalarfields)
     if (ASSOCIATED(vectorfields)) DEALLOCATE(vectorfields)
     if (ASSOCIATED(tensorfields)) DEALLOCATE(tensorfields)
-
 
   END SUBROUTINE PROBES_FIELDS
 
