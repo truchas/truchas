@@ -62,6 +62,10 @@ include(input/TruchasFiles.cmake)
 message(STATUS "Processing materials")
 include(materials/TruchasFiles.cmake)
 
+# - microstructure
+message(STATUS "Processing ustruc")
+include(ustruc/TruchasFiles.cmake)
+
 # - ode
 message(STATUS "Processing ode")
 include(ode/TruchasFiles.cmake)
@@ -197,6 +201,9 @@ if(ENABLE_PGSLib)
 endif()
 if(ENABLE_UbikSolve)
   list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+endif()
+if(Fortran_COMPILER_IS_NAG)
+  list(APPEND fc_flags -C)
 endif()
 build_whitespace_string(MAIN_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${MAIN_SOURCE_FILES} PROPERTIES

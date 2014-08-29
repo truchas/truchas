@@ -95,6 +95,8 @@ module FHT_solver_type
   public :: FHT_solver_set_initial_state
   public :: FHT_solver_get_cell_temp_view
   public :: FHT_solver_get_cell_temp_copy
+  public :: FHT_solver_get_face_temp_view
+  public :: FHT_solver_get_face_temp_copy
   public :: FHT_solver_get_cell_heat_view
   public :: FHT_solver_get_cell_heat_copy
   public :: FHT_solver_get_void_cell_view
@@ -741,6 +743,18 @@ contains
     real(r8), intent(inout) :: copy(:)
     call FHT_model_get_cell_temp_copy (this%model, this%u, copy)
   end subroutine FHT_solver_get_cell_temp_copy
+  
+  subroutine FHT_solver_get_face_temp_view (this, view)
+    type(FHT_solver), intent(in) :: this
+    real(r8), pointer :: view(:)
+    call FHT_model_get_face_temp_view (this%model, this%u, view)
+  end subroutine FHT_solver_get_face_temp_view
+  
+  subroutine FHT_solver_get_face_temp_copy (this, copy)
+    type(FHT_solver), intent(in) :: this
+    real(r8), intent(inout) :: copy(:)
+    call FHT_model_get_face_temp_copy (this%model, this%u, copy)
+  end subroutine FHT_solver_get_face_temp_copy
   
   subroutine FHT_solver_get_cell_heat_view (this, view)
     type(FHT_solver), intent(in) :: this

@@ -193,6 +193,9 @@ module distributed_mesh
 
     !! Partitioning and inter-process communication data.
     type(ip_desc) :: node_ip, edge_ip, face_ip, cell_ip
+  contains
+    procedure :: get_cell_set_bitmask
+    procedure :: get_face_set_bitmask
   end type dist_mesh
 
   interface destroy
@@ -200,6 +203,65 @@ module distributed_mesh
   end interface
 
 contains
+
+  !! Returns a scalar bit mask for use in bit operations with the cell_set_mask
+  !! array component.  The corresponding bit is set for each cell set ID given
+  !! in the array SETIDS.  STAT returns a non-zero value if an unknown cell set
+  !! ID is specified, and the optional allocatable deferred-length character
+  !! ERRMSG is assigned an explanatory message if present.
+
+  subroutine get_cell_set_bitmask (this, setids, bitmask, stat, errmsg)
+    use string_utilities, only: i_to_c
+    class(dist_mesh), intent(in) :: this
+    integer, intent(in) :: setids(:)
+    integer(kind(this%cell_set_mask)), intent(out) :: bitmask
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    integer :: i, j
+    bitmask = 0
+    do i = 1, size(setids)
+      do j = size(this%cell_set_ID), 1, -1
+        if (setids(i) == this%cell_set_ID(j)) exit
+      end do
+      if (j == 0) then
+        stat = 1
+        if (present(errmsg)) errmsg = 'unknown cell set ID: ' // i_to_c(setids(i))
+        return
+      end if
+      bitmask = ibset(bitmask, j)
+    end do
+    stat = 0
+  end subroutine get_cell_set_bitmask
+
+  !! Returns a scalar bit mask for use in bit operations with the face_set_mask
+  !! array component.  The corresponding bit is set for each face set ID given
+  !! in the array SETIDS.  STAT returns a non-zero value if an unknown face set
+  !! ID is specified, and the optional allocatable deferred-length character
+  !! ERRMSG is assigned an explanatory message if present.
+
+  subroutine get_face_set_bitmask (this, setids, bitmask, stat, errmsg)
+    use bitfield_type
+    use string_utilities, only: i_to_c
+    class(dist_mesh), intent(in) :: this
+    integer, intent(in) :: setids(:)
+    type(bitfield), intent(out) :: bitmask
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    integer :: i, j
+    bitmask = ZERO_BITFIELD
+    do i = 1, size(setids)
+      do j = size(this%face_set_ID), 1, -1
+        if (setids(i) == this%face_set_ID(j)) exit
+      end do
+      if (j == 0) then
+        stat = 1
+        if (present(errmsg)) errmsg = 'unknown face set ID: ' // i_to_c(setids(i))
+        return
+      end if
+      bitmask = ibset(bitmask, j)
+    end do
+    stat = 0
+  end subroutine get_face_set_bitmask
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

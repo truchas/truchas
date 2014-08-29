@@ -14,6 +14,7 @@
 module truchas_danu_output
 
   use truchas_danu_output_data
+  use truchas_danu_output_tools
   use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
   use parallel_communication
   use truchas_logging_services
@@ -31,14 +32,6 @@ module truchas_danu_output
   type(c_ptr), save :: seq_id = C_NULL_PTR ! Danu sequence id
   
   public :: fid ! others may want to write here
-  
-  interface write_cell_field
-    module procedure write_cell_field_r0, write_cell_field_r1
-  end interface
-  
-  interface write_node_field
-    module procedure write_node_field_r0, write_node_field_r1
-  end interface
   
 contains
 
@@ -200,6 +193,7 @@ contains
     use EM_data_proxy, only: EM_is_on
     use solid_mechanics_input, only: solid_mechanics
     use gap_output, only: set_gap_element_output
+    use ustruc_driver, only: ustruc_output
     
     integer :: stat
   
@@ -236,6 +230,11 @@ contains
     
     !! Species fields.
     if (species_transport .or. heat_species_transport) call write_species_data
+
+print *, 'fofo'
+    !! Microstructure analysis data (if enabled)
+    call ustruc_output (seq_id)
+print *, 'baba'
     
   contains
   
@@ -257,14 +256,14 @@ contains
       !! same, but perhaps the zone%rho value is stale?  NNC, 8/9/2012. 
       allocate(rho(ncells))
       call get_density (zone%temp, rho)
-      call write_cell_field (rho, 'Z_RHO', for_viz=.true., viz_name='Density')
+      call write_seq_cell_field (seq_id, rho, 'Z_RHO', for_viz=.true., viz_name='Density')
       deallocate(rho)
     
       !! Cell temperature
-      call write_cell_field (zone%temp, 'Z_TEMP', for_viz=.true., viz_name='T')
+      call write_seq_cell_field (seq_id, zone%temp, 'Z_TEMP', for_viz=.true., viz_name='T')
 
       !! Average cell enthalpy density
-      call write_cell_field (zone%enthalpy, 'Z_ENTHALPY', for_viz=.true., viz_name='Enthalpy')
+      call write_seq_cell_field (seq_id, zone%enthalpy, 'Z_ENTHALPY', for_viz=.true., viz_name='Enthalpy')
 
       !! Phase volume fractions
       if (nmat > 1) then
@@ -273,7 +272,7 @@ contains
           call gather_vof (m, vof(m,:))
           write(name(m),'(a,i4.4)') 'VOF', get_user_material_id(m)
         end do
-        call write_cell_field (vof, 'VOF', for_viz=.true., viz_name=name)
+        call write_seq_cell_field (seq_id, vof, 'VOF', for_viz=.true., viz_name=name)
         deallocate(vof, name)
       end if
 
@@ -295,29 +294,29 @@ contains
       do n = 1, ndim
         vcell(n,:) = zone%vc(n) ! work around flawed data structure
       end do
-      call write_cell_field (vcell, 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
+      call write_seq_cell_field (seq_id, vcell, 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
       deallocate(vcell)
       
       !! Cell-centered fluid pressure.
-      call write_cell_field (zone%p, 'Z_P', for_viz=.true., viz_name='P')
+      call write_seq_cell_field (seq_id, zone%p, 'Z_P', for_viz=.true., viz_name='P')
       
       !! Face fluxing velocities.
-      call write_cell_field (fluxing_velocity, 'Face_Vel', for_viz=.false.)
+      call write_seq_cell_field (seq_id, fluxing_velocity, 'Face_Vel', for_viz=.false.)
       
       !! Cell-centered fluid Courant number.
-      call write_cell_field (courant, 'COURANT', for_viz=.true.)
+      call write_seq_cell_field (seq_id, courant, 'COURANT', for_viz=.true.)
       
       !! Cell-centered divergence (the volume error).
       allocate(div(ncells))
       call divergence (div)
-      call write_cell_field (div, 'Volume_Error', for_viz=.true., viz_name='vol_err')
+      call write_seq_cell_field (seq_id, div, 'Volume_Error', for_viz=.true., viz_name='vol_err')
       deallocate(div)
       
       !! Cell-centered fluid density delta.
       if (boussinesq_approximation) then
         allocate(drho(ncells))
         call get_density_delta (zone%temp, drho)
-        call write_cell_field (drho, 'del-rho', for_viz=.true., viz_name='delrho')
+        call write_seq_cell_field (seq_id, drho, 'del-rho', for_viz=.true., viz_name='delrho')
         deallocate(drho)
       end if
 
@@ -333,10 +332,10 @@ contains
       real(r8) :: dTdt(ncells), gradT(ndim,ncells)
       
       dTdt = (zone%temp - zone%temp_old) / dt
-      call write_cell_field (dTdt, 'dTdt', for_viz=.true., viz_name='dT/dt')
+      call write_seq_cell_field (seq_id, dTdt, 'dTdt', for_viz=.true., viz_name='dT/dt')
       
       call ds_get_temp_grad (gradT)
-      call write_cell_field (gradT, 'Grad_T', for_viz=.true., viz_name=['dT/dx','dT/dy','dT/dz'])
+      call write_seq_cell_field (seq_id, gradT, 'Grad_T', for_viz=.true., viz_name=['dT/dx','dT/dy','dT/dz'])
 
     end subroutine write_heat_transfer_data
     
@@ -347,7 +346,7 @@ contains
       real(r8), pointer :: q(:)
       
       q => joule_power_density()
-      call write_cell_field (q, 'Joule_P', for_viz=.true.)
+      call write_seq_cell_field (seq_id, q, 'Joule_P', for_viz=.true.)
 
     end subroutine write_EM_data
   
@@ -374,16 +373,16 @@ contains
       do n = 1, nipc
         call get_smech_ip_total_strain(n,scratch2)
         write(name,'(a,i2.2)') 'TOTAL_STRAIN_', n
-        call write_cell_field (scratch2, name, for_viz=.false.)
+        call write_seq_cell_field (seq_id, scratch2, name, for_viz=.false.)
         call get_smech_ip_elastic_stress(n,scratch2)
         write(name,'(a,i2.2)') 'ELASTIC_STRESS_', n
-        call write_cell_field (scratch2, name, for_viz=.false.)
+        call write_seq_cell_field (seq_id, scratch2, name, for_viz=.false.)
         call get_smech_ip_plastic_strain(n,scratch2)
         write(name,'(a,i2.2)') 'PLASTIC_STRAIN_', n
-        call write_cell_field (scratch2, name, for_viz=.false.)
+        call write_seq_cell_field (seq_id, scratch2, name, for_viz=.false.)
         call get_smech_ip_plastic_strain_rate(n,scratch1)
         write(name,'(a,i2.2)') 'PLASTIC_STRAIN_RATE_', n
-        call write_cell_field (scratch1, name, for_viz=.false.)
+        call write_seq_cell_field (seq_id, scratch1, name, for_viz=.false.)
       end do
       deallocate(scratch1)
       deallocate(scratch2)
@@ -391,42 +390,42 @@ contains
       !! More restart-only data
       allocate(scratch2(ndim,nnodes))
       call get_sm_rhs(scratch2)
-      call write_node_field (scratch2, 'RHS', for_viz=.false.)
+      call write_seq_node_field (seq_id, scratch2, 'RHS', for_viz=.false.)
       deallocate(scratch2)
       
       !! Restart and viz data (cell based).
       allocate(scratch2(ncomps,ncells))
       call get_smech_cell_elastic_stress(scratch2)
-      call write_cell_field (scratch2, 'sigma', for_viz=.true., &
+      call write_seq_cell_field (seq_id, scratch2, 'sigma', for_viz=.true., &
           viz_name=['sigxx', 'sigyy', 'sigzz', 'sigxy', 'sigxz', 'sigyz'])
       call get_smech_cell_total_strain(scratch2)
-      call write_cell_field (scratch2, 'epsilon', for_viz=.true., &
+      call write_seq_cell_field (seq_id, scratch2, 'epsilon', for_viz=.true., &
           viz_name=['epsxx', 'epsyy', 'epszz', 'epsxy', 'epsxz', 'epsyz'])
       call get_smech_cell_plastic_strain(scratch2)
-      call write_cell_field (scratch2, 'e_plastic', for_viz=.true., &
+      call write_seq_cell_field (seq_id, scratch2, 'e_plastic', for_viz=.true., &
           viz_name=['eplxx', 'eplyy', 'eplzz', 'eplxy', 'eplxz', 'eplyz'])
       call get_sm_thermal_strain(scratch2)
-      call write_cell_field (scratch2, 'epstherm', for_viz=.true., &
+      call write_seq_cell_field (seq_id, scratch2, 'epstherm', for_viz=.true., &
           viz_name=['epsthxx', 'epsthyy', 'epsthzz', 'epsthxy', 'epsthxz', 'epsthyz'])
       call get_sm_pc_strain(scratch2)  
-      call write_cell_field (scratch2, 'epspc', for_viz=.true., &
+      call write_seq_cell_field (seq_id, scratch2, 'epspc', for_viz=.true., &
           viz_name=['epspcxx', 'epspcyy', 'epspczz', 'epspcxy', 'epspcxz', 'epspcyz'])
       deallocate(scratch2)
       allocate(scratch1(ncells))
       call get_smech_cell_plastic_strain_rate(scratch1)  
-      call write_cell_field (scratch1, 'epsdot', for_viz=.true.)
+      call write_seq_cell_field (seq_id, scratch1, 'epsdot', for_viz=.true.)
       
       !! Restart and viz data (node based)
       allocate(scratch2(ndim,nnodes))
       call get_sm_displacement(scratch2)
-      call write_node_field (scratch2, 'Displacement', for_viz=.true., &
+      call write_seq_node_field (seq_id, scratch2, 'Displacement', for_viz=.true., &
           viz_name=['Dx', 'Dy', 'Dz'])
       deallocate(scratch2)  
 
  
       !! Viz data only.
       call get_sm_rotation_magnitude(scratch1)
-      call write_cell_field (scratch1, 'Rotation', for_viz=.true.)
+      call write_seq_cell_field (seq_id, scratch1, 'Rotation', for_viz=.true.)
      
       deallocate(scratch1)
       
@@ -445,9 +444,9 @@ contains
         call get_sm_node_norm_trac(n,node_norm_trac)
         if (global_any((node_gap /= 0.0_r8) .or. (node_norm_trac /= 0.0_r8))) then
           write(name,'(a,i2.2)') 'GAP_', interface_list(n)
-          call write_node_field (node_gap, name, for_viz=.true.)
+          call write_seq_node_field (seq_id, node_gap, name, for_viz=.true.)
           write(name,'(a,i2.2)') 'NTRAC_', interface_list(n)
-          call write_node_field (node_norm_trac, name, for_viz=.true.)
+          call write_seq_node_field (seq_id, node_norm_trac, name, for_viz=.true.)
         end if
       end do
       deallocate(node_gap)
@@ -467,217 +466,11 @@ contains
       
       do n = 1, num_species
         call ds_get_phi (n, array)
-        call write_cell_field (array, 'phi'//i_to_c(n), for_viz=.true.)
+        call write_seq_cell_field (seq_id, array, 'phi'//i_to_c(n), for_viz=.true.)
       end do
 
     end subroutine write_species_data
     
   end subroutine TDO_write_timestep
-  
-  subroutine write_cell_field_r0 (ldata, name, for_viz, viz_name)
-  
-    use parameter_module, only: ncells, ncells_tot
-
-    real(r8), intent(in) :: ldata(:)
-    character(*), intent(in) :: name
-    logical, intent(in) :: for_viz
-    character(*), intent(in), optional :: viz_name
-
-    integer :: stat
-    real(r8), allocatable :: gdata(:)
-    type(c_ptr) :: dataset_id
-    
-    INSIST(size(ldata) == ncells)
-    
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(ncells_tot))
-      else
-        allocate(gdata(0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
-    
-    INSIST(stat == DANU_SUCCESS)
-    
-    if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'CELL', stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) then
-        if (present(viz_name)) then
-          call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-        else
-          call attribute_write (dataset_id, 'FIELDNAME', name, stat)
-        end if
-      end if
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-    end if
-    
-  end subroutine write_cell_field_r0
-  
-  subroutine write_cell_field_r1 (ldata, name, for_viz, viz_name)
-  
-    use parameter_module, only: ncells, ncells_tot
-    use string_utilities, only: i_to_c
-
-    real(r8), intent(in) :: ldata(:,:)
-    character(*), intent(in) :: name
-    logical, intent(in) :: for_viz
-    character(*), intent(in), optional :: viz_name(:)
-
-    integer :: stat, n
-    real(r8), allocatable :: gdata(:,:)
-    type(c_ptr) :: dataset_id
-    
-    INSIST(size(ldata,dim=2) == ncells)
-    
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(size(ldata,1),ncells_tot))
-      else
-        allocate(gdata(size(ldata,1),0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
-    
-    INSIST(stat == DANU_SUCCESS)
-    
-    if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'CELL', stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      INSIST(present(viz_name))
-      INSIST(size(viz_name) == size(ldata,1))
-      ! Argh, no array attributes!  So we'll do it this way for now.
-      !if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-      !call broadcast (stat)
-      !INSIST(stat == DANU_SUCCESS)
-      do n = 1, size(viz_name)
-        if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
-        call broadcast (stat)
-        INSIST(stat == DANU_SUCCESS)
-      end do
-    end if
-    
-  end subroutine write_cell_field_r1
-  
-  subroutine write_node_field_r0 (ldata, name, for_viz, viz_name)
-  
-    use parameter_module, only: nnodes, nnodes_tot
-
-    real(r8), intent(in) :: ldata(:)
-    character(*), intent(in) :: name
-    logical, intent(in) :: for_viz
-    character(*), intent(in), optional :: viz_name
-
-    integer :: stat
-    real(r8), allocatable :: gdata(:)
-    type(c_ptr) :: dataset_id
-    
-    INSIST(size(ldata) == nnodes)
-    
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(nnodes_tot))
-      else
-        allocate(gdata(0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
-    
-    INSIST(stat == DANU_SUCCESS)
-    
-    if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'NODE', stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) then
-        if (present(viz_name)) then
-          call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-        else
-          call attribute_write (dataset_id, 'FIELDNAME', name, stat)
-        end if
-      end if
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-    end if
-    
-  end subroutine write_node_field_r0
-  
-  subroutine write_node_field_r1 (ldata, name, for_viz, viz_name)
-  
-    use parameter_module, only: nnodes, nnodes_tot
-    use string_utilities, only: i_to_c
-
-    real(r8), intent(in) :: ldata(:,:)
-    character(*), intent(in) :: name
-    logical, intent(in) :: for_viz
-    character(*), intent(in), optional :: viz_name(:)
-
-    integer :: stat, n
-    real(r8), allocatable :: gdata(:,:)
-    type(c_ptr) :: dataset_id
-    
-    INSIST(size(ldata,dim=2) == nnodes)
-    
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(size(ldata,1),nnodes_tot))
-      else
-        allocate(gdata(size(ldata,1),0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
-    
-    INSIST(stat == DANU_SUCCESS)
-    
-    if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'NODE', stat)
-      call broadcast (stat)
-      INSIST(stat == DANU_SUCCESS)
-      INSIST(present(viz_name))
-      INSIST(size(viz_name) == size(ldata,1))
-      ! Argh, no array attributes!  So we'll do it this way for now.
-      !if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-      !call broadcast (stat)
-      !INSIST(stat == DANU_SUCCESS)
-      do n = 1, size(viz_name)
-        if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
-        call broadcast (stat)
-        INSIST(stat == DANU_SUCCESS)
-      end do
-    end if
-    
-  end subroutine write_node_field_r1
 
 end module truchas_danu_output

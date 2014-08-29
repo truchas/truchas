@@ -156,7 +156,11 @@ contains
         a = c
         c = t
       end if
-      l = a * sqrt(1.0_r8 + ((b/a)**2 + (c/a)**2))
+      if (a == 0.0_r8) then
+        l = 0.0_r8
+      else
+        l = a * sqrt(1.0_r8 + ((b/a)**2 + (c/a)**2))
+      end if
     case default  ! FOR ANYTHING ELSE WE RETURN A BOGUS VALUE
       l = -huge(1.0_r8)
     end select

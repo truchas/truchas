@@ -36,6 +36,7 @@ module HTSD_solver_type
   public :: HTSD_solver_commit_pending_state
   public :: HTSD_solver_get_soln_view, HTSD_solver_get_soln_copy
   public :: HTSD_solver_get_cell_temp_view, HTSD_solver_get_cell_temp_copy
+  public :: HTSD_solver_get_face_temp_view, HTSD_solver_get_face_temp_copy
   public :: HTSD_solver_get_cell_heat_view, HTSD_solver_get_cell_heat_copy
   public :: HTSD_solver_get_cell_conc_view, HTSD_solver_get_cell_conc_copy
   public :: HTSD_solver_get_cell_temp_grad
@@ -130,9 +131,21 @@ contains
   
   subroutine HTSD_solver_get_cell_temp_copy (this, copy)
     type(HTSD_solver), intent(in) :: this
-    real(r8), intent(out) :: copy(:)
+    real(r8), intent(inout) :: copy(:)
     call HTSD_model_get_cell_temp_copy (this%model, this%u, copy)
   end subroutine HTSD_solver_get_cell_temp_copy
+  
+  subroutine HTSD_solver_get_face_temp_view (this, view)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), pointer :: view(:)
+    call HTSD_model_get_face_temp_view (this%model, this%u, view)
+  end subroutine HTSD_solver_get_face_temp_view
+  
+  subroutine HTSD_solver_get_face_temp_copy (this, copy)
+    type(HTSD_solver), intent(in) :: this
+    real(r8), intent(inout) :: copy(:)
+    call HTSD_model_get_face_temp_copy (this%model, this%u, copy)
+  end subroutine HTSD_solver_get_face_temp_copy
   
   subroutine HTSD_solver_get_cell_heat_view (this, view)
     type(HTSD_solver), intent(in) :: this
@@ -142,7 +155,7 @@ contains
   
   subroutine HTSD_solver_get_cell_heat_copy (this, copy)
     type(HTSD_solver), intent(in) :: this
-    real(r8), intent(out) :: copy(:)
+    real(r8), intent(inout) :: copy(:)
     call HTSD_model_get_cell_heat_copy (this%model, this%u, copy)
   end subroutine HTSD_solver_get_cell_heat_copy
   

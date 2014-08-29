@@ -111,7 +111,7 @@ module parallel_permutations
   end interface
 
   interface rearrange
-    module procedure rearrange_r0, rearrange_i0
+    module procedure rearrange_r0, rearrange_r1, rearrange_i0
   end interface
 
 contains
@@ -415,6 +415,33 @@ contains
     end do
 
   end subroutine rearrange_r0
+
+  subroutine rearrange_r1 (this, dest, src)
+
+    type(par_perm), intent(in) :: this
+    real(r8), intent(inout) :: dest(:,:)
+    real(r8), intent(in) :: src(:,:)
+
+    integer :: j, k
+    real(r8) :: src_offP(size(src,1),onP_size(this%src_ip)+1:local_size(this%src_ip))
+
+    ASSERT( defined(this) )
+    ASSERT( size(dest,1) == size(src,1) )
+    ASSERT( size(dest,2) == size(this%perm) )
+    ASSERT( size(src,2) == onP_size(this%src_ip) )
+
+    call gather_boundary (this%src_ip, src, src_offP)
+
+    do j = 1, size(dest,2)
+      k = this%perm(j)
+      if (k > onP_size(this%src_ip)) then
+        dest(:,j) = src_offP(:,k)
+      else if (k > 0) then
+        dest(:,j) = src(:,k)
+      end if
+    end do
+
+  end subroutine rearrange_r1
 
   subroutine rearrange_i0 (this, dest, src)
 

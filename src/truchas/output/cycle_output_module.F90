@@ -193,7 +193,9 @@ CONTAINS
        end if
 
        ! Initial output
+print *, 'foo'
        call TDO_write_timestep
+print *, 'bar'
        do_xml_output = .false.
 
        if (retain_last_step) then
@@ -209,6 +211,7 @@ CONTAINS
 
     ! Current time output
 10  continue
+print *, 'foo10'
 
     ! Determine if we need to quit.
     if (t2 < Output_T(next_op)) then
@@ -374,6 +377,7 @@ CONTAINS
 
        if (do_xml_output) then
           call TDO_write_timestep
+print *, 'bar'
        end if
 
     end if TERMINATION_OUTPUT

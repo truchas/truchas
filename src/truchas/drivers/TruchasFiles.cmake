@@ -31,6 +31,7 @@ fortran_preprocess_files(DRIVERS_SOURCE_FILES
 # Set compile flags		       
 include(BuildWhitespaceString)
 set(fc_flags -I${NETCDF_INCLUDE_DIR})
+list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 if(ENABLE_PGSLib)
   list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
 endif()

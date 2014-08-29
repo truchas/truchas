@@ -25,11 +25,12 @@
 !!  The following procedures operate on instances of this type passed as the
 !!  initial THIS argument.
 !!
-!!  CALL MFD_DISC_INIT (THIS, MESH) initializes the object with MESH as the
-!!    underlying computational mesh.  The object holds a reference to MESH,
+!!  CALL MFD_DISC_INIT (THIS, MESH, MINV) initializes the object with MESH as
+!!    the underlying computational mesh.  The object holds a reference to MESH,
 !!    and so the actual argument must either be a pointer or have the target
-!!    attribute, and must persist for the lifetime of the object.  After this
-!!    call the MINV component of the object is defined.
+!!    attribute, and must persist for the lifetime of the object.  The MINV
+!!    component of the object is defined by this call, unless the optional
+!!    logical argument MINV is specified with the value false.
 !!
 !!  CALL MFD_DISC_DELETE (THIS) frees resources allocated by the object.
 !!
@@ -50,6 +51,18 @@
 !!    average cell values of u which are also available (typically).  The
 !!    results are really only intended to be used for output, and may not be
 !!    at all suitable for use in a discretization scheme.
+!!
+!! NOTES
+!!
+!!  NNC, Aug 2014.  This module has grown unruly and needs to be re-thought.
+!!  It is essentially a collection of (type bound) procedures requiring no
+!!  state data other than the mesh pointer, plus other procedures that do
+!!  expect state (MINV) that is costly (space and time).  In addition, the
+!!  data components of the type are public, so the object cannot automatically
+!!  generate that state itself on demand.  Thus the addition of the optional
+!!  argument to the initialization call.  Users of this type that know they
+!!  will not need that state data can opt to not create it; the default is
+!!  to create it.
 !!
 
 #include "f90_assert.fpp"
@@ -72,6 +85,7 @@ module mfd_disc_type
   interface mfd_disc_compute_cell_grad
     procedure mfd_disc_compute_cell_grad1, mfd_disc_compute_cell_grad2
   end interface
+  public :: mfd_disc_compute_flux_matrix
   
   !! Private type for internal use.
   type :: mfd_hex
@@ -83,21 +97,15 @@ module mfd_disc_type
 
 contains
 
-  subroutine mfd_disc_init (this, mesh)
-  
+  subroutine mfd_disc_init (this, mesh, minv)
     type(mfd_disc), intent(out) :: this
     type(dist_mesh), intent(in), target :: mesh
-    
-    integer :: j
-    type(mfd_hex) :: tmp
-    
+    logical, intent(in), optional :: minv
+    logical :: define_minv
     this%mesh => mesh
-    allocate(this%minv(21,mesh%ncell))
-    do j = 1, mesh%ncell
-      call mfd_hex_init (tmp, mesh%x(:,mesh%cnode(:,j)))
-      call mfd_hex_compute_flux_matrix (tmp, 1.0_r8, this%minv(:,j), invert=.true.)
-    end do
-    
+    define_minv = .true.
+    if (present(minv)) define_minv = minv
+    if (define_minv) call init_minv (this)
   end subroutine mfd_disc_init
   
   subroutine mfd_disc_delete (this)
@@ -123,7 +131,7 @@ contains
     ASSERT(size(rcell) == size(ucell))
     ASSERT(size(uface) == this%mesh%nface)
     ASSERT(size(rface) == size(uface))
-    
+
     rface = 0.0_r8
     do j = 1, this%mesh%ncell
       flux = coef(j) * sym_matmul(this%minv(:,j), ucell(j) - uface(this%mesh%cface(:,j)))
@@ -132,6 +140,23 @@ contains
     end do
 
   end subroutine mfd_disc_apply_diff
+
+  !! This auxillary procedure allocates and initializes the MINV component.
+
+  subroutine init_minv (this)
+  
+    type(mfd_disc), intent(inout) :: this
+    
+    integer :: j
+    type(mfd_hex) :: tmp
+    
+    allocate(this%minv(21,this%mesh%ncell))
+    do j = 1, this%mesh%ncell
+      call mfd_hex_init (tmp, this%mesh%x(:,this%mesh%cnode(:,j)))
+      call mfd_hex_compute_flux_matrix (tmp, 1.0_r8, this%minv(:,j), invert=.true.)
+    end do
+    
+  end subroutine init_minv
 
  !! This procedure computes a cell-wise average gradient of a scalar field
  !! given its values at the mesh faces.  The average gradient for a cell C
@@ -258,5 +283,17 @@ contains
     !! and scale by the determinant to get the inverse.
     Ainv = (1.0_r8/(A(1,1)*Ainv(1,1) + A(2,1)*Ainv(2,1) + A(3,1)*Ainv(3,1))) * Ainv
   end subroutine invert_sym_3x3
+
+  !! NNC, August 2014.  Need external access to a MFD_HEX_COMPUTE_FLUX_MATRIX.
+  !! This needs to be revisited/generalized when this module is refactored.
+  subroutine mfd_disc_compute_flux_matrix (this, n, matrix)
+    type(mfd_disc), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8), intent(out) :: matrix(:)
+    type(mfd_hex) :: tmp
+    ASSERT(n >=1 .and. n <= this%mesh%ncell)
+    call mfd_hex_init (tmp, this%mesh%x(:,this%mesh%cnode(:,n)))
+    call mfd_hex_compute_flux_matrix (tmp, 1.0_r8, matrix, invert=.false.)
+  end subroutine mfd_disc_compute_flux_matrix
 
 end module mfd_disc_type

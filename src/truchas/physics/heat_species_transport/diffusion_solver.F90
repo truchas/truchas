@@ -34,8 +34,12 @@ module diffusion_solver
   public :: ds_set_initial_state
   public :: ds_delete
 
+  !! These return cell-centered results relative to the old Truchas mesh.
   public :: ds_get_temp, ds_get_enthalpy, ds_get_phi
   public :: ds_get_temp_grad
+
+  !! These return results relative to the new distributed mesh.
+  public :: ds_get_cell_temp, ds_get_face_temp
 
   type :: ds_driver
     !! Problem characteristics.
@@ -326,6 +330,36 @@ contains
     deallocate(tgrad)
     array(:,t_gap_elements) = 0.0_r8
   end subroutine ds_get_temp_grad
+  
+  !! Get reference to the current cell temperatures on the new distributed mesh.
+  subroutine ds_get_cell_temp (array)
+    real(r8), intent(inout) :: array(:)
+    ASSERT(size(array) >= this%mesh%ncell_onP)
+    ASSERT(this%have_heat_transfer)
+    select case (this%solver_type)
+    case (SOLVER1)
+      call HTSD_solver_get_cell_temp_copy (this%sol1, array)
+    case (SOLVER2)
+      call FHT_solver_get_cell_temp_copy (this%sol2, array)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine ds_get_cell_temp
+  
+  !! Get reference to the current face temperatures on the new distributed mesh.
+  subroutine ds_get_face_temp (array)
+    real(r8), intent(inout) :: array(:)
+    ASSERT(size(array) >= this%mesh%nface_onP)
+    ASSERT(this%have_heat_transfer)
+    select case (this%solver_type)
+    case (SOLVER1)
+      call HTSD_solver_get_face_temp_copy (this%sol1, array)
+    case (SOLVER2)
+      call FHT_solver_get_face_temp_copy (this%sol2, array)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine ds_get_face_temp
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
