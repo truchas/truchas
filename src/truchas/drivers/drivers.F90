@@ -230,9 +230,7 @@ call hijack_truchas ()
        call Cycle_Init()
 
        ! perform any necessary cyclic output and check for termination
-print *, 'FOO'
        call CYCLE_OUTPUT_DRIVER (quit, c)
-print *, 'BAR'
 
        ! check for termination; exit if time to quit
        if (quit) exit MAIN_CYCLE

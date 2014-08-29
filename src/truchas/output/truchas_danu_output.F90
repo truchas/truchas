@@ -231,10 +231,8 @@ contains
     !! Species fields.
     if (species_transport .or. heat_species_transport) call write_species_data
 
-print *, 'fofo'
     !! Microstructure analysis data (if enabled)
     call ustruc_output (seq_id)
-print *, 'baba'
     
   contains
   
