@@ -43,11 +43,11 @@ contains
   subroutine delete_cell_grad (this)
     type(cell_grad), intent(inout) :: this
     if (associated(this%params)) deallocate(this%params)
+    call pcsr_matrix_delete (this%matrix)
   end subroutine delete_cell_grad
 
   subroutine init (this, disc, mask, setids, stat, errmsg)
 
-use cell_geometry, only: hex_face_normals
     class(cell_grad), intent(out) :: this
     type(mfd_disc), intent(in), target :: disc
     logical, intent(in) :: mask(:)
@@ -60,8 +60,6 @@ use cell_geometry, only: hex_face_normals
     type(pcsr_graph), pointer :: g
     type(ip_desc), pointer :: row_ip
     real(r8) :: c
-!real(r8) :: face_normals(3,6)
-!character(128) :: string
     
     ASSERT(size(mask) == disc%mesh%ncell)
     

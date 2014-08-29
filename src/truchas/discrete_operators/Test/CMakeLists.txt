@@ -23,3 +23,6 @@ if(ENABLE_MPI)
   set_tests_properties(cell_grad_type PROPERTIES PROCESSORS 4)
 endif()
 set_property(TEST cell_grad_type PROPERTY LABELS UNIT)
+
+add_executable(test_linear_consistency test_linear_consistency.F90)
+target_link_libraries(test_linear_consistency truchas ${Truchas_LINK_LIBS})
