@@ -44,7 +44,7 @@ CONTAINS
 
   ! <><><><><><><><><><><><> PUBLIC ROUTINES <><><><><><><><><><><><><><><>
 
-  SUBROUTINE INITIAL ()
+  SUBROUTINE INITIAL (t)
     !=======================================================================
     ! Purpose(s):
     !
@@ -53,7 +53,6 @@ CONTAINS
     !   Initialize all probe structures
     !
     !=======================================================================
-    use time_step_module,       only: t
     use fluid_data_module,      only: Void_Material_Exists,     &
                                       Void_Material_Index,      &
                                       Void_Material_Count, fluid_flow
@@ -76,6 +75,8 @@ CONTAINS
     use diffusion_solver,       only: ds_init, ds_set_initial_state
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
+
+    real(r8), intent(in) :: t
 
     ! Local Variables
     integer :: m, stat

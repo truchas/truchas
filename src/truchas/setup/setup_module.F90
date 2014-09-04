@@ -138,16 +138,21 @@ CONTAINS
     call TDO_write_default_mesh
 
 #endif
-    ! Initialize cell-centered fluid variables and thermodynamic quantities.
-    call INITIAL ()
+    ! NNC, Sep 2014.  This used to be done after the call to INITIAL, but is
+    ! needed here because of time-dependent boundary conditions.  I left the
+    ! rest (DT, CYCLE_NUMBER) where it was because I do not know the
+    ! consequences of moving it here, especially CYCLE_NUMBER  as there are
+    ! some "if cycle_number == 0" hacks in the flow code.
+    if (restart) t = restart_t
 
-    ! Set initial time and timestep values. If this
-    ! is a restart, take what's on the dump; if not,
-    ! then they've already set on input.
+    ! Initialize cell-centered fluid variables and thermodynamic quantities.
+    call INITIAL (t)
+
+    ! Set the initial timestep value. If this is a restart, take what is in
+    ! restart file; if not, then it was already set by the input file.
     if (restart) then
       if (.not.ignore_dt) dt = restart_dt
-       t = restart_t
-       cycle_number = restart_cycle_number
+      cycle_number = restart_cycle_number
     end if
 
     ! Initialize electromagnetics.
