@@ -44,7 +44,7 @@ CONTAINS
 
   ! <><><><><><><><><><><><> PUBLIC ROUTINES <><><><><><><><><><><><><><><>
 
-  SUBROUTINE INITIAL ()
+  SUBROUTINE INITIAL (t)
     !=======================================================================
     ! Purpose(s):
     !
@@ -53,7 +53,6 @@ CONTAINS
     !   Initialize all probe structures
     !
     !=======================================================================
-    use time_step_module,       only: t
     use fluid_data_module,      only: Void_Material_Exists,     &
                                       Void_Material_Index,      &
                                       Void_Material_Count, fluid_flow
@@ -78,6 +77,8 @@ CONTAINS
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
     use physics_module,         only: heat_transport, heat_species_transport
+
+    real(r8), intent(in) :: t
 
     ! Local Variables
     integer :: m, stat
