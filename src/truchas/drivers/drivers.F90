@@ -204,7 +204,7 @@ call hijack_truchas ()
     call start_timer ("Main Cycle")
 
     ! Prepass to initialize a solenoidal velocity field for Advection
-    if(.not.restart) call Fluid_Flow_Driver ()
+    if(.not.restart) call Fluid_Flow_Driver (t)
   
     call mem_diag_write ('Before main loop:')
 
@@ -276,7 +276,7 @@ call hijack_truchas ()
 
        ! calculate new velocity field
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
-       call FLUID_FLOW_DRIVER ()
+       call FLUID_FLOW_DRIVER (t)
 
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
        call THERMO_MECHANICS ()

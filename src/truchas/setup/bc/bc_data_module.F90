@@ -16,6 +16,7 @@ MODULE BC_DATA_MODULE
   use bc_type_module,   only: BOUNDARY_CONDITION
   use parameter_module, only: bc_forms, ndim, nbcs, nvar, mbc_surfaces, &
                               string_len, mbcsrf, mbc_nodes, max_bc_dof
+  use velocity_boundary_data_type
 
   implicit none
 
@@ -28,10 +29,11 @@ MODULE BC_DATA_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Namelist input variables
-  character(80),         dimension(0:mbc_surfaces)       :: BC_Type
-  character(80),         dimension(0:mbc_surfaces)       :: BC_Name
-  real(r8), dimension(max_bc_dof,0:mbc_surfaces)  :: BC_Value
-  character(80),         dimension(0:mbc_surfaces)       :: BC_Variable
+  character(80), dimension(0:mbc_surfaces)            :: BC_Type
+  character(80), dimension(0:mbc_surfaces)            :: BC_Name
+  real(r8),      dimension(max_bc_dof,0:mbc_surfaces) :: BC_Value
+  real(r8),      dimension(4,16,0:mbc_surfaces)       :: BC_Table
+  character(80), dimension(0:mbc_surfaces)            :: BC_Variable
 
   integer,  dimension(0:mbc_surfaces)       :: Inflow_Material
   real(r8), dimension(0:mbc_surfaces)       :: Inflow_Temperature
@@ -87,7 +89,9 @@ MODULE BC_DATA_MODULE
 
   ! Applied velocity values (3 components on each face of each cell)
   integer, pointer, dimension(:,:)   :: BC_Mat => null()
-  real(r8),   pointer, dimension(:,:,:) :: BC_Vel => null()
+  !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
+  !ORIG: real(r8),   pointer, dimension(:,:,:) :: BC_Vel => null()
+  type(velocity_boundary_data) :: bndry_vel
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

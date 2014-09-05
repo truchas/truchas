@@ -107,6 +107,11 @@ add_pytruchas_test(diverging-duct
 		   PROCESSORS 4
 		   LABELS FLOW)
 
+add_pytruchas_test(diverging-duct-td
+                   diverging-duct-td/testDivergingDuctTD.py
+		   PROCESSORS 4
+		   LABELS FLOW)
+
 add_pytruchas_test(hydrostatic
                    hydrostatic/testHydrostatic.py
 		   PROCESSORS 4

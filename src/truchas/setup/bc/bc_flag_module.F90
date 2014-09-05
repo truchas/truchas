@@ -28,7 +28,7 @@ MODULE BC_FLAG_MODULE
   ! Public Subroutines
   public :: ASSIGN_BC_BITS, SET_DIRICHLET, SET_FREE_SLIP,    &
             SET_DIRICHLET_VEL, SET_INTERNAL_BC, SET_NEUMANN, &
-            SET_NEUMANN_VEL, SET_VELOCITY_BC, SET_NO_VEL_BC
+            SET_NEUMANN_VEL, SET_NO_VEL_BC !, SET_VELOCITY_BC
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -243,54 +243,63 @@ CONTAINS
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-  SUBROUTINE SET_VELOCITY_BC (Velocity, bit_position, f)
-    !=======================================================================
-    ! Purpose(s):
-    !   Apply velocity boundary conditions to the velocity vector 
-    !   (U,V,W) lying on face f. BCs are applied according to the 
-    !   bit positions in BC%Flag.
-    !=======================================================================
-    use bc_data_module,   only: BC_Vel, BC
-    use bc_kind_module,   only: FREE_SLIP, DIRICHLET_VEL
-    use kinds, only: r8
-    use mesh_module,      only: Cell
-    use parameter_module, only: ncells, ndim
+!! NNC, Jan 2014.  Time-dependent dirichlet velocity.  This routine is unused,
+!! and the change below to use time_step_module to get the time introduced
+!! a circular module dependency.  Hence I'm just commenting it out instead.
 
-    ! Argument List
-
-    integer, intent(IN) :: bit_position, f
-    real(r8), dimension(ndim,ncells), intent(INOUT) :: Velocity
-
-    ! Local Variables
-
-    logical, dimension(ncells) :: Mask
-    integer :: n
-    real(r8), dimension(ncells) :: Mag
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! FREE_SLIP velocity BC
-    Mask = FREE_SLIP (BC%Flag, bit_position)
-    ! Compute the projection of the velocity and the normal
-    if (ANY(Mask)) then
-       Mag = 0.0_r8
-       do n = 1,ndim
-          where (Mask) Mag = Mag + Velocity(n,:)*Cell%Face_Normal(n,f)
-       end do
-       do n = 1,ndim
-          where (Mask) Velocity(n,:) = Velocity(n,:) - Mag*Cell%Face_Normal(n,f)
-       end do
-    end if
-
-    ! DIRICHLET velocity BC
-    Mask = DIRICHLET_VEL (BC%Flag, bit_position)
-    if (ANY(Mask)) then
-       do n = 1,ndim
-          where (Mask) Velocity(n,:) = BC_Vel(n,f,:)
-       end do
-    end if
-
-  END SUBROUTINE SET_VELOCITY_BC
+!  SUBROUTINE SET_VELOCITY_BC (Velocity, bit_position, f)
+!    !=======================================================================
+!    ! Purpose(s):
+!    !   Apply velocity boundary conditions to the velocity vector 
+!    !   (U,V,W) lying on face f. BCs are applied according to the 
+!    !   bit positions in BC%Flag.
+!    !=======================================================================
+!    use bc_data_module,   only: BC_Vel, BC
+!    use bc_kind_module,   only: FREE_SLIP, DIRICHLET_VEL
+!    use kinds, only: r8
+!    use mesh_module,      only: Cell
+!    use parameter_module, only: ncells, ndim
+!    use time_step_module, only: t
+!
+!    ! Argument List
+!
+!    integer, intent(IN) :: bit_position, f
+!    real(r8), dimension(ndim,ncells), intent(INOUT) :: Velocity
+!
+!    ! Local Variables
+!
+!    logical, dimension(ncells) :: Mask
+!    integer :: n, j
+!    real(r8), dimension(ncells) :: Mag
+!
+!    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+!
+!    ! FREE_SLIP velocity BC
+!    Mask = FREE_SLIP (BC%Flag, bit_position)
+!    ! Compute the projection of the velocity and the normal
+!    if (ANY(Mask)) then
+!       Mag = 0.0_r8
+!       do n = 1,ndim
+!          where (Mask) Mag = Mag + Velocity(n,:)*Cell%Face_Normal(n,f)
+!       end do
+!       do n = 1,ndim
+!          where (Mask) Velocity(n,:) = Velocity(n,:) - Mag*Cell%Face_Normal(n,f)
+!       end do
+!    end if
+!
+!    ! DIRICHLET velocity BC
+!    Mask = DIRICHLET_VEL (BC%Flag, bit_position)
+!    !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
+!    !ORIG: if (ANY(Mask)) then
+!    !ORIG:    do n = 1,ndim
+!    !ORIG:       where (Mask) Velocity(n,:) = BC_Vel(n,f,:)
+!    !ORIG:    end do
+!    !ORIG: end if
+!    do j = 1, ncells
+!       if (Mask(j)) Velocity(:,j) = bndry_vel%get(f,j,t)
+!    end do
+!
+!  END SUBROUTINE SET_VELOCITY_BC
   
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

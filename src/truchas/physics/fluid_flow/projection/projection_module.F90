@@ -218,7 +218,7 @@ CONTAINS
     !   original MAC scheme. Upon return, Fluxing_Velocity's have been
     !   corrected so that they are discretely solenoidal.
     !=======================================================================
-    use bc_module,              only: BC_Vel
+    use bc_module,              only: bndry_vel !BC_Vel
     use fluid_data_module,      only: fluidRho, Solid_Face, &
                                       void_pressure, IsPureImmobile,  &
                                       Rho_Face, IsImmobile
@@ -234,7 +234,7 @@ CONTAINS
                                       dirichlet_pressure,           &
                                       Vol_over_RhoCsqDt
     use property_data_module,   only: Sound_Speed
-    use time_step_module,       only: dt
+    use time_step_module,       only: t, dt
     use timing_tree
     use zone_module,            only: Zone
     use UbikSolve_module
@@ -297,10 +297,18 @@ CONTAINS
        where (Boundary_Flag(f,:) == 0) &
           RHS = RHS - Fluxing_velocity(f,:)*Cell%Face_Area(f)
 
-       boundary_fv = 0
-       do n = 1,ndim
-          where (Boundary_Flag(f,:) == 2) &
-             boundary_fv = boundary_fv + BC_Vel(n,f,:)*Cell%Face_Normal(n,f)
+       !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
+       !ORIG: boundary_fv = 0
+       !ORIG: do n = 1,ndim
+       !ORIG:    where (Boundary_Flag(f,:) == 2) &
+       !ORIG:       boundary_fv = boundary_fv + BC_Vel(n,f,:)*Cell%Face_Normal(n,f)
+       !ORIG: end do
+       do i = 1, ncells
+         if (boundary_flag(f,i) == 2) then
+           boundary_fv(i) = dot_product(bndry_vel%get(f,i,t), Cell(i)%Face_Normal(:,f))
+         else
+           boundary_fv(i) = 0.0_r8
+         end if
        end do
        where (Boundary_Flag(f,:) == 2) &
           RHS = RHS + (boundary_fv - Fluxing_velocity(f,:))*Cell%Face_Area(f)
@@ -487,7 +495,7 @@ CONTAINS
     !   components on faces
     !       Jim Sicilian,   May 2006
     !======================================================================= 
-    use bc_module,              only: BC_Vel
+    use bc_module,              only: bndry_vel !BC_Vel
     use mesh_module,            only: Cell, Mesh
     use fluid_data_module,      only: Fluxing_Velocity, Face_Interpolation_Factor,  &
                                       fluidRho, IsPureImmobile, Solid_Face,         &
@@ -495,7 +503,7 @@ CONTAINS
     use gs_module,              only: EE_GATHER
     use parameter_module,       only: ncells, ndim, nfc
     use projection_data_module, only: Boundary_Flag
-    use time_step_module,       only: dt
+    use time_step_module,       only: t, dt
     use zone_module,            only: Zone
 
     ! Local Variables
@@ -533,7 +541,9 @@ CONTAINS
              Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) + Cell(:)%Face_Normal(n,f)*Velocity_Component(:)
           elsewhere(Boundary_Flag(f,:)==2)
              ! Dirichlet Velocity Boundaries
-             Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) + Cell(:)%Face_Normal(n,f)*BC_Vel(n,f,:)
+             !! NNC, Jan 2014.  Time-dependent dirichlet velocity
+             !ORIG: Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) + Cell(:)%Face_Normal(n,f)*BC_Vel(n,f,:)
+             Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) + Cell(:)%Face_Normal(n,f)*bndry_vel%get_all(n,f,t)
           endwhere
        enddo
     enddo
@@ -579,7 +589,7 @@ CONTAINS
     !   Apply a solenoidal correction, which is the gradient of the
     !   MAC solution field, to the face fluxing velocities.
     !=======================================================================
-    use bc_module,              only: BC_Prs, BC_Vel
+    use bc_module,              only: BC_Prs, bndry_vel !BC_Vel
     use do_interface,           only: DO_Specifier, do_init_ss, &
                                       do_gradient_face, DO_SOLVE_ORTHO, &
                                       DO_SOLVE_LU_LSLR
@@ -589,7 +599,7 @@ CONTAINS
     use parameter_module,       only: ncells, ndim, nfc
     use projection_data_module, only: dirichlet_pressure, Boundary_Flag, &
                                       dt_gradP_over_Rho
-    use time_step_module,       only: dt
+    use time_step_module,       only: t, dt
 
     ! Argument List
     real(r8), dimension(ncells),     intent(IN)    :: Solution
@@ -599,7 +609,7 @@ CONTAINS
     ! Local Variables
     type(DO_Specifier), pointer, save :: MAC_Cor_SS =>NULL()
     integer :: status
-    integer :: f, n, MCSolveTech
+    integer :: f, n, MCSolveTech, i
     real(r8), dimension(:),     allocatable, save :: dt_over_Rho, Grad_Dot_N
     real(r8), dimension(:,:),   allocatable, save :: Grad
     real(r8), dimension(:,:,:), allocatable, save :: fgradx
@@ -680,10 +690,15 @@ CONTAINS
           Fluxing_Velocity(f,:) = 0
 
        ! Dirichlet velocity BCs:  Fluxing_Velocity = BC_Vel
-       do n = 1,ndim
-          where (Boundary_Flag(f,:) == 2) &
-             Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) + &
-                                     BC_Vel(n,f,:)*Cell%Face_Normal(n,f)
+       !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
+       !ORIG: do n = 1,ndim
+       !ORIG:    where (Boundary_Flag(f,:) == 2) &
+       !ORIG:       Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) + &
+       !ORIG:                               BC_Vel(n,f,:)*Cell%Face_Normal(n,f)
+       !ORIG: end do
+       do i = 1, ncells
+         if (Boundary_Flag(f,i) == 2) Fluxing_Velocity(f,i) = Fluxing_Velocity(f,i) + &
+                                      dot_product(bndry_vel%get(f,i,t), Cell(i)%Face_Normal(:,f))
        end do
 
        ! Zero out Fluxing_Velocity's at solid faces.

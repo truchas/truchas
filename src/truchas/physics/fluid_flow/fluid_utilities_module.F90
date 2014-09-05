@@ -25,7 +25,7 @@ MODULE FLUID_UTILITIES_MODULE
 
 CONTAINS
 
-  SUBROUTINE FLUID_INIT ()
+  SUBROUTINE FLUID_INIT (t)
     !=======================================================================
     ! Purpose:
     !
@@ -65,6 +65,8 @@ CONTAINS
     use gs_module,              only: EE_GATHER
     use restart_variables,      only: restart, have_fluid_flow_data
 
+    real(r8), intent(in) :: t
+
     ! local variables
     integer :: n, status, f
     logical :: abort
@@ -102,7 +104,7 @@ CONTAINS
              STAT = status)
     if (status /= 0) call TLS_panic ('FLUID_INIT: memory allocation failed')
 
-    call FLUID_PROPERTIES(abort)
+    call FLUID_PROPERTIES (abort, t)
     if(abort) then
         fluid_to_move = .false.
     else

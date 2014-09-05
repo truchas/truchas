@@ -14,7 +14,7 @@ Module BC_MODULE
                             Inflow_Material, Inflow_Temperature,               &
                             BC_Temp,                                           &
                             Inflow_Index, Type_Forms, variable_forms,          &
-                            BC_Conc, BC_Prs, BC_Mat, BC_Vel,                   &
+                            BC_Conc, BC_Prs, BC_Mat, bndry_vel, & !BC_Vel,                   &
                             BC_T_DIRICHLET, BC_T_HNEUMANN, BC_T_NEUMANN,       &
                             BC_T_HTC, BC_T_RADIATION, BC_T_HTC_RADIATION,      &
                             BC_T_REFLECTIVE, BC_T_NO_BC, BC, BC_P_NO_BC,       &
@@ -23,7 +23,7 @@ Module BC_MODULE
 
   use bc_flag_module, only: ASSIGN_BC_BITS, SET_DIRICHLET, SET_FREE_SLIP,      &
                             SET_DIRICHLET_VEL, SET_INTERNAL_BC, SET_NEUMANN,   &
-                            SET_NEUMANN_VEL, SET_VELOCITY_BC, SET_NO_VEL_BC
+                            SET_NEUMANN_VEL, SET_NO_VEL_BC ! SET_VELOCITY_BC
 
   use bc_info_module, only: BCMatch, Boundary, ExternalBoundary,               &
                             InternalBoundary
@@ -47,7 +47,7 @@ Module BC_MODULE
             Inflow_Material, Inflow_Temperature,             &
             BC_Temp,                                         &
             Inflow_Index, Type_Forms, variable_forms,        &
-            BC_Conc, BC_Prs, BC_Mat, BC_Vel,                 &
+            BC_Conc, BC_Prs, BC_Mat, bndry_vel, & !BC_Vel,                 &
             BC_T_DIRICHLET, BC_T_HNEUMANN, &
             BC_T_NEUMANN, BC_T_HTC, BC_T_RADIATION,          &
             BC_T_VFRADIATION, BC_T_HTC_GAP,                  &
@@ -59,7 +59,7 @@ Module BC_MODULE
   ! bc_flag_module
   public :: ASSIGN_BC_BITS, SET_DIRICHLET, SET_FREE_SLIP,    &
             SET_DIRICHLET_VEL, SET_INTERNAL_BC, SET_NEUMANN, &
-            SET_NEUMANN_VEL, SET_VELOCITY_BC, SET_NO_VEL_BC
+            SET_NEUMANN_VEL, SET_NO_VEL_BC !, SET_VELOCITY_BC
 
   ! bc_info_module
   public :: BCMatch, Boundary, ExternalBoundary,             &

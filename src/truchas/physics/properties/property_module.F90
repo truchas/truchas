@@ -204,7 +204,7 @@ contains
   end function density_material
 
 
-  SUBROUTINE FLUID_PROPERTIES (SkipFlow)
+  SUBROUTINE FLUID_PROPERTIES (SkipFlow, t)
     !=======================================================================
     ! Purpose(s):
     !
@@ -212,7 +212,7 @@ contains
     !   there are some cells in which there are flow equations to solve
     !
     !======================================================================
-    use bc_module,              only: BC_Mat, BC_Vel
+    use bc_module,              only: BC_Mat, bndry_vel !BC_Vel
     use input_utilities,        only: NULL_I
     use cutoffs_module,         only: cutvof
     use fluid_data_module,      only: fluid_flow,                             &
@@ -233,6 +233,7 @@ contains
 
     ! Argument List
     logical :: SkipFlow  ! Flag indicating that the flow solution should abort
+    real(r8), intent(in) :: t ! time
 
     ! Local Variables
     integer :: status, m, n, f, nc, c 
@@ -386,10 +387,12 @@ contains
                   if(BC_Mat(f,c) /= NULL_I) then
                      if(DENSITY_MATERIAL(BC_Mat(f,c)) > 0.0_r8 ) then
                         !Inward Flow?
-                        BC_V_Dot_N = 0.0
-                        do n = 1, ndim
-                           BC_V_Dot_N = BC_V_Dot_N + BC_Vel(n,f,c)*Cell(c)%Face_Normal(n,f)
-                        enddo
+                        !! NNC, Jan 2014. Time-dependent dirichlet velocity
+                        !ORIG: BC_V_Dot_N = 0.0
+                        !ORIG: do n = 1, ndim
+                        !ORIG:    BC_V_Dot_N = BC_V_Dot_N + BC_Vel(n,f,c)*Cell(c)%Face_Normal(n,f)
+                        !ORIG: enddo
+                        BC_V_Dot_N = dot_product(bndry_vel%get(f,c,t), Cell(c)%Face_Normal(:,f))
                         if(BC_V_Dot_N < 0.0_r8) then
                            SkipFlow = .false.
                            EXIT SKIPFLOWLOOP

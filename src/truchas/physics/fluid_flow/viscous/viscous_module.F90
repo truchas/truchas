@@ -279,7 +279,7 @@ CONTAINS
     !                               Volume_c
     !
     !=======================================================================
-    use bc_module,            only: BC, BC_Vel, FREE_SLIP, DIRICHLET_VEL, &
+    use bc_module,            only: BC, bndry_vel, FREE_SLIP, DIRICHLET_VEL, & ! BC_Vel
                                     DIRICHLET, Vel, Prs
     use bc_operations
     use do_interface,         only: DO_Specifier, do_init_ss, do_update_weights, &
@@ -292,6 +292,7 @@ CONTAINS
     use tensor_module,        only: Tensor
     use viscous_data_module,  only: Mask, Grad, Mu_Face, &
                                     Normal, Face_Velocity
+    use time_step_module,     only: t
 
     ! Argument List
     real(r8), dimension(ndim,ncells), intent(OUT) :: Stress_Grad
@@ -344,7 +345,11 @@ CONTAINS
 
           ! At Dirichlet velocity boundary faces simply use the specified boundary velocity
           Mask = DIRICHLET_VEL (BC%Flag, Vel%Face_bit(f))
-          where (Mask) Face_Velocity = BC_Vel(n,f,:)
+          !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
+          !ORIG: where (Mask) Face_Velocity = BC_Vel(n,f,:)
+          do j = 1, ncells
+             if (Mask(j)) Face_Velocity(j) = bndry_vel%get(n,f,j,t)
+          end do
 
           ! Calculate a face gradient based on Face_Velocity and the neighbouring Zone%Vc_Old.
           Mask = Mask1 .or. Mask

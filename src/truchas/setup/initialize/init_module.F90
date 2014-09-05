@@ -162,7 +162,7 @@ CONTAINS
     !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
     !! always because fluid_init uses its results regardless of whether flow is on.
     call flow_property_init
-    call FLUID_INIT()
+    call FLUID_INIT (t)
 
     ! Allow arbitrary overwriting of the Matl, Zone, and BC types.
     call OVERWRITE_MATL ()
@@ -289,9 +289,9 @@ CONTAINS
     !   Initialize boundary condition quantities in the BC structure.
     !=======================================================================
     use bc_data_module,         only: BC_Type, BC_Name,                                  &
-                                      BC_Value, BC_Variable, Inflow_Material,            &
+                                      BC_Value, BC_Table, BC_Variable, Inflow_Material,  &
                                       Inflow_Index, nbc_surfaces, BC_Pressure,           &
-                                      BC_Conc, BC_Prs, BC_Mat, BC_Vel, BC_Temp, BC_Zero, &
+                                      BC_Conc, BC_Prs, BC_Mat, bndry_vel, BC_Temp, BC_Zero, & !BC_Vel
                                       Conic_XX, Conic_YY,                                &
                                       Conic_ZZ, Conic_XY, Conic_XZ, Conic_YZ, Conic_X,   &
                                       Conic_Y, Conic_Z, Conic_Constant, Conic_Tolerance, &
@@ -320,6 +320,8 @@ CONTAINS
     use property_module,        only: Get_Truchas_Material_Id
     use solid_mechanics_input,  only: solid_mechanics
     use physics_module,         only: heat_transport, heat_species_transport
+    use string_utilities,       only: i_to_c
+    use vector_func_factories
 
     ! Local Variables
     integer                              :: bit_position, f, n, nf, p, &
@@ -337,6 +339,7 @@ CONTAINS
     real(r8), dimension(:),   allocatable :: Tmp1, Tmp2
     integer :: istatus
     character(128) :: message
+    class(vector_func), pointer :: vel_func
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -360,11 +363,12 @@ CONTAINS
     nssets      = 0
 
     ! Nullify the pointers to BC arrays, and then initialize
-    NULLIFY (BC_Vel, BC_Mat, BC_Prs, BC_Conc, BC_Temp, BC_Zero, BC_Pressure)
+    !NULLIFY (BC_Vel, BC_Mat, BC_Prs, BC_Conc, BC_Temp, BC_Zero, BC_Pressure)
+    NULLIFY (BC_Mat, BC_Prs, BC_Conc, BC_Temp, BC_Zero, BC_Pressure)
 
     if (fluid_flow) then
-       ALLOCATE (BC_Vel(ndim,nfc,ncells))
-       BC_Vel = NULL_R
+       !ALLOCATE (BC_Vel(ndim,nfc,ncells))
+       !BC_Vel = NULL_R
        ALLOCATE (BC_Pressure(nfc,ncells))
        BC_Pressure = 0.0_r8
        ALLOCATE (BC_Zero(nfc,ncells))
@@ -400,6 +404,37 @@ CONTAINS
        call SET_FREE_SLIP (Mask1, BC%Flag, bit_position)
     end do
     dirichlet_pressure = .false.
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !! NNC, Jan 2014.  New code to handle time-dependent velocity Dirichlet BC
+    !! Here we create and store functions that return the Dirichlet velocity
+    !! data specified in the BC namelist using either the BC_Value or BC_Table
+    !! arrays.  If anything was specified for BC_Table, we use it to define a
+    !! time-dependent tabular function; otherwise we define a constant function
+    !! using BC_value.
+    call bndry_vel%init (ncells, nbc_surfaces)
+    do p = 1, nbc_surfaces
+      if (BC_Variable(p) == 'velocity' .and. BC_Type(p) == 'dirichlet') then
+        if (any(BC_Table(:,:,p) /= NULL_R)) then  ! time-dependent
+          !! work out the size of the table read from the input file.
+          do n = 1, size(BC_Table,dim=2)
+            if (any(BC_Table(:,n,p) == NULL_R)) exit
+          end do
+          m = n - 1 ! table size
+          if (any(BC_Table(:,m+1:,p) /= NULL_R)) &
+              call TLS_fatal (' Badly specified BC_Table array for BC namelist '// i_to_c(p))
+          do n = 2, m
+            if (BC_Table(1,n,p) <= BC_Table(1,n-1,p)) &
+                call TLS_fatal ('BC_Table time values not in ascending order')
+          end do
+          vel_func => new_tabular_vector_func(BC_Table(1,:m,p), BC_Table(2:,:m,p))
+        else  ! constant using BC_Value (first three elements)
+          vel_func => new_const_vector_func(BC_Value(:3,p))
+        end if
+        call bndry_vel%set_vel_func (p, vel_func)
+      end if
+    end do
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! Write notice
     call TLS_info ('')
@@ -546,16 +581,20 @@ CONTAINS
                    case ('no-slip')
 
                       call SET_DIRICHLET_VEL (Mask1, BC%Flag, bit_position)
-                      do n = 1, ndim
-                         where (Mask1) BC_Vel(n,f,:) = 0.0_r8
-                      end do
+                      !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
+                      !ORIG: do n = 1, ndim
+                      !ORIG:    where (Mask1) BC_Vel(n,f,:) = 0.0_r8
+                      !ORIG: end do
+                      call bndry_vel%set_no_slip (f, Mask1)
 
                    case ('dirichlet')
 
                       call SET_DIRICHLET_VEL (Mask1, BC%Flag, bit_position)
-                      do n = 1, ndim
-                         where (Mask1) BC_Vel(n,f,:) = BC_Value(n,p)
-                      end do
+                      !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
+                      !ORIG: do n = 1, ndim
+                      !ORIG:    where (Mask1) BC_Vel(n,f,:) = BC_Value(n,p)
+                      !ORIG: end do
+                      call bndry_vel%set_dirichlet (p, f, Mask1)
 
                    case ('neumann')
 

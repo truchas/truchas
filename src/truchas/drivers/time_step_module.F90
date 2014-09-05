@@ -147,7 +147,7 @@ CONTAINS
         ALLOCATE (fluidDeltaRho(ncells), STAT = status) 
           if (status /= 0) call TLS_panic ('TIME_STEP: fluidDeltaRho(ncells) allocation failed') 
 
-        call FLUID_PROPERTIES (abort) 
+        call FLUID_PROPERTIES (abort, t) 
         if(.not.abort) then 
             call TIME_STEP_COURANT(Fluxing_Velocity) 
             call TIME_STEP_VISCOUS 

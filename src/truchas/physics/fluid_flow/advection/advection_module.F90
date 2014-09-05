@@ -284,7 +284,7 @@ CONTAINS
     !
     !=======================================================================
     use advection_data,       only: Volume_Flux
-    use bc_module,            only: BC_Vel, BC_Mat, BC_Temp, IN_FLOW
+    use bc_module,            only: BC_Mat, BC_Temp, IN_FLOW, bndry_vel ! BC_Vel
     use input_utilities,      only: NULL_R
     use fluid_data_module,    only: Fluxing_Velocity
     use gs_module,            only: EE_GATHER
@@ -294,6 +294,7 @@ CONTAINS
     use time_step_module,     only: cycle_number
     use zone_module,          only: Zone
     use property_module,      only: DENSITY_MATERIAL
+    use time_step_module,     only: t
 
     ! Argument List
     real(r8), intent(IN)  :: dt
@@ -307,7 +308,7 @@ CONTAINS
     real(r8), dimension(:), allocatable :: Momentum_Delta_Component
     real(r8), dimension(:,:), allocatable :: Momentum, Vc_Ngbr
     real(r8), dimension(:,:,:), allocatable :: Mass_Flux
-    real(r8) :: rhom
+    real(r8) :: rhom, v
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -370,7 +371,12 @@ CONTAINS
              end do
 
              Inflow_Vel = Zone%Vc(n)
-             where (BC_Vel(n,f,:) /= NULL_R) Inflow_Vel = BC_Vel(n,f,:)
+             !! NNC, Jan 2014.  Time-dependent dirichlet velocity
+             !ORIG: where (BC_Vel(n,f,:) /= NULL_R) Inflow_Vel = BC_Vel(n,f,:)
+             do nc = 1, ncells
+                v = bndry_vel%get(n,f,nc,t)
+                if (v /= NULL_R) Inflow_Vel(nc) = v
+             end do
 
 
              ! fix up for 1D_plug_flow problem
@@ -421,7 +427,7 @@ CONTAINS
     !
     !=======================================================================
     use advection_data,       only: Volume_Flux
-    use bc_module,            only: BC_Vel, IN_FLOW
+    use bc_module,            only: IN_FLOW, bndry_vel ! BC_Vel
     use input_utilities,      only: NULL_R
     use fluid_data_module,    only: Fluxing_Velocity
     use gs_module,            only: EE_GATHER
@@ -431,6 +437,7 @@ CONTAINS
     use zone_module,          only: Zone
     use property_module,      only: DENSITY_MATERIAL
     use hoadvection,          only: ADVECT_SCALAR
+    use time_step_module,     only: t
 
     ! Argument List
     real(r8),  intent(OUT)  :: Momentum_Delta(:,:)
@@ -446,6 +453,7 @@ CONTAINS
 
     logical,  dimension(:,:),   allocatable :: InflowMask
     real(r8), dimension(:,:),   allocatable :: InflowPhi
+    real(r8) :: v
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -484,7 +492,12 @@ CONTAINS
 
           if (PGSLIB_GLOBAL_ANY(InflowMask)) then
              InflowPhi(f,:) = Zone%Vc(n)
-             where (BC_Vel(n,f,:) /= NULL_R) InflowPhi(f,:) =  BC_Vel(n,f,:)
+             !! NNC, Jan 2014.  Time-dependent dirichlet velocity
+             !ORIG: where (BC_Vel(n,f,:) /= NULL_R) InflowPhi(f,:) =  BC_Vel(n,f,:)
+             do nc = 1, ncells
+                v = bndry_vel%get(n,f,nc,t)
+                if (v /= NULL_R) InflowPhi(f,nc) = v
+             end do
              if (cycle_number == 1) then
                where (InflowMask(f,:) .and. Zone(:)%Rho_old > 0.0_r8) 
                  InflowPhi(f,:) = Zone%Vc(n)

@@ -367,7 +367,7 @@ CONTAINS
     !   Default variables in and related to the BC Namelist.
     !
     !=======================================================================
-    use bc_data_module,   only: BC_Type, BC_Value, BC_Name,                  &
+    use bc_data_module,   only: BC_Type, BC_Value, BC_Table, BC_Name,        &
                                 BC_Variable, Inflow_Material,                &
                                 Inflow_Temperature,                          &
                                 Inflow_Index,                                &
@@ -388,6 +388,7 @@ CONTAINS
     BC_name     = 'Unnamed'
     BC_Type     = 'none'
     BC_Value    = 0
+    BC_Table    = NULL_R
     BC_Variable = 'none'
 
     ! Default Velocity Variables
@@ -493,6 +494,8 @@ CONTAINS
     !   then execution terminates.
     !
     !=======================================================================
+    use kinds, only: r8
+    use bc_data_module,         only: BC_Table_Array => BC_Table
     use bc_data_module,         only: BC_Type, BC_Value, BC_Name,                  &
                                       BC_Variable, Inflow_Material,                &
                                       Inflow_Temperature,                          &
@@ -514,9 +517,10 @@ CONTAINS
     logical :: fatal, no_bc_namelist, found
     integer :: ioerror, bcs
     character(128) :: errmsg
+    real(r8) :: BC_Table(size(BC_Table_Array,1),size(BC_Table_Array,2))
 
     ! Define BC Namelist
-    namelist /BC/ BC_Type, BC_Value, BC_Variable, BC_Name,                       &
+    namelist /BC/ BC_Type, BC_Value, BC_Table, BC_Variable, BC_Name,             &
                   Inflow_Material, Inflow_Temperature,                           &
                    Conic_XX, Conic_YY, Conic_ZZ, Conic_XY,                       &
                   Conic_XZ, Conic_YZ, Conic_X, Conic_Y, Conic_Z, Conic_Constant, &
@@ -546,6 +550,7 @@ CONTAINS
        BC_Name(0)               = 'Unnamed'
        BC_Type(0)               = 'none'
        BC_Value(:,0)            = 0
+       BC_Table                 = NULL_R
        BC_Variable(0)           = 'none'
        Inflow_Material(0)       = NULL_I
        Inflow_Temperature(0)    = NULL_R
@@ -616,6 +621,7 @@ CONTAINS
           BC_Name(nbc_surfaces)              = BC_Name(0)
           BC_Type(nbc_surfaces)              = BC_Type(0)
           BC_Value(:,nbc_surfaces)           = BC_Value(:,0)
+          BC_Table_Array(:,:,nbc_surfaces)   = BC_Table
           BC_Variable(nbc_surfaces)          = BC_Variable(0)
           Inflow_Material(nbc_surfaces)      = Inflow_Material(0)
           Inflow_Temperature(nbc_surfaces)   = Inflow_Temperature(0)
@@ -663,7 +669,7 @@ CONTAINS
     !   Broadcast variables in the BC namelist to all processors.
     !
     !======================================================================
-    use bc_data_module,       only: BC_Type, BC_Value, BC_Name,               &
+    use bc_data_module,       only: BC_Type, BC_Value, BC_Table, BC_Name,     &
                                     BC_Variable, Inflow_Material,             &
                                     Inflow_Temperature,                       &
                                     Conic_XX, Conic_YY,                       &
@@ -685,6 +691,7 @@ CONTAINS
        call PGSLib_BCAST (BC_name)
        call PGSLib_BCAST (BC_Type)
        call PGSLib_BCAST (BC_Value)
+       call PGSLib_BCAST (BC_Table)
        call PGSLib_BCAST (BC_Variable)
 
        call PGSLib_BCAST (Inflow_Material)

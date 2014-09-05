@@ -38,7 +38,8 @@ set(SETUP_BC_FILES
           setup/bc/bc_info_module.F90
           setup/bc/bc_kind_module.F90
           setup/bc/bc_set_module.F90
-          setup/bc/bc_type_module.F90)
+          setup/bc/bc_type_module.F90
+          setup/bc/velocity_boundary_data_type.F90)
 list(APPEND SETUP_FILES ${SETUP_BC_FILES})	
 
 # - initialize

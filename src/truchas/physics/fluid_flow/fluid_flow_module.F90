@@ -25,22 +25,24 @@ MODULE FLUID_FLOW_MODULE
 
 CONTAINS
 
-  SUBROUTINE FLUID_FLOW_DRIVER ()
+  SUBROUTINE FLUID_FLOW_DRIVER (t)
 
     use fluid_data_module, only: fluid_flow, applyflow, fluid_to_move
+    
+    real(r8), intent(in) :: t
 
     if (fluid_flow) then
       if (applyflow) then
         fluid_to_move = .true.
-        call appliedflowfield()
+        call appliedflowfield(t)
       else
-        call NAVIER_STOKES()
+        call NAVIER_STOKES(t)
       end if
     end if
 
   END SUBROUTINE FLUID_FLOW_DRIVER
 
-  SUBROUTINE NAVIER_STOKES ()
+  SUBROUTINE NAVIER_STOKES (t)
     !=======================================================================
     ! Purpose(s):
     !
@@ -67,6 +69,7 @@ CONTAINS
     logical :: abort
 
     ! Argument List
+    real(r8), intent(in) :: t
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -89,7 +92,7 @@ CONTAINS
 
     ! Evaluate cell properties excluding immobile materials, and
     ! check that there are at least some flow equations to solve
-    call FLUID_PROPERTIES (abort)
+    call FLUID_PROPERTIES (abort, t)
 
     if (.not. abort) then
 
@@ -134,7 +137,7 @@ CONTAINS
 
   END SUBROUTINE NAVIER_STOKES
 
-  SUBROUTINE appliedflowfield ()
+  SUBROUTINE appliedflowfield (t)
 
     !=======================================================================
     ! Purpose(s):
@@ -147,6 +150,8 @@ CONTAINS
     use projection_data_module, only: Face_Density
     use property_module,        only: FLUID_PROPERTIES
     use overwrite_module,       only: PRESCRIBE_VELOCITY
+    
+    real(r8), intent(in) :: t
 
     ! Local Variables
     integer :: status
@@ -163,7 +168,7 @@ CONTAINS
     ALLOCATE (Face_Density(nfc,ncells), STAT = status)
     if (status /= 0) call TLS_panic ('FLUID_FLOW: Face_Density(nfc,ncells) allocation failed')
 
-    call fluid_properties(abort)
+    call fluid_properties(abort, t)
 
     call PRESCRIBE_VELOCITY('diagxz')
 
