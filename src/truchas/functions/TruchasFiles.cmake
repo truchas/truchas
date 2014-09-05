@@ -23,6 +23,10 @@ set(FUNC_FILES
         functions/scalar_func_containers.F90
         functions/scalar_func_tools.F90
         functions/scalar_func_map_type.F90
+        functions/vector_func_class.F90
+        functions/const_vector_func_type.F90
+        functions/tabular_vector_func_type.F90
+        functions/vector_func_factories.F90
         )
 
 if(ENABLE_DYNAMIC_LOADING)
