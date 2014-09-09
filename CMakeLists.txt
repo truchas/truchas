@@ -45,7 +45,7 @@ project(Truchas C CXX Fortran)
 # Version
 set(Truchas_MAJOR_VERSION 2)
 set(Truchas_MINOR_VERSION 8)
-set(Truchas_PATCH_VERSION 3)
+set(Truchas_PATCH_VERSION 4)
 set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
 
 # Copyright file
@@ -419,7 +419,7 @@ if (ENABLE_Danu)
 endif()
 
 # More hardcoded defines - only used in drivers.f90 need to move
-list(APPEND Truchas_PREPROCESSOR -DCODE_NAME='DUMMY')
+list(APPEND Truchas_PREPROCESSOR -DCODE_NAME='Truchas')
 list(APPEND Truchas_PREPROCESSOR -DUBIKSOLVE='UbikSolve')
 list(APPEND Truchas_PREPROCESSOR -DPGSLIB='PGSLib')
 list(APPEND Truchas_PREPROCESSOR -DCHACO='Chaco')
