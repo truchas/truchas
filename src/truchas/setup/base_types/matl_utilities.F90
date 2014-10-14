@@ -260,12 +260,20 @@ CONTAINS
     integer :: j, m, s
     type(material) :: null_mat  ! This is default initialized.
     type(material), allocatable :: mlist(:)
+#ifdef INTEL_DPD200362104
+    integer :: itmp(ncells)
+#endif
 
     ASSERT( size(vf,1) <= nmat )
     ASSERT( size(vf,2) == ncells )
 
     !! Find the max number of materials in any one cell and resize MATL accordingly.
+#ifdef INTEL_DPD200362104
+    itmp = count(vf > 0.0_r8, dim=1)
+    m = pgslib_global_maxval(itmp)
+#else
     m = pgslib_global_maxval(count(vf > 0.0_r8, dim=1))
+#endif
     call slot_resize (matl, mat_slot, m)
 
     !! Set up the material list; only the VOF values change from cell to cell.

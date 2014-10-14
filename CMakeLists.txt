@@ -367,6 +367,14 @@ else()
               ${Truchas_Compiler_Define}_WORKAROUND)
 endif()
 
+# Specific compiler bug workarounds
+include (CMakeFortranCompilerVersion)
+if (Fortran_COMPILER_IS_INTEL)
+  if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "14.0.3")
+    list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362104)
+  endif()
+endif()
+
 # Add USE_PGSLIB
 if (ENABLE_PGSLib)
   list(APPEND Truchas_PREPROCESSOR -DUSE_PGSLIB)
