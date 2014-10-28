@@ -35,7 +35,6 @@ contains
     use parallel_communication
     use distributed_mesh
     use EM_data_proxy, only: symmetry_axis, get_EM_domain_type
-    use EM_utilities
     use GeometricModeler
     use bitfield_type, only: btest
     
