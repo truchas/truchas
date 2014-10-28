@@ -130,7 +130,6 @@ list(APPEND PHYSICS_FILES
            physics/induction_heating/EM_data_proxy.F90
            physics/induction_heating/EM_graphics_output.F90
            physics/induction_heating/EM_hex_tet_mapping.F90
-           physics/induction_heating/EM_utilities.F90
            physics/induction_heating/GeometricModeler.F90
            physics/induction_heating/MaxwellBoundaryData.F90
            physics/induction_heating/MaxwellEddy.F90
@@ -140,8 +139,7 @@ list(APPEND PHYSICS_FILES
            physics/induction_heating/field_probes.F90
            physics/induction_heating/mimetic_discretization.F90
            physics/induction_heating/solenoid_fields.F90
-           physics/induction_heating/sparse_matrix.F90
-           physics/induction_heating/system_io.F90)
+           physics/induction_heating/sparse_matrix.F90)
 
 # - properties	 
 list(APPEND PHYSICS_FILES

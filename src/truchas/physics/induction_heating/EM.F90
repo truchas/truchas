@@ -5,7 +5,7 @@ module EM
   use kinds, only: rk => r8
   use parallel_communication
   use EM_data_proxy
-  use EM_utilities
+  use truchas_logging_services
   implicit none
   private
 
@@ -37,7 +37,7 @@ contains
     character(len=10) :: ss
 
     if (EM_is_on()) then
-      call EM_info (' Initializing electromagnetics ...')
+      call TLS_info (' Initializing electromagnetics ...')
       call init_EM_data_proxy ()
     end if
 
@@ -59,38 +59,38 @@ contains
       !! Determine if the restart Joule heat is usable; if not, compute it.
       if (no_source_field()) then
         if (source_has_changed()) then
-          call EM_info ('   Magnetic source field has changed; restart data not usable.')
-          call EM_info ('  No magnetic source field; setting the Joule heat to zero.')
+          call TLS_info ('   Magnetic source field has changed; restart data not usable.')
+          call TLS_info ('  No magnetic source field; setting the Joule heat to zero.')
           call zero_joule_power_density ()
         else
-          call EM_info ('   Using the Joule heat data from the restart file.')
+          call TLS_info ('   Using the Joule heat data from the restart file.')
         end if
       else if (material_has_changed()) then
-        call EM_info ('   EM material parameters have changed; restart data not usable.')
-        call EM_info ('  Computing the Joule heat ...')
+        call TLS_info ('   EM material parameters have changed; restart data not usable.')
+        call TLS_info ('  Computing the Joule heat ...')
         call compute_joule_heat ()
       else if (source_has_changed()) then
         if (source_is_scaled(s)) then
           write(ss,fmt='(es9.3)') s
-          call EM_info ('   Magnetic source field was scaled by ' // trim(ss) // '; Joule heat scaled accordingly.')
+          call TLS_info ('   Magnetic source field was scaled by ' // trim(ss) // '; Joule heat scaled accordingly.')
           call scale_joule_power_density (s)
         else
-          call EM_info ('   Magnetic source field has changed; restart data not usable.')
-          call EM_info ('  Computing the Joule heat ...')
+          call TLS_info ('   Magnetic source field has changed; restart data not usable.')
+          call TLS_info ('  Computing the Joule heat ...')
           call compute_joule_heat ()
         end if
       else
-        call EM_info ('   Using the Joule heat data from the restart file.')
+        call TLS_info ('   Using the Joule heat data from the restart file.')
       end if
 
     else
 
       !! Compute the initial Joule heat.
       if (no_source_field()) then
-        call EM_info ('  No magnetic source field; setting the Joule heat to zero.')
+        call TLS_info ('  No magnetic source field; setting the Joule heat to zero.')
         call zero_joule_power_density ()
       else
-        call EM_info ('  Computing the Joule heat ...')
+        call TLS_info ('  Computing the Joule heat ...')
         call compute_joule_heat ()
       end if
 
@@ -99,7 +99,7 @@ contains
     !! Write the initial Joule heat to the xml output file.
     call danu_write_joule (t)
 
-    call EM_info (' Electromagnetics initialized.')
+    call TLS_info (' Electromagnetics initialized.')
 
   end subroutine initialize_EM
   
@@ -149,7 +149,7 @@ contains
         call ppt_assign_phase_property (phase_id, prop_id, f_default)
         write(message,'(2x,3a,es10.3,3a)') 'Using default value "', trim(prop), '" =', &
             default, ' for phase "', trim(ppt_phase_name(phase_id)), '"'
-        call EM_info (message)
+        call TLS_info (message)
       end do
       
     end subroutine add_property
@@ -184,21 +184,21 @@ contains
 
     if (no_source_field()) then ! there is no joule heat ...
       if (source_has_changed()) then
-        call EM_info (' No magnetic source field; setting the Joule heat to zero.')
+        call TLS_info (' No magnetic source field; setting the Joule heat to zero.')
         call zero_joule_power_density ()
         call danu_write_joule (t1)
       end if
     else if (material_has_changed()) then
-      call EM_info (' EM material parameters have changed; computing the Joule heat ...')
+      call TLS_info (' EM material parameters have changed; computing the Joule heat ...')
       call compute_joule_heat ()
       call danu_write_joule (t1)
     else if (source_has_changed()) then
       if (source_is_scaled(s)) then
         write(ss,fmt='(es9.3)') s
-        call EM_info (' Magnetic source field was scaled by ' // trim(ss) // '; Joule heat scaled accordingly.')
+        call TLS_info (' Magnetic source field was scaled by ' // trim(ss) // '; Joule heat scaled accordingly.')
         call scale_joule_power_density (s)
       else
-        call EM_info (' Magnetic source field has changed; computing the Joule heat ...')
+        call TLS_info (' Magnetic source field has changed; computing the Joule heat ...')
         call compute_joule_heat ()
       end if
       call danu_write_joule (t1)
@@ -230,7 +230,7 @@ contains
     character(len=256) :: string
     real(kind=rk) :: eps_min, eps_max, mu_min, mu_max, sigma_min, sigma_max
     
-    !call EM_info (' Beginning Joule Heat Simulation...')
+    !call TLS_info (' Beginning Joule Heat Simulation...')
     
     !! Get the mesh from the EM data proxy and create the discretization.
     mesh => EM_mesh()
@@ -242,9 +242,9 @@ contains
     mu    => permeability()
     sigma => conductivity()
     
-    if (global_any(eps <= 0.0_rk)) call EM_error ('COMPUTE_JOULE_HEAT', 'Epsilon is not positive')
-    if (global_any(mu  <= 0.0_rk)) call EM_error ('COMPUTE_JOULE_HEAT', 'Mu is not positive')
-    if (global_any(sigma <0.0_rk)) call EM_error ('COMPUTE_JOULE_HEAT', 'Sigma is not nonnegative')
+    if (global_any(eps <= 0.0_rk)) call TLS_fatal ('COMPUTE_JOULE_HEAT: Epsilon is not positive')
+    if (global_any(mu  <= 0.0_rk)) call TLS_fatal ('COMPUTE_JOULE_HEAT: Mu is not positive')
+    if (global_any(sigma <0.0_rk)) call TLS_fatal ('COMPUTE_JOULE_HEAT: Sigma is not nonnegative')
     
     eps_min = global_minval(eps)
     eps_max = global_maxval(eps)
@@ -255,18 +255,18 @@ contains
     
     if (is_IOP) then
       write(string,fmt='(3x,2(a,es11.4))') 'Min epsilon=', eps_min,   ', Max epsilon=', eps_max
-      call EM_info (trim(string))
+      call TLS_info (trim(string))
       write(string,fmt='(3x,2(a,es11.4))') 'Min mu=     ', mu_min,    ', Max mu=     ', mu_max
-      call EM_info (trim(string))
+      call TLS_info (trim(string))
       write(string,fmt='(3x,2(a,es11.4))') 'Min sigma=  ', sigma_min, ', Max sigma=  ', sigma_max
-      call EM_info (trim(string))
+      call TLS_info (trim(string))
     end if
     
     eps0 = get_epsilon_0()
     mu0 = get_mu_0()
     sigma0 = sigma_max
     
-    if (sigma0 <= 0.0_rk) call EM_error ('COMPUTE_JOULE_HEAT', 'Sigma is uniformly zero!')
+    if (sigma0 <= 0.0_rk) call TLS_fatal ('COMPUTE_JOULE_HEAT: Sigma is uniformly zero!')
     
     !coil => get_coil()
     freq = source_frequency()
@@ -278,16 +278,16 @@ contains
     
     if (is_IOP) then
       write(string,fmt='(3x,a,es11.4)') 'DELTA=', delta
-      call EM_info (trim(string))
+      call TLS_info (trim(string))
       write(string,fmt='(3x,a,es11.4)') 'ETASQ=', etasq
-      call EM_info (trim(string))
+      call TLS_info (trim(string))
     end if
     
     if (get_num_etasq() > etasq) then
       etasq = get_num_etasq()
       if (is_IOP) then
         write(string,fmt='(3x,a,es11.4)') 'Using input numerical ETASQ value instead:', etasq
-        call EM_info (trim(string))
+        call TLS_info (trim(string))
       end if
     end if
         
@@ -362,7 +362,7 @@ contains
       write(string,fmt='(t4,a,i4,2(a,es11.4))') 'Source cycle', n, &
         ': |Q|_max=', global_maxval(q_avg), ', Q_total=', &
         global_dot_product(q_avg(:mesh%ncell_onP), abs(mesh%volume(:mesh%ncell_onP)))
-      call EM_info (trim(string))
+      call TLS_info (trim(string))
 
       if (graphics()) call finalize_field_output (q_avg)
       
@@ -381,7 +381,7 @@ contains
       if (graphics()) then
 !NNC!        call write_probes (em_output)
       end if
-      call EM_error ('COMPUTE_JOULE_HEAT', 'EM time step failure')
+      call TLS_fatal ('COMPUTE_JOULE_HEAT: EM time step failure')
     end if
 
     if (graphics()) then
@@ -393,7 +393,7 @@ contains
 
     !! Check for convergence to steady state.  We continue in any case.
     if (.not.converged) then
-      call EM_warning ('COMPUTE_JOULE_HEAT', 'Not converged to steady-state; proceding anyway.')
+      call TLS_warn ('COMPUTE_JOULE_HEAT: Not converged to steady-state; proceding anyway.')
     end if
 
     !! Clean-up.
@@ -401,7 +401,7 @@ contains
     call destroy_system (sys)
     ! The BDATA structure needs to be deallocated too!
 
-    call EM_info ('  Joule heat computation completed.')
+    call TLS_info ('  Joule heat computation completed.')
     
   end subroutine compute_joule_heat
 

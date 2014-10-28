@@ -15,7 +15,6 @@
 module EM_graphics_output
 
   use kinds, only: rk => r8
-  use system_io
   use string_utilities, only: i_to_c
   use parallel_communication
   use index_partitioning

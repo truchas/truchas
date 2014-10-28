@@ -14,7 +14,7 @@ module MaxwellEddy
   use solution_history
   use sparse_matrix
   use CGSolver
-  use EM_utilities
+  use truchas_logging_services
   
 use debug_EM
 
@@ -171,7 +171,7 @@ contains
     
     if (sys%cg%output_level >= 3) then
       write(message,fmt='(t6,a,es10.3)') 'step |de|_max=', global_maxval(abs(de))
-      call EM_info (trim(message))
+      call TLS_info (trim(message))
     end if
 
     !! Advance the B-field
@@ -514,7 +514,9 @@ contains
   
   subroutine hiptmair_is_symmetric (sys)
     
-    use system_io
+#ifndef SUPPORTS_NEWUNIT
+    use truchas_env, only: new_unit
+#endif
     
     type(system), intent(in), target :: sys
     
@@ -542,8 +544,12 @@ contains
     call collate (etype, edge_type(:nedge_onP))
     
     if (is_IOP) then
+#ifdef SUPPORTS_NEWUNIT
+      open(newunit=lun,file='hiptmair.dat',status='replace',action='write')
+#else
       call new_unit(lun)
       open(unit=lun,file='hiptmair.dat',status='replace',action='write')
+#endif
       write(unit=lun,fmt=*) nPE
       write(unit=lun,fmt=*) bsize_vector
     end if

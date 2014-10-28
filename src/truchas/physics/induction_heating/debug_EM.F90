@@ -3,7 +3,9 @@ module debug_EM
   use kinds, only: r8
   use parallel_communication
   use index_partitioning
-  use system_io
+#ifndef SUPPORTS_NEWUNIT
+  use truchas_env, only: new_unit
+#endif
   
   implicit none
   private
@@ -24,9 +26,13 @@ contains
     real(kind=r8) :: err1, err2, err3
     real(kind=r8), pointer :: ref(:), g_ref(:)
     
-    if (lun < 0) then
+    if (lun == -1) then
+#ifdef SUPPORTS_NEWUNIT
+      open(newunit=lun,file='data.dat',form='unformatted')
+#else
       call new_unit (lun)
       open(unit=lun,file='data.dat',form='unformatted')
+#endif
     end if
     
     if (nPE == 1) then
@@ -60,11 +66,20 @@ contains
     real(kind=r8) :: err1, err2, err3
     real(kind=r8), allocatable :: ref_array(:)
     
-    if (lun < 0) then
-      call new_unit (lun)
+    if (lun == -1) then
       fname = 'data.' // i_to_c(this_PE)
       inquire(file=fname, exist=exists)
       exists = global_all(exists)
+#ifdef SUPPORTS_NEWUNIT
+      if (exists) then
+        mode = 2
+        open(newunit=lun, file=fname, form='unformatted', action='read', position='rewind')
+      else
+        mode = 1
+        open(newunit=lun, file=fname, form='unformatted', action='write', position='rewind')
+      end if
+#else
+      call new_unit (lun)
       if (exists) then
         mode = 2
         open(file=fname, unit=lun, form='unformatted', action='read', position='rewind')
@@ -72,6 +87,7 @@ contains
         mode = 1
         open(file=fname, unit=lun, form='unformatted', action='write', position='rewind')
       end if
+#endif
     end if
     
     select case (mode)

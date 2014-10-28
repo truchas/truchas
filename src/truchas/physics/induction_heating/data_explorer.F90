@@ -24,7 +24,6 @@
 
 module data_explorer
 
-  use system_io
   use string_utilities, i2c => i_to_c
   implicit none
   private
@@ -126,7 +125,12 @@ contains
   end function is_defined_file
   
   subroutine dx_open (dxf, file, append, embed)
-  
+
+    use,intrinsic :: iso_fortran_env, only: stdout => output_unit
+#ifndef SUPPORTS_NEWUNIT
+    use truchas_env, only: new_unit
+#endif
+
     type(dx_file), intent(out) :: dxf
     character(len=*), intent(in), optional :: file
     logical, intent(in), optional :: append, embed
@@ -176,13 +180,21 @@ contains
       dxf%file  = trim(base) // '.dx'
       dxf%dfile = trim(base) // '.bin'
 
+#ifdef SUPPORTS_NEWUNIT
+      open(newunit=dxf%hunit, file=trim(dxf%path)//trim(dxf%file), status='replace', action='write', position='rewind')
+#else
       call new_unit (dxf%hunit)
       open(unit=dxf%hunit, file=trim(dxf%path)//trim(dxf%file), status='replace', action='write', position='rewind')
+#endif
 
+#ifdef SUPPORTS_NEWUNIT
+      open(newunit=dxf%dunit, file=trim(dxf%path)//trim(dxf%dfile), &
+        status='replace', action='write', position='rewind', form='unformatted')
+#else
       call new_unit (dxf%dunit)
-      !open(unit=dxf % dunit, status='scratch', action='write', position='rewind', form='unformatted')
       open(unit=dxf%dunit, file=trim(dxf%path)//trim(dxf%dfile), &
         status='replace', action='write', position='rewind', form='unformatted')
+#endif
 
     else  ! We'll be writing to stdout
       if (.not.dxf%embed_data) then

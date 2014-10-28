@@ -42,7 +42,7 @@ contains
 
     use altmesh_input, only: grid_transfer_file
     use parameter_module, only: string_len
-    use EM_utilities
+    use truchas_logging_services
 #ifdef SUPPORTS_NEWUNIT
     use truchas_env, only: output_dir
 #else
@@ -56,13 +56,13 @@ contains
     logical :: file_exists, compute
     character(len=string_len) :: mapfile
 
-    call EM_info ('  Initializing the hex-tet grid mapping data ...')
+    call TLS_info ('  Initializing the hex-tet grid mapping data ...')
 
     compute = .true.
 
     inquire(file=grid_transfer_file,exist=file_exists)
     if (file_exists) then
-      call EM_info ('   Reading the hex-tet grid mapping data from ' // trim(grid_transfer_file))
+      call TLS_info ('   Reading the hex-tet grid mapping data from ' // trim(grid_transfer_file))
 #ifdef SUPPORTS_NEWUNIT
       open(newunit=lun,file=grid_transfer_file,action='read',position='rewind',form='unformatted',iostat=status)
 #else
@@ -76,24 +76,24 @@ contains
           compute = .not. right_int_volumes(hexmesh, tetmesh, gmd)
           if (compute) then
             call destroy_grid_int_vols (gmd)
-            call EM_info ('    Grid mapping data is not usable.')
+            call TLS_info ('    Grid mapping data is not usable.')
           else
-            call EM_info ('    Using the grid mapping data.')
+            call TLS_info ('    Using the grid mapping data.')
           endif
         else
           call destroy_grid_int_vols (gmd)
-          call EM_info ('    Error reading the file!')
+          call TLS_info ('    Error reading the file!')
         end if
       else
-        call EM_info ('    Unable to open the file for unformatted reading!')
+        call TLS_info ('    Unable to open the file for unformatted reading!')
       end if
     end if
 
     if (compute) then
       mapfile = 'altmesh_mapping_data.bin'
-      call EM_info ('   Computing the hex-tet grid mapping data.')
+      call TLS_info ('   Computing the hex-tet grid mapping data.')
       call compute_int_volumes (hexmesh, tetmesh, gmd)
-      call EM_info ('   Writing the hex-tet grid mapping data to ' // trim(mapfile))
+      call TLS_info ('   Writing the hex-tet grid mapping data to ' // trim(mapfile))
       mapfile = trim(output_dir) // trim(mapfile)
 #ifdef SUPPORTS_NEWUNIT
       open(newunit=lun,file=trim(mapfile),action='write',position='rewind',form='unformatted',iostat=status)
@@ -105,11 +105,11 @@ contains
         call write_int_volumes (gmd, lun)
         close(lun)
       else
-        call EM_info ('    Unable to open the file for unformatted writing!  Continuing anyway.')
+        call TLS_info ('    Unable to open the file for unformatted writing!  Continuing anyway.')
       end if
     end if
 
-    call EM_info ('   Hex-tet grid mapping data initialized.')
+    call TLS_info ('   Hex-tet grid mapping data initialized.')
 
   end subroutine get_grid_mapping_data
 

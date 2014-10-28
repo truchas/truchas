@@ -27,8 +27,7 @@ module CGSolver
 
   use kinds, only: r8
   use parallel_communication
-  use EM_utilities
-  !use index_partitioning
+  use truchas_logging_services
   implicit none
   private
   
@@ -124,7 +123,7 @@ contains
       if (cg%output_level >= 4) then
         write(message,fmt="(t8,a,i4,2(a,es10.3))") 'cg iterate', itr, &
             ': |r|=', sqrt(rho), ', |r|/|r_prev|=', sqrt(s)
-        call EM_info (message)
+        call TLS_info (message)
       end if
       
       if (itr >= cg%minitr .and. (rho < cg%tol**2 .or. rho < cg%red**2 * rho_init)) then
@@ -137,7 +136,7 @@ contains
     if (cg%output_level >= 2) then
       write(message,fmt="(t6,a,i4,2(a,es10.3))") 'step cg summary:', itr, &
           ' iterations, |r|=', sqrt(rho), ', |r0|=', sqrt(rho_init)
-      call EM_info (message)
+      call TLS_info (message)
     end if
     
   end subroutine solve_cg_1

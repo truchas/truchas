@@ -193,6 +193,7 @@ module EM_data_proxy
 
   use kinds, only : rk => r8
   use EM_hex_tet_mapping
+  use truchas_logging_services
   
   implicit none
   private
@@ -656,7 +657,6 @@ CONTAINS
 
   logical function material_has_changed ()
 
-    use EM_utilities, only: EM_info
     use EM_input, only: Material_Change_Threshold
     use parallel_communication, only: global_maxval
 
@@ -677,7 +677,7 @@ CONTAINS
     if (max(dmu, dsigma) > Material_Change_Threshold) material_has_changed = .true.
 
     write(string,fmt='(3x,2(a,es10.3))') 'Maximum relative change: sigma=', dsigma, ', mu=', dmu
-    call EM_info(string)
+    call TLS_info(string)
 
   end function material_has_changed
 
@@ -925,14 +925,13 @@ CONTAINS
     use string_utilities, only: i_to_c
     use parallel_communication, only: global_sum
     use index_partitioning
-    use EM_utilities, only: EM_info
 
     integer, intent(in) :: unit,  version
     type(dist_mesh), pointer :: mesh => null()
     
     integer :: n
 
-    call EM_info ('  Reading the Joule heat data from the restart file.')
+    call TLS_info ('  Reading the Joule heat data from the restart file.')
 
     call read_var (unit, freq_q, 'READ_JOULE_DATA: error reading FREQ record')
     call read_var (unit, uhfs_q, 'READ_JOULE_DATA: error reading UHFS record')
@@ -997,7 +996,6 @@ CONTAINS
     use parallel_communication
     use permutations
     use mesh_broker, only: dist_mesh, named_mesh_ptr
-    use EM_utilities, only: EM_error
     use danu_module, only: DANU_SUCCESS
     
     real(rk), intent(in) :: t
@@ -1040,7 +1038,7 @@ CONTAINS
     if (is_IOP) call write_data (status)
     deallocate(cell_perm, col_mu, col_sigma, col_joule)
     call broadcast (status)
-    if (status /= DANU_SUCCESS) call EM_error ('DANU_WRITE_JOULE', 'Error writing Joule data to h5 file')
+    if (status /= DANU_SUCCESS) call TLS_fatal ('DANU_WRITE_JOULE: Error writing Joule data to h5 file')
 
   contains
 
@@ -1056,7 +1054,6 @@ CONTAINS
       use danu_module
       use truchas_danu_output_data, only: fid
       use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
-      use truchas_logging_services, only: TLS_info
 
       integer, intent(out) :: status
 
