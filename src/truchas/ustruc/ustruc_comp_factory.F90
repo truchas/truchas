@@ -16,7 +16,7 @@
 !!
 !!  The parameters that are understood are documented in the source files for
 !!  the concrete implementations of the USTRUC_PLUGIN class.  Currently, these
-!!  are USTRUC_VEL1, USTRUC_TIME, and USTRUC_GV1.
+!!  are USTRUC_VEL1, USTRUC_TIME, and USTRUC_GV0.
 !!
 !! NOTES
 !!
@@ -42,7 +42,7 @@ module ustruc_comp_factory
   use ustruc_core_type
   use ustruc_vel1_type
   use ustruc_time_type
-  use ustruc_gv1_type
+  use ustruc_gv0_type
   use parameter_list_type
   implicit none
   private
@@ -59,8 +59,8 @@ contains
 
     comp => new_ustruc_core(n)
     comp => new_ustruc_vel1(comp, params)
-    !comp => new_ustruc_time(comp, params)  ! gv1 includes this analysis now
-    comp => new_ustruc_gv1(comp, params)
+    !comp => new_ustruc_time(comp, params)  ! gv0 includes this analysis now
+    comp => new_ustruc_gv0(comp, params)
 
     !NB: need to make sure the included components match up with the data
     !    that is being output from USTRUC_DRIVER:USTRUC_OUTPUT.

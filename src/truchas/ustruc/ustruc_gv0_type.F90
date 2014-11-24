@@ -1,14 +1,10 @@
 !!
-!! USTRUC_GV1
+!! USTRUC_GV0
 !!
 !! A concrete implementation of USTRUC_PLUGIN/USTRUC_COMP that adds the
-!! identification of microstructure type and characteristics (first model).
-!!
-!! NB: THIS IS AN INCOMPLETE STUB.  ONLY THE THERMAL GRADIENT MAGNITUDE (G)
-!! AND SOLIDIFICATION FRONT SPEED (V) ARE COMPUTED.  THESE WILL BE THE INPUTS
-!! TO A TABLE LOOKUP FOR THE TYPE OF MICROSTRUCTURE (DENDRITIC, PLANAR, ...)
-!! AND THE COMPUTATION OF CHARACTERISTICS (PRIMARY AND SECONDARY ARM SPACING)
-!! AWAITING THIS INFO FROM SETH IMHOFF AND PAUL GIBBS (MST-6)
+!! identification of the thermal gradient (G) and solidification front
+!! velocity (V) at the onset of solidification.  View this as a starting
+!! point for implementing a microstructure prediction model.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! August 2014
@@ -19,8 +15,8 @@
 !!  USTRUC_PLUGIN classes which define the interface to this object.  The
 !!  only public entity provided by the module is the following function.
 !!
-!!  NEW_USTRUC_GV1(COMP, PARAMS) returns a pointer to a new USTRUC_COMP class
-!!    object whose dynamic type is USTRUC_GV1.  The USTRUC_GV1 type is itself
+!!  NEW_USTRUC_GV0(COMP, PARAMS) returns a pointer to a new USTRUC_COMP class
+!!    object whose dynamic type is USTRUC_GV0.  The USTRUC_GV0 type is itself
 !!    private.  COMP is a USTRUC_COMP pointer whose target is being wrapped
 !!    by this new analysis component specified by PARAMS.  The new object
 !!    takes ownership of the target.  PARAMS is a PARAMETER_LIST object;
@@ -43,16 +39,16 @@
 
 #include "f90_assert.fpp"
 
-module ustruc_gv1_type
+module ustruc_gv0_type
 
   use kinds, only: r8
   use ustruc_plugin_class
   implicit none
   private
 
-  public :: new_ustruc_gv1
+  public :: new_ustruc_gv0
 
-  type, extends(ustruc_plugin) :: ustruc_gv1
+  type, extends(ustruc_plugin) :: ustruc_gv0
     real(r8) :: f1, f1p, f2, f2p
     integer,  allocatable :: state(:)
     real(r8), allocatable :: dt(:), g(:), v(:)
@@ -62,7 +58,7 @@ module ustruc_gv1_type
     procedure :: update_state
     procedure :: getl1
     procedure :: getr1
-  end type ustruc_gv1
+  end type ustruc_gv0
 
   integer, parameter :: STATE_INVALID   = 0
   integer, parameter :: STATE_UNDEFINED = 1
@@ -72,13 +68,13 @@ module ustruc_gv1_type
 
 contains
 
-  function new_ustruc_gv1 (comp, params) result (this)
+  function new_ustruc_gv0 (comp, params) result (this)
 
     use parameter_list_type
 
     class(ustruc_comp), pointer, intent(in) :: comp
     type(parameter_list) :: params
-    type(ustruc_gv1), pointer :: this
+    type(ustruc_gv0), pointer :: this
 
     allocate(this)
     call this%init (comp)
@@ -96,11 +92,11 @@ contains
     allocate(this%state(this%n), this%dt(this%n), this%g(this%n), this%v(this%n))
     allocate(this%count(this%n))
 
-  end function new_ustruc_gv1
+  end function new_ustruc_gv0
 
   subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
 
-    class(ustruc_gv1), intent(inout) :: this
+    class(ustruc_gv0), intent(inout) :: this
     real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
     logical,  intent(in) :: invalid(:)
 
@@ -130,7 +126,7 @@ contains
 
   subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
 
-    class(ustruc_gv1), intent(inout) :: this
+    class(ustruc_gv0), intent(inout) :: this
     real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
     logical,  intent(in) :: invalid(:)
 
@@ -214,7 +210,7 @@ contains
   end subroutine update_state
 
   subroutine getl1 (this, name, array)
-    class(ustruc_gv1), intent(in) :: this
+    class(ustruc_gv0), intent(in) :: this
     character(*), intent(in) :: name
     logical, intent(out) :: array(:)
     select case (name)
@@ -227,7 +223,7 @@ contains
   end subroutine getl1
 
   subroutine getr1 (this, name, array, invalid)
-    class(ustruc_gv1), intent(in) :: this
+    class(ustruc_gv0), intent(in) :: this
     character(*), intent(in) :: name
     real(r8), intent(out) :: array(:)
     logical, intent(out), optional :: invalid(:)
@@ -281,4 +277,4 @@ contains
     end select
   end subroutine getr1
 
-end module ustruc_gv1_type
+end module ustruc_gv0_type
