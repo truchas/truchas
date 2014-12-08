@@ -46,7 +46,7 @@ contains
   !! Final subroutine for DL_SCALAR_FUNC objects
   subroutine dl_scalar_func_delete (this)
     type(dl_scalar_func), intent(inout) :: this
-    call this%so%close ()
+    !call this%so%close () NNC: this does not play nice with assignment -- temporary fix
     this%f => null()
   end subroutine dl_scalar_func_delete
 
