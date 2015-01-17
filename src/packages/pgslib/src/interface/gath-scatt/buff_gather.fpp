@@ -10,6 +10,10 @@
 #error "_ROUTINE_NAME_ must be defined before including this file"
 #endif
 
+#ifndef _GATHER_BUF_C_
+#error "_GATHER_BUF_C_ must be defined before including this file"
+#endif
+
 #ifndef _DUP_DIMENSION_
 #error "_DUP_DIMENSION_ must be defined before including this file"
 #endif
@@ -20,15 +24,6 @@
 
 #ifndef _BLOCKSIZE_
 #error "_BLOCKSIZE_ must be defined before including this file"
-#endif
-
-
-#ifndef _DUP_ARRAY_ELEMENT_
-#error "_DUP_ARRAY_ELEMENT_ must be defined before including this file"
-#endif
-
-#ifndef _SUP_ARRAY_ELEMENT_
-#error "_SUP_ARRAY_ELEMENT_ must be defined before including this file"
 #endif
 
     subroutine _ROUTINE_NAME_ (Supplement, Duplicate, Trace) 
@@ -73,10 +68,7 @@
     BlockSize = _BLOCKSIZE_
 
     ! Now do the communication
-    Call PGSLib_Gather_Buf_C(Supplement _SUP_ARRAY_ELEMENT_, &
-                             Duplicate  _DUP_ARRAY_ELEMENT_,  &
-                             BlockSize,                  &
-                             Trace%GS_Trace)
+    Call _GATHER_BUF_C_ (Supplement, Duplicate, BlockSize, Trace%GS_Trace)
 
 #ifdef USE_TIMERS_1
     call Exit_Routine(GATHER_BUFFER_STATISTICS())
@@ -86,10 +78,9 @@
 
     end subroutine _ROUTINE_NAME_
 
-#undef _SUP_ARRAY_ELEMENT_
-#undef _DUP_ARRAY_ELEMENT_
 #undef _BLOCKSIZE_
 #undef _DATA_TYPE_
+#undef _GATHER_BUF_C_
 #undef _DUP_DIMENSION_
 #undef _SUP_DIMENSION_
 #undef _ROUTINE_NAME_

@@ -1,93 +1,61 @@
-!=====================================================================
-! Serial F90 routines to support PGSLib_Index_Table_MODULE
-! These routines have the same calling convention as
-! the parallal routines, but they are for serial use only.
-!=====================================================================
+!!
+!! index-f.F
+!!
+!! Serial-only dummy routines that correspond to the MPI parallel
+!! C functions from par-src/indexing/index-c.c.
+!!
+!! This is a modern rewrite of the original code by Robert Ferrell
+!! using the C interoperability features of Fortran 2003.
+!!
+!! Neil N. Carlson <nnc@lanl.gov>
+!! November 2014
+!!
 
-! $Id: index-f.F,v 1.1.1.1 2000/10/11 22:44:23 ferrell Exp $
+subroutine pgslib_init_access_table_c (Access_Table) &
+    bind(c, name="pgslib_init_access_table_c")
+  use,intrinsic :: iso_c_binding, only: c_ptr
+  type(c_ptr) :: Access_Table
+end subroutine
 
-subroutine PGSLib_Init_Access_Table_C(Access_Table)
-  implicit none 
-  integer, dimension(*) :: Access_Table  
+subroutine pgslib_free_access_table_c (Access_Table) &
+    bind(c, name="pgslib_free_access_table_c")
+  use,intrinsic :: iso_c_binding, only: c_ptr
+  type(c_ptr) :: Access_Table
+end subroutine
 
-  Access_Table(2) = 1
-  Access_Table(3) = 0
+subroutine pgslib_add_item_to_table_c (Item, PE, Access_Table, ierror) &
+    bind(c, name="pgslib_add_item_to_table_c")
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_int
+  integer(c_int), intent(in) :: Item, PE
+  type(c_ptr) :: Access_Table
+  integer(c_int), intent(out) :: ierror
+  ierror = 0
+end subroutine
 
-  RETURN
-END subroutine PGSLib_Init_Access_Table_C
+subroutine PGSLib_Count_Items_In_Table_C (Count, Access_Table) &
+    bind(c, name="pgslib_count_items_in_table_c")
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_int
+  integer(c_int), intent(out) :: Count
+  type(c_ptr) :: Access_Table
+  Count = 0
+end subroutine
 
-subroutine PGSLib_Free_Access_Table_C(Access_Table)
-  implicit none 
-  integer, dimension(*) :: Access_Table  
+subroutine PGSLib_Items_From_Table_C (Items, PEs, Count, Access_Table, ierror) &
+    bind(c, name="pgslib_items_from_table_c")
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_int
+  integer(c_int), intent(in)  :: Count
+  integer(c_int), intent(out) :: Items(Count), PEs(Count), ierror
+  type(c_ptr) :: Access_Table
+  Items = 0
+  PEs = 0
+  ierror = 0
+end subroutine
 
-  Access_Table(2) = 0
-  Access_Table(3) = 0
-
-  RETURN
-END subroutine PGSLib_Free_Access_Table_C
-
-subroutine PGSLib_Add_Item_To_Table_C(Item, PE, Access_Table, ierror)
-  implicit none
-  integer               :: Item, PE
-  integer, dimension(*) :: Access_Table
-  integer               :: ierror
-
-  IF (Access_Table(2) == 1) Then
-     ierror = 0
-  ELSE
-     ierror = -1
-  ENDIF
-
-  RETURN
-END subroutine PGSLib_Add_Item_To_Table_C
-
-subroutine PGSLib_Count_Items_In_Table_C(Count, Access_Table)
-  implicit none 
-  integer               ::   Count
-  integer, dimension(*) :: Access_Table
-
-  IF (Access_Table(2) == 1) Then
-     Count = 0
-  ELSE
-     Count = -1
-  ENDIF
-
-  RETURN
-END subroutine PGSLib_Count_Items_In_Table_C
-
-subroutine PGSLib_Items_From_Table_C(Items, PEs, Count, Access_Table, ierror)
-  implicit none 
-  integer               :: Count, ierror
-  integer, DIMENSION(Count):: Items, PEs
-  integer, dimension(*) :: Access_Table
-
-  IF (Access_Table(2) == 1) Then
-     IF(SIZE(Items,1) .GT. 0) Items = 0
-     IF(SIZE(PEs,1) .GT. 0) PEs = 0
-     ierror = 0
-     Access_Table(3) = 1
-  ELSE
-     Items = -1
-     PEs   = -1
-     ierror = -1
-  ENDIF
-
-
-  RETURN
-END subroutine PGSLib_Items_From_Table_C
-
-subroutine PGSLib_Item_Index_From_Table_C(Index, Item, PE, Access_Table)
-  implicit none 
-  integer  :: Index
-  integer  :: Item, PE
-  integer, dimension(*) :: Access_Table
-
-  IF ((Access_Table(2) == 1)  .AND. (Access_Table(3) == 1)) Then
-     Index = 0
-  ELSE
-     Index = -1
-  ENDIF
-
-  RETURN
-END subroutine PGSLib_Item_Index_From_Table_C
-
+subroutine PGSLib_Item_Index_From_Table_C (Index, Item, PE, Access_Table) &
+    bind(c, name="pgslib_item_index_from_table_c")
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_int
+  integer(c_int), intent(out) :: Index
+  integer(c_int), intent(in)  :: Item, PE
+  type(c_ptr) :: Access_Table
+  Index = 0
+end subroutine

@@ -2,6 +2,7 @@ MODULE PGSLib_GS_Setup_MODULE
   use pgslib_Instrument
   use PGSlib_Stats
   use pgslib_timing_module
+  use pgslib_c_binding
   IMPLICIT NONE 
   SAVE
   PRIVATE
@@ -30,33 +31,6 @@ MODULE PGSLib_GS_Setup_MODULE
      MODULE PROCEDURE PGSLib_Setup_Duplicate_F
   END INTERFACE
 
-! Interfaces to the C routines which support this module.
-
-  INTERFACE PGSLib_Setup_N_Duplicate
-     subroutine PGSLib_Setup_N_Duplicate_C(N_Duplicate, GS_Trace)
-       implicit none
-       integer :: N_Duplicate
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_Setup_N_Duplicate_C
-  END INTERFACE
-
-  INTERFACE PGSLib_Setup_Duplicate_Buffer
-     subroutine pgslib_setup_duplicate_buffer_C(GS_Trace)
-       implicit none
-       integer, DIMENSION(*)  :: GS_Trace
-     END subroutine pgslib_setup_duplicate_buffer_C
-  END INTERFACE
-     
-  INTERFACE PGSLib_Prep_Supplement
-     subroutine PGSLib_Prep_Supplement_C(N_Supplement, PEs, GS_Trace)
-       implicit none
-       integer :: N_Supplement
-       integer, dimension(*) :: PEs
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_Prep_Supplement_C
-  END INTERFACE
-
-  !======================================================================
 CONTAINS
   
   !====================================================================
@@ -331,6 +305,7 @@ CONTAINS
     USE PGSLib_Utility_MODULE
     USE PGSLib_Index_MODULE
     USE PGSLIB_GS_Util_MODULE
+    use,intrinsic :: iso_c_binding, only: c_ptr
     implicit none 
     
     integer (PGSLib_Int_Type), INTENT(INOUT),      &                                         
@@ -356,7 +331,7 @@ CONTAINS
     integer (PGSLib_Int_Type) :: R1, R2, N_Supplement
     INTEGER (PGSLib_Int_TYPE) :: thisPE, PE, ierror
     logical (PGSLib_Log_Type) :: Mask_Present, NEW_PE_ARRAY
-    type (PGSLib_Access_Table), POINTER :: Table
+    type (c_ptr), POINTER :: Table
 
     ! Nullify all local pointers to put them into known state
     NULLIFY(Table)
@@ -548,12 +523,12 @@ CONTAINS
 
     Trace%N_Supplement = SIZE(PE_ARRAY,1)
     ! C counts PE_ARRAY from 0 to nPE-1, FORTRAN from 1 to nPE
-    call pgslib_Prep_supplement(SIZE(PE_ARRAY,1), PE_ARRAY-1, Trace%GS_Trace)
+    call PGSLib_Prep_Supplement_C(SIZE(PE_ARRAY,1), PE_ARRAY-1, Trace%GS_Trace)
 
-    call pgslib_setup_n_duplicate(N_Slaves, Trace%GS_Trace)
+    call PGSLib_Setup_N_Duplicate_C(N_Slaves, Trace%GS_Trace)
     Trace%N_Duplicate = N_Slaves
 
-    call pgslib_setup_duplicate_buffer(Trace%GS_Trace)
+    call PGSLib_Setup_Duplicate_Buffer_C(Trace%GS_Trace)
 
     ! Indicate that trace has been setup.
     Trace%SetupP = .TRUE.

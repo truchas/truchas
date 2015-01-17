@@ -11,11 +11,6 @@ include_directories(${PGSLibMpi_SOURCE_DIR}/include)
 # Add the MPI include directories
 include_directories(${MPI_C_INCLUDE_PATH})
 
-# Add the directory that contains the generated
-# FortranCInterface_names.h file
-include_directories(${PGSLib_FCIface_INCLUDE_DIR})		       
-                         
-
 # --- Define source files
 set(PGSLibMpi_SOURCE_FILES) 
 

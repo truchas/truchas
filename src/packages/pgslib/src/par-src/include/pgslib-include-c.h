@@ -34,6 +34,4 @@ extern parallel_state pgslib_state; /* Declared in utility-c.c */
 extern int * sm_space;
 #endif
 
-#include "pgslib-names.h"
-
 #endif

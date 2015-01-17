@@ -1,4 +1,5 @@
 MODULE PGSLib_Type_MODULE
+  USE,INTRINSIC :: ISO_C_BINDING, ONLY: c_ptr, c_null_ptr
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -163,12 +164,7 @@ MODULE PGSLib_Type_MODULE
      type (PGSLib_Timer) :: GatherBuffer_Timer, ScatterBuffer_Timer
      type (PGSLib_Timer) :: Setup_Timer
 
-
-     integer (PGSLib_INT_TYPE),    POINTER, DIMENSION(:) :: GS_Trace
-     ! Here is the key for the array element''s meaning in the serial code.
-     ! 1 = GS_Trace allocated
-     ! 2 = Hash table initialized
-     ! 3 = Hash table ready for redirection.
+     type(c_ptr) :: GS_Trace = c_null_ptr
 
   END TYPE PGSLib_GS_TRACE
 

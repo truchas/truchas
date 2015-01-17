@@ -10,7 +10,7 @@ include(FortranPreprocessFiles)
 include_directories(${PGSLib_MODULE_DIR})
 
 # --- Define *.F -> *.f90 files
-set(PGSLibIface_SOURCE_FILES)
+set(PGSLibIface_SOURCE_FILES pgslib_c_binding.f90)
 
 # gath-scatt files
 set(GS_F_FILES
@@ -156,12 +156,8 @@ fortran_preprocess_files(MAIN_SOURCE_FILES
 list(APPEND PGSLibIface_SOURCE_FILES ${MAIN_SOURCE_FILES})
 
 
-# Additional C source files -- needs the FortranCInterface_names.h file
+# Additional C source files
 list(APPEND PGSLibIface_SOURCE_FILES utility/get_process_info.c)
-set_source_files_properties(utility/get_process_info.c PROPERTIES
-                            COMPILE_FLAGS -I${PGSLib_FCIface_INCLUDE_DIR})
-
-
 
 # --- Library
 

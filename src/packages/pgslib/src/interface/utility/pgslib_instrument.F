@@ -13,6 +13,7 @@ MODULE PGSlib_Instrument
   use pgslib_stats
   USE PGSLib_Type_MODULE
   USE PGSLib_Timing_MODULE
+  use pgslib_c_binding
 
   PRIVATE
   SAVE
@@ -38,31 +39,6 @@ MODULE PGSlib_Instrument
      module procedure PGSLib_Trace_Degree_F
   end interface
   
-  ! Interfaces to C routines
-  interface PGSLib_Trace_Degree_C
-     subroutine PGSLib_Trace_Degree_C(Scatter_Degree, Gather_Degree, GS_Trace)
-       implicit none
-       integer :: Scatter_Degree, Gather_Degree
-       integer, DIMENSION(*) :: GS_Trace
-     end subroutine PGSLib_Trace_Degree_C
-  end interface
-
-  interface PGSLib_Barrier_Time_C
-     subroutine PGSLib_Barrier_Time_C(BT)
-       USE PGSLib_Type_MODULE
-       implicit none
-       real (PGSLib_Real_Type) :: BT
-     end subroutine PGSLib_Barrier_Time_C
-  end interface
-
-  interface PGSLib_Sr_Time_C
-     subroutine PGSLib_Sr_Time_C(T)
-       USE PGSLib_Type_MODULE
-       implicit none
-       real (PGSLib_Real_Type) :: T
-     end subroutine PGSLib_Sr_Time_C
-  end interface
-
 CONTAINS
   function PGSLib_Read_Maximum_Time_Timer(Timer) RESULT(Max_Time)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -146,7 +122,7 @@ CONTAINS
     implicit none
     integer :: Scatter_Degree, Gather_Degree
     type (PGSLib_GS_Trace) :: Trace
-    call pgslib_trace_degree_c(Scatter_Degree, Gather_Degree, Trace%GS_Trace)
+    call PGSLib_Trace_Degree_C (Scatter_Degree, Gather_Degree, Trace%GS_Trace)
     return
   end subroutine PGSLib_Trace_Degree_F
 

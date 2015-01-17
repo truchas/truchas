@@ -11,6 +11,7 @@ MODULE PGSLib_SCAN_SEG_BIT_MODULE
   use pgslib_type_module
   use pgslib_globals_module
   use pgslib_utility_module, only : PGSLib_Fatal_ERROR, PGSLib_Scope_Check
+  use pgslib_c_binding
 
   implicit none
   PRIVATE
@@ -55,62 +56,6 @@ MODULE PGSLib_SCAN_SEG_BIT_MODULE
      MODULE PROCEDURE SUFFIX_Fixup_SEG_BIT_DOUBLE_1D
   END INTERFACE
 
-  ! Interface blocks for the C routines which call MPI
-  INTERFACE Off_Node_SUM_PREFIX
-     subroutine Off_Node_SUM_PREFIX_INT_C(Dest_Data, Dest_Seg, Src_Data, Src_Seg)
-       use pgslib_type_module
-       implicit none
-       integer(PGSLib_Int_Type),  intent (INOUT) :: Dest_Data
-       integer,                   intent (INOUT) :: Dest_Seg
-       integer(PGSLib_Int_Type),  intent (INOUT) :: Src_Data
-       integer,                   intent (INOUT) :: Src_Seg
-     end subroutine Off_Node_SUM_PREFIX_INT_C
-     subroutine Off_Node_SUM_PREFIX_FLOAT_C(Dest_Data, Dest_Seg, Src_Data, Src_Seg)
-       use pgslib_type_module
-       implicit none
-       REAL(PGSLib_Real_Type),    intent (INOUT) :: Dest_Data
-       integer,                   intent (INOUT) :: Dest_Seg
-       REAL(PGSLib_Real_Type),    intent (INOUT) :: Src_Data
-       integer,                   intent (INOUT) :: Src_Seg
-     end subroutine Off_Node_SUM_PREFIX_FLOAT_C
-     subroutine Off_Node_SUM_PREFIX_DOUBLE_C(Dest_Data, Dest_Seg, Src_Data, Src_Seg)
-       use PGSLib_Type_MODULE
-       implicit none
-       REAL (PGSLib_DOUBLE_Type), intent (INOUT) :: Dest_Data
-       integer,                   intent (INOUT) :: Dest_Seg
-       REAL (PGSLib_DOUBLE_Type), intent (INOUT) :: Src_Data
-       integer,                   intent (INOUT) :: Src_Seg
-     end subroutine Off_Node_SUM_PREFIX_DOUBLE_C
-  END INTERFACE
-  
-  INTERFACE Off_Node_SUM_SUFFIX
-     subroutine Off_Node_SUM_SUFFIX_INT_C(Dest_Data, Dest_Seg, Src_Data, Src_Seg)
-       use pgslib_type_module
-       implicit none
-       integer(PGSLib_Int_Type),  intent (INOUT) :: Dest_Data
-       integer,                   intent (INOUT) :: Dest_Seg
-       integer(PGSLib_Int_Type),  intent (INOUT) :: Src_Data
-       integer,                   intent (INOUT) :: Src_Seg
-     end subroutine Off_Node_SUM_SUFFIX_INT_C
-     subroutine Off_Node_SUM_SUFFIX_FLOAT_C(Dest_Data, Dest_Seg, Src_Data, Src_Seg)
-       use pgslib_type_module
-       implicit none
-       REAL(PGSLib_Real_Type),    intent (INOUT) :: Dest_Data
-       integer,                   intent (INOUT) :: Dest_Seg
-       REAL(PGSLib_Real_Type),    intent (INOUT) :: Src_Data
-       integer,                   intent (INOUT) :: Src_Seg
-     end subroutine Off_Node_SUM_SUFFIX_FLOAT_C
-     subroutine Off_Node_SUM_SUFFIX_DOUBLE_C(Dest_Data, Dest_Seg, Src_Data, Src_Seg)
-       use PGSLib_Type_MODULE
-       implicit none
-       REAL (PGSLib_DOUBLE_Type), intent (INOUT) :: Dest_Data
-       integer,                   intent (INOUT) :: Dest_Seg
-       REAL (PGSLib_DOUBLE_Type), intent (INOUT) :: Src_Data
-       integer,                   intent (INOUT) :: Src_Seg
-     end subroutine Off_Node_SUM_SUFFIX_DOUBLE_C
-  END INTERFACE
-  
-  
 CONTAINS
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -1,4 +1,5 @@
 MODULE PGSLib_IO_Dist_MODULE
+  use pgslib_c_binding
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -45,91 +46,6 @@ MODULE PGSLib_IO_Dist_MODULE
      MODULE Procedure PGSLib_Dist_Log_Vector_F
 
   END INTERFACE!For the user callable PGSLib_Dist
-
-
-
-  ! Interfaces to the C routines which take a single scalar argument.
-  ! These interfaces are visible only internally to the library.
-  ! Users will not have access to these specific routines.
-
-  INTERFACE PGSLib_Dist_Scalar_c
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Dist_int_scalar_c(scalar_out, scalarv_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (PGSLib_INT_TYPE), INTENT(OUT) :: scalar_out
-       INTEGER (PGSLib_Int_Type), INTENT(IN), DIMENSION(*):: scalarv_in
-     END SUBROUTINE PGSLib_Dist_int_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Dist_float_scalar_c(scalar_out, scalarv_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (PGSLib_REAL_TYPE), INTENT(OUT) ::scalar_out
-       REAL (PGSLib_REAL_TYPE), INTENT(IN), DIMENSION(*) ::scalarv_in
-     END SUBROUTINE PGSLib_Dist_float_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Dist_double_scalar_c(scalar_out, scalarv_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (KIND=PGSLib_DOUBLE_TYPE), INTENT(OUT) :: scalar_out
-       REAL (KIND=PGSLib_DOUBLE_TYPE), INTENT(IN), DIMENSION(*) :: scalarv_in
-     END SUBROUTINE PGSLib_Dist_double_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Dist_log_scalar_c(scalar_out, scalarv_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       LOGICAL (PGSLib_Log_Type), INTENT(OUT) :: scalar_out
-       LOGICAL (PGSLib_Log_Type), INTENT(IN), DIMENSION(*) :: scalarv_in
-     END SUBROUTINE PGSLib_Dist_log_scalar_c
-
-  END INTERFACE!PGSLib_Dist_Scalar
-
-  ! Interfaces to the C routines, which take both a vector and a length
-
-  ! Distribute Vectors
-  INTERFACE PGSLib_Dist_Vector_c
-     SUBROUTINE PGSLib_dist_int_vector_c(vector_out, out_len, vector_in, lengths)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN):: out_len
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(OUT), DIMENSION(out_len):: vector_out
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN), DIMENSION(*):: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN), DIMENSION(*):: lengths
-     END SUBROUTINE PGSLib_dist_int_vector_c
-
-     SUBROUTINE PGSLib_dist_float_vector_c(vector_out, out_len, vector_in, lengths)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN):: out_len
-       REAL (KIND=PGSLib_REAL_TYPE),INTENT(OUT), DIMENSION(out_len):: vector_out
-       REAL (KIND=PGSLib_REAL_TYPE),INTENT(IN), DIMENSION(*):: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN), DIMENSION(*):: lengths
-     END SUBROUTINE PGSLib_dist_float_vector_c
-
-     SUBROUTINE PGSLib_dist_double_vector_c(vector_out, out_len, vector_in, lengths)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN):: out_len
-       REAL (KIND=PGSLib_DOUBLE_TYPE), INTENT(OUT), DIMENSION(out_len):: vector_out
-       REAL (KIND=PGSLib_DOUBLE_TYPE), INTENT(IN), DIMENSION(*):: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN), DIMENSION(*):: lengths
-     END SUBROUTINE PGSLib_dist_double_vector_c
-
-     SUBROUTINE PGSLib_dist_log_vector_c(vector_out, out_len, vector_in, lengths)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN):: out_len
-       LOGICAL (KIND=PGSLib_LOG_TYPE),INTENT(OUT), DIMENSION(out_len):: vector_out
-       LOGICAL (KIND=PGSLib_LOG_TYPE),INTENT(IN), DIMENSION(*):: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE), INTENT(IN), DIMENSION(*):: lengths
-     END SUBROUTINE PGSLib_dist_log_vector_c
-
-  END INTERFACE!PGSLib_Dist_Vector
-
-
 
 CONTAINS
 

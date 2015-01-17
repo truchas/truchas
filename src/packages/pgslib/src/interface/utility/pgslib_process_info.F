@@ -14,17 +14,16 @@ Module pgslib_process_info
 
   Public PGSLib_Memory_Size
 
-  Interface 
-     Subroutine pgslib_get_process_id_C (pid)
-       Integer :: pid
-     End Subroutine pgslib_get_process_id_C
-  End Interface
-
-  Interface
-     Subroutine pgslib_get_vm_size_C (vmsize)
-       Integer :: vmsize
-     End Subroutine pgslib_get_vm_size_C
-  End Interface
+  interface 
+    subroutine pgslib_get_process_id_c (pid) bind(c)
+      use,intrinsic :: iso_c_binding, only: c_int
+      integer(c_int) :: pid
+    end subroutine
+    subroutine pgslib_get_vm_size_c (vmsize) bind(c)
+      use,intrinsic :: iso_c_binding, only: c_int
+      integer(c_int) :: vmsize
+    end subroutine
+  end interface
 
 Contains
 

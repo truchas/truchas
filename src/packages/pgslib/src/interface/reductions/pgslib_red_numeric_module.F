@@ -1,5 +1,6 @@
 MODULE PGSLib_Red_Numeric_MODULE
   use PGSLib_Error_MODULE
+  use pgslib_c_binding
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -77,87 +78,6 @@ MODULE PGSLib_Red_Numeric_MODULE
      MODULE PROCEDURE PGSLib_Global_DT_PD_DOUBLE_1D
      MODULE PROCEDURE PGSLib_Global_DT_PD_LOG_1D
   END INTERFACE
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!! Interfaces to the C routines
-
-  ! Min
-  INTERFACE PGSLib_Global_MIN_c
-     subroutine PGSLib_global_min_int_c(MinA)
-       USE PGSLib_Type_MODULE
-       integer (kind = PGSLib_INT_TYPE), INTENT(INOUT):: MinA
-     END subroutine PGSLib_global_min_int_c
-
-     subroutine PGSLib_global_min_float_c(MinA)
-       USE PGSLib_Type_MODULE
-       REAL (kind = PGSLib_REAL_TYPE), INTENT(INOUT):: MinA
-     END subroutine PGSLib_global_min_float_c
-
-     subroutine PGSLib_global_min_double_c(MinA)
-       USE PGSLib_Type_MODULE
-       real (PGSLib_DOUBLE_TYPE), INTENT(INOUT):: MinA
-     end subroutine PGSLib_global_min_double_c
-
-  END INTERFACE !PGSLib_Global_Min_c
-
-  ! Max
-
-  INTERFACE PGSLib_Global_MAX_C
-     subroutine PGSLib_global_max_int_c(MaxA)
-       USE PGSLib_Type_MODULE
-       integer (kind = PGSLib_INT_TYPE), INTENT(INOUT):: MaxA
-     END subroutine PGSLib_global_max_int_c
-
-     subroutine PGSLib_global_max_float_c(MaxA)
-       USE PGSLib_Type_MODULE
-       REAL (kind = PGSLib_REAL_TYPE), INTENT(INOUT):: MaxA
-     END subroutine PGSLib_global_max_float_c
-
-     subroutine PGSLib_global_max_double_c(MaxA)
-       USE PGSLib_Type_MODULE
-       real (PGSLib_DOUBLE_TYPE), INTENT(INOUT):: MaxA
-     end subroutine PGSLib_global_max_double_c
-
-  END INTERFACE !PGSLib_Global_Max_c
-  ! Sum
-
-  INTERFACE PGSLib_Global_SUM_C
-     subroutine PGSLib_global_sum_int_C(SumA)
-       USE PGSLib_Type_MODULE
-       integer (kind = PGSLib_INT_TYPE), INTENT(INOUT):: SumA
-     END subroutine PGSLib_global_sum_int_C
-
-     subroutine PGSLib_global_sum_float_C(SumA)
-       USE PGSLib_Type_MODULE
-       REAL (kind = PGSLib_REAL_TYPE), INTENT(INOUT):: SumA
-     END subroutine PGSLib_global_sum_float_C
-
-     subroutine PGSLib_global_sum_double_C(SumA)
-       USE PGSLib_Type_MODULE
-       real (PGSLib_DOUBLE_TYPE), INTENT(INOUT):: SumA
-     end subroutine PGSLib_global_sum_double_C
-
-  END INTERFACE !PGSLib_Global_Sum_C
-  ! ALL
-
-  INTERFACE PGSLib_Global_ALL_C
-     subroutine PGSLib_global_all_log_C(AllA)
-       USE PGSLib_Type_MODULE
-       integer (PGSLib_Int_TYPE), INTENT(INOUT):: AllA
-     END subroutine PGSLib_global_all_log_C
-  END INTERFACE !PGSLib_Global_All_C
-  ! ANY
-
-  INTERFACE PGSLib_Global_ANY_C
-     subroutine PGSLib_global_any_log_C(AnyA)
-       USE PGSLib_Type_MODULE
-       integer (PGSLib_Int_TYPE), INTENT(INOUT):: AnyA
-     END subroutine PGSLib_global_any_log_C
-  END INTERFACE !PGSLib_Global_Any_C
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 CONTAINS
 

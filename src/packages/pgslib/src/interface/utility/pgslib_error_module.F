@@ -8,6 +8,7 @@ MODULE PGSLib_ERROR_MODULE
 
   ! $Id: pgslib_error_module.F,v 1.1.1.1 2000/10/11 22:44:31 ferrell Exp $
   USE PGSLib_Type_MODULE
+  use pgslib_c_binding
 
   IMPLICIT NONE
   SAVE
@@ -24,20 +25,6 @@ MODULE PGSLib_ERROR_MODULE
   INTERFACE PGSLib_Fatal_Error
      MODULE PROCEDURE PGSLib_Fatal_Error_F
   END INTERFACE!PGSLib_Fatal_Error
-
-  INTERFACE PGSLib_Error_C
-     SUBROUTINE PGSLib_Error_C(EString)
-       IMPLICIT NONE
-       CHARACTER (*):: Estring
-     END SUBROUTINE PGSLib_Error_C
-
-  END INTERFACE! PGSLib_Error_C
-
-  INTERFACE PGSLib_Abort_C
-     SUBROUTINE PGSLib_Abort_C()
-     END SUBROUTINE PGSLib_Abort_C
-
-  END INTERFACE! PGSLib_Abort_C
 
 CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

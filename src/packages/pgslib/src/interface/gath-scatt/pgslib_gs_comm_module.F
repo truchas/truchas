@@ -5,6 +5,7 @@ MODULE PGSLib_GS_Comm_MODULE
   Use pgslib_timing_module
   USE PGSLib_Type_MODULE
   USE PGSLib_Utility_MODULE, ONLY : PGSLib_Error
+  use pgslib_c_binding
   IMPLICIT NONE 
   SAVE
   PRIVATE
@@ -58,86 +59,6 @@ MODULE PGSLib_GS_Comm_MODULE
      MODULE PROCEDURE PGSLib_Scatter_Buf_3_3_LOG
   END INTERFACE
 
-
-  ! Interfaces to the C routines
-  INTERFACE PGSLib_Gather_Buf_C
-     ! Since we want to use the same specific routine for both 1d and 2d 
-     ! gathers, we have to declare the arguments as scalars.
-     ! If we use dimension(*) for a dummy, that matches only a 1D actual.
-     subroutine PGSLib_Gather_Buf_INT_C(Supplement,  Duplicate, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none 
-       integer (PGSLib_Int_Type) :: Supplement
-       integer (PGSLib_Int_Type) :: Duplicate
-       integer :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     End subroutine PGSLib_Gather_Buf_INT_C
-     subroutine PGSLib_Gather_Buf_FLOAT_C(Supplement,  Duplicate, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none 
-       REAL (PGSLib_REAL_TYPE) :: Supplement
-       REAL (PGSLib_REAL_TYPE) :: Duplicate
-       integer :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     End subroutine PGSLib_Gather_Buf_FLOAT_C
-
-     subroutine PGSLib_Gather_Buf_DOUBLE_C(Supplement,  Duplicate, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none 
-       REAL (PGSLib_DOUBLE_TYPE) :: Supplement
-       REAL (PGSLib_DOUBLE_TYPE) :: Duplicate
-       integer :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     End subroutine PGSLib_Gather_Buf_DOUBLE_C
-
-     subroutine PGSLib_Gather_Buf_LOG_C(Supplement,  Duplicate, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none 
-       logical (PGSLib_LOG_TYPE) :: Supplement
-       logical (PGSLib_LOG_TYPE) :: Duplicate
-       integer :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     End subroutine PGSLib_Gather_Buf_LOG_C
-  END INTERFACE
-     
-  INTERFACE PGSLib_Scatter_Buf_C
-     subroutine PGSLib_Scatter_Buf_INT_C(Duplicate, Supplement, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none
-       INTEGER (PGSLib_Int_Type) :: Duplicate
-       INTEGER (PGSLib_Int_Type) :: Supplement
-       integer (PGSLib_Int_Type) :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_Scatter_Buf_INT_C
-
-     subroutine PGSLib_Scatter_Buf_FLOAT_C(Duplicate, Supplement, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none
-       REAL (PGSLib_REAL_Type) :: Duplicate
-       REAL (PGSLib_REAL_Type) :: Supplement
-       integer (PGSLib_Int_Type) :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_Scatter_Buf_FLOAT_C
-
-     subroutine PGSLib_Scatter_Buf_DOUBLE_C(Duplicate, Supplement, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none
-       REAL (PGSLib_DOUBLE_Type) :: Duplicate
-       REAL (PGSLib_DOUBLE_Type) :: Supplement
-       integer (PGSLib_Int_Type) :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_Scatter_Buf_DOUBLE_C
-
-     subroutine PGSLib_Scatter_Buf_LOG_C(Duplicate, Supplement, BlockSize, GS_Trace)
-       USE PGSLib_Type_MODULE
-       implicit none
-       logical (PGSLib_LOG_Type) :: Duplicate
-       logical (PGSLib_LOG_Type) :: Supplement
-       integer (PGSLib_Int_Type) :: BlockSize
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_Scatter_Buf_LOG_C
-  END INTERFACE
-
 CONTAINS
 
 !======================================================================
@@ -168,12 +89,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_  PGSLib_Gather_Buf_1_1_INT
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_INT_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_     integer (PGSLib_Int_TYPE)
 #define _BLOCKSIZE_     1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
     
@@ -185,12 +105,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Gather_Buf_1_1_Single
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_FLOAT_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    real (PGSLib_Single_TYPE)
 #define _BLOCKSIZE_    1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !======================================================================
@@ -201,12 +120,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Gather_Buf_1_1_Double
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_DOUBLE_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    real (PGSLib_DOUBLE_TYPE)
 #define _BLOCKSIZE_    1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !======================================================================
@@ -217,12 +135,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Gather_Buf_1_1_Log
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    logical (PGSLib_Log_TYPE)
 #define _BLOCKSIZE_    1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !========== Gather Vector from Vector =================================
@@ -234,12 +151,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_2_2_Int
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_INT_C
 #define _DATA_TYPE_     integer (PGSLib_Int_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
     
 !======================================================================
@@ -249,12 +165,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_2_2_Single
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_FLOAT_C
 #define _DATA_TYPE_     REAL (PGSLib_Single_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !======================================================================
@@ -264,12 +179,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_2_2_Double
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_DOUBLE_C
 #define _DATA_TYPE_     REAL (PGSLib_Double_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 
@@ -280,12 +194,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_2_2_Log
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
 #define _DATA_TYPE_     logical (PGSLib_Log_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !========== Gather 3-d routines =================================
@@ -297,12 +210,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_3_3_Int
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_INT_C
 #define _DATA_TYPE_     integer (PGSLib_Int_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
     
 !======================================================================
@@ -312,12 +224,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_3_3_Single
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_FLOAT_C
 #define _DATA_TYPE_     real (PGSLib_Single_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !======================================================================
@@ -327,12 +238,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_3_3_Double
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_DOUBLE_C
 #define _DATA_TYPE_     real (PGSLib_Double_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !======================================================================
@@ -342,12 +252,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_3_3_Log
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "gather_buff.fpp"
 
 !======================================================================
@@ -366,12 +275,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_  PGSLib_Buf_Gather_1_1_INT
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_INT_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_     integer (PGSLib_Int_TYPE)
 #define _BLOCKSIZE_     1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
     
@@ -383,12 +291,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Buf_Gather_1_1_Single
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_FLOAT_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    real (PGSLib_Single_TYPE)
 #define _BLOCKSIZE_    1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !======================================================================
@@ -399,12 +306,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Buf_Gather_1_1_Double
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_DOUBLE_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    real (PGSLib_DOUBLE_TYPE)
 #define _BLOCKSIZE_    1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !======================================================================
@@ -415,12 +321,11 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Buf_Gather_1_1_Log
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    logical (PGSLib_Log_TYPE)
 #define _BLOCKSIZE_    1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !========== Gather Vector from Vector =================================
@@ -432,12 +337,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_2_2_Int
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_INT_C
 #define _DATA_TYPE_     integer (PGSLib_Int_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
     
 !======================================================================
@@ -447,12 +351,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_2_2_Single
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_FLOAT_C
 #define _DATA_TYPE_     REAL (PGSLib_Single_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !======================================================================
@@ -462,12 +365,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_2_2_Double
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_DOUBLE_C
 #define _DATA_TYPE_     REAL (PGSLib_Double_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 
@@ -478,12 +380,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_2_2_Log
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
 #define _DATA_TYPE_     logical (PGSLib_Log_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !========== Gather 3-d routines =================================
@@ -495,12 +396,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_3_3_Int
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_INT_C
 #define _DATA_TYPE_     integer (PGSLib_Int_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
     
 !======================================================================
@@ -510,12 +410,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_3_3_Single
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_FLOAT_C
 #define _DATA_TYPE_     real (PGSLib_Single_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !======================================================================
@@ -525,12 +424,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_3_3_Double
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_DOUBLE_C
 #define _DATA_TYPE_     real (PGSLib_Double_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !======================================================================
@@ -540,12 +438,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_3_3_Log
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
 #define _BLOCKSIZE_     SIZE(Duplicate, 1)*SIZE(Duplicate, 2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "buff_gather.fpp"
 
 !======================================================================
@@ -561,12 +458,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_1_1_Int
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_INT_C
 #define _DATA_TYPE_     integer (PGSLib_Int_Type)
 #define _SUP_DIMENSION_ dimension(:)
 #define _DUP_DIMENSION_ dimension(Trace%N_Duplicate)
 #define _BLOCKSIZE_     1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !======================================================================
@@ -576,12 +472,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_1_1_Single
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_FLOAT_C
 #define _DATA_TYPE_     Real (PGSLib_Single_Type)
 #define _SUP_DIMENSION_ dimension(:)
 #define _DUP_DIMENSION_ dimension(Trace%N_Duplicate)
 #define _BLOCKSIZE_     1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !======================================================================
@@ -591,12 +486,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_1_1_DOUBLE
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_DOUBLE_C
 #define _DATA_TYPE_     Real (PGSLib_Double_Type)
 #define _SUP_DIMENSION_ dimension(:)
 #define _DUP_DIMENSION_ dimension(Trace%N_Duplicate)
 #define _BLOCKSIZE_     1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
     
 !======================================================================
@@ -606,12 +500,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_1_1_LOG
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG_C
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _SUP_DIMENSION_ dimension(:)
 #define _DUP_DIMENSION_ dimension(Trace%N_Duplicate)
 #define _BLOCKSIZE_     1
-#define _DUP_ARRAY_ELEMENT_ _DUP_1D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_1D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !========== 2D Routines ====================
@@ -623,12 +516,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_2_2_INT
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_INT_C
 #define _DATA_TYPE_     integer (PGSLib_Int_Type)
 #define _SUP_DIMENSION_ dimension(:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !======================================================================
@@ -638,12 +530,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_2_2_SINGLE
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_FLOAT_C
 #define _DATA_TYPE_     real (PGSLib_Single_Type)
 #define _SUP_DIMENSION_ dimension(:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !======================================================================
@@ -653,12 +544,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_2_2_Double
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_DOUBLE_C
 #define _DATA_TYPE_     real (PGSLib_Double_Type)
 #define _SUP_DIMENSION_ dimension(:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
     
 !======================================================================
@@ -668,12 +558,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_2_2_Log
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG_C
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _SUP_DIMENSION_ dimension(:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1)
-#define _DUP_ARRAY_ELEMENT_ _DUP_2D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_2D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !========== 3D Routines ====================
@@ -685,12 +574,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_3_3_INT
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_INT_C
 #define _DATA_TYPE_     integer (PGSLib_Int_Type)
 #define _SUP_DIMENSION_ dimension(:,:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),SIZE(Supplement,2), Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1) * SIZE(Supplement,2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !======================================================================
@@ -700,12 +588,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_3_3_SINGLE
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_FLOAT_C
 #define _DATA_TYPE_     real (PGSLib_Single_Type)
 #define _SUP_DIMENSION_ dimension(:,:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),SIZE(Supplement,2), Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1) * SIZE(Supplement,2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
 
 !======================================================================
@@ -715,12 +602,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_3_3_DOUBLE
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_DOUBLE_C
 #define _DATA_TYPE_     real (PGSLib_Double_Type)
 #define _SUP_DIMENSION_ dimension(:,:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),SIZE(Supplement,2), Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1) * SIZE(Supplement,2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
     
 !======================================================================
@@ -730,12 +616,11 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_3_3_LOG
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG_C
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _SUP_DIMENSION_ dimension(:,:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),SIZE(Supplement,2), Trace%N_Duplicate)
 #define _BLOCKSIZE_     SIZE(Supplement,1) * SIZE(Supplement,2)
-#define _DUP_ARRAY_ELEMENT_ _DUP_3D_ARRAY_ELEMENT_
-#define _SUP_ARRAY_ELEMENT_ _SUP_3D_ARRAY_ELEMENT_
 #include "scatter_buff.fpp"
     
 END MODULE PGSLib_GS_Comm_MODULE

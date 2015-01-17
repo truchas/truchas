@@ -9,6 +9,7 @@ MODULE PGSLib_Init
   use PGSLib_Stats
   USE PGSLib_Type_MODULE
   USE PGSLib_Misc_Utility
+  use pgslib_c_binding
   
   IMPLICIT NONE
   SAVE
@@ -33,49 +34,6 @@ MODULE PGSLib_Init
   INTERFACE PGSLib_Finalize
      MODULE PROCEDURE PGSLib_Finalize_F
   END INTERFACE!PGSLib_Finalize
-
-  ! Interface block for the C routines which are needed.
-  INTERFACE PGSLib_Initialize_C
-     SUBROUTINE PGSLib_Initialize_C(nPE, thisPE, IO_ROOT_PE, FILE_PER_PE, FILE_PREFIX)
-       IMPLICIT NONE
-       INTEGER, INTENT(  OUT) :: nPE, thisPE
-       INTEGER, INTENT(INOUT) ::  IO_ROOT_PE
-       INTEGER, INTENT(IN   ) ::  FILE_PER_PE
-       CHARACTER (LEN=*), INTENT(IN) :: FILE_PREFIX
-     END SUBROUTINE PGSLib_Initialize_C
-
-  END INTERFACE! PGSLib_Initialize_C
-
-  INTERFACE PGSLib_Finalize_C
-     SUBROUTINE PGSLib_Finalize_C()
-       IMPLICIT NONE
-     END SUBROUTINE PGSLib_Finalize_C
-
-  END INTERFACE! PGSLib_Finalize_C
-
-  ! for argc and argv returns from C
-  interface pgslib_get_argc
-     subroutine pgslib_get_argc (argc)
-        integer :: argc
-     end subroutine pgslib_get_argc
-  end interface
-
-  interface pgslib_get_argv
-     subroutine pgslib_get_argv (i, string_l, string)
-        integer :: i
-        integer :: string_l
-        character (len=*) :: string
-     end subroutine pgslib_get_argv
-  end interface
-
-  interface pgslib_cleanup_argv
-      subroutine pgslib_cleanup_argv ()
-      end subroutine pgslib_cleanup_argv
-  end interface
-
-  ! End of interfaces to C routines
-
-
 
 CONTAINS
 
@@ -150,7 +108,7 @@ CONTAINS
 
        ! get argv values from the cached data
        do i = 0, argc - 1
-          call pgslib_get_argv(i, LEN(argv(i)), argv(i))
+          call pgslib_get_argv(i, LEN(argv), argv(i))
        end do
     end if
 

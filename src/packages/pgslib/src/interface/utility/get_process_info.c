@@ -6,20 +6,6 @@
 
 #include <unistd.h>
 
-/**********************************************************************/
-/* Translator Macro                                                   */
-/**********************************************************************/
-
-/* FortranCInterface_names.h is created by CMake. It contians
-   macros that manage the Fortran to C name mangling. The
-   macro TR_ROUTINE_GLOBAL_ handles global routines with underscores
-   in the name */
-#include <FortranCInterface_names.h>
-
-
-#define pgslib_get_process_id_c   TR_ROUTINE_GLOBAL_(pgslib_get_process_id_c,PGSLIB_GET_PROCESS_ID_C)
-#define pgslib_get_vm_size_c      TR_ROUTINE_GLOBAL_(pgslib_get_vm_size_c,PGSLIB_GET_VM_SIZE_C)
-
 /* get process id */
 void pgslib_get_process_id_c (int *pid)
 {

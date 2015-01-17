@@ -1,5 +1,6 @@
 MODULE PGSLib_IO_BCast_MODULE
   USE PGSLib_Type_MODULE
+  use pgslib_c_binding
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -64,80 +65,6 @@ MODULE PGSLib_IO_BCast_MODULE
 
   END INTERFACE!For the user callable PGSLib_BCast
 
-
-
-  ! Interfaces to the C routines which take a single scalar argument.
-  ! These interfaces are visible only internally to the library.
-  ! Users will not have access to these specific routines.
-
-  INTERFACE PGSLib_BCast_Scalar_c
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_bcast_int_scalar_c(scalar)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (KIND=PGSLib_INT_TYPE) :: scalar
-     END SUBROUTINE PGSLib_bcast_int_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_bcast_float_scalar_c(scalar)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (KIND=PGSLib_REAL_TYPE) ::scalar
-     END SUBROUTINE PGSLib_bcast_float_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_bcast_double_scalar_c(scalar)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (KIND=PGSLib_DOUBLE_TYPE) :: scalar
-     END SUBROUTINE PGSLib_bcast_double_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_bcast_log_scalar_c(scalar)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       LOGICAL (PGSLib_Log_Type) :: scalar
-     END SUBROUTINE PGSLib_bcast_log_scalar_c
-
-  END INTERFACE!PGSLib_BCast_Scalar
-
-  ! Interfaces to the C routines, which take both a vector and a length
-
-  INTERFACE PGSLib_bcast_vector_c
-     SUBROUTINE PGSLib_bcast_int_vector_c(vector, len)
-       USE PGSLib_TYPE_MODULE
-       INTEGER (KIND=PGSLib_INT_TYPE) :: LEN
-       INTEGER (KIND=PGSLib_INT_TYPE) :: vector(LEN)
-     END SUBROUTINE PGSLib_bcast_int_vector_c
-
-     SUBROUTINE PGSLib_bcast_float_vector_c(vector, len)
-       USE PGSLib_TYPE_MODULE
-       INTEGER (KIND=PGSLib_INT_TYPE) :: LEN
-       REAL (KIND=PGSLib_REAL_TYPE) ::vector(LEN)
-     END SUBROUTINE PGSLib_bcast_float_vector_c
-
-     SUBROUTINE PGSLib_bcast_double_vector_c(vector, len)
-       USE PGSLib_TYPE_MODULE
-       INTEGER (KIND=PGSLib_INT_TYPE) :: LEN
-       REAL (KIND=PGSLib_DOUBLE_TYPE) :: vector(LEN)
-     END SUBROUTINE PGSLib_bcast_double_vector_c
-
-     SUBROUTINE PGSLib_bcast_log_vector_c(vector, len)
-       USE PGSLib_TYPE_MODULE
-       INTEGER (KIND=PGSLib_INT_TYPE) :: LEN
-       LOGICAL (KIND=PGSLib_LOG_TYPE) :: vector(LEN)
-     END SUBROUTINE PGSLib_bcast_log_vector_c
-
-     SUBROUTINE PGSLib_bcast_char_vector_c(vector, len)
-       USE PGSLib_TYPE_MODULE
-       integer (KIND=PGSLib_INT_TYPE) :: LEN
-       CHARACTER (*) :: vector
-     END SUBROUTINE PGSLib_bcast_char_vector_c
-
-  END INTERFACE!PGSLib_BCast_Vector
-
-
-
 CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -153,7 +80,7 @@ CONTAINS
     USE PGSLib_TYPE_MODULE
     IMPLICIT NONE
     INTEGER (KIND=PGSLib_INT_TYPE) :: scalar
-    Call PGSLib_BCast_Scalar_c(scalar)
+    Call PGSLib_BCast_int_Scalar_c(scalar)
     RETURN
   END SUBROUTINE PGSLib_bcast_int_scalar_F
 
@@ -162,7 +89,7 @@ CONTAINS
     USE PGSLib_TYPE_MODULE
     IMPLICIT NONE
     REAL (KIND=PGSLib_REAL_TYPE) ::scalar
-    Call PGSLib_BCast_Scalar_c(scalar)
+    Call PGSLib_BCast_float_Scalar_c(scalar)
     RETURN
   END SUBROUTINE PGSLib_bcast_real_scalar_F
 
@@ -171,7 +98,7 @@ CONTAINS
     USE PGSLib_TYPE_MODULE
     IMPLICIT NONE
     REAL (KIND=PGSLib_DOUBLE_TYPE) :: scalar
-    Call PGSLib_BCast_Scalar_c(scalar)
+    Call PGSLib_BCast_double_Scalar_c(scalar)
     RETURN
   END SUBROUTINE PGSLib_bcast_double_scalar_F
 
@@ -180,7 +107,7 @@ CONTAINS
     USE PGSLib_TYPE_MODULE
     IMPLICIT NONE
     LOGICAL (PGSLib_Log_Type) :: scalar
-    Call PGSLib_BCast_Scalar_c(scalar)
+    Call PGSLib_BCast_log_Scalar_c(scalar)
     RETURN
   END SUBROUTINE PGSLib_bcast_log_scalar_F
 
@@ -198,7 +125,7 @@ CONTAINS
     ! Local variables
     integer vec_len
     vec_len = SIZE(vector)
-    call pgslib_bcast_vector_c(vector, vec_len)
+    call pgslib_bcast_int_vector_c(vector, vec_len)
     return
 
   END SUBROUTINE PGSLib_bcast_int_vector_F
@@ -212,7 +139,7 @@ CONTAINS
     ! Local variables
     integer vec_len
     vec_len = SIZE(vector)
-    call pgslib_bcast_vector_c(vector, vec_len)
+    call pgslib_bcast_float_vector_c (vector, vec_len)
     return
 
   END SUBROUTINE PGSLib_bcast_real_vector_F
@@ -226,7 +153,7 @@ CONTAINS
     ! Local variables
     integer vec_len
     vec_len = SIZE(vector)
-    call pgslib_bcast_vector_c(vector, vec_len)
+    call pgslib_bcast_double_vector_c (vector, vec_len)
     return
 
   END SUBROUTINE PGSLib_bcast_double_vector_F
@@ -240,7 +167,7 @@ CONTAINS
     ! Local variables
     integer vec_len
     vec_len = SIZE(vector)
-    call pgslib_bcast_vector_c(vector, vec_len)
+    call pgslib_bcast_log_vector_c (vector, vec_len)
     return
 
   END SUBROUTINE PGSLib_bcast_log_vector_F
@@ -264,7 +191,7 @@ CONTAINS
        vector = " "
     endif
 
-    call pgslib_bcast_vector_c(vector, vec_len)
+    call pgslib_bcast_char_vector_c (vector, vec_len)
 
     return
   END SUBROUTINE PGSLib_bcast_char_vector_F

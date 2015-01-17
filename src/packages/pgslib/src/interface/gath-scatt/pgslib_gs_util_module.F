@@ -1,6 +1,7 @@
 MODULE PGSLib_GS_Util_MODULE
   use PGSlib_Stats
   use pgslib_timing_module
+  use pgslib_c_binding
 
   implicit none 
 
@@ -23,23 +24,6 @@ MODULE PGSLib_GS_Util_MODULE
   INTERFACE PGSLib_Deallocate_Trace
      MODULE PROCEDURE PGSLib_GS_Release_Trace_F
   END INTERFACE
-  
-     
-
-! Interfaces to the C routines
-  INTERFACE 
-     subroutine PGSLib_GS_Init_Trace_C(GS_Trace)
-       implicit none
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_GS_Init_Trace_C
-  END INTERFACE
-  INTERFACE 
-     subroutine PGSLib_GS_Release_Trace_C(GS_Trace)
-       implicit none
-       integer, DIMENSION(*) :: GS_Trace
-     END subroutine PGSLib_GS_Release_Trace_C
-  END INTERFACE
-       
 
 CONTAINS
   
@@ -105,8 +89,6 @@ CONTAINS
       call PGSLib_Start_Timer(Trace%Setup_Timer)
 #endif
 
-    ! Allocate enough space to hold a pointer
-    ALLOCATE(Trace%GS_Trace(4))
     Call PGSLib_GS_Init_Trace_C(Trace%GS_Trace)
 
 !    Trace%Access_Table => PGSLib_Init_offPE_Access_Table()
@@ -129,6 +111,7 @@ CONTAINS
 
   subroutine PGSLib_GS_Release_Trace_F(Trace)
 
+    USE,INTRINSIC :: iso_c_binding, only: c_null_ptr
     USE PGSLib_Type_MODULE
     USE PGSLib_Globals_MODULE
     Use PGSLib_Index_MODULE
@@ -143,7 +126,8 @@ CONTAINS
 
 
     ! Release stuff internal to C structures.
-    call pgslib_gs_release_trace_c(Trace%GS_Trace)
+    call PGSLib_GS_Release_Trace_C(Trace%GS_Trace)
+    Trace%GS_Trace = c_null_ptr
 
     ! Release the access table stuff
     ! call pgslib_free_offPE_access_table(Trace%Access_Table)
@@ -174,8 +158,6 @@ CONTAINS
     if (ASSOCIATED(Trace%Duplicate_2_L_Data))        DEALLOCATE(Trace%Duplicate_2_L_Data)
 
     if (ASSOCIATED(Trace%Global_Index_1))            DEALLOCATE(Trace%Global_Index_1)
-
-    if (ASSOCIATED(Trace%GS_Trace))                  DEALLOCATE(Trace%GS_Trace)
 
 #ifdef USE_TIMERS_1
     call PGSLib_Stop_Timer(Trace%Setup_Timer)

@@ -1,5 +1,6 @@
 MODULE PGSLib_Red_MINMAXLOC_MODULE
   use pgslib_utility_module
+  use pgslib_c_binding
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -21,58 +22,6 @@ MODULE PGSLib_Red_MINMAXLOC_MODULE
          MODULE PROCEDURE PGS_Glbl_MAXLOC_Real_1D_F
          MODULE PROCEDURE PGS_Glbl_MAXLOC_Double_1D_F
       END INTERFACE
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!! Interfaces to the C routines
-
-! MINLOC
-      INTERFACE PGSLib_Global_MINLOC_C
-         subroutine PGSLib_Global_MINLOC_INT_C(MinV, GlobalIndex)
-           USE PGSLib_Type_MODULE
-           integer (PGSLib_Int_Type), intent(IN OUT) :: GlobalIndex
-           integer (PGSLib_Int_Type), intent(IN OUT) :: MinV
-         END subroutine PGSLib_Global_MINLOC_INT_C
-
-         subroutine PGSLib_Global_MINLOC_float_C(MinV, GlobalIndex)
-           USE PGSLib_Type_MODULE
-           integer (PGSLib_Int_Type), intent(IN OUT) :: GlobalIndex
-           real    (PGSLib_Real_Type), intent(IN OUT) :: MinV
-         END subroutine PGSLib_Global_MINLOC_float_C
-
-         subroutine PGSLib_Global_MINLOC_Double_C(MinV, GlobalIndex)
-           USE PGSLib_Type_MODULE
-           integer (PGSLib_Int_Type), intent(IN OUT) :: GlobalIndex
-           real    (PGSLib_Double_Type), intent(IN OUT) :: MinV
-         END subroutine PGSLib_Global_MINLOC_Double_C
-
-      END INTERFACE
-
-! MAXLOC
-      INTERFACE PGSLib_Global_MAXLOC_C
-         subroutine PGSLib_Global_MAXLOC_INT_C(MinV, GlobalIndex)
-           USE PGSLib_Type_MODULE
-           integer (PGSLib_Int_Type), intent(IN OUT) :: GlobalIndex
-           integer (PGSLib_Int_Type), intent(IN OUT) :: MinV
-         END subroutine PGSLib_Global_MAXLOC_INT_C
-
-         subroutine PGSLib_Global_MAXLOC_float_C(MinV, GlobalIndex)
-           USE PGSLib_Type_MODULE
-           integer (PGSLib_Int_Type), intent(IN OUT) :: GlobalIndex
-           real    (PGSLib_Real_Type), intent(IN OUT) :: MinV
-         END subroutine PGSLib_Global_MAXLOC_float_C
-
-         subroutine PGSLib_Global_MAXLOC_Double_C(MinV, GlobalIndex)
-           USE PGSLib_Type_MODULE
-           integer (PGSLib_Int_Type), intent(IN OUT) :: GlobalIndex
-           real    (PGSLib_Double_Type), intent(IN OUT) :: MinV
-         END subroutine PGSLib_Global_MAXLOC_Double_C
-
-      END INTERFACE
-
-      
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 CONTAINS
 

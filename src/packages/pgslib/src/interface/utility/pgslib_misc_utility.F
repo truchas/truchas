@@ -2,6 +2,7 @@ MODULE PGSLib_Misc_Utility
   USE PGSLib_Type_MODULE
   use pgslib_globals_module
   use pgslib_error_module
+  use pgslib_c_binding
 
   IMPLICIT NONE
   SAVE
@@ -60,30 +61,6 @@ MODULE PGSLib_Misc_Utility
   INTERFACE PGSLib_Barrier
      MODULE PROCEDURE PGSLib_Barrier_F
   END INTERFACE!PGSLib_Barrier
-
-  ! Interface block for the C routines which are needed.
-  INTERFACE PGSLib_Output_C
-     SUBROUTINE PGSLib_Output_C(OutString)
-       CHARACTER (LEN=*), INTENT(IN) :: OutString
-     END SUBROUTINE PGSLib_Output_C
-  END INTERFACE! PGSLib_Output_C
-
-
-  INTERFACE PGSLib_Flush_Output_C
-     SUBROUTINE PGSLib_Flush_Output_C()
-     END SUBROUTINE PGSLib_Flush_Output_C
-  END INTERFACE! PGSLib_Flush_Output_C
-
-
-  INTERFACE PGSLib_Barrier_C
-     SUBROUTINE PGSLib_Barrier_C()
-     END SUBROUTINE PGSLib_Barrier_C
-
-  END INTERFACE! PGSlib_Barrier_C
-
-  ! End of interfaces to C routines
-
-
 
 CONTAINS
 

@@ -1,4 +1,5 @@
 MODULE PGSLib_IO_Collate_MODULE
+  use pgslib_c_binding
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -47,101 +48,6 @@ MODULE PGSLib_IO_Collate_MODULE
      MODULE Procedure PGSLib_Collate_Char_Vector_F
 
   END INTERFACE!For the user callable PGSLib_Collate
-
-
-
-  ! Interfaces to the C routines which take a single scalar argument.
-  ! These interfaces are visible only internally to the library.
-  ! Users will not have access to these specific routines.
-
-  INTERFACE PGSLib_Collate_Scalar_C
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Collate_int_scalar_c(scalarv_out, scalar_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (PGSLib_Int_Type), INTENT(  OUT), DIMENSION(*) :: scalarv_out
-       INTEGER (PGSLib_INT_TYPE), INTENT(IN   ) :: scalar_in
-     END SUBROUTINE PGSLib_Collate_int_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Collate_float_scalar_c(scalarv_out, scalar_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (PGSLib_REAL_TYPE), INTENT(  OUT), DIMENSION(*) ::scalarv_out
-       REAL (PGSLib_REAL_TYPE), INTENT(IN   ) ::scalar_in
-     END SUBROUTINE PGSLib_Collate_float_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Collate_double_scalar_c(scalarv_out, scalar_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (KIND=PGSLib_DOUBLE_TYPE), INTENT(  OUT), DIMENSION(*) :: scalarv_out
-       REAL (KIND=PGSLib_DOUBLE_TYPE), INTENT(IN   ) :: scalar_in
-     END SUBROUTINE PGSLib_Collate_double_scalar_c
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     SUBROUTINE PGSLib_Collate_log_scalar_c(scalarv_out, scalar_in)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       LOGICAL (PGSLib_Log_Type), INTENT(  OUT), DIMENSION(*) :: scalarv_out
-       LOGICAL (PGSLib_Log_Type), INTENT(IN   ) :: scalar_in
-     END SUBROUTINE PGSLib_Collate_log_scalar_c
-
-  END INTERFACE!PGSLib_Collate_Scalar
-
-  ! Interfaces to the C routines, which take both a vector and a length
-
-  ! Collate Vectors
-  INTERFACE PGSLib_Collate_Vector_c
-     SUBROUTINE PGSLib_Collate_int_vector_c(vector_out, Lengths, vector_in, In_Length)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       INTEGER (KIND=PGSLib_INT_TYPE), DIMENSION(*) :: vector_out
-       INTEGER (KIND=PGSLib_INT_TYPE), DIMENSION(*) :: lengths
-       INTEGER (KIND=PGSLib_INT_TYPE), DIMENSION(*) :: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE)               :: In_Length
-     END SUBROUTINE PGSLib_Collate_int_vector_c
-
-
-     SUBROUTINE PGSLib_Collate_float_vector_c(vector_out, Lengths, vector_in, In_Length)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (KIND=PGSLib_REAL_TYPE),   DIMENSION(*) :: vector_out
-       INTEGER (KIND=PGSLib_INT_TYPE), DIMENSION(*) :: lengths
-       REAL (KIND=PGSLib_REAL_TYPE),   DIMENSION(*) :: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE)               :: In_Length
-     END SUBROUTINE PGSLib_Collate_float_vector_c
-
-     SUBROUTINE PGSLib_Collate_double_vector_c(vector_out, Lengths, vector_in, In_Length)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       REAL (KIND=PGSLib_DOUBLE_TYPE), DIMENSION(*) :: vector_out
-       INTEGER (KIND=PGSLib_INT_TYPE), DIMENSION(*) :: lengths
-       REAL (KIND=PGSLib_DOUBLE_TYPE), DIMENSION(*) :: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE)               :: In_Length
-     END SUBROUTINE PGSLib_Collate_double_vector_c
-
-     SUBROUTINE PGSLib_Collate_log_vector_c(vector_out, Lengths, vector_in, In_Length)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       LOGICAL (KIND=PGSLib_LOG_TYPE), DIMENSION(*) :: vector_out
-       INTEGER (KIND=PGSLib_INT_TYPE), DIMENSION(*) :: lengths
-       LOGICAL (KIND=PGSLib_LOG_TYPE), DIMENSION(*) :: vector_in
-       INTEGER (KIND=PGSLib_INT_TYPE)               :: In_Length
-     END SUBROUTINE PGSLib_Collate_log_vector_c
-
-     SUBROUTINE PGSLib_Collate_char_vector_c(vector_out, Lengths, vector_in, In_Length)
-       USE PGSLib_TYPE_MODULE
-       IMPLICIT NONE
-       CHARACTER (1)              , INTENT(  OUT) :: vector_out
-       INTEGER   (PGSLib_INT_TYPE), INTENT(IN   ) :: lengths
-       CHARACTER (1)              , INTENT(IN   ) :: vector_in
-       INTEGER   (PGSLib_INT_TYPE), INTENT(IN   ) :: In_Length
-     END SUBROUTINE PGSLib_Collate_char_vector_c
-
-  END INTERFACE!PGSLib_Collate_Vector
-
-
 
 CONTAINS
 
@@ -248,7 +154,7 @@ CONTAINS
        allocate(vector_out_total(1))
     endif
 
-    call pgslib_collate_vector_c(vector_out_total(1), lengths(1), vector_in(1), in_len)
+    call pgslib_collate_vector_c(vector_out_total, lengths, vector_in, in_len)
 
     if (PGSLib_Inquire_IO_P()) then
        scalarv_out = ''
@@ -374,7 +280,7 @@ CONTAINS
        allocate(vector_out_total(1))
     end if
 
-    call pgslib_collate_vector_c(vector_out_total(1), vec_out_lengths(1), vector_in_total(1), vec_in_len)
+    call pgslib_collate_vector_c(vector_out_total, vec_out_lengths, vector_in_total, vec_in_len)
 
     deallocate(vector_in_total)
     if (PGSLib_Inquire_IO_P()) then

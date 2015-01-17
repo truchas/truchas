@@ -5,6 +5,8 @@
 MODULE PGSLib_Index_Table_MODULE
   use pgslib_stats
   use pgslib_timing_module
+  use pgslib_c_binding
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
   IMPLICIT NONE 
   SAVE
   PRIVATE
@@ -38,46 +40,6 @@ MODULE PGSLib_Index_Table_MODULE
 
   INTERFACE PGSLib_Item_Index_From_Table
      MODULE PROCEDURE PGSLib_Item_Index_From_Table_F
-  END INTERFACE
-  ! Interfaces to the C support routines
-  INTERFACE 
-     subroutine PGSLib_Init_Access_Table_C(C_Table)
-       implicit none 
-       integer, DIMENSION(*) :: C_Table  
-     END subroutine PGSLib_Init_Access_Table_C
-
-     subroutine PGSLib_Free_Access_Table_C(C_Table)
-       implicit none 
-       integer, DIMENSION(*) :: C_Table  
-     END subroutine PGSLib_Free_Access_Table_C
-
-     subroutine PGSLib_Add_Item_To_Table_C(Item, PE, C_Table, ierror)
-       implicit none
-       integer, intent(IN):: Item, PE
-       integer, DIMENSION(*) :: C_Table
-       integer, intent(OUT):: ierror
-     END subroutine PGSLib_Add_Item_To_Table_C
-
-     subroutine PGSLib_Count_Items_In_Table_C(Count, C_Table)
-       implicit none 
-       integer, intent(OUT)::   Count
-       integer, DIMENSION(*) :: C_Table
-     END subroutine PGSLib_Count_Items_In_Table_C
-
-     subroutine PGSLib_Items_From_Table_C(Items, PEs, Count, C_Table, ierror)
-       implicit none 
-       integer, intent(IN) :: Count
-       integer, intent(OUT), DIMENSION(Count):: Items, PEs
-       integer, DIMENSION(*) :: C_Table
-       integer, intent(OUT)              :: ierror
-     END subroutine PGSLib_Items_From_Table_C
-
-     subroutine PGSLib_Item_Index_From_Table_C(Index, Item, PE, C_Table)
-       implicit none 
-       integer, intent(OUT)  :: Index
-       integer, intent( IN)  :: Item, PE
-       integer, DIMENSION(*) :: C_Table
-     END subroutine PGSLib_Item_Index_From_Table_C
   END INTERFACE
 
 type ItemPEPair
@@ -113,14 +75,12 @@ CONTAINS
   function PGSLib_Init_Access_Table_F() RESULT( Table )
     USE PGSLib_Type_MODULE
     implicit none 
-    type (PGSLib_Access_Table), POINTER :: Table
+    type (c_ptr), POINTER :: Table
 
     ! Allocate the Fortran table
     ALLOCATE(Table)
-    ! Allocate enough space to hold a pointer
-    ALLOCATE(Table%C_Table(4))
 
-    call PGSLib_Init_Access_Table_C(Table%C_Table)
+    call PGSLib_Init_Access_Table_C(Table)
 
     RETURN
   END function PGSLib_Init_Access_Table_F
@@ -136,12 +96,9 @@ CONTAINS
   subroutine PGSLib_Free_Access_Table_F(Table)
     USE PGSLib_Type_MODULE
     implicit none 
-    type (PGSLib_Access_Table), POINTER:: Table
+    type (c_ptr), POINTER:: Table
 
-    if (ASSOCIATED(Table%C_Table)) then
-       call PGSLib_Free_Access_Table_C(Table%C_Table)
-    end if
-    DEALLOCATE(Table%C_Table)
+    if (ASSOCIATED(Table)) call PGSLib_Free_Access_Table_C(Table)
     DEALLOCATE(Table)
 
     RETURN
@@ -162,7 +119,7 @@ CONTAINS
     implicit none 
     integer (PGSLib_Int_Type)                :: PGSLib_Add_Item_To_Table_F
     integer (PGSLib_Int_Type), INTENT(IN)    :: Item, PE
-    type    (PGSLib_Access_Table), INTENT(INOUT):: Table
+    type    (c_ptr), INTENT(INOUT):: Table
 
     ! local variables
     integer (PGSLib_Int_Type) :: ierror
@@ -171,7 +128,7 @@ CONTAINS
     call enter_routine(Add_Item_To_T_STATISTICS())
 #endif
     ! C counts PEs from 0 to nPE-1, FORTRAN counts from 1.
-    call PGSLib_Add_Item_To_Table_C(Item, PE-1, Table%C_table, ierror)
+    call PGSLib_Add_Item_To_Table_C(Item, PE-1, Table, ierror)
 
     PGSLib_Add_Item_To_Table_F = ierror
 
@@ -195,12 +152,12 @@ CONTAINS
     USE PGSLib_Type_MODULE
     implicit none 
     integer (PGSLib_Int_Type)                :: PGSLib_Count_Items_In_Table_F
-    type    (PGSLib_Access_Table), INTENT(INOUT):: Table
+    type    (c_ptr), INTENT(INOUT):: Table
 
     ! local variables
     integer (PGSLib_Int_Type) :: count
 
-    call PGSLib_Count_Items_In_Table_C(Count, Table%C_Table)
+    call PGSLib_Count_Items_In_Table_C(Count, Table)
 
     PGSLib_Count_Items_In_Table_F = count
     RETURN
@@ -227,7 +184,7 @@ CONTAINS
     implicit none 
     integer (PGSLib_Int_Type)                :: PGSLib_Items_From_Table_F
     integer (PGSLib_Int_Type),  INTENT(OUT), DIMENSION(:) :: Items, PEs
-    type    (PGSLib_Access_Table), INTENT(INOUT)             :: Table
+    type    (c_ptr), INTENT(INOUT)             :: Table
 
     ! Local variables
     integer (PGSLib_Int_Type) :: ierror, count
@@ -236,7 +193,7 @@ CONTAINS
     count = PGSLib_Count_Items_In_Table(Table)
     IF (Count >= 0) THEN
        IF ((Size(Items,1) >= Count) .AND. (Size(PEs  ,1) >= Count)) THEN
-          call PGSLib_Items_From_Table_C(Items, PEs, Count, Table%C_Table, ierror)
+          call PGSLib_Items_From_Table_C(Items, PEs, Count, Table, ierror)
           ! C counts from 0 to nPE-1, FORTRAN counts from 1, so need to increment
           PEs = PEs + 1
         ELSE
@@ -283,7 +240,7 @@ CONTAINS
     integer (PGSLib_Int_Type)                :: Index
     integer (PGSLib_Int_Type),  INTENT(IN)   :: Item, Item_PE
     integer (PGSLib_Int_Type),  INTENT(IN), dimension(:)   :: Item_List, PE_List
-!    type    (PGSLib_Access_Table), INTENT(INOUT):: Table
+!    type    (c_ptr), INTENT(INOUT):: Table
 
     ! Local variables
     integer (PGSLib_Int_Type) :: Lo, Mid, Hi, Count
@@ -296,7 +253,7 @@ CONTAINS
 #endif
     
     ! C counts PEs from 0 to nPE-1
-!    Call PGSLib_Item_Index_From_Table_C(Index, Item, PE-1, Table%C_Table)
+!    Call PGSLib_Item_Index_From_Table_C(Index, Item, PE-1, Table)
 
     ! This version (in test) finds the item in the item list, then returns the 
     ! index
