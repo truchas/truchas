@@ -23,12 +23,14 @@ if ( ENABLE_ExternalSearch )
   include(Verify_SWIG)
   include(Verify_HDF5)
   include(Verify_NetCDF)
+  include(Verify_Exodus)
   include(Verify_PETACA)
 else(ENABLE_ExternalSearch)  
   set(HYPRE_VERIFIED False)
   set(SWIG_VERIFIED False)
   set(HDF5_VERIFIED False)
   set(NETCDF_VERIFIED False)
+  set(EXODUS_VERIFIED False)
   set(PETACA_VERIFIED False)
 endif(ENABLE_ExternalSearch)
 
@@ -36,9 +38,10 @@ endif(ENABLE_ExternalSearch)
 include(BoolEval)
 bool_eval(BUILD_EXTERNAL 
           NOT HYPRE_VERIFIED OR
-	        NOT SWIG_VERIFIED OR
-	        NOT HDF5_VERIFIED OR
-	        NOT NETCDF_VERIFIED OR
+          NOT SWIG_VERIFIED OR
+          NOT HDF5_VERIFIED OR
+          NOT NETCDF_VERIFIED OR
+          NOT EXODUS_VERIFIED OR
           NOT PETACA_VERIFIED)
 
 # --- External projects built for Truchas
@@ -96,7 +99,7 @@ if(BUILD_EXTERNAL)
   )
 
   # Loop through and add ExternalProject_* if not verified
-  foreach(proj HDF5 NetCDF HYPRE SWIG PETACA)
+  foreach(proj HDF5 NetCDF Exodus HYPRE SWIG PETACA)
     if ( NOT "${${proj}_VERIFIED}")
       include(ExternalProject_${proj})
     endif(NOT "${${proj}_VERIFIED}")
@@ -159,6 +162,13 @@ set(NETCDF_Fortran_LIBRARY   ${NETCDF_Fortran_LIBRARY} PARENT_SCOPE)
 set(NETCDF_Fortran_LIBRARIES ${NETCDF_Fortran_LIBRARIES} PARENT_SCOPE)
 set(NETCDF_INCLUDE_DIR       ${NETCDF_INCLUDE_DIR} PARENT_SCOPE)
 set(NETCDF_INCLUDE_DIRS      ${NETCDF_INCLUDE_DIRS} PARENT_SCOPE)
+
+# EXODUS
+set(EXODUS_FOUND          ${EXODUS_FOUND} PARENT_SCOPE)
+set(EXODUS_BUILD_TARGET   ${EXODUS_BUILD_TARGET} PARENT_SCOPE)
+set(EXODUS_VERSION        ${EXODUS_VERSION} PARENT_SCOPE)
+set(EXODUS_LIBRARIES      ${EXODUS_LIBRARIES} PARENT_SCOPE)
+set(EXODUS_INCLUDE_DIRS   ${EXODUS_INCLUDE_DIRS} PARENT_SCOPE)
 
 # YAJL
 set(YAJL_FOUND         ${YAJL_FOUND} PARENT_SCOPE)
