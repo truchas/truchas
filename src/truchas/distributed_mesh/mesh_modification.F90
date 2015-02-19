@@ -59,15 +59,15 @@ contains
     use hashing
     use string_utilities, only: i_to_c
 
-    type(external_mesh), intent(inout) :: mesh
+    type(external_mesh), intent(inout), target :: mesh
     integer, intent(in) :: block_id(:)
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 
     integer :: i, j, k, n, side_bitmask, node_bitmask
     logical, allocatable :: link_cell(:), link_node(:), keep(:)
-    integer, allocatable :: link_side(:), xbin(:), map(:)
-    integer, pointer :: cnode(:), fnode(:), old_cnode(:,:), old_cell_block(:), tmp(:)
+    integer, allocatable :: link_side(:), xbin(:), map(:), old_cnode(:,:), old_cell_block(:), tmp(:)
+    integer, pointer :: cnode(:), fnode(:)
     type(side_set), pointer :: old_sset(:)
     type(hash_param) :: hpar
 
@@ -260,8 +260,8 @@ contains
 
     !! Resized mesh cell arrays.
     mesh%ncell = mesh%ncell - mesh%nlink
-    old_cnode => mesh%cnode
-    old_cell_block => mesh%cell_block
+    call move_alloc (mesh%cnode, old_cnode)
+    call move_alloc (mesh%cell_block, old_cell_block)
     allocate(mesh%cnode(8,mesh%ncell), mesh%cell_block(mesh%ncell))
 
     !! Copy the old cell data into the new data arrays.  If cell J is not a link
@@ -296,7 +296,7 @@ contains
     mesh%nlblock = size(mesh%link_block_id)
     mesh%link_block_id = pack(mesh%block_id, mask=.not.keep)
     if (n < mesh%nblock) then
-      tmp => mesh%block_id
+      call move_alloc (mesh%block_id, tmp)
       allocate(mesh%block_id(n))
       mesh%nblock = n
       mesh%block_id = pack(tmp, mask=keep)
@@ -310,11 +310,11 @@ contains
       keep = .not.link_cell(mesh%sset(i)%elem)
       n = count(keep)
       mesh%sset(i)%num_side = n
-      tmp => mesh%sset(i)%elem
+      call move_alloc (mesh%sset(i)%elem, tmp)
       allocate(mesh%sset(i)%elem(n))
       mesh%sset(i)%elem = map(pack(tmp, mask=keep))
       deallocate(tmp)
-      tmp => mesh%sset(i)%face
+      call move_alloc (mesh%sset(i)%face, tmp)
       allocate(mesh%sset(i)%face(n))
       mesh%sset(i)%face = pack(tmp, mask=keep)
       deallocate(tmp, keep)
@@ -417,7 +417,7 @@ contains
     use cell_topology
     use mesh_importer, only: side_set_node_list
 
-    type(external_mesh), intent(inout) :: mesh
+    type(external_mesh), intent(inout), target :: mesh
     integer, intent(in) :: ssid(:)
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -429,7 +429,7 @@ contains
     integer, allocatable :: parent(:), equiv(:), map(:), daughter(:)
     integer, allocatable :: xside(:), side(:,:)
     integer, pointer :: iptr1(:), iptr2(:,:)
-    real(r8), pointer :: new_x(:,:)
+    real(r8), allocatable :: new_x(:,:)
 
     !! Data arrays for the active submesh.
     integer :: num_active_cell
@@ -1136,7 +1136,7 @@ contains
       new_x(:,j) = mesh%x(:,map(j))
     end do
     deallocate(mesh%x)
-    mesh%x => new_x
+    call move_alloc (new_x, mesh%x)
     mesh%nnode = new_nnode
 
     deallocate(map, daughter)

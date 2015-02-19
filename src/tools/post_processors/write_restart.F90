@@ -126,7 +126,8 @@ program write_restart
   use write_restart_command_line
   use string_utilities, only: i_to_c
   use,intrinsic :: iso_fortran_env, only: output_unit, error_unit
-  use exodus
+  use exodus_mesh_type
+  use exodus_mesh_io, only: read_exodus_mesh
   use mapped_restart
   implicit none
   
@@ -134,6 +135,7 @@ program write_restart
   character(256) :: errmsg
   type(h5out) :: ofile
   type(exodus_mesh) :: exomesh
+  character(:), allocatable :: errstr
   
   call parse_command_line
   
@@ -182,13 +184,15 @@ program write_restart
     if (mapped) then
     
       !! Read the ExodusII mesh file.
-      call read_exodus_mesh (mfile, exomesh, stat)
+      call read_exodus_mesh (mfile, exomesh, stat, errstr)
       if (stat /= 0) then
-        write(error_unit,'(3a)') 'Error reading ', trim(mfile), ': ' // trim(exo_err_str(stat))
+        write(error_unit,'(3a)') 'Error reading ', trim(mfile), ': ' // errstr
         stop
       end if
       
-      call write_mapped_restart (ofile, seq_num, exomesh, coord_scale_factor, 10)
+      if (coord_scale_factor /= 1.0) exomesh%coord = coord_scale_factor * exomesh%coord
+
+      call write_mapped_restart (ofile, seq_num, exomesh, 10)
     
     else
     

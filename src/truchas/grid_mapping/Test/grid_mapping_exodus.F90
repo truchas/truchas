@@ -23,7 +23,7 @@ contains
 
   subroutine copy_exodus_mesh_to_gm_mesh(e_mesh,g_mesh)
 
-    use exodus, only : exodus_mesh
+    use exodus_mesh_type
 
     implicit none 
 

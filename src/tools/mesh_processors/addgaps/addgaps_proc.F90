@@ -14,7 +14,7 @@
 
 module addgaps_proc
 
-  use exodus
+  use exodus_mesh_type
   use string_utilities, only: i_to_c
   use command_line, only: prog, strict_ss_transf
   implicit none
@@ -120,7 +120,7 @@ contains
     active_node = .false.
     do n = 1, inmesh%num_sset
       if (.not.active_sset(n)) cycle
-      list => side_set_node_list(inmesh, n)
+      list => inmesh%side_set_node_list(n)
       do i = 1, size(list)
         active_node(list(i)) = .true.
       end do
@@ -160,7 +160,7 @@ contains
         case ('HEX', 'HEX8')
           side_sig => HEX8_SIDE_SIG
         case default
-          call halt ('unable to handle element type: ' // trim(inmesh%eblk(b)%elem_type))
+          call halt ('unable to handle element type: ' // inmesh%eblk(b)%elem_type)
         end select
 
         do l = 1, inmesh%eblk(b)%num_elem
@@ -173,12 +173,13 @@ contains
             active%lnum(j) = l
 
             !! Define NMASK: mark the active nodes on this active element.
-            list => inmesh%eblk(b)%connect(:,l)
-            bit_mask = 0
-            do k = 1, size(list)
-              if (active_node(list(k))) bit_mask = ibset(bit_mask, k-1)
-            end do
-            active%nmask(j) = bit_mask
+            associate(list => inmesh%eblk(b)%connect(:,l))
+              bit_mask = 0
+              do k = 1, size(list)
+                if (active_node(list(k))) bit_mask = ibset(bit_mask, k-1)
+              end do
+              active%nmask(j) = bit_mask
+            end associate
 
             !! Define SMASK: mark the active sides on this active element.
             bit_mask = 0
@@ -277,7 +278,7 @@ contains
     do j = 1, active%num_elem
       do k = 1, MAX_SIDE
         if (btest(active%smask(j),k-1)) then
-          key => side_node_list(mesh, active%enum(j), k)
+          key => mesh%side_node_list(active%enum(j), k)
           n = hash(hpar, key)
           xbin(n+1) = xbin(n+1) + 1
           deallocate(key)
@@ -296,7 +297,7 @@ contains
     do j = 1, active%num_elem
       do k = 1, MAX_SIDE
         if (btest(active%smask(j),k-1)) then
-          key => side_node_list(mesh, active%enum(j), k)
+          key => mesh%side_node_list(active%enum(j), k)
           n = hash(hpar, key)
           i = xbin(n)
           bin_table(i)%key => key
@@ -325,7 +326,7 @@ contains
           if (active%jnbr(k,j) > 0) cycle  ! info already assigned
 
           !! The key my neighbor would have for this side.
-          key => side_node_list(mesh, active%enum(j), k, reverse=.true.)
+          key => mesh%side_node_list(active%enum(j), k, reverse=.true.)
           n = hash(hpar, key)
 
           bin => bin_table(xbin(n):xbin(n+1)-1)
@@ -608,7 +609,7 @@ contains
     allocate(gap_count(3:4,inmesh%num_sset))
     gap_count = 0
     do j = 1, active%num_elem
-      list => side_size_list(inmesh%eblk(active%bnum(j))%elem_type)
+      list => inmesh%side_size_list(inmesh%eblk(active%bnum(j))%elem_type)
       do k = 1, MAX_SIDE
         n = active%gside(k,j)
         if (n > 0) gap_count(list(k),n) = 1 + gap_count(list(k),n)
@@ -658,7 +659,7 @@ contains
 
         !! Announce the element block.
         write(*,'(a)') 'Creating element block for ' // i_to_c(outmesh%eblk(b)%num_elem) &
-          // ' ' // trim(outmesh%eblk(b)%elem_type) // ' gap elements from side set ' &
+          // ' ' // outmesh%eblk(b)%elem_type // ' gap elements from side set ' &
           // i_to_c(inmesh%sset(n)%ID)
 
         !! Obtain the element block ID from the user.
@@ -680,7 +681,7 @@ contains
 
         !! Write info to the log file
         write(LUN,'(a)') 'Creating element block ' // i_to_c(outmesh%eblk(b)%ID) // ' for ' &
-          // i_to_c(outmesh%eblk(b)%num_elem) // ' ' // trim(outmesh%eblk(b)%elem_type) &
+          // i_to_c(outmesh%eblk(b)%num_elem) // ' ' // outmesh%eblk(b)%elem_type &
           // ' gap elements from side set ' // i_to_c(inmesh%sset(n)%ID)
       end do
     end do
@@ -712,14 +713,15 @@ contains
     !! Replace each active node of each active element with a new daughter node.
     n = inmesh%num_node
     do j = 1, active%num_elem
-      list => outmesh%eblk(active%bnum(j))%connect(:,active%lnum(j))
-      do k = 1, size(list)
-        if (btest(active%nmask(j),k-1)) then
-          n = n + 1
-          parent(n) = list(k)
-          list(k) = n
-        end if
-      end do
+      associate(list => outmesh%eblk(active%bnum(j))%connect(:,active%lnum(j)))
+        do k = 1, size(list)
+          if (btest(active%nmask(j),k-1)) then
+            n = n + 1
+            parent(n) = list(k)
+            list(k) = n
+          end if
+        end do
+      end associate
     end do
 
     ASSERT( n == ubound(parent,1) )
@@ -752,8 +754,8 @@ contains
         if (j > active%jnbr(k,j))  cycle ! handle this one from the other side
 
         !! The co-oriented side node lists for the adjacent elements.
-        side1 => side_node_list(outmesh, active%enum(j), k)
-        side2 => side_node_list(outmesh, active%enum(active%jnbr(k,j)), active%knbr(k,j), reverse=.true.)
+        side1 => outmesh%side_node_list(active%enum(j), k)
+        side2 => outmesh%side_node_list(active%enum(active%jnbr(k,j)), active%knbr(k,j), reverse=.true.)
         ASSERT( associated(side1) .and. associated(side2) )
         ASSERT( size(side1) == size(side2) )
 
@@ -796,7 +798,7 @@ contains
       end do
     end do
 
-    ASSERT( all(defined(outmesh%eblk)) )
+    ASSERT( all(outmesh%eblk%defined()) )
     ASSERT( all(equiv(:inmesh%num_node) == 0) )
     ASSERT( minval(equiv,equiv/=0) > inmesh%num_node )
     ASSERT( maxval(equiv,equiv/=0) <= ubound(equiv,1) )
@@ -853,19 +855,21 @@ contains
 
     !! Renumber the active nodes of the original active elements.
     do j = 1, active%num_elem
-      list => outmesh%eblk(active%bnum(j))%connect(:,active%lnum(j))
-      do k = 1, size(list)
-        if (btest(active%nmask(j),k-1)) list(k) = map(list(k))
-      end do
+      associate(list => outmesh%eblk(active%bnum(j))%connect(:,active%lnum(j)))
+        do k = 1, size(list)
+          if (btest(active%nmask(j),k-1)) list(k) = map(list(k))
+        end do
+      end associate
     end do
 
     !! Renumber the nodes of the new gap elements.
     do b = inmesh%num_eblk+1, outmesh%num_eblk
       n = 0
       do l = 1, outmesh%eblk(b)%num_elem
-        list => outmesh%eblk(b)%connect(:,l)
-        list = map(list)
-        if (.not.unique(list)) n = n + 1  ! degenerate gap element
+        associate(list => outmesh%eblk(b)%connect(:,l))
+          list = map(list)
+          if (.not.unique(list)) n = n + 1  ! degenerate gap element
+        end associate
       end do
       if (n > 0) call warn ('element block ID ' // i_to_c(outmesh%eblk(b)%ID) // &
                             ' contains ' // i_to_c(n) // ' degenerate gap elements')
@@ -1045,7 +1049,7 @@ contains
 
     end do
 
-    ASSERT( all(defined(outmesh%nset)) )
+    ASSERT( all(outmesh%nset%defined()) )
 
   end subroutine define_nset
 
@@ -1096,7 +1100,7 @@ contains
 
     end do
 
-    ASSERT( all(defined(outmesh%sset)) )
+    ASSERT( all(outmesh%sset%defined()) )
 
   end subroutine define_sset
 

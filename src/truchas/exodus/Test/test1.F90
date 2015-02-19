@@ -1,6 +1,7 @@
 program test1
 
-  use exodus
+  use exodus_mesh_type
+  use exodus_mesh_io
   implicit none
 
   integer :: status

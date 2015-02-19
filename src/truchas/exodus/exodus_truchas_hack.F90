@@ -1,18 +1,51 @@
 !!
 !! EXODUS_TRUCHAS_HACK
 !!
-!! Neil N. Carlson <nnc@lanl.gov> 25 Sep 2004
-!! Revised 25 Mar 2010
-!!
 !! This module provides procedures to read certain data from an ExodusII file.
 !! These are intended solely to accomodate specific needs in Truchas as it is
 !! currently designed.  Please DO NOT use these for any other purpose.
 !!
+!! Neil N. Carlson <nnc@lanl.gov> 25 Sep 2004
+!! Revised February 2015
+!!
+!! PROGRAMMING INTERFACE
+!!
+!!  CALL READ_EXODUS_MESH_SIZE (PATH, NUM_NODE, NUM_ELEM [,STAT])
+!!
+!!    Reads the number of nodes and elements from the ExodusII file PATH.
+!!    If an error occurs, a nonzero value is returned in STAT, if present;
+!!    otherwise an error message is written to the preconnected error unit
+!!    and the program is stopped.
+!!
+!!  CALL READ_EXODUS_SIDE_SETS (PATH, MESH_FACE_SET_TOT, STATUS)
+!!
+!!    Reads the side set information from the ExodusII file PATH.  The data
+!!    is returned in the supplied rank-3 MESH_FACE_SET_TOT array; its shape
+!!    should be number of side sets, by number of faces per cell (6), by number
+!!    of elements.  The old Truchas mesh data structure stores tet and wedge
+!!    elements as specific forms of degenerate hexes, and it also uses a
+!!    different numbering of the sides of a hex.  (See MESH_READ from the
+!!    MESH_INPUT_MODULE for details.)  This routine takes care of translating
+!!    the ExodusII side info appropriately.  If an error occurs, a nonzero
+!!    value is returned in STAT.
+!!
+!! NOTES
+!!
+!! The internal implementation of the procedures was completely rewritten
+!! to use the official ExodusII library to read the file instead of making
+!! direct NetCDF calls.  The procedure interfaces are unchanged.
+!!
+!! Trailing white space in the path string is significant to the ExodusII
+!! library function ex_open that underlies the EXODUS_FILE:OPEN method, which
+!! does not modify the path string other than to append a null character to
+!! form a proper C string.  The EXODUS_FILE:OPEN caller is thus expected to
+!! pass the precise path.  Instead of propagating this requirement up to the
+!! caller of these procedures, these procedures trim the received path to
+!! remove any trailing spaces, which are thus deemed to be insignificant.
+!!
 
 module exodus_truchas_hack
 
-  use netcdf
-  use string_utilities
   implicit none
   private
 
@@ -20,79 +53,52 @@ module exodus_truchas_hack
 
 contains
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! READ_EXODUS_MESH_SIZE
- !!
- !! This routine reads the number of nodes and elements from the ExodusII
- !! file PATH.  If an error occurs, a nonzero value is returned in STATUS.
- !!
-
   subroutine read_exodus_mesh_size (path, num_node, num_elem, stat)
 
-    character(len=*), intent(in) :: path
+    use exodus_file_type
+    use,intrinsic :: iso_fortran_env, only: error_unit
+#ifdef NAG_COMPILER
+    use,intrinsic :: f90_unix, only: exit
+#endif
+
+    character(*), intent(in) :: path
     integer, intent(out) :: num_node, num_elem
     integer, intent(out), optional :: stat
 
-    integer :: status, ncid, dimid
+    integer :: status
+    type(exodus_file) :: file
+    character(:), allocatable :: errmsg
+
+    call file%open (trim(path), status, errmsg)
+    if (status /= 0) then
+      if (present(stat)) then
+        stat = status
+        return
+      else
+        write(error_unit,'(2a)') 'READ_EXODUS_MESH_SIZE: error opening file: ', errmsg
+        call exit (1)
+      end if
+    end if
+
+    num_node = file%num_node
+    num_elem = file%num_elem
 
     if (present(stat)) stat = 0
 
-    !! Open the exodus mesh file (a netCDF dataset).
-    status = nf90_open(path, NF90_NOWRITE, ncid)
-    if (status /= NF90_NOERR) goto 666
-
-    !! Get the number of nodes.
-    status = nf90_inq_dimid(ncid, 'num_nodes', dimid)
-    if (status /= NF90_NOERR) goto 666
-    status = nf90_inquire_dimension(ncid, dimid, len=num_node)
-    if (status /= NF90_NOERR) goto 666
-
-    !! Read the number of elements.
-    status = nf90_inq_dimid(ncid, 'num_elem', dimid)
-    if (status /= NF90_NOERR) goto 666
-    status = nf90_inquire_dimension(ncid, dimid, len=num_elem)
-    if (status /= NF90_NOERR) goto 666
-
-    !! Close the exodus mesh file.
-    status = nf90_close(ncid)
-    if (status /= NF90_NOERR) goto 666
-
-    return
-
-    !! Handle NetCDF errors.
-666 if (present(stat)) then ! caller handles the error
-      stat = status
-      return
-    else  ! we deal with it
-      write(0,fmt='(2a)') 'READ_EXODUS_MESH_SIZE: FATAL: ', nf90_strerror(status)
-      stop
-    end if
-
   end subroutine read_exodus_mesh_size
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! READ_EXODUS_SIDE_SETS
- !!
- !! This routine reads the side set information from the ExodusII file PATH.
- !! The data is returned in the supplied rank-3 MESH_FACE_SET_TOT array; its
- !! shape should be number of side sets, by number of faces per cell (6), by
- !! number of elements.  The old Truchas mesh data structure stores tet and
- !! wedge elements as specific forms of degenerate hexes, and it also uses a
- !! different numbering of the sides of a hex.  (See MESH_READ from the
- !! MESH_INPUT_MODULE for details.)  This routine takes care of translating
- !! the ExodusII side info appropriately.
- !!
 
   subroutine read_exodus_side_sets (path, mesh_face_set_tot, status)
+
+    use exodus_file_type
 
     character(len=*), intent(in) :: path
     integer, pointer :: mesh_face_set_tot(:,:,:)
     integer, intent(out) :: status
 
-    integer :: ncid, dimid, varid, num_elem, num_sset, num_eblk, num_side, n, j, tside
-    integer, allocatable :: eblk_size(:), eblk_type(:), sset_id(:), elem(:), side(:)
+    integer :: num_side, n, j, tside
+    integer, allocatable :: elem(:), side(:)
+    type(exodus_file) :: file
 
     !! Exodus side numbering to (old) Truchas side numbering.
     integer, parameter :: TET_SIDE_MAP(4)=(/4,1,3,5/)
@@ -107,75 +113,21 @@ contains
       return
     end if
 
-    !! Open the exodus mesh file (a NetCDF dataset).
-    status = nf90_open(path, NF90_NOWRITE, ncid)
-    if (status /= NF90_NOERR) return
+    !! Open the exodus mesh file.
+    call file%open (trim(path), status)
+    if (status /= 0) return
 
-    !! Get the total number of elements.
-    status = nf90_inq_dimid(ncid, 'num_elem', dimid)
-    if (status /= NF90_NOERR) return
-    status = nf90_inquire_dimension(ncid, dimid, len=num_elem)
-    if (status /= NF90_NOERR) return
-
-    !! Read the number of side sets, if any.
-    status = nf90_inq_dimid(ncid, 'num_side_sets', dimid)
-    if (status /= NF90_NOERR) then  ! we conclude there are no side sets.
-      status = NF90_NOERR
-      num_sset = 0
-    else
-      status = nf90_inquire_dimension(ncid, dimid, len=num_sset)
-      if (status /= NF90_NOERR) return
-    end if
-
-    if (num_sset == 0) return ! leaving array unallocated
-    allocate(mesh_face_set_tot(num_sset,6,num_elem))
-
-    !! Get the number of element blocks.
-    status = nf90_inq_dimid(ncid, 'num_el_blk', dimid)
-    if (status /= NF90_NOERR) return
-    status = nf90_inquire_dimension(ncid, dimid, len=num_eblk)
-    if (status /= NF90_NOERR) return
-
-    !! For each block get the number of elements and the element "type".
-    allocate(eblk_size(num_eblk), eblk_type(num_eblk))
-    do n = 1, num_eblk
-      status = nf90_inq_dimid(ncid, 'num_el_in_blk'//i_to_c(n), dimid)
-      if (status /= NF90_NOERR) return
-      status = nf90_inquire_dimension(ncid, dimid, len=eblk_size(n))
-      if (status /= NF90_NOERR) return
-      status = nf90_inq_dimid(ncid, 'num_nod_per_el'//i_to_c(n), dimid)
-      if (status /= NF90_NOERR) return
-      status = nf90_inquire_dimension(ncid, dimid, len=eblk_type(n))
-      if (status /= NF90_NOERR) return
-    end do
-
-    !! Read the side set ID array.
-    allocate(sset_id(num_sset))
-    status = nf90_inq_varid(ncid, 'ss_prop1', varid)
-    if (status /= NF90_NOERR) return
-    status = nf90_get_var(ncid, varid, sset_id)
-    if (status /= NF90_NOERR) return
+    if (file%num_side_sets == 0) return ! leaving array unallocated
+    allocate(mesh_face_set_tot(file%num_side_sets,6,file%num_elem))
 
     mesh_face_set_tot = 0
 
-    do n = 1, num_sset
-      !! Read the number of sides in this side set.
-      status = nf90_inq_dimid(ncid, 'num_side_ss'//i_to_c(n), dimid)
-      if (status /= NF90_NOERR) return
-      status = nf90_inquire_dimension(ncid, dimid, len=num_side)
-      if (status /= NF90_NOERR) return
-
+    do n = 1, file%num_side_sets
       !! Read the element/side arrays for this side set.
+      num_side = file%side_set(n)%num_side_in_set
       allocate(elem(num_side), side(num_side))
-      status = nf90_inq_varid(ncid, 'elem_ss'//i_to_c(n), varid)
-      if (status /= NF90_NOERR) return
-      status = nf90_get_var(ncid, varid, elem)
-      if (status /= NF90_NOERR) return
-      status = nf90_inq_varid(ncid, 'side_ss'//i_to_c(n), varid)
-      if (status /= NF90_NOERR) return
-      status = nf90_get_var(ncid, varid, side)
-      if (status /= NF90_NOERR) return
-
+      call file%get_side_set (file%side_set(n)%ID, elem, side, status)
+      if (status /= 0) return
       !! Unpack the info into the Truchas array, translating the side indices.
       do j = 1, num_side
         tside = truchas_side(elem(j),side(j))
@@ -183,15 +135,10 @@ contains
           status = 2
           return
         end if
-        mesh_face_set_tot(n,tside,elem(j)) = sset_id(n)
+        mesh_face_set_tot(n,tside,elem(j)) = file%side_set(n)%ID
       end do
       deallocate(elem, side)
     end do
-
-    deallocate(sset_id, eblk_type, eblk_size)
-
-    !! Close the exodus mesh file.
-    status = nf90_close(ncid)
 
   contains
 
@@ -201,6 +148,8 @@ contains
 
       integer :: b, l
 
+      associate (eblk_size => file%elem_blk%num_elem, &
+                 eblk_type => file%elem_blk%num_nodes_per_elem)
       !! Locate element J as element L of block B.
       b = 1
       l = j
@@ -220,6 +169,7 @@ contains
       case default
         truchas_side = 0
       end select
+      end associate
 
     end function truchas_side
 

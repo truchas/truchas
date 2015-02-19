@@ -318,14 +318,14 @@ CONTAINS
     use EM_input, only: coil_array
     
     type(dist_mesh), pointer :: alt_mesh
-    type(external_mesh) :: main_mesh
+    type(external_mesh), target :: main_mesh
     type(gm_mesh) :: tet_mesh, hex_mesh
     integer :: j, tmp
     real(kind=rk), pointer :: volume(:)
     
     !! Collect the collated main mesh (hex).
     call collect_main_mesh (main_mesh)
-    ASSERT( associated(main_mesh%cell_block) )
+    ASSERT( allocated(main_mesh%cell_block) )
     
     !! Setup the corresponding GM_MESH structure by linking into the imported mesh.
     hex_mesh%nnod = main_mesh%nnode

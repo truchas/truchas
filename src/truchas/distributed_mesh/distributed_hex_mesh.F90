@@ -46,7 +46,7 @@ contains
     use bitfield_type
 
     type(dist_mesh), intent(out) :: this
-    type(external_mesh), intent(inout) :: mesh
+    type(external_mesh), intent(inout), target :: mesh
 
     integer :: j, k, n, offset, ncell, nface, stat, p(mesh%ncell)
     integer, pointer :: cnode(:,:), cface(:,:), lface(:,:), node_perm(:), cell_perm(:)

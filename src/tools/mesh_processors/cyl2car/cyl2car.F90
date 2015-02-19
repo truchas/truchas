@@ -11,7 +11,8 @@
 
 program cyl2car
 
-  use exodus
+  use exodus_mesh_type
+  use exodus_mesh_io
   use command_line
   use cyl2car_proc
   implicit none

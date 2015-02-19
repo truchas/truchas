@@ -14,7 +14,8 @@
 
 program scramble
 
-  use exodus
+  use exodus_mesh_type
+  use exodus_mesh_io
   use command_line
   use scramble_proc
   implicit none

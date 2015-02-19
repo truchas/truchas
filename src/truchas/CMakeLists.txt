@@ -146,6 +146,7 @@ add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
 set(Truchas_LINK_LIBS
+            ${EXODUS_LIBRARIES}
             ${NETCDF_Fortran_LIBRARIES}
             ${HYPRE_LIBRARY}
             ${PETACA_LIBRARIES})

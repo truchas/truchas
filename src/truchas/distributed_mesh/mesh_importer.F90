@@ -40,7 +40,8 @@
 module mesh_importer
 
   use kinds
-  use exodus, ignore => side_set_node_list
+  use exodus_mesh_type
+  use exodus_mesh_io, only: read_exodus_mesh
   use parallel_communication
   implicit none
   private
@@ -54,22 +55,22 @@ module mesh_importer
 
   type, public :: external_mesh
     integer :: ncell=0, nnode=0                     ! number of cells and nodes
-    integer, pointer :: cnode(:,:) => null()        ! cell node array (nodes-of-cell)
-    real(kind=r8), pointer :: x(:,:) => null()      ! node positions
+    integer, allocatable :: cnode(:,:)              ! cell node array (nodes-of-cell)
+    real(kind=r8), allocatable :: x(:,:)            ! node positions
 
     !! Attributes
     character(len=8) :: mesh_type = 'UNKNOWN'       ! tet, hex, etc.
 
     !! Exodus element block data
     integer :: nblock=0                             ! number of element blocks
-    integer, pointer :: block_id(:) => null()       ! list of block IDs
-    integer, pointer :: cell_block(:) => null()     ! block index for each cell
+    integer, allocatable :: block_id(:)             ! list of block IDs
+    integer, allocatable :: cell_block(:)           ! block index for each cell
 
     !! Exodus side set data; just use the exodus-provided type.
-    type(side_set), pointer :: sset(:) => null()
+    type(side_set), allocatable :: sset(:)
 
     !! Exodus node set data; just use the exodus-provided type.
-    type(node_set), pointer :: nset(:) => null()
+    type(node_set), allocatable :: nset(:)
     
     !! Link data
     integer :: nlink=0, nlblock=0                   ! number of link blocks
@@ -115,12 +116,13 @@ contains
     type(external_mesh), intent(out) :: mesh
 
     integer :: stat, dimen, nvert, ssize
+    character(:), allocatable :: errmsg
 
     !! Import the mesh on the IO processor.
     if (is_IOP) then
-      call import_exodus_mesh_iop (path, mesh, stat)
+      call import_exodus_mesh_iop (path, mesh, stat, errmsg)
       if (stat > 0) then
-        write(0,'(a)') 'IMPORT_EXODUS_MESH: Error: ' // exo_err_str(stat)
+        write(0,'(a)') 'IMPORT_EXODUS_MESH: Error reading file: ' // errmsg
       else if (stat < 0) then
         write(0,'(a)') 'IMPORT_EXODUS_MESH: Error: mesh type not recognized; must be hex or tet.'
       end if
@@ -159,11 +161,12 @@ contains
 
   end subroutine import_exodus_mesh
 
-  subroutine import_exodus_mesh_iop (path, mesh, stat)
+  subroutine import_exodus_mesh_iop (path, mesh, stat, errmsg)
 
     character(len=*),    intent(in)  :: path
     type(external_mesh), intent(out) :: mesh
     integer,             intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: j, n, offset, nvert
     type(exodus_mesh) :: exo_mesh
@@ -173,13 +176,13 @@ contains
     data TET_FACE_MAP/3,1,2,4/, HEX_FACE_MAP/2,4,1,3,5,6/
 
     !! Read the Exodus II mesh file.
-    call read_exodus_mesh (path, exo_mesh, stat)
+    call read_exodus_mesh (path, exo_mesh, stat, errmsg)
     if (stat /= 0) then
-      call destroy (exo_mesh)
+      stat = 1
       return ! status value is positive
     end if
 
-    INSIST( defined(exo_mesh) )
+    !INSIST( defined(exo_mesh) )
 
     call identify_mesh_type (exo_mesh, mesh%mesh_type)
     select case (mesh%mesh_type)
@@ -199,8 +202,7 @@ contains
     mesh%nblock = exo_mesh%num_eblk
 
     !! Take the node positions.
-    mesh%x => exo_mesh%coord
-    nullify(exo_mesh%coord)
+    call move_alloc (exo_mesh%coord, mesh%x)
 
     !! Allocate the remaining array components.
     allocate(mesh%cnode(nvert,mesh%ncell), mesh%block_id(mesh%nblock), mesh%cell_block(mesh%ncell))
@@ -216,14 +218,12 @@ contains
     end do
 
     !! Take the side set data.
-    mesh%sset => exo_mesh%sset
-    nullify(exo_mesh%sset)
-    if (.not.associated(mesh%sset)) allocate(mesh%sset(0))
+    call move_alloc (exo_mesh%sset, mesh%sset)
+    if (.not.allocated(mesh%sset)) allocate(mesh%sset(0))
 
     !! Take the node set data.
-    mesh%nset => exo_mesh%nset
-    nullify(exo_mesh%nset)
-    if (.not.associated(mesh%nset)) allocate(mesh%nset(0))
+    call move_alloc (exo_mesh%nset, mesh%nset)
+    if (.not.allocated(mesh%nset)) allocate(mesh%nset(0))
 
     !! Translate Exodus face numbering to Truchas face numbering.
     do n = 1, size(mesh%sset)
@@ -231,8 +231,6 @@ contains
         mesh%sset(n)%face(j) = face_map(mesh%sset(n)%face(j))
       end do
     end do
-
-    call destroy (exo_mesh)
 
   end subroutine import_exodus_mesh_iop
 
@@ -274,18 +272,6 @@ contains
   subroutine destroy_mesh (mesh)
     type(external_mesh), intent(inout) :: mesh
     type(external_mesh) :: default
-    if (associated(mesh%cnode))      deallocate(mesh%cnode)
-    if (associated(mesh%x))          deallocate(mesh%x)
-    if (associated(mesh%block_id))   deallocate(mesh%block_id)
-    if (associated(mesh%cell_block)) deallocate(mesh%cell_block)
-    if (associated(mesh%sset)) then
-      call destroy (mesh%sset)
-      deallocate(mesh%sset)
-    end if
-    if (associated(mesh%nset)) then
-      call destroy (mesh%nset)
-      deallocate(mesh%nset)
-    end if
     if (associated(mesh%lnode)) deallocate(mesh%lnode)
     if (associated(mesh%link_block)) deallocate(mesh%link_block)
     if (associated(mesh%link_block_id)) deallocate(mesh%link_block_id)
@@ -346,7 +332,7 @@ contains
 
     !! Cell block IDs.
     if (mesh_has_cblockid_data) then
-      call allocate_collated_array (mesh%cell_block, ncells_tot)
+      allocate(mesh%cell_block(mesh%ncell))
       call collate (mesh%cell_block, MMesh(:)%CBlockID)
     end if
 
@@ -370,41 +356,41 @@ contains
     write(unit,fmt='(a)') 'EXTERNAL_MESH('
     write(unit,fmt='(t4,a,i7)') 'NCELL=', mesh%ncell
     write(unit,fmt='(t4,a,i7)') 'NNODE=', mesh%nnode
-    if (associated(mesh%cnode)) then
+    if (allocated(mesh%cnode)) then
       write(unit,fmt='(t4,a,t15,8i8)') 'CNODE=', mesh%cnode(:,1)
       write(unit,fmt='((t15,8i8))') mesh%cnode(:,2:)
     else
       write(unit,fmt='(t4,a)') 'CNODE => NULL()'
     end if
-    if (associated(mesh%x)) then
+    if (allocated(mesh%x)) then
       write(unit,fmt='(t4,a,(t15,3es22.14))') 'X=', mesh%x
     else
       write(unit,fmt='(t4,a)') 'X => NULL()'
     end if
     write(unit,fmt='(t4,a)') 'MESH_TYPE= "' // trim(mesh%mesh_type) // '"'
     write(unit,fmt='(t4,a,i4)') 'NBLOCK=', mesh%nblock
-    if (associated(mesh%block_id)) then
+    if (allocated(mesh%block_id)) then
       write(unit,fmt='(t4,a,(t15,10i5))') 'BLOCK_ID=', mesh%block_id
     else
       write(unit,fmt='(t4,a)') 'BLOCK_ID => NULL()'
     end if
-    if (associated(mesh%cell_block)) then
+    if (allocated(mesh%cell_block)) then
       write(unit,fmt='(t4,a,(t15,10i5))') 'CELL_BLOCK=', mesh%cell_block
     else
       write(unit,fmt='(t4,a)') 'CELL_BLOCK => NULL()'
     end if
-    if (associated(mesh%sset)) then
+    if (allocated(mesh%sset)) then
       write(unit,fmt='(t4,a)') 'SSET= ...'
       do j = 1, size(mesh%sset)
-        call dump_type (mesh%sset(j), unit)
+        call mesh%sset(j)%dump(unit)
       end do
     else
       write(unit,fmt='(t4,a)') 'SSET => NULL()'
     end if
-    if (associated(mesh%nset)) then
+    if (allocated(mesh%nset)) then
       write(unit,fmt='(t4,a)') 'NSET= ...'
       do j = 1, size(mesh%nset)
-        call dump_type (mesh%nset(j), unit)
+        call mesh%nset(j)%dump(unit)
       end do
     else
       write(unit,fmt='(t4,a)') 'NSET => NULL()'

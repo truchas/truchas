@@ -2,43 +2,42 @@
 #   exodus
 
 # List of files to  process
-set(EXODUS_FILES)
+set(EXOMESH_FILES)
 
 # List of files to add to the Truchas library
-set(EXODUS_SOURCE_FILES)
+set(EXOMESH_SOURCE_FILES)
 
-set(EXODUS_FILES
-           exodus/exodus.F90
-           exodus/exodus_errors.F90
-           exodus/exodus_mesh_reader.F90
+set(EXOMESH_FILES
+           exodus/exodus_c_binding.F90
+           exodus/exodus_file_type.F90
            exodus/exodus_mesh_type.F90
-           exodus/exodus_mesh_utilities.F90
-           exodus/exodus_mesh_writer.F90
+           exodus/exodus_mesh_io.F90
            exodus/exodus_truchas_hack.F90)
 
-set(EXODUS_FPP_FLAGS 
+set(EXOMESH_FPP_FLAGS 
+        -I${TruchasExe_SOURCE_DIR}/utilities
 	${Truchas_FPP_FLAGS})
 
 # Process files
-fortran_preprocess_files(EXODUS_SOURCE_FILES
-                         FILES ${EXODUS_FILES}
+fortran_preprocess_files(EXOMESH_SOURCE_FILES
+                         FILES ${EXOMESH_FILES}
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
-			 FPP_FLAGS ${EXODUS_FPP_FLAGS}
-			 PROCESS_TARGET ProcessTruchasExodusFiles)
+			 FPP_FLAGS ${EXOMESH_FPP_FLAGS}
+			 PROCESS_TARGET ProcessTruchasExoMeshFiles)
 
 # Source file properties		       
-set(EXODUS_SOURCE_FILES_PROPS COMPILE_FLAGS -I${NETCDF_INCLUDE_DIR})
-if ( TARGET ${NETCDF_BUILD_TARGET} )
-  list(APPEND EXODUS_SOURCE_FILE_PROPS 
-              OBJECT_DEPENDS ${NETCDF_BUILD_TARGET})
+set(EXOMESH_SOURCE_FILES_PROPS COMPILE_FLAGS -I${EXODUS_INCLUDE_DIR})
+if ( TARGET ${EXODUS_BUILD_TARGET} )
+  list(APPEND EXOMESH_SOURCE_FILE_PROPS 
+              OBJECT_DEPENDS ${EXODUS_BUILD_TARGET})
 endif()	    
-set_source_files_properties(${EXODUS_SOURCE_FILES} 
-                            PROPERTIES ${EXODUS_SOURCE_FILES_PROPS})
+set_source_files_properties(${EXOMESH_SOURCE_FILES} 
+                            PROPERTIES ${EXOMESH_SOURCE_FILES_PROPS})
                             
 
 # Update the Truchas library file list and targets		       
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${EXODUS_SOURCE_FILES})		       
-list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasExodusFiles)
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${EXOMESH_SOURCE_FILES})		       
+list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasExoMeshFiles)
 
 
 

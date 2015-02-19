@@ -220,7 +220,8 @@ CONTAINS
     use bc_data_module,       only: Mesh_Face_Set_Tot
     use mesh_module,          only: MESH_CONNECTIVITY, VERTEX_DATA
     use parameter_module,     only: ncells_tot, ndim, nnodes_tot, nfc, nssets
-    use exodus
+    use exodus_mesh_type
+    use exodus_mesh_io, only: read_exodus_mesh
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(ncells_tot), intent(INOUT) :: Mesh
@@ -231,15 +232,16 @@ CONTAINS
     integer :: i, j, lc, n, mem_stat, status
     integer :: nc_count, ntmp
     integer, pointer  :: ctemp(:), ftemp(:)
-    type(exodus_mesh) :: exo_mesh
+    type(exodus_mesh), target :: exo_mesh
+    character(:), allocatable :: errmsg
 
     call TLS_info ('')
     call TLS_info ('Reading ExodusII mesh file ' // trim(mesh_file) // ' ...')
 
     ! Read the Exodus II mesh file.
-    call read_exodus_mesh (mesh_file, exo_mesh, status)
-    if (status /= 0 .or. .not.defined(exo_mesh)) then
-      call TLS_panic ('READ_MESH: error reading ExodusII mesh file: ' // exo_err_str(status))
+    call read_exodus_mesh (mesh_file, exo_mesh, status, errmsg)
+    if (status /= 0) then
+      call TLS_panic ('READ_MESH: error reading ExodusII mesh file: ' // errmsg)
     end if
 
     ! Copy the node coordinates.
@@ -343,8 +345,6 @@ CONTAINS
 
        end do
     end if
-
-    call destroy (exo_mesh)
 
     ! Done; announce.
     call TLS_info (' Closed ExodusII mesh file ' // trim(mesh_file))
@@ -941,7 +941,7 @@ CONTAINS
   subroutine mesh_read_size ()
 
     use parameter_module, only: ncells_tot, nnodes_tot
-    use exodus, only: read_exodus_mesh_size
+    use exodus_truchas_hack, only: read_exodus_mesh_size
     use string_utilities, only: raise_case
 
     logical :: file_exists
@@ -973,7 +973,7 @@ CONTAINS
     use parameter_module, only: nssets
     use parallel_info_module, only: p_info
     use bc_data_module, only: Mesh_Face_Set_Tot
-    use exodus, only: read_exodus_side_sets
+    use exodus_truchas_hack, only: read_exodus_side_sets
     use pgslib_module,only: PGSLib_BCast
     use string_utilities, only: raise_case
     

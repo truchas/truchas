@@ -1,9 +1,0 @@
-o A simple "make" will build the programming guide exodus-prog-guide.pdf.
-  "make clean" will remove all intermediate files.  "make cleanest" will
-  remove all intermediate files and exodus-prog-guide.pdf.
-
-o Documentation on the Exodus II format:
-  - Some correspondence with the Exodus II maintainer in exodus-email.mbox.
-  - Some info on "large model" changes in ExodusLargeModel.html.
-  - The Exodus II manual (too large to be included here) can be obtained at
-    http://endo.sandia.gov/SEACAS/Documentation/exodusII.pdf

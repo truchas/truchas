@@ -225,17 +225,19 @@ contains
   end subroutine destroy_encl_spec
 
   subroutine generate_encl (spec, e)
-    use exodus
+    use exodus_mesh_type
+    use exodus_mesh_io, only: read_exodus_mesh
     use re_encl_type
     type(encl_spec), intent(in)  :: spec
     type(encl), intent(out) :: e
-    type(exodus_mesh) :: mesh
+    type(exodus_mesh), allocatable :: mesh
     integer :: stat
     character(len=128) :: errmsg
     if (scl_rank() == 1) then
+      allocate(mesh)
       call read_exodus_mesh (spec%mesh_file, mesh)
       call extract_surface_from_exodus (mesh, spec%ssid, spec%ebid, e, stat, errmsg)
-      call destroy (mesh)
+      deallocate(mesh)
       if (stat == 0) then
         e%name     = spec%name
         e%mirror   = spec%mirror
@@ -280,7 +282,7 @@ contains
 
   subroutine extract_surface_from_exodus (mesh, ssid, ebid, surf, stat, errmsg)
 
-    use exodus
+    use exodus_mesh_type
     use string_utilities, only: i_to_c
     use re_encl_type
     use hashing
@@ -395,7 +397,7 @@ contains
         j = mesh%sset(n)%elem(i)
         k = mesh%sset(n)%face(i)
         if (omit_elem(j)) cycle
-        list => side_node_list(mesh, j, k)
+        list => mesh%side_node_list(j, k)
         INSIST( associated(list) )
         call store_side (stab, j, k, n, list, stat)
         select case (stat)
@@ -450,7 +452,7 @@ contains
         side_sig => HEX8_SIDE_SIG
       case default
         stat = -1
-        errmsg = 'unable to handle element type: ' // trim(mesh%eblk(b)%elem_type)
+        errmsg = 'unable to handle element type: ' // mesh%eblk(b)%elem_type
         return
       end select
 
@@ -459,11 +461,12 @@ contains
         if (omit_elem(j)) cycle
 
         !! Mark the element vertices that are surface nodes.
-        list => mesh%eblk(b)%connect(:,l)
-        bitmask = 0
-        do k = 1, size(list)
-          if (nmap(list(k))>0) bitmask = ibset(bitmask, k-1)
-        end do
+        associate(list => mesh%eblk(b)%connect(:,l))
+          bitmask = 0
+          do k = 1, size(list)
+            if (nmap(list(k))>0) bitmask = ibset(bitmask, k-1)
+          end do
+        end associate
 
         !! Mark sides having all surface nodes.
         if (bitmask == 0) cycle ! nothing to see on this element
@@ -488,7 +491,7 @@ contains
       if (nhbr_side(j) == 0) cycle
       do k = 1, MAX_SIDE
         if (btest(nhbr_side(j), k-1)) then
-          list => side_node_list(mesh, j, k, reverse=.true.)
+          list => mesh%side_node_list(j, k, reverse=.true.)
           ASSERT( associated(list) )
           call add_nhbr (ntab, list)
         end if

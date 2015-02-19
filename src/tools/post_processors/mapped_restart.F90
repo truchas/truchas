@@ -36,26 +36,22 @@ module mapped_restart
 
 contains
 
-  subroutine write_mapped_restart (ofile, seq_num, exomesh, coord_scale_factor, unit)
+  subroutine write_mapped_restart (ofile, seq_num, exomesh, unit)
   
     use h5out_type
-    use exodus
+    use exodus_mesh_type
     use danu_module
     use,intrinsic :: iso_c_binding, only: c_ptr
     
     type(h5out), intent(inout) :: ofile
     integer, intent(in) :: seq_num
     type(exodus_mesh), intent(in) :: exomesh
-    real(r8), intent(in) :: coord_scale_factor
     integer, intent(in) :: unit
     
     integer :: stat
     type(c_ptr) :: seq_id
     type(base_mesh) :: src_mesh, dest_mesh
     type(mesh_map) :: map
-    
-    INSIST(coord_scale_factor > 0.0_r8)
-    if (coord_scale_factor /= 1.0_r8) exomesh%coord = coord_scale_factor * exomesh%coord
 
     call base_mesh_init (src_mesh, ofile)
     call base_mesh_init (dest_mesh, exomesh)
@@ -284,7 +280,7 @@ contains
 
   subroutine base_mesh_init_exo (this, mesh)
 
-    use exodus
+    use exodus_mesh_type
     use,intrinsic :: iso_fortran_env, only: error_unit
 
     type(base_mesh),   intent(out) :: this
