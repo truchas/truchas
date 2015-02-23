@@ -281,7 +281,7 @@ contains
   subroutine organize_cells (np, pmeth, cnode, bsize, perm)
 
     use simplicial_mesh_support, only: assemble_cell_neighbor_list
-    use GraphModule
+    use graph_type
     use permutations
 
     integer, intent(in)    :: np            ! number of partitions
@@ -293,7 +293,7 @@ contains
     integer :: j, k, ncell, stat
     integer :: pass(size(cnode,2)), cnhbr(size(cnode,1),size(cnode,2)), rcm_perm(size(perm))
 
-    type(NGraphType) :: g
+    type(graph), allocatable :: g
     integer, allocatable :: xadj(:), adjncy(:)
 
     ASSERT( np > 0 )
@@ -307,14 +307,15 @@ contains
     ASSERT( stat == 0 )
 
     !! Create the cell adjacency graph
-    g = CreateGraph (ncell)
+    allocate(g)
+    call g%init (ncell)
     do j = 1, ncell
       do k = 1, size(cnode,1)
-        if (cnhbr(k,j) > j) call AddEdge (g, j, cnhbr(k,j))
+        if (cnhbr(k,j) > j) call g%add_edge (j, cnhbr(k,j))
       end do
     end do
-    call GetNeighborStructure (g, xadj, adjncy)
-    call DeleteGraph (g)
+    call g%get_adjacency (xadj, adjncy)
+    deallocate(g)
 
     if (np > 1) then  ! Assign cells to partitions.
 

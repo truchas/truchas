@@ -8,7 +8,7 @@ program test_hypre_hybrid_type
   use pgslib_module
   use parallel_communication
   use index_partitioning
-  use parallel_csr_matrix
+  use pcsr_matrix_type
   use hypre_hybrid_type
   use parameter_list_type
   implicit none
@@ -351,17 +351,17 @@ contains
     
     !! Create the parallel CSR matrix.
     allocate(graph)
-    call pcsr_graph_create (graph, row_ip)
+    call graph%init (row_ip)
     do j = 1, size(nnbr,2)
-      call pcsr_graph_add_edge (graph, j, j)
-      call pcsr_graph_add_edge (graph, j, nnbr(:,j))
+      call graph%add_edge (j, j)
+      call graph%add_edge (j, nnbr(:,j))
     end do
-    call pcsr_graph_fill_complete (graph)
-    call pcsr_matrix_create (matrix, graph, take_graph=.true.)
+    call graph%add_complete
+    call matrix%init (graph, take_graph=.true.)
     do j = 1, size(nnbr,2)
-      call pcsr_matrix_set_value (matrix, j, j, a + 6.0_r8)
+      call matrix%set (j, j, a + 6.0_r8)
       do k = 1, size(nnbr,1)
-        call pcsr_matrix_set_value (matrix, j, nnbr(k,j), -1.0_r8)
+        call matrix%set (j, nnbr(k,j), -1.0_r8)
       end do
     end do
     deallocate(nnbr)

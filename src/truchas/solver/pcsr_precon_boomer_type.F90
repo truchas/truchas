@@ -1,89 +1,65 @@
 !!
-!! BOOMER_AMG_PRECON_TYPE
+!! PCSR_PRECON_BOOMER_TYPE
 !!
-!! This module defines a derived type and associated procedures that describe
-!! a Hypre BoomerAMG preconditioner for a parallel CSR matrix.
+!! A concrete implementation of the abstract base class PCSR_PRECON that
+!! uses Hypre's BoomerAMG preconditioning.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
+!! Adapted for F2008, February 2015
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  This module defines the derived data type BOOMER_AMG_PRECON (private
-!!  components) and the following procedures that operate on instances of the
-!!  type passed as the THIS argument.  An instance describes a BoomerAMG
-!!  preconditioner for a parallel CSR matrix of type PCSR_MATRIX.
+!!  This module defines the derived type PCSR_PRECON_BOOMER which is an
+!!  extension of the abstract base class PCSR_PRECON that uses the BoomerAMG
+!!  algebraic multigrid preconditioner from LLNL's Hypre library.  See the
+!!  base class comments for a description of the common type bound procedures.
 !!
-!!  CALL BAMG_PRECON_INIT (THIS, A, PARAMS) initializes the object to be a
-!!    preconditioner for the parallel CSR matrix A of type PCSR_MATRIX.  The
-!!    object holds a reference to the matrix A, and so the matrix must never
-!!    go out of scope during the lifetime of the object.  Morover the actual
-!!    argument must be a pointer or have the target attribute.  Only the
-!!    structure of the matrix A needs to be defined at this point; the matrix
-!!    values are not referenced.  Note that the matrix will not be modified
-!!    in any way by this, or the other procedures.
+!!  The INIT procedure expects to find the following parameters in the
+!!  TYPE(PARAMETER_LIST) argument PARAMS.  Parameters with a default value
+!!  are optional; the others are required.
 !!
-!!    PARAMS is an intent-in argument of type BOOMER_AMG_PRECON_PARAMS which
-!!    has the following components:
-!!      MAX_ITER        The number of multigrid cycles to apply; default 1.
-!!      PRINT_LEVEL     Verbosity level: 0, silent (default), 1, info from
-!!                      set-up step; 2, info from solve step; 3, info from
+!!    'num-cycles'    - The number of multigrid cycles to apply; > 0.
+!!    'print-level'   - Verbosity level: 0, silent (default), 1, info from
+!!                    - set-up step; 2, info from solve step; 3, info from
 !!                      both set-up and solve steps.
-!!      DEBUG_LEVEL     0, disable debugging (default); 1 enable debugging.
-!!      LOGGING_LEVEL   0, off (default); 1, on; >1, residual info available.
-!!
-!!  CALL BAMG_PRECON_COMPUTE (THIS) performs the final setup and configuration
-!!    of the preconditioner.  It is at this point the values of the matrix A
-!!    are referenced.  It must be called before using the APPLY procedure and
-!!    after the matrix values are defined, and must be called again whenever
-!!    the matrix values are modified.
-!!
-!!  CALL BAMG_PRECON_APPLY (THIS, X) applies the preconditioner to the vector X.
-!!    The size of X must be at least A%NROW_ONP; only the the initial A%NROW_ONP
-!!    elements will be referenced or modified.
-!!
-!!  BAMG_PRECON_MATRIX(THIS) returns a pointer to the parallel CSR matrix A
-!!    with which the preconditioner was initialized.
-!!
-!!  CALL BAMG_PRECON_DELETE (THIS) frees resources allocated by the object.
+!!    'debug-level'   - 0, disable debugging (default); 1 enable debugging.
+!!    'logging-level' - 0, off (default); 1, on; >1, residual info available.
 !!
 !! IMPLEMENTATION NOTES
 !!
+!!  The INIT procedure includes some commented-out code from the Pececillo
+!!  mini-app for error checking the parameter list.  This code, especially
+!!  its error messages, make little sense in the current context, but are
+!!  included for future reference.  The provided parameter list is created
+!!  by the client code using namelist data read from the input file, and it
+!!  is expected that the parameter list is fully vetted at that point.  In
+!!  the future I expect the parameter list to be read directly from the input
+!!  file, and when that happens this included code may become apropos.
 !!  The params derived type is intended as a temporary stand-in for the use of
 !!  a generic parameter list capability similiar to the Teuchos::ParameterList
 !!  class from Trilinos.  A partial F2003 implementation exists.
 !!
-!!  Transitioning to F2003. The design is intended make the change to an OO
-!!  implementation straightforward:
-!!  * All procedures become type-bound; delete is a final procedure.
-!!  * Drop the BAMG_PRECON_ prefix from the method names and don't export
-!!    them as loose procedures.
-!!  * The interface is identical in form to that for SSOR_PRECON.
-!!    Both should extend the same abstract base type, which implements
-!!    the MATRIX function and defines the deferred subroutines COMPUTE
-!!    and APPLY.  It could also define a deferred subroutine INIT if it
-!!    were modified to accept a generic 'parameter list' argument as
-!!    described above.  Otherwise the INIT method would need to be
-!!    specific to a particular implementation of the base type.
-!!
 
 #include "f90_assert.fpp"
 
-module boomer_amg_precon_type
+module pcsr_precon_boomer_type
 
-  use kinds
-  use index_partitioning
-  use parallel_csr_matrix
+  use kinds, only: r8
   use fhypre
+  use index_partitioning
+  use pcsr_matrix_type
+  use pcsr_precon_class
+  use parameter_list_type
+  use timing_tree
   implicit none
   private
 
-  type, public :: boomer_amg_precon
+  type, extends(pcsr_precon), public :: pcsr_precon_boomer
     private
-    type(pcsr_matrix), pointer :: Asrc => null()
     integer :: nrows = 0, ilower = 0, iupper = 0
     type(hypre_obj) :: solver = hypre_null_obj    ! HYPRE_Solver object handle
-    type(hypre_obj) :: A = hypre_null_obj         ! HYPRE_IJMatrix object handle
-    type(hypre_obj) :: b = hypre_null_obj, x = hypre_null_obj  ! HYPRE_IJVector handles
+    type(hypre_obj) :: Ah = hypre_null_obj        ! HYPRE_IJMatrix object handle
+    type(hypre_obj) :: bh = hypre_null_obj, xh = hypre_null_obj  ! HYPRE_IJVector handles
     !! BoomerAMG parameters -- these are set at initialization
     integer  :: max_iter          ! number of cycles -- using as a preconditioner
     integer  :: print_level       ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
@@ -96,29 +72,37 @@ module boomer_amg_precon_type
     integer  :: max_levels = 25   ! max number of multigrid levels
     real(r8) :: tol = 0.0d0       ! no tolerance -- using as a preconditioner
     real(r8) :: strong_threshold = 0.5_r8 ! should be 0.5 for 3D problems and 0.25 for 2D
-  end type boomer_amg_precon
-
-  public :: bamg_precon_init, bamg_precon_compute, bamg_precon_delete
-  public :: bamg_precon_apply, bamg_precon_matrix
-
-  type, public :: boomer_amg_precon_params
-    integer  :: max_iter = 1      ! number of cycles -- using as a preconditioner
-    integer  :: print_level = 0   ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
-    integer  :: debug_level = 0   ! OFF=0, ON=1
-    integer  :: logging_level = 0 ! OFF=0, ON=1, >1=residual available from hypre
-  end type boomer_amg_precon_params
+  contains
+    procedure :: init
+    procedure :: compute
+    procedure :: apply
+    final :: pcsr_precon_boomer_delete
+  end type pcsr_precon_boomer
 
 contains
 
-  subroutine bamg_precon_init (this, A, params)
+  !! Final subroutine for PCSR_PRECON_BOOMER objects.
+  subroutine pcsr_precon_boomer_delete (this)
+    type(pcsr_precon_boomer), intent(inout) :: this
+    integer :: ierr
+    ierr = 0
+    call fHYPRE_ClearAllErrors
+    if (hypre_associated(this%Ah)) call fHYPRE_IJMatrixDestroy (this%Ah, ierr)
+    if (hypre_associated(this%bh)) call fHYPRE_IJVectorDestroy (this%bh, ierr)
+    if (hypre_associated(this%xh)) call fHYPRE_IJVectorDestroy (this%xh, ierr)
+    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
+    INSIST(ierr == 0)
+  end subroutine pcsr_precon_boomer_delete
 
-    type(boomer_amg_precon), intent(out) :: this
+  subroutine init (this, A, params)
+
+    class(pcsr_precon_boomer), intent(out) :: this
     type(pcsr_matrix), target, intent(in) :: A
-    type(boomer_amg_precon_params), intent(in) :: params
+    type(parameter_list) :: params
 
     integer :: ierr
 
-    this%Asrc => A
+    this%A => A
 
     this%nrows  = onP_size(A%graph%row_ip)
     this%ilower = first_index(A%graph%row_ip)
@@ -126,55 +110,58 @@ contains
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%b, ierr)
-    call fHYPRE_IJVectorSetMaxOffProcElmts (this%b, 0, ierr)
+    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%x, ierr)
-    call fHYPRE_IJVectorSetMaxOffProcElmts (this%x, 0, ierr)
+    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%xh, 0, ierr)
     INSIST(ierr == 0)
 
     !! Process the parameters.
-    INSIST(params%max_iter > 0)
-    this%max_iter = params%max_iter
-    INSIST(params%print_level >= 0 .and. params%print_level <= 3)
-    this%print_level = params%print_level
-    INSIST(params%debug_level >= 0)
-    this%debug_level = params%debug_level
-    INSIST(params%logging_level >= 0)
-    this%logging_level = params%logging_level
+    call params%get('num-cycles', this%max_iter)
+    INSIST(this%max_iter > 0)
+    call params%get('print-level', this%print_level, default=0)
+    INSIST(this%print_level >= 0 .and. this%print_level <= 3)
+    call params%get('debug-level', this%debug_level, default=0)
+    INSIST(this%debug_level >= 0)
+    call params%get('logging-level', this%logging_level, default=0)
+    INSIST(this%logging_level >= 0)
 
-  end subroutine bamg_precon_init
+!NNC    !! Process the parameters.
+!NNC    use truchas_logging_services
+!NNC    integer :: stat
+!NNC    character(:), allocatable :: context, errmsg
+!NNC    context = 'processing ' // params%name() // ': '
+!NNC    call params%get('num-cycles', this%max_iter, stat=stat, errmsg=errmsg)
+!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
+!NNC    if (this%max_iter <= 0) call TLS_fatal (context//'"num-cycles" must be > 0')
+!NNC    call params%get('print-level', this%print_level, default=0, stat=stat, errmsg=errmsg)
+!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
+!NNC    if (this%print_level < 0 .or. this%print_level > 3) call TLS_fatal (context//'"print-level" must be >= 0 and <= 3')
+!NNC    call params%get('debug-level', this%debug_level, default=0, stat=stat, errmsg=errmsg)
+!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
+!NNC    if (this%debug_level < 0) call TLS_fatal (context//'"debug-level" must be >= 0')
+!NNC    call params%get('logging-level', this%logging_level, default=0, stat=stat, errmsg=errmsg)
+!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
+!NNC    if (this%logging_level < 0) call TLS_fatal (context//'"logging-level" must be >= 0')
 
-  subroutine bamg_precon_delete (this)
-    type(boomer_amg_precon), intent(inout) :: this
+  end subroutine init
+
+  subroutine compute (this)
+
+    class(pcsr_precon_boomer), intent(inout) :: this
+
     integer :: ierr
-    ierr = 0
-    call fHYPRE_ClearAllErrors
-    if (hypre_associated(this%A)) call fHYPRE_IJMatrixDestroy (this%A, ierr)
-    if (hypre_associated(this%b)) call fHYPRE_IJVectorDestroy (this%b, ierr)
-    if (hypre_associated(this%x)) call fHYPRE_IJVectorDestroy (this%x, ierr)
-    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
-    INSIST(ierr == 0)
-  end subroutine bamg_precon_delete
 
-  function bamg_precon_matrix (this) result (matrix)
-    type(boomer_amg_precon), intent(in) :: this
-    type(pcsr_matrix), pointer :: matrix
-    matrix => this%Asrc
-  end function bamg_precon_matrix
-
-  subroutine bamg_precon_compute (this)
-
-    type(boomer_amg_precon), intent(inout) :: this
-
-    integer :: ierr
-
-    call copy_to_ijmatrix (this%Asrc, this%A)
+    call start_timer ('hypre-matrix-copy')
+    call copy_to_ijmatrix (this%A, this%Ah)
+    call stop_timer ('hypre-matrix-copy')
 
     !! Create the Hypre solver object.  Note that once the solver has
     !! been setup, it is not possible to change the matrix values without
     !! completely destroying the solver and recreating it from scratch.
+    call start_timer ('boomer-setup')
     if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
     call fHYPRE_BoomerAMGCreate (this%solver, ierr)
     INSIST(ierr == 0)
@@ -196,47 +183,52 @@ contains
     INSIST(ierr == 0)
 
     !! After setup the solver is ready to go.  Note that B and X are ignored here.
-    call fHYPRE_BoomerAMGSetup (this%solver, this%A, this%b, this%x, ierr)
+    call fHYPRE_BoomerAMGSetup (this%solver, this%Ah, this%bh, this%xh, ierr)
     INSIST(ierr == 0)
+    call stop_timer ('boomer-setup')
 
-  end subroutine bamg_precon_compute
+  end subroutine compute
 
-  subroutine bamg_precon_apply (this, x)
+  subroutine apply (this, x)
 
-    type(boomer_amg_precon), intent(in) :: this
+    class(pcsr_precon_boomer), intent(in) :: this
     real(r8), intent(inout) :: x(:)
 
     integer :: i, ierr, rows(this%nrows)
 
     ASSERT(size(x) >= this%nrows)
 
+    call start_timer ('boomer-solve')
+
     call fHYPRE_ClearAllErrors
 
     !! Global row indices for this process.
-    rows = (/ (i, i = this%ilower, this%iupper) /)
+    rows = [ (i, i = this%ilower, this%iupper) ]
 
     !! Initialize the Hypre RHS vector.
-    call fHYPRE_IJVectorInitialize (this%b, ierr)
-    call fHYPRE_IJVectorSetValues  (this%b, this%nrows, rows, x, ierr)
-    call fHYPRE_IJVectorAssemble   (this%b, ierr)
+    call fHYPRE_IJVectorInitialize (this%bh, ierr)
+    call fHYPRE_IJVectorSetValues  (this%bh, this%nrows, rows, x, ierr)
+    call fHYPRE_IJVectorAssemble   (this%bh, ierr)
     INSIST(ierr == 0)
 
     !! Initialize the Hypre initial guess vector.
     x(:this%nrows) = 0.0_r8
-    call fHYPRE_IJVectorInitialize (this%x, ierr)
-    call fHYPRE_IJVectorSetValues  (this%x, this%nrows, rows, x, ierr)
-    call fHYPRE_IJVectorAssemble   (this%x, ierr)
+    call fHYPRE_IJVectorInitialize (this%xh, ierr)
+    call fHYPRE_IJVectorSetValues  (this%xh, this%nrows, rows, x, ierr)
+    call fHYPRE_IJVectorAssemble   (this%xh, ierr)
     INSIST(ierr == 0)
 
     !! Call the BoomerAMG solver.
-    call fHYPRE_BoomerAMGSolve (this%solver, this%A, this%b, this%x, ierr)
+    call fHYPRE_BoomerAMGSolve (this%solver, this%Ah, this%bh, this%xh, ierr)
     INSIST(ierr == 0)
 
     !! Retrieve the solution vector from HYPRE
-    call fHYPRE_IJVectorGetValues (this%x, this%nrows, rows, x, ierr)
+    call fHYPRE_IJVectorGetValues (this%xh, this%nrows, rows, x, ierr)
     INSIST(ierr == 0)
 
-  end subroutine bamg_precon_apply
+    call stop_timer ('boomer-solve')
+
+  end subroutine apply
 
  !!
  !! This auxillary routine copies a PCSR_MATRIX object SRC to an equivalent
@@ -295,7 +287,7 @@ contains
     rows = (/ (j, j = ilower, iupper) /)
     ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
     cols = global_index(src%graph%row_ip, src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
-    call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%data, ierr)
+    call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%values, ierr)
     deallocate(ncols, rows, cols)
     INSIST(ierr == 0)
 
@@ -305,4 +297,4 @@ contains
 
   end subroutine copy_to_ijmatrix
 
-end module boomer_amg_precon_type
+end module pcsr_precon_boomer_type

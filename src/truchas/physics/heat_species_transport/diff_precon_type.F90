@@ -81,11 +81,11 @@ module diff_precon_type
 
   use kinds
   use diffusion_matrix
-  use parallel_csr_matrix
-  use ssor_precon_type
-  use boomer_amg_precon_type
+  use pcsr_matrix_type
+  use pcsr_precon_class
   use index_partitioning
   use distributed_mesh
+  use parameter_list_type
   implicit none
   private
 
@@ -93,64 +93,72 @@ module diff_precon_type
     private
     type(dist_diff_matrix), pointer :: dm => null()
     type(pcsr_matrix), pointer :: Sff => null()
-    integer :: solver_type = 0
-    type(ssor_precon), pointer :: ssor_solver  => null()
-    type(boomer_amg_precon), pointer :: bamg_solver => null()
+    class(pcsr_precon), allocatable :: Sff_precon
   end type diff_precon
 
   public :: diff_precon_init, diff_precon_compute, diff_precon_delete
   public :: diff_precon_apply, diff_precon_matrix
+
+  type, public :: ssor_precon_params
+    integer  :: num_iter = 1
+    real(r8) :: omega = 1.0_r8
+  end type ssor_precon_params
+
+  type, public :: boomer_amg_precon_params
+    integer  :: max_iter = 1      ! number of cycles -- using as a preconditioner
+    integer  :: print_level = 0   ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
+    integer  :: debug_level = 0   ! OFF=0, ON=1
+    integer  :: logging_level = 0 ! OFF=0, ON=1, >1=residual available from hypre
+  end type boomer_amg_precon_params
 
   type, public :: diff_precon_params
     character(16) :: solver
     type(ssor_precon_params) :: ssor_params
     type(boomer_amg_precon_params) :: bamg_params
   end type diff_precon_params
-  public :: ssor_precon_params, boomer_amg_precon_params
-
-  integer, parameter :: SOLVER_IS_SSOR = 1
-  integer, parameter :: SOLVER_IS_BAMG = 2
 
 contains
 
   subroutine diff_precon_init (this, dm, params)
+
+    use pcsr_precon_ssor_type
+    use pcsr_precon_boomer_type
+
     type(diff_precon), intent(out) :: this
     type(dist_diff_matrix), pointer :: dm
     type(diff_precon_params), intent(in) :: params
+
+    type(parameter_list), pointer :: precon_params
+
     this%dm => dm ! take ownership
     allocate(this%Sff)
-    call pcsr_matrix_create (this%Sff, mold=dm%a22)
+    call this%Sff%init (mold=dm%a22)
     !! Process the parameters.
     select case (params%solver)
     case ('SSOR')
-      this%solver_type = SOLVER_IS_SSOR
-      allocate(this%ssor_solver)
-      call ssor_precon_init (this%ssor_solver, this%Sff, params%ssor_params)
+      allocate(pcsr_precon_ssor :: this%Sff_precon)
+      allocate(precon_params)
+      call precon_params%set ('num-sweeps', params%ssor_params%num_iter)
+      call precon_params%set ('omega', params%ssor_params%omega)
     case ('BoomerAMG')
-      this%solver_type = SOLVER_IS_BAMG
-      allocate(this%bamg_solver)
-      call bamg_precon_init (this%bamg_solver, this%Sff, params%bamg_params)
+      allocate(pcsr_precon_boomer :: this%Sff_precon)
+      allocate(precon_params)
+      call precon_params%set ('num-cycles', params%bamg_params%max_iter)
+      call precon_params%set ('print-level', params%bamg_params%print_level)
+      call precon_params%set ('debug-level', params%bamg_params%debug_level)
+      call precon_params%set ('logging-level', params%bamg_params%logging_level)
     case default
       INSIST(.false.)
     end select
+    call this%Sff_precon%init (this%Sff, precon_params)
     nullify(dm) ! object takes ownership of the matrix
+
   end subroutine diff_precon_init
 
   subroutine diff_precon_delete (this)
     type(diff_precon), intent(inout) :: this
     if (associated(this%Sff)) deallocate(this%Sff)
-    if (associated(this%ssor_solver)) then
-      call ssor_precon_delete (this%ssor_solver)
-      deallocate(this%ssor_solver)
-    end if
-    if (associated(this%bamg_solver)) then
-      call bamg_precon_delete (this%bamg_solver)
-      deallocate(this%bamg_solver)
-    end if
-    if (associated(this%dm)) then
-      call DM_destroy (this%dm)
-      deallocate(this%dm)
-    end if
+    if (associated(this%dm)) deallocate(this%dm)
   end subroutine diff_precon_delete
 
   function diff_precon_matrix (this) result (matrix)
@@ -161,13 +169,8 @@ contains
 
   subroutine diff_precon_compute (this)
     type(diff_precon), intent(inout) :: this
-    call DM_compute_face_schur_matrix (this%dm, this%Sff)
-    select case (this%solver_type)
-    case (SOLVER_IS_SSOR)
-      call ssor_precon_compute (this%ssor_solver)
-    case (SOLVER_IS_BAMG)
-      call bamg_precon_compute (this%bamg_solver)
-    end select
+    call this%dm%compute_face_schur_matrix (this%Sff)
+    call this%Sff_precon%compute
   end subroutine diff_precon_compute
 
   subroutine diff_precon_apply (this, f1x, f2x)
@@ -182,12 +185,7 @@ contains
     call forward_elimination (this%dm, f1x, f2x)
 
     !! Approximately solve the Schur complement system for the face unknowns.
-    select case (this%solver_type)
-    case (SOLVER_IS_SSOR)
-      call ssor_precon_apply (this%ssor_solver, f2x)
-    case (SOLVER_IS_BAMG)
-      call bamg_precon_apply (this%bamg_solver, f2x)
-    end select
+    call this%Sff_precon%apply (f2x)
     call gather_boundary (this%dm%mesh%face_ip, f2x)
 
     !! Solve for the cell unknowns by back substitution.
@@ -208,7 +206,7 @@ contains
     ASSERT(size(b1x) == this%mesh%ncell)
     ASSERT(size(b2x) == this%mesh%nface)
 
-    if (associated(this%dir_faces)) then
+    if (allocated(this%dir_faces)) then
       allocate(b2x_dir(size(this%dir_faces)))
       b2x_dir = b2x(this%dir_faces)
     end if
@@ -221,7 +219,7 @@ contains
       end do
     end do
 
-    if (associated(this%dir_faces)) then
+    if (allocated(this%dir_faces)) then
       b2x(this%dir_faces) = b2x_dir
       deallocate(b2x_dir)
     end if
@@ -239,7 +237,7 @@ contains
     real(r8) :: s
     real(r8), allocatable :: u2x_dir(:)
 
-    if (associated(this%dir_faces)) then
+    if (allocated(this%dir_faces)) then
       allocate(u2x_dir(size(this%dir_faces)))
       u2x_dir = u2x(this%dir_faces)
       u2x(this%dir_faces) = 0.0_r8
@@ -253,7 +251,7 @@ contains
       b1x(j) = s / this%a11(j)
     end do
 
-    if (associated(this%dir_faces)) then
+    if (allocated(this%dir_faces)) then
       u2x(this%dir_faces) = u2x_dir
       deallocate(u2x_dir)
     end if

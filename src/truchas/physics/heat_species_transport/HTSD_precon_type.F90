@@ -73,9 +73,9 @@ contains
       !! Create the preconditioner for the heat equation.
       allocate(matrix)
       if (associated(mold_matrix)) then
-        call DM_create (matrix, mold=mold_matrix)
+        call matrix%init (mold=mold_matrix)
       else
-        call DM_create (matrix, model%disc)
+        call matrix%init (model%disc)
         mold_matrix => matrix
       end if
       allocate(this%hcprecon)
@@ -108,9 +108,9 @@ contains
       do n = 1, this%model%num_comp
         allocate(matrix)
         if (associated(mold_matrix)) then
-          call DM_create (matrix, mold=mold_matrix)
+          call matrix%init (mold=mold_matrix)
         else
-          call DM_create (matrix, model%disc)
+          call matrix%init (model%disc)
           mold_matrix => matrix
         end if
         call diff_precon_init (this%sdprecon(n), matrix, params%sdprecon_params%precon_params)
@@ -224,18 +224,18 @@ contains
       !! Jacobian of the basic heat equation that ignores nonlinearities
       !! in the conductivity.  This has the H/T relation eliminated.
       dm => diff_precon_matrix(this%hcprecon)
-      call DM_compute (dm, D)
-      call DM_incr_cell_diag (dm, A)
+      call dm%compute (D)
+      call dm%incr_cell_diag (A)
 
       !! Dirichlet boundary condition fixups.
       call bd_data_eval (this%model%ht%bc_dir, t)
-      call DM_set_dir_faces (dm, this%model%ht%bc_dir%faces)
+      call dm%set_dir_faces (this%model%ht%bc_dir%faces)
 
       !! External HTC boundary condition contribution.
       call bd_data_eval (this%model%ht%bc_htc, t)
       allocate(values(size(this%model%ht%bc_htc%faces)))
       values = this%mesh%area(this%model%ht%bc_htc%faces) * this%model%ht%bc_htc%values(1,:)
-      call DM_incr_face_diag (dm, this%model%ht%bc_htc%faces, values)
+      call dm%incr_face_diag (this%model%ht%bc_htc%faces, values)
       deallocate(values)
 
       !! Simple radiation boundary condition contribution.
@@ -244,7 +244,7 @@ contains
       allocate(values(size(faces)))
       values = 4 * this%model%ht%sbconst * this%mesh%area(faces) * this%model%ht%bc_rad%values(1,:) * &
           (Tface(faces) - this%model%ht%abszero)**3
-      call DM_incr_face_diag (dm, faces, values)
+      call dm%incr_face_diag (faces, values)
       deallocate(values)
 
       !! Internal HTC interface condition contribution.
@@ -256,7 +256,7 @@ contains
           if (any(this%model%void_face(this%model%ht%ic_htc%faces(:,j)))) values(j) = 0.0_r8
         end do
       end if
-      call DM_incr_interface_flux (dm, this%model%ht%ic_htc%faces, values)
+      call dm%incr_interface_flux (this%model%ht%ic_htc%faces, values)
       deallocate(values)
 
       !! Internal gap radiation condition contribution.
@@ -274,11 +274,11 @@ contains
           if (any(this%model%void_face(this%model%ht%ic_rad%faces(:,j)))) values2(:,j) = 0.0_r8
         end do
       end if
-      call DM_incr_interface_flux2 (dm, this%model%ht%ic_rad%faces, values2)
+      call dm%incr_interface_flux2 (this%model%ht%ic_rad%faces, values2)
       deallocate(values2)
 
       !! Dirichlet fix-ups for void faces.
-      call DM_set_dir_faces (dm, more_dir_faces)
+      call dm%set_dir_faces (more_dir_faces)
 
       !! Enclosure radiation contributions to the preconditioner.
       !! TODO: what about factorization coupling?  Is this still correct?
@@ -287,7 +287,7 @@ contains
           faces => this%model%ht%vf_rad_prob(index)%faces
           allocate(values(size(faces)))
           call ERD_rhs_deriv (this%model%ht%vf_rad_prob(index), t, Tface(faces), values)
-          call DM_incr_face_diag (dm, faces, this%mesh%area(faces) * values)
+          call dm%incr_face_diag (faces, this%mesh%area(faces) * values)
           deallocate(values)
         end do
       end if
@@ -308,15 +308,15 @@ contains
       !! Jacobian of the diffusion operator that ignores nonlinearities.
       call pmf_eval (this%model%sd(index)%diffusivity, state, values)
       if (associated(this%model%void_cell)) where (this%model%void_cell) values = 0.0_r8
-      call DM_compute (matrix, values)
+      call matrix%compute (values)
       !! Time derivative contribution to the diffusion equation Jacobian.
       values = this%mesh%volume / dt
       if (associated(this%model%void_cell)) where (this%model%void_cell) values = 1.0_r8
-      call DM_incr_cell_diag (matrix, values)
+      call matrix%incr_cell_diag (values)
       !! Dirichlet BC fixups.
       call bd_data_eval (this%model%sd(index)%bc_dir, t)
-      call DM_set_dir_faces (matrix, this%model%sd(index)%bc_dir%faces)
-      call DM_set_dir_faces (matrix, more_dir_faces)
+      call matrix%set_dir_faces (this%model%sd(index)%bc_dir%faces)
+      call matrix%set_dir_faces (more_dir_faces)
       !! The matrix is now complete; re-compute the preconditioner.
       call diff_precon_compute (this%sdprecon(index))
 

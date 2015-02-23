@@ -122,14 +122,14 @@ contains
   
   subroutine create_msr_matrix (n, clique_array, a)
   
-    use GraphModule
+    use graph_type
     
     integer, intent(in) :: n  ! number of rows/cols
     integer, intent(in) :: clique_array(:,:)
     type(msr_matrix), intent(out) :: a
     
     integer :: j
-    type(NGraphType) :: g
+    type(graph), allocatable :: g
     
     ASSERT(size(clique_array)==0.or.minval(clique_array)==1)
     !ASSERT(size(clique_array)==0.or.maxval(clique_array)==n)
@@ -138,14 +138,15 @@ contains
     a%ncol = n
     
     !! Create a graph of the matrix nonzero structure
-    g = CreateGraph(n)
+    allocate(g)
+    call g%init (n)
     do j = 1, size(clique_array,dim=2)
-      call AddClique (g, clique_array(:,j))
+      call g%add_clique (clique_array(:,j))
     end do
     
     !! Extract the adjacency structure and toss the graph.
-    call GetNeighborStructure (g, a%xadj, a%adjncy)
-    call DeleteGraph (g)
+    call g%get_adjacency (a%xadj, a%adjncy)
+    deallocate(g)
     
     !! Allocate storage for the matrix elements and initialize.
     allocate(a%diag(n), a%nonz(size(a%adjncy)))

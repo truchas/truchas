@@ -14,7 +14,7 @@ module cell_grad_type
 
   use kinds, only: r8
   use distributed_mesh
-  use parallel_csr_matrix
+  use pcsr_matrix_type
   use mfd_disc_type
   use hypre_hybrid_type
   use parameter_list_type
@@ -43,7 +43,6 @@ contains
   subroutine delete_cell_grad (this)
     type(cell_grad), intent(inout) :: this
     if (associated(this%params)) deallocate(this%params)
-    call pcsr_matrix_delete (this%matrix)
   end subroutine delete_cell_grad
 
   subroutine init (this, disc, mask, setids, stat, errmsg)
@@ -76,25 +75,25 @@ contains
     allocate(g, face_mask(this%mesh%nface))
     face_mask = .true.  ! will tag inactive faces
     row_ip => this%mesh%face_ip
-    call pcsr_graph_create (g, row_ip)
+    call g%init (row_ip)
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
-        call pcsr_graph_add_clique (g, this%mesh%cface(:,j))
+        call g%add_clique (this%mesh%cface(:,j))
         face_mask(this%mesh%cface(:,j)) = .false.  ! tag faces as active
       end if
     end do
     do j = 1, this%mesh%nface  ! dummy equations for inactive faces
-      if (face_mask(j)) call pcsr_graph_add_edge (g, j, j)
+      if (face_mask(j)) call g%add_edge (j, j)
     end do
-    call pcsr_graph_fill_complete (g)
+    call g%add_complete
     
     !! Create the face flux matrix.
-    call pcsr_matrix_create (this%matrix, g, take_graph=.true.)
-    call pcsr_matrix_set_all_values (this%matrix, 0.0_r8)
+    call this%matrix%init (g, take_graph=.true.)
+    call this%matrix%set_all (0.0_r8)
     
     !! Matrix values for inactive face dummy equations.
     do j = 1, this%mesh%nface
-      if (face_mask(j)) call pcsr_matrix_set_value (this%matrix, j, j, 1.0_r8)
+      if (face_mask(j)) call this%matrix%set (j, j, 1.0_r8)
     end do
     
     !! Get the face mask identifying faces where passive BC will be applied.
@@ -108,11 +107,11 @@ contains
           l = 1
           do ic = 1, size(index)
             do ir = 1, ic-1
-              call pcsr_matrix_add_to_value (this%matrix, index(ir), index(ic), minv(l))
-              call pcsr_matrix_add_to_value (this%matrix, index(ic), index(ir), minv(l))
+              call this%matrix%add_to (index(ir), index(ic), minv(l))
+              call this%matrix%add_to (index(ic), index(ir), minv(l))
               l = l + 1
             end do
-            call pcsr_matrix_add_to_value (this%matrix, index(ic), index(ic), minv(l))
+            call this%matrix%add_to (index(ic), index(ic), minv(l))
             l = l + 1
             !! Matrix modification for passive BC on face INDEX(IC).  Only
             !! affects that row of the matrix. NB: using IR to iterate over
@@ -121,7 +120,7 @@ contains
               !face_normals = hex_face_normals(this%mesh%x(:,this%mesh%cnode(:,j)))
               !do ir = 1, size(index)
               !  c = -dot_product(face_normals(:,ic),face_normals(:,ir))/this%mesh%volume(j)
-              !  call pcsr_matrix_add_to_value (this%matrix, index(ic), index(ir), c)
+              !  call this%matrix%add_to (index(ic), index(ir), c)
               !  if (dot_product(face_normals(:,ir),this%mesh%normal(:,index(ir))) > 0.0_r8 &
               !      .eqv. btest(this%mesh%cfpar(j),pos=ir)) then
               !    write(string,'(i0,3(1x,i0),1x,l1)') j, this%mesh%xcell(j), ir, index(ir), index(ir) > this%mesh%nface_onP!, this%mesh%face_set_mask(index(ir))
@@ -131,7 +130,7 @@ contains
               do ir = 1, size(index)
                 c = -dot_product(this%mesh%normal(:,index(ic)),this%mesh%normal(:,index(ir)))/this%mesh%volume(j)
                 if (btest(this%mesh%cfpar(j),pos=ir)) c = -c
-                call pcsr_matrix_add_to_value (this%matrix, index(ic), index(ir), c)
+                call this%matrix%add_to (index(ic), index(ir), c)
               end do
             end if
           end do

@@ -103,7 +103,6 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/HTSD_solver_type.F90
            physics/heat_species_transport/TofH_callback.F90
            physics/heat_species_transport/TofH_type.F90
-           physics/heat_species_transport/boomer_amg_precon_type.F90
            physics/heat_species_transport/boundary_data.F90
            physics/heat_species_transport/data_layout_type.F90
            physics/heat_species_transport/diff_precon_type.F90
@@ -116,10 +115,8 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/interface_data.F90
            physics/heat_species_transport/mesh_interop.F90
            physics/heat_species_transport/mfd_disc_type.F90
-           physics/heat_species_transport/parallel_csr_matrix.F90
            physics/heat_species_transport/property_mesh_function.F90
            physics/heat_species_transport/source_mesh_function.F90
-           physics/heat_species_transport/ssor_precon_type.F90
            physics/heat_species_transport/upper_packed_matrix.F90)
 
 # - induction_heating

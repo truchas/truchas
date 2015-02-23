@@ -2,38 +2,40 @@
 
 module diffusion_matrix
 
-  use kinds
-  use parallel_csr_matrix
+  use kinds, only: r8
   use distributed_mesh, only: dist_mesh
   use mfd_disc_type
+  use pcsr_matrix_type
   use parallel_communication
   use index_partitioning
   implicit none
   private
 
-  public :: DM_create, DM_destroy, DM_compute
-  public :: DM_set_dir_faces, DM_incr_cell_diag, DM_incr_face_diag
-  public :: DM_incr_interface_flux, DM_incr_interface_flux2
-  public :: DM_compute_face_schur_matrix
-  public :: DM_get_Dff
-
   type, public :: dist_diff_matrix
-    type(mfd_disc),  pointer :: disc => null()
-    type(dist_mesh), pointer :: mesh => null()
-    real(r8), pointer :: a11(:) => null(), a12(:,:) => null()
-    type(pcsr_matrix), pointer :: a22 => null()
-    integer, pointer :: dir_faces(:) => null()
+    type(mfd_disc),  pointer :: disc => null()  ! reference only -- do not own
+    type(dist_mesh), pointer :: mesh => null()  ! reference only -- do not own
+    real(r8), allocatable :: a11(:)     ! the cell-cell submatrix
+    real(r8), allocatable :: a12(:,:)   ! the cell-face submatrix
+    type(pcsr_matrix)     :: a22        ! the face-face submatrix
+    integer, allocatable  :: dir_faces(:)
+  contains
+    procedure, private :: init_disc
+    procedure, private :: init_mold
+    generic   :: init => init_disc, init_mold
+    procedure :: compute
+    procedure :: set_dir_faces
+    procedure :: incr_cell_diag
+    procedure :: incr_face_diag
+    procedure :: incr_interface_flux
+    procedure :: incr_interface_flux2
+    procedure :: compute_face_schur_matrix
   end type dist_diff_matrix
   
-  interface DM_create
-    module procedure DM_create, DM_create_mold
-  end interface
-
 contains
 
-  subroutine DM_create (this, disc)
+  subroutine init_disc (this, disc)
 
-    type(dist_diff_matrix), intent(out) :: this
+    class(dist_diff_matrix), intent(out) :: this
     type(mfd_disc), intent(in), target :: disc
 
     integer :: j
@@ -48,25 +50,24 @@ contains
     !! Create a CSR matrix graph for the A22 submatrix.
     allocate(g)
     row_ip => this%mesh%face_ip
-    call pcsr_graph_create (g, row_ip)
+    call g%init (row_ip)
     do j = 1, this%mesh%ncell
-      call pcsr_graph_add_clique (g, this%mesh%cface(:,j))
+      call g%add_clique (this%mesh%cface(:,j))
     end do
     do j = 1, this%mesh%nlink
-      call pcsr_graph_add_clique (g, this%mesh%lface(:,j))
+      call g%add_clique (this%mesh%lface(:,j))
     end do
-    call pcsr_graph_fill_complete (g)
+    call g%add_complete
 
     !! Create the A22 submatrix.
-    allocate(this%a22)
-    call pcsr_matrix_create (this%a22, g, take_graph=.true.)
+    call this%a22%init (g, take_graph=.true.)
 
-  end subroutine DM_create
+  end subroutine init_disc
   
-  subroutine DM_create_mold (this, mold)
+  subroutine init_mold (this, mold)
   
-    type(dist_diff_matrix), intent(out) :: this
-    type(dist_diff_matrix), intent(in)  :: mold
+    class(dist_diff_matrix), intent(out) :: this
+    class(dist_diff_matrix), intent(in)  :: mold
     
     type(pcsr_graph), pointer :: g
     
@@ -74,40 +75,16 @@ contains
     this%mesh => mold%mesh
     allocate(this%a11(size(mold%a11)))
     allocate(this%a12(size(mold%a12,1),size(mold%a12,2)))
-    allocate(this%a22)
-    g => pcsr_matrix_graph(mold%a22)
-    call pcsr_matrix_create(this%a22, g, take_graph=.false.)
+    g => mold%a22%graph_ptr()
+    call this%a22%init (g, take_graph=.false.)
     
-  end subroutine DM_create_mold
-  
-  subroutine DM_destroy (this)
+  end subroutine init_mold
 
-    type(dist_diff_matrix), intent(inout) :: this
-
-    type(dist_diff_matrix) :: default
-
-    if (associated(this%a11)) deallocate(this%a11)
-    if (associated(this%a12)) deallocate(this%a12)
-    if (associated(this%a22)) then
-      call pcsr_matrix_delete (this%a22)
-      deallocate(this%a22)
-    end if
-
-    this = default  ! assign default initialization values
-
-  end subroutine DM_destroy
-  
-  subroutine DM_get_Dff (this, Dff)
-    type(dist_diff_matrix), intent(in) :: this
-    type(pcsr_matrix), pointer :: Dff
-    Dff => this%a22
-  end subroutine DM_get_Dff
-
-  subroutine DM_compute (this, d)
+  subroutine compute (this, d)
 
     use upper_packed_matrix, only: upm_col_sum
   
-    type(dist_diff_matrix), intent(inout) :: this
+    class(dist_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: d(:)
     
     integer :: j, l, ir, ic
@@ -118,7 +95,7 @@ contains
 
     ASSERT(size(d) == this%mesh%ncell)
     
-    call pcsr_matrix_set_all_values (this%a22, 0.0_r8)
+    call this%a22%set_all (0.0_r8)
     
     do j = 1, this%mesh%ncell
       if (d(j) == 0.0_r8) then
@@ -138,18 +115,18 @@ contains
       l = 1
       do ic = 1, size(index)
         do ir = 1, ic-1
-          call pcsr_matrix_add_to_value (this%a22, index(ir), index(ic), minv(l))
-          call pcsr_matrix_add_to_value (this%a22, index(ic), index(ir), minv(l))
+          call this%a22%add_to (index(ir), index(ic), minv(l))
+          call this%a22%add_to (index(ic), index(ir), minv(l))
           l = l + 1
         end do
-        call pcsr_matrix_add_to_value (this%a22, index(ic), index(ic), minv(l))
+        call this%a22%add_to (index(ic), index(ic), minv(l))
         l = l + 1
       end do
     end do
     
-    if (associated(this%dir_faces)) deallocate(this%dir_faces)
+    if (allocated(this%dir_faces)) deallocate(this%dir_faces)
 
-  end subroutine DM_compute
+  end subroutine compute
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -169,18 +146,18 @@ contains
  !! an internal reference to this array, and so it should not be modified.
  !!
 
-  subroutine DM_set_dir_faces (this, dir_faces)
+  subroutine set_dir_faces (this, dir_faces)
 
-    type(dist_diff_matrix), intent(inout) :: this
+    class(dist_diff_matrix), intent(inout) :: this
     integer, intent(in) :: dir_faces(:)
 
     integer :: j, n
-    integer, pointer :: tmp(:)
+    integer, allocatable :: tmp(:)
     
     ASSERT(minval(dir_faces) >= 1)
     ASSERT(maxval(dir_faces) <= this%mesh%nface)
 
-    if (associated(this%dir_faces)) then
+    if (allocated(this%dir_faces)) then
       if (size(dir_faces) > 0) then
         n = size(this%dir_faces) + size(dir_faces)
         allocate(tmp(n))
@@ -188,7 +165,7 @@ contains
         tmp(:n) = this%dir_faces
         tmp(n+1:) = dir_faces
         deallocate(this%dir_faces)
-        this%dir_faces => tmp
+        call move_alloc (tmp, this%dir_faces)
       end if
     else
       allocate(this%dir_faces(size(dir_faces)))
@@ -197,23 +174,23 @@ contains
 
     do j = 1, size(dir_faces)
       n = dir_faces(j)
-      call pcsr_matrix_project_out_index (this%a22, n)
-      call pcsr_matrix_set_value (this%a22, n, n, 1.0_r8)
+      call this%a22%project_out (n)
+      call this%a22%set (n, n, 1.0_r8)
     end do
 
-  end subroutine DM_set_dir_faces
+  end subroutine set_dir_faces
   
   !! This subroutine increments the (entire) diagonal cell-cell diffusion
   !! submatrix with the specified values.  The intended use is to modify
   !! the base diffusion matrix to account for the discretization of a time
   !! derivative term.
   
-  subroutine DM_incr_cell_diag (this, values)
-    type(dist_diff_matrix), intent(inout) :: this
+  subroutine incr_cell_diag (this, values)
+    class(dist_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: values(:)
     ASSERT(size(values) == size(this%a11))
     this%a11 = this%a11 + values
-  end subroutine DM_incr_cell_diag
+  end subroutine incr_cell_diag
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -226,9 +203,9 @@ contains
  !! the discretization of certain types of flux boundary conditions.
  !!
 
-  subroutine DM_incr_face_diag (this, indices, values)
+  subroutine incr_face_diag (this, indices, values)
 
-    type(dist_diff_matrix), intent(inout) :: this
+    class(dist_diff_matrix), intent(inout) :: this
     integer,  intent(in) :: indices(:)
     real(r8), intent(in) :: values(:)
 
@@ -239,10 +216,10 @@ contains
     ASSERT(maxval(indices) <= this%mesh%nface)
 
     do j = 1, size(indices)
-      call pcsr_matrix_add_to_value (this%a22, indices(j), indices(j), values(j))
+      call this%a22%add_to (indices(j), indices(j), values(j))
     end do
 
-  end subroutine DM_incr_face_diag
+  end subroutine incr_face_diag
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -255,9 +232,9 @@ contains
  !! {I,J} submatrix the 2x2 matrix [A, -A; -A, A], for some scalar A.
  !!
 
-  subroutine DM_incr_interface_flux (this, faces, values)
+  subroutine incr_interface_flux (this, faces, values)
   
-    type(dist_diff_matrix), intent(inout) :: this
+    class(dist_diff_matrix), intent(inout) :: this
     integer,  intent(in) :: faces(:,:)
     real(r8), intent(in) :: values(:)
     
@@ -271,13 +248,13 @@ contains
     do j = 1, size(faces,2)
       n1 = faces(1,j)
       n2 = faces(2,j)
-      call pcsr_matrix_add_to_value (this%a22, n1, n1,  values(j))
-      call pcsr_matrix_add_to_value (this%a22, n1, n2, -values(j))
-      call pcsr_matrix_add_to_value (this%a22, n2, n1, -values(j))
-      call pcsr_matrix_add_to_value (this%a22, n2, n2,  values(j))
+      call this%a22%add_to (n1, n1,  values(j))
+      call this%a22%add_to (n1, n2, -values(j))
+      call this%a22%add_to (n2, n1, -values(j))
+      call this%a22%add_to (n2, n2,  values(j))
     end do
   
-  end subroutine DM_incr_interface_flux
+  end subroutine incr_interface_flux
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -290,9 +267,9 @@ contains
  !! {I,J} submatrix the 2x2 matrix [A, -B; -A, B], for some scalars A and B.
  !!
 
-  subroutine DM_incr_interface_flux2 (this, faces, values)
+  subroutine incr_interface_flux2 (this, faces, values)
   
-    type(dist_diff_matrix), intent(inout) :: this
+    class(dist_diff_matrix), intent(inout) :: this
     integer,  intent(in) :: faces(:,:)
     real(r8), intent(in) :: values(:,:)
     
@@ -307,17 +284,17 @@ contains
     do j = 1, size(faces,2)
       n1 = faces(1,j)
       n2 = faces(2,j)
-      call pcsr_matrix_add_to_value (this%a22, n1, n1,  values(1,j))
-      call pcsr_matrix_add_to_value (this%a22, n1, n2, -values(2,j))
-      call pcsr_matrix_add_to_value (this%a22, n2, n1, -values(1,j))
-      call pcsr_matrix_add_to_value (this%a22, n2, n2,  values(2,j))
+      call this%a22%add_to (n1, n1,  values(1,j))
+      call this%a22%add_to (n1, n2, -values(2,j))
+      call this%a22%add_to (n2, n1, -values(1,j))
+      call this%a22%add_to (n2, n2,  values(2,j))
     end do
   
-  end subroutine DM_incr_interface_flux2
+  end subroutine incr_interface_flux2
   
-  subroutine DM_compute_face_schur_matrix (this, Sff)
+  subroutine compute_face_schur_matrix (this, Sff)
   
-    type(dist_diff_matrix), intent(in) :: this
+    class(dist_diff_matrix), intent(in) :: this
     type(pcsr_matrix), intent(inout) :: Sff
     
     integer :: j, n, ir, ic
@@ -326,13 +303,13 @@ contains
     
     ASSERT(associated(this%a22%graph, Sff%graph))
     
-    Sff%data = this%a22%data
+    Sff%values = this%a22%values
     do j = 1, this%mesh%ncell
       indices => this%mesh%cface(:,j)
       do ir = 1, size(indices)
         do ic = 1, size(indices)
           value = -this%a12(ir,j)*this%a12(ic,j)/this%a11(j)
-          call pcsr_matrix_add_to_value (Sff, indices(ir), indices(ic), value)
+          call Sff%add_to (indices(ir), indices(ic), value)
         end do
       end do
     end do
@@ -340,10 +317,10 @@ contains
     !! Apply the Dirichlet projections.
     do j = 1, size(this%dir_faces)
       n = this%dir_faces(j)
-      call pcsr_matrix_project_out_index (Sff, n)
-      call pcsr_matrix_set_value (Sff, n, n, 1.0_r8)
+      call Sff%project_out (n)
+      call Sff%set (n, n, 1.0_r8)
     end do
 
-  end subroutine DM_compute_face_schur_matrix
+  end subroutine compute_face_schur_matrix
 
 end module diffusion_matrix

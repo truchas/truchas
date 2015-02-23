@@ -57,7 +57,7 @@ contains
     
     !! Create the preconditioner for the heat equation.
     allocate(this%matrix)
-    call DM_create (this%matrix, model%disc)
+    call this%matrix%init (model%disc)
     call diff_precon_init (this%precon, this%matrix, params%HC_precon_params)
     
     !! Initialize the heat equation/view factor radiation
@@ -86,10 +86,7 @@ contains
   
   subroutine FHT_precon_delete (this)
     type(FHT_precon), intent(inout) :: this
-    if (associated(this%matrix)) then
-      call DM_destroy (this%matrix)
-      deallocate(this%matrix)
-    end if
+    if (associated(this%matrix)) deallocate(this%matrix)
     call diff_precon_delete (this%precon)
     if (associated(this%vfr_precon_coupling)) deallocate(this%vfr_precon_coupling)
   end subroutine FHT_precon_delete
@@ -231,18 +228,18 @@ contains
     !! Jacobian of the basic heat equation that ignores nonlinearities
     !! in the conductivity.  This has the H/T relation eliminated.
     dm => diff_precon_matrix(this%precon)
-    call DM_compute (dm, D)
-    call DM_incr_cell_diag (dm, A)
+    call dm%compute (D)
+    call dm%incr_cell_diag (A)
     
     !! Dirichlet boundary condition fixups.
     call bd_data_eval (this%model%bc_dir, t)
-    call DM_set_dir_faces (dm, this%model%bc_dir%faces)
+    call dm%set_dir_faces (this%model%bc_dir%faces)
     
     !! External HTC boundary condition contribution.
     call bd_data_eval (this%model%bc_htc, t)
     allocate(values(size(this%model%bc_htc%faces)))
     values = this%mesh%area(this%model%bc_htc%faces) * this%model%bc_htc%values(1,:)
-    call DM_incr_face_diag (dm, this%model%bc_htc%faces, values)
+    call dm%incr_face_diag (this%model%bc_htc%faces, values)
     deallocate(values)
 
     !! Simple radiation boundary condition contribution.
@@ -251,7 +248,7 @@ contains
     allocate(values(size(faces)))
     values = 4 * this%model%sbconst * this%mesh%area(faces) * this%model%bc_rad%values(1,:) * &
         (Tface(faces) - this%model%abszero)**3
-    call DM_incr_face_diag (dm, faces, values)
+    call dm%incr_face_diag (faces, values)
     deallocate(values)
 
     !! Internal HTC interface condition contribution.
@@ -263,7 +260,7 @@ contains
         if (any(this%model%void_face(this%model%ic_htc%faces(:,j)))) values(j) = 0.0_r8
       end do
     end if
-    call DM_incr_interface_flux (dm, this%model%ic_htc%faces, values)
+    call dm%incr_interface_flux (this%model%ic_htc%faces, values)
     deallocate(values)
 
     !! Internal gap radiation condition contribution.
@@ -281,7 +278,7 @@ contains
         if (any(this%model%void_face(this%model%ic_rad%faces(:,j)))) values2(:,j) = 0.0_r8
       end do
     end if
-    call DM_incr_interface_flux2 (dm, this%model%ic_rad%faces, values2)
+    call dm%incr_interface_flux2 (this%model%ic_rad%faces, values2)
     deallocate(values2)
 
     if (associated(this%model%void_face)) then
@@ -295,7 +292,7 @@ contains
             more_dir_faces(n) = j
           end if
         end do
-        call DM_set_dir_faces (dm, more_dir_faces)
+        call dm%set_dir_faces (more_dir_faces)
         deallocate(more_dir_faces)
       end if
     end if
@@ -307,7 +304,7 @@ contains
         faces => this%model%vf_rad_prob(index)%faces
         allocate(values(size(faces)))
         call ERD_rhs_deriv (this%model%vf_rad_prob(index), t, Tface(faces), values)
-        call DM_incr_face_diag (dm, faces, this%mesh%area(faces) * values)
+        call dm%incr_face_diag (faces, this%mesh%area(faces) * values)
         deallocate(values)
       end do
     end if

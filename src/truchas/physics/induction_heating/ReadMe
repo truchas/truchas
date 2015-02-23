@@ -8,7 +8,6 @@ MaxwellEddy.F90 -- Maxwell solver in the low-frequency, eddy current regime.
 SolutionHistory.F90 -- Provides a structure for maintaining solution history.
 CGSolver.F90 -- Simple CG solver.
 sparse_matrix.F90 -- Essential sparse matrix tools.
-GraphModule.F90 -- Tools for handling graphs; used by sparse_matrix.
 
 MaxwellBoundaryData.F90 -- Provides high-level tools for configuring the
 	boundary condition data.  Works in conjunction with MaxwellEddy.

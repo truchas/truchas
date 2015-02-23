@@ -396,7 +396,7 @@ contains
 
   subroutine partition_cells (np, pmeth, cnhbr, lnhbr, pass)
 
-    use GraphModule
+    use graph_type
 
     integer, intent(in)    :: np            ! number of partitions
     character(len=*), intent(in) :: pmeth   ! partition method
@@ -406,7 +406,7 @@ contains
 
     integer :: i, j, k, ncell, stat, n1, n2
 
-    type(NGraphType) :: g
+    type(graph), allocatable :: g
     integer, allocatable :: xadj(:), adjncy(:)
     real, allocatable :: ewgt(:)
     real, parameter :: LINK_WEIGHT = 1.0
@@ -423,24 +423,25 @@ contains
     ncell = size(cnhbr,dim=2)
 
     !! Create the cell adjacency graph.
-    g = CreateGraph(ncell)
+    allocate(g)
+    call g%init(ncell)
     do j = 1, size(cnhbr,dim=2)
       do k = 1, size(cnhbr,dim=1)
-        if (cnhbr(k,j) > j) call AddEdge (g, j, cnhbr(k,j))
+        if (cnhbr(k,j) > j) call g%add_edge (j, cnhbr(k,j))
       end do
     end do
     
     !! Add edges between linked cells.
     do j = 1, size(lnhbr,dim=2)
-      call AddEdge (g, lnhbr(1,j), lnhbr(2,j))
+      call g%add_edge (lnhbr(1,j), lnhbr(2,j))
     end do
     
-    call GetNeighborStructure (g, xadj, adjncy)
-    call DeleteGraph (g)
+    call g%get_adjacency (xadj, adjncy)
+    deallocate(g)
 
     !! Define edge weights.  We weight the link edges heavily to discourage
     !! them from being cut.  The weights are probably best handled as part
-    !! of forming the graph, but this would require additions to GraphModule
+    !! of forming the graph, but this would require additions to GRAPH_TYPE
     !! that I'm not prepared to make just yet.
     allocate(ewgt(size(adjncy)))
     ewgt = 1  ! the default
@@ -513,7 +514,7 @@ contains
   subroutine organize_cells (np, pmeth, cnode, lnode, bsize, perm)
 
     use hexahedral_mesh_support, only: cell_neighbor_info
-    use GraphModule
+    use graph_type
     use permutations
 
     integer, intent(in)    :: np            ! number of partitions
@@ -527,7 +528,7 @@ contains
     integer :: pass(size(cnode,2)), cnhbr(6,size(cnode,2)), rcm_perm(size(perm))
     integer :: lnhbr(2,size(lnode,2))
 
-    type(NGraphType) :: g
+    type(graph), allocatable :: g
     integer, allocatable :: xadj(:), adjncy(:)
     real, allocatable :: ewgt(:)
     real, parameter :: LINK_WEIGHT = 2.0
@@ -545,26 +546,27 @@ contains
     INSIST( stat == 0 )
 
     !! Create the cell adjacency graph
-    g = CreateGraph (ncell)
+    allocate(g)
+    call g%init (ncell)
     do j = 1, size(cnhbr,dim=2)
       do k = 1, size(cnhbr,dim=1)
-        if (cnhbr(k,j) > j) call AddEdge (g, j, cnhbr(k,j))
+        if (cnhbr(k,j) > j) call g%add_edge (j, cnhbr(k,j))
       end do
     end do
     
     !! Add edges between linked cells.
     do j = 1, size(lnhbr,dim=2)
-      call AddEdge (g, lnhbr(1,j), lnhbr(2,j))
+      call g%add_edge (lnhbr(1,j), lnhbr(2,j))
     end do
     
-    call GetNeighborStructure (g, xadj, adjncy)
-    call DeleteGraph (g)
+    call g%get_adjacency (xadj, adjncy)
+    deallocate(g)
 
     if (np > 1) then  ! Assign cells to partitions.
     
       !! Define edge weights.  We weight the link edges heavily to discourage
       !! them from being cut.  The weights are probably best handled as part
-      !! of forming the graph, but this would require additions to GraphModule
+      !! of forming the graph, but this would require additions to GRAPH_TYPE
       !! that I'm not prepared to make just yet.
       
       allocate(ewgt(size(adjncy)))

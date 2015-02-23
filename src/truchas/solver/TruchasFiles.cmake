@@ -16,6 +16,10 @@ set(SOLVER_FILES
           solver/fhypre.F90
           solver/hypre_pcg_type.F90
           solver/hypre_hybrid_type.F90
+          solver/pcsr_matrix_type.F90
+          solver/pcsr_precon_class.F90
+          solver/pcsr_precon_ssor_type.F90
+          solver/pcsr_precon_boomer_type.F90
           solver/linear_solution.F90
           solver/nonlinear_solution.F90
           solver/ortho_matvec.F90

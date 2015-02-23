@@ -12,7 +12,7 @@
 module hypre_pcg_type
 
   use kinds
-  use parallel_csr_matrix
+  use pcsr_matrix_type
   use index_partitioning
   use fhypre
   implicit none
@@ -290,7 +290,7 @@ contains
     rows = (/ (j, j = ilower, iupper) /)
     ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
     cols = global_index(src%graph%row_ip, src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
-    call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%data, ierr)
+    call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%values, ierr)
     deallocate(ncols, rows, cols)
     INSIST(ierr == 0)
 
