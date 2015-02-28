@@ -19,7 +19,6 @@ set(USTRUC_FILES
         ustruc/ustruc_vel1_type.F90
         ustruc/ustruc_time_type.F90
         ustruc/ustruc_gv0_type.F90
-        ustruc/ustruc_gv1_type.F90
         ustruc/ustruc_comp_factory.F90
         )
 
