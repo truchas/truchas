@@ -75,6 +75,7 @@ CONTAINS
     use diffusion_solver,       only: ds_init, ds_set_initial_state
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
+    use ustruc_driver,          only: ustruc_driver_init
     use physics_module,         only: heat_transport, heat_species_transport
 
     real(r8), intent(in) :: t
@@ -199,6 +200,9 @@ CONTAINS
         deallocate(phi)
       end select
     end if
+    
+    ! Initialize the microstructure modeling driver (if enabled).
+    if (heat_transport .or. heat_species_transport) call ustruc_driver_init (t)
 
   END SUBROUTINE INITIAL
 

@@ -180,6 +180,7 @@ call hijack_truchas ()
     use timing_tree
     use diffusion_solver,         only: ds_step
     use diffusion_solver_data,    only: ds_enabled
+    use ustruc_driver,            only: ustruc_update
     use truchas_logging_services
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -285,6 +286,7 @@ call hijack_truchas ()
        
        ! post-processing modules (no side effects)
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before microstructure:')
+       call ustruc_update (t2) ! microstructure modeling
 
     end do MAIN_CYCLE
  
