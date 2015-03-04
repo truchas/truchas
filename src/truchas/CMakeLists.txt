@@ -62,10 +62,6 @@ include(input/TruchasFiles.cmake)
 message(STATUS "Processing materials")
 include(materials/TruchasFiles.cmake)
 
-# - microstructure
-message(STATUS "Processing ustruc")
-include(ustruc/TruchasFiles.cmake)
-
 # - ode
 message(STATUS "Processing ode")
 include(ode/TruchasFiles.cmake)
