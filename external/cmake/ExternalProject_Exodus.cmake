@@ -43,7 +43,7 @@ set(exodus_c_flags "${CMAKE_C_FLAGS} ${exodus_pic_flag}")
 # --- Add the external project
 
 ExternalProject_Add(${EXODUS_BUILD_TARGET}
-                    DEPENDS ${NETCDF_BUILD_TARGET}
+                    DEPENDS ${NETCDF_BUILD_TARGET} ${HDF5_BUILD_TARGET}
                     # -- Project directories
                     PREFIX      ${exodus_prefix_dir} 
                     TMP_DIR     ${exodus_tmp_dir}     
