@@ -36,7 +36,7 @@ import Xdmf
 
 def setSequenceFilename(id,sim_name,h5file_name):
   base_name=os.path.splitext(h5file_name)[0]
-  f='%s-%s-%d.xmf'%(base_name,sim_name,id)
+  f='%s-%s-%04d.xmf'%(base_name,sim_name,id)
   return f
 
 def setCollectionFilename(sim_name,h5file_name):
