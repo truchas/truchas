@@ -14,6 +14,7 @@ set(UTIL_FILES
          utilities/file_utility.F90
          utilities/graph_type.F90
          utilities/input_utilities.F90
+         utilities/integer_set_type.F90
          utilities/kinds.F90
          utilities/linear_module.F90
          utilities/lnorm_module.F90
