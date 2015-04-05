@@ -7,7 +7,7 @@ module HTSD_solver_type
   use HTSD_precon_type
   use HTSD_norm_type
   use material_mesh_function
-  use distributed_mesh
+  use dist_mesh_type
   use index_partitioning
   use bdf2_dae
   implicit none
@@ -183,7 +183,7 @@ contains
     INSIST(associated(this%model%ht))
     call HTSD_model_get_face_temp_copy (this%model, this%u, tface)
     call gather_boundary (this%model%mesh%face_ip, tface)
-    call mfd_disc_compute_cell_grad (this%model%disc, tface, tgrad)
+    call this%model%disc%compute_cell_grad (tface, tgrad)
   end subroutine HTSD_solver_get_cell_temp_grad
     
   subroutine HTSD_solver_get_stepping_stats (this, counters)

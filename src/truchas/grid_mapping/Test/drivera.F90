@@ -11,8 +11,7 @@ program grid_mapping_test_driver_ascii
   use grid_mapping_module, only : grid_int_vols, &
        read_int_volumes, compute_int_volumes, &
        grid_vols, grid_vol_fracs, write_int_volumes, map_cell_field, &
-       destroy_grid_int_vols, right_int_volumes, gm_mesh, &
-       destroy_gm_mesh
+       destroy_grid_int_vols, right_int_volumes, gm_mesh
 
   implicit none
 
@@ -24,7 +23,7 @@ program grid_mapping_test_driver_ascii
   logical :: reverse_order,exactly_conservative,preserve_constants,strict
   logical :: map_exists
   real(dp) :: defval
-  type(gm_mesh) :: mesh_a, mesh_b
+  type(gm_mesh), allocatable :: mesh_a, mesh_b
   type(grid_int_vols) :: int_vols
   real(dp), dimension(:), pointer :: field_a=>null(), field_b=>null(), vol_a=>null(), vol_b=>null()
   real(dp), dimension(:), pointer :: vf_a=>null(), vf_b=>null()
@@ -58,9 +57,7 @@ program grid_mapping_test_driver_ascii
      write(*,fmt='(a,l1)') 'strict= ',strict
      write(*,fmt='(a,es20.12)') 'defval= ',defval
 
-     ! Release meshes if necessary
-     call destroy_gm_mesh(mesh_a)
-     call destroy_gm_mesh(mesh_b)
+     allocate(mesh_a, mesh_b)
 
      ! Read two meshes from ascii files
      open(UNIT=file_lun,FILE=filename_mesh_a,POSITION='rewind')
@@ -225,6 +222,7 @@ program grid_mapping_test_driver_ascii
      write(*,fmt='(a,es20.12)') 'Integral on B mesh= ',dot_product(vol_b,field_b)
   
      call destroy_grid_int_vols(int_vols)
+     deallocate(mesh_a, mesh_b)
   enddo
 
 20 continue

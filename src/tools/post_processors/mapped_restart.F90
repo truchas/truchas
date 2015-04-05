@@ -215,15 +215,15 @@ contains
     !! Wire the mapping source mesh.
     gm_src%nnod = src%nnode
     gm_src%nelt = src%ncell
-    gm_src%pos_node  => src%coord
-    gm_src%node_elt  => src%connect
-    gm_src%block_elt => src%blockid
+    gm_src%pos_node  = src%coord
+    gm_src%node_elt  = src%connect
+    gm_src%block_elt = src%blockid
     !! Wire the mapping destination mesh.
     gm_dest%nnod = dest%nnode
     gm_dest%nelt = dest%ncell
-    gm_dest%pos_node  => dest%coord
-    gm_dest%node_elt  => dest%connect
-    gm_dest%block_elt => dest%blockid
+    gm_dest%pos_node  = dest%coord
+    gm_dest%node_elt  = dest%connect
+    gm_dest%block_elt = dest%blockid
     !! Compute the mesh mapping data.
     call compute_int_volumes (gm_src, gm_dest, this%map_data)
   end subroutine mesh_map_init

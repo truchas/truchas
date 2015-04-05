@@ -76,7 +76,7 @@
 module material_mesh_function
 
   use kinds, only: r8
-  use distributed_mesh, only: dist_mesh
+  use dist_mesh_type
   use string_utilities, only: i_to_c
 
   implicit none

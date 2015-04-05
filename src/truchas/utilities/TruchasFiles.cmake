@@ -21,7 +21,6 @@ set(UTIL_FILES
          utilities/lu_solve_module.F90
          utilities/permutations.F90
          utilities/process_info_module.F90
-         utilities/sets.F90
          utilities/sort_module.F90
          utilities/string_utilities.F90
          utilities/tabular_utilities.F90

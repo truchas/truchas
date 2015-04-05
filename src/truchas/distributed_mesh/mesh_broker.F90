@@ -7,13 +7,13 @@
 
 #include "f90_assert.fpp"
 
-!#define DEBUG_WRITE_MESH
+#define DEBUG_WRITE_MESH
 
 module mesh_broker
 
   use kinds, only: r8
   use parallel_communication
-  use distributed_mesh
+  use dist_mesh_type
 
   implicit none
   private
@@ -35,6 +35,7 @@ module mesh_broker
     integer, pointer :: gap_blocks(:) => null()
     integer, pointer :: iface_sset_id(:) => null()
     logical :: enabled = .false.
+    logical :: em_mesh = .false. ! whether this mesh is for EM (HACK)
     type(dist_mesh), pointer :: mesh => null()
   end type mesh_desc
 
@@ -99,10 +100,10 @@ contains
 
     use mesh_importer
     use mesh_modification, only: convert_cells_to_links, create_internal_interfaces
-    use distributed_hex_mesh, only: create_dist_hex_mesh
+    use dist_mesh_factory, only: new_dist_mesh
     use distributed_tet_mesh, only: create_dist_tet_mesh
 #ifdef DEBUG_WRITE_MESH
-    use distributed_mesh_gmv
+    use dist_mesh_gmv
 #endif
 
     integer :: stat
@@ -125,16 +126,23 @@ contains
         if (is_IOP) call create_internal_interfaces (xmesh, l%first%mesh%iface_sset_id, stat, errmsg)
         call broadcast (stat)
         if (stat /= 0) call halt ('INIT_MESH_BROKER: ' // trim(errmsg))
-        allocate (l%first%mesh%mesh)
-        select case (xmesh%mesh_type)
-        case ('HEX')
-          call create_dist_hex_mesh (l%first%mesh%mesh, xmesh)
-        case ('TET')
-          call create_dist_tet_mesh (l%first%mesh%mesh, xmesh)
-        case default
-          INSIST( .false. )
-        end select
-        call write_dist_mesh_profile (l%first%mesh%mesh)
+        if (l%first%mesh%em_mesh) then
+          select case (xmesh%mesh_type)
+          case ('TET')
+            allocate (l%first%mesh%mesh)
+            call create_dist_tet_mesh (l%first%mesh%mesh, xmesh)
+          case default
+            INSIST( .false. )
+          end select
+        else
+          select case (xmesh%mesh_type)
+          case ('TET', 'HEX')
+            l%first%mesh%mesh => new_dist_mesh(xmesh)
+          case default
+            INSIST( .false. )
+          end select
+        end if
+        call l%first%mesh%mesh%write_profile
         call destroy (xmesh)
         call write_info ('  Distributed mesh ' // trim(l%first%mesh%name) // ' initialized.')
 #ifdef DEBUG_WRITE_MESH
@@ -319,6 +327,7 @@ contains
       meshes%first%rest = old_meshes
       meshes%first%mesh%name = 'ALT'
       meshes%first%mesh%file = altmesh_file
+      meshes%first%mesh%em_mesh = .true.
       meshes%first%mesh%coord_scale_factor = altmesh_coordinate_scale_factor
       allocate(meshes%first%mesh%gap_blocks(0), meshes%first%mesh%iface_sset_id(0))
     end if

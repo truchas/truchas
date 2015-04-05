@@ -22,7 +22,7 @@ module EM_hex_tet_mapping
   public :: get_grid_mapping_data, map_hex_field, map_tet_field
 
   !! Objects from GRID_MAPPING_MODULE required by a user of EM_HEX_TET_MAPPING.
-  public :: gm_mesh, destroy_gm_mesh, grid_int_vols, destroy_grid_int_vols
+  public :: gm_mesh, grid_int_vols, destroy_grid_int_vols
 
 contains
 

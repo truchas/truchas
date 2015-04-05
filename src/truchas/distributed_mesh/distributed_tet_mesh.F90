@@ -15,7 +15,7 @@ module distributed_tet_mesh
   use kinds
   use parallel_communication
   use index_partitioning
-  use distributed_mesh
+  use dist_mesh_type
 
   implicit none
   private
@@ -40,7 +40,7 @@ contains
     use simplicial_mesh_support
     use parallel_communication
     use permutations
-    use sets
+    use integer_set_type
     use bitfield_type
 
     type(dist_mesh), intent(out) :: this
@@ -118,22 +118,15 @@ contains
       !! Copy the cell sets into packed array storage.
       allocate(offP_size(nPE))
       do n = 1, nPE
-        offP_size(n) = size(xcells(n))
+        offP_size(n) = xcells(n)%size()
       end do
 
       n = sum(offP_size)
       allocate(offP_index(n))
       offset = 0
       do n = 1, nPE
-        array => to_array(xcells(n))
-        offP_index(offset+1:offset+offP_size(n)) = array
+        call xcells(n)%copy_to_array (offP_index(offset+1:))
         offset = offset + offP_size(n)
-        deallocate(array)
-      end do
-
-      !! We're finished with the cell sets now.
-      do n = 1, size(xcells)
-        call clear (xcells(n))
       end do
       deallocate(xcells)
 
@@ -596,7 +589,7 @@ contains
 
   subroutine overlapping_cells (facet, cell_bsize, bsize, xcells)
 
-    use sets
+    use integer_set_type
 
     integer, intent(in) :: facet(:,:)     ! cell facets
     integer, intent(in) :: cell_bsize(:)  ! cell partition block sizes
@@ -617,7 +610,7 @@ contains
       do j = offset+1, offset+cell_bsize(n) ! loop over cells in partition N.
         do k = 1, size(facet,1) ! loop over the facets of cell J.
           m = fpart(facet(k,j))
-          if (m /= n) call add (xcells(m), j)
+          if (m /= n) call xcells(m)%add (j)
         end do
       end do
       offset = offset + cell_bsize(n)

@@ -56,7 +56,7 @@ contains
 
     use mesh_importer, only: external_mesh, side_set
     use cell_topology
-    use hashing
+    use facet_hash_type
     use string_utilities, only: i_to_c
 
     type(external_mesh), intent(inout), target :: mesh
@@ -69,7 +69,7 @@ contains
     integer, allocatable :: link_side(:), xbin(:), map(:), old_cnode(:,:), old_cell_block(:), tmp(:)
     integer, pointer :: cnode(:), fnode(:)
     type(side_set), pointer :: old_sset(:)
-    type(hash_param) :: hpar
+    type(facet_hash) :: hpar
 
     type :: table_entry
       integer, pointer :: fnode(:) => null()
@@ -156,7 +156,7 @@ contains
    !!
 
     allocate(table(n))
-    call initialize_hash_param (hpar, n, mesh%nnode)  ! adjusts N to a power of 2
+    call hpar%init (n, mesh%nnode)  ! adjusts N to a power of 2
     allocate(xbin(0:n))
 
     !! Count the number of hits to each bin; store the count for bin N in XBIN(N+1).
@@ -166,7 +166,7 @@ contains
       do k = 1, NUM_FACE
         if (btest(link_side(j), k-1)) then
           fnode => hex_face_nodes (mesh%cnode(:,j), k, normalize=.true.)
-          call hash (hpar, fnode, n)
+          call hpar%hash (fnode, n)
           xbin(n+1) = xbin(n+1) + 1
           deallocate(fnode)
         end if
@@ -184,7 +184,7 @@ contains
       do k = 1, NUM_FACE
         if (btest(link_side(j), k-1)) then
           fnode => hex_face_nodes (mesh%cnode(:,j), k, normalize=.true.)
-          call hash (hpar, fnode, n)
+          call hpar%hash (fnode, n)
           i = xbin(n)
           table(i)%fnode => fnode
           xbin(n) = i + 1
@@ -216,7 +216,7 @@ contains
         do k = 1, NUM_FACE
           !! The FNODE the neighbor cell would have for this side.
           fnode => hex_face_nodes (cnode, k, reverse=.true., normalize=.true.)
-          call hash (hpar, fnode, n)
+          call hpar%hash (fnode, n)
           bin => table(xbin(n):xbin(n+1)-1)
           do i = size(bin), 1, -1
             if (all(fnode == bin(i)%fnode)) exit
@@ -413,7 +413,7 @@ contains
 
   subroutine create_internal_interfaces (mesh, ssid, stat, errmsg)
 
-    use hashing
+    use facet_hash_type
     use cell_topology
     use mesh_importer, only: side_set_node_list
 
@@ -444,7 +444,7 @@ contains
     end type table_entry
     type(table_entry), pointer :: table(:), bin(:)
     integer, allocatable :: xbin(:)
-    type(hash_param) :: hpar
+    type(facet_hash) :: hpar
 
     stat = 0
     errmsg = ''
@@ -561,7 +561,7 @@ contains
 
     !! Allocate space for the bin table, and initialize the hash function.
     allocate(table(n))
-    call initialize_hash_param (hpar, n, mesh%nnode)  ! adjusts N up to a power of 2
+    call hpar%init (n, mesh%nnode)  ! adjusts N up to a power of 2
     allocate(xbin(0:n))
 
     !! Count the number of hits to each bin; store the count for bin N in XBIN(N+1).
@@ -570,7 +570,7 @@ contains
       do k = 1, num_cell_side
         if (btest(active_smask(j),k-1)) then
           side1 => side_node_list(mesh%cnode(:,active_cnum(j)), k)
-          call hash (hpar, side1, n)
+          call hpar%hash (side1, n)
           xbin(n+1) = xbin(n+1) + 1
           deallocate(side1)
         end if
@@ -588,7 +588,7 @@ contains
       do k = 1, num_cell_side
         if (btest(active_smask(j),k-1)) then
           side1 => side_node_list(mesh%cnode(:,active_cnum(j)), k, normalize=.true.)
-          call hash (hpar, side1, n)
+          call hpar%hash (side1, n)
           i = xbin(n)
           table(i)%side => side1
           table(i)%j = j
@@ -616,7 +616,7 @@ contains
           if (active_jnbr(k,j) > 0) cycle  ! info already assigned
           !! The SIDE1 my neighbor would have for this side.
           side1 => side_node_list(mesh%cnode(:,active_cnum(j)), k, normalize=.true., reverse=.true.)
-          call hash (hpar, side1, n)
+          call hpar%hash (side1, n)
           bin => table(xbin(n):xbin(n+1)-1)
           !! Search the bin for a matching SIDE1.
           do i = size(bin), 1, -1
@@ -657,7 +657,7 @@ contains
           end select
           call normalize_facet (side1)
           if (any(active_node(side1))) then
-            call hash (hpar, side1, n)
+            call hpar%hash (side1, n)
             bin => table(xbin(n):xbin(n+1)-1)
             !! Search the bin for the matching SIDE1.
             do i = size(bin), 1, -1

@@ -11,17 +11,17 @@
 
 #include "f90_assert.fpp"
 
-module distributed_hex_mesh
+module dist_mesh_factory
 
   use kinds
   use parallel_communication
   use index_partitioning
-  use distributed_mesh
+  use dist_mesh_type
 
   implicit none
   private
 
-  public :: create_dist_hex_mesh
+  public :: new_dist_mesh
 
 contains
 
@@ -35,45 +35,53 @@ contains
  !! and geometrical information required by a mimetic discretization scheme.
  !! It also returns the permutation vectors NODE_PERM and CELL_PERM which
 
-  subroutine create_dist_hex_mesh (this, mesh)
+  function new_dist_mesh (mesh) result (this)
 
     use mesh_importer
     use cell_geometry
-    use hexahedral_mesh_support
+    use unstr_mesh_tools
     use parallel_communication
     use permutations
-    use sets
+    use integer_set_type
     use bitfield_type
 
-    type(dist_mesh), intent(out) :: this
     type(external_mesh), intent(inout), target :: mesh
+    type(dist_mesh), pointer :: this
 
     integer :: j, k, n, offset, ncell, nface, stat, p(mesh%ncell)
-    integer, pointer :: cnode(:,:), cface(:,:), lface(:,:), node_perm(:), cell_perm(:)
+    integer, pointer :: cnode(:,:), offP_index(:)
+    integer, allocatable :: cface(:,:), lface(:,:), node_perm(:), cell_perm(:)
     integer, dimension(nPE) :: node_bsize, face_bsize, cell_bsize, bsize
-    type(bitfield), pointer :: face_set_mask(:)
-    integer, pointer :: node_set_mask(:)
+    type(bitfield), allocatable :: face_set_mask(:)
+    integer, allocatable :: cfpar(:), node_set_mask(:)
     integer, allocatable :: face_perm(:), offP_size(:), lnhbr(:,:), cnhbr(:,:), perm(:)
-    integer, pointer :: cfpar(:), array(:), offP_index(:)
     type(integer_set), allocatable :: xcells(:)
-    type(bitfield), pointer :: link_set_mask(:)
+    type(bitfield), allocatable :: link_set_mask(:)
+    
+    allocate(this)
 
     ncell = mesh%ncell
     cnode => mesh%cnode
     
-    !call allocate_collated_array (cedge, 12, ncell)
-    call allocate_collated_array (cface, 6, ncell)
-    call allocate_collated_array (lface, 2, mesh%nlink)
-    call allocate_collated_array (cfpar, ncell)
-
-    call allocate_collated_array (node_perm, mesh%nnode)
-    call allocate_collated_array (cell_perm, mesh%ncell)
+    this%cell_type = mesh%mesh_type
+    select case (mesh%mesh_type)
+    case ('TET')
+      allocate(cface(4,merge(mesh%ncell,0,is_IOP)))
+    case ('HEX')
+      allocate(cface(6,merge(mesh%ncell,0,is_IOP)))
+    case default
+      INSIST(.false.)
+    end select
+    allocate(cfpar(merge(mesh%ncell,0,is_IOP)))
+    allocate(lface(2,merge(mesh%nlink,0,is_IOP)))
+    allocate(node_perm(merge(mesh%nnode,0,is_IOP)))
+    allocate(cell_perm(merge(mesh%ncell,0,is_IOP)))
 
     if (is_IOP) then
     
       !! Partition and order the cells.
-      allocate(cnhbr(6,ncell), lnhbr(2,mesh%nlink))
-      call cell_neighbor_info (cnode, mesh%lnode, cnhbr, lnhbr, stat)
+      allocate(cnhbr(size(cface,dim=1),ncell), lnhbr(2,mesh%nlink))
+      call get_cell_neighbor_array (cnode, mesh%lnode, cnhbr, lnhbr, stat)
       INSIST(stat == 0)
       call partition_cells (nPE, 'CHACO', cnhbr, lnhbr, p)
       call blocked_partition (p, cell_bsize, cell_perm)
@@ -96,10 +104,6 @@ contains
       !  cnhbr(:,j) = p(cnhbr(:,j))
       !end do
       
-      !! Partition and order the cells.
-      !call organize_cells (nPE, 'CHACO', mesh%cnode, mesh%lnode, cell_bsize, cell_perm)
-      !call reorder (mesh%cell_block, cell_perm)  ! array is cell-based.
-
       !! Partition and order the nodes.
       call organize_facets (mesh%cnode, cell_bsize, node_bsize, node_perm)
       call reorder (mesh%x, node_perm)  ! array is node-based.
@@ -115,13 +119,12 @@ contains
       end do
       deallocate(perm)
 
-      !! Label the edges and faces of the mesh.
-      !call label_cell_edges (mesh%cnode, cedge, nedge)
-      call label_cell_faces (mesh%cnode, cface, nface, mesh%lnode, lface)
+      !! Label the faces of the mesh.
+      call label_mesh_faces (mesh%cnode, nface, cface, mesh%lnode, lface)
       cfpar = 0
-      do j = 1, ncell
+      do j = 1, size(cface,dim=2)
         n = 0
-        do k = 1, 6
+        do k = 1, size(cface,dim=1)
           if (cface(k,j) < 0) then
             n = ibset(n,k)
             cface(k,j) = -cface(k,j)
@@ -129,11 +132,6 @@ contains
         end do
         cfpar(j) = n
       end do
-
-      !! Partition and order the edges.
-      !allocate(edge_perm(nedge))
-      !call organize_facets (cedge, cell_bsize, edge_bsize, edge_perm)
-      !deallocate(edge_perm)
 
       !! Partition and order the faces.
       allocate(face_perm(nface))
@@ -146,7 +144,7 @@ contains
     end if
 
     !! Generate the boundary face mask array.
-    call allocate_collated_array (face_set_mask, nface)
+    allocate(face_set_mask(merge(nface,0,is_IOP)))
     if (is_IOP) then
       call generate_face_set_mask (face_set_mask, cface, mesh%sset)
       !! We won't call interface faces boundary faces.
@@ -155,7 +153,7 @@ contains
     end if
     
     !! Generate the node set mask array; need to tag boundary nodes later.
-    call allocate_collated_array (node_set_mask, mesh%nnode)
+    allocate(node_set_mask(merge(mesh%nnode,0,is_IOP)))
     if (is_IOP) call generate_node_set_mask (node_set_mask, mesh%nset)
 
     !!
@@ -175,29 +173,21 @@ contains
       !! Form the sets of off-process cells.
       allocate(xcells(nPE))
       call overlapping_cells (cnode, cell_bsize, node_bsize, xcells)
-      !call overlapping_cells (cedge, cell_bsize, edge_bsize, xcells)
       call overlapping_cells (cface, cell_bsize, face_bsize, xcells)
       call overlapping_cells2 (lnhbr, cell_bsize, xcells)
 
       !! Copy the cell sets into packed array storage.
       allocate(offP_size(nPE))
       do n = 1, nPE
-        offP_size(n) = size(xcells(n))
+        offP_size(n) = xcells(n)%size()
       end do
 
       n = sum(offP_size)
       allocate(offP_index(n))
       offset = 0
       do n = 1, nPE
-        array => to_array(xcells(n))
-        offP_index(offset+1:offset+offP_size(n)) = array
+        call xcells(n)%copy_to_array (offP_index(offset+1:))
         offset = offset + offP_size(n)
-        deallocate(array)
-      end do
-
-      !! We're finished with the cell sets now.
-      do n = 1, size(xcells)
-        call clear (xcells(n))
       end do
       deallocate(xcells)
 
@@ -215,13 +205,6 @@ contains
     call localize_index_array (cnode, this%cell_ip, this%node_ip, this%cnode, offP_index)
     call add_offP_index (this%node_ip, offP_index)
     deallocate(offP_index)
-
-    !! Create the edge index partition and localize the global CEDGE array,
-    !! which identifies off-process edges to augment the partition with.
-    !call create (this%edge_ip, edge_bsize)
-    !call localize_index_array (cedge, this%cell_ip, this%edge_ip, this%cedge, offP_index)
-    !call add_offP_index (this%edge_ip, offP_index)
-    !deallocate(cedge, offP_index)
 
     !! Create the face index partition and localize the global CFACE array,
     !! which identifies off-process faces to augment the partition with.
@@ -292,7 +275,7 @@ contains
     allocate(this%link_set_id(n), this%link_set_mask(this%nlink))
     if (is_IOP) this%link_set_id = mesh%link_block_id
     call broadcast (this%link_set_id)
-    call allocate_collated_array (link_set_mask, mesh%nlink)
+    allocate(link_set_mask(merge(mesh%nlink,0,is_IOP)))
     if (is_IOP) then
       INSIST(n <= bit_size(link_set_mask)-1)
       link_set_mask = ZERO_BITFIELD
@@ -355,11 +338,13 @@ contains
     call gather_boundary (this%node_ip, this%x)
 
     !! Construct the secondary indexing arrays (THIS SUBDOMAIN MESH).
-    !allocate(this%fnode(4,this%nface), this%fedge(3,this%nface), this%enode(2,this%nedge))
-    allocate(this%fnode(4,this%nface))
-    call assemble_face_node_list (this%cface, this%cfpar, this%cnode, this%fnode)
-    !call assemble_face_edge_list (this%cface, this%cedge, this%fedge)
-    !call assemble_edge_node_list (this%cedge, this%cnode, this%enode)
+    select case (mesh%mesh_type)
+    case ('TET')
+      allocate(this%fnode(3,this%nface))
+    case ('HEX')
+      allocate(this%fnode(4,this%nface))
+    end select
+    call get_face_node_array (this%cnode, this%cface, this%cfpar, this%fnode)
     
     !! Tag boundary nodes in the node set mask.
     do j = 1, this%nface
@@ -372,27 +357,20 @@ contains
     !! process but not another.  This isn't possible except *perhaps* for a node on
     !! a internal interface.  In any case, if it were possible, then a gather would
     !! not necessarily fix things, and may actually break things.  NNC, Apr 2014.
-
-    !! Edge lengths (THIS SUBDOMAIN MESH)
-    !allocate(this%length(this%nedge))
-    !do j = 1, this%nedge
-    !  this%length(j) = edge_length(this%x(:,this%enode(:,j)))
-    !end do
-
-    !! Directed face areas and face areas (THIS SUBDOMAIN MESH)
+    
     allocate(this%normal(3,this%nface), this%area(this%nface))
     do j = 1, this%nface
-      this%normal(:,j) = quad_face_normal(this%x(:,this%fnode(:,j)))
+      this%normal(:,j) = face_normal(this%x(:,this%fnode(:,j)))
       this%area(j) = vector_length(this%normal(:,j))
     end do
-
-    !! Cell and corner volumes (THIS SUBDOMAIN MESH)
-    allocate(this%volume(this%ncell), this%corner_volume(8,this%ncell))
+    
+    allocate(this%volume(this%ncell))
     do j = 1, this%ncell
-      call eval_hex_volumes (this%x(:,this%cnode(:,j)), this%volume(j), this%corner_volume(:,j))
+      this%volume(j) = cell_volume(this%x(:,this%cnode(:,j)))
     end do
 
-  end subroutine create_dist_hex_mesh
+  end function new_dist_mesh
+
 
   subroutine partition_cells (np, pmeth, cnhbr, lnhbr, pass)
 
@@ -483,159 +461,6 @@ contains
     deallocate(xadj, adjncy, ewgt)
 
   end subroutine partition_cells
-
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! ORGANIZE_CELLS
- !!
- !! This routine organizes the mesh cells in preparation for creating the
- !! distributed mesh data structure.  This involves partitioning the cells,
- !! and generating a new cell numbering in which the partition becomes a
- !! block partition and the cells within partitions are well-ordered.
- !! It takes the cell node array CNODE and the number of partitions NP, and
- !! returns the new order as a permutation vector PERM (new-to-old) and the
- !! partition block size vector BSIZE.
- !!
- !! N.B.: The CNODE array is permuted into the new ordering, but the caller
- !! must ensure that all other cell-based arrays are permuted using the
- !! returned permutation, and it will need to remap all cell-valued arrays
- !! with its inverse.
- !!
- !! The cell adjacency graph is used as the fuel for the partitioner, which
- !! seeks to minimize the number of (graph) edges joining different partitions;
- !! this is a typical domain decomposition.
- !!
- !! For cells belonging to a common partition, well-ordered simply means an
- !! order that gives good memory locality: adjacent cells--which share faces,
- !! edges, and nodes--should be numbered close together.  We use the heuristic
- !! reverse Cuthill-McKee (RCM) algorithm; there may well be better methods.
- !!
-
-  subroutine organize_cells (np, pmeth, cnode, lnode, bsize, perm)
-
-    use hexahedral_mesh_support, only: cell_neighbor_info
-    use graph_type
-    use permutations
-
-    integer, intent(in)    :: np            ! number of partitions
-    character(len=*), intent(in) :: pmeth   ! partition method
-    integer, intent(inout) :: cnode(:,:)    ! the cell node array
-    integer, intent(inout) :: lnode(:,:)    ! the link node array
-    integer, intent(out)   :: bsize(:)      ! partition block size
-    integer, intent(out)   :: perm(:)       ! permutation
-
-    integer :: i, j, k, ncell, stat, n1, n2
-    integer :: pass(size(cnode,2)), cnhbr(6,size(cnode,2)), rcm_perm(size(perm))
-    integer :: lnhbr(2,size(lnode,2))
-
-    type(graph), allocatable :: g
-    integer, allocatable :: xadj(:), adjncy(:)
-    real, allocatable :: ewgt(:)
-    real, parameter :: LINK_WEIGHT = 2.0
-
-    ASSERT( np > 0 )
-    ASSERT( size(bsize) == np )
-    ASSERT( size(perm) == size(cnode,2) )
-
-    ncell = size(cnode,dim=2)
-
-    !! Generate the cell neighbor array
-    !call assemble_cell_neighbor_list (cnode, cnhbr, stat)
-    !call assemble_link_neighbor_list (cnode, cnhbr, lnode, lnhbr)
-    call cell_neighbor_info (cnode, lnode, cnhbr, lnhbr, stat)
-    INSIST( stat == 0 )
-
-    !! Create the cell adjacency graph
-    allocate(g)
-    call g%init (ncell)
-    do j = 1, size(cnhbr,dim=2)
-      do k = 1, size(cnhbr,dim=1)
-        if (cnhbr(k,j) > j) call g%add_edge (j, cnhbr(k,j))
-      end do
-    end do
-    
-    !! Add edges between linked cells.
-    do j = 1, size(lnhbr,dim=2)
-      call g%add_edge (lnhbr(1,j), lnhbr(2,j))
-    end do
-    
-    call g%get_adjacency (xadj, adjncy)
-    deallocate(g)
-
-    if (np > 1) then  ! Assign cells to partitions.
-    
-      !! Define edge weights.  We weight the link edges heavily to discourage
-      !! them from being cut.  The weights are probably best handled as part
-      !! of forming the graph, but this would require additions to GRAPH_TYPE
-      !! that I'm not prepared to make just yet.
-      
-      allocate(ewgt(size(adjncy)))
-      ewgt = 1  ! the default
-      do j = 1, size(lnhbr,2)
-        n1 = lnhbr(1,j)
-        n2 = lnhbr(2,j)
-        !! Locate the edge (n1,n2) in the graph and set the weight.
-        do i = xadj(n1), xadj(n1+1) - 1
-          if (adjncy(i) == n2) exit
-        end do
-        ASSERT(i /= xadj(n1+1))
-        ewgt(i) = LINK_WEIGHT
-        !! Locate the edge (n2,n1) in the graph and set the weight.
-        do i = xadj(n2), xadj(n2+1) - 1
-          if (adjncy(i) == n1) exit
-        end do
-        ASSERT(i /= xadj(n2+1))
-        ewgt(i) = LINK_WEIGHT
-      end do
-
-      select case (pmeth)
-      case ('CHACO')
-
-        !! Use Chaco to assign the cells to partitions based on the cell
-        !! adjacency graph.  Some Chaco control parameters are hard-wired
-        !! within the wrapper.  In Chaco, graph nodes are numbered starting
-        !! at one (as here), but its C-arrays use 0-based indexing, so we
-        !! need to offset the values in XADJ, which point to ADJNCY, by 1.
-
-        call chaco_f90_wrapper2 (ncell, np, xadj-1, adjncy, ewgt, pass, stat)
-
-        pass = pass + 1   ! we want 1-based numbering of the partitions.
-        ASSERT( minval(pass) == 1 .and. maxval(pass) == np )
-
-      case default ! shouldn't be here
-
-        ASSERT( .false. )
-
-      end select
-
-      call blocked_partition (pass, bsize, perm)
-      deallocate(ewgt)
-
-    else  ! single partition (serial mode)
-
-      bsize = 0
-      bsize(1) = ncell
-      perm = identity_perm(ncell)
-
-    end if
-
-    !! Generate a good ordering of common-partition cells.
-    !! The plan is to use the cell neighbor graph and partition assignments
-    !! to generate the RCM ordering of the cells in each subgraph defined by
-    !! the partitioning.  For now we just leave the order as it is.
-    rcm_perm = identity_perm(ncell)
-
-    deallocate(xadj, adjncy)
-
-    !! Total cell permutation (new-to-old)
-    do j = 1, size(perm)
-      perm(j) = rcm_perm(perm(j))
-    end do
-
-    !! Permute the cell node array accordingly.
-    call reorder (cnode, perm)
-
-  end subroutine organize_cells
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -754,7 +579,7 @@ contains
 
   subroutine partition_links (lnhbr, cell_bsize, bsize, perm, offP_size, offP_index)
   
-    use sets
+    use integer_set_type
   
     integer, intent(in)  :: lnhbr(:,:)
     integer, intent(in)  :: cell_bsize(:)
@@ -765,7 +590,6 @@ contains
     
     integer :: j, n, offset, pass(size(perm))
     type(integer_set) :: xlink(size(bsize))
-    integer, pointer :: array(:)
     
     ASSERT(size(bsize) == size(cell_bsize))
     ASSERT(size(perm) == size(lnhbr,2))
@@ -776,7 +600,7 @@ contains
     do j = 1, size(lnhbr,dim=2)
       pass(j) = cell_part(lnhbr(1,j))
       n = cell_part(lnhbr(2,j))
-      if (n /= pass(j)) call add (xlink(n), j)
+      if (n /= pass(j)) call xlink(n)%add (j)
     end do
     
     !! Block partition permutation (new-to-old).
@@ -784,21 +608,15 @@ contains
 
     !! Copy the off-process link sets into packed array storage.
     do n = 1, size(xlink)
-      offP_size(n) = size(xlink(n))
+      offP_size(n) = xlink(n)%size()
     end do
     
     n = sum(offP_size)
     allocate(offP_index(n))
     offset = 0
     do n = 1, size(xlink)
-      array => to_array(xlink(n))
-      offP_index(offset+1:offset+offP_size(n)) = array
+      call xlink(n)%copy_to_array (offP_index(offset+1:))
       offset = offset + offP_size(n)
-      deallocate(array)
-    end do
-    
-    do n = 1, size(xlink)
-      call clear (xlink(n))
     end do
 
   contains
@@ -987,7 +805,7 @@ contains
 
   subroutine overlapping_cells (facet, cell_bsize, bsize, xcells)
 
-    use sets
+    use integer_set_type
 
     integer, intent(in) :: facet(:,:)     ! cell facets
     integer, intent(in) :: cell_bsize(:)  ! cell partition block sizes
@@ -1008,7 +826,7 @@ contains
       do j = offset+1, offset+cell_bsize(n) ! loop over cells in partition N.
         do k = 1, size(facet,1) ! loop over the facets of cell J.
           m = fpart(facet(k,j))
-          if (m /= n) call add (xcells(m), j)
+          if (m /= n) call xcells(m)%add (j)
         end do
       end do
       offset = offset + cell_bsize(n)
@@ -1030,7 +848,7 @@ contains
 
   subroutine overlapping_cells2 (lnhbr, cell_bsize, xcells)
 
-    use sets
+    use integer_set_type
 
     integer, intent(in) :: lnhbr(:,:)     ! link cell neighbors
     integer, intent(in) :: cell_bsize(:)  ! cell partition block sizes
@@ -1047,8 +865,8 @@ contains
       p1 = cell_part(lnhbr(1,j))
       p2 = cell_part(lnhbr(2,j))
       if (p1 /= p2) then
-        call add (xcells(p1), lnhbr(2,j))
-        call add (xcells(p2), lnhbr(1,j))
+        call xcells(p1)%add (lnhbr(2,j))
+        call xcells(p2)%add (lnhbr(1,j))
       end if
     end do
 
@@ -1066,4 +884,4 @@ contains
 
   end subroutine overlapping_cells2
 
-end module distributed_hex_mesh
+end module dist_mesh_factory

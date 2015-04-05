@@ -77,7 +77,7 @@ module mesh_interop
 
   use kinds, only: r8
   use parallel_permutations
-  use distributed_mesh, only: dist_mesh
+  use dist_mesh_type
   use material_mesh_function
   use truchas_logging_services, only: TLS_info
   implicit none

@@ -84,7 +84,7 @@ module diff_precon_type
   use pcsr_matrix_type
   use pcsr_precon_class
   use index_partitioning
-  use distributed_mesh
+  use dist_mesh_type
   use parameter_list_type
   implicit none
   private

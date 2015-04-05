@@ -6,7 +6,7 @@ program example
   use pgslib_module
   use parallel_util_module, only: parallel_init
   use parallel_communication
-  use distributed_mesh
+  use dist_mesh_type
   use mesh_broker
   use ER_driver
   use physical_constants, only: read_physical_constants

@@ -4,7 +4,7 @@ module FHT_precon_type
 
   use kinds
   use FHT_model_type
-  use distributed_mesh
+  use dist_mesh_type
   use index_partitioning
   use diffusion_matrix
   use diff_precon_type

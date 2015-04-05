@@ -13,7 +13,7 @@
 module cell_grad_type
 
   use kinds, only: r8
-  use distributed_mesh
+  use dist_mesh_type
   use pcsr_matrix_type
   use mfd_disc_type
   use hypre_hybrid_type
@@ -214,7 +214,7 @@ contains
     endif
     
     call gather_boundary (this%mesh%face_ip, uface)
-    call mfd_disc_compute_cell_grad (this%disc, uface, this%cell_mask(:size(gradu,2)), gradu)
+    call this%disc%compute_cell_grad (uface, this%cell_mask(:size(gradu,2)), gradu)
 
   end subroutine compute
     
