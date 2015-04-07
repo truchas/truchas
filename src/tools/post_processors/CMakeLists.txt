@@ -34,6 +34,9 @@ fortran_preprocess_files(WRITE_RESTART_FILES
 			 PROCESS_TARGET ProcessWriteRestartFiles)
 set(fc_flags -I${NETCDF_INCLUDE_DIR})
 list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
+if(Fortran_COMPILER_IS_INTEL)
+  list(APPEND fc_flags "-assume realloc_lhs")
+endif()
 build_whitespace_string(WRITE_RESTART_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${WRITE_RESTART_FILES} PROPERTIES
                             COMPILE_FLAGS ${WRITE_RESTART_COMPILE_FLAGS})

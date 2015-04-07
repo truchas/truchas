@@ -6,6 +6,16 @@ set(CMAKE_MODULE_PATH ${TruchasTest_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 include(AddPytruchasTest)
 
+add_pytruchas_test(1d-ss-hc-xlinear-hex 1d-ss-hc-xlinear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(1d-ss-hc-xlinear-tet 1d-ss-hc-xlinear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(1d-ss-hc-ylinear-hex 1d-ss-hc-ylinear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(1d-ss-hc-ylinear-tet 1d-ss-hc-ylinear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(1d-ss-hc-zlinear-hex 1d-ss-hc-zlinear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(1d-ss-hc-zlinear-tet 1d-ss-hc-zlinear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
+
+add_pytruchas_test(3d-ss-hc-linear-hex 3d-ss-hc-linear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(3d-ss-hc-linear-tet 3d-ss-hc-linear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
+
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py 
                    PROCESSORS 4)
 
