@@ -1,155 +1,222 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 #
 #
 #
 #
 #  Usage:
 #
-#    xdmf-parser.py [options] DANU_FILE
+#    xdmf-parser.py DANU_FILE.h5
 #
-#    Creates light data model described in file DANU_FILE.xml
-#     of the mesh associated data in DATA_FILE
+#    Creates light data model described in file DANU_FILE.xmf of the mesh
+#    associated data in DANU_FILE.h5.
 #
 #
-# --- Standard Python Modules
-import sys
+
+
 import os
+import sys
+from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.dom import minidom
 
-import numpy
-
-from xml.etree import ElementTree
+from numpy import array
 
 # --- Attempt to import Danu. Exit gracefully
 try:
-  import Danu
-except ImportError:
-  danu_py_install='@Danu_Python_INSTALL_DIR@'
-  sys.path.append(danu_py_install)
-  try:
     import Danu
-  except ImportError:
-    print "Attempted to add %s to Python to import Danu. Failed" % (danu_py_install)
-    raise
+except ImportError:
+    danu_py_install='@Danu_Python_INSTALL_DIR@'
+    sys.path.append(danu_py_install)
+    try:
+        import Danu
+    except ImportError:
+        print "Attempted to add %s to Python to import Danu. Failed" % (danu_py_install)
+        raise
 
 
-import Xdmf
+def prettify(elem):
+    """Return a pretty-printed XML string for the Element.
+    """
+    rough_string = '<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>' \
+            + tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="  ")
 
-def setSequenceFilename(id,sim_name,h5file_name):
-  base_name=os.path.splitext(h5file_name)[0]
-  f='%s-%s-%04d.xmf'%(base_name,sim_name,id)
-  return f
+def dtype_extract(d):
+    dstr = str(d)
+    conversion_table = {
+            "int8": ("Int", "1"),
+            "int16": ("Int", "2"),
+            "int32": ("Int", "4"),
+            "int64": ("Int", "8"),
+            "float32": ("Float", "4"),
+            "float64": ("Float", "8"),
+        }
+    if dstr in conversion_table:
+        return conversion_table[dstr]
+    else:
+        raise ValueError("dtype '%s' is not implemented yet" % dstr)
 
-def setCollectionFilename(sim_name,h5file_name):
-  base_name=os.path.splitext(h5file_name)[0]
-  f='%s-%s.Collection.xmf'%(base_name,sim_name)
-  return f
+def main(filename, filename_out, filename_mesh):
+    xdmf_top = Element("Xdmf", {
+        "Version": "2.0",
+        "xmlns:xi": "http://www.w3.org/2001/XInclude",
+    })
+    xdmf_domain = SubElement(xdmf_top, "Domain")
+    xdmf_grid_parent = SubElement(xdmf_domain, "Grid", {
+        "GridType": "Collection",
+        "CollectionType": "Temporal",
+    })
 
-def main(filename):
+    f = Danu.Output(filename)
+    sim = f.get_simulation("MAIN")
 
-  # Open the file for reading
-  f=Danu.Output(filename)
+    # Read the mesh
+    mesh = sim.open_mesh_link()
+    nodes = array(mesh.coordinates()).T
+    elements = mesh.read_connectivity()
+    #elements_offset = elements.attrs["Offset"][0]
+    elements_offset = 1 # FIXME: Obtain this from Danu
+    #fmesh = File(filename_mesh, "w")
+    #fmesh["/Simulations/MAIN/Mesh/Element Connectivity"] = elements[:]
+    #fmesh.close()
 
-  # Open simulation (MAIN ONLY for now)
-  simulation_group_name='/Simulations'+'/MAIN'
-  sim_name='MAIN'
-  sim = f.get_simulation(sim_name)
+    # Series
+    for n in range(1, sim.sequence_count()+1):
+        xdmf_grid = SubElement(xdmf_grid_parent, "Grid", {
+            "GridType": "Uniform",
+        })
 
-  # Xdmf model
-  model = Xdmf.XdmfModel()
-  grid=model.add_grid('MESH')
-  grid.set_type('Uniform')
+        # Nodes
+        xdmf_geometry = SubElement(xdmf_grid, "Geometry", {"GeometryType": "XYZ"})
+        data_type, precision = dtype_extract(nodes.dtype)
+        xdmf_dataitem = SubElement(xdmf_geometry, "DataItem", {
+            "DataType": data_type,
+            "Precision": precision,
+            "Dimensions": "%d %d" % nodes.shape,
+            "Format": "HDF",
+            "Name": "Coordinates",
+        })
+        xdmf_dataitem.text="%s:/Simulations/MAIN/Mesh/Nodal Coordinates" % filename
 
-  # Open the mesh
-  mesh_group_name=simulation_group_name+ '/Mesh'
-  mesh = sim.open_mesh_link()
-  dim = mesh.dim
-  nnodes = mesh.nnodes()
-  nelem  = mesh.nelem()
-  elem_type = mesh.elem_type
-  elem_order = mesh.elem_order()
-  offset = mesh.connectivity_offset()
+        # Elements
+        xdmf_topology = SubElement(xdmf_grid, "Topology", {
+            "BaseOffset": str(elements_offset),
+            "NumberOfElements": str(elements.shape[0]),
+            "TopologyType": "Hexahedron",
+        })
+        data_type, precision = dtype_extract(elements.dtype)
+        xdmf_dataitem = SubElement(xdmf_topology, "DataItem", {
+            "DataType": data_type,
+            "Precision": precision,
+            "Dimensions": "%d %d" % elements.shape,
+            "Format": "HDF",
+            "Name": "Connectivity",
+        })
+        xdmf_dataitem.text="%s:/Simulations/MAIN/Mesh/Element Connectivity" % filename
 
 
-  # Coordinates
-  coordinate_dataset_name=mesh_group_name+'/Nodal Coordinates'
-  geo = Xdmf.XdmfGeometry('geo')
-  geo.set_type('XYZ')
-  grid.append(geo)
-  data = Xdmf.XdmfDataItem('Coordinates')
-  data.set_num_type('Float')
-  data.set_precision(8)
-  data.set_format('HDF')
-  data.set_dimensions([nnodes,dim])
-  loc=Xdmf.munge_hdf5_dataset(filename,coordinate_dataset_name)
-  data.set_text(loc)
-  geo.append(data)
+        # Time step
+        seq_name = sim.get_sequence_name(n)
+        time_step = sim.get_sequence(seq_name)
+        xdmf_time = SubElement(xdmf_grid, "Time", {
+            "TimeType": "Single",
+            "Value": str(time_step.time),
+        })
 
-  # Connectivity
-  connect_dataset_name=mesh_group_name+'/Element Connectivity'
-  type=Xdmf.xdmf_mesh_type(elem_type)
-  top=Xdmf.XdmfTopology('topo',type)
-  top.set_offset(offset)
-  top.set_nelem(nelem)
-  grid.append(top)
-  data = Xdmf.XdmfDataItem('Connectivity')
-  data.set_num_type('Int')
-  data.set_precision(4)
-  data.set_format('HDF')
-  data.set_dimensions([nelem,elem_order])
-  loc=Xdmf.munge_hdf5_dataset(filename,connect_dataset_name)
-  data.set_text(loc)
-  top.append(data)
+        # Loop over all fields in a given time step
+        for field_name in time_step.data_list():
+            try:
+                attrs = time_step.data_attributes(field_name)
+            except:
+                attrs = {}
+            dims = time_step.get_data_dimensions(field_name)
+            if len(dims) == 1:
+                type_str = "Scalar"
+                dimensions_str = "%d" % dims[0]
+            elif len(dims) == 2:
+                if dims[1] == 3 and field_name == "Z_VC":
+                    # ParaView shows "Vector" type as having components (X, Y,
+                    # Z) and can also show magnitude. We only want to use this
+                    # for velocity.
+                    type_str = "Vector"
+                else:
+                    type_str = "Matrix"
+                dimensions_str = "%d %d" % tuple(dims)
+            else:
+                raise ValueError("Fields with more than 2 dimensions are not supported")
+            # If the HDF5 field name is in this dictionary, the new name will be
+            # used instead (e.g. in Paraview). Otherwise the name will remain
+            # unchanged.
+            field_names = {
+                    "Z_VC": "Velocity",
+                }
 
-  # Loop through the sequences
-  time_files=[]
-  series_group_name=simulation_group_name+'/Series Data'
-  id=1
-  while id <= sim.sequence_count():
-    model_file=setSequenceFilename(id,sim_name,filename)
-    print 'Creating file: %s'%(model_file)
-    fh=open(model_file,'w')
-    seq_name=sim.get_sequence_name(id)
-    seq=sim.get_sequence(seq_name)
-    grid.set_time(seq.time)
-    # Now loop through each dataset
-    for dname in seq.data_list():
-      print '\tAdding %s to %s'%(dname,model_file)
-      try:
-        d=Xdmf.XdmfDanuDataset(seq,dname)
-      except:
-        msg='\t\tFailed to read data set %s will skip'%(dname)
-        print msg
-      else:
-        data_loc='%s/Series %d/%s'%(series_group_name,id,dname)
-        d.set_data_location(Xdmf.munge_hdf5_dataset(filename,data_loc))
-        grid.append(d)
-    model.write(fh)
-    fh.close()
-    time_files.append(model_file)
-    print
-    id=id+1
+            if type_str == "Matrix":
+                # XDMF type 'Matrix' should work for a matrix (p, m), but for
+                # some reason Paraview cannot show the m components, so we
+                # instead save 'm' scalar arrays of dimension 'p'.
+                for m in range(dims[1]):
+                    output_field_name = attrs.get("FIELDNAME%d" % (m+1))
+                    if not output_field_name:
+                        output_field_name = field_names.get(field_name,
+                                field_name) + " (Field %d)" % (m+1)
+                    xdmf_attribute = SubElement(xdmf_grid, "Attribute", {
+                        "Center": "Cell",
+                        "Name": output_field_name,
+                        "Type": "Scalar",
+                    })
+                    hyper_slab = SubElement(xdmf_attribute, "DataItem", {
+                        "ItemType": "HyperSlab",
+                        "Dimensions": "%d 1" % dims[0],
+                        "Type": "HyperSlab",
+                        "Name": "Slab",
+                    })
 
-  # Now loop through the time step files to create the movie file
-  movie_file=setCollectionFilename(sim_name,filename)
-  mf=open(movie_file,'w')
-  movie=Xdmf.XdmfTemporalCollection()
-  xpath='/Xdmf/Domain/Grid'
-  for f in time_files:
-    print 'Adding %s to the movie file:%s'%(f,movie_file)
-    movie.add_file_ref(f,xpath)
-  movie.write(mf)
-  mf.close()
+                    xdmf_dataitem = SubElement(hyper_slab, "DataItem", {
+                        "Dimensions": "3 2",
+                        "Format": "XML",
+                    })
+                    xdmf_dataitem.text="0 %d\n1 1\n%d 1" % (m, dims[0])
 
+                    field_dtype = "float64" # FIXME: Obtain this from Danu
+                    data_type, precision = dtype_extract(field_dtype)
+                    xdmf_dataitem = SubElement(hyper_slab, "DataItem", {
+                        "DataType": data_type,
+                        "Precision": precision,
+                        "Dimensions": dimensions_str,
+                        "Format": "HDF",
+                        "Name": field_name,
+                    })
+                    xdmf_dataitem.text="%s:/Simulations/MAIN/Series Data/Series %d/%s" \
+                            % (filename, n, field_name)
+            else:
+                output_field_name = attrs.get("FIELDNAME")
+                if not output_field_name:
+                    output_field_name = field_names.get(field_name, field_name)
+                xdmf_attribute = SubElement(xdmf_grid, "Attribute", {
+                    "Center": "Cell",
+                    "Name": output_field_name,
+                    "Type": type_str,
+                })
+                field_dtype = "float64" # FIXME: Obtain this from Danu
+                data_type, precision = dtype_extract(field_dtype)
+                xdmf_dataitem = SubElement(xdmf_attribute, "DataItem", {
+                    "DataType": data_type,
+                    "Precision": precision,
+                    "Dimensions": dimensions_str,
+                    "Format": "HDF",
+                    "Name": field_name,
+                })
+                xdmf_dataitem.text="%s:/Simulations/MAIN/Series Data/Series %d/%s" \
+                        % (filename, n, field_name)
+
+    open(filename_out, "w").write(prettify(xdmf_top))
 
 if __name__ == '__main__':
-  try:
-    main(sys.argv[1])
-  except IndexError:
-    print 'Usage: <parser> HDF5 file'
-    raise
-
-
-
-
-
-
+    if len(sys.argv) != 2:
+        print 'Usage: xdmf-parser.py DANU_FILE.h5'
+        sys.exit(1)
+    filename = sys.argv[1]
+    filename_out = os.path.splitext(filename)[0] + ".xmf"
+    filename_mesh = os.path.splitext(filename)[0] + "_mesh" + ".h5"
+    main(filename, filename_out, filename_mesh)
