@@ -8,7 +8,7 @@
 #
 # SWIG Requirements
 #
-#  o Version > 2.0
+#  o 2.0 < Version < 3.0
 
 # Boolean evaluator
 include(BoolEval)
@@ -25,7 +25,8 @@ if (SWIG_FOUND)
   message(STATUS "Verify SWIG package")
 
   # Version verification
-  bool_eval(SWIG_VERIFIED "${SWIG_VERSION}" VERSION_GREATER "2.0")
+  bool_eval(SWIG_VERIFIED "${SWIG_VERSION}" VERSION_GREATER "2.0"
+                      AND "${SWIG_VERSION}" VERSION_LESS "3.0")
 
 endif(SWIG_FOUND)
 

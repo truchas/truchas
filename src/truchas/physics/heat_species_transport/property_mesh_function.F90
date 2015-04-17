@@ -123,7 +123,7 @@ contains
   end subroutine pmf_create
   
   subroutine init_cprop (this)
-    use distributed_mesh, only: dist_mesh
+    use dist_mesh_type
     type(prop_mf), intent(inout) :: this
     integer :: i, j, n
     type(dist_mesh), pointer :: mesh

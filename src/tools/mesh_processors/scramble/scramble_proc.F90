@@ -59,6 +59,34 @@ contains
                    2,1,4,3,6,5,  3,5,1,6,2,4,  6,4,5,2,3,1, &
                    3,2,1,4,6,5,  6,3,5,1,2,4,  2,6,4,5,3,1/
 
+  !! Equivalent relabelings of the cell vertices (new-to-old).
+  integer, target, save :: WEDGE6_VPERM(6,0:5)
+  data WEDGE6_VPERM /1,2,3,4,5,6,  2,3,1,5,6,4,  3,1,2,6,4,5, &
+                     4,6,5,1,3,2,  6,5,4,3,2,1,  5,4,6,2,1,3/
+
+  !! Corresponding relabelings of the local face numbers (old-to-new).
+  integer, target, save :: WEDGE6_FPERM(5,0:5)
+  data WEDGE6_FPERM /1,2,3,4,5,  3,1,2,4,5,  2,3,1,4,5, &
+                     3,2,1,5,4,  2,1,3,5,4,  1,3,2,5,4/
+
+  !! Equivalent relabelings of the cell vertices (new-to-old).
+  integer, target, save :: PYRAMID5_VPERM(5,0:3)
+  data PYRAMID5_VPERM /1,2,3,4,5,  2,3,4,1,5,  3,4,1,2,5,  4,1,2,3,5/
+
+  !! Corresponding relabelings of the local face numbers (old-to-new).
+  integer, target, save :: PYRAMID5_FPERM(5,0:3)
+  data PYRAMID5_FPERM /1,2,3,4,5,  4,1,2,3,5,  3,4,1,2,5,  2,3,4,1,5/
+
+  !! Equivalent relabelings of the cell vertices (new-to-old).
+  integer, target, save :: TET4_VPERM(4,0:11)
+  data TET4_VPERM /1,2,3,4,  1,3,4,2,  1,4,2,3,  2,1,4,3,  2,4,3,1,  2,3,1,4, &
+                   3,1,2,4,  3,2,4,1,  3,4,1,2,  4,1,3,2,  4,3,2,1,  4,2,1,3/
+
+  !! Corresponding relabelings of the local face numbers (old-to-new).
+  integer, target, save :: TET4_FPERM(4,0:11)
+  data TET4_FPERM /1,2,3,4,  3,2,4,1,  4,2,1,3,  4,3,2,1,  1,4,2,3,  3,1,2,4, &
+                   2,3,1,4,  2,4,3,1,  2,1,4,3,  1,3,4,2,  3,4,1,2,  4,1,3,2/
+
   !! Set the random number seed.
   call random_seed (size=n)
   allocate(put(n))
@@ -70,11 +98,27 @@ contains
   do n = 1, mesh%num_eblk
 
     !! Setup permutation data for this block's element type.
-    select case (mesh%eblk(n)%elem_type)
-    case ('HEX', 'HEX8')
+    select case (mesh%eblk(n)%elem_type(1:3))
+    case ('HEX')  ! 8-node hex elements
+      INSIST(size(mesh%eblk(n)%connect,dim=1) == 8)
       nperm = size(HEX8_VPERM,dim=2)
       vperm => HEX8_VPERM
       fperm => HEX8_FPERM
+    case ('WED')  ! 6-node wedge/prism elements
+      INSIST(size(mesh%eblk(n)%connect,dim=1) == 6)
+      nperm = size(WEDGE6_VPERM,dim=2)
+      vperm => WEDGE6_VPERM
+      fperm => WEDGE6_FPERM
+    case ('PYR')  ! 5-node pyramid elements
+      INSIST(size(mesh%eblk(n)%connect,dim=1) == 5)
+      nperm = size(PYRAMID5_VPERM,dim=2)
+      vperm => PYRAMID5_VPERM
+      fperm => PYRAMID5_FPERM
+    case ('TET')  ! 4-node tet elements
+      INSIST(size(mesh%eblk(n)%connect,dim=1) == 4)
+      nperm = size(TET4_VPERM,dim=2)
+      vperm => TET4_VPERM
+      fperm => TET4_FPERM
     case default
       !! Scrambling other element types not implemented.
       nperm = 0

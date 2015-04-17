@@ -15,7 +15,6 @@ Module GRID_MAPPING_MODULE
   !      read_int_volumes
   !      right_int_volumes
   !      destroy_grid_int_vols
-  !      destroy_gm_mesh
   !
   !      type gm_mesh
   !      type grid_int_vols
@@ -24,13 +23,13 @@ Module GRID_MAPPING_MODULE
   !
   !=======================================================================
   USE hpsort, only: hpsortimp,hpsortim
-  USE gm_mesh_type, only : gm_mesh, destroy_gm_mesh
+  USE gm_mesh_type
   USE grid_mapping_utils, only: write_msg
   implicit none
 
   PRIVATE
 
-  PUBLIC :: gm_mesh, destroy_gm_mesh
+  PUBLIC :: gm_mesh
 
   PUBLIC :: compute_int_volumes
   PUBLIC :: map_cell_field

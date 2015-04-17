@@ -3,7 +3,7 @@
 module HTSD_model_type
 
   use kinds
-  use distributed_mesh
+  use dist_mesh_type
   use mfd_disc_type
   use data_layout_type
   use property_mesh_function
@@ -278,7 +278,7 @@ contains
       !! Compute the generic heat equation residual.
       call pmf_eval (this%ht%conductivity, state, value)
       if (associated(this%void_cell)) where (this%void_cell) value = 0.0_r8
-      call mfd_disc_apply_diff (this%disc, value, Tcell, Tface, Fcell, Fface)
+      call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
       call smf_eval (this%ht%source, t, value)
       Fcell = Fcell + this%mesh%volume*(Hdot - value)
 
@@ -413,7 +413,7 @@ contains
       !! Diffusion operator function value.
       call pmf_eval (this%sd(index)%diffusivity, state, D)
       if (associated(this%void_cell)) where (this%void_cell) D = 0.0_r8
-      call mfd_disc_apply_diff (this%disc, D, Ccell, Cface, Fcell, Fface)
+      call this%disc%apply_diff (D, Ccell, Cface, Fcell, Fface)
 
       !! Time derivative and source contribution.
       call HTSD_model_get_cell_conc_copy (this, index, udot, Cdot)
@@ -453,7 +453,7 @@ contains
         Tface(this%ht%bc_dir%faces) = this%ht%bc_dir%values(1,:)
         call pmf_eval (this%sd(index)%soret, state, value)
         value = D*value
-        call mfd_disc_apply_diff (this%disc, value, Tcell, Tface, Fcell, Fface)
+        call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
         call bd_data_eval (this%sd(index)%bc_dir, t)
         Fface(this%sd(index)%bc_dir%faces) = 0.0_r8
         !! Fcell and Fface should already be 0 at all void cells and faces as required.

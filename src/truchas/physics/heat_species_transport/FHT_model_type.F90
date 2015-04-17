@@ -4,7 +4,7 @@ module FHT_model_type
 
   use kinds
   use mfd_disc_type
-  use distributed_mesh
+  use dist_mesh_type
   use data_layout_type
   use property_mesh_function
   use source_mesh_function
@@ -183,7 +183,7 @@ contains
     !! Compute the generic heat equation residual.
     call pmf_eval (this%conductivity, state, value)
     where (this%void_cell) value = 0.0_r8
-    call mfd_disc_apply_diff (this%disc, value, Tcell, Tface, Fcell, Fface)
+    call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
 
     !! Add the source and time deriviative contribution.
     !! The result is complete on on-process cells only, but the

@@ -98,7 +98,7 @@ module source_mesh_function
 
   use kinds
   use scalar_func_containers
-  use distributed_mesh, only: dist_mesh
+  use dist_mesh_type
   implicit none
   private
 

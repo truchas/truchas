@@ -89,7 +89,7 @@ program test_linear_consistency
   use parameter_list_type
   use mfd_disc_type
   use cell_grad_type
-  use distributed_mesh
+  use dist_mesh_type
   use test_cell_grad_type_tools
   implicit none
 
@@ -146,7 +146,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call mfd_disc_init (disc, mesh)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -207,7 +207,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call mfd_disc_init (disc, mesh)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -251,7 +251,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call mfd_disc_init (disc, mesh)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -296,7 +296,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call mfd_disc_init (disc, mesh)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = (mesh%cblock == 1)
@@ -410,7 +410,7 @@ contains
   end subroutine centroid
 
   subroutine write_gmv_output (mesh, ucell, gradu, error, filename)
-    use distributed_mesh_gmv
+    use dist_mesh_gmv
     type(dist_mesh), intent(in) :: mesh
     real(r8), intent(in) :: ucell(:), gradu(:,:), error(:,:)
     character(*), intent(in) :: filename

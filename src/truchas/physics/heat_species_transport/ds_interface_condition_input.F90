@@ -94,7 +94,7 @@ module ds_interface_condition_input
 
   use kinds
   use parallel_communication
-  use distributed_mesh
+  use dist_mesh_type
   use interface_data
   use scalar_func_containers
   use truchas_logging_services

@@ -386,7 +386,7 @@ contains
     call generate_mesh_mappings (this%mesh)
     
     allocate(this%disc)
-    call mfd_disc_init (this%disc, this%mesh)
+    call this%disc%init (this%mesh)
     
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg)
@@ -488,10 +488,7 @@ contains
       call mmf_destroy (this%mmf)
       deallocate(this%mmf)
     end if
-    if (associated(this%disc)) then
-      call mfd_disc_delete (this%disc)
-      deallocate(this%disc)
-    end if
+    if (associated(this%disc)) deallocate(this%disc)
     call delete_mesh_mappings
     this%mesh => null()
   end subroutine ds_delete

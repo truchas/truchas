@@ -11,7 +11,7 @@
 module MaxwellBoundaryData
 
   use kinds, only: rk => r8
-  use distributed_mesh
+  use dist_mesh_type
   implicit none
   private
   

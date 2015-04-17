@@ -28,7 +28,7 @@ module FHT_solver_type
   use property_mesh_function
   use solution_history
   use nka_type
-  use distributed_mesh, only: dist_mesh
+  use dist_mesh_type
   use parallel_communication
   use index_partitioning
   implicit none
@@ -434,7 +434,7 @@ contains
   
 #ifdef GMV_DIAGNOSTICS
   subroutine gmv_write_state (this)
-    use distributed_mesh_gmv
+    use dist_mesh_gmv
     type(FHT_solver), intent(in) :: this
     character(63) :: filename
     real(r8), pointer :: Tcell(:)
@@ -464,7 +464,7 @@ contains
     call gmv_close ()
   end subroutine gmv_write_state
   subroutine gmv_write_field (this, array, name)
-    use distributed_mesh_gmv
+    use dist_mesh_gmv
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
     character(*), intent(in) :: name
@@ -478,7 +478,7 @@ contains
     call gmv_close ()
   end subroutine gmv_write_field
   subroutine gmv_write_face_field (this, array, name)
-    use distributed_mesh_gmv
+    use dist_mesh_gmv
     use fgmvwrite
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
@@ -656,7 +656,7 @@ contains
   subroutine backward_euler_solve (this, t, dt, Hlast, u, stat)
   
 #ifdef GMV_DIAGNOSTICS
-    use distributed_mesh_gmv
+    use dist_mesh_gmv
 #endif
   
     type(FHT_solver), intent(inout) :: this
@@ -813,7 +813,7 @@ contains
     INSIST(size(tgrad,2) == this%model%mesh%ncell_onP)
     call FHT_model_get_face_temp_copy (this%model, this%u, tface)
     call gather_boundary (this%model%mesh%face_ip, tface)
-    call mfd_disc_compute_cell_grad (this%model%disc, tface, tgrad)
+    call this%model%disc%compute_cell_grad (tface, tgrad)
   end subroutine FHT_solver_get_cell_temp_grad
 
 end module FHT_solver_type

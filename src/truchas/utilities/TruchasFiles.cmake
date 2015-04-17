@@ -14,13 +14,14 @@ set(UTIL_FILES
          utilities/file_utility.F90
          utilities/graph_type.F90
          utilities/input_utilities.F90
+         utilities/integer_set_type.F90
          utilities/kinds.F90
          utilities/linear_module.F90
          utilities/lnorm_module.F90
          utilities/lu_solve_module.F90
+         utilities/old_mesh_gmv.F90
          utilities/permutations.F90
          utilities/process_info_module.F90
-         utilities/sets.F90
          utilities/sort_module.F90
          utilities/string_utilities.F90
          utilities/tabular_utilities.F90

@@ -53,10 +53,11 @@ module cell_topology
   implicit none
   private
 
-  public :: tet_face_nodes
-  public :: hex_face_nodes, hex_edge_nodes
+  public :: get_tet_face_nodes, tet_face_nodes
+  public :: get_hex_face_nodes, hex_face_nodes, hex_edge_nodes
   public :: parity
   public :: normalize_facet, reverse_facet
+  public :: link_face_nodes
 
   integer, target, public :: TETRA4_XFACE(5), TETRA4_FACES(12), TETRA4_FSIZE(4), TETRA4_FACE_SIG(4)
   data TETRA4_XFACE/1,4,7,10,13/
@@ -81,8 +82,51 @@ module cell_topology
   
   integer, target, public :: TETRA4_FACE_VERT(3,4)
   data TETRA4_FACE_VERT/2,3,4, 1,4,3, 1,2,4, 1,3,2/
+  
+  integer, target, public :: TETRA4_VERT_FACE(3,4)
+  data TETRA4_VERT_FACE/2,3,4, 1,3,4, 1,2,4, 1,2,3/
+  
+  integer :: TRI_LINK_FACE_VERT(3,2)
+  data TRI_LINK_FACE_VERT/1,2,3, 4,6,5/
+  
+  integer :: QUAD_LINK_FACE_VERT(4,2)
+  data QUAD_LINK_FACE_VERT/1,2,3,4, 5,8,7,6/
 
 contains
+
+  subroutine get_tet_face_nodes (fnodes, cnodes, k, normalize, reverse)
+
+    integer, intent(out) :: fnodes(:)
+    integer, intent(in) :: cnodes(:)
+    integer, intent(in) :: k
+    logical, intent(in), optional :: normalize
+    logical, intent(in), optional :: reverse
+
+    integer :: n
+
+    ASSERT(size(fnodes) == 3)
+    ASSERT(size(cnodes) == 4)
+    ASSERT(k >= 1 .and. k <= 4)
+
+    fnodes = cnodes(TETRA4_FACES(TETRA4_XFACE(k):TETRA4_XFACE(k+1)-1))
+
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) then
+        fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
+      end if
+    end if
+
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) then
+        n = fnodes(2)
+        fnodes(2) = fnodes(3)
+        fnodes(3) = n
+      end if
+    end if
+
+  end subroutine get_tet_face_nodes
 
   function tet_face_nodes (cnodes, k, normalize, reverse) result (list)
 
@@ -116,6 +160,41 @@ contains
     end if
 
   end function tet_face_nodes
+
+
+  subroutine get_hex_face_nodes (fnodes, cnodes, k, normalize, reverse)
+
+    integer, intent(out) :: fnodes(:)
+    integer, intent(in) :: cnodes(:)
+    integer, intent(in) :: k
+    logical, intent(in), optional :: normalize
+    logical, intent(in), optional :: reverse
+
+    integer :: n
+
+    ASSERT(size(fnodes) == 4)
+    ASSERT(size(cnodes) == 8)
+    ASSERT(k >= 1 .and. k <= 6)
+
+    fnodes = cnodes(HEX8_FACES(HEX8_XFACE(k):HEX8_XFACE(k+1)-1))
+
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) then
+        fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
+      end if
+    end if
+
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) then
+        n = fnodes(2)
+        fnodes(2) = fnodes(4)
+        fnodes(4) = n
+      end if
+    end if
+
+  end subroutine get_hex_face_nodes
 
 
   function hex_face_nodes (cnodes, k, normalize, reverse) result (list)
@@ -176,6 +255,44 @@ contains
     end if
 
   end function hex_edge_nodes
+
+  !! This function return a pointer to the list of nodes defining the specified
+  !! oriented link face K in {1,2}. The faces are oriented outward with respect
+  !! to the cells they belongs to; if we regard the link nodes as defining a
+  !! wedge or hex element, the faces are inward oriented with respect to it.
+  !! The pointer target is allocated by the function and the caller is
+  !! responsible for deallocating it when it is no longer needed.
+
+  pure function link_face_nodes (lnodes, k, normalize, reverse) result (fnodes)
+
+    integer, intent(in) :: lnodes(:), k
+    logical, intent(in), optional :: normalize, reverse
+    integer, pointer :: fnodes(:)
+
+    fnodes => null()
+    if (k < 1 .or. k > 2) return
+    select case (size(lnodes))
+    case (6) ! triangular link faces
+      allocate(fnodes(3))
+      fnodes = lnodes(TRI_LINK_FACE_VERT(:,k))
+    case (8) ! quadrilateral link faces
+      allocate(fnodes(4))
+      fnodes = lnodes(QUAD_LINK_FACE_VERT(:,k))
+    end select
+    if (.not.associated(fnodes)) return
+    
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) call normalize_facet (fnodes)
+    end if
+    
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) call reverse_facet (fnodes)
+    end if
+
+  end function link_face_nodes
+
 
   pure integer function parity (f, g)
   

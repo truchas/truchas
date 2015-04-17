@@ -5,7 +5,7 @@ module HTSD_precon_type
   use kinds, only: r8
   use HTSD_model_type
   use ER_driver
-  use distributed_mesh
+  use dist_mesh_type
   use diff_precon_type
   use diffusion_matrix
   use index_partitioning
@@ -483,7 +483,7 @@ contains
         call pmf_eval (this%model%sd(index)%soret, state, value)
         call pmf_eval (this%model%sd(index)%diffusivity, state, Fcell) ! Fcell used as temporary
         value = value * Fcell
-        call mfd_disc_apply_diff (this%model%disc, value, FTcell, FTface, Fcell, Fface)
+        call this%model%disc%apply_diff (value, FTcell, FTface, Fcell, Fface)
         Fface(this%model%sd(index)%bc_dir%faces) = 0.0_r8 ! concentration Dirichlet projection
         !TODO! void face dirichlet projection?
         !! Apply the update.

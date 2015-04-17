@@ -22,7 +22,7 @@
 module field_probes
 
   use simplicial_mesh_support
-  use distributed_mesh
+  use dist_mesh_type
   use mimetic_discretization
   implicit none
   private

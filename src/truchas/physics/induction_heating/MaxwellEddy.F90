@@ -8,7 +8,7 @@ module MaxwellEddy
 
   use kinds
   use parallel_communication
-  use distributed_mesh
+  use dist_mesh_type
   use index_partitioning
   use mimetic_discretization
   use solution_history

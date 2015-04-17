@@ -46,7 +46,7 @@ contains
   subroutine ERD_problem_init (this, mesh, name)
 
     use ER_input
-    use distributed_mesh, only: dist_mesh
+    use dist_mesh_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use scalar_func_class
     use ER_encl_func,  only: encl_func
@@ -193,7 +193,7 @@ contains
 
   subroutine connect_to_mesh (mesh, file, lm_faces, ge_faces, stat)
 
-    use distributed_mesh, only: dist_mesh
+    use dist_mesh_type
     use index_partitioning
     use permutations
     use ER_file
@@ -460,7 +460,7 @@ contains
   subroutine boundary_face_check (mesh, faces, stat, setids)
 
     use bitfield_type
-    use distributed_mesh
+    use dist_mesh_type
 
     type(dist_mesh), intent(in) :: mesh
     integer, intent(in) :: faces(:)
@@ -522,7 +522,7 @@ contains
 
   subroutine check_surface (mesh, encl, faces, perm_er_to_hc, stat)
 
-    use distributed_mesh, only: dist_mesh
+    use dist_mesh_type
     use ER_dist_encl, only: dist_encl
 
     type(dist_mesh), intent(in) :: mesh
@@ -815,7 +815,7 @@ contains
     use fgmvwrite
     use parallel_communication
     use index_partitioning
-    use distributed_mesh
+    use dist_mesh_type
 
     character(len=*), intent(in) :: file
     type(dist_mesh), intent(in) :: mesh

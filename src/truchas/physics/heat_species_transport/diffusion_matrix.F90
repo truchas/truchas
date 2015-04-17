@@ -3,7 +3,7 @@
 module diffusion_matrix
 
   use kinds, only: r8
-  use distributed_mesh, only: dist_mesh
+  use dist_mesh_type
   use mfd_disc_type
   use pcsr_matrix_type
   use parallel_communication

@@ -72,7 +72,7 @@
 
 module solid_mechanics_mesh
 
-  use distributed_mesh, only: dist_mesh
+  use dist_mesh_type
   use parallel_permutations, only: par_perm
 
   implicit none

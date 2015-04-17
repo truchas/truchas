@@ -18,7 +18,7 @@ module EM_graphics_output
   use string_utilities, only: i_to_c
   use parallel_communication
   use index_partitioning
-  use distributed_mesh
+  use dist_mesh_type
   use mimetic_discretization
   use data_explorer
 !NNC!  use field_probes
@@ -52,8 +52,9 @@ contains
     real(kind=rk), intent(in) :: eps(:), mu(:), sigma(:)
     
     type(dx_object) :: dxfld
-    integer, pointer :: cnode(:,:), cblock(:), pdata(:)
-    real(kind=rk), pointer :: x(:,:)
+    integer, allocatable :: cnode(:,:), cblock(:)
+    integer, pointer :: pdata(:)
+    real(kind=rk), allocatable :: x(:,:)
     character(len=256) :: file
 
     sim_num = sim_num + 1
@@ -61,9 +62,9 @@ contains
     file = output_file_name('EM-mesh-' // i_to_c(sim_num))
 
     !! Extract the bare collated mesh.
-    call get_global_cnode_array (mesh, cnode)
-    call get_global_x_array (mesh, x)
-    call get_global_cblock_array (mesh, cblock)
+    call mesh%get_global_cnode_array (cnode)
+    call mesh%get_global_x_array (x)
+    call mesh%get_global_cblock_array (cblock)
     
     call allocate_collated_array (pdata, global_size(mesh%cell_ip))
     call collate (pdata, spread(this_PE, dim=1, ncopies=onP_size(mesh%cell_ip)))

@@ -21,9 +21,8 @@
 
 module HTSD_model_factory
 
-  use kinds, only: r8
   use HTSD_model_type
-  use distributed_mesh
+  use dist_mesh_type
   use mfd_disc_type
   use material_mesh_function
   implicit none
@@ -166,8 +165,8 @@ contains
       character(len=*), intent(out) :: errmsg
 
       integer :: j
-      logical,  allocatable :: mask(:), rmask(:)
-      integer, pointer :: setids(:)
+      logical, allocatable :: mask(:), rmask(:)
+      integer, allocatable :: setids(:)
 
       allocate(mask(mesh%nface))
 
@@ -243,7 +242,7 @@ contains
       !! TODO: THIS DOESN'T WORK PROPERLY IN PARALLEL
       if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then
         mask = mask .neqv. btest(mesh%face_set_mask,0)
-        call get_face_set_IDs (mesh, pack((/(j,j=1,mesh%nface)/), mask), setids)
+        call mesh%get_face_set_IDs (pack([(j,j=1,mesh%nface)], mask), setids)
         stat = -1
         write(errmsg,'(a,99(:,1x,i0))') &
           'incomplete temperature boundary/interface condition specification; ' // &
@@ -336,7 +335,8 @@ contains
     integer :: n, j
     logical :: mask(mesh%nface)
     character(len=31) :: property, variable
-    integer, pointer :: matids(:), setids(:)
+    integer, allocatable :: setids(:)
+    integer, pointer :: matids(:)
 
     allocate(model(num_species))
 
@@ -387,7 +387,7 @@ contains
       !! Finally verify that a BC has been applied to every boundary face.
       if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then
         mask = mask .neqv. btest(mesh%face_set_mask,0)
-        call get_face_set_IDs (mesh, pack((/(j,j=1,mesh%nface)/), mask), setids)
+        call mesh%get_face_set_IDs (pack([(j,j=1,mesh%nface)], mask), setids)
         stat = -1
         !! The assumption here is that no bad faces are internal; any errors of
         !! that kind should have been caught when creating the bd_data objects.

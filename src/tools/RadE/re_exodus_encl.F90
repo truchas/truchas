@@ -285,7 +285,7 @@ contains
     use exodus_mesh_type
     use string_utilities, only: i_to_c
     use re_encl_type
-    use hashing
+    use facet_hash_type
 
     type(exodus_mesh), intent(in)  :: mesh
     integer, intent(in) :: ssid(:)  ! IDs of side sets describing the surface
@@ -308,7 +308,7 @@ contains
     end type
     type :: side_table
       integer :: size=0, nentry=0
-      type(hash_param) :: hpar
+      type(facet_hash) :: hpar
       type(side_row), pointer :: row(:) => null()
     end type
     type(side_table) :: stab
@@ -319,7 +319,7 @@ contains
     end type
     type :: nhbr_table
       integer :: size=0, nentry=0
-      type(hash_param) :: hpar
+      type(facet_hash) :: hpar
       type(nhbr_row), pointer :: row(:) => null()
     end type
     type(nhbr_table) :: ntab
@@ -546,7 +546,7 @@ contains
       type(side_table), intent(out) :: table
       integer, intent(in) :: size, key_max
       table%size = size
-      call initialize_hash_param (table%hpar, hsize=table%size, kmax=key_max)
+      call table%hpar%init (hsize=table%size, kmax=key_max)
       allocate(table%row(0:table%size-1))
     end subroutine
 
@@ -566,7 +566,7 @@ contains
       integer, pointer :: list(:)
       integer, intent(out) :: status
       integer :: n, incr
-      call hash (table%hpar, (/j, k/), n, incr)
+      call table%hpar%hash ([j, k], n, incr)
       do while (table%row(n)%j /= 0)
         if (j == table%row(n)%j) then
           if (k == table%row(n)%k) exit
@@ -597,7 +597,7 @@ contains
       integer, intent(out) :: ssn
       integer, pointer :: list(:)
       integer :: n, incr
-      call hash (table%hpar, (/j, k/), n, incr)
+      call table%hpar%hash ([j, k], n, incr)
       do while (table%row(n)%j /= 0)
         if (j == table%row(n)%j) then
           if (k == table%row(n)%k) exit
@@ -618,7 +618,7 @@ contains
       type(nhbr_table), intent(out) :: table
       integer, intent(in) :: size, key_max
       table%size = size
-      call initialize_hash_param (table%hpar, hsize=table%size, kmax=key_max)
+      call table%hpar%init (hsize=table%size, kmax=key_max)
       allocate(table%row(0:table%size-1))
     end subroutine
 
@@ -636,7 +636,7 @@ contains
       type(nhbr_table), intent(inout) :: table
       integer, pointer :: list(:)
       integer :: n, inc
-      call hash (table%hpar, list, n, inc)
+      call table%hpar%hash (list, n, inc)
       do while (associated(table%row(n)%list))
         n = n - inc
         if (n < 0) n = n + table%size
@@ -649,7 +649,7 @@ contains
       type(nhbr_table), intent(in) :: table
       integer, intent(in) :: list(:)
       integer :: n, inc
-      call hash (table%hpar, list, n, inc)
+      call table%hpar%hash (list, n, inc)
       nhbr_exists = .true.
       do while (associated(table%row(n)%list))
         if (size(table%row(n)%list) == size(list)) then

@@ -49,32 +49,16 @@
 
 module graph_type
 
+  use integer_set_type
   implicit none
   private
-
-  !! Private types implementing linked lists.
-  type :: list
-    type(list_item), pointer :: head => null()
-  contains
-    procedure :: insert => list_insert
-    procedure :: copy_to_array => list_copy_to_array
-    procedure :: length => list_length
-    final :: list_delete
-  end type
-
-  type :: list_item
-    type(list_item), pointer :: next => null()
-    integer :: node
-  contains
-    final :: list_item_delete
-  end type
 
   type, public :: graph
     private
     integer :: n = 0
     logical :: directed = .false.
     logical :: self_edge = .false.
-    type(list), allocatable :: nbrs(:)
+    type(integer_set), allocatable :: nbrs(:)
   contains
     procedure :: init => graph_init
     procedure, private :: graph_add_edge_one
@@ -105,8 +89,8 @@ contains
     ASSERT(from >= 1 .and. from <= this%n)
     ASSERT(to >= 1 .and. to <= this%n)
     if (.not.this%self_edge .and. from == to) return
-    call this%nbrs(from)%insert (to)
-    if (.not.this%directed) call this%nbrs(to)%insert (from)
+    call this%nbrs(from)%add (to)
+    if (.not.this%directed) call this%nbrs(to)%add (from)
   end subroutine graph_add_edge_one
 
   !! Add the specified set of edges to the graph.
@@ -118,8 +102,8 @@ contains
     do j = 1, size(to)
       ASSERT(to(j) >= 1 .and. to(j) <= this%n)
       if (.not.this%self_edge .and. from == to(j)) cycle
-      call this%nbrs(from)%insert (to(j))
-      if (.not.this%directed) call this%nbrs(to(j))%insert (from)
+      call this%nbrs(from)%add (to(j))
+      if (.not.this%directed) call this%nbrs(to(j))%add (from)
     end do
   end subroutine graph_add_edge_many
 
@@ -135,7 +119,7 @@ contains
         to = clique(k)
         ASSERT(to >= 1 .and. to <= this%n)
         if (to == from .and. .not.this%self_edge) cycle
-        call this%nbrs(from)%insert (to)
+        call this%nbrs(from)%add (to)
       end do
     end do
   end subroutine graph_add_clique
@@ -148,80 +132,12 @@ contains
     allocate(xadj(this%n+1))
     xadj(1) = 1
     do j = 1, this%n
-      xadj(j+1) = xadj(j) + this%nbrs(j)%length()
+      xadj(j+1) = xadj(j) + this%nbrs(j)%size()
     end do
     allocate(adjncy(xadj(this%n+1)-1))
     do j = 1, this%n
       call this%nbrs(j)%copy_to_array(adjncy(xadj(j):))
     end do
   end subroutine graph_get_adjacency
-
-!!!! TYPE BOUND PROCEDURES FOR THE PRIVATE LIST TYPES !!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !! Final subroutine for LIST objects.
-  subroutine list_delete (this)
-    type(list) :: this
-    if (associated(this%head)) deallocate(this%head)
-  end subroutine list_delete
-
-  !! Final subroutine for LIST_ITEM objects.
-  recursive subroutine list_item_delete (this)
-    type(list_item) :: this
-    if (associated(this%next)) deallocate(this%next)
-  end subroutine list_item_delete
-
-  !! Insert node N into the sorted list if it is not already there.
-  subroutine list_insert (this, n)
-    class(list), intent(inout) :: this
-    integer, intent(in) :: n
-    call insert_aux (this%head, n)
-  contains
-    recursive subroutine insert_aux (item, n)
-      type(list_item), pointer :: item
-      integer, intent(in) :: n
-      type(list_item), pointer :: new
-      if (.not.associated(item)) then
-        allocate(item)
-        item%node = n
-      else if (n < item%node) then
-        allocate(new, source=list_item(node=n,next=item))
-        item => new
-      else if (n > item%node) then
-        call insert_aux (item%next, n)
-      end if
-    end subroutine
-  end subroutine list_insert
-
-  !! Copy the list values (in order) into an array.
-  subroutine list_copy_to_array (this, array)
-    class(list), intent(in) :: this
-    integer, intent(inout) :: array(:)
-    call list_to_array_aux (this%head, array)
-  contains
-    recursive subroutine list_to_array_aux (item, array)
-      type(list_item), pointer :: item
-      integer, intent(inout) :: array(:)
-      if (associated(item)) then
-        array(1) = item%node
-        call list_to_array_aux (item%next, array(2:))
-      end if
-    end subroutine
-  end subroutine list_copy_to_array
-
-  !! Return the length of the list.
-  integer function list_length (this)
-    class(list), intent(in) :: this
-    list_length = length_aux(this%head, 0)
-  contains
-    recursive integer function length_aux (item, acc) result (len)
-      type(list_item), pointer :: item
-      integer, intent(in), value :: acc
-      if (.not.associated(item)) then
-        len = acc
-      else
-        len = length_aux(item%next, acc+1)
-      end if
-    end function
-  end function list_length
 
 end module graph_type

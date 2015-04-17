@@ -22,7 +22,7 @@ module FHT_model_factory
 
   use kinds, only: r8
   use FHT_model_type
-  use distributed_mesh
+  use dist_mesh_type
   use mfd_disc_type
   use material_mesh_function
   use ER_driver
@@ -186,8 +186,8 @@ contains
     character(len=*), intent(out) :: errmsg
 
     integer :: j
-    logical,  allocatable :: mask(:), rmask(:)
-    integer, pointer :: setids(:)
+    logical, allocatable :: mask(:), rmask(:)
+    integer, allocatable :: setids(:)
 
     allocate(mask(mesh%nface))
 
@@ -269,7 +269,7 @@ contains
     !! TODO: THIS DOESN'T WORK PROPERLY IN PARALLEL
     if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then
       mask = mask .neqv. btest(mesh%face_set_mask,0)
-      call get_face_set_IDs (mesh, pack((/(j,j=1,mesh%nface)/), mask), setids)
+      call mesh%get_face_set_IDs (pack((/(j,j=1,mesh%nface)/), mask), setids)
       stat = -1
       write(errmsg,'(a,99(:,1x,i0))') &
         'incomplete temperature boundary/interface condition specification; ' // &

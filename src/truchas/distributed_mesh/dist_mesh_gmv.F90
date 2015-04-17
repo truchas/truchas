@@ -1,5 +1,5 @@
 !!
-!! DISTRIBUTED_MESH_GMV
+!! DIST_MESH_GMV
 !!
 !! Neil N. Carlson <nnc@lanl.gov> 3/30/2006
 !! Last revised 11 Aug 2006.
@@ -41,7 +41,7 @@
 
 #include "f90_assert.fpp"
 
-module distributed_mesh_gmv
+module dist_mesh_gmv
 
   use kinds, only: r8
   use fgmvwrite
@@ -67,20 +67,21 @@ contains
 
   subroutine gmv_write_dist_mesh (mesh)
 
-    use distributed_mesh
+    use dist_mesh_type
     use index_partitioning
     use string_utilities, only: i_to_c
 
     type(dist_mesh), intent(in) :: mesh
 
     integer :: j
-    integer, pointer :: cnode(:,:), cblock(:), pdata(:), map(:)
-    real(kind=r8), pointer :: x(:,:)
+    integer, allocatable :: cnode(:,:), cblock(:)
+    integer, pointer :: pdata(:), map(:)
+    real(kind=r8), allocatable :: x(:,:)
     character(len=3) :: cell_type
 
-    call get_global_cnode_array (mesh, cnode)
-    call get_global_x_array (mesh, x)
-    call get_global_cblock_array (mesh, cblock)
+    call mesh%get_global_cnode_array (cnode)
+    call mesh%get_global_x_array (x)
+    call mesh%get_global_cblock_array (cblock)
 
     if (is_IOP) then
 
@@ -178,7 +179,7 @@ contains
 
   subroutine gmv_write_dist_cell_var (mesh, u, name)
 
-    use distributed_mesh
+    use dist_mesh_type
     use index_partitioning
 
     type(dist_mesh), intent(in) :: mesh
@@ -197,4 +198,4 @@ contains
 
   end subroutine gmv_write_dist_cell_var
 
-end module distributed_mesh_gmv
+end module dist_mesh_gmv

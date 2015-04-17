@@ -12,8 +12,7 @@ program grid_mapping_test_driver
   !=======================================================================
   use grid_mapping_module, only : read_int_volumes, compute_int_volumes, &
        grid_vols, grid_vol_fracs, write_int_volumes, map_cell_field, &
-       right_int_volumes, grid_int_vols, destroy_grid_int_vols, gm_mesh, &
-       destroy_gm_mesh
+       right_int_volumes, grid_int_vols, destroy_grid_int_vols, gm_mesh
   use exodus_mesh_type
   use exodus_mesh_io, only: read_exodus_mesh
   use grid_mapping_exodus, only : copy_exodus_mesh_to_gm_mesh
@@ -29,7 +28,7 @@ program grid_mapping_test_driver
   logical :: reverse_order,exactly_conservative,preserve_constants,strict
   logical :: map_exists
   real(dp) :: defval
-  type(gm_mesh) :: mesh_a, mesh_b
+  type(gm_mesh), allocatable :: mesh_a, mesh_b
   type(exodus_mesh), allocatable :: exodus_mesh_a, exodus_mesh_b
   type(grid_int_vols) :: int_vols
   real(dp), dimension(:), pointer :: field_a=>null(), field_b=>null(), vol_a=>null(), vol_b=>null()
@@ -70,11 +69,11 @@ program grid_mapping_test_driver
      call read_exodus_mesh(filename_mesh_b,exodus_mesh_b)
 
      ! Set up gm_mesh data object for both meshes
-     call destroy_gm_mesh(mesh_a)
+     allocate(mesh_a)
      call copy_exodus_mesh_to_gm_mesh(exodus_mesh_a,mesh_a)
      deallocate(exodus_mesh_a)
 
-     call destroy_gm_mesh(mesh_b)
+     allocate(mesh_b)
      call copy_exodus_mesh_to_gm_mesh(exodus_mesh_b,mesh_b)
      deallocate(exodus_mesh_b)
 
@@ -226,6 +225,7 @@ program grid_mapping_test_driver
      write(*,fmt='(a,es20.12)') 'Integral on B mesh= ',dot_product(vol_b,field_b)
   
      call destroy_grid_int_vols(int_vols)
+     deallocate(mesh_a, mesh_b)
   enddo
 
 20 continue

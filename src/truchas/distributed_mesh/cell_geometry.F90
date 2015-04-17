@@ -13,9 +13,10 @@ module cell_geometry
   implicit none
   private
 
-  public :: tet_volume
-  public :: hex_face_normals, eval_hex_volumes
-  public :: edge_length, quad_face_normal
+  public :: cell_volume, tet_volume, hex_volume
+  public :: face_normal, tri_face_normal, quad_face_normal
+  public :: tet_face_normals, hex_face_normals, eval_hex_volumes
+  public :: edge_length
   public :: cross_product, triple_product, vector_length
 
 contains
@@ -35,12 +36,39 @@ contains
           a(2)*(b(3)*c(1) - b(1)*c(3)) + &
           a(3)*(b(1)*c(2) - b(2)*c(1))
   end function triple_product
+  
+  pure function cell_volume (x) result (vol)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: vol
+    select case (size(x,dim=2))
+    case (4)  ! tet
+      vol = tet_volume(x)
+    case (8)  ! hex
+      vol = hex_volume(x)
+    case default
+      vol = 0.0_r8
+    end select
+  end function cell_volume
 
-  pure function tet_volume (x) result (v)
-    real(kind=r8), intent(in) :: x(:,:)
-    real(kind=r8) :: v
-    v = triple_product(x(:,2)-x(:,1), x(:,3)-x(:,1), x(:,4)-x(:,1)) / 6.0_r8
+  pure function tet_volume (x) result (tvol)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: tvol
+    tvol = triple_product(x(:,2)-x(:,1), x(:,3)-x(:,1), x(:,4)-x(:,1)) / 6.0_r8
   end function tet_volume
+  
+  pure function hex_volume (x) result (hvol)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: hvol, cvol(8)
+    cvol(1) = tet_volume(x(:,[1,2,4,5]))
+    cvol(2) = tet_volume(x(:,[2,3,1,6]))
+    cvol(3) = tet_volume(x(:,[3,4,2,7]))
+    cvol(4) = tet_volume(x(:,[4,1,3,8]))
+    cvol(5) = tet_volume(x(:,[5,8,6,1]))
+    cvol(6) = tet_volume(x(:,[6,5,7,2]))
+    cvol(7) = tet_volume(x(:,[7,6,8,3]))
+    cvol(8) = tet_volume(x(:,[8,7,5,4]))
+    hvol = 0.5_r8 * (sum(cvol) + tet_volume(x(:,[1,3,8,6])) + tet_volume(x(:,[2,4,5,7])))
+  end function hex_volume
 
   subroutine eval_hex_volumes (x, hvol, cvol)
 
@@ -66,6 +94,15 @@ contains
 
   end subroutine eval_hex_volumes
 
+  pure function tet_face_normals (x) result (a)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: a(3,4)
+    a(:,1) = 0.5_r8 * cross_product(x(:,2)-x(:,4), x(:,3)-x(:,4))
+    a(:,2) = 0.5_r8 * cross_product(x(:,3)-x(:,4), x(:,1)-x(:,4))
+    a(:,3) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,2)-x(:,4))
+    a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
+  end function tet_face_normals
+  
   function hex_face_normals (x) result (a)
 
     real(kind=r8), intent(in) :: x(:,:)

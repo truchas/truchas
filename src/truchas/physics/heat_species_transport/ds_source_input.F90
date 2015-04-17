@@ -85,7 +85,7 @@ module ds_source_input
   use kinds
   use scalar_func_class
   use source_mesh_function
-  use distributed_mesh
+  use dist_mesh_type
   use truchas_logging_services
   use parallel_communication
   use string_utilities, only: raise_case, i_to_c
