@@ -19,6 +19,7 @@ set(UTIL_FILES
          utilities/linear_module.F90
          utilities/lnorm_module.F90
          utilities/lu_solve_module.F90
+         utilities/old_mesh_gmv.F90
          utilities/permutations.F90
          utilities/process_info_module.F90
          utilities/sort_module.F90
