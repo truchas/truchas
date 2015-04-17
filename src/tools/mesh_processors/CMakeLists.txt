@@ -30,4 +30,7 @@ build_whitespace_string(fpp_flags ${fpp_flags_list})
 # addgaps 
 add_subdirectory(addgaps)
 
+# scramble 
+add_subdirectory(scramble)
+
 # --- Install rules 		    
