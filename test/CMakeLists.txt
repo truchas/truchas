@@ -6,15 +6,45 @@ set(CMAKE_MODULE_PATH ${TruchasTest_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 include(AddPytruchasTest)
 
-add_pytruchas_test(1d-ss-hc-xlinear-hex 1d-ss-hc-xlinear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(1d-ss-hc-xlinear-tet 1d-ss-hc-xlinear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(1d-ss-hc-ylinear-hex 1d-ss-hc-ylinear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(1d-ss-hc-ylinear-tet 1d-ss-hc-ylinear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(1d-ss-hc-zlinear-hex 1d-ss-hc-zlinear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(1d-ss-hc-zlinear-tet 1d-ss-hc-zlinear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(1d-ss-hc-xlinear-hex
+                   1d-ss-hc-xlinear-hex/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION HEX)
 
-add_pytruchas_test(3d-ss-hc-linear-hex 3d-ss-hc-linear-hex/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(3d-ss-hc-linear-tet 3d-ss-hc-linear-tet/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(1d-ss-hc-xlinear-tet
+                   1d-ss-hc-xlinear-tet/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION TET)
+
+add_pytruchas_test(1d-ss-hc-ylinear-hex
+                   1d-ss-hc-ylinear-hex/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION HEX)
+
+add_pytruchas_test(1d-ss-hc-ylinear-tet
+                   1d-ss-hc-ylinear-tet/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION TET)
+
+add_pytruchas_test(1d-ss-hc-zlinear-hex
+                   1d-ss-hc-zlinear-hex/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION HEX)
+
+add_pytruchas_test(1d-ss-hc-zlinear-tet
+                   1d-ss-hc-zlinear-tet/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION TET)
+
+add_pytruchas_test(3d-ss-hc-linear-hex
+                   3d-ss-hc-linear-hex/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION HEX)
+
+add_pytruchas_test(3d-ss-hc-linear-tet
+                   3d-ss-hc-linear-tet/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION TET)
 
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py 
                    PROCESSORS 4)
@@ -170,12 +200,17 @@ add_pytruchas_test(gap-rad-flow
 add_pytruchas_test(vfrad1
                    vfrad1/testVFRad1.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION)
+		   LABELS CONDUCTION HEX)
+
+add_pytruchas_test(vfrad1-tet
+                   vfrad1-tet/testVFRad1Tet.py
+		   PROCESSORS 4
+		   LABELS CONDUCTION TET)
 
 add_pytruchas_test(vfrad2
                    vfrad2/testVFRad2.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION)
+		   LABELS CONDUCTION)
 
 add_pytruchas_test(contact-box-close
                    contact-box-close/testContactBoxClose.py

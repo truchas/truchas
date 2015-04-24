@@ -1,0 +1,185 @@
+VIEW FACTOR RADIATION TEST 1 -- TET MESH
+
+3D heat conduction and view factor radiation in a gas-filled toroidal tube.
+Domain is the upper half of a 60° wedge of a torus (principle radius 1.0,
+secondary radius 0.8).  There are two radiation enclosures: a partial
+enclosure external to the domain, and a full enclosure in the cavity occupied
+by the gas, which is transparent to thermal radiation.  In addition there is
+conductive heat flux between the solid tube and the gas, which is modeled by
+an internal HTC condition.
+
+
+&MESH
+  mesh_file = 'vfrad1-tet.gen'
+  mesh_file_format = 'ExodusII'
+  interface_side_sets = 5   ! the solid/gas interface
+/
+
+&OUTPUTS
+  Output_T = 0.0, 0.5
+  Output_Dt = 0.5
+/
+
+&PHYSICS
+  heat_transport = .true.
+  fluid_flow = .false.
+/
+
+&PHYSICAL_CONSTANTS
+  stefan_boltzmann = 1.0
+  absolute_zero = 0.0
+/
+
+&NUMERICS
+  dt_init = 1.0d-4
+  dt_min  = 1.0d-5
+  dt_grow = 10.0
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 5.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 5.0e-4
+  nlk_tol            = 0.05
+  max_nlk_itr        = 10
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+!! RADIATION IN THE EXTERIOR REGION.
+!! SOLID RADIATES TO SELF AND AMBIENT ENVIRONMENT.
+
+&ENCLOSURE_RADIATION
+  name = 'exterior'
+  enclosure_file = 'extvf.nc'
+  ambient_constant = 1.0
+  !! For testing; recommended values are 'jacobi', 1, 'backward GS'
+  precon_method = 'chebyshev'
+  precon_iter = 2
+  precon_coupling_method = 'forward GS'
+  error_tolerance = 1.0e-8
+/
+
+&ENCLOSURE_SURFACE
+  name = 'exterior surface'
+  enclosure_name = 'exterior'
+  face_block_ids = 2    ! references face blocks in 'extvf.nc'
+  emissivity_constant = 0.8
+/
+
+!! RADIATION IN THE INTERNAL GAS-FILLED CAVITY.
+!! GAS IS TRANSPARENT TO THERMAL RADIATION.
+
+&ENCLOSURE_RADIATION
+  name = 'interior'
+  enclosure_file = 'intvf.nc'
+  ambient_constant = 1.0  ! required, but not used
+  !! For testing; recommended values are 'jacobi', 1, 'backward GS'
+  precon_method = 'jacobi'
+  precon_iter = 2
+  precon_coupling_method = 'factorization'
+  error_tolerance = 1.0e-8
+/
+
+&ENCLOSURE_SURFACE
+  name = 'interior surface'
+  enclosure_name = 'interior'
+  face_block_ids = 3    ! references face blocks in 'intvf.nc'
+  emissivity_constant = 0.5
+/
+
+!! INTERNAL HTC BETWEEN SOLID AND GAS REGIONS.
+!! ADDS TO THE RADIATIVE HEAT FLUX FROM THE SOLID.
+
+&DS_INTERFACE_CONDITION
+  name = 'solid/gas interface'
+  variable = 'temperature'
+  condition = 'htc'
+  data_constant = 0.001
+  face_set_ids = 5        ! references interface_side_sets in MESH
+/
+
+!! NO HEAT FLUX ON SYMMETRY PLANES.
+
+&DS_BOUNDARY_CONDITION
+  name = 'symmetry planes'
+  variable = 'temperature'
+  condition = 'flux'
+  data_constant = 0.0
+  face_set_ids = 1
+/
+
+!! SPATIALLY VARYING HEAT SOURCE IN THE SOLID REGION.
+!! SOURCE EXHIBITS THE SYMMETRIES IMPOSED ON THE TEMPERATURE.
+
+&DS_SOURCE
+  equation = 'temperature'
+  cell_set_ids = 1
+  source_function = 'heat source'
+/
+
+&FUNCTION
+  name = 'heat source'
+  type = 'polynomial'
+  poly_coefficients = 12.0 2.0 -6.0
+  poly_exponents(:,1) = 0 0 0 0 ! t,x,y,z expon for first coef
+  poly_exponents(:,2) = 0 3 0 0 ! t,x,y,z expon for second coef
+  poly_exponents(:,3) = 0 1 2 0 ! t,x,y,z expon for third coef
+/
+
+!! THE OUTER SOLID TORIODAL TUBE REGION.
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 1.1
+/
+
+&MATERIAL
+  material_number  = 1
+  material_name    = 'solid'
+  material_feature = 'background'
+  Density          = 4.0
+/
+
+&PHASE
+  name = 'solid'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 0.5
+/
+
+&MATERIAL_SYSTEM
+  name   = 'solid'
+  phases = 'solid'
+/
+
+!! THE INNER GAS-FILLED TORIODAL CAVITY.
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 2
+  temperature = 1.0
+/
+
+&MATERIAL
+  material_number = 2
+  material_name   = 'gas'
+  density         = 4.0
+/
+
+&PHASE
+  name = 'gas'
+  property_name(1) = 'density',       property_constant(1) = 0.4
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 0.005
+/
+
+&MATERIAL_SYSTEM
+  name   = 'gas'
+  phases = 'gas'
+/
+
