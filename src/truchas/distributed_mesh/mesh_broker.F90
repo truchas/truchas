@@ -7,7 +7,7 @@
 
 #include "f90_assert.fpp"
 
-#define DEBUG_WRITE_MESH
+!#define DEBUG_WRITE_MESH
 
 module mesh_broker
 
