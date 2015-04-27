@@ -165,7 +165,12 @@ add_pytruchas_test(static-wall
 add_pytruchas_test(natural-convection
                    natural-convection/testNaturalConvection.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS FLOW CONDUCTION HEX)
+
+add_pytruchas_test(natural-conv-tet
+                   natural-conv-tet/test.py
+		   PROCESSORS 4
+		   LABELS FLOW CONDUCTION TET)
 
 add_pytruchas_test(porous-drag
                    porous-drag/testPorousDrag.py
