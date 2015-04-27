@@ -634,8 +634,10 @@ CONTAINS
           if(NFC_F /=(ub-lb+1))then
             call TLS_panic ('DO_INIT_LSLR_SS: memory bounds error for dX, GeoW and other arrays')
           endif
-          dX1 = sum(SS%dX(1,lb:ub))
-          SS%dX(1,lb:ub) = dX1 / float(NFC_F)  ! Average the "scale invariant" dX1 components
+          if (NFC_F > 1) then
+            dX1 = sum(SS%dX(1,lb:ub))
+            SS%dX(1,lb:ub) = dX1 / float(NFC_F)  ! Average the "scale invariant" dX1 components
+          end if
           SS%dX_Struct(f,j)%FData => SS%dX(:,lb:ub)
           SS%GeoW_Struct(f,j)%FData => SS%GeoW(lb:ub)
           SS%TotW_Struct(f,j)%FData => SS%W(lb:ub)
