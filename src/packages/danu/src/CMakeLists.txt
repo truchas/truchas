@@ -35,6 +35,7 @@ set(DANU_SRC
         group.c
         h5_error.c
         h5_object.c
+        hex_convert.c
         link.c
         linked_list.c
         memory.c

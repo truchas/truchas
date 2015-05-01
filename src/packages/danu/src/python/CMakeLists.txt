@@ -143,13 +143,7 @@ endif()
             ${PyDanu_BINARY_DIR}/_Danu.so
             ${PyDanu_BINARY_DIR}/GMV.py
             ${PyDanu_BINARY_DIR}/_GMV.so
-            ${PyDanu_BINARY_DIR}/Xdmf.py)
-
-  # Process the Xdmf module
-  get_filename_component(base ${PyDanu_SOURCE_DIR}/Xdmf.py NAME)
-  set(output_target ${CMAKE_CURRENT_BINARY_DIR}/${base})
-  configure_file(${PyDanu_SOURCE_DIR}/Xdmf.py ${output_target} @ONLY)
-
+            ${PyDanu_SOURCE_DIR}/xdmf_conversion.py)
 
   install(FILES ${PyDanu_MODULES} 
           DESTINATION ${Danu_Python_INSTALL_DIR})

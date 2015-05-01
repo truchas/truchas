@@ -145,7 +145,7 @@ import_array();
     return status;
   }
   void write(double* x_in, int nx, double* y_in, int ny, double* z_in, int nz, int* condata, int ncells, int elem_order) {
-    int i,nc,xh[8];
+    int i,nc,list[8];
     int nv;
     int *ptr;
 
@@ -169,10 +169,20 @@ import_array();
           ptr=condata;
           for(nc=0; nc<ncells; nc++ ) {
             for(i=0;i<elem_order;i++) {
-              xh[i] = *ptr;
+              list[i] = *ptr;
               ptr++;
             }
-            gmvwrite_cell_type($self->type,elem_order,xh);
+            if (list[0] == list[1]) { /* tet element */
+              gmvwrite_cell_type("ptet4", 4, list[1]);
+            } else if (list[4] == list[5]) { /* pyramid element */
+              gmvwrite_cell_type("ppyrmd5", 5, list);
+            } else if (list[5] == list[6]) { /* wedge element */
+              i = list[1]; list[1] = list[3]; list[3] = i;  /* swap 1 and 3 */
+              i = list[2]; list[2] = list[4]; list[4] = i;  /* swap 2 and 4 */
+              gmvwrite_cell_type("pprism6", 6, list);
+            } else { /* hex element */
+              gmvwrite_cell_type("phex8", 8, list);
+            }
           }
         }
   
