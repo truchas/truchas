@@ -4,7 +4,7 @@ module FHT_norm_type
 
   use kinds, only: r8
   use FHT_model_type
-  use ER_driver
+  use rad_problem_type
   use parallel_communication
   implicit none
   private
@@ -109,7 +109,7 @@ contains
           allocate(rhs(size(faces)))
           call FHT_model_get_radiosity_view (this%model, i, f, qres)
           call FHT_model_get_face_temp_view (this%model, u, temp)
-          call ERD_rhs (this%model%vf_rad_prob(i), t, temp(faces), rhs)
+          call this%model%vf_rad_prob(i)%rhs (t, temp(faces), rhs)
           err = sqrt(global_sum(qres**2)) / (this%rad_tol(i) * sqrt(global_sum(rhs**2)))
           if (this%verbose) then
             write(this%unit,'(es10.3)',advance='no') err
@@ -173,7 +173,7 @@ contains
           allocate(rhs(size(faces)))
           call FHT_model_get_radiosity_view (this%model, i, f, qres)
           call FHT_model_get_face_temp_view (this%model, u, temp)
-          call ERD_rhs (this%model%vf_rad_prob(i), t, temp(faces), rhs)
+          call this%model%vf_rad_prob(i)%rhs (t, temp(faces), rhs)
           err = sqrt(global_sum(qres**2)) / (this%rad_tol(i) * sqrt(global_sum(rhs**2)))
           if (this%verbose) then
             write(this%unit,'(es10.3)',advance='no') err
@@ -253,7 +253,7 @@ contains
           allocate(rhs(size(faces)))
           call FHT_model_get_radiosity_view (this%model, i, f, qres)
           call FHT_model_get_face_temp_view (this%model, u, temp)
-          call ERD_rhs (this%model%vf_rad_prob(i), t, temp(faces), rhs)
+          call this%model%vf_rad_prob(i)%rhs (t, temp(faces), rhs)
           qerror = sqrt(global_sum(qres**2)) / (this%rad_tol(i) * sqrt(global_sum(rhs**2)))
           if (is_IOP) write(*,'(e10.3)',advance='no') qerror
           error = max(error, qerror)

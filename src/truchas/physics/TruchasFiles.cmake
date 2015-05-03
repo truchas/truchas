@@ -12,15 +12,16 @@ set(PHYSICS_TARGET_NAME ProcessTruchasPhysicsFiles)
 
 # - enclosure_radiation
 list(APPEND PHYSICS_FILES
-           physics/enclosure_radiation/ER_dist_encl.F90
-           physics/enclosure_radiation/ER_driver.F90
-           physics/enclosure_radiation/ER_driver_gmv.F90
-           physics/enclosure_radiation/ER_encl_func.F90
+           physics/enclosure_radiation/rad_encl_type.F90
+           physics/enclosure_radiation/rad_encl_func_type.F90
+           physics/enclosure_radiation/rad_solver_type.F90
+           physics/enclosure_radiation/rad_problem_type.F90
+           physics/enclosure_radiation/rad_encl_gmv.F90
+           physics/enclosure_radiation/rad_solver_gmv.F90
+           physics/enclosure_radiation/rad_problem_gmv.F90
            physics/enclosure_radiation/ER_file.F90
            physics/enclosure_radiation/ER_input.F90
-           physics/enclosure_radiation/ER_solver.F90
-           physics/enclosure_radiation/ER_solver_gmv.F90
-           physics/enclosure_radiation/ER_system.F90)
+           physics/enclosure_radiation/rad_system_type.F90)
 
 # - fluid_flow
 list(APPEND PHYSICS_FILES

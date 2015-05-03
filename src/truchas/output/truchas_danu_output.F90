@@ -234,13 +234,14 @@ contains
   
     subroutine write_common_data
 
-      use parameter_module, only: ncells, nmat
+      use parameter_module, only: ndim, ncells, nmat
+      use mesh_module, only: cell
       use zone_module, only: zone
       use property_module, only: get_density, get_user_material_id
       use matl_module, only: gather_vof
 
-      integer :: m, stat
-      real(r8), allocatable :: rho(:), vof(:,:)
+      integer :: j, m, stat
+      real(r8), allocatable :: rho(:), vof(:,:), xc(:,:)
       character(8), allocatable :: name(:)
 
       !! Average cell density
@@ -269,6 +270,14 @@ contains
         call write_seq_cell_field (seq_id, vof, 'VOF', for_viz=.true., viz_name=name)
         deallocate(vof, name)
       end if
+      
+      !! Cell centroids
+      allocate(xc(ndim,ncells))
+      do j = 1, ncells
+        xc(:,j) = cell(j)%centroid
+      end do
+      call write_seq_cell_field (seq_id, xc, 'CENTROID', for_viz=.true., viz_name=['XC', 'YC', 'ZC'])
+      deallocate(xc)
 
     end subroutine write_common_data
   

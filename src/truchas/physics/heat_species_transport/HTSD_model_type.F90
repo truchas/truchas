@@ -10,7 +10,7 @@ module HTSD_model_type
   use source_mesh_function
   use boundary_data
   use interface_data
-  use ER_driver
+  use rad_problem_type
   use index_partitioning
   use timing_tree
   implicit none
@@ -30,7 +30,7 @@ module HTSD_model_type
     type(if_data) :: ic_rad  ! internal gap radiation
     real(r8) :: sbconst, abszero ! Stefan-Boltzmann constant and absolute zero for radiation BC
     !! Enclosure radiation problems
-    type(ERD_problem), pointer :: vf_rad_prob(:) => null()
+    type(rad_problem), pointer :: vf_rad_prob(:) => null()
   end type HT_model
   
   type, public :: SD_model
@@ -154,12 +154,7 @@ contains
     call bd_data_destroy (this%bc_rad)
     call if_data_destroy (this%ic_htc)
     call if_data_destroy (this%ic_rad)
-    if (associated(this%vf_rad_prob)) then
-      do n = 1, size(this%vf_rad_prob)
-        call ERD_problem_destroy (this%vf_rad_prob(n))
-      end do
-      deallocate(this%vf_rad_prob)
-    end if
+    if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine HT_model_delete
   
   subroutine SD_model_delete (this)
@@ -366,14 +361,14 @@ contains
           faces => this%ht%vf_rad_prob(n)%faces
           !! Radiative heat flux contribution to the heat conduction face residual.
           allocate(flux(size(faces)))
-          call ERD_compute_heat_flux (this%ht%vf_rad_prob(n), t, qrad, Tface(faces), flux)
+          call this%ht%vf_rad_prob(n)%heat_flux (t, qrad, Tface(faces), flux)
           do j = 1, size(faces)
             Fface(faces(j)) = Fface(faces(j)) + this%mesh%area(faces(j)) * flux(j)
           end do
           deallocate(flux)
           !! Residual of the algebraic radiosity system.
           call HTSD_model_get_radiosity_view (this, n, f, fptr)
-          call ERD_compute_residual (this%ht%vf_rad_prob(n), t, qrad, Tface(faces), fptr)
+          call this%ht%vf_rad_prob(n)%residual (t, qrad, Tface(faces), fptr)
           fptr = -fptr
         end do
       end if
@@ -552,7 +547,7 @@ contains
           call HTSD_model_get_radiosity_view (this, n, u, var)
           faces => this%ht%vf_rad_prob(n)%faces
           var = 0.0_r8
-          call ERD_solve_radiosity (this%ht%vf_rad_prob(n), t, Tface(faces), var)
+          call this%ht%vf_rad_prob(n)%solve_radiosity (t, Tface(faces), var)
         end do
       end if
       deallocate(Tface)

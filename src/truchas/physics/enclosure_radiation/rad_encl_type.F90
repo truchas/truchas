@@ -1,54 +1,61 @@
 !!
-!! ER_DIST_ENCL
+!! RAD_ENCL_TYPE
 !!
-!! Neil N. Carlson <nnc@lanl.gov>, 3 Apr 2010
+!! Neil N. Carlson <nnc@lanl.gov>
+!! Adapted for Fortran 2008, May 2015
 !!
 
 #include <f90_assert.fpp>
 
-module ER_dist_encl
+module rad_encl_type
 
   use kinds
   use index_partitioning
   implicit none
   private
 
-  public :: dist_encl, create_dist_encl, destroy_dist_encl
-
-  type :: dist_encl
+  type, public :: rad_encl
     !! Local surface mesh.
     integer :: nnode = 0, nface = 0
-    integer,  pointer :: xface(:) => null(), fnode(:) => null()
-    real(r8), pointer :: coord(:,:) => null()
+    integer, allocatable :: xface(:), fnode(:)
+    real(r8), allocatable :: coord(:,:)
     !! Mappings to external numberings.
-    integer, pointer :: node_map(:) => null()
-    integer, pointer :: face_map(:) => null()
+    integer, allocatable :: node_map(:), face_map(:)
     !! Face block data.
-    integer, pointer :: face_block_id(:) => null()
-    integer, pointer :: face_block(:) => null()
+    integer, allocatable :: face_block_id(:), face_block(:)
     !! Partitioning and inter-process communication data.
     integer :: nnode_onP = 0, nface_onP = 0
     type(ip_desc) :: node_ip, face_ip
-  end type dist_encl
+  contains
+    procedure :: init
+    final :: rad_encl_delete
+  end type rad_encl
 
 contains
 
-  subroutine create_dist_encl (this, ncid, fcolor)
+  !! Final subroutine for RAD_ENCL type objects
+  subroutine rad_encl_delete (this)
+    type(rad_encl), intent(inout) :: this
+    call destroy (this%node_ip)
+    call destroy (this%face_ip)
+  end subroutine rad_encl_delete
+
+  subroutine init (this, ncid, fcolor)
 
     use ER_file
     use permutations
     use parallel_communication
 
-    type(dist_encl), intent(out) :: this
+    class(rad_encl), intent(out) :: this
     integer, intent(in) :: ncid
     integer, intent(in) :: fcolor(:)
 
     integer :: j, n, nnode, nface, nfnode, ngroup
     integer, allocatable :: fsize(:), fnode(:), group_ids(:), gnum(:)
-    integer, allocatable :: node_map(:), face_map(:)
+    integer, allocatable :: node_map(:), face_map(:), fsize_l(:)
     real(r8), allocatable :: coord(:,:)
     integer :: face_bsize(nPE), node_bsize(nPE)
-    integer, pointer :: fsize_l(:) => null(), offP_index(:) => null()
+    integer, pointer :: offP_index(:) => null()
 
     !! Read the enclosure data from the NetCDF file
     if (is_IOP) then
@@ -146,7 +153,7 @@ contains
     !call gather_boundary (this%face_ip, this%face_block)
     deallocate(gnum)
 
-  end subroutine create_dist_encl
+  end subroutine init
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -357,24 +364,4 @@ contains
 
   end subroutine blocked_coloring_map
 
-  subroutine destroy_dist_encl (this)
-
-    type(dist_encl), intent(inout) :: this
-
-    type(dist_encl) :: default
-
-    if (associated(this%xface)) deallocate(this%xface)
-    if (associated(this%fnode)) deallocate(this%fnode)
-    if (associated(this%coord)) deallocate(this%coord)
-    if (associated(this%node_map)) deallocate(this%node_map)
-    if (associated(this%face_map)) deallocate(this%face_map)
-    if (associated(this%face_block_id)) deallocate(this%face_block_id)
-    if (associated(this%face_block)) deallocate(this%face_block)
-    call destroy (this%node_ip)
-    call destroy (this%face_ip)
-
-    this = default  ! assign default initialization values
-
-  end subroutine destroy_dist_encl
-
-end module ER_dist_encl
+end module rad_encl_type

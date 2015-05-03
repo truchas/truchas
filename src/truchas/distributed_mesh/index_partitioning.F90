@@ -760,7 +760,7 @@ contains
 
     integer, intent(in) :: g_index(:), g_count(:)
     type(ip_desc), intent(in) :: domain, range
-    integer, pointer :: l_index(:), l_count(:)
+    integer, allocatable, intent(out) :: l_index(:), l_count(:)
     integer, pointer :: offP_index(:)
 
     integer :: j

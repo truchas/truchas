@@ -1,58 +1,62 @@
 !!
-!! ER_DRIVER
+!! RAD_PROBLEM_TYPE
 !!
 
 #include "f90_assert.fpp"
 
 !#define GMV_SURFACE_DIAGNOSTICS
 
-module ER_driver
+module rad_problem_type
 
   use kinds, only: r8
   use parallel_communication
   use parallel_permutations
-  use ER_solver
+  use rad_solver_type
   implicit none
   private
-
-  public :: ERD_problem, ERD_problem_init, ERD_problem_destroy
-  public :: ERD_compute_residual, ERD_compute_heat_flux, ERD_solve_radiosity
-  public :: ERD_precon, ERD_precon_matvec1
-  public :: ERD_rhs_deriv, ERD_rhs
 
   integer, parameter :: PC_JACOBI = 1
   integer, parameter :: PC_CHEBY  = 2
 
-  type :: ERD_problem
-    integer, pointer :: faces(:) => null()
+  type, public :: rad_problem
+    integer, allocatable :: faces(:)
     !! The rest are private
-    type(solver) :: sol
-    integer, pointer :: ge_faces(:) => null()
+    type(rad_solver) :: sol
+    integer, allocatable :: ge_faces(:)
     integer :: nface_hc
     integer :: nface_er
     type(par_perm) :: perm_er_to_hc, perm_hc_to_er
     !! Radiosity system preconditioner parameters
     integer :: pc_numitr = 1
     integer :: pc_method = PC_JACOBI
-  end type ERD_problem
+  contains
+    procedure :: init
+    procedure :: residual
+    procedure :: heat_flux
+    procedure :: solve_radiosity
+    procedure :: precon
+    procedure :: precon_matvec1
+    procedure :: rhs
+    procedure :: rhs_deriv
+  end type rad_problem
 
 contains
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! ERD_PROBLEM_INIT
+ !! INIT
  !!
 
-  subroutine ERD_problem_init (this, mesh, name)
+  subroutine init (this, mesh, name)
 
     use ER_input
     use dist_mesh_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use scalar_func_class
-    use ER_encl_func,  only: encl_func
+    use rad_encl_func_type
     use truchas_logging_services
 
-    type(ERD_problem), intent(out) :: this
+    class(rad_problem), intent(out) :: this
     type(dist_mesh),   intent(in)  :: mesh
     character(len=*),  intent(in)  :: name
 
@@ -63,7 +67,7 @@ contains
     integer, pointer :: color(:), color_l(:), setids(:)
     real(r8) :: csf, tol
     class(scalar_func), allocatable :: tamb
-    type(encl_func), pointer :: eps
+    type(rad_encl_func), pointer :: eps
 
     call ERI_get_file (name, file)
 
@@ -116,7 +120,7 @@ contains
 
     !! Create the distributed enclosure radiation system.
     call ERI_get_coord_scale_factor (name, csf)
-    call ERS_solver_create (this%sol, file, csf, color)
+    call this%sol%init (file, csf, color)
     deallocate(color)
     INSIST(this%nface_er == this%sol%nface)
 
@@ -141,24 +145,24 @@ contains
 
     !! Set ER system parameters.
     call ERI_get_ambient (name, tamb)
-    call ERS_set_ambient (this%sol, tamb)
+    call this%sol%set_ambient (tamb)
 
     allocate(eps)
     call ERI_get_emissivity (name, this%sol%encl, eps)
-    call ERS_set_emissivity (this%sol, eps)
+    call this%sol%set_emissivity (eps)
 
-    call ERS_set_stefan_boltzmann (this%sol, stefan_boltzmann)
-    call ERS_set_absolute_zero (this%sol, absolute_zero)
+    call this%sol%set_stefan_boltzmann (stefan_boltzmann)
+    call this%sol%set_absolute_zero (absolute_zero)
 
     !! Go ahead and set the Chebyshev iteration parameters.  This assumes
     !! that the emissivities are time-independent so that we can compute
     !! the parameters once.  Really these need to be computed whenever the
     !! emissivities change significantly, but this involves computing
     !! eigenvalues of the radiosity system and isn't cheap.
-    call ERS_set_cheby_param (this%sol, time=0.0_r8)
+    call this%sol%set_cheby_param (time=0.0_r8)
     
     call ERI_get_error_tolerance (name, tol)
-    call ERS_set_solver_controls (this%sol, tol, maxitr=500) !TODO! input maxitr value
+    call this%sol%set_solver_controls (tol, maxitr=500) !TODO! input maxitr value
 
     call ERI_get_precon_method (name, method, this%pc_numitr)
     select case (method)
@@ -170,7 +174,7 @@ contains
       INSIST(.false.)
     end select
 
-  end subroutine ERD_problem_init
+  end subroutine init
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -200,8 +204,8 @@ contains
 
     type(dist_mesh),  intent(in) :: mesh
     character(len=*), intent(in) :: file
-    integer, pointer     :: lm_faces(:) ! returned list of local HC mesh faces
-    integer, pointer     :: ge_faces(:) ! returned list of global ER faces
+    integer, allocatable :: lm_faces(:) ! returned list of local HC mesh faces
+    integer, allocatable :: ge_faces(:) ! returned list of global ER faces
     integer, intent(out) :: stat
 
     integer :: j, n, offset, ncid, nface, nnode, nfnode, ngroup
@@ -523,16 +527,15 @@ contains
   subroutine check_surface (mesh, encl, faces, perm_er_to_hc, stat)
 
     use dist_mesh_type
-    use ER_dist_encl, only: dist_encl
+    use rad_encl_type
 
     type(dist_mesh), intent(in) :: mesh
-    type(dist_encl), intent(in) :: encl
+    type(rad_encl),  intent(in) :: encl
     integer,         intent(in) :: faces(:)
     type(par_perm),  intent(in) :: perm_er_to_hc
     integer, intent(out) :: stat
 
     integer :: i, j, k, i1, i2, dimen, nvert, badcnt
-    integer, pointer :: fnode(:)
     real(r8), allocatable :: mesh_vert(:,:,:)
     real(r8) :: tolsq
 
@@ -560,29 +563,31 @@ contains
 
     do j = 1, encl%nface
 
-      fnode => encl%fnode(encl%xface(j):encl%xface(j+1)-1) ! enclosure face node indices
+      associate (fnode => encl%fnode(encl%xface(j):encl%xface(j+1)-1))
 
-      if (size(fnode) /= nvert) then  ! different type faces
-        badcnt = badcnt + 1
-        cycle
-      end if
+        if (size(fnode) /= nvert) then  ! different type faces
+          badcnt = badcnt + 1
+          cycle
+        end if
 
-      !! Locate the mesh face vertex that matches the first enclosure face vertex.
-      do i1 = nvert, 1, -1
-        if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(1)))) exit
-      end do
-      if (i1 == 0) then ! no matching vertex
-        badcnt = badcnt + 1
-        cycle
-      end if
+        !! Locate the mesh face vertex that matches the first enclosure face vertex.
+        do i1 = nvert, 1, -1
+          if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(1)))) exit
+        end do
+        if (i1 == 0) then ! no matching vertex
+          badcnt = badcnt + 1
+          cycle
+        end if
 
-      !! Verify that the remaining vertices match, in order.
-      do i2 = 2, nvert
-        i1 = modulo(i1,nvert) + 1
-        if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(i2)))) cycle
-        badcnt = badcnt + 1
-        exit
-      end do
+        !! Verify that the remaining vertices match, in order.
+        do i2 = 2, nvert
+          i1 = modulo(i1,nvert) + 1
+          if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(i2)))) cycle
+          badcnt = badcnt + 1
+          exit
+        end do
+
+      end associate
 
     end do
 
@@ -598,18 +603,9 @@ contains
 
   end subroutine check_surface
 
-  subroutine ERD_problem_destroy (this)
-    type(ERD_problem), intent(inout) :: this
-    if (associated(this%faces)) deallocate(this%faces)
-    if (associated(this%ge_faces)) deallocate(this%ge_faces)
-    call ERS_solver_destroy (this%sol)
-    call destroy (this%perm_er_to_hc)
-    call destroy (this%perm_hc_to_er)
-  end subroutine ERD_problem_destroy
-
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! ERD_SOLVE_RADIOSITY
+ !! SOLVE_RADIOSITY
  !!
  !! This subroutine solves the radiosity system for the radiosity from the
  !! enclosure surface given the temperature on the surface.  The surface
@@ -617,9 +613,9 @@ contains
  !! time-dependent.
  !!
 
-  subroutine ERD_solve_radiosity (this, time, temp, qrad)
+  subroutine solve_radiosity (this, time, temp, qrad)
 
-    type(ERD_problem), intent(inout) :: this
+    class(rad_problem), intent(inout) :: this
     real(r8),          intent(in)    :: time
     real(r8),          intent(in)    :: temp(:)
     real(r8),          intent(inout) :: qrad(:)
@@ -633,16 +629,16 @@ contains
     call reorder (this%perm_er_to_hc, temp_er, temp)
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
 
-    call ERS_solve_radiosity (this%sol, time, temp_er, qrad_er)
+    call this%sol%solve_radiosity (time, temp_er, qrad_er)
 
     !! Form the local radiosity vector in the HC ordering.
     call reorder (this%perm_hc_to_er, qrad, qrad_er)
 
-  end subroutine ERD_solve_radiosity
+  end subroutine solve_radiosity
 
-  subroutine ERD_precon (this, time, z)
+  subroutine precon (this, time, z)
 
-    type(ERD_problem), intent(inout) :: this
+    class(rad_problem), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(inout) :: z(:)
 
@@ -654,19 +650,19 @@ contains
     case (PC_JACOBI)
       if (this%pc_numitr == 1) return ! the effect of 1 iteration
       call reorder (this%perm_er_to_hc, z_er, z)  ! form the Z vector in the ER ordering
-      call ERS_precon_jacobi (this%sol, time, this%pc_numitr, z_er)
+      call this%sol%precon_jacobi (time, this%pc_numitr, z_er)
       call reorder (this%perm_hc_to_er, z, z_er)  ! form the Z vector in the HC ordering
     case (PC_CHEBY)
       call reorder (this%perm_er_to_hc, z_er, z)  ! form the Z vector in the ER ordering
-      call ERS_precon_cheby (this%sol, time, this%pc_numitr, z_er)
+      call this%sol%precon_cheby (time, this%pc_numitr, z_er)
       call reorder (this%perm_hc_to_er, z, z_er)  ! form the Z vector in the HC ordering
     end select
 
-  end subroutine ERD_precon
+  end subroutine precon
 
-  subroutine ERD_precon_matvec1 (this, time, z)
+  subroutine precon_matvec1 (this, time, z)
 
-    type(ERD_problem), intent(inout) :: this
+    class(rad_problem), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(inout) :: z(:)
 
@@ -677,25 +673,25 @@ contains
     !! Form the Z vector in the ER ordering.
     call reorder (this%perm_er_to_hc, z_er, z)
 
-    call ERS_precon_matvec1 (this%sol, time, z_er)
+    call this%sol%precon_matvec1 (time, z_er)
 
     !! Form the Z vector in the HC ordering.
     call reorder (this%perm_hc_to_er, z, z_er)
 
-  end subroutine ERD_precon_matvec1
+  end subroutine precon_matvec1
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! ERD_COMPUTE_HEAT_FLUX
+ !! HEAT_FLUX
  !!
  !! Calculates the net heat flux through the enclosure surface given the
  !! radiosity from the enclosure surface.  The flux may depend on a possibly
  !! time-dependent ambient temperature.
  !!
 
-  subroutine ERD_compute_heat_flux (this, time, qrad, temp, flux)
+  subroutine heat_flux (this, time, qrad, temp, flux)
 
-    type(ERD_problem), intent(inout)  :: this
+    class(rad_problem), intent(inout)  :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: qrad(:)  ! local radiosity vector
     real(r8), intent(in)  :: temp(:)
@@ -711,26 +707,26 @@ contains
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
     call reorder (this%perm_er_to_hc, temp_er, temp)
 
-    call ERS_compute_heat_flux (this%sol, time, qrad_er, temp_er, flux_er)
+    call this%sol%heat_flux (time, qrad_er, temp_er, flux_er)
 !    call ERS_compute_heat_flux (this%sol, time, qrad_er, flux_er)
 
     !! Form the local heat flux vector in the HC ordering.
     call reorder (this%perm_hc_to_er, flux, flux_er)
 
-  end subroutine ERD_compute_heat_flux
+  end subroutine heat_flux
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! ERD_COMPUTE_RESIDUAL
+ !! RESIDUAL
  !!
  !! This subroutine calculates the residual of the radiosity system given the
  !! temperature and radiosity on the enclosure surface.  The emissivities and
  !! ambient temperature parameters of the system may be time-dependent.
  !!
 
-  subroutine ERD_compute_residual (this, time, qrad, temp, res)
+  subroutine residual (this, time, qrad, temp, res)
 
-    type(ERD_problem), intent(inout) :: this
+    class(rad_problem), intent(inout) :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: qrad(:)
     real(r8), intent(in)  :: temp(:)
@@ -746,16 +742,16 @@ contains
     call reorder (this%perm_er_to_hc, temp_er, temp)
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
 
-    call ERS_compute_residual (this%sol, time, qrad_er, temp_er, res_er)
+    call this%sol%residual (time, qrad_er, temp_er, res_er)
 
     !! Form the local residual vector in the HC ordering.
     call reorder (this%perm_hc_to_er, res, res_er)
 
-  end subroutine ERD_compute_residual
+  end subroutine residual
 
-  subroutine ERD_rhs_deriv (this, time, temp, drhs)
+  subroutine rhs_deriv (this, time, temp, drhs)
 
-    type(ERD_problem), intent(inout) :: this
+    class(rad_problem), intent(inout) :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: temp(:)
     real(r8), intent(out) :: drhs(:)
@@ -768,34 +764,34 @@ contains
     !! Form the local temperature vector in the ER ordering.
     call reorder (this%perm_er_to_hc, temp_er, temp)
 
-    call ERS_rhs_deriv (this%sol, time, temp_er, drhs_er)
+    call this%sol%rhs_deriv (time, temp_er, drhs_er)
 
     !! Form the local derivative vector in the HC ordering.
     call reorder (this%perm_hc_to_er, drhs, drhs_er)
 
-  end subroutine ERD_rhs_deriv
+  end subroutine rhs_deriv
 
-  subroutine ERD_rhs (this, time, temp, rhs)
+  subroutine rhs (this, time, temp, b)
 
-    type(ERD_problem), intent(inout) :: this
+    class(rad_problem), intent(inout) :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: temp(:)
-    real(r8), intent(out) :: rhs(:)
+    real(r8), intent(out) :: b(:)
 
     real(r8), dimension(this%nface_er) :: temp_er, rhs_er
 
     ASSERT(size(temp) == this%nface_hc)
-    ASSERT(size(rhs) == this%nface_hc)
+    ASSERT(size(b) == this%nface_hc)
 
     !! Form the local temperature vector in the ER ordering.
     call reorder (this%perm_er_to_hc, temp_er, temp)
 
-    call ERS_rhs (this%sol, time, temp_er, rhs_er)
+    call this%sol%rhs (time, temp_er, rhs_er)
 
     !! Form the local rhs vector in the HC ordering.
-    call reorder (this%perm_hc_to_er, rhs, rhs_er)
+    call reorder (this%perm_hc_to_er, b, rhs_er)
 
-  end subroutine ERD_rhs
+  end subroutine rhs
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -949,15 +945,15 @@ contains
 
   subroutine write_encl_surface (file, sol)
 
-    use ER_solver_gmv
+    use rad_solver_gmv
 
-    character(len=*), intent(in) :: file
-    type(solver), intent(in) :: sol
+    character(*), intent(in) :: file
+    type(rad_solver), intent(in) :: sol
 
-    call ERS_gmv_open (file)
-    call ERS_gmv_write_enclosure (sol)
-    call ERS_gmv_close
+    call gmv_open (file)
+    call gmv_write_enclosure (sol)
+    call gmv_close
 
   end subroutine write_encl_surface
 
-end module ER_driver
+end module rad_problem_type

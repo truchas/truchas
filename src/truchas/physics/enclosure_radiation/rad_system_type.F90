@@ -1,28 +1,32 @@
 #include "f90_assert.fpp"
 
-module ER_system
+module rad_system_type
 
   use kinds
   use parallel_communication
   implicit none
   private
 
-  public :: system_residual, system_flux, system_rhs_deriv, system_rhs
-  public :: system_cheby_solve, system_lambda_min, system_lambda_max
-  public :: system_cheby_precon, system_jacobi_precon, system_matvec1
-  public :: system_destroy
-
-  type, public :: system
+  type, public :: rad_system
     real(r8) :: sigma ! Stefan-Boltzmann constant
     real(r8) :: t0    ! absolute-zero temperature
     integer :: nface      ! number of faces (number of rows) on this process
     integer :: offset     ! difference between global index and local row index
     integer :: nface_tot  ! total number of faces (number of columns)
-    integer, pointer :: ia(:) => null()
-    integer, pointer :: ja(:) => null()
-    real, pointer :: vf(:) => null()
-    real, pointer :: amb_vf(:) => null()
-  end type
+    integer, allocatable :: ia(:), ja(:)
+    real, allocatable :: vf(:), amb_vf(:)
+  contains
+    procedure :: flux
+    procedure :: residual
+    procedure :: matvec1
+    procedure :: rhs
+    procedure :: rhs_deriv
+    procedure :: cheby_solve
+    procedure :: cheby_precon
+    procedure :: jacobi_precon
+    procedure :: lambda_min
+    procedure :: lambda_max
+  end type rad_system
 
 contains
 
@@ -30,9 +34,9 @@ contains
   !! Heat flux computational kernel.
   !!
 
-  subroutine system_flux (this, q, t, tamb, eps, f)
+  subroutine flux (this, q, t, tamb, eps, f)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8),  intent(in)  :: q(:)  ! local radiosity vector
     real(r8),  intent(in)  :: t(:)
     real(r8),  intent(in)  :: tamb  ! ambient temperature
@@ -58,7 +62,7 @@ contains
       f(j) = eps(j)*this%sigma*(t(j)-this%t0)**4 - eps(j)*s
     end do
 
-    if (associated(this%amb_vf)) f = f - (this%sigma*(tamb-this%t0)**4)*eps*this%amb_vf
+    if (allocated(this%amb_vf)) f = f - (this%sigma*(tamb-this%t0)**4)*eps*this%amb_vf
 
 !    do j = 1, this%nface
 !      s = q(j)
@@ -68,17 +72,17 @@ contains
 !      f(j) = s
 !    end do
 !
-!    if (associated(this%amb_vf)) f = f - (this%sigma*(tamb-this%t0)**4) * this%amb_vf
+!    if (allocated(this%amb_vf)) f = f - (this%sigma*(tamb-this%t0)**4) * this%amb_vf
 
-  end subroutine system_flux
+  end subroutine flux
 
   !!
   !!  Radiosity system residual -- core computational kernel
   !!
 
-  subroutine system_residual (this, q, t, tamb, eps, r)
+  subroutine residual (this, q, t, tamb, eps, r)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in)  :: q(:)
     real(r8), intent(in)  :: t(:)
     real(r8), intent(in)  :: tamb
@@ -104,13 +108,13 @@ contains
       r(j) = eps(j)*this%sigma*(t(j)-this%t0)**4 - q(j) + (1.0_r8-eps(j))*s
     end do
 
-    if (associated(this%amb_vf)) r = r + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%amb_vf
+    if (allocated(this%amb_vf)) r = r + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%amb_vf
 
-  end subroutine system_residual
+  end subroutine residual
 
-  subroutine system_matvec1 (this, eps, z)
+  subroutine matvec1 (this, eps, z)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in) :: eps(:)
     real(r8), intent(inout) :: z(:)
 
@@ -131,16 +135,16 @@ contains
       z(j) = eps(j)*s
     end do
 
-  end subroutine system_matvec1
+  end subroutine matvec1
 
   !!
   !! Jacobian of the radiosity system RHS with respect to the temperatures.
   !! This is diagonal, and DRHS returns the diagonal.
   !!
 
-  subroutine system_rhs_deriv (this, t, eps, drhs)
+  subroutine rhs_deriv (this, t, eps, drhs)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in) :: t(:)
     real(r8), intent(in) :: eps(:)
     real(r8), intent(out) :: drhs(:)
@@ -151,26 +155,26 @@ contains
 
     drhs = 4*this%sigma*eps*(t-this%t0)**3
 
-  end subroutine system_rhs_deriv
+  end subroutine rhs_deriv
 
-  subroutine system_rhs (this, t, tamb, eps, rhs)
+  subroutine rhs (this, t, tamb, eps, b)
 
-    type(system), intent(in)  :: this
-    real(r8),     intent(in)  :: tamb, t(:), eps(:)
-    real(r8),     intent(out) :: rhs(:)
+    class(rad_system), intent(in)  :: this
+    real(r8), intent(in)  :: tamb, t(:), eps(:)
+    real(r8), intent(out) :: b(:)
 
     ASSERT(size(t) == this%nface)
     ASSERT(size(eps) == this%nface)
-    ASSERT(size(rhs) == this%nface)
+    ASSERT(size(b) == this%nface)
 
-    rhs = eps * this%sigma * (t-this%t0)**4
-    if (associated(this%amb_vf)) rhs = rhs + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%amb_vf
+    b = eps * this%sigma * (t-this%t0)**4
+    if (allocated(this%amb_vf)) b = b + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%amb_vf
 
-  end subroutine system_rhs
+  end subroutine rhs
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! SYSTEM_CHEBY_SOLVE
+ !! CHEBY_SOLVE
  !!
  !! This subroutine solves the radiosity system using the Chebyshev iterative
  !! method.
@@ -206,9 +210,9 @@ contains
  !!     and eliminate the need to specify c and d.
  !!
 
-  subroutine system_cheby_solve (this, t, tamb, eps, c, d, tol, maxitr, q, numitr, error)
+  subroutine cheby_solve (this, t, tamb, eps, c, d, tol, maxitr, q, numitr, error)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in) :: t(:)    ! face temperatures
     real(r8), intent(in) :: tamb    ! ambient temperature
     real(r8), intent(in) :: eps(:)  ! face emissivities
@@ -293,11 +297,11 @@ contains
 
     error = res_norm/rhs_norm
 
-  end subroutine system_cheby_solve
+  end subroutine cheby_solve
 
-  subroutine system_cheby_precon (this, eps, c, d, numitr, q)
+  subroutine cheby_precon (this, eps, c, d, numitr, q)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in) :: eps(:)  ! face emissivities
     real(r8), intent(in) :: c, d    ! chebyshev iteration parameters
     integer,  intent(in) :: numitr  ! number of iterations
@@ -345,11 +349,11 @@ contains
 
     end do
 
-  end subroutine system_cheby_precon
+  end subroutine cheby_precon
 
-  subroutine system_jacobi_precon (this, eps, numitr, z)
+  subroutine jacobi_precon (this, eps, numitr, z)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in) :: eps(:)  ! face emissivities
     integer,  intent(in) :: numitr  ! number of iterations
     real(r8), intent(inout) :: z(:)  ! RHS on entry, approx solution on return
@@ -377,11 +381,11 @@ contains
       end do
     end do
 
-  end subroutine system_jacobi_precon
+  end subroutine jacobi_precon
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! SYSTEM_LAMBDA_MIN / SYSTEM_LAMBDA_MAX
+ !! LAMBDA_MIN / LAMBDA_MAX
  !!
  !! These subroutines calculate the minimum and maximum eigenvalues of the
  !! radiosity system matrix using the power method. The matrix has the form
@@ -418,9 +422,9 @@ contains
  !! which is precisely what we want to do.
  !!
 
-  subroutine system_lambda_min (this, eps, tol, maxitr, q, lmin, numitr, error)
+  subroutine lambda_min (this, eps, tol, maxitr, q, lmin, numitr, error)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in)    :: eps(:)
     real(r8), intent(in)    :: tol
     integer,  intent(in)    :: maxitr
@@ -470,11 +474,11 @@ contains
     lmin = 1 + shift - theta
     numitr = n
 
-  end subroutine system_lambda_min
+  end subroutine lambda_min
 
-  subroutine system_lambda_max (this, eps, tol, maxitr, q, lmax, numitr, error)
+  subroutine lambda_max (this, eps, tol, maxitr, q, lmax, numitr, error)
 
-    type(system), intent(in) :: this
+    class(rad_system), intent(in) :: this
     real(r8), intent(in)    :: eps(:)
     real(r8), intent(in)    :: tol
     integer,  intent(in)    :: maxitr
@@ -521,7 +525,7 @@ contains
     lmax = theta
     numitr = n
 
-  end subroutine system_lambda_max
+  end subroutine lambda_max
 
   function global_l2norm (x) result (l2norm)
     real(r8), intent(in) :: x(:)
@@ -534,12 +538,4 @@ contains
     l2norm = sqrt(global_sum(s))
   end function global_l2norm
 
-  subroutine system_destroy (this)
-    type(system), intent(inout) :: this
-    if (associated(this%ia)) deallocate(this%ia)
-    if (associated(this%ja)) deallocate(this%ja)
-    if (associated(this%vf)) deallocate(this%vf)
-    if (associated(this%amb_vf)) deallocate(this%amb_vf)
-  end subroutine system_destroy
-
-end module ER_system
+end module rad_system_type

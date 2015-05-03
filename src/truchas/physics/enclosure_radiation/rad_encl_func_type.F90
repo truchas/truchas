@@ -1,5 +1,5 @@
 !!
-!! ER_ENCL_FUNC
+!! RAD_ENCL_FUNC_TYPE
 !!
 !! Neil N. Carlson <nnc@lanl.gov>, 5 Apr 2010
 !!
@@ -66,30 +66,34 @@
 
 #include "f90_assert.fpp"
 
-module ER_encl_func
+module rad_encl_func_type
 
   use kinds
   use scalar_func_containers
-  use ER_dist_encl, only: dist_encl
+  use rad_encl_type
   implicit none
   private
 
-  public :: EF_prep, EF_add_function, EF_done, EF_eval, EF_destroy
-
-  type, public :: encl_func
-    real(r8), pointer :: values(:) => null()
+  type, public :: rad_encl_func
+    private
+    real(r8), allocatable, public :: values(:)
     !! the rest are private
-    type(dist_encl), pointer :: encl => null()
+    type(rad_encl), pointer :: encl => null() ! reference only -- do not own
     real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup = -1
-    integer, pointer :: group(:) => null()
-    integer, pointer :: faces(:) => null()
+    integer, allocatable :: group(:)
+    integer, allocatable :: faces(:)
     type(scalar_func_box), allocatable :: farray(:)
-    integer, pointer :: hint(:) => null()
+    integer, allocatable :: hint(:)
     !! temporary components used during initialization
-    integer, pointer :: tag(:) => null()
+    integer, allocatable :: tag(:)
     type(scalar_func_list) :: flist
-  end type encl_func
+  contains
+    procedure :: prep
+    procedure :: add_function
+    procedure :: done
+    procedure :: eval
+  end type rad_encl_func
 
   !! Optimization hint values.
   integer, parameter, public :: EF_HINT_NONE    = 0
@@ -104,33 +108,33 @@ contains
  !! EF_PREP
  !!
 
-  subroutine EF_prep (this, encl)
+  subroutine prep (this, encl)
 
-    type(encl_func), intent(out) :: this
-    type(dist_encl), pointer :: encl
+    class(rad_encl_func), intent(out) :: this
+    type(rad_encl), pointer :: encl
 
     this%encl => encl
     this%ngroup = 0
     allocate(this%tag(encl%nface))
     this%tag = 0
 
-  end subroutine EF_prep
+  end subroutine prep
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! EF_ADD_FUNCTION
  !!
 
-  subroutine EF_add_function (this, f, blockID, stat, errmsg)
+  subroutine add_function (this, f, blockID, stat, errmsg)
 
-    type(encl_func), intent(inout) :: this
+    class(rad_encl_func), intent(inout) :: this
     class(scalar_func), allocatable, intent(inout) :: f
     integer, intent(in) :: blockID(:)
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 
     !! Verify that THIS is in the correct state.
-    INSIST(this%ngroup>=0 .and. associated(this%tag))
+    INSIST(this%ngroup>=0 .and. allocated(this%tag))
 
     !! Tag the faces associated with this function.
     call set_tag_array (this, blockID, stat, errmsg)
@@ -139,7 +143,7 @@ contains
     !! Append the function to the temporary list.
     call this%flist%append (f)
 
-  end subroutine EF_add_function
+  end subroutine add_function
 
   !!
   !! This auxillary subroutine tags the faces identified by the list
@@ -148,7 +152,7 @@ contains
 
   subroutine set_tag_array (this, blockID, stat, errmsg)
 
-    type(encl_func), intent(inout) :: this
+    type(rad_encl_func), intent(inout) :: this
     integer, intent(in) :: blockID(:)
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -194,18 +198,18 @@ contains
  !! EF_DONE
  !!
 
-  subroutine EF_done (this, stat, errmsg)
+  subroutine done (this, stat, errmsg)
   
     use const_scalar_func_type
 
-    type(encl_func), intent(inout) :: this
+    class(rad_encl_func), intent(inout) :: this
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 
     integer :: n, j
 
     !! Verify that THIS is in the correct state.
-    INSIST(this%ngroup>=0 .and. associated(this%tag))
+    INSIST(this%ngroup>=0 .and. allocated(this%tag))
 
     ASSERT(minval(this%tag)>=0 .and. maxval(this%tag)<=this%ngroup)
 
@@ -258,78 +262,59 @@ contains
     stat = 0
     errmsg = ''
 
-  end subroutine EF_done
+  end subroutine done
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! EF_EVAL
  !!
 
-  subroutine EF_eval (this, t)
+  subroutine eval (this, t)
 
-    type(encl_func), intent(inout) :: this
+    class(rad_encl_func), intent(inout) :: this
     real(r8), intent(in)  :: t
 
     integer :: j, n
     logical :: unevaluated
-    integer, pointer :: faces(:), fnode(:)
     real(r8) :: args(0:size(this%encl%coord,dim=1))
 
     !! Verify that THIS is in the correct state.
-    INSIST(associated(this%faces) .and. .not.associated(this%tag))
+    INSIST(allocated(this%faces) .and. .not.allocated(this%tag))
 
-    unevaluated = .not.associated(this%values)
+    unevaluated = .not.allocated(this%values)
     if (unevaluated) allocate(this%values(this%encl%nface))
 
     if (unevaluated .or. t /= this%tlast) then
       args(0) = t
       do n = 1, this%ngroup
-        faces => this%faces(this%group(n):this%group(n+1)-1)
-        select case (this%hint(n))
-        case (EF_HINT_CONST)
-          if (unevaluated) this%values(faces) = this%farray(n)%f%eval(args)
-        case (EF_HINT_X_INDEP)
-          this%values(faces) = this%farray(n)%f%eval(args)
-        case (EF_HINT_T_INDEP)
-          if (unevaluated) then
+        associate (faces => this%faces(this%group(n):this%group(n+1)-1))
+          select case (this%hint(n))
+          case (EF_HINT_CONST)
+            if (unevaluated) this%values(faces) = this%farray(n)%f%eval(args)
+          case (EF_HINT_X_INDEP)
+            this%values(faces) = this%farray(n)%f%eval(args)
+          case (EF_HINT_T_INDEP)
+            if (unevaluated) then
+              do j = 1, size(faces)
+                associate (fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1))
+                  args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
+                  this%values(faces(j)) = this%farray(n)%f%eval(args)
+                end associate
+              end do
+            end if
+          case default
             do j = 1, size(faces)
-              fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1)
-              args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
-              this%values(faces(j)) = this%farray(n)%f%eval(args)
+              associate (fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1))
+                args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
+                this%values(faces(j)) = this%farray(n)%f%eval(args)
+              end associate
             end do
-          end if
-        case default
-          do j = 1, size(faces)
-            fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1)
-            args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
-            this%values(faces(j)) = this%farray(n)%f%eval(args)
-          end do
-        end select
+          end select
+        end associate
       end do
       this%tlast = t
     end if
 
-  end subroutine EF_eval
+  end subroutine eval
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! EF_DESTROY
- !!
-
-  subroutine EF_destroy (this)
-
-    type(encl_func), intent(inout) :: this
-
-    type(encl_func) :: default
-
-    if (associated(this%faces)) deallocate(this%faces)
-    if (associated(this%values)) deallocate(this%values)
-    if (associated(this%group)) deallocate(this%group)
-    if (associated(this%hint)) deallocate(this%hint)
-    if (associated(this%tag)) deallocate(this%tag)
-
-    this = default  ! assign default initialization values
-
-  end subroutine EF_destroy
-
-end module ER_encl_func
+end module rad_encl_func_type

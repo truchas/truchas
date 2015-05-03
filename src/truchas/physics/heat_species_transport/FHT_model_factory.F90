@@ -25,7 +25,7 @@ module FHT_model_factory
   use dist_mesh_type
   use mfd_disc_type
   use material_mesh_function
-  use ER_driver
+  use rad_problem_type
   implicit none
   private
   
@@ -89,7 +89,7 @@ contains
       allocate(model%vf_rad_prob(n), encl_name(n))
       call ERI_get_names (encl_name)
       do j = 1, n
-        call ERD_problem_init (model%vf_rad_prob(j), mesh, encl_name(j))
+        call model%vf_rad_prob(j)%init (mesh, encl_name(j))
         !! Verify that these enclosure faces are boundary faces.
         if (.not.global_all(btest(mesh%face_set_mask(model%vf_rad_prob(j)%faces),0))) then
           stat = -1

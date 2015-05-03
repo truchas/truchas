@@ -86,17 +86,15 @@ module parallel_permutations
   implicit none
   private
 
-  public :: create_par_perm, destroy, defined, reorder, rearrange
+  public :: create_par_perm, defined, reorder, rearrange
 
   type, public :: par_perm
     private
     integer, pointer :: perm(:) => null() ! dest-to-src mapping (local indices)
     type(ip_desc) :: src_ip ! partition descriptor for the src index set
+  contains
+    final :: par_perm_delete
   end type par_perm
-
-  interface destroy
-    module procedure destroy_par_perm
-  end interface
 
   interface defined
     module procedure defined_par_perm
@@ -115,6 +113,13 @@ module parallel_permutations
   end interface
 
 contains
+
+  !! Final subroutine for PAR_PERM type objects
+  subroutine par_perm_delete (this)
+    type(par_perm), intent(inout) :: this
+    if (associated(this%perm)) deallocate(this%perm)
+    call destroy (this%src_ip)
+  end subroutine par_perm_delete
 
   subroutine create_par_perm_1 (this, perm, dest_bsize, src_bsize)
 
@@ -319,12 +324,6 @@ contains
     ASSERT( maxval(this%perm) <= local_size(this%src_ip) )
 
   end subroutine create_par_perm_var
-
-  subroutine destroy_par_perm (this)
-    type(par_perm), intent(inout) :: this
-    if (associated(this%perm)) deallocate(this%perm)
-    call destroy (this%src_ip)
-  end subroutine destroy_par_perm
 
   logical function defined_par_perm (this)
     type(par_perm), intent(in) :: this

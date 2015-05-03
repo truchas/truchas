@@ -8,7 +8,7 @@ program example
   use parallel_communication
   use dist_mesh_type
   use mesh_broker
-  use ER_driver
+  use rad_driver_type
   use physical_constants, only: read_physical_constants
   use function_namelist, only: read_function_namelists
   use ER_input
@@ -18,7 +18,7 @@ program example
   implicit none
   
   logical :: exists
-  type(ERD_problem) :: prob
+  type(rad_problem) :: prob
   type(dist_mesh), pointer :: mesh
   character(len=PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:)
   real(r8), allocatable :: hc_temp(:), temp(:), qrad(:), res(:)
@@ -67,7 +67,7 @@ program example
   
     if (is_IOP) write(*,'(/,a)') 'Solving radiosity system "' // trim(encl_name(p)) // '" ...'
   
-    call ERD_problem_init (prob, mesh, encl_name(p))
+    call prob%init (mesh, encl_name(p))
   
     allocate(temp(prob%nface_hc), qrad(prob%nface_hc), res(prob%nface_hc))
     
@@ -81,16 +81,16 @@ program example
     
     !! Compute the surface radiosity.
     qrad = 0.0_r8
-    call ERD_solve_radiosity (prob, 0.0_r8, temp, qrad)
+    call prob%solve_radiosity (0.0_r8, temp, qrad)
     call ERD_gmv_write_var (prob, qrad, 'radiosity')
   
     !! Compute the residual of the radiosity system (should be small).
-    call ERD_compute_residual  (prob, 0.0_r8, qrad, temp, res)
+    call prob%residual  (0.0_r8, qrad, temp, res)
     res_norm = sqrt(global_sum(res**2))
     if (is_IOP) write(*,'(2x,a,es13.5)') 'residual norm =', res_norm
   
     !! Compute the heat flux through the surface.
-    call ERD_compute_heat_flux (prob, 0.0_r8, qrad, res)
+    call prob%heat_flux (0.0_r8, qrad, res)
     call ERD_gmv_write_var (prob, res,  'heatflux')
     
     call ERD_gmv_end_variables ()

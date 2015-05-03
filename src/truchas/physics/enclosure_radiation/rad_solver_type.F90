@@ -1,45 +1,61 @@
 #include "f90_assert.fpp"
 
-module ER_solver
+module rad_solver_type
 
   use kinds, only: r8
-  use ER_system
-  use ER_dist_encl
-  use ER_encl_func
+  use rad_system_type
+  use rad_encl_type
+  use rad_encl_func_type
   use scalar_func_class
   use parallel_communication
   use truchas_logging_services
   implicit none
   private
 
-  public :: ERS_solver_create, ERS_solver_destroy
-  public :: ERS_set_ambient, ERS_set_emissivity, ERS_set_absolute_zero, ERS_set_stefan_boltzmann
-  public :: ERS_set_solver_controls
-  public :: ERS_compute_residual, ERS_compute_heat_flux, ERS_solve_radiosity
-  public :: ERS_precon_cheby, ERS_precon_jacobi, ERS_precon_matvec1
-  public :: ERS_rhs_deriv, ERS_rhs
-  public :: ERS_set_cheby_param
-
-  type, public :: solver
+  type, public :: rad_solver
     integer :: nface
-    type(dist_encl), pointer :: encl => null()  ! radiation enclosure surface
+    type(rad_encl), pointer :: encl => null()  ! radiation enclosure surface
     class(scalar_func), allocatable :: tamb     ! ambient temperature function
-    type(encl_func), pointer :: eps  => null()  ! emissivity enclosure function
-    type(system) :: sys
+    type(rad_encl_func), pointer :: eps  => null()  ! emissivity enclosure function
+    type(rad_system) :: sys
     !! Chebyshev solver parameters
     real(r8) :: c, d = -1.0_r8  ! iteration parameters
     real(r8) :: tol
     integer  :: maxitr
-  end type solver
+  contains
+    procedure :: init
+    procedure :: set_ambient
+    procedure :: set_emissivity
+    procedure :: set_absolute_zero
+    procedure :: set_stefan_boltzmann
+    procedure :: set_solver_controls
+    procedure :: set_cheby_param
+    procedure :: residual
+    procedure :: heat_flux
+    procedure :: rhs
+    procedure :: rhs_deriv
+    procedure :: precon_cheby
+    procedure :: precon_jacobi
+    procedure :: precon_matvec1
+    procedure :: solve_radiosity
+    final :: rad_solver_delete
+  end type rad_solver
 
 contains
 
-  subroutine ERS_solver_create (this, file, csf, color)
+  !! Final subroutine for RAD_SOLVER type objects
+  subroutine rad_solver_delete (this)
+    type(rad_solver), intent(inout) :: this
+    if (associated(this%encl)) deallocate(this%encl)
+    if (associated(this%eps)) deallocate(this%eps)
+  end subroutine rad_solver_delete
+
+  subroutine init (this, file, csf, color)
 
     use ER_file
     use index_partitioning
 
-    type(solver), intent(out) :: this
+    class(rad_solver), intent(out) :: this
     character(len=*), intent(in) :: file
     real(r8), intent(in) :: csf
     integer, intent(in) :: color(:)
@@ -51,7 +67,7 @@ contains
 
     !! Load the distributed enclosure surface.
     allocate(this%encl)
-    call create_dist_encl (this%encl, ncid, color)
+    call this%encl%init (ncid, color)
 
     if (csf /= 1.0_r8) this%encl%coord = csf * this%encl%coord
 
@@ -74,13 +90,13 @@ contains
 
     if (is_IOP) call ERF_close (ncid)
 
-  end subroutine ERS_solver_create
+  end subroutine init
 
   subroutine load_view_factors (this, ncid, bsize)
 
     use ER_file
 
-    type(system), intent(out) :: this
+    type(rad_system), intent(out) :: this
     integer, intent(in) :: ncid
     integer, intent(in) :: bsize(:)
 
@@ -168,54 +184,41 @@ contains
 
   end subroutine load_view_factors
 
-  subroutine ERS_solver_destroy (this)
-    type(solver), intent(inout) :: this
-    if (associated(this%encl)) then
-      call destroy_dist_encl (this%encl)
-      deallocate(this%encl)
-    end if
-    if (associated(this%eps)) then
-      call EF_destroy (this%eps)
-      deallocate(this%eps)
-    end if
-    call system_destroy (this%sys)
-  end subroutine ERS_solver_destroy
-
-  subroutine ERS_set_ambient (this, tamb)
-    type(solver), intent(inout) :: this
+  subroutine set_ambient (this, tamb)
+    class(rad_solver), intent(inout) :: this
     class(scalar_func), allocatable, intent(inout) :: tamb
     call move_alloc (tamb, this%tamb)
-  end subroutine ERS_set_ambient
+  end subroutine set_ambient
 
-  subroutine ERS_set_emissivity (this, eps)
-    type(solver), intent(inout) :: this
-    type(encl_func), pointer :: eps
+  subroutine set_emissivity (this, eps)
+    class(rad_solver), intent(inout) :: this
+    type(rad_encl_func), pointer :: eps
     this%eps => eps
-  end subroutine ERS_set_emissivity
+  end subroutine set_emissivity
 
-  subroutine ERS_set_absolute_zero (this, t0)
-    type(solver), intent(inout) :: this
+  subroutine set_absolute_zero (this, t0)
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: t0
     this%sys%t0 = t0
-  end subroutine ERS_set_absolute_zero
+  end subroutine set_absolute_zero
 
-  subroutine ERS_set_stefan_boltzmann (this, sigma)
-    type(solver), intent(inout) :: this
+  subroutine set_stefan_boltzmann (this, sigma)
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: sigma
     this%sys%sigma = sigma
-  end subroutine ERS_set_stefan_boltzmann
+  end subroutine set_stefan_boltzmann
 
-  subroutine ERS_set_solver_controls (this, tol, maxitr)
-    type(solver), intent(inout) :: this
+  subroutine set_solver_controls (this, tol, maxitr)
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: tol
     integer, intent(in) :: maxitr
     this%tol = tol
     this%maxitr = maxitr
-  end subroutine ERS_set_solver_controls
+  end subroutine set_solver_controls
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! ERS_SOLVE_RADIOSITY
+ !! SOLVE_RADIOSITY
  !!
  !! This subroutine solves the radiosity system for the radiosity from the
  !! enclosure surface given the temperature on the surface.  The surface
@@ -244,9 +247,9 @@ contains
  !! surface.  Thus we
 
 
-  subroutine ERS_solve_radiosity (this, time, temp, qrad)
+  subroutine solve_radiosity (this, time, temp, qrad)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: temp(:)
     real(r8), intent(inout) :: qrad(:)
@@ -258,59 +261,59 @@ contains
     ASSERT(size(qrad) == this%nface)
 
     tamb = this%tamb%eval ([time])
-    call EF_eval(this%eps, time)
+    call this%eps%eval (time)
 
-    call system_cheby_solve (this%sys, temp, tamb, this%eps%values, &
-                             this%c, this%d, this%tol, this%maxitr, qrad, n, err)
+    call this%sys%cheby_solve (temp, tamb, this%eps%values, &
+                               this%c, this%d, this%tol, this%maxitr, qrad, n, err)
     if (is_IOP) write(*,'(2x,a,i0,a,es9.3)') 'rhs-relative error(', n, ')=', err
     INSIST( n <= this%maxitr )
 
-  end subroutine ERS_solve_radiosity
+  end subroutine solve_radiosity
 
-  subroutine ERS_precon_cheby (this, time, numitr, z)
+  subroutine precon_cheby (this, time, numitr, z)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: time
     integer, intent(in) :: numitr
     real(r8), intent(inout) :: z(:)
 
     ASSERT(size(z) == this%nface)
 
-    call EF_eval(this%eps, time)
-    call system_cheby_precon (this%sys, this%eps%values, this%c, this%d, numitr, z)
+    call this%eps%eval (time)
+    call this%sys%cheby_precon (this%eps%values, this%c, this%d, numitr, z)
 
-  end subroutine ERS_precon_cheby
+  end subroutine precon_cheby
 
-  subroutine ERS_precon_jacobi (this, time, numitr, z)
+  subroutine precon_jacobi (this, time, numitr, z)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: time
     integer, intent(in) :: numitr
     real(r8), intent(inout) :: z(:)
 
     ASSERT(size(z) == this%nface)
 
-    call EF_eval(this%eps, time)
-    call system_jacobi_precon (this%sys, this%eps%values, numitr, z)
+    call this%eps%eval (time)
+    call this%sys%jacobi_precon (this%eps%values, numitr, z)
 
-  end subroutine ERS_precon_jacobi
+  end subroutine precon_jacobi
 
-  subroutine ERS_precon_matvec1 (this, time, z)
+  subroutine precon_matvec1 (this, time, z)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(inout) :: z(:)
 
     ASSERT(size(z) == this%nface)
 
-    call EF_eval(this%eps, time)
-    call system_matvec1 (this%sys, this%eps%values, z)
+    call this%eps%eval (time)
+    call this%sys%matvec1 (this%eps%values, z)
 
-  end subroutine ERS_precon_matvec1
+  end subroutine precon_matvec1
 
-  subroutine ERS_set_cheby_param (this, time)
+  subroutine set_cheby_param (this, time)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: time
 
     integer  :: n, maxitr
@@ -321,7 +324,7 @@ contains
 
     call TLS_info ('    Calculating Chebyshev iteration parameters ...')
 
-    call EF_eval(this%eps, time)
+    call this%eps%eval (time)
 
     !! Set the PRN generator seed.  This gives us reproducibility on the same
     !! platform using the same number of processes/data distribution.  But we
@@ -335,7 +338,7 @@ contains
 
     !! Chebyshev iteration parameters C and D (see Notes 1, 2).
     tol = 1.0d-4; maxitr = 10000 !TODO! MAKE THESE PARAMETERS
-    call system_lambda_min (this%sys, this%eps%values, tol, maxitr, z, lmin, n, err)
+    call this%sys%lambda_min (this%eps%values, tol, maxitr, z, lmin, n, err)
     write(msg,'(6x,a,i0,a,f8.6,a,es9.3)') 'eigenvalue calculation: lmin(', n, ')=', lmin,  ', error=', err
     call TLS_info (trim(msg))
     
@@ -354,20 +357,20 @@ contains
     write(msg,'(6x,2(a,f8.6))') 'setting d=', this%d, ', c=', this%c
     call TLS_info (trim(msg))
 
-  end subroutine ERS_set_cheby_param
+  end subroutine set_cheby_param
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! ERS_COMPUTE_HEAT_FLUX
+ !! HEAT_FLUX
  !!
  !! Calculates the net heat flux through the enclosure surface given the
  !! radiosity from the enclosure surface.  The flux may depend on a possibly
  !! time-dependent ambient temperature.
  !!
 
-  subroutine ERS_compute_heat_flux (this, time, qrad, temp, flux)
+  subroutine heat_flux (this, time, qrad, temp, flux)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: qrad(:)  ! local radiosity vector
     real(r8), intent(in)  :: temp(:)  ! local temperature vector
@@ -380,23 +383,23 @@ contains
     ASSERT(size(flux) == this%nface)
 
     tamb = this%tamb%eval([time])
-    call EF_eval (this%eps, time)
-    call system_flux (this%sys, qrad, temp, tamb, this%eps%values, flux)
+    call this%eps%eval (time)
+    call this%sys%flux (qrad, temp, tamb, this%eps%values, flux)
 
-  end subroutine ERS_compute_heat_flux
+  end subroutine heat_flux
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! ERS_COMPUTE_RESIDUAL
+ !! RESIDUAL
  !!
  !! This subroutine calculates the residual of the radiosity system given the
  !! temperature and radiosity on the enclosure surface.  The emissivities and
  !! ambient temperature parameters of the system may be time-dependent.
  !!
 
-  subroutine ERS_compute_residual (this, time, qrad, temp, res)
+  subroutine residual (this, time, qrad, temp, res)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: qrad(:)  ! radiosity vector
     real(r8), intent(in)  :: temp(:)  ! temperature vector
@@ -409,10 +412,10 @@ contains
     ASSERT(size(res)  == this%nface)
 
     tamb = this%tamb%eval([time])
-    call EF_eval (this%eps, time)
-    call system_residual (this%sys, qrad, temp, tamb, this%eps%values, res)
+    call this%eps%eval (time)
+    call this%sys%residual (qrad, temp, tamb, this%eps%values, res)
 
-  end subroutine ERS_compute_residual
+  end subroutine residual
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -423,9 +426,9 @@ contains
  !! and the diagonal is returned in drhs.
  !!
 
-  subroutine ERS_rhs_deriv (this, time, temp, drhs)
+  subroutine rhs_deriv (this, time, temp, drhs)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: temp(:)  ! temperature vector
     real(r8), intent(out) :: drhs(:)  ! RHS derivative (diagonal)
@@ -433,27 +436,27 @@ contains
     ASSERT(size(temp) == this%nface)
     ASSERT(size(drhs) == this%nface)
 
-    call EF_eval (this%eps, time)
-    call system_rhs_deriv (this%sys, temp, this%eps%values, drhs)
+    call this%eps%eval (time)
+    call this%sys%rhs_deriv (temp, this%eps%values, drhs)
 
-  end subroutine ERS_rhs_deriv
+  end subroutine rhs_deriv
 
-  subroutine ERS_rhs (this, time, temp, rhs)
+  subroutine rhs (this, time, temp, b)
 
-    type(solver), intent(inout) :: this
+    class(rad_solver), intent(inout) :: this
     real(r8), intent(in)  :: time
     real(r8), intent(in)  :: temp(:)  ! temperature vector
-    real(r8), intent(out) :: rhs(:)
+    real(r8), intent(out) :: b(:)
 
     real(r8) :: tamb
 
     ASSERT(size(temp) == this%nface)
-    ASSERT(size(rhs) == this%nface)
+    ASSERT(size(b) == this%nface)
 
     tamb = this%tamb%eval([time])
-    call EF_eval (this%eps, time)
-    call system_rhs (this%sys, temp, tamb, this%eps%values, rhs)
+    call this%eps%eval (time)
+    call this%sys%rhs (temp, tamb, this%eps%values, b)
 
-  end subroutine ERS_rhs
+  end subroutine rhs
 
-end module ER_solver
+end module rad_solver_type

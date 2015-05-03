@@ -88,7 +88,7 @@ module mesh_interop
   public :: void_is_present
 
   !! Permutation structures connecting the DS and T mesh cell labelings.
-  type(par_perm), public, save :: pcell_t_to_ds, pcell_ds_to_t
+  type(par_perm), allocatable, public, save :: pcell_t_to_ds, pcell_ds_to_t
   integer, pointer, public, save :: t_gap_elements(:) => null()
   
 contains
@@ -97,6 +97,7 @@ contains
     use mesh_module, only: unpermute_mesh_vector
     type(dist_mesh), intent(in) :: mesh
     integer, pointer :: dummy(:) => null()
+    allocate(pcell_t_to_ds, pcell_ds_to_t)
     call create_par_perm (unpermute_mesh_vector, mesh%xcell(:mesh%ncell_onP), &
                           pcell_t_to_ds, t_gap_elements, pcell_ds_to_t, dummy)
     INSIST(size(dummy) == 0)
@@ -116,8 +117,8 @@ contains
   end subroutine generate_mesh_mappings
   
   subroutine delete_mesh_mappings ()
-    call destroy (pcell_t_to_ds)
-    call destroy (pcell_ds_to_t)
+    if (allocated(pcell_t_to_ds)) deallocate(pcell_t_to_ds)
+    if (allocated(pcell_ds_to_t)) deallocate(pcell_ds_to_t)
     if (associated(t_gap_elements)) deallocate(t_gap_elements)
   end subroutine delete_mesh_mappings
   
