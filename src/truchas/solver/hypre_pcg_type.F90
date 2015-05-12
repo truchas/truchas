@@ -11,117 +11,87 @@
 
 module hypre_pcg_type
 
-  use kinds
+  use kinds, only: r8
+  use fhypre
   use pcsr_matrix_type
   use index_partitioning
-  use fhypre
+  use parameter_list_type
   implicit none
   private
 
   type, public :: hypre_pcg
     private
-    type(pcsr_matrix), pointer :: Asrc => null()
+    type(pcsr_matrix), pointer :: A => null()
     integer :: nrows = 0, ilower = 0, iupper = 0
-    integer, pointer :: rows(:) => null()
-    type(hypre_obj) :: solver = hypre_null_obj    ! HYPRE_Solver object handle
-    type(hypre_obj) :: precon = hypre_null_obj    ! HYPRE_Solver object handle
-    type(hypre_obj) :: A = hypre_null_obj         ! HYPRE_IJMatrix object handle
-    type(hypre_obj) :: b = hypre_null_obj, x = hypre_null_obj  ! HYPRE_IJVector object handles
-    !! PCG parameters -- these are set at initialization
-    integer  :: print_level       ! ??? OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
-    integer  :: max_iter          ! maximum number of iterations
-    real(r8) :: err_tol           ! error tolerance (||r||_2 / ||b||_2)
-    !! BoomerAMG preconditioner parameters -- these are set at initialization
-    integer  :: num_cycles        ! number of cycles
-    integer  :: debug_level       ! OFF=0, ON=1
-    integer  :: logging_level     ! OFF=0, ON=1, >1=residual available from hypre
-    !! BoomerAMG preconditioner parameters -- these are currently hardwired
-    integer  :: coarsen_type = 6  ! Falgout coarsening
-    integer  :: relax_type = 3    ! hybrid Gauss-Seidel smoothing
-    integer  :: num_sweeps = 1    ! number of smoother sweeps
-    integer  :: max_levels = 25   ! max number of multigrid levels
-    real(r8) :: strong_threshold = 0.5_r8 ! should be 0.5 for 3D problems and 0.25 for 2D
+    integer, allocatable :: rows(:)
+    type(hypre_obj) :: solver = hypre_null_obj ! HYPRE_Solver object handle
+    type(hypre_obj) :: precon = hypre_null_obj ! HYPRE_Solver object handle
+    type(hypre_obj) :: Ah = hypre_null_obj     ! HYPRE_IJMatrix object handle
+    type(hypre_obj) :: bh = hypre_null_obj     ! HYPRE_IJVector object handles
+    type(hypre_obj) :: xh = hypre_null_obj     ! HYPRE_IJVector object handles
+    type(parameter_list), pointer :: params    ! reference only -- do not own
+  contains
+    procedure :: init
+    procedure :: setup
+    procedure :: solve
+    procedure :: matrix
+    procedure :: get_metrics
+    final :: hypre_pcg_delete
   end type hypre_pcg
-
-  public :: hypre_pcg_init, hypre_pcg_compute, hypre_pcg_solve, hypre_pcg_delete
-  public :: hypre_pcg_matrix, hypre_pcg_get_metrics
-
-  type, public :: hypre_pcg_params
-    real(r8) :: err_tol           ! error tolerance (||r||_2 / ||b||_2)
-    integer  :: max_iter = 100    ! maximum number of iterations
-    integer  :: num_cycles = 1    ! number of BoomerAMG preconditioner cycles
-    integer  :: print_level = 0   ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
-    integer  :: debug_level = 0   ! OFF=0, ON=1
-    integer  :: logging_level = 0 ! OFF=0, ON=1, >1=residual available from hypre
-  end type hypre_pcg_params
 
 contains
 
-  subroutine hypre_pcg_init (this, A, params)
+  !! Final subroutine for HYPRE_PCG objects
+  subroutine hypre_pcg_delete (this)
+    type(hypre_pcg), intent(inout) :: this
+    integer :: ierr
+    ierr = 0
+    call fHYPRE_ClearAllErrors
+    if (hypre_associated(this%Ah)) call fHYPRE_IJMatrixDestroy (this%Ah, ierr)
+    if (hypre_associated(this%bh)) call fHYPRE_IJVectorDestroy (this%bh, ierr)
+    if (hypre_associated(this%xh)) call fHYPRE_IJVectorDestroy (this%xh, ierr)
+    if (hypre_associated(this%solver)) call fHYPRE_PCGDestroy (this%solver, ierr)
+    if (hypre_associated(this%precon)) call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
+    INSIST(ierr == 0)
+  end subroutine hypre_pcg_delete
 
-    type(hypre_pcg), intent(out) :: this
-    type(pcsr_matrix), target, intent(in) :: A
-    type(hypre_pcg_params), intent(in) :: params
+  subroutine init (this, A, params)
+
+    class(hypre_pcg), intent(out) :: this
+    type(pcsr_matrix), intent(in), target :: A
+    type(parameter_list), pointer, intent(in) :: params
 
     integer :: ierr, i
 
-    this%Asrc => A
+    this%A => A
+    this%params => params
 
     this%nrows  = onP_size(A%graph%row_ip)
     this%ilower = first_index(A%graph%row_ip)
     this%iupper = last_index(A%graph%row_ip)
     allocate(this%rows(this%nrows))
-    this%rows = (/ (i, i = this%ilower, this%iupper) /)
+    this%rows = [(i, i = this%ilower, this%iupper)]
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%b, ierr)
-    call fHYPRE_IJVectorSetMaxOffProcElmts (this%b, 0, ierr)
+    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%x, ierr)
-    call fHYPRE_IJVectorSetMaxOffProcElmts (this%x, 0, ierr)
+    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts (this%xh, 0, ierr)
     INSIST(ierr == 0)
 
-    !! Process the parameters.
-    INSIST(params%err_tol > 0.0_r8)
-    this%err_tol = params%err_tol
-    INSIST(params%max_iter > 0)
-    this%max_iter = params%max_iter
-    INSIST(params%num_cycles > 0)
-    this%num_cycles = params%num_cycles
-    INSIST(params%print_level >= 0 .and. params%print_level <= 3)
-    this%print_level = params%print_level
-    INSIST(params%debug_level >= 0)
-    this%debug_level = params%debug_level
-    INSIST(params%logging_level >= 0)
-    this%logging_level = params%logging_level
+  end subroutine init
 
-  end subroutine hypre_pcg_init
-
-  subroutine hypre_pcg_delete (this)
-    type(hypre_pcg), intent(inout) :: this
-    type(hypre_pcg) :: default
-    integer :: ierr
-    ierr = 0
-    if (associated(this%rows)) deallocate(this%rows)
-    if (hypre_associated(this%A)) call fHYPRE_IJMatrixDestroy (this%A, ierr)
-    if (hypre_associated(this%b)) call fHYPRE_IJVectorDestroy (this%b, ierr)
-    if (hypre_associated(this%x)) call fHYPRE_IJVectorDestroy (this%x, ierr)
-    if (hypre_associated(this%solver)) call fHYPRE_PCGDestroy (this%solver, ierr)
-    if (hypre_associated(this%precon)) call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
-    INSIST(ierr == 0)
-    this = default  ! assign default initialization values
-  end subroutine hypre_pcg_delete
-
-  function hypre_pcg_matrix (this) result (matrix)
-    type(hypre_pcg), intent(in) :: this
+  function matrix (this)
+    class(hypre_pcg), intent(in) :: this
     type(pcsr_matrix), pointer :: matrix
-    matrix => this%Asrc
-  end function hypre_pcg_matrix
+    matrix => this%A
+  end function matrix
 
-  subroutine hypre_pcg_get_metrics (this, num_itr)
-    type(hypre_pcg), intent(in) :: this
+  subroutine get_metrics (this, num_itr)
+    class(hypre_pcg), intent(in) :: this
     integer, intent(out), optional :: num_itr
     integer :: ierr
     INSIST(hypre_associated(this%solver))
@@ -129,42 +99,23 @@ contains
       call fHYPRE_PCGGetNumIterations (this%solver, num_itr, ierr)
       INSIST(ierr == 0)
     end if
-  end subroutine hypre_pcg_get_metrics
+  end subroutine get_metrics
 
-  subroutine hypre_pcg_compute (this)
+  subroutine setup (this)
 
-    type(hypre_pcg), intent(inout) :: this
+    class(hypre_pcg), intent(inout) :: this
 
-    integer :: ierr
-    real(r8) :: dummy(this%nrows)
+    integer :: ierr, ipar
+    real(r8) :: dummy(this%nrows), rpar
 
-    ASSERT(associated(this%Asrc))
-    call copy_to_ijmatrix (this%Asrc, this%A)
+    ASSERT(associated(this%A))
+    call copy_to_ijmatrix (this%A, this%Ah)
 
     !! Create the Hypre BoomerAMG solver object (preconditioner).  Note that
     !! once the solver has been setup, it is not possible to change the matrix
     !! values without completely destroying the solver and recreating it.
     if (hypre_associated(this%precon)) call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
     call fHYPRE_BoomerAMGCreate (this%precon, ierr)
-    INSIST(ierr == 0)
-
-    !! Set some debugging/diagnostic output options.
-    call fHYPRE_BoomerAMGSetDebugFlag (this%precon, this%debug_level, ierr)
-    call fHYPRE_BoomerAMGSetLogging (this%precon, this%logging_level, ierr)
-    INSIST(ierr == 0)
-
-    !! Set the Boomer AMG parameters.
-    call fHYPRE_BoomerAMGSetPrintLevel  (this%precon, this%print_level, ierr)
-    call fHYPRE_BoomerAMGSetCoarsenType (this%precon, this%coarsen_type, ierr)
-    call fHYPRE_BoomerAMGSetRelaxType   (this%precon, this%relax_type, ierr)
-    call fHYPRE_BoomerAMGSetNumSweeps   (this%precon, this%num_sweeps, ierr)
-    call fHYPRE_BoomerAMGSetMaxLevels   (this%precon, this%max_levels, ierr)
-    call fHYPRE_BoomerAMGSetMaxIter     (this%precon, this%num_cycles, ierr)
-    call fHYPRE_BoomerAMGSetTol         (this%precon, 0.0_r8, ierr)
-    call fHYPRE_BoomerAMGSetStrongThreshold  (this%precon, this%strong_threshold, ierr)
-    call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 3, 1, ierr)
-    call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 4, 2, ierr)
-    call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 9, 3, ierr)
     INSIST(ierr == 0)
 
     !! Create the Hypre PCG solver object. This supposes that once the solver
@@ -174,64 +125,161 @@ contains
     call fHYPRE_PCGCreate (this%solver, ierr)
     INSIST(ierr == 0)
 
-    !! Set the PCG parameters.
-    call fHYPRE_PCGSetPrintLevel (this%solver, this%print_level, ierr)
+    !! Print level (optional, default is no output)
+    call this%params%get ('print-level', ipar, default=0)
+    INSIST(ipar >= 0 .and. ipar <= 3) !TODO: replace with proper error handling
+    call fHYPRE_PCGSetPrintLevel (this%solver, ipar, ierr)
+    INSIST(ierr == 0)
+    call this%params%get ('amg-print-level', ipar, default=0)
+    INSIST(ipar >= 0) !TODO: replace with proper error handling
+    call fHYPRE_BoomerAMGSetPrintLevel  (this%precon, ipar, ierr)
+    INSIST(ierr == 0)
+    
+    !! Logging level (optional, default is none)
+    call this%params%get ('logging-level', ipar, default=0)
+    INSIST(ipar >= 0) !TODO: replace with proper error handling
+    call fHYPRE_BoomerAMGSetLogging (this%precon, ipar, ierr)
+    INSIST(ierr == 0)
+    
+    !! PCG solver relative tolerance (required)
+    call this%params%get ('rel-tol', rpar)
+    INSIST(rpar >= 0.0_r8) !TODO: replace with proper error handling
+    call fHYPRE_PCGSetTol (this%solver, rpar, ierr)
+    INSIST(ierr == 0)
+    
+    !! Absolute error tolerance for PCG solver (optional, use Hypre default -- none)
+    if (this%params%is_parameter ('abs-tol')) then
+      call this%params%get ('abs-tol', rpar)
+      INSIST(rpar > 0.0_r8) !TODO: replace with proper error handling
+      call fHYPRE_PCGSetAbsoluteTol (this%solver, rpar, ierr)
+      INSIST(ierr == 0)
+    end if
+
+    !! Use the two norm instead of the energy norm (hardwired).  Why?
     call fHYPRE_PCGSetTwoNorm (this%solver, 1, ierr)
-    call fHYPRE_PCGSetTol (this%solver, this%err_tol, ierr)
-    call fHYPRE_PCGSetAbsoluteTol (this%solver, 0.0_r8, ierr)
-    call fHYPRE_PCGSetMaxIter (this%solver, this%max_iter, ierr)
+    INSIST(ierr == 0)
+    
+    !! Maximum number of PCG iterations (required)
+    call this%params%get ('max-iter', ipar)
+    INSIST(ipar > 0) !TODO: replace with proper error handling
+    call fHYPRE_PCGSetTol (this%solver, rpar, ierr)
+    call fHYPRE_PCGSetMaxIter (this%solver, ipar, ierr)
+    INSIST(ierr == 0)
+
+    !! Number of AMG cycles (using as a preconditioner, optional, default=1)
+    call this%params%get ('amg-num-cycles', ipar, default=1)
+    INSIST(ipar >= 1) !TODO: replace with proper error handling
+    call fHYPRE_BoomerAMGSetMaxIter (this%precon, ipar, ierr)
+    call fHYPRE_BoomerAMGSetTol (this%precon, 0.0_r8, ierr)
+    INSIST(ierr == 0)
+
+    !! AMG strength threshold (default 0.5 (3D Laplace))
+    call this%params%get ('amg-strong-threshold', rpar, default=0.5_r8)
+    INSIST(rpar > 0.0_r8 .and. rpar < 1.0_r8) !TODO: replace with proper error handling
+    call fHYPRE_BoomerAMGSetStrongThreshold  (this%precon, rpar, ierr)
+    INSIST(ierr == 0)
+
+    !! Maximum number of AMG levels (optional, use Hypre default)
+    if (this%params%is_parameter('amg-max-levels')) then
+      call this%params%get ('amg-max-levels', ipar)
+      INSIST(ipar > 1) !TODO: replace with proper error handling
+      call fHYPRE_BoomerAMGSetMaxLevels   (this%precon, ipar, ierr)
+      INSIST(ierr == 0)
+    end if
+    
+    !! The AMG coarsening method (optional, use Hypre default)
+    if (this%params%is_parameter('amg-coarsen-method')) then
+      call this%params%get ('amg-coarsen-type', ipar)
+      INSIST(ipar >= 0) !TODO: replace with proper error handling
+      call fHYPRE_BoomerAMGSetCoarsenType (this%precon, ipar, ierr)
+      INSIST(ierr == 0)
+    end if
+    
+    !! Number of AMG smoother sweeps (optional, default 1)
+    call this%params%get ('amg-smoothing-sweeps', ipar, default=1)
+    INSIST(ipar >= 0) !TODO: replace with proper error handling
+    call fHYPRE_BoomerAMGSetNumSweeps (this%precon, ipar, ierr)
+    INSIST(ierr == 0)
+    
+    !! The AMG smoothing method (optional, use Hypre default)
+    if (this%params%is_parameter('amg-smoothing-method')) then
+      call this%params%get ('amg-smoothing-method', ipar)
+      INSIST(ipar >= 0) !TODO: replace with proper error handling
+      call fHYPRE_BoomerAMGSetRelaxType (this%precon, ipar, ierr)
+      INSIST(ierr == 0)
+    end if
+    
+    !! The AMG interpolation method (optional, use Hypre default)
+    if (this%params%is_parameter('amg-interp-method')) then
+      call this%params%get ('amg-interp-method', ipar)
+      INSIST(ipar >= 0) !TODO: replace with proper error handling
+      call fHYPRE_BoomerAMGSetInterpType (this%solver, ipar, ierr)
+      INSIST(ierr == 0)
+    end if
+
+    !! Hardwire a few AMG parameters.
+    call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 3, 1, ierr)
+    call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 4, 2, ierr)
+    call fHYPRE_BoomerAMGSetCycleRelaxType (this%precon, 9, 3, ierr)
     INSIST(ierr == 0)
 
     !! Initialize the Hypre solution and RHS vectors;
     !! structure (not values) needed to setup PCG solver.
     dummy = 0.0_r8
-    call fHYPRE_IJVectorInitialize (this%b, ierr)
-    call fHYPRE_IJVectorSetValues  (this%b, this%nrows, this%rows, dummy, ierr)
-    call fHYPRE_IJVectorAssemble   (this%b, ierr)
+    call fHYPRE_IJVectorInitialize (this%bh, ierr)
+    call fHYPRE_IJVectorSetValues  (this%bh, this%nrows, this%rows, dummy, ierr)
+    call fHYPRE_IJVectorAssemble   (this%bh, ierr)
     INSIST(ierr == 0)
-    call fHYPRE_IJVectorInitialize (this%x, ierr)
-    call fHYPRE_IJVectorSetValues  (this%x, this%nrows, this%rows, dummy, ierr)
-    call fHYPRE_IJVectorAssemble   (this%x, ierr)
+    call fHYPRE_IJVectorInitialize (this%xh, ierr)
+    call fHYPRE_IJVectorSetValues  (this%xh, this%nrows, this%rows, dummy, ierr)
+    call fHYPRE_IJVectorAssemble   (this%xh, ierr)
     INSIST(ierr == 0)
 
     !! After setup the solver is ready to go.
     call fHYPRE_PCGSetPrecond (this%solver, this%precon, ierr)
-    call fHYPRE_PCGSetup (this%solver, this%A, this%b, this%x, ierr)
+    call fHYPRE_PCGSetup (this%solver, this%Ah, this%bh, this%xh, ierr)
     INSIST(ierr == 0)
 
-  end subroutine hypre_pcg_compute
+  end subroutine setup
 
-  subroutine hypre_pcg_solve (this, b, x)
+  subroutine solve (this, b, x, stat)
 
-    type(hypre_pcg), intent(inout) :: this
+    class(hypre_pcg), intent(inout) :: this
     real(r8), intent(in) :: b(:)
     real(r8), intent(inout) :: x(:)
+    integer, intent(out) :: stat
 
     integer :: ierr
 
     call fHYPRE_ClearAllErrors
 
     !! Initialize the Hypre RHS vector.
-    call fHYPRE_IJVectorInitialize (this%b, ierr)
-    call fHYPRE_IJVectorSetValues  (this%b, this%nrows, this%rows, b, ierr)
-    call fHYPRE_IJVectorAssemble   (this%b, ierr)
+    call fHYPRE_IJVectorInitialize (this%bh, ierr)
+    call fHYPRE_IJVectorSetValues  (this%bh, this%nrows, this%rows, b, ierr)
+    call fHYPRE_IJVectorAssemble   (this%bh, ierr)
     INSIST(ierr == 0)
 
     !! Initialize the Hypre initial guess vector.
-    call fHYPRE_IJVectorInitialize (this%x, ierr)
-    call fHYPRE_IJVectorSetValues  (this%x, this%nrows, this%rows, x, ierr)
-    call fHYPRE_IJVectorAssemble   (this%x, ierr)
+    call fHYPRE_IJVectorInitialize (this%xh, ierr)
+    call fHYPRE_IJVectorSetValues  (this%xh, this%nrows, this%rows, x, ierr)
+    call fHYPRE_IJVectorAssemble   (this%xh, ierr)
     INSIST(ierr == 0)
 
     !! Solve the system.
-    call fHYPRE_PCGSolve (this%solver, this%A, this%b, this%x, ierr)
-    INSIST(ierr == 0)
+    call fHYPRE_PCGSolve (this%solver, this%Ah, this%bh, this%xh, ierr)
+    if (ierr /= 0) then
+      INSIST(ierr == HYPRE_ERROR_CONV)
+      stat = 1
+      call fHYPRE_ClearAllErrors
+    else
+      stat = 0
+    end if
 
     !! Retrieve the solution vector from HYPRE.
-    call fHYPRE_IJVectorGetValues (this%x, this%nrows, this%rows, x, ierr)
+    call fHYPRE_IJVectorGetValues (this%xh, this%nrows, this%rows, x, ierr)
     INSIST(ierr == 0)
 
-  end subroutine hypre_pcg_solve
+  end subroutine solve
 
  !!
  !! This auxillary routine copies a PCSR_MATRIX object SRC to an equivalent
