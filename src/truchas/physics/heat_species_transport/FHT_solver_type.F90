@@ -116,6 +116,7 @@ contains
     type(FHT_solver_params), intent(inout) :: params
     
     integer :: n
+    procedure(pardp), pointer :: dp
   
     this%mmf   => mmf
     this%model => model
@@ -136,8 +137,10 @@ contains
     
     !! Setup the backward-Euler integrator.
     n = FHT_model_size(model)
-    call nka_init (this%accel, n, params%nlk_max_vec)
-    call nka_set_vec_tol (this%accel, params%nlk_vec_tol)
+    call this%accel%init (n, params%nlk_max_vec)
+    call this%accel%set_vec_tol (params%nlk_vec_tol)
+    dp => pardp ! NB: in F2008 can make pardp an internal sub and pass directly
+    call this%accel%set_dot_prod (dp)
     call create_history (this%uhist, 2, n)
     this%max_itr = params%nlk_max_itr
     
@@ -147,10 +150,15 @@ contains
     
   end subroutine FHT_solver_init
   
+  function pardp (a, b) result (dp)
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: dp
+    dp = global_dot_product(a, b)
+  end function pardp
+  
   subroutine FHT_solver_delete (this)
     type(FHT_solver), intent(inout) :: this
     call FHT_precon_delete (this%precon)
-    call nka_delete (this%accel)
     call destroy (this%uhist)
   end subroutine FHT_solver_delete
   
@@ -686,7 +694,7 @@ contains
     call FHT_norm_fnorm (this%norm, t, u, Hdot, f)
     
     itr = 0
-    call nka_restart (this%accel)
+    call this%accel%restart
     do ! until converged
     
       itr = itr + 1
@@ -694,7 +702,7 @@ contains
       !! Compute the next solution iterate.
       this%num_precon_apply = this%num_precon_apply + 1
       call FHT_precon_apply (this%precon, t, u, f)
-      call nka_accel_update (this%accel, f, dp=pardp)
+      call this%accel%accel_update (f)
       u = u - f
       
       !! Compute the residual and norm.
@@ -725,12 +733,6 @@ contains
     3 format(2x,i3,': error=',es12.5)
 
   end subroutine backward_euler_solve
-  
-  function pardp (a, b) result (dp)
-    real(r8), intent(in) :: a(:), b(:)
-    real(r8) :: dp
-    dp = global_dot_product(a, b)
-  end function pardp
   
   subroutine FHT_solver_get_cell_temp_view (this, view)
     type(FHT_solver), intent(in) :: this
