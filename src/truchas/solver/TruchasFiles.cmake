@@ -24,7 +24,7 @@ set(SOLVER_FILES
           solver/nonlinear_solution.F90
           solver/ortho_matvec.F90
           solver/preconditioners.F90
-          solver/ridders_type.F90)
+          solver/ridders_class.F90)
 
 set(SOLVER_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities

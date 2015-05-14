@@ -132,8 +132,8 @@ contains
     call FHT_precon_init (this%precon, this%model, params%precon_params)
     call FHT_norm_init (this%norm, this%model, params%norm_params)
     
-    call TofH_init (this%T_of_H, model%H_of_T, eps=params%TofH_tol, &
-                    max_try=params%TofH_max_try, delta=params%TofH_delta)
+    call this%T_of_H%init (model%H_of_T, eps=params%TofH_tol, &
+        max_try=params%TofH_max_try, delta=params%TofH_delta)
     
     !! Setup the backward-Euler integrator.
     n = FHT_model_size(model)
@@ -249,7 +249,7 @@ contains
         Tcell(j) = 0.0_r8 ! dummy value
       else if (this%last_void_cell(j)) then ! newly non-void cell
         !! Use the temperature corresponding to the advected heat density.
-        call TofH_compute (this%T_of_H, j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
+        call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
       end if
     end do
     
@@ -312,7 +312,7 @@ contains
       if (this%tot_void_cell(j)) then
         Tcell(j) = 0.0_r8
       else if (this%void_cell(j)) then  ! essentially void cell
-        call TofH_compute (this%T_of_H, j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
+        call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
       end if
     end do
     deallocate(Tmin, Tmax)
@@ -430,7 +430,7 @@ contains
       n3 = global_sum(this%mesh%ncell_onP) - n1 - n2
       write(msg,'(a,3(i0,:,"/"))') 'DS: totally/essentially/non-void cell counts = ', n1, n2, n3
       call TLS_info (msg)
-      call TofH_get_metrics (this%T_of_H, avg_itr, max_itr, rec_rate, avg_adj, max_adj)
+      call this%T_of_H%get_metrics (avg_itr, max_itr, rec_rate, avg_adj, max_adj)
       write(msg,'(a,f5.2,a,i0,a)') 'DS: T(H) iterations: ', avg_itr, '(avg), ', max_itr, '(max)'
       call TLS_info (msg)
       write(msg,'(a,f5.3,a,f5.2,a,i0,a)') 'DS: T(H) salvage rate = ', rec_rate, &

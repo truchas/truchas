@@ -1,36 +1,38 @@
 #include "f90_assert.fpp"
 
-module ridders_type
+module ridders_class
 
   use kinds, only: r8
   implicit none
   private
 
-  type, public :: ridders
+  type, abstract, public :: ridders
     real(r8) :: eps     ! convergence tolerance
     real(r8) :: maxitr  ! maximum number of iterations allowed
     real(r8) :: error = 0.0_r8  ! estimate of the error in the root
     integer  :: numitr = 0      ! number of iterations taken
+  contains
+    procedure, non_overridable :: find_root
+    procedure(func), deferred  :: f
   end type ridders
   
-  public :: ridders_find_root
+  abstract interface
+    function func (this, x) result (fx)
+      import ridders, r8
+      class(ridders), intent(in) :: this
+      real(r8), intent(in) :: x
+      real(r8) :: fx
+    end function
+  end interface
   
 contains
 
-  subroutine ridders_find_root (this, f, xmin, xmax, root, stat)
+  subroutine find_root (this, xmin, xmax, root, stat)
   
-    type(ridders), intent(inout) :: this
+    class(ridders), intent(inout) :: this
     real(r8), intent(in) :: xmin, xmax
     real(r8), intent(out) :: root
     integer, intent(out) :: stat
-    
-    interface
-      function f(x) result(fx)
-        use kinds, only: r8
-        real(r8), intent(in) :: x
-        real(r8) :: fx
-      end function
-    end interface
     
     real(r8) :: a, b, c, m, fa, fb, fc, fm
     
@@ -42,13 +44,13 @@ contains
     this%numitr = 0
     stat = 0
     
-    fa = f(a)
+    fa = this%f(a)
     if (fa == 0.0_r8) then
       root = a
       return
     end if
     
-    fb = f(b)
+    fb = this%f(b)
     if (fb == 0.0_r8) then
       root = b
       return
@@ -67,7 +69,7 @@ contains
       this%numitr = this%numitr + 1
       !! Next approximate root C.
       m = 0.5d0*(a + b)
-      fm = f(m)
+      fm = this%f(m)
       c = m + (m-a) * fm * sign(1.0d0/sqrt(fm*fm - fa*fb), fa)
       !! First convergence check.
       if (this%numitr > 1) then
@@ -79,7 +81,7 @@ contains
       end if
       root = c
       !! Update the interval bracketing the root.
-      fc = f(c)
+      fc = this%f(c)
       if (fc == 0.0_r8) then
         this%error = 0.0_r8
         return
@@ -105,6 +107,6 @@ contains
       if (this%error <= this%eps) return
     end do
     
-  end subroutine ridders_find_root
+  end subroutine find_root
 
-end module ridders_type
+end module ridders_class
