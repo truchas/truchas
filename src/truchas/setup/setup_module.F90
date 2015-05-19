@@ -110,16 +110,16 @@ CONTAINS
     ! consequences of moving it here, especially CYCLE_NUMBER  as there are
     ! some "if cycle_number == 0" hacks in the flow code.
     if (restart) then
-      if (.not.ignore_t) t = restart_t
+      if (.not.ignore_t)  t  = restart_t
+      if (.not.ignore_dt) dt = restart_dt
     end if
 
     ! Initialize cell-centered fluid variables and thermodynamic quantities.
-    call INITIAL (t)
+    call INITIAL (t, dt)
 
     ! Set the initial timestep value. If this is a restart, take what is in
     ! restart file; if not, then it was already set by the input file.
     if (restart) then
-      if (.not.ignore_dt) dt = restart_dt
       if (.not.ignore_t) cycle_number = restart_cycle_number
     end if
 

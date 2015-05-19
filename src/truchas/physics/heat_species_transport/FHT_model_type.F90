@@ -335,10 +335,10 @@ contains
     real(r8), intent(out) :: u(:), udot(:)
     target :: u, udot
 
-    integer :: j, index
+    integer :: j, index, stat, numitr
     integer, pointer :: faces(:)
     real(r8), target :: f(size(u))
-    real(r8) :: fdinc, H0, H1
+    real(r8) :: fdinc, H0, H1, error
     real(r8), pointer :: var(:), Fcell(:)
     real(r8), allocatable :: Tcell(:), Tface(:), Hdot(:)
 
@@ -370,7 +370,7 @@ contains
         call FHT_model_get_radiosity_view (this, index, u, var)
         faces => this%vf_rad_prob(index)%faces
         var = 0.0_r8
-        call this%vf_rad_prob(index)%solve_radiosity (t, Tface(faces), var)
+        call this%vf_rad_prob(index)%solve_radiosity (t, Tface(faces), var, stat, numitr, error)
         !! Go ahead and set radiosity derivatives to zero now.
         call FHT_model_get_radiosity_view (this, index, udot, var)
         var = 0.0_r8

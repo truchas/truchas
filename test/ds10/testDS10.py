@@ -47,7 +47,7 @@ class DS10(TruchasTest.GoldenTestCase):
           Tref[j] += 3.5
     
     # The centroids function does not serialize the data, so we don't want to either.
-    T = self.get_test_field('Z_TEMP',cycle=233,serialize=False)
+    T = self.get_test_field('Z_TEMP',cycle=225,serialize=False)
     
     # Take care of gap cells so they don't enter into error calc
     for j in range(Tref.shape[0]):

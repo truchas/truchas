@@ -44,7 +44,7 @@ Should give the same results
 /
 
 &NUMERICS
-  dt_init = 5.0d-5
+  dt_init = 5.0d-4
   dt_min  = 1.0d-7
   dt_grow = 10.0
 /

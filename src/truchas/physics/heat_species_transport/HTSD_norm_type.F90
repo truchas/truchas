@@ -122,7 +122,7 @@ contains
       !TODO! in this case it is the actual residual norm.  We need more general
       !TODO! norms in the integrator.
       if (associated(this%model%ht%vf_rad_prob)) then
-        if (is_IOP) write(*,'(a)',advance='no')'ER error: ||res||/||rhs||='
+        !if (is_IOP) write(*,'(a)',advance='no')'ER error: ||res||/||rhs||='
         do n = 1, size(this%model%ht%vf_rad_prob)
           faces => this%model%ht%vf_rad_prob(n)%faces
           allocate(res(size(faces)), rhs(size(faces)))
@@ -131,11 +131,11 @@ contains
           call this%model%ht%vf_rad_prob(n)%residual (0.0_r8, qrad, temp(faces), res)
           call this%model%ht%vf_rad_prob(n)%rhs (0.0_r8, temp(faces), rhs)
           qerror = sqrt(global_sum(res**2)) / sqrt(global_sum(rhs**2))
-          if (is_IOP) write(*,'(e10.3)',advance='no') qerror
+          !if (is_IOP) write(*,'(e10.3)',advance='no') qerror
           ht_du_norm = max(ht_du_norm, qerror/1.0d-3)
           deallocate(res, rhs)
         end do
-        if (is_IOP) write(*,*)
+        !if (is_IOP) write(*,*)
       end if
     else
       ht_du_norm = 0.0_r8

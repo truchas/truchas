@@ -1,37 +1,36 @@
 
 TRAP step      1: T= 0.00000E+00, H= 1.00000E-01, ETAH= 5.00000E-02
   Preconditioner updated at T= 1.00000E-01, ETAH= 5.00000E-02
-    1: error= 7.89631E+00
-    2: error= 2.32235E-01
-    3: error= 2.60439E-02
-  AIN BCE solve succeeded:   3 iterations, error= 2.60439E-02
+    1: error= 1.77248E+00
+    2: error= 1.34070E-01
+    3: error= 1.50041E-02
+  AIN BCE solve succeeded:   3 iterations, error= 1.50041E-02
   Step accepted: no local error control
 
 BDF2 step      2: T= 1.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
-    1: error= 1.71708E+01
-    2: error= 1.81099E+00
-    3: error= 1.09167E-01
-    4: error= 9.27147E-03
-  AIN BCE solve succeeded:   4 iterations, error= 9.27147E-03
+    1: error= 1.42101E+00
+    2: error= 3.01254E-01
+    3: error= 2.66114E-02
+  AIN BCE solve succeeded:   3 iterations, error= 2.66114E-02
   Step accepted: no local error control
 
 BDF2 step      3: T= 2.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
-    1: error= 4.46833E+00
-    2: error= 4.42141E-01
-    3: error= 2.83439E-02
-  AIN BCE solve succeeded:   3 iterations, error= 2.83439E-02
+    1: error= 8.85187E-01
+    2: error= 2.31753E-01
+    3: error= 1.75140E-02
+  AIN BCE solve succeeded:   3 iterations, error= 1.75140E-02
   Step accepted: no local error control
 
 BDF2 step      4: T= 3.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
-    1: error= 3.59790E-01
-    2: error= 9.51322E-02
-    3: error= 3.55798E-03
-  AIN BCE solve succeeded:   3 iterations, error= 3.55798E-03
-  Step accepted: perr= 4.51518E-01
+    1: error= 4.62168E-01
+    2: error= 1.29910E-01
+    3: error= 7.36114E-03
+  AIN BCE solve succeeded:   3 iterations, error= 7.36114E-03
+  Step accepted: perr= 5.87018E-01
 
-BDF2 step      5: T= 4.00000E-01, H= 1.05679E-01, ETAH= 6.98103E-02
-    1: error= 2.07007E-01
-    2: error= 6.10335E-02
-    3: error= 3.99204E-03
-  AIN BCE solve succeeded:   3 iterations, error= 3.99204E-03
-  Step accepted: perr= 2.63996E-01
+BDF2 step      5: T= 4.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
+    1: error= 2.18405E-01
+    2: error= 6.44164E-02
+    3: error= 2.78180E-03
+  AIN BCE solve succeeded:   3 iterations, error= 2.78180E-03
+  Step accepted: perr= 2.80146E-01

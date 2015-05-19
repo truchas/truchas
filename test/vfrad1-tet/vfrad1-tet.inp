@@ -31,7 +31,7 @@ an internal HTC condition.
 /
 
 &NUMERICS
-  dt_init = 1.0d-4
+  dt_init = 1.0d-3
   dt_min  = 1.0d-5
   dt_grow = 10.0
 /

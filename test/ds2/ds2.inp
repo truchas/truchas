@@ -42,7 +42,7 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
 /
 
 &NUMERICS
-  dt_init = 1.0d-7
+  dt_init = 1.0d-5
   dt_min  = 1.0d-9
   dt_grow = 10.0
 /

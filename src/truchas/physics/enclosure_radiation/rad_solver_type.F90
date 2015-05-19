@@ -247,15 +247,17 @@ contains
  !! surface.  Thus we
 
 
-  subroutine solve_radiosity (this, time, temp, qrad)
+  subroutine solve_radiosity (this, time, temp, qrad, stat, numitr, error)
 
     class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: temp(:)
     real(r8), intent(inout) :: qrad(:)
+    integer,  intent(out) :: stat
+    integer,  intent(out) :: numitr
+    real(r8), intent(out) :: error
 
-    integer  :: n
-    real(r8) :: err, tamb
+    real(r8) :: tamb
 
     ASSERT(size(temp) == this%nface)
     ASSERT(size(qrad) == this%nface)
@@ -264,9 +266,8 @@ contains
     call this%eps%eval (time)
 
     call this%sys%cheby_solve (temp, tamb, this%eps%values, &
-                               this%c, this%d, this%tol, this%maxitr, qrad, n, err)
-    if (is_IOP) write(*,'(2x,a,i0,a,es9.3)') 'rhs-relative error(', n, ')=', err
-    INSIST( n <= this%maxitr )
+                               this%c, this%d, this%tol, this%maxitr, qrad, numitr, error)
+    stat = merge(0, 1, numitr <= this%maxitr)
 
   end subroutine solve_radiosity
 

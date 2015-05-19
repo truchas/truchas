@@ -613,12 +613,15 @@ contains
  !! time-dependent.
  !!
 
-  subroutine solve_radiosity (this, time, temp, qrad)
+  subroutine solve_radiosity (this, time, temp, qrad, stat, numitr, error)
 
     class(rad_problem), intent(inout) :: this
-    real(r8),          intent(in)    :: time
-    real(r8),          intent(in)    :: temp(:)
-    real(r8),          intent(inout) :: qrad(:)
+    real(r8), intent(in) :: time
+    real(r8), intent(in) :: temp(:)
+    real(r8), intent(inout) :: qrad(:)
+    integer,  intent(out) :: stat
+    integer,  intent(out) :: numitr
+    real(r8), intent(out) :: error
 
     real(r8), dimension(this%nface_er) :: qrad_er, temp_er
 
@@ -629,7 +632,7 @@ contains
     call reorder (this%perm_er_to_hc, temp_er, temp)
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
 
-    call this%sol%solve_radiosity (time, temp_er, qrad_er)
+    call this%sol%solve_radiosity (time, temp_er, qrad_er, stat, numitr, error)
 
     !! Form the local radiosity vector in the HC ordering.
     call reorder (this%perm_hc_to_er, qrad, qrad_er)

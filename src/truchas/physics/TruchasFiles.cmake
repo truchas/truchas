@@ -102,7 +102,7 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/HTSD_precon_type.F90
            physics/heat_species_transport/HTSD_solver_factory.F90
            physics/heat_species_transport/HTSD_solver_type.F90
-           physics/heat_species_transport/TofH_callback.F90
+           physics/heat_species_transport/HTSD_init_cond_type.F90
            physics/heat_species_transport/TofH_type.F90
            physics/heat_species_transport/boundary_data.F90
            physics/heat_species_transport/data_layout_type.F90

@@ -13,18 +13,18 @@ class TMPC(TruchasTest.GoldenTestCase):
   test_name = 'tm-pc'
   num_procs = 4 # with a parallel executable
 
-  def get_test_field(self,field,cycle,region=None):
-    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
+  def get_test_field(self,field,id,region=None):
+    return self.test_output.get_simulation().find_series(id=id).get_data(field,region=region)
 
-  def get_gold_field(self,field,cycle,region=None):
-    return self.gold_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
+  def get_gold_field(self,field,id,region=None):
+    return self.gold_output.get_simulation().find_series(id=id).get_data(field,region=region)
 
   def test_final_temperature(self):
     '''Verify final temperature'''
-    n = 216
-    tol = 1.0e-6
-    gold = self.get_gold_field('Z_TEMP',cycle=n)
-    test = self.get_test_field('Z_TEMP',cycle=n)
+    n = 2
+    tol = 1.0e-5
+    gold = self.get_gold_field('Z_TEMP',id=n)
+    test = self.get_test_field('Z_TEMP',id=n)
     error = max(abs((test-gold)/gold))
     if error > tol:
       print 'temperature: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
@@ -35,7 +35,7 @@ class TMPC(TruchasTest.GoldenTestCase):
   def test_final_thermal_strain(self):
     '''Verify final thermal strain with value calculated from temperature'''
 
-    n = 216
+    n = 2
     ncells = 18
     cte1 = 2.2e-5
     cte2 = 2.1e-5
@@ -48,9 +48,9 @@ class TMPC(TruchasTest.GoldenTestCase):
     pcstrain1 = 1.15013007E-03
     pcstrain2 = -1.57897042E-03
     
-    T_test = self.get_test_field('Z_TEMP',cycle=n)
-    test = self.get_test_field('epstherm',cycle=n)
-    gold = self.get_gold_field('epstherm',cycle=n)
+    T_test = self.get_test_field('Z_TEMP',id=n)
+    test = self.get_test_field('epstherm',id=n)
+    gold = self.get_gold_field('epstherm',id=n)
 
 #   Here we compare with a calculated solution where the material has not seen
 #   any non-isothermal phase change, and a golden solution where it has.
@@ -89,19 +89,19 @@ class TMPC(TruchasTest.GoldenTestCase):
   def test_final_stress(self):
     '''Verify the final stress field'''
     
-    n = 216 # final cycle number
+    n = 2 # final cycle number
     abs_tol = 2.0e0
     rel_tol = 1.0e-8
     fail = 0
 
-    epstherm = self.get_test_field('epstherm',cycle=n)
+    epstherm = self.get_test_field('epstherm',id=n)
     l1 = 5.20e+10
     l2 = 2.60e+10
 
     XXref = -epstherm[:,0] * (2.0*l1 + 2.0*l2 - 2.0*l1**2/(l1 + 2.0*l2))
     YYref = XXref
 
-    test = self.get_test_field('sigma',cycle=n)
+    test = self.get_test_field('sigma',id=n)
 
     error = max(abs((test[:,0]-XXref)/XXref))
     tol = rel_tol
@@ -157,17 +157,17 @@ class TMPC(TruchasTest.GoldenTestCase):
   def test_final_strain(self):
     '''Verify the final strain field'''
     
-    n = 216 # final cycle number
+    n = 2 # final cycle number
     abs_tol = 1.0e-10
     rel_tol = 1.0e-8
     fail = 0
 
-    epstherm = self.get_test_field('epstherm',cycle=n)
+    epstherm = self.get_test_field('epstherm',id=n)
     l1 = 5.20e+10
     l2 = 2.60e+10
     ZZref = epstherm[:,0] * (1.0 + 2.0*l1/(l1 + 2.0*l2))
 
-    test = self.get_test_field('epsilon',cycle=n)
+    test = self.get_test_field('epsilon',id=n)
 
     error = max(abs(test[:,0]))
     tol = abs_tol
