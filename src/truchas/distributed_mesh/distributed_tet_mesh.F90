@@ -186,7 +186,7 @@ contains
     this%cell_set_id = this%block_id
     allocate(this%cell_set_mask(this%ncell))
     this%cell_set_mask = 0
-    this%cell_set_mask = ibset(this%cell_set_mask, pos=this%cblock)
+    this%cell_set_mask = ibset(this%cell_set_mask, this%cblock)
 
     !! Distribute the boundary face mask array.
     allocate(this%face_set_mask(this%nface))
