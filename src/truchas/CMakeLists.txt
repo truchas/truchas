@@ -70,6 +70,10 @@ include(ode/TruchasFiles.cmake)
 message(STATUS "Processing output")
 include(output/TruchasFiles.cmake)
 
+# - partitioning
+message(STATUS "Processing partitioning")
+include(partitioning/TruchasFiles.cmake)
+
 # - physics
 message(STATUS "Processing physics")
 include(physics/TruchasFiles.cmake)

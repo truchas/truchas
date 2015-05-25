@@ -375,6 +375,8 @@ contains
   subroutine partition_cells (np, pmeth, cnhbr, lnhbr, pass)
 
     use graph_type
+    use graph_partitioner_factory
+    use parameter_list_type
 
     integer, intent(in)    :: np            ! number of partitions
     character(len=*), intent(in) :: pmeth   ! partition method
@@ -388,6 +390,8 @@ contains
     integer, allocatable :: xadj(:), adjncy(:)
     real, allocatable :: ewgt(:)
     real, parameter :: LINK_WEIGHT = 1.0
+    class(graph_partitioner), allocatable :: gpart
+    type(parameter_list) :: params
 
     ASSERT(np > 0)
     ASSERT(size(pass) == size(cnhbr,2))
@@ -440,23 +444,9 @@ contains
       ewgt(i) = LINK_WEIGHT
     end do
 
-    select case (pmeth)
-    case ('CHACO')
-
-      !! Use Chaco to assign the cells to partitions based on the cell
-      !! adjacency graph.  Some Chaco control parameters are hard-wired
-      !! within the wrapper.  In Chaco, graph nodes are numbered starting
-      !! at one (as here), but its C-arrays use 0-based indexing, so we
-      !! need to offset the values in XADJ, which point to ADJNCY, by 1.
-      call chaco_f90_wrapper2 (ncell, np, xadj-1, adjncy, ewgt, pass, stat)
-      pass = pass + 1   ! we want 1-based numbering of the partitions.
-      ASSERT( minval(pass) == 1 .and. maxval(pass) == np )
-
-    case default ! shouldn't be here
-
-      ASSERT( .false. )
-
-    end select
+    call params%set ('partitioner', pmeth)
+    call alloc_graph_partitioner (gpart, params)
+    call gpart%compute (ncell, xadj, adjncy, ewgt, np, pass, stat)
 
     deallocate(xadj, adjncy, ewgt)
 
