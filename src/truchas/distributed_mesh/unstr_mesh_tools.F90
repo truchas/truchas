@@ -242,7 +242,8 @@ contains
     do j = 1, size(cface,dim=2)
       do k = 1, size(cface,dim=1)
         f => face_nodes(cnode(:,j), k)
-        call table%get_facet_label (f, cface(k,j))
+        call table%get_facet_label (f, cface(k,j), insert=.true.)
+        deallocate(f)
       end do
     end do
     nface = table%number_of_facets()
@@ -250,8 +251,8 @@ contains
 
     do j = 1, size(lnode,dim=2)
       do k = 1, 2
-        f => link_face_nodes(lnode(:,j), k, normalize=.true.)
-        call table%get_facet_label2 (f, lface(k,j))
+        f => link_face_nodes(lnode(:,j), k)
+        call table%get_facet_label (f, lface(k,j), insert=.false.)
         deallocate(f)
       end do
     end do
@@ -268,7 +269,7 @@ contains
 
   subroutine get_face_node_array (cnode, cface, cfpar, fnode)
 
-    use cell_topology
+    use cell_topology, only: get_tet_face_nodes, get_hex_face_nodes, reverse_facet
 
     integer, intent(in)  :: cnode(:,:)  ! cell-node connectivity array
     integer, intent(in)  :: cface(:,:)  ! cell-face connectivity array
@@ -302,7 +303,7 @@ contains
     do j = 1, size(cface,dim=2)
       do k = 1, size(cface,dim=1)
         if (fnode(1,cface(k,j)) == 0) then
-          call get_face_nodes (fnode(:,cface(k,j)), cnode(:,j), k, normalize=.true.)
+          call get_face_nodes (cnode(:,j), k, fnode(:,cface(k,j)), normalize=.true.)
           if (btest(cfpar(j),pos=k)) call reverse_facet (fnode(:,cface(k,j)))
         end if
       end do

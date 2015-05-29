@@ -94,11 +94,11 @@ module cell_topology
 
 contains
 
-  subroutine get_tet_face_nodes (fnodes, cnodes, k, normalize, reverse)
+  subroutine get_tet_face_nodes (cnodes, k, fnodes, normalize, reverse)
 
-    integer, intent(out) :: fnodes(:)
     integer, intent(in) :: cnodes(:)
     integer, intent(in) :: k
+    integer, intent(out) :: fnodes(:)
     logical, intent(in), optional :: normalize
     logical, intent(in), optional :: reverse
 
@@ -112,9 +112,7 @@ contains
 
     !! If specified, rotate the smallest value to the initial position.
     if (present(normalize)) then
-      if (normalize) then
-        fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
-      end if
+      if (normalize) fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
     end if
 
     !! If specified, reverse the orientation of the face.
@@ -162,11 +160,11 @@ contains
   end function tet_face_nodes
 
 
-  subroutine get_hex_face_nodes (fnodes, cnodes, k, normalize, reverse)
+  subroutine get_hex_face_nodes (cnodes, k, fnodes, normalize, reverse)
 
-    integer, intent(out) :: fnodes(:)
     integer, intent(in) :: cnodes(:)
     integer, intent(in) :: k
+    integer, intent(out) :: fnodes(:)
     logical, intent(in), optional :: normalize
     logical, intent(in), optional :: reverse
 
@@ -180,9 +178,7 @@ contains
 
     !! If specified, rotate the smallest value to the initial position.
     if (present(normalize)) then
-      if (normalize) then
-        fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
-      end if
+      if (normalize) fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
     end if
 
     !! If specified, reverse the orientation of the face.

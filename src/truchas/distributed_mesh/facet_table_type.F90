@@ -27,21 +27,16 @@
 !!
 !!  FILL_FACTOR() returns the fraction of the table that is used.
 !!
-!!  GET_FACET_LABEL (FACET, LABEL) returns the integer LABEL assigned to the
-!!    facet specified by the rank-1 integer array pointer FACET.  If the facet
-!!    is not found in the table, it is inserted and assigned the next numeric
-!!    label in sequence starting with 1.  When the facet is found in the table,
-!!    its orientation is compared with the facet stored in the table.  If it is
-!!    the same, the (positive) numeric label of the stored facet is returned;
-!!    otherwise it has the opposite orientation and the negative of the numeric
-!!    label is returned.  A return label of 0 indicates a full table (error).
-!!    This routine assumes ownership of the target of FACET pointer argument,
-!!    which is returned unassociated.
-!!
-!!  GET_FACET_LABEL2 (FACET, LABEL) is a variant of GET_FACET_LABEL.  In this
-!!    case FACET is just a rank-1 integer array, not a pointer.  The facet is
-!!    not entered into the table if it is not found; this is indicated by a
-!!    return label of 0.
+!!  GET_FACET_LABEL (FACET, LABEL, INSERT) returns the integer LABEL assigned
+!!    to the facet specified by the rank-1 integer array FACET.  If the facet
+!!    is not found in the table and INSERT is true, the facet is inserted and
+!!    assigned the next numeric label in sequence starting with 1.  When the
+!!    facet is found in the table, its orientation is compared with the stored
+!!    facet.  If it is the same, the (positive) numeric label of the stored
+!!    facet is returned; otherwise it has the opposite orientation and the
+!!    negative of the numeric label is returned. If INSERT is false, a 0 label
+!!    indicates the face was not found; otherwise a 0 label indicates a full
+!!    table and is an error.
 !!
 !!  WRITE_HASH_PERFORMANCE (LUN) writes a summary of the hash table performance
 !!    to logical unit LUN, which must be open for writing.  This can be helpful
@@ -50,16 +45,6 @@
 !!
 !!  DUMP_FACET_TABLE (UNIT) dumps the contents of the hash table to the
 !!    specified logical unit in a readable format.  For debugging.
-!!
-!! NOTES
-!!
-!! (1) I've retained the existing design that uses a facet pointer array that
-!!    gets passed around and inserted into the table.  I'm not entirely happy
-!!    with this, and would like to reconsider using allocatable components.
-!!
-!! (2) I think the two GET_FACET_LABEL methods could be merged into a single
-!!    method with optional flag argument.  Linked with (1).
-!!
 !!
 
 #include "f90_assert.fpp"
@@ -71,10 +56,8 @@ module facet_table_type
   private
 
   type, private :: table_record
-    integer, pointer :: facet(:) => null()
+    integer, allocatable :: facet(:)
     integer :: label = 0
-  contains
-    final :: delete_table_record
   end type table_record
 
   type, public :: facet_table
@@ -93,7 +76,6 @@ module facet_table_type
   contains
     procedure :: init
     procedure :: get_facet_label
-    procedure :: get_facet_label2
     procedure :: number_of_facets
     procedure :: fill_factor
     procedure :: write_hash_performance
@@ -101,12 +83,6 @@ module facet_table_type
   end type facet_table
 
 contains
-
-  !! Final procedure for TABLE_RECORD objects.
-  subroutine delete_table_record (this)
-    type(table_record), intent(inout) :: this
-    if (associated(this%facet)) deallocate(this%facet)
-  end subroutine delete_table_record
 
   subroutine init (this, max_facet, node_max)
     class(facet_table), intent(out) :: this
@@ -129,17 +105,17 @@ contains
     fill_factor = real(this%nfacet) / real(this%tsize)
   end function fill_factor
 
-  subroutine get_facet_label (this, facet, label)
+  subroutine get_facet_label (this, facet, label, insert)
 
     use cell_topology, only: normalize_facet, parity
 
     class(facet_table), intent(inout) :: this
-    integer, pointer :: facet(:)
+    integer, intent(inout) :: facet(:)
     integer, intent(out) :: label
+    logical, intent(in)  :: insert
 
     integer :: p, np, i, j
 
-    ASSERT(associated(facet))
     ASSERT(size(facet) > 1)
     ASSERT(all(facet > 0))
     ASSERT(.not.degenerate(facet))
@@ -151,7 +127,7 @@ contains
     label = 0
 
     !! Search the hash table for the facet
-    do while (associated(this%record(i)%facet))
+    do while (allocated(this%record(i)%facet))
       np = np + 1 ! update the number of probes
       p = parity(facet, this%record(i)%facet)
       if (p /= 0) then  ! we located the facet
@@ -160,67 +136,27 @@ contains
         this%nss = this%nss + 1
         this%nsp = this%nsp + np
         this%msp = max(np, this%msp)
-        deallocate(facet)
         return
       end if
       !! Next probe address.
       i = i - j
       if (i < 0) i = i + this%tsize
     end do
+
+    if (.not.insert) return
 
     !! Facet not found; insert it at this location.
     if (this%nfacet >= this%tsize - 1) return ! table is full
     this%nfacet = 1 + this%nfacet
     label = this%nfacet
     this%record(i)%label = label
-    this%record(i)%facet => facet
-    facet => null()
+    this%record(i)%facet = facet
     !! Update performance counters
     this%nus = this%nus + 1
     this%nup = this%nup + np
     this%mup = max(np, this%mup)
 
   end subroutine get_facet_label
-
-  subroutine get_facet_label2 (this, facet, label)
-
-    use cell_topology, only: parity
-
-    class(facet_table), intent(inout) :: this
-    integer, intent(in) :: facet(:)
-    integer, intent(out) :: label
-
-    integer :: p, np, i, j
-
-    ASSERT(size(facet) > 1)
-    ASSERT(all(facet > 0))
-    ASSERT(.not.degenerate(facet))
-
-    !!! the input facet must be normalized !!!
-    !call normalize_facet (facet)
-    call this%fh%hash (facet, i, j)
-
-    np = 0
-    label = 0
-
-    !! Search the hash table for the facet
-    do while (associated(this%record(i)%facet))
-      np = np + 1 ! update the number of probes
-      p = parity(facet, this%record(i)%facet)
-      if (p /= 0) then  ! we located the facet
-        label = p * this%record(i)%label
-        !! Update performance counters
-        this%nss = this%nss + 1
-        this%nsp = this%nsp + np
-        this%msp = max(np, this%msp)
-        return
-      end if
-      !! Next probe address.
-      i = i - j
-      if (i < 0) i = i + this%tsize
-    end do
-
-  end subroutine get_facet_label2
 
 
   subroutine dump_facet_table (this, unit)
@@ -234,7 +170,7 @@ contains
       return
     end if
     do j = lbound(this%record,dim=1), ubound(this%record,dim=1)
-      if (associated(this%record(j)%facet)) then
+      if (allocated(this%record(j)%facet)) then
         write(unit,*) 'RECORD(', j, ')%LABEL=', this%record(j)%label, &
                       ', %FACET=', this%record(j)%facet
       else
