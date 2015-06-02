@@ -57,8 +57,10 @@ contains
   end function tet_volume
   
   pure function hex_volume (x) result (hvol)
+
     real(r8), intent(in) :: x(:,:)
     real(r8) :: hvol, cvol(8)
+
     cvol(1) = tet_volume(x(:,[1,2,4,5]))
     cvol(2) = tet_volume(x(:,[2,3,1,6]))
     cvol(3) = tet_volume(x(:,[3,4,2,7]))
@@ -67,54 +69,69 @@ contains
     cvol(6) = tet_volume(x(:,[6,5,7,2]))
     cvol(7) = tet_volume(x(:,[7,6,8,3]))
     cvol(8) = tet_volume(x(:,[8,7,5,4]))
+
     hvol = 0.5_r8 * (sum(cvol) + tet_volume(x(:,[1,3,8,6])) + tet_volume(x(:,[2,4,5,7])))
+
   end function hex_volume
 
-  subroutine eval_hex_volumes (x, hvol, cvol)
+  pure subroutine eval_hex_volumes (x, hvol, cvol)
 
-    real(kind=r8), intent(in)  :: x(:,:)
-    real(kind=r8), intent(out) :: hvol
-    real(kind=r8), intent(out) :: cvol(:)
+    real(r8), intent(in)  :: x(:,:)
+    real(r8), intent(out) :: hvol, cvol(:)
 
-    ASSERT( size(x,dim=1) == 3 )
-    ASSERT( size(x,dim=2) == 8 )
-    ASSERT( size(cvol) == 8 )
+    !ASSERT(size(x,dim=1) == 3)
+    !ASSERT(size(x,dim=2) == 8)
+    !ASSERT(size(cvol) == 8)
 
     !! Corner tet volumes.
-    cvol(1) = tet_volume(x(:,(/1,2,4,5/)))
-    cvol(2) = tet_volume(x(:,(/2,3,1,6/)))
-    cvol(3) = tet_volume(x(:,(/3,4,2,7/)))
-    cvol(4) = tet_volume(x(:,(/4,1,3,8/)))
-    cvol(5) = tet_volume(x(:,(/5,8,6,1/)))
-    cvol(6) = tet_volume(x(:,(/6,5,7,2/)))
-    cvol(7) = tet_volume(x(:,(/7,6,8,3/)))
-    cvol(8) = tet_volume(x(:,(/8,7,5,4/)))
+    cvol(1) = tet_volume(x(:,[1,2,4,5]))
+    cvol(2) = tet_volume(x(:,[2,3,1,6]))
+    cvol(3) = tet_volume(x(:,[3,4,2,7]))
+    cvol(4) = tet_volume(x(:,[4,1,3,8]))
+    cvol(5) = tet_volume(x(:,[5,8,6,1]))
+    cvol(6) = tet_volume(x(:,[6,5,7,2]))
+    cvol(7) = tet_volume(x(:,[7,6,8,3]))
+    cvol(8) = tet_volume(x(:,[8,7,5,4]))
 
-    hvol = 0.5_r8 * (sum(cvol) + tet_volume(x(:,(/1,3,8,6/))) + tet_volume(x(:,(/2,4,5,7/))))
+    hvol = 0.5_r8 * (sum(cvol) + tet_volume(x(:,[1,3,8,6])) + tet_volume(x(:,[2,4,5,7])))
 
   end subroutine eval_hex_volumes
 
   pure function tet_face_normals (x) result (a)
+
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,4)
-    a(:,1) = 0.5_r8 * cross_product(x(:,2)-x(:,4), x(:,3)-x(:,4))
-    a(:,2) = 0.5_r8 * cross_product(x(:,3)-x(:,4), x(:,1)-x(:,4))
-    a(:,3) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,2)-x(:,4))
+
+    ! incompatible with PURE
+    !ASSERT(size(x,dim=1) == 3)
+    !ASSERT(size(x,dim=2) == 4)
+
+    !! NB: These must be consistent with the TETRA4 vertex and face labelings
+    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
+    !! its TETRA4_FACE_VERT array was not used here.
+    a(:,1) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,2)-x(:,4))
+    a(:,2) = 0.5_r8 * cross_product(x(:,2)-x(:,4), x(:,3)-x(:,4))
+    a(:,3) = 0.5_r8 * cross_product(x(:,3)-x(:,4), x(:,1)-x(:,4))
     a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
+
   end function tet_face_normals
   
-  function hex_face_normals (x) result (a)
+  pure function hex_face_normals (x) result (a)
 
-    real(kind=r8), intent(in) :: x(:,:)
-    real(kind=r8) :: a(3,6)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: a(3,6)
 
-    ASSERT( size(x,dim=1) == 3 )
-    ASSERT( size(x,dim=2) == 8 )
+    ! incompatible with PURE
+    !ASSERT(size(x,dim=1) == 3)
+    !ASSERT(size(x,dim=2) == 8)
 
-    a(:,1) = 0.5_r8 * cross_product(x(:,8)-x(:,3), x(:,7)-x(:,4))
-    a(:,2) = 0.5_r8 * cross_product(x(:,6)-x(:,1), x(:,5)-x(:,2))
-    a(:,3) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,8)-x(:,1))
-    a(:,4) = 0.5_r8 * cross_product(x(:,7)-x(:,2), x(:,6)-x(:,3))
+    !! NB: These must be consistent with the HEX8 vertex and face labelings
+    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
+    !! its HEX8_FACE_VERT array was not used here.
+    a(:,1) = 0.5_r8 * cross_product(x(:,6)-x(:,1), x(:,5)-x(:,2))
+    a(:,2) = 0.5_r8 * cross_product(x(:,7)-x(:,2), x(:,6)-x(:,3))
+    a(:,3) = 0.5_r8 * cross_product(x(:,8)-x(:,3), x(:,7)-x(:,4))
+    a(:,4) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,8)-x(:,1))
     a(:,5) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,4))
     a(:,6) = 0.5_r8 * cross_product(x(:,7)-x(:,5), x(:,8)-x(:,6))
 

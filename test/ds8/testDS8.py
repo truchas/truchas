@@ -26,7 +26,7 @@ class DS8(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
-    print 'early temp rel error=', error, '(tol=', tol, ')'
+    print 'early temp max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_temp(self):
@@ -35,7 +35,7 @@ class DS8(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=4).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=4).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
-    print 'final temp rel error=', error, '(tol=', tol, ')'
+    print 'final temp max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_early_velocity(self):

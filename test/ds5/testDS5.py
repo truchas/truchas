@@ -31,6 +31,7 @@ class DS5(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
+    print 'early phi1 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_phi1(self):
@@ -39,6 +40,7 @@ class DS5(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=3).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
+    print 'final phi1 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_early_phi2(self):
@@ -48,6 +50,7 @@ class DS5(TruchasTest.GoldenTestCase):
     Cref = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi2')
     error = max(abs((C/1.5)-Cref)/Cref)
+    print 'early phi2 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_phi2(self):
@@ -57,6 +60,7 @@ class DS5(TruchasTest.GoldenTestCase):
     Cref = self.test_output.get_simulation().find_series(id=3).get_data('phi1')
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi2')
     error = max(abs((C/1.5)-Cref)/Cref)
+    print 'final phi2 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_early_phi3(self):
@@ -66,6 +70,7 @@ class DS5(TruchasTest.GoldenTestCase):
     Cref = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi3')
     error = max(abs((C/2.0)-Cref)/Cref)
+    print 'early phi3 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_phi3(self):
@@ -75,6 +80,7 @@ class DS5(TruchasTest.GoldenTestCase):
     Cref = self.test_output.get_simulation().find_series(id=3).get_data('phi1')
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi3')
     error = max(abs((C/2.0)-Cref)/Cref)
+    print 'final phi3 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
 if __name__ == '__main__':

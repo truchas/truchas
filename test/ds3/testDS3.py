@@ -25,7 +25,7 @@ class DS3(TruchasTest.GoldenTestCase):
     T    = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     Tref = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(T-Tref)/Tref)
-    print 'final temp rel error=', error, '(tol=', tol, ')'
+    print 'final temp max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_concentration(self):
@@ -34,7 +34,7 @@ class DS3(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
-    print 'final conc rel error=', error, '(tol=', tol, ')'
+    print 'final conc max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
 if __name__ == '__main__':

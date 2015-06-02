@@ -1,0 +1,700 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                DUMMY
+   version:             2.9.dev
+   libraries:           UbikSolve, PGSLib, Chaco
+   build architecture:  x86_64
+   build date/time:      2 Jun 2015 12:29:49
+   build flags:         -O2 -u -maxcontin=99 -PIC
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 3.15.10-201.fc20.x86_64 #1 SMP Wed Aug 27 21:10:06 UTC 2014 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       02 Jun 15 09:55:31
+   processors:          4 (processor 1 is performing I/O)
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007-2013. Los Alamos National Security, LLC.
+
+   This material was produced under U.S. Government contract DE-AC52-06NA25396
+   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+   National Security, LLC for the U.S. Department of Energy. The U.S. Government
+   has rights to use, reproduce, and distribute this software.  NEITHER THE
+   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+   is modified to produce derivative works, such modified software should be
+   clearly marked, so as not to confuse it with the version available from LANL.
+
+   Additionally, this program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or (at your
+   option) any later version. Accordingly, this program is distributed in the
+   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
+DANU: Opening h5 output file
+
+================================================================================
+
+INPUT
+
+Opening input file contact-box-open.inp ...
+ Reading PARALLEL_PARAMETERS Namelist ...
+PARALLEL_PARAMETERS namelist not found; using defaults.
+
+Reading FUNCTION namelists ...
+  Reading FUNCTION namelist #1
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+Reading PHYSICS namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading MESH Namelist ...
+         Opened mesh file ./split-rotated-cube.exo
+           containing 150 nodes and 80 cells
+
+ Reading MATERIAL Namelist # 1 ...
+
+ Reading MATERIAL Namelist # 2 ...
+This is the last MATERIAL Namelist.
+Identified 2 material(s)
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1     aluminum        1
+             2          gap        2
+
+Reading VISCOPLASTIC_MODEL namelists ...
+
+Reading INTERFACES namelist ...
+  INTERFACES namelist not found; using defaults
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 3 ...
+            3       2    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+         BODY Namelist number  2 will be used for background material ( 1)
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+
+         Reading LINEAR_SOLVER Namelist # 1 ...
+
+Reading NONLINEAR_SOLVER Namelists ...
+  Reading NONLINEAR_SOLVER Namelist #1
+
+ Reading NUMERICS Namelist ...
+Using default linear solver parameters for displacement linear solution.
+Using nonlinear solver "displacement solve" for displacement nonlinear solution.
+Using linear solver "displacement precon" for nonlinear solver "displacement solve".
+
+ Reading BC Namelists ...
+
+         Reading BC namelist #  1: left end -- no normal displacement
+
+         Reading BC namelist #  2: gap interface
+
+         Reading BC namelist #  3: right end -- no normal displacement
+
+         Reading BC namelist #  4: front side
+
+         Reading BC namelist #  5: bottom side
+
+         Reading BC namelist #  6: top side
+
+Reading DIFFUSION_SOLVER namelist ...
+  using default STEPPING_METHOD value: "Adaptive BDF2"
+  using default MAX_NLK_ITR value: 5
+  using default MAX_STEP_TRIES value: 10
+  using default MAX_NLK_VEC value: MAX_NLK_ITR - 1
+  using default NLK_VEC_TOL value: 1.00E-03
+  WARNING: using a pure relative error norm; temp must be bounded away from 0
+  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
+  using default PC_AMG_CYCLES value: 1
+
+Reading DS_BOUNDARY_CONDITION namelists ...
+  [ends] "dirichlet" condition for "temperature" variable
+  [lateral sides] "flux" condition for "temperature" variable
+
+Reading DS_INTERFACE_CONDITION namelists ...
+  [gap interface] read "HTC" condition for "temperature" variable
+
+Reading DS_SOURCE namelists ...
+  No DS_SOURCE namelists found.
+
+Reading ENCLOSURE_RADIATION namelists ...
+
+Reading ENCLOSURE_SURFACE namelists ...
+
+ Reading PROBE namelists ...
+         This is the last PROBE Namelist.
+
+         Identified 0 probe(s)
+
+Input file contact-box-open.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+Allocating mesh derived types ... done.
+ Automatic partitioner selection: Chaco
+
+Reading ExodusII mesh file ./split-rotated-cube.exo ...
+ Closed ExodusII mesh file ./split-rotated-cube.exo
+
+ Determining mesh partitions and permutation vectors.
+ Using 4 partitions.
+ Partitioning with Chaco.
+
+ Permuting mesh ... done.
+ Permuting vertices ... done.
+ Renumbering vertices ... done.
+
+ Establishing mesh connectivity for       480 faces ...
+
+   Sorting face vertex 1 ...
+   Sorting face vertex 2 ...
+   Sorting face vertex 3 ...
+   Sorting face vertex 4 ...
+   There are        112 external boundary faces.
+ Mesh connectivity established.
+
+ Finding all cell neighbors ... done.
+
+Allocating base derived types ...done.
+
+                               Mesh Diagnostics
+                               ----------------
+
+                   Element Type   Number     Face Type   Number
+                   ------------   ------     ---------   ------
+                      Hex            80       Point           0
+                      Prism           0       Line            0
+                      Pyramid         0       Triangle        0
+                      Tet             0       Quad          480
+
+                            Nodes               Cells
+                            -----               -----
+                                8 are shared by   1
+                               40 are shared by   2
+                               66 are shared by   4
+                               36 are shared by   8
+
+Computing cell geometry ... 
+                    Min        Cell       Max        Cell       Total
+                    ---        ----       ---        ----       -----
+       Volumes   4.4409E-16        44   1.0000E-06        33    6.4000E-05
+
+    Entire mesh is orthogonal
+
+    use_ortho_face_gradient = T
+
+    Using full pivoting for LSLR_ operators
+
+done.
+
+                    Min Coord        Max Coord
+                    ---------        ---------
+                  -2.8284E-02       2.8284E-02
+                  -3.1463E-02       3.1463E-02
+                  -3.4495E-02       3.4495E-02
+
+ Finding face neighbors ... done.
+
+Initializing distributed mesh MAIN ...
+  Reading ExodusII mesh file ./split-rotated-cube.exo
+  Distributed Mesh Profile:
+     PE|    nnode    nedge    nface    ncell
+    ---+------------------------------------
+      1|       96        0      150       36
+      2|       72        0      104       24
+      3|       72        0      104       24
+      4|       54        0       72       16
+  Mesh Communication Profile:
+              Nodes           Edges           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+----------------------------------------------------------------
+      1|     42       54      0        0     78       72     20       16
+      2|     36       36      0        0     40       64      8       16
+      3|     36       36      0        0     40       64      8       16
+      4|     30       24      0        0     16       56      0       16
+  Distributed mesh MAIN initialized.
+DANU: adding default mesh entry
+DANU: writing mesh node coordinates
+DANU: adding main simulation entry
+
+Computing initial volume fractions ...
+
+    Volume fractions will be computed in         80 total cells with   5**3 particles/cell
+
+    Tallying        5**3 =    125 interface particles
+
+    Tallied   1 x   5**2 =     25 interface particles
+    Tallied   2 x   5**2 =     50 interface particles
+    Tallied   3 x   5**2 =     75 interface particles
+    Tallied   4 x   5**2 =    100 interface particles
+    Tallied   5 x   5**2 =    125 interface particles
+ERROR: volume fraction sum < 1 in cells: 1 2 3 4 9 [59 more items omitted]
+       minimum volume fraction sum less 1: -2.77556E-15
+  Computed volume fractions are invalid; attempting to normalize.
+  Normalization was successful.
+  Initial volume fractions computed.
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+
+
+
+
+
+
+Warning:     16 interior #3 faces are affected by BC namelist  2!
+Warning:     16 interior #5 faces are affected by BC namelist  2!
+Warning:     32 interior #6 faces are affected by BC namelist  2!
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.60000E-03 (    16 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   6.40000E-03 (    64 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   1.60000E-03 (    16 faces)
+    Boundary conditions in BC namelist  4 will be applied on an area of   1.60000E-03 (    16 faces)
+    Boundary conditions in BC namelist  5 will be applied on an area of   1.60000E-03 (    16 faces)
+    Boundary conditions in BC namelist  6 will be applied on an area of   1.60000E-03 (    16 faces)
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 112 boundary points
+   EXTERIOR: 112 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 112 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+
+ Finding control volume faces internal to cells ...
+
+ Finding jacobians ...
+
+ Inverting jacobians ...
+done.
+
+ Finding control volume faces on external boundaries ...
+
+done.
+
+ Calculating initial thermo-elastic state. Done.
+
+     0 Thermo-elastic iterations (linear)
+     819 Thermo-elastic iterations (nonlinear)
+
+Initializing diffusion solver ...
+  Generating external source for "temperature" equation
+  Generating "HTC" interface condition for "temperature" variable
+    using DS_INTERFACE_CONDITION[1]: gap interface
+  Generating "radiation" interface condition for "temperature" variable
+  Generating "HTC" boundary condition for "temperature" variable
+  Generating "radiation" boundary condition for "temperature" variable
+  Generating "dirichlet" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[1]: ends
+  Generating "flux" boundary condition for "temperature" variable
+    using DS_BOUNDARY_CONDITION[2]: lateral sides
+  Diffusion solver initialized.
+
+Computing consistent initial state for HT/SD solver ...
+  Computing consistent face temperatures and radiosities ...
+
+Computing consistent initial state derivative for HT/SD solver ...
+  Computing consistent face temperatures and radiosities ...
+    ||Rface(2)||= 3.96E-17, ||Rface(0)||= 3.37E-02, ||ΔTface||_max= 1.73E-18
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+
+DS: dt=1.000E+00, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           42 Solid mechanics iterations (nonlinear)
+
+          2: t =   1.00000E+00, dt(diffusion solver) =   1.00000E+00
+
+DS: dt=1.000E+00, NFUN:NPC=0000004:00001, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           48 Solid mechanics iterations (nonlinear)
+
+          3: t =   2.00000E+00, dt(diffusion solver) =   1.00000E+00
+
+DS: dt=1.000E+00, NFUN:NPC=0000006:00001, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           49 Solid mechanics iterations (nonlinear)
+
+          4: t =   3.00000E+00, dt(diffusion solver) =   1.00000E+00
+
+DS: dt=1.000E+00, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           49 Solid mechanics iterations (nonlinear)
+
+          5: t =   4.00000E+00, dt(diffusion solver) =   1.99092E+00
+
+DS: dt=1.991E+00, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           52 Solid mechanics iterations (nonlinear)
+
+          6: t =   5.99092E+00, dt(diffusion solver) =   2.09357E+00
+
+DS: dt=2.094E+00, NFUN:NPC=0000013:00001, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           55 Solid mechanics iterations (nonlinear)
+
+          7: t =   8.08449E+00, dt(diffusion solver) =   3.95449E+00
+
+DS: dt=3.954E+00, NFUN:NPC=0000015:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           72 Solid mechanics iterations (nonlinear)
+
+          8: t =   1.20390E+01, dt(diffusion solver) =   3.02894E+00
+
+DS: dt=3.029E+00, NFUN:NPC=0000017:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           70 Solid mechanics iterations (nonlinear)
+
+          9: t =   1.50679E+01, dt(diffusion solver) =   3.10135E+00
+
+DS: dt=3.101E+00, NFUN:NPC=0000019:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           83 Solid mechanics iterations (nonlinear)
+
+         10: t =   1.81693E+01, dt(diffusion solver) =   3.22992E+00
+
+DS: dt=3.230E+00, NFUN:NPC=0000021:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           91 Solid mechanics iterations (nonlinear)
+
+         11: t =   2.13992E+01, dt(diffusion solver) =   3.07658E+00
+
+DS: dt=3.077E+00, NFUN:NPC=0000023:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           77 Solid mechanics iterations (nonlinear)
+
+         12: t =   2.44758E+01, dt(diffusion solver) =   3.19711E+00
+
+DS: dt=3.197E+00, NFUN:NPC=0000025:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           65 Solid mechanics iterations (nonlinear)
+
+         13: t =   2.76729E+01, dt(diffusion solver) =   3.14252E+00
+
+DS: dt=3.143E+00, NFUN:NPC=0000027:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           62 Solid mechanics iterations (nonlinear)
+
+         14: t =   3.08154E+01, dt(diffusion solver) =   3.16434E+00
+
+DS: dt=3.164E+00, NFUN:NPC=0000029:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           66 Solid mechanics iterations (nonlinear)
+
+         15: t =   3.39797E+01, dt(diffusion solver) =   3.15885E+00
+
+DS: dt=3.159E+00, NFUN:NPC=0000031:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           63 Solid mechanics iterations (nonlinear)
+
+         16: t =   3.71386E+01, dt(diffusion solver) =   3.15319E+00
+
+DS: dt=3.153E+00, NFUN:NPC=0000033:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           64 Solid mechanics iterations (nonlinear)
+
+         17: t =   4.02918E+01, dt(diffusion solver) =   3.15163E+00
+
+DS: dt=3.152E+00, NFUN:NPC=0000035:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           59 Solid mechanics iterations (nonlinear)
+
+         18: t =   4.34434E+01, dt(diffusion solver) =   3.14810E+00
+
+DS: dt=3.148E+00, NFUN:NPC=0000037:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           70 Solid mechanics iterations (nonlinear)
+
+         19: t =   4.65915E+01, dt(diffusion solver) =   3.14463E+00
+
+DS: dt=3.145E+00, NFUN:NPC=0000039:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           75 Solid mechanics iterations (nonlinear)
+
+         20: t =   4.97361E+01, dt(diffusion solver) =   3.14144E+00
+
+DS: dt=3.141E+00, NFUN:NPC=0000041:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           48 Solid mechanics iterations (nonlinear)
+
+         21: t =   5.28776E+01, dt(diffusion solver) =   3.13810E+00
+
+DS: dt=3.138E+00, NFUN:NPC=0000043:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           45 Solid mechanics iterations (nonlinear)
+
+         22: t =   5.60157E+01, dt(diffusion solver) =   3.13481E+00
+
+DS: dt=3.135E+00, NFUN:NPC=0000045:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           45 Solid mechanics iterations (nonlinear)
+
+         23: t =   5.91505E+01, dt(diffusion solver) =   3.13160E+00
+
+DS: dt=3.132E+00, NFUN:NPC=0000047:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           45 Solid mechanics iterations (nonlinear)
+
+         24: t =   6.22821E+01, dt(diffusion solver) =   3.12847E+00
+
+DS: dt=3.128E+00, NFUN:NPC=0000049:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           45 Solid mechanics iterations (nonlinear)
+
+         25: t =   6.54106E+01, dt(diffusion solver) =   3.12545E+00
+
+DS: dt=3.125E+00, NFUN:NPC=0000051:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           45 Solid mechanics iterations (nonlinear)
+
+         26: t =   6.85360E+01, dt(diffusion solver) =   3.12257E+00
+
+DS: dt=3.123E+00, NFUN:NPC=0000053:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           43 Solid mechanics iterations (nonlinear)
+
+         27: t =   7.16586E+01, dt(diffusion solver) =   3.11985E+00
+
+DS: dt=3.120E+00, NFUN:NPC=0000055:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           43 Solid mechanics iterations (nonlinear)
+
+         28: t =   7.47784E+01, dt(diffusion solver) =   3.11733E+00
+
+DS: dt=3.117E+00, NFUN:NPC=0000057:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           43 Solid mechanics iterations (nonlinear)
+
+         29: t =   7.78957E+01, dt(diffusion solver) =   3.11502E+00
+
+DS: dt=3.115E+00, NFUN:NPC=0000059:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           43 Solid mechanics iterations (nonlinear)
+
+         30: t =   8.10108E+01, dt(diffusion solver) =   3.11296E+00
+
+DS: dt=3.113E+00, NFUN:NPC=0000061:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           42 Solid mechanics iterations (nonlinear)
+
+         31: t =   8.41237E+01, dt(diffusion solver) =   3.11116E+00
+
+DS: dt=3.111E+00, NFUN:NPC=0000063:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           42 Solid mechanics iterations (nonlinear)
+
+         32: t =   8.72349E+01, dt(diffusion solver) =   3.10966E+00
+
+DS: dt=3.110E+00, NFUN:NPC=0000065:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           42 Solid mechanics iterations (nonlinear)
+
+         33: t =   9.03446E+01, dt(diffusion solver) =   3.10849E+00
+
+DS: dt=3.108E+00, NFUN:NPC=0000067:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           42 Solid mechanics iterations (nonlinear)
+
+         34: t =   9.34530E+01, dt(diffusion solver) =   3.10767E+00
+
+DS: dt=3.108E+00, NFUN:NPC=0000069:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           42 Solid mechanics iterations (nonlinear)
+
+         35: t =   9.65607E+01, dt(diffusion solver) =   3.10722E+00
+
+DS: dt=3.107E+00, NFUN:NPC=0000071:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           41 Solid mechanics iterations (nonlinear)
+
+         36: t =   9.96679E+01, dt(diffusion solver) =   3.10717E+00
+
+DS: dt=3.107E+00, NFUN:NPC=0000074:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           39 Solid mechanics iterations (nonlinear)
+
+         37: t =   1.02775E+02, dt(diffusion solver) =   1.06894E+00
+
+DS: dt=1.069E+00, NFUN:NPC=0000077:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           33 Solid mechanics iterations (nonlinear)
+
+         38: t =   1.03844E+02, dt(diffusion solver) =   1.22161E+00
+
+DS: dt=1.222E+00, NFUN:NPC=0000080:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           30 Solid mechanics iterations (nonlinear)
+
+         39: t =   1.05066E+02, dt(diffusion solver) =   1.63482E+00
+
+DS: dt=1.635E+00, NFUN:NPC=0000083:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           31 Solid mechanics iterations (nonlinear)
+
+         40: t =   1.06700E+02, dt(diffusion solver) =   1.82759E+00
+
+DS: dt=1.828E+00, NFUN:NPC=0000085:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           31 Solid mechanics iterations (nonlinear)
+
+         41: t =   1.08528E+02, dt(diffusion solver) =   3.57709E+00
+
+DS: dt=3.577E+00, NFUN:NPC=0000087:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           31 Solid mechanics iterations (nonlinear)
+
+         42: t =   1.12105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000089:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           29 Solid mechanics iterations (nonlinear)
+
+         43: t =   1.17105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000091:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           27 Solid mechanics iterations (nonlinear)
+
+         44: t =   1.22105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000093:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           27 Solid mechanics iterations (nonlinear)
+
+         45: t =   1.27105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000095:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           25 Solid mechanics iterations (nonlinear)
+
+         46: t =   1.32105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000097:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           19 Solid mechanics iterations (nonlinear)
+
+         47: t =   1.37105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000099:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           21 Solid mechanics iterations (nonlinear)
+
+         48: t =   1.42105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000100:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           19 Solid mechanics iterations (nonlinear)
+
+         49: t =   1.47105E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000101:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           14 Solid mechanics iterations (nonlinear)
+
+================================================================================
+
+TERMINATION
+
+DANU: Closing h5 output file
+Warning: DANU: Danu fid is still associated
+                 Final Time:  1.5211E+02 after    49 steps
+
+
+  TIMING SUMMARY                       AVERAGE        MIN          MAX
+  --------------                      ---------    ---------    ---------
+  Total                               1.485E+00    1.484E+00    1.485E+00
+    Input                               8.250E-03    8.000E-03    9.000E-03
+    Initialization                      3.770E-01    3.770E-01    3.770E-01
+      Solid Mechanics                     3.490E-01    3.490E-01    3.490E-01
+        Precondition                        0.000E+00    0.000E+00    0.000E+00
+        NK                                  3.483E-01    3.480E-01    3.490E-01
+          NK Residual                         2.500E-04    0.000E+00    1.000E-03
+          Newton Loop                         3.480E-01    3.480E-01    3.480E-01
+            NK LS                               1.005E-01    9.500E-02    1.050E-01
+              Solver TMP1                         9.975E-02    9.400E-02    1.040E-01
+                Precondition                        9.850E-02    9.400E-02    1.010E-01
+            NK Residual                         1.838E-01    1.810E-01    1.880E-01
+      Initialization                      2.000E-03    2.000E-03    2.000E-03
+        Solid Mech Init                     2.000E-03    2.000E-03    2.000E-03
+      HTSD function                       0.000E+00    0.000E+00    0.000E+00
+        HT function                         0.000E+00    0.000E+00    0.000E+00
+      ssor-setup                          0.000E+00    0.000E+00    0.000E+00
+      ssor-solve                          0.000E+00    0.000E+00    0.000E+00
+    Main Cycle                          1.098E+00    1.097E+00    1.098E+00
+      Output                              1.185E-01    1.150E-01    1.250E-01
+      Time Step                           2.500E-04    0.000E+00    1.000E-03
+      Diffusion Solver                    1.900E-02    1.600E-02    2.300E-02
+        HTSD precon compute                 1.750E-03    1.000E-03    2.000E-03
+          hypre-matrix-copy                   0.000E+00    0.000E+00    0.000E+00
+          boomer-setup                        1.750E-03    1.000E-03    2.000E-03
+        HTSD function                       1.500E-03    9.999E-04    2.000E-03
+          HT function                         1.250E-03    9.999E-04    2.000E-03
+        HTSD precon apply                   1.400E-02    1.100E-02    1.900E-02
+          HT precon apply                     1.400E-02    1.100E-02    1.900E-02
+            boomer-solve                        1.350E-02    1.000E-02    1.900E-02
+      Solid Mechanics                     9.585E-01    9.540E-01    9.610E-01
+        Precondition                        1.250E-03    1.000E-03    2.000E-03
+        NK                                  9.522E-01    9.490E-01    9.560E-01
+          NK Residual                         1.200E-02    9.000E-03    1.700E-02
+          Newton Loop                         9.402E-01    9.390E-01    9.440E-01
+            NK LS                               2.720E-01    2.650E-01    2.880E-01
+              Solver TMP1                         2.698E-01    2.630E-01    2.850E-01
+                Precondition                        2.688E-01    2.630E-01    2.840E-01
+            NK Residual                         5.170E-01    5.010E-01    5.320E-01
+
+         Smallest process virtual memory used: 1.91E+02 mB
+          Largest process virtual memory used: 2.03E+02 mB
+                    Total virtual memory used: 7.76E+02 mB
+                                   words/cell: 1271859
+
+truchas terminated normally on 02 Jun 15 at 09:55:32

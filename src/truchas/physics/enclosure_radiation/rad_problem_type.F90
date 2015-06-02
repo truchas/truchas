@@ -213,11 +213,6 @@ contains
     integer, allocatable :: fcell(:), fcell_l(:), fside(:), fside_l(:), perm(:), perm2(:)
     integer, pointer :: map(:)
 
-    !! Exodus side numbering to Truchas side numbering.
-    integer, pointer :: side_map(:) => null()
-    integer, target, save :: TET_SIDE_MAP(4), HEX_SIDE_MAP(6)
-    data TET_SIDE_MAP/3,1,2,4/, HEX_SIDE_MAP/2,4,1,3,5,6/
-
     !! Read the source info from the enclosure file: FCELL and FSIDE.
     if (is_IOP) then
       call ERF_open_ro (file, ncid)
@@ -273,19 +268,10 @@ contains
     ASSERT(all(fside_l >= 1))
 
     !! Find the global mesh face that corresponds to each of the enclosure
-    !! faces.  We must translate from the Exodus/Genesis side labeling to the
-    !! side labeling used by Truchas.  FCELL_L holds the results temporarily.
-    select case (size(mesh%cface,dim=1))
-    case (4)  ! Tet cells
-      side_map => TET_SIDE_MAP
-    case (6)  ! Hex cells
-      side_map => HEX_SIDE_MAP
-    case default
-      INSIST(.false.)
-    end select
+    !! faces.  FCELL_L holds the results temporarily.
     do j = n, 1, -1
-      if (fside_l(j) > size(side_map)) exit ! no matching mesh face
-      fcell_l(j) = global_index(mesh%face_ip, mesh%cface(side_map(fside_l(j)),fcell_l(j)))
+      if (fside_l(j) > size(mesh%cface,dim=1)) exit ! no matching mesh face
+      fcell_l(j) = global_index(mesh%face_ip, mesh%cface(fside_l(j),fcell_l(j)))
     end do
     stat = global_maxval(j) ! get one of the unmatched faces, if any
     if (stat /= 0) return
