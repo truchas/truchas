@@ -77,7 +77,7 @@ contains
     !! renumbering the enclosure faces, so check that no renumbering has
     !! occurred.  This should be the case if COLOR is a blocked coloring.
     renumbered = .false.
-    offset = first_index(this%encl%face_ip) - 1
+    offset = this%encl%face_ip%first_index() - 1
     do j = 1, this%encl%nface_onP
       if (this%encl%face_map(j) /= j+offset) renumbered = .true.
     end do

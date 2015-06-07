@@ -106,8 +106,8 @@ contains
     character(8) :: name
 
     dimen = size(this%coord,dim=1)
-    nnode = global_size(this%node_ip)
-    nface = global_size(this%face_ip)
+    nnode = this%node_ip%global_size()
+    nface = this%face_ip%global_size()
 
     !! Write the node coordinate data.
     call allocate_collated_array (x, nnode)
@@ -123,7 +123,7 @@ contains
     call allocate_collated_array (fsize, nface)
     call collate (fsize, this%xface(2:this%nface+1)-this%xface(1:this%nface))
     call allocate_collated_array (fnode, sum(fsize))
-    call collate (fnode, global_index(this%node_ip, this%fnode))
+    call collate (fnode, this%node_ip%global_index(this%fnode))
     if (is_IOP) then
       call gmvwrite_cell_header_f (nface)
       offset = 0
@@ -192,7 +192,7 @@ contains
     character(*), intent(in) :: name
     real(r8), allocatable :: u_global(:)
     ASSERT(size(u) >= this%nface_onP)
-    allocate(u_global(merge(global_size(this%face_ip),0,is_IOP)))
+    allocate(u_global(merge(this%face_ip%global_size(),0,is_IOP)))
     call collate (u_global, u(:this%nface_onP))
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
   end subroutine gmv_write_var

@@ -66,8 +66,8 @@ contains
     call mesh%get_global_x_array (x)
     call mesh%get_global_cblock_array (cblock)
     
-    call allocate_collated_array (pdata, global_size(mesh%cell_ip))
-    call collate (pdata, spread(this_PE, dim=1, ncopies=onP_size(mesh%cell_ip)))
+    call allocate_collated_array (pdata, mesh%cell_ip%global_size())
+    call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onP_size()))
     
     if (is_IOP) then
       !! Open the DX output file.
@@ -133,8 +133,8 @@ contains
     real, pointer :: g_v(:,:), g_q(:)
     type(dx_object) :: dxfld
     
-    call allocate_collated_array (g_v, 3, global_size(mesh%cell_ip))
-    call allocate_collated_array (g_q, global_size(mesh%cell_ip))
+    call allocate_collated_array (g_v, 3, mesh%cell_ip%global_size())
+    call allocate_collated_array (g_q, mesh%cell_ip%global_size())
     
     v = w1_vector_on_cells(mesh, efield)
     call collate (g_v, v(:,:mesh%ncell_onP))

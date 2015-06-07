@@ -950,12 +950,12 @@ CONTAINS
     mesh => named_mesh_ptr('alt')
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NMU record')
-    if (n /= global_size(mesh%cell_ip)) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
+    if (n /= mesh%cell_ip%global_size()) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
     call read_dist_array (unit, mu_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading MU record')
     call gather_boundary (mesh%cell_ip, mu_q)
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NSIGMA record')
-    if (n /= global_size(mesh%cell_ip)) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
+    if (n /= mesh%cell_ip%global_size()) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
     call read_dist_array (unit, sigma_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading SIGMA record')
     call gather_boundary (mesh%cell_ip, sigma_q)
 

@@ -233,18 +233,18 @@ contains
     deallocate(lface, offP_index)
     
     !! Local mesh sizes: on-process plus off-process.
-    this%nnode = local_size(this%node_ip)
-    this%nedge = 0 !local_size(this%edge_ip)
-    this%nface = local_size(this%face_ip)
-    this%ncell = local_size(this%cell_ip)
-    this%nlink = local_size(this%link_ip)
+    this%nnode = this%node_ip%local_size()
+    this%nedge = 0 !this%edge_ip%local_size()
+    this%nface = this%face_ip%local_size()
+    this%ncell = this%cell_ip%local_size()
+    this%nlink = this%link_ip%local_size()
 
     !! On-process mesh sizes.
-    this%nnode_onP = onP_size(this%node_ip)
-    this%nedge_onP = 0 !onP_size(this%edge_ip)
-    this%nface_onP = onP_size(this%face_ip)
-    this%ncell_onP = onP_size(this%cell_ip)
-    this%nlink_onP = onP_size(this%link_ip)
+    this%nnode_onP = this%node_ip%onP_size()
+    this%nedge_onP = 0 !this%edge_ip%onP_size()
+    this%nface_onP = this%face_ip%onP_size()
+    this%ncell_onP = this%cell_ip%onP_size()
+    this%nlink_onP = this%link_ip%onP_size()
 
     !! Distribute the cell block ID arrays.
     if (is_IOP) n = size(mesh%block_id)
@@ -331,6 +331,13 @@ contains
     allocate(this%face_set_ID(n))
     if (is_IOP) this%face_set_ID = mesh%sset%ID
     call broadcast (this%face_set_ID)
+
+    !! Broadcast the node set IDs to all processors.
+    if (is_IOP) n = size(mesh%nset)
+    call broadcast (n)
+    allocate(this%node_set_ID(n))
+    if (is_IOP) this%node_set_ID = mesh%nset%ID
+    call broadcast (this%node_set_ID)
 
     !! Distribute the global node position array.
     allocate(this%x(3,this%nnode))

@@ -225,7 +225,7 @@ contains
     end if
 
     !! Mapping from external cell numbers to internal (global) cell numbers.
-    call allocate_collated_array (map, global_size(mesh%cell_ip))
+    call allocate_collated_array (map, mesh%cell_ip%global_size())
     call collate (map, mesh%xcell(:mesh%ncell_onP))
     if (is_IOP) then
       ASSERT(is_perm(map))
@@ -247,7 +247,7 @@ contains
     end if
 
     !! Sort the cell/side pairs so that they are ordered by cell process rank.
-    call collate (last, last_index(mesh%cell_ip)) ! last global cell index on the processes
+    call collate (last, mesh%cell_ip%last_index()) ! last global cell index on the processes
     if (is_IOP) then
       allocate(perm(nface))
       call partition_sort (last, fcell, bsize, perm)
@@ -261,7 +261,7 @@ contains
     call distribute (fcell_l, fcell)
     call distribute (fside_l, fside)
     deallocate(fcell, fside)
-    offset = first_index(mesh%cell_ip) - 1
+    offset = mesh%cell_ip%first_index() - 1
     fcell_l = fcell_l - offset ! local cell index
     ASSERT(all(fcell_l >= 1))
     ASSERT(all(fcell_l <= mesh%ncell_onP))
@@ -271,7 +271,7 @@ contains
     !! faces.  FCELL_L holds the results temporarily.
     do j = n, 1, -1
       if (fside_l(j) > size(mesh%cface,dim=1)) exit ! no matching mesh face
-      fcell_l(j) = global_index(mesh%face_ip, mesh%cface(fside_l(j),fcell_l(j)))
+      fcell_l(j) = mesh%face_ip%global_index(mesh%cface(fside_l(j),fcell_l(j)))
     end do
     stat = global_maxval(j) ! get one of the unmatched faces, if any
     if (stat /= 0) return
@@ -282,12 +282,12 @@ contains
     if (is_IOP) then  ! undo the partition sort
       call reorder (map, perm, forward=.true.)
       ASSERT(all(map >= 1))
-      ASSERT(all(map <= global_size(mesh%face_ip)))
+      ASSERT(all(map <= mesh%face_ip%global_size()))
     end if
     deallocate(fcell_l, fside_l)
 
     !! Sort the mesh face list MAP so that it is ordered by face process rank.
-    call collate (last, last_index(mesh%face_ip))
+    call collate (last, mesh%face_ip%last_index())
     if (is_IOP) then
       call partition_sort (last, map, bsize, perm)
       call reorder (map, perm)
@@ -298,12 +298,12 @@ contains
     call distribute (n, bsize)
     allocate(lm_faces(n), perm2(n))
     call distribute (lm_faces, map)
-    offset = first_index(mesh%face_ip) - 1
+    offset = mesh%face_ip%first_index() - 1
     lm_faces = lm_faces - offset  ! local face index
     call heapsort (lm_faces, perm2)
     call reorder (lm_faces, perm2)
     ASSERT(all(lm_faces >= 1))
-    ASSERT(all(lm_faces <= onP_size(mesh%face_ip)))
+    ASSERT(all(lm_faces <= mesh%face_ip%onP_size()))
 
     !! Generate the mapping from mesh enclosure faces to enclosure faces:
     !! it is the composition of the partition sort and the heap sort.
@@ -816,7 +816,7 @@ contains
 
     ASSERT(size(faces) == size(efaces))
     ASSERT(global_all(faces >= 1))
-    ASSERT(global_all(faces <= onP_size(mesh%face_ip)))
+    ASSERT(global_all(faces <= mesh%face_ip%onP_size()))
 
     !if (is_IOP) call gmvwrite_openfile_ir_f (file, 4, 8) ! bug with node ids
     if (is_IOP) call gmvwrite_openfile_ir_ascii_f (file, 4, 8)
@@ -851,7 +851,7 @@ contains
     deallocate(tag)
 
     !! Global mapping array.
-    call allocate_collated_array (map, global_size(mesh%node_ip))
+    call allocate_collated_array (map, mesh%node_ip%global_size())
     call collate (map, map_l)
     deallocate(map_l)
 
@@ -869,7 +869,7 @@ contains
     !! Collate the surface face node array, ...
     num_faces = global_sum(size(faces))
     allocate(fnode(size(mesh%fnode,dim=1),num_faces))
-    call collate (fnode, global_index(mesh%node_ip, mesh%fnode(:,faces)))
+    call collate (fnode, mesh%node_ip%global_index(mesh%fnode(:,faces)))
     !! and remap mesh node numbers to surface node numbers.
     if (is_IOP) then
       do j = 1, size(fnode,dim=2)
@@ -900,7 +900,7 @@ contains
 
     !! Write mesh node numbers as the nodeids -- GMV uses these for display.
     call allocate_collated_array (map, num_nodes)
-    !call collate (map, global_index(mesh%node_ip, nodes))  ! internal mesh node numbers
+    !call collate (map, mesh%node_ip%global_index(nodes))  ! internal mesh node numbers
     call collate (map, mesh%xnode(nodes)) ! external mesh node numbers
     if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map, nodes)

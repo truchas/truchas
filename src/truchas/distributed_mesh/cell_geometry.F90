@@ -43,6 +43,10 @@ contains
     select case (size(x,dim=2))
     case (4)  ! tet
       vol = tet_volume(x)
+    case (5)  ! pyramid
+      vol = pyramid_volume(x)
+    case (6)  ! wedge
+      vol = wedge_volume(x)
     case (8)  ! hex
       vol = hex_volume(x)
     case default
@@ -50,11 +54,31 @@ contains
     end select
   end function cell_volume
 
-  pure function tet_volume (x) result (tvol)
+  pure function tet_volume (x) result (vol)
     real(r8), intent(in) :: x(:,:)
-    real(r8) :: tvol
-    tvol = triple_product(x(:,2)-x(:,1), x(:,3)-x(:,1), x(:,4)-x(:,1)) / 6.0_r8
+    real(r8) :: vol
+    vol = triple_product(x(:,2)-x(:,1), x(:,3)-x(:,1), x(:,4)-x(:,1)) / 6.0_r8
   end function tet_volume
+  
+  pure function pyramid_volume (x) result (vol)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: vol, cvol1, cvol2, cvol3, cvol4
+    vol = 0.5_r8 * (tet_volume(x(:,[1,2,4,5])) &
+                  + tet_volume(x(:,[2,3,1,5])) &
+                  + tet_volume(x(:,[3,4,2,5])) &
+                  + tet_volume(x(:,[4,1,3,5])) )
+  end function pyramid_volume
+  
+  pure function wedge_volume (x) result (vol)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: vol
+    vol = 0.5_r8 * (tet_volume(x(:,[1,2,3,4])) &
+                  + tet_volume(x(:,[5,4,6,2])) &
+                  + tet_volume(x(:,[3,2,6,4])) &
+                  + tet_volume(x(:,[2,3,1,5])) &
+                  + tet_volume(x(:,[4,5,6,1])) &
+                  + tet_volume(x(:,[6,5,3,1])) )
+  end function wedge_volume
   
   pure function hex_volume (x) result (hvol)
 

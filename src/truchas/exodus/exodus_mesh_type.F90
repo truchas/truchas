@@ -145,7 +145,7 @@ module exodus_mesh_type
   private
 
   type, public :: elem_blk
-    integer :: id = 0, num_elem = 0
+    integer :: id = 0, num_elem = 0, num_nodes_per_elem = 0
     character(:), allocatable :: elem_type
     integer, allocatable :: connect(:,:)
   contains
@@ -455,6 +455,7 @@ contains
     elem_blk_defined = .false.
     if (this%id <= 0) return
     if (.not.allocated(this%connect)) return
+    if (this%num_nodes_per_elem /= size(this%connect,dim=1)) return
     if (this%num_elem /= size(this%connect,dim=2)) return
     elem_blk_defined = .true.
   end function elem_blk_defined
@@ -564,6 +565,7 @@ contains
     write(lun,'(a)') 'ELEMENT_BLOCK('
     write(lun,'(t4,a,i6)') 'ID=', this%id
     write(lun,'(t4,a,i6)') 'NUM_ELEM=', this%num_elem
+    write(lun,'(t4,a,i6)') 'NUM_NODES_PER_ELEM=', this%num_nodes_per_elem
     write(lun,'(t4,a)')  'ELEM_TYPE= "' // this%elem_type // '"'
     if (allocated(this%connect)) then
       write(lun,'(t4,a,(t12,8(1x,i6)))') 'CONNECT=', this%connect(:,1)

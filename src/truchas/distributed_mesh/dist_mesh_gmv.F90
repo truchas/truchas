@@ -134,8 +134,8 @@ contains
       if (is_IOP) call gmvwrite_flag_header_f ()
 
       !! Cell partitioning info ...
-      call allocate_collated_array (pdata, global_size(mesh%cell_ip))
-      call collate (pdata, spread(this_PE, dim=1, ncopies=onP_size(mesh%cell_ip)))
+      call allocate_collated_array (pdata, mesh%cell_ip%global_size())
+      call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onP_size()))
       if (is_IOP) then
         call gmvwrite_flag_name_f ('cellpart', nPE, CELLDATA)
         do j = 1, nPE
@@ -146,8 +146,8 @@ contains
       deallocate(pdata)
 
       !! Node partitioning info ...
-      call allocate_collated_array (pdata, global_size(mesh%node_ip))
-      call collate (pdata, spread(this_PE, dim=1, ncopies=onP_size(mesh%node_ip)))
+      call allocate_collated_array (pdata, mesh%node_ip%global_size())
+      call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%node_ip%onP_size()))
       if (is_IOP) then
         call gmvwrite_flag_name_f ('nodepart', nPE, NODEDATA)
         do j = 1, nPE
@@ -189,9 +189,9 @@ contains
     real(kind=r8), pointer :: u_global(:)
 
     ASSERT( defined(mesh%cell_ip) )
-    ASSERT( size(u) == onP_size(mesh%cell_ip) )
+    ASSERT( size(u) == mesh%cell_ip%onP_size() )
 
-    call allocate_collated_array (u_global, global_size(mesh%cell_ip))
+    call allocate_collated_array (u_global, mesh%cell_ip%global_size())
     call collate (u_global, u)
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
     deallocate(u_global)

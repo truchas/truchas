@@ -113,9 +113,10 @@ contains
     allocate(mesh%eblk(mesh%num_eblk))
     mesh%eblk%ID = file%elem_blk%ID
     mesh%eblk%num_elem = file%elem_blk%num_elem
+    mesh%eblk%num_nodes_per_elem = file%elem_blk%num_nodes_per_elem
     do n = 1, mesh%num_eblk
       mesh%eblk(n)%elem_type = file%elem_blk(n)%elem_type
-      allocate(mesh%eblk(n)%connect(file%elem_blk(n)%num_nodes_per_elem,mesh%eblk(n)%num_elem))
+      allocate(mesh%eblk(n)%connect(mesh%eblk(n)%num_nodes_per_elem,mesh%eblk(n)%num_elem))
       call file%get_connect (mesh%eblk(n)%ID, mesh%eblk(n)%connect, ierr, errstr)
       if (ierr /= 0) then
         call error_handler ('READ_EXODUS_MESH', &

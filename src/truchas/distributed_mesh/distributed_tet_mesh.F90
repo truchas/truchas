@@ -160,16 +160,16 @@ contains
     deallocate(cface, offP_index)
 
     !! Local mesh sizes: on-process plus off-process.
-    this%nnode = local_size(this%node_ip)
-    this%nedge = local_size(this%edge_ip)
-    this%nface = local_size(this%face_ip)
-    this%ncell = local_size(this%cell_ip)
+    this%nnode = this%node_ip%local_size()
+    this%nedge = this%edge_ip%local_size()
+    this%nface = this%face_ip%local_size()
+    this%ncell = this%cell_ip%local_size()
 
     !! On-process mesh sizes.
-    this%nnode_onP = onP_size(this%node_ip)
-    this%nedge_onP = onP_size(this%edge_ip)
-    this%nface_onP = onP_size(this%face_ip)
-    this%ncell_onP = onP_size(this%cell_ip)
+    this%nnode_onP = this%node_ip%onP_size()
+    this%nedge_onP = this%edge_ip%onP_size()
+    this%nface_onP = this%face_ip%onP_size()
+    this%ncell_onP = this%cell_ip%onP_size()
 
     !! Distribute the cell block ID arrays.
     if (is_IOP) n = size(mesh%block_id)

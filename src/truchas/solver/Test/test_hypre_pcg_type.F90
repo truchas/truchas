@@ -40,7 +40,7 @@ program test_hypre_pcg_type
   call solver%init (matrix, params)
   call solver%setup ()
   
-  nrow = onP_size(matrix%graph%row_ip)
+  nrow = matrix%graph%row_ip%onP_size()
   allocate(x(nrow), b(nrow), u(nrow))
   
   kx = 1; ky = 1; kz = 1
@@ -55,7 +55,7 @@ program test_hypre_pcg_type
   call solver%get_metrics (num_itr)
 
   maxerr = global_maxval(abs(u-x))
-  l2err = sqrt(global_sum((u-x)**2) / global_size(matrix%graph%row_ip))
+  l2err = sqrt(global_sum((u-x)**2) / matrix%graph%row_ip%global_size())
   if (is_IOP) print '(a,i2,2(a,es9.2))', 'itr=', num_itr, ', maxerr=', maxerr, ', l2err=', l2err
 
   call pgslib_finalize
