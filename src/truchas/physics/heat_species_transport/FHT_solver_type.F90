@@ -116,6 +116,7 @@ contains
     type(FHT_solver_params), intent(inout) :: params
     
     integer :: n
+    procedure(pardp), pointer :: dp
   
     this%mmf   => mmf
     this%model => model
@@ -131,13 +132,15 @@ contains
     call FHT_precon_init (this%precon, this%model, params%precon_params)
     call FHT_norm_init (this%norm, this%model, params%norm_params)
     
-    call TofH_init (this%T_of_H, model%H_of_T, eps=params%TofH_tol, &
-                    max_try=params%TofH_max_try, delta=params%TofH_delta)
+    call this%T_of_H%init (model%H_of_T, eps=params%TofH_tol, &
+        max_try=params%TofH_max_try, delta=params%TofH_delta)
     
     !! Setup the backward-Euler integrator.
     n = FHT_model_size(model)
-    call nka_init (this%accel, n, params%nlk_max_vec)
-    call nka_set_vec_tol (this%accel, params%nlk_vec_tol)
+    call this%accel%init (n, params%nlk_max_vec)
+    call this%accel%set_vec_tol (params%nlk_vec_tol)
+    dp => pardp ! NB: in F2008 can make pardp an internal sub and pass directly
+    call this%accel%set_dot_prod (dp)
     call create_history (this%uhist, 2, n)
     this%max_itr = params%nlk_max_itr
     
@@ -147,10 +150,15 @@ contains
     
   end subroutine FHT_solver_init
   
+  function pardp (a, b) result (dp)
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: dp
+    dp = global_dot_product(a, b)
+  end function pardp
+  
   subroutine FHT_solver_delete (this)
     type(FHT_solver), intent(inout) :: this
     call FHT_precon_delete (this%precon)
-    call nka_delete (this%accel)
     call destroy (this%uhist)
   end subroutine FHT_solver_delete
   
@@ -241,7 +249,7 @@ contains
         Tcell(j) = 0.0_r8 ! dummy value
       else if (this%last_void_cell(j)) then ! newly non-void cell
         !! Use the temperature corresponding to the advected heat density.
-        call TofH_compute (this%T_of_H, j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
+        call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
       end if
     end do
     
@@ -304,7 +312,7 @@ contains
       if (this%tot_void_cell(j)) then
         Tcell(j) = 0.0_r8
       else if (this%void_cell(j)) then  ! essentially void cell
-        call TofH_compute (this%T_of_H, j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
+        call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
       end if
     end do
     deallocate(Tmin, Tmax)
@@ -422,7 +430,7 @@ contains
       n3 = global_sum(this%mesh%ncell_onP) - n1 - n2
       write(msg,'(a,3(i0,:,"/"))') 'DS: totally/essentially/non-void cell counts = ', n1, n2, n3
       call TLS_info (msg)
-      call TofH_get_metrics (this%T_of_H, avg_itr, max_itr, rec_rate, avg_adj, max_adj)
+      call this%T_of_H%get_metrics (avg_itr, max_itr, rec_rate, avg_adj, max_adj)
       write(msg,'(a,f5.2,a,i0,a)') 'DS: T(H) iterations: ', avg_itr, '(avg), ', max_itr, '(max)'
       call TLS_info (msg)
       write(msg,'(a,f5.3,a,f5.2,a,i0,a)') 'DS: T(H) salvage rate = ', rec_rate, &
@@ -686,7 +694,7 @@ contains
     call FHT_norm_fnorm (this%norm, t, u, Hdot, f)
     
     itr = 0
-    call nka_restart (this%accel)
+    call this%accel%restart
     do ! until converged
     
       itr = itr + 1
@@ -694,7 +702,7 @@ contains
       !! Compute the next solution iterate.
       this%num_precon_apply = this%num_precon_apply + 1
       call FHT_precon_apply (this%precon, t, u, f)
-      call nka_accel_update (this%accel, f, dp=pardp)
+      call this%accel%accel_update (f)
       u = u - f
       
       !! Compute the residual and norm.
@@ -725,12 +733,6 @@ contains
     3 format(2x,i3,': error=',es12.5)
 
   end subroutine backward_euler_solve
-  
-  function pardp (a, b) result (dp)
-    real(r8), intent(in) :: a(:), b(:)
-    real(r8) :: dp
-    dp = global_dot_product(a, b)
-  end function pardp
   
   subroutine FHT_solver_get_cell_temp_view (this, view)
     type(FHT_solver), intent(in) :: this

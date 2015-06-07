@@ -10,6 +10,7 @@ module HTSD_solver_type
   use dist_mesh_type
   use index_partitioning
   use bdf2_dae
+  use parameter_list_type
   implicit none
   private
   
@@ -27,6 +28,7 @@ module HTSD_solver_type
     real(r8) :: hmin
     integer :: max_step_tries
     !integer :: step_method
+    type(parameter_list), pointer :: ic_params
   end type HTSD_solver
   
   public :: HTSD_solver_init
@@ -67,6 +69,7 @@ contains
     type(HTSD_model), intent(in), target :: model
     type(HTSD_solver_params), intent(in) :: params
     integer :: n
+    type(parameter_list), pointer :: plist
 #ifdef INTEL_COMPILER_WORKAROUND
     type(dist_mesh), pointer :: fubar
 #endif
@@ -91,6 +94,16 @@ contains
     this%hmin = params%hmin
     this%max_step_tries = params%max_step_tries
     !this%step_method = params%step_method
+    !! Grab parameters for HTSD_init_cond%init
+    allocate(this%ic_params)
+    if (associated(model%ht)) then
+      call this%ic_params%set ('atol-temp', 0.01_r8 * params%norm_params%abs_T_tol)
+      call this%ic_params%set ('rtol-temp', 0.01_r8 * params%norm_params%rel_T_tol)
+      call this%ic_params%set ('max-iter', 50)
+      call this%ic_params%set ('method', 'SSOR')
+      plist => this%ic_params%sublist('params')
+      call plist%set ('num-sweeps', 1)
+    end if
   end subroutine HTSD_solver_init
   
   subroutine HTSD_solver_delete (this)
@@ -108,6 +121,7 @@ contains
     !! The solver owns the void cell and face mask components of the model.
     if (associated(this%model%void_cell)) deallocate(this%model%void_cell)
     if (associated(this%model%void_face)) deallocate(this%model%void_face)
+    if (associated(this%ic_params)) deallocate(this%ic_params)
   end subroutine HTSD_solver_delete
   
   subroutine HTSD_solver_get_soln_view (this, view)
@@ -270,16 +284,19 @@ contains
     this%state_is_pending = .false.
   end subroutine HTSD_solver_commit_pending_state
   
-  subroutine HTSD_solver_set_initial_state (this, t, temp, conc)
+  subroutine HTSD_solver_set_initial_state (this, t, temp, conc, dt)
   
     use parallel_communication, only: global_count
+    use HTSD_init_cond_type
   
     type(HTSD_solver), intent(inout) :: this
     real(r8), intent(in) :: t
     real(r8), pointer :: temp(:), conc(:,:)
+    real(r8), intent(in) :: dt
     
     integer :: j
     real(r8), allocatable :: void_vol_frac(:), udot(:)
+    type(HTSD_init_cond) :: ic
     
     INSIST(associated(this%model))
     
@@ -302,7 +319,9 @@ contains
     end if
     
     allocate(udot(size(this%u)))
-    call HTSD_model_compute_udot (this%model, t, temp, conc, this%u, udot)
+    call this%ic_params%set ('dt', dt)
+    call ic%init (this%model, this%ic_params)
+    call ic%compute (t, temp, conc, this%u, udot)
     call set_initial_state (this%bdf2_state, t, this%u, udot)
     deallocate(udot)
     

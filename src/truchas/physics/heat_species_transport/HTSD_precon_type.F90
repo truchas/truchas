@@ -4,7 +4,7 @@ module HTSD_precon_type
 
   use kinds, only: r8
   use HTSD_model_type
-  use ER_driver
+  use rad_problem_type
   use dist_mesh_type
   use diff_precon_type
   use diffusion_matrix
@@ -286,7 +286,7 @@ contains
         do index = 1, size(this%model%ht%vf_rad_prob)
           faces => this%model%ht%vf_rad_prob(index)%faces
           allocate(values(size(faces)))
-          call ERD_rhs_deriv (this%model%ht%vf_rad_prob(index), t, Tface(faces), values)
+          call this%model%ht%vf_rad_prob(index)%rhs_deriv (t, Tface(faces), values)
           call dm%incr_face_diag (faces, this%mesh%area(faces) * values)
           deallocate(values)
         end do
@@ -404,10 +404,10 @@ contains
             call HTSD_model_get_radiosity_view (this%model, index, f, fq)
             allocate(z(size(fq)))
             z = fq
-            call ERD_precon (this%model%ht%vf_rad_prob(index), t, z)
+            call this%model%ht%vf_rad_prob(index)%precon (t, z)
             if (this%vfr_precon_coupling(index) == VFR_FGS) fq = z
             !! Update the heat equation face residual.
-            call ERD_precon_matvec1 (this%model%ht%vf_rad_prob(index), t, z)
+            call this%model%ht%vf_rad_prob(index)%precon_matvec1 (t, z)
             do j = 1, size(z)
               n = this%model%ht%vf_rad_prob(index)%faces(j)
               f2(n) = f2(n) + this%mesh%area(n) * z(j)
@@ -456,11 +456,11 @@ contains
             call HTSD_model_get_radiosity_view (this%model, index, f, fq)
             if (this%vfr_precon_coupling(index) /= VFR_JAC) then
               allocate(z(size(fq)))
-              call ERD_rhs_deriv (this%model%ht%vf_rad_prob(index), t, Tface(this%model%ht%vf_rad_prob(index)%faces), z)
+              call this%model%ht%vf_rad_prob(index)%rhs_deriv (t, Tface(this%model%ht%vf_rad_prob(index)%faces), z)
               fq = fq + z * f2(this%model%ht%vf_rad_prob(index)%faces)
               deallocate(z)
             end if
-            call ERD_precon (this%model%ht%vf_rad_prob(index), t, fq)
+            call this%model%ht%vf_rad_prob(index)%precon (t, fq)
           end if
         end do
         call stop_timer ('VF rad precon')

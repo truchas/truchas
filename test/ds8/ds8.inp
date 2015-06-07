@@ -31,7 +31,7 @@ elsewhere.  Free-slip flow conditions on all boundaries.
 /
 
 &NUMERICS
-  dt_init = 1.0e-4
+  dt_init = 1.0e-3
   dt_grow = 5.0
   dt_min  = 1.0e-5
   dt_max  = 1000.0

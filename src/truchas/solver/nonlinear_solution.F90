@@ -451,6 +451,7 @@ CONTAINS
     type(nka) :: accel_state
     integer :: mvec
     character(256) :: message
+    procedure(nlk_dot_product), pointer :: dp
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -541,8 +542,10 @@ CONTAINS
     ubik_vec%values => Solution_Delta
 
     ! Initialize fixed point accelerator
-    call nka_init (accel_state, size(Solution_Delta), mvec)
-    call nka_set_vec_tol (accel_state, NLS%NLK_Vector_Tolerance)
+    call accel_state%init (size(Solution_Delta), mvec)
+    call accel_state%set_vec_tol (NLS%NLK_Vector_Tolerance)
+    dp => nlk_dot_product ! NB: in F2008 can make nlk_dot_product an internal sub and pass directly
+    call accel_state%set_dot_prod (dp)
 
     if (LS%solver.ne.SOLVER_NONE) then
        LS%solver=SOLVER_NONE
@@ -585,7 +588,7 @@ CONTAINS
       
 
       ! The Newton accelerator of Carlson/Miller SIAM Sci. Comp. Vol 19 pp 728-765 1998
-      call nka_accel_update (accel_state, Solution_Delta, dp=nlk_dot_product)
+      call accel_state%accel_update (Solution_Delta)
      
 ! NKA is not currently set up to handle damping.
       alpha=1.d0
@@ -695,9 +698,6 @@ CONTAINS
 
     ! Check for errors in solver; print diagnostics and quit
 !    call POST_SOLVE (Ubik_solver, 'LINEAR_SOLVER')
-
-    ! Deallocate acceleration vectors
-    call nka_delete (accel_state)
 
     ! copy Ubik_solver out to Ubik before deallocating
     LS%status = Ubik_solver%status

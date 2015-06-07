@@ -10,7 +10,7 @@ module FHT_model_type
   use source_mesh_function
   use boundary_data
   use interface_data
-  use ER_driver
+  use rad_problem_type
   use index_partitioning
   use timing_tree
   implicit none
@@ -38,7 +38,7 @@ module FHT_model_type
     type(if_data), pointer :: ic_rad => null()  ! internal gap radiation
     real(r8) :: sbconst, abszero ! Stefan-Boltzmann constant and absolute zero for radiation BC
     !! Enclosure radiation problems
-    type(ERD_problem), pointer :: vf_rad_prob(:) => null()
+    type(rad_problem), pointer :: vf_rad_prob(:) => null()
   end type FHT_model
 
   public :: FHT_model_init
@@ -133,12 +133,7 @@ contains
       call if_data_destroy (this%ic_rad)
       deallocate(this%ic_rad)
     end if
-    if (associated(this%vf_rad_prob)) then
-      do n = 1, size(this%vf_rad_prob)
-        call ERD_problem_destroy (this%vf_rad_prob(n))
-      end do
-      deallocate(this%vf_rad_prob)
-    end if
+    if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine FHT_model_delete
 
   subroutine FHT_model_compute_f (this, t, u, hdot, f)
@@ -270,14 +265,14 @@ contains
         faces => this%vf_rad_prob(n)%faces
         !! Radiative heat flux contribution to the heat conduction face residual.
         allocate(flux(size(faces)))
-        call ERD_compute_heat_flux (this%vf_rad_prob(n), t, qrad, Tface(faces), flux)
+        call this%vf_rad_prob(n)%heat_flux (t, qrad, Tface(faces), flux)
         do j = 1, size(faces)
           Fface(faces(j)) = Fface(faces(j)) + this%mesh%area(faces(j)) * flux(j)
         end do
         deallocate(flux)
         !! Residual of the algebraic radiosity system.
         call FHT_model_get_radiosity_view (this, n, f, rptr)
-        call ERD_compute_residual (this%vf_rad_prob(n), t, qrad, Tface(faces), rptr)
+        call this%vf_rad_prob(n)%residual (t, qrad, Tface(faces), rptr)
         rptr = -rptr
       end do
     end if
@@ -340,10 +335,10 @@ contains
     real(r8), intent(out) :: u(:), udot(:)
     target :: u, udot
 
-    integer :: j, index
+    integer :: j, index, stat, numitr
     integer, pointer :: faces(:)
     real(r8), target :: f(size(u))
-    real(r8) :: fdinc, H0, H1
+    real(r8) :: fdinc, H0, H1, error
     real(r8), pointer :: var(:), Fcell(:)
     real(r8), allocatable :: Tcell(:), Tface(:), Hdot(:)
 
@@ -375,7 +370,7 @@ contains
         call FHT_model_get_radiosity_view (this, index, u, var)
         faces => this%vf_rad_prob(index)%faces
         var = 0.0_r8
-        call ERD_solve_radiosity (this%vf_rad_prob(index), t, Tface(faces), var)
+        call this%vf_rad_prob(index)%solve_radiosity (t, Tface(faces), var, stat, numitr, error)
         !! Go ahead and set radiosity derivatives to zero now.
         call FHT_model_get_radiosity_view (this, index, udot, var)
         var = 0.0_r8

@@ -20,11 +20,12 @@ set(SOLVER_FILES
           solver/pcsr_precon_class.F90
           solver/pcsr_precon_ssor_type.F90
           solver/pcsr_precon_boomer_type.F90
+          solver/pcsr_precon_factory.F90
           solver/linear_solution.F90
           solver/nonlinear_solution.F90
           solver/ortho_matvec.F90
           solver/preconditioners.F90
-          solver/ridders_type.F90)
+          solver/ridders_class.F90)
 
 set(SOLVER_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities

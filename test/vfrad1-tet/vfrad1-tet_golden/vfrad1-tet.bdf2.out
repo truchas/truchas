@@ -1,487 +1,450 @@
 
-TRAP step      1: T= 0.00000E+00, H= 1.00000E-04, ETAH= 5.00000E-05
-  Preconditioner updated at T= 1.00000E-04, ETAH= 5.00000E-05
-    1: error= 5.69681E+01
-    2: error= 4.98076E+01
-    3: error= 1.04087E+00
-    4: error= 4.63845E-02
-  AIN BCE solve succeeded:   4 iterations, error= 4.63845E-02
+TRAP step      1: T= 0.00000E+00, H= 1.00000E-03, ETAH= 5.00000E-04
+  Preconditioner updated at T= 1.00000E-03, ETAH= 5.00000E-04
+    1: error= 3.26428E+00
+    2: error= 8.71683E-01
+    3: error= 1.65069E-01
+    4: error= 2.04047E-03
+  AIN BCE solve succeeded:   4 iterations, error= 2.04047E-03
   Step accepted: no local error control
 
-BDF2 step      2: T= 1.00000E-04, H= 1.00000E-04, ETAH= 6.66667E-05
-    1: error= 1.53802E+02
-    2: error= 1.40848E+02
-    3: error= 1.01845E+01
-    4: error= 4.45090E-02
-  AIN BCE solve succeeded:   4 iterations, error= 4.45090E-02
+BDF2 step      2: T= 1.00000E-03, H= 1.00000E-03, ETAH= 6.66667E-04
+    1: error= 2.87830E+00
+    2: error= 6.89663E-01
+    3: error= 2.48375E-01
+    4: error= 5.65753E-03
+  AIN BCE solve succeeded:   4 iterations, error= 5.65753E-03
   Step accepted: no local error control
 
-BDF2 step      3: T= 2.00000E-04, H= 1.00000E-04, ETAH= 6.66667E-05
-    1: error= 5.55773E+01
-    2: error= 5.12225E+01
-    3: error= 1.08319E+00
-    4: error= 1.35677E-02
-  AIN BCE solve succeeded:   4 iterations, error= 1.35677E-02
+BDF2 step      3: T= 2.00000E-03, H= 1.00000E-03, ETAH= 6.66667E-04
+    1: error= 1.77364E+00
+    2: error= 5.56310E-01
+    3: error= 2.13151E-01
+    4: error= 3.94096E-03
+  AIN BCE solve succeeded:   4 iterations, error= 3.94096E-03
   Step accepted: no local error control
 
-BDF2 step      4: T= 3.00000E-04, H= 1.00000E-04, ETAH= 6.66667E-05
-    1: error= 9.33806E-02
-    2: error= 2.64001E-02
-  AIN BCE solve succeeded:   2 iterations, error= 2.64001E-02
-  Step accepted: perr= 1.12002E-01
+BDF2 step      4: T= 3.00000E-03, H= 1.00000E-03, ETAH= 6.66667E-04
+    1: error= 7.88585E-01
+    2: error= 2.58128E-01
+    3: error= 1.07145E-01
+    4: error= 1.52075E-03
+  AIN BCE solve succeeded:   4 iterations, error= 1.52075E-03
+  Step accepted: perr= 9.47083E-01
 
-BDF2 step      5: T= 4.00000E-04, H= 2.10338E-04, ETAH= 1.25368E-04
-    1: error= 8.08087E-02
-    2: error= 6.22172E-02
-    3: error= 4.31734E-02
-  AIN BCE solve succeeded:   3 iterations, error= 4.31734E-02
-  Step accepted: perr= 1.86079E-01
+BDF2 step      5: T= 4.00000E-03, H= 6.94060E-04, ETAH= 4.92345E-04
+    1: error= 2.09348E-01
+    2: error= 5.35232E-02
+    3: error= 5.42137E-03
+  AIN BCE solve succeeded:   3 iterations, error= 5.42137E-03
+  Step accepted: perr= 2.07989E-01
 
-BDF2 step      6: T= 6.10338E-04, H= 2.64093E-04, ETAH= 1.69655E-04
-    1: error= 5.37845E-02
-    2: error= 2.61359E-02
-  AIN BCE solve succeeded:   2 iterations, error= 2.61359E-02
-  Step accepted: perr= 7.99197E-02
+BDF2 step      6: T= 4.69406E-03, H= 1.28816E-03, ETAH= 7.80772E-04
+    1: error= 2.27644E-01
+    2: error= 6.41186E-02
+    3: error= 5.28414E-02
+    4: error= 7.23398E-04
+  AIN BCE solve succeeded:   4 iterations, error= 7.23398E-04
+  Step accepted: perr= 3.12778E-01
 
-BDF2 step      7: T= 8.74431E-04, H= 5.45416E-04, ETAH= 3.25862E-04
-  Preconditioner updated at T= 1.41985E-03, ETAH= 3.25862E-04
-    1: error= 5.02951E-01
-    2: error= 9.43706E-02
-    3: error= 1.77405E-02
-  AIN BCE solve succeeded:   3 iterations, error= 1.77405E-02
-  Step accepted: perr= 5.06729E-01
+BDF2 step      7: T= 5.98222E-03, H= 1.36797E-03, ETAH= 9.02937E-04
+    1: error= 1.00536E-01
+    2: error= 2.77999E-02
+  AIN BCE solve succeeded:   2 iterations, error= 2.77999E-02
+  Step accepted: perr= 1.28337E-01
 
-BDF2 step      8: T= 1.41985E-03, H= 3.93416E-04, ETAH= 2.77239E-04
-    1: error= 1.86969E-01
-    2: error= 4.62198E-02
-  AIN BCE solve succeeded:   2 iterations, error= 4.62198E-02
-  Step accepted: perr= 1.77322E-01
+BDF2 step      8: T= 7.35019E-03, H= 2.44183E-03, ETAH= 1.48807E-03
+    1: error= 1.96403E-01
+    2: error= 1.10328E-01
+    3: error= 1.09272E-01
+    4: error= 4.53904E-02
+  AIN BCE solve succeeded:   4 iterations, error= 4.53904E-02
+  Step accepted: perr= 4.31137E-01
 
-BDF2 step      9: T= 1.81326E-03, H= 6.99586E-04, ETAH= 4.26562E-04
-    1: error= 2.98391E-01
-    2: error= 9.69133E-02
-    3: error= 3.26643E-02
-  AIN BCE solve succeeded:   3 iterations, error= 3.26643E-02
-  Step accepted: perr= 3.62648E-01
+BDF2 step      9: T= 9.79202E-03, H= 2.07180E-03, ETAH= 1.42000E-03
+    1: error= 1.87427E-01
+    2: error= 4.75390E-02
+  AIN BCE solve succeeded:   2 iterations, error= 4.75390E-02
+  Step accepted: perr= 1.96802E-01
 
-BDF2 step     10: T= 2.51285E-03, H= 6.93791E-04, ETAH= 4.63169E-04
-    1: error= 2.11580E-01
-    2: error= 4.17733E-02
-  AIN BCE solve succeeded:   2 iterations, error= 4.17733E-02
-  Step accepted: perr= 2.46915E-01
+BDF2 step     10: T= 1.18638E-02, H= 3.31429E-03, ETAH= 2.05175E-03
+  Preconditioner updated at T= 1.51781E-02, ETAH= 2.05175E-03
+    1: error= 9.78333E-01
+    2: error= 8.38078E-02
+    3: error= 8.46852E-03
+  AIN BCE solve succeeded:   3 iterations, error= 8.46852E-03
+  Step accepted: perr= 9.78065E-01
 
-BDF2 step     11: T= 3.20664E-03, H= 9.28548E-04, ETAH= 5.90547E-04
-    1: error= 2.56160E-01
-    2: error= 1.94320E-01
-    3: error= 5.39185E-02
-    4: error= 1.92311E-03
-  AIN BCE solve succeeded:   4 iterations, error= 1.92311E-03
-  Step accepted: perr= 3.94831E-01
+BDF2 step     11: T= 1.51781E-02, H= 1.88783E-03, ETAH= 1.38516E-03
+    1: error= 2.48693E-01
+    2: error= 6.90066E-02
+    3: error= 1.97498E-03
+  AIN BCE solve succeeded:   3 iterations, error= 1.97498E-03
+  Step accepted: perr= 2.06899E-01
 
-BDF2 step     12: T= 4.13519E-03, H= 9.32019E-04, ETAH= 6.20960E-04
-    1: error= 1.04532E-01
-    2: error= 3.32175E-02
-  AIN BCE solve succeeded:   2 iterations, error= 3.32175E-02
-  Step accepted: perr= 1.37751E-01
+BDF2 step     12: T= 1.70659E-02, H= 3.58731E-03, ETAH= 2.16730E-03
+    1: error= 5.99828E-01
+    2: error= 8.51066E-02
+    3: error= 8.05446E-03
+  AIN BCE solve succeeded:   3 iterations, error= 8.05446E-03
+  Step accepted: perr= 6.23195E-01
 
-BDF2 step     13: T= 5.06721E-03, H= 1.70733E-03, ETAH= 1.03671E-03
-    1: error= 2.29169E-01
-    2: error= 2.26467E-01
-    3: error= 7.00260E-02
-    4: error= 1.53824E-02
-  AIN BCE solve succeeded:   4 iterations, error= 1.53824E-02
-  Step accepted: perr= 5.36483E-01
+BDF2 step     13: T= 2.06532E-02, H= 2.69699E-03, ETAH= 1.88711E-03
+    1: error= 3.77853E-01
+    2: error= 4.86211E-02
+  AIN BCE solve succeeded:   2 iterations, error= 4.86211E-02
+  Step accepted: perr= 3.55522E-01
 
-BDF2 step     14: T= 6.77454E-03, H= 1.27989E-03, ETAH= 8.95995E-04
-    1: error= 5.94214E-02
-    2: error= 2.05869E-02
-  AIN BCE solve succeeded:   2 iterations, error= 2.05869E-02
-  Step accepted: perr= 6.77131E-02
+BDF2 step     14: T= 2.33502E-02, H= 3.34663E-03, ETAH= 2.15391E-03
+    1: error= 4.62445E-01
+    2: error= 6.77672E-02
+    3: error= 6.88309E-03
+  AIN BCE solve succeeded:   3 iterations, error= 6.88309E-03
+  Step accepted: perr= 4.74944E-01
 
-BDF2 step     15: T= 8.05442E-03, H= 3.52988E-03, ETAH= 2.03581E-03
-  Preconditioner updated at T= 1.15843E-02, ETAH= 2.03581E-03
-    1: error= 1.01638E+00
-    2: error= 1.62382E-01
-    3: error= 2.79212E-02
-  AIN BCE solve succeeded:   3 iterations, error= 2.79212E-02
-  Step accepted: perr= 1.01735E+00
+BDF2 step     15: T= 2.66969E-02, H= 3.30111E-03, ETAH= 2.20577E-03
+    1: error= 4.08719E-01
+    2: error= 6.81475E-02
+    3: error= 7.74391E-03
+  AIN BCE solve succeeded:   3 iterations, error= 7.74391E-03
+  Step accepted: perr= 4.25573E-01
 
-BDF2 step     16: T= 1.15843E-02, H= 1.63417E-03, ETAH= 1.24134E-03
-    1: error= 2.49296E-01
-    2: error= 9.00568E-02
-    3: error= 9.32928E-03
-  AIN BCE solve succeeded:   3 iterations, error= 9.32928E-03
-  Step accepted: perr= 1.93310E-01
+BDF2 step     16: T= 2.99980E-02, H= 3.49514E-03, ETAH= 2.30813E-03
+    1: error= 3.92640E-01
+    2: error= 8.05149E-02
+    3: error= 1.24972E-02
+  AIN BCE solve succeeded:   3 iterations, error= 1.24972E-02
+  Step accepted: perr= 4.23218E-01
 
-BDF2 step     17: T= 1.32185E-02, H= 3.33279E-03, ETAH= 1.99450E-03
-    1: error= 6.45913E-01
-    2: error= 6.54575E-02
-    3: error= 9.73622E-03
-  AIN BCE solve succeeded:   3 iterations, error= 9.73622E-03
-  Step accepted: perr= 6.30003E-01
+BDF2 step     17: T= 3.34931E-02, H= 3.73677E-03, ETAH= 2.46374E-03
+    1: error= 3.73159E-01
+    2: error= 8.43182E-02
+    3: error= 1.99691E-02
+  AIN BCE solve succeeded:   3 iterations, error= 1.99691E-02
+  Step accepted: perr= 4.21084E-01
 
-BDF2 step     18: T= 1.65513E-02, H= 2.53551E-03, ETAH= 1.77052E-03
-    1: error= 4.08217E-01
-    2: error= 4.00399E-02
-  AIN BCE solve succeeded:   2 iterations, error= 4.00399E-02
-  Step accepted: perr= 3.68696E-01
+BDF2 step     18: T= 3.72299E-02, H= 3.94049E-03, ETAH= 2.60396E-03
+    1: error= 3.52634E-01
+    2: error= 9.05456E-02
+    3: error= 2.67973E-02
+  AIN BCE solve succeeded:   3 iterations, error= 2.67973E-02
+  Step accepted: perr= 4.12736E-01
 
-BDF2 step     19: T= 1.90868E-02, H= 3.04420E-03, ETAH= 1.96961E-03
-    1: error= 4.72981E-01
-    2: error= 4.77384E-02
-  AIN BCE solve succeeded:   2 iterations, error= 4.77384E-02
-  Step accepted: perr= 4.57840E-01
+BDF2 step     19: T= 4.11704E-02, H= 4.21857E-03, ETAH= 2.78079E-03
+    1: error= 3.42209E-01
+    2: error= 9.80522E-02
+    3: error= 3.61587E-02
+  AIN BCE solve succeeded:   3 iterations, error= 3.61587E-02
+  Step accepted: perr= 4.15897E-01
 
-BDF2 step     20: T= 2.21310E-02, H= 3.10003E-03, ETAH= 2.06045E-03
-    1: error= 4.36351E-01
-    2: error= 6.50825E-02
-    3: error= 1.14702E-02
-  AIN BCE solve succeeded:   3 iterations, error= 1.14702E-02
-  Step accepted: perr= 4.32790E-01
+BDF2 step     20: T= 4.53889E-02, H= 4.47859E-03, ETAH= 2.95626E-03
+    1: error= 3.32195E-01
+    2: error= 1.02880E-01
+    3: error= 4.61011E-02
+  AIN BCE solve succeeded:   3 iterations, error= 4.61011E-02
+  Step accepted: perr= 4.13055E-01
 
-BDF2 step     21: T= 2.52310E-02, H= 3.22395E-03, ETAH= 2.13535E-03
-    1: error= 4.25388E-01
-    2: error= 6.94813E-02
-    3: error= 9.35728E-03
-  AIN BCE solve succeeded:   3 iterations, error= 9.35728E-03
-  Step accepted: perr= 4.27791E-01
+BDF2 step     21: T= 4.98675E-02, H= 4.77751E-03, ETAH= 3.15108E-03
+    1: error= 3.23350E-01
+    2: error= 1.04190E-01
+    3: error= 5.76903E-02
+    4: error= 2.76889E-02
+  AIN BCE solve succeeded:   4 iterations, error= 2.76889E-02
+  Step accepted: perr= 4.36407E-01
 
-BDF2 step     22: T= 2.84549E-02, H= 3.43515E-03, ETAH= 2.26614E-03
-    1: error= 3.99090E-01
-    2: error= 7.62523E-02
-    3: error= 1.11247E-02
-  AIN BCE solve succeeded:   3 iterations, error= 1.11247E-02
-  Step accepted: perr= 4.25442E-01
+BDF2 step     22: T= 5.46450E-02, H= 4.94475E-03, ETAH= 3.27771E-03
+    1: error= 3.19591E-01
+    2: error= 1.01054E-01
+    3: error= 4.44534E-02
+  AIN BCE solve succeeded:   3 iterations, error= 4.44534E-02
+  Step accepted: perr= 3.49183E-01
 
-BDF2 step     23: T= 3.18901E-02, H= 3.61880E-03, ETAH= 2.39178E-03
-    1: error= 3.76726E-01
-    2: error= 7.97917E-02
-    3: error= 1.68794E-02
-  AIN BCE solve succeeded:   3 iterations, error= 1.68794E-02
-  Step accepted: perr= 4.15371E-01
+BDF2 step     23: T= 5.95898E-02, H= 5.83191E-03, ETAH= 3.78410E-03
+    1: error= 3.12704E-01
+    2: error= 1.06867E-01
+    3: error= 1.05555E-01
+    4: error= 2.49092E-02
+  AIN BCE solve succeeded:   4 iterations, error= 2.49092E-02
+  Step accepted: perr= 5.32276E-01
 
-BDF2 step     24: T= 3.55089E-02, H= 3.86491E-03, ETAH= 2.54867E-03
-    1: error= 3.63338E-01
-    2: error= 8.85130E-02
-    3: error= 2.51215E-02
-  AIN BCE solve succeeded:   3 iterations, error= 2.51215E-02
-  Step accepted: perr= 4.18061E-01
+BDF2 step     24: T= 6.54217E-02, H= 5.20557E-03, ETAH= 3.53729E-03
+    1: error= 3.60024E-01
+    2: error= 1.75362E-01
+    3: error= 6.84432E-02
+    4: error= 5.52985E-02
+    5: error= 1.36796E-02
+  AIN BCE solve succeeded:   5 iterations, error= 1.36796E-02
+  Step accepted: perr= 3.16596E-01
 
-BDF2 step     25: T= 3.93738E-02, H= 4.09673E-03, ETAH= 2.70490E-03
-    1: error= 3.53198E-01
-    2: error= 9.49737E-02
-    3: error= 3.28297E-02
-  AIN BCE solve succeeded:   3 iterations, error= 3.28297E-02
-  Step accepted: perr= 4.15319E-01
+BDF2 step     25: T= 7.06273E-02, H= 6.78566E-03, ETAH= 4.33344E-03
+    1: error= 2.91322E-01
+    2: error= 1.52459E-01
+    3: error= 1.24317E-01
+    4: error= 8.15238E-02
+    5: error= 1.69535E-02
+  AIN BCE solve succeeded:   5 iterations, error= 1.69535E-02
+  Step accepted: perr= 4.92864E-01
 
-BDF2 step     26: T= 4.34705E-02, H= 4.36212E-03, ETAH= 2.87798E-03
-    1: error= 3.45188E-01
-    2: error= 1.01138E-01
-    3: error= 4.19109E-02
-  AIN BCE solve succeeded:   3 iterations, error= 4.19109E-02
-  Step accepted: perr= 4.14558E-01
+BDF2 step     26: T= 7.74129E-02, H= 6.21544E-03, ETAH= 4.20511E-03
+    1: error= 2.82344E-01
+    2: error= 1.94223E-01
+    3: error= 1.29913E-01
+    4: error= 7.46455E-02
+    5: error= 1.70237E-02
+  AIN BCE solve succeeded:   5 iterations, error= 1.70237E-02
+  Step accepted: perr= 3.69635E-01
 
-BDF2 step     27: T= 4.78327E-02, H= 4.64596E-03, ETAH= 3.06511E-03
-    1: error= 3.34944E-01
-    2: error= 1.04776E-01
-    3: error= 5.28245E-02
-    4: error= 2.85530E-02
-  AIN BCE solve succeeded:   4 iterations, error= 2.85530E-02
-  Step accepted: perr= 4.34941E-01
+BDF2 step     27: T= 8.36284E-02, H= 7.27532E-03, ETAH= 4.72644E-03
+    1: error= 3.25707E-01
+    2: error= 2.53670E-01
+    3: error= 1.76212E-01
+    4: error= 9.42180E-02
+    5: error= 2.39677E-02
+  AIN BCE solve succeeded:   5 iterations, error= 2.39677E-02
+  Step accepted: perr= 4.37919E-01
 
-BDF2 step     28: T= 5.24786E-02, H= 4.81824E-03, ETAH= 3.19278E-03
-    1: error= 3.33223E-01
-    2: error= 1.07002E-01
-    3: error= 4.14076E-02
-  AIN BCE solve succeeded:   3 iterations, error= 4.14076E-02
-  Step accepted: perr= 3.51010E-01
+BDF2 step     28: T= 9.09037E-02, H= 7.40626E-03, ETAH= 4.92287E-03
+    1: error= 3.10657E-01
+    2: error= 2.69311E-01
+    3: error= 1.92524E-01
+    4: error= 9.27890E-02
+    5: error= 2.53351E-02
+  AIN BCE solve succeeded:   5 iterations, error= 2.53351E-02
+  Step accepted: perr= 4.14968E-01
 
-BDF2 step     29: T= 5.72968E-02, H= 5.66375E-03, ETAH= 3.67697E-03
-    1: error= 3.19663E-01
-    2: error= 1.13354E-01
-    3: error= 1.03604E-01
-    4: error= 2.67193E-02
-  AIN BCE solve succeeded:   4 iterations, error= 2.67193E-02
-  Step accepted: perr= 5.34205E-01
+BDF2 step     29: T= 9.83100E-02, H= 7.91132E-03, ETAH= 5.21688E-03
+    1: error= 3.24219E-01
+    2: error= 3.08772E-01
+    3: error= 2.27223E-01
+    4: error= 1.00859E-01
+    5: error= 2.98760E-02
+  AIN BCE solve succeeded:   5 iterations, error= 2.98760E-02
+  Step accepted: perr= 4.20259E-01
 
-BDF2 step     30: T= 6.29606E-02, H= 5.05084E-03, ETAH= 3.43268E-03
-    1: error= 3.60840E-01
-    2: error= 1.78124E-01
-    3: error= 6.66183E-02
-    4: error= 5.79278E-02
-    5: error= 1.63480E-02
-  AIN BCE solve succeeded:   5 iterations, error= 1.63480E-02
-  Step accepted: perr= 3.14151E-01
+BDF2 step     30: T= 1.06221E-01, H= 8.41061E-03, ETAH= 5.55048E-03
+    1: error= 3.23976E-01
+    2: error= 3.11732E-01
+    3: error= 2.24546E-01
+    4: error= 9.21730E-02
+    5: error= 3.13849E-02
+  AIN BCE solve succeeded:   5 iterations, error= 3.13849E-02
+  Step accepted: perr= 4.25387E-01
 
-BDF2 step     31: T= 6.80114E-02, H= 6.61647E-03, ETAH= 4.22212E-03
-    1: error= 3.01716E-01
-    2: error= 1.58478E-01
-    3: error= 1.15715E-01
-    4: error= 9.18829E-02
-    5: error= 2.17562E-02
-  AIN BCE solve succeeded:   5 iterations, error= 2.17562E-02
-  Step accepted: perr= 4.97903E-01
+BDF2 step     31: T= 1.14632E-01, H= 8.82962E-03, ETAH= 5.83911E-03
+    1: error= 3.22717E-01
+    2: error= 3.21625E-01
+    3: error= 2.23006E-01
+    4: error= 8.38771E-02
+    5: error= 3.45008E-02
+  AIN BCE solve succeeded:   5 iterations, error= 3.45008E-02
+  Step accepted: perr= 4.35064E-01
 
-BDF2 step     32: T= 7.46279E-02, H= 6.01514E-03, ETAH= 4.07475E-03
-    1: error= 2.84565E-01
-    2: error= 1.93075E-01
-    3: error= 1.19055E-01
-    4: error= 7.87873E-02
-    5: error= 2.06776E-02
-  AIN BCE solve succeeded:   5 iterations, error= 2.06776E-02
-  Step accepted: perr= 3.66020E-01
+BDF2 step     32: T= 1.23462E-01, H= 9.21627E-03, ETAH= 6.10061E-03
+    1: error= 3.18305E-01
+    2: error= 3.04527E-01
+    3: error= 1.88876E-01
+    4: error= 6.15498E-02
+    5: error= 3.45119E-02
+  AIN BCE solve succeeded:   5 iterations, error= 3.45119E-02
+  Step accepted: perr= 4.34879E-01
 
-BDF2 step     33: T= 8.06430E-02, H= 7.09586E-03, ETAH= 4.60407E-03
-    1: error= 3.32514E-01
-    2: error= 2.61211E-01
-    3: error= 1.79633E-01
-    4: error= 1.02930E-01
-    5: error= 2.99442E-02
-  AIN BCE solve succeeded:   5 iterations, error= 2.99442E-02
-  Step accepted: perr= 4.40825E-01
+BDF2 step     33: T= 1.32678E-01, H= 9.66720E-03, ETAH= 6.39391E-03
+    1: error= 3.75876E-01
+    2: error= 3.92384E-01
+    3: error= 1.80567E-01
+    4: error= 6.41236E-02
+    5: error= 3.71226E-02
+  AIN BCE solve succeeded:   5 iterations, error= 3.71226E-02
+  Step accepted: perr= 4.31504E-01
 
-BDF2 step     34: T= 8.77389E-02, H= 7.18344E-03, ETAH= 4.77919E-03
-    1: error= 3.17226E-01
-    2: error= 2.75565E-01
-    3: error= 1.94876E-01
-    4: error= 9.93376E-02
-    5: error= 3.11641E-02
-  AIN BCE solve succeeded:   5 iterations, error= 3.11641E-02
-  Step accepted: perr= 4.09699E-01
+BDF2 step     34: T= 1.42345E-01, H= 1.01707E-02, ETAH= 6.72357E-03
+    1: error= 4.43659E-01
+    2: error= 5.07729E-01
+    3: error= 2.47517E-01
+    4: error= 9.10595E-02
+    5: error= 3.63385E-02
+  AIN BCE solve succeeded:   5 iterations, error= 3.63385E-02
+  Step accepted: perr= 4.30797E-01
 
-BDF2 step     35: T= 9.49223E-02, H= 7.73531E-03, ETAH= 5.09406E-03
-    1: error= 3.33813E-01
-    2: error= 3.27886E-01
-    3: error= 2.41320E-01
-    4: error= 1.12193E-01
-    5: error= 3.80943E-02
-  AIN BCE solve succeeded:   5 iterations, error= 3.80943E-02
-  Step accepted: perr= 4.21207E-01
+BDF2 step     35: T= 1.52516E-01, H= 1.06867E-02, ETAH= 7.06617E-03
+    1: error= 4.95234E-01
+    2: error= 5.66268E-01
+    3: error= 2.55727E-01
+    4: error= 1.37025E-01
+    5: error= 5.05107E-02
+    6: error= 3.02528E-02
+  AIN BCE solve succeeded:   6 iterations, error= 3.02528E-02
+  Step accepted: perr= 4.49225E-01
 
-BDF2 step     36: T= 1.02658E-01, H= 8.19250E-03, ETAH= 5.40991E-03
-    1: error= 3.34249E-01
-    2: error= 3.28127E-01
-    3: error= 2.36952E-01
-    4: error= 1.01750E-01
-    5: error= 3.89036E-02
-  AIN BCE solve succeeded:   5 iterations, error= 3.89036E-02
-  Step accepted: perr= 4.22329E-01
+BDF2 step     36: T= 1.63202E-01, H= 1.09790E-02, ETAH= 7.28654E-03
+    1: error= 5.48087E-01
+    2: error= 5.89067E-01
+    3: error= 2.39819E-01
+    4: error= 1.77124E-01
+    5: error= 6.79390E-02
+    6: error= 3.33553E-02
+  AIN BCE solve succeeded:   6 iterations, error= 3.33553E-02
+  Step accepted: perr= 4.05079E-01
 
-BDF2 step     37: T= 1.10850E-01, H= 8.63666E-03, ETAH= 5.70756E-03
-    1: error= 3.34753E-01
-    2: error= 3.53674E-01
-    3: error= 2.53768E-01
-    4: error= 1.01558E-01
-    5: error= 4.44629E-02
-  AIN BCE solve succeeded:   5 iterations, error= 4.44629E-02
-  Step accepted: perr= 4.30795E-01
+BDF2 step     37: T= 1.74181E-01, H= 1.20440E-02, ETAH= 7.90740E-03
+    1: error= 5.84692E-01
+    2: error= 4.47071E-01
+    3: error= 3.12195E-01
+    4: error= 2.60537E-01
+    5: error= 1.02362E-01
+    6: error= 4.35525E-02
+  AIN BCE solve succeeded:   6 iterations, error= 4.35525E-02
+  Step accepted: perr= 4.16719E-01
 
-BDF2 step     38: T= 1.19487E-01, H= 9.05191E-03, ETAH= 5.98775E-03
-    1: error= 3.31374E-01
-    2: error= 3.32509E-01
-    3: error= 2.14418E-01
-    4: error= 7.56115E-02
-    5: error= 4.30770E-02
-  AIN BCE solve succeeded:   5 iterations, error= 4.30770E-02
-  Step accepted: perr= 4.36181E-01
+BDF2 step     38: T= 1.86225E-01, H= 1.26936E-02, ETAH= 8.38897E-03
+  Preconditioner updated at T= 1.98919E-01, ETAH= 8.38897E-03
+    1: error= 5.84252E-01
+    2: error= 1.20242E-01
+    3: error= 5.32413E-02
+    4: error= 2.10874E-02
+  AIN BCE solve succeeded:   4 iterations, error= 2.10874E-02
+  Step accepted: perr= 5.94275E-01
 
-BDF2 step     39: T= 1.28539E-01, H= 9.45565E-03, ETAH= 6.25826E-03
-    1: error= 3.52211E-01
-    2: error= 3.50066E-01
-    3: error= 2.07091E-01
-    4: error= 7.59099E-02
-    5: error= 4.90706E-02
-  AIN BCE solve succeeded:   5 iterations, error= 4.90706E-02
-  Step accepted: perr= 4.33255E-01
+BDF2 step     39: T= 1.98919E-01, H= 1.10809E-02, ETAH= 7.55818E-03
+    1: error= 2.32863E-01
+    2: error= 6.77660E-02
+    3: error= 4.27854E-02
+  AIN BCE solve succeeded:   3 iterations, error= 4.27854E-02
+  Step accepted: perr= 2.77288E-01
 
-BDF2 step     40: T= 1.37994E-01, H= 9.93765E-03, ETAH= 6.57066E-03
-    1: error= 4.24597E-01
-    2: error= 4.70938E-01
-    3: error= 2.08739E-01
-    4: error= 9.07651E-02
-    5: error= 4.46596E-02
-  AIN BCE solve succeeded:   5 iterations, error= 4.46596E-02
-  Step accepted: perr= 4.30047E-01
+BDF2 step     40: T= 2.10000E-01, H= 1.58976E-02, ETAH= 1.00031E-02
+    1: error= 3.92202E-01
+    2: error= 1.50182E-01
+    3: error= 8.15780E-02
+    4: error= 7.02019E-02
+    5: error= 1.87686E-01
+    6: error= 1.19941E-01
+    7: error= 2.42746E-03
+  AIN BCE solve succeeded:   7 iterations, error= 2.42746E-03
+  Step accepted: perr= 8.32212E-01
 
-BDF2 step     41: T= 1.47932E-01, H= 1.04638E-02, ETAH= 6.91641E-03
-    1: error= 4.86455E-01
-    2: error= 5.48090E-01
-    3: error= 2.28945E-01
-    4: error= 1.37625E-01
-    5: error= 5.17384E-02
-    6: error= 2.88668E-02
-  AIN BCE solve succeeded:   6 iterations, error= 2.88668E-02
-  Step accepted: perr= 4.49676E-01
+BDF2 step     41: T= 2.25897E-01, H= 1.04000E-02, ETAH= 7.45266E-03
+    1: error= 2.25321E-01
+    2: error= 4.30224E-02
+  AIN BCE solve succeeded:   2 iterations, error= 4.30224E-02
+  Step accepted: perr= 2.00238E-01
 
-BDF2 step     42: T= 1.58396E-01, H= 1.07361E-02, ETAH= 7.12691E-03
-    1: error= 5.22191E-01
-    2: error= 5.22023E-01
-    3: error= 2.46960E-01
-    4: error= 1.78888E-01
-    5: error= 1.00770E-01
-    6: error= 3.20120E-02
-  AIN BCE solve succeeded:   6 iterations, error= 3.20120E-02
-  Step accepted: perr= 4.05105E-01
+BDF2 step     42: T= 2.36297E-01, H= 1.90810E-02, ETAH= 1.15837E-02
+    1: error= 4.72804E-01
+    2: error= 1.65525E-01
+    3: error= 7.61633E-02
+    4: error= 3.20095E-02
+  AIN BCE solve succeeded:   4 iterations, error= 3.20095E-02
+  Step accepted: perr= 6.37521E-01
 
-BDF2 step     43: T= 1.69132E-01, H= 1.17797E-02, ETAH= 7.73367E-03
-    1: error= 5.85964E-01
-    2: error= 4.22105E-01
-    3: error= 3.24523E-01
-    4: error= 2.68046E-01
-    5: error= 9.42994E-02
-    6: error= 4.20156E-02
-  AIN BCE solve succeeded:   6 iterations, error= 4.20156E-02
-  Step accepted: perr= 4.19461E-01
+BDF2 step     43: T= 2.55378E-01, H= 1.39532E-02, ETAH= 9.80972E-03
+    1: error= 2.36591E-01
+    2: error= 7.66252E-02
+    3: error= 4.40094E-02
+  AIN BCE solve succeeded:   3 iterations, error= 4.40094E-02
+  Step accepted: perr= 3.04709E-01
 
-BDF2 step     44: T= 1.80912E-01, H= 1.23733E-02, ETAH= 8.18185E-03
-  Preconditioner updated at T= 1.93285E-01, ETAH= 8.18185E-03
-    1: error= 5.80612E-01
-    2: error= 1.17117E-01
-    3: error= 5.04418E-02
-    4: error= 2.02106E-02
-  AIN BCE solve succeeded:   4 iterations, error= 2.02106E-02
-  Step accepted: perr= 5.89047E-01
+BDF2 step     44: T= 2.69332E-01, H= 1.90816E-02, ETAH= 1.20952E-02
+    1: error= 3.43704E-01
+    2: error= 1.96239E-01
+    3: error= 1.22394E-01
+    4: error= 1.50457E-01
+    5: error= 2.77084E-01
+    6: error= 3.41233E-01
+    7: error= 2.92036E-02
+  AIN BCE solve succeeded:   7 iterations, error= 2.92036E-02
+  Step accepted: perr= 1.27895E+00
 
-BDF2 step     45: T= 1.93285E-01, H= 1.08712E-02, ETAH= 7.40704E-03
-    1: error= 2.39481E-01
-    2: error= 6.68716E-02
-    3: error= 4.04434E-02
-  AIN BCE solve succeeded:   3 iterations, error= 4.04434E-02
-  Step accepted: perr= 2.70920E-01
+BDF2 step     45: T= 2.88413E-01, H= 1.01651E-02, ETAH= 7.54333E-03
+    1: error= 1.78570E-01
+    2: error= 3.59232E-02
+  AIN BCE solve succeeded:   2 iterations, error= 3.59232E-02
+  Step accepted: perr= 1.59451E-01
 
-BDF2 step     46: T= 2.04156E-01, H= 1.57425E-02, ETAH= 9.89149E-03
-    1: error= 4.05970E-01
-    2: error= 1.51258E-01
-    3: error= 7.85746E-02
-    4: error= 6.28649E-02
-    5: error= 1.54675E-01
-    6: error= 1.19085E-01
-    7: error= 2.28933E-03
-  AIN BCE solve succeeded:   7 iterations, error= 2.28933E-03
-  Step accepted: perr= 7.89555E-01
+BDF2 step     46: T= 2.98578E-01, H= 2.31130E-02, ETAH= 1.36397E-02
+    1: error= 4.13411E-01
+    2: error= 1.73321E-01
+    3: error= 6.49383E-02
+    4: error= 3.02384E-02
+  AIN BCE solve succeeded:   4 iterations, error= 3.02384E-02
+  Step accepted: perr= 6.25243E-01
 
-BDF2 step     47: T= 2.19899E-01, H= 1.05714E-02, ETAH= 7.54161E-03
-    1: error= 2.39232E-01
-    2: error= 4.36622E-02
-  AIN BCE solve succeeded:   2 iterations, error= 4.36622E-02
-  Step accepted: perr= 2.19805E-01
+BDF2 step     47: T= 3.21691E-01, H= 1.64040E-02, ETAH= 1.15920E-02
+    1: error= 1.90349E-01
+    2: error= 8.70944E-02
+    3: error= 5.41948E-02
+    4: error= 4.42808E-02
+  AIN BCE solve succeeded:   4 iterations, error= 4.42808E-02
+  Step accepted: perr= 3.05246E-01
 
-BDF2 step     48: T= 2.30470E-01, H= 1.82841E-02, ETAH= 1.11922E-02
-    1: error= 4.55783E-01
-    2: error= 1.63949E-01
-    3: error= 7.41780E-02
-    4: error= 3.02526E-02
-  AIN BCE solve succeeded:   4 iterations, error= 3.02526E-02
-  Step accepted: perr= 6.06359E-01
+BDF2 step     48: T= 3.38095E-01, H= 2.21700E-02, ETAH= 1.40785E-02
+    1: error= 3.11755E-01
+    2: error= 1.75486E-01
+    3: error= 1.28316E-01
+    4: error= 2.22835E-01
+    5: error= 4.36822E-01
+    6: error= 3.57700E-01
+    7: error= 5.52557E-02
+    8: error= 1.23724E-02
+  AIN BCE solve succeeded:   8 iterations, error= 1.23724E-02
+  Step accepted: perr= 1.37849E+00
 
-BDF2 step     49: T= 2.48754E-01, H= 1.40135E-02, ETAH= 9.77307E-03
-    1: error= 2.53025E-01
-    2: error= 8.08678E-02
-    3: error= 4.62180E-02
-  AIN BCE solve succeeded:   3 iterations, error= 4.62180E-02
-  Step accepted: perr= 3.20555E-01
+BDF2 step     49: T= 3.60265E-01, H= 1.14037E-02, ETAH= 8.51236E-03
+    1: error= 1.49485E-01
+    2: error= 3.50239E-02
+  AIN BCE solve succeeded:   2 iterations, error= 3.50239E-02
+  Step accepted: perr= 1.55276E-01
 
-BDF2 step     50: T= 2.62768E-01, H= 1.84087E-02, ETAH= 1.17419E-02
-    1: error= 3.43676E-01
-    2: error= 1.92637E-01
-    3: error= 1.18179E-01
-    4: error= 1.35786E-01
-    5: error= 2.45141E-01
-    6: error= 3.21158E-01
-    7: error= 2.53312E-02
-  AIN BCE solve succeeded:   7 iterations, error= 2.53312E-02
-  Step accepted: perr= 1.20781E+00
+BDF2 step     50: T= 3.71669E-01, H= 2.67597E-02, ETAH= 1.57300E-02
+    1: error= 3.39712E-01
+    2: error= 1.82608E-01
+    3: error= 5.34025E-02
+    4: error= 3.12447E-02
+  AIN BCE solve succeeded:   4 iterations, error= 3.12447E-02
+  Step accepted: perr= 5.94867E-01
 
-BDF2 step     51: T= 2.81176E-01, H= 1.02467E-02, ETAH= 7.54773E-03
-    1: error= 1.81916E-01
-    2: error= 3.50749E-02
-  AIN BCE solve succeeded:   2 iterations, error= 3.50749E-02
-  Step accepted: perr= 1.65361E-01
+BDF2 step     51: T= 3.98429E-01, H= 1.94515E-02, ETAH= 1.36893E-02
+    1: error= 1.65995E-01
+    2: error= 7.89060E-02
+    3: error= 6.97061E-02
+    4: error= 1.04907E-01
+    5: error= 1.79005E-01
+    6: error= 1.49898E-01
+    7: error= 3.51178E-02
+  AIN BCE solve succeeded:   7 iterations, error= 3.51178E-02
+  Step accepted: perr= 5.49613E-01
 
-BDF2 step     52: T= 2.91423E-01, H= 2.25536E-02, ETAH= 1.33643E-02
-    1: error= 3.95885E-01
-    2: error= 1.65554E-01
-    3: error= 6.53448E-02
-    4: error= 2.98283E-02
-  AIN BCE solve succeeded:   4 iterations, error= 2.98283E-02
-  Step accepted: perr= 5.97605E-01
+BDF2 step     52: T= 4.17880E-01, H= 1.88817E-02, ETAH= 1.26505E-02
+    1: error= 1.69755E-01
+    2: error= 4.96254E-02
+  AIN BCE solve succeeded:   2 iterations, error= 4.96254E-02
+  Step accepted: perr= 2.10457E-01
 
-BDF2 step     53: T= 3.13977E-01, H= 1.64784E-02, ETAH= 1.15867E-02
-    1: error= 1.94253E-01
-    2: error= 8.98350E-02
-    3: error= 5.57356E-02
-    4: error= 4.35114E-02
-  AIN BCE solve succeeded:   4 iterations, error= 4.35114E-02
-  Step accepted: perr= 3.18969E-01
+BDF2 step     53: T= 4.36762E-01, H= 3.16509E-02, ETAH= 1.94614E-02
+    1: error= 3.36178E-01
+    2: error= 2.35052E-01
+    3: error= 1.89776E-01
+    4: error= 2.18956E-01
+    5: error= 2.96518E-01
+    6: error= 4.77876E-01
+    7: error= 2.00905E-02
+  AIN BCE solve succeeded:   7 iterations, error= 2.00905E-02
+  Step accepted: perr= 1.32099E+00
 
-BDF2 step     54: T= 3.30455E-01, H= 2.15582E-02, ETAH= 1.37596E-02
-    1: error= 3.06069E-01
-    2: error= 1.76500E-01
-    3: error= 1.28494E-01
-    4: error= 1.98417E-01
-    5: error= 4.21828E-01
-    6: error= 3.59358E-01
-    7: error= 5.31496E-02
-    8: error= 1.15672E-02
-  AIN BCE solve succeeded:   8 iterations, error= 1.15672E-02
-  Step accepted: perr= 1.35564E+00
+BDF2 step     54: T= 4.68413E-01, H= 1.42486E-02, ETAH= 1.08732E-02
+    1: error= 1.01866E-01
+    2: error= 4.23668E-02
+  AIN BCE solve succeeded:   2 iterations, error= 4.23668E-02
+  Step accepted: perr= 1.41194E-01
 
-BDF2 step     55: T= 3.52013E-01, H= 1.13025E-02, ETAH= 8.40988E-03
-    1: error= 1.50892E-01
-    2: error= 3.33859E-02
-  AIN BCE solve succeeded:   2 iterations, error= 3.33859E-02
-  Step accepted: perr= 1.57969E-01
-
-BDF2 step     56: T= 3.63316E-01, H= 2.61938E-02, ETAH= 1.54211E-02
-    1: error= 3.33261E-01
-    2: error= 1.79963E-01
-    3: error= 5.60722E-02
-    4: error= 3.24527E-02
-  AIN BCE solve succeeded:   4 iterations, error= 3.24527E-02
-  Step accepted: perr= 5.84107E-01
-
-BDF2 step     57: T= 3.89509E-01, H= 1.92518E-02, ETAH= 1.35231E-02
-    1: error= 1.70480E-01
-    2: error= 8.21835E-02
-    3: error= 7.32366E-02
-    4: error= 1.03094E-01
-    5: error= 1.69738E-01
-    6: error= 1.68207E-01
-    7: error= 3.54094E-02
-  AIN BCE solve succeeded:   7 iterations, error= 3.54094E-02
-  Step accepted: perr= 5.66027E-01
-
-BDF2 step     58: T= 4.08761E-01, H= 1.83122E-02, ETAH= 1.23108E-02
-    1: error= 1.68536E-01
-    2: error= 4.85416E-02
-  AIN BCE solve succeeded:   2 iterations, error= 4.85416E-02
-  Step accepted: perr= 2.10178E-01
-
-BDF2 step     59: T= 4.27074E-01, H= 3.09321E-02, ETAH= 1.89985E-02
-    1: error= 3.32930E-01
-    2: error= 2.31196E-01
-    3: error= 1.68313E-01
-    4: error= 2.14034E-01
-    5: error= 2.70707E-01
-    6: error= 4.53174E-01
-    7: error= 1.71999E-02
-  AIN BCE solve succeeded:   7 iterations, error= 1.71999E-02
-  Step accepted: perr= 1.27888E+00
-
-BDF2 step     60: T= 4.58006E-01, H= 1.42299E-02, ETAH= 1.08205E-02
-    1: error= 1.06768E-01
-    2: error= 4.36779E-02
-  AIN BCE solve succeeded:   2 iterations, error= 4.36779E-02
-  Step accepted: perr= 1.45860E-01
-
-BDF2 step     61: T= 4.72235E-01, H= 3.52009E-02, ETAH= 2.05598E-02
-    1: error= 2.45121E-01
-    2: error= 1.30826E-01
-    3: error= 1.12749E-01
-    4: error= 9.22570E-02
-    5: error= 8.44208E-02
-    6: error= 8.13666E-02
-    7: error= 1.26023E-01
-    8: error= 8.92762E-03
-  AIN BCE solve succeeded:   8 iterations, error= 8.92762E-03
-  Step accepted: perr= 5.82179E-01
+BDF2 step     55: T= 4.82662E-01, H= 3.62110E-02, ETAH= 2.10820E-02
+    1: error= 2.43802E-01
+    2: error= 1.25070E-01
+    3: error= 1.11005E-01
+    4: error= 9.18045E-02
+    5: error= 8.01077E-02
+    6: error= 7.11622E-02
+    7: error= 1.22431E-01
+    8: error= 1.00413E-02
+  AIN BCE solve succeeded:   8 iterations, error= 1.00413E-02
+  Step accepted: perr= 5.68550E-01

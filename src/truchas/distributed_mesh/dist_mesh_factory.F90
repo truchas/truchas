@@ -233,18 +233,18 @@ contains
     deallocate(lface, offP_index)
     
     !! Local mesh sizes: on-process plus off-process.
-    this%nnode = local_size(this%node_ip)
-    this%nedge = 0 !local_size(this%edge_ip)
-    this%nface = local_size(this%face_ip)
-    this%ncell = local_size(this%cell_ip)
-    this%nlink = local_size(this%link_ip)
+    this%nnode = this%node_ip%local_size()
+    this%nedge = 0 !this%edge_ip%local_size()
+    this%nface = this%face_ip%local_size()
+    this%ncell = this%cell_ip%local_size()
+    this%nlink = this%link_ip%local_size()
 
     !! On-process mesh sizes.
-    this%nnode_onP = onP_size(this%node_ip)
-    this%nedge_onP = 0 !onP_size(this%edge_ip)
-    this%nface_onP = onP_size(this%face_ip)
-    this%ncell_onP = onP_size(this%cell_ip)
-    this%nlink_onP = onP_size(this%link_ip)
+    this%nnode_onP = this%node_ip%onP_size()
+    this%nedge_onP = 0 !this%edge_ip%onP_size()
+    this%nface_onP = this%face_ip%onP_size()
+    this%ncell_onP = this%cell_ip%onP_size()
+    this%nlink_onP = this%link_ip%onP_size()
 
     !! Distribute the cell block ID arrays.
     if (is_IOP) n = size(mesh%block_id)
@@ -332,6 +332,13 @@ contains
     if (is_IOP) this%face_set_ID = mesh%sset%ID
     call broadcast (this%face_set_ID)
 
+    !! Broadcast the node set IDs to all processors.
+    if (is_IOP) n = size(mesh%nset)
+    call broadcast (n)
+    allocate(this%node_set_ID(n))
+    if (is_IOP) this%node_set_ID = mesh%nset%ID
+    call broadcast (this%node_set_ID)
+
     !! Distribute the global node position array.
     allocate(this%x(3,this%nnode))
     call distribute (this%x(:,:this%nnode_onP), mesh%x)
@@ -375,6 +382,8 @@ contains
   subroutine partition_cells (np, pmeth, cnhbr, lnhbr, pass)
 
     use graph_type
+    use graph_partitioner_factory
+    use parameter_list_type
 
     integer, intent(in)    :: np            ! number of partitions
     character(len=*), intent(in) :: pmeth   ! partition method
@@ -388,6 +397,8 @@ contains
     integer, allocatable :: xadj(:), adjncy(:)
     real, allocatable :: ewgt(:)
     real, parameter :: LINK_WEIGHT = 1.0
+    class(graph_partitioner), allocatable :: gpart
+    type(parameter_list) :: params
 
     ASSERT(np > 0)
     ASSERT(size(pass) == size(cnhbr,2))
@@ -440,23 +451,9 @@ contains
       ewgt(i) = LINK_WEIGHT
     end do
 
-    select case (pmeth)
-    case ('CHACO')
-
-      !! Use Chaco to assign the cells to partitions based on the cell
-      !! adjacency graph.  Some Chaco control parameters are hard-wired
-      !! within the wrapper.  In Chaco, graph nodes are numbered starting
-      !! at one (as here), but its C-arrays use 0-based indexing, so we
-      !! need to offset the values in XADJ, which point to ADJNCY, by 1.
-      call chaco_f90_wrapper2 (ncell, np, xadj-1, adjncy, ewgt, pass, stat)
-      pass = pass + 1   ! we want 1-based numbering of the partitions.
-      ASSERT( minval(pass) == 1 .and. maxval(pass) == np )
-
-    case default ! shouldn't be here
-
-      ASSERT( .false. )
-
-    end select
+    call params%set ('partitioner', pmeth)
+    call alloc_graph_partitioner (gpart, params)
+    call gpart%compute (ncell, xadj, adjncy, ewgt, np, pass, stat)
 
     deallocate(xadj, adjncy, ewgt)
 

@@ -80,8 +80,8 @@
 
     ASSERT( defined(this) )
     ASSERT( associated(this%offP_index) )
-    ASSERT( size(onP_data) == this%onP_size )
-    ASSERT( size(offP_data) == this%offP_size )
+    ASSERT( size(onP_data) == this%onP_size_ )
+    ASSERT( size(offP_data) == this%offP_size_ )
 
     call _AUX_ (this, onP_data, offP_data)
 
@@ -98,8 +98,8 @@
     ASSERT( defined(this) )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(offP_data,1) == size(onP_data,1) )
-    ASSERT( size(onP_data,2) == this%onP_size )
-    ASSERT( size(offP_data,2) == this%offP_size )
+    ASSERT( size(onP_data,2) == this%onP_size_ )
+    ASSERT( size(offP_data,2) == this%offP_size_ )
 
     do k = 1, size(onP_data,dim=1)   ! Ugh...
       call _AUX_ (this, onP_data(k,:), offP_data(k,:))
@@ -119,8 +119,8 @@
     ASSERT( associated(this%offP_index) )
     ASSERT( size(offP_data,1) == size(onP_data,1) )
     ASSERT( size(offP_data,2) == size(onP_data,2) )
-    ASSERT( size(onP_data,3) == this%onP_size )
-    ASSERT( size(offP_data,3) == this%offP_size )
+    ASSERT( size(onP_data,3) == this%onP_size_ )
+    ASSERT( size(offP_data,3) == this%offP_size_ )
 
     do j = 1, size(onP_data,dim=2)   ! Double ugh...
       do k = 1, size(onP_data,dim=1)
@@ -137,9 +137,9 @@
 
     ASSERT( defined(this) )
     ASSERT( associated(this%offP_index) )
-    ASSERT( size(local_data) == this%local_size )
+    ASSERT( size(local_data) == this%local_size_ )
 
-    call _AUX_ (this, local_data(:this%onP_size), local_data(this%onP_size+1:))
+    call _AUX_ (this, local_data(:this%onP_size_), local_data(this%onP_size_+1:))
 
   end subroutine _PROC_GB_B1_
 
@@ -152,10 +152,10 @@
 
     ASSERT( defined(this) )
     ASSERT( associated(this%offP_index) )
-    ASSERT( size(local_data,2) == this%local_size )
+    ASSERT( size(local_data,2) == this%local_size_ )
 
     do k = 1, size(local_data,dim=1)   ! Ugh...
-      call _AUX_ (this, local_data(k,:this%onP_size), local_data(k,this%onP_size+1:))
+      call _AUX_ (this, local_data(k,:this%onP_size_), local_data(k,this%onP_size_+1:))
     end do
 
   end subroutine _PROC_GB_B2_
@@ -169,11 +169,11 @@
 
     ASSERT( defined(this) )
     ASSERT( associated(this%offP_index) )
-    ASSERT( size(local_data,3) == this%local_size )
+    ASSERT( size(local_data,3) == this%local_size_ )
 
     do j = 1, size(local_data,dim=2)   ! Double ugh...
       do k = 1, size(local_data,dim=1)
-        call _AUX_ (this, local_data(k,j,:this%onP_size), local_data(k,j,this%onP_size+1:))
+        call _AUX_ (this, local_data(k,j,:this%onP_size_), local_data(k,j,this%onP_size_+1:))
       end do
     end do
 
@@ -218,26 +218,26 @@
   logical function _PROC_BIC1_ (this, local_data) result (l)
     type(ip_desc), intent(in) :: this
     _TYPE_, intent(in) :: local_data(:)
-    _TYPE_:: offP_data(this%offP_size)
-    call gather_boundary (this, local_data(:this%onP_size), offP_data)
-    l = global_all(local_data(this%onP_size+1:) _EQUAL_ offP_data)
+    _TYPE_:: offP_data(this%offP_size_)
+    call gather_boundary (this, local_data(:this%onP_size_), offP_data)
+    l = global_all(local_data(this%onP_size_+1:) _EQUAL_ offP_data)
   end function _PROC_BIC1_
   
   logical function _PROC_BIC2_ (this, local_data) result (l)
     type(ip_desc), intent(in) :: this
     _TYPE_, intent(in) :: local_data(:,:)
-    _TYPE_ :: offP_data(size(local_data,1),this%offP_size)
-    call gather_boundary (this, local_data(:,:this%onP_size), offP_data)
-    l = global_all(local_data(:,this%onP_size+1:) _EQUAL_ offP_data)
+    _TYPE_ :: offP_data(size(local_data,1),this%offP_size_)
+    call gather_boundary (this, local_data(:,:this%onP_size_), offP_data)
+    l = global_all(local_data(:,this%onP_size_+1:) _EQUAL_ offP_data)
   end function _PROC_BIC2_
 
 ! There is no specific for GLOBAL_ALL to handle rank-3 matrices.  Argh...
 !  logical function _PROC_BIC3_ (this, local_data) result (l)
 !    type(ip_desc), intent(in) :: this
 !    _TYPE_, intent(in) :: local_data(:,:,:)
-!    _TYPE_ :: offP_data(size(local_data,1),size(local_data,2),this%offP_size)
-!    call gather_boundary (this, local_data(:,:,:this%onP_size), offP_data)
-!    l = global_all(local_data(:,:,this%onP_size+1:) _EQUAL_ offP_data)
+!    _TYPE_ :: offP_data(size(local_data,1),size(local_data,2),this%offP_size_)
+!    call gather_boundary (this, local_data(:,:,:this%onP_size_), offP_data)
+!    l = global_all(local_data(:,:,this%onP_size_+1:) _EQUAL_ offP_data)
 !  end function _PROC_BIC3_
   
 #undef _TYPE_

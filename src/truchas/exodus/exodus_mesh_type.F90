@@ -145,7 +145,7 @@ module exodus_mesh_type
   private
 
   type, public :: elem_blk
-    integer :: id = 0, num_elem = 0
+    integer :: id = 0, num_elem = 0, num_nodes_per_elem = 0
     character(:), allocatable :: elem_type
     integer, allocatable :: connect(:,:)
   contains
@@ -203,6 +203,11 @@ module exodus_mesh_type
   data TETRA4_SIDES/1,2,4, 2,3,4, 1,4,3, 1,3,2/
   data TETRA4_SSIZE/3,3,3,3/
 
+  integer, target, private :: PYRAMID5_XSIDE(6), PYRAMID5_SIDES(16), PYRAMID5_SSIZE(5)
+  data PYRAMID5_XSIDE/1,4,7,10,13,17/
+  data PYRAMID5_SIDES/1,2,5, 2,3,5, 3,4,5, 1,5,4, 1,4,3,2/
+  data PYRAMID5_SSIZE/3,3,3,3,4/
+
   integer, target, private :: WEDGE6_XSIDE(6), WEDGE6_SIDES(18), WEDGE6_SSIZE(5)
   data WEDGE6_XSIDE/1,5,9,13,16,19/
   data WEDGE6_SIDES/1,2,5,4, 2,3,6,5, 1,4,6,3, 1,3,2, 4,5,6/
@@ -237,14 +242,17 @@ contains
       b = b + 1
     end do
 
-    select case (this%eblk(b)%elem_type)
-    case ('TETRA', 'TETRA4')
+    select case (this%eblk(b)%elem_type(1:3))
+    case ('TET')
       xside => TETRA4_XSIDE
       sides => TETRA4_SIDES
-    case ('WEDGE', 'WEDGE6')
+    case ('PYR')
+      xside => PYRAMID5_XSIDE
+      sides => PYRAMID5_SIDES
+    case ('WED')
       xside => WEDGE6_XSIDE
       sides => WEDGE6_SIDES
-    case ('HEX', 'HEX8')
+    case ('HEX')
       xside => HEX8_XSIDE
       sides => HEX8_SIDES
     case default
@@ -303,12 +311,14 @@ contains
         b = b + 1
       end do
 
-      select case (trim(this%eblk(b)%elem_type))
-      case ('TETRA', 'TETRA4')
+      select case (trim(this%eblk(b)%elem_type(1:3)))
+      case ('TET')
         xside => TETRA4_XSIDE
-      case ('WEDGE', 'WEDGE6')
+      case ('PYR')
+        xside => PYRAMID5_XSIDE
+      case ('WED')
         xside => WEDGE6_XSIDE
-      case ('HEX', 'HEX8')
+      case ('HEX')
         xside => HEX8_XSIDE
       case default
         return  ! unknown element type
@@ -333,14 +343,17 @@ contains
         b = b + 1
       end do
 
-      select case (trim(this%eblk(b)%elem_type))
-      case ('TETRA', 'TETRA4')
+      select case (trim(this%eblk(b)%elem_type(1:3)))
+      case ('TET')
         xside => TETRA4_XSIDE
         sides => TETRA4_SIDES
-      case ('WEDGE', 'WEDGE6')
+      case ('PYR')
+        xside => PYRAMID5_XSIDE
+        sides => PYRAMID5_SIDES
+      case ('WED')
         xside => WEDGE6_XSIDE
         sides => WEDGE6_SIDES
-      case ('HEX', 'HEX8')
+      case ('HEX')
         xside => HEX8_XSIDE
         sides => HEX8_SIDES
       end select
@@ -361,12 +374,14 @@ contains
     character(*), intent(in) :: elem_type
     integer, pointer :: list(:)
 
-    select case (elem_type)
-    case ('TETRA', 'TETRA4')
+    select case (elem_type(1:3))
+    case ('TET')
       list => TETRA4_SSIZE
-    case ('WEDGE', 'WEDGE6')
+    case ('PYR')
+      list => PYRAMID5_SSIZE
+    case ('WED')
       list => WEDGE6_SSIZE
-    case ('HEX', 'HEX8')
+    case ('HEX')
       list => HEX8_SSIZE
     case default
       list => null()
@@ -440,6 +455,7 @@ contains
     elem_blk_defined = .false.
     if (this%id <= 0) return
     if (.not.allocated(this%connect)) return
+    if (this%num_nodes_per_elem /= size(this%connect,dim=1)) return
     if (this%num_elem /= size(this%connect,dim=2)) return
     elem_blk_defined = .true.
   end function elem_blk_defined
@@ -549,6 +565,7 @@ contains
     write(lun,'(a)') 'ELEMENT_BLOCK('
     write(lun,'(t4,a,i6)') 'ID=', this%id
     write(lun,'(t4,a,i6)') 'NUM_ELEM=', this%num_elem
+    write(lun,'(t4,a,i6)') 'NUM_NODES_PER_ELEM=', this%num_nodes_per_elem
     write(lun,'(t4,a)')  'ELEM_TYPE= "' // this%elem_type // '"'
     if (allocated(this%connect)) then
       write(lun,'(t4,a,(t12,8(1x,i6)))') 'CONNECT=', this%connect(:,1)

@@ -247,7 +247,6 @@ module index_partitioning
   private
 
   public :: create, add_offP_index, destroy, defined
-  public :: onP_size, offP_size, local_size, global_size, global_index, first_index, last_index
   public :: localize_index_array, localize_index_struct
   public :: gather_boundary, boundary_is_current
   public :: scatter_boundary_sum, scatter_boundary_min, scatter_boundary_max
@@ -255,16 +254,24 @@ module index_partitioning
 
   type, public :: ip_desc
     private
-    integer :: onP_size = 0     ! number of indices assigned to this process (on-process)
-    integer :: offP_size = 0    ! number of off-process indices referenced from this process
-    integer :: local_size = 0   ! number of local indices (on and off-process)
-    integer :: global_size = 0  ! size of the global index set
+    integer :: onP_size_ = 0    ! number of indices assigned to this process (on-process)
+    integer :: offP_size_ = 0   ! number of off-process indices referenced from this process
+    integer :: local_size_ = 0  ! number of local indices (on and off-process)
+    integer :: global_size_ = 0 ! size of the global index set
     integer :: first = 0        ! first global index of the range assigned to this process
     integer :: last  = 0        ! last global index of the range assigned to this process
     integer, pointer :: offP_index(:) => null() ! off-process indices referenced from this process
     integer, pointer :: dup_index(:) => null()  ! index from duplicate buffer to on-process data
     integer, pointer :: sup_index(:) => null()  ! index from off-process data to supplement buffer
     type(PGSLib_GS_Trace), pointer :: trace => null() ! PGSLib communication trace
+  contains
+    procedure :: onP_size
+    procedure :: offP_size
+    procedure :: local_size
+    procedure :: global_size
+    procedure :: global_index
+    procedure :: first_index
+    procedure :: last_index
   end type ip_desc
 
   interface create
@@ -352,11 +359,11 @@ contains
 
     call broadcast (sizes)
 
-    this%onP_size = sizes(this_PE)
+    this%onP_size_ = sizes(this_PE)
     this%last  = sum(sizes(1:this_PE))
-    this%first = this%last - this%onP_size + 1
-    this%local_size = this%onP_size
-    this%global_size = sum(sizes)
+    this%first = this%last - this%onP_size_ + 1
+    this%local_size_ = this%onP_size_
+    this%global_size_ = sum(sizes)
 
   end subroutine create_1
 
@@ -441,44 +448,44 @@ contains
  !!
 
   pure integer function onP_size (this)
-    type(ip_desc), intent(in) :: this
-    onP_size = this%onP_size
+    class(ip_desc), intent(in) :: this
+    onP_size = this%onP_size_
   end function onP_size
 
   pure integer function offP_size (this)
-    type(ip_desc), intent(in) :: this
-    offP_size = this%offP_size
+    class(ip_desc), intent(in) :: this
+    offP_size = this%offP_size_
   end function offP_size
 
   pure integer function local_size (this)
-    type(ip_desc), intent(in) :: this
-    local_size = this%local_size
+    class(ip_desc), intent(in) :: this
+    local_size = this%local_size_
   end function local_size
 
   pure integer function global_size (this)
-    type(ip_desc), intent(in) :: this
-    global_size = this%global_size
+    class(ip_desc), intent(in) :: this
+    global_size = this%global_size_
   end function global_size
 
   elemental integer function global_index (this, n)
-    type(ip_desc), intent(in) :: this
+    class(ip_desc), intent(in) :: this
     integer, intent(in) :: n
     global_index = -1
     if (n < 1) return
-    if (n <= this%onP_size) then
+    if (n <= this%onP_size_) then
       global_index = this%first + n - 1
-    else if (n <= this%local_size) then
-      global_index = this%offP_index(n-this%onP_size)
+    else if (n <= this%local_size_) then
+      global_index = this%offP_index(n-this%onP_size_)
     end if
   end function global_index
   
   pure integer function first_index (this)
-    type(ip_desc), intent(in) :: this
+    class(ip_desc), intent(in) :: this
     first_index = this%first
   end function first_index
 
   pure integer function last_index (this)
-    type(ip_desc), intent(in) :: this
+    class(ip_desc), intent(in) :: this
     last_index = this%last
   end function last_index
 
@@ -531,29 +538,29 @@ contains
 
     ASSERT( defined(this) )
     ASSERT( minval(offP_index) >= 1 )
-    ASSERT( maxval(offP_index) <= this%global_size )
+    ASSERT( maxval(offP_index) <= this%global_size_ )
     ASSERT( all((offP_index < this%first) .or. (offP_index > this%last)) )
 
     !! Record the off-process indices to be referenced from this process.
     if (associated(this%offP_index)) then ! append to the existing list
       old_offP_index => this%offP_index
-      allocate(this%offP_index(this%offP_size+size(offP_index)))
-      this%offP_index(:this%offP_size) = old_offP_index
-      this%offP_index(this%offP_size+1:) = offP_index
+      allocate(this%offP_index(this%offP_size_+size(offP_index)))
+      this%offP_index(:this%offP_size_) = old_offP_index
+      this%offP_index(this%offP_size_+1:) = offP_index
       deallocate(old_offP_index)
     else  ! create a new list
       allocate(this%offP_index(size(offP_index)))
       this%offP_index = offP_index
     end if
-    this%offP_size = size(offP_index)
-    this%local_size = this%onP_size + this%offP_size
+    this%offP_size_ = size(offP_index)
+    this%local_size_ = this%onP_size_ + this%offP_size_
 
     !! Generate the PGSLib communication trace for the off-process indices.
     if (associated(this%sup_index)) deallocate(this%sup_index)
     allocate(this%sup_index(size(this%offP_index)))
     this%sup_index = this%offP_index
     if (associated(this%trace)) call PGSLib_Deallocate_Trace (this%trace)
-    this%trace => pgslib_setup_trace(this%sup_index, this%onP_size)
+    this%trace => pgslib_setup_trace(this%sup_index, this%onP_size_)
 
     if (associated(this%dup_index)) deallocate(this%dup_index)
     allocate(this%dup_index(pgslib_size_of_dup(this%trace)))
@@ -610,12 +617,12 @@ contains
     ASSERT( defined(domain) )
 
     if (is_IOP) then
-      ASSERT( size(g_index) == domain%global_size )
+      ASSERT( size(g_index) == domain%global_size_ )
     end if
 
     !! Distribute the global indexing array according to the domain partition.
-    allocate(l_index(domain%local_size))
-    call distribute (l_index(:domain%onP_size), g_index)
+    allocate(l_index(domain%local_size_))
+    call distribute (l_index(:domain%onP_size_), g_index)
     if(associated(domain%offP_index)) call gather_boundary (domain, l_index)
 
     call localize_index_array_2 (range, l_index, offP_index)
@@ -634,10 +641,10 @@ contains
 
     ASSERT( defined(range) )
     ASSERT( minval(index) >= 0 )
-    ASSERT( maxval(index) <= range%global_size )
+    ASSERT( maxval(index) <= range%global_size_ )
 
     !! Identify all unknown off-process index references (map>0).
-    allocate(map(0:range%global_size))
+    allocate(map(0:range%global_size_))
     map = 0
     do j = 1, size(index)
       map(index(j)) = index(j)
@@ -657,14 +664,14 @@ contains
     !! were numbered sequentially following the on-process indices.
     if (associated(range%offP_index)) then
       do j = 1, size(range%offP_index)
-        map(range%offP_index(j)) = range%onP_size + j
+        map(range%offP_index(j)) = range%onP_size_ + j
       end do
     end if
 
     !! Generate a local numbering of the unknown off-process indices; these
     !! will be numered sequentially following the 'known' local indices.
     do j = 1, size(offP_index)
-      map(offP_index(j)) = range%local_size + j
+      map(offP_index(j)) = range%local_size_ + j
     end do
 
     !! Remap the local index array values to the local numbering.
@@ -696,18 +703,18 @@ contains
     ASSERT( defined(range) )
 
     if (is_IOP) then
-      ASSERT( size(g_index,2) == domain%global_size )
+      ASSERT( size(g_index,2) == domain%global_size_ )
       ASSERT( minval(g_index) >= 0 )
-      ASSERT( maxval(g_index) <= range%global_size )
+      ASSERT( maxval(g_index) <= range%global_size_ )
     end if
 
     !! Distribute the global indexing array according to the domain partition.
-    allocate(l_index(size(g_index,1),domain%local_size))
-    call distribute (l_index(:,:domain%onP_size), g_index)
+    allocate(l_index(size(g_index,1),domain%local_size_))
+    call distribute (l_index(:,:domain%onP_size_), g_index)
     if(associated(domain%offP_index)) call gather_boundary (domain, l_index)
 
     !! Identify all unknown off-process index references (map>0).
-    allocate(map(0:range%global_size))
+    allocate(map(0:range%global_size_))
     map = 0
     do j = 1, size(l_index, dim=2)
       do i = 1, size(l_index, dim=1)
@@ -729,14 +736,14 @@ contains
     !! were numbered sequentially following the on-process indices.
     if (associated(range%offP_index)) then
       do j = 1, size(range%offP_index)
-        map(range%offP_index(j)) = range%onP_size + j
+        map(range%offP_index(j)) = range%onP_size_ + j
       end do
     end if
 
     !! Generate a local numbering of the unknown off-process indices; these
     !! will be numered sequentially following the 'known' local indices.
     do j = 1, size(offP_index)
-      map(offP_index(j)) = range%local_size + j
+      map(offP_index(j)) = range%local_size_ + j
     end do
 
     !! Remap the local index array values to the local numbering.
@@ -760,11 +767,11 @@ contains
 
     integer, intent(in) :: g_index(:), g_count(:)
     type(ip_desc), intent(in) :: domain, range
-    integer, pointer :: l_index(:), l_count(:)
+    integer, allocatable, intent(out) :: l_index(:), l_count(:)
     integer, pointer :: offP_index(:)
 
-    integer :: j
-    integer, allocatable :: map(:)
+    integer :: j, n, offset
+    integer, allocatable :: map(:), bsize(:), domain_offP_index(:), g_ghosts(:), x_index(:)
 
     ASSERT( defined(domain) )
     ASSERT( defined(range) )
@@ -772,27 +779,67 @@ contains
     if (is_IOP) then
       ASSERT( minval(g_count) >= 0 )
       ASSERT( sum(g_count) == size(g_index) )
-      ASSERT( size(g_count) == domain%global_size )
+      ASSERT( size(g_count) == domain%global_size_ )
       ASSERT( minval(g_index) >= 0 )
-      ASSERT( maxval(g_index) <= range%global_size )
+      ASSERT( maxval(g_index) <= range%global_size_ )
     end if
     
-    !! We don't currently have a decent way of gathering the off-process range
-    !! index values in order to support having off-process domain indices.
-    INSIST(.not.associated(domain%offP_index))
-
     !! Distribute the global count array according to the domain partition.
-    allocate(l_count(domain%local_size))
-    call distribute (l_count(:domain%onP_size), g_count)
-    !if (associated(domain%offP_index)) call gather_boundary (domain, l_count)
+    allocate(l_count(domain%local_size_))
+    call distribute (l_count(:domain%onP_size_), g_count)
+    if (associated(domain%offP_index)) call gather_boundary (domain, l_count)
     
     !! Distribute the global indexing array according to the domain partition.
     allocate(l_index(sum(l_count)))
-    call distribute (l_index(:sum(l_count(:domain%onP_size))), g_index)
-    !if (associated(domain%offP_index)) "gather off-process part of l_index"
+    call distribute (l_index(:sum(l_count(:domain%onP_size_))), g_index)
+    ! if (associated(domain%offP_index)) "gather off-process part of l_index"
+    !! Here we need to gather the off-process indexing data, ideally via a
+    !! call to gather_boundary as we do in elsewhere (the commented line above).
+    !! But no such version of gather_boundary exists; it would require the
+    !! ability to communicate variable amounts of data per off-process index
+    !! and that capability doesn't exist through PGSLib.  We would be stuck
+    !! were it not for having the global indexing data G_INDEX at hand.  So
+    !! instead of the processes gathering their off-process indexing data
+    !! from the distributed indexing data, we collect the off-process
+    !! indexing data on the IO process from G_INDEX, and then distribute it.
+    !! The somewhat complicated block of code below does this.
+    if (associated(domain%offP_index)) then
+      !! Collate the off-process index sets.
+      allocate(bsize(merge(nPE,0,is_IOP)))
+      call collate (bsize, size(domain%offP_index))
+      allocate(domain_offP_index(merge(sum(bsize),0,is_IOP)))
+      call collate (domain_offP_index, domain%offP_index)
+      !! Allocate space to hold the collated ghost indexing data.
+      call collate (bsize, size(l_index) - sum(l_count(:domain%onP_size_)))
+      allocate(g_ghosts(merge(sum(bsize),0,is_IOP)))
+      deallocate(bsize)
+      if (is_IOP) then
+        !! Generate the indexing array into g_index.
+        allocate(x_index(size(g_count)+1))
+        x_index(1) = 1
+        do j = 1, size(g_count)
+          x_index(j+1) = x_index(j) + g_count(j)
+        end do
+        !! Collect the ghost indexing data.
+        offset = 0
+        do j = 1, size(domain_offP_index)
+          n = domain_offP_index(j)
+          associate (list => g_index(x_index(n):x_index(n+1)-1))
+            g_ghosts(offset+1:offset+size(list)) = list
+            offset = offset + size(list)
+          end associate
+        end do
+        deallocate(x_index)
+      end if
+      !! Distribute the collected ghost indexing data.
+      associate (l_index_offP => l_index(1+sum(l_count(:domain%onP_size_)):))
+        call distribute (l_index_offP, g_ghosts)
+      end associate
+      deallocate(domain_offP_index, g_ghosts)
+    end if
 
     !! Identify all unknown off-process index references (map>0).
-    allocate(map(0:range%global_size))
+    allocate(map(0:range%global_size_))
     map = 0
     do j = 1, size(l_index)
       map(l_index(j)) = l_index(j)
@@ -812,14 +859,14 @@ contains
     !! were numbered sequentially following the on-process indices.
     if (associated(range%offP_index)) then
       do j = 1, size(range%offP_index)
-        map(range%offP_index(j)) = range%onP_size + j
+        map(range%offP_index(j)) = range%onP_size_ + j
       end do
     end if
 
     !! Generate a local numbering of the unknown off-process indices; these
     !! will be numered sequentially following the 'known' local indices.
     do j = 1, size(offP_index)
-      map(offP_index(j)) = range%local_size + j
+      map(offP_index(j)) = range%local_size_ + j
     end do
 
     !! Remap the local index array values to the local numbering.
@@ -858,23 +905,23 @@ contains
 
     integer :: sizes(nPE)
 
-    call collate (sizes, this%onP_size)
+    call collate (sizes, this%onP_size_)
     call broadcast (sizes)
 
     defined_ip_desc = .false.
     CHECKLIST_1: do ! the cheap bits
-      if (this%onP_size < 0) exit
-      if (this%offP_size < 0) exit
-      if (this%local_size /= this%onP_size + this%offP_size) exit
-      if (this%global_size /= sum(sizes)) exit
+      if (this%onP_size_ < 0) exit
+      if (this%offP_size_ < 0) exit
+      if (this%local_size_ /= this%onP_size_ + this%offP_size_) exit
+      if (this%global_size_ /= sum(sizes)) exit
       if (this%last /= sum(sizes(:this_PE))) exit
-      if (this%first /= this%last - this%onP_size + 1) exit
+      if (this%first /= this%last - this%onP_size_ + 1) exit
       if (associated(this%offP_index)) then
-        if (this%offP_size /= size(this%offP_index)) exit
+        if (this%offP_size_ /= size(this%offP_index)) exit
         if (.not.associated(this%trace)) exit
         if (.not.associated(this%dup_index)) exit
       else
-        if (this%offP_size /= 0) exit
+        if (this%offP_size_ /= 0) exit
         if (associated(this%trace)) exit
         if (associated(this%dup_index)) exit
         if (associated(this%sup_index)) exit
@@ -892,15 +939,15 @@ contains
     !! if (.not.defined(this%trace)) return
     CHECKLIST_2: do ! the more expensive bits
       if (.not.associated(this%offP_index)) exit
-      if (minval(this%offP_index) < 1 .or. maxval(this%offP_index) > this%global_size) exit
+      if (minval(this%offP_index) < 1 .or. maxval(this%offP_index) > this%global_size_) exit
       if (any(this%offP_index >= this%first .and. this%offP_index <= this%last)) exit
       if (size(this%dup_index) /= pgslib_size_of_dup(this%trace)) exit
-      if (minval(this%dup_index) < 1 .or. maxval(this%dup_index) > this%onP_size) exit
+      if (minval(this%dup_index) < 1 .or. maxval(this%dup_index) > this%onP_size_) exit
       if (.not.associated(this%sup_index)) then
-        if (this%offP_size /= pgslib_size_of_sup(this%trace)) exit
+        if (this%offP_size_ /= pgslib_size_of_sup(this%trace)) exit
       else
-        if (size(this%sup_index) /= this%offP_size) exit
-        if (minval(this%sup_index) < 1 .or. maxval(this%sup_index) > this%offP_size) exit
+        if (size(this%sup_index) /= this%offP_size_) exit
+        if (minval(this%sup_index) < 1 .or. maxval(this%sup_index) > this%offP_size_) exit
       end if
       defined_ip_desc = .true.
       exit
@@ -919,8 +966,8 @@ contains
 
     !ASSERT( defined(this) )
 
-    allocate(onP_data(this%onP_size), offP_data(this%offP_size))
-    do j = 1, this%onP_size
+    allocate(onP_data(this%onP_size_), offP_data(this%offP_size_))
+    do j = 1, this%onP_size_
       onP_data(j) = global_index(this, j)
     end do
     call gather_boundary (this, onP_data, offP_data)
@@ -939,8 +986,8 @@ contains
 !
 !    ASSERT( defined(this) )
 !
-!    allocate(onP_data(this%onP_size), offP_data(this%offP_size))
-!    do j = 1, this%onP_size
+!    allocate(onP_data(this%onP_size_), offP_data(this%offP_size_))
+!    do j = 1, this%onP_size_
 !      onP_data(j) = this%first + j - 1
 !    end do
 !    call boundary_gather (this, onP_data, offP_data)

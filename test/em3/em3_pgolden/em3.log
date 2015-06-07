@@ -4,15 +4,15 @@
 PROGRAM INFORMATION
 
    code:                DUMMY
-   version:             2.8.dev
+   version:             2.9.dev
    libraries:           UbikSolve, PGSLib, Chaco
    build architecture:  x86_64
-   build date/time:     15 Sep 2013 13:09:48
-   build flags:         -O2 -maxcontin=99 -PIC
-   build host:          omega.indiana
-   run architecture:    Linux omega.indiana 3.10.9-200.fc19.x86_64 #1 SMP Wed Aug 21 19:27:58 UTC 2013 x86_64
-   run host:            omega.indiana
-   run date/time:       15 Sep 13 18:51:05
+   build date/time:      2 Jun 2015 12:29:49
+   build flags:         -O2 -u -maxcontin=99 -PIC
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 3.15.10-201.fc20.x86_64 #1 SMP Wed Aug 27 21:10:06 UTC 2014 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       02 Jun 15 09:33:20
    processors:          4 (processor 1 is performing I/O)
 
 ================================================================================
@@ -282,6 +282,12 @@ Initializing diffusion solver ...
   Generating "flux" boundary condition for "temperature" variable
     using DS_BOUNDARY_CONDITION[1]: symmetry planes
   Diffusion solver initialized.
+
+Computing consistent initial state for HT/SD solver ...
+  Computing consistent face temperatures and radiosities ...
+
+Computing consistent initial state derivative for HT/SD solver ...
+  Computing consistent face temperatures and radiosities ...
  Initializing electromagnetics ...
   Initializing the hex-tet grid mapping data ...
    Computing the hex-tet grid mapping data.
@@ -383,97 +389,97 @@ DS: dt=1.000E-02, NFUN:NPC=0000009:00001, NNR:NNF:NSR=0000:0000:0000
 
 DS: dt=3.602E-02, NFUN:NPC=0000011:00002, NNR:NNF:NSR=0000:0000:0000
 
-          6: t =   7.60230E-02, dt(diffusion solver) =   4.89663E-02
+          6: t =   7.60230E-02, dt(diffusion solver) =   4.89661E-02
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=4.897E-02, NFUN:NPC=0000013:00002, NNR:NNF:NSR=0000:0000:0000
 
-          7: t =   1.24989E-01, dt(diffusion solver) =   1.46171E-01
+          7: t =   1.24989E-01, dt(diffusion solver) =   1.46172E-01
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=1.462E-01, NFUN:NPC=0000015:00003, NNR:NNF:NSR=0000:0000:0000
 
-          8: t =   2.71161E-01, dt(diffusion solver) =   2.67316E-01
+          8: t =   2.71161E-01, dt(diffusion solver) =   2.67314E-01
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=2.673E-01, NFUN:NPC=0000017:00003, NNR:NNF:NSR=0000:0000:0000
 
-          9: t =   5.38476E-01, dt(diffusion solver) =   7.11643E-01
+          9: t =   5.38476E-01, dt(diffusion solver) =   7.11647E-01
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=7.116E-01, NFUN:NPC=0000019:00004, NNR:NNF:NSR=0000:0000:0000
 
-         10: t =   1.25012E+00, dt(diffusion solver) =   1.55704E+00
+         10: t =   1.25012E+00, dt(diffusion solver) =   1.55705E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=1.557E+00, NFUN:NPC=0000022:00004, NNR:NNF:NSR=0000:0000:0000
 
-         11: t =   2.80716E+00, dt(diffusion solver) =   1.90860E+00
+         11: t =   2.80717E+00, dt(diffusion solver) =   1.90857E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=1.909E+00, NFUN:NPC=0000025:00004, NNR:NNF:NSR=0000:0000:0000
 
-         12: t =   4.71576E+00, dt(diffusion solver) =   2.39937E+00
+         12: t =   4.71573E+00, dt(diffusion solver) =   2.39937E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=2.399E+00, NFUN:NPC=0000028:00004, NNR:NNF:NSR=0000:0000:0000
 
-         13: t =   7.11513E+00, dt(diffusion solver) =   2.55705E+00
+         13: t =   7.11511E+00, dt(diffusion solver) =   2.55705E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=2.557E+00, NFUN:NPC=0000030:00005, NNR:NNF:NSR=0000:0000:0000
 
-         14: t =   9.67218E+00, dt(diffusion solver) =   2.73851E+00
+         14: t =   9.67216E+00, dt(diffusion solver) =   2.73851E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=2.739E+00, NFUN:NPC=0000032:00005, NNR:NNF:NSR=0000:0000:0000
 
-         15: t =   1.24107E+01, dt(diffusion solver) =   2.97470E+00
+         15: t =   1.24107E+01, dt(diffusion solver) =   2.97473E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=2.975E+00, NFUN:NPC=0000034:00005, NNR:NNF:NSR=0000:0000:0000
 
-         16: t =   1.53854E+01, dt(diffusion solver) =   3.20347E+00
+         16: t =   1.53854E+01, dt(diffusion solver) =   3.20345E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=3.203E+00, NFUN:NPC=0000037:00005, NNR:NNF:NSR=0000:0000:0000
 
-         17: t =   1.85889E+01, dt(diffusion solver) =   3.48032E+00
+         17: t =   1.85888E+01, dt(diffusion solver) =   3.48027E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=3.480E+00, NFUN:NPC=0000040:00005, NNR:NNF:NSR=0000:0000:0000
 
-         18: t =   2.20692E+01, dt(diffusion solver) =   3.76412E+00
+         18: t =   2.20691E+01, dt(diffusion solver) =   3.76416E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=3.764E+00, NFUN:NPC=0000043:00005, NNR:NNF:NSR=0000:0000:0000
 
-         19: t =   2.58333E+01, dt(diffusion solver) =   4.07372E+00
+         19: t =   2.58333E+01, dt(diffusion solver) =   4.07371E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=4.074E+00, NFUN:NPC=0000046:00005, NNR:NNF:NSR=0000:0000:0000
 
-         20: t =   2.99070E+01, dt(diffusion solver) =   4.39094E+00
+         20: t =   2.99070E+01, dt(diffusion solver) =   4.39095E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=4.391E+00, NFUN:NPC=0000049:00005, NNR:NNF:NSR=0000:0000:0000
 
-         21: t =   3.42980E+01, dt(diffusion solver) =   4.72221E+00
+         21: t =   3.42979E+01, dt(diffusion solver) =   4.72220E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=4.722E+00, NFUN:NPC=0000052:00005, NNR:NNF:NSR=0000:0000:0000
 
-         22: t =   3.90202E+01, dt(diffusion solver) =   5.06130E+00
+         22: t =   3.90201E+01, dt(diffusion solver) =   5.06130E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=5.061E+00, NFUN:NPC=0000055:00005, NNR:NNF:NSR=0000:0000:0000
 
-         23: t =   4.40815E+01, dt(diffusion solver) =   5.40973E+00
+         23: t =   4.40814E+01, dt(diffusion solver) =   5.40972E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=5.410E+00, NFUN:NPC=0000058:00005, NNR:NNF:NSR=0000:0000:0000
 
-         24: t =   4.94912E+01, dt(diffusion solver) =   5.76514E+00
+         24: t =   4.94912E+01, dt(diffusion solver) =   5.76513E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=5.765E+00, NFUN:NPC=0000061:00005, NNR:NNF:NSR=0000:0000:0000
@@ -483,17 +489,17 @@ DS: dt=5.765E+00, NFUN:NPC=0000061:00005, NNR:NNF:NSR=0000:0000:0000
 
 DS: dt=6.118E+00, NFUN:NPC=0000064:00005, NNR:NNF:NSR=0000:0000:0000
 
-         26: t =   6.13744E+01, dt(diffusion solver) =   6.44803E+00
+         26: t =   6.13743E+01, dt(diffusion solver) =   6.44803E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=6.448E+00, NFUN:NPC=0000067:00005, NNR:NNF:NSR=0000:0000:0000
 
-         27: t =   6.78224E+01, dt(diffusion solver) =   6.79574E+00
+         27: t =   6.78224E+01, dt(diffusion solver) =   6.79575E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=6.796E+00, NFUN:NPC=0000070:00005, NNR:NNF:NSR=0000:0000:0000
 
-         28: t =   7.46182E+01, dt(diffusion solver) =   7.10717E+00
+         28: t =   7.46181E+01, dt(diffusion solver) =   7.10717E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=7.107E+00, NFUN:NPC=0000073:00005, NNR:NNF:NSR=0000:0000:0000
@@ -503,7 +509,7 @@ DS: dt=7.107E+00, NFUN:NPC=0000073:00005, NNR:NNF:NSR=0000:0000:0000
 
 DS: dt=7.406E+00, NFUN:NPC=0000076:00005, NNR:NNF:NSR=0000:0000:0000
 
-         30: t =   8.91316E+01, dt(diffusion solver) =   7.70654E+00
+         30: t =   8.91315E+01, dt(diffusion solver) =   7.70654E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
 DS: dt=7.707E+00, NFUN:NPC=0000079:00005, NNR:NNF:NSR=0000:0000:0000
@@ -524,24 +530,27 @@ Warning: DANU: Danu fid is still associated
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               1.853E+00    1.788E+00    1.876E+00
-    Input                               4.150E-02    1.000E-02    5.200E-02
-    Initialization                      1.726E+00    1.704E+00    1.735E+00
+  Total                               1.600E+00    1.597E+00    1.601E+00
+    Input                               6.250E-03    6.000E-03    7.000E-03
+    Initialization                      1.526E+00    1.523E+00    1.527E+00
       HTSD function                       0.000E+00    0.000E+00    0.000E+00
         HT function                         0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          7.250E-02    7.200E-02    7.300E-02
-      Output                              2.250E-03    2.000E-03    3.000E-03
+    Main Cycle                          6.650E-02    6.600E-02    6.700E-02
+      Output                              3.250E-03    2.000E-03    5.000E-03
       Time Step                           0.000E+00    0.000E+00    0.000E+00
-      Diffusion Solver                    5.200E-02    4.900E-02    5.400E-02
-        HTSD precon compute                 1.225E-02    1.100E-02    1.300E-02
-        HTSD function                       4.250E-03    3.000E-03    5.000E-03
-          HT function                         4.000E-03    3.000E-03    5.000E-03
-        HTSD precon apply                   3.225E-02    3.100E-02    3.300E-02
-          HT precon apply                     3.200E-02    3.100E-02    3.300E-02
+      Diffusion Solver                    4.800E-02    4.600E-02    5.000E-02
+        HTSD precon compute                 9.750E-03    9.000E-03    1.100E-02
+          hypre-matrix-copy                   7.500E-04    0.000E+00    2.000E-03
+          boomer-setup                        8.000E-03    6.000E-03    1.000E-02
+        HTSD function                       3.250E-03    2.000E-03    5.000E-03
+          HT function                         2.750E-03    2.000E-03    4.000E-03
+        HTSD precon apply                   3.200E-02    2.800E-02    3.600E-02
+          HT precon apply                     3.200E-02    2.800E-02    3.600E-02
+            boomer-solve                        2.850E-02    2.600E-02    3.100E-02
 
-         Smallest process virtual memory used: 1.92E+02 mB
-          Largest process virtual memory used: 2.00E+02 mB
-                    Total virtual memory used: 7.79E+02 mB
-                                   words/cell: 289898
+         Smallest process virtual memory used: 1.94E+02 mB
+          Largest process virtual memory used: 1.99E+02 mB
+                    Total virtual memory used: 7.80E+02 mB
+                                   words/cell: 290465
 
-truchas terminated normally on 15 Sep 13 at 18:51:07
+truchas terminated normally on 02 Jun 15 at 09:33:22

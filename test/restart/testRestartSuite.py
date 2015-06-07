@@ -55,7 +55,7 @@ class RestartTest(TruchasTest.BaseTestCase):
     self.clean_output_directory(self.test_name,outdir)
 
     # Write a restart file
-    restart_cycle=45
+    restart_cycle=41
     restart_file=self.build_output_filename(self.test_name,outdir,'restart.%i'%restart_cycle)
     self.truchas.write_restart(restart_cycle,output=restart_file)
 
@@ -94,7 +94,7 @@ class RestartTest(TruchasTest.BaseTestCase):
     self.clean_output_directory(self.test_name,outdir2)
 
     # Write a restart file
-    restart_cycle=45
+    restart_cycle=41
     restart_file=self.build_output_filename(self.test_name,outdir2,'restart.%i'%restart_cycle)
     try:
       self.truchas.write_restart(restart_cycle,output=restart_file)
@@ -173,7 +173,7 @@ class RestartTest(TruchasTest.BaseTestCase):
     self.clean_output_directory(self.test_name,outdir)
 
     # Write a restart file
-    restart_cycle=45
+    restart_cycle=41
     restart_file=self.build_output_filename(self.test_name,outdir,'restart.%i'%restart_cycle)
     self.truchas.write_restart(restart_cycle,output=restart_file)
 

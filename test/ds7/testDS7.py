@@ -31,6 +31,7 @@ class DS7(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
+    print 'early temp max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_temperature(self):
@@ -39,6 +40,7 @@ class DS7(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
+    print 'final temp max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
 if __name__ == '__main__':

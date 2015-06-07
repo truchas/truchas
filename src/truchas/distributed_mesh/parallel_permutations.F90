@@ -86,17 +86,15 @@ module parallel_permutations
   implicit none
   private
 
-  public :: create_par_perm, destroy, defined, reorder, rearrange
+  public :: create_par_perm, defined, reorder, rearrange
 
   type, public :: par_perm
     private
     integer, pointer :: perm(:) => null() ! dest-to-src mapping (local indices)
     type(ip_desc) :: src_ip ! partition descriptor for the src index set
+  contains
+    final :: par_perm_delete
   end type par_perm
-
-  interface destroy
-    module procedure destroy_par_perm
-  end interface
 
   interface defined
     module procedure defined_par_perm
@@ -115,6 +113,13 @@ module parallel_permutations
   end interface
 
 contains
+
+  !! Final subroutine for PAR_PERM type objects
+  subroutine par_perm_delete (this)
+    type(par_perm), intent(inout) :: this
+    if (associated(this%perm)) deallocate(this%perm)
+    call destroy (this%src_ip)
+  end subroutine par_perm_delete
 
   subroutine create_par_perm_1 (this, perm, dest_bsize, src_bsize)
 
@@ -145,7 +150,7 @@ contains
     call destroy (dest_ip)
 
     ASSERT( minval(this%perm) > 0 )
-    ASSERT( maxval(this%perm) <= local_size(this%src_ip) )
+    ASSERT( maxval(this%perm) <= this%src_ip%local_size() )
 
   end subroutine create_par_perm_1
 
@@ -316,15 +321,9 @@ contains
     call destroy (dest_ip)
 
     ASSERT( minval(this%perm) >= 0 )
-    ASSERT( maxval(this%perm) <= local_size(this%src_ip) )
+    ASSERT( maxval(this%perm) <= this%src_ip%local_size() )
 
   end subroutine create_par_perm_var
-
-  subroutine destroy_par_perm (this)
-    type(par_perm), intent(inout) :: this
-    if (associated(this%perm)) deallocate(this%perm)
-    call destroy (this%src_ip)
-  end subroutine destroy_par_perm
 
   logical function defined_par_perm (this)
     type(par_perm), intent(in) :: this
@@ -345,17 +344,17 @@ contains
     real(r8), intent(in)  :: src(:)
 
     integer :: j, k
-    real(r8) :: src_offP(onP_size(this%src_ip)+1:local_size(this%src_ip))
+    real(r8) :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == onP_size(this%src_ip) )
+    ASSERT( size(src) == this%src_ip%onP_size() )
 
     call gather_boundary (this%src_ip, src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > onP_size(this%src_ip)) then
+      if (k > this%src_ip%onP_size()) then
         dest(j) = src_offP(k)
       else
         dest(j) = src(k)
@@ -371,17 +370,17 @@ contains
     integer, intent(in)  :: src(:)
 
     integer :: j, k
-    integer :: src_offP(onP_size(this%src_ip)+1:local_size(this%src_ip))
+    integer :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == onP_size(this%src_ip) )
+    ASSERT( size(src) == this%src_ip%onP_size() )
 
     call gather_boundary (this%src_ip, src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > onP_size(this%src_ip)) then
+      if (k > this%src_ip%onP_size()) then
         dest(j) = src_offP(k)
       else
         dest(j) = src(k)
@@ -397,17 +396,17 @@ contains
     real(r8), intent(in) :: src(:)
 
     integer :: j, k
-    real(r8) :: src_offP(onP_size(this%src_ip)+1:local_size(this%src_ip))
+    real(r8) :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == onP_size(this%src_ip) )
+    ASSERT( size(src) == this%src_ip%onP_size() )
 
     call gather_boundary (this%src_ip, src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > onP_size(this%src_ip)) then
+      if (k > this%src_ip%onP_size()) then
         dest(j) = src_offP(k)
       else if (k > 0) then
         dest(j) = src(k)
@@ -423,18 +422,18 @@ contains
     real(r8), intent(in) :: src(:,:)
 
     integer :: j, k
-    real(r8) :: src_offP(size(src,1),onP_size(this%src_ip)+1:local_size(this%src_ip))
+    real(r8) :: src_offP(size(src,1),this%src_ip%onP_size()+1:this%src_ip%local_size())
 
     ASSERT( defined(this) )
     ASSERT( size(dest,1) == size(src,1) )
     ASSERT( size(dest,2) == size(this%perm) )
-    ASSERT( size(src,2) == onP_size(this%src_ip) )
+    ASSERT( size(src,2) == this%src_ip%onP_size() )
 
     call gather_boundary (this%src_ip, src, src_offP)
 
     do j = 1, size(dest,2)
       k = this%perm(j)
-      if (k > onP_size(this%src_ip)) then
+      if (k > this%src_ip%onP_size()) then
         dest(:,j) = src_offP(:,k)
       else if (k > 0) then
         dest(:,j) = src(:,k)
@@ -450,17 +449,17 @@ contains
     integer, intent(in) :: src(:)
 
     integer :: j, k
-    integer :: src_offP(onP_size(this%src_ip)+1:local_size(this%src_ip))
+    integer :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == onP_size(this%src_ip) )
+    ASSERT( size(src) == this%src_ip%onP_size() )
 
     call gather_boundary (this%src_ip, src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > onP_size(this%src_ip)) then
+      if (k > this%src_ip%onP_size()) then
         dest(j) = src_offP(k)
       else if (k > 0) then
         dest(j) = src(k)

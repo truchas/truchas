@@ -31,6 +31,7 @@ class DS6(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
+    print 'early temp max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_temperature(self):
@@ -39,6 +40,7 @@ class DS6(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
+    print 'final temp max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_early_phi1(self):
@@ -48,6 +50,7 @@ class DS6(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
+    print 'early phi1 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_phi1(self):
@@ -56,6 +59,7 @@ class DS6(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=3).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
+    print 'final phi1 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_early_phi2(self):
@@ -65,6 +69,7 @@ class DS6(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi2')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi2')
     error = max(abs(C-Cref)/Cref)
+    print 'early phi2 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_phi2(self):
@@ -73,6 +78,7 @@ class DS6(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi2')
     Cref = self.gold_output.get_simulation().find_series(id=3).get_data('phi2')
     error = max(abs(C-Cref)/Cref)
+    print 'final phi2 max rel error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
 if __name__ == '__main__':

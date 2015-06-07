@@ -493,11 +493,11 @@ contains
     this%mesh => null()
   end subroutine ds_delete
   
-  subroutine ds_set_initial_state (t, temp, conc)
+  subroutine ds_set_initial_state (t, dt, temp, conc)
   
     use parameter_module, only: ncells
 
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, dt
     real(r8), intent(in), optional :: temp(:), conc(:,:)
     
     integer :: n
@@ -525,7 +525,7 @@ contains
     !! Set the initial state in the appropriate solver.
     select case (this%solver_type)
     case (SOLVER1)
-      call HTSD_solver_set_initial_state (this%sol1, t, temp_ds, conc_ds)
+      call HTSD_solver_set_initial_state (this%sol1, t, temp_ds, conc_ds, dt)
     case (SOLVER2)
       call FHT_solver_set_initial_state (this%sol2, t, temp_ds)
     case default

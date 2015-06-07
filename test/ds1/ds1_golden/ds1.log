@@ -4,15 +4,15 @@
 PROGRAM INFORMATION
 
    code:                DUMMY
-   version:             2.8.dev
+   version:             2.9.dev
    libraries:           UbikSolve, PGSLib, Chaco
    build architecture:  x86_64
-   build date/time:      3 Sep 2013 21:04:14
-   build flags:         -O2 -maxcontin=99 -PIC
+   build date/time:      1 Jun 2015 23:08:59
+   build flags:         -O2 -u -maxcontin=99 -PIC
    build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 3.8.13-100.fc17.x86_64 #1 SMP Mon May 13 13:36:17 UTC 2013 x86_64
+   run architecture:    Linux noether.lanl.gov 3.15.10-201.fc20.x86_64 #1 SMP Wed Aug 27 21:10:06 UTC 2014 x86_64
    run host:            noether.lanl.gov
-   run date/time:       03 Sep 13 15:51:53
+   run date/time:       02 Jun 15 08:36:05
    processors:          1
 
 ================================================================================
@@ -276,6 +276,10 @@ Initializing diffusion solver ...
     using DS_BOUNDARY_CONDITION[3]: other sides
   Diffusion solver initialized.
 
+Computing consistent initial state for HT/SD solver ...
+
+Computing consistent initial state derivative for HT/SD solver ...
+
 ================================================================================
 
 EXECUTION
@@ -297,367 +301,367 @@ DS: dt=1.000E-07, NFUN:NPC=0000012:00001, NNR:NNF:NSR=0000:0000:0000
 
 DS: dt=1.000E-07, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
 
-          5: t =   4.00000E-07, dt(diffusion solver) =   3.29989E-07
+          5: t =   4.00000E-07, dt(diffusion solver) =   3.29990E-07
 
 DS: dt=3.300E-07, NFUN:NPC=0000018:00001, NNR:NNF:NSR=0000:0000:0000
 
-          6: t =   7.29989E-07, dt(diffusion solver) =   3.11686E-07
+          6: t =   7.29990E-07, dt(diffusion solver) =   3.11682E-07
 
 DS: dt=3.117E-07, NFUN:NPC=0000020:00002, NNR:NNF:NSR=0000:0000:0000
 
-          7: t =   1.04167E-06, dt(diffusion solver) =   1.17748E-06
+          7: t =   1.04167E-06, dt(diffusion solver) =   1.17745E-06
 
 DS: dt=1.177E-06, NFUN:NPC=0000022:00002, NNR:NNF:NSR=0000:0000:0000
 
-          8: t =   2.21915E-06, dt(diffusion solver) =   3.00896E-06
+          8: t =   2.21913E-06, dt(diffusion solver) =   3.00888E-06
 
 DS: dt=3.009E-06, NFUN:NPC=0000024:00003, NNR:NNF:NSR=0000:0000:0000
 
-          9: t =   5.22812E-06, dt(diffusion solver) =   6.78084E-06
+          9: t =   5.22801E-06, dt(diffusion solver) =   6.78237E-06
 
-DS: dt=6.781E-06, NFUN:NPC=0000026:00003, NNR:NNF:NSR=0000:0000:0000
+DS: dt=6.782E-06, NFUN:NPC=0000026:00003, NNR:NNF:NSR=0000:0000:0000
 
-         10: t =   1.20090E-05, dt(diffusion solver) =   2.05884E-05
+         10: t =   1.20104E-05, dt(diffusion solver) =   2.05872E-05
 
 DS: dt=2.059E-05, NFUN:NPC=0000029:00004, NNR:NNF:NSR=0000:0000:0000
 
-         11: t =   3.25974E-05, dt(diffusion solver) =   1.06636E-05
+         11: t =   3.25976E-05, dt(diffusion solver) =   1.06655E-05
 
-DS: dt=1.066E-05, NFUN:NPC=0000032:00004, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.067E-05, NFUN:NPC=0000032:00004, NNR:NNF:NSR=0000:0000:0000
 
-         12: t =   4.32610E-05, dt(diffusion solver) =   1.66966E-05
+         12: t =   4.32631E-05, dt(diffusion solver) =   1.66957E-05
 
 DS: dt=1.670E-05, NFUN:NPC=0000035:00004, NNR:NNF:NSR=0000:0000:0000
 
-         13: t =   5.99576E-05, dt(diffusion solver) =   1.76807E-05
+         13: t =   5.99587E-05, dt(diffusion solver) =   1.76810E-05
 
 DS: dt=1.768E-05, NFUN:NPC=0000038:00004, NNR:NNF:NSR=0000:0000:0000
 
-         14: t =   7.76383E-05, dt(diffusion solver) =   1.89756E-05
+         14: t =   7.76398E-05, dt(diffusion solver) =   1.89758E-05
 
 DS: dt=1.898E-05, NFUN:NPC=0000041:00004, NNR:NNF:NSR=0000:0000:0000
 
-         15: t =   9.66139E-05, dt(diffusion solver) =   2.10548E-05
+         15: t =   9.66156E-05, dt(diffusion solver) =   2.10549E-05
 
 DS: dt=2.105E-05, NFUN:NPC=0000044:00004, NNR:NNF:NSR=0000:0000:0000
 
-         16: t =   1.17669E-04, dt(diffusion solver) =   2.33360E-05
+         16: t =   1.17671E-04, dt(diffusion solver) =   2.33361E-05
 
 DS: dt=2.334E-05, NFUN:NPC=0000048:00004, NNR:NNF:NSR=0000:0000:0000
 
-         17: t =   1.41005E-04, dt(diffusion solver) =   2.58511E-05
+         17: t =   1.41007E-04, dt(diffusion solver) =   2.58514E-05
 
 DS: dt=2.585E-05, NFUN:NPC=0000052:00004, NNR:NNF:NSR=0000:0000:0000
 
-         18: t =   1.66856E-04, dt(diffusion solver) =   2.86818E-05
+         18: t =   1.66858E-04, dt(diffusion solver) =   2.86819E-05
 
 DS: dt=2.868E-05, NFUN:NPC=0000056:00004, NNR:NNF:NSR=0000:0000:0000
 
-         19: t =   1.95538E-04, dt(diffusion solver) =   3.22229E-05
+         19: t =   1.95540E-04, dt(diffusion solver) =   3.22233E-05
 
 DS: dt=3.222E-05, NFUN:NPC=0000063:00005, NNR:NNF:NSR=0001:0000:0000
 
-         20: t =   2.27760E-04, dt(diffusion solver) =   3.61194E-05
+         20: t =   2.27763E-04, dt(diffusion solver) =   3.61196E-05
 
 DS: dt=3.612E-05, NFUN:NPC=0000066:00005, NNR:NNF:NSR=0001:0000:0000
 
-         21: t =   2.63880E-04, dt(diffusion solver) =   4.08126E-05
+         21: t =   2.63883E-04, dt(diffusion solver) =   4.08135E-05
 
 DS: dt=4.081E-05, NFUN:NPC=0000070:00005, NNR:NNF:NSR=0001:0000:0000
 
-         22: t =   3.04692E-04, dt(diffusion solver) =   4.63368E-05
+         22: t =   3.04696E-04, dt(diffusion solver) =   4.63364E-05
 
 DS: dt=4.634E-05, NFUN:NPC=0000074:00005, NNR:NNF:NSR=0001:0000:0000
 
-         23: t =   3.51029E-04, dt(diffusion solver) =   5.25256E-05
+         23: t =   3.51033E-04, dt(diffusion solver) =   5.25268E-05
 
 DS: dt=5.253E-05, NFUN:NPC=0000079:00005, NNR:NNF:NSR=0001:0000:0000
 
-         24: t =   4.03555E-04, dt(diffusion solver) =   5.99047E-05
+         24: t =   4.03560E-04, dt(diffusion solver) =   5.99052E-05
 
-DS: dt=5.990E-05, NFUN:NPC=0000084:00005, NNR:NNF:NSR=0001:0000:0000
+DS: dt=5.991E-05, NFUN:NPC=0000084:00005, NNR:NNF:NSR=0001:0000:0000
 
-         25: t =   4.63460E-04, dt(diffusion solver) =   6.33405E-05
+         25: t =   4.63465E-04, dt(diffusion solver) =   6.33397E-05
 
 DS: dt=6.334E-05, NFUN:NPC=0000089:00005, NNR:NNF:NSR=0001:0000:0000
 
-         26: t =   5.26800E-04, dt(diffusion solver) =   5.97978E-05
+         26: t =   5.26805E-04, dt(diffusion solver) =   5.97982E-05
 
 DS: dt=5.980E-05, NFUN:NPC=0000094:00005, NNR:NNF:NSR=0001:0000:0000
 
-         27: t =   5.86598E-04, dt(diffusion solver) =   6.12100E-05
+         27: t =   5.86603E-04, dt(diffusion solver) =   6.12094E-05
 
 DS: dt=6.121E-05, NFUN:NPC=0000099:00005, NNR:NNF:NSR=0001:0000:0000
 
-         28: t =   6.47808E-04, dt(diffusion solver) =   6.03213E-05
+         28: t =   6.47812E-04, dt(diffusion solver) =   6.03213E-05
 
 DS: dt=6.032E-05, NFUN:NPC=0000104:00005, NNR:NNF:NSR=0001:0000:0000
 
-         29: t =   7.08129E-04, dt(diffusion solver) =   6.26044E-05
+         29: t =   7.08134E-04, dt(diffusion solver) =   6.26049E-05
 
 DS: dt=6.260E-05, NFUN:NPC=0000108:00005, NNR:NNF:NSR=0001:0000:0000
 
-         30: t =   7.70734E-04, dt(diffusion solver) =   6.50528E-05
+         30: t =   7.70738E-04, dt(diffusion solver) =   6.50537E-05
 
 DS: dt=6.505E-05, NFUN:NPC=0000112:00005, NNR:NNF:NSR=0001:0000:0000
 
-         31: t =   8.35786E-04, dt(diffusion solver) =   7.01477E-05
+         31: t =   8.35792E-04, dt(diffusion solver) =   7.01473E-05
 
 DS: dt=7.015E-05, NFUN:NPC=0000117:00005, NNR:NNF:NSR=0001:0000:0000
 
-         32: t =   9.05934E-04, dt(diffusion solver) =   7.71082E-05
+         32: t =   9.05939E-04, dt(diffusion solver) =   7.71084E-05
 
 DS: dt=7.711E-05, NFUN:NPC=0000125:00006, NNR:NNF:NSR=0002:0000:0000
 
-         33: t =   9.83042E-04, dt(diffusion solver) =   8.68589E-05
+         33: t =   9.83048E-04, dt(diffusion solver) =   8.68598E-05
 
 DS: dt=8.686E-05, NFUN:NPC=0000129:00006, NNR:NNF:NSR=0002:0000:0000
 
-         34: t =   1.06990E-03, dt(diffusion solver) =   8.38437E-05
+         34: t =   1.06991E-03, dt(diffusion solver) =   8.38428E-05
 
 DS: dt=8.384E-05, NFUN:NPC=0000133:00006, NNR:NNF:NSR=0002:0000:0000
 
-         35: t =   1.15375E-03, dt(diffusion solver) =   8.39547E-05
+         35: t =   1.15375E-03, dt(diffusion solver) =   8.39553E-05
 
-DS: dt=8.395E-05, NFUN:NPC=0000137:00006, NNR:NNF:NSR=0002:0000:0000
+DS: dt=8.396E-05, NFUN:NPC=0000137:00006, NNR:NNF:NSR=0002:0000:0000
 
-         36: t =   1.23770E-03, dt(diffusion solver) =   8.35662E-05
+         36: t =   1.23771E-03, dt(diffusion solver) =   8.35659E-05
 
 DS: dt=8.357E-05, NFUN:NPC=0000141:00006, NNR:NNF:NSR=0002:0000:0000
 
-         37: t =   1.32127E-03, dt(diffusion solver) =   8.52932E-05
+         37: t =   1.32127E-03, dt(diffusion solver) =   8.52935E-05
 
 DS: dt=8.529E-05, NFUN:NPC=0000145:00006, NNR:NNF:NSR=0002:0000:0000
 
-         38: t =   1.40656E-03, dt(diffusion solver) =   8.90279E-05
+         38: t =   1.40657E-03, dt(diffusion solver) =   8.90282E-05
 
 DS: dt=8.903E-05, NFUN:NPC=0000149:00006, NNR:NNF:NSR=0002:0000:0000
 
-         39: t =   1.49559E-03, dt(diffusion solver) =   9.52128E-05
+         39: t =   1.49559E-03, dt(diffusion solver) =   9.52134E-05
 
 DS: dt=9.521E-05, NFUN:NPC=0000153:00006, NNR:NNF:NSR=0002:0000:0000
 
-         40: t =   1.59080E-03, dt(diffusion solver) =   1.02094E-04
+         40: t =   1.59081E-03, dt(diffusion solver) =   1.02094E-04
 
 DS: dt=1.021E-04, NFUN:NPC=0000157:00006, NNR:NNF:NSR=0002:0000:0000
 
-         41: t =   1.69289E-03, dt(diffusion solver) =   1.10499E-04
+         41: t =   1.69290E-03, dt(diffusion solver) =   1.10500E-04
 
 DS: dt=1.105E-04, NFUN:NPC=0000162:00006, NNR:NNF:NSR=0002:0000:0000
 
-         42: t =   1.80339E-03, dt(diffusion solver) =   1.03160E-04
+         42: t =   1.80340E-03, dt(diffusion solver) =   1.03159E-04
 
 DS: dt=1.032E-04, NFUN:NPC=0000167:00006, NNR:NNF:NSR=0002:0000:0000
 
-         43: t =   1.90655E-03, dt(diffusion solver) =   1.08107E-04
+         43: t =   1.90656E-03, dt(diffusion solver) =   1.08108E-04
 
 DS: dt=1.081E-04, NFUN:NPC=0000172:00006, NNR:NNF:NSR=0002:0000:0000
 
-         44: t =   2.01466E-03, dt(diffusion solver) =   1.07106E-04
+         44: t =   2.01467E-03, dt(diffusion solver) =   1.07104E-04
 
 DS: dt=1.071E-04, NFUN:NPC=0000177:00006, NNR:NNF:NSR=0002:0000:0000
 
-         45: t =   2.12177E-03, dt(diffusion solver) =   1.13098E-04
+         45: t =   2.12177E-03, dt(diffusion solver) =   1.13103E-04
 
 DS: dt=1.131E-04, NFUN:NPC=0000182:00006, NNR:NNF:NSR=0002:0000:0000
 
-         46: t =   2.23486E-03, dt(diffusion solver) =   1.18957E-04
+         46: t =   2.23488E-03, dt(diffusion solver) =   1.18951E-04
 
 DS: dt=1.190E-04, NFUN:NPC=0000187:00006, NNR:NNF:NSR=0002:0000:0000
 
-         47: t =   2.35382E-03, dt(diffusion solver) =   1.22723E-04
+         47: t =   2.35383E-03, dt(diffusion solver) =   1.22731E-04
 
 DS: dt=1.227E-04, NFUN:NPC=0000192:00006, NNR:NNF:NSR=0002:0000:0000
 
-         48: t =   2.47654E-03, dt(diffusion solver) =   1.33058E-04
+         48: t =   2.47656E-03, dt(diffusion solver) =   1.33052E-04
 
 DS: dt=1.331E-04, NFUN:NPC=0000200:00007, NNR:NNF:NSR=0003:0000:0000
 
-         49: t =   2.60960E-03, dt(diffusion solver) =   1.25002E-04
+         49: t =   2.60961E-03, dt(diffusion solver) =   1.25004E-04
 
 DS: dt=1.250E-04, NFUN:NPC=0000203:00007, NNR:NNF:NSR=0003:0000:0000
 
-         50: t =   2.73460E-03, dt(diffusion solver) =   1.30988E-04
+         50: t =   2.73461E-03, dt(diffusion solver) =   1.30987E-04
 
 DS: dt=1.310E-04, NFUN:NPC=0000207:00007, NNR:NNF:NSR=0003:0000:0000
 
-         51: t =   2.86559E-03, dt(diffusion solver) =   1.29718E-04
+         51: t =   2.86560E-03, dt(diffusion solver) =   1.29719E-04
 
 DS: dt=1.297E-04, NFUN:NPC=0000211:00007, NNR:NNF:NSR=0003:0000:0000
 
-         52: t =   2.99531E-03, dt(diffusion solver) =   1.36922E-04
+         52: t =   2.99532E-03, dt(diffusion solver) =   1.36922E-04
 
 DS: dt=1.369E-04, NFUN:NPC=0000215:00007, NNR:NNF:NSR=0003:0000:0000
 
-         53: t =   3.13223E-03, dt(diffusion solver) =   1.41913E-04
+         53: t =   3.13224E-03, dt(diffusion solver) =   1.41913E-04
 
 DS: dt=1.419E-04, NFUN:NPC=0000219:00007, NNR:NNF:NSR=0003:0000:0000
 
-         54: t =   3.27415E-03, dt(diffusion solver) =   1.50470E-04
+         54: t =   3.27416E-03, dt(diffusion solver) =   1.50471E-04
 
 DS: dt=1.505E-04, NFUN:NPC=0000223:00007, NNR:NNF:NSR=0003:0000:0000
 
-         55: t =   3.42462E-03, dt(diffusion solver) =   1.51248E-04
+         55: t =   3.42463E-03, dt(diffusion solver) =   1.51248E-04
 
 DS: dt=1.512E-04, NFUN:NPC=0000227:00007, NNR:NNF:NSR=0003:0000:0000
 
-         56: t =   3.57586E-03, dt(diffusion solver) =   1.50725E-04
+         56: t =   3.57587E-03, dt(diffusion solver) =   1.50725E-04
 
 DS: dt=1.507E-04, NFUN:NPC=0000231:00007, NNR:NNF:NSR=0003:0000:0000
 
-         57: t =   3.72659E-03, dt(diffusion solver) =   1.53208E-04
+         57: t =   3.72660E-03, dt(diffusion solver) =   1.53208E-04
 
 DS: dt=1.532E-04, NFUN:NPC=0000235:00007, NNR:NNF:NSR=0003:0000:0000
 
-         58: t =   3.87980E-03, dt(diffusion solver) =   1.57814E-04
+         58: t =   3.87981E-03, dt(diffusion solver) =   1.57814E-04
 
 DS: dt=1.578E-04, NFUN:NPC=0000239:00007, NNR:NNF:NSR=0003:0000:0000
 
-         59: t =   4.03761E-03, dt(diffusion solver) =   1.63913E-04
+         59: t =   4.03762E-03, dt(diffusion solver) =   1.63913E-04
 
 DS: dt=1.639E-04, NFUN:NPC=0000243:00007, NNR:NNF:NSR=0003:0000:0000
 
-         60: t =   4.20152E-03, dt(diffusion solver) =   1.72327E-04
+         60: t =   4.20153E-03, dt(diffusion solver) =   1.72328E-04
 
 DS: dt=1.723E-04, NFUN:NPC=0000248:00007, NNR:NNF:NSR=0003:0000:0000
 
-         61: t =   4.37385E-03, dt(diffusion solver) =   1.74889E-04
+         61: t =   4.37386E-03, dt(diffusion solver) =   1.74889E-04
 
 DS: dt=1.749E-04, NFUN:NPC=0000253:00007, NNR:NNF:NSR=0003:0000:0000
 
-         62: t =   4.54874E-03, dt(diffusion solver) =   1.71633E-04
+         62: t =   4.54875E-03, dt(diffusion solver) =   1.71634E-04
 
 DS: dt=1.716E-04, NFUN:NPC=0000258:00007, NNR:NNF:NSR=0003:0000:0000
 
-         63: t =   4.72037E-03, dt(diffusion solver) =   1.75502E-04
+         63: t =   4.72039E-03, dt(diffusion solver) =   1.75502E-04
 
 DS: dt=1.755E-04, NFUN:NPC=0000262:00007, NNR:NNF:NSR=0003:0000:0000
 
-         64: t =   4.89587E-03, dt(diffusion solver) =   1.79810E-04
+         64: t =   4.89589E-03, dt(diffusion solver) =   1.79812E-04
 
 DS: dt=1.798E-04, NFUN:NPC=0000267:00007, NNR:NNF:NSR=0003:0000:0000
 
-         65: t =   5.07568E-03, dt(diffusion solver) =   1.88711E-04
+         65: t =   5.07570E-03, dt(diffusion solver) =   1.88707E-04
 
 DS: dt=1.887E-04, NFUN:NPC=0000272:00007, NNR:NNF:NSR=0003:0000:0000
 
-         66: t =   5.26440E-03, dt(diffusion solver) =   1.97365E-04
+         66: t =   5.26441E-03, dt(diffusion solver) =   1.97368E-04
 
 DS: dt=1.974E-04, NFUN:NPC=0000277:00007, NNR:NNF:NSR=0003:0000:0000
 
-         67: t =   5.46176E-03, dt(diffusion solver) =   1.93400E-04
+         67: t =   5.46177E-03, dt(diffusion solver) =   1.93398E-04
 
 DS: dt=1.934E-04, NFUN:NPC=0000282:00007, NNR:NNF:NSR=0003:0000:0000
 
-         68: t =   5.65516E-03, dt(diffusion solver) =   1.96564E-04
+         68: t =   5.65517E-03, dt(diffusion solver) =   1.96560E-04
 
 DS: dt=1.966E-04, NFUN:NPC=0000287:00007, NNR:NNF:NSR=0003:0000:0000
 
-         69: t =   5.85172E-03, dt(diffusion solver) =   1.99577E-04
+         69: t =   5.85173E-03, dt(diffusion solver) =   1.99585E-04
 
 DS: dt=1.996E-04, NFUN:NPC=0000292:00007, NNR:NNF:NSR=0003:0000:0000
 
-         70: t =   6.05130E-03, dt(diffusion solver) =   2.07096E-04
+         70: t =   6.05132E-03, dt(diffusion solver) =   2.07087E-04
 
 DS: dt=2.071E-04, NFUN:NPC=0000300:00008, NNR:NNF:NSR=0004:0000:0000
 
-         71: t =   6.25840E-03, dt(diffusion solver) =   2.14616E-04
+         71: t =   6.25841E-03, dt(diffusion solver) =   2.14627E-04
 
 DS: dt=2.146E-04, NFUN:NPC=0000303:00008, NNR:NNF:NSR=0004:0000:0000
 
-         72: t =   6.47301E-03, dt(diffusion solver) =   2.22756E-04
+         72: t =   6.47303E-03, dt(diffusion solver) =   2.22749E-04
 
-DS: dt=2.228E-04, NFUN:NPC=0000307:00008, NNR:NNF:NSR=0004:0000:0000
+DS: dt=2.227E-04, NFUN:NPC=0000307:00008, NNR:NNF:NSR=0004:0000:0000
 
-         73: t =   6.69577E-03, dt(diffusion solver) =   2.16538E-04
+         73: t =   6.69578E-03, dt(diffusion solver) =   2.16541E-04
 
 DS: dt=2.165E-04, NFUN:NPC=0000311:00008, NNR:NNF:NSR=0004:0000:0000
 
-         74: t =   6.91231E-03, dt(diffusion solver) =   2.22445E-04
+         74: t =   6.91232E-03, dt(diffusion solver) =   2.22444E-04
 
 DS: dt=2.224E-04, NFUN:NPC=0000315:00008, NNR:NNF:NSR=0004:0000:0000
 
-         75: t =   7.13475E-03, dt(diffusion solver) =   2.26634E-04
+         75: t =   7.13477E-03, dt(diffusion solver) =   2.26635E-04
 
 DS: dt=2.266E-04, NFUN:NPC=0000319:00008, NNR:NNF:NSR=0004:0000:0000
 
-         76: t =   7.36139E-03, dt(diffusion solver) =   2.34980E-04
+         76: t =   7.36140E-03, dt(diffusion solver) =   2.34980E-04
 
 DS: dt=2.350E-04, NFUN:NPC=0000323:00008, NNR:NNF:NSR=0004:0000:0000
 
-         77: t =   7.59637E-03, dt(diffusion solver) =   2.45783E-04
+         77: t =   7.59638E-03, dt(diffusion solver) =   2.45784E-04
 
 DS: dt=2.458E-04, NFUN:NPC=0000327:00008, NNR:NNF:NSR=0004:0000:0000
 
-         78: t =   7.84215E-03, dt(diffusion solver) =   2.38162E-04
+         78: t =   7.84217E-03, dt(diffusion solver) =   2.38162E-04
 
 DS: dt=2.382E-04, NFUN:NPC=0000331:00008, NNR:NNF:NSR=0004:0000:0000
 
-         79: t =   8.08031E-03, dt(diffusion solver) =   2.44762E-04
+         79: t =   8.08033E-03, dt(diffusion solver) =   2.44762E-04
 
 DS: dt=2.448E-04, NFUN:NPC=0000335:00008, NNR:NNF:NSR=0004:0000:0000
 
-         80: t =   8.32507E-03, dt(diffusion solver) =   2.48356E-04
+         80: t =   8.32509E-03, dt(diffusion solver) =   2.48356E-04
 
 DS: dt=2.484E-04, NFUN:NPC=0000339:00008, NNR:NNF:NSR=0004:0000:0000
 
-         81: t =   8.57343E-03, dt(diffusion solver) =   2.57999E-04
+         81: t =   8.57345E-03, dt(diffusion solver) =   2.57998E-04
 
 DS: dt=2.580E-04, NFUN:NPC=0000343:00008, NNR:NNF:NSR=0004:0000:0000
 
-         82: t =   8.83143E-03, dt(diffusion solver) =   2.68448E-04
+         82: t =   8.83144E-03, dt(diffusion solver) =   2.68449E-04
 
 DS: dt=2.684E-04, NFUN:NPC=0000347:00008, NNR:NNF:NSR=0004:0000:0000
 
-         83: t =   9.09988E-03, dt(diffusion solver) =   2.61381E-04
+         83: t =   9.09989E-03, dt(diffusion solver) =   2.61381E-04
 
 DS: dt=2.614E-04, NFUN:NPC=0000351:00008, NNR:NNF:NSR=0004:0000:0000
 
-         84: t =   9.36126E-03, dt(diffusion solver) =   2.68341E-04
+         84: t =   9.36127E-03, dt(diffusion solver) =   2.68341E-04
 
 DS: dt=2.683E-04, NFUN:NPC=0000355:00008, NNR:NNF:NSR=0004:0000:0000
 
-         85: t =   9.62960E-03, dt(diffusion solver) =   2.73283E-04
+         85: t =   9.62961E-03, dt(diffusion solver) =   2.73284E-04
 
 DS: dt=2.733E-04, NFUN:NPC=0000359:00008, NNR:NNF:NSR=0004:0000:0000
 
-         86: t =   9.90288E-03, dt(diffusion solver) =   2.81516E-04
+         86: t =   9.90290E-03, dt(diffusion solver) =   2.81516E-04
 
 DS: dt=2.815E-04, NFUN:NPC=0000364:00008, NNR:NNF:NSR=0004:0000:0000
 
-         87: t =   1.01844E-02, dt(diffusion solver) =   2.85232E-04
+         87: t =   1.01844E-02, dt(diffusion solver) =   2.85234E-04
 
 DS: dt=2.852E-04, NFUN:NPC=0000369:00008, NNR:NNF:NSR=0004:0000:0000
 
-         88: t =   1.04696E-02, dt(diffusion solver) =   2.81456E-04
+         88: t =   1.04696E-02, dt(diffusion solver) =   2.81447E-04
 
-DS: dt=2.815E-04, NFUN:NPC=0000374:00008, NNR:NNF:NSR=0004:0000:0000
+DS: dt=2.814E-04, NFUN:NPC=0000374:00008, NNR:NNF:NSR=0004:0000:0000
 
-         89: t =   1.07511E-02, dt(diffusion solver) =   2.86875E-04
+         89: t =   1.07511E-02, dt(diffusion solver) =   2.86905E-04
 
 DS: dt=2.869E-04, NFUN:NPC=0000379:00008, NNR:NNF:NSR=0004:0000:0000
 
-         90: t =   1.10380E-02, dt(diffusion solver) =   2.86659E-04
+         90: t =   1.10380E-02, dt(diffusion solver) =   2.86610E-04
 
-DS: dt=2.867E-04, NFUN:NPC=0000384:00008, NNR:NNF:NSR=0004:0000:0000
+DS: dt=2.866E-04, NFUN:NPC=0000384:00008, NNR:NNF:NSR=0004:0000:0000
 
-         91: t =   1.13246E-02, dt(diffusion solver) =   2.96732E-04
+         91: t =   1.13246E-02, dt(diffusion solver) =   2.96780E-04
 
-DS: dt=2.967E-04, NFUN:NPC=0000389:00008, NNR:NNF:NSR=0004:0000:0000
+DS: dt=2.968E-04, NFUN:NPC=0000389:00008, NNR:NNF:NSR=0004:0000:0000
 
-         92: t =   1.16214E-02, dt(diffusion solver) =   3.10670E-04
+         92: t =   1.16214E-02, dt(diffusion solver) =   3.10637E-04
 
-DS: dt=3.107E-04, NFUN:NPC=0000394:00008, NNR:NNF:NSR=0004:0000:0000
+DS: dt=3.106E-04, NFUN:NPC=0000394:00008, NNR:NNF:NSR=0004:0000:0000
 
-         93: t =   1.19320E-02, dt(diffusion solver) =   3.00478E-04
+         93: t =   1.19320E-02, dt(diffusion solver) =   3.00484E-04
 
 DS: dt=3.005E-04, NFUN:NPC=0000399:00008, NNR:NNF:NSR=0004:0000:0000
 
-         94: t =   1.22325E-02, dt(diffusion solver) =   3.12805E-04
+         94: t =   1.22325E-02, dt(diffusion solver) =   3.12824E-04
 
 DS: dt=3.128E-04, NFUN:NPC=0000404:00008, NNR:NNF:NSR=0004:0000:0000
 
-         95: t =   1.25453E-02, dt(diffusion solver) =   3.11978E-04
+         95: t =   1.25453E-02, dt(diffusion solver) =   3.11952E-04
 
 DS: dt=3.120E-04, NFUN:NPC=0000409:00008, NNR:NNF:NSR=0004:0000:0000
 
@@ -665,51 +669,51 @@ DS: dt=3.120E-04, NFUN:NPC=0000409:00008, NNR:NNF:NSR=0004:0000:0000
 
 DS: dt=3.270E-04, NFUN:NPC=0000417:00009, NNR:NNF:NSR=0005:0000:0000
 
-         97: t =   1.31843E-02, dt(diffusion solver) =   3.32819E-04
+         97: t =   1.31843E-02, dt(diffusion solver) =   3.32882E-04
 
-DS: dt=3.328E-04, NFUN:NPC=0000420:00009, NNR:NNF:NSR=0005:0000:0000
+DS: dt=3.329E-04, NFUN:NPC=0000420:00009, NNR:NNF:NSR=0005:0000:0000
 
-         98: t =   1.35171E-02, dt(diffusion solver) =   3.34621E-04
+         98: t =   1.35172E-02, dt(diffusion solver) =   3.34569E-04
 
 DS: dt=3.346E-04, NFUN:NPC=0000423:00009, NNR:NNF:NSR=0005:0000:0000
 
-         99: t =   1.38517E-02, dt(diffusion solver) =   3.37119E-04
+         99: t =   1.38517E-02, dt(diffusion solver) =   3.37149E-04
 
 DS: dt=3.371E-04, NFUN:NPC=0000426:00009, NNR:NNF:NSR=0005:0000:0000
 
-        100: t =   1.41888E-02, dt(diffusion solver) =   3.43520E-04
+        100: t =   1.41889E-02, dt(diffusion solver) =   3.43503E-04
 
 DS: dt=3.435E-04, NFUN:NPC=0000429:00009, NNR:NNF:NSR=0005:0000:0000
 
-        101: t =   1.45324E-02, dt(diffusion solver) =   3.58076E-04
+        101: t =   1.45324E-02, dt(diffusion solver) =   3.58085E-04
 
 DS: dt=3.581E-04, NFUN:NPC=0000433:00009, NNR:NNF:NSR=0005:0000:0000
 
-        102: t =   1.48904E-02, dt(diffusion solver) =   3.53787E-04
+        102: t =   1.48905E-02, dt(diffusion solver) =   3.53784E-04
 
 DS: dt=3.538E-04, NFUN:NPC=0000437:00009, NNR:NNF:NSR=0005:0000:0000
 
-        103: t =   1.52442E-02, dt(diffusion solver) =   3.62523E-04
+        103: t =   1.52443E-02, dt(diffusion solver) =   3.62522E-04
 
 DS: dt=3.625E-04, NFUN:NPC=0000441:00009, NNR:NNF:NSR=0005:0000:0000
 
-        104: t =   1.56067E-02, dt(diffusion solver) =   3.63080E-04
+        104: t =   1.56068E-02, dt(diffusion solver) =   3.63082E-04
 
 DS: dt=3.631E-04, NFUN:NPC=0000445:00009, NNR:NNF:NSR=0005:0000:0000
 
-        105: t =   1.59698E-02, dt(diffusion solver) =   3.79018E-04
+        105: t =   1.59699E-02, dt(diffusion solver) =   3.79018E-04
 
 DS: dt=3.790E-04, NFUN:NPC=0000449:00009, NNR:NNF:NSR=0005:0000:0000
 
-        106: t =   1.63488E-02, dt(diffusion solver) =   3.78708E-04
+        106: t =   1.63489E-02, dt(diffusion solver) =   3.78709E-04
 
 DS: dt=3.787E-04, NFUN:NPC=0000453:00009, NNR:NNF:NSR=0005:0000:0000
 
-        107: t =   1.67275E-02, dt(diffusion solver) =   3.84652E-04
+        107: t =   1.67276E-02, dt(diffusion solver) =   3.84649E-04
 
-DS: dt=3.847E-04, NFUN:NPC=0000457:00009, NNR:NNF:NSR=0005:0000:0000
+DS: dt=3.846E-04, NFUN:NPC=0000457:00009, NNR:NNF:NSR=0005:0000:0000
 
-        108: t =   1.71122E-02, dt(diffusion solver) =   3.88086E-04
+        108: t =   1.71122E-02, dt(diffusion solver) =   3.88087E-04
 
 DS: dt=3.881E-04, NFUN:NPC=0000461:00009, NNR:NNF:NSR=0005:0000:0000
 
@@ -717,15 +721,15 @@ DS: dt=3.881E-04, NFUN:NPC=0000461:00009, NNR:NNF:NSR=0005:0000:0000
 
 DS: dt=3.998E-04, NFUN:NPC=0000465:00009, NNR:NNF:NSR=0005:0000:0000
 
-        110: t =   1.79000E-02, dt(diffusion solver) =   4.07510E-04
+        110: t =   1.79001E-02, dt(diffusion solver) =   4.07509E-04
 
 DS: dt=4.075E-04, NFUN:NPC=0000469:00009, NNR:NNF:NSR=0005:0000:0000
 
-        111: t =   1.83075E-02, dt(diffusion solver) =   4.06468E-04
+        111: t =   1.83076E-02, dt(diffusion solver) =   4.06466E-04
 
 DS: dt=4.065E-04, NFUN:NPC=0000474:00009, NNR:NNF:NSR=0005:0000:0000
 
-        112: t =   1.87140E-02, dt(diffusion solver) =   4.16868E-04
+        112: t =   1.87140E-02, dt(diffusion solver) =   4.16866E-04
 
 DS: dt=4.169E-04, NFUN:NPC=0000479:00009, NNR:NNF:NSR=0005:0000:0000
 
@@ -733,103 +737,103 @@ DS: dt=4.169E-04, NFUN:NPC=0000479:00009, NNR:NNF:NSR=0005:0000:0000
 
 DS: dt=4.223E-04, NFUN:NPC=0000484:00009, NNR:NNF:NSR=0005:0000:0000
 
-        114: t =   1.95532E-02, dt(diffusion solver) =   4.33185E-04
+        114: t =   1.95532E-02, dt(diffusion solver) =   4.33192E-04
 
 DS: dt=4.332E-04, NFUN:NPC=0000489:00009, NNR:NNF:NSR=0005:0000:0000
 
-        115: t =   1.99864E-02, dt(diffusion solver) =   4.31518E-04
+        115: t =   1.99864E-02, dt(diffusion solver) =   4.31506E-04
 
 DS: dt=4.315E-04, NFUN:NPC=0000494:00009, NNR:NNF:NSR=0005:0000:0000
 
-        116: t =   2.04179E-02, dt(diffusion solver) =   4.44559E-04
+        116: t =   2.04179E-02, dt(diffusion solver) =   4.44568E-04
 
 DS: dt=4.446E-04, NFUN:NPC=0000499:00009, NNR:NNF:NSR=0005:0000:0000
 
-        117: t =   2.08624E-02, dt(diffusion solver) =   4.47275E-04
+        117: t =   2.08625E-02, dt(diffusion solver) =   4.47264E-04
 
 DS: dt=4.473E-04, NFUN:NPC=0000504:00009, NNR:NNF:NSR=0005:0000:0000
 
-        118: t =   2.13097E-02, dt(diffusion solver) =   4.56612E-04
+        118: t =   2.13097E-02, dt(diffusion solver) =   4.56618E-04
 
 DS: dt=4.566E-04, NFUN:NPC=0000509:00009, NNR:NNF:NSR=0005:0000:0000
 
-        119: t =   2.17663E-02, dt(diffusion solver) =   4.54739E-04
+        119: t =   2.17663E-02, dt(diffusion solver) =   4.54722E-04
 
 DS: dt=4.547E-04, NFUN:NPC=0000514:00009, NNR:NNF:NSR=0005:0000:0000
 
-        120: t =   2.22211E-02, dt(diffusion solver) =   4.65342E-04
+        120: t =   2.22211E-02, dt(diffusion solver) =   4.65350E-04
 
-DS: dt=4.653E-04, NFUN:NPC=0000519:00009, NNR:NNF:NSR=0005:0000:0000
+DS: dt=4.654E-04, NFUN:NPC=0000519:00009, NNR:NNF:NSR=0005:0000:0000
 
-        121: t =   2.26864E-02, dt(diffusion solver) =   4.71166E-04
+        121: t =   2.26864E-02, dt(diffusion solver) =   4.71154E-04
 
 DS: dt=4.712E-04, NFUN:NPC=0000524:00009, NNR:NNF:NSR=0005:0000:0000
 
-        122: t =   2.31576E-02, dt(diffusion solver) =   4.78263E-04
+        122: t =   2.31576E-02, dt(diffusion solver) =   4.78276E-04
 
 DS: dt=4.783E-04, NFUN:NPC=0000529:00009, NNR:NNF:NSR=0005:0000:0000
 
-        123: t =   2.36358E-02, dt(diffusion solver) =   4.82615E-04
+        123: t =   2.36358E-02, dt(diffusion solver) =   4.82671E-04
 
-DS: dt=4.826E-04, NFUN:NPC=0000534:00009, NNR:NNF:NSR=0005:0000:0000
+DS: dt=4.827E-04, NFUN:NPC=0000534:00009, NNR:NNF:NSR=0005:0000:0000
 
-        124: t =   2.41184E-02, dt(diffusion solver) =   4.89225E-04
+        124: t =   2.41185E-02, dt(diffusion solver) =   4.89116E-04
 
-DS: dt=4.892E-04, NFUN:NPC=0000539:00009, NNR:NNF:NSR=0005:0000:0000
+DS: dt=4.891E-04, NFUN:NPC=0000539:00009, NNR:NNF:NSR=0005:0000:0000
 
-        125: t =   2.46077E-02, dt(diffusion solver) =   5.03470E-04
+        125: t =   2.46076E-02, dt(diffusion solver) =   5.03583E-04
 
-DS: dt=5.035E-04, NFUN:NPC=0000544:00009, NNR:NNF:NSR=0005:0000:0000
+DS: dt=5.036E-04, NFUN:NPC=0000544:00009, NNR:NNF:NSR=0005:0000:0000
 
-        126: t =   2.51111E-02, dt(diffusion solver) =   4.95889E-04
+        126: t =   2.51112E-02, dt(diffusion solver) =   4.95762E-04
 
-DS: dt=4.959E-04, NFUN:NPC=0000552:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=4.958E-04, NFUN:NPC=0000552:00010, NNR:NNF:NSR=0006:0000:0000
 
-        127: t =   2.56070E-02, dt(diffusion solver) =   5.04522E-04
+        127: t =   2.56070E-02, dt(diffusion solver) =   5.04618E-04
 
-DS: dt=5.045E-04, NFUN:NPC=0000555:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=5.046E-04, NFUN:NPC=0000555:00010, NNR:NNF:NSR=0006:0000:0000
 
-        128: t =   2.61115E-02, dt(diffusion solver) =   5.17055E-04
+        128: t =   2.61116E-02, dt(diffusion solver) =   5.17005E-04
 
-DS: dt=5.171E-04, NFUN:NPC=0000558:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=5.170E-04, NFUN:NPC=0000558:00010, NNR:NNF:NSR=0006:0000:0000
 
-        129: t =   2.66286E-02, dt(diffusion solver) =   5.22036E-04
+        129: t =   2.66286E-02, dt(diffusion solver) =   5.22061E-04
 
-DS: dt=5.220E-04, NFUN:NPC=0000561:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=5.221E-04, NFUN:NPC=0000561:00010, NNR:NNF:NSR=0006:0000:0000
 
-        130: t =   2.71506E-02, dt(diffusion solver) =   5.18798E-04
+        130: t =   2.71507E-02, dt(diffusion solver) =   5.18786E-04
 
 DS: dt=5.188E-04, NFUN:NPC=0000565:00010, NNR:NNF:NSR=0006:0000:0000
 
-        131: t =   2.76694E-02, dt(diffusion solver) =   5.31901E-04
+        131: t =   2.76694E-02, dt(diffusion solver) =   5.31888E-04
 
 DS: dt=5.319E-04, NFUN:NPC=0000569:00010, NNR:NNF:NSR=0006:0000:0000
 
-        132: t =   2.82013E-02, dt(diffusion solver) =   5.34328E-04
+        132: t =   2.82013E-02, dt(diffusion solver) =   5.34348E-04
 
 DS: dt=5.343E-04, NFUN:NPC=0000573:00010, NNR:NNF:NSR=0006:0000:0000
 
-        133: t =   2.87357E-02, dt(diffusion solver) =   5.41636E-04
+        133: t =   2.87357E-02, dt(diffusion solver) =   5.41620E-04
 
 DS: dt=5.416E-04, NFUN:NPC=0000577:00010, NNR:NNF:NSR=0006:0000:0000
 
-        134: t =   2.92773E-02, dt(diffusion solver) =   5.40806E-04
+        134: t =   2.92773E-02, dt(diffusion solver) =   5.40815E-04
 
 DS: dt=5.408E-04, NFUN:NPC=0000581:00010, NNR:NNF:NSR=0006:0000:0000
 
-        135: t =   2.98181E-02, dt(diffusion solver) =   5.50756E-04
+        135: t =   2.98181E-02, dt(diffusion solver) =   5.50749E-04
 
-DS: dt=5.508E-04, NFUN:NPC=0000585:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=5.507E-04, NFUN:NPC=0000585:00010, NNR:NNF:NSR=0006:0000:0000
 
-        136: t =   3.03689E-02, dt(diffusion solver) =   5.60726E-04
+        136: t =   3.03689E-02, dt(diffusion solver) =   5.60729E-04
 
 DS: dt=5.607E-04, NFUN:NPC=0000589:00010, NNR:NNF:NSR=0006:0000:0000
 
-        137: t =   3.09296E-02, dt(diffusion solver) =   5.55173E-04
+        137: t =   3.09296E-02, dt(diffusion solver) =   5.55171E-04
 
 DS: dt=5.552E-04, NFUN:NPC=0000593:00010, NNR:NNF:NSR=0006:0000:0000
 
-        138: t =   3.14848E-02, dt(diffusion solver) =   5.68412E-04
+        138: t =   3.14848E-02, dt(diffusion solver) =   5.68409E-04
 
 DS: dt=5.684E-04, NFUN:NPC=0000597:00010, NNR:NNF:NSR=0006:0000:0000
 
@@ -837,7 +841,7 @@ DS: dt=5.684E-04, NFUN:NPC=0000597:00010, NNR:NNF:NSR=0006:0000:0000
 
 DS: dt=5.692E-04, NFUN:NPC=0000601:00010, NNR:NNF:NSR=0006:0000:0000
 
-        140: t =   3.26223E-02, dt(diffusion solver) =   5.77383E-04
+        140: t =   3.26223E-02, dt(diffusion solver) =   5.77378E-04
 
 DS: dt=5.774E-04, NFUN:NPC=0000605:00010, NNR:NNF:NSR=0006:0000:0000
 
@@ -845,275 +849,275 @@ DS: dt=5.774E-04, NFUN:NPC=0000605:00010, NNR:NNF:NSR=0006:0000:0000
 
 DS: dt=5.746E-04, NFUN:NPC=0000609:00010, NNR:NNF:NSR=0006:0000:0000
 
-        142: t =   3.37744E-02, dt(diffusion solver) =   5.90432E-04
+        142: t =   3.37744E-02, dt(diffusion solver) =   5.90426E-04
 
 DS: dt=5.904E-04, NFUN:NPC=0000613:00010, NNR:NNF:NSR=0006:0000:0000
 
-        143: t =   3.43648E-02, dt(diffusion solver) =   6.02037E-04
+        143: t =   3.43648E-02, dt(diffusion solver) =   6.02039E-04
 
 DS: dt=6.020E-04, NFUN:NPC=0000617:00010, NNR:NNF:NSR=0006:0000:0000
 
-        144: t =   3.49668E-02, dt(diffusion solver) =   5.93161E-04
+        144: t =   3.49668E-02, dt(diffusion solver) =   5.93151E-04
 
 DS: dt=5.932E-04, NFUN:NPC=0000622:00010, NNR:NNF:NSR=0006:0000:0000
 
-        145: t =   3.55600E-02, dt(diffusion solver) =   6.13575E-04
+        145: t =   3.55600E-02, dt(diffusion solver) =   6.13585E-04
 
 DS: dt=6.136E-04, NFUN:NPC=0000627:00010, NNR:NNF:NSR=0006:0000:0000
 
-        146: t =   3.61736E-02, dt(diffusion solver) =   6.12118E-04
+        146: t =   3.61736E-02, dt(diffusion solver) =   6.12104E-04
 
 DS: dt=6.121E-04, NFUN:NPC=0000631:00010, NNR:NNF:NSR=0006:0000:0000
 
-        147: t =   3.67857E-02, dt(diffusion solver) =   6.24033E-04
+        147: t =   3.67857E-02, dt(diffusion solver) =   6.23993E-04
 
 DS: dt=6.240E-04, NFUN:NPC=0000636:00010, NNR:NNF:NSR=0006:0000:0000
 
-        148: t =   3.74097E-02, dt(diffusion solver) =   6.21087E-04
+        148: t =   3.74096E-02, dt(diffusion solver) =   6.21145E-04
 
 DS: dt=6.211E-04, NFUN:NPC=0000641:00010, NNR:NNF:NSR=0006:0000:0000
 
-        149: t =   3.80308E-02, dt(diffusion solver) =   6.38594E-04
+        149: t =   3.80308E-02, dt(diffusion solver) =   6.38597E-04
 
 DS: dt=6.386E-04, NFUN:NPC=0000646:00010, NNR:NNF:NSR=0006:0000:0000
 
-        150: t =   3.86694E-02, dt(diffusion solver) =   6.48465E-04
+        150: t =   3.86694E-02, dt(diffusion solver) =   6.48399E-04
 
-DS: dt=6.485E-04, NFUN:NPC=0000651:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=6.484E-04, NFUN:NPC=0000651:00010, NNR:NNF:NSR=0006:0000:0000
 
-        151: t =   3.93179E-02, dt(diffusion solver) =   6.43190E-04
+        151: t =   3.93178E-02, dt(diffusion solver) =   6.43297E-04
 
-DS: dt=6.432E-04, NFUN:NPC=0000656:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=6.433E-04, NFUN:NPC=0000656:00010, NNR:NNF:NSR=0006:0000:0000
 
-        152: t =   3.99610E-02, dt(diffusion solver) =   6.63828E-04
+        152: t =   3.99611E-02, dt(diffusion solver) =   6.63713E-04
 
-DS: dt=6.638E-04, NFUN:NPC=0000661:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=6.637E-04, NFUN:NPC=0000661:00010, NNR:NNF:NSR=0006:0000:0000
 
-        153: t =   4.06249E-02, dt(diffusion solver) =   6.68656E-04
+        153: t =   4.06248E-02, dt(diffusion solver) =   6.68709E-04
 
 DS: dt=6.687E-04, NFUN:NPC=0000666:00010, NNR:NNF:NSR=0006:0000:0000
 
-        154: t =   4.12935E-02, dt(diffusion solver) =   6.71003E-04
+        154: t =   4.12935E-02, dt(diffusion solver) =   6.71040E-04
 
 DS: dt=6.710E-04, NFUN:NPC=0000671:00010, NNR:NNF:NSR=0006:0000:0000
 
-        155: t =   4.19645E-02, dt(diffusion solver) =   6.84906E-04
+        155: t =   4.19645E-02, dt(diffusion solver) =   6.84828E-04
 
-DS: dt=6.849E-04, NFUN:NPC=0000676:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=6.848E-04, NFUN:NPC=0000676:00010, NNR:NNF:NSR=0006:0000:0000
 
-        156: t =   4.26494E-02, dt(diffusion solver) =   6.91878E-04
+        156: t =   4.26494E-02, dt(diffusion solver) =   6.91875E-04
 
 DS: dt=6.919E-04, NFUN:NPC=0000681:00010, NNR:NNF:NSR=0006:0000:0000
 
-        157: t =   4.33413E-02, dt(diffusion solver) =   7.01852E-04
+        157: t =   4.33413E-02, dt(diffusion solver) =   7.01976E-04
 
-DS: dt=7.019E-04, NFUN:NPC=0000686:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=7.020E-04, NFUN:NPC=0000686:00010, NNR:NNF:NSR=0006:0000:0000
 
-        158: t =   4.40432E-02, dt(diffusion solver) =   7.07169E-04
+        158: t =   4.40432E-02, dt(diffusion solver) =   7.07044E-04
 
-DS: dt=7.072E-04, NFUN:NPC=0000691:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=7.070E-04, NFUN:NPC=0000691:00010, NNR:NNF:NSR=0006:0000:0000
 
-        159: t =   4.47503E-02, dt(diffusion solver) =   7.20219E-04
+        159: t =   4.47503E-02, dt(diffusion solver) =   7.20300E-04
 
-DS: dt=7.202E-04, NFUN:NPC=0000696:00010, NNR:NNF:NSR=0006:0000:0000
+DS: dt=7.203E-04, NFUN:NPC=0000696:00010, NNR:NNF:NSR=0006:0000:0000
 
-        160: t =   4.54706E-02, dt(diffusion solver) =   7.30164E-04
+        160: t =   4.54706E-02, dt(diffusion solver) =   7.30056E-04
 
-DS: dt=7.302E-04, NFUN:NPC=0000704:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=7.301E-04, NFUN:NPC=0000704:00011, NNR:NNF:NSR=0007:0000:0000
 
-        161: t =   4.62007E-02, dt(diffusion solver) =   7.28691E-04
+        161: t =   4.62006E-02, dt(diffusion solver) =   7.28882E-04
 
-DS: dt=7.287E-04, NFUN:NPC=0000707:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=7.289E-04, NFUN:NPC=0000707:00011, NNR:NNF:NSR=0007:0000:0000
 
-        162: t =   4.69294E-02, dt(diffusion solver) =   7.56845E-04
+        162: t =   4.69295E-02, dt(diffusion solver) =   7.56696E-04
 
-DS: dt=7.568E-04, NFUN:NPC=0000710:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=7.567E-04, NFUN:NPC=0000710:00011, NNR:NNF:NSR=0007:0000:0000
 
-        163: t =   4.76863E-02, dt(diffusion solver) =   7.60460E-04
+        163: t =   4.76862E-02, dt(diffusion solver) =   7.60558E-04
 
-DS: dt=7.605E-04, NFUN:NPC=0000713:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=7.606E-04, NFUN:NPC=0000713:00011, NNR:NNF:NSR=0007:0000:0000
 
-        164: t =   4.84467E-02, dt(diffusion solver) =   7.63339E-04
+        164: t =   4.84468E-02, dt(diffusion solver) =   7.63270E-04
 
 DS: dt=7.633E-04, NFUN:NPC=0000716:00011, NNR:NNF:NSR=0007:0000:0000
 
-        165: t =   4.92101E-02, dt(diffusion solver) =   7.83820E-04
+        165: t =   4.92100E-02, dt(diffusion solver) =   7.83846E-04
 
 DS: dt=7.838E-04, NFUN:NPC=0000720:00011, NNR:NNF:NSR=0007:0000:0000
 
-        166: t =   4.99939E-02, dt(diffusion solver) =   7.94706E-04
+        166: t =   4.99939E-02, dt(diffusion solver) =   7.94649E-04
 
-DS: dt=7.947E-04, NFUN:NPC=0000724:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=7.946E-04, NFUN:NPC=0000724:00011, NNR:NNF:NSR=0007:0000:0000
 
-        167: t =   5.07886E-02, dt(diffusion solver) =   7.93675E-04
+        167: t =   5.07885E-02, dt(diffusion solver) =   7.93733E-04
 
 DS: dt=7.937E-04, NFUN:NPC=0000728:00011, NNR:NNF:NSR=0007:0000:0000
 
-        168: t =   5.15823E-02, dt(diffusion solver) =   8.18774E-04
+        168: t =   5.15823E-02, dt(diffusion solver) =   8.18736E-04
 
-DS: dt=8.188E-04, NFUN:NPC=0000732:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=8.187E-04, NFUN:NPC=0000732:00011, NNR:NNF:NSR=0007:0000:0000
 
-        169: t =   5.24010E-02, dt(diffusion solver) =   8.28280E-04
+        169: t =   5.24010E-02, dt(diffusion solver) =   8.28310E-04
 
 DS: dt=8.283E-04, NFUN:NPC=0000736:00011, NNR:NNF:NSR=0007:0000:0000
 
-        170: t =   5.32293E-02, dt(diffusion solver) =   8.31886E-04
+        170: t =   5.32293E-02, dt(diffusion solver) =   8.31867E-04
 
 DS: dt=8.319E-04, NFUN:NPC=0000740:00011, NNR:NNF:NSR=0007:0000:0000
 
-        171: t =   5.40612E-02, dt(diffusion solver) =   8.56056E-04
+        171: t =   5.40612E-02, dt(diffusion solver) =   8.56063E-04
 
 DS: dt=8.561E-04, NFUN:NPC=0000744:00011, NNR:NNF:NSR=0007:0000:0000
 
-        172: t =   5.49173E-02, dt(diffusion solver) =   8.69715E-04
+        172: t =   5.49172E-02, dt(diffusion solver) =   8.69708E-04
 
 DS: dt=8.697E-04, NFUN:NPC=0000748:00011, NNR:NNF:NSR=0007:0000:0000
 
-        173: t =   5.57870E-02, dt(diffusion solver) =   8.70687E-04
+        173: t =   5.57869E-02, dt(diffusion solver) =   8.70691E-04
 
 DS: dt=8.707E-04, NFUN:NPC=0000752:00011, NNR:NNF:NSR=0007:0000:0000
 
-        174: t =   5.66577E-02, dt(diffusion solver) =   8.98668E-04
+        174: t =   5.66576E-02, dt(diffusion solver) =   8.98658E-04
 
 DS: dt=8.987E-04, NFUN:NPC=0000756:00011, NNR:NNF:NSR=0007:0000:0000
 
-        175: t =   5.75563E-02, dt(diffusion solver) =   9.06063E-04
+        175: t =   5.75563E-02, dt(diffusion solver) =   9.06069E-04
 
 DS: dt=9.061E-04, NFUN:NPC=0000760:00011, NNR:NNF:NSR=0007:0000:0000
 
-        176: t =   5.84624E-02, dt(diffusion solver) =   9.16718E-04
+        176: t =   5.84624E-02, dt(diffusion solver) =   9.16705E-04
 
 DS: dt=9.167E-04, NFUN:NPC=0000764:00011, NNR:NNF:NSR=0007:0000:0000
 
-        177: t =   5.93791E-02, dt(diffusion solver) =   9.40887E-04
+        177: t =   5.93791E-02, dt(diffusion solver) =   9.40894E-04
 
 DS: dt=9.409E-04, NFUN:NPC=0000768:00011, NNR:NNF:NSR=0007:0000:0000
 
-        178: t =   6.03200E-02, dt(diffusion solver) =   9.47636E-04
+        178: t =   6.03200E-02, dt(diffusion solver) =   9.47621E-04
 
 DS: dt=9.476E-04, NFUN:NPC=0000772:00011, NNR:NNF:NSR=0007:0000:0000
 
-        179: t =   6.12676E-02, dt(diffusion solver) =   9.66771E-04
+        179: t =   6.12676E-02, dt(diffusion solver) =   9.66791E-04
 
 DS: dt=9.668E-04, NFUN:NPC=0000776:00011, NNR:NNF:NSR=0007:0000:0000
 
-        180: t =   6.22344E-02, dt(diffusion solver) =   9.86541E-04
+        180: t =   6.22344E-02, dt(diffusion solver) =   9.86522E-04
 
 DS: dt=9.865E-04, NFUN:NPC=0000781:00011, NNR:NNF:NSR=0007:0000:0000
 
-        181: t =   6.32209E-02, dt(diffusion solver) =   9.90191E-04
+        181: t =   6.32209E-02, dt(diffusion solver) =   9.90050E-04
 
-DS: dt=9.902E-04, NFUN:NPC=0000786:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=9.900E-04, NFUN:NPC=0000786:00011, NNR:NNF:NSR=0007:0000:0000
 
-        182: t =   6.42111E-02, dt(diffusion solver) =   1.02221E-03
+        182: t =   6.42109E-02, dt(diffusion solver) =   1.02228E-03
 
 DS: dt=1.022E-03, NFUN:NPC=0000790:00011, NNR:NNF:NSR=0007:0000:0000
 
-        183: t =   6.52333E-02, dt(diffusion solver) =   1.04244E-03
+        183: t =   6.52332E-02, dt(diffusion solver) =   1.04246E-03
 
 DS: dt=1.042E-03, NFUN:NPC=0000795:00011, NNR:NNF:NSR=0007:0000:0000
 
-        184: t =   6.62758E-02, dt(diffusion solver) =   1.03397E-03
+        184: t =   6.62757E-02, dt(diffusion solver) =   1.03355E-03
 
 DS: dt=1.034E-03, NFUN:NPC=0000800:00011, NNR:NNF:NSR=0007:0000:0000
 
-        185: t =   6.73098E-02, dt(diffusion solver) =   1.08005E-03
+        185: t =   6.73092E-02, dt(diffusion solver) =   1.08082E-03
 
-DS: dt=1.080E-03, NFUN:NPC=0000805:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=1.081E-03, NFUN:NPC=0000805:00011, NNR:NNF:NSR=0007:0000:0000
 
-        186: t =   6.83898E-02, dt(diffusion solver) =   1.08021E-03
+        186: t =   6.83900E-02, dt(diffusion solver) =   1.08000E-03
 
 DS: dt=1.080E-03, NFUN:NPC=0000810:00011, NNR:NNF:NSR=0007:0000:0000
 
-        187: t =   6.94700E-02, dt(diffusion solver) =   1.10313E-03
+        187: t =   6.94700E-02, dt(diffusion solver) =   1.10364E-03
 
-DS: dt=1.103E-03, NFUN:NPC=0000815:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=1.104E-03, NFUN:NPC=0000815:00011, NNR:NNF:NSR=0007:0000:0000
 
-        188: t =   7.05731E-02, dt(diffusion solver) =   1.12726E-03
+        188: t =   7.05737E-02, dt(diffusion solver) =   1.12601E-03
 
-DS: dt=1.127E-03, NFUN:NPC=0000820:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=1.126E-03, NFUN:NPC=0000820:00011, NNR:NNF:NSR=0007:0000:0000
 
-        189: t =   7.17004E-02, dt(diffusion solver) =   1.12906E-03
+        189: t =   7.16997E-02, dt(diffusion solver) =   1.13200E-03
 
-DS: dt=1.129E-03, NFUN:NPC=0000825:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=1.132E-03, NFUN:NPC=0000825:00011, NNR:NNF:NSR=0007:0000:0000
 
-        190: t =   7.28295E-02, dt(diffusion solver) =   1.16616E-03
+        190: t =   7.28317E-02, dt(diffusion solver) =   1.16126E-03
 
-DS: dt=1.166E-03, NFUN:NPC=0000830:00011, NNR:NNF:NSR=0007:0000:0000
+DS: dt=1.161E-03, NFUN:NPC=0000830:00011, NNR:NNF:NSR=0007:0000:0000
 
-        191: t =   7.39956E-02, dt(diffusion solver) =   1.16989E-03
+        191: t =   7.39929E-02, dt(diffusion solver) =   1.17487E-03
 
-DS: dt=1.170E-03, NFUN:NPC=0000838:00012, NNR:NNF:NSR=0008:0000:0000
+DS: dt=1.175E-03, NFUN:NPC=0000838:00012, NNR:NNF:NSR=0008:0000:0000
 
-        192: t =   7.51655E-02, dt(diffusion solver) =   1.19059E-03
+        192: t =   7.51678E-02, dt(diffusion solver) =   1.18751E-03
 
-DS: dt=1.191E-03, NFUN:NPC=0000841:00012, NNR:NNF:NSR=0008:0000:0000
+DS: dt=1.188E-03, NFUN:NPC=0000841:00012, NNR:NNF:NSR=0008:0000:0000
 
-        193: t =   7.63561E-02, dt(diffusion solver) =   1.23622E-03
+        193: t =   7.63553E-02, dt(diffusion solver) =   1.23799E-03
 
-DS: dt=1.236E-03, NFUN:NPC=0000844:00012, NNR:NNF:NSR=0008:0000:0000
+DS: dt=1.238E-03, NFUN:NPC=0000844:00012, NNR:NNF:NSR=0008:0000:0000
 
-        194: t =   7.75923E-02, dt(diffusion solver) =   1.22183E-03
+        194: t =   7.75933E-02, dt(diffusion solver) =   1.22105E-03
 
-DS: dt=1.222E-03, NFUN:NPC=0000847:00012, NNR:NNF:NSR=0008:0000:0000
+DS: dt=1.221E-03, NFUN:NPC=0000847:00012, NNR:NNF:NSR=0008:0000:0000
 
-        195: t =   7.88141E-02, dt(diffusion solver) =   1.27124E-03
+        195: t =   7.88144E-02, dt(diffusion solver) =   1.27150E-03
 
 DS: dt=1.271E-03, NFUN:NPC=0000850:00012, NNR:NNF:NSR=0008:0000:0000
 
-        196: t =   8.00854E-02, dt(diffusion solver) =   1.27102E-03
+        196: t =   8.00859E-02, dt(diffusion solver) =   1.27099E-03
 
 DS: dt=1.271E-03, NFUN:NPC=0000853:00012, NNR:NNF:NSR=0008:0000:0000
 
-        197: t =   8.13564E-02, dt(diffusion solver) =   1.30455E-03
+        197: t =   8.13569E-02, dt(diffusion solver) =   1.30448E-03
 
-DS: dt=1.305E-03, NFUN:NPC=0000856:00012, NNR:NNF:NSR=0008:0000:0000
+DS: dt=1.304E-03, NFUN:NPC=0000856:00012, NNR:NNF:NSR=0008:0000:0000
 
-        198: t =   8.26610E-02, dt(diffusion solver) =   1.32831E-03
+        198: t =   8.26613E-02, dt(diffusion solver) =   1.32837E-03
 
 DS: dt=1.328E-03, NFUN:NPC=0000859:00012, NNR:NNF:NSR=0008:0000:0000
 
-        199: t =   8.39893E-02, dt(diffusion solver) =   1.33677E-03
+        199: t =   8.39897E-02, dt(diffusion solver) =   1.33674E-03
 
 DS: dt=1.337E-03, NFUN:NPC=0000862:00012, NNR:NNF:NSR=0008:0000:0000
 
-        200: t =   8.53260E-02, dt(diffusion solver) =   1.38072E-03
+        200: t =   8.53264E-02, dt(diffusion solver) =   1.38075E-03
 
 DS: dt=1.381E-03, NFUN:NPC=0000865:00012, NNR:NNF:NSR=0008:0000:0000
 
-        201: t =   8.67067E-02, dt(diffusion solver) =   1.38553E-03
+        201: t =   8.67072E-02, dt(diffusion solver) =   1.38555E-03
 
 DS: dt=1.386E-03, NFUN:NPC=0000868:00012, NNR:NNF:NSR=0008:0000:0000
 
-        202: t =   8.80923E-02, dt(diffusion solver) =   1.43007E-03
+        202: t =   8.80927E-02, dt(diffusion solver) =   1.43002E-03
 
 DS: dt=1.430E-03, NFUN:NPC=0000872:00012, NNR:NNF:NSR=0008:0000:0000
 
-        203: t =   8.95223E-02, dt(diffusion solver) =   1.45952E-03
+        203: t =   8.95228E-02, dt(diffusion solver) =   1.45962E-03
 
 DS: dt=1.460E-03, NFUN:NPC=0000876:00012, NNR:NNF:NSR=0008:0000:0000
 
-        204: t =   9.09819E-02, dt(diffusion solver) =   1.49320E-03
+        204: t =   9.09824E-02, dt(diffusion solver) =   1.49313E-03
 
 DS: dt=1.493E-03, NFUN:NPC=0000880:00012, NNR:NNF:NSR=0008:0000:0000
 
-        205: t =   9.24751E-02, dt(diffusion solver) =   1.53118E-03
+        205: t =   9.24755E-02, dt(diffusion solver) =   1.53118E-03
 
 DS: dt=1.531E-03, NFUN:NPC=0000885:00012, NNR:NNF:NSR=0008:0000:0000
 
-        206: t =   9.40063E-02, dt(diffusion solver) =   1.53982E-03
+        206: t =   9.40067E-02, dt(diffusion solver) =   1.53992E-03
 
 DS: dt=1.540E-03, NFUN:NPC=0000890:00012, NNR:NNF:NSR=0008:0000:0000
 
-        207: t =   9.55461E-02, dt(diffusion solver) =   1.54390E-03
+        207: t =   9.55466E-02, dt(diffusion solver) =   1.54367E-03
 
 DS: dt=1.544E-03, NFUN:NPC=0000895:00012, NNR:NNF:NSR=0008:0000:0000
 
-        208: t =   9.70900E-02, dt(diffusion solver) =   1.54194E-03
+        208: t =   9.70903E-02, dt(diffusion solver) =   1.54198E-03
 
 DS: dt=1.542E-03, NFUN:NPC=0000900:00012, NNR:NNF:NSR=0008:0000:0000
 
-        209: t =   9.86319E-02, dt(diffusion solver) =   1.55532E-03
+        209: t =   9.86323E-02, dt(diffusion solver) =   1.55545E-03
 
 DS: dt=1.555E-03, NFUN:NPC=0000905:00012, NNR:NNF:NSR=0008:0000:0000
 
@@ -1128,22 +1132,24 @@ Warning: DANU: Danu fid is still associated
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               2.014E+00    2.014E+00    2.014E+00
-    Input                               6.000E-03    6.000E-03    6.000E-03
-    Initialization                      2.690E-01    2.690E-01    2.690E-01
+  Total                               6.730E-01    6.730E-01    6.730E-01
+    Input                               2.000E-03    2.000E-03    2.000E-03
+    Initialization                      9.400E-02    9.400E-02    9.400E-02
       HTSD function                       0.000E+00    0.000E+00    0.000E+00
         SD function                         0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          1.738E+00    1.738E+00    1.738E+00
+    Main Cycle                          5.760E-01    5.760E-01    5.760E-01
       Output                              2.000E-03    2.000E-03    2.000E-03
-      Time Step                           3.000E-03    3.000E-03    3.000E-03
-      Diffusion Solver                    1.724E+00    1.724E+00    1.724E+00
-        HTSD precon compute                 2.300E-02    2.300E-02    2.300E-02
-        HTSD function                       2.730E-01    2.730E-01    2.730E-01
-          SD function                         2.720E-01    2.720E-01    2.720E-01
-        HTSD precon apply                   1.135E+00    1.135E+00    1.135E+00
-          SD precon apply                     1.132E+00    1.132E+00    1.132E+00
+      Time Step                           2.000E-03    2.000E-03    2.000E-03
+      Diffusion Solver                    5.690E-01    5.690E-01    5.690E-01
+        HTSD precon compute                 9.000E-03    9.000E-03    9.000E-03
+          ssor-setup                          0.000E+00    0.000E+00    0.000E+00
+        HTSD function                       8.900E-02    8.900E-02    8.900E-02
+          SD function                         8.500E-02    8.500E-02    8.500E-02
+        HTSD precon apply                   3.700E-01    3.700E-01    3.700E-01
+          SD precon apply                     3.700E-01    3.700E-01    3.700E-01
+            ssor-solve                          3.450E-01    3.450E-01    3.450E-01
 
-                  Process virtual memory used: 4.57E+01 mB
-                                   words/cell: 7046
+                  Process virtual memory used: 5.28E+01 mB
+                                   words/cell: 8143
 
-truchas terminated normally on 03 Sep 13 at 15:51:55
+truchas terminated normally on 02 Jun 15 at 08:36:06

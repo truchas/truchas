@@ -75,7 +75,7 @@ contains
 
   function create_HT_model (mesh, mmf, stat, errmsg) result (model)
 
-   use ER_driver
+   use rad_problem_type
 
    type(dist_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
@@ -262,7 +262,7 @@ contains
 
   function create_vf_rad_prob (mesh, stat, errmsg) result (vf_rad_prob)
 
-    use ER_driver
+    use rad_problem_type
     use ER_input
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
@@ -270,7 +270,7 @@ contains
     type(dist_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
-    type(ERD_problem), pointer :: vf_rad_prob(:)
+    type(rad_problem), pointer :: vf_rad_prob(:)
 
     integer :: n, j
     logical, allocatable :: mask(:)
@@ -285,7 +285,7 @@ contains
       allocate(vf_rad_prob(n), encl_name(n))
       call ERI_get_names (encl_name)
       do j = 1, n
-        call ERD_problem_init (vf_rad_prob(j), mesh, encl_name(j))
+        call vf_rad_prob(j)%init (mesh, encl_name(j))
         !! Verify that these enclosure faces are boundary faces.
         if (.not.global_all(btest(mesh%face_set_mask(vf_rad_prob(j)%faces),0))) then
           stat = -1

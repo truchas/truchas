@@ -314,32 +314,32 @@ contains
     end do
 
     if (defined(this%node_ip)) then
-      call collate (nvec(1,:), offP_size(this%node_ip))
-      call collate (nvec(2,:), onP_size(this%node_ip))
+      call collate (nvec(1,:), this%node_ip%offP_size())
+      call collate (nvec(2,:), this%node_ip%onP_size())
       call broadcast (nvec)
     else
       nvec = 0
     end if
 
     if (defined(this%edge_ip)) then
-      call collate (evec(1,:), offP_size(this%edge_ip))
-      call collate (evec(2,:), onP_size(this%edge_ip))
+      call collate (evec(1,:), this%edge_ip%offP_size())
+      call collate (evec(2,:), this%edge_ip%onP_size())
       call broadcast (evec)
     else
       evec = 0
     end if
 
     if (defined(this%face_ip)) then
-      call collate (fvec(1,:), offP_size(this%face_ip))
-      call collate (fvec(2,:), onP_size(this%face_ip))
+      call collate (fvec(1,:), this%face_ip%offP_size())
+      call collate (fvec(2,:), this%face_ip%onP_size())
       call broadcast (fvec)
     else
       fvec = 0
     end if
 
     if (defined(this%cell_ip)) then
-      call collate (cvec(1,:), offP_size(this%cell_ip))
-      call collate (cvec(2,:), onP_size(this%cell_ip))
+      call collate (cvec(1,:), this%cell_ip%offP_size())
+      call collate (cvec(2,:), this%cell_ip%onP_size())
       call broadcast (cvec)
     else
       cvec = 0
@@ -387,12 +387,12 @@ contains
     ASSERT(associated(this%cnode))
     ASSERT(defined(this%cell_ip))
     ASSERT(defined(this%node_ip))
-    ASSERT(size(this%cnode,2) == local_size(this%cell_ip))
+    ASSERT(size(this%cnode,2) == this%cell_ip%local_size())
     ASSERT(minval(this%cnode) >= 1)
-    ASSERT(maxval(this%cnode) <= local_size(this%node_ip))
-    allocate(cnode(size(this%cnode,1),merge(global_size(this%cell_ip),0,is_IOP)))
-    call collate (cnode, global_index(this%node_ip, this%cnode(:,:this%ncell_onP)))
-    ASSERT(minval(cnode) >= 1 .and. maxval(cnode) <= global_size(this%node_ip))
+    ASSERT(maxval(this%cnode) <= this%node_ip%local_size())
+    allocate(cnode(size(this%cnode,1),merge(this%cell_ip%global_size(),0,is_IOP)))
+    call collate (cnode, this%node_ip%global_index(this%cnode(:,:this%ncell_onP)))
+    ASSERT(minval(cnode) >= 1 .and. maxval(cnode) <= this%node_ip%global_size())
   end subroutine get_global_cnode_array
 
   subroutine get_global_cedge_array (this, cedge)
@@ -401,12 +401,12 @@ contains
     ASSERT(associated(this%cedge))
     ASSERT(defined(this%cell_ip))
     ASSERT(defined(this%edge_ip))
-    ASSERT(size(this%cedge,2) == local_size(this%cell_ip))
+    ASSERT(size(this%cedge,2) == this%cell_ip%local_size())
     ASSERT(minval(this%cedge) >= 1)
-    ASSERT(maxval(this%cedge) <= local_size(this%edge_ip))
-    allocate(cedge(size(this%cedge,1),merge(global_size(this%cell_ip),0,is_IOP)))
-    call collate (cedge, global_index(this%edge_ip, this%cedge(:,:this%ncell_onP)))
-    ASSERT(minval(cedge) >= 1 .and. maxval(cedge) <= global_size(this%edge_ip))
+    ASSERT(maxval(this%cedge) <= this%edge_ip%local_size())
+    allocate(cedge(size(this%cedge,1),merge(this%cell_ip%global_size(),0,is_IOP)))
+    call collate (cedge, this%edge_ip%global_index(this%cedge(:,:this%ncell_onP)))
+    ASSERT(minval(cedge) >= 1 .and. maxval(cedge) <= this%edge_ip%global_size())
   end subroutine get_global_cedge_array
 
   subroutine get_global_cface_array (this, cface)
@@ -415,12 +415,12 @@ contains
     ASSERT(associated(this%cface))
     ASSERT(defined(this%cell_ip))
     ASSERT(defined(this%face_ip))
-    ASSERT(size(this%cface,2) == local_size(this%cell_ip))
+    ASSERT(size(this%cface,2) == this%cell_ip%local_size())
     ASSERT(minval(this%cface) >= 1)
-    ASSERT(maxval(this%cface) <= local_size(this%face_ip))
-    allocate(cface(size(this%cface,1),merge(global_size(this%cell_ip),0,is_IOP)))
-    call collate (cface, global_index(this%face_ip, this%cface(:,:this%ncell_onP)))
-    ASSERT(minval(cface) >= 1 .and. maxval(cface) <= global_size(this%face_ip))
+    ASSERT(maxval(this%cface) <= this%face_ip%local_size())
+    allocate(cface(size(this%cface,1),merge(this%cell_ip%global_size(),0,is_IOP)))
+    call collate (cface, this%face_ip%global_index(this%cface(:,:this%ncell_onP)))
+    ASSERT(minval(cface) >= 1 .and. maxval(cface) <= this%face_ip%global_size())
   end subroutine get_global_cface_array
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -440,7 +440,7 @@ contains
     integer, allocatable, intent(out) :: cblock(:)
     ASSERT(allocated(this%cblock))
     ASSERT(defined(this%cell_ip))
-    allocate(cblock(merge(global_size(this%cell_ip),0,is_IOP)))
+    allocate(cblock(merge(this%cell_ip%global_size(),0,is_IOP)))
     call collate (cblock, this%cblock(:this%ncell_onP))
   end subroutine get_global_cblock_array
 
@@ -461,7 +461,7 @@ contains
     real(r8), allocatable, intent(out) :: x(:,:)
     ASSERT(allocated(this%x))
     ASSERT(defined(this%node_ip))
-    allocate(x(size(this%x,1),merge(global_size(this%node_ip),0,is_IOP)))
+    allocate(x(size(this%x,1),merge(this%node_ip%global_size(),0,is_IOP)))
     call collate (x, this%x(:,:this%nnode_onP))
   end subroutine get_global_x_array
 
@@ -482,7 +482,7 @@ contains
     real(r8), allocatable, intent(out) :: volume(:)
     ASSERT(allocated(this%volume))
     ASSERT(defined(this%cell_ip))
-    allocate(volume(merge(global_size(this%cell_ip),0,is_IOP)))
+    allocate(volume(merge(this%cell_ip%global_size(),0,is_IOP)))
     call collate (volume, this%volume(:this%ncell_onP))
   end subroutine get_global_volume_array
 

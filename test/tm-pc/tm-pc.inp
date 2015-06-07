@@ -282,7 +282,7 @@ constant time increment
 loose solver tolerance
 
 &NUMERICS
-    dt_init                          = 1.00e-3,
+    dt_init                          = 1.00e-2,
     dt_max                           = 5.0e0,
     dt_grow                          = 100,
     displacement_nonlinear_solution  = 'displacement solve', 
@@ -293,9 +293,8 @@ Run for 100 sec
 &OUTPUTS
 
     output_t                     = 0.0e+00, 6.0e+00, 
-    output_dt                    = 1.0e-2, 
-    output_dt_multiplier         = 20
-    short_output_dt_multiplier   = 1, 
+    output_dt                    = 6.0
+    output_dt_multiplier         = 1
 
 /
 

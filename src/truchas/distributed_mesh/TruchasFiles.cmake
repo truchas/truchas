@@ -43,7 +43,7 @@ fortran_preprocess_files(DISMESH_SOURCE_FILES
 
 # Define compile flags
 set(DISMESH_COMPILE_FLAGS -I${PGSLib_MODULE_DIR} -I${NETCDF_INCLUDE_DIR})
-if(Fortan_COMPILER_IS_INTEL)
+if(Fortran_COMPILER_IS_INTEL)
   list(APPEND DISMESH_COMPILE_FLAGS "-assume realloc_lhs")
 endif()
 include(BuildWhitespaceString)

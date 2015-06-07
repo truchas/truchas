@@ -113,8 +113,8 @@
 
     ASSERT( defined(this) )
     ASSERT( associated(this%offP_index) )
-    ASSERT( size(onP_data) == this%onP_size )
-    ASSERT( size(offP_data) == this%offP_size )
+    ASSERT( size(onP_data) == this%onP_size_ )
+    ASSERT( size(offP_data) == this%offP_size_ )
 
     call _AUX_ (this, onP_data, offP_data)
 
@@ -127,9 +127,9 @@
 
     ASSERT( defined(this) )
     ASSERT( associated(this%offP_index) )
-    ASSERT( size(local_data) == this%local_size )
+    ASSERT( size(local_data) == this%local_size_ )
 
-    call _AUX_ (this, local_data(:this%onP_size), local_data(this%onP_size+1:))
+    call _AUX_ (this, local_data(:this%onP_size_), local_data(this%onP_size_+1:))
 
   end subroutine _PROC2_
 
