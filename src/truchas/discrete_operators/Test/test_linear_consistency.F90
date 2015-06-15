@@ -142,7 +142,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_UNIF: 2D square/uniform mesh')
 
-    mesh => named_mesh_ptr('mesh1-unif')
+    mesh => dist_mesh_ptr('mesh1-unif')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -203,7 +203,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_RAND: 2D square/randomized mesh')
 
-    mesh => named_mesh_ptr('mesh1-rand2')
+    mesh => dist_mesh_ptr('mesh1-rand2')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -247,7 +247,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_PAVE: 2D square/paved mesh')
 
-    mesh => named_mesh_ptr('mesh1-pave')
+    mesh => dist_mesh_ptr('mesh1-pave')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -292,7 +292,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST2_UNIF: 2D square/uniform mesh with void border')
 
-    mesh => named_mesh_ptr('mesh2-unif')
+    mesh => dist_mesh_ptr('mesh2-unif')
     INSIST(associated(mesh))
 
     allocate(disc)

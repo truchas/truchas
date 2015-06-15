@@ -3,7 +3,7 @@
 module HTSD_model_type
 
   use kinds
-  use dist_mesh_type
+  use base_mesh_class
   use mfd_disc_type
   use data_layout_type
   use property_mesh_function
@@ -48,7 +48,7 @@ module HTSD_model_type
     type(HT_model), pointer :: ht => null()
     type(SD_model), pointer :: sd(:) => null()
     type(mfd_disc),  pointer :: disc => null()
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     logical, pointer :: void_cell(:) => null(), void_face(:) => null()
     real(r8) :: void_temp = 0.0_r8
     type(data_layout) :: layout

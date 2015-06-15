@@ -50,15 +50,17 @@ contains
   subroutine init (this, mesh, name)
 
     use ER_input
+    use base_mesh_class
     use dist_mesh_type
+    use unstr_mesh_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use scalar_func_class
     use rad_encl_func_type
     use truchas_logging_services
 
     class(rad_problem), intent(out) :: this
-    type(dist_mesh),   intent(in)  :: mesh
-    character(len=*),  intent(in)  :: name
+    class(base_mesh),   intent(in)  :: mesh
+    character(len=*),   intent(in)  :: name
 
     integer :: n, stat
     character(len=255) :: file
@@ -136,11 +138,18 @@ contains
 
     !! Check that HC radiation faces are geometrically equal to the enclosure surface.
     if (ERI_check_geometry(name)) then
-      call check_surface (mesh, this%sol%encl, this%faces, this%perm_er_to_hc, stat)
-      if (stat /= 0) then
-        write(errmsg,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
-        call TLS_fatal (errmsg)
-      end if
+      select type (mesh)
+      type is (dist_mesh)
+        call check_surface (mesh, this%sol%encl, this%faces, this%perm_er_to_hc, stat)
+        if (stat /= 0) then
+          write(errmsg,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
+          call TLS_fatal (errmsg)
+        end if
+      type is (unstr_mesh)
+        call TLS_warn ('Not able to check matching enclosure surface geometry for mixed cell meshes')
+      class default
+        INSIST(.false.)
+      end select
     end if
 
     !! Set ER system parameters.
@@ -197,12 +206,14 @@ contains
 
   subroutine connect_to_mesh (mesh, file, lm_faces, ge_faces, stat)
 
+    use base_mesh_class
     use dist_mesh_type
+    use unstr_mesh_type
     use index_partitioning
     use permutations
     use ER_file
 
-    type(dist_mesh),  intent(in) :: mesh
+    class(base_mesh), intent(in) :: mesh
     character(len=*), intent(in) :: file
     integer, allocatable :: lm_faces(:) ! returned list of local HC mesh faces
     integer, allocatable :: ge_faces(:) ! returned list of global ER faces
@@ -269,10 +280,22 @@ contains
 
     !! Find the global mesh face that corresponds to each of the enclosure
     !! faces.  FCELL_L holds the results temporarily.
-    do j = n, 1, -1
-      if (fside_l(j) > size(mesh%cface,dim=1)) exit ! no matching mesh face
-      fcell_l(j) = mesh%face_ip%global_index(mesh%cface(fside_l(j),fcell_l(j)))
-    end do
+    select type (mesh)
+    type is (dist_mesh)
+      do j = n, 1, -1
+        if (fside_l(j) > size(mesh%cface,dim=1)) exit ! no matching mesh face
+        fcell_l(j) = mesh%face_ip%global_index(mesh%cface(fside_l(j),fcell_l(j)))
+      end do
+    type is (unstr_mesh)
+      do j = n, 1, -1
+        associate (faces => mesh%cface(mesh%xcface(fcell_l(j)):mesh%xcface(fcell_l(j)+1)-1))
+          if (fside_l(j) > size(faces)) exit ! no matching mesh face
+          fcell_l(j) = mesh%face_ip%global_index(faces(fside_l(j)))
+        end associate
+      end do
+    class default
+      INSIST(.false.)
+    end select
     stat = global_maxval(j) ! get one of the unmatched faces, if any
     if (stat /= 0) return
 
@@ -450,9 +473,9 @@ contains
   subroutine boundary_face_check (mesh, faces, stat, setids)
 
     use bitfield_type
-    use dist_mesh_type
+    use base_mesh_class
 
-    type(dist_mesh), intent(in) :: mesh
+    class(base_mesh), intent(in) :: mesh
     integer, intent(in) :: faces(:)
     integer, intent(out) :: stat
     integer, pointer :: setids(:)

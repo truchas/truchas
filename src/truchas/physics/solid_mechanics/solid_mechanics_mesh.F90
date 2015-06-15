@@ -145,7 +145,7 @@ contains
   ! Purpose: Initialize the solid mechanics mesh pointer and the permutation
   !          structures.
   subroutine sm_mesh_init
-    use mesh_broker, only: named_mesh_ptr
+    use mesh_broker, only: dist_mesh_ptr
     use mesh_module, only: unpermute_mesh_vector, unpermute_vertex_vector
     use parallel_permutations, only: create_par_perm
 
@@ -153,7 +153,7 @@ contains
     logical :: found
 
     ! Initialize the mesh pointer
-    sm_mesh => named_mesh_ptr(sm_mesh_name)
+    sm_mesh => dist_mesh_ptr(sm_mesh_name)
     INSIST(associated(sm_mesh))
 
     ! Initialize the permutation structures -- I've copied

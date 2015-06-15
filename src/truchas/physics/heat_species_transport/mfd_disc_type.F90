@@ -68,13 +68,15 @@
 module mfd_disc_type
 
   use kinds
+  use base_mesh_class
   use dist_mesh_type
   implicit none
   private
 
   type, public :: mfd_disc
-    type(dist_mesh), pointer :: mesh => null()  ! reference only - do not own
+    class(base_mesh), pointer :: mesh => null()  ! reference only - do not own
     real(r8), allocatable :: minv(:,:)
+    ! new stuff for mixed cell type meshes
   contains
     procedure :: init => mfd_disc_init
     procedure :: apply_diff => mfd_disc_apply_diff
@@ -106,7 +108,7 @@ contains
 
   subroutine mfd_disc_init (this, mesh, minv)
     class(mfd_disc), intent(out) :: this
-    type(dist_mesh), intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     logical, intent(in), optional :: minv
     logical :: define_minv
     this%mesh => mesh
@@ -125,7 +127,7 @@ contains
     real(r8), intent(out) :: rcell(:), rface(:)
 
     integer :: j
-    real(r8) :: flux(size(this%mesh%cface,dim=1))
+    real(r8), allocatable :: flux(:)
 
     ASSERT(size(coef) == this%mesh%ncell)
     ASSERT(size(ucell) == size(coef))
@@ -133,12 +135,18 @@ contains
     ASSERT(size(uface) == this%mesh%nface)
     ASSERT(size(rface) == size(uface))
 
-    rface = 0.0_r8
-    do j = 1, this%mesh%ncell
-      flux = coef(j) * sym_matmul(this%minv(:,j), ucell(j) - uface(this%mesh%cface(:,j)))
-      rface(this%mesh%cface(:,j)) = rface(this%mesh%cface(:,j)) - flux
-      rcell(j) = sum(flux)
-    end do
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      allocate(flux(size(mesh%cface,dim=1)))
+      rface = 0.0_r8
+      do j = 1, mesh%ncell
+        flux = coef(j) * sym_matmul(this%minv(:,j), ucell(j) - uface(mesh%cface(:,j)))
+        rface(mesh%cface(:,j)) = rface(mesh%cface(:,j)) - flux
+        rcell(j) = sum(flux)
+      end do
+    class default
+      INSIST(.false.)
+    end select
 
   end subroutine mfd_disc_apply_diff
 
@@ -152,20 +160,25 @@ contains
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
 
-    select case (this%mesh%cell_type)
-    case ('TET')
-      allocate(tet, this%minv(10,this%mesh%ncell))
-      do j = 1, this%mesh%ncell
-        call tet%init (this%mesh%x(:,this%mesh%cnode(:,j)))
-        call tet%compute_flux_matrix (1.0_r8, this%minv(:,j), invert=.true.)
-      end do
-    case ('HEX')
-      allocate(hex, this%minv(21,this%mesh%ncell))
-      do j = 1, this%mesh%ncell
-        call hex%init (this%mesh%x(:,this%mesh%cnode(:,j)))
-        call hex%compute_flux_matrix (1.0_r8, this%minv(:,j), invert=.true.)
-      end do
-    case default
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      select case (mesh%cell_type)
+      case ('TET')
+        allocate(tet, this%minv(10,mesh%ncell))
+        do j = 1, mesh%ncell
+          call tet%init (mesh%x(:,mesh%cnode(:,j)))
+          call tet%compute_flux_matrix (1.0_r8, this%minv(:,j), invert=.true.)
+        end do
+      case ('HEX')
+        allocate(hex, this%minv(21,mesh%ncell))
+        do j = 1, mesh%ncell
+          call hex%init (mesh%x(:,mesh%cnode(:,j)))
+          call hex%compute_flux_matrix (1.0_r8, this%minv(:,j), invert=.true.)
+        end do
+      case default
+        INSIST(.false.)
+      end select
+    class default
       INSIST(.false.)
     end select
 
@@ -196,20 +209,25 @@ contains
     INSIST(size(uface) == this%mesh%nface)
     INSIST(size(grad,2) <= this%mesh%ncell)
 
-    select case (this%mesh%cell_type)
-    case ('TET')
-      allocate(tet)
-      do j = 1, size(grad,2)
-        call tet%init (this%mesh%x(:,this%mesh%cnode(:,j)))
-        grad(:,j) = matmul(tet%face_normals, uface(this%mesh%cface(:,j))) / tet%volume
-      end do
-    case ('HEX')
-      allocate(hex)
-      do j = 1, size(grad,2)
-        call hex%init (this%mesh%x(:,this%mesh%cnode(:,j)))
-        grad(:,j) = matmul(hex%face_normals, uface(this%mesh%cface(:,j))) / hex%volume
-      end do
-    case default
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      select case (mesh%cell_type)
+      case ('TET')
+        allocate(tet)
+        do j = 1, size(grad,2)
+          call tet%init (mesh%x(:,mesh%cnode(:,j)))
+          grad(:,j) = matmul(tet%face_normals, uface(mesh%cface(:,j))) / tet%volume
+        end do
+      case ('HEX')
+        allocate(hex)
+        do j = 1, size(grad,2)
+          call hex%init (mesh%x(:,mesh%cnode(:,j)))
+          grad(:,j) = matmul(hex%face_normals, uface(mesh%cface(:,j))) / hex%volume
+        end do
+      case default
+        INSIST(.false.)
+      end select
+    class default
       INSIST(.false.)
     end select
 
@@ -231,28 +249,33 @@ contains
     INSIST(size(grad,2) <= this%mesh%ncell)
     INSIST(size(mask) == size(grad,2))
 
-    select case (this%mesh%cell_type)
-    case ('TET')
-      allocate(tet)
-      do j = 1, size(grad,2)
-        if (mask(j)) then
-          call tet%init (this%mesh%x(:,this%mesh%cnode(:,j)))
-          grad(:,j) = matmul(tet%face_normals, uface(this%mesh%cface(:,j))) / tet%volume
-        else
-          grad(:,j) = 0.0_r8
-        end if
-      end do
-    case ('HEX')
-      allocate(hex)
-      do j = 1, size(grad,2)
-        if (mask(j)) then
-          call hex%init (this%mesh%x(:,this%mesh%cnode(:,j)))
-          grad(:,j) = matmul(hex%face_normals, uface(this%mesh%cface(:,j))) / hex%volume
-        else
-          grad(:,j) = 0.0_r8
-        end if
-      end do
-    case default
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      select case (mesh%cell_type)
+      case ('TET')
+        allocate(tet)
+        do j = 1, size(grad,2)
+          if (mask(j)) then
+            call tet%init (mesh%x(:,mesh%cnode(:,j)))
+            grad(:,j) = matmul(tet%face_normals, uface(mesh%cface(:,j))) / tet%volume
+          else
+            grad(:,j) = 0.0_r8
+          end if
+        end do
+      case ('HEX')
+        allocate(hex)
+        do j = 1, size(grad,2)
+          if (mask(j)) then
+            call hex%init (mesh%x(:,mesh%cnode(:,j)))
+            grad(:,j) = matmul(hex%face_normals, uface(mesh%cface(:,j))) / hex%volume
+          else
+            grad(:,j) = 0.0_r8
+          end if
+        end do
+      case default
+        INSIST(.false.)
+      end select
+    class default
       INSIST(.false.)
     end select
 
@@ -307,7 +330,7 @@ contains
 
   end subroutine mfd_tet_compute_flux_matrix
 
-  !!!! MFD_TET type bound procedures !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!! MFD_HEX type bound procedures !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine mfd_hex_init (this, vertices)
     use cell_geometry, only: eval_hex_volumes, hex_face_normals
@@ -387,16 +410,21 @@ contains
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
     ASSERT(n >=1 .and. n <= this%mesh%ncell)
-    select case (this%mesh%cell_type)
-    case ('TET')
-      allocate(tet)
-      call tet%init (this%mesh%x(:,this%mesh%cnode(:,n)))
-      call tet%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
-    case ('HEX')
-      allocate(hex)
-      call hex%init (this%mesh%x(:,this%mesh%cnode(:,n)))
-      call hex%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
-    case default
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      select case (mesh%cell_type)
+      case ('TET')
+        allocate(tet)
+        call tet%init (mesh%x(:,mesh%cnode(:,n)))
+        call tet%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
+      case ('HEX')
+        allocate(hex)
+        call hex%init (mesh%x(:,mesh%cnode(:,n)))
+        call hex%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
+      case default
+        INSIST(.false.)
+      end select
+    class default
       INSIST(.false.)
     end select
   end subroutine mfd_disc_compute_flux_matrix

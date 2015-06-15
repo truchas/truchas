@@ -43,7 +43,13 @@ contains
     type(ip_desc), pointer :: row_ip
 
     this%disc => disc
-    this%mesh => disc%mesh
+    select type (mesh => disc%mesh)
+    type is (dist_mesh)
+      this%mesh => mesh
+    class default
+      INSIST(.false.)
+    end select
+    
     allocate(this%a11(this%mesh%ncell))
     allocate(this%a12(size(this%mesh%cface,1),this%mesh%ncell))
 

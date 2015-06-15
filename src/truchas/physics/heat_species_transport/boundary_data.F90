@@ -74,7 +74,7 @@ module boundary_data
 
   use kinds
   use scalar_func_containers
-  use dist_mesh_type
+  use base_mesh_class
   use string_utilities, only: i_to_c
   implicit none
   private
@@ -86,7 +86,7 @@ module boundary_data
     real(r8), pointer :: values(:,:) => null()
     !! rest are private
     integer :: npar
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     logical :: evaluated = .false.
     real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup = -1
@@ -113,7 +113,7 @@ contains
   subroutine bd_data_prep (this, mesh, npar)
 
     type(bd_data), intent(out) :: this
-    type(dist_mesh), intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     integer, intent(in) :: npar
 
     INSIST(npar > 0)
@@ -279,6 +279,8 @@ contains
  !!
 
   subroutine bd_data_eval (this, t)
+  
+    use dist_mesh_type
 
     type(bd_data), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -305,16 +307,26 @@ contains
           values(i,:) = this%farray(i,n)%f%eval(args)
         case (BD_DATA_HINT_T_INDEP)
           if (.not.this%evaluated) then
-            do j = 1, size(faces)
-              args(1:) = sum(this%mesh%x(:,this%mesh%fnode(:,faces(j))),dim=2) / size(this%mesh%fnode,dim=1)
-              values(i,j) = this%farray(i,n)%f%eval(args)
-            end do
+            select type (mesh => this%mesh)
+            type is (dist_mesh)
+              do j = 1, size(faces)
+                args(1:) = sum(mesh%x(:,mesh%fnode(:,faces(j))),dim=2) / size(mesh%fnode,dim=1)
+                values(i,j) = this%farray(i,n)%f%eval(args)
+              end do
+            class default
+              INSIST(.false.)
+            end select
           end if
         case default
-          do j = 1, size(faces)
-            args(1:) = sum(this%mesh%x(:,this%mesh%fnode(:,faces(j))),dim=2) / size(this%mesh%fnode,dim=1)
-            values(i,j) = this%farray(i,n)%f%eval(args)
-          end do
+          select type (mesh => this%mesh)
+          type is (dist_mesh)
+            do j = 1, size(faces)
+              args(1:) = sum(mesh%x(:,mesh%fnode(:,faces(j))),dim=2) / size(mesh%fnode,dim=1)
+              values(i,j) = this%farray(i,n)%f%eval(args)
+            end do
+          class default
+            INSIST(.false.)
+          end select
         end select
       end do
     end do

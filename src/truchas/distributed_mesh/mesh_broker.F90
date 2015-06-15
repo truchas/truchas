@@ -13,6 +13,7 @@ module mesh_broker
 
   use kinds, only: r8
   use parallel_communication
+  use base_mesh_class
   use dist_mesh_type
 
   implicit none
@@ -20,7 +21,7 @@ module mesh_broker
 
   public :: dist_mesh
 
-  public :: read_mesh_namelists, enable_mesh, init_mesh_broker, named_mesh_ptr
+  public :: read_mesh_namelists, enable_mesh, init_mesh_broker, named_mesh_ptr, dist_mesh_ptr
   public :: peek_truchas_mesh_namelists
 
   !!  This module maintains a collection of meshes using a recursive linked-
@@ -36,7 +37,8 @@ module mesh_broker
     integer, pointer :: iface_sset_id(:) => null()
     logical :: enabled = .false.
     logical :: em_mesh = .false. ! whether this mesh is for EM (HACK)
-    type(dist_mesh), pointer :: mesh => null()
+    !type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
   end type mesh_desc
 
   type :: mesh_list
@@ -59,7 +61,7 @@ contains
   function named_mesh_ptr (name)
     use string_utilities, only: raise_case
     character(len=*), intent(in) :: name
-    type(dist_mesh), pointer :: named_mesh_ptr
+    class(base_mesh), pointer :: named_mesh_ptr
     type(mesh_list) :: l
     named_mesh_ptr => null()
     l = meshes
@@ -73,6 +75,27 @@ contains
       l = l%first%rest
     end do
   end function named_mesh_ptr
+
+  function dist_mesh_ptr (name)
+    use string_utilities, only: raise_case
+    character(len=*), intent(in) :: name
+    type(dist_mesh), pointer :: dist_mesh_ptr
+    type(mesh_list) :: l
+    dist_mesh_ptr => null()
+    l = meshes
+    do while (associated(l%first))
+      if (l%first%mesh%enabled) then
+        if (l%first%mesh%name == raise_case(name)) then
+          select type (mesh => l%first%mesh%mesh)
+          type is (dist_mesh)
+            dist_mesh_ptr => mesh
+          end select
+          exit
+        end if
+      end if
+      l = l%first%rest
+    end do
+  end function dist_mesh_ptr
 
   subroutine enable_mesh (name, exists)
     use string_utilities, only: raise_case
@@ -110,6 +133,7 @@ contains
     character(len=127) :: errmsg
     type(mesh_list) :: l
     type(external_mesh) :: xmesh
+    type(dist_mesh), pointer :: dmesh
 
     l = meshes
     do while (associated(l%first))
@@ -129,15 +153,17 @@ contains
         if (l%first%mesh%em_mesh) then
           select case (xmesh%mesh_type)
           case ('TET')
-            allocate (l%first%mesh%mesh)
-            call create_dist_tet_mesh (l%first%mesh%mesh, xmesh)
+            allocate(dmesh)
+            call create_dist_tet_mesh (dmesh, xmesh)
+            l%first%mesh%mesh => dmesh
           case default
             INSIST( .false. )
           end select
         else
           select case (xmesh%mesh_type)
           case ('TET', 'HEX')
-            l%first%mesh%mesh => new_dist_mesh(xmesh)
+            dmesh => new_dist_mesh(xmesh)
+            l%first%mesh%mesh => dmesh
           case default
             INSIST( .false. )
           end select

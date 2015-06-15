@@ -63,7 +63,12 @@ contains
     ASSERT(size(mask) == disc%mesh%ncell)
     
     this%disc => disc
-    this%mesh => disc%mesh
+    select type (mesh => disc%mesh)
+    type is (dist_mesh)
+      this%mesh => mesh
+    class default
+      call TLS_fatal ('CELL_GRAD_TYPE module not yet extended to mixed cell meshes')
+    end select
     this%cell_mask = mask
     
     !! Define the face flux matrix for the subdomain defined by the active

@@ -142,7 +142,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_UNIF: 2D square/uniform mesh')
 
-    mesh => named_mesh_ptr('mesh1-unif')
+    mesh => dist_mesh_ptr('mesh1-unif')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -203,7 +203,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_RAND: 2D square/randomized mesh')
 
-    mesh => named_mesh_ptr('mesh1-rand')
+    mesh => dist_mesh_ptr('mesh1-rand')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -259,7 +259,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_PAVE: 2D square/paved mesh')
 
-    mesh => named_mesh_ptr('mesh1-pave')
+    mesh => dist_mesh_ptr('mesh1-pave')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -310,7 +310,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST2_UNIF: 2D square/uniform mesh with masked cells')
 
-    mesh => named_mesh_ptr('mesh2-unif')
+    mesh => dist_mesh_ptr('mesh2-unif')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -361,7 +361,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST2_PAVE: 2D square/uniform mesh with masked cells')
 
-    mesh => named_mesh_ptr('mesh2-pave')
+    mesh => dist_mesh_ptr('mesh2-pave')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -412,7 +412,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST3_UNIF: 3D square/uniform mesh with symmetry')
 
-    mesh => named_mesh_ptr('mesh3-unif')
+    mesh => dist_mesh_ptr('mesh3-unif')
     INSIST(associated(mesh))
 
     allocate(disc)

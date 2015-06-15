@@ -94,7 +94,7 @@ module ds_interface_condition_input
 
   use kinds
   use parallel_communication
-  use dist_mesh_type
+  use base_mesh_class
   use interface_data
   use scalar_func_containers
   use truchas_logging_services
@@ -306,7 +306,7 @@ contains
 
   subroutine get_interface_data (mesh, variable, condition, npar, idata)
 
-    type(dist_mesh),  intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     character(len=*), intent(in)  :: variable
     character(len=*), intent(in)  :: condition
     integer,          intent(in)  :: npar

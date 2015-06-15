@@ -7,7 +7,7 @@ module HTSD_solver_type
   use HTSD_precon_type
   use HTSD_norm_type
   use material_mesh_function
-  use dist_mesh_type
+  use base_mesh_class
   use index_partitioning
   use bdf2_dae
   use parameter_list_type
@@ -16,7 +16,7 @@ module HTSD_solver_type
   
   type, public :: HTSD_solver
     type(mat_mf),    pointer :: mmf => null()
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     type(state) :: bdf2_state
     logical :: state_is_pending = .false.
     !! Pending state
@@ -70,18 +70,19 @@ contains
     type(HTSD_solver_params), intent(in) :: params
     integer :: n
     type(parameter_list), pointer :: plist
-#ifdef INTEL_COMPILER_WORKAROUND
-    type(dist_mesh), pointer :: fubar
-#endif
+!#ifdef INTEL_COMPILER_WORKAROUND
+!    class(base_mesh), pointer :: fubar
+!#endif
     this%mmf   => mmf
     this%model => model
     this%mesh  => model%mesh
-#ifdef INTEL_COMPILER_WORKAROUND
-    fubar => mmf_mesh(mmf)
-    ASSERT(associated(fubar, model%mesh))
-#else
-    ASSERT(associated(mmf_mesh(mmf), model%mesh))
-#endif
+! cannot do this check at the momement with differing types
+!#ifdef INTEL_COMPILER_WORKAROUND
+!    fubar => mmf_mesh(mmf)
+!    ASSERT(associated(fubar, model%mesh))
+!#else
+!    ASSERT(associated(mmf_mesh(mmf), model%mesh))
+!#endif
     allocate(this%norm)
     call HTSD_norm_init (this%norm, model, params%norm_params)
     allocate(this%precon)
@@ -288,6 +289,8 @@ contains
   
     use parallel_communication, only: global_count
     use HTSD_init_cond_type
+    use dist_mesh_type
+    use unstr_mesh_type
   
     type(HTSD_solver), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -309,9 +312,22 @@ contains
     if (global_count(this%model%void_cell) > 0) then
       allocate(this%model%void_face(this%mesh%nface))
       this%model%void_face = .true.
-      do j = 1, this%mesh%ncell
-        if (.not.this%model%void_cell(j)) this%model%void_face(this%mesh%cface(:,j)) = .false.
-      end do
+      select type (mesh => this%mesh)
+      type is (dist_mesh)
+        do j = 1, mesh%ncell
+          if (.not.this%model%void_cell(j)) this%model%void_face(mesh%cface(:,j)) = .false.
+        end do
+      type is (unstr_mesh)
+        do j = 1, mesh%ncell
+          if (.not.this%model%void_cell(j)) then
+            associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+              this%model%void_face(cface) = .false.
+            end associate
+          end if
+        end do
+      class default
+        INSIST(.false.)
+      end select
       call gather_boundary (this%mesh%face_ip, this%model%void_face)
     else
       deallocate(this%model%void_cell)

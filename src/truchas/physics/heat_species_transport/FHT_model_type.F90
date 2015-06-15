@@ -4,7 +4,7 @@ module FHT_model_type
 
   use kinds
   use mfd_disc_type
-  use dist_mesh_type
+  use base_mesh_class
   use data_layout_type
   use property_mesh_function
   use source_mesh_function
@@ -18,7 +18,7 @@ module FHT_model_type
 
   type, public :: FHT_model
     type(mfd_disc),  pointer :: disc => null()
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     type(data_layout) :: layout
     integer :: cell_temp_segid, face_temp_segid
     integer, pointer :: rad_segid(:) => null()
@@ -413,6 +413,8 @@ contains
 
     subroutine eval_face_averages (ucell, uface)
 
+      use dist_mesh_type
+
       real(r8), intent(in)  :: ucell(:)
       real(r8), intent(out) :: uface(:)
 
@@ -423,11 +425,16 @@ contains
 
       uface = 0.0_r8
       scale = 0
-      do j = 1, this%mesh%ncell
-        if (this%void_cell(j)) cycle
-        uface(this%mesh%cface(:,j)) = uface(this%mesh%cface(:,j)) + ucell(j)
-        scale(this%mesh%cface(:,j)) = scale(this%mesh%cface(:,j)) + 1
-      end do
+      select type (mesh => this%mesh)
+      type is (dist_mesh)
+        do j = 1, mesh%ncell
+          if (this%void_cell(j)) cycle
+          uface(mesh%cface(:,j)) = uface(mesh%cface(:,j)) + ucell(j)
+          scale(mesh%cface(:,j)) = scale(mesh%cface(:,j)) + 1
+        end do
+      class default
+        INSIST(.false.)
+      end select
       call gather_boundary (this%mesh%face_ip, uface)
       call gather_boundary (this%mesh%face_ip, scale)
       do j = 1, this%mesh%nface

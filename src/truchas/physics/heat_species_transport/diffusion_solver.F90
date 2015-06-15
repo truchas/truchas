@@ -26,6 +26,7 @@ module diffusion_solver
   use HTSD_solver_type
   use timing_tree
   use truchas_logging_services
+  use base_mesh_class
   implicit none
   private
 
@@ -50,7 +51,7 @@ module diffusion_solver
     logical :: have_phase_change = .false.
     logical :: have_void = .false.
     !! The mesh, discretization, and material mesh function.
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     type(mfd_disc), pointer :: disc => null()
     type(mat_mf), pointer :: mmf => null()
     !! Saved references to the model sources.

@@ -338,7 +338,7 @@ CONTAINS
     deallocate(main_mesh)
     
     !! Access the distributed alternate mesh (tet).
-    alt_mesh => named_mesh_ptr('alt')
+    alt_mesh => dist_mesh_ptr('alt')
     ASSERT(associated(alt_mesh))
     
     !! Create the corresponding (collated) GM_MESH structure.
@@ -398,7 +398,7 @@ CONTAINS
     use mesh_broker
     use dist_mesh_type
     type(dist_mesh), pointer :: ptr
-    ptr => named_mesh_ptr('alt')
+    ptr => dist_mesh_ptr('alt')
   end function EM_mesh
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -920,7 +920,7 @@ CONTAINS
 
   subroutine read_joule_data (unit, version)
 
-    use mesh_broker, only: dist_mesh, named_mesh_ptr
+    use mesh_broker, only: dist_mesh, dist_mesh_ptr
     use mesh_module, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
@@ -947,7 +947,7 @@ CONTAINS
       call read_var (unit, coil_q(n)%nturns,  'READ_JOULE_DATA: error reading NTURNS record')
     end do
 
-    mesh => named_mesh_ptr('alt')
+    mesh => dist_mesh_ptr('alt')
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NMU record')
     if (n /= mesh%cell_ip%global_size()) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
@@ -996,7 +996,7 @@ CONTAINS
 
     use parallel_communication
     use permutations
-    use mesh_broker, only: dist_mesh, named_mesh_ptr
+    use mesh_broker, only: dist_mesh, dist_mesh_ptr
     use danu_module, only: DANU_SUCCESS
     
     real(rk), intent(in) :: t
@@ -1014,7 +1014,7 @@ CONTAINS
     ASSERT( allocated(joule) )
     ASSERT( associated(coil_q) )
     
-    mesh => named_mesh_ptr('alt')
+    mesh => dist_mesh_ptr('alt')
     n = global_sum(mesh%ncell_onP)
 
     !! Collate the cell permutation array.
