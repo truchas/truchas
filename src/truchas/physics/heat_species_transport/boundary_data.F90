@@ -281,6 +281,7 @@ contains
   subroutine bd_data_eval (this, t)
   
     use dist_mesh_type
+    use unstr_mesh_type
 
     type(bd_data), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -313,6 +314,13 @@ contains
                 args(1:) = sum(mesh%x(:,mesh%fnode(:,faces(j))),dim=2) / size(mesh%fnode,dim=1)
                 values(i,j) = this%farray(i,n)%f%eval(args)
               end do
+            type is (unstr_mesh)
+              do j = 1, size(faces)
+                associate (fnode => mesh%fnode(mesh%xfnode(faces(j)):mesh%xfnode(faces(j)+1)-1))
+                  args(1:) = sum(mesh%x(:,fnode),dim=2) / size(fnode)
+                  values(i,j) = this%farray(i,n)%f%eval(args)
+                end associate
+              end do
             class default
               INSIST(.false.)
             end select
@@ -323,6 +331,13 @@ contains
             do j = 1, size(faces)
               args(1:) = sum(mesh%x(:,mesh%fnode(:,faces(j))),dim=2) / size(mesh%fnode,dim=1)
               values(i,j) = this%farray(i,n)%f%eval(args)
+            end do
+          type is (unstr_mesh)
+            do j = 1, size(faces)
+              associate (fnode => mesh%fnode(mesh%xfnode(faces(j)):mesh%xfnode(faces(j)+1)-1))
+                args(1:) = sum(mesh%x(:,fnode),dim=2) / size(fnode)
+                values(i,j) = this%farray(i,n)%f%eval(args)
+              end associate
             end do
           class default
             INSIST(.false.)

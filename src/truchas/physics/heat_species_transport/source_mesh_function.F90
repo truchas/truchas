@@ -339,6 +339,7 @@ contains
   subroutine smf_eval (this, t, q)
   
     use dist_mesh_type
+    use unstr_mesh_type
 
     type(source_mf), intent(inout) :: this
     real(r8), intent(in)  :: t
@@ -370,18 +371,25 @@ contains
         case (SMF_HINT_X_INDEP)
           this%fvalue(cells) = this%farray(n)%f%eval(args)
         case (SMF_HINT_T_INDEP)
-          select type (mesh => this%mesh)
-          type is (dist_mesh)
-            if (unevaluated) then
+          if (unevaluated) then
+            select type (mesh => this%mesh)
+            type is (dist_mesh)
               do j = 1, size(cells)
                 args(1:) = sum(mesh%x(:,mesh%cnode(:,cells(j))),dim=2) &
                          / size(mesh%cnode,dim=1)
                 this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
               end do
-            end if
-          class default
-            INSIST(.false.)
-          end select
+            type is (unstr_mesh)
+              do j = 1, size(cells)
+                associate (cnode => mesh%cnode(mesh%xcnode(cells(j)):mesh%xcnode(cells(j)+1)-1))
+                  args(1:) = sum(mesh%x(:,cnode),dim=2) / size(cnode)
+                  this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+                end associate
+              end do
+            class default
+              INSIST(.false.)
+            end select
+          end if
         case default
           select type (mesh => this%mesh)
           type is (dist_mesh)
@@ -389,6 +397,13 @@ contains
               args(1:) = sum(mesh%x(:,mesh%cnode(:,cells(j))),dim=2) &
                        / size(mesh%cnode,dim=1)
               this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+            end do
+          type is (unstr_mesh)
+            do j = 1, size(cells)
+              associate (cnode => mesh%cnode(mesh%xcnode(cells(j)):mesh%xcnode(cells(j)+1)-1))
+                args(1:) = sum(mesh%x(:,cnode),dim=2) / size(cnode)
+                this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+              end associate
             end do
           class default
             INSIST(.false.)

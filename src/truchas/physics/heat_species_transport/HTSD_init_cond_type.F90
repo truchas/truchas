@@ -263,40 +263,33 @@ contains
     ASSERT(size(ucell) == mesh%ncell)
     ASSERT(size(uface) == mesh%nface)
 
-    select type (mesh)
-    type is (dist_mesh)
     
     uface = 0.0_r8
     scale = 0.0_r8
-    do j = 1, mesh%ncell
-      if (associated(skip)) then
-        if (skip(j)) cycle
-      end if
-      uface(mesh%cface(:,j)) = uface(mesh%cface(:,j)) + ucell(j)
-      scale(mesh%cface(:,j)) = scale(mesh%cface(:,j)) + 1
-    end do
-    call gather_boundary (mesh%face_ip, uface)
-    call gather_boundary (mesh%face_ip, scale)
-    
-    type is (unstr_mesh)
-    
-      uface = 0.0_r8
-      scale = 0.0_r8
+    select type (mesh)
+    type is (dist_mesh)
       do j = 1, mesh%ncell
         if (associated(skip)) then
           if (skip(j)) cycle
         end if
-        associate (faces => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-          uface(faces) = uface(faces) + ucell(j)
-          scale(faces) = scale(faces) + 1
+        uface(mesh%cface(:,j)) = uface(mesh%cface(:,j)) + ucell(j)
+        scale(mesh%cface(:,j)) = scale(mesh%cface(:,j)) + 1
+      end do
+    type is (unstr_mesh)
+      do j = 1, mesh%ncell
+        if (associated(skip)) then
+          if (skip(j)) cycle
+        end if
+        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+          uface(cface) = uface(cface) + ucell(j)
+          scale(cface) = scale(cface) + 1
         end associate
       end do
-      call gather_boundary (mesh%face_ip, uface)
-      call gather_boundary (mesh%face_ip, scale)
-    
     class default
       INSIST(.false.)
     end select
+    call gather_boundary (mesh%face_ip, uface)
+    call gather_boundary (mesh%face_ip, scale)
 
     where (scale == 0)
       uface = 0.0_r8

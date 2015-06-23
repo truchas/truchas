@@ -19,16 +19,17 @@ module more_unstr_mesh_tools
 
 contains
 
-  subroutine get_cell_neighbor_array (xcnode, cnode, xcnhbr, cnhbr, stat)
+  subroutine get_cell_neighbor_array (xcnode, cnode, xlnode, lnode, xcnhbr, cnhbr, lnhbr, stat)
   
     use facet_hash_type
     use cell_topology
 
-    integer, intent(in)  :: xcnode(:), cnode(:)
-    integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:)
+    integer, intent(in) :: xcnode(:), cnode(:)
+    integer, intent(in) :: xlnode(:), lnode(:)
+    integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:), lnhbr(:,:)
     integer, intent(out) :: stat
 
-    integer :: i, j, k, n, jj, kk, max_bin_size, nmatch, bad_faces, ncell, offset
+    integer :: i, j, k, n, jj, kk, max_bin_size, nmatch, bad_faces, ncell, nlink, offset
     integer, allocatable :: face(:), xbin(:), p(:)
     type(facet_hash) :: hpar
 
@@ -168,19 +169,48 @@ contains
       end associate
     end do
     
+    !! Lookup the two link faces in the table to get the neighbor cell numbers.
+    !! The face node list must be arranged to match that stored in the table.
+    nlink = size(xlnode) - 1
+    allocate(lnhbr(2,nlink))
+    do j = 1, nlink
+      associate (link => lnode(xlnode(j):xlnode(j+1)-1))
+        do k = 1, 2
+          call get_link_face_nodes (link, k, face, normalize=.true.)
+          call hpar%hash (face, n)
+          associate (bin => bin_table(xbin(n):xbin(n+1)-1))
+            lnhbr(k,j) = 0  ! default value
+            do i = size(bin), 1, -1
+              if (all(bin(i)%face == face)) exit
+            end do
+            if (i > 0) then  ! found a match ...
+              if (cnhbr(bin(i)%k) == 0) then ! and it's a boundary face as expected
+                lnhbr(k,j) = bin(i)%j
+              else  ! not a boundary face; something is wrong
+                stat = -1
+              end if
+            else  ! no match found; something is wrong
+              stat = -1
+            end if
+          end associate
+        end do
+      end associate
+    end do
+    
   end subroutine get_cell_neighbor_array
 
 
-  subroutine label_mesh_faces (xcnode, cnode, nface, xcface, cface)
+  subroutine label_mesh_faces (xcnode, cnode, xlnode, lnode, nface, xcface, cface, lface)
 
     use cell_topology
     use facet_table_type
 
     integer, intent(in)  :: xcnode(:), cnode(:)
+    integer, intent(in)  :: xlnode(:), lnode(:)
     integer, intent(out) :: nface
-    integer, allocatable, intent(out) :: xcface(:), cface(:)
+    integer, allocatable, intent(out) :: xcface(:), cface(:), lface(:,:)
 
-    integer :: j, k, n, offset, ncell, max_face, node_max
+    integer :: j, k, n, offset, ncell, nlink, max_face, node_max
     integer, allocatable :: face(:)
     type(facet_table) :: table
 
@@ -223,6 +253,19 @@ contains
     end do
     nface = table%number_of_facets()
     INSIST(all(cface /= 0))
+
+    nlink = size(xlnode) - 1
+    allocate(lface(2,nlink))
+    do j = 1, nlink
+      associate (link => lnode(xlnode(j):xlnode(j+1)-1))
+        do k = 1, 2
+          call get_link_face_nodes (link, k, face)
+          call table%get_facet_label (face, lface(k,j), insert=.false.)
+        end do
+      end associate
+    end do
+    INSIST(all(lface >= 1))
+    INSIST(all(lface <= nface))
 
   end subroutine label_mesh_faces
 

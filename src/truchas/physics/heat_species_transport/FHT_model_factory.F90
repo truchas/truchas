@@ -43,12 +43,6 @@ contains
     
     class(base_mesh), pointer :: mesh
 
-    !select type (disc_mesh => disc%mesh)
-    !type is (dist_mesh)
-    !  mesh => disc_mesh
-    !class default
-    !  INSIST(.false.)
-    !end select
     mesh => disc%mesh
     
     allocate(model)

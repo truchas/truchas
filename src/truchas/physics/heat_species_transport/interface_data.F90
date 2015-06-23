@@ -274,6 +274,7 @@ contains
   subroutine if_data_eval (this, t)
   
     use dist_mesh_type
+    use unstr_mesh_type
 
     type(if_data), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -308,6 +309,15 @@ contains
                             (2*size(mesh%fnode,dim=1))
                 values(i,j) = this%farray(i,n)%f%eval(args)
               end do
+            type is (unstr_mesh)
+              do j = 1, size(faces,dim=2)
+                associate (fnode1 => mesh%fnode(mesh%xfnode(faces(1,j)):mesh%xfnode(faces(1,j)+1)-1), &
+                           fnode2 => mesh%fnode(mesh%xfnode(faces(2,j)):mesh%xfnode(faces(2,j)+1)-1))
+                  args(1:) = (sum(mesh%x(:,fnode1),dim=2) + sum(mesh%x(:,fnode2),dim=2)) / &
+                              (2*size(fnode1))
+                  values(i,j) = this%farray(i,n)%f%eval(args)
+                end associate
+              end do
             class default
               INSIST(.false.)
             end select
@@ -320,6 +330,15 @@ contains
                           sum(mesh%x(:,mesh%fnode(:,faces(2,j))),dim=2)) / &
                           (2*size(mesh%fnode,dim=1))
               values(i,j) = this%farray(i,n)%f%eval(args)
+            end do
+          type is (unstr_mesh)
+            do j = 1, size(faces,dim=2)
+              associate (fnode1 => mesh%fnode(mesh%xfnode(faces(1,j)):mesh%xfnode(faces(1,j)+1)-1), &
+                         fnode2 => mesh%fnode(mesh%xfnode(faces(2,j)):mesh%xfnode(faces(2,j)+1)-1))
+                args(1:) = (sum(mesh%x(:,fnode1),dim=2) + sum(mesh%x(:,fnode2),dim=2)) / &
+                            (2*size(fnode1))
+                values(i,j) = this%farray(i,n)%f%eval(args)
+              end associate
             end do
           class default
             INSIST(.false.)

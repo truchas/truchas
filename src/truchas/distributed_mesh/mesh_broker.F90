@@ -15,6 +15,8 @@ module mesh_broker
   use parallel_communication
   use base_mesh_class
   use dist_mesh_type
+  use parameter_list_type
+  use truchas_logging_services
 
   implicit none
   private
@@ -39,6 +41,7 @@ module mesh_broker
     logical :: em_mesh = .false. ! whether this mesh is for EM (HACK)
     !type(dist_mesh), pointer :: mesh => null()
     class(base_mesh), pointer :: mesh => null()
+    type(parameter_list), pointer :: params => null()
   end type mesh_desc
 
   type :: mesh_list
@@ -124,6 +127,7 @@ contains
     use mesh_importer
     use mesh_modification, only: convert_cells_to_links, create_internal_interfaces
     use dist_mesh_factory, only: new_dist_mesh
+    use unstr_mesh_factory
     use distributed_tet_mesh, only: create_dist_tet_mesh
 #ifdef DEBUG_WRITE_MESH
     use dist_mesh_gmv
@@ -131,9 +135,11 @@ contains
 
     integer :: stat
     character(len=127) :: errmsg
+    character(:), allocatable :: errmsg2
     type(mesh_list) :: l
     type(external_mesh) :: xmesh
     type(dist_mesh), pointer :: dmesh
+    type(unstr_mesh), pointer :: umesh
 
     l = meshes
     do while (associated(l%first))
@@ -162,8 +168,11 @@ contains
         else
           select case (xmesh%mesh_type)
           case ('TET', 'HEX')
-            dmesh => new_dist_mesh(xmesh)
-            l%first%mesh%mesh => dmesh
+            !dmesh => new_dist_mesh(xmesh)
+            umesh => new_unstr_mesh(l%first%mesh%params, stat, errmsg2)
+            if (stat /= 0) call TLS_fatal (errmsg2)
+            !l%first%mesh%mesh => dmesh
+            l%first%mesh%mesh => umesh
           case default
             INSIST( .false. )
           end select
@@ -327,6 +336,7 @@ contains
 
     integer :: n
     type(mesh_list) :: old_meshes
+    type(parameter_list), pointer :: params
 
     !! MESH namelist: if it's a true Exodus/Genesis mesh file add it to the list.
     if (raise_case(mesh_file_format) == 'EXODUSII') then
@@ -343,6 +353,11 @@ contains
       n = count(interface_side_sets > 0)
       allocate(meshes%first%mesh%iface_sset_id(n))
       meshes%first%mesh%iface_sset_id = pack(interface_side_sets, mask=(interface_side_sets > 0))
+      allocate(params)
+      call params%set ('mesh-file', trim(mesh_file))
+      call params%set ('coord-scale-factor', coordinate_scale_factor)
+      call params%set ('interface-side-set-ids', pack(interface_side_sets, mask=(interface_side_sets > 0)))
+      meshes%first%mesh%params => params
     end if
 
     !! ALTMESH namelist.

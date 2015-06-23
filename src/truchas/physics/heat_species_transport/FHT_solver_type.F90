@@ -271,11 +271,11 @@ contains
     type is (unstr_mesh)
       do j = 1, mesh%ncell
         if (this%void_cell(j)) cycle
-        associate (faces => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-          do k = 1, size(faces)
+        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+          do k = 1, size(cface)
             n = 1
-            if (fnbr(1,faces(k)) /= 0) n = 2
-            fnbr(n,faces(k)) = j
+            if (fnbr(1,cface(k)) /= 0) n = 2
+            fnbr(n,cface(k)) = j
           end do
         end associate
       end do
@@ -581,8 +581,8 @@ contains
     type is (unstr_mesh)
       do j = 1, mesh%ncell
         if (.not.this%void_cell(j)) then
-          associate (faces => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-            this%void_face(faces) = .false.
+          associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+            this%void_face(cface) = .false.
           end associate
         end if
       end do

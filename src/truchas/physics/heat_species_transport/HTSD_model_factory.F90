@@ -48,7 +48,6 @@ contains
     type(SD_model), pointer :: sdmodel(:) => null()
     class(base_mesh), pointer :: mesh
 
-! cannot do this check at the momement with differing types
 #ifdef INTEL_COMPILER_WORKAROUND
     class(base_mesh), pointer :: fubar
 
@@ -59,12 +58,6 @@ contains
     ASSERT(associated(disc%mesh, mmf_mesh(mmf)))
 #endif
 
-    !select type (disc_mesh => disc%mesh)
-    !type is (dist_mesh)
-    !  mesh => disc_mesh
-    !class default
-    !  INSIST(.false.)
-    !end select
     mesh => disc%mesh
 
     if (heat_eqn) then

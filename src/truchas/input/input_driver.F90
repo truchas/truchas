@@ -54,7 +54,7 @@ contains
     use viscous_data_module,       only: inviscid
     use turbulence_module,         only: read_turbulence_namelist
     use solid_mechanics_input,     only: solid_mechanics
-    use solid_mechanics_mesh,      only: sm_mesh_enable
+    !use solid_mechanics_mesh,      only: sm_mesh_enable
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use timing_tree
     use truchas_logging_services
@@ -132,7 +132,7 @@ contains
     ! read namelists for solid mechanics options
     if (solid_mechanics) then
       call read_viscoplastic_model_namelists (lun)
-      call sm_mesh_enable
+      !call sm_mesh_enable
     end if
 
     ! read volume fraction data

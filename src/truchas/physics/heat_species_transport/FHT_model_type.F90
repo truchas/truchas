@@ -414,6 +414,7 @@ contains
     subroutine eval_face_averages (ucell, uface)
 
       use dist_mesh_type
+      use unstr_mesh_type
 
       real(r8), intent(in)  :: ucell(:)
       real(r8), intent(out) :: uface(:)
@@ -431,6 +432,14 @@ contains
           if (this%void_cell(j)) cycle
           uface(mesh%cface(:,j)) = uface(mesh%cface(:,j)) + ucell(j)
           scale(mesh%cface(:,j)) = scale(mesh%cface(:,j)) + 1
+        end do
+      type is (unstr_mesh)
+        do j = 1, mesh%ncell
+          if (this%void_cell(j)) cycle
+          associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+            uface(cface) = uface(cface) + ucell(j)
+            scale(cface) = scale(cface) + 1
+          end associate
         end do
       class default
         INSIST(.false.)
