@@ -57,8 +57,10 @@ module cell_topology
   public :: get_hex_face_nodes, hex_face_nodes, hex_edge_nodes
   public :: parity
   public :: normalize_facet, reverse_facet
-  public :: link_face_nodes
-  public :: get_face_nodes, get_cell_face_sizes
+  public :: link_face_nodes, get_link_face_nodes
+  public :: get_face_nodes, get_cell_face_sizes, cell_face_sizes
+  public :: cell_face_sig
+  public :: num_cell_faces
 
   integer, target, public :: TETRA4_XFACE(5), TETRA4_FACES(12), TETRA4_FSIZE(4), TETRA4_FACE_SIG(4)
   data TETRA4_XFACE/1,4,7,10,13/
@@ -66,13 +68,13 @@ module cell_topology
   data TETRA4_FSIZE/3,3,3,3/
   data TETRA4_FACE_SIG/b'1011', b'1110', b'1101', b'0111'/
 
-  integer, public :: PYR5_XFACE(6), PYR5_FACES(16), PYR5_FSIZE(5), PYR5_FACE_SIG(5)
+  integer, target, public :: PYR5_XFACE(6), PYR5_FACES(16), PYR5_FSIZE(5), PYR5_FACE_SIG(5)
   data PYR5_XFACE/1,4,7,10,13,17/
   data PYR5_FACES/1,2,5,  2,3,5,  3,4,5,  1,5,4,  1,4,3,2/
   data PYR5_FSIZE/3,3,3,3,4/
   data PYR5_FACE_SIG/b'10011', b'10110', b'11100', b'11001', b'01111'/
 
-  integer, public :: WED6_XFACE(6), WED6_FACES(18), WED6_FSIZE(5), WED6_FACE_SIG(5)
+  integer, target, public :: WED6_XFACE(6), WED6_FACES(18), WED6_FSIZE(5), WED6_FACE_SIG(5)
   data WED6_XFACE/1,5,9,13,16,19/
   data WED6_FACES/1,2,5,4,  2,3,6,5,  1,4,6,3,  1,3,2,  4,5,6/
   data WED6_FSIZE/4,4,4,3,3/
@@ -106,6 +108,56 @@ module cell_topology
   data QUAD_LINK_FACE_VERT/1,2,3,4, 5,8,7,6/
 
 contains
+
+  integer function num_cell_faces (cnodes)
+    integer, intent(in) :: cnodes(:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      num_cell_faces = 4
+    case (5)  ! pyramid
+      num_cell_faces = 5
+    case (6)  ! wedge
+      num_cell_faces = 5
+    case (8)  ! hex
+      num_cell_faces = 6
+    case default
+      num_cell_faces = 0
+    end select
+  end function num_cell_faces
+
+  function cell_face_sig (cnodes) result (face_sig)
+    integer, intent(in) :: cnodes(:)
+    integer, pointer :: face_sig(:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      face_sig => TETRA4_FACE_SIG
+    case (5)  ! pyramid
+      face_sig => PYR5_FACE_SIG
+    case (6)  ! wedge
+      face_sig => WED6_FACE_SIG
+    case (8)  ! hex
+      face_sig => HEX8_FACE_SIG
+    case default
+      face_sig => null()
+    end select
+  end function cell_face_sig
+
+  function cell_face_sizes (cnodes) result (fsizes)
+    integer, intent(in) :: cnodes(:)
+    integer, pointer :: fsizes(:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      fsizes => TETRA4_FSIZE
+    case (5)  ! pyramid
+      fsizes => PYR5_FSIZE
+    case (6)  ! wedge
+      fsizes => WED6_FSIZE
+    case (8)  ! hex
+      fsizes => HEX8_FSIZE
+    case default
+      fsizes => null()
+    end select
+  end function cell_face_sizes
 
   pure subroutine get_cell_face_sizes (cnodes, fsizes)
     integer, intent(in) :: cnodes(:)
@@ -348,6 +400,34 @@ contains
     end if
 
   end function link_face_nodes
+
+  pure subroutine get_link_face_nodes (lnodes, k, fnodes, normalize, reverse)
+
+    integer, intent(in) :: lnodes(:), k
+    integer, allocatable, intent(inout) :: fnodes(:)
+    logical, intent(in), optional :: normalize, reverse
+
+    select case (size(lnodes))
+    case (6) ! triangular link faces
+      fnodes = lnodes(TRI_LINK_FACE_VERT(:,k))
+    case (8) ! quadrilateral link faces
+      fnodes = lnodes(QUAD_LINK_FACE_VERT(:,k))
+    case default
+      if (allocated(fnodes)) deallocate(fnodes)
+      return
+    end select
+    
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) call normalize_facet (fnodes)
+    end if
+    
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) call reverse_facet (fnodes)
+    end if
+
+  end subroutine get_link_face_nodes
 
 
   pure integer function parity (f, g)
