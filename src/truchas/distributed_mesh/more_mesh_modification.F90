@@ -60,100 +60,92 @@ module more_mesh_modification
 
 contains
 
-  subroutine convert_cells_to_links (mesh, block_id, stat, errmsg)
+  subroutine convert_cells_to_links (ebid, mesh, link, stat, errmsg)
 
-    use mesh_importer, only: external_mesh, side_set
     use cell_topology
     use facet_hash_type
     use string_utilities, only: i_to_c
+    use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
 
-    type(external_mesh), intent(inout), target :: mesh
-    integer, intent(in) :: block_id(:)
+    integer, intent(in) :: ebid(:)
+    type(exodus_mesh), intent(inout), target :: mesh
+    type(link_mesh), intent(out), target :: link
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
-    integer :: i, j, k, n, side_bitmask, node_bitmask
-    logical, allocatable :: link_cell(:), link_node(:), keep(:)
-    integer, allocatable :: link_side(:), xbin(:), map(:), old_cnode(:,:), old_cell_block(:), tmp(:)
-    integer, pointer :: cnode(:), fnode(:)
-    type(side_set), pointer :: old_sset(:)
-    type(facet_hash) :: hpar
+    integer :: i, j, k, l, n, offset, offset1, side_mask, node_mask
+    logical, allocatable :: link_eblk(:), link_node(:), keep(:)
+    integer, allocatable :: link_side(:), face(:), map(:)
+    integer, pointer :: side_sig(:) => null(), flat_connect(:) => null()
+    type(elem_blk), allocatable :: new_eblk(:)
+    type(side_set), allocatable :: new_sset(:)
 
     type :: table_entry
-      integer, pointer :: fnode(:) => null()
+      integer, allocatable :: face(:)
     end type table_entry
-    type(table_entry), pointer :: table(:), bin(:)
-
-    !! Hex cell parameters
-    integer, parameter :: NUM_FACE = 6
-    integer, parameter :: FACE_SIZE = 4
-    integer, parameter :: LINK_12 = int(b'000011')
-    integer, parameter :: LINK_34 = int(b'001100')
-    integer, parameter :: LINK_56 = int(b'110000')
-    integer, parameter :: ROTATE_12(8) = (/ 1, 5, 6, 2, 4, 8, 7, 3 /)
-    integer, parameter :: ROTATE_34(8) = (/ 1, 4, 8, 5, 2, 3, 7, 6 /)
+    type(table_entry), allocatable :: table(:)
+    integer, allocatable :: xbin(:)
+    type(facet_hash) :: hpar
 
     stat = 0
-    errmsg = ''
 
-    if (size(block_id) == 0) return ! nothing to do
-
-    !! This subroutine can only be applied to hex meshes.
-    if (mesh%mesh_type /= 'HEX') then
-      stat = -1
-      errmsg = 'CONVERT_CELLS_TO_LINKS: invalid mesh type: ' // trim(mesh%mesh_type)
-      return
-    end if
-
-    !! Check that the specifed block IDs are valid.
-    do j = 1, size(block_id)
-      do i = size(mesh%block_id), 1, -1
-        if (block_id(j) == mesh%block_id(i)) exit
+    if (size(ebid) == 0) return ! nothing to do
+    
+    !! Tag the element blocks whose elements are to be converted into links.
+    allocate(link_eblk(mesh%num_eblk))
+    link_eblk = .false.
+    do i = 1, size(ebid)
+      do n = mesh%num_eblk, 1, -1
+        if (mesh%eblk(n)%id == ebid(i)) exit
       end do
-      if (i == 0) then
+      if (n == 0) then
         stat = -1
-        errmsg = 'CONVERT_CELLS_TO_LINKS: unknown element block ID: ' // i_to_c(block_id(j))
+        errmsg = 'CONVERT_CELLS_TO_LINKS: unknown element block ID: ' // i_to_c(ebid(i))
         return
       end if
-    end do
-
-    !! Tag the cells that are to be converted into link cells.
-    allocate(link_cell(mesh%ncell))
-    do j = 1, mesh%ncell
-      link_cell(j) = any(mesh%cell_block(j) == block_id)
+      link_eblk(n) = .true.
     end do
 
     !! Tag the nodes that lie along the gap: all link cell nodes.
-    allocate(link_node(mesh%nnode))
+    allocate(link_node(mesh%num_node))
     link_node = .false.
-    do j = 1, mesh%ncell
-      if (link_cell(j)) link_node(mesh%cnode(:,j)) = .true.
+    do i = 1, mesh%num_eblk
+      if (link_eblk(i)) then
+        do j = 1, mesh%eblk(i)%num_elem
+          link_node(mesh%eblk(i)%connect(:,j)) = .true.
+        end do
+      end if
     end do
 
     !! Identify those remaining cell sides that may match a link cell side;
     !! these are sides whose nodes are all link nodes.  This info is stored
     !! in the bitmask array LINK_SIDE.
-    n = 0 ! side count
-    allocate(link_side(mesh%ncell))
-    do j = 1, mesh%ncell
-      link_side(j) = 0
-      if (link_cell(j)) cycle  ! not interested in these cells
-      !! Tag the link nodes on this cell.
-      cnode => mesh%cnode(:,j)
-      node_bitmask = 0
-      do k = 1, size(cnode)
-        if (link_node(cnode(k))) node_bitmask = ibset(node_bitmask, k-1)
-      end do
-      if (node_bitmask == 0) cycle ! no link nodes on this cell at all
-      !! Tag the cell sides whose nodes are all link nodes.
-      side_bitmask = 0
-      do k = 1, size(HEX8_FACE_SIG)
-        if (iand(node_bitmask, HEX8_FACE_SIG(k)) == HEX8_FACE_SIG(k)) then
-          n = n + 1
-          side_bitmask = ibset(side_bitmask, k-1)
-        end if
-      end do
-      link_side(j) = side_bitmask
+    allocate(link_side(mesh%num_elem))
+    link_side = 0
+    offset = 0
+    do i = 1, mesh%num_eblk
+      if (.not.link_eblk(i)) then
+        side_sig => cell_face_sig(mesh%eblk(i)%connect(:,1))
+        do j = 1, mesh%eblk(i)%num_elem
+          associate (connect => mesh%eblk(i)%connect(:,j))
+            !! Tag the link nodes on this element
+            node_mask = 0
+            do k = 1, size(connect)
+              if (link_node(connect(k))) node_mask = ibset(node_mask, k-1)
+            end do
+            if (node_mask == 0) cycle ! no link nodes on this element
+            !! Tag the element sides whose nodes are all link nodes
+            side_mask = 0
+            do k = 1, size(side_sig)
+              if (iand(node_mask, side_sig(k)) == side_sig(k)) then
+                side_mask = ibset(side_mask, k-1)
+              end if
+            end do
+            link_side(offset+j) = side_mask
+          end associate
+        end do
+      end if
+      offset = offset + mesh%eblk(i)%num_elem
     end do
     deallocate(link_node)
 
@@ -163,22 +155,31 @@ contains
    !! data structure enables efficient searching of the sides.
    !!
 
+    n = sum(popcnt(link_side))
     allocate(table(n))
-    call hpar%init (n, mesh%nnode)  ! adjusts N to a power of 2
+    call hpar%init (n, mesh%num_node)  ! adjusts N to a power of 2
     allocate(xbin(0:n))
 
     !! Count the number of hits to each bin; store the count for bin N in XBIN(N+1).
+    offset = 0    
     xbin = 0
-    do j = 1, mesh%ncell
-      if (link_side(j) == 0) cycle
-      do k = 1, NUM_FACE
-        if (btest(link_side(j), k-1)) then
-          fnode => hex_face_nodes (mesh%cnode(:,j), k, normalize=.true.)
-          call hpar%hash (fnode, n)
-          xbin(n+1) = xbin(n+1) + 1
-          deallocate(fnode)
-        end if
-      end do
+    do i = 1, mesh%num_eblk
+      if (.not.link_eblk(i)) then
+        associate (connect => mesh%eblk(i)%connect)
+          side_sig => cell_face_sig(connect(:,1))
+          do j = 1, mesh%eblk(i)%num_elem
+            if (link_side(offset+j) == 0) cycle
+            do k = 1, size(side_sig)
+              if (btest(link_side(offset+j),k-1)) then
+                call get_face_nodes (connect(:,j), k, face)
+                call hpar%hash (face, n)
+                xbin(n+1) = xbin(n+1) + 1
+              end if
+            end do
+          end do
+        end associate
+      end if
+      offset = offset + mesh%eblk(i)%num_elem
     end do
 
     !! Prepare XBIN: bin J will be TABLE(XBIN(J):XBIN(J+1)-1).
@@ -188,18 +189,26 @@ contains
     end do
 
     !! Fill the table; use XBIN as a temporary to hold the next free location for each bin.
-    do j = 1, mesh%ncell
-      do k = 1, NUM_FACE
-        if (btest(link_side(j), k-1)) then
-          fnode => hex_face_nodes (mesh%cnode(:,j), k, normalize=.true.)
-          call hpar%hash (fnode, n)
-          i = xbin(n)
-          table(i)%fnode => fnode
-          xbin(n) = i + 1
-        end if
-      end do
+    offset = 0    
+    do i = 1, mesh%num_eblk
+      if (.not.link_eblk(i)) then
+        associate (connect => mesh%eblk(i)%connect)
+          side_sig => cell_face_sig(connect(:,1))
+          do j = 1, mesh%eblk(i)%num_elem
+            if (link_side(offset+j) == 0) cycle
+            do k = 1, size(side_sig)
+              if (btest(link_side(offset+j),k-1)) then
+                call get_face_nodes (connect(:,j), k, face, normalize=.true.)
+                call hpar%hash (face, n)
+                call move_alloc (face, table(xbin(n))%face)
+                xbin(n) = xbin(n) + 1
+              end if
+            end do
+          end do
+        end associate
+      end if
+      offset = offset + mesh%eblk(i)%num_elem
     end do
-    deallocate(link_side)
 
     !! Restore XBIN: the index of the first element of bin J is now XBIN(J-1)
     !! instead of XBIN(J) as it should be -- fix this.
@@ -208,143 +217,140 @@ contains
     end do
     xbin(0) = 1
 
-   !!
-   !! Verify that the specified cells are valid link cells: exactly one pair
-   !! of opposing sides must match sides of the remaining cells.  The table
-   !! created above contains all the possible candidates.  We also reorient
-   !! the link cells, if necessary, so that it is sides 5/6 (bottom/top) that
-   !! lie along the gap surfaces.
-   !!
+    !!
+    !! Verify that the specified cells are valid link cells: exactly one pair
+    !! of opposing sides must match sides of the remaining cells.  The table
+    !! created above contains all the possible candidates.  We also reorient
+    !! hex link cells, if necessary, so that it is sides 5/6 (bottom/top) that
+    !! lie along the gap surfaces.
+    !!
 
-    do j = 1, mesh%ncell
-      if (link_cell(j)) then
-        cnode => mesh%cnode(:,j)
-        !! For each side of the link cell search the table for a matching side.
-        side_bitmask = 0  ! sides that match
-        do k = 1, NUM_FACE
-          !! The FNODE the neighbor cell would have for this side.
-          fnode => hex_face_nodes (cnode, k, reverse=.true., normalize=.true.)
-          call hpar%hash (fnode, n)
-          bin => table(xbin(n):xbin(n+1)-1)
-          do i = size(bin), 1, -1
-            if (all(fnode == bin(i)%fnode)) exit
-          end do
-          if (i /= 0) side_bitmask = ibset(side_bitmask, k-1)
-          deallocate(fnode)
+    offset = 0
+    do i = 1, mesh%num_eblk
+      if (link_eblk(i)) then
+        side_sig => cell_face_sig(mesh%eblk(i)%connect(:,1))
+        do j = 1, mesh%eblk(i)%num_elem
+          associate (connect => mesh%eblk(i)%connect(:,j))
+            side_mask = 0 ! sides that match
+            do k = 1, size(side_sig)
+              call get_face_nodes (connect, k, face, reverse=.true., normalize=.true.)
+              call hpar%hash (face, n)
+              associate (bin => table(xbin(n):xbin(n+1)-1))
+                do l = size(bin), 1, -1
+                  if (all(face == bin(l)%face)) exit
+                end do
+                if (l > 0) side_mask = ibset(side_mask,k-1)
+              end associate
+            end do
+            !! Check the signature of the matching sides and reorient if necessary
+            select case (size(connect,dim=1))
+            case (6)  ! wedge element
+              select case (side_mask)
+              case (int(b'11000'))
+                ! no reorientation necessary
+              case default
+                stat = -1
+                errmsg = 'CONVERT_CELLS_TO_LINKS: invalid link cell ' // i_to_c(offset+j)
+                return
+              end select
+            case (8)  ! hex element
+              select case (side_mask)
+              case(int(b'000101'))
+                connect = connect([1,5,6,2,4,8,7,3])
+              case(int(b'001010'))
+                connect = connect([1,4,8,5,2,3,7,6])
+              case(int(b'110000'))
+                ! no reorientation necessary
+              case default
+                stat = -1
+                errmsg = 'CONVERT_CELLS_TO_LINKS: invalid link cell ' // i_to_c(offset+j)
+                return
+              end select
+            case default
+              INSIST(.false.)
+            end select
+          end associate
         end do
-        !! Check the signature of the matching sides and reorient if necessary.
-        select case (side_bitmask)
-        case (LINK_12)
-          cnode = cnode(ROTATE_12)
-        case (LINK_34)
-          cnode = cnode(ROTATE_34)
-        case (LINK_56)
-          ! no reorientation necessary
-        case default
-          stat = -1
-          errmsg = 'CONVERT_CELLS_TO_LINKS: unrecognized link cell ' // i_to_c(j)
-          return
-        end select
       end if
-    end do
-
-    !! Delete the table -- we're finished with it.
-    do j = 1, size(table)
-      if (associated(table(i)%fnode)) deallocate(table(i)%fnode)
+      offset = offset + mesh%eblk(i)%num_elem
     end do
     deallocate(table, xbin)
 
-   !!
-   !! Convert the specified cells into link cells.  The cells that remain must
-   !! be repacked into contiguous arrays along with their associated cell block
-   !! info.  We also need to update the list of block IDs and the side set data.
-   !!
-
-    !! New link cell data array.
-    INSIST(mesh%nlink == 0)
-    deallocate(mesh%lnode, mesh%link_block, mesh%link_block_id)
-    mesh%nlink = count(link_cell)
-    allocate(mesh%lnode(2*FACE_SIZE,mesh%nlink), mesh%link_block(mesh%nlink))
-
-    !! Resized mesh cell arrays.
-    mesh%ncell = mesh%ncell - mesh%nlink
-    call move_alloc (mesh%cnode, old_cnode)
-    call move_alloc (mesh%cell_block, old_cell_block)
-    allocate(mesh%cnode(8,mesh%ncell), mesh%cell_block(mesh%ncell))
-
-    !! Copy the old cell data into the new data arrays.  If cell J is not a link
-    !! cell, then MAP(J) is its new cell number; MAP(J) = 0 for link cells.
-    n = 0
-    i = 0
-    allocate(map(size(old_cnode,dim=2)))
-    do j = 1, size(old_cnode,dim=2)
-      if (link_cell(j)) then
-        n = n + 1
-        map(j) = 0  ! dummy value -- shouldn't be used
-        mesh%lnode(:,n) = old_cnode(:,j)
-        mesh%link_block(n) = old_cell_block(j)
-      else
-        i = i + 1
-        map(j) = i
-        mesh%cnode(:,i) = old_cnode(:,j)
-        mesh%cell_block(i) = old_cell_block(j)
+    !! Transform the elements in the link element blocks into links.
+    link%nlink = sum(mesh%eblk%num_elem, mask=link_eblk)
+    n = sum(mesh%eblk%num_elem * mesh%eblk%num_nodes_per_elem, mask=link_eblk)
+    allocate(link%xlnode(link%nlink+1), link%lnode(n), link%link_block(link%nlink))
+    link%link_block_id = pack(mesh%eblk%id, mask=link_eblk)
+    link%nlblock = size(link%link_block_id)
+    offset = 0; offset1 = 0
+    link%xlnode(1) = 1
+    do i = 1, mesh%num_eblk
+      if (link_eblk(i)) then
+        do j = 1, mesh%eblk(i)%num_elem
+          link%xlnode(offset+j+1) = link%xlnode(offset+j) + mesh%eblk(i)%num_nodes_per_elem
+          link%link_block(offset+j) = mesh%eblk(i)%id
+        end do
+        associate (connect => mesh%eblk(i)%connect)
+          call c_f_pointer (c_loc(connect), flat_connect, shape=[size(connect)])
+          link%lnode(offset1+1:offset1+size(connect)) = flat_connect
+          offset1 = offset1 + size(connect)
+        end associate
+        offset = offset + mesh%eblk(i)%num_elem
       end if
     end do
-    deallocate(old_cnode, old_cell_block)
-    ASSERT(n == mesh%nlink)
-    ASSERT(i == mesh%ncell)
 
-    !! Fix-up the block ID list; the link cell blocks are gone now.
-    allocate(keep(mesh%nblock))
-    do i = 1, mesh%nblock
-      keep(i) = all(mesh%block_id(i) /= block_id)
+    !! Prune the link element blocks from the EBLK array, and generate the
+    !! old-to-new cell number MAP; MAP(J) = 0 for link cells.
+    allocate(new_eblk(count(.not.link_eblk)), map(mesh%num_elem))
+    n = 0; offset = 0; offset1 = 0
+    do i = 1, mesh%num_eblk
+      if (link_eblk(i)) then
+        map(offset+1:offset+mesh%eblk(i)%num_elem) = 0
+      else
+        n = n + 1
+        new_eblk(n)%id                 = mesh%eblk(i)%id
+        new_eblk(n)%num_elem           = mesh%eblk(i)%num_elem
+        new_eblk(n)%num_nodes_per_elem = mesh%eblk(i)%num_nodes_per_elem
+        new_eblk(n)%elem_type          = mesh%eblk(i)%elem_type
+        call move_alloc (mesh%eblk(i)%connect, new_eblk(n)%connect)
+        do j = 1, mesh%eblk(i)%num_elem
+          map(offset+j) = offset1 + j
+        end do
+        offset1 = offset1 + mesh%eblk(i)%num_elem
+      end if
+      offset = offset + mesh%eblk(i)%num_elem
     end do
-    n = count(keep)
-    allocate(mesh%link_block_id(mesh%nblock-n))
-    mesh%nlblock = size(mesh%link_block_id)
-    mesh%link_block_id = pack(mesh%block_id, mask=.not.keep)
-    if (n < mesh%nblock) then
-      call move_alloc (mesh%block_id, tmp)
-      allocate(mesh%block_id(n))
-      mesh%nblock = n
-      mesh%block_id = pack(tmp, mask=keep)
-      deallocate(tmp)
-    end if
-    deallocate(keep)
+    deallocate(mesh%eblk)
+    call move_alloc (new_eblk, mesh%eblk)
+    mesh%num_eblk = size(mesh%eblk)
+    mesh%num_elem = sum(mesh%eblk%num_elem)
 
-    !! Fix-up the sideset data: some elements are gone and the rest renumbered.
-    do i = 1, size(mesh%sset)
-      allocate(keep(mesh%sset(i)%num_side))
-      keep = .not.link_cell(mesh%sset(i)%elem)
-      n = count(keep)
-      mesh%sset(i)%num_side = n
-      call move_alloc (mesh%sset(i)%elem, tmp)
-      allocate(mesh%sset(i)%elem(n))
-      mesh%sset(i)%elem = map(pack(tmp, mask=keep))
-      deallocate(tmp)
-      call move_alloc (mesh%sset(i)%face, tmp)
-      allocate(mesh%sset(i)%face(n))
-      mesh%sset(i)%face = pack(tmp, mask=keep)
-      deallocate(tmp, keep)
+    !! Fix-up the side set data: some elements are gone and the rest renumbered.
+    do i = 1, mesh%num_sset
+      mesh%sset(i)%elem = map(mesh%sset(i)%elem)
+      keep = (mesh%sset(i)%elem > 0)
+      mesh%sset(i)%elem = pack(mesh%sset(i)%elem, mask=keep)
+      mesh%sset(i)%face = pack(mesh%sset(i)%face, mask=keep)
+      mesh%sset(i)%num_side = size(mesh%sset(i)%elem)
     end do
-    deallocate(link_cell)
 
-    !! Prune any empty side sets that may have resulted.
+    !! Prune any empty side sets from the SSET array that may have resulted.
     n = count(mesh%sset%num_side > 0)
-    if (n < size(mesh%sset)) then
-      old_sset => mesh%sset
-      allocate(mesh%sset(n))
+    if (n < mesh%num_sset) then
+      allocate(new_sset(n))
       n = 0
-      do i = 1, size(old_sset)
-        if (old_sset(i)%num_side > 0) then
+      do i = 1, mesh%num_sset
+        if (mesh%sset(i)%num_side > 0) then
           n = n + 1
-          mesh%sset(n) = old_sset(i)
-        else  ! deallocate the 0-sized array pointer components
-          deallocate(old_sset(i)%elem, old_sset(i)%face)
+          new_sset(n)%id       = mesh%sset(i)%id
+          new_sset(n)%num_side = mesh%sset(i)%num_side
+          call move_alloc (mesh%sset(i)%elem, new_sset(n)%elem)
+          call move_alloc (mesh%sset(i)%face, new_sset(n)%face)
         end if
       end do
-      ASSERT(n == size(mesh%sset))
-      deallocate(old_sset)
+      deallocate(mesh%sset)
+      call move_alloc (new_sset, mesh%sset)
+      mesh%num_sset = size(mesh%sset)
     end if
 
   end subroutine convert_cells_to_links

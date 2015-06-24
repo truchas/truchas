@@ -74,7 +74,7 @@ contains
     integer, allocatable :: face_perm(:)
     integer, allocatable :: offP_size(:)
     integer, pointer :: offP_index(:)
-    integer, allocatable :: p(:), ssid(:)
+    integer, allocatable :: p(:), ssid(:), ebid(:)
     type(exodus_mesh) :: exo_mesh
     type(link_mesh)   :: link
     character(:), allocatable :: mesh_file
@@ -103,6 +103,20 @@ contains
     end if
     
     !! Create internal interfaces
+    if (is_IOP) then
+      if (params%is_parameter('gap-element-block-ids')) then
+        call params%get ('gap-element-block-ids', ebid)
+        call convert_cells_to_links (ebid, exo_mesh, link, stat, errmsg)
+      end if
+    end if
+    call broadcast (stat)
+    if (stat /= 0) then
+      if (is_IOP) n = len(errmsg)
+      call broadcast (n)
+      if (.not.is_IOP) allocate(character(len=n)::errmsg)
+      call broadcast (errmsg)
+      return
+    end if
     if (is_IOP) then
       if (params%is_parameter('interface-side-set-ids')) then
         call params%get ('interface-side-set-ids', ssid)

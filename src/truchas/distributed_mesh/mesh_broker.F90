@@ -357,6 +357,7 @@ contains
       call params%set ('mesh-file', trim(mesh_file))
       call params%set ('coord-scale-factor', coordinate_scale_factor)
       call params%set ('interface-side-set-ids', pack(interface_side_sets, mask=(interface_side_sets > 0)))
+      call params%set ('gap-element-block-ids', pack(gap_element_blocks, mask=(gap_element_blocks > 0)))
       meshes%first%mesh%params => params
     end if
 
