@@ -106,6 +106,18 @@ module mfd_disc_type
     procedure :: init => mfd_tet_init
     procedure :: compute_flux_matrix => mfd_tet_compute_flux_matrix
   end type mfd_tet
+  
+  type :: mfd_cell
+    integer :: nfaces
+    real(r8), allocatable :: face_centers(:,:)
+    real(r8), allocatable :: cell_center(:)
+    real(r8), allocatable :: face_area(:)
+    real(r8), allocatable :: face_normals(:,:)
+    real(r8) :: volume
+  contains
+    procedure :: init => mfd_cell_init
+    procedure :: compute_flux_matrix_inv => mfd_cell_compute_flux_matrix_inv
+  end type mfd_cell
 
 contains
 
@@ -172,6 +184,7 @@ contains
     integer :: j, n
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
+    type(mfd_cell), allocatable :: cell
 
     select type (mesh => this%mesh)
     type is (dist_mesh)
@@ -210,7 +223,7 @@ contains
         this%xminv2(j+1) = this%xminv2(j) + n
       end do
       allocate(this%minv2(this%xminv2(mesh%ncell+1)-1))
-      allocate(tet, hex)
+      allocate(tet, hex, cell)
       do j = 1, mesh%ncell
         associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
                    minv2 => this%minv2(this%xminv2(j):this%xminv2(j+1)-1))
@@ -218,6 +231,9 @@ contains
           case (4)  ! tet
             call tet%init (mesh%x(:,cnode))
             call tet%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+          case (5,6)  ! pyramid or tet (eventually tet and hex too!)
+            call cell%init (mesh%x(:,cnode))
+            call cell%compute_flux_matrix_inv (1.0_r8, minv2)
           case (8)  ! hex
             call hex%init (mesh%x(:,cnode))
             call hex%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
@@ -252,6 +268,7 @@ contains
     integer :: j
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
+    type(mfd_cell), allocatable :: cell
 
     INSIST(size(grad,1) == 3)
     INSIST(size(uface) == this%mesh%nface)
@@ -276,7 +293,7 @@ contains
         INSIST(.false.)
       end select
     type is (unstr_mesh)
-      allocate(tet, hex)
+      allocate(tet, hex, cell)
       do j = 1, size(grad,2)
         associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
                    cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
@@ -284,6 +301,9 @@ contains
           case (4)
             call tet%init (mesh%x(:,cnode))
             grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
+          case (5,6)  ! pyramid or tet (eventually tet and hex too!)
+            call cell%init (mesh%x(:,cnode))
+            grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
           case (8)
             call hex%init (mesh%x(:,cnode))
             grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
@@ -308,6 +328,7 @@ contains
     integer :: j
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
+    type(mfd_cell), allocatable :: cell
 
     INSIST(size(grad,1) == 3)
     INSIST(size(uface) == this%mesh%nface)
@@ -341,7 +362,7 @@ contains
         INSIST(.false.)
       end select
     type is (unstr_mesh)
-      allocate(tet, hex)
+      allocate(tet, hex, cell)
       do j = 1, size(grad,2)
         if (mask(j)) then
           associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
@@ -350,6 +371,9 @@ contains
             case (4)
               call tet%init (mesh%x(:,cnode))
               grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
+            case (5,6)  ! pyramid or tet (eventually tet and hex too!)
+              call cell%init (mesh%x(:,cnode))
+              grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
             case (8)
               call hex%init (mesh%x(:,cnode))
               grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
@@ -490,11 +514,13 @@ contains
   !! NNC, August 2014.  Need external access to a MFD_HEX_COMPUTE_FLUX_MATRIX.
   !! This needs to be revisited/generalized when this module is refactored.
   subroutine mfd_disc_compute_flux_matrix (this, n, matrix)
+    use upper_packed_matrix, only: invert_upm
     class(mfd_disc), intent(in) :: this
     integer, intent(in) :: n
     real(r8), intent(out) :: matrix(:)
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
+    type(mfd_cell), allocatable :: cell
     ASSERT(n >=1 .and. n <= this%mesh%ncell)
     select type (mesh => this%mesh)
     type is (dist_mesh)
@@ -511,12 +537,16 @@ contains
         INSIST(.false.)
       end select
     type is (unstr_mesh)
-      allocate(tet, hex)
+      allocate(tet, hex, cell)
       associate (cnode => mesh%cnode(mesh%xcnode(n):mesh%xcnode(n+1)-1))
         select case (size(cnode))
         case (4)
           call tet%init (mesh%x(:,cnode))
           call tet%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
+        case (5,6)  ! pyramid or wedge (and eventually tet and hex too!)
+          call cell%init (mesh%x(:,cnode))
+          call cell%compute_flux_matrix_inv (1.0_r8, matrix)
+          call invert_upm (matrix)
         case (8)
           call hex%init (mesh%x(:,cnode))
           call hex%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
@@ -528,5 +558,102 @@ contains
       INSIST(.false.)
     end select
   end subroutine mfd_disc_compute_flux_matrix
+
+  !!!! MFD_CELL type bound procedures !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mfd_cell_init (this, vertices)
+    use cell_geometry
+    class(mfd_cell), intent(out) :: this
+    real(r8), intent(in) :: vertices(:,:)
+    integer :: j
+    ASSERT(size(vertices,dim=1) == 3)
+    this%face_centers = cell_face_centers(vertices)
+    this%cell_center  = sum(vertices,dim=2) / size(vertices,dim=2)
+    this%face_normals = cell_face_normals(vertices)
+    allocate(this%face_area(size(this%face_normals,dim=2)))
+    do j = 1, size(this%face_area)
+      this%face_area(j) = vector_length(this%face_normals(:,j))
+    end do
+    this%volume = cell_volume(vertices)
+  end subroutine mfd_cell_init
+
+!!!!!!!!!!!!!!!!!!!
+!! This is procedure computes inverse of the MFD mass matrix for a polygonal
+!! cell using standard choice of MFD parameters
+!! W - is an inverse of mass matrix
+!!
+!! W = (coef/volume)*N*N' + (coef/volume)*(I - Q*Q')
+!!
+!! N - matrix of normals
+!! Q - orthonormal basis of range(R)
+!!
+  subroutine mfd_cell_compute_flux_matrix_inv(this, coef, matrix)
+
+    class(mfd_cell), intent(in) :: this
+    real(r8), intent(in) :: coef
+    real(r8), intent(out) :: matrix(:)
+
+    integer :: c, i, j, k, n, loc
+    real(r8) :: alpha, stab_val, u_par
+    real(r8), allocatable :: Q(:,:), R(:, :)
+    real(r8) :: rv(3)
+
+    allocate(Q(3, this%nfaces)) 
+    allocate(R(3, this%nfaces)) 
+    matrix = 0.0_r8
+
+    n = this%nfaces
+
+    do i=1, n
+       R(:, i) = (this%face_centers(:, i) - this%cell_center(:))*this%face_area(i)
+    end do
+
+!!! Modifies Grammm-Schimdt orthogonalization
+
+    do k=1, 3
+       rv(k) = 0;
+       do i=1, n
+          rv(k) = rv(k) + R(k,i)*R(k,i)
+       end do
+       rv(k) = sqrt(rv(k))      
+       Q(k,:) = R(k,:)/rv(k)
+       do j=k+1, 3
+          rv(j) = 0;
+          do i=1, n
+             rv(j) = rv(j) + Q(k,i)*R(j,i)
+          end do
+          R(j,:) = R(j,:) - Q(k,:)*rv(j)
+       end do
+    end do
+    
+!!$    print *, "Q"
+!!$    do i=1, n
+!!$       print *,  Q(:, i)
+!!$    end do
+
+    do i = 1, n
+       do j = i, n
+          loc = i + j*(j-1)/2
+          matrix(loc) = 0.
+          do k = 1, 3
+             matrix(loc) = matrix(loc) +  this%face_normals(k,i) * this%face_normals(k,j)
+          end do
+
+          stab_val = 0.
+          do k = 1, 3
+             stab_val = stab_val - Q(k, i)*Q(k, j)
+          end do
+          if (i.eq.j) stab_val = stab_val + 1
+
+          matrix(loc) = (matrix(loc) + stab_val)*(coef/this%volume)
+!          matrix(loc) = (matrix(loc))*(coef/this%volume)
+
+       end do
+    end do
+
+    deallocate(Q)
+    deallocate(R)
+
+  end subroutine mfd_cell_compute_flux_matrix_inv
 
 end module mfd_disc_type

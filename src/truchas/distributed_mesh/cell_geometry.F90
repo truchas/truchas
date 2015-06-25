@@ -18,6 +18,7 @@ module cell_geometry
   public :: tet_face_normals, hex_face_normals, eval_hex_volumes
   public :: edge_length
   public :: cross_product, triple_product, vector_length
+  public :: cell_face_normals, cell_face_centers
 
 contains
 
@@ -120,6 +121,23 @@ contains
     hvol = 0.5_r8 * (sum(cvol) + tet_volume(x(:,[1,3,8,6])) + tet_volume(x(:,[2,4,5,7])))
 
   end subroutine eval_hex_volumes
+  
+  pure function cell_face_normals (x) result (a)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), allocatable :: a(:,:)
+    select case (size(x,2))
+    case (4)
+      a = tet_face_normals(x)
+    case (5)
+      a = pyramid_face_normals(x)
+    case (6)
+      a = wedge_face_normals(x)
+    case (8)
+      a = hex_face_normals(x)
+    case default
+      allocate(a(3,0))
+    end select
+  end function cell_face_normals
 
   pure function tet_face_normals (x) result (a)
 
@@ -139,6 +157,46 @@ contains
     a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
 
   end function tet_face_normals
+
+  pure function pyramid_face_normals (x) result (a)
+
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: a(3,5)
+
+    ! incompatible with PURE
+    !ASSERT(size(x,dim=1) == 3)
+    !ASSERT(size(x,dim=2) == 5)
+
+    !! NB: These must be consistent with the PYR5 vertex and face labelings
+    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
+    !! its PYR5_FACE_VERT array was not used here.
+    a(:,1) = 0.5_r8 * cross_product(x(:,2)-x(:,1), x(:,5)-x(:,1))
+    a(:,2) = 0.5_r8 * cross_product(x(:,3)-x(:,2), x(:,5)-x(:,2))
+    a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,5)-x(:,3))
+    a(:,4) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,5)-x(:,4))
+    a(:,5) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,4))
+
+  end function pyramid_face_normals
+
+  pure function wedge_face_normals (x) result (a)
+
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: a(3,5)
+
+    ! incompatible with PURE
+    !ASSERT(size(x,dim=1) == 3)
+    !ASSERT(size(x,dim=2) == 6)
+
+    !! NB: These must be consistent with the WED6 vertex and face labelings
+    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
+    !! its WED6_FACE_VERT array was not used here.
+    a(:,1) = 0.5_r8 * cross_product(x(:,5)-x(:,1), x(:,4)-x(:,2))
+    a(:,2) = 0.5_r8 * cross_product(x(:,6)-x(:,2), x(:,5)-x(:,3))
+    a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,6)-x(:,1))
+    a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
+    a(:,5) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,6)-x(:,4))
+
+  end function wedge_face_normals
   
   pure function hex_face_normals (x) result (a)
 
@@ -195,6 +253,59 @@ contains
     case default
     end select
   end function face_normal
+  
+  pure function cell_face_centers (x) result (xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), allocatable :: xc(:,:)
+    select case (size(x,dim=2))
+    case (4)
+      allocate(xc(3,4))
+      xc(:,1) = (x(:,1) + x(:,2) + x(:,4)) / 3.0_r8
+      xc(:,2) = (x(:,2) + x(:,3) + x(:,4)) / 3.0_r8
+      xc(:,3) = (x(:,1) + x(:,3) + x(:,4)) / 3.0_r8
+      xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+    case (5)
+      allocate(xc(3,5))
+      xc(:,1) = (x(:,1) + x(:,2) + x(:,5)) / 3.0_r8
+      xc(:,2) = (x(:,2) + x(:,3) + x(:,5)) / 3.0_r8
+      xc(:,3) = (x(:,3) + x(:,4) + x(:,5)) / 3.0_r8
+      xc(:,4) = (x(:,1) + x(:,4) + x(:,5)) / 3.0_r8
+      xc(:,5) = polygon_center(x(:,[1,4,3,2]))
+    case (6)
+      allocate(xc(3,5))
+      xc(:,1) = polygon_center(x(:,[1,2,5,4]))
+      xc(:,2) = polygon_center(x(:,[2,3,6,5]))
+      xc(:,3) = polygon_center(x(:,[1,4,6,3]))
+      xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+      xc(:,5) = (x(:,4) + x(:,5) + x(:,6)) / 3.0_r8
+    case (8)
+      allocate(xc(3,6))
+      xc(:,1) = polygon_center(x(:,[1,2,6,5]))
+      xc(:,2) = polygon_center(x(:,[2,3,7,6]))
+      xc(:,3) = polygon_center(x(:,[3,4,8,7]))
+      xc(:,4) = polygon_center(x(:,[1,5,8,4]))
+      xc(:,5) = polygon_center(x(:,[1,4,3,2]))
+      xc(:,6) = polygon_center(x(:,[5,6,7,8]))
+    end select
+  end function cell_face_centers
+  
+  pure function polygon_center (x) result (xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: xc(3), xtri(3,3), asum, atri
+    integer :: n, j
+    n = size(x,dim=2)
+    xtri(:,3) = sum(x,dim=2) / n
+    asum = 0.0_r8; xc = 0.0_r8
+    do j = 1, n
+      xtri(:,1) = x(:,j)
+      xtri(:,2) = x(:,modulo(j,n)+1)
+      atri = tri_area(xtri)
+      asum = asum + atri
+      xc = xc + atri*sum(xtri,dim=2)/3.0_r8
+    end do
+    xc = xc / asum
+  end function polygon_center
+
 
   pure function vector_length (x) result (l)
   
@@ -251,5 +362,65 @@ contains
     real(kind=r8) :: l
     l = vector_length (x(:,1)-x(:,2))
   end function edge_length
+
+
+  pure function tri_area (x) result (area)
+  
+    real(kind=r8), intent(in) :: x(:,:)
+    real(kind=r8) :: area, l(3)
+    
+    l(1) = vector_length(x(:,1)-x(:,2))
+    l(2) = vector_length(x(:,2)-x(:,3))
+    l(3) = vector_length(x(:,3)-x(:,1))
+    area = tri_area_l (l)
+    
+  end function tri_area
+  
+  pure function tri_area_l (l) result (area)
+  
+    real(r8), intent(in) :: l(3)
+    real(r8) :: area, a, b, c, t
+    
+    a = l(1)
+    b = l(2)
+    c = l(3)
+    
+    ! Sort so that a >= b >= c
+    if (b > a) then
+      if (c > a) then
+        t = a
+        a = c
+        c = t
+        if (b > a) then
+          t = a
+          a = b
+          b = t
+        end if
+      else
+        t = a
+        a = b
+        b = t
+      end if
+    else
+      if (c > b) then
+        t = b
+        b = c
+        c = t
+        if (b > a) then
+          t = a
+          a = b
+          b = t
+        end if
+      end if
+    end if
+    
+    if (c-(a-b) < 0.0_r8) then ! not the lengths of a real triangle
+      area = 2.0_r8               ! trigger a floating point exception;
+      area = sqrt(1.0_r8 - area)  ! must be a bit obtuse about it.
+    else
+      area = 0.25_r8 * sqrt((a+(b+c))*(c-(a-b))*(c+(a-b))*(a+(b-c)))
+    end if
+
+  end function tri_area_l
   
 end module cell_geometry

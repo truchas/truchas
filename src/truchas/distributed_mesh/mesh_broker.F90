@@ -39,6 +39,7 @@ module mesh_broker
     integer, pointer :: iface_sset_id(:) => null()
     logical :: enabled = .false.
     logical :: em_mesh = .false. ! whether this mesh is for EM (HACK)
+    logical :: dist_mesh = .false.  ! whether to generate an old DIST_MESH mesh (TEMP)
     !type(dist_mesh), pointer :: mesh => null()
     class(base_mesh), pointer :: mesh => null()
     type(parameter_list), pointer :: params => null()
@@ -147,16 +148,10 @@ contains
         call write_info ('')
         call write_info ('Initializing distributed mesh ' // trim(l%first%mesh%name) // ' ...')
         call write_info ('  Reading ExodusII mesh file ' // trim(l%first%mesh%file))
-        call import_exodus_mesh (l%first%mesh%file, xmesh)
-        if (l%first%mesh%coord_scale_factor /= 1.0_r8) &
-            xmesh%x = l%first%mesh%coord_scale_factor * xmesh%x
-        if (is_IOP) call convert_cells_to_links (xmesh, l%first%mesh%gap_blocks, stat, errmsg)
-        call broadcast (stat)
-        if (stat /= 0) call halt ('INIT_MESH_BROKER: ' // trim(errmsg))
-        if (is_IOP) call create_internal_interfaces (xmesh, l%first%mesh%iface_sset_id, stat, errmsg)
-        call broadcast (stat)
-        if (stat /= 0) call halt ('INIT_MESH_BROKER: ' // trim(errmsg))
         if (l%first%mesh%em_mesh) then
+          call import_exodus_mesh (l%first%mesh%file, xmesh)
+          if (l%first%mesh%coord_scale_factor /= 1.0_r8) &
+              xmesh%x = l%first%mesh%coord_scale_factor * xmesh%x
           select case (xmesh%mesh_type)
           case ('TET')
             allocate(dmesh)
@@ -166,16 +161,28 @@ contains
             INSIST( .false. )
           end select
         else
-          select case (xmesh%mesh_type)
-          case ('TET', 'HEX')
-            !dmesh => new_dist_mesh(xmesh)
+          if (l%first%mesh%dist_mesh) then
+            call import_exodus_mesh (l%first%mesh%file, xmesh)
+            if (l%first%mesh%coord_scale_factor /= 1.0_r8) &
+                xmesh%x = l%first%mesh%coord_scale_factor * xmesh%x
+            if (is_IOP) call convert_cells_to_links (xmesh, l%first%mesh%gap_blocks, stat, errmsg)
+            call broadcast (stat)
+            if (stat /= 0) call halt ('INIT_MESH_BROKER: ' // trim(errmsg))
+            if (is_IOP) call create_internal_interfaces (xmesh, l%first%mesh%iface_sset_id, stat, errmsg)
+            call broadcast (stat)
+            if (stat /= 0) call halt ('INIT_MESH_BROKER: ' // trim(errmsg))
+            select case (xmesh%mesh_type)
+            case ('TET', 'HEX')
+              dmesh => new_dist_mesh(xmesh)
+              l%first%mesh%mesh => dmesh
+            case default
+              INSIST( .false. )
+            end select
+          else
             umesh => new_unstr_mesh(l%first%mesh%params, stat, errmsg2)
             if (stat /= 0) call TLS_fatal (errmsg2)
-            !l%first%mesh%mesh => dmesh
             l%first%mesh%mesh => umesh
-          case default
-            INSIST( .false. )
-          end select
+          end if
         end if
         call l%first%mesh%mesh%write_profile
         call destroy (xmesh)
