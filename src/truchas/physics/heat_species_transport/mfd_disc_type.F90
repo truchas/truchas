@@ -107,7 +107,7 @@ module mfd_disc_type
     procedure :: compute_flux_matrix => mfd_tet_compute_flux_matrix
   end type mfd_tet
   
-  type :: mfd_cell
+  type, public :: mfd_cell
     integer :: nfaces
     real(r8), allocatable :: face_centers(:,:)
     real(r8), allocatable :: cell_center(:)
@@ -653,10 +653,10 @@ call cell%dump
        end do
     end do
     
-!!$    print *, "Q"
-!!$    do i=1, n
-!!$       print *,  Q(:, i)
-!!$    end do
+!!$   print *, "Q"
+!!$   do i=1, n
+!!$      print *,  Q(:, i)
+!!$   end do
 
     do i = 1, n
        do j = i, n
@@ -671,6 +671,8 @@ call cell%dump
              stab_val = stab_val - Q(k, i)*Q(k, j)
           end do
           if (i.eq.j) stab_val = stab_val + 1
+
+          stab_val = stab_val * this%face_area(i) * this%face_area(j)
 
           matrix(loc) = (matrix(loc) + stab_val)*(coef/this%volume)
 !          matrix(loc) = (matrix(loc))*(coef/this%volume)
