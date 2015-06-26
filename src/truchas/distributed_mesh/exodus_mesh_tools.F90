@@ -1,49 +1,52 @@
 !!
-!! MESH_MODIFICATION
+!! EXODUS_MESH_TOOLS
 !!
-!! This module provides several routines that apply specialized schemes that
-!! modify a primitive mesh (in its intermediate serial EXTERNAL_MESH-type
-!! form) prior to generating the final distributed mesh.
+!! This module provides procedures that apply specific transformations to
+!! an Exodus mesh object.  Currently these involve the creation of internal
+!! mesh interfaces, either through the conversion of so-called gap element
+!! blocks or the slicing open of the mesh along specified side sets.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! Modified for general Exodus meshes, June 2015.
 !!
 !! PROGRAMMING INTERFACE
 !!
-!! The following routines operate on EXTERNAL_MESH-type meshes
+!! The following routines operate on EXT_EXODUS_MESH-type meshes and are
+!! suitable for general mixed-element meshes.
 !!
-!!  CALL CONVERT_CELLS_TO_LINKS (MESH, BLOCK_ID, STAT, ERRMSG) removes the
+!!  CALL CONVERT_CELLS_TO_LINKS (MESH, EBID, STAT, ERRMSG) removes the
 !!    specified set of cells from the mesh and converts them into a special
 !!    link data structure from which the original mesh connectivity may be
-!!    recovered.  The cells must form a 1-cell thick layer, which when removed
-!!    create gap interface in the mesh.  Each of these cells must have exactly
-!!    one pair of opposite faces that match faces in the remaining mesh.
-!!    MESH is the EXTERNAL_MESH-type mesh and BLOCK_ID is a rank-1 integer
-!!    array of cell block IDs identifying the blocks of cells that are to be
-!!    converted.  The modified mesh is returned in MESH.  STAT returns a
-!!    nonzero integer value if and error is encountered and an explanatory
-!!    error message is assigned to the string ERRMSG.  This is a serial
-!!    procedure and is only applicable to hexahedral meshes (non-degenerate).
+!!    recovered. The cells must form a 1-cell thick layer, which when removed
+!!    create a gap interface in the mesh.  Each of these cells must have
+!!    exactly one pair of opposing sides that match sides in the remaining
+!!    mesh.  EBID is a rank-1 integer array of element block IDs identifying
+!!    the cells that are to be converted.  The modified mesh is returned in
+!!    MESH.  The input mesh may not have any existing links.  STAT returns
+!!    a nonzero integer value if an error is encountered and an explanatory
+!!    error message is assigned to the deferred-length allocatable character
+!!    argument ERRMSG.
 !!
 !! CALL CREATE_INTERNAL_INTERFACES (MESH, SSID, STAT, ERRMSG) slices the
 !!    input mesh open along the mesh surfaces specified by the list SSID
 !!    of side set IDs.  This involves duplicating nodes along the surface
 !!    and disconnecting neighboring cells across the surface to create an
 !!    internal interface.  This interface appears as a boundary of the mesh,
-!!    but a special link data structure is added the MESH object that encodes
-!!    the original cell connectivity across the interface.  The specified
-!!    surface must not lie on the boundary of the input mesh.  STAT returns
-!!    a nonzero value if an error is encountered and an explanatory error
-!!    message is assigned to the string ERRMSG.  This is a serial procedure
-!!    and is applicable to both tet and hex meshes (non-degenerate).
+!!    but a special link data structure is added to the MESH object that
+!!    encodes the original cell connectivity across the interface.  The
+!!    specified surface must not lie on the boundary of the input mesh.
+!!    It is permissible for the input mesh to contain pre-existing link
+!!    data; the created links will be appended.  STAT returns a nonzero
+!!    value if an error is encountered and an explanatory error message is
+!!    assigned to the deferred-length allocatable character argument ERRMSG.
 !!
 
 #include "f90_assert.fpp"
 
-module more_mesh_modification
+module exodus_mesh_tools
 
-  use kinds, only: r8
   use exodus_mesh_type
+  use ext_exodus_mesh_type
   use string_utilities, only: i_to_c
   implicit none
   private
@@ -51,25 +54,17 @@ module more_mesh_modification
   public :: convert_cells_to_links
   public :: create_internal_interfaces
   
-  type, public :: link_mesh
-    integer :: nlink=0, nlblock=0
-    integer, allocatable :: xlnode(:), lnode(:)
-    integer, allocatable :: link_block(:)
-    integer, allocatable :: link_block_id(:)
-  end type link_mesh
-
 contains
 
-  subroutine convert_cells_to_links (ebid, mesh, link, stat, errmsg)
+  subroutine convert_cells_to_links (mesh, ebid, stat, errmsg)
 
     use cell_topology
     use facet_hash_type
     use string_utilities, only: i_to_c
     use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
 
+    type(ext_exodus_mesh), intent(inout), target :: mesh
     integer, intent(in) :: ebid(:)
-    type(exodus_mesh), intent(inout), target :: mesh
-    type(link_mesh), intent(out), target :: link
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -89,7 +84,16 @@ contains
 
     stat = 0
 
-    if (size(ebid) == 0) return ! nothing to do
+    if (size(ebid) == 0) then ! nothing much to do
+      call mesh%set_no_links
+      return
+    end if
+    
+    if (mesh%nlink /= 0) then
+      stat = -1
+      errmsg = 'CONVERT_CELLS_TO_LINKS: found pre-existing links'
+      return
+    end if
     
     !! Tag the element blocks whose elements are to be converted into links.
     allocate(link_eblk(mesh%num_eblk))
@@ -277,22 +281,23 @@ contains
     deallocate(table, xbin)
 
     !! Transform the elements in the link element blocks into links.
-    link%nlink = sum(mesh%eblk%num_elem, mask=link_eblk)
+    call mesh%delete_links  ! deallocates the arrays if allocated
+    mesh%nlink = sum(mesh%eblk%num_elem, mask=link_eblk)
     n = sum(mesh%eblk%num_elem * mesh%eblk%num_nodes_per_elem, mask=link_eblk)
-    allocate(link%xlnode(link%nlink+1), link%lnode(n), link%link_block(link%nlink))
-    link%link_block_id = pack(mesh%eblk%id, mask=link_eblk)
-    link%nlblock = size(link%link_block_id)
+    allocate(mesh%xlnode(mesh%nlink+1), mesh%lnode(n), mesh%link_block(mesh%nlink))
+    mesh%link_block_id = pack(mesh%eblk%id, mask=link_eblk)
+    mesh%nlblock = size(mesh%link_block_id)
     offset = 0; offset1 = 0
-    link%xlnode(1) = 1
+    mesh%xlnode(1) = 1
     do i = 1, mesh%num_eblk
       if (link_eblk(i)) then
         do j = 1, mesh%eblk(i)%num_elem
-          link%xlnode(offset+j+1) = link%xlnode(offset+j) + mesh%eblk(i)%num_nodes_per_elem
-          link%link_block(offset+j) = mesh%eblk(i)%id
+          mesh%xlnode(offset+j+1) = mesh%xlnode(offset+j) + mesh%eblk(i)%num_nodes_per_elem
+          mesh%link_block(offset+j) = mesh%eblk(i)%id
         end do
         associate (connect => mesh%eblk(i)%connect)
           call c_f_pointer (c_loc(connect), flat_connect, shape=[size(connect)])
-          link%lnode(offset1+1:offset1+size(connect)) = flat_connect
+          mesh%lnode(offset1+1:offset1+size(connect)) = flat_connect
           offset1 = offset1 + size(connect)
         end associate
         offset = offset + mesh%eblk(i)%num_elem
@@ -425,15 +430,14 @@ contains
  !! for the active submesh only.
  !!
 
-  subroutine create_internal_interfaces (ssid, mesh, link, stat, errmsg)
+  subroutine create_internal_interfaces (mesh, ssid, stat, errmsg)
 
     use facet_hash_type
     use cell_topology
     use integer_set_type
 
     integer, intent(in) :: ssid(:)
-    type(exodus_mesh), intent(inout), target :: mesh
-    type(link_mesh), intent(inout), target :: link
+    type(ext_exodus_mesh), intent(inout), target :: mesh
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -442,7 +446,7 @@ contains
     integer, allocatable :: side1(:), side2(:), sides(:), cell_side(:), itmp(:)
     logical, allocatable :: active_sset(:), active_node(:), active_cell(:)
     integer, allocatable :: parent(:), equiv(:), map(:), daughter(:)
-    real(r8), allocatable :: new_x(:,:)
+    real(kind(mesh%coord)), allocatable :: new_x(:,:)
     type(integer_set), allocatable :: extra_sides(:)
 
     !! Data arrays for the active submesh.
@@ -468,14 +472,7 @@ contains
 
     stat = 0
 
-    !! Put a 0-sized input link mesh into a known state. 
-    if (.not.allocated(link%xlnode)) then
-      link%nlink = 0
-      link%nlblock = 0
-      allocate(link%xlnode(1), link%lnode(0), link%link_block_id(0), link%link_block(0))
-      link%xlnode(1) = 1
-    end if
-
+    if (mesh%nlink == 0) call mesh%set_no_links  ! code below expects defined link data
     if (size(ssid) == 0) return ! nothing to do
 
     !! Generate the active side set mask array ACTIVE_SSET.
@@ -672,9 +669,9 @@ contains
 
     !! Find the neighboring cell to each active link side, filling in
     !! LINK_JNBR and LINK_KNBR; 0 values assigned for inactive sides.
-    allocate(link_jnbr(2,link%nlink), link_knbr(2,link%nlink))
-    do j = 1, link%nlink
-      associate (link_nodes => link%lnode(link%xlnode(j):link%xlnode(j+1)-1))
+    allocate(link_jnbr(2,mesh%nlink), link_knbr(2,mesh%nlink))
+    do j = 1, mesh%nlink
+      associate (link_nodes => mesh%lnode(mesh%xlnode(j):mesh%xlnode(j+1)-1))
         n = size(link_nodes)/2  ! number of nodes on each link face
         do k = 1, 2
           !! The SIDE1 my neighbor cell would have for this side.
@@ -866,8 +863,8 @@ contains
    !! disconnect them.
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    do j = 1, link%nlink
-      associate (link_nodes => link%lnode(link%xlnode(j):link%xlnode(j+1)-1))
+    do j = 1, mesh%nlink
+      associate (link_nodes => mesh%lnode(mesh%xlnode(j):mesh%xlnode(j+1)-1))
         n = size(link_nodes)/2  ! number of nodes on each link face
         do k = 1, 2 ! loop over the two link sides
           if (link_jnbr(k,j) > 0) then
@@ -915,11 +912,11 @@ contains
 
     !! Define the list of link block IDs.  The side set ID used to define the
     !! interface is inherited as the link block ID of the corresponding links.
-    link%nlblock = link%nlblock + count(active_sset)
-    call move_alloc (link%link_block_id, itmp)
-    allocate(link%link_block_id(link%nlblock))
-    link%link_block_id(:size(itmp)) = itmp
-    link%link_block_id(size(itmp)+1:) = pack(mesh%sset(:)%ID, mask=active_sset)
+    mesh%nlblock = mesh%nlblock + count(active_sset)
+    call move_alloc (mesh%link_block_id, itmp)
+    allocate(mesh%link_block_id(mesh%nlblock))
+    mesh%link_block_id(:size(itmp)) = itmp
+    mesh%link_block_id(size(itmp)+1:) = pack(mesh%sset(:)%ID, mask=active_sset)
     deallocate(itmp, active_sset)
 
     !! Extend the link data structure storage to accomodate the new links.
@@ -935,26 +932,26 @@ contains
     end do
     n1 = n1 / 2 ! double counted
     !! Extend link_block
-    call move_alloc (link%link_block, itmp)
-    allocate(link%link_block(size(itmp)+n1))
-    link%link_block(:size(itmp)) = itmp
+    call move_alloc (mesh%link_block, itmp)
+    allocate(mesh%link_block(size(itmp)+n1))
+    mesh%link_block(:size(itmp)) = itmp
     deallocate(itmp)
     !! Extend xlnode
-    call move_alloc (link%xlnode, itmp)
-    allocate(link%xlnode(size(itmp)+n1))
-    link%xlnode(:size(itmp)) = itmp
+    call move_alloc (mesh%xlnode, itmp)
+    allocate(mesh%xlnode(size(itmp)+n1))
+    mesh%xlnode(:size(itmp)) = itmp
     deallocate(itmp)
     !! Extend lnode
-    call move_alloc (link%lnode, itmp)
-    allocate(link%lnode(size(itmp)+n2))
-    link%lnode(:size(itmp)) = itmp
+    call move_alloc (mesh%lnode, itmp)
+    allocate(mesh%lnode(size(itmp)+n2))
+    mesh%lnode(:size(itmp)) = itmp
     deallocate(itmp)
 
     allocate(equiv(size(parent)))
     equiv = 0
 
-    n = link%nlink  ! still the old value
-    link%nlink = size(link%xlnode) - 1
+    n = mesh%nlink  ! still the old value
+    mesh%nlink = size(mesh%xlnode) - 1
     do j = 1, size(acell)
       do k = 1, acell(j)%nface
 
@@ -985,10 +982,10 @@ contains
           !! Create a link between the adjacent cells across this interface side.
           !! The link inherits the defining side set ID as its block ID.
           n = n + 1
-          link%xlnode(n+1) = link%xlnode(n) + size(side1) + size(side2)
-          link%lnode(link%xlnode(n):link%xlnode(n)+size(side1)-1) = side1
-          link%lnode(link%xlnode(n)+size(side1):link%xlnode(n+1)-1) = side2
-          link%link_block(n) = mesh%sset(acell(j)%iside(k))%id
+          mesh%xlnode(n+1) = mesh%xlnode(n) + size(side1) + size(side2)
+          mesh%lnode(mesh%xlnode(n):mesh%xlnode(n)+size(side1)-1) = side1
+          mesh%lnode(mesh%xlnode(n)+size(side1):mesh%xlnode(n+1)-1) = side2
+          mesh%link_block(n) = mesh%sset(acell(j)%iside(k))%id
 
         case (0) ! open side
 
@@ -1003,8 +1000,8 @@ contains
 
       end do
     end do
-    ASSERT(n == link%nlink)
-    ASSERT(size(link%lnode) == link%xlnode(link%nlink+1)-1)
+    ASSERT(n == mesh%nlink)
+    ASSERT(size(mesh%lnode) == mesh%xlnode(mesh%nlink+1)-1)
 
     ASSERT(all(equiv(:mesh%num_node) == 0))
     ASSERT(minval(equiv,equiv/=0) > mesh%num_node)
@@ -1083,8 +1080,8 @@ contains
     end do
     
     !! Renumber the link nodes.
-    do i = 1, size(link%lnode)
-      link%lnode(i) = map(link%lnode(i))
+    do i = 1, size(mesh%lnode)
+      mesh%lnode(i) = map(mesh%lnode(i))
     end do
 
     !! Define the DAUGHTER data structure.
@@ -1148,4 +1145,4 @@ contains
 
   end subroutine create_internal_interfaces
 
-end module more_mesh_modification
+end module exodus_mesh_tools
