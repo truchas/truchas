@@ -13,6 +13,7 @@ module upper_packed_matrix
   private
 
   public :: factor_upm, invert_upm, solve_upm, sym_matmul, upm_col_sum
+  public :: dump_upm
 
   interface sym_matmul
     module procedure sym_matmul_vec, sym_matmul_mat
@@ -21,6 +22,17 @@ module upper_packed_matrix
   integer, parameter :: r8 = selected_real_kind(10,50)  ! 8-byte IEEE float
 
 contains
+
+  subroutine dump_upm (a)
+    real(r8), intent(in) :: a(:)
+    integer :: n, offset
+    offset = 0; n = 0
+    do while (offset < size(a))
+      n = n + 1
+      write(*,'(6es10.2)') a(offset+1:offset+n)
+      offset = offset + n
+    end do
+  end subroutine dump_upm
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

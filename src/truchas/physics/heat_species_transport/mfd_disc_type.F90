@@ -117,6 +117,7 @@ module mfd_disc_type
   contains
     procedure :: init => mfd_cell_init
     procedure :: compute_flux_matrix_inv => mfd_cell_compute_flux_matrix_inv
+    procedure :: dump => mfd_cell_dump
   end type mfd_cell
 
 contains
@@ -179,8 +180,10 @@ contains
 
   subroutine init_minv (this)
 
+use upper_packed_matrix
     type(mfd_disc), intent(inout) :: this
 
+integer :: i, k
     integer :: j, n
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
@@ -229,14 +232,27 @@ contains
                    minv2 => this%minv2(this%xminv2(j):this%xminv2(j+1)-1))
           select case (size(cnode))
           case (4)  ! tet
-            call tet%init (mesh%x(:,cnode))
-            call tet%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
-          case (5,6)  ! pyramid or tet (eventually tet and hex too!)
+            !call tet%init (mesh%x(:,cnode))
+            !call tet%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+            call cell%init (mesh%x(:,cnode))
+            call cell%compute_flux_matrix_inv (1.0_r8, minv2)
+          case (5,6)  ! pyramid or wedge (eventually tet and hex too!)
             call cell%init (mesh%x(:,cnode))
             call cell%compute_flux_matrix_inv (1.0_r8, minv2)
           case (8)  ! hex
-            call hex%init (mesh%x(:,cnode))
-            call hex%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+            !call hex%init (mesh%x(:,cnode))
+            !call hex%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+            call cell%init (mesh%x(:,cnode))
+print '(/,a)', 'OLD MATRIX'
+call hex%init(mesh%x(:,cnode))
+call hex%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+call dump_upm (minv2)
+print '(/,a)', 'NEW MATRIX'
+            call cell%compute_flux_matrix_inv (1.0_r8, minv2)
+call dump_upm (minv2)
+print '(/,a)', 'CELL DATA'
+call cell%dump
+
           case default
             INSIST(.false.)
           end select
@@ -575,7 +591,18 @@ contains
       this%face_area(j) = vector_length(this%face_normals(:,j))
     end do
     this%volume = cell_volume(vertices)
+    this%nfaces = size(this%face_normals,dim=2)
   end subroutine mfd_cell_init
+
+  subroutine mfd_cell_dump (this)
+    class(mfd_cell), intent(in) :: this
+    integer :: j
+    write(*,'(a,es10.2,a,3es10.2)') 'VOLUME=', this%volume, ', CENTER=', this%cell_center
+    write(*,'((a,i0,a,es10.2,a,3es10.2))') &
+        ('FACE(', j, '): AREA=', this%face_area(j), ', CENTER=', this%face_centers(:,j), j=1,this%nfaces)
+    write(*,'((a,i0,a,3es10.2))') &
+        ('FACE(', j, '): NORMAL=', this%face_normals(:,j), j=1,this%nfaces)
+  end subroutine
 
 !!!!!!!!!!!!!!!!!!!
 !! This is procedure computes inverse of the MFD mass matrix for a polygonal
