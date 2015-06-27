@@ -74,7 +74,7 @@ contains
     integer, intent(in) :: lun
 
     integer :: ios
-    logical :: found, exists, hypre_amg_debug, use_new_mfd
+    logical :: found, exists, hypre_amg_debug
     character(len=32) :: nlk_preconditioner, stepping_method
     character(len=8)  :: string
 
