@@ -94,6 +94,9 @@ module cell_topology
   
   integer, target, public :: HEX8_VERT_FACE(3,8)
   data HEX8_VERT_FACE/1,4,5, 1,2,5, 2,3,5, 3,4,5, 1,4,6, 1,2,6, 2,3,6, 3,4,6/
+  
+  integer, target, public :: WED6_VERT_FACE(3,6)
+  data WED6_VERT_FACE/1,3,4, 1,2,4, 2,3,4, 1,3,5, 1,2,5, 2,3,5/
 
   integer, target, public :: TETRA4_FACE_VERT(3,4)
   data TETRA4_FACE_VERT/1,2,4, 2,3,4, 1,4,3, 1,3,2/

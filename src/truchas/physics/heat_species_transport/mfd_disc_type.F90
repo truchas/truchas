@@ -80,6 +80,7 @@ module mfd_disc_type
     ! new stuff for mixed cell type meshes
     integer, allocatable :: xminv2(:)
     real(r8), allocatable :: minv2(:)
+    logical :: use_new_mfd
   contains
     procedure :: init => mfd_disc_init
     procedure :: apply_diff => mfd_disc_apply_diff
@@ -98,6 +99,15 @@ module mfd_disc_type
     procedure :: init => mfd_hex_init
     procedure :: compute_flux_matrix => mfd_hex_compute_flux_matrix
   end type mfd_hex
+
+  type :: mfd_wedge
+    real(r8) :: volume
+    real(r8) :: corner_volumes(6)
+    real(r8) :: face_normals(3,5)
+  contains
+    procedure :: init => mfd_wedge_init
+    procedure :: compute_flux_matrix => mfd_wedge_compute_flux_matrix
+  end type mfd_wedge
 
   type :: mfd_tet
     real(r8) :: volume
@@ -122,12 +132,14 @@ module mfd_disc_type
 
 contains
 
-  subroutine mfd_disc_init (this, mesh, minv)
+  subroutine mfd_disc_init (this, mesh, use_new_mfd, minv)
     class(mfd_disc), intent(out) :: this
     class(base_mesh), intent(in), target :: mesh
+    logical, intent(in) :: use_new_mfd
     logical, intent(in), optional :: minv
     logical :: define_minv
     this%mesh => mesh
+    this%use_new_mfd = use_new_mfd
     define_minv = .true.
     if (present(minv)) define_minv = minv
     if (define_minv) call init_minv (this)
@@ -180,6 +192,7 @@ contains
 
   subroutine init_minv (this)
 
+    use cell_topology, only: num_cell_faces
 use upper_packed_matrix
     type(mfd_disc), intent(inout) :: this
 
@@ -187,6 +200,7 @@ integer :: i, k
     integer :: j, n
     type(mfd_tet), allocatable :: tet
     type(mfd_hex), allocatable :: hex
+    type(mfd_wedge), allocatable :: wedge
     type(mfd_cell), allocatable :: cell
 
     select type (mesh => this%mesh)
@@ -211,51 +225,37 @@ integer :: i, k
       allocate(this%xminv2(mesh%ncell+1))
       this%xminv2(1) = 1
       do j = 1, mesh%ncell
-        select case (mesh%xcnode(j+1) - mesh%xcnode(j))
-        case (4)  ! tet - 4 faces
-          n = 10
-        case (5)  ! pyramid - 5 faces
-          n = 15
-        case (6)  ! wedge - 5 faces
-          n = 15
-        case (8)  ! hex - 6 faces
-          n = 21
-        case default
-          INSIST(.false.)
-        end select
-        this%xminv2(j+1) = this%xminv2(j) + n
+        associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))
+          n = num_cell_faces(cnode)
+          this%xminv2(j+1) = this%xminv2(j) + (n*(n+1))/2
+        end associate
       end do
       allocate(this%minv2(this%xminv2(mesh%ncell+1)-1))
-      allocate(tet, hex, cell)
+      allocate(tet, hex, cell, wedge)
       do j = 1, mesh%ncell
         associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
                    minv2 => this%minv2(this%xminv2(j):this%xminv2(j+1)-1))
-          select case (size(cnode))
-          case (4)  ! tet
-            !call tet%init (mesh%x(:,cnode))
-            !call tet%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+          if (this%use_new_mfd) then
             call cell%init (mesh%x(:,cnode))
             call cell%compute_flux_matrix_inv (1.0_r8, minv2)
-          case (5,6)  ! pyramid or wedge (eventually tet and hex too!)
-            call cell%init (mesh%x(:,cnode))
-            call cell%compute_flux_matrix_inv (1.0_r8, minv2)
-          case (8)  ! hex
-            !call hex%init (mesh%x(:,cnode))
-            !call hex%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
-            call cell%init (mesh%x(:,cnode))
-print '(/,a)', 'OLD MATRIX'
-call hex%init(mesh%x(:,cnode))
-call hex%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
-call dump_upm (minv2)
-print '(/,a)', 'NEW MATRIX'
-            call cell%compute_flux_matrix_inv (1.0_r8, minv2)
-call dump_upm (minv2)
-print '(/,a)', 'CELL DATA'
-call cell%dump
-
-          case default
-            INSIST(.false.)
-          end select
+          else
+            select case (size(cnode))
+            case (4)  ! tet
+              call tet%init (mesh%x(:,cnode))
+              call tet%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+            case (5)  ! pyramid
+              call cell%init (mesh%x(:,cnode))
+              call cell%compute_flux_matrix_inv (1.0_r8, minv2)
+            case (6)  ! wedge
+              call wedge%init (mesh%x(:,cnode))
+              call wedge%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+            case (8)  ! hex
+              call hex%init (mesh%x(:,cnode))
+              call hex%compute_flux_matrix (1.0_r8, minv2, invert=.true.)
+            case default
+              INSIST(.false.)
+            end select
+          end if
         end associate
       end do
     class default
@@ -283,6 +283,7 @@ call cell%dump
 
     integer :: j
     type(mfd_tet), allocatable :: tet
+    type(mfd_wedge), allocatable :: wedge
     type(mfd_hex), allocatable :: hex
     type(mfd_cell), allocatable :: cell
 
@@ -309,7 +310,7 @@ call cell%dump
         INSIST(.false.)
       end select
     type is (unstr_mesh)
-      allocate(tet, hex, cell)
+      allocate(tet, hex, cell, wedge)
       do j = 1, size(grad,2)
         associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
                    cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
@@ -317,9 +318,12 @@ call cell%dump
           case (4)
             call tet%init (mesh%x(:,cnode))
             grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
-          case (5,6)  ! pyramid or tet (eventually tet and hex too!)
+          case (5)  ! pyramid or tet (eventually tet and hex too!)
             call cell%init (mesh%x(:,cnode))
             grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
+          case (6)
+            call wedge%init (mesh%x(:,cnode))
+            grad(:,j) = matmul(wedge%face_normals, uface(cface)) / wedge%volume
           case (8)
             call hex%init (mesh%x(:,cnode))
             grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
@@ -343,6 +347,7 @@ call cell%dump
 
     integer :: j
     type(mfd_tet), allocatable :: tet
+    type(mfd_hex), allocatable :: wedge
     type(mfd_hex), allocatable :: hex
     type(mfd_cell), allocatable :: cell
 
@@ -378,7 +383,7 @@ call cell%dump
         INSIST(.false.)
       end select
     type is (unstr_mesh)
-      allocate(tet, hex, cell)
+      allocate(tet, hex, cell, wedge)
       do j = 1, size(grad,2)
         if (mask(j)) then
           associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
@@ -387,9 +392,12 @@ call cell%dump
             case (4)
               call tet%init (mesh%x(:,cnode))
               grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
-            case (5,6)  ! pyramid or tet (eventually tet and hex too!)
+            case (5)  ! pyramid or tet (eventually tet and hex too!)
               call cell%init (mesh%x(:,cnode))
               grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
+            case (6)
+              call wedge%init (mesh%x(:,cnode))
+              grad(:,j) = matmul(wedge%face_normals, uface(cface)) / wedge%volume
             case (8)
               call hex%init (mesh%x(:,cnode))
               grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
@@ -455,6 +463,62 @@ call cell%dump
     end if
 
   end subroutine mfd_tet_compute_flux_matrix
+
+  !!!! MFD_WEDGE type bound procedures !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine mfd_wedge_init (this, vertices)
+    use cell_geometry, only: cell_volume, wedge_face_normals, tet_volume
+    class(mfd_wedge), intent(out) :: this
+    real(r8), intent(in) :: vertices(:,:)
+    ASSERT(size(vertices,1) == 3 .and. size(vertices,2) == 6)
+    this%volume = cell_volume(vertices)
+    this%face_normals = wedge_face_normals(vertices)
+    this%corner_volumes(1) = tet_volume(vertices(:,[1,2,3,4]))
+    this%corner_volumes(2) = tet_volume(vertices(:,[2,3,1,5]))
+    this%corner_volumes(3) = tet_volume(vertices(:,[3,1,2,6]))
+    this%corner_volumes(1) = tet_volume(vertices(:,[4,6,5,1]))
+    this%corner_volumes(2) = tet_volume(vertices(:,[5,4,6,2]))
+    this%corner_volumes(3) = tet_volume(vertices(:,[6,5,4,3]))
+  end subroutine mfd_wedge_init
+
+  subroutine mfd_wedge_compute_flux_matrix (this, coef, matrix, invert)
+
+    use cell_topology, only: WED6_VERT_FACE
+    use upper_packed_matrix, only: invert_upm
+
+    class(mfd_wedge), intent(in) :: this
+    real(r8), intent(in) :: coef
+    real(r8), intent(out) :: matrix(:)
+    logical, intent(in), optional :: invert
+
+    integer :: c, i, j, ii, jj, loc
+    real(r8) :: s, cwt(6), Nc(3,3), Mc(3,3)
+
+    ASSERT(size(matrix) == 15)
+
+    matrix = 0.0_r8
+    cwt = this%corner_volumes / sum(this%corner_volumes)
+    do c = 1, 6
+      Nc = this%face_normals(:,WED6_VERT_FACE(:,c))
+      call invert_sym_3x3(matmul(transpose(Nc),Nc), Mc)
+      !! Scatter the corner matrix into the full cell flux matrix.
+      !! It is essential that WED6_VERT_FACE(:,c) is an increasing sequence of indices.
+      s = this%volume * cwt(c) / coef
+      do j = 1, 3
+        jj = WED6_VERT_FACE(j,c)
+        do i = 1, j
+          ii = WED6_VERT_FACE(i,c)
+          loc = ii + jj*(jj - 1)/2
+          matrix(loc) = matrix(loc) + s*Mc(i,j)
+        end do
+      end do
+    end do
+
+    if (present(invert)) then
+      if (invert) call invert_upm (matrix)
+    end if
+
+  end subroutine mfd_wedge_compute_flux_matrix
 
   !!!! MFD_HEX type bound procedures !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -535,6 +599,7 @@ call cell%dump
     integer, intent(in) :: n
     real(r8), intent(out) :: matrix(:)
     type(mfd_tet), allocatable :: tet
+    type(mfd_wedge), allocatable :: wedge
     type(mfd_hex), allocatable :: hex
     type(mfd_cell), allocatable :: cell
     ASSERT(n >=1 .and. n <= this%mesh%ncell)
@@ -553,22 +618,30 @@ call cell%dump
         INSIST(.false.)
       end select
     type is (unstr_mesh)
-      allocate(tet, hex, cell)
+      allocate(tet, hex, cell, wedge)
       associate (cnode => mesh%cnode(mesh%xcnode(n):mesh%xcnode(n+1)-1))
-        select case (size(cnode))
-        case (4)
-          call tet%init (mesh%x(:,cnode))
-          call tet%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
-        case (5,6)  ! pyramid or wedge (and eventually tet and hex too!)
+        if (this%use_new_mfd) then
           call cell%init (mesh%x(:,cnode))
           call cell%compute_flux_matrix_inv (1.0_r8, matrix)
-          call invert_upm (matrix)
-        case (8)
-          call hex%init (mesh%x(:,cnode))
-          call hex%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
-        case default
-          INSIST(.false.)
-        end select
+        else
+          select case (size(cnode))
+          case (4)
+            call tet%init (mesh%x(:,cnode))
+            call tet%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
+          case (5)  ! pyramid or wedge (and eventually tet and hex too!)
+            call cell%init (mesh%x(:,cnode))
+            call cell%compute_flux_matrix_inv (1.0_r8, matrix)
+            call invert_upm (matrix)
+          case (6)
+            call wedge%init (mesh%x(:,cnode))
+            call wedge%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
+          case (8)
+            call hex%init (mesh%x(:,cnode))
+            call hex%compute_flux_matrix (1.0_r8, matrix, invert=.false.)
+          case default
+            INSIST(.false.)
+          end select
+        end if
       end associate
     class default
       INSIST(.false.)

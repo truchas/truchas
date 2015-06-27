@@ -387,7 +387,7 @@ contains
     call generate_mesh_mappings (this%mesh)
     
     allocate(this%disc)
-    call this%disc%init (this%mesh)
+    call this%disc%init (this%mesh, use_new_mfd)
     
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg)

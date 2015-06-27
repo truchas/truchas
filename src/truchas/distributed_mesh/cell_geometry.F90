@@ -15,7 +15,7 @@ module cell_geometry
 
   public :: cell_volume, tet_volume, hex_volume
   public :: face_normal, tri_face_normal, quad_face_normal
-  public :: tet_face_normals, hex_face_normals, eval_hex_volumes
+  public :: tet_face_normals, hex_face_normals, eval_hex_volumes, wedge_face_normals
   public :: edge_length
   public :: cross_product, triple_product, vector_length
   public :: cell_face_normals, cell_face_centers

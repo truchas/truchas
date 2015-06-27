@@ -14,13 +14,13 @@ module unstr_mesh_factory
   use parameter_list_type
   implicit none
   private
-  
+
   public :: unstr_mesh, new_unstr_mesh
-  
+
 contains
 
   function new_unstr_mesh (params, stat, errmsg) result (mesh)
-  
+
     use ext_exodus_mesh_type
     use exodus_mesh_tools
     use exodus_mesh_io, only: read_exodus_mesh
@@ -28,40 +28,11 @@ contains
     use index_partitioning
     use more_unstr_mesh_tools
     use parallel_communication
-  
+
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable :: errmsg
     type(unstr_mesh), pointer :: mesh
-    
-! Current parameters:
-! mesh_file, coord_scale_factor, gap_element_blocks, interface_side_sets
-
-! Current process:
-! * reads the mesh file and populates a exodus_mesh object (serial):
-!   coordinates, element blocks, node sets, side sets -- just as in file
-! * populates an external_mesh object from the exodus_mesh object:
-!   - take coord, node set, and side set data (as is)
-!   - element block data compressed into cnode(:,:), cblock(:) arrays.
-!   - convert exodus face numbering to truchas numbering (side set data)
-!     is this really necessary?  why not use exodus convention?
-!   - start with empty link structures
-!   - make mesh formally parallel -- 0-sized on non-IO processes.
-! * scales the mesh coordinates
-! * converts gap elements to links (serial)
-!   - we want this as long as SM is on orig mesh data structure
-! * create internal interfaces (serial)
-! * partition cells and reorder (serial)
-! * partition nodes and reorder (serial)
-! * number, partition, and reorder faces (serial)
-! * convert node and side sets into node and face set mask arrays.
-! * determine ghost cells
-! * populate the distributed mesh object
-!   - cell, node, and face index partitioning (with ghosts)
-!   - distributing and localizing cnode and cface
-!   - partition and reorder links (serial), link index partitioning,
-!   - distributing and localizing lface
-!   - etc, etc.
 
     integer :: j, k, n, nnode, nface, ncell
     real(r8) :: csf
@@ -77,9 +48,9 @@ contains
     integer, allocatable :: p(:), ssid(:), ebid(:)
     type(ext_exodus_mesh) :: exo_mesh
     character(:), allocatable :: mesh_file
-    
+
     mesh => null()
-    
+
     if (is_IOP) then
       call params%get ('mesh-file', mesh_file)
       call read_exodus_mesh (mesh_file, exo_mesh, stat, errmsg)
@@ -88,16 +59,16 @@ contains
     end if
     call broadcast (stat)
     if (stat /= 0) return
-    
+
     !! Scale the node coordinates
     if (is_IOP) then
       call params%get ('coord-scale-factor', csf, default=1.0d0)
       if (csf /= 1.0_r8) exo_mesh%coord = csf * exo_mesh%coord
     end if
-    
+
     !! Define an empty mesh link structure
     if (is_IOP) call exo_mesh%set_no_links
-    
+
     !! Create internal interfaces
     if (is_IOP) then
       if (params%is_parameter('gap-element-block-ids')) then
@@ -127,16 +98,16 @@ contains
       call broadcast (errmsg)
       return
     end if
-    
+
     call get_cell_node_connectivity (exo_mesh, xcnode, cnode)
-    
+
     allocate(cell_perm(exo_mesh%num_elem))
     allocate(node_perm(exo_mesh%num_node))
-      
+
     if (is_IOP) call get_cell_neighbor_array (xcnode, cnode, exo_mesh%xlnode, exo_mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
     call broadcast (stat)
     if (stat /= 0) return
-    
+
     if (is_IOP) then
       ncell = exo_mesh%num_elem
       nnode = exo_mesh%num_node
@@ -153,7 +124,7 @@ contains
 
       !! Reorder cell-based arrays.
       call reorder (xcnode, cnode, cell_perm)
-      
+
       !! Map the values of cell-valued arrays.
       allocate(p(size(cell_perm)))
       call invert_perm (cell_perm, p)
@@ -164,13 +135,13 @@ contains
         exo_mesh%sset(n)%elem = p(exo_mesh%sset(n)%elem)
       end do
       deallocate(p)
-      
+
       ! partition and order the nodes
       call organize_facets (xcnode, cnode, cell_bsize, node_bsize, node_perm)
-      
+
       !! Reorder node-based arrays.
       call reorder (exo_mesh%coord, node_perm)
-      
+
       !! Map the values of node-valued arrays.
       allocate(p(size(node_perm)))
       call invert_perm (node_perm, p)
@@ -181,9 +152,9 @@ contains
         exo_mesh%nset(n)%node = p(exo_mesh%nset(n)%node)
       end do
       deallocate(p)
-      
+
       !! input: (xcnode,cnode), (xlnode,lnode)
-      !! output: (xcface,cface), cfpar, lface, face_bsize 
+      !! output: (xcface,cface), cfpar, lface, face_bsize
       !! label mesh faces
       call label_mesh_faces (xcnode, cnode, exo_mesh%xlnode, exo_mesh%lnode, nface, xcface, cface, lface)
       allocate(cfpar(exo_mesh%num_elem))
@@ -200,11 +171,11 @@ contains
           cfpar(j) = n
         end associate
       end do
-      
+
       !! Partition and order the faces.
       allocate(face_perm(nface))
       call organize_facets (xcface, cface, cell_bsize, face_bsize, face_perm)
-      
+
       !! Map the values of face-valued arrays
       allocate(p(size(face_perm)))
       call invert_perm (face_perm, p)
@@ -217,17 +188,17 @@ contains
       allocate(xcface(1), cface(0), lnhbr(2,0), lface(2,0))
       xcface(1) = 1
     end if
-      
+
     allocate(mesh)
 
     !! Identify off-process ghost cells to include with each partition.
     call select_ghost_cells (cell_bsize, xcnode, cnode, node_bsize, &
                              xcface, cface, face_bsize, lnhbr, offP_size, offP_index)
-    
+
     !! Create the cell index partition; include the off-process cells from above.
     call create (mesh%cell_ip, cell_bsize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
-    
+
     mesh%ncell = mesh%cell_ip%local_size()
     mesh%ncell_onP = mesh%cell_ip%onP_size()
 
@@ -236,7 +207,7 @@ contains
     call distribute (mesh%xcell(:mesh%ncell_onP), cell_perm)
     call gather_boundary (mesh%cell_ip, mesh%xcell)
     deallocate(cell_perm)
-    
+
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
     call init_cell_node_data (mesh, node_bsize, xcnode, cnode)
@@ -256,7 +227,7 @@ contains
     !! Initialize the interface link data components: %NLINK, %NLINK_ONP, %LFACE, %LINK_IP, %LINK_SET_ID, %LINK_SET_MASK
     call init_link_data (mesh, exo_mesh, lnhbr, lface)
     deallocate(lnhbr, lface)
-    
+
     !! Initialize the face node data: %XFNODE, %FNODE
     call init_face_node_data (mesh)
 
@@ -266,20 +237,20 @@ contains
     call init_node_set_data (mesh, exo_mesh)
     !! %CELL_SET_ID, %CELL_SET_MASK
     call init_cell_set_data (mesh, exo_mesh)
-    
+
     !! MESH GEOMETRY
-    
+
     allocate(mesh%x(3,mesh%nnode))
     call distribute (mesh%x(:,:mesh%nnode_onP), exo_mesh%coord)
     call gather_boundary (mesh%node_ip, mesh%x)
-    
+
     allocate(mesh%volume(mesh%ncell), mesh%normal(3,mesh%nface), mesh%area(mesh%nface))
-    call mesh%compute_geometry  
-        
+    call mesh%compute_geometry
+
   end function new_unstr_mesh
-  
+
 !!!! AUXILIARY PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
   !! This auxiliary procedure repackages the mesh connectivity data stored in
   !! an EXODUS_MESH object, which is structured in blocks of elements, into the
   !! packed mixed-element data structure used by the UNSTR_MESH type:
@@ -287,20 +258,20 @@ contains
   !! While essentially a serial procedure, with inputs, outputs, and work
   !! only occuring on the IO processes, it is meant to be called in parallel
   !! and allocates dummy 0-sized arrays on other processors which facilitate
-  !! subsequent parallel calls. 
-    
+  !! subsequent parallel calls.
+
   subroutine get_cell_node_connectivity (exo_mesh, xcnode, cnode)
-  
+
     use exodus_mesh_type
     use parallel_communication, only: is_IOP
     use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
-    
+
     class(exodus_mesh), intent(in), target :: exo_mesh
     integer, allocatable, intent(out) :: xcnode(:), cnode(:)
-    
+
     integer :: j, k, n, offset
     integer, pointer :: flat_connect(:)
-    
+
     !! Copy the mesh connectivity from element blocks.
     if (is_IOP) then
       !! Copy connectivity from element blocks into si
@@ -323,7 +294,7 @@ contains
     else
       allocate(xcnode(1), cnode(0))
     end if
-    
+
   end subroutine get_cell_node_connectivity
 
   subroutine partition_cells (xcnhbr, cnhbr, lnhbr, npart, part)
@@ -348,7 +319,7 @@ contains
 
     ASSERT(npart > 0)
     ASSERT(size(part) == size(xcnhbr)-1)
-    
+
     if (npart == 1) then
       part = 1
       return
@@ -366,12 +337,12 @@ contains
         end do
       end associate
     end do
-    
+
     !! Add edges between linked cells.
     do j = 1, size(lnhbr,dim=2)
       call g%add_edge (lnhbr(1,j), lnhbr(2,j))
     end do
-    
+
     call g%get_adjacency (xadj, adjncy)
     deallocate(g)
 
@@ -542,7 +513,7 @@ contains
     end do
 
   end subroutine organize_facets
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! PARTITION_LINKS
@@ -564,31 +535,31 @@ contains
  !!
 
   subroutine partition_links (lnhbr, cell_bsize, bsize, perm, offP_size, offP_index)
-  
+
     use integer_set_type
-  
+
     integer, intent(in)  :: lnhbr(:,:)
     integer, intent(in)  :: cell_bsize(:)
     integer, intent(out) :: bsize(:)
     integer, intent(out) :: perm(:)
     integer, intent(out) :: offP_size(:)
     integer, pointer     :: offP_index(:)
-    
+
     integer :: j, n, offset, pass(size(perm))
     type(integer_set) :: xlink(size(bsize))
-    
+
     ASSERT(size(bsize) == size(cell_bsize))
     ASSERT(size(perm) == size(lnhbr,2))
     ASSERT(minval(lnhbr) >= 1 .and. maxval(lnhbr) <= sum(cell_bsize))
     ASSERT(size(offP_size) == size(bsize))
-    
+
     !! Assign the links to processes, either as on or off-process.
     do j = 1, size(lnhbr,dim=2)
       pass(j) = cell_part(lnhbr(1,j))
       n = cell_part(lnhbr(2,j))
       if (n /= pass(j)) call xlink(n)%add (j)
     end do
-    
+
     !! Block partition permutation (new-to-old).
     call blocked_partition (pass, bsize, perm)
 
@@ -596,7 +567,7 @@ contains
     do n = 1, size(xlink)
       offP_size(n) = xlink(n)%size()
     end do
-    
+
     n = sum(offP_size)
     allocate(offP_index(n))
     offset = 0
@@ -621,7 +592,7 @@ contains
 
   subroutine select_ghost_cells (cell_bsize, xcnode, cnode, node_bsize, &
       xcface, cface, face_bsize, lnhbr, offP_size, offP_index)
-      
+
     use integer_set_type
     use parallel_communication, only: is_IOP, nPE
 
@@ -631,10 +602,10 @@ contains
     integer, intent(in) :: lnhbr(:,:)
     integer, allocatable, intent(out) :: offP_size(:)
     integer, pointer, intent(out) :: offP_index(:)  ! concession to the caller
-    
+
     integer :: n, offset
     type(integer_set), allocatable :: ghosts(:)
-      
+
     if (is_IOP) then
       allocate(ghosts(nPE))
       call overlapping_cells (xcnode, cnode, cell_bsize, node_bsize, ghosts)
@@ -656,7 +627,7 @@ contains
     else
       allocate(offP_size(0), offP_index(0))
     end if
-      
+
   end subroutine select_ghost_cells
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -764,7 +735,7 @@ contains
     end function cell_part
 
   end subroutine overlapping_cells2
-    
+
   !! This subroutine initializes the node partition and cell node data
   !! components: NODE_IP, NNODE, NNODE_ONP, XCNODE, and CNODE.
 
@@ -776,11 +747,11 @@ contains
     type(unstr_mesh), intent(inout) :: this
     integer, intent(in) :: bsize(:)
     integer, intent(in) :: xcnode(:), cnode(:)
-    
+
     integer :: j
     integer, allocatable :: count_g(:), count_l(:)
     integer, pointer :: offP_index(:)
-    
+
     call create (this%node_ip, bsize)
 
     !! Translate the global indexing array into global row sizes.
@@ -789,11 +760,11 @@ contains
     else
       allocate(count_g(0))
     end if
-    
+
     call localize_index_struct (count_g, cnode, this%cell_ip, this%node_ip, count_l, this%cnode, offP_index)
     call add_offP_index (this%node_ip, offP_index)
     deallocate(count_g, offP_index)
-    
+
     !! Translate the local row sizes into the local indexing array.
     allocate(this%xcnode(1+size(count_l)))
     this%xcnode(1) = 1
@@ -801,12 +772,12 @@ contains
       this%xcnode(j+1) = this%xcnode(j) + count_l(j)
     end do
     deallocate(count_l)
-    
+
     this%nnode = this%node_ip%local_size()
     this%nnode_onP = this%node_ip%onP_size()
-    
+
   end subroutine init_cell_node_data
-    
+
   !! This subroutine initializes the face partition and cell face data
   !! components: FACE_IP, NFACE, NFACE_ONP, XCFACE, CFACE, and CFPAR.
 
@@ -819,11 +790,11 @@ contains
     integer, intent(in) :: bsize(:)
     integer, intent(in) :: xcface(:), cface(:)
     integer, intent(in) :: cfpar(:)
-    
+
     integer :: j
     integer, allocatable :: count_g(:), count_l(:)
     integer, pointer :: offP_index(:)
-    
+
     call create (this%face_ip, bsize)
 
     !! Translate the global indexing array into global row sizes.
@@ -832,11 +803,11 @@ contains
     else
       allocate(count_g(0))
     end if
-    
+
     call localize_index_struct (count_g, cface, this%cell_ip, this%face_ip, count_l, this%cface, offP_index)
     call add_offP_index (this%face_ip, offP_index)
     deallocate(count_g, offP_index)
-    
+
     !! Translate the local row sizes into the local indexing array.
     allocate(this%xcface(1+size(count_l)))
     this%xcface(1) = 1
@@ -844,15 +815,15 @@ contains
       this%xcface(j+1) = this%xcface(j) + count_l(j)
     end do
     deallocate(count_l)
-    
+
     !! Distribute the CFPAR mask array.
     allocate(this%cfpar(this%ncell))
     call distribute (this%cfpar(:this%ncell_onP), cfpar)
     call gather_boundary (this%cell_ip, this%cfpar)
-    
+
     this%nface = this%face_ip%local_size()
     this%nface_onP = this%face_ip%onP_size()
-    
+
   end subroutine init_cell_face_data
 
   !! This subroutine initializes the face-node connectivity data components,
@@ -875,7 +846,7 @@ contains
     ASSERT(size(this%cface) == this%xcface(size(this%xcface))-1)
     ASSERT(minval(this%cnode) > 0)
     ASSERT(minval(this%cface) > 0)
-    
+
     !! Determine storage requirements; XFNODE(k) to store num nodes on face k.
     allocate(fsize(this%nface))
     fsize = 0
@@ -886,7 +857,7 @@ contains
         where (fsize(cell_faces) == 0) fsize(cell_faces) = list
       end associate
     end do
-    
+
     !! Generate the XFNODE indexing array; exclusive prefix sum of FSIZE.
     allocate(this%xfnode(this%nface+1))
     this%xfnode(1) = 1
@@ -916,11 +887,11 @@ contains
     ASSERT(minval(this%fnode) > 0)
 
   end subroutine init_face_node_data
-  
+
   !! This subroutine initializes the interface link data.
-    
+
   subroutine init_link_data (this, exo_mesh, lnhbr, lface)
-  
+
     use parallel_communication, only: is_IOP, nPE, collate, broadcast, distribute
     use permutations, only: reorder, invert_perm
     use index_partitioning, only: create, localize_index_array, gather_boundary
@@ -930,12 +901,12 @@ contains
     type(unstr_mesh), intent(inout) :: this
     type(ext_exodus_mesh), intent(inout) :: exo_mesh
     integer, intent(inout) :: lnhbr(:,:), lface(:,:)
-    
+
     integer :: j, n
     integer, allocatable :: offP_size(:), cell_bsize(:), bsize(:), perm(:)
     integer, pointer :: offP_index(:) => null()
     type(bitfield), allocatable :: link_set_mask(:)
-    
+
     !! Partition the links
     allocate(cell_bsize(merge(nPE,0,is_IOP)))
     call collate (cell_bsize, this%cell_ip%onP_size())
@@ -950,26 +921,26 @@ contains
     else
       allocate(bsize(0), offP_size(0), offP_index(0))
     end if
-    
+
     !! THIS%LINK_IP: create the link index partition; include off-process links from above.
     call create (this%link_ip, bsize, offP_size, offP_index)
     deallocate(bsize, offP_size, offP_index)
-    
+
     !! THIS%LFACE: distribute and localize the link face indexing array.
     call localize_index_array (lface, this%link_ip, this%face_ip, this%lface, offP_index)
     INSIST(size(offP_index) == 0)
     deallocate(offP_index)
-    
+
     this%nlink = this%link_ip%local_size()
     this%nlink_onP = this%link_ip%onP_size()
-    
+
     !! THIS%LINK_SET_ID
     n = exo_mesh%nlblock
     call broadcast (n)
     allocate(this%link_set_id(n))
     if (is_IOP) this%link_set_id = exo_mesh%link_block_id
     call broadcast (this%link_set_id)
-    
+
     !! Convert the array of link block IDs to a bit mask.
     allocate(link_set_mask(merge(exo_mesh%nlink,0,is_IOP)))
     if (is_IOP) then
@@ -990,7 +961,7 @@ contains
     call gather_boundary (this%link_ip, this%link_set_mask)
 
   end subroutine init_link_data
-  
+
   !! This subroutine initializes the node set data components.  NODE_SET_MASK
   !! is a node-based integer mask array, with bit n > 0 set if the node belongs
   !! to the nth node set.  Bit 0 is set if the node belongs to a boundary face.
@@ -1006,15 +977,15 @@ contains
 
     type(unstr_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: exo_mesh
-    
+
     integer :: i, j, n, nnode_tot
     integer, allocatable :: node_set_mask(:)
     logical, allocatable :: bnode(:)
-    
+
     ASSERT(allocated(this%xfnode))
     ASSERT(allocated(this%fnode))
     ASSERT(allocated(this%face_set_mask))
-    
+
     nnode_tot = this%node_ip%global_size()
 
     !! Initialize the node set data, %NODE_SET_MASK
@@ -1031,20 +1002,20 @@ contains
         end do
       end do
     end if
-    
+
     !! Initialize the distributed node set mask (%NODE_SET_MASK)
     allocate(this%node_set_mask(this%nnode))
     call distribute (this%node_set_mask(:this%nnode_onP), node_set_mask)
     call gather_boundary (this%node_ip, this%node_set_mask)
     deallocate(node_set_mask)
-    
+
     !! Initialize the list of node set IDs (%NODE_SET_ID)
     if (is_IOP) n = size(exo_mesh%nset)
     call broadcast (n)
     allocate(this%node_set_id(n))
     if (is_IOP) this%node_set_id = exo_mesh%nset%id
     call broadcast (this%node_set_id)
-    
+
     !! Tag boundary nodes in the node set mask (bit 0).
     allocate(bnode(this%nnode))
     bnode = .false.
@@ -1058,7 +1029,7 @@ contains
     call scatter_boundary_or (this%node_ip, bnode)
     where (bnode) this%node_set_mask = ibset(this%node_set_mask, pos=0)
     deallocate(bnode)
-    
+
   end subroutine init_node_set_data
 
   !! This subroutine initializes the cell set data components.  CELL_SET_MASK
@@ -1077,12 +1048,12 @@ contains
 
     type(unstr_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: exo_mesh
-    
+
     integer :: i, n, offset, ncell_tot
     integer, allocatable :: cell_set_mask(:), cell_perm(:)
-    
+
     ncell_tot = this%cell_ip%global_size()
-    
+
     !! Generate the global cell_set mask array (original cell ordering)
     allocate(cell_set_mask(merge(ncell_tot,0,is_IOP)))
     if (is_IOP) then
@@ -1095,19 +1066,19 @@ contains
         offset = offset + exo_mesh%eblk(n)%num_elem
       end do
     end if
-    
+
     !! Reorder the global cell_set_mask to the internal cell ordering.
     allocate(cell_perm(merge(ncell_tot,0,is_IOP)))
     call collate (cell_perm, this%xcell(:this%ncell_onP))
     if (is_IOP) call reorder (cell_set_mask, cell_perm)
     deallocate(cell_perm)
-    
+
     !! Initialize the distributed cell set mask (%CELL_SET_MASK)
     allocate(this%cell_set_mask(this%ncell))
     call distribute (this%cell_set_mask(:this%ncell_onP), cell_set_mask)
     call gather_boundary (this%cell_ip, this%cell_set_mask)
     deallocate(cell_set_mask)
-    
+
     !! Initialize the list of cell set IDs (%CELL_SET_ID)
     if (is_IOP) n = size(exo_mesh%eblk)
     call broadcast (n)
@@ -1160,7 +1131,7 @@ contains
           face_set_mask(cface(j)) = ibset(face_set_mask(cface(j)), pos=n)
         end do
       end do
-      
+
       !! Count the references to each face.  A count of 1 indicates a boundary
       !! face, 2 an interior face.  Anything else exposes a bad mesh topology.
       allocate(tag(size(face_set_mask)))
@@ -1169,7 +1140,7 @@ contains
         tag(cface(j)) = tag(cface(j)) + 1
       end do
       INSIST(all(tag >= 1 .and. tag <= 2))
-      
+
       !! Tag boundary faces (bit 0)
       do j = 1, size(tag)
         if (tag(j) == 1) face_set_mask(j) = ibset(face_set_mask(j), pos=0)
@@ -1182,7 +1153,7 @@ contains
     call distribute (this%face_set_mask(:this%nface_onP), face_set_mask)
     call gather_boundary (this%face_ip, this%face_set_mask)
     deallocate(face_set_mask)
-    
+
     !! Initialize the list of cell set IDs (%FACE_SET_ID)
     if (is_IOP) n = size(exo_mesh%sset)
     call broadcast (n)
