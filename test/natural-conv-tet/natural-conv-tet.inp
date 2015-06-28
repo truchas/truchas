@@ -66,6 +66,7 @@ cells at each long_edit interval.
   rel_enthalpy_tol   = 1.0e-4
   nlk_tol            = 0.05
   nlk_preconditioner = 'hypre_amg'
+  use_new_mfd = .false.
 /
 
 &NUMERICS

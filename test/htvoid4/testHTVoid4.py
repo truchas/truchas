@@ -25,6 +25,7 @@ class HTVoid4(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold))
+    print 'final temp max error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
   def test_final_fluid_frac(self):
@@ -33,6 +34,7 @@ class HTVoid4(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('VOF')
     error = max(abs(test[:,1]-gold[:,1])) # comp 1 is fluid
+    print 'final vof max error=', error, '(tol=', tol, ')'
     self.assertTrue(error <= tol)
 
 if __name__ == '__main__':

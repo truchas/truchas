@@ -153,7 +153,7 @@ contains
       cond_vfrac_threshold = NULL_R
       residual_atol = NULL_R
       residual_rtol = NULL_R
-      use_new_mfd = .false.
+      use_new_mfd = .true.
       read(lun,nml=diffusion_solver,iostat=ios)
     end if
     call broadcast (ios)

@@ -241,6 +241,7 @@ contains
               call hpar%hash (face, n)
               associate (bin => table(xbin(n):xbin(n+1)-1))
                 do l = size(bin), 1, -1
+                  if (size(face) /= size(bin(l)%face)) cycle
                   if (all(face == bin(l)%face)) exit
                 end do
                 if (l > 0) side_mask = ibset(side_mask,k-1)
@@ -647,6 +648,7 @@ contains
           associate (bin => table(xbin(n):xbin(n+1)-1))
             !! Search the bin for a matching SIDE1.
             do i = size(bin), 1, -1
+              if (size(side1) /= size(bin(i)%side)) cycle
               if (all(side1 == bin(i)%side)) exit  ! found my neighbor
             end do
             if (i > 0) then
