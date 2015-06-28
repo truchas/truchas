@@ -7,12 +7,12 @@ PROGRAM INFORMATION
    version:             2.9.dev
    libraries:           UbikSolve, PGSLib, Chaco
    build architecture:  x86_64
-   build date/time:      2 Jun 2015 12:29:49
-   build flags:         -O2 -u -maxcontin=99 -PIC
+   build date/time:     27 Jun 2015 13:38:32
+   build flags:         -u -O -fPIC-O3
    build host:          noether.lanl.gov
    run architecture:    Linux noether.lanl.gov 3.15.10-201.fc20.x86_64 #1 SMP Wed Aug 27 21:10:06 UTC 2014 x86_64
    run host:            noether.lanl.gov
-   run date/time:       02 Jun 15 09:55:31
+   run date/time:       28 Jun 15 08:40:03
    processors:          4 (processor 1 is performing I/O)
 
 ================================================================================
@@ -241,21 +241,21 @@ done.
 
 Initializing distributed mesh MAIN ...
   Reading ExodusII mesh file ./split-rotated-cube.exo
-  Distributed Mesh Profile:
-     PE|    nnode    nedge    nface    ncell
-    ---+------------------------------------
-      1|       96        0      150       36
-      2|       72        0      104       24
-      3|       72        0      104       24
-      4|       54        0       72       16
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|       96      150       36
+      2|       72      104       24
+      3|       72      104       24
+      4|       54       72       16
   Mesh Communication Profile:
-              Nodes           Edges           Faces           Cells
-     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
-    ---+----------------------------------------------------------------
-      1|     42       54      0        0     78       72     20       16
-      2|     36       36      0        0     40       64      8       16
-      3|     36       36      0        0     40       64      8       16
-      4|     30       24      0        0     16       56      0       16
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|     42       54     78       72     20       16
+      2|     36       36     40       64      8       16
+      3|     36       36     40       64      8       16
+      4|     30       24     16       56      0       16
   Distributed mesh MAIN initialized.
 DANU: adding default mesh entry
 DANU: writing mesh node coordinates
@@ -320,7 +320,7 @@ done.
  Calculating initial thermo-elastic state. Done.
 
      0 Thermo-elastic iterations (linear)
-     819 Thermo-elastic iterations (nonlinear)
+     381 Thermo-elastic iterations (nonlinear)
 
 Initializing diffusion solver ...
   Generating external source for "temperature" equation
@@ -340,7 +340,7 @@ Computing consistent initial state for HT/SD solver ...
 
 Computing consistent initial state derivative for HT/SD solver ...
   Computing consistent face temperatures and radiosities ...
-    ||Rface(2)||= 3.96E-17, ||Rface(0)||= 3.37E-02, ||ΔTface||_max= 1.73E-18
+    ||Rface(2)||= 5.54E-05, ||Rface(0)||= 5.27E-02, ||ΔTface||_max= 3.17E-05
 
 ================================================================================
 
@@ -351,19 +351,19 @@ EXECUTION
 
 DS: dt=1.000E+00, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           42 Solid mechanics iterations (nonlinear)
+           43 Solid mechanics iterations (nonlinear)
 
           2: t =   1.00000E+00, dt(diffusion solver) =   1.00000E+00
 
 DS: dt=1.000E+00, NFUN:NPC=0000004:00001, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           48 Solid mechanics iterations (nonlinear)
+           46 Solid mechanics iterations (nonlinear)
 
           3: t =   2.00000E+00, dt(diffusion solver) =   1.00000E+00
 
 DS: dt=1.000E+00, NFUN:NPC=0000006:00001, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           49 Solid mechanics iterations (nonlinear)
+           48 Solid mechanics iterations (nonlinear)
 
           4: t =   3.00000E+00, dt(diffusion solver) =   1.00000E+00
 
@@ -371,275 +371,275 @@ DS: dt=1.000E+00, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            49 Solid mechanics iterations (nonlinear)
 
-          5: t =   4.00000E+00, dt(diffusion solver) =   1.99092E+00
+          5: t =   4.00000E+00, dt(diffusion solver) =   2.02024E+00
 
-DS: dt=1.991E+00, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=2.020E+00, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            52 Solid mechanics iterations (nonlinear)
 
-          6: t =   5.99092E+00, dt(diffusion solver) =   2.09357E+00
+          6: t =   6.02024E+00, dt(diffusion solver) =   1.97355E+00
 
-DS: dt=2.094E+00, NFUN:NPC=0000013:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.974E+00, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           55 Solid mechanics iterations (nonlinear)
+           56 Solid mechanics iterations (nonlinear)
 
-          7: t =   8.08449E+00, dt(diffusion solver) =   3.95449E+00
+          7: t =   7.99379E+00, dt(diffusion solver) =   3.51394E+00
 
-DS: dt=3.954E+00, NFUN:NPC=0000015:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.514E+00, NFUN:NPC=0000016:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           72 Solid mechanics iterations (nonlinear)
+           60 Solid mechanics iterations (nonlinear)
 
-          8: t =   1.20390E+01, dt(diffusion solver) =   3.02894E+00
+          8: t =   1.15077E+01, dt(diffusion solver) =   3.24970E+00
 
-DS: dt=3.029E+00, NFUN:NPC=0000017:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.250E+00, NFUN:NPC=0000018:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           70 Solid mechanics iterations (nonlinear)
+           69 Solid mechanics iterations (nonlinear)
 
-          9: t =   1.50679E+01, dt(diffusion solver) =   3.10135E+00
+          9: t =   1.47574E+01, dt(diffusion solver) =   3.07873E+00
 
-DS: dt=3.101E+00, NFUN:NPC=0000019:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.079E+00, NFUN:NPC=0000020:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           83 Solid mechanics iterations (nonlinear)
+           82 Solid mechanics iterations (nonlinear)
 
-         10: t =   1.81693E+01, dt(diffusion solver) =   3.22992E+00
+         10: t =   1.78362E+01, dt(diffusion solver) =   3.20004E+00
 
-DS: dt=3.230E+00, NFUN:NPC=0000021:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.200E+00, NFUN:NPC=0000022:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           91 Solid mechanics iterations (nonlinear)
+           88 Solid mechanics iterations (nonlinear)
 
-         11: t =   2.13992E+01, dt(diffusion solver) =   3.07658E+00
+         11: t =   2.10362E+01, dt(diffusion solver) =   3.13047E+00
 
-DS: dt=3.077E+00, NFUN:NPC=0000023:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.130E+00, NFUN:NPC=0000024:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           77 Solid mechanics iterations (nonlinear)
+           96 Solid mechanics iterations (nonlinear)
 
-         12: t =   2.44758E+01, dt(diffusion solver) =   3.19711E+00
+         12: t =   2.41667E+01, dt(diffusion solver) =   3.15641E+00
 
-DS: dt=3.197E+00, NFUN:NPC=0000025:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.156E+00, NFUN:NPC=0000026:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           61 Solid mechanics iterations (nonlinear)
+
+         13: t =   2.73231E+01, dt(diffusion solver) =   3.15823E+00
+
+DS: dt=3.158E+00, NFUN:NPC=0000028:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           68 Solid mechanics iterations (nonlinear)
+
+         14: t =   3.04813E+01, dt(diffusion solver) =   3.16148E+00
+
+DS: dt=3.161E+00, NFUN:NPC=0000030:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            65 Solid mechanics iterations (nonlinear)
 
-         13: t =   2.76729E+01, dt(diffusion solver) =   3.14252E+00
+         15: t =   3.36428E+01, dt(diffusion solver) =   3.15856E+00
 
-DS: dt=3.143E+00, NFUN:NPC=0000027:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.159E+00, NFUN:NPC=0000032:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           62 Solid mechanics iterations (nonlinear)
+           65 Solid mechanics iterations (nonlinear)
 
-         14: t =   3.08154E+01, dt(diffusion solver) =   3.16434E+00
+         16: t =   3.68013E+01, dt(diffusion solver) =   3.15437E+00
 
-DS: dt=3.164E+00, NFUN:NPC=0000029:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.154E+00, NFUN:NPC=0000034:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           66 Solid mechanics iterations (nonlinear)
+           65 Solid mechanics iterations (nonlinear)
 
-         15: t =   3.39797E+01, dt(diffusion solver) =   3.15885E+00
+         17: t =   3.99557E+01, dt(diffusion solver) =   3.15170E+00
 
-DS: dt=3.159E+00, NFUN:NPC=0000031:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.152E+00, NFUN:NPC=0000036:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           63 Solid mechanics iterations (nonlinear)
+           60 Solid mechanics iterations (nonlinear)
 
-         16: t =   3.71386E+01, dt(diffusion solver) =   3.15319E+00
+         18: t =   4.31074E+01, dt(diffusion solver) =   3.14842E+00
 
-DS: dt=3.153E+00, NFUN:NPC=0000033:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.148E+00, NFUN:NPC=0000038:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           64 Solid mechanics iterations (nonlinear)
+         1111 Solid mechanics iterations (nonlinear)
 
-         17: t =   4.02918E+01, dt(diffusion solver) =   3.15163E+00
+         19: t =   4.62558E+01, dt(diffusion solver) =   3.14505E+00
 
-DS: dt=3.152E+00, NFUN:NPC=0000035:00002, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-           59 Solid mechanics iterations (nonlinear)
-
-         18: t =   4.34434E+01, dt(diffusion solver) =   3.14810E+00
-
-DS: dt=3.148E+00, NFUN:NPC=0000037:00002, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-           70 Solid mechanics iterations (nonlinear)
-
-         19: t =   4.65915E+01, dt(diffusion solver) =   3.14463E+00
-
-DS: dt=3.145E+00, NFUN:NPC=0000039:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.145E+00, NFUN:NPC=0000040:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            75 Solid mechanics iterations (nonlinear)
 
-         20: t =   4.97361E+01, dt(diffusion solver) =   3.14144E+00
+         20: t =   4.94009E+01, dt(diffusion solver) =   3.14177E+00
 
-DS: dt=3.141E+00, NFUN:NPC=0000041:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.142E+00, NFUN:NPC=0000042:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            48 Solid mechanics iterations (nonlinear)
 
-         21: t =   5.28776E+01, dt(diffusion solver) =   3.13810E+00
+         21: t =   5.25427E+01, dt(diffusion solver) =   3.13845E+00
 
-DS: dt=3.138E+00, NFUN:NPC=0000043:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.138E+00, NFUN:NPC=0000044:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           47 Solid mechanics iterations (nonlinear)
+
+         22: t =   5.56811E+01, dt(diffusion solver) =   3.13516E+00
+
+DS: dt=3.135E+00, NFUN:NPC=0000046:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            45 Solid mechanics iterations (nonlinear)
 
-         22: t =   5.60157E+01, dt(diffusion solver) =   3.13481E+00
+         23: t =   5.88163E+01, dt(diffusion solver) =   3.13194E+00
 
-DS: dt=3.135E+00, NFUN:NPC=0000045:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.132E+00, NFUN:NPC=0000048:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            45 Solid mechanics iterations (nonlinear)
 
-         23: t =   5.91505E+01, dt(diffusion solver) =   3.13160E+00
+         24: t =   6.19482E+01, dt(diffusion solver) =   3.12880E+00
 
-DS: dt=3.132E+00, NFUN:NPC=0000047:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.129E+00, NFUN:NPC=0000050:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            45 Solid mechanics iterations (nonlinear)
 
-         24: t =   6.22821E+01, dt(diffusion solver) =   3.12847E+00
+         25: t =   6.50770E+01, dt(diffusion solver) =   3.12577E+00
 
-DS: dt=3.128E+00, NFUN:NPC=0000049:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.126E+00, NFUN:NPC=0000052:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            45 Solid mechanics iterations (nonlinear)
 
-         25: t =   6.54106E+01, dt(diffusion solver) =   3.12545E+00
+         26: t =   6.82028E+01, dt(diffusion solver) =   3.12287E+00
 
-DS: dt=3.125E+00, NFUN:NPC=0000051:00002, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-           45 Solid mechanics iterations (nonlinear)
-
-         26: t =   6.85360E+01, dt(diffusion solver) =   3.12257E+00
-
-DS: dt=3.123E+00, NFUN:NPC=0000053:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.123E+00, NFUN:NPC=0000054:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            43 Solid mechanics iterations (nonlinear)
 
-         27: t =   7.16586E+01, dt(diffusion solver) =   3.11985E+00
+         27: t =   7.13256E+01, dt(diffusion solver) =   3.12013E+00
 
-DS: dt=3.120E+00, NFUN:NPC=0000055:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.120E+00, NFUN:NPC=0000056:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            43 Solid mechanics iterations (nonlinear)
 
-         28: t =   7.47784E+01, dt(diffusion solver) =   3.11733E+00
+         28: t =   7.44458E+01, dt(diffusion solver) =   3.11759E+00
 
-DS: dt=3.117E+00, NFUN:NPC=0000057:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.118E+00, NFUN:NPC=0000058:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            43 Solid mechanics iterations (nonlinear)
 
-         29: t =   7.78957E+01, dt(diffusion solver) =   3.11502E+00
+         29: t =   7.75634E+01, dt(diffusion solver) =   3.11525E+00
 
-DS: dt=3.115E+00, NFUN:NPC=0000059:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.115E+00, NFUN:NPC=0000060:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            43 Solid mechanics iterations (nonlinear)
 
-         30: t =   8.10108E+01, dt(diffusion solver) =   3.11296E+00
+         30: t =   8.06786E+01, dt(diffusion solver) =   3.11316E+00
 
-DS: dt=3.113E+00, NFUN:NPC=0000061:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.113E+00, NFUN:NPC=0000062:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            42 Solid mechanics iterations (nonlinear)
 
-         31: t =   8.41237E+01, dt(diffusion solver) =   3.11116E+00
+         31: t =   8.37918E+01, dt(diffusion solver) =   3.11134E+00
 
-DS: dt=3.111E+00, NFUN:NPC=0000063:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.111E+00, NFUN:NPC=0000064:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            42 Solid mechanics iterations (nonlinear)
 
-         32: t =   8.72349E+01, dt(diffusion solver) =   3.10966E+00
+         32: t =   8.69031E+01, dt(diffusion solver) =   3.10981E+00
 
-DS: dt=3.110E+00, NFUN:NPC=0000065:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.110E+00, NFUN:NPC=0000066:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            42 Solid mechanics iterations (nonlinear)
 
-         33: t =   9.03446E+01, dt(diffusion solver) =   3.10849E+00
+         33: t =   9.00129E+01, dt(diffusion solver) =   3.10860E+00
 
-DS: dt=3.108E+00, NFUN:NPC=0000067:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.109E+00, NFUN:NPC=0000068:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            42 Solid mechanics iterations (nonlinear)
 
-         34: t =   9.34530E+01, dt(diffusion solver) =   3.10767E+00
+         34: t =   9.31215E+01, dt(diffusion solver) =   3.10774E+00
 
-DS: dt=3.108E+00, NFUN:NPC=0000069:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.108E+00, NFUN:NPC=0000070:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            42 Solid mechanics iterations (nonlinear)
 
-         35: t =   9.65607E+01, dt(diffusion solver) =   3.10722E+00
+         35: t =   9.62293E+01, dt(diffusion solver) =   3.10724E+00
 
-DS: dt=3.107E+00, NFUN:NPC=0000071:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.107E+00, NFUN:NPC=0000072:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            41 Solid mechanics iterations (nonlinear)
 
-         36: t =   9.96679E+01, dt(diffusion solver) =   3.10717E+00
+         36: t =   9.93365E+01, dt(diffusion solver) =   3.10715E+00
 
-DS: dt=3.107E+00, NFUN:NPC=0000074:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.107E+00, NFUN:NPC=0000075:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            39 Solid mechanics iterations (nonlinear)
 
-         37: t =   1.02775E+02, dt(diffusion solver) =   1.06894E+00
+         37: t =   1.02444E+02, dt(diffusion solver) =   1.32681E+00
 
-DS: dt=1.069E+00, NFUN:NPC=0000077:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.327E+00, NFUN:NPC=0000078:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           36 Solid mechanics iterations (nonlinear)
+
+         38: t =   1.03770E+02, dt(diffusion solver) =   1.07049E+00
+
+DS: dt=1.070E+00, NFUN:NPC=0000081:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            33 Solid mechanics iterations (nonlinear)
 
-         38: t =   1.03844E+02, dt(diffusion solver) =   1.22161E+00
+         39: t =   1.04841E+02, dt(diffusion solver) =   1.84723E+00
 
-DS: dt=1.222E+00, NFUN:NPC=0000080:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.847E+00, NFUN:NPC=0000084:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           31 Solid mechanics iterations (nonlinear)
+
+         40: t =   1.06688E+02, dt(diffusion solver) =   1.60801E+00
+
+DS: dt=1.608E+00, NFUN:NPC=0000087:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            30 Solid mechanics iterations (nonlinear)
 
-         39: t =   1.05066E+02, dt(diffusion solver) =   1.63482E+00
+         41: t =   1.08296E+02, dt(diffusion solver) =   3.05349E+00
 
-DS: dt=1.635E+00, NFUN:NPC=0000083:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.053E+00, NFUN:NPC=0000089:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           31 Solid mechanics iterations (nonlinear)
+           30 Solid mechanics iterations (nonlinear)
 
-         40: t =   1.06700E+02, dt(diffusion solver) =   1.82759E+00
+         42: t =   1.11350E+02, dt(diffusion solver) =   4.33834E+00
 
-DS: dt=1.828E+00, NFUN:NPC=0000085:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=4.338E+00, NFUN:NPC=0000091:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           31 Solid mechanics iterations (nonlinear)
+           30 Solid mechanics iterations (nonlinear)
 
-         41: t =   1.08528E+02, dt(diffusion solver) =   3.57709E+00
-
-DS: dt=3.577E+00, NFUN:NPC=0000087:00002, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-           31 Solid mechanics iterations (nonlinear)
-
-         42: t =   1.12105E+02, dt(maximum) =   5.00000E+00
-
-DS: dt=5.000E+00, NFUN:NPC=0000089:00002, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-           29 Solid mechanics iterations (nonlinear)
-
-         43: t =   1.17105E+02, dt(maximum) =   5.00000E+00
-
-DS: dt=5.000E+00, NFUN:NPC=0000091:00002, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-           27 Solid mechanics iterations (nonlinear)
-
-         44: t =   1.22105E+02, dt(maximum) =   5.00000E+00
+         43: t =   1.15688E+02, dt(maximum) =   5.00000E+00
 
 DS: dt=5.000E+00, NFUN:NPC=0000093:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            27 Solid mechanics iterations (nonlinear)
 
-         45: t =   1.27105E+02, dt(maximum) =   5.00000E+00
+         44: t =   1.20688E+02, dt(maximum) =   5.00000E+00
 
 DS: dt=5.000E+00, NFUN:NPC=0000095:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
            25 Solid mechanics iterations (nonlinear)
 
-         46: t =   1.32105E+02, dt(maximum) =   5.00000E+00
+         45: t =   1.25688E+02, dt(maximum) =   5.00000E+00
 
 DS: dt=5.000E+00, NFUN:NPC=0000097:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           19 Solid mechanics iterations (nonlinear)
+           25 Solid mechanics iterations (nonlinear)
 
-         47: t =   1.37105E+02, dt(maximum) =   5.00000E+00
+         46: t =   1.30688E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000098:00002, NNR:NNF:NSR=0000:0000:0000
+            0 Solid mechanics iterations (linear)
+           22 Solid mechanics iterations (nonlinear)
+
+         47: t =   1.35688E+02, dt(maximum) =   5.00000E+00
 
 DS: dt=5.000E+00, NFUN:NPC=0000099:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           21 Solid mechanics iterations (nonlinear)
+           18 Solid mechanics iterations (nonlinear)
 
-         48: t =   1.42105E+02, dt(maximum) =   5.00000E+00
+         48: t =   1.40688E+02, dt(maximum) =   5.00000E+00
 
 DS: dt=5.000E+00, NFUN:NPC=0000100:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           19 Solid mechanics iterations (nonlinear)
+           21 Solid mechanics iterations (nonlinear)
 
-         49: t =   1.47105E+02, dt(maximum) =   5.00000E+00
+         49: t =   1.45688E+02, dt(maximum) =   5.00000E+00
 
 DS: dt=5.000E+00, NFUN:NPC=0000101:00002, NNR:NNF:NSR=0000:0000:0000
             0 Solid mechanics iterations (linear)
-           14 Solid mechanics iterations (nonlinear)
+           19 Solid mechanics iterations (nonlinear)
 
 ================================================================================
 
@@ -647,54 +647,54 @@ TERMINATION
 
 DANU: Closing h5 output file
 Warning: DANU: Danu fid is still associated
-                 Final Time:  1.5211E+02 after    49 steps
+                 Final Time:  1.5069E+02 after    49 steps
 
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               1.485E+00    1.484E+00    1.485E+00
-    Input                               8.250E-03    8.000E-03    9.000E-03
-    Initialization                      3.770E-01    3.770E-01    3.770E-01
-      Solid Mechanics                     3.490E-01    3.490E-01    3.490E-01
-        Precondition                        0.000E+00    0.000E+00    0.000E+00
-        NK                                  3.483E-01    3.480E-01    3.490E-01
-          NK Residual                         2.500E-04    0.000E+00    1.000E-03
-          Newton Loop                         3.480E-01    3.480E-01    3.480E-01
-            NK LS                               1.005E-01    9.500E-02    1.050E-01
-              Solver TMP1                         9.975E-02    9.400E-02    1.040E-01
-                Precondition                        9.850E-02    9.400E-02    1.010E-01
-            NK Residual                         1.838E-01    1.810E-01    1.880E-01
-      Initialization                      2.000E-03    2.000E-03    2.000E-03
-        Solid Mech Init                     2.000E-03    2.000E-03    2.000E-03
+  Total                               1.638E+00    1.638E+00    1.640E+00
+    Input                               1.275E-02    1.200E-02    1.300E-02
+    Initialization                      1.770E-01    1.770E-01    1.770E-01
+      Solid Mechanics                     1.500E-01    1.500E-01    1.500E-01
+        Precondition                        7.500E-04    0.000E+00    1.000E-03
+        NK                                  1.492E-01    1.490E-01    1.500E-01
+          NK Residual                         0.000E+00    0.000E+00    0.000E+00
+          Newton Loop                         1.490E-01    1.490E-01    1.490E-01
+            NK LS                               5.125E-02    4.800E-02    5.400E-02
+              Solver TMP1                         5.100E-02    4.700E-02    5.400E-02
+                Precondition                        5.075E-02    4.700E-02    5.400E-02
+            NK Residual                         6.975E-02    6.800E-02    7.200E-02
+      Initialization                      1.750E-03    1.000E-03    2.000E-03
+        Solid Mech Init                     1.500E-03    1.000E-03    2.000E-03
       HTSD function                       0.000E+00    0.000E+00    0.000E+00
         HT function                         0.000E+00    0.000E+00    0.000E+00
       ssor-setup                          0.000E+00    0.000E+00    0.000E+00
       ssor-solve                          0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          1.098E+00    1.097E+00    1.098E+00
-      Output                              1.185E-01    1.150E-01    1.250E-01
-      Time Step                           2.500E-04    0.000E+00    1.000E-03
-      Diffusion Solver                    1.900E-02    1.600E-02    2.300E-02
-        HTSD precon compute                 1.750E-03    1.000E-03    2.000E-03
+    Main Cycle                          1.446E+00    1.445E+00    1.447E+00
+      Output                              1.217E-01    1.190E-01    1.230E-01
+      Time Step                           0.000E+00    0.000E+00    0.000E+00
+      Diffusion Solver                    1.950E-02    1.500E-02    2.200E-02
+        HTSD precon compute                 1.500E-03    0.000E+00    2.000E-03
           hypre-matrix-copy                   0.000E+00    0.000E+00    0.000E+00
-          boomer-setup                        1.750E-03    1.000E-03    2.000E-03
-        HTSD function                       1.500E-03    9.999E-04    2.000E-03
-          HT function                         1.250E-03    9.999E-04    2.000E-03
-        HTSD precon apply                   1.400E-02    1.100E-02    1.900E-02
-          HT precon apply                     1.400E-02    1.100E-02    1.900E-02
-            boomer-solve                        1.350E-02    1.000E-02    1.900E-02
-      Solid Mechanics                     9.585E-01    9.540E-01    9.610E-01
-        Precondition                        1.250E-03    1.000E-03    2.000E-03
-        NK                                  9.522E-01    9.490E-01    9.560E-01
-          NK Residual                         1.200E-02    9.000E-03    1.700E-02
-          Newton Loop                         9.402E-01    9.390E-01    9.440E-01
-            NK LS                               2.720E-01    2.650E-01    2.880E-01
-              Solver TMP1                         2.698E-01    2.630E-01    2.850E-01
-                Precondition                        2.688E-01    2.630E-01    2.840E-01
-            NK Residual                         5.170E-01    5.010E-01    5.320E-01
+          boomer-setup                        1.500E-03    0.000E+00    2.000E-03
+        HTSD function                       2.000E-03    1.000E-03    4.000E-03
+          HT function                         1.750E-03    1.000E-03    4.000E-03
+        HTSD precon apply                   1.425E-02    9.000E-03    1.900E-02
+          HT precon apply                     1.400E-02    9.000E-03    1.900E-02
+            boomer-solve                        1.225E-02    6.000E-03    1.800E-02
+      Solid Mechanics                     1.303E+00    1.301E+00    1.306E+00
+        Precondition                        2.500E-03    1.000E-03    4.000E-03
+        NK                                  1.298E+00    1.295E+00    1.302E+00
+          NK Residual                         7.000E-03    5.000E-03    9.000E-03
+          Newton Loop                         1.290E+00    1.288E+00    1.292E+00
+            NK LS                               4.400E-01    4.110E-01    4.670E-01
+              Solver TMP1                         4.385E-01    4.100E-01    4.670E-01
+                Precondition                        4.343E-01    4.090E-01    4.630E-01
+            NK Residual                         6.287E-01    6.110E-01    6.560E-01
 
-         Smallest process virtual memory used: 1.91E+02 mB
-          Largest process virtual memory used: 2.03E+02 mB
-                    Total virtual memory used: 7.76E+02 mB
-                                   words/cell: 1271859
+         Smallest process virtual memory used: 2.17E+02 mB
+          Largest process virtual memory used: 2.28E+02 mB
+                    Total virtual memory used: 8.79E+02 mB
+                                   words/cell: 1440160
 
-truchas terminated normally on 02 Jun 15 at 09:55:32
+truchas terminated normally on 28 Jun 15 at 08:40:05

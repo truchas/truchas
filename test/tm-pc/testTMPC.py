@@ -22,7 +22,7 @@ class TMPC(TruchasTest.GoldenTestCase):
   def test_final_temperature(self):
     '''Verify final temperature'''
     n = 2
-    tol = 1.0e-5
+    tol = 2.0e-4
     gold = self.get_gold_field('Z_TEMP',id=n)
     test = self.get_test_field('Z_TEMP',id=n)
     error = max(abs((test-gold)/gold))

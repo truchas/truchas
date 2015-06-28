@@ -43,7 +43,7 @@ contains
     allocate(flux(polygon_cell%nfaces))
     allocate(flux_num(polygon_cell%nfaces))
 
-    call srand(seed)
+    !call srand(seed)
     call random_number(grad)
     
 !!$!    grad(1) = 1.
