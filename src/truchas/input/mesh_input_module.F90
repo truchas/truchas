@@ -325,8 +325,16 @@ CONTAINS
                    ftemp(i) = 4
                 end select
              else if (pyramid) then
-                ! Cubit does not create pyramids (I don't think), so this must be an error
-                call TLS_panic ('MESH_READ: pyramid cell found in side set list.')
+                select case (ftemp(i)
+                case(1)
+                  ftemp(i) = 2
+                case(2)
+                  ftemp(i) = 4
+                case(3)
+                  ftemp(i) = 1
+                case(4)
+                  ftemp(i) = 3
+                end select
              else
                 select case(ftemp(i))
                 case(1)
