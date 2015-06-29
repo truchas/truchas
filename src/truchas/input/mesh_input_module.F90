@@ -325,7 +325,7 @@ CONTAINS
                    ftemp(i) = 4
                 end select
              else if (pyramid) then
-                select case (ftemp(i)
+                select case (ftemp(i))
                 case(1)
                   ftemp(i) = 2
                 case(2)
