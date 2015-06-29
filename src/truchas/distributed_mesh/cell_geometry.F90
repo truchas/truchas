@@ -19,6 +19,7 @@ module cell_geometry
   public :: edge_length
   public :: cross_product, triple_product, vector_length
   public :: cell_face_normals, cell_face_centers
+  public :: cell_center
 
 contains
 
@@ -75,10 +76,10 @@ contains
     real(r8) :: vol
     vol = 0.5_r8 * (tet_volume(x(:,[1,2,3,4])) &
                   + tet_volume(x(:,[5,4,6,2])) &
-                  + tet_volume(x(:,[3,2,6,4])) &
+                  + tet_volume(x(:,[2,3,4,6])) &
                   + tet_volume(x(:,[2,3,1,5])) &
-                  + tet_volume(x(:,[4,5,6,1])) &
-                  + tet_volume(x(:,[6,5,3,1])) )
+                  + tet_volume(x(:,[4,6,5,1])) &
+                  + tet_volume(x(:,[1,3,6,5])) )
   end function wedge_volume
   
   pure function hex_volume (x) result (hvol)
@@ -422,5 +423,61 @@ contains
     end if
 
   end function tri_area_l
-  
+
+  pure function cell_center (x) result (c)
+
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: c(3), smom(3), svol
+
+    select case (size(x,dim=2))
+    case (4)  ! tet
+      c = sum(x,dim=2)/4
+
+    case (5)  ! pyramid
+      smom = 0.0_r8; svol = 0.0_r8
+      call aux (x(:,[1,2,4,5]), smom, svol)
+      call aux (x(:,[2,3,1,5]), smom, svol)
+      call aux (x(:,[3,4,2,5]), smom, svol)
+      call aux (x(:,[4,1,3,5]), smom, svol)
+      c = smom/svol
+
+    case (6)  ! wedge
+      smom = 0.0_r8; svol = 0.0_r8
+      call aux (x(:,[1,2,3,4]), smom, svol)
+      call aux (x(:,[5,4,6,2]), smom, svol)
+      call aux (x(:,[2,3,4,6]), smom, svol)
+      call aux (x(:,[2,3,1,5]), smom, svol)
+      call aux (x(:,[4,6,5,1]), smom, svol)
+      call aux (x(:,[1,3,6,5]), smom, svol)
+      c = smom/svol
+
+   case (8)  ! hex
+      smom = 0.0_r8; svol = 0.0_r8
+      call aux (x(:,[1,2,4,5]), smom, svol)
+      call aux (x(:,[2,3,1,6]), smom, svol)
+      call aux (x(:,[3,4,2,7]), smom, svol)
+      call aux (x(:,[4,1,3,8]), smom, svol)
+      call aux (x(:,[5,8,6,1]), smom, svol)
+      call aux (x(:,[6,5,7,2]), smom, svol)
+      call aux (x(:,[7,6,8,3]), smom, svol)
+      call aux (x(:,[8,7,5,4]), smom, svol)
+      call aux (x(:,[1,3,8,6]), smom, svol)
+      call aux (x(:,[2,4,5,7]), smom, svol)
+      c = smom/svol
+
+    case default
+      c = 0.0_r8
+    end select
+
+  contains
+
+    pure subroutine aux (x, smom, svol)
+      real(r8), intent(in) :: x(:,:)
+      real(r8), intent(inout) :: smom(:), svol
+      svol = svol + tet_volume(x)
+      smom = smom + tet_volume(x) * sum(x,dim=2)/4
+    end subroutine aux
+
+  end function cell_center
+
 end module cell_geometry

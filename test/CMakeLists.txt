@@ -46,6 +46,11 @@ add_pytruchas_test(3d-ss-hc-linear-tet
                    PROCESSORS 4
                    LABELS CONDUCTION TET)
 
+add_pytruchas_test(3d-ss-hc-linear-mixed
+                   3d-ss-hc-linear-mixed/test.py
+                   PROCESSORS 4
+                   LABELS CONDUCTION MIXED)
+
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py 
                    PROCESSORS 4)
 
