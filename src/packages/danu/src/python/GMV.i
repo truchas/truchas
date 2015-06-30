@@ -17,6 +17,7 @@
 #include "except.h"
 
 #include "GMVIface.h"
+#include "gmvwrite.h"
 
 #define GMV_DFLT_TIME  -99999.0
 #define GMV_DFLT_CYCLE -1
