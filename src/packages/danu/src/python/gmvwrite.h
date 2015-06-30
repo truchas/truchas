@@ -96,7 +96,7 @@ void gmvwrite_flag_subname(char subname[]);
 
 void gmvwrite_flag_data(int data_type, int flag_data[]);
 
-void gmvwrite_flag_endflag()
+void gmvwrite_flag_endflag();
 
 void gmvwrite_polygons_fromfile(char *filename);
 
