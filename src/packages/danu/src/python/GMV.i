@@ -174,7 +174,7 @@ import_array();
               ptr++;
             }
             if (list[0] == list[1]) { /* tet element */
-              gmvwrite_cell_type("ptet4", 4, list[1]);
+              gmvwrite_cell_type("ptet4", 4, &(list[1]));
             } else if (list[4] == list[5]) { /* pyramid element */
               gmvwrite_cell_type("ppyrmd5", 5, list);
             } else if (list[5] == list[6]) { /* wedge element */
