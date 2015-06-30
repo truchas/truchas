@@ -1,6 +1,5 @@
 #ifndef _GMVWRITEH_
 #define _GMVWRITEH_
-#endif
 
 
 /*  C, C++ prototypes.  */
@@ -192,11 +191,10 @@ void gmvwrite_simdate(char simdate[]);
 
 void gmvwrite_subvars_header();
 
-void gmvwrite_suvvars_name_data(int data_type, int numelem, char varname[], 
-                              void *vids, void *vdata);
-
 void gmvwrite_subvars_endsubv();
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
