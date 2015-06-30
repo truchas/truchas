@@ -82,7 +82,7 @@ void gmvwrite_velocity_data(int data_type, void *u, void *v, void *w);
 
 void gmvwrite_variable_header();
 
-void gmvwrite_variable_name_data(int data_type, char varname[], void *vids);
+void gmvwrite_variable_name_data(int data_type, const char varname[], void *vids);
 
 void gmvwrite_variable_endvars();
 
@@ -90,7 +90,7 @@ void gmvwrite_flag_fromfile(char *filename);
 
 void gmvwrite_flag_header();
 
-void gmvwrite_flag_name(char flagname[], int numtypes, int data_type);
+void gmvwrite_flag_name(const char flagname[], int numtypes, int data_type);
 
 void gmvwrite_flag_subname(char subname[]);
 
