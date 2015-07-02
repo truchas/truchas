@@ -1,6 +1,5 @@
 #ifndef _GMVWRITEH_
 #define _GMVWRITEH_
-#endif
 
 
 /*  C, C++ prototypes.  */
@@ -83,7 +82,7 @@ void gmvwrite_velocity_data(int data_type, void *u, void *v, void *w);
 
 void gmvwrite_variable_header();
 
-void gmvwrite_variable_name_data(int data_type, char varname[], void *vids);
+void gmvwrite_variable_name_data(int data_type, const char varname[], void *vids);
 
 void gmvwrite_variable_endvars();
 
@@ -91,13 +90,13 @@ void gmvwrite_flag_fromfile(char *filename);
 
 void gmvwrite_flag_header();
 
-void gmvwrite_flag_name(char flagname[], int numtypes, int data_type);
+void gmvwrite_flag_name(const char flagname[], int numtypes, int data_type);
 
 void gmvwrite_flag_subname(char subname[]);
 
 void gmvwrite_flag_data(int data_type, int flag_data[]);
 
-void gmvwrite_flag_endflag()
+void gmvwrite_flag_endflag();
 
 void gmvwrite_polygons_fromfile(char *filename);
 
@@ -192,11 +191,10 @@ void gmvwrite_simdate(char simdate[]);
 
 void gmvwrite_subvars_header();
 
-void gmvwrite_suvvars_name_data(int data_type, int numelem, char varname[], 
-                              void *vids, void *vdata);
-
 void gmvwrite_subvars_endsubv();
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

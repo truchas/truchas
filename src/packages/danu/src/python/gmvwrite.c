@@ -2087,7 +2087,7 @@ void gmvwrite_variable_header()
 
 /* --------------------------------------------------------- */
 
-void gmvwrite_variable_name_data(int data_type, char varname[], void *vids)
+void gmvwrite_variable_name_data(int data_type, const char varname[], void *vids)
  {
   int tmpdata_type;
   long count, npts;
@@ -2209,7 +2209,7 @@ void gmvwrite_flag_header()
 
 /* --------------------------------------------------------- */
 
-void gmvwrite_flag_name(char flagname[], int numtypes, int data_type)
+void gmvwrite_flag_name(const char flagname[], int numtypes, int data_type)
 {
   int tmpdata_type, tmpnumtypes;
 
