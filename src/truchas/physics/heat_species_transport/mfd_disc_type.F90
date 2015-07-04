@@ -314,22 +314,27 @@ integer :: i, k
       do j = 1, size(grad,2)
         associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
                    cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-          select case (size(cnode))
-          case (4)
-            call tet%init (mesh%x(:,cnode))
-            grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
-          case (5)  ! pyramid or tet (eventually tet and hex too!)
+          if (this%use_new_mfd) then
             call cell%init (mesh%x(:,cnode))
             grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
-          case (6)
-            call wedge%init (mesh%x(:,cnode))
-            grad(:,j) = matmul(wedge%face_normals, uface(cface)) / wedge%volume
-          case (8)
-            call hex%init (mesh%x(:,cnode))
-            grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
-          case default
-            INSIST(.false.)
-          end select
+          else
+            select case (size(cnode))
+            case (4)
+              call tet%init (mesh%x(:,cnode))
+              grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
+            case (5)  ! pyramid or tet (eventually tet and hex too!)
+              call cell%init (mesh%x(:,cnode))
+              grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
+            case (6)
+              call wedge%init (mesh%x(:,cnode))
+              grad(:,j) = matmul(wedge%face_normals, uface(cface)) / wedge%volume
+            case (8)
+              call hex%init (mesh%x(:,cnode))
+              grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
+            case default
+              INSIST(.false.)
+            end select
+          end if
         end associate
       end do
     class default
@@ -388,22 +393,27 @@ integer :: i, k
         if (mask(j)) then
           associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1), &
                      cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-            select case (size(cnode))
-            case (4)
-              call tet%init (mesh%x(:,cnode))
-              grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
-            case (5)  ! pyramid or tet (eventually tet and hex too!)
+            if (this%use_new_mfd) then
               call cell%init (mesh%x(:,cnode))
               grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
-            case (6)
-              call wedge%init (mesh%x(:,cnode))
-              grad(:,j) = matmul(wedge%face_normals, uface(cface)) / wedge%volume
-            case (8)
-              call hex%init (mesh%x(:,cnode))
-              grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
-            case default
-              INSIST(.false.)
-            end select
+            else
+              select case (size(cnode))
+              case (4)
+                call tet%init (mesh%x(:,cnode))
+                grad(:,j) = matmul(tet%face_normals, uface(cface)) / tet%volume
+              case (5)  ! pyramid or tet (eventually tet and hex too!)
+                call cell%init (mesh%x(:,cnode))
+                grad(:,j) = matmul(cell%face_normals, uface(cface)) / cell%volume
+              case (6)
+                call wedge%init (mesh%x(:,cnode))
+                grad(:,j) = matmul(wedge%face_normals, uface(cface)) / wedge%volume
+              case (8)
+                call hex%init (mesh%x(:,cnode))
+                grad(:,j) = matmul(hex%face_normals, uface(cface)) / hex%volume
+              case default
+                INSIST(.false.)
+              end select
+            end if
           end associate
         else
           grad(:,j) = 0.0_r8

@@ -30,8 +30,9 @@ set(DISMESH_FILES
            distributed_mesh/parallel_permutations.F90
            distributed_mesh/simplicial_mesh_support.F90
            distributed_mesh/unstr_mesh_type.F90
-           distributed_mesh/more_unstr_mesh_tools.F90
            distributed_mesh/unstr_mesh_factory.F90
+           distributed_mesh/unstr_mesh_gmv.F90
+           distributed_mesh/more_unstr_mesh_tools.F90
            distributed_mesh/ext_exodus_mesh_type.F90
            distributed_mesh/exodus_mesh_tools.F90
            )

@@ -89,7 +89,7 @@ program test_linear_consistency
   use parameter_list_type
   use mfd_disc_type
   use cell_grad_type
-  use dist_mesh_type
+  use unstr_mesh_type
   use test_cell_grad_type_tools
   implicit none
 
@@ -134,7 +134,7 @@ contains
     integer, allocatable :: setids(:)
     character(:), allocatable :: errmsg
     class(test_func), allocatable :: func
-    type(dist_mesh), pointer :: mesh
+    type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
     integer :: stat
@@ -142,7 +142,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_UNIF: 2D square/uniform mesh')
 
-    mesh => dist_mesh_ptr('mesh1-unif')
+    mesh => unstr_mesh_ptr('mesh1-unif')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -195,7 +195,7 @@ contains
     integer, allocatable :: setids(:)
     character(:), allocatable :: errmsg
     class(test_func), allocatable :: func
-    type(dist_mesh), pointer :: mesh
+    type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
     integer :: stat
@@ -203,7 +203,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_RAND: 2D square/randomized mesh')
 
-    mesh => dist_mesh_ptr('mesh1-rand2')
+    mesh => unstr_mesh_ptr('mesh1-rand2')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -239,7 +239,7 @@ contains
     integer, allocatable :: setids(:)
     character(:), allocatable :: errmsg
     class(test_func), allocatable :: func
-    type(dist_mesh), pointer :: mesh
+    type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
     integer :: stat
@@ -247,7 +247,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST1_PAVE: 2D square/paved mesh')
 
-    mesh => dist_mesh_ptr('mesh1-pave')
+    mesh => unstr_mesh_ptr('mesh1-pave')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -284,7 +284,7 @@ contains
     integer, allocatable :: setids(:)
     character(:), allocatable :: errmsg
     class(test_func), allocatable :: func
-    type(dist_mesh), pointer :: mesh
+    type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
     integer :: stat
@@ -292,7 +292,7 @@ contains
     call TLS_info ('')
     call TLS_info ('TEST2_UNIF: 2D square/uniform mesh with void border')
 
-    mesh => dist_mesh_ptr('mesh2-unif')
+    mesh => unstr_mesh_ptr('mesh2-unif')
     INSIST(associated(mesh))
 
     allocate(disc)
@@ -334,7 +334,7 @@ contains
 
   subroutine run_test (mesh, grad, func, tol, filename)
 
-    type(dist_mesh) :: mesh
+    type(unstr_mesh) :: mesh
     type(cell_grad) :: grad
     class(test_func) :: func
     real(r8) :: tol
@@ -410,12 +410,12 @@ contains
   end subroutine centroid
 
   subroutine write_gmv_output (mesh, ucell, gradu, error, filename)
-    use dist_mesh_gmv
-    type(dist_mesh), intent(in) :: mesh
+    use unstr_mesh_gmv
+    type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: ucell(:), gradu(:,:), error(:,:)
     character(*), intent(in) :: filename
     call gmv_open (filename)
-    call gmv_write_dist_mesh (mesh)
+    call gmv_write_unstr_mesh (mesh)
     call gmv_begin_variables
     call gmv_write_dist_cell_var (mesh, ucell(:mesh%ncell_onP), 'u')
     call gmv_write_dist_cell_var (mesh, gradu(1,:mesh%ncell_onP), 'dudx')

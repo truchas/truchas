@@ -26,15 +26,8 @@ module unstr_mesh_type
     integer, allocatable :: xcface(:), cface(:) ! cell faces
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
   contains
-!    procedure :: get_face_set_ids
-!    procedure :: get_cell_set_bitmask
-!    procedure :: get_face_set_bitmask
-!    procedure :: get_global_cnode_array
+    procedure :: get_global_cnode_array
 !    procedure :: get_global_cface_array
-!    procedure :: get_global_cblock_array
-!    procedure :: get_global_x_array
-!    procedure :: get_global_volume_array
-!    procedure :: write_profile
     procedure :: compute_geometry
     procedure :: write_profile
     final :: unstr_mesh_delete
@@ -49,7 +42,7 @@ contains
     call destroy (this%face_ip)
     call destroy (this%cell_ip)
   end subroutine unstr_mesh_delete
-  
+
   !! Compute the geometric data components from the node coordinates.
   subroutine compute_geometry (this)
     use cell_geometry, only: cell_volume, face_normal, vector_length
@@ -151,34 +144,67 @@ contains
 
   end subroutine write_profile
 
-! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! !!
-! !! GET_GLOBAL_CNODE_ARRAY
-! !! GET_GLOBAL_CFACE_ARRAY
-! !!
-! !! These routines return the so-named global index array that is associated
-! !! with a distributed mesh.  The collated global index array is returned on
-! !! the IO processor and a 0-sized array on all others.  The returned array
-! !! pointer is allocated by these procedures.
-! !!
-! !! N.B.: Any storage the pointer may have been associated with at entry
-! !! is _not_ deallocated before allocating the pointer anew.
-! !!
-!
-!  subroutine get_global_cnode_array (this, cnode)
-!    class(dist_mesh), intent(in) :: this
-!    integer, allocatable, intent(out) :: cnode(:,:)
-!    ASSERT(associated(this%cnode))
-!    ASSERT(defined(this%cell_ip))
-!    ASSERT(defined(this%node_ip))
-!    ASSERT(size(this%cnode,2) == this%cell_ip%local_size())
-!    ASSERT(minval(this%cnode) >= 1)
-!    ASSERT(maxval(this%cnode) <= this%node_ip%local_size())
-!    allocate(cnode(size(this%cnode,1),merge(this%cell_ip%global_size(),0,is_IOP)))
-!    call collate (cnode, this%node_ip%global_index(this%cnode(:,:this%ncell_onP)))
-!    ASSERT(minval(cnode) >= 1 .and. maxval(cnode) <= this%node_ip%global_size())
-!  end subroutine get_global_cnode_array
-!
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !!
+ !! GET_GLOBAL_CNODE_ARRAY
+ !! GET_GLOBAL_CFACE_ARRAY
+ !!
+ !! These routines return the so-named global index array that is associated
+ !! with the mesh.  The collated global index array is returned on the IO
+ !! processor and a 0-sized array on all others.  The returned arrays are
+ !! allocated by these procedures.
+ !!
+
+  subroutine get_global_cnode_array (this, xcnode, cnode)
+    class(unstr_mesh), intent(in) :: this
+    integer, allocatable, intent(out) :: xcnode(:), cnode(:)
+    associate (xcnode_onP => this%xcnode(:this%ncell_onP+1), &
+                cnode_onP => this%cnode(:this%xcnode(this%ncell_onP+1)-1))
+      call get_global_ragged_array (xcnode_onP, this%node_ip%global_index(cnode_onP), xcnode, cnode)
+    end associate
+    ASSERT(minval(cnode) >= 1 .and. maxval(cnode) <= this%node_ip%global_size())
+  end subroutine get_global_cnode_array
+
+  subroutine get_global_ragged_array (xarray_l, array_l, xarray, array)
+    integer, intent(in) :: xarray_l(:), array_l(:)
+    integer, allocatable, intent(out) :: xarray(:), array(:)
+    integer :: offset
+    ASSERT(size(xarray_l) >= 1)
+    ASSERT(size(array_l) == xarray_l(size(xarray_l))-1)
+    ASSERT(global_all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) >= 4))
+    ASSERT(global_all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) <= 8))
+    offset = excl_prefix_sum(size(array_l))
+    allocate(xarray(1+merge(global_sum(size(xarray_l)-1),0,is_IOP)))
+    xarray(1) = 1
+    call collate (xarray(2:), xarray_l(2:)+offset)
+    allocate(array(merge(global_sum(size(array_l)),0,is_IOP)))
+    call collate (array, array_l)
+    if (is_IOP) then
+      ASSERT(size(xarray) >= 1)
+      ASSERT(xarray(1) == 1)
+      ASSERT(all(xarray(2:) - xarray(:size(xarray)-1) >= 4))
+      ASSERT(all(xarray(2:) - xarray(:size(xarray)-1) <= 8))
+      ASSERT(size(array) == xarray(size(xarray))-1)
+    end if
+  contains
+    integer function excl_prefix_sum (n) result (psum)
+      use parallel_communication, only: nPE, is_IOP, collate, distribute
+      integer, intent(in) :: n
+      integer :: j
+      integer, allocatable :: array(:)
+      allocate(array(merge(nPE,0,is_IOP)))
+      call collate (array, n)
+      if (is_IOP) then
+        do j = 2, nPE
+          array(j) = array(j) + array(j-1)
+        end do
+      end if
+      call distribute (psum, array)
+
+      psum = psum - n
+    end function
+  end subroutine get_global_ragged_array
+
 !  subroutine get_global_cface_array (this, cface)
 !    class(dist_mesh), intent(in) :: this
 !    integer, allocatable, intent(out) :: cface(:,:)
@@ -192,26 +218,5 @@ contains
 !    call collate (cface, this%face_ip%global_index(this%cface(:,:this%ncell_onP)))
 !    ASSERT(minval(cface) >= 1 .and. maxval(cface) <= this%face_ip%global_size())
 !  end subroutine get_global_cface_array
-!
-! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! !!
-! !! GET_GLOBAL_CBLOCK_ARRAY
-! !!
-! !! This routine returns the global cell block ID array that is associated
-! !! with a distributed mesh.  The collated global array is returned on the IO
-! !! processor and a 0-sized array on all others.  The returned array pointer
-! !! is allocated by this procedure, and any storage the pointer may have been
-! !! associated with at entry is _not_ deallocated before allocating the pointer
-! !! anew.
-! !!
-!
-!  subroutine get_global_cblock_array (this, cblock)
-!    class(dist_mesh), intent(in) :: this
-!    integer, allocatable, intent(out) :: cblock(:)
-!    ASSERT(allocated(this%cblock))
-!    ASSERT(defined(this%cell_ip))
-!    allocate(cblock(merge(this%cell_ip%global_size(),0,is_IOP)))
-!    call collate (cblock, this%cblock(:this%ncell_onP))
-!  end subroutine get_global_cblock_array
 
 end module unstr_mesh_type

@@ -24,5 +24,6 @@ if(ENABLE_MPI)
 endif()
 set_property(TEST cell_grad_type PROPERTY LABELS UNIT)
 
-add_executable(test_linear_consistency test_linear_consistency.F90)
-target_link_libraries(test_linear_consistency truchas ${Truchas_LINK_LIBS})
+# test development incomplete -- not working
+#add_executable(test_linear_consistency test_linear_consistency.F90)
+#target_link_libraries(test_linear_consistency truchas ${Truchas_LINK_LIBS})

@@ -13,7 +13,7 @@
 module cell_grad_type
 
   use kinds, only: r8
-  use dist_mesh_type
+  use unstr_mesh_type
   use pcsr_matrix_type
   use mfd_disc_type
   use hypre_hybrid_type
@@ -24,7 +24,7 @@ module cell_grad_type
   private
   
   type, public :: cell_grad
-    type(dist_mesh), pointer :: mesh => null()  ! reference only -- do not own
+    type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     type(mfd_disc),  pointer :: disc => null()  ! reference only -- do not own
     type(pcsr_matrix) :: matrix
     type(hypre_hybrid) :: solver
@@ -64,10 +64,10 @@ contains
     
     this%disc => disc
     select type (mesh => disc%mesh)
-    type is (dist_mesh)
+    type is (unstr_mesh)
       this%mesh => mesh
     class default
-      call TLS_fatal ('CELL_GRAD_TYPE module not yet extended to mixed cell meshes')
+      call TLS_fatal ('CELL_GRAD_TYPE module only supports UNSTR_MESH meshes')
     end select
     this%cell_mask = mask
     
@@ -83,8 +83,10 @@ contains
     call g%init (row_ip)
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
-        call g%add_clique (this%mesh%cface(:,j))
-        face_mask(this%mesh%cface(:,j)) = .false.  ! tag faces as active
+        associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+          call g%add_clique (cface)
+          face_mask(cface) = .false.  ! tag faces as active
+        end associate
       end if
     end do
     do j = 1, this%mesh%nface  ! dummy equations for inactive faces
@@ -108,7 +110,8 @@ contains
     !! Assemble the matrix elements corresponding to the active cells.
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
-        associate (index => this%mesh%cface(:,j), minv => this%disc%minv(:,j))
+        associate (index => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
+                   minv => this%disc%minv2(this%disc%xminv2(j):this%disc%xminv2(j+1)-1))
           l = 1
           do ic = 1, size(index)
             do ir = 1, ic-1
@@ -148,7 +151,7 @@ contains
     !! Hardwire the solver parameters for now; some need to be exposed.
     allocate(this%params)
     call this%params%set ('krylov-method', 'gmres')
-    call this%params%set ('rel-tol', 1.0e-8_r8)
+    call this%params%set ('rel-tol', 1.0e-10_r8)
     call this%params%set ('gmres-krylov-dim', 5)
     call this%params%set ('max-ds-iter', 50)
     call this%params%set ('max-amg-iter', 20)
@@ -174,8 +177,9 @@ contains
     
     integer  :: j, num_itr, num_dscg_itr, num_pcg_itr
     !logical  :: bface(this%mesh%nface)
-    real(r8) :: w(size(this%mesh%cface,dim=1)), norm
+    real(r8) :: norm
     real(r8) :: uface(this%mesh%nface), rface(this%mesh%nface)
+    real(r8), allocatable :: w(:)
     character(80) :: string
     
     ASSERT(size(ucell) == this%mesh%ncell)
@@ -194,10 +198,15 @@ contains
     !bface = .false.
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
-        call upm_col_sum (this%disc%minv(:,j), w)
-        rface(this%mesh%cface(:,j)) = rface(this%mesh%cface(:,j)) + ucell(j)*w
-        uface(this%mesh%cface(:,j)) = uface(this%mesh%cface(:,j)) + ucell(j)*0.5_r8
-        !bface(this%mesh%cface(:,j)) = .not.bface(this%mesh%cface(:,j))
+        associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
+                   minv => this%disc%minv2(this%disc%xminv2(j):this%disc%xminv2(j+1)-1))
+          allocate(w(size(cface)))
+          call upm_col_sum (minv, w)
+          rface(cface) = rface(cface) + ucell(j)*w
+          uface(cface) = uface(cface) + ucell(j)*0.5_r8
+          !bface(cface) = .not.bface(cface)
+          deallocate(w)
+        end associate
       end if
     end do
     !where (bface) uface = 2*uface
@@ -239,7 +248,7 @@ contains
     use bitfield_type
     use string_utilities, only: i_to_c
   
-    type(dist_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     logical, intent(in) :: mask(:)
     integer, intent(in) :: setids(:)
     logical, intent(out) :: bc_mask(:)
@@ -253,7 +262,11 @@ contains
     !! precisely those faces adjacent to exactly one active cell.
     bc_mask = .false.
     do j = 1, mesh%ncell
-      if (mask(j)) bc_mask(mesh%cface(:,j)) = .not. bc_mask(mesh%cface(:,j))
+      if (mask(j)) then
+        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+          bc_mask(cface) = .not. bc_mask(cface)
+        end associate
+      end if
     end do
     call gather_boundary (mesh%face_ip, bc_mask)
     

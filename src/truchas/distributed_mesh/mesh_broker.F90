@@ -15,6 +15,7 @@ module mesh_broker
   use parallel_communication
   use base_mesh_class
   use dist_mesh_type
+  use unstr_mesh_type
   use parameter_list_type
   use truchas_logging_services
 
@@ -23,7 +24,8 @@ module mesh_broker
 
   public :: dist_mesh
 
-  public :: read_mesh_namelists, enable_mesh, init_mesh_broker, named_mesh_ptr, dist_mesh_ptr
+  public :: read_mesh_namelists, enable_mesh, init_mesh_broker
+  public :: named_mesh_ptr, dist_mesh_ptr, unstr_mesh_ptr
   public :: peek_truchas_mesh_namelists
 
   !!  This module maintains a collection of meshes using a recursive linked-
@@ -100,6 +102,27 @@ contains
       l = l%first%rest
     end do
   end function dist_mesh_ptr
+
+  function unstr_mesh_ptr (name)
+    use string_utilities, only: raise_case
+    character(len=*), intent(in) :: name
+    type(unstr_mesh), pointer :: unstr_mesh_ptr
+    type(mesh_list) :: l
+    unstr_mesh_ptr => null()
+    l = meshes
+    do while (associated(l%first))
+      if (l%first%mesh%enabled) then
+        if (l%first%mesh%name == raise_case(name)) then
+          select type (mesh => l%first%mesh%mesh)
+          type is (unstr_mesh)
+            unstr_mesh_ptr => mesh
+          end select
+          exit
+        end if
+      end if
+      l = l%first%rest
+    end do
+  end function unstr_mesh_ptr
 
   subroutine enable_mesh (name, exists)
     use string_utilities, only: raise_case
@@ -459,6 +482,11 @@ contains
       meshes%first%mesh%iface_sset_id = side_sets
       allocate(meshes%first%mesh%gap_blocks(0))
       meshes%first%mesh%enabled = .true.
+      allocate(params)
+      call params%set ('mesh-file', file)
+      call params%set ('coord-scale-factor', meshes%first%mesh%coord_scale_factor)
+      call params%set ('interface-side-set-ids', side_sets)
+      meshes%first%mesh%params => params
       call piter%next
     end do
 
