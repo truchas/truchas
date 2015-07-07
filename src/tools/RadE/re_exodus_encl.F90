@@ -329,6 +329,9 @@ contains
     integer, target, save :: TETRA4_SIDE_SIG(4)
     data TETRA4_SIDE_SIG/b'1011', b'1110', b'1101', b'0111'/
 
+    integer, target, save :: PYRAMID5_SIDE_SIG(5)
+    data PYRAMID5_SIDE_SIG/b'10011', b'10110', b'11100', b'11001', b'01111'/
+
     integer, target, save :: WEDGE6_SIDE_SIG(5)
     data WEDGE6_SIDE_SIG/b'011011', b'110110', b'101101', b'000111', b'111000'/
 
@@ -443,12 +446,14 @@ contains
     tsize = 0 ! neighbor count
     do b = 1, mesh%num_eblk
 
-      select case (mesh%eblk(b)%elem_type)
-      case ('TETRA', 'TETRA4')
+      select case (mesh%eblk(b)%elem_type(1:3))
+      case ('TET')
         side_sig => TETRA4_SIDE_SIG
-      case ('WEDGE', 'WEDGE6')
+      case ('PYR')
+        side_sig => PYRAMID5_SIDE_SIG
+      case ('WED')
         side_sig => WEDGE6_SIDE_SIG
-      case ('HEX', 'HEX8')
+      case ('HEX')
         side_sig => HEX8_SIDE_SIG
       case default
         stat = -1

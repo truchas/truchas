@@ -8,7 +8,7 @@ program main
   use cell_based_function
   use properties
   use material_properties
-  use mesh_broker
+  use mesh_manager
   use spec_diff
   use bdf2_dae
   use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH
@@ -33,7 +33,7 @@ program main
   open(unit=10,file='test1.inp',position='rewind',action='read',status='old')
   call read_mesh_namelists (10)
   call enable_mesh ('testmesh', exists)
-  call init_mesh_broker ()
+  call init_mesh_manager ()
   
   if (is_IOP) then
     call cpu_time (cpu1)

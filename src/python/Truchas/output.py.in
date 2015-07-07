@@ -601,7 +601,7 @@ class TruchasMesh(object):
       elif connect[nc,4] == connect[nc,5]: # PYRAMID
         list = connect[nc,:5]
       elif connect[nc,4] == connect[nc,7]: # WEDGE
-        list = connect[nc,:7]
+        list = connect[nc,:6]
       else: # HEX
         list = connect[nc,:]
       xc = numpy.zeros(self.dim)

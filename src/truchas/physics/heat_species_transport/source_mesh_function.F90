@@ -98,7 +98,7 @@ module source_mesh_function
 
   use kinds
   use scalar_func_containers
-  use dist_mesh_type
+  use base_mesh_class
   implicit none
   private
 
@@ -108,7 +108,7 @@ module source_mesh_function
 
   type :: source_mf
     private
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     real(r8) :: tlast = -huge(1.0_r8)
     real(r8) :: default = 0.0_r8
     real(r8), pointer :: fvalue(:) => null()
@@ -139,7 +139,7 @@ contains
   subroutine smf_prep (this, mesh)
 
     type(source_mf), intent(out) :: this
-    type(dist_mesh), intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
 
     this%mesh => mesh
     this%ngroup = 0
@@ -337,6 +337,9 @@ contains
  !!
 
   subroutine smf_eval (this, t, q)
+  
+    use dist_mesh_type
+    use unstr_mesh_type
 
     type(source_mf), intent(inout) :: this
     real(r8), intent(in)  :: t
@@ -369,18 +372,42 @@ contains
           this%fvalue(cells) = this%farray(n)%f%eval(args)
         case (SMF_HINT_T_INDEP)
           if (unevaluated) then
-            do j = 1, size(cells)
-              args(1:) = sum(this%mesh%x(:,this%mesh%cnode(:,cells(j))),dim=2) &
-                       / size(this%mesh%cnode,dim=1)
-              this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
-            end do
+            select type (mesh => this%mesh)
+            type is (dist_mesh)
+              do j = 1, size(cells)
+                args(1:) = sum(mesh%x(:,mesh%cnode(:,cells(j))),dim=2) &
+                         / size(mesh%cnode,dim=1)
+                this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+              end do
+            type is (unstr_mesh)
+              do j = 1, size(cells)
+                associate (cnode => mesh%cnode(mesh%xcnode(cells(j)):mesh%xcnode(cells(j)+1)-1))
+                  args(1:) = sum(mesh%x(:,cnode),dim=2) / size(cnode)
+                  this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+                end associate
+              end do
+            class default
+              INSIST(.false.)
+            end select
           end if
         case default
-          do j = 1, size(cells)
-            args(1:) = sum(this%mesh%x(:,this%mesh%cnode(:,cells(j))),dim=2) &
-                     / size(this%mesh%cnode,dim=1)
-            this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
-          end do
+          select type (mesh => this%mesh)
+          type is (dist_mesh)
+            do j = 1, size(cells)
+              args(1:) = sum(mesh%x(:,mesh%cnode(:,cells(j))),dim=2) &
+                       / size(mesh%cnode,dim=1)
+              this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+            end do
+          type is (unstr_mesh)
+            do j = 1, size(cells)
+              associate (cnode => mesh%cnode(mesh%xcnode(cells(j)):mesh%xcnode(cells(j)+1)-1))
+                args(1:) = sum(mesh%x(:,cnode),dim=2) / size(cnode)
+                this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+              end associate
+            end do
+          class default
+            INSIST(.false.)
+          end select
         end select
       end do
       this%tlast = t

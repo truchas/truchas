@@ -11,7 +11,7 @@ module diffusion_solver
 
   use kinds
   use diffusion_solver_data
-  use mesh_broker
+  use mesh_manager
   use parallel_permutations
   use parallel_communication
   use truchas_logging_services
@@ -26,6 +26,7 @@ module diffusion_solver
   use HTSD_solver_type
   use timing_tree
   use truchas_logging_services
+  use base_mesh_class
   implicit none
   private
 
@@ -50,7 +51,7 @@ module diffusion_solver
     logical :: have_phase_change = .false.
     logical :: have_void = .false.
     !! The mesh, discretization, and material mesh function.
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     type(mfd_disc), pointer :: disc => null()
     type(mat_mf), pointer :: mmf => null()
     !! Saved references to the model sources.
@@ -386,7 +387,7 @@ contains
     call generate_mesh_mappings (this%mesh)
     
     allocate(this%disc)
-    call this%disc%init (this%mesh)
+    call this%disc%init (this%mesh, use_new_mfd)
     
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg)

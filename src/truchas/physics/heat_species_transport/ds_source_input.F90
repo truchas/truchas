@@ -85,7 +85,7 @@ module ds_source_input
   use kinds
   use scalar_func_class
   use source_mesh_function
-  use dist_mesh_type
+  use base_mesh_class
   use truchas_logging_services
   use parallel_communication
   use string_utilities, only: raise_case, i_to_c
@@ -248,7 +248,7 @@ contains
 
   subroutine define_external_source (mesh, equation, q)
 
-    type(dist_mesh),  intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     character(len=*), intent(in)  :: equation
     type(source_mf),  intent(out) :: q
 

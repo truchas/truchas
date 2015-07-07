@@ -22,7 +22,7 @@
 module HTSD_model_factory
 
   use HTSD_model_type
-  use dist_mesh_type
+  use base_mesh_class
   use mfd_disc_type
   use material_mesh_function
   implicit none
@@ -46,8 +46,10 @@ contains
 
     type(HT_model), pointer :: htmodel => null()
     type(SD_model), pointer :: sdmodel(:) => null()
+    class(base_mesh), pointer :: mesh
+
 #ifdef INTEL_COMPILER_WORKAROUND
-    type(dist_mesh), pointer :: fubar
+    class(base_mesh), pointer :: fubar
 
     fubar => mmf_mesh(mmf)
     ASSERT(associated(disc%mesh,fubar))
@@ -56,13 +58,15 @@ contains
     ASSERT(associated(disc%mesh, mmf_mesh(mmf)))
 #endif
 
+    mesh => disc%mesh
+
     if (heat_eqn) then
-      htmodel => create_HT_model(disc%mesh, mmf, stat, errmsg)
+      htmodel => create_HT_model(mesh, mmf, stat, errmsg)
       if (stat /= 0) return
     endif
 
     if (num_species > 0) then
-      sdmodel => create_SD_model(disc%mesh, mmf, stat, errmsg)
+      sdmodel => create_SD_model(mesh, mmf, stat, errmsg)
       if (stat /= 0) return
     end if
 
@@ -75,9 +79,9 @@ contains
 
   function create_HT_model (mesh, mmf, stat, errmsg) result (model)
 
-   use rad_problem_type
+    use rad_problem_type
 
-   type(dist_mesh), intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
@@ -108,7 +112,7 @@ contains
       use ds_source_input, only: define_external_source
       use parallel_communication, only: global_any
 
-      type(dist_mesh), intent(in), target :: mesh
+      class(base_mesh), intent(in), target :: mesh
       type(mat_mf), intent(in), target :: mmf
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
@@ -159,7 +163,7 @@ contains
       use physical_constants, only: stefan_boltzmann, absolute_zero
       use parallel_communication, only: global_any
 
-      type(dist_mesh), intent(in), target :: mesh
+      class(base_mesh), intent(in), target :: mesh
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
       character(len=*), intent(out) :: errmsg
@@ -267,7 +271,7 @@ contains
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
 
-    type(dist_mesh), intent(in) :: mesh
+    class(base_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
     type(rad_problem), pointer :: vf_rad_prob(:)
@@ -326,7 +330,7 @@ contains
     use index_partitioning
     use parallel_communication, only: global_any
 
-    type(dist_mesh), intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg

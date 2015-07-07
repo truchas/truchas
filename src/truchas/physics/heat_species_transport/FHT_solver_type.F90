@@ -28,7 +28,7 @@ module FHT_solver_type
   use property_mesh_function
   use solution_history
   use nka_type
-  use dist_mesh_type
+  use base_mesh_class
   use parallel_communication
   use index_partitioning
   implicit none
@@ -37,7 +37,7 @@ module FHT_solver_type
   type, public :: FHT_solver
     type(mat_mf),    pointer :: mmf => null()
     type(FHT_model), pointer :: model => null()
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     type(FHT_precon) :: precon
     type(FHT_norm) :: norm
     type(TofH) :: T_of_H
@@ -202,6 +202,8 @@ contains
   subroutine FHT_solver_advance_state (this, t, stat)
   
     use boundary_data
+    use dist_mesh_type
+    use unstr_mesh_type
   
     type(FHT_solver), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -256,14 +258,30 @@ contains
     !! Face-to-non-void-cell data structure; correct for on-process faces only.
     allocate(fnbr(2,this%mesh%nface))
     fnbr = 0
-    do j = 1, this%mesh%ncell
-      if (this%void_cell(j)) cycle
-      do k = 1, size(this%mesh%cface,1)
-        n = 1
-        if (fnbr(1,this%mesh%cface(k,j)) /= 0) n = 2
-        fnbr(n,this%mesh%cface(k,j)) = j
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      do j = 1, mesh%ncell
+        if (this%void_cell(j)) cycle
+        do k = 1, size(mesh%cface,1)
+          n = 1
+          if (fnbr(1,mesh%cface(k,j)) /= 0) n = 2
+          fnbr(n,mesh%cface(k,j)) = j
+        end do
       end do
-    end do
+    type is (unstr_mesh)
+      do j = 1, mesh%ncell
+        if (this%void_cell(j)) cycle
+        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+          do k = 1, size(cface)
+            n = 1
+            if (fnbr(1,cface(k)) /= 0) n = 2
+            fnbr(n,cface(k)) = j
+          end do
+        end associate
+      end do
+    class default
+      INSIST(.false.)
+    end select
     
     !! Void face mask; correct for all faces.
     this%void_face = (fnbr(1,:) == 0)
@@ -535,6 +553,9 @@ contains
   
   subroutine FHT_solver_set_initial_state (this, t, temp)
   
+    use dist_mesh_type
+    use unstr_mesh_type
+
     type(FHT_solver), intent(inout) :: this
     real(r8), intent(in) :: t, temp(:)
     
@@ -552,9 +573,22 @@ contains
     deallocate(void_vol_frac)
     
     this%void_face = .true.
-    do j = 1, this%mesh%ncell
-      if (.not.this%void_cell(j)) this%void_face(this%mesh%cface(:,j)) = .false.
-    end do
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      do j = 1, mesh%ncell
+        if (.not.this%void_cell(j)) this%void_face(mesh%cface(:,j)) = .false.
+      end do
+    type is (unstr_mesh)
+      do j = 1, mesh%ncell
+        if (.not.this%void_cell(j)) then
+          associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+            this%void_face(cface) = .false.
+          end associate
+        end if
+      end do
+    class default
+      INSIST(.false.)
+    end select
     call gather_boundary (this%mesh%face_ip, this%void_face)
     
     !! Set the current void context for the heat transfer model.

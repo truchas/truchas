@@ -4,7 +4,7 @@ module FHT_precon_type
 
   use kinds
   use FHT_model_type
-  use dist_mesh_type
+  use base_mesh_class
   use index_partitioning
   use diffusion_matrix
   use diff_precon_type
@@ -19,7 +19,7 @@ module FHT_precon_type
   
   type, public :: FHT_precon
     type(FHT_model), pointer :: model => null()
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     integer, pointer :: vfr_precon_coupling(:) => null()
     type(dist_diff_matrix), pointer :: matrix => null()
     type(diff_precon) :: precon

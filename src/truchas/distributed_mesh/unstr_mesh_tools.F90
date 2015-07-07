@@ -15,51 +15,51 @@ module unstr_mesh_tools
   implicit none
   private
   
-  public :: get_cell_neighbor_array, label_mesh_faces, get_face_node_array
+  public :: get_cell_neighbor_array, label_mesh_faces
 
 contains
 
-  subroutine get_cell_neighbor_array (cnode, lnode, cnhbr, lnhbr, stat)
+  subroutine get_cell_neighbor_array (xcnode, cnode, xlnode, lnode, xcnhbr, cnhbr, lnhbr, stat)
   
     use facet_hash_type
     use cell_topology
 
-    integer, intent(in)  :: cnode(:,:)
-    integer, intent(out) :: cnhbr(:,:)
-    integer, intent(in)  :: lnode(:,:)
-    integer, intent(out) :: lnhbr(:,:)
+    integer, intent(in) :: xcnode(:), cnode(:)
+    integer, intent(in) :: xlnode(:), lnode(:)
+    integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:), lnhbr(:,:)
     integer, intent(out) :: stat
 
-    integer :: i, j, k, n, jj, kk, max_bin_size, nmatch, bad_faces
-    integer, allocatable :: xbin(:), p(:)
-    integer, pointer :: f(:) => null()
+    integer :: i, j, k, n, jj, kk, max_bin_size, nmatch, bad_faces, ncell, nlink, offset
+    integer, allocatable :: face(:), xbin(:), p(:)
     type(facet_hash) :: hpar
 
     type :: table_entry
-      integer :: j, k                     ! cell and local face indices
-      integer, pointer :: f(:) => null()  ! face node list (outward and normalized)
+      integer :: j, k ! cell and face indices
+      integer, allocatable :: face(:) ! face node list (outward and normalized)
     end type table_entry
     type(table_entry), allocatable :: bin_table(:)
-
-    procedure(hex_face_nodes), pointer :: face_nodes
-
-    !! Infer the type of mesh we are working with from the shape of CNODE and CNHBR.
-    ASSERT(size(cnode,dim=2) == size(cnhbr,dim=2))
-    ASSERT(size(lnode,dim=2) == size(lnhbr,dim=2))
-    ASSERT(size(lnhbr,dim=1) == 2)
-    if (size(cnode,dim=1) == 4) then ! tetrahedral cells
-      ASSERT(size(cnhbr,dim=1) == 4)
-      ASSERT(size(lnode,dim=1) == 6)
-      face_nodes => tet_face_nodes
-    else if (size(cnode,dim=1) == 8) then ! hexahedral cells
-      ASSERT(size(cnhbr,dim=1) == 6)
-      ASSERT(size(lnode,dim=1) == 8)
-      face_nodes => hex_face_nodes
-    else
-      INSIST(.false.)
-    end if
     
-    !!! Check that each cell is non-degenerate
+    ncell = size(xcnode) - 1
+    
+    !! Generate XCNHBR: CNHBR(XCNHBR(J):XCNHBR(J+1)-1) will store the face
+    !! neighbors of cell J.  We infer the cell type from the number of nodes.
+    allocate(xcnhbr(size(xcnode)))
+    xcnhbr(1) = 1
+    do j = 1, ncell
+      select case (xcnode(j+1)-xcnode(j))
+      case (4)  ! tet - 4 faces
+        xcnhbr(j+1) = xcnhbr(j) + 4
+      case (5)  ! pyramid - 5 faces
+        xcnhbr(j+1) = xcnhbr(j) + 5
+      case (6)  ! wedge - 5 faces
+        xcnhbr(j+1) = xcnhbr(j) + 5
+      case (8)  ! hex - 6 faces
+        xcnhbr(j+1) = xcnhbr(j) + 6
+      case default
+        INSIST(.false.)
+      end select
+    end do
+    allocate(cnhbr(xcnhbr(ncell+1)-1))
     
     n = size(cnhbr)
     allocate(bin_table(n))
@@ -75,16 +75,18 @@ contains
 
     !! Count the number of hits to each bin; count for bin N stored in XBIN(N+1).
     xbin = 0
-    do j = 1, size(cnode,dim=2)
-      do k = 1, size(cnhbr,dim=1)
-        f => face_nodes(cnode(:,j), k)
-        call hpar%hash (f, n)
-        xbin(n+1) = 1 + xbin(n+1)
-        deallocate(f)
-      end do
+    do j = 1, ncell
+      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
+        offset = xcnhbr(j)-1  ! for getting local face index
+        do k = xcnhbr(j), xcnhbr(j+1)-1
+          call get_face_nodes (cell, k-offset, face)
+          call hpar%hash (face, n)
+          xbin(n+1) = 1 + xbin(n+1)
+        end do
+      end associate
     end do
     max_bin_size = maxval(xbin)
-    
+          
     !! Prepare XBIN: bin J will be BIN_TABLE(XBIN(J):XBIN(J+1)-1)
     xbin(0) = 1
     do j = 1, ubound(xbin,1)
@@ -93,16 +95,19 @@ contains
     
     !! Fill the bin table; use XBIN as a temporary to hold the next free
     !! location for each bin.
-    do j = 1, size(cnode,dim=2)
-      do k = 1, size(cnhbr,dim=1)
-        f => face_nodes(cnode(:,j), k, normalize=.true.)
-        call hpar%hash (f, n)
-        i = xbin(n)
-        bin_table(i)%f => f
-        bin_table(i)%j = j
-        bin_table(i)%k = k
-        xbin(n) = i + 1
-      end do
+    do j = 1, ncell
+      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
+        offset = xcnhbr(j)-1  ! for getting local face index
+        do k = xcnhbr(j), xcnhbr(j+1)-1
+          call get_face_nodes (cell, k-offset, face, normalize=.true.)
+          call hpar%hash (face, n)
+          i = xbin(n)
+          bin_table(i)%j = j
+          bin_table(i)%k = k
+          call move_alloc (face, bin_table(i)%face)
+          xbin(n) = i + 1
+        end do
+      end associate
     end do
     
     !! Restore XBIN: the index of the first element of bin J is now XBIN(J-1)
@@ -118,199 +123,150 @@ contains
     bad_faces = 0
     stat = 0
 
-    do j = 1, size(cnhbr,dim=2)
-      do k = 1, size(cnhbr,dim=1)
-      
-        if (cnhbr(k,j) /= 0) cycle  ! info already assigned
-        
-        !! Get a face and its corresponding bin.
-        f => face_nodes(cnode(:,j), k, normalize=.true.)
-        call hpar%hash (f, n)
-        associate (bin => bin_table(xbin(n):xbin(n+1)-1))
-        
-          !! Scan bin for *all* matching faces.
-          jj = 0
-          kk = 0
-          nmatch = 0
-          do i = 1, size(bin)
-            if (bin(i)%j == j) then ! found myself
-              p(i) = 1
-            else
-              p(i) = parity(bin(i)%f, f)
-              select case (p(i))
-              case (-1) ! a good match (if only one)
-                nmatch = 1 + nmatch
-                jj = bin(i)%j
-                kk = bin(i)%k
-              case (1)  ! a bad match (wrong orientation)
-                nmatch = 1 + nmatch
-              end select
-            end if
-          end do
-          deallocate(f)
-
-          if (nmatch == 1 .and. jj /= 0) then
-            !! Found a unique neighbor; assign the neighbor data.
-            cnhbr(k,j) = jj   ! my neighbor, and
-            cnhbr(kk,jj) = j  ! my neighbor's neighbor (me!)
-          else if (nmatch /= 0) then
-            !! Bad mesh topology; tag the faces involved.
-            bad_faces = 1 + bad_faces
+    do j = 1, ncell
+      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
+        offset = xcnhbr(j)-1  ! for getting local face index
+        do k = xcnhbr(j), xcnhbr(j+1)-1
+          if (cnhbr(k) /= 0) cycle  ! info already assigned
+          !! Get a face and its corresponding bin.
+          call get_face_nodes (cell, k-offset, face, normalize=.true.)
+          call hpar%hash (face, n)
+          associate (bin => bin_table(xbin(n):xbin(n+1)-1))
+            !! Scan bin for *all* matching faces.
+            jj = 0
+            kk = 0
+            nmatch = 0
             do i = 1, size(bin)
-              if (p(i) /= 0) cnhbr(bin(i)%j, bin(i)%k) = -bad_faces
+              if (bin(i)%j == j) then ! found myself
+                p(i) = 1
+              else
+                p(i) = parity(bin(i)%face, face)
+                select case (p(i))
+                case (-1) ! a good match (if only one)
+                  nmatch = 1 + nmatch
+                  jj = bin(i)%j
+                  kk = bin(i)%k
+                case (1)  ! a bad match (wrong orientation)
+                  nmatch = 1 + nmatch
+                end select
+              end if
             end do
-            stat = -1
-          end if
-        end associate
-        
-      end do
+            !! Store the neighbor information.
+            if (nmatch == 1 .and. jj /= 0) then
+              !! Found a unique neighbor; assign the neighbor data.
+              cnhbr(k) = jj ! my neighbor, and
+              cnhbr(kk) = j ! my neighbor's neighbor (me!)
+            else if (nmatch /= 0) then
+              !! Bad mesh topology; tag the faces involved.
+              bad_faces = 1 + bad_faces
+              do i = 1, size(bin)
+                if (p(i) /= 0) cnhbr(bin(i)%k) = -bad_faces
+              end do
+              stat = -1
+            end if
+          end associate
+        end do
+      end associate
     end do
     
     !! Lookup the two link faces in the table to get the neighbor cell numbers.
     !! The face node list must be arranged to match that stored in the table.
-    do j = 1, size(lnode,dim=2)
-      do k = 1, 2
-        f => link_face_nodes(lnode(:,j), k, normalize=.true.)
-        call hpar%hash (f, n)
-        associate (bin => bin_table(xbin(n):xbin(n+1)-1))
-          lnhbr(k,j) = 0  ! default value
-          do i = size(bin), 1, -1
-            if (all(bin(i)%f == f)) exit
-          end do
-          if (i > 0) then  ! found a match ...
-            if (cnhbr(bin(i)%k,bin(i)%j) == 0) then ! and it's a boundary face as expected
-              lnhbr(k,j) = bin(i)%j
-            else  ! not a boundary face; something is wrong
+    nlink = size(xlnode) - 1
+    allocate(lnhbr(2,nlink))
+    do j = 1, nlink
+      associate (link => lnode(xlnode(j):xlnode(j+1)-1))
+        do k = 1, 2
+          call get_link_face_nodes (link, k, face, normalize=.true.)
+          call hpar%hash (face, n)
+          associate (bin => bin_table(xbin(n):xbin(n+1)-1))
+            lnhbr(k,j) = 0  ! default value
+            do i = size(bin), 1, -1
+              if (all(bin(i)%face == face)) exit
+            end do
+            if (i > 0) then  ! found a match ...
+              if (cnhbr(bin(i)%k) == 0) then ! and it's a boundary face as expected
+                lnhbr(k,j) = bin(i)%j
+              else  ! not a boundary face; something is wrong
+                stat = -1
+              end if
+            else  ! no match found; something is wrong
               stat = -1
             end if
-          else  ! no match found; something is wrong
-            stat = -1
-          end if
-          deallocate(f)
-        end associate
-      end do
+          end associate
+        end do
+      end associate
     end do
-    
-    !! Clean-up
-    do j = lbound(bin_table,1), ubound(bin_table,1)
-      if (associated(bin_table(j)%f)) deallocate(bin_table(j)%f)
-    end do
-    deallocate(p, xbin, bin_table)
     
   end subroutine get_cell_neighbor_array
 
 
-  subroutine label_mesh_faces (cnode, nface, cface, lnode, lface)
+  subroutine label_mesh_faces (xcnode, cnode, xlnode, lnode, nface, xcface, cface, lface)
 
     use cell_topology
     use facet_table_type
 
-    integer, intent(in)  :: cnode(:,:)
+    integer, intent(in)  :: xcnode(:), cnode(:)
+    integer, intent(in)  :: xlnode(:), lnode(:)
     integer, intent(out) :: nface
-    integer, intent(out) :: cface(:,:)
-    integer, intent(in)  :: lnode(:,:)
-    integer, intent(out) :: lface(:,:)
+    integer, allocatable, intent(out) :: xcface(:), cface(:), lface(:,:)
 
-    integer :: j, k, n, max_face, node_max
-    integer, pointer :: f(:) => null()
+    integer :: j, k, n, offset, ncell, nlink, max_face, node_max
+    integer, allocatable :: face(:)
     type(facet_table) :: table
 
-    procedure(hex_face_nodes), pointer :: face_nodes
-
-    !! Infer the type of mesh we are working with from the shape of CNODE and CFACE.
-    ASSERT(size(cnode,dim=2) == size(cface,dim=2))
-    ASSERT(size(lnode,dim=2) == size(lface,dim=2))
-    ASSERT(size(lface,dim=1) == 2)
-    if (size(cnode,dim=1) == 4) then ! tetrahedral cells
-      ASSERT(size(cface,dim=1) == 4)
-      ASSERT(size(lnode,dim=1) == 6)
-      face_nodes => tet_face_nodes
-    else if (size(cnode,dim=1) == 8) then ! hexahedral cells
-      ASSERT(size(cface,dim=1) == 6)
-      ASSERT(size(lnode,dim=1) == 8)
-      face_nodes => hex_face_nodes
-    else
-      INSIST(.false.)
-    end if
-
+    ncell = size(xcnode) - 1
+    
+    !! Generate XCFACE: CFACE(XCFACE(J):XCFACE(J+1)-1) will store the face
+    !! numbers of cell J.  We infer the cell type from the number of nodes.
+    allocate(xcface(size(xcnode)))
+    xcface(1) = 1
+    do j = 1, ncell
+      select case (xcnode(j+1)-xcnode(j))
+      case (4)  ! tet - 4 faces
+        xcface(j+1) = xcface(j) + 4
+      case (5)  ! pyramid - 5 faces
+        xcface(j+1) = xcface(j) + 5
+      case (6)  ! wedge - 5 faces
+        xcface(j+1) = xcface(j) + 5
+      case (8)  ! hex - 6 faces
+        xcface(j+1) = xcface(j) + 6
+      case default
+        INSIST(.false.)
+      end select
+    end do
+    allocate(cface(xcface(ncell+1)-1))
+    
     ASSERT(minval(cnode) > 0)
 
-    max_face = product(shape(cface))  ! worst case; realistically, closer to half this
+    max_face = size(cface)  ! worst case; realistically, closer to half this
     node_max = maxval(cnode)
     call table%init (max_face, node_max)
 
-    do j = 1, size(cface,dim=2)
-      do k = 1, size(cface,dim=1)
-        f => face_nodes(cnode(:,j), k)
-        call table%get_facet_label (f, cface(k,j), insert=.true.)
-        deallocate(f)
-      end do
+    do j = 1, ncell
+      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
+        offset = xcface(j)-1  ! for getting local face index
+        do k = xcface(j), xcface(j+1)-1
+          call get_face_nodes (cell, k-offset, face)
+          call table%get_facet_label (face, cface(k), insert=.true.)
+        end do
+      end associate
     end do
     nface = table%number_of_facets()
     INSIST(all(cface /= 0))
 
-    do j = 1, size(lnode,dim=2)
-      do k = 1, 2
-        f => link_face_nodes(lnode(:,j), k)
-        call table%get_facet_label (f, lface(k,j), insert=.false.)
-        deallocate(f)
-      end do
+    nlink = size(xlnode) - 1
+    allocate(lface(2,nlink))
+    do j = 1, nlink
+      associate (link => lnode(xlnode(j):xlnode(j+1)-1))
+        do k = 1, 2
+          call get_link_face_nodes (link, k, face)
+          call table%get_facet_label (face, lface(k,j), insert=.false.)
+        end do
+      end associate
     end do
     INSIST(all(lface >= 1))
     INSIST(all(lface <= nface))
 
   end subroutine label_mesh_faces
-
-  !! Generate the face-node connectivity array FNODE.  The procedure assumes
-  !! every face is cooriented with exactly one local cell face (which are
-  !! outward-oriented).  The CFACE/CFPAR arrays produced by LABEL_MESH_FACES
-  !! have this property.  The returned face-node lists are normalized (the
-  !! smallest node begins the list).
-
-  subroutine get_face_node_array (cnode, cface, cfpar, fnode)
-
-    use cell_topology, only: get_tet_face_nodes, get_hex_face_nodes, reverse_facet
-
-    integer, intent(in)  :: cnode(:,:)  ! cell-node connectivity array
-    integer, intent(in)  :: cface(:,:)  ! cell-face connectivity array
-    integer, intent(in)  :: cfpar(:)    ! cell-face orientation parity bit mask
-    integer, intent(out) :: fnode(:,:)  ! face-node connectivity array
-
-    integer :: j, k
-
-    procedure(get_hex_face_nodes), pointer :: get_face_nodes
-
-    !! Infer the type of mesh we are working with from the shape of CNODE and CFACE.
-    ASSERT(size(cface,dim=2) == size(cnode,dim=2))
-    ASSERT(size(cface,dim=2) == size(cfpar))
-    if (size(cnode,dim=1) == 4) then ! tetrahedral cells
-      ASSERT(size(cface,dim=1) == 4)
-      ASSERT(size(fnode,dim=1) == 3)
-      get_face_nodes => get_tet_face_nodes
-    else if (size(cnode,dim=1) == 8) then ! hexahedral cells
-      ASSERT(size(cface,dim=1) == 6)
-      ASSERT(size(fnode,dim=1) == 4)
-      get_face_nodes => get_hex_face_nodes
-    else
-      INSIST(.false.)
-    end if
-
-    ASSERT(minval(cnode) > 0)
-    ASSERT(minval(cface) > 0)
-    ASSERT(maxval(cface) <= size(fnode,dim=2))
-
-    fnode = 0
-    do j = 1, size(cface,dim=2)
-      do k = 1, size(cface,dim=1)
-        if (fnode(1,cface(k,j)) == 0) then
-          call get_face_nodes (cnode(:,j), k, fnode(:,cface(k,j)), normalize=.true.)
-          if (btest(cfpar(j),pos=k)) call reverse_facet (fnode(:,cface(k,j)))
-        end if
-      end do
-    end do
-
-    ASSERT(minval(fnode) > 0)
-
-  end subroutine get_face_node_array
 
 end module unstr_mesh_tools

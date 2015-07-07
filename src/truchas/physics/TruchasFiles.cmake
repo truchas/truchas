@@ -192,6 +192,14 @@ set_source_files_properties(${PHYSICS_SOURCE_FILES} PROPERTIES
 set_source_files_properties(${TruchasExe_BINARY_DIR}/ER_file.f90 PROPERTIES
                             COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS} -I${NETCDF_INCLUDE_DIR}")
 
+# Add special Intel flag for certain sources (A DAMN UGLY HACK)
+if (Fortran_COMPILER_IS_INTEL)
+  set_source_files_properties(${TruchasExe_BINARY_DIR}/mfd_disc_type.f90
+                              ${TruchasExe_BINARY_DIR}/diffusion_matrix.f90
+                              PROPERTIES
+                              COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS} -assume realloc_lhs")
+endif()
+
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${PHYSICS_SOURCE_FILES})		       
 list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasPhysicsFiles)
 

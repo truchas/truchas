@@ -275,7 +275,7 @@ contains
   subroutine check_EM_input (stat)
   
     use string_utilities, only: raise_case, i_to_c
-    use mesh_broker, only: enable_mesh
+    use mesh_manager, only: enable_mesh
     
     integer, intent(out) :: stat
   

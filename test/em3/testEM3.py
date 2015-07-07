@@ -35,8 +35,8 @@ class EM3(TruchasTest.GoldenTestCase):
   def test_final_temperature(self):
     '''Verify the final temperature field'''
     tol = 1.0e-10
-    test = self.get_test_field('Z_TEMP',cycle=31)
-    gold = self.get_gold_field('Z_TEMP',cycle=31)
+    test = self.get_test_field('Z_TEMP',cycle=30)
+    gold = self.get_gold_field('Z_TEMP',cycle=30)
     error = max(abs((test-gold)/gold))
     if error > tol:
       print 'temperature: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)

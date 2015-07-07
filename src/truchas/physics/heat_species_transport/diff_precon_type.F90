@@ -84,7 +84,9 @@ module diff_precon_type
   use pcsr_matrix_type
   use pcsr_precon_class
   use index_partitioning
+  use base_mesh_class
   use dist_mesh_type
+  use unstr_mesh_type
   use parameter_list_type
   implicit none
   private
@@ -211,13 +213,26 @@ contains
       b2x_dir = b2x(this%dir_faces)
     end if
 
-    do j = 1, size(this%a12,dim=2)
-      s = b1x(j) / this%a11(j)
-      do k = 1, size(this%a12,dim=1)
-        n = this%mesh%cface(k,j)
-        b2x(n) = b2x(n) - this%a12(k,j) * s
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      do j = 1, size(this%a12,dim=2)
+        s = b1x(j) / this%a11(j)
+        do k = 1, size(this%a12,dim=1)
+          n = mesh%cface(k,j)
+          b2x(n) = b2x(n) - this%a12(k,j) * s
+        end do
       end do
-    end do
+    type is (unstr_mesh)
+      do j = 1, mesh%ncell
+        s = b1x(j) / this%a11(j)
+        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1), &
+                   a12 => this%a12_val(mesh%xcface(j):mesh%xcface(j+1)-1))
+          b2x(cface) = b2x(cface) - a12 * s
+        end associate
+      end do
+    class default
+      INSIST(.false.)
+    end select
 
     if (allocated(this%dir_faces)) then
       b2x(this%dir_faces) = b2x_dir
@@ -243,14 +258,26 @@ contains
       u2x(this%dir_faces) = 0.0_r8
     end if
 
-    do j = 1, this%mesh%ncell_onP
-      s = b1x(j)
-      do k = 1, size(this%a12,dim=1)
-        s = s - this%a12(k,j) * u2x(this%mesh%cface(k,j))
+    select type (mesh => this%mesh)
+    type is (dist_mesh)
+      do j = 1, mesh%ncell_onP
+        s = b1x(j)
+        do k = 1, size(this%a12,dim=1)
+          s = s - this%a12(k,j) * u2x(mesh%cface(k,j))
+        end do
+        b1x(j) = s / this%a11(j)
       end do
-      b1x(j) = s / this%a11(j)
-    end do
-
+    type is (unstr_mesh)
+      do j = 1, mesh%ncell_onP
+        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1), &
+                   a12 => this%a12_val(mesh%xcface(j):mesh%xcface(j+1)-1))
+          b1x(j) = (b1x(j) - dot_product(a12, u2x(cface))) / this%a11(j)
+        end associate
+      end do
+    class default
+      INSIST(.false.)
+    end select
+    
     if (allocated(this%dir_faces)) then
       u2x(this%dir_faces) = u2x_dir
       deallocate(u2x_dir)

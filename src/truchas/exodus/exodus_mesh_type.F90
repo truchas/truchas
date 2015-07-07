@@ -187,6 +187,7 @@ module exodus_mesh_type
   contains
     procedure :: side_node_list
     procedure :: side_set_node_list
+    procedure :: get_concat_elem_conn
     procedure, nopass :: side_size_list
     !! Debugging methods
     procedure :: defined => exodus_mesh_defined
@@ -389,6 +390,42 @@ contains
 
   end function side_size_list
 
+  !! This ExodusII-like procedure concatenates the mesh connectivity data that
+  !! is stored within an array of element blocks, into a packed mixed-element
+  !! ragged-array data structure: CONNECT(XCONNECT(j):XCONNECT(j+1)-1) is the
+  !! connectivity of cell j. As a convenience to the caller, the procedure
+  !! allocates the allocatable output arrays XCONNECT and CONNECT, primarily
+  !! because the required size of CONNECT is not immediately known.
+    
+  subroutine get_concat_elem_conn (this, xconnect, connect)
+  
+    use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
+    
+    class(exodus_mesh), intent(in), target :: this
+    integer, allocatable, intent(out) :: xconnect(:), connect(:)
+    
+    integer :: j, k, n, offset
+    integer, pointer :: flat_conn(:)
+    
+    n = sum(this%eblk%num_nodes_per_elem * this%eblk%num_elem)
+    allocate(xconnect(this%num_elem+1), connect(n))
+    n = 0
+    offset = 0
+    xconnect(1) = 1
+    do j = 1, this%num_eblk
+      do k = 1, this%eblk(j)%num_elem
+        n = n + 1
+        xconnect(n+1) = xconnect(n) + this%eblk(j)%num_nodes_per_elem
+      end do
+      associate (conn => this%eblk(j)%connect)
+        call c_f_pointer (c_loc(conn), flat_conn, shape=[size(conn)])
+        connect(offset+1:offset+size(conn)) = flat_conn
+        offset = offset + size(conn)
+      end associate
+    end do
+    
+  end subroutine get_concat_elem_conn
+    
 !!!! TYPE BOUND DEBUGGING PROCEDURES FOLLOW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   elemental logical function exodus_mesh_defined (this)

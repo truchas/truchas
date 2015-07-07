@@ -71,7 +71,7 @@ contains
     use exodus_file_type
 
     character(*), intent(in)  :: path
-    type(exodus_mesh), intent(out) :: mesh
+    class(exodus_mesh), intent(out) :: mesh
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
 
@@ -168,7 +168,7 @@ contains
   subroutine write_exodus_mesh (path, mesh, creator, version, stat, errmsg)
 
     character(*), intent(in) :: path
-    type(exodus_mesh), intent(in) :: mesh
+    class(exodus_mesh), intent(in) :: mesh
     character(*), intent(in)  :: creator, version
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg

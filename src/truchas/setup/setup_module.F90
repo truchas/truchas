@@ -53,7 +53,7 @@ CONTAINS
                                       dt, t, t1, t2
     use timing_tree
     use tensor_module,          only: TENSOR_MATRIX
-    use mesh_broker,            only: init_mesh_broker
+    use mesh_manager,           only: init_mesh_manager
     use EM,                     only: initialize_EM
     use truchas_danu_output,    only: TDO_write_default_mesh
 
@@ -99,7 +99,7 @@ CONTAINS
     call Flag_Face_Neighbors ()
 
     ! Setup the distributed tet mesh used by the EM solver.
-    call init_mesh_broker ()
+    call init_mesh_manager ()
 
     ! Write the primary truchas mesh.
     call TDO_write_default_mesh

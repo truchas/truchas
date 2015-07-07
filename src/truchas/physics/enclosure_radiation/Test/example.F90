@@ -7,7 +7,7 @@ program example
   use parallel_util_module, only: parallel_init
   use parallel_communication
   use dist_mesh_type
-  use mesh_broker
+  use mesh_manager
   use rad_driver_type
   use physical_constants, only: read_physical_constants
   use function_namelist, only: read_function_namelists
@@ -48,7 +48,7 @@ program example
   INSIST(exists)
   
   !! Read and initialize the mesh.
-  call init_mesh_broker ()
+  call init_mesh_manager ()
   mesh => named_mesh_ptr('main')
   INSIST(associated(mesh%fnode))
   
