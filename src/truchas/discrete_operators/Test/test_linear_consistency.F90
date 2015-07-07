@@ -84,7 +84,7 @@ program test_linear_consistency
   use parallel_util_module, only: parallel_init
   use parallel_communication
   use truchas_env, only: prefix
-  use mesh_broker
+  use mesh_manager
   use truchas_logging_services
   use parameter_list_type
   use mfd_disc_type
@@ -496,16 +496,16 @@ contains
 
     params => plist%sublist('mesh2-unif')
     call params%set ('mesh-file', indir // '/mesh2-unif.gen')
-    call params%set ('interface-side-sets', [2])
+    call params%set ('interface-side-set-ids', [2])
 
 !    params => plist%sublist('mesh2-pave')
 !    call params%set ('mesh-file', indir // '/mesh2-pave.gen')
-!    call params%set ('interface-side-sets', [2])
+!    call params%set ('interface-side-set-ids', [2])
 !
 !    params => plist%sublist('mesh3-unif')
 !    call params%set ('mesh-file', indir // '/mesh3-unif.gen')
 
-    call init_mesh_broker (plist)
+    call init_mesh_manager (plist)
 
   end subroutine make_meshes
 

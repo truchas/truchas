@@ -42,7 +42,7 @@ contains
     use lin_solver_input,          only: linear_solver_input
     use EM_data_proxy,             only: em_is_on
     use region_input_module,       only: region_read
-    use mesh_broker,               only: peek_truchas_mesh_namelists
+    use mesh_manager,              only: peek_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
     use physical_constants,        only: read_physical_constants

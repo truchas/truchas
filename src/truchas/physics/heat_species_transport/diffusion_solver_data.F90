@@ -66,7 +66,7 @@ contains
 
   subroutine read_ds_namelist (lun)
 
-    use mesh_broker, only: enable_mesh
+    use mesh_manager, only: enable_mesh
     use input_utilities, only: seek_to_namelist
     use parallel_communication
     use string_utilities

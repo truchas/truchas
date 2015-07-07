@@ -15,17 +15,14 @@ set(DISMESH_FILES
            distributed_mesh/cell_geometry.F90
            distributed_mesh/cell_topology.F90
            distributed_mesh/base_mesh_class.F90
-           distributed_mesh/dist_mesh_factory.F90
            distributed_mesh/dist_mesh_gmv.F90
 	   distributed_mesh/dist_mesh_type.F90
            distributed_mesh/distributed_tet_mesh.F90
            distributed_mesh/facet_hash_type.F90
            distributed_mesh/facet_table_type.F90
-           distributed_mesh/unstr_mesh_tools.F90
            distributed_mesh/index_partitioning.F90
-           distributed_mesh/mesh_broker.F90
+           distributed_mesh/mesh_manager.F90
            distributed_mesh/mesh_importer.F90
-           distributed_mesh/mesh_modification.F90
            distributed_mesh/parallel_communication.F90
            distributed_mesh/parallel_permutations.F90
            distributed_mesh/simplicial_mesh_support.F90

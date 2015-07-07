@@ -145,7 +145,7 @@ contains
   ! Purpose: Initialize the solid mechanics mesh pointer and the permutation
   !          structures.
   subroutine sm_mesh_init
-    use mesh_broker, only: dist_mesh_ptr
+    use mesh_manager, only: dist_mesh_ptr
     use mesh_module, only: unpermute_mesh_vector, unpermute_vertex_vector
     use parallel_permutations, only: create_par_perm
 
@@ -191,7 +191,7 @@ contains
 
   ! Purpose: A wrapper to the DIST_MESH call to enable the mesh pointer
   subroutine sm_mesh_enable
-    use mesh_broker, only : enable_mesh
+    use mesh_manager, only : enable_mesh
     logical :: found
     call enable_mesh(sm_mesh_name,found)
     INSIST(found)

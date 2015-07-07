@@ -314,7 +314,7 @@ CONTAINS
     use parameter_module, only: hex_mesh_ncell => ncells
     use mesh_importer
     use dist_mesh_type
-    use mesh_broker
+    use mesh_manager, only: dist_mesh_ptr
     use EM_input, only: coil_array
     
     type(dist_mesh), pointer :: alt_mesh
@@ -395,7 +395,7 @@ CONTAINS
   end subroutine init_EM_data_proxy
 
   function EM_mesh () result (ptr)
-    use mesh_broker
+    use mesh_manager, only: dist_mesh_ptr
     use dist_mesh_type
     type(dist_mesh), pointer :: ptr
     ptr => dist_mesh_ptr('alt')
@@ -920,7 +920,7 @@ CONTAINS
 
   subroutine read_joule_data (unit, version)
 
-    use mesh_broker, only: dist_mesh, dist_mesh_ptr
+    use mesh_manager, only: dist_mesh, dist_mesh_ptr
     use mesh_module, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
@@ -996,7 +996,7 @@ CONTAINS
 
     use parallel_communication
     use permutations
-    use mesh_broker, only: dist_mesh, dist_mesh_ptr
+    use mesh_manager, only: dist_mesh, dist_mesh_ptr
     use danu_module, only: DANU_SUCCESS
     
     real(rk), intent(in) :: t

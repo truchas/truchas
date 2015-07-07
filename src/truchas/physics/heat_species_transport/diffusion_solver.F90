@@ -11,7 +11,7 @@ module diffusion_solver
 
   use kinds
   use diffusion_solver_data
-  use mesh_broker
+  use mesh_manager
   use parallel_permutations
   use parallel_communication
   use truchas_logging_services
