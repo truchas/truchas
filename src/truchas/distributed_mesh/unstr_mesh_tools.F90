@@ -10,7 +10,7 @@
 
 #include "f90_assert.fpp"
 
-module more_unstr_mesh_tools
+module unstr_mesh_tools
 
   implicit none
   private
@@ -269,4 +269,4 @@ contains
 
   end subroutine label_mesh_faces
 
-end module more_unstr_mesh_tools
+end module unstr_mesh_tools

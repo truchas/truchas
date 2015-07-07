@@ -104,12 +104,8 @@ contains
 
   subroutine init_mesh_manager
   
-    use kinds, only: r8
-    use unstr_mesh_type
     use unstr_mesh_factory
-    use mesh_importer
-    use dist_mesh_type
-    use distributed_tet_mesh, only: create_dist_tet_mesh
+    use distributed_tet_mesh
   
     integer :: stat
     logical :: enabled, em_mesh
@@ -119,10 +115,6 @@ contains
     type(unstr_mesh), pointer :: umesh
     type(dist_mesh),  pointer :: dmesh
 
-    real(r8) :: csf
-    character(:), allocatable :: mesh_file
-    type(external_mesh) :: xmesh
-    
     piter = parameter_list_iterator(meshes)
     do while (.not.piter%at_end())
       plist => piter%sublist()
@@ -132,20 +124,9 @@ contains
         call TLS_info ('Initializing mesh "' // piter%name() // '" ...')
         call plist%get ('em-mesh', em_mesh, default=.false.)
         if (em_mesh) then
-          !TODO: the following needs to be rolled into create_dist_tet_mesh
-          call plist%get ('mesh-file', mesh_file)
-          call TLS_info ('  Reading ExodusII mesh file "' // mesh_file // '"')
-          call import_exodus_mesh (mesh_file, xmesh)
-          call plist%get ('coord-scale-factor', csf, default=1.0_r8)
-          if (csf /= 1.0_r8) xmesh%x = csf * xmesh%x
-          select case (xmesh%mesh_type)
-          case ('TET')
-            allocate(dmesh)
-            call create_dist_tet_mesh (dmesh, xmesh)
-            call plist%set ('mesh', any_mesh(dmesh))
-          case default
-            INSIST( .false. )
-          end select
+          dmesh => new_dist_tet_mesh (plist, stat, errmsg)
+          if (stat /= 0) call TLS_fatal (errmsg)
+          call plist%set ('mesh', any_mesh(dmesh))
           call dmesh%write_profile
         else
           umesh => new_unstr_mesh(plist, stat, errmsg)

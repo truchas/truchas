@@ -26,7 +26,7 @@ contains
     use exodus_mesh_io, only: read_exodus_mesh
     use permutations
     use index_partitioning
-    use more_unstr_mesh_tools
+    use unstr_mesh_tools
     use parallel_communication
 
     type(parameter_list) :: params

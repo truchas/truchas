@@ -16,11 +16,12 @@ module distributed_tet_mesh
   use parallel_communication
   use index_partitioning
   use dist_mesh_type
-
+  use parameter_list_type
+  use truchas_logging_services
   implicit none
   private
 
-  public :: create_dist_tet_mesh
+  public :: dist_mesh, new_dist_tet_mesh
 
 contains
 
@@ -34,28 +35,45 @@ contains
  !! and geometrical information required by a mimetic discretization scheme.
  !! It also returns the permutation vectors NODE_PERM and CELL_PERM which
 
-  subroutine create_dist_tet_mesh (this, mesh)
+  function new_dist_tet_mesh (params, stat, errmsg) result (this)
 
-    use mesh_importer, only: external_mesh
+    use mesh_importer, only: external_mesh, import_exodus_mesh
     use simplicial_mesh_support
     use parallel_communication
     use permutations
     use integer_set_type
     use bitfield_type
 
-    type(dist_mesh), intent(out) :: this
-    type(external_mesh), intent(inout), target :: mesh
+    type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    type(dist_mesh), pointer :: this
 
-    integer :: j, n, offset, ncell, nedge, nface, p(mesh%ncell)
+    integer :: j, n, offset, ncell, nedge, nface
     integer, pointer :: cnode(:,:), cedge(:,:), cface(:,:), node_perm(:), cell_perm(:)
     integer, dimension(nPE) :: node_bsize, edge_bsize, face_bsize, cell_bsize
     type(bitfield), pointer :: face_set_mask(:)
     integer, pointer :: offP_index(:), array(:)
-    integer, allocatable :: edge_perm(:), face_perm(:), offP_size(:)
+    integer, allocatable :: edge_perm(:), face_perm(:), offP_size(:), p(:)
     type(integer_set), allocatable :: xcells(:)
-
+    type(external_mesh), target :: mesh
+    character(:), allocatable :: mesh_file
+    real(r8) :: csf
+    
+    stat = 0
+    this => null()
+    
+    call params%get('mesh-file', mesh_file)
+    call TLS_info ('  Reading ExodusII mesh file "' // mesh_file // '"')
+    call import_exodus_mesh (mesh_file, mesh)
+    INSIST(mesh%mesh_type == 'TET')
+    call params%get ('coord-scale-factor', csf, default=1.0_r8)
+    if (csf /= 1.0_r8) mesh%x = csf * mesh%x
+    
     ncell = mesh%ncell
     cnode => mesh%cnode
+    
+    allocate(p(ncell))
 
     call allocate_collated_array (cedge, 6, ncell)
     call allocate_collated_array (cface, 4, ncell)
@@ -133,6 +151,8 @@ contains
     else
       allocate(offP_index(0), offP_size(0))
     end if
+    
+    allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
     call create (this%cell_ip, cell_bsize, offP_size, offP_index)
@@ -242,7 +262,7 @@ contains
       this%volume(j) = tet_volume(this%x(:,this%cnode(:,j)))
     end do
 
-  end subroutine create_dist_tet_mesh
+  end function new_dist_tet_mesh
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
