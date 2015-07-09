@@ -4,7 +4,7 @@ module FHT_model_type
 
   use kinds
   use mfd_disc_type
-  use base_mesh_class
+  use unstr_mesh_type
   use data_layout_type
   use property_mesh_function
   use source_mesh_function
@@ -17,8 +17,8 @@ module FHT_model_type
   private
 
   type, public :: FHT_model
-    type(mfd_disc),  pointer :: disc => null()
-    class(base_mesh), pointer :: mesh => null()
+    type(mfd_disc),   pointer :: disc => null()
+    type(unstr_mesh), pointer :: mesh => null()
     type(data_layout) :: layout
     integer :: cell_temp_segid, face_temp_segid
     integer, pointer :: rad_segid(:) => null()
@@ -413,9 +413,6 @@ contains
 
     subroutine eval_face_averages (ucell, uface)
 
-      use dist_mesh_type
-      use unstr_mesh_type
-
       real(r8), intent(in)  :: ucell(:)
       real(r8), intent(out) :: uface(:)
 
@@ -426,24 +423,13 @@ contains
 
       uface = 0.0_r8
       scale = 0
-      select type (mesh => this%mesh)
-      type is (dist_mesh)
-        do j = 1, mesh%ncell
-          if (this%void_cell(j)) cycle
-          uface(mesh%cface(:,j)) = uface(mesh%cface(:,j)) + ucell(j)
-          scale(mesh%cface(:,j)) = scale(mesh%cface(:,j)) + 1
-        end do
-      type is (unstr_mesh)
-        do j = 1, mesh%ncell
-          if (this%void_cell(j)) cycle
-          associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-            uface(cface) = uface(cface) + ucell(j)
-            scale(cface) = scale(cface) + 1
-          end associate
-        end do
-      class default
-        INSIST(.false.)
-      end select
+      do j = 1, this%mesh%ncell
+        if (this%void_cell(j)) cycle
+        associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+          uface(cface) = uface(cface) + ucell(j)
+          scale(cface) = scale(cface) + 1
+        end associate
+      end do
       call gather_boundary (this%mesh%face_ip, uface)
       call gather_boundary (this%mesh%face_ip, scale)
       do j = 1, this%mesh%nface

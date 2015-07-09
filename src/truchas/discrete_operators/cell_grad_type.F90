@@ -63,12 +63,7 @@ contains
     ASSERT(size(mask) == disc%mesh%ncell)
     
     this%disc => disc
-    select type (mesh => disc%mesh)
-    type is (unstr_mesh)
-      this%mesh => mesh
-    class default
-      call TLS_fatal ('CELL_GRAD_TYPE module only supports UNSTR_MESH meshes')
-    end select
+    this%mesh => disc%mesh
     this%cell_mask = mask
     
     !! Define the face flux matrix for the subdomain defined by the active
@@ -111,7 +106,7 @@ contains
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
         associate (index => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
-                   minv => this%disc%minv2(this%disc%xminv2(j):this%disc%xminv2(j+1)-1))
+                   minv => this%disc%minv(this%disc%xminv(j):this%disc%xminv(j+1)-1))
           l = 1
           do ic = 1, size(index)
             do ir = 1, ic-1
@@ -199,7 +194,7 @@ contains
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
         associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
-                   minv => this%disc%minv2(this%disc%xminv2(j):this%disc%xminv2(j+1)-1))
+                   minv => this%disc%minv(this%disc%xminv(j):this%disc%xminv(j+1)-1))
           allocate(w(size(cface)))
           call upm_col_sum (minv, w)
           rface(cface) = rface(cface) + ucell(j)*w

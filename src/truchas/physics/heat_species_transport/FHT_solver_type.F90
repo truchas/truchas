@@ -28,16 +28,16 @@ module FHT_solver_type
   use property_mesh_function
   use solution_history
   use nka_type
-  use base_mesh_class
+  use unstr_mesh_type
   use parallel_communication
   use index_partitioning
   implicit none
   private
 
   type, public :: FHT_solver
-    type(mat_mf),    pointer :: mmf => null()
-    type(FHT_model), pointer :: model => null()
-    class(base_mesh), pointer :: mesh => null()
+    type(mat_mf),     pointer :: mmf => null()
+    type(FHT_model),  pointer :: model => null()
+    type(unstr_mesh), pointer :: mesh => null()
     type(FHT_precon) :: precon
     type(FHT_norm) :: norm
     type(TofH) :: T_of_H
@@ -202,8 +202,6 @@ contains
   subroutine FHT_solver_advance_state (this, t, stat)
   
     use boundary_data
-    use dist_mesh_type
-    use unstr_mesh_type
   
     type(FHT_solver), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -258,30 +256,16 @@ contains
     !! Face-to-non-void-cell data structure; correct for on-process faces only.
     allocate(fnbr(2,this%mesh%nface))
     fnbr = 0
-    select type (mesh => this%mesh)
-    type is (dist_mesh)
-      do j = 1, mesh%ncell
-        if (this%void_cell(j)) cycle
-        do k = 1, size(mesh%cface,1)
+    do j = 1, this%mesh%ncell
+      if (this%void_cell(j)) cycle
+      associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        do k = 1, size(cface)
           n = 1
-          if (fnbr(1,mesh%cface(k,j)) /= 0) n = 2
-          fnbr(n,mesh%cface(k,j)) = j
+          if (fnbr(1,cface(k)) /= 0) n = 2
+          fnbr(n,cface(k)) = j
         end do
-      end do
-    type is (unstr_mesh)
-      do j = 1, mesh%ncell
-        if (this%void_cell(j)) cycle
-        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-          do k = 1, size(cface)
-            n = 1
-            if (fnbr(1,cface(k)) /= 0) n = 2
-            fnbr(n,cface(k)) = j
-          end do
-        end associate
-      end do
-    class default
-      INSIST(.false.)
-    end select
+      end associate
+    end do
     
     !! Void face mask; correct for all faces.
     this%void_face = (fnbr(1,:) == 0)
@@ -460,7 +444,7 @@ contains
   
 #ifdef GMV_DIAGNOSTICS
   subroutine gmv_write_state (this)
-    use dist_mesh_gmv
+    use unstr_mesh_gmv
     type(FHT_solver), intent(in) :: this
     character(63) :: filename
     real(r8), pointer :: Tcell(:)
@@ -468,7 +452,7 @@ contains
     integer :: j
     write(filename,'(a,i4.4)') 'FHT_solver-gmv-', this%seq
     call gmv_open (trim(filename))
-    call gmv_write_dist_mesh (this%mesh)
+    call gmv_write_unstr_mesh (this%mesh)
     call gmv_begin_variables (this%t, this%seq)
     call FHT_model_get_cell_temp_view (this%model, this%u, Tcell)
     call gmv_write_dist_cell_var (this%mesh, Tcell, "T")
@@ -490,21 +474,21 @@ contains
     call gmv_close ()
   end subroutine gmv_write_state
   subroutine gmv_write_field (this, array, name)
-    use dist_mesh_gmv
+    use unstr_mesh_gmv
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
     character(*), intent(in) :: name
     character(63) :: filename
     write(filename,'(a,i4.4)') 'FHT_solver-' // trim(name) // '-gmv-', this%seq
     call gmv_open (trim(filename))
-    call gmv_write_dist_mesh (this%mesh)
+    call gmv_write_unstr_mesh (this%mesh)
     call gmv_begin_variables (this%t, this%seq)
     call gmv_write_dist_cell_var (this%mesh, array, trim(name))
     call gmv_end_variables ()
     call gmv_close ()
   end subroutine gmv_write_field
   subroutine gmv_write_face_field (this, array, name)
-    use dist_mesh_gmv
+    use unstr_mesh_gmv
     use fgmvwrite
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
@@ -553,9 +537,6 @@ contains
   
   subroutine FHT_solver_set_initial_state (this, t, temp)
   
-    use dist_mesh_type
-    use unstr_mesh_type
-
     type(FHT_solver), intent(inout) :: this
     real(r8), intent(in) :: t, temp(:)
     
@@ -573,22 +554,13 @@ contains
     deallocate(void_vol_frac)
     
     this%void_face = .true.
-    select type (mesh => this%mesh)
-    type is (dist_mesh)
-      do j = 1, mesh%ncell
-        if (.not.this%void_cell(j)) this%void_face(mesh%cface(:,j)) = .false.
-      end do
-    type is (unstr_mesh)
-      do j = 1, mesh%ncell
-        if (.not.this%void_cell(j)) then
-          associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-            this%void_face(cface) = .false.
-          end associate
-        end if
-      end do
-    class default
-      INSIST(.false.)
-    end select
+    do j = 1, this%mesh%ncell
+      if (.not.this%void_cell(j)) then
+        associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+          this%void_face(cface) = .false.
+        end associate
+      end if
+    end do
     call gather_boundary (this%mesh%face_ip, this%void_face)
     
     !! Set the current void context for the heat transfer model.
@@ -698,7 +670,7 @@ contains
   subroutine backward_euler_solve (this, t, dt, Hlast, u, stat)
   
 #ifdef GMV_DIAGNOSTICS
-    use dist_mesh_gmv
+    use unstr_mesh_gmv
 #endif
   
     type(FHT_solver), intent(inout) :: this

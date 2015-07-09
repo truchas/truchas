@@ -3,7 +3,7 @@
 module HTSD_init_cond_type
 
   use kinds, only: r8
-  use base_mesh_class
+  use unstr_mesh_type
   use data_layout_type
   use property_mesh_function
   use boundary_data
@@ -17,7 +17,7 @@ module HTSD_init_cond_type
   
   type, public :: HTSD_init_cond
     private
-    class(base_mesh), pointer :: mesh  => null()  ! reference only -- do not own
+    type(unstr_mesh), pointer :: mesh  => null()  ! reference only -- do not own
     type(HTSD_model), pointer :: model => null()  ! reference only -- do not own
     type(parameter_list), pointer :: params => null() ! reference only -- do not own
   contains
@@ -249,10 +249,8 @@ contains
 
     use bitfield_type
     use index_partitioning
-    use dist_mesh_type
-    use unstr_mesh_type
 
-    class(base_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(in)  :: ucell(:)
     real(r8), intent(out) :: uface(:)
     logical, pointer, intent(in) :: skip(:)
@@ -266,28 +264,15 @@ contains
     
     uface = 0.0_r8
     scale = 0.0_r8
-    select type (mesh)
-    type is (dist_mesh)
-      do j = 1, mesh%ncell
-        if (associated(skip)) then
-          if (skip(j)) cycle
-        end if
-        uface(mesh%cface(:,j)) = uface(mesh%cface(:,j)) + ucell(j)
-        scale(mesh%cface(:,j)) = scale(mesh%cface(:,j)) + 1
-      end do
-    type is (unstr_mesh)
-      do j = 1, mesh%ncell
-        if (associated(skip)) then
-          if (skip(j)) cycle
-        end if
-        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-          uface(cface) = uface(cface) + ucell(j)
-          scale(cface) = scale(cface) + 1
-        end associate
-      end do
-    class default
-      INSIST(.false.)
-    end select
+    do j = 1, mesh%ncell
+      if (associated(skip)) then
+        if (skip(j)) cycle
+      end if
+      associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+        uface(cface) = uface(cface) + ucell(j)
+        scale(cface) = scale(cface) + 1
+      end associate
+    end do
     call gather_boundary (mesh%face_ip, uface)
     call gather_boundary (mesh%face_ip, scale)
 

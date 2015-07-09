@@ -22,7 +22,7 @@
 module HTSD_model_factory
 
   use HTSD_model_type
-  use base_mesh_class
+  use unstr_mesh_type
   use mfd_disc_type
   use material_mesh_function
   implicit none
@@ -46,17 +46,7 @@ contains
 
     type(HT_model), pointer :: htmodel => null()
     type(SD_model), pointer :: sdmodel(:) => null()
-    class(base_mesh), pointer :: mesh
-
-#ifdef INTEL_COMPILER_WORKAROUND
-    class(base_mesh), pointer :: fubar
-
-    fubar => mmf_mesh(mmf)
-    ASSERT(associated(disc%mesh,fubar))
-#else
-
-    ASSERT(associated(disc%mesh, mmf_mesh(mmf)))
-#endif
+    type(unstr_mesh), pointer :: mesh
 
     mesh => disc%mesh
 
@@ -81,7 +71,7 @@ contains
 
     use rad_problem_type
 
-    class(base_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
@@ -112,7 +102,7 @@ contains
       use ds_source_input, only: define_external_source
       use parallel_communication, only: global_any
 
-      class(base_mesh), intent(in), target :: mesh
+      type(unstr_mesh), intent(in), target :: mesh
       type(mat_mf), intent(in), target :: mmf
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
@@ -163,7 +153,7 @@ contains
       use physical_constants, only: stefan_boltzmann, absolute_zero
       use parallel_communication, only: global_any
 
-      class(base_mesh), intent(in), target :: mesh
+      type(unstr_mesh), intent(in), target :: mesh
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
       character(len=*), intent(out) :: errmsg
@@ -271,7 +261,7 @@ contains
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
 
-    class(base_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
     type(rad_problem), pointer :: vf_rad_prob(:)
@@ -330,7 +320,7 @@ contains
     use index_partitioning
     use parallel_communication, only: global_any
 
-    class(base_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg

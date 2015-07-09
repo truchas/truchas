@@ -3,8 +3,6 @@
 module diffusion_matrix
 
   use kinds, only: r8
-  use base_mesh_class
-  use dist_mesh_type
   use unstr_mesh_type
   use mfd_disc_type
   use pcsr_matrix_type
@@ -14,8 +12,8 @@ module diffusion_matrix
   private
 
   type, public :: dist_diff_matrix
-    type(mfd_disc),  pointer :: disc => null()  ! reference only -- do not own
-    class(base_mesh), pointer :: mesh => null()  ! reference only -- do not own
+    type(mfd_disc),   pointer :: disc => null()  ! reference only -- do not own
+    type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     real(r8), allocatable :: a11(:)     ! the cell-cell submatrix
     real(r8), allocatable :: a12(:,:)   ! the cell-face submatrix
     type(pcsr_matrix)     :: a22        ! the face-face submatrix
@@ -51,33 +49,17 @@ contains
     this%mesh => disc%mesh
     
     allocate(this%a11(this%mesh%ncell))
-    select type (mesh => this%mesh)
-    type is (dist_mesh)
-      allocate(this%a12(size(mesh%cface,1),mesh%ncell))
-    type is (unstr_mesh)
-      allocate(this%a12_val(size(mesh%cface)))
-    class default
-      INSIST(.false.)
-    end select
+    allocate(this%a12_val(size(this%mesh%cface)))
 
     !! Create a CSR matrix graph for the A22 submatrix.
     allocate(g)
     row_ip => this%mesh%face_ip
     call g%init (row_ip)
-    select type (mesh => this%mesh)
-    type is (dist_mesh)
-      do j = 1, mesh%ncell
-        call g%add_clique (mesh%cface(:,j))
-      end do
-    type is (unstr_mesh)
-      do j = 1, mesh%ncell
-        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+      do j = 1, this%mesh%ncell
+        associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
           call g%add_clique (cface)
         end associate
       end do
-    class default
-      INSIST(.false.)
-    end select
     do j = 1, this%mesh%nlink
       call g%add_clique (this%mesh%lface(:,j))
     end do
@@ -98,14 +80,7 @@ contains
     this%disc => mold%disc
     this%mesh => mold%mesh
     allocate(this%a11(size(mold%a11)))
-    select type (mesh => this%mesh)
-    type is (dist_mesh)
-      allocate(this%a12(size(mold%a12,1),size(mold%a12,2)))
-    type is (unstr_mesh)
-      allocate(this%a12_val(size(mold%a12_val)))
-    class default
-      INSIST(.false.)
-    end select
+    allocate(this%a12_val(size(mold%a12_val)))
     g => mold%a22%graph_ptr()
     call this%a22%init (g, take_graph=.false.)
     
@@ -125,72 +100,35 @@ contains
     
     call this%a22%set_all (0.0_r8)
     
-    select type (mesh => this%mesh)
-    type is (dist_mesh)
-    
-      allocate(w(size(mesh%cface,dim=1)))
-      allocate(minv(size(w)*(size(w)+1)/2))
-      do j = 1, mesh%ncell
+    do j = 1, this%mesh%ncell
+      associate(a12 => this%a12_val(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
         if (d(j) == 0.0_r8) then
           this%a11(j) = 0.0_r8
-          this%a12(:,j) = 0.0_r8
+          a12 = 0.0_r8
           cycle
         end if
-        minv = d(j) * this%disc%minv(:,j)
+        minv = d(j) * this%disc%minv(this%disc%xminv(j):this%disc%xminv(j+1)-1)
         !! Fill the A11 and A12 submatrices
+        allocate(w(size(a12)))
         call upm_col_sum (minv, w)
         this%a11(j) = sum(w)
-        this%a12(:,j) = -w
-        !! Assemble the A22 CSR submatrix.
-        associate (index => mesh%cface(:,j))
-          l = 1
-          do ic = 1, size(index)
-            do ir = 1, ic-1
-              call this%a22%add_to (index(ir), index(ic), minv(l))
-              call this%a22%add_to (index(ic), index(ir), minv(l))
-              l = l + 1
-            end do
-            call this%a22%add_to (index(ic), index(ic), minv(l))
+        a12 = -w
+        deallocate(w)
+      end associate
+      !! Assemble the A22 CSR submatrix.
+      associate(index => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        l = 1
+        do ic = 1, size(index)
+          do ir = 1, ic-1
+            call this%a22%add_to (index(ir), index(ic), minv(l))
+            call this%a22%add_to (index(ic), index(ir), minv(l))
             l = l + 1
           end do
-        end associate
-      end do
-      
-    type is (unstr_mesh)
-    
-      do j = 1, mesh%ncell
-        associate(a12 => this%a12_val(mesh%xcface(j):mesh%xcface(j+1)-1))
-          if (d(j) == 0.0_r8) then
-            this%a11(j) = 0.0_r8
-            a12 = 0.0_r8
-            cycle
-          end if
-          minv = d(j) * this%disc%minv2(this%disc%xminv2(j):this%disc%xminv2(j+1)-1)
-          !! Fill the A11 and A12 submatrices
-          allocate(w(size(a12)))
-          call upm_col_sum (minv, w)
-          this%a11(j) = sum(w)
-          a12 = -w
-          deallocate(w)
-        end associate
-        !! Assemble the A22 CSR submatrix.
-        associate(index => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-          l = 1
-          do ic = 1, size(index)
-            do ir = 1, ic-1
-              call this%a22%add_to (index(ir), index(ic), minv(l))
-              call this%a22%add_to (index(ic), index(ir), minv(l))
-              l = l + 1
-            end do
-            call this%a22%add_to (index(ic), index(ic), minv(l))
-            l = l + 1
-          end do
-        end associate
-      end do
-    
-    class default
-      INSIST(.false.)
-    end select
+          call this%a22%add_to (index(ic), index(ic), minv(l))
+          l = l + 1
+        end do
+      end associate
+    end do
     
     if (allocated(this%dir_faces)) deallocate(this%dir_faces)
 
@@ -372,33 +310,17 @@ contains
     ASSERT(associated(this%a22%graph, Sff%graph))
     
     Sff%values = this%a22%values
-    select type (mesh => this%mesh)
-    type is (dist_mesh)
-      do j = 1, mesh%ncell
-        associate (indices => mesh%cface(:,j))
-          do ir = 1, size(indices)
-            do ic = 1, size(indices)
-              value = -this%a12(ir,j)*this%a12(ic,j)/this%a11(j)
-              call Sff%add_to (indices(ir), indices(ic), value)
-            end do
+    do j = 1, this%mesh%ncell
+      associate (indices => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
+                   a12 => this%a12_val(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        do ir = 1, size(indices)
+          do ic = 1, size(indices)
+            value = -a12(ir)*a12(ic)/this%a11(j)
+            call Sff%add_to (indices(ir), indices(ic), value)
           end do
-        end associate
-      end do
-    type is (unstr_mesh)
-      do j = 1, mesh%ncell
-        associate (indices => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1), &
-                     a12 => this%a12_val(mesh%xcface(j):mesh%xcface(j+1)-1))
-          do ir = 1, size(indices)
-            do ic = 1, size(indices)
-              value = -a12(ir)*a12(ic)/this%a11(j)
-              call Sff%add_to (indices(ir), indices(ic), value)
-            end do
-          end do
-        end associate
-      end do
-    class default
-      INSIST(.false.)
-    end select
+        end do
+      end associate
+    end do
     
     !! Apply the Dirichlet projections.
     do j = 1, size(this%dir_faces)

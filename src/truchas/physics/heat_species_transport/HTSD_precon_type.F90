@@ -5,7 +5,7 @@ module HTSD_precon_type
   use kinds, only: r8
   use HTSD_model_type
   use rad_problem_type
-  use base_mesh_class
+  use unstr_mesh_type
   use diff_precon_type
   use diffusion_matrix
   use index_partitioning
@@ -18,7 +18,7 @@ module HTSD_precon_type
   
   type, public :: HTSD_precon
     type(HTSD_model), pointer :: model => null()
-    class(base_mesh), pointer :: mesh  => null()
+    type(unstr_mesh), pointer :: mesh  => null()
     !! Heat transfer preconditioning data
     real(r8) :: dt
     real(r8), pointer :: dHdT(:) => null()

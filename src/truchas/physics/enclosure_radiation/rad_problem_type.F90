@@ -50,8 +50,6 @@ contains
   subroutine init (this, mesh, name)
 
     use ER_input
-    use base_mesh_class
-    use dist_mesh_type
     use unstr_mesh_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use scalar_func_class
@@ -59,7 +57,7 @@ contains
     use truchas_logging_services
 
     class(rad_problem), intent(out) :: this
-    class(base_mesh),   intent(in)  :: mesh
+    type(unstr_mesh),   intent(in)  :: mesh
     character(len=*),   intent(in)  :: name
 
     integer :: n, stat
@@ -138,18 +136,13 @@ contains
 
     !! Check that HC radiation faces are geometrically equal to the enclosure surface.
     if (ERI_check_geometry(name)) then
-      select type (mesh)
-      type is (dist_mesh)
-        call check_surface (mesh, this%sol%encl, this%faces, this%perm_er_to_hc, stat)
-        if (stat /= 0) then
-          write(errmsg,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
-          call TLS_fatal (errmsg)
-        end if
-      type is (unstr_mesh)
-        call TLS_warn ('Not able to check matching enclosure surface geometry for mixed cell meshes')
-      class default
-        INSIST(.false.)
-      end select
+      call TLS_warn ('Not able to check matching enclosure surface geometry for mixed cell meshes')
+      !FIXME -- REWRITE CHECK_SURFACE TO OPERATE ON A UNSTR_MESH TYPE MESH
+      !call check_surface (mesh, this%sol%encl, this%faces, this%perm_er_to_hc, stat)
+      !if (stat /= 0) then
+      !  write(errmsg,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
+      !  call TLS_fatal (errmsg)
+      !end if
     end if
 
     !! Set ER system parameters.
@@ -206,14 +199,12 @@ contains
 
   subroutine connect_to_mesh (mesh, file, lm_faces, ge_faces, stat)
 
-    use base_mesh_class
-    use dist_mesh_type
     use unstr_mesh_type
     use index_partitioning
     use permutations
     use ER_file
 
-    class(base_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     character(len=*), intent(in) :: file
     integer, allocatable :: lm_faces(:) ! returned list of local HC mesh faces
     integer, allocatable :: ge_faces(:) ! returned list of global ER faces
@@ -280,22 +271,12 @@ contains
 
     !! Find the global mesh face that corresponds to each of the enclosure
     !! faces.  FCELL_L holds the results temporarily.
-    select type (mesh)
-    type is (dist_mesh)
-      do j = n, 1, -1
-        if (fside_l(j) > size(mesh%cface,dim=1)) exit ! no matching mesh face
-        fcell_l(j) = mesh%face_ip%global_index(mesh%cface(fside_l(j),fcell_l(j)))
-      end do
-    type is (unstr_mesh)
-      do j = n, 1, -1
-        associate (faces => mesh%cface(mesh%xcface(fcell_l(j)):mesh%xcface(fcell_l(j)+1)-1))
-          if (fside_l(j) > size(faces)) exit ! no matching mesh face
-          fcell_l(j) = mesh%face_ip%global_index(faces(fside_l(j)))
-        end associate
-      end do
-    class default
-      INSIST(.false.)
-    end select
+    do j = n, 1, -1
+      associate (faces => mesh%cface(mesh%xcface(fcell_l(j)):mesh%xcface(fcell_l(j)+1)-1))
+        if (fside_l(j) > size(faces)) exit ! no matching mesh face
+        fcell_l(j) = mesh%face_ip%global_index(faces(fside_l(j)))
+      end associate
+    end do
     stat = global_maxval(j) ! get one of the unmatched faces, if any
     if (stat /= 0) return
 
@@ -473,9 +454,9 @@ contains
   subroutine boundary_face_check (mesh, faces, stat, setids)
 
     use bitfield_type
-    use base_mesh_class
+    use unstr_mesh_type
 
-    class(base_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     integer, intent(in) :: faces(:)
     integer, intent(out) :: stat
     integer, pointer :: setids(:)
@@ -533,84 +514,84 @@ contains
  !! should have.
  !!
 
-  subroutine check_surface (mesh, encl, faces, perm_er_to_hc, stat)
-
-    use dist_mesh_type
-    use rad_encl_type
-
-    type(dist_mesh), intent(in) :: mesh
-    type(rad_encl),  intent(in) :: encl
-    integer,         intent(in) :: faces(:)
-    type(par_perm),  intent(in) :: perm_er_to_hc
-    integer, intent(out) :: stat
-
-    integer :: i, j, k, i1, i2, dimen, nvert, badcnt
-    real(r8), allocatable :: mesh_vert(:,:,:)
-    real(r8) :: tolsq
-
-    !! Spatial tolerance (squared); I don't like this -- should be user-specified.
-    tolsq = 1.0d-8*sum((maxval(encl%coord,2) - minval(encl%coord,2))**2)
-
-    dimen = size(mesh%x,dim=1)
-    nvert = size(mesh%fnode,dim=1) ! number of vertices per face in mesh
-
-    !! Verify that the spatial dimensions are the same.
-    if (dimen /= size(encl%coord,dim=1)) then
-      stat = -1
-      return
-    end if
-
-    !! Gather the mesh face vertex coordinates.
-    allocate(mesh_vert(dimen,nvert,encl%nface))
-    do k = 1, nvert
-      do i = 1, dimen
-        call reorder (perm_er_to_hc, mesh_vert(i,k,:), mesh%x(i,mesh%fnode(k,faces)))
-      end do
-    end do
-
-    badcnt = 0  ! count of mismatched faces
-
-    do j = 1, encl%nface
-
-      associate (fnode => encl%fnode(encl%xface(j):encl%xface(j+1)-1))
-
-        if (size(fnode) /= nvert) then  ! different type faces
-          badcnt = badcnt + 1
-          cycle
-        end if
-
-        !! Locate the mesh face vertex that matches the first enclosure face vertex.
-        do i1 = nvert, 1, -1
-          if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(1)))) exit
-        end do
-        if (i1 == 0) then ! no matching vertex
-          badcnt = badcnt + 1
-          cycle
-        end if
-
-        !! Verify that the remaining vertices match, in order.
-        do i2 = 2, nvert
-          i1 = modulo(i1,nvert) + 1
-          if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(i2)))) cycle
-          badcnt = badcnt + 1
-          exit
-        end do
-
-      end associate
-
-    end do
-
-    deallocate(mesh_vert)
-    stat = global_sum(badcnt)
-
-  contains
-
-    logical function vertices_match (a, b)
-      real(r8), intent(in) :: a(:), b(:)
-      vertices_match = (sum((a-b)**2) < tolsq)
-    end function vertices_match
-
-  end subroutine check_surface
+!  subroutine check_surface (mesh, encl, faces, perm_er_to_hc, stat)
+!
+!    use dist_mesh_type
+!    use rad_encl_type
+!
+!    type(dist_mesh), intent(in) :: mesh
+!    type(rad_encl),  intent(in) :: encl
+!    integer,         intent(in) :: faces(:)
+!    type(par_perm),  intent(in) :: perm_er_to_hc
+!    integer, intent(out) :: stat
+!
+!    integer :: i, j, k, i1, i2, dimen, nvert, badcnt
+!    real(r8), allocatable :: mesh_vert(:,:,:)
+!    real(r8) :: tolsq
+!
+!    !! Spatial tolerance (squared); I don't like this -- should be user-specified.
+!    tolsq = 1.0d-8*sum((maxval(encl%coord,2) - minval(encl%coord,2))**2)
+!
+!    dimen = size(mesh%x,dim=1)
+!    nvert = size(mesh%fnode,dim=1) ! number of vertices per face in mesh
+!
+!    !! Verify that the spatial dimensions are the same.
+!    if (dimen /= size(encl%coord,dim=1)) then
+!      stat = -1
+!      return
+!    end if
+!
+!    !! Gather the mesh face vertex coordinates.
+!    allocate(mesh_vert(dimen,nvert,encl%nface))
+!    do k = 1, nvert
+!      do i = 1, dimen
+!        call reorder (perm_er_to_hc, mesh_vert(i,k,:), mesh%x(i,mesh%fnode(k,faces)))
+!      end do
+!    end do
+!
+!    badcnt = 0  ! count of mismatched faces
+!
+!    do j = 1, encl%nface
+!
+!      associate (fnode => encl%fnode(encl%xface(j):encl%xface(j+1)-1))
+!
+!        if (size(fnode) /= nvert) then  ! different type faces
+!          badcnt = badcnt + 1
+!          cycle
+!        end if
+!
+!        !! Locate the mesh face vertex that matches the first enclosure face vertex.
+!        do i1 = nvert, 1, -1
+!          if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(1)))) exit
+!        end do
+!        if (i1 == 0) then ! no matching vertex
+!          badcnt = badcnt + 1
+!          cycle
+!        end if
+!
+!        !! Verify that the remaining vertices match, in order.
+!        do i2 = 2, nvert
+!          i1 = modulo(i1,nvert) + 1
+!          if (vertices_match(mesh_vert(:,i1,j), encl%coord(:,fnode(i2)))) cycle
+!          badcnt = badcnt + 1
+!          exit
+!        end do
+!
+!      end associate
+!
+!    end do
+!
+!    deallocate(mesh_vert)
+!    stat = global_sum(badcnt)
+!
+!  contains
+!
+!    logical function vertices_match (a, b)
+!      real(r8), intent(in) :: a(:), b(:)
+!      vertices_match = (sum((a-b)**2) < tolsq)
+!    end function vertices_match
+!
+!  end subroutine check_surface
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -818,142 +799,143 @@ contains
  !! corresponding list of enclosure face indices is passed in EFACES.
  !!
 
-  subroutine write_mesh_surface (file, mesh, faces, efaces)
-
-    use fgmvwrite
-    use parallel_communication
-    use index_partitioning
-    use dist_mesh_type
-
-    character(len=*), intent(in) :: file
-    type(dist_mesh), intent(in) :: mesh
-    integer, Intent(in) :: faces(:), efaces(:)
-
-    integer :: j, k, n, offset, bsize(nPE)
-    integer :: num_nodes, num_faces
-    logical,  allocatable :: tag(:)
-    integer,  allocatable :: nodes(:), map_l(:), fnode(:,:)
-    integer,  pointer :: map(:)
-    real(r8), pointer :: x(:), y(:), z(:)
-    character(len=8) :: name
-
-    ASSERT(size(faces) == size(efaces))
-    ASSERT(global_all(faces >= 1))
-    ASSERT(global_all(faces <= mesh%face_ip%onP_size()))
-
-    !if (is_IOP) call gmvwrite_openfile_ir_f (file, 4, 8) ! bug with node ids
-    if (is_IOP) call gmvwrite_openfile_ir_ascii_f (file, 4, 8)
-
-    !! Tag the nodes belonging to the specified faces.
-    allocate(tag(mesh%nnode))
-    tag = .false.
-    do j = 1, size(faces)
-      tag(mesh%fnode(:,faces(j))) = .true.
-    end do
-    call scatter_boundary_or (mesh%node_ip, tag)
-
-    !! Count the on-process surface nodes per process (BSIZE).
-    call collate (bsize, count(tag(:mesh%nnode_onP)))
-    call broadcast (bsize)
-
-    !! Create the local list of on-process surface node indices, and create
-    !! the local block of the inverse mapping from global mesh node indices
-    !! to global surface node indices: MAP_L(NODES(J)) = OFFSET + J where J
-    !! and OFFSET+J are the local and global surface node indices, resp.
-    allocate(nodes(bsize(this_PE)), map_l(mesh%nnode_onP))
-    map_l = 0
-    n = 0 ! local surface node index
-    offset = sum(bsize(:this_PE-1))
-    do j = 1, mesh%nnode_onP
-      if (tag(j)) then
-        n = n + 1
-        nodes(n) = j
-        map_l(j) = offset + n ! global surface node index
-      end if
-    end do
-    deallocate(tag)
-
-    !! Global mapping array.
-    call allocate_collated_array (map, mesh%node_ip%global_size())
-    call collate (map, map_l)
-    deallocate(map_l)
-
-    !! Write the node coordinate data.
-    num_nodes = global_sum(size(nodes))
-    call allocate_collated_array (x, num_nodes)
-    call allocate_collated_array (y, num_nodes)
-    call allocate_collated_array (z, num_nodes)
-    call collate (x, mesh%x(1,nodes))
-    call collate (y, mesh%x(2,nodes))
-    call collate (z, mesh%x(3,nodes))
-    if (is_IOP) call gmvwrite_node_data_f (num_nodes, x, y, z)
-    deallocate(x, y, z)
-
-    !! Collate the surface face node array, ...
-    num_faces = global_sum(size(faces))
-    allocate(fnode(size(mesh%fnode,dim=1),num_faces))
-    call collate (fnode, mesh%node_ip%global_index(mesh%fnode(:,faces)))
-    !! and remap mesh node numbers to surface node numbers.
-    if (is_IOP) then
-      do j = 1, size(fnode,dim=2)
-        do k = 1, size(fnode,dim=1)
-          fnode(k,j) = map(fnode(k,j))
-        end do
-      end do
-      INSIST(minval(fnode) >= 1 .and. maxval(fnode) <= num_nodes)
-    end if
-    deallocate(map)
-
-    !! Write the cell data.
-    if (is_IOP) then
-      call gmvwrite_cell_header_f (num_faces)
-      select case (size(fnode,dim=1))
-      case (3)
-        name = 'tri'
-      case (4)
-        name = 'quad'
-      case default
-        INSIST(.false.)
-      end select
-      do j = 1, num_faces
-        call gmvwrite_cell_type_f (name, size(fnode,dim=1), fnode(:,j))
-      end do
-    end if
-    deallocate (fnode)
-
-    !! Write mesh node numbers as the nodeids -- GMV uses these for display.
-    call allocate_collated_array (map, num_nodes)
-    !call collate (map, mesh%node_ip%global_index(nodes))  ! internal mesh node numbers
-    call collate (map, mesh%xnode(nodes)) ! external mesh node numbers
-    if (is_IOP) call gmvwrite_nodeids_f (map)
-    deallocate (map, nodes)
-
-    !! Write the enclosure face indices as the cellids -- GMV uses these for display.
-    call allocate_collated_array (map, num_faces)
-    call collate (map, efaces)
-    if (is_IOP) call gmvwrite_cellids_f (map)
-    deallocate (map)
-
-    if (nPE > 1) then
-      !! Write the face partitioning info.
-      call allocate_collated_array (map, num_faces)
-      call collate (map, spread(this_PE, dim=1, ncopies=size(faces)))
-      if (is_IOP) then
-        call gmvwrite_flag_header_f ()
-        call gmvwrite_flag_name_f ('facepart', nPE, CELLDATA)
-        do j = 1, nPE
-          write(name,'(a,i0)') 'P', j
-          call gmvwrite_flag_subname_f (name)
-        end do
-        call gmvwrite_flag_data_f (CELLDATA, map)
-        call gmvwrite_flag_endflag_f ()
-      end if
-      deallocate(map)
-    end if
-
-    if (is_IOP) call gmvwrite_closefile_f
-
-  end subroutine write_mesh_surface
+!FIXME -- REWRITE TO OPERATE ON A UNSTR_MESH TYPE MESH
+!  subroutine write_mesh_surface (file, mesh, faces, efaces)
+!
+!    use fgmvwrite
+!    use parallel_communication
+!    use index_partitioning
+!    use unstr_mesh_type
+!
+!    character(len=*), intent(in) :: file
+!    type(unstr_mesh), intent(in) :: mesh
+!    integer, Intent(in) :: faces(:), efaces(:)
+!
+!    integer :: j, k, n, offset, bsize(nPE)
+!    integer :: num_nodes, num_faces
+!    logical,  allocatable :: tag(:)
+!    integer,  allocatable :: nodes(:), map_l(:), fnode(:,:)
+!    integer,  pointer :: map(:)
+!    real(r8), pointer :: x(:), y(:), z(:)
+!    character(len=8) :: name
+!
+!    ASSERT(size(faces) == size(efaces))
+!    ASSERT(global_all(faces >= 1))
+!    ASSERT(global_all(faces <= mesh%face_ip%onP_size()))
+!
+!    !if (is_IOP) call gmvwrite_openfile_ir_f (file, 4, 8) ! bug with node ids
+!    if (is_IOP) call gmvwrite_openfile_ir_ascii_f (file, 4, 8)
+!
+!    !! Tag the nodes belonging to the specified faces.
+!    allocate(tag(mesh%nnode))
+!    tag = .false.
+!    do j = 1, size(faces)
+!      tag(mesh%fnode(:,faces(j))) = .true.
+!    end do
+!    call scatter_boundary_or (mesh%node_ip, tag)
+!
+!    !! Count the on-process surface nodes per process (BSIZE).
+!    call collate (bsize, count(tag(:mesh%nnode_onP)))
+!    call broadcast (bsize)
+!
+!    !! Create the local list of on-process surface node indices, and create
+!    !! the local block of the inverse mapping from global mesh node indices
+!    !! to global surface node indices: MAP_L(NODES(J)) = OFFSET + J where J
+!    !! and OFFSET+J are the local and global surface node indices, resp.
+!    allocate(nodes(bsize(this_PE)), map_l(mesh%nnode_onP))
+!    map_l = 0
+!    n = 0 ! local surface node index
+!    offset = sum(bsize(:this_PE-1))
+!    do j = 1, mesh%nnode_onP
+!      if (tag(j)) then
+!        n = n + 1
+!        nodes(n) = j
+!        map_l(j) = offset + n ! global surface node index
+!      end if
+!    end do
+!    deallocate(tag)
+!
+!    !! Global mapping array.
+!    call allocate_collated_array (map, mesh%node_ip%global_size())
+!    call collate (map, map_l)
+!    deallocate(map_l)
+!
+!    !! Write the node coordinate data.
+!    num_nodes = global_sum(size(nodes))
+!    call allocate_collated_array (x, num_nodes)
+!    call allocate_collated_array (y, num_nodes)
+!    call allocate_collated_array (z, num_nodes)
+!    call collate (x, mesh%x(1,nodes))
+!    call collate (y, mesh%x(2,nodes))
+!    call collate (z, mesh%x(3,nodes))
+!    if (is_IOP) call gmvwrite_node_data_f (num_nodes, x, y, z)
+!    deallocate(x, y, z)
+!
+!    !! Collate the surface face node array, ...
+!    num_faces = global_sum(size(faces))
+!    allocate(fnode(size(mesh%fnode,dim=1),num_faces))
+!    call collate (fnode, mesh%node_ip%global_index(mesh%fnode(:,faces)))
+!    !! and remap mesh node numbers to surface node numbers.
+!    if (is_IOP) then
+!      do j = 1, size(fnode,dim=2)
+!        do k = 1, size(fnode,dim=1)
+!          fnode(k,j) = map(fnode(k,j))
+!        end do
+!      end do
+!      INSIST(minval(fnode) >= 1 .and. maxval(fnode) <= num_nodes)
+!    end if
+!    deallocate(map)
+!
+!    !! Write the cell data.
+!    if (is_IOP) then
+!      call gmvwrite_cell_header_f (num_faces)
+!      select case (size(fnode,dim=1))
+!      case (3)
+!        name = 'tri'
+!      case (4)
+!        name = 'quad'
+!      case default
+!        INSIST(.false.)
+!      end select
+!      do j = 1, num_faces
+!        call gmvwrite_cell_type_f (name, size(fnode,dim=1), fnode(:,j))
+!      end do
+!    end if
+!    deallocate (fnode)
+!
+!    !! Write mesh node numbers as the nodeids -- GMV uses these for display.
+!    call allocate_collated_array (map, num_nodes)
+!    !call collate (map, mesh%node_ip%global_index(nodes))  ! internal mesh node numbers
+!    call collate (map, mesh%xnode(nodes)) ! external mesh node numbers
+!    if (is_IOP) call gmvwrite_nodeids_f (map)
+!    deallocate (map, nodes)
+!
+!    !! Write the enclosure face indices as the cellids -- GMV uses these for display.
+!    call allocate_collated_array (map, num_faces)
+!    call collate (map, efaces)
+!    if (is_IOP) call gmvwrite_cellids_f (map)
+!    deallocate (map)
+!
+!    if (nPE > 1) then
+!      !! Write the face partitioning info.
+!      call allocate_collated_array (map, num_faces)
+!      call collate (map, spread(this_PE, dim=1, ncopies=size(faces)))
+!      if (is_IOP) then
+!        call gmvwrite_flag_header_f ()
+!        call gmvwrite_flag_name_f ('facepart', nPE, CELLDATA)
+!        do j = 1, nPE
+!          write(name,'(a,i0)') 'P', j
+!          call gmvwrite_flag_subname_f (name)
+!        end do
+!        call gmvwrite_flag_data_f (CELLDATA, map)
+!        call gmvwrite_flag_endflag_f ()
+!      end if
+!      deallocate(map)
+!    end if
+!
+!    if (is_IOP) call gmvwrite_closefile_f
+!
+!  end subroutine write_mesh_surface
 
   subroutine write_encl_surface (file, sol)
 

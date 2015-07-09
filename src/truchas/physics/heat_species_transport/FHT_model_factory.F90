@@ -22,7 +22,7 @@ module FHT_model_factory
 
   use kinds, only: r8
   use FHT_model_type
-  use base_mesh_class
+  use unstr_mesh_type
   use mfd_disc_type
   use material_mesh_function
   use rad_problem_type
@@ -41,7 +41,7 @@ contains
     character(*), intent(out) :: errmsg
     type(FHT_model), pointer :: model
     
-    class(base_mesh), pointer :: mesh
+    type(unstr_mesh), pointer :: mesh
 
     mesh => disc%mesh
     
@@ -71,7 +71,7 @@ contains
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
   
-    class(base_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -126,7 +126,7 @@ contains
     use ds_source_input, only: define_external_source
     use parallel_communication, only: global_any
 
-    class(base_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
@@ -180,7 +180,7 @@ contains
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use parallel_communication, only: global_any
 
-    class(base_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg

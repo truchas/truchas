@@ -26,7 +26,7 @@ module diffusion_solver
   use HTSD_solver_type
   use timing_tree
   use truchas_logging_services
-  use base_mesh_class
+  use unstr_mesh_type
   implicit none
   private
 
@@ -51,7 +51,7 @@ module diffusion_solver
     logical :: have_phase_change = .false.
     logical :: have_void = .false.
     !! The mesh, discretization, and material mesh function.
-    class(base_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     type(mfd_disc), pointer :: disc => null()
     type(mat_mf), pointer :: mmf => null()
     !! Saved references to the model sources.
@@ -382,7 +382,7 @@ contains
     call TLS_info ('Initializing diffusion solver ...')
     
     !! Common initialization.
-    this%mesh => named_mesh_ptr(mesh_name)
+    this%mesh => unstr_mesh_ptr(mesh_name)
     INSIST(associated(this%mesh))
     call generate_mesh_mappings (this%mesh)
     

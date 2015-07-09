@@ -74,7 +74,7 @@ module boundary_data
 
   use kinds
   use scalar_func_containers
-  use base_mesh_class
+  use unstr_mesh_type
   use string_utilities, only: i_to_c
   implicit none
   private
@@ -86,7 +86,7 @@ module boundary_data
     real(r8), pointer :: values(:,:) => null()
     !! rest are private
     integer :: npar
-    class(base_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     logical :: evaluated = .false.
     real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup = -1
@@ -113,7 +113,7 @@ contains
   subroutine bd_data_prep (this, mesh, npar)
 
     type(bd_data), intent(out) :: this
-    class(base_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: npar
 
     INSIST(npar > 0)
@@ -280,9 +280,6 @@ contains
 
   subroutine bd_data_eval (this, t)
   
-    use dist_mesh_type
-    use unstr_mesh_type
-
     type(bd_data), intent(inout) :: this
     real(r8), intent(in) :: t
 
@@ -308,40 +305,20 @@ contains
           values(i,:) = this%farray(i,n)%f%eval(args)
         case (BD_DATA_HINT_T_INDEP)
           if (.not.this%evaluated) then
-            select type (mesh => this%mesh)
-            type is (dist_mesh)
-              do j = 1, size(faces)
-                args(1:) = sum(mesh%x(:,mesh%fnode(:,faces(j))),dim=2) / size(mesh%fnode,dim=1)
-                values(i,j) = this%farray(i,n)%f%eval(args)
-              end do
-            type is (unstr_mesh)
-              do j = 1, size(faces)
-                associate (fnode => mesh%fnode(mesh%xfnode(faces(j)):mesh%xfnode(faces(j)+1)-1))
-                  args(1:) = sum(mesh%x(:,fnode),dim=2) / size(fnode)
-                  values(i,j) = this%farray(i,n)%f%eval(args)
-                end associate
-              end do
-            class default
-              INSIST(.false.)
-            end select
-          end if
-        case default
-          select type (mesh => this%mesh)
-          type is (dist_mesh)
             do j = 1, size(faces)
-              args(1:) = sum(mesh%x(:,mesh%fnode(:,faces(j))),dim=2) / size(mesh%fnode,dim=1)
-              values(i,j) = this%farray(i,n)%f%eval(args)
-            end do
-          type is (unstr_mesh)
-            do j = 1, size(faces)
-              associate (fnode => mesh%fnode(mesh%xfnode(faces(j)):mesh%xfnode(faces(j)+1)-1))
-                args(1:) = sum(mesh%x(:,fnode),dim=2) / size(fnode)
+              associate (fnode => this%mesh%fnode(this%mesh%xfnode(faces(j)):this%mesh%xfnode(faces(j)+1)-1))
+                args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
                 values(i,j) = this%farray(i,n)%f%eval(args)
               end associate
             end do
-          class default
-            INSIST(.false.)
-          end select
+          end if
+        case default
+          do j = 1, size(faces)
+            associate (fnode => this%mesh%fnode(this%mesh%xfnode(faces(j)):this%mesh%xfnode(faces(j)+1)-1))
+              args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
+              values(i,j) = this%farray(i,n)%f%eval(args)
+            end associate
+          end do
         end select
       end do
     end do
