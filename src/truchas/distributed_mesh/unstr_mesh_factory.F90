@@ -99,7 +99,7 @@ contains
       return
     end if
 
-    call get_cell_node_connectivity (exo_mesh, xcnode, cnode)
+    call exo_mesh%get_concat_elem_conn (xcnode, cnode)
 
     allocate(cell_perm(exo_mesh%num_elem))
     allocate(node_perm(exo_mesh%num_node))
@@ -250,52 +250,6 @@ contains
   end function new_unstr_mesh
 
 !!!! AUXILIARY PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !! This auxiliary procedure repackages the mesh connectivity data stored in
-  !! an EXODUS_MESH object, which is structured in blocks of elements, into the
-  !! packed mixed-element data structure used by the UNSTR_MESH type:
-  !! CNODE(XCNODE(j):XCNODE(j+1)-1) is the node connectivity of cell j.
-  !! While essentially a serial procedure, with inputs, outputs, and work
-  !! only occuring on the IO processes, it is meant to be called in parallel
-  !! and allocates dummy 0-sized arrays on other processors which facilitate
-  !! subsequent parallel calls.
-
-  subroutine get_cell_node_connectivity (exo_mesh, xcnode, cnode)
-
-    use exodus_mesh_type
-    use parallel_communication, only: is_IOP
-    use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
-
-    class(exodus_mesh), intent(in), target :: exo_mesh
-    integer, allocatable, intent(out) :: xcnode(:), cnode(:)
-
-    integer :: j, k, n, offset
-    integer, pointer :: flat_connect(:)
-
-    !! Copy the mesh connectivity from element blocks.
-    if (is_IOP) then
-      !! Copy connectivity from element blocks into si
-      n = sum(exo_mesh%eblk%num_nodes_per_elem * exo_mesh%eblk%num_elem)
-      allocate(xcnode(exo_mesh%num_elem+1), cnode(n))
-      n = 0
-      offset = 0
-      xcnode(1) = 1
-      do j = 1, exo_mesh%num_eblk
-        do k = 1, exo_mesh%eblk(j)%num_elem
-          n = n + 1
-          xcnode(n+1) = xcnode(n) + exo_mesh%eblk(j)%num_nodes_per_elem
-        end do
-        associate (connect => exo_mesh%eblk(j)%connect)
-          call c_f_pointer (c_loc(connect), flat_connect, shape=[size(connect)])
-          cnode(offset+1:offset+size(connect)) = flat_connect
-          offset = offset + size(connect)
-        end associate
-      end do
-    else
-      allocate(xcnode(1), cnode(0))
-    end if
-
-  end subroutine get_cell_node_connectivity
 
   subroutine partition_cells (xcnhbr, cnhbr, lnhbr, npart, part)
 

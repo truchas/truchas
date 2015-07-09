@@ -396,6 +396,10 @@ contains
   !! connectivity of cell j. As a convenience to the caller, the procedure
   !! allocates the allocatable output arrays XCONNECT and CONNECT, primarily
   !! because the required size of CONNECT is not immediately known.
+  !! NB: The procedure handles a default-initialized mesh object gracefully,
+  !! allocating and defining XCONNECT and CONNECT for a mesh with 0 elements.
+  !! This is useful in a parallel context where the mesh object is only
+  !! default initialized on all but the IO process. 
     
   subroutine get_concat_elem_conn (this, xconnect, connect)
   
@@ -406,6 +410,12 @@ contains
     
     integer :: j, k, n, offset
     integer, pointer :: flat_conn(:)
+
+    if (this%num_elem == 0) then
+      allocate(xconnect(1), connect(0))
+      xconnect(1) = 1
+      return
+    end if
     
     n = sum(this%eblk%num_nodes_per_elem * this%eblk%num_elem)
     allocate(xconnect(this%num_elem+1), connect(n))
