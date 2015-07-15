@@ -13,7 +13,7 @@
 !!  kernel.  It has the following type bound procedures.
 !!
 !!  INIT (MESH, PARAMS) initializes the object.  MESH is a pointer to
-!!    the TYPE(DIST_MESH) computational mesh.  An internal reference to
+!!    the TYPE(UNSTR_MESH) computational mesh.  An internal reference to
 !!    the mesh is held by the object.  All input/output state fields are
 !!    relative to this mesh.
 !!
@@ -62,7 +62,7 @@
 module ustruc_model_type
 
   use kinds, only: r8
-  use distributed_mesh, only: dist_mesh
+  use unstr_mesh_type
   use mfd_disc_type
   use ustruc_comp_class
   use truchas_logging_services
@@ -72,7 +72,7 @@ module ustruc_model_type
   type, public :: ustruc_model
     private
     class(ustruc_comp), pointer :: comp => null() ! analysis component
-    type(dist_mesh), pointer :: mesh => null()  ! reference only -- do not own
+    type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     type(mfd_disc) :: disc  ! see Note 1
     logical, allocatable :: mask(:)  ! identifies active mesh cells
     integer :: ncell  ! number of active cells
@@ -103,7 +103,7 @@ contains
     use ustruc_comp_factory
 
     class(ustruc_model), intent(out) :: this
-    type(dist_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list) :: params
 
     integer :: j, stat
@@ -113,7 +113,7 @@ contains
 
     this%mesh => mesh
 
-    call mfd_disc_init (this%disc, this%mesh) ! See Note 1
+    call this%disc%init (this%mesh, use_new_mfd=.true.) ! See Note 1
 
     call params%get ('cell-set-ids', setids)
     call this%mesh%get_cell_set_bitmask (setids, bitmask, stat, errmsg)
@@ -255,7 +255,7 @@ contains
     !! Compute gradients mesh-wide (under control of mask); see NB above.
     xtface(:this%mesh%nface_onP) = tface  ! off-process extended face temperatures
     call gather_boundary (this%mesh%face_ip, xtface)
-    call mfd_disc_compute_cell_grad (this%disc, xtface, this%mask, grad)
+    call this%disc%compute_cell_grad (xtface, this%mask, grad)
 
     !! Now extract the relevant gradients.
     temp_grad = grad(:,this%map)

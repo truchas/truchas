@@ -8,7 +8,7 @@ module MaxwellEddy
 
   use kinds
   use parallel_communication
-  use distributed_mesh
+  use dist_mesh_type
   use index_partitioning
   use mimetic_discretization
   use solution_history
@@ -522,14 +522,14 @@ contains
     
     integer :: j, jproc, k, kproc, kstart, lun, nedge_onP, n, m, bsize_vector(nPE)
     real(kind=r8), dimension(sys%mesh%nedge) :: ej, ek, tmp
-    real(kind=r8) :: pe(sys%mesh%nedge,global_size(sys%mesh%edge_ip))
-    character(len=1) :: edge_type(sys%mesh%nedge), etype(global_size(sys%mesh%edge_ip))
+    real(kind=r8) :: pe(sys%mesh%nedge,sys%mesh%edge_ip%global_size())
+    character(len=1) :: edge_type(sys%mesh%nedge), etype(sys%mesh%edge_ip%global_size())
     real(kind=r8) :: ej_dot_pek, ek_dot_pej, ej_dot_pej
     
     nedge_onP = sys%mesh%nedge_onP
     cg_sys => sys
     
-    call collate (bsize_vector, onP_size(sys%mesh%edge_ip))
+    call collate (bsize_vector, sys%mesh%edge_ip%onP_size())
     
     !! Mark the on-PE edges as partition boundary, partition interior, or ignored
     tmp(1:nedge_onP)  = 0.0_r8

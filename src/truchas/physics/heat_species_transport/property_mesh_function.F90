@@ -123,10 +123,10 @@ contains
   end subroutine pmf_create
   
   subroutine init_cprop (this)
-    use distributed_mesh, only: dist_mesh
+    use base_mesh_class
     type(prop_mf), intent(inout) :: this
     integer :: i, j, n
-    type(dist_mesh), pointer :: mesh
+    class(base_mesh), pointer :: mesh
     type(mat_prop), pointer :: mprop(:)
     integer, pointer :: cell(:)
     real(r8), pointer :: vfrac(:,:)

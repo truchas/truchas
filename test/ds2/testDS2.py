@@ -25,6 +25,7 @@ class DS2(TruchasTest.GoldenTestCase):
     T    = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     Tref = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(T-Tref)/Tref)
+    print 'final temp max rel error=', error, ' (tol=', tol, ')'
     self.assertTrue(error <= tol)
 
 if __name__ == '__main__':

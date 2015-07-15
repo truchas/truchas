@@ -107,10 +107,7 @@ contains
   subroutine destroy_bdf2_state (state)
     type(bdf2_state), intent(inout) :: state
     call destroy (state%uhist)
-    if (associated(state%fpa)) then
-      call nka_delete (state%fpa)
-      deallocate(state%fpa)
-    end if
+    if (associated(state%fpa)) deallocate(state%fpa)
     if (associated(state%profile)) deallocate(state%profile)
   end subroutine destroy_bdf2_state
   
@@ -179,14 +176,11 @@ contains
       if (.not.associated(state%fpa)) then
         allocate(state%fpa)
         mv = min(control%mvec, control%mitr-1, state%n)
-        call nka_init (state%fpa, size(u), mv)
-        call nka_set_vec_tol (state%fpa, control%vtol)
+        call state%fpa%init (size(u), mv)
+        call state%fpa%set_vec_tol (control%vtol)
       end if
     else
-      if (associated(state%fpa)) then
-        call nka_delete (state%fpa)
-        deallocate(state%fpa)
-      end if
+      if (associated(state%fpa)) deallocate(state%fpa)
     end if
     
     step = 0
@@ -416,7 +410,7 @@ contains
     integer  :: itr
     real(kind=rk) :: error, du(size(u)), ddu(size(u))
     
-    if (associated(state%fpa)) call nka_restart (state%fpa)
+    if (associated(state%fpa)) call state%fpa%restart
  
     itr = 0
     u = up
@@ -439,7 +433,7 @@ contains
       ddu = u - u0 - h*ddu
 
       !! Accelerated correction.
-      if (associated(state%fpa)) call nka_accel_update (state%fpa, ddu)
+      if (associated(state%fpa)) call state%fpa%accel_update (ddu)
 
 
       !! Next solution iterate.

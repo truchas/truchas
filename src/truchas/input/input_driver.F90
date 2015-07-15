@@ -42,7 +42,7 @@ contains
     use lin_solver_input,          only: linear_solver_input
     use EM_data_proxy,             only: em_is_on
     use region_input_module,       only: region_read
-    use mesh_broker,               only: peek_truchas_mesh_namelists
+    use mesh_manager,              only: peek_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
     use ustruc_driver,             only: read_microstructure_namelist
@@ -55,7 +55,7 @@ contains
     use viscous_data_module,       only: inviscid
     use turbulence_module,         only: read_turbulence_namelist
     use solid_mechanics_input,     only: solid_mechanics
-    use solid_mechanics_mesh,      only: sm_mesh_enable
+    !use solid_mechanics_mesh,      only: sm_mesh_enable
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use timing_tree
     use truchas_logging_services
@@ -133,7 +133,7 @@ contains
     ! read namelists for solid mechanics options
     if (solid_mechanics) then
       call read_viscoplastic_model_namelists (lun)
-      call sm_mesh_enable
+      !call sm_mesh_enable
     end if
 
     ! read volume fraction data

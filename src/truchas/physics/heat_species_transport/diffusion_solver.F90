@@ -11,7 +11,7 @@ module diffusion_solver
 
   use kinds
   use diffusion_solver_data
-  use mesh_broker
+  use mesh_manager
   use parallel_permutations
   use parallel_communication
   use truchas_logging_services
@@ -26,6 +26,7 @@ module diffusion_solver
   use HTSD_solver_type
   use timing_tree
   use truchas_logging_services
+  use unstr_mesh_type
   implicit none
   private
 
@@ -50,7 +51,7 @@ module diffusion_solver
     logical :: have_phase_change = .false.
     logical :: have_void = .false.
     !! The mesh, discretization, and material mesh function.
-    type(dist_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     type(mfd_disc), pointer :: disc => null()
     type(mat_mf), pointer :: mmf => null()
     !! Saved references to the model sources.
@@ -381,12 +382,12 @@ contains
     call TLS_info ('Initializing diffusion solver ...')
     
     !! Common initialization.
-    this%mesh => named_mesh_ptr(mesh_name)
+    this%mesh => unstr_mesh_ptr(mesh_name)
     INSIST(associated(this%mesh))
     call generate_mesh_mappings (this%mesh)
     
     allocate(this%disc)
-    call mfd_disc_init (this%disc, this%mesh)
+    call this%disc%init (this%mesh, use_new_mfd)
     
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg)
@@ -488,19 +489,16 @@ contains
       call mmf_destroy (this%mmf)
       deallocate(this%mmf)
     end if
-    if (associated(this%disc)) then
-      call mfd_disc_delete (this%disc)
-      deallocate(this%disc)
-    end if
+    if (associated(this%disc)) deallocate(this%disc)
     call delete_mesh_mappings
     this%mesh => null()
   end subroutine ds_delete
   
-  subroutine ds_set_initial_state (t, temp, conc)
+  subroutine ds_set_initial_state (t, dt, temp, conc)
   
     use parameter_module, only: ncells
 
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, dt
     real(r8), intent(in), optional :: temp(:), conc(:,:)
     
     integer :: n
@@ -528,7 +526,7 @@ contains
     !! Set the initial state in the appropriate solver.
     select case (this%solver_type)
     case (SOLVER1)
-      call HTSD_solver_set_initial_state (this%sol1, t, temp_ds, conc_ds)
+      call HTSD_solver_set_initial_state (this%sol1, t, temp_ds, conc_ds, dt)
     case (SOLVER2)
       call FHT_solver_set_initial_state (this%sol2, t, temp_ds)
     case default

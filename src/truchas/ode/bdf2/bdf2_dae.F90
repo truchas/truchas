@@ -101,6 +101,7 @@ contains
     optional :: mitr, ntol, mvec, vtol
 
     integer :: maxv
+    procedure(pardp), pointer :: dp
 
     INSIST( n > 0 )
     this%n = n
@@ -122,13 +123,22 @@ contains
     end if
 
     !! Initialize the NKA structure.
-    call nka_init (this%fpa, this%n, maxv)
-    call nka_set_vec_tol (this%fpa, vtol)
+    call this%fpa%init (this%n, maxv)
+    call this%fpa%set_vec_tol (vtol)
+    dp => pardp ! NB: in F2008 can make pardp an internal sub and pass directly
+    call this%fpa%set_dot_prod (dp)
 
     !! We need to maintain 3 solution vectors for quadratic extrapolation.
     call create_history (this%uhist, 3, this%n)
 
   end subroutine create_state
+
+  function pardp (a, b) result (dp)
+    use parallel_communication, only: global_dot_product
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: dp
+    dp = global_dot_product(a, b)
+  end function pardp
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -166,7 +176,6 @@ contains
   subroutine destroy_state (this)
     type(state), intent(inout) :: this
     call destroy (this%uhist)
-    call nka_delete (this%fpa)
   end subroutine destroy_state
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -764,7 +773,7 @@ contains
     integer  :: itr
     real(r8) :: error, du(size(u))
 
-    call nka_restart (this%fpa)
+    call this%fpa%restart
 
     itr = 0
     do
@@ -783,7 +792,7 @@ contains
       call pcfun (t, u, (u-u0)/h, du)
 
       !! Accelerated correction.
-      call nka_accel_update (this%fpa, du, dp=pardp)
+      call this%fpa%accel_update (du)
 
       !! Next solution iterate and error estimate.
       u  = u - du
@@ -804,13 +813,6 @@ contains
     3 format(2x,i3,': error=',es12.5)
 
   end subroutine solve_bce_ain
-
-  function pardp (a, b) result (dp)
-    use parallel_communication, only: global_dot_product
-    real(r8), intent(in) :: a(:), b(:)
-    real(r8) :: dp
-    dp = global_dot_product(a, b)
-  end function pardp
   
   !!
   !! SOLVE_BCE_VAR -- a test variation that uses different convergence
@@ -831,7 +833,7 @@ contains
     integer  :: itr
     real(r8) :: error, error0, du(size(u)), conv_rate
 
-    call nka_restart (this%fpa)
+    call this%fpa%restart
 
     itr = 0
 
@@ -856,7 +858,7 @@ contains
       itr = itr + 1
 
       !! Accelerated correction and next solution iterate.
-      call nka_accel_update (this%fpa, du, dp=pardp)
+      call this%fpa%accel_update (du)
       u  = u - du
       
       !! Evaluate the preconditioned nonlinear function.
@@ -964,7 +966,7 @@ contains
     integer  :: itr
     real(r8) :: f(size(u)), udot(size(u)), error
 
-    call nka_restart (this%fpa)
+    call this%fpa%restart
 
     itr = 0
     
@@ -980,7 +982,7 @@ contains
     
       !! Compute the next solution iterate.
       call pc (t, u, udot, f)
-      call nka_accel_update (this%fpa, f, dp=pardp)
+      call this%fpa%accel_update (f)
       u = u - f
       udot = (u - u0)/h
       

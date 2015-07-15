@@ -21,9 +21,8 @@
 
 module HTSD_model_factory
 
-  use kinds, only: r8
   use HTSD_model_type
-  use distributed_mesh
+  use unstr_mesh_type
   use mfd_disc_type
   use material_mesh_function
   implicit none
@@ -47,23 +46,17 @@ contains
 
     type(HT_model), pointer :: htmodel => null()
     type(SD_model), pointer :: sdmodel(:) => null()
-#ifdef INTEL_COMPILER_WORKAROUND
-    type(dist_mesh), pointer :: fubar
+    type(unstr_mesh), pointer :: mesh
 
-    fubar => mmf_mesh(mmf)
-    ASSERT(associated(disc%mesh,fubar))
-#else
-
-    ASSERT(associated(disc%mesh, mmf_mesh(mmf)))
-#endif
+    mesh => disc%mesh
 
     if (heat_eqn) then
-      htmodel => create_HT_model(disc%mesh, mmf, stat, errmsg)
+      htmodel => create_HT_model(mesh, mmf, stat, errmsg)
       if (stat /= 0) return
     endif
 
     if (num_species > 0) then
-      sdmodel => create_SD_model(disc%mesh, mmf, stat, errmsg)
+      sdmodel => create_SD_model(mesh, mmf, stat, errmsg)
       if (stat /= 0) return
     end if
 
@@ -76,9 +69,9 @@ contains
 
   function create_HT_model (mesh, mmf, stat, errmsg) result (model)
 
-   use ER_driver
+    use rad_problem_type
 
-   type(dist_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
@@ -109,7 +102,7 @@ contains
       use ds_source_input, only: define_external_source
       use parallel_communication, only: global_any
 
-      type(dist_mesh), intent(in), target :: mesh
+      type(unstr_mesh), intent(in), target :: mesh
       type(mat_mf), intent(in), target :: mmf
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
@@ -160,14 +153,14 @@ contains
       use physical_constants, only: stefan_boltzmann, absolute_zero
       use parallel_communication, only: global_any
 
-      type(dist_mesh), intent(in), target :: mesh
+      type(unstr_mesh), intent(in), target :: mesh
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
       character(len=*), intent(out) :: errmsg
 
       integer :: j
-      logical,  allocatable :: mask(:), rmask(:)
-      integer, pointer :: setids(:)
+      logical, allocatable :: mask(:), rmask(:)
+      integer, allocatable :: setids(:)
 
       allocate(mask(mesh%nface))
 
@@ -243,7 +236,7 @@ contains
       !! TODO: THIS DOESN'T WORK PROPERLY IN PARALLEL
       if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then
         mask = mask .neqv. btest(mesh%face_set_mask,0)
-        call get_face_set_IDs (mesh, pack((/(j,j=1,mesh%nface)/), mask), setids)
+        call mesh%get_face_set_IDs (pack([(j,j=1,mesh%nface)], mask), setids)
         stat = -1
         write(errmsg,'(a,99(:,1x,i0))') &
           'incomplete temperature boundary/interface condition specification; ' // &
@@ -263,15 +256,15 @@ contains
 
   function create_vf_rad_prob (mesh, stat, errmsg) result (vf_rad_prob)
 
-    use ER_driver
+    use rad_problem_type
     use ER_input
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
 
-    type(dist_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
-    type(ERD_problem), pointer :: vf_rad_prob(:)
+    type(rad_problem), pointer :: vf_rad_prob(:)
 
     integer :: n, j
     logical, allocatable :: mask(:)
@@ -286,7 +279,7 @@ contains
       allocate(vf_rad_prob(n), encl_name(n))
       call ERI_get_names (encl_name)
       do j = 1, n
-        call ERD_problem_init (vf_rad_prob(j), mesh, encl_name(j))
+        call vf_rad_prob(j)%init (mesh, encl_name(j))
         !! Verify that these enclosure faces are boundary faces.
         if (.not.global_all(btest(mesh%face_set_mask(vf_rad_prob(j)%faces),0))) then
           stat = -1
@@ -327,7 +320,7 @@ contains
     use index_partitioning
     use parallel_communication, only: global_any
 
-    type(dist_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
@@ -336,7 +329,8 @@ contains
     integer :: n, j
     logical :: mask(mesh%nface)
     character(len=31) :: property, variable
-    integer, pointer :: matids(:), setids(:)
+    integer, allocatable :: setids(:)
+    integer, pointer :: matids(:)
 
     allocate(model(num_species))
 
@@ -387,7 +381,7 @@ contains
       !! Finally verify that a BC has been applied to every boundary face.
       if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then
         mask = mask .neqv. btest(mesh%face_set_mask,0)
-        call get_face_set_IDs (mesh, pack((/(j,j=1,mesh%nface)/), mask), setids)
+        call mesh%get_face_set_IDs (pack([(j,j=1,mesh%nface)], mask), setids)
         stat = -1
         !! The assumption here is that no bad faces are internal; any errors of
         !! that kind should have been caught when creating the bd_data objects.

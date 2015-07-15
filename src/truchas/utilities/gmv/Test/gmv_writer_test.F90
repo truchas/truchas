@@ -3,7 +3,7 @@ program gmv_writer_test
 #ifdef NAG
   use f90_unix_proc, only: system, exit
 #endif
-  use mesh_broker
+  use mesh_manager
   use gmv_writer
   use parallel_communication
   implicit none
@@ -19,7 +19,7 @@ program gmv_writer_test
   
   if (is_IOP) open(unit=10,file='gmv_writer_test.inp',position='rewind',action='read',status='old')
   call read_mesh_namelists (10)
-  call init_mesh_broker ()
+  call init_mesh_manager ()
   
   mesh => named_mesh_ptr('mesh1')
   

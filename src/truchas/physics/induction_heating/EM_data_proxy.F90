@@ -313,40 +313,44 @@ CONTAINS
     use parallel_communication
     use parameter_module, only: hex_mesh_ncell => ncells
     use mesh_importer
-    use distributed_mesh
-    use mesh_broker
+    use dist_mesh_type
+    use mesh_manager, only: dist_mesh_ptr
     use EM_input, only: coil_array
     
     type(dist_mesh), pointer :: alt_mesh
-    type(external_mesh), target :: main_mesh
-    type(gm_mesh) :: tet_mesh, hex_mesh
+    type(external_mesh), allocatable :: main_mesh
+    type(gm_mesh), allocatable :: tet_mesh, hex_mesh
     integer :: j, tmp
-    real(kind=rk), pointer :: volume(:)
+    real(kind=rk), allocatable :: volume(:)
     
     !! Collect the collated main mesh (hex).
+    allocate(main_mesh)
     call collect_main_mesh (main_mesh)
-    ASSERT( allocated(main_mesh%cell_block) )
+    ASSERT(allocated(main_mesh%cell_block))
     
     !! Setup the corresponding GM_MESH structure by linking into the imported mesh.
+    allocate(hex_mesh)
     hex_mesh%nnod = main_mesh%nnode
     hex_mesh%nelt = main_mesh%ncell
-    hex_mesh%node_elt => main_mesh%cnode
-    hex_mesh%block_elt => main_mesh%cell_block
-    hex_mesh%pos_node => main_mesh%x
+    call move_alloc (main_mesh%cnode, hex_mesh%node_elt)
+    call move_alloc (main_mesh%cell_block, hex_mesh%block_elt)
+    call move_alloc (main_mesh%x, hex_mesh%pos_node)
+    deallocate(main_mesh)
     
     !! Access the distributed alternate mesh (tet).
-    alt_mesh => named_mesh_ptr('alt')
-    ASSERT( associated(alt_mesh) )
+    alt_mesh => dist_mesh_ptr('alt')
+    ASSERT(associated(alt_mesh))
     
     !! Create the corresponding (collated) GM_MESH structure.
-    call get_global_cnode_array (alt_mesh, tet_mesh%node_elt)
-    call get_global_cblock_array (alt_mesh, tet_mesh%block_elt)
-    call get_global_x_array (alt_mesh, tet_mesh%pos_node)
+    allocate(tet_mesh)
+    call alt_mesh%get_global_cnode_array (tet_mesh%node_elt)
+    call alt_mesh%get_global_cblock_array (tet_mesh%block_elt)
+    call alt_mesh%get_global_x_array (tet_mesh%pos_node)
     tet_mesh%nnod = size(tet_mesh%pos_node,dim=2)
     tet_mesh%nelt = size(tet_mesh%node_elt,dim=2)
     
     !! Ensure each tet is positively oriented with respect to its volume.
-    call get_global_volume_array (alt_mesh, volume)
+    call alt_mesh%get_global_volume_array (volume)
     do j = 1, size(volume)
       if (volume(j) < 0.0) then
         tmp = tet_mesh%node_elt(3,j)
@@ -358,10 +362,7 @@ CONTAINS
     !! Calculate the hex-tet grid mapping data: a serial calculation.
     call destroy_grid_int_vols (gmd)
     if (is_IOP) call get_grid_mapping_data (hex_mesh, tet_mesh, gmd)
-    
-    !! Clean up.
-    call destroy (main_mesh)  ! HEX_MESH array components pointed into MAIN_MESH.
-    call destroy_gm_mesh (tet_mesh)   ! TET_MESH array components were allocated directly.
+    deallocate(hex_mesh, tet_mesh)
     
     !! Allocate the module's tet-mesh data store arrays.
     if (allocated(eps)) deallocate(eps)
@@ -394,10 +395,10 @@ CONTAINS
   end subroutine init_EM_data_proxy
 
   function EM_mesh () result (ptr)
-    use mesh_broker
-    use distributed_mesh
+    use mesh_manager, only: dist_mesh_ptr
+    use dist_mesh_type
     type(dist_mesh), pointer :: ptr
-    ptr => named_mesh_ptr('alt')
+    ptr => dist_mesh_ptr('alt')
   end function EM_mesh
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -409,7 +410,7 @@ CONTAINS
  !! 
   
   subroutine set_permittivity (values)
-    use distributed_mesh
+    use dist_mesh_type
     use index_partitioning
     real(kind=rk), intent(in) :: values(:)
     type(dist_mesh), pointer :: mesh
@@ -420,7 +421,7 @@ CONTAINS
   end subroutine set_permittivity
 
   subroutine set_permeability (values)
-    use distributed_mesh
+    use dist_mesh_type
     use index_partitioning
     real(kind=rk), intent(in) :: values(:)
     type(dist_mesh), pointer :: mesh
@@ -431,7 +432,7 @@ CONTAINS
   end subroutine set_permeability
 
   subroutine set_conductivity (values)
-    use distributed_mesh
+    use dist_mesh_type
     use index_partitioning
     real(kind=rk), intent(in) :: values(:)
     type(dist_mesh), pointer :: mesh
@@ -479,7 +480,7 @@ CONTAINS
  
   subroutine set_joule_power_density (values)
   
-    use distributed_mesh
+    use dist_mesh_type
 
     real(kind=rk), intent(in) :: values(:)
     type(dist_mesh), pointer :: mesh
@@ -919,7 +920,7 @@ CONTAINS
 
   subroutine read_joule_data (unit, version)
 
-    use mesh_broker, only: dist_mesh, named_mesh_ptr
+    use mesh_manager, only: dist_mesh, dist_mesh_ptr
     use mesh_module, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
@@ -946,15 +947,15 @@ CONTAINS
       call read_var (unit, coil_q(n)%nturns,  'READ_JOULE_DATA: error reading NTURNS record')
     end do
 
-    mesh => named_mesh_ptr('alt')
+    mesh => dist_mesh_ptr('alt')
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NMU record')
-    if (n /= global_size(mesh%cell_ip)) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
+    if (n /= mesh%cell_ip%global_size()) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
     call read_dist_array (unit, mu_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading MU record')
     call gather_boundary (mesh%cell_ip, mu_q)
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NSIGMA record')
-    if (n /= global_size(mesh%cell_ip)) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
+    if (n /= mesh%cell_ip%global_size()) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
     call read_dist_array (unit, sigma_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading SIGMA record')
     call gather_boundary (mesh%cell_ip, sigma_q)
 
@@ -995,7 +996,7 @@ CONTAINS
 
     use parallel_communication
     use permutations
-    use mesh_broker, only: dist_mesh, named_mesh_ptr
+    use mesh_manager, only: dist_mesh, dist_mesh_ptr
     use danu_module, only: DANU_SUCCESS
     
     real(rk), intent(in) :: t
@@ -1013,7 +1014,7 @@ CONTAINS
     ASSERT( allocated(joule) )
     ASSERT( associated(coil_q) )
     
-    mesh => named_mesh_ptr('alt')
+    mesh => dist_mesh_ptr('alt')
     n = global_sum(mesh%ncell_onP)
 
     !! Collate the cell permutation array.

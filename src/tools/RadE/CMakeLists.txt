@@ -10,6 +10,9 @@ include(FortranPreprocessFiles)
 # Add the SOURCE_DIR and BINARY_DIR to the include directories
 set(CMAKE_INCLUDE_CURRENT_DIR True)
 
+# Want modules in the build directory.
+unset(CMAKE_Fortran_MODULE_DIRECTORY)
+
 # Truchas module directory
 include_directories(${Truchas_MODULE_DIR})
 

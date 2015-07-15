@@ -361,12 +361,17 @@ except RuntimeError:
 except:
   raise
 else:
-  nmats=int(blockids.max())
-  i=1
-  while i <= nmats:
-    mat_name='mat_%d'%(i)
+  unique_ids = list(set(blockids))
+  unique_ids.sort()
+  nmats=len(unique_ids)
+  id_to_index = {}
+  for i in range(nmats):
+    id_to_index[unique_ids[i]] = i+1  # want 1-based
+  for i in range(len(blockids)):
+    blockids[i] = id_to_index[blockids[i]]
+  for i in unique_ids:
+    mat_name='blk_%d'%(i)
     materials.append(mat_name)
-    i=i+1
   print 'Number of materials: ' + str(nmats)
   print 'Materials: ' + str(materials)
 

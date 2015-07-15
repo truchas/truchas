@@ -44,7 +44,7 @@ four quadrants of the domain are
 /
 
 &NUMERICS
-  dt_init = 1.0d-5
+  dt_init = 4.0d-4
   dt_min  = 1.0d-9
   dt_max  = 1.0
   dt_grow = 10.0

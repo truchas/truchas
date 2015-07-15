@@ -4,15 +4,15 @@
 PROGRAM INFORMATION
 
    code:                DUMMY
-   version:             2.8.dev
+   version:             2.9.dev
    libraries:           UbikSolve, PGSLib, Chaco
    build architecture:  x86_64
-   build date/time:     14 Sep 2013 23:53:46
-   build flags:         -O2 -maxcontin=99 -PIC
-   build host:          omega.indiana
-   run architecture:    Linux omega.indiana 3.10.9-200.fc19.x86_64 #1 SMP Wed Aug 21 19:27:58 UTC 2013 x86_64
-   run host:            omega.indiana
-   run date/time:       15 Sep 13 18:46:46
+   build date/time:     27 Jun 2015 00:59:08
+   build flags:         -O -u -fPIC-O3
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 3.15.10-201.fc20.x86_64 #1 SMP Wed Aug 27 21:10:06 UTC 2014 x86_64
+   run host:            noether.lanl.gov
+   run date/time:       27 Jun 15 22:08:45
    processors:          1
 
 ================================================================================
@@ -229,15 +229,15 @@ Initializing distributed mesh ALT ...
 
 Initializing distributed mesh MAIN ...
   Reading ExodusII mesh file ./em-qcyl-hex.gen
-  Distributed Mesh Profile:
-     PE|    nnode    nedge    nface    ncell
-    ---+------------------------------------
-      1|      182        0      315       75
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|      182      315       75
   Mesh Communication Profile:
-              Nodes           Edges           Faces           Cells
-     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
-    ---+----------------------------------------------------------------
-      1|      0      182      0        0      0      315      0       75
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|      0      182      0      315      0       75
   Distributed mesh MAIN initialized.
 DANU: adding default mesh entry
 DANU: writing mesh node coordinates
@@ -283,6 +283,12 @@ Initializing diffusion solver ...
   Generating "flux" boundary condition for "temperature" variable
     using DS_BOUNDARY_CONDITION[1]: whole boundary insulated
   Diffusion solver initialized.
+
+Computing consistent initial state for HT/SD solver ...
+  Computing consistent face temperatures and radiosities ...
+
+Computing consistent initial state derivative for HT/SD solver ...
+  Computing consistent face temperatures and radiosities ...
  Initializing electromagnetics ...
   Initializing the hex-tet grid mapping data ...
    Computing the hex-tet grid mapping data.
@@ -347,202 +353,202 @@ EXECUTION
           1: t =   0.00000E+00, dt(constant) =   5.00000E+00
    Maximum relative change: sigma= 0.000E+00, mu= 0.000E+00
 
-DS: dt=5.000E+00, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000003:00001, NNR:NNF:NSR=0000:0000:0000
 
           2: t =   5.00000E+00, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 3.921E-05, mu= 1.013E-01
+   Maximum relative change: sigma= 3.972E-05, mu= 1.017E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000006:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000007:00001, NNR:NNF:NSR=0000:0000:0000
 
           3: t =   1.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 1.184E-03, mu= 2.694E-01
+   Maximum relative change: sigma= 1.207E-03, mu= 2.708E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000010:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
 
           4: t =   1.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 8.280E-03, mu= 4.500E-01
+   Maximum relative change: sigma= 8.471E-03, mu= 4.526E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000013:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
 
           5: t =   2.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 3.015E-02, mu= 6.137E-01
+   Maximum relative change: sigma= 3.089E-02, mu= 6.170E-01
  EM material parameters have changed; computing the Joule heat ...
    Min epsilon= 1.0000E+00, Max epsilon= 1.0000E+00
-   Min mu=      1.0000E+00, Max mu=      1.9214E+00
-   Min sigma=   2.5000E+03, Max sigma=   2.5777E+03
-   DELTA= 7.8576E-01
-   ETASQ= 1.7174E-12
-     step cg summary:  48 iterations, |r|= 3.326E-09, |r0|= 4.467E-01
-     step cg summary:  48 iterations, |r|= 8.544E-09, |r0|= 1.245E+00
-     step cg summary:  48 iterations, |r|= 2.001E-08, |r0|= 2.632E+00
-     step cg summary:  48 iterations, |r|= 1.707E-09, |r0|= 2.576E-01
-     step cg summary:  48 iterations, |r|= 8.000E-09, |r0|= 9.939E-01
-     step cg summary:  48 iterations, |r|= 2.122E-08, |r0|= 2.643E+00
-     step cg summary:  48 iterations, |r|= 9.873E-09, |r0|= 1.290E+00
-     step cg summary:  48 iterations, |r|= 2.265E-08, |r0|= 2.821E+00
-     step cg summary:  48 iterations, |r|= 6.731E-09, |r0|= 8.800E-01
-     step cg summary:  48 iterations, |r|= 3.844E-09, |r0|= 5.653E-01
-     step cg summary:  48 iterations, |r|= 2.989E-08, |r0|= 3.721E+00
-     step cg summary:  48 iterations, |r|= 1.208E-08, |r0|= 1.594E+00
-   Source cycle   1: |Q|_max= 9.8090E+03, Q_total= 2.8900E-01
-     step cg summary:  48 iterations, |r|= 2.107E-08, |r0|= 2.584E+00
-     step cg summary:  47 iterations, |r|= 1.036E-08, |r0|= 1.164E+00
-     step cg summary:  48 iterations, |r|= 3.766E-09, |r0|= 5.976E-01
-     step cg summary:  48 iterations, |r|= 2.873E-08, |r0|= 3.541E+00
-     step cg summary:  48 iterations, |r|= 1.152E-08, |r0|= 1.545E+00
-     step cg summary:  48 iterations, |r|= 2.406E-08, |r0|= 2.942E+00
-     step cg summary:  48 iterations, |r|= 4.151E-09, |r0|= 4.441E-01
-     step cg summary:  48 iterations, |r|= 4.764E-09, |r0|= 5.056E-01
-     step cg summary:  48 iterations, |r|= 2.297E-08, |r0|= 2.790E+00
-     step cg summary:  48 iterations, |r|= 9.753E-09, |r0|= 1.342E+00
-     step cg summary:  48 iterations, |r|= 2.774E-08, |r0|= 3.402E+00
-     step cg summary:  48 iterations, |r|= 4.434E-09, |r0|= 7.301E-01
-   Source cycle   2: |Q|_max= 3.5520E+04, Q_total= 1.0500E+00
-     step cg summary:  48 iterations, |r|= 1.414E-08, |r0|= 1.691E+00
-     step cg summary:  48 iterations, |r|= 1.403E-08, |r0|= 1.697E+00
-     step cg summary:  48 iterations, |r|= 4.359E-09, |r0|= 7.185E-01
-     step cg summary:  48 iterations, |r|= 2.768E-08, |r0|= 3.384E+00
-     step cg summary:  48 iterations, |r|= 9.318E-09, |r0|= 1.316E+00
-     step cg summary:  48 iterations, |r|= 2.284E-08, |r0|= 2.762E+00
-     step cg summary:  48 iterations, |r|= 5.023E-09, |r0|= 5.226E-01
-     step cg summary:  48 iterations, |r|= 4.772E-09, |r0|= 5.094E-01
-     step cg summary:  48 iterations, |r|= 2.298E-08, |r0|= 2.764E+00
-     step cg summary:  48 iterations, |r|= 9.187E-09, |r0|= 1.315E+00
-     step cg summary:  48 iterations, |r|= 2.760E-08, |r0|= 3.383E+00
-     step cg summary:  48 iterations, |r|= 4.092E-09, |r0|= 7.280E-01
-   Source cycle   3: |Q|_max= 3.7350E+04, Q_total= 1.1045E+00
+   Min mu=      1.0000E+00, Max mu=      1.9215E+00
+   Min sigma=   2.5000E+03, Max sigma=   2.5797E+03
+   DELTA= 7.8547E-01
+   ETASQ= 1.7161E-12
+     step cg summary:  48 iterations, |r|= 3.321E-09, |r0|= 4.469E-01
+     step cg summary:  48 iterations, |r|= 8.498E-09, |r0|= 1.245E+00
+     step cg summary:  48 iterations, |r|= 1.999E-08, |r0|= 2.633E+00
+     step cg summary:  48 iterations, |r|= 1.712E-09, |r0|= 2.577E-01
+     step cg summary:  48 iterations, |r|= 8.000E-09, |r0|= 9.942E-01
+     step cg summary:  48 iterations, |r|= 2.123E-08, |r0|= 2.644E+00
+     step cg summary:  48 iterations, |r|= 9.896E-09, |r0|= 1.291E+00
+     step cg summary:  48 iterations, |r|= 2.267E-08, |r0|= 2.822E+00
+     step cg summary:  48 iterations, |r|= 6.783E-09, |r0|= 8.804E-01
+     step cg summary:  48 iterations, |r|= 3.853E-09, |r0|= 5.655E-01
+     step cg summary:  48 iterations, |r|= 2.992E-08, |r0|= 3.722E+00
+     step cg summary:  48 iterations, |r|= 1.211E-08, |r0|= 1.594E+00
+   Source cycle   1: |Q|_max= 9.8194E+03, Q_total= 2.8917E-01
+     step cg summary:  48 iterations, |r|= 2.109E-08, |r0|= 2.585E+00
+     step cg summary:  47 iterations, |r|= 1.057E-08, |r0|= 1.164E+00
+     step cg summary:  48 iterations, |r|= 3.776E-09, |r0|= 5.978E-01
+     step cg summary:  48 iterations, |r|= 2.875E-08, |r0|= 3.543E+00
+     step cg summary:  48 iterations, |r|= 1.155E-08, |r0|= 1.545E+00
+     step cg summary:  48 iterations, |r|= 2.408E-08, |r0|= 2.943E+00
+     step cg summary:  48 iterations, |r|= 4.161E-09, |r0|= 4.443E-01
+     step cg summary:  48 iterations, |r|= 4.775E-09, |r0|= 5.058E-01
+     step cg summary:  48 iterations, |r|= 2.299E-08, |r0|= 2.791E+00
+     step cg summary:  48 iterations, |r|= 9.776E-09, |r0|= 1.343E+00
+     step cg summary:  48 iterations, |r|= 2.776E-08, |r0|= 3.403E+00
+     step cg summary:  48 iterations, |r|= 4.445E-09, |r0|= 7.304E-01
+   Source cycle   2: |Q|_max= 3.5558E+04, Q_total= 1.0507E+00
+     step cg summary:  48 iterations, |r|= 1.414E-08, |r0|= 1.692E+00
+     step cg summary:  48 iterations, |r|= 1.402E-08, |r0|= 1.697E+00
+     step cg summary:  48 iterations, |r|= 4.370E-09, |r0|= 7.188E-01
+     step cg summary:  48 iterations, |r|= 2.771E-08, |r0|= 3.385E+00
+     step cg summary:  48 iterations, |r|= 9.340E-09, |r0|= 1.317E+00
+     step cg summary:  48 iterations, |r|= 2.286E-08, |r0|= 2.763E+00
+     step cg summary:  48 iterations, |r|= 5.036E-09, |r0|= 5.228E-01
+     step cg summary:  48 iterations, |r|= 4.787E-09, |r0|= 5.096E-01
+     step cg summary:  48 iterations, |r|= 2.300E-08, |r0|= 2.765E+00
+     step cg summary:  48 iterations, |r|= 9.208E-09, |r0|= 1.316E+00
+     step cg summary:  48 iterations, |r|= 2.761E-08, |r0|= 3.384E+00
+     step cg summary:  48 iterations, |r|= 4.102E-09, |r0|= 7.283E-01
+   Source cycle   3: |Q|_max= 3.7390E+04, Q_total= 1.1051E+00
   Joule heat computation completed.
 DANU: adding EM simulation EM002
 DANU: writing EM restart data for EM002
 
-DS: dt=5.000E+00, NFUN:NPC=0000017:00001, NNR:NNF:NSR=0000:0000:0000
-Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   2.38976E+00
+DS: dt=5.000E+00, NFUN:NPC=0000018:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   2.37505E+00
 
           6: t =   2.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 2.986E-02, mu= 6.945E-02
+   Maximum relative change: sigma= 3.063E-02, mu= 6.937E-02
 
-DS: dt=5.000E+00, NFUN:NPC=0000021:00001, NNR:NNF:NSR=0000:0000:0000
-Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   3.14278E+00
+DS: dt=5.000E+00, NFUN:NPC=0000022:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   3.13604E+00
 
           7: t =   3.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 6.695E-02, mu= 1.268E-01
+   Maximum relative change: sigma= 6.856E-02, mu= 1.265E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000024:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000025:00001, NNR:NNF:NSR=0000:0000:0000
 
           8: t =   3.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 1.124E-01, mu= 1.797E-01
+   Maximum relative change: sigma= 1.149E-01, mu= 1.794E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000027:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000028:00001, NNR:NNF:NSR=0000:0000:0000
 
           9: t =   4.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 1.663E-01, mu= 2.281E-01
+   Maximum relative change: sigma= 1.695E-01, mu= 2.278E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000030:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000031:00001, NNR:NNF:NSR=0000:0000:0000
 
          10: t =   4.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 2.272E-01, mu= 2.725E-01
+   Maximum relative change: sigma= 2.311E-01, mu= 2.719E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000033:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000034:00001, NNR:NNF:NSR=0000:0000:0000
 
          11: t =   5.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 2.929E-01, mu= 3.133E-01
+   Maximum relative change: sigma= 2.973E-01, mu= 3.126E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000036:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000037:00001, NNR:NNF:NSR=0000:0000:0000
 
          12: t =   5.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 3.605E-01, mu= 3.515E-01
+   Maximum relative change: sigma= 3.653E-01, mu= 3.506E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000038:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000039:00001, NNR:NNF:NSR=0000:0000:0000
 
          13: t =   6.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 4.275E-01, mu= 3.864E-01
+   Maximum relative change: sigma= 4.325E-01, mu= 3.855E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000040:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000041:00001, NNR:NNF:NSR=0000:0000:0000
 
          14: t =   6.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 4.918E-01, mu= 4.193E-01
+   Maximum relative change: sigma= 4.968E-01, mu= 4.183E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000042:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000043:00001, NNR:NNF:NSR=0000:0000:0000
 
          15: t =   7.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 5.517E-01, mu= 4.497E-01
+   Maximum relative change: sigma= 5.565E-01, mu= 4.486E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000044:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000045:00001, NNR:NNF:NSR=0000:0000:0000
 
          16: t =   7.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 6.062E-01, mu= 4.795E-01
+   Maximum relative change: sigma= 6.108E-01, mu= 4.783E-01
  EM material parameters have changed; computing the Joule heat ...
    Min epsilon= 1.0000E+00, Max epsilon= 1.0000E+00
-   Min mu=      1.0000E+00, Max mu=      1.5650E+00
-   Min sigma=   2.5023E+03, Max sigma=   6.5465E+03
-   DELTA= 4.9307E-01
-   ETASQ= 6.7626E-13
-     step cg summary:  49 iterations, |r|= 4.916E-09, |r0|= 7.119E-01
-     step cg summary:  48 iterations, |r|= 1.981E-08, |r0|= 1.984E+00
-     step cg summary:  49 iterations, |r|= 2.915E-08, |r0|= 4.195E+00
-     step cg summary:  48 iterations, |r|= 2.925E-09, |r0|= 4.172E-01
-     step cg summary:  49 iterations, |r|= 1.134E-08, |r0|= 1.584E+00
-     step cg summary:  48 iterations, |r|= 3.269E-08, |r0|= 4.212E+00
-     step cg summary:  48 iterations, |r|= 1.475E-08, |r0|= 2.058E+00
-     step cg summary:  49 iterations, |r|= 3.157E-08, |r0|= 4.495E+00
-     step cg summary:  48 iterations, |r|= 8.698E-09, |r0|= 1.405E+00
-     step cg summary:  48 iterations, |r|= 3.954E-09, |r0|= 9.028E-01
-     step cg summary:  49 iterations, |r|= 4.196E-08, |r0|= 5.929E+00
-     step cg summary:  48 iterations, |r|= 1.712E-08, |r0|= 2.541E+00
-   Source cycle   1: |Q|_max= 1.3507E+04, Q_total= 2.9015E-01
-     step cg summary:  49 iterations, |r|= 2.966E-08, |r0|= 4.118E+00
-     step cg summary:  48 iterations, |r|= 1.483E-08, |r0|= 1.855E+00
-     step cg summary:  48 iterations, |r|= 5.248E-09, |r0|= 9.517E-01
-     step cg summary:  45 iterations, |r|= 4.977E-08, |r0|= 5.643E+00
-     step cg summary:  48 iterations, |r|= 1.549E-08, |r0|= 2.462E+00
-     step cg summary:  49 iterations, |r|= 3.355E-08, |r0|= 4.688E+00
-     step cg summary:  49 iterations, |r|= 6.410E-09, |r0|= 7.067E-01
-     step cg summary:  48 iterations, |r|= 7.860E-09, |r0|= 8.022E-01
-     step cg summary:  49 iterations, |r|= 3.234E-08, |r0|= 4.445E+00
-     step cg summary:  48 iterations, |r|= 1.198E-08, |r0|= 2.139E+00
-     step cg summary:  48 iterations, |r|= 5.145E-08, |r0|= 5.421E+00
-     step cg summary:  48 iterations, |r|= 5.971E-09, |r0|= 1.165E+00
-   Source cycle   2: |Q|_max= 4.9124E+04, Q_total= 1.0587E+00
-     step cg summary:  49 iterations, |r|= 1.960E-08, |r0|= 2.694E+00
-     step cg summary:  49 iterations, |r|= 1.931E-08, |r0|= 2.703E+00
-     step cg summary:  47 iterations, |r|= 1.004E-08, |r0|= 1.146E+00
-     step cg summary:  48 iterations, |r|= 5.228E-08, |r0|= 5.392E+00
-     step cg summary:  48 iterations, |r|= 1.095E-08, |r0|= 2.100E+00
-     step cg summary:  48 iterations, |r|= 4.318E-08, |r0|= 4.401E+00
-     step cg summary:  49 iterations, |r|= 6.450E-09, |r0|= 8.361E-01
-     step cg summary:  48 iterations, |r|= 7.375E-09, |r0|= 8.128E-01
-     step cg summary:  49 iterations, |r|= 3.220E-08, |r0|= 4.404E+00
-     step cg summary:  48 iterations, |r|= 1.110E-08, |r0|= 2.099E+00
-     step cg summary:  49 iterations, |r|= 3.919E-08, |r0|= 5.391E+00
-     step cg summary:  47 iterations, |r|= 9.151E-09, |r0|= 1.167E+00
-   Source cycle   3: |Q|_max= 5.1677E+04, Q_total= 1.1141E+00
+   Min mu=      1.0000E+00, Max mu=      1.5691E+00
+   Min sigma=   2.5022E+03, Max sigma=   6.6277E+03
+   DELTA= 4.9004E-01
+   ETASQ= 6.6797E-13
+     step cg summary:  49 iterations, |r|= 4.937E-09, |r0|= 7.163E-01
+     step cg summary:  48 iterations, |r|= 1.981E-08, |r0|= 1.996E+00
+     step cg summary:  49 iterations, |r|= 2.929E-08, |r0|= 4.221E+00
+     step cg summary:  48 iterations, |r|= 3.092E-09, |r0|= 4.202E-01
+     step cg summary:  49 iterations, |r|= 1.141E-08, |r0|= 1.594E+00
+     step cg summary:  49 iterations, |r|= 3.022E-08, |r0|= 4.238E+00
+     step cg summary:  48 iterations, |r|= 1.450E-08, |r0|= 2.071E+00
+     step cg summary:  49 iterations, |r|= 3.227E-08, |r0|= 4.523E+00
+     step cg summary:  48 iterations, |r|= 8.767E-09, |r0|= 1.414E+00
+     step cg summary:  48 iterations, |r|= 4.217E-09, |r0|= 9.089E-01
+     step cg summary:  49 iterations, |r|= 4.260E-08, |r0|= 5.966E+00
+     step cg summary:  48 iterations, |r|= 1.680E-08, |r0|= 2.557E+00
+   Source cycle   1: |Q|_max= 1.3699E+04, Q_total= 2.9230E-01
+     step cg summary:  49 iterations, |r|= 2.979E-08, |r0|= 4.143E+00
+     step cg summary:  48 iterations, |r|= 1.491E-08, |r0|= 1.866E+00
+     step cg summary:  48 iterations, |r|= 5.583E-09, |r0|= 9.581E-01
+     step cg summary:  49 iterations, |r|= 4.087E-08, |r0|= 5.678E+00
+     step cg summary:  48 iterations, |r|= 1.517E-08, |r0|= 2.478E+00
+     step cg summary:  49 iterations, |r|= 3.414E-08, |r0|= 4.717E+00
+     step cg summary:  49 iterations, |r|= 6.482E-09, |r0|= 7.119E-01
+     step cg summary:  48 iterations, |r|= 7.866E-09, |r0|= 8.077E-01
+     step cg summary:  48 iterations, |r|= 4.335E-08, |r0|= 4.472E+00
+     step cg summary:  48 iterations, |r|= 1.169E-08, |r0|= 2.153E+00
+     step cg summary:  49 iterations, |r|= 3.952E-08, |r0|= 5.454E+00
+     step cg summary:  48 iterations, |r|= 6.334E-09, |r0|= 1.172E+00
+   Source cycle   2: |Q|_max= 4.9830E+04, Q_total= 1.0667E+00
+     step cg summary:  49 iterations, |r|= 1.972E-08, |r0|= 2.711E+00
+     step cg summary:  49 iterations, |r|= 1.943E-08, |r0|= 2.720E+00
+     step cg summary:  47 iterations, |r|= 1.021E-08, |r0|= 1.153E+00
+     step cg summary:  49 iterations, |r|= 3.948E-08, |r0|= 5.426E+00
+     step cg summary:  48 iterations, |r|= 1.067E-08, |r0|= 2.113E+00
+     step cg summary:  49 iterations, |r|= 3.245E-08, |r0|= 4.428E+00
+     step cg summary:  49 iterations, |r|= 6.490E-09, |r0|= 8.421E-01
+     step cg summary:  48 iterations, |r|= 7.399E-09, |r0|= 8.185E-01
+     step cg summary:  49 iterations, |r|= 3.248E-08, |r0|= 4.432E+00
+     step cg summary:  48 iterations, |r|= 1.081E-08, |r0|= 2.112E+00
+     step cg summary:  49 iterations, |r|= 3.960E-08, |r0|= 5.425E+00
+     step cg summary:  47 iterations, |r|= 9.127E-09, |r0|= 1.175E+00
+   Source cycle   3: |Q|_max= 5.2421E+04, Q_total= 1.1225E+00
   Joule heat computation completed.
 DANU: adding EM simulation EM003
 DANU: writing EM restart data for EM003
 
-DS: dt=5.000E+00, NFUN:NPC=0000048:00001, NNR:NNF:NSR=0000:0000:0000
-Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   4.15470E+00
+DS: dt=5.000E+00, NFUN:NPC=0000049:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   3.98764E+00
 
          17: t =   8.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 1.583E-01, mu= 2.546E-02
+   Maximum relative change: sigma= 1.611E-01, mu= 2.514E-02
 
-DS: dt=5.000E+00, NFUN:NPC=0000052:00001, NNR:NNF:NSR=0000:0000:0000
-Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   4.72938E+00
+DS: dt=5.000E+00, NFUN:NPC=0000053:00001, NNR:NNF:NSR=0000:0000:0000
+Warning: Constant time step of   5.00000E+00 > diffusion solver time step constraint of   4.57852E+00
 
          18: t =   8.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 2.987E-01, mu= 5.095E-02
+   Maximum relative change: sigma= 3.039E-01, mu= 5.013E-02
 
-DS: dt=5.000E+00, NFUN:NPC=0000055:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000056:00001, NNR:NNF:NSR=0000:0000:0000
 
          19: t =   9.00000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 4.145E-01, mu= 7.710E-02
+   Maximum relative change: sigma= 4.213E-01, mu= 7.589E-02
 
-DS: dt=5.000E+00, NFUN:NPC=0000058:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000059:00001, NNR:NNF:NSR=0000:0000:0000
 
          20: t =   9.50000E+01, dt(constant) =   5.00000E+00
-   Maximum relative change: sigma= 5.081E-01, mu= 1.035E-01
+   Maximum relative change: sigma= 5.157E-01, mu= 1.020E-01
 
-DS: dt=5.000E+00, NFUN:NPC=0000061:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.000E+00, NFUN:NPC=0000062:00001, NNR:NNF:NSR=0000:0000:0000
 
 ================================================================================
 
@@ -555,22 +561,25 @@ Warning: DANU: Danu fid is still associated
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               8.110E-01    8.110E-01    8.110E-01
-    Input                               6.000E-03    6.000E-03    6.000E-03
-    Initialization                      2.730E-01    2.730E-01    2.730E-01
+  Total                               3.870E-01    3.870E-01    3.870E-01
+    Input                               3.000E-03    3.000E-03    3.000E-03
+    Initialization                      1.290E-01    1.290E-01    1.290E-01
       HTSD function                       0.000E+00    0.000E+00    0.000E+00
         HT function                         0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          5.280E-01    5.280E-01    5.280E-01
-      Output                              2.100E-02    2.100E-02    2.100E-02
-      Time Step                           1.000E-03    1.000E-03    1.000E-03
-      Diffusion Solver                    9.000E-03    9.000E-03    9.000E-03
+    Main Cycle                          2.500E-01    2.500E-01    2.500E-01
+      Output                              1.600E-02    1.600E-02    1.600E-02
+      Time Step                           0.000E+00    0.000E+00    0.000E+00
+      Diffusion Solver                    5.000E-03    5.000E-03    5.000E-03
         HTSD precon compute                 1.000E-03    1.000E-03    1.000E-03
-        HTSD function                       1.000E-03    1.000E-03    1.000E-03
-          HT function                         1.000E-03    1.000E-03    1.000E-03
-        HTSD precon apply                   7.000E-03    7.000E-03    7.000E-03
-          HT precon apply                     7.000E-03    7.000E-03    7.000E-03
+          hypre-matrix-copy                   0.000E+00    0.000E+00    0.000E+00
+          boomer-setup                        1.000E-03    1.000E-03    1.000E-03
+        HTSD function                       0.000E+00    0.000E+00    0.000E+00
+          HT function                         0.000E+00    0.000E+00    0.000E+00
+        HTSD precon apply                   1.000E-03    1.000E-03    1.000E-03
+          HT precon apply                     1.000E-03    1.000E-03    1.000E-03
+            boomer-solve                        1.000E-03    1.000E-03    1.000E-03
 
-                  Process virtual memory used: 4.77E+01 mB
-                                   words/cell: 83442
+                  Process virtual memory used: 7.71E+01 mB
+                                   words/cell: 134731
 
-truchas terminated normally on 15 Sep 13 at 18:46:48
+truchas terminated normally on 27 Jun 15 at 22:08:46

@@ -76,7 +76,7 @@
 module material_mesh_function
 
   use kinds, only: r8
-  use distributed_mesh, only: dist_mesh
+  use base_mesh_class
   use string_utilities, only: i_to_c
 
   implicit none
@@ -91,7 +91,7 @@ module material_mesh_function
   
   type, public :: mat_mf
     private
-    type(dist_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: mesh => null()
     integer :: nreg = -1
     type(region), pointer :: reg(:) => null()
     !! Temporary components used during setup.
@@ -200,14 +200,14 @@ contains
   
   function mmf_mesh (this) result (mesh)
     type(mat_mf), intent(in) :: this
-    type(dist_mesh), pointer :: mesh
+    class(base_mesh), pointer :: mesh
     mesh => this%mesh
   end function mmf_mesh
   
   subroutine mmf_prep (this, mesh)
   
     type(mat_mf), intent(out) :: this
-    type(dist_mesh), intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     
     this%mesh => mesh
     this%nreg = 0
@@ -489,10 +489,8 @@ contains
     integer :: n, i
     integer, pointer :: matids(:), cell(:)
     real(r8), pointer :: vfrac(:,:)
-    type(dist_mesh), pointer :: mesh
     
-    mesh => mmf_mesh(mmf)
-    ASSERT(size(vol_frac) == mesh%ncell)
+    ASSERT(size(vol_frac) == mmf%mesh%ncell)
     
     vol_frac = 0.0_r8
     do n = 1, mmf_num_reg(mmf)

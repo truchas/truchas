@@ -59,12 +59,14 @@ module diffusion_solver_data
   real(r8), public :: residual_atol, residual_rtol
   
   real(r8), public :: cond_vfrac_threshold
+  
+  logical, public :: use_new_mfd  ! use the new MFD mass matrix (temporary)
 
 contains
 
   subroutine read_ds_namelist (lun)
 
-    use mesh_broker, only: enable_mesh
+    use mesh_manager, only: enable_mesh
     use input_utilities, only: seek_to_namelist
     use parallel_communication
     use string_utilities
@@ -87,7 +89,8 @@ contains
                                 pc_ssor_sweeps, pc_ssor_relax, verbose_stepping, stepping_method, &
                                 nlk_preconditioner, pc_amg_cycles, hypre_amg_print_level, &
                                 hypre_amg_debug, hypre_amg_logging_level, &
-                                cond_vfrac_threshold, residual_atol, residual_rtol
+                                cond_vfrac_threshold, residual_atol, residual_rtol, &
+                                use_new_mfd
 
     !! Check that the manually-set module variables have good values before reading.
     INSIST(ds_enabled)
@@ -150,6 +153,7 @@ contains
       cond_vfrac_threshold = NULL_R
       residual_atol = NULL_R
       residual_rtol = NULL_R
+      use_new_mfd = .true.
       read(lun,nml=diffusion_solver,iostat=ios)
     end if
     call broadcast (ios)
@@ -179,6 +183,7 @@ contains
     call broadcast (cond_vfrac_threshold)
     call broadcast (residual_atol)
     call broadcast (residual_rtol)
+    call broadcast (use_new_mfd)
     
     if (stepping_method == NULL_C) then
       stepping_method = 'Adaptive BDF2'

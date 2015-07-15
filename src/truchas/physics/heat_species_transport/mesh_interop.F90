@@ -77,7 +77,7 @@ module mesh_interop
 
   use kinds, only: r8
   use parallel_permutations
-  use distributed_mesh, only: dist_mesh
+  use base_mesh_class
   use material_mesh_function
   use truchas_logging_services, only: TLS_info
   implicit none
@@ -86,17 +86,46 @@ module mesh_interop
   public :: generate_mesh_mappings, delete_mesh_mappings
   public :: mmf_init, update_mmf_from_matl, update_matl_from_mmf
   public :: void_is_present
+  public :: cast_to_dist_mesh, cast_to_unstr_mesh
 
   !! Permutation structures connecting the DS and T mesh cell labelings.
-  type(par_perm), public, save :: pcell_t_to_ds, pcell_ds_to_t
+  type(par_perm), allocatable, public, save :: pcell_t_to_ds, pcell_ds_to_t
   integer, pointer, public, save :: t_gap_elements(:) => null()
   
 contains
 
+  function cast_to_dist_mesh (bmesh) result (cast)
+    use dist_mesh_type
+    class(base_mesh), pointer, intent(in) :: bmesh
+    class(dist_mesh), pointer :: cast
+    cast => null()
+    if (associated(bmesh)) then
+      select type (bmesh)
+      type is (dist_mesh)
+        cast => bmesh
+      end select
+    end if
+  end function cast_to_dist_mesh
+
+  function cast_to_unstr_mesh (bmesh) result (cast)
+    use base_mesh_class
+    use unstr_mesh_type
+    class(base_mesh), pointer, intent(in) :: bmesh
+    class(unstr_mesh), pointer :: cast
+    cast => null()
+    if (associated(bmesh)) then
+      select type (bmesh)
+      type is (unstr_mesh)
+        cast => bmesh
+      end select
+    end if
+  end function cast_to_unstr_mesh
+
   subroutine generate_mesh_mappings (mesh)
     use mesh_module, only: unpermute_mesh_vector
-    type(dist_mesh), intent(in) :: mesh
+    class(base_mesh), intent(in) :: mesh
     integer, pointer :: dummy(:) => null()
+    allocate(pcell_t_to_ds, pcell_ds_to_t)
     call create_par_perm (unpermute_mesh_vector, mesh%xcell(:mesh%ncell_onP), &
                           pcell_t_to_ds, t_gap_elements, pcell_ds_to_t, dummy)
     INSIST(size(dummy) == 0)
@@ -116,8 +145,8 @@ contains
   end subroutine generate_mesh_mappings
   
   subroutine delete_mesh_mappings ()
-    call destroy (pcell_t_to_ds)
-    call destroy (pcell_ds_to_t)
+    if (allocated(pcell_t_to_ds)) deallocate(pcell_t_to_ds)
+    if (allocated(pcell_ds_to_t)) deallocate(pcell_ds_to_t)
     if (associated(t_gap_elements)) deallocate(t_gap_elements)
   end subroutine delete_mesh_mappings
   
@@ -168,7 +197,7 @@ contains
     use material_table
     use material_interop, only: void_material_index
 
-    type(dist_mesh), intent(in), target :: mesh
+    class(base_mesh), intent(in), target :: mesh
     type(mat_mf), intent(out) :: mmf
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -243,7 +272,7 @@ contains
     integer, pointer :: material_id(:)
     real(r8), allocatable :: vf(:), vofm(:)
     real(r8), pointer :: vfrac(:,:)
-    type(dist_mesh), pointer :: mesh
+    class(base_mesh), pointer :: mesh
 #ifdef EXTRA_VOF_DIAGNOSTICS
     character(len=90) :: string
 #endif
@@ -325,7 +354,7 @@ contains
     real(r8), pointer :: vfrac(:,:)
     real(r8), allocatable :: pfrac(:,:), vofm(:), vof(:,:)
     type(mat_system), pointer :: ms
-    type(dist_mesh),  pointer :: mesh
+    class(base_mesh),  pointer :: mesh
 #ifdef EXTRA_VOF_DIAGNOSTICS
     character(len=90) :: string
 #endif

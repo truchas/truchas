@@ -313,8 +313,9 @@ Transient heat transfer and elastic_viscoplasticity
 
 &NUMERICS
 
+    dt_constant = 1.0e-1
     dt_max                           = 1.0e0, 
-    dt_grow                          = 5.0, 
+    dt_grow                          = 5.0,
     dt_init                          = 1.0e-1, 
     dt_min                           = 1.0e-8, 
     strain_limit                     = 1.0e-10, 

@@ -84,7 +84,7 @@ module diff_precon_type
   use pcsr_matrix_type
   use pcsr_precon_class
   use index_partitioning
-  use distributed_mesh
+  use unstr_mesh_type
   use parameter_list_type
   implicit none
   private
@@ -211,12 +211,12 @@ contains
       b2x_dir = b2x(this%dir_faces)
     end if
 
-    do j = 1, size(this%a12,dim=2)
+    do j = 1, this%mesh%ncell
       s = b1x(j) / this%a11(j)
-      do k = 1, size(this%a12,dim=1)
-        n = this%mesh%cface(k,j)
-        b2x(n) = b2x(n) - this%a12(k,j) * s
-      end do
+      associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
+                 a12 => this%a12_val(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        b2x(cface) = b2x(cface) - a12 * s
+      end associate
     end do
 
     if (allocated(this%dir_faces)) then
@@ -244,13 +244,12 @@ contains
     end if
 
     do j = 1, this%mesh%ncell_onP
-      s = b1x(j)
-      do k = 1, size(this%a12,dim=1)
-        s = s - this%a12(k,j) * u2x(this%mesh%cface(k,j))
-      end do
-      b1x(j) = s / this%a11(j)
+      associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
+                 a12 => this%a12_val(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        b1x(j) = (b1x(j) - dot_product(a12, u2x(cface))) / this%a11(j)
+      end associate
     end do
-
+    
     if (allocated(this%dir_faces)) then
       u2x(this%dir_faces) = u2x_dir
       deallocate(u2x_dir)

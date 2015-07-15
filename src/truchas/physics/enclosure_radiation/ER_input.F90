@@ -565,12 +565,12 @@ contains
 
   subroutine ERI_get_emissivity (encl_name, encl, eps)
 
-    use ER_dist_encl
-    use ER_encl_func
+    use rad_encl_type
+    use rad_encl_func_type
 
     character(len=*), intent(in)  :: encl_name
-    type(dist_encl),  pointer     :: encl
-    type(encl_func),  intent(out) :: eps
+    type(rad_encl), pointer :: encl
+    type(rad_encl_func), intent(out) :: eps
 
     integer :: stat
     character(len=127) :: errmsg
@@ -578,20 +578,20 @@ contains
 
     call TLS_info ('    Defining emissivity for enclosure "' // trim(encl_name) // '" ...')
 
-    call EF_prep (eps, encl)
+    call eps%prep (encl)
 
     l => es_list
     do while (associated(l))
       if (l%encl_name == encl_name) then
         write(errmsg,'(6x,a,i0,2a)') 'using ENCLOSURE_SURFACE[', l%seq, ']: ', trim(l%name)
         call TLS_info (trim(errmsg)) ! not an error message!
-        call EF_add_function (eps, l%eps, l%face_block_ids, stat, errmsg)
+        call eps%add_function (l%eps, l%face_block_ids, stat, errmsg)
         call TLS_fatal_if_any (stat /=0 , 'Error defining emissivity: ' // trim(errmsg))
       end if
       l => l%next
     end do
 
-    call EF_done (eps, stat, errmsg)
+    call eps%done (stat, errmsg)
     call TLS_fatal_if_any (stat /= 0, 'Error defining emissivity: ' // trim(errmsg))
 
   end subroutine ERI_get_emissivity

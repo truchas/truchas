@@ -36,10 +36,12 @@
 
 subroutine f90_assert (file, line)
 
+  use iso_fortran_env, only: error_unit
+
   character(*), intent(in) :: file
   integer,      intent(in) :: line
 
-  write(0,fmt='(3a,i4.4)') 'Assertion failed at ', file, ':', line
+  write(error_unit,fmt='(3a,i4.4)') 'Assertion failed at ', file, ':', line
   stop
 
 end subroutine f90_assert

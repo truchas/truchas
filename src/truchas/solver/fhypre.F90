@@ -101,6 +101,7 @@ module fhypre
   public :: fHYPRE_BoomerAMGSetStrongThreshold
   public :: fHYPRE_BoomerAMGSetMaxIter
   public :: fHYPRE_BoomerAMGSetCoarsenType
+  public :: fHYPRE_BoomerAMGSetInterpType
   public :: fHYPRE_BoomerAMGSetTol
   public :: fHYPRE_BoomerAMGSetNumSweeps
   public :: fHYPRE_BoomerAMGSetRelaxType
@@ -320,6 +321,13 @@ contains
     integer, intent(in)  :: max_iter
     integer, intent(out) :: ierr
     ierr = HYPRE_BoomerAMGSetMaxIter(solver, max_iter)
+  end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetInterpType (solver, interp_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: interp_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetInterpType(solver, interp_type)
   end subroutine
 
   subroutine fHYPRE_BoomerAMGSetCoarsenType (solver, coarsen_type, ierr)

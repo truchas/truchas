@@ -2,7 +2,6 @@
 !! NKA_TYPE
 !!
 !! Neil N. Carlson <neil.n.carlson@gmail.com>
-!! Last revised 14 Oct 2006; initial F90 version 1996.
 !!
 !! This module implements the nonlinear Krylov accelerator (NKA) introduced
 !! in [1] for fixed point or Picard iterations.  Placed in the iteration loop,
@@ -11,13 +10,16 @@
 !! typical quasi-Newton iterations, which can usually be viewed as a fixed
 !! point iteration for a preconditioned function.
 !!
+!! This is a Fortran 2008 adaptation of the original Fortran 95 version that
+!! implements the methods as type bound procedures.
+!!
 !! [1] N.N.Carlson and K.Miller, "Design and application of a gradient-
 !!     weighted moving finite element code I: in one dimension", SIAM J.
 !!     Sci. Comput;, 19 (1998), pp. 728-765.  See section 9.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! Copyright (c) 1996, 2004, 2006, 2013  Neil N. Carlson
+!! Copyright (c) 2010, 2011  Neil N. Carlson
 !!
 !! Permission is hereby granted, free of charge, to any person obtaining a
 !! copy of this software and associated documentation files (the "Software"),
@@ -41,103 +43,70 @@
 !!
 !! PROGRAMING INTERFACE
 !!
-!! This module provides the derived data type NKA with private components that
-!! encapsulates the state of the acceleration procedure, and the following
-!! procedures that operate on variables of that type.  All real arguments are
-!! of kind R8 (double precision).
+!! This module defines the derived data type NKA, which encapsulates the state
+!! of the acceleration procedure, with the following methods as type bound
+!! procedures.
 !!
-!!  CALL NKA_INIT (THIS, VLEN, MVEC)
-!!    TYPE(NKA), INTENT(OUT) :: THIS
-!!    INTEGER,   INTENT(IN)  :: VLEN
-!!    INTEGER,   INTENT(IN)  :: MVEC
+!!  INIT(VLEN, MVEC) initializes the object to handle as many as MVEC vectors
+!!    of length VLEN.
 !!
-!!    Initializes the accelerator THIS to handle as many as MVEC vectors of
-!!    length VLEN.
+!!  SET_VEC_TOL(VTOL) sets the vector drop tolerance.  A vector is dropped
+!!    from the acceleration subspace when the sine of the angle between the
+!!    vector and the subspace spanned by the preceding vectors is less than
+!!    this value.  If not set, the default value 0.01 is used.
 !!
-!!  CALL NKA_DELETE (THIS)
-!!    TYPE(NKA), INTENT(INOUT) :: THIS
-!!
-!!    Deallocates all the array components of the accelerator THIS and
-!!    returns it to its default initialization state.
-!!
-!!  CALL SET_VEC_TOL (THIS, VTOL)
-!!    TYPE(NKA), INTENT(INOUT) :: THIS
-!!    REAL(R8), INTENT(IN) :: VTOL
-!!
-!!    Sets the vector drop tolerance. A vector is dropped from the acceleration
-!!    subspace when the sine of the angle between the vector and the subspace
-!!    spanned by the preceding vectors is less than this value.  If not set,
-!!    the default value 0.01 is used.
-!!
-!!  CALL NKA_ACCEL_UPDATE (THIS, F, DP)
-!!    TYPE(NKA), INTENT(INOUT) :: THIS
-!!    REAL(R8),  INTENT(INOUT) :: F(:)
-!!    OPTIONAL :: DP
-!!
-!!    Takes the function value F, which would be the update vector in a fixed
-!!    point iteration, and overwrites it with the accelerated update computed
-!!    from the acceleration subspace stored in THIS.  This subspace is updated
-!!    prior to computing the update using F and previous function value and
-!!    update that were cached on the preceding call to NKA_ACCEL_UPDATE, if any.
-!!    The input F and returned update are cached in THIS for use by the next
-!!    call to NKA_ACCEL_UPDATE.
-!!
-!!    DP is an optional procedure argument having the same interface as the
-!!    intrinsic function DOT_PRODUCT with rank-1 array arguments.  If DP is
-!!    present, it is used to compute vector dot products instead of DOT_PRODUCT.
-!!    In a parallel context where the vector components are distributed across
+!!  SET_DOT_PROD(DOT_PROD) sets the procedure used to compute vector dot
+!!    products.  DOT_PROD is a procedure pointer with the same interface
+!!    as the intrinsic function DOT_PRODUCT with real rank-1 array arguments.
+!!    If not set, the default is to use the instrinsic DOT_PRODUCT.  In a
+!!    parallel context where the vector components are distributed across
 !!    processes, a global dot product procedure needs to be supplied that
-!!    performs the necessary communications internally.
+!!    performs the necessary communication internally.
 !!
-!!  CALL NKA_RELAX (THIS)
-!!    TYPE(NKA), INTENT(INOUT) :: THIS
+!!  ACCEL_UPDATE(F) takes the function value F, which would be the update
+!!    vector in a fixed point iteration, and overwrites it with the accelerated
+!!    update computed from the acceleration subspace stored in the object.
+!!    This subspace is updated prior to computing the update using F and
+!!    the previous function value and update that were cached on the
+!!    preceding call to ACCEL_UPDATE, if any. The input F and returned update
+!!    are cached for use by the next call to ACCEL_UPDATE.
 !!
-!!    Deletes the pending vectors that were cached by the preceding call
-!!    to NKA_ACCEL_UPDATE, if any.  This modifies the behavior of the next
-!!    call to NKA_ACCEL_UPDATE in that the acceleration subspace will not be
+!!  RESTART() flushes the acceleration subspace, returning the object to its
+!!    state after the call to INIT; the next call to ACCEL_UPDATE begins the
+!!    process of accumulating a new acceleration subspace.  Typical usage is
+!!    to call RESTART at the start of each nonlinear solve in a sequence of
+!!    solves.  This allows the object to be reused and eliminates the overhead
+!!    of repeated memory allocation and deallocation that would otherwise occur.
+!!
+!!  RELAX() deletes the pending vectors that were cached by the preceding
+!!    call to ACCEL_UPDATE, if any.  This modifies the behavior of the next
+!!    call to ACCEL_UPDATE in that the acceleration subspace will not be
 !!    updated prior to computing the accelerated update.  This could be used,
 !!    for example, to carry over the subspace from one nonlinear solve to
 !!    another.  (Whether this is an effective strategy is an open question.)
-!!    NKA_ACCEL_UPDATE expects that the passed function value is connected to
-!!    the preceding update (if it exists), but this is not normally true for
+!!    ACCEL_UPDATE expects that the passed function value is connected to the
+!!    preceding update (if it exists), but this is not normally true for
 !!    the first call in a subsequent nonlinear solve, and would result in the
 !!    subspace being updated with bogus information.  A call to RELAX at the
 !!    end of a nonlinear solve prevents this from occuring.
 !!
-!!  CALL NKA_RESTART (THIS)
-!!    TYPE(NKA), INTENT(OUT) :: THIS
+!!  NUM_VEC() returns the number of vectors in the acceleration subspace.
 !!
-!!    Flushes the acceleration subspace from THIS, returning THIS to its state
-!!    as returned by NKA_INIT; the next call to NKA_ACCEL_UPDATE begins the
-!!    process of accumulating a new subspace.  Typical usage is to call
-!!    NKA_RESTART at the start of each nonlinear solve in a sequence of solves.
-!!    This allows the object to be reused and eliminates the overhead of
-!!    repeated memory allocation and deallocation that would otherwise occur.
+!!  MAX_VEC() returns the max number of vectors in the acceleration subspace.
 !!
+!!  VEC_LEN() returns the length of the vectors.
 !!
-!!  NKA_NUM_VEC(THIS) returns the number of vectors in the acceleration
-!!    subspace.
+!!  VEC_TOL() returns the vector drop tolerance.
 !!
-!!  NKA_MAX_VEC(THIS) returns the max number of vectors in the acceleration
-!!    subspace.
+!!  REAL_KIND() returns the kind parameter value expected of all real arguments.
 !!
-!!  NKA_VEC_LEN(THIS) returns the length of the vectors.
-!!
-!!  NKA_VEC_TOL(THIS) returns the vector drop tolerance.
-!!
-!!  NKA_REAL_KIND(THIS) returns the real kind parameter expected of all real
-!!    arguments.
-!!
-!!  NKA_DEFINED(THIS)
-!!    TYPE(NKA), INTENT(IN) :: THIS
-!!
-!!    Returns the value true if THIS is well-defined; otherwise it returns the
-!!    value false.  Defined means that the data components of the object are
-!!    properly and consistently defined.  Due to the significant effort this
-!!    function goes through to examine the object, it is primarily intended
-!!    to be used in debugging situations.  Note that this function is used
-!!    internally when this module is compiled without the preprocessor -DNDEBUG
-!!    flag.
+!!  DEFINED() returns the value true if the object is well-defined; otherwise
+!!    it returns the value false.  Defined means that the data components of
+!!    the object are properly and consistently defined.  Due to the significant
+!!    effort this function goes through to examine the object, it is primarily
+!!    intended to be used in debugging situations.  Note that this function is
+!!    used internally when this module is compiled without the preprocessor
+!!    -DNDEBUG flag.
 !!
 !! USAGE EXAMPLE
 !!
@@ -151,40 +120,38 @@
 !!
 !!    x = 0
 !!    do <until converged>
-!!      dx = PC(F(X))
+!!      dx = PC(F(x))
 !!      x = x - dx
 !!    end do
 !!
 !!  The accelerated iteration would look something like
 !!
 !!    type(nka) :: accel
-!!    call nka_init (accel, size(v), mvec=5)
+!!    call accel%init (size(v), mvec=5)
 !!    x = 0
 !!    do <until converged>
-!!      dx = PC(F(X))
-!!      call nka_accel_update (accel, dx)
+!!      dx = PC(F(x))
+!!      call accel%accel_update(dx)
 !!      x = x - dx
 !!    end do
-!!    call nka_delete (accel)
 !!
-!! The INIT and DELETE can of course be moved outside any nonlinear solution
-!! procedure containing this iteration, and a single NKA-type variable used
-!! for repeated calls to the procedure.  This avoids the repeated allocations
-!! and deallocations of memory associated with the accelerator. In this case,
-!! one should either include a call to NKA_RESTART before the loop so that
-!! each iterative solve starts with clean slate, or include a call to NKA_RELAX
-!! after the loop so that first call to NKA_ACCEL_UPDATE in the next iterative
-!! solve doesn't update the acceleration subspace with bogus information.
+!! The INIT call can be moved outside any nonlinear solution procedure
+!! containing this iteration, and a single NKA-type variable used for repeated
+!! calls to the procedure. This avoids the repeated allocation and deallocation
+!! of memory associated with the accelerator.  In this case, one should either
+!! include a call to RESTART before the loop so that each iterative solve starts
+!! with clean slate, or include a call to RELAX after the loop so that first
+!! call to ACCEL_UPDATE in the next iterative solve doesn't update the
+!! acceleration subspace with bogus information.
 !!
 
 #include "f90_assert.fpp"
 
 module nka_type
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
-
-  integer, parameter :: r8 = selected_real_kind(15) ! 8-byte IEEE float
 
   type, public :: nka
     private
@@ -193,6 +160,7 @@ module nka_type
     integer :: vlen = 0         ! vector length
     integer :: mvec = 0         ! maximum number of vectors
     real(r8) :: vtol = 0.01_r8  ! vector drop tolerance
+    procedure(dp), pointer, nopass :: dp => null()
     !! Subspace storage.
     real(r8), allocatable :: v(:,:)   ! update vectors
     real(r8), allocatable :: w(:,:)   ! function difference vectors
@@ -200,21 +168,31 @@ module nka_type
     !! Linked-list organization of the vector storage.
     integer :: first, last, free
     integer, allocatable :: next(:), prev(:)
+  contains
+    procedure :: init => nka_init
+    procedure :: set_vec_tol => nka_set_vec_tol
+    procedure :: set_dot_prod => nka_set_dot_prod
+    procedure :: vec_len => nka_vec_len
+    procedure :: num_vec => nka_num_vec
+    procedure :: max_vec => nka_max_vec
+    procedure :: vec_tol => nka_vec_tol
+    procedure :: real_kind => nka_real_kind
+    procedure :: accel_update => nka_accel_update
+    procedure :: relax => nka_relax
+    procedure :: restart => nka_restart
+    procedure :: defined => nka_defined
   end type nka
-
-  public :: nka_init, nka_delete, nka_set_vec_tol, nka_defined
-  public :: nka_vec_len, nka_num_vec, nka_max_vec, nka_vec_tol, nka_real_kind
-  public :: nka_accel_update, nka_relax, nka_restart
 
 contains
 
   subroutine nka_init (this, vlen, mvec)
-    type(nka), intent(out) :: this
+    class(nka), intent(out) :: this
     integer, intent(in) :: vlen
     integer, intent(in) :: mvec
     integer :: n
     ASSERT(mvec > 0)
     ASSERT(vlen >= 0)
+    this%dp => dp
     this%vlen = vlen
     this%mvec = mvec
     n = mvec + 1
@@ -225,14 +203,26 @@ contains
   end subroutine nka_init
 
   subroutine nka_set_vec_tol (this, vtol)
-    type(nka), intent(inout) :: this
+    class(nka), intent(inout) :: this
     real(r8), intent(in) :: vtol
     ASSERT(vtol > 0.0_r8)
     this%vtol = vtol
   end subroutine nka_set_vec_tol
 
+  subroutine nka_set_dot_prod (this, dot_prod)
+    class(nka), intent(inout) :: this
+    procedure(dp), pointer :: dot_prod
+    ASSERT(associated(dot_prod))
+    this%dp => dot_prod
+  end subroutine nka_set_dot_prod
+
+  real(r8) function dp (x, y)
+    real(r8), intent(in) :: x(:), y(:)
+    dp = dot_product(x, y)
+  end function dp
+
   integer function nka_num_vec (this)
-    type(nka), intent(in) :: this
+    class(nka), intent(in) :: this
     integer :: k
     nka_num_vec = 0
     k = this%first
@@ -244,52 +234,30 @@ contains
   end function nka_num_vec
 
   integer function nka_max_vec (this)
-    type(nka), intent(in) :: this
+    class(nka), intent(in) :: this
     nka_max_vec = this%mvec
   end function nka_max_vec
 
   integer function nka_vec_len (this)
-    type(nka), intent(in) :: this
+    class(nka), intent(in) :: this
     nka_vec_len = this%vlen
   end function nka_vec_len
 
   real(r8) function nka_vec_tol (this)
-    type(nka), intent(in) :: this
+    class(nka), intent(in) :: this
     nka_vec_tol = this%vtol
   end function nka_vec_tol
 
   integer function nka_real_kind (this)
-    type(nka), intent(in) :: this
+    class(nka), intent(in) :: this
     nka_real_kind = kind(this%h)
   end function nka_real_kind
 
-  subroutine nka_delete (this)
-    type(nka), intent(inout) :: this
-    type(nka) :: default
-    if (allocated(this%v)) deallocate(this%v)
-    if (allocated(this%w)) deallocate(this%w)
-    if (allocated(this%h)) deallocate(this%h)
-    if (allocated(this%next)) deallocate(this%next)
-    if (allocated(this%prev)) deallocate(this%prev)
-    this = default    ! Set default values
-  end subroutine nka_delete
 
+  subroutine nka_accel_update (this, f)
 
-  subroutine nka_accel_update (this, f, dp)
-
-    type(nka), intent(inout) :: this
-    real(r8),  intent(inout) :: f(:)
-
-    !! Optional dot product procedure to use instead of the intrinsic DOT_PRODUCT.
-    interface
-      !pure function dp (x, y)
-      function dp (x, y)
-        integer, parameter :: r8 = selected_real_kind(15) ! 8-byte IEEE float
-        real(r8), intent(in) :: x(:), y(:)
-        real(r8) :: dp
-      end function dp
-    end interface
-    optional :: dp
+    class(nka), intent(inout) :: this
+    real(r8),   intent(inout) :: f(:)
 
     ! local variables.
     integer :: i, j, k, new, nvec
@@ -305,11 +273,7 @@ contains
 
       !! Next function difference w_1.
       this%w(:,this%first) = this%w(:,this%first) - f
-      if (present(dp)) then
-        s = sqrt(dp(this%w(:,this%first), this%w(:,this%first)))
-      else
-        s = sqrt(dot_product(this%w(:,this%first), this%w(:,this%first)))
-      end if
+      s = sqrt(this%dp(this%w(:,this%first), this%w(:,this%first)))
 
       !! If the function difference is 0, we can't update the subspace with
       !! this data; so we toss it out and continue.  In this case it is likely
@@ -330,11 +294,7 @@ contains
       !! Update H.
       k = this%next(this%first)
       do while (k /= 0)
-        if (present(dp)) then
-          this%h(this%first,k) = dp(this%w(:,this%first), this%w(:,k))
-        else
-          this%h(this%first,k) = dot_product(this%w(:,this%first), this%w(:,k))
-        end if
+        this%h(this%first,k) = this%dp(this%w(:,this%first), this%w(:,k))
         k = this%next(k)
       end do
 
@@ -397,6 +357,7 @@ contains
 
       ASSERT(this%first /= 0)
       this%subspace = .true.
+      this%pending  = .false.
 
     end if
 
@@ -416,11 +377,7 @@ contains
       !! Project f onto the span of the w vectors: forward substitution
       j = this%first
       do while (j /= 0)
-        if (present(dp)) then
-          cj = dp(f, this%w(:,j))
-        else
-          cj = dot_product(f, this%w(:,j))
-        endif
+        cj = this%dp(f, this%w(:,j))
         i = this%first
         do while (i /= j)
           cj = cj - this%h(j,i) * c(i)
@@ -472,7 +429,7 @@ contains
 
 
   subroutine nka_restart (this)
-    type(nka), intent(inout) :: this
+    class(nka), intent(inout) :: this
     integer :: k
     this%subspace = .false.
     this%pending  = .false.
@@ -489,7 +446,7 @@ contains
 
 
   subroutine nka_relax (this)
-    type(nka), intent(inout) :: this
+    class(nka), intent(inout) :: this
     integer :: new
     if (this%pending) then
       ASSERT(this%first /= 0)
@@ -511,7 +468,7 @@ contains
 
   logical function nka_defined (this)
 
-    type(nka), intent(in) :: this
+    class(nka), intent(in) :: this
 
     integer :: n
     logical, allocatable :: tag(:)

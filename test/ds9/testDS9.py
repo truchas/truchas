@@ -22,7 +22,7 @@ class DS9(TruchasTest.GoldenTestCase):
   def test_final_temp(self):
     '''DS9: verifying the final temperature field'''
     #FAILtol = 1.0e-10
-    tol = 5.0e-4
+    tol = 2.0e-3
     mesh=self.test_output.get_mesh()
     centroids=mesh.centroids()
     x=centroids[:,0]

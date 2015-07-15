@@ -3,7 +3,7 @@
 module mimetic_discretization
 
   use kinds, only: r8
-  use distributed_mesh
+  use dist_mesh_type
   use index_partitioning
   implicit none
   private
@@ -45,7 +45,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%nnode )
-    ASSERT( associated(mesh%enode) )
+    ASSERT( allocated(mesh%enode) )
     
     if (present(mask)) then
       do j = 1, mesh%nedge
@@ -74,7 +74,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%nedge )
-    ASSERT( associated(mesh%enode) )
+    ASSERT( allocated(mesh%enode) )
     
     if (present(mask)) then
     v = 0.0_r8
@@ -108,7 +108,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%nedge )
-    ASSERT( associated(mesh%fedge) )
+    ASSERT( allocated(mesh%fedge) )
     
     do j = 1, mesh%nface
       v(j) = u(mesh%fedge(1,j)) - u(mesh%fedge(2,j)) + u(mesh%fedge(3,j))
@@ -125,7 +125,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%nface )
-    ASSERT( associated(mesh%fedge) )
+    ASSERT( allocated(mesh%fedge) )
     
     v = 0.0_r8
     do j = 1, mesh%nface

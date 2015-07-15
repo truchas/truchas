@@ -3,14 +3,14 @@
 module HTSD_model_type
 
   use kinds
-  use distributed_mesh
+  use unstr_mesh_type
   use mfd_disc_type
   use data_layout_type
   use property_mesh_function
   use source_mesh_function
   use boundary_data
   use interface_data
-  use ER_driver
+  use rad_problem_type
   use index_partitioning
   use timing_tree
   implicit none
@@ -30,7 +30,7 @@ module HTSD_model_type
     type(if_data) :: ic_rad  ! internal gap radiation
     real(r8) :: sbconst, abszero ! Stefan-Boltzmann constant and absolute zero for radiation BC
     !! Enclosure radiation problems
-    type(ERD_problem), pointer :: vf_rad_prob(:) => null()
+    type(rad_problem), pointer :: vf_rad_prob(:) => null()
   end type HT_model
   
   type, public :: SD_model
@@ -48,7 +48,7 @@ module HTSD_model_type
     type(HT_model), pointer :: ht => null()
     type(SD_model), pointer :: sd(:) => null()
     type(mfd_disc),  pointer :: disc => null()
-    type(dist_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     logical, pointer :: void_cell(:) => null(), void_face(:) => null()
     real(r8) :: void_temp = 0.0_r8
     type(data_layout) :: layout
@@ -61,7 +61,6 @@ module HTSD_model_type
   public :: HTSD_model_delete
   public :: HTSD_model_size
   public :: HTSD_model_compute_f
-  public :: HTSD_model_compute_udot
   public :: HTSD_model_new_state_array
   
   public :: HTSD_model_get_cell_heat_view, HTSD_model_get_cell_heat_copy
@@ -154,12 +153,7 @@ contains
     call bd_data_destroy (this%bc_rad)
     call if_data_destroy (this%ic_htc)
     call if_data_destroy (this%ic_rad)
-    if (associated(this%vf_rad_prob)) then
-      do n = 1, size(this%vf_rad_prob)
-        call ERD_problem_destroy (this%vf_rad_prob(n))
-      end do
-      deallocate(this%vf_rad_prob)
-    end if
+    if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine HT_model_delete
   
   subroutine SD_model_delete (this)
@@ -278,7 +272,7 @@ contains
       !! Compute the generic heat equation residual.
       call pmf_eval (this%ht%conductivity, state, value)
       if (associated(this%void_cell)) where (this%void_cell) value = 0.0_r8
-      call mfd_disc_apply_diff (this%disc, value, Tcell, Tface, Fcell, Fface)
+      call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
       call smf_eval (this%ht%source, t, value)
       Fcell = Fcell + this%mesh%volume*(Hdot - value)
 
@@ -366,14 +360,14 @@ contains
           faces => this%ht%vf_rad_prob(n)%faces
           !! Radiative heat flux contribution to the heat conduction face residual.
           allocate(flux(size(faces)))
-          call ERD_compute_heat_flux (this%ht%vf_rad_prob(n), t, qrad, Tface(faces), flux)
+          call this%ht%vf_rad_prob(n)%heat_flux (t, qrad, Tface(faces), flux)
           do j = 1, size(faces)
             Fface(faces(j)) = Fface(faces(j)) + this%mesh%area(faces(j)) * flux(j)
           end do
           deallocate(flux)
           !! Residual of the algebraic radiosity system.
           call HTSD_model_get_radiosity_view (this, n, f, fptr)
-          call ERD_compute_residual (this%ht%vf_rad_prob(n), t, qrad, Tface(faces), fptr)
+          call this%ht%vf_rad_prob(n)%residual (t, qrad, Tface(faces), fptr)
           fptr = -fptr
         end do
       end if
@@ -413,7 +407,7 @@ contains
       !! Diffusion operator function value.
       call pmf_eval (this%sd(index)%diffusivity, state, D)
       if (associated(this%void_cell)) where (this%void_cell) D = 0.0_r8
-      call mfd_disc_apply_diff (this%disc, D, Ccell, Cface, Fcell, Fface)
+      call this%disc%apply_diff (D, Ccell, Cface, Fcell, Fface)
 
       !! Time derivative and source contribution.
       call HTSD_model_get_cell_conc_copy (this, index, udot, Cdot)
@@ -453,7 +447,7 @@ contains
         Tface(this%ht%bc_dir%faces) = this%ht%bc_dir%values(1,:)
         call pmf_eval (this%sd(index)%soret, state, value)
         value = D*value
-        call mfd_disc_apply_diff (this%disc, value, Tcell, Tface, Fcell, Fface)
+        call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
         call bd_data_eval (this%sd(index)%bc_dir, t)
         Fface(this%sd(index)%bc_dir%faces) = 0.0_r8
         !! Fcell and Fface should already be 0 at all void cells and faces as required.
@@ -467,221 +461,6 @@ contains
     end subroutine SD_model_compute_f
 
   end subroutine HTSD_model_compute_f
-
-!TODO!  This procedure needs to be reimplemented to exactly compute the
-!TODO!  the initial state and state time derivative instead of the simple
-!TODO!  approximation computed here.  Because the exact solution must
-!TODO!  involve a solver, this new procedure probably doesn't belong here,
-!TODO!  but should become a new class, like HT_precon, that builds on
-!TODO!  HT_model.
-
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! EVAL_UDOT
- !!
- !! Given the values of the cell unknowns, this routine computes values for
- !! the face unknowns and time derivatives for all the unknowns using the
- !! DAE system.  However, instead of solving the linear system for the face
- !! unknowns as we ought, we use simple averaging of adjacent cell unknowns
- !! to get a cheap and decent approximation for the face unknowns.  Likewise
- !! the time derivative of the face unknowns is approximated by a simple
- !! averaging of the computed time derivatives of the cell unknowns.  These
- !! values are intended only to initialize the DAE integrator, which uses
- !! them to extrapolate an initial guess for the first time step, and so the
- !! approximations made are not of great consequence.
- !!
-
-  subroutine HTSD_model_compute_udot (this, t, temp, conc, u, udot)
-
-    type(HTSD_model), intent(inout) :: this
-    real(r8), intent(in) :: t
-    real(r8), pointer :: temp(:), conc(:,:)
-    real(r8), intent(out), target :: u(:), udot(:)
-
-    integer :: n
-    integer, pointer :: faces(:)
-    real(r8), allocatable, target :: f(:)
-    real(r8), allocatable :: Tface(:), Ccell(:), Cface(:), Tdot(:), dHdT(:)
-    real(r8), pointer :: state(:,:), var(:), Hcell(:), Hdot(:), Cdot(:), Fcell(:)
-    
-    ASSERT(size(u) == layout_size(this%layout))
-    ASSERT(size(u) == size(udot))
-    
-    !! Set cell temperatures.
-    if (associated(this%ht)) then
-      ASSERT(associated(temp))
-      ASSERT(size(temp) == this%mesh%ncell_onP)
-      call HTSD_model_set_cell_temp (this, temp, u)
-      call HTSD_model_get_cell_temp_view (this, u, var)
-      if (associated(this%void_cell)) where (this%void_cell(:size(var))) var = this%void_temp
-    end if
-    
-    !! Set cell concentrations.
-    if (associated(this%sd)) then
-      ASSERT(associated(conc))
-      ASSERT(size(conc,dim=1) == this%mesh%ncell_onP)
-      ASSERT(size(conc,dim=2) == this%num_comp)
-      do n = 1, this%num_comp
-        call HTSD_model_set_cell_conc (this, n, conc(:,n), u)
-        call HTSD_model_get_cell_conc_view (this, n, u, var)
-        if (associated(this%void_cell)) where (this%void_cell(:size(var))) var = 0.0_r8
-      end do
-    end if
-
-    !! Here we ought to be solving for the algebraically-coupled face
-    !! temperatures and radiosities. Instead we cheat and just approximate
-    !! the face temperature by averaging the adjacent cell temperatures, and
-    !! compute the radiosities accordingly. The end result is face temperatures
-    !! and radiosities that do not give exact heat flux matching at the faces,
-    !! and ignores heat flux due to view factor radiation.
-
-    state => HTSD_model_new_state_array(this, u)
-    
-    if (associated(this%ht)) then
-      allocate(Tface(this%mesh%nface))
-      call eval_face_averages (state(:,0), Tface)
-      !! Overwrite face temperatures with Dirichlet boundary data.
-      call bd_data_eval (this%ht%bc_dir, t)
-      Tface(this%ht%bc_dir%faces) = this%ht%bc_dir%values(1,:)
-      !! Overwrite void face components with dummy value.
-      if (associated(this%void_face)) where (this%void_face) Tface = 0.0_r8
-      call HTSD_model_set_face_temp (this, Tface, u)
-
-      if (associated(this%ht%vf_rad_prob)) then
-        do n = 1, size(this%ht%vf_rad_prob)
-          call HTSD_model_get_radiosity_view (this, n, u, var)
-          faces => this%ht%vf_rad_prob(n)%faces
-          var = 0.0_r8
-          call ERD_solve_radiosity (this%ht%vf_rad_prob(n), t, Tface(faces), var)
-        end do
-      end if
-      deallocate(Tface)
-    end if
-    
-    !! Here we ought to be solving the algebraic constraints for the face
-    !! concentrations to complete the definition of U.  Instead we cheat and
-    !! just approximate them by averaging adjacent cell concentrations.  The
-    !! end result is a (somewhat) inconsistent U that does not give exact
-    !! concentration flux matching at the faces.
-
-    if (associated(this%sd)) then
-      allocate(Cface(this%mesh%nface))
-      do n = 1, this%num_comp
-        call eval_face_averages (state(:,n), Cface)
-        !! Overwrite face concentrations with Dirichlet boundary data.
-        call bd_data_eval (this%sd(n)%bc_dir, t)
-        Cface(this%sd(n)%bc_dir%faces) = this%sd(n)%bc_dir%values(1,:)
-        !! Overwrite void face components with dummy value.
-        if (associated(this%void_face)) where (this%void_face) Cface = 0.0_r8
-        call HTSD_model_set_face_conc (this, n, Cface, u)
-      end do
-      deallocate(Cface)
-    end if
-    
-    !! Compute the cell heat density, its time derivative, and the time derivative
-    !! of the cell concentrations.  We use the model's F function with appropriate
-    !! inputs to do this.  The calculated heat density is exact, but the time
-    !! derivatives are not because U is only approximately consistent (see above).
-    
-    if (associated(this%ht)) then
-      call HTSD_model_get_cell_heat_view (this, u, Hcell)
-      Hcell = 0.0_r8
-    end if
-    udot = 0.0_r8
-    allocate(f(size(u)))
-    call HTSD_model_compute_f (this, t, u, udot, f)
-    if (associated(this%ht)) then
-      !! Extract the heat densities from F.
-      call HTSD_model_get_cell_heat_view (this, u, Hcell)
-      call HTSD_model_get_cell_heat_view (this, f, Fcell)
-      Hcell = -Fcell
-      if (associated(this%void_cell)) where (this%void_cell(:size(Hcell))) Hcell = 0.0_r8
-      !! Extract the heat density derivatives from F.
-      call HTSD_model_get_cell_heat_view (this, udot, Hdot)
-      call HTSD_model_get_cell_temp_view (this, f, Fcell)
-      Hdot = -Fcell / this%mesh%volume(:size(Hdot))
-      if (associated(this%void_cell)) where (this%void_cell(:size(Hdot))) Hdot = 0.0_r8
-    end if
-    if (associated(this%sd)) then
-      !! Extract the cell concentration derivatives from F.
-      do n = 1, this%num_comp
-        call HTSD_model_get_cell_conc_view (this, n, udot, Cdot)
-        call HTSD_model_get_cell_conc_view (this, n, f, Fcell)
-        Cdot = -Fcell / this%mesh%volume(:size(Cdot))
-        if (associated(this%void_cell)) where (this%void_cell(:size(Cdot))) Cdot = 0.0_r8
-      end do
-    end if
-    deallocate(f)
-
-    if (associated(this%ht)) then
-      !! Time derivative of the cell temperatures.
-      allocate(Tdot(this%mesh%ncell), dHdT(this%mesh%ncell))
-      call pmf_eval_deriv (this%ht%H_of_T, state, 1, dHdT)
-      if (associated(this%void_cell)) where (this%void_cell) dHdT = 1.0_r8
-      Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
-      call gather_boundary (this%mesh%cell_ip, Tdot)
-      call HTSD_model_set_cell_temp (this, Tdot, udot)
-      deallocate(dHdT, state)
-
-      !! Approximate face temperature derivative by average of adjacent cell derivatives.
-      allocate(Tface(this%mesh%nface))
-      call eval_face_averages (Tdot, Tface)
-      call HTSD_model_set_face_temp (this, Tface, udot)
-      deallocate(Tdot, Tface)
-
-      !! Here we should compute/approximate the radiosity derivatives.
-      !! For now we just leave them 0 (set when udot was set to 0 above).
-    end if
-
-    if (associated(this%sd)) then
-      !! Approximate face concentration derivative by average of adjacent cell derivatives.
-      allocate(Ccell(this%mesh%ncell), Cface(this%mesh%nface))
-      do n = 1, this%num_comp
-        call HTSD_model_get_cell_conc_copy (this, n, udot, Ccell)
-        call gather_boundary (this%mesh%cell_ip, Ccell)
-        call eval_face_averages (Ccell, Cface)
-        call HTSD_model_set_face_conc (this, n, Cface, udot)
-      end do
-      deallocate(Ccell, Cface)
-    end if
-
-  contains
-
-    subroutine eval_face_averages (ucell, uface)
-    
-      use bitfield_type
-      use index_partitioning
-
-      real(r8), intent(in)  :: ucell(:)
-      real(r8), intent(out) :: uface(:)
-
-      integer :: j
-      integer :: scale(size(uface))
-
-      ASSERT(size(ucell) == this%mesh%ncell)
-      ASSERT(size(uface) == this%mesh%nface)
-
-      uface = 0.0_r8
-      scale = 0.0_r8
-      do j = 1, this%mesh%ncell
-        if (associated(this%void_cell)) then
-          if (this%void_cell(j)) cycle
-        end if
-        uface(this%mesh%cface(:,j)) = uface(this%mesh%cface(:,j)) + ucell(j)
-        scale(this%mesh%cface(:,j)) = scale(this%mesh%cface(:,j)) + 1
-      end do
-      call gather_boundary (this%mesh%face_ip, uface)
-      call gather_boundary (this%mesh%face_ip, scale)
-      
-      where (scale == 0)
-        uface = 0.0_r8
-      elsewhere
-        uface = uface / scale
-      end where
-
-    end subroutine eval_face_averages
-
-  end subroutine HTSD_model_compute_udot
 
   
   pure integer function HTSD_model_size (this)

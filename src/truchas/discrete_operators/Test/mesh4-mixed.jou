@@ -1,0 +1,38 @@
+## /opt/cubit/15.0-397645/bin/clarox
+## Cubit Version 15.0
+## Cubit Build 397645
+## Revised 2015-04-07 09:12:39 -0600 (Tue, 07 Apr 2015)
+## Running 06/28/2015 07:48:21 PM
+## Command Options:
+set developer commands on
+brick x 1 y 1 z 1
+webcut volume 1 with plane xplane offset 0 noimprint nomerge
+webcut volume 1 2 with plane yplane offset 0 noimprint nomerge
+webcut volume 1 2 3 4 with plane zplane offset 0 noimprint nomerge
+move volume all x 0.5 y 0.5 z 0.5 include_merged
+imprint volume all
+merge volume all
+volume all size 0.125
+volume 6 3 scheme map
+mesh volume 6 3
+surface 21 48 76 size 0.125
+mesh surface 21 48 76
+qtri surface 21 48 76
+volume 5 8 2 redistribute nodes off
+volume 5 8 2 scheme sweep
+mesh volume 5 8 2
+volume 7 1 4 scheme tetmesh
+set tetmesher interior points on
+set tetmesher optimize level 3 overconstrained off sliver off
+set tetmesher boundary recovery off
+volume 7 1 4 tetmesh growth_factor 1
+mesh volume 7 1 4
+block 1 volume all
+sideset 1 surface 69 51 53 76
+sideset 2 surface 39 61 63 45
+sideset 3 surface 48 38 46 56
+sideset 4 surface 58 68 75 66
+sideset 5 surface 21 23 35 29
+sideset 6 surface 19 25 33 31
+set large exodus file on
+export genesis "mesh4-mixed.gen" overwrite

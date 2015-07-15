@@ -65,6 +65,7 @@ module hypre_c_binding
   public :: HYPRE_BoomerAMGSetStrongThreshold
   public :: HYPRE_BoomerAMGSetMaxIter
   public :: HYPRE_BoomerAMGSetCoarsenType
+  public :: HYPRE_BoomerAMGSetInterpType
   public :: HYPRE_BoomerAMGSetTol
   public :: HYPRE_BoomerAMGSetNumSweeps
   public :: HYPRE_BoomerAMGSetRelaxType
@@ -288,6 +289,13 @@ module hypre_c_binding
       import c_ptr, c_int
       type(c_ptr), value :: solver
       integer(c_int), value :: coarsen_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_BoomerAMGSetInterpType (solver, interp_type) &
+        result(ierr) bind(c, name="HYPRE_BoomerAMGSetInterpType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: interp_type
       integer(c_int) :: ierr
     end function
     function HYPRE_BoomerAMGSetTol (solver, tol) &

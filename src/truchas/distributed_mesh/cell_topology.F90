@@ -53,36 +53,193 @@ module cell_topology
   implicit none
   private
 
-  public :: tet_face_nodes
-  public :: hex_face_nodes, hex_edge_nodes
+  public :: get_tet_face_nodes, tet_face_nodes
+  public :: get_hex_face_nodes, hex_face_nodes, hex_edge_nodes
   public :: parity
   public :: normalize_facet, reverse_facet
+  public :: link_face_nodes, get_link_face_nodes
+  public :: get_face_nodes, get_cell_face_sizes, cell_face_sizes
+  public :: cell_face_sig
+  public :: num_cell_faces
 
   integer, target, public :: TETRA4_XFACE(5), TETRA4_FACES(12), TETRA4_FSIZE(4), TETRA4_FACE_SIG(4)
   data TETRA4_XFACE/1,4,7,10,13/
-  data TETRA4_FACES/2,3,4, 1,4,3, 1,2,4, 1,3,2/
+  data TETRA4_FACES/1,2,4, 2,3,4, 1,4,3, 1,3,2/
   data TETRA4_FSIZE/3,3,3,3/
-  data TETRA4_FACE_SIG/b'1110', b'1101', b'1011', b'0111'/
+  data TETRA4_FACE_SIG/b'1011', b'1110', b'1101', b'0111'/
+
+  integer, target, public :: PYR5_XFACE(6), PYR5_FACES(16), PYR5_FSIZE(5), PYR5_FACE_SIG(5)
+  data PYR5_XFACE/1,4,7,10,13,17/
+  data PYR5_FACES/1,2,5,  2,3,5,  3,4,5,  1,5,4,  1,4,3,2/
+  data PYR5_FSIZE/3,3,3,3,4/
+  data PYR5_FACE_SIG/b'10011', b'10110', b'11100', b'11001', b'01111'/
+
+  integer, target, public :: WED6_XFACE(6), WED6_FACES(18), WED6_FSIZE(5), WED6_FACE_SIG(5)
+  data WED6_XFACE/1,5,9,13,16,19/
+  data WED6_FACES/1,2,5,4,  2,3,6,5,  1,4,6,3,  1,3,2,  4,5,6/
+  data WED6_FSIZE/4,4,4,3,3/
+  data WED6_FACE_SIG/b'011011', b'110110', b'101101', b'000111', b'111000'/
 
   integer, target, public :: HEX8_XFACE(7), HEX8_FACES(24), HEX8_FSIZE(6), HEX8_FACE_SIG(6)
   data HEX8_XFACE/1,5,9,13,17,21,25/
-  data HEX8_FACES/3,4,8,7, 1,2,6,5, 1,5,8,4, 2,3,7,6, 1,4,3,2, 5,6,7,8/
+  data HEX8_FACES/1,2,6,5, 2,3,7,6, 3,4,8,7, 1,5,8,4, 1,4,3,2, 5,6,7,8/
   data HEX8_FSIZE/4,4,4,4,4,4/
-  data HEX8_FACE_SIG/b'11001100', b'00110011', b'10011001', b'01100110', b'00001111', b'11110000'/
+  data HEX8_FACE_SIG/b'00110011', b'01100110', b'11001100', b'10011001', b'00001111', b'11110000'/
 
   integer, private :: HEX8_EDGES(2,12)
   data HEX8_EDGES/1,2, 1,4, 1,5, 2,3, 2,6, 3,4, 3,7, 4,8, 5,6, 5,8, 6,7, 7,8/
   
   integer, target, public :: HEX8_FACE_VERT(4,6)
-  data HEX8_FACE_VERT/3,4,8,7, 1,2,6,5, 1,5,8,4, 2,3,7,6, 1,4,3,2, 5,6,7,8/
+  data HEX8_FACE_VERT/1,2,6,5, 2,3,7,6, 3,4,8,7, 1,5,8,4, 1,4,3,2, 5,6,7,8/
   
   integer, target, public :: HEX8_VERT_FACE(3,8)
-  data HEX8_VERT_FACE/2,3,5, 2,4,5, 1,4,5, 1,3,5, 2,3,6, 2,4,6, 1,4,6, 1,3,6/
+  data HEX8_VERT_FACE/1,4,5, 1,2,5, 2,3,5, 3,4,5, 1,4,6, 1,2,6, 2,3,6, 3,4,6/
   
+  integer, target, public :: WED6_VERT_FACE(3,6)
+  data WED6_VERT_FACE/1,3,4, 1,2,4, 2,3,4, 1,3,5, 1,2,5, 2,3,5/
+
   integer, target, public :: TETRA4_FACE_VERT(3,4)
-  data TETRA4_FACE_VERT/2,3,4, 1,4,3, 1,2,4, 1,3,2/
+  data TETRA4_FACE_VERT/1,2,4, 2,3,4, 1,4,3, 1,3,2/
+  
+  integer, target, public :: TETRA4_VERT_FACE(3,4)
+  data TETRA4_VERT_FACE/2,3,4, 1,3,4, 1,2,4, 1,2,3/
+  
+  integer :: TRI_LINK_FACE_VERT(3,2)
+  data TRI_LINK_FACE_VERT/1,2,3, 4,6,5/
+  
+  integer :: QUAD_LINK_FACE_VERT(4,2)
+  data QUAD_LINK_FACE_VERT/1,2,3,4, 5,8,7,6/
 
 contains
+
+  integer function num_cell_faces (cnodes)
+    integer, intent(in) :: cnodes(:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      num_cell_faces = 4
+    case (5)  ! pyramid
+      num_cell_faces = 5
+    case (6)  ! wedge
+      num_cell_faces = 5
+    case (8)  ! hex
+      num_cell_faces = 6
+    case default
+      num_cell_faces = 0
+    end select
+  end function num_cell_faces
+
+  function cell_face_sig (cnodes) result (face_sig)
+    integer, intent(in) :: cnodes(:)
+    integer, pointer :: face_sig(:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      face_sig => TETRA4_FACE_SIG
+    case (5)  ! pyramid
+      face_sig => PYR5_FACE_SIG
+    case (6)  ! wedge
+      face_sig => WED6_FACE_SIG
+    case (8)  ! hex
+      face_sig => HEX8_FACE_SIG
+    case default
+      face_sig => null()
+    end select
+  end function cell_face_sig
+
+  function cell_face_sizes (cnodes) result (fsizes)
+    integer, intent(in) :: cnodes(:)
+    integer, pointer :: fsizes(:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      fsizes => TETRA4_FSIZE
+    case (5)  ! pyramid
+      fsizes => PYR5_FSIZE
+    case (6)  ! wedge
+      fsizes => WED6_FSIZE
+    case (8)  ! hex
+      fsizes => HEX8_FSIZE
+    case default
+      fsizes => null()
+    end select
+  end function cell_face_sizes
+
+  pure subroutine get_cell_face_sizes (cnodes, fsizes)
+    integer, intent(in) :: cnodes(:)
+    integer, allocatable, intent(inout) :: fsizes(:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      fsizes = TETRA4_FSIZE
+    case (5)  ! pyramid
+      fsizes = PYR5_FSIZE
+    case (6)  ! wedge
+      fsizes = WED6_FSIZE
+    case (8)  ! hex
+      fsizes = HEX8_FSIZE
+    case default
+      if (allocated(fsizes)) deallocate(fsizes)
+    end select
+  end subroutine
+
+  pure subroutine get_face_nodes (cnodes, index, fnodes, normalize, reverse)
+  
+    integer, intent(in) :: cnodes(:), index
+    integer, allocatable, intent(inout) :: fnodes(:)
+    logical, intent(in), optional :: normalize, reverse
+    
+    select case (size(cnodes))
+    case (4)  ! tet
+      fnodes = cnodes(TETRA4_FACES(TETRA4_XFACE(index):TETRA4_XFACE(index+1)-1))
+    case (5)  ! pyramid
+      fnodes = cnodes(PYR5_FACES(PYR5_XFACE(index):PYR5_XFACE(index+1)-1))
+    case (6)  ! wedge
+      fnodes = cnodes(WED6_FACES(WED6_XFACE(index):WED6_XFACE(index+1)-1))
+    case (8)  ! hex
+      fnodes = cnodes(HEX8_FACES(HEX8_XFACE(index):HEX8_XFACE(index+1)-1))
+    case default
+      if (allocated(fnodes)) deallocate(fnodes)
+      return
+    end select
+    
+    if (present(normalize)) then
+      if (normalize) fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
+    end if
+
+    if (present(reverse)) then  
+      if (reverse) call reverse_facet (fnodes)
+    end if   
+  
+  end subroutine get_face_nodes
+
+  subroutine get_tet_face_nodes (cnodes, k, fnodes, normalize, reverse)
+
+    integer, intent(in) :: cnodes(:)
+    integer, intent(in) :: k
+    integer, intent(out) :: fnodes(:)
+    logical, intent(in), optional :: normalize
+    logical, intent(in), optional :: reverse
+
+    integer :: n
+
+    ASSERT(size(fnodes) == 3)
+    ASSERT(size(cnodes) == 4)
+    ASSERT(k >= 1 .and. k <= 4)
+
+    fnodes = cnodes(TETRA4_FACES(TETRA4_XFACE(k):TETRA4_XFACE(k+1)-1))
+
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
+    end if
+
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) then
+        n = fnodes(2)
+        fnodes(2) = fnodes(3)
+        fnodes(3) = n
+      end if
+    end if
+
+  end subroutine get_tet_face_nodes
 
   function tet_face_nodes (cnodes, k, normalize, reverse) result (list)
 
@@ -116,6 +273,39 @@ contains
     end if
 
   end function tet_face_nodes
+
+
+  subroutine get_hex_face_nodes (cnodes, k, fnodes, normalize, reverse)
+
+    integer, intent(in) :: cnodes(:)
+    integer, intent(in) :: k
+    integer, intent(out) :: fnodes(:)
+    logical, intent(in), optional :: normalize
+    logical, intent(in), optional :: reverse
+
+    integer :: n
+
+    ASSERT(size(fnodes) == 4)
+    ASSERT(size(cnodes) == 8)
+    ASSERT(k >= 1 .and. k <= 6)
+
+    fnodes = cnodes(HEX8_FACES(HEX8_XFACE(k):HEX8_XFACE(k+1)-1))
+
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) fnodes = cshift(fnodes, shift=minloc(fnodes,dim=1)-1)
+    end if
+
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) then
+        n = fnodes(2)
+        fnodes(2) = fnodes(4)
+        fnodes(4) = n
+      end if
+    end if
+
+  end subroutine get_hex_face_nodes
 
 
   function hex_face_nodes (cnodes, k, normalize, reverse) result (list)
@@ -176,6 +366,72 @@ contains
     end if
 
   end function hex_edge_nodes
+
+  !! This function return a pointer to the list of nodes defining the specified
+  !! oriented link face K in {1,2}. The faces are oriented outward with respect
+  !! to the cells they belongs to; if we regard the link nodes as defining a
+  !! wedge or hex element, the faces are inward oriented with respect to it.
+  !! The pointer target is allocated by the function and the caller is
+  !! responsible for deallocating it when it is no longer needed.
+
+  pure function link_face_nodes (lnodes, k, normalize, reverse) result (fnodes)
+
+    integer, intent(in) :: lnodes(:), k
+    logical, intent(in), optional :: normalize, reverse
+    integer, pointer :: fnodes(:)
+
+    fnodes => null()
+    if (k < 1 .or. k > 2) return
+    select case (size(lnodes))
+    case (6) ! triangular link faces
+      allocate(fnodes(3))
+      fnodes = lnodes(TRI_LINK_FACE_VERT(:,k))
+    case (8) ! quadrilateral link faces
+      allocate(fnodes(4))
+      fnodes = lnodes(QUAD_LINK_FACE_VERT(:,k))
+    end select
+    if (.not.associated(fnodes)) return
+    
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) call normalize_facet (fnodes)
+    end if
+    
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) call reverse_facet (fnodes)
+    end if
+
+  end function link_face_nodes
+
+  pure subroutine get_link_face_nodes (lnodes, k, fnodes, normalize, reverse)
+
+    integer, intent(in) :: lnodes(:), k
+    integer, allocatable, intent(inout) :: fnodes(:)
+    logical, intent(in), optional :: normalize, reverse
+
+    select case (size(lnodes))
+    case (6) ! triangular link faces
+      fnodes = lnodes(TRI_LINK_FACE_VERT(:,k))
+    case (8) ! quadrilateral link faces
+      fnodes = lnodes(QUAD_LINK_FACE_VERT(:,k))
+    case default
+      if (allocated(fnodes)) deallocate(fnodes)
+      return
+    end select
+    
+    !! If specified, rotate the smallest value to the initial position.
+    if (present(normalize)) then
+      if (normalize) call normalize_facet (fnodes)
+    end if
+    
+    !! If specified, reverse the orientation of the face.
+    if (present(reverse)) then
+      if (reverse) call reverse_facet (fnodes)
+    end if
+
+  end subroutine get_link_face_nodes
+
 
   pure integer function parity (f, g)
   

@@ -98,7 +98,7 @@ module source_mesh_function
 
   use kinds
   use scalar_func_containers
-  use distributed_mesh, only: dist_mesh
+  use unstr_mesh_type
   implicit none
   private
 
@@ -108,7 +108,7 @@ module source_mesh_function
 
   type :: source_mf
     private
-    type(dist_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     real(r8) :: tlast = -huge(1.0_r8)
     real(r8) :: default = 0.0_r8
     real(r8), pointer :: fvalue(:) => null()
@@ -139,7 +139,7 @@ contains
   subroutine smf_prep (this, mesh)
 
     type(source_mf), intent(out) :: this
-    type(dist_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
 
     this%mesh => mesh
     this%ngroup = 0
@@ -337,7 +337,7 @@ contains
  !!
 
   subroutine smf_eval (this, t, q)
-
+  
     type(source_mf), intent(inout) :: this
     real(r8), intent(in)  :: t
     real(r8), intent(out) :: q(:)
@@ -370,16 +370,18 @@ contains
         case (SMF_HINT_T_INDEP)
           if (unevaluated) then
             do j = 1, size(cells)
-              args(1:) = sum(this%mesh%x(:,this%mesh%cnode(:,cells(j))),dim=2) &
-                       / size(this%mesh%cnode,dim=1)
-              this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+              associate (cnode => this%mesh%cnode(this%mesh%xcnode(cells(j)):this%mesh%xcnode(cells(j)+1)-1))
+                args(1:) = sum(this%mesh%x(:,cnode),dim=2) / size(cnode)
+                this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+              end associate
             end do
           end if
         case default
           do j = 1, size(cells)
-            args(1:) = sum(this%mesh%x(:,this%mesh%cnode(:,cells(j))),dim=2) &
-                     / size(this%mesh%cnode,dim=1)
-            this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+            associate (cnode => this%mesh%cnode(this%mesh%xcnode(cells(j)):this%mesh%xcnode(cells(j)+1)-1))
+              args(1:) = sum(this%mesh%x(:,cnode),dim=2) / size(cnode)
+              this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
+            end associate
           end do
         end select
       end do

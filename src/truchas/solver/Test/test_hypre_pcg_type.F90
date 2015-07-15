@@ -10,6 +10,7 @@ program test_hypre_pcg_type
   use index_partitioning
   use pcsr_matrix_type
   use hypre_pcg_type
+  use parameter_list_type
   implicit none
   
   !integer, parameter :: NX = 128, NY = 128, NZ = 128
@@ -19,10 +20,10 @@ program test_hypre_pcg_type
   character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(pcsr_matrix), target :: matrix
   type(hypre_pcg) :: solver
-  type(hypre_pcg_params) :: params
+  type(parameter_list), pointer :: params
   real(r8), allocatable :: x(:), b(:), u(:)
-  integer :: nrow, kx, ky, kz, num_itr
-  real(r8) :: a, maxerr, l2err
+  integer :: nrow, kx, ky, kz, num_itr, stat
+  real(r8) :: a, maxerr, l2err, rtol
   real(r8), parameter :: PI = 3.1415926535897931_r8
   
   call parallel_init (argv)
@@ -30,29 +31,36 @@ program test_hypre_pcg_type
   
   a = 1.0e-6_r8
   call create_matrix (a, matrix)
-  params%err_tol = 1.0e-12_r8
-  params%num_cycles = 1
-  params%print_level = 0 !1
-  call hypre_pcg_init (solver, matrix, params)
-  call hypre_pcg_compute (solver)
+  allocate(params)
+  rtol = 1.0e-12_r8
+  call params%set ('rel-tol', rtol)
+  call params%set ('max-iter', 100)
+  call params%set ('print-level', 2)
+  call params%set ('amg-num-cycles', 1)
+  call solver%init (matrix, params)
+  call solver%setup ()
   
-  nrow = onP_size(matrix%graph%row_ip)
+  nrow = matrix%graph%row_ip%onP_size()
   allocate(x(nrow), b(nrow), u(nrow))
   
   kx = 1; ky = 1; kz = 1
   call solution (kx, ky, kz, u)
   b = (a + 4*(sin(PI*kx/NX)**2 + sin(PI*ky/NY)**2 + sin(PI*kz/NZ)**2)) * u
   x = 0.0_r8
-  call hypre_pcg_solve (solver, b, x)
-  call hypre_pcg_get_metrics (solver, num_itr)
+  call solver%solve (b, x, stat)
+  if (stat /= 0) then
+    if (is_IOP) print *, 'PCG failed to converge'
+    call exit (1)
+  end if
+  call solver%get_metrics (num_itr)
 
   maxerr = global_maxval(abs(u-x))
-  l2err = sqrt(global_sum((u-x)**2) / global_size(matrix%graph%row_ip))
+  l2err = sqrt(global_sum((u-x)**2) / matrix%graph%row_ip%global_size())
   if (is_IOP) print '(a,i2,2(a,es9.2))', 'itr=', num_itr, ', maxerr=', maxerr, ', l2err=', l2err
 
   call pgslib_finalize
 
-  if (num_itr <= 9 .and. l2err <= 10*params%err_tol) then
+  if (num_itr <= 9 .and. l2err <= 10*rtol) then
     call exit (0)
   else
     call exit (1)

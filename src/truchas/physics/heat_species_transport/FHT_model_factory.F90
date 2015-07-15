@@ -22,10 +22,10 @@ module FHT_model_factory
 
   use kinds, only: r8
   use FHT_model_type
-  use distributed_mesh
+  use unstr_mesh_type
   use mfd_disc_type
   use material_mesh_function
-  use ER_driver
+  use rad_problem_type
   implicit none
   private
   
@@ -41,8 +41,8 @@ contains
     character(*), intent(out) :: errmsg
     type(FHT_model), pointer :: model
     
-    type(dist_mesh), pointer :: mesh
-    
+    type(unstr_mesh), pointer :: mesh
+
     mesh => disc%mesh
     
     allocate(model)
@@ -71,7 +71,7 @@ contains
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
   
-    type(dist_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -89,7 +89,7 @@ contains
       allocate(model%vf_rad_prob(n), encl_name(n))
       call ERI_get_names (encl_name)
       do j = 1, n
-        call ERD_problem_init (model%vf_rad_prob(j), mesh, encl_name(j))
+        call model%vf_rad_prob(j)%init (mesh, encl_name(j))
         !! Verify that these enclosure faces are boundary faces.
         if (.not.global_all(btest(mesh%face_set_mask(model%vf_rad_prob(j)%faces),0))) then
           stat = -1
@@ -126,7 +126,7 @@ contains
     use ds_source_input, only: define_external_source
     use parallel_communication, only: global_any
 
-    type(dist_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(mat_mf), intent(in), target :: mmf
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
@@ -180,14 +180,14 @@ contains
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use parallel_communication, only: global_any
 
-    type(dist_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 
     integer :: j
-    logical,  allocatable :: mask(:), rmask(:)
-    integer, pointer :: setids(:)
+    logical, allocatable :: mask(:), rmask(:)
+    integer, allocatable :: setids(:)
 
     allocate(mask(mesh%nface))
 
@@ -269,7 +269,7 @@ contains
     !! TODO: THIS DOESN'T WORK PROPERLY IN PARALLEL
     if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then
       mask = mask .neqv. btest(mesh%face_set_mask,0)
-      call get_face_set_IDs (mesh, pack((/(j,j=1,mesh%nface)/), mask), setids)
+      call mesh%get_face_set_IDs (pack((/(j,j=1,mesh%nface)/), mask), setids)
       stat = -1
       write(errmsg,'(a,99(:,1x,i0))') &
         'incomplete temperature boundary/interface condition specification; ' // &

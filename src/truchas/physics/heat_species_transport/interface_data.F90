@@ -74,7 +74,7 @@ module interface_data
 
   use kinds
   use scalar_func_containers
-  use distributed_mesh, only: dist_mesh
+  use unstr_mesh_type
   use string_utilities, only: i_to_c
   implicit none
   private
@@ -86,7 +86,7 @@ module interface_data
     real(r8), pointer :: values(:,:) => null()
     !! rest are private
     integer :: npar
-    type(dist_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     logical :: evaluated = .false.
     real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup = -1
@@ -113,7 +113,7 @@ contains
   subroutine if_data_prep (this, mesh, npar)
 
     type(if_data), intent(out) :: this
-    type(dist_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: npar
 
     INSIST(npar >= 0)
@@ -272,7 +272,7 @@ contains
  !!
 
   subroutine if_data_eval (this, t)
-
+  
     type(if_data), intent(inout) :: this
     real(r8), intent(in) :: t
 
@@ -299,18 +299,22 @@ contains
         case (IF_DATA_HINT_T_INDEP)
           if (.not.this%evaluated) then
             do j = 1, size(faces,dim=2)
-              args(1:) = (sum(this%mesh%x(:,this%mesh%fnode(:,faces(1,j))),dim=2) +  &
-                          sum(this%mesh%x(:,this%mesh%fnode(:,faces(2,j))),dim=2)) / &
-                          (2*size(this%mesh%fnode,dim=1))
-              values(i,j) = this%farray(i,n)%f%eval(args)
+              associate (fnode1 => this%mesh%fnode(this%mesh%xfnode(faces(1,j)):this%mesh%xfnode(faces(1,j)+1)-1), &
+                         fnode2 => this%mesh%fnode(this%mesh%xfnode(faces(2,j)):this%mesh%xfnode(faces(2,j)+1)-1))
+                args(1:) = (sum(this%mesh%x(:,fnode1),dim=2) + sum(this%mesh%x(:,fnode2),dim=2)) / &
+                            (2*size(fnode1))
+                values(i,j) = this%farray(i,n)%f%eval(args)
+              end associate
             end do
           end if
         case default
           do j = 1, size(faces,dim=2)
-            args(1:) = (sum(this%mesh%x(:,this%mesh%fnode(:,faces(1,j))),dim=2) +  &
-                        sum(this%mesh%x(:,this%mesh%fnode(:,faces(2,j))),dim=2)) / &
-                        (2*size(this%mesh%fnode,dim=1))
-            values(i,j) = this%farray(i,n)%f%eval(args)
+            associate (fnode1 => this%mesh%fnode(this%mesh%xfnode(faces(1,j)):this%mesh%xfnode(faces(1,j)+1)-1), &
+                       fnode2 => this%mesh%fnode(this%mesh%xfnode(faces(2,j)):this%mesh%xfnode(faces(2,j)+1)-1))
+              args(1:) = (sum(this%mesh%x(:,fnode1),dim=2) + sum(this%mesh%x(:,fnode2),dim=2)) / &
+                          (2*size(fnode1))
+              values(i,j) = this%farray(i,n)%f%eval(args)
+            end associate
           end do
         end select
       end do

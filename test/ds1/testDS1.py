@@ -25,6 +25,7 @@ class DS1(TruchasTest.GoldenTestCase):
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
+    print 'final conc max rel error=', error, ' (tol=', tol, ')'
     self.assertTrue(error <= tol)
 
 if __name__ == '__main__':

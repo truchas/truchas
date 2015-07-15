@@ -596,11 +596,18 @@ class TruchasMesh(object):
     center=numpy.empty((self.ncells,self.dim))
     nc=0
     while nc < self.ncells:
-      idx=0
-      for i in connect[nc,:]:
-	buff[idx,:]=coordinates[i-1,:]
-	idx=idx+1
-      center[nc,:]=numpy.average(buff,axis=0) # Average by column axis=0	
+      if connect[nc,0] == connect[nc,1]:   # TET
+        list = connect[nc,1:5]
+      elif connect[nc,4] == connect[nc,5]: # PYRAMID
+        list = connect[nc,:5]
+      elif connect[nc,4] == connect[nc,7]: # WEDGE
+        list = connect[nc,:6]
+      else: # HEX
+        list = connect[nc,:]
+      xc = numpy.zeros(self.dim)
+      for i in list:
+        xc = xc + coordinates[i-1,:]
+      center[nc,:] = xc / list.size
       nc=nc+1	
     return center
 

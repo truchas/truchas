@@ -213,7 +213,7 @@ contains
   
   subroutine compute_joule_heat ()
 
-    use distributed_mesh
+    use dist_mesh_type
     use mimetic_discretization
     use MaxwellEddy
     use EM_boundary_data

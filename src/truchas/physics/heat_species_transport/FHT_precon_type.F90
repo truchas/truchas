@@ -4,12 +4,12 @@ module FHT_precon_type
 
   use kinds
   use FHT_model_type
-  use distributed_mesh
+  use unstr_mesh_type
   use index_partitioning
   use diffusion_matrix
   use diff_precon_type
   use data_layout_type
-  use ER_driver
+  use rad_problem_type
   use boundary_data
   use interface_data
   use property_mesh_function
@@ -19,7 +19,7 @@ module FHT_precon_type
   
   type, public :: FHT_precon
     type(FHT_model), pointer :: model => null()
-    type(dist_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     integer, pointer :: vfr_precon_coupling(:) => null()
     type(dist_diff_matrix), pointer :: matrix => null()
     type(diff_precon) :: precon
@@ -128,10 +128,10 @@ contains
           call FHT_model_get_radiosity_view (this%model, index, f, fq)
           allocate(z(size(fq)))
           z = fq
-          call ERD_precon (this%model%vf_rad_prob(index), t, z)
+          call this%model%vf_rad_prob(index)%precon (t, z)
           if (this%vfr_precon_coupling(index) == VFR_FGS) fq = z
           !! Update the heat equation face residual.
-          call ERD_precon_matvec1 (this%model%vf_rad_prob(index), t, z)
+          call this%model%vf_rad_prob(index)%precon_matvec1 (t, z)
           do j = 1, size(z)
             n = this%model%vf_rad_prob(index)%faces(j)
             f2(n) = f2(n) + this%mesh%area(n) * z(j)
@@ -169,11 +169,11 @@ contains
           call FHT_model_get_radiosity_view (this%model, index, f, fq)
           if (this%vfr_precon_coupling(index) /= VFR_JAC) then
             allocate(z(size(fq)))
-            call ERD_rhs_deriv (this%model%vf_rad_prob(index), t, Tface(this%model%vf_rad_prob(index)%faces), z)
+            call this%model%vf_rad_prob(index)%rhs_deriv (t, Tface(this%model%vf_rad_prob(index)%faces), z)
             fq = fq + z * f2(this%model%vf_rad_prob(index)%faces)
             deallocate(z)
           end if
-          call ERD_precon (this%model%vf_rad_prob(index), t, fq)
+          call this%model%vf_rad_prob(index)%precon (t, fq)
         end if
       end do
       call stop_timer ('VF rad precon')
@@ -303,7 +303,7 @@ contains
       do index = 1, size(this%model%vf_rad_prob)
         faces => this%model%vf_rad_prob(index)%faces
         allocate(values(size(faces)))
-        call ERD_rhs_deriv (this%model%vf_rad_prob(index), t, Tface(faces), values)
+        call this%model%vf_rad_prob(index)%rhs_deriv (t, Tface(faces), values)
         call dm%incr_face_diag (faces, this%mesh%area(faces) * values)
         deallocate(values)
       end do

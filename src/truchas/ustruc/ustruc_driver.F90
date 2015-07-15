@@ -51,7 +51,7 @@
 module ustruc_driver
 
   use kinds, only: r8
-  use distributed_mesh, only: dist_mesh
+  use unstr_mesh_type
   use ustruc_model_type
   use parameter_list_type
   use truchas_logging_services
@@ -65,7 +65,7 @@ module ustruc_driver
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
   type :: ustruc_driver_data
-    type(dist_mesh), pointer :: mesh => null()  ! reference only -- do not own
+    type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     integer, allocatable :: sol_matid(:), liq_matid(:)
     type(ustruc_model) :: model
   end type ustruc_driver_data
@@ -244,7 +244,7 @@ contains
 
   subroutine ustruc_driver_init (t)
 
-    use mesh_broker, only: named_mesh_ptr
+    use mesh_manager, only: unstr_mesh_ptr
     use diffusion_solver_data, only: mesh_name
     use material_table, only: mt_material_id, mt_get_material
     use material_system, only: mat_system, ms_get_phase_id
@@ -267,7 +267,7 @@ contains
 
     !! We should be using the same mesh as the heat transfer physics;
     !! it should eventually be provided by the MPC.
-    this%mesh => named_mesh_ptr(mesh_name)
+    this%mesh => unstr_mesh_ptr(mesh_name)
     INSIST(associated(this%mesh))
 
     !! Form the list of old material ids that are the phases of this material;

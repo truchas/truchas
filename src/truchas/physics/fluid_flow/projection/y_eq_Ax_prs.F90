@@ -74,6 +74,8 @@ CONTAINS
     real(r8), dimension(ndim,nfc,ncells) :: fgradX
     real(r8), dimension(:), pointer :: X
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    
+    call start_timer ('ppe-matvec')
 
     X => Ubik_values_ptr(X_vec)
     
@@ -83,16 +85,19 @@ CONTAINS
     endif
 
     ! Start the timer.
-    call start_timer ("Timer_Solver_TMP2")
+    !call start_timer ("Timer_Solver_TMP2")
 
     Y = 0
     
+    call start_timer ('ppe-matvec-face-grad')
     fgradx = 0
 
     call DO_GRADIENT_FACE(PHI=X, SOLVESPEC=YPressure_SS, GRAD=fgradx)
+    call stop_timer ('ppe-matvec-face-grad')
 
     ! Now put in the Exterior BCs.  At the moment, Exterior Faces get zero gradient.
 
+    call start_timer ('ppe-matvec-bc')
     EXTERIOR_Operator => BC_Spec_Get_Operator(Pressure_BC, BC_EXTERIOR_Op)
     EXTERIOR_Atlas    => BC_OP_Get_Atlas(EXTERIOR_Operator)
 
@@ -104,8 +109,10 @@ CONTAINS
        BdyFace = BdyFaceList(BdyPt)
        FGradX(:,BdyFace,BdyCell) = 0.0
     end do EXT_BDY_LOOP
+    call stop_timer ('ppe-matvec-bc')
 
     ! For all cells, dot the solution gradient with the face unit normal.
+    call start_timer ('ppe-matvec-flux')
     do c = 1, ncells
        do f = 1, nfc
           N_Dot_Grad_X(f,c) = 0
@@ -114,9 +121,11 @@ CONTAINS
           end do
        end do
     end do
+    call stop_timer ('ppe-matvec-flux')
 
     ! If Dirichlet BCs are on this face, then 
     ! use the input solution value rather than the gradient.
+    call start_timer ('ppe-matvec-bc')
     DIRICHLET_Operator => BC_Spec_Get_Operator(Pressure_BC, BC_DIRICHLET_Op)
     DIRICHLET_Atlas    => BC_OP_Get_Atlas(DIRICHLET_Operator)
 
@@ -128,8 +137,10 @@ CONTAINS
        BdyFace = BdyFaceList(BdyPt)
        N_Dot_Grad_X(BdyFace, BdyCell) = X(BdyCell)
     end do DIR_BDY_LOOP
+    call stop_timer ('ppe-matvec-bc')
 
    ! Accumulate the contribution for the faces.
+   call start_timer ('ppe-matvec-div')
    do c = 1, ncells
       ! Void and Solid cells return X
       if (fluidRho(c) == 0 .or. isPureImmobile(c)) then
@@ -148,8 +159,10 @@ CONTAINS
       Y(c) = (Y(c) - Vol_over_RhoCsqDt(c)*X(c)/dt) / Cell(c)%Volume
 
    end do
+   call stop_timer ('ppe-matvec-div')
 
-   call stop_timer ("Timer_Solver_TMP2")
+   !call stop_timer ("Timer_Solver_TMP2")
+   call stop_timer ('ppe-matvec')
    
    status = 0
 

@@ -53,7 +53,7 @@ CONTAINS
                                       dt, t, t1, t2
     use timing_tree
     use tensor_module,          only: TENSOR_MATRIX
-    use mesh_broker,            only: init_mesh_broker
+    use mesh_manager,           only: init_mesh_manager
     use EM,                     only: initialize_EM
     use truchas_danu_output,    only: TDO_write_default_mesh
 
@@ -99,7 +99,7 @@ CONTAINS
     call Flag_Face_Neighbors ()
 
     ! Setup the distributed tet mesh used by the EM solver.
-    call init_mesh_broker ()
+    call init_mesh_manager ()
 
     ! Write the primary truchas mesh.
     call TDO_write_default_mesh
@@ -110,16 +110,16 @@ CONTAINS
     ! consequences of moving it here, especially CYCLE_NUMBER  as there are
     ! some "if cycle_number == 0" hacks in the flow code.
     if (restart) then
-      if (.not.ignore_t) t = restart_t
+      if (.not.ignore_t)  t  = restart_t
+      if (.not.ignore_dt) dt = restart_dt
     end if
 
     ! Initialize cell-centered fluid variables and thermodynamic quantities.
-    call INITIAL (t)
+    call INITIAL (t, dt)
 
     ! Set the initial timestep value. If this is a restart, take what is in
     ! restart file; if not, then it was already set by the input file.
     if (restart) then
-      if (.not.ignore_dt) dt = restart_dt
       if (.not.ignore_t) cycle_number = restart_cycle_number
     end if
 

@@ -63,7 +63,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = onP_size(matrix%graph%row_ip)
+    nrow = matrix%graph%row_ip%onP_size()
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -130,7 +130,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = onP_size(matrix%graph%row_ip)
+    nrow = matrix%graph%row_ip%onP_size()
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -198,7 +198,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = onP_size(matrix%graph%row_ip)
+    nrow = matrix%graph%row_ip%onP_size()
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -266,7 +266,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = onP_size(matrix%graph%row_ip)
+    nrow = matrix%graph%row_ip%onP_size()
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)

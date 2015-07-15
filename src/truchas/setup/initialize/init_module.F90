@@ -44,7 +44,7 @@ CONTAINS
 
   ! <><><><><><><><><><><><> PUBLIC ROUTINES <><><><><><><><><><><><><><><>
 
-  SUBROUTINE INITIAL (t)
+  SUBROUTINE INITIAL (t, dt)
     !=======================================================================
     ! Purpose(s):
     !
@@ -78,7 +78,7 @@ CONTAINS
     use ustruc_driver,          only: ustruc_driver_init
     use physics_module,         only: heat_transport, heat_species_transport
 
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, dt
 
     ! Local Variables
     integer :: m, stat
@@ -191,12 +191,12 @@ CONTAINS
       call ds_init
       select case (ds_sys_type)
       case (DS_SPEC_SYS)
-        call ds_set_initial_state (t, conc=phi)
+        call ds_set_initial_state (t, dt, conc=phi)
         deallocate(phi)
       case (DS_TEMP_SYS)
-        call ds_set_initial_state (t, temp=zone%temp)
+        call ds_set_initial_state (t, dt, temp=zone%temp)
       case (DS_TEMP_SPEC_SYS)
-        call ds_set_initial_state (t, temp=zone%temp, conc=phi)
+        call ds_set_initial_state (t, dt, temp=zone%temp, conc=phi)
         deallocate(phi)
       end select
     end if

@@ -107,6 +107,8 @@
 !! permutation.
 !!
 
+#include "f90_assert.fpp"
+
 module permutations
 
   implicit none
@@ -123,6 +125,7 @@ module permutations
     module procedure reorder_i0, reorder_i1
     module procedure reorder_r0, reorder_r1
     module procedure reorder_d0, reorder_d1
+    module procedure reorder_ragged_int
   end interface
 
 contains
@@ -236,6 +239,40 @@ contains
  !!
  !! REORDER -- specific procedures
  !!
+
+  subroutine reorder_ragged_int (xarray, array, perm, forward)
+    integer, intent(inout) :: xarray(:), array(:)
+    integer, intent(in) :: perm(:)
+    logical, intent(in), optional :: forward
+    logical :: pullback
+    integer, allocatable :: invp(:)
+    ASSERT(size(xarray) == size(perm)+1)
+    ASSERT(size(array) == xarray(size(xarray))-1)
+    pullback = .true.
+    if (present(forward)) pullback = .not.forward
+    if (pullback) then
+      call pullback_ragged_int (xarray, array, perm)
+    else
+      allocate(invp(size(perm)))
+      call invert_perm (perm, invp)
+      call pullback_ragged_int (xarray, array, invp)
+    end if
+  end subroutine reorder_ragged_int
+
+  pure subroutine pullback_ragged_int (xarray, array, perm)
+    integer, intent(inout) :: xarray(:), array(:)
+    integer, intent(in) :: perm(:)
+    integer :: j, xtmp(size(xarray)), tmp(size(array))
+    xtmp(1) = 1
+    do j = 1, size(perm)
+      associate(col => array(xarray(perm(j)):xarray(perm(j)+1)-1))
+        xtmp(j+1) = xtmp(j) + size(col)
+        tmp(xtmp(j):xtmp(j+1)-1) = col
+      end associate
+    end do
+    xarray = xtmp
+    array = tmp
+  end subroutine pullback_ragged_int
 
   !!
   !! Rank-1 logical array
@@ -654,92 +691,6 @@ contains
 
   end subroutine reorder_d1
 end module permutations
-
-#ifdef UNIT_TEST
-
-program test_permutations
-  use permutations
-
-  integer, allocatable :: p(:)
-  integer :: p1(7) = (/ 2, 5, 7, 1, 3, 4, 6 /) ! 1 cycle
-  integer :: p2(7) = (/ 3, 6, 5, 2, 7, 4, 1 /) ! 2 cycle
-  integer :: p3(7) = (/ 3, 2, 6, 5, 4, 1, 7 /) ! 2 cycle w/ fixed pt and swap
-
-  real, allocatable :: array_in(:,:), array_out(:,:), array_tmp(:,:)
-
-  !! Test IS_PERM
-  call pass_fail (1, is_perm((/4,3,2,1/)) .eqv. .true.)
-  call pass_fail (2, is_perm((/4,3,3,1/)) .eqv. .false.)
-  call pass_fail (3, is_perm((/4,0,2,1/)) .eqv. .false.)
-  call pass_fail (4, is_perm((/4,3,2,5/)) .eqv. .false.)
-
-  !! Test INVERSE_PERM, IDENTITY_PERM
-  call pass_fail (6, all(identity_perm(7) == p1(inverse_perm(p1))))
-  call pass_fail (7, all(p1 == inverse_perm(inverse_perm(p1))))
-  call pass_fail (8, all(identity_perm(7) == p2(inverse_perm(p2))))
-  call pass_fail (9, all(p2 == inverse_perm(inverse_perm(p2))))
-  call pass_fail (10, all(identity_perm(7) == p3(inverse_perm(p3))))
-  call pass_fail (11, all(p3 == inverse_perm(inverse_perm(p3))))
-  call pass_fail (12, all(identity_perm(7) == inverse_perm(identity_perm(7))))
-
-  !! Test INVERT_PERM
-  allocate(p(7))
-  call invert_perm (p1, p)
-  call pass_fail (13, all(p == inverse_perm(p1)))
-  call pass_fail (14, all(identity_perm(7) == p(p1)))
-  call invert_perm (p2, p)
-  call pass_fail (15, all(p == inverse_perm(p2)))
-  call pass_fail (16, all(identity_perm(7) == p(p2)))
-  call invert_perm (p3, p)
-  call pass_fail (17, all(p == inverse_perm(p3)))
-  call pass_fail (18, all(identity_perm(7) == p(p3)))
-
-  p = p1
-  call invert_perm (p)
-  call pass_fail (19, all(p == inverse_perm(p1)))
-  p = p2
-  call invert_perm (p)
-  call pass_fail (20, all(p == inverse_perm(p2)))
-  p = p3
-  call invert_perm (p)
-  call pass_fail (21, all(p == inverse_perm(p3)))
-
-  !! Test REORDER
-  allocate(array_in(2,7), array_out(2,7), array_tmp(2,7))
-  array_in(1,:) = (/ 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7 /)
-  array_in(2,:) = array_in(1,:) + 1
-  array_out = array_in
-
-  call reorder (array_out, p1) ! everything is moved
-  call pass_fail (22, all(array_out /= array_in))
-  call pass_fail (23, maxval(array_out(2,:) - 1 - array_out(1,:)) < 2*epsilon(1.0))
-
-  call reorder (array_out, p3)
-  call reorder (array_out, inverse_perm(p3))
-  call reorder (array_out, inverse_perm(p1))
-  call pass_fail (24, all(array_out == array_in))
-
-  array_out = array_in
-  array_tmp = array_in
-  call reorder (array_out, p3, forward=.true.)
-  call reorder (array_tmp, inverse_perm(p3), forward=.false.)
-  call pass_fail (25, all(array_out == array_tmp))
-
-contains
-
-  subroutine pass_fail (n, pass)
-    integer, intent(in) :: n
-    logical, intent(in) :: pass
-    if (pass) then
-      print *, ' Test', n, ': PASS'
-    else
-      print *, ' Test', n, ': FAIL'
-    end if
-  end subroutine pass_fail
-
-end program test_permutations
-
-#endif
 
 ! Here is code before preprocessing:
 !

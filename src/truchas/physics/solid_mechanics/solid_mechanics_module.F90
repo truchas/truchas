@@ -231,8 +231,8 @@ Contains
     ! If not calculating solid mechanics, then skip the rest
     If (.not. solid_mechanics) Return
 
-    ! Initialize the solid mechanics mesh pointer
-    call SM_MESH_INIT
+    ! Initialize the solid mechanics mesh pointer (NOT YET)
+    !call SM_MESH_INIT
     
     ! Allocate and calculate control volume structures
     

@@ -155,7 +155,7 @@ contains
     type(ip_desc), intent(in), target :: row_ip
     this%row_ip => row_ip
     allocate(this%g)
-    call this%g%init (local_size(row_ip), self_edge=.true.)
+    call this%g%init (row_ip%local_size(), self_edge=.true.)
   end subroutine pcsr_graph_init
 
   subroutine pcsr_graph_add_clique (this, indices)
@@ -207,8 +207,8 @@ contains
     this%graph => graph
     if (present(take_graph)) this%graph_dealloc = take_graph
     allocate(this%values(size(graph%adjncy)))
-    this%nrow = local_size(graph%row_ip)
-    this%nrow_onP = onP_size(graph%row_ip)
+    this%nrow = graph%row_ip%local_size()
+    this%nrow_onP = graph%row_ip%onP_size()
   end subroutine pcsr_matrix_init
 
   !! Initialize the sparse matrix using the non-zero structure from MOLD.

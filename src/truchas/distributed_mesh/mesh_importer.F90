@@ -171,10 +171,6 @@ contains
     integer :: j, n, offset, nvert
     type(exodus_mesh) :: exo_mesh
 
-    integer, pointer :: face_map(:) => null()
-    integer, target, save :: TET_FACE_MAP(4), HEX_FACE_MAP(6)
-    data TET_FACE_MAP/3,1,2,4/, HEX_FACE_MAP/2,4,1,3,5,6/
-
     !! Read the Exodus II mesh file.
     call read_exodus_mesh (path, exo_mesh, stat, errmsg)
     if (stat /= 0) then
@@ -188,10 +184,8 @@ contains
     select case (mesh%mesh_type)
     case ('TET')
       nvert = 4
-      face_map => TET_FACE_MAP
     case ('HEX')
       nvert = 8
-      face_map => HEX_FACE_MAP
     case default
       stat = -1
       return
@@ -224,13 +218,6 @@ contains
     !! Take the node set data.
     call move_alloc (exo_mesh%nset, mesh%nset)
     if (.not.allocated(mesh%nset)) allocate(mesh%nset(0))
-
-    !! Translate Exodus face numbering to Truchas face numbering.
-    do n = 1, size(mesh%sset)
-      do j = 1, mesh%sset(n)%num_side
-        mesh%sset(n)%face(j) = face_map(mesh%sset(n)%face(j))
-      end do
-    end do
 
   end subroutine import_exodus_mesh_iop
 

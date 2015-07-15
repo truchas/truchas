@@ -33,7 +33,7 @@ contains
   subroutine cylinder_bv_init (mesh)
   
     use parallel_communication
-    use distributed_mesh
+    use dist_mesh_type
     use EM_data_proxy, only: symmetry_axis, get_EM_domain_type
     use GeometricModeler
     use bitfield_type, only: btest

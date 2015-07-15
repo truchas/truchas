@@ -28,16 +28,16 @@ module FHT_solver_type
   use property_mesh_function
   use solution_history
   use nka_type
-  use distributed_mesh, only: dist_mesh
+  use unstr_mesh_type
   use parallel_communication
   use index_partitioning
   implicit none
   private
 
   type, public :: FHT_solver
-    type(mat_mf),    pointer :: mmf => null()
-    type(FHT_model), pointer :: model => null()
-    type(dist_mesh), pointer :: mesh => null()
+    type(mat_mf),     pointer :: mmf => null()
+    type(FHT_model),  pointer :: model => null()
+    type(unstr_mesh), pointer :: mesh => null()
     type(FHT_precon) :: precon
     type(FHT_norm) :: norm
     type(TofH) :: T_of_H
@@ -116,6 +116,7 @@ contains
     type(FHT_solver_params), intent(inout) :: params
     
     integer :: n
+    procedure(pardp), pointer :: dp
   
     this%mmf   => mmf
     this%model => model
@@ -131,13 +132,15 @@ contains
     call FHT_precon_init (this%precon, this%model, params%precon_params)
     call FHT_norm_init (this%norm, this%model, params%norm_params)
     
-    call TofH_init (this%T_of_H, model%H_of_T, eps=params%TofH_tol, &
-                    max_try=params%TofH_max_try, delta=params%TofH_delta)
+    call this%T_of_H%init (model%H_of_T, eps=params%TofH_tol, &
+        max_try=params%TofH_max_try, delta=params%TofH_delta)
     
     !! Setup the backward-Euler integrator.
     n = FHT_model_size(model)
-    call nka_init (this%accel, n, params%nlk_max_vec)
-    call nka_set_vec_tol (this%accel, params%nlk_vec_tol)
+    call this%accel%init (n, params%nlk_max_vec)
+    call this%accel%set_vec_tol (params%nlk_vec_tol)
+    dp => pardp ! NB: in F2008 can make pardp an internal sub and pass directly
+    call this%accel%set_dot_prod (dp)
     call create_history (this%uhist, 2, n)
     this%max_itr = params%nlk_max_itr
     
@@ -147,10 +150,15 @@ contains
     
   end subroutine FHT_solver_init
   
+  function pardp (a, b) result (dp)
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: dp
+    dp = global_dot_product(a, b)
+  end function pardp
+  
   subroutine FHT_solver_delete (this)
     type(FHT_solver), intent(inout) :: this
     call FHT_precon_delete (this%precon)
-    call nka_delete (this%accel)
     call destroy (this%uhist)
   end subroutine FHT_solver_delete
   
@@ -241,7 +249,7 @@ contains
         Tcell(j) = 0.0_r8 ! dummy value
       else if (this%last_void_cell(j)) then ! newly non-void cell
         !! Use the temperature corresponding to the advected heat density.
-        call TofH_compute (this%T_of_H, j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
+        call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
       end if
     end do
     
@@ -250,11 +258,13 @@ contains
     fnbr = 0
     do j = 1, this%mesh%ncell
       if (this%void_cell(j)) cycle
-      do k = 1, size(this%mesh%cface,1)
-        n = 1
-        if (fnbr(1,this%mesh%cface(k,j)) /= 0) n = 2
-        fnbr(n,this%mesh%cface(k,j)) = j
-      end do
+      associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        do k = 1, size(cface)
+          n = 1
+          if (fnbr(1,cface(k)) /= 0) n = 2
+          fnbr(n,cface(k)) = j
+        end do
+      end associate
     end do
     
     !! Void face mask; correct for all faces.
@@ -304,7 +314,7 @@ contains
       if (this%tot_void_cell(j)) then
         Tcell(j) = 0.0_r8
       else if (this%void_cell(j)) then  ! essentially void cell
-        call TofH_compute (this%T_of_H, j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
+        call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
       end if
     end do
     deallocate(Tmin, Tmax)
@@ -422,7 +432,7 @@ contains
       n3 = global_sum(this%mesh%ncell_onP) - n1 - n2
       write(msg,'(a,3(i0,:,"/"))') 'DS: totally/essentially/non-void cell counts = ', n1, n2, n3
       call TLS_info (msg)
-      call TofH_get_metrics (this%T_of_H, avg_itr, max_itr, rec_rate, avg_adj, max_adj)
+      call this%T_of_H%get_metrics (avg_itr, max_itr, rec_rate, avg_adj, max_adj)
       write(msg,'(a,f5.2,a,i0,a)') 'DS: T(H) iterations: ', avg_itr, '(avg), ', max_itr, '(max)'
       call TLS_info (msg)
       write(msg,'(a,f5.3,a,f5.2,a,i0,a)') 'DS: T(H) salvage rate = ', rec_rate, &
@@ -434,7 +444,7 @@ contains
   
 #ifdef GMV_DIAGNOSTICS
   subroutine gmv_write_state (this)
-    use distributed_mesh_gmv
+    use unstr_mesh_gmv
     type(FHT_solver), intent(in) :: this
     character(63) :: filename
     real(r8), pointer :: Tcell(:)
@@ -442,7 +452,7 @@ contains
     integer :: j
     write(filename,'(a,i4.4)') 'FHT_solver-gmv-', this%seq
     call gmv_open (trim(filename))
-    call gmv_write_dist_mesh (this%mesh)
+    call gmv_write_unstr_mesh (this%mesh)
     call gmv_begin_variables (this%t, this%seq)
     call FHT_model_get_cell_temp_view (this%model, this%u, Tcell)
     call gmv_write_dist_cell_var (this%mesh, Tcell, "T")
@@ -464,21 +474,21 @@ contains
     call gmv_close ()
   end subroutine gmv_write_state
   subroutine gmv_write_field (this, array, name)
-    use distributed_mesh_gmv
+    use unstr_mesh_gmv
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
     character(*), intent(in) :: name
     character(63) :: filename
     write(filename,'(a,i4.4)') 'FHT_solver-' // trim(name) // '-gmv-', this%seq
     call gmv_open (trim(filename))
-    call gmv_write_dist_mesh (this%mesh)
+    call gmv_write_unstr_mesh (this%mesh)
     call gmv_begin_variables (this%t, this%seq)
     call gmv_write_dist_cell_var (this%mesh, array, trim(name))
     call gmv_end_variables ()
     call gmv_close ()
   end subroutine gmv_write_field
   subroutine gmv_write_face_field (this, array, name)
-    use distributed_mesh_gmv
+    use unstr_mesh_gmv
     use fgmvwrite
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
@@ -545,7 +555,11 @@ contains
     
     this%void_face = .true.
     do j = 1, this%mesh%ncell
-      if (.not.this%void_cell(j)) this%void_face(this%mesh%cface(:,j)) = .false.
+      if (.not.this%void_cell(j)) then
+        associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+          this%void_face(cface) = .false.
+        end associate
+      end if
     end do
     call gather_boundary (this%mesh%face_ip, this%void_face)
     
@@ -656,7 +670,7 @@ contains
   subroutine backward_euler_solve (this, t, dt, Hlast, u, stat)
   
 #ifdef GMV_DIAGNOSTICS
-    use distributed_mesh_gmv
+    use unstr_mesh_gmv
 #endif
   
     type(FHT_solver), intent(inout) :: this
@@ -686,7 +700,7 @@ contains
     call FHT_norm_fnorm (this%norm, t, u, Hdot, f)
     
     itr = 0
-    call nka_restart (this%accel)
+    call this%accel%restart
     do ! until converged
     
       itr = itr + 1
@@ -694,7 +708,7 @@ contains
       !! Compute the next solution iterate.
       this%num_precon_apply = this%num_precon_apply + 1
       call FHT_precon_apply (this%precon, t, u, f)
-      call nka_accel_update (this%accel, f, dp=pardp)
+      call this%accel%accel_update (f)
       u = u - f
       
       !! Compute the residual and norm.
@@ -725,12 +739,6 @@ contains
     3 format(2x,i3,': error=',es12.5)
 
   end subroutine backward_euler_solve
-  
-  function pardp (a, b) result (dp)
-    real(r8), intent(in) :: a(:), b(:)
-    real(r8) :: dp
-    dp = global_dot_product(a, b)
-  end function pardp
   
   subroutine FHT_solver_get_cell_temp_view (this, view)
     type(FHT_solver), intent(in) :: this
@@ -813,7 +821,7 @@ contains
     INSIST(size(tgrad,2) == this%model%mesh%ncell_onP)
     call FHT_model_get_face_temp_copy (this%model, this%u, tface)
     call gather_boundary (this%model%mesh%face_ip, tface)
-    call mfd_disc_compute_cell_grad (this%model%disc, tface, tgrad)
+    call this%model%disc%compute_cell_grad (tface, tgrad)
   end subroutine FHT_solver_get_cell_temp_grad
 
 end module FHT_solver_type

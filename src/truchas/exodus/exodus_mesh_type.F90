@@ -145,7 +145,7 @@ module exodus_mesh_type
   private
 
   type, public :: elem_blk
-    integer :: id = 0, num_elem = 0
+    integer :: id = 0, num_elem = 0, num_nodes_per_elem = 0
     character(:), allocatable :: elem_type
     integer, allocatable :: connect(:,:)
   contains
@@ -187,6 +187,7 @@ module exodus_mesh_type
   contains
     procedure :: side_node_list
     procedure :: side_set_node_list
+    procedure :: get_concat_elem_conn
     procedure, nopass :: side_size_list
     !! Debugging methods
     procedure :: defined => exodus_mesh_defined
@@ -202,6 +203,11 @@ module exodus_mesh_type
   data TETRA4_XSIDE/1,4,7,10,13/
   data TETRA4_SIDES/1,2,4, 2,3,4, 1,4,3, 1,3,2/
   data TETRA4_SSIZE/3,3,3,3/
+
+  integer, target, private :: PYRAMID5_XSIDE(6), PYRAMID5_SIDES(16), PYRAMID5_SSIZE(5)
+  data PYRAMID5_XSIDE/1,4,7,10,13,17/
+  data PYRAMID5_SIDES/1,2,5, 2,3,5, 3,4,5, 1,5,4, 1,4,3,2/
+  data PYRAMID5_SSIZE/3,3,3,3,4/
 
   integer, target, private :: WEDGE6_XSIDE(6), WEDGE6_SIDES(18), WEDGE6_SSIZE(5)
   data WEDGE6_XSIDE/1,5,9,13,16,19/
@@ -237,14 +243,17 @@ contains
       b = b + 1
     end do
 
-    select case (this%eblk(b)%elem_type)
-    case ('TETRA', 'TETRA4')
+    select case (this%eblk(b)%elem_type(1:3))
+    case ('TET')
       xside => TETRA4_XSIDE
       sides => TETRA4_SIDES
-    case ('WEDGE', 'WEDGE6')
+    case ('PYR')
+      xside => PYRAMID5_XSIDE
+      sides => PYRAMID5_SIDES
+    case ('WED')
       xside => WEDGE6_XSIDE
       sides => WEDGE6_SIDES
-    case ('HEX', 'HEX8')
+    case ('HEX')
       xside => HEX8_XSIDE
       sides => HEX8_SIDES
     case default
@@ -303,12 +312,14 @@ contains
         b = b + 1
       end do
 
-      select case (trim(this%eblk(b)%elem_type))
-      case ('TETRA', 'TETRA4')
+      select case (trim(this%eblk(b)%elem_type(1:3)))
+      case ('TET')
         xside => TETRA4_XSIDE
-      case ('WEDGE', 'WEDGE6')
+      case ('PYR')
+        xside => PYRAMID5_XSIDE
+      case ('WED')
         xside => WEDGE6_XSIDE
-      case ('HEX', 'HEX8')
+      case ('HEX')
         xside => HEX8_XSIDE
       case default
         return  ! unknown element type
@@ -333,14 +344,17 @@ contains
         b = b + 1
       end do
 
-      select case (trim(this%eblk(b)%elem_type))
-      case ('TETRA', 'TETRA4')
+      select case (trim(this%eblk(b)%elem_type(1:3)))
+      case ('TET')
         xside => TETRA4_XSIDE
         sides => TETRA4_SIDES
-      case ('WEDGE', 'WEDGE6')
+      case ('PYR')
+        xside => PYRAMID5_XSIDE
+        sides => PYRAMID5_SIDES
+      case ('WED')
         xside => WEDGE6_XSIDE
         sides => WEDGE6_SIDES
-      case ('HEX', 'HEX8')
+      case ('HEX')
         xside => HEX8_XSIDE
         sides => HEX8_SIDES
       end select
@@ -361,12 +375,14 @@ contains
     character(*), intent(in) :: elem_type
     integer, pointer :: list(:)
 
-    select case (elem_type)
-    case ('TETRA', 'TETRA4')
+    select case (elem_type(1:3))
+    case ('TET')
       list => TETRA4_SSIZE
-    case ('WEDGE', 'WEDGE6')
+    case ('PYR')
+      list => PYRAMID5_SSIZE
+    case ('WED')
       list => WEDGE6_SSIZE
-    case ('HEX', 'HEX8')
+    case ('HEX')
       list => HEX8_SSIZE
     case default
       list => null()
@@ -374,6 +390,52 @@ contains
 
   end function side_size_list
 
+  !! This ExodusII-like procedure concatenates the mesh connectivity data that
+  !! is stored within an array of element blocks, into a packed mixed-element
+  !! ragged-array data structure: CONNECT(XCONNECT(j):XCONNECT(j+1)-1) is the
+  !! connectivity of cell j. As a convenience to the caller, the procedure
+  !! allocates the allocatable output arrays XCONNECT and CONNECT, primarily
+  !! because the required size of CONNECT is not immediately known.
+  !! NB: The procedure handles a default-initialized mesh object gracefully,
+  !! allocating and defining XCONNECT and CONNECT for a mesh with 0 elements.
+  !! This is useful in a parallel context where the mesh object is only
+  !! default initialized on all but the IO process. 
+    
+  subroutine get_concat_elem_conn (this, xconnect, connect)
+  
+    use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
+    
+    class(exodus_mesh), intent(in), target :: this
+    integer, allocatable, intent(out) :: xconnect(:), connect(:)
+    
+    integer :: j, k, n, offset
+    integer, pointer :: flat_conn(:)
+
+    if (this%num_elem == 0) then
+      allocate(xconnect(1), connect(0))
+      xconnect(1) = 1
+      return
+    end if
+    
+    n = sum(this%eblk%num_nodes_per_elem * this%eblk%num_elem)
+    allocate(xconnect(this%num_elem+1), connect(n))
+    n = 0
+    offset = 0
+    xconnect(1) = 1
+    do j = 1, this%num_eblk
+      do k = 1, this%eblk(j)%num_elem
+        n = n + 1
+        xconnect(n+1) = xconnect(n) + this%eblk(j)%num_nodes_per_elem
+      end do
+      associate (conn => this%eblk(j)%connect)
+        call c_f_pointer (c_loc(conn), flat_conn, shape=[size(conn)])
+        connect(offset+1:offset+size(conn)) = flat_conn
+        offset = offset + size(conn)
+      end associate
+    end do
+    
+  end subroutine get_concat_elem_conn
+    
 !!!! TYPE BOUND DEBUGGING PROCEDURES FOLLOW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   elemental logical function exodus_mesh_defined (this)
@@ -440,6 +502,7 @@ contains
     elem_blk_defined = .false.
     if (this%id <= 0) return
     if (.not.allocated(this%connect)) return
+    if (this%num_nodes_per_elem /= size(this%connect,dim=1)) return
     if (this%num_elem /= size(this%connect,dim=2)) return
     elem_blk_defined = .true.
   end function elem_blk_defined
@@ -549,6 +612,7 @@ contains
     write(lun,'(a)') 'ELEMENT_BLOCK('
     write(lun,'(t4,a,i6)') 'ID=', this%id
     write(lun,'(t4,a,i6)') 'NUM_ELEM=', this%num_elem
+    write(lun,'(t4,a,i6)') 'NUM_NODES_PER_ELEM=', this%num_nodes_per_elem
     write(lun,'(t4,a)')  'ELEM_TYPE= "' // this%elem_type // '"'
     if (allocated(this%connect)) then
       write(lun,'(t4,a,(t12,8(1x,i6)))') 'CONNECT=', this%connect(:,1)
