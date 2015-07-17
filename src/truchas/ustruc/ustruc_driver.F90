@@ -203,58 +203,62 @@ contains
     else
       call TLS_fatal ('require VEL-LO-SOLID-FRAC <= VEL-HI-SOLID-FRAC')
     end if
-
-    !! Check THETA1 and THETA2.
-    if (theta1 == NULL_R) then
-      call TLS_fatal ('no value assigned to THETA1')
-    else if (theta1 < 0.0_r8 .or. theta1 > 1.0_r8) then
-      call TLS_fatal ('THETA1 must be >= 0.0 and <= 1.0')
-    end if
-    if (theta2 == NULL_R) then
-      call TLS_fatal ('no value assigned to THETA2')
-    else if (theta2 < 0.0_r8 .or. theta2 > 1.0_r8) then
-      call TLS_fatal ('THETA2 must be >= 0.0 and <= 1.0')
-    end if
-    if (theta1 <= theta2) then
-      call params%set ('theta1', theta1)
-      call params%set ('theta2', theta2)
-    else
-      call TLS_fatal ('require THETA1 <= THETA2')
-    end if
-
-    !! Check THETA1P.
-    if (theta1p == NULL_R) then
-      ! do not set a parameter value -- accept its default value
-    else if (theta1p < 0.0_r8 .or. theta1p > theta1) then
-      call TLS_fatal ('THETA1P must be >= 0.0 and <= THETA1')
-    else
-      call params%set ('theta1p', theta1p)
-    end if
-
-    !! Check THETA2P.
-    if (theta2p == NULL_R) then
-      ! do not set a parameter value -- accept its default value
-    else if (theta2p < theta1 .or. theta2p > theta2) then
-      call TLS_fatal ('THETA2P must be >= THETA1 and <= THETA2')
-    else
-      call params%set ('theta2p', theta2p)
-    end if
-
-    !! Check THETA_GV.
-    if (theta_gv == NULL_R) then
-      ! do not set a parameter value -- accept its default value
-    else if (theta_gv < theta1 .or. theta_gv >= theta2) then
-      call TLS_fatal ('THETA_GV must be >= THETA1 and < THETA2')
-    else
-      call params%set ('theta-gv', theta_gv)
-    end if
     
-    !! Check GV_MODEL_FILE.
-    if (gv_model_file /= NULL_C) then
+    if (gv_model_file /= NULL_C) then ! file mode
+    
+      !! Check GV_MODEL_FILE.
       if (gv_model_file(1:1) /= '/') gv_model_file = trim(input_dir) // trim(gv_model_file)
       inquire(file=trim(gv_model_file), exist=found)  ! NB: all processes will read
       if (.not.found) call TLS_fatal (' GV_MODEL_FILE not found: "' // trim(gv_model_file) // '"')
       call params%set ('gv-model-file', trim(gv_model_file))
+      
+    else  ! basic GV fall back mode
+
+      !! Check THETA1 and THETA2.
+      if (theta1 == NULL_R) then
+        call TLS_fatal ('no value assigned to THETA1')
+      else if (theta1 < 0.0_r8 .or. theta1 > 1.0_r8) then
+        call TLS_fatal ('THETA1 must be >= 0.0 and <= 1.0')
+      end if
+      if (theta2 == NULL_R) then
+        call TLS_fatal ('no value assigned to THETA2')
+      else if (theta2 < 0.0_r8 .or. theta2 > 1.0_r8) then
+        call TLS_fatal ('THETA2 must be >= 0.0 and <= 1.0')
+      end if
+      if (theta1 <= theta2) then
+        call params%set ('theta1', theta1)
+        call params%set ('theta2', theta2)
+      else
+        call TLS_fatal ('require THETA1 <= THETA2')
+      end if
+
+      !! Check THETA1P.
+      if (theta1p == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (theta1p < 0.0_r8 .or. theta1p > theta1) then
+        call TLS_fatal ('THETA1P must be >= 0.0 and <= THETA1')
+      else
+        call params%set ('theta1p', theta1p)
+      end if
+
+      !! Check THETA2P.
+      if (theta2p == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (theta2p < theta1 .or. theta2p > theta2) then
+        call TLS_fatal ('THETA2P must be >= THETA1 and <= THETA2')
+      else
+        call params%set ('theta2p', theta2p)
+      end if
+
+      !! Check THETA_GV.
+      if (theta_gv == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (theta_gv < theta1 .or. theta_gv >= theta2) then
+        call TLS_fatal ('THETA_GV must be >= THETA1 and < THETA2')
+      else
+        call params%set ('theta-gv', theta_gv)
+      end if
+    
     end if
 
     !! Enable microstructure modeling by allocating the data object THIS.
