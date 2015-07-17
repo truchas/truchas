@@ -43,7 +43,9 @@ module ustruc_comp_factory
   use ustruc_vel1_type
   use ustruc_time_type
   use ustruc_gv0_type
+  use ustruc_gv1_type
   use parameter_list_type
+  use parameter_list_json
   implicit none
   private
 
@@ -52,15 +54,39 @@ module ustruc_comp_factory
 contains
 
   function new_ustruc_comp (n, params) result (comp)
+  
+    use truchas_logging_services
 
     integer, intent(in) :: n
     type(parameter_list) :: params
     class(ustruc_comp), pointer :: comp
+    
+    integer :: lun, stat
+    character(:), allocatable :: filename, errmsg, gv_model_type
+    type(parameter_list), pointer :: plist
 
     comp => new_ustruc_core(n)
     comp => new_ustruc_vel1(comp, params)
-    !comp => new_ustruc_time(comp, params)  ! gv0 includes this analysis now
-    comp => new_ustruc_gv0(comp, params)
+    
+    if (params%is_parameter('gv-model-file')) then
+      call params%get ('gv-model-file', filename)
+      plist => params%sublist('gv-params')
+      !FIXME: every process is reading -- better to read on one and broadcast(?)
+      open(newunit=lun,file=filename,action='read',access='stream',form='unformatted')
+      call parameters_from_json_stream (lun, plist, stat, errmsg)
+      if (stat /= 0) call TLS_fatal ('error reading "' // filename // '": ' // errmsg)
+      close(lun)
+      call plist%get ('gv-model-type', gv_model_type)
+      select case (gv_model_type)
+      case ('gv0')
+        comp => new_ustruc_gv0(comp, plist)
+      case ('gv1')
+        comp => new_ustruc_gv1(comp, plist)
+      case default
+      end select
+    else  ! default to the basic GV0
+      comp => new_ustruc_gv0(comp, params)
+    end if
 
     !NB: need to make sure the included components match up with the data
     !    that is being output from USTRUC_DRIVER:USTRUC_OUTPUT.

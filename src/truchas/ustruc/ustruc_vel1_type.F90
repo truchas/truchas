@@ -48,6 +48,7 @@ module ustruc_vel1_type
   contains
     procedure :: set_state
     procedure :: update_state
+    procedure :: has
     procedure :: getl1
     procedure :: getr1
     procedure :: getr2
@@ -136,6 +137,17 @@ contains
       call this%ustruc_plugin%get (name, array)
     end select
   end subroutine getl1
+
+  logical function has (this, name)
+    class(ustruc_vel1), intent(in) :: this
+    character(*), intent(in) :: name
+    select case (name)
+    case ('speed', 'velocity')
+      has = .true.
+    case default
+      has = this%ustruc_plugin%has (name)
+    end select
+  end function has
 
   subroutine getr1 (this, name, array, invalid)
     class(ustruc_vel1), intent(in) :: this

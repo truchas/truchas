@@ -35,6 +35,9 @@
 !!    ultimately handle the request.  The TKR of ARRAY and its shape must
 !!    be consistent with the requested data.
 !!
+!!  HAS (NAME) returns true if NAME identifies known data that the GET
+!!    subroutine is able to retrieve.
+!!
 !! NOTES
 !!
 !!  1. This MFD_DISC object is not shared and holds its own large MINV array
@@ -84,6 +87,7 @@ module ustruc_model_type
     procedure :: init
     procedure :: set_state
     procedure :: update_state
+    procedure :: has
     generic :: get => getr1, getr2
     procedure, private :: getr1
     procedure, private :: getr2
@@ -164,6 +168,13 @@ contains
     call this%comp%update_state (t, temp, temp_grad, sol_frac, sol_frac_grad, invalid)
     call stop_timer ('analysis')
   end subroutine update_state
+  
+  !! Returns true if one of the analysis components has the named data.
+  logical function has (this, name)
+    class(ustruc_model), intent(in) :: this
+    character(*), intent(in) :: name
+    has = this%comp%has(name)
+  end function has
 
   !! I do not know how to handle the logical data with respect to assigning
   !! data on inactive cells -- this really requires knowing what the logical

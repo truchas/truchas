@@ -84,6 +84,7 @@ contains
   subroutine read_microstructure_namelist (lun)
 
     use string_utilities, only: i_to_c
+    use truchas_env, only: input_dir
     use parallel_communication, only: is_IOP, broadcast
     use input_utilities, only: seek_to_namelist, NULL_I, NULL_R, NULL_C
     use material_table, only: MT_MAX_NAME_LEN, mt_has_material
@@ -92,15 +93,16 @@ contains
 
     integer :: ios, cell_set_ids(32), symmetry_face_sets(32)
     real(r8) :: vel_max, vel_lo_solid_frac, vel_hi_solid_frac
-    real(r8) :: theta1, theta1p, theta2, theta2p
+    real(r8) :: theta1, theta1p, theta2, theta2p, theta_gv
     logical :: found
     integer, allocatable :: setids(:)
     character(MT_MAX_NAME_LEN) :: material
-    character(128) :: iom
+    character(32)  :: gv_model
+    character(128) :: iom, gv_model_file
 
     namelist /microstructure/ material, cell_set_ids, symmetry_face_sets, &
         vel_max, vel_lo_solid_frac, vel_hi_solid_frac, &
-        theta1, theta1p, theta2, theta2p
+        theta1, theta1p, theta2, theta2p, theta_gv, gv_model_file
 
     !! Locate the MICROSTRUCTURE namelist (first occurrence)
     if (is_IOP) then
@@ -128,6 +130,8 @@ contains
       theta1p = NULL_R
       theta2 = NULL_R
       theta2p = NULL_R
+      theta_gv = NULL_R
+      gv_model_file = NULL_C
       read(lun,nml=microstructure,iostat=ios,iomsg=iom)
     end if
     call broadcast (ios)
@@ -144,6 +148,8 @@ contains
     call broadcast (theta1p)
     call broadcast (theta2)
     call broadcast (theta2p)
+    call broadcast (theta_gv)
+    call broadcast (gv_model_file)
 
     !! Check the values of the namelist variables as best we can before
     !! stuffing them into a parameter list.  The parameters are checked
@@ -232,6 +238,23 @@ contains
       call TLS_fatal ('THETA2P must be >= THETA1 and <= THETA2')
     else
       call params%set ('theta2p', theta2p)
+    end if
+
+    !! Check THETA_GV.
+    if (theta_gv == NULL_R) then
+      ! do not set a parameter value -- accept its default value
+    else if (theta_gv < theta1 .or. theta_gv >= theta2) then
+      call TLS_fatal ('THETA_GV must be >= THETA1 and < THETA2')
+    else
+      call params%set ('theta-gv', theta_gv)
+    end if
+    
+    !! Check GV_MODEL_FILE.
+    if (gv_model_file /= NULL_C) then
+      if (gv_model_file(1:1) /= '/') gv_model_file = trim(input_dir) // trim(gv_model_file)
+      inquire(file=trim(gv_model_file), exist=found)  ! NB: all processes will read
+      if (.not.found) call TLS_fatal (' GV_MODEL_FILE not found: "' // trim(gv_model_file) // '"')
+      call params%set ('gv-model-file', trim(gv_model_file))
     end if
 
     !! Enable microstructure modeling by allocating the data object THIS.
@@ -353,15 +376,20 @@ contains
     call write_vector_field (data_name='velocity',  hdf_name='uStruc-veloc', viz_name=['Vx','Vy','Vz'])
     call write_scalar_field (data_name='speed',     hdf_name='uStruc-speed', viz_name='solid-speed')
 
-    !! TIME or GV1 analysis modules: time to solidify
+    !! GV0 or GV1 analysis modules: time to solidify
     call write_scalar_field (data_name='solid-time', hdf_name='uStruc-solid-time', viz_name='solid-time')
 
-    !! GV1 analysis module: temp gradient and solidification front speed at onset
+    !! GV0 analysis module: temp gradient and solidification front speed at onset
     call write_scalar_field (data_name='g', hdf_name='uStruc-G', viz_name='G')
     call write_scalar_field (data_name='v', hdf_name='uStruc-V', viz_name='V')
 
-    !! GV1 analysis module: count of steps in mushy zone
-    !call write_scalar_field (data_name='count', hdf_name='uStruc-count', viz_name='count')
+    !! GV0 analysis module: count of steps in mushy zone
+    call write_scalar_field (data_name='count', hdf_name='uStruc-count', viz_name='count')
+    
+    !! GV1 analysis module
+    call write_scalar_field (data_name='ustruc',  hdf_name='uStruc-gv1-ustruc',  viz_name='gv1-ustruc')
+    call write_scalar_field (data_name='lambda1', hdf_name='uStruc-gv1-lambda1', viz_name='gv1-lambda1')
+    call write_scalar_field (data_name='lambda2', hdf_name='uStruc-gv1-lambda2', viz_name='gv1-lambda2')
 
     call stop_timer ('Microstructure')
 
@@ -369,16 +397,20 @@ contains
 
     subroutine write_scalar_field (data_name, hdf_name, viz_name)
       character(*), intent(in) :: data_name, hdf_name, viz_name
-      call this%model%get (data_name, ds_scalar)
-      call rearrange (pcell_t_to_ds, t_scalar, ds_scalar)
-      call write_seq_cell_field (seq_id, t_scalar, hdf_name, for_viz=.true., viz_name=viz_name)
+      if (this%model%has(data_name)) then
+        call this%model%get (data_name, ds_scalar)
+        call rearrange (pcell_t_to_ds, t_scalar, ds_scalar)
+        call write_seq_cell_field (seq_id, t_scalar, hdf_name, for_viz=.true., viz_name=viz_name)
+      end if
     end subroutine
 
     subroutine write_vector_field (data_name, hdf_name, viz_name)
       character(*), intent(in) :: data_name, hdf_name, viz_name(:)
-      call this%model%get (data_name, ds_vector)
-      call rearrange (pcell_t_to_ds, t_vector, ds_vector)
-      call write_seq_cell_field (seq_id, t_vector, hdf_name, for_viz=.true., viz_name=viz_name)
+      if (this%model%has(data_name)) then
+        call this%model%get (data_name, ds_vector)
+        call rearrange (pcell_t_to_ds, t_vector, ds_vector)
+        call write_seq_cell_field (seq_id, t_vector, hdf_name, for_viz=.true., viz_name=viz_name)
+      end if
     end subroutine
 
   end subroutine ustruc_output

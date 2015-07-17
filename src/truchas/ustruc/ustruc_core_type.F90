@@ -83,6 +83,7 @@ module ustruc_core_type
     procedure, private :: init
     procedure :: set_state
     procedure :: update_state
+    procedure :: has
     procedure :: getl1
     procedure :: geti1
     procedure :: getr1
@@ -161,6 +162,17 @@ contains
     this%invalid = invalid
 
   end subroutine update_state
+
+  logical function has (this, name)
+    class(ustruc_core), intent(in) :: this
+    character(*), intent(in) :: name
+    select case (name)
+    case ('invalid', 'temp', 'frac-rate', 'temp-grad', 'frac-grad')
+      has = .true.
+    case default
+      has = .false.
+    end select
+  end function has
 
   subroutine getl1 (this, name, array)
     class(ustruc_core), intent(in) :: this

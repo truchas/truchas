@@ -58,6 +58,7 @@ module ustruc_plugin_class
     procedure :: init
     procedure :: set_state
     procedure :: update_state
+    procedure :: has
     procedure :: getl1
     procedure :: geti1
     procedure :: getr1
@@ -107,6 +108,13 @@ contains
     ASSERT(associated(this%comp))
     call this%comp%update_state (t, temp, temp_grad, frac, frac_grad, invalid)
   end subroutine update_state
+
+  logical function has (this, name)
+    class(ustruc_plugin), intent(in) :: this
+    character(*), intent(in) :: name
+    ASSERT(associated(this%comp))
+    has = this%comp%has (name)
+  end function has
 
   subroutine getl1 (this, name, array)
     class(ustruc_plugin), intent(in) :: this

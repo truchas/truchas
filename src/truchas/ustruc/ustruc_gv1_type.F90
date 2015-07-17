@@ -11,7 +11,7 @@
 !! AWAITING THIS INFO FROM SETH IMHOFF AND PAUL GIBBS (MST-6)
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
-!! September 2014
+!! September 2014; updated July 2015
 !!
 !! PROGRAMMING INTERFACE
 !!
@@ -99,6 +99,7 @@ module ustruc_gv1_type
   contains
     procedure :: set_state
     procedure :: update_state
+    procedure :: has
     procedure :: getl1
     procedure :: getr1
   end type ustruc_gv1
@@ -113,16 +114,29 @@ contains
 
   subroutine gv_init (this, params)
     use parameter_list_type
+    use truchas_logging_services
     class(gv), intent(out) :: this
     type(parameter_list) :: params
-    call params%get ('liquidus-slope', this%m_liq)
-    call params%get ('solute-conc', this%c_0)
-    call params%get ('partition-coef', this%k_part)
-    call params%get ('liq-sol-delta-T', this%delta_T)
-    call params%get ('diffusivity', this%d)
-    call params%get ('gibbs-thomson-coef', this%gamma)
-    call params%get ('instability-coef', this%alpha)
-    call params%get ('coarsening-coef', this%k_coarse)
+    integer :: stat
+    character(:), allocatable :: errmsg
+    call params%get ('theta-gv', this%theta, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('liquidus-slope', this%m_liq, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('solute-conc', this%c_0, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('partition-coef', this%k_part, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('liq-sol-delta-T', this%delta_T, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('diffusivity', this%d, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('gibbs-thomson-coef', this%gamma, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('instability-coef', this%alpha, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
+    call params%get ('coarsening-coef', this%k_coarse, stat=stat, errmsg=errmsg)
+    if (stat /= 0) call TLS_fatal (errmsg)
   end subroutine gv_init
   
   !! This method is called when transitioning from the liquid to mushy state.
@@ -179,8 +193,6 @@ contains
       state%ustruc = GV_INVALID
     elseif (state%ustruc == GV_DENDRITIC) then
       state%lambda2 = this%k_coarse*sqrt(dt)
-    else
-      INSIST(.false.)
     end if
   end subroutine gv_finish
   
@@ -212,38 +224,52 @@ contains
   function new_ustruc_gv1 (comp, params) result (this)
 
     use parameter_list_type
-    use parameter_list_json
+    use truchas_logging_services
 
     class(ustruc_comp), pointer, intent(in) :: comp
     type(parameter_list) :: params
     type(ustruc_gv1), pointer :: this
+    integer :: stat
+    character(:), allocatable :: errmsg
     
-    character(:), allocatable :: filename, errmsg
-    type(parameter_list), pointer :: plist
-    integer :: lun
-
     allocate(this)
     call this%init (comp)
 
-    call params%get ('theta1',  this%f1)
-    INSIST(this%f1 >= 0.0_r8)
-    call params%get ('theta2',  this%f2)
-    INSIST(this%f2 <= 1.0_r8)
-    INSIST(this%f1 <= this%f2)
-    call params%get ('theta1p', this%f1p, default=this%f1)
-    INSIST(this%f1p >= 0.0_r8 .and. this%f1p <= this%f1)
-    call params%get ('theta2p', this%f2p, default=this%f2)
-    INSIST(this%f2p >= this%f1 .and. this%f2p <= this%f2)
+    call params%get ('theta1', this%f1, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f1 <= 0.0 .or. this%f1 >= 1.0) then
+      call TLS_fatal ('theta1 must be > 0.0 and < 1.0')
+    end if
     
-    call params%get ('parameter-file', filename)
+    call params%get ('theta2', this%f2, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f2 <= 0.0 .or. this%f2 >= 1.0) then
+      call TLS_fatal ('theta2 must be > 0.0 and < 1.0')
+    end if
     
-    !FIXME: every process is reading -- better to read on one and broadcast(?)
-    open(newunit=lun,file=filename,action='read',access='stream',form='unformatted')
-    call parameter_list_from_json_stream (lun, plist, errmsg)
-    INSIST(associated(plist))
+    if (this%f2 <= this%f1) call TLS_fatal ('theta2 <= theta1')
     
-    call this%ustruc_model%init (plist)
-    deallocate(plist)
+    call params%get ('theta1p', this%f1p, default=this%f1, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f1p > this%f1 .or. this%f1p < 0.0) then
+      call TLS_fatal ('theta1p must be >= 0.0 and <= theta1')
+    end if
+
+    call params%get ('theta2p', this%f2p, default=this%f2, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f1p > this%f1 .or. this%f1p < 0.0) then
+      call TLS_fatal ('theta2p must be >= theta1 and <= theta2')
+    end if
+    
+    call this%ustruc_model%init (params)
+    
+    if (this%ustruc_model%theta < this%f1 .or. this%ustruc_model%theta > this%f2) then
+      call TLS_fatal ('theta-gv must be >= theta1 and <= theta2')
+    end if
 
     allocate(this%state(this%n), this%dt(this%n), this%ustruc_state(this%n))
 
@@ -363,6 +389,17 @@ contains
     end function
 
   end subroutine update_state
+
+  logical function has (this, name)
+    class(ustruc_gv1), intent(in) :: this
+    character(*), intent(in) :: name
+    select case (name)
+    case ('invalid-gv', 'solid-time', 'ustruc', 'lambda1', 'lambda2')
+      has = .true.
+    case default
+      has = this%ustruc_plugin%has (name)
+    end select
+  end function has
 
   subroutine getl1 (this, name, array)
     class(ustruc_gv1), intent(in) :: this

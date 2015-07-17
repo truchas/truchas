@@ -56,6 +56,7 @@ module ustruc_gv0_type
   contains
     procedure :: set_state
     procedure :: update_state
+    procedure :: has
     procedure :: getl1
     procedure :: getr1
   end type ustruc_gv0
@@ -208,6 +209,17 @@ contains
     end function
 
   end subroutine update_state
+
+  logical function has (this, name)
+    class(ustruc_gv0), intent(in) :: this
+    character(*), intent(in) :: name
+    select case (name)
+    case ('invalid-gv', 'count', 'solid-time', 'g', 'v')
+      has = .true.
+    case default
+      has = this%ustruc_plugin%has (name)
+    end select
+  end function has
 
   subroutine getl1 (this, name, array)
     class(ustruc_gv0), intent(in) :: this

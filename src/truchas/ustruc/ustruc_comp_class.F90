@@ -73,6 +73,7 @@ module ustruc_comp_class
   contains
     procedure(update), deferred :: set_state
     procedure(update), deferred :: update_state
+    procedure(has),    deferred :: has
     generic :: get => getl1, geti1, getr1, getr2
     procedure(getl1), deferred :: getl1
     procedure(geti1), deferred :: geti1
@@ -88,6 +89,11 @@ module ustruc_comp_class
       real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
       logical,  intent(in) :: invalid(:)
     end subroutine
+    logical function has (this, name)
+      import ustruc_comp
+      class(ustruc_comp), intent(in) :: this
+      character(*), intent(in) :: name
+    end function has
     subroutine getl1 (this, name, array)
       import ustruc_comp
       class(ustruc_comp), intent(in) :: this
