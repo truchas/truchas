@@ -123,6 +123,7 @@ contains
     if (stat /= 0) call TLS_fatal (errmsg)
     call params%get ('liquidus-slope', this%m_liq, stat=stat, errmsg=errmsg)
     if (stat /= 0) call TLS_fatal (errmsg)
+    if (this%m_liq >= 0.0_r8) call TLS_fatal ('liquidus-slope must be < 0')
     call params%get ('solute-conc', this%c_0, stat=stat, errmsg=errmsg)
     if (stat /= 0) call TLS_fatal (errmsg)
     call params%get ('partition-coef', this%k_part, stat=stat, errmsg=errmsg)
@@ -167,7 +168,7 @@ contains
           state%G = G
           state%V = V
           c = -this%m_liq * this%c_0 * (1 - this%k_part) / (this%k_part * this%d)
-          if (state%G < c*state%V) then
+          if (state%G > c*state%V) then
             state%ustruc = GV_PLANAR
           else
             lambda1 = this%lambda1(G,V)
@@ -350,6 +351,8 @@ contains
               this%state(j) = STATE_SOLID
               call this%ustruc_model%finish (this%dt(j), this%ustruc_state(j))
             else
+              G = this%vector_magnitude(temp_grad(:,j))
+              V = this%vector_magnitude(velocity(:,j))
               call this%ustruc_model%update (frac(j), G, V, invalid_velocity(j), this%ustruc_state(j))
             end if
           case (STATE_SOLID)
@@ -394,7 +397,7 @@ contains
     class(ustruc_gv1), intent(in) :: this
     character(*), intent(in) :: name
     select case (name)
-    case ('invalid-gv', 'solid-time', 'ustruc', 'lambda1', 'lambda2')
+    case ('invalid-gv', 'solid-time', 'ustruc', 'lambda1', 'lambda2', 'g', 'v')
       has = .true.
     case default
       has = this%ustruc_plugin%has (name)
@@ -460,6 +463,28 @@ contains
       if (present(invalid)) then
         ASSERT(size(invalid) == this%n)
         invalid = (this%state /= STATE_SOLID .or. this%ustruc_state%ustruc /= GV_DENDRITIC)
+      end if
+    case ('g')
+      ASSERT(size(array) == this%n)
+      where (this%ustruc_state%ustruc > GV_UNDEFINED)
+        array = this%ustruc_state%G
+      else where
+        array = 0.0_r8
+      end where
+      if (present(invalid)) then
+        ASSERT(size(invalid) == this%n)
+        invalid = (this%ustruc_state%ustruc <= GV_UNDEFINED)
+      end if
+    case ('v')
+      ASSERT(size(array) == this%n)
+      where (this%ustruc_state%ustruc > GV_UNDEFINED)
+        array = this%ustruc_state%V
+      else where
+        array = 0.0_r8
+      end where
+      if (present(invalid)) then
+        ASSERT(size(invalid) == this%n)
+        invalid = (this%ustruc_state%ustruc <= GV_UNDEFINED)
       end if
     case default
       call this%ustruc_plugin%get (name, array, invalid)
