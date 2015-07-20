@@ -124,7 +124,7 @@ contains
     ! CORE component.
     call this%ustruc_plugin%update_state (t, temp, temp_grad, frac, frac_grad, invalid)
 
-    ! Add coe here or above, as appropriate, to update the state arrays
+    ! Add code here or above, as appropriate, to update the state arrays
     ! specific to this new analysis component.  At this point the state held
     ! by the CORE component is the state at the (new) current time and is the
     ! same as the passed arguments.  (The CORE component holds some additional
@@ -219,5 +219,23 @@ contains
   !    call this%ustruc_plugin%get (name, array, invalid)
   !  end select
   !end subroutine getr2
+
+  ! This function goes along with the preceding GET procedures (if any).
+  ! It needs to return true for any of the data names handled by one of
+  ! the GET procedures.  For any other data name it needs to delegate back
+  ! to the HAS procedure of the parent class to be handled by another
+  ! analysis component.  If none of the above GET procedures are defined,
+  ! then leave this one out too.
+
+  !logical function has (this, name)
+  !  class(ustruc_<name>), intent(in) :: this
+  !  character(*), intent(in) :: name
+  !  select case (name)
+  !  case ('chosen-name-1', 'chosen-name-2', ...)
+  !    has = .true.
+  !  case default
+  !    has = this%ustruc_plugin%has(name)
+  !  end select
+  !end function has
 
 end module ustruc_<name>_type

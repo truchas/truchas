@@ -7,7 +7,7 @@
 !! point for implementing a microstructure prediction model.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
-!! August 2014
+!! August 2014; updated July 2015
 !!
 !! PROGRAMMING INTERFACE
 !!
@@ -32,6 +32,7 @@
 !!      'theta2p' -- if the solid fraction drops below this threshold while
 !!          considered solid, it is considered to have remelted and the
 !!          previously computed solidification time erased.
+!!      'theta-gv' -- the solid fraction at which G and V are taken
 !!
 !!  Objects of this type respond to the following data names in the generic
 !!  GET subroutine: 'solid-time', 'g', and 'v'.
@@ -42,6 +43,7 @@
 module ustruc_gv0_type
 
   use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: int8, int16
   use ustruc_plugin_class
   implicit none
   private
@@ -49,10 +51,10 @@ module ustruc_gv0_type
   public :: new_ustruc_gv0
 
   type, extends(ustruc_plugin) :: ustruc_gv0
-    real(r8) :: f1, f1p, f2, f2p
-    integer,  allocatable :: state(:)
+    real(r8) :: f1, f1p, f2, f2p, theta
     real(r8), allocatable :: dt(:), g(:), v(:)
-    integer,  allocatable :: count(:)
+    integer(int8), allocatable :: state(:), gv_state(:)
+    integer(int16), allocatable :: count(:)
   contains
     procedure :: set_state
     procedure :: update_state
@@ -67,31 +69,65 @@ module ustruc_gv0_type
   integer, parameter :: STATE_MUSHY     = 3
   integer, parameter :: STATE_SOLID     = 4
 
+  integer, parameter :: GV_INVALID   = 0
+  integer, parameter :: GV_UNDEFINED = 1
+  integer, parameter :: GV_DEFINED   = 2
+
 contains
 
   function new_ustruc_gv0 (comp, params) result (this)
 
     use parameter_list_type
+    use truchas_logging_services
 
     class(ustruc_comp), pointer, intent(in) :: comp
     type(parameter_list) :: params
     type(ustruc_gv0), pointer :: this
 
+    integer :: stat
+    character(:), allocatable :: errmsg
+
     allocate(this)
     call this%init (comp)
 
-    call params%get ('theta1',  this%f1)
-    INSIST(this%f1 >= 0.0_r8)
-    call params%get ('theta2',  this%f2)
-    INSIST(this%f2 <= 1.0_r8)
-    INSIST(this%f1 <= this%f2)
-    call params%get ('theta1p', this%f1p, default=this%f1)
-    INSIST(this%f1p >= 0.0_r8 .and. this%f1p <= this%f1)
-    call params%get ('theta2p', this%f2p, default=this%f2)
-    INSIST(this%f2p >= this%f1 .and. this%f2p <= this%f2)
+    call params%get ('theta1', this%f1, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f1 <= 0.0 .or. this%f1 >= 1.0) then
+      call TLS_fatal ('theta1 must be > 0.0 and < 1.0')
+    end if
 
-    allocate(this%state(this%n), this%dt(this%n), this%g(this%n), this%v(this%n))
-    allocate(this%count(this%n))
+    call params%get ('theta2', this%f2, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f2 <= 0.0 .or. this%f2 >= 1.0) then
+      call TLS_fatal ('theta2 must be > 0.0 and < 1.0')
+    end if
+    if (this%f2 <= this%f1) call TLS_fatal ('theta2 <= theta1')
+
+    call params%get ('theta1p', this%f1p, default=this%f1, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f1p > this%f1 .or. this%f1p < 0.0) then
+      call TLS_fatal ('theta1p must be >= 0.0 and <= theta1')
+    end if
+
+    call params%get ('theta2p', this%f2p, default=this%f2, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      call TLS_fatal (errmsg)
+    else if (this%f1p > this%f1 .or. this%f1p < 0.0) then
+      call TLS_fatal ('theta2p must be >= theta1 and <= theta2')
+    end if
+
+    call params%get ('theta-gv', this%theta, default=this%f1, stat=stat, errmsg=errmsg)
+    if (this%theta < this%f1 .or. this%theta > this%f2) then
+      call TLS_fatal ('theta-gv must be >= theta1 and <= theta2')
+    end if
+
+    allocate(this%state(this%n), this%count(this%n), this%dt(this%n))
+    allocate(this%g(this%n), this%v(this%n), this%gv_state(this%n))
+    
+    this%gv_state = GV_INVALID
 
   end function new_ustruc_gv0
 
@@ -145,15 +181,15 @@ contains
     do j = 1, this%n
       if (invalid(j)) then
         this%state(j) = STATE_INVALID
+        this%gv_state(j) = GV_INVALID
       else
-        associate (temp_grad => this%core%temp_grad, velocity => this%core%velocity)
+        associate (temp_grad => this%core%temp_grad, velocity => this%core%velocity, &
+                   invalid_velocity => this%core%invalid_velocity)
           select case (this%state(j))
           case (STATE_LIQUID)
             if (frac(j) >= this%f1) then
               this%dt(j) = interp_frac(prev_t, prev_frac(j), t, frac(j), this%f1)
               this%state(j) = STATE_MUSHY
-              this%g(j) = this%vector_magnitude(temp_grad(:,j))
-              this%v(j) = this%vector_magnitude(velocity(:,j))
             else if (frac(j) <= this%f2) then
               this%count(j) = 1
             end if
@@ -161,14 +197,40 @@ contains
               this%dt(j) = interp_frac(prev_t, prev_frac(j), t, frac(j), this%f2) - this%dt(j)
               this%state(j) = STATE_SOLID
             end if
+            if (this%state(j) == STATE_MUSHY) then
+              if (frac(j) >= this%theta) then
+                if (invalid_velocity(j)) then
+                  this%gv_state(j) = GV_INVALID
+                else
+                  this%g(j) = this%vector_magnitude(temp_grad(:,j))
+                  this%v(j) = this%vector_magnitude(velocity(:,j))
+                  this%gv_state(j) = GV_DEFINED
+                end if
+              else
+                this%gv_state(j) = GV_UNDEFINED
+              end if
+            end if
           case (STATE_MUSHY)
             if (frac(j) < this%f1p) then
               this%state(j) = STATE_LIQUID
+              this%state(j) = GV_INVALID
             else if (frac(j) > this%f2) then
               this%dt(j) = interp_frac(prev_t, prev_frac(j), t, frac(j), this%f2) - this%dt(j)
               this%state(j) = STATE_SOLID
+              if (this%gv_state(j) == GV_UNDEFINED) this%gv_state(j) = GV_INVALID
             else
               this%count(j) = this%count(j) + 1
+              if (this%gv_state(j) == GV_UNDEFINED) then
+                if (frac(j) >= this%theta) then
+                  if (invalid_velocity(j)) then
+                    this%gv_state(j) = GV_INVALID
+                  else
+                    this%g(j) = this%vector_magnitude(temp_grad(:,j))
+                    this%v(j) = this%vector_magnitude(velocity(:,j))
+                    this%gv_state(j) = GV_DEFINED
+                  end if
+                end if
+              end if
             end if
           case (STATE_SOLID)
             if (frac(j) < this%f1) then
@@ -176,6 +238,7 @@ contains
             else if (frac(j) <= this%f2p) then
               this%state(j) = STATE_UNDEFINED
             end if
+            if (this%state(j) /= STATE_SOLID) this%gv_state(j) = GV_INVALID
           case (STATE_UNDEFINED)
             if (frac(j) < this%f1) this%state(j) = STATE_LIQUID
           case (STATE_INVALID)
@@ -228,7 +291,7 @@ contains
     select case (name)
     case ('invalid-gv')
       ASSERT(size(array) == this%n)
-      array = (this%state /= STATE_SOLID)
+      array = (this%gv_state /= GV_DEFINED)
     case default
       call this%ustruc_plugin%get (name, array)
     end select
@@ -264,25 +327,25 @@ contains
       end if
     case ('g')
       ASSERT(size(array) == this%n)
-      where (this%state == STATE_SOLID)
+      where (this%gv_state == GV_DEFINED)
         array = this%g
       else where
         array = 0.0_r8
       end where
       if (present(invalid)) then
         ASSERT(size(invalid) == this%n)
-        invalid = (this%state /= STATE_SOLID)
+        invalid = (this%gv_state /= GV_DEFINED)
       end if
     case ('v')
       ASSERT(size(array) == this%n)
-      where (this%state == STATE_SOLID)
+      where (this%gv_state == GV_DEFINED)
         array = this%v
       else where
         array = 0.0_r8
       end where
       if (present(invalid)) then
         ASSERT(size(invalid) == this%n)
-        invalid = (this%state /= STATE_SOLID)
+        invalid = (this%gv_state /= GV_DEFINED)
       end if
     case default
       call this%ustruc_plugin%get (name, array, invalid)

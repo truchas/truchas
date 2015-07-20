@@ -83,6 +83,7 @@ contains
       case ('gv1')
         comp => new_ustruc_gv1(comp, plist)
       case default
+        call TLS_fatal ('unknown value for gv-model-type: "' // gv_model_type // '"')
       end select
     else  ! default to the basic GV0
       comp => new_ustruc_gv0(comp, params)

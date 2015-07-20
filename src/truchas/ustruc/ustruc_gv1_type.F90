@@ -2,13 +2,13 @@
 !! USTRUC_GV1
 !!
 !! A concrete implementation of USTRUC_PLUGIN/USTRUC_COMP that adds the
-!! identification of microstructure type and characteristics (first model).
+!! identification of microstructure type and characteristics.
 !!
-!! NB: THIS IS AN INCOMPLETE STUB.  ONLY THE THERMAL GRADIENT MAGNITUDE (G)
-!! AND SOLIDIFICATION FRONT SPEED (V) ARE COMPUTED.  THESE WILL BE THE INPUTS
-!! TO A TABLE LOOKUP FOR THE TYPE OF MICROSTRUCTURE (DENDRITIC, PLANAR, ...)
-!! AND THE COMPUTATION OF CHARACTERISTICS (PRIMARY AND SECONDARY ARM SPACING)
-!! AWAITING THIS INFO FROM SETH IMHOFF AND PAUL GIBBS (MST-6)
+!! This implements an initial model from Seth Imhoff (MST-6) that takes as
+!! input the thermal gradient magnitude (G) and solidification front speed (V)
+!! at a certain point during soldification, and does a lookup for the type
+!! of microstructure (planar, cellular, dendritic) and for the dendritic case
+!! computes the primary and secondary arm spacing using explicit formulas.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! September 2014; updated July 2015
@@ -26,19 +26,26 @@
 !!    takes ownership of the target.  PARAMS is a PARAMETER_LIST object;
 !!    the relevant parameters in PARAMS are:
 !!
-!!      'theta1' -- low solid fraction threshold; solidification is deemed
-!!          to have started when the solid fraction crosses this threshold.
-!!      'theta2' -- high solid fraction threshold; solidification is deemed
-!!          to have finished when the solid fraction crosses this threshold.
-!!      'theta1p' -- if the solid fraction drops below this threshold while
-!!          solidifying, it is deemed to have returned to a liquid state;
-!!          theta1p <= theta1, optional, default theta1p = theta1.
-!!      'theta2p' -- if the solid fraction drops below this threshold while
-!!          considered solid, it is considered to have remelted and the
-!!          previously computed solidification time erased.
+!!    theta1 -- low solid fraction threshold; solidification is deemed
+!!        to have started when the solid fraction crosses this threshold.
+!!    theta2 -- high solid fraction threshold; solidification is deemed
+!!       to have finished when the solid fraction crosses this threshold.
+!!    theta1p -- if the solid fraction drops below this threshold while
+!!       solidifying, it is deemed to have returned to a liquid state;
+!!       theta1p <= theta1, optional, default theta1p = theta1.
+!!    theta2p -- if the solid fraction drops below this threshold while
+!!       considered solid, it is considered to have remelted and the
+!!       previously computed solidification time erased.
+!!    theta-gv -- the solid fraction at which G and V are taken
+!!
+!!    The remaining parameters are specific to the model (see other
+!!    documentation for their meaning): liquidus-slope, solute-conc,
+!!    partition-coef, liq-sol-delta-T, diffusivity, gibbs-thomson-coef,
+!!    instability-coef, and coarsening-coef.
 !!
 !!  Objects of this type respond to the following data names in the generic
-!!  GET subroutine: 'solid-time', 'g', and 'v'.
+!!  GET subroutine: 'invalid-gv', 'solid-time', 'ustruc', 'lambda1', 'lambda2',
+!!  'g', and 'v'.
 !!
 
 #include "f90_assert.fpp"
@@ -249,7 +256,6 @@ contains
     else if (this%f2 <= 0.0 .or. this%f2 >= 1.0) then
       call TLS_fatal ('theta2 must be > 0.0 and < 1.0')
     end if
-    
     if (this%f2 <= this%f1) call TLS_fatal ('theta2 <= theta1')
     
     call params%get ('theta1p', this%f1p, default=this%f1, stat=stat, errmsg=errmsg)
