@@ -30,16 +30,16 @@
 
 #include <danu_xdmf_mesh.h>
 
-struct DanuH5Handle * danu_h5_create_handle()
+struct DanuXDMFMeshHandle * danu_h5_create_handle()
 {
-    return malloc(sizeof(struct DanuH5Handle));
+    return malloc(sizeof(struct DanuXDMFMeshHandle));
 }
-void danu_h5_free_handle(struct DanuH5Handle *h)
+void danu_h5_free_handle(struct DanuXDMFMeshHandle *h)
 {
     free(h);
 }
 
-void danu_h5_open(struct DanuH5Handle *h, const char *name,
+void danu_h5_open(struct DanuXDMFMeshHandle *h, const char *name,
         const char *group_name)
 {
     h->file = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -47,7 +47,7 @@ void danu_h5_open(struct DanuH5Handle *h, const char *name,
             H5P_DEFAULT);
 }
 
-void danu_h5_save_int_1d_array(struct DanuH5Handle *h,
+void danu_h5_save_int_1d_array(struct DanuXDMFMeshHandle *h,
         const char *dataset_name, int* array1d, int n)
 {
     hid_t space, dset;
@@ -63,14 +63,14 @@ void danu_h5_save_int_1d_array(struct DanuH5Handle *h,
     status = H5Sclose(space);
 }
 
-void danu_h5_close(struct DanuH5Handle *h)
+void danu_h5_close(struct DanuXDMFMeshHandle *h)
 {
     herr_t status;
     status = H5Gclose(h->group);
     status = H5Fclose(h->file);
 }
 
-int danu_hex_save(struct DanuH5Handle *h, int* elements, int n1, int n2,
+int danu_hex_save(struct DanuXDMFMeshHandle *h, int* elements, int n1, int n2,
         const char *dataset_name)
 {
     int *elements1d;
