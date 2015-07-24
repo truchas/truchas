@@ -108,7 +108,7 @@ int danu_hex_save(const char *name, int* elements, int n1, int n2, const char
     space = H5Screate_simple(1, dims, NULL);
     dset = H5Dcreate(group, dataset_name, H5T_STD_I32LE, space, H5P_DEFAULT,
                 H5P_DEFAULT, H5P_DEFAULT);
-    status = H5Dwrite (dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+    status = H5Dwrite(dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                 elements1d);
     status = H5Dclose(dset);
     status = H5Sclose(space);
