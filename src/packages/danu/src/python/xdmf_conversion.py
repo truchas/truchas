@@ -3,7 +3,7 @@ import sys
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 
-from numpy import array, size, where
+from numpy import array, size, where, unique
 
 import Danu
 
@@ -63,7 +63,8 @@ def main(filename, filename_out, filename_mesh):
     except RuntimeError:
         print 'BLOCKID not found'
         raise
-    element_blocks = [where(blockid == i+1)[0] for i in range(blockid.max())]
+    ids = unique(blockid)
+    element_blocks = [where(blockid == id)[0] for id in ids]
     element_blocks_str = [" ".join(map(str, x)) for x in element_blocks]
 
     # Series
@@ -101,10 +102,10 @@ def main(filename, filename_out, filename_mesh):
         xdmf_dataitem.text="%s:/Simulations_MAIN_Mesh/Element Connectivity" % filename_mesh
 
         # Sets
-        for i in range(len(element_blocks)):
+        for i in range(len(ids)):
             xdmf_set = SubElement(xdmf_grid, "Set", {
                 "SetType": "Cell",
-                "Name": "Material %d" % (i+1),
+                "Name": "Material %d" % ids[i],
             })
             xdmf_dataitem = SubElement(xdmf_set, "DataItem", {
                 "NumberType": "Int",
