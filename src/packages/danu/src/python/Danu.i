@@ -63,6 +63,16 @@ import_array();
 %include Simulations.i
 
 %apply (int* IN_ARRAY2, int DIM1, int DIM2){(int* elements, int n1, int n2)};
-int danu_hex_save(const char *name, int* elements, int n1, int n2, const char
-    *group_name, const char *dataset_name);
+int danu_hex_save(struct DanuH5Handle *h, int* elements, int n1, int n2,
+        const char *dataset_name);
 %clear (int* elements, int n1, int n2);
+
+struct DanuH5Handle * danu_h5_create_handle();
+void danu_h5_free_handle(struct DanuH5Handle *h);
+void danu_h5_open(struct DanuH5Handle *h, const char *name,
+        const char *group_name);
+%apply (int* IN_ARRAY1, int DIM1){(int* array1d, int n)};
+void danu_h5_save_int_1d_array(struct DanuH5Handle *h,
+        const char *dataset_name, int* array1d, int n);
+%clear (int* array1d, int n);
+void danu_h5_close(struct DanuH5Handle *h);

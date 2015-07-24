@@ -3,7 +3,7 @@ import sys
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 
-from numpy import array, size, where, unique
+from numpy import array, size, where, unique, int32
 
 import Danu
 
@@ -55,8 +55,9 @@ def main(filename, filename_out, filename_mesh):
     # nested group creation is not implemented in the C code yet, so we use _
     # instead of / for now. Once this is fixed, also update the path below in
     # XML.
-    elements1d_size = Danu.danu_hex_save(filename_mesh, elements, "/Simulations_MAIN_Mesh",
-            "Element Connectivity")
+    h = Danu.danu_h5_create_handle()
+    Danu.danu_h5_open(h, filename_mesh, "/Simulations_MAIN_Mesh")
+    elements1d_size = Danu.danu_hex_save(h, elements, "Element Connectivity")
 
     try:
         blockid = sim.data_read('BLOCKID')
@@ -64,8 +65,12 @@ def main(filename, filename_out, filename_mesh):
         print 'BLOCKID not found'
         raise
     ids = unique(blockid)
-    element_blocks = [where(blockid == id)[0] for id in ids]
-    element_blocks_str = [" ".join(map(str, x)) for x in element_blocks]
+    element_blocks = [array(where(blockid == id)[0], dtype=int32) for id in ids]
+    for i in range(len(ids)):
+        Danu.danu_h5_save_int_1d_array(h, "Element Blocks %d" % i,
+                element_blocks[i])
+    Danu.danu_h5_close(h)
+    Danu.danu_h5_free_handle(h)
 
     # Series
     for n in range(1, sim.sequence_count()+1):
@@ -110,9 +115,10 @@ def main(filename, filename_out, filename_mesh):
             xdmf_dataitem = SubElement(xdmf_set, "DataItem", {
                 "NumberType": "Int",
                 "Dimensions": "%d" % size(element_blocks[i]),
-                "Format": "XML",
+                "Format": "HDF",
             })
-            xdmf_dataitem.text=element_blocks_str[i]
+            xdmf_dataitem.text="%s:/Simulations_MAIN_Mesh/Element Blocks %d" \
+                    % (filename_mesh, i)
 
 
         # Time step

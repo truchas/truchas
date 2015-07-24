@@ -34,6 +34,50 @@
 
 #include <danu_group.h>
 
+struct DanuH5Handle {
+    hid_t file, group;
+};
+
+struct DanuH5Handle * danu_h5_create_handle()
+{
+    return malloc(sizeof(struct DanuH5Handle));
+}
+void danu_h5_free_handle(struct DanuH5Handle *h)
+{
+    free(h);
+}
+
+void danu_h5_open(struct DanuH5Handle *h, const char *name,
+        const char *group_name)
+{
+    h->file = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    h->group = H5Gcreate(h->file, group_name, H5P_DEFAULT, H5P_DEFAULT,
+            H5P_DEFAULT);
+}
+
+void danu_h5_save_int_1d_array(struct DanuH5Handle *h,
+        const char *dataset_name, int* array1d, int n)
+{
+    hid_t space, dset;
+    herr_t status;
+    hsize_t dims[1] = {n};
+
+    space = H5Screate_simple(1, dims, NULL);
+    dset = H5Dcreate(h->group, dataset_name, H5T_STD_I32LE, space, H5P_DEFAULT,
+                H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Dwrite(dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+                array1d);
+    status = H5Dclose(dset);
+    status = H5Sclose(space);
+}
+
+void danu_h5_close(struct DanuH5Handle *h)
+{
+    herr_t status;
+    status = H5Gclose(h->group);
+    status = H5Fclose(h->file);
+}
+
 /*
  * Takes element connectivity in Truchas format (degenerated hexes), converts
  * to XDMF 1D mixed array and saves it into a new HDF5 file.
@@ -52,8 +96,8 @@
  * The function returns the length of the 1D array (that was saved into HDF5).
  *
  */
-int danu_hex_save(const char *name, int* elements, int n1, int n2, const char
-    *group_name, const char *dataset_name)
+int danu_hex_save(struct DanuH5Handle *h, int* elements, int n1, int n2,
+        const char *dataset_name)
 {
     int *elements1d;
     int n, i, nc, idx, list[8];
@@ -98,22 +142,7 @@ int danu_hex_save(const char *name, int* elements, int n1, int n2, const char
     }
     n = idx;
 
-
-    hid_t file, space, dset, group;
-    herr_t status;
-    hsize_t dims[1] = {n};
-
-    file = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-    group = H5Gcreate(file, group_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    space = H5Screate_simple(1, dims, NULL);
-    dset = H5Dcreate(group, dataset_name, H5T_STD_I32LE, space, H5P_DEFAULT,
-                H5P_DEFAULT, H5P_DEFAULT);
-    status = H5Dwrite(dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                elements1d);
-    status = H5Dclose(dset);
-    status = H5Sclose(space);
-    status = H5Gclose(group);
-    status = H5Fclose(file);
+    danu_h5_save_int_1d_array(h, dataset_name, elements1d, n);
 
     free(elements1d);
 
