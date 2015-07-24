@@ -35,7 +35,7 @@ set(DANU_SRC
         group.c
         h5_error.c
         h5_object.c
-        hex_convert.c
+        danu_mesh_convert.c
         link.c
         linked_list.c
         memory.c
@@ -64,6 +64,7 @@ set(DANU_HEADERS
          danu_link.h
          danu_linked_list.h
          danu_memory.h
+         danu_mesh_convert.h
          danu_slab.h
          danu_types.h
          danu_utils.h
