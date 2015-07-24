@@ -112,6 +112,7 @@ int danu_hex_save(const char *name, int* elements, int n1, int n2, const char
                 elements1d);
     status = H5Dclose(dset);
     status = H5Sclose(space);
+    status = H5Gclose(group);
     status = H5Fclose(file);
 
     free(elements1d);
