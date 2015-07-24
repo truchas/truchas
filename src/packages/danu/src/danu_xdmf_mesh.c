@@ -9,7 +9,7 @@
 * **************************************************************************** */
 
 /*
- * hex_convert.c
+ * danu_xdmf_mesh.c
  *
  *  Convert utilities from Truchas format (degenerate hexes) into XDMF style.
  *
@@ -28,7 +28,7 @@
 
 #include <danu_group.h>
 
-#include <danu_mesh_convert.h>
+#include <danu_xdmf_mesh.h>
 
 struct DanuH5Handle * danu_h5_create_handle()
 {
