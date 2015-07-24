@@ -15,19 +15,6 @@
  *
  */
 
-#include <string.h>
-
-#include <danu_error.h>
-#include <danu_h5_error.h>
-#include <danu_h5_object.h>
-#include <danu_types.h>
-#include <danu_memory.h>
-#include <danu_utils.h>
-#include <danu_link.h>
-#include <danu_file.h>
-
-#include <danu_group.h>
-
 #include <danu_xdmf_mesh.h>
 
 struct DanuXDMFMeshHandle * danu_h5_create_handle()
