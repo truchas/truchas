@@ -3,7 +3,7 @@ import sys
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 
-from numpy import array, empty, size
+from numpy import array, size, where
 
 import Danu
 
@@ -58,6 +58,14 @@ def main(filename, filename_out, filename_mesh):
     elements1d_size = Danu.danu_hex_save(filename_mesh, elements, "/Simulations_MAIN_Mesh",
             "Element Connectivity")
 
+    try:
+        blockid = sim.data_read('BLOCKID')
+    except RuntimeError:
+        print 'BLOCKID not found'
+        raise
+    element_blocks = [where(blockid == i+1)[0] for i in range(blockid.max())]
+    element_blocks_str = [" ".join(map(str, x)) for x in element_blocks]
+
     # Series
     for n in range(1, sim.sequence_count()+1):
         xdmf_grid = SubElement(xdmf_grid_parent, "Grid", {
@@ -91,6 +99,19 @@ def main(filename, filename_out, filename_mesh):
             "Name": "Connectivity",
         })
         xdmf_dataitem.text="%s:/Simulations_MAIN_Mesh/Element Connectivity" % filename_mesh
+
+        # Sets
+        for i in range(len(element_blocks)):
+            xdmf_set = SubElement(xdmf_grid, "Set", {
+                "SetType": "Cell",
+                "Name": "Material %d" % (i+1),
+            })
+            xdmf_dataitem = SubElement(xdmf_set, "DataItem", {
+                "NumberType": "Int",
+                "Dimensions": "%d" % size(element_blocks[i]),
+                "Format": "XML",
+            })
+            xdmf_dataitem.text=element_blocks_str[i]
 
 
         # Time step
