@@ -60,7 +60,7 @@ program test_hypre_pcg_type
 
   call pgslib_finalize
 
-  if (num_itr <= 9 .and. l2err <= 10*rtol) then
+  if (num_itr <= 9 .and. l2err <= 20*rtol) then
     call exit (0)
   else
     call exit (1)
