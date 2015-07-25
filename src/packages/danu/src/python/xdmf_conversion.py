@@ -110,7 +110,7 @@ def main(filename, filename_out, filename_mesh):
         for i in range(len(ids)):
             xdmf_set = SubElement(xdmf_grid, "Set", {
                 "SetType": "Cell",
-                "Name": "Material %d" % ids[i],
+                "Name": "Block %d" % ids[i],
             })
             xdmf_dataitem = SubElement(xdmf_set, "DataItem", {
                 "NumberType": "Int",
