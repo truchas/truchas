@@ -1,5 +1,5 @@
 !!
-!! DIST_MESH_GMV
+!! SIMPL_MESH_GMV
 !!
 !! Neil N. Carlson <nnc@lanl.gov> 3/30/2006
 !! Last revised 11 Aug 2006.
@@ -17,7 +17,7 @@
 !! CALL GMV_OPEN (FILE) establishes FILE as the file where the graphics data
 !!    will be written.  Any previous contents of the file will be overwritten.
 !!
-!! CALL GMV_WRITE_DIST_MESH (MESH) writes the distributed mesh MESH to the
+!! CALL GMV_WRITE_SIMPL_MESH (MESH) writes the distributed mesh MESH to the
 !!    graphics file.  The cell block ID information is written as the material
 !!    component.  When executing in parallel, mesh partition information is
 !!    also written as flag components: cellpart gives the cell partitioning
@@ -41,7 +41,7 @@
 
 #include "f90_assert.fpp"
 
-module dist_mesh_gmv
+module simpl_mesh_gmv
 
   use kinds, only: r8
   use fgmvwrite
@@ -49,7 +49,7 @@ module dist_mesh_gmv
   implicit none
   private
 
-  public :: gmv_open, gmv_close, gmv_write_dist_mesh
+  public :: gmv_open, gmv_close, gmv_write_simpl_mesh
   public :: gmv_begin_variables, gmv_end_variables, gmv_write_dist_cell_var
 
 contains
@@ -65,13 +65,13 @@ contains
     if (is_IOP) call gmvwrite_closefile_f ()
   end subroutine gmv_close
 
-  subroutine gmv_write_dist_mesh (mesh)
+  subroutine gmv_write_simpl_mesh (mesh)
 
-    use dist_mesh_type
+    use simpl_mesh_type
     use index_partitioning
     use string_utilities, only: i_to_c
 
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
 
     integer :: j
     integer, allocatable :: cnode(:,:), cblock(:)
@@ -161,7 +161,7 @@ contains
 
     end if
 
-  end subroutine gmv_write_dist_mesh
+  end subroutine gmv_write_simpl_mesh
 
   subroutine gmv_begin_variables (time, seq)
     real(kind=r8), intent(in), optional :: time
@@ -179,10 +179,10 @@ contains
 
   subroutine gmv_write_dist_cell_var (mesh, u, name)
 
-    use dist_mesh_type
+    use simpl_mesh_type
     use index_partitioning
 
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     character(len=*), intent(in) :: name
 
@@ -198,4 +198,4 @@ contains
 
   end subroutine gmv_write_dist_cell_var
 
-end module dist_mesh_gmv
+end module simpl_mesh_gmv

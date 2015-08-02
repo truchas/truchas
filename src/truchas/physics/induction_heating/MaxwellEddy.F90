@@ -8,7 +8,7 @@ module MaxwellEddy
 
   use kinds
   use parallel_communication
-  use dist_mesh_type
+  use simpl_mesh_type
   use index_partitioning
   use mimetic_discretization
   use solution_history
@@ -25,7 +25,7 @@ use debug_EM
   public :: joule_heat, destroy_system
   
   type, public :: system
-    type(dist_mesh), pointer :: mesh => null() ! spatial discretization
+    type(simpl_mesh), pointer :: mesh => null() ! spatial discretization
     
     !! Solution history
     real(kind=r8) :: t, dt
@@ -195,7 +195,7 @@ contains
   subroutine initialize_system (sys, mesh, eps, mu, sigma, etasq, delta, dt, emask)
   
     type(system), intent(out) :: sys
-    type(dist_mesh), intent(in), target :: mesh
+    type(simpl_mesh), intent(in), target :: mesh
     real(kind=r8), intent(in) :: eps(:), mu(:), sigma(:)
     real(kind=r8), intent(in) :: dt, etasq, delta
     integer, intent(in) :: emask(:)

@@ -11,14 +11,14 @@ module mesh_manager
 
   use parameter_list_type
   use truchas_logging_services
-  use dist_mesh_type
+  use simpl_mesh_type
   implicit none
   private
   
-  public :: enable_mesh, named_mesh_ptr, unstr_mesh_ptr, dist_mesh_ptr
+  public :: enable_mesh, named_mesh_ptr, unstr_mesh_ptr, simpl_mesh_ptr
   public :: peek_truchas_mesh_namelists, init_mesh_manager
   
-  public :: dist_mesh ! re-export; do not want this -- FIXME
+  public :: simpl_mesh ! re-export; do not want this -- FIXME
   
   interface init_mesh_manager
     module procedure init_mesh_manager, init_mesh_manager_params
@@ -105,7 +105,7 @@ contains
   subroutine init_mesh_manager
   
     use unstr_mesh_factory
-    use distributed_tet_mesh
+    use simpl_mesh_factory
   
     integer :: stat
     logical :: enabled, em_mesh
@@ -113,7 +113,7 @@ contains
     type(parameter_list), pointer :: plist
     type(parameter_list_iterator) :: piter
     type(unstr_mesh), pointer :: umesh
-    type(dist_mesh),  pointer :: dmesh
+    type(simpl_mesh), pointer :: smesh
 
     piter = parameter_list_iterator(meshes)
     do while (.not.piter%at_end())
@@ -124,10 +124,10 @@ contains
         call TLS_info ('Initializing mesh "' // piter%name() // '" ...')
         call plist%get ('em-mesh', em_mesh, default=.false.)
         if (em_mesh) then
-          dmesh => new_dist_tet_mesh (plist, stat, errmsg)
+          smesh => new_simpl_mesh(plist, stat, errmsg)
           if (stat /= 0) call TLS_fatal (errmsg)
-          call plist%set ('mesh', any_mesh(dmesh))
-          call dmesh%write_profile
+          call plist%set ('mesh', any_mesh(smesh))
+          call smesh%write_profile
         else
           umesh => new_unstr_mesh(plist, stat, errmsg)
           if (stat /= 0) call TLS_fatal (errmsg)
@@ -222,22 +222,22 @@ contains
     end select
   end function unstr_mesh_ptr
 
-  !! Returns a pointer to the TYPE(DIST_MESH) mesh object that corresponds to
+  !! Returns a pointer to the TYPE(SIMPL_MESH) mesh object that corresponds to
   !! NAME. A null pointer is returned if NAME is not recognized or if the mesh
-  !! that corresponds to NAME is not of type DIST_MESH.
-  function dist_mesh_ptr (name)
-    use dist_mesh_type
+  !! that corresponds to NAME is not of type SIMPL_MESH.
+  function simpl_mesh_ptr (name)
+    use simpl_mesh_type
     character(*), intent(in) :: name
-    type(dist_mesh), pointer :: dist_mesh_ptr
+    type(simpl_mesh), pointer :: simpl_mesh_ptr
     class(*), pointer :: csptr
     csptr => mesh_ptr(name)
-    dist_mesh_ptr => null()
+    simpl_mesh_ptr => null()
     if (.not.associated(csptr)) return
     select type (csptr)
-    class is (dist_mesh)
-      dist_mesh_ptr => csptr
+    class is (simpl_mesh)
+      simpl_mesh_ptr => csptr
     end select
-  end function dist_mesh_ptr
+  end function simpl_mesh_ptr
 
   !! Auxiliary function returns a CLASS(*) pointer to the arbitrary mesh object
   !! that corresponds to NAME.  NAME is case-insensitive.  A null pointer is

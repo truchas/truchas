@@ -516,10 +516,10 @@ contains
 
 !  subroutine check_surface (mesh, encl, faces, perm_er_to_hc, stat)
 !
-!    use dist_mesh_type
+!    use unstr_mesh_type
 !    use rad_encl_type
 !
-!    type(dist_mesh), intent(in) :: mesh
+!    type(unstr_mesh), intent(in) :: mesh
 !    type(rad_encl),  intent(in) :: encl
 !    integer,         intent(in) :: faces(:)
 !    type(par_perm),  intent(in) :: perm_er_to_hc

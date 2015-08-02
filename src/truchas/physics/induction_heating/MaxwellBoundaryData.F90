@@ -11,7 +11,7 @@
 module MaxwellBoundaryData
 
   use kinds, only: rk => r8
-  use dist_mesh_type
+  use simpl_mesh_type
   implicit none
   private
   
@@ -22,7 +22,7 @@ module MaxwellBoundaryData
   public :: generate_bface, bit_mask
   
   type, public :: BoundaryData
-    type(dist_mesh), pointer :: mesh => null()
+    type(simpl_mesh), pointer :: mesh => null()
     !! Boundary conditions on nxE (essential)
     integer :: nebgroup = 0
     integer, pointer :: ebedge(:) => null()
@@ -45,7 +45,7 @@ contains
     use index_partitioning, only: gather_boundary
   
     type(BoundaryData), intent(out) :: self
-    type(dist_mesh), intent(in), target :: mesh
+    type(simpl_mesh), intent(in), target :: mesh
     integer, intent(in) :: bface(:)
     integer, intent(in) :: ebgroup(:)
     integer, intent(in), optional :: hbgroup(:)
@@ -296,7 +296,7 @@ contains
     use GeometricModeler
     
     type(GeometricModel), intent(in) :: gm
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     logical, intent(in) :: filter(:)
     integer, intent(in) :: group(:)
     integer, intent(out) :: bface(:)

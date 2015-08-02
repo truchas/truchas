@@ -25,6 +25,17 @@ module unstr_mesh_type
     integer, allocatable :: xcnode(:), cnode(:) ! cell nodes
     integer, allocatable :: xcface(:), cface(:) ! cell faces
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
+
+    integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
+    
+    real(r8), allocatable :: normal(:,:)
+
+    !! Mesh interface links.
+    integer :: nlink = 0, nlink_onP = 0
+    integer, pointer :: lface(:,:) => null()  ! pointer due to localize_index_array
+    integer, allocatable :: link_set_id(:)    ! user-assigned ID for each link block
+    type(bitfield), allocatable :: link_set_mask(:)  ! link block index
+    type(ip_desc) :: link_ip
   contains
     procedure :: get_global_cnode_array
 !    procedure :: get_global_cface_array
@@ -38,9 +49,11 @@ contains
   !! Final subroutine for UNSTR_MESH objects.
   subroutine unstr_mesh_delete (this)
     type(unstr_mesh), intent(inout) :: this
+    if (associated(this%lface)) deallocate(this%lface)
     call destroy (this%node_ip)
     call destroy (this%face_ip)
     call destroy (this%cell_ip)
+    call destroy (this%link_ip)
   end subroutine unstr_mesh_delete
 
   !! Compute the geometric data components from the node coordinates.
@@ -173,11 +186,27 @@ contains
     ASSERT(size(array_l) == xarray_l(size(xarray_l))-1)
     ASSERT(global_all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) >= 4))
     ASSERT(global_all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) <= 8))
-    offset = excl_prefix_sum(size(array_l))
+#ifdef NAG_COMPILER_WORKAROUND
+    !! NAGFOR 6.0(1052)/GCC 4.8.3 produce bad code under optimization (-O2)
+    !! with the one-line allocation in parallel, getting the wrong value for
+    !! the global_sum expression, apparently it gets the value of its argument
+    !! instead.  Looking at the intermediate C code suggests that tha problem
+    !! may not be here but in global_sum and perhaps a race condition?
+    offset = global_sum(size(xarray_l)-1)
+    allocate(xarray(1+merge(offset,0,is_IOP)))
+#else
     allocate(xarray(1+merge(global_sum(size(xarray_l)-1),0,is_IOP)))
+#endif
+    offset = excl_prefix_sum(size(array_l))
     xarray(1) = 1
     call collate (xarray(2:), xarray_l(2:)+offset)
+#ifdef NAG_COMPILER_WORKAROUND
+    !! Same comments as above.
+    offset = global_sum(size(array_l))
+    allocate(array(merge(offset,0,is_IOP)))
+#else
     allocate(array(merge(global_sum(size(array_l)),0,is_IOP)))
+#endif
     call collate (array, array_l)
     if (is_IOP) then
       ASSERT(size(xarray) >= 1)

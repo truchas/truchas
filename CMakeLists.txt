@@ -359,7 +359,8 @@ string(TOUPPER "-D${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define
 if ( Fortran_COMPILER_IS_NAG )
   add_definitions(${Truchas_Compiler_Define})
   list(APPEND Truchas_PREPROCESSOR 
-             ${Truchas_Compiler_Define})
+             ${Truchas_Compiler_Define}
+	     ${Truchas_Compiler_Define}_WORKAROUND)
 else()
   add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
   list(APPEND Truchas_PREPROCESSOR 
@@ -370,6 +371,7 @@ endif()
 # Specific compiler bug workarounds
 include (CMakeFortranCompilerVersion)
 if (Fortran_COMPILER_IS_INTEL)
+  list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362026)
   if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "14.0.3" AND
       CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "15.0.2")
     list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362104)

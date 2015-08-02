@@ -18,7 +18,7 @@ module EM_graphics_output
   use string_utilities, only: i_to_c
   use parallel_communication
   use index_partitioning
-  use dist_mesh_type
+  use simpl_mesh_type
   use mimetic_discretization
   use data_explorer
 !NNC!  use field_probes
@@ -48,7 +48,7 @@ contains
 
     use truchas_env, only: output_file_name
 
-    type(dist_mesh),  intent(in) :: mesh
+    type(simpl_mesh),  intent(in) :: mesh
     real(kind=rk), intent(in) :: eps(:), mu(:), sigma(:)
     
     type(dx_object) :: dxfld
@@ -123,7 +123,7 @@ contains
 
   subroutine export_fields (mesh, t, efield, bfield, qfield)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=rk),   intent(in) :: t
     real(kind=rk),   intent(in) :: efield(:)
     real(kind=rk),   intent(in) :: bfield(:)
@@ -202,7 +202,7 @@ contains
 
 
 !NNC!  subroutine initialize_probes (mesh)
-!NNC!    type(dist_mesh), intent(in) :: mesh
+!NNC!    type(simpl_mesh), intent(in) :: mesh
 !NNC!    integer :: j
 !NNC!    if (.not.allocated(probe_point)) return
 !NNC!    call new_probe_array (probes, size(probe_point,dim=2))

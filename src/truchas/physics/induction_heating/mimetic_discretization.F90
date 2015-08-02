@@ -3,7 +3,7 @@
 module mimetic_discretization
 
   use kinds, only: r8
-  use dist_mesh_type
+  use simpl_mesh_type
   use index_partitioning
   implicit none
   private
@@ -37,7 +37,7 @@ contains
   
   function grad (mesh, u, mask) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real(kind=r8) :: v(mesh%nedge)
     logical, intent(in), optional :: mask(:)
@@ -65,7 +65,7 @@ contains
   
   function grad_t (mesh, u, local, mask) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real(kind=r8) :: v(mesh%nnode)
     logical, intent(in), optional :: local
@@ -101,7 +101,7 @@ contains
 
   function curl (mesh, u) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real(kind=r8) :: v(mesh%nface)
     
@@ -118,7 +118,7 @@ contains
   
   function curl_t (mesh, u) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real(kind=r8) :: v(mesh%nedge)
     
@@ -140,7 +140,7 @@ contains
   
   function div (mesh, u) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real(kind=r8) :: v(mesh%ncell)
     
@@ -157,7 +157,7 @@ contains
   
   function div_t (mesh, u) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real(kind=r8) :: v(mesh%nface)
     
@@ -189,9 +189,9 @@ contains
   
   function W1_matrix_HS (mesh, cell) result (matrix)
   
-    use simplicial_mesh_support, only: tet_face_normal
+    use simplex_geometry, only: tet_face_normal
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     integer,         intent(in) :: cell
     real(kind=r8) :: matrix(21)
     
@@ -239,9 +239,9 @@ contains
   
   function W1_matrix_WE (mesh, cell) result (matrix)
   
-    use simplicial_mesh_support, only: tet_face_normal
+    use simplex_geometry, only: tet_face_normal
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     integer,         intent(in) :: cell
     real(kind=r8) :: matrix(21)
     
@@ -289,7 +289,7 @@ contains
   
   function W2_matrix_HS (mesh, cell) result (matrix)
   
-    type(dist_mesh),  intent(in)  :: mesh
+    type(simpl_mesh),  intent(in)  :: mesh
     integer,          intent(in)  :: cell
     real(kind=r8) :: matrix(10)
     
@@ -325,7 +325,7 @@ contains
   
   function W2_matrix_WE (mesh, cell) result (matrix)
   
-    type(dist_mesh),  intent(in)  :: mesh
+    type(simpl_mesh),  intent(in)  :: mesh
     integer,          intent(in)  :: cell
     real(kind=r8) :: matrix(10)
     
@@ -422,9 +422,9 @@ contains
   
   function w1_vector_on_cells (mesh, u) result (v)
   
-    use simplicial_mesh_support, only: tet_face_normal
+    use simplex_geometry, only: tet_face_normal
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real :: v(3,mesh%ncell)
     
@@ -455,7 +455,7 @@ contains
   
   function w2_vector_on_cells (mesh, u) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real :: v(3,mesh%ncell)
     
@@ -488,7 +488,7 @@ contains
   
   function w3_scalar_on_cells (mesh, u) result (v)
   
-    type(dist_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
     real :: v(mesh%ncell)
     
@@ -514,9 +514,9 @@ contains
   
   subroutine eval_w0_interp_coef (mesh, point, cell, coef, index)
   
-    use simplicial_mesh_support, only: bc_coord
+    use simplex_geometry, only: bary_coord
   
-    type(dist_mesh), intent(in)  :: mesh
+    type(simpl_mesh), intent(in)  :: mesh
     real(kind=r8),   intent(in)  :: point(:)
     integer,         intent(in)  :: cell
     real(kind=r8),   intent(out) :: coef(:)
@@ -526,7 +526,7 @@ contains
     ASSERT( cell > 0 .and. cell <= mesh%ncell )
     ASSERT( size(coef) == 4 .and. size(index) == 4 )
     
-    coef = bc_coord(mesh%x(:,mesh%cnode(:,cell)), point)
+    coef = bary_coord(mesh%x(:,mesh%cnode(:,cell)), point)
     index = mesh%cnode(:,cell)
     
   end subroutine eval_w0_interp_coef
@@ -534,9 +534,9 @@ contains
   
   subroutine eval_w1_interp_coef (mesh, point, cell, coef, index)
   
-    use simplicial_mesh_support, only: tet_face_normal, bc_coord
+    use simplex_geometry, only: tet_face_normal, bary_coord
   
-    type(dist_mesh), intent(in)  :: mesh
+    type(simpl_mesh), intent(in)  :: mesh
     real(kind=r8),   intent(in)  :: point(:)    ! interpolation point
     integer,         intent(in)  :: cell        ! index of the containing cell
     real(kind=r8),   intent(out) :: coef(:,:)   ! interpolation coefficients
@@ -553,7 +553,7 @@ contains
     p = tet_face_normal(mesh%x(:,mesh%cnode(:,cell)))
     
     !! Barycentric coordinates (scaled) of the interpolation point
-    lambda = bc_coord(mesh%x(:,mesh%cnode(:,cell)), point) / (3.0_r8 * mesh%volume(cell))
+    lambda = bary_coord(mesh%x(:,mesh%cnode(:,cell)), point) / (3.0_r8 * mesh%volume(cell))
     
     !! Local interpolation coefficients
     coef(:,1) = lambda(2) * p(:,1) - lambda(1) * p(:,2)
@@ -570,9 +570,9 @@ contains
   
   subroutine eval_w2_interp_coef (mesh, point, cell, coef, index)
   
-    use simplicial_mesh_support, only: bc_coord
+    use simplex_geometry, only: bary_coord
   
-    type(dist_mesh), intent(in)  :: mesh
+    type(simpl_mesh), intent(in)  :: mesh
     real(kind=r8),   intent(in)  :: point(:)    ! interpolation point
     integer,         intent(in)  :: cell        ! index of the containing cell
     real(kind=r8),   intent(out) :: coef(:,:)   ! interpolation coefficients
@@ -594,7 +594,7 @@ contains
     q(:,6) = mesh%x(:,mesh%cnode(4,cell)) - mesh%x(:,mesh%cnode(3,cell))
     
     !! Barycentric coordinates (scaled) of the interpolation point
-    lambda = bc_coord(mesh%x(:,mesh%cnode(:,cell)), point) / (3.0_r8 * mesh%volume(cell))
+    lambda = bary_coord(mesh%x(:,mesh%cnode(:,cell)), point) / (3.0_r8 * mesh%volume(cell))
     
     !! Local interpolation coefficients
     coef(:,1) =   lambda(2)*q(:,1) + lambda(3)*q(:,2) + lambda(4)*q(:,3)
@@ -612,7 +612,7 @@ contains
     
   subroutine eval_w3_interp_coef (mesh, point, cell, coef, index)
   
-    type(dist_mesh), intent(in)  :: mesh     
+    type(simpl_mesh), intent(in)  :: mesh     
     real(kind=r8),   intent(in)  :: point(:) 
     integer,         intent(in)  :: cell     
     real(kind=r8),   intent(out) :: coef(:)
