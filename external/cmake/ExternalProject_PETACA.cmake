@@ -12,9 +12,9 @@
 set(PETACA_BUILD_TARGET petaca)
 
 # Define the version and archive file
-set(EP_PETACA_VERSION        96c3d9d)
+set(EP_PETACA_VERSION        833b9c1)
 set(EP_PETACA_ARCHIVE_FILE   petaca-${EP_PETACA_VERSION}.tgz)
-set(EP_PETACA_MD5_SUM        742c35658afeef2a7e366a55b8c69be4)  
+set(EP_PETACA_MD5_SUM        fd1aa0849752eb8575e1934ae1c0ca9b)  
 
 # Useful utility to build *FLAGS strings
 include(BuildWhitespaceString)
