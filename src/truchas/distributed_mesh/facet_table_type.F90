@@ -110,18 +110,20 @@ contains
     use cell_topology, only: normalize_facet, parity
 
     class(facet_table), intent(inout) :: this
-    integer, intent(inout) :: facet(:)
+    integer, intent(in)  :: facet(:)
     integer, intent(out) :: label
     logical, intent(in)  :: insert
 
     integer :: p, np, i, j
+    integer, allocatable :: norm_facet(:)
 
     ASSERT(size(facet) > 1)
     ASSERT(all(facet > 0))
     ASSERT(.not.degenerate(facet))
 
-    call normalize_facet (facet)
-    call this%fh%hash (facet, i, j)
+    norm_facet = facet
+    call normalize_facet (norm_facet)
+    call this%fh%hash (norm_facet, i, j)
 
     np = 0
     label = 0
@@ -129,7 +131,7 @@ contains
     !! Search the hash table for the facet
     do while (allocated(this%record(i)%facet))
       np = np + 1 ! update the number of probes
-      p = parity(facet, this%record(i)%facet)
+      p = parity(norm_facet, this%record(i)%facet)
       if (p /= 0) then  ! we located the facet
         label = p * this%record(i)%label
         !! Update performance counters
@@ -150,7 +152,7 @@ contains
     this%nfacet = 1 + this%nfacet
     label = this%nfacet
     this%record(i)%label = label
-    this%record(i)%facet = facet
+    call move_alloc (norm_facet, this%record(i)%facet)
     !! Update performance counters
     this%nus = this%nus + 1
     this%nup = this%nup + np

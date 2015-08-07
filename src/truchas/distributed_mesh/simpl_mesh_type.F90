@@ -1,5 +1,5 @@
 !!
-!! DIST_MESH_TYPE
+!! SIMPL_MESH_TYPE
 !!
 !! This module provides a derived type that encapsulates the data describing a
 !! distributed unstructured mesh that is comprised either entirely of hex cells
@@ -12,7 +12,7 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  The module defines the derived type DIST_MESH for encapsulating the data
+!!  The module defines the derived type SIMPL_MESH for encapsulating the data
 !!  that describes a distributed unstructured mesh.  Objects of this type are
 !!  intended to be used by trusted code, and so its data components are public.
 !!  However, the components should be regarded as read-only because an object
@@ -124,7 +124,7 @@
 
 #include "f90_assert.fpp"
 
-module dist_mesh_type
+module simpl_mesh_type
 
   use kinds, only: r8
   use base_mesh_class
@@ -134,7 +134,7 @@ module dist_mesh_type
   implicit none
   private
 
-  type, extends(base_mesh), public :: dist_mesh
+  type, extends(base_mesh), public :: simpl_mesh
     integer :: nedge=0
     character(:), allocatable :: cell_type
     !! Primary indexing arrays which define the mesh topology (see Note 1)
@@ -142,14 +142,10 @@ module dist_mesh_type
     integer, pointer :: cedge(:,:) => null()  ! cell edges
     integer, pointer :: cface(:,:) => null()  ! cell faces
 
-    integer, allocatable :: cepar(:)  ! relative cell edge orientation (bitfield)
-
     !! Secondary indexing arrays derivable from the primary indexing arrays.
     integer, allocatable :: fnode(:,:)  ! face nodes
     integer, allocatable :: fedge(:,:)  ! face edges
     integer, allocatable :: enode(:,:)  ! edge nodes
-
-    integer, allocatable :: fepar(:)    ! relative face edge orientation (bitfield)
 
     !! Cell block ID arrays.
     integer, allocatable :: block_id(:) ! user-assigned ID for each cell block.
@@ -166,31 +162,50 @@ module dist_mesh_type
     procedure :: get_global_cedge_array
     procedure :: get_global_cface_array
     procedure :: get_global_cblock_array
+    procedure :: compute_geometry
     procedure :: write_profile
-    final :: dist_mesh_delete
-  end type dist_mesh
+    final :: simpl_mesh_delete
+  end type simpl_mesh
 
 contains
 
-  !! Final subroutine for DIST_MESH objects.
-  subroutine dist_mesh_delete (this)
-    type(dist_mesh), intent(inout) :: this
+  !! Final subroutine for SIMPL_MESH objects.
+  subroutine simpl_mesh_delete (this)
+    type(simpl_mesh), intent(inout) :: this
     if (associated(this%cnode)) deallocate(this%cnode)
     if (associated(this%cedge)) deallocate(this%cedge)
     if (associated(this%cface)) deallocate(this%cface)
-    if (associated(this%lface)) deallocate(this%lface)
     call destroy (this%node_ip)
     call destroy (this%edge_ip)
     call destroy (this%face_ip)
     call destroy (this%cell_ip)
-  end subroutine dist_mesh_delete
+  end subroutine simpl_mesh_delete
+
+  !! Compute the geometric data components from the node coordinates.
+  subroutine compute_geometry (this)
+    use simplex_geometry, only: edge_length, tri_area, tet_volume
+    class(simpl_mesh), intent(inout) :: this
+    integer :: j
+    ASSERT(allocated(this%length))
+    ASSERT(allocated(this%area))
+    ASSERT(allocated(this%volume))
+    do j = 1, this%nedge
+      this%length(j) = edge_length(this%x(:,this%enode(:,j)))
+    end do
+    do j = 1, this%nface
+      this%area(j) = tri_area(this%length(this%fedge(:,j)))
+    end do
+    do j = 1, this%ncell
+      this%volume(j) = tet_volume(this%x(:,this%cnode(:,j)))
+    end do
+  end subroutine compute_geometry
 
  !! Writes to the tty and output file a profile of the distributed mesh:
  !! numbers of noded, edges, faces, and cells assigned to each processor;
  !! numbers of  on-process and off-process objects.
   subroutine write_profile (this)
 
-    class(dist_mesh), intent(in) :: this
+    class(simpl_mesh), intent(in) :: this
 
     integer :: n
     character(len=80) :: line
@@ -285,7 +300,7 @@ contains
  !!
 
   subroutine get_global_cnode_array (this, cnode)
-    class(dist_mesh), intent(in) :: this
+    class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cnode(:,:)
     ASSERT(associated(this%cnode))
     ASSERT(defined(this%cell_ip))
@@ -299,7 +314,7 @@ contains
   end subroutine get_global_cnode_array
 
   subroutine get_global_cedge_array (this, cedge)
-    class(dist_mesh), intent(in) :: this
+    class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cedge(:,:)
     ASSERT(associated(this%cedge))
     ASSERT(defined(this%cell_ip))
@@ -313,7 +328,7 @@ contains
   end subroutine get_global_cedge_array
 
   subroutine get_global_cface_array (this, cface)
-    class(dist_mesh), intent(in) :: this
+    class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cface(:,:)
     ASSERT(associated(this%cface))
     ASSERT(defined(this%cell_ip))
@@ -339,7 +354,7 @@ contains
  !!
 
   subroutine get_global_cblock_array (this, cblock)
-    class(dist_mesh), intent(in) :: this
+    class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cblock(:)
     ASSERT(allocated(this%cblock))
     ASSERT(defined(this%cell_ip))
@@ -347,4 +362,4 @@ contains
     call collate (cblock, this%cblock(:this%ncell_onP))
   end subroutine get_global_cblock_array
 
-end module dist_mesh_type
+end module simpl_mesh_type

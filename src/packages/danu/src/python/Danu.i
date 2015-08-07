@@ -62,7 +62,12 @@ import_array();
 //  Simulation Objects definition and extensions
 %include Simulations.i
 
-%apply(int* IN_ARRAY2, int DIM1, int DIM2){(int* elements, int n1, int n2)};
-int danu_hex_save(const char *name, int* elements, int n1, int n2, const char
-    *group_name, const char *dataset_name);
+
+%{
+#include <danu_xdmf_mesh.h>
+%}
+%apply (int* IN_ARRAY2, int DIM1, int DIM2){(int* elements, int n1, int n2)};
+%apply (int* IN_ARRAY1, int DIM1){(int* array1d, int n)};
+%include "../danu_xdmf_mesh.h";
+%clear (int* array1d, int n);
 %clear (int* elements, int n1, int n2);

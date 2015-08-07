@@ -213,7 +213,7 @@ contains
   
   subroutine compute_joule_heat ()
 
-    use dist_mesh_type
+    use simpl_mesh_type
     use mimetic_discretization
     use MaxwellEddy
     use EM_boundary_data
@@ -221,7 +221,7 @@ contains
 
     integer :: j, status, n, cg_max_itr, steps_per_cycle
     real(kind=rk), pointer :: eps(:), mu(:), sigma(:)
-    type(dist_mesh), pointer :: mesh
+    type(simpl_mesh), pointer :: mesh
 
     type(system) :: sys
     real(kind=rk), pointer :: efield(:), bfield(:), q(:), q_avg(:), q_avg_last(:)

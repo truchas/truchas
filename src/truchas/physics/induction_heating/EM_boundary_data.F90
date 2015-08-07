@@ -33,12 +33,12 @@ contains
   subroutine cylinder_bv_init (mesh)
   
     use parallel_communication
-    use dist_mesh_type
+    use simpl_mesh_type
     use EM_data_proxy, only: symmetry_axis, get_EM_domain_type
     use GeometricModeler
     use bitfield_type, only: btest
     
-    type(dist_mesh), intent(in), target :: mesh
+    type(simpl_mesh), intent(in), target :: mesh
     
     integer :: k, bface(mesh%nface), bx0, by0, bz0, bx1, by1, bz1, br1, b30, b60, b120, b150
     real(kind=rk) :: xmin(3), xmax(3), rmax, xh(3), yh(3), zh(3), tol, rmin, vertex(3), slope

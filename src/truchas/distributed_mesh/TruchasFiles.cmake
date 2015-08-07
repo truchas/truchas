@@ -12,26 +12,27 @@ set(DISMESH_TARGET_NAME ProcessTruchasDisMeshFiles)
 
 set(DISMESH_FILES
            distributed_mesh/bitfield_type.F90
-           distributed_mesh/cell_geometry.F90
-           distributed_mesh/cell_topology.F90
            distributed_mesh/base_mesh_class.F90
-           distributed_mesh/dist_mesh_gmv.F90
-	   distributed_mesh/dist_mesh_type.F90
-           distributed_mesh/distributed_tet_mesh.F90
            distributed_mesh/facet_hash_type.F90
            distributed_mesh/facet_table_type.F90
            distributed_mesh/index_partitioning.F90
            distributed_mesh/mesh_manager.F90
-           distributed_mesh/mesh_importer.F90
            distributed_mesh/parallel_communication.F90
            distributed_mesh/parallel_permutations.F90
-           distributed_mesh/simplicial_mesh_support.F90
+           distributed_mesh/cell_topology.F90
+           distributed_mesh/cell_geometry.F90
            distributed_mesh/unstr_mesh_type.F90
            distributed_mesh/unstr_mesh_factory.F90
-           distributed_mesh/unstr_mesh_gmv.F90
            distributed_mesh/unstr_mesh_tools.F90
+           distributed_mesh/unstr_mesh_gmv.F90
            distributed_mesh/ext_exodus_mesh_type.F90
            distributed_mesh/exodus_mesh_tools.F90
+           distributed_mesh/simplex_topology.F90
+           distributed_mesh/simplex_geometry.F90
+	   distributed_mesh/simpl_mesh_type.F90
+           distributed_mesh/simpl_mesh_factory.F90
+           distributed_mesh/simpl_mesh_tools.F90
+           distributed_mesh/simpl_mesh_gmv.F90
            )
 
 set(DISMESH_FPP_FLAGS 

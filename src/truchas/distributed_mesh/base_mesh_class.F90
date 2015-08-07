@@ -19,8 +19,6 @@ module base_mesh_class
   type, abstract, public :: base_mesh
     integer :: nnode=0, nface=0, ncell=0
 
-    integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
-
     !! Relationship to external numbering.
     integer, allocatable :: xnode(:)  ! external node number
     integer, allocatable :: xcell(:)  ! external cell number
@@ -37,17 +35,9 @@ module base_mesh_class
     integer, allocatable :: node_set_id(:)
     integer, allocatable :: node_set_mask(:)
 
-    !! Mesh interface links.
-    integer :: nlink = 0, nlink_onP = 0
-    integer, pointer :: lface(:,:) => null()  ! pointer due to localize_index_array
-    integer, allocatable :: link_set_id(:)    ! user-assigned ID for each link block
-    type(bitfield), allocatable :: link_set_mask(:)  ! link block index
-    type(ip_desc) :: link_ip
-
     real(r8), allocatable :: x(:,:)
     real(r8), allocatable :: area(:)
     real(r8), allocatable :: volume(:)
-    real(r8), allocatable :: normal(:,:)
 
     !! Partitioning and inter-process communication data.
     integer :: nnode_onP=0, nface_onP=0, ncell_onP=0

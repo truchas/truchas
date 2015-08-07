@@ -312,12 +312,16 @@ CONTAINS
   
     use parallel_communication
     use parameter_module, only: hex_mesh_ncell => ncells
-    use mesh_importer
-    use dist_mesh_type
-    use mesh_manager, only: dist_mesh_ptr
+    use simpl_mesh_type
+    use mesh_manager, only: simpl_mesh_ptr
     use EM_input, only: coil_array
     
-    type(dist_mesh), pointer :: alt_mesh
+    type(simpl_mesh), pointer :: alt_mesh
+    type :: external_mesh
+      integer :: nnode=0, ncell=0
+      integer, allocatable :: cnode(:,:), cell_block(:)
+      real(rk), allocatable :: x(:,:)
+    end type
     type(external_mesh), allocatable :: main_mesh
     type(gm_mesh), allocatable :: tet_mesh, hex_mesh
     integer :: j, tmp
@@ -338,7 +342,7 @@ CONTAINS
     deallocate(main_mesh)
     
     !! Access the distributed alternate mesh (tet).
-    alt_mesh => dist_mesh_ptr('alt')
+    alt_mesh => simpl_mesh_ptr('alt')
     ASSERT(associated(alt_mesh))
     
     !! Create the corresponding (collated) GM_MESH structure.
@@ -392,13 +396,62 @@ CONTAINS
 
     !! The initial joule heat is set later in INITIALIZE_EM.
     
+  contains
+    
+    subroutine collect_main_mesh (mesh)
+
+      use parameter_module, only: ncells_tot, nnodes_tot
+      use mesh_module, only: MMesh => Mesh, Vertex, CELL_TET, mesh_has_cblockid_data
+
+      type(external_mesh), intent(out) :: mesh
+
+      integer :: k
+
+      if (is_IOP) then
+        mesh%ncell = ncells_tot
+        mesh%nnode = nnodes_tot
+      end if
+
+      if (global_all(MMesh(:)%Cell_Shape == CELL_TET)) then
+
+        !! Tet-cell node array. Note the funky way Truchas describes a tet as a degenerate hex.
+        allocate(mesh%cnode(4,mesh%ncell))
+        call collate (mesh%cnode(1,:), MMesh(:)%Ngbr_Vrtx_Orig(1))
+        call collate (mesh%cnode(2,:), MMesh(:)%Ngbr_Vrtx_Orig(3))
+        call collate (mesh%cnode(3,:), MMesh(:)%Ngbr_Vrtx_Orig(4))
+        call collate (mesh%cnode(4,:), MMesh(:)%Ngbr_Vrtx_Orig(5))
+
+      else
+
+        !! Hex-cell node array.
+        allocate(mesh%cnode(8,mesh%ncell))
+        do k = 1, 8
+          call collate (mesh%cnode(k,:), MMesh(:)%Ngbr_Vrtx_Orig(k))
+        end do
+
+      end if
+
+      !! Node positions.
+      allocate(mesh%x(3,mesh%nnode))
+      do k = 1, 3
+        call collate (mesh%x(k,:), vertex(:)%Coord(k))
+      end do
+
+      !! Cell block IDs.
+      if (mesh_has_cblockid_data) then
+        allocate(mesh%cell_block(mesh%ncell))
+        call collate (mesh%cell_block, MMesh(:)%CBlockID)
+      end if
+
+    end subroutine collect_main_mesh
+
   end subroutine init_EM_data_proxy
 
   function EM_mesh () result (ptr)
-    use mesh_manager, only: dist_mesh_ptr
-    use dist_mesh_type
-    type(dist_mesh), pointer :: ptr
-    ptr => dist_mesh_ptr('alt')
+    use mesh_manager, only: simpl_mesh_ptr
+    use simpl_mesh_type
+    type(simpl_mesh), pointer :: ptr
+    ptr => simpl_mesh_ptr('alt')
   end function EM_mesh
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -410,10 +463,10 @@ CONTAINS
  !! 
   
   subroutine set_permittivity (values)
-    use dist_mesh_type
+    use simpl_mesh_type
     use index_partitioning
     real(kind=rk), intent(in) :: values(:)
-    type(dist_mesh), pointer :: mesh
+    type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(eps) )
     mesh => EM_mesh()
     call map_hex_field (gmd, values, eps(:mesh%ncell_onP), defval=1.0_rk)
@@ -421,10 +474,10 @@ CONTAINS
   end subroutine set_permittivity
 
   subroutine set_permeability (values)
-    use dist_mesh_type
+    use simpl_mesh_type
     use index_partitioning
     real(kind=rk), intent(in) :: values(:)
-    type(dist_mesh), pointer :: mesh
+    type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(mu) )
     mesh => EM_mesh()
     call map_hex_field (gmd, values, mu(:mesh%ncell_onP), defval=1.0_rk)
@@ -432,10 +485,10 @@ CONTAINS
   end subroutine set_permeability
 
   subroutine set_conductivity (values)
-    use dist_mesh_type
+    use simpl_mesh_type
     use index_partitioning
     real(kind=rk), intent(in) :: values(:)
-    type(dist_mesh), pointer :: mesh
+    type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(sigma) )
     mesh => EM_mesh()
     call map_hex_field (gmd, values, sigma(:mesh%ncell_onP), defval=0.0_rk)
@@ -480,10 +533,10 @@ CONTAINS
  
   subroutine set_joule_power_density (values)
   
-    use dist_mesh_type
+    use simpl_mesh_type
 
     real(kind=rk), intent(in) :: values(:)
-    type(dist_mesh), pointer :: mesh
+    type(simpl_mesh), pointer :: mesh
 
     ASSERT( allocated(joule) )
     
@@ -920,7 +973,7 @@ CONTAINS
 
   subroutine read_joule_data (unit, version)
 
-    use mesh_manager, only: dist_mesh, dist_mesh_ptr
+    use mesh_manager, only: simpl_mesh, simpl_mesh_ptr
     use mesh_module, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
@@ -928,7 +981,7 @@ CONTAINS
     use index_partitioning
 
     integer, intent(in) :: unit,  version
-    type(dist_mesh), pointer :: mesh => null()
+    type(simpl_mesh), pointer :: mesh => null()
     
     integer :: n
 
@@ -947,7 +1000,7 @@ CONTAINS
       call read_var (unit, coil_q(n)%nturns,  'READ_JOULE_DATA: error reading NTURNS record')
     end do
 
-    mesh => dist_mesh_ptr('alt')
+    mesh => simpl_mesh_ptr('alt')
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NMU record')
     if (n /= mesh%cell_ip%global_size()) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
@@ -996,13 +1049,13 @@ CONTAINS
 
     use parallel_communication
     use permutations
-    use mesh_manager, only: dist_mesh, dist_mesh_ptr
+    use mesh_manager, only: simpl_mesh, simpl_mesh_ptr
     use danu_module, only: DANU_SUCCESS
     
     real(rk), intent(in) :: t
 
     integer :: status, n
-    type(dist_mesh), pointer :: mesh => null()
+    type(simpl_mesh), pointer :: mesh => null()
     integer, pointer :: cell_perm(:) => null()
     real(kind=rk), pointer :: col_mu(:)    => null()
     real(kind=rk), pointer :: col_sigma(:) => null()
@@ -1014,7 +1067,7 @@ CONTAINS
     ASSERT( allocated(joule) )
     ASSERT( associated(coil_q) )
     
-    mesh => dist_mesh_ptr('alt')
+    mesh => simpl_mesh_ptr('alt')
     n = global_sum(mesh%ncell_onP)
 
     !! Collate the cell permutation array.

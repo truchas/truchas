@@ -21,8 +21,8 @@
 
 module field_probes
 
-  use simplicial_mesh_support
-  use dist_mesh_type
+  use simplex_geometry, only: tet_volume, tet_face_normal
+  use simpl_mesh_type
   use mimetic_discretization
   implicit none
   private
@@ -138,7 +138,7 @@ contains
   
   subroutine initialize_probe_array (this, d, mask)
     type(ProbeArray),  intent(inout) :: this
-    type(dist_mesh),   intent(in)    :: d
+    type(simpl_mesh),   intent(in)    :: d
     logical, optional, intent(out)   :: mask(:)
     integer :: j
     !! Each type of field probe is at the same point => one mask.
@@ -164,7 +164,7 @@ contains
 
   subroutine initialize_w1_probe (probe, d)
     type(W1Probe), intent(inout) :: probe
-    type(dist_mesh), intent(in) :: d
+    type(simpl_mesh), intent(in) :: d
     integer :: n
     n = cell(d, probe%point) ! Locate probe point in the grid
     if (n == 0) return
@@ -174,7 +174,7 @@ contains
   
   subroutine initialize_w2_probe (probe, d)
     type(W2Probe), intent(inout) :: probe
-    type(dist_mesh), intent(in) :: d
+    type(simpl_mesh), intent(in) :: d
     integer :: n
     n = cell(d, probe%point) ! Locate probe point in the grid
     if (n == 0) return
@@ -184,7 +184,7 @@ contains
   
   subroutine initialize_w3_probe (probe, d)
     type(W3Probe), intent(inout) :: probe
-    type(dist_mesh), intent(in) :: d
+    type(simpl_mesh), intent(in) :: d
     integer :: n
     n = cell(d, probe%point) ! Locate probe point in the grid
     if (n == 0) return
@@ -412,7 +412,7 @@ contains
 !!
     
   integer function cell (d, point)
-    type(dist_mesh), intent(in) :: d
+    type(simpl_mesh), intent(in) :: d
     real(kind=r8), intent(in) :: point(:)
     integer :: j
     cell = 0

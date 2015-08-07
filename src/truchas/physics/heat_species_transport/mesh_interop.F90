@@ -86,40 +86,12 @@ module mesh_interop
   public :: generate_mesh_mappings, delete_mesh_mappings
   public :: mmf_init, update_mmf_from_matl, update_matl_from_mmf
   public :: void_is_present
-  public :: cast_to_dist_mesh, cast_to_unstr_mesh
 
   !! Permutation structures connecting the DS and T mesh cell labelings.
   type(par_perm), allocatable, public, save :: pcell_t_to_ds, pcell_ds_to_t
   integer, pointer, public, save :: t_gap_elements(:) => null()
   
 contains
-
-  function cast_to_dist_mesh (bmesh) result (cast)
-    use dist_mesh_type
-    class(base_mesh), pointer, intent(in) :: bmesh
-    class(dist_mesh), pointer :: cast
-    cast => null()
-    if (associated(bmesh)) then
-      select type (bmesh)
-      type is (dist_mesh)
-        cast => bmesh
-      end select
-    end if
-  end function cast_to_dist_mesh
-
-  function cast_to_unstr_mesh (bmesh) result (cast)
-    use base_mesh_class
-    use unstr_mesh_type
-    class(base_mesh), pointer, intent(in) :: bmesh
-    class(unstr_mesh), pointer :: cast
-    cast => null()
-    if (associated(bmesh)) then
-      select type (bmesh)
-      type is (unstr_mesh)
-        cast => bmesh
-      end select
-    end if
-  end function cast_to_unstr_mesh
 
   subroutine generate_mesh_mappings (mesh)
     use mesh_module, only: unpermute_mesh_vector

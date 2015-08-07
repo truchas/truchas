@@ -187,7 +187,9 @@ module exodus_mesh_type
   contains
     procedure :: side_node_list
     procedure :: side_set_node_list
-    procedure :: get_concat_elem_conn
+    procedure, private :: get_concat_elem_conn_mixed
+    procedure, private :: get_concat_elem_conn_pure
+    generic :: get_concat_elem_conn => get_concat_elem_conn_mixed, get_concat_elem_conn_pure
     procedure, nopass :: side_size_list
     !! Debugging methods
     procedure :: defined => exodus_mesh_defined
@@ -399,15 +401,15 @@ contains
   !! NB: The procedure handles a default-initialized mesh object gracefully,
   !! allocating and defining XCONNECT and CONNECT for a mesh with 0 elements.
   !! This is useful in a parallel context where the mesh object is only
-  !! default initialized on all but the IO process. 
-    
-  subroutine get_concat_elem_conn (this, xconnect, connect)
-  
+  !! default initialized on all but the IO process.
+
+  subroutine get_concat_elem_conn_mixed (this, xconnect, connect)
+
     use,intrinsic :: iso_c_binding, only: c_loc, c_f_pointer
-    
+
     class(exodus_mesh), intent(in), target :: this
     integer, allocatable, intent(out) :: xconnect(:), connect(:)
-    
+
     integer :: j, k, n, offset
     integer, pointer :: flat_conn(:)
 
@@ -416,7 +418,7 @@ contains
       xconnect(1) = 1
       return
     end if
-    
+
     n = sum(this%eblk%num_nodes_per_elem * this%eblk%num_elem)
     allocate(xconnect(this%num_elem+1), connect(n))
     n = 0
@@ -433,9 +435,30 @@ contains
         offset = offset + size(conn)
       end associate
     end do
-    
-  end subroutine get_concat_elem_conn
-    
+
+  end subroutine get_concat_elem_conn_mixed
+
+  !! This ExodusII-like procedure concatenates the mesh connectivity data that
+  !! is stored within an array of element blocks, into the single rank-2 array
+  !! CONNECT.  It assumes that all element blocks have the same element type
+  !! and that the shape of CONNECT is consistent with that element type and the
+  !! total number of elements.
+
+  subroutine get_concat_elem_conn_pure (this, connect)
+
+    class(exodus_mesh), intent(in), target :: this
+    integer, intent(out) :: connect(:,:)
+
+    integer :: j, offset
+
+    offset = 0
+    do j = 1, this%num_eblk
+      connect(:,offset+1:offset+this%eblk(j)%num_elem) = this%eblk(j)%connect
+      offset = offset + this%eblk(j)%num_elem
+    end do
+
+  end subroutine get_concat_elem_conn_pure
+
 !!!! TYPE BOUND DEBUGGING PROCEDURES FOLLOW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   elemental logical function exodus_mesh_defined (this)
