@@ -59,6 +59,7 @@ MODULE MESH_INPUT_MODULE
   real(r8), public, save, dimension(ndim,mseg+1) :: Coord
   integer,  public, save, dimension(mbody) :: gap_element_blocks
   integer,  public, save, dimension(127) :: interface_side_sets
+  integer,  public, save :: exodus_block_modulus
 
   ! Derived MESH namelist quantities
   integer, public, save, dimension(ndim) :: Nseg
@@ -103,7 +104,7 @@ CONTAINS
     ! mesh namelist specification
     Namelist /MESH/ Ncell, Coord, Ratio, Fuzz, Heps, mesh_file, mesh_file_format, &
                     coordinate_scale_factor, use_RCM, partitions_total, partitions_per_process, &
-                    gap_element_blocks, interface_side_sets
+                    gap_element_blocks, interface_side_sets, exodus_block_modulus
 
     call TLS_info ('')
     call TLS_info ('Reading MESH Namelist ...')
@@ -169,6 +170,9 @@ CONTAINS
        ! First read the sizes and broadcast them.
        call MESH_READ_SIZE ()
 
+       if (exodus_block_modulus < 0) &
+           call TLS_fatal ('negative value specified for Exodus_Block_Modulus')
+
        if (nnodes_tot <= 0 .or. ncells_tot <= 0) &
            call TLS_fatal ('number of nodes and/or cells in ' // trim(mesh_file) // ' is <= 0')
 
@@ -222,6 +226,7 @@ CONTAINS
     use parameter_module,     only: ncells_tot, ndim, nnodes_tot, nfc, nssets
     use exodus_mesh_type
     use exodus_mesh_io, only: read_exodus_mesh
+    use string_utilities, only: i_to_c
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(ncells_tot), intent(INOUT) :: Mesh
@@ -230,10 +235,10 @@ CONTAINS
     ! Local Variables
     logical :: hybrid_mesh, tet, prism, pyramid
     integer :: i, j, lc, n, mem_stat, status
-    integer :: nc_count, ntmp
+    integer :: nc_count, ntmp, new_id
     integer, pointer  :: ctemp(:), ftemp(:)
     type(exodus_mesh), target :: exo_mesh
-    character(:), allocatable :: errmsg
+    character(:), allocatable :: errmsg, msg
 
     call TLS_info ('')
     call TLS_info ('Reading ExodusII mesh file ' // trim(mesh_file) // ' ...')
@@ -252,6 +257,17 @@ CONTAINS
     ! Copy the element connectivity, organized by blocks.
     nc_count = 0
     do n = 1, exo_mesh%num_eblk
+       ! Overwrite the block ID with its value modulo EXODUS_BLOCK_MODULUS.
+       if (exodus_block_modulus > 0) then
+          associate (id => exo_mesh%eblk(n)%id)
+             new_id = modulo(exo_mesh%eblk(n)%id, exodus_block_modulus)
+             if (new_id /= id) then
+                msg = ' Element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id)
+                call TLS_info (msg, TLS_VERB_NORMAL)
+                id = new_id
+             end if
+          end associate
+       end if
        lc = size(exo_mesh%eblk(n)%connect,dim=1)
        do i = 1, exo_mesh%eblk(n)%num_elem
           nc_count = nc_count + 1
@@ -904,6 +920,9 @@ CONTAINS
     gap_element_blocks = 0
     interface_side_sets = 0
 
+    ! Modulus for determining congruent element block IDs.
+    exodus_block_modulus = 10000
+
    ! Initialize the coordinates for in-line generation to NULL_R.
    ! This permits error-trapping above to catch situations where the 
    ! user failed to specify a coordinate.
@@ -942,6 +961,7 @@ CONTAINS
        call PGSLib_BCast (partitions_per_process)
        call PGSLib_BCast (gap_element_blocks)
        call PGSLib_BCast (interface_side_sets)
+       call PGSLib_BCast (exodus_block_modulus)
     end if BROADCAST_VARIABLES
 
   END SUBROUTINE MESH_INPUT_PARALLEL
