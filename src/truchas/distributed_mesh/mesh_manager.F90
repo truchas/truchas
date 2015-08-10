@@ -14,18 +14,18 @@ module mesh_manager
   use simpl_mesh_type
   implicit none
   private
-  
+
   public :: enable_mesh, named_mesh_ptr, unstr_mesh_ptr, simpl_mesh_ptr
   public :: peek_truchas_mesh_namelists, init_mesh_manager
-  
+
   public :: simpl_mesh ! re-export; do not want this -- FIXME
-  
+
   interface init_mesh_manager
     module procedure init_mesh_manager, init_mesh_manager_params
   end interface
-  
+
   type(parameter_list), target, save :: meshes
-  
+
   !! The value of the 'mesh' parameter will be of this private type.
   !! A PARAMETER_LIST stores (shallow) copies of parameter values, and thus
   !! cannot properly store a mesh object.  Instead we have it store a pointer
@@ -58,6 +58,7 @@ contains
 
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist1, plist2
+    integer  :: exodus_block_modulus
     real(r8) :: coord_scale_factor
     character(:), allocatable :: mesh_file
 #ifdef INTEL_COMPILER_WORKAROUND
@@ -83,17 +84,22 @@ contains
       call plist1%get ('mesh-file', mesh_file)
       call plist2%set ('mesh-file', mesh_file)
       call plist2%set ('enabled', .true.)
-      
+
       if (plist1%is_parameter('coord-scale-factor')) then
         call plist1%get ('coord-scale-factor', coord_scale_factor)
         call plist2%set ('coord-scale-factor', coord_scale_factor)
       end if
-      
+
       if (plist1%is_parameter('interface-side-set-ids')) then
         call plist1%get ('interface-side-set-ids', side_sets)
         call plist2%set ('interface-side-set-ids', side_sets)
       end if
-      
+
+      if (plist1%is_parameter('exodus-block-modulus')) then
+        call plist1%get ('exodus-block-modulus', exodus_block_modulus)
+        call plist2%set ('exodus-block-modulus', exodus_block_modulus)
+      end if
+
       call piter%next
     end do
 
@@ -103,10 +109,10 @@ contains
   end subroutine init_mesh_manager_params
 
   subroutine init_mesh_manager
-  
+
     use unstr_mesh_factory
     use simpl_mesh_factory
-  
+
     integer :: stat
     logical :: enabled, em_mesh
     character(:), allocatable :: errmsg
@@ -144,10 +150,10 @@ contains
   subroutine peek_truchas_mesh_namelists
 
     use mesh_input_module, only: mesh_file, mesh_file_format, coordinate_scale_factor, &
-                                 gap_element_blocks, interface_side_sets
+                                 gap_element_blocks, interface_side_sets, exodus_block_modulus
     use altmesh_input, only: altmesh_exists, altmesh_file, altmesh_coordinate_scale_factor
     use string_utilities, only: raise_case
-  
+
     integer, allocatable :: iarray(:)
     type(parameter_list), pointer :: plist
 
@@ -157,12 +163,13 @@ contains
       call plist%set ('mesh', any_mesh())
       call plist%set ('mesh-file', trim(mesh_file))
       call plist%set ('coord-scale-factor', coordinate_scale_factor)
+      call plist%set ('exodus-block-modulus', exodus_block_modulus)
       iarray = pack(gap_element_blocks, mask=(gap_element_blocks > 0))
       if (size(iarray) > 0) call plist%set ('gap-element-block-ids', iarray)
       iarray = pack(interface_side_sets, mask=(interface_side_sets > 0))
       if (size(iarray) > 0) call plist%set ('interface-side-set-ids', iarray)
     end if
-    
+
     !! ALTMESH namelist. the "ALT" mesh used by EM
     if (altmesh_exists) then
       plist => meshes%sublist('ALT')
@@ -171,9 +178,9 @@ contains
       call plist%set ('coord-scale-factor', altmesh_coordinate_scale_factor)
       call plist%set ('em-mesh', .true.)
     end if
-    
+
   end subroutine peek_truchas_mesh_namelists
-  
+
 
   subroutine enable_mesh (name, exists)
     use string_utilities, only: raise_case
@@ -186,7 +193,7 @@ contains
       call plist%set ('enabled', .true.)
     end if
   end subroutine enable_mesh
-    
+
 
   !! Returns a pointer to the CLASS(BASE_MESH) mesh object that corresponds to
   !! NAME. A null pointer is returned if NAME is not recognized or if the mesh

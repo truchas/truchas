@@ -28,13 +28,15 @@ contains
     use index_partitioning
     use unstr_mesh_tools
     use parallel_communication
+    use truchas_logging_services
+    use string_utilities, only: i_to_c
 
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable :: errmsg
     type(unstr_mesh), pointer :: mesh
 
-    integer :: j, k, n, nnode, nface, ncell
+    integer :: j, k, n, nnode, nface, ncell, new_id, exodus_block_modulus
     real(r8) :: csf
     integer :: cell_bsize(nPE), node_bsize(nPE), face_bsize(nPE)
     integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), pass(:)
@@ -47,12 +49,13 @@ contains
     integer, pointer :: offP_index(:)
     integer, allocatable :: p(:), ssid(:), ebid(:)
     type(ext_exodus_mesh) :: exo_mesh
-    character(:), allocatable :: mesh_file
+    character(:), allocatable :: mesh_file, msg
 
     mesh => null()
 
     if (is_IOP) then
       call params%get ('mesh-file', mesh_file)
+      call TLS_info ('  Reading ExodusII mesh file "' // mesh_file // '"')
       call read_exodus_mesh (mesh_file, exo_mesh, stat, errmsg)
     else
       allocate(exo_mesh%coord(3,0))
@@ -64,6 +67,23 @@ contains
     if (is_IOP) then
       call params%get ('coord-scale-factor', csf, default=1.0d0)
       if (csf /= 1.0_r8) exo_mesh%coord = csf * exo_mesh%coord
+    end if
+
+    !! Overwrite the Exodus block IDs with their congruent values.
+    if (is_IOP) then
+      call params%get ('exodus-block-modulus', exodus_block_modulus, default=0)
+      if (exodus_block_modulus > 0) then
+        do n = 1, exo_mesh%num_eblk
+          associate (id => exo_mesh%eblk(n)%id)
+            new_id = modulo(id, exodus_block_modulus)
+            if (new_id /= id) then
+              msg = '  Element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id)
+              call TLS_info (msg, TLS_VERB_NORMAL)
+              id = new_id
+            end if
+          end associate
+        end do
+      end if
     end if
 
     !! Define an empty mesh link structure
@@ -992,10 +1012,17 @@ contains
   !! block are mapped to a cell set whose ID is the element block ID.
   !! CELL_SET_ID stores the user-assigned integer IDs for the cell sets, and is
   !! replicated on each process.
+  !!
+  !! NB: This implementation does not assume the element blocks have unique IDs.
+  !! Duplicates are coalesced and the returned CELL_SET_ID array is the list of
+  !! the unique IDs (important).  A consequence is that the order of CELL_SET_ID
+  !! no longer corresponds to the order of the element blocks in the Exodus mesh
+  !! but this was never a guaranteed property, and should not have been assumed.
 
   subroutine init_cell_set_data (this, exo_mesh)
 
     use exodus_mesh_type
+    use integer_set_type
     use permutations, only: reorder
     use parallel_communication, only: is_IOP, distribute, broadcast, collate
     use index_partitioning, only: gather_boundary
@@ -1003,19 +1030,36 @@ contains
     type(unstr_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: exo_mesh
 
-    integer :: i, n, offset, ncell_tot
+    integer :: i, j, n, offset, ncell_tot
     integer, allocatable :: cell_set_mask(:), cell_perm(:)
+    type(integer_set) :: id_set
+
+    !! Initialize the list of cell set IDs (%CELL_SET_ID), eliminating duplicates.
+    if (is_IOP) then
+      do n = 1, size(exo_mesh%eblk)
+        call id_set%add (exo_mesh%eblk(n)%id)
+      end do
+      n = id_set%size()
+    end if
+    call broadcast (n)
+    allocate(this%cell_set_id(n))
+    if (is_IOP) this%cell_set_id = id_set
+    call broadcast (this%cell_set_id)
 
     ncell_tot = this%cell_ip%global_size()
 
     !! Generate the global cell_set mask array (original cell ordering)
     allocate(cell_set_mask(merge(ncell_tot,0,is_IOP)))
     if (is_IOP) then
-      INSIST(size(exo_mesh%eblk)+1 <= bit_size(cell_set_mask))
+      INSIST(size(this%cell_set_id)+1 <= bit_size(cell_set_mask))
       offset = 0
       do n = 1, size(exo_mesh%eblk)
+        do j = size(this%cell_set_id), 1, -1
+          if (this%cell_set_id(j) == exo_mesh%eblk(n)%id) exit
+        end do
+        INSIST(j > 0)
         do i = 1, exo_mesh%eblk(n)%num_elem
-          cell_set_mask(offset+i) = ibset(0, pos=n)
+          cell_set_mask(offset+i) = ibset(0, pos=j)
         end do
         offset = offset + exo_mesh%eblk(n)%num_elem
       end do
@@ -1032,13 +1076,6 @@ contains
     call distribute (this%cell_set_mask(:this%ncell_onP), cell_set_mask)
     call gather_boundary (this%cell_ip, this%cell_set_mask)
     deallocate(cell_set_mask)
-
-    !! Initialize the list of cell set IDs (%CELL_SET_ID)
-    if (is_IOP) n = size(exo_mesh%eblk)
-    call broadcast (n)
-    allocate(this%cell_set_id(n))
-    if (is_IOP) this%cell_set_id = exo_mesh%eblk%id
-    call broadcast (this%cell_set_id)
 
   end subroutine init_cell_set_data
 
