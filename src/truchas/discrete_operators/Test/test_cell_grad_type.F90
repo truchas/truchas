@@ -140,6 +140,7 @@ contains
     type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
+    type(parameter_list) :: params  ! we will not define any; use defaults
     integer :: stat
 
     call TLS_info ('')
@@ -155,7 +156,7 @@ contains
     mask = .true.
     setids = [5, 6]
 
-    call grad%init (disc, mask, setids, stat, errmsg)
+    call grad%init (disc, mask, setids, params, stat, errmsg)
     if (stat /= 0) then
       call TLS_error ('from CELL_GRAD%INIT: ' // errmsg)
       status = 1
@@ -201,6 +202,7 @@ contains
     type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
+    type(parameter_list) :: params  ! we will not define any; use defaults
     integer :: stat
 
     call TLS_info ('')
@@ -216,7 +218,7 @@ contains
     mask = .true.
     setids = [5, 6]
 
-    call grad%init (disc, mask, setids, stat, errmsg)
+    call grad%init (disc, mask, setids, params, stat, errmsg)
     if (stat /= 0) then
       call TLS_error ('from CELL_GRAD%INIT: ' // errmsg)
       status = 1
@@ -257,6 +259,7 @@ contains
     type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
+    type(parameter_list) :: params  ! we will not define any; use defaults
     integer :: stat
 
     call TLS_info ('')
@@ -272,7 +275,7 @@ contains
     mask = .true.
     setids = [5, 6]
 
-    call grad%init (disc, mask, setids, stat, errmsg)
+    call grad%init (disc, mask, setids, params, stat, errmsg)
     if (stat /= 0) then
       call TLS_error ('from CELL_GRAD%INIT: ' // errmsg)
       status = 1
@@ -308,6 +311,7 @@ contains
     type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
+    type(parameter_list) :: params  ! we will not define any; use defaults
     integer :: stat
 
     call TLS_info ('')
@@ -323,7 +327,7 @@ contains
     mask = btest(mesh%cell_set_mask,pos=1)
     setids = [1]
 
-    call grad%init (disc, mask, setids, stat, errmsg)
+    call grad%init (disc, mask, setids, params, stat, errmsg)
     if (stat /= 0) then
       call TLS_error ('from CELL_GRAD%INIT: ' // errmsg)
       status = 1
@@ -359,6 +363,7 @@ contains
     type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
+    type(parameter_list) :: params  ! we will not define any; use defaults
     integer :: stat
 
     call TLS_info ('')
@@ -374,7 +379,7 @@ contains
     mask = btest(mesh%cell_set_mask,pos=1)
     setids = [1]
 
-    call grad%init (disc, mask, setids, stat, errmsg)
+    call grad%init (disc, mask, setids, params, stat, errmsg)
     if (stat /= 0) then
       call TLS_error ('from CELL_GRAD%INIT: ' // errmsg)
       status = 1
@@ -410,6 +415,7 @@ contains
     type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
+    type(parameter_list) :: params  ! we will not define any; use defaults
     integer :: stat
 
     call TLS_info ('')
@@ -425,7 +431,7 @@ contains
     mask = .true.
     setids = [1]
 
-    call grad%init (disc, mask, setids, stat, errmsg)
+    call grad%init (disc, mask, setids, params, stat, errmsg)
     if (stat /= 0) then
       call TLS_error ('from CELL_GRAD%INIT: ' // errmsg)
       status = 1
@@ -449,6 +455,7 @@ contains
     type(unstr_mesh), pointer :: mesh
     type(mfd_disc),  pointer :: disc
     type(cell_grad) :: grad
+    type(parameter_list) :: params  ! we will not define any; use defaults
     integer :: stat
 
     call TLS_info ('')
@@ -463,7 +470,7 @@ contains
     allocate(mask(mesh%ncell), setids(0))
     mask = .true.
 
-    call grad%init (disc, mask, setids, stat, errmsg)
+    call grad%init (disc, mask, setids, params, stat, errmsg)
     if (stat /= 0) then
       call TLS_error ('from CELL_GRAD%INIT: ' // errmsg)
       status = 1

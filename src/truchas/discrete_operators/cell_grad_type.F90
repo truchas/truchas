@@ -45,12 +45,13 @@ contains
     if (associated(this%params)) deallocate(this%params)
   end subroutine delete_cell_grad
 
-  subroutine init (this, disc, mask, setids, stat, errmsg)
+  subroutine init (this, disc, mask, setids, params, stat, errmsg)
 
     class(cell_grad), intent(out) :: this
     type(mfd_disc), intent(in), target :: disc
     logical, intent(in) :: mask(:)
     integer, intent(in) :: setids(:)
+    type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     
@@ -58,7 +59,7 @@ contains
     logical, allocatable :: face_mask(:)
     type(pcsr_graph), pointer :: g
     type(ip_desc), pointer :: row_ip
-    real(r8) :: c
+    real(r8) :: c, rpar
     
     ASSERT(size(mask) == disc%mesh%ncell)
     
@@ -146,7 +147,10 @@ contains
     !! Hardwire the solver parameters for now; some need to be exposed.
     allocate(this%params)
     call this%params%set ('krylov-method', 'gmres')
-    call this%params%set ('rel-tol', 1.0e-10_r8)
+    call params%get ('grad-abs-tol', rpar, default=0.0_r8)
+    call this%params%set ('abs-tol', rpar)
+    call params%get ('grad-rel-tol', rpar, default=1.0e-10_r8)
+    call this%params%set ('rel-tol', rpar)
     call this%params%set ('gmres-krylov-dim', 5)
     call this%params%set ('max-ds-iter', 50)
     call this%params%set ('max-amg-iter', 20)

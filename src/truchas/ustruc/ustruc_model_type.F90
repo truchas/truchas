@@ -68,6 +68,7 @@ module ustruc_model_type
   use unstr_mesh_type
   use mfd_disc_type
   use ustruc_comp_class
+  use parameter_list_type
   use truchas_logging_services
   implicit none
   private
@@ -83,6 +84,7 @@ module ustruc_model_type
     !! Model parameters
     real(r8) :: mfrac_min
     integer, allocatable :: sym_setids(:)
+    type(parameter_list) :: grad_params ! gradient solver parameters
   contains
     procedure :: init
     procedure :: set_state
@@ -103,7 +105,6 @@ contains
 
   subroutine init (this, mesh, params)
 
-    use parameter_list_type
     use ustruc_comp_factory
 
     class(ustruc_model), intent(out) :: this
@@ -114,6 +115,7 @@ contains
     integer, allocatable :: setids(:)
     integer(kind(mesh%cell_set_mask)) :: bitmask
     character(:), allocatable :: errmsg
+    real(r8) :: rpar
 
     this%mesh => mesh
 
@@ -135,6 +137,16 @@ contains
     INSIST(this%mfrac_min >= 0.0_r8)
 
     call params%get ('symmetry-face-sets', this%sym_setids, default=[integer::])
+    
+    if (params%is_parameter('grad-abs-tol')) then
+      call params%get ('grad-abs-tol', rpar)
+      call this%grad_params%set ('grad-abs-tol', rpar)
+    end if
+
+    if (params%is_parameter('grad-rel-tol')) then
+      call params%get ('grad-rel-tol', rpar)
+      call this%grad_params%set ('grad-rel-tol', rpar)
+    end if
 
     !! For now we instantiate the analysis components here, but this needs to
     !! be done outside and the result passed in.
@@ -328,7 +340,7 @@ contains
     invalid  = .not.mask(this%map)
 
     !! Setup the gradient solver; see NB1 and NB2 above.
-    call grad%init (this%disc, mask, this%sym_setids, stat, errmsg)
+    call grad%init (this%disc, mask, this%sym_setids, this%grad_params, stat, errmsg)
     if (stat /= 0) call TLS_fatal ('USTRUC_MODEL%INIT: gradient solver setup error: ' // errmsg)
 
     !! Solve for the solid fraction gradient and extract the relevant data.

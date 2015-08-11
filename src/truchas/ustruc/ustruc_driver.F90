@@ -92,6 +92,7 @@ contains
     integer, intent(in) :: lun
 
     integer :: ios, cell_set_ids(32), symmetry_face_sets(32)
+    real(r8) :: grad_abs_tol, grad_rel_tol
     real(r8) :: vel_max, vel_lo_solid_frac, vel_hi_solid_frac
     real(r8) :: theta1, theta1p, theta2, theta2p, theta_gv
     logical :: found
@@ -101,7 +102,7 @@ contains
     character(128) :: iom, gv_model_file
 
     namelist /microstructure/ material, cell_set_ids, symmetry_face_sets, &
-        vel_max, vel_lo_solid_frac, vel_hi_solid_frac, &
+        grad_abs_tol, grad_rel_tol, vel_max, vel_lo_solid_frac, vel_hi_solid_frac, &
         theta1, theta1p, theta2, theta2p, theta_gv, gv_model_file
 
     !! Locate the MICROSTRUCTURE namelist (first occurrence)
@@ -123,6 +124,8 @@ contains
       material = NULL_C
       cell_set_ids = NULL_I
       symmetry_face_sets = NULL_I
+      grad_abs_tol = NULL_R
+      grad_rel_tol = NULL_R
       vel_max = NULL_R
       vel_lo_solid_frac = NULL_R
       vel_hi_solid_frac = NULL_R
@@ -141,6 +144,8 @@ contains
     call broadcast (material)
     call broadcast (cell_set_ids)
     call broadcast (symmetry_face_sets)
+    call broadcast (grad_abs_tol)
+    call broadcast (grad_rel_tol)
     call broadcast (vel_max)
     call broadcast (vel_lo_solid_frac)
     call broadcast (vel_hi_solid_frac)
@@ -177,11 +182,28 @@ contains
     setids = pack(symmetry_face_sets, mask=(symmetry_face_sets /= NULL_I))
     call params%set ('symmetry-face-sets', setids)
 
+    !! Check gradient solver tolerances GRAD_ABS_TOL and GRAD_REL_TOL.
+    if (grad_abs_tol /= NULL_R) then
+      if (grad_abs_tol < 0.0_r8) then
+        call TLS_fatal ('GRAD_ABS_TOL must be >= 0')
+      else
+        call params%set ('grad-abs-tol', grad_abs_tol)
+      end if
+    end if
+
+    if (grad_rel_tol /= NULL_R) then
+      if (grad_rel_tol < 0.0_r8) then
+        call TLS_fatal ('GRAD_REL_TOL must be >= 0')
+      else
+        call params%set ('grad-rel-tol', grad_rel_tol)
+      end if
+    end if
+
     !! Check VEL-MAX
     if (vel_max == NULL_R) then
-      call TLS_fatal ('no value assigned to VEL-MAX')
+      call TLS_fatal ('no value assigned to VEL_MAX')
     else if (vel_max < 0.0_r8) then
-      call TLS_fatal ('VEL-MAX must be >= 0')
+      call TLS_fatal ('VEL_MAX must be >= 0')
     else
       call params%set ('vel-max', vel_max)
     end if
