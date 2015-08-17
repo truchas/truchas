@@ -246,7 +246,6 @@ module index_partitioning
   implicit none
   private
 
-  public :: create, add_offP_index, destroy, defined
   public :: localize_index_array, localize_index_struct
   public :: gather_boundary, boundary_is_current
   public :: scatter_boundary_sum, scatter_boundary_min, scatter_boundary_max
@@ -265,6 +264,12 @@ module index_partitioning
     integer, pointer :: sup_index(:) => null()  ! index from off-process data to supplement buffer
     type(PGSLib_GS_Trace), pointer :: trace => null() ! PGSLib communication trace
   contains
+    procedure, private :: create_1
+    procedure, private :: create_2
+    procedure, private :: create_3
+    procedure, private :: create_4
+    generic   :: init => create_1, create_2, create_3, create_4
+    procedure :: add_offP_index
     procedure :: onP_size
     procedure :: offP_size
     procedure :: local_size
@@ -272,19 +277,9 @@ module index_partitioning
     procedure :: global_index
     procedure :: first_index
     procedure :: last_index
+    procedure :: defined => defined_ip_desc
+    final :: ip_desc_delete
   end type ip_desc
-
-  interface create
-    module procedure create_1, create_2, create_3, create_4
-  end interface
-
-  interface destroy
-    module procedure destroy_ip_desc
-  end interface
-
-  interface defined
-    module procedure defined_ip_desc
-  end interface
 
   interface localize_index_array
     module procedure localize_index_array_1, localize_index_array_2, localize_index_array_3
@@ -339,6 +334,15 @@ module index_partitioning
 
 contains
 
+  !! Final subroutine for IP_DESC objects.
+  subroutine ip_desc_delete (this)
+    type(ip_desc), intent(inout) :: this
+    if (associated(this%offP_index)) deallocate(this%offP_index)
+    if (associated(this%dup_index))  deallocate(this%dup_index)
+    if (associated(this%sup_index))  deallocate(this%sup_index)
+    if (associated(this%trace)) call PGSLib_Deallocate_Trace (this%trace)
+  end subroutine ip_desc_delete
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! CREATE specific procedures
@@ -346,7 +350,7 @@ contains
 
   subroutine create_1 (this, bsize)
 
-    type(ip_desc), intent(out) :: this
+    class(ip_desc), intent(out) :: this
     integer, intent(in) :: bsize(:)
 
     integer :: sizes(nPE)
@@ -370,20 +374,20 @@ contains
 
   subroutine create_2 (this, bsize)
 
-    type(ip_desc), intent(out) :: this
+    class(ip_desc), intent(out) :: this
     integer, intent(in) :: bsize
 
     integer :: sizes(nPE)
 
     call collate (sizes, bsize)
-    call create (this, sizes)
+    call create_1 (this, sizes)
 
   end subroutine create_2
 
 
   subroutine create_3 (this, bsize, offP_size, offP_index)
 
-    type(ip_desc), intent(out) :: this
+    class(ip_desc), intent(out) :: this
     integer, intent(in) :: bsize(:)
     integer, intent(in) :: offP_size(:)
     integer, intent(in) :: offP_index(:)
@@ -391,7 +395,7 @@ contains
     integer :: n
     integer, allocatable :: index(:)
 
-    call create (this, bsize)
+    call create_1 (this, bsize)
 
     if (is_IOP) then
       ASSERT( size(offP_size) == nPE )
@@ -410,37 +414,14 @@ contains
 
   subroutine create_4 (this, bsize, offP_index)
 
-    type(ip_desc), intent(out) :: this
+    class(ip_desc), intent(out) :: this
     integer, intent(in) :: bsize
     integer, intent(in) :: offP_index(:)
 
-    call create (this, bsize)
+    call create_2 (this, bsize)
     call add_offP_index (this, offP_index)
 
   end subroutine create_4
-
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! DESTROY
- !!
- !! This routine deallocates any storage associated with the partition THIS,
- !! and returns the object to its default initialization state.
- !!
-
-  subroutine destroy_ip_desc (this)
-
-    type(ip_desc), intent(inout) :: this
-
-    type(ip_desc) :: default
-
-    if (associated(this%offP_index)) deallocate(this%offP_index)
-    if (associated(this%dup_index))  deallocate(this%dup_index)
-    if (associated(this%sup_index))  deallocate(this%sup_index)
-    if (associated(this%trace)) call PGSLib_Deallocate_Trace (this%trace)
-
-    this = default  ! assign default initialization values
-
-  end subroutine destroy_ip_desc
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -531,12 +512,12 @@ contains
 
     use permutations, only: is_identity_perm
 
-    type(ip_desc), intent(inout) :: this
+    class(ip_desc), intent(inout) :: this
     integer, intent(in) :: offP_index(:)
     
     integer, pointer :: old_offP_index(:)
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( minval(offP_index) >= 1 )
     ASSERT( maxval(offP_index) <= this%global_size_ )
     ASSERT( all((offP_index < this%first) .or. (offP_index > this%last)) )
@@ -608,13 +589,12 @@ contains
 
     integer, intent(in) :: g_index(:)
     type(ip_desc), intent(in) :: domain, range
-    integer, pointer :: l_index(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: l_index(:), offP_index(:)
 
     integer :: j
     integer, allocatable :: map(:)
 
-    ASSERT( defined(domain) )
+    ASSERT( domain%defined() )
 
     if (is_IOP) then
       ASSERT( size(g_index) == domain%global_size_ )
@@ -634,12 +614,12 @@ contains
 
     type(ip_desc), intent(in) :: range
     integer, intent(inout) :: index(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: offP_index(:)
 
     integer :: j
     integer, allocatable :: map(:)
 
-    ASSERT( defined(range) )
+    ASSERT( range%defined() )
     ASSERT( minval(index) >= 0 )
     ASSERT( maxval(index) <= range%global_size_ )
 
@@ -657,7 +637,7 @@ contains
     end if
 
     !! Extract the list of unknown referenced indices.
-    allocate(offP_index(count(map>0)))
+    !allocate(offP_index(count(map>0)))
     offP_index = pack(map, mask=(map>0))
 
     !! Local numbering of the known off-process indices; by convention these
@@ -693,14 +673,13 @@ contains
 
     integer, intent(in) :: g_index(:,:)
     type(ip_desc), intent(in) :: domain, range
-    integer, pointer :: l_index(:,:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: l_index(:,:), offP_index(:)
 
     integer :: i, j
     integer, allocatable :: map(:)
 
-    ASSERT( defined(domain) )
-    ASSERT( defined(range) )
+    ASSERT( domain%defined() )
+    ASSERT( range%defined() )
 
     if (is_IOP) then
       ASSERT( size(g_index,2) == domain%global_size_ )
@@ -729,7 +708,7 @@ contains
     end if
 
     !! Extract the list of unknown referenced indices.
-    allocate(offP_index(count(map>0)))
+    !allocate(offP_index(count(map>0)))
     offP_index = pack(map, mask=(map>0))
 
     !! Local numbering of the known off-process indices; by convention these
@@ -767,14 +746,13 @@ contains
 
     integer, intent(in) :: g_index(:), g_count(:)
     type(ip_desc), intent(in) :: domain, range
-    integer, allocatable, intent(out) :: l_index(:), l_count(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable, intent(out) :: l_index(:), l_count(:), offP_index(:)
 
     integer :: j, n, offset
     integer, allocatable :: map(:), bsize(:), domain_offP_index(:), g_ghosts(:), x_index(:)
 
-    ASSERT( defined(domain) )
-    ASSERT( defined(range) )
+    ASSERT( domain%defined() )
+    ASSERT( range%defined() )
 
     if (is_IOP) then
       ASSERT( minval(g_count) >= 0 )
@@ -852,7 +830,7 @@ contains
     end if
 
     !! Extract the list of unknown referenced indices.
-    allocate(offP_index(count(map>0)))
+    !allocate(offP_index(count(map>0)))
     offP_index = pack(map, mask=(map>0))
 
     !! Local numbering of the known off-process indices; by convention these
@@ -901,7 +879,7 @@ contains
 
   logical function defined_ip_desc (this)
 
-    type(ip_desc), intent(in) :: this
+    class(ip_desc), intent(in) :: this
 
     integer :: sizes(nPE)
 

@@ -147,7 +147,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%nface )
-    ASSERT( associated(mesh%cface) )
+    ASSERT( allocated(mesh%cface) )
     
     do j = 1, mesh%ncell
       v(j) = u(mesh%cface(1,j)) - u(mesh%cface(2,j)) + u(mesh%cface(3,j)) - u(mesh%cface(4,j))
@@ -164,7 +164,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%ncell )
-    ASSERT( associated(mesh%cface) )
+    ASSERT( allocated(mesh%cface) )
     
     v = 0.0_r8
     do j = 1, mesh%ncell

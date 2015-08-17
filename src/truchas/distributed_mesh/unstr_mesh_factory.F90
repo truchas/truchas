@@ -46,7 +46,7 @@ contains
     integer, allocatable :: node_perm(:)
     integer, allocatable :: face_perm(:)
     integer, allocatable :: offP_size(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: offP_index(:)
     integer, allocatable :: p(:), ssid(:), ebid(:)
     type(ext_exodus_mesh) :: exo_mesh
     character(:), allocatable :: mesh_file, msg
@@ -216,7 +216,7 @@ contains
                              xcface, cface, face_bsize, lnhbr, offP_size, offP_index)
 
     !! Create the cell index partition; include the off-process cells from above.
-    call create (mesh%cell_ip, cell_bsize, offP_size, offP_index)
+    call mesh%cell_ip%init (cell_bsize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
 
     mesh%ncell = mesh%cell_ip%local_size()
@@ -517,7 +517,7 @@ contains
     integer, intent(out) :: bsize(:)
     integer, intent(out) :: perm(:)
     integer, intent(out) :: offP_size(:)
-    integer, pointer     :: offP_index(:)
+    integer, allocatable, intent(out) :: offP_index(:)
 
     integer :: j, n, offset, pass(size(perm))
     type(integer_set) :: xlink(size(bsize))
@@ -574,8 +574,7 @@ contains
     integer, intent(in) :: xcnode(:), cnode(:)
     integer, intent(in) :: xcface(:), cface(:)
     integer, intent(in) :: lnhbr(:,:)
-    integer, allocatable, intent(out) :: offP_size(:)
-    integer, pointer, intent(out) :: offP_index(:)  ! concession to the caller
+    integer, allocatable, intent(out) :: offP_size(:), offP_index(:)
 
     integer :: n, offset
     type(integer_set), allocatable :: ghosts(:)
@@ -716,17 +715,16 @@ contains
   subroutine init_cell_node_data (this, bsize, xcnode, cnode)
 
     use parallel_communication, only: is_IOP
-    use index_partitioning, only: create, localize_index_struct, add_offP_index
+    use index_partitioning, only: localize_index_struct
 
     type(unstr_mesh), intent(inout) :: this
     integer, intent(in) :: bsize(:)
     integer, intent(in) :: xcnode(:), cnode(:)
 
     integer :: j
-    integer, allocatable :: count_g(:), count_l(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
-    call create (this%node_ip, bsize)
+    call this%node_ip%init (bsize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
@@ -736,7 +734,7 @@ contains
     end if
 
     call localize_index_struct (count_g, cnode, this%cell_ip, this%node_ip, count_l, this%cnode, offP_index)
-    call add_offP_index (this%node_ip, offP_index)
+    call this%node_ip%add_offP_index (offP_index)
     deallocate(count_g, offP_index)
 
     !! Translate the local row sizes into the local indexing array.
@@ -758,7 +756,7 @@ contains
   subroutine init_cell_face_data (this, bsize, xcface, cface, cfpar)
 
     use parallel_communication, only: is_IOP, distribute
-    use index_partitioning, only: create, localize_index_struct, add_offP_index, gather_boundary
+    use index_partitioning, only: localize_index_struct, gather_boundary
 
     type(unstr_mesh), intent(inout) :: this
     integer, intent(in) :: bsize(:)
@@ -766,10 +764,9 @@ contains
     integer, intent(in) :: cfpar(:)
 
     integer :: j
-    integer, allocatable :: count_g(:), count_l(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
-    call create (this%face_ip, bsize)
+    call this%face_ip%init (bsize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
@@ -779,7 +776,7 @@ contains
     end if
 
     call localize_index_struct (count_g, cface, this%cell_ip, this%face_ip, count_l, this%cface, offP_index)
-    call add_offP_index (this%face_ip, offP_index)
+    call this%face_ip%add_offP_index (offP_index)
     deallocate(count_g, offP_index)
 
     !! Translate the local row sizes into the local indexing array.
@@ -868,7 +865,7 @@ contains
 
     use parallel_communication, only: is_IOP, nPE, collate, broadcast, distribute
     use permutations, only: reorder, invert_perm
-    use index_partitioning, only: create, localize_index_array, gather_boundary
+    use index_partitioning, only: localize_index_array, gather_boundary
     use bitfield_type
     use ext_exodus_mesh_type
 
@@ -877,8 +874,7 @@ contains
     integer, intent(inout) :: lnhbr(:,:), lface(:,:)
 
     integer :: j, n
-    integer, allocatable :: offP_size(:), cell_bsize(:), bsize(:), perm(:)
-    integer, pointer :: offP_index(:) => null()
+    integer, allocatable :: offP_size(:), offP_index(:), cell_bsize(:), bsize(:), perm(:)
     type(bitfield), allocatable :: link_set_mask(:)
 
     !! Partition the links
@@ -897,7 +893,7 @@ contains
     end if
 
     !! THIS%LINK_IP: create the link index partition; include off-process links from above.
-    call create (this%link_ip, bsize, offP_size, offP_index)
+    call this%link_ip%init (bsize, offP_size, offP_index)
     deallocate(bsize, offP_size, offP_index)
 
     !! THIS%LFACE: distribute and localize the link face indexing array.

@@ -188,7 +188,7 @@ contains
 
     real(kind=r8), pointer :: u_global(:)
 
-    ASSERT( defined(mesh%cell_ip) )
+    ASSERT( mesh%cell_ip%defined() )
     ASSERT( size(u) == mesh%cell_ip%onP_size() )
 
     call allocate_collated_array (u_global, mesh%cell_ip%global_size())

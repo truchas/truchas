@@ -28,17 +28,9 @@ module rad_encl_type
     type(ip_desc) :: node_ip, face_ip
   contains
     procedure :: init
-    final :: rad_encl_delete
   end type rad_encl
 
 contains
-
-  !! Final subroutine for RAD_ENCL type objects
-  subroutine rad_encl_delete (this)
-    type(rad_encl), intent(inout) :: this
-    call destroy (this%node_ip)
-    call destroy (this%face_ip)
-  end subroutine rad_encl_delete
 
   subroutine init (this, ncid, fcolor)
 
@@ -52,10 +44,9 @@ contains
 
     integer :: j, n, nnode, nface, nfnode, ngroup
     integer, allocatable :: fsize(:), fnode(:), group_ids(:), gnum(:)
-    integer, allocatable :: node_map(:), face_map(:), fsize_l(:)
+    integer, allocatable :: node_map(:), face_map(:), fsize_l(:), offP_index(:)
     real(r8), allocatable :: coord(:,:)
     integer :: face_bsize(nPE), node_bsize(nPE)
-    integer, pointer :: offP_index(:) => null()
 
     !! Read the enclosure data from the NetCDF file
     if (is_IOP) then
@@ -91,10 +82,10 @@ contains
     end if
 
     !! Create the face index partition; no off-process (ghost) faces.
-    call create (this%face_ip, face_bsize)
+    call this%face_ip%init (face_bsize)
 
     !! Create the node index partition; no off-process (ghost) nodes yet.
-    call create (this%node_ip, node_bsize)
+    call this%node_ip%init (node_bsize)
 
     !! Localize the global face connectivity structure arrays.  This identifies
     !! off-process nodes that need to be added as ghost nodes on this process.
@@ -102,7 +93,7 @@ contains
                                 fsize_l, this%fnode, offP_index)
 
     !! Augment the node index partition with the required ghost nodes.
-    call add_offP_index (this%node_ip, offP_index)
+    call this%node_ip%add_offP_index (offP_index)
     deallocate(fsize, fnode, offP_index)
 
     !! Generate the local face indexing array from the local face sizes.

@@ -208,7 +208,7 @@ contains
 
     real(r8), pointer :: u_global(:)
 
-    ASSERT(defined(mesh%cell_ip))
+    ASSERT(mesh%cell_ip%defined())
     ASSERT(size(u) == mesh%cell_ip%onP_size())
 
     allocate(u_global(merge(mesh%cell_ip%global_size(),0,is_IOP)))

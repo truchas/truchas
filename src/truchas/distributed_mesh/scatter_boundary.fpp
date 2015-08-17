@@ -111,7 +111,7 @@
     _TYPE_, intent(inout) :: onP_data(:)   ! on-process data
     _TYPE_, intent(in)    :: offP_data(:)  ! off-process data
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(onP_data) == this%onP_size_ )
     ASSERT( size(offP_data) == this%offP_size_ )
@@ -125,7 +125,7 @@
     type(ip_desc), intent(in) :: this   ! partition descriptor
     _TYPE_, intent(inout) :: local_data(:)
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(local_data) == this%local_size_ )
 

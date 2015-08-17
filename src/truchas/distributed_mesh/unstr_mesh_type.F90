@@ -32,7 +32,8 @@ module unstr_mesh_type
 
     !! Mesh interface links.
     integer :: nlink = 0, nlink_onP = 0
-    integer, pointer :: lface(:,:) => null()  ! pointer due to localize_index_array
+    !integer, pointer :: lface(:,:) => null()  ! pointer due to localize_index_array
+    integer, allocatable :: lface(:,:)        ! pointer due to localize_index_array
     integer, allocatable :: link_set_id(:)    ! user-assigned ID for each link block
     type(bitfield), allocatable :: link_set_mask(:)  ! link block index
     type(ip_desc) :: link_ip
@@ -41,20 +42,9 @@ module unstr_mesh_type
 !    procedure :: get_global_cface_array
     procedure :: compute_geometry
     procedure :: write_profile
-    final :: unstr_mesh_delete
   end type unstr_mesh
 
 contains
-
-  !! Final subroutine for UNSTR_MESH objects.
-  subroutine unstr_mesh_delete (this)
-    type(unstr_mesh), intent(inout) :: this
-    if (associated(this%lface)) deallocate(this%lface)
-    call destroy (this%node_ip)
-    call destroy (this%face_ip)
-    call destroy (this%cell_ip)
-    call destroy (this%link_ip)
-  end subroutine unstr_mesh_delete
 
   !! Compute the geometric data components from the node coordinates.
   subroutine compute_geometry (this)
@@ -112,7 +102,7 @@ contains
       call wline (line)
     end do
 
-    if (defined(this%node_ip)) then
+    if (this%node_ip%defined()) then
       call collate (nvec(1,:), this%node_ip%offP_size())
       call collate (nvec(2,:), this%node_ip%onP_size())
       call broadcast (nvec)
@@ -120,7 +110,7 @@ contains
       nvec = 0
     end if
 
-    if (defined(this%face_ip)) then
+    if (this%face_ip%defined()) then
       call collate (fvec(1,:), this%face_ip%offP_size())
       call collate (fvec(2,:), this%face_ip%onP_size())
       call broadcast (fvec)
@@ -128,7 +118,7 @@ contains
       fvec = 0
     end if
 
-    if (defined(this%cell_ip)) then
+    if (this%cell_ip%defined()) then
       call collate (cvec(1,:), this%cell_ip%offP_size())
       call collate (cvec(2,:), this%cell_ip%onP_size())
       call broadcast (cvec)

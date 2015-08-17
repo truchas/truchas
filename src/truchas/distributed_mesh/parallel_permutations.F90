@@ -90,10 +90,8 @@ module parallel_permutations
 
   type, public :: par_perm
     private
-    integer, pointer :: perm(:) => null() ! dest-to-src mapping (local indices)
+    integer, allocatable :: perm(:) ! dest-to-src mapping (local indices)
     type(ip_desc) :: src_ip ! partition descriptor for the src index set
-  contains
-    final :: par_perm_delete
   end type par_perm
 
   interface defined
@@ -114,13 +112,6 @@ module parallel_permutations
 
 contains
 
-  !! Final subroutine for PAR_PERM type objects
-  subroutine par_perm_delete (this)
-    type(par_perm), intent(inout) :: this
-    if (associated(this%perm)) deallocate(this%perm)
-    call destroy (this%src_ip)
-  end subroutine par_perm_delete
-
   subroutine create_par_perm_1 (this, perm, dest_bsize, src_bsize)
 
     type(par_perm), intent(out) :: this
@@ -128,7 +119,7 @@ contains
     integer, intent(in) :: dest_bsize(:)  ! dest index partition block sizes
     integer, intent(in) :: src_bsize(:)   ! src index partition block sizes
 
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: offP_index(:)
     type(ip_desc) :: dest_ip
 
     if (is_IOP) then
@@ -141,13 +132,11 @@ contains
       ASSERT( is_perm(perm) )
     end if
 
-    call create (dest_ip, dest_bsize)
-    call create (this%src_ip, src_bsize)
+    call dest_ip%init (dest_bsize)
+    call this%src_ip%init (src_bsize)
 
     call localize_index_array (perm, dest_ip, this%src_ip, this%perm, offP_index)
-    call add_offP_index (this%src_ip, offP_index)
-    deallocate(offP_index)
-    call destroy (dest_ip)
+    call this%src_ip%add_offP_index (offP_index)
 
     ASSERT( minval(this%perm) > 0 )
     ASSERT( maxval(this%perm) <= this%src_ip%local_size() )
@@ -309,16 +298,14 @@ contains
     integer, intent(in) :: dest_bsize(:)  ! dest index partition block sizes
     integer, intent(in) :: src_bsize(:)   ! src index partition block sizes
 
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: offP_index(:)
     type(ip_desc) :: dest_ip
 
-    call create (dest_ip, dest_bsize)
-    call create (this%src_ip, src_bsize)
+    call dest_ip%init (dest_bsize)
+    call this%src_ip%init (src_bsize)
 
     call localize_index_array (perm, dest_ip, this%src_ip, this%perm, offP_index)
-    call add_offP_index (this%src_ip, offP_index)
-    deallocate(offP_index)
-    call destroy (dest_ip)
+    call this%src_ip%add_offP_index (offP_index)
 
     ASSERT( minval(this%perm) >= 0 )
     ASSERT( maxval(this%perm) <= this%src_ip%local_size() )
@@ -329,8 +316,8 @@ contains
     type(par_perm), intent(in) :: this
     defined_par_perm = .false.
     CHECKLIST: do
-      if (.not.associated(this%perm)) exit
-      if (.not.defined(this%src_ip)) exit
+      if (.not.allocated(this%perm)) exit
+      if (.not.this%src_ip%defined()) exit
       defined_par_perm = .true.
       exit
     end do CHECKLIST
