@@ -34,7 +34,7 @@ fortran_preprocess_files(PART_SOURCE_FILES
 
 # Define compile flags
 include(BuildWhitespaceString)
-set(part_source_flags -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR})
+set(part_source_flags -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR} -I${PETACA_MODULE_DIR})
 if(Fortran_COMPILER_IS_INTEL)
   list(APPEND part_source_flags "-assume realloc_lhs")
 endif()

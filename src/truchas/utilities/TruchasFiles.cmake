@@ -45,7 +45,7 @@ fortran_preprocess_files(UTIL_SOURCE_FILES
 			 FPP_FLAGS ${UTIL_FPP_FLAGS}
 			 PROCESS_TARGET ProcessTruchasUtilFiles)
 set_source_files_properties(${UTIL_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
+                            COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}")
 
 # Add the C files 
 list(APPEND UTIL_SOURCE_FILES
