@@ -132,7 +132,6 @@ contains
   subroutine get_cell_neighbor_array (cnode, get_face, face_parity, cnhbr, stat)
 
     use facet_hash_type
-    use cell_topology, only: parity
 
     integer, intent(in)  :: cnode(:,:)
     integer, intent(out) :: cnhbr(:,:)

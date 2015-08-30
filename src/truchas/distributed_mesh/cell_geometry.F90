@@ -1,8 +1,17 @@
 !!
 !! CELL_GEOMETRY
 !!
+!! This module provides some basic geometric primitives for 3D cell types and
+!! and their facets.  The module CELL_TOPOLOGY is the companion to this module.
+!!
 !! Neil N. Carlson <nnc@lanl.gov>
-!! 9 Feb 2006
+!! 9 Feb 2006; updated August 2015
+!!
+!! NOTES
+!!
+!! Some procedures come with important caveats; please read and understand the
+!! comments below before using the procedures.  This applies particularly to
+!! cells with non-planar faces.
 !!
 
 #include "f90_assert.fpp"
@@ -13,32 +22,49 @@ module cell_geometry
   implicit none
   private
 
-  public :: cell_volume, tet_volume, hex_volume
-  public :: face_normal, tri_face_normal, quad_face_normal
-  public :: tet_face_normals, hex_face_normals, eval_hex_volumes, wedge_face_normals
-  public :: edge_length
-  public :: cross_product, triple_product, vector_length
-  public :: cell_face_normals, cell_face_centers
+  !! Cell volumes
+  public :: tet_volume, pyramid_volume, wedge_volume, hex_volume
+  public :: cell_volume ! wraps the preceding functions
+  public :: eval_hex_volumes  ! special version that returns corner volumes also
+
+  !! Cell centers
   public :: cell_center
+
+  !! Face normals
+  public :: tri_face_normal, quad_face_normal
+  public :: face_normal ! wraps the preceding functions
+
+  !! Cell face normals
+  public :: tet_face_normals, pyramid_face_normals, wedge_face_normals, hex_face_normals
+  public :: cell_face_normals ! wraps the preceding functions
+
+  !! Cell face centers
+  public :: tet_face_centers, pyramid_face_centers, wedge_face_centers, hex_face_centers
+  public :: cell_face_centers
+
+  !! Algebraic primitives
+  public :: cross_product, triple_product, vector_length, tri_area
+
+  interface tri_area
+    procedure tri_area_length, tri_area_coord
+  end interface
 
 contains
 
-  pure function cross_product (a, b) result (axb)
-    real(kind=r8), intent(in) :: a(:), b(:)
-    real(kind=r8) :: axb(3)
-    axb(1) = a(2)*b(3) - a(3)*b(2)
-    axb(2) = a(3)*b(1) - a(1)*b(3)
-    axb(3) = a(1)*b(2) - a(2)*b(1)
-  end function cross_product
+  !! Returns the volume of the given 3D cell.  X(:,k) are the coordinates of
+  !! the kth vertex of the cell.  The cell type is inferred from the number of
+  !! vertices.  The function handles tet, pyramid, wedge, and hex cell types;
+  !! 0 is returned for anything else.  The volume of a tet is computed using
+  !! the common formula involving the triple product of three edges sharing a
+  !! vertex.  The problem for the other cell types is much more complex.  A
+  !! general hexahedron is the image of a unit cube under the tri-linear mapping
+  !! defined by the vertices of the hexahedron, and will not generally have
+  !! planar faces.  Its volume is computed using a formula involving the volume
+  !! of 10 sub-tetrahedra: O.V. Ushakova, "Conditions of nondegeneracy of
+  !! three-dimensional cells.  A formula of a volume of cells.", SIAM J. Sci.
+  !! Comput., 23, 2001.  Pyramid and wedge cells are regarded as degenerate
+  !! hexahedra, and their volumes computed using the formula for a hex.
 
-  pure function triple_product (a, b, c) result (abc)
-    real(kind=r8), intent(in) :: a(:), b(:), c(:)
-    real(kind=r8) :: abc
-    abc = a(1)*(b(2)*c(3) - b(3)*c(2)) + &
-          a(2)*(b(3)*c(1) - b(1)*c(3)) + &
-          a(3)*(b(1)*c(2) - b(2)*c(1))
-  end function triple_product
-  
   pure function cell_volume (x) result (vol)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: vol
@@ -61,7 +87,7 @@ contains
     real(r8) :: vol
     vol = triple_product(x(:,2)-x(:,1), x(:,3)-x(:,1), x(:,4)-x(:,1)) / 6.0_r8
   end function tet_volume
-  
+
   pure function pyramid_volume (x) result (vol)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: vol, cvol1, cvol2, cvol3, cvol4
@@ -70,7 +96,7 @@ contains
                   + tet_volume(x(:,[3,4,2,5])) &
                   + tet_volume(x(:,[4,1,3,5])) )
   end function pyramid_volume
-  
+
   pure function wedge_volume (x) result (vol)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: vol
@@ -81,35 +107,19 @@ contains
                   + tet_volume(x(:,[4,6,5,1])) &
                   + tet_volume(x(:,[1,3,6,5])) )
   end function wedge_volume
-  
-  pure function hex_volume (x) result (hvol)
 
+  pure function hex_volume (x) result (hvol)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: hvol, cvol(8)
-
-    cvol(1) = tet_volume(x(:,[1,2,4,5]))
-    cvol(2) = tet_volume(x(:,[2,3,1,6]))
-    cvol(3) = tet_volume(x(:,[3,4,2,7]))
-    cvol(4) = tet_volume(x(:,[4,1,3,8]))
-    cvol(5) = tet_volume(x(:,[5,8,6,1]))
-    cvol(6) = tet_volume(x(:,[6,5,7,2]))
-    cvol(7) = tet_volume(x(:,[7,6,8,3]))
-    cvol(8) = tet_volume(x(:,[8,7,5,4]))
-
-    hvol = 0.5_r8 * (sum(cvol) + tet_volume(x(:,[1,3,8,6])) + tet_volume(x(:,[2,4,5,7])))
-
+    call eval_hex_volumes (x, hvol, cvol)
   end function hex_volume
 
-  pure subroutine eval_hex_volumes (x, hvol, cvol)
+  !! Computes the corner volumes CVOL(:) of a hex cell and its total volume HVOL.
+  !! This uses the formula of Ushakova cited above.
 
+  pure subroutine eval_hex_volumes (x, hvol, cvol)
     real(r8), intent(in)  :: x(:,:)
     real(r8), intent(out) :: hvol, cvol(:)
-
-    !ASSERT(size(x,dim=1) == 3)
-    !ASSERT(size(x,dim=2) == 8)
-    !ASSERT(size(cvol) == 8)
-
-    !! Corner tet volumes.
     cvol(1) = tet_volume(x(:,[1,2,4,5]))
     cvol(2) = tet_volume(x(:,[2,3,1,6]))
     cvol(3) = tet_volume(x(:,[3,4,2,7]))
@@ -118,11 +128,20 @@ contains
     cvol(6) = tet_volume(x(:,[6,5,7,2]))
     cvol(7) = tet_volume(x(:,[7,6,8,3]))
     cvol(8) = tet_volume(x(:,[8,7,5,4]))
-
     hvol = 0.5_r8 * (sum(cvol) + tet_volume(x(:,[1,3,8,6])) + tet_volume(x(:,[2,4,5,7])))
-
   end subroutine eval_hex_volumes
-  
+
+  !! Returns the outward area-weighted normal vectors to the faces of the
+  !! given 3D cell. X(:,k) are the coordinates of the kth vertex of the cell.
+  !! The cell type is inferred from the number of vertices.  The function
+  !! handles tet, pyramid, wedge, and hex cell types; a 0-sized array result
+  !! is returned for anything else.  For a planar face (triangles and special
+  !! quadrilateral faces) the normal is unambiguous.  For a warped quad face
+  !! the normal direction is defined to be that orthogonal to the diagonals of
+  !! the face, and the area that of the projection of the face onto a plane
+  !! orthogonal to the normal.  This definition coincides with the integral of
+  !! the unit normal over the face.
+
   pure function cell_face_normals (x) result (a)
     real(r8), intent(in) :: x(:,:)
     real(r8), allocatable :: a(:,:)
@@ -141,36 +160,23 @@ contains
   end function cell_face_normals
 
   pure function tet_face_normals (x) result (a)
-
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,4)
-
-    ! incompatible with PURE
-    !ASSERT(size(x,dim=1) == 3)
-    !ASSERT(size(x,dim=2) == 4)
-
-    !! NB: These must be consistent with the TETRA4 vertex and face labelings
+    !! NB: These must be consistent with the TET4 vertex and face labelings
     !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its TETRA4_FACE_VERT array was not used here.
+    !! its TET4_FACES array was not used here.
     a(:,1) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,2)-x(:,4))
     a(:,2) = 0.5_r8 * cross_product(x(:,2)-x(:,4), x(:,3)-x(:,4))
     a(:,3) = 0.5_r8 * cross_product(x(:,3)-x(:,4), x(:,1)-x(:,4))
     a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
-
   end function tet_face_normals
 
   pure function pyramid_face_normals (x) result (a)
-
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,5)
-
-    ! incompatible with PURE
-    !ASSERT(size(x,dim=1) == 3)
-    !ASSERT(size(x,dim=2) == 5)
-
     !! NB: These must be consistent with the PYR5 vertex and face labelings
     !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its PYR5_FACE_VERT array was not used here.
+    !! its PYR5_FACES array was not used here.
     a(:,1) = 0.5_r8 * cross_product(x(:,2)-x(:,1), x(:,5)-x(:,1))
     a(:,2) = 0.5_r8 * cross_product(x(:,3)-x(:,2), x(:,5)-x(:,2))
     a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,5)-x(:,3))
@@ -180,116 +186,140 @@ contains
   end function pyramid_face_normals
 
   pure function wedge_face_normals (x) result (a)
-
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,5)
-
-    ! incompatible with PURE
-    !ASSERT(size(x,dim=1) == 3)
-    !ASSERT(size(x,dim=2) == 6)
-
     !! NB: These must be consistent with the WED6 vertex and face labelings
     !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its WED6_FACE_VERT array was not used here.
+    !! its WED6_FACES array was not used here.
     a(:,1) = 0.5_r8 * cross_product(x(:,5)-x(:,1), x(:,4)-x(:,2))
     a(:,2) = 0.5_r8 * cross_product(x(:,6)-x(:,2), x(:,5)-x(:,3))
     a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,6)-x(:,1))
     a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
     a(:,5) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,6)-x(:,4))
-
   end function wedge_face_normals
-  
-  pure function hex_face_normals (x) result (a)
 
+  pure function hex_face_normals (x) result (a)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,6)
-
-    ! incompatible with PURE
-    !ASSERT(size(x,dim=1) == 3)
-    !ASSERT(size(x,dim=2) == 8)
-
     !! NB: These must be consistent with the HEX8 vertex and face labelings
     !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its HEX8_FACE_VERT array was not used here.
+    !! its HEX8_FACES array was not used here.
     a(:,1) = 0.5_r8 * cross_product(x(:,6)-x(:,1), x(:,5)-x(:,2))
     a(:,2) = 0.5_r8 * cross_product(x(:,7)-x(:,2), x(:,6)-x(:,3))
     a(:,3) = 0.5_r8 * cross_product(x(:,8)-x(:,3), x(:,7)-x(:,4))
     a(:,4) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,8)-x(:,1))
     a(:,5) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,4))
     a(:,6) = 0.5_r8 * cross_product(x(:,7)-x(:,5), x(:,8)-x(:,6))
-
   end function hex_face_normals
 
+  !! These funcctions returns the area-weighted normal to the given oriented
+  !! triangle or quadrilateral face in 3D.  X(:,k) are the coordinates of the
+  !! kth vertex of the face.  In the case of FACE_NORMAL, the face type is
+  !! inferred from the number of vertices.  For warped quadrilateral faces
+  !! the definition of the normal is as described for CELL_FACE_NORMALS.
+
   pure function tri_face_normal (x) result (a)
-    real(kind=r8), intent(in) :: x(:,:)
-    real(kind=r8) :: a(3)
-    a = 0.5_r8 * cross_product(x(:,2)-x(:,1),x(:,3)-x(:,2))
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: a(3)
+    a = 0.5_r8 * cross_product(x(:,2)-x(:,1), x(:,3)-x(:,2))
   end function tri_face_normal
 
   pure function quad_face_normal (x) result (a)
-    real(kind=r8), intent(in) :: x(:,:)
-    real(kind=r8) :: a(3)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: a(3)
     a = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,4)-x(:,2))
   end function quad_face_normal
 
   pure function face_normal (x) result (a)
-    real(kind=r8), intent(in) :: x(:,:)
-    real(kind=r8) :: a(size(x,dim=1))
-    select case (size(x,dim=1))
-    case (2)  ! 2-D coordinate space
-      select case (size(x,dim=2))
-      case (2)  ! just an edge
-        a(1) = x(2,2) - x(2,1)
-        a(2) = x(1,1) - x(1,2)
-      case default
-      end select
-    case (3)  ! 3-D coordinate space
-      select case (size(x,dim=2))
-      case (3)  ! triangular face
-        a = 0.5_r8 * cross_product(x(:,2)-x(:,1),x(:,3)-x(:,2))
-      case (4)  ! quadrilateral face
-        a = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,4)-x(:,2))
-      case default
-      end select
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: a(3)
+    select case (size(x,dim=2))
+    case (3)  ! triangular face
+      a = 0.5_r8 * cross_product(x(:,2)-x(:,1),x(:,3)-x(:,2))
+    case (4)  ! quadrilateral face
+      a = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,4)-x(:,2))
     case default
+      a = 0.0_r8
     end select
   end function face_normal
-  
+
+  !! Returns the coordinates of the face centers of the given 3D cell.
+  !! X(:,k) are the coordinates of the kth vertex of the cell.  The cell
+  !! type is inferred from the number of vertices.  The function handles tet,
+  !! pyramid, wedge, and hex cell types; a 0-sized array result is returned
+  !! for anything else.  For triangular faces and planar quadrilateral faces
+  !! the definition of the center is unambiguous and corresponds to the center
+  !! of mass of the face.  Warped quadrilateral faces are approximated by a
+  !! triangulated surface formed by adding the algebraic mean of the vertices
+  !! as a vertex, and taking the center of mass of that surface as the center
+  !! of the warped quadrilateral face.  NB: These must be consistent with the
+  !! TET5, PYR5, WED6, HEX8 vertex and face labelings defined in the
+  !! CELL_TOPOLOGY module.  They were not used here to avoid indirection.
+
   pure function cell_face_centers (x) result (xc)
     real(r8), intent(in) :: x(:,:)
     real(r8), allocatable :: xc(:,:)
     select case (size(x,dim=2))
-    case (4)
-      allocate(xc(3,4))
-      xc(:,1) = (x(:,1) + x(:,2) + x(:,4)) / 3.0_r8
-      xc(:,2) = (x(:,2) + x(:,3) + x(:,4)) / 3.0_r8
-      xc(:,3) = (x(:,1) + x(:,3) + x(:,4)) / 3.0_r8
-      xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
-    case (5)
-      allocate(xc(3,5))
-      xc(:,1) = (x(:,1) + x(:,2) + x(:,5)) / 3.0_r8
-      xc(:,2) = (x(:,2) + x(:,3) + x(:,5)) / 3.0_r8
-      xc(:,3) = (x(:,3) + x(:,4) + x(:,5)) / 3.0_r8
-      xc(:,4) = (x(:,1) + x(:,4) + x(:,5)) / 3.0_r8
-      xc(:,5) = polygon_center(x(:,[1,4,3,2]))
-    case (6)
-      allocate(xc(3,5))
-      xc(:,1) = polygon_center(x(:,[1,2,5,4]))
-      xc(:,2) = polygon_center(x(:,[2,3,6,5]))
-      xc(:,3) = polygon_center(x(:,[1,4,6,3]))
-      xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
-      xc(:,5) = (x(:,4) + x(:,5) + x(:,6)) / 3.0_r8
-    case (8)
-      allocate(xc(3,6))
-      xc(:,1) = polygon_center(x(:,[1,2,6,5]))
-      xc(:,2) = polygon_center(x(:,[2,3,7,6]))
-      xc(:,3) = polygon_center(x(:,[3,4,8,7]))
-      xc(:,4) = polygon_center(x(:,[1,5,8,4]))
-      xc(:,5) = polygon_center(x(:,[1,4,3,2]))
-      xc(:,6) = polygon_center(x(:,[5,6,7,8]))
+    case (4)  ! tet
+      xc = tet_face_centers(x)
+    case (5)  ! pyramid
+      xc = pyramid_face_centers(x)
+    case (6)  ! wedge
+      xc = wedge_face_centers(x)
+    case (8)  ! hex
+      xc = hex_face_centers(x)
+    case default
+      allocate(xc(3,0))
     end select
   end function cell_face_centers
-  
+
+  pure function tet_face_centers (x) result (xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: xc(3,4)
+    xc(:,1) = (x(:,1) + x(:,2) + x(:,4)) / 3.0_r8
+    xc(:,2) = (x(:,2) + x(:,3) + x(:,4)) / 3.0_r8
+    xc(:,3) = (x(:,1) + x(:,3) + x(:,4)) / 3.0_r8
+    xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+  end function tet_face_centers
+
+  pure function pyramid_face_centers (x) result (xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: xc(3,5)
+    xc(:,1) = (x(:,1) + x(:,2) + x(:,5)) / 3.0_r8
+    xc(:,2) = (x(:,2) + x(:,3) + x(:,5)) / 3.0_r8
+    xc(:,3) = (x(:,3) + x(:,4) + x(:,5)) / 3.0_r8
+    xc(:,4) = (x(:,1) + x(:,4) + x(:,5)) / 3.0_r8
+    xc(:,5) = polygon_center(x(:,[1,4,3,2]))
+  end function pyramid_face_centers
+
+  pure function wedge_face_centers (x) result (xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: xc(3,5)
+    xc(:,1) = polygon_center(x(:,[1,2,5,4]))
+    xc(:,2) = polygon_center(x(:,[2,3,6,5]))
+    xc(:,3) = polygon_center(x(:,[1,4,6,3]))
+    xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+    xc(:,5) = (x(:,4) + x(:,5) + x(:,6)) / 3.0_r8
+  end function wedge_face_centers
+
+  pure function hex_face_centers (x) result (xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: xc(3,6)
+    xc(:,1) = polygon_center(x(:,[1,2,6,5]))
+    xc(:,2) = polygon_center(x(:,[2,3,7,6]))
+    xc(:,3) = polygon_center(x(:,[3,4,8,7]))
+    xc(:,4) = polygon_center(x(:,[1,5,8,4]))
+    xc(:,5) = polygon_center(x(:,[1,4,3,2]))
+    xc(:,6) = polygon_center(x(:,[5,6,7,8]))
+  end function hex_face_centers
+
+  !! Returns the center of a polygonal face in 3D.  Except for triangles,
+  !! a polygonal face is not generally planar and a practical definition
+  !! of the center is arguably ambiguous.  This function computes the center
+  !! of mass of a triangulated surface that approximates the polygonal face.
+  !! The triangulation is formed by connecting the vertices of the polygon
+  !! with the algebraic mean of the vertices.
+
   pure function polygon_center (x) result (xc)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: xc(3), xtri(3,3), asum, atri
@@ -307,177 +337,202 @@ contains
     xc = xc / asum
   end function polygon_center
 
+  !! Returns the center of mass of the given 3D cell.  X(:,k) are the
+  !! coordinates of the kth vertiex of the cell.  The cell type is inferred
+  !! from the number of vertices.  The function handles tet, pyramid, wedge,
+  !! and hex cell types; a 0 result is returned for anything else. The center
+  !! of mass of a tetrahedron is simply the algebraic mean of its vertices.
+  !! The problem for the other cell types is handled by subdividing them into
+  !! tetrahedra.  This is straightforward if they have planar faces, but this
+  !! will generally not be the case.  This is where we punt and do something
+  !! heuristic based on Ushakova's exact formula for the volume of a general
+  !! hexahedron.  Noting that it is the average volume of two different
+  !! subdivisions of a hexahedron into tetrahedrons (four corner tets plus the
+  !! remaining internal tet -- done two ways), we use the same subdivisions to
+  !! compute the center of mass.  In this case the formula is not exact, but
+  !! it has the virtue that the errors at a warped quadrilateral face from the
+  !! adjacent cells cancel when computing the center of mass for an assembly
+  !! of cells. As for volumes, pyramid and wedge cells are regarded as
+  !! degenerate hexahedra.
+
+  pure function cell_center (x) result (c)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: c(3), svol, smom(3)
+    select case (size(x,dim=2))
+    case (4)  ! tet
+      c = sum(x,dim=2)/4
+    case (5)  ! pyramid
+      svol = 0.0_r8; smom = 0.0_r8
+      call aux (x(:,[1,2,4,5]), svol, smom)
+      call aux (x(:,[2,3,1,5]), svol, smom)
+      call aux (x(:,[3,4,2,5]), svol, smom)
+      call aux (x(:,[4,1,3,5]), svol, smom)
+      c = smom/svol
+    case (6)  ! wedge
+      svol = 0.0_r8; smom = 0.0_r8
+      call aux (x(:,[1,2,3,4]), svol, smom)
+      call aux (x(:,[5,4,6,2]), svol, smom)
+      call aux (x(:,[2,3,4,6]), svol, smom)
+      call aux (x(:,[2,3,1,5]), svol, smom)
+      call aux (x(:,[4,6,5,1]), svol, smom)
+      call aux (x(:,[1,3,6,5]), svol, smom)
+      c = smom/svol
+   case (8)  ! hex
+      svol = 0.0_r8; smom = 0.0_r8
+      call aux (x(:,[1,2,4,5]), svol, smom)
+      call aux (x(:,[2,3,1,6]), svol, smom)
+      call aux (x(:,[3,4,2,7]), svol, smom)
+      call aux (x(:,[4,1,3,8]), svol, smom)
+      call aux (x(:,[5,8,6,1]), svol, smom)
+      call aux (x(:,[6,5,7,2]), svol, smom)
+      call aux (x(:,[7,6,8,3]), svol, smom)
+      call aux (x(:,[8,7,5,4]), svol, smom)
+      call aux (x(:,[1,3,8,6]), svol, smom)
+      call aux (x(:,[2,4,5,7]), svol, smom)
+      c = smom/svol
+    case default
+      c = 0.0_r8
+    end select
+  contains
+    !! Accumulates the moment and volume for the given cell.
+    pure subroutine aux (x, svol, smom)
+      real(r8), intent(in) :: x(:,:)
+      real(r8), intent(inout) :: svol, smom(:)
+      svol = svol + tet_volume(x)
+      smom = smom + tet_volume(x) * sum(x,dim=2)/4
+    end subroutine aux
+  end function cell_center
+
+!!!! ALGEBRAIC PRIMITIVES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !! Computes A x B
+  pure function cross_product (a, b) result (axb)
+    real(r8), intent(in) :: a(:), b(:)
+    real(r8) :: axb(3)
+    axb(1) = a(2)*b(3) - a(3)*b(2)
+    axb(2) = a(3)*b(1) - a(1)*b(3)
+    axb(3) = a(1)*b(2) - a(2)*b(1)
+  end function cross_product
+
+  !! Computes A . B X C
+  pure function triple_product (a, b, c) result (abc)
+    real(r8), intent(in) :: a(:), b(:), c(:)
+    real(r8) :: abc
+    abc = a(1)*(b(2)*c(3) - b(3)*c(2)) + &
+          a(2)*(b(3)*c(1) - b(1)*c(3)) + &
+          a(3)*(b(1)*c(2) - b(2)*c(1))
+  end function triple_product
+
+  !! Computes the Euclidean length of a vector X(:).  This is really meant
+  !! for 2 and 3-vectors where a numerically robust method is used, but it
+  !! also works with 1 and n-vectors, n>2, delegating to the NORM2 intrinsic
+  !! function in the latter case.
 
   pure function vector_length (x) result (l)
-  
-    real(kind=r8), intent(in) :: x(:)
-    real(kind=r8) :: l
-    
-    real(kind=r8) :: a, b, c, t
-    
+
+    real(r8), intent(in) :: x(:)
+    real(r8) :: l, a, b, c, t
+
     select case (size(x))
-    case (2)  ! two-vector
-      a = abs(x(1))
-      b = abs(x(2))
-      !! Swap largest value to A.
+    case (1)  ! 1-vector
+      l = abs(x(1))
+    case (2)  ! 2-vector
+      a = abs(x(1)); b = abs(x(2))
+      !! Swap largest value to A
       if (b > a) then
-        t = a
-        a = b
-        b = t
+        t = a; a = b; b = t   ! swap A and B
       end if
-      l = a * sqrt(1.0_r8 + (b/a)**2)
-    case (3)  ! three-vector
-      a = abs(x(1))
-      b = abs(x(2))
-      c = abs(x(3))
-      !! Swap largest value to A.
+      if (a == 0.0_r8) then
+        l = 0.0_r8
+      else
+        l = a * sqrt(1.0_r8 + (b/a)**2)
+      end if
+    case (3)  ! 3-vector
+      a = abs(x(1)); b = abs(x(2)); c = abs(x(3))
+      !! Swap largest value to A
       if (b > a) then
         if (c > b) then
-          t = a
-          a = c
-          c = t
+          t = a; a = c; c = t ! swap A and C
         else
-          t = a
-          a = b
-          b = t
+          t = a; a = b; b = t ! swap A and B
         end if
       else if (c > a) then
-        t = a
-        a = c
-        c = t
+        t = a; a = c; c = t   ! swap A and C
       end if
       if (a == 0.0_r8) then
         l = 0.0_r8
       else
         l = a * sqrt(1.0_r8 + ((b/a)**2 + (c/a)**2))
       end if
-    case default  ! FOR ANYTHING ELSE WE RETURN A BOGUS VALUE
-      l = -huge(1.0_r8)
+    case default  ! do nothing special for the general case
+      l = norm2(x)
     end select
-    
+
   end function vector_length
-  
-  
-  pure function edge_length (x) result (l)
-    real(kind=r8), intent(in) :: x(:,:)
-    real(kind=r8) :: l
-    l = vector_length (x(:,1)-x(:,2))
-  end function edge_length
 
+  !! Computes the area of a triangle given the coordinates of its three
+  !! vertices: X(:,j) are the coordinates of vertex j. The vertices may
+  !! be given in any order and the coordinates n-dimensional, n > 1.
+  !! This uses the TRI_AREA_LENGTH function and thus the computed area
+  !! is non-negative independent of the orientation of the triangle.
 
-  pure function tri_area (x) result (area)
-  
-    real(kind=r8), intent(in) :: x(:,:)
-    real(kind=r8) :: area, l(3)
-    
+  pure function tri_area_coord (x) result (area)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: area, l(3)
     l(1) = vector_length(x(:,1)-x(:,2))
     l(2) = vector_length(x(:,2)-x(:,3))
     l(3) = vector_length(x(:,3)-x(:,1))
-    area = tri_area_l (l)
-    
-  end function tri_area
-  
-  pure function tri_area_l (l) result (area)
-  
-    real(r8), intent(in) :: l(3)
+    area = tri_area_length(l)
+  end function tri_area_coord
+
+  !! Computes the area of a triangle given the lengths of its three sides.
+  !! Uses Kahan's algorithm from "Miscalculating area and angles of a needle-
+  !! like triangle", 1986, http://www.cs.berkeley.edu/~wkahan/Triangle.pdf.
+  !! It is essential that the parentheses are respected. The result is accurate
+  !! to within a few ulps. The computed area is necessarily non-negative and is
+  !! insensitive to the orientation of the triangle.
+  !!
+  !! NB: The implementation attempts to use the IEEE exception feature of
+  !! Fortran to handle the case of invalid inputs.  The ieee_set_flag call
+  !! should be enough to trigger an exception, but on some platforms it does
+  !! not. Hence the following two lines which ensure an exception is raised.
+
+  pure function tri_area_length (length) result (area)
+
+    use,intrinsic :: ieee_arithmetic, only: ieee_set_flag, ieee_invalid, &
+                                            ieee_value, ieee_signaling_nan
+
+    real(r8), intent(in) :: length(:)
     real(r8) :: area, a, b, c, t
-    
-    a = l(1)
-    b = l(2)
-    c = l(3)
-    
-    ! Sort so that a >= b >= c
+
+    !! Sort lengths so that A >= B >= C
+    a = length(1); b = length(2); c = length(3)
     if (b > a) then
       if (c > a) then
-        t = a
-        a = c
-        c = t
+        t = a; a = c; c = t   ! swap A and C
         if (b > a) then
-          t = a
-          a = b
-          b = t
+          t = a; a = b; b = t ! swap A and B
         end if
       else
-        t = a
-        a = b
-        b = t
+        t = a; a = b; b = t   ! swap A and B
       end if
     else
       if (c > b) then
-        t = b
-        b = c
-        c = t
+        t = b; b = c; c = t   ! swap B and C
         if (b > a) then
-          t = a
-          a = b
-          b = t
+          t = a; a = b; b = t ! swap A and B
         end if
       end if
     end if
-    
-    if (c-(a-b) < 0.0_r8) then ! not the lengths of a real triangle
-      area = 2.0_r8               ! trigger a floating point exception;
-      area = sqrt(1.0_r8 - area)  ! must be a bit obtuse about it.
-    else
+
+    if (c-(a-b) >= 0.0_r8) then
       area = 0.25_r8 * sqrt((a+(b+c))*(c-(a-b))*(c+(a-b))*(a+(b-c)))
+    else  ! not the lengths of a real triangle
+      call ieee_set_flag (ieee_invalid, .true.)
+      area = ieee_value(area, ieee_signaling_nan)
+      area = area + area  ! see the NB above
     end if
 
-  end function tri_area_l
-
-  pure function cell_center (x) result (c)
-
-    real(r8), intent(in) :: x(:,:)
-    real(r8) :: c(3), smom(3), svol
-
-    select case (size(x,dim=2))
-    case (4)  ! tet
-      c = sum(x,dim=2)/4
-
-    case (5)  ! pyramid
-      smom = 0.0_r8; svol = 0.0_r8
-      call aux (x(:,[1,2,4,5]), smom, svol)
-      call aux (x(:,[2,3,1,5]), smom, svol)
-      call aux (x(:,[3,4,2,5]), smom, svol)
-      call aux (x(:,[4,1,3,5]), smom, svol)
-      c = smom/svol
-
-    case (6)  ! wedge
-      smom = 0.0_r8; svol = 0.0_r8
-      call aux (x(:,[1,2,3,4]), smom, svol)
-      call aux (x(:,[5,4,6,2]), smom, svol)
-      call aux (x(:,[2,3,4,6]), smom, svol)
-      call aux (x(:,[2,3,1,5]), smom, svol)
-      call aux (x(:,[4,6,5,1]), smom, svol)
-      call aux (x(:,[1,3,6,5]), smom, svol)
-      c = smom/svol
-
-   case (8)  ! hex
-      smom = 0.0_r8; svol = 0.0_r8
-      call aux (x(:,[1,2,4,5]), smom, svol)
-      call aux (x(:,[2,3,1,6]), smom, svol)
-      call aux (x(:,[3,4,2,7]), smom, svol)
-      call aux (x(:,[4,1,3,8]), smom, svol)
-      call aux (x(:,[5,8,6,1]), smom, svol)
-      call aux (x(:,[6,5,7,2]), smom, svol)
-      call aux (x(:,[7,6,8,3]), smom, svol)
-      call aux (x(:,[8,7,5,4]), smom, svol)
-      call aux (x(:,[1,3,8,6]), smom, svol)
-      call aux (x(:,[2,4,5,7]), smom, svol)
-      c = smom/svol
-
-    case default
-      c = 0.0_r8
-    end select
-
-  contains
-
-    pure subroutine aux (x, smom, svol)
-      real(r8), intent(in) :: x(:,:)
-      real(r8), intent(inout) :: smom(:), svol
-      svol = svol + tet_volume(x)
-      smom = smom + tet_volume(x) * sum(x,dim=2)/4
-    end subroutine aux
-
-  end function cell_center
+  end function tri_area_length
 
 end module cell_geometry

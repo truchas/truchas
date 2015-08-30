@@ -2,11 +2,121 @@
 !! UNSTR_MESH_TYPE
 !!
 !! This module provides a derived type that encapsulates the data describing a
-!! distributed unstructured mesh that is comprised either entirely of hex cells
-!! or entirely of tet cells.
+!! distributed unstructured mixed-element mesh.  Supported element types are
+!! hexes, tets, pyramids, and wedges/prisms.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! Revised May 2015
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! PROGRAMMING INTERFACE
+!!
+!!  The module defines the derived type UNSTR_MESH that encapsulates the data
+!!  describing a distributed unstructured mixed-element mesh.  On each process
+!!  the object describes a complete mesh of some subdomain that references only
+!!  local entities (cells, faces, nodes), and can rightly be considered as a
+!!  serial mesh for that subdomain.  Globally, the mesh-conforming subdomains
+!!  will overlap, perhaps only along a boundary but more generally on some
+!!  collection of cells.  Additional mesh data describes this overlap and
+!!  provides for communication between overlapping entities.
+!!
+!!  Objects of this type are intended to be used by trusted code, and so its
+!!  data components are public.  However, the components must be treated as
+!!  read-only because an object may be shared amongst multiple clients.  The
+!!  following data components are accessible:
+!!
+!!    nnode, nface, ncell - the number of nodes, faces, and cells in the mesh.
+!!
+!!    xcnode, cnode - pair of rank-1 integer arrays storing the cell-node data:
+!!        cnode(xcnode(j):xcnode(j+1)-1) is the ordered list of node indices
+!!        defining cell j.  The shape of xcnode is [ncell+1] and the shape of
+!!        cnode is [xcnode(ncell+1)-1].
+!!
+!!    xcface, cface - pair of rank-1 integer arrays storing the cell-face data:
+!!        cface(xcface(j):xcface(j+1)-1) is the ordered list of face indices
+!!        belonging to cell j.  The shape of xcface is [ncell+1] and the shape
+!!        of cface is [xcface(ncell+1)-1].
+!!
+!!    xfnode, fnode - pair of rank-1 integer arrays storing the face-node data:
+!!        fnode(xfnode(j):xfnode(j+1)-1) is the ordered list of node indices
+!!        defining the oriented face j.  The shape of xfnode is [nface+1] and
+!!        the shape of fnode is [xfnode(nface+1)-1].
+!!
+!!    cfpar - an integer bit mask array storing the relative cell face
+!!        orientations: btest(cfpar(j),k) is true when face k of cell j is
+!!        inward oriented with respect to cell j, and false when it is
+!!        outward oriented.  The shape of cfpar is [ncell].
+!!
+!!    xnode - a rank-1 integer array giving the mapping from local node indices
+!!        to their external (global) index (as defined in the mesh file, for
+!!        example).  Its shape is [nnode].
+!!
+!!    xcell - a rank-1 integer array giving the mapping from local cell indices
+!!        to their external (global) index (as defined in the mesh file, for
+!!        example).  Its shape is [ncell].
+!!
+!!  PARALLEL DATA:
+!!
+!!    nnode_onP, nface_onP, ncell_onP - the number of local nodes, faces, and
+!!        cells that that are uniquely owned (on-process).
+!!
+!!    node_ip, face_ip, cell_ip - derived types that describe the partitioning
+!!        and overlap of nodes, edges, faces, and cells, including information
+!!        necessary to communicate off-process data between processes.
+!!
+!!  MESH ENTITY DATA:
+!!
+!!    cell_set_id - a rank-1 integer array storing the unique cell set IDs.
+!!        This data is replicated on each process.
+!!
+!!    cell_set_mask - a rank-1 bitmask array: btest(cell_set_mask(j),k)
+!!        returns true if cell j belongs to the cell set with ID cell_set_id(k).
+!!
+!!    face_set_id - a rank-1 integer array storing the unique face set IDs.
+!!        This data is replicated on each process.
+!!
+!!    face_set_mask - a rank-1 bitmask array: btest(face_set_mask(j),k) returns
+!!        true if face j belongs to the face set with ID face_set_id(k).
+!!        Btest(face_set_mask(j),0) returns true if face j is a boundary face (global mesh).
+!!
+!!    node_set_id - a rank-1 integer array storing the unique node set IDs.
+!!        This data is replicated on each process.
+!!
+!!    node_set_mask - a rank-1 bitmask array: btest(node_set_mask(j),k) returns
+!!        true if node j belongs to the node set with ID node_set_id(k).
+!!
+!!  GEOMETRY DATA:
+!!
+!!    x - the rank-2 real array of node coordinates; x(:,j) is the position in
+!!        R^3 of node j.  Its shape is [3,nnode].
+!!
+!!    area - the rank-1 real array of face areas; area(j) is the area of face j.
+!!        Its shape is [nface].
+!!
+!!    volume - the rank-1 real array of signed cell volumes; volume(j) is the
+!!        signed volume of cell j.  Its shape is [ncell].
+!!
+!!    normal - the rank-2 real array of oriented face areas; normal(:,j) is the
+!!        oriented area of face j.  Its shape is [3,nface].
+!!
+!!  INTERFACE LINKS:
+!!
+!!    nlink, nlink_onP - the number of interface links and uniquely owned
+!!        (on-process) interface links in the (subdomain) mesh.
+!!
+!!    lface - the rank-1 integer link-face array: lface(:,j) are the indices
+!!        of the two opposing mesh faces for link j.
+!!
+!!    link_set_id - a rank-1 integer array storing the unique link set IDs.
+!!        This data is replicated on each process.
+!!
+!!    link_set_mask - a rank-1 bitmask array: btest(link_set_mask(j),k)
+!!        returns true if link j belongs to the link set with ID link_set_id(k).
+!!
+!!    link_ip - derived type that describes the partitioning and overlap of
+!!        links, including information necessary to comminicate off-process
+!!        data between processes.
 !!
 
 #include "f90_assert.fpp"
@@ -15,8 +125,8 @@ module unstr_mesh_type
 
   use kinds, only: r8
   use base_mesh_class
-  use parallel_communication
   use index_partitioning
+  use parallel_communication
   use bitfield_type
   implicit none
   private
@@ -25,21 +135,17 @@ module unstr_mesh_type
     integer, allocatable :: xcnode(:), cnode(:) ! cell nodes
     integer, allocatable :: xcface(:), cface(:) ! cell faces
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
-
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
-    
     real(r8), allocatable :: normal(:,:)
-
     !! Mesh interface links.
     integer :: nlink = 0, nlink_onP = 0
-    !integer, pointer :: lface(:,:) => null()  ! pointer due to localize_index_array
     integer, allocatable :: lface(:,:)        ! pointer due to localize_index_array
     integer, allocatable :: link_set_id(:)    ! user-assigned ID for each link block
     type(bitfield), allocatable :: link_set_mask(:)  ! link block index
     type(ip_desc) :: link_ip
   contains
     procedure :: get_global_cnode_array
-!    procedure :: get_global_cface_array
+    procedure :: get_global_cface_array
     procedure :: compute_geometry
     procedure :: write_profile
   end type unstr_mesh
@@ -67,97 +173,7 @@ contains
     end do
   end subroutine compute_geometry
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! WRITE_DIST_MESH_PROFILE
- !!
- !! Writes to the tty and output file a profile of the distributed mesh:
- !! numbers of noded, edges, faces, and cells assigned to each processor;
- !! numbers of  on-process and off-process objects.
- !!
-
-  subroutine write_profile (this)
-
-    class(unstr_mesh), intent(in) :: this
-
-    integer :: n
-    character(len=80) :: line
-    integer, dimension(nPE) :: nnode_vec, nface_vec, ncell_vec
-    integer, dimension(2,nPE) :: nvec, fvec, cvec
-
-    call collate (nnode_vec, this%nnode)
-    call collate (nface_vec, this%nface)
-    call collate (ncell_vec, this%ncell)
-
-    call broadcast (nnode_vec)
-    call broadcast (nface_vec)
-    call broadcast (ncell_vec)
-
-    call wline ('  UNSTR_MESH Profile:')
-    write(line,fmt='(4x,a3,a,4a9)') 'PE', '|', 'nnode', 'nface', 'ncell'
-    call wline (line)
-    call wline ('    ---+'//repeat('-',27))
-    do n = 1, nPE
-      write(line,fmt='(4x,i3,a,3i9)') n, '|', nnode_vec(n),  nface_vec(n), ncell_vec(n)
-      call wline (line)
-    end do
-
-    if (this%node_ip%defined()) then
-      call collate (nvec(1,:), this%node_ip%offP_size())
-      call collate (nvec(2,:), this%node_ip%onP_size())
-      call broadcast (nvec)
-    else
-      nvec = 0
-    end if
-
-    if (this%face_ip%defined()) then
-      call collate (fvec(1,:), this%face_ip%offP_size())
-      call collate (fvec(2,:), this%face_ip%onP_size())
-      call broadcast (fvec)
-    else
-      fvec = 0
-    end if
-
-    if (this%cell_ip%defined()) then
-      call collate (cvec(1,:), this%cell_ip%offP_size())
-      call collate (cvec(2,:), this%cell_ip%onP_size())
-      call broadcast (cvec)
-    else
-      cvec = 0
-    end if
-
-    call wline ('  Mesh Communication Profile:')
-    write(line,fmt='(4x,3x,1x,a11,2a16)')  'Nodes', 'Faces', 'Cells'
-    call wline (line)
-    write(line,fmt='(4x,a3,a,3a16)') 'PE', '|', ('off-PE   on-PE', n=1,3)
-    call wline (line)
-    call wline ('    ---+'//repeat('-',48))
-    do n = 1, nPE
-      write(line,fmt='(4x,i3,a,3(i7,i9))') n, '|', nvec(:,n), fvec(:,n), cvec(:,n)
-      call wline (line)
-    end do
-
-  contains
-
-    subroutine wline (line)
-      use truchas_logging_services
-      character(len=*), intent(in) :: line
-      call TLS_info (line)
-    end subroutine wline
-
-  end subroutine write_profile
-
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! GET_GLOBAL_CNODE_ARRAY
- !! GET_GLOBAL_CFACE_ARRAY
- !!
- !! These routines return the so-named global index array that is associated
- !! with the mesh.  The collated global index array is returned on the IO
- !! processor and a 0-sized array on all others.  The returned arrays are
- !! allocated by these procedures.
- !!
-
+  !! Creates the global ragged CNODE array on the IO process, 0-sized on others.
   subroutine get_global_cnode_array (this, xcnode, cnode)
     class(unstr_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: xcnode(:), cnode(:)
@@ -165,17 +181,29 @@ contains
                 cnode_onP => this%cnode(:this%xcnode(this%ncell_onP+1)-1))
       call get_global_ragged_array (xcnode_onP, this%node_ip%global_index(cnode_onP), xcnode, cnode)
     end associate
-    ASSERT(minval(cnode) >= 1 .and. maxval(cnode) <= this%node_ip%global_size())
   end subroutine get_global_cnode_array
 
+  !! Creates the global ragged CFACE array on the IO process, 0-sized on others.
+  subroutine get_global_cface_array (this, xcface, cface)
+    class(unstr_mesh), intent(in) :: this
+    integer, allocatable, intent(out) :: xcface(:), cface(:)
+    associate (xcface_onP => this%xcface(:this%ncell_onP+1), &
+                cface_onP => this%cface(:this%xcface(this%ncell_onP+1)-1))
+      call get_global_ragged_array (xcface_onP, this%face_ip%global_index(cface_onP), xcface, cface)
+    end associate
+  end subroutine get_global_cface_array
+
+  !! Auxiliary subroutine creates a global ragged array on the IO process,
+  !! 0-sized on others, given a distributed ragged array.
   subroutine get_global_ragged_array (xarray_l, array_l, xarray, array)
+    use parallel_communication, only: nPE, is_IOP, global_sum, collate, distribute
     integer, intent(in) :: xarray_l(:), array_l(:)
     integer, allocatable, intent(out) :: xarray(:), array(:)
     integer :: offset
     ASSERT(size(xarray_l) >= 1)
+    ASSERT(xarray_l(1) == 1)
     ASSERT(size(array_l) == xarray_l(size(xarray_l))-1)
-    ASSERT(global_all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) >= 4))
-    ASSERT(global_all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) <= 8))
+    ASSERT(all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) >= 0))
 #ifdef NAG_COMPILER_WORKAROUND
     !! NAGFOR 6.0(1052)/GCC 4.8.3 produce bad code under optimization (-O2)
     !! with the one-line allocation in parallel, getting the wrong value for
@@ -201,13 +229,11 @@ contains
     if (is_IOP) then
       ASSERT(size(xarray) >= 1)
       ASSERT(xarray(1) == 1)
-      ASSERT(all(xarray(2:) - xarray(:size(xarray)-1) >= 4))
-      ASSERT(all(xarray(2:) - xarray(:size(xarray)-1) <= 8))
+      ASSERT(all(xarray(2:) - xarray(:size(xarray)-1) >= 0))
       ASSERT(size(array) == xarray(size(xarray))-1)
     end if
   contains
     integer function excl_prefix_sum (n) result (psum)
-      use parallel_communication, only: nPE, is_IOP, collate, distribute
       integer, intent(in) :: n
       integer :: j
       integer, allocatable :: array(:)
@@ -219,23 +245,66 @@ contains
         end do
       end if
       call distribute (psum, array)
-
       psum = psum - n
     end function
   end subroutine get_global_ragged_array
 
-!  subroutine get_global_cface_array (this, cface)
-!    class(dist_mesh), intent(in) :: this
-!    integer, allocatable, intent(out) :: cface(:,:)
-!    ASSERT(associated(this%cface))
-!    ASSERT(defined(this%cell_ip))
-!    ASSERT(defined(this%face_ip))
-!    ASSERT(size(this%cface,2) == this%cell_ip%local_size())
-!    ASSERT(minval(this%cface) >= 1)
-!    ASSERT(maxval(this%cface) <= this%face_ip%local_size())
-!    allocate(cface(size(this%cface,1),merge(this%cell_ip%global_size(),0,is_IOP)))
-!    call collate (cface, this%face_ip%global_index(this%cface(:,:this%ncell_onP)))
-!    ASSERT(minval(cface) >= 1 .and. maxval(cface) <= this%face_ip%global_size())
-!  end subroutine get_global_cface_array
+ !! Writes to the tty and output file a profile of the distributed mesh:
+ !! numbers of nodes, faces, and cells assigned to each processor; numbers
+ !! of on-process and off-process objects.
+
+  subroutine write_profile (this)
+
+    use parallel_communication, only: nPE, broadcast, collate
+    use truchas_logging_services
+
+    class(unstr_mesh), intent(in) :: this
+
+    integer :: n
+    character(80) :: line
+    integer, dimension(nPE) :: nnode_vec, nface_vec, ncell_vec
+    integer, dimension(2,nPE) :: nvec, fvec, cvec
+
+    call collate (nnode_vec, this%nnode)
+    call collate (nface_vec, this%nface)
+    call collate (ncell_vec, this%ncell)
+
+    call broadcast (nnode_vec)
+    call broadcast (nface_vec)
+    call broadcast (ncell_vec)
+
+    call TLS_info ('  UNSTR_MESH Profile:')
+    write(line,fmt='(4x,a3,a,4a9)') 'PE', '|', 'nnode', 'nface', 'ncell'
+    call TLS_info (line)
+    call TLS_info ('    ---+'//repeat('-',27))
+    do n = 1, nPE
+      write(line,fmt='(4x,i3,a,3i9)') n, '|', nnode_vec(n),  nface_vec(n), ncell_vec(n)
+      call TLS_info (line)
+    end do
+
+    call collate (nvec(1,:), this%node_ip%offP_size())
+    call collate (nvec(2,:), this%node_ip%onP_size())
+    call broadcast (nvec)
+
+    call collate (fvec(1,:), this%face_ip%offP_size())
+    call collate (fvec(2,:), this%face_ip%onP_size())
+    call broadcast (fvec)
+
+    call collate (cvec(1,:), this%cell_ip%offP_size())
+    call collate (cvec(2,:), this%cell_ip%onP_size())
+    call broadcast (cvec)
+
+    call TLS_info ('  Mesh Communication Profile:')
+    write(line,fmt='(4x,3x,1x,a11,2a16)')  'Nodes', 'Faces', 'Cells'
+    call TLS_info (line)
+    write(line,fmt='(4x,a3,a,3a16)') 'PE', '|', ('off-PE   on-PE', n=1,3)
+    call TLS_info (line)
+    call TLS_info ('    ---+'//repeat('-',48))
+    do n = 1, nPE
+      write(line,fmt='(4x,i3,a,3(i7,i9))') n, '|', nvec(:,n), fvec(:,n), cvec(:,n)
+      call TLS_info (line)
+    end do
+
+  end subroutine write_profile
 
 end module unstr_mesh_type

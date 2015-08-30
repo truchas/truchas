@@ -368,7 +368,7 @@ contains
       call get_tet_neighbor_array (cnode, cnhbr, stat)
       if (stat /= 0) then
         stat = -1
-        errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
+        errmsg = 'get_tet_neighbor_array: invalid mesh topology detected'
         return
       end if
       !! Sort the neighbor lists; see Note 2.
