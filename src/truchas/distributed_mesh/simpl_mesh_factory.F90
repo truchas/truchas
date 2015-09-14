@@ -605,8 +605,12 @@ contains
       !! Copy the sets into packed array storage
 #ifdef INTEL_DPD200362026
       allocate(offP_size(nPE))
-#endif
+      do n = 1, nPE
+        offP_size(n) = ghosts(n)%size()
+      end do
+#else
       offP_size = ghosts%size()
+#endif
       allocate(offP_index(sum(offP_size)))
       offset = 0
       do n = 1, nPE
