@@ -181,6 +181,7 @@ contains
           associate (bin => bin_table(xbin(n):xbin(n+1)-1))
             lnhbr(k,j) = 0  ! default value
             do i = size(bin), 1, -1
+              if (size(bin(i)%face) /= size(face)) cycle
               if (all(bin(i)%face == face)) exit
             end do
             if (i > 0) then  ! found a match ...
