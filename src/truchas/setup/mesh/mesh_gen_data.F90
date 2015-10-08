@@ -29,10 +29,6 @@ MODULE MESH_GEN_DATA
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   integer, save, public :: partitions_total
-  integer, save, public :: partitions_per_process
-
-  integer, parameter, public :: partitions_total_DEFAULT       = -1
-  integer, parameter, public :: partitions_per_process_DEFAULT = -1
 
   ! Private parameters
   logical, SAVE :: Generated_Mesh_Flag

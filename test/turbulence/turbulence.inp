@@ -34,7 +34,6 @@ velocity, but there is no satisfactory way to check the velocity profile.
     Coord             = 3*0.0, 5.0, 1.0, 1.0
     Fuzz              = 3*0.0
     Ratio             = 1.0, 1.0, 1.0
-    Partitions_Total  = 1
 
 /
 
@@ -53,11 +52,11 @@ velocity, but there is no satisfactory way to check the velocity profile.
 
     name                            = 'projection'
     method                          = 'fgmres'
-    preconditioning_method          = '2level'
-    preconditioning_preconditioner  = 'ssor'
-    preconditioning_steps           = 2
+    preconditioning_method          = 'ssor'
+    preconditioning_steps           = 4
     relaxation_parameter            = 1.4
     convergence_criterion           = 1.0e-12
+    maximum_iterations              = 200
 
 /
 

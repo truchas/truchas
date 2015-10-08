@@ -88,9 +88,7 @@ CONTAINS
     use parameter_module,       only: mseg, ndim, Nx_tot
     use restart_variables,      only: restart
     use parameter_module,       only: ncells_tot, nnodes_tot
-    use mesh_gen_data,          only: partitions_total, partitions_total_DEFAULT, &
-                                      partitions_per_process, partitions_per_process_DEFAULT, &
-                                      set_generated_mesh
+    use mesh_gen_data,          only: partitions_total, set_generated_mesh
 
     integer, intent(in) :: lun
 
@@ -103,7 +101,7 @@ CONTAINS
 
     ! mesh namelist specification
     Namelist /MESH/ Ncell, Coord, Ratio, Fuzz, Heps, mesh_file, mesh_file_format, &
-                    coordinate_scale_factor, use_RCM, partitions_total, partitions_per_process, &
+                    coordinate_scale_factor, use_RCM, &
                     gap_element_blocks, interface_side_sets, exodus_block_modulus
 
     call TLS_info ('')
@@ -132,27 +130,8 @@ CONTAINS
     ! Broadcast total mesh size variables.
     call MESH_INPUT_PARALLEL ()
 
-    ! if partitions specified, must be positive
-    if (partitions_total /= partitions_total_DEFAULT .and. &
-        partitions_total < 1) then
-       call TLS_fatal (' partitions_total must be > 0')
-    end if
-
-    ! if partitions_per_process specified, must be positive
-    if (partitions_per_process /= partitions_per_process_DEFAULT .and. &
-        partitions_per_process < 1) then
-       call TLS_fatal ('partitions_per_process must be > 0')
-    end if
-
-    ! can only specify partitions_total or partitions_per_process
-    if (partitions_total /= partitions_total_DEFAULT .and. &
-        partitions_per_process /= partitions_per_process_DEFAULT) then
-       call TLS_fatal ('can''t specify partitions_total and partitions_per_process')
-    end if
-
     ! all is OK, let's set the partition numbers
-    partitions_per_process = MAX(partitions_per_process, 1)
-    partitions_total = MAX(partitions_total, p_info%npe*partitions_per_process)
+    partitions_total = p_info%npe
 
     ! Read in the mesh from the mesh file if this is not a restart.
     ! Set flag for indicating whether we can cartesian partition
@@ -684,8 +663,6 @@ CONTAINS
     use parameter_module, only: boundary_faces, ncells,   &
                                 nfaces, nfc, nnodes, nvc, &
                                 nvf, nfv
-    use mesh_gen_data,    only: partitions_total, partitions_total_DEFAULT, &
-                                partitions_per_process, partitions_per_process_DEFAULT
 
     ! local variables
     integer :: f, i, j
@@ -699,9 +676,6 @@ CONTAINS
     ncells         = 1 ! Number of cells
     nfaces         = 1 ! Number of unique faces
     nnodes         = 1 ! Number of nodes
-
-    partitions_total       = partitions_total_DEFAULT
-    partitions_per_process = partitions_per_process_DEFAULT
 
     ! Number of cells for each mesh segment.
     Ncell = 0
@@ -943,7 +917,6 @@ CONTAINS
     !======================================================================
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_BCAST
-    use mesh_gen_data,        only: partitions_total, partitions_per_process
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -957,8 +930,6 @@ CONTAINS
        call PGSLib_BCast (mesh_file_format)
        call PGSLib_BCast (coordinate_scale_factor)
        call PGSLib_BCast (use_RCM)
-       call PGSLib_BCast (partitions_total)
-       call PGSLib_BCast (partitions_per_process)
        call PGSLib_BCast (gap_element_blocks)
        call PGSLib_BCast (interface_side_sets)
        call PGSLib_BCast (exodus_block_modulus)

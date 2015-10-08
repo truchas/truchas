@@ -62,7 +62,6 @@ MODULE LINEAR_SOLUTION
   integer, parameter, public :: PRECOND_SSOR     = 2
   integer, parameter, public :: PRECOND_ILU0     = 3
   integer, parameter, public :: PRECOND_LU       = 4
-  integer, parameter, public :: PRECOND_2LEVEL   = 5
   integer, parameter, public :: PRECOND_TM_SSOR  = 6
   integer, parameter, public :: PRECOND_TM_DIAG  = 7
   integer, parameter, public :: PRECOND_DIAGONAL = 8
@@ -95,9 +94,6 @@ MODULE LINEAR_SOLUTION
      ! Use preconditioning? If so, then specify solution
      ! method for the preconditioning equation.
      integer :: precond
- 
-     ! preconditioner used for the preconditioning equation
-     integer :: precond_pre
  
      ! number of preconditioning iterations
      integer :: precond_iter

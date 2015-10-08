@@ -23,11 +23,5 @@ MODULE Two_Level_Partition
 
   ! And the graph partitions
   type (A_PARTITIONED_GRAPH),SAVE, PUBLIC :: Cell_Cell_Two_Level_Partitioned
-  
-
-  ! This indicates that we are (might) use a 2-level preconditiner
-  ! If the flag is TRUE, some extra output is provided to give info about
-  ! what is happening with the partitioning.
-  logical,                  SAVE, PUBLIC :: precond_2level_active = .FALSE.
 
 END MODULE Two_Level_Partition
