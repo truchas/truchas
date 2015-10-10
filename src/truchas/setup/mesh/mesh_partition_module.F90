@@ -447,7 +447,6 @@ CONTAINS
     !
     !=======================================================================
     use parallel_util_module, only: p_info, Is_IO_PE
-    use two_level_partition,  only: Cell_Two_Level_Partitioning, Set_Of_Cells
     use parameter_module,     only: ncells, nnodes, ncells_tot
     use pgslib_module,        only: PGSLib_REDISTRIBUTE, PGSLib_PERMUTE, &
                                     PGSLib_Collate, &
@@ -496,19 +495,6 @@ CONTAINS
                         INDEX  = MeshPermute_Orig_Layout)
 
     Partitions_This_Processor = MAXVAL(Cell_Colors_New) - MINVAL(Cell_Colors_New) + 1
-
-    ! Establish the set of cells 
-    ! This really needs to go someplace else, but put it here since we first need it hear.
-    call INITIALIZE(Set_Of_Cells)
-    call ALLOC(Set_Of_Cells, ncells_tot)
-
-    ! Now set up the 2-level partitioning
-    ! What we've done is split the mesh into many partitions.  Already we've determined
-    ! how many partitions go on each processor.  Now we are using the same partitioning
-    ! for our 2-level work.  That is, now we are noting that we may have more than
-    ! one partition per process.
-    call INITIALIZE(Cell_Two_Level_Partitioning)
-    call SET(Cell_Two_Level_Partitioning, Set_Of_Cells, Cell_Colors_New, SCOPE=PGSLib_LOCAL)
 
     ! Now take care of the nodes
     ! Find permuation and distribution

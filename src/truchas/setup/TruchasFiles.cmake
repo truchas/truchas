@@ -57,8 +57,7 @@ set(SETUP_MESH_FILES
           setup/mesh/mesh_quality_module.F90
           setup/mesh/mesh_tests.F90
           setup/mesh/mesh_utilities.F90
-          setup/mesh/partitioner_data.F90
-          setup/mesh/two_level_partition.F90)
+          setup/mesh/partitioner_data.F90)
 list(APPEND SETUP_FILES ${SETUP_MESH_FILES})	
 
 # - restart

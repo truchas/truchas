@@ -612,11 +612,8 @@ CONTAINS
                                     PRECOND_JACOBI, PRECOND_SSOR,               &
                                     PRECOND_ILU0, PRECOND_LU,                   &
                                     PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL,  &
-                                    UBIK_PRESSURE_DEFAULT, UBIK_ENERGY_DEFAULT, &
-                                    UBIK_ENERGY_NK_DEFAULT, UBIK_NK_DEFAULT,    &
+                                    UBIK_PRESSURE_DEFAULT, UBIK_NK_DEFAULT,     &
                                     UBIK_DISPLACEMENT_DEFAULT, PRECOND_TM_DIAG, &
-                                    UBIK_VIEWFACTOR_DEFAULT,                    &
-                                    UBIK_SENSITIVITY_DEFAULT,                   &
                                     PRECOND_TM_SSOR, ubik_viscous_default
     use mesh_input_module,    only: mesh_file
     use parameter_module,     only: ncells_tot
@@ -668,32 +665,6 @@ CONTAINS
        relaxation_parameter           = 1.4
        krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
        status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (UBIK_ENERGY_DEFAULT)
-       name                           = 'energy'
-       method                         = METHOD_DEFAULT
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = CONVERGENCE_CRITERION_DEFAULT
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (UBIK_ENERGY_NK_DEFAULT)
-       name                           = 'energy_nk'
-       method                         = METHOD_DEFAULT
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = 1.0d-3
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
     case (UBIK_NK_DEFAULT)
        name                           = 'nk'
        method                         = METHOD_DEFAULT
@@ -729,32 +700,6 @@ CONTAINS
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        ! Default preconditioning method should be diagonal for viscous terms
        preconditioning_method         = 'diagonal'
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (ubik_viewfactor_default)
-       name                           = 'radiation_flux'
-       method                         = 'gmres'
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_R_B_STOP_DEFAULT
-       convergence_criterion          = CONVERGENCE_CRITERION_DEFAULT
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (UBIK_SENSITIVITY_DEFAULT)
-       name                           = 'energy_sensitivity'
-       method                         = METHOD_DEFAULT
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = CONVERGENCE_CRITERION_DEFAULT
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
        preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
        preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
        relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT

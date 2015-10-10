@@ -35,17 +35,13 @@ MODULE LINEAR_SOLUTION
 
   ! Number of Ubik_user elements that are used for default parameters.
   ! NOTE: remember to increment this if another default solver is added!
-  integer, parameter, public :: DEFAULT_UBIK_CONTROLS = 9
+  integer, parameter, public :: DEFAULT_UBIK_CONTROLS = 4
 
   ! Position of default solver parameters in the Ubik_user array.
   integer, parameter, public :: UBIK_PRESSURE_DEFAULT     = 1
-  integer, parameter, public :: UBIK_ENERGY_DEFAULT       = 2
-  integer, parameter, public :: UBIK_ENERGY_NK_DEFAULT    = 3
-  integer, parameter, public :: UBIK_NK_DEFAULT           = 4
-  integer, parameter, public :: UBIK_DISPLACEMENT_DEFAULT = 5
-  integer, parameter, public :: UBIK_VISCOUS_DEFAULT      = 6 
-  integer, parameter, public :: UBIK_VIEWFACTOR_DEFAULT   = 7 
-  integer, parameter, public :: UBIK_SENSITIVITY_DEFAULT   = 8
+  integer, parameter, public :: UBIK_NK_DEFAULT           = 2
+  integer, parameter, public :: UBIK_DISPLACEMENT_DEFAULT = 3
+  integer, parameter, public :: UBIK_VISCOUS_DEFAULT      = 4
 
   ! Solver parameters
   integer, parameter, public :: SOLVER_NONE    = -1
