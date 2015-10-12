@@ -19,7 +19,8 @@ set(SETUP_FPP_FLAGS
 
 # - base_types
 set(SETUP_BASE_FILES
-          setup/base_types/base_types_module.F90
+          setup/base_types/base_types_A_module.F90
+          setup/base_types/base_types_B_module.F90
           setup/base_types/matl_module.F90
           setup/base_types/matl_utilities.F90
           setup/base_types/mesh_module.F90

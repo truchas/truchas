@@ -149,7 +149,7 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module,   only: ARRAYCREATE, ARRAYDESTROY
-    use base_types_module,      only: PERMUTE_MESH, &
+    use base_types_B_module,    only: PERMUTE_MESH, &
                                       PERMUTE_VERTEX, RENUMBER_CELLS_VERTICES, &
                                       ANNOUNCE_MESH_SIZES
     use bc_data_module,         only: Mesh_Face_Set, Mesh_Face_Set_Tot

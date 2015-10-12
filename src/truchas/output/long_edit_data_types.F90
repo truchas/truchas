@@ -19,7 +19,7 @@ MODULE LONG_EDIT_DATA_TYPES
   !=======================================================================
   use kinds, only: r8
   use matl_module,      only: MATERIAL, MATL_SLOT, COLLATE, PERMUTE_MATL
-  use mesh_module,      only: CELL_GEOMETRY, COLLATE, PERMUTE_CELL
+  use mesh_module,      only: CELL_GEOMETRY, COLLATE_CELL, PERMUTE_CELL
   use parameter_module, only: max_slots, mat_slot, nvc, ndim, nfc
   use zone_module,      only: CELL_AVG, Zone, COLLATE, PERMUTE_ZONE
   use solid_mechanics_output, only: CELL_MECH_INVARIANT
@@ -1245,7 +1245,7 @@ CONTAINS
   end subroutine phys_data_sort
 
   subroutine geo_data_collate(COLLATED_DATA, LOCAL_DATA)
-    use mesh_module,    only : CELL_GEOMETRY, COLLATE
+    use mesh_module,    only : CELL_GEOMETRY, COLLATE_CELL
     type (LONG_EDIT_GEO_DATA), intent(INOUT) :: COLLATED_DATA
     type (LONG_EDIT_GEO_DATA), intent(IN) :: LOCAL_DATA
 
@@ -1265,7 +1265,7 @@ CONTAINS
     Local_cell_geo    => CELL_GEO_DATA(LOCAL_DATA)
     Collated_cell_geo => CELL_GEO_DATA(COLLATED_DATA)
 
-    call COLLATE(Collated_cell_geo, Local_cell_geo)
+    call COLLATE_CELL(Collated_cell_geo, Local_cell_geo)
 
     ! Take care of Vertex Geometry information
     Local_vrtx_geo    => VERTEX_GEO_DATA(LOCAL_DATA)

@@ -65,8 +65,6 @@ CONTAINS
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species
     use property_module,        only: DENSITY_MATERIAL
     use zone_module,            only: Zone
-    use var_vector_module
-    use gs_module
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use vof_init,               only: VOF_INITIALIZE

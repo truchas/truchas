@@ -31,7 +31,6 @@ CONTAINS
   subroutine Append_BC_Region_From_Mask(Region, BC_Mask, BC_Values, BC_UseFunction, POSITIONS)
     ! Append the boundary values flagged in BC_Mask to Region
     use pgslib_module, ONLY: PGSLib_SUM_PREFIX
-    use mesh_module
 
     type(BC_Region), intent(INOUT) :: Region
     logical, intent(IN), dimension(nfc,ncells) :: BC_Mask

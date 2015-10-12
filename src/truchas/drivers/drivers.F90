@@ -299,7 +299,8 @@ call hijack_truchas ()
     !
     !   clean up prior to termination, print reports
     !---------------------------------------------------------------------------
-    use base_types_module,      only: MESH_VERTEX_DEALLOCATE, BASE_TYPES_DEALLOCATE
+    use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
+    use base_types_B_module,    only: MESH_VERTEX_DEALLOCATE, BASE_TYPES_B_DEALLOCATE
     use debug_control_data
     use fluid_utilities_module, only: FLUID_DEALLOCATE
     use mesh_module,            only: Mesh, Vertex
@@ -320,7 +321,8 @@ call hijack_truchas ()
     call MESH_VERTEX_DEALLOCATE (Mesh, Vertex)
 
     ! deallocate the base types
-     call BASE_TYPES_DEALLOCATE ()
+    call BASE_TYPES_A_DEALLOCATE ()
+    call BASE_TYPES_B_DEALLOCATE ()
 
     ! free the diffusion solver resources
     call ds_delete ()
