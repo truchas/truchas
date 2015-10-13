@@ -143,9 +143,7 @@ CONTAINS
     !
     !   Main driver for all cyclic output functions.
     !=======================================================================
-    use edit_module,             only: EDIT_LONG, EDIT_SHORT, long_edit,      &
-                                       Long_Output_Dt_Multiplier, short_edit, &
-                                       Short_Output_Dt_Multiplier
+    use edit_module,             only: EDIT_SHORT, short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump, &
                                        time_for_int_dump
     use output_control,          only: next_op, nops, Output_Dt, Output_T
@@ -163,7 +161,7 @@ CONTAINS
 
     ! Local Variables
     integer :: idiff, last, next
-    logical :: do_edit_short, do_edit_long, do_xml_output
+    logical :: do_edit_short, do_xml_output
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -176,7 +174,6 @@ CONTAINS
     ! Initialize dump flags
     time_for_int_dump  = .false.
     do_edit_short      = .true.
-    do_edit_long       = .true.
     do_xml_output      = .true.
 
     ! Initial time output
@@ -186,10 +183,6 @@ CONTAINS
        if (short_edit) then
           call EDIT_SHORT ()
           do_edit_short = .false.
-       end if
-       if (long_edit) then
-          call EDIT_LONG ()
-          do_edit_long = .false.
        end if
 
        ! Initial output
@@ -244,12 +237,6 @@ CONTAINS
           do_edit_short = .false.
        end if
 
-       if (Long_Output_Dt_Multiplier(next_op) /= 0 .or. &
-            Long_Output_Dt_Multiplier(MAX(next_op-1,1)) /= 0) then
-          call EDIT_LONG ()
-          do_edit_long = .false.
-       end if
-
        if (Output_Dt_Multiplier (next_op) /= 0 .or. &
             Output_Dt_Multiplier (MAX(next_op-1,1)) /= 0) then
           call TDO_write_timestep
@@ -285,15 +272,6 @@ CONTAINS
           end if
        end if
 
-       if (Long_Output_Dt_Multiplier(next_op) > 0) then
-          if (MOD(next, Long_Output_Dt_Multiplier(next_op)) <= &
-               MOD(last, Long_Output_Dt_Multiplier(next_op)) .or. &
-               idiff >= Long_Output_Dt_Multiplier(next_op)) then
-             call EDIT_LONG ()
-             do_edit_long = .false.
-          end if
-       end if
-
        if (Output_Dt_Multiplier(next_op) > 0) then
           if (MOD(next, Output_Dt_Multiplier(next_op)) <= &
                MOD(last, Output_Dt_Multiplier(next_op)) .or. &
@@ -320,11 +298,6 @@ CONTAINS
        if (Short_Output_Dt_Multiplier(next_op) < 0) then
           call EDIT_SHORT ()
           do_edit_short = .false.
-       end if
-
-       if (Long_Output_Dt_Multiplier(next_op) < 0) then
-          call EDIT_LONG ()
-          do_edit_long = .false.
        end if
 
        if (Output_Dt_Multiplier(next_op) < 0) then
@@ -367,9 +340,6 @@ CONTAINS
        ! Last editsout
        if (short_edit .and. do_edit_short) then
           call EDIT_SHORT ()
-       end if
-       if (long_edit .and. do_edit_long) then
-          call EDIT_LONG ()
        end if
 
        if (do_xml_output) then

@@ -43,8 +43,6 @@ velocity, but there is no satisfactory way to check the velocity profile.
     Output_Dt                   = 0.1
     Int_Output_Dt_Multiplier    = 0
     Short_Output_Dt_Multiplier  = 1
-    Long_Output_Dt_Multiplier   = 1
-    Long_Edit_Bounding_Coords   = 0., 5.0, 0., 1.0, 0., 1.0
 
 /
 

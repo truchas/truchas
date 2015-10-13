@@ -57,8 +57,6 @@ resolution, in part due to the first order momentum advection.
     Output_Dt                     = 20.
     Int_Output_Dt_Multiplier      = 0
     Short_Output_Dt_Multiplier    = 1
-    Long_Output_Dt_Multiplier     = 1
-    Long_Edit_Bounding_Coords     = 0., 10., -1., 1., 0., 1.
 
 /
  
