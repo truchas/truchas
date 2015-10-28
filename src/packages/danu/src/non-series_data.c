@@ -453,6 +453,101 @@ herr_t data_list(hid_t sid, int num, char **datanames, int *num_found)
     return status;
 }
 /*
+ * Routine: data_write_byte(hid_t sid, const char *name, int dim, int *dimensions, int *data) 
+ * Purpose: Write non_series integer data to the non_series subgroup if simulation sid
+ * Description: Creates a dataset of dimensions simensions under non_series data subgroup
+ *              with label name.
+ *
+ * Parameters:
+ *           sid         IN      HDF5 identifier for the simulation group
+ *          *name        IN      Dataset name 
+ *           dim         IN      Dimension of the dataset
+ *          *dimensions  IN      1D array of length dim that stores the size of each dimension
+ *          *data        IN      Pointer pointing to the data to be written 
+ *                              
+ * Returns: A negative value if an error occurs
+ *          
+ * Errors: Error occurs if the input is not valid, if dataset already exists, or an error is raised
+ *         when writing the data.
+ *        
+ */
+herr_t data_write_byte(hid_t sid, const char *name, int dim, const int *dimensions, int *data)
+{
+    herr_t status = DANU_FAILURE;
+
+    hsize_t * sizes;
+
+    hid_t  gid;
+    int    exists;
+
+    if ( H5_RETURN_OK(data_exists(sid,name,&exists)) ) {
+      
+        if ( !exists ) {
+            gid = data_open_group(sid);
+            sizes = DANU_MALLOC(hsize_t, dim);
+            convert_int_to_hsize(dim,dimensions,sizes);
+            status = danu_data_write_byte(gid,name,dim,sizes,data);
+            DANU_FREE(sizes);
+        }
+        else {
+            DANU_ERROR_MESS("Non series dataset already exists will not overwrite");
+        }
+    }
+    else {
+        DANU_ERROR_MESS("Failed to stat the non-series dataset");
+    }
+
+    return status;
+
+}
+/*
+ * Routine: data_read_byte(hid_t sid, const char *name, int dim, int *dimensions, int *data) 
+ * Purpose: Read non_series integer data found in the non_series subgroup of simulation sid
+ * Description: Read a dataset of dimensions dimensions under non_series data subgroup
+ *              with label name.
+ *
+ * Parameters:
+ *           sid         IN      HDF5 identifier for the simulation group
+ *          *name        IN      Dataset name 
+ *           dim         IN      Dimension of the dataset
+ *          *dimensions  IN      1D array of length dim that stores the size of each dimension
+ *          *data        IN      Pointer pointing to the buffer to be read in to 
+ *                              
+ * Returns: A negative value if an error occurs
+ *          
+ * Errors: Error occurs if the input is not valid, if dataset does not exists, or an error is raised
+ *         when writing the data.
+ *        
+ */
+herr_t data_read_byte(hid_t sid, const char *name, int dim, const int *dimensions, int *data)
+{
+    herr_t status = DANU_FAILURE;
+
+    hid_t    gid;
+
+    hsize_t * sizes;
+    int      exists;
+
+    if ( H5_RETURN_OK(data_exists(sid,name,&exists) ) ) {
+
+        if ( exists ) {
+            gid = data_open_group(sid);
+            sizes = DANU_MALLOC(hsize_t,dim);
+            convert_int_to_hsize(dim,dimensions,sizes);
+            status =  danu_data_read_byte(gid,name,dim,sizes,data);
+            danu_group_close(gid);
+            DANU_FREE(sizes);
+        }
+        else {
+            DANU_ERROR_MESS("Non-series dataset does not exist");
+        }
+
+    }
+
+    return status;
+
+}
+/*
  * Routine: data_write_int(hid_t sid, const char *name, int dim, int *dimensions, int *data) 
  * Purpose: Write non_series integer data to the non_series subgroup if simulation sid
  * Description: Creates a dataset of dimensions simensions under non_series data subgroup

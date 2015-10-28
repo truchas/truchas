@@ -4,6 +4,12 @@
 #undef _TYPE_
 #endif
 
+#ifdef _INT8_DATA_
+#undef _INT8_DATA_
+#define _TYPE_ integer(int8)
+#define _PROC2_ distribute_int8_2
+#endif
+
 #ifdef _INTEGER_DATA_
 #undef _INTEGER_DATA_
 #define _TYPE_ integer

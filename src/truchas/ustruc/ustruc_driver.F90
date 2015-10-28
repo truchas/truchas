@@ -60,7 +60,9 @@ module ustruc_driver
   private
 
   public :: read_microstructure_namelist
-  public :: ustruc_driver_init, ustruc_update, ustruc_output
+  public :: ustruc_driver_init, ustruc_update, ustruc_output, ustruc_driver_final
+  public :: ustruc_read_checkpoint, ustruc_skip_checkpoint
+  public :: ustruc_enabled
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -75,6 +77,14 @@ module ustruc_driver
   type(parameter_list), save :: params
 
 contains
+
+  subroutine ustruc_driver_final
+    if (allocated(this)) deallocate(this)
+  end subroutine ustruc_driver_final
+  
+  logical function ustruc_enabled ()
+    ustruc_enabled = allocated(this)
+  end function ustruc_enabled
 
   !! Current Truchas design requires that parameter input and object
   !! initialization be separated and occur at distinct execution stages.
@@ -418,6 +428,9 @@ contains
     call write_scalar_field (data_name='lambda2', hdf_name='uStruc-gv1-lambda2', viz_name='gv1-lambda2')
 
     call stop_timer ('Microstructure')
+    
+    !! Additional checkpoint data gets written at the same time.
+    call ustruc_write_checkpoint (seq_id)
 
   contains
 
@@ -440,6 +453,176 @@ contains
     end subroutine
 
   end subroutine ustruc_output
+  
+  !! Output the integrated internal state of the analysis components to the HDF
+  !! file needed for restarts.  This is additional internal state that is not set
+  !! by USTRUC_SET_INITIAL_STATE, and it corresponds to data recorded during the
+  !! course of integration.
+  
+  subroutine ustruc_write_checkpoint (seq_id)
+  
+    use,intrinsic :: iso_c_binding, only: c_ptr
+    use,intrinsic :: iso_fortran_env, only: int8
+    use danu_module, only: simulation_data_write, simulation_open_data, attribute_write, DANU_SUCCESS
+    use parallel_communication, only: nPE, is_IOP, collate, broadcast, global_sum
+    use string_utilities, only: i_to_c
+
+    type(c_ptr), intent(in) :: seq_id
+
+    integer :: j, n, stat
+    integer, allocatable :: cid(:), lmap(:), gmap(:)
+    integer(int8), allocatable :: lar(:,:), gar(:,:)
+    character(:), allocatable :: name
+    type(c_ptr) :: dataset_id
+    
+    if (.not.allocated(this)) return
+    call start_timer ('Microstructure')
+    
+    !! Write the external cell indices that correspond to the state data.
+    call this%model%get_map (lmap)
+    lmap = this%mesh%xcell(lmap)
+    name = 'CP-USTRUC-MAP'
+    if (nPE == 1) then
+      call simulation_data_write (seq_id, name, lmap, stat)
+    else
+      n = global_sum(size(lmap))
+      allocate(gmap(merge(n,0,is_IOP)))
+      call collate (gmap, lmap)
+      if (is_IOP) call simulation_data_write (seq_id, name, gmap, stat)
+      call broadcast (stat)
+      deallocate(lmap, gmap)
+    end if
+    INSIST(stat == DANU_SUCCESS)
+
+    !! Get the list of analysis components ...
+    call this%model%get_comp_list (cid)
+    do j = 1, size(cid)
+      !! and for each one, fetch its state and write it.
+      call this%model%serialize (cid(j), lar)
+      if (.not.allocated(lar))  cycle ! no checkpoint data for this analysis component
+      if (size(lar,dim=1) == 0) cycle ! no checkpoint data for this analysis component
+      name = 'CP-USTRUC-COMP-' // i_to_c(j)
+      if (nPE == 1) then
+        call simulation_data_write (seq_id, name, lar, stat)
+      else
+        allocate(gar(size(lar,1),merge(n,0,is_IOP)))
+        call collate (gar, lar)
+        if (is_IOP) call simulation_data_write (seq_id, name, gar, stat)
+        call broadcast (stat)
+        deallocate(gar)
+      end if
+      INSIST(stat == DANU_SUCCESS)
+      if (is_IOP) then
+        call simulation_open_data (seq_id, name, dataset_id, stat)
+        call attribute_write (dataset_id, 'COMP-ID', cid(j), stat)
+      end if
+      call broadcast (stat)
+      INSIST(stat == DANU_SUCCESS)
+    end do
+
+    call stop_timer ('Microstructure')
+
+  end subroutine ustruc_write_checkpoint
+  
+  !! Reads the microstructure checkpoint data from the restart file, and pushes
+  !! it to the microstructure analysis components (deserialize).  Note that this
+  !! is internal integrated state that is *additional* to the state that is set
+  !! via USTRUC_SET_INITIAL_STATE, and if this procedure is called (optional) it
+  !! must be after the call to USTRUC_DRIVER_INIT.
+
+  subroutine ustruc_read_checkpoint (lun)
+  
+    use,intrinsic :: iso_fortran_env, only: int8
+    use parallel_communication, only: is_IOP, global_sum, global_any, broadcast, collate, distribute
+    use sort_utilities, only: heap_sort
+    use permutations, only: reorder, invert_perm
+    use restart_utilities, only: read_var
+    
+    integer, intent(in) :: lun
+
+    integer :: j, n, ios, ncell, ncomp, ncell_tot, cid, nbyte
+    integer, allocatable :: lmap(:), gmap(:), map(:), perm(:), perm1(:)
+    integer(int8), allocatable :: garray(:,:), larray(:,:)
+    
+    call TLS_info ('  Reading microstructure state data from the restart file.')
+    
+    !! Get the cell list and translate to external cell numbers.  This needs to
+    !! exactly match the cell list read from the restart file, modulo the order.
+    call this%model%get_map (lmap)
+    ncell = size(lmap)
+    do j = 1, size(lmap)
+      lmap(j) = this%mesh%xcell(lmap(j))
+    end do
+    n = global_sum(size(lmap))
+    allocate(gmap(merge(n,0,is_IOP)))
+    call collate (gmap, lmap)
+    
+    !! Read the number of microstructure cells and verify the value.
+    call read_var (lun, ncell_tot, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCELL record')
+    if (ncell_tot /= n) call TLS_fatal ('USTRUC_READ_CHECKPOINT: incorrect number of cells')
+    
+    !! Read the cell list; these are external cell numbers.
+    allocate(map(merge(ncell_tot,0,is_IOP)))
+    if (is_IOP) read(lun,iostat=ios) map
+    call broadcast (ios)
+    if (ios /= 0) call TLS_fatal ('USTRUC_READ_CHECKPOINT: error reading USTRUC-CELL record')
+
+    !! We need to verify that GMAP and MAP specify the same cells and also determine the
+    !! pull-back permutation that takes MAP to GMAP.  This will be used to permute the
+    !! checkpoint data to match the current cell order.  This is accomplished by generating
+    !! the permutations that sort both GMAP and MAP.
+    if (is_IOP) then
+      allocate(perm(ncell_tot), perm1(ncell_tot))
+      call heap_sort (map, perm1)
+      call reorder (map, perm1) ! map is now sorted
+      call heap_sort (gmap, perm)
+      call reorder (gmap, perm) ! gmap is now sorted
+    end if
+    if (global_any(map /= gmap)) call TLS_fatal ('USTRUC_READ_CHECKPOINT: incorrect cell list')
+    deallocate(lmap, gmap, map)
+    if (is_IOP) then
+      call invert_perm (perm)
+      do j = 1, size(perm)
+        perm(j) = perm1(perm(j))
+      end do
+      deallocate(perm1)
+    end if
+    
+    !! Read the number of component sections to follow.
+    call read_var (lun, ncomp, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCOMP record')
+    
+    !! For each component ...
+    do n = 1, ncomp
+      !! Read the component ID and the number of data bytes (per cell)
+      call read_var (lun, cid, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-ID record')
+      call read_var (lun, nbyte, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-NBYTE record')
+      !! Read the component checkpoint data and reorder it according to PERM
+      allocate(garray(nbyte,merge(ncell_tot,0,is_IOP)))
+      if (is_IOP) read(lun,iostat=ios) garray
+      call broadcast (ios)
+      if (ios /= 0) call TLS_fatal ('USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-DATA record')
+      if (is_IOP) call reorder (garray, perm)
+      !! Distribute the checkpoint data and push it into the analysis component to consume.
+      allocate(larray(nbyte,ncell))
+      call distribute (larray, garray)
+      call this%model%deserialize (cid, larray)
+      deallocate(garray,larray)
+    end do
+
+  end subroutine ustruc_read_checkpoint
+
+  !! In the event the restart file contains microstructure checkpoint data but
+  !! microstructure modeling is not enabled, this subroutine should be called
+  !! to skip over the data so that the file is left correctly positioned.
+
+  subroutine ustruc_skip_checkpoint (lun)
+    use restart_utilities, only: skip_records, read_var
+    integer, intent(in) :: lun
+    integer :: n
+    call skip_records (lun, 2, 'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
+    call read_var (lun, n, 'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
+    call skip_records (lun, 3*n,  'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
+  end subroutine ustruc_skip_checkpoint
 
 !!!!!! AUXILIARY PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

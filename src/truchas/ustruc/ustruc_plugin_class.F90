@@ -58,13 +58,21 @@ module ustruc_plugin_class
     procedure :: init
     procedure :: set_state
     procedure :: update_state
+    procedure :: get_comp_list
     procedure :: has
     procedure :: getl1
     procedure :: geti1
     procedure :: getr1
     procedure :: getr2
+    procedure :: serialize
+    procedure :: deserialize
     final :: delete_chain
   end type
+
+  !! Unique IDs for the existing analysis components
+  integer, parameter, public :: USTRUC_VEL1_ID = 1
+  integer, parameter, public :: USTRUC_GV0_ID  = 2
+  integer, parameter, public :: USTRUC_GV1_ID  = 3
 
 contains
 
@@ -93,7 +101,7 @@ contains
     this%n = this%core%n
   end subroutine init
 
-  subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  recursive subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
     class(ustruc_plugin), intent(inout) :: this
     real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
     logical,  intent(in) :: invalid(:)
@@ -101,7 +109,7 @@ contains
     call this%comp%set_state (t, temp, temp_grad, frac, frac_grad, invalid)
   end subroutine set_state
 
-  subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  recursive subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
     class(ustruc_plugin), intent(inout) :: this
     real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
     logical,  intent(in) :: invalid(:)
@@ -109,14 +117,20 @@ contains
     call this%comp%update_state (t, temp, temp_grad, frac, frac_grad, invalid)
   end subroutine update_state
 
-  logical function has (this, name)
+  recursive subroutine get_comp_list (this, list)
+    class(ustruc_plugin), intent(in) :: this
+    integer, allocatable, intent(out) :: list(:)
+    call this%comp%get_comp_list (list)
+  end subroutine get_comp_list
+
+  recursive logical function has (this, name)
     class(ustruc_plugin), intent(in) :: this
     character(*), intent(in) :: name
     ASSERT(associated(this%comp))
     has = this%comp%has (name)
   end function has
 
-  subroutine getl1 (this, name, array)
+  recursive subroutine getl1 (this, name, array)
     class(ustruc_plugin), intent(in) :: this
     character(*), intent(in) :: name
     logical, intent(out) :: array(:)
@@ -124,7 +138,7 @@ contains
     call this%comp%get (name, array)
   end subroutine getl1
 
-  subroutine geti1 (this, name, array, invalid)
+  recursive subroutine geti1 (this, name, array, invalid)
     class(ustruc_plugin), intent(in) :: this
     character(*), intent(in) :: name
     integer, intent(out) :: array(:)
@@ -133,7 +147,7 @@ contains
     call this%comp%get (name, array, invalid)
   end subroutine geti1
 
-  subroutine getr1 (this, name, array, invalid)
+  recursive subroutine getr1 (this, name, array, invalid)
     class(ustruc_plugin), intent(in) :: this
     character(*), intent(in) :: name
     real(r8), intent(out) :: array(:)
@@ -142,7 +156,7 @@ contains
     call this%comp%get (name, array, invalid)
   end subroutine getr1
 
-  subroutine getr2 (this, name, array, invalid)
+  recursive subroutine getr2 (this, name, array, invalid)
     class(ustruc_plugin), intent(in) :: this
     character(*), intent(in) :: name
     real(r8), intent(out) :: array(:,:)
@@ -150,5 +164,22 @@ contains
     ASSERT(associated(this%comp))
     call this%comp%get (name, array, invalid)
   end subroutine getr2
+
+  recursive subroutine serialize (this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_plugin), intent(in) :: this
+    integer, intent(in) :: cid
+    integer(int8), allocatable, intent(out) :: array(:,:)
+    ASSERT(associated(this%comp))
+    call this%comp%serialize (cid, array)
+  end subroutine serialize
+
+  recursive subroutine deserialize (this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_plugin), intent(inout) :: this
+    integer, intent(in) :: cid
+    integer(int8), intent(in) :: array(:,:)
+    call this%comp%deserialize (cid, array)
+  end subroutine deserialize
 
 end module ustruc_plugin_class

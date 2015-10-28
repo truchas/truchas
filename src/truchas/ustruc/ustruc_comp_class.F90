@@ -65,6 +65,7 @@
 module ustruc_comp_class
 
   use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: int8
   implicit none
   private
 
@@ -74,11 +75,14 @@ module ustruc_comp_class
     procedure(update), deferred :: set_state
     procedure(update), deferred :: update_state
     procedure(has),    deferred :: has
+    procedure(comp_list), deferred :: get_comp_list
     generic :: get => getl1, geti1, getr1, getr2
     procedure(getl1), deferred :: getl1
     procedure(geti1), deferred :: geti1
     procedure(getr1), deferred :: getr1
     procedure(getr2), deferred :: getr2
+    procedure(serialize), deferred :: serialize
+    procedure(deserialize), deferred :: deserialize
     procedure, nopass :: vector_magnitude
   end type
 
@@ -94,6 +98,11 @@ module ustruc_comp_class
       class(ustruc_comp), intent(in) :: this
       character(*), intent(in) :: name
     end function has
+    subroutine comp_list (this, list)
+      import ustruc_comp
+      class(ustruc_comp), intent(in) :: this
+      integer, allocatable, intent(out) :: list(:)
+    end subroutine
     subroutine getl1 (this, name, array)
       import ustruc_comp
       class(ustruc_comp), intent(in) :: this
@@ -120,6 +129,18 @@ module ustruc_comp_class
       character(*), intent(in) :: name
       real(r8), intent(out) :: array(:,:)
       logical, intent(out), optional :: invalid(:)
+    end subroutine
+    subroutine serialize (this, cid, array)
+      import ustruc_comp, int8
+      class(ustruc_comp), intent(in) :: this
+      integer, intent(in) :: cid
+      integer(int8), allocatable, intent(out) :: array(:,:)
+    end subroutine
+    subroutine deserialize (this, cid, array)
+      import ustruc_comp, int8
+      class(ustruc_comp), intent(inout) :: this
+      integer, intent(in) :: cid
+      integer(int8), intent(in) :: array(:,:)
     end subroutine
   end interface
 

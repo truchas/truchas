@@ -48,11 +48,20 @@ module ustruc_vel1_type
   contains
     procedure :: set_state
     procedure :: update_state
+    procedure :: get_comp_list
     procedure :: has
     procedure :: getl1
     procedure :: getr1
     procedure :: getr2
+    procedure :: serialize
+    procedure :: deserialize
   end type ustruc_vel1
+
+  !! Number of bytes (per cell) of internal state for serialization/deserialization
+  type(ustruc_vel1), allocatable :: dummy  ! only use is in the following parameter declaration
+  integer, parameter :: NBYTES = storage_size(dummy%core%speed)/8 + &
+                               3*storage_size(dummy%core%velocity)/8 + &
+                                 storage_size(dummy%core%invalid_velocity)/8
 
 contains
 
@@ -125,6 +134,16 @@ contains
 
   end subroutine update_state
 
+  subroutine get_comp_list (this, list)
+    class(ustruc_vel1), intent(in) :: this
+    integer, allocatable, intent(out) :: list(:)
+    integer, allocatable :: rest(:)
+    call this%ustruc_plugin%get_comp_list (rest)
+    allocate(list(size(rest)+1))
+    list(1) = USTRUC_VEL1_ID
+    list(2:) = rest
+  end subroutine get_comp_list
+
   subroutine getl1 (this, name, array)
     class(ustruc_vel1), intent(in) :: this
     character(*), intent(in) :: name
@@ -184,5 +203,56 @@ contains
       call this%ustruc_plugin%get (name, array, invalid)
     end select
   end subroutine getr2
+
+  subroutine serialize (this, cid, array)
+
+    use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_to_bytes
+
+    class(ustruc_vel1), intent(in) :: this
+    integer, intent(in) :: cid
+    integer(int8), allocatable, intent(out) :: array(:,:)
+
+    integer :: j, offset
+
+    if (cid == USTRUC_VEL1_ID) then
+      allocate(array(NBYTES,this%n))
+      do j = 1, this%n
+        offset = 0
+        call copy_to_bytes (this%core%speed(j), array(:,j), offset)
+        call copy_to_bytes (this%core%velocity(:,j), array(:,j), offset)
+        call copy_to_bytes (this%core%invalid_velocity(j), array(:,j), offset)
+      end do
+    else
+      call this%ustruc_plugin%serialize (cid, array)
+    end if
+
+  end subroutine serialize
+
+  subroutine deserialize (this, cid, array)
+
+    use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_from_bytes
+
+    class(ustruc_vel1), intent(inout) :: this
+    integer, intent(in) :: cid
+    integer(int8), intent(in) :: array(:,:)
+
+    integer :: j, offset
+
+    if (cid == USTRUC_VEL1_ID) then
+      INSIST(size(array,1) == NBYTES)
+      INSIST(size(array,2) == this%n)
+      do j = 1, this%n
+        offset = 0
+        call copy_from_bytes (array(:,j), offset, this%core%speed(j))
+        call copy_from_bytes (array(:,j), offset, this%core%velocity(:,j))
+        call copy_from_bytes (array(:,j), offset, this%core%invalid_velocity(j))
+      end do
+    else
+      call this%ustruc_plugin%deserialize (cid, array)
+    end if
+
+  end subroutine deserialize
 
 end module ustruc_vel1_type

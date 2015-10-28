@@ -31,6 +31,11 @@
 
 !!!! BROADCAST PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+subroutine pgslib_bcast_int8_scalar_c (scalar) bind(c)
+  use,intrinsic :: iso_c_binding, only: c_int8_t
+  integer(c_int8_t) :: scalar
+end subroutine
+
 subroutine pgslib_bcast_int_scalar_c (scalar) bind(c)
   use,intrinsic :: iso_c_binding, only: c_int
   integer(c_int) :: scalar
@@ -49,6 +54,12 @@ end subroutine
 subroutine pgslib_bcast_log_scalar_c (scalar) bind(c)
   use,intrinsic :: iso_c_binding, only: c_int
   logical(c_int) :: scalar  ! SEE NOTES 1 and 2
+end subroutine
+
+subroutine pgslib_bcast_int8_vector_c (vector, vec_len) bind(c)
+  use,intrinsic :: iso_c_binding, only: c_int, c_int8_t
+  integer(c_int8_t) :: vector(*)
+  integer(c_int), intent(in) :: vec_len
 end subroutine
 
 subroutine pgslib_bcast_int_vector_c (vector, vec_len) bind(c)
@@ -83,6 +94,13 @@ end subroutine
 
 !!!! DISTRIBUTE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+subroutine pgslib_dist_int8_scalar_c (scalar_out, scalarv_in) bind(c)
+  use,intrinsic :: iso_c_binding, only: c_int8_t
+  integer(c_int8_t), intent(out) :: scalar_out
+  integer(c_int8_t), intent(in)  :: scalarv_in(*)
+  scalar_out = scalarv_in(1)
+end subroutine
+
 subroutine pgslib_dist_int_scalar_c (scalar_out, scalarv_in) bind(c)
   use,intrinsic :: iso_c_binding, only: c_int
   integer(c_int), intent(out) :: scalar_out
@@ -109,6 +127,14 @@ subroutine pgslib_dist_log_scalar_c (scalar_out, scalarv_in) bind(c)
   logical(c_int), intent(out) :: scalar_out     ! SEE NOTES 1 and 2
   logical(c_int), intent(in)  :: scalarv_in(*)  ! SEE NOTES 1 and 2
   scalar_out = scalarv_in(1)
+end subroutine
+
+subroutine pgslib_dist_int8_vector_c (vector_out, out_len, vector_in, lengths) bind(c)
+  use,intrinsic :: iso_c_binding, only: c_int, c_int8_t
+  integer(c_int8_t), intent(out) :: vector_out(*)
+  integer(c_int8_t), intent(in)  :: vector_in(*)
+  integer(c_int), intent(in)  :: out_len, lengths(*)
+  vector_out(:out_len) = vector_in(:out_len)
 end subroutine
 
 subroutine pgslib_dist_int_vector_c (vector_out, out_len, vector_in, lengths) bind(c)
@@ -145,6 +171,13 @@ end subroutine
 
 !!!! COLLATE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+subroutine pgslib_collate_int8_scalar_c (scalarv_out, scalar_in) bind(c)
+  use,intrinsic :: iso_c_binding, only: c_int8_t
+  integer(c_int8_t), intent(out) :: scalarv_out(*)
+  integer(c_int8_t), intent(in)  :: scalar_in
+  scalarv_out(1) = scalar_in
+end subroutine
+
 subroutine pgslib_collate_int_scalar_c (scalarv_out, scalar_in) bind(c)
   use,intrinsic :: iso_c_binding, only: c_int
   integer(c_int), intent(out) :: scalarv_out(*)
@@ -171,6 +204,14 @@ subroutine pgslib_collate_log_scalar_c (scalarv_out, scalar_in) bind(c)
   logical(c_int), intent(out) :: scalarv_out(*) ! SEE NOTES 1 and 2
   logical(c_int), intent(in)  :: scalar_in      ! SEE NOTES 1 and 2
   scalarv_out(1) = scalar_in
+end subroutine
+
+subroutine pgslib_collate_int8_vector_c (vector_out, Lengths, vector_in, In_Length) bind(c)
+  use,intrinsic :: iso_c_binding, only: c_int, c_int8_t
+  integer(c_int8_t), intent(out) :: vector_out(*)
+  integer(c_int8_t), intent(in)  :: vector_in(*)
+  integer(c_int), intent(in)  :: Lengths(*), In_Length
+  vector_out(:Lengths(1)) = vector_in(:Lengths(1))
 end subroutine
 
 subroutine pgslib_collate_int_vector_c (vector_out, Lengths, vector_in, In_Length) bind(c)

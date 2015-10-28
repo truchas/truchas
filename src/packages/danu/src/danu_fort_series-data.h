@@ -49,6 +49,20 @@ void simulation_data_type_f(const hid_t_ptr *nptr,
                             int *typecode,
                             int *ierr);
 
+void simulation_data_write_byte0_f(const hid_t_ptr * nptr,
+                                  const char *data_name,
+                                  const int *flen,
+                                  const int8_t *data,
+                                  int *ierr);
+
+void simulation_data_write_byte_f(const hid_t_ptr *nptr,
+                                 const char *data_name,
+                                 const int *flen,
+                                 const int *dim,
+                                 const int *dimensions,
+                                 const int8_t *data,
+                                 int *ierr);
+
 void simulation_data_write_int0_f(const hid_t_ptr * nptr,
                                   const char *data_name,
                                   const int *flen,
@@ -90,6 +104,20 @@ void simulation_data_write_double_f(const hid_t_ptr *nptr,
                                     const int *dimensions,
                                     const double *data,
                                     int *ierr);
+
+void simulation_data_read_byte0_f(const hid_t_ptr * nptr,
+                                 const char *data_name,
+                                 const int *flen,
+                                 int8_t *data,
+                                 int *ierr);
+
+void simulation_data_read_byte_f(const hid_t_ptr *nptr,
+                                const char *data_name,
+                                const int *flen,
+                                const int *dim,
+                                const int *dimensions,
+                                int8_t *data,
+                                int *ierr);
 
 void simulation_data_read_int0_f(const hid_t_ptr * nptr,
                                  const char *data_name,

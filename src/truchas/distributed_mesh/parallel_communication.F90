@@ -18,6 +18,7 @@
 
 module parallel_communication
 
+  use,intrinsic :: iso_fortran_env, only: int8
   use pgslib_module, halt_parallel_communication => PGSLib_Finalize, &
                      broadcast  => PGSLib_BCast, &
                      distribute => PGSLIB_Dist,  &
@@ -47,11 +48,11 @@ module parallel_communication
   integer, public, save :: delta_IOP = 1    ! 1 if this PE is the IO PE, 0 otherwise
   
   interface distribute
-    module procedure distribute_L2, distribute_I2, distribute_S2, distribute_D2
+    module procedure distribute_L2, distribute_I2, distribute_S2, distribute_D2, distribute_int8_2
   end interface
   
   interface collate
-    module procedure collate_L2, collate_I2, collate_S2, collate_D2
+    module procedure collate_L2, collate_I2, collate_S2, collate_D2, collate_int8_2
   end interface
   
   interface allocate_collated_array
@@ -114,6 +115,9 @@ contains
 #define _LOGICAL_DATA_
 #include "distribute.fpp"
  
+#define _INT8_DATA_
+#include "distribute.fpp"
+ 
 #define _INTEGER_DATA_
 #include "distribute.fpp"
  
@@ -129,6 +133,9 @@ contains
  !!
 
 #define _LOGICAL_DATA_
+#include "collate.fpp"
+ 
+#define _INT8_DATA_
 #include "collate.fpp"
  
 #define _INTEGER_DATA_

@@ -77,6 +77,7 @@
 module restart_utilities
 
   use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: int8
 
   implicit none
   private
@@ -84,6 +85,8 @@ module restart_utilities
   public :: read_var, read_dist_array, skip_records, make_undefined, info, halt
 
   interface read_var
+    module procedure read_var_stat_int8_0, read_var_halt_int8_0
+    module procedure read_var_stat_int8_1, read_var_halt_int8_1
     module procedure read_var_stat_I0, read_var_halt_I0
     module procedure read_var_stat_I1, read_var_halt_I1
     module procedure read_var_stat_R0, read_var_halt_R0
@@ -93,6 +96,9 @@ module restart_utilities
   end interface
 
   interface read_dist_array
+    module procedure read_array_stat_int8_1, read_array_halt_int8_1
+    module procedure read_array_stat_int8_2, read_array_halt_int8_2
+    module procedure read_array_stat_int8_3, read_array_halt_int8_3
     module procedure read_array_stat_I1, read_array_halt_I1
     module procedure read_array_stat_I2, read_array_halt_I2
     module procedure read_array_stat_I3, read_array_halt_I3
@@ -169,6 +175,9 @@ contains
   !!
   !! Specific procedures for the generic subroutines READ_VAR and READ_DIST_ARRAY.
   !!
+
+#define _INT8_DATA_
+#include "restart_utilities.fpp"
 
 #define _INTEGER_DATA_
 #include "restart_utilities.fpp"

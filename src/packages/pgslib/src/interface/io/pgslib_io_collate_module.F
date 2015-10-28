@@ -1,5 +1,6 @@
 MODULE PGSLib_IO_Collate_MODULE
   use pgslib_c_binding
+  use,intrinsic :: iso_fortran_env, only: int8
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -32,7 +33,7 @@ MODULE PGSLib_IO_Collate_MODULE
 
      ! Broadcast Scalars
      ! These routines provide F90 interfaces to the C routines
-
+     MODULE PROCEDURE PGSLib_Collate_Int8_Scalar_F
      MODULE PROCEDURE PGSLib_Collate_Int_Scalar_F
      MODULE PROCEDURE PGSLib_Collate_REAL_Scalar_F
      MODULE PROCEDURE PGSLib_Collate_Double_Scalar_F
@@ -41,6 +42,7 @@ MODULE PGSLib_IO_Collate_MODULE
 
      ! Broadcast Vectors
      ! Interfaces for the F90 interface routines, which take a single vector argument
+     MODULE Procedure PGSLib_Collate_Int8_Vector_F
      MODULE Procedure PGSLib_Collate_Int_Vector_F
      MODULE Procedure PGSLib_Collate_Real_Vector_F
      MODULE Procedure PGSLib_Collate_Double_Vector_F
@@ -58,6 +60,14 @@ CONTAINS
   ! Collate scalars, one per PE.
   ! These are the F90 versions, which do some checking, and then
   !    call C working routines.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  SUBROUTINE PGSLib_Collate_int8_scalar_f(scalarv_out, scalar_in)
+
+#define _DATA_TYPE_ integer (int8)
+#include "collate_scalar.fpp"
+
+  END SUBROUTINE PGSLib_Collate_int8_scalar_F
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   SUBROUTINE PGSLib_Collate_int_scalar_f(scalarv_out, scalar_in)
@@ -177,6 +187,13 @@ CONTAINS
   !          to do the work.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  SUBROUTINE PGSLib_Collate_Int8_Vector_F(Vector_out, Vector_In)
+
+#define _DATA_TYPE_ INTEGER (int8)
+#include "collate_vector.fpp"
+
+  END SUBROUTINE PGSLib_Collate_Int8_Vector_F
+
   SUBROUTINE PGSLib_Collate_Int_Vector_F(Vector_out, Vector_In)
 
 #define _DATA_TYPE_ INTEGER (PGSLib_Int_Type)

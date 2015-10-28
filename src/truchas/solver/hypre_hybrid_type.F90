@@ -50,6 +50,7 @@ contains
     if (hypre_associated(this%xh)) call fHYPRE_IJVectorDestroy (this%xh, ierr)
     if (hypre_associated(this%solver)) call fHYPRE_ParCSRHybridDestroy (this%solver, ierr)
     INSIST(ierr == 0)
+    call fHYPRE_ClearAllErrors
   end subroutine hypre_hybrid_delete
 
   subroutine init (this, A, params)

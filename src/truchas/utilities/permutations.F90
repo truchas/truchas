@@ -111,6 +111,7 @@
 
 module permutations
 
+  use,intrinsic :: iso_fortran_env, only: int8
   implicit none
   private
 
@@ -122,6 +123,7 @@ module permutations
 
   interface reorder
     module procedure reorder_l0, reorder_l1
+    module procedure reorder_int8_0, reorder_int8_1
     module procedure reorder_i0, reorder_i1
     module procedure reorder_r0, reorder_r1
     module procedure reorder_d0, reorder_d1
@@ -378,6 +380,110 @@ contains
     end if
 
   end subroutine reorder_l1
+  !!
+  !! Rank-1 integer array
+  !!
+  subroutine reorder_int8_0 (vector, perm, forward)
+
+    integer(int8), dimension(:), intent(inout) :: vector
+    integer, intent(in) :: perm(:)
+    logical, intent(in), optional :: forward
+
+    integer(int8) :: vk, vpk, vj
+    integer :: j, k, pk
+    logical :: pullback, tagged(size(perm))
+
+    pullback = .true.
+    if (present(forward)) pullback = .not.forward
+
+    if (pullback) then ! Pull VECTOR back by PERM.
+
+      tagged = .false.
+      do j = 1, size(perm)
+        if (tagged(j) .or. perm(j) == j) cycle
+        vj = vector(j)
+        k = j
+        do while (perm(k) /= j)
+          vector(k) = vector(perm(k))
+          tagged(k) = .true. ! Tag vector(k) as defined.
+          k = perm(k) ! Advance.
+        end do
+        vector(k) = vj
+        tagged(k) = .true.
+      end do
+
+    else ! Push VECTOR forward by PERM
+
+      tagged = .false.
+      do j = 1, size(perm)
+        if (tagged(j) .or. perm(j) == j) cycle
+        vk = vector(j)
+        pk = perm(j)
+        do while (pk /= j)
+          vpk = vector(pk) ! Swap vk and vector(pk).
+          vector(pk) = vk
+          vk = vpk
+          tagged(pk) = .true. ! Tag vector(pk) as moved.
+          pk = perm(pk) ! Advance.
+        end do
+        vector(j) = vk
+      end do
+
+    end if
+
+  end subroutine reorder_int8_0
+  !!
+  !! Rank-2 integer array
+  !!
+  subroutine reorder_int8_1 (vector, perm, forward)
+
+    integer(int8), dimension(:,:), intent(inout) :: vector
+    integer, intent(in) :: perm(:)
+    logical, intent(in), optional :: forward
+
+    integer(int8), dimension(size(vector,1)) :: vk, vpk, vj
+    integer :: j, k, pk
+    logical :: pullback, tagged(size(perm))
+
+    pullback = .true.
+    if (present(forward)) pullback = .not.forward
+
+    if (pullback) then ! Pull VECTOR back by PERM.
+
+      tagged = .false.
+      do j = 1, size(perm)
+        if (tagged(j) .or. perm(j) == j) cycle
+        vj = vector(:,j)
+        k = j
+        do while (perm(k) /= j)
+          vector(:,k) = vector(:,perm(k))
+          tagged(k) = .true. ! Tag vector(k) as defined.
+          k = perm(k) ! Advance.
+        end do
+        vector(:,k) = vj
+        tagged(k) = .true.
+      end do
+
+    else ! Push VECTOR forward by PERM
+
+      tagged = .false.
+      do j = 1, size(perm)
+        if (tagged(j) .or. perm(j) == j) cycle
+        vk = vector(:,j)
+        pk = perm(j)
+        do while (pk /= j)
+          vpk = vector(:,pk) ! Swap vk and vector(pk).
+          vector(:,pk) = vk
+          vk = vpk
+          tagged(pk) = .true. ! Tag vector(pk) as moved.
+          pk = perm(pk) ! Advance.
+        end do
+        vector(:,j) = vk
+      end do
+
+    end if
+
+  end subroutine reorder_int8_1
   !!
   !! Rank-1 integer array
   !!

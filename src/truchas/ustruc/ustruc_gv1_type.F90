@@ -106,9 +106,12 @@ module ustruc_gv1_type
   contains
     procedure :: set_state
     procedure :: update_state
+    procedure :: get_comp_list
     procedure :: has
     procedure :: getl1
     procedure :: getr1
+    procedure :: serialize
+    procedure :: deserialize
   end type ustruc_gv1
 
   integer, parameter :: STATE_INVALID   = 0
@@ -116,6 +119,17 @@ module ustruc_gv1_type
   integer, parameter :: STATE_LIQUID    = 2
   integer, parameter :: STATE_MUSHY     = 3
   integer, parameter :: STATE_SOLID     = 4
+  
+  !! Number of bytes (per cell) of internal state for serialization/deserialization
+  type(ustruc_gv1), allocatable :: dummy  ! only use is in the following parameter declaration
+  integer, parameter :: NBYTES = storage_size(dummy%ustruc_state%G)/8 + &
+                                 storage_size(dummy%ustruc_state%V)/8 + &
+                                 storage_size(dummy%ustruc_state%sfrac)/8 +  &
+                                 storage_size(dummy%ustruc_state%lambda1)/8 + &
+                                 storage_size(dummy%ustruc_state%lambda2)/8 + &
+                                 storage_size(dummy%ustruc_state%ustruc)/8 + &
+                                 storage_size(dummy%state)/8 + &
+                                 storage_size(dummy%dt)/8
 
 contains
 
@@ -399,6 +413,16 @@ contains
 
   end subroutine update_state
 
+  subroutine get_comp_list (this, list)
+    class(ustruc_gv1), intent(in) :: this
+    integer, allocatable, intent(out) :: list(:)
+    integer, allocatable :: rest(:)
+    call this%ustruc_plugin%get_comp_list (rest)
+    allocate(list(size(rest)+1))
+    list(1) = USTRUC_GV1_ID
+    list(2:) = rest
+  end subroutine get_comp_list
+
   logical function has (this, name)
     class(ustruc_gv1), intent(in) :: this
     character(*), intent(in) :: name
@@ -496,5 +520,66 @@ contains
       call this%ustruc_plugin%get (name, array, invalid)
     end select
   end subroutine getr1
+
+  subroutine serialize (this, cid, array)
+
+    use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_to_bytes
+
+    class(ustruc_gv1), intent(in) :: this
+    integer, intent(in) :: cid
+    integer(int8), allocatable, intent(out) :: array(:,:)
+
+    integer :: j, offset
+
+    if (cid == USTRUC_GV1_ID) then
+      allocate(array(NBYTES,this%n))
+      do j = 1, this%n
+        offset = 0
+        call copy_to_bytes (this%ustruc_state(j)%G, array(:,j), offset)
+        call copy_to_bytes (this%ustruc_state(j)%V, array(:,j), offset)
+        call copy_to_bytes (this%ustruc_state(j)%sfrac, array(:,j), offset)
+        call copy_to_bytes (this%ustruc_state(j)%lambda1, array(:,j), offset)
+        call copy_to_bytes (this%ustruc_state(j)%lambda2, array(:,j), offset)
+        call copy_to_bytes (this%ustruc_state(j)%ustruc, array(:,j), offset)
+        call copy_to_bytes (this%state(j), array(:,j), offset)
+        call copy_to_bytes (this%dt(j), array(:,j), offset)
+      end do
+    else
+      call this%ustruc_plugin%serialize (cid, array)
+    end if
+
+  end subroutine serialize
+
+  subroutine deserialize (this, cid, array)
+
+    use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_from_bytes
+
+    class(ustruc_gv1), intent(inout) :: this
+    integer, intent(in) :: cid
+    integer(int8), intent(in) :: array(:,:)
+
+    integer :: j, offset
+
+    if (cid == USTRUC_GV1_ID) then
+      INSIST(size(array,1) == NBYTES)
+      INSIST(size(array,2) == this%n)
+      do j = 1, this%n
+        offset = 0
+        call copy_from_bytes (array(:,j), offset, this%ustruc_state(j)%G)
+        call copy_from_bytes (array(:,j), offset, this%ustruc_state(j)%V)
+        call copy_from_bytes (array(:,j), offset, this%ustruc_state(j)%sfrac)
+        call copy_from_bytes (array(:,j), offset, this%ustruc_state(j)%lambda1)
+        call copy_from_bytes (array(:,j), offset, this%ustruc_state(j)%lambda2)
+        call copy_from_bytes (array(:,j), offset, this%ustruc_state(j)%ustruc)
+        call copy_from_bytes (array(:,j), offset, this%state(j))
+        call copy_from_bytes (array(:,j), offset, this%dt(j))
+      end do
+    else
+      call this%ustruc_plugin%deserialize (cid, array)
+    end if
+
+  end subroutine deserialize
 
 end module ustruc_gv1_type

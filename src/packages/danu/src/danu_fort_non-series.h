@@ -34,6 +34,8 @@ void data_exists_f(const hid_t_ptr *sid, const char *dataname, const int *flen, 
 void data_count_f(const hid_t_ptr *sid, int *ndata, int *ierr);
 void data_list_f(const hid_t_ptr *sid, char *datanames, const int *flen, const int *num, int *ierr);
 
+void data_write_byte_f(const hid_t_ptr *sid, const char * name, const int *flen,
+                      const int *dim, const int *dimensions, int8_t *data, int * ierr);
 void data_write_int_f(const hid_t_ptr *sid, const char * name, const int *flen,
                       const int *dim, const int *dimensions, int *data, int * ierr);
 void data_write_float_f(const hid_t_ptr *sid, const char * name, const int *flen,
@@ -43,6 +45,8 @@ void data_write_double_f(const hid_t_ptr *sid, const char * name, const int *fle
 void data_write_string_f(const hid_t_ptr *sid, const char * name, const int *flen,
                          const int *dim, const int *dimensions, char *data, int *ierr);
 
+void data_read_byte_f(const hid_t_ptr *sid, const char * name, const int *flen,
+                     const int *dim, const int * dimensions, int8_t *data, int *ierr);
 void data_read_int_f(const hid_t_ptr *sid, const char * name, const int *flen,
                      const int *dim, const int * dimensions, int *data, int *ierr);
 void data_read_float_f(const hid_t_ptr *sid, const char * name, const int *flen, const int *dim, const int * dimensions, float *data, int *ierr);

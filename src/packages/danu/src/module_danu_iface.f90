@@ -752,6 +752,30 @@ interface
 end interface  
 
 interface
+    subroutine data_write_byte0_f(ptr,data_name,flen,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT8_T),                     intent(in)  :: data
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine data_write_byte0_f
+end interface
+
+interface
+    subroutine data_write_byte_f(ptr,data_name,flen,ndim,dims,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT),                        intent(in)  :: ndim
+    integer(kind=C_INT),                        intent(in)  :: dims(*)
+    integer(kind=C_INT8_T),                     intent(in)  :: data(*)
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine data_write_byte_f
+end interface
+
+interface
     subroutine data_write_int0_f(ptr,data_name,flen,idata,ierr) bind(c)
     use iso_c_binding
     type(C_PTR),                                intent(in)  :: ptr
@@ -821,6 +845,30 @@ interface
     real(kind=C_DOUBLE),                        intent(in)  :: r8data(*)
     integer(kind=C_INT),                        intent(out) :: ierr
     end subroutine data_write_double_f
+end interface
+
+interface
+    subroutine data_read_byte0_f(ptr,data_name,flen,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT8_T),                     intent(out) :: data
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine data_read_byte0_f
+end interface
+
+interface
+    subroutine data_read_byte_f(ptr,data_name,flen,ndim,dims,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT),                        intent(in)  :: ndim
+    integer(kind=C_INT),                        intent(in)  :: dims(*)
+    integer(kind=C_INT8_T),                     intent(out) :: data(*)
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine data_read_byte_f
 end interface
 
 interface
@@ -1040,6 +1088,30 @@ end interface
 
 
 interface
+    subroutine simulation_data_write_byte0_f(ptr,data_name,flen,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT8_T),                     intent(in)  :: data
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine simulation_data_write_byte0_f
+end interface
+
+interface
+    subroutine simulation_data_write_byte_f(ptr,data_name,flen,ndim,dims,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT),                        intent(in)  :: ndim
+    integer(kind=C_INT),                        intent(in)  :: dims(*)
+    integer(kind=C_INT8_T),                     intent(in)  :: data(*)
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine simulation_data_write_byte_f
+end interface
+
+interface
     subroutine simulation_data_write_int0_f(ptr,data_name,flen,idata,ierr) bind(c)
     use iso_c_binding
     type(C_PTR),                                intent(in)  :: ptr
@@ -1111,6 +1183,30 @@ interface
     end subroutine simulation_data_write_double_f
 end interface
 
+
+interface
+    subroutine simulation_data_read_byte0_f(ptr,data_name,flen,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT8_T),                     intent(out) :: data
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine simulation_data_read_byte0_f
+end interface
+
+interface
+    subroutine simulation_data_read_byte_f(ptr,data_name,flen,ndim,dims,data,ierr) bind(c)
+    use iso_c_binding
+    type(C_PTR),                                intent(in)  :: ptr
+    character(kind=C_CHAR),                     intent(in)  :: data_name(*)
+    integer(kind=C_INT),                        intent(in)  :: flen
+    integer(kind=C_INT),                        intent(in)  :: ndim
+    integer(kind=C_INT),                        intent(in)  :: dims(*)
+    integer(kind=C_INT8_T),                     intent(out) :: data(*)
+    integer(kind=C_INT),                        intent(out) :: ierr
+    end subroutine simulation_data_read_byte_f
+end interface
 
 interface
     subroutine simulation_data_read_int0_f(ptr,data_name,flen,idata,ierr) bind(c)

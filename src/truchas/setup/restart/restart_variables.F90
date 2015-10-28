@@ -39,6 +39,7 @@ module restart_variables
   logical, public :: have_joule_heat_data = .false.
   logical, public :: have_solid_mechanics_data = .false.
   logical, public :: have_species_data = .false.
+  logical, public :: have_microstructure_data = .false.
 
 contains
 

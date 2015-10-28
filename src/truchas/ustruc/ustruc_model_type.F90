@@ -89,10 +89,14 @@ module ustruc_model_type
     procedure :: init
     procedure :: set_state
     procedure :: update_state
+    procedure :: get_comp_list
     procedure :: has
     generic :: get => getr1, getr2
     procedure, private :: getr1
     procedure, private :: getr2
+    procedure :: get_map
+    procedure :: serialize
+    procedure :: deserialize
     final :: delete_ustruc_model
   end type ustruc_model
 
@@ -166,6 +170,7 @@ contains
 
   subroutine update_state (this, t, tcell, tface, liq_vf, sol_vf)
     use timing_tree
+use process_info_module
     class(ustruc_model), intent(inout) :: this
     real(r8), intent(in) :: t, tcell(:), tface(:), liq_vf(:), sol_vf(:)
     logical,  allocatable :: invalid(:)
@@ -174,12 +179,21 @@ contains
     call get_temp_state (this, tcell, tface, temp, temp_grad)
     call stop_timer ('temperature gradient')
     call start_timer ('solid fraction gradient')
+call mem_diag_write ('***A calling get_sol_frac_state')
     call get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, sol_frac_grad, invalid)
     call stop_timer ('solid fraction gradient')
     call start_timer ('analysis')
+call mem_diag_write ('***B calling comp%update_state')
     call this%comp%update_state (t, temp, temp_grad, sol_frac, sol_frac_grad, invalid)
     call stop_timer ('analysis')
+call mem_diag_write ('***C returning from ustruc_model%update_state')
   end subroutine update_state
+
+  subroutine get_comp_list (this, list)
+    class(ustruc_model), intent(in) :: this
+    integer, allocatable, intent(out) :: list(:)
+    call this%comp%get_comp_list (list)
+  end subroutine get_comp_list
   
   !! Returns true if one of the analysis components has the named data.
   logical function has (this, name)
@@ -309,7 +323,7 @@ contains
     use cell_grad_type
     use index_partitioning, only: gather_boundary
 
-    class(ustruc_model), intent(in) :: this
+    class(ustruc_model), intent(inout) :: this
     real(r8), intent(in)  :: liq_vf(:), sol_vf(:)
     real(r8), allocatable, intent(out) :: sol_frac(:), sol_frac_grad(:,:)
     logical,  allocatable, intent(out) :: invalid(:)
@@ -317,7 +331,7 @@ contains
     integer  :: j, stat
     logical  :: mask(this%mesh%ncell)
     real(r8) :: sfrac(this%mesh%ncell), sfrac_grad(3,this%mesh%ncell)
-    type(cell_grad) :: grad
+    type(cell_grad), target :: grad
     character(:), allocatable :: errmsg
 
     ASSERT(size(liq_vf) == this%mesh%ncell_onP)
@@ -349,5 +363,27 @@ contains
     sol_frac_grad = sfrac_grad(:,this%map)
 
   end subroutine get_sol_frac_state
+
+  subroutine get_map (this, map)
+    class(ustruc_model), intent(in) :: this
+    integer, allocatable, intent(out) :: map(:)
+    map = this%map
+  end subroutine
+
+  subroutine serialize (this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_model), intent(in) :: this
+    integer, intent(in) :: cid
+    integer(int8), allocatable, intent(out) :: array(:,:)
+    call this%comp%serialize (cid, array)
+  end subroutine serialize
+
+  subroutine deserialize (this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_model), intent(inout) :: this
+    integer, intent(in) :: cid
+    integer(int8), intent(in) :: array(:,:)
+    call this%comp%deserialize (cid, array)
+  end subroutine deserialize
 
 end module ustruc_model_type

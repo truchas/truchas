@@ -62,7 +62,7 @@ CONTAINS
                                       OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: ncells, nmat
     use restart_variables,      only: restart
-    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species
+    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use property_module,        only: DENSITY_MATERIAL
     use zone_module,            only: Zone
     use var_vector_module
@@ -76,7 +76,6 @@ CONTAINS
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
-    use physics_module,         only: heat_transport, heat_species_transport
 
     real(r8), intent(in) :: t, dt
 
@@ -202,7 +201,8 @@ CONTAINS
     end if
     
     ! Initialize the microstructure modeling driver (if enabled).
-    if (heat_transport .or. heat_species_transport) call ustruc_driver_init (t)
+    call ustruc_driver_init (t)
+    call restart_ustruc
 
   END SUBROUTINE INITIAL
 

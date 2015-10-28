@@ -210,6 +210,58 @@ void simulation_data_list_f(const hid_t_ptr *sptr, char *names, const int *len, 
 
 /* Data write routines */
 
+void simulation_data_write_byte0_f(const hid_t_ptr *nptr, const char *data_name, const int *flen,
+				  const int8_t *data, int *ierr)
+{
+  hid_t nid = GET_HID_VALUE(nptr);
+  herr_t err;
+  int  c_len        = *flen+1;
+  char *c_data       = DANU_MALLOC(char, c_len);
+  danu_err_t status = convert_string_f2c(data_name,*flen,c_data,c_len);
+  int dim, size;
+
+  err = DANU_FAILURE;
+  if ( status == DANU_SUCCESS ) {
+    dim=1;
+    size=1;
+    err = simulation_data_write_byte(nid,c_data,dim,&size,data);
+    DANU_FREE(c_data);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to copy Fortran string C string");
+  }
+
+  error_translate(err,ierr);
+
+}
+
+void simulation_data_write_byte_f(const hid_t_ptr *nptr, const char * data_name, const int *flen,
+		      const int *dim, const int * dimensions, const int8_t *data, int *ierr )
+{
+  hid_t nid = GET_HID_VALUE(nptr);
+  herr_t err;
+  int  c_len        = *flen+1;
+  char *c_data       = DANU_MALLOC(char, c_len);
+  danu_err_t status = convert_string_f2c(data_name,*flen,c_data,c_len);
+  int *c_dim;
+
+  err = DANU_FAILURE;
+  if ( status == DANU_SUCCESS ) {
+    c_dim = DANU_MALLOC(int,*dim);
+    transpose_array_int(*dim,dimensions,c_dim);
+    err = simulation_data_write_byte(nid,c_data,*dim,c_dim,data);
+
+    DANU_FREE(c_data);
+    DANU_FREE(c_dim);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to copy Fortran string to C string");
+  }
+
+  error_translate(err,ierr);
+
+}
+
 void simulation_data_write_int0_f(const hid_t_ptr *nptr, const char *data_name, const int *flen,
 				  const int *data, int *ierr)
 {
@@ -369,6 +421,58 @@ void simulation_data_write_double_f(const hid_t_ptr *nptr, const char * data_nam
 
 
 /* Data read routines */
+
+void simulation_data_read_byte0_f(const hid_t_ptr *nptr, const char *data_name, const int *flen,
+				  int8_t *data, int *ierr)
+{
+  hid_t nid = GET_HID_VALUE(nptr);
+  herr_t err;
+  int  c_len        = *flen+1;
+  char *c_data       = DANU_MALLOC(char, c_len);
+  danu_err_t status = convert_string_f2c(data_name,*flen,c_data,c_len);
+  int dim, size;
+
+  err = DANU_FAILURE;
+  if ( status == DANU_SUCCESS ) {
+    dim=1;
+    size=1;
+    err = simulation_data_read_byte(nid,c_data,dim,&size,data);
+    DANU_FREE(c_data);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to copy Fortran string C string");
+  }
+
+  error_translate(err,ierr);
+
+}
+
+void simulation_data_read_byte_f(const hid_t_ptr *nptr, const char * data_name, const int *flen,
+		                 const int *dim, const int * dimensions, int8_t *data, int *ierr )
+{
+  hid_t nid = GET_HID_VALUE(nptr);
+  herr_t err;
+  int  c_len        = *flen+1;
+  char *c_data       = DANU_MALLOC(char, c_len);
+  danu_err_t status = convert_string_f2c(data_name,*flen,c_data,c_len);
+  int *c_dim;
+
+  err = DANU_FAILURE;
+  if ( status == DANU_SUCCESS ) {
+    c_dim = DANU_MALLOC(int,*dim);
+    transpose_array_int(*dim,dimensions,c_dim);
+    err = simulation_data_read_byte(nid,c_data,*dim,c_dim,data);
+
+    DANU_FREE(c_data);
+    DANU_FREE(c_dim);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to copy Fortran string to C string");
+  }
+
+  error_translate(err,ierr);
+
+}
 
 void simulation_data_read_int0_f(const hid_t_ptr *nptr, const char *data_name, const int *flen,
 				  int *data, int *ierr)

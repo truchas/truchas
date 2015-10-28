@@ -83,11 +83,14 @@ module ustruc_core_type
     procedure, private :: init
     procedure :: set_state
     procedure :: update_state
+    procedure :: get_comp_list
     procedure :: has
     procedure :: getl1
     procedure :: geti1
     procedure :: getr1
     procedure :: getr2
+    procedure :: serialize
+    procedure :: deserialize
   end type ustruc_core
 
 contains
@@ -162,6 +165,12 @@ contains
     this%invalid = invalid
 
   end subroutine update_state
+
+  subroutine get_comp_list (this, list)
+    class(ustruc_core), intent(in) :: this
+    integer, allocatable, intent(out) :: list(:)
+    list = [0]
+  end subroutine get_comp_list
 
   logical function has (this, name)
     class(ustruc_core), intent(in) :: this
@@ -266,5 +275,19 @@ contains
       call TLS_fatal ('USTRUCT_COMP%GET: unknown name: ' // name)
     end select
   end subroutine getr2
+
+  subroutine serialize (this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_core), intent(in) :: this
+    integer, intent(in) :: cid
+    integer(int8), allocatable, intent(out) :: array(:,:)
+  end subroutine
+
+  subroutine deserialize (this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_core), intent(inout) :: this
+    integer, intent(in) :: cid
+    integer(int8), intent(in) :: array(:,:)
+  end subroutine
 
 end module ustruc_core_type
