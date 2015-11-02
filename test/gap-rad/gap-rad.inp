@@ -99,9 +99,14 @@ T = 1.5*(1 - (5/48) 10^-2 (1-r)^2), where here r = |x|
   surface_name = 'from mesh file'
   mesh_material_number = 1
   material_number = 1
-  temperature = 1.5
-  tg_r_constants = -0.1041666667e-2, 0.2083333333e-2,  -0.1041666667e-2
-  tg_r_exponents = 0, 1, 2
+  temperature_function = 'left-temp'
+/
+
+&FUNCTION
+  name = 'left-temp'
+  type = 'polynomial'
+  poly_coefficients   = 1.5, -0.15625e-2, -0.3125e-2, -0.15625e-2
+  poly_exponents(1,:) = 0, 0, 1, 2
 /
 
 Right block (x>0):
@@ -113,9 +118,14 @@ T = 0.5*(1 + (5/16) 10^-2 (1-r)^2), where here r = |x|
   surface_name = 'from mesh file'
   mesh_material_number = 2
   material_number = 1
-  temperature = 0.5
-  tg_r_constants = 0.3125e-2, -0.625e-2, 0.3125e-2
-  tg_r_exponents = 0, 1, 2
+  temperature_function = 'right-temp'
+/
+
+&FUNCTION
+  name = 'right-temp'
+  type = 'polynomial'
+  poly_coefficients   = 0.5, 0.15625e-2, -0.3125e-2, 0.15625e-2
+  poly_exponents(1,:) = 0, 0, 1, 2
 /
 
 &MATERIAL

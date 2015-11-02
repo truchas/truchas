@@ -1024,7 +1024,6 @@ CONTAINS
     use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
     use zone_module,          only: Zone
     use restart_variables,    only: restart
-    use tempGrad_module,      only: Body_Temperature, Body_Temp_Grad
     use physics_module, only: heat_transport, heat_species_transport
 
     ! Arguments
@@ -1142,32 +1141,15 @@ CONTAINS
           mass_sum(:) = mass_sum(:) + DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,:)
         end where
 
-        GRADIENT: if (Body_Temp_Grad(ib)%On) then
-          ! Apply a temperature gradient, zone by zone
-
-          do iz = 1, ncells
-            if (Hits_Vol(ib,iz) .gt. alittle) then
-              temp         = Body_Temperature(ib, Body_Temp(ib), Zone(iz), Cell(iz))
-              enth_matl    = ENTHALPY_DENSITY_MATERIAL(m,temp)
-              enth_sum(iz) = enth_sum(iz) + enth_matl * Hits_Vol(ib,iz)
-
-              ! If the maximum mass contribution is from this body, assign the temp
-              if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = temp
-
-            end if
-          end do
-
-        else GRADIENT
-          ! Utilize the constant body temperature
-          enth_matl = ENTHALPY_DENSITY_MATERIAL(m,Body_Temp(ib))
-          enth_sum(:) = enth_sum(:) + enth_matl*Hits_Vol(ib,:)
-
-          do iz = 1,ncells
+        do iz = 1, ncells
+          if (Hits_Vol(ib,iz) .gt. alittle) then
+            temp = Body_Temp(ib)%eval(Cell(iz)%Centroid)
+            enth_matl    = ENTHALPY_DENSITY_MATERIAL(m,temp)
+            enth_sum(iz) = enth_sum(iz) + enth_matl * Hits_Vol(ib,iz)
             ! If the maximum mass contribution is from this body, assign the temp
-            if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = Body_Temp(ib)
-          end do
-
-        end if GRADIENT
+            if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = temp
+          end if
+        end do
 
       end do TOTAL_ENTHALPY_LOOP
 

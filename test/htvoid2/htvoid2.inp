@@ -100,11 +100,15 @@ LOWER WALL
   surface_name = 'from mesh file'
   mesh_material_number = 3
   material_number = 1
-  temperature = 2.0
-  tg_origin = 3*0.0
-  tg_axis = 1.0, 0.0, 0.0
-  tg_z_constants = -0.125
-  tg_z_exponents = 1
+  temperature_function = 'init-temp-lower'
+/
+
+T = 2 - 0.25*x
+&FUNCTION
+  name = 'init-temp-lower'
+  type = 'polynomial'
+  poly_coefficients   = 2.0, -0.25
+  poly_exponents(1,:) = 0, 1
 /
 
 UPPER WALL
@@ -112,11 +116,15 @@ UPPER WALL
   surface_name = 'from mesh file'
   mesh_material_number = 4
   material_number = 1
-  temperature = 1.0
-  tg_origin = 3*0.0
-  tg_axis = 1.0, 0.0, 0.0
-  tg_z_constants = 0.125
-  tg_z_exponents = 1
+  temperature_function = 'init-temp-upper'
+/
+
+T = 1 + 0.125*x
+&FUNCTION
+  name = 'init-temp-upper'
+  type = 'polynomial'
+  poly_coefficients   = 1.0, 0.125
+  poly_exponents(1,:) = 0, 1
 /
 
 &DS_BOUNDARY_CONDITION

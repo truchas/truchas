@@ -84,11 +84,18 @@ Fluid plug at left end of the channel
   translation_pt = -1.5, 0.0, 0.0
   material_number = 1
   velocity        = 0.5, 0.0, 0.0
-  temperature     = 1.0
-  tg_origin = 3*0.0
-  tg_axis = 3*1.0
-  tg_z_constants = 5.0, 1.0
-  tg_z_exponents = 0, 1
+  temperature_function = 'init-temp'
+/
+
+T = 6 + (x + y + z)/sqrt(3)
+&FUNCTION
+  name = 'init-temp'
+  type = 'polynomial'
+  poly_coefficients = 6, 3*0.577350269
+  poly_exponents(:,1) = 0, 0, 0
+  poly_exponents(:,2) = 1, 0, 0
+  poly_exponents(:,3) = 0, 1, 0
+  poly_exponents(:,4) = 0, 0, 1
 /
 
 Remainder of the channel is void

@@ -26,7 +26,6 @@ set(SETUP_BASE_FILES
           setup/base_types/mesh_module.F90
           setup/base_types/parallel_scope.F90
           setup/base_types/probe_module.F90
-          setup/base_types/tempGrad_module.F90
           setup/base_types/var_vector_types.F90
           setup/base_types/zone_module.F90)
 list(APPEND SETUP_FILES ${SETUP_BASE_FILES})	

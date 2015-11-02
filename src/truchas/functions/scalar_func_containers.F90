@@ -70,6 +70,8 @@ module scalar_func_containers
 
   type :: scalar_func_box
     class(scalar_func), allocatable :: f
+  contains
+    procedure :: eval => scalar_func_box_eval
   end type scalar_func_box
 
   type :: scalar_func_list
@@ -101,6 +103,14 @@ module scalar_func_containers
   end type
 
 contains
+
+  function scalar_func_box_eval (this, x) result (fx)
+    use kinds, only: r8
+    class(scalar_func_box), intent(in) :: this
+    real(r8), intent(in) :: x(:)
+    real(r8) :: fx
+    fx = this%f%eval(x)
+  end function scalar_func_box_eval
 
   !! Final subroutine for SCALAR_FUNC_LIST objects.
   subroutine scalar_func_list_delete (this)

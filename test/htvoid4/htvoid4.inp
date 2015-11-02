@@ -82,8 +82,7 @@ FLUID CHANNEL
   mesh_material_number = 1
   material_number = 2
   velocity        = 1.0, 0.0, 0.0
-  temperature     = 5.0
-  TG_z_constants = 0.1, 0.0, 0.0
+  temperature_function = 'init-temp'
 /
 
 UPPER WALL
@@ -91,8 +90,7 @@ UPPER WALL
   surface_name = 'from mesh file'
   mesh_material_number = 2
   material_number = 1
-  temperature     = 5.0
-  TG_z_constants = 0.1, 0.0, 0.0
+  temperature_function = 'init-temp'
 /
 
 LOWER WALL
@@ -100,8 +98,16 @@ LOWER WALL
   surface_name = 'from mesh file'
   mesh_material_number = 3
   material_number = 1
-  temperature     = 5.0
-  TG_z_constants = 0.1, 0.0, 0.0
+  temperature_function = 'init-temp'
+/
+
+T = 5 + 0.5*z
+&FUNCTION
+  name = 'init-temp'
+  type = 'polynomial'
+  poly_coefficients =  5.0, 0.5
+  poly_exponents(:,1) = 0, 0, 0
+  poly_exponents(:,2) = 0, 0, 1
 /
 
 VOID IN LOWER WALL CAVITY; UPPER CAVITY IS NOT MESHED

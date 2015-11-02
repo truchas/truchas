@@ -15,6 +15,7 @@ MODULE INTERFACES_MODULE
   use kinds, only: r8
   use parameter_module, only: mbody, msurf, mtab, ndim, string_len, &
                               nrot, mcoef, mphi
+  use scalar_func_containers, only: scalar_func_box
   implicit none
   private
 
@@ -38,7 +39,7 @@ MODULE INTERFACES_MODULE
   real(r8), dimension(0:mtab,mbody), public, save :: Rtab, Ztab
   real(r8), dimension(2,mtab), public, save :: RZ_Tabular_Pt, Rtheta_Tabular_Pt
   real(r8), dimension(mbody), public, save :: Body_Mass, Body_Enthalpy,         &
-                                                            Body_Temp, Body_Conc, Old_Body_Mass
+                                                            Body_Conc, Old_Body_Mass
   real(r8), dimension(mbody,mphi), public, save :: Body_Phi
   real(r8), dimension(ndim,msurf), public, save :: Rotation_Pt, Translation_Pt, &
                                                                  Radius, Length
@@ -46,6 +47,7 @@ MODULE INTERFACES_MODULE
   real(r8), dimension(nrot,msurf,mbody), public, save :: Rotangl, Cosa, Sina
   real(r8), dimension(ndim,msurf,mbody), public, save :: Offset, Rotpt, Ar
   real(r8), dimension(mcoef,msurf,mbody), public, save :: Sgeom
+  type(scalar_func_box), public, save :: Body_Temp(mbody)
 
   ! VOF initialization controls
   character(string_len), public, save :: vof_method         ! 'points' or 'divide'
