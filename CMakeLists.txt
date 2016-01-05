@@ -43,16 +43,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}"
 project(Truchas C CXX Fortran)
 
 # Version
-set(Truchas_MAJOR_VERSION 2)
-set(Truchas_MINOR_VERSION 9)
+set(Truchas_MAJOR_VERSION 3)
+set(Truchas_MINOR_VERSION 0)
 set(Truchas_PATCH_VERSION dev)
 set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
-
-# Copyright file
-set(Truchas_COPYRIGHT_FILE ${Truchas_SOURCE_DIR}/COPYRIGHT)
-
-# License file
-set(Truchas_LICENSE_FILE ${Truchas_SOURCE_DIR}/LICENSE)
 
 # Build date
 try_run(BUILD_DATE_FAILED BUILD_DATE_COMPILED

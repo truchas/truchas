@@ -6,6 +6,14 @@
 !! units being used.  The following constants are provided and, by default,
 !! have been assigned their SI unit values.
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !!  STEFAN_BOLTZMANN -- the Stefan-Boltzmann constant that appears in thermal
 !!    radiation models.
 !!  ABSOLUTE_ZERO -- the value of absolute zero in the temperature scale; used

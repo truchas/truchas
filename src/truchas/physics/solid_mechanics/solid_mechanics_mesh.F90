@@ -1,11 +1,17 @@
 !!
-!!
 !! Solid Mechanics Mesh Module
 !!      
 !! This module holds a copy of the mesh pointer and defines subroutines
 !! and functions related to the mesh required throughout the solid mechanics physics
 !! package.
 !! 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! PUBLIC Data 
 !!

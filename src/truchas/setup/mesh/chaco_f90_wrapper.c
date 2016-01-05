@@ -1,3 +1,11 @@
+/*==============================================================================
+
+  Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+  Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+  in the LICENSE file found in the top-level directory of this distribution.
+
+==============================================================================*/
+
 /* this routine is an interface to chaco
    this facilitates calling Chaco (C code) from F90 */
 /* Robert Ferrell, ferrell@cpca, Oct 24, 1996 */

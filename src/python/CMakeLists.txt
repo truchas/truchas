@@ -54,7 +54,7 @@ configure_file(${TruchasPython_CONFIGURE_INCLUDE}
 	       @ONLY)
 
 # --- Add the directories
-add_subdirectory(Truchas)
+#add_subdirectory(Truchas)
 
 # --- Python module files
 set(TruchasPython_FILES

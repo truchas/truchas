@@ -1,4 +1,3 @@
 #
 # Include file for the CMake script configure-files.cmake
 #
-set(Truchas_COPYRIGHT_STATEMENT)
