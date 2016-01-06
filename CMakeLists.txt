@@ -546,7 +546,7 @@ set(CPACK_PACKAGE_VERSION       "${Truchas_VERSION}")
 set(CPACK_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}-${CMAKE_SYSTEM_NAME}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Truchas: Cool code package")
 set(CPACK_PACKAGE_VENDOR "Los Alamos National Laboratory")
-set(CPACK_RESOURCE_FILE_LICENSE ${Truchas_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_LICENSE ${Truchas_SOURCE_DIR}/LICENSE.md)
 
 # Name of the source file distribution 
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}"
