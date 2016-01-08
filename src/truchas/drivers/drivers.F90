@@ -204,15 +204,17 @@ call hijack_truchas ()
     use pgslib_module,            only: PGSLib_GLOBAL_ANY
     use restart_variables,        only: restart
     use signal_module,            only: SignalInquire
-    use time_step_module,         only: cycle_number, cycle_max, dt, t, t1, t2, dt_ds, &
+    use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
                                         TIME_STEP
     use timing_tree
-    use diffusion_solver,         only: ds_step
+    use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use truchas_logging_services
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
     use probe_output_module, only: probe_init_danu
+    use simulation_event_queue, only: sim_event, next_event
+    use time_step_sync_type
 
     ! Local Variables
     Logical :: quit = .False.
@@ -221,10 +223,15 @@ call hijack_truchas ()
     Integer :: HUP                      ! signal flag
     Integer :: USR2                     ! signal flag
     Integer :: URG                      ! signal flag
+    type(sim_event), pointer :: event
+    type(time_step_sync) :: ts_sync
 
     !---------------------------------------------------------------------------
     
     if (mem_on) call mem_diag_open
+
+    ts_sync = time_step_sync(5)
+    event => next_event(t)
 
     call PROBE_INIT_DANU  ! for Tbrook output this was done in TBU_writebasicdata
 
@@ -271,13 +278,31 @@ call hijack_truchas ()
        ! get the new time step
        call TIME_STEP ()
 
+       ! simulation phases (optional)
+       if (associated(event)) then
+          if (t1 == event%time()) then ! at start of the next phase
+             dt = event%init_dt(dt_old, dt)
+             event => next_event()
+             if (associated(event)) then
+                t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
+             else
+                t2 = t1 + dt
+             end if
+             ! required physics kernel restarts
+             call ds_restart (t2 - t1)
+          else
+             t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
+          end if
+       else
+          t2 = t1 + dt
+       end if
+
+       dt = t2 - t1
+
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': Before output cycle:')
 
        ! output cycle time step
        call CYCLE_OUTPUT_PRE ()
-
-       ! set ending cycle time (= beginning cycle time + dt)
-       t2 = t1 + dt
 
        ! call each physics package in turn
 

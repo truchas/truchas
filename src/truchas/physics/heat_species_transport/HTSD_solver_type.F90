@@ -44,6 +44,7 @@ module HTSD_solver_type
   public :: HTSD_solver_set_initial_state
   public :: HTSD_solver_advance_state
   public :: HTSD_solver_commit_pending_state
+  public :: HTSD_solver_restart
   public :: HTSD_solver_get_soln_view, HTSD_solver_get_soln_copy
   public :: HTSD_solver_get_cell_temp_view, HTSD_solver_get_cell_temp_copy
   public :: HTSD_solver_get_face_temp_view, HTSD_solver_get_face_temp_copy
@@ -329,5 +330,24 @@ contains
     deallocate(udot)
     
   end subroutine HTSD_solver_set_initial_state
-  
+
+  subroutine HTSD_solver_restart (this, dt)
+
+    use HTSD_init_cond_type
+
+    type(HTSD_solver), intent(inout) :: this
+    real(r8), intent(in) :: dt
+
+    real(r8) :: udot(size(this%u))
+    type(HTSD_init_cond) :: ic
+
+    INSIST(associated(this%model))
+
+    call this%ic_params%set ('dt', dt)
+    call ic%init (this%model, this%ic_params)
+    call ic%compute_udot (this%t, this%u, udot)
+    call set_initial_state (this%bdf2_state, this%t, this%u, udot)
+
+  end subroutine HTSD_solver_restart
+
 end module HTSD_solver_type
