@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 # /* include file for index_partitioning.F90 */
 
 #ifdef _TYPE_
@@ -78,7 +86,7 @@
     _TYPE_, intent(in)  :: onP_data(:)   ! on-process data array
     _TYPE_, intent(out) :: offP_data(:)  ! off-process data array
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(onP_data) == this%onP_size_ )
     ASSERT( size(offP_data) == this%offP_size_ )
@@ -95,7 +103,7 @@
 
     integer :: k
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(offP_data,1) == size(onP_data,1) )
     ASSERT( size(onP_data,2) == this%onP_size_ )
@@ -115,7 +123,7 @@
 
     integer :: k, j
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(offP_data,1) == size(onP_data,1) )
     ASSERT( size(offP_data,2) == size(onP_data,2) )
@@ -135,7 +143,7 @@
     type(ip_desc), intent(in) :: this   ! partition descriptor
     _TYPE_, intent(inout) :: local_data(:)  ! local data array
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(local_data) == this%local_size_ )
 
@@ -150,7 +158,7 @@
 
     integer :: k
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(local_data,2) == this%local_size_ )
 
@@ -167,7 +175,7 @@
 
     integer :: k, j
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(local_data,3) == this%local_size_ )
 

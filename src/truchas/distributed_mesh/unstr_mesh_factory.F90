@@ -1,8 +1,43 @@
 !!
 !! UNSTR_MESH_FACTORY
 !!
+!! Provides a procedure for instantiating a new UNSTR_MESH object that stores
+!! a distributed unstructured mixed-element mesh.  Information about the mesh
+!! is passed using a PARAMETER_LIST object.
+!!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! June 2015
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! PROGRAMMING INTERFACE
+!!
+!!  NEW_UNSTR_MESH(PARAMS, STAT, ERRMSG) returns a pointer to a newly allocated
+!!    UNSTR_MESH object that has been initialized according to the information
+!!    specified by the parameter list PARAMS.  If an error is encountered, the
+!!    integer STAT is assigned a non-zero value and the alloctable deferred-
+!!    length character string ERRMSG assigned an explanatory message.  The
+!!    following parameter list parameters are recognized:
+!!
+!!    'mesh-file' -- path to an ExodusII mesh file (required)
+!!    'coord-scale-factor' -- a multiplicative scaling factor applied to the
+!!        node coordinates (optional)
+!!    'gap-element-block-ids' -- a list of Exodus element block IDs whose
+!!        elements should be converted into interface links. The elements in the
+!!        specified element blocks must satisfy certain constraints. (optional)
+!!    'interface-side-set-ids' -- a list of Exodus side set IDs defining an
+!!        internal mesh interface along which the mesh is sliced open and
+!!        stitched together with interface links. (optional)
+!!    'exodus-block-modulus' -- Immediately after the Exodus mesh is read the
+!!        element block IDs are overwritten with their values modulo the value
+!!        of this parameter.  This is optional; 0 is treated as if the parameter
+!!        was not specified.
 !!
 
 #include "f90_assert.fpp"
@@ -19,7 +54,7 @@ module unstr_mesh_factory
 
 contains
 
-  function new_unstr_mesh (params, stat, errmsg) result (mesh)
+  function new_unstr_mesh (params, stat, errmsg) result (this)
 
     use ext_exodus_mesh_type
     use exodus_mesh_tools
@@ -34,47 +69,36 @@ contains
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable :: errmsg
-    type(unstr_mesh), pointer :: mesh
+    type(unstr_mesh), pointer :: this
 
     integer :: j, k, n, nnode, nface, ncell, new_id, exodus_block_modulus
-    real(r8) :: csf
-    integer :: cell_bsize(nPE), node_bsize(nPE), face_bsize(nPE)
-    integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), pass(:)
-    integer, allocatable :: xcface(:), cface(:), cfpar(:)
-    integer, allocatable :: lnhbr(:,:), lface(:,:)
-    integer, allocatable :: cell_perm(:)
-    integer, allocatable :: node_perm(:)
-    integer, allocatable :: face_perm(:)
-    integer, allocatable :: offP_size(:)
-    integer, pointer :: offP_index(:)
-    integer, allocatable :: p(:), ssid(:), ebid(:)
-    type(ext_exodus_mesh) :: exo_mesh
+    integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
+    integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), part(:)
+    integer, allocatable :: xcface(:), cface(:), cfpar(:), lnhbr(:,:), lface(:,:)
+    integer, allocatable :: cell_perm(:), node_perm(:), offP_size(:), offP_index(:)
+    integer, allocatable :: perm(:), ssid(:), ebid(:)
+    type(ext_exodus_mesh) :: mesh
     character(:), allocatable :: mesh_file, msg
+    real(r8) :: csf
 
-    mesh => null()
+    this => null()
 
+    !! Read the Exodus mesh file into MESH.
     if (is_IOP) then
       call params%get ('mesh-file', mesh_file)
       call TLS_info ('  Reading ExodusII mesh file "' // mesh_file // '"')
-      call read_exodus_mesh (mesh_file, exo_mesh, stat, errmsg)
-    else
-      allocate(exo_mesh%coord(3,0))
+      call read_exodus_mesh (mesh_file, mesh, stat, errmsg)
+      if (stat /= 0) errmsg = 'error reading mesh file: ' // errmsg
     end if
-    call broadcast (stat)
+    call broadcast_status (stat, errmsg)
     if (stat /= 0) return
-
-    !! Scale the node coordinates
-    if (is_IOP) then
-      call params%get ('coord-scale-factor', csf, default=1.0d0)
-      if (csf /= 1.0_r8) exo_mesh%coord = csf * exo_mesh%coord
-    end if
 
     !! Overwrite the Exodus block IDs with their congruent values.
     if (is_IOP) then
       call params%get ('exodus-block-modulus', exodus_block_modulus, default=0)
       if (exodus_block_modulus > 0) then
-        do n = 1, exo_mesh%num_eblk
-          associate (id => exo_mesh%eblk(n)%id)
+        do n = 1, mesh%num_eblk
+          associate (id => mesh%eblk(n)%id)
             new_id = modulo(id, exodus_block_modulus)
             if (new_id /= id) then
               msg = '  Element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id)
@@ -87,99 +111,101 @@ contains
     end if
 
     !! Define an empty mesh link structure
-    if (is_IOP) call exo_mesh%set_no_links
+    if (is_IOP) call mesh%set_no_links
 
-    !! Create internal interfaces
+    !! Create internal interfaces from gap element blocks.
     if (is_IOP) then
       if (params%is_parameter('gap-element-block-ids')) then
         call params%get ('gap-element-block-ids', ebid)
-        call convert_cells_to_links (exo_mesh, ebid, stat, errmsg)
+        call convert_cells_to_links (mesh, ebid, stat, errmsg)
+        if (stat /= 0) errmsg = 'error processing gap element blocks: ' // errmsg
+      else
+        stat = 0
       end if
     end if
-    call broadcast (stat)
-    if (stat /= 0) then
-      if (is_IOP) n = len(errmsg)
-      call broadcast (n)
-      if (.not.is_IOP) allocate(character(len=n)::errmsg)
-      call broadcast (errmsg)
-      return
-    end if
+    call broadcast_status (stat, errmsg)
+    if (stat /= 0) return
+
+    !! Create internal interfaces from side sets.
     if (is_IOP) then
       if (params%is_parameter('interface-side-set-ids')) then
         call params%get ('interface-side-set-ids', ssid)
-        call create_internal_interfaces (exo_mesh, ssid, stat, errmsg)
+        call create_internal_interfaces (mesh, ssid, stat, errmsg)
+        if (stat /= 0) errmsg = 'error processing interface side sets: ' // errmsg
+      else
+        stat = 0
       end if
     end if
-    call broadcast (stat)
-    if (stat /= 0) then
-      if (is_IOP) n = len(errmsg)
-      call broadcast (n)
-      if (.not.is_IOP) allocate(character(len=n)::errmsg)
-      call broadcast (errmsg)
-      return
-    end if
-
-    call exo_mesh%get_concat_elem_conn (xcnode, cnode)
-
-    allocate(cell_perm(exo_mesh%num_elem))
-    allocate(node_perm(exo_mesh%num_node))
-
-    if (is_IOP) call get_cell_neighbor_array (xcnode, cnode, exo_mesh%xlnode, exo_mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
-    call broadcast (stat)
+    call broadcast_status (stat, errmsg)
     if (stat /= 0) return
 
+    ncell = mesh%num_elem
+    nnode = mesh%num_node
+
+    !! Flatten the Exodus element block structure.
+    call mesh%get_concat_elem_conn (xcnode, cnode)
+
+    !! Generate the cell and link neighbor arrays.
     if (is_IOP) then
-      ncell = exo_mesh%num_elem
-      nnode = exo_mesh%num_node
+      call get_cell_neighbor_array (xcnode, cnode, mesh%xlnode, mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
+      if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
+    else
+      allocate(lnhbr(2,0))
+    end if
+    call broadcast_status (stat, errmsg)
+    if (stat /= 0) return
 
-      ! cell adjacency graph from cnhbr and lnhbr
-      ! call graph partitioner to get part assignment
-      allocate(pass(exo_mesh%num_elem))
-      call partition_cells (xcnhbr, cnhbr, lnhbr, nPE, pass)
+    !! Partition and order the cells.
+    allocate(cell_perm(ncell))
+    if (is_IOP) then
+      !! Partition the cell neighbor graph.
+      allocate(part(mesh%num_elem))
+      call partition_cells (xcnhbr, cnhbr, lnhbr, nPE, part)
       deallocate(xcnhbr, cnhbr)
-
-      ! generate permutation that makes it a block partition (block sizes too)
-      !allocate(cell_perm(exo_mesh%num_elem))
-      call blocked_partition (pass, cell_bsize, cell_perm)
-
+      !! Compute the partition sizes and the permutation making this a block partition.
+      call blocked_partition (part, cell_psize, cell_perm)
       !! Reorder cell-based arrays.
       call reorder (xcnode, cnode, cell_perm)
-
       !! Map the values of cell-valued arrays.
-      allocate(p(size(cell_perm)))
-      call invert_perm (cell_perm, p)
+      allocate(perm(size(cell_perm)))
+      call invert_perm (cell_perm, perm)
       do j = 1, size(lnhbr,dim=2)
-        lnhbr(:,j) = p(lnhbr(:,j))
+        lnhbr(:,j) = perm(lnhbr(:,j))
       end do
-      do n = 1, size(exo_mesh%sset)
-        exo_mesh%sset(n)%elem = p(exo_mesh%sset(n)%elem)
+      do n = 1, size(mesh%sset)
+        mesh%sset(n)%elem = perm(mesh%sset(n)%elem)
       end do
-      deallocate(p)
+      deallocate(perm)
+    end if
 
-      ! partition and order the nodes
-      call organize_facets (xcnode, cnode, cell_bsize, node_bsize, node_perm)
-
+    !! Partition and order the nodes.
+    allocate(node_perm(nnode))
+    if (is_IOP) then
+      call partition_facets (xcnode, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
-      call reorder (exo_mesh%coord, node_perm)
-
+      call reorder (mesh%coord, node_perm)
       !! Map the values of node-valued arrays.
-      allocate(p(size(node_perm)))
-      call invert_perm (node_perm, p)
-      do j = 1, size(exo_mesh%lnode)
-        exo_mesh%lnode(j) = p(exo_mesh%lnode(j))
+      allocate(perm(size(node_perm)))
+      call invert_perm (node_perm, perm)
+      do j = 1, size(cnode)
+        cnode(j) = perm(cnode(j))
       end do
-      do n = 1, size(exo_mesh%nset)
-        exo_mesh%nset(n)%node = p(exo_mesh%nset(n)%node)
+      do j = 1, size(mesh%lnode)
+        mesh%lnode(j) = perm(mesh%lnode(j))
       end do
-      deallocate(p)
+      do n = 1, size(mesh%nset)
+        mesh%nset(n)%node = perm(mesh%nset(n)%node)
+      end do
+      deallocate(perm)
+    end if
 
-      !! input: (xcnode,cnode), (xlnode,lnode)
-      !! output: (xcface,cface), cfpar, lface, face_bsize
-      !! label mesh faces
-      call label_mesh_faces (xcnode, cnode, exo_mesh%xlnode, exo_mesh%lnode, nface, xcface, cface, lface)
-      allocate(cfpar(exo_mesh%num_elem))
+    !! Enumerate and partition the mesh faces.
+    allocate(cfpar(ncell))
+    if (is_IOP) then
+      call label_mesh_faces (xcnode, cnode, mesh%xlnode, mesh%lnode, nface, xcface, cface, lface)
+      !! Extract the relative face orientation info.
       cfpar = 0
-      do j = 1, exo_mesh%num_elem
+      do j = 1, mesh%num_elem
         associate (list => cface(xcface(j):xcface(j+1)-1))
           n = 0
           do k = 1, size(list)
@@ -191,81 +217,84 @@ contains
           cfpar(j) = n
         end associate
       end do
-
       !! Partition and order the faces.
-      allocate(face_perm(nface))
-      call organize_facets (xcface, cface, cell_bsize, face_bsize, face_perm)
-
-      !! Map the values of face-valued arrays
-      allocate(p(size(face_perm)))
-      call invert_perm (face_perm, p)
-      do j = 1, exo_mesh%nlink
-        lface(:,j) = p(lface(:,j))
+      allocate(perm(nface))
+      call partition_facets (xcface, cface, cell_psize, face_psize, perm)
+      call invert_perm (perm)
+      do j = 1, size(cface)
+        cface(j) = perm(cface(j))
       end do
-      deallocate(face_perm, p)
-
+      do j = 1, mesh%nlink
+        lface(:,j) = perm(lface(:,j))
+      end do
+      deallocate(perm)
     else
-      allocate(xcface(1), cface(0), lnhbr(2,0), lface(2,0))
+      allocate(xcface(1), cface(0), lface(2,0))
       xcface(1) = 1
     end if
 
-    allocate(mesh)
-
     !! Identify off-process ghost cells to include with each partition.
-    call select_ghost_cells (cell_bsize, xcnode, cnode, node_bsize, &
-                             xcface, cface, face_bsize, lnhbr, offP_size, offP_index)
+    call select_ghost_cells (cell_psize, xcnode, cnode, node_psize, &
+                             xcface, cface, face_psize, lnhbr, offP_size, offP_index)
+
+    !! Begin initializing the UNSTR_MESH result object.
+    allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
-    call create (mesh%cell_ip, cell_bsize, offP_size, offP_index)
+    call this%cell_ip%init (cell_psize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
 
-    mesh%ncell = mesh%cell_ip%local_size()
-    mesh%ncell_onP = mesh%cell_ip%onP_size()
+    this%ncell = this%cell_ip%local_size()
+    this%ncell_onP = this%cell_ip%onP_size()
 
     !! Distribute the cell permutation array; gives mapping to the external cell number.
-    allocate(mesh%xcell(mesh%ncell))
-    call distribute (mesh%xcell(:mesh%ncell_onP), cell_perm)
-    call gather_boundary (mesh%cell_ip, mesh%xcell)
+    allocate(this%xcell(this%ncell))
+    call distribute (this%xcell(:this%ncell_onP), cell_perm)
+    call gather_boundary (this%cell_ip, this%xcell)
     deallocate(cell_perm)
 
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
-    call init_cell_node_data (mesh, node_bsize, xcnode, cnode)
+    call init_cell_node_data (this, node_psize, xcnode, cnode)
 
     !! Distribute the node permutation array; gives mapping to the external node number.
-    allocate(mesh%xnode(mesh%nnode))
-    call distribute (mesh%xnode(:mesh%nnode_onP), node_perm)
-    call gather_boundary (mesh%node_ip, mesh%xnode)
+    allocate(this%xnode(this%nnode))
+    call distribute (this%xnode(:this%nnode_onP), node_perm)
+    call gather_boundary (this%node_ip, this%xnode)
     deallocate(node_perm)
 
     !! Create the face index partition and localize the global CFACE array,
     !! which identifies off-process faces to augment the partition with.
-    if (.not.is_IOP) allocate(cfpar(0))
-    call init_cell_face_data (mesh, face_bsize, xcface, cface, cfpar)
+    call init_cell_face_data (this, face_psize, xcface, cface, cfpar)
     deallocate(cfpar)
 
-    !! Initialize the interface link data components: %NLINK, %NLINK_ONP, %LFACE, %LINK_IP, %LINK_SET_ID, %LINK_SET_MASK
-    call init_link_data (mesh, exo_mesh, lnhbr, lface)
+    !! Initialize the interface link data components.
+    call init_link_data (this, mesh, lnhbr, lface)
     deallocate(lnhbr, lface)
 
-    !! Initialize the face node data: %XFNODE, %FNODE
-    call init_face_node_data (mesh)
+    !! Initialize the secondary face-node indexing array.
+    call init_face_node_data (this)
 
-    !! %FACE_SET_ID, %FACE_SET_MASK
-    call init_face_set_data (mesh, exo_mesh, xcface, cface)
-    !! %NODE_SET_ID, %NODE_SET_MASK
-    call init_node_set_data (mesh, exo_mesh)
-    !! %CELL_SET_ID, %CELL_SET_MASK
-    call init_cell_set_data (mesh, exo_mesh)
+    !! Initialize the node, face, and cell set data.
+    call init_face_set_data (this, mesh, xcface, cface)
+    call init_node_set_data (this, mesh)
+    call init_cell_set_data (this, mesh)
+    deallocate(xcface, cface)
 
-    !! MESH GEOMETRY
+    !! Scale the node coordinates and distribute.
+    if (is_IOP) then
+      call params%get ('coord-scale-factor', csf, default=1.0_r8)
+      if (csf /= 1.0_r8) mesh%coord = csf * mesh%coord
+    else
+      allocate(mesh%coord(3,0))
+    end if
+    allocate(this%x(3,this%nnode))
+    call distribute (this%x(:,:this%nnode_onP), mesh%coord)
+    call gather_boundary (this%node_ip, this%x)
 
-    allocate(mesh%x(3,mesh%nnode))
-    call distribute (mesh%x(:,:mesh%nnode_onP), exo_mesh%coord)
-    call gather_boundary (mesh%node_ip, mesh%x)
-
-    allocate(mesh%volume(mesh%ncell), mesh%normal(3,mesh%nface), mesh%area(mesh%nface))
-    call mesh%compute_geometry
+    !! Initialize the mesh geometry data components.
+    allocate(this%volume(this%ncell), this%normal(3,this%nface), this%area(this%nface))
+    call this%compute_geometry
 
   end function new_unstr_mesh
 
@@ -349,98 +378,44 @@ contains
 
   end subroutine partition_cells
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! BLOCKED_PARTITION
- !!
- !! This is an auxillary routine that takes the partition assignment vector
- !! PASS and returns the permutation PERM that will make the partition a
- !! block partition.  The partition sizes are returned in the vector BSIZE.
- !! The permutation preserves the relative order of elements in the same
- !! partition.  PERM is a mapping from the new numbering to original.
- !!
+  !! This auxiliary subroutine partitions the mesh facets of one type (nodes,
+  !! edges, or faces) and generates a new numbering of them for which the
+  !! partition becomes a block partition and the facets within partitions are
+  !! well-ordered.  This is a serial procedure that operates on facet data for
+  !! the entire mesh.  FACET(XFACET(j):XFACET(j+1)-1) are the facets of one
+  !! type belonging to cell j.  It is assumed that the cells have already been
+  !! partitioned and renumbered, and that XFACET and FACET reflects that new
+  !! numbering.  PSIZE returns the number of facets in each partition, and
+  !! the new facet numbering is returned in the permutation array PERM, which
+  !! maps new facet numbers to old.
+  !!
+  !! NB: The caller is responsible for applying the renumbering.  That means
+  !! permuting any facet-based arrays, and mapping the values of all facet-
+  !! valued arrays, including FACET itself.
+  !!
+  !! The facet partition is based on the cell partition given by the cell
+  !! partition sizes CELL_PSIZE.  A facet is assigned to the partition of one
+  !! of the cells it is adjacent to.  We use a simple greedy algorithm: for
+  !! n=1,2,... assign any unassigned facet adjacent to a cell in partition n
+  !! to partition n.  NB: While this may lead to a poorly balanced partition
+  !! for facets, it is not clear that this significantly impacts performance.
+  !!
+  !! To order the facets in a partition we rely on the well-orderedness of the
+  !! cells.  We merely number them as they are encountered in the FACET array.
 
-  subroutine blocked_partition (pass, bsize, perm)
-
-    use permutations
-
-    integer, intent(in)  :: pass(:)   ! partition assignment
-    integer, intent(out) :: bsize(:)  ! partition block size
-    integer, intent(out) :: perm(:)   ! permutation
-
-    integer :: j, n, next(size(bsize))
-
-    ASSERT(size(pass) == size(perm))
-    ASSERT(minval(pass) >= 1 .and. maxval(pass) <= size(bsize))
-
-    !! Compute the block size of each partition.
-    bsize = 0
-    do j = 1, size(pass)
-      bsize(pass(j)) = bsize(pass(j)) + 1
-    end do
-
-    !! NEXT(j) is the next free cell number for partition j.
-    next(1) = 1
-    do n = 2, size(bsize)
-      next(n) = next(n-1) + bsize(n-1)
-    end do
-
-    !! Generate the permutation.
-    do j = 1, size(pass)
-      perm(next(pass(j))) = j
-      next(pass(j)) = next(pass(j)) + 1
-    end do
-
-    ASSERT(is_perm(perm))
-
-  end subroutine blocked_partition
-
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! ORGANIZE_FACETS
- !!
- !! This routine organizes the mesh facets (i.e., nodes, edges, or faces) in
- !! preparation for creating the distributed mesh data structure. This involves
- !! partitioning the facets, and generating a new facet numbering in which the
- !! partition becomes a block partition and the facets within partitions are
- !! well-ordered.  The partition block sizes are returned in the vector BSIZE,
- !! and the permutation (new-to-old) in PERM.
- !!
- !! N.B.: The FACET array values are mapped to the new numbering, but the
- !! caller must remap any other facet-valued arrays, and permute any
- !! facet-based arrays, using the returned permutation.
- !!
- !! The FACET array is a cell-based array: FACET(:,j) are the facets of one
- !! type adjacent to cell j.  It is assumed that the cells have already been
- !! organized and FACET defined accordingly, and that all facets are referenced
- !! by the array.
- !!
- !! The partitioning of the facets is based on the existing cell partition
- !! described by the cell partition block size CELL_BSIZE.  A facet must be
- !! assigned to a partition of one of the cells it is adjacent to.  We use a
- !! simple greedy algorithm: for n=1,2,... assign any unassigned facet adjacent
- !! to a cell in partition n to partition n.  This may lead to a poorly
- !! balanced partition, but this can be addressed later if it turns out to be
- !! a significant issue.
- !!
- !! To order the facets in a common partition we rely on the well-ordered'ness
- !! of the cells.  We merely number them as they are encountered in the FACET
- !! array.
- !!
-
-  subroutine organize_facets (xfacet, facet, cell_bsize, bsize, perm)
+  subroutine partition_facets (xfacet, facet, cell_psize, psize, perm)
 
     use permutations
 
-    integer, intent(inout) :: xfacet(:), facet(:)    ! cell facets
-    integer, intent(in)    :: cell_bsize(:) ! cell partition block sizes
-    integer, intent(out)   :: bsize(:)      ! facet partition block sizes
-    integer, intent(out)   :: perm(:)       ! permutation
+    integer, intent(in)  :: xfacet(:), facet(:) ! cell facets
+    integer, intent(in)  :: cell_psize(:)       ! cell partition block sizes
+    integer, intent(out) :: psize(:)            ! facet partition block sizes
+    integer, intent(out) :: perm(:)             ! permutation
 
-    integer :: j, n, offset, pass(size(perm)), perm1(size(perm))
+    integer :: j, n, offset, part(size(perm)), perm1(size(perm))
 
-    ASSERT(size(bsize) == size(cell_bsize))
-    ASSERT(sum(cell_bsize) == size(xfacet)-1)
+    ASSERT(size(psize) == size(cell_psize))
+    ASSERT(sum(cell_psize) == size(xfacet)-1)
     ASSERT(size(facet) == xfacet(size(xfacet))-1)
     ASSERT(minval(facet) == 1 .and. maxval(facet) == size(perm))
 
@@ -458,35 +433,29 @@ contains
     call invert_perm (perm1)  ! PERM1 is now good-to-old numbering
 
     !! Assign facets to partitions: a simple greedy algorithm.
-    pass = 0
+    part = 0
     offset = 1
-    do n = 1, size(cell_bsize)
-      associate (list => facet(xfacet(offset):xfacet(offset+cell_bsize(n))-1))
+    do n = 1, size(cell_psize)
+      associate (list => facet(xfacet(offset):xfacet(offset+cell_psize(n))-1))
         do j = 1, size(list)
-          if (pass(list(j)) == 0) pass(list(j)) = n
+          if (part(list(j)) == 0) part(list(j)) = n
         end do
       end associate
-      offset = offset + cell_bsize(n)
+      offset = offset + cell_psize(n)
     end do
 
     !! Partition assignment relative to the good ordering.
-    call reorder (pass, perm1)
+    call reorder (part, perm1)
 
     !! Block partition permutation (new-to-good).
-    call blocked_partition (pass, bsize, perm)
+    call blocked_partition (part, psize, perm)
 
     !! Total facet permutation (new-to-old).
     do j = 1, size(perm)
       perm(j) = perm1(perm(j))
     end do
 
-    !! Remap the facet array values; PERM1 is old-to-new.
-    perm1 = inverse_perm(perm)
-    do j = 1, size(facet)
-      facet(j) = perm1(facet(j))
-    end do
-
-  end subroutine organize_facets
+  end subroutine partition_facets
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -499,7 +468,7 @@ contains
  !! we assign a link to the process owning the first link cell neighbor, and if
  !! the second link cell neighbor belongs to a  different partition, we add the
  !! link to the set of off-process links for that partition.  The partition
- !! block sizes are returned in the BSIZE, and the associated permutation
+ !! block sizes are returned in the PSIZE, and the associated permutation
  !! (new-to-old) in PERM. The link indices that must be included as off-process
  !! are returned in the pointer array OFFP_INDEX (allocated by the routine):
  !! the first OFFP_SIZE(1) elements for process 1, the next OFFP_SIZE(2)
@@ -508,24 +477,24 @@ contains
  !! N.B. This routine does not reorder the LNHBR array argument.
  !!
 
-  subroutine partition_links (lnhbr, cell_bsize, bsize, perm, offP_size, offP_index)
+  subroutine partition_links (lnhbr, cell_psize, psize, perm, offP_size, offP_index)
 
     use integer_set_type
 
     integer, intent(in)  :: lnhbr(:,:)
-    integer, intent(in)  :: cell_bsize(:)
-    integer, intent(out) :: bsize(:)
+    integer, intent(in)  :: cell_psize(:)
+    integer, intent(out) :: psize(:)
     integer, intent(out) :: perm(:)
     integer, intent(out) :: offP_size(:)
-    integer, pointer     :: offP_index(:)
+    integer, allocatable, intent(out) :: offP_index(:)
 
     integer :: j, n, offset, pass(size(perm))
-    type(integer_set) :: xlink(size(bsize))
+    type(integer_set) :: xlink(size(psize))
 
-    ASSERT(size(bsize) == size(cell_bsize))
+    ASSERT(size(psize) == size(cell_psize))
     ASSERT(size(perm) == size(lnhbr,2))
-    ASSERT(minval(lnhbr) >= 1 .and. maxval(lnhbr) <= sum(cell_bsize))
-    ASSERT(size(offP_size) == size(bsize))
+    ASSERT(minval(lnhbr) >= 1 .and. maxval(lnhbr) <= sum(cell_psize))
+    ASSERT(size(offP_size) == size(psize))
 
     !! Assign the links to processes, either as on or off-process.
     do j = 1, size(lnhbr,dim=2)
@@ -535,7 +504,7 @@ contains
     end do
 
     !! Block partition permutation (new-to-old).
-    call blocked_partition (pass, bsize, perm)
+    call blocked_partition (pass, psize, perm)
 
     !! Copy the off-process link sets into packed array storage.
     do n = 1, size(xlink)
@@ -556,40 +525,101 @@ contains
       integer, intent(in) :: n
       integer :: m
       m = n
-      do cell_part = 1, size(cell_bsize)
-        if (m <= cell_bsize(cell_part)) return
-        m = m - cell_bsize(cell_part)
+      do cell_part = 1, size(cell_psize)
+        if (m <= cell_psize(cell_part)) return
+        m = m - cell_psize(cell_part)
       end do
     end function cell_part
 
   end subroutine partition_links
 
-  subroutine select_ghost_cells (cell_bsize, xcnode, cnode, node_bsize, &
-      xcface, cface, face_bsize, lnhbr, offP_size, offP_index)
+  !! Given a partition assignment array PART, this auxiliary subroutine
+  !! computes the permutation array PERM that makes the partition a block
+  !! partition.  The partition sizes are returned in PSIZE.  PERM maps the
+  !! new numbering to the original, and preserves the relative order of
+  !! elements in the same partition.  Specifically, 1) PART(PERM(:)) is
+  !! sorted (non-decreasing), and 2) j < k whenever PERM(j) < PERM(k) and
+  !! PART(PERM(j)) = PART(PERM(k)).
+
+  subroutine blocked_partition (part, psize, perm)
+
+    use permutations
+
+    integer, intent(in)  :: part(:)   ! partition assignment
+    integer, intent(out) :: psize(:)  ! partition block size
+    integer, intent(out) :: perm(:)   ! permutation
+
+    integer :: j, n, next(size(psize))
+
+    ASSERT(size(part) == size(perm))
+    ASSERT(minval(part) >= 1 .and. maxval(part) <= size(psize))
+
+    !! Compute the block size of each partition.
+    psize = 0
+    do j = 1, size(part)
+      psize(part(j)) = psize(part(j)) + 1
+    end do
+
+    !! NEXT(j) is the next free cell number for partition j.
+    next(1) = 1
+    do n = 2, size(psize)
+      next(n) = next(n-1) + psize(n-1)
+    end do
+
+    !! Generate the permutation.
+    do j = 1, size(part)
+      perm(next(part(j))) = j
+      next(part(j)) = next(part(j)) + 1
+    end do
+
+    ASSERT(is_perm(perm))
+
+  end subroutine blocked_partition
+
+  !! This auxiliary subroutine identifies the off-process ghost cells that
+  !! should be added to each subdomain.  The criterion is that if a cell
+  !! contains a face or node that belongs to a subdomain and the cell itself
+  !! does not belong to the subdomain, then it is added to the subdomain as
+  !! a ghost cell.  This ensures that every face and node belonging to the
+  !! subdomain will have complete cell support.  The motivation for this
+  !! stems from the finite element context in which the equation for a DoF
+  !! located at a facet depends on calculations over all the cells that
+  !! contain the facet.  An additional criterion is if a cell adjacent to
+  !! an interface belongs to a partition then the cell it is linked to across
+  !! the interface is added as a ghost if it does not also belong to the
+  !! partition.  This will guarantee that the associated pair of interface
+  !! faces is present in the subdomain so that an interface condition can be
+  !! fully formed.  This is a serial procedure.
+
+  subroutine select_ghost_cells (cell_psize, xcnode, cnode, node_psize, &
+      xcface, cface, face_psize, lnhbr, offP_size, offP_index)
 
     use integer_set_type
     use parallel_communication, only: is_IOP, nPE
 
-    integer, intent(in) :: cell_bsize(:), node_bsize(:), face_bsize(:)
+    integer, intent(in) :: cell_psize(:), node_psize(:), face_psize(:)
     integer, intent(in) :: xcnode(:), cnode(:)
     integer, intent(in) :: xcface(:), cface(:)
     integer, intent(in) :: lnhbr(:,:)
-    integer, allocatable, intent(out) :: offP_size(:)
-    integer, pointer, intent(out) :: offP_index(:)  ! concession to the caller
+    integer, allocatable, intent(out) :: offP_size(:), offP_index(:)
 
     integer :: n, offset
     type(integer_set), allocatable :: ghosts(:)
 
     if (is_IOP) then
       allocate(ghosts(nPE))
-      call overlapping_cells (xcnode, cnode, cell_bsize, node_bsize, ghosts)
-      call overlapping_cells (xcface, cface, cell_bsize, face_bsize, ghosts)
-      call overlapping_cells2 (lnhbr, cell_bsize, ghosts)
+      call overlapping_cells (xcnode, cnode, cell_psize, node_psize, ghosts)
+      call overlapping_cells (xcface, cface, cell_psize, face_psize, ghosts)
+      call overlapping_cells2 (lnhbr, cell_psize, ghosts)
       !! Copy the sets into packed array storage
+#ifdef INTEL_DPD200362026
       allocate(offP_size(nPE))
       do n = 1, nPE
         offP_size(n) = ghosts(n)%size()
       end do
+#else
+      offP_size = ghosts%size()
+#endif
       n = sum(offP_size)
       allocate(offP_index(n))
       offset = 0
@@ -604,50 +634,45 @@ contains
 
   end subroutine select_ghost_cells
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! This routine identifies for each partition those cells that contain a facet
- !! in the partition but which themselves belong to a different partition.  For
- !! a given partition the identitified cell set will be the minimal one that if
- !! added to the cells already belonging to the partition will ensure that
- !! every facet belonging to the partition has complete cell-support.  The
- !! motivation for this stems from the finite element context in which the
- !! equation for a DoF located at a facet depends on calculations over all the
- !! cells that contain that facet.
- !!
- !! The FACET array is a cell-based array: FACET(:,j) are the indices of the
- !! facets of one type (node, edge, or face) contained in cell j.  The cell
- !! partitioning is described by the cell partition block sizes CELL_BSIZE, and
- !! the facet partitioning by their block sizes BSIZE.  The cells identified
- !! for partition n are added to the set XCELLS(n).  Thus this routine can be
- !! called for different FACET arrays, each call adding to XCELLS the cells
- !! for that type of facet.
- !!
- !! This is a serial procedure.
- !!
+  !! This auxiliary subroutine identifies for each partition those cells that
+  !! contain a facet in the partition but that themselves belong to a different
+  !! partition.  For a given partition the identitified cell set will be the
+  !! minimal one that if added to the cells already belonging to the partition
+  !! will ensure that every facet belonging to the partition has complete
+  !! cell-support.  The motivation for this stems from the finite element
+  !! context in which the equation for a DoF located at a facet depends on
+  !! calculations over all the cells that contain that facet.
+  !!
+  !! FACET(XFACET(j):XFACET(j+1)-1) are the indices of the facets of one type
+  !! (node, edge, or face) contained in cell j.  The cell partitioning is
+  !! described by the cell partition block sizes CELL_PSIZE, and the facet
+  !! partitioning by their block sizes PSIZE.  The cells identified for
+  !! partition n are added to the set XCELLS(n).  Thus this routine can be
+  !! called for different FACET arrays, each call adding to XCELLS the cells
+  !! for that type of facet.  This is a serial procedure.
 
-  subroutine overlapping_cells (xfacet, facet, cell_bsize, bsize, xcells)
+  subroutine overlapping_cells (xfacet, facet, cell_psize, psize, xcells)
 
     use integer_set_type
 
-    integer, intent(in) :: xfacet(:), facet(:)     ! cell facets
-    integer, intent(in) :: cell_bsize(:)  ! cell partition block sizes
-    integer, intent(in) :: bsize(:)       ! facet partition block sizes
+    integer, intent(in) :: xfacet(:), facet(:)  ! cell facets
+    integer, intent(in) :: cell_psize(:)        ! cell partition block sizes
+    integer, intent(in) :: psize(:)             ! facet partition block sizes
     type(integer_set), intent(inout) :: xcells(:)
 
     integer :: j, k, n, m, offset
 
-    ASSERT(size(bsize) == size(cell_bsize))
-    ASSERT(all(bsize >= 0))
-    ASSERT(all(cell_bsize >= 0))
-    ASSERT(size(xcells) == size(bsize))
-    ASSERT(sum(cell_bsize) == size(xfacet)-1)
+    ASSERT(size(psize) == size(cell_psize))
+    ASSERT(all(psize >= 0))
+    ASSERT(all(cell_psize >= 0))
+    ASSERT(size(xcells) == size(psize))
+    ASSERT(sum(cell_psize) == size(xfacet)-1)
     ASSERT(size(facet) == xfacet(size(xfacet))-1)
-    ASSERT(minval(facet) >= 1 .and. maxval(facet) <= sum(bsize))
+    ASSERT(minval(facet) >= 1 .and. maxval(facet) <= sum(psize))
 
     offset = 0
-    do n = 1, size(cell_bsize)  ! loop over partitions
-      do j = offset+1, offset+cell_bsize(n) ! loop over cells in partition N.
+    do n = 1, size(cell_psize)  ! loop over partitions
+      do j = offset+1, offset+cell_psize(n) ! loop over cells in partition N.
         associate (list => facet(xfacet(j):xfacet(j+1)-1))
           do k = 1, size(list) ! loop over the facets of cell J
             m = fpart(list(k))
@@ -655,7 +680,7 @@ contains
           end do
         end associate
       end do
-      offset = offset + cell_bsize(n)
+      offset = offset + cell_psize(n)
     end do
 
   contains
@@ -664,28 +689,43 @@ contains
       integer, intent(in) :: n
       integer :: m
       m = n
-      do fpart = 1, size(bsize)
-        if (m <= bsize(fpart)) return
-        m = m - bsize(fpart)
+      do fpart = 1, size(psize)
+        if (m <= psize(fpart)) return
+        m = m - psize(fpart)
       end do
     end function fpart
 
   end subroutine overlapping_cells
 
-  subroutine overlapping_cells2 (lnhbr, cell_bsize, xcells)
+  !! This auxiliary subroutine identifies for each partition those cells that
+  !! that are linked across an interface to a cell in the partition but than
+  !! themselves belong to a different partition.  For a given partition the
+  !! identitified cell set will be the minimal one that if added to the cells
+  !! already belonging to the partition will ensure that every face linked to
+  !! an interface face owned by the partition is also present on the partition.
+  !! This permits the full evaluation of an interface condition at a pair of
+  !! interface faces without communication.  Note that the cell containing
+  !! such interface faces are necessarily also present in the partition.
+  !!
+  !! The LNHBR array is a link-based array: LNHBR(:,j) are the indices of the
+  !! two cells linked by link j.  The cell partitioning is described by the
+  !! cell partition block sizes CELL_PSIZE.  The cells identified for partition
+  !! n are added to the set XCELLS(n).  This is a serial procedure.
+
+  subroutine overlapping_cells2 (lnhbr, cell_psize, xcells)
 
     use integer_set_type
 
     integer, intent(in) :: lnhbr(:,:)     ! link cell neighbors
-    integer, intent(in) :: cell_bsize(:)  ! cell partition block sizes
+    integer, intent(in) :: cell_psize(:)  ! cell partition block sizes
     type(integer_set), intent(inout) :: xcells(:)
 
     integer :: j, p1, p2
 
-    ASSERT(all(cell_bsize >= 0))
-    ASSERT(size(xcells) == size(cell_bsize))
+    ASSERT(all(cell_psize >= 0))
+    ASSERT(size(xcells) == size(cell_psize))
     ASSERT(size(lnhbr,1) == 2)
-    ASSERT(minval(lnhbr) >= 1 .and. maxval(lnhbr) <= sum(cell_bsize))
+    ASSERT(minval(lnhbr) >= 1 .and. maxval(lnhbr) <= sum(cell_psize))
 
     do j = 1, size(lnhbr,2)
       p1 = cell_part(lnhbr(1,j))
@@ -702,9 +742,9 @@ contains
       integer, intent(in) :: n
       integer :: m
       m = n
-      do cell_part = 1, size(cell_bsize)
-        if (m <= cell_bsize(cell_part)) return
-        m = m - cell_bsize(cell_part)
+      do cell_part = 1, size(cell_psize)
+        if (m <= cell_psize(cell_part)) return
+        m = m - cell_psize(cell_part)
       end do
     end function cell_part
 
@@ -713,20 +753,19 @@ contains
   !! This subroutine initializes the node partition and cell node data
   !! components: NODE_IP, NNODE, NNODE_ONP, XCNODE, and CNODE.
 
-  subroutine init_cell_node_data (this, bsize, xcnode, cnode)
+  subroutine init_cell_node_data (this, psize, xcnode, cnode)
 
     use parallel_communication, only: is_IOP
-    use index_partitioning, only: create, localize_index_struct, add_offP_index
+    use index_partitioning, only: localize_index_struct
 
     type(unstr_mesh), intent(inout) :: this
-    integer, intent(in) :: bsize(:)
+    integer, intent(in) :: psize(:)
     integer, intent(in) :: xcnode(:), cnode(:)
 
     integer :: j
-    integer, allocatable :: count_g(:), count_l(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
-    call create (this%node_ip, bsize)
+    call this%node_ip%init (psize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
@@ -736,7 +775,7 @@ contains
     end if
 
     call localize_index_struct (count_g, cnode, this%cell_ip, this%node_ip, count_l, this%cnode, offP_index)
-    call add_offP_index (this%node_ip, offP_index)
+    call this%node_ip%add_offP_index (offP_index)
     deallocate(count_g, offP_index)
 
     !! Translate the local row sizes into the local indexing array.
@@ -755,21 +794,20 @@ contains
   !! This subroutine initializes the face partition and cell face data
   !! components: FACE_IP, NFACE, NFACE_ONP, XCFACE, CFACE, and CFPAR.
 
-  subroutine init_cell_face_data (this, bsize, xcface, cface, cfpar)
+  subroutine init_cell_face_data (this, psize, xcface, cface, cfpar)
 
     use parallel_communication, only: is_IOP, distribute
-    use index_partitioning, only: create, localize_index_struct, add_offP_index, gather_boundary
+    use index_partitioning, only: localize_index_struct, gather_boundary
 
     type(unstr_mesh), intent(inout) :: this
-    integer, intent(in) :: bsize(:)
+    integer, intent(in) :: psize(:)
     integer, intent(in) :: xcface(:), cface(:)
     integer, intent(in) :: cfpar(:)
 
     integer :: j
-    integer, allocatable :: count_g(:), count_l(:)
-    integer, pointer :: offP_index(:)
+    integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
-    call create (this%face_ip, bsize)
+    call this%face_ip%init (psize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
@@ -779,7 +817,7 @@ contains
     end if
 
     call localize_index_struct (count_g, cface, this%cell_ip, this%face_ip, count_l, this%cface, offP_index)
-    call add_offP_index (this%face_ip, offP_index)
+    call this%face_ip%add_offP_index (offP_index)
     deallocate(count_g, offP_index)
 
     !! Translate the local row sizes into the local indexing array.
@@ -807,12 +845,13 @@ contains
 
   subroutine init_face_node_data (this)
 
-    use cell_topology, only: get_cell_face_sizes, get_face_nodes
+    use cell_topology, only: cell_face_sizes, get_face_nodes
 
     type(unstr_mesh), intent(inout) :: this
 
     integer :: j, k, n
-    integer, allocatable :: fsize(:), list(:)
+    integer, allocatable :: fsize(:), fnodes(:)
+    integer, pointer :: list(:)
 
     ASSERT(size(this%xcnode) == size(this%xcface))
     ASSERT(size(this%cfpar) == size(this%xcface)-1)
@@ -827,7 +866,7 @@ contains
     do j = 1, this%ncell
       associate (cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1), &
                  cell_faces => this%cface(this%xcface(j):this%xcface(j+1)-1))
-        call get_cell_face_sizes (cell_nodes, list)
+        list => cell_face_sizes(cell_nodes)
         where (fsize(cell_faces) == 0) fsize(cell_faces) = list
       end associate
     end do
@@ -850,9 +889,9 @@ contains
           n = cell_faces(k)
           associate (face_nodes => this%fnode(this%xfnode(n):this%xfnode(n+1)-1))
             if (face_nodes(1) == 0) then
-              call get_face_nodes (cell_nodes, k, list, normalize=.true., &
+              call get_face_nodes (cell_nodes, k, fnodes, normalize=.true., &
                                    reverse=btest(this%cfpar(j),pos=k))
-              face_nodes = list
+              face_nodes = fnodes
             end if
           end associate
         end do
@@ -864,41 +903,40 @@ contains
 
   !! This subroutine initializes the interface link data.
 
-  subroutine init_link_data (this, exo_mesh, lnhbr, lface)
+  subroutine init_link_data (this, mesh, lnhbr, lface)
 
     use parallel_communication, only: is_IOP, nPE, collate, broadcast, distribute
     use permutations, only: reorder, invert_perm
-    use index_partitioning, only: create, localize_index_array, gather_boundary
+    use index_partitioning, only: localize_index_array, gather_boundary
     use bitfield_type
     use ext_exodus_mesh_type
 
     type(unstr_mesh), intent(inout) :: this
-    type(ext_exodus_mesh), intent(inout) :: exo_mesh
+    type(ext_exodus_mesh), intent(inout) :: mesh
     integer, intent(inout) :: lnhbr(:,:), lface(:,:)
 
     integer :: j, n
-    integer, allocatable :: offP_size(:), cell_bsize(:), bsize(:), perm(:)
-    integer, pointer :: offP_index(:) => null()
+    integer, allocatable :: offP_size(:), offP_index(:), cell_psize(:), psize(:), perm(:)
     type(bitfield), allocatable :: link_set_mask(:)
 
     !! Partition the links
-    allocate(cell_bsize(merge(nPE,0,is_IOP)))
-    call collate (cell_bsize, this%cell_ip%onP_size())
+    allocate(cell_psize(merge(nPE,0,is_IOP)))
+    call collate (cell_psize, this%cell_ip%onP_size())
     if (is_IOP) then
-      allocate(bsize(nPE), perm(exo_mesh%nlink), offP_size(nPE))
-      call partition_links (lnhbr, cell_bsize, bsize, perm, offP_size, offP_index)
+      allocate(psize(nPE), perm(mesh%nlink), offP_size(nPE))
+      call partition_links (lnhbr, cell_psize, psize, perm, offP_size, offP_index)
       call reorder (lface, perm)
-      call reorder (exo_mesh%link_block, perm)
+      call reorder (mesh%link_block, perm)
       call invert_perm (perm)
       offP_index = perm(offP_index)
       deallocate(perm)
     else
-      allocate(bsize(0), offP_size(0), offP_index(0))
+      allocate(psize(0), offP_size(0), offP_index(0))
     end if
 
     !! THIS%LINK_IP: create the link index partition; include off-process links from above.
-    call create (this%link_ip, bsize, offP_size, offP_index)
-    deallocate(bsize, offP_size, offP_index)
+    call this%link_ip%init (psize, offP_size, offP_index)
+    deallocate(psize, offP_size, offP_index)
 
     !! THIS%LFACE: distribute and localize the link face indexing array.
     call localize_index_array (lface, this%link_ip, this%face_ip, this%lface, offP_index)
@@ -909,20 +947,20 @@ contains
     this%nlink_onP = this%link_ip%onP_size()
 
     !! THIS%LINK_SET_ID
-    n = exo_mesh%nlblock
+    n = mesh%nlblock
     call broadcast (n)
     allocate(this%link_set_id(n))
-    if (is_IOP) this%link_set_id = exo_mesh%link_block_id
+    if (is_IOP) this%link_set_id = mesh%link_block_id
     call broadcast (this%link_set_id)
 
     !! Convert the array of link block IDs to a bit mask.
-    allocate(link_set_mask(merge(exo_mesh%nlink,0,is_IOP)))
+    allocate(link_set_mask(merge(mesh%nlink,0,is_IOP)))
     if (is_IOP) then
       INSIST(n <= bit_size(link_set_mask)-1)
       link_set_mask = ZERO_BITFIELD
-      do j = 1, exo_mesh%nlink
-        do n = size(exo_mesh%link_block_id), 1, -1
-          if (exo_mesh%link_block(j) == exo_mesh%link_block_id(n)) exit
+      do j = 1, mesh%nlink
+        do n = size(mesh%link_block_id), 1, -1
+          if (mesh%link_block(j) == mesh%link_block_id(n)) exit
         end do
         INSIST(n /= 0)
         link_set_mask(j) = ibset(link_set_mask(j), pos=n)
@@ -942,7 +980,7 @@ contains
   !! NODE_SET_ID stores the user-assigned integer IDs for the side sets, and is
   !! replicated on each process.
 
-  subroutine init_node_set_data (this, exo_mesh)
+  subroutine init_node_set_data (this, mesh)
 
     use exodus_mesh_type
     use bitfield_type
@@ -950,7 +988,7 @@ contains
     use index_partitioning, only: gather_boundary, scatter_boundary_or
 
     type(unstr_mesh), intent(inout) :: this
-    class(exodus_mesh), intent(in) :: exo_mesh
+    class(exodus_mesh), intent(in) :: mesh
 
     integer :: i, j, n, nnode_tot
     integer, allocatable :: node_set_mask(:)
@@ -965,13 +1003,13 @@ contains
     !! Initialize the node set data, %NODE_SET_MASK
     allocate(node_set_mask(merge(nnode_tot,0,is_IOP)))
     if (is_IOP) then
-      INSIST(size(exo_mesh%nset)+1 <= bit_size(node_set_mask))
+      INSIST(size(mesh%nset)+1 <= bit_size(node_set_mask))
       node_set_mask = 0
-      do n = 1, size(exo_mesh%nset)
-        ASSERT(minval(exo_mesh%nset(n)%node) >= 1)
-        ASSERT(maxval(exo_mesh%nset(n)%node) <= size(node_set_mask))
-        do i = 1, exo_mesh%nset(n)%num_node
-          j = exo_mesh%nset(n)%node(i)
+      do n = 1, size(mesh%nset)
+        ASSERT(minval(mesh%nset(n)%node) >= 1)
+        ASSERT(maxval(mesh%nset(n)%node) <= size(node_set_mask))
+        do i = 1, mesh%nset(n)%num_node
+          j = mesh%nset(n)%node(i)
           node_set_mask(j) = ibset(node_set_mask(j),pos=n)
         end do
       end do
@@ -984,10 +1022,10 @@ contains
     deallocate(node_set_mask)
 
     !! Initialize the list of node set IDs (%NODE_SET_ID)
-    if (is_IOP) n = size(exo_mesh%nset)
+    if (is_IOP) n = size(mesh%nset)
     call broadcast (n)
     allocate(this%node_set_id(n))
-    if (is_IOP) this%node_set_id = exo_mesh%nset%id
+    if (is_IOP) this%node_set_id = mesh%nset%id
     call broadcast (this%node_set_id)
 
     !! Tag boundary nodes in the node set mask (bit 0).
@@ -1019,7 +1057,7 @@ contains
   !! no longer corresponds to the order of the element blocks in the Exodus mesh
   !! but this was never a guaranteed property, and should not have been assumed.
 
-  subroutine init_cell_set_data (this, exo_mesh)
+  subroutine init_cell_set_data (this, mesh)
 
     use exodus_mesh_type
     use integer_set_type
@@ -1028,7 +1066,7 @@ contains
     use index_partitioning, only: gather_boundary
 
     type(unstr_mesh), intent(inout) :: this
-    class(exodus_mesh), intent(in) :: exo_mesh
+    class(exodus_mesh), intent(in) :: mesh
 
     integer :: i, j, n, offset, ncell_tot
     integer, allocatable :: cell_set_mask(:), cell_perm(:)
@@ -1036,8 +1074,8 @@ contains
 
     !! Initialize the list of cell set IDs (%CELL_SET_ID), eliminating duplicates.
     if (is_IOP) then
-      do n = 1, size(exo_mesh%eblk)
-        call id_set%add (exo_mesh%eblk(n)%id)
+      do n = 1, size(mesh%eblk)
+        call id_set%add (mesh%eblk(n)%id)
       end do
       n = id_set%size()
     end if
@@ -1053,15 +1091,15 @@ contains
     if (is_IOP) then
       INSIST(size(this%cell_set_id)+1 <= bit_size(cell_set_mask))
       offset = 0
-      do n = 1, size(exo_mesh%eblk)
+      do n = 1, size(mesh%eblk)
         do j = size(this%cell_set_id), 1, -1
-          if (this%cell_set_id(j) == exo_mesh%eblk(n)%id) exit
+          if (this%cell_set_id(j) == mesh%eblk(n)%id) exit
         end do
         INSIST(j > 0)
-        do i = 1, exo_mesh%eblk(n)%num_elem
+        do i = 1, mesh%eblk(n)%num_elem
           cell_set_mask(offset+i) = ibset(0, pos=j)
         end do
-        offset = offset + exo_mesh%eblk(n)%num_elem
+        offset = offset + mesh%eblk(n)%num_elem
       end do
     end if
 
@@ -1088,7 +1126,7 @@ contains
   !! naturally identifies a unique mesh face, but any orientation information
   !! implicit with the side-of-a-cell description is lost.
 
-  subroutine init_face_set_data (this, exo_mesh, xcface, cface)
+  subroutine init_face_set_data (this, mesh, xcface, cface)
 
     use bitfield_type
     use exodus_mesh_type
@@ -1096,7 +1134,7 @@ contains
     use index_partitioning, only: gather_boundary
 
     type(unstr_mesh), intent(inout) :: this
-    class(exodus_mesh), intent(in) :: exo_mesh
+    class(exodus_mesh), intent(in) :: mesh
     integer, intent(in) :: xcface(:), cface(:)
 
     integer :: i, j, n, nface_tot
@@ -1110,15 +1148,15 @@ contains
     if (is_IOP) then
       ASSERT(minval(cface) >= 1)
       ASSERT(maxval(cface) <= size(face_set_mask))
-      INSIST(size(exo_mesh%sset)+1 <= bit_size(face_set_mask))
+      INSIST(size(mesh%sset)+1 <= bit_size(face_set_mask))
       face_set_mask = ZERO_BITFIELD
-      do n = 1, size(exo_mesh%sset)
-        ASSERT(minval(exo_mesh%sset(n)%elem) >= 1)
-        ASSERT(maxval(exo_mesh%sset(n)%elem) <= size(xcface)-1)
-        ASSERT(minval(exo_mesh%sset(n)%face) >= 1)
-        do i = 1, exo_mesh%sset(n)%num_side
-          j = xcface(exo_mesh%sset(n)%elem(i)) + exo_mesh%sset(n)%face(i) - 1 ! index of side in CFACE
-          ASSERT(j < xcface(exo_mesh%sset(n)%elem(i)+1))
+      do n = 1, size(mesh%sset)
+        ASSERT(minval(mesh%sset(n)%elem) >= 1)
+        ASSERT(maxval(mesh%sset(n)%elem) <= size(xcface)-1)
+        ASSERT(minval(mesh%sset(n)%face) >= 1)
+        do i = 1, mesh%sset(n)%num_side
+          j = xcface(mesh%sset(n)%elem(i)) + mesh%sset(n)%face(i) - 1 ! index of side in CFACE
+          ASSERT(j < xcface(mesh%sset(n)%elem(i)+1))
           face_set_mask(cface(j)) = ibset(face_set_mask(cface(j)), pos=n)
         end do
       end do
@@ -1146,12 +1184,32 @@ contains
     deallocate(face_set_mask)
 
     !! Initialize the list of cell set IDs (%FACE_SET_ID)
-    if (is_IOP) n = size(exo_mesh%sset)
+    if (is_IOP) n = size(mesh%sset)
     call broadcast (n)
     allocate(this%face_set_id(n))
-    if (is_IOP) this%face_set_ID = exo_mesh%sset%id
+    if (is_IOP) this%face_set_ID = mesh%sset%id
     call broadcast (this%face_set_id)
 
   end subroutine init_face_set_data
+
+  !! When a procedure executed only on the IO processor returns a status
+  !! and possible error message, these need to be communicated to the other
+  !! processes.  This auxiliary procedure performs that communication.
+  !! The IO process value of STAT is broadcast, and if not 0, the IO process
+  !! value of ERRMSG, which must be allocated, is broadcast also.
+
+  subroutine broadcast_status (stat, errmsg)
+    use parallel_communication, only: is_IOP, broadcast
+    integer, intent(inout) :: stat
+    character(:), allocatable, intent(inout) :: errmsg
+    integer :: n
+    call broadcast (stat)
+    if (stat /= 0) then
+      if (is_IOP) n = len(errmsg)
+      call broadcast (n)
+      if (.not.is_IOP) allocate(character(len=n)::errmsg)
+      call broadcast (errmsg)
+    end if
+  end subroutine broadcast_status
 
 end module unstr_mesh_factory

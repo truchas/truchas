@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 module input_driver
   !=======================================================================
   ! Purpose:
@@ -57,6 +65,7 @@ contains
     use solid_mechanics_input,     only: solid_mechanics
     !use solid_mechanics_mesh,      only: sm_mesh_enable
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
+    use simulation_event_queue,    only: read_simulation_control_namelist
     use timing_tree
     use truchas_logging_services
     use string_utilities, only: i_to_c
@@ -105,6 +114,8 @@ contains
 
     ! read output specifications
     call outputs_input (lun)
+    
+    call read_simulation_control_namelist (lun)
 
     if (restart) then
       call read_restart_namelist (lun)

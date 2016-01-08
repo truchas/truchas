@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
 module HTSD_init_cond_type
@@ -23,6 +31,7 @@ module HTSD_init_cond_type
   contains
     procedure :: init
     procedure :: compute
+    procedure :: compute_udot
   end type HTSD_init_cond
 
 contains
@@ -239,6 +248,130 @@ contains
     deallocate(state)
 
   end subroutine compute
+
+
+  subroutine compute_udot (this, t, u, udot)
+
+    class(HTSD_init_cond), intent(inout) :: this
+    real(r8), intent(in) :: t
+    real(r8), intent(in),  target :: u(:)
+    real(r8), intent(out), target :: udot(:)
+
+    integer :: n
+    real(r8), allocatable, target :: f(:)
+    real(r8), allocatable :: Ccell(:), Cface(:), Tdot(:), dHdT(:)
+    real(r8), pointer :: state(:,:), var(:), Hdot(:), Cdot(:), Fcell(:)
+    real(r8) :: dt
+
+    ASSERT(size(u) == layout_size(this%model%layout))
+    ASSERT(size(u) == size(udot))
+
+    call TLS_info ('')
+    call TLS_info ('Computing consistent initial state derivative for HT/SD solver ...')
+
+    !! State variables (cell temps and concs) on which model parameters depend.
+    state => HTSD_model_new_state_array(this%model, u)
+
+    udot = 0.0_r8
+    allocate(f(size(u)))
+    call HTSD_model_compute_f (this%model, t, u, udot, f)
+
+    !! Set the cell heat density time derivative.
+    if (associated(this%model%ht)) then
+      !! Extract the heat density derivatives from F.
+      call HTSD_model_get_cell_heat_view (this%model, udot, Hdot)
+      call HTSD_model_get_cell_temp_view (this%model, f, Fcell)
+      Hdot = -Fcell / this%mesh%volume(:size(Hdot))
+      if (associated(this%model%void_cell)) &
+          where (this%model%void_cell(:size(Hdot))) Hdot = 0.0_r8
+    end if
+
+    !! Set the cell concentration time derivative.  This is approximate
+    !! because it depends on the face concentrations which are approximate.
+    if (associated(this%model%sd)) then
+      !! Extract the cell concentration derivatives from F.
+      do n = 1, this%model%num_comp
+        call HTSD_model_get_cell_conc_view (this%model, n, udot, Cdot)
+        call HTSD_model_get_cell_conc_view (this%model, n, f, Fcell)
+        Cdot = -Fcell / this%mesh%volume(:size(Cdot))
+        if (associated(this%model%void_cell)) &
+            where (this%model%void_cell(:size(Cdot))) Cdot = 0.0_r8
+      end do
+    end if
+
+    !! Compute the cell temperature derivative from the temperature/enthalpy
+    !! relation given the heat density derivative
+    if (associated(this%model%ht)) then
+      allocate(Tdot(this%mesh%ncell), dHdT(this%mesh%ncell))
+      call pmf_eval_deriv (this%model%ht%H_of_T, state, 1, dHdT)
+      if (associated(this%model%void_cell)) &
+          where (this%model%void_cell) dHdT = 1.0_r8
+      Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
+      call gather_boundary (this%mesh%cell_ip, Tdot)
+      call HTSD_model_set_cell_temp (this%model, Tdot, udot)
+      deallocate(Tdot,dHdT)
+    end if
+
+    !! Approximate the initial time derivatives of the remaining algebraic
+    !! variables (face temps, concs, and radiosities) by a finite difference.
+    !! The temperatures and concentrations are advanced by a small time step
+    !! using their time derivatives (forward Euler), and then the associated
+    !! cell temps and face temps, concs, and radiosities solved for.
+
+    call this%params%get ('dt', dt)
+    f = u + dt * udot
+
+    !! New state variables (cell temps and concs) on which model parameters depend.
+    deallocate(state)
+    state => HTSD_model_new_state_array(this%model, u)
+
+    !! Set consistent advanced face temps and radiosities.  Use their initial
+    !! conditions as the initial guess for the solution procedure.
+    if (associated(this%model%ht)) then
+      call compute_face_temp (this%model, t+dt, state, f, this%params)
+    end if
+
+    !! We should deal with face concs in the same manner as face temps, but
+    !! for now we continue to use the simple approx of the initial face concs
+    !! done later.
+    !if (associated(this%model%sd)) then
+    !  do n = 1, this%model%num_comp
+    !    call compute_face_conc (this%model, index, t+dt, state, f, this%params)
+    !  end do
+    !end if
+
+    f = (f - u) / dt
+
+    !! Finite difference approx of face temp and radiosity derivatives.
+    if (associated(this%model%ht)) then
+      call HTSD_model_get_face_temp_view (this%model, f, var)
+      call HTSD_model_set_face_temp (this%model, var, udot)
+      if (associated(this%model%ht%vf_rad_prob)) then
+        do n = 1, size(this%model%ht%vf_rad_prob)
+          call HTSD_model_get_radiosity_view (this%model, n, f, var)
+          call HTSD_model_set_radiosity (this%model, n, var, udot)
+        end do
+      end if
+    end if
+
+    !! We should compute a similar finite difference approximation of the face
+    !! concs, but for now we continue to approximate the face conc derivatives
+    !! by averaging the adjacent cell conc derivatives.
+    if (associated(this%model%sd)) then
+      !! Approximate face concentration derivative by average of adjacent cell derivatives.
+      allocate(Ccell(this%mesh%ncell), Cface(this%mesh%nface))
+      do n = 1, this%model%num_comp
+        call HTSD_model_get_cell_conc_copy (this%model, n, udot, Ccell)
+        call gather_boundary (this%mesh%cell_ip, Ccell)
+        call average_to_faces (this%mesh, Ccell, Cface, this%model%void_cell)
+        call HTSD_model_set_face_conc (this%model, n, Cface, udot)
+      end do
+      deallocate(Ccell, Cface)
+    end if
+
+    deallocate(state)
+
+  end subroutine compute_udot
 
   !! Given a cell-based field, this auxiliary subroutine produces a face-based
   !! field whose value on each face is the average of the values on adjacent

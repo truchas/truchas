@@ -39,7 +39,6 @@ A = C(1-lambda)^2/lambda^3
        Coord = 3*0.0, 20.0, 1.0, 1.0,
        Ratio = 1.0, 1.0, 1.0 
        Fuzz  = 3*0.0,
-       partitions_total = 1,
  
 /
  

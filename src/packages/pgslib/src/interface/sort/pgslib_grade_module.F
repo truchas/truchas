@@ -376,7 +376,7 @@ CONTAINS
 
       ! Local variables
       integer :: N_Keys, N_Buckets, N_Samples, N_Samples_Tot
-      integer :: BucketSize, b, High_index, Low_index
+      integer :: BucketSize, b, High_index
       real    :: SampleCutOff
       integer, pointer, dimension(:) :: Samples, Samples_Tot
       integer, pointer, dimension(:) :: Sample_SegNums, Sample_SegNums_Tot
@@ -439,7 +439,8 @@ CONTAINS
                                 ! If multiple PEs then have to define buckets for each PE
          if (N_Buckets > 1) then
             BucketSize = N_Samples_Tot/N_Buckets
-            High_index = MIN(BucketSize, N_Samples_Tot)         
+            High_Index = BucketSize
+            if (1 <= modulo(N_Samples_Tot, N_Buckets)) High_Index = High_Index + 1
             Buckets(1)%High%Data   = MAX(Samples_Tot(High_Index),Buckets(1)%Low%Data+1)
             Buckets(1)%High%SegNum = Sample_SegNums_Tot(High_Index) 
 
@@ -452,8 +453,8 @@ CONTAINS
             call pgslib_output(out_string)
 #endif
             DO b = 2, N_Buckets - 1
-               Low_index  = Min(High_Index + 1, N_Samples_Tot)
-               High_Index = Min(Low_index + BucketSize - 1, N_Samples_Tot)
+               High_Index = High_Index + BucketSize
+               if (b <= modulo(N_Samples_Tot, N_Buckets)) High_Index = High_Index + 1
                Buckets(b)%Low%Data    = Buckets(b-1)%High%Data
                Buckets(b)%Low%SegNum  = Buckets(b-1)%High%SegNum
                Buckets(b)%High%Data   = MAX(Samples_Tot(High_index),Buckets(b)%Low%Data+1)

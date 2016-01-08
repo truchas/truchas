@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE OUTPUTS_INPUT_MODULE
   !=======================================================================
   ! Purpose:
@@ -36,9 +44,7 @@ CONTAINS
     !   Read OUTPUTS namelist.
     !
     !=======================================================================
-    use edit_module,             only: Long_Edit_Bounding_Coords, &
-                                       Long_Output_Dt_Multiplier, &
-                                       Short_Output_Dt_Multiplier
+    use edit_module,             only: Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist
     use interface_output_module, only: Int_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T, precise_output
@@ -57,8 +63,6 @@ CONTAINS
     ! Define OUTPUTS namelist
     namelist /OUTPUTS/ Output_Dt_Multiplier,       &
                        Int_Output_Dt_Multiplier,       &
-                       Long_Edit_Bounding_Coords,      &
-                       Long_Output_Dt_Multiplier,      &
                        Output_Dt,                      &
                        Output_T,                       &
                        Short_Output_Dt_Multiplier,     &
@@ -116,10 +120,7 @@ CONTAINS
     !
     !=======================================================================
     use kinds, only: r8
-    use edit_module,             only: long_edit, Long_Edit_Bounding_Coords,  &
-                                       Long_Edit_Cell_List, long_edit_cells,  &
-                                       Long_Output_Dt_Multiplier, short_edit, &
-                                       Short_Output_Dt_Multiplier
+    use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump
     use output_control,          only: Output_Dt, Output_T, precise_output
     use timing_tree
@@ -137,13 +138,7 @@ CONTAINS
 
     ! Edit variables
     short_edit                 = .false.
-    long_edit                  = .false.
-    Long_Edit_Cell_List        = 0
-    long_edit_cells            = 0
     Short_Output_Dt_Multiplier = 0
-    Long_Output_Dt_Multiplier  = 0
-    Long_Edit_Bounding_Coords(1,:,:) =  HUGE(1.0_r8)    ! Min coord is defaulted large positive
-    Long_Edit_Bounding_Coords(2,:,:) = -HUGE(1.0_r8)    ! Max coord is defaulted large negative
 
     ! interface output
     interface_dump           = .false.
@@ -163,9 +158,7 @@ CONTAINS
     !   Broadcast outputs namelist data to all PE's.
     !
     !======================================================================
-    use edit_module,             only: Long_Edit_Bounding_Coords,    &
-                                       Long_Output_Dt_Multiplier,    &
-                                       Short_Output_Dt_Multiplier
+    use edit_module,             only: Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T, precise_output
     use parallel_info_module,    only: p_info
@@ -179,8 +172,6 @@ CONTAINS
     ! Broadcast Data
     if (.NOT. p_info%UseGlobalServices) then
        call PGSLIB_BCAST (Int_Output_Dt_Multiplier)
-       call PGSLIB_BCAST (Long_Edit_Bounding_Coords)
-       call PGSLIB_BCAST (Long_Output_Dt_Multiplier)
        call PGSLIB_BCAST (Output_Dt)
        call PGSLIB_BCAST (Output_T)
        call PGSLIB_BCAST (precise_output)
@@ -199,8 +190,7 @@ CONTAINS
     !   Check OUTPUTS namelist.
     !
     !=======================================================================
-    use edit_module,             only: long_edit, Long_Output_Dt_Multiplier, &
-                                       short_edit, Short_Output_Dt_Multiplier
+    use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: interface_dump, Int_Output_Dt_Multiplier
     use output_control,          only: nops, Output_Dt, Output_T
     use parameter_module,        only: mops
@@ -277,14 +267,10 @@ CONTAINS
 
     ! Initialize output flags
     interface_dump   = .false.
-    long_edit        = .false.
     short_edit       = .false.
 
     ! Interface output flag.
     if (ANY(Int_Output_Dt_Multiplier      /= 0)) interface_dump = .true.
-
-    ! Long edit output flag.
-    if (ANY(Long_Output_Dt_Multiplier     /= 0)) long_edit      = .true.
 
     ! Short edit output flag.
     if (ANY(Short_Output_Dt_Multiplier    /= 0)) short_edit     = .true.

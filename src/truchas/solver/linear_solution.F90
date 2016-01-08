@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
 MODULE LINEAR_SOLUTION
@@ -35,17 +43,13 @@ MODULE LINEAR_SOLUTION
 
   ! Number of Ubik_user elements that are used for default parameters.
   ! NOTE: remember to increment this if another default solver is added!
-  integer, parameter, public :: DEFAULT_UBIK_CONTROLS = 9
+  integer, parameter, public :: DEFAULT_UBIK_CONTROLS = 4
 
   ! Position of default solver parameters in the Ubik_user array.
   integer, parameter, public :: UBIK_PRESSURE_DEFAULT     = 1
-  integer, parameter, public :: UBIK_ENERGY_DEFAULT       = 2
-  integer, parameter, public :: UBIK_ENERGY_NK_DEFAULT    = 3
-  integer, parameter, public :: UBIK_NK_DEFAULT           = 4
-  integer, parameter, public :: UBIK_DISPLACEMENT_DEFAULT = 5
-  integer, parameter, public :: UBIK_VISCOUS_DEFAULT      = 6 
-  integer, parameter, public :: UBIK_VIEWFACTOR_DEFAULT   = 7 
-  integer, parameter, public :: UBIK_SENSITIVITY_DEFAULT   = 8
+  integer, parameter, public :: UBIK_NK_DEFAULT           = 2
+  integer, parameter, public :: UBIK_DISPLACEMENT_DEFAULT = 3
+  integer, parameter, public :: UBIK_VISCOUS_DEFAULT      = 4
 
   ! Solver parameters
   integer, parameter, public :: SOLVER_NONE    = -1
@@ -62,7 +66,6 @@ MODULE LINEAR_SOLUTION
   integer, parameter, public :: PRECOND_SSOR     = 2
   integer, parameter, public :: PRECOND_ILU0     = 3
   integer, parameter, public :: PRECOND_LU       = 4
-  integer, parameter, public :: PRECOND_2LEVEL   = 5
   integer, parameter, public :: PRECOND_TM_SSOR  = 6
   integer, parameter, public :: PRECOND_TM_DIAG  = 7
   integer, parameter, public :: PRECOND_DIAGONAL = 8
@@ -95,9 +98,6 @@ MODULE LINEAR_SOLUTION
      ! Use preconditioning? If so, then specify solution
      ! method for the preconditioning equation.
      integer :: precond
- 
-     ! preconditioner used for the preconditioning equation
-     integer :: precond_pre
  
      ! number of preconditioning iterations
      integer :: precond_iter

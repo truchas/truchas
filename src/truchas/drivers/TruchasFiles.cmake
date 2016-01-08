@@ -15,6 +15,8 @@ set(DRIVERS_FILES
            drivers/physics_module.F90
            drivers/signal_module.F90
            drivers/time_step_module.F90
+           drivers/time_step_sync_type.F90
+           drivers/simulation_event_queue.F90
            drivers/hijack_truchas.F90)
 
 set(DRIVERS_FPP_FLAGS 

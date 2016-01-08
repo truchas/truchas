@@ -7,6 +7,7 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 
 include_directories(${Truchas_MODULE_DIR})
 include_directories(${PGSLib_MODULE_DIR})
+include_directories(${Danu_Fortran_MODULE_DIR})
 include_directories(${TruchasExe_SOURCE_DIR}/utilities)
 
 add_executable(test_cell_grad_type test_cell_grad_type.F90)

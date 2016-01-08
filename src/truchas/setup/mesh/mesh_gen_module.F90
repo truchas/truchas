@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE MESH_GEN_MODULE
   !=======================================================================
   ! Purpose(s):
@@ -149,7 +157,7 @@ CONTAINS
     !
     !=======================================================================
     use ArrayAllocate_Module,   only: ARRAYCREATE, ARRAYDESTROY
-    use base_types_module,      only: PERMUTE_MESH, &
+    use base_types_B_module,    only: PERMUTE_MESH, &
                                       PERMUTE_VERTEX, RENUMBER_CELLS_VERTICES, &
                                       ANNOUNCE_MESH_SIZES
     use bc_data_module,         only: Mesh_Face_Set, Mesh_Face_Set_Tot

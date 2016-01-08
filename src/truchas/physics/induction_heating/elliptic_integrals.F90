@@ -10,6 +10,14 @@
 !!  Scientific Library) implementation.  The module adopts the interface used
 !!  by the IMSL special functions library.
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !!  NB: The routines ELRF and ELRD have not been thoroughly verified.  The
 !!  complete elliptic integrals (which use ELRF and ELRD) have been generally
 !!  verified, but not thoroughly so in the asymptotic regimes.

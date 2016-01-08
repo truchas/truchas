@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE BODY_INPUT_MODULE
   !=======================================================================
   ! Purpose(s):
@@ -32,7 +40,7 @@ CONTAINS
     !
     !=======================================================================
     use input_utilities,   only: NULL_I, NULL_R
-    use interfaces_module, only: Axis, Body_temp,                      &
+    use interfaces_module, only: Axis,                                 &
                                  File_Name, Fill, Height, Isrftype,    &
                                  Matnum, nbody, Nsurf, Offset,         &
                                  Radius, Rotangl, Rotpt, Rtab,         &
@@ -159,14 +167,6 @@ CONTAINS
        call TLS_error (message)
        fatal = .true.
        goto 300
-    end if
-
-    ! Validate body temperature
-    if (Body_Temp(nbody) == NULL_R) then
-       write (message, 30) nbody
-30     format ('Temperature for body ',i2,' is undefined!')
-       call TLS_error (message)
-       fatal = .true.
     end if
 
     ! Identify surface type
@@ -541,13 +541,14 @@ CONTAINS
                                       Length, Rotation_Angle, Rotation_Pt,      &
                                       Translation_Pt, Mesh_Matnum,              &
                                       mesh_material_number
-    use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R
+    use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R, NULL_C
     use parallel_info_module,   only: p_info
     use parameter_module,       only: mbody, msurf, mtab, ndim, string_dim,     &
                                       nrot, mphi
     use property_module,        only: Get_Truchas_Material_ID
 
-    use tempGrad_module,        only: Body_Temp_Grad, TEMP_GRADIENT
+    use scalar_func_factories,  only: alloc_const_scalar_func
+    use function_namelist,      only: lookup_func
 
     ! Argument List
     integer, intent(in) :: lun
@@ -559,26 +560,16 @@ CONTAINS
     logical :: fatal
     integer :: ioerror, is, n
     real(r8) :: phi(mphi), temperature
+    character(31) :: temperature_function
     real(r8), dimension(ndim) :: Velocity
     real(r8) :: scratch
     character(128) :: message
 
-    ! Body Temperature Gradient (TG) Variables
-    type(TEMP_GRADIENT) :: BTG
-    logical :: TG_On
-    ! Appended to the BODY Namelist
-    real(r8), dimension(3) :: TG_Origin,      TG_Axis
-    real(r8), dimension(3) :: TG_Z_Constants, TG_R_Constants
-    integer,  dimension(3) :: TG_Z_Exponents, TG_R_Exponents
-    real(r8), dimension(2) :: TG_Z_Bounds,    TG_R_Bounds
-
     ! Define BODY Namelist
     namelist /BODY/ Axis, Fill, Height, Radius, material_number, tabular_type,     &
-                    phi, temperature, Velocity, File_Name, Surface_Name,           &
-                    Rtheta_Tabular_Pt, RZ_Tabular_Pt, Length, Rotation_Angle,      &
-                    Rotation_Pt, Translation_Pt, mesh_material_number,             &
-                    TG_Z_Constants, TG_R_Constants, TG_Z_Exponents, TG_R_Exponents,&
-                    TG_Origin, TG_Axis, TG_Z_Bounds, TG_R_Bounds
+                    phi, temperature, temperature_function, Velocity, File_Name,   &
+                    Surface_Name, Rtheta_Tabular_Pt, RZ_Tabular_Pt, Length,        &
+                    Rotation_Angle, Rotation_Pt, Translation_Pt, mesh_material_number
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -595,6 +586,7 @@ CONTAINS
     material_number      = NULL_I
     mesh_material_number = NULL_I
     temperature          = NULL_R
+    temperature_function = NULL_C
     phi                  = 0
     Velocity             = 0
 
@@ -624,18 +616,6 @@ CONTAINS
        end do
     end do
 
-    ! Initialize local structure elements
-    ! BTG is default initialized
-    TG_On          = BTG%On
-    TG_Origin      = BTG%Origin
-    TG_Axis        = BTG%Axis
-    TG_Z_Constants = BTG%Z_Constants
-    TG_R_Constants = BTG%R_Constants
-    TG_Z_Exponents = BTG%Z_Exponents
-    TG_R_Exponents = BTG%R_Exponents
-    TG_Z_Bounds    = BTG%Z_Bound
-    TG_R_Bounds    = BTG%R_Bound
-
     ! Set error detection stuff
     IO_PE_ONLY: if (p_info%IOP) then
        ! Find namelist
@@ -650,50 +630,11 @@ CONTAINS
           end if
        end if
 
-       if (body_namelist) then
-         ! Check if valid gradient parameters are provided
-
-         ! A gradient exists if there is any non-zero constant provided
-         TG_On = ((sum(abs(TG_Z_Constants))+sum(abs(TG_R_Constants))) /= 0)
-         BTG%On = TG_On
-
-         if (TG_On) then
-           ! normalize the gradient axis unit vector
-           scratch = sqrt(DOT_PRODUCT(TG_Axis,TG_Axis))
-
-           if (scratch == 0) then
-             ! Invalid unit vector
-             fatal = .true.
-             body_namelist = .false.
-             write (fatal_error_string, 101) nbody+1
-101          format('zero length gradient axis for body',i3)
-
-           else if (min(minval(TG_Z_Exponents),minval(TG_R_Exponents))<0) then
-             ! Negative exponent found
-             fatal = .true.
-             body_namelist = .false.
-             write (fatal_error_string, 102) nbody+1
-102          format('negative gradient exponent for body ',i3)
-             
-           else
-             ! store Temperature Gradient info
-             BTG%Origin      = TG_Origin
-             BTG%Axis        = TG_Axis/scratch
-             BTG%Z_Constants = TG_Z_Constants
-             BTG%R_Constants = TG_R_Constants
-             BTG%Z_Exponents = TG_Z_Exponents
-             BTG%R_Exponents = TG_R_Exponents
-             BTG%Z_Bound     = TG_Z_Bounds
-             BTG%R_Bound     = TG_R_Bounds
-           end if
-         end if
-       endif
-
     end if IO_PE_ONLY
 
     ! Broadcast data just read in to all PE's.
     call BODY_INPUT_PARALLEL (body_namelist, phi, tabular_type, &
-                              temperature, Velocity, BTG )
+                              temperature, temperature_function, Velocity)
 
     ! Continue only if we found the namelist and read it without error.
     BODY_NML: if (body_namelist) then
@@ -731,16 +672,29 @@ CONTAINS
           body_surfaces = is
        end if
 
+       ! Check that either the temperature or a function name was read, and not both.
+       if (temperature == NULL_R .eqv. temperature_function == NULL_C) then
+          fatal_error_string = 'either TEMPERATURE or TEMPERATURE_FUNCTION must be specified'
+          fatal = .true.
+       end if
+
        ! Save body data if we still don't have any error
        if (.not. fatal) then
-         ! Store temperature gradient 
-         Body_Temp_Grad(nbody) = BTG
-
          Nsurf(nbody)       = body_surfaces
          Matnum(nbody)      = Get_Truchas_Material_ID(material_number)
          Mesh_Matnum(nbody) = mesh_material_number
          
-         Body_Temp(nbody) = temperature
+         ! Generate and store the body temperature function.
+         if (temperature /= NULL_R) then
+           call alloc_const_scalar_func (body_temp(nbody)%f, temperature)
+         else
+           call lookup_func (temperature_function, body_temp(nbody)%f)
+           if (.not.allocated(body_temp(nbody)%f)) then
+             fatal_error_string =  'unknown function name: ' // trim(temperature_function)
+             fatal = .true.
+           end if
+         end if
+
          Body_Phi(nbody,:)  = phi
          do n = 1,ndim
            Body_Vel(n,nbody) = Velocity(n)
@@ -768,7 +722,7 @@ CONTAINS
   END SUBROUTINE BODY_INPUT
 
   SUBROUTINE BODY_INPUT_PARALLEL (body_namelist, phi, tabular_type, &
-                                  temperature, velocity, BTG)
+                                  temperature, temperature_function, velocity)
     !======================================================================
     ! Purpose(s):
     !
@@ -785,15 +739,14 @@ CONTAINS
     use parameter_module,     only: msurf, ndim
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_BCAST
-    use tempGrad_module,      only: TEMP_GRADIENT
 
     ! Argument List
     character(80), dimension(msurf) :: tabular_type
     logical :: body_namelist
     real(r8) :: phi(:)
     real(r8) :: temperature
+    character(*), intent(inout) :: temperature_function
     real(r8), dimension(ndim) :: Velocity
-    type(TEMP_GRADIENT), intent(InOut) :: BTG ! body temperature gradient
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Broadcast Data
@@ -802,6 +755,7 @@ CONTAINS
        call PGSLIB_BCAST (phi)
        call PGSLIB_BCAST (tabular_type)
        call PGSLIB_BCAST (temperature)
+       call PGSLIB_BCAST (temperature_function)
        call PGSLIB_BCAST (Velocity)
 
        call PGSLIB_BCAST (Axis)
@@ -818,22 +772,6 @@ CONTAINS
        call PGSLIB_BCAST (Rotation_Angle)
        call PGSLIB_BCAST (Translation_Pt)
        call PGSLIB_BCAST (Rotation_Pt)
-
-       ! Body Temperature Gradient (BTG) information
-       if (body_namelist) then
-         call PGSLIB_BCAST (BTG%On)
-         if (BTG%On) then
-           call PGSLIB_BCAST (BTG%Origin)
-           call PGSLIB_BCAST (BTG%Axis)
-           call PGSLIB_BCAST (BTG%Z_Constants)
-           call PGSLIB_BCAST (BTG%Z_Exponents)
-           call PGSLIB_BCAST (BTG%Z_Bound)
-           call PGSLIB_BCAST (BTG%R_Constants)
-           call PGSLIB_BCAST (BTG%R_Bound)
-           call PGSLIB_BCAST (BTG%R_Exponents)
-         end if
-       end if
-
     end if
 
   END SUBROUTINE BODY_INPUT_PARALLEL

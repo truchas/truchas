@@ -4,6 +4,13 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! June 2015
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #include "f90_assert.fpp"
 
@@ -161,8 +168,6 @@ contains
   subroutine get_global_x_array (this, x)
     class(base_mesh), intent(in) :: this
     real(r8), allocatable, intent(out) :: x(:,:)
-    ASSERT(allocated(this%x))
-    ASSERT(defined(this%node_ip))
     allocate(x(size(this%x,1),merge(this%node_ip%global_size(),0,is_IOP)))
     call collate (x, this%x(:,:this%nnode_onP))
   end subroutine get_global_x_array
@@ -173,8 +178,6 @@ contains
   subroutine get_global_volume_array (this, volume)
     class(base_mesh), intent(in) :: this
     real(r8), allocatable, intent(out) :: volume(:)
-    ASSERT(allocated(this%volume))
-    ASSERT(defined(this%cell_ip))
     allocate(volume(merge(this%cell_ip%global_size(),0,is_IOP)))
     call collate (volume, this%volume(:this%ncell_onP))
   end subroutine get_global_volume_array

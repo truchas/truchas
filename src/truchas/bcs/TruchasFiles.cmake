@@ -35,7 +35,7 @@ fortran_preprocess_files(BCS_SOURCE_FILES
 			 FPP_FLAGS ${OUTPUT_FPP_FLAGS}
 			 PROCESS_TARGET ProcessTruchasBcsFiles)
 set_source_files_properties(${BCS_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
+                            COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}")
 
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${BCS_SOURCE_FILES})		       

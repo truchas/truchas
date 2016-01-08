@@ -11,6 +11,12 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! PROGRAMMING INTERFACE
 !!
 !!  A polymorphic SCALAR_FUNC array must have a single dynamic type, and thus
@@ -70,6 +76,8 @@ module scalar_func_containers
 
   type :: scalar_func_box
     class(scalar_func), allocatable :: f
+  contains
+    procedure :: eval => scalar_func_box_eval
   end type scalar_func_box
 
   type :: scalar_func_list
@@ -101,6 +109,14 @@ module scalar_func_containers
   end type
 
 contains
+
+  function scalar_func_box_eval (this, x) result (fx)
+    use kinds, only: r8
+    class(scalar_func_box), intent(in) :: this
+    real(r8), intent(in) :: x(:)
+    real(r8) :: fx
+    fx = this%f%eval(x)
+  end function scalar_func_box_eval
 
   !! Final subroutine for SCALAR_FUNC_LIST objects.
   subroutine scalar_func_list_delete (this)

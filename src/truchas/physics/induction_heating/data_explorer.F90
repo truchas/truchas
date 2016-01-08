@@ -4,6 +4,14 @@
 !!  Neil N. Carlson <nnc@newmexico.com>
 !!  Initial version prior to 9/96 with many subsequent revisions
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !!  This module provides an API to easily create native format DX files
 !!  used by the OpenDX visualization tool (previously IBM Visualization
 !!  Data Explorer).

@@ -1,23 +1,70 @@
 !!
 !! SIMPL_MESH_FACTORY
 !!
-!! This module provides a procedure that takes as input a bare, as-imported
-!! tetrahedral mesh presented on the IO processor, and completely fleshed-out,
-!! distributed mesh object.
+!! Provides a procedure for instantiating a new SIMPL_MESH object that stores
+!! a distributed unstructured tetrahedral mesh.  Information about the mesh
+!! is passed using a PARAMETER_LIST object.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
+!! July 2015 (refactored version of distributed_tet_mesh)
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! PROGRAMMING INTERFACE
+!!
+!!  NEW_SIMPL_MESH(PARAMS, STAT, ERRMSG) returns a pointer to a newly allocated
+!!    SIMPL_MESH object that has been initialized according to the information
+!!    specified by the parameter list PARAMS.  If an error is encountered, the
+!!    integer STAT is assigned a non-zero value and the alloctable deferred-
+!!    length character string ERRMSG assigned an explanatory message.  The
+!!    following parameter list parameters are recognized:
+!!
+!!    'mesh-file' -- path to an ExodusII mesh file (required)
+!!    'coord-scale-factor' -- a multiplicative scaling factor applied to the
+!!                            node coordinates (optional)
+!!
+!! IMPLEMENTATION NOTES
+!!
+!! 1. We exploit a property of suitably defined tetrahedral meshes that allows
+!!    us to know, a priori without additional data, the relationship between
+!!    the local orientation of a face or edge of a tetrahedron to the global
+!!    orientation of the face or edge within the mesh.  An oriented edge in
+!!    the mesh is an ordered list of its end points [n1 n2] with n1 < n2.
+!!    Similarly an oriented triangular face in the mesh is an ordered list
+!!    of its 3 vertices [n1 n2 n3] with n1 < n2 < n3.  We extend this to the
+!!    mesh cells, describing them as oriented tetrahedra [n1 n2 n3 n4] with
+!!    n1 < n2 < n3 < n4.  A tetrahedron is positively oriented if its volume
+!!    with respect to the ordering of its vertices is positive, and negatively
+!!    oriented if its volume is negative.  The faces of a tetrahedron are, in
+!!    order, [n2 n3 n4], [n1 n3 n4], [n1 n2 n4], and [n1 n2 n3].  If the tet
+!!    is positively oriented, the first and third faces are oriented outward
+!!    with respect to the tet, and the second and fourth are oriented inward.
+!!    If the tetrahedron is negatively oriented, the orientations are all
+!!    reversed.  Similarly, the edges of a triangular face [n1 n2 n3] are,
+!!    in order [n2 n3], [n1 n3], [n1 n2], with the first and third oriented
+!!    ccw with respect to the orientation of the triangle, and the second
+!!    oriented cw.
+!!
+!! 2. The original method of generating the cell adjacency data produced
+!!    neighbor lists that were sorted.  A graph partitioner generally will
+!!    be sensitive to reordering the lists, producing somewhat different,
+!!    though equally good, partitions.  Here we have sorted the lists for
+!!    no other reason than to be able to verify the new implementation
+!!    against the original; this step can be eliminated.
 !!
 
 #include "f90_assert.fpp"
 
 module simpl_mesh_factory
 
-  use kinds
-  use parallel_communication
-  use index_partitioning
   use simpl_mesh_type
   use parameter_list_type
-  use truchas_logging_services
   implicit none
   private
 
@@ -25,25 +72,16 @@ module simpl_mesh_factory
 
 contains
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! NEW_SIMPL_MESH
- !!
- !! This procedure takes the bare imported mesh MESH of TYPE(EXTERNAL_MESH) presented
- !! on the IO processor, and returns the distributed mesh object THIS, which
- !! is a fully fleshed-out distributed mesh containing all the basic topological
- !! and geometrical information required by a mimetic discretization scheme.
- !! It also returns the permutation vectors NODE_PERM and CELL_PERM which
-
   function new_simpl_mesh (params, stat, errmsg) result (this)
 
+    use kinds, only: r8
     use exodus_mesh_type
     use exodus_mesh_io
     use simpl_mesh_tools
+    use index_partitioning
     use parallel_communication
     use permutations
-    use integer_set_type
-    use bitfield_type
+    use truchas_logging_services
 
     type(parameter_list) :: params
     integer, intent(out) :: stat
@@ -53,18 +91,14 @@ contains
     integer :: j, k, n, offset, ncell, nedge, nface, nnode
     integer, allocatable :: cnode(:,:), cedge(:,:), cface(:,:), node_perm(:), cell_perm(:)
     integer, dimension(nPE) :: node_bsize, edge_bsize, face_bsize, cell_bsize
-    type(bitfield), pointer :: face_set_mask(:)
-    integer, pointer :: offP_index(:), array(:)
-    integer, allocatable :: perm(:), offP_size(:), cblock(:)
-    type(integer_set), allocatable :: xcells(:)
+    integer, allocatable :: side_map(:), perm(:), offP_size(:), offP_index(:), cblock(:)
     type(exodus_mesh), target :: mesh
     character(:), allocatable :: mesh_file
     real(r8) :: csf
-    
-    stat = 0
+
     this => null()
-    
-    !! Read the Exodus mesh file.
+
+    !! Read the Exodus mesh file into MESH.
     if (is_IOP) then
       call params%get('mesh-file', mesh_file)
       call TLS_info ('  Reading ExodusII mesh file "' // mesh_file // '"')
@@ -89,8 +123,8 @@ contains
     end if
     call broadcast_status (stat, errmsg)
     if (stat /= 0) return
-    
-    !! Flatten the element block structure.
+
+    !! Flatten the Exodus element block structure.
     allocate(cnode(4,ncell), cblock(ncell))
     call mesh%get_concat_elem_conn (cnode)
     offset = 0
@@ -98,7 +132,15 @@ contains
       cblock(offset+1:offset+mesh%eblk(n)%num_elem) = mesh%eblk(n)%id
       offset = offset + mesh%eblk(n)%num_elem
     end do
-    
+
+    !! Account for the different tet side labeling convention used by SIMPL_MESH.
+    side_map = [3,1,2,4]
+    do n = 1, mesh%num_sset
+      do j = 1, mesh%sset(n)%num_side
+        mesh%sset(n)%face(j) = side_map(mesh%sset(n)%face(j))
+      end do
+    end do
+
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
     if (is_IOP) call partition_cells (cnode, nPE, cell_bsize, cell_perm, stat, errmsg)
@@ -116,7 +158,7 @@ contains
       end do
       deallocate(perm)
     end if
-    
+
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
@@ -136,57 +178,14 @@ contains
       end do
       deallocate(perm)
     end if
-    
-    !! Modify the way side set faces are identified.  Instead of using the
-    !! local face index of the element, we identify them by the global node
-    !! number opposite the face, storing that info in the %FACE component.
-!    opp_vertex = [3,1,2,4]  ! local node opposite exodus face
-    if (is_IOP) then
-      do n = 1, mesh%num_sset
-        do j = 1, mesh%sset(n)%num_side
-!          mesh%sset(n)%face(j) = cnode(opp_vertex(mesh%sset(n)%face(j)),mesh%sset(n)%elem(j))
-          select case (mesh%sset(n)%face(j))
-          case (1)
-            mesh%sset(n)%face(j) = cnode(3,mesh%sset(n)%elem(j))
-          case (2)
-            mesh%sset(n)%face(j) = cnode(1,mesh%sset(n)%elem(j))
-          case (3)
-            mesh%sset(n)%face(j) = cnode(2,mesh%sset(n)%elem(j))
-          case (4)
-            mesh%sset(n)%face(j) = cnode(4,mesh%sset(n)%elem(j))
-          end select
-        end do
-      end do
 
-      !! Reorient each cell so that the nodes defining it are listed in
-      !! increasing order.  This, together with the convention for the
-      !! labeling of local cell faces and edges of faces, will ensure that
-      !! the orientation of global faces and edges relative to their local
-      !! orientation for a cell is known a priori.  This trick/technique
-      !! is only applicable to simplicial meshes.
-      do j = 1, ncell
-        call insertion_sort (cnode(:,j))
-      end do
+    !! Reorient the cells before enumerating the mesh faces and edges; see Note 1.
+    if (is_IOP) call reorient_tets (cnode, mesh%sset)
 
-      !! Restore the way side set faces are identified, using the local face
-      !! index of the element.  Here we adopt a new convention for labeling
-      !! tetrahedral element faces: face k is the one opposite node k.
-      do n = 1, mesh%num_sset
-        do j = 1, mesh%sset(n)%num_side
-          do k = 1, size(cnode,dim=2)
-            if (mesh%sset(n)%face(j) == cnode(k,mesh%sset(n)%elem(j))) then
-              mesh%sset(n)%face(j) = k
-              exit
-            end if
-          end do
-        end do
-      end do
-    end if
-    
     !! Enumerate and partition the mesh edges.
     allocate(cedge(6,ncell))
     if (is_IOP) then
-      call label_mesh_edges (cnode, cedge, nedge)
+      call label_tet_mesh_edges (cnode, cedge, nedge)
       allocate(perm(nedge))
       call partition_facets (cedge, cell_bsize, edge_bsize, perm)
       call invert_perm (perm)
@@ -197,11 +196,11 @@ contains
       end do
       deallocate(perm)
     end if
-    
+
     !! Enumerate and partition the mesh faces.
     allocate(cface(4,ncell))
     if (is_IOP) then
-      call label_mesh_faces (cnode, cface, nface)
+      call label_tet_mesh_faces (cnode, cface, nface)
       allocate(perm(nface))
       call partition_facets (cface, cell_bsize, face_bsize, perm)
       call invert_perm (perm)
@@ -213,25 +212,15 @@ contains
       deallocate(perm)
     end if
 
-    !!
-    !! At this point, the mesh is fully fleshed out on the IO processor, and
-    !! everything block partitioned.  We're now ready to build the distributed
-    !! mesh that will be used by the application code.  The inputs to this
-    !! section of the procedure are:
-    !!  o global cell node, edge, and face arrays: CNODE, CEDGE, CFACE
-    !!  o partition block sizes: NODE_BSIZE, EDGE_BSIZE, FACE_BSIZE, CELL_BSIZE
-    !!  o node positions X and boundary face mask array BFACE
-    !! All are collated arrays.
-    !!
-
-    !! Identify off-process cells to include with each partition.
+    !! Identify off-process cells (ghosts) to include with each partition.
     call select_ghost_cells (cell_bsize, cnode, node_bsize, cedge, edge_bsize, &
                              cface, face_bsize, offP_size, offP_index)
-    
+
+    !! Begin initializing the SIMPL_MESH result.
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
-    call create (this%cell_ip, cell_bsize, offP_size, offP_index)
+    call this%cell_ip%init (cell_bsize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
 
     this%ncell = this%cell_ip%local_size()
@@ -245,11 +234,11 @@ contains
 
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
-    call create (this%node_ip, node_bsize)
+    call this%node_ip%init (node_bsize)
     call localize_index_array (cnode, this%cell_ip, this%node_ip, this%cnode, offP_index)
-    call add_offP_index (this%node_ip, offP_index)
+    call this%node_ip%add_offP_index (offP_index)
     deallocate(offP_index)
-    
+
     this%nnode = this%node_ip%local_size()
     this%nnode_onP = this%node_ip%onP_size()
 
@@ -261,47 +250,45 @@ contains
 
     !! Create the edge index partition and localize the global CEDGE array,
     !! which identifies off-process edges to augment the partition with.
-    call create (this%edge_ip, edge_bsize)
+    call this%edge_ip%init (edge_bsize)
     call localize_index_array (cedge, this%cell_ip, this%edge_ip, this%cedge, offP_index)
-    call add_offP_index (this%edge_ip, offP_index)
+    call this%edge_ip%add_offP_index (offP_index)
     deallocate(cedge, offP_index)
-    
+
     this%nedge = this%edge_ip%local_size()
     this%nedge_onP = this%edge_ip%onP_size()
 
     !! Create the face index partition and localize the global CFACE array,
     !! which identifies off-process faces to augment the partition with.
-    call create (this%face_ip, face_bsize)
+    call this%face_ip%init (face_bsize)
     call localize_index_array (cface, this%cell_ip, this%face_ip, this%cface, offP_index)
-    call add_offP_index (this%face_ip, offP_index)
+    call this%face_ip%add_offP_index (offP_index)
     deallocate(offP_index)
 
     this%nface = this%face_ip%local_size()
     this%nface_onP = this%face_ip%onP_size()
 
+    !! Distribute the element block data
     if (is_IOP) n = mesh%num_eblk
     call broadcast (n)
     allocate(this%block_id(n))
     if (is_IOP) this%block_id = mesh%eblk%id
     call broadcast (this%block_id)
-    
+
     allocate(this%cblock(this%ncell))
     call distribute (this%cblock(:this%ncell_onP), cblock)
     call gather_boundary (this%cell_ip, this%cblock)
     deallocate(cblock)
-    
+
     !! Initialize the secondary indexing arrays.
     call init_face_node_data (this)
     call init_face_edge_data (this)
     call init_edge_node_data (this)
 
-!    !! %FACE_SET_ID, %FACE_SET_MASK
+    !! Initialize the node, face, and cell set data.
     call init_face_set_data (this, mesh, cface)
-    !! %NODE_SET_ID, %NODE_SET_MASK
     call init_node_set_data (this, mesh)
-    !! %CELL_SET_ID, %CELL_SET_MASK
     call init_cell_set_data (this, mesh)
-
     deallocate(cface)
 
     !! Scale the node coordinates and distribute.
@@ -314,43 +301,45 @@ contains
     allocate(this%x(3,this%nnode))
     call distribute (this%x(:,:this%nnode_onP), mesh%coord)
     call gather_boundary (this%node_ip, this%x)
-    
+
+    !! Initialize the mesh geometry data components.
     allocate(this%length(this%nedge), this%area(this%nface), this%volume(this%ncell))
     call this%compute_geometry
-    
+
   end function new_simpl_mesh
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! ORGANIZE_CELLS
- !!
- !! This routine organizes the mesh cells in preparation for creating the
- !! distributed mesh data structure.  This involves partitioning the cells,
- !! and generating a new cell numbering in which the partition becomes a
- !! block partition and the cells within partitions are well-ordered.
- !! It takes the cell node array CNODE and the number of partitions NP, and
- !! returns the new order as a permutation vector PERM (new-to-old) and the
- !! partition block size vector BSIZE.
- !!
- !! N.B.: The CNODE array is permuted into the new ordering, but the caller
- !! must ensure that all other cell-based arrays are permuted using the
- !! returned permutation, and it will need to remap all cell-valued arrays
- !! with its inverse.
- !!
- !! The cell adjacency graph is used as the fuel for the partitioner, which
- !! seeks to minimize the number of (graph) edges joining different partitions;
- !! this is a typical domain decomposition.
- !!
- !! For cells belonging to a common partition, well-ordered simply means an
- !! order that gives good memory locality: adjacent cells--which share faces,
- !! edges, and nodes--should be numbered close together.  We use the heuristic
- !! reverse Cuthill-McKee (RCM) algorithm; there may well be better methods.
- !!
+  !! This auxiliary subroutine partitions the mesh cells and generates a new
+  !! cell numbering for which the partition becomes a block partition and the
+  !! cells within partitions are well-ordered.  This is a serial procedure
+  !! that operates on the entire mesh.  CNODE(:,:) is the cell connectivity
+  !! array, with the last index running over cells.  The cells are partitioned
+  !! into NPART groups, and BSIZE(:) returns the number of cells in each of the
+  !! partitions.  Under the new cell numbering, the first BSIZE(1) cells belong
+  !! to the first partition, the next BSIZE(2) cells to the second, and so on.
+  !! The new cell numbering is returned in the permutation array PERM, which
+  !! maps new cell numbers to old.  STAT and ERRMSG return a nonzero value and
+  !! explanatory message if an error occurs.
+  !!
+  !! NB: The caller is responsible for applying the renumbering.  That means
+  !! permuting all cell-based arrays, including CNODE, and mapping the values
+  !! of all cell-valued arrays.
+  !!
+  !! This implementation uses the cell adjacency graph (cells are adjacent if
+  !! they share a face) as input to the partitioner, which seeks to minimize
+  !! the number of graph edges connecting different partitions; this is a
+  !! typical domain decomposition.
+  !!
+  !! Currently this is hardwired to use Chaco to do the partitioning (with
+  !! hardwired Chaco parameters), but the framework is more or less in place
+  !! to allow the input of partitioner choice and parameters.
+  !!
+  !! This implementation does not currently do anything about well-ordering
+  !! the cells within a partition (FIXME!); RCM would be better than nothing.
 
   subroutine partition_cells (cnode, npart, bsize, perm, stat, errmsg)
 
     use permutations
-    use simpl_mesh_tools, only: get_cell_neighbor_array
+    use simpl_mesh_tools, only: get_tet_neighbor_array
     use graph_partitioner_factory
     use parameter_list_type
     use string_utilities, only: i_to_c
@@ -368,10 +357,10 @@ contains
     class(graph_partitioner), allocatable :: gpart
     integer, allocatable :: part(:)
     real, allocatable :: ewgt(:)
-    
+
     ASSERT(npart > 0)
     ASSERT(size(bsize) == npart)
-    ASSERT(size(perm) == size(cnode,2))      
+    ASSERT(size(perm) == size(cnode,2))
 
     ncell = size(cnode,dim=2)
 
@@ -379,22 +368,22 @@ contains
 
       bsize(1) = ncell
       perm = identity_perm(ncell)
-      
+
     else
-      
+
       !! Generate the cell neighbor data array CNHBR.
       allocate(cnhbr, mold=cnode) ! valid for simplicial cells
-      call get_cell_neighbor_array (cnode, get_tet_face, cnhbr, stat)
+      call get_tet_neighbor_array (cnode, cnhbr, stat)
       if (stat /= 0) then
         stat = -1
-        errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
+        errmsg = 'get_tet_neighbor_array: invalid mesh topology detected'
         return
       end if
-      !! Sort the neighbor lists; see note 1.
+      !! Sort the neighbor lists; see Note 2.
       do j = 1, size(cnhbr,dim=2)
         call insertion_sort (cnhbr(:,j))
       end do
-      
+
       !! Pack the neighbor data into the adjacency structure required by the
       !! partitioner.  The CNHBR array is almost what we want, we just need to
       !! squeeze out 0 values marking "no neighbor" for cells on the boundary.
@@ -422,63 +411,42 @@ contains
       call blocked_partition (part, bsize, perm)
 
     end if
-  
+
   end subroutine partition_cells
 
-  pure subroutine get_tet_face (cell, face_index, face, normalize)
-    use cell_topology, only: normalize_facet
-    integer, intent(in) :: cell(:), face_index
-    integer, allocatable, intent(inout) :: face(:)
-    logical, intent(in), optional :: normalize
-    integer, parameter :: TetFaceVert(3,4) = &
-      reshape(source=[2,3,4,  1,4,3,  1,2,4,  1,3,2], shape=[3,4])
-    face = cell(TetFaceVert(:,face_index))
-    if (present(normalize)) then
-      if (normalize) call normalize_facet (face)
-    end if
-  end subroutine get_tet_face
-
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! ORGANIZE_FACETS
- !!
- !! This routine organizes the mesh facets (i.e., nodes, edges, or faces) in
- !! preparation for creating the distributed mesh data structure. This involves
- !! partitioning the facets, and generating a new facet numbering in which the
- !! partition becomes a block partition and the facets within partitions are
- !! well-ordered.  The partition block sizes are returned in the vector BSIZE,
- !! and the permutation (new-to-old) in PERM.
- !!
- !! N.B.: The FACET array values are mapped to the new numbering, but the
- !! caller must remap any other facet-valued arrays, and permute any
- !! facet-based arrays, using the returned permutation.
- !!
- !! The FACET array is a cell-based array: FACET(:,j) are the facets of one
- !! type adjacent to cell j.  It is assumed that the cells have already been
- !! organized and FACET defined accordingly, and that all facets are referenced
- !! by the array.
- !!
- !! The partitioning of the facets is based on the existing cell partition
- !! described by the cell partition block size CELL_BSIZE.  A facet must be
- !! assigned to a partition of one of the cells it is adjacent to.  We use a
- !! simple greedy algorithm: for n=1,2,... assign any unassigned facet adjacent
- !! to a cell in partition n to partition n.  This may lead to a poorly
- !! balanced partition, but this can be addressed later if it turns out to be
- !! a significant issue.
- !!
- !! To order the facets in a common partition we rely on the well-ordered'ness
- !! of the cells.  We merely number them as they are encountered in the FACET
- !! array.
- !!
+  !! This auxiliary subroutine partitions the mesh facets of one type (nodes,
+  !! edges, or faces) and generates a new numbering of them for which the
+  !! partition becomes a block partition and the facets within partitions are
+  !! well-ordered.  This is a serial procedure that operates on facet data for
+  !! the entire mesh.  FACET(:,:) is a cell based array: FACET(:,j) are the
+  !! facets of one type belonging to cell j.  It is assumed that the cells
+  !! have already been partitioned and renumbered, and that FACET reflects that
+  !! new numbering.  BSIZE returns the number of facets in each partition, and
+  !! the new facet numbering is returned in the permutation array PERM, which
+  !! maps new facet numbers to old.
+  !!
+  !! NB: The caller is responsible for applying the renumbering.  That means
+  !! permuting any facet-based arrays, and mapping the values of all facet-
+  !! valued arrays, including FACET itself.
+  !!
+  !! The facet partition is based on the cell partition given by the cell
+  !! partition sizes CELL_BSIZE.  A facet is assigned to the partition of one
+  !! of the cells it is adjacent to.  We use a simple greedy algorithm: for
+  !! n=1,2,... assign any unassigned facet adjacent to a cell in partition n
+  !! to partition n.  NB: While this may lead to a poorly balanced partition
+  !! for facets, it is not clear that this significantly impacts performance.
+  !!
+  !! To order the facets in a partition we rely on the well-orderedness of the
+  !! cells.  We merely number them as they are encountered in the FACET array.
 
   subroutine partition_facets (facet, cell_bsize, bsize, perm)
 
     use permutations
 
-    integer, intent(inout) :: facet(:,:)    ! cell facets
-    integer, intent(in)    :: cell_bsize(:) ! cell partition block sizes
-    integer, intent(out)   :: bsize(:)      ! facet partition block sizes
-    integer, intent(out)   :: perm(:)       ! permutation
+    integer, intent(in)  :: facet(:,:)    ! cell facets
+    integer, intent(in)  :: cell_bsize(:) ! cell partition block sizes
+    integer, intent(out) :: bsize(:)      ! facet partition block sizes
+    integer, intent(out) :: perm(:)       ! facet permutation
 
     integer :: j, k, n, offset, part(size(perm)), perm1(size(perm))
 
@@ -526,35 +494,76 @@ contains
 
   end subroutine partition_facets
 
+  !! This auxiliary subroutine reorients each tet cell by sorting its list of
+  !! node numbers into increasing order.  This is a critical step that allows
+  !! us to establish a fixed relationship between the local orientation of the
+  !! local facets of a simplex with their orientation as entities in the mesh.
+  !! This would be trivial were it not for the side sets that must be updated.
+  !! This is a serial procedure that operates on the entire mesh.
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! BLOCKED_PARTITION
- !!
- !! This is an auxillary routine that takes the partition assignment vector
- !! PASS and returns the permutation PERM that will make the partition a
- !! block partition.  The partition sizes are returned in the vector BSIZE.
- !! The permutation preserves the relative order of elements in the same
- !! partition.  PERM is a mapping from the new numbering to original.
- !!
+  subroutine reorient_tets (cnode, sset)
 
-  subroutine blocked_partition (pass, bsize, perm)
+    use exodus_mesh_type, only: side_set
+
+    integer, intent(inout) :: cnode(:,:)
+    type(side_set), intent(inout) :: sset(:)
+
+    integer :: n, j, k
+
+    !! Temporarily modify the way side set sides are identified,
+    !! using the global node number opposite the side.
+    !! This is unaffected by the sort that follows.
+    do n = 1, size(sset)
+      do j = 1, sset(n)%num_side
+        sset(n)%face(j) = cnode(sset(n)%face(j),sset(n)%elem(j))
+      end do
+    end do
+
+    !! Sort the nodes defining each cell into increasing order.
+    do j = 1, size(cnode,2)
+      call insertion_sort (cnode(:,j))
+    end do
+
+    !! Restore the way side set sides are identified,
+    !! using the local side index of the cell.
+    do n = 1, size(sset)
+      do j = 1, sset(n)%num_side
+        do k = 1, size(cnode,dim=2)
+          if (sset(n)%face(j) == cnode(k,sset(n)%elem(j))) then
+            sset(n)%face(j) = k
+            exit
+          end if
+        end do
+      end do
+    end do
+
+  end subroutine reorient_tets
+
+  !! Given a partition assignment array PART, this auxiliary subroutine
+  !! computes the permutation array PERM that makes the partition a block
+  !! partition.  The partition sizes are returned in BSIZE.  PERM maps the
+  !! new numbering to the original, and preserves the relative order of
+  !! elements in the same partition.  Specifically, 1) PART(PERM(:)) is
+  !! sorted (non-decreasing), and 2) j < k whenever PERM(j) < PERM(k) and
+  !! PART(PERM(j)) = PART(PERM(k)).
+
+  subroutine blocked_partition (part, bsize, perm)
 
     use permutations
 
-    integer, intent(in)  :: pass(:)   ! partition assignment
+    integer, intent(in)  :: part(:)   ! partition assignment
     integer, intent(out) :: bsize(:)  ! partition block size
     integer, intent(out) :: perm(:)   ! permutation
 
     integer :: j, n, next(size(bsize))
 
-    ASSERT( size(pass) == size(perm) )
-    ASSERT( minval(pass) >= 1 .and. maxval(pass) <= size(bsize) )
+    ASSERT(size(part) == size(perm))
+    ASSERT(minval(part) >= 1 .and. maxval(part) <= size(bsize))
 
     !! Compute the block size of each partition.
     bsize = 0
-    do j = 1, size(pass)
-      bsize(pass(j)) = bsize(pass(j)) + 1
+    do j = 1, size(part)
+      bsize(part(j)) = bsize(part(j)) + 1
     end do
 
     !! NEXT(j) is the next free cell number for partition j.
@@ -564,51 +573,38 @@ contains
     end do
 
     !! Generate the permutation.
-    do j = 1, size(pass)
-      perm(next(pass(j))) = j
-      next(pass(j)) = next(pass(j)) + 1
+    do j = 1, size(part)
+      perm(next(part(j))) = j
+      next(part(j)) = next(part(j)) + 1
     end do
 
-    ASSERT( is_perm(perm) )
+    ASSERT(is_perm(perm))
 
   end subroutine blocked_partition
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! This routine identifies for each partition those cells that contain a facet
- !! in the partition but which themselves belong to a different partition.  For
- !! a given partition the identitified cell set will be the minimal one that if
- !! added to the cells already belonging to the partition will ensure that
- !! every facet belonging to the partition has complete cell-support.  The
- !! motivation for this stems from the finite element context in which the
- !! equation for a DoF located at a facet depends on calculations over all the
- !! cells that contain that facet.
- !!
- !! The FACET array is a cell-based array: FACET(:,j) are the indices of the
- !! facets of one type (node, edge, or face) contained in cell j.  The cell
- !! partitioning is described by the cell partition block sizes CELL_BSIZE, and
- !! the facet partitioning by their block sizes BSIZE.  The cells identified
- !! for partition n are added to the set XCELLS(n).  Thus this routine can be
- !! called for different FACET arrays, each call adding to XCELLS the cells
- !! for that type of facet.
- !!
- !! This is a serial procedure.
- !!
-  
+  !! This auxiliary subroutine identifies the off-process ghost cells that
+  !! should be added to each subdomain.  The criterion is that if a cell
+  !! contains a face, edge, or node that belongs to a subdomain and the
+  !! cell itself does not belong to the subdomain, then it is added to the
+  !! subdomain as a ghost cell.  This ensures that every face, edge, and
+  !! node belonging to the subdomain will have complete cell support.  The
+  !! motivation for stems from the finite element context in which the
+  !! equation for a DoF located at a facet depends on calculations over
+  !! all the cells that contain that facet.  This is a serial procedure.
+
   subroutine select_ghost_cells (cell_bsize, cnode, node_bsize, cedge, edge_bsize, &
                                  cface, face_bsize, offP_size, offP_index)
 
     use integer_set_type
     use parallel_communication, only: is_IOP, nPE
-    
+
     integer, intent(in) :: cell_bsize(:), node_bsize(:), edge_bsize(:), face_bsize(:)
     integer, intent(in) :: cnode(:,:), cedge(:,:), cface(:,:)
-    integer, allocatable, intent(out) :: offP_size(:)
-    integer, pointer, intent(out) :: offP_index(:)  ! concession to the caller
-    
+    integer, allocatable, intent(out) :: offP_size(:), offP_index(:)
+
     integer :: n, offset
     type(integer_set), allocatable :: ghosts(:)
-    
+
     if (is_IOP) then
       allocate(ghosts(nPE))
       call overlapping_cells (cnode, cell_bsize, node_bsize, ghosts)
@@ -617,8 +613,12 @@ contains
       !! Copy the sets into packed array storage
 #ifdef INTEL_DPD200362026
       allocate(offP_size(nPE))
-#endif
+      do n = 1, nPE
+        offP_size(n) = ghosts(n)%size()
+      end do
+#else
       offP_size = ghosts%size()
+#endif
       allocate(offP_index(sum(offP_size)))
       offset = 0
       do n = 1, nPE
@@ -632,6 +632,23 @@ contains
 
   end subroutine select_ghost_cells
 
+  !! This auxiliary subroutine identifies for each partition those cells that
+  !! contain a facet in the partition but that themselves belong to a different
+  !! partition.  For a given partition the identitified cell set will be the
+  !! minimal one that if added to the cells already belonging to the partition
+  !! will ensure that every facet belonging to the partition has complete
+  !! cell-support.  The motivation for this stems from the finite element
+  !! context in which the equation for a DoF located at a facet depends on
+  !! calculations over all the cells that contain that facet.
+  !!
+  !! The FACET array is a cell-based array: FACET(:,j) are the indices of the
+  !! facets of one type (node, edge, or face) contained in cell j.  The cell
+  !! partitioning is described by the cell partition block sizes CELL_BSIZE,
+  !! and the facet partitioning by their block sizes BSIZE.  The cells
+  !! identified for partition n are added to the set XCELLS(n).  Thus this
+  !! routine can be called for different FACET arrays, each call adding to
+  !! XCELLS the cells for that type of facet.  This is a serial procedure.
+
   subroutine overlapping_cells (facet, cell_bsize, bsize, xcells)
 
     use integer_set_type
@@ -643,12 +660,12 @@ contains
 
     integer :: j, k, n, m, offset
 
-    ASSERT( size(bsize) == size(cell_bsize) )
-    ASSERT( all(bsize >= 0) )
-    ASSERT( all(cell_bsize >= 0) )
-    ASSERT( size(xcells) == size(bsize) )
-    ASSERT( sum(cell_bsize) == size(facet,2) )
-    ASSERT( minval(facet) >= 1 .and. maxval(facet) <= sum(bsize) )
+    ASSERT(size(bsize) == size(cell_bsize))
+    ASSERT(all(bsize >= 0))
+    ASSERT(all(cell_bsize >= 0))
+    ASSERT(size(xcells) == size(bsize))
+    ASSERT(sum(cell_bsize) == size(facet,2))
+    ASSERT(minval(facet) >= 1 .and. maxval(facet) <= sum(bsize))
 
     offset = 0
     do n = 1, size(cell_bsize)  ! loop over partitions
@@ -888,7 +905,7 @@ contains
     end do
     ASSERT(all(this%fnode > 0))
   end subroutine init_face_node_data
-  
+
   !! Initialize the face-edge connectivity data component FEDGE.
   subroutine init_face_edge_data (this)
     use simplex_topology, only: TET_FACE_EDGE
@@ -904,7 +921,7 @@ contains
     end do
     ASSERT(all(this%fedge > 0))
   end subroutine init_face_edge_data
-  
+
   !! Initialize the edge-node connectivity data component ENODE.
   subroutine init_edge_node_data (this)
     use simplex_topology, only: TET_EDGE_VERT
@@ -920,7 +937,7 @@ contains
     end do
     ASSERT(all(this%enode > 0))
   end subroutine init_edge_node_data
-    
+
   !! When a procedure executed only on the IO processor returns a status
   !! and possible error message, these need to be communicated to the other
   !! processes.  This auxiliary procedure performs that communication.
@@ -940,7 +957,7 @@ contains
       call broadcast (errmsg)
     end if
   end subroutine broadcast_status
-  
+
   !! Standard insertion sort.  Should be moved to a "sort module".
 
   pure subroutine insertion_sort (array)

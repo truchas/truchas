@@ -1,3 +1,11 @@
+/*==============================================================================
+
+  Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+  Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+  in the LICENSE file found in the top-level directory of this distribution.
+
+==============================================================================*/
+
 /* Fortran-compatible interface routines to gmvwrite.c.
    Function names have a single appended underscore that many (but not all)
    Fortran compilers will expect for external functions.  Functions that are

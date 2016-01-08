@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE DO_DISCRETE_OPERATORS
   !=======================================================================
   ! Purpose(s):
@@ -7,8 +15,6 @@ MODULE DO_DISCRETE_OPERATORS
   !   Public Interfaces:      DO_GRADIENT_FACE
   !                           DO_FACE_SOLVE
   !                           DO_UPDATE_WEIGHTS
-  !                           DO_GoodSolution
-  !                           DO_GoodPhiSolution
   !
   ! Author(s): Doug Kothe (dbk@lanl.gov)
   !            Jeff Durachta (durachta@verizon.net)
@@ -23,9 +29,6 @@ MODULE DO_DISCRETE_OPERATORS
   ! Public Subroutines
   public :: DO_GRADIENT_FACE, DO_FACE_SOLVE, DO_UPDATE_WEIGHTS
 
-  ! Public Functions
-  public :: DO_GoodSolution, DO_GoodPhiSolution
-
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   INTERFACE DO_GRADIENT_FACE
@@ -38,14 +41,6 @@ MODULE DO_DISCRETE_OPERATORS
 
   INTERFACE DO_UPDATE_WEIGHTS
     MODULE PROCEDURE UpdateWeights
-  END INTERFACE
-
-  INTERFACE DO_GoodSolution
-    MODULE PROCEDURE GoodSolution
-  END INTERFACE
-
-  INTERFACE DO_GoodPhiSolution
-    MODULE PROCEDURE GoodPhiSolution
   END INTERFACE
 
 CONTAINS
@@ -493,30 +488,6 @@ CONTAINS
         call TLS_fatal ('UpdateWeights: attempt to update weights for unknown solution method.')
     END SELECT METHOD
   END SUBROUTINE UpdateWeights
-
-
-  FUNCTION GoodPhiSolution(SolveSpec)
-    use do_base_types,  only: DO_Specifier
-    use parameter_module,  only: nfc,ncells
-      type(DO_Specifier), intent(IN) :: SolveSpec
-      logical, pointer, dimension(:,:) :: GoodPhiSolution
-      logical, allocatable, dimension(:,:), target, save :: GPS
-      if(.not. ALLOCATED(GPS))ALLOCATE(GPS(nfc,ncells))
-      GPS = SolveSpec%SolveFlag(1,:,:)
-      GoodPhiSolution => GPS
-  END FUNCTION GoodPhiSolution
-
-
-  FUNCTION GoodSolution(SolveSpec)
-    use do_base_types,  only: DO_Specifier
-    use parameter_module,  only: ndim,nfc,ncells
-      type(DO_Specifier), intent(IN) :: SolveSpec
-      logical, pointer, dimension(:,:,:) :: GoodSolution
-      logical, allocatable, dimension(:,:,:), target, save :: GS
-      if(.not. ALLOCATED(GS))ALLOCATE(GS(ndim+1,nfc,ncells))
-      GS = SolveSpec%SolveFlag
-      GoodSolution => GS
-  END FUNCTION GoodSolution
 
 
 END MODULE DO_DISCRETE_OPERATORS

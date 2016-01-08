@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE GS_UTIL
   !=======================================================================
   ! Purpose(s):
@@ -57,32 +65,14 @@ CONTAINS
     use ArrayAllocate_Module
     use mesh_module,      only: Mesh
     use parameter_module, only: ncells, nfc
-    use two_level_partition,    only: Cell_Two_Level_Partitioning, &
-                                      Cell_Cell_Two_Level_Partitioned, &
-                                      Set_Of_Cell_Cell_Edges, &
-                                      Cell_Cell_Two_Level_Edges_Part
+    use pgslib_module,    only: PGSLIB_SETUP_TRACE
     use var_vector_module
-    use pgslib_module,    only: PGSLIB_SETUP_TRACE,           &
-                                      GRAPH_HEAD,             &
-                                      GRAPH_TAIL,             &
-                                      INITIALIZE,             &
-                                      SET, &
-                                      PGSLib_Sum_Prefix, &
-                                      ALLOC, &
-                                      LOOKUP_TAIL, &
-                                      Get_Num_Edges_Available,&
-                                      PGSLib_Local, &
-                                      PGSLib_Global_SUM
 
     ! Local variables
+    integer :: f
     integer, dimension(nfc,ncells) :: Mesh_Ngbr_Cell
     integer, dimension(:,:), POINTER :: Mesh_Ngbr_Cell_PE
     integer, dimension(:), POINTER :: Mesh_Ngbr_Cells_All
-    integer, dimension(:), POINTER :: Tail_Partition
-    ! This stuff is for setting up the two_level partitioned graph
-    integer, dimension(2, ncells*nfc)  :: Cell_Cell_Edges
-    integer, dimension(ncells) :: Global_Cell_Number
-    integer :: edge, c, f, Number_Edges_Avail, Number_Edges
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -112,46 +102,6 @@ CONTAINS
        Mesh%Ngbr_Cell_PE(f)   = MERGE(Mesh_Ngbr_Cell_PE(f,:), -1, EL_Nbr_Mask(f,:))
     end do
 
-    ! This is also an excellent place to establish the cell-cell (across faces) partitioned graph.
-    CALL INITIALIZE(Cell_Cell_Two_Level_Partitioned)
-    Global_Cell_Number = PGSLib_Sum_Prefix( (/ (1, c=1,ncells) /) )
-    edge = 0
-    do c = 1, ncells
-       do f = 1, nfc
-          edge = edge + 1
-          ! Graph points from tail to head.
-          Cell_Cell_Edges(GRAPH_TAIL, edge) = Global_Cell_Number(c)
-          Cell_Cell_Edges(GRAPH_HEAD, edge) = Mesh(c)%Ngbr_Cell_Orig(f)
-       end do
-    end do
-    
-    call SET(Cell_Cell_Two_Level_Partitioned, &
-            NUMBER_AVAILABLE_EDGES=SIZE(Cell_Cell_Edges,2), &
-            EDGES = Cell_Cell_Edges, &
-            HEAD_PARTITIONED_SET = Cell_Two_Level_Partitioning, &
-            TAIL_PARTITIONED_SET = Cell_Two_Level_Partitioning)
-
-
-    ! We also need to know how the edges are partitioned.  The partitioning
-    ! of edges is according to the partition of the tail of each vertex.
-    ! We need a set of edges.
-    call INITIALIZE(Set_Of_Cell_Cell_Edges)
-    Number_Edges_Avail = Get_Num_Edges_Available(Cell_Cell_Two_Level_Partitioned)
-    Number_Edges = PGSlib_Global_Sum(Number_Edges_Avail)
-    call ALLOC(Set_Of_Cell_Cell_Edges, Number_Edges)
-
-    ! Use the partitions of the tails to partition the edges
-    ALLOCATE(Tail_Partition(Number_Edges_Avail))
-    do edge = 1, Number_Edges_Avail
-       Tail_Partition(edge) = LOOKUP_TAIL(Cell_Cell_Two_Level_Partitioned, edge)
-    end do
-       
-
-    call INITIALIZE(Cell_Cell_Two_Level_Edges_Part)
-    call SET(Cell_Cell_Two_Level_Edges_Part, Set_Of_Cell_Cell_Edges, &
-             Tail_Partition, SCOPE=PGSLib_LOCAL)
-    DEALLOCATE(Tail_Partition)
-
     ! This code is for gathering/scattering from/to all neighbor cells
     ! Notice that here we don't need a mask, since the length of the
     ! neighbor list varies.  
@@ -168,10 +118,6 @@ CONTAINS
     EE_All_Ngbr_Trace => PGSLib_Setup_Trace(INDEX = Mesh_Ngbr_Cells_All, &
                                             SIZE_OF_DEST = ncells)
     
-!!$    Don't need this, because we are already pointing at permanent storage slot.
-!!$    ! Move renumbered index back to permanent storage
-!!$    Mesh%Ngbr_Cells_All = Mesh_Ngbr_Cells_ALL
-
   END SUBROUTINE EE_GS_INIT
 
   SUBROUTINE EN_GS_INIT()

@@ -37,7 +37,7 @@ fortran_preprocess_files(MAT_SOURCE_FILES
 # Define compile flags                       
 include(BuildWhitespaceString)
 build_whitespace_string(mat_source_flags_string 
-                        -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR})
+                        -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR} -I${PETACA_MODULE_DIR})
 set_source_files_properties(${MAT_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${mat_source_flags_string})
 

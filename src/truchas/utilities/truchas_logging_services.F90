@@ -9,6 +9,14 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! April 2012
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! PROGRAMMING INTERFACE
 !!
 !!  There are three categories of log messages. Informational messages are the
@@ -424,11 +432,13 @@ contains
 #ifdef NAG_COMPILER
     use,intrinsic :: f90_unix, only: exit
 #endif
+    use truchas_danu_output_data, only: close_danu_output_file
     use pgslib_module, only: pgslib_finalize
     use utilities_module, only: timestamp
     character(*), intent(in) :: message
     character(32) :: date_time
     call labeled_message_scalar ('FATAL: ', message)
+    call close_danu_output_file
     call timestamp (date_time)
     call TLS_info ('truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22))
     call TLS_finalize

@@ -4,6 +4,14 @@
 !! This is a special-purpose solver for heat transfer that is coupled to free
 !! surface flows involving void.
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! CRUCIAL BEHAVIOR THAT NEEDS TO BE FIXED: THE STATE 'GET' ROUTINES ALL
 !! RETURN THE PENDING STATE.  THIS EQUALS THE LAST STATE AFTER SETTING THE
 !! INITIAL STATE OR AFTER COMMITTING THE PENDING STATE, WHICH IS NORMALLY

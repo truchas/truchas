@@ -43,16 +43,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}"
 project(Truchas C CXX Fortran)
 
 # Version
-set(Truchas_MAJOR_VERSION 2)
-set(Truchas_MINOR_VERSION 9)
+set(Truchas_MAJOR_VERSION 3)
+set(Truchas_MINOR_VERSION 0)
 set(Truchas_PATCH_VERSION dev)
 set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
-
-# Copyright file
-set(Truchas_COPYRIGHT_FILE ${Truchas_SOURCE_DIR}/COPYRIGHT)
-
-# License file
-set(Truchas_LICENSE_FILE ${Truchas_SOURCE_DIR}/LICENSE)
 
 # Build date
 try_run(BUILD_DATE_FAILED BUILD_DATE_COMPILED
@@ -552,7 +546,7 @@ set(CPACK_PACKAGE_VERSION       "${Truchas_VERSION}")
 set(CPACK_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}-${CMAKE_SYSTEM_NAME}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Truchas: Cool code package")
 set(CPACK_PACKAGE_VENDOR "Los Alamos National Laboratory")
-set(CPACK_RESOURCE_FILE_LICENSE ${Truchas_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_LICENSE ${Truchas_SOURCE_DIR}/LICENSE.md)
 
 # Name of the source file distribution 
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}"

@@ -17,7 +17,6 @@ set(OUTPUT_FILES
           output/edit_module.F90
           output/gap_output.F90
           output/interface_output_module.F90
-          output/long_edit_data_types.F90
           output/output_control.F90
           output/output_utilities.F90
           output/probe_output_module.F90

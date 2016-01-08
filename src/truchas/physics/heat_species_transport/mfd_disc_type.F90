@@ -8,6 +8,14 @@
 !! Neil Carlson <nnc@lanl.gov>
 !! Revised April 2015
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! PROGRAMMING INTERFACE
 !!
 !!  This module defines the derived type MFD_DISC which composes a reference
@@ -345,7 +353,7 @@ contains
 
   subroutine mfd_tet_compute_flux_matrix (this, coef, matrix, invert)
 
-    use cell_topology, only: TETRA4_VERT_FACE
+    use cell_topology, only: TET4_VERT_FACE
     use upper_packed_matrix, only: invert_upm
 
     class(mfd_tet), intent(in) :: this
@@ -360,15 +368,15 @@ contains
 
     matrix = 0.0_r8
     do c = 1, 4
-      Nc = this%face_normals(:,TETRA4_VERT_FACE(:,c))
+      Nc = this%face_normals(:,TET4_VERT_FACE(:,c))
       call invert_sym_3x3 (matmul(transpose(Nc),Nc), Mc)
       !! Scatter the corner matrix into the full cell flux matrix.
-      !! It is essential that TETRA4_VERT_FACE(:,c) is an increasing sequence of indices.
+      !! It is essential that TET4_VERT_FACE(:,c) is an increasing sequence of indices.
       s = (0.25/coef)*this%volume
       do j = 1, 3
-        jj = TETRA4_VERT_FACE(j,c)
+        jj = TET4_VERT_FACE(j,c)
         do i = 1, j
-          ii = TETRA4_VERT_FACE(i,c)
+          ii = TET4_VERT_FACE(i,c)
           loc = ii + jj*(jj - 1)/2
           matrix(loc) = matrix(loc) + s*Mc(i,j)
         end do

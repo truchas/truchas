@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 # /* include file for index_partitioning.F90 */
 
 #ifdef _OP_
@@ -111,7 +119,7 @@
     _TYPE_, intent(inout) :: onP_data(:)   ! on-process data
     _TYPE_, intent(in)    :: offP_data(:)  ! off-process data
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(onP_data) == this%onP_size_ )
     ASSERT( size(offP_data) == this%offP_size_ )
@@ -125,7 +133,7 @@
     type(ip_desc), intent(in) :: this   ! partition descriptor
     _TYPE_, intent(inout) :: local_data(:)
 
-    ASSERT( defined(this) )
+    ASSERT( this%defined() )
     ASSERT( associated(this%offP_index) )
     ASSERT( size(local_data) == this%local_size_ )
 

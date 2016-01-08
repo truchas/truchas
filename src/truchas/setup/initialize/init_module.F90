@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
 ! set to 1 to turn on local debugging code
@@ -65,8 +73,6 @@ CONTAINS
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use property_module,        only: DENSITY_MATERIAL
     use zone_module,            only: Zone
-    use var_vector_module
-    use gs_module
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use vof_init,               only: VOF_INITIALIZE
@@ -1030,7 +1036,6 @@ CONTAINS
     use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
     use zone_module,          only: Zone
     use restart_variables,    only: restart
-    use tempGrad_module,      only: Body_Temperature, Body_Temp_Grad
     use physics_module, only: heat_transport, heat_species_transport
 
     ! Arguments
@@ -1148,32 +1153,15 @@ CONTAINS
           mass_sum(:) = mass_sum(:) + DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,:)
         end where
 
-        GRADIENT: if (Body_Temp_Grad(ib)%On) then
-          ! Apply a temperature gradient, zone by zone
-
-          do iz = 1, ncells
-            if (Hits_Vol(ib,iz) .gt. alittle) then
-              temp         = Body_Temperature(ib, Body_Temp(ib), Zone(iz), Cell(iz))
-              enth_matl    = ENTHALPY_DENSITY_MATERIAL(m,temp)
-              enth_sum(iz) = enth_sum(iz) + enth_matl * Hits_Vol(ib,iz)
-
-              ! If the maximum mass contribution is from this body, assign the temp
-              if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = temp
-
-            end if
-          end do
-
-        else GRADIENT
-          ! Utilize the constant body temperature
-          enth_matl = ENTHALPY_DENSITY_MATERIAL(m,Body_Temp(ib))
-          enth_sum(:) = enth_sum(:) + enth_matl*Hits_Vol(ib,:)
-
-          do iz = 1,ncells
+        do iz = 1, ncells
+          if (Hits_Vol(ib,iz) .gt. alittle) then
+            temp = Body_Temp(ib)%eval(Cell(iz)%Centroid)
+            enth_matl    = ENTHALPY_DENSITY_MATERIAL(m,temp)
+            enth_sum(iz) = enth_sum(iz) + enth_matl * Hits_Vol(ib,iz)
             ! If the maximum mass contribution is from this body, assign the temp
-            if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = Body_Temp(ib)
-          end do
-
-        end if GRADIENT
+            if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = temp
+          end if
+        end do
 
       end do TOTAL_ENTHALPY_LOOP
 

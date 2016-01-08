@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 program test_hypre_pcg_type
 
 #ifdef NAGFOR
@@ -74,8 +82,7 @@ contains
     type(pcsr_matrix), intent(out) :: matrix
     
     integer :: ix, iy, iz, n, j, k, ntot, nloc
-    integer, allocatable :: nnbr_g(:,:)
-    integer, pointer :: nnbr(:,:), offP_index(:)
+    integer, allocatable :: nnbr_g(:,:), nnbr(:,:), offP_index(:)
     type(ip_desc), pointer :: row_ip
     type(pcsr_graph), pointer :: graph
     
@@ -108,9 +115,9 @@ contains
     
     !! Setup the index partition for the grid points.
     allocate(row_ip)
-    call create (row_ip, nloc)
+    call row_ip%init (nloc)
     call localize_index_array (nnbr_g, row_ip, row_ip, nnbr, offP_index)
-    call add_offP_index (row_ip, offP_index)
+    call row_ip%add_offP_index (offP_index)
     deallocate(offP_index, nnbr_g)
     
     !! Create the parallel CSR matrix.

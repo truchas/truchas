@@ -1,3 +1,10 @@
+# ############################################################################ #
+#
+#  Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+#  Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+#  in the LICENSE file found in the top-level directory of this distribution.
+#
+# ############################################################################ #
 # Required file to force Python to look in this
 # directory for sub modules. 
 
@@ -16,17 +23,6 @@ __all__ = [
 	   'TruchasOutput', 'TruchasSimulation', 'TruchasEMSimulation', 'TruchasMesh',
 	   'TruchasSeries', 'TruchasProbe', 'TruchasRegion'
 	  ]
-
-__author__ = 'Neil Carlson (nnc@lanl.gov)'
-
-
-__copyright__ = '''
-@Truchas_COPYRIGHT_STATEMENT@
-'''
-
-__license__ = '''
-@Truchas_LICENSE_STATEMENT@
-'''
 
 __version__ = '@Truchas_VERSION@'
 

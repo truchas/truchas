@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE LIN_SOLVER_INPUT
   !=======================================================================
   ! Purpose(s):
@@ -42,9 +50,6 @@ MODULE LIN_SOLVER_INPUT
 
   ! Solver preconditioner.
   character(string_len) :: preconditioning_method
-
-  ! Preconditioner preconditioner.
-  character(string_len) :: preconditioning_preconditioner
 
   ! Preconditioner steps.
   integer :: preconditioning_steps
@@ -109,8 +114,7 @@ CONTAINS
                              output_mode, method, preconditioning_method,    &
                              relaxation_parameter, name, stopping_criterion, &
                              status_frequency, krylov_vectors,               &
-                             preconditioning_steps, preconditioning_scope,   &
-                             preconditioning_preconditioner
+                             preconditioning_steps, preconditioning_scope
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -404,68 +408,53 @@ CONTAINS
        end if
     end if
 
-    ! Preconditioner and preconditioning preconditioner method.
-    PRECONDITIONER_CHECK: do i = 1,2
+    ! Preconditioner method.
+    string         = preconditioning_method
+    string_default = NULL_C
+    if (string /= string_default) then
 
-       select case (i)
-       case (1)
-          string         = preconditioning_method
-          string_default = NULL_C
-       case (2)
-          string         = preconditioning_preconditioner
-          string_default = NULL_C
-       end select
+       ! Check for valid strings.
+       string = ADJUSTL(string)
+       strings_match = .false.
 
-       if (string /= string_default) then
+       call STRING_COMPARE (TRIM(string), 'none', this_string_matches)
+       if (this_string_matches) string = 'none'
+       strings_match = strings_match .or. this_string_matches
 
-          ! Check for valid strings.
-          string = ADJUSTL(string)
-          strings_match = .false.
+       call STRING_COMPARE (TRIM(string), 'diagonal', this_string_matches)
+       if (this_string_matches) string = 'diagonal'
+       strings_match = strings_match .or. this_string_matches
 
-          call STRING_COMPARE (TRIM(string), 'none', this_string_matches)
-          if (this_string_matches) string = 'none'
-          strings_match = strings_match .or. this_string_matches
+       call STRING_COMPARE (TRIM(string), 'jacobi', this_string_matches)
+       if (this_string_matches) string = 'jacobi'
+       strings_match = strings_match .or. this_string_matches
 
-          call STRING_COMPARE (TRIM(string), 'diagonal', this_string_matches)
-          if (this_string_matches) string = 'diagonal'
-          strings_match = strings_match .or. this_string_matches
+       call STRING_COMPARE (TRIM(string), 'ssor', this_string_matches)
+       if (this_string_matches) string = 'ssor'
+       strings_match = strings_match .or. this_string_matches
 
-          call STRING_COMPARE (TRIM(string), 'jacobi', this_string_matches)
-          if (this_string_matches) string = 'jacobi'
-          strings_match = strings_match .or. this_string_matches
+       call STRING_COMPARE (TRIM(string), 'ilu0', this_string_matches)
+       if (this_string_matches) string = 'ilu0'
+       strings_match = strings_match .or. this_string_matches
 
-          call STRING_COMPARE (TRIM(string), 'ssor', this_string_matches)
-          if (this_string_matches) string = 'ssor'
-          strings_match = strings_match .or. this_string_matches
+       call STRING_COMPARE (TRIM(string), 'lu', this_string_matches)
+       if (this_string_matches) string = 'lu'
+       strings_match = strings_match .or. this_string_matches
 
-          call STRING_COMPARE (TRIM(string), 'ilu0', this_string_matches)
-          if (this_string_matches) string = 'ilu0'
-          strings_match = strings_match .or. this_string_matches
+       call STRING_COMPARE (TRIM(string), 'tm_ssor', this_string_matches)
+       if (this_string_matches) string = 'tm_ssor'
+       strings_match = strings_match .or. this_string_matches
 
-          call STRING_COMPARE (TRIM(string), 'lu', this_string_matches)
-          if (this_string_matches) string = 'lu'
-          strings_match = strings_match .or. this_string_matches
+       call STRING_COMPARE (TRIM(string), 'tm_diag', this_string_matches)
+       if (this_string_matches) string = 'tm_diag'
+       strings_match = strings_match .or. this_string_matches
 
-          call STRING_COMPARE (TRIM(string), '2level', this_string_matches)
-          if (this_string_matches) string = '2level'
-          strings_match = strings_match .or. this_string_matches
-
-          call STRING_COMPARE (TRIM(string), 'tm_ssor', this_string_matches)
-          if (this_string_matches) string = 'tm_ssor'
-          strings_match = strings_match .or. this_string_matches
-
-          call STRING_COMPARE (TRIM(string), 'tm_diag', this_string_matches)
-          if (this_string_matches) string = 'tm_diag'
-          strings_match = strings_match .or. this_string_matches
-
-          if (.not. strings_match) then
-             call TLS_error ('Preconditioning method "' // trim(string) // '" not valid!')
-             fatal = .true.
-          end if
-
+       if (.not. strings_match) then
+          call TLS_error ('Preconditioning method "' // trim(string) // '" not valid!')
+          fatal = .true.
        end if
-   
-    end do PRECONDITIONER_CHECK
+
+    end if
 
     ! Preconditioning scope.
     if (preconditioning_scope /= NULL_C) then
@@ -580,7 +569,6 @@ CONTAINS
     name                           = NULL_C
     output_mode                    = NULL_C
     preconditioning_method         = NULL_C
-    preconditioning_preconditioner = NULL_C
     preconditioning_scope          = NULL_C
     preconditioning_steps          = NULL_I
     relaxation_parameter           = NULL_R
@@ -607,7 +595,6 @@ CONTAINS
        call PGSLib_BCAST (name)
        call PGSLib_BCAST (output_mode)
        call PGSLib_BCAST (preconditioning_method)
-       call PGSLib_BCAST (preconditioning_preconditioner)
        call PGSLib_BCAST (preconditioning_scope)
        call PGSLib_BCAST (preconditioning_steps)
        call PGSLib_BCAST (relaxation_parameter)
@@ -632,17 +619,12 @@ CONTAINS
                                     PRECOND_NONE, PRECOND_DIAGONAL,             &
                                     PRECOND_JACOBI, PRECOND_SSOR,               &
                                     PRECOND_ILU0, PRECOND_LU,                   &
-                                    PRECOND_2LEVEL,                             &
                                     PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL,  &
-                                    UBIK_PRESSURE_DEFAULT, UBIK_ENERGY_DEFAULT, &
-                                    UBIK_ENERGY_NK_DEFAULT, UBIK_NK_DEFAULT,    &
+                                    UBIK_PRESSURE_DEFAULT, UBIK_NK_DEFAULT,     &
                                     UBIK_DISPLACEMENT_DEFAULT, PRECOND_TM_DIAG, &
-                                    UBIK_VIEWFACTOR_DEFAULT,                    &
-                                    UBIK_SENSITIVITY_DEFAULT,                   &
                                     PRECOND_TM_SSOR, ubik_viscous_default
     use mesh_input_module,    only: mesh_file
     use parameter_module,     only: ncells_tot
-    use two_level_partition,  only: precond_2level_active
     use UbikSolve_module
     use input_utilities, only: NULL_C
 
@@ -655,7 +637,6 @@ CONTAINS
     character(string_len), parameter :: METHOD_DEFAULT                  = 'fgmres'
     character(string_len), parameter :: NAME_DEFAULT                    = 'default'
     character(string_len), parameter :: PRECONDITIONING_METHOD_DEFAULT  = 'none'
-    character(string_len), parameter :: PRECONDITIONING_PRECOND_DEFAULT = 'none'
     character(string_len), parameter :: PRECONDITIONING_SCOPE_DEFAULT   = 'global'
     integer,  parameter :: PRECONDITIONING_STEPS_DEFAULT   = 1
     real(r8), parameter :: RELAXATION_PARAMETER_DEFAULT    = 0.90
@@ -687,38 +668,9 @@ CONTAINS
        convergence_criterion          = 1.0d-10
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        preconditioning_method         = 'jacobi'
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
        preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
        preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
        relaxation_parameter           = 1.4
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (UBIK_ENERGY_DEFAULT)
-       name                           = 'energy'
-       method                         = METHOD_DEFAULT
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = CONVERGENCE_CRITERION_DEFAULT
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (UBIK_ENERGY_NK_DEFAULT)
-       name                           = 'energy_nk'
-       method                         = METHOD_DEFAULT
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = 1.0d-3
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
        krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
        status_frequency               = STATUS_FREQUENCY_DEFAULT
     case (UBIK_NK_DEFAULT)
@@ -729,7 +681,6 @@ CONTAINS
        convergence_criterion          = 1.0d-3
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
        preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
        preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
        relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
@@ -743,7 +694,6 @@ CONTAINS
        convergence_criterion          = CONVERGENCE_CRITERION_DEFAULT
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
        preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
        preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
        relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
@@ -758,35 +708,6 @@ CONTAINS
        maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
        ! Default preconditioning method should be diagonal for viscous terms
        preconditioning_method         = 'diagonal'
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (ubik_viewfactor_default)
-       name                           = 'radiation_flux'
-       method                         = 'gmres'
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_R_B_STOP_DEFAULT
-       convergence_criterion          = CONVERGENCE_CRITERION_DEFAULT
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
-       preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
-       preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
-       relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
-       krylov_vectors                 = KRYLOV_VECTORS_DEFAULT
-       status_frequency               = STATUS_FREQUENCY_DEFAULT
-    case (UBIK_SENSITIVITY_DEFAULT)
-       name                           = 'energy_sensitivity'
-       method                         = METHOD_DEFAULT
-       linear_solve_output            = LINEAR_SOLVE_OUTPUT_DEFAULT
-       linear_solve_stop              = LINEAR_SOLVE_STOP_DEFAULT
-       convergence_criterion          = CONVERGENCE_CRITERION_DEFAULT
-       maximum_iterations             = MAXIMUM_ITERATIONS_DEFAULT
-       preconditioning_method         = PRECONDITIONING_METHOD_DEFAULT
-       preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
        preconditioning_scope          = PRECONDITIONING_SCOPE_DEFAULT
        preconditioning_steps          = PRECONDITIONING_STEPS_DEFAULT
        relaxation_parameter           = RELAXATION_PARAMETER_DEFAULT
@@ -811,9 +732,6 @@ CONTAINS
        end if
        if (preconditioning_method == NULL_C) then
           preconditioning_method = PRECONDITIONING_METHOD_DEFAULT
-       end if
-       if (preconditioning_preconditioner == NULL_C) then
-          preconditioning_preconditioner = PRECONDITIONING_PRECOND_DEFAULT
        end if
        if (preconditioning_scope == NULL_C) then
           preconditioning_scope = PRECONDITIONING_SCOPE_DEFAULT
@@ -904,10 +822,6 @@ CONTAINS
        Ubik%precond = precond_ILU0
     case ('lu')
        Ubik%precond = precond_LU
-    case ('2level')
-       Ubik%precond = precond_2Level
-       ! This just lets us know that we can output so add'l info
-       precond_2level_active = .TRUE.
     case ('tm_ssor')
        Ubik%precond = precond_TM_SSOR
     case ('tm_diag')
@@ -918,28 +832,6 @@ CONTAINS
 
     ! Number of preconditioning iterations.
     Ubik%precond_iter = 0
-
-    ! prepreconditioners.
-    select case (TRIM(preconditioning_preconditioner))
-    case ('none')
-       Ubik%precond_pre = precond_none
-    case ('diagonal')
-       Ubik%precond_pre = precond_DIAGONAL
-    case ('jacobi')
-       Ubik%precond_pre = precond_Jacobi
-    case ('ssor')
-       Ubik%precond_pre = precond_SSOR
-    case ('ilu0')
-       Ubik%precond_pre = precond_ILU0
-    case ('lu')
-       Ubik%precond_pre = precond_LU
-    case ('tm_ssor')
-       Ubik%precond_pre = precond_TM_SSOR
-    case ('tm_diag')
-       Ubik%precond_pre = precond_TM_DIAG
-    case default
-       call TLS_fatal ('SET_UBIK: invalid prepreconditioner choice')
-    end select
 
     ! Select a solution method.
     if (TRIM(method) == 'default') then
@@ -953,11 +845,6 @@ CONTAINS
        if (TRIM(mesh_file) /= NULL_C) then
           write (message, 10) 
 10        format (9x,'Suggest using FGMRES for linear solutions when a mesh file is specified. User specified CG, using CG')
-          call TLS_info (message)
-       end if
-       if (TRIM(preconditioning_method) == '2level') then
-          write (message, 20) 
-20        format (9x,'Suggest using FGMRES for linear solutions (2-level preconditioner specified). User specified CG, using CG')
           call TLS_info (message)
        end if
        Ubik%solver = solver_CG

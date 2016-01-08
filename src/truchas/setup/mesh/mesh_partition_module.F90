@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 Module MESH_PARTITION_MODULE
   !======================================================================
   ! Purpose(s):
@@ -447,9 +455,6 @@ CONTAINS
     !
     !=======================================================================
     use parallel_util_module, only: p_info, Is_IO_PE
-    use two_level_partition,  only: Cell_Two_Level_Partitioning, &
-                                    Set_Of_Cells, &
-                                    Precond_2level_Active
     use parameter_module,     only: ncells, nnodes, ncells_tot
     use pgslib_module,        only: PGSLib_REDISTRIBUTE, PGSLib_PERMUTE, &
                                     PGSLib_Collate, &
@@ -471,7 +476,6 @@ CONTAINS
     integer, dimension(:), POINTER :: Cell_Colors_New
     integer, dimension(ncells)              :: MeshPermute_Orig_Layout
     integer, dimension(nnodes)              :: VertexPermute_Orig_Layout
-    integer, dimension(p_info%nPE)          :: num_avail_part_tot
 #ifdef USE_OLD_PERMUTE_WAY
     integer :: partition
 #endif
@@ -499,31 +503,6 @@ CONTAINS
                         INDEX  = MeshPermute_Orig_Layout)
 
     Partitions_This_Processor = MAXVAL(Cell_Colors_New) - MINVAL(Cell_Colors_New) + 1
-
-    ! Establish the set of cells 
-    ! This really needs to go someplace else, but put it here since we first need it hear.
-    call INITIALIZE(Set_Of_Cells)
-    call ALLOC(Set_Of_Cells, ncells_tot)
-
-    ! Now set up the 2-level partitioning
-    ! What we've done is split the mesh into many partitions.  Already we've determined
-    ! how many partitions go on each processor.  Now we are using the same partitioning
-    ! for our 2-level work.  That is, now we are noting that we may have more than
-    ! one partition per process.
-    call INITIALIZE(Cell_Two_Level_Partitioning)
-    call SET(Cell_Two_Level_Partitioning, Set_Of_Cells, Cell_Colors_New, SCOPE=PGSLib_LOCAL)
-
-    if (precond_2level_active) then
-       call TLS_info (' Two-Level Partition Parameters ')
-       call TLS_info ('    Total of ' // i_to_c(Get_Num_Partitions(Cell_Two_Level_partitioning)) // ' partitions.')
-       ! Collate number of partitions/process for output
-       call pgslib_collate(num_avail_part_tot, Get_Num_Partitions_Available(Cell_Two_Level_Partitioning))
-       if (Is_IO_PE()) then
-          do pe = 1, SIZE(num_avail_part_tot)
-             call TLS_info ('     On processor ' // i_to_c(pe) // ' partitions.')
-          end do
-       end if
-    end if
 
     ! Now take care of the nodes
     ! Find permuation and distribution

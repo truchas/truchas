@@ -19,13 +19,13 @@ set(SETUP_FPP_FLAGS
 
 # - base_types
 set(SETUP_BASE_FILES
-          setup/base_types/base_types_module.F90
+          setup/base_types/base_types_A_module.F90
+          setup/base_types/base_types_B_module.F90
           setup/base_types/matl_module.F90
           setup/base_types/matl_utilities.F90
           setup/base_types/mesh_module.F90
           setup/base_types/parallel_scope.F90
           setup/base_types/probe_module.F90
-          setup/base_types/tempGrad_module.F90
           setup/base_types/var_vector_types.F90
           setup/base_types/zone_module.F90)
 list(APPEND SETUP_FILES ${SETUP_BASE_FILES})	
@@ -57,8 +57,7 @@ set(SETUP_MESH_FILES
           setup/mesh/mesh_quality_module.F90
           setup/mesh/mesh_tests.F90
           setup/mesh/mesh_utilities.F90
-          setup/mesh/partitioner_data.F90
-          setup/mesh/two_level_partition.F90)
+          setup/mesh/partitioner_data.F90)
 list(APPEND SETUP_FILES ${SETUP_MESH_FILES})	
 
 # - restart

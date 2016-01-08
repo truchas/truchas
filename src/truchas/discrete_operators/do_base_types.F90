@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE DO_BASE_TYPES
   !=======================================================================
   ! Purpose(s):
@@ -34,8 +42,8 @@ MODULE DO_BASE_TYPES
   private
 
   ! Public Data Structures
-  public :: DO_Specifier, DO_Diag_Specifier, DO_DiagListSpec, &
-            SVDU_Type, dX_Type, SField_Type, NIdx_Type, cMat_row_type
+  public :: DO_Specifier, &
+            SVDU_Type, dX_Type, SField_Type, NIdx_Type
 
   ! Public Parameters
   public :: DO_SOLVE_DEFAULT
@@ -143,48 +151,6 @@ MODULE DO_BASE_TYPES
     integer,  pointer, dimension(:)   :: NumFaces       =>NULL()
     integer,  pointer, dimension(:)   :: NumFaceNghbrs  =>NULL()
   end type DO_Specifier
-
-  type DO_Diag_Specifier
-    integer :: FieldType=-9999
-
-    real(r8), pointer, dimension(:)     :: Phi_Set    =>NULL()
-
-    real(r8), pointer, dimension(:,:)   :: FPhi_Set   =>NULL()
-    real(r8), pointer, dimension(:,:,:) :: FGrad_Set  =>NULL()
-
-    real(r8), pointer, dimension(:,:)   :: FPhi_DO    =>NULL()
-    real(r8), pointer, dimension(:,:,:) :: FGrad_DO   =>NULL()
-
-    real(r8), pointer, dimension(:,:)   :: FPhi_ERR   =>NULL()
-    real(r8), pointer, dimension(:,:)   :: RFPhi_ERR  =>NULL()
-    real(r8), pointer, dimension(:,:)   :: FPhi_AERR  =>NULL()
-    real(r8), pointer, dimension(:,:,:) :: FGrad_ERR  =>NULL()
-
-    real(r8), pointer, dimension(:)     :: Phi_rmsERR  =>NULL()
-    real(r8), pointer, dimension(:)     :: RPhi_rmsERR =>NULL()
-    real(r8), pointer, dimension(:)     :: Phi_rmsAERR =>NULL()
-    real(r8), pointer, dimension(:,:)   :: Grad_rmsERR =>NULL()
-
-    real(r8), pointer, dimension(:,:,:) :: StandUncert =>NULL()
-    real(r8), pointer, dimension(:)     :: SUPhi_rms  =>NULL()
-    real(r8), pointer, dimension(:,:)   :: SUGrad_rms =>NULL()
-    real(r8), pointer, dimension(:)     :: SUrms      =>NULL()
-  end type DO_Diag_Specifier
-
-  type DO_DiagListSpec
-    character(LEN=1)  :: field_type ='F'
-    logical :: FacePhiErr      =.false.
-    logical :: FaceGradientErr =.false.
-    logical :: TaylorErr       =.false.
-    logical :: AnalyticErr     =.false.
-  end type DO_DiagListSpec
-
-  type cMat_row_type
-    real(r8), pointer, dimension(:) :: coeff =>NULL()  ! compress coeff vector
-    integer,  pointer, dimension(:) :: g_idx =>NULL()  ! global index
-    integer :: n_phi=0         ! num nghbr cells
-  end type cMat_row_type
-
 
   ! Solution Techniques:
   integer, parameter :: DO_SOLVE_DEFAULT  =0

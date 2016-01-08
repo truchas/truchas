@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 Module BC_Initialize
 
   !-----------------------------------------------------------------------------
@@ -31,7 +39,6 @@ CONTAINS
   subroutine Append_BC_Region_From_Mask(Region, BC_Mask, BC_Values, BC_UseFunction, POSITIONS)
     ! Append the boundary values flagged in BC_Mask to Region
     use pgslib_module, ONLY: PGSLib_SUM_PREFIX
-    use mesh_module
 
     type(BC_Region), intent(INOUT) :: Region
     logical, intent(IN), dimension(nfc,ncells) :: BC_Mask

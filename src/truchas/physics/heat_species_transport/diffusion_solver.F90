@@ -4,6 +4,13 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! Markus Berndt <berndt@lanl.gov>
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #include "f90_assert.fpp"
 
@@ -32,7 +39,7 @@ module diffusion_solver
 
   public :: ds_init, ds_step
   public :: read_ds_namelists
-  public :: ds_set_initial_state
+  public :: ds_set_initial_state, ds_restart
   public :: ds_delete
 
   !! These return cell-centered results relative to the old Truchas mesh.
@@ -537,7 +544,30 @@ contains
     if (associated(conc_ds)) deallocate(conc_ds)
 
   end subroutine ds_set_initial_state
-  
+
+  !! The effect of calling this subroutine is to restart or reset the solver so
+  !! that its subsequent numerical behavior is as if it was starting integration
+  !! from an initial state equal to the current state.  This mainly means
+  !! dropping any previous solution history in the BDF2 solver and recomputing
+  !! an approximation to the initial state time derivative.  The argument DT is
+  !! used to compute that time derivative and is best chosen equal to the next
+  !! time step size; however it has no bearing on the next step size used.
+
+  subroutine ds_restart (dt)
+
+    real(r8), intent(in) :: dt
+
+    select case (this%solver_type)
+    case (SOLVER1)
+      call HTSD_solver_restart (this%sol1, dt)
+    case (SOLVER2)
+      ! nothing to do here yet
+    case default
+      INSIST(.false.)
+    end select
+
+  end subroutine ds_restart
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! VERIFY_MATERIAL_COMPATIBILITY

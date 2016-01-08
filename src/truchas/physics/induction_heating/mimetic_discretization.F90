@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
 module mimetic_discretization
@@ -147,7 +155,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%nface )
-    ASSERT( associated(mesh%cface) )
+    ASSERT( allocated(mesh%cface) )
     
     do j = 1, mesh%ncell
       v(j) = u(mesh%cface(1,j)) - u(mesh%cface(2,j)) + u(mesh%cface(3,j)) - u(mesh%cface(4,j))
@@ -164,7 +172,7 @@ contains
     integer :: j
     
     ASSERT( size(u) == mesh%ncell )
-    ASSERT( associated(mesh%cface) )
+    ASSERT( allocated(mesh%cface) )
     
     v = 0.0_r8
     do j = 1, mesh%ncell

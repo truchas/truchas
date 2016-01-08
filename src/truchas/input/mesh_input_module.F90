@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE MESH_INPUT_MODULE
   !=======================================================================
   ! Purpose:
@@ -88,9 +96,7 @@ CONTAINS
     use parameter_module,       only: mseg, ndim, Nx_tot
     use restart_variables,      only: restart
     use parameter_module,       only: ncells_tot, nnodes_tot
-    use mesh_gen_data,          only: partitions_total, partitions_total_DEFAULT, &
-                                      partitions_per_process, partitions_per_process_DEFAULT, &
-                                      set_generated_mesh
+    use mesh_gen_data,          only: partitions_total, set_generated_mesh
 
     integer, intent(in) :: lun
 
@@ -103,7 +109,7 @@ CONTAINS
 
     ! mesh namelist specification
     Namelist /MESH/ Ncell, Coord, Ratio, Fuzz, Heps, mesh_file, mesh_file_format, &
-                    coordinate_scale_factor, use_RCM, partitions_total, partitions_per_process, &
+                    coordinate_scale_factor, use_RCM, &
                     gap_element_blocks, interface_side_sets, exodus_block_modulus
 
     call TLS_info ('')
@@ -132,27 +138,8 @@ CONTAINS
     ! Broadcast total mesh size variables.
     call MESH_INPUT_PARALLEL ()
 
-    ! if partitions specified, must be positive
-    if (partitions_total /= partitions_total_DEFAULT .and. &
-        partitions_total < 1) then
-       call TLS_fatal (' partitions_total must be > 0')
-    end if
-
-    ! if partitions_per_process specified, must be positive
-    if (partitions_per_process /= partitions_per_process_DEFAULT .and. &
-        partitions_per_process < 1) then
-       call TLS_fatal ('partitions_per_process must be > 0')
-    end if
-
-    ! can only specify partitions_total or partitions_per_process
-    if (partitions_total /= partitions_total_DEFAULT .and. &
-        partitions_per_process /= partitions_per_process_DEFAULT) then
-       call TLS_fatal ('can''t specify partitions_total and partitions_per_process')
-    end if
-
     ! all is OK, let's set the partition numbers
-    partitions_per_process = MAX(partitions_per_process, 1)
-    partitions_total = MAX(partitions_total, p_info%npe*partitions_per_process)
+    partitions_total = p_info%npe
 
     ! Read in the mesh from the mesh file if this is not a restart.
     ! Set flag for indicating whether we can cartesian partition
@@ -680,12 +667,9 @@ CONTAINS
     !   Default MESH namelist
     !=======================================================================
     use input_utilities,  only: NULL_C
-    use mesh_module,      only: Face_Vrtx, Vrtx_Face
     use parameter_module, only: boundary_faces, ncells,   &
                                 nfaces, nfc, nnodes, nvc, &
                                 nvf, nfv
-    use mesh_gen_data,    only: partitions_total, partitions_total_DEFAULT, &
-                                partitions_per_process, partitions_per_process_DEFAULT
 
     ! local variables
     integer :: f, i, j
@@ -700,203 +684,8 @@ CONTAINS
     nfaces         = 1 ! Number of unique faces
     nnodes         = 1 ! Number of nodes
 
-    partitions_total       = partitions_total_DEFAULT
-    partitions_per_process = partitions_per_process_DEFAULT
-
     ! Number of cells for each mesh segment.
     Ncell = 0
-
-    ! Face vertex number mapping
-    do f = 1, nfc
-       select case (f)
-          case (1) ! Face 1     *fix*
-             do v = 1,nvf
-                select case (v)
-                   case (1)
-                      vertex_number = 3
-                   case (2)
-                      vertex_number = 4
-                   case (3)
-                      vertex_number = 8
-                   case (4)
-                      vertex_number = 7
-                end select
-                Face_Vrtx(f,v) = vertex_number
-             end do
-          case (2) ! Face 2     *ok*
-             do v = 1,nvf
-                select case (v)
-                   case (1)
-                      vertex_number = 1
-                   case (2)
-                      vertex_number = 2
-                   case (3)
-                      vertex_number = 6
-                   case (4)
-                      vertex_number = 5
-                end select
-                Face_Vrtx(f,v) = vertex_number
-             end do
-          case (3) ! Face 3     *ok*
-             do v = 1,nvf
-                select case (v)
-                   case (1)
-                      vertex_number = 4
-                   case (2)
-                      vertex_number = 1
-                   case (3)
-                      vertex_number = 5
-                   case (4)
-                      vertex_number = 8
-                end select
-                Face_Vrtx(f,v) = vertex_number
-             end do
-          case (4) ! Face 4     *fix*
-             do v = 1,nvf
-                select case (v)
-                   case (1)
-                      vertex_number = 2
-                   case (2)
-                      vertex_number = 3
-                   case (3)
-                      vertex_number = 7
-                   case (4)
-                      vertex_number = 6
-                end select
-                Face_Vrtx(f,v) = vertex_number
-             end do
-          case (5) ! Face 5     *fix*
-             do v = 1,nvf
-                select case (v)
-                   case (1)
-                      vertex_number = 3
-                   case (2)
-                      vertex_number = 2
-                   case (3)
-                      vertex_number = 1
-                   case (4)
-                      vertex_number = 4
-                end select
-                Face_Vrtx(f,v) = vertex_number
-             end do
-          case (6) ! Face 6     *ok*
-             do v = 1,nvf
-                select case (v)
-                   case (1)
-                      vertex_number = 8
-                   case (2)
-                      vertex_number = 5
-                   case (3)
-                      vertex_number = 6
-                   case (4)
-                      vertex_number = 7
-                end select
-                Face_Vrtx(f,v) = vertex_number
-             end do
-       end select
-    end do
-
-    ! Vertex face numbers
-    do v = 1,nvc
-       select case(v)
-          case (1) ! Vertex 1
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 2
-                   case (2)
-                      vertex_number = 3
-                   case (3)
-                      vertex_number = 5
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-          case (2) ! Vertex 2
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 2
-                   case (2)
-                      vertex_number = 4
-                   case (3)
-                      vertex_number = 5
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-          case (3) ! Vertex 3
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 1
-                   case (2)
-                      vertex_number = 4
-                   case (3)
-                      vertex_number = 5
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-          case (4) ! Vertex 4
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 1
-                   case (2)
-                      vertex_number = 3
-                   case (3)
-                      vertex_number = 5
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-          case (5) ! Vertex 5
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 2
-                   case (2)
-                      vertex_number = 3
-                   case (3)
-                      vertex_number = 6
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-          case (6) ! Vertex 6
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 2
-                   case (2)
-                      vertex_number = 4
-                   case (3)
-                      vertex_number = 6
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-          case (7) ! Vertex 7
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 1
-                   case (2)
-                      vertex_number = 4
-                   case (3)
-                      vertex_number = 6
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-          case (8) ! Vertex 8
-             do f = 1,nfv
-                select case (f)
-                   case (1)
-                      vertex_number = 1
-                   case (2)
-                      vertex_number = 3
-                   case (3)
-                      vertex_number = 6
-                end select
-                Vrtx_Face(v,f) = vertex_number
-             end do
-       end select
-    end do
 
     ! Fuzzing parameters
     Fuzz = 0.0_r8
@@ -943,7 +732,6 @@ CONTAINS
     !======================================================================
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_BCAST
-    use mesh_gen_data,        only: partitions_total, partitions_per_process
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -957,8 +745,6 @@ CONTAINS
        call PGSLib_BCast (mesh_file_format)
        call PGSLib_BCast (coordinate_scale_factor)
        call PGSLib_BCast (use_RCM)
-       call PGSLib_BCast (partitions_total)
-       call PGSLib_BCast (partitions_per_process)
        call PGSLib_BCast (gap_element_blocks)
        call PGSLib_BCast (interface_side_sets)
        call PGSLib_BCast (exodus_block_modulus)

@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE SETUP_MODULE
   !=======================================================================
   ! Purpose:
@@ -36,7 +44,8 @@ CONTAINS
     !    set up the problem
     !=======================================================================
     use kinds, only: r8
-    use base_types_module,      only: MESH_VERTEX_ALLOCATE, BASE_TYPES_ALLOCATE
+    use base_types_A_module,    only: BASE_TYPES_A_ALLOCATE
+    use base_types_B_module,    only: MESH_VERTEX_ALLOCATE, BASE_TYPES_B_ALLOCATE
     use bc_module,              only: ASSIGN_BC_BITS, Conc, Prs, Vel
     use cell_geometry_module,   only: GET_CELL_GEOMETRY
     use gs_module,              only: EE_GS_INIT, EN_GS_INIT, NN_GS_INIT
@@ -78,7 +87,8 @@ CONTAINS
     call MESH_GEN ()
 
     ! Allocate the base types and set them to their defaults.
-    call BASE_TYPES_ALLOCATE ()
+    call BASE_TYPES_A_ALLOCATE ()
+    call BASE_TYPES_B_ALLOCATE ()
 
     ! Setup element <-> element (ee) communication.
     call EE_GS_INIT ()

@@ -9,6 +9,14 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! Adapted for Fortran 2008, Jan 2014
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! PROGRAMMING INTERFACE
 !!
 !!  The module defines the FACET_TABLE derived type.  It has the following type
@@ -107,7 +115,7 @@ contains
 
   subroutine get_facet_label (this, facet, label, insert)
 
-    use cell_topology, only: normalize_facet, parity
+    use cell_topology, only: normalize_facet, facet_parity
 
     class(facet_table), intent(inout) :: this
     integer, intent(in)  :: facet(:)
@@ -131,7 +139,7 @@ contains
     !! Search the hash table for the facet
     do while (allocated(this%record(i)%facet))
       np = np + 1 ! update the number of probes
-      p = parity(norm_facet, this%record(i)%facet)
+      p = facet_parity(norm_facet, this%record(i)%facet)
       if (p /= 0) then  ! we located the facet
         label = p * this%record(i)%label
         !! Update performance counters

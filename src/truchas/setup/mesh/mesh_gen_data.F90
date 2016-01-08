@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE MESH_GEN_DATA
   !=======================================================================
   ! Purpose(s):
@@ -29,10 +37,6 @@ MODULE MESH_GEN_DATA
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   integer, save, public :: partitions_total
-  integer, save, public :: partitions_per_process
-
-  integer, parameter, public :: partitions_total_DEFAULT       = -1
-  integer, parameter, public :: partitions_per_process_DEFAULT = -1
 
   ! Private parameters
   logical, SAVE :: Generated_Mesh_Flag

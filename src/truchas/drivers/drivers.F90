@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE DRIVERS
   !-----------------------------------------------------------------------------
   ! Purpose:
@@ -29,13 +37,14 @@ MODULE DRIVERS
   ! Disclaimer Notice
   character (LEN=string_len), dimension(2), target :: disclaimer = (/       &
      '   This Truchas release is registered with the Los Alamos National ', &
-     '   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.     ' /)
+     '   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.     ' /)
 
   ! Copyright Notice
-  character (LEN=string_len), dimension(18),target :: copyright = (/                      &
-     '   Copyright 2007-2013. Los Alamos National Security, LLC.                       ', &
+  character (LEN=string_len), dimension(39),target :: copyright = [                       &
+     '   Copyright (c) 2007-2015. Los Alamos National Security, LLC.                   ', &
+     '   All rights reserved.                                                          ', &
      '                                                                                 ', &
-     '   This material was produced under U.S. Government contract DE-AC52-06NA25396   ', &
+     '   This software was produced under U.S. Government contract DE-AC52-06NA25396   ', &
      '   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos    ', &
      '   National Security, LLC for the U.S. Department of Energy. The U.S. Government ', &
      '   has rights to use, reproduce, and distribute this software.  NEITHER THE      ', &
@@ -44,14 +53,34 @@ MODULE DRIVERS
      '   is modified to produce derivative works, such modified software should be     ', &
      '   clearly marked, so as not to confuse it with the version available from LANL. ', &
      '                                                                                 ', &
-     '   Additionally, this program is free software; you can redistribute it and/or   ', &
-     '   modify it under the terms of the GNU General Public License as published by   ', &
-     '   the Free Software Foundation; either version 2 of the License, or (at your    ', &
-     '   option) any later version. Accordingly, this program is distributed in the    ', &
-     '   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the       ', &
-     '   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.      ', &
-     '   See the GNU General Public License for more details.                          ' /)
-     
+     '   Additionally, redistribution and use in source and binary forms, with or      ', &
+     '   without modification, are permitted provided that the following conditions    ', &
+     '   are met:                                                                      ', &
+     '                                                                                 ', &
+     '   1. Redistributions of source code must retain the above copyright notice,     ', &
+     '      this list of conditions and the following disclaimer.                      ', &
+     '                                                                                 ', &
+     '   2. Redistributions in binary form must reproduce the above copyright notice,  ', &
+     '      this list of conditions and the following disclaimer in the documentation  ', &
+     '      and/or other materials provided with the distribution.                     ', &
+     '                                                                                 ', &
+     '   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National ', &
+     '      Laboratory, LANL, the U.S. Government, nor the names of its contributors   ', &
+     '      may be used to endorse or promote products derived from this software      ', &
+     '      without specific prior written permission.                                 ', &
+     '                                                                                 ', &
+     '   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND            ', &
+     '   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,        ', &
+     '   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS     ', &
+     '   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS         ', &
+     '   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,    ', &
+     '   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT      ', &
+     '   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,     ', &
+     '   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY         ', &
+     '   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT           ', &
+     '   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF      ', &
+     '   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             ']
+
   logical :: mem_on = .false.
 
 CONTAINS
@@ -175,16 +204,18 @@ call hijack_truchas ()
     use pgslib_module,            only: PGSLib_GLOBAL_ANY
     use restart_variables,        only: restart
     use signal_module,            only: SignalInquire
-    use time_step_module,         only: cycle_number, cycle_max, dt, t, t1, t2, dt_ds, &
+    use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
                                         TIME_STEP
     use timing_tree
-    use diffusion_solver,         only: ds_step
+    use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
     use truchas_logging_services
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
     use probe_output_module, only: probe_init_danu
+    use simulation_event_queue, only: sim_event, next_event
+    use time_step_sync_type
 
     ! Local Variables
     Logical :: quit = .False.
@@ -193,10 +224,15 @@ call hijack_truchas ()
     Integer :: HUP                      ! signal flag
     Integer :: USR2                     ! signal flag
     Integer :: URG                      ! signal flag
+    type(sim_event), pointer :: event
+    type(time_step_sync) :: ts_sync
 
     !---------------------------------------------------------------------------
     
     if (mem_on) call mem_diag_open
+
+    ts_sync = time_step_sync(5)
+    event => next_event(t)
 
     call PROBE_INIT_DANU  ! for Tbrook output this was done in TBU_writebasicdata
 
@@ -243,13 +279,31 @@ call hijack_truchas ()
        ! get the new time step
        call TIME_STEP ()
 
+       ! simulation phases (optional)
+       if (associated(event)) then
+          if (t1 == event%time()) then ! at start of the next phase
+             dt = event%init_dt(dt_old, dt)
+             event => next_event()
+             if (associated(event)) then
+                t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
+             else
+                t2 = t1 + dt
+             end if
+             ! required physics kernel restarts
+             call ds_restart (t2 - t1)
+          else
+             t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
+          end if
+       else
+          t2 = t1 + dt
+       end if
+
+       dt = t2 - t1
+
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': Before output cycle:')
 
        ! output cycle time step
        call CYCLE_OUTPUT_PRE ()
-
-       ! set ending cycle time (= beginning cycle time + dt)
-       t2 = t1 + dt
 
        ! call each physics package in turn
 
@@ -301,7 +355,8 @@ call hijack_truchas ()
     !
     !   clean up prior to termination, print reports
     !---------------------------------------------------------------------------
-    use base_types_module,      only: MESH_VERTEX_DEALLOCATE, BASE_TYPES_DEALLOCATE
+    use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
+    use base_types_B_module,    only: MESH_VERTEX_DEALLOCATE, BASE_TYPES_B_DEALLOCATE
     use debug_control_data
     use fluid_utilities_module, only: FLUID_DEALLOCATE
     use mesh_module,            only: Mesh, Vertex
@@ -322,7 +377,8 @@ call hijack_truchas ()
     call MESH_VERTEX_DEALLOCATE (Mesh, Vertex)
 
     ! deallocate the base types
-     call BASE_TYPES_DEALLOCATE ()
+    call BASE_TYPES_A_DEALLOCATE ()
+    call BASE_TYPES_B_DEALLOCATE ()
 
     ! free the diffusion solver resources
     call ds_delete ()

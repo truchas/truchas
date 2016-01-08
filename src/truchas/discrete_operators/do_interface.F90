@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE DO_INTERFACE
   !=======================================================================
   ! Purpose(s):
@@ -7,9 +15,6 @@ MODULE DO_INTERFACE
   !   this module ONLY.
   !
   !   Public Data Structures: DO_Specifier
-  !                           DO_Diag_Specifier
-  !                           DO_DiagListSpec
-  !                           cMat_row_type
   !
   !   Public Parameters:      DO_SOLVE_DEFAULT
   !                           DO_SOLVE_ORTHO
@@ -24,8 +29,6 @@ MODULE DO_INTERFACE
   !                           DO_GRADIENT_FACE
   !                           DO_FACE_SOLVE
   !                           DO_UPDATE_WEIGHTS
-  !                           DO_GoodSolution
-  !                           DO_GoodPhiSolution
   !
   ! DO_ use documentation:
   !
@@ -80,24 +83,17 @@ MODULE DO_INTERFACE
   !            Robert Ferrell (ferrell@cpca.com)
   !
   !=======================================================================
-  use do_base_types,         only: DO_Specifier,DO_Diag_Specifier, DO_DiagListSpec, &
+  use do_base_types,         only: DO_Specifier, &
                                    DO_SOLVE_DEFAULT,DO_SOLVE_ORTHO, &
-                                   DO_SOLVE_LU_LSLR,DO_SOLVE_SVD_LSLR,DO_NUM_ST, &
-                                   cMat_row_type
-  use do_discrete_operators, only: DO_GRADIENT_FACE,DO_FACE_SOLVE,DO_UPDATE_WEIGHTS, &
-                                   DO_GoodSolution,DO_GoodPhiSolution
-  use do_solve_specifier,    only: DO_INIT_SS, DO_DESTROY_SS, &
-                                   DO_GET_cM_compressed, DO_DESTROY_cM_compressed, &
-                                   DO_GET_cM_full, DO_DESTROY_cM_full
+                                   DO_SOLVE_LU_LSLR,DO_SOLVE_SVD_LSLR,DO_NUM_ST
+  use do_discrete_operators, only: DO_GRADIENT_FACE,DO_FACE_SOLVE,DO_UPDATE_WEIGHTS
+  use do_solve_specifier,    only: DO_INIT_SS, DO_DESTROY_SS
 
   implicit none
   private
 
   ! Public Data Structures
   public :: DO_Specifier
-  public :: DO_Diag_Specifier
-  public :: DO_DiagListSpec
-  public :: cMat_row_type
 
   ! Public Parameters
   public :: DO_SOLVE_DEFAULT
@@ -107,12 +103,8 @@ MODULE DO_INTERFACE
   public :: DO_NUM_ST
 
   ! Public Subroutines
-  public :: DO_INIT_SS, DO_DESTROY_SS, DO_DESTROY_cM_compressed, DO_DESTROY_cM_full
+  public :: DO_INIT_SS, DO_DESTROY_SS
   public :: DO_GRADIENT_FACE, DO_FACE_SOLVE, DO_UPDATE_WEIGHTS
-
-  ! Public Functions
-  public :: DO_GoodSolution, DO_GoodPhiSolution
-  public :: DO_GET_cM_compressed, DO_GET_cM_full
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 !!#define DEBUG_MESH_MODULE
 
 MODULE MESH_MODULE
@@ -51,7 +59,7 @@ MODULE MESH_MODULE
             Clear_Face_Neighbor,             &
             Is_Face_Ngbr
 
-  public :: COLLATE, PERMUTE_CELL
+  public :: COLLATE_CELL, PERMUTE_CELL
   public :: read_mesh_data
 
   ! Public Operators
@@ -80,7 +88,9 @@ MODULE MESH_MODULE
 
   ! Face-Vertex and Vertex-Face mappings.
   integer, public, save, dimension(nfc,nvf)  :: Face_Vrtx
+  data Face_Vrtx /3,1,4,2,3,8,  4,2,1,3,2,5,  8,6,5,7,1,6,  7,5,8,6,4,7/
   integer, public, save, dimension(nvc,ndim) :: Vrtx_Face
+  data Vrtx_Face /2,2,1,1,2,2,1,1,  3,4,4,3,3,4,4,3,  5,5,5,5,6,6,6,6/
   
   ! MESH_CONNECTIVITY structure
   Type MESH_CONNECTIVITY
@@ -180,14 +190,6 @@ MODULE MESH_MODULE
   ! Bit mask for identifying face neighbors
   integer, dimension(:), pointer :: Face_Bit_Mask => NULL()
   logical, SAVE                  :: Face_Bit_Mask_Initialized = .FALSE.
-
-  interface COLLATE
-     module procedure COLLATE_CELL
-  end interface
-
-  interface PERMUTE_CELL
-     module procedure PERMUTE_CELL
-  end interface
 
   interface operator(.DISTRIBUTE.)
      module procedure MESH_DISTRIBUTE
@@ -343,7 +345,7 @@ CONTAINS
        ALLOCATE(Cell_Collate(0))
     end if
     
-    call COLLATE(Cell_Collate, Cell)
+    call COLLATE_CELL(Cell_Collate, Cell)
 
   END FUNCTION CELL_COLLATE
 

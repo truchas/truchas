@@ -6,6 +6,14 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! 16 Jan 2014
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! Until now (version 2.8) Truchas has only allowed constant velocity Dirichlet
 !! conditions to be specified.  That data is stored in the array BC_Vel(:,:,:)
 !! (3 by 6 by number of cells), together with some additional mask arrays. This

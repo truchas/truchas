@@ -1,3 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 MODULE PARAMETER_MODULE
   !=======================================================================
   ! Purpose(s):
@@ -85,26 +93,8 @@ MODULE PARAMETER_MODULE
   ! Maximum number of mesh domains
   integer, parameter :: max_domains = 4196
 
-  ! Maximum number of long edit cells
-  integer, parameter :: max_long_edit_cells = 500
-
-  ! Maximum number of long edit boxes
-  integer, parameter :: max_long_edit_boxes = 20
-
-  ! Maximum number of alloy components allowed
-  integer, parameter :: max_alloy_comps = 10
-
-  ! Maximum number of phases allowed
-  integer, parameter :: max_phases = 10
-
   ! Number of stress/strain components
   integer, Parameter :: ncomps = (ndim*(ndim + 1))/2
-
-  ! Maximum number of chemical reactions allowed
-  integer, parameter :: max_cr = 10
-
-  ! Upper-to-lower character conversion constant
-  integer, parameter :: upper_to_lower = IACHAR('a') -IACHAR('A')
 
   ! Array sizes
   integer, dimension(ndim) :: Nx, Mx, Nx_tot, Mx_tot

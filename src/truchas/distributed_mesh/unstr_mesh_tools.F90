@@ -2,11 +2,18 @@
 !! UNSTR_MESH_TOOLS
 !!
 !! This module provides a collection of procedures for generating higher-order
-!! topological information for unstructured meshes.
+!! topological information for unstructured mixed-element meshes.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! Adapted from existing code, February 2014
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #include "f90_assert.fpp"
 
@@ -14,15 +21,15 @@ module unstr_mesh_tools
 
   implicit none
   private
-  
+
   public :: get_cell_neighbor_array, label_mesh_faces
 
 contains
 
   subroutine get_cell_neighbor_array (xcnode, cnode, xlnode, lnode, xcnhbr, cnhbr, lnhbr, stat)
-  
+
     use facet_hash_type
-    use cell_topology
+    use cell_topology, only: get_face_nodes, get_link_face_nodes, facet_parity
 
     integer, intent(in) :: xcnode(:), cnode(:)
     integer, intent(in) :: xlnode(:), lnode(:)
@@ -38,9 +45,9 @@ contains
       integer, allocatable :: face(:) ! face node list (outward and normalized)
     end type table_entry
     type(table_entry), allocatable :: bin_table(:)
-    
+
     ncell = size(xcnode) - 1
-    
+
     !! Generate XCNHBR: CNHBR(XCNHBR(J):XCNHBR(J+1)-1) will store the face
     !! neighbors of cell J.  We infer the cell type from the number of nodes.
     allocate(xcnhbr(size(xcnode)))
@@ -60,7 +67,7 @@ contains
       end select
     end do
     allocate(cnhbr(xcnhbr(ncell+1)-1))
-    
+
     n = size(cnhbr)
     allocate(bin_table(n))
 
@@ -86,13 +93,13 @@ contains
       end associate
     end do
     max_bin_size = maxval(xbin)
-          
+
     !! Prepare XBIN: bin J will be BIN_TABLE(XBIN(J):XBIN(J+1)-1)
     xbin(0) = 1
     do j = 1, ubound(xbin,1)
       xbin(j) = xbin(j-1) + xbin(j)
     end do
-    
+
     !! Fill the bin table; use XBIN as a temporary to hold the next free
     !! location for each bin.
     do j = 1, ncell
@@ -109,16 +116,16 @@ contains
         end do
       end associate
     end do
-    
+
     !! Restore XBIN: the index of the first element of bin J is now XBIN(J-1)
     !! instead of XBIN(J) as it should be -- fix this.
     do j = ubound(xbin,1), 1, -1
       xbin(j) = xbin(j-1)
     end do
     xbin(0) = 1
-    
+
     allocate(p(max_bin_size))
-    
+
     cnhbr = 0
     bad_faces = 0
     stat = 0
@@ -140,7 +147,7 @@ contains
               if (bin(i)%j == j) then ! found myself
                 p(i) = 1
               else
-                p(i) = parity(bin(i)%face, face)
+                p(i) = facet_parity(bin(i)%face, face)
                 select case (p(i))
                 case (-1) ! a good match (if only one)
                   nmatch = 1 + nmatch
@@ -168,7 +175,7 @@ contains
         end do
       end associate
     end do
-    
+
     !! Lookup the two link faces in the table to get the neighbor cell numbers.
     !! The face node list must be arranged to match that stored in the table.
     nlink = size(xlnode) - 1
@@ -181,6 +188,7 @@ contains
           associate (bin => bin_table(xbin(n):xbin(n+1)-1))
             lnhbr(k,j) = 0  ! default value
             do i = size(bin), 1, -1
+              if (size(bin(i)%face) /= size(face)) cycle
               if (all(bin(i)%face == face)) exit
             end do
             if (i > 0) then  ! found a match ...
@@ -196,7 +204,7 @@ contains
         end do
       end associate
     end do
-    
+
   end subroutine get_cell_neighbor_array
 
 
@@ -215,7 +223,7 @@ contains
     type(facet_table) :: table
 
     ncell = size(xcnode) - 1
-    
+
     !! Generate XCFACE: CFACE(XCFACE(J):XCFACE(J+1)-1) will store the face
     !! numbers of cell J.  We infer the cell type from the number of nodes.
     allocate(xcface(size(xcnode)))
@@ -235,7 +243,7 @@ contains
       end select
     end do
     allocate(cface(xcface(ncell+1)-1))
-    
+
     ASSERT(minval(cnode) > 0)
 
     max_face = size(cface)  ! worst case; realistically, closer to half this
