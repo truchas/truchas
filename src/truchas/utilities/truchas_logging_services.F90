@@ -159,6 +159,10 @@
 !!    executable was run.  After each write the output buffer is flushed.
 !!    The file is created only if needed.  This is NOT a collective procedure.
 !!
+!!  CALL TLS_GET_DEBUG_UNIT (UNIT) returns the logical unit that the
+!!    processor-specific debug file is opened on.  If the file is not already
+!!    open, this call opens the file as well.  This is NOT a collective procedure.
+!!
 !! IMPLEMENTATION NOTES
 !!
 !! * I've continued the tradition of logging to both the terminal (stdout) and
@@ -198,7 +202,7 @@ module truchas_logging_services
   public :: TLS_initialize, TLS_finalize, TLS_set_verbosity, TLS_logging_unit
   public :: TLS_info, TLS_warn, TLS_error, TLS_fatal, TLS_exit
   public :: TLS_fatal_if_any, TLS_fatal_if_IOP
-  public :: TLS_panic, TLS_debug
+  public :: TLS_panic, TLS_debug, TLS_get_debug_unit
 
   interface TLS_info
     module procedure TLS_info_scalar, TLS_info_array, TLS_info_advance
@@ -515,16 +519,27 @@ contains
  !!
 
   subroutine TLS_debug (message)
+    character(*), intent(in) :: message
+    if (dbg_unit == -1) call open_debug_file
+    write(dbg_unit,'(a)') message
+  end subroutine TLS_debug
+
+  subroutine TLS_get_debug_unit (unit)
+    integer, intent(out) :: unit
+    if (dbg_unit == -1) call open_debug_file
+    unit = dbg_unit
+  end subroutine TLS_get_debug_unit
+
+  subroutine open_debug_file
 #ifndef SUPPORTS_NEWUNIT
     use truchas_env, only: new_unit
 #endif
     use parallel_communication, only: nPE, this_PE
     use string_utilities, only: i_to_c
-    character(*), intent(in) :: message
     character(16) :: string
     character(128) :: dbg_file
     integer :: n, ios
-    if (dbg_unit == -1) then  ! first time -- open the debug file
+    if (dbg_unit == -1) then  ! open the debug file
       write(string,'(i0)') nPE
       n = len_trim(string)
       write(string,'("(a,i",i0,".",i0,")")') n, n
@@ -539,8 +554,8 @@ contains
       if (ios /= 0) call TLS_panic ('TLS_DEBUG: error opening file "' // trim(dbg_file) // &
                                     '": iostat=' // i_to_c(ios))
     end if
-    write(dbg_unit,'(a)') message
-  end subroutine TLS_debug
+  end subroutine open_debug_file
+    
 
  !!
  !! COMPARISON OPERATORS FOR TYPE(VERB_LEVEL) OBJECTS
