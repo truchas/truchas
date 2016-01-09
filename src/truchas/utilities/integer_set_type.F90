@@ -64,12 +64,26 @@ module integer_set_type
     procedure, private, pass(rhs) :: set_to_array
     generic :: assignment(=) => set_to_array
     final :: integer_set_delete
+    procedure :: begin => set_begin
   end type integer_set
 
   type :: set_item
     integer :: value
     type(set_item), pointer :: next => null()
   end type set_item
+
+  type, public :: integer_set_iterator
+    class(set_item), pointer, private :: item => null()
+  contains
+    procedure :: next => iter_next
+    procedure :: at_end => iter_at_end
+    procedure :: value => iter_value
+  end type integer_set_iterator
+  
+  !! Defined INTEGER_SET_ITERATOR structure constructor
+  interface integer_set_interator
+    procedure set_begin
+  end interface
 
 contains
 
@@ -142,6 +156,9 @@ contains
     end do
   end subroutine set_to_array
 
+  !! Copy the sorted values in the set to the user provided array.  Its size
+  !! must be sufficiently large to store the values.  If larger, the values
+  !! of the unused elements are left unchanged.
   subroutine copy_to_array (this, array)
     integer, intent(inout) :: array(:)
     class(integer_set), intent(in) :: this
@@ -155,5 +172,33 @@ contains
       p => p%next
     end do
   end subroutine copy_to_array
+
+  !! Returns an INTEGER_SET_ITERATOR positioned to the first element of the set.
+  function set_begin (this) result (iter)
+    class(integer_set), intent(in) :: this
+    type(integer_set_iterator) :: iter
+    iter%item => this%head
+  end function set_begin
+
+!!!! INTEGER_SET_TYPE_ITERATOR TYPE-BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !! Advances the iterator to the next element in the set.
+  pure subroutine iter_next (this)
+    class(integer_set_iterator), intent(inout) :: this
+    if(associated(this%item)) this%item => this%item%next
+  end subroutine iter_next
+
+  !! Returns true if the iterator has reached the end; that is, it has
+  !! gone past the last element of the set.
+  pure logical function iter_at_end (this)
+    class(integer_set_iterator), intent(in) :: this
+    iter_at_end = .not.associated(this%item)
+  end function iter_at_end
+
+  !! Returns the value of the current element.
+  pure integer function iter_value (this)
+    class(integer_set_iterator), intent(in) :: this
+    iter_value = this%item%value
+  end function iter_value
 
 end module integer_set_type
