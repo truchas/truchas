@@ -74,6 +74,7 @@ module graph_type
     generic :: add_edge => graph_add_edge_one, graph_add_edge_many
     procedure :: add_clique => graph_add_clique
     procedure :: get_adjacency => graph_get_adjacency
+    procedure :: get_components => graph_get_components
   end type graph
 
 contains
@@ -147,5 +148,54 @@ contains
       call this%nbrs(j)%copy_to_array(adjncy(xadj(j):))
     end do
   end subroutine graph_get_adjacency
+
+  !! Return the connected components of the graph.
+  subroutine graph_get_components (this, ncomp, xcomp, comp)
+    class(graph), intent(in) :: this
+    integer, intent(out) :: ncomp
+    integer, allocatable, intent(out) :: xcomp(:), comp(:)
+    integer :: j
+    integer :: tag(this%n)
+    if (this%directed) return
+    ncomp = 0
+    tag = 0
+    do j = 1, this%n
+      if (tag(j) /= 0) cycle
+      ncomp = ncomp + 1
+      call tag_component (j)
+    end do
+    allocate(xcomp(ncomp+1),comp(this%n))
+    !! Prepare XCOMP; nodes in component N will be COMP(XCOMP(N):XCOMP(N+1)-1)
+    xcomp = 0
+    do j = 1, size(tag)
+      xcomp(1+tag(j)) = xcomp(1+tag(j)) + 1
+    end do
+    xcomp(1) = 1
+    do j = 2, size(xcomp)
+      xcomp(j) = xcomp(j) + xcomp(j-1)
+    end do
+    !! Fill COMP; XCOMP(N) stores the next free location for component N.
+    do j = 1, size(tag)
+      comp(xcomp(tag(j))) = j
+      xcomp(tag(j)) = xcomp(tag(j)) + 1
+    end do
+    !! Restore XCOMP; XCOMP(N) is now the start of component N+1 instead of N
+    do j = size(xcomp), 2, -1
+      xcomp(j) = xcomp(j-1)
+    end do
+    xcomp(1) = 1
+  contains
+    !! Tag all the nodes connected to ROOT with the current component number
+    recursive subroutine tag_component (root)
+      integer, intent(in) :: root
+      type(integer_set_iterator) :: iter
+      tag(root) = ncomp
+      iter = this%nbrs(root)%begin()
+      do while (.not.iter%at_end())
+        if (tag(iter%value()) == 0) call tag_component (iter%value())
+        call iter%next
+      end do
+    end subroutine
+  end subroutine graph_get_components
 
 end module graph_type

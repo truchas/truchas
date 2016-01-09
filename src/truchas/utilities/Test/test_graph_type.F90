@@ -18,17 +18,15 @@ program test_graph_module
   use,intrinsic :: f90_unix, only: exit
 #endif
   use graph_type
-  !use truchas_logging_services  ! because asserts in graph_type use it
   implicit none
   
   integer :: stat = 0
   
-  !call 
-  
   call test_0_nodes
   call test_basic
   call test_basic_self
-  call test1
+  call test_comp1
+  call test_comp2
   
   call exit (stat)
   
@@ -91,12 +89,43 @@ contains
     if (any(adjncy /= [2,3,1,2,3,1,2,3])) call write_fail ('test_basic_self: xadj wrong values')
   end subroutine test_basic_self
     
-  subroutine test1
-    type(graph) :: g
-    call g%init (3)
-    call g%add_clique ([1, 2, 3])
-  end subroutine test1
-
+  subroutine test_comp1
+    type(graph), allocatable :: g
+    integer :: ncomp
+    integer, allocatable :: xcomp(:), comp(:)
+    allocate(g)
+    call g%init (4)
+    call g%get_components (ncomp, xcomp, comp)
+    if (ncomp /= 4) call write_fail ('test_comp1: wrong ncomp value')
+    if (size(xcomp) /= 5) call write_fail ('test_comp1: wrong xcomp size')
+    if (any(xcomp /= [1,2,3,4,5])) call write_fail ('test_comp1: wrong xcomp values')
+    if (size(comp) /= 4) call write_fail ('test_comp1: wrong comp size')
+    if (any(comp /= [1,2,3,4])) call write_fail ('test_comp1: wring comp values')
+  end subroutine test_comp1
+  
+  subroutine test_comp2
+    type(graph), allocatable :: g
+    integer :: ncomp
+    integer, allocatable :: xcomp(:), comp(:)
+    allocate(g)
+    call g%init (9)
+    call g%add_clique ([1,3,5])
+    call g%add_clique ([4,6,8,9])
+    call g%get_components (ncomp, xcomp, comp)
+    if (ncomp /= 4) call write_fail ('test_comp2: wrong ncomp value')
+    if (size(xcomp) /= 5) call write_fail ('test_comp2: wrong xcomp size')
+    if (any(xcomp /= [1,4,5,9,10])) call write_fail ('test_comp2: wrong xcomp values')
+    if (size(comp) /= 9) call write_fail ('test_comp2: wrong comp size')
+    if (any(comp /= [1,3,5,2,4,6,8,9,7])) call write_fail ('test_comp2: wrong comp values')
+    call g%add_edge (2, [5,7])
+    call g%add_edge (4, 7)
+    call g%get_components (ncomp, xcomp, comp)
+    if (ncomp /= 1) call write_fail ('test_comp2: wrong ncomp value')
+    if (size(xcomp) /= 2) call write_fail ('test_comp2: wrong xcomp size')
+    if (any(xcomp /= [1,10])) call write_fail ('test_comp2: wrong xcomp values')
+    if (size(comp) /= 9) call write_fail ('test_comp2: wrong comp size')
+    if (any(comp /= [1,2,3,4,5,6,7,8,9])) call write_fail ('test_comp2: wrong comp values')
+  end subroutine test_comp2
 
   subroutine write_fail (errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit
