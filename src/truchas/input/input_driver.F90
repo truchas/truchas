@@ -53,6 +53,7 @@ contains
     use mesh_manager,              only: peek_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
+    use additive_manufacturing_data,     only: am_enabled, read_am_namelists
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use phase_namelist,            only: read_phase_namelists
@@ -167,6 +168,11 @@ contains
     ! Read diffusion solver namelists
     if (ds_enabled) then
       call read_ds_namelists (lun)
+    end if
+
+    ! Read additive manufacturing solver namelists
+    if (am_enabled) then
+      call read_am_namelists (lun)
     end if
 
     ! read probe information

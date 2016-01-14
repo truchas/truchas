@@ -196,6 +196,7 @@ call hijack_truchas ()
     !   Cycle through each time step
     !---------------------------------------------------------------------------
     use advection_module,         only: ADVECT_MASS
+    use additive_manufacturing_driver,  only: deposit_energy_and_mass
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST, &
                                         CYCLE_OUTPUT_DRIVER
     use fluid_flow_module,        only: FLUID_FLOW_DRIVER
@@ -209,6 +210,7 @@ call hijack_truchas ()
     use timing_tree
     use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
+    use additive_manufacturing_data, only: am_enabled
     use truchas_logging_services
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -313,6 +315,12 @@ call hijack_truchas ()
        ! move materials and associated quantities
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
        call ADVECT_MASS ()
+
+       ! if using AM, deposit energy and mass at material-void interface
+       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before additive manufacturing:')
+       if ( am_enabled ) then
+           call deposit_energy_and_mass()
+       end if
 
        ! solve heat transfer and phase change
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')

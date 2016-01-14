@@ -126,6 +126,9 @@ CONTAINS
     heat_species_transport = .false.
     number_of_species = 0
 
+    ! Additive manufacturing
+    use_additive_manufacturing = .false.
+
     ! solid_mechanics
     solid_mechanics = .false.
     solid_mechanics_body_force = .false.
@@ -169,6 +172,7 @@ CONTAINS
     use solid_mechanics_input,  only: solid_mechanics, &
                                       solid_mechanics_body_force
     use diffusion_solver_data,  only: ds_enabled, system_type, num_species
+    use additive_manufacturing_data, only: am_enabled
     
     integer, intent(in) :: lun
 
@@ -191,7 +195,8 @@ CONTAINS
                        solid_mechanics_body_force,     &
                        void_pressure,                  &
                        electromagnetics,               &
-                       applyflow
+                       applyflow,                      &
+                       use_additive_manufacturing
 
     ! The following option is left here for possible future use (MAC)
     ! As discussed 5/3/05 this is being removed to avoid confusion regarding
@@ -271,6 +276,11 @@ CONTAINS
       ds_enabled = .false.
     end if
 
+    ! Set am_enabled if additive_manufacturing = .true.
+    if (use_additive_manufacturing) then
+        am_enabled = .true.
+    end if
+
   END SUBROUTINE PHYSICS_INPUT
  
   SUBROUTINE PHYSICS_INPUT_PARALLEL ()
@@ -313,6 +323,7 @@ CONTAINS
        call PGSLib_BCAST (solid_mechanics)
        call PGSLib_BCAST (solid_mechanics_body_force)
        call PGSLib_BCAST (electromagnetics)
+       call PGSLib_BCAST (use_additive_manufacturing)
 
     end if BROADCAST_VARIABLES
  

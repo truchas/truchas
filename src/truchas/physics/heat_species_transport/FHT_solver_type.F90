@@ -39,6 +39,8 @@ module FHT_solver_type
   use unstr_mesh_type
   use parallel_communication
   use index_partitioning
+  use additive_manufacturing_data, only: am_enabled
+  use additive_manufacturing_driver, only: compute_add_manuf_source_for_ds
   implicit none
   private
 
@@ -226,14 +228,20 @@ contains
     this%void_cell = (void_vol_frac > 1.0_r8 - this%epsilon)
     this%tot_void_cell = (void_vol_frac == 1.0_r8)
     
-    !! Advance the heat density due to advection.  dQ is the advected heat
-    !! increment, and Tmin and Tmax are give the min and max temperatures
-    !! of the heat parcels advected into (or remaining in) the cells.  These
-    !! are used later when solving for temperature given the heat density.
+    !! Advance the heat density due to advection.  dQ is the sheat
+    !! increment from advection and, optionally, energy deposition at the 
+    !! void-material interface; Tmin and Tmax bounds on the min and max temperatures,
+    !! used when solving for temperature given the heat density.
+    !! TODO: MADE NEED TO CHANGE HOW Tmax and Tmin ARE COMPUTED IN AM MODULE
     ulast => most_recent_solution(this%uhist)
     call FHT_model_get_cell_temp_view (this%model, ulast, Tcell)
     allocate(dQ(size(Tcell)), Tmin(size(Tcell)), Tmax(size(Tcell)))
-    call compute_advected_heat (Tcell, dQ, Tmin, Tmax)
+    if (am_enabled) then 
+        call compute_add_manuf_source_for_ds (this%mesh%ncell_onP, this%mesh%cell_ip, &
+                                              dQ, Tmin, Tmax)
+    else 
+        call compute_advected_heat (Tcell, dQ, Tmin, Tmax)
+    end if 
     do j = 1, this%mesh%ncell_onP
       if (this%tot_void_cell(j)) then
         this%H(j) = this%Hlast(j)
