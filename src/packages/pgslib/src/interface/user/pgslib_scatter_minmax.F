@@ -42,7 +42,7 @@ CONTAINS
 #define _INCLUDE_FILE_ "scatter.fpp"
 #define _OP_(a,b) MAX(a,b)
 #define _OP_NAME_ Max_Scatter
-#define _GEN_OP_ID_(op_null) MAXVAL( (/ op_null /) , MASK=.FALSE.)
+#define _GEN_OP_ID_(data_type,op_null) MAXVAL([data_type::])
 #define _DST_DIMENSION_ _NARROW_DIM_
 #define _SRC_DIMENSION_ _FAT_DIM_
 #include "arithmetic_gath-scatt.fpp"
@@ -56,7 +56,7 @@ CONTAINS
 #define _INCLUDE_FILE_ "scatter.fpp"
 #define _OP_(a,b) MIN(a,b)
 #define _OP_NAME_ Min_Scatter
-#define _GEN_OP_ID_(op_null) MINVAL( (/ op_null /) , MASK=.FALSE.)
+#define _GEN_OP_ID_(data_type,op_null) MINVAL([data_type::])
 #define _DST_DIMENSION_ _NARROW_DIM_
 #define _SRC_DIMENSION_ _FAT_DIM_
 #include "arithmetic_gath-scatt.fpp"

@@ -135,7 +135,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MIN_SCATTER_SCALAR_INT
 #define _DATA_TYPE_    integer
-#define _OP_ID_        MINVAL(Src,   MASK=.FALSE.)
+#define _OP_ID_        MINVAL([integer::])
 #define _MIN_
 
 #include "scatter_prefix_parallel_op_s_s_include.fpp"
@@ -146,7 +146,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MIN_SCATTER_SCALAR_SINGLE
 #define _DATA_TYPE_    real
-#define _OP_ID_        MINVAL(Src, MASK=.FALSE.)
+#define _OP_ID_        MINVAL([real::])
 #define _MIN_
 
 #include "scatter_prefix_parallel_op_s_s_include.fpp"
@@ -157,7 +157,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MIN_SCATTER_SCALAR_DOUBLE
 #define _DATA_TYPE_    real(r8)
-#define _OP_ID_        MINVAL(Src, MASK=.FALSE.)
+#define _OP_ID_        MINVAL([real(r8)::])
 #define _MIN_
 
 #include "scatter_prefix_parallel_op_s_s_include.fpp"
@@ -168,7 +168,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MIN_SCATTER_VECTOR_INT
 #define _DATA_TYPE_    integer
-#define _OP_ID_        MINVAL(Src,   MASK=.FALSE.)
+#define _OP_ID_        MINVAL([integer::])
 #define _MIN_
 
 #include "scatter_prefix_parallel_op_s_v_include.fpp"
@@ -179,7 +179,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MIN_SCATTER_VECTOR_SINGLE
 #define _DATA_TYPE_  real
-#define _OP_ID_      MINVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MINVAL([real::])
 #define _MIN_
 
 #include "scatter_prefix_parallel_op_s_v_include.fpp"
@@ -190,7 +190,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MIN_SCATTER_VECTOR_DOUBLE
 #define _DATA_TYPE_  real(r8)
-#define _OP_ID_      MINVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MINVAL([real(r8)::])
 #define _MIN_
 
 #include "scatter_prefix_parallel_op_s_v_include.fpp"
@@ -201,7 +201,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MAX_SCATTER_SCALAR_INT
 #define _DATA_TYPE_  integer
-#define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MAXVAL([integer::])
 #define _MAX_
 
 #include "scatter_prefix_parallel_op_s_s_include.fpp"
@@ -212,7 +212,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MAX_SCATTER_SCALAR_SINGLE
 #define _DATA_TYPE_  real
-#define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MAXVAL([real::])
 #define _MAX_
 
 #include "scatter_prefix_parallel_op_s_s_include.fpp"
@@ -223,7 +223,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MAX_SCATTER_SCALAR_DOUBLE
 #define _DATA_TYPE_  real(r8)
-#define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MAXVAL([real(r8)::])
 #define _MAX_
 
 
@@ -235,7 +235,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MAX_SCATTER_VECTOR_INT
 #define _DATA_TYPE_  integer
-#define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MAXVAL([integer::])
 #define _MAX_
 
 #include "scatter_prefix_parallel_op_s_v_include.fpp"
@@ -246,7 +246,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MAX_SCATTER_VECTOR_SINGLE
 #define _DATA_TYPE_  real
-#define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MAXVAL([real::])
 #define _MAX_
 
 #include "scatter_prefix_parallel_op_s_v_include.fpp"
@@ -257,7 +257,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_ MAX_SCATTER_VECTOR_DOUBLE
 #define _DATA_TYPE_  real(r8)
-#define _OP_ID_      MAXVAL(Src, MASK=.FALSE.)
+#define _OP_ID_      MAXVAL([real(r8)::])
 #define _MAX_
 
 #include "scatter_prefix_parallel_op_s_v_include.fpp"

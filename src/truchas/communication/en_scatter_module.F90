@@ -173,7 +173,7 @@ CONTAINS
   !========== EN_MIN_SCATTER_SCALAR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_SCALAR_INT
 #define _DATA_TYPE_     integer
-#define _OP_ID_         MINVAL( (/0/), MASK=.false.)
+#define _OP_ID_         MINVAL([integer::])
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -183,7 +183,7 @@ CONTAINS
   !========== EN_MIN_SCATTER_SCALAR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_SCALAR_SINGLE
 #define _DATA_TYPE_     real
-#define _OP_ID_         MINVAL( (/0.0/), MASK=.false.)
+#define _OP_ID_         MINVAL([real::])
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -193,7 +193,7 @@ CONTAINS
   !========== EN_MIN_SCATTER_SCALAR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_SCALAR_DOUBLE
 #define _DATA_TYPE_     real(r8)
-#define _OP_ID_         MINVAL( (/0.0_r8/), MASK=.false.)
+#define _OP_ID_         MINVAL([real(r8)::])
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -203,7 +203,7 @@ CONTAINS
   !========== EN_MIN_SCATTER_VECTOR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_VECTOR_INT
 #define _DATA_TYPE_     integer
-#define _OP_ID_         MINVAL( (/0/), MASK=.false.)
+#define _OP_ID_         MINVAL([integer::])
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -214,7 +214,7 @@ CONTAINS
   !========== EN_MIN_SCATTER_VECTOR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_VECTOR_SINGLE
 #define _DATA_TYPE_     real
-#define _OP_ID_         MINVAL( (/0.0/), MASK=.false.)
+#define _OP_ID_         MINVAL([real::])
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -224,7 +224,7 @@ CONTAINS
   !========== EN_MIN_SCATTER_VECTOR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MIN_SCATTER_VECTOR_DOUBLE
 #define _DATA_TYPE_     real(r8)
-#define _OP_ID_         MINVAL( (/0.0_r8/), MASK=.false.)
+#define _OP_ID_         MINVAL([real(r8)::])
 #define _OP_NAME_       min_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -234,7 +234,7 @@ CONTAINS
   !========== EN_MAX_SCATTER_SCALAR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_SCALAR_INT
 #define _DATA_TYPE_     integer
-#define _OP_ID_         MAXVAL( (/0/), MASK=.false.)
+#define _OP_ID_         MAXVAL([integer::])
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -244,7 +244,7 @@ CONTAINS
   !========== EN_MAX_SCATTER_SCALAR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_SCALAR_SINGLE
 #define _DATA_TYPE_     real
-#define _OP_ID_         MAXVAL( (/0.0/), MASK=.false.)
+#define _OP_ID_         MAXVAL([real::])
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -254,7 +254,7 @@ CONTAINS
   !========== EN_MAX_SCATTER_SCALAR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_SCALAR_DOUBLE
 #define _DATA_TYPE_     real(r8)
-#define _OP_ID_         MAXVAL( (/0.0_r8/), MASK=.false.)
+#define _OP_ID_         MAXVAL([real(r8)::])
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -264,7 +264,7 @@ CONTAINS
   !========== EN_MAX_SCATTER_VECTOR_INT  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_VECTOR_INT
 #define _DATA_TYPE_     integer
-#define _OP_ID_         MAXVAL( (/0/), MASK=.false.)
+#define _OP_ID_         MAXVAL([integer::])
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -275,7 +275,7 @@ CONTAINS
   !========== EN_MAX_SCATTER_VECTOR_SINGLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_VECTOR_SINGLE
 #define _DATA_TYPE_     real
-#define _OP_ID_         MAXVAL( (/0.0/), MASK=.false.)
+#define _OP_ID_         MAXVAL([real::])
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))
@@ -285,7 +285,7 @@ CONTAINS
   !========== EN_MAX_SCATTER_VECTOR_DOUBLE  ==============================
 #define _ROUTINE_NAME_  EN_MAX_SCATTER_VECTOR_DOUBLE
 #define _DATA_TYPE_     real(r8)
-#define _OP_ID_         MAXVAL( (/0.0_r8/), MASK=.false.)
+#define _OP_ID_         MAXVAL([real(r8)::])
 #define _OP_NAME_       max_scatter
 #define _SRC_DIMENSION_ _DIMENSION_((nvc, ncells))
 #define _DST_DIMENSION_ _DIMENSION_((nnodes))

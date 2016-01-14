@@ -26,12 +26,10 @@
 
 #ifdef _MIN_
 #define _PREFIX_OP_ MIN
-#define _OP_ID_ MINVAL(Src, MASK=.FALSE.)
 #endif
 
 #ifdef _MAX_
 #define _PREFIX_OP_ MAX
-#define _OP_ID_ MAXVAL(Src, MASK=.FALSE.)
 #endif
 
 #ifndef _PREFIX_OP_

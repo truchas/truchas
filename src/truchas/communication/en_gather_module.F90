@@ -140,7 +140,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_  EN_MIN_GATHER_INT
 #define _DATA_TYPE_     integer
-#define _OP_ID_         MINVAL((/0/), MASK=.false.)
+#define _OP_ID_         MINVAL([integer::])
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MIN
 
@@ -150,7 +150,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_  EN_MIN_GATHER_SINGLE
 #define _DATA_TYPE_     real
-#define _OP_ID_         MINVAL((/0.0/), MASK=.false.)
+#define _OP_ID_         MINVAL([real::])
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MIN
 
@@ -160,7 +160,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_  EN_MIN_GATHER_DOUBLE
 #define _DATA_TYPE_     real(r8)
-#define _OP_ID_         MINVAL((/0.0_r8/), MASK=.false.)
+#define _OP_ID_         MINVAL([real(r8)::])
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MIN
 
@@ -170,7 +170,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_  EN_MAX_GATHER_INT
 #define _DATA_TYPE_     integer
-#define _OP_ID_         MAXVAL((/0/), MASK=.false.)
+#define _OP_ID_         MAXVAL([integer::])
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MAX
 
@@ -180,7 +180,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_  EN_MAX_GATHER_SINGLE
 #define _DATA_TYPE_     real
-#define _OP_ID_         MAXVAL((/0.0/), MASK=.false.)
+#define _OP_ID_         MAXVAL([real::])
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MAX
 
@@ -190,7 +190,7 @@ CONTAINS
 
 #define _ROUTINE_NAME_  EN_MAX_GATHER_DOUBLE
 #define _DATA_TYPE_     real(r8)
-#define _OP_ID_         MAXVAL((/0.0_r8/), MASK=.false.)
+#define _OP_ID_         MAXVAL([real(r8)::])
 #define _DST_DIMENSION_ _DIMENSION_((ncells))
 #define _PREFIX_OP_     MAX
 
