@@ -166,6 +166,27 @@ list(APPEND PHYSICS_FILES
            physics/solid_mechanics/viscoplasticity.F90
            physics/solid_mechanics/tm_density.F90)
 
+# - additive manufacturing
+list(APPEND PHYSICS_FILES
+           physics/additive_manufacturing/additive_manufacturing_data.F90
+           physics/additive_manufacturing/am_coord_system_class.F90
+           physics/additive_manufacturing/am_coord_system_block_type.F90
+           physics/additive_manufacturing/am_coord_system_data.F90
+           physics/additive_manufacturing/am_coord_system_factory.F90
+           physics/additive_manufacturing/interface_energy_class.F90
+           physics/additive_manufacturing/interface_energy_gaussian_type.F90
+           physics/additive_manufacturing/interface_energy_factory.F90
+           physics/additive_manufacturing/interface_energy_data.F90
+           physics/additive_manufacturing/interface_mass_data.F90
+           physics/additive_manufacturing/interface_mass_class.F90
+           physics/additive_manufacturing/interface_mass_gaussian_type.F90
+           physics/additive_manufacturing/interface_mass_factory.F90
+           physics/additive_manufacturing/am_state_type.F90
+           physics/additive_manufacturing/root_finder_type.F90
+           physics/additive_manufacturing/add_manuf_type.F90
+           physics/additive_manufacturing/additive_manufacturing_driver.F90)
+
+
 # Preprocess flags	 
 set(PHYSICS_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/utilities

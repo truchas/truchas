@@ -116,10 +116,6 @@ module FHT_solver_type
   public :: FHT_solver_get_stepping_stats
   public :: FHT_solver_get_cell_temp_grad
 
-  !!!!! REMOVE !!!!!!
-  real(r8), private, save :: elapsed_time = 0.0_r8
-  !!!!! REMOVE !!!!!!
-
 contains
 
   subroutine FHT_solver_init (this, mmf, model, params)
@@ -226,6 +222,19 @@ contains
     real(r8) :: dt, void_vol_frac(this%mesh%ncell)
     real(r8), allocatable :: dQ(:), Tmin(:), Tmax(:)
     integer, allocatable :: fnbr(:,:)
+    !!!!! REMOVE !!!!!!
+    logical :: exist
+    !!!!! REMOVE !!!!!!
+
+    !!!!! REMOVE !!!!!!
+    inquire(file="ds_convergence_failures.log", exist=exist)
+    if (exist) then
+      open(777, status='old', position='append', &
+           file='ds_convergence_failures.log', action='write')
+    else
+      open(777, status='new', file='ds_convergence_failures.log', action='write')
+    end if
+    !!!!! REMOVE !!!!!!
 
     !! Update the void and totally-void domain masks.
     call mmf_get_void_vol_frac (this%mmf, void_vol_frac)
@@ -252,12 +261,13 @@ contains
       else
         this%H(j) = this%Hlast(j) + dQ(j) / this%mesh%volume(j)
       end if
-      !!!!! TODO: CHANGE HOW THIS IS DONE !!!!!
+      !!!!! REMOVE !!!!!
       if (this%H(j) < 0) then
+        print *, "FHT_solver_advance_state: predicted H: ", this%H(j), this%Hlast(j)
         Tcell(j) = 300
         call pmf_eval (this%model%H_of_T, j, Tcell(j:j), this%H(j))
       end if
-      !!!!! TODO: CHANGE HOW THIS IS DONE !!!!!
+      !!!!! REMOVE !!!!!
     end do
     deallocate(dQ)
     
@@ -331,27 +341,32 @@ contains
     !! at non-void cells and faces.  Void cell and face values are dummies.
     dt = t - most_recent_time(this%uhist)
     call backward_euler_solve (this, t, dt, this%H, this%u, stat)
- !   if (stat /= 0) return
-    !!!!! REMOVE, UNCOMMENT ABOVE !!!!!
+    !!!!! REMOVE, UNCOMMENT ABOVE !!!!!!
     if (stat /= 0) then
+      write(777,*) "timestep: ", t
       stat = 0
     end if
-    !!!!! REMOVE !!!!!
+    close(777)
+    stat = 0
+    !!!!! REMOVE !!!!!!
+    if (stat /= 0) return
 
-    !!!!! TODO: CHANGE HOW THIS IS DONE !!!!!
+    !!!!! ADDED FOR ADDITIVE MANUFACTURING !!!!!
     allocate(Tcell(this%mesh%ncell))
     call FHT_model_get_cell_temp_copy (this%model, this%u, Tcell)
     !!!!! Note: cell face temps are no longer consistent with cell centers temps
     do j = 1, this%mesh%ncell_onP
       if (this%tot_void_cell(j)) cycle
       if (Tcell(j) < 0) then
+        print *, "FHT_solver_advance_state, solver: solver : ", Tcell(j)
         Tcell(j) = 300
         call pmf_eval (this%model%H_of_T, j, Tcell(j:j), this%H(j))
+       ! Tcell(j) = 300
       end if
     end do
     deallocate(Tcell)
-    !!!!! TODO: CHANGE HOW THIS IS DONE !!!!!
-
+    !!!!! ADDED FOR ADDITIVE MANUFACTURING !!!!!
+    !!!!! REMOVE !!!!!!
     
     !! Advance the cell temperature for void cells.  For essentially-void cells
     !! this is the temperature corresponding to the advanced heat density.
@@ -361,12 +376,11 @@ contains
         Tcell(j) = 0.0_r8
       else if (this%void_cell(j)) then  ! essentially void cell
         call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
-        !!!!! TODO: CHANGE HOW THIS IS DONE !!!!!
+        !!!!! REMOVE !!!!!
         if (Tcell(j) < 0) then
-          Tcell(j) = 300
-          call pmf_eval (this%model%H_of_T, j, Tcell(j:j), this%H(j))
+          print *, "FHT_solver_advance_state: T_of_H: ", Tcell(j), this%H(j)
         end if
-        !!!!! TODO: CHANGE HOW THIS IS DONE !!!!!
+        !!!!! REMOVE !!!!!
       end if
     end do
     deallocate(Tmin, Tmax)
@@ -392,7 +406,6 @@ contains
     this%t = t
     
     this%state_is_pending = .true.
-
     
     !! Diagnostic output
     
@@ -542,7 +555,7 @@ contains
   end subroutine gmv_write_field
   subroutine gmv_write_face_field (this, array, name)
     use unstr_mesh_gmv
-    use gmvwrite_c_binding
+    use fgmvwrite
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
     character(*), intent(in) :: name

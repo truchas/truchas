@@ -125,6 +125,9 @@ contains
     if (this%have_fluid_flow) then
       call update_mmf_from_matl (this%mmf)
       if (this%have_void) call cull_material_fragments (this%mmf, cutvof)
+      !!!!! REMOVE, UNCOMMENT ABOVE !!!!!!
+     ! if (this%have_void) call cull_material_fragments (this%mmf, 1d-8)
+      !!!!! REMOVE, UNCOMMENT ABOVE !!!!!!
     end if
     
     if (this%have_heat_transfer) call update_adv_heat

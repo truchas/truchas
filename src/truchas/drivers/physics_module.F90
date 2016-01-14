@@ -26,5 +26,6 @@ module physics_module
   logical, public, save :: species_transport = .false.
   logical, public, save :: heat_species_transport = .false.
   integer, public, save :: number_of_species = 0
+  logical, public, save :: use_additive_manufacturing = .false.
   
 end module physics_module

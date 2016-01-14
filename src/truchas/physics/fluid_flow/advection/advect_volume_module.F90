@@ -90,6 +90,9 @@ CONTAINS
     ! Local Variables
     integer :: status
     integer :: p, vps
+    !!!! REMOVE !!!!
+    integer :: m, n
+    !!!! REMOVE !!!!
     real(r8), dimension(:,:,:), allocatable :: Volume_Flux_Sub
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -162,7 +165,13 @@ CONTAINS
 
        ! Make sure volume fractions of a particular material are within
        ! the allowed range (0 <= Vof <= 1) and that all materials sum to one.
+       !!!!! REMOVE !!!!!
+     !  print *, "before VOF_BOUNDS: ", maxval(abs(Zone%Vc(3)))
+       !!!!! REMOVE !!!!!
        call VOF_BOUNDS (Vof, Volume_Flux_Tot)
+       !!!!! REMOVE !!!!!
+    !   print *, "after VOF_BOUNDS: ", maxval(abs(Zone%Vc(3)))
+       !!!!! REMOVE !!!!!
 
     end do FLUXING_PASSES
 
@@ -487,7 +496,7 @@ CONTAINS
                       if (.not. Maxed(m) .and. .not.isImmobile(m)) number_not_maxed = number_not_maxed + 1
                    end do
                    if (number_not_maxed == 0) then
-                       call TLS_panic ('FLUX_RENORM: cannot reassign face flux to any other material')
+                       call TLS_fatal ('FLUX_RENORM: cannot reassign face flux to any other material')
                    endif
                    Ratio = (Total_Face_Flux - Sum) / number_not_maxed
                    do m = 1,nmat
@@ -537,6 +546,7 @@ CONTAINS
     end do
 
   END SUBROUTINE VOLUME_ADVANCE
+
 
   SUBROUTINE VOF_BOUNDS (Vof, Volume_Flux_Tot)
     !=======================================================================
