@@ -38,7 +38,7 @@ MODULE MESH_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: ndim, nfc, nvc, nvf, nec
+  use mesh_parameter_module, only: ndim, nfc, nvc, nvf, nec
   use var_vector_types
   implicit none
   private
@@ -197,6 +197,10 @@ MODULE MESH_MODULE
      module procedure CELL_DISTRIBUTE
   end interface
   
+  ! Mask arrays for face and node sets read from mesh file 
+  integer, pointer, public, save :: Mesh_Face_Set(:,:,:) => NULL()
+  integer, pointer, public, save :: Mesh_Face_Set_Tot(:,:,:) => NULL()
+
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
@@ -270,7 +274,7 @@ CONTAINS
     !   Collate a distributed mesh into a single large mesh on IO PE
     !==================================================================
     use parallel_info_module, only: p_info
-    use parameter_module,     only: ncells_tot, nvc, ncells
+    use mesh_parameter_module, only: ncells_tot, nvc, ncells
     use pgslib_module,        only: PGSLib_COLLATE
 
     ! Arguments
@@ -300,7 +304,7 @@ CONTAINS
     !   Collate a distributed vertex into a single large vertex on IO PE
     !==================================================================
     use parallel_info_module, only: p_info
-    use parameter_module,     only: nnodes_tot, nnodes
+    use mesh_parameter_module, only: nnodes_tot, nnodes
     use pgslib_module,        only: PGSLib_COLLATE
 
     ! Arguments
@@ -331,7 +335,7 @@ CONTAINS
     !   Collate a distributed cell into a single large cell on IO PE
     !==================================================================
     use parallel_info_module, only: p_info
-    use parameter_module,     only: ncells_tot, ncells
+    use mesh_parameter_module, only: ncells_tot, ncells
 
     ! Arguments
     type(CELL_GEOMETRY), dimension(ncells), intent(IN) :: Cell
@@ -354,7 +358,7 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed cell into a single large cell on IO PE
     !==================================================================
-    use parameter_module,     only: ndim, nfc
+    use mesh_parameter_module, only: ndim, nfc
     use pgslib_module,        only: PGSLib_COLLATE
 
     ! Arguments
@@ -423,7 +427,7 @@ CONTAINS
     !   Permute cell according to Permuter vector
     !   Global version, so Permuter must be global indices
     !==================================================================
-    use parameter_module,     only: ndim, nfc
+    use mesh_parameter_module, only: ndim, nfc
     use pgslib_module,        only: PGSLib_Permute,    &
                                     PGSLIB_Deallocate_Trace, &
                                     PGSLib_GS_Trace
@@ -509,7 +513,7 @@ CONTAINS
     !   mesh data structure changes, this routine must be updated too.
     !
     !====================================================================
-    use parameter_module, only: ncells, nfc, nvc
+    use mesh_parameter_module, only: ncells, nfc, nvc
     use pgslib_module,    only: PGSLib_DIST
 
     ! Arguments
@@ -561,7 +565,7 @@ CONTAINS
     !   data structure changes this routine must be updated too.
     !
     !====================================================================
-    use parameter_module,     only: ndim, nnodes
+    use mesh_parameter_module, only: ndim, nnodes
     use pgslib_module,        only: PGSLib_DIST
 
     ! Arguments
@@ -592,7 +596,7 @@ CONTAINS
     !   data structure changes this routine must be updated too.
     !
     !====================================================================
-    use parameter_module,     only: ncells
+    use mesh_parameter_module, only: ncells
     use pgslib_module,        only: PGSLib_DIST
 
     ! Arguments

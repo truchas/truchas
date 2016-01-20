@@ -42,9 +42,7 @@ CONTAINS
     !      
     !=======================================================================
 
-    use gs_module, only: EE_GATHER
-    use mesh_module, only: Cell, Mesh
-    use parameter_module, only: ncells, ndim, nfc
+    use legacy_mesh_api, only: ncells, ndim, nfc, Cell, Mesh, EE_GATHER
 
     ! Argument List
     real(r8), dimension(:), intent(IN) :: Phi
@@ -108,8 +106,7 @@ CONTAINS
     !      
     !=======================================================================
     use cutoffs_module,   only: alittle
-    use parameter_module, only: ncells
-    use mesh_module,      only: Cell
+    use legacy_mesh_api,  only: ncells, Cell
 
     ! Arguments
     real(r8), dimension(:),   intent(IN)  :: Extrapolated_Value
@@ -202,8 +199,7 @@ CONTAINS
     !           the mass.
     !     
     !=======================================================================
-    use parameter_module, only: ncells, nfc
-    use gs_module,        only: EE_GATHER
+    use legacy_mesh_api, only: ncells, nfc, EE_GATHER
 
     ! Arguments
     real(r8), dimension(:),     intent(IN)     :: phi

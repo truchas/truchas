@@ -27,7 +27,8 @@ Module PARALLEL_INPUT_MODULE
    ! Author(s): Robert C. Ferrell (ferrell@cpca.com)
    !            Bryan Lally (lally@lanl.gov)
    !=======================================================================
-   use parameter_module, only: string_len, ndim
+   use parameter_module, only: string_len
+   use mesh_parameter_module, only: ndim
    use truchas_logging_services
    implicit none
    private

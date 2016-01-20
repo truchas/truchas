@@ -138,7 +138,7 @@ CONTAINS
     use mesh_gen_data,        only: Partitions_Total
     use mesh_utilities,       only: NODE_CONNECTIVITY
     use parallel_info_module, only: p_info
-    use parameter_module,     only: nnodes, nnodes_tot
+    use mesh_parameter_module, only: nnodes, nnodes_tot
     use pgslib_module,        only: PGSLIB_GLOBAL_SUM, PGSLIB_COLLATE, &
                                     PGSLIB_DIST, PGSLib_SUM_PREFIX
     use var_vector_module
@@ -292,7 +292,8 @@ CONTAINS
     !
     !=======================================================================
     use partitioner_data,     only: get_Processor_Array
-    use parameter_module,     only: ncells, Nx_Tot, ndim
+    use parameter_module,     only: Nx_Tot
+    use mesh_parameter_module, only: ncells, ndim
     use pgslib_module,        only: PGSLIB_SUM_PREFIX
 
     ! Arguments
@@ -370,7 +371,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nvc
+    use mesh_parameter_module, only: ncells, nvc
     use pgslib_module,    only: PGSLib_GATHER
 
     ! Arguments
@@ -410,7 +411,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nnodes, nvc
+    use mesh_parameter_module, only: ncells, nnodes, nvc
     use pgslib_module,    only: PGSLib_SCATTER_MAX
 
     ! Arguments
@@ -455,7 +456,7 @@ CONTAINS
     !
     !=======================================================================
     use parallel_util_module, only: p_info, Is_IO_PE
-    use parameter_module,     only: ncells, nnodes, ncells_tot
+    use mesh_parameter_module,     only: ncells, nnodes, ncells_tot
     use pgslib_module,        only: PGSLib_REDISTRIBUTE, PGSLib_PERMUTE, &
                                     PGSLib_Collate, &
                                     ALLOC, INITIALIZE, SET, PGSLib_Local,&
@@ -778,7 +779,7 @@ CONTAINS
     !          Cell_Colors is ALLOCATED and assigned the value 0.
     !      
     !=======================================================================
-    use parameter_module, only: ncells
+    use mesh_parameter_module, only: ncells
 
     ! Arguments
     integer, dimension(:), pointer :: Cell_Colors
@@ -804,7 +805,7 @@ CONTAINS
     !          Node_Colors is ALLOCATED and assigned the value 0.
     !      
     !=======================================================================
-    use parameter_module, only: nnodes
+    use mesh_parameter_module, only: nnodes
 
     ! Arguments
     integer, dimension(:), pointer :: Node_Colors
@@ -833,7 +834,7 @@ CONTAINS
     !   
     !
     !=======================================================================
-    use parameter_module, only: ncells, nnodes
+    use mesh_parameter_module, only: ncells, nnodes
     use pgslib_module, only: PGSLib_SUM_PREFIX
 
     ! Arguments

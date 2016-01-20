@@ -27,7 +27,7 @@ MODULE FLUX_VOLUME_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: ndim, nvc
+  use legacy_mesh_api, only: ndim, nvc
   use truchas_logging_services
   implicit none
   private
@@ -74,10 +74,8 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,   only: alittle, cutvof
-    use gs_module,        only: EN_GATHER
-    use mesh_module,      only: Cell, Mesh, Vertex, Vrtx_Bdy, CELL_TET, &
-                                CELL_PYRAMID, CELL_PRISM, CELL_HEX
-    use parameter_module, only: ncells, nfc, nvf
+    use legacy_mesh_api,  only: ncells, nfc, nvf, Cell, Mesh, gather_vertex_coord
+    use legacy_mesh_api,  only: CELL_TET, CELL_PYRAMID, CELL_PRISM, CELL_HEX
     use vof_data_module,  only: adv_dt
 
     ! Arguments
@@ -128,7 +126,7 @@ CONTAINS
 
     ! First gather the vertex coordinates and store them in Vtx
     do n = 1,ndim
-       call EN_GATHER (Vtx, Vertex%Coord(n), BOUNDARY=Vrtx_Bdy(n)%Data)
+       call gather_vertex_coord (Vtx, dim=n)
        do v = 1,nvc
           Flux_Vol%Xv(v,n) = Vtx(v,:)
        end do
@@ -232,7 +230,7 @@ CONTAINS
     !   given by J. Dukowicz, JCP 74: 493-496 (1988).
     !
     !=======================================================================
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
 
     ! Arguments
     type(FLUX_VOL_QUANTITY), dimension(ncells), intent(IN) :: Flux_Vol

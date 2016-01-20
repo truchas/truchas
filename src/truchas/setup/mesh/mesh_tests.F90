@@ -62,7 +62,7 @@ CONTAINS
     use debug_control_data
     use gs_module,            only: EE_Gather
     use mesh_module,          only: Mesh
-    use parameter_module,     only: ncells, nvc
+    use mesh_parameter_module, only: ncells, nvc
     use pgslib_module,        only: PGSLib_Global_All
     use var_vector_module
 

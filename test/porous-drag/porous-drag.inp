@@ -34,12 +34,9 @@ A = C(1-lambda)^2/lambda^3
  
 ----------------------------------------------------------------------                     
 &MESH
- 
-       Ncell = 20, 5, 1, 
-       Coord = 3*0.0, 20.0, 1.0, 1.0,
-       Ratio = 1.0, 1.0, 1.0 
-       Fuzz  = 3*0.0,
- 
+
+       Mesh_File = 'mesh.exo'
+
 /
  
 &OUTPUTS
@@ -107,10 +104,8 @@ Pressure  BC:  on x=0 face
 
 &BC
 
-       Surface_Name       = 'conic',
-       Conic_X            =  1.0,
-       Conic_Constant     =  0.0,
-       Conic_Tolerance    = 1.0e-6,
+       Surface_Name       = 'from mesh file',
+       Mesh_Surface       = 1,
        BC_Variable        = 'pressure',
        BC_Type            = 'dirichlet',
        BC_Value           =  20000.0,  
@@ -121,10 +116,8 @@ Pressure  BC:  on x=20.0 face
 
 &BC
 
-       Surface_Name       = 'conic',
-       Conic_X            =  1.0,
-       Conic_Constant     =  -20.0,
-       Conic_Tolerance    = 1.0e-6,
+       Surface_Name       = 'from mesh file',
+       Mesh_Surface       = 2,
        BC_Variable        = 'pressure',
        BC_Type            = 'dirichlet',
        BC_Value           =  0.0,  
@@ -137,11 +130,8 @@ Velocity BC: No slip on y=0  and y=1 face
 
 &BC
 
-       Surface_Name    = 'conic',
-       Conic_Y         =  1.0,
-       Conic_Constant  =  0.0,
-       Conic_Tolerance = 1.0e-6,
- 
+       Surface_Name    = 'from mesh file',
+       Mesh_Surface    = 3,
        BC_Variable     = 'velocity',
        BC_Type         = 'no-slip',
        BC_Value        =    0.0,
@@ -151,11 +141,8 @@ Velocity BC: No slip on y=0  and y=1 face
 
 &BC
 
-       Surface_Name    = 'conic',
-       Conic_Y         =  1.0,
-       Conic_Constant  = -1.0,
-       Conic_Tolerance = 1.0e-6,
- 
+       Surface_Name    = 'from mesh file',
+       Mesh_Surface    = 4,
        BC_Variable     = 'velocity',
        BC_Type         = 'no-slip',
        BC_Value        =    0.0, 

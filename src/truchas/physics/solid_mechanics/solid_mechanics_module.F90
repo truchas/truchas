@@ -75,8 +75,7 @@ Contains
     !    strain, and stress arrays
     !
     !---------------------------------------------------------------------------
-    !Use parameter_module, Only: ncells, ndim, nnodes, ncomps
-    Use parameter_module, Only: ncells, nnodes
+    use legacy_mesh_api, only: ncells, nnodes
     Use node_operator_module, Only: nipc
     use solid_mechanics_input, only: solid_mechanics
     use solid_mechanics_mesh, only: ndim, ncomps
@@ -202,20 +201,18 @@ Contains
     !
     !---------------------------------------------------------------------------
 
-    !Use parameter_module,     Only: ndim, nnodes, ncells, nvc, nfc, nmat, mat_slot
-    Use parameter_module,     Only: nnodes, ncells, nmat, mat_slot
-    use node_operator_module, only: cv_init, CV_Internal, nipc
+    use parameter_module,     only: nmat, mat_slot
+    use legacy_mesh_api,      only: nnodes, ncells, Cell, Mesh, GAP_ELEMENT_1
+    use legacy_mesh_api,      only: EN_GATHER, EN_SUM_SCATTER
+    use node_operator_module, only: cv_init, CV_Internal, nipc, LINEAR_GRAD
     use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
     use timing_tree
     use UbikSolve_module
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
-    use linear_module,        only: LINEAR_GRAD
-    Use gs_module,            Only: EN_GATHER, EN_SUM_SCATTER
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
     use fluid_data_module,    only: isImmobile
     use matl_module,          only: Matl
-    use mesh_module,            only: Cell, Mesh, GAP_ELEMENT_1
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_mesh,   only: SM_MESH_INIT, ndim, nvc, nfc
@@ -442,8 +439,8 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    !Use parameter_module,     Only: ndim, nnodes, ncells, ncomps, nmat, mat_slot
-    use parameter_module,     Only:  nnodes, ncells, nmat, mat_slot
+    use parameter_module,     only: nmat, mat_slot
+    use legacy_mesh_api,      only: nnodes, ncells
     Use node_operator_module, Only: nipc
     use timing_tree
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
@@ -616,8 +613,7 @@ Contains
     !---------------------------------------------------------------------------
     !
     Use linear_solution, Only: Ubik_user, PRECOND_NONE, PRECOND_TM_SSOR, PRECOND_TM_DIAG
-    !Use parameter_module, Only: ndim, nnodes
-    Use parameter_module, Only: nnodes
+    use legacy_mesh_api, only: nnodes
     Use preconditioners, Only: PRECONDITION
     use UbikSolve_module
     use nonlinear_solution, only: Nonlinear_Solve, NKuser,                     &
@@ -699,12 +695,9 @@ Contains
     !   terms) for the right hand side of the linear system or the constant part
     !   of the nonlinear residual.
     !---------------------------------------------------------------------------
-    Use mesh_module,                 Only: Cell_Edge, Cell
-    !Use parameter_module,            Only: ndim, nnodes, ncells, nvc, ncomps, nvf
-    Use parameter_module,            Only: nnodes, ncells
+    use legacy_mesh_api,             only: nnodes, ncells, Cell_Edge, Cell, EN_SUM_Scatter
     Use zone_module,                 Only: Zone
     use node_operator_module,        only: CV_Internal, CV_Boundary, nipc, nbface, Nodal_Volume
-    Use gs_module,                   Only: EN_SUM_Scatter
     use bc_data_types
     use mech_bc_data_module
     use viscoplasticity,             only: MATERIAL_STRESSES
@@ -895,14 +888,11 @@ Contains
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
     use preconditioners,        only: TM_P, TM_P_Map
-    !use parameter_module,       only: ndim, nnodes, ncells
-    use parameter_module,       only: nnodes, ncells
+    use legacy_mesh_api,        only: nnodes, ncells, Cell, Mesh, GAP_ELEMENT_1, EN_SUM_Scatter
+    use legacy_mesh_api,        only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig
     use node_operator_module,   only: mech_precond_init
-    use mesh_module,            only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig, Cell, Mesh, &
-                                      GAP_ELEMENT_1
     use mech_bc_data_module
     use timing_tree
-    Use gs_module,              Only: EN_SUM_Scatter
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
     use solid_mechanics_mesh,   only: ndim
 
@@ -1096,11 +1086,10 @@ Contains
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    !use parameter_module, only: ndim, nvc, ncells_tot, nnodes, nnodes_tot
-    use parameter_module, only: ncells_tot, nnodes, nnodes_tot
-    use mesh_module, only: Mesh, Vertex, CELL_TET,&
-         CELL_PYRAMID, CELL_PRISM, CELL_HEX, MESH_COLLATE_VERTEX, VERTEX_COLLATE, &
-          Vertex_Ngbr_All_Orig, VERTEX_DATA, GAP_ELEMENT_1, GAP_ELEMENT_3
+    use legacy_mesh_api, only: ncells_tot, nnodes, nnodes_tot, Mesh, Vertex
+    use legacy_mesh_api, only: CELL_TET, CELL_PYRAMID, CELL_PRISM, CELL_HEX
+    use legacy_mesh_api, only: MESH_COLLATE_VERTEX, VERTEX_COLLATE, VERTEX_DATA
+    use legacy_mesh_api, only: Vertex_Ngbr_All_Orig, GAP_ELEMENT_1, GAP_ELEMENT_3
     use node_operator_module, only: CV_Internal, nipc
     use parallel_info_module
     use pgslib_module, only: PGSLib_DIST, PGSLib_COLLATE, PGSLib_Global_Sum
@@ -1502,7 +1491,6 @@ Contains
     ! Tc are the coordinates of the nodes
     ! Tcen are the coordinates of the centroid of the tet
 
-    !use parameter_module, only: ndim
     use solid_mechanics_mesh, only: ndim
 
     real(r8), Dimension(ndim+1,ndim) :: Tc
@@ -1600,12 +1588,9 @@ Contains
     !   a surface integral over the control volumes.
     !
     !---------------------------------------------------------------------------
-    Use mesh_module,            Only: Mesh, Cell_Edge, GAP_ELEMENT_1
-    !Use parameter_module,       Only: ndim, ncells, nnodes, nvc, ncomps
-    Use parameter_module,       Only: ncells, nnodes
-    use node_operator_module,   only: CV_Internal, nipc
-    use linear_module,          only: LINEAR_GRAD
-    Use gs_module,              Only: EN_GATHER, EN_SUM_Scatter
+    use legacy_mesh_api,        only: ncells, nnodes, Mesh, Cell_Edge, GAP_ELEMENT_1
+    Use legacy_mesh_api,        only: EN_GATHER, EN_SUM_Scatter
+    use node_operator_module,   only: CV_Internal, nipc, LINEAR_GRAD
     use mech_bc_data_module
     Use UbikSolve_module
     Use viscoplasticity,        only: PLASTIC_STRAIN_INCREMENT
@@ -1773,8 +1758,7 @@ Contains
     !=======================================================================
     use lnorm_module,       only: L1NORM, L2NORM
     use nonlinear_solution, only: P_Residual, P_Future, p_control, P_Past
-    !use parameter_module,   only: ndim, nnodes, nnodes_tot
-    use parameter_module,   only: nnodes, nnodes_tot
+    use legacy_mesh_api,    only: nnodes, nnodes_tot
     use solid_mechanics_mesh, only: ndim
     use UbikSolve_module
 
@@ -1905,7 +1889,8 @@ Contains
   
   subroutine compute_cell_property (prop, temp, value)
   
-    use parameter_module, only: ncells, nmat
+    use parameter_module, only: nmat
+    use legacy_mesh_api,  only: ncells
     use fluid_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase

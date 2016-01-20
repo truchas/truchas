@@ -19,7 +19,6 @@ define a three-dimensional mesh
 
 &MESH
         mesh_file               = 'simple_gap_4.exo',
-        mesh_file_format        = 'ExodusII',
         gap_element_blocks      = 3 4
 /
 

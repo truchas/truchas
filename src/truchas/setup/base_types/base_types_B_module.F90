@@ -82,7 +82,9 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,         only: Cell
-    use parameter_module,    only: ncells
+    use mesh_parameter_module, only: ncells
+
+    ! Arguments
 
     ! Local Variables
     integer :: memstat
@@ -125,7 +127,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,       only: Cell
-    use parameter_module,  only: ndim, nfc
+    use mesh_parameter_module, only: ndim, nfc
 
     ! Local variables
     integer :: f, n
@@ -156,7 +158,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,          only: MESH_CONNECTIVITY, VERTEX_DATA, Vrtx_Bdy
-    use parameter_module,     only: ncells, nnodes, ndim
+    use mesh_parameter_module, only: ncells, nnodes, ndim
 
     ! Arguments
     type(MESH_CONNECTIVITY),  dimension(:),  pointer :: Mesh
@@ -372,7 +374,7 @@ CONTAINS
     !=======================================================================
     use mesh_module,   only: Mesh, Vertex, MESH_CONNECTIVITY, VERTEX_DATA
     use parallel_info_module, only: p_info
-    use parameter_module,     only: ncells, nnodes
+    use mesh_parameter_module, only: ncells, nnodes
     use pgslib_module,        only: PGSLib_SUM_PREFIX, PGSLib_PERMUTE, pgslib_collate
 
     ! Arguments
@@ -476,7 +478,7 @@ CONTAINS
     use mesh_module,   only: MESH_CONNECTIVITY, UnPermute_Mesh_Vector, &
                              Permute_Mesh_Vector,               &
                              UnPermute_Mesh_Initialized
-    use parameter_module, only: ncells
+    use mesh_parameter_module, only: ncells
     use pgslib_module, only: PGSLib_Deallocate_Trace,     &
          &                   PGSLib_GS_Trace,             &
          &                   PGSLib_Permute,              &
@@ -687,7 +689,7 @@ CONTAINS
     use mesh_module,   only: Vertex_Data, UnPermute_Vertex_Vector, &
                              Permute_Vertex_Vector, Vrtx_Bdy,      &
                              UnPermute_Vertex_Initialized
-    use parameter_module, only: nnodes, ndim
+    use mesh_parameter_module, only: nnodes, ndim
     use pgslib_module, only: PGSLib_Deallocate_Trace,     &
          &                   PGSLib_GS_Trace,             &
          &                   PGSLib_Permute,              &
@@ -926,7 +928,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nvc
+    use mesh_parameter_module, only: ncells, nvc
     use pgslib_module,    only: PGSLib_GATHER
 
     ! Arguments
@@ -968,7 +970,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,      only: MESH_CONNECTIVITY
-    use parameter_module, only: nvc
+    use mesh_parameter_module, only: nvc
     use pgslib_module,    only: PGSLib_GATHER
 
     ! Arguments

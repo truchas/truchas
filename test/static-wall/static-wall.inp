@@ -12,8 +12,7 @@ method for computing body forces.  Before the fix the maximum velocity
 magnitude was 0.023, and after it was less than 3e-12.
  
 &MESH
-  ncell = 20, 1, 20
-  coord = -1.0, -0.025, -1.0, 1.0, 0.025, 1.0
+  mesh_file = 'mesh.exo'
 /
  
 &OUTPUTS

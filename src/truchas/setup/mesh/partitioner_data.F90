@@ -16,7 +16,7 @@ module partitioner_data
    !
    ! author: Bryan Lally (LANL, lally@lanl.gov)
    !----------------------------------------------------------------------------
-   use parameter_module, only: ndim
+   use mesh_parameter_module, only: ndim
    use truchas_logging_services
    implicit none
    private
@@ -134,7 +134,7 @@ contains
       !    returns 0 for success
       !    returns 1 for failure
       !-------------------------------------------------------------------------
-      use parameter_module, only: ndim
+      use mesh_parameter_module, only: ndim
 
       integer, dimension(ndim) :: processor_array_arg
       integer :: SET_PROCESSOR_ARRAY
@@ -158,7 +158,7 @@ contains
       !
       !    return the processor array
       !-------------------------------------------------------------------------
-      use parameter_module, only: ndim
+      use mesh_parameter_module, only: ndim
 
       integer, dimension(ndim) :: GET_PROCESSOR_ARRAY
 
@@ -176,7 +176,7 @@ contains
       !
       !    return the default processor array
       !-------------------------------------------------------------------------
-      use parameter_module, only: ndim
+      use mesh_parameter_module, only: ndim
 
       integer, dimension(ndim) :: GET_PROCESSOR_ARRAY_DEFAULT
 
@@ -195,7 +195,8 @@ contains
       !    check the partitioner info for consistency
       !    finish initialization
       !-------------------------------------------------------------------------
-      use parameter_module,     only: nx_tot, ndim
+      use parameter_module,     only: nx_tot
+      use mesh_parameter_module, only: ndim
       use parallel_info_module, only: p_info
       use mesh_gen_data,        only: GENERATED_MESH, partitions_total
 

@@ -66,11 +66,9 @@ CONTAINS
                                       Mom_Delta,                          &
                                       courant
     use fluid_type_module,      only: NORMS, DIV_NORMS, Div_c, Div_f
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell, EE_GATHER
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
     use property_module,        only: FLUID_PROPERTIES
-    use gs_module,              only: EE_GATHER
     use restart_variables,      only: restart, have_fluid_flow_data
 
     real(r8), intent(in) :: t
@@ -273,7 +271,7 @@ CONTAINS
     use fluid_data_module,     only: fluidRho, fluidDeltaRho,    &
                                      fluidvof, avgRho_n,           &
                                      Rho_Face, Rho_Face_n
-    use parameter_module,      only: ncells, ndim, nfc
+    use legacy_mesh_api,       only: ncells, ndim, nfc
 
     use projection_data_module, only: dt_gradP_over_Rho, ghc, ghn,dtCsf_over_Rho, &
                                       dtRhoG_over_Rho
@@ -394,9 +392,7 @@ CONTAINS
     !
     !=======================================================================
     use fluid_data_module
-    use gs_module,              only: EE_GATHER
-    use mesh_module,            only: Mesh, Cell, DEGENERATE_FACE
-    use parameter_module,       only: ncells,  nfc
+    use legacy_mesh_api, only: ncells, nfc, Mesh, Cell, DEGENERATE_FACE, EE_GATHER
 
     ! Local Variables
     integer :: status
@@ -466,8 +462,7 @@ CONTAINS
                                       DO_SOLVE_LU_LSLR
     use discrete_ops_data,      only: use_ortho_face_gradient
     use fluid_data_module,      only: Solid_Face, Centered_GradP_Dynamic, Rho_Face
-    use mesh_module,            only: Cell, Mesh
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell, Mesh
     use projection_data_module, only: Boundary_Flag, dirichlet_pressure, &
                                       dt_gradP_over_Rho, ghc, ghn,dtCsf_over_Rho, &
                                       dtRhoG_over_Rho
@@ -647,7 +642,7 @@ CONTAINS
 ! Author(s): M. A. Christon, LANL CCS-2 (christon@lanl.gov)
 !
 !===============================================================================
-    use parameter_module,    only: ndim, ncells
+    use legacy_mesh_api,     only: ndim, ncells
     use fluid_data_module,   only: minVel, maxVel
     use pgslib_module,       only: pgslib_global_minval, pgslib_global_maxval
     use zone_module,         only: Zone

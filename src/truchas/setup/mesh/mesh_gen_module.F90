@@ -68,7 +68,7 @@ CONTAINS
     use mesh_module,      only: Mesh, Face_Vrtx, Initialize_Face_Bit_Mask,   &
                                 Set_Face_Neighbor, Clear_Face_Neighbor,      &
                                 DEGENERATE_FACE
-    use parameter_module, only: ncells, nfc, nvf, nvc
+    use mesh_parameter_module, only: ncells, nfc, nvf, nvc
     use var_vector_module
 
     ! Local Variables
@@ -160,10 +160,9 @@ CONTAINS
     use base_types_B_module,    only: PERMUTE_MESH, &
                                       PERMUTE_VERTEX, RENUMBER_CELLS_VERTICES, &
                                       ANNOUNCE_MESH_SIZES
-    use bc_data_module,         only: Mesh_Face_Set, Mesh_Face_Set_Tot
     use mesh_input_module,      only: MESH_READ, mesh_file, &
                                       coordinate_scale_factor, &
-                                      use_RCM, MESH_READ_SIDE_SETS
+                                      MESH_READ_SIDE_SETS
     use mesh_partition_module,  only: MESH_PARTITIONS
     use mesh_module,            only: Mesh, Vertex,             &
                                       MESH_CONNECTIVITY,        &
@@ -172,10 +171,11 @@ CONTAINS
                                       Permute_Vertex_Vector,    &
                                       OPERATOR(.DISTRIBUTE.),   &
                                       Vertex_Ngbr_All,          &
-                                      mesh_has_cblockid_data
+                                      mesh_has_cblockid_data,   &
+                                      mesh_face_set, mesh_face_set_tot
     use mesh_utilities,         only: NODE_CONNECTIVITY, SET_DEGENERATE_FACES
     use parallel_info_module,   only: p_info
-    use parameter_module,       only: ncells, ncells_tot, nnodes, &
+    use mesh_parameter_module,  only: ncells, ncells_tot, nnodes, &
                                       nnodes_tot, ndim, nfc, nssets
     use pgslib_module,          only: PGSLib_DIST,            &
                                       PGSLIB_PERMUTE,         &
@@ -266,38 +266,6 @@ CONTAINS
 
        end if
 
-    else
-
-       ! Create mesh; create into temporaries of total size,
-       ! then distribute mesh across pe's.
-       if (p_info%IOP) then
-          ALLOCATE (Mesh_Tot(ncells_tot), Vertex_Tot(nnodes_tot), STAT = memerror)
-       else
-          ALLOCATE (Mesh_Tot(0),          Vertex_Tot(0),          STAT = memerror)
-       end if
-       fatal = (memerror /= 0)
-       call TLS_fatal_if_any (fatal, 'MESH_GEN: could not allocate space for mesh temporary arrays')
-
-       if (p_info%IOP) then
-          call CREATE_MESH (Mesh_Tot, Vertex_Tot)
-       end if
-       !! NNC, Dec 2013.  The Vertex_Data type is now default initialized
-       !! making the following assignment unnecessary.  However the rhs
-       !! function reference had the side effect of resetting the Vrtx_Bdy
-       !! structure to its initial state (unbelievable!)  That is now done here.
-       !! The assignment was originally done in CREATE_MESH, meaning it was
-       !! only done on the IO process -- probably not correct, but it didn't
-       !! matter because in this execution path the data structure had never
-       !! been allocated.
-       !! Vertex_tot = VERTEX_DATA_PRESET() ! moved from inside create_mesh
-       do n = 1, ndim
-         if (associated(Vrtx_Bdy(n)%data)) deallocate(Vrtx_Bdy(n)%data)
-       end do
-
-       Mesh   = .DISTRIBUTE. Mesh_Tot
-       Vertex = .DISTRIBUTE. Vertex_Tot
-       DEALLOCATE (Mesh_Tot, Vertex_Tot)
-
     end if ASSIGN_VERTEX
 
     ! Broadcast nodal BC input flags in case they have changed.
@@ -330,31 +298,6 @@ CONTAINS
     call ANNOUNCE_MESH_SIZES(Mesh, Vertex)
     ! Done with MeshPermute and VertexPermutation
     DEALLOCATE (MeshPermute, VertexPermute)
-
-    if (use_RCM) then
-
-       ! Need All_Ngbr_CONNECTIVITY for RCM
-       call ALL_NGBR_CONNECTIVITY (Mesh)
-
-       ! Renumber the mesh via reverse Cuthill-McKee renumbering
-
-       ! Need to allocate RCM_Permute on the fly, since size of each
-       ! domain changes in mesh_reallocate.
-       ALLOCATE(RCM_Permute(SIZE(Mesh)))
-       RCM_Permute = COMPUTE_RCM (Mesh)
-
-       ! Permute mesh according to RCM permutation.  Since we haven't
-       ! done anything with node numbering (yet) don't need to permute nodes.
-       ! Scope is local because this is a per-domain re-ordering.
-
-       call PERMUTE_MESH (Mesh, RCM_Permute, SCOPE=PGSLib_Local)
-
-       ! do not have to renumber because we didn't permute nodes
-   
-       ! Done with RCM_Permute
-       DEALLOCATE(RCM_Permute)
-   
-    end if
 
     ! don't have to renumber because we didn't permute the nodes
     ! Do have to rebuild cell connectivity, since that has changed.
@@ -400,276 +343,6 @@ CONTAINS
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><><>
 
-  SUBROUTINE CREATE_MESH (Mesh_Tot, Vertex_Tot)
-    !======================================================================
-    ! Purpose:
-    !
-    !   Create a mesh, based on input parameters
-    !
-    !   Creates mesh only on IO processor.  The mesh must then be
-    !   distributed across other processors (outside of this routine)
-    !======================================================================
-    use mesh_input_module,      only: Coord, Heps,                &
-                                      Fuzz, Ncell, Nseg, Ratio,   &
-                                      Coord_label
-    use mesh_module,            only: MESH_CONNECTIVITY,          &
-                                      VERTEX_DATA
-    use parameter_module,       only: ncells_tot, nnodes_tot,     &
-                                      Nx_tot, Mx_tot,             &
-                                      ndim, nvc, nvf
-    use random_module,          only: GENERATE_RANDOM
-    
-    ! Arguments
-    type(VERTEX_DATA),       intent(INOUT), dimension(:) :: Vertex_Tot
-    type(MESH_CONNECTIVITY), intent(INOUT), dimension(:) :: Mesh_Tot
-
-    integer, dimension(0:nvc) :: Nvtx
-    real(r8), pointer, dimension(:,:) :: Xv_Tot
-    real(r8), dimension(ndim,nnodes_tot) :: Del_Tot
-    real(r8), dimension(nnodes_tot)      :: Rnum_Tot
-    real(r8) :: SHIFT, PI, xi, eta, zeta, dx, dy, dz
-    logical :: orthog_mesh
-    integer :: i, iend, j, jend, k, kend, n, nc, nv, maxdim, skip, v, vertex_start
-
-    ! Test that the mesh and vertex structures are the proper size
-
-    if (SIZE(Mesh_Tot,1) /= ncells_tot) then
-       call TLS_panic ('CREATE_MESH: Mesh_tot not size ncells_tot')
-    end if
-    
-    if (SIZE(Vertex_Tot,1) /= nnodes_tot) then
-       call TLS_panic ('CREATE_MESH: Vertex_tot not size nnodes_tot')
-    end if
-    
-    PI  = 4.0*atan(1.0)
-
-    ! Scale Heps so not too large
-    Heps = 0.5*Heps
-
-    ! Create a logical mesh; allocate arrays
-    maxdim = MAXVAL(Mx_Tot)
-    ALLOCATE(Xv_Tot(ndim, maxdim))
-    Xv_Tot = 0.
-
-          ! Create vertex axes; assign orthogonal mesh flag
-          orthog_mesh = .true.
-          iend = 1; jend = 1; kend = 1
-          do n = 1,ndim
-             orthog_mesh = orthog_mesh .and. Fuzz(n) == 0.
-             call MESH_AXIS (Coord_label(n), Nseg(n), Ncell(n,:), Coord(n,:), Ratio(n,:), &
-                Mx_tot(n), maxdim, Xv_Tot(n,:))
-             select case(n)
-             case (1)
-                iend = Mx_tot(n)
-             case (2)
-                jend = Mx_tot(n)
-             case (3)
-                kend = Mx_tot(n)
-             end select
-          end do
-
-          dx = Xv_Tot(1,2) - Xv_Tot(1,1)
-          dy = Xv_Tot(2,2) - Xv_Tot(2,1)
-          dz = Xv_Tot(3,2) - Xv_Tot(3,1)
-
-          ! Assign vertex coordinates
-          nv = 1
-          do k = 1, kend
-             do j = 1, jend
-                do i = 1, iend
-
-                   xi   = (i-1)*dx
-                   eta  = (j-1)*dy
-                   zeta = (k-1)*dz
-
-                   SHIFT = Heps*SIN( 2*PI*xi/(Xv_Tot(1,iend)-Xv_Tot(1,1)) )           &
-                               *SIN( 2*PI*eta/(Xv_Tot(2,jend)-Xv_Tot(2,1)) )          &
-                               *SIN( 2*PI*zeta/(Xv_Tot(3,kend)-Xv_Tot(3,1)) )
-
-                   ! Assign vertex coordinates
-                   do n = 1,ndim
-                      select case(n)
-                      case (1)
-                         Vertex_Tot(nv)%Coord(n) = Xv_Tot(n,i) + SHIFT
-                      case (2)
-                         Vertex_Tot(nv)%Coord(n) = Xv_Tot(n,j) + SHIFT
-                      case (3)
-                         Vertex_Tot(nv)%Coord(n) = Xv_Tot(n,k) + SHIFT
-                      end select
-                   end do
-
-                   ! Increment vertex number
-                   nv = nv + 1
-
-                end do
-             end do
-          end do
-
-          ! Non-Orthogonal mesh (Fuzz interior vertices only!)
-          RANDOM_MESH: if (.not.(orthog_mesh)) then
-             ! Make sure kend is correct for 2-D case
-             if (ndim == 2 .and. kend == 1) kend = 3
-
-             ! Random number [-1.0, +1.0]
-             call GENERATE_RANDOM(-1.0_r8,1.0_r8,nnodes_tot,Rnum_Tot)
-
-             ! Initialize Min-Delta arrays
-             Del_Tot = 0.
-
-             ! Min-Cell width about each vertex
-             vertex_start = 2
-             do n = 1,ndim-1
-                select case(n)
-                case (1)
-                   vertex_start = vertex_start + Mx_tot(n)
-                case (2)
-                   vertex_start = vertex_start + Mx_tot(n)*Mx_tot(n-1)
-                end select
-             end do
-             do k = 2, kend - 1
-                do j = 2, jend - 1
-                   do i = 2, iend - 1
-
-                      ! Compute vertex number
-                      nv = vertex_start
-                      do n = 1,ndim
-                         select case(n)
-                         case (1)
-                            nv = nv + i - 2
-                         case (2)
-                            nv = nv + (j - 2)*Mx_tot(n-1)
-                         case (3)
-                            nv = nv + (k - 2)*Mx_tot(n-1)*Mx_tot(n-2)
-                         end select
-                      end do
-
-                      ! Compute min-cell width
-                      do n = 1,ndim
-                         select case(n)
-                         case (1)
-                            Del_Tot(n,nv) = MIN((Xv_Tot(n,i+1)-Xv_Tot(n,i)), (Xv_Tot(n,i)-Xv_Tot(n,i-1)))
-                         case (2)
-                            Del_Tot(n,nv) = MIN((Xv_Tot(n,j+1)-Xv_Tot(n,j)), (Xv_Tot(n,j)-Xv_Tot(n,j-1)))
-                         case (3)
-                            Del_Tot(n,nv) = MIN((Xv_Tot(n,k+1)-Xv_Tot(n,k)), (Xv_Tot(n,k)-Xv_Tot(n,k-1)))
-                         end select
-                      end do
-
-                   end do
-                end do
-             end do
-
-             ! Limit min-delta arrays
-             ! (The limiting factor must be less than one-half to avoid an
-             ! overlap of the fuzzed vertices. A factor much less than
-             ! one-half is not necessary but it is recommended; this further
-             ! limits the vertex position adjustments.)
-             do n = 1,ndim
-                Del_Tot(n,:) = (1./2.)*Del_Tot(n,:)
-             end do
-
-             ! Fuzz interior vertex coordinates
-             do k = 2, kend - 1
-                do j = 2, jend - 1
-                   do i = 2, iend - 1
-
-                      ! Compute vertex number
-                      nv = vertex_start
-                      do n = 1,ndim
-                         select case(n)
-                         case (1)
-                            nv = nv + i - 2
-                         case (2)
-                            nv = nv + (j - 2)*Mx_tot(n-1)
-                         case (3)
-                            nv = nv + (k - 2)*Mx_tot(n-1)*Mx_tot(n-2)
-                         end select
-                      end do
-
-                      ! Fuzz interior vertices
-                      do n = 1,ndim
-                         Vertex_Tot(nv)%Coord(n) = Vertex_Tot(nv)%Coord(n) + &
-                            Fuzz(n)*Rnum_Tot(nv)*Del_Tot(n,nv)
-                      end do
-
-                   end do
-                end do
-             end do
-
-          end if RANDOM_MESH
-
-          ! Destroy working arrays
-          DEALLOCATE(Xv_Tot)
-
-          ! Assign ending do loop indices
-          iend = 1; jend = 1; kend = 1
-          do n = 1,ndim
-             select case(n)
-             case (1)
-                iend = Nx_tot(n)
-             case (2)
-                jend = Nx_tot(n)
-             case (3)
-                kend = Nx_tot(n)
-             end select
-          end do
-
-          ! Get the vertices
-          nc = 1
-          do k = 1, kend
-             do j = 1, jend
-                do i = 1, iend
-
-                   ! Compute cell vertices
-                   do n = 1,ndim
-                      select case(n)
-                      case (1)
-                         Nvtx(nvf) = i
-                      case (2)
-                         Nvtx(nvf) = Nvtx(nvf) + (j - 1)*Mx_tot(n-1)
-                      case (3)
-                         Nvtx(nvf) = Nvtx(nvf) + (k - 1)*Mx_tot(n-1)*Mx_tot(n-2)
-                      end select
-                   end do
-                   Nvtx(0) = Nvtx(nvf)
-                   do v = 1,nvf-1
-                      select case(v)
-                      case (1)
-                         Nvtx(v) = Nvtx(v-1) + 1
-                      case (2)
-                         Nvtx(v) = Nvtx(v-1) + Mx_tot(1)
-                      case (3)
-                         Nvtx(v) = Nvtx(v-1) - 1
-                      end select
-                   end do
-                   do n = 1,ndim
-                      select case(n)
-                      case (1)
-                         skip = 1
-                      case (2)
-                         skip = skip*Mx_tot(n-1)
-                      case (3)
-                         skip = skip*Mx_tot(n-1)
-                      end select
-                   end do
-                   do v = 1,nvc/2
-                      Nvtx(v+nvf) = Nvtx(v) + skip
-                   end do
-
-                   ! Assign cell vertices
-                   do v = 1,nvc
-                      Mesh_Tot(nc)%Ngbr_Vrtx(v) = Nvtx(v)
-                   end do
-
-                   ! Increment cell number
-                   nc = nc + 1
-
-                end do
-             end do
-          end do
-
-  END SUBROUTINE CREATE_MESH
-
   SUBROUTINE ALL_NGBR_CONNECTIVITY (Mesh)
     !=======================================================================
     ! Purpose(s):
@@ -694,7 +367,7 @@ CONTAINS
                                     PGSLIB_SUM_PREFIX,       &
                                     PGSLib_SUM_SUFFIX,       &
                                     PGSLib_SCATTER_SUM    
-    use parameter_module,     only: ncells, nvc, nnodes
+    use mesh_parameter_module, only: ncells, nvc, nnodes
     use var_vector_module
 
     ! Arguments
@@ -1054,7 +727,8 @@ CONTAINS
                                     PGSLib_Size_Of_Sup,      &
                                     PGSLib_Dup_Index
 
-    use parameter_module,     only: boundary_faces, ncells, nfc, boundary_faces_tot, nvf
+    use parameter_module,     only: boundary_faces, boundary_faces_tot
+    use mesh_parameter_module, only: ncells, nfc, nvf
 
     ! Arguments
     type(MESH_CONNECTIVITY), dimension(ncells), intent(INOUT) :: Mesh
@@ -1429,7 +1103,7 @@ CONTAINS
      !          Yousef Saad, Pg 77
      !--------------------------------------------------------------------------
     use mesh_module,       only: MESH_CONNECTIVITY
-    use parameter_module,  only: ncells
+    use mesh_parameter_module, only: ncells
     use var_vector_module, only: SIZES, FLATTEN
 
     ! arguments
@@ -1622,7 +1296,7 @@ CONTAINS
     !              if so, .FALSE. otherwise.
     !
     !=======================================================================
-    use parameter_module, only: nvf
+    use mesh_parameter_module, only: nvf
 
     ! Arguments
     integer, dimension(nvf), intent(IN) :: Face

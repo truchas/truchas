@@ -59,8 +59,8 @@ CONTAINS
     !=======================================================================
     use parallel_info_module, only: p_info
     use interface_module, only: Int_Geom
-    use mesh_module,      only: orthogonal_mesh
-    use parameter_module, only: ndim, nicells, nvc
+    use legacy_mesh_api,  only: ndim, nvc, orthogonal_mesh
+    use parameter_module, only: nicells
     use pgslib_module,    only: PGSLib_GLOBAL_SUM, pgslib_collate
     use time_step_module, only: cycle_number, t
     use output_utilities, only: ANNOUNCE_FILE_WRITE

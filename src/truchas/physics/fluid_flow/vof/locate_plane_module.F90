@@ -62,7 +62,8 @@ CONTAINS
     !   flux volume (Vp).
     !
     !=======================================================================
-    use parameter_module, only: nicells, nvc
+    use parameter_module, only: nicells
+    use legacy_mesh_api,  only: nvc
     use timing_tree
     use vof_data_module,  only: volume_track_brents_method
  
@@ -107,7 +108,8 @@ CONTAINS
     !   University Press, 1986), p. 253
     !=======================================================================
     use interface_module,       only: Int_Geom
-    use parameter_module,       only: ndim, nfc, nicells, nvc
+    use parameter_module,       only: nicells
+    use legacy_mesh_api,        only: ndim, nfc, nvc
     use truncate_volume_module, only: TRUNCATE_FACE, FACE_PARAM
  
     ! Arguments
@@ -369,7 +371,8 @@ CONTAINS
     !   is computed analytically via a call to another routine.
     !=======================================================================
     use interface_module,       only: Int_Geom, Int_Flux
-    use parameter_module,       only: ndim, nicells, nvc
+    use parameter_module,       only: nicells
+    use legacy_mesh_api,        only: ndim, nvc
     use truncate_volume_module, only: TRUNCATE_VOLUME
     use vof_data_module,        only: volume_track_iter_max, volume_track_iter_tol
  
@@ -478,7 +481,8 @@ CONTAINS
     !   equation X*Normal - Ro = 0
     !=======================================================================
     use interface_module,       only: Int_Geom
-    use parameter_module,       only: ndim, nfc, nicells, nvc
+    use parameter_module,       only: nicells
+    use legacy_mesh_api,        only: ndim, nfc, nvc
     use truncate_volume_module, only: Trunc_Vol
 
     ! Arguments
@@ -549,7 +553,8 @@ CONTAINS
     !   a plane described by the equation X*Normal - Ro = 0
     !=======================================================================
     use interface_module,       only: Int_Geom
-    use parameter_module,       only: nicells, nvc, nvf
+    use parameter_module,       only: nicells
+    use legacy_mesh_api,        only: nvc, nvf
     use truncate_volume_module, only: Trunc_Vol
 
     ! Arguments
@@ -611,7 +616,8 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,         only: alittle
     use interface_module,       only: Int_Geom
-    use parameter_module,       only: nicells, nvc, nvf
+    use parameter_module,       only: nicells
+    use legacy_mesh_api,        only: nvc, nvf
     use truncate_volume_module, only: Trunc_Vol
     use vof_data_module,        only: Eps
 
@@ -705,7 +711,8 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,         only: alittle
     use interface_module,       only: Int_Geom
-    use parameter_module,       only: nicells, nvc, nvf
+    use parameter_module,       only: nicells
+    use legacy_mesh_api,        only: nvc, nvf
     use truncate_volume_module, only: Trunc_Vol
     use vof_data_module,        only: Eps
 

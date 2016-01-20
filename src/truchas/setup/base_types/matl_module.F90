@@ -50,7 +50,7 @@ MODULE MATL_MODULE
   private
 
   ! Public Variables
-  public :: MATERIAL, MATL_SLOT, MATL, COLLATE, PERMUTE_MATL
+  public :: MATERIAL, MATL_SLOT, MATL, COLLATE
   ! Public Procedures
   public :: GATHER_VOF, SCATTER_VOF, &
             SLOT_DECREASE, SLOT_INCREASE, SLOT_COMPRESS,      &
@@ -129,7 +129,8 @@ CONTAINS
     !   Gather material m volume fractions from the Matl derived
     !   type and place them into array Vof.
     !=======================================================================
-    use parameter_module, only: mat_slot, ncells
+    use parameter_module, only: mat_slot
+    use legacy_mesh_api,  only: ncells
 
     ! Argument List
     integer, intent(IN) :: m
@@ -158,7 +159,8 @@ CONTAINS
     !   Scatter material m volume fractions in array Vof into the
     !   appropriate slots of the Matl derived type.
     !=======================================================================
-    use parameter_module, only: mat_slot, ncells
+    use parameter_module, only: mat_slot
+    use legacy_mesh_api,  only: ncells
 
     ! Argument List
     integer, intent(IN) :: m
@@ -220,7 +222,8 @@ CONTAINS
     ! Purpose(s):
     !   Increase the ABC structure size from slot to slot_new.
     !=======================================================================
-    use parameter_module, only: max_slots, ncells
+    use parameter_module, only: max_slots
+    use legacy_mesh_api,  only: ncells
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -261,7 +264,7 @@ CONTAINS
 
   subroutine slot_resize (abc, slot, slot_new)
 
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
 
     type(matl_slot), intent(inout) :: abc(:)
     integer,         intent(inout) :: slot
@@ -301,7 +304,8 @@ CONTAINS
     !   This routine compresses the slot structure to remove unused holes.
     !
     !=======================================================================
-    use parameter_module, only: max_slots, ncells
+    use parameter_module, only: max_slots
+    use legacy_mesh_api,  only: ncells
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -397,132 +401,6 @@ CONTAINS
     end do
 
   END SUBROUTINE COLLATE_MATL
-  
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  FUNCTION MATL_PERMUTE (Matl_Cell) RESULT (Matl_Permute_Cell)
-    !==================================================================
-    ! Purpose(s):
-    !   PERMUTE a matl slot according to Permute_Mesh_Vector
-    !==================================================================
-    use mesh_module,      only: Permute_Mesh_Vector
-    use parallel_scope
-    use parameter_module, only: ncells
-
-    ! Arguments
-    type(MATERIAL), dimension(:), intent(IN) :: Matl_Cell
-    type(MATERIAL), dimension(ncells)        :: Matl_Permute_Cell
-
-    ! Local variables
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    call PERMUTE_MATL(Matl_Permute_Cell, Matl_Cell, Permute_Mesh_Vector, SCOPE=GLOBAL_SCOPE)
-
-  END FUNCTION MATL_PERMUTE
-  
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  SUBROUTINE PERMUTE_MATL (Permuted_Matl, Orig_Matl, Permuter, SCOPE)
-    !==================================================================
-    ! Purpose(s):
-    !   PERMUTE a matl slot according to Permute_Mesh_Vector
-    !==================================================================
-    use parallel_scope
-
-    ! Arguments
-    type(MATERIAL), dimension(:), intent(  OUT) :: Permuted_Matl
-    type(MATERIAL), dimension(:), intent(IN   ) :: Orig_Matl
-    integer, dimension(:), intent(IN) :: Permuter
-    type (PL_SCOPE), OPTIONAL, intent(IN   ) :: SCOPE
-
-    ! Local variables
-    type (PL_SCOPE) :: Desired_Scope
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Default scope is global
-    if (PRESENT(SCOPE)) then
-       Desired_Scope = SCOPE
-    else
-       Desired_Scope = GLOBAL_SCOPE
-    end if
-
-    if (DESIRED_SCOPE == GLOBAL_SCOPE) then
-       call PERMUTE_MATL_GLOBAL(Permuted_Matl, Orig_Matl, Permuter)
-    end if
-
-    if (DESIRED_SCOPE == LOCAL_SCOPE) then
-       call PERMUTE_MATL_LOCAL(Permuted_Matl, Orig_Matl, Permuter)
-    end if
-
-  END SUBROUTINE PERMUTE_MATL
-  
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  SUBROUTINE PERMUTE_MATL_GLOBAL (Permuted_Matl, Orig_Matl, Permuter)
-    !==================================================================
-    ! Purpose(s):
-    !   PERMUTE a matl slot according to Permute_Mesh_Vector
-    !   Global version, so Permuter must have global indices
-    !==================================================================
-    use pgslib_module,    only: PGSLib_Permute,   &
-                                PGSLIB_Deallocate_Trace, &
-                                PGSLIB_GS_Trace
-
-    ! Arguments
-    type(MATERIAL), dimension(:), intent(  OUT) :: Permuted_Matl
-    type(MATERIAL), dimension(:), intent(IN   ) :: Orig_Matl
-    integer, dimension(:), intent(IN) :: Permuter
-
-    ! Local variables
-    type (PGSLIB_GS_Trace), POINTER :: Matl_Trace
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Need trace to be in a known state
-    NULLIFY(Matl_Trace)
-
-       call PGSLib_Permute(DEST   = Permuted_Matl%Id,&
-                           SOURCE = Orig_Matl%Id,        &
-                           INDEX  = Permuter,    &
-                           TRACE  = Matl_Trace)
-       call PGSLib_Permute(DEST   = Permuted_Matl%Vof,&
-                           SOURCE = Orig_Matl%Vof,        &
-                           INDEX  = Permuter,    &
-                           TRACE  = Matl_Trace)
-       call PGSLib_Permute(DEST   = Permuted_Matl%Vof_Old,&
-                           SOURCE = Orig_Matl%Vof_Old,        &
-                           INDEX  = Permuter,    &
-                           TRACE  = Matl_Trace)
-
-    ! Done with the trace
-    Call PGSLib_Deallocate_Trace(Matl_Trace)
-
-  END SUBROUTINE PERMUTE_MATL_GLOBAL
-  
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  SUBROUTINE PERMUTE_MATL_LOCAL (Permuted_Matl, Orig_Matl, Permuter)
-    !==================================================================
-    ! Purpose(s):
-    !   PERMUTE a matl slot according to Permute_Mesh_Vector
-    !   Local version, so Permuter must have local indices
-    !==================================================================
-
-    ! Arguments
-    type(MATERIAL), dimension(:), intent(  OUT) :: Permuted_Matl
-    type(MATERIAL), dimension(:), intent(IN   ) :: Orig_Matl
-    integer, dimension(:), intent(IN) :: Permuter
-
-    ! Local variables
-    integer :: cell
-
-    do cell = 1, SIZE(Permuter)
-       Permuted_Matl(Permuter(cell)) = Orig_Matl(cell)
-    end do
-
-  END SUBROUTINE PERMUTE_MATL_LOCAL
   
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

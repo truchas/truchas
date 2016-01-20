@@ -26,6 +26,8 @@ MODULE BC_INFO_MODULE
   !            Bryan R. Lally, LANL ESA-EPE (lally@lanl.gov)
   !
   !=======================================================================
+  use bc_type_module, only: BC_STRUCTURE
+  use legacy_mesh_api, only: ncells
   implicit none
 
   ! Private Module
@@ -66,10 +68,6 @@ CONTAINS
     ! Purpose(s):
     !   Return BC type identifier; returns a scalar.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
@@ -99,10 +97,6 @@ CONTAINS
     ! Purpose(s):
     !   Return BC type identifier; returns an array.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
@@ -133,10 +127,6 @@ CONTAINS
     !   Returns a true if a cell face is on a boundary, else returns a false;
     !   returns a scalar.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
@@ -169,10 +159,6 @@ CONTAINS
     !   Returns a true if a cell face is on a boundary, else returns a false;
     !   returns a mask array.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
@@ -204,10 +190,6 @@ CONTAINS
     !   Returns a true if a cell face is on an external boundary, else
     !   returns a false; returns a scalar.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! argument list
     type(BC_STRUCTURE),       intent(IN) :: BC
@@ -236,10 +218,6 @@ CONTAINS
     !   Returns a true if a cell face is on an external boundary, else
     !   returns a false; returns a mask array.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
@@ -270,10 +248,6 @@ CONTAINS
     !   Returna a true if a cell face is on an internal boundary, else
     !   returns a false; returns a scalar.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC
@@ -303,10 +277,6 @@ CONTAINS
     !   Returns a true if a cell face is on an internal boundary, else
     !   returns a false; returns a mask array.
     !=======================================================================
-    use bc_type_module, only: BC_STRUCTURE
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     type(BC_STRUCTURE),       intent(IN) :: BC

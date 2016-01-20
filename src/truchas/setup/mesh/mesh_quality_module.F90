@@ -70,7 +70,7 @@ CONTAINS
     !=======================================================================
     use mesh_module,          only: Vertex
     use gs_module,            only: EN_GATHER
-    use parameter_module,     only: ncells, ndim, nvc
+    use mesh_parameter_module, only: ncells, ndim, nvc
     use PGSLIB_Module,        only: pgslib_global_any
 
     ! Local variables

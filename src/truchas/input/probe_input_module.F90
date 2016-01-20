@@ -27,7 +27,6 @@ MODULE PROBE_INPUT_MODULE
   ! Author(s): Sharen Cummins (scummins@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
   use truchas_logging_services
   implicit none
   private
@@ -49,7 +48,6 @@ CONTAINS
 
     use probe_data_module,      only: probe_name, probe_description, &
                                       probe_coords, probe_coords_scale
-    use mesh_input_module,      only: coordinate_scale_factor
     use input_utilities,        only: NULL_R
     use parameter_module,       only: nprobes
  
@@ -95,17 +93,7 @@ CONTAINS
          exit 
       end if
 
-      if (coordinate_scale_factor /= 1 .and. probe_coords_scale(i) == NULL_R) then
-         write (message, 40) i
-40       format ('Mesh coordinate_scale_factor is specified, so probe_coords_scale factor reqd in PROBE namelist ',i2)
-         call TLS_error (message)
-         fatal = .true.
-         exit 
-      end if
-
-      if (coordinate_scale_factor == 1 .and. probe_coords_scale(i) == NULL_R) then
-         probe_coords_scale(i) = 1
-      end if
+      if (probe_coords_scale(i) == NULL_R) probe_coords_scale(i) = 1
 
    end do
 
@@ -147,13 +135,12 @@ CONTAINS
                                       probe_coords, probe_coords_scale
     use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R
     use parallel_info_module,   only: p_info
-    use parameter_module,       only: string_dim, string_len, nprobes
+    use parameter_module,       only: nprobes
     use pgslib_module,          only: PGSLIB_BCAST
 
     integer, intent(in) :: lun
 
     ! Local Variables
-    character(string_len), dimension(string_dim) :: Fatal_Error_String
     logical :: fatal, read_done, found
     integer :: probe_number
     integer :: ioerror

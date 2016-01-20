@@ -56,8 +56,7 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,    only: alittle
     use do_base_types,    only: DO_Specifier, DO_SOLVE_LU_LSLR, DO_SOLVE_SVD_LSLR, DO_SOLVE_ORTHO
-    use parameter_module,  only: ndim,nfc,ncells
-    use mesh_module,      only: Mesh
+    use legacy_mesh_api,  only: ndim, nfc, ncells, Mesh
 
     ! Arguments
     real(r8),dimension(ncells),             intent(IN)    :: Phi
@@ -122,7 +121,7 @@ CONTAINS
     !
     !=======================================================================
     use do_base_types,    only: DO_Specifier, DO_SOLVE_LU_LSLR, DO_SOLVE_SVD_LSLR, DO_SOLVE_ORTHO
-    use parameter_module,  only: nfc,ncells
+    use legacy_mesh_api,  only: nfc, ncells
 
     ! Arguments
     real(r8),dimension(ncells),             intent(IN)    :: Phi
@@ -159,9 +158,7 @@ CONTAINS
     !=======================================================================
     use do_base_types,  only: DO_Specifier
     use do_solve_specifier,  only: dX_Scaled
-    use gs_module,      only: EE_GATHER
-    use parameter_module,  only: ndim,nfc,ncells
-    use mesh_module,    only: Mesh
+    use legacy_mesh_api, only: ndim, nfc, ncells, Mesh, EE_GATHER
     
     ! Arguments
     real(r8), dimension(ncells), intent(IN) :: Phi
@@ -245,8 +242,7 @@ CONTAINS
     use do_base_types,    only: DO_Specifier,dX_Type,SField_Type
     use do_update_module, only: FGetPhiValues
     use do_solve_module,  only: do_lu_solve
-    use parameter_module,  only: ndim,nfc,ncells
-    use mesh_module,      only: Mesh,DEGENERATE_FACE
+    use legacy_mesh_api,  only: ndim, nfc, ncells, Mesh, DEGENERATE_FACE
 
     ! Arguments
     real(r8), dimension(ncells), intent(IN)    :: Phi
@@ -356,8 +352,7 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier,dX_Type,SField_Type
     use do_update_module, only: FGetPhiValues
-    use parameter_module,  only: ndim,nfc,ncells
-    use mesh_module,      only: Mesh,DEGENERATE_FACE
+    use legacy_mesh_api,  only: ndim, nfc, ncells, Mesh, DEGENERATE_FACE
 
     ! Arguments
     real(r8), dimension(ncells), intent(IN)    :: Phi
@@ -458,8 +453,7 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier, DO_SOLVE_LU_LSLR, DO_SOLVE_SVD_LSLR, DO_SOLVE_ORTHO
     use do_update_module, only: UpdateLSLRWeights
-    use gs_module,        only: EE_GATHER
-    use parameter_module,  only: ncells
+    use legacy_mesh_api,  only: ncells, EE_GATHER
  
     ! Arguments
     type(DO_Specifier), intent(INOUT) :: SolveSpec

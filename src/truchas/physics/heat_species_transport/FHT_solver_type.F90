@@ -646,7 +646,7 @@ contains
   
   subroutine compute_advected_heat (T, dQ, Tmin, Tmax)
   
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     use mesh_interop, only: pcell_t_to_ds, pcell_ds_to_t, t_gap_elements
     use parallel_permutations, only: rearrange
     use advection_module, only: compute_advected_enthalpy

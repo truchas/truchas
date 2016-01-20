@@ -23,7 +23,7 @@ MODULE LINEAR_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: ndim, nvc
+  use mesh_parameter_module, only: ndim, nvc
   implicit none
   private
 
@@ -92,7 +92,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,      only: Cell
-    use parameter_module, only: ncells, ndim, nvc
+    use mesh_parameter_module, only: ncells
 
     ! Argument List
     integer, intent(IN) :: f ! Cell-Face Number
@@ -149,7 +149,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,      only: Cell
-    use parameter_module, only: ncells, ndim, nvc
+    use mesh_parameter_module, only: ncells
 
     ! Argument List
     integer, intent(IN) :: f ! Cell-Face Number
@@ -207,7 +207,6 @@ CONTAINS
     !               n=1
     !
     !=======================================================================
-    use parameter_module, only: ndim, nvc
 
     ! Argument List
     integer, optional, intent(IN)  :: id
@@ -279,7 +278,6 @@ CONTAINS
     !   The index 'nlc' is never equivalent to n, and is derived from
     !   the Tensor matrix, nlc = Tensor(nn+1,n).
     !=======================================================================
-    use parameter_module, only: ndim, nvc
     use tensor_module,    only: Tensor
 
     ! Argument List

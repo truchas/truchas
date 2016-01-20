@@ -2,6 +2,7 @@
 
 import sys
 import os
+import math
 
 import unittest
 import numpy
@@ -43,24 +44,36 @@ class Hydrostatic(TruchasTest.GoldenTestCase):
     '''Verify hydrostatic pressure head'''
     
     n = 20
-    tol = 4.0e-7
 
     # The centroids function doesn't serialize, so we don't want to here either.
-    test = self.get_test_field('Z_P',cycle=n,serialize=False)
+    p = self.get_test_field('Z_P',cycle=n,serialize=False)
+    vof = self.get_test_field('VOF', cycle=n,serialize=False)
     xc = self.test_output.get_mesh().centroids()
     
-    # This is really lame ...
-    top = 54  # cell 55 (1-based)
-    bot =  6  # cell  7 (1-based)
-    dpdz = (test[top]-test[bot]) / (xc[top,2]-xc[bot,2])
+    n = 0
+    pavg = 0.0
+    zavg = 0.0
+    for j in range(p.size):
+      if vof[j,0] > 0.99:
+        pavg += p[j]
+        zavg += xc[j,2]
+        n += 1
+    pavg = pavg/n
+    zavg = zavg/n
+    error = 0.0
+    dpdz = -9.81e3
+    for j in range(p.size):
+      if vof[j,0] > 0.99:
+        error += ((p[j]-pavg) - dpdz*(xc[j,2]-zavg))**2
+    error = math.sqrt(error/n)
     
-    gold = -9.81e3
-    error = abs((dpdz - gold)/gold) 
+    tol = 1.0e-4
     if (error > tol):
-      print 'pressure gradient rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      print dpdz
+      print 'fluid pressure l2 error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
       self.assertTrue(False)
     else:
-      print 'pressure gradient rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+      print 'fluid pressure l2 error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
     
 
 if __name__ == '__main__':

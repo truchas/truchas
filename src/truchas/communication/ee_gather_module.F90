@@ -23,7 +23,7 @@ MODULE EE_GATHER_MODULE
   use gs_util,        only: gs_init_ee_mask,        &
                             ee_gs_init
   use mesh_module,    only: Mesh
-  use parameter_module
+  use mesh_parameter_module, only: ncells, nfc
   use var_vector_module
   use truchas_logging_services
 

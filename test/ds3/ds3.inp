@@ -9,7 +9,6 @@ remain identical as they should.
 
 &MESH
   mesh_file = 'ds1-randomized.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS

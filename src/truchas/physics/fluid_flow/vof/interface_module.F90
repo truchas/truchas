@@ -27,7 +27,8 @@ MODULE INTERFACE_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: ncells, ndim, nvc, max_topology_models
+  use parameter_module, only: max_topology_models
+  use legacy_mesh_api, only: ncells, ndim, nvc
   implicit none
   private
 
@@ -116,8 +117,7 @@ CONTAINS
     !    the INTERFACE_DATA derived type.
     !
     !=======================================================================
-    use gs_module,   only: EN_GATHER
-    use mesh_module, only: Cell, Vertex, Vrtx_Bdy
+    use legacy_mesh_api, only: Cell, gather_vertex_coord
  
     ! Arguments
     logical,  dimension(ncells), intent(IN) :: Mask
@@ -148,7 +148,7 @@ CONTAINS
  
        ! Added the BOUNDARY argument.  Now off-pe data motion only done
        ! on first time through.
-       call EN_GATHER (Vtx1, Vertex%Coord(n), BOUNDARY=Vrtx_Bdy(n)%Data)
+       call gather_vertex_coord (Vtx1, dim=n)
  
        do v = 1, nvc
 

@@ -17,7 +17,8 @@ MODULE probe_module
   !======================================================================= 
  
   use kinds, only: r8
-  use parameter_module, only: ndim, string_len
+  use parameter_module, only: string_len
+  use legacy_mesh_api,  only: ndim
   use,intrinsic :: iso_c_binding, only: c_ptr
   implicit none 
   private 

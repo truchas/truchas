@@ -6,6 +6,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 MODULE SORT_MODULE
   !=======================================================================
   ! Purpose(s):
@@ -76,8 +78,13 @@ MODULE SORT_MODULE
   private
 
   public :: SORT, REVERSE
+  public :: heapsort
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+  interface heapsort
+    module procedure heapsort_int, heapsort_int_perm
+  end interface
 
   ! Generic Procedure Interfaces
   INTERFACE REVERSE
@@ -100,6 +107,100 @@ MODULE SORT_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
+
+  !! This subroutine uses the heap sort method to compute the permutation PERM
+  !! that sorts the elements of ARRAY into increasing order; i.e., the elements
+  !! of the array ARRAY(PERM(:)) are in increasing order.
+  !! Copied here from rad_problem_type.F90 for general use. NNC, Feb 2016.
+
+  subroutine heapsort_int_perm (array, perm)
+
+    integer, intent(in)  :: array(:)
+    integer, intent(out) :: perm(:)
+
+    integer :: j, tmp
+
+    ASSERT(size(array) == size(perm))
+
+    do j = 1, size(perm)
+      perm(j) = j
+    end do
+
+    !! Create the heap from the bottom up.
+    do j = size(perm)/2, 1, -1 ! start with the last parent
+      call sift_down (j, size(perm))
+    end do
+
+    do j = size(perm), 2, -1
+      tmp = perm(j)
+      perm(j) = perm(1)
+      perm(1) = tmp
+      if (j > 2) call sift_down (1, j-1)
+    end do
+
+  contains
+
+    subroutine sift_down (first, last)
+      integer, intent(in) :: first, last
+      integer :: root, child, proot
+      root = first
+      proot = perm(root)
+      child = 2*root
+      do while (child <= last)
+        if (child < last) then  ! there is a sibling, take the larger
+          if (array(perm(child)) < array(perm(child+1))) child = child + 1
+        end if
+        if (array(proot) >= array(perm(child))) exit  ! tree at root is a heap
+        perm(root) = perm(child)
+        root = child
+        child = 2*root
+      end do
+      perm(root) = proot
+    end subroutine
+
+  end subroutine heapsort_int_perm
+
+
+  subroutine heapsort_int (array)
+
+    integer, intent(inout) :: array(:)
+
+    integer :: j, tmp
+
+    !! Create the heap from the bottom up.
+    do j = size(array)/2, 1, -1 ! start with the last parent
+      call sift_down (j, size(array))
+    end do
+
+    do j = size(array), 2, -1
+      tmp = array(j)
+      array(j) = array(1)
+      array(1) = tmp
+      if (j > 2) call sift_down (1, j-1)
+    end do
+
+  contains
+
+    subroutine sift_down (first, last)
+      integer, intent(in) :: first, last
+      integer :: root, child, array_first
+      array_first = array(first)
+      root = first
+      child = 2*root
+      do while (child <= last)
+        if (child < last) then  ! there is a sibling, take the larger
+          if (array(child) < array(child+1)) child = child + 1
+        end if
+        if (array_first >= array(child)) exit  ! tree at root is a heap
+        array(root) = array(child)
+        root = child
+        child = 2*root
+      end do
+      array(root) = array_first
+    end subroutine
+
+  end subroutine heapsort_int
+
 
   SUBROUTINE SORT (Array_Test, Array_Index, sort_method)
     !=======================================================================

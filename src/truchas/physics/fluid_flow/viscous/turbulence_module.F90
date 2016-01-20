@@ -24,7 +24,8 @@ MODULE TURBULENCE_MODULE
   !           
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: string_len, ncells
+  use parameter_module, only: string_len
+  use legacy_mesh_api, only: ncells
   implicit none
   private
 
@@ -52,7 +53,6 @@ CONTAINS
     !   Driver routine for all turbulence models.
     !
     !======================================================================= 
-    use parameter_module, only: string_len
 
     ! Argument List
     character(*), optional, intent(IN) :: specified_model
@@ -119,7 +119,7 @@ CONTAINS
     !   In the case of momentum transport, the diffusivity is also called
     !   kinematic viscosity (nu), which is given by mu / rho.
     !======================================================================= 
-    use parameter_module, only: ncells, ndim
+    use legacy_mesh_api,  only: ncells, ndim
     use zone_module,      only: Zone
 
     ! Local Variables

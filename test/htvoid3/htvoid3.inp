@@ -20,7 +20,6 @@ will result in heat solutions that are not comparable.
 
 &MESH
   mesh_file = 'htvoid3.gen'
-  mesh_file_format = 'ExodusII'
   interface_side_sets = 10
 /
 

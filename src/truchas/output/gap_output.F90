@@ -31,7 +31,9 @@ contains
     ! 
     !    Set gap element output data to that of an adjacent cell 
     !---------------------------------------------------------------------------
-    use parameter_module,            only: ncells, ncomps, nfc 
+    use parameter_module,            only: ncomps
+    use legacy_mesh_api,             only: ncells, nfc, Mesh, EE_GATHER
+    use legacy_mesh_api,             only: GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5 
     use solid_mechanics_input,       only: solid_mechanics
     use solid_mechanics_output,      only: get_sm_rotation_magnitude,          &
                                            set_sm_rotation_magnitude,          &
@@ -44,9 +46,7 @@ contains
                                            get_smech_cell_plastic_strain_rate, &
                                            set_smech_cell_plastic_strain_rate
     use zone_module,                 only: Zone 
-    use mesh_module,                 only: Mesh, GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5 
     use pgslib_module,               only: PGSLib_GLOBAL_ANY 
-    use gs_module,                   only: EE_GATHER 
     use physics_module, only: heat_transport, heat_species_transport
 
     integer :: icomp 

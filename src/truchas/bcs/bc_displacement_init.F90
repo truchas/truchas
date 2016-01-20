@@ -45,7 +45,8 @@ CONTAINS
     ! Author: Dave Korzekwa
     !-----------------------------------------------------------------------------
     use mech_bc_data_module
-    use parameter_module, only: ndim, mbc_surfaces, mbc_nodes
+    use parameter_module, only: mbc_surfaces, mbc_nodes
+    use legacy_mesh_api, only: ndim
     !
     !
     ! Arguments
@@ -174,9 +175,8 @@ CONTAINS
     ! Author: Dave Korzekwa
     !---------------------------------------------------------------------
     !
-    use parameter_module, only: ndim, nfc, ncells
+    use legacy_mesh_api, only: ndim, nfc, ncells, Cell
     use bc_data_module, only: BC_Type, BC_Value
-    use mesh_module, only: Cell
     !
     ! Arguments
     logical, dimension(nfc,ncells), intent(IN) :: BC_Mask
@@ -360,12 +360,12 @@ CONTAINS
     ! Author(s): Dave Korzekwa
     !
     !-----------------------------------------------------------------------------
-    use mesh_module,          only: Vertex, UnPermute_Vertex_Vector
+    use legacy_mesh_api,      only: ndim, nnodes, Vertex, UnPermute_Vertex_Vector
     use bc_data_module,       only: BC_Value, BC_Type, Conic_Tolerance, &
                                     Node_Disp_Coords
     use mech_bc_data_module,  only: Node_Disp_BC_Temp, X_DISPLACEMENT, Y_DISPLACEMENT, Z_DISPLACEMENT, &
                                     NORMAL_DISPLACEMENT
-    use parameter_module,     only: ndim, nnodes, mbc_nodes
+    use parameter_module,     only: mbc_nodes
     use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_COLLATE
     use parallel_info_module
     !
@@ -375,16 +375,8 @@ CONTAINS
     integer :: status, i, j, idim, inode, bc_gnode
     integer, pointer, dimension(:) :: Collated_Nodes
     real(r8) :: dist
-!    real(r8), pointer, dimension(:,:,:)  :: Xv
     logical :: node_found
     character(128) :: message
-    !
-!    allocate(Xv(ndim,nvc,ncells), stat=status)
-!    if (status /= 0) call punt((/'allocation error: Xv'/), 'Node_Set_BC_Init')
-    ! Gather vertex coordinates
-!    do i = 1,ndim
-!       call EN_GATHER (Xv(i,:,:), Vertex%Coord(i), BOUNDARY=Vrtx_Bdy(i)%Data)
-!    end do
     !
     if (p_info%IOP) then
        ALLOCATE(Collated_Nodes(p_info%nPE))
@@ -466,9 +458,9 @@ CONTAINS
     !
     !-----------------------------------------------------------------------------
     use mech_bc_data_module,  only: Interface_ID, Interface_List
-    use parameter_module,     only: ncells,nfc
+    use legacy_mesh_api, only: ncells, nfc
     use parallel_info_module
-!    use mesh_module,          only: Mesh, GAP_ELEMENT_1
+!    use legacy_mesh_api,          only: Mesh, GAP_ELEMENT_1
     !
     ! Arguments
     integer, intent(IN) :: p, f, msrf

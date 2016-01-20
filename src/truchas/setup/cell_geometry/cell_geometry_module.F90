@@ -69,7 +69,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,          only: Vertex
-    use parameter_module,     only: ndim
+    use mesh_parameter_module, only: ndim
     use pgslib_module,        only: PGSLib_Global_MINVAL, PGSLib_Global_MAXVAL
 
     ! local variables
@@ -127,7 +127,7 @@ CONTAINS
     use gs_module,        only: EN_GATHER
     use linear_module,    only: LINEAR_PROP
     use mesh_module,      only: Cell, Vertex, Vrtx_Bdy
-    use parameter_module, only: ncells, nfc, ndim, nvc
+    use mesh_parameter_module, only: ncells, nfc, ndim, nvc
 
     ! local variables
     integer :: n, f
@@ -165,7 +165,8 @@ CONTAINS
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
     use gs_module,            only: EN_GATHER
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
-    use parameter_module,     only: ncells, ndim, nvc, nrot
+    use parameter_module,     only: nrot
+    use mesh_parameter_module, only: ncells, ndim, nvc
 
     ! Local Variables
     integer :: i, i1, i2, v1, v2, v3, v4, v5, v6, v7, v8
@@ -361,7 +362,7 @@ CONTAINS
     use gs_module,            only: EN_GATHER, EN_SUM_SCATTER
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy, Mesh,       &
                                     volume_min, volume_max, GAP_ELEMENT_1
-    use parameter_module,     only: ncells, ndim, nfc, nnodes, nvc, nec
+    use mesh_parameter_module, only: ncells, ndim, nfc, nnodes, nvc, nec
     use pgslib_module,        only: PGSLib_GLOBAL_MINLOC, &
                                     PGSLib_GLOBAL_MAXLOC, &
                                     PGSLib_Global_SUM,    &
@@ -509,7 +510,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,          only: Cell
-    use parameter_module,     only: ndim, nfc
+    use mesh_parameter_module, only: ndim, nfc
 
     ! Local Variables
     integer :: f, n
@@ -540,7 +541,7 @@ CONTAINS
     use mesh_module,          only: Mesh, DEGENERATE_FACE, &
                                     CELL_HEX, CELL_PYRAMID, CELL_PRISM, &
                                     CELL_TET, GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5
-    use parameter_module,     only: ncells
+    use mesh_parameter_module, only: ncells
 
     ! Local Variables
     integer :: i
@@ -590,7 +591,7 @@ CONTAINS
     use cutoffs_module,   only: alittle
     use gs_module,        only: EN_GATHER
     use mesh_module,      only: Cell, Vertex, Vrtx_Bdy
-    use parameter_module, only: ncells, ndim, nfc, nvc
+    use mesh_parameter_module, only: ncells, ndim, nfc, nvc
 
     ! Local Variables
     integer :: f, i, v1, v2, v3, v4
@@ -749,7 +750,7 @@ CONTAINS
     use cutoffs_module,       only: alittle
     use gs_module,            only: EN_GATHER
     use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
-    use parameter_module,     only: ncells, ndim, nfc, nvc
+    use mesh_parameter_module, only: ncells, ndim, nfc, nvc
 
     ! Local Variables
     integer :: f, i, i1, i2, n, v11, v12, v13, v14,    &
@@ -905,7 +906,7 @@ CONTAINS
     use cutoffs_module,       only: alittle
     use discrete_ops_data,    only: use_ortho_face_gradient, discrete_ops_type
     use mesh_module,          only: Cell, orthogonal_mesh
-    use parameter_module,     only: ncells, ncells_tot, ndim
+    use mesh_parameter_module, only: ncells, ncells_tot, ndim
     use pgslib_module,        only: PGSLib_GLOBAL_COUNT
 
     ! Local Variables
@@ -1009,7 +1010,7 @@ CONTAINS
     !___________________________________________________________________________
 
     use mesh_module,       only: Mesh, GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5
-    use parameter_module,  only: ncells, ndim, nfc
+    use mesh_parameter_module, only: ncells, ndim, nfc
     use gs_module,         only: EE_GATHER
     use mesh_input_module, only: gap_element_blocks
 

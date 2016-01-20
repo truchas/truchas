@@ -4,10 +4,8 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 
 
 &MESH
-    Ncell             = 36, 1, 30
-    Coord             = 3*0.0, 1.2, 0.05, 1.0
-    Fuzz              = 3*0.0
-    Ratio             = 3*1.0
+
+    Mesh_File = 'mesh.exo'
 
 /
 

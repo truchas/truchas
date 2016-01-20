@@ -75,7 +75,7 @@ set(SETUP_SCALARS_FILES
           setup/scalars/cutoffs_module.F90
           setup/scalars/debug_control_data.F90
           setup/scalars/parameter_module.F90
-          setup/scalars/scalars_module.F90)
+          setup/scalars/mesh_parameter_module.F90)
 list(APPEND SETUP_FILES ${SETUP_SCALARS_FILES})	
 
 # - vof

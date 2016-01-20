@@ -47,7 +47,8 @@ CONTAINS
                                  Rtheta_Tabular_Pt, RZ_Tabular_Pt,     &
                                  Sgeom, Surface_Name, Tab_Type,        &
                                  Length, Ztab, Mesh_Matnum
-    use parameter_module,  only: msurf, mtab, mtype, ndim, nmat
+    use parameter_module,  only: msurf, mtab, mtype, nmat
+    use legacy_mesh_api,   only: ndim
     use property_module,   only: Get_User_Material_ID
 
     ! Argument List
@@ -543,8 +544,8 @@ CONTAINS
                                       mesh_material_number
     use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R, NULL_C
     use parallel_info_module,   only: p_info
-    use parameter_module,       only: mbody, msurf, mtab, ndim, string_dim,     &
-                                      nrot, mphi
+    use parameter_module,       only: mbody, msurf, mtab, string_dim, nrot, mphi
+    use legacy_mesh_api,        only: ndim
     use property_module,        only: Get_Truchas_Material_ID
 
     use scalar_func_factories,  only: alloc_const_scalar_func
@@ -736,7 +737,8 @@ CONTAINS
                                     Surface_Name, Length, Rotation_Angle, &
                                     Translation_Pt, Rotation_Pt,          &
                                     mesh_material_number
-    use parameter_module,     only: msurf, ndim
+    use parameter_module,     only: msurf
+    use legacy_mesh_api,      only: ndim
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLIB_BCAST
 

@@ -19,7 +19,7 @@ MODULE PROJECTION_DATA_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module,   only: string_len
+  use parameter_module, only: string_len
   implicit none
   private
 

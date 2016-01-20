@@ -27,21 +27,6 @@ MODULE PARAMETER_MODULE
   ! Number of physical dimensions
   integer, parameter :: ndim = 3
 
-  ! Number of faces per cell
-  integer, parameter :: nfc = 2*ndim
-
-  ! Number of vertices per cell
-  integer, parameter :: nvc = 2**ndim
-
-  ! Number of vertices per face
-  integer, parameter :: nvf = 2**(ndim - 1)
-
-  ! Number of faces per vertex
-  integer, parameter :: nfv = ndim
-
-  ! Number of edges per cell
-  integer, parameter :: nec = ndim*2**(ndim - 1)
-
   ! Number of rotation axes
   integer, parameter :: nrot = 2*ndim - 3
 
@@ -87,9 +72,6 @@ MODULE PARAMETER_MODULE
   integer, parameter :: maxcon = 10
   integer, parameter :: maxform = 8
 
-  ! Maximum number of mesh segments
-  integer, parameter :: mseg = 21
-
   ! Maximum number of mesh domains
   integer, parameter :: max_domains = 4196
 
@@ -98,13 +80,10 @@ MODULE PARAMETER_MODULE
 
   ! Array sizes
   integer, dimension(ndim) :: Nx, Mx, Nx_tot, Mx_tot
-  integer :: nmat, mmat, nnodes, nnodes_tot, ncells,     &
-                              ncells_tot, nicells, nicells_tot,           &
+  integer :: nmat, mmat, nicells, nicells_tot,           &
                               nfaces, boundary_faces, boundary_faces_tot, &
                               mat_slot = 0, mat_slot_new = 0,             &
                               mat_slot_tmp = 0, mat_slot_tmp_new = 0
-  ! Number of side sets
-  integer :: nssets = 0
 
   ! maximum number of probes allowed in input file
   integer, parameter :: MAX_PROBES = 20

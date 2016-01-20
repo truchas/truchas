@@ -34,7 +34,7 @@
     !=======================================================================
     use gs_info_module,   only: EN_TRACE, EN
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nnodes, nvc
+    use mesh_parameter_module, only: ncells, nnodes, nvc
     use pgslib_module,  only: PGSLib_GS_Trace_Setup_P
 
     ! Incoming Arguments

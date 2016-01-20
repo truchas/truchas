@@ -54,7 +54,7 @@ CONTAINS
     !=======================================================================
     use mesh_module,          only: MESH_CONNECTIVITY, VERTEX_DATA
     use parallel_info_module, only: p_info
-    use parameter_module,     only: ncells, ncells_tot, nnodes, nnodes_tot
+    use mesh_parameter_module, only: ncells, ncells_tot, nnodes, nnodes_tot
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_COLLATE
 #endif
@@ -116,7 +116,7 @@ CONTAINS
     !
     !====================================================================
     use mesh_module,          only: MESH_CONNECTIVITY
-    use parameter_module,     only: ncells, ncells_tot, nfc, nvc
+    use mesh_parameter_module, only: ncells, ncells_tot, nfc, nvc
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_DIST
 #endif
@@ -183,7 +183,7 @@ CONTAINS
     !
     !====================================================================
     use mesh_module,          only: VERTEX_DATA
-    use parameter_module,     only: ndim, nnodes, nnodes_tot 
+    use mesh_parameter_module, only: ndim, nnodes, nnodes_tot 
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_DIST
 #endif
@@ -232,7 +232,7 @@ CONTAINS
     !
     !====================================================================
     use mesh_module,          only: MESH_CONNECTIVITY
-    use parameter_module,     only: nfc, nvc
+    use mesh_parameter_module, only: nfc, nvc
 #ifdef USE_PGSLIB
     use pgslib_module,        only: PGSLIB_COLLATE
 #endif

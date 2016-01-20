@@ -186,7 +186,8 @@ module solid_mechanics_output
 ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
   subroutine get_sm_thermal_strain(output)
     use solid_mechanics_data, only: Thermal_Strain
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -198,7 +199,7 @@ module solid_mechanics_output
 
   subroutine get_sm_displacement(output)
     use solid_mechanics_data, only: Displacement
-    use parameter_module, only: ndim, nnodes
+    use legacy_mesh_api, only: ndim, nnodes
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
     ASSERT(size(output,1) == ndim)
@@ -210,7 +211,7 @@ module solid_mechanics_output
 
   subroutine get_sm_rhs(output)
     use solid_mechanics_data, only: RHS
-    use parameter_module, only: ndim, nnodes
+    use legacy_mesh_api, only: ndim, nnodes
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
     ASSERT(size(output,1) == ndim)
@@ -222,7 +223,7 @@ module solid_mechanics_output
                
   subroutine get_sm_rotation_magnitude(output)
     use solid_mechanics_data, only: ROTATION_MAGNITUDE
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:), intent(out) :: output
     ASSERT(size(output) == ncells)
     call remap_dist_to_old_cell(DEST=output,SRC=ROTATION_MAGNITUDE)
@@ -230,7 +231,7 @@ module solid_mechanics_output
  
   subroutine set_sm_rotation_magnitude(output)
     use solid_mechanics_data, only: ROTATION_MAGNITUDE
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:), intent(in) :: output
     ASSERT(size(output) == ncells)
     call remap_old_cell_to_dist(SRC=output,DEST=ROTATION_MAGNITUDE)
@@ -238,7 +239,8 @@ module solid_mechanics_output
  
   subroutine get_sm_pc_strain(output)
     use solid_mechanics_data, only: PC_STRAIN
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -250,7 +252,8 @@ module solid_mechanics_output
 
   subroutine get_smech_cell_total_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -262,7 +265,8 @@ module solid_mechanics_output
 
   subroutine set_smech_cell_total_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncells, ncomps
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(in) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -274,7 +278,8 @@ module solid_mechanics_output
 
   subroutine get_smech_cell_elastic_stress(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -286,7 +291,8 @@ module solid_mechanics_output
 
   subroutine set_smech_cell_elastic_stress(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncells, ncomps
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(in) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -298,7 +304,8 @@ module solid_mechanics_output
 
   subroutine get_smech_cell_plastic_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -310,7 +317,8 @@ module solid_mechanics_output
 
   subroutine set_smech_cell_plastic_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncells, ncomps
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:,:), intent(in) :: output
     integer :: n
     ASSERT(size(output,1) == ncomps)
@@ -322,7 +330,7 @@ module solid_mechanics_output
 
   subroutine get_smech_cell_plastic_strain_rate(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:), intent(out) :: output
     ASSERT(size(output) == ncells)
     call remap_dist_to_old_cell(SRC=SMECH_CELL%PLASTIC_STRAIN_RATE, DEST=output)
@@ -330,7 +338,7 @@ module solid_mechanics_output
  
   subroutine set_smech_cell_plastic_strain_rate(output)
     use solid_mechanics_data, only: SMECH_CELL
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), dimension(:), intent(in) :: output
     ASSERT(size(output) == ncells)
     call remap_old_cell_to_dist(SRC=output,DEST=SMECH_CELL%PLASTIC_STRAIN_RATE)
@@ -343,7 +351,8 @@ module solid_mechanics_output
 
   subroutine get_smech_ip_total_strain(idx,output)
     use solid_mechanics_data, only: SMECH_IP
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     integer,                            intent(in)  :: idx
     real(r8), dimension(ncomps,ncells), intent(out) :: output
     integer :: n
@@ -357,7 +366,8 @@ module solid_mechanics_output
 
   subroutine get_smech_ip_elastic_stress(idx,output)
     use solid_mechanics_data, only: SMECH_IP
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     integer,                  intent(in)  :: idx
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
@@ -371,7 +381,8 @@ module solid_mechanics_output
 
   subroutine get_smech_ip_plastic_strain(idx,output)
     use solid_mechanics_data, only: SMECH_IP
-    use parameter_module, only: ncomps, ncells
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells
     integer,                  intent(in)  :: idx
     real(r8), dimension(:,:), intent(out) :: output
     integer :: n
@@ -385,7 +396,7 @@ module solid_mechanics_output
 
   subroutine get_smech_ip_plastic_strain_rate(idx,output)
     use solid_mechanics_data, only: SMECH_IP
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     integer,                     intent(in)  :: idx
     real(r8), dimension(ncells), intent(out) :: output
     ASSERT(size(output) == ncells)
@@ -400,7 +411,7 @@ module solid_mechanics_output
   end function sm_node_gap_isize
 
   subroutine get_sm_node_gap(idx,output)
-    use parameter_module,     only: nnodes
+    use legacy_mesh_api,     only: nnodes
     use solid_mechanics_data, only: Node_Gap
     integer, intent(in) :: idx
     real(r8), dimension(:), intent(out) :: output
@@ -408,7 +419,7 @@ module solid_mechanics_output
   end subroutine get_sm_node_gap
 
   subroutine get_sm_node_norm_trac(idx,output)
-    use parameter_module,     only: nnodes
+    use legacy_mesh_api,     only: nnodes
     use solid_mechanics_data, only: Node_Norm_Trac
     integer, intent(in) :: idx
     real(r8), dimension(:), intent(out) :: output
@@ -425,7 +436,7 @@ module solid_mechanics_output
     use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_CELL
     use parallel_communication,   only: global_all
     use parallel_permutations,    only: rearrange
-    use parameter_module,         only: ncells
+    use legacy_mesh_api,          only: ncells
 
     real(r8), intent(in)    :: src(:)
     real(r8), intent(inout) :: dest(:)
@@ -445,7 +456,7 @@ module solid_mechanics_output
     use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_CELL
     use parallel_communication,   only: global_all
     use parallel_permutations,    only: rearrange
-    use parameter_module,         only: ncells
+    use legacy_mesh_api,          only: ncells
 
     real(r8), intent(in)    :: src(:,:)
     real(r8), intent(inout) :: dest(:,:)
@@ -472,7 +483,7 @@ module solid_mechanics_output
     use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_NODE
     use parallel_communication,   only: global_all
     use parallel_permutations,    only: rearrange
-    use parameter_module,         only: nnodes
+    use legacy_mesh_api,          only: nnodes
 
     real(r8), intent(in)    :: src(:)
     real(r8), intent(inout) :: dest(:)
@@ -497,7 +508,7 @@ module solid_mechanics_output
     use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_NODE
     use parallel_communication,   only: global_all
     use parallel_permutations,    only: rearrange
-    use parameter_module,         only: nnodes
+    use legacy_mesh_api,          only: nnodes
 
     real(r8), intent(in)    :: src(:,:)
     real(r8), intent(inout) :: dest(:,:)
@@ -534,7 +545,7 @@ module solid_mechanics_output
     use solid_mechanics_mesh,     only: SM_MESH, SM_OLD_TO_MESH_CELL
     use parallel_communication,   only: global_all
     use parallel_permutations,    only: rearrange
-    use parameter_module,         only: ncells
+    use legacy_mesh_api,          only: ncells
 
     real(r8), intent(in)    :: src(:)
     real(r8), intent(inout) :: dest(:)
@@ -559,7 +570,7 @@ module solid_mechanics_output
     use solid_mechanics_mesh,     only: SM_MESH, SM_OLD_TO_MESH_CELL
     use parallel_communication,   only: global_all
     use parallel_permutations,    only: rearrange
-    use parameter_module,         only: ncells
+    use legacy_mesh_api,          only: ncells
 
     real(r8), intent(in)    :: src(:,:)
     real(r8), intent(inout) :: dest(:,:)
@@ -603,10 +614,10 @@ module solid_mechanics_output
 
     use restart_utilities, only: read_dist_array
     use node_operator_module, only: nipc
-    use mesh_module, only: pcell => unpermute_mesh_vector, pnode => unpermute_vertex_vector
+    use legacy_mesh_api, only: pcell => unpermute_mesh_vector, pnode => unpermute_vertex_vector
     use solid_mechanics_data, only: displacement, pc_strain, thermal_strain, &
                                      rhs, smech_ip, smech_cell, mech_data
-    use parameter_module, only: ndim                              
+    use legacy_mesh_api, only: ndim                              
 
     integer, intent(in) :: unit, version
 
@@ -657,7 +668,8 @@ module solid_mechanics_output
     ! edit output.
     ! 
     !=============================================================================
-    use parameter_module, only: ncells, ndim, ncomps
+    use parameter_module, only: ncomps
+    use legacy_mesh_api, only: ncells, ndim
     use truchas_logging_services, only: TLS_panic
 
     integer :: status

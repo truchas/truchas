@@ -16,7 +16,7 @@ MODULE EN_GATHER_MODULE
   use kinds, only: r8
   use gather_module,  only: GATHER
   use gs_util,        only: en_gs_init
-  use parameter_module
+  use mesh_parameter_module, only: ncells, nnodes, nvc
   use truchas_logging_services
   implicit none
   private
@@ -201,7 +201,7 @@ CONTAINS
     ! PURPOSE - 
     !
     !=======================================================================
-    use parameter_module, only: ncells, nnodes, nvc
+    use mesh_parameter_module, only: ncells, nnodes, nvc
 
     ! Arguments
     logical, dimension(nnodes),   intent(IN)  :: Src

@@ -41,8 +41,7 @@ cells along the direction of flow should then be 750 and 250.
 
 &MESH
 
-    Ncell             = 2, 7, 1
-    Coord             = 3*0.0, 1., 1., 1.
+    Mesh_File = 'mesh.exo'
 
 /
 

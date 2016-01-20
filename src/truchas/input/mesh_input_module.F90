@@ -31,7 +31,6 @@ MODULE MESH_INPUT_MODULE
   !           MESH_READ
   !           MESH_READ_SIZE
   !           MESH_SIZES
-  !           MESH_CHECK
   !           MESH_DEFAULT
   !           MESH_INPUT_PARALLEL
   !
@@ -41,7 +40,8 @@ MODULE MESH_INPUT_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: mseg, ndim, mbody
+  use parameter_module, only: mbody
+  use mesh_parameter_module, only: ndim
   use truchas_logging_services
   use parallel_communication
   implicit none
@@ -58,26 +58,10 @@ MODULE MESH_INPUT_MODULE
 
   ! MESH namelist input variables
   character(120), public, save :: mesh_file
-  character(120), public, save :: mesh_file_format
   real(r8), public, save :: coordinate_scale_factor
-  integer,  public, save, dimension(ndim,mseg) :: Ncell
-  real(r8), public, save, dimension(ndim) :: Fuzz
-  real(r8), public, save :: Heps
-  real(r8), public, save, dimension(ndim,mseg) :: Ratio
-  real(r8), public, save, dimension(ndim,mseg+1) :: Coord
   integer,  public, save, dimension(mbody) :: gap_element_blocks
   integer,  public, save, dimension(127) :: interface_side_sets
   integer,  public, save :: exodus_block_modulus
-
-  ! Derived MESH namelist quantities
-  integer, public, save, dimension(ndim) :: Nseg
-  character, public, save, dimension(3) :: Coord_label = (/ 'X','Y','Z' /)
-
-  ! RCM renumbering flag
-  logical, public, save :: use_RCM
-  
-  ! Logical unit the mesh file is opened on
-  integer, save :: msh_lun
 
 CONTAINS
 
@@ -93,9 +77,8 @@ CONTAINS
     use truchas_env,            only: input_dir
     use parallel_info_module,   only: p_info
     use pgslib_module,          only: pgslib_bcast
-    use parameter_module,       only: mseg, ndim, Nx_tot
     use restart_variables,      only: restart
-    use parameter_module,       only: ncells_tot, nnodes_tot
+    use mesh_parameter_module,  only: ncells_tot, nnodes_tot
     use mesh_gen_data,          only: partitions_total, set_generated_mesh
 
     integer, intent(in) :: lun
@@ -108,8 +91,7 @@ CONTAINS
     character(256) :: message
 
     ! mesh namelist specification
-    Namelist /MESH/ Ncell, Coord, Ratio, Fuzz, Heps, mesh_file, mesh_file_format, &
-                    coordinate_scale_factor, use_RCM, &
+    Namelist /MESH/ mesh_file, coordinate_scale_factor, &
                     gap_element_blocks, interface_side_sets, exodus_block_modulus
 
     call TLS_info ('')
@@ -142,18 +124,16 @@ CONTAINS
     partitions_total = p_info%npe
 
     ! Read in the mesh from the mesh file if this is not a restart.
-    ! Set flag for indicating whether we can cartesian partition
-    ! The default .FALSE.
-    call set_Generated_Mesh(.FALSE.)
-
-    if (mesh_file /= NULL_C) then
+    if (mesh_file == NULL_C) then
+       call TLS_fatal ('MESH_FILE not specified')
+    else
        mesh_file = adjustl(trim(mesh_file))
        if (mesh_file(1:1) /= '/' .and. mesh_file(1:1) /= '~') then
           mesh_file = trim(input_dir) // trim(mesh_file)
        end if
-       if (mesh_file_format == NULL_C) mesh_file_format = 'ExodusII'
+       call set_Generated_Mesh(.FALSE.)
     end if
-    READ_THE_MESH: if (mesh_file /= NULL_C .and. .not.(restart)) then
+    READ_THE_MESH: if (.not.restart) then
        ! First read the sizes and broadcast them.
        call MESH_READ_SIZE ()
 
@@ -170,34 +150,6 @@ CONTAINS
 
     end if READ_THE_MESH
 
-    ! If we made the mesh, check it and announce.
-    GENERATE_MESH: if (mesh_file == NULL_C) then
-
-       ! If we are generating a mesh, okay to cartesian partition
-       call set_Generated_Mesh( .TRUE. )
-
-       ! we built the mesh - Check for user input errors
-       total_cells = 1
-       do n = 1,ndim
-          fatal = .false.
-          call MESH_CHECK(Coord_label(n), mseg, Coord(n,:), Fuzz(n), Heps, &
-                          Ratio(n,:), Ncell(n,:), fatal, Nx_tot(n), Nseg(n))
-          total_cells = total_cells*Nx_tot(n)
-          if (fatal) call TLS_fatal ('terminating execution due to previous input errors')
-       end do
-
-       if (ndim == 2) then
-          write (message, 15) (Nx_tot(n), n = 1,ndim), total_cells
-15        format (9x,'Mesh Size: ',i3,' x',i3,' = ',i7,' cells')
-          if (.not.restart) call TLS_info (message)
-       else if (ndim == 3) then
-          write (message, 20) (Nx_tot(n), n = 1,ndim), total_cells
-20        format (9x,'Mesh Size: ',i3,' x',i3,' x',i3,' = ',i7,' cells')
-          if (.not.restart) call TLS_info (message)
-       end if
-
-    end if GENERATE_MESH
-
   END SUBROUTINE MESH_INPUT
 
   SUBROUTINE MESH_READ (Mesh, Vertex)
@@ -208,9 +160,8 @@ CONTAINS
     !   from the mesh file
     !
     !=======================================================================
-    use bc_data_module,       only: Mesh_Face_Set_Tot
-    use mesh_module,          only: MESH_CONNECTIVITY, VERTEX_DATA
-    use parameter_module,     only: ncells_tot, ndim, nnodes_tot, nfc, nssets
+    use mesh_module, only: MESH_CONNECTIVITY, VERTEX_DATA, Mesh_Face_Set_Tot
+    use mesh_parameter_module, only: ncells_tot, ndim, nnodes_tot, nfc, nssets
     use exodus_mesh_type
     use exodus_mesh_io, only: read_exodus_mesh
     use string_utilities, only: i_to_c
@@ -418,9 +369,8 @@ CONTAINS
     use mesh_decomposition_module, only: MESH_BLOCK_DECOMPOSITION, &
                                          MESH_DOMAIN_SIZES
     use parameter_module,          only: boundary_faces, boundary_faces_tot, &
-                                         Mx, Mx_tot, ncells, ncells_tot,     &
-                                         nnodes, nnodes_tot, Nx, Nx_tot,     &
-                                         ndim
+                                         Mx, Mx_tot, Nx, Nx_tot
+    use mesh_parameter_module,     only: ncells, ncells_tot, nnodes, nnodes_tot, ndim
     use parallel_info_module,      only: p_info
     use pgslib_module,             only: PGSLib_Global_ALL
     use restart_variables,         only: restart, restart_ncells, restart_nnodes
@@ -452,7 +402,7 @@ CONTAINS
        ! if mesh is input from a file, then we need to know
        ! the sizes of each of the domains.  This is determined by
        ! a combination of: default choices, user input, mesh file format
-       call MESH_DOMAIN_SIZES (msh_lun, ncells_tot, nnodes_tot, ncells, nnodes)
+       call MESH_DOMAIN_SIZES (ncells_tot, nnodes_tot, ncells, nnodes)
 
        do n = 1,ndim
           Mx(n) = Nx(n) + 1
@@ -510,156 +460,6 @@ CONTAINS
 
   END SUBROUTINE MESH_SIZES
 
-  SUBROUTINE MESH_CHECK (axis, mseg, Coord, fuzz, Heps, Ratio, Ncell, fatal, n, nseg)
-    !=======================================================================
-    ! Purpose:
-    !
-    !   Check MESH namelist parameters for orthogonal mesh generation.
-    !   return n, the total number of cells for this axis.
-    !=======================================================================
-    ! Arguments
-    character, intent(IN) :: axis
-    integer, intent(IN) :: mseg
-    real(r8), dimension(mseg+1), intent(IN) :: Coord
-    real(r8), intent(IN) :: fuzz
-    real(r8), intent(IN) :: Heps
-    real(r8), dimension(mseg), intent(INOUT) :: Ratio
-    integer, dimension(mseg), intent(INOUT) :: Ncell
-    logical, intent(INOUT) :: fatal
-    integer, intent(OUT) :: n, nseg
-
-    ! Local Variables
-    integer :: i, msegm1
-    character(128) :: message
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Basic constants
-    n      = 0
-    nseg   = 0
-    msegm1 = mseg - 1
-
-    ! Check mesh segments
-    SEGMENT_LOOP: do i = 1, msegm1
-
-       ! Check number of cells for this segment.
-       CELL_NUMBER_CHECK: if (Ncell(i) < 0) then
-
-          ! Negative number of cells; no good.
-          write (message,10) axis, i, Ncell(i)
-10        format(a,'-axis ncell(',i3,') =',i10,' is negative!')
-          call TLS_error (message)
-          fatal = .true.
-
-       ! Positive number of cells. . .
-       else if (Ncell(i) > 0) then
-
-          n    = n + Ncell(i)
-          nseg = nseg + 1
-
-          ! Non-contiguous segment.
-          if (nseg /= i) then
-             write (message,15) axis, i
-15           format(a,'-axis mesh segment ',i0,' is not contiguous with other mesh segments!')
-             call TLS_error (message)
-             fatal = .true.
-          end if
-
-          ! This seems to be a valid segment, now check to be sure the
-          ! user input all the coordinates.
-          if (Coord(i) == NULL_R .or. Coord(i+1) == NULL_R) then
-             call TLS_error ('COORD data for ' // axis // '-axis not fully specified')
-             fatal = .true.
-          endif
-
-          ! Non-monotonic coordinates.
-          if (Coord(i) >= Coord(i+1)) then
-             write (message,20) axis,i,Coord(i),i+1,Coord(i+1)
-20           format(a,'-axis coord(',i0,')=',1pe13.5,' Equal or greater than coord(',i0,')=',1pe13.5)
-             call TLS_error (message)
-             fatal = .true.
-          end if
-
-          ! Zero expansion gives uniform zoning.
-          if (Ratio(i) == 0.0_r8) Ratio(i) = 1.0_r8
-
-          ! Outside allowed bounds for Ratio.
-          if (Ratio(i) < 0.8 .or. Ratio(i) > 1.2) then
-             write (message,25) axis, i!, Ratio(i)
-25           format(a,'-axis ratio(',i3,') < 0.8 or > 1.2 !')
-             call TLS_warn (message)
-          end if
-
-       end if CELL_NUMBER_CHECK
-
-    end do SEGMENT_LOOP
-
-    ! Check mseg, Fuzz, and Heps.
-    ! Fuzz is greater than one; not allowed.
-    if (Heps > 0 .and. fuzz > 0) then
-       write (message,30) Heps,fuzz
-30     format('Heps = ',1pe12.5,' > 0 and Fuzz = ',1pe12.5,' > 0. ', &
-              'Only one value (fuzz or Heps) can be nonzero. ')
-       call TLS_error (message)
-       fatal = .true.
-    end if
-
-    if (fuzz > 0.95) then
-       write (message,35) axis, fuzz
-35     format(a,'-axis randomization MAY be too large! Fuzz = ',1pe12.5, &
-              '.  Fuzz greater than 0.95 may give negative volumes!')
-       call TLS_warn (message)
-       fatal = .false.
-    end if
-
-    if (nseg == msegm1 .and. Ncell(mseg) > 0) then
-       write (message,40) axis, msegm1
-40     format('number of ',a,'-axis mesh segments exceeds internal limit MSEG=',i0)
-       call TLS_error (message)
-       fatal = .true.
-    end if
-
-    ! Fuzz is greater than one; not allowed.
-    if (Heps > 1.0_r8) then
-       call TLS_error ('Heps must be <= 1')
-       fatal = .true.
-    end if
-
-    ! Fuzz is less than zero; not allowed.
-    if (Heps < 0.0_r8) then
-       call TLS_error ('Heps must be >= 0')
-       fatal = .true.
-    end if
-
-    ! Fuzz is greater than one; not allowed.
-    if (fuzz > 1.0_r8) then
-       write (message,55) axis, fuzz
-55     format(a,'-axis randomization is too large: Fuzz = ',1pe12.5, &
-              '.  Fuzz must be less than one.')
-       call TLS_error (message)
-       fatal = .true.
-    end if
-
-
-    ! Fuzz is negative; not allowed.
-    if (fuzz < 0.0_r8) then
-       write (message,60) axis, fuzz
-60     format(a,'-axis randomization is negative: Fuzz = ',1pe12.5, &
-              '.  Fuzz should be positive.')
-       call TLS_error (message)
-       fatal = .true.
-    end if
-
-    ! Make sure coordinate scale factor is positive.
-    if (coordinate_scale_factor <= 0.0_r8) then
-       write (message,65) Coordinate_Scale_Factor
-65     format(3(1pe12.5,1x),'is not a valid coordinate scale factor!')
-       call TLS_error (message)
-       fatal = .true.
-    end if
-
-  END SUBROUTINE MESH_CHECK
-
   SUBROUTINE MESH_DEFAULT ()
     !=======================================================================
     ! Purpose:
@@ -667,9 +467,8 @@ CONTAINS
     !   Default MESH namelist
     !=======================================================================
     use input_utilities,  only: NULL_C
-    use parameter_module, only: boundary_faces, ncells,   &
-                                nfaces, nfc, nnodes, nvc, &
-                                nvf, nfv
+    use parameter_module, only: boundary_faces, nfaces
+    use mesh_parameter_module, only: ncells, nfc, nnodes, nvc, nvf, nfv
 
     ! local variables
     integer :: f, i, j
@@ -684,26 +483,11 @@ CONTAINS
     nfaces         = 1 ! Number of unique faces
     nnodes         = 1 ! Number of nodes
 
-    ! Number of cells for each mesh segment.
-    Ncell = 0
-
-    ! Fuzzing parameters
-    Fuzz = 0.0_r8
-    
-    Heps = 0.0_r8
-    Ratio = 0.0_r8
-
     ! Mesh file name
     mesh_file = NULL_C
 
-    ! Mesh file format
-    mesh_file_format = NULL_C
-
     ! Vertex coordinate scale factor.
     coordinate_scale_factor = 1.0_r8
-
-    ! RCM off by default
-    use_RCM = .false.
 
     ! No gap elements or internal interfaces
     gap_element_blocks = 0
@@ -711,15 +495,6 @@ CONTAINS
 
     ! Modulus for determining congruent element block IDs.
     exodus_block_modulus = 10000
-
-   ! Initialize the coordinates for in-line generation to NULL_R.
-   ! This permits error-trapping above to catch situations where the 
-   ! user failed to specify a coordinate.
-   do  j = 1, mseg+1
-       do i = 1, ndim
-          Coord(i,j) = NULL_R
-       end do
-    end do
 
   END SUBROUTINE MESH_DEFAULT
 
@@ -737,14 +512,8 @@ CONTAINS
 
     ! Broadcast Data
     BROADCAST_VARIABLES: if (.not. p_info%UseGlobalServices) then
-       call PGSLib_BCast (Coord)
-       call PGSLib_BCast (Fuzz)
-       call PGSLib_BCast (Ncell)
-       call PGSLib_BCast (Ratio)
        call PGSLib_BCast (mesh_file)
-       call PGSLib_BCast (mesh_file_format)
        call PGSLib_BCast (coordinate_scale_factor)
-       call PGSLib_BCast (use_RCM)
        call PGSLib_BCast (gap_element_blocks)
        call PGSLib_BCast (interface_side_sets)
        call PGSLib_BCast (exodus_block_modulus)
@@ -754,9 +523,8 @@ CONTAINS
 
   subroutine mesh_read_size ()
 
-    use parameter_module, only: ncells_tot, nnodes_tot
+    use mesh_parameter_module, only: ncells_tot, nnodes_tot
     use exodus_truchas_hack, only: read_exodus_mesh_size
-    use string_utilities, only: raise_case
 
     logical :: file_exists
     integer :: stat
@@ -766,13 +534,6 @@ CONTAINS
     call broadcast (file_exists)
     if (.not.file_exists) call TLS_fatal ('mesh file "' // trim(mesh_file) // '" not found')
 
-    !! The default and only supported format is ExodusII.
-    if (mesh_file_format == NULL_C) mesh_file_format = 'EXODUSII'
-    mesh_file_format = raise_case(mesh_file_format)
-    if (mesh_file_format /= 'EXODUSII') then
-      call TLS_fatal ('Unknown MESH_FILE_FORMAT value: "' // trim(mesh_file_format) // '"')
-    end if
-    
     !! Read the number of nodes and cells from the file and broadcast.
     if (is_IOP) call read_exodus_mesh_size (mesh_file, nnodes_tot, ncells_tot, stat)
     call broadcast (stat)
@@ -784,44 +545,39 @@ CONTAINS
   
   SUBROUTINE MESH_READ_SIDE_SETS ()
   
-    use parameter_module, only: nssets
+    use mesh_parameter_module, only: nssets
     use parallel_info_module, only: p_info
-    use bc_data_module, only: Mesh_Face_Set_Tot
+    use mesh_module, only: Mesh_Face_Set_Tot
     use exodus_truchas_hack, only: read_exodus_side_sets
     use pgslib_module,only: PGSLib_BCast
-    use string_utilities, only: raise_case
     
     logical :: fatal
     integer :: status
     character(128) :: Fatal_Error_String
   
-    if (raise_case(mesh_file_format) == "EXODUSII") then
-    
-      fatal = .false.
-    
-      if (p_info%IOP) then
-        if (associated(mesh_face_set_tot)) then
-          Fatal_Error_String = 'mesh_face_set_tot already defined'
-          fatal = .true.
-        end if
-        call read_exodus_side_sets (mesh_file, mesh_face_set_tot, status)
-        if (status /= 0) then
-          Fatal_Error_String = 'error reading side sets from ExodusII file ' // trim(mesh_file)
-          fatal = .true.
-        else
-          nssets = 0
-          if (associated(mesh_face_set_tot)) nssets = size(mesh_face_set_tot,dim=1)
-        end if
+    fatal = .false.
+
+    if (p_info%IOP) then
+      if (associated(mesh_face_set_tot)) then
+        Fatal_Error_String = 'mesh_face_set_tot already defined'
+        fatal = .true.
       end if
-      
-      call TLS_fatal_if_any (fatal, Fatal_Error_String)
-      
-      !! Broadcast the number of side sets;
-      !! the side set data is distributed elsewhere.
-      call PGSLib_BCast (nssets)
-      
+      call read_exodus_side_sets (mesh_file, mesh_face_set_tot, status)
+      if (status /= 0) then
+        Fatal_Error_String = 'error reading side sets from ExodusII file ' // trim(mesh_file)
+        fatal = .true.
+      else
+        nssets = 0
+        if (associated(mesh_face_set_tot)) nssets = size(mesh_face_set_tot,dim=1)
+      end if
     end if
-  
+
+    call TLS_fatal_if_any (fatal, Fatal_Error_String)
+
+    !! Broadcast the number of side sets;
+    !! the side set data is distributed elsewhere.
+    call PGSLib_BCast (nssets)
+      
   END SUBROUTINE MESH_READ_SIDE_SETS
     
 END MODULE MESH_INPUT_MODULE

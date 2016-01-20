@@ -83,7 +83,8 @@ contains
   subroutine get_density_delta (temp, drho)
 
     use kinds, only: r8
-    use parameter_module, only: ncells, nmat
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
     use matl_module, only: gather_vof
@@ -132,7 +133,8 @@ contains
 
   subroutine get_viscosity (mu)
   
-    use parameter_module, only: ncells, nmat
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use fluid_data_module, only: IsImmobile, FluidRho
     use matl_module, only: gather_vof
     use turbulence_module, only: turbulence_model, Nu_Turb
@@ -162,7 +164,7 @@ contains
 
   function EM_permittivity () result (value)
     use kinds, only: r8
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     use zone_module, only: zone
     real(r8) :: value(ncells)
     call compute_cell_property ('electric susceptibility', zone%temp, value)
@@ -171,7 +173,7 @@ contains
 
   function EM_permeability () result (value)
     use kinds, only: r8
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     use zone_module, only: zone
     real(r8) :: value(ncells)
     call compute_cell_property ('magnetic susceptibility', zone%temp, value)
@@ -180,7 +182,7 @@ contains
 
   function EM_conductivity () result (value)
     use kinds, only: r8
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     use zone_module, only: zone
     real(r8) :: value(ncells)
     call compute_cell_property ('electrical conductivity', zone%temp, value)
@@ -230,10 +232,9 @@ contains
                                       boussinesq_approximation,               &
                                       Cell_isnt_Void, Ngbr_isnt_Void,         &
                                       Fluxing_Velocity,MinFluidRho
-    use gs_module,              only: EE_GATHER
     use matl_module,            only: GATHER_VOF
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, nfc, ndim, nmat
+    use parameter_module,       only: nmat
+    use legacy_mesh_api,        only: ncells, nfc, ndim, Cell, EE_GATHER
     use projection_data_module, only: Boundary_Flag
     use pgslib_module,          only: PGSLIB_GLOBAL_ALL, PGSLIB_GLOBAL_ANY, PGSLIB_GLOBAL_MINVAL
     use zone_module,            only: Zone
@@ -443,9 +444,8 @@ contains
     !
     !=======================================================================
 
-    use mesh_module,           only: Cell
-    use parameter_module,      only: ncells, ndim
-    use region_data,           only: Regions, nregion
+    use legacy_mesh_api, only: ncells, ndim, Cell
+    use region_data, only: Regions, nregion
 
     ! calling arguments
     logical, intent(inout) :: IsPureImmobile(:)
@@ -506,7 +506,8 @@ contains
   subroutine compute_cell_property (prop, temp, value, fluid)
 
     use kinds, only: r8
-    use parameter_module, only: ncells, nmat
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use fluid_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase

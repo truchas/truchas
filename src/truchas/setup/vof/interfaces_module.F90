@@ -21,8 +21,8 @@ MODULE INTERFACES_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: mbody, msurf, mtab, ndim, string_len, &
-                              nrot, mcoef, mphi
+  use parameter_module, only: mbody, msurf, mtab, string_len, nrot, mcoef, mphi
+  use legacy_mesh_api, only: ndim
   use scalar_func_containers, only: scalar_func_box
   implicit none
   private

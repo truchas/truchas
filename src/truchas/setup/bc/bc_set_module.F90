@@ -85,7 +85,7 @@ Contains
                                     BC_T_EXIST, BC_T_IFLAG, BC_T_SHIFT, &
                                     BC_V_EXIST, BC_V_IFLAG, BC_V_SHIFT
     use bc_type_module,       only: BC_C, BC_P, BC_T, BC_V
-    use scalars_module
+    use legacy_mesh_api,      only: ncells, nfc
 
     ! Argument List
     logical, intent(IN) :: cflag ! Concentration flag
@@ -271,10 +271,8 @@ Contains
                                     BC_HTC_GAP_OP
 
     use bc_type_module,       only: BC_STRUCTURE
-    use scalars_module
+    use legacy_mesh_api,      only: ncells, nfc, Mesh
     use kinds, only: r8
-    Use mesh_module,          Only: Mesh
-    use parameter_module,     only: ncells
     use pgslib_module,        only: PGSLIB_GLOBAL_COUNT
 
     ! Argument List

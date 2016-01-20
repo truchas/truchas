@@ -72,15 +72,17 @@
 !!    P12 and P21 returned by the call should not be passed to REORDER -- use
 !!    REARRANGE instead.
 !!
-!!  CALL REARRANGE (THIS, DEST, SRC) rearranges values from the distributed
-!!    array SRC to the distributed array DEST according to the parallel
-!!    permutation THIS that describes the mapping from the DEST index space
-!!    into the SRC index space.  This is analogous to REORDER (and in fact
+!!  CALL REARRANGE (THIS, DEST, SRC [,DEFAULT]) rearranges values from the
+!!    distributed array SRC to the distributed array DEST according to the
+!!    parallel permutation THIS that describes the mapping from the DEST index
+!!    space into the SRC index space.  This is analogous to REORDER (and in fact
 !!    equivalent if THIS was created with either of the first two forms of
 !!    CREATE_PAR_PERM) except that DEST is intent-inout and not all elements
 !!    of DEST may be assigned a value by the call.  The elements of DEST not
 !!    assigned to will be those in the index list corresponding to THIS that
-!!    was returned by the third form of CREATE_PAR_PERM.
+!!    was returned by the third form of CREATE_PAR_PERM.  If the optional
+!!    scalar value DEFAULT is specified, those elements in DEST not assigned
+!!    a value from SRC will be assigned this value.
 !!
 
 #include "f90_assert.fpp"
@@ -115,7 +117,8 @@ module parallel_permutations
   end interface
 
   interface rearrange
-    module procedure rearrange_r0, rearrange_r1, rearrange_i0
+    module procedure rearrange_r0, rearrange_r1, rearrange_i0, rearrange_i1
+    module procedure rearrange_l0, rearrange_l1
   end interface
 
 contains
@@ -227,7 +230,7 @@ contains
       nmax = max(maxval(m1), maxval(m2))
       ASSERT(nmin > 0)
       allocate(m2inv(nmin:nmax))
-      ASSERT(is_one_to_one(m1))
+      ASSERT(is_one_to_one(m1).or. .not.present(pp21))
       ASSERT(is_one_to_one(m2))
       m2inv = 0
       do j = 1, size(m2)
@@ -384,11 +387,12 @@ contains
 
   end subroutine reorder_i0
 
-  subroutine rearrange_r0 (this, dest, src)
+  subroutine rearrange_r0 (this, dest, src, default)
 
     type(par_perm), intent(in) :: this
     real(r8), intent(inout) :: dest(:)
     real(r8), intent(in) :: src(:)
+    real(r8), intent(in), optional :: default
 
     integer :: j, k
     real(r8) :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
@@ -405,16 +409,19 @@ contains
         dest(j) = src_offP(k)
       else if (k > 0) then
         dest(j) = src(k)
+      else if (present(default)) then
+        dest(j) = default
       end if
     end do
 
   end subroutine rearrange_r0
 
-  subroutine rearrange_r1 (this, dest, src)
+  subroutine rearrange_r1 (this, dest, src, default)
 
     type(par_perm), intent(in) :: this
     real(r8), intent(inout) :: dest(:,:)
     real(r8), intent(in) :: src(:,:)
+    real(r8), intent(in), optional :: default
 
     integer :: j, k
     real(r8) :: src_offP(size(src,1),this%src_ip%onP_size()+1:this%src_ip%local_size())
@@ -432,16 +439,19 @@ contains
         dest(:,j) = src_offP(:,k)
       else if (k > 0) then
         dest(:,j) = src(:,k)
+      else if (present(default)) then
+        dest(:,j) = default
       end if
     end do
 
   end subroutine rearrange_r1
 
-  subroutine rearrange_i0 (this, dest, src)
+  subroutine rearrange_i0 (this, dest, src, default)
 
     type(par_perm), intent(in) :: this
     integer, intent(inout) :: dest(:)
     integer, intent(in) :: src(:)
+    integer, intent(in), optional :: default
 
     integer :: j, k
     integer :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
@@ -458,9 +468,100 @@ contains
         dest(j) = src_offP(k)
       else if (k > 0) then
         dest(j) = src(k)
+      else if (present(default)) then
+        dest(j) = default
       end if
     end do
 
   end subroutine rearrange_i0
+
+  subroutine rearrange_i1 (this, dest, src, default)
+
+    type(par_perm), intent(in) :: this
+    integer, intent(inout) :: dest(:,:)
+    integer, intent(in) :: src(:,:)
+    integer, intent(in), optional :: default
+
+    integer :: j, k
+    integer :: src_offP(size(src,1),this%src_ip%onP_size()+1:this%src_ip%local_size())
+
+    ASSERT( defined(this) )
+    ASSERT( size(dest,1) == size(src,1) )
+    ASSERT( size(dest,2) == size(this%perm) )
+    ASSERT( size(src,2) == this%src_ip%onP_size() )
+
+    call gather_boundary (this%src_ip, src, src_offP)
+
+    do j = 1, size(dest,2)
+      k = this%perm(j)
+      if (k > this%src_ip%onP_size()) then
+        dest(:,j) = src_offP(:,k)
+      else if (k > 0) then
+        dest(:,j) = src(:,k)
+      else if (present(default)) then
+        dest(:,j) = default
+      end if
+    end do
+
+  end subroutine rearrange_i1
+
+  subroutine rearrange_l0 (this, dest, src, default)
+
+    type(par_perm), intent(in) :: this
+    logical, intent(inout) :: dest(:)
+    logical, intent(in) :: src(:)
+    logical, intent(in), optional :: default
+
+    integer :: j, k
+    logical :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
+
+    ASSERT( defined(this) )
+    ASSERT( size(dest) == size(this%perm) )
+    ASSERT( size(src) == this%src_ip%onP_size() )
+
+    call gather_boundary (this%src_ip, src, src_offP)
+
+    do j = 1, size(dest)
+      k = this%perm(j)
+      if (k > this%src_ip%onP_size()) then
+        dest(j) = src_offP(k)
+      else if (k > 0) then
+        dest(j) = src(k)
+      else if (present(default)) then
+        dest(j) = default
+      end if
+    end do
+
+  end subroutine rearrange_l0
+
+  subroutine rearrange_l1 (this, dest, src, default)
+
+    type(par_perm), intent(in) :: this
+    logical, intent(inout) :: dest(:,:)
+    logical, intent(in) :: src(:,:)
+    logical, intent(in), optional :: default
+
+    integer :: j, k
+    logical :: src_offP(size(src,1),this%src_ip%onP_size()+1:this%src_ip%local_size())
+
+    ASSERT( defined(this) )
+    ASSERT( size(dest,1) == size(src,1) )
+    ASSERT( size(dest,2) == size(this%perm) )
+    ASSERT( size(src,2) == this%src_ip%onP_size() )
+
+    call gather_boundary (this%src_ip, src, src_offP)
+
+    do j = 1, size(dest,2)
+      k = this%perm(j)
+      if (k > this%src_ip%onP_size()) then
+        dest(:,j) = src_offP(:,k)
+      else if (k > 0) then
+        dest(:,j) = src(:,k)
+      else if (present(default)) then
+        dest(:,j) = default
+      end if
+    end do
+
+  end subroutine rearrange_l1
 
 end module parallel_permutations

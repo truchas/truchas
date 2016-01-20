@@ -68,9 +68,7 @@ CONTAINS
     use fluid_data_module,      only: fluidRho, Solid_Face, IsPureImmobile, &
                                       Rho_Face, Rho_Face_n, Fluxing_Velocity
     use fluid_utilities_module, only: FLUIDDENSITYFACE
-    use gs_module,              only: EE_GATHER
-    use mesh_module,            only: Mesh, Cell
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Mesh, Cell, EE_GATHER
     use projection_data_module, only: dt_gradP_over_Rho, Vol_over_RhoCsqDt, &
                                       ghc, ghn, dtRhoG_over_Rho, &
                                       Fcsf_new,dtCsf_over_Rho
@@ -232,8 +230,8 @@ CONTAINS
                                       Rho_Face, IsImmobile
     use matl_module,            only: Matl
     use linear_solution,        only: Ubik_user
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, ndim, nfc, ncells_tot, nmat, mat_slot
+    use legacy_mesh_api,        only: ncells, ndim, nfc, ncells_tot, Cell
+    use parameter_module,       only: nmat, mat_slot
     use pgslib_module,          only: PGSLIB_GLOBAL_SUM, PGSLIB_GLOBAL_ANY
     use projection_data_module, only: mac_projection_iterations,    &
                                       mac_projection_precond_iter,  &
@@ -382,8 +380,7 @@ CONTAINS
                                       DO_SOLVE_LU_LSLR
     use discrete_ops_data,      only: use_ortho_face_gradient
     use fluid_data_module,      only: Rho_Face, Solid_Face, Fluxing_Velocity
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell
     use projection_data_module, only: dirichlet_pressure, Boundary_Flag, ghc, ghn, &
                                       Fcsf_new
 !-mf jan04
@@ -504,12 +501,10 @@ CONTAINS
     !       Jim Sicilian,   May 2006
     !======================================================================= 
     use bc_module,              only: bndry_vel !BC_Vel
-    use mesh_module,            only: Cell, Mesh
     use fluid_data_module,      only: Fluxing_Velocity, Face_Interpolation_Factor,  &
                                       fluidRho, IsPureImmobile, Solid_Face,         &
                                       Centered_GradP_Dynamic
-    use gs_module,              only: EE_GATHER
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell, Mesh, EE_GATHER
     use projection_data_module, only: Boundary_Flag
     use time_step_module,       only: t, dt
     use zone_module,            only: Zone
@@ -603,8 +598,7 @@ CONTAINS
                                       DO_SOLVE_LU_LSLR
     use discrete_ops_data,      only: use_ortho_face_gradient
     use fluid_data_module,      only: Solid_Face
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell
     use projection_data_module, only: dirichlet_pressure, Boundary_Flag, &
                                       dt_gradP_over_Rho
     use time_step_module,       only: t, dt
@@ -730,8 +724,7 @@ CONTAINS
     !   cell-centered divergence of the face fluxing velocity.
     !=======================================================================
     use fluid_data_module,      only: Solid_Face
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, nfc
+    use legacy_mesh_api,        only: ncells, nfc, Cell
     use projection_data_module, only: DVol_by_Dt_over_Vol
 
     ! Argument List
@@ -780,8 +773,7 @@ CONTAINS
     use fluid_data_module,      only: FluidRho, isPureImmobile, MinFaceFraction, MinFluidRho
     use linear_solution,        only: LINEAR_SOLVER, Ubik_user
     use lnorm_module,           only: L1NORM
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell
     use preconditioners,        only: P, PRECONDITION
     use projection_data_module, only: A_Ortho, Boundary_Flag, &
                                       Coeff, UBIK_PRESSURE
@@ -951,9 +943,7 @@ CONTAINS
     use bc_module,              only: BC_Prs, BC, DIRICHLET, Prs
     use cutoffs_module,         only: alittle
     use fluid_data_module,      only: FluidRho, Solid_Face, isPureImmobile
-    use gs_module,              only: EE_GATHER
-    use mesh_module,            only: Cell, Mesh
-    use parameter_module,       only: ncells, nfc, ndim
+    use legacy_mesh_api,        only: ncells, nfc, ndim, Cell, Mesh, EE_GATHER
     use projection_data_module, only: dirichlet_pressure, Vol_over_RhoCsqDt
     use time_step_module,       only: dt
 
@@ -1066,7 +1056,7 @@ CONTAINS
                                       Centered_GradP_Dynamic,   &
                                       Momentum_by_Volume,       &
                                       fluidVof
-    use parameter_module,       only: ndim, ncells
+    use legacy_mesh_api,        only: ndim, ncells
     use time_step_module,       only: dt
     use timing_tree
     use zone_module,            only: Zone
@@ -1154,8 +1144,7 @@ CONTAINS
     use fluid_data_module, only: fluidRho
     use fluid_type_module, only: Div_c
     use lnorm_module,      only: L1NORM, L2NORM, LINORM
-    use mesh_module,       only: Cell
-    use parameter_module,  only: ncells, nfc
+    use legacy_mesh_api,   only: ncells, nfc, Cell
     use pgslib_module,     only: PGSLIB_GLOBAL_MAXLOC
     use time_step_module,  only: dt
 

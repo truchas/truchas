@@ -66,6 +66,10 @@ include(materials/TruchasFiles.cmake)
 message(STATUS "Processing ode")
 include(ode/TruchasFiles.cmake)
 
+# - old mesh api
+message(STATUS "Processing legacy_mesh")
+include(legacy_mesh/TruchasFiles.cmake)
+
 # - output
 message(STATUS "Processing output")
 include(output/TruchasFiles.cmake)

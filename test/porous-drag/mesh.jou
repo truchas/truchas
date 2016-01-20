@@ -1,0 +1,26 @@
+## /opt/cubit/15.0-397645/bin/clarox
+## Cubit Version 15.0
+## Cubit Build 397645
+## Revised 2015-04-07 09:12:39 -0600 (Tue, 07 Apr 2015)
+## Running 10/05/2015 09:20:48 PM
+## Command Options:
+brick x 20 y 1 z 1
+move vertex 7 location 0 0 0 include_merged
+curve 6 interval 20
+curve 6 scheme equal
+curve 7 interval 5
+curve 7 scheme equal
+curve 9 interval 1
+curve 9 scheme equal
+volume 1 scheme auto
+mesh volume 1
+set duplicate block elements off
+block 1 volume 1
+sideset 1 surface 4
+sideset 2 surface 6
+sideset 3 surface 3
+sideset 4 surface 5
+sideset 5 surface 2
+sideset 6 surface 1
+set large exodus file on
+export genesis "mesh.exo" overwrite

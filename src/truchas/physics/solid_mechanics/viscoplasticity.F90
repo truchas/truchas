@@ -27,7 +27,6 @@ Module VISCOPLASTICITY
 !Authors: Dave Korzekwa (dak@lanl.gov)
 !----------------------------------------------------------------------------- 
   use kinds, only: r8
-  !Use parameter_module, only: ncomps
   use time_step_module, only: dt
   use VP_model_class
   use solid_mechanics_mesh, only: ncomps
@@ -107,14 +106,13 @@ Contains
   !
   !----------------------------------------------------------------------------
 
-    use parameter_module,      only: ncells
+    use legacy_mesh_api,       only: ncells, Mesh, GAP_ELEMENT_1
     use solid_mechanics_data,  only: Thermal_Strain, PC_Strain, plasticity
     use solid_mechanics_input, only: strain_limit
     Use zone_module,           only: zone
     Use time_step_module,      Only: cycle_number
     use bdf2_kinds
     use bdf2_integrator
-    use mesh_module,           only: Mesh, GAP_ELEMENT_1
 
     !Arguments
     real(r8), Dimension(ncomps,ncells), Intent(OUT)   :: Pl_Strain_Inc
@@ -309,7 +307,7 @@ Contains
 
       use string_utilities, only: i_to_c
       use parallel_info_module, only: p_info
-      use mesh_module, only: unpermute_mesh_vector
+      use legacy_mesh_api, only: unpermute_mesh_vector
 #ifdef SUPPORTS_NEWUNIT
       use truchas_env, only: output_dir
 #else
@@ -446,7 +444,8 @@ Contains
 
   subroutine viscoplastic_strain_rate_all (stress, temp, strain_rate)
 
-    use parameter_module, only: ncells, nmat
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use fluid_data_module, only: isImmobile
     use material_interop, only: void_material_index
     use matl_module, only: gather_vof
@@ -489,8 +488,7 @@ Contains
     !
     !---------------------------------------------------------------------------
 
-    !Use parameter_module, Only: ndim, nnodes, ncells
-    Use parameter_module, Only: nnodes, ncells
+    use legacy_mesh_api, only: nnodes, ncells
     use solid_mechanics_mesh, only: ndim
 
     ! Argument list
@@ -575,10 +573,7 @@ Contains
     !
     !---------------------------------------------------------------------------
     Use discrete_op_module, Only: DETERMINANT_VOL_AVG
-    Use gs_module,          Only: EN_GATHER
-    Use mesh_module,        Only: Cell, Vertex, Vrtx_Bdy
-    !Use parameter_module,   Only: nnodes, ncells, nvc
-    Use parameter_module,   Only: nnodes, ncells
+    use legacy_mesh_api, only: nnodes, ncells, Cell, EN_GATHER, gather_vertex_coord
     use solid_mechanics_mesh, only: nvc
 
     ! Argument list
@@ -600,9 +595,9 @@ Contains
     Call EN_GATHER (Q_v, Q)
 
     ! Gather the vertex coordinates
-    Call EN_GATHER (X_v, Vertex(:)%Coord(1), BOUNDARY=Vrtx_Bdy(1)%Data)
-    Call EN_GATHER (Y_v, Vertex(:)%Coord(2), BOUNDARY=Vrtx_Bdy(2)%Data)
-    Call EN_GATHER (Z_v, Vertex(:)%Coord(3), BOUNDARY=Vrtx_Bdy(3)%Data)
+    call gather_vertex_coord (X_v, dim=1)
+    call gather_vertex_coord (Y_v, dim=2)
+    call gather_vertex_coord (Z_v, dim=3)
 
     ! Calculate the volume-averaged gradient
     Call DETERMINANT_VOL_AVG (Q_v, Y_v, Z_v, dQ_dx)
@@ -626,11 +621,9 @@ Contains
     !    Calculate the cell-centered solid material stress field - all cells
     !
     !---------------------------------------------------------------------------
-    !Use parameter_module,     Only: ncells, ndim, ncomps
-    Use parameter_module,     Only: ncells, ndim
+    use legacy_mesh_api, only: ncells, ndim, Mesh, GAP_ELEMENT_1
     use solid_mechanics_data, only: Lame1, Lame2
     use solid_mechanics_mesh, only: ncomps
-    use mesh_module,          only: Mesh, GAP_ELEMENT_1
 
     ! Argument list
     real(r8), Dimension(ncomps,ncells), Intent(IN) :: Strain
@@ -673,10 +666,9 @@ Contains
     !    Calculate the cell-centered solid material stress field - all cells
     !
     !---------------------------------------------------------------------------
-    !Use parameter_module,     Only: ndim, ncomps
     use solid_mechanics_data, only: Lame1, Lame2
     use solid_mechanics_mesh, only: ndim, ncomps
-    use mesh_module,          only: Mesh, GAP_ELEMENT_1
+    use legacy_mesh_api,      only: Mesh, GAP_ELEMENT_1
 
     ! Argument list
     real(r8), Dimension(ncomps), Intent(IN) :: Strain
@@ -715,7 +707,6 @@ Contains
 
   Subroutine DEVIATORIC_STRESS(Stress, Dev_Stress)
     ! Calculate the deviatoric stress tensor from the elastic stress tensor
-    !Use parameter_module,     Only: ndim, ncomps
     use solid_mechanics_mesh, only: ndim, ncomps
 
     ! Argument list

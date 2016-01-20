@@ -55,7 +55,8 @@ CONTAINS
     !=======================================================================
     use bc_module,           only: BC
     use matl_module,         only: SLOT_INCREASE, Matl
-    use parameter_module,    only: nfc, ncells, mat_slot, mat_slot_new, nmat, nprobes
+    use legacy_mesh_api,     only: nfc, ncells
+    use parameter_module,    only: mat_slot, mat_slot_new, nmat, nprobes
     use zone_module,            only: Zone
     use fluid_data_module,       only: Fluxing_Velocity
     use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
@@ -199,7 +200,8 @@ CONTAINS
     !   Default the base types.
     !
     !=======================================================================
-    use parameter_module,  only: ndim, nfc
+    use parameter_module,  only: ndim
+    use legacy_mesh_api,   only: nfc
     use zone_module,       only: Zone
 
     ! Local variables

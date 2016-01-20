@@ -86,7 +86,7 @@ CONTAINS
     !           (nz_tot is distributed as evenly as possible over nPEs)
     !=======================================================================
     use parallel_info_module, only: p_info
-    use parameter_module,     only: ndim
+    use mesh_parameter_module, only: ndim
     use pgslib_module,        only: PGSLib_BCAST, PGSLib_COLLATE
 
     ! Argument List
@@ -163,7 +163,7 @@ CONTAINS
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-  SUBROUTINE MESH_DOMAIN_SIZES (msh_lun, ncells_tot, nnodes_tot, ncells, nnodes)
+  SUBROUTINE MESH_DOMAIN_SIZES (ncells_tot, nnodes_tot, ncells, nnodes)
     !=======================================================================
     ! Purpose(s):
     !   Figure out how the mesh is decomposed, and determine how to assign 
@@ -174,7 +174,6 @@ CONTAINS
     use pgslib_module,          only: PGSLib_BCAST
 
     ! Argument List
-    integer, intent(in) :: msh_lun
     integer, intent(IN)  :: ncells_tot
     integer, intent(IN)  :: nnodes_tot
     integer, intent(OUT) :: ncells

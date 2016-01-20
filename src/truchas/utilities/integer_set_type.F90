@@ -26,6 +26,11 @@
 !!    ADD (VALUE) adds the integer VALUE to the set.  If the set already
 !!      stores the value it is not added again.
 !!
+!!    ADD (SET) adds the elements of the INTEGER_SET argument SET to the
+!!      object.  SET is unmodified by the call.
+!!
+!!    REMOVE (VALUE) removes the integer VALUE from the set if it contains it.
+!!
 !!  The following defined assignment is provided:
 !!
 !!    TYPE(INTEGER_SET) :: SET
@@ -40,7 +45,7 @@
 !!  Scalar and array objects of this type are properly finalized when they
 !!  are deallocated or otherwise cease to exist.
 !!
-!! IMPLEMENTATION NOTES 
+!! IMPLEMENTATION NOTES
 !!
 !!  The values are stored in increasing order using a simple linked-list
 !!  structure and are added using a linear search.  This is most appropriate
@@ -59,7 +64,15 @@ module integer_set_type
   contains
     procedure :: is_empty => set_is_empty
     procedure :: size => set_size
+#ifdef INTEL_INTEGER_SET_ICE
     procedure :: add => set_add
+    procedure :: add_set => set_add_set
+#else
+    procedure, private :: set_add
+    procedure, private :: set_add_set
+    generic   :: add => set_add, set_add_set
+#endif
+    procedure :: remove => set_remove
     procedure :: copy_to_array
     procedure, private, pass(rhs) :: set_to_array
     generic :: assignment(=) => set_to_array
@@ -79,7 +92,7 @@ module integer_set_type
     procedure :: at_end => iter_at_end
     procedure :: value => iter_value
   end type integer_set_iterator
-  
+
   !! Defined INTEGER_SET_ITERATOR structure constructor
   interface integer_set_interator
     procedure set_begin
@@ -112,7 +125,7 @@ contains
   end function set_size
 
   !! Adds a value to the set; no duplicates.
-  elemental subroutine set_add (this,  value)
+  elemental subroutine set_add (this, value)
     class(integer_set), intent(inout) :: this
     integer, intent(in) :: value
     type(set_item), pointer :: item, p, t
@@ -133,6 +146,61 @@ contains
     end if
     this%n = this%n + 1
   end subroutine set_add
+
+  !! Adds the values from the given set.
+  subroutine set_add_set (this, set)
+    class(integer_set), intent(inout) :: this
+    class(integer_set), intent(in) :: set
+    type(set_item), pointer :: item, p, t, q
+    p => this%head; t => null(); q => set%head
+    nextq: do while (associated(q))
+      do while (associated(p))
+        if (q%value == p%value) then
+          q => q%next
+          t => p
+          p => p%next
+          cycle nextq
+        end if
+        if (q%value < p%value) exit
+        t => p
+        p => p%next
+      end do
+      allocate(item)
+      item%value = q%value
+      item%next => p
+      if (associated(t)) then
+        t%next => item
+      else
+        this%head => item
+      end if
+      this%n = this%n + 1
+      t => item
+      q => q%next
+    end do nextq
+  end subroutine set_add_set
+
+  !! Removes a value from the set.
+  elemental subroutine set_remove (this, value)
+    class(integer_set), intent(inout) :: this
+    integer, intent(in) :: value
+    type(set_item), pointer :: p, t
+    p => this%head; t => null()
+    do while (associated(p))
+      if (value == p%value) then
+        if (associated(t)) then
+          t%next => p%next
+        else
+          this%head => p%next
+        end if
+        deallocate(p)
+        this%n = this%n - 1
+        return
+      end if
+      if (value < p%value) return
+      t => p
+      p => p%next
+    end do
+  end subroutine set_remove
 
   !! Defined assignment of the set to an allocatable rank-1 array.
   !! The array is allocated/reallocated to the correct size, and the

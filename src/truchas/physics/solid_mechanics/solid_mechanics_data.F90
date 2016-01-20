@@ -19,7 +19,6 @@ Module SOLID_MECHANICS_DATA
   !-----------------------------------------------------------------------------
   !
   use kinds, only: r8
-  !use parameter_module, only: string_len, ncomps, ndim
   use parameter_module, only: string_len
   use solid_mechanics_mesh, only: ncomps, ndim
   implicit none
@@ -132,7 +131,7 @@ CONTAINS
     !   Collate a distributed mech data type into a single large mech data on IO PE
     !==================================================================
     use parallel_info_module, only: p_info
-    use parameter_module,     only: ncells_tot
+    use legacy_mesh_api, only: ncells_tot
 
     ! Arguments
     type(MECH_DATA), intent(IN) :: Mech
@@ -299,7 +298,7 @@ CONTAINS
     ! to an nnodes array for plotting
     !
     use mech_bc_data_module
-    use parameter_module, only: nnodes
+    use legacy_mesh_api, only: nnodes
 
     ! Local variables
     integer :: inode, nnum, n, isize, iint

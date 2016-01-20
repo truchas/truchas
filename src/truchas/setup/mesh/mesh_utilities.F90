@@ -49,7 +49,7 @@ CONTAINS
                                       degenerate_lines, triangle_faces,   &
                                       quad_faces, DEGENERATE_FACE
     use mesh_tests,             only: Test_All_Neighbors
-    use parameter_module,       only: ncells, nnodes, nfc, nvf, ndim, nvc
+    use mesh_parameter_module,  only: ncells, nnodes, nfc, nvf, ndim, nvc
     use pgslib_module,          only: PGSLib_GLOBAL_COUNT, PGSLib_GLOBAL_MAXVAL,&
                                       PGSLib_SUM_PREFIX
     use mesh_quality_module,    only: TWISTED_CELL_TEST
@@ -203,7 +203,7 @@ CONTAINS
     !
     !=======================================================================
     use mesh_module,          only: Mesh, Cell_Edge
-    use parameter_module,     only: nec, nnodes
+    use mesh_parameter_module, only: nec, nnodes
     use pgslib_module,        only: PGSLIB_PERMUTE, PGSLIB_GRADE_UP,             &
                                     PGSLIB_GLOBAL_EOSHIFT, PGSLIB_PARITY_PREFIX, &
                                     PGSLIB_SUM_PREFIX, PGSLib_Scatter_SUM

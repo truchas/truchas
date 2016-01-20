@@ -37,13 +37,13 @@ MODULE DISCRETE_OP_MODULE
   !            Douglas B. Kothe, LANL T-3 (dbk@lanl.gov)
   !
   !=======================================================================
-! Using gs_module here, instead of in every routine, reduces the
+! Using legacy_mesh_api here, instead of in every routine, reduces the
 ! virtual size required to compile (discrete_operators) file under linux/fujitsu from
 ! 560+ mb to ~70 mb, and reduces the time required greatly.  Seems we
 ! must do this to get around a hard kernel limit on rockhopper.
 
   use kinds, only: r8
-  use gs_module, only: EN_GATHER, EE_GATHER, EN_SUM_SCATTER
+  use legacy_mesh_api, only: EN_GATHER, EE_GATHER, EN_SUM_SCATTER, gather_vertex_coord
   implicit none
   private
 
@@ -75,7 +75,7 @@ CONTAINS
     !   evaluated following J. Dukowicz, JCP 74: 493-496 (1988).
     !
     !=======================================================================
-    use parameter_module, only: ncells, nfc, nvc
+    use legacy_mesh_api, only: ncells, nfc, nvc
 
     ! Arguments
     real(r8), dimension(nvc,ncells), intent(IN)  :: Xv, Yv, Zv
@@ -141,8 +141,7 @@ CONTAINS
     ! Purpose(s):
     !   Evaluate a cell-face centroid quantity given a cell-center quantity.
     !=======================================================================
-    use linear_module,      only: LINEAR_PROP
-    use parameter_module,   only: ncells, nfc, nnodes, nvc
+    use legacy_mesh_api, only: ncells, nfc, nnodes, nvc, LINEAR_PROP
 
     ! Argument List
 
@@ -208,9 +207,7 @@ CONTAINS
     use ArrayAllocate_Module, only: ArrayCreate, ArrayDestroy
     use bc_module,            only: Vel
     use cutoffs_module,       only: alittle
-    use linear_module,        only: LINEAR_PROP
-    use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
-    use parameter_module,     only: ncells, nfc, nnodes, nvc
+    use legacy_mesh_api,      only: Cell, ncells, nfc, nnodes, nvc, LINEAR_PROP
 
     ! Arguments
     character(LEN = *), intent(IN), optional :: method
@@ -280,9 +277,9 @@ CONTAINS
           call ARRAYCREATE (Z_v, 1, nvc, 1, ncells, 'Array Z_v(nvc,ncells)')
 
           ! Gather the vertex coordinates into (X_v,Y_v,Z_v)
-          call EN_GATHER (X_v, Vertex%Coord(1), BOUNDARY=Vrtx_Bdy(1)%Data)
-          call EN_GATHER (Y_v, Vertex%Coord(2), BOUNDARY=Vrtx_Bdy(2)%Data)
-          call EN_GATHER (Z_v, Vertex%Coord(3), BOUNDARY=Vrtx_Bdy(3)%Data)
+          call gather_vertex_coord (X_v, dim=1)
+          call gather_vertex_coord (Y_v, dim=2)
+          call gather_vertex_coord (Z_v, dim=3)
     end select
 
     ! Choose method by which gradient will be computed
@@ -423,8 +420,7 @@ CONTAINS
     !=======================================================================
     use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
     use cutoffs_module,       only: alittle
-    use mesh_module,          only: Cell, Face_Vrtx, Mesh, Vrtx_Face
-    use parameter_module,     only: ncells, nfc, nnodes, nvc
+    use legacy_mesh_api,      only: ncells, nfc, nnodes, nvc, Cell, Face_Vrtx, Mesh, Vrtx_Face
 
     ! Arguments
     real(r8), dimension(nvc,ncells), intent(IN)  :: X_v, Y_v, Z_v, Phi_v
@@ -616,7 +612,7 @@ CONTAINS
 
   END SUBROUTINE LSLR
 
-  SUBROUTINE VERTEX_AVG (X_cell, X_vertex, BOUNDARY)
+  SUBROUTINE VERTEX_AVG (X_cell, X_vertex)
     !=======================================================================
     ! Purpose(s):
     !
@@ -625,13 +621,11 @@ CONTAINS
     !   of X_cell: X_vertex = SUM(X_cell/Vol)/SUM(1/Vol).
     !
     !=======================================================================
-    use mesh_module,      only: Cell, Vertex
-    use parameter_module, only: ncells, nnodes
+    use legacy_mesh_api, only: ncells, nnodes, Cell, Vertex
 
     ! Arguments
     real(r8), dimension(ncells), intent(IN)  :: X_cell
     real(r8), dimension(nnodes), intent(OUT) :: X_vertex
-    real(r8), dimension(:), pointer, optional :: BOUNDARY
 
     ! Local Variables
     real(r8), dimension(ncells) :: Tmp
@@ -640,7 +634,7 @@ CONTAINS
 
     ! Scatter inverse-volume-weighted value of X_cell
     Tmp = X_cell/Cell%Volume
-    call EN_SUM_SCATTER (X_vertex, Tmp, BOUNDARY=BOUNDARY)
+    call EN_SUM_SCATTER (X_vertex, Tmp)
 
     ! X_vertex: Vertex-averaged X_cell
     X_vertex = X_vertex*Vertex%Rsum_rvol
@@ -664,10 +658,8 @@ CONTAINS
     !       face contributions will telescope, leaving only boundary
     !       contributions.
     !=======================================================================
-    use cutoffs_module,       only: alittle
-    use linear_module,        only: LINEAR_PROP
-    use mesh_module,          only: Cell
-    use parameter_module,     only: ncells, nfc, nnodes, nvc, ndim
+    use cutoffs_module,  only: alittle
+    use legacy_mesh_api, only: Cell, ncells, nfc, nnodes, nvc, ndim, LINEAR_PROP
 
     ! Arguments
     real(r8), dimension(ndim,ncells), intent(OUT) :: Gradient_Phi
@@ -734,9 +726,7 @@ CONTAINS
     !       face contributions will telescope, leaving only boundary
     !       contributions.
     !=======================================================================
-    use mesh_module,          only: Cell, Mesh
-    use parameter_module,     only: ncells, nfc, ndim
-    use gs_module,            only: EE_GATHER 
+    use legacy_mesh_api, only: ncells, nfc, ndim, Cell, Mesh, EE_GATHER 
 
     ! Arguments
     real(r8), dimension(ndim,nfc,ncells), intent(OUT) :: facegrad

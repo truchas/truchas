@@ -235,7 +235,7 @@ contains
   
     use kinds, only: r8
     use restart_utilities, only: read_var, read_dist_array, skip_records, halt
-    use mesh_module, only: pcell => unpermute_mesh_vector
+    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
     
     real(r8), intent(out), optional :: phi(:,:)
     logical,  intent(out), optional :: found

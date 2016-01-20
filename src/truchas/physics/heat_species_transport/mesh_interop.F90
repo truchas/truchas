@@ -102,7 +102,7 @@ module mesh_interop
 contains
 
   subroutine generate_mesh_mappings (mesh)
-    use mesh_module, only: unpermute_mesh_vector
+    use legacy_mesh_api, only: unpermute_mesh_vector
     class(base_mesh), intent(in) :: mesh
     integer, pointer :: dummy(:) => null()
     allocate(pcell_t_to_ds, pcell_ds_to_t)
@@ -113,7 +113,7 @@ contains
     INSIST(are_gap_elements(t_gap_elements))
   contains
     logical function are_gap_elements (list)
-      use mesh_module, only: mesh, GAP_ELEMENT_1
+      use legacy_mesh_api, only: mesh, GAP_ELEMENT_1
       integer, intent(in) :: list(:)
       integer :: j
       are_gap_elements = .false.
@@ -239,7 +239,8 @@ contains
   subroutine update_mmf_from_matl (mmf)
 
     use matl_module, only: gather_vof
-    use parameter_module, only: nmat, ncells
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use index_partitioning, only: gather_boundary
     use material_interop, only: material_to_system
 #ifdef EXTRA_VOF_DIAGNOSTICS
@@ -320,7 +321,8 @@ contains
     use material_system
     use material_table
     use matl_utilities, only: update_matl, matl_get_cell_vof
-    use parameter_module, only: nmat, ncells
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use material_interop, only: phase_to_material, void_material_index
 #ifdef EXTRA_VOF_DIAGNOSTICS
     use parallel_communication, only: global_minval, global_maxval

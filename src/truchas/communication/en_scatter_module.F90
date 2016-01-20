@@ -15,7 +15,7 @@ MODULE EN_SCATTER_MODULE
   !=======================================================================
   use gs_util, only: EN_GS_INIT
   use kinds, only: r8
-  use parameter_module
+  use mesh_parameter_module, only: ncells, nnodes, nvc
   use scatter_module, only: SUM_SCATTER, MIN_SCATTER, MAX_SCATTER, OR_SCATTER
   implicit none
   private
@@ -299,7 +299,7 @@ CONTAINS
     !=======================================================================
     use gs_info_module,   only: EN, EN_TRACE
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nnodes
+    use mesh_parameter_module, only: ncells, nnodes
 
     ! Arguments
     logical, dimension(ncells), intent(IN)   :: Src
@@ -322,7 +322,7 @@ CONTAINS
     !=======================================================================
     use gs_info_module,   only: EN, EN_TRACE
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nnodes, nvc
+    use mesh_parameter_module, only: ncells, nnodes, nvc
 
     ! Arguments
     logical, dimension(nvc, ncells), intent(IN)  :: Src

@@ -18,7 +18,7 @@ MODULE FLUID_TYPE_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: nfc
+  use legacy_mesh_api, only: nfc
   implicit none
   private
 

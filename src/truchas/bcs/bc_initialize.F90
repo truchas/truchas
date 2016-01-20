@@ -23,7 +23,7 @@ Module BC_Initialize
   !-----------------------------------------------------------------------------
   use kinds, only: r8
   use bc_data_types
-  use parameter_module
+  use legacy_mesh_api, only: ndim, ncells, nfc
   implicit none
   Private
 

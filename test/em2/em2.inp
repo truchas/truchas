@@ -8,7 +8,6 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
 
 &MESH
   mesh_file = 'em-qcyl-hex.gen'
-  mesh_file_format = 'ExodusII'
   coordinate_scale_factor = 0.01
 /
 

@@ -206,7 +206,7 @@ contains
     
     subroutine update_adv_heat
 
-      use parameter_module,   only: ncells
+      use legacy_mesh_api, only: ncells
       use advection_module,   only: compute_advected_enthalpy
       use EM_data_proxy,      only: joule_power_density
       use index_partitioning, only: gather_boundary
@@ -242,7 +242,7 @@ contains
     
     subroutine update_adv_conc
 
-      use parameter_module,   only: ncells
+      use legacy_mesh_api, only: ncells
       use advection_module,   only: advected_phi
       use index_partitioning, only: gather_boundary
 
@@ -267,7 +267,7 @@ contains
   end subroutine ds_step
   
   subroutine ds_get_temp (array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:)
     real(r8), pointer :: tcell(:)
     ASSERT(this%have_heat_transfer)
@@ -284,7 +284,7 @@ contains
   end subroutine
 
   subroutine ds_get_enthalpy (array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:)
     real(r8), pointer :: hcell(:)
     ASSERT(this%have_heat_transfer)
@@ -301,7 +301,7 @@ contains
   end subroutine
 
   subroutine ds_get_phi (n, array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     integer,  intent(in)  :: n
     real(r8), intent(inout) :: array(:)
     real(r8), pointer :: phi(:)
@@ -317,7 +317,7 @@ contains
   end subroutine ds_get_phi
 
   subroutine ds_get_temp_grad (array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:,:)
     real(r8), pointer :: tgrad(:,:)
     ASSERT(size(array,dim=2) == ncells)
@@ -503,7 +503,7 @@ contains
   
   subroutine ds_set_initial_state (t, dt, temp, conc)
   
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
 
     real(r8), intent(in) :: t, dt
     real(r8), intent(in), optional :: temp(:), conc(:,:)

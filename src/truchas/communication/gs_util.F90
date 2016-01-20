@@ -40,7 +40,7 @@ CONTAINS
     !=======================================================================
     use truchas_logging_services, only: TLS_fatal_if_any
     use mesh_module,      only: Mesh, DEGENERATE_FACE
-    use parameter_module, only: ncells, nfc
+    use mesh_parameter_module, only: ncells, nfc
 
     ! Local variables
     integer :: memerror, f
@@ -64,7 +64,7 @@ CONTAINS
     !=======================================================================
     use ArrayAllocate_Module
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nfc
+    use mesh_parameter_module, only: ncells, nfc
     use pgslib_module,    only: PGSLIB_SETUP_TRACE
     use var_vector_module
 
@@ -127,7 +127,7 @@ CONTAINS
     !=======================================================================
     use gs_info_module,   only: EN_TRACE
     use mesh_module,      only: Mesh
-    use parameter_module, only: ncells, nnodes, nvc
+    use mesh_parameter_module, only: ncells, nnodes, nvc
     use pgslib_module,    only: PGSLIB_SETUP_TRACE
 
     ! Local variables
@@ -168,7 +168,7 @@ CONTAINS
     !=======================================================================
     use ArrayAllocate_Module
     use mesh_module,      only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig
-    use parameter_module, only: nnodes
+    use mesh_parameter_module, only: nnodes
     use var_vector_module
     use pgslib_module,    only: PGSLIB_SETUP_TRACE
 

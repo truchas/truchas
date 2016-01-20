@@ -18,7 +18,6 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
 
 &MESH
   mesh_file = 'ds1-randomized.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS

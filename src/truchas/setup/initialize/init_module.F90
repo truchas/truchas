@@ -68,7 +68,8 @@ CONTAINS
     use interfaces_module,      only: nbody
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
                                       OVERWRITE_VEL, OVERWRITE_ZONE
-    use parameter_module,       only: ncells, nmat
+    use parameter_module,       only: nmat
+    use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species
     use property_module,        only: DENSITY_MATERIAL
@@ -261,8 +262,7 @@ CONTAINS
 
   subroutine init_conc (hits_vol, phi)
 
-    use parameter_module, only: ncells
-    use mesh_module, only: mesh, GAP_ELEMENT_1
+    use legacy_mesh_api, only: ncells, mesh, GAP_ELEMENT_1
     use interfaces_module, only: body_phi
 
     real(r8), intent(in) :: hits_vol(:,:)
@@ -301,7 +301,7 @@ CONTAINS
                                       Surface_Name,                                      &
                                       Conic_Relation, Surfaces_In_This_BC,               &
                                       Surface_Materials, Srfmatl_Index,                  &
-                                      Mesh_Face_Set, Mesh_Surface
+                                      Mesh_Surface
     use bc_module,              only: DIRICHLET, FREE_SLIP, DIRICHLET_VEL,               &
                                       SET_DIRICHLET, NEUMANN_VEL,                        &
                                       SET_NO_VEL_BC, SET_FREE_SLIP, SET_DIRICHLET_VEL,   &
@@ -314,9 +314,8 @@ CONTAINS
     use bc_pressure_init,       only: Initialize_Pressure_BC
     use input_utilities,        only: NULL_I, NULL_R
     use fluid_data_module,      only: fluid_flow
-    use gs_module,              only: EE_GATHER
-    use mesh_module,            only: Cell, Mesh, DEGENERATE_FACE
-    use parameter_module,       only: ncells, ndim, nfc, nvc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, nvc, EE_GATHER
+    use legacy_mesh_api,        only: Cell, Mesh, DEGENERATE_FACE, mesh_face_set
     use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
     use projection_data_module, only: dirichlet_pressure
     use property_module,        only: Get_Truchas_Material_Id
@@ -740,8 +739,7 @@ CONTAINS
     ! Purpose(s):
     !
     !=======================================================================
-    use parameter_module, only: ndim, ncells
-    use mesh_module,      only: Cell
+    use legacy_mesh_api, only: ndim, ncells, Cell
 
     ! Arguments
     integer, intent(IN) :: face
@@ -801,9 +799,8 @@ CONTAINS
     use interfaces_module,    only: background_body, Body_Mass, Matnum, nbody,   &
                                     Body_Temp
     use matl_module,          only: Matl, SLOT_INCREASE, SLOT_SET
-    use mesh_module,          only: Cell
-    use parameter_module,     only: mat_slot, mat_slot_new, maxmat, &
-                                    mbody, ncells, nmat
+    use legacy_mesh_api,      only: ncells, Cell
+    use parameter_module,     only: mat_slot, mat_slot_new, maxmat, mbody, nmat
     use pgslib_module,        only: PGSLib_GLOBAL_MAXVAL
     use property_data_module, only: background_material
     use restart_variables,    only: restart
@@ -1026,9 +1023,9 @@ CONTAINS
     use interfaces_module,    only: Body_Temp, Matnum, nbody
     use matl_module,          only: Matl, GATHER_VOF
     use matl_utilities,       only: update_matl
-    use mesh_module,          only: Cell
+    use legacy_mesh_api,      only: ncells, Cell
 
-    use parameter_module,     only: mat_slot, ncells, nmat
+    use parameter_module,     only: mat_slot, nmat
     use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
     use zone_module,          only: Zone
     use restart_variables,    only: restart
@@ -1198,8 +1195,8 @@ CONTAINS
 
   subroutine check_vof (stat)
 
-    use parameter_module, only: nmat, ncells
-    use mesh_module, only: unpermute_mesh_vector
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells, unpermute_mesh_vector
     use matl_utilities, only: matl_get_vof
     use property_module, only: get_user_material_id
 
@@ -1398,7 +1395,7 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,    only: alittle
     use interfaces_module, only: Body_Vel, nbody, Body_Temp, Matnum
-    use parameter_module,  only: ndim, ncells
+    use legacy_mesh_api,   only: ndim, ncells
     use zone_module,       only: Zone
     use property_module,   only: density_material
 
@@ -1452,9 +1449,8 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,    only: cutvof
-    use gs_module,         only: EE_GATHER
+    use legacy_mesh_api,   only: ncells, nfc, EE_GATHER
     use matl_module,       only: GATHER_VOF
-    use parameter_module,  only: ncells, nfc
 
     ! Arguments
     integer, intent(IN) :: face
@@ -1523,8 +1519,7 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,    only: cutvof
     use matl_module,       only: GATHER_VOF
-    use mesh_module,       only: Mesh
-    use parameter_module,  only: ncells
+    use legacy_mesh_api,   only: ncells, Mesh
 
     ! Arguments
     integer, intent(IN) :: face
@@ -1572,9 +1567,7 @@ CONTAINS
     ! elements.
     !
     !=======================================================================
-    use bc_data_module,    only: Mesh_Face_Set
-    use parameter_module,  only: ncells, nfc
-    use mesh_module,       only: Mesh
+    use legacy_mesh_api, only: ncells, nfc, Mesh, Mesh_Face_Set
 
     ! Arguments
     integer, intent(IN) :: face, set1, nssets
