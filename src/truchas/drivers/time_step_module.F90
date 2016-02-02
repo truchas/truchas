@@ -168,12 +168,12 @@ CONTAINS
             dt_viscous = 1.0d10 
         endif 
       
-        if (surface_tension) then
-          call TIME_STEP_SURFACE_TENSION
-          dt_next = MIN(dt_next, dt_surften)
-        else
-          dt_surften = 1.0d10 
-        endif    
+!         if (surface_tension) then
+!           call TIME_STEP_SURFACE_TENSION
+!           dt_next = MIN(dt_next, dt_surften)
+!         else
+!           dt_surften = 1.0d10
+!         endif
    
 
         DEALLOCATE (Solid_Face) 
