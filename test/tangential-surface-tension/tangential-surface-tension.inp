@@ -1,0 +1,119 @@
+&MESH
+  mesh_file = 'tangential-surface-tension.gen'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 10.0
+  Output_Dt = 5.0 !1.0
+/
+
+&SIMULATION_CONTROL
+  phase_start_times = 10.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  fluid_flow = .true.
+  inviscid = .false.
+  stokes = .false.
+  surface_tension = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 0.01
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&LINEAR_SOLVER
+  name                            = 'projection'
+  method                          = 'fgmres'
+  preconditioning_method          = 'ssor'
+  convergence_criterion           = 1.0e-10
+  relaxation_parameter            = 1.4
+  preconditioning_steps           = 2
+  stopping_criterion              = '||r||', 
+  maximum_iterations              = 1000, 
+/
+
+&NUMERICS
+  dt_init = 1.0d-03
+  dt_min  = 1.0d-10
+  dt_grow = 1.5
+  dt_max  = 1.0
+  projection_linear_solution = 'projection'
+  viscous_implicitness       = 0.5
+  courant_number             = 0.5
+  discrete_ops_type          = 'ortho'
+/
+
+##### BOUNDARY CONDITIONS ######################################################
+
+&DS_BOUNDARY_CONDITION
+  name = 'cold surface'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 1, 2, 4
+  data_constant = 1.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'hot top'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 3
+  data_constant = 2.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'x-z symmetry'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 5, 6
+  data_constant = 0.0
+/
+
+&SURFACE_TENSION
+  csf_normal = .false.
+  csf_tangential = .true.
+  csf_bc_top_surface = .true.
+  sigma_constant =  1.0 ! unused with csf, but avoids false error detection
+  dsig_dT =  -1.0
+  face_set_ids = 3
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 1
+/
+
+##### MATERIALS ################################################################
+
+&MATERIAL
+  material_name = 'liquid'
+  material_number = 1
+  material_feature = 'background'
+  immobile= .false.
+  priority = 1
+  density = 1.0 ! not void
+/
+
+&PHASE 
+ name = 'liquid' 
+ property_name(1) = 'density',       property_constant(1) = 1.0
+ property_name(2) = 'specific heat', property_constant(2) = 1.0
+ property_name(3) = 'conductivity',  property_constant(3) = 1.0
+ property_name(4) = 'viscosity',     property_constant(4) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'single'
+  phases = 'liquid'
+/
