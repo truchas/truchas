@@ -21,24 +21,19 @@ module en_gather_impl
 
   interface gather_vertex_coord
     procedure gather_vertex_coord_dim
-    !procedure gather_vertex_coord_all
-    !procedure gather_vertex_coord_dim_validate  ! not written
-    procedure gather_vertex_coord_all_validate
+    procedure gather_vertex_coord_all
   end interface
 
   interface en_gather
-    !module procedure en_gather_real64
-    module procedure en_gather_validate_real64
+    module procedure en_gather_real64
   end interface
 
   interface en_min_gather
-    !procedure en_min_gather_real64
-    procedure en_min_gather_validate_real64
+    procedure en_min_gather_real64
   end interface
 
   interface en_or_gather
-    !procedure en_or_gather_log
-    procedure en_or_gather_validate_log
+    procedure en_or_gather_log
   end interface
 
   !! NB: The original en_sum_scatter fails to ignore degenerate nodes for
@@ -55,25 +50,19 @@ module en_gather_impl
   interface en_sum_scatter
     procedure en_sum_scatter_real64
     procedure cn_sum_scatter_real64
-    !procedure en_sum_scatter_validate_real64
-    !procedure cn_sum_scatter_validate_real64
   end interface
 
   interface en_or_scatter
-    !procedure en_or_scatter_log
-    !procedure cn_or_scatter_log
-    procedure en_or_scatter_validate_log
-    procedure cn_or_scatter_validate_log
+    procedure en_or_scatter_log
+    procedure cn_or_scatter_log
   end interface
 
   interface en_min_scatter
-    !procedure en_min_scatter_real64
-    procedure en_min_scatter_validate_real64
+    procedure en_min_scatter_real64
   end interface
 
   interface en_max_scatter
-    !procedure cn_max_scatter_real64
-    procedure cn_max_scatter_validate_real64
+    procedure cn_max_scatter_real64
   end interface
 
   real(r8), allocatable :: coord_boundary(:,:)
@@ -439,391 +428,5 @@ contains
     call scatter_boundary_or (node_ip, dest, boundary)
 
   end subroutine cn_or_scatter_log
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!! TESTING CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  subroutine gather_vertex_coord_all_validate (coord)
-
-    use gs_module, only: old_en_gather => en_gather
-    use vertex_impl, only: vertex
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-
-    real(r8), intent(out) :: coord(:,:,:)
-
-    integer :: i, j, k, unit
-    real(r8), allocatable :: ref_coord(:,:,:)
-    logical :: error
-
-    allocate(ref_coord, mold=coord)
-    do i = 1, 3
-      call old_en_gather (ref_coord(i,:,:), vertex%coord(i))
-    end do
-
-    call gather_vertex_coord_all (coord)
-
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      do k = 1, 8
-        if (all(coord(:,k,j) == ref_coord(:,k,j))) cycle
-        if (.not.error) then
-          write(unit,'(/,a)') 'GATHER_VERTEX_COORD_ALL *************************'
-          error = .true.
-        end if
-        write(unit,'(2(a,i0),a,3(1x,g0))') 'old[', k, ',', j, ']=', ref_coord(:,k,j)
-        write(unit,'(2(a,i0),a,3(1x,g0))') 'new[', k, ',', j, ']=', coord(:,k,j)
-      end do
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating gather_vertex_coord_all')
-
-  end subroutine gather_vertex_coord_all_validate
-
-  subroutine en_gather_validate_real64 (dest, src)
-
-    use truchas_logging_services
-    use parallel_communication, only: global_any, global_all
-    use gs_module, only: en_gather_old => en_gather
-    use mesh_module, only: old_mesh => mesh
-
-    real(r8), intent(out) :: dest(:,:)
-    real(r8), intent(in)  :: src(:)
-
-    integer :: j, unit
-    real(r8), allocatable :: ref_dest(:,:)
-
-    allocate(ref_dest, mold=dest)
-
-    call en_gather_old (ref_dest, src)
-
-    call en_gather_real64 (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(dest /= ref_dest)) then
-      unit = TLS_debug_unit()
-      call TLS_debug ('')
-      call TLS_debug ('EN_GATHER_REAL64 ***********************************************')
-      do j = 1, size(dest,2)
-        if (any(dest(:,j) /= ref_dest(:,j))) then
-          write(unit,'(a,i0,a,1x,i0)')  'shape[', j, ']=', old_mesh(j)%cell_shape
-          write(unit,'(a,i0,a,6(1x,g0))') 'new[', j, ']=', dest(:,j)
-          write(unit,'(a,i0,a,6(1x,g0))') 'old[', j, ']=', ref_dest(:,j)
-        end if
-      end do
-      call TLS_fatal ('error validating en_gather_real64')
-    end if
-#else
-    INSIST(global_all(dest == ref_dest))
-#endif
-
-  end subroutine en_gather_validate_real64
-
-  subroutine en_min_gather_validate_real64 (dest, src)
-
-    use truchas_logging_services
-    use parallel_communication, only: global_any, global_all
-    use gs_module, only: en_min_gather_old => en_min_gather
-
-    real(r8), intent(out) :: dest(:)
-    real(r8), intent(in)  :: src(:)
-
-    integer :: j, unit
-    real(r8), allocatable :: ref_dest(:)
-
-    allocate(ref_dest, mold=dest)
-
-    call en_min_gather_old (ref_dest, src)
-    call en_min_gather_real64 (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(dest /= ref_dest)) then
-      unit = TLS_debug_unit()
-      call TLS_debug ('')
-      call TLS_debug ('EE_MIN_GATHER_REAL64 ***********************************************')
-      do j = 1, size(dest)
-        if (dest(j) /= ref_dest(j)) then
-          write(unit,'(a,i0,a,(1x,g0))') 'new[', j, ']=', dest(j)
-          write(unit,'(a,i0,a,(1x,g0))') 'old[', j, ']=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating en_min_gather_real64')
-    end if
-#else
-    INSIST(global_all(dest == ref_dest))
-#endif
-
-  end subroutine en_min_gather_validate_real64
-
-  subroutine en_or_gather_validate_log (dest, src)
-
-    use truchas_logging_services
-    use parallel_communication, only: global_any, global_all
-    use gs_module, only: en_or_gather_old => en_or_gather
-
-    logical, intent(out) :: dest(:)
-    logical, intent(in)  :: src(:)
-
-    integer :: j, unit
-    logical, allocatable :: ref_dest(:)
-
-    allocate(ref_dest, mold=dest)
-
-    call en_or_gather_old (ref_dest, src)
-    call en_or_gather_log (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(dest .neqv. ref_dest)) then
-      unit = TLS_debug_unit()
-      call TLS_debug ('')
-      call TLS_debug ('EN_OR_GATHER ***********************************************')
-      do j = 1, size(dest)
-        if (dest(j) .neqv. ref_dest(j)) then
-          write(unit,'(a,i0,2(a,l1))') '[', j, ']: new=', dest(j), ', old=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating en_or_gather')
-    end if
-#else
-    INSIST(global_all(dest .eqv. ref_dest))
-#endif
-
-  end subroutine en_or_gather_validate_log
-
-  subroutine  en_sum_scatter_validate_real64 (dest, src)
-
-    use gs_module, only: en_sum_scatter_old => en_sum_scatter
-    use truchas_logging_services
-    use parallel_communication, only: global_any, global_all
-
-    real(r8), intent(out) :: dest(:)
-    real(r8), intent(in)  :: src(:)
-
-    integer :: j, unit
-    real(r8) :: ref_dest(nnodes)
-
-    ASSERT(size(src) == ncells)
-    ASSERT(size(dest) == nnodes)
-
-    call en_sum_scatter_old (ref_dest, src)
-    call en_sum_scatter_real64 (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(abs(dest - ref_dest) > 4*spacing(ref_dest))) then
-      unit = TLS_debug_unit()
-      write(unit,'(/,a)') 'EN_SUM_SCATTER_REAL64 **********************************'
-      do j = 1, nnodes
-        if (abs(dest(j) - ref_dest(j)) > 4*spacing(ref_dest(j))) then
-          write(unit,'(a,i0,a,(1x,g0))') 'new[', j, ']=', dest(j)
-          write(unit,'(a,i0,a,(1x,g0))') 'old[', j, ']=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating en_sum_scatter_real64')
-    end if
-#else
-    INSIST(global_all(abs(dest - ref_dest) <= 4*spacing(ref_dest)))
-#endif
-
-  end subroutine en_sum_scatter_validate_real64
-
-  subroutine cn_sum_scatter_validate_real64 (dest, src)
-
-    use gs_module, only: en_sum_scatter_old => en_sum_scatter
-    use truchas_logging_services
-    use parallel_communication, only: global_any, global_all
-
-    real(r8), intent(out) :: dest(:)
-    real(r8), intent(in)  :: src(:,:)
-
-    integer :: j, unit
-    real(r8) :: ref_dest(nnodes)
-
-    ASSERT(size(src,1) == 8)
-    ASSERT(size(src,2) == ncells)
-    ASSERT(size(dest) == nnodes)
-
-    call en_sum_scatter_old (ref_dest, src)
-    call cn_sum_scatter_real64 (dest, src)
-
-#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(abs(dest - ref_dest) > 4*spacing(ref_dest))) then
-      unit = TLS_debug_unit()
-      write(unit,'(/,a)') 'CN_SUM_SCATTER_REAL64 **********************************'
-      do j = 1, nnodes
-        if (abs(dest(j) - ref_dest(j)) > 4*spacing(ref_dest(j))) then
-          write(unit,'(a,i0,a,(1x,g0))') 'new[', j, ']=', dest(j)
-          write(unit,'(a,i0,a,(1x,g0))') 'old[', j, ']=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating cn_sum_scatter_real64')
-    end if
-#else
-    INSIST(global_all(abs(dest - ref_dest) <= 4*spacing(ref_dest)))
-#endif
-
-  end subroutine cn_sum_scatter_validate_real64
-
-  subroutine en_min_scatter_validate_real64 (dest, src)
-
-    use gs_module, only: en_min_scatter_old => en_min_scatter
-    use parallel_communication, only: global_any, global_all
-    use truchas_logging_services
-
-    real(r8), intent(out) :: dest(:)
-    real(r8), intent(in)  :: src(:)
-
-    integer :: j, unit
-    real(r8) :: ref_dest(nnodes)
-
-    ASSERT(size(src) == ncells)
-    ASSERT(size(dest) == nnodes)
-
-    call en_min_scatter_old (ref_dest, src)
-    call en_min_scatter_real64 (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(abs(dest - ref_dest) > 4*spacing(ref_dest))) then
-      unit = TLS_debug_unit()
-      write(unit,'(/,a)') 'EN_MIN_SCATTER_REAL64 **********************************'
-      do j = 1, nnodes
-        if (abs(dest(j) - ref_dest(j)) > 4*spacing(ref_dest(j))) then
-          write(unit,'(a,i0,a,(1x,g0))') 'new[', j, ']=', dest(j)
-          write(unit,'(a,i0,a,(1x,g0))') 'old[', j, ']=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating en_min_scatter_real64')
-    end if
-#else
-    INSIST(global_all(abs(dest - ref_dest) <= 4*spacing(ref_dest)))
-#endif
-
-  end subroutine en_min_scatter_validate_real64
-
-  subroutine cn_max_scatter_validate_real64 (dest, src)
-
-    use gs_module, only: en_max_scatter_old => en_max_scatter
-    use parallel_communication, only: global_any, global_all
-    use truchas_logging_services
-
-    real(r8), intent(out) :: dest(:)
-    real(r8), intent(in)  :: src(:,:)
-
-    integer :: j, unit
-    real(r8) :: ref_dest(nnodes)
-
-    ASSERT(size(src,1) == 8)
-    ASSERT(size(src,2) == ncells)
-    ASSERT(size(dest) == nnodes)
-
-    call en_max_scatter_old (ref_dest, src)
-    call cn_max_scatter_real64 (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(abs(dest - ref_dest) > 4*spacing(ref_dest))) then
-      unit = TLS_debug_unit()
-      write(unit,'(/,a)') 'CN_MAX_SCATTER_REAL64 **********************************'
-      do j = 1, nnodes
-        if (abs(dest(j) - ref_dest(j)) > 4*spacing(ref_dest(j))) then
-          write(unit,'(a,i0,a,(1x,g0))') 'new[', j, ']=', dest(j)
-          write(unit,'(a,i0,a,(1x,g0))') 'old[', j, ']=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating cn_max_scatter_real64')
-    end if
-#else
-    INSIST(global_all(abs(dest - ref_dest) <= 4*spacing(ref_dest)))
-#endif
-
-  end subroutine cn_max_scatter_validate_real64
-
-  subroutine en_or_scatter_validate_log (dest, src)
-
-    use gs_module, only: en_or_scatter_old => en_or_scatter
-    use parallel_communication, only: global_any, global_all
-    use truchas_logging_services
-
-    logical, intent(out) :: dest(:)
-    logical, intent(in)  :: src(:)
-
-    integer :: j, unit
-    logical :: ref_dest(nnodes)
-
-    ASSERT(size(src)  == ncells)
-    ASSERT(size(dest) == nnodes)
-
-    call en_or_scatter_old (ref_dest, src)
-    call en_or_scatter_log (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(dest .neqv. ref_dest)) then
-      unit = TLS_debug_unit()
-      write(unit,'(/,a)') 'EN_OR_SCATTER_LOG **********************************'
-      do j = 1, nnodes
-        if (dest(j) .neqv. ref_dest(j)) then
-          write(unit,'(a,i0,2(a,l1))') '[', j, ']: new=', dest(j), ', old=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating en_or_scatter_log')
-    end if
-#else
-    INSIST(global_all(dest .eqv. ref_dest))
-#endif
-
-  end subroutine en_or_scatter_validate_log
-
-  subroutine cn_or_scatter_validate_log (dest, src)
-
-    use gs_module, only: en_or_scatter_old => en_or_scatter
-    use parallel_communication, only: global_any, global_all
-    use truchas_logging_services
-
-    logical, intent(out) :: dest(:)
-    logical, intent(in)  :: src(:,:)
-
-    integer :: j, unit
-    logical :: ref_dest(nnodes)
-
-    ASSERT(size(src,1) == 8)
-    ASSERT(size(src,2) == ncells)
-    ASSERT(size(dest) == nnodes)
-
-    call en_or_scatter_old (ref_dest, src)
-    call cn_or_scatter_log (dest, src)
-
-!#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    if (global_any(dest .neqv. ref_dest)) then
-      unit = TLS_debug_unit()
-      write(unit,'(/,a)') 'CN_OR_SCATTER_LOG **********************************'
-      do j = 1, nnodes
-        if (dest(j) .neqv. ref_dest(j)) then
-          write(unit,'(a,i0,2(a,l1))') '[', j, ']: new=', dest(j), ', old=', ref_dest(j)
-        end if
-      end do
-      call TLS_fatal ('error validating cn_or_scatter_log')
-    end if
-#else
-    INSIST(global_all(dest .eqv. ref_dest))
-#endif
-
-  end subroutine cn_or_scatter_validate_log
 
 end module en_gather_impl

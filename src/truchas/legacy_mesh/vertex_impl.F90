@@ -56,8 +56,6 @@ contains
     src = 1.0_r8 / src
     call rearrange (pnode_old_to_new, vertex%rsum_rvol, src(:mesh%nnode_onP))
 
-    !call test_vertex ! If used, see remarks below (will fail for gap cells)
-
   end subroutine init_vertex_impl
 
   !! Copy of function from MESH_MODULE
@@ -73,52 +71,5 @@ contains
     end do
     call collate (vertex_collate%rsum_rvol, vertex%rsum_rvol)
   end function vertex_collate
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!! TESTING CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !! Testing of RSUM_RVOL values is difficult for several reasons.  First, we
-  !! are computing cell volumes using an entirely different method and so they
-  !! alone differ by some small hard-to-quantify amount.  But a more serious
-  !! problem occurs when gap elements are present.  These are assigned an
-  !! arbitrarily small volume of 2*alittle, which completely dominates the
-  !! computation of RSUM_RVOL and lead to a result comparable to 2*alittle
-  !! which is nigh impossible to match to the required relative precision.
-  !! This is almost certainly *not* what was intended -- gap cells should
-  !! be ignored in this case -- but it is what Truchas currently does.
-
-  subroutine test_vertex
-
-    use mesh_module, only: old_vertex => vertex
-    use parallel_communication, only: global_all
-    use truchas_logging_services
-
-    integer :: j, k, unit
-    logical :: error
-
-    do k = 1, 3
-      INSIST(global_all(vertex%coord(k) == old_vertex%coord(k)))
-    end do
-
-#define DEBUG
-#ifdef DEBUG
-#undef DEBUG
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, size(vertex)
-      if (abs(vertex(j)%rsum_rvol - old_vertex(j)%rsum_rvol) <= 128*spacing(old_vertex(j)%rsum_rvol)) cycle
-      if (.not.error) then
-        write(unit, '(/,a)') 'VERTEX%RSUM_RVOL **********'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,2(1x,g0))') 'rsum_rvol[', j, ']=', vertex(j)%rsum_rvol, old_vertex(j)%rsum_rvol
-    end do
-    if (error) call TLS_fatal ('error validating vertex%rsum_rvol')
-#else
-    INSIST(global_all(abs(vertex%rsum_rvol - old_vertex%rsum_rvol) <= 128*spacing(old_vertex%rsum_rvol)))
-#endif
-
-  end subroutine test_vertex
 
 end module vertex_impl

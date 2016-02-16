@@ -41,10 +41,6 @@ contains
     use common_impl, only: nnodes
     allocate(vertex_ngbr_all(nnodes), vertex_ngbr_all_orig(nnodes))
     call init_vertex_ngbr_all_mapped (node_ip, vertex_ngbr_all_orig, vertex_ngbr_all)
-!#define DEBUG
-#ifdef DEBUG
-    call test_vertex_ngbr_all
-#endif
   end subroutine init_nn_gather_impl
 
   subroutine nn_gather_boundarydata (boundary, source)
@@ -192,59 +188,5 @@ contains
     end do
 
   end subroutine init_vertex_ngbr_all_aux
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!! TESTING CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  subroutine test_vertex_ngbr_all
-
-    use common_impl, only: nnodes
-    use mesh_module, only: old_vertex_ngbr_all_orig => vertex_ngbr_all_orig
-    use mesh_module, only: old_vertex_ngbr_all => vertex_ngbr_all
-    use var_vector_module, only: destroy
-    use truchas_logging_services
-
-    integer :: j, unit
-    type(ip_desc) :: node_ip
-    type(int_var_vector) :: new_vertex_ngbr_all(nnodes)
-    type(int_var_vector) :: new_vertex_ngbr_all_orig(nnodes)
-    logical :: error
-
-    call init_vertex_ngbr_all_mapped (node_ip, new_vertex_ngbr_all_orig, new_vertex_ngbr_all)
-
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, nnodes
-      if (size(new_vertex_ngbr_all_orig(j)%v) == size(old_vertex_ngbr_all_orig(j)%v)) then
-        if (all(new_vertex_ngbr_all_orig(j)%v == old_vertex_ngbr_all_orig(j)%v)) cycle
-      end if
-      if (.not.error) then
-        write(unit,'(/,a)') 'VERTEX_NGBR_ALL_ORIG ****'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, '] =', old_vertex_ngbr_all_orig(j)%v
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, '] =', new_vertex_ngbr_all_orig(j)%v
-    end do
-
-    error = .false.
-    do j = 1, nnodes
-      if (size(new_vertex_ngbr_all(j)%v) == size(old_vertex_ngbr_all(j)%v)) then
-        if (all((new_vertex_ngbr_all(j)%v<0) .eqv. (old_vertex_ngbr_all(j)%v<0))) then
-          if (all(new_vertex_ngbr_all(j)%v == old_vertex_ngbr_all(j)%v .or. old_vertex_ngbr_all(j)%v < 0)) cycle
-        end if
-      end if
-      if (.not.error) then
-        write(unit,'(/,a)') 'VERTEX_NGBR_ALL ****'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, '] =', old_vertex_ngbr_all(j)%v
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, '] =', new_vertex_ngbr_all(j)%v
-    end do
-
-    call destroy (new_vertex_ngbr_all)
-    call destroy (new_vertex_ngbr_all_orig)
-
-  end subroutine test_vertex_ngbr_all
 
 end module nn_gather_impl

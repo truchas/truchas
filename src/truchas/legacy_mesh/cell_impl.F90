@@ -68,7 +68,6 @@ contains
 
     !! CELL%VOLUME
     call init_volume (cell%volume)
-    !call test_init_volume
 
     !! CELL%CENTROID
     allocate(centroid(3,ncells))
@@ -77,7 +76,6 @@ contains
       cell(j)%centroid = centroid(:,j)
     end do
     deallocate(centroid)
-    !call test_init_centroid
 
     !! CELL%FACE_AREA, CELL%FACE_NORMAL
     allocate(face_area(6,ncells), face_normal(3,6,ncells))
@@ -87,7 +85,6 @@ contains
       cell(j)%face_normal = face_normal(:,:,j)
     end do
     deallocate(face_area, face_normal)
-    !call test_init_face_normal
 
     !! CELL%FACE_CENTROID_L
     allocate(face_centroid_l(3,6,ncells))
@@ -96,7 +93,6 @@ contains
       cell(j)%face_centroid_l = face_centroid_l(:,:,j)
     end do
     deallocate(face_centroid_l)
-    !call test_init_face_centroid_l
 
     !! CELL%FACE_CENTROID
     allocate(face_centroid(3,6,ncells))
@@ -105,7 +101,6 @@ contains
       cell(j)%face_centroid = face_centroid(:,:,j)
     end do
     deallocate(face_centroid)
-    !call test_init_face_centroid
 
     !! CELL%HALFWIDTH
     allocate(halfwidth(6,ncells))
@@ -114,11 +109,9 @@ contains
       cell(j)%halfwidth = halfwidth(:,j)
     end do
     deallocate(halfwidth)
-    !call test_init_halfwidth
 
     !! ORTHOGONAL_MESH
     call init_orthogonal_mesh (orthogonal_mesh)
-    !call test_init_orthogonal_mesh
 
     !! The original cell_geometry_module::jacobian procedure included the
     !! following as a side effect of computing the orthogonal_mesh flag.
@@ -151,7 +144,6 @@ contains
   !! volumes there are small differences; see test_init_centroid below.
 
   subroutine init_centroid (centroid)
-    !use mesh_module, only: old_cell => cell
     use en_gather_impl, only: gather_vertex_coord
     use legacy_geometry, only: cell_centroid
     real(r8), intent(out) :: centroid(:,:)
@@ -161,7 +153,6 @@ contains
     ASSERT(size(centroid,2) == ncells)
     call gather_vertex_coord (x)
     do j = 1, ncells
-      !call cell_centroid (x(:,:,j), old_cell(j)%volume, centroid(:,j))
       call cell_centroid (x(:,:,j), cell(j)%volume, centroid(:,j))
     end do
   end subroutine init_centroid
@@ -335,198 +326,5 @@ contains
       call linear_prop_face_aux (cell(j)%face_centroid_l, f, vrtx(:,j), prop(j))
     end do
   end subroutine linear_prop_face
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!! TESTING CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !! The legacy algorithm for computing cell volume suffers from substantial
-  !! cancellation error and was a poor choice.  Note the relatively large
-  !! error tolerance (5 or 6 decimal digits).  It is as small as it can be
-  !! to have this test pass for all regression test meshes.  The regression
-  !! tests themselves are not sensitive to the differences.
-
-  subroutine test_init_volume
-    use mesh_module, only: old_cell => cell
-    use parallel_communication, only: global_any, global_maxval
-    use truchas_logging_services
-    integer :: j, unit
-    logical :: error
-    real(r8) :: volume(ncells)
-    call init_volume (volume)
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (abs(volume(j) - old_cell(j)%volume) <= (2**16)*spacing(volume(j))) cycle
-      if (.not. error) then
-        write(unit,'(/,a)') 'CELL%VOLUME *********************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,1x,g0)') 'old[', j, ']=', old_cell(j)%volume
-      write(unit,'(a,i0,a,1x,g0)') 'new[', j, ']=', volume(j)
-    end do
-    if (global_any(error)) then
-      write(unit,'(a,g0)') 'MAX REL ERROR = ',global_maxval(abs(volume - old_cell%volume)/volume)
-      call TLS_fatal ('error validating VOLUME')
-    end if
-  end subroutine test_init_volume
-
-  !! The legacy formula is still being used to compute centroids, but with the
-  !! new volume.  Hence the error tolerance (as small as it can be and have the
-  !! test pass for all regression test meshes) is somewhat larger than would
-  !! normally be expected.  There is also a testing issue that arises when a
-  !! centroid component is 0, or nearly so -- that is the reason for the
-  !! inclusion of an absolute tolerance.
-
-  subroutine test_init_centroid
-    use mesh_module, only: old_cell => cell
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-    integer :: j, unit
-    logical :: error
-    real(r8) :: centroid(3,ncells)
-    call init_centroid (centroid)
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (all(abs(centroid(:,j) - old_cell(j)%centroid) <= &
-              max((2**13)*spacing(old_cell(j)%centroid),8*epsilon(1.0_r8)))) cycle
-      if (.not. error) then
-        write(unit,'(/,a)') 'CELL%CENTROID *********************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,3(1x,g0))') 'old[', j, ']=', old_cell(j)%centroid
-      write(unit,'(a,i0,a,3(1x,g0))') 'new[', j, ']=', centroid(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating CENTROID')
-  end subroutine test_init_centroid
-
-  !! As long as we are using the legacy algorithm for computing the face areas
-  !! and normals we should get exactly the same results, and we are as reflected
-  !! by the very small tolerance (2 least significant bits).
-
-  subroutine test_init_face_normal
-    use mesh_module, only: old_cell => cell
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-    integer :: j, k, unit
-    logical :: error
-    real(r8) :: face_area(6,ncells), face_normal(3,6,ncells)
-    call init_face_normal (face_area, face_normal)
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (all(abs(face_area(:,j) - old_cell(j)%face_area) <= 2*spacing(old_cell(j)%face_area))) cycle
-      if (.not. error) then
-        write(unit,'(/,a)') 'CELL%FACE_AREA *********************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,g0))') 'old[', j, ']=', old_cell(j)%face_area
-      write(unit,'(a,i0,a,*(1x,g0))') 'new[', j, ']=', face_area(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating FACE_AREA')
-    error = .false.
-    do j = 1, ncells
-      do k = 1, 6
-        if (all(abs(face_normal(:,k,j) - old_cell(j)%face_normal(:,k)) <= &
-                2*spacing(old_cell(j)%face_normal(:,k)))) cycle
-        if (.not. error) then
-          write(unit,'(/,a)') 'CELL%FACE_NORMAL *********************************'
-          error = .true.
-        end if
-        write(unit,'(2(a,i0),a,*(1x,g0))') 'old[', k, ',', j, ']=', old_cell(j)%face_normal(:,k)
-        write(unit,'(2(a,i0),a,*(1x,g0))') 'new[', k, ',', j, ']=', face_normal(:,k,j)
-      end do
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating FACE_NORMAL')
-  end subroutine test_init_face_normal
-
-  subroutine test_init_face_centroid_l
-    use mesh_module, only: old_cell => cell
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-    integer :: j, k, unit
-    logical :: error
-    real(r8) :: face_centroid_l(3,6,ncells)
-    call init_face_centroid_l (face_centroid_l)
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      do k = 1, 6
-        if (all(abs(face_centroid_l(:,k,j) - old_cell(j)%face_centroid_l(:,k)) <= &
-                2*spacing(old_cell(j)%face_centroid_l(:,k)))) cycle
-        if (.not. error) then
-          write(unit,'(/,a)') 'CELL%FACE_CENTROID_L *********************************'
-          error = .true.
-        end if
-        write(unit,'(2(a,i0),a,*(1x,g0))') 'old[', k, ',', j, ']=', old_cell(j)%face_centroid_l(:,k)
-        write(unit,'(2(a,i0),a,*(1x,g0))') 'new[', k, ',', j, ']=', face_centroid_l(:,k,j)
-      end do
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating FACE_CENTROID_L')
-  end subroutine test_init_face_centroid_l
-
-  subroutine test_init_face_centroid
-    use mesh_module, only: old_cell => cell
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-    integer :: j, k, unit
-    logical :: error
-    real(r8) :: face_centroid(3,6,ncells)
-    call init_face_centroid (face_centroid)
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      do k = 1, 6
-        if (all(abs(face_centroid(:,k,j) - old_cell(j)%face_centroid(:,k)) <= &
-                max(8*spacing(old_cell(j)%face_centroid(:,k)),2*epsilon(1.0_r8)))) cycle
-        if (.not. error) then
-          write(unit,'(/,a)') 'CELL%FACE_CENTROID *********************************'
-          error = .true.
-        end if
-        write(unit,'(2(a,i0),a,*(1x,g0))') 'old[', k, ',', j, ']=', old_cell(j)%face_centroid(:,k)
-        write(unit,'(2(a,i0),a,*(1x,g0))') 'new[', k, ',', j, ']=', face_centroid(:,k,j)
-      end do
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating FACE_CENTROID')
-  end subroutine test_init_face_centroid
-
-  !! The error tolerance here needs to be surprisingly large in order for all
-  !! the regression test meshes to pass.  The face centroids are very close to
-  !! the old values, but the centroid above does differ much more significantly,
-  !! so what might expect needing a similarly sized tolerance here.  But in fact
-  !! the tolerance needs to be about 10 times larger.
-
-  subroutine test_init_halfwidth
-    use mesh_module, only: old_cell => cell
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-    integer :: j, unit
-    logical :: error
-    real(r8) :: halfwidth(6,ncells)
-    call init_halfwidth (halfwidth)
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (all(abs(halfwidth(:,j) - old_cell(j)%halfwidth) <= &
-              (2**17)*spacing(old_cell(j)%halfwidth))) cycle
-      if (.not. error) then
-        write(unit,'(/,a)') 'CELL%HALFWIDTH *********************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,g0))') 'old[', j, ']=', old_cell(j)%halfwidth
-      write(unit,'(a,i0,a,*(1x,g0))') 'new[', j, ']=', halfwidth(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating HALFWIDTH')
-  end subroutine test_init_halfwidth
-
-  subroutine test_init_orthogonal_mesh
-    use mesh_module, only: old_orthogonal_mesh => orthogonal_mesh
-    use truchas_logging_services
-    logical :: orthogonal_mesh
-    call init_orthogonal_mesh (orthogonal_mesh)
-    if (orthogonal_mesh .neqv. old_orthogonal_mesh) &
-        call TLS_fatal ('error validating ORTHOGONAL_MESH')
-  end subroutine test_init_orthogonal_mesh
 
 end module cell_impl

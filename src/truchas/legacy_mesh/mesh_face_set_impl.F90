@@ -64,51 +64,6 @@ contains
       call rearrange (pcell_old_to_new, mesh_face_set(i,:,:), src(i,:,:), default=0)
     end do
 
-    call test_mesh_face_set ! Caution: see remarks below
-
   end subroutine init_mesh_face_set_impl
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!! TESTING CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  !! There is a 1-1 mapping between exodus side sets and original mesh_face_sets,
-  !! but some side set info is lost when they are converted into new mesh face
-  !! sets.  Thus it is not generally possible to fully recover the side sets and
-  !! compare to the original mesh_face_sets array.  However in practice it seems
-  !! we can, and if there are differences, which will only occur for side sets
-  !! internal to the mesh, that difference is likely not significant practically.
-  !! The issue is that a (cell,side) pair maps to a unique face, but a face can
-  !! map to two (cell,side) pairs (except on the boundary).  Exodus side sets
-  !! may be one sided or two sided (or even some combination).  The above code
-  !! takes the approach of generating 2-sided side sets from the face sets; the
-  !! original may not be.
-
-  subroutine test_mesh_face_set
-
-    use mesh_module, only: old_mesh_face_set => mesh_face_set
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-
-    integer :: j, k, unit
-    logical :: error
-
-    unit = TLS_debug_unit()
-
-    error = .false.
-    do j = 1, size(mesh_face_set,dim=3)
-      do k = 1, 6
-        if (all(mesh_face_set(:,k,j) == old_mesh_face_set(:,k,j))) cycle
-        if (.not.error) then
-          write(unit,'(/,a)') 'MESH_FACE_SET **********************'
-          error = .true.
-        end if
-        write(unit,'(2(a,i0),a,*(1x,i0))') 'old[', k, ',', j, ']=', old_mesh_face_set(:,k,j)
-        write(unit,'(2(a,i0),a,*(1x,i0))') 'old[', k, ',', j, ']=', mesh_face_set(:,k,j)
-      end do
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating mesh_face_set')
-
-  end subroutine test_mesh_face_set
 
 end module mesh_face_set_impl

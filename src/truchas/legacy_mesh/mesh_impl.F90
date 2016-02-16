@@ -69,7 +69,6 @@ contains
 
     !! MESH%CELL_SHAPE
     call init_cell_shape (mesh%cell_shape)
-    call test_init_cell_shape
 
     !! MESH%NGBR_CELL, MESH%NGBR_CELL_ORIG
     allocate(ngbr_cell_orig(6,ncells), ngbr_cell(6,ncells))
@@ -79,7 +78,6 @@ contains
       mesh(j)%ngbr_cell_orig = ngbr_cell_orig(:,j)
     end do
     deallocate(ngbr_cell_orig, ngbr_cell)
-    call test_init_ngbr_cell
 
     !! MESH%NGBR_FACE
     allocate(ngbr_face(6,ncells))
@@ -88,7 +86,6 @@ contains
       mesh(j)%ngbr_face = ngbr_face(:,j)
     end do
     deallocate(ngbr_face)
-    call test_init_ngbr_face
 
     !! MESH%NGBR_VRTX, MESH%NGBR_VRTX_ORIG
     allocate(ngbr_vrtx_orig(8,ncells), ngbr_vrtx(8,ncells))
@@ -98,15 +95,12 @@ contains
       mesh(j)%ngbr_vrtx_orig = ngbr_vrtx_orig(:,j)
     end do
     deallocate(ngbr_vrtx_orig, ngbr_vrtx)
-    call test_init_ngbr_vrtx
 
     !! MESH%NGBR_CELLS_ALL, MESH%NGBR_CELLS_FACE
     call init_ngbr_cells_all_mapped (mesh%ngbr_cells_all, mesh%ngbr_cells_face, cell_ip_all)
-    call test_init_ngbr_cells_all
 
     !! MESH%CBLOCKID
     call init_cblockid (mesh%cblockid)
-    call test_cblockid
 
   end subroutine init_mesh
 
@@ -806,220 +800,5 @@ contains
       call collate (mesh_collate_vertex(k,:), mesh%ngbr_vrtx_orig(k))
     end do
   end function mesh_collate_vertex
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!! TESTING CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  subroutine test_init_cell_shape
-    use mesh_module, only: old_mesh => mesh
-    use parallel_communication, only: global_all
-    integer :: cell_shape(ncells)
-    call init_cell_shape (cell_shape)
-    INSIST(global_all(cell_shape == old_mesh%cell_shape))
-  end subroutine test_init_cell_shape
-
-  subroutine test_cblockid
-    use mesh_module, only: old_mesh => mesh
-    integer :: cblockid(ncells)
-    call init_cblockid (cblockid)
-    INSIST(all(cblockid == old_mesh%cblockid))
-  end subroutine test_cblockid
-
-  subroutine test_init_ngbr_cell
-
-    use common_impl, only: gap_cells
-    use mesh_module, only: old_mesh => mesh
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-
-    integer :: j, unit
-    integer :: ngbr_cell(6,ncells), ngbr_cell_orig(6,ncells)
-    type(ip_desc) :: cell_ip
-    logical :: error, gap_cell_mask(ncells)
-
-    call init_ngbr_cell (ngbr_cell_orig, ngbr_cell, cell_ip)
-
-    gap_cell_mask = .false.
-    gap_cell_mask(gap_cells) = .true.
-
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (gap_cell_mask(j)) cycle
-      if (all(ngbr_cell_orig(:,j) == old_mesh(j)%ngbr_cell_orig)) cycle
-      if (.not.error) then
-        write(unit,'(/,a)') '%NGBR_CELL_ORIG *****************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, ']=', old_mesh(j)%ngbr_cell_orig
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, ']=', ngbr_cell_orig(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating %ngbr_cell_orig')
-
-    error = .false.
-    do j = 1, ncells
-      if (gap_cell_mask(j)) cycle
-      if (all(ngbr_cell(:,j) == old_mesh(j)%ngbr_cell .or. &
-         ((DEGENERATE_FACE < old_mesh(j)%ngbr_cell) .and. (old_mesh(j)%ngbr_cell < 0) &
-         .and. (DEGENERATE_FACE < ngbr_cell(:,j)) .and. (ngbr_cell(:,j) < 0)))) cycle
-      if (.not.error) then
-        write(unit,'(/,a)') '%NGBR_CELL *****************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, ']=', old_mesh(j)%ngbr_cell
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, ']=', ngbr_cell(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating %ngbr_cell')
-
-  end subroutine test_init_ngbr_cell
-
-  !! NB1: We have no data for gap cells and thus skip comparison of values on
-  !! those cells.
-  !!
-  !! NB2: Gap cell neighbors may not be oriented properly and so face values
-  !! belonging to such neighbors may be incorrect.  This is definitely so for
-  !! non-hex gap cells, but no current regression test includes such cells.
-  !! It is possible also for hex gap cells, but it appears that the recovered
-  !! gap cells preserve the orientation of the original and so these values
-  !! are correct.  These values are tested.
-
-  subroutine test_init_ngbr_face
-
-    use common_impl, only: gap_cells
-    use mesh_module, only: old_mesh => mesh
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-
-    integer :: j, unit
-    integer :: ngbr_face(6,ncells)
-    logical :: gap_cell_mask(ncells), error
-
-    call init_ngbr_face (ngbr_face)
-
-    gap_cell_mask = .false.
-    gap_cell_mask(gap_cells) = .true.
-
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (gap_cell_mask(j)) cycle
-      if (all(ngbr_face(:,j) == old_mesh(j)%ngbr_face)) cycle
-      if (.not.error) then
-        write(unit,'(/,a)') '%NGBR_FACE ********************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, ']=', old_mesh(j)%ngbr_face
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, ']=', ngbr_face(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating %ngbr_face')
-
-  end subroutine test_init_ngbr_face
-
-  !! NB1: Non-hex gap cells are not mapped properly and will be detected as an
-  !! error.  However no current regression test includes such gap cells.
-  !!
-  !! NB2: Hex gap cells recovered from links are not necessarily oriented like
-  !! the original gap cell, and the code does not attempt to restore the
-  !! orientation.  Differing orientation will give errors below.  However, it
-  !! appears the reconstructed gap cells preserve the original orientation.
-  !! This is no doubt due to the fact that the code that creates the gap cells
-  !! is essentially identical to that which creates links -- fortuitous.
-  !!
-  !! NB3: Negative values in ngbr_vrtx are indices into a lookaside buffer, and
-  !! the construction of that buffer differs between the two versions, so that
-  !! those values cannot be compared, other than both should be negative.
-
-  subroutine test_init_ngbr_vrtx
-
-    use mesh_module, only: old_mesh => mesh
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-
-    integer :: j, unit
-    integer :: ngbr_vrtx(8,ncells), ngbr_vrtx_orig(8,ncells)
-    type(ip_desc) :: node_ip
-    logical :: error
-
-    call init_ngbr_vrtx_mapped (ngbr_vrtx_orig, ngbr_vrtx, node_ip)
-
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (all(ngbr_vrtx_orig(:,j) == old_mesh(j)%ngbr_vrtx_orig)) cycle
-      if (.not.error) then
-        write(unit,'(/,a)') '%NGBR_VRTX_ORIG ************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, ']=', old_mesh(j)%ngbr_vrtx_orig
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, ']=', ngbr_vrtx_orig(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating %ngbr_vrtx_orig')
-
-    error = .false.
-    do j = 1, ncells
-      if (all(ngbr_vrtx(:,j) == old_mesh(j)%ngbr_vrtx .or. old_mesh(j)%ngbr_vrtx < 0)) cycle
-      if (.not.error) then
-        write(unit,'(/,a)') '%NGBR_VRTX ************************'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, ']=', old_mesh(j)%ngbr_vrtx
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, ']=', ngbr_vrtx(:,j)
-    end do
-    if (global_any(error)) call TLS_fatal ('error validating %ngbr_vrtx')
-
-  end subroutine test_init_ngbr_vrtx
-
-  subroutine test_init_ngbr_cells_all
-
-    use mesh_module, only: old_mesh=>mesh
-    use parallel_communication, only: global_any
-    use var_vector_module, only: int_var_vector, destroy
-    use truchas_logging_services
-
-    integer :: j, unit
-    type(int_var_vector) :: ngbr_cells_all(ncells), ngbr_cells_face(ncells)
-    logical :: error
-
-    call init_ngbr_cells_all_mapped (ngbr_cells_all, ngbr_cells_face, cell_ip_all)
-
-    unit = TLS_debug_unit()
-    error = .false.
-    do j = 1, ncells
-      if (size(old_mesh(j)%ngbr_cells_all%v) == size(ngbr_cells_all(j)%v)) then
-        if (all((old_mesh(j)%ngbr_cells_all%v < 0) .eqv. (old_mesh(j)%ngbr_cells_all%v < 0))) then
-          if (all(old_mesh(j)%ngbr_cells_all%v == ngbr_cells_all(j)%v .or. old_mesh(j)%ngbr_cells_all%v < 0)) cycle
-        endif
-      end if
-      if (.not.error) then
-        write(unit,'(/,a)') 'NGBR_CELLS_ALL ****'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, '] =', old_mesh(j)%ngbr_cells_all%v
-      write(unit,'(a,i0,a,*(1x,i0))') 'new[', j, '] =', ngbr_cells_all(j)%v
-    end do
-
-    if (global_any(error)) call TLS_warn ('error validating NGBR_CELLS_ALL')
-
-    error = .false.
-    do j = 1, ncells
-      if (size(old_mesh(j)%ngbr_cells_face%v) == size(ngbr_cells_face(j)%v)) then
-        if (all(old_mesh(j)%ngbr_cells_face%v == ngbr_cells_face(j)%v)) cycle
-      end if
-      if (.not.error) then
-        write(unit,'(/,a)') 'NGBR_CELLS_FACE ****'
-        error = .true.
-      end if
-      write(unit,'(a,i0,a,*(1x,i0))') 'old[', j, '] =', old_mesh(j)%ngbr_cells_all%v
-      write(unit,'(a,i0,a,*(1x,b7.7))') 'old[', j, '] =', old_mesh(j)%ngbr_cells_face%v
-      write(unit,'(a,i0,a,*(1x,b7.7))') 'new[', j, '] =', ngbr_cells_face(j)%v
-    end do
-
-    if (global_any(error)) call TLS_warn ('error validating NGBR_CELLS_FACE')
-
-    call destroy (ngbr_cells_all)
-    call destroy (ngbr_cells_face)
-
-  end subroutine test_init_ngbr_cells_all
 
 end module mesh_impl
