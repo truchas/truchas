@@ -76,7 +76,7 @@ contains
 
   subroutine init_legacy_mesh_api
 
-    use mesh_module, only: unpermute_mesh_vector, unpermute_vertex_vector
+    !use mesh_module, only: unpermute_mesh_vector, unpermute_vertex_vector
     use common_impl, only: init_common_impl
     use mesh_impl, only: init_mesh_impl
     use ee_gather_impl, only: init_ee_gather_impl
@@ -85,6 +85,8 @@ contains
     use vertex_impl, only: init_vertex_impl
     use cell_impl, only: init_cell_impl
     use mesh_face_set_impl, only: init_mesh_face_set_impl
+    
+    integer, allocatable :: unpermute_mesh_vector(:), unpermute_vertex_vector(:)
 
     !! These two unpermute arrays define the relationship of the old mesh to
     !! the new.  At this point they come from the old mesh so that we can
@@ -92,6 +94,7 @@ contains
     !! new_mesh%xcell and new_mesh%xnode, so that the rearrangements that are
     !! currently done are the identity and unnecessary.  (Gap cells need to
     !! be dealt with still.)
+    call same_as_new (unpermute_mesh_vector, unpermute_vertex_vector)
     call init_common_impl (unpermute_mesh_vector, unpermute_vertex_vector)
 
     call init_mesh_impl
@@ -102,6 +105,23 @@ contains
     call init_cell_impl
     call init_mesh_face_set_impl
 
+  contains
+  
+    !! This is okay for meshes without links of any kind
+    subroutine same_as_new (xcell, xnode)
+      use unstr_mesh_type
+      use mesh_manager, only: unstr_mesh_ptr
+      integer :: ngap
+      integer, allocatable, intent(out) :: xcell(:), xnode(:)
+      type(unstr_mesh), pointer :: mesh
+      mesh => unstr_mesh_ptr('MAIN')
+      ngap = count(mesh%link_cell_id(:mesh%nlink_onP) > 0)
+      allocate(xcell(mesh%ncell_onP + ngap))
+      xcell(:mesh%ncell_onP) = mesh%xcell(:mesh%ncell_onP)
+      xcell(mesh%ncell_onP+1:) = pack(mesh%link_cell_id(:mesh%nlink_onP), &
+                                 mask=(mesh%link_cell_id(:mesh%nlink_onP) > 0))
+      xnode = mesh%xnode(:mesh%nnode_onP)
+    end subroutine 
   end subroutine init_legacy_mesh_api
 
 end module legacy_mesh_api
