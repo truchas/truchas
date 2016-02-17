@@ -115,9 +115,6 @@ contains
       call region_read (lun) ! What is this and what does it have to do with restarts? (NNC)
     end if
 
-    ! Read MESH namelist and set dimensions for the legacy mesh
-    call legacy_mesh_input (lun)
-
     ! Read the MESH and ALTMESH namelists: used to initialize MESH_MANAGER (new mesh)
     call read_truchas_mesh_namelists (lun)
 
@@ -167,17 +164,6 @@ contains
     call TLS_info ('')
     call TLS_info ('Input file ' // trim(infile) // ' closed.')
     call stop_timer('Input')
-
-  contains
-
-    subroutine legacy_mesh_input (lun)
-      use mesh_input_module, only: mesh_input, mesh_sizes
-      use parallel_input_module, only: parallel_parameters_input
-      integer, intent(in) :: lun
-      call parallel_parameters_input (lun)
-      call mesh_input (lun)
-      call mesh_sizes ()
-    end subroutine
 
   end subroutine read_input
 

@@ -49,7 +49,7 @@ CONTAINS
     use output_control,         only: next_op
     use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
-    use restart_driver,         only: close_restart_file
+    use restart_driver,         only: close_restart_file, skip_restart_mesh, skip_restart_side_sets
     use time_step_module,       only: cycle_number, cycle_number_restart, &
                                       dt, t, t1, t2
     use init_module,            only: INITIAL
@@ -73,9 +73,12 @@ CONTAINS
 
     ! Setup the tensor matrix.
     call TENSOR_MATRIX ()
-
-    ! Initialize the legacy mesh data structures.
-    call init_legacy_mesh
+    
+    ! Skip over unused legacy mesh data in the restart file (TEMPORARY)
+    if (restart) then
+      call skip_restart_mesh
+      call skip_restart_side_sets
+    end if
 
     ! Instantiate the new mesh objects.
     call init_mesh_manager
@@ -120,29 +123,6 @@ CONTAINS
 
     ! Stop the initialization timer.
     call stop_timer("Initialization")
-
-  contains
-
-    subroutine init_legacy_mesh
-
-      use base_types_B_module,    only: MESH_VERTEX_ALLOCATE, BASE_TYPES_B_ALLOCATE
-      use cell_geometry_module,   only: GET_CELL_GEOMETRY
-      use gs_module,              only: EE_GS_INIT, EN_GS_INIT, NN_GS_INIT
-      use mesh_gen_module,        only: MESH_GEN, Flag_Face_Neighbors
-      use mesh_utilities,         only: MESH_DIAGNOSTICS
-      use mesh_module,            only: Mesh, Vertex
-
-      call MESH_VERTEX_ALLOCATE (Mesh, Vertex) ! allocate the Mesh and Vertex structure arrays
-      call MESH_GEN ! read the mesh and compute the connectivity
-      call BASE_TYPES_B_ALLOCATE ! allocate the Cell structure array
-      call EE_GS_INIT ! setup element-element communication
-      call EN_GS_INIT ! setup element-node communication
-      call NN_GS_INIT ! setup node-node communication
-      call MESH_DIAGNOSTICS ! compute mesh diagnostics and check for connectivity errors
-      call GET_CELL_GEOMETRY ! compute cell geometry
-      call Flag_Face_Neighbors ! flag which neighbors touch which faces
-
-    end subroutine init_legacy_mesh
 
   END SUBROUTINE SETUP
 

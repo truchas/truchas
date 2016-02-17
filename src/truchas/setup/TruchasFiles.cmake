@@ -20,10 +20,8 @@ set(SETUP_FPP_FLAGS
 # - base_types
 set(SETUP_BASE_FILES
           setup/base_types/base_types_A_module.F90
-          setup/base_types/base_types_B_module.F90
           setup/base_types/matl_module.F90
           setup/base_types/matl_utilities.F90
-          setup/base_types/mesh_module.F90
           setup/base_types/parallel_scope.F90
           setup/base_types/probe_module.F90
           setup/base_types/var_vector_types.F90
@@ -47,19 +45,6 @@ set(SETUP_INIT_FILES
           setup/initialize/init_module.F90)
 list(APPEND SETUP_FILES ${SETUP_INIT_FILES})	
 
-# - mesh
-set(SETUP_MESH_FILES
-          setup/mesh/mesh_decomposition_module.F90
-          setup/mesh/mesh_distribute_module.F90
-          setup/mesh/mesh_gen_data.F90
-          setup/mesh/mesh_gen_module.F90
-          setup/mesh/mesh_partition_module.F90
-          setup/mesh/mesh_quality_module.F90
-          setup/mesh/mesh_tests.F90
-          setup/mesh/mesh_utilities.F90
-          setup/mesh/partitioner_data.F90)
-list(APPEND SETUP_FILES ${SETUP_MESH_FILES})	
-
 # - restart
 set(SETUP_RESTART_FILES
           setup/restart/restart_driver.F90
@@ -74,8 +59,7 @@ set(SETUP_SCALARS_FILES
           setup/scalars/constants_module.F90
           setup/scalars/cutoffs_module.F90
           setup/scalars/debug_control_data.F90
-          setup/scalars/parameter_module.F90
-          setup/scalars/mesh_parameter_module.F90)
+          setup/scalars/parameter_module.F90)
 list(APPEND SETUP_FILES ${SETUP_SCALARS_FILES})	
 
 # - vof
@@ -90,7 +74,6 @@ list(APPEND SETUP_FILES ${SETUP_VOF_FILES})
 list(APPEND SETUP_FILES
             setup/setup_module.F90
             setup/random_module.F90
-	    setup/cell_geometry/cell_geometry_module.F90
 	    setup/overwrite/overwrite_module.F90)
 
 # Process Fortran files
@@ -115,16 +98,3 @@ set_source_files_properties(${SETUP_SOURCE_FILES} PROPERTIES
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${SETUP_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ${SETUP_TARGET_NAME})
-
-# Add C files to Truchas source file list
-list(APPEND Truchas_LIBRARY_SOURCE_FILES
-                    setup/mesh/chaco_f90_wrapper.c)
-set(chaco_cflags "-I${Truchas_FCIface_INCLUDE_DIR}")
-if(ENABLE_Chaco)
-  set(chaco_cflags "${chaco_cflags} -DUSE_CHACO")
-endif()  
-set_source_files_properties(setup/mesh/chaco_f90_wrapper.c PROPERTIES
-                            COMPILE_FLAGS ${chaco_cflags})
-
-
-

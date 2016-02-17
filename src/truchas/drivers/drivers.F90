@@ -367,9 +367,6 @@ call hijack_truchas ()
     !deallocate the fluidvof array, and others
     call FLUID_DEALLOCATE()
 
-    ! deallocate the mesh
-    call LEGACY_MESH_DEALLOCATE
-
     ! deallocate the base types
     call BASE_TYPES_A_DEALLOCATE ()
 
@@ -390,15 +387,6 @@ call hijack_truchas ()
 
     ! report the timing info
     call REPORT_MEMORY
-
-  CONTAINS
-
-    SUBROUTINE LEGACY_MESH_DEALLOCATE
-      use mesh_module, only: Mesh, Vertex
-      use base_types_B_module, only: MESH_VERTEX_DEALLOCATE, BASE_TYPES_B_DEALLOCATE
-      call MESH_VERTEX_DEALLOCATE (Mesh, Vertex)
-      call BASE_TYPES_B_DEALLOCATE ! deallocates the Cell structure array
-    END SUBROUTINE LEGACY_MESH_DEALLOCATE
 
   END SUBROUTINE CLEANUP
 

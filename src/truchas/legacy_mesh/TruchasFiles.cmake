@@ -21,7 +21,6 @@ set(LEGACYMESH_FILES
     legacy_mesh/nn_gather_impl.F90
     legacy_mesh/mesh_face_set_impl.F90
     legacy_mesh/gap_node_map_type.F90
-    legacy_mesh/orig_old_mesh_gmv.F90
     legacy_mesh/legacy_geometry.F90
     )
 

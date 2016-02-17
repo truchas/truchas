@@ -20,11 +20,9 @@ set(INPUT_FILES
          input/interfaces_input_module.F90
          input/lin_solver_input.F90
          input/material_input_module.F90
-         input/mesh_input_module.F90
          input/nonlin_solver_input.F90
          input/numerics_input_module.F90
          input/outputs_input_module.F90
-         input/parallel_input_module.F90
          input/physics_input_module.F90
          input/probe_data_module.F90
          input/probe_input_module.F90
