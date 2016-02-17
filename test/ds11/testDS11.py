@@ -25,8 +25,9 @@ class DS11(TruchasTest.GoldenTestCase):
     self.test_output=Truchas.TruchasOutput(self.get_output_file())
     self.gold_output=Truchas.TruchasOutput(self.get_golden_output_file())
     self.test_sim = self.test_output.get_simulation()
-    self.gap_cells  = Truchas.TruchasRegion(self.test_sim,self.gap_block_ids)
-    self.true_cells = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
+    self.gold_sim = self.gold_output.get_simulation()
+    self.test_reg = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
+    self.gold_reg = Truchas.TruchasRegion(self.gold_sim,self.other_block_ids)
   
   def test_cycle_numbers(self):
     '''DS8: checking the cycle numbers'''
@@ -40,8 +41,8 @@ class DS11(TruchasTest.GoldenTestCase):
     tol = 1.0e-9
     fail = 0
     for n in [3,4]:
-      gold=self.gold_output.get_simulation().find_series(id=n).get_data('Z_TEMP',region=self.true_cells)
-      test=self.test_output.get_simulation().find_series(id=n).get_data('Z_TEMP',region=self.true_cells)
+      gold=self.gold_output.get_simulation().find_series(id=n).get_data('Z_TEMP',region=self.gold_reg)
+      test=self.test_output.get_simulation().find_series(id=n).get_data('Z_TEMP',region=self.test_reg)
       error=max(abs((test-gold)/gold))
       if (error > tol):
         fail += 1
