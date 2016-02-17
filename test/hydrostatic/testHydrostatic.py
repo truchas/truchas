@@ -67,7 +67,7 @@ class Hydrostatic(TruchasTest.GoldenTestCase):
         error += ((p[j]-pavg) - dpdz*(xc[j,2]-zavg))**2
     error = math.sqrt(error/n)
     
-    tol = 1.0e-4
+    tol = 1.0e-5
     if (error > tol):
       print dpdz
       print 'fluid pressure l2 error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
