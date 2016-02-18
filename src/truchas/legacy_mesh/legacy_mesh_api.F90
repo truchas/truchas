@@ -14,51 +14,24 @@
 
 module legacy_mesh_api
 
-  !use mesh_module, only: unpermute_mesh_vector, unpermute_vertex_vector
   use common_impl, only: unpermute_mesh_vector, unpermute_vertex_vector
-
-  !use mesh_parameter_module, only: ncells, ncells_tot, nnodes, nnodes_tot
   use common_impl, only: ncells, nnodes, nnodes_tot, ncells_tot
-
-  !use gs_module, only: ee_gather, gather_boundarydata
   use ee_gather_impl, only: ee_gather, gather_boundarydata
-
-  !use gs_module, only: en_gather, en_min_gather, en_or_gather
   use en_gather_impl, only: en_gather, gather_vertex_coord, en_min_gather, en_or_gather
-
-  !use gs_module, only: en_sum_scatter, en_or_scatter, en_min_scatter, en_max_scatter
   use en_gather_impl, only: en_sum_scatter, en_or_scatter, en_min_scatter, en_max_scatter
-
-  !use mesh_module, only: mesh, DEGENERATE_FACE, is_face_ngbr, mesh_collate_vertex
   use mesh_impl, only: mesh, DEGENERATE_FACE
   use mesh_impl, only: is_face_ngbr, mesh_collate_vertex
-
-  !use mesh_module, only: cell, orthogonal_mesh
   use cell_impl, only: cell, orthogonal_mesh
-
-  !use mesh_module, only: vertex_ngbr_all, vertex_ngbr_all_orig, nn_gather_boundarydata
   use nn_gather_impl, only: vertex_ngbr_all, vertex_ngbr_all_orig, nn_gather_boundarydata
-
-  !use mesh_module, only: vertex_data, vertex, vertex_collate
   use vertex_impl, only: vertex_data, vertex, vertex_collate
-
-  !use mesh_module, only: mesh_face_set
   use mesh_face_set_impl, only: mesh_face_set
-
-  !! Originally from MESH_MODULE
   use mesh_impl, only: CELL_TET, CELL_PYRAMID, CELL_PRISM, CELL_HEX
   use mesh_impl, only: GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5
-
-  !use linear_module, only: linear_prop
   use cell_impl, only: linear_prop
-
   implicit none
   public
 
-  !! Originally from MESH_MODULE; always true now
   logical, parameter :: mesh_has_cblockid_data = .true.
-
-  !! Originally from MESH_PARAMETER_MODULE; values for a hex cell.
   integer, parameter :: ndim=3, nfc=6, nvc=8, nvf=4, nfv=3, nec=12
 
   ! Define the edges surrounding a hex cell
@@ -76,7 +49,6 @@ contains
 
   subroutine init_legacy_mesh_api
 
-    !use mesh_module, only: unpermute_mesh_vector, unpermute_vertex_vector
     use common_impl, only: init_common_impl
     use mesh_impl, only: init_mesh_impl
     use ee_gather_impl, only: init_ee_gather_impl
@@ -85,18 +57,8 @@ contains
     use vertex_impl, only: init_vertex_impl
     use cell_impl, only: init_cell_impl
     use mesh_face_set_impl, only: init_mesh_face_set_impl
-    
-    integer, allocatable :: unpermute_mesh_vector(:), unpermute_vertex_vector(:)
 
-    !! These two unpermute arrays define the relationship of the old mesh to
-    !! the new.  At this point they come from the old mesh so that we can
-    !! validate the old mesh api.  But the next step is to instead use
-    !! new_mesh%xcell and new_mesh%xnode, so that the rearrangements that are
-    !! currently done are the identity and unnecessary.  (Gap cells need to
-    !! be dealt with still.)
-    call same_as_new (unpermute_mesh_vector, unpermute_vertex_vector)
-    call init_common_impl (unpermute_mesh_vector, unpermute_vertex_vector)
-
+    call init_common_impl
     call init_mesh_impl
     call init_vertex_impl
     call init_ee_gather_impl
@@ -105,23 +67,6 @@ contains
     call init_cell_impl
     call init_mesh_face_set_impl
 
-  contains
-  
-    !! This is okay for meshes without links of any kind
-    subroutine same_as_new (xcell, xnode)
-      use unstr_mesh_type
-      use mesh_manager, only: unstr_mesh_ptr
-      integer :: ngap
-      integer, allocatable, intent(out) :: xcell(:), xnode(:)
-      type(unstr_mesh), pointer :: mesh
-      mesh => unstr_mesh_ptr('MAIN')
-      ngap = count(mesh%link_cell_id(:mesh%nlink_onP) > 0)
-      allocate(xcell(mesh%ncell_onP + ngap))
-      xcell(:mesh%ncell_onP) = mesh%xcell(:mesh%ncell_onP)
-      xcell(mesh%ncell_onP+1:) = pack(mesh%link_cell_id(:mesh%nlink_onP), &
-                                 mask=(mesh%link_cell_id(:mesh%nlink_onP) > 0))
-      xnode = mesh%xnode(:mesh%nnode_onP)
-    end subroutine 
   end subroutine init_legacy_mesh_api
 
 end module legacy_mesh_api

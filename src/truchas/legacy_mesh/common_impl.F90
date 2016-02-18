@@ -60,20 +60,38 @@ module common_impl
 
 contains
 
-  subroutine init_common_impl (old_cell_perm, old_node_perm)
+  subroutine init_common_impl
 
     use mesh_manager, only: unstr_mesh_ptr
     use parallel_permutations, only: create_par_perm
     use parallel_communication, only: global_sum
 
-    integer, intent(in) :: old_cell_perm(:), old_node_perm(:)
+    integer, allocatable :: xgap(:)
     integer, pointer :: dummy(:)
 
     new_mesh => unstr_mesh_ptr('MAIN')
     INSIST(associated(new_mesh))
 
-    unpermute_mesh_vector = old_cell_perm
-    unpermute_vertex_vector = old_node_perm
+    !! Establish the relationship between the way cells and nodes are ordered
+    !! and partitioned in the legacy API with that of the main mesh.  The input
+    !! for this are the UNPERMUTE_MESH_VECTOR and UNPERMUTE_VERTEX_VECTOR
+    !! arrays.  Originally these came from the legacy mesh.  Now we set them
+    !! to correspond to the way the main mesh cells and nodes are ordered and
+    !! partitioned.  This results in an identity correspondence between the
+    !! main mesh and the mesh served by the legacy API, though for the time
+    !! being we continue to got through the motion of mapping between the two
+    !! as if the relationship were not the identity.  Eventually this will all
+    !! be removed.
+
+    unpermute_vertex_vector = new_mesh%xnode(:new_mesh%nnode_onP)
+
+    !! Mesh links that originally came from gap elements appear as regular
+    !! cells in the legacy API.  These are appended to the main mesh cells.
+    xgap = pack(new_mesh%link_cell_id(:new_mesh%nlink_onP), &
+                mask=(new_mesh%link_cell_id(:new_mesh%nlink_onP) > 0))
+    allocate(unpermute_mesh_vector(new_mesh%ncell_onP + size(xgap)))
+    unpermute_mesh_vector(:new_mesh%ncell_onP) = new_mesh%xcell(:new_mesh%ncell_onP)
+    unpermute_mesh_vector(new_mesh%ncell_onP+1:) = xgap
 
     ncells = size(unpermute_mesh_vector)
     nnodes = size(unpermute_vertex_vector)
