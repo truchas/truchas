@@ -28,6 +28,11 @@ will result in heat solutions that are not comparable.
   Output_Dt = 5.0 !0.2
 /
 
+&SIMULATION_CONTROL
+  phase_start_times = 5.0
+  phase_init_dt_factor = 1.0
+/
+
 &PHYSICS
   fluid_flow = .true.
   inviscid   = .true.
@@ -52,7 +57,7 @@ will result in heat solutions that are not comparable.
   body_force_face_method = .true.
   volume_track_interfaces    = .true.
   volume_track_Brents_Method = .true.
-  volume_track_subcycles     = 2
+  volume_track_subcycles     = 4
   volume_track_iter_Tol      = 1.0e-12
   cutvof                     = 1.0e-8
   courant_number             = 0.4
