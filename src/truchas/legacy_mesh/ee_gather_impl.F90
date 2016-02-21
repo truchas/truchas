@@ -215,7 +215,7 @@ contains
   subroutine ee_gather_all_v_s_real64 (dest, source, boundary, range)
 
     use var_vector_types, only: real_var_vector
-    use mesh_impl, only: mesh, cell_ip_all
+    use mesh_impl, only: mesh
     use index_partitioning, only: gather_boundary
 
     real(r8) :: source(:)
@@ -228,13 +228,13 @@ contains
 
     if (present(boundary)) buffer => boundary
     if (.not.associated(buffer)) then
-      allocate(buffer(cell_ip_all%offP_size()))
-      call gather_boundary (cell_ip_all, source, buffer)
+      allocate(buffer(new_mesh%cell_ip%offP_size()))
+      call gather_boundary (new_mesh%cell_ip, source, buffer)
       if (present(boundary)) boundary => buffer
     end if
 
-    ASSERT(size(source) == cell_ip_all%onP_size())
-    ASSERT(size(buffer) == cell_ip_all%offP_size())
+    ASSERT(size(source) == new_mesh%cell_ip%onP_size())
+    ASSERT(size(buffer) == new_mesh%cell_ip%offP_size())
     ASSERT(size(dest) <= size(mesh))
 
     !! Will assume this actual usage when RANGE is specified.

@@ -19,7 +19,7 @@ module mesh_impl
 
   integer, parameter, public :: DEGENERATE_FACE = -huge(1)
 
-  type(ip_desc), public :: cell_ip, cell_ip_all
+  type(ip_desc), public :: cell_ip
 
   !! Copy of the MESH_CONNECTIVITY type from MESH_MODULE (used components only)
   type, public :: mesh_connectivity
@@ -96,7 +96,7 @@ contains
     deallocate(ngbr_vrtx_orig, ngbr_vrtx)
 
     !! MESH%NGBR_CELLS_ALL, MESH%NGBR_CELLS_FACE
-    call init_ngbr_cells_all_mapped (mesh%ngbr_cells_all, mesh%ngbr_cells_face, cell_ip_all)
+    call init_ngbr_cells_all_mapped (mesh%ngbr_cells_all, mesh%ngbr_cells_face)
 
     !! MESH%CBLOCKID
     call init_cblockid (mesh%cblockid)
@@ -522,7 +522,7 @@ contains
   !! flow anyway, so once things are converted over to the new mesh with gap
   !! elements separated, we should be okay.
 
-  subroutine init_ngbr_cells_all_mapped (ngbr_cells_all, ngbr_cells_face, cell_ip)
+  subroutine init_ngbr_cells_all_mapped (ngbr_cells_all, ngbr_cells_face)
 
     use common_impl, only: pcell_old_to_new, pcell_new_to_old
     use common_impl, only: NEW_TET_SIDE_MAP,  NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
@@ -534,7 +534,6 @@ contains
     use parallel_communication, only: global_maxval
 
     type(int_var_vector), intent(out) :: ngbr_cells_all(:), ngbr_cells_face(:)
-    type(ip_desc), intent(out) :: cell_ip
 
     integer :: j, k, n, b
     integer :: old_gid(ncells), new_gid(new_mesh%ncell), new_side_map(6)
@@ -546,9 +545,8 @@ contains
     ASSERT(size(ngbr_cells_face) == ncells)
 
     !! Push the array of old-mesh global cell IDs to the new mesh.
-    call cell_ip%init (ncells)
     do j = 1, ncells
-      old_gid(j) = cell_ip%global_index(j)
+      old_gid(j) = new_mesh%cell_ip%global_index(j)
     end do
     call rearrange (pcell_new_to_old, new_gid(:new_mesh%ncell_onP), old_gid) ! drops gap cells
     call gather_boundary (new_mesh%cell_ip, new_gid)
@@ -639,9 +637,8 @@ contains
 
     !! Create an index partition
     cells => flatten(ngbr_cells_all)
-    call localize_index_struct (cell_ip, old_sizes, cells, offP_index)
-    call cell_ip%add_offP_index (offP_index)
-    deallocate(offP_index)
+    call localize_index_struct (new_mesh%cell_ip, old_sizes, cells, offP_index)
+    INSIST(size(offP_index)==0)
 
     !! Translate off-process references to boundary buffer references.
     where (cells > ncells) cells = ncells - cells
