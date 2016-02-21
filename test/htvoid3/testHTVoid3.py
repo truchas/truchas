@@ -21,7 +21,7 @@ class HTVoid3(TruchasTest.GoldenTestCase):
 
   def test_final_temp(self):
     '''HTVOID3: verifying the temperature field at final time'''
-    tol = 1.0e-5
+    tol = 3.0e-4
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold))
@@ -30,7 +30,7 @@ class HTVoid3(TruchasTest.GoldenTestCase):
 
   def test_final_solid_frac(self):
     '''HTVOID3: verifying the solid volume fraction at final time'''
-    tol = 1.0e-5
+    tol = 2.0e-4
     test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('VOF')
     error = max(abs(test[:,1]-gold[:,1])) # comp 1 is solid

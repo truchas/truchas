@@ -11,7 +11,6 @@ module en_gather_impl
   use kinds, only: r8
   use common_impl, only: ncells, nnodes, new_mesh
   use parallel_permutations, only: par_perm
-  use gap_node_map_type
   implicit none
   private
 

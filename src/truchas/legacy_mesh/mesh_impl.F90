@@ -439,7 +439,7 @@ contains
 
     use common_impl, only: OLD_TET_NODE_MAP, OLD_PYR_NODE_MAP, OLD_PRI_NODE_MAP
     use common_impl, only: pcell_old_to_new, pnode_new_to_old
-    use common_impl, only: gnmap, pgap_old_to_new, gap_cells, gap_link_mask
+    use common_impl, only: pgap_old_to_new, gap_cells, gap_link_mask
     use parallel_permutations, only: rearrange
     use index_partitioning, only: ip_desc, localize_index_array, gather_boundary
     use truchas_logging_services
@@ -463,7 +463,6 @@ contains
       src_buf(j) = node_ip%global_index(j)
     end do
     call rearrange (pnode_new_to_old, gid(:new_mesh%nnode_onP), src_buf, default=0)
-    call gnmap%copy_from_parent (gid)
     call gather_boundary (new_mesh%node_ip, gid)
     INSIST(all(gid > 0))
 

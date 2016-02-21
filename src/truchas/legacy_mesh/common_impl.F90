@@ -13,7 +13,6 @@ module common_impl
 
   use unstr_mesh_type, only: unstr_mesh
   use parallel_permutations, only: par_perm
-  use gap_node_map_type
   implicit none
   private
 
@@ -32,7 +31,6 @@ module common_impl
 
   logical, allocatable, public :: gap_link_mask(:)
   type(par_perm), public :: pgap_old_to_new, pgap_new_to_old
-  type(gap_node_map), public :: gnmap
 
   !! Mappings from old cell sides to new. These imagine new cell side data
   !! stored in the leading part of an array of size 6 with dummy data in the
@@ -138,9 +136,6 @@ contains
     deallocate(dummy1)
     INSIST(size(dummy2) == 0)
     deallocate(dummy2)
-
-    !! Initialize the mapping between gap nodes and their parents.
-    call gnmap%init (new_mesh)
 
   end subroutine init_gap_maps
 
