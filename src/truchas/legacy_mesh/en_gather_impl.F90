@@ -69,13 +69,12 @@ module en_gather_impl
 contains
 
   subroutine init_en_gather_impl
-    use mesh_impl, only: node_ip
     use vertex_impl, only: vertex
     use index_partitioning, only: gather_boundary
     integer :: n
-    allocate(coord_boundary(3,node_ip%offP_size()))
+    allocate(coord_boundary(3,new_mesh%node_ip%offP_size()))
     do n = 1, 3
-      call gather_boundary (node_ip, vertex%coord(n), coord_boundary(n,:))
+      call gather_boundary (new_mesh%node_ip, vertex%coord(n), coord_boundary(n,:))
     end do
   end subroutine init_en_gather_impl
 
@@ -140,16 +139,16 @@ contains
 
   subroutine en_gather_real64 (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: gather_boundary
 
     real(r8), intent(out) :: dest(:,:)
     real(r8), intent(in)  :: src(:)
 
     integer :: j, k, n
-    real(r8) :: boundary(node_ip%offP_size())
+    real(r8) :: boundary(new_mesh%node_ip%offP_size())
 
-    call gather_boundary (node_ip, src, boundary)
+    call gather_boundary (new_mesh%node_ip, src, boundary)
 
     do j = 1, ncells
       do k = 1, 8
@@ -170,16 +169,16 @@ contains
 
   subroutine en_min_gather_real64 (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: gather_boundary
 
     real(r8), intent(out) :: dest(:)
     real(r8), intent(in)  :: src(:)
 
     integer :: j, k, n
-    real(r8) :: tmp, boundary(node_ip%offP_size())
+    real(r8) :: tmp, boundary(new_mesh%node_ip%offP_size())
 
-    call gather_boundary (node_ip, src, boundary)
+    call gather_boundary (new_mesh%node_ip, src, boundary)
 
     do j = 1, ncells
       tmp = huge(tmp)
@@ -200,16 +199,16 @@ contains
 
   subroutine en_or_gather_log (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: gather_boundary
 
     logical, intent(out) :: dest(:)
     logical, intent(in)  :: src(:)
 
     integer :: j, k, n
-    logical :: tmp, boundary(node_ip%offP_size())
+    logical :: tmp, boundary(new_mesh%node_ip%offP_size())
 
-    call gather_boundary (node_ip, src, boundary)
+    call gather_boundary (new_mesh%node_ip, src, boundary)
 
     do j = 1, ncells
       tmp = .false.
@@ -230,14 +229,14 @@ contains
 
   subroutine en_sum_scatter_real64 (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: scatter_boundary_sum
 
     real(r8), intent(out) :: dest(:)
     real(r8), intent(in)  :: src(:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(node_ip%offP_size())
+    real(r8) :: boundary(new_mesh%node_ip%offP_size())
 
     ASSERT(size(src) == ncells)
     ASSERT(size(dest) == nnodes)
@@ -256,21 +255,21 @@ contains
       end do
     end do
 
-    call scatter_boundary_sum (node_ip, dest, boundary)
+    call scatter_boundary_sum (new_mesh%node_ip, dest, boundary)
 
   end subroutine en_sum_scatter_real64
 
 
   subroutine cn_sum_scatter_real64 (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: scatter_boundary_sum
 
     real(r8), intent(out) :: dest(:)
     real(r8), intent(in)  :: src(:,:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(node_ip%offP_size())
+    real(r8) :: boundary(new_mesh%node_ip%offP_size())
 
     ASSERT(size(src,1) == 8)
     ASSERT(size(src,2) == ncells)
@@ -290,21 +289,21 @@ contains
       end do
     end do
 
-    call scatter_boundary_sum (node_ip, dest, boundary)
+    call scatter_boundary_sum (new_mesh%node_ip, dest, boundary)
 
   end subroutine cn_sum_scatter_real64
 
 
   subroutine en_min_scatter_real64 (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: scatter_boundary_min
 
     real(r8), intent(out) :: dest(:)
     real(r8), intent(in)  :: src(:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(node_ip%offP_size())
+    real(r8) :: boundary(new_mesh%node_ip%offP_size())
 
     ASSERT(size(src) == ncells)
     ASSERT(size(dest) == nnodes)
@@ -323,21 +322,21 @@ contains
       end do
     end do
 
-    call scatter_boundary_min (node_ip, dest, boundary)
+    call scatter_boundary_min (new_mesh%node_ip, dest, boundary)
 
   end subroutine en_min_scatter_real64
 
 
   subroutine cn_max_scatter_real64 (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: scatter_boundary_max
 
     real(r8), intent(out) :: dest(:)
     real(r8), intent(in)  :: src(:,:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(node_ip%offP_size())
+    real(r8) :: boundary(new_mesh%node_ip%offP_size())
 
     ASSERT(size(src,1) == 8)
     ASSERT(size(src,2) == ncells)
@@ -357,21 +356,21 @@ contains
       end do
     end do
 
-    call scatter_boundary_max (node_ip, dest, boundary)
+    call scatter_boundary_max (new_mesh%node_ip, dest, boundary)
 
   end subroutine cn_max_scatter_real64
 
 
   subroutine en_or_scatter_log (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: scatter_boundary_or
 
     logical, intent(out) :: dest(:)
     logical, intent(in)  :: src(:)
 
     integer :: j, k, n
-    logical :: boundary(node_ip%offP_size())
+    logical :: boundary(new_mesh%node_ip%offP_size())
 
     ASSERT(size(src) == ncells)
     ASSERT(size(dest) == nnodes)
@@ -390,21 +389,21 @@ contains
       end do
     end do
 
-    call scatter_boundary_or (node_ip, dest, boundary)
+    call scatter_boundary_or (new_mesh%node_ip, dest, boundary)
 
   end subroutine en_or_scatter_log
 
 
   subroutine cn_or_scatter_log (dest, src)
 
-    use mesh_impl, only: mesh, node_ip
+    use mesh_impl, only: mesh
     use index_partitioning, only: scatter_boundary_or
 
     logical, intent(out) :: dest(:)
     logical, intent(in)  :: src(:,:)
 
     integer :: j, k, n
-    logical :: boundary(node_ip%offP_size())
+    logical :: boundary(new_mesh%node_ip%offP_size())
 
     ASSERT(size(src,1) == 8)
     ASSERT(size(src,2) == ncells)
@@ -424,7 +423,7 @@ contains
       end do
     end do
 
-    call scatter_boundary_or (node_ip, dest, boundary)
+    call scatter_boundary_or (new_mesh%node_ip, dest, boundary)
 
   end subroutine cn_or_scatter_log
 

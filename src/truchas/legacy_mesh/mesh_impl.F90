@@ -19,7 +19,7 @@ module mesh_impl
 
   integer, parameter, public :: DEGENERATE_FACE = -huge(1)
 
-  type(ip_desc), public :: cell_ip, cell_ip_all, node_ip
+  type(ip_desc), public :: cell_ip, cell_ip_all
 
   !! Copy of the MESH_CONNECTIVITY type from MESH_MODULE (used components only)
   type, public :: mesh_connectivity
@@ -88,7 +88,7 @@ contains
 
     !! MESH%NGBR_VRTX, MESH%NGBR_VRTX_ORIG
     allocate(ngbr_vrtx_orig(8,ncells), ngbr_vrtx(8,ncells))
-    call init_ngbr_vrtx_mapped (ngbr_vrtx_orig, ngbr_vrtx, node_ip)
+    call init_ngbr_vrtx_mapped (ngbr_vrtx_orig, ngbr_vrtx)
     do j = 1, ncells
       mesh(j)%ngbr_vrtx      = ngbr_vrtx(:,j)
       mesh(j)%ngbr_vrtx_orig = ngbr_vrtx_orig(:,j)
@@ -423,28 +423,20 @@ contains
 
   end subroutine init_ngbr_face
 
-  !! Initialize the passed  NGBR_VRTX_ORIG and NGBR_VRTX indexing arrays, and
-  !! return the associated nnode index partition object NODE_IP which is to be
-  !! used by gather boundary when filling the off-process buffer indexed by the
-  !! negative values in NGBR_VRTX.
-  !!
-  !! Note that the handling of gap cells is incomplete and fragile.  Prism gap
-  !! cells are not mapped to the legacy node ordering for prisms.  No current
-  !! regression test includes such gap cells.  Also, the hex gap cell recovered
-  !! from a link will not necessarily be oriented like the original legacy mesh,
-  !! however it appears in practice that the orientation is preserved.
+  !! Initialize the passed  NGBR_VRTX_ORIG and NGBR_VRTX indexing arrays.
+  !! Note that prism gap cells are not mapped to degenerate hex cells expected
+  !! by legacy mesh API clients.
 
-  subroutine init_ngbr_vrtx_mapped (ngbr_vrtx_orig, ngbr_vrtx, node_ip)
+  subroutine init_ngbr_vrtx_mapped (ngbr_vrtx_orig, ngbr_vrtx)
 
     use common_impl, only: OLD_TET_NODE_MAP, OLD_PYR_NODE_MAP, OLD_PRI_NODE_MAP
     use common_impl, only: pcell_old_to_new
     use common_impl, only: pgap_old_to_new, gap_cells, gap_link_mask
     use parallel_permutations, only: rearrange
-    use index_partitioning, only: ip_desc, localize_index_array
+    use index_partitioning, only: localize_index_array
     use truchas_logging_services
 
     integer, intent(out) :: ngbr_vrtx_orig(:,:), ngbr_vrtx(:,:)
-    type(ip_desc), intent(out) :: node_ip
 
     integer :: j, k
     integer, allocatable :: src(:,:), src_buf(:), dest_buf(:), offP_index(:)
@@ -502,9 +494,8 @@ contains
 
     !! Copy to the NGBR_VRTX array and localize it.
     ngbr_vrtx = ngbr_vrtx_orig
-    call node_ip%init (nnodes)
-    call localize_index_array (node_ip, ngbr_vrtx, offP_index)
-    call node_ip%add_offP_index (offP_index)
+    call localize_index_array (new_mesh%node_ip, ngbr_vrtx, offP_index)
+    INSIST(size(offP_index) == 0)
 
     !! Convert off-process references to look-aside boundary array references.
     where (ngbr_vrtx > nnodes) ngbr_vrtx = nnodes - ngbr_vrtx
