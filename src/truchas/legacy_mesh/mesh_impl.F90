@@ -8,7 +8,6 @@
 
 module mesh_impl
 
-  use kinds, only: r8
   use common_impl, only: ncells, nnodes, new_mesh
   use var_vector_types, only: int_var_vector
   use index_partitioning, only: ip_desc
@@ -438,17 +437,16 @@ contains
   subroutine init_ngbr_vrtx_mapped (ngbr_vrtx_orig, ngbr_vrtx, node_ip)
 
     use common_impl, only: OLD_TET_NODE_MAP, OLD_PYR_NODE_MAP, OLD_PRI_NODE_MAP
-    use common_impl, only: pcell_old_to_new, pnode_new_to_old
+    use common_impl, only: pcell_old_to_new
     use common_impl, only: pgap_old_to_new, gap_cells, gap_link_mask
     use parallel_permutations, only: rearrange
-    use index_partitioning, only: ip_desc, localize_index_array, gather_boundary
+    use index_partitioning, only: ip_desc, localize_index_array
     use truchas_logging_services
 
     integer, intent(out) :: ngbr_vrtx_orig(:,:), ngbr_vrtx(:,:)
     type(ip_desc), intent(out) :: node_ip
 
     integer :: j, k
-    integer :: gid(new_mesh%nnode)
     integer, allocatable :: src(:,:), src_buf(:), dest_buf(:), offP_index(:)
 
     ASSERT(size(ngbr_vrtx_orig,1) == 8)
@@ -456,23 +454,13 @@ contains
     ASSERT(size(ngbr_vrtx,1) == 8)
     ASSERT(size(ngbr_vrtx,2) == ncells)
 
-    !! Push the array of old-mesh global node IDs to the new mesh.
-    call node_ip%init (nnodes)
-    allocate(src_buf(nnodes))
-    do j = 1, nnodes
-      src_buf(j) = node_ip%global_index(j)
-    end do
-    call rearrange (pnode_new_to_old, gid(:new_mesh%nnode_onP), src_buf, default=0)
-    call gather_boundary (new_mesh%node_ip, gid)
-    INSIST(all(gid > 0))
-
     !! Generate the node neighbor array (old mesh global IDs)
     allocate(src(8,new_mesh%ncell_onP))
     src = 0
     do j = 1, new_mesh%ncell_onP
       associate (cnode => new_mesh%cnode(new_mesh%xcnode(j):new_mesh%xcnode(j+1)-1))
         do k = 1, size(cnode)
-          src(k,j) = gid(cnode(k))
+          src(k,j) = new_mesh%node_ip%global_index(cnode(k))
         end do
       end associate
     end do
@@ -487,7 +475,7 @@ contains
     do j = 1, new_mesh%nlink_onP
       associate (lnode => new_mesh%lnode(new_mesh%xlnode(j):new_mesh%xlnode(j+1)-1))
         do k = 1, size(lnode)
-          src(k,j) = gid(lnode(k))
+          src(k,j) = new_mesh%node_ip%global_index(lnode(k))
         end do
       end associate
     end do
@@ -514,6 +502,7 @@ contains
 
     !! Copy to the NGBR_VRTX array and localize it.
     ngbr_vrtx = ngbr_vrtx_orig
+    call node_ip%init (nnodes)
     call localize_index_array (node_ip, ngbr_vrtx, offP_index)
     call node_ip%add_offP_index (offP_index)
 

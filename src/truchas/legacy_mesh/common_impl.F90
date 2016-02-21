@@ -25,9 +25,7 @@ module common_impl
 
   type(unstr_mesh), pointer, public :: new_mesh => null()
   type(par_perm),   public :: pcell_new_to_old, pcell_old_to_new
-  type(par_perm),   public :: pnode_new_to_old, pnode_old_to_new
   integer, pointer, public :: gap_cells(:) => null()  ! exist in old but not new
-  integer, pointer, public :: gap_nodes(:) => null()  ! exist in new but not old
 
   logical, allocatable, public :: gap_link_mask(:)
   type(par_perm), public :: pgap_old_to_new, pgap_new_to_old
@@ -103,12 +101,6 @@ contains
     INSIST(size(dummy) == 0)  ! every new cell is an old cell
     deallocate(dummy)
 
-    !! Node mappings between the old and new meshes.
-    call create_par_perm (unpermute_vertex_vector, new_mesh%xnode(:new_mesh%nnode_onP), &
-                          pnode_old_to_new, dummy, pnode_new_to_old, gap_nodes)
-    INSIST(size(dummy) == 0)  ! every old node is a new node
-    deallocate(dummy)
-
     call init_gap_maps
 
   end subroutine init_common_impl
@@ -122,7 +114,6 @@ contains
 
     integer, allocatable :: gap_cell_id(:), gap_link_id(:)
     integer, pointer :: dummy1(:), dummy2(:)
-    integer :: unit, bndry_size
 
     !! On-process link mask identifying links coming from gap cells.
     gap_link_mask = (new_mesh%link_cell_id(:new_mesh%nlink_onP) > 0)
