@@ -105,76 +105,61 @@ contains
 
   subroutine init_cell_shape (cell_shape)
 
-    use common_impl, only: pcell_old_to_new
-    use parallel_permutations, only: rearrange
-
     integer, intent(out) :: cell_shape(:)
 
-    integer :: j, src(new_mesh%ncell_onP)
+    integer :: j
 
     ASSERT(size(cell_shape) == ncells)
 
-    do j = 1, size(src)
+    !! Real cells
+    do j = 1, new_mesh%ncell_onP
       select case (new_mesh%xcnode(j+1)-new_mesh%xcnode(j))
       case (4)
-        src(j) = CELL_TET
+        cell_shape(j) = CELL_TET
       case (5)
-        src(j) = CELL_PYRAMID
+        cell_shape(j) = CELL_PYRAMID
       case (6)
-        src(j) = CELL_PRISM
+        cell_shape(j) = CELL_PRISM
       case (8)
-        src(j) = CELL_HEX
+        cell_shape(j) = CELL_HEX
       case default
         INSIST(.false.)
       end select
     end do
-
-    !! Map the cell shape array to the old mesh.  The default is assigned to
-    !! gap cells, and appears to be correct for the hex gap cells that Truchas
-    !! generates.  It is not correct for prism gap cells, but no regression
-    !! test currently includes these.
-    call rearrange (pcell_old_to_new, cell_shape, src, default=GAP_ELEMENT_5)
+    
+    !! Gap cells.  Correct  for hex, but incorrect for prism.
+    cell_shape(new_mesh%ncell_onP+1:) = GAP_ELEMENT_5
 
   end subroutine init_cell_shape
 
   subroutine init_cblockid (cblockid)
 
-    use common_impl, only: new_mesh, pcell_old_to_new, pgap_old_to_new, gap_link_mask, gap_cells
-    use parallel_permutations, only: rearrange
     use bitfield_type, only: popcnt, trailz
 
     integer, intent(out) :: cblockid(:)
 
-    integer :: j
-    integer, allocatable :: src(:), dest(:)
+    integer :: j, n
 
     ASSERT(size(cblockid) == ncells)
 
-    !! Cell set IDs
-    allocate(src(new_mesh%ncell_onP))
+    !! Real cells
     do j = 1, new_mesh%ncell_onP
       associate (bitmask => new_mesh%cell_set_mask(j))
         INSIST(popcnt(bitmask) == 1)
-        src(j) = new_mesh%cell_set_id(trailz(bitmask))
+        cblockid(j) = new_mesh%cell_set_id(trailz(bitmask))
       end associate
     end do
-    call rearrange (pcell_old_to_new, cblockid, src, default = 0)
-    deallocate(src)
-    ASSERT(all(cblockid(gap_cells) == 0))
 
-    !! Link set IDs for links coming from gap cells
-    allocate(src(new_mesh%nlink_onP),dest(size(gap_cells)))
+    !! Gap cells
+    n = new_mesh%ncell_onP
     do j = 1, new_mesh%nlink_onP
+      if (new_mesh%link_cell_id(j) == 0) cycle ! not from gap cell
       associate (bitmask => new_mesh%link_set_mask(j))
         INSIST(popcnt(bitmask) == 1)
-        src(j) = new_mesh%link_set_id(trailz(bitmask))
+        n = n + 1
+        cblockid(n) = new_mesh%link_set_id(trailz(bitmask))
       end associate
     end do
-    src = pack(src, mask=gap_link_mask)
-    call rearrange (pgap_old_to_new, dest, src)
-    cblockid(gap_cells) = dest
-
-    INSIST(all(cblockid > 0))
 
   end subroutine init_cblockid
 
