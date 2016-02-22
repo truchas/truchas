@@ -168,12 +168,12 @@ CONTAINS
             dt_viscous = 1.0d10 
         endif 
       
-!         if (surface_tension) then
-!           call TIME_STEP_SURFACE_TENSION
-!           dt_next = MIN(dt_next, dt_surften)
-!         else
-!           dt_surften = 1.0d10
-!         endif
+        if (surface_tension) then
+          call TIME_STEP_SURFACE_TENSION
+          dt_next = MIN(dt_next, dt_surften)
+        else
+          dt_surften = 1.0d10
+        endif
    
 
         DEALLOCATE (Solid_Face) 
@@ -564,7 +564,7 @@ CONTAINS
     use fluid_data_module,           only: fluidRho
     use PGSLib_module,               only: PGSLib_GLOBAL_MINLOC, PGSLib_GLOBAL_MINVAL
     use zone_module,                 only: Zone
-    use surface_tension_module,      only: sigma_func
+    use surface_tension_module,      only: sigma_func, csf_bc_top_surface
 
     ! Local Variables
     real(r8) :: state(1)
@@ -600,6 +600,13 @@ CONTAINS
 
     dt_surften = surften_number * PGSLib_GLOBAL_MINVAL(Dt_local)
     min_dt_surften_cell = PGSLib_GLOBAL_MINLOC(Dt_local)
+
+    ! WARNING!!! Experimental: Deactivate/override time step limit due to
+    ! tangential surface tension only for the special experimental case of
+    ! boundary-applied surface tension force
+    if (csf_bc_top_surface) then
+      dt_surften = 1.0d10
+    endif
 
   END SUBROUTINE TIME_STEP_SURFACE_TENSION
 
