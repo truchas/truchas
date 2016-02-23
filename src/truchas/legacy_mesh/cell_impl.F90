@@ -130,12 +130,11 @@ contains
   !! from substantial cancellation error and is really quite poor.
 
   subroutine init_volume (volume)
-    use common_impl, only: pcell_old_to_new
-    use parallel_permutations, only: rearrange
     use cutoffs_module, only: alittle
     real(r8), intent(out) :: volume(:)
     ASSERT(size(volume) == ncells)
-    call rearrange (pcell_old_to_new, volume, new_mesh%volume(:new_mesh%ncell_onP), default=2*alittle)
+    volume(:new_mesh%ncell_onP) = new_mesh%volume(:new_mesh%ncell_onP)
+    volume(new_mesh%ncell_onP+1:) = 2*alittle
   end subroutine init_volume
 
   !! Use the legacy algorithm for centroids.  We use the new mesh volumes.

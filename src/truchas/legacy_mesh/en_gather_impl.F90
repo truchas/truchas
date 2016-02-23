@@ -10,7 +10,6 @@ module en_gather_impl
 
   use kinds, only: r8
   use common_impl, only: ncells, nnodes, new_mesh
-  use parallel_permutations, only: par_perm
   implicit none
   private
 
@@ -116,7 +115,7 @@ contains
 
     real(r8), intent(out) :: coord(:,:,:)
 
-    integer :: i, j, k, n
+    integer :: j, k, n
 
     ASSERT(size(coord,1) == 3)
     ASSERT(size(coord,2) == 8)

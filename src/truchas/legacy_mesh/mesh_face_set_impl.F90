@@ -19,21 +19,20 @@ contains
 
   subroutine init_mesh_face_set_impl
 
-    use common_impl, only: ncells, mesh => new_mesh, pcell_old_to_new
+    use common_impl, only: ncells, mesh => new_mesh
     use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
-    use parallel_permutations, only: rearrange
     use bitfield_type
 
     integer :: i, j, k, kk
     type(bitfield) :: ssmask
-    integer, allocatable :: src(:,:,:), buffer(:)
+    integer, allocatable :: buffer(:)
 
     ssmask = not(ibset(ZERO_BITFIELD,pos=0))
 
-    allocate(src(size(mesh%face_set_id),6,mesh%ncell_onP))
-    allocate(buffer(size(src,1)))
+    allocate(mesh_face_set(size(mesh%face_set_id),6,ncells))
+    allocate(buffer(size(mesh_face_set,1)))
 
-    src = 0
+    mesh_face_set = 0
     do j = 1, mesh%ncell_onP
       associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
         do k = 1, size(cface)
@@ -54,14 +53,9 @@ contains
           case default
             INSIST(.false.)
           end select
-          src(:,kk,j) = buffer
+          mesh_face_set(:,kk,j) = buffer
         end do
       end associate
-    end do
-
-    allocate(mesh_face_set(size(src,1),size(src,2),ncells))
-    do i = 1, size(src,1)
-      call rearrange (pcell_old_to_new, mesh_face_set(i,:,:), src(i,:,:), default=0)
     end do
 
   end subroutine init_mesh_face_set_impl

@@ -30,7 +30,7 @@ contains
     use common_impl, only: nnodes, mesh => new_mesh
     use cutoffs_module, only: alittle
 
-    integer :: j, k
+    integer :: j
     real(r8) :: tmp(mesh%nnode)
 
     allocate(vertex(nnodes))
