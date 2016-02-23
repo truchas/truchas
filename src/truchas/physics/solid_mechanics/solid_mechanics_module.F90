@@ -1601,7 +1601,6 @@ Contains
     ! Argument list
     real(r8), Dimension(:), Intent(IN) :: X, X_old
     real(r8), Dimension(:), Intent(OUT) :: Residual
-    integer :: status
 
     ! Local variables
     integer :: ip, icell, idim, icomps
@@ -1741,7 +1740,6 @@ Contains
     call DISPLACEMENT_CONSTRAINTS(X,Y)
 
     Residual = Y - RHS
-    status = 0
 
   End Subroutine ELAS_VP_RESIDUAL
 
