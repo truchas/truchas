@@ -123,8 +123,8 @@ contains
   end subroutine init_cell_impl
 
   !! Copy cell volumes from the new mesh.  Gap cell volumes are arbitrarily
-  !! set to 2*alittle as was originally done in the old mesh.  Note that the
-  !! volume formula used by the new mesh is very different and leads to
+  !! set to 2*alittle as was originally done in the legacy mesh.  Note that
+  !! the volume formula used by the new mesh is very different and leads to
   !! relatively small volume differences (though as much as 5 or 6 least
   !! significant decimal digits). The original formula due to Dukowicz suffers
   !! from substantial cancellation error and is really quite poor.
@@ -137,10 +137,7 @@ contains
     volume(new_mesh%ncell_onP+1:) = 2*alittle
   end subroutine init_volume
 
-  !! Use the legacy algorithm for centroids.  We use the new mesh volumes.
-  !! If the old mesh volumes are used (commented out code) the centroid
-  !! results are bit-for-bit the same, as expected.  But with the new
-  !! volumes there are small differences; see test_init_centroid below.
+  !! Use the legacy algorithm for centroids, but with new mesh volumes.
 
   subroutine init_centroid (centroid)
     use en_gather_impl, only: gather_vertex_coord
@@ -156,7 +153,7 @@ contains
     end do
   end subroutine init_centroid
 
-  !! We could pull these values from the new mesh (and will eventually) but
+  !! We could pull these values from the mesh (and will eventually) but
   !! it is simpler for now to recompute them using the legacy algorithm.
 
   subroutine init_face_normal (area, normal)

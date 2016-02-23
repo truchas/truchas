@@ -19,7 +19,7 @@ module mesh_impl
 
   integer, parameter, public :: DEGENERATE_FACE = -huge(1)
 
-  type(ip_desc), public :: cell_ip
+  type(ip_desc), public :: legacy_cell_ip
 
   !! Copy of the MESH_CONNECTIVITY type from MESH_MODULE (used components only)
   type, public :: mesh_connectivity
@@ -53,6 +53,19 @@ contains
     is_face_ngbr = btest(face_bits, pos=face)
   end function is_face_ngbr
 
+  !! Copy of function from MESH_MODULE
+  function mesh_collate_vertex (mesh)
+    use common_impl, only: ncells_tot
+    use parallel_communication, only: is_IOP, collate
+    type(mesh_connectivity), intent(in) :: mesh(:)
+    integer, pointer :: mesh_collate_vertex(:,:)
+    integer :: k
+    allocate(mesh_collate_vertex(8,merge(ncells_tot,0,is_IOP)))
+    do k = 1, 8
+      call collate (mesh_collate_vertex(k,:), mesh%ngbr_vrtx_orig(k))
+    end do
+  end function mesh_collate_vertex
+
   subroutine init_mesh_impl
     call init_mesh
   end subroutine init_mesh_impl
@@ -71,7 +84,7 @@ contains
 
     !! MESH%NGBR_CELL, MESH%NGBR_CELL_ORIG
     allocate(ngbr_cell_orig(6,ncells), ngbr_cell(6,ncells))
-    call init_ngbr_cell (ngbr_cell_orig, ngbr_cell, cell_ip)
+    call init_ngbr_cell (ngbr_cell_orig, ngbr_cell, legacy_cell_ip)
     do j = 1, ncells
       mesh(j)%ngbr_cell      = ngbr_cell(:,j)
       mesh(j)%ngbr_cell_orig = ngbr_cell_orig(:,j)
@@ -480,10 +493,10 @@ contains
   !! Initialize the passed NGBR_CELLS_ALL and NGBR_CELLS_FACE structure arrays.
   !! The EE_GATHER_ALL_V_S_* procedures that operate with the returned arguments
   !! should use the cell index partition from the mesh object and NOT the legacy
-  !! cell index partition CELL_IP from this module.  The reason is that these
-  !! structure arrays ignore gap cells, and therefore have precisely the same
-  !! cells as the mesh.  Neighbor lists will not include any neighbors that are
-  !! gap cells, and while the arrays are sized to include neighbor lists for
+  !! cell index partition LEGACY_CELL_IP from this module.  The reason is that
+  !! these structure arrays ignore gap cells, and therefore have precisely the
+  !  same cells as the mesh.  Neighbor lists will not include any neighbors that
+  !! are gap cells, and while the arrays are sized to include neighbor lists for
   !! gap cells, these lists are entirely empty.
   !!
   !! This data is used only by the least squares operators, which I believe are
@@ -639,18 +652,5 @@ contains
     end do
 
   end subroutine init_ngbr_cells_face_aux
-
-  !! Copy of function from MESH_MODULE
-  function mesh_collate_vertex (mesh)
-    use common_impl, only: ncells_tot
-    use parallel_communication, only: is_IOP, collate
-    type(mesh_connectivity), intent(in) :: mesh(:)
-    integer, pointer :: mesh_collate_vertex(:,:)
-    integer :: k
-    allocate(mesh_collate_vertex(8,merge(ncells_tot,0,is_IOP)))
-    do k = 1, 8
-      call collate (mesh_collate_vertex(k,:), mesh%ngbr_vrtx_orig(k))
-    end do
-  end function mesh_collate_vertex
 
 end module mesh_impl

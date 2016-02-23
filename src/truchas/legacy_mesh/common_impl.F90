@@ -17,12 +17,9 @@ module common_impl
 
   public :: init_common_impl
 
-  integer, public, allocatable, protected :: unpermute_mesh_vector(:), unpermute_vertex_vector(:)
-
-  integer, public, protected :: ncells, nnodes
-  integer, public, protected :: ncells_tot, nnodes_tot
-
   type(unstr_mesh), pointer, public :: new_mesh => null()
+  integer, public, protected :: ncells, nnodes, ncells_tot, nnodes_tot
+  integer, public, allocatable, protected :: unpermute_mesh_vector(:), unpermute_vertex_vector(:)
 
   !! Mappings from old cell sides to new. These imagine new cell side data
   !! stored in the leading part of an array of size 6 with dummy data in the
@@ -55,37 +52,26 @@ contains
     use mesh_manager, only: unstr_mesh_ptr
     use parallel_communication, only: global_sum
 
-    integer, allocatable :: xgap(:)
+    integer :: j
+    integer, allocatable :: gap_links(:)
 
     new_mesh => unstr_mesh_ptr('MAIN')
     INSIST(associated(new_mesh))
 
-    !! Establish the relationship between the way cells and nodes are ordered
-    !! and partitioned in the legacy API with that of the main mesh.  The input
-    !! for this are the UNPERMUTE_MESH_VECTOR and UNPERMUTE_VERTEX_VECTOR
-    !! arrays.  Originally these came from the legacy mesh.  Now we set them
-    !! to correspond to the way the main mesh cells and nodes are ordered and
-    !! partitioned.  This results in an identity correspondence between the
-    !! main mesh and the mesh served by the legacy API, though for the time
-    !! being we continue to got through the motion of mapping between the two
-    !! as if the relationship were not the identity.  Eventually this will all
-    !! be removed.
-
-    unpermute_vertex_vector = new_mesh%xnode(:new_mesh%nnode_onP)
-
-    !! Mesh links that originally came from gap elements appear as regular
-    !! cells in the legacy API.  These are appended to the main mesh cells.
-    xgap = pack(new_mesh%link_cell_id(:new_mesh%nlink_onP), &
-                mask=(new_mesh%link_cell_id(:new_mesh%nlink_onP) > 0))
-    allocate(unpermute_mesh_vector(new_mesh%ncell_onP + size(xgap)))
-    unpermute_mesh_vector(:new_mesh%ncell_onP) = new_mesh%xcell(:new_mesh%ncell_onP)
-    unpermute_mesh_vector(new_mesh%ncell_onP+1:) = xgap
-
-    ncells = size(unpermute_mesh_vector)
-    nnodes = size(unpermute_vertex_vector)
-
-    ncells_tot = global_sum(ncells)
+    nnodes = new_mesh%nnode_onP
     nnodes_tot = global_sum(nnodes)
+    unpermute_vertex_vector = new_mesh%xnode(:nnodes)
+
+    !! Mesh links generated from elements in the Exodus mesh are presented as
+    !! regular cells by the legacy API.  These are appended to the list of mesh
+    !! cells locally.
+    gap_links = pack(array=[(j, j=1, new_mesh%nlink_onP)], &
+                     mask=(new_mesh%link_cell_id(:new_mesh%nlink_onP)>0))
+    ncells = new_mesh%ncell_onP + size(gap_links)
+    ncells_tot = global_sum(ncells)
+    allocate(unpermute_mesh_vector(ncells))
+    unpermute_mesh_vector(:new_mesh%ncell_onP) = new_mesh%xcell(:new_mesh%ncell_onP)
+    unpermute_mesh_vector(new_mesh%ncell_onP+1:) = new_mesh%link_cell_id(gap_links)
 
   end subroutine init_common_impl
 

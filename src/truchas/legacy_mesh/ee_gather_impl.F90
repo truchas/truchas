@@ -13,7 +13,7 @@ module ee_gather_impl
   implicit none
   private
 
-  public :: ee_gather, gather_boundarydata, init_ee_gather_impl
+  public :: ee_gather, gather_boundarydata
 
   interface ee_gather
     module procedure ee_gather_int32
@@ -30,13 +30,9 @@ module ee_gather_impl
 
 contains
 
-  subroutine init_ee_gather_impl
-  end subroutine init_ee_gather_impl
-
-
   subroutine ee_gather_real64 (dest, src, boundary)
 
-    use mesh_impl, only: old_mesh => mesh, cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
     use index_partitioning, only: gather_boundary
 
     real(r8), intent(inout) :: dest(:,:)
@@ -48,18 +44,18 @@ contains
 
     if (present(boundary)) then
       if (.not.associated(boundary)) then
-        allocate(boundary(cell_ip%offP_size()))
-        call gather_boundary (cell_ip, src, boundary)
+        allocate(boundary(legacy_cell_ip%offP_size()))
+        call gather_boundary (legacy_cell_ip, src, boundary)
       end if
       buffer => boundary
     else
-      allocate(buffer(cell_ip%offP_size()))
-      call gather_boundary (cell_ip, src, buffer)
+      allocate(buffer(legacy_cell_ip%offP_size()))
+      call gather_boundary (legacy_cell_ip, src, buffer)
     end if
 
     do j = 1, ncells
       do k = 1, 6
-        n = old_mesh(j)%ngbr_cell(k)
+        n = mesh(j)%ngbr_cell(k)
         select case (n)
         case (1:)
           dest(k,j) = src(n)
@@ -78,17 +74,16 @@ contains
 
   subroutine ee_gather_int32 (dest, src)
 
-    use common_impl, only: ncells
-    use mesh_impl, only: mesh, cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
     use index_partitioning, only: gather_boundary
 
     integer, intent(inout) :: dest(:,:)
     integer, intent(in) :: src(:)
 
     integer :: j, k, n
-    integer :: buffer(cell_ip%offP_size())
+    integer :: buffer(legacy_cell_ip%offP_size())
 
-    call gather_boundary (cell_ip, src, buffer)
+    call gather_boundary (legacy_cell_ip, src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -109,17 +104,16 @@ contains
 
   subroutine ee_gather_log (dest, src)
 
-    use common_impl, only: ncells
-    use mesh_impl, only: mesh, cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
     use index_partitioning, only: gather_boundary
 
     logical, intent(inout) :: dest(:,:)
     logical, intent(in) :: src(:)
 
     integer :: j, k, n
-    logical :: buffer(cell_ip%offP_size())
+    logical :: buffer(legacy_cell_ip%offP_size())
 
-    call gather_boundary (cell_ip, src, buffer)
+    call gather_boundary (legacy_cell_ip, src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -140,22 +134,21 @@ contains
 
   subroutine ss_gather_real64 (dest, src)
 
-    use common_impl, only: ncells
-    use mesh_impl, only: mesh, cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
     use index_partitioning, only: gather_boundary
 
     real(r8), intent(inout) :: dest(:,:)
     real(r8), intent(in) :: src(:,:)
 
     integer :: j, jj, k, kk
-    real(r8) :: buffer(6,cell_ip%offP_size())
+    real(r8) :: buffer(6,legacy_cell_ip%offP_size())
 
     ASSERT(size(dest,1) == 6)
     ASSERT(size(dest,2) == ncells)
     ASSERT(size(src,1) == 6)
     ASSERT(size(src,2) == ncells)
 
-    call gather_boundary (cell_ip, src, buffer)
+    call gather_boundary (legacy_cell_ip, src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -177,22 +170,21 @@ contains
 
   subroutine ss_gather_log (dest, src)
 
-    use common_impl, only: ncells
-    use mesh_impl, only: mesh, cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
     use index_partitioning, only: gather_boundary
 
     logical, intent(inout) :: dest(:,:)
     logical, intent(in) :: src(:,:)
 
     integer :: j, jj, k, kk
-    logical :: buffer(6,cell_ip%offP_size())
+    logical :: buffer(6,legacy_cell_ip%offP_size())
 
     ASSERT(size(dest,1) == 6)
     ASSERT(size(dest,2) == ncells)
     ASSERT(size(src,1) == 6)
     ASSERT(size(src,2) == ncells)
 
-    call gather_boundary (cell_ip, src, buffer)
+    call gather_boundary (legacy_cell_ip, src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -214,9 +206,9 @@ contains
 
   subroutine ee_gather_all_v_s_real64 (dest, source, boundary, range)
 
-    use var_vector_types, only: real_var_vector
     use mesh_impl, only: mesh
     use index_partitioning, only: gather_boundary
+    use var_vector_types, only: real_var_vector
 
     real(r8) :: source(:)
     type(real_var_vector) :: dest(:)
@@ -263,14 +255,14 @@ contains
 
 
   subroutine gather_boundarydata_real64 (boundary, source)
-    use mesh_impl, only: cell_ip
+    use mesh_impl, only: legacy_cell_ip
     use index_partitioning, only: gather_boundary
     real(r8), pointer :: boundary(:)
     real(r8), intent(in) :: source(:)
-    ASSERT(size(source) == cell_ip%onP_size())
+    ASSERT(size(source) == legacy_cell_ip%onP_size())
     if (associated(boundary)) return  ! signal to do nothing
-    allocate(boundary(cell_ip%offP_size()))
-    call gather_boundary (cell_ip, source, boundary)
+    allocate(boundary(legacy_cell_ip%offP_size()))
+    call gather_boundary (legacy_cell_ip, source, boundary)
   end subroutine gather_boundarydata_real64
 
 end module

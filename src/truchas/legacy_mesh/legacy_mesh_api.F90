@@ -51,7 +51,6 @@ contains
 
     use common_impl, only: init_common_impl
     use mesh_impl, only: init_mesh_impl
-    use ee_gather_impl, only: init_ee_gather_impl
     use en_gather_impl, only: init_en_gather_impl
     use nn_gather_impl, only: init_nn_gather_impl
     use vertex_impl, only: init_vertex_impl
@@ -61,7 +60,6 @@ contains
     call init_common_impl
     call init_mesh_impl
     call init_vertex_impl
-    call init_ee_gather_impl
     call init_en_gather_impl
     call init_nn_gather_impl
     call init_cell_impl
