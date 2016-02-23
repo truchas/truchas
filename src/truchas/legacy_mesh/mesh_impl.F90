@@ -96,7 +96,7 @@ contains
     deallocate(ngbr_vrtx_orig, ngbr_vrtx)
 
     !! MESH%NGBR_CELLS_ALL, MESH%NGBR_CELLS_FACE
-    call init_ngbr_cells_all_mapped (mesh%ngbr_cells_all, mesh%ngbr_cells_face)
+    call init_ngbr_cells_all (mesh%ngbr_cells_all, mesh%ngbr_cells_face)
 
     !! MESH%CBLOCKID
     call init_cblockid (mesh%cblockid)
@@ -126,7 +126,7 @@ contains
         INSIST(.false.)
       end select
     end do
-    
+
     !! Gap cells.  Correct  for hex, but incorrect for prism.
     cell_shape(new_mesh%ncell_onP+1:) = GAP_ELEMENT_5
 
@@ -190,9 +190,6 @@ contains
   subroutine init_ngbr_cell (ngbr_cell_orig, ngbr_cell, cell_ip)
 
     use common_impl, only: OLD_TET_SIDE_MAP, OLD_PYR_SIDE_MAP, OLD_PRI_SIDE_MAP, OLD_HEX_SIDE_MAP
-    use common_impl, only: pcell_old_to_new, pcell_new_to_old
-    use common_impl, only: gap_cells, gap_link_mask, pgap_new_to_old
-    use parallel_permutations, only: rearrange
     use index_partitioning, only: localize_index_array, gather_boundary
 
     integer, intent(out) :: ngbr_cell_orig(:,:), ngbr_cell(:,:)
@@ -432,7 +429,6 @@ contains
     integer, intent(out) :: ngbr_vrtx_orig(:,:), ngbr_vrtx(:,:)
 
     integer :: j, k, n
-    integer, allocatable :: offP_index(:)
 
     ASSERT(size(ngbr_vrtx_orig,1) == 8)
     ASSERT(size(ngbr_vrtx_orig,2) == ncells)
@@ -481,17 +477,14 @@ contains
 
   end subroutine init_ngbr_vrtx
 
-  !! Initialize the passed NGBR_CELLS_ALL and NGBR_CELLS_FACE structure arrays,
-  !! and return the associated cell index partition object CELL_IP which must be
-  !! used by the EE_GATHER_ALL_V_S_* procedures that operate with the returned
-  !! arguments. CELL_IP is the analog of EE_ALL_NGBR_TRACE from gs_info_module.
-  !! This data is all with respect to the legacy mesh ordering and partitioning
-  !! of cells and its convention for face numbering.
-  !!
-  !! This implementation does not fill in data for gap elements.  That means
-  !! the neighbor lists will not include any neighbors that are gap elements,
-  !! and the neighbor lists for gap elements will be entirely empty, not even
-  !! including themselves.
+  !! Initialize the passed NGBR_CELLS_ALL and NGBR_CELLS_FACE structure arrays.
+  !! The EE_GATHER_ALL_V_S_* procedures that operate with the returned arguments
+  !! should use the cell index partition from the mesh object and NOT the legacy
+  !! cell index partition CELL_IP from this module.  The reason is that these
+  !! structure arrays ignore gap cells, and therefore have precisely the same
+  !! cells as the mesh.  Neighbor lists will not include any neighbors that are
+  !! gap cells, and while the arrays are sized to include neighbor lists for
+  !! gap cells, these lists are entirely empty.
   !!
   !! This data is used only by the least squares operators, which I believe are
   !! only used by flow.  There is at least one regression problem that uses this
@@ -501,45 +494,21 @@ contains
   !! flow anyway, so once things are converted over to the new mesh with gap
   !! elements separated, we should be okay.
 
-  subroutine init_ngbr_cells_all_mapped (ngbr_cells_all, ngbr_cells_face)
+  subroutine init_ngbr_cells_all (ngbr_cells_all, ngbr_cells_face)
 
-    use common_impl, only: pcell_old_to_new, pcell_new_to_old
     use common_impl, only: NEW_TET_SIDE_MAP,  NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
-    use parallel_permutations, only: rearrange
-    use permutations, only: reorder
-    use sort_module, only: heapsort
-    use index_partitioning, only: ip_desc, gather_boundary, localize_index_struct
-    use var_vector_module, only: int_var_vector, create, sizes, flatten
-    use parallel_communication, only: global_maxval
+    use var_vector_module, only: int_var_vector, flatten
 
     type(int_var_vector), intent(out) :: ngbr_cells_all(:), ngbr_cells_face(:)
 
-    integer :: j, k, n, b
-    integer :: old_gid(ncells), new_gid(new_mesh%ncell), new_side_map(6)
-    integer, allocatable :: perm(:), new_sizes(:), old_sizes(:), src(:,:), dest(:,:), offP_index(:)
-    type(int_var_vector), allocatable :: new_ngbr_cells_all(:), new_ngbr_cells_face(:)
+    integer :: j, k, n, b, new_side_map(6)
     integer, pointer :: cells(:)
 
-    ASSERT(size(ngbr_cells_all) == ncells)
-    ASSERT(size(ngbr_cells_face) == ncells)
-
-    !! Push the array of old-mesh global cell IDs to the new mesh.
-    do j = 1, ncells
-      old_gid(j) = new_mesh%cell_ip%global_index(j)
-    end do
-    call rearrange (pcell_new_to_old, new_gid(:new_mesh%ncell_onP), old_gid) ! drops gap cells
-    call gather_boundary (new_mesh%cell_ip, new_gid)
-
-    !! Create the NGBR_CELLS_ALL data relative to the new mesh ordering.
-    allocate(new_ngbr_cells_all(new_mesh%ncell_onP))
-    call init_ngbr_cells_all_aux (new_mesh, new_ngbr_cells_all)
-
-    !! Create the companion NGBR_CELLS_FACE data relative to new mesh conventions.
-    allocate(new_ngbr_cells_face(new_mesh%ncell_onP))
-    call init_ngbr_cells_face_aux (new_mesh, new_ngbr_cells_all, new_ngbr_cells_face)
+    call init_ngbr_cells_all_aux (new_mesh, ngbr_cells_all)
+    call init_ngbr_cells_face_aux (new_mesh, ngbr_cells_all, ngbr_cells_face)
 
     !! Map the face bitmasks to the legacy face ordering conventions.
-    do j = 1, size(new_ngbr_cells_face)
+    do j = 1, new_mesh%ncell_onP
       select case (new_mesh%xcnode(j+1)-new_mesh%xcnode(j))
       case (4)
         new_side_map = NEW_TET_SIDE_MAP
@@ -552,7 +521,7 @@ contains
       case default
         INSIST(.false.)
       end select
-      associate(fbits => new_ngbr_cells_face(j)%v)
+      associate(fbits => ngbr_cells_face(j)%v)
         do n = 1, size(fbits)
           b = 0
           do k = 1, 6
@@ -563,86 +532,12 @@ contains
       end associate
     end do
 
-    !! Map the data to the cell ordering used by the legacy mesh.
-    !! We also re-sort the mapped lists to recover that behavior.
-    allocate(perm(maxval(sizes(new_ngbr_cells_all))))
-    do j = 1, size(new_ngbr_cells_all)
-      associate (jngbr => new_ngbr_cells_all(j)%v, jface => new_ngbr_cells_face(j)%v)
-        jngbr = new_gid(jngbr)
-        call heapsort (jngbr, perm(:size(jngbr)))
-        call reorder  (jngbr, perm(:size(jngbr)))
-        call reorder  (jface, perm(:size(jface)))
-      end associate
-    end do
-    deallocate(perm)
-
-    !! Move this data to the old partition.  This is awkward because there is
-    !! a variable amount of data per cell and no easy way to do it with PGSLib.
-    !! So we unpack into a sufficiently large rank-2 array and move it instead.
-    new_sizes = sizes(new_ngbr_cells_all)
-    allocate(old_sizes(ncells))
-    call rearrange (pcell_old_to_new, old_sizes, new_sizes, default=0)
-    n = global_maxval(new_sizes)
-    allocate(src(n,size(new_sizes)), dest(n,ncells))
-
-    !! Push the NGBR_CELL_ALL data to the old mesh.
-    src = 0
-    do j = 1, size(new_ngbr_cells_all)
-      n = size(new_ngbr_cells_all(j)%v)
-      src(1:n,j) = new_ngbr_cells_all(j)%v
-    end do
-    call rearrange (pcell_old_to_new, dest, src, default=0)
-
-    !! Pack the data into an int_var_vector.
-    call create (ngbr_cells_all, old_sizes)
-    do j = 1, ncells
-      ngbr_cells_all(j)%v = dest(:old_sizes(j),j)
-    end do
-
-    !! Push the NGBR_CELL_FACE data to the old mesh.
-    src = 0
-    do j = 1, size(new_ngbr_cells_face)
-      n = size(new_ngbr_cells_face(j)%v)
-      src(1:n,j) = new_ngbr_cells_face(j)%v
-    end do
-    call rearrange (pcell_old_to_new, dest, src, default=0)
-
-    !! Pack the data into an int_var_vector.
-    call create (ngbr_cells_face, old_sizes)
-    do j = 1, ncells
-      ngbr_cells_face(j)%v = dest(:old_sizes(j),j)
-    end do
-    deallocate(src, dest)
-
-    !! Create an index partition
-    cells => flatten(ngbr_cells_all)
-    call localize_index_struct (new_mesh%cell_ip, old_sizes, cells, offP_index)
-    INSIST(size(offP_index)==0)
-
     !! Translate off-process references to boundary buffer references.
-    where (cells > ncells) cells = ncells - cells
+    cells => flatten(ngbr_cells_all)
+    where (cells > ncells) cells = new_mesh%ncell_onP - cells
     INSIST(all(cells /= 0))
 
-  end subroutine init_ngbr_cells_all_mapped
-
-  !! Initialize the passed NGBR_CELLS_ALL and NGBR_CELLS_FACE structure arrays,
-  !! that corresponds to the given new MESH object.  These arrays work with the
-  !! cell index partition component MESH%CELL_IP.  This is what will be used
-  !! once we switch to using the new mesh partitioning and conventions.
-  !! This is untested and hence commented out.
-
-  !subroutine init_ngbr_cells_all (mesh, ngbr_cells_all, ngbr_cells_face)
-  !
-  !  type(unstr_mesh), intent(in) :: mesh
-  !  type(int_var_vector), intent(out) :: ngbr_cells_all(:), ngbr_cells_face(:)
-  !
-  !  ASSERT(size(ngbr_cells_all) == mesh%ncell_onP)
-  !  ASSERT(size(ngbr_cells_face) == mesh%ncell_onP)
-  !
-  !  call init_ngbr_cells_all_aux (mesh, ngbr_cells_all)
-  !  call init_ngbr_cells_face_aux (mesh, ngbr_cells_all, ngbr_cells_face)
-  !
-  !end subroutine init_ngbr_cells_all
+  end subroutine init_ngbr_cells_all
 
   !! This auxiliary subroutine initializes the NGBR_CELLS_ALL structure array
   !! that corresponds to the given new MESH object.  The array data is local
@@ -659,10 +554,10 @@ contains
     type(unstr_mesh), intent(in) :: mesh
     type(int_var_vector), intent(out) :: ngbr_cells_all(:)
 
-    integer :: j, k
+    integer :: j, k, sizes(size(ngbr_cells_all))
     type(integer_set) :: nsets(mesh%nnode), csets(mesh%ncell_onP)
 
-    ASSERT(size(ngbr_cells_all) == mesh%ncell_onP)
+    ASSERT(size(ngbr_cells_all) >= mesh%ncell_onP)
 
     !! For each node, form the set of cells that contain it.
     do j = 1, mesh%ncell
@@ -687,7 +582,9 @@ contains
     end do
 
     !! Pack the data into an int_var_vector
-    call create (ngbr_cells_all, csets%size())
+    sizes(:mesh%ncell_onP) = csets%size()
+    sizes(mesh%ncell_onP+1:) = 0
+    call create (ngbr_cells_all, sizes)
     do j = 1, size(csets)
       call csets(j)%copy_to_array (ngbr_cells_all(j)%v)
     end do
@@ -713,10 +610,10 @@ contains
     integer, pointer :: face_sig(:)
 
     ASSERT(size(ngbr_cells_face) == size(ngbr_cells_all))
-    ASSERT(size(ngbr_cells_face) <= mesh%ncell)
+    ASSERT(size(ngbr_cells_face) >= mesh%ncell_onP)
 
     call create (ngbr_cells_face, sizes(ngbr_cells_all))
-    do j = 1, size(ngbr_cells_all)  ! for each on-process cell J
+    do j = 1, mesh%ncell_onP  ! for each on-process cell J
       associate (jnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))
         face_sig => cell_face_sig(jnode)
         do n = 1, size(ngbr_cells_all(j)%v) ! for each neighbor cell I of J
