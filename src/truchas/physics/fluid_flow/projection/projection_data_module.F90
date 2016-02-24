@@ -43,15 +43,12 @@ MODULE PROJECTION_DATA_MODULE
   ! Dirichlet BC flag
   logical, public, save :: dirichlet_pressure
 
-
-  ! Orthogonal mesh matrix and preconditioner
-  real(r8), pointer, public, save, dimension(:,:) :: A_Ortho
-
   ! Rank-1 real coefficient arrays.
   real(r8), pointer, public, save, dimension(:) :: Solution_Vtx
 
   ! Rank-2 real coefficient arrays.
-  real(r8), pointer, public, save, dimension(:,:) :: Coeff, Solution_Ngbr, Solution_Vertex
+  real(r8), allocatable, public, save :: Coeff(:,:)
+  real(r8), pointer, public, save, dimension(:,:) :: Solution_Ngbr, Solution_Vertex
 
   ! Face densities and pressure gradients
   real(r8), pointer, public, save, dimension(:,:)   :: Face_Density

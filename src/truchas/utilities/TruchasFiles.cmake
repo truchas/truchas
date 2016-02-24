@@ -9,7 +9,6 @@ set(UTIL_SOURCE_FILES)
 
 
 set(UTIL_FILES
-         utilities/ArrayAllocate_Module.F90
          utilities/f90_assert.F90
          utilities/file_utility.F90
          utilities/graph_type.F90

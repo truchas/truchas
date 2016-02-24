@@ -46,7 +46,7 @@
        ! For efficiency, we allocate all the varying vectors at once, in
        ! a single large array.  Then we point at the section we want.
        TotalSize = SUM(SIZES)
-       Call ArrayCreate(BigArray, 1, TotalSize, 'Create Var_Vector')
+       allocate(BigArray(TotalSize))
 
        ! We keep a pointer to this BigArray in the first Var_Vector
        ARRAY(1)%Container => BigArray

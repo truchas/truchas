@@ -34,7 +34,7 @@ MODULE TURBULENCE_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Turbulent diffusivity at cell centers
-  real(r8), dimension(:), pointer, save, public :: Nu_Turb
+  real(r8), allocatable, save, public :: Nu_Turb(:)
 
   ! Physics Namelist Variables
   character(string_len), save, public :: turbulence_model = 'none'
@@ -143,14 +143,11 @@ CONTAINS
   !-----------------------------------------------------------------------------
 
   subroutine turbulence_allocate ()
-     use ArrayAllocate_Module, only: ARRAYCREATE
 
      ! use turbulence_model as a flag to determine whether Nu_Turb should be allocated
 
-     nullify (Nu_Turb)
-
      if (turbulence_model == 'alg') then
-        call ARRAYCREATE (Nu_Turb, 1, ncells, 'Allocation of Nu_Turb(ncells) failed')
+        allocate(Nu_Turb(ncells))
         Nu_Turb = 0.0_r8
      end if
 
