@@ -79,7 +79,6 @@
 /
 
 &SURFACE_TENSION
-  csf_tangential = .true.
   csf_boundary = .true.
   sigma_constant =  1.0 ! unused with csf, but avoids false error detection
   dsig_dT =  -1.0
