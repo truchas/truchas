@@ -95,25 +95,6 @@
 !! NODE_OPERATOR_MODULE. Need to call this to determine the size of
 !! SMech_IP array.
 !!
-!! PRIVATE 
-!!
-!! REMAP_DIST_TO_OLD_CELL(SRC,DEST)
-!!
-!!  Remap SRC indexed by SM_MESH, a dist_mesh type, to DEST indexed
-!!  by the the old mesh parameters. Assumes that the last index of
-!!  SRC is SM_MESH%NCELL. A fatal error is called if not true.
-!!  SRC may be a real8 rank 1 ro 2 array. The last index of DEST
-!!  must be NCELLS (parameter_module) or an error is thrown.
-!!
-!!
-!! REMAP_DIST_TO_OLD_NODE(SRC,DEST)
-!!
-!!  Remap SRC indexed by SM_MESH, a dist_mesh type, to DEST indexed
-!!  by the the old mesh parameters. Assumes that the last index of
-!!  SRC is SM_MESH%NNODE. A fatal error is called if not true.
-!!  SRC may be a real8 rank 1 ro 2 array. The last index of DEST
-!!  must be NNODES (parameter_module) or an error is thrown.
-!!
 
 #include "f90_assert.fpp"
 
@@ -162,186 +143,138 @@ module solid_mechanics_output
       ! Public functions
       public :: stress_strain_invariants
 
-      ! Map distributed ncell based arrays to the old mesh
-      interface remap_dist_to_old_cell
-        module procedure remap_dist_to_old_cell_r8_1
-        module procedure remap_dist_to_old_cell_r8_2
-      end interface
+contains
 
-      ! Map distributed nnode based arrays to the old mesh
-      interface remap_dist_to_old_node
-        module procedure remap_dist_to_old_node_r8_1
-        module procedure remap_dist_to_old_node_r8_2
-      end interface
-
-      ! Map old mesh ncells based arrays to distributed mesh
-      interface remap_old_cell_to_dist
-        module procedure remap_old_cell_to_dist_r8_1
-        module procedure remap_old_cell_to_dist_r8_2
-      end interface
-      
-
-! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-  contains
-! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
   subroutine get_sm_thermal_strain(output)
     use solid_mechanics_data, only: Thermal_Strain
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(dest=output(n,:),src=Thermal_Strain(n,:))
-    end do 
+    output = Thermal_Strain
   end subroutine get_sm_thermal_strain              
 
   subroutine get_sm_displacement(output)
     use solid_mechanics_data, only: Displacement
-    use legacy_mesh_api, only: ndim, nnodes
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
-    ASSERT(size(output,1) == ndim)
+    use legacy_mesh_api, only: nnodes
+    real(r8), intent(out) :: output(:,:)
+    ASSERT(size(output,1) == 3)
     ASSERT(size(output,2) == nnodes)
-    do n = 1, ndim
-      call remap_dist_to_old_node(dest=output(n,:),src=Displacement(n,:))
-    end do 
+    output = Displacement
   end subroutine get_sm_displacement
 
   subroutine get_sm_rhs(output)
     use solid_mechanics_data, only: RHS
-    use legacy_mesh_api, only: ndim, nnodes
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
-    ASSERT(size(output,1) == ndim)
+    use legacy_mesh_api, only: nnodes
+    real(r8), intent(out) :: output(:,:)
+    real(r8), pointer :: rhs2(:,:)
+    ASSERT(size(output,1) == 3)
     ASSERT(size(output,2) == nnodes)
-    do n = 1, ndim
-      call remap_dist_to_old_node(dest=output(n,:),src=RHS(n::ndim))
-    end do 
+    rhs2(1:3,1:nnodes) => RHS
+    output = rhs2
   end subroutine get_sm_rhs
                
   subroutine get_sm_rotation_magnitude(output)
     use solid_mechanics_data, only: ROTATION_MAGNITUDE
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:), intent(out) :: output
+    real(r8), intent(out) :: output(:)
     ASSERT(size(output) == ncells)
-    call remap_dist_to_old_cell(DEST=output,SRC=ROTATION_MAGNITUDE)
+    output = ROTATION_MAGNITUDE
   end subroutine get_sm_rotation_magnitude
  
   subroutine set_sm_rotation_magnitude(output)
     use solid_mechanics_data, only: ROTATION_MAGNITUDE
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:), intent(in) :: output
+    real(r8), intent(in) :: output(:)
     ASSERT(size(output) == ncells)
-    call remap_old_cell_to_dist(SRC=output,DEST=ROTATION_MAGNITUDE)
+    ROTATION_MAGNITUDE = output
   end subroutine set_sm_rotation_magnitude
  
   subroutine get_sm_pc_strain(output)
     use solid_mechanics_data, only: PC_STRAIN
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(SRC=PC_STRAIN(n,:),DEST=output(n,:))
-    end do
+    output = PC_STRAIN
   end subroutine get_sm_pc_strain
 
   subroutine get_smech_cell_total_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(SRC=SMECH_CELL%TOTAL_STRAIN(n,:), DEST=output(n,:))
-    end do
+    output = SMECH_CELL%TOTAL_STRAIN
   end subroutine get_smech_cell_total_strain
 
   subroutine set_smech_cell_total_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(in) :: output
-    integer :: n
+    real(r8), intent(in) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_old_cell_to_dist(SRC=output(n,:),DEST=SMECH_CELL%TOTAL_STRAIN(n,:))
-    end do
+    SMECH_CELL%TOTAL_STRAIN = output
   end subroutine set_smech_cell_total_strain
 
   subroutine get_smech_cell_elastic_stress(output)
     use solid_mechanics_data, only: SMECH_CELL
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(SRC=SMECH_CELL%ELASTIC_STRESS(n,:), DEST=output(n,:))
-    end do
+    output = SMECH_CELL%ELASTIC_STRESS
   end subroutine get_smech_cell_elastic_stress
 
   subroutine set_smech_cell_elastic_stress(output)
     use solid_mechanics_data, only: SMECH_CELL
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(in) :: output
-    integer :: n
+    real(r8), intent(in) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_old_cell_to_dist(SRC=output(n,:),DEST=SMECH_CELL%ELASTIC_STRESS(n,:))
-    end do
+    SMECH_CELL%ELASTIC_STRESS = output
   end subroutine set_smech_cell_elastic_stress
 
   subroutine get_smech_cell_plastic_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(SRC=SMECH_CELL%PLASTIC_STRAIN(n,:), DEST=output(n,:))
-    end do
+    output = SMECH_CELL%PLASTIC_STRAIN
   end subroutine get_smech_cell_plastic_strain
 
   subroutine set_smech_cell_plastic_strain(output)
     use solid_mechanics_data, only: SMECH_CELL
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:,:), intent(in) :: output
-    integer :: n
+    real(r8), intent(in) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_old_cell_to_dist(SRC=output(n,:),DEST=SMECH_CELL%PLASTIC_STRAIN(n,:))
-    end do
+    SMECH_CELL%PLASTIC_STRAIN = output
   end subroutine set_smech_cell_plastic_strain
 
   subroutine get_smech_cell_plastic_strain_rate(output)
     use solid_mechanics_data, only: SMECH_CELL
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:), intent(out) :: output
+    real(r8), intent(out) :: output(:)
     ASSERT(size(output) == ncells)
-    call remap_dist_to_old_cell(SRC=SMECH_CELL%PLASTIC_STRAIN_RATE, DEST=output)
+    output = SMECH_CELL%PLASTIC_STRAIN_RATE
   end subroutine get_smech_cell_plastic_strain_rate
  
   subroutine set_smech_cell_plastic_strain_rate(output)
     use solid_mechanics_data, only: SMECH_CELL
     use legacy_mesh_api, only: ncells
-    real(r8), dimension(:), intent(in) :: output
+    real(r8), intent(in) :: output(:)
     ASSERT(size(output) == ncells)
-    call remap_old_cell_to_dist(SRC=output,DEST=SMECH_CELL%PLASTIC_STRAIN_RATE)
+    SMECH_CELL%PLASTIC_STRAIN_RATE = output
   end subroutine set_smech_cell_plastic_strain_rate
 
   integer function smech_num_int_pts() result(n)
@@ -353,55 +286,42 @@ module solid_mechanics_output
     use solid_mechanics_data, only: SMECH_IP
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    integer,                            intent(in)  :: idx
-    real(r8), dimension(ncomps,ncells), intent(out) :: output
-    integer :: n
+    integer,  intent(in)  :: idx
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(SRC=SMECH_IP(idx)%TOTAL_STRAIN(n,:),  &
-                                  DEST=output(n,:))
-    end do                            
+    output = SMECH_IP(idx)%TOTAL_STRAIN
   end subroutine get_smech_ip_total_strain
 
   subroutine get_smech_ip_elastic_stress(idx,output)
     use solid_mechanics_data, only: SMECH_IP
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    integer,                  intent(in)  :: idx
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
+    integer,  intent(in)  :: idx
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(SRC=SMECH_IP(idx)%ELASTIC_STRESS(n,:),  &
-                                  DEST=output(n,:))
-    end do                            
+    output = SMECH_IP(idx)%ELASTIC_STRESS
   end subroutine get_smech_ip_elastic_stress
 
   subroutine get_smech_ip_plastic_strain(idx,output)
     use solid_mechanics_data, only: SMECH_IP
     use parameter_module, only: ncomps
     use legacy_mesh_api, only: ncells
-    integer,                  intent(in)  :: idx
-    real(r8), dimension(:,:), intent(out) :: output
-    integer :: n
+    integer,  intent(in)  :: idx
+    real(r8), intent(out) :: output(:,:)
     ASSERT(size(output,1) == ncomps)
     ASSERT(size(output,2) == ncells)
-    do n = 1, ncomps
-      call remap_dist_to_old_cell(SRC=SMECH_IP(idx)%PLASTIC_STRAIN(n,:),  &
-                                  DEST=output(n,:))
-    end do                            
+    output = SMECH_IP(idx)%PLASTIC_STRAIN
   end subroutine get_smech_ip_plastic_strain
 
   subroutine get_smech_ip_plastic_strain_rate(idx,output)
     use solid_mechanics_data, only: SMECH_IP
     use legacy_mesh_api, only: ncells
-    integer,                     intent(in)  :: idx
-    real(r8), dimension(ncells), intent(out) :: output
+    integer,  intent(in)  :: idx
+    real(r8), intent(out) :: output(:)
     ASSERT(size(output) == ncells)
-    call remap_dist_to_old_cell(SRC=SMECH_IP(idx)%PLASTIC_STRAIN_RATE,  &
-                                DEST=output)
+    output = SMECH_IP(idx)%PLASTIC_STRAIN_RATE
   end subroutine get_smech_ip_plastic_strain_rate
 
 
@@ -411,7 +331,6 @@ module solid_mechanics_output
   end function sm_node_gap_isize
 
   subroutine get_sm_node_gap(idx,output)
-    use legacy_mesh_api,     only: nnodes
     use solid_mechanics_data, only: Node_Gap
     integer, intent(in) :: idx
     real(r8), dimension(:), intent(out) :: output
@@ -419,179 +338,11 @@ module solid_mechanics_output
   end subroutine get_sm_node_gap
 
   subroutine get_sm_node_norm_trac(idx,output)
-    use legacy_mesh_api,     only: nnodes
     use solid_mechanics_data, only: Node_Norm_Trac
     integer, intent(in) :: idx
     real(r8), dimension(:), intent(out) :: output
     output = Node_Norm_Trac(:,idx)
   end subroutine get_sm_node_norm_trac
-
-
-  !! 
-  !! PRIVATE Interfaces
-  !!
-
-  !! REMAP_DIST_TO_OLD_CELL Real8 Rank 1 
-  subroutine remap_dist_to_old_cell_r8_1(src,dest)
-    use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_CELL
-    use parallel_communication,   only: global_all
-    use parallel_permutations,    only: rearrange
-    use legacy_mesh_api,          only: ncells
-
-    real(r8), intent(in)    :: src(:)
-    real(r8), intent(inout) :: dest(:)
-
-    ! This is now handled in the wrappers.
-    !size_ok = global_all(size(src) .eq. SM_MESH%NCELL)
-    !INSIST(size_ok)
-
-    ! Rearrange
-    !call rearrange(SM_MESH_TO_OLD_CELL,src=src,dest=dest)
-    dest = src
-
-  end subroutine remap_dist_to_old_cell_r8_1
-
-  ! REMAP_DIST_TO_OLD_CELL Real8 Rank 2
-  subroutine remap_dist_to_old_cell_r8_2(src,dest)
-    use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_CELL
-    use parallel_communication,   only: global_all
-    use parallel_permutations,    only: rearrange
-    use legacy_mesh_api,          only: ncells
-
-    real(r8), intent(in)    :: src(:,:)
-    real(r8), intent(inout) :: dest(:,:)
-
-    integer :: n
-    logical :: size_ok
-
-    ! Check the sizes
-    size_ok = global_all(size(dest,2) .eq. ncells)
-    INSIST(size_ok)
-
-    !size_ok = global_all(size(src,2) .eq. SM_MESH%NCELL)
-    !INSIST(size_ok)
-
-    ! Rearrange
-    do n = 1, size(src,1)
-      !call rearrange(SM_MESH_TO_OLD_CELL,src=src(n,:),dest=dest(n,:))
-      dest(n,:) = src(n,:)
-    end do 
-
-  end subroutine remap_dist_to_old_cell_r8_2
-  ! Real8 Rank 1 
-  subroutine remap_dist_to_old_node_r8_1(src,dest)
-    use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_NODE
-    use parallel_communication,   only: global_all
-    use parallel_permutations,    only: rearrange
-    use legacy_mesh_api,          only: nnodes
-
-    real(r8), intent(in)    :: src(:)
-    real(r8), intent(inout) :: dest(:)
-
-    logical :: size_ok
-
-    ! Check the sizes
-    size_ok = global_all(size(dest) .eq. nnodes)
-    INSIST(size_ok)
-
-    !size_ok = global_all(size(src) .eq. SM_MESH%NNODE)
-    !INSIST(size_ok)
-
-    ! Rearrange
-    !call rearrange(SM_MESH_TO_OLD_NODE,src=src,dest=dest)
-    dest = src
-
-  end subroutine remap_dist_to_old_node_r8_1
-
-  ! Real8 Rank 2
-  subroutine remap_dist_to_old_node_r8_2(src,dest)
-    use solid_mechanics_mesh,     only: SM_MESH, SM_MESH_TO_OLD_NODE
-    use parallel_communication,   only: global_all
-    use parallel_permutations,    only: rearrange
-    use legacy_mesh_api,          only: nnodes
-
-    real(r8), intent(in)    :: src(:,:)
-    real(r8), intent(inout) :: dest(:,:)
-
-    integer :: n
-    logical :: size_ok
-
-    ! Check the sizes
-    size_ok = global_all(size(dest,2) .eq. nnodes)
-    INSIST(size_ok)
-
-    !size_ok = global_all(size(src,2) .eq. SM_MESH%NNODE)
-    !INSIST(size_ok)
-
-    ! Rearrange
-    !do n = 1, size(src,1)
-      !call rearrange(SM_MESH_TO_OLD_NODE,src=src(n,:),dest=dest(n,:))
-    !end do 
-    dest = src
-
-  end subroutine remap_dist_to_old_node_r8_2
-
-  !!
-  !! REMAP_OLD_CELL_TO_DIST(SRC,DEST)
-  !!
-  !!  Remap SRC indexed by NCELLS (parameter_module), to DEST indexed
-  !!  by SM_MESH%NCELL, a distributed mesh. Assumes that the last index of
-  !!  SRC is NCELLS. A fatal error is called if not true.
-  !!  SRC may be a real8 rank 1 ro 2 array. The last index of DEST
-  !!  must be SM_MESH%NCELL or an error is thrown.
-  !!
-  ! Real8 Rank 1 
-  subroutine remap_old_cell_to_dist_r8_1(src,dest)
-    use solid_mechanics_mesh,     only: SM_MESH, SM_OLD_TO_MESH_CELL
-    use parallel_communication,   only: global_all
-    use parallel_permutations,    only: rearrange
-    use legacy_mesh_api,          only: ncells
-
-    real(r8), intent(in)    :: src(:)
-    real(r8), intent(inout) :: dest(:)
-
-    logical :: size_ok
-
-    ! Check the sizes
-    !size_ok = global_all(size(dest) .eq. SM_MESH%NCELL)
-    !INSIST(size_ok)
-
-    size_ok = global_all(size(src) .eq. ncells)
-    INSIST(size_ok)
-
-    ! Rearrange
-    !call rearrange(SM_MESH_TO_OLD_CELL,src=src,dest=dest)
-    dest = src
-
-  end subroutine remap_old_cell_to_dist_r8_1
-
-  ! Real8 Rank 2
-  subroutine remap_old_cell_to_dist_r8_2(src,dest)
-    use solid_mechanics_mesh,     only: SM_MESH, SM_OLD_TO_MESH_CELL
-    use parallel_communication,   only: global_all
-    use parallel_permutations,    only: rearrange
-    use legacy_mesh_api,          only: ncells
-
-    real(r8), intent(in)    :: src(:,:)
-    real(r8), intent(inout) :: dest(:,:)
-
-    integer :: n
-    logical :: size_ok
-
-    ! Check the sizes
-    !size_ok = global_all(size(dest,2) .eq. SM_MESH%NCELL)
-    !INSIST(size_ok)
-
-    size_ok = global_all(size(src,2) .eq. ncells)
-    INSIST(size_ok)
-
-    ! Rearrange
-    !do n = 1, size(src,1)
-      !call rearrange(SM_OLD_TO_MESH_CELL,src=src(n,:),dest=dest(n,:))
-    !end do 
-    dest = src
-
-  end subroutine remap_old_cell_to_dist_r8_2
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -669,7 +420,7 @@ module solid_mechanics_output
     ! 
     !=============================================================================
     use parameter_module, only: ncomps
-    use legacy_mesh_api, only: ncells, ndim
+    use legacy_mesh_api, only: ncells
     use truchas_logging_services, only: TLS_panic
 
     integer :: status

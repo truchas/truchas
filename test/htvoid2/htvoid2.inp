@@ -9,9 +9,8 @@ near the left end, with void on both sides of the plug.  The plug is
 initially at rest but accelerates down the channel due to the gravity
 which is directed to the right.  The simulation terminates before the
 fluid has reached the right end.  Unlike HTVOID1, this mesh is orthogonal.
-The wall bodies have a high heat capacity relative to the fluid, and the
-fluid is in perfect contact with the top wall body.  The interface between
-the fluid and lower wall body is modeled with an internal HTC condition.
+The wall bodies have a high heat capacity relative to the fluid. The interface
+between the fluid and wall bodies are modeled with an internal HTC condition.
 The back side of the channel is modeled with an external HTC condition
 and a no-heat-flux condition is imposed on the front side.  The fluid
 is initial at a uniform temperature, but develops a distinctive profile
@@ -27,7 +26,7 @@ void will result in heat solutions that are not comparable.
 
 &MESH
   mesh_file = 'channel+mold-4.gen'
-  interface_side_sets = 6
+  interface_side_sets = 5, 6
 /
 
 &OUTPUTS
@@ -148,6 +147,14 @@ T = 1 + 0.125*x
   condition = 'flux'
   face_set_ids = 7
   data_constant = 0.0
+/
+
+&DS_INTERFACE_CONDITION
+  name = 'lower channel-wall interface'
+  variable = 'temperature'
+  condition = 'HTC'
+  face_set_ids = 5
+  data_constant = 20.0
 /
 
 &DS_INTERFACE_CONDITION

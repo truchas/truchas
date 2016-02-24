@@ -27,34 +27,31 @@ contains
 
   subroutine init_vertex_impl
 
-    use common_impl, only: nnodes, pnode_old_to_new, gnmap, mesh => new_mesh
-    use parallel_permutations, only: rearrange
+    use common_impl, only: nnodes, mesh => new_mesh
     use cutoffs_module, only: alittle
 
-    integer :: j, k
-    real(r8) :: src(mesh%nnode)
+    integer :: j
+    real(r8) :: tmp(mesh%nnode)
 
     allocate(vertex(nnodes))
 
-    do k = 1, 3
-      call rearrange (pnode_old_to_new, vertex%coord(k), mesh%x(k,:mesh%nnode_onP))
+    do j = 1, nnodes
+      vertex(j)%coord = mesh%x(:,j)
     end do
 
-    src = 0.0_r8
+    tmp = 0.0_r8
     do j = 1, mesh%ncell
       associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))
-        src(cnode) = src(cnode) + 1.0_r8 / mesh%volume(j)
+        tmp(cnode) = tmp(cnode) + 1.0_r8 / mesh%volume(j)
       end associate
     end do
     do j = 1, mesh%nlink
       if (mesh%link_cell_id(j) == 0) cycle ! not from a gap cell
       associate (lnode => mesh%lnode(mesh%xlnode(j):mesh%xlnode(j+1)-1))
-        src(lnode) = src(lnode) + 1.0_r8 / (2*alittle)
+        tmp(lnode) = tmp(lnode) + 1.0_r8 / (2*alittle)
       end associate
     end do
-    call gnmap%sum_to_parent(src)
-    src = 1.0_r8 / src
-    call rearrange (pnode_old_to_new, vertex%rsum_rvol, src(:mesh%nnode_onP))
+    vertex%rsum_rvol = 1.0_r8 / tmp(:mesh%nnode_onP)
 
   end subroutine init_vertex_impl
 

@@ -19,8 +19,7 @@ Module SOLID_MECHANICS_DATA
   !-----------------------------------------------------------------------------
   !
   use kinds, only: r8
-  use parameter_module, only: string_len
-  use solid_mechanics_mesh, only: ncomps, ndim
+  use solid_mechanics_mesh, only: ncomps
   implicit none
   private
 

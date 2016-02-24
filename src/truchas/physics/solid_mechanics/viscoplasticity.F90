@@ -413,7 +413,6 @@ Contains
 
   subroutine viscoplastic_strain_rate_one (icell, stress, temp, strain_rate)
 
-    use fluid_data_module, only: isImmobile
     use parameter_module, only: mat_slot
     use matl_module, only: matl
     use time_step_module, Only: dt
