@@ -54,7 +54,7 @@ module surface_tension_module
   logical, public, save :: csf_normal = .false.
   logical, public, save :: csf_tangential = .false.
   !for welding case assuming a flat top surface
-  logical, public, save :: csf_bc_top_surface
+  logical, public, save :: csf_boundary = .false.
   real,    public, save :: dsig_dT
   integer, public, save  :: face_set_ids(MAX_FACE_SET_IDS)
   real(r8), pointer, dimension(:), public :: csf_z
@@ -98,7 +98,7 @@ contains
     real(r8), dimension(ncells) :: dC_dx, dC_dy, dC_dz
     real(r8), dimension(ncells) :: dS_dx, dS_dy, dS_dz
 
-    ASSERT(csf_tangential)
+    ASSERT(csf_tangential .or. csf_boundary)
     ASSERT(size(Mom_Delta,1) == ndim)
     ASSERT(size(Mom_Delta,2) == ncells)
 
@@ -117,9 +117,8 @@ contains
     ! the volume fraction of the first (or other) material.
     Color = 0.0_r8
 
-    !-mf 
-    !-if special welding case with tangential surface tension only on top surface
-    if (csf_bc_top_surface) then
+    !- tangential surface tension applied on a boundary surface given by set id
+    if (csf_boundary) then
 
       Fx=0.0_r8
       Fy=0.0_r8
@@ -183,7 +182,7 @@ contains
                                  dC_dy*dC_dz *dS_dy)
       end where
 
-    endif ! special welding case
+    endif ! csf_boundary
 
     ! Increment Momentum Delta
     Mom_Delta(1,:) = Mom_Delta(1,:) + dt*Fx
@@ -695,17 +694,16 @@ contains
 
     integer, intent(in) :: lun
 
-    integer :: ios, stat, n
+    integer :: ios, n
     logical :: found
 
     integer  :: interface_materials(2)
     real(r8) :: sigma_constant
     character(32) :: smoothing_kernel, sigma_function
     character(len=8+MAX_NAME_LEN) :: label
-    character(len=127) :: errmsg
     namelist /surface_tension/ csf_normal, csf_tangential, smoothing_kernel, &
         interface_materials, sigma_constant, sigma_function, dsig_dT, &
-        csf_bc_top_surface, face_set_ids
+        csf_boundary, face_set_ids
     
     call TLS_info ('')
     call TLS_info ('Reading SURFACE_TENSION namelist ...')
@@ -714,12 +712,6 @@ contains
     if (is_IOP) then
       rewind lun
       call seek_to_namelist (lun, 'SURFACE_TENSION', found, iostat=ios)
-    end if
-
-    stat = 0
-    call broadcast (stat)
-    if (stat /= 0) then
-      errmsg = trim(label) // ' read error, iostat=' // i_to_c(stat)
     end if
 
     call broadcast (ios)
@@ -732,13 +724,13 @@ contains
     if (is_IOP) then
       csf_normal = .false.
       csf_tangential = .false.
+      csf_boundary = .false.
       smoothing_kernel = NULL_C
       interface_materials = NULL_I
       sigma_constant = NULL_R
       sigma_function = NULL_C
       dsig_dT = 0.0
-      csf_bc_top_surface = .false.
-      face_set_ids = -1
+      face_set_ids = NULL_I
       read(lun,nml=surface_tension,iostat=ios)
     end if
 
@@ -748,16 +740,16 @@ contains
     !! Broadcast the namelist variables.
     call broadcast (csf_normal)
     call broadcast (csf_tangential)
+    call broadcast (csf_boundary)
     call broadcast (smoothing_kernel)
     call broadcast (interface_materials)
     call broadcast (sigma_constant)
     call broadcast (sigma_function)
     call broadcast (dsig_dT)
-    call broadcast (csf_bc_top_surface)
     call broadcast (face_set_ids)
 
-    if (.not.(csf_normal .or. csf_tangential)) then
-      call TLS_fatal ('At least one of CSF_NORMAL and CSF_TANGENTIAL must be enabled.')
+    if (.not.(csf_normal .or. csf_tangential .or. csf_boundary)) then
+      call TLS_fatal ('At least one of csf_normal, csf_tangential, or csf_boundary  must be enabled.')
     endif
 
     if (csf_normal) then
@@ -777,7 +769,7 @@ contains
     end if
     
     !! Verify that the interface material numbers refer to distinct defined fluids.
-    if (csf_bc_top_surface == .false.) then
+    if (csf_boundary == .false.) then
       if (any(interface_materials == NULL_I)) then
         call TLS_fatal ('INTERFACE_MATERIALS must be assigned two values.')
       else
@@ -791,15 +783,14 @@ contains
         if (IsImmobile(surfmat1)) call TLS_fatal ('INTERFACE_MATERIALS(1) is not a fluid')
         if (IsImmobile(surfmat2)) call TLS_fatal ('INTERFACE_MATERIALS(2) is not a fluid')
       end if
-    else   ! if csf_bc_top_surface == .true.
+    else   ! if csf_boundary == .true.
 
       !! Check for a non-empty FACE_SET_IDS.
       if (count(face_set_ids /= NULL_I) == 0) then
-        stat = -1
-        errmsg = trim(label) // ' error: no values assigned to FACE_SET_IDS'
+        call TLS_fatal('no values assigned to FACE_SET_IDS')
       endif
 
-    end if !(csf_bc_top_surface == .false.)
+    end if !(csf_boundary == .false.)
     
     !! Verify that only one of SIGMA_CONSTANT and SIGMA_FUNCTION was specified.
     if (sigma_constant == NULL_R .eqv. sigma_function == NULL_C) then
@@ -817,11 +808,6 @@ contains
       if (.not.allocated(sigma_func)) then
         call TLS_fatal ('Unknown SIGMA_FUNCTION name: "' // trim(sigma_function) // '"')
       end if
-    end if
-
-    if (stat /= 0) then
-      call TLS_info (trim(errmsg))
-      call TLS_fatal ('error reading SURFACE_TENSION namelists')
     end if
 
   end subroutine read_surface_tension_namelist

@@ -79,9 +79,8 @@
 /
 
 &SURFACE_TENSION
-  csf_normal = .false.
   csf_tangential = .true.
-  csf_bc_top_surface = .true.
+  csf_boundary = .true.
   sigma_constant =  1.0 ! unused with csf, but avoids false error detection
   dsig_dT =  -1.0
   face_set_ids = 3

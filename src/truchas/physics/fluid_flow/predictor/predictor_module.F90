@@ -66,7 +66,8 @@ CONTAINS
     use viscous_data_module,     only: inviscid, stokes, viscous_implicitness
     use viscous_module,          only: viscousExplicit
     use zone_module,             only: Zone
-    use surface_tension_module,  only: CSF, surface_tension, csf_tangential
+    use surface_tension_module,  only: CSF, surface_tension, csf_tangential, &
+                                       csf_boundary
 
     ! Local Variables
     integer :: i, n, status
@@ -129,7 +130,7 @@ CONTAINS
     end if
 
     ! Tangential surface tension 
-    if (surface_tension .and. csf_tangential) then
+    if (surface_tension .and. (csf_tangential .or. csf_boundary)) then
       !call CSF(dt, Mom_Delta)
       ALLOCATE (Csftang(ndim,ncells), STAT = status)
 

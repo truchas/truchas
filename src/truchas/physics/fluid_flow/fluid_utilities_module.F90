@@ -70,7 +70,7 @@ CONTAINS
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
     use property_module,        only: FLUID_PROPERTIES
     use restart_variables,      only: restart, have_fluid_flow_data
-    use surface_tension_module, only: face_set_ids, csf_bc_top_surface, csf_z
+    use surface_tension_module, only: face_set_ids, csf_boundary, csf_z
     use bc_data_module,         only: Mesh_Face_Set
 
     real(r8), intent(in) :: t
@@ -115,10 +115,12 @@ CONTAINS
     if (status /= 0) call TLS_panic ('FLUID_INIT: memory allocation failed')
 
     ! Precompute and store cell sizes in z direction for those volume cells that
-    ! are adjacent to side set on which "top_bc" surface tension is to be applied
-    if (csf_bc_top_surface) then
-      ! Find volume cells adjacent to side set on which "top_bc" surface tension
-      ! is to be applied (tag those with -1.0 as opposed to the initial 0.0 values)
+    ! are adjacent to side set on which "csf_boundary"-type tagnential surface
+    ! tension is to be applied
+    if (csf_boundary) then
+      ! Find volume cells adjacent to side set on which "csf_boundary"-type
+      ! surface tension is to be applied (tag those with -1.0 as opposed to the
+      ! initial 0.0 values)
       csf_flag = 0
       nssets = SIZE(Mesh_Face_Set,1);
       do j = 1, ncells
@@ -132,7 +134,7 @@ CONTAINS
       end do
 
       ! Compute and store volume mesh cell size in z direction for cells adjacent
-      ! to side set on which "top_bc" surface tension is to be applied
+      ! to side set on which "csf_boundary"-type surface tension is to be applied
       csf_z = -1.0
       do j = 1, ncells
         if (csf_flag(j) == 1) then
@@ -153,7 +155,7 @@ CONTAINS
                           Cell(j)%Face_Centroid(3,fminz) )
        end if
       end do
-    end if !(csf_bc_top_surface)
+    end if !(csf_boundary)
 
     call FLUID_PROPERTIES (abort, t)
     if(abort) then
@@ -168,7 +170,7 @@ CONTAINS
     ! Initialise courant number array
     courant = 0.0_r8
 
-    ! Give initial values to Div_c, and Div_f (they'll be printed before computed :-/
+    ! Give initial values to Div_c, and Div_f (they will be printed before computed :-/
     Div_c = DIV_NORMS(NORMS(0.0, 0.0, 0.0, 0))
     Div_f = DIV_NORMS(NORMS(0.0, 0.0, 0.0, 0))
 
