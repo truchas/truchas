@@ -85,7 +85,7 @@ contains
     use zone_module,          only: Zone
     use timing_tree
     use mesh_module,          only: Mesh,Cell
-    use bc_data_module,       only: Mesh_Face_Set
+    use legacy_mesh_api,      only: ncells, mesh_face_set
 
     real(r8), intent(in) :: dt
     real(r8), intent(inout) :: Mom_Delta(:,:)

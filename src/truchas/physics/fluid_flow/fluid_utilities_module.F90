@@ -71,7 +71,7 @@ CONTAINS
     use property_module,        only: FLUID_PROPERTIES
     use restart_variables,      only: restart, have_fluid_flow_data
     use surface_tension_module, only: face_set_ids, csf_boundary, csf_z
-    use bc_data_module,         only: Mesh_Face_Set
+    use legacy_mesh_api,        only: mesh_face_set
 
     real(r8), intent(in) :: t
 
