@@ -768,7 +768,7 @@ contains
     end if
     
     !! Verify that the interface material numbers refer to distinct defined fluids.
-    if (csf_boundary == .false.) then
+    if (csf_boundary .eqv. .false.) then
       if (any(interface_materials == NULL_I)) then
         call TLS_fatal ('INTERFACE_MATERIALS must be assigned two values.')
       else
