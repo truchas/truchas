@@ -714,6 +714,12 @@ contains
       call seek_to_namelist (lun, 'SURFACE_TENSION', found, iostat=ios)
     end if
 
+    stat = 0
+    call broadcast (stat)
+    if (stat /= 0) then
+      errmsg = trim(label) // ' read error, iostat=' // i_to_c(stat)
+    end if
+
     call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('Error reading input file: iostat=' // i_to_c(ios))
 
@@ -808,6 +814,11 @@ contains
       if (.not.allocated(sigma_func)) then
         call TLS_fatal ('Unknown SIGMA_FUNCTION name: "' // trim(sigma_function) // '"')
       end if
+    end if
+
+    if (stat /= 0) then
+      call TLS_info (trim(errmsg))
+      call TLS_fatal ('error reading SURFACE_TENSION namelists')
     end if
 
   end subroutine read_surface_tension_namelist
