@@ -44,7 +44,7 @@ project(Truchas C CXX Fortran)
 
 # Version
 set(Truchas_MAJOR_VERSION 3)
-set(Truchas_MINOR_VERSION 0)
+set(Truchas_MINOR_VERSION 1)
 set(Truchas_PATCH_VERSION dev)
 set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
 
