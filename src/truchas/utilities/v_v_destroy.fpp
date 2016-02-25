@@ -35,15 +35,13 @@
 
     ! Local variables
     integer :: i
-    _DATA_TYPE_, pointer, dimension(:) :: BigArray
 
     ! If ARRAY has 0 size, then there is nothing to do:
     if (SIZE(ARRAY) >= 1) then
        ! Since the ragged array was produced by pointing to sections of
        ! a single big array, we need merely deallocate that big array.
        ! The first Var_Vector contains a pointer to the container
-       BigArray => Array(1)%Container
-       Call ArrayDestroy(BigArray, 'Destroy Var_Vector')
+       deallocate(Array(1)%Container)
        
        ! Now we want to NULLIFY the rest of pointers
        NULLIFY(Array(1)%Container)

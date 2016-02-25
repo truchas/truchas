@@ -766,7 +766,6 @@ CONTAINS
     !   S = D/dt for the regular pressure projection and S = D for the MAC
     !   projection, where D is a velocity divergence.
     !======================================================================
-    use ArrayAllocate_Module,   only: ARRAYCREATE, ARRAYDESTROY
     use bc_module,              only: BC_Prs
     use cutoffs_module,         only: alittle
     !  FluidRho is needed for scaling of A_ortho and RHS
@@ -775,8 +774,7 @@ CONTAINS
     use lnorm_module,           only: L1NORM
     use legacy_mesh_api,        only: ncells, ndim, nfc, Cell
     use preconditioners,        only: P, PRECONDITION
-    use projection_data_module, only: A_Ortho, Boundary_Flag, &
-                                      Coeff, UBIK_PRESSURE
+    use projection_data_module, only: Boundary_Flag, Coeff, UBIK_PRESSURE
     use y_eq_Ax_prs,            only: Y_EQ_AX_PRESSURE
     use time_step_module,       only: dt
     use timing_tree
@@ -793,6 +791,7 @@ CONTAINS
     integer  :: f, n, nc
     real(r8) :: X_Dot_N
     real(r8) :: RHSnorm
+    real(r8), pointer :: A_ortho(:,:)
 
     ! Convergence criteria used with new PPE
     real(r8)   :: original_criterion, convergence_criterion
@@ -803,7 +802,7 @@ CONTAINS
     if (Ubik_user(UBIK_PRESSURE)%precond /= 0) then
 
        ! Allocate the orthogonal coeffient array.
-       call ARRAYCREATE (A_Ortho, 0, nfc, 1, ncells, 'A_Ortho(0:nfc,ncells)')
+       allocate(A_Ortho(0:nfc,ncells))
 
        ! Point the preconditioning matrix to A_Ortho
        P => A_Ortho
@@ -826,7 +825,7 @@ CONTAINS
     end if
 
     ! Allocate coefficient array.
-    call ARRAYCREATE (Coeff, 1, nfc, 1, ncells, 'Coeff(nfc,ncells)')
+    allocate(Coeff(nfc,ncells))
     Coeff = 0
 
     ! Set Coeff = Area_Face/Rho_Face. If the face has Dirichlet BCs,
@@ -903,11 +902,11 @@ CONTAINS
     call Ubik_set_eps(Ubik_user(UBIK_PRESSURE)%Control, original_criterion)
 
     ! Deallocate working arrays.
-    call ARRAYDESTROY (Coeff, 'Coeff(nfc,ncells)')
+    deallocate(Coeff)
 
     if (Ubik_user(UBIK_PRESSURE)%precond /= 0) then
-       NULLIFY (P)
-       call ARRAYDESTROY (A_Ortho, 'A_Ortho(0:nfc,ncells)')
+       P => null()
+       deallocate(A_Ortho)
     end if
 
   END SUBROUTINE NONORTHO_PROJECTION

@@ -204,7 +204,6 @@ CONTAINS
     !       neighboring value is minimized in the least-squares sense.
     !
     !=======================================================================
-    use ArrayAllocate_Module, only: ArrayCreate, ArrayDestroy
     use bc_module,            only: Vel
     use cutoffs_module,       only: alittle
     use legacy_mesh_api,      only: Cell, ncells, nfc, nnodes, nvc, LINEAR_PROP
@@ -226,12 +225,11 @@ CONTAINS
     integer :: f
 
     real(r8), dimension(ncells) :: Phi_f
-    real(r8), dimension(:,:), pointer :: Phi_e
     real(r8), dimension(nvc,ncells) :: Phi_v
     real(r8), dimension(nnodes) :: Phi_vtx
 
-    real(r8), dimension(:,:), pointer :: X_v, Y_v, Z_v
-    real(r8), dimension(:,:), pointer :: X_e, Y_e, Z_e
+    real(r8), allocatable :: X_v(:,:), Y_v(:,:), Z_v(:,:)
+    real(r8), allocatable :: X_e(:,:), Y_e(:,:), Z_e(:,:), Phi_e(:,:)
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -272,9 +270,7 @@ CONTAINS
 
        case ('volume-average', 'lslr')
           ! Allocate coordinate arrays
-          call ARRAYCREATE (X_v, 1, nvc, 1, ncells, 'Array X_v(nvc,ncells)')
-          call ARRAYCREATE (Y_v, 1, nvc, 1, ncells, 'Array Y_v(nvc,ncells)')
-          call ARRAYCREATE (Z_v, 1, nvc, 1, ncells, 'Array Z_v(nvc,ncells)')
+          allocate(X_v(nvc,ncells), Y_v(nvc,ncells), Z_v(nvc,ncells))
 
           ! Gather the vertex coordinates into (X_v,Y_v,Z_v)
           call gather_vertex_coord (X_v, dim=1)
@@ -318,10 +314,7 @@ CONTAINS
 
        case ('lslr')
           ! Allocate arrays for neighboring coordinates and Phi values
-          call ARRAYCREATE (X_e, 1, nfc, 1, ncells, 'Array X_e(nfc,ncells)')
-          call ARRAYCREATE (Y_e, 1, nfc, 1, ncells, 'Array Y_e(nfc,ncells)')
-          call ARRAYCREATE (Z_e, 1, nfc, 1, ncells, 'Array Z_e(nfc,ncells)')
-          call ARRAYCREATE (Phi_e, 1, nfc, 1, ncells, 'Array Phi_e(nfc,ncells)')
+          allocate(X_e(nfc,ncells), Y_e(nfc,ncells), Z_e(nfc,ncells), Phi_e(nfc,ncells))
 
           ! Gather neighboring coordinates and Phi values
           call EE_GATHER (X_e, Cell%Centroid(1))
@@ -379,22 +372,6 @@ CONTAINS
                            Phi, dPhi_dx, dPhi_dy, dPhi_dz)
              end if
 !!$          end if
-
-          ! Deallocate arrays
-          call ARRAYDESTROY (X_e, 'Array X_e(nfc,ncells)')
-          call ARRAYDESTROY (Y_e, 'Array Y_e(nfc,ncells)')
-          call ARRAYDESTROY (Z_e, 'Array Z_e(nfc,ncells)')
-          call ARRAYDESTROY (Phi_e, 'Array Phi_e(nfc,ncells)')
-    end select
-
-    ! Deallocate arrays
-    select case (gradient_method)
-       case default
-
-       case ('volume-average', 'lslr')
-          call ARRAYDESTROY (X_v, 'Array X_v(nvc,ncells)')
-          call ARRAYDESTROY (Y_v, 'Array Y_v(nvc,ncells)')
-          call ARRAYDESTROY (Z_v, 'Array Z_v(nvc,ncells)')
     end select
 
     ! Eliminate noise
@@ -418,7 +395,6 @@ CONTAINS
     !   the gradient of Phi is desired.
     !
     !=======================================================================
-    use ArrayAllocate_Module, only: ARRAYCREATE, ARRAYDESTROY
     use cutoffs_module,       only: alittle
     use legacy_mesh_api,      only: ncells, nfc, nnodes, nvc, Cell, Face_Vrtx, Mesh, Vrtx_Face
 
@@ -446,8 +422,7 @@ CONTAINS
     real(r8), dimension(ncells) :: Bx, By, Bz
     real(r8), dimension(ncells) :: dX, dY, dZ
     real(r8), dimension(ncells) :: W
-    real(r8), pointer, dimension(:)   :: WD_Vrtx
-    real(r8), pointer, dimension(:,:) :: WD_Vrtx_Cell, Weight_Data_Nbr
+    real(r8), allocatable :: WD_Vrtx(:), WD_Vrtx_Cell(:,:), Weight_Data_Nbr(:,:)
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! See if this is to be a face or cell-centered gradient
@@ -465,9 +440,7 @@ CONTAINS
     Mask = .false.
 
     if (PRESENT(Weight_Data)) then
-       call ARRAYCREATE (WD_Vrtx, 1, nnodes, 'WD_Vrtx(nnodes)')
-       call ARRAYCREATE (WD_Vrtx_Cell, 1, nvc, 1, ncells, 'WD_Vrtx_Cell(nvc,ncells)')
-       call ARRAYCREATE (Weight_Data_Nbr, 1, nfc, 1, ncells, 'Weight_Data_Nbr(nfc,ncells)')
+       allocate(WD_Vrtx(nnodes), WD_Vrtx_Cell(nvc,ncells), Weight_Data_Nbr(nfc,ncells))
        ! Cell-Vertex Quantity ...................................
        ! Vertex Average
        call VERTEX_AVG (Weight_Data, WD_Vrtx)
@@ -602,13 +575,6 @@ CONTAINS
     dPhi_dx = dX*dPhi_dx
     dPhi_dy = dX*dPhi_dy
     dPhi_dz = dX*dPhi_dz
-
-    ! Destroy unneeded arrays.
-    if (PRESENT(Weight_Data)) then
-       call ARRAYDESTROY (WD_Vrtx, 'WD_Vrtx(nnodes)')
-       call ARRAYDESTROY (WD_Vrtx_Cell, 'WD_Vrtx_Cell(nvc,ncells)')
-       call ARRAYDESTROY (Weight_Data_Nbr, 'Weight_Data_Nbr(nfc,ncells)')
-    end if
 
   END SUBROUTINE LSLR
 
