@@ -84,7 +84,6 @@ contains
     use property_module,      only: density_material
     use zone_module,          only: Zone
     use timing_tree
-    use mesh_module,          only: Mesh,Cell
     use legacy_mesh_api,      only: ncells, mesh_face_set
 
     real(r8), intent(in) :: dt
