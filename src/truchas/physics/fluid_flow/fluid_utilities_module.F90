@@ -247,7 +247,7 @@ CONTAINS
                                       fluidrho, Momentum_by_Volume, Face_Interpolation_Factor, &
                                       Drag_Coefficient, Mom_Delta, courant
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
-    use surface_tension_module, only: csf_boundary, csf_z
+    use surface_tension_module, only: csf_z
 
     ! Local Variables
     integer :: memstat
