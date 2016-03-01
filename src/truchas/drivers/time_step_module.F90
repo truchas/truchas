@@ -604,9 +604,7 @@ CONTAINS
     ! WARNING!!! Experimental: Deactivate/override time step limit due to
     ! tangential surface tension only for the special experimental case of
     ! boundary-applied surface tension force (csf_boundary)
-    if (csf_boundary) then
-      dt_surften = 1.0d10
-    endif
+    if (csf_boundary) dt_surften = 1.0d10
 
   END SUBROUTINE TIME_STEP_SURFACE_TENSION
 

@@ -53,11 +53,13 @@ module surface_tension_module
   !! The remaining variables are defined by READ_SURFACE_TENSION_NAMELIST.
   logical, public, save :: csf_normal = .false.
   logical, public, save :: csf_tangential = .false.
-  !for welding case assuming a flat top surface
   logical, public, save :: csf_boundary = .false.
   real,    public, save :: dsig_dT
-  integer, public, save  :: face_set_ids(MAX_FACE_SET_IDS)
-  real(r8), pointer, dimension(:), public :: csf_z
+  integer, allocatable, public :: face_set_ids(:)
+  !! Volume mesh cell size in z direction for cells adjacent to side set on
+  !! which "csf_boundary"-type surface tension is to be applied. Computed by
+  !! FLUID_INIT().
+  real(r8), allocatable, public :: csf_z(:)
 
   integer, public, save :: surfmat1, surfmat2
   class(scalar_func), allocatable, public :: sigma_func ! surface tension coefficient
@@ -181,7 +183,7 @@ contains
                                  dC_dy*dC_dz *dS_dy)
       end where
 
-    endif ! csf_boundary
+    endif
 
     ! Increment Momentum Delta
     Mom_Delta(1,:) = Mom_Delta(1,:) + dt*Fx
@@ -696,13 +698,14 @@ contains
     integer :: ios, n
     logical :: found
 
+    integer :: bndry_face_set_ids(MAX_FACE_SET_IDS)
     integer  :: interface_materials(2)
     real(r8) :: sigma_constant
     character(32) :: smoothing_kernel, sigma_function
     character(len=8+MAX_NAME_LEN) :: label
     namelist /surface_tension/ csf_normal, csf_tangential, smoothing_kernel, &
         interface_materials, sigma_constant, sigma_function, dsig_dT, &
-        csf_boundary, face_set_ids
+        csf_boundary, bndry_face_set_ids
     
     call TLS_info ('')
     call TLS_info ('Reading SURFACE_TENSION namelist ...')
@@ -729,7 +732,7 @@ contains
       sigma_constant = NULL_R
       sigma_function = NULL_C
       dsig_dT = 0.0
-      face_set_ids = NULL_I
+      bndry_face_set_ids = NULL_I
       read(lun,nml=surface_tension,iostat=ios)
     end if
 
@@ -745,11 +748,14 @@ contains
     call broadcast (sigma_constant)
     call broadcast (sigma_function)
     call broadcast (dsig_dT)
-    call broadcast (face_set_ids)
+    call broadcast (bndry_face_set_ids)
 
     if (.not.(csf_normal .or. csf_tangential .or. csf_boundary)) then
       call TLS_fatal ('At least one of csf_normal, csf_tangential, or csf_boundary  must be enabled.')
     endif
+
+    if (csf_boundary .and. csf_normal) call TLS_fatal ('csf_boundary and csf_normal are mutually exclusive options')
+if (csf_boundary .and. csf_tangential) call TLS_fatal ('csf_boundary and csf_tangential are mutually exclusive options')
 
     if (csf_normal) then
       smoothing_kernel = raise_case(smoothing_kernel)
@@ -767,8 +773,19 @@ contains
       end select
     end if
     
-    !! Verify that the interface material numbers refer to distinct defined fluids.
-    if (csf_boundary .eqv. .false.) then
+    if (csf_boundary) then
+
+      !! Check for a non-empty FACE_SET_IDS.
+      if (count(bndry_face_set_ids /= NULL_I) == 0) then
+        call TLS_fatal('no values assigned to FACE_SET_IDS')
+      endif
+
+      allocate(face_set_ids(count(bndry_face_set_ids/=NULL_I)))
+      face_set_ids = pack(bndry_face_set_ids, mask=(bndry_face_set_ids/=NULL_I))
+
+    else
+
+      !! Verify that the interface material numbers refer to distinct defined fluids
       if (any(interface_materials == NULL_I)) then
         call TLS_fatal ('INTERFACE_MATERIALS must be assigned two values.')
       else
@@ -782,14 +799,8 @@ contains
         if (IsImmobile(surfmat1)) call TLS_fatal ('INTERFACE_MATERIALS(1) is not a fluid')
         if (IsImmobile(surfmat2)) call TLS_fatal ('INTERFACE_MATERIALS(2) is not a fluid')
       end if
-    else   ! if csf_boundary == .true.
 
-      !! Check for a non-empty FACE_SET_IDS.
-      if (count(face_set_ids /= NULL_I) == 0) then
-        call TLS_fatal('no values assigned to FACE_SET_IDS')
-      endif
-
-    end if !(csf_boundary == .false.)
+    end if
     
     !! Verify that only one of SIGMA_CONSTANT and SIGMA_FUNCTION was specified.
     if (sigma_constant == NULL_R .eqv. sigma_function == NULL_C) then

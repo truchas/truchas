@@ -70,9 +70,9 @@ CONTAINS
                                        csf_boundary
 
     ! Local Variables
-    integer :: i, n, status
+    integer :: i, n
     real(r8) :: tweight
-    real(r8), dimension(:,:), allocatable :: Csftang
+    real(r8), allocatable :: Csftang(:,:)
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -131,15 +131,14 @@ CONTAINS
 
     ! Tangential surface tension 
     if (surface_tension .and. (csf_tangential .or. csf_boundary)) then
-      !call CSF(dt, Mom_Delta)
-      ALLOCATE (Csftang(ndim,ncells), STAT = status)
+      ALLOCATE (Csftang(ndim,ncells))
 
       ! initialize Csftang...
       Csftang = 0.0_r8
 
       call CSF (dt, Csftang)
 
-      !-mf for welding case
+      ! Experimental: boundary tangential surface tension (csf_boundary)
       do n=1,ndim
         where (Zone%Rho /= 0.0_r8)
           Csftang(n,:)=Csftang(n,:)*FluidRho*FluidVof/Zone%Rho

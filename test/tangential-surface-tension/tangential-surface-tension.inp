@@ -82,7 +82,7 @@
   csf_boundary = .true.
   sigma_constant =  1.0 ! unused with csf, but avoids false error detection
   dsig_dT =  -1.0
-  face_set_ids = 3
+  bndry_face_set_ids = 3
 /
 
 &BODY

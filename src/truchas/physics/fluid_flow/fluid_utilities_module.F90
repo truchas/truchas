@@ -140,22 +140,14 @@ CONTAINS
         if (csf_flag(j) == 1) then
           ! find cell face ids with minimum and maximum z coordinates of the cell
           ! centroids
-          fminz = 1
-          fmaxz = 1
-          do m = 1, nfc
-            if (Cell(j)%Face_Centroid(3,m) < Cell(j)%Face_Centroid(3,fminz)) then
-              fminz = m
-            end if
-            if (Cell(j)%Face_Centroid(3,m) > Cell(j)%Face_Centroid(3,fmaxz)) then
-              fmaxz = m
-            end if
-          end do
+          fminz = minloc(Cell(j)%Face_Centroid(3,:), dim=1)
+          fmaxz = maxloc(Cell(j)%Face_Centroid(3,:), dim=1)
           ! compute and store size of cell in z direction
           csf_z(j) = abs( Cell(j)%Face_Centroid(3,fmaxz) - &
                           Cell(j)%Face_Centroid(3,fminz) )
        end if
       end do
-    end if !(csf_boundary)
+    end if
 
     call FLUID_PROPERTIES (abort, t)
     if(abort) then
@@ -255,7 +247,7 @@ CONTAINS
                                       fluidrho, Momentum_by_Volume, Face_Interpolation_Factor, &
                                       Drag_Coefficient, Mom_Delta, courant
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
-    use surface_tension_module, only: csf_z
+    use surface_tension_module, only: csf_boundary, csf_z
 
     ! Local Variables
     integer :: memstat
@@ -300,7 +292,7 @@ CONTAINS
     if (ASSOCIATED(Momentum_by_Volume)) DEALLOCATE(Momentum_by_Volume)
     if (ALLOCATED(Drag_Coefficient)) DEALLOCATE(Drag_Coefficient)
     if (ASSOCIATED(courant)) DEALLOCATE (courant)
-    if (ASSOCIATED(csf_z)) DEALLOCATE (csf_z)
+    if (ALLOCATED(csf_z)) DEALLOCATE (csf_z)
 
   END SUBROUTINE FLUID_DEALLOCATE
 
