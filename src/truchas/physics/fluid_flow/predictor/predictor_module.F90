@@ -129,8 +129,12 @@ CONTAINS
        end do
     end if
 
-    ! Tangential surface tension 
-    if (surface_tension .and. (csf_tangential .or. csf_boundary)) then
+    ! Tangential surface tension
+    if (surface_tension .and. csf_tangential) call CSF(dt, Mom_Delta)
+
+    ! Tangential surface tension  applied on a boundary
+    if (surface_tension .and. csf_boundary) then
+
       ALLOCATE (Csftang(ndim,ncells))
 
       ! initialize Csftang...
@@ -147,7 +151,8 @@ CONTAINS
 
       Mom_Delta=Mom_Delta+Csftang
       DEALLOCATE(Csftang)
-    end if
+
+    endif
 
     ! Porous drag.
     if (porous_flow) call POROUS_DRAG(dt, Mom_Delta)
