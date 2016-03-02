@@ -72,7 +72,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
@@ -83,7 +88,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
@@ -94,7 +104,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
@@ -105,7 +120,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
@@ -116,7 +136,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
@@ -127,7 +152,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
@@ -138,8 +168,13 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-    integer, parameter :: n = storage_size(var)/storage_size(buffer)
     integer :: len
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
+    integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     len = n*size(var)
     call c_f_pointer (c_loc(var(1)), ptr, shape=[len])
     buffer(offset+1:offset+len) = ptr
@@ -151,7 +186,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
@@ -162,7 +202,12 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
@@ -173,7 +218,12 @@ contains
     integer, intent(inout) :: offset
     integer(int16), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
@@ -184,7 +234,12 @@ contains
     integer, intent(inout) :: offset
     integer(int32), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
@@ -195,7 +250,12 @@ contains
     integer, intent(inout) :: offset
     integer(int64), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
@@ -206,7 +266,12 @@ contains
     integer, intent(inout) :: offset
     real(real32), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
@@ -217,7 +282,12 @@ contains
     integer, intent(inout) :: offset
     real(real64), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
@@ -228,8 +298,13 @@ contains
     integer, intent(inout) :: offset
     real(real64), intent(out), contiguous, target :: var(:)
     integer(int8), pointer :: ptr(:)
-    integer, parameter :: n = storage_size(var)/storage_size(buffer)
     integer :: len
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
+    integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     len = n*size(var)
     call c_f_pointer (c_loc(var(1)), ptr, shape=[len])
     ptr = buffer(offset+1:offset+len)
@@ -241,7 +316,12 @@ contains
     integer, intent(inout) :: offset
     logical(int32), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: n
+    n = storage_size(var)/storage_size(buffer)
+#else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
+#endif
     call c_f_pointer (c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n

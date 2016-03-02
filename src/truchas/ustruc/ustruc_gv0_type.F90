@@ -75,12 +75,14 @@ module ustruc_gv0_type
   integer, parameter :: GV_INVALID   = 0
   integer, parameter :: GV_UNDEFINED = 1
   integer, parameter :: GV_DEFINED   = 2
-  
+
+#ifndef INTEL_COMPILER_WORKAROUND
   !! Number of bytes (per cell) of internal state for serialization/deserialization
   type(ustruc_gv0), allocatable :: dummy  ! only use is in the following parameter declaration
   integer, parameter :: NBYTES = storage_size(dummy%dt)/8 + storage_size(dummy%g)/8 + &
                                  storage_size(dummy%v)/8 +  storage_size(dummy%state)/8 + &
                                  storage_size(dummy%gv_state)/8 + storage_size(dummy%count)/8
+#endif
 
 contains
 
@@ -381,6 +383,12 @@ contains
     integer(int8), allocatable, intent(out) :: array(:,:)
 
     integer :: j, offset
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%dt)/8 + storage_size(this%g)/8 + &
+             storage_size(this%v)/8 +  storage_size(this%state)/8 + &
+             storage_size(this%gv_state)/8 + storage_size(this%count)/8
+#endif
 
     if (cid == USTRUC_GV0_ID) then
       allocate(array(NBYTES,this%n))
@@ -409,6 +417,12 @@ contains
     integer(int8), intent(in) :: array(:,:)
 
     integer :: j, offset
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%dt)/8 + storage_size(this%g)/8 + &
+             storage_size(this%v)/8 +  storage_size(this%state)/8 + &
+             storage_size(this%gv_state)/8 + storage_size(this%count)/8
+#endif
 
     if (cid == USTRUC_GV0_ID) then
       INSIST(size(array,1) == NBYTES)

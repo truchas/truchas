@@ -383,21 +383,18 @@ contains
 
   subroutine ustruc_output (seq_id)
 
-    use parameter_module, only: ncells
-    use mesh_interop, only: pcell_t_to_ds
-    use parallel_permutations, only: rearrange
+    use legacy_mesh_api, only: ncells
     use truchas_danu_output_tools
     use,intrinsic :: iso_c_binding, only: c_ptr
 
     type(c_ptr), intent(in) :: seq_id
 
-    real(r8), allocatable :: ds_scalar(:), t_scalar(:), ds_vector(:,:), t_vector(:,:)
+    real(r8), allocatable :: scalar_out(:), vector_out(:,:)
 
     if (.not.allocated(this)) return
     call start_timer ('Microstructure')
 
-    allocate(ds_scalar(this%mesh%ncell_onP),   t_scalar(ncells))
-    allocate(ds_vector(3,this%mesh%ncell_onP), t_vector(3,ncells))
+    allocate(scalar_out(ncells), vector_out(3,ncells))
 
     !! Core module: temperature and gradient -- modeled cells only
     call write_scalar_field (data_name='temp',      hdf_name='uStruc-T',     viz_name='T')
@@ -437,18 +434,18 @@ contains
     subroutine write_scalar_field (data_name, hdf_name, viz_name)
       character(*), intent(in) :: data_name, hdf_name, viz_name
       if (this%model%has(data_name)) then
-        call this%model%get (data_name, ds_scalar)
-        call rearrange (pcell_t_to_ds, t_scalar, ds_scalar)
-        call write_seq_cell_field (seq_id, t_scalar, hdf_name, for_viz=.true., viz_name=viz_name)
+        call this%model%get (data_name, scalar_out)
+        scalar_out(this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
+        call write_seq_cell_field (seq_id, scalar_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
 
     subroutine write_vector_field (data_name, hdf_name, viz_name)
       character(*), intent(in) :: data_name, hdf_name, viz_name(:)
       if (this%model%has(data_name)) then
-        call this%model%get (data_name, ds_vector)
-        call rearrange (pcell_t_to_ds, t_vector, ds_vector)
-        call write_seq_cell_field (seq_id, t_vector, hdf_name, for_viz=.true., viz_name=viz_name)
+        call this%model%get (data_name, vector_out)
+        vector_out(:,this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
+        call write_seq_cell_field (seq_id, vector_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
 
@@ -655,9 +652,7 @@ contains
   subroutine get_vol_frac (matid, vf)
 
     use matl_module, only: gather_vof
-    use parameter_module, only: ncells
-    use mesh_interop, only: pcell_ds_to_t
-    use parallel_permutations, only: rearrange
+    use legacy_mesh_api, only: ncells
 
     integer, intent(in) :: matid(:)
     real(r8), intent(out) :: vf(:)
@@ -676,7 +671,7 @@ contains
         vf1 = vf1 + vf2
       end do
     end if
-    call rearrange (pcell_ds_to_t, vf, vf1)
+    vf = vf1(:this%mesh%ncell_onP)
 
   end subroutine get_vol_frac
 

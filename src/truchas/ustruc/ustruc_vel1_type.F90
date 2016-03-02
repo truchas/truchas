@@ -57,11 +57,13 @@ module ustruc_vel1_type
     procedure :: deserialize
   end type ustruc_vel1
 
+#ifndef INTEL_COMPILER_WORKAROUND
   !! Number of bytes (per cell) of internal state for serialization/deserialization
   type(ustruc_vel1), allocatable :: dummy  ! only use is in the following parameter declaration
   integer, parameter :: NBYTES = storage_size(dummy%core%speed)/8 + &
                                3*storage_size(dummy%core%velocity)/8 + &
                                  storage_size(dummy%core%invalid_velocity)/8
+#endif
 
 contains
 
@@ -214,6 +216,12 @@ contains
     integer(int8), allocatable, intent(out) :: array(:,:)
 
     integer :: j, offset
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%core%speed)/8 + &
+           3*storage_size(this%core%velocity)/8 + &
+             storage_size(this%core%invalid_velocity)/8
+#endif
 
     if (cid == USTRUC_VEL1_ID) then
       allocate(array(NBYTES,this%n))
@@ -239,6 +247,12 @@ contains
     integer(int8), intent(in) :: array(:,:)
 
     integer :: j, offset
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%core%speed)/8 + &
+           3*storage_size(this%core%velocity)/8 + &
+             storage_size(this%core%invalid_velocity)/8
+#endif
 
     if (cid == USTRUC_VEL1_ID) then
       INSIST(size(array,1) == NBYTES)

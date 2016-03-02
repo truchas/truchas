@@ -120,6 +120,7 @@ module ustruc_gv1_type
   integer, parameter :: STATE_MUSHY     = 3
   integer, parameter :: STATE_SOLID     = 4
   
+#ifndef INTEL_COMPILER_WORKAROUND
   !! Number of bytes (per cell) of internal state for serialization/deserialization
   type(ustruc_gv1), allocatable :: dummy  ! only use is in the following parameter declaration
   integer, parameter :: NBYTES = storage_size(dummy%ustruc_state%G)/8 + &
@@ -130,6 +131,7 @@ module ustruc_gv1_type
                                  storage_size(dummy%ustruc_state%ustruc)/8 + &
                                  storage_size(dummy%state)/8 + &
                                  storage_size(dummy%dt)/8
+#endif
 
 contains
 
@@ -531,6 +533,17 @@ contains
     integer(int8), allocatable, intent(out) :: array(:,:)
 
     integer :: j, offset
+#idef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%ustruc_state%G)/8 + &
+             storage_size(this%ustruc_state%V)/8 + &
+             storage_size(this%ustruc_state%sfrac)/8 +  &
+             storage_size(this%ustruc_state%lambda1)/8 + &
+             storage_size(this%ustruc_state%lambda2)/8 + &
+             storage_size(this%ustruc_state%ustruc)/8 + &
+             storage_size(this%state)/8 + &
+             storage_size(this%dt)/8
+#endif
 
     if (cid == USTRUC_GV1_ID) then
       allocate(array(NBYTES,this%n))
@@ -561,6 +574,17 @@ contains
     integer(int8), intent(in) :: array(:,:)
 
     integer :: j, offset
+#idef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%ustruc_state%G)/8 + &
+             storage_size(this%ustruc_state%V)/8 + &
+             storage_size(this%ustruc_state%sfrac)/8 +  &
+             storage_size(this%ustruc_state%lambda1)/8 + &
+             storage_size(this%ustruc_state%lambda2)/8 + &
+             storage_size(this%ustruc_state%ustruc)/8 + &
+             storage_size(this%state)/8 + &
+             storage_size(this%dt)/8
+#endif
 
     if (cid == USTRUC_GV1_ID) then
       INSIST(size(array,1) == NBYTES)
