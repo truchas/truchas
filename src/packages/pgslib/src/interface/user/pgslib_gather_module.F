@@ -39,7 +39,7 @@ CONTAINS
 #define _INCLUDE_FILE_ "gather.fpp"
 #define _OP_ 
 #define _OP_NAME_       Gather
-#define _GEN_OP_ID_(op_null) op_null
+#define _GEN_OP_ID_(data_type,op_null) op_null
 #define _DST_DIMENSION_ _FAT_DIM_
 #define _SRC_DIMENSION_ _NARROW_DIM_
 #include "arithmetic_gath-scatt.fpp"

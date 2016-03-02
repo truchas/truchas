@@ -44,8 +44,7 @@ CONTAINS
     !      the PE number of this process, and the I/O PE
     !=======================================================================
     use cutoffs_module,   only: alittle
-    use parameter_module, only: ncells, nfc
-    use mesh_module,      only: Cell
+    use legacy_mesh_api,  only: ncells, nfc, Cell
 
     ! Arguments
     real(r8), dimension(ncells),     intent(IN)  :: Extrapolated_Value

@@ -10,7 +10,6 @@ subdivision of the hex cells.
 
 &MESH
   mesh_file = 'em-qcyl-hex-void.gen'
-  mesh_file_format = 'ExodusII'
   coordinate_scale_factor = 0.01
 /
 

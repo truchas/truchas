@@ -25,7 +25,7 @@ class PorousDrag(TruchasTest.GoldenTestCase):
   def test_velocity(self):
     '''Verify velocity field'''
 
-    n = 113
+    n = 114
     fail = 0
 
     test = self.get_test_field('Z_VC',cycle=n)
@@ -39,7 +39,7 @@ class PorousDrag(TruchasTest.GoldenTestCase):
     else:
       print 'x-velocity: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
-    tol = 5.0e-10
+    tol = 5.0e-9
     for k in [1,2]:
       error = max(abs(test[:,k]))
       if (error > tol):
@@ -54,8 +54,8 @@ class PorousDrag(TruchasTest.GoldenTestCase):
   def test_pressure(self):
     '''Verify pressure field'''
 
-    n = 113
-    tol = 5.0e-7
+    n = 114
+    tol = 5.0e-6
 
     # The centroids function doesn't serialize, so we don't want to here either.
     test = self.get_test_field('Z_P',cycle=n,serialize=False)

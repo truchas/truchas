@@ -55,8 +55,7 @@ CONTAINS
     use fluid_data_module,      only: fluidRho, Solid_Face, isPureImmobile, &
                                       MinFaceFraction, MinFluidRho
     use kinds, only: r8
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell
     use projection_data_module, only: Coeff, Vol_over_RhoCsqDt
     use time_step_module,       only: dt
     use timing_tree

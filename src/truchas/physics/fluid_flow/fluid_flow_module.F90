@@ -60,7 +60,7 @@ CONTAINS
     use fluid_data_module,      only: fluid_flow, fluidRho, Solid_Face, &
                                       isPureImmobile, fluidDeltaRho,      &
                                       fluid_to_move, Fluxing_Velocity
-    use parameter_module,       only: ncells, nfc, ndim
+    use legacy_mesh_api,        only: ncells, nfc, ndim
     use predictor_module,       only: PREDICTOR
     use projection_data_module, only: Face_Density, mac_projection_iterations, &
                                       prelim_projection_iterations
@@ -154,7 +154,7 @@ CONTAINS
     !
     !======================================================================
     use fluid_data_module,      only: fluid_flow, Solid_Face, isPureImmobile, fluidDeltaRho
-    use parameter_module,       only: ncells, nfc
+    use legacy_mesh_api,        only: ncells, nfc
     use projection_data_module, only: Face_Density
     use property_module,        only: FLUID_PROPERTIES
     use overwrite_module,       only: PRESCRIBE_VELOCITY

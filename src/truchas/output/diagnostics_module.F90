@@ -74,10 +74,10 @@ CONTAINS
   ! Author(s): Sharen Cummins (scummins@lanl.gov)
   !=======================================================================
 
-    use mesh_module,       only: Cell, Vertex, UnPermute_Mesh_Vector, UnPermute_Vertex_Vector
+    use legacy_mesh_api,   only: ndim, Cell, Vertex, UnPermute_Mesh_Vector, UnPermute_Vertex_Vector
     use PGSLIB_module,     only: pgslib_global_sum
     use probe_module,      only: probes
-    use parameter_module,  only: nprobes, ndim
+    use parameter_module,  only: nprobes
 
     ! Local variables.
     integer :: i, j, icell, inode, cellindex, nodeindex
@@ -151,8 +151,8 @@ CONTAINS
                                       get_sm_node_gap,                    &
                                       get_sm_node_norm_trac
     use probe_module,           only: probes
-    use parameter_module,       only: string_len, ncells, ndim, nmat, nprobes, &
-                                      nnodes, ncomps
+    use parameter_module,       only: string_len, nmat, nprobes, ncomps
+    use legacy_mesh_api,        only: ncells, ndim, nnodes
 
     ! Local variables.
     integer :: i, j, k, n, m, count, theindex, vfieldsize, tfieldsize
@@ -384,8 +384,7 @@ CONTAINS
     !=======================================================================
     use fluid_data_module, only: fluidRho
     use fluid_data_module, only: Fluxing_Velocity
-    use mesh_module,       only: Cell 
-    use parameter_module,  only: nfc, ncells
+    use legacy_mesh_api,   only: nfc, ncells, Cell 
     use time_step_module,  only: dt
 
     ! Arguments
@@ -423,8 +422,7 @@ CONTAINS
     !
     !=======================================================================
 
-    use mesh_module,          only: Cell
-    use parameter_module,     only: ndim, ncells
+    use legacy_mesh_api,      only: ndim, ncells, Cell
     use PGSLIB_module,        only: PGSLib_Global_SUM, pgslib_global_minval
 
     ! Argument List
@@ -478,8 +476,7 @@ CONTAINS
     !
     !=======================================================================
 
-    use mesh_module,          only: Vertex
-    use parameter_module,     only: ndim, nnodes
+    use legacy_mesh_api,      only: ndim, nnodes, Vertex
     use PGSLIB_module,        only: PGSLib_Global_SUM, pgslib_global_minval
 
     ! Argument List
@@ -533,7 +530,8 @@ CONTAINS
     !=======================================================================
 
     use PGSLIB_module,    only: pgslib_global_sum
-    use parameter_module, only: ndim, string_len 
+    use parameter_module, only: string_len 
+    use legacy_mesh_api,  only: ndim
 
     ! Argument List
 

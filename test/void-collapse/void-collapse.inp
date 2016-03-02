@@ -4,10 +4,7 @@
          
 &MESH
  
-       Ncell = 10, 1, 1, 
-       Coord = 3*0.0, 1.0, 0.1, 0.1,
-       Ratio = 1.0, 1.0, 1.0 
-       Fuzz  = 3*0.0,
+       Mesh_File = 'mesh.exo'
  
 /
  

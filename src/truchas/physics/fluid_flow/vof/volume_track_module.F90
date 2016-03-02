@@ -52,14 +52,13 @@ CONTAINS
     use cutoffs_module,            only: cutvof, alittle
     use fluid_data_module,         only: FluidRho
     use flux_volume_module,        only: FLUX_VOL_QUANTITY, FLUX_VOL_VERTICES
-    use gs_module,                 only: EN_GATHER
     use interface_module,          only: Int_Geom, Int_Flux, SETUP_INTERFACE_GEOM, &
                                          SETUP_INTERFACE_FLUX
     use interface_output_module,   only: INTERFACE_OUTPUT, time_for_int_dump
     use interface_triangle_module, only: INTERFACE_TRIANGLES
     use locate_plane_module,       only: LOCATE_PLANE
-    use mesh_module,               only: Cell, Vertex
-    use parameter_module,          only: ncells, nicells, ndim, nmat, nfc, nvc
+    use legacy_mesh_api,           only: ncells, ndim, nfc, nvc, Cell, Vertex, EN_GATHER
+    use parameter_module,          only: nicells, nmat
     use pgslib_module,             only: PGSLib_Global_MAXVAL
     use property_data_module,      only: Matpri
     use timing_tree
@@ -351,7 +350,8 @@ CONTAINS
     use discrete_op_module,   only: GRADIENT
     use interface_module,     only: interface_topology_model
     use mollify,              only: MOLLIFY_CONV_SAVEMEM
-    use parameter_module,     only: ncells, nmat, ndim
+    use parameter_module,     only: nmat
+    use legacy_mesh_api,      only: ncells, ndim
     use property_data_module, only: Matpri
     use vof_data_module,      only: interface_geometry
  

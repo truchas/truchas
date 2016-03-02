@@ -23,7 +23,7 @@ Module BC_Pressure_Init
   !-----------------------------------------------------------------------------
   use bc_data_types
   use bc_initialize
-  use parameter_module
+  use legacy_mesh_api, only: ndim, ncells, nfc
   use kinds, only: r8
   use truchas_logging_services
   implicit none
@@ -146,7 +146,7 @@ CONTAINS
     !
     !-----------------------------------------------------------------------------
     use bc_module,            only: BC_P_REFLECTIVE, DIRICHLET, BC, Prs, BC_Prs
-    use mesh_module,          only: Cell, Mesh
+    use legacy_mesh_api,      only: Cell, Mesh
 
     ! Arguments
     type(BC_Region), intent(INOUT) :: Region

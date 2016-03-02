@@ -47,8 +47,7 @@ data by Martin & Moyce for this regression test.
 
 
 &MESH
-  Ncell = 50, 42, 1
-  Coord = 3*0.0, 0.142875, 0.120015, 0.005715
+  mesh_file = 'mesh.exo'
 /
 
 &OUTPUTS

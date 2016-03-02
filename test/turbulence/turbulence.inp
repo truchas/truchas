@@ -30,10 +30,7 @@ velocity, but there is no satisfactory way to check the velocity profile.
 
 &MESH
 
-    Ncell             = 2, 11, 1
-    Coord             = 3*0.0, 5.0, 1.0, 1.0
-    Fuzz              = 3*0.0
-    Ratio             = 1.0, 1.0, 1.0
+    Mesh_File = 'mesh.exo'
 
 /
 

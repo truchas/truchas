@@ -7,7 +7,6 @@ MATL and the material mesh function used by the diffusion solver.
 
 &MESH
   mesh_file = 'ds11-gaps.g'
-  mesh_file_format = 'ExodusII'
   gap_element_blocks = 10   ! gap elements were inserted by add gaps along sideset 10
 /
 
@@ -15,7 +14,6 @@ An alternative that doesn't use gap elements.
 Should give the same results
 #&MESH
   mesh_file = 'ds11.g'
-  mesh_file_format = 'ExodusII'
   interface_side_sets = 10
 /
 

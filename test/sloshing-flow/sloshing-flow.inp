@@ -1,6 +1,5 @@
 &MESH
   mesh_file = 'disk+mold.g'
-  mesh_file_format = 'ExodusII'
   coordinate_scale_factor = 0.01
 /
 

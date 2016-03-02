@@ -42,7 +42,7 @@ MODULE TRUNCATE_VOLUME_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: ndim, nvf
+  use legacy_mesh_api, only: ndim, nvf
   implicit none
   private
 
@@ -242,7 +242,8 @@ CONTAINS
     !   Compute the truncation volume.
     !
     !=======================================================================
-    use parameter_module, only: nfc, nicells
+    use parameter_module, only: nicells
+    use legacy_mesh_api, only: nfc
     use vof_data_module,  only: Cases, count_cases
 
     ! Arguments
@@ -279,7 +280,8 @@ CONTAINS
     !
     !=======================================================================
     use interface_module, only: Int_Geom
-    use parameter_module, only: nfc, nicells
+    use parameter_module, only: nicells
+    use legacy_mesh_api,  only: nfc
     use vof_data_module,  only: Cases, count_cases
 
     ! Arguments

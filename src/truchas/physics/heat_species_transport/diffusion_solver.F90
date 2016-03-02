@@ -19,7 +19,6 @@ module diffusion_solver
   use kinds
   use diffusion_solver_data
   use mesh_manager
-  use parallel_permutations
   use parallel_communication
   use truchas_logging_services
   use mfd_disc_type
@@ -206,19 +205,22 @@ contains
     
     subroutine update_adv_heat
 
-      use parameter_module,   only: ncells
+      use legacy_mesh_api, only: ncells
       use advection_module,   only: compute_advected_enthalpy
       use EM_data_proxy,      only: joule_power_density
       use index_partitioning, only: gather_boundary
 
-      real(r8), allocatable :: q_ds(:), dQ_t(:), dQ_ds(:), T_t(:)
+      real(r8), allocatable :: q_t(:), q_ds(:), dQ_t(:), dQ_ds(:), T_t(:)
       
       if (this%have_joule_heat .or. (this%have_fluid_flow .and. this%solver_type /= SOLVER2)) then
         allocate(q_ds(this%mesh%ncell))
         !! Joule heat source.
         if (this%have_joule_heat) then
-          call rearrange (pcell_ds_to_t, dest=q_ds(:this%mesh%ncell_onP), src=joule_power_density())
+          allocate(q_t(ncells))
+          q_t = joule_power_density()
+          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
           call gather_boundary (this%mesh%cell_ip, q_ds)
+          deallocate(q_t)
         else
           q_ds = 0.0_r8
         end if
@@ -229,7 +231,7 @@ contains
           call compute_advected_enthalpy (T_t, dQ_t)
           deallocate(T_t)
           allocate(dQ_ds(this%mesh%ncell))
-          call rearrange (pcell_ds_to_t, dest=dQ_ds(:this%mesh%ncell_onP), src=dQ_t)
+          dQ_ds(:this%mesh%ncell_onP) = dQ_t(:this%mesh%ncell_onP)
           call gather_boundary (this%mesh%cell_ip, dQ_ds)
           q_ds = q_ds + (dQ_ds / (h * this%mesh%volume))
           deallocate(dQ_ds, dQ_t)
@@ -242,7 +244,7 @@ contains
     
     subroutine update_adv_conc
 
-      use parameter_module,   only: ncells
+      use legacy_mesh_api, only: ncells
       use advection_module,   only: advected_phi
       use index_partitioning, only: gather_boundary
 
@@ -254,7 +256,7 @@ contains
         do i = 1, num_species
           call ds_get_phi (i, phi_t)
           call advected_phi(phi_t, q_t)    ! species deltas for the time step
-          call reorder (pcell_ds_to_t, dest=q_ds(:this%mesh%ncell_onP), src=q_t)
+          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
           call gather_boundary (this%mesh%cell_ip, q_ds)
           q_ds = q_ds / (h * this%mesh%volume) ! convert to a rate density
           call smf_set_extra_source (this%sd_source(i), q_ds)
@@ -267,76 +269,64 @@ contains
   end subroutine ds_step
   
   subroutine ds_get_temp (array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:)
-    real(r8), pointer :: tcell(:)
     ASSERT(this%have_heat_transfer)
     ASSERT(size(array) == ncells)
     select case (this%solver_type)
     case (SOLVER1)
-      call HTSD_solver_get_cell_temp_view (this%sol1, tcell)
+      call HTSD_solver_get_cell_temp_copy (this%sol1, array)
     case (SOLVER2)
-      call FHT_solver_get_cell_temp_view (this%sol2, tcell)
+      call FHT_solver_get_cell_temp_copy (this%sol2, array)
     case default
       INSIST(.false.)
     end select
-    call rearrange (pcell_t_to_ds, dest=array, src=tcell)
   end subroutine
 
   subroutine ds_get_enthalpy (array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:)
-    real(r8), pointer :: hcell(:)
     ASSERT(this%have_heat_transfer)
     ASSERT(size(array) == ncells)
     select case (this%solver_type)
     case (SOLVER1)
-      call HTSD_solver_get_cell_heat_view (this%sol1, hcell)
+      call HTSD_solver_get_cell_heat_copy (this%sol1, array)
     case (SOLVER2)
-      call FHT_solver_get_cell_heat_view (this%sol2, hcell)
+      call FHT_solver_get_cell_heat_copy (this%sol2, array)
     case default
       INSIST(.false.)
     end select
-    call rearrange (pcell_t_to_ds, dest=array, src=hcell)
   end subroutine
 
   subroutine ds_get_phi (n, array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     integer,  intent(in)  :: n
     real(r8), intent(inout) :: array(:)
-    real(r8), pointer :: phi(:)
     ASSERT(this%have_species_diffusion)
     ASSERT(size(array) == ncells)
     select case (this%solver_type)
     case (SOLVER1)
-      call HTSD_solver_get_cell_conc_view (this%sol1, n, phi)
+      call HTSD_solver_get_cell_conc_copy (this%sol1, n, array)
     case default
       INSIST(.false.)
     end select
-    call rearrange (pcell_t_to_ds, dest=array, src=phi)
   end subroutine ds_get_phi
 
   subroutine ds_get_temp_grad (array)
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:,:)
-    real(r8), pointer :: tgrad(:,:)
     ASSERT(size(array,dim=2) == ncells)
     ASSERT(size(array,dim=1) == 3)
     ASSERT(this%have_heat_transfer)
-    allocate(tgrad(3,this%mesh%ncell_onP))
     select case (this%solver_type)
     case (SOLVER1)
-      call HTSD_solver_get_cell_temp_grad (this%sol1, tgrad)
+      call HTSD_solver_get_cell_temp_grad (this%sol1, array(:,:this%mesh%ncell_onP))
     case (SOLVER2)
-      call FHT_solver_get_cell_temp_grad (this%sol2, tgrad)
+      call FHT_solver_get_cell_temp_grad (this%sol2, array(:,:this%mesh%ncell_onP))
     case default
       INSIST(.false.)
     end select
-    call rearrange (pcell_t_to_ds, dest=array(1,:), src=tgrad(1,:))
-    call rearrange (pcell_t_to_ds, dest=array(2,:), src=tgrad(2,:))
-    call rearrange (pcell_t_to_ds, dest=array(3,:), src=tgrad(3,:))
-    deallocate(tgrad)
-    array(:,t_gap_elements) = 0.0_r8
+    array(:,this%mesh%ncell_onP+1:) = 0.0_r8  ! gap elements
   end subroutine ds_get_temp_grad
   
   !! Get reference to the current cell temperatures on the new distributed mesh.
@@ -391,7 +381,6 @@ contains
     !! Common initialization.
     this%mesh => unstr_mesh_ptr(mesh_name)
     INSIST(associated(this%mesh))
-    call generate_mesh_mappings (this%mesh)
     
     allocate(this%disc)
     call this%disc%init (this%mesh, use_new_mfd)
@@ -497,26 +486,23 @@ contains
       deallocate(this%mmf)
     end if
     if (associated(this%disc)) deallocate(this%disc)
-    call delete_mesh_mappings
     this%mesh => null()
   end subroutine ds_delete
   
   subroutine ds_set_initial_state (t, dt, temp, conc)
   
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
 
     real(r8), intent(in) :: t, dt
-    real(r8), intent(in), optional :: temp(:), conc(:,:)
+    real(r8), intent(in), optional, target :: temp(:), conc(:,:)
     
-    integer :: n
     real(r8), pointer :: temp_ds(:) => null(), conc_ds(:,:) => null()
-    
+
     !! Permute the cell temperature array to the DS ordering.
     if (this%have_heat_transfer) then
       ASSERT(present(temp))
       ASSERT(size(temp) == ncells)
-      allocate(temp_ds(this%mesh%ncell_onP))
-      call rearrange (pcell_ds_to_t, dest=temp_ds, src=temp)
+      temp_ds => temp(:this%mesh%ncell_onP)
     end if
     
     !! Permute the cell concentration array to the DS ordering.
@@ -524,10 +510,7 @@ contains
       INSIST(present(conc))
       ASSERT(size(conc,dim=1) == ncells)
       ASSERT(size(conc,dim=2) == num_species)
-      allocate(conc_ds(this%mesh%ncell_onP,num_species))
-      do n = 1, num_species
-        call rearrange (pcell_ds_to_t, dest=conc_ds(:,n), src=conc(:,n))
-      end do
+      conc_ds => conc(:this%mesh%ncell_onP,:)
     end if
     
     !! Set the initial state in the appropriate solver.
@@ -540,9 +523,6 @@ contains
       INSIST(.false.)
     end select
     
-    if (associated(temp_ds)) deallocate(temp_ds)
-    if (associated(conc_ds)) deallocate(conc_ds)
-
   end subroutine ds_set_initial_state
 
   !! The effect of calling this subroutine is to restart or reset the solver so

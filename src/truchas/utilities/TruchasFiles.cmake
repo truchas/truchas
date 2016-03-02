@@ -9,14 +9,12 @@ set(UTIL_SOURCE_FILES)
 
 
 set(UTIL_FILES
-         utilities/ArrayAllocate_Module.F90
          utilities/f90_assert.F90
          utilities/file_utility.F90
          utilities/graph_type.F90
          utilities/input_utilities.F90
          utilities/integer_set_type.F90
          utilities/kinds.F90
-         utilities/linear_module.F90
          utilities/lnorm_module.F90
          utilities/lu_solve_module.F90
          utilities/old_mesh_gmv.F90

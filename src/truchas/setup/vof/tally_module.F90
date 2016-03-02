@@ -65,9 +65,9 @@ CONTAINS
 
       use cutoffs_module,       only: cutvof
       use interfaces_module,    only: int_particles, nbody, vof_particles
-      use gs_module,            only: EN_MIN_GATHER, EN_MIN_SCATTER, EN_OR_GATHER, EN_OR_SCATTER
-      use mesh_module,          only: Cell
-      use parameter_module,     only: nicells, nicells_tot, nnodes, ncells, ndim
+      use legacy_mesh_api,      only: nnodes, ncells, ndim, Cell
+      use legacy_mesh_api,      only: EN_MIN_GATHER, EN_MIN_SCATTER, EN_OR_GATHER, EN_OR_SCATTER
+      use parameter_module,     only: nicells, nicells_tot
       use pgslib_module,        only: PGSLib_GLOBAL_SUM
 
       ! return value
@@ -227,7 +227,8 @@ CONTAINS
     use constants_module,  only: pi
     use interfaces_module, only: Ar, Cosa, Isrftype, nbody, Nsurf, &
                                  Offset, Rotangl, Sina, Sgeom
-    use parameter_module,  only: ndim, nrot
+    use parameter_module,  only: nrot
+    use legacy_mesh_api,   only: ndim
 
     ! Local Variables
     integer :: ib, is, n, n1, n2, na
@@ -342,7 +343,7 @@ CONTAINS
     !   vertices Xv
     !
     !=======================================================================
-    use parameter_module, only: ndim, nvc, nfc, nec
+    use legacy_mesh_api,  only: ndim, nvc, nfc, nec
     use pgslib_module,    only: PGSLib_GLOBAL_ANY
 
     ! Arguments
@@ -454,7 +455,7 @@ CONTAINS
     !
     !=======================================================================
     use interfaces_module, only: Rtab, Ztab
-    use parameter_module,  only: ncells
+    use legacy_mesh_api, only: ncells
 
     ! Arguments
     integer, intent(IN)  :: vertices
@@ -557,7 +558,7 @@ CONTAINS
     !   Compute particle subvolumes
     !
     !=======================================================================
-    use parameter_module, only: ndim, nvc
+    use legacy_mesh_api, only: ndim, nvc
 
     ! Arguments
     integer, intent(IN)    :: i
@@ -655,9 +656,9 @@ CONTAINS
     use interfaces_module,    only: Ar, Cosa, Isrftype, nbody, Nsurf, Offset, &
                                     Rotangl, Rotpt, Rtab, Sgeom, Sina,        &
                                     vof_particles, Ztab, Mesh_Matnum
-    use gs_module,            only: EN_GATHER
-    use mesh_module,          only: Cell, Vertex, Vrtx_Bdy, Mesh, mesh_has_cblockid_data
-    use parameter_module,     only: ndim, ncells, nvc, nrot, string_len
+    use legacy_mesh_api,      only: ndim, ncells, nvc
+    use legacy_mesh_api,      only: Cell, Mesh, mesh_has_cblockid_data, gather_vertex_coord
+    use parameter_module,     only: nrot, string_len
     use random_module,        only: GENERATE_RANDOM
     use utilities_module,     only: TIMESTAMP
 
@@ -683,9 +684,7 @@ CONTAINS
     total_particles = vof_particles**ndim
 
     ! Gather the cell vertices
-    do n = 1,ndim
-       call EN_GATHER (X_v(n,:,:), Vertex%Coord(n), BOUNDARY=Vrtx_Bdy(n)%Data)
-    end do
+    call gather_vertex_coord (X_v)
 
     ! Initialize relevant quantities
     Hits_Vol = 0.0_r8
@@ -1073,9 +1072,9 @@ CONTAINS
     use interfaces_module,    only: Ar, Cosa, Isrftype, nbody, Nsurf, Offset, &
                                     Rotangl, Rotpt, Rtab, Sgeom, Sina,        &
                                     vof_particles, Ztab, Mesh_Matnum
-    use gs_module,            only: EN_GATHER
-    use mesh_module,          only: Cell, Vertex, Mesh, mesh_has_cblockid_data
-    use parameter_module,     only: ndim, nicells, ncells, nvc, nrot, string_len
+    use legacy_mesh_api,      only: ndim, ncells, nvc, EN_GATHER
+    use legacy_mesh_api,      only: Cell, Vertex, Mesh, mesh_has_cblockid_data
+    use parameter_module,     only: nicells, nrot, string_len
     use PGSlib_module,        only: PGSlib_GLOBAL_SUM
     use utilities_module,     only: TIMESTAMP
 

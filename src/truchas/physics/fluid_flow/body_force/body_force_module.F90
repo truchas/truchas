@@ -27,7 +27,7 @@ MODULE BODY_FORCE_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: ndim
+  use legacy_mesh_api, only: ndim
   use truchas_logging_services
   implicit none
   private
@@ -48,7 +48,7 @@ CONTAINS
     use body_data_module,  only: Body_Force, body_force_implicitness
     use fluid_data_module, only: fluidRho, fluidDeltaRho, &
                                  fluidvof, avgRho, avgRho_n
-    use parameter_module,  only: ncells
+    use legacy_mesh_api,   only: ncells
 
     ! Argument List
     real(r8), intent(IN) :: dt
@@ -89,9 +89,7 @@ CONTAINS
     !=======================================================================
     use body_data_module,  only: Body_Force
     use fluid_data_module, only: fluidRho, fluidDeltaRho, fluidvof, Rho_Face
-    use gs_module,         only: EE_GATHER
-    use mesh_module,       only: Cell, Mesh, DEGENERATE_FACE
-    use parameter_module,  only: nfc, ncells
+    use legacy_mesh_api,   only: nfc, ncells, Cell, Mesh, DEGENERATE_FACE, EE_GATHER
 
     ! Argument List
     real(r8), intent(IN) :: dt
@@ -188,10 +186,8 @@ CONTAINS
   SUBROUTINE COMPUTE_GRAVITYHEAD()
 
     use fluid_data_module,      only: fluiddeltarho, fluidRho, fluidVof
-    use mesh_module,            only: Cell, Mesh
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell, Mesh, EE_GATHER
     use projection_data_module, only: Boundary_Flag, dirichlet_pressure, ghc, ghn
-    use gs_module,              only: EE_GATHER
     use body_data_module,       only: body_force
 
     ! Local Variables
@@ -259,10 +255,8 @@ CONTAINS
   SUBROUTINE gravity_limiter(gravity_off)
 
     use input_utilities,        only: NULL_R
-    use mesh_module,            only: Cell
-    use parameter_module,       only: ncells, ndim, nfc
+    use legacy_mesh_api,        only: ncells, ndim, nfc, Cell, EE_GATHER
     use zone_module,            only: Zone
-    use gs_module,              only: EE_GATHER
     use body_data_module,       only: body_force, mechanical_energy_bound
 
     ! Argument List

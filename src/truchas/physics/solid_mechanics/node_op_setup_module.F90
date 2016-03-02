@@ -43,8 +43,7 @@ CONTAINS
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
     use node_operator_module,     only: CV_Internal, Nodal_Volume, nipc
-    !use parameter_module,         only: ndim, ncells, nnodes
-    use parameter_module,         only: ncells, nnodes
+    use legacy_mesh_api,          only: ncells, nnodes
     use solid_mechanics_mesh,     only: ndim
     use solid_mechanics_input,    only: stress_reduced_integration
 
@@ -91,9 +90,7 @@ CONTAINS
     use node_operator_module,     only: nipbf, CV_Boundary, nbface, nbnode
     use bc_data_types
     use mech_bc_data_module
-    use gs_module,                only: EN_OR_Scatter, EN_MAX_Scatter
-    !use parameter_module,         only: ndim, nvc, ncells, nnodes
-    use parameter_module,         only: ncells, nnodes
+    use legacy_mesh_api,          only: ncells, nnodes, EN_OR_Scatter, EN_MAX_Scatter
     use solid_mechanics_mesh,     only: ndim, nvc
     use var_vector_module
 
@@ -347,16 +344,11 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use mesh_module,           only: Vertex, Vrtx_Bdy, Mesh, CELL_TET,&
-         CELL_PYRAMID, CELL_PRISM, CELL_EDGE, &
-         GAP_ELEMENT_1
-    !use parameter_module,     only: ndim, nvc, nec, nvf, ncells
-    use parameter_module,      only: ncells
+    use legacy_mesh_api, only: ncells, Mesh, gather_vertex_coord, EN_SUM_Scatter
+    use legacy_mesh_api, only: CELL_TET, CELL_PYRAMID, CELL_PRISM, CELL_EDGE, GAP_ELEMENT_1
     use cutoffs_module,        only: alittle
-    use linear_module,         only: LINEAR_PROP, LINEAR_GRAD
     use lu_solve_module,       only: LU_SOLVE, factsolve, backsolve
-    use gs_module,             only: EN_GATHER, EN_SUM_Scatter
-    use node_operator_module,  only: CV_Internal, nipc, Nodal_Volume
+    use node_operator_module,  only: CV_Internal, nipc, Nodal_Volume, LINEAR_PROP, LINEAR_GRAD
     use solid_mechanics_input, only: stress_reduced_integration
     use solid_mechanics_mesh,  only: ndim, nvc, nec, nvf
 
@@ -424,9 +416,7 @@ CONTAINS
        if (status /= 0) call TLS_panic ( 'CELL_CV_FACES: allocation error: jac')
     end if
     ! Gather vertex coordinates
-    do i = 1,ndim
-       call EN_GATHER (Xv(i,:,:), Vertex%Coord(i), BOUNDARY=Vrtx_Bdy(i)%Data)
-    end do
+    call gather_vertex_coord (Xv)
     ! Get logical centroid
     call CELL_LOGICAL_CENTROID(Xv,cell_cen_l)
     ! write(*,*) ' Cell logical centroid', cell_cen_l(1),cell_cen_l(2),cell_cen_l(3)
@@ -623,11 +613,8 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use mesh_module,          only: Cell, Vertex, Vrtx_Bdy
-    !use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes
-    use parameter_module,     only: ncells, nnodes
+    use legacy_mesh_api,      only: Cell, ncells, nnodes, gather_vertex_coord
     use cutoffs_module,       only: alittle
-    use gs_module,            only: EN_GATHER
     use pgslib_module,        only: PGSLib_GLOBAL_ANY
     use node_operator_module, only: CV_Boundary, nbnode, nbface
     use solid_mechanics_mesh, only: ndim, nvc, nvf
@@ -660,9 +647,7 @@ CONTAINS
     if (status /= 0) call TLS_panic ('BOUNDARY_CV_FACE: allocation error: Xv')
     !
     ! Gather vertex coordinates
-    do i = 1,ndim
-       call EN_GATHER (Xv(i,:,:), Vertex%Coord(i), BOUNDARY=Vrtx_Bdy(i)%Data)
-    end do
+    call gather_vertex_coord (Xv)
 
     ! Get node numbers for the node BC structure
     nodecount = 0
@@ -793,7 +778,7 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use mesh_module,          only: Cell
+    use legacy_mesh_api, only: Cell
     
     !Arguments
     ! Inputs
@@ -1026,7 +1011,6 @@ CONTAINS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    !use parameter_module,     only: ndim
     use solid_mechanics_mesh,     only: ndim
 
     !Arguments
@@ -1268,11 +1252,10 @@ CONTAINS
     !=============================================================================
     use node_operator_module, only: CV_Boundary
     use mech_bc_data_module
-    use gs_module,            only: EN_SUM_SCATTER, NN_Gather_BoundaryData
+    use legacy_mesh_api,      only: ncells, nnodes, Cell, Mesh, GAP_ELEMENT_1
+    use legacy_mesh_api,      only: EN_SUM_SCATTER, NN_Gather_BoundaryData
+    use legacy_mesh_api,      only: Vertex, Vertex_Ngbr_All
     use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_Global_MAXVAL
-    !use parameter_module,     only: ndim, nvc, nvf, ncells, nnodes, nfc
-    use parameter_module,     only: ncells, nnodes
-    use mesh_module,          only: Vertex, Vertex_Ngbr_All, Mesh, GAP_ELEMENT_1, Cell
     use solid_mechanics_mesh, only: ndim, nvc, nvf, nfc
     use var_vector_module
 
@@ -1849,8 +1832,7 @@ CONTAINS
     !---------------------------------------------------------------------------------
     use mech_bc_data_module
     use bc_data_types
-    !use parameter_module,     only: ndim, nnodes
-    use parameter_module,     only: nnodes
+    use legacy_mesh_api,      only: nnodes
     use lu_solve_module,      only: LU_SOLVE, factsolve
     use solid_mechanics_mesh, only: ndim
 
@@ -2082,9 +2064,7 @@ CONTAINS
     !
     ! Author: David Korzekwa
     !---------------------------------------------------------------------------------
-    !use parameter_module,     only: ndim, nrot, ncells
-    use parameter_module,     only: ncells
-    use mesh_module,          only: Cell
+    use legacy_mesh_api, only: ncells, Cell
     use solid_mechanics_mesh, only: ndim, nrot
 
     ! Arguments

@@ -20,7 +20,7 @@ MODULE ZONE_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, Only: ndim
+  use legacy_mesh_api, only: ndim
   implicit none
   private
 
@@ -56,7 +56,7 @@ CONTAINS
     !   Collate a distributed zone into a single large zone on IO PE
     !==================================================================
     use parallel_info_module, only: p_info
-    use parameter_module,     only: ncells_tot, ncells
+    use legacy_mesh_api, only: ncells_tot, ncells
 
     ! Arguments
     type(CELL_AVG),          dimension(ncells), intent(IN) :: Zone
@@ -79,7 +79,6 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed zone into a single large zone on IO PE
     !==================================================================
-    use parameter_module,     only: ndim
     use pgslib_module,        only: PGSLib_COLLATE
 
     ! Arguments
@@ -126,8 +125,7 @@ CONTAINS
 
   subroutine read_zone_data (unit, version)
 
-    use parameter_module, only: ndim
-    use mesh_module, only: pcell => unpermute_mesh_vector
+    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_dist_array
 
     integer, intent(in) :: unit, version
@@ -190,7 +188,6 @@ CONTAINS
     ! Purpose(s):
     !   Permute zone according the Permuter vector, global version
     !==================================================================
-    use parameter_module, only: ndim
     use pgslib_module,    only: PGSLib_Permute,    &
                                 PGSLIB_Deallocate_Trace, &
                                 PGSLib_GS_Trace

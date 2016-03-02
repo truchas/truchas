@@ -19,7 +19,8 @@ MODULE PROPERTY_DATA_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: maxcon, maxmat, ndim
+  use parameter_module, only: maxcon, maxmat
+  use legacy_mesh_api, only: ndim
   implicit none
   public
 

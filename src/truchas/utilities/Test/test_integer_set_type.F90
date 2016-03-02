@@ -21,9 +21,12 @@ program test_integer_set_type
   integer :: stat = 0
 
   call test_add
+  call test_remove
   call test_to_array
   call test_copy_to_array
   call test_elemental
+  call test_add_set
+  call test_iterator
 
   call exit (stat)
 
@@ -55,6 +58,39 @@ contains
 
   end subroutine test_add
 
+  subroutine test_remove
+
+    type(integer_set) :: A
+
+    call A%add (1)
+    call A%add (2)
+    call A%add (3)
+    call A%add (4)
+    call A%add (5)
+
+    call A%remove (3)
+    if (A%size() /= 4) call write_fail ('test_remove: middle, wrong size')
+
+    call A%remove (3)
+    if (A%size() /= 4) call write_fail ('test_remove: absent middle, wrong size')
+
+    call A%remove (0)
+    if (A%size() /= 4) call write_fail ('test_remove: absent before, wrong size')
+
+    call A%remove (9)
+    if (A%size() /= 4) call write_fail ('test_remove: absent after, wrong size')
+
+    call A%remove (1)
+    if (A%size() /= 3) call write_fail ('test_remove: first, wrong size')
+
+    call A%remove (5)
+    if (A%size() /= 2) call write_fail ('test_remove: last, wrong size')
+
+    call A%remove (2)
+    call A%remove (4)
+    if (.not.A%is_empty()) call write_fail ('test_remove: not empty')
+
+  end subroutine test_remove
 
   subroutine test_to_array
 
@@ -109,8 +145,8 @@ contains
 
   subroutine test_elemental
 
-    type(integer_set) :: A(2)
-    integer, allocatable :: array(:)
+    type(integer_set) :: A(2), B(1)
+    integer, allocatable :: array(:), array2(:)
 
     if (any(.not.A%is_empty())) call write_fail ('test_elemental: not empty')
     call A%add (1)
@@ -125,7 +161,103 @@ contains
     array = A(2)
     if (any(array /= [1,3])) call write_fail ('test_elemental: wrong values set 2')
 
+    array2 = B(1)
+    if (size(array2) /= 0) call write_fail ('test_elemental: wrong size for array2')
+
   end subroutine test_elemental
+
+#ifdef INTEL_INTEGER_SET_ICE
+#define ADD_SET_ add_set
+#else
+#define ADD_SET_ add
+#endif
+
+  subroutine test_add_set
+
+    type(integer_set) :: a, b, c, d, e
+    integer, allocatable :: array(:)
+
+    call b%add (2)
+    call b%add (4)
+    call a%ADD_SET_ (b)
+    if (a%size() /= 2) then
+      call write_fail ('test_set_add_set: empty, wrong size')
+    else
+      array = a
+      if (any(array /= [2,4])) call write_fail ('test_set_add_set: empty, wrong values')
+    end if
+
+    call c%add (1)
+    call c%add (2)
+    call a%ADD_SET_ (c)
+    if (a%size() /= 3) then
+      call write_fail ('test_set_add_set: before, dupl, wrong size')
+    else
+      array = a
+      if (any(array /= [1,2,4])) call write_fail ('test_set_add_set: before, dupl, wrong values')
+    end if
+
+    call d%add (3)
+    call d%add (4)
+    call d%add (5)
+    call a%ADD_SET_ (d)
+    if (a%size() /= 5) then
+      call write_fail ('test_set_add_set: after, dupl, wrong size')
+    else
+      array = a
+      if (any(array /= [1,2,3,4,5])) call write_fail ('test_set_add_set: after, dupl, wrong values')
+    end if
+
+    call a%ADD_SET_(b)
+    if (a%size() /= 5) then
+      call write_fail ('test_set_add_set: all dupl, wrong size')
+    else
+      array = a
+      if (any(array /= [1,2,3,4,5])) call write_fail ('test_set_add_set: all dupl, wrong values')
+    end if
+
+    call a%ADD_SET_(e)
+    if (a%size() /= 5) then
+      call write_fail ('test_set_add_set: add empty, wrong size')
+    else
+      array = a
+      if (any(array /= [1,2,3,4,5])) call write_fail ('test_set_add_set: add empty, wrong values')
+    end if
+
+  end subroutine test_add_set
+
+
+  subroutine test_iterator
+
+    type(integer_set) :: A
+    type(integer_set_iterator) :: iter
+    integer, parameter :: m = 4
+    integer :: n, j
+    logical :: tag(m) = .false.
+
+    do j = 1, m
+      call A%add (j)
+    end do
+
+    iter = A%begin()
+    do j = 1, m
+      if (iter%at_end()) then
+        call write_fail ('test_iterator: iterator at end prematurely')
+        exit
+      end if
+      n = iter%value()
+      if (n < 1 .or. n > m) then
+        call write_fail ('test_iterator: invalid value')
+      else if (tag(n)) then
+        call write_fail ('test_iterator: element already visited')
+      else
+        tag(n) = .true.
+      end if
+      call iter%next
+    end do
+    if (.not.iter%at_end()) call write_fail ('test_iterator: iterator not at end')
+
+  end subroutine test_iterator
 
 
   subroutine write_fail (errmsg)

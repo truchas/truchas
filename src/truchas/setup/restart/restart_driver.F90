@@ -87,7 +87,7 @@ module restart_driver
   implicit none
   private
 
-  public :: open_restart_file, restart_mesh, restart_side_sets, restart_matlzone, &
+  public :: open_restart_file, skip_restart_mesh, skip_restart_side_sets, restart_matlzone, &
             restart_solid_mechanics, restart_species, restart_joule_heat, restart_ustruc, &
             close_restart_file
 
@@ -188,18 +188,22 @@ contains
   !! MESH_FACE_SET defined in BC_DATA_MODULE.
   !!
 
-  subroutine restart_mesh ()
-    use mesh_module, only: read_mesh_data
-    call read_mesh_data (unit, version)
-  end subroutine restart_mesh
+  subroutine skip_restart_mesh ()
+    use restart_utilities, only: read_var, skip_records
+    integer :: n
+    call skip_records (unit, 8, 'SKIP_RESTART_MESH: error skipping VERTEX records')
+    call read_var (unit, n, 'SKIP_RESTART_MESH: error reading NCBLOCK record')
+    if (n /= 0) call skip_records (unit, 1, 'SKIP_RESTART_MESH: error skipping CBLOCKID record')
+    call skip_records (unit, 3, 'SKIP_RESTART_MESH: error skipping COORD records')
+  end subroutine skip_restart_mesh
 
-  subroutine restart_side_sets ()
+  subroutine skip_restart_side_sets ()
     use bc_data_module, only: skip_side_set_data
     !! Starting with version 3, this info is no longer present.
     !! call read_side_set_data (unit, version)
     !! Skip this data in older version files.
     call skip_side_set_data (unit, version)
-  end subroutine restart_side_sets
+  end subroutine skip_restart_side_sets
 
   !!
   !! Read the core data segment: initializes the module structures ZONE and
@@ -241,8 +245,8 @@ contains
 
     use kinds, only: r8
     use restart_utilities, only: read_var, read_dist_array, skip_records, halt
-    use mesh_module, only: pcell => unpermute_mesh_vector
-
+    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
+    
     real(r8), intent(out), optional :: phi(:,:)
     logical,  intent(out), optional :: found
 

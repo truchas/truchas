@@ -65,8 +65,8 @@ contains
   subroutine TDO_write_default_mesh
   
     use kinds, only: r8
-    use parameter_module, only: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
-    use mesh_module, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
+    use legacy_mesh_api, only: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
+    use legacy_mesh_api, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
     use truchas_logging_services
     
     integer :: stat, k
@@ -245,8 +245,8 @@ contains
   
     subroutine write_common_data
 
-      use parameter_module, only: ndim, ncells, nmat
-      use mesh_module, only: cell
+      use parameter_module, only: nmat
+      use legacy_mesh_api, only: ndim, ncells, cell
       use zone_module, only: zone
       use property_module, only: get_density, get_user_material_id
       use matl_module, only: gather_vof
@@ -294,7 +294,7 @@ contains
   
     subroutine write_fluid_flow_data
     
-      use parameter_module, only: ndim, ncells
+      use legacy_mesh_api, only: ndim, ncells
       use zone_module, only: zone
       use fluid_data_module, only: fluxing_velocity, courant, boussinesq_approximation
       use property_module, only: get_density_delta
@@ -338,7 +338,7 @@ contains
     
     subroutine write_heat_transfer_data
     
-      use parameter_module, only: ndim, ncells
+      use legacy_mesh_api, only: ndim, ncells
       use zone_module, only: zone
       use time_step_module, only: dt
       use diffusion_solver, only: ds_get_temp_grad
@@ -366,7 +366,8 @@ contains
   
     subroutine write_solid_mech_data
     
-      use parameter_module, only: ndim, nnodes, ncomps, ncells
+      use parameter_module, only: ncomps
+      use legacy_mesh_api, only: ndim, nnodes, ncells
       use solid_mechanics_output, only: get_sm_displacement, get_sm_thermal_strain,get_sm_rhs, &
           get_sm_rotation_magnitude, get_sm_pc_strain, get_smech_cell_total_strain, &
           get_smech_cell_elastic_stress, get_smech_cell_plastic_strain, &
@@ -470,7 +471,7 @@ contains
     
     subroutine write_species_data
     
-      use parameter_module, only: ncells
+      use legacy_mesh_api, only: ncells
       use diffusion_solver_data, only: num_species
       use diffusion_solver, only: ds_get_phi
       use string_utilities, only: i_to_c

@@ -22,8 +22,9 @@ MODULE BC_DATA_MODULE
   !=======================================================================
   use kinds, only: r8
   use bc_type_module,   only: BOUNDARY_CONDITION
-  use parameter_module, only: bc_forms, ndim, nbcs, nvar, mbc_surfaces, &
+  use parameter_module, only: bc_forms, nbcs, nvar, mbc_surfaces, &
                               string_len, mbcsrf, mbc_nodes, max_bc_dof
+  use parameter_module, only: ndim
   use velocity_boundary_data_type
 
   implicit none
@@ -75,9 +76,6 @@ MODULE BC_DATA_MODULE
   character(80),         dimension(mbc_surfaces)         :: BC_Surface_Forms 
   ! Coordinates for individual node displacement BCs (read from input file)   
   real(r8), dimension(ndim,mbc_nodes,0:mbc_surfaces)         :: Node_Disp_Coords
-  ! Mask arrays for face and node sets read from mesh file 
-  integer, pointer, dimension(:,:,:)           :: Mesh_Face_Set     => NULL()
-  integer, pointer, dimension(:,:,:)           :: Mesh_Face_Set_Tot => NULL()
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Define Arrays for Dirichlet BC .........................
@@ -290,8 +288,8 @@ CONTAINS
 
 !  subroutine read_side_set_data (unit, version)
 !
-!    use parameter_module, only: ncells, nfc, nssets
-!    use mesh_module, only: pcell => unpermute_mesh_vector
+!    use legacy_mesh_api, only: ncells, nfc, nssets
+!    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
 !    use restart_utilities, only: read_var, read_dist_array
 !
 !    integer, intent(in) :: unit, version

@@ -14,9 +14,8 @@ Program TEST_ILU0
 
   Use kind_module,           Only: int_kind, real_kind
   Use JTpack_module,         Only: JT_vector_type
-  Use parameter_module,      Only: ncells, nfc
+  use legacy_mesh_api,       only: ncells, nfc, mesh
   Use solver_data_module,    Only: JT
-  Use mesh_module,           Only: Mesh
   Use cutoffs_module,        Only: alittle
   Use preconditioner_module, Only: ILU0
 

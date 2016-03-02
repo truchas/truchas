@@ -223,8 +223,8 @@ CONTAINS
     use nonlinear_solution,       only: NK_DEFAULT, NKuser,                   &
                                         nonlinear_solutions,                  &
                                         DEFAULT_NK_CONTROLS
-    use parameter_module,         only: nmat, ndim,               &
-                                        string_len, max_topology_models
+    use parameter_module,         only: nmat, string_len, max_topology_models
+    use legacy_mesh_api,          only: ndim
     use porous_drag_data,         only: porous_implicitness
     use projection_data_module,   only: projection_linear_solution,           &
                                         UBIK_PRESSURE

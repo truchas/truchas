@@ -34,9 +34,8 @@ contains
 
   subroutine kern_convolution_center (Scal_Center, Scal_Convol, d)
 
-    use mesh_module, only: Mesh,Cell, degenerate_face
     use pgslib_module, only: PGSLIB_BCast, PGSLIB_Collate
-    use parameter_module, only: ncells, ncells_tot, ndim, nfc
+    use legacy_mesh_api, only: ncells, ncells_tot, ndim, nfc, Mesh, Cell, degenerate_face
     use var_vector_module
 
     real(r8), dimension(ncells), intent(in)    :: Scal_Center
@@ -183,7 +182,7 @@ contains
 
   recursive subroutine recurs_conv_center (Cell_no,Tot_vol, Tot_scal,all_ngbr,    &
                                    all_cent,all_face_cent,cent,Hit_Array,KF_N,KF_D,d)
-    use mesh_module, only: DEGENERATE_FACE
+    use legacy_mesh_api, only: DEGENERATE_FACE
 
     integer,  intent(in) :: Cell_no
     real(r8), intent(in) :: Tot_vol(:)
@@ -242,9 +241,8 @@ contains
 
   subroutine kern_interpolation_face (Scal_Center,Scal_Face,Scal_Flag,Face_Flag,d)
 
-    use mesh_module, only: Mesh,Cell, degenerate_face
     use pgslib_module, only: PGSLIB_BCast, PGSLIB_Collate
-    use parameter_module, only: ncells, ncells_tot, ndim, nfc
+    use legacy_mesh_api, only: ncells, ncells_tot, ndim, nfc, Mesh, Cell, degenerate_face
     use var_vector_module
 
     real(r8), dimension(ncells), INTENT(IN) :: Scal_Center
@@ -395,7 +393,7 @@ contains
   recursive subroutine recurs_conv_face (Cell_no,Tot_vol, Tot_scal,all_ngbr,    &
                                    all_cent,fcent,Hit_Array,KF_N,KF_D,d,     &
                                    All_Scal_Flag)
-    use mesh_module, only: DEGENERATE_FACE
+    use legacy_mesh_api, only: DEGENERATE_FACE
 
     integer,  intent(in) :: Cell_no
     real(r8), intent(in) :: Tot_vol(:)

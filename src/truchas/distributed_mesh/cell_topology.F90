@@ -23,8 +23,8 @@ module cell_topology
   implicit none
   private
 
-  public :: get_face_nodes, get_link_face_nodes
-  public :: num_cell_faces, cell_face_sizes, cell_face_sig
+  public :: get_face_nodes, get_link_face_nodes, link_edges
+  public :: num_cell_faces, cell_face_sizes, cell_face_sig, cell_edges
   public :: normalize_facet, reverse_facet, facet_parity
 
   !! These data arrays define the intrinsic labeling conventions for the common
@@ -36,33 +36,51 @@ module cell_topology
   !!
   !! * <T>_FSIZE(k) is the number of vertices on the kth face of cell type <T>.
   !!
+  !! * <T>_EDGES(:,k) are the 2 cell vertices defining edge k of cell type <T>.
+  !!
   !! * <T>_FACE_SIG(k) is a bit mask array tagging the vertices on the kth face
   !!   of cell type <T>.  BTEST(<T>_FACE_SIG(k), i-1) is true if vertex i is
   !!   contained in face k of cell type <T>.
+  !!
+  !! * <T>_VERT_SIG(k) is a bit mask array tagging the faces that contain the
+  !!   kth vertex for cell type <T>.  BTEST(<T>_VERT_SIG(k), i-1) is true if
+  !!   face i contains in vertex k of cell type <T>.
 
-  integer, target, public :: TET4_XFACE(5), TET4_FACES(12), TET4_FSIZE(4), TET4_FACE_SIG(4)
+  integer, target, public :: TET4_XFACE(5), TET4_FACES(12), TET4_FSIZE(4), TET4_EDGES(2,6)
+  integer, target, public :: TET4_FACE_SIG(4), TET4_VERT_SIG(4)
   data TET4_XFACE/1,4,7,10,13/
   data TET4_FACES/1,2,4, 2,3,4, 1,4,3, 1,3,2/
   data TET4_FSIZE/3,3,3,3/
+  data TET4_EDGES/1,2, 1,3, 1,4, 2,3, 2,4, 3,4/
   data TET4_FACE_SIG/b'1011', b'1110', b'1101', b'0111'/
+  data TET4_VERT_SIG/b'1101', b'1011', b'1110', b'0111'/
 
-  integer, target, public :: PYR5_XFACE(6), PYR5_FACES(16), PYR5_FSIZE(5), PYR5_FACE_SIG(5)
+  integer, target, public :: PYR5_XFACE(6), PYR5_FACES(16), PYR5_FSIZE(5), PYR5_EDGES(2,8)
+  integer, target, public :: PYR5_FACE_SIG(5), PYR5_VERT_SIG(5)
   data PYR5_XFACE/1,4,7,10,13,17/
   data PYR5_FACES/1,2,5,  2,3,5,  3,4,5,  1,5,4,  1,4,3,2/
   data PYR5_FSIZE/3,3,3,3,4/
+  data PYR5_EDGES/1,2, 1,4, 1,5, 2,3, 2,5, 3,4, 3,5, 4,5/
   data PYR5_FACE_SIG/b'10011', b'10110', b'11100', b'11001', b'01111'/
+  data PYR5_VERT_SIG/b'11001', b'10011', b'10110', b'11100', b'01111'/
 
-  integer, target, public :: WED6_XFACE(6), WED6_FACES(18), WED6_FSIZE(5), WED6_FACE_SIG(5)
+  integer, target, public :: WED6_XFACE(6), WED6_FACES(18), WED6_FSIZE(5), WED6_EDGES(2,9)
+  integer, target, public :: WED6_FACE_SIG(5), WED6_VERT_SIG(6)
   data WED6_XFACE/1,5,9,13,16,19/
   data WED6_FACES/1,2,5,4,  2,3,6,5,  1,4,6,3,  1,3,2,  4,5,6/
   data WED6_FSIZE/4,4,4,3,3/
+  data WED6_EDGES/1,2, 1,3, 1,4, 2,3, 2,5, 3,6, 4,5, 4,6, 5,6/
   data WED6_FACE_SIG/b'011011', b'110110', b'101101', b'000111', b'111000'/
+  data WED6_VERT_SIG/b'01101', b'01011', b'01110', b'10101', b'10011', b'10110'/
 
-  integer, target, public :: HEX8_XFACE(7), HEX8_FACES(24), HEX8_FSIZE(6), HEX8_FACE_SIG(6)
+  integer, target, public :: HEX8_XFACE(7), HEX8_FACES(24), HEX8_FSIZE(6), HEX8_EDGES(2,12)
+  integer, target, public :: HEX8_FACE_SIG(6), HEX8_VERT_SIG(8)
   data HEX8_XFACE/1,5,9,13,17,21,25/
   data HEX8_FACES/1,2,6,5, 2,3,7,6, 3,4,8,7, 1,5,8,4, 1,4,3,2, 5,6,7,8/
   data HEX8_FSIZE/4,4,4,4,4,4/
+  data HEX8_EDGES/1,2, 1,4, 1,5, 2,3, 2,6, 3,4, 3,7, 4,8, 5,6, 5,8, 6,7, 7,8/
   data HEX8_FACE_SIG/b'00110011', b'01100110', b'11001100', b'10011001', b'00001111', b'11110000'/
+  data HEX8_VERT_SIG/b'011001', b'010011', b'010110', b'011100', b'101001', b'100011', b'100110', b'101100'/
 
   !! These provide the list of local indices of faces that contain each of the
   !! cell vertices: *_VERT_FACE(:,k) are the three face indices that contain
@@ -88,7 +106,35 @@ module cell_topology
   integer, parameter :: TRI_LINK_FACE_VERT(3,2) = reshape(source=[1,2,3, 4,6,5], shape=[3,2])
   integer, parameter :: QUAD_LINK_FACE_VERT(4,2) = reshape(source=[1,2,3,4, 5,8,7,6], shape=[4,2])
 
+  !! These data arrays provide the pair of vertices defining the link edges.
+  integer, target :: TRI_LINK_EDGES(2,3), QUAD_LINK_EDGES(2,4)
+  data TRI_LINK_EDGES/1,4, 2,5, 3,6/
+  data QUAD_LINK_EDGES/1,5, 2,6, 3,7, 4,8/
+
 contains
+
+  !! Returns a pointer to the array of cell edges for the given cell type.
+  !! CNODES is the list of nodes defining the cell, but only the size of the
+  !! array is significant and is used as a surrogate for the cell type.  This
+  !! works for tet, pyramid, wedge, and hex cells; a null pointer is returned
+  !! for anything else.
+
+  function cell_edges (cnodes) result (edges)
+    integer, intent(in) :: cnodes(:)
+    integer, pointer :: edges(:,:)
+    select case (size(cnodes))
+    case (4)  ! tet
+      edges => TET4_EDGES
+    case (5)  ! pyramid
+      edges => PYR5_EDGES
+    case (6)  ! wedge
+      edges => WED6_EDGES
+    case (8)  ! hex
+      edges => HEX8_EDGES
+    case default
+      edges => null()
+    end select
+  end function cell_edges
 
   !! Returns the number of faces the given cell possesses.  CNODES is the list
   !! of nodes defining the cell, but only the size of the array is significant;
@@ -231,6 +277,23 @@ contains
     end if
 
   end subroutine get_link_face_nodes
+
+  !! Returns a pointer to the array of link edges for the given link type.
+  !! LNODES is the list of nodes defining the link, but only the size of the
+  !! array is significant and is used as a surrogate for the link type.
+
+  function link_edges (lnodes)
+    integer, intent(in) :: lnodes(:)
+    integer, pointer :: link_edges(:,:)
+    select case (size(lnodes))
+    case (6)
+      link_edges => TRI_LINK_EDGES
+    case (8)
+      link_edges => QUAD_LINK_EDGES
+    case default
+      link_edges => null()
+    end select
+  end function link_edges
 
   !! An facet is an edge in R^2, or triangle, quadrilateral, or general polygon
   !! in R^3.  It is described by a list of the distinct node numbers that define

@@ -109,11 +109,9 @@ CONTAINS
     implicit none
 
     character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
-    integer :: i
 
     !---------------------------------------------------------------------------
 
-    i = 0
     ! assign preprocessor definitions to global variables
     call PREPROCESSOR_DEFS ()
 
@@ -356,10 +354,8 @@ call hijack_truchas ()
     !   clean up prior to termination, print reports
     !---------------------------------------------------------------------------
     use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
-    use base_types_B_module,    only: MESH_VERTEX_DEALLOCATE, BASE_TYPES_B_DEALLOCATE
     use debug_control_data
     use fluid_utilities_module, only: FLUID_DEALLOCATE
-    use mesh_module,            only: Mesh, Vertex
     use time_step_module,       only: t, cycle_number
     use timing_tree
     use truchas_timing
@@ -373,12 +369,8 @@ call hijack_truchas ()
     !deallocate the fluidvof array, and others
     call FLUID_DEALLOCATE()
 
-    ! deallocate the mesh
-    call MESH_VERTEX_DEALLOCATE (Mesh, Vertex)
-
     ! deallocate the base types
     call BASE_TYPES_A_DEALLOCATE ()
-    call BASE_TYPES_B_DEALLOCATE ()
 
     ! free the diffusion solver resources
     call ds_delete ()
@@ -501,7 +493,6 @@ call hijack_truchas ()
     logical :: r
     logical :: h
     logical :: f
-    logical :: m
     character (LEN=string_len), dimension(9) :: usage = (/                       &
        'usage: truchas [options] infile                                       ', &
        '                                                                      ', &
@@ -522,7 +513,6 @@ call hijack_truchas ()
     r = .false.                         ! restart file
     h = .false.                         ! help
     f = .false.                         ! input file
-    m = .false.                         ! mem diagnostics on/off
     ! there must be at least one argument
     if (SIZE(argv) < 2) then
        call TLS_error ('insufficient arguments')

@@ -41,7 +41,7 @@ contains
   
   subroutine write_seq_cell_field_r0 (seq_id, ldata, name, for_viz, viz_name)
   
-    use parameter_module, only: ncells, ncells_tot
+    use legacy_mesh_api, only: ncells, ncells_tot
 
     type(c_ptr), intent(in) :: seq_id
     real(r8), intent(in) :: ldata(:)
@@ -92,7 +92,7 @@ contains
   
   subroutine write_seq_cell_field_r1 (seq_id, ldata, name, for_viz, viz_name)
   
-    use parameter_module, only: ncells, ncells_tot
+    use legacy_mesh_api, only: ncells, ncells_tot
     use string_utilities, only: i_to_c
 
     type(c_ptr), intent(in) :: seq_id
@@ -146,7 +146,7 @@ contains
   
   subroutine write_seq_node_field_r0 (seq_id, ldata, name, for_viz, viz_name)
   
-    use parameter_module, only: nnodes, nnodes_tot
+    use legacy_mesh_api, only: nnodes, nnodes_tot
 
     type(c_ptr), intent(in) :: seq_id
     real(r8), intent(in) :: ldata(:)
@@ -197,7 +197,7 @@ contains
   
   subroutine write_seq_node_field_r1 (seq_id, ldata, name, for_viz, viz_name)
   
-    use parameter_module, only: nnodes, nnodes_tot
+    use legacy_mesh_api, only: nnodes, nnodes_tot
     use string_utilities, only: i_to_c
 
     type(c_ptr), intent(in) :: seq_id

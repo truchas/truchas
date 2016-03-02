@@ -98,7 +98,7 @@ CONTAINS
     use input_utilities,        only: seek_to_namelist
     use linear_solution,        only: Ubik_user, DEFAULT_UBIK_CONTROLS, linear_solutions
     use parallel_info_module,   only: p_info
-    use parameter_module,       only: string_len, string_dim
+    use parameter_module,       only: string_len
     use pgslib_module,          only: PGSLIB_BCAST
 
     integer, intent(in) :: lun
@@ -219,7 +219,8 @@ CONTAINS
     !   and inconsistencies.
     !
     !=======================================================================
-    use parameter_module, only: ncells_tot, nnodes_tot, ndim
+    use mesh_manager, only: get_main_mesh_size
+    use parameter_module, only: ndim
     use utilities_module, only: STRING_COMPARE
     use solid_mechanics_input, only: solid_mechanics
 
@@ -229,10 +230,12 @@ CONTAINS
     ! Local Variables
     logical :: strings_match, this_string_matches
     character(string_len) :: string, string_default
-    integer :: i, krylov_vectors_max
+    integer :: krylov_vectors_max, ncells_tot, nnodes_tot
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    call get_main_mesh_size (ncells_tot, nnodes_tot)
 
     ! Convergence criterion.
     if (convergence_criterion /= NULL_R) then
@@ -623,8 +626,7 @@ CONTAINS
                                     UBIK_PRESSURE_DEFAULT, UBIK_NK_DEFAULT,     &
                                     UBIK_DISPLACEMENT_DEFAULT, PRECOND_TM_DIAG, &
                                     PRECOND_TM_SSOR, ubik_viscous_default
-    use mesh_input_module,    only: mesh_file
-    use parameter_module,     only: ncells_tot
+    use mesh_manager, only: get_main_mesh_size
     use UbikSolve_module
     use input_utilities, only: NULL_C
 
@@ -635,7 +637,6 @@ CONTAINS
     ! Input variable defaults.
     real(r8), parameter :: CONVERGENCE_CRITERION_DEFAULT = 1.0d-8
     character(string_len), parameter :: METHOD_DEFAULT                  = 'fgmres'
-    character(string_len), parameter :: NAME_DEFAULT                    = 'default'
     character(string_len), parameter :: PRECONDITIONING_METHOD_DEFAULT  = 'none'
     character(string_len), parameter :: PRECONDITIONING_SCOPE_DEFAULT   = 'global'
     integer,  parameter :: PRECONDITIONING_STEPS_DEFAULT   = 1
@@ -646,10 +647,12 @@ CONTAINS
     integer,  parameter :: STATUS_FREQUENCY_DEFAULT        = 0
     integer             :: KRYLOV_VECTORS_DEFAULT
     integer             :: MAXIMUM_ITERATIONS_DEFAULT
-    character(128) :: message
+    integer :: ncells_tot, nnodes_tot
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
  
+    call get_main_mesh_size (ncells_tot, nnodes_tot)
+
     ! Set defaults that can't be parameters.
     MAXIMUM_ITERATIONS_DEFAULT = MAX(20.0,MIN(1000.0,2.0*SQRT(REAL(ncells_tot))))
     KRYLOV_VECTORS_DEFAULT     = MAX(10.0,MIN(100.0,SQRT(REAL(ncells_tot))))
@@ -842,11 +845,6 @@ CONTAINS
     case ('none')
        Ubik%solver = solver_NONE
     case ('cg')
-       if (TRIM(mesh_file) /= NULL_C) then
-          write (message, 10) 
-10        format (9x,'Suggest using FGMRES for linear solutions when a mesh file is specified. User specified CG, using CG')
-          call TLS_info (message)
-       end if
        Ubik%solver = solver_CG
 #ifndef LINUX
        call Ubik_set_method (Ubik%control, Ubik_method_CG)

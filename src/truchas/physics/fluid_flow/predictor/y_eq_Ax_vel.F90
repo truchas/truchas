@@ -47,7 +47,7 @@ CONTAINS
                                     momentum_solidify_implicitness, &
                                     IsPureImmobile
     use flow_phase_change,    only: have_solidifying_flow, solidified_rho
-    use parameter_module,     only: ncells, ndim
+    use legacy_mesh_api,      only: ncells, ndim
 
     use time_step_module,     only: dt
 

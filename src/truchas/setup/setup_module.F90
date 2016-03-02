@@ -45,24 +45,18 @@ CONTAINS
     !=======================================================================
     use kinds, only: r8
     use base_types_A_module,    only: BASE_TYPES_A_ALLOCATE
-    use base_types_B_module,    only: MESH_VERTEX_ALLOCATE, BASE_TYPES_B_ALLOCATE
     use bc_module,              only: ASSIGN_BC_BITS, Conc, Prs, Vel
-    use cell_geometry_module,   only: GET_CELL_GEOMETRY
-    use gs_module,              only: EE_GS_INIT, EN_GS_INIT, NN_GS_INIT
-    use init_module,            only: INITIAL
-    use mesh_gen_module,        only: MESH_GEN,                    &
-                                      Flag_Face_Neighbors
-    use mesh_utilities,         only: MESH_DIAGNOSTICS
-    use mesh_module,            only: Mesh, Vertex
     use output_control,         only: next_op
     use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
-    use restart_driver,         only: close_restart_file
+    use restart_driver,         only: close_restart_file, skip_restart_mesh, skip_restart_side_sets
     use time_step_module,       only: cycle_number, cycle_number_restart, &
                                       dt, t, t1, t2
+    use init_module,            only: INITIAL
     use timing_tree
     use tensor_module,          only: TENSOR_MATRIX
     use mesh_manager,           only: init_mesh_manager
+    use legacy_mesh_api,        only: init_legacy_mesh_api
     use EM,                     only: initialize_EM
     use truchas_danu_output,    only: TDO_write_default_mesh
 
@@ -73,43 +67,27 @@ CONTAINS
 
     ! Initialize I/O quantities.
     next_op = 1
-    
+
     ! Assign bc bits.
     call ASSIGN_BC_BITS (Prs%Face_bit, Vel%Face_bit, Conc%Face_bit)
 
     ! Setup the tensor matrix.
     call TENSOR_MATRIX ()
+    
+    ! Skip over unused legacy mesh data in the restart file (TEMPORARY)
+    if (restart) then
+      call skip_restart_mesh
+      call skip_restart_side_sets
+    end if
 
-    ! Allocate and default the Mesh and Vertex derived types.
-    call MESH_VERTEX_ALLOCATE (Mesh, Vertex)
+    ! Instantiate the new mesh objects.
+    call init_mesh_manager
 
-    ! Read in or generate the mesh; compute the connectivity.
-    call MESH_GEN ()
+    ! Initialize old_mesh_api module
+    call init_legacy_mesh_api
 
     ! Allocate the base types and set them to their defaults.
-    call BASE_TYPES_A_ALLOCATE ()
-    call BASE_TYPES_B_ALLOCATE ()
-
-    ! Setup element <-> element (ee) communication.
-    call EE_GS_INIT ()
-
-    ! Setup element <-> node (en) communication.
-    call EN_GS_INIT ()
-
-    ! Setup node <-> node (en) communication.
-    call NN_GS_INIT ()
-
-    ! Compute mesh diagnostics and check for connectivity errors.
-    call MESH_DIAGNOSTICS ()
-
-    ! Get the cell geometry.
-    call GET_CELL_GEOMETRY ()
-
-    ! Flag which neighbors touch which faces
-    call Flag_Face_Neighbors ()
-
-    ! Setup the distributed tet mesh used by the EM solver.
-    call init_mesh_manager ()
+    call BASE_TYPES_A_ALLOCATE
 
     ! Write the primary truchas mesh.
     call TDO_write_default_mesh
@@ -145,8 +123,6 @@ CONTAINS
 
     ! Stop the initialization timer.
     call stop_timer("Initialization")
-    
-    return
 
   END SUBROUTINE SETUP
 

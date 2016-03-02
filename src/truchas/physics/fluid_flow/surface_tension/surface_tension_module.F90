@@ -70,7 +70,8 @@ contains
     use cutoffs_module,       only: alittle, cutvof
     use discrete_op_module,   only: GRADIENT
     use matl_module,          only: GATHER_VOF
-    use parameter_module,     only: ncells, ndim, nmat
+    use parameter_module,     only: nmat
+    use legacy_mesh_api,      only: ncells, ndim
     use property_module,      only: density_material
     use zone_module,          only: Zone
     use timing_tree
@@ -169,7 +170,7 @@ contains
     !   interface and zero on the other side.  (Nx, Ny, Nz) is provided
     !   as the cell-centered color gradient. 
     !=======================================================================
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
 
     ! Argument List
     real(r8), dimension(ncells), intent(IN)  :: Color, Nx, Ny, Nz 
@@ -206,12 +207,12 @@ contains
     use matl_module,                 only: GATHER_VOF
     use mollify,                     only: MOLLIFY_CONV_SAVEMEM,     &
                                            interface_smoothing_length
-    use parameter_module,            only: ncells, ndim, nmat, nfc, nvc, nnodes
+    use parameter_module,            only: nmat
+    use legacy_mesh_api,             only: ncells, ndim, nfc, nvc, nnodes
+    use legacy_mesh_api,             only: EN_GATHER, LINEAR_PROP 
     use timing_tree
     use zone_module,                 only: Zone 
     use kernel_interpolation_module, only: KERN_CONVOLUTION_CENTER
-    use gs_module,                   only: EN_GATHER 
-    use linear_module,               only: LINEAR_PROP 
  
     ! Argument List
     real(r8), dimension(ndim,nfc,ncells), intent(INOUT) :: Fcsf_face
@@ -535,10 +536,9 @@ contains
     ! 
     !=======================================================================
     use cutoffs_module,    only: alittle
-    use linear_module,     only: LINEAR_PROP
-    use mesh_module,       only: Cell, Mesh, Vrtx_Face, Vertex
-    use parameter_module,  only: ncells, ndim, nfc, nfv, nnodes, nvc
-    use gs_module,         only: EN_GATHER,EN_SUM_SCATTER
+    use legacy_mesh_api,   only: Cell, Mesh, Vrtx_Face, Vertex
+    use legacy_mesh_api,   only: ncells, ndim, nfc, nfv, nnodes, nvc
+    use legacy_mesh_api,   only: EN_GATHER, EN_SUM_SCATTER, LINEAR_PROP
 
     ! Arguments
     real(r8), dimension(ndim,ncells),    intent(IN)  :: NV

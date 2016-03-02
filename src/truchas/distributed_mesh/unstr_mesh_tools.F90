@@ -24,27 +24,87 @@ module unstr_mesh_tools
 
   public :: get_cell_neighbor_array, label_mesh_faces
 
+  interface get_cell_neighbor_array
+    procedure get_cell_neighbor_array_1, get_cell_neighbor_array_2
+  end interface
+
 contains
 
-  subroutine get_cell_neighbor_array (xcnode, cnode, xlnode, lnode, xcnhbr, cnhbr, lnhbr, stat)
+  subroutine get_cell_neighbor_array_1 (xcnode, cnode, xcnhbr, cnhbr, stat)
 
-    use facet_hash_type
-    use cell_topology, only: get_face_nodes, get_link_face_nodes, facet_parity
+    use face_neighbor_table_type
+
+    integer, intent(in) :: xcnode(:), cnode(:)
+    integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:)
+    integer, intent(out) :: stat
+
+    type(face_neighbor_table) :: nhbr_table
+
+    call nhbr_table%init (xcnode, cnode)
+    call get_cnhbr_aux (nhbr_table, xcnode, cnode, xcnhbr, cnhbr, stat)
+
+  end subroutine get_cell_neighbor_array_1
+
+  subroutine get_cell_neighbor_array_2 (xcnode, cnode, xlnode, lnode, xcnhbr, cnhbr, lnhbr, stat)
+
+    use face_neighbor_table_type
+    use cell_topology, only: get_link_face_nodes
 
     integer, intent(in) :: xcnode(:), cnode(:)
     integer, intent(in) :: xlnode(:), lnode(:)
     integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:), lnhbr(:,:)
     integer, intent(out) :: stat
 
-    integer :: i, j, k, n, jj, kk, max_bin_size, nmatch, bad_faces, ncell, nlink, offset
-    integer, allocatable :: face(:), xbin(:), p(:)
-    type(facet_hash) :: hpar
+    integer :: i, j, k, nlink
+    integer, allocatable :: face(:)
+    type(face_neighbor_table) :: nhbr_table
+    type(face_neighbor), allocatable :: nhbrs(:)
 
-    type :: table_entry
-      integer :: j, k ! cell and face indices
-      integer, allocatable :: face(:) ! face node list (outward and normalized)
-    end type table_entry
-    type(table_entry), allocatable :: bin_table(:)
+    call nhbr_table%init (xcnode, cnode)
+    call get_cnhbr_aux (nhbr_table, xcnode, cnode, xcnhbr, cnhbr, stat)
+    if (stat /= 0) return
+
+    !! Lookup the two link faces in the table to get the neighbor cell numbers.
+    !! The face node list must be arranged to match that stored in the table.
+    nlink = size(xlnode) - 1
+    allocate(lnhbr(2,nlink))
+    do j = 1, nlink
+      associate (link => lnode(xlnode(j):xlnode(j+1)-1))
+        do k = 1, 2
+          call get_link_face_nodes (link, k, face, normalize=.true.)
+          call nhbr_table%get_neighbors (face, nhbrs)
+          lnhbr(k,j) = 0  ! default value
+          do i = size(nhbrs), 1, -1
+            if (nhbrs(i)%p == 1) exit
+          end do
+          if (i > 0) then  ! found a match ...
+            if (cnhbr(nhbrs(i)%k) == 0) then ! it is a boundary face as expected
+              lnhbr(k,j) = nhbrs(i)%j
+            else  ! not a boundary face; something is wrong
+              stat = -1
+            end if
+          else  ! no match found; something is wrong
+            stat = -1
+          end if
+        end do
+      end associate
+    end do
+
+  end subroutine get_cell_neighbor_array_2
+
+  subroutine get_cnhbr_aux (nhbr_table, xcnode, cnode, xcnhbr, cnhbr, stat)
+
+    use face_neighbor_table_type
+    use cell_topology, only: get_face_nodes
+
+    type(face_neighbor_table), intent(in) :: nhbr_table
+    integer, intent(in) :: xcnode(:), cnode(:)
+    integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:)
+    integer, intent(out) :: stat
+
+    integer :: i, j, k, jj, kk, nmatch, bad_faces, ncell, offset
+    integer, allocatable :: face(:)
+    type(face_neighbor), allocatable :: nhbrs(:)
 
     ncell = size(xcnode) - 1
 
@@ -66,65 +126,8 @@ contains
         INSIST(.false.)
       end select
     end do
+
     allocate(cnhbr(xcnhbr(ncell+1)-1))
-
-    n = size(cnhbr)
-    allocate(bin_table(n))
-
-    !! Set-up the hash function.  It will return an address (or bin number)
-    !! in the interval [0, N-1], where N is adjusted upward to a power of 2.
-    !! With an ideal hash function, the number of bins is between 1/2 and 1
-    !! times the number of faces, but is generally much closer to the
-    !! lower bound.  Setting N to the number of faces is generous.
-    call hpar%init (n, maxval(cnode))
-
-    allocate(xbin(0:n))
-
-    !! Count the number of hits to each bin; count for bin N stored in XBIN(N+1).
-    xbin = 0
-    do j = 1, ncell
-      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
-        offset = xcnhbr(j)-1  ! for getting local face index
-        do k = xcnhbr(j), xcnhbr(j+1)-1
-          call get_face_nodes (cell, k-offset, face)
-          call hpar%hash (face, n)
-          xbin(n+1) = 1 + xbin(n+1)
-        end do
-      end associate
-    end do
-    max_bin_size = maxval(xbin)
-
-    !! Prepare XBIN: bin J will be BIN_TABLE(XBIN(J):XBIN(J+1)-1)
-    xbin(0) = 1
-    do j = 1, ubound(xbin,1)
-      xbin(j) = xbin(j-1) + xbin(j)
-    end do
-
-    !! Fill the bin table; use XBIN as a temporary to hold the next free
-    !! location for each bin.
-    do j = 1, ncell
-      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
-        offset = xcnhbr(j)-1  ! for getting local face index
-        do k = xcnhbr(j), xcnhbr(j+1)-1
-          call get_face_nodes (cell, k-offset, face, normalize=.true.)
-          call hpar%hash (face, n)
-          i = xbin(n)
-          bin_table(i)%j = j
-          bin_table(i)%k = k
-          call move_alloc (face, bin_table(i)%face)
-          xbin(n) = i + 1
-        end do
-      end associate
-    end do
-
-    !! Restore XBIN: the index of the first element of bin J is now XBIN(J-1)
-    !! instead of XBIN(J) as it should be -- fix this.
-    do j = ubound(xbin,1), 1, -1
-      xbin(j) = xbin(j-1)
-    end do
-    xbin(0) = 1
-
-    allocate(p(max_bin_size))
 
     cnhbr = 0
     bad_faces = 0
@@ -135,77 +138,39 @@ contains
         offset = xcnhbr(j)-1  ! for getting local face index
         do k = xcnhbr(j), xcnhbr(j+1)-1
           if (cnhbr(k) /= 0) cycle  ! info already assigned
-          !! Get a face and its corresponding bin.
+          !! Get a face and the list of its neighbor cells.
           call get_face_nodes (cell, k-offset, face, normalize=.true.)
-          call hpar%hash (face, n)
-          associate (bin => bin_table(xbin(n):xbin(n+1)-1))
-            !! Scan bin for *all* matching faces.
-            jj = 0
-            kk = 0
-            nmatch = 0
-            do i = 1, size(bin)
-              if (bin(i)%j == j) then ! found myself
-                p(i) = 1
-              else
-                p(i) = facet_parity(bin(i)%face, face)
-                select case (p(i))
-                case (-1) ! a good match (if only one)
-                  nmatch = 1 + nmatch
-                  jj = bin(i)%j
-                  kk = bin(i)%k
-                case (1)  ! a bad match (wrong orientation)
-                  nmatch = 1 + nmatch
-                end select
-              end if
-            end do
-            !! Store the neighbor information.
-            if (nmatch == 1 .and. jj /= 0) then
-              !! Found a unique neighbor; assign the neighbor data.
-              cnhbr(k) = jj ! my neighbor, and
-              cnhbr(kk) = j ! my neighbor's neighbor (me!)
-            else if (nmatch /= 0) then
-              !! Bad mesh topology; tag the faces involved.
-              bad_faces = 1 + bad_faces
-              do i = 1, size(bin)
-                if (p(i) /= 0) cnhbr(bin(i)%k) = -bad_faces
-              end do
-              stat = -1
+          call nhbr_table%get_neighbors (face, nhbrs)
+          !! Locate the cell neighbor, but scan all for valid topology.
+          jj = 0
+          kk = 0
+          nmatch = 0
+          do i = 1, size(nhbrs)
+            if (nhbrs(i)%j == j) cycle  ! found myself
+            nmatch = nmatch + 1
+            if (nhbrs(i)%p == -1) then  ! a good match (if only one)
+              jj = nhbrs(i)%j
+              kk = nhbrs(i)%k
             end if
-          end associate
+          end do
+          !! Store the neighbor information.
+          if (nmatch == 1 .and. jj /= 0) then
+            !! Found a unique neighbor; assign the neighbor data.
+            cnhbr(k) = jj ! my neighbor, and
+            cnhbr(kk) = j ! my neighbor's neighbor (me!)
+          else if (nmatch /= 0) then
+            !! Bad mesh topology; tag the faces involved.
+            bad_faces = 1 + bad_faces
+            do i = 1, size(nhbrs)
+              cnhbr(nhbrs(i)%k) = -bad_faces
+            end do
+            stat = -1
+          end if
         end do
       end associate
     end do
 
-    !! Lookup the two link faces in the table to get the neighbor cell numbers.
-    !! The face node list must be arranged to match that stored in the table.
-    nlink = size(xlnode) - 1
-    allocate(lnhbr(2,nlink))
-    do j = 1, nlink
-      associate (link => lnode(xlnode(j):xlnode(j+1)-1))
-        do k = 1, 2
-          call get_link_face_nodes (link, k, face, normalize=.true.)
-          call hpar%hash (face, n)
-          associate (bin => bin_table(xbin(n):xbin(n+1)-1))
-            lnhbr(k,j) = 0  ! default value
-            do i = size(bin), 1, -1
-              if (size(bin(i)%face) /= size(face)) cycle
-              if (all(bin(i)%face == face)) exit
-            end do
-            if (i > 0) then  ! found a match ...
-              if (cnhbr(bin(i)%k) == 0) then ! and it's a boundary face as expected
-                lnhbr(k,j) = bin(i)%j
-              else  ! not a boundary face; something is wrong
-                stat = -1
-              end if
-            else  ! no match found; something is wrong
-              stat = -1
-            end if
-          end associate
-        end do
-      end associate
-    end do
-
-  end subroutine get_cell_neighbor_array
+  end subroutine get_cnhbr_aux
 
 
   subroutine label_mesh_faces (xcnode, cnode, xlnode, lnode, nface, xcface, cface, lface)
