@@ -340,7 +340,7 @@ find_package(BLAS)
 
 # Preprocessor - allow this to be a list to define global flags easily
 if ( NOT Truchas_PREPROCESSOR )
-  set(Truchas_PREPROCESSOR cpp -ansi)
+  set(Truchas_PREPROCESSOR cpp -traditional-cpp)
 endif()
 
 # Turn off assertions in Truchas Fortran code

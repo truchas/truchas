@@ -15,7 +15,7 @@ include_directories(${Truchas_MODULE_DIR})
 
 # --- Preprocessor
 # To avoid overwriting VERSION
-set(ADDGAPS_PREPROCESSOR cpp -ansi)
+set(ADDGAPS_PREPROCESSOR cpp -traditional-cpp)
 
 
 # --- AddGaps
