@@ -60,7 +60,7 @@ endif(CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG)
 
 # Preprocessor - allow this to be a list to define global flags easily
 if ( NOT UbikSolve_PREPROCESSOR )
-  set(UbikSolve_PREPROCESSOR cpp -ansi)
+  set(UbikSolve_PREPROCESSOR cpp -traditional-cpp)
 endif()
 
 # Add the compiler type to the global defines and the preprocessor

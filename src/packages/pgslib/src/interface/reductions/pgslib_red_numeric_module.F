@@ -81,6 +81,9 @@ MODULE PGSLib_Red_Numeric_MODULE
 
 CONTAINS
 
+!!CPP!! Need this strange set of macros to get proper expansion.
+#define _STRING_(S)   "S"
+
 !!!!!!!!!! MINVAL ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _GENERIC_ROUTINE_NAME_ PGSLib_Global_MINVAL
 
@@ -433,9 +436,6 @@ CONTAINS
     logical (PGSLib_Log_TYPE) :: Global
 
     ! Local or Global operation
-!!CPP!! Need this strange set of macros to get proper expansion.
-#define _STRINGIZE_(S)           #S
-#define _STRING_(S)   _STRINGIZE_(S)
 #include "red_global_test.fpp"
 
     ! On-PE reduction
