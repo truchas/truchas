@@ -38,7 +38,7 @@ endif(CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG)
 
 # Preprocessor - allow this to be a list to define global flags easily
 if ( NOT PGSLib_PREPROCESSOR )
-  set(PGSLib_PREPROCESSOR cpp -ansi)
+  set(PGSLib_PREPROCESSOR cpp -traditional-cpp)
 endif()
 
 # Add the compiler type to the global defines and the preprocessor

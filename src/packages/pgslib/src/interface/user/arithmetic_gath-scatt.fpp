@@ -21,8 +21,8 @@
 
 !!CPP!! The contortions in this macro are to get op and specific
 !!CPP!! to expand before catenation.
-#define _CAT_(a,b) a##b
-#define _GEN_NAME_(op,specific) _CAT_(op, specific)
+#define IDENTITY(a) a
+#define _GEN_NAME_(op,specific) IDENTITY(op)IDENTITY(specific)
 
 !======================================================================
 !          Gather/Scatter_1_1_Int(Dest, Src, Index, Mask, Trace)
@@ -31,7 +31,7 @@
 !
 !======================================================================
 #define _SPECIFIC_SUFFIX_ _1_1_Int
-#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_, _SPECIFIC_SUFFIX_)
+#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_,_SPECIFIC_SUFFIX_)
 #define _DATA_TYPE_     integer (PGSLib_Int_Type)
 #define _OP_NULL_       0
 #define _OP_ID_         _GEN_OP_ID_( _OP_NULL_ )
@@ -54,7 +54,7 @@
 !
 !======================================================================
 #define _SPECIFIC_SUFFIX_ _1_1_Single
-#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_, _SPECIFIC_SUFFIX_)
+#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_,_SPECIFIC_SUFFIX_)
 #define _DATA_TYPE_     real (PGSLib_Single_Type)
 #define _OP_NULL_       REAL(0.0, PGSLib_Single_Type)
 #define _OP_ID_         _GEN_OP_ID_( _OP_NULL_ )
@@ -77,7 +77,7 @@
 !
 !======================================================================
 #define _SPECIFIC_SUFFIX_ _1_1_Double
-#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_, _SPECIFIC_SUFFIX_)
+#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_,_SPECIFIC_SUFFIX_)
 #define _DATA_TYPE_     real (PGSLib_Double_Type)
 #define _OP_NULL_       REAL(0.0, PGSLib_Double_Type)
 #define _OP_ID_         _GEN_OP_ID_( _OP_NULL_ )
@@ -100,7 +100,7 @@
 !
 !======================================================================
 #define _SPECIFIC_SUFFIX_ _1_2_Int
-#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_, _SPECIFIC_SUFFIX_)
+#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_,_SPECIFIC_SUFFIX_)
 #define _DATA_TYPE_     integer (PGSLib_Int_Type)
 #define _OP_NULL_       0_PGSLib_Int_Type
 #define _OP_ID_         _GEN_OP_ID_( _OP_NULL_ )
@@ -123,7 +123,7 @@
 !
 !======================================================================
 #define _SPECIFIC_SUFFIX_ _1_2_Single
-#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_, _SPECIFIC_SUFFIX_)
+#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_,_SPECIFIC_SUFFIX_)
 #define _DATA_TYPE_     real (PGSLib_Single_Type)
 #define _OP_NULL_       REAL(0.0, PGSLib_Single_Type)
 #define _OP_ID_         _GEN_OP_ID_( _OP_NULL_ )
@@ -146,7 +146,7 @@
 !
 !======================================================================
 #define _SPECIFIC_SUFFIX_ _1_2_Double
-#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_, _SPECIFIC_SUFFIX_)
+#define _ROUTINE_NAME_  _GEN_NAME_(_OP_NAME_,_SPECIFIC_SUFFIX_)
 #define _DATA_TYPE_     real (PGSLib_Double_Type)
 #define _OP_NULL_       REAL(0.0, PGSLib_Double_Type)
 #define _OP_ID_         _GEN_OP_ID_( _OP_NULL_ )
@@ -163,7 +163,6 @@
 #undef  _NARROW_DIM_
 
 #undef  _GEN_NAME_
-#undef  _CAT_
 #undef  _OP_
 #undef  _OP_NAME_
 #undef  _GEN_OP_ID_
