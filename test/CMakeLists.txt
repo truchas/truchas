@@ -252,3 +252,13 @@ add_pytruchas_test(tm-pc
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
+add_pytruchas_test(ustruc1
+                   ustruc1/test.py
+		   PROCESSORS 4
+		   LABELS MICROSTRUCTURE CONDUCTION MIXED)
+
+add_pytruchas_test(ustruc2
+                   ustruc2/test.py
+		   PROCESSORS 4
+		   LABELS MICROSTRUCTURE CONDUCTION MIXED RESTART)
+
