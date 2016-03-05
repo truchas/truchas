@@ -281,6 +281,7 @@ contains
   !!
 
   subroutine restart_ustruc
+    use restart_utilities, only: info
     use ustruc_driver, only: ustruc_enabled, ustruc_read_checkpoint, ustruc_skip_checkpoint
     if (have_microstructure_data) then
       if (ustruc_enabled())  then
@@ -288,6 +289,8 @@ contains
       else
         call ustruc_skip_checkpoint (unit)
       end if
+    else if (ustruc_enabled()) then
+      call info ('  WARNING: restart file contains no microstructure state data')
     end if
   end subroutine restart_ustruc
 
@@ -313,7 +316,8 @@ contains
     use restart_utilities, only: info
     use parallel_info_module, only: p_info
     if (p_info%IOP) close(unit)
-    call info ('Restart file ' // trim(restart_file) // ' successfully read.')
+    call info ('')
+    call info ('Closing restart file ' // trim(restart_file))
   end subroutine close_restart_file
 
 end module restart_driver

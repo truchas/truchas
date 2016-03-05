@@ -321,6 +321,7 @@ contains
 
     if (.not.allocated(this)) return ! microstructure modeling not enabled
 
+    call TLS_info ('')
     call TLS_info ('Configuring microstructure modeling ...')
     call start_timer ('Microstructure')
 
