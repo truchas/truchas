@@ -42,7 +42,7 @@ Contains
 
     use,intrinsic :: iso_c_binding, only: c_int
     use parallel_communication, only: nPE, global_all, global_minval, global_maxval, global_sum
-    use parameter_module, only: ncells_tot
+    use legacy_mesh_api, only: ncells_tot
     use constants_module, only: FLOATBYTES  ! we ought to compute this here
     use truchas_logging_services
 

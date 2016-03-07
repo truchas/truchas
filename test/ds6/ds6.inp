@@ -24,7 +24,6 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
 
 &MESH
   mesh_file = 'ds5.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS

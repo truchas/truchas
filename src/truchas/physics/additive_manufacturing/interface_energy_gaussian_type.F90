@@ -78,7 +78,7 @@ module interface_energy_gaussian_type
 
     subroutine alloc_energy_depos(this)
 
-      use parameter_module, only: ncells
+      use legacy_mesh_api, only: ncells
 
       class(interface_energy_gaussian), intent(inout) :: this
  
@@ -130,8 +130,7 @@ module interface_energy_gaussian_type
 
     subroutine locate_interface_cells(this, state)
 
-      use gs_module,     only: EE_GATHER
-      use mesh_module,      only: Cell
+      use legacy_mesh_api, only: Cell, EE_GATHER
 
       class(interface_energy_gaussian), intent(inout) :: this
       type(am_state), intent(in) :: state
@@ -235,7 +234,7 @@ module interface_energy_gaussian_type
 
     function T_after_energy_depos(this, state, am_geom, ncell, dt) result(T_new)
 
-      use mesh_module,          only: Cell
+      use legacy_mesh_api, only: Cell
 
       class(interface_energy_gaussian), intent(inout) :: this
       type(am_state), intent(in) :: state

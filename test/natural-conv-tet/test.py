@@ -17,7 +17,7 @@ class NaturalConvTet(TruchasTest.GoldenTestCase):
 
   def test_final_velocity(self):
     '''NaturalConvTet: verifying the final velocity field'''
-    tol = 4.0e-5  # seeing an error of approx 3.7e-5
+    tol = 8.0e-5  # seeing an error of approx 3.7e-5
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_VC')
     gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_VC')
     error = max(abs((test[:,0]-gold[:,0]))) / max(abs(gold[:,0]))

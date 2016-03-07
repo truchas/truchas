@@ -76,7 +76,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: i, j, k, l, n, offset, offset1, side_mask, node_mask
+    integer :: i, j, k, l, n, offset, offset1, offset2, side_mask, node_mask
     logical, allocatable :: link_eblk(:), link_node(:), keep(:)
     integer, allocatable :: link_side(:), face(:), map(:)
     integer, pointer :: side_sig(:) => null(), flat_connect(:) => null()
@@ -293,16 +293,17 @@ contains
     call mesh%delete_links  ! deallocates the arrays if allocated
     mesh%nlink = sum(mesh%eblk%num_elem, mask=link_eblk)
     n = sum(mesh%eblk%num_elem * mesh%eblk%num_nodes_per_elem, mask=link_eblk)
-    allocate(mesh%xlnode(mesh%nlink+1), mesh%lnode(n), mesh%link_block(mesh%nlink))
+    allocate(mesh%xlnode(mesh%nlink+1), mesh%lnode(n), mesh%link_block(mesh%nlink), mesh%link_cell_id(mesh%nlink))
     mesh%link_block_id = pack(mesh%eblk%id, mask=link_eblk)
     mesh%nlblock = size(mesh%link_block_id)
-    offset = 0; offset1 = 0
+    offset = 0; offset1 = 0; offset2 = 0
     mesh%xlnode(1) = 1
     do i = 1, mesh%num_eblk
       if (link_eblk(i)) then
         do j = 1, mesh%eblk(i)%num_elem
           mesh%xlnode(offset+j+1) = mesh%xlnode(offset+j) + mesh%eblk(i)%num_nodes_per_elem
           mesh%link_block(offset+j) = mesh%eblk(i)%id
+          mesh%link_cell_id(offset+j) = offset2 + j
         end do
         associate (connect => mesh%eblk(i)%connect)
           call c_f_pointer (c_loc(connect), flat_connect, shape=[size(connect)])
@@ -311,6 +312,7 @@ contains
         end associate
         offset = offset + mesh%eblk(i)%num_elem
       end if
+      offset2 = offset2 + mesh%eblk(i)%num_elem
     end do
 
     !! Prune the link element blocks from the EBLK array, and generate the
@@ -957,6 +959,11 @@ contains
     allocate(mesh%lnode(size(itmp)+n2))
     mesh%lnode(:size(itmp)) = itmp
     deallocate(itmp)
+    !! Extend link_cell_id
+    call move_alloc (mesh%link_cell_id, itmp)
+    allocate(mesh%link_cell_id(size(itmp)+n1))
+    mesh%link_cell_id(:size(itmp)) = itmp
+    mesh%link_cell_id(size(itmp)+1:) = 0  ! new links come from no cell
 
     allocate(equiv(size(parent)))
     equiv = 0
@@ -1138,6 +1145,10 @@ contains
     deallocate(mesh%coord)
     call move_alloc (new_x, mesh%coord)
     mesh%num_node = new_nnode
+
+    !! Save the node map (TEMPORARY)
+    INSIST(.not.allocated(mesh%parent_node))
+    call move_alloc (map, mesh%parent_node)
 
   contains
 

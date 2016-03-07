@@ -25,6 +25,7 @@ MODULE BC_KIND_MODULE
   !            Bryan R. Lally, LANL ESA-EPE (lally@lanl.gov)
   !
   !=======================================================================
+  use legacy_mesh_api, only: ncells, nfc
   implicit none
 
   ! Private Module
@@ -46,9 +47,6 @@ CONTAINS
     !   Return true if the Dirichlet bit (in bit_position) in integer
     !   Flag is set; otherwise return false.
     !=======================================================================
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     integer, intent(IN) :: bit_position
@@ -76,9 +74,6 @@ CONTAINS
     !   Return true if the Neumann bit (in bit_position) in integer
     !   Flag is set; otherwise return false.
     !=======================================================================
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     integer, intent(IN) :: bit_position
@@ -106,9 +101,6 @@ CONTAINS
     !   Return true if the Free-slip bits (in bit_position and
     !   bit_position+1) in integer Flag are set; otherwise return false.
     !=======================================================================
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     integer, intent(IN) :: bit_position
@@ -137,9 +129,6 @@ CONTAINS
     !   Return true if the Dirichlet_Vel bits (in bit_position and
     !   bit_position+1) in integer Flag are set; otherwise return false.
     !=======================================================================
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     integer, intent(IN) :: bit_position
@@ -168,9 +157,6 @@ CONTAINS
     !   Return true if the Neumann_Vel bits (in bit_position and
     !   bit_position+1) in integer Flag are set; otherwise return false.
     !=======================================================================
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     integer, intent(IN) :: bit_position
@@ -199,9 +185,6 @@ CONTAINS
     !   Return true if the internal BC bit (in bit_position) in integer
     !   Flag is set; otherwise return false.
     !=======================================================================
-    use scalars_module
-
-    implicit none
 
     ! Argument List
     integer, intent(IN) :: bit_position
@@ -231,8 +214,7 @@ CONTAINS
     !=======================================================================
     use bc_data_module, only: BC
     use bc_type_module, only: Vel
-    use mesh_module,    only: Mesh
-    use scalars_module
+    use legacy_mesh_api, only: Mesh
     use kinds, only: r8
 
     ! Argument List
@@ -273,8 +255,7 @@ CONTAINS
     !=======================================================================
     use bc_data_module, only: BC
     use bc_type_module, only: Vel
-    use mesh_module,    only: Mesh
-    use scalars_module
+    use legacy_mesh_api, only: Mesh
     use kinds, only: r8
 
     ! Argument List

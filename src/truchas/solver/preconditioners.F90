@@ -215,8 +215,7 @@ CONTAINS
     !   Compute y = Ax where A is a matrix stored as array P(nfc,:)
     !   in ELL format.
     !=======================================================================
-    use gs_module,        only: EE_GATHER
-    use parameter_module, only: nfc, ncells
+    use legacy_mesh_api, only: nfc, ncells, EE_GATHER
 
     ! Arguments
     type(Ubik_vector_type), target, intent(INOUT) :: X_vec
@@ -309,9 +308,7 @@ CONTAINS
     !   perform Jacobi iterations
     !===========================================================================
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
-    use mesh_module,      only: DEGENERATE_FACE, Mesh
-    use parameter_module, only: nfc, ncells
-    use gs_module,        only: EE_GATHER
+    use legacy_mesh_api,  only: nfc, ncells, DEGENERATE_FACE, Mesh, EE_GATHER
 
     ! arguments
     real(r8), dimension(0:,:), intent(IN) :: A
@@ -382,10 +379,8 @@ CONTAINS
     !
     !   perform symmetric successive-over-relaxation (SSOR) iterations
     !===========================================================================
-    use gs_module,        only: Gather_BoundaryData
+    use legacy_mesh_api, only: nfc, ncells, Gather_BoundaryData, Mesh, DEGENERATE_FACE
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
-    use mesh_module,      only: Mesh, DEGENERATE_FACE
-    use parameter_module, only: nfc, ncells
 
     ! arguments
     real(r8), dimension(0:,:), intent(IN) :: A
@@ -480,7 +475,7 @@ CONTAINS
     !   this could be really expensive
     !===========================================================================
     use linear_solution,  only: Ubik_type
-    use parameter_module, only: nfc, ncells
+    use legacy_mesh_api,  only: nfc, ncells
 
     ! Arguments
     real(r8), dimension(0:,:), intent(IN)    :: A_arg
@@ -542,7 +537,7 @@ CONTAINS
     !   do ILU0 preconditioning
     !===========================================================================
     use linear_solution,  only: Ubik_type
-    use parameter_module, only: nfc, ncells
+    use legacy_mesh_api,  only: nfc, ncells
 
     ! arguments
     real(r8), dimension(0:,:), intent(IN)    :: A_arg
@@ -655,9 +650,8 @@ CONTAINS
     !  For thermo-mechanics only, perform symmetric successive-over-relaxation 
     ! (SSOR) iterations.
     !===========================================================================
-    use gs_module,        only: NN_Gather_BoundaryData
+    use legacy_mesh_api,  only: ndim, nnodes, NN_Gather_BoundaryData
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
-    Use parameter_module, Only: ndim, nnodes
 
     ! arguments
     type(real_var_vector), dimension(:), intent(IN) :: A
@@ -764,9 +758,8 @@ CONTAINS
     !
     !   determine the residual from our equation system, b - Ax
     !===========================================================================
-    use gs_module,        only: EE_GATHER
+    use legacy_mesh_api,  only: nfc, ncells, EE_GATHER
     use linear_solution,  only: PRECOND_SCOPE_LOCAL, PRECOND_SCOPE_GLOBAL
-    use parameter_module, only: nfc, ncells
 
     ! Arguments
     real(r8), dimension(ncells), intent(OUT) :: Res
@@ -812,7 +805,7 @@ CONTAINS
     !===========================================================================
     ! Purpose:
     !===========================================================================
-    use mesh_module,      only: Mesh
+    use legacy_mesh_api, only: Mesh
 
     ! Arguments
     integer, intent(IN) :: ncoef
@@ -843,7 +836,7 @@ CONTAINS
     !===========================================================================
     ! Purpose:
     !===========================================================================
-    use mesh_module,      only: Mesh
+    use legacy_mesh_api, only: Mesh
 
     ! Arguments
     integer, intent(IN) :: ncoef
@@ -1107,7 +1100,7 @@ CONTAINS
     !
     !   do an Incomplete LU factorization, fill in 0
     !===========================================================================
-    use mesh_module,      only: Mesh
+    use legacy_mesh_api,  only: Mesh
     use cutoffs_module,   only: alittle
     use utilities_module, only: bubble_permute
 
@@ -1198,7 +1191,7 @@ CONTAINS
     !
     !   do an Incomplete LU factorization, fill in 0
     !===========================================================================
-    use mesh_module,      only: Mesh
+    use legacy_mesh_api,  only: Mesh
     use utilities_module, only: bubble_permute
 
     ! Arguments
@@ -1236,7 +1229,7 @@ CONTAINS
     !
     !   do an Incomplete LU factorization, fill in 0
     !===========================================================================
-    use mesh_module,      only: Mesh
+    use legacy_mesh_api, only: Mesh
 
     ! Arguments
     integer, intent(IN) :: ncoef

@@ -18,7 +18,7 @@ MODULE BC_TYPE_MODULE
   !            Bryan R. Lally, LANL ESA-EPE (lally@lanl.gov)
   !
   !=======================================================================
-  use scalars_module
+  use legacy_mesh_api, only: nfc
   use kinds, only: r8
 
   implicit none

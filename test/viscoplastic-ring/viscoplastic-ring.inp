@@ -27,7 +27,6 @@ define a three-dimensional mesh
 &MESH
 
     mesh_file         = 'hytec_quarter_coarse_g.exo', 
-    mesh_file_format  = 'ExodusII', 
     gap_element_blocks = 3
 /
 

@@ -72,7 +72,8 @@ module unstr_mesh_gmv
   private
 
   public :: gmv_open, gmv_close, gmv_write_unstr_mesh
-  public :: gmv_begin_variables, gmv_end_variables, gmv_write_dist_cell_var
+  public :: gmv_begin_variables, gmv_end_variables
+  public :: gmv_write_dist_cell_var, gmv_write_dist_node_var
 
 contains
 
@@ -225,5 +226,26 @@ contains
     deallocate(u_global)
 
   end subroutine gmv_write_dist_cell_var
+
+  subroutine gmv_write_dist_node_var (mesh, u, name)
+
+    use unstr_mesh_type
+    use index_partitioning
+
+    type(unstr_mesh), intent(in) :: mesh
+    real(r8), intent(in) :: u(:)
+    character(*), intent(in) :: name
+
+    real(r8), pointer :: u_global(:)
+
+    ASSERT(mesh%node_ip%defined())
+    ASSERT(size(u) == mesh%node_ip%onP_size())
+
+    allocate(u_global(merge(mesh%node_ip%global_size(),0,is_IOP)))
+    call collate (u_global, u)
+    if (is_IOP) call gmvwrite_variable_name_data_f (NODEDATA, name, u_global)
+    deallocate(u_global)
+
+  end subroutine gmv_write_dist_node_var
 
 end module unstr_mesh_gmv

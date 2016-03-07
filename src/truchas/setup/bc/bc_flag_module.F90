@@ -26,6 +26,7 @@ MODULE BC_FLAG_MODULE
   !            Bryan R. Lally, LANL ESA-EPE (lally@lanl.gov)
   !
   !=======================================================================
+  use legacy_mesh_api, only: ncells, nfc
   implicit none
 
   ! Private Module
@@ -48,7 +49,6 @@ CONTAINS
     !   Assign bit positions in the Flag portion of the BC structure
     !   (BC%Flag) for pressure, velocity, and concentration BC flags.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     integer, dimension(nfc) :: Conc_bit
@@ -97,7 +97,6 @@ CONTAINS
     !   One bit (in bit_position) is set to one. This routine
     !   should only be called for temperature and pressure BC.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
@@ -122,7 +121,6 @@ CONTAINS
     !   Set the Free-Slip bit in integer Flag where Mask is true.
     !   Sets bits to '01'.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
@@ -150,7 +148,6 @@ CONTAINS
     !   Set the velocity Dirichlet bit in integer Flag where Mask is true.
     !   Sets bits to '10'.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
@@ -178,7 +175,6 @@ CONTAINS
     !   Set the internal BC bit in integer Flag where Mask is true.
     !   One bit (in bit_position) is set to one.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
@@ -204,7 +200,6 @@ CONTAINS
     !   One bit (in bit_position) is set to zero. This routine
     !   should only be called for temperature and pressure BC.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
@@ -229,7 +224,6 @@ CONTAINS
     !   Set the velocity Neumann bit in integer Flag where Mask is true.
     !   Sets bits to '11'.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask
@@ -265,8 +259,7 @@ CONTAINS
 !    use bc_data_module,   only: BC_Vel, BC
 !    use bc_kind_module,   only: FREE_SLIP, DIRICHLET_VEL
 !    use kinds, only: r8
-!    use mesh_module,      only: Cell
-!    use parameter_module, only: ncells, ndim
+!    use legacy_mesh_api, only: ncells, ndim, Cell
 !    use time_step_module, only: t
 !
 !    ! Argument List
@@ -317,7 +310,6 @@ CONTAINS
     !   Set the velocity BC bit to '00', indicating that no velocity BC is
     !   specified.
     !=======================================================================
-    use scalars_module
 
     ! Argument List
     logical, dimension(ncells), intent(IN) :: Mask

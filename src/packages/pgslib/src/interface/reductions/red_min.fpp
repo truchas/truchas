@@ -19,10 +19,6 @@
 #error "_ROUTINE_ must be defined before including this file"
 #endif
 
-!!CPP!! Need this strange set of macros to get proper expansion.
-#define _STRINGIZE_(S)           #S
-#define _STRING_(S)   _STRINGIZE_(S)
-
 function _ROUTINE_(A, MASK, SCOPE)
   USE PGSLib_Type_MODULE
   use pgslib_globals_module
@@ -66,5 +62,3 @@ END FUNCTION _ROUTINE_
 #undef _ARRAY_
 #undef _ARG_
 #undef _ROUTINE_
-#undef _STRINGIZE_
-#undef _STRING_

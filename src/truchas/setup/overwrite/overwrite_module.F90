@@ -93,9 +93,10 @@ CONTAINS
     !
     !=======================================================================
 !    use constants_module, only: pi
-!    use parameter_module, only: max_slots, ncells, nnodes, ndim
+!    use parameter_module, only: max_slots
+!    use legacy_mesh_api,  only: ncells, nnodes, ndim
 !    use zone_module,      only: Zone
-!    use mesh_module,      only: Mesh, Cell, Vertex
+!    use legacy_mesh_api,  only: Mesh, Cell, Vertex
 !    use matl_module,      only: Matl
 
     ! Arguments
@@ -207,8 +208,9 @@ CONTAINS
     
 !!$    use error_module,         only: ERROR_CHECK
 !!$    use matl_module,          only: GATHER_VOF
-!!$    use mesh_module,          only: Mesh, Cell, Vertex
-!!$    use parameter_module,     only: max_slots, ncells, nnodes, mat_slot, nmat
+!!$    use legacy_mesh_api,      only: Mesh, Cell, Vertex
+!!$    use parameter_module,     only: max_slots, mat_slot, nmat
+!!$    use legacy_mesh_api,      only: ncells, nnodes
 !!$    use thermo,               only: Volume_Fraction
 !!$    use zone_module,          only: Zone
 !!$    use thermo_iterative,     only: h_of_t
@@ -274,9 +276,8 @@ CONTAINS
      ! material_1 or material_2.  Set as close to 1.0 as desired.
      !--------------------------------------------------------------------------
 
-     use parameter_module,  only: ncells, nfc
+     use legacy_mesh_api,   only: ncells, nfc, EE_GATHER
      use matl_module,       only: gather_vof
-     use gs_module,         only: EE_GATHER
 
      ! arguments
      logical, dimension(:,:) :: mask
@@ -362,9 +363,8 @@ CONTAINS
      ! It is set to true for the uncovered boundary faces.
      !--------------------------------------------------------------------------
 
-     use parameter_module,  only: ncells, nfc
+     use legacy_mesh_api,   only: ncells, nfc, Mesh
      use bc_module,         only: Boundary, BC_T
-     use mesh_module,       only: Mesh
 
      ! arguments
      logical, dimension(:,:) :: mask
@@ -386,8 +386,7 @@ CONTAINS
 
   SUBROUTINE CREATE_PLUME(Phi,xc,yc,zc,r1,type)
 
-    use mesh_module,          only: Cell
-    use parameter_module,     only: ncells, ndim
+    use legacy_mesh_api, only: ncells, ndim, Cell
 
     ! Arguments...
     real(r8), dimension(:), intent(INOUT) :: Phi
@@ -506,9 +505,8 @@ CONTAINS
     !=======================================================================
     use constants_module, only: pi
     use fluid_data_module, only: Fluxing_Velocity
-    use parameter_module, only: ncells, ndim, nfc
+    use legacy_mesh_api,  only: ncells, ndim, nfc, Cell
     use zone_module,      only: Zone
-    use mesh_module,      only: Cell
 
     ! Arguments
 

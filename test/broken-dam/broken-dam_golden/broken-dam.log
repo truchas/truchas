@@ -3,41 +3,39 @@
 
 PROGRAM INFORMATION
 
-   code:                truchas
-   version:             2.7.dev
-   libraries:           UbikSolve (v2.3_beta), PGSLib (v3.3.4_Alpha), Chaco (v2.2)
-   build architecture:  Linux noether.lanl.gov 3.6.11-5.fc17.x86_64 #1 SMP Tue Jan 8 21:40:51 UTC 2013 x86_64 x86_64 x86_64 GNU/Linux
-   build date/time:     13 Feb 13 12:19:16
-   build flags:         -O2 -u -maxcontin=99
+   code:                DUMMY
+   version:             2.9.dev
+   libraries:           UbikSolve, PGSLib, Chaco
+   build architecture:  x86_64
+   build date/time:      6 Oct 2015 01:51:34
+   build flags:         -u -C -gline -nan -maxcontin=99 -PIC
    build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 3.6.11-5.fc17.x86_64 #1 SMP Tue Jan 8 21:40:51 UTC 2013 x86_64
+   run architecture:    Linux noether.lanl.gov 3.19.8-100.fc20.x86_64 #1 SMP Tue May 12 17:08:50 UTC 2015 x86_64
    run host:            noether.lanl.gov
-   run date/time:       13 Feb 13 14:45:12
+   run date/time:       05 Oct 15 21:48:40
    processors:          1
 
 ================================================================================
 
 COPYRIGHT
 
-   Copyright 2012. Los Alamos National Security, LLC.  This material
-   was produced under U.S. Government contract DE-AC52-06NA25396 for
-   Los Alamos National Laboratory (LANL), which is operated by Los
-   Alamos National Security, LLC for the U.S. Department of Energy.
-   The U.S. Government has rights to use, reproduce, and distribute
-   this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
-   SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES
-   ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
-   modified to produce derivative works, such modified software
-   should be clearly marked, so as not to confuse it with the
-   version available from LANL.
+   Copyright 2007-2013. Los Alamos National Security, LLC.
 
-   Additionally, this program is free software; you can redistribute
-   it and/or modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-   Accordingly, this program is distributed in the hope that it will
-   be useful, but WITHOUT ANY WARRANTY; without even the implied
-   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   This material was produced under U.S. Government contract DE-AC52-06NA25396
+   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+   National Security, LLC for the U.S. Department of Energy. The U.S. Government
+   has rights to use, reproduce, and distribute this software.  NEITHER THE
+   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+   is modified to produce derivative works, such modified software should be
+   clearly marked, so as not to confuse it with the version available from LANL.
+
+   Additionally, this program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or (at your
+   option) any later version. Accordingly, this program is distributed in the
+   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
    See the GNU General Public License for more details.
 
 ================================================================================
@@ -46,10 +44,6 @@ DISCLAIMER
 
    This Truchas release is registered with the Los Alamos National
    Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
-   Truchas is currently a beta version, as development is ongoing
-   and continuous, hence bugs are likely to be present. All aspects
-   of the Truchas software and its user interface are subject to
-   change without notice.
 DANU: Opening h5 output file
 
 ================================================================================
@@ -79,7 +73,8 @@ Reading PHYSICS namelist ...
  Reading OUTPUTS Namelist ...
 
 Reading MESH Namelist ...
-         Mesh Size:  50 x 42 x  1 =    2100 cells
+         Opened mesh file ./mesh.exo
+           containing 4386 nodes and 2100 cells
 
  Reading MATERIAL Namelist # 1 ...
 
@@ -115,9 +110,6 @@ Reading INTERFACES namelist ...
 
          Reading LINEAR_SOLVER Namelist # 1 ...
 
- Reading SO_SOLVER Namelist ...
-         SO_SOLVER namelist not found! Using defaults.
-
 Reading NONLINEAR_SOLVER Namelists ...
   NONLINEAR_SOLVER namelist not found; using defaults.
 
@@ -145,26 +137,8 @@ INITIALIZATION
 Allocating mesh derived types ... done.
  Automatic partitioner selection: None
 
- X-direction mesh:
-
-   Seg      X       Cells   Ratio     First dX      Last  dX
-    1  0.000000E+00   50  1.0000000  2.857500E-03  2.857500E-03
-       1.428750E-01 ----
-                      50
-
- Y-direction mesh:
-
-   Seg      Y       Cells   Ratio     First dY      Last  dY
-    1  0.000000E+00   42  1.0000000  2.857500E-03  2.857500E-03
-       1.200150E-01 ----
-                      42
-
- Z-direction mesh:
-
-   Seg      Z       Cells   Ratio     First dZ      Last  dZ
-    1  0.000000E+00    1  1.0000000  5.715000E-03  5.715000E-03
-       5.715000E-03 ----
-                       1
+Reading ExodusII mesh file ./mesh.exo ...
+ Closed ExodusII mesh file ./mesh.exo
 
  Determining mesh partitions and permutation vectors.
 
@@ -204,7 +178,7 @@ Allocating base derived types ...done.
 Computing cell geometry ... 
                     Min        Cell       Max        Cell       Total
                     ---        ----       ---        ----       -----
-       Volumes   4.6665E-08      1890   4.6665E-08      1547    9.7996E-05
+       Volumes   4.6665E-08      1931   4.6665E-08      1885    9.7996E-05
 
     Entire mesh is orthogonal
 
@@ -221,11 +195,25 @@ done.
                    0.0000E+00       5.7150E-03
 
  Finding face neighbors ... done.
+
+Initializing mesh "MAIN" ...
+  Reading ExodusII mesh file "./mesh.exo"
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|     4386     8492     2100
+  Mesh Communication Profile:
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|      0     4386      0     8492      0     2100
+  Mesh "MAIN" initialized
 DANU: adding default mesh entry
 DANU: writing mesh node coordinates
 DANU: adding main simulation entry
 
- Computing initial volume fractions ... 
+Computing initial volume fractions ...
+
     Interface cells will be identified from       2100 total cells with   5**3 particles/cell
 
     Tallying        5**3 =    125 interface particles
@@ -254,7 +242,11 @@ DANU: adding main simulation entry
     Tallied  10 x  10**2 =   1000 VOF particles
 
     Body # 2 was clipped in    800 cells because of previously defined bodies
-done.
+ERROR: volume fraction sum < 1 in cells: 1 2 3 8 10 [370 more items omitted]
+       minimum volume fraction sum less 1: -6.35569E-12
+  Computed volume fractions are invalid; attempting to normalize.
+  Normalization was successful.
+  Initial volume fractions computed.
   Using default value "specific heat" = 0.000E+00 for phase "water"
   Using default value "specific heat" = 0.000E+00 for phase "air"
  Initializing Displacement Boundary Conditions
@@ -282,48 +274,61 @@ EXECUTION
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E-03
 Warning: excessive volume adjustment: cell=1, matid=1, adjustment fraction= -6.569E-09
-Warning: excessive volume adjustment: cell=2, matid=1, adjustment fraction=  2.518E-09
-Warning: excessive volume adjustment: cell=3, matid=1, adjustment fraction=  8.672E-11
-Warning: excessive volume adjustment: cell=4, matid=1, adjustment fraction=  4.239E-10
-Warning: excessive volume adjustment: cell=5, matid=1, adjustment fraction=  6.518E-10
-Warning: excessive volume adjustment: cell=6, matid=1, adjustment fraction=  3.981E-10
-Warning: excessive volume adjustment: cell=7, matid=1, adjustment fraction= -6.431E-10
-Warning: excessive volume adjustment: cell=8, matid=1, adjustment fraction=  8.755E-10
-Warning: excessive volume adjustment: cell=9, matid=1, adjustment fraction=  7.052E-11
-Warning: excessive volume adjustment: cell=10, matid=1, adjustment fraction= -1.195E-10
-Warning: excessive volume adjustment: cell=11, matid=1, adjustment fraction=  8.884E-11
-Warning: excessive volume adjustment: cell=21, adjustment fraction= -6.319E-11
-Warning: excessive volume adjustment: cell=71, adjustment fraction= -4.778E-10
-Warning: excessive volume adjustment: cell=121, adjustment fraction= -3.374E-10
-Warning: excessive volume adjustment: cell=171, adjustment fraction= -1.826E-11
-Warning: excessive volume adjustment: cell=221, adjustment fraction= -1.624E-10
-Warning: excessive volume adjustment: cell=271, adjustment fraction= -1.308E-10
-Warning: excessive volume adjustment: cell=321, adjustment fraction=  4.868E-11
-Warning: excessive volume adjustment: cell=371, adjustment fraction=  2.326E-11
-Warning: excessive volume adjustment: cell=421, adjustment fraction= -1.706E-10
-Warning: excessive volume adjustment: cell=471, adjustment fraction= -6.524E-11
-Warning: excessive volume adjustment: cell=521, adjustment fraction=  9.172E-11
-Warning: excessive volume adjustment: cell=571, adjustment fraction= -1.325E-12
-Warning: excessive volume adjustment: cell=1951, adjustment fraction= -1.452E-07
-Warning: excessive volume adjustment: cell=1952, adjustment fraction= -1.446E-07
-Warning: excessive volume adjustment: cell=1953, adjustment fraction= -1.433E-07
-Warning: excessive volume adjustment: cell=1954, adjustment fraction= -1.413E-07
-Warning: excessive volume adjustment: cell=1955, adjustment fraction= -1.386E-07
-Warning: excessive volume adjustment: cell=1956, adjustment fraction= -1.354E-07
-Warning: excessive volume adjustment: cell=1957, adjustment fraction= -1.314E-07
-Warning: excessive volume adjustment: cell=1958, adjustment fraction= -1.267E-07
-Warning: excessive volume adjustment: cell=1959, adjustment fraction= -1.214E-07
-Warning: excessive volume adjustment: cell=1960, adjustment fraction= -1.153E-07
-Warning: excessive volume adjustment: cell=1961, adjustment fraction= -1.085E-07
-Warning: excessive volume adjustment: cell=1963, adjustment fraction=  1.492E-06
-Warning: excessive volume adjustment: cell=1964, adjustment fraction= -1.271E-11
-Warning: excessive volume adjustment: cell=1965, adjustment fraction= -9.364E-12
-Warning: excessive volume adjustment: cell=1966, adjustment fraction= -4.626E-12
-Warning: excessive volume adjustment: cell=1967, adjustment fraction=  3.656E-13
-Warning: excessive volume adjustment: cell=1968, adjustment fraction=  4.580E-12
-Warning: excessive volume adjustment: cell=1969, adjustment fraction=  7.139E-12
-Warning: excessive volume adjustment: cell=1970, adjustment fraction=  5.007E-12
-Warning: excessive volume adjustment: cell=1971, adjustment fraction= -1.320E-10
+Warning: excessive volume adjustment: cell=2, matid=1, adjustment fraction=  4.692E-09
+Warning: excessive volume adjustment: cell=3, matid=1, adjustment fraction= -1.157E-09
+Warning: excessive volume adjustment: cell=4, matid=1, adjustment fraction=  1.468E-09
+Warning: excessive volume adjustment: cell=5, matid=1, adjustment fraction= -3.507E-10
+Warning: excessive volume adjustment: cell=6, matid=1, adjustment fraction=  3.201E-10
+Warning: excessive volume adjustment: cell=7, matid=1, adjustment fraction=  4.485E-10
+Warning: excessive volume adjustment: cell=8, matid=1, adjustment fraction= -1.702E-11
+Warning: excessive volume adjustment: cell=9, matid=1, adjustment fraction=  1.030E-10
+Warning: excessive volume adjustment: cell=10, matid=1, adjustment fraction=  3.223E-10
+Warning: excessive volume adjustment: cell=11, matid=1, adjustment fraction=  2.836E-11
+Warning: excessive volume adjustment: cell=40, adjustment fraction=  4.921E-11
+Warning: excessive volume adjustment: cell=82, adjustment fraction= -1.708E-11
+Warning: excessive volume adjustment: cell=124, adjustment fraction= -4.576E-11
+Warning: excessive volume adjustment: cell=166, adjustment fraction= -3.581E-11
+Warning: excessive volume adjustment: cell=208, adjustment fraction= -2.076E-11
+Warning: excessive volume adjustment: cell=250, adjustment fraction= -2.061E-11
+Warning: excessive volume adjustment: cell=292, adjustment fraction= -2.923E-11
+Warning: excessive volume adjustment: cell=334, adjustment fraction= -3.157E-11
+Warning: excessive volume adjustment: cell=376, adjustment fraction= -2.396E-11
+Warning: excessive volume adjustment: cell=418, adjustment fraction= -1.629E-11
+Warning: excessive volume adjustment: cell=460, adjustment fraction= -1.646E-11
+Warning: excessive volume adjustment: cell=841, adjustment fraction= -6.319E-11
+Warning: excessive volume adjustment: cell=842, adjustment fraction= -4.778E-10
+Warning: excessive volume adjustment: cell=843, adjustment fraction= -3.374E-10
+Warning: excessive volume adjustment: cell=844, adjustment fraction= -1.823E-11
+Warning: excessive volume adjustment: cell=845, adjustment fraction= -1.624E-10
+Warning: excessive volume adjustment: cell=846, adjustment fraction= -1.307E-10
+Warning: excessive volume adjustment: cell=847, adjustment fraction=  4.870E-11
+Warning: excessive volume adjustment: cell=848, adjustment fraction=  2.324E-11
+Warning: excessive volume adjustment: cell=849, adjustment fraction= -1.706E-10
+Warning: excessive volume adjustment: cell=850, adjustment fraction= -6.519E-11
+Warning: excessive volume adjustment: cell=851, adjustment fraction=  9.172E-11
+Warning: excessive volume adjustment: cell=852, adjustment fraction= -1.325E-12
+Warning: excessive volume adjustment: cell=40, adjustment fraction= -1.452E-07
+Warning: excessive volume adjustment: cell=82, adjustment fraction= -1.446E-07
+Warning: excessive volume adjustment: cell=124, adjustment fraction= -1.433E-07
+Warning: excessive volume adjustment: cell=166, adjustment fraction= -1.413E-07
+Warning: excessive volume adjustment: cell=208, adjustment fraction= -1.386E-07
+Warning: excessive volume adjustment: cell=250, adjustment fraction= -1.354E-07
+Warning: excessive volume adjustment: cell=292, adjustment fraction= -1.314E-07
+Warning: excessive volume adjustment: cell=334, adjustment fraction= -1.267E-07
+Warning: excessive volume adjustment: cell=376, adjustment fraction= -1.214E-07
+Warning: excessive volume adjustment: cell=418, adjustment fraction= -1.153E-07
+Warning: excessive volume adjustment: cell=460, adjustment fraction= -1.085E-07
+Warning: excessive volume adjustment: cell=544, adjustment fraction=  1.492E-06
+Warning: excessive volume adjustment: cell=586, adjustment fraction= -1.275E-11
+Warning: excessive volume adjustment: cell=628, adjustment fraction= -9.364E-12
+Warning: excessive volume adjustment: cell=670, adjustment fraction= -4.592E-12
+Warning: excessive volume adjustment: cell=712, adjustment fraction=  3.656E-13
+Warning: excessive volume adjustment: cell=754, adjustment fraction=  4.580E-12
+Warning: excessive volume adjustment: cell=796, adjustment fraction=  7.123E-12
+Warning: excessive volume adjustment: cell=838, adjustment fraction=  5.007E-12
+Warning: excessive volume adjustment: cell=841, adjustment fraction= -3.161E-11
+Warning: excessive volume adjustment: cell=842, adjustment fraction= -2.389E-10
+Warning: excessive volume adjustment: cell=843, adjustment fraction= -1.687E-10
            37 Preliminary projection iterations (linear)
            34 Projection iterations (linear)
 
@@ -331,19 +336,17 @@ Warning: excessive volume adjustment: cell=1971, adjustment fraction= -1.320E-10
             Max Velocity: ( 2.9587E-02,  7.6966E-03,  0.0000E+00)
 
           2: t =   1.00000E-03, dt(growth) =   1.05000E-03
-Warning: excessive volume adjustment: cell=21, adjustment fraction=  8.434E-11
-Warning: excessive volume adjustment: cell=71, adjustment fraction=  9.252E-11
-Warning: excessive volume adjustment: cell=1956, adjustment fraction=  2.829E-06
-Warning: excessive volume adjustment: cell=1957, adjustment fraction= -3.336E-12
-Warning: excessive volume adjustment: cell=1958, adjustment fraction= -3.183E-12
-Warning: excessive volume adjustment: cell=1959, adjustment fraction= -4.510E-12
-Warning: excessive volume adjustment: cell=1960, adjustment fraction= -2.809E-12
-Warning: excessive volume adjustment: cell=1961, adjustment fraction=  1.561E-12
-Warning: excessive volume adjustment: cell=1962, adjustment fraction=  5.078E-12
-Warning: excessive volume adjustment: cell=1963, adjustment fraction=  6.446E-12
-Warning: excessive volume adjustment: cell=1964, adjustment fraction=  6.525E-12
-Warning: excessive volume adjustment: cell=1965, adjustment fraction=  5.409E-12
-Warning: excessive volume adjustment: cell=1966, adjustment fraction=  4.533E-12
+Warning: excessive volume adjustment: cell=250, adjustment fraction=  2.829E-06
+Warning: excessive volume adjustment: cell=292, adjustment fraction= -3.336E-12
+Warning: excessive volume adjustment: cell=334, adjustment fraction= -3.183E-12
+Warning: excessive volume adjustment: cell=376, adjustment fraction= -4.443E-12
+Warning: excessive volume adjustment: cell=418, adjustment fraction= -2.809E-12
+Warning: excessive volume adjustment: cell=460, adjustment fraction=  1.661E-12
+Warning: excessive volume adjustment: cell=502, adjustment fraction=  5.111E-12
+Warning: excessive volume adjustment: cell=544, adjustment fraction=  6.479E-12
+Warning: excessive volume adjustment: cell=586, adjustment fraction=  6.590E-12
+Warning: excessive volume adjustment: cell=628, adjustment fraction=  5.377E-12
+Warning: excessive volume adjustment: cell=670, adjustment fraction=  4.533E-12
            31 Projection iterations (linear)
 
             Min Velocity: (-5.0402E-03, -2.0042E-02,  0.0000E+00)
@@ -427,325 +430,343 @@ Warning: excessive volume adjustment: cell=1966, adjustment fraction=  4.533E-12
             Min Velocity: (-4.4037E-02, -2.1220E-01,  0.0000E+00)
             Max Velocity: ( 5.7016E-01,  1.1460E-01,  0.0000E+00)
 
-         16: t =   2.15786E-02, dt(courant) =   1.92923E-03 (cell       50)
+         16: t =   2.15786E-02, dt(courant) =   1.92923E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-4.9234E-02, -2.3098E-01,  0.0000E+00)
             Max Velocity: ( 6.0831E-01,  1.3158E-01,  0.0000E+00)
 
-         17: t =   2.35078E-02, dt(courant) =   1.81018E-03 (cell       50)
+         17: t =   2.35078E-02, dt(courant) =   1.81018E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-5.4038E-02, -2.4870E-01,  0.0000E+00)
             Max Velocity: ( 6.4278E-01,  1.3964E-01,  0.0000E+00)
 
-         18: t =   2.53180E-02, dt(courant) =   1.71596E-03 (cell       50)
-Warning: excessive volume adjustment: cell=22, matid=2, adjustment fraction= -7.976E-09
-Warning: excessive volume adjustment: cell=24, matid=2, adjustment fraction=  4.847E-13
-Warning: excessive volume adjustment: cell=25, matid=2, adjustment fraction=  6.213E-14
-Warning: excessive volume adjustment: cell=26, matid=2, adjustment fraction= -3.550E-12
-Warning: excessive volume adjustment: cell=27, matid=2, adjustment fraction=  4.010E-12
-Warning: excessive volume adjustment: cell=28, matid=2, adjustment fraction=  5.904E-12
-Warning: excessive volume adjustment: cell=29, matid=2, adjustment fraction=  1.095E-12
-Warning: excessive volume adjustment: cell=30, matid=2, adjustment fraction=  1.226E-12
-Warning: excessive volume adjustment: cell=31, matid=2, adjustment fraction= -1.871E-12
-Warning: excessive volume adjustment: cell=32, matid=2, adjustment fraction= -6.915E-13
-Warning: excessive volume adjustment: cell=33, matid=2, adjustment fraction=  3.080E-12
+         18: t =   2.53180E-02, dt(courant) =   1.71596E-03 (cell     2059)
+Warning: excessive volume adjustment: cell=883, matid=2, adjustment fraction= -7.976E-09
+Warning: excessive volume adjustment: cell=890, matid=2, adjustment fraction= -1.720E-12
+Warning: excessive volume adjustment: cell=891, matid=2, adjustment fraction= -2.966E-12
+Warning: excessive volume adjustment: cell=892, matid=2, adjustment fraction=  1.086E-12
+Warning: excessive volume adjustment: cell=893, matid=2, adjustment fraction=  1.911E-12
+Warning: excessive volume adjustment: cell=894, matid=2, adjustment fraction=  3.873E-13
+Warning: excessive volume adjustment: cell=895, matid=2, adjustment fraction= -2.085E-12
+Warning: excessive volume adjustment: cell=896, matid=2, adjustment fraction= -1.677E-12
+Warning: excessive volume adjustment: cell=897, matid=2, adjustment fraction=  1.958E-13
+Warning: excessive volume adjustment: cell=898, matid=2, adjustment fraction= -2.948E-13
+Warning: excessive volume adjustment: cell=899, matid=2, adjustment fraction= -1.578E-12
            35 Projection iterations (linear)
 
             Min Velocity: (-5.8357E-02, -2.6550E-01,  0.0000E+00)
             Max Velocity: ( 6.7414E-01,  1.3969E-01,  0.0000E+00)
 
-         19: t =   2.70339E-02, dt(courant) =   1.63875E-03 (cell       50)
-Warning: excessive volume adjustment: cell=271, matid=2, adjustment fraction= -1.784E-08
-Warning: excessive volume adjustment: cell=273, matid=2, adjustment fraction=  7.633E-12
-Warning: excessive volume adjustment: cell=274, matid=2, adjustment fraction= -5.553E-12
-Warning: excessive volume adjustment: cell=275, matid=2, adjustment fraction= -4.076E-12
-Warning: excessive volume adjustment: cell=276, matid=2, adjustment fraction=  2.076E-12
-Warning: excessive volume adjustment: cell=277, matid=2, adjustment fraction=  3.306E-12
-Warning: excessive volume adjustment: cell=278, matid=2, adjustment fraction=  1.002E-12
-Warning: excessive volume adjustment: cell=279, matid=2, adjustment fraction= -4.489E-12
-Warning: excessive volume adjustment: cell=280, matid=2, adjustment fraction= -1.532E-12
-Warning: excessive volume adjustment: cell=281, matid=2, adjustment fraction=  1.470E-12
-Warning: excessive volume adjustment: cell=282, matid=2, adjustment fraction= -1.616E-12
+         19: t =   2.70339E-02, dt(courant) =   1.63875E-03 (cell     2059)
+Warning: excessive volume adjustment: cell=846, matid=2, adjustment fraction= -1.783E-08
+Warning: excessive volume adjustment: cell=879, matid=2, adjustment fraction= -3.943E-12
+Warning: excessive volume adjustment: cell=880, matid=2, adjustment fraction=  1.125E-11
+Warning: excessive volume adjustment: cell=881, matid=2, adjustment fraction=  6.382E-12
+Warning: excessive volume adjustment: cell=882, matid=2, adjustment fraction= -2.991E-13
+Warning: excessive volume adjustment: cell=883, matid=1, adjustment fraction= -8.036E-14
+Warning: excessive volume adjustment: cell=891, matid=2, adjustment fraction=  3.780E-12
+Warning: excessive volume adjustment: cell=892, matid=2, adjustment fraction=  3.480E-12
+Warning: excessive volume adjustment: cell=893, matid=2, adjustment fraction=  2.259E-12
+Warning: excessive volume adjustment: cell=894, matid=2, adjustment fraction= -8.086E-13
+Warning: excessive volume adjustment: cell=895, matid=2, adjustment fraction= -2.554E-12
            35 Projection iterations (linear)
 
             Min Velocity: (-6.0955E-02, -2.8169E-01,  0.0000E+00)
             Max Velocity: ( 7.0308E-01,  1.4350E-01,  0.0000E+00)
 
-         20: t =   2.86727E-02, dt(courant) =   1.57355E-03 (cell       50)
+         20: t =   2.86727E-02, dt(courant) =   1.57355E-03 (cell     2059)
            33 Projection iterations (linear)
 
             Min Velocity: (-6.2102E-02, -2.9731E-01,  0.0000E+00)
             Max Velocity: ( 7.2992E-01,  1.5009E-01,  0.0000E+00)
 
-         21: t =   3.02462E-02, dt(courant) =   1.51759E-03 (cell       50)
+         21: t =   3.02462E-02, dt(courant) =   1.51759E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-6.4690E-02, -3.1229E-01,  0.0000E+00)
             Max Velocity: ( 7.5495E-01,  1.4807E-01,  0.0000E+00)
 
-         22: t =   3.17638E-02, dt(courant) =   1.46893E-03 (cell       50)
+         22: t =   3.17638E-02, dt(courant) =   1.46893E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-7.1566E-02, -3.2660E-01,  0.0000E+00)
             Max Velocity: ( 7.7855E-01,  1.5216E-01,  0.0000E+00)
 
-         23: t =   3.32328E-02, dt(courant) =   1.42585E-03 (cell       50)
+         23: t =   3.32328E-02, dt(courant) =   1.42585E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-7.7937E-02, -3.4022E-01,  0.0000E+00)
             Max Velocity: ( 8.0090E-01,  1.6117E-01,  0.0000E+00)
 
-         24: t =   3.46586E-02, dt(courant) =   1.38733E-03 (cell       50)
-Warning: excessive volume adjustment: cell=73, matid=2, adjustment fraction= -2.112E-08
-Warning: excessive volume adjustment: cell=76, matid=2, adjustment fraction=  4.360E-12
-Warning: excessive volume adjustment: cell=77, matid=2, adjustment fraction=  2.518E-12
-Warning: excessive volume adjustment: cell=78, matid=2, adjustment fraction= -7.737E-12
-Warning: excessive volume adjustment: cell=79, matid=2, adjustment fraction= -1.036E-12
-Warning: excessive volume adjustment: cell=80, matid=2, adjustment fraction= -5.703E-12
-Warning: excessive volume adjustment: cell=81, matid=2, adjustment fraction= -4.871E-12
-Warning: excessive volume adjustment: cell=82, matid=2, adjustment fraction= -8.341E-12
-Warning: excessive volume adjustment: cell=83, matid=2, adjustment fraction= -3.358E-12
-Warning: excessive volume adjustment: cell=84, matid=2, adjustment fraction=  1.466E-13
-Warning: excessive volume adjustment: cell=85, matid=2, adjustment fraction= -4.112E-12
+         24: t =   3.46586E-02, dt(courant) =   1.38733E-03 (cell     2059)
+Warning: excessive volume adjustment: cell=926, matid=2, adjustment fraction= -2.114E-08
+Warning: excessive volume adjustment: cell=931, matid=2, adjustment fraction=  2.045E-13
+Warning: excessive volume adjustment: cell=932, matid=2, adjustment fraction=  4.593E-12
+Warning: excessive volume adjustment: cell=933, matid=2, adjustment fraction= -3.659E-12
+Warning: excessive volume adjustment: cell=934, matid=2, adjustment fraction= -2.254E-12
+Warning: excessive volume adjustment: cell=935, matid=2, adjustment fraction=  4.838E-12
+Warning: excessive volume adjustment: cell=936, matid=2, adjustment fraction=  4.596E-12
+Warning: excessive volume adjustment: cell=937, matid=2, adjustment fraction=  9.084E-12
+Warning: excessive volume adjustment: cell=938, matid=2, adjustment fraction=  8.754E-13
+Warning: excessive volume adjustment: cell=939, matid=2, adjustment fraction= -3.722E-12
+Warning: excessive volume adjustment: cell=940, matid=2, adjustment fraction= -8.071E-12
            35 Projection iterations (linear)
 
             Min Velocity: (-8.4005E-02, -3.5311E-01,  0.0000E+00)
             Max Velocity: ( 8.2206E-01,  1.6240E-01,  0.0000E+00)
 
-         25: t =   3.60460E-02, dt(courant) =   1.35275E-03 (cell       50)
-Warning: excessive volume adjustment: cell=1915, matid=1, adjustment fraction= -1.977E-07
-Warning: excessive volume adjustment: cell=1915, matid=2, adjustment fraction=  1.791E-10
-Warning: excessive volume adjustment: cell=1916, matid=1, adjustment fraction= -2.053E-07
-Warning: excessive volume adjustment: cell=1916, matid=2, adjustment fraction=  1.591E-10
-Warning: excessive volume adjustment: cell=1917, matid=1, adjustment fraction= -2.594E-07
-Warning: excessive volume adjustment: cell=1917, matid=2, adjustment fraction=  1.648E-10
-Warning: excessive volume adjustment: cell=1918, matid=2, adjustment fraction= -2.210E-13
-Warning: excessive volume adjustment: cell=1921, matid=2, adjustment fraction=  2.384E-11
-Warning: excessive volume adjustment: cell=1922, matid=2, adjustment fraction=  6.791E-12
-Warning: excessive volume adjustment: cell=1923, matid=2, adjustment fraction=  3.666E-12
-Warning: excessive volume adjustment: cell=1924, matid=2, adjustment fraction=  6.137E-12
-Warning: excessive volume adjustment: cell=1925, matid=2, adjustment fraction=  8.919E-12
-Warning: excessive volume adjustment: cell=1926, matid=2, adjustment fraction=  3.885E-12
-Warning: excessive volume adjustment: cell=1927, matid=2, adjustment fraction=  1.171E-12
-Warning: excessive volume adjustment: cell=1928, matid=2, adjustment fraction= -3.279E-13
+         25: t =   3.60460E-02, dt(courant) =   1.35275E-03 (cell     2059)
+Warning: excessive volume adjustment: cell=627, matid=1, adjustment fraction= -1.978E-07
+Warning: excessive volume adjustment: cell=627, matid=2, adjustment fraction=  1.792E-10
+Warning: excessive volume adjustment: cell=628, matid=2, adjustment fraction= -2.100E-11
+Warning: excessive volume adjustment: cell=629, matid=2, adjustment fraction=  6.803E-12
+Warning: excessive volume adjustment: cell=630, matid=2, adjustment fraction=  4.338E-12
+Warning: excessive volume adjustment: cell=631, matid=1, adjustment fraction= -3.169E-12
+Warning: excessive volume adjustment: cell=632, matid=1, adjustment fraction= -2.986E-12
+Warning: excessive volume adjustment: cell=633, matid=1, adjustment fraction=  4.496E-13
+Warning: excessive volume adjustment: cell=634, matid=1, adjustment fraction=  5.979E-13
+Warning: excessive volume adjustment: cell=635, matid=1, adjustment fraction= -4.206E-13
+Warning: excessive volume adjustment: cell=636, matid=1, adjustment fraction= -2.231E-12
+Warning: excessive volume adjustment: cell=669, matid=1, adjustment fraction= -2.052E-07
+Warning: excessive volume adjustment: cell=669, matid=2, adjustment fraction=  1.591E-10
+Warning: excessive volume adjustment: cell=670, matid=2, adjustment fraction= -2.083E-12
+Warning: excessive volume adjustment: cell=671, matid=2, adjustment fraction= -1.641E-11
+Warning: excessive volume adjustment: cell=672, matid=2, adjustment fraction=  1.232E-12
+Warning: excessive volume adjustment: cell=673, matid=1, adjustment fraction= -2.154E-12
+Warning: excessive volume adjustment: cell=674, matid=1, adjustment fraction=  7.182E-13
+Warning: excessive volume adjustment: cell=675, matid=1, adjustment fraction=  9.168E-13
+Warning: excessive volume adjustment: cell=676, matid=1, adjustment fraction= -4.936E-13
+Warning: excessive volume adjustment: cell=677, matid=1, adjustment fraction= -1.340E-12
+Warning: excessive volume adjustment: cell=678, matid=1, adjustment fraction= -2.005E-12
+Warning: excessive volume adjustment: cell=711, matid=1, adjustment fraction= -2.594E-07
+Warning: excessive volume adjustment: cell=711, matid=2, adjustment fraction=  1.648E-10
+Warning: excessive volume adjustment: cell=712, matid=2, adjustment fraction= -2.118E-12
+Warning: excessive volume adjustment: cell=713, matid=2, adjustment fraction=  8.156E-12
+Warning: excessive volume adjustment: cell=714, matid=2, adjustment fraction= -4.888E-12
+Warning: excessive volume adjustment: cell=715, matid=1, adjustment fraction= -1.487E-13
+Warning: excessive volume adjustment: cell=716, matid=1, adjustment fraction=  1.587E-12
+Warning: excessive volume adjustment: cell=717, matid=1, adjustment fraction= -2.075E-13
+Warning: excessive volume adjustment: cell=718, matid=1, adjustment fraction= -1.150E-12
+Warning: excessive volume adjustment: cell=719, matid=1, adjustment fraction= -8.846E-13
+Warning: excessive volume adjustment: cell=720, matid=1, adjustment fraction= -1.349E-12
            34 Projection iterations (linear)
 
             Min Velocity: (-9.0555E-02, -3.6558E-01,  0.0000E+00)
             Max Velocity: ( 8.4219E-01,  1.6323E-01,  0.0000E+00)
 
-         26: t =   3.73987E-02, dt(courant) =   1.32142E-03 (cell       50)
+         26: t =   3.73987E-02, dt(courant) =   1.32142E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-9.5870E-02, -3.7810E-01,  0.0000E+00)
             Max Velocity: ( 8.6149E-01,  1.6662E-01,  0.0000E+00)
 
-         27: t =   3.87201E-02, dt(courant) =   1.29273E-03 (cell       50)
+         27: t =   3.87201E-02, dt(courant) =   1.29273E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-9.9155E-02, -3.9015E-01,  0.0000E+00)
             Max Velocity: ( 8.8005E-01,  1.6938E-01,  0.0000E+00)
 
-         28: t =   4.00128E-02, dt(courant) =   1.26630E-03 (cell       50)
+         28: t =   4.00128E-02, dt(courant) =   1.26630E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.0153E-01, -4.0193E-01,  0.0000E+00)
             Max Velocity: ( 8.9777E-01,  1.6778E-01,  0.0000E+00)
 
-         29: t =   4.12791E-02, dt(courant) =   1.24206E-03 (cell       50)
+         29: t =   4.12791E-02, dt(courant) =   1.24206E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.0189E-01, -4.1385E-01,  0.0000E+00)
             Max Velocity: ( 9.1491E-01,  1.7051E-01,  0.0000E+00)
 
-         30: t =   4.25212E-02, dt(courant) =   1.21948E-03 (cell       50)
+         30: t =   4.25212E-02, dt(courant) =   1.21948E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.0164E-01, -4.2570E-01,  0.0000E+00)
             Max Velocity: ( 9.3143E-01,  1.7362E-01,  0.0000E+00)
 
-         31: t =   4.37407E-02, dt(courant) =   1.19849E-03 (cell       50)
+         31: t =   4.37407E-02, dt(courant) =   1.19849E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.0263E-01, -4.3688E-01,  0.0000E+00)
             Max Velocity: ( 9.4741E-01,  1.7470E-01,  0.0000E+00)
 
-         32: t =   4.49392E-02, dt(courant) =   1.17887E-03 (cell       50)
+         32: t =   4.49392E-02, dt(courant) =   1.17887E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.0641E-01, -4.4772E-01,  0.0000E+00)
             Max Velocity: ( 9.6280E-01,  1.7480E-01,  0.0000E+00)
 
-         33: t =   4.61181E-02, dt(courant) =   1.16058E-03 (cell       50)
+         33: t =   4.61181E-02, dt(courant) =   1.16058E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.1409E-01, -4.5853E-01,  0.0000E+00)
             Max Velocity: ( 9.7785E-01,  1.7517E-01,  0.0000E+00)
 
-         34: t =   4.72786E-02, dt(courant) =   1.14323E-03 (cell       50)
+         34: t =   4.72786E-02, dt(courant) =   1.14323E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.2049E-01, -4.6909E-01,  0.0000E+00)
             Max Velocity: ( 9.9237E-01,  1.7588E-01,  0.0000E+00)
 
-         35: t =   4.84219E-02, dt(courant) =   1.12699E-03 (cell       50)
+         35: t =   4.84219E-02, dt(courant) =   1.12699E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.2596E-01, -4.7952E-01,  0.0000E+00)
             Max Velocity: ( 1.0065E+00,  1.7354E-01,  0.0000E+00)
 
-         36: t =   4.95489E-02, dt(courant) =   1.11166E-03 (cell       50)
+         36: t =   4.95489E-02, dt(courant) =   1.11166E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.3164E-01, -4.9083E-01,  0.0000E+00)
             Max Velocity: ( 1.0203E+00,  1.7570E-01,  0.0000E+00)
 
-         37: t =   5.06605E-02, dt(courant) =   1.09697E-03 (cell       50)
+         37: t =   5.06605E-02, dt(courant) =   1.09697E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.3527E-01, -5.0217E-01,  0.0000E+00)
             Max Velocity: ( 1.0337E+00,  1.7505E-01,  0.0000E+00)
 
-         38: t =   5.17575E-02, dt(courant) =   1.08320E-03 (cell       50)
+         38: t =   5.17575E-02, dt(courant) =   1.08320E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.3633E-01, -5.1207E-01,  0.0000E+00)
             Max Velocity: ( 1.0467E+00,  1.7240E-01,  0.0000E+00)
 
-         39: t =   5.28407E-02, dt(courant) =   1.07012E-03 (cell       50)
+         39: t =   5.28407E-02, dt(courant) =   1.07012E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.3685E-01, -5.2138E-01,  0.0000E+00)
             Max Velocity: ( 1.0595E+00,  1.7260E-01,  0.0000E+00)
 
-         40: t =   5.39108E-02, dt(courant) =   1.05755E-03 (cell       50)
+         40: t =   5.39108E-02, dt(courant) =   1.05755E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.3687E-01, -5.3160E-01,  0.0000E+00)
             Max Velocity: ( 1.0720E+00,  1.7367E-01,  0.0000E+00)
 
-         41: t =   5.49684E-02, dt(courant) =   1.04560E-03 (cell       50)
+         41: t =   5.49684E-02, dt(courant) =   1.04560E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.3639E-01, -5.4197E-01,  0.0000E+00)
             Max Velocity: ( 1.0842E+00,  1.6925E-01,  0.0000E+00)
 
-         42: t =   5.60140E-02, dt(courant) =   1.03413E-03 (cell       50)
+         42: t =   5.60140E-02, dt(courant) =   1.03413E-03 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.4238E-01, -5.5283E-01,  0.0000E+00)
             Max Velocity: ( 1.0959E+00,  1.6934E-01,  0.0000E+00)
 
-         43: t =   5.70481E-02, dt(courant) =   1.02334E-03 (cell       50)
+         43: t =   5.70481E-02, dt(courant) =   1.02334E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.4784E-01, -5.6316E-01,  0.0000E+00)
             Max Velocity: ( 1.1076E+00,  1.6968E-01,  0.0000E+00)
 
-         44: t =   5.80714E-02, dt(courant) =   1.01287E-03 (cell       50)
+         44: t =   5.80714E-02, dt(courant) =   1.01287E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5034E-01, -5.7184E-01,  0.0000E+00)
             Max Velocity: ( 1.1192E+00,  1.6806E-01,  0.0000E+00)
 
-         45: t =   5.90843E-02, dt(courant) =   1.00270E-03 (cell       50)
+         45: t =   5.90843E-02, dt(courant) =   1.00270E-03 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5204E-01, -5.7986E-01,  0.0000E+00)
             Max Velocity: ( 1.1302E+00,  1.6490E-01,  0.0000E+00)
 
-         46: t =   6.00870E-02, dt(courant) =   9.93176E-04 (cell       50)
+         46: t =   6.00870E-02, dt(courant) =   9.93176E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5277E-01, -5.8934E-01,  0.0000E+00)
             Max Velocity: ( 1.1411E+00,  1.6384E-01,  0.0000E+00)
 
-         47: t =   6.10802E-02, dt(courant) =   9.83976E-04 (cell       50)
+         47: t =   6.10802E-02, dt(courant) =   9.83976E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5248E-01, -5.9946E-01,  0.0000E+00)
             Max Velocity: ( 1.1520E+00,  1.6304E-01,  0.0000E+00)
 
-         48: t =   6.20641E-02, dt(courant) =   9.74847E-04 (cell       50)
+         48: t =   6.20641E-02, dt(courant) =   9.74847E-04 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.5138E-01, -6.0944E-01,  0.0000E+00)
             Max Velocity: ( 1.1626E+00,  1.6050E-01,  0.0000E+00)
 
-         49: t =   6.30390E-02, dt(courant) =   9.66268E-04 (cell       50)
+         49: t =   6.30390E-02, dt(courant) =   9.66268E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5098E-01, -6.1830E-01,  0.0000E+00)
             Max Velocity: ( 1.1728E+00,  1.5904E-01,  0.0000E+00)
 
-         50: t =   6.40053E-02, dt(courant) =   9.58109E-04 (cell       50)
+         50: t =   6.40053E-02, dt(courant) =   9.58109E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5476E-01, -6.2545E-01,  0.0000E+00)
             Max Velocity: ( 1.1830E+00,  1.5634E-01,  0.0000E+00)
 
-         51: t =   6.49634E-02, dt(courant) =   9.50017E-04 (cell       50)
+         51: t =   6.49634E-02, dt(courant) =   9.50017E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5734E-01, -6.3348E-01,  0.0000E+00)
             Max Velocity: ( 1.1931E+00,  1.5361E-01,  0.0000E+00)
 
-         52: t =   6.59134E-02, dt(courant) =   9.42252E-04 (cell       50)
+         52: t =   6.59134E-02, dt(courant) =   9.42252E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5863E-01, -6.4286E-01,  0.0000E+00)
             Max Velocity: ( 1.2029E+00,  1.5325E-01,  0.0000E+00)
 
-         53: t =   6.68556E-02, dt(courant) =   9.34757E-04 (cell       50)
+         53: t =   6.68556E-02, dt(courant) =   9.34757E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5879E-01, -6.5226E-01,  0.0000E+00)
             Max Velocity: ( 1.2128E+00,  1.5130E-01,  0.0000E+00)
 
-         54: t =   6.77904E-02, dt(courant) =   9.27322E-04 (cell       50)
+         54: t =   6.77904E-02, dt(courant) =   9.27322E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5764E-01, -6.6073E-01,  0.0000E+00)
             Max Velocity: ( 1.2223E+00,  1.4745E-01,  0.0000E+00)
 
-         55: t =   6.87177E-02, dt(courant) =   9.20319E-04 (cell       50)
+         55: t =   6.87177E-02, dt(courant) =   9.20319E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5532E-01, -6.6726E-01,  0.0000E+00)
             Max Velocity: ( 1.2316E+00,  1.4375E-01,  0.0000E+00)
 
-         56: t =   6.96380E-02, dt(courant) =   9.13597E-04 (cell       50)
+         56: t =   6.96380E-02, dt(courant) =   9.13597E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5526E-01, -6.7460E-01,  0.0000E+00)
             Max Velocity: ( 1.2411E+00,  1.4375E-01,  0.0000E+00)
 
-         57: t =   7.05516E-02, dt(courant) =   9.06803E-04 (cell       50)
+         57: t =   7.05516E-02, dt(courant) =   9.06803E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5775E-01, -6.8318E-01,  0.0000E+00)
             Max Velocity: ( 1.2503E+00,  1.4132E-01,  0.0000E+00)
 
-         58: t =   7.14584E-02, dt(courant) =   9.00330E-04 (cell       50)
+         58: t =   7.14584E-02, dt(courant) =   9.00330E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5922E-01, -6.9185E-01,  0.0000E+00)
             Max Velocity: ( 1.2593E+00,  1.3845E-01,  0.0000E+00)
 
-         59: t =   7.23588E-02, dt(courant) =   8.94095E-04 (cell       50)
+         59: t =   7.23588E-02, dt(courant) =   8.94095E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5903E-01, -6.9948E-01,  0.0000E+00)
             Max Velocity: ( 1.2681E+00,  1.3303E-01,  0.0000E+00)
 
-         60: t =   7.32529E-02, dt(courant) =   8.88060E-04 (cell       50)
+         60: t =   7.32529E-02, dt(courant) =   8.88060E-04 (cell     2059)
            35 Projection iterations (linear)
 
             Min Velocity: (-1.5755E-01, -7.0593E-01,  0.0000E+00)
             Max Velocity: ( 1.2769E+00,  1.3237E-01,  0.0000E+00)
 
-         61: t =   7.41409E-02, dt(courant) =   8.82093E-04 (cell       50)
+         61: t =   7.41409E-02, dt(courant) =   8.82093E-04 (cell     2059)
            34 Projection iterations (linear)
 
             Min Velocity: (-1.5548E-01, -7.1410E-01,  0.0000E+00)
@@ -762,28 +783,36 @@ Warning: DANU: Danu fid is still associated
 
   TIMING SUMMARY                       AVERAGE        MIN          MAX
   --------------                      ---------    ---------    ---------
-  Total                               6.468E+00    6.468E+00    6.468E+00
-    Input                               2.999E-03    2.999E-03    2.999E-03
-    Initialization                      2.389E+00    2.389E+00    2.389E+00
-    Main Cycle                          4.073E+00    4.073E+00    4.073E+00
-      Predictor                           1.300E-02    1.300E-02    1.300E-02
-      timer_projection                    2.311E+00    2.311E+00    2.311E+00
-        timer_projection_mac                1.898E+00    1.898E+00    1.898E+00
-          timer_projection_solver             1.682E+00    1.682E+00    1.682E+00
-            Timer_Solver_TMP2                   8.009E-01    8.009E-01    8.009E-01
-            Solver TMP1                         5.379E-01    5.379E-01    5.379E-01
-          Timer_Solver_TMP2                   2.700E-02    2.700E-02    2.700E-02
-        timer_projection_corrector          1.410E-01    1.410E-01    1.410E-01
-          timer_projection_corrector          1.250E-01    1.250E-01    1.250E-01
-      Output                              7.000E-03    7.000E-03    7.000E-03
-      Time Step                           4.199E-02    4.199E-02    4.199E-02
-      Mass Advection                      1.661E+00    1.661E+00    1.661E+00
-        Volume Tracking                     1.535E+00    1.535E+00    1.535E+00
-          Reconstruct/Advect                  1.412E+00    1.412E+00    1.412E+00
-            Locate Plane                        4.069E-01    4.069E-01    4.069E-01
-        Momentum Advection                  8.199E-02    8.199E-02    8.199E-02
+  Total                               1.706E+01    1.706E+01    1.706E+01
+    Input                               1.129E-02    1.129E-02    1.129E-02
+    Initialization                      4.444E+00    4.444E+00    4.444E+00
+    Main Cycle                          1.260E+01    1.260E+01    1.260E+01
+      Predictor                           3.048E-02    3.048E-02    3.048E-02
+      timer_projection                    8.284E+00    8.284E+00    8.284E+00
+        timer_projection_mac                7.185E+00    7.185E+00    7.185E+00
+          timer_projection_solver             6.658E+00    6.658E+00    6.658E+00
+            ppe-matvec                          3.640E+00    3.640E+00    3.640E+00
+              ppe-matvec-face-grad                1.667E+00    1.667E+00    1.667E+00
+              ppe-matvec-bc                       1.602E-01    1.602E-01    1.602E-01
+              ppe-matvec-flux                     1.182E+00    1.182E+00    1.182E+00
+              ppe-matvec-div                      6.125E-01    6.125E-01    6.125E-01
+            Solver TMP1                         2.087E+00    2.087E+00    2.087E+00
+          ppe-matvec                          1.165E-01    1.165E-01    1.165E-01
+            ppe-matvec-face-grad                5.179E-02    5.179E-02    5.179E-02
+            ppe-matvec-bc                       4.370E-03    4.370E-03    4.370E-03
+            ppe-matvec-flux                     4.033E-02    4.033E-02    4.033E-02
+            ppe-matvec-div                      1.920E-02    1.920E-02    1.920E-02
+        timer_projection_corrector          2.951E-01    2.951E-01    2.951E-01
+          timer_projection_corrector          2.793E-01    2.793E-01    2.793E-01
+      Output                              6.344E-03    6.344E-03    6.344E-03
+      Time Step                           9.706E-02    9.706E-02    9.706E-02
+      Mass Advection                      4.094E+00    4.094E+00    4.094E+00
+        Volume Tracking                     3.731E+00    3.731E+00    3.731E+00
+          Reconstruct/Advect                  3.406E+00    3.406E+00    3.406E+00
+            Locate Plane                        1.025E+00    1.025E+00    1.025E+00
+        Momentum Advection                  2.584E-01    2.584E-01    2.584E-01
 
-                  Process virtual memory used: 5.03E+01 mB
-                                   words/cell: 3139
+                  Process virtual memory used: 8.96E+01 mB
+                                   words/cell: 5589
 
-truchas terminated normally on 13 Feb 13 at 14:45:19
+truchas terminated normally on 05 Oct 15 at 21:48:57

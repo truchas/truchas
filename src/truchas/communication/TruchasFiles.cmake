@@ -8,18 +8,8 @@ set(COMM_FILES)
 set(COMM_SOURCE_FILES)
 
 set(COMM_FILES
-         communication/ee_gather_module.F90
-         communication/en_gather_module.F90
-         communication/en_scatter_module.F90
-         communication/gather_module.F90
-         communication/gs_info_module.F90
-         communication/gs_module.F90
-         communication/gs_util.F90
-         communication/gs_module.F90
-         communication/nn_gather_module.F90
          communication/parallel_info_module.F90
-         communication/parallel_util_module.F90
-         communication/scatter_module.F90)
+         communication/parallel_util_module.F90)
 set(COMM_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities 
 	-I${TruchasExe_SOURCE_DIR}/communication

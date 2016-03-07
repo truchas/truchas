@@ -53,7 +53,6 @@ CONTAINS
     !                      |_2, 3, 1_|
     !
     !=======================================================================
-    use parameter_module, only: ndim
 
     ! Argument List
 

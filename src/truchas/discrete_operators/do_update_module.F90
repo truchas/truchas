@@ -42,9 +42,7 @@ CONTAINS
     !
     !=======================================================================
     use do_base_types,     only: DO_Specifier
-    use gs_module,         only: EE_GATHER
-    use parameter_module,  only: ncells,nfc
-    use mesh_module,       only: Mesh, DEGENERATE_FACE
+    use legacy_mesh_api,   only: ncells, nfc, Mesh, DEGENERATE_FACE, EE_GATHER
     use var_vector_module, only: CREATE,FLATTEN,SIZES,REAL_VAR_VECTOR
 
     ! Arguments
@@ -115,7 +113,7 @@ CONTAINS
     !
     !=======================================================================
     use do_base_types,    only: DO_Specifier,DO_SOLVE_LU_LSLR,DO_SOLVE_SVD_LSLR
-    use parameter_module, only: ncells,nfc
+    use legacy_mesh_api,  only: ncells, nfc
 
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -151,8 +149,7 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier,dX_Type,SField_Type
     use do_solve_module,  only: do_lu_decomp,do_lu_solve
-    use mesh_module,      only: Mesh, DEGENERATE_FACE
-    use parameter_module, only: ndim
+    use legacy_mesh_api,  only: ndim, Mesh, DEGENERATE_FACE
 
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -273,8 +270,8 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier,dX_Type,SField_Type
     use do_solve_module,  only: do_sv_decomp
-    use mesh_module,      only: Mesh, DEGENERATE_FACE
-    use parameter_module, only: Nx_tot,ndim
+    use legacy_mesh_api,  only: ndim, Mesh, DEGENERATE_FACE
+    use parameter_module, only: Nx_tot
 
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -407,9 +404,7 @@ CONTAINS
     !=======================================================================
     use bc_data_types
     use do_base_types,  only: DO_Specifier,SField_Type
-    use gs_module,      only: EE_GATHER
-    use mesh_module,    only: Mesh,DEGENERATE_FACE
-    use parameter_module, only: ncells,nfc
+    use legacy_mesh_api, only: ncells, nfc, Mesh, DEGENERATE_FACE, EE_GATHER
     use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN
 
     type(DO_Specifier), target, intent(INOUT) :: SS

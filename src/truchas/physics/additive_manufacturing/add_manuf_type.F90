@@ -160,7 +160,7 @@ module add_manuf_type
 
     subroutine update_state_from_advection(this)
  
-      use mesh_module, only: Cell
+      use legacy_mesh_api, only: Cell
       use advection_module, only: compute_advected_enthalpy
 
       class(add_manuf), intent(inout) :: this

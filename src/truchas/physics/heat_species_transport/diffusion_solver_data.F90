@@ -32,7 +32,7 @@ module diffusion_solver_data
   logical, public :: heat_eqn = .false.
   integer, public :: nconc = 0
 
-  character(len=32), public :: mesh_name
+  character(4), parameter, public :: mesh_name = 'MAIN'
 
   !! Time stepping control parameters.
   integer,  public :: max_step_tries
@@ -74,7 +74,6 @@ contains
 
   subroutine read_ds_namelist (lun)
 
-    use mesh_manager, only: enable_mesh
     use input_utilities, only: seek_to_namelist
     use parallel_communication
     use string_utilities
@@ -82,7 +81,7 @@ contains
     integer, intent(in) :: lun
 
     integer :: ios
-    logical :: found, exists, hypre_amg_debug
+    logical :: found, hypre_amg_debug
     character(len=32) :: nlk_preconditioner, stepping_method
     character(len=8)  :: string
 
@@ -499,11 +498,6 @@ contains
         call TLS_info ('  ignoring COND_VFRAC_THRESHOLD value; not relevant to STEPPING_METHOD choice')
       end if
     end if
-
-    !! In the future we will read the mesh name; now we hardwire it.
-    mesh_name = 'MAIN'
-    call enable_mesh (mesh_name, exists)
-    INSIST( exists )
 
   end subroutine read_ds_namelist
 

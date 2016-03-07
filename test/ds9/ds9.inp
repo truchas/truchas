@@ -13,7 +13,6 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
 
 &MESH
   mesh_file = 'ds9.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS

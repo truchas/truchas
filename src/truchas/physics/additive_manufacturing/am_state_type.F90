@@ -102,7 +102,8 @@ module am_state_type
                               densities, velocities_x, &
                               velocities_y, velocities_z)
 
-      use parameter_module, only: nmat, ncells, nfc
+      use parameter_module, only: nmat
+      use legacy_mesh_api, only: ncells, nfc
       use fluid_data_module, only: Void_Material_Index, isImmobile
 
       class(am_state), intent(inout) :: this
@@ -117,7 +118,7 @@ module am_state_type
       this%void_index = Void_Material_Index(1)
 
       ! Set the number of faces, number of cells, and number of materials
-      ! TODO: note that these are imported from parameter_module, pass as parameters instead
+      ! TODO: note that these are imported from legacy_mesh_api, pass as parameters instead
       this%ncells = ncells
       this%nfaces = nfc
       this%nmat = nmat
@@ -351,7 +352,7 @@ module am_state_type
 
     subroutine fixup_energy_in_nearly_void_cells(this, is_nearly_void)
 
-      use gs_module,     only: EE_GATHER
+      use legacy_mesh_api, only: EE_GATHER
 
       class(am_state) :: this
       logical, intent(in) :: is_nearly_void(:)

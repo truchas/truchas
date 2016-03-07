@@ -64,11 +64,11 @@ class ChannelFlow(TruchasTest.GoldenTestCase):
 
     Ncellx = 2
     Ncelly = 7
-    n = 51025
+    n = 51031
     tol = 1.0e-12
 
     test = self.get_test_field('Z_VC',cycle=n)
-    test = test[::Ncellx,0] # regular ncellx by ncelly grid -- pulling x-vel from first column
+    test = test[:Ncelly,0] # regular ncelly by ncellx grid -- pulling x-vel from first column
 
     gold = self.AnalyticSolution(Ncellx,Ncelly)
 

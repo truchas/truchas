@@ -24,7 +24,8 @@ module additive_manufacturing_driver
 
     subroutine deposit_energy_and_mass()
 
-      use parameter_module,     only: ncells, nmat
+      use parameter_module, only: nmat
+      use legacy_mesh_api,  only: ncells
       use zone_module,      only: Zone
       use matl_utilities,       only: MATL_GET_VOF, MATL_SET_VOF
       use time_step_module,     only: dt
@@ -85,9 +86,7 @@ module additive_manufacturing_driver
 
     subroutine compute_add_manuf_source_for_ds(ncell_onP, cell_ip, dQ_ds, Tmin, Tmax)
 
-      use mesh_module,      only: Cell
-      use mesh_interop, only: pcell_ds_to_t
-      use parallel_permutations, only: rearrange
+      use legacy_mesh_api, only: Cell
       use index_partitioning, only: gather_boundary, ip_desc
       use pgslib_module,        only: PGSLIB_GLOBAL_MAXVAL
     
@@ -139,10 +138,9 @@ module additive_manufacturing_driver
       end do
 
       ! Put into arrays consistent with the diffusion ordering
-      call rearrange (pcell_ds_to_t, dest=dQ_ds(:ncell_onP), src=dQ_t)
-      call rearrange (pcell_ds_to_t, dest=Tmin(:ncell_onP), src=Tmin_t)
-      call rearrange (pcell_ds_to_t, dest=Tmax(:ncell_onP), src=Tmax_t)
-    
+      dQ_ds(:ncell_onP) = dQ_t(:ncell_onP)
+      Tmin(:ncell_onP) = Tmin_t(:ncell_onP)
+      Tmax(:ncell_onP) = Tmax_t(:ncell_onP)
 
       deallocate(dQ_t, Tmin_t, Tmax_t)
 

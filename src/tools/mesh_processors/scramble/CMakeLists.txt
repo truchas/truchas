@@ -15,7 +15,7 @@ include_directories(${Truchas_MODULE_DIR})
 
 # --- Preprocessor
 # To avoid overwriting VERSION
-set(SCRAMBLE_PREPROCESSOR cpp -ansi)
+set(SCRAMBLE_PREPROCESSOR cpp -traditional-cpp)
 
 
 # --- Scramble

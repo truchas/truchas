@@ -51,11 +51,10 @@ CONTAINS
     !    The `convolved normals' algorithm is included here so we don't have
     !    to allocate and deallocate all of the ncells_tot length arrays.
     !=======================================================================
-       use cutoffs_module,          only: cutvof
-       use mesh_module,             only: Mesh,Cell, degenerate_face
-       use pgslib_module,           only: PGSLIB_BCast, PGSLIB_Collate &
-                                      ,PGSLib_GLOBAL_Maxval
-       use parameter_module,        only: ncells, ncells_tot, ndim, nfc, nmat
+       use cutoffs_module, only: cutvof
+       use legacy_mesh_api, only: ncells, ncells_tot, ndim, nfc, Mesh, Cell, degenerate_face
+       use pgslib_module, only: PGSLIB_BCast, PGSLIB_Collate, PGSLib_GLOBAL_Maxval
+       use parameter_module, only: nmat
        use var_vector_module
 
        real(r8), dimension(ncells), INTENT(IN) :: Scal_Field
@@ -398,8 +397,7 @@ end if
     !    Tot_Scal with a kernel centered at some given cell -
     !    This program is called from the CONV_MOLLIFY_SAMEMEM routine 
     !=======================================================================
-      use mesh_module, only: DEGENERATE_FACE
-      use parameter_module, only: ndim
+      use legacy_mesh_api, only: ndim, DEGENERATE_FACE
 
       integer, INTENT(IN) :: Cell_no
       real(r8), dimension(:), INTENT(IN) :: Tot_vol
@@ -538,8 +536,7 @@ end if
     !    some given cell -
     !    This program is called from the CONV_MOLLIFY_SAMEMEM routine 
     !=======================================================================
-      use mesh_module, only: DEGENERATE_FACE
-      use parameter_module, only: ndim
+      use legacy_mesh_api, only: ndim, DEGENERATE_FACE
       integer, INTENT(IN) :: Cell_no
       real(r8), dimension(:), INTENT(IN) :: Tot_vol
       real(r8), dimension(:), INTENT(IN) :: Tot_Scal
@@ -618,7 +615,7 @@ end if
 
   real FUNCTION Kern(X,Y,Z,DELTA)
     use constants_module,  only: pi
-    use parameter_module,  only: ndim
+    use legacy_mesh_api,   only: ndim
     real(r8) :: X,Y,Z,DELTA,A
     IF (ndim == 2) then
       A = 4.0/(DELTA**8*pi)
@@ -634,7 +631,7 @@ end if
       
   real FUNCTION DxKern(X,Y,Z,DELTA)
     use constants_module, only: pi
-    use parameter_module, only: ndim
+    use legacy_mesh_api,  only: ndim
     real(r8) :: DELTA,X,Y,Z,A
     IF (ndim == 2) then
       A = 4.0/(DELTA**8*pi)
@@ -650,7 +647,7 @@ end if
       
   real FUNCTION DyKern(X,Y,Z,DELTA)
     use constants_module, only: pi
-    use parameter_module, only: ndim
+    use legacy_mesh_api,  only: ndim
     real(r8) :: X,Y,Z,DELTA,A
     IF (ndim == 2) then
       A = 4.0/(DELTA**8*pi)
@@ -666,7 +663,7 @@ end if
       
   real FUNCTION DzKern(X,Y,Z,DELTA)
     use constants_module, only: pi
-    use parameter_module, only: ndim
+    use legacy_mesh_api,  only: ndim
     real(r8) :: DELTA,X,Y,Z,A
     IF (ndim == 2) then
       A = 4.0/(DELTA**8*pi)

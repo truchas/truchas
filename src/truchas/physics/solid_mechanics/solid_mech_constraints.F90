@@ -43,7 +43,6 @@ Contains
     !=============================================================================
 
     use mech_bc_data_module
-    !use parameter_module,     only: ndim
     use solid_mechanics_input,    only: contact_penalty
     use solid_mechanics_mesh,     only: ndim
     use bc_data_types
@@ -132,11 +131,8 @@ Contains
     !=============================================================================
 
     use mech_bc_data_module
-    !use parameter_module,     only: ndim, nnodes
-    use parameter_module,      only: nnodes
+    use legacy_mesh_api, only: nnodes, Vertex, NN_Gather_BoundaryData
     use bc_data_types
-    use gs_module,             only: NN_Gather_BoundaryData
-    use mesh_module,           only: Vertex
     use solid_mechanics_input, only: contact_penalty
     use solid_mechanics_mesh,  only: ndim
 
@@ -769,9 +765,8 @@ Contains
   SUBROUTINE CONTACT_FUNCTION(U, F, U_Bound, XC_Bound)
 
     use mech_bc_data_module
-    !use parameter_module, only: ndim
     use solid_mechanics_mesh, only: ndim
-    use mesh_module, only: Vertex
+    use legacy_mesh_api, only: Vertex
 
     real(r8), dimension(:), intent(IN) :: F, U
     real(r8), pointer, dimension(:)    :: U_Bound, XC_Bound
@@ -988,10 +983,9 @@ Contains
     !=============================================================================
 
     use mech_bc_data_module
-    !use parameter_module, only: ndim
     use solid_mechanics_mesh, only: ndim
     use solid_mechanics_input, only: contact_penalty
-    use mesh_module, only: Vertex_Ngbr_All
+    use legacy_mesh_api, only: Vertex_Ngbr_All
 
     ! Arguments
     type(real_var_vector), pointer, dimension(:) :: A_Elas
@@ -1129,7 +1123,6 @@ Contains
     !=============================================================================
     use mech_bc_data_module
     use bc_operations
-    !use parameter_module, only: nvf
     use solid_mechanics_mesh, only: nvf
     use pgslib_module, only: PGSLib_GLOBAL_ANY
 
@@ -1217,10 +1210,8 @@ Contains
 
     use bc_operations
     use mech_bc_data_module
-    !use parameter_module, only: nvf, nvc, ncells
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells, EN_Gather
     use pgslib_module, only: PGSLib_GLOBAL_ANY
-    use gs_module, only: EN_Gather
     use solid_mechanics_mesh, only: nvf, nvc
 
     TYPE(BC_Operator), POINTER :: HTC_GAP_Operator

@@ -57,7 +57,7 @@ CONTAINS
                                        Mom_Delta,                      &
                                        momentum_solidify_implicitness
     use flow_phase_change,       only: have_solidifying_flow, solidified_rho
-    use parameter_module,        only: ncells, ndim
+    use legacy_mesh_api,         only: ncells, ndim
     use porous_drag_data,        only: porous_flow
     use porous_drag_module,      only: POROUS_DRAG
     use time_step_module,        only: dt
@@ -166,9 +166,8 @@ CONTAINS
 ! momentum equations.
 !
 !===============================================================================
-    use parameter_module,         only: ncells, ndim
-    use fluid_data_module,        only: Centered_GradP_Dynamic, &
-                                        fluidRho, fluidRho_n
+    use legacy_mesh_api, only: ncells, ndim
+    use fluid_data_module, only: Centered_GradP_Dynamic, fluidRho, fluidRho_n
     
     ! Arguments...
     real(r8), intent(IN) :: dt
@@ -203,7 +202,7 @@ CONTAINS
                                        momentum_solidify_implicitness,    &
                                        mass_limiter, mass_limiter_cutoff
     use flow_phase_change,       only: have_solidifying_flow, solidified_rho
-    use parameter_module,        only: ndim, ncells
+    use legacy_mesh_api,         only: ndim, ncells
     use pgslib_module,           only: PGSLIB_GLOBAL_MAXVAL, &
                                        PGSLIB_GLOBAL_MINVAL
     use porous_drag_data,        only: porous_implicitness
@@ -453,7 +452,7 @@ CONTAINS
 !===============================================================================
 
     use viscous_module, only: viscousSetup
-    use parameter_module, only: ncells, ndim
+    use legacy_mesh_api, only: ncells, ndim
 
     ! Arguments...
     real(r8), intent(IN) :: dt
@@ -491,8 +490,7 @@ CONTAINS
                                     Drag_Coefficient, isPureImmobile, &
                                     momentum_solidify_implicitness
     use flow_phase_change,    only: have_solidifying_flow, solidified_rho
-    use mesh_module,          only: Cell
-    use parameter_module,     only: ncells, ndim, nfc
+    use legacy_mesh_api,      only: ncells, ndim, nfc, Cell
     use time_step_module,     only: dt
     use viscous_data_module,  only: viscous_implicitness, Mu_Face, Mask
     use porous_drag_data,     only: porous_flow, porous_implicitness
@@ -594,12 +592,10 @@ CONTAINS
 !
 !===============================================================================
 
-  use parameter_module,     only: ncells, nfc
+  use legacy_mesh_api,      only: ncells, nfc, Cell, EE_GATHER
   use bc_module,            only: BC, FREE_SLIP, DIRICHLET_VEL, DIRICHLET, &
                                   Vel, Prs
   use bc_operations
-  use gs_module,            only: EE_GATHER
-  use mesh_module,          only: Cell
   use viscous_data_module,  only: mask
 
   ! Arguments

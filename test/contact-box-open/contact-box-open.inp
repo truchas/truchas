@@ -9,7 +9,6 @@
 
 &MESH
   mesh_file = 'split-rotated-cube.exo'
-  mesh_file_format = 'ExodusII'
   coordinate_scale_factor = 0.01
   gap_element_blocks = 3
 /
@@ -54,7 +53,7 @@
   method = 'nlk'
   linear_solver_name = 'displacement precon'
   convergence_criterion = 1.0e-12
-  NLK_max_vectors = 20
+  NLK_max_vectors = 10
   NLK_vector_tolerance = 0.001
   maximum_iterations = 2000
 /

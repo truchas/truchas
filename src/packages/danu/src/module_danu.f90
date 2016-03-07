@@ -401,6 +401,10 @@ interface data_list
 end interface data_list
 
 interface data_write
+  module procedure df90_data_write_byte_rank0
+  module procedure df90_data_write_byte_rank1
+  module procedure df90_data_write_byte_rank2
+  module procedure df90_data_write_byte_rank3
   module procedure df90_data_write_integer_rank0
   module procedure df90_data_write_integer_rank1
   module procedure df90_data_write_integer_rank2
@@ -416,6 +420,10 @@ interface data_write
 end interface data_write
 
 interface data_read
+  module procedure df90_data_read_byte_rank0
+  module procedure df90_data_read_byte_rank1
+  module procedure df90_data_read_byte_rank2
+  module procedure df90_data_read_byte_rank3
   module procedure df90_data_read_integer_rank0
   module procedure df90_data_read_integer_rank1
   module procedure df90_data_read_integer_rank2
@@ -480,6 +488,10 @@ interface simulation_data_list
 end interface simulation_data_list
 
 interface simulation_data_write
+  module procedure df90_sim_data_write_byte_rank0
+  module procedure df90_sim_data_write_byte_rank1
+  module procedure df90_sim_data_write_byte_rank2
+  module procedure df90_sim_data_write_byte_rank3
   module procedure df90_sim_data_write_integer_rank0
   module procedure df90_sim_data_write_integer_rank1
   module procedure df90_sim_data_write_integer_rank2
@@ -495,6 +507,10 @@ interface simulation_data_write
 end interface simulation_data_write
 
 interface simulation_data_read
+  module procedure df90_sim_data_read_byte_rank0
+  module procedure df90_sim_data_read_byte_rank1
+  module procedure df90_sim_data_read_byte_rank2
+  module procedure df90_sim_data_read_byte_rank3
   module procedure df90_sim_data_read_integer_rank0
   module procedure df90_sim_data_read_integer_rank1
   module procedure df90_sim_data_read_integer_rank2
@@ -2183,6 +2199,78 @@ end subroutine df90_data_list
 
 ! ------------------------------------------------------------------------------
 
+subroutine df90_data_write_byte_rank0 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr
+
+  name_len = len_trim(data_name)
+  call data_write_byte0_f (sid, data_name, name_len, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_write_byte_rank0
+
+subroutine df90_data_write_byte_rank1 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data(:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(1)
+  integer(C_INT), parameter :: num_dim = 1
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call data_write_byte_f (sid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_write_byte_rank1
+
+subroutine df90_data_write_byte_rank2 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data(:,:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(2)
+  integer(C_INT), parameter :: num_dim = 2
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call data_write_byte_f (sid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_write_byte_rank2
+
+subroutine df90_data_write_byte_rank3 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data(:,:,:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(3)
+  integer(C_INT), parameter :: num_dim = 3
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call data_write_byte_f (sid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_write_byte_rank3
+
+! ------------------------------------------------------------------------------
+
 subroutine df90_data_write_integer_rank0(sid,data_name,idata,stat)
 
 ! --- Calling arguments
@@ -2544,6 +2632,78 @@ subroutine df90_data_write_real8_rank3(sid,data_name,r8data,stat)
       endif       
 
 end subroutine df90_data_write_real8_rank3
+
+! ------------------------------------------------------------------------------
+
+subroutine df90_data_read_byte_rank0 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data            
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr
+
+  name_len = len_trim(data_name)
+  call data_read_byte0_f (sid, data_name, name_len, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_read_byte_rank0
+
+subroutine df90_data_read_byte_rank1 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data(:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(1)
+  integer(C_INT), parameter :: num_dim = 1
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call data_read_byte_f (sid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_read_byte_rank1
+
+subroutine df90_data_read_byte_rank2 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data(:,:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(2)
+  integer(C_INT), parameter :: num_dim = 2
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call data_read_byte_f (sid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_read_byte_rank2
+
+subroutine df90_data_read_byte_rank3 (sid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: sid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data(:,:,:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(3)
+  integer(C_INT), parameter :: num_dim = 3
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call data_read_byte_f (sid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_data_read_byte_rank3
 
 ! ------------------------------------------------------------------------------
 
@@ -3173,6 +3333,78 @@ end subroutine df90_simulation_data_list
 
 ! ------------------------------------------------------------------------------
 
+subroutine df90_sim_data_write_byte_rank0 (nid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data            
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr
+
+  name_len = len_trim(data_name)
+  call simulation_data_write_byte0_f (nid, data_name, name_len, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_sim_data_write_byte_rank0
+
+subroutine df90_sim_data_write_byte_rank1 (nid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data(:)          
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(1)
+  integer(C_INT), parameter :: num_dim = 1
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call simulation_data_write_byte_f (nid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_sim_data_write_byte_rank1
+
+subroutine df90_sim_data_write_byte_rank2 (nid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data(:,:)          
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(2)
+  integer(C_INT), parameter :: num_dim = 2
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call simulation_data_write_byte_f (nid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_sim_data_write_byte_rank2
+
+subroutine df90_sim_data_write_byte_rank3 (nid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(in) :: data(:,:,:)        
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(3)
+  integer(C_INT), parameter :: num_dim = 3
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call simulation_data_write_byte_f (nid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_sim_data_write_byte_rank3
+
+! ------------------------------------------------------------------------------
+
 subroutine df90_sim_data_write_integer_rank0(nid,data_name,idata,stat)
 
 ! --- Calling arguments
@@ -3533,6 +3765,78 @@ subroutine df90_sim_data_write_real8_rank3(nid,data_name,rdata,stat)
       endif       
 
 end subroutine df90_sim_data_write_real8_rank3
+
+! ------------------------------------------------------------------------------
+
+subroutine df90_sim_data_read_byte_rank0 (nid,data_name,data,stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data            
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr
+
+  name_len = len_trim(data_name)
+  call simulation_data_read_byte0_f (nid,data_name,name_len,data,ierr)
+  if (present(stat)) call define_return_status (ierr,stat)
+
+end subroutine df90_sim_data_read_byte_rank0
+
+subroutine df90_sim_data_read_byte_rank1 (nid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data(:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(1)
+  integer(C_INT), parameter :: num_dim = 1
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call simulation_data_read_byte_f (nid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_sim_data_read_byte_rank1
+
+subroutine df90_sim_data_read_byte_rank2 (nid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data(:,:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(2)
+  integer(C_INT), parameter :: num_dim = 2
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call simulation_data_read_byte_f (nid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_sim_data_read_byte_rank2
+
+subroutine df90_sim_data_read_byte_rank3 (nid, data_name, data, stat)
+
+  type(C_PTR), intent(in) :: nid
+  character(*), intent(in) :: data_name
+  integer(C_INT8_T), intent(out) :: data(:,:,:)
+  integer, intent(out), optional :: stat
+
+  integer :: name_len
+  integer(C_INT) :: ierr, dims(3)
+  integer(C_INT), parameter :: num_dim = 3
+
+  name_len = len_trim(data_name)
+  dims = shape(data)
+  call simulation_data_read_byte_f (nid, data_name, name_len, num_dim, dims, data, ierr)
+  if (present(stat)) call define_return_status (ierr, stat)
+
+end subroutine df90_sim_data_read_byte_rank3
 
 ! ------------------------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 !! OLD_MESH_GMV
 !!
 !! This is a quick-n-dirty high-level layer over GMV's gmvwrite C library that
-!! provides some procedures for writing the original mesh (from mesh_module)
+!! provides some procedures for writing the original mesh (from legacy_mesh_api)
 !! and cell-based fields on that mesh to a GMV-format graphics file.  It is
 !! intended for ad hoc debugging purposes only, enabling the developer to
 !! visualize intermediate field data from any place within Truchas.
@@ -72,8 +72,8 @@ contains
 
   subroutine gmv_write_mesh
 
-    use parameter_module, only: ncells_tot, nnodes_tot, ncells
-    use mesh_module, only: mesh, vertex
+    use legacy_mesh_api, only: ncells_tot, nnodes_tot, ncells
+    use legacy_mesh_api, only: mesh, vertex
     use string_utilities, only: i_to_c
 
     integer,  allocatable :: cnode(:,:), pdata(:)
@@ -146,7 +146,7 @@ contains
 
   subroutine gmv_write_cell_var (u, name)
 
-    use parameter_module, only: ncells_tot
+    use legacy_mesh_api, only: ncells_tot
 
     real(r8), intent(in) :: u(:)
     character(*), intent(in) :: name

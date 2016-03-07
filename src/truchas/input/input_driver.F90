@@ -32,17 +32,14 @@ contains
     !   driver for reading input file
     !=======================================================================
     use probe_input_module,        only: probe_input  
-    use altmesh_input,             only: read_altmesh_input
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use interfaces_input_module,   only: interfaces_input
     use material_input_module,     only: material_input, material_sizes
-    use mesh_input_module,         only: mesh_input, mesh_sizes
     use nonlin_solver_input,       only: nonlinear_solver_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
     use parallel_info_module,      only: p_info
-    use parallel_input_module,     only: parallel_parameters_input
     use pgslib_module,             only: pgslib_bcast
     use physics_input_module,      only: physics_input
     use restart_variables,         only: restart, read_restart_namelist
@@ -50,10 +47,11 @@ contains
     use lin_solver_input,          only: linear_solver_input
     use EM_data_proxy,             only: em_is_on
     use region_input_module,       only: region_read
-    use mesh_manager,              only: peek_truchas_mesh_namelists
+    use mesh_manager,              only: read_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
     use additive_manufacturing_data,     only: am_enabled, read_am_namelists
+    use ustruc_driver,             only: read_microstructure_namelist
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use phase_namelist,            only: read_phase_namelists
@@ -63,7 +61,6 @@ contains
     use viscous_data_module,       only: inviscid
     use turbulence_module,         only: read_turbulence_namelist
     use solid_mechanics_input,     only: solid_mechanics
-    !use solid_mechanics_mesh,      only: sm_mesh_enable
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use timing_tree
@@ -101,9 +98,6 @@ contains
     if (ios /= 0) call TLS_fatal ('error reading initial title line: iostat=' // i_to_c(ios))
     call pgslib_bcast (title)
 
-    ! read parallel computation parameters
-    call parallel_parameters_input (lun)
-
     call read_physical_constants (lun)
     call read_function_namelists (lun)
     call read_phase_namelists (lun)
@@ -123,19 +117,14 @@ contains
       call region_read (lun) ! What is this and what does it have to do with restarts? (NNC)
     end if
 
-    ! read mesh data and set dimensions
-    call mesh_input (lun)
-    call mesh_sizes ()
-
-    ! Read Alternative Mesh Namelist (necessary for electromagnetics)
-    call read_altmesh_input (lun)
-    call peek_truchas_mesh_namelists()
+    ! Read the MESH and ALTMESH namelists: used to initialize MESH_MANAGER (new mesh)
+    call read_truchas_mesh_namelists (lun)
 
     ! read materials data and set dimensions
     call material_input (lun)
     call material_sizes ()
 
-    ! read namelists for flow options
+    ! read namelists for flow options and enable new mesh
     if (fluid_flow) then
       if (.not.inviscid)   call read_turbulence_namelist (lun)
       if (surface_tension) call read_surface_tension_namelist (lun)
@@ -144,7 +133,6 @@ contains
     ! read namelists for solid mechanics options
     if (solid_mechanics) then
       call read_viscoplastic_model_namelists (lun)
-      !call sm_mesh_enable
     end if
 
     ! read volume fraction data
@@ -168,6 +156,7 @@ contains
     ! Read diffusion solver namelists
     if (ds_enabled) then
       call read_ds_namelists (lun)
+      if (heat_eqn) call read_microstructure_namelist (lun)
     end if
 
     ! Read additive manufacturing solver namelists

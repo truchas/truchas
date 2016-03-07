@@ -28,7 +28,7 @@ MODULE DISCRETE_DERIVATIVES
   use bc_data_types
   use cutoffs_module,   only: alittle
   use truchas_logging_services
-  use parameter_module, only: ncells, nfc, ndim
+  use legacy_mesh_api, only: ncells, nfc, ndim
   implicit none
   private
 
@@ -109,8 +109,7 @@ CONTAINS
     !   of a cell-centered scalar quantity Phi on face f.
     !
     !=======================================================================
-    use mesh_module,       only: Mesh
-    use gs_module,         only: EE_GATHER
+    use legacy_mesh_api, only: Mesh, EE_GATHER
 
     ! Arguments
     real(r8), dimension(ncells),           intent(IN)    :: Phi
@@ -234,8 +233,7 @@ CONTAINS
     !   of a cell-centered scalar quantity Phi on face f.
     !
     !=======================================================================
-    use mesh_module, only: Cell, Mesh
-    use gs_module, only: EE_GATHER
+    use legacy_mesh_api, only: Cell, Mesh, EE_GATHER
 
     ! Arguments
     real(r8), dimension(:,:,:), intent(OUT) :: dX_scaled
@@ -282,7 +280,7 @@ CONTAINS
     !   at face centers (Gradient_Phi).
     !
     !=======================================================================
-    use mesh_module, only: Mesh, DEGENERATE_FACE
+    use legacy_mesh_api, only: Mesh, DEGENERATE_FACE
 
     ! Arguments
     real(r8), dimension(ncells), intent(IN) :: Phi
@@ -481,8 +479,7 @@ CONTAINS
   FUNCTION FGetWeightList(icell, Weight) RESULT(WLcell)
   ! Accessor function for weights associated with given cell
 
-  use gs_module,      only: EE_GATHER
-  use mesh_module,    only: Mesh, DEGENERATE_FACE
+  use legacy_mesh_api,   only: Mesh, DEGENERATE_FACE, EE_GATHER
   use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN
 
   integer, intent(IN) :: icell
@@ -563,7 +560,7 @@ CONTAINS
   SUBROUTINE UpdateFaceLU(Face,c1)
   ! Updates LU decomposition
 
-  use mesh_module, only: Mesh, DEGENERATE_FACE
+  use legacy_mesh_api, only: Mesh, DEGENERATE_FACE
 
   integer, intent(IN) :: Face
   integer, intent(IN) :: c1
@@ -677,8 +674,7 @@ CONTAINS
   SUBROUTINE FGetScalarField(SField,S_Struct)
   ! Accessor function for neighbor and BC scalar field values
   ! associated with given cell
-  use gs_module, only: EE_GATHER
-  use mesh_module, only: Mesh, DEGENERATE_FACE
+  use legacy_mesh_api, only: Mesh, DEGENERATE_FACE, EE_GATHER
   use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, DESTROY
 
   real(r8), dimension(:), intent(IN) :: SField
@@ -783,8 +779,7 @@ CONTAINS
     !             arrays for the FGet... accessor functions.
     !
     !=======================================================================
-    use gs_module, only: EE_GATHER
-    use mesh_module, only: Cell,Mesh,BOUNDARY,Is_Face_Ngbr
+    use legacy_mesh_api, only: Cell, Mesh, Is_Face_Ngbr, EE_GATHER
     use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, DESTROY
 
     ! Arguments
@@ -813,6 +808,9 @@ CONTAINS
     real(r8), pointer, dimension(:,:), save :: dX
     type(REAL_VAR_VECTOR), pointer, dimension(:,:),save :: X_Centers
 
+    type BOUNDARY
+      real(r8), pointer :: data(:) => null()
+    end type BOUNDARY
     type(BOUNDARY), dimension(ndim) :: X_Centers_Bndy
 
     ! This V_HACK type is needed to conform with the REAL_VAR_VECTOR type.
@@ -867,10 +865,6 @@ CONTAINS
     ALLOCATE(NumFaceBCs(nfc,ncells),STAT=istat)
     if (istat /= 0) call TLS_panic ('INIT_DD_SUPPORT: memory allocation failure for array NumFaceBCs')
 
-    ! Initialize boundary arrays.
-    do d = 1,ndim
-       NULLIFY(X_Centers_Bndy(d)%Data)
-    end do
     ! Allocate a vector to store neighboring coordinate data.
     ALLOCATE (X_Centers(ndim,ncells))
     GATHER_LOOP: do d = 1,ndim

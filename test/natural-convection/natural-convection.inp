@@ -51,7 +51,6 @@ cells at each long_edit interval.
 
 &MESH
   mesh_file = 'square-49.g'
-  mesh_file_format = 'ExodusII'
 /
  
 &PHYSICS

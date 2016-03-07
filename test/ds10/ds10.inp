@@ -19,7 +19,6 @@ four quadrants of the domain are
 
 &MESH
   mesh_file = 'ds10-gaps.g'
-  mesh_file_format = 'ExodusII'
   gap_element_blocks  = 21 24   ! result of addgaps on side sets 11 and 14
   interface_side_sets = 12 13
 /

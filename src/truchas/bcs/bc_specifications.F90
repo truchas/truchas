@@ -145,7 +145,7 @@ CONTAINS
     !  an input bc ID, and a new value and update the
     !  atlas to use the new value wherever that 
     !  particular BCID was used to specify a boundary condition
-    use parameter_module, only: ncells, nfc
+    use legacy_mesh_api, only: ncells, nfc
     use bc_atlases_data_types, only: bc_atlas,   &
                                      data_size,  &
                                      bc_get_face,&
@@ -195,7 +195,7 @@ CONTAINS
     !  an input bc ID, and a new value and update the
     !  atlas to use the new value wherever that 
     !  particular BCID was used to specify a boundary condition
-    use parameter_module, only: ncells, nfc
+    use legacy_mesh_api, only: ncells, nfc
     use bc_atlases_data_types, only: bc_atlas,   &
                                      data_size,  &
                                      bc_get_face,&

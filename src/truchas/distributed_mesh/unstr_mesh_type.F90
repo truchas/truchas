@@ -141,6 +141,7 @@ module unstr_mesh_type
     integer, allocatable :: xcnode(:), cnode(:) ! cell nodes
     integer, allocatable :: xcface(:), cface(:) ! cell faces
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
+    integer, allocatable :: xcnhbr(:), cnhbr(:) ! cell neighbors
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
     real(r8), allocatable :: normal(:,:)
     !! Mesh interface links.
@@ -149,6 +150,11 @@ module unstr_mesh_type
     integer, allocatable :: link_set_id(:)    ! user-assigned ID for each link block
     type(bitfield), allocatable :: link_set_mask(:)  ! link block index
     type(ip_desc) :: link_ip
+    !! Additional link data aiding transition from old mesh.
+    integer, allocatable :: link_cell_id(:)   ! external cell ID the link was derived from (or 0)
+    integer, allocatable :: lnhbr(:,:)        ! link cell neighbors (2)
+    integer, allocatable :: xlnode(:), lnode(:) ! link nodes
+    integer, allocatable :: parent_node(:)    ! node parents (global ID)
   contains
     procedure :: get_global_cnode_array
     procedure :: get_global_cface_array

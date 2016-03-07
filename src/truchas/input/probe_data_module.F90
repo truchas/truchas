@@ -17,7 +17,8 @@ MODULE PROBE_DATA_MODULE
 !   
 !=======================================================================   
   use kinds, only: r8
-  use parameter_module, only: ndim, nprobes, MAX_PROBES
+  use parameter_module, only: nprobes, MAX_PROBES
+  use legacy_mesh_api, only: ndim
   implicit none    
   public    
 

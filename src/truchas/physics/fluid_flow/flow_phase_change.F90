@@ -69,7 +69,7 @@ contains
 
   subroutine set_reference_fluid_density ()
     use fluid_data_module, only: fluid_flow
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     if (fluid_flow) then
       if (.not.allocated(fluid_rho)) allocate (fluid_rho(ncells))
       call get_fluid_density (fluid_rho)
@@ -93,7 +93,8 @@ contains
   
   subroutine get_fluid_density (rho)
 
-    use parameter_module, only: ncells, mat_slot
+    use parameter_module, only: mat_slot
+    use legacy_mesh_api, only: ncells
     use fluid_data_module, only: isImmobile
     use property_module, only: density_material
     use matl_module, only: Matl

@@ -19,7 +19,6 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 
 &MESH
   mesh_file = 'ds5.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS
