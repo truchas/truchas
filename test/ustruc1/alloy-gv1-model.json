@@ -1,0 +1,20 @@
+{
+  "gv-model-type": "gv1",
+  "theta1": 0.05, "theta1p": 0.04,
+  "theta2": 0.95, "theta2p": 0.94,
+  
+            "theta-gv": 0.10,  //  GV taken at this solid fraction
+      "liquidus-slope": -165.0,  //  [K/C]
+         "solute-conc": 0.50,  //  [C]
+      "partition-coef": 0.19,  //  [unitless]
+     "liq-sol-delta-T": 15.0,   //  [T]
+         "diffusivity": 7.5e-10, //  [L^2/T]
+  "gibbs-thomson-coef": 7.7e-8,  //  [K-L]
+    "instability-coef": 0.1,   //  [unitless]
+     "coarsening-coef": 10.0e-6    //  [L/T^{1/2}] to be updated later
+}
+
+// K = temperature unit
+// L = length unit
+// C = concentration unit
+// T = time unit
