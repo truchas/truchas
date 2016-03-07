@@ -22,7 +22,6 @@ define a three-dimensional mesh
 &MESH
 
     mesh_file         = 'tiny_box_unstruc.g', 
-    mesh_file_format  = 'ExodusII', 
     coordinate_scale_factor = 1.0e-2
 
 /

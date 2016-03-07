@@ -10,7 +10,6 @@ See diffusion solver tests 2, 3 and 4 for variations.
 
 &MESH
   mesh_file = 'ds1-randomized.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS

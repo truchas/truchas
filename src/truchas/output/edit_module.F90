@@ -56,10 +56,10 @@ CONTAINS
     use fluid_data_module,      only: fluid_flow, qin, qout, isImmobile
     use fluid_type_module,      only: Div_c
     use matl_module,            only: GATHER_VOF
-    use mesh_module,            only: Cell
+    use legacy_mesh_api,        only: ncells, ndim, Cell
     use nonlinear_solution,     only: NKuser, nonlinear_solutions, DEFAULT_NK_CONTROLS
     use truchas_env,            only: output_file_name
-    use parameter_module,       only: ncells, ndim, nmat
+    use parameter_module,       only: nmat
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL, &
                                       PGSLIB_GLOBAL_MINLOC, PGSLIB_GLOBAL_MINVAL, &
                                       PGSLIB_GLOBAL_SUM

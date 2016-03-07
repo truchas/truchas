@@ -59,7 +59,6 @@ MODULE Var_Vector_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use ArrayAllocate_Module
   use truchas_logging_services
   use var_vector_types
   implicit none

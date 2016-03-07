@@ -49,12 +49,12 @@
 !! between processes according this mapping.  Communicating data to an
 !! off-process index from its corresponding on-process index is known as a
 !! "gather" operation, and communicating data from an off-process index to
-!! its corresponding on-process index is known as a "scatter" operation.  
+!! its corresponding on-process index is known as a "scatter" operation.
 !! Because the mapping is many-to-one, the scatter operation may have
 !! multiple data elements arriving at an on-process index and so the scatter
 !! operation must include some sort of reduction operation, like summation,
 !! in order to form a single data element for the index.
-!! 
+!!
 !! The module provides the derived type IP_DESC with private components that
 !! encapsulates all the info describing such an index set partition, including
 !! the info needed to perform the inter-process communication.  The following
@@ -66,7 +66,7 @@
 !!    for the index partition THIS.  Thus local indices in the range 1 through
 !!    ONP_SIZE(THIS) are on-process (or owned) indices.  The function is pure
 !!    and can be used in a specification expression.
-!!  
+!!
 !!  OFFP_SIZE(THIS) returns the number of off-process indices for the process
 !!    for the index partition THIS.  Thus local indices in the range
 !!    ONP_SIZE(THIS) + 1 through ONP_SIZE(THIS) + OFFP_SIZE(THIS) correspond
@@ -134,7 +134,7 @@
 !!    This version of CREATE is just like the preceding version except that all
 !!    the partition info is provided on the I/O process rather being distributed
 !!    across the processes.
-!!    
+!!
 !!  CALL ADD_OFFP_INDEX (THIS, OFFP_INDEX) adds the global indices given in the
 !!    rank-1 integer array OFFP_INDEX to the existing off-process indices
 !!    for the process in the index partition THIS.  THIS must have been defined
@@ -288,7 +288,12 @@ module index_partitioning
   end type ip_desc
 
   interface localize_index_array
-    module procedure localize_index_array_1, localize_index_array_2, localize_index_array_3
+    module procedure localize_index_array_1, localize_index_array_2
+    module procedure localize_index_array_3, localize_index_array_4
+  end interface
+
+  interface localize_index_struct
+    module procedure localize_index_struct1, localize_index_struct2
   end interface
 
   interface gather_boundary
@@ -465,7 +470,7 @@ contains
       global_index = this%offP_index(n-this%onP_size_)
     end if
   end function global_index
-  
+
   pure integer function first_index (this)
     class(ip_desc), intent(in) :: this
     first_index = this%first
@@ -520,7 +525,7 @@ contains
 
     class(ip_desc), intent(inout) :: this
     integer, intent(in) :: offP_index(:)
-    
+
     integer, pointer :: old_offP_index(:)
 
     ASSERT( this%defined() )
@@ -685,12 +690,9 @@ contains
     integer, allocatable :: map(:)
 
     ASSERT( domain%defined() )
-    ASSERT( range%defined() )
 
     if (is_IOP) then
       ASSERT( size(g_index,2) == domain%global_size_ )
-      ASSERT( minval(g_index) >= 0 )
-      ASSERT( maxval(g_index) <= range%global_size_ )
     end if
 
     !! Distribute the global indexing array according to the domain partition.
@@ -698,12 +700,30 @@ contains
     call distribute (l_index(:,:domain%onP_size_), g_index)
     if(associated(domain%offP_index)) call gather_boundary (domain, l_index)
 
+    call localize_index_array_4 (range, l_index, offP_index)
+
+  end subroutine localize_index_array_3
+
+
+  subroutine localize_index_array_4 (range, index, offP_index)
+
+    type(ip_desc), intent(in) :: range
+    integer :: index(:,:)
+    integer, allocatable :: offP_index(:)
+
+    integer :: i, j
+    integer, allocatable :: map(:)
+
+    ASSERT( range%defined() )
+    ASSERT( minval(index) >= 0 )
+    ASSERT( maxval(index) <= range%global_size_ )
+
     !! Identify all unknown off-process index references (map>0).
     allocate(map(0:range%global_size_))
     map = 0
-    do j = 1, size(l_index, dim=2)
-      do i = 1, size(l_index, dim=1)
-        map(l_index(i,j)) = l_index(i,j)
+    do j = 1, size(index, dim=2)
+      do i = 1, size(index, dim=1)
+        map(index(i,j)) = index(i,j)
       end do
     end do
     map(range%first:range%last) = 0   ! on-process indices are known
@@ -732,23 +752,23 @@ contains
     end do
 
     !! Remap the local index array values to the local numbering.
-    do j = 1, size(l_index, dim=2)
-      do i = 1, size(l_index, dim=1)
-        if ((l_index(i,j) < range%first) .or. (l_index(i,j) > range%last)) then
-          l_index(i,j) = map(l_index(i,j))
+    do j = 1, size(index, dim=2)
+      do i = 1, size(index, dim=1)
+        if ((index(i,j) < range%first) .or. (index(i,j) > range%last)) then
+          index(i,j) = map(index(i,j))
         else
           !! 1-based numbering of the on-process indices.
-          l_index(i,j) = l_index(i,j) - range%first + 1
+          index(i,j) = index(i,j) - range%first + 1
         end if
       end do
     end do
 
     deallocate(map)
 
-  end subroutine localize_index_array_3
+  end subroutine localize_index_array_4
 
 
-  subroutine localize_index_struct (g_count, g_index, domain, range, l_count, l_index, offP_index)
+  subroutine localize_index_struct1 (g_count, g_index, domain, range, l_count, l_index, offP_index)
 
     integer, intent(in) :: g_index(:), g_count(:)
     type(ip_desc), intent(in) :: domain, range
@@ -767,12 +787,12 @@ contains
       ASSERT( minval(g_index) >= 0 )
       ASSERT( maxval(g_index) <= range%global_size_ )
     end if
-    
+
     !! Distribute the global count array according to the domain partition.
     allocate(l_count(domain%local_size_))
     call distribute (l_count(:domain%onP_size_), g_count)
     if (associated(domain%offP_index)) call gather_boundary (domain, l_count)
-    
+
     !! Distribute the global indexing array according to the domain partition.
     allocate(l_index(sum(l_count)))
     call distribute (l_index(:sum(l_count(:domain%onP_size_))), g_index)
@@ -822,6 +842,26 @@ contains
       deallocate(domain_offP_index, g_ghosts)
     end if
 
+    call localize_index_struct2 (range, l_count, l_index, offP_index)
+
+  end subroutine localize_index_struct1
+
+
+  subroutine localize_index_struct2 (range, l_count, l_index, offP_index)
+
+    type(ip_desc), intent(in) :: range
+    integer, intent(in) :: l_count(:)
+    integer, intent(inout) :: l_index(:)
+    integer, allocatable, intent(out) :: offP_index(:)
+
+    integer :: j
+    integer, allocatable :: map(:)
+
+    ASSERT(range%defined())
+    ASSERT(sum(l_count) == size(l_index))
+    ASSERT(minval(l_index) >= 0)
+    ASSERT(maxval(l_index) <= range%global_size_)
+
     !! Identify all unknown off-process index references (map>0).
     allocate(map(0:range%global_size_))
     map = 0
@@ -863,9 +903,7 @@ contains
       end if
     end do
 
-    deallocate(map)
-
-  end subroutine localize_index_struct
+  end subroutine localize_index_struct2
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

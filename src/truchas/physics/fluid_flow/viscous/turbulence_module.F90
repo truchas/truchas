@@ -24,7 +24,8 @@ MODULE TURBULENCE_MODULE
   !           
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: string_len, ncells
+  use parameter_module, only: string_len
+  use legacy_mesh_api, only: ncells
   implicit none
   private
 
@@ -33,7 +34,7 @@ MODULE TURBULENCE_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Turbulent diffusivity at cell centers
-  real(r8), dimension(:), pointer, save, public :: Nu_Turb
+  real(r8), allocatable, save, public :: Nu_Turb(:)
 
   ! Physics Namelist Variables
   character(string_len), save, public :: turbulence_model = 'none'
@@ -52,7 +53,6 @@ CONTAINS
     !   Driver routine for all turbulence models.
     !
     !======================================================================= 
-    use parameter_module, only: string_len
 
     ! Argument List
     character(*), optional, intent(IN) :: specified_model
@@ -119,7 +119,7 @@ CONTAINS
     !   In the case of momentum transport, the diffusivity is also called
     !   kinematic viscosity (nu), which is given by mu / rho.
     !======================================================================= 
-    use parameter_module, only: ncells, ndim
+    use legacy_mesh_api,  only: ncells, ndim
     use zone_module,      only: Zone
 
     ! Local Variables
@@ -143,14 +143,11 @@ CONTAINS
   !-----------------------------------------------------------------------------
 
   subroutine turbulence_allocate ()
-     use ArrayAllocate_Module, only: ARRAYCREATE
 
      ! use turbulence_model as a flag to determine whether Nu_Turb should be allocated
 
-     nullify (Nu_Turb)
-
      if (turbulence_model == 'alg') then
-        call ARRAYCREATE (Nu_Turb, 1, ncells, 'Allocation of Nu_Turb(ncells) failed')
+        allocate(Nu_Turb(ncells))
         Nu_Turb = 0.0_r8
      end if
 

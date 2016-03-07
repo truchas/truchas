@@ -20,6 +20,11 @@
 #include "io-c.h"
 
 /* Broadcast Scalars */
+void pgslib_bcast_int8_scalar_c(scalar)
+     int8_t *scalar;
+{
+  MPI_Bcast(scalar, 1, MPI_INT8_T, PGSLib_IO_ROOT_PE, MPI_COMM_WORLD );
+}
 void pgslib_bcast_int_scalar_c(scalar)
      int *scalar;
 {
@@ -49,6 +54,12 @@ void pgslib_bcast_char_scalar_c(scalar)
 }
 
 /* Broadcast Vectors */
+void pgslib_bcast_int8_vector_c(vector, len)
+     int8_t *vector;
+     int *len;
+{
+  MPI_Bcast(vector, *len, MPI_INT8_T, PGSLib_IO_ROOT_PE, MPI_COMM_WORLD );
+}
 void pgslib_bcast_int_vector_c(vector, len)
      int *vector, *len;
 {
@@ -89,6 +100,23 @@ void pgslib_bcast_char_vector_c(vector, len)
 /* Distribute Routines */
 
 /* Distribute Scalars */
+void pgslib_dist_int8_scalar_c(scalar_out, scalarv_in)
+     int8_t *scalar_out, *scalarv_in;
+{
+  char errstring[256];
+
+#ifdef DEBUG_IO
+  sprintf(errstring, "before call, scalarv_in[1,2] = %d, %d, scalar_out = %d\n", *scalarv_in, *(scalarv_in+1), *scalar_out);
+  pgslib_output_c(errstring);
+#endif
+
+  MPI_Scatter(scalarv_in, 1, MPI_INT8_T, scalar_out, 1, MPI_INT8_T,
+	      PGSLib_IO_ROOT_PE, MPI_COMM_WORLD);
+#ifdef DEBUG_IO
+  sprintf(errstring, "after  call, scalarv_in[1,2] = %d, %d, scalar_out = %d\n", *scalarv_in, *(scalarv_in+1), *scalar_out);
+  pgslib_output_c(errstring);
+#endif
+}
 void pgslib_dist_int_scalar_c(scalar_out, scalarv_in)
      int *scalar_out, *scalarv_in;
 {
@@ -135,6 +163,35 @@ void pgslib_dist_char_scalar_c(scalar_out, scalarv_in)
 }
 	      
 /* Distribute Vectors */
+void pgslib_dist_int8_vector_c(vector_out, out_len, vector_in, lengths)
+     int8_t *vector_out, *vector_in;
+     int *out_len, *lengths;
+{
+  static int *displs;
+  static int init_dist_int_vector = 0;
+  static int thisPE, nPE;
+  int i;
+  
+  
+  if (!init_dist_int_vector) {
+    MPI_Comm_size( MPI_COMM_WORLD, &nPE);
+    displs = (int *) malloc(sizeof(int)* nPE);
+    pgslib_check_malloc_c(displs, "malloc failed in pgslib_dist_int_vector");
+    init_dist_int_vector = 1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &thisPE);
+  }
+
+  if (thisPE == PGSLib_IO_ROOT_PE) {
+    displs[0]=0;
+    for(i=1;i<nPE;i++) {
+      displs[i] = displs[i-1] + lengths[i-1];
+    }
+  }
+
+  MPI_Scatterv(vector_in, lengths, displs, MPI_INT8_T, 
+               vector_out, *out_len, MPI_INT8_T, PGSLib_IO_ROOT_PE, MPI_COMM_WORLD);
+}
+
 void pgslib_dist_int_vector_c(vector_out, out_len, vector_in, lengths)
      int *vector_out, *vector_in;
      int *out_len, *lengths;
@@ -260,6 +317,13 @@ void pgslib_dist_log_vector_c(vector_out, out_len, vector_in, lengths)
 
 /* Collate scalars */
 
+void pgslib_collate_int8_scalar_c(scalarv_out, scalar_in)
+     int8_t *scalarv_out, *scalar_in;
+{ 
+  MPI_Gather(scalar_in, 1, MPI_INT8_T, scalarv_out, 1, MPI_INT8_T, 
+	     PGSLib_IO_ROOT_PE, MPI_COMM_WORLD);
+}
+
 void pgslib_collate_int_scalar_c(scalarv_out, scalar_in)
      int *scalarv_out, *scalar_in;
 { 
@@ -303,6 +367,35 @@ void pgslib_collate_char_scalar_c(scalarv_out, scalar_in)
 }
 
 /* Collate vectors */
+void pgslib_collate_int8_vector_c(vector_out, lengths, vector_in, in_length)
+     int8_t *vector_out, *vector_in;
+     int *lengths, *in_length;
+{
+  static int *displs;
+  static int init_collate_int_vector = 0;
+  static int thisPE, nPE;
+  int i;
+  
+  
+  if (!init_collate_int_vector) {
+    MPI_Comm_size( MPI_COMM_WORLD, &nPE);
+    displs = (int *) malloc(sizeof(int)* nPE);
+    pgslib_check_malloc_c(displs, "malloc failed in pgslib_collate_int_vector");
+    init_collate_int_vector = 1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &thisPE);
+  }
+
+  if (thisPE == PGSLib_IO_ROOT_PE) {
+    displs[0]=0;
+    for(i=1;i<nPE;i++) {
+      displs[i] = displs[i-1] + lengths[i-1];
+    }
+  }
+
+  MPI_Gatherv(vector_in, *in_length, MPI_INT8_T, 
+               vector_out, lengths, displs, MPI_INT8_T, PGSLib_IO_ROOT_PE, MPI_COMM_WORLD);
+}
+
 void pgslib_collate_int_vector_c(vector_out, lengths, vector_in, in_length)
      int *vector_out, *vector_in;
      int *lengths, *in_length;

@@ -29,6 +29,9 @@ module ext_exodus_mesh_type
     integer, allocatable :: xlnode(:), lnode(:)
     integer, allocatable :: link_block(:)
     integer, allocatable :: link_block_id(:)
+    !! Additional link data aiding transition from old mesh (TEMPORARY)
+    integer, allocatable :: link_cell_id(:)  ! index of cell that became link (or 0)
+    integer, allocatable :: parent_node(:)   ! index of the parent node (or 0)
   contains
     procedure :: set_no_links
     procedure :: delete_links
@@ -45,6 +48,7 @@ contains
     this%lnode = [integer::]  ! 0-sized array
     this%link_block = [integer::]  ! 0-sized array
     this%link_block_id = [integer::]  ! 0-sized array
+    this%link_cell_id = [integer::]   ! 0-sized array
   end subroutine set_no_links
 
   !! Sets the number of links to 0 and deallocates the link arrays if allocated.
@@ -56,6 +60,8 @@ contains
     if (allocated(this%lnode)) deallocate(this%lnode)
     if (allocated(this%link_block)) deallocate(this%link_block)
     if (allocated(this%link_block_id)) deallocate(this%link_block_id)
+    if (allocated(this%link_cell_id)) deallocate(this%link_cell_id)
+    if (allocated(this%parent_node)) deallocate(this%parent_node)
   end subroutine delete_links
 
 end module ext_exodus_mesh_type

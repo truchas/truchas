@@ -8,7 +8,6 @@ the ball are not conforming.
 
 &MESH
   mesh_file = 'em-oball-hex.gen'
-  mesh_file_format = 'ExodusII'
   coordinate_scale_factor = 0.01
 /
 

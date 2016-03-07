@@ -15,35 +15,6 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  CALL GENERATE_MESH_MAPPINGS (MESH) generates the mappings that
-!!    are needed to move cell based fields between the diffusion solver MESH
-!!    and the old Truchas mesh structure.  The two meshes are geometrically
-!!    equivalent but may differ in the cell numbering and parallel partitioning.
-!!    In addition the Truchas mesh may include so-called "gap elements" that
-!!    are not included in the diffusion solver mesh.  The following public
-!!    module variables provide access to this information:
-!!
-!!    T_GAP_ELEMENTS(:)
-!!        An array of the process-local Truchas mesh cell indices that are
-!!        gap elements.
-!!
-!!    PCELL_T_TO_DS
-!!        The parallel mapping object that describes the mapping from Truchas
-!!        mesh cells to diffusion solver mesh cells.  It is used with the
-!!        REARRANGE subroutine to pull-back a cell-based field defined on the
-!!        diffusion solver mesh to the Truchas mesh, as in
-!!            CALL REARRANGE (PCELL_T_TO_DS, DEST_T_FIELD, SRC_DS_FIELD).
-!!        All elements of the destination field are defined except for those
-!!        corresponding to the gap elements given by the T_GAP_ELEMENTS array.
-!!
-!!    PCELL_DS_TO_T
-!!        The analogous parallel mapping object that describes the inverse
-!!        mapping from diffusion solver mesh cells to Truchas mesh cells.
-!!        It is used in exactly the same way to pull-back a cell-based field
-!!        defined on the Truchas mesh to the diffusion solver mesh.  In this
-!!        case source elements corresponding to gap elements are ignored and
-!!        all elements of the destination field are defined.
-!!
 !! The following routines handle the mapping between the MATL module data
 !! structure used in the older parts of Truchas and a material mesh function
 !! used by the diffusion solver.  Both structures describe the distribution
@@ -84,52 +55,17 @@
 module mesh_interop
 
   use kinds, only: r8
-  use parallel_permutations
   use base_mesh_class
   use material_mesh_function
   use truchas_logging_services, only: TLS_info
   implicit none
   private
   
-  public :: generate_mesh_mappings, delete_mesh_mappings
   public :: mmf_init, update_mmf_from_matl, update_matl_from_mmf
   public :: void_is_present
 
-  !! Permutation structures connecting the DS and T mesh cell labelings.
-  type(par_perm), allocatable, public, save :: pcell_t_to_ds, pcell_ds_to_t
-  integer, pointer, public, save :: t_gap_elements(:) => null()
-  
 contains
 
-  subroutine generate_mesh_mappings (mesh)
-    use mesh_module, only: unpermute_mesh_vector
-    class(base_mesh), intent(in) :: mesh
-    integer, pointer :: dummy(:) => null()
-    allocate(pcell_t_to_ds, pcell_ds_to_t)
-    call create_par_perm (unpermute_mesh_vector, mesh%xcell(:mesh%ncell_onP), &
-                          pcell_t_to_ds, t_gap_elements, pcell_ds_to_t, dummy)
-    INSIST(size(dummy) == 0)
-    deallocate(dummy)
-    INSIST(are_gap_elements(t_gap_elements))
-  contains
-    logical function are_gap_elements (list)
-      use mesh_module, only: mesh, GAP_ELEMENT_1
-      integer, intent(in) :: list(:)
-      integer :: j
-      are_gap_elements = .false.
-      do j = 1, size(list)
-        if (mesh(list(j))%cell_shape < GAP_ELEMENT_1) return
-      end do
-      are_gap_elements = .true.
-    end function are_gap_elements
-  end subroutine generate_mesh_mappings
-  
-  subroutine delete_mesh_mappings ()
-    if (allocated(pcell_t_to_ds)) deallocate(pcell_t_to_ds)
-    if (allocated(pcell_ds_to_t)) deallocate(pcell_ds_to_t)
-    if (associated(t_gap_elements)) deallocate(t_gap_elements)
-  end subroutine delete_mesh_mappings
-  
   logical function void_is_present ()
     use material_interop, only: void_material_index
     void_is_present = (void_material_index > 0)
@@ -169,7 +105,6 @@ contains
  !! B. GENERATE_MATERIAL_MAPPINGS from the MATERIAL_INTEROP module has been
  !!    called to establish the mappings between Truchas material numbers and
  !!    material system IDs that are used in the MMF <--> MATL update routines.
- !! C. GENERATE_MESH_MAPPINGS has been called to establish the mesh mappings.
  !!
 
   subroutine mmf_init (mesh, mmf, stat, errmsg)
@@ -233,13 +168,14 @@ contains
  !!
  !! The routine assumes a single-region MMF having an identity mapping between
  !! region cells and mesh cells, and uses the mapping MATERIAL_TO_SYSTEM from
- !! the MATERIAL_INTEROP module, and the mesh mapping PCELL_DS_TO_T.
+ !! the MATERIAL_INTEROP module.
  !!
 
   subroutine update_mmf_from_matl (mmf)
 
     use matl_module, only: gather_vof
-    use parameter_module, only: nmat, ncells
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use index_partitioning, only: gather_boundary
     use material_interop, only: material_to_system
 #ifdef EXTRA_VOF_DIAGNOSTICS
@@ -273,7 +209,7 @@ contains
     vfrac = 0.0_r8
     do m = 1, nmat  ! loop over Truchas material numbers
       call gather_vof (m, vofm)
-      call rearrange (pcell_ds_to_t, vf(:mesh%ncell_onP), vofm)
+      vf(:mesh%ncell_onP) = vofm(:mesh%ncell_onP)
       call gather_boundary (mesh%cell_ip, vf)
       do i = size(material_id), 1, -1 ! find the destination dim
         if (material_id(i) == material_to_system(m)) exit
@@ -320,7 +256,8 @@ contains
     use material_system
     use material_table
     use matl_utilities, only: update_matl, matl_get_cell_vof
-    use parameter_module, only: nmat, ncells
+    use parameter_module, only: nmat
+    use legacy_mesh_api, only: ncells
     use material_interop, only: phase_to_material, void_material_index
 #ifdef EXTRA_VOF_DIAGNOSTICS
     use parallel_communication, only: global_minval, global_maxval
@@ -359,7 +296,7 @@ contains
     if (material_id(1) == 0) then
       ASSERT(void_material_index > 0)
       if (associated(vfrac)) then
-        call rearrange (pcell_t_to_ds, vofm, vfrac(:mesh%ncell_onP,1))
+        vofm(:mesh%ncell_onP) = vfrac(:mesh%ncell_onP,1)
         vof(void_material_index,:) = vofm
       else  ! single-material region, just void!
         vof(void_material_index,:) = 1.0_r8
@@ -377,7 +314,7 @@ contains
         !! Copy its volume fraction into the Truchas material VoF array.
         m = phase_to_material(phase_id(1))
         if (associated(vfrac)) then
-          call rearrange (pcell_t_to_ds, vofm, vfrac(:mesh%ncell_onP,i))
+          vofm(:mesh%ncell_onP) = vfrac(:mesh%ncell_onP,i)
           vof(m,:) = vofm
         else  ! single-material region; volume fraction is 1
           vof(m,:) = 1.0_r8
@@ -405,7 +342,7 @@ contains
         !! Copy into the Truchas material VoF array.
         do k = 1, size(phase_id)
           m = phase_to_material(phase_id(k))
-          call rearrange (pcell_t_to_ds, vofm, pfrac(:,k))
+          vofm(:mesh%ncell_onP) = pfrac(:,k)
           vof(m,:) = vofm
         end do
         deallocate(pfrac)
@@ -416,8 +353,7 @@ contains
     deallocate(vofm)
     
     !! Copy the volume fraction data for gap elements from MATL into VOF.
-    do i = 1, size(t_gap_elements)
-      j = t_gap_elements(i)
+    do j = mesh%ncell_onP+1, ncells
       call matl_get_cell_vof (j, vof(1:,j))
     end do
     

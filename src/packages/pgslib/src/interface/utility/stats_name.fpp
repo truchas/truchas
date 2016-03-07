@@ -10,7 +10,8 @@
 !!CPP!! define the variable names based on the function name
 !!CPP!! The contortions are to get _F_NAME_, _SLOT_ & _LOCAL to expand
 !!CPP!! _FUNC_ before catentation.
-#define _CAT_(a,b) a##b
+#define _ID_(a) a
+#define _CAT_(a,b) _ID_(a)_ID_(b)
 #define _F_NAME_NAME_(f) _CAT_(f,_STATISTICS)
 #define _F_NAME_ _F_NAME_NAME_(_FUNC_)
 #define _SLOT_NAME_(f) _CAT_(f,_Slot)

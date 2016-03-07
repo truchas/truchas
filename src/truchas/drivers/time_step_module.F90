@@ -93,7 +93,8 @@ CONTAINS
     use fluid_data_module,        only: fluid_flow, FluidDeltaRho, & 
                                         Solid_face, isPureImmobile, Fluxing_Velocity
     use matl_module,              only: Matl 
-    use parameter_module,         only: mat_slot, ncells, ndim, nfc 
+    use parameter_module,         only: mat_slot
+    use legacy_mesh_api,          only: ncells, ndim, nfc 
     use property_module,          only: fluid_properties 
     use restart_variables,        only: restart
     use timing_tree
@@ -289,10 +290,9 @@ CONTAINS
     !   Fluxing_Velocity, which is the face-normal component of the 
     !   face flux velocities. 
     !======================================================================= 
-    use mesh_module,       only: Cell 
+    use legacy_mesh_api,   only: ncells, ndim, nfc, Cell 
     use cutoffs_module,    only: alittle 
     use fluid_data_module, only: fluidvof, fluidRho, courant
-    use parameter_module,  only: ncells, ndim, nfc 
     use PGSLib_module,     only: PGSLib_GLOBAL_MINLOC, PGSLib_GLOBAL_MINVAL, & 
                                  PGSLib_GLOBAL_MAXLOC, PGSLib_GLOBAL_MAXVAL                    
 
@@ -388,7 +388,7 @@ CONTAINS
     !   is given by nu = mu/rho. 
     !======================================================================= 
     use fluid_data_module, only: FluidRho 
-    use parameter_module,  only: ncells, ndim
+    use legacy_mesh_api,   only: ncells, ndim
     use PGSLib_module,     only: PGSLib_GLOBAL_MINLOC, PGSLib_GLOBAL_MINVAL 
     use property_module,   only: get_viscosity
     use viscous_data_module,    only: inviscid 
@@ -480,8 +480,7 @@ CONTAINS
     !   Compute the square of a characteristic length for a cell used in 
     !   calculating a time step constraint. 
     !======================================================================= 
-    use mesh_module,      only: Cell, orthogonal_mesh 
-    use parameter_module, only: ncells, ndim 
+    use legacy_mesh_api, only: ncells, ndim, Cell, orthogonal_mesh 
 
     ! Argument List 
     real(r8), dimension(ndim,ncells), intent(OUT) :: Dl 
@@ -510,8 +509,7 @@ CONTAINS
     !   Compute the square of a characteristic length for a cell 
     !   used in calculating a time step constraint. 
     !======================================================================= 
-    use mesh_module,          only: Cell, orthogonal_mesh, Mesh, GAP_ELEMENT_1 
-    use parameter_module,     only: ncells, ndim
+    use legacy_mesh_api, only: ncells, ndim, Cell, orthogonal_mesh, Mesh, GAP_ELEMENT_1 
 
     ! Argument List 
     real(r8), dimension(ndim,ncells), intent(OUT) :: Dl_Squared 
@@ -561,7 +559,7 @@ CONTAINS
     !           date : ??/??/2005
     ! 
     !=======================================================================
-    use parameter_module,            only: ncells,ndim
+    use legacy_mesh_api,             only: ncells, ndim
     use constants_module,            only: pi, big
     use fluid_data_module,           only: fluidRho
     use PGSLib_module,               only: PGSLib_GLOBAL_MINLOC, PGSLib_GLOBAL_MINVAL

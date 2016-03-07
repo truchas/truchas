@@ -237,10 +237,10 @@ contains
     call FHT_model_get_cell_temp_view (this%model, ulast, Tcell)
     allocate(dQ(size(Tcell)), Tmin(size(Tcell)), Tmax(size(Tcell)))
     if (am_enabled) then 
-        call compute_add_manuf_source_for_ds (this%mesh%ncell_onP, this%mesh%cell_ip, &
-                                              dQ, Tmin, Tmax)
+      call compute_add_manuf_source_for_ds (this%mesh%ncell_onP, this%mesh%cell_ip, &
+                                            dQ, Tmin, Tmax)
     else 
-        call compute_advected_heat (Tcell, dQ, Tmin, Tmax)
+      call compute_advected_heat (this, Tcell, dQ, Tmin, Tmax)
     end if 
     do j = 1, this%mesh%ncell_onP
       if (this%tot_void_cell(j)) then
@@ -652,25 +652,23 @@ contains
  !! fields between old and new meshes.
  !!
   
-  subroutine compute_advected_heat (T, dQ, Tmin, Tmax)
+  subroutine compute_advected_heat (this, T, dQ, Tmin, Tmax)
   
-    use parameter_module, only: ncells
-    use mesh_interop, only: pcell_t_to_ds, pcell_ds_to_t, t_gap_elements
-    use parallel_permutations, only: rearrange
+    use legacy_mesh_api, only: ncells
     use advection_module, only: compute_advected_enthalpy
 
+    type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: T(:)
     real(r8), intent(out) :: dQ(:), Tmin(:), Tmax(:)
     
     real(r8), dimension(ncells) :: T_t, dQ_t, Tmin_t, Tmax_t
     
-    call rearrange (pcell_t_to_ds, dest=T_t, src=T)
-    T_t(t_gap_elements) = 0.0_r8
+    T_t(:this%mesh%ncell_onP) = T
+    T_t(this%mesh%ncell_onP+1:) = 0.0_r8
     call compute_advected_enthalpy (T_t, dQ_t, Tmin_t, Tmax_t)
-    ASSERT(all(dQ_t(t_gap_elements) == 0.0_r8))
-    call rearrange (pcell_ds_to_t, dest=dQ,   src=dQ_t)
-    call rearrange (pcell_ds_to_t, dest=Tmin, src=Tmin_t)
-    call rearrange (pcell_ds_to_t, dest=Tmax, src=Tmax_t)
+    dQ = dQ_t(:this%mesh%ncell_onP)
+    Tmin = Tmin_t(:this%mesh%ncell_onP)
+    Tmax = Tmax_t(:this%mesh%ncell_onP)
     ASSERT(all(Tmin <= T .and. T <= Tmax))
     
   end subroutine compute_advected_heat

@@ -9,7 +9,6 @@
 
 &MESH
   mesh_file = 'split-rotated-cube.exo'
-  mesh_file_format = 'ExodusII'
   coordinate_scale_factor = 0.01
   gap_element_blocks = 3
 /

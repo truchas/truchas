@@ -45,7 +45,7 @@ MODULE FISCHER_MODULE
 CONTAINS
 
   SUBROUTINE FISCHER_INITIALIZE ()
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
 
     integer :: status
 
@@ -81,7 +81,7 @@ CONTAINS
     !    then the update will be wrong.
     !
     !=======================================================================
-    use parameter_module,       only: ncells
+    use legacy_mesh_api, only: ncells
     use pgslib_module, only: PGSLib_Global_DOT_PRODUCT
 
     real(r8), dimension(ncells) :: x
@@ -113,7 +113,7 @@ CONTAINS
     !   solutions and right hand sides) is updated.
     !
     !=======================================================================
-    use parameter_module, only: ncells
+    use legacy_mesh_api, only: ncells
     use cutoffs_module, only: alittle
     use UbikSolve_module
     use pgslib_module, only: PGSLib_Global_DOT_PRODUCT

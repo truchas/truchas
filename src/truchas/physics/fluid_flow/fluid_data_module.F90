@@ -21,7 +21,8 @@ MODULE FLUID_DATA_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: maxmat, ndim
+  use parameter_module, only: maxmat
+  use legacy_mesh_api, only: ndim
   implicit none
   private
 
@@ -114,7 +115,7 @@ MODULE FLUID_DATA_MODULE
 
   subroutine read_flow_data (unit, version)
 
-    use mesh_module, only: pcell => unpermute_mesh_vector
+    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_dist_array
 
     integer, intent(in) :: unit, version

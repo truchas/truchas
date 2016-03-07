@@ -9,7 +9,14 @@ include_directories(${Truchas_MODULE_DIR})
 #include_directories(${PGSLib_MODULE_DIR})
 
 if(Fortran_COMPILER_IS_INTEL)
-  set_source_files_properties(test_integer_set_type.F90 test_graph_type.F90 PROPERTIES
+  if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.0")
+    set_source_files_properties(test_integer_set_type.F90 PROPERTIES
+                                COMPILE_FLAGS "-assume realloc_lhs -DINTEL_INTEGER_SET_ICE")
+  else()
+    set_source_files_properties(test_integer_set_type.F90 PROPERTIES
+                                COMPILE_FLAGS "-assume realloc_lhs")
+  endif()
+  set_source_files_properties(test_graph_type.F90 PROPERTIES
                               COMPILE_FLAGS "-assume realloc_lhs")
 endif()
 

@@ -202,7 +202,7 @@ module truchas_logging_services
   public :: TLS_initialize, TLS_finalize, TLS_set_verbosity, TLS_logging_unit
   public :: TLS_info, TLS_warn, TLS_error, TLS_fatal, TLS_exit
   public :: TLS_fatal_if_any, TLS_fatal_if_IOP
-  public :: TLS_panic, TLS_debug, TLS_get_debug_unit
+  public :: TLS_panic, TLS_debug, TLS_debug_unit
 
   interface TLS_info
     module procedure TLS_info_scalar, TLS_info_array, TLS_info_advance
@@ -556,6 +556,33 @@ contains
     end if
   end subroutine open_debug_file
     
+
+  integer function TLS_debug_unit () result (unit)
+#ifndef SUPPORTS_NEWUNIT
+    use truchas_env, only: new_unit
+#endif
+    use parallel_communication, only: nPE, this_PE
+    use string_utilities, only: i_to_c
+    character(16) :: string
+    character(128) :: dbg_file
+    integer :: n, ios
+    if (dbg_unit == -1) then  ! first time -- open the debug file
+      write(string,'(i0)') nPE
+      n = len_trim(string)
+      write(string,'("(a,i",i0,".",i0,")")') n, n
+      write(dbg_file,string) 'debug.', this_PE
+#ifdef SUPPORTS_NEWUNIT
+      open(newunit=dbg_unit,file=trim(dbg_file),action='write',status='replace',iostat=ios)
+#else
+      call new_unit (dbg_unit)
+      if (dbg_unit == -1) call TLS_panic ('TLS_DEBUG: unable to acquire I/O unit for opening debug file')
+      open(unit=dbg_unit,file=trim(dbg_file),action='write',status='replace',iostat=ios)
+#endif
+      if (ios /= 0) call TLS_panic ('TLS_DEBUG: error opening file "' // trim(dbg_file) // &
+                                    '": iostat=' // i_to_c(ios))
+    end if
+    unit = dbg_unit
+  end function TLS_debug_unit
 
  !!
  !! COMPARISON OPERATORS FOR TYPE(VERB_LEVEL) OBJECTS

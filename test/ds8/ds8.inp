@@ -6,7 +6,6 @@ elsewhere.  Free-slip flow conditions on all boundaries.
 
 &MESH
   mesh_file = 'ds8.gen'
-  mesh_file_format = 'ExodusII'
 /
  
 &OUTPUTS

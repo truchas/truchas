@@ -317,7 +317,7 @@ CONTAINS
   subroutine init_EM_data_proxy ()
   
     use parallel_communication
-    use parameter_module, only: hex_mesh_ncell => ncells
+    use legacy_mesh_api, only: hex_mesh_ncell => ncells
     use simpl_mesh_type
     use mesh_manager, only: simpl_mesh_ptr
     use EM_input, only: coil_array
@@ -406,8 +406,8 @@ CONTAINS
     
     subroutine collect_main_mesh (mesh)
 
-      use parameter_module, only: ncells_tot, nnodes_tot
-      use mesh_module, only: MMesh => Mesh, Vertex, CELL_TET, mesh_has_cblockid_data
+      use legacy_mesh_api, only: ncells_tot, nnodes_tot
+      use legacy_mesh_api, only: MMesh => Mesh, Vertex, CELL_TET, mesh_has_cblockid_data
 
       type(external_mesh), intent(out) :: mesh
 
@@ -980,7 +980,7 @@ CONTAINS
   subroutine read_joule_data (unit, version)
 
     use mesh_manager, only: simpl_mesh, simpl_mesh_ptr
-    use mesh_module, only: pcell => unpermute_mesh_vector
+    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
     use parallel_communication, only: global_sum

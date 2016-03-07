@@ -16,7 +16,7 @@ MODULE BODY_DATA_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: ndim
+  use legacy_mesh_api, only: ndim
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

@@ -48,6 +48,7 @@ herr_t danu_data_write_double(hid_t loc, const char * name, int dim, const hsize
 herr_t danu_data_write_float(hid_t loc, const char * name, int dim, const hsize_t *size, const float * buf);
 herr_t danu_data_write_int(hid_t loc, const char * name, int dim, const hsize_t *size, const int * buf);
 herr_t danu_data_write_strings(hid_t loc, const char * name, int num, const char ** buf);
+herr_t danu_data_write_byte(hid_t loc, const char * name, int dim, const hsize_t *size, const int8_t * buf);
 
 herr_t danu_data_write_double2(hid_t id, int dim, const hsize_t *size, const double * buf);
 herr_t danu_data_write_float2(hid_t id,  int dim, const hsize_t *size, const float * buf);
@@ -58,6 +59,7 @@ herr_t danu_data_read_double(hid_t loc, const char * name, int dim, const hsize_
 herr_t danu_data_read_float(hid_t loc, const char * name, int dim, const hsize_t *size, float * buf);
 herr_t danu_data_read_int(hid_t loc, const char * name, int dim, const hsize_t *size, int * buf);
 herr_t danu_data_read_strings(hid_t loc, const char * name, int num, char ** buf);
+herr_t danu_data_read_byte(hid_t loc, const char * name, int dim, const hsize_t *size, int8_t * buf);
 
 herr_t danu_data_read_double2(hid_t id, int dim, const hsize_t *size, double * buf);
 herr_t danu_data_read_float2(hid_t id, int dim, const hsize_t *size, float * buf);

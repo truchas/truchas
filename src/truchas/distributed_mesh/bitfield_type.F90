@@ -25,6 +25,7 @@ module bitfield_type
   !! Intrinsic bit manipulation procedures extended to the BITFIELD type.
   !! Procedures are elemental where the instrinsics are.
   public :: bit_size, btest, ibset, ibclr, iand, ieor, ior, not
+  public :: popcnt, trailz
 
   !! Equality/inequality operators overloaded for BITFIELD operands.
   public :: operator(==), operator(/=)
@@ -86,6 +87,14 @@ module bitfield_type
 
   interface not
     module procedure not_bitfield
+  end interface
+
+  interface popcnt
+    module procedure popcnt_bitfield
+  end interface
+
+  interface trailz
+    module procedure trailz_bitfield
   end interface
 
   interface operator(==)
@@ -174,6 +183,22 @@ contains
     type(bitfield) :: bf_out
     bf_out%chunk = not(bf%chunk)
   end function not_bitfield
+
+  elemental integer function popcnt_bitfield (bf)
+    type(bitfield), intent(in) :: bf
+    popcnt_bitfield = sum(popcnt(bf%chunk))
+  end function popcnt_bitfield
+
+  elemental integer function trailz_bitfield (bf) result (p)
+    type(bitfield), intent(in) :: bf
+    integer :: n, q
+    p = 0
+    do n = 0, NUM_CHUNK-1
+      q = trailz(bf%chunk(n))
+      p = p + q
+      if (q < CHUNK_BITS) exit
+    end do
+  end function trailz_bitfield
 
   elemental logical function eq_bitfield (bf1, bf2)
     type(bitfield), intent(in) :: bf1, bf2

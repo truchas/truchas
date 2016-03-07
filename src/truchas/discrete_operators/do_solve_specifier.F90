@@ -78,7 +78,7 @@ CONTAINS
     use do_base_types,     only: DO_Specifier,DO_NUM_ST,DO_SOLVE_ORTHO, &
                                  DO_SOLVE_LU_LSLR,DO_SOLVE_SVD_LSLR,DO_SOLVE_DEFAULT
     use discrete_ops_data, only: use_ortho_face_gradient
-    use parameter_module,  only: ncells
+    use legacy_mesh_api,   only: ncells
 
     ! Argument list
     type(DO_Specifier), pointer :: NewSolveSpec
@@ -154,9 +154,7 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,   only: alittle
     use do_base_types,    only: DO_Specifier
-    use gs_module,        only: EE_GATHER
-    use mesh_module,      only: Cell, Mesh
-    use parameter_module, only: ncells, nfc, ndim
+    use legacy_mesh_api,  only: ncells, nfc, ndim, Cell, Mesh, EE_GATHER
 
     ! Argument list
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -266,7 +264,7 @@ CONTAINS
     !=======================================================================
     use bc_data_types,    only: BC_Specifier
     use do_base_types,    only: DO_Specifier
-    use parameter_module, only: ncells, nfc, ndim
+    use legacy_mesh_api,  only: ncells, nfc, ndim
 
     ! Argument list
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -316,7 +314,7 @@ CONTAINS
     !=======================================================================
     use bc_data_types,    only: BC_Specifier
     use do_base_types,    only: DO_Specifier
-    use parameter_module, only: ncells, nfc, ndim
+    use legacy_mesh_api,  only: ncells, nfc, ndim
 
     ! Argument list
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -379,9 +377,7 @@ CONTAINS
                                  DIMENSIONALITY
     use cutoffs_module,    only: alittle
     use do_base_types,     only: DO_Specifier,SField_Type
-    use gs_module,         only: EE_GATHER
-    use mesh_module,       only: Cell,Mesh,Is_Face_Ngbr
-    use parameter_module,  only: ncells, nfc, ndim
+    use legacy_mesh_api,   only: ncells, nfc, ndim, Cell, Mesh, Is_Face_Ngbr, EE_GATHER
     use var_vector_module, only: REAL_VAR_VECTOR, CREATE, SIZES, FLATTEN, DESTROY
 
     ! Arguments
@@ -653,7 +649,7 @@ CONTAINS
     !
     !=======================================================================
     use do_base_types,    only: DO_Specifier
-    use parameter_module, only: ncells, nfc, ndim
+    use legacy_mesh_api,  only: ncells, nfc, ndim
 
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -708,7 +704,7 @@ CONTAINS
     !
     !=======================================================================
     use do_base_types,    only: DO_Specifier
-    use parameter_module,  only: ncells
+    use legacy_mesh_api,  only: ncells
     use var_vector_module, only: DESTROY
 
     ! Arguments
@@ -809,7 +805,7 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier
     use do_update_module, only: UpdateFaceLU
-    use parameter_module, only: ncells, nfc
+    use legacy_mesh_api,  only: ncells, nfc
 
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -832,7 +828,7 @@ CONTAINS
     !=======================================================================
     use do_base_types,    only: DO_Specifier
     use do_update_module, only: UpdateFaceSVD
-    use parameter_module, only: ncells, nfc
+    use legacy_mesh_api,  only: ncells, nfc
  
     ! Arguments
     type(DO_Specifier), target, intent(INOUT) :: SS
@@ -846,5 +842,6 @@ CONTAINS
       end do FACE_LOOP
     end do
   END SUBROUTINE SVD_Init
+
 
 END MODULE DO_SOLVE_SPECIFIER

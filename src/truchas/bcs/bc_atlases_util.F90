@@ -110,7 +110,7 @@ CONTAINS
     ! permute the atlas so that all the data for each chart is local
     ! to the processor which owns that chart.  Chart ownership
     ! is determined by the cell identifier for that chart.
-    use parameter_module
+    use legacy_mesh_api, only: ncells
     use parallel_info_module
     use pgslib_module, ONLY: PGSLib_Gather, PGSLib_GRADE_UP, PGSLib_Scatter_SUM                                  
     type(BC_Atlas), intent(INOUT), target :: Atlas
@@ -423,7 +423,7 @@ CONTAINS
     
   subroutine AtlasRenumberCells(Atlas, SCOPE)
     ! Renumber the cells based on the the input scope
-    use parameter_module
+    use legacy_mesh_api, only: ncells
     use pgslib_module, ONLY: PGSLib_SUM_PREFIX
     type(BC_Atlas), intent(INOUT), target :: Atlas
     integer, intent(IN) :: SCOPE

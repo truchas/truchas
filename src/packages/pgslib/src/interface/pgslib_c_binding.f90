@@ -55,7 +55,7 @@
 
 module pgslib_c_binding
 
-  use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_float, c_double, c_char
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_float, c_double, c_char, c_int8_t
   implicit none
   public
 
@@ -213,6 +213,11 @@ module pgslib_c_binding
 
   !! Functions from par-src/io/io-c.c
   interface
+    subroutine PGSLib_bcast_int8_scalar_c (scalar) &
+        bind(c, name="pgslib_bcast_int8_scalar_c")
+      import c_int8_t
+      integer(c_int8_t) :: scalar
+    end subroutine
     subroutine PGSLib_bcast_int_scalar_c (scalar) &
         bind(c, name="pgslib_bcast_int_scalar_c")
       import c_int
@@ -232,6 +237,12 @@ module pgslib_c_binding
         bind(c, name="pgslib_bcast_log_scalar_c")
       import c_int
       logical(c_int) :: scalar ! A LIE: SEE NOTE 1
+    end subroutine
+    subroutine PGSLib_bcast_int8_vector_c (vector, vec_len) &
+        bind(c, name="pgslib_bcast_int8_vector_c")
+      import c_int, c_int8_t
+      integer(c_int8_t) :: vector(*)
+      integer(c_int), intent(in) :: vec_len
     end subroutine
     subroutine PGSLib_bcast_int_vector_c (vector, vec_len) &
         bind(c, name="pgslib_bcast_int_vector_c")
@@ -267,6 +278,12 @@ module pgslib_c_binding
 
   !! Functions from par-src/io/io-c.c
   interface PGSLib_Collate_Scalar_C ! SEE NOTE 3
+    subroutine PGSLib_Collate_int8_scalar_c (scalarv_out, scalar_in) &
+        bind(c, name="pgslib_collate_int8_scalar_c")
+      import c_int8_t
+      integer(c_int8_t), intent(out) :: scalarv_out(*)
+      integer(c_int8_t), intent(in)  :: scalar_in
+    end subroutine
     subroutine PGSLib_Collate_int_scalar_c (scalarv_out, scalar_in) &
         bind(c, name="pgslib_collate_int_scalar_c")
       import c_int
@@ -297,6 +314,13 @@ module pgslib_c_binding
 
   !! Functions from par-src/io/io-c.c
   interface PGSLib_Collate_Vector_c ! SEE NOTE 3
+    subroutine PGSLib_Collate_int8_vector_c (vector_out, Lengths, vector_in, In_Length) &
+        bind(c, name="pgslib_collate_int8_vector_c")
+      import c_int, c_int8_t
+      integer(c_int8_t), intent(out) :: vector_out(*)
+      integer(c_int8_t), intent(in)  :: vector_in(*)
+      integer(c_int),    intent(in)  :: Lengths(*), In_Length
+    end subroutine
     subroutine PGSLib_Collate_int_vector_c (vector_out, Lengths, vector_in, In_Length) &
         bind(c, name="pgslib_collate_int_vector_c")
       import c_int
@@ -339,6 +363,12 @@ module pgslib_c_binding
 
   !! Functions from par-src/io/io-c.c
   interface PGSLib_Dist_Scalar_c  ! SEE NOTE 3
+    subroutine PGSLib_Dist_int8_scalar_c (scalar_out, scalarv_in) &
+        bind(c, name="pgslib_dist_int8_scalar_c")
+      import c_int8_t
+      integer(c_int8_t), intent(out) :: scalar_out
+      integer(c_int8_t), intent(in)  :: scalarv_in(*)
+    end subroutine
     subroutine PGSLib_Dist_int_scalar_c (scalar_out, scalarv_in) &
         bind(c, name="pgslib_dist_int_scalar_c")
       import c_int
@@ -369,6 +399,13 @@ module pgslib_c_binding
 
   !! Functions from par-src/io/io-c.c
   interface PGSLib_Dist_Vector_c  ! SEE NOTE 3
+    subroutine PGSLib_dist_int8_vector_c (vector_out, out_len, vector_in, lengths) &
+        bind(c, name="pgslib_dist_int8_vector_c")
+      import c_int, c_int8_t
+      integer(c_int8_t), intent(out) :: vector_out(*)
+      integer(c_int8_t), intent(in)  :: vector_in(*)
+      integer(c_int),    intent(in)  :: out_len, lengths(*)
+    end subroutine
     subroutine PGSLib_dist_int_vector_c (vector_out, out_len, vector_in, lengths) &
         bind(c, name="pgslib_dist_int_vector_c")
       import c_int

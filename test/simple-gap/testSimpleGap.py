@@ -13,6 +13,21 @@ class SimpleGap(TruchasTest.GoldenTestCase):
   test_name = 'simple-gap'
   num_procs = 4 # with a parallel executable
 
+  gap_block_ids = [3, 4]
+  other_block_ids = [1, 2]
+
+  true_cells = None
+  gap_cells = None
+
+  def setUp(self):
+    if self._is_initialized is False:
+      self.setUpClass()
+    self.test_output=Truchas.TruchasOutput(self.get_output_file())
+    self.gold_output=Truchas.TruchasOutput(self.get_golden_output_file())
+    self.test_sim = self.test_output.get_simulation()
+    self.gap_cells  = Truchas.TruchasRegion(self.test_sim,self.gap_block_ids)
+    self.true_cells = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
+
   def get_test_field(self,field,cycle,region=None):
     return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,region=region)
 
@@ -22,8 +37,8 @@ class SimpleGap(TruchasTest.GoldenTestCase):
   def test_stress(self):
     '''Verify initial stress'''
     tol = 1.0e-6
-    test = self.get_test_field('sigma',cycle=0)
-    gold = self.get_gold_field('sigma',cycle=0)
+    test = self.get_test_field('sigma',cycle=0,region=self.true_cells)
+    gold = self.get_gold_field('sigma',cycle=0,region=self.true_cells)
     fail = 0
     for j in range(6):
       error = max(abs((test[:,j]-gold[:,j])/gold[:,j]))
@@ -37,8 +52,8 @@ class SimpleGap(TruchasTest.GoldenTestCase):
   def test_strain(self):
     '''Verify initial strain'''
     tol = 1.0e-7
-    test = self.get_test_field('epsilon',cycle=0)
-    gold = self.get_gold_field('epsilon',cycle=0)
+    test = self.get_test_field('epsilon',cycle=0,region=self.true_cells)
+    gold = self.get_gold_field('epsilon',cycle=0,region=self.true_cells)
     fail = 0
     for j in range(6):
       error = max(abs((test[:,j]-gold[:,j])/gold[:,j]))

@@ -53,7 +53,8 @@ CONTAINS
                                 Surface_Materials, BC_Surface_Forms,        &
                                 Surfaces_In_This_BC, Srfmatl_Index,         &
                                 Node_Disp_Coords, Mesh_Surface
-    use parameter_module, only: bc_forms, maxmat, ndim, nvar, mbc_surfaces, mbcsrf
+    use parameter_module, only: bc_forms, maxmat, nvar, mbc_surfaces, mbcsrf
+    use legacy_mesh_api, only: ndim
     use utilities_module, only: STRING_COMPARE
     use solid_mechanics_input, only: solid_mechanics
     use property_module,      only: Get_Truchas_Material_ID

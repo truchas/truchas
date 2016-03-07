@@ -45,7 +45,8 @@ CONTAINS
     !=======================================================================
     use constants_module,     only: pi
     use interface_module,     only: Int_Geom
-    use parameter_module,     only: ndim, nec, nvc, nicells
+    use parameter_module,     only: nicells
+    use legacy_mesh_api,      only: ndim, nec, nvc
 
     ! Arguments
     real(r8), dimension(ndim,nvc,nicells), intent(IN) :: Xv
@@ -229,8 +230,8 @@ CONTAINS
     !   vary.
     !=======================================================================
     use interface_module,  only: Int_Geom
-    use mesh_module,       only: orthogonal_mesh
-    use parameter_module,  only: ndim, nec, nvc, nicells
+    use parameter_module,  only: nicells
+    use legacy_mesh_api,   only: orthogonal_mesh, ndim, nec, nvc
 
     ! Arguments
     real(r8), dimension(ndim,nvc,nicells), intent(IN) :: Xv
@@ -430,7 +431,8 @@ CONTAINS
     !
     !=======================================================================
     use interface_module,  only: Int_Geom
-    use parameter_module,  only: ndim, nec, nicells
+    use parameter_module,  only: nicells
+    use legacy_mesh_api,   only: ndim, nec
 
     ! Arguments
     real(r8), dimension(nicells,nec,ndim), intent(IN) :: V_vec

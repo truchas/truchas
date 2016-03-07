@@ -79,13 +79,12 @@ Contains
     ! Purpose:
     !   initialize boundary conditions
     !---------------------------------------------------------------------------
-    use ArrayAllocate_Module, only: ARRAYCREATE
     use bc_data_module,       only: BC_C_EXIST, BC_C_IFLAG, BC_C_SHIFT, &
                                     BC_P_EXIST, BC_P_IFLAG, BC_P_SHIFT, &
                                     BC_T_EXIST, BC_T_IFLAG, BC_T_SHIFT, &
                                     BC_V_EXIST, BC_V_IFLAG, BC_V_SHIFT
     use bc_type_module,       only: BC_C, BC_P, BC_T, BC_V
-    use scalars_module
+    use legacy_mesh_api,      only: ncells, nfc
 
     ! Argument List
     logical, intent(IN) :: cflag ! Concentration flag
@@ -157,7 +156,7 @@ Contains
        allocate(BC_C%BCOperator(nfc,ncells))
        BC_C%BCOperator = 0
 
-       call ARRAYCREATE (BC_C%Flag, 1, ncells, 'InitializeBoundaryConditionsC')
+       allocate(BC_C%Flag(ncells))
        BC_C%Flag = 0
     end if
 
@@ -169,9 +168,9 @@ Contains
        allocate(BC_P%BCOperator(nfc,ncells))
        BC_P%BCOperator = 0
 
-       call ARRAYCREATE (BC_P%Flag, 1, ncells, 'InitializeBoundaryConditionsP')
+       allocate(BC_P%Flag(ncells))
        BC_P%Flag = 0
-       call ARRAYCREATE (BC_V%Flag, 1, ncells, 'InitializeBoundaryConditionsV')
+       allocate(BC_V%Flag(ncells))
        BC_V%Flag = 0
     end if
 
@@ -183,7 +182,7 @@ Contains
        allocate(BC_T%BCOperator(nfc,ncells))
        BC_T%BCOperator = 0
 
-       call ARRAYCREATE (BC_T%Flag, 1, ncells, 'InitializeBoundaryConditionsT')
+       allocate(BC_T%Flag(ncells))
        BC_T%Flag = 0
     end if
 
@@ -246,8 +245,6 @@ Contains
     ! Purpose:
     !   set boundary conditions
     !---------------------------------------------------------------------------
-    use ArrayAllocate_Module, only: ARRAYCREATE
-
     use bc_data_module,       only: BC_C_DIRICHLET, BC_C_HNEUMANN, &
                                     BC_C_NEUMANN,                  &
 
@@ -271,10 +268,8 @@ Contains
                                     BC_HTC_GAP_OP
 
     use bc_type_module,       only: BC_STRUCTURE
-    use scalars_module
+    use legacy_mesh_api,      only: ncells, nfc, Mesh
     use kinds, only: r8
-    Use mesh_module,          Only: Mesh
-    use parameter_module,     only: ncells
     use pgslib_module,        only: PGSLIB_GLOBAL_COUNT
 
     ! Argument List
@@ -416,7 +411,7 @@ Contains
     ! Use function to determine value for boundary condition variable
     if (PRESENT(UseFunc)) then
        if (.not. ASSOCIATED(BC%UseFunc)) then
-          call ARRAYCREATE (BC%UseFunc,1,nfc,1,ncells,'SetBoundaryCondition, UseFunc')
+          allocate(BC%UseFunc(nfc,ncells))
        end if
        where (mask)
           BC%UseFunc(face,:) = UseFunc
@@ -426,7 +421,7 @@ Contains
     ! Value Number 1
     if (PRESENT(value1)) then
        if (.not. ASSOCIATED(BC%Value1)) then
-          call ARRAYCREATE (BC%Value1,1,nfc,1,ncells,'SetBoundaryCondition, value 1')
+          allocate(BC%Value1(nfc,ncells))
        end if
        where (mask)
           BC%Value1(face,:) = value1
@@ -436,7 +431,7 @@ Contains
     ! Value Number 2
     if (PRESENT(value2)) then
        if (.not. ASSOCIATED(BC%Value2)) then
-          call ARRAYCREATE (BC%Value2,1,nfc,1,ncells,'SetBoundaryCondition, value 2')
+          allocate(BC%Value2(nfc,ncells))
        end if
        Where (mask)
           BC%Value2(face,:) = value2
@@ -446,7 +441,7 @@ Contains
     ! Value Number 3
     if (PRESENT(value3)) then
        if (.not. ASSOCIATED(BC%Value3)) then
-          call ARRAYCREATE (BC%Value3,1,nfc,1,ncells,'SetBoundaryCondition, value 3')
+          allocate(BC%Value3(nfc,ncells))
        end if
        Where (mask)
           BC%Value3(face,:) = value3
@@ -457,7 +452,7 @@ Contains
     if (PRESENT(value_array)) then
        length_value_array = SIZE (value_array)
        if (.not. ASSOCIATED(BC%Value_Array)) then
-          call ARRAYCREATE (BC%Value_Array,1,length_value_array,1,nfc,1,ncells,'SetBoundaryCondition, value_array')
+          allocate(BC%Value_Array(length_value_array,nfc,ncells))
           BC%Value_Array = 0.0_r8
        end if
        do k = 1,length_value_array

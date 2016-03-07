@@ -14,7 +14,6 @@ test exercises the implementation in the normal 'HTSD' solver.
 
 &MESH
   mesh_file = 'gap-rad-flow.g'
-  mesh_file_format = 'ExodusII'
   interface_side_sets = 2, 3
 /
 

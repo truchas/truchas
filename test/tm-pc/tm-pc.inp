@@ -24,7 +24,6 @@ define a three-dimensional mesh
 
 &MESH
        mesh_file = '233_box.exo',
-       mesh_file_format = 'exodusII',
        coordinate_scale_factor         =  0.01
 /
 

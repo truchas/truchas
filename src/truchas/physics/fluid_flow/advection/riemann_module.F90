@@ -13,7 +13,7 @@ MODULE RIEMANN_MODULE
   !=======================================================================
   use kinds, only: r8
   use cutoffs_module
-  use parameter_module
+  use legacy_mesh_api
   implicit none
   save
 

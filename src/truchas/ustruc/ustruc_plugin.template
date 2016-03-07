@@ -1,0 +1,241 @@
+!! This is a template for creating new microstructure analysis components,
+!! together with some explanation of what is going on.  In the following
+!! <name> should be replaced with the name of the new component, which
+!! must differ from the existing components.  The file name should be
+!! exactly the same as the module name with the .F90 suffix added.  Look
+!! at the other analysis components for some specific examples.
+
+#include "f90_assert.fpp"
+
+module ustruc_<name>_type
+
+  use kinds, only: r8
+  use ustruc_plugin_class
+  implicit none
+  private
+
+  ! The only public entity should be this function which instantiates a new
+  ! object.  All interaction with the object is via the interface defined by
+  ! the parent base class and not via the interface for this specific type.
+  public :: new_ustruc_<name>
+
+  ! The new analysis component is a derived type that extends a base class,
+  ! and it inherits the following data components from that base class:
+  !
+  !   integer :: n  -- The number of points where the analysis is applied.
+  !   This will be the size of this components state arrays, as well as the
+  !   state array components of the following core component.
+  !
+  !   type(ustruc_core), pointer :: core  -- This is the core analysis
+  !   component that holds the shared state data as data components of the
+  !   type.  Use this data as input for this analysis component.  See the
+  !   source for ustruc_core_type for the definitive list of the available
+  !   state arrays, but it includes the following (arrays are all of length n):
+  !
+  !     t -- time
+  !     temp(:) -- temperature
+  !     temp(:,:) -- temperature gradient
+  !     frac(:) -- solid fraction
+  !     frac_grad(:,:) -- solid fraction gradient
+  !     frac_rate(:) -- solid fraction time rate of change
+  !     invalid(:) -- logical mask marking points with invalid data (above)
+  !
+  !   If a velocity analysis component is enabled then there is also
+  !
+  !     velocity(:,:) -- transformation front velocity (vector)
+  !     speed(:) -- transformation front speed (scalar)
+  !     invalid_velocity(:) -- logical mask marking invalid velocity data
+  type, extends(ustruc_plugin) :: ustruc_<name>
+    ! Declare parameters for this analysis component here
+    ! Declare state arrays specific to this analysis component here
+  contains
+    procedure :: set_state
+    procedure :: update_state
+    !procedure :: geti1 ! uncomment if needed (see below)
+    !procedure :: getl1 ! uncomment if needed (see below)
+    !procedure :: getr1 ! uncomment if needed (see below)
+    !procedure :: getr2 ! uncomment if needed (see below)
+  end type ustruc_<name>
+
+contains
+
+  function new_ustruc_<name> (comp, params) result (this)
+
+    use parameter_list_type
+
+    class(ustruc_comp), pointer, intent(in) :: comp
+    type(parameter_list) :: params
+    type(ustruc_<name>), pointer :: this
+
+    allocate(this)
+    ! This wraps the passed microstructure analysis object with an instance
+    ! of this new analysis component.  The ultimate microstructure analysis
+    ! object that is used will be a chain of individual analysis components,
+    ! like nesting russian dolls, with the core analysis component always at
+    ! the end (or center).  Note that this defines the values of the N and
+    ! CORE data components inherited from the parent type.
+    call this%init (comp)
+
+    ! Here you would extract parameter values from the passed PARAMS and
+    ! use them to define the parameter data components of the derived type.
+
+    ! Finally, allocate the state array components of the derived type.
+    ! The lengths of the arrays should be THIS%N -- the number of points.
+
+  end function new_ustruc_<name>
+
+  ! For the SET_STATE and UPDATE_STATE subroutines the passed arguments
+  ! are precisely the state variables described earlier.  These arrays
+  ! of length THIS%N ultimately get copied into the same-named components
+  ! of the THIS%CORE derived type variable.
+
+  subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+
+    class(ustruc_<name>), intent(inout) :: this
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    logical,  intent(in) :: invalid(:)
+
+    integer :: j
+
+    !! Set the initial state for the next analysis component in the chain.
+    !! This will define the core component state arrays.
+    call this%ustruc_plugin%set_state (t, temp, temp_grad, frac, frac_grad, invalid)
+
+    ! Assign values to the state arrays specific to this analysis component.
+    ! Arrays which don't have a well-defined meaning initially should be
+    ! assigned a dummy value, as the value of the arrays may be accessed by
+    ! the client via one of the GET subroutines.
+
+  end subroutine set_state
+
+  subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+
+    class(ustruc_<name>), intent(inout) :: this
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    logical,  intent(in) :: invalid(:)
+
+    ! Add code here or below, as appropriate, to update the state arrays
+    ! specific to this new analysis component.  At this point the state held by
+    ! the CORE component is still the state at the previous time.  The passed
+    ! arguments are the state at the (new) current time.
+
+    ! Update the enclosed analysis components.  The core analysis component
+    ! is always at the center, and thus this updates the state held by the
+    ! CORE component.
+    call this%ustruc_plugin%update_state (t, temp, temp_grad, frac, frac_grad, invalid)
+
+    ! Add code here or above, as appropriate, to update the state arrays
+    ! specific to this new analysis component.  At this point the state held
+    ! by the CORE component is the state at the (new) current time and is the
+    ! same as the passed arguments.  (The CORE component holds some additional
+    ! derived state, like velocities.)
+
+  end subroutine update_state
+
+  ! Here we add procedures for accessing analysis data computed by this new
+  ! analysis component.  The types of data that can be handled are scalar
+  ! logical, integer, and real data (per point) (GETL1, GETI1, and GETR1),
+  ! and vector real data (per point) (GETR2).  Decide on a name (character
+  ! string) that the client will use to identify the data.  The choice of
+  ! names needs to be coordinated with all the other analysis components.
+  ! These subroutines need to respond to the chosen names and return the
+  ! appropriate data, else delegate back to the GET procedure of the parent
+  ! class to be handled by another analysis component.  A subroutine only
+  ! needs to be included if it is needed to respond to a chosen name for
+  ! this new analysis component; otherwise leave it out entirely.  See the
+  ! existing analysis components for examples.
+
+  !subroutine getl1 (this, name, array)
+  !  class(ustruc_<name>), intent(in) :: this
+  !  character(*), intent(in) :: name
+  !  logical, intent(out) :: array(:)
+  !  select case (name)
+  !  case ('chosen-name-1')
+  !    ASSERT(size(array) == this%n)
+  !    array = ... ! assign appropriate values here
+  !  case default
+  !    call this%ustruc_plugin%get (name, array)
+  !  end select
+  !end subroutine getl1
+
+  !subroutine geti1 (this, name, array, invalid)
+  !  class(ustruc_<name>), intent(in) :: this
+  !  character(*), intent(in) :: name
+  !  integer, intent(out) :: array(:)
+  !  logical, intent(out), optional :: invalid(:)
+  !  select case (name)
+  !  case ('chosen-name-1')
+  !    ASSERT(size(array) == this%n)
+  !    array = ... ! assign appropriate values here
+  !    if (present(invalid)) then
+  !      ASSERT(size(invalid) == this%n)
+  !      invalid = ... ! assign appropriate values here
+  !    end if
+  !  case default
+  !    call this%ustruc_plugin%get (name, array)
+  !  end select
+  !end subroutine geti1
+
+  !subroutine getr1 (this, name, array, invalid)
+  !  class(ustruc_<name>), intent(in) :: this
+  !  character(*), intent(in) :: name
+  !  real(r8), intent(out) :: array(:)
+  !  logical, intent(out), optional :: invalid(:)
+  !  select case (name)
+  !  case ('chosen-name-1')
+  !    ASSERT(size(array) == this%n)
+  !    array = ... ! assign appropriate values here
+  !    if (present(invalid)) then
+  !      ASSERT(size(invalid) == this%n)
+  !      invalid = ... ! assign appropriate values here
+  !    end if
+  !  case ('chosen-name-2')
+  !    ASSERT(size(array) == this%n)
+  !    array = ... ! assign appropriate values here
+  !    if (present(invalid)) then
+  !      ASSERT(size(invalid) == this%n)
+  !      invalid = ... ! assign appropriate values here
+  !    end if
+  !  case default
+  !    call this%ustruc_plugin%get (name, array, invalid)
+  !  end select
+  !end subroutine getr1
+
+  !subroutine getr2 (this, name, array, invalid)
+  !  class(ustruc_<name>), intent(in) :: this
+  !  character(*), intent(in) :: name
+  !  real(r8), intent(out) :: array(:,:)
+  !  logical, intent(out), optional :: invalid(:)
+  !  select case (name)
+  !  case ('chosen-name-1')
+  !    ASSERT(size(array,1) == ???)  ! is this a 3-vector?
+  !    ASSERT(size(array,2) == this%n)
+  !    array = ... ! assign appropriate values here
+  !    if (present(invalid)) then
+  !      ASSERT(size(invalid) == this%n)
+  !      invalid =  ... ! assign appropriate values here
+  !    end if
+  !  case default
+  !    call this%ustruc_plugin%get (name, array, invalid)
+  !  end select
+  !end subroutine getr2
+
+  ! This function goes along with the preceding GET procedures (if any).
+  ! It needs to return true for any of the data names handled by one of
+  ! the GET procedures.  For any other data name it needs to delegate back
+  ! to the HAS procedure of the parent class to be handled by another
+  ! analysis component.  If none of the above GET procedures are defined,
+  ! then leave this one out too.
+
+  !logical function has (this, name)
+  !  class(ustruc_<name>), intent(in) :: this
+  !  character(*), intent(in) :: name
+  !  select case (name)
+  !  case ('chosen-name-1', 'chosen-name-2', ...)
+  !    has = .true.
+  !  case default
+  !    has = this%ustruc_plugin%has(name)
+  !  end select
+  !end function has
+
+end module ustruc_<name>_type

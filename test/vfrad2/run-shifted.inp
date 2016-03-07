@@ -8,7 +8,6 @@ other simulation where the ball is centered, but uses the same view factors.
 
 &MESH
   mesh_file = 'mesh-shifted.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS

@@ -38,7 +38,7 @@ CONTAINS
     !
     !   Mom_Delta = dt * Stress Gradient
     !======================================================================= 
-    use parameter_module,     only: ncells, ndim, nfc
+    use legacy_mesh_api,      only: ncells, ndim, nfc
     use viscous_data_module,  only: Stress_Grad_BC, viscous_implicitness
 
     use viscous_data_module,  only: Mask, Grad, Mu_Face, &
@@ -101,7 +101,7 @@ CONTAINS
     !
     !   Mom_Delta = dt * Stress Gradient
     !======================================================================= 
-    use parameter_module,     only: ncells, ndim
+    use legacy_mesh_api,      only: ncells, ndim
     use timing_tree
     use zone_module,          only: Zone
     use viscous_data_module,  only: viscous_implicitness, Stress_Grad_BC
@@ -203,9 +203,7 @@ CONTAINS
     !
     !=======================================================================
     use fluid_data_module,    only: Solid_Face
-    use gs_module,            only: EE_GATHER
-    use mesh_module,          only: Mesh, DEGENERATE_FACE
-    use parameter_module,     only: ncells, nfc
+    use legacy_mesh_api,      only: ncells, nfc, Mesh, DEGENERATE_FACE, EE_GATHER
     use property_module,      only: get_viscosity
     use truchas_logging_services
     use viscous_data_module,  only: Mu_Face
@@ -295,8 +293,7 @@ CONTAINS
                                     DO_SOLVE_LU_LSLR
     use discrete_ops_data,    only: use_ortho_face_gradient
     use fluid_data_module,    only: fluidVof
-    use mesh_module,          only: Cell
-    use parameter_module,     only: ncells, ndim, nfc
+    use legacy_mesh_api,      only: ncells, ndim, nfc, Cell
     use tensor_module,        only: Tensor
     use viscous_data_module,  only: Mask, Grad, Mu_Face, &
                                     Normal, Face_Velocity

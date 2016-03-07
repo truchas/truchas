@@ -54,8 +54,7 @@ CONTAINS
     !   Calculate a fluix quantity which is compatible with the mass
     !
     !======================================================================= 
-    use gs_module,                 only: EE_GATHER
-    use parameter_module,          only: ncells, ndim, nfc
+    use legacy_mesh_api,           only: ncells, ndim, nfc, EE_GATHER
     use time_step_module,          only: dt
     use zone_module,               only: CELL_AVG
     use limiter,                   only: fluxLimiterThuburn, limitGradient
@@ -167,8 +166,7 @@ CONTAINS
     !   be limited or not.
     !
     !======================================================================= 
-    use gs_module,                 only: EE_GATHER
-    use parameter_module,          only: ncells, ndim, nfc
+    use legacy_mesh_api,           only: ncells, ndim, nfc, EE_GATHER
     use zone_module,               only: CELL_AVG
 
     ! Argument List
@@ -235,8 +233,7 @@ CONTAINS
     !   Compute evaluation point for calculating fluxed quantity.
     !
     !======================================================================= 
-    use mesh_module,               only: Cell
-    use parameter_module,          only: ncells, ndim, nfc
+    use legacy_mesh_api,           only: ncells, ndim, nfc, Cell
     use zone_module,               only: CELL_AVG
 
     ! Argument List
@@ -316,9 +313,7 @@ CONTAINS
     !           takes a scalar quantity from time n to time n+1.
     !
     !=======================================================================
-    use gs_module,            only: EE_GATHER
-    use mesh_module,          only: Cell
-    use parameter_module,     only: ncells, nfc
+    use legacy_mesh_api,      only: ncells, nfc, Cell, EE_GATHER
     use zone_module,          only: Zone
 
     ! Argument List

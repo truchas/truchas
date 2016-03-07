@@ -44,7 +44,7 @@ project(Truchas C CXX Fortran)
 
 # Version
 set(Truchas_MAJOR_VERSION 3)
-set(Truchas_MINOR_VERSION 0)
+set(Truchas_MINOR_VERSION 1)
 set(Truchas_PATCH_VERSION dev)
 set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
 
@@ -340,7 +340,7 @@ find_package(BLAS)
 
 # Preprocessor - allow this to be a list to define global flags easily
 if ( NOT Truchas_PREPROCESSOR )
-  set(Truchas_PREPROCESSOR cpp -ansi)
+  set(Truchas_PREPROCESSOR cpp -traditional-cpp)
 endif()
 
 # Turn off assertions in Truchas Fortran code
@@ -366,6 +366,9 @@ endif()
 include (CMakeFortranCompilerVersion)
 if (Fortran_COMPILER_IS_INTEL)
   list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362026)
+  if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.0")
+    list(APPEND Truchas_PREPROCESSOR -DINTEL_INTEGER_SET_ICE)
+  endif()
   if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "14.0.3" AND
       CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "15.0.2")
     list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362104)

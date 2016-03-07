@@ -13,6 +13,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #include "f90_assert.fpp"
+!#define DEBUG_MESH
 
 module mesh_manager
 
@@ -23,7 +24,8 @@ module mesh_manager
   private
 
   public :: enable_mesh, named_mesh_ptr, unstr_mesh_ptr, simpl_mesh_ptr
-  public :: peek_truchas_mesh_namelists, init_mesh_manager
+  public :: read_truchas_mesh_namelists, init_mesh_manager
+  public :: get_main_mesh_size  ! HACK
 
   public :: simpl_mesh ! re-export; do not want this -- FIXME
 
@@ -119,6 +121,9 @@ contains
 
     use unstr_mesh_factory
     use simpl_mesh_factory
+#ifdef DEBUG_MESH
+    use unstr_mesh_gmv
+#endif
 
     integer :: stat
     logical :: enabled, em_mesh
@@ -146,6 +151,11 @@ contains
           if (stat /= 0) call TLS_fatal (errmsg)
           call plist%set ('mesh', any_mesh(umesh))
           call umesh%write_profile
+#ifdef DEBUG_MESH
+          call gmv_open (piter%name()//'.gmv')
+          call gmv_write_unstr_mesh (umesh)
+          call gmv_close
+#endif
         end if
         call TLS_info ('  Mesh "' // trim(piter%name()) // '" initialized')
       end if
@@ -154,30 +164,25 @@ contains
 
   end subroutine init_mesh_manager
 
-  subroutine peek_truchas_mesh_namelists
+  !! This procedure reads the MESH and ALTMESH namelists and uses the data to
+  !! initialize the module variable MESHES parameter list.
 
-    use mesh_input_module, only: mesh_file, mesh_file_format, coordinate_scale_factor, &
-                                 gap_element_blocks, interface_side_sets, exodus_block_modulus
-    use altmesh_input, only: altmesh_exists, altmesh_file, altmesh_coordinate_scale_factor
-    use string_utilities, only: raise_case
+  subroutine read_truchas_mesh_namelists (lun)
 
-    integer, allocatable :: iarray(:)
+    use altmesh_input
+
+    integer, intent(in) :: lun
+
     type(parameter_list), pointer :: plist
 
-    !! The MESH namelist: the "MAIN" mesh
-    if (raise_case(mesh_file_format) == 'EXODUSII') then
-      plist => meshes%sublist('MAIN')
-      call plist%set ('mesh', any_mesh())
-      call plist%set ('mesh-file', trim(mesh_file))
-      call plist%set ('coord-scale-factor', coordinate_scale_factor)
-      call plist%set ('exodus-block-modulus', exodus_block_modulus)
-      iarray = pack(gap_element_blocks, mask=(gap_element_blocks > 0))
-      if (size(iarray) > 0) call plist%set ('gap-element-block-ids', iarray)
-      iarray = pack(interface_side_sets, mask=(interface_side_sets > 0))
-      if (size(iarray) > 0) call plist%set ('interface-side-set-ids', iarray)
-    end if
+    !! The MESH namelist: the "MAIN" mesh used by most physics
+    plist => meshes%sublist('MAIN')
+    call plist%set ('mesh', any_mesh())
+    call plist%set ('enabled', .true.)  ! always enabled
+    call read_mesh_namelist (lun, plist)
 
-    !! ALTMESH namelist. the "ALT" mesh used by EM
+    !! The ALTMESH namelist: the "ALT" mesh used by EM
+    call read_altmesh_input (lun)
     if (altmesh_exists) then
       plist => meshes%sublist('ALT')
       call plist%set ('mesh', any_mesh())
@@ -186,8 +191,98 @@ contains
       call plist%set ('em-mesh', .true.)
     end if
 
-  end subroutine peek_truchas_mesh_namelists
+  end subroutine read_truchas_mesh_namelists
 
+  !! This auxiliary procedure reads the MESH namelist and stuffs the results
+  !! into the passed parameter list PLIST.
+
+  subroutine read_mesh_namelist (lun, plist)
+
+    use kinds, only: r8
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_I
+    use string_utilities, only: i_to_c
+    use truchas_env, only: input_dir
+    use parallel_communication, only: is_IOP, broadcast
+    use exodus_truchas_hack, only: read_exodus_mesh_size
+
+    integer, intent(in) :: lun
+    type(parameter_list), intent(inout) :: plist
+
+    logical :: found
+    integer :: ios, stat, nnodes, ncells
+    integer, allocatable :: iarray(:)
+
+    !! Namelist variables
+    character(120) :: mesh_file
+    real(r8) :: coordinate_scale_factor
+    integer :: exodus_block_modulus, gap_element_blocks(50), interface_side_sets(127)
+    namelist /mesh/ mesh_file, coordinate_scale_factor, exodus_block_modulus, &
+                    gap_element_blocks, interface_side_sets
+
+    call TLS_info ('')
+    call TLS_info ('Reading MESH Namelist ...')
+
+    !! Locate the MESH namelist (required)
+    if (is_IOP) then
+      rewind(lun)
+      call seek_to_namelist (lun, 'MESH', found, iostat=ios)
+    end if
+    call broadcast (ios)
+    if (ios /= 0)  call TLS_fatal ('error reading input file: iostat=' // i_to_c(ios))
+    call broadcast (found)
+    if (.not.found) call TLS_fatal ('MESH namelist not found')
+
+    !! Read the MESH namelist, assigning default values first.
+    if (is_IOP) then
+      mesh_file = NULL_C
+      coordinate_scale_factor = 1.0_r8
+      exodus_block_modulus = 10000
+      gap_element_blocks = NULL_I
+      interface_side_sets = NULL_I
+      read(lun,nml=mesh,iostat=ios)
+    end if
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal ('error reading MESH namelist')
+
+    !! Broadcast the namelist variables.
+    call broadcast (mesh_file)
+    call broadcast (coordinate_scale_factor)
+    call broadcast (exodus_block_modulus)
+    call broadcast (gap_element_blocks)
+    call broadcast (interface_side_sets)
+
+    !! Check and process the namelist variables, and stuff them into the return PLIST.
+    if (mesh_file == NULL_C) call TLS_fatal ('MESH_FILE not specified')
+    if (mesh_file(1:1) /= '/') then ! not an absolute path
+      mesh_file = trim(input_dir) // trim(mesh_file)
+    end if
+    if (is_IOP) inquire(file=mesh_file,exist=found)
+    call broadcast (found)
+    if (.not.found) call TLS_fatal ('MESH_FILE not found: ' // trim(mesh_file))
+    call plist%set ('mesh-file', trim(mesh_file))
+
+    if (coordinate_scale_factor <= 0.0_r8) call TLS_fatal ('COORDINATE_SCALE_FACTOR must be > 0')
+    call plist%set ('coord-scale-factor', coordinate_scale_factor)
+
+    if (exodus_block_modulus < 0) call TLS_fatal ('EXODUS_BLOCK_MODULUS must be >= 0')
+    call plist%set ('exodus-block-modulus', exodus_block_modulus)
+
+    iarray = pack(gap_element_blocks, mask=(gap_element_blocks /= NULL_I))
+    if (size(iarray) > 0) call plist%set ('gap-element-block-ids', iarray)
+
+    iarray = pack(interface_side_sets, mask=(interface_side_sets /= NULL_I))
+    if (size(iarray) > 0) call plist%set ('interface-side-set-ids', iarray)
+
+    !! Read the number of cells and nodes from the file (HACK!)
+    if (is_IOP) call read_exodus_mesh_size (trim(mesh_file), nnodes, ncells, stat)
+    call broadcast (stat)
+    if (stat /= 0) call TLS_fatal ('error reading MESH_FILE "' // trim(mesh_file) // '"')
+    call broadcast (nnodes)
+    call broadcast (ncells)
+    call plist%set ('nnodes', nnodes)
+    call plist%set ('ncells', ncells)
+
+  end subroutine read_mesh_namelist
 
   subroutine enable_mesh (name, exists)
     use string_utilities, only: raise_case
@@ -200,7 +295,6 @@ contains
       call plist%set ('enabled', .true.)
     end if
   end subroutine enable_mesh
-
 
   !! Returns a pointer to the CLASS(BASE_MESH) mesh object that corresponds to
   !! NAME. A null pointer is returned if NAME is not recognized or if the mesh
@@ -274,5 +368,28 @@ contains
       end select
     end if
   end function mesh_ptr
+
+  !! NNC, Feb 2016.  This awful hack is necessitated by LIN_SOLVER_INPUT which
+  !! initializes default solver parameters in the opaque Ubik structure array.
+  !! Several of these parameters depend on the number of cells and nodes in the
+  !! mesh, and it is doing this *before* the mesh has actually been read; i.e.
+  !! it is doing it at the wrong time.  The legacy mesh accomodated this design
+  !! flaw by pre-reading the sizes at the time the MESH namelist was read.  So
+  !! we have to do the same thing for the new mesh.  A difference here is that
+  !! we are storing this metadata with the mesh_manager and not the new mesh.
+
+  subroutine get_main_mesh_size (ncells_tot, nnodes_tot)
+    use parameter_list_type
+    type(parameter_list), pointer :: plist
+    integer, intent(out) :: ncells_tot, nnodes_tot
+    if (meshes%is_sublist('MAIN')) then
+      plist => meshes%sublist('MAIN')
+      call plist%get ('ncells', ncells_tot)
+      call plist%get ('nnodes', nnodes_tot)
+    else
+      ncells_tot = -1
+      nnodes_tot = -1
+    end if
+  end subroutine get_main_mesh_size
 
 end module mesh_manager

@@ -42,7 +42,7 @@ module interface_mass_gaussian_type
 
     subroutine alloc_mass_depos(this)
 
-      use parameter_module, only: ncells
+      use legacy_mesh_api, only: ncells
 
       class(interface_mass_gaussian), intent(inout) :: this
  
@@ -83,7 +83,7 @@ module interface_mass_gaussian_type
 
     subroutine deposit_mass_gaussian(this, state, am_geom, dt)
 
-      use mesh_module,          only: Cell
+      use legacy_mesh_api, only: Cell
 
       class(interface_mass_gaussian), intent(inout) :: this
       type(am_state), intent(inout) :: state
@@ -134,8 +134,7 @@ module interface_mass_gaussian_type
 
     subroutine redistribute_overflow(this, state)
 
-      use gs_module,     only: EE_GATHER
-      use mesh_module,      only: Cell
+      use legacy_mesh_api, only: Cell, EE_GATHER
 
       class(interface_mass_gaussian), intent(inout) :: this
       type(am_state), intent(inout) :: state
@@ -244,10 +243,8 @@ module interface_mass_gaussian_type
 
     subroutine find_and_init_interface_cells(this, state)
 
-      use gs_module,     only: EE_GATHER
-
       use parameter_module, only: ndim
-      use mesh_module,      only: Cell
+      use legacy_mesh_api, only: Cell, EE_GATHER
 
       class(interface_mass_gaussian), intent(inout) :: this
       type(am_state), intent(inout) :: state

@@ -47,9 +47,7 @@ CONTAINS
     !   store the data in arrays Cell_Ngbr_Coord(ndim,nfc,ncells) and
     !   Vertex_Coord(ndim,nvc,ncells).
     !=======================================================================
-    use gs_module,        only: EE_GATHER, EN_GATHER
-    use mesh_module,      only: Cell, Vertex
-    use parameter_module, only: ndim
+    use legacy_mesh_api, only: ndim, Cell, Vertex, EE_GATHER, EN_GATHER
 
     ! Local Variables
     integer :: n

@@ -42,9 +42,9 @@ module vof_init
    !----------------------------------------------------------------------------
 
    use kinds, only: r8
-   use parameter_module,  only: ndim, nvc, ncells, nfc, nec
+   use legacy_mesh_api, only: ndim, nvc, ncells, nfc, nec
    use interfaces_module, only: nbody, vof_method, vof_tolerance, vof_max_recursion
-   use parameter_module,  only: nmat
+   use parameter_module, only: nmat
    use truchas_logging_services
    implicit none
    private
@@ -74,7 +74,7 @@ contains
       !-------------------------------------------------------------------------
 
       use tally_module,      only: vof_init_tally_points
-      use mesh_module,       only: cell
+      use legacy_mesh_api,   only: cell
 
       ! return value
       real(r8), dimension(nbody,ncells) :: vof_initialize
@@ -126,10 +126,9 @@ contains
       !        partial_volumes(nbody,cell) = partial_volumes_in_cell(recursion_depth, tolerance, cell_vertices)
       !-------------------------------------------------------------------------
 
-      use mesh_module,      only: vertex, mesh, cell, vrtx_bdy
+      use legacy_mesh_api,  only: mesh, cell, gather_vertex_coord
       use PGSLib_module,    only: PGSLib_GLOBAL_MINVAL
       use input_utilities,  only: NULL_R, NULL_I
-      use gs_module,        only: en_gather
 
       ! return value
       real(r8), dimension(nbody,ncells) :: vof_init_divide_conquer
@@ -166,9 +165,7 @@ contains
       !! NNC: I'm working around a parallel bug in the next loop, and I want
       !! to muck with it as little as possible.  With more time and effort
       !! I could probably merge the two and eliminate this extra storage but ...
-      do i = 1, ndim
-        call en_gather (vtx_coord(i,:,:), vertex%coord(i), boundary=vrtx_bdy(i)%data)
-      end do
+      call gather_vertex_coord (vtx_coord)
 
       ! loop over the cells, calculating the volume of each body in the cell
       do c = 1, ncells

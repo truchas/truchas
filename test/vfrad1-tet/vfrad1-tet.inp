@@ -11,7 +11,6 @@ an internal HTC condition.
 
 &MESH
   mesh_file = 'vfrad1-tet.gen'
-  mesh_file_format = 'ExodusII'
   interface_side_sets = 5   ! the solid/gas interface
 /
 

@@ -15,6 +15,7 @@ set(DISMESH_FILES
            distributed_mesh/base_mesh_class.F90
            distributed_mesh/facet_hash_type.F90
            distributed_mesh/facet_table_type.F90
+           distributed_mesh/face_neighbor_table_type.F90
            distributed_mesh/index_partitioning.F90
            distributed_mesh/mesh_manager.F90
            distributed_mesh/parallel_communication.F90

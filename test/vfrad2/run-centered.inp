@@ -10,7 +10,6 @@ with the off-center ball that actually matches the view factors.
 
 &MESH
   mesh_file = 'mesh-centered.gen'
-  mesh_file_format = 'ExodusII'
 /
 
 &OUTPUTS
