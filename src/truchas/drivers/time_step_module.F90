@@ -172,8 +172,8 @@ CONTAINS
           call TIME_STEP_SURFACE_TENSION
           dt_next = MIN(dt_next, dt_surften)
         else
-          dt_surften = 1.0d10 
-        endif    
+          dt_surften = 1.0d10
+        endif
    
 
         DEALLOCATE (Solid_Face) 
@@ -190,7 +190,7 @@ CONTAINS
        dt_strain = 1.0d10 
 !    end if 
 
-    ! Set a character string according to the constraint that's been activated. 
+    ! Set a character string according to the constraint that has been activated
     if (dt_next == dt_growth) then 
        dt_constraint = 'growth' 
     else if (dt_next == dt_max) then 
@@ -330,7 +330,7 @@ CONTAINS
        ! Local Courant Time Step 
        Local_Dt = courant_number * Dl(n,:) / (V_r + V_l + alittle) 
 
-!!$       ! The timestep shouldn't be based on cells that are filled with void. 
+!!$       ! The timestep should not be based on cells that are filled with void
 !!$       where (FluidRho == 0.0_r8) Local_Dt = 1.0d10 
 
        ! Minimum Courant Time Step 
@@ -344,7 +344,7 @@ CONTAINS
     end do 
 
     ! The above routine does allow for the possibility that the sum of  
-    ! positive (outward) Fluxing_Velocity's * Face_Area * dt_courant exceeds 
+    ! positive (outward) Fluxing_Velocity * Face_Area * dt_courant exceeds
     ! the volume of the cell; need to check, and reduce dt_courant  
     ! accordingly. 
 
@@ -549,8 +549,8 @@ CONTAINS
     !=======================================================================
     ! Purpose(s):
     !   Compute the time step limit due to surface tension forces
-    !   Here note it's only due to the normal force component 
-    !   but it's currently used for both normal and tangential forces cases
+    !   Here note it is only due to the normal force component
+    !   but it is currently used for both normal and tangential forces cases
     !   dt = coeff*sqrt(rho*dx^3/(2*pi*sigma)) with coeff between 0 and 1
     !
     !  Author(s)name : Marianne M. Francois (mmfran@lanl.gov)
@@ -564,7 +564,7 @@ CONTAINS
     use fluid_data_module,           only: fluidRho
     use PGSLib_module,               only: PGSLib_GLOBAL_MINLOC, PGSLib_GLOBAL_MINVAL
     use zone_module,                 only: Zone
-    use surface_tension_module,      only: sigma_func
+    use surface_tension_module,      only: sigma_func, csf_boundary
 
     ! Local Variables
     real(r8) :: state(1)
@@ -600,6 +600,11 @@ CONTAINS
 
     dt_surften = surften_number * PGSLib_GLOBAL_MINVAL(Dt_local)
     min_dt_surften_cell = PGSLib_GLOBAL_MINLOC(Dt_local)
+
+    ! WARNING!!! Experimental: Deactivate/override time step limit due to
+    ! tangential surface tension only for the special experimental case of
+    ! boundary-applied surface tension force (csf_boundary)
+    if (csf_boundary) dt_surften = 1.0d10
 
   END SUBROUTINE TIME_STEP_SURFACE_TENSION
 

@@ -38,11 +38,14 @@ module surface_tension_module
   use kinds, only: r8
   use truchas_logging_services
   use scalar_func_class
+  use scalar_func_containers
   implicit none
   private
 
   public :: read_surface_tension_namelist
   Public :: CSF, CSF_FACE
+
+  integer, parameter :: MAX_NAME_LEN = 31, MAX_FACE_SET_IDS = 32
 
   !! This flag is enabled by the PHYSICS namelist.
   logical, public, save :: surface_tension = .false.
@@ -50,6 +53,14 @@ module surface_tension_module
   !! The remaining variables are defined by READ_SURFACE_TENSION_NAMELIST.
   logical, public, save :: csf_normal = .false.
   logical, public, save :: csf_tangential = .false.
+  logical, public, save :: csf_boundary = .false.
+  real,    public, save :: dsig_dT
+  integer, allocatable, public :: face_set_ids(:)
+  !! Volume mesh cell size in z direction for cells adjacent to side set on
+  !! which "csf_boundary"-type surface tension is to be applied. Computed by
+  !! FLUID_INIT().
+  real(r8), allocatable, public :: csf_z(:)
+
   integer, public, save :: surfmat1, surfmat2
   class(scalar_func), allocatable, public :: sigma_func ! surface tension coefficient
   integer :: kernel = 0  ! initialized to one of the following values
@@ -63,7 +74,7 @@ contains
     ! Purpose(s):
     !   Compute cell-centered forces with the CSF (Continuum Surface
     !   Force) model for surface tension, as detailed in the Journal
-    !   of Computational Physics, 100: 335-354 (1992). Increment the
+    !   of Computational Physics, 100: 335-354 (1993). Increment the
     !   momentum delta array by dt*(Fx,Fy,Fz), where (Fx,Fy,Fz)
     !   is the CSF force.
     !=======================================================================
@@ -75,19 +86,20 @@ contains
     use property_module,      only: density_material
     use zone_module,          only: Zone
     use timing_tree
+    use legacy_mesh_api,      only: ncells, mesh_face_set
 
     real(r8), intent(in) :: dt
     real(r8), intent(inout) :: Mom_Delta(:,:)
 
-    integer :: m, j
-    real(r8) :: state(1)
+    integer :: n, m, j, fminz, fmaxz, nssets
+    real(r8) :: state(1), cz
     real(r8), dimension(ncells) :: Color, Delta
     real(r8), dimension(ncells) :: Fx, Fy, Fz
     real(r8), dimension(ncells) :: Kappa, Sigma
     real(r8), dimension(ncells) :: dC_dx, dC_dy, dC_dz
     real(r8), dimension(ncells) :: dS_dx, dS_dy, dS_dz
 
-    ASSERT(csf_tangential)
+    ASSERT(csf_tangential .or. csf_boundary)
     ASSERT(size(Mom_Delta,1) == ndim)
     ASSERT(size(Mom_Delta,2) == ncells)
 
@@ -100,54 +112,78 @@ contains
     ! NNC, Dec 2012.  Formerly, surface tension was triggered when the first
     ! material having the surf10 property was encountered.  This property also
     ! pointed to the other material.  The COLOR field below was the volume
-    ! fraction sum of all materials except this other material. I've preserved
+    ! fraction sum of all materials except this other material. I have preserved
     ! this behavior treating surfmat1 as the first material and surfmat2 as
-    ! the other, though I don't understand why COLOR wasn't just taken to be
+    ! the other, though I do not understand why COLOR was not just taken to be
     ! the volume fraction of the first (or other) material.
     Color = 0.0_r8
-    do m = 1, nmat
-      if (m == surfmat2) cycle
-      call gather_vof (m, Kappa)
-      Color = Color + Kappa
-    end do
 
-    ! Compute the cell-centered color gradient.
-    call GRADIENT (dC_dx, dC_dy, dC_dz, Color, method='Green-Gauss')
+    !- tangential surface tension applied on a boundary surface given by set id
+    if (csf_boundary) then
 
-    ! Compute the surface delta function.
-    call DELTA_FUNCTION (Color, dC_dx, dC_dy, dC_dz, Delta)
+      Fx=0.0_r8
+      Fy=0.0_r8
+      Fz=0.0_r8
 
-    ! Normalize the color gradient (use Sigma as a temporary).
-    Sigma = SQRT(dC_dx*dC_dx + dC_dy*dC_dy + dC_dz*dC_dz)
-    Sigma = MERGE(0.0_r8, 1.0_r8/Sigma, Sigma <= alittle)
-    dC_dx = Sigma*dC_dx; dC_dy = Sigma*dC_dy; dC_dz = Sigma*dC_dz
+      ! use variable dC_dx,dC_dy,dC_dz temporarly as the temperature gradient
+      call GRADIENT(dC_dx,dC_dy, dC_dz,Zone%Temp,method='Green-Gauss')
 
-    ! Get the cell-centered surface tension coefficient.
-    !call PROPERTY (Zone%Temp_Old, m, 'surface_tension', Value = Sigma)
-    do j = 1, ncells
-      state(1) = Zone(j)%Temp_Old
-      sigma(j) = sigma_func%eval(state)
-    end do
+      ! compute tangential surface tension force only in cells adjacent to bc
+      do j = 1, ncells
+        if (csf_z(j) > 0.0) then
+          Fx(j) = dsig_dT * dC_dx(j) / csf_z(j)
+          Fy(j) = dsig_dT * dC_dy(j) / csf_z(j)
+          Fz(j) = 0.0_r8
+        end if
+      end do
 
-    ! Density weighting of the delta function 
-    Delta=Delta*2.*Zone%Rho/(density_material(surfmat1)+density_material(surfmat2))
+    else
 
-    ! Compute the cell-centered sigma gradient.
-    call GRADIENT (dS_dx, dS_dy, dS_dz, Sigma, method = 'Green-Gauss')
+      do m = 1, nmat
+        if (m == surfmat2) cycle
+        call gather_vof (m, Kappa)
+        Color = Color + Kappa
+      end do
 
-    ! Construct the CSF tangential component. 
-    where (abs(dC_dx).gt.cutvof.or.abs(dC_dy).gt.cutvof & 
-           .or.abs(dC_dz).gt.cutvof)  
-       Fx = Fx + Delta*((1.0_r8 - dC_dx*dC_dx)*dS_dx - &
-                               dC_dy*dC_dx *dS_dy - &
-                               dC_dz*dC_dx *dS_dz)
-       Fy = Fy + Delta*((1.0_r8 - dC_dy*dC_dy)*dS_dy - &
-                               dC_dz*dC_dy *dS_dz - &
-                               dC_dx*dC_dy *dS_dx)
-       Fz = Fz + Delta*((1.0_r8 - dC_dz*dC_dz)*dS_dz - &
-                               dC_dx*dC_dz *dS_dx - &
-                               dC_dy*dC_dz *dS_dy)
-    end where
+      ! Compute the cell-centered color gradient.
+      call GRADIENT (dC_dx, dC_dy, dC_dz, Color, method='Green-Gauss')
+
+      ! Compute the surface delta function.
+      call DELTA_FUNCTION (Color, dC_dx, dC_dy, dC_dz, Delta)
+
+      ! Normalize the color gradient (use Sigma as a temporary).
+      Sigma = SQRT(dC_dx*dC_dx + dC_dy*dC_dy + dC_dz*dC_dz)
+      Sigma = MERGE(0.0_r8, 1.0_r8/Sigma, Sigma <= alittle)
+      dC_dx = Sigma*dC_dx; dC_dy = Sigma*dC_dy; dC_dz = Sigma*dC_dz
+
+      ! Get the cell-centered surface tension coefficient.
+      !call PROPERTY (Zone%Temp_Old, m, 'surface_tension', Value = Sigma)
+      do j = 1, ncells
+        state(1) = Zone(j)%Temp_Old
+        sigma(j) = sigma_func%eval(state)
+      end do
+
+      ! Density weighting of the delta function
+      Delta=Delta*2.*Zone%Rho/(density_material(surfmat1)+density_material(surfmat2))
+
+      ! Compute the cell-centered sigma gradient
+      call GRADIENT (dS_dx, dS_dy, dS_dz, Sigma, method = 'Green-Gauss')
+
+      ! Construct the CSF tangential component. 
+      where (abs(dC_dx).gt.cutvof.or.abs(dC_dy).gt.cutvof & 
+             .or.abs(dC_dz).gt.cutvof)
+         Fx = Fx + Delta*((1.0_r8 - dC_dx*dC_dx)*dS_dx - &
+                                 dC_dy*dC_dx *dS_dy - &
+                                 dC_dz*dC_dx *dS_dz)
+         Fy = Fy + Delta*((1.0_r8 - dC_dy*dC_dy)*dS_dy - &
+                                 dC_dz*dC_dy *dS_dz - &
+                                 dC_dx*dC_dy *dS_dx)
+         Fz = Fz + Delta*((1.0_r8 - dC_dz*dC_dz)*dS_dz - &
+                                 dC_dx*dC_dz *dS_dx - &
+                                 dC_dy*dC_dz *dS_dy)
+      end where
+
+    endif
 
     ! Increment Momentum Delta
     Mom_Delta(1,:) = Mom_Delta(1,:) + dt*Fx
@@ -195,7 +231,7 @@ contains
     ! 
     ! References: 
     !   J. Comput. Physics, 213: 141-173 (2006) Francois et al.
-    !   LA-UR-03-2128 report (ASME paper FEDS'03) Francois et al.
+    !   LA-UR-03-2128 report (ASME paper FEDS 2003) Francois et al.
     !   J. Comput. Physics, 100: 335-354 (1992) Brackbill et al.
     !        
     ! Author: Marianne M. Francois, LANL CCS-2 (mmfran@lanl.gov)
@@ -291,7 +327,7 @@ contains
     ! NNC, Dec 2012.  Formerly, surface tension was triggered when the first
     ! material having the surf10 property was encountered.  This property also
     ! pointed to the other material.  The COLOR field below was the volume
-    ! fraction sum of all materials except this other material. I've preserved
+    ! fraction sum of all materials except this other material. I have preserved
     ! this behavior treating surfmat1 as the first material and surfmat2 as
     ! the other, though I don't understand why COLOR wasn't just taken to be
     ! the volume fraction of the first (or other) material.
@@ -524,7 +560,7 @@ contains
     !
     !   Compute the cell-centered divergence (D) of a cell-centered
     !   vector NV with a discrete approximation
-    !   to Gauss's theorem, whereby the integral of Div*NV over the
+    !   to Gauss theorem, whereby the integral of Div*NV over the
     !   cell volume is converted to an integral of NV over the cell
     !   surface area vector.  The area integral is approximated as a
     !   discrete sum over cell faces. This control volume formulation
@@ -659,14 +695,17 @@ contains
 
     integer, intent(in) :: lun
 
-    integer :: ios
+    integer :: ios, n
     logical :: found
 
+    integer :: bndry_face_set_ids(MAX_FACE_SET_IDS)
     integer  :: interface_materials(2)
     real(r8) :: sigma_constant
     character(32) :: smoothing_kernel, sigma_function
+    character(len=8+MAX_NAME_LEN) :: label
     namelist /surface_tension/ csf_normal, csf_tangential, smoothing_kernel, &
-        interface_materials, sigma_constant, sigma_function
+        interface_materials, sigma_constant, sigma_function, dsig_dT, &
+        csf_boundary, bndry_face_set_ids
     
     call TLS_info ('')
     call TLS_info ('Reading SURFACE_TENSION namelist ...')
@@ -687,27 +726,36 @@ contains
     if (is_IOP) then
       csf_normal = .false.
       csf_tangential = .false.
+      csf_boundary = .false.
       smoothing_kernel = NULL_C
       interface_materials = NULL_I
       sigma_constant = NULL_R
       sigma_function = NULL_C
+      dsig_dT = 0.0
+      bndry_face_set_ids = NULL_I
       read(lun,nml=surface_tension,iostat=ios)
     end if
-    
+
     call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('Error reading SURFACE_TENSION namelist.')
 
     !! Broadcast the namelist variables.
     call broadcast (csf_normal)
     call broadcast (csf_tangential)
+    call broadcast (csf_boundary)
     call broadcast (smoothing_kernel)
     call broadcast (interface_materials)
     call broadcast (sigma_constant)
     call broadcast (sigma_function)
+    call broadcast (dsig_dT)
+    call broadcast (bndry_face_set_ids)
 
-    if (.not.(csf_normal .or. csf_tangential)) then
-      call TLS_fatal ('At least one of CSF_NORMAL and CSF_TANGENTIAL must be enabled.')
+    if (.not.(csf_normal .or. csf_tangential .or. csf_boundary)) then
+      call TLS_fatal ('At least one of csf_normal, csf_tangential, or csf_boundary  must be enabled.')
     endif
+
+    if (csf_boundary .and. csf_normal) call TLS_fatal ('csf_boundary and csf_normal are mutually exclusive options')
+if (csf_boundary .and. csf_tangential) call TLS_fatal ('csf_boundary and csf_tangential are mutually exclusive options')
 
     if (csf_normal) then
       smoothing_kernel = raise_case(smoothing_kernel)
@@ -725,19 +773,33 @@ contains
       end select
     end if
     
-    !! Verify that the interface material numbers refer to distinct defined fluids.
-    if (any(interface_materials == NULL_I)) then
-      call TLS_fatal ('INTERFACE_MATERIALS must be assigned two values.')
+    if (csf_boundary) then
+
+      !! Check for a non-empty FACE_SET_IDS.
+      if (count(bndry_face_set_ids /= NULL_I) == 0) then
+        call TLS_fatal('no values assigned to FACE_SET_IDS')
+      endif
+
+      allocate(face_set_ids(count(bndry_face_set_ids/=NULL_I)))
+      face_set_ids = pack(bndry_face_set_ids, mask=(bndry_face_set_ids/=NULL_I))
+
     else
-      surfmat1 = get_truchas_material_id(interface_materials(1))
-      if (surfmat1 < 1) call TLS_fatal ('Unknown material number INTERFACE_MATERIALS(1): ' &
-                                        // i_to_c(interface_materials(1)))
-      surfmat2 = get_truchas_material_id(interface_materials(2))
-      if (surfmat2 < 1) call TLS_fatal ('Unknown material number INTERFACE_MATERIALS(2): ' &
-                                        // i_to_c(interface_materials(2)))
-      if (surfmat1 == surfmat2) call TLS_fatal ('INTERFACE_MATERIALS must be assigned distinct material numbers')
-      if (IsImmobile(surfmat1)) call TLS_fatal ('INTERFACE_MATERIALS(1) is not a fluid')
-      if (IsImmobile(surfmat2)) call TLS_fatal ('INTERFACE_MATERIALS(2) is not a fluid')
+
+      !! Verify that the interface material numbers refer to distinct defined fluids
+      if (any(interface_materials == NULL_I)) then
+        call TLS_fatal ('INTERFACE_MATERIALS must be assigned two values.')
+      else
+        surfmat1 = get_truchas_material_id(interface_materials(1))
+        if (surfmat1 < 1) call TLS_fatal ('Unknown material number INTERFACE_MATERIALS(1): ' &
+                                          // i_to_c(interface_materials(1)))
+        surfmat2 = get_truchas_material_id(interface_materials(2))
+        if (surfmat2 < 1) call TLS_fatal ('Unknown material number INTERFACE_MATERIALS(2): ' &
+                                          // i_to_c(interface_materials(2)))
+        if (surfmat1 == surfmat2) call TLS_fatal ('INTERFACE_MATERIALS must be assigned distinct material numbers')
+        if (IsImmobile(surfmat1)) call TLS_fatal ('INTERFACE_MATERIALS(1) is not a fluid')
+        if (IsImmobile(surfmat2)) call TLS_fatal ('INTERFACE_MATERIALS(2) is not a fluid')
+      end if
+
     end if
     
     !! Verify that only one of SIGMA_CONSTANT and SIGMA_FUNCTION was specified.

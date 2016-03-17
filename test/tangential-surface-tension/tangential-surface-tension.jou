@@ -1,0 +1,26 @@
+brick x 12 y 1 z 8
+# move volume 1 x 0 y 4 z -4 include_merged
+# webcut volume 1  with plane xplane offset -2 noimprint nomerge
+# webcut volume 1  with plane xplane offset 2 noimprint nomerge
+# imprint volume all
+# merge volume all
+
+volume all size 1
+mesh volume all
+
+# refine curve 41 depth 2  # gives 1.35 mm (3 x 1)
+# refine curve 41 depth 2  # gives 0.45 mm (3 x 1)
+# refine curve 41 depth 3  # gives 0.15 mm (3 x 2)
+# refine curve 41 depth 6  # gives 0.05 mm (3 x 3)
+# refine curve 41 depth 10 # gives 0.0165 mm (4 x 3)
+
+block 1 volume all
+
+sideset 1 surface 4     # left
+sideset 2 surface 6     # right
+sideset 3 surface 1     # top
+sideset 4 surface 2     # bottom
+sideset 5 surface 5     # front
+sideset 6 surface 3     # back
+
+export Genesis  "st.gen"  overwrite

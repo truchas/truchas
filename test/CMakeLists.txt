@@ -252,3 +252,7 @@ add_pytruchas_test(tm-pc
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
+add_pytruchas_test(tangential-surface-tension
+                   tangential-surface-tension/test_tst.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION FLOW)

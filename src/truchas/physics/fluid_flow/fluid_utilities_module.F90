@@ -70,14 +70,17 @@ CONTAINS
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
     use property_module,        only: FLUID_PROPERTIES
     use restart_variables,      only: restart, have_fluid_flow_data
+    use surface_tension_module, only: face_set_ids, csf_boundary, csf_z
+    use legacy_mesh_api,        only: mesh_face_set
 
     real(r8), intent(in) :: t
 
     ! local variables
-    integer :: n, status, f
+    integer :: n, status, f, j, m, nssets, fminz, fmaxz
     logical :: abort
     real(r8), dimension(:,:), allocatable :: Intercell_Distance_Sq, Ngbr_Centroid
     real(r8), dimension(:),   allocatable :: Cell_Centroid_C
+    integer, dimension(ncells) :: csf_flag
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -107,8 +110,44 @@ CONTAINS
              Face_Interpolation_Factor(nfc,ncells), &
              Drag_Coefficient(ndim,ncells),         &
              courant(ncells),                       &
+             csf_z(ncells),                         &
              STAT = status)
     if (status /= 0) call TLS_panic ('FLUID_INIT: memory allocation failed')
+
+    ! Precompute and store cell sizes in z direction for those volume cells that
+    ! are adjacent to side set on which "csf_boundary"-type tagnential surface
+    ! tension is to be applied
+    if (csf_boundary) then
+      ! Find volume cells adjacent to side set on which "csf_boundary"-type
+      ! surface tension is to be applied (tag those with -1.0 as opposed to the
+      ! initial 0.0 values)
+      csf_flag = 0
+      nssets = SIZE(Mesh_Face_Set,1);
+      do j = 1, ncells
+          do m = 1, nfc
+            do n = 1,nssets
+              if (ANY(face_set_ids == Mesh_Face_Set(n,m,j))) then
+                csf_flag(j) = 1
+              end if
+            end do
+          end do
+      end do
+
+      ! Compute and store volume mesh cell size in z direction for cells adjacent
+      ! to side set on which "csf_boundary"-type surface tension is to be applied
+      csf_z = -1.0
+      do j = 1, ncells
+        if (csf_flag(j) == 1) then
+          ! find cell face ids with minimum and maximum z coordinates of the cell
+          ! centroids
+          fminz = minloc(Cell(j)%Face_Centroid(3,:), dim=1)
+          fmaxz = maxloc(Cell(j)%Face_Centroid(3,:), dim=1)
+          ! compute and store size of cell in z direction
+          csf_z(j) = abs( Cell(j)%Face_Centroid(3,fmaxz) - &
+                          Cell(j)%Face_Centroid(3,fminz) )
+       end if
+      end do
+    end if
 
     call FLUID_PROPERTIES (abort, t)
     if(abort) then
@@ -123,7 +162,7 @@ CONTAINS
     ! Initialise courant number array
     courant = 0.0_r8
 
-    ! Give initial values to Div_c, and Div_f (they'll be printed before computed :-/
+    ! Give initial values to Div_c, and Div_f (they will be printed before computed :-/
     Div_c = DIV_NORMS(NORMS(0.0, 0.0, 0.0, 0))
     Div_f = DIV_NORMS(NORMS(0.0, 0.0, 0.0, 0))
 
@@ -208,6 +247,7 @@ CONTAINS
                                       fluidrho, Momentum_by_Volume, Face_Interpolation_Factor, &
                                       Drag_Coefficient, Mom_Delta, courant
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
+    use surface_tension_module, only: csf_z
 
     ! Local Variables
     integer :: memstat
@@ -252,6 +292,7 @@ CONTAINS
     if (ASSOCIATED(Momentum_by_Volume)) DEALLOCATE(Momentum_by_Volume)
     if (ALLOCATED(Drag_Coefficient)) DEALLOCATE(Drag_Coefficient)
     if (ASSOCIATED(courant)) DEALLOCATE (courant)
+    if (ALLOCATED(csf_z)) DEALLOCATE (csf_z)
 
   END SUBROUTINE FLUID_DEALLOCATE
 

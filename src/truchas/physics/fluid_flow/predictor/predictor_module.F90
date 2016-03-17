@@ -51,7 +51,7 @@ CONTAINS
     use advection_module,        only: ADVECT_MOMENTUM
     use body_data_module,        only: body_force_face_method
     use body_force_module,       only: add_cell_body_force
-    use fluid_data_module,       only: fluidRho_n,           &
+    use fluid_data_module,       only: fluidRho, fluidRho_n,           &
                                        fluidVof, fluidVof_n,           &
                                        Drag_Coefficient,               &
                                        Mom_Delta,                      &
@@ -66,11 +66,13 @@ CONTAINS
     use viscous_data_module,     only: inviscid, stokes, viscous_implicitness
     use viscous_module,          only: viscousExplicit
     use zone_module,             only: Zone
-    use surface_tension_module,  only: CSF, csf_tangential
+    use surface_tension_module,  only: CSF, surface_tension, csf_tangential, &
+                                       csf_boundary
 
     ! Local Variables
     integer :: i, n
     real(r8) :: tweight
+    real(r8), allocatable :: Csftang(:,:)
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -127,10 +129,30 @@ CONTAINS
        end do
     end if
 
-    ! Tangential surface tension 
-    if (csf_tangential) then
-      call CSF(dt, Mom_Delta)
-    end if
+    ! Tangential surface tension
+    if (surface_tension .and. csf_tangential) call CSF(dt, Mom_Delta)
+
+    ! Tangential surface tension  applied on a boundary
+    if (surface_tension .and. csf_boundary) then
+
+      ALLOCATE (Csftang(ndim,ncells))
+
+      ! initialize Csftang...
+      Csftang = 0.0_r8
+
+      call CSF (dt, Csftang)
+
+      ! Experimental: boundary tangential surface tension (csf_boundary)
+      do n=1,ndim
+        where (Zone%Rho /= 0.0_r8)
+          Csftang(n,:)=Csftang(n,:)*FluidRho*FluidVof/Zone%Rho
+        end where
+      enddo
+
+      Mom_Delta=Mom_Delta+Csftang
+      DEALLOCATE(Csftang)
+
+    endif
 
     ! Porous drag.
     if (porous_flow) call POROUS_DRAG(dt, Mom_Delta)
@@ -238,7 +260,7 @@ CONTAINS
     real(r8) :: cmass, width, cutoff, offset, xi
 
     ! The cutoff should really be cast in terms of a mass rather than volume 
-    ! fractions ... but make do with what's here.  The width of the exponential
+    ! fractions ... but make do with what is here.  The width of the exponential
     ! function is based on 6-decades from the cutvof level of mass by default.
     ! For cutvof values larger than the default, then the width shrinks while
     ! holing the limiter cutoff at 1.0e-2 by default.
@@ -574,7 +596,7 @@ CONTAINS
     !
     ! Note: Also need to trap on the case of all-void cells.  This is a 
     ! little bogus, but essentially forces a sane diagonal (unity) for
-    ! void cells.  There's a patch-up that occurs the in mat-vec call back
+    ! void cells.  There is a patch-up that occurs the in mat-vec call back
     ! y_eq_Ax_vel.F90
     do i = 1, ncells
        do n = 1, ndim
