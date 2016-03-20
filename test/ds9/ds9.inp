@@ -83,11 +83,19 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
   face_set_ids = 2
 /
 
+!&FUNCTION
+!  name = 'steady right flux'
+!  type = 'polynomial'
+!  poly_coefficients(1) =  0.5, poly_exponents(:,1) = 0 0 0 0
+!  poly_coefficients(2) = -1.5, poly_exponents(:,2) = 0 0 1 0
+!/
+
 &FUNCTION
   name = 'steady right flux'
-  type = 'polynomial'
-  poly_coefficients(1) =  0.5, poly_exponents(:,1) = 0 0 0 0
-  poly_coefficients(2) = -1.5, poly_exponents(:,2) = 0 0 1 0
+  type = 'tabular'
+  tabular_data = -1.0,  2.0
+                  1.0, -1.0
+  tabular_dim  = 3  ! y-coord
 /
 
 &DS_BOUNDARY_CONDITION

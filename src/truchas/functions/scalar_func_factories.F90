@@ -109,11 +109,12 @@ contains
     allocate(f, source=poly_scalar_func(c, e, x0))
   end subroutine alloc_poly_scalar_func
 
-  subroutine alloc_tabular_scalar_func (f, x, y)
+  subroutine alloc_tabular_scalar_func (f, x, y, dim)
     use tabular_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: x(:), y(:)
-    allocate(f, source=tabular_scalar_func(x, y))
+    integer, intent(in), optional :: dim
+    allocate(f, source=tabular_scalar_func(x, y, dim))
   end subroutine alloc_tabular_scalar_func
 
   ! A temporary stand-in (?) until we move to parameter list driven instantiation
@@ -167,11 +168,12 @@ contains
     allocate(f, source=poly_scalar_func(c, e, x0))
   end function new_poly_scalar_func
 
-  function new_tabular_scalar_func (x, y) result (f)
+  function new_tabular_scalar_func (x, y, dim) result (f)
     use tabular_scalar_func_type
     real(r8), intent(in) :: x(:), y(:)
+    integer, intent(in), optional :: dim
     class(scalar_func), pointer :: f
-    allocate(f, source=tabular_scalar_func(x, y))
+    allocate(f, source=tabular_scalar_func(x, y, dim))
   end function new_tabular_scalar_func
 
   !! A higher-level constructors that takes a parameter list
