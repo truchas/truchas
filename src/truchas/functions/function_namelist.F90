@@ -68,19 +68,19 @@ contains
 
     !! local variables
     logical :: found
-    integer :: n, stat, ncoef, nvar, npar
+    integer :: n, stat, ncoef, nvar, npar, npts
     class(scalar_func), allocatable :: f
 
     !! namelist variables
     character(len=31)  :: name, type
     character(len=128) :: library_path, library_symbol
-    real(r8) :: poly_coefficients(MAX_COEF), poly_refvars(MAX_VAR)
-    integer  :: poly_exponents(MAX_VAR,MAX_COEF)
+    real(r8) :: poly_coefficients(MAX_COEF), poly_refvars(MAX_VAR), tabular_data(2,100)
+    integer  :: poly_exponents(MAX_VAR,MAX_COEF), tabular_dim
     real(r8) :: parameters(MAX_PARAM)
     real(r8) :: smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1
 
     namelist/function/ name, type, parameters, library_path, library_symbol, &
-        poly_coefficients, poly_exponents, poly_refvars, &
+        tabular_data, tabular_dim, poly_coefficients, poly_exponents, poly_refvars, &
         smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1
 
     call TLS_info ('')
@@ -111,6 +111,8 @@ contains
         library_path      = NULL_C
         library_symbol    = NULL_C
         parameters        = NULL_R
+        tabular_data      = NULL_R
+        tabular_dim       = NULL_I
         smooth_step_x0    = NULL_R
         smooth_step_y0    = NULL_R
         smooth_step_x1    = NULL_R
@@ -130,6 +132,8 @@ contains
       call broadcast (library_path)
       call broadcast (library_symbol)
       call broadcast (parameters)
+      call broadcast (tabular_data)
+      call broadcast (tabular_dim)
       call broadcast (smooth_step_x0)
       call broadcast (smooth_step_y0)
       call broadcast (smooth_step_x1)
@@ -153,6 +157,7 @@ contains
 #ifndef ENABLE_DYNAMIC_LOADING
         call TLS_fatal ('the configuration of this executable does not support TYPE="LIBRARY"')
 #endif
+      case ('TABULAR')
       case ('SMOOTH STEP')
       case (NULL_C)
         call TLS_fatal ('TYPE must be assigned a value')
@@ -179,6 +184,13 @@ contains
             call TLS_warn ('PARAMETERS is not used when TYPE="' // trim(type) // '"')
       end if
 #endif
+
+      if (raise_case(type) /= 'TABULAR') then
+        if (any(tabular_data /= NULL_R)) &
+            call TLS_warn ('TABULAR_DATA is ignored when TYPE="' // trim(type) // '"')
+        if (tabular_dim /= NULL_I) &
+            call TLS_warn ('TABULAR_DIM is ignored when TYPE="' // trim(type) // '"')
+      end if
 
       if (raise_case(type) /= 'SMOOTH STEP') then
         if (smooth_step_x0 /= NULL_R) &
@@ -248,6 +260,31 @@ contains
                                         x0 = poly_refvars(1:nvar) )
           call ftable%insert (name, f)
         endif
+
+      case ('TABULAR')
+
+        !! Identify and check the user-specified table.
+        do npts = size(tabular_data,dim=1), 1, -1
+          if (any(tabular_data(:,npts) /= NULL_R)) exit
+        end do
+        if (npts == 0) then
+          call TLS_fatal ('no values assigned to TABULAR_DATA')
+        end if
+        if (any(tabular_data(:,:npts) == NULL_R)) then
+          call TLS_fatal ('values assigned to TABULAR_DATA are not packed')
+        end if
+        associate (xleft => tabular_data(1,1:npts-1), xright => tabular_data(1,2:npts))
+          if (any(xleft >= xright)) call TLS_fatal ('TABULAR_DATA is not ordered')
+        end associate
+
+        if (tabular_dim == NULL_I) then
+          tabular_dim = 1
+        else if (tabular_dim <= 0) then
+          call TLS_fatal ('TABULAR_DIM must be >0')
+        end if
+
+        call alloc_tabular_scalar_func (f, tabular_data(1,:npts), tabular_data(2,:npts), tabular_dim)
+        call ftable%insert (name, f)
 
       case ('SMOOTH STEP')
 
