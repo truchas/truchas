@@ -148,7 +148,7 @@ def main(filename, filename_out, filename_mesh):
                 type_str = "Scalar"
                 dimensions_str = "%d" % dims[0]
             elif len(dims) == 2:
-                if dims[1] == 3 and field_name == "Z_VC":
+                if dims[1] == 3 and field_name in ["Z_VC", "Displacement"]:
                     # ParaView shows "Vector" type as having components (X, Y,
                     # Z) and can also show magnitude. We only want to use this
                     # for velocity.
@@ -165,6 +165,11 @@ def main(filename, filename_out, filename_mesh):
                     "Z_VC": "Velocity",
                 }
 
+            if dims[0] == nodes.shape[0]:
+                cell_type = "Node"
+            else:
+                cell_type = "Cell"
+
             if type_str == "Matrix":
                 # XDMF type 'Matrix' should work for a matrix (p, m), but for
                 # some reason Paraview cannot show the m components, so we
@@ -175,7 +180,7 @@ def main(filename, filename_out, filename_mesh):
                         output_field_name = field_names.get(field_name,
                                 field_name) + " (Field %d)" % (m+1)
                     xdmf_attribute = SubElement(xdmf_grid, "Attribute", {
-                        "Center": "Cell",
+                        "Center": cell_type,
                         "Name": output_field_name,
                         "Type": "Scalar",
                     })
@@ -208,7 +213,7 @@ def main(filename, filename_out, filename_mesh):
                 if not output_field_name:
                     output_field_name = field_names.get(field_name, field_name)
                 xdmf_attribute = SubElement(xdmf_grid, "Attribute", {
-                    "Center": "Cell",
+                    "Center": cell_type,
                     "Name": output_field_name,
                     "Type": type_str,
                 })
