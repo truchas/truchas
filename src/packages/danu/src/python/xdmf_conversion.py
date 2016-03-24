@@ -167,8 +167,10 @@ def main(filename, filename_out, filename_mesh):
 
             if dims[0] == nodes.shape[0]:
                 cell_type = "Node"
-            else:
+            elif dims[0] == elements1d_size:
                 cell_type = "Cell"
+            else:
+                raise Exception("Unsupported array size (neither Node nor Cell).")
 
             if type_str == "Matrix":
                 # XDMF type 'Matrix' should work for a matrix (p, m), but for
