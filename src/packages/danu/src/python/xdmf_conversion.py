@@ -167,7 +167,7 @@ def main(filename, filename_out, filename_mesh):
 
             if dims[0] == nodes.shape[0]:
                 cell_type = "Node"
-            elif dims[0] == elements1d_size:
+            elif dims[0] == elements.shape[0]:
                 cell_type = "Cell"
             else:
                 raise Exception("Unsupported array size (neither Node nor Cell).")
