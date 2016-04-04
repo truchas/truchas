@@ -264,7 +264,7 @@ contains
       case ('TABULAR')
 
         !! Identify and check the user-specified table.
-        do npts = size(tabular_data,dim=1), 1, -1
+        do npts = size(tabular_data,dim=2), 1, -1
           if (any(tabular_data(:,npts) /= NULL_R)) exit
         end do
         if (npts == 0) then
