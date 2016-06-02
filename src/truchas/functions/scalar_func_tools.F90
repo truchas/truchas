@@ -25,10 +25,11 @@
 !!    variables; G is allocatable and the antiderivative of F is returned in G,
 !!    which satisfies the condition G%EVAL([X0]) == G0.  The dynamic type of F
 !!    is limited to those where the antiderivative is easily determined.
-!!    Currently that is constant (CONST_SCALAR_FUNC) and single-variable
-!!    polynomials (POLY_SCALAR_FUNC) containing no 1/x term. If F is otherwise,
-!!    a non-zero value is returned in STAT, and an explanatory error message
-!!    is returned in the deferred-length allocatable character variable ERRMSG.
+!!    Currently that is constant (CONST_SCALAR_FUNC), single-variable
+!!    polynomials (POLY_SCALAR_FUNC) containing no 1/x term, and tabular
+!!    functions (TABULAR_SCALAR_FUNC). If F is otherwise, a non-zero value is
+!!    returned in STAT, and an explanatory error message is returned in the
+!!    deferred-length allocatable character variable ERRMSG.
 !!
 !!  CALL ALLOC_SCALAR_FUNC_PRODUCT (F, G, FG, STAT, ERRMSG) instantiates a new
 !!    function that is the product of the given class SCALAR_FUNC objects F
@@ -70,6 +71,7 @@ contains
 
     use const_scalar_func_type
     use poly_scalar_func_type
+    use tabular_scalar_func_type
     use scalar_func_factories
 
     class(scalar_func), intent(in) :: f
@@ -86,6 +88,10 @@ contains
     type is (const_scalar_func)
 
       call alloc_poly_scalar_func (g, c=[g0,f%const], e=[0,1], x0=x0)
+
+    type is (tabular_scalar_func)
+
+      call alloc_tabular_ad_scalar_func (g, f, x0, g0)
 
     type is (poly_scalar_func)
 
@@ -132,6 +138,7 @@ contains
     use const_scalar_func_type
     use poly_scalar_func_type
     use mpoly_scalar_func_type
+    use tabular_scalar_func_type
     use scalar_func_factories
 
     class(scalar_func), intent(in) :: f, g
@@ -150,6 +157,11 @@ contains
         fg%c = f%const * fg%c
       type is (mpoly_scalar_func)
         fg%coef = f%const * fg%coef
+      type is (tabular_scalar_func)
+        fg%y = f%const * fg%y
+      type is (tabular_ad_scalar_func)
+        fg%y = f%const * fg%y
+        fg%c = f%const * fg%c
       class default
         stat = -1
         errmsg = 'cannot create product for this type of second function argument'

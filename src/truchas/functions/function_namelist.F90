@@ -273,6 +273,9 @@ contains
         if (any(tabular_data(:,:npts) == NULL_R)) then
           call TLS_fatal ('values assigned to TABULAR_DATA are not packed')
         end if
+        if (npts < 2) then
+          call TLS_fatal ('at least two data points are required for TABULAR_DATA')
+        end if
         associate (xleft => tabular_data(1,1:npts-1), xright => tabular_data(1,2:npts))
           if (any(xleft >= xright)) call TLS_fatal ('TABULAR_DATA is not ordered')
         end associate

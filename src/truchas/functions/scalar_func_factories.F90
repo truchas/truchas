@@ -44,7 +44,7 @@ module scalar_func_factories
   public :: new_fptr_scalar_func
   public :: new_mpoly_scalar_func
   public :: new_poly_scalar_func
-  public :: new_tabular_scalar_func
+  public :: new_tabular_scalar_func, new_tabular_ad_scalar_func
 #ifdef ENABLE_DYNAMIC_LOADING
   public :: new_dl_scalar_func
 #endif
@@ -55,7 +55,7 @@ module scalar_func_factories
   public :: alloc_mpoly_scalar_func
   public :: alloc_poly_scalar_func
   public :: alloc_sstep_scalar_func
-  public :: alloc_tabular_scalar_func
+  public :: alloc_tabular_scalar_func, alloc_tabular_ad_scalar_func
 #ifdef ENABLE_DYNAMIC_LOADING
   public :: alloc_dl_scalar_func
 #endif
@@ -117,6 +117,14 @@ contains
     allocate(f, source=tabular_scalar_func(x, y, dim))
   end subroutine alloc_tabular_scalar_func
 
+  subroutine alloc_tabular_ad_scalar_func (f, df, x0, y0)
+    use tabular_scalar_func_type
+    class(scalar_func), allocatable, intent(out) :: f
+    type(tabular_scalar_func), intent(in) :: df
+    real(r8), intent(in) :: x0, y0
+    allocate(f, source=tabular_ad_scalar_func(df, x0, y0))
+  end subroutine alloc_tabular_ad_scalar_func
+
   ! A temporary stand-in (?) until we move to parameter list driven instantiation
   subroutine alloc_sstep_scalar_func (f, x0, y0, x1, y1)
     use fptr_scalar_func_type
@@ -175,6 +183,14 @@ contains
     class(scalar_func), pointer :: f
     allocate(f, source=tabular_scalar_func(x, y, dim))
   end function new_tabular_scalar_func
+
+  function new_tabular_ad_scalar_func (df, x0, y0) result (f)
+    use tabular_scalar_func_type
+    type(tabular_scalar_func), intent(in) :: df
+    real(r8), intent(in) :: x0, y0
+    class(scalar_func), pointer :: f
+    allocate(f, source=tabular_ad_scalar_func(df, x0, y0))
+  end function new_tabular_ad_scalar_func
 
   !! A higher-level constructors that takes a parameter list
   !! that describes the function to be instantiated.
