@@ -689,7 +689,7 @@ contains
     use string_utilities, only: i_to_c, raise_case
     use parallel_communication, only: is_IOP, broadcast
     use scalar_func_factories, only: alloc_const_scalar_func
-    use function_namelist, only: lookup_func
+    use scalar_func_table, only: lookup_func
     use property_module, only: get_truchas_material_id
     use fluid_data_module, only: IsImmobile
 

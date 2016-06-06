@@ -129,7 +129,7 @@ contains
 
     use input_utilities, only: seek_to_namelist
     use scalar_func_factories, only: alloc_const_scalar_func
-    use function_namelist, only: lookup_func
+    use scalar_func_table, only: lookup_func
 
     integer, intent(in) :: lun
 

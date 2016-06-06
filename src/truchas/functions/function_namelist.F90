@@ -35,13 +35,13 @@ module function_namelist
   use parallel_communication
   use string_utilities, only: lower_case, raise_case, i_to_c
   use input_utilities, only: seek_to_namelist
-  use scalar_func_map_type
   use scalar_func_factories
+  use scalar_func_table, only: known_func, insert_func
   use truchas_logging_services
   implicit none
   private
 
-  public :: read_function_namelists, lookup_func
+  public :: read_function_namelists
 
   integer, parameter :: MAX_VAR = 10
   integer, parameter :: MAX_COEF = 64
@@ -51,16 +51,7 @@ module function_namelist
   real(r8),  parameter :: NULL_R = HUGE(1.0_r8)
   character, parameter :: NULL_C = char(0)
 
-  !! The instantiated functions are stored in this private associative array.
-  type(scalar_func_map) :: ftable
-
 contains
-
-  subroutine lookup_func (name, f)
-    character(*), intent(in) :: name
-    class(scalar_func), allocatable, intent(out) :: f
-    call ftable%lookup (name, f)
-  end subroutine lookup_func
 
   subroutine read_function_namelists (lun)
 
@@ -147,7 +138,7 @@ contains
 
       !! Check the user-supplied name.
       if (name == NULL_C .or. name == '') call TLS_fatal ('NAME must be assigned a nonempty value')
-      if (ftable%mapped(name)) then
+      if (known_func(name)) then
         call TLS_fatal ('already read a FUNCTION namelist with this name: ' // trim(name))
       end if
 
@@ -220,7 +211,7 @@ contains
       case ('LIBRARY')
 
         call alloc_dl_scalar_func (f, library_path, library_symbol, parameters(:npar))
-        call ftable%insert (name, f)
+        call insert_func (name, f)
 
 #endif
       case ('POLYNOMIAL')
@@ -263,12 +254,12 @@ contains
           call alloc_poly_scalar_func (f, c = poly_coefficients(1:ncoef), &
                                        e = poly_exponents(1, 1:ncoef), &
                                        x0 = poly_refvars(1))
-          call ftable%insert (name, f)
+          call insert_func (name, f)
         else
           call alloc_mpoly_scalar_func (f, c = poly_coefficients(1:ncoef), &
                                         e = poly_exponents(1:nvar, 1:ncoef), &
                                         x0 = poly_refvars(1:nvar) )
-          call ftable%insert (name, f)
+          call insert_func (name, f)
         endif
 
       case ('TABULAR')
@@ -317,7 +308,7 @@ contains
 
         call alloc_tabular_scalar_func (f, tabular_data(1,:npts), tabular_data(2,:npts), &
             tabular_dim, tabular_smooth, tabular_extrap)
-        call ftable%insert (name, f)
+        call insert_func (name, f)
 
       case ('SMOOTH STEP')
 
@@ -328,7 +319,7 @@ contains
         if (smooth_step_x0 >= smooth_step_x1) call TLS_fatal ('require SMOOTH_STEP_X0 < SMOOTH_STEP_X1')
 
         call alloc_sstep_scalar_func (f, smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1)
-        call ftable%insert (name, f)
+        call insert_func (name, f)
 
       end select
     end do
