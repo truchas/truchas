@@ -47,7 +47,7 @@ contains
                                            set_smech_cell_plastic_strain_rate
     use zone_module,                 only: Zone 
     use pgslib_module,               only: PGSLib_GLOBAL_ANY 
-    use physics_module, only: heat_transport, heat_species_transport
+    use physics_module, only: heat_transport
 
     integer :: icomp 
     real(r8) :: Tstemp(nfc, ncells), Estemp(nfc, ncells), Pstemp(nfc, ncells), &
@@ -114,7 +114,7 @@ contains
        deallocate(plastic_strain)
        deallocate(plastic_strain_rate)
     end if SOLID_MECH 
-    HEAT_COND: if (heat_transport .or. heat_species_transport) then 
+    HEAT_COND: if (heat_transport) then 
        call EE_GATHER(Tstemp, Zone%Temp) 
        call EE_GATHER(Estemp, Zone%Enthalpy) 
        call EE_GATHER(Pstemp, Zone%Rho) 

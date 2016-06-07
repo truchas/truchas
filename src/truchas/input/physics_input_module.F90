@@ -85,13 +85,8 @@ CONTAINS
        end if
     end if POROUS_FLOW_CHECK
  
-    if (count([heat_transport, species_transport, heat_species_transport]) > 1) then
-      call TLS_error ('At most one of HEAT_TRANSPORT, SPECIES_TRANSPORT, and &
-                      &HEAT_SPECIES_TRANSPORT can be enabled.')
-    end if
-
     ! Check the number_of_species value.
-    if (species_transport .or. heat_species_transport) then
+    if (species_transport) then
       if (number_of_species <= 0) then
         call TLS_error ('NUMBER_OF_SPECIES must be > 0')
         fatal = .true.
@@ -123,7 +118,6 @@ CONTAINS
     ! Heat/species transport
     heat_transport = .false.
     species_transport = .false.
-    heat_species_transport = .false.
     number_of_species = 0
 
     ! solid_mechanics
@@ -179,7 +173,6 @@ CONTAINS
     ! Define PHYSICS namelist
     Namelist /PHYSICS/ heat_transport,                 &
                        species_transport,              &
-                       heat_species_transport,         &
                        number_of_species,              &
                        fluid_flow,                     &
                        inviscid,                       &
@@ -256,19 +249,14 @@ CONTAINS
     call SET_EM_SIMULATION_ON_OR_OFF (electromagnetics)
 
     !! Configure the heat/species transport kernel.
-    if (heat_species_transport) then
-      ds_enabled = .true.
+    ds_enabled = heat_transport .or. species_transport
+    if (species_transport) num_species = number_of_species
+    if (heat_transport .and. species_transport) then
       system_type = 'thermal+species'
-      num_species = number_of_species
     else if (heat_transport) then
-      ds_enabled = .true.
       system_type = 'thermal'
     else if (species_transport) then
-      ds_enabled = .true.
       system_type = 'species'
-      num_species = number_of_species
-    else
-      ds_enabled = .false.
     end if
 
   END SUBROUTINE PHYSICS_INPUT
@@ -303,7 +291,6 @@ CONTAINS
        call PGSLib_BCAST (applyflow)
        call PGSLib_BCAST (heat_transport)
        call PGSLib_BCAST (species_transport)
-       call PGSLib_BCAST (heat_species_transport)
        call PGSLib_BCAST (number_of_species)
        call PGSLib_BCAST (inviscid)
        call PGSLib_BCAST (boussinesq_approximation)
