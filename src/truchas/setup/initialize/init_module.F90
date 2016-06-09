@@ -84,6 +84,7 @@ CONTAINS
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
     use physics_module,         only: heat_transport
+    use ded_head_driver,        only: ded_head_init
 
     real(r8), intent(in) :: t, dt
 
@@ -179,6 +180,8 @@ CONTAINS
 
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
     if (solid_mechanics) Call SOLID_MECH_INIT
+
+    call ded_head_init(t)
 
     ! Get the initial species concentration fields.
     if (ds_enabled .and. num_species > 0) then
