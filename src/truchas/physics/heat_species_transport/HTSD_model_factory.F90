@@ -167,7 +167,7 @@ contains
       character(len=*), intent(out) :: errmsg
 
       integer :: j
-      logical, allocatable :: mask(:), rmask(:)
+      logical, allocatable :: mask(:), rmask(:), fmask(:)
       integer, allocatable :: setids(:)
 
       allocate(mask(mesh%nface))
@@ -187,14 +187,27 @@ contains
       mask(model%ic_rad%faces(2,:)) = .true.
       call gather_boundary (mesh%face_ip, mask)
 
+      !! Flux-type boundary conditions.  These may be superimposed.
+      allocate(fmask(mesh%nface))
+      fmask = .false.
+
+      !! Define the simple flux boundary conditions.
+      call get_boundary_data (mesh, 'temperature', 'flux', 1, model%bc_flux)
+      if (global_any(mask(model%bc_flux%faces))) then
+        stat = -1
+        errmsg = 'temperature flux boundary condition overlaps with interface conditions'
+        return
+      end if
+      fmask(model%bc_flux%faces) = .true. ! mark the simple flux faces
+
       !! Define the external HTC boundary conditions.
       call get_boundary_data (mesh, 'temperature', 'HTC', 2, model%bc_htc)
       if (global_any(mask(model%bc_htc%faces))) then
         stat = -1
-        errmsg = 'temperature HTC boundary condition overlaps with preceding conditions'
+        errmsg = 'temperature HTC boundary condition overlaps with interface conditions'
         return
       end if
-      mask(model%bc_htc%faces) = .true. ! mark the HTC faces
+      fmask(model%bc_htc%faces) = .true. ! mark the HTC faces
 
       !! Tag all the enclosure radation (view factor) faces.  They were already
       !! verified to be boundary faces and non-overlapping with each other.
@@ -203,8 +216,10 @@ contains
       if (associated(model%vf_rad_prob)) then
         do j = 1, size(model%vf_rad_prob)
           rmask(model%vf_rad_prob(j)%faces) = .true.
+          fmask(model%vf_rad_prob(j)%faces) = .true.
         end do
         call gather_boundary (mesh%face_ip, rmask)
+        call gather_boundary (mesh%face_ip, fmask)
       end if
 
       !! Define the (simple) radiation boundary conditions.
@@ -214,31 +229,28 @@ contains
         errmsg = 'temperature radiation boundary condition overlaps with enclosure radiation'
         return
       end if
-      rmask(model%bc_rad%faces) = .true. ! mark the radiation faces
+      deallocate(rmask)
+      if (global_any(mask(model%bc_rad%faces))) then
+        stat = -1
+        errmsg = 'temperature radiation boundary condition overlaps with interface conditions'
+        return
+      end if
+      fmask(model%bc_rad%faces) = .true. ! mark the radiation faces
       model%sbconst = stefan_boltzmann
       model%abszero = absolute_zero
 
-      !! Radiation BC may be superimposed with the HTC flux conditions.
-      mask = mask .or. rmask
-      deallocate(rmask)
+      !! Merge flux mask into main mask.
+      mask = mask .or. fmask
+      deallocate(fmask)
 
       !! Define the Dirichlet boundary conditions.
       call get_boundary_data (mesh, 'temperature', 'dirichlet', 1, model%bc_dir)
       if (global_any(mask(model%bc_dir%faces))) then
         stat = -1
-        errmsg = 'temperature dirichlet boundary condition overlaps with preceding conditions'
+        errmsg = 'temperature dirichlet boundary condition overlaps with other conditions'
         return
       end if
       mask(model%bc_dir%faces) = .true. ! mark the dirichlet faces
-
-      !! Define the flux boundary conditions.
-      call get_boundary_data (mesh, 'temperature', 'flux', 1, model%bc_flux)
-      if (global_any(mask(model%bc_flux%faces))) then
-        stat = -1
-        errmsg = 'temperature flux boundary condition overlaps with preceding conditions'
-        return
-      end if
-      mask(model%bc_flux%faces) = .true. ! mark the flux faces
 
       !! Finally verify that a condition has been applied to every boundary face.
       !! TODO: THIS DOESN'T WORK PROPERLY IN PARALLEL
