@@ -48,8 +48,9 @@ contains
     use EM_data_proxy,             only: em_is_on
     use region_input_module,       only: region_read
     use mesh_manager,              only: read_truchas_mesh_namelists
-    use diffusion_solver_data,     only: ds_enabled
+    use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
+    use ustruc_driver,             only: read_microstructure_namelist
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use phase_namelist,            only: read_phase_namelists
@@ -154,6 +155,7 @@ contains
     ! Read diffusion solver namelists
     if (ds_enabled) then
       call read_ds_namelists (lun)
+      if (heat_eqn) call read_microstructure_namelist (lun)
     end if
 
     ! read probe information

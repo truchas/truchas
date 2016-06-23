@@ -72,6 +72,9 @@
 !!      if any.  DEFINED returns true if the Joule heat data was read;
 !!      otherwise it returns false.
 !!
+!!    CALL RESTART_USTRUC () reads (or skips) the microstructure analysis
+!!      checkpoint data, if any.
+!!
 !!    CALL CLOSE_RESTART_FILE () closes the restart file.  Called from SETUP.
 !!
 
@@ -85,7 +88,8 @@ module restart_driver
   private
 
   public :: open_restart_file, skip_restart_mesh, skip_restart_side_sets, restart_matlzone, &
-            restart_solid_mechanics, restart_species, restart_joule_heat, close_restart_file
+            restart_solid_mechanics, restart_species, restart_joule_heat, restart_ustruc, &
+            close_restart_file
 
   !! Private data; defined by OPEN_RESTART_FILE.
   integer, save :: unit, version
@@ -154,6 +158,8 @@ contains
         !! renamed if it is of interest to distinguish a mapped restart from a normal.
       case ('species')
         have_species_data = .true.
+      case ('microstructure')
+        have_microstructure_data = .true.
       case default
         call halt ('OPEN_RESTART_FILE: unknown feature: ' // trim(feature))
       end select
@@ -230,25 +236,25 @@ contains
       end if
     end if
   end subroutine restart_solid_mechanics
-  
+
   !!
   !! Read (or skip) the species concentration data.
   !!
-  
+
   subroutine restart_species (phi, found)
-  
+
     use kinds, only: r8
     use restart_utilities, only: read_var, read_dist_array, skip_records, halt
     use legacy_mesh_api, only: pcell => unpermute_mesh_vector
     
     real(r8), intent(out), optional :: phi(:,:)
     logical,  intent(out), optional :: found
-    
+
     integer :: i, n, m
     character(len=80) :: errmsg
-    
+
     if (present(found)) found = have_species_data
-    
+
     if (have_species_data) then
       call read_var (unit, n, 'RESTART_SPECIES: error reading NSPECIES record')
       if (present(phi)) then
@@ -267,8 +273,26 @@ contains
     else if (present(phi) .and. .not.present(found)) then
       call halt ('RESTART_SPECIES: restart file does not contain the requested species data')
     end if
-    
+
   end subroutine restart_species
+
+  !!
+  !! Read the optional microstructure data segment
+  !!
+
+  subroutine restart_ustruc
+    use restart_utilities, only: info
+    use ustruc_driver, only: ustruc_enabled, ustruc_read_checkpoint, ustruc_skip_checkpoint
+    if (have_microstructure_data) then
+      if (ustruc_enabled())  then
+        call ustruc_read_checkpoint (unit)
+      else
+        call ustruc_skip_checkpoint (unit)
+      end if
+    else if (ustruc_enabled()) then
+      call info ('  WARNING: restart file contains no microstructure state data')
+    end if
+  end subroutine restart_ustruc
 
   !!
   !! Read the optional Joule heat data segment.
@@ -292,7 +316,8 @@ contains
     use restart_utilities, only: info
     use parallel_info_module, only: p_info
     if (p_info%IOP) close(unit)
-    call info ('Restart file ' // trim(restart_file) // ' successfully read.')
+    call info ('')
+    call info ('Closing restart file ' // trim(restart_file))
   end subroutine close_restart_file
 
 end module restart_driver

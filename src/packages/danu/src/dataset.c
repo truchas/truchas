@@ -1063,6 +1063,26 @@ herr_t danu_dataset_write(hid_t id,
         return status;
 }
 /*
+ * Routine: hid_t danu_dataset_create_byte(hid_t loc,const char *name, int dim, hsize_t *size )
+ * Purpose: Create a dataset of opaque byte values
+ * Description: Create a dataset of opaque bytes located in HDF5 object loc. Routine is 
+ *              essentially a wrapper to danu_dataset_create.
+ *
+ * Parameters:
+ *           loc           IN              HDF5 location identifier
+ *           name          IN              Dataset name
+ *           dim           IN              Dataset dimension
+ *           size          IN              1D array of length dim that defines the dataset size
+ *
+ * Returns: Returns a negative value if not successful
+ * Errors: Input checked in danu_dataset_create. Error raised if input is not valid.
+ *
+ */ 
+ hid_t danu_dataset_create_byte(hid_t loc, const char *name, int dim, const hsize_t *size)
+ {
+     return danu_dataset_create(loc,name,H5T_NATIVE_OPAQUE,dim,size,FALSE);
+ }
+/*
  * Routine: hid_t danu_dataset_create_double(hid_t loc,const char *name, int dim, hsize_t *size )
  * Purpose: Create a dataset of double values 
  * Description: Create a dataset of doubles located in HDF5 object loc. Routine is 
@@ -1165,6 +1185,49 @@ herr_t danu_dataset_write(hid_t id,
 
      return id;
  }
+/*
+ * Routine: herr_t danu_data_write_byte(hid_t loc,const char *name, int dim, hsize_t *size, int8_t *buf)
+ * Purpose: Write a double dataset containing data in buf
+ * Description: Create a dataset of bytes located in HDF5 object loc and write the data found in buf to that
+ *              dataset. Routine does NOT return the dataset identifier, only the status of the write. The 
+ *              is closed before the routine returns. Calling routine must re-open dataset to retrieve the 
+ *              identifier.
+ *
+ * Parameters:
+ *           loc           IN              HDF5 location identifier
+ *           name          IN              Dataset name
+ *           dim           IN              Dataset dimension
+ *           size          IN              1D array of length dim that defines the dataset size
+ *           buf           IN              Buffer containing data
+ *
+ * Returns: Returns a negative value if not successful
+ * Errors: Some of the input is checked in danu_dataset_create. Buffer pointer checked in this routine
+ *         Return immediately if input is not valid.
+ *
+ */ 
+ herr_t danu_data_write_byte(hid_t loc, 
+                               const char *name,
+                               int dim,
+                               const hsize_t *size,
+                               const int8_t *buf)
+ {
+     hid_t id;
+     herr_t status;
+
+     /* Creaate the dataset */
+     id = danu_dataset_create_byte(loc,name,dim,size);
+
+     if ( H5_ISA_VALID_ID(id) ) {
+         status = danu_dataset_write(id,NULL,H5T_NATIVE_OPAQUE,dim,size,buf);
+         danu_dataset_close(id);
+     }
+     else {
+         status = DANU_FAILURE;
+     }
+
+
+     return status;
+}
 /*
  * Routine: herr_t danu_data_write_double(hid_t loc,const char *name, int dim, hsize_t *size,double *buf )
  * Purpose: Write a double dataset containing data in buf
@@ -1557,6 +1620,41 @@ herr_t danu_data_write_strings2(hid_t id, int num, const char **buf)
 
      return status;
 }
+/*
+ * Routine: herr_t danu_data_read_byte(hid_t loc,const char *name, int dim, hsize_t *size, int8_t *buf )
+ * Purpose: Read a opaque byte dataset and store data in buf
+ * Description: Open a dataset of doubles located in HDF5 object loc and read the data into buf.
+ *
+ * Parameters:
+ *           loc           IN              HDF5 location identifier
+ *           name          IN              Dataset name
+ *           dim           IN              Dataset dimension
+ *           size          IN              1D array of length dim that defines the dataset size
+ *           buf           IN              Buffer containing data
+ *
+ * Returns: Returns a negative value if not successful
+ * Errors: Input is checked in danu_dataset_open and danu_dataset_read. Errors are raised in these routines.
+ *
+ */ 
+ herr_t danu_data_read_byte(hid_t loc, const char *name, int dim, const hsize_t *size, int8_t *buf)
+ {
+     hid_t id;
+     herr_t status;
+
+     /* Open the dataset */
+     id = danu_dataset_open(loc,name);
+
+     if ( H5_ISA_VALID_ID(id) ) {
+         status = danu_dataset_read(id,NULL,H5T_NATIVE_OPAQUE,dim,size,buf);
+         danu_dataset_close(id);
+     }
+     else {
+         status = DANU_FAILURE;
+     }
+
+
+     return status;
+ }
 /*
  * Routine: herr_t danu_data_read_double(hid_t loc,const char *name, int dim, hsize_t *size,double *buf )
  * Purpose: Read a double dataset and store data in buf

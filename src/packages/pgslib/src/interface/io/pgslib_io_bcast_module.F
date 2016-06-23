@@ -1,6 +1,7 @@
 MODULE PGSLib_IO_BCast_MODULE
   USE PGSLib_Type_MODULE
   use pgslib_c_binding
+  use,intrinsic :: iso_fortran_env, only: int8
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -34,6 +35,7 @@ MODULE PGSLib_IO_BCast_MODULE
      ! Broadcast Scalars
      ! These routines provide F90 interfaces to the C routines
 
+     MODULE PROCEDURE PGSLib_BCast_Int8_Scalar_F
      MODULE PROCEDURE PGSLib_BCast_Int_Scalar_F
      MODULE PROCEDURE PGSLib_BCast_REAL_Scalar_F
      MODULE PROCEDURE PGSLib_BCast_Double_Scalar_F
@@ -41,6 +43,7 @@ MODULE PGSLib_IO_BCast_MODULE
 
      ! Broadcast Vectors
      ! Interfaces for the F90 interface routines, which take a single vector argument
+     MODULE Procedure PGSLib_BCast_Int8_Vector_F
      MODULE Procedure PGSLib_BCast_Int_Vector_F
      MODULE Procedure PGSLib_BCast_Real_Vector_F
      MODULE Procedure PGSLib_BCast_Double_Vector_F
@@ -49,6 +52,7 @@ MODULE PGSLib_IO_BCast_MODULE
 
      ! Broadcast 2D Vectors
      ! Interfaces for the F90 interface routines, which take a single vector argument
+     MODULE Procedure PGS_BCast_Int8_vector_2d_F
      MODULE Procedure PGS_BCast_Int_vector_2d_F
      MODULE Procedure PGS_BCast_Real_vector_2d_F
      MODULE Procedure PGS_BCast_Double_vector_2d_F
@@ -57,6 +61,7 @@ MODULE PGSLib_IO_BCast_MODULE
 
      ! Broadcast 3D Vectors
      ! Interfaces for the F90 interface routines, which take a single vector argument
+     MODULE Procedure PGS_BCast_Int8_vector_3d_F
      MODULE Procedure PGS_BCast_Int_vector_3d_F
      MODULE Procedure PGS_BCast_Real_vector_3d_F
      MODULE Procedure PGS_BCast_Double_vector_3d_F
@@ -74,6 +79,15 @@ CONTAINS
   !Broadcast of Scalars
   ! These routines only call C routines, they exist only for symmetry
   ! with the vector versions.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  SUBROUTINE PGSLib_bcast_int8_scalar_F(scalar)
+    USE PGSLib_TYPE_MODULE
+    IMPLICIT NONE
+    INTEGER (int8) :: scalar
+    Call PGSLib_BCast_int8_Scalar_c(scalar)
+    RETURN
+  END SUBROUTINE PGSLib_bcast_int8_scalar_F
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   SUBROUTINE PGSLib_bcast_int_scalar_F(scalar)
@@ -115,6 +129,20 @@ CONTAINS
 
   ! Broadcast of Vectors
   ! These routines do some checking, and then call C routines.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  SUBROUTINE PGSLib_bcast_int8_vector_F(vector)
+    USE PGSLib_TYPE_MODULE
+    IMPLICIT NONE
+    INTEGER (int8) ,dimension(:):: vector
+
+    ! Local variables
+    integer vec_len
+    vec_len = SIZE(vector)
+    call pgslib_bcast_int8_vector_c(vector, vec_len)
+    return
+
+  END SUBROUTINE PGSLib_bcast_int8_vector_F
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   SUBROUTINE PGSLib_bcast_int_vector_F(vector)
@@ -200,6 +228,24 @@ CONTAINS
 
   ! Broadcast of 2D Vectors
   ! These routines do some checking, and then call C routines.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  SUBROUTINE PGS_bcast_int8_vector_2d_F(vector)
+    USE PGSLib_TYPE_MODULE
+    IMPLICIT NONE
+    INTEGER (int8), intent(INOUT), dimension(:,:):: vector
+
+    ! Local variables
+    integer dim1, idim
+    dim1 = SIZE(vector,1)
+
+    do idim = 1, dim1
+       call pgslib_bcast(vector(idim,:))
+    enddo
+
+    return
+
+  END SUBROUTINE PGS_bcast_int8_vector_2d_F
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   SUBROUTINE PGS_bcast_int_vector_2d_F(vector)
@@ -294,6 +340,24 @@ CONTAINS
 
   ! Broadcast of 3D Vectors
   ! These routines do some checking, and then call C routines.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  SUBROUTINE PGS_bcast_int8_vector_3d_F(vector)
+    USE PGSLib_TYPE_MODULE
+    IMPLICIT NONE
+    INTEGER (int8), intent(INOUT), dimension(:,:,:):: vector
+
+    ! Local variables
+    integer dim1, idim
+    dim1 = SIZE(vector,1)
+
+    do idim = 1, dim1
+       call pgslib_bcast(vector(idim,:,:))
+    enddo
+
+    return
+
+  END SUBROUTINE PGS_bcast_int8_vector_3d_F
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   SUBROUTINE PGS_bcast_int_vector_3d_F(vector)

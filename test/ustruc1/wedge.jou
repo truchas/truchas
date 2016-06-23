@@ -1,0 +1,91 @@
+## /opt/cubit/15.0-397645/bin/clarox
+## Cubit Version 15.0
+## Cubit Build 397645
+## Revised 2015-04-07 09:12:39 -0600 (Tue, 07 Apr 2015)
+## Running 07/15/2015 11:01:26 AM
+## Command Options:
+#{a=22}
+#{b=2}
+create vertex {-a*(sqrt(3.0)/2)} 0 {a/2}
+create vertex {a*(sqrt(3.0)/2)} 0 {a/2}
+create vertex 0 0 {-a}
+create surface vertex 1 2 3
+sweep surface 1 direction 0 5 0 distance
+webcut volume 1 with plane zplane offset {1.5*b-a} noimprint nomerge
+webcut volume 2 with cylinder radius {b} axis y center 0 0 {2*b-a}
+delete volume 2
+unite volume 1 3
+rotate volume 1 angle 120 about y include_merged
+webcut volume 1 with plane zplane offset {1.5*b-a} noimprint nomerge
+webcut volume 4 with cylinder radius {b} axis y center 0 0 {2*b-a}
+delete volume 4
+unite volume 1 5
+rotate volume 1 angle 120 about y include_merged
+webcut volume 1 with plane zplane offset {1.5*b-a} noimprint nomerge
+webcut volume 6 with cylinder radius {b} axis y center 0 0 {2*b-a}
+delete volume 6
+unite volume 1 7
+brick x 50 y 7 z 50
+move volume 8 x 0 y 3.5 z 0 include_merged
+move volume 1 x 0 y 0 z 5 include_merged
+chop volume 8 with volume 1
+webcut volume 10 9 with plane xplane noimprint nomerge
+delete volume 12 11
+webcut volume 10 with plane yplane offset 5 noimprint nomerge
+
+imprint volume all
+merge volume all
+compress all
+
+surface 8 size 1.2
+surface 8 scheme pave
+mesh surface 8
+surface 8 smooth scheme centroid area pull 
+smooth surface 8
+smooth surface 8
+
+curve 12 scheme bias fine size 1 factor 1.2
+curve 13 tangent opposite
+curve 13 scheme bias fine size 1 factor 1.2
+
+mesh curve 12 13
+volume 1 redistribute nodes on
+volume 1  scheme Sweep
+mesh volume 1
+
+curve 29 scheme bias fine size 1.2 factor 1.5 start vertex 15
+curve 11 scheme bias fine size 1.2 factor 1.5 start vertex 14
+curve 25 scheme bias fine size 1.2 factor 1.5 start vertex 16
+curve 14 scheme bias fine size 1.2 factor 1.5 start vertex 17
+mesh curve 11 14 25 29
+
+surface 6 size 8
+surface 6 scheme trimesh #pave
+mesh surface 6
+
+curve 31 scheme bias fine size 1 factor 1.2 start vertex 22
+curve 30 scheme bias fine size 1 factor 1.2 start vertex 21
+curve 32 scheme bias fine size 1 factor 1.2 start vertex 20
+curve 33 scheme bias fine size 1 factor 1.2 start vertex 19
+
+volume 2 redistribute nodes on
+volume 2 scheme Sweep
+mesh volume 2
+
+curve 34 interval 2
+curve 34 scheme equal
+volume 3 redistribute nodes on
+volume 3 scheme Sweep
+mesh volume 3
+
+block 1 volume 1
+block 2 volume 2 3
+
+sideset 1 surface 6 8 7 16 14 15
+sideset 2 surface 12 18 5
+sideset 3 surface 17 11
+sideset 4 surface 13 19
+sideset 5 surface 9 4 1 2 3
+
+export genesis "wedge.exo" overwrite
+

@@ -207,6 +207,7 @@ contains
     call write_core_data_segment
     if (has_feature(seq_id,'solid_mechanics')) call write_solid_mech_data_segment
     if (has_feature(seq_id,'species'))         call write_species_data_segment
+    if (has_feature(seq_id,'microstructure'))  call write_ustruc_data_segment
     if (has_feature(seq_id,'joule_heat'))      call write_joule_heat_data_segment
 
   contains
@@ -498,6 +499,58 @@ contains
       end do
 
     end subroutine write_species_data_segment
+    
+    subroutine write_ustruc_data_segment
+    
+      use,intrinsic :: iso_fortran_env, only: int8
+      use string_utilities, only: i_to_c
+      
+      integer :: n, ncell, ncomp, cid, shape1(1), shape2(2)
+      integer, allocatable :: map(:)
+      integer(int8), allocatable :: array(:,:)
+      character(:), allocatable :: name
+      type(c_ptr) :: dataset_id
+      
+      name = 'CP-USTRUC-MAP'
+      call simulation_data_dimensions (seq_id, name, shape1, stat)
+      INSIST(stat == DANU_SUCCESS)
+      ncell = shape1(1)
+      allocate(map(ncell))
+      call simulation_data_read (seq_id, name, map, stat)
+      INSIST(stat == DANU_SUCCESS)
+      
+      write(unit) size(map)
+      write(unit) map
+      
+      do n = 1, huge(n)
+        name = 'CP-USTRUC-COMP-' // i_to_c(n)
+        if (.not.simulation_data_exists(seq_id, name)) exit
+      end do
+      ncomp = n - 1
+      
+      write(unit) ncomp
+      
+      do n = 1, ncomp
+        name = 'CP-USTRUC-COMP-' // i_to_c(n)
+        call simulation_open_data (seq_id, name, dataset_id, stat)
+        INSIST(stat == DANU_SUCCESS)
+        call attribute_read (dataset_id, 'COMP-ID', cid, stat)
+        INSIST(stat == DANU_SUCCESS)
+        call simulation_data_dimensions (seq_id, name, shape2, stat)
+        INSIST(stat == DANU_SUCCESS)
+        INSIST(shape2(2) == size(map))
+        allocate(array(shape2(1),shape2(2)))
+        call simulation_data_read (seq_id, name, array, stat)
+        INSIST(stat == DANU_SUCCESS)
+        
+        write(unit) cid
+        write(unit) size(array,1)
+        write(unit) array
+        
+        deallocate(array)
+      end do
+      
+    end subroutine write_ustruc_data_segment
 
     subroutine write_joule_heat_data_segment
 
@@ -668,6 +721,8 @@ contains
       has_feature = simulation_data_exists(seq_id, 'phi1')
     case ('joule_heat')
       has_feature = simulation_data_exists(seq_id, 'Joule_P')
+    case ('microstructure')
+      has_feature = simulation_data_exists(seq_id, 'CP-USTRUC-MAP')
     case default
       INSIST(.false.)
     end select
@@ -677,13 +732,14 @@ contains
     type(c_ptr), intent(in) :: seq_id
     character(32), pointer :: feature_list(:)
     integer :: n
-    character(32) :: name(4)
-    logical :: exists(4)
+    character(32) :: name(5)
+    logical :: exists(5)
     name(1) = 'fluid_flow'
     name(2) = 'solid_mechanics'
     name(3) = 'species'
     name(4) = 'joule_heat'
-    do n = 1, 4
+    name(5) = 'microstructure'
+    do n = 1, size(name)
       exists(n) = has_feature(seq_id, trim(name(n)))
     end do
     allocate(feature_list(count(exists)))
