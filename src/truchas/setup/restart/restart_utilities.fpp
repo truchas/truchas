@@ -16,6 +16,22 @@
 #undef _ARRAY_PROCS_
 #endif
 
+#ifdef _INT8_DATA_
+#undef _INT8_DATA_
+#define _TYPE_ integer(int8)
+#define _READ_VAR0_STAT_ read_var_stat_int8_0
+#define _READ_VAR0_HALT_ read_var_halt_int8_0
+#define _READ_VAR1_STAT_ read_var_stat_int8_1
+#define _READ_VAR1_HALT_ read_var_halt_int8_1
+#define _ARRAY_PROCS_
+#define _READ_ARRAY1_STAT_ read_array_stat_int8_1
+#define _READ_ARRAY1_HALT_ read_array_halt_int8_1
+#define _READ_ARRAY2_STAT_ read_array_stat_int8_2
+#define _READ_ARRAY2_HALT_ read_array_halt_int8_2
+#define _READ_ARRAY3_STAT_ read_array_stat_int8_3
+#define _READ_ARRAY3_HALT_ read_array_halt_int8_3
+#endif
+
 #ifdef _INTEGER_DATA_
 #undef _INTEGER_DATA_
 #define _TYPE_ integer

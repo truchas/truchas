@@ -200,6 +200,7 @@ contains
     use EM_data_proxy, only: EM_is_on
     use solid_mechanics_input, only: solid_mechanics
     use gap_output, only: set_gap_element_output
+    use ustruc_driver, only: ustruc_output
     
     integer :: stat
   
@@ -237,6 +238,9 @@ contains
     !! Species fields.
     if (species_transport .or. heat_species_transport) call write_species_data
 
+    !! Microstructure analysis data (if enabled)
+    call ustruc_output (seq_id)
+    
   contains
   
     subroutine write_common_data

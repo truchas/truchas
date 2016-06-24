@@ -71,7 +71,7 @@ CONTAINS
     use parameter_module,       only: nmat
     use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
-    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species
+    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use property_module,        only: DENSITY_MATERIAL
     use zone_module,            only: Zone
     use solid_mechanics_input,  only: solid_mechanics
@@ -82,7 +82,7 @@ CONTAINS
     use diffusion_solver,       only: ds_init, ds_set_initial_state
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
-    use physics_module,         only: heat_transport, heat_species_transport
+    use ustruc_driver,          only: ustruc_driver_init
 
     real(r8), intent(in) :: t, dt
 
@@ -206,6 +206,10 @@ CONTAINS
         deallocate(phi)
       end select
     end if
+    
+    ! Initialize the microstructure modeling driver (if enabled).
+    call ustruc_driver_init (t)
+    call restart_ustruc
 
   END SUBROUTINE INITIAL
 

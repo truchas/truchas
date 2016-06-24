@@ -21,6 +21,7 @@ set(UTIL_FILES
          utilities/permutations.F90
          utilities/process_info_module.F90
          utilities/sort_module.F90
+         utilities/sort_utilities.F90
          utilities/string_utilities.F90
          utilities/tabular_utilities.F90
          utilities/tensor_module.F90
