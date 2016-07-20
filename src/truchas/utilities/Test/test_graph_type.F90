@@ -19,17 +19,19 @@ program test_graph_module
 #endif
   use graph_type
   implicit none
-  
+
   integer :: stat = 0
-  
+
   call test_0_nodes
   call test_basic
   call test_basic_self
   call test_comp1
   call test_comp2
-  
+  call test_comp3
+  call test_comp4
+
   call exit (stat)
-  
+
 contains
 
   subroutine test_0_nodes
@@ -52,7 +54,7 @@ contains
       call write_fail ('test_0_nodes: adjncy not allocated')
     end if
   end subroutine test_0_nodes
-  
+
   subroutine test_basic
     type(graph), allocatable :: g
     integer, allocatable :: xadj(:), adjncy(:)
@@ -70,7 +72,7 @@ contains
     if (any(xadj /= [1,3,5,7])) call write_fail ('test_basic: xadj wrong values')
     if (any(adjncy /= [2,3,1,3,1,2])) call write_fail ('test_basic: xadj wrong values')
   end subroutine test_basic
-  
+
   subroutine test_basic_self
     type(graph), allocatable :: g
     integer, allocatable :: xadj(:), adjncy(:)
@@ -88,7 +90,7 @@ contains
     if (any(xadj /= [1,3,6,9])) call write_fail ('test_basic_self: xadj wrong values')
     if (any(adjncy /= [2,3,1,2,3,1,2,3])) call write_fail ('test_basic_self: xadj wrong values')
   end subroutine test_basic_self
-    
+
   subroutine test_comp1
     type(graph), allocatable :: g
     integer :: ncomp
@@ -102,7 +104,7 @@ contains
     if (size(comp) /= 4) call write_fail ('test_comp1: wrong comp size')
     if (any(comp /= [1,2,3,4])) call write_fail ('test_comp1: wring comp values')
   end subroutine test_comp1
-  
+
   subroutine test_comp2
     type(graph), allocatable :: g
     integer :: ncomp
@@ -126,6 +128,50 @@ contains
     if (size(comp) /= 9) call write_fail ('test_comp2: wrong comp size')
     if (any(comp /= [1,2,3,4,5,6,7,8,9])) call write_fail ('test_comp2: wrong comp values')
   end subroutine test_comp2
+
+  subroutine test_comp3
+    type(graph), allocatable :: g
+    integer :: ncomp
+    logical :: mask(4)
+    integer, allocatable :: xcomp(:), comp(:)
+    allocate(g)
+    call g%init (4)
+    mask = .false.
+    call g%get_components (mask, ncomp, xcomp, comp)
+    if (ncomp /= 0) call write_fail ('test_comp3: wrong ncomp value')
+    if (size(xcomp) /= 1) call write_fail ('test_comp3: wrong xcomp size')
+    if (any(xcomp /= [1])) call write_fail ('test_comp3: wrong xcomp values')
+    if (size(comp) /= 0) call write_fail ('test_comp3: wrong comp size')
+    mask = .true.
+    call g%get_components (mask, ncomp, xcomp, comp)
+    if (ncomp /= 4) call write_fail ('test_comp3: wrong ncomp value')
+    if (size(xcomp) /= 5) call write_fail ('test_comp3: wrong xcomp size')
+    if (any(xcomp /= [1,2,3,4,5])) call write_fail ('test_comp3: wrong xcomp values')
+    if (size(comp) /= 4) call write_fail ('test_comp3: wrong comp size')
+    if (any(comp /= [1,2,3,4])) call write_fail ('test_comp3: wring comp values')
+  end subroutine test_comp3
+
+  subroutine test_comp4
+    type(graph), allocatable :: g
+    integer :: ncomp
+    logical :: mask(9)
+    integer, allocatable :: xcomp(:), comp(:)
+    allocate(g)
+    call g%init (9)
+    call g%add_clique ([1,3,5])
+    call g%add_clique ([4,6,8,9])
+    call g%add_edge (2, [5,7])
+    call g%add_edge (4, 7)
+    mask = .true.
+    mask(2) = .false.
+    mask(4) = .false.
+    call g%get_components (mask, ncomp, xcomp, comp)
+    if (ncomp /= 3) call write_fail ('test_comp4: wrong ncomp value')
+    if (size(xcomp) /= 4) call write_fail ('test_comp4: wrong xcomp size')
+    if (any(xcomp /= [1,4,7,8])) call write_fail ('test_comp4: wrong xcomp values')
+    if (size(comp) /= 7) call write_fail ('test_comp4: wrong comp size')
+    if (any(comp /= [1,3,5,6,8,9,7])) call write_fail ('test_comp4: wrong comp values')
+  end subroutine test_comp4
 
   subroutine write_fail (errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit

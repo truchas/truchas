@@ -74,7 +74,9 @@ module graph_type
     generic :: add_edge => graph_add_edge_one, graph_add_edge_many
     procedure :: add_clique => graph_add_clique
     procedure :: get_adjacency => graph_get_adjacency
-    procedure :: get_components => graph_get_components
+    procedure, private :: graph_get_components
+    procedure, private :: graph_get_components_mask
+    generic :: get_components => graph_get_components, graph_get_components_mask
   end type graph
 
 contains
@@ -197,5 +199,59 @@ contains
       end do
     end subroutine
   end subroutine graph_get_components
+
+  !! Return the connected components of the subgraph defined by mask.
+  subroutine graph_get_components_mask (this, mask, ncomp, xcomp, comp)
+    class(graph), intent(in) :: this
+    logical, intent(in)  :: mask(:)
+    integer, intent(out) :: ncomp
+    integer, allocatable, intent(out) :: xcomp(:), comp(:)
+    integer :: j
+    integer :: tag(this%n)
+    ASSERT(size(mask) == this%n)
+    if (this%directed) return
+    ncomp = 0
+    tag = 0
+    do j = 1, this%n
+      if (mask(j) .and. tag(j) == 0) then
+        ncomp = ncomp + 1
+        call tag_component (j)
+      end if
+    end do
+    ASSERT(all((tag > 0) .eqv. mask))
+    allocate(xcomp(ncomp+1),comp(count(mask)))
+    !! Prepare XCOMP; nodes in component N will be COMP(XCOMP(N):XCOMP(N+1)-1)
+    xcomp = 0
+    do j = 1, size(tag)
+      if (mask(j)) xcomp(1+tag(j)) = xcomp(1+tag(j)) + 1
+    end do
+    xcomp(1) = 1
+    do j = 2, size(xcomp)
+      xcomp(j) = xcomp(j) + xcomp(j-1)
+    end do
+    !! Fill COMP; XCOMP(N) stores the next free location for component N.
+    do j = 1, size(tag)
+      if (.not.mask(j)) cycle
+      comp(xcomp(tag(j))) = j
+      xcomp(tag(j)) = xcomp(tag(j)) + 1
+    end do
+    !! Restore XCOMP; XCOMP(N) is now the start of component N+1 instead of N
+    do j = size(xcomp), 2, -1
+      xcomp(j) = xcomp(j-1)
+    end do
+    xcomp(1) = 1
+  contains
+    !! Tag all the nodes connected to ROOT with the current component number
+    recursive subroutine tag_component (root)
+      integer, intent(in) :: root
+      type(integer_set_iterator) :: iter
+      tag(root) = ncomp
+      iter = this%nbrs(root)%begin()
+      do while (.not.iter%at_end())
+        if (mask(iter%value()) .and. tag(iter%value()) == 0) call tag_component (iter%value())
+        call iter%next
+      end do
+    end subroutine
+  end subroutine graph_get_components_mask
 
 end module graph_type
