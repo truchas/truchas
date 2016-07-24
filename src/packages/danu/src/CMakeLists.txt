@@ -6,7 +6,7 @@
 #
 # ############################################################################ #
 
-project(DanuLibSrc)
+project(DanuLibSrc C Fortran)
 
 include(PrintVariable)
 include(DanuAddLibrary)
@@ -15,12 +15,15 @@ include(DanuAddLibrary)
 # Add include directories
 # ---------------------------------------------------------------------------- #
 include_directories(${HDF5_INCLUDE_DIRS})
+if(MPI_C_INCLUDE_PATH)
+  include_directories(${MPI_C_INCLUDE_PATH})
+endif()
 include_directories(${Danu_SOURCE_DIR}/src)
 
 if ( ENABLE_Fortran )
   set(DANU_Fortran_MODULE_DIR ${Danu_BINARY_DIR}/src/mod_files)
   include_directories(${DANU_Fortran_MODULE_DIR})
-  global_set(Danu_Fortran_MODULE_DIR ${DANU_Fortran_MODULE_DIR})
+  set(Danu_Fortran_MODULE_DIR ${DANU_Fortran_MODULE_DIR} CACHE INTERNAL "")
 endif()
 
 
@@ -80,16 +83,15 @@ set(DANU_HEADERS
 danu_add_library(danu
                  SOURCE             ${DANU_SRC}
                  HEADERS            ${DANU_HEADERS} 
-                 LINK_LIBS          ${HDF5_C_LIBRARY} ${HDF5_LINK_LIBRARIES}
+                 LINK_LIBS          ${HDF5_LIBRARIES}
+		                    ${HDF5_HL_LIBRARIES}
 		 DESTINATION        ${Danu_LIB_INSTALL_DIR}
-		 HEADER_DESTINATION ${Danu_INCLUDE_INSTALL_DIR}
-                 DEPENDENCIES       ${HDF5_BUILD_TARGET})
+		 HEADER_DESTINATION ${Danu_INCLUDE_INSTALL_DIR})
 
 # ---------------------------------------------------------------------------- #
 # Library: danu_f (Fortran interface)
 # ---------------------------------------------------------------------------- #
 if (ENABLE_Fortran)
-  message(STATUS "Building Fortran interface")
   set(DANU_F_SRC 
             module_danu.f90
             module_danu_iface.f90)
@@ -146,7 +148,6 @@ endif()
 # Add the Python interface
 if ( ENABLE_Python )
 
-  message(STATUS "Building the Python interface")
   add_subdirectory(python)
 
   # Push these definitions up one level

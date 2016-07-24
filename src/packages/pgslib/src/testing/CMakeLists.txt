@@ -1,4 +1,4 @@
-project(PGSLibTesting)
+project(PGSLibTesting Fortran)
 
 message(STATUS "Configuring testing directory")
 

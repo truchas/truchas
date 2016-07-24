@@ -1,6 +1,4 @@
-project(PGSLibSerial)
-
-message(STATUS "Configuring serial-src directory")
+project(PGSLibSerial Fortran)
 
 include(FortranPreprocessFiles)
 

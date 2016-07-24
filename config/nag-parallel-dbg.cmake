@@ -1,22 +1,10 @@
-##############################################################################
-#                                                                             
-# Truchas build configuration: Nag compiler, parallel, debug                                                 
-#                                                                             
-##############################################################################
+# Generic Linux with NAG Fortran and GNU C
 
-# Compilers
-set(CMAKE_C_COMPILER gcc CACHE STRING "C Compiler")
-set(CMAKE_CXX_COMPILER g++ CACHE STRING "C++ Compiler")
-set(CMAKE_Fortran_COMPILER nagfor CACHE STRING "Fortran Compiler")
-
-# Compiler flags.  The C/C++ flags default to acceptable CMake-defined
-# built-ins that depend on the compiler ID and build type.  Not so for
-# Fortran Flags -- we must specify them (or get none).
-#set(CMAKE_Fortran_FLAGS "-u -C=all -g90 -gline -nan -maxcontin=99" CACHE STRING "Fortran compile flags")
-set(CMAKE_Fortran_FLAGS "-u -gline -nan -maxcontin=99" CACHE STRING "Fortran compile flags")
-
-# Optimized build
+set(ENABLE_MPI YES CACHE BOOL "Parallel Truchas")
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type")
 
-# Serial executable
-set(ENABLE_MPI True CACHE BOOL "MPI build control flag")
+set(CMAKE_C_COMPILER gcc CACHE STRING "C Compiler")
+set(CMAKE_Fortran_COMPILER nagfor CACHE STRING "Fortran Compiler")
+
+# Additional flags to the default CMAKE_<lang>_FLAGS_<build_type> flags
+set(CMAKE_Fortran_FLAGS "-u -gline -nan" CACHE STRING "Fortran compile flags")

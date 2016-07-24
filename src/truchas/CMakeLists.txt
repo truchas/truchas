@@ -1,6 +1,4 @@
-project(TruchasExe)
-
-message(STATUS "configuring the Truchas binary and library directory")
+project(TruchasExe C Fortran)
 
 # --- CMake modules
 include(FortranPreprocessFiles)
@@ -11,91 +9,32 @@ include(FortranPreprocessFiles)
 set(CMAKE_INCLUDE_CURRENT_DIR True)
 
 # Truchas module directory
-include_directories(${Truchas_MODULE_DIR} ${PETACA_MODULE_DIR})
+include_directories(${Truchas_MODULE_DIR})
 
 
 # --- Define the source files
 set(Truchas_LIBRARY_SOURCE_FILES)
 set(Truchas_PROCESS_TARGETS)
 
-# - bcs
-message(STATUS "Processing bcs")
 include(bcs/TruchasFiles.cmake)
-
-# - communication
-message(STATUS "Processing communication")
 include(communication/TruchasFiles.cmake)
-
-# - discrete_operators
-message(STATUS "Processing discrete_operators")
 include(discrete_operators/TruchasFiles.cmake)
-
-# - distributed_mesh
-message(STATUS "Processing distributed_mesh")
 include(distributed_mesh/TruchasFiles.cmake)
-
-# - drivers
-message(STATUS "Processing drivers")
 include(drivers/TruchasFiles.cmake)
-
-# - exodus
-message(STATUS "Processing exodus")
 include(exodus/TruchasFiles.cmake)
-
-# - nka
-message(STATUS "Processing nka")
 include(nka/TruchasFiles.cmake)
-
-# - functions
-message(STATUS "Processing functions")
 include(functions/TruchasFiles.cmake)
-
-# - grid_mapping
-message(STATUS "Processing grid_mapping")
 include(grid_mapping/TruchasFiles.cmake)
-
-# - input
-message(STATUS "Processing input")
 include(input/TruchasFiles.cmake)
-
-# - materials
-message(STATUS "Processing materials")
 include(materials/TruchasFiles.cmake)
-
-# - microstructure
-message(STATUS "Processing ustruc")
 include(ustruc/TruchasFiles.cmake)
-
-# - ode
-message(STATUS "Processing ode")
 include(ode/TruchasFiles.cmake)
-
-# - old mesh api
-message(STATUS "Processing legacy_mesh")
 include(legacy_mesh/TruchasFiles.cmake)
-
-# - output
-message(STATUS "Processing output")
 include(output/TruchasFiles.cmake)
-
-# - partitioning
-message(STATUS "Processing partitioning")
 include(partitioning/TruchasFiles.cmake)
-
-# - physics
-message(STATUS "Processing physics")
 include(physics/TruchasFiles.cmake)
-
-# - setup
-message(STATUS "Processing setup")
 include(setup/TruchasFiles.cmake)
-
-# - solver
-message(STATUS "Processing solver")
 include(solver/TruchasFiles.cmake)
-
-# - utilities
-message(STATUS "Processing utilities")
 include(utilities/TruchasFiles.cmake)
 
 # --- Custom target to process Fortran files
@@ -114,38 +53,16 @@ add_library(truchas ${Truchas_LIBRARY_SOURCE_FILES})
 set(Truchas_DEPENDS ${Truchas_PROCESS_TARGETS})
 
 # PGSLib
-if (ENABLE_PGSLib)
-  list(APPEND Truchas_DEPENDS pgslib_fe)
-  if (ENABLE_MPI)
-    list(APPEND Truchas_DEPENDS pgslib_mpi)
-  else()
-    list(APPEND Truchas_DEPENDS pgslib_serial)
-  endif()  
-endif()
-
-# UbikSolve
-if (ENABLE_UbikSolve)
-  list(APPEND Truchas_DEPENDS ubiksolve)
+list(APPEND Truchas_DEPENDS pgslib_fe)
+if (ENABLE_MPI)
+  list(APPEND Truchas_DEPENDS pgslib_mpi)
+else()
+  list(APPEND Truchas_DEPENDS pgslib_serial)
 endif()  
 
-# Chaco
-if ( ENABLE_Chaco )
-  list(APPEND Truchas_DEPENDS chaco)
-endif()  
-
-# Chaparral
-if (ENABLE_Chaparral)
-  list(APPEND Truchas_DEPENDS vflib)
-endif()  
-
-# Danu
+list(APPEND Truchas_DEPENDS ubiksolve)
+list(APPEND Truchas_DEPENDS chaco)
 list(APPEND Truchas_DEPENDS danu_f)
-
-# Various build targets from the external projects
-list(APPEND Truchas_DEPENDS 
-            ${NETCDF_BUILD_TARGET}
-           ${HYPRE_BUILD_TARGET}
-            ${PETACA_BUILD_TARGET})
 
 # Force the completion of the targets defined 
 # in Truchas_DEPENDS before compiling source for
@@ -153,33 +70,17 @@ list(APPEND Truchas_DEPENDS
 add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
-set(Truchas_LINK_LIBS
-            ${EXODUS_LIBRARIES}
-            ${NETCDF_Fortran_LIBRARIES}
-            ${HYPRE_LIBRARY}
-            ${PETACA_LIBRARIES})
+set(Truchas_LINK_LIBS exodus netcdff hypre petaca)
 
-if(ENABLE_PGSLib)
-  list(APPEND Truchas_LINK_LIBS pgslib_fe)
-  if (ENABLE_MPI)
-    list(APPEND Truchas_LINK_LIBS pgslib_mpi)
-  else()
-    list(APPEND Truchas_LINK_LIBS pgslib_serial)
-  endif()
+list(APPEND Truchas_LINK_LIBS pgslib_fe)
+if (ENABLE_MPI)
+  list(APPEND Truchas_LINK_LIBS pgslib_mpi)
+else()
+  list(APPEND Truchas_LINK_LIBS pgslib_serial)
 endif()
 
-if (ENABLE_UbikSolve)
-  list(APPEND Truchas_LINK_LIBS ubiksolve)
-endif() 
-
-if (ENABLE_Chaco)
-  list(APPEND Truchas_LINK_LIBS chaco)
-endif()
-
-if (ENABLE_Chaparral)
-  list(APPEND Truchas_LINK_LIBS vflib)
-endif()
-
+list(APPEND Truchas_LINK_LIBS ubiksolve)
+list(APPEND Truchas_LINK_LIBS chaco)
 list(APPEND Truchas_LINK_LIBS danu_f)
 
 # To pick up the dlopen and dlclose symbols
@@ -203,15 +104,10 @@ fortran_preprocess_files(MAIN_SOURCE_FILES
                          FPP_FLAGS ${Truchas_FPP_FLAGS}
                          PROCESS_TARGET ProcessTruchasMainFiles)
 
-set(fc_flags -I${NETCDF_INCLUDE_DIR})
-list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
-if(ENABLE_PGSLib)
-  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
-endif()
-if(ENABLE_UbikSolve)
-  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
-endif()
-if(Fortran_COMPILER_IS_NAG)
+set(fc_flags -I${Danu_Fortran_MODULE_DIR})
+list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   list(APPEND fc_flags -C)
 endif()
 build_whitespace_string(MAIN_COMPILE_FLAGS ${fc_flags})

@@ -58,7 +58,7 @@
 module rad_encl_gmv
 
   use kinds, only: r8
-  use fgmvwrite
+  use gmvwrite_c_binding
   use rad_encl_type
   use index_partitioning
   use parallel_communication

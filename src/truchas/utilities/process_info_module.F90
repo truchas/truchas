@@ -84,11 +84,7 @@ Contains
 
     use,intrinsic :: iso_c_binding, only: c_int
     use parallel_communication, only: is_IOP, global_all
-#ifdef SUPPORTS_NEWUNIT
     use truchas_env, only: output_file_name
-#else
-    use truchas_env, only: output_file_name, new_unit
-#endif
 
     integer(c_int) :: vsize, rsize, dsize
 
@@ -97,12 +93,7 @@ Contains
     mem_on = global_all(vsize /= 0)
     !! Open the memory diagnostics file and write header (or regrets).
     if (is_IOP) then
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=mem_lun,file=output_file_name('mem'),action='write',status='replace')
-#else
-      call new_unit (mem_lun)
-      open(unit=mem_lun,file=output_file_name('mem'),action='write',status='replace')
-#endif
       if (mem_on) then
         write(mem_lun,'(a)') '===== MEMORY DIAGNOSTICS ' // repeat('=',55)
         write(mem_lun,'(a)') ' vsize[N]: total virtual memory (mB) used by process N'

@@ -53,6 +53,22 @@ MODULE UTILITIES_MODULE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
+     interface
+        subroutine MAKE_DIRECTORY_C(path, status) bind(c, name='make_directory_c')
+           use,intrinsic :: iso_c_binding, only: c_char, c_int
+           character(kind=c_char), intent(in)  :: path(*)
+           integer(c_int), intent(out) :: status
+        end subroutine
+     end interface
+
+     interface
+        subroutine MAKE_DIRECTORY_HIER_C(path, status) bind(c,name='make_directory_hier_c')
+           use,intrinsic :: iso_c_binding, only: c_char, c_int
+           character(kind=c_char), intent(in) :: path(*)
+           integer(c_int), intent(out) :: status
+        end subroutine
+     end interface
+
 CONTAINS
 
 
@@ -175,14 +191,6 @@ CONTAINS
      character(1024) :: path2
      integer :: MAKE_DIRECTORY
 
-     interface MAKE_DIRECTORY_C
-        subroutine MAKE_DIRECTORY_C (path, status)
-           implicit none
-           character (*), intent(IN)  :: path
-           integer,       intent(OUT) :: status
-        end subroutine MAKE_DIRECTORY_C
-     end interface
-
      if (LEN_TRIM(path) > 1023) then
         MAKE_DIRECTORY = -1
         return
@@ -212,14 +220,6 @@ CONTAINS
      integer :: status
      character(1024) :: path2
      integer :: MAKE_DIRECTORY_HIERARCHY
-
-     interface MAKE_DIRECTORY_HIER_C
-        subroutine MAKE_DIRECTORY_HIER_C (path, status)
-           implicit none
-           character (*), intent(IN)  :: path
-           integer,       intent(OUT) :: status
-        end subroutine MAKE_DIRECTORY_HIER_C
-     end interface
 
      if (LEN_TRIM(path) > 1023) then
         MAKE_DIRECTORY_HIERARCHY = -1

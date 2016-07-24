@@ -308,24 +308,13 @@ Contains
       use string_utilities, only: i_to_c
       use parallel_info_module, only: p_info
       use legacy_mesh_api, only: unpermute_mesh_vector
-#ifdef SUPPORTS_NEWUNIT
       use truchas_env, only: output_dir
-#else
-      use truchas_env, only: output_dir, new_unit
-#endif
 
       integer, intent(out) :: unit
 
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=unit,file=trim(output_dir)//'bdf2-'//i_to_c(p_info%thisPE)//'.'// & 
            i_to_c(unpermute_mesh_vector(cell_no))//'.'//i_to_c(bdf2_seq)//'.err', &
            status='replace', position='rewind', action='write')
-#else
-      call new_unit (unit)
-      open(unit, status='replace', position='rewind', action='write', &
-           file=trim(output_dir)//'bdf2-'//i_to_c(p_info%thisPE)//'.'// & 
-           i_to_c(unpermute_mesh_vector(cell_no))//'.'//i_to_c(bdf2_seq)//'.err')
-#endif
 
       write(unit,fmt='(a,i4)') 'PE=', p_info%thisPE
       write(unit,fmt='(a,i7)') 'LOC_CELL=', cell_no

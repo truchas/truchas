@@ -1,31 +1,23 @@
-project(TruchasSrc)
-
-message(STATUS "configuring truchas source directory")
-
-# Chaco
+message(STATUS "Configuring src/packages/chaco")
 add_subdirectory(packages/chaco)
 
-# Chaparral
+message(STATUS "Configuring src/packages/chaparral")
 add_subdirectory(packages/chaparral)
 
-# PGSLib
-if (ENABLE_PGSLib)
-  add_subdirectory(packages/pgslib)
-endif()
+message(STATUS "Configuring src/packages/pgslib")
+add_subdirectory(packages/pgslib)
 
-# UbikSolve
+message(STATUS "Configuring src/packages/ubiksolve")
 add_subdirectory(packages/ubiksolve)
 
-# Danu
+message(STATUS "Configuring src/packages/danu")
 add_subdirectory(packages/danu)
 
-# Truchas
+message(STATUS "Configuring src/truchas")
 add_subdirectory(truchas)
 
-# Tools
+message(STATUS "Configuring src/tools")
 add_subdirectory(tools)
 
-# Python
+message(STATUS "Configuring src/python")
 add_subdirectory(python)
-
-

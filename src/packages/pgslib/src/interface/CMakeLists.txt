@@ -1,6 +1,4 @@
-project(PGSLibIface)
-
-message(STATUS "Configuring directory interface")
+project(PGSLibIface C Fortran)
 
 include(FortranPreprocessFiles)
 

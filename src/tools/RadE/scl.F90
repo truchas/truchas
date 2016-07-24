@@ -11,6 +11,7 @@
 
 module scl
 
+  use,intrinsic :: iso_c_binding, only: c_int, c_float, c_double, c_char
   implicit none
   private
 
@@ -21,169 +22,218 @@ module scl
   public :: scl_size, scl_rank
 
   interface
-    subroutine initialize ()
+    subroutine initialize() bind(c,name='initialize')
     end subroutine
-    subroutine finalize ()
+    subroutine finalize() bind(c,name='finalize')
     end subroutine
-    integer function f77_comm_rank()
+    function f77_comm_rank() bind(c,name='f77_comm_rank')
+      import c_int
+      integer(c_int) :: f77_comm_rank
     end function
-    integer function f77_comm_size()
+    function f77_comm_size() bind(c,name='f77_comm_size')
+      import c_int
+      integer(c_int) :: f77_comm_size
     end function
-    subroutine MPI_Send_int (buf, count, dest, tag)
-      integer, intent(in) :: buf(*), count, dest, tag
+    subroutine MPI_Send_int(buf, count, dest, tag) bind(c,name='MPI_Send_int')
+      import c_int
+      integer(c_int), intent(in) :: buf(*), count, dest, tag
     end subroutine
-    subroutine MPI_Send_float (buf, count, dest, tag)
-      real, intent(in) :: buf(*)
-      integer, intent(in) :: count, dest, tag
+    subroutine MPI_Send_float(buf, count, dest, tag) bind(c,name='MPI_Send_float')
+      import c_int, c_float
+      real(c_float), intent(in) :: buf(*)
+      integer(c_int), intent(in) :: count, dest, tag
     end subroutine
-    subroutine MPI_Send_double (buf, count, dest, tag)
-      double precision, intent(in) :: buf(*)
-      integer, intent(in) :: count, dest, tag
+    subroutine MPI_Send_double(buf, count, dest, tag) bind(c,name='MPI_Send_double')
+      import c_int, c_double
+      real(c_double), intent(in) :: buf(*)
+      integer(c_int), intent(in) :: count, dest, tag
     end subroutine
-    subroutine MPI_Recv_int (buf, count, source, tag)
-      integer, intent(out) :: buf(*)
-      integer, intent(in) :: count, source, tag
+    subroutine MPI_Recv_int(buf, count, source, tag) bind(c,name='MPI_Recv_int')
+      import c_int
+      integer(c_int), intent(out) :: buf(*)
+      integer(c_int), intent(in) :: count, source, tag
     end subroutine
-    subroutine MPI_Recv_float (buf, count, source, tag)
-      real, intent(out) :: buf(*)
-      integer, intent(in) :: count, source, tag
+    subroutine MPI_Recv_float(buf, count, source, tag) bind(c,name='MPI_Recv_float')
+      import c_int, c_float
+      real(c_float), intent(out) :: buf(*)
+      integer(c_int), intent(in) :: count, source, tag
     end subroutine
-    subroutine MPI_Recv_double (buf, count, source, tag)
-      double precision, intent(out) :: buf(*)
-      integer, intent(in) :: count, source, tag
+    subroutine MPI_Recv_double(buf, count, source, tag) bind(c,name='MPI_Recv_double')
+      import c_int, c_double
+      real(c_double), intent(out) :: buf(*)
+      integer(c_int), intent(in) :: count, source, tag
     end subroutine
-    subroutine MPI_Bcast_int_scalar (buffer, root)
-      integer, intent(inout) :: buffer
-      integer, intent(in) :: root
+    subroutine MPI_Bcast_int_scalar(buffer, root) bind(c,name='MPI_Bcast_int_scalar')
+      import c_int
+      integer(c_int), intent(inout) :: buffer
+      integer(c_int), intent(in) :: root
     end subroutine
-    subroutine MPI_Bcast_int_vector (buffer, len, root)
-      integer, intent(inout) :: buffer(*)
-      integer, intent(in) :: len, root
+    subroutine MPI_Bcast_int_vector(buffer, len, root) bind(c,name='MPI_Bcast_int_vector')
+      import c_int
+      integer(c_int), intent(inout) :: buffer(*)
+      integer(c_int), intent(in) :: len, root
     end subroutine
-    subroutine MPI_Bcast_logical_scalar (buffer, root)
-      logical, intent(inout) :: buffer
-      integer, intent(in) :: root
+    subroutine MPI_Bcast_logical_scalar(buffer, root) bind(c,name='MPI_Bcast_logical_scalar')
+      import c_int
+      logical(c_int), intent(inout) :: buffer
+      integer(c_int), intent(in) :: root
     end subroutine
-    subroutine MPI_Bcast_logical_vector (buffer, len, root)
-      logical, intent(inout) :: buffer(*)
-      integer, intent(in) :: len, root
+    subroutine MPI_Bcast_logical_vector(buffer, len, root) bind(c,name='MPI_Bcast_logical_vector')
+      import c_int
+      logical(c_int), intent(inout) :: buffer(*)
+      integer(c_int), intent(in) :: len, root
     end subroutine
-    subroutine MPI_Bcast_float_scalar (buffer, root)
-      real, intent(inout) :: buffer
-      integer, intent(in) :: root
+    subroutine MPI_Bcast_float_scalar(buffer, root) bind(c,name='MPI_Bcast_float_scalar')
+      import c_int, c_float
+      real(c_float), intent(inout) :: buffer
+      integer(c_int), intent(in) :: root
     end subroutine
-    subroutine MPI_Bcast_float_vector (buffer, len, root)
-      real, intent(inout) :: buffer(*)
-      integer, intent(in) :: len, root
+    subroutine MPI_Bcast_float_vector(buffer, len, root) bind(c,name='MPI_Bcast_float_vector')
+      import c_int, c_float
+      real(c_float), intent(inout) :: buffer(*)
+      integer(c_int), intent(in) :: len, root
     end subroutine
-    subroutine MPI_Bcast_double_scalar (buffer, root)
-      double precision, intent(inout) :: buffer
-      integer, intent(in) :: root
+    subroutine MPI_Bcast_double_scalar(buffer, root) bind(c,name='MPI_Bcast_double_scalar')
+      import c_int, c_double
+      real(c_double), intent(inout) :: buffer
+      integer(c_int), intent(in) :: root
     end subroutine
-    subroutine MPI_Bcast_double_vector (buffer, len, root)
-      double precision, intent(inout) :: buffer(*)
-      integer, intent(in) :: len, root
+    subroutine MPI_Bcast_double_vector(buffer, len, root) bind(c,name='MPI_Bcast_double_vector')
+      import c_int, c_double
+      real(c_double), intent(inout) :: buffer(*)
+      integer(c_int), intent(in) :: len, root
     end subroutine
-    subroutine MPI_Bcast_char_vector (buffer, root)
-      character(len=*), intent(inout) :: buffer
-      integer, intent(in) :: root
+    subroutine MPI_Bcast_char_vector(buffer, len, root) bind(c,name='MPI_Bcast_char_vector')
+      import c_int, c_char
+      character(kind=c_char), intent(inout) :: buffer(*)
+      integer(c_int), intent(in) :: len, root
     end subroutine
-    subroutine MPI_Gather_int (sendbuf, recvbuf, root)
-      integer, intent(in) :: sendbuf, root
-      integer, intent(out) :: recvbuf(*)
+    subroutine MPI_Gather_int(sendbuf, recvbuf, root) bind(c,name='MPI_Gather_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf, root
+      integer(c_int), intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Gatherv_int (sendbuf, sendcount, recvbuf, recvcounts, root)
-      integer, intent(in) :: sendbuf(*), sendcount, recvcounts(*), root
-      integer, intent(out) :: recvbuf(*)
+    subroutine MPI_Gatherv_int(sendbuf, sendcount, recvbuf, recvcounts, root) &
+        bind(c,name='MPI_Gatherv_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf(*), sendcount, recvcounts(*), root
+      integer(c_int), intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Gather_float (sendbuf, recvbuf, root)
-      real, intent(in) :: sendbuf
-      real, intent(out) :: recvbuf(*)
-      integer, intent(in) :: root
+    subroutine MPI_Gather_float(sendbuf, recvbuf, root) bind(c,name='MPI_Gather_float')
+      import c_int, c_float
+      real(c_float), intent(in) :: sendbuf
+      real(c_float), intent(out) :: recvbuf(*)
+      integer(c_int), intent(in) :: root
     end subroutine
-    subroutine MPI_Gatherv_float (sendbuf, sendcount, recvbuf, recvcounts, root)
-      real, intent(in) :: sendbuf(*)
-      integer, intent(in) :: sendcount, recvcounts(*), root
-      real, intent(out) :: recvbuf(*)
+    subroutine MPI_Gatherv_float(sendbuf, sendcount, recvbuf, recvcounts, root) &
+        bind(c,name='MPI_Gatherv_float')
+      import c_int, c_float
+      real(c_float), intent(in) :: sendbuf(*)
+      integer(c_int), intent(in) :: sendcount, recvcounts(*), root
+      real(c_float), intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Gather_double (sendbuf, recvbuf, root)
-      double precision, intent(in) :: sendbuf
-      double precision, intent(out) :: recvbuf(*)
-      integer, intent(in) :: root
+    subroutine MPI_Gather_double(sendbuf, recvbuf, root) bind(c,name='MPI_Gather_double')
+      import c_int, c_double
+      real(c_double), intent(in) :: sendbuf
+      real(c_double), intent(out) :: recvbuf(*)
+      integer(c_int), intent(in) :: root
     end subroutine
-    subroutine MPI_Gatherv_double (sendbuf, sendcount, recvbuf, recvcounts, root)
-      double precision, intent(in) :: sendbuf(*)
-      integer, intent(in) :: sendcount, recvcounts(*), root
-      double precision, intent(out) :: recvbuf(*)
-    end subroutine
-    subroutine MPI_Allgather_int (sendbuf, recvbuf)
-      integer, intent(in) :: sendbuf
-      integer, intent(out) :: recvbuf(*)
-    end subroutine
-    subroutine MPI_Allgatherv_int (sendbuf, sendcount, recvbuf, recvcounts)
-      integer, intent(in) :: sendbuf(*), sendcount, recvcounts(*)
-      integer, intent(out) :: recvbuf(*)
-    end subroutine
-    subroutine MPI_Allgather_float (sendbuf, recvbuf)
-      real, intent(in) :: sendbuf
-      real, intent(out) :: recvbuf(*)
-    end subroutine
-    subroutine MPI_Allgatherv_float (sendbuf, sendcount, recvbuf, recvcounts)
-      real, intent(in) :: sendbuf(*)
-      integer, intent(in) :: sendcount, recvcounts(*)
-      real, intent(out) :: recvbuf(*)
-    end subroutine
-    subroutine MPI_Scatter_int (sendbuf, recvbuf, root)
-      integer, intent(in) :: sendbuf(*), root
-      integer, intent(out) :: recvbuf
-    end subroutine
-    subroutine MPI_Scatterv_int (sendbuf, sendcounts, recvbuf, recvcount, root)
-      integer, intent(in) :: sendbuf(*), sendcounts(*), recvcount, root
-      integer, intent(out) :: recvbuf(*)
-    end subroutine
-    subroutine MPI_Scatter_float (sendbuf, recvbuf, root)
-      real, intent(in) :: sendbuf(*)
-      real, intent(out) :: recvbuf
-      integer, intent(in) :: root
-    end subroutine
-    subroutine MPI_Scatterv_float (sendbuf, sendcounts, recvbuf, recvcount, root)
-      real, intent(in) :: sendbuf(*)
-      integer, intent(in) :: sendcounts(*), recvcount, root
-      real, intent(out) :: recvbuf(*)
-    end subroutine
-    subroutine MPI_Scatter_double (sendbuf, recvbuf, root)
-      double precision, intent(in) :: sendbuf(*)
-      double precision, intent(out) :: recvbuf
-      integer, intent(in) :: root
-    end subroutine
-    subroutine MPI_Scatterv_double (sendbuf, sendcounts, recvbuf, recvcount, root)
-      double precision, intent(in) :: sendbuf(*)
-      integer, intent(in) :: sendcounts(*), recvcount, root
+    subroutine MPI_Gatherv_double(sendbuf, sendcount, recvbuf, recvcounts, root) &
+        bind(c,name='MPI_Gatherv_double')
+      import c_int, c_double
+      real(c_double), intent(in) :: sendbuf(*)
+      integer(c_int), intent(in) :: sendcount, recvcounts(*), root
       double precision, intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Allreduce_sum_int (sendbuf, recvbuf)
-      integer, intent(in) :: sendbuf
-      integer, intent(out) :: recvbuf
+    subroutine MPI_Allgather_int(sendbuf, recvbuf) bind(c,name='MPI_Allgather_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf
+      integer(c_int), intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Allreduce_sum_float (sendbuf, recvbuf)
+    subroutine MPI_Allgatherv_int(sendbuf, sendcount, recvbuf, recvcounts) &
+        bind(c,name='MPI_Allgatherv_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf(*), sendcount, recvcounts(*)
+      integer(c_int), intent(out) :: recvbuf(*)
+    end subroutine
+    subroutine MPI_Allgather_float(sendbuf, recvbuf) bind(c,name='MPI_Allgather_float')
+      import c_float
       real, intent(in) :: sendbuf
-      real, intent(out) :: recvbuf
+      real, intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Allreduce_sum_double (sendbuf, recvbuf)
-      double precision, intent(in) :: sendbuf
-      double precision, intent(out) :: recvbuf
+    subroutine MPI_Allgatherv_float(sendbuf, sendcount, recvbuf, recvcounts) &
+        bind(c,name='MPI_Allgatherv_float')
+      import c_int, c_float
+      real(c_float), intent(in) :: sendbuf(*)
+      integer(c_int), intent(in) :: sendcount, recvcounts(*)
+      real(c_float), intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Allreduce_max_int (sendbuf, recvbuf)
-      integer, intent(in) :: sendbuf
-      integer, intent(out) :: recvbuf
+    subroutine MPI_Scatter_int(sendbuf, recvbuf, root) bind(c,name='MPI_Scatter_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf(*), root
+      integer(c_int), intent(out) :: recvbuf
     end subroutine
-    subroutine MPI_Allreduce_max_float (sendbuf, recvbuf)
-      real, intent(in) :: sendbuf
-      real, intent(out) :: recvbuf
+    subroutine MPI_Scatterv_int(sendbuf, sendcounts, recvbuf, recvcount, root) &
+        bind(c,name='MPI_Scatterv_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf(*), sendcounts(*), recvcount, root
+      integer(c_int), intent(out) :: recvbuf(*)
     end subroutine
-    subroutine MPI_Allreduce_max_double (sendbuf, recvbuf)
-      double precision, intent(in) :: sendbuf
-      double precision, intent(out) :: recvbuf
+    subroutine MPI_Scatter_float(sendbuf, recvbuf, root) bind(c,name='MPI_Scatter_float')
+      import c_int, c_float
+      real(c_float), intent(in) :: sendbuf(*)
+      real(c_float), intent(out) :: recvbuf
+      integer(c_int), intent(in) :: root
+    end subroutine
+    subroutine MPI_Scatterv_float(sendbuf, sendcounts, recvbuf, recvcount, root) &
+        bind(c,name='MPI_Scatterv_float')
+      import c_int, c_float
+      real(c_float), intent(in) :: sendbuf(*)
+      integer(c_int), intent(in) :: sendcounts(*), recvcount, root
+      real(c_float), intent(out) :: recvbuf(*)
+    end subroutine
+    subroutine MPI_Scatter_double(sendbuf, recvbuf, root) bind(c,name='MPI_Scatter_double')
+      import c_int, c_double
+      real(c_double), intent(in) :: sendbuf(*)
+      real(c_double), intent(out) :: recvbuf
+      integer(c_int), intent(in) :: root
+    end subroutine
+    subroutine MPI_Scatterv_double(sendbuf, sendcounts, recvbuf, recvcount, root) &
+        bind(c,name='MPI_Scatterv_double')
+      import c_int, c_double
+      real(c_double), intent(in) :: sendbuf(*)
+      integer(c_int), intent(in) :: sendcounts(*), recvcount, root
+      real(c_double), intent(out) :: recvbuf(*)
+    end subroutine
+    subroutine MPI_Allreduce_sum_int(sendbuf, recvbuf) bind(c,name='MPI_Allreduce_sum_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf
+      integer(c_int), intent(out) :: recvbuf
+    end subroutine
+    subroutine MPI_Allreduce_sum_float(sendbuf, recvbuf) bind(c,name='MPI_Allreduce_sum_float')
+      import c_float
+      real(c_float), intent(in) :: sendbuf
+      real(c_float), intent(out) :: recvbuf
+    end subroutine
+    subroutine MPI_Allreduce_sum_double(sendbuf, recvbuf) bind(c,name='MPI_Allreduce_sum_double')
+      import c_double
+      real(c_double), intent(in) :: sendbuf
+      real(c_double), intent(out) :: recvbuf
+    end subroutine
+    subroutine MPI_Allreduce_max_int(sendbuf, recvbuf) bind(c,name='MPI_Allreduce_max_int')
+      import c_int
+      integer(c_int), intent(in) :: sendbuf
+      integer(c_int), intent(out) :: recvbuf
+    end subroutine
+    subroutine MPI_Allreduce_max_float(sendbuf, recvbuf) bind(c,name='MPI_Allreduce_max_float')
+      import c_float
+      real(c_float), intent(in) :: sendbuf
+      real(c_float), intent(out) :: recvbuf
+    end subroutine
+    subroutine MPI_Allreduce_max_double(sendbuf, recvbuf) bind(c,name='MPI_Allreduce_max_double')
+      import c_double
+      real(c_double), intent(in) :: sendbuf
+      real(c_double), intent(out) :: recvbuf
     end subroutine
   end interface
 
@@ -382,9 +432,9 @@ contains
     character(len=*), intent(inout) :: x
     integer, intent(in), optional :: root
     if (present(root)) then
-      call MPI_Bcast_char_vector (x, root-1)
+      call MPI_Bcast_char_vector (x, len(x), root-1)
     else
-      call MPI_Bcast_char_vector (x, 0)
+      call MPI_Bcast_char_vector (x, len(x), 0)
     endif
   end subroutine
 
@@ -394,11 +444,11 @@ contains
     integer, intent(in), optional :: root
     if (present(root)) then
       do j = 1, size(x)
-        call MPI_Bcast_char_vector (x(j), root-1)
+        call MPI_Bcast_char_vector (x(j), len(x), root-1)
       end do
     else
       do j = 1, size(x)
-        call MPI_Bcast_char_vector (x(j), 0)
+        call MPI_Bcast_char_vector (x(j), len(x), 0)
       end do
     endif
   end subroutine

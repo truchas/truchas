@@ -31,9 +31,9 @@ set(UTIL_FILES
          utilities/truchas_timing.F90
          utilities/utilities_module.F90
          utilities/var_vector_module.F90
-	 utilities/gmv/fgmvwrite.F90)
+         utilities/gmv/gmvwrite_c_binding.F90)
 
-set(UTIL_FPP_FLAGS 
+set(UTIL_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/utilities
 	${Truchas_FPP_FLAGS})
 
@@ -46,26 +46,18 @@ fortran_preprocess_files(UTIL_SOURCE_FILES
 set_source_files_properties(${UTIL_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}")
 
-# Add the C files 
+# Add the C files
 list(APPEND UTIL_SOURCE_FILES
             utilities/get_process_size.c
             utilities/make_directory.c
-            utilities/gmv/fgmvwrite_c.c
             utilities/gmv/gmvwrite.c)
-set(gmv_compile_flags "-I${Truchas_FCIface_INCLUDE_DIR} -I${TruchasExe_SOURCE_DIR}/utilities/gmv")	  
-set_source_files_properties(utilities/gmv/fgmvwrite_c.c PROPERTIES
-                            COMPILE_FLAGS ${gmv_compile_flags})
-set_source_files_properties(utilities/make_directory.c PROPERTIES
-                            COMPILE_FLAGS -I${Truchas_FCIface_INCLUDE_DIR})
 
-include(CheckFunctionExists)
-check_function_exists(getpid HAVE_GETPID)
-if (HAVE_GETPID)
+if(CMAKE_SYSTEM_NAME MATCHES Linux)
   set_source_files_properties(utilities/get_process_size.c PROPERTIES
-                              COMPILE_FLAGS -DLINUX)
-endif(HAVE_GETPID)			    
+                              COMPILE_DEFINITIONS LINUX)
+endif()			
 
-# Update the Truchas library file list and targets		       
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${UTIL_SOURCE_FILES})		       
+# Update the Truchas library file list and targets		
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${UTIL_SOURCE_FILES})		
 list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasUtilFiles)
 

@@ -302,7 +302,7 @@ contains
 
   subroutine calculate_vf (e, cpar, evf)
 
-    use chaparral
+    use chaparral_c_binding
     use re_encl_type
 
     type(encl), intent(in), target :: e
@@ -403,7 +403,7 @@ contains
     handle = VF_DefineEnclosure (trim(e%name), cpar%nonblocking, cpar%partial, cpar%asink, &
                                  npatches, global_ids, cpar%verbosity)
     call VF_DefineTopology (handle, GEOM_TYPE, nfacets, e%nnode, x, y, z, &
-                            c, global_ids, nrotations, xmirror, ymirror, zmirror, &
+                            c, 1, global_ids, nrotations, xmirror, ymirror, zmirror, &
                             cpar%bsp_depth, cpar%bsp_length, cpar%spatial_tol, cpar%verbosity)
     call VF_CalcHemicube (handle, cpar%hc_sub_divide, cpar%hc_resolution, cpar%hc_min_sep)
     call VF_SmoothMatrix (handle, cpar%smooth_wt, cpar%smooth_tol, cpar%smooth_max_iter, SYM_METHOD, cpar%verbosity)

@@ -65,9 +65,6 @@ contains
     use timing_tree
     use truchas_logging_services
     use string_utilities, only: i_to_c
-#ifndef SUPPORTS_NEWUNIT
-    use truchas_env, only: new_unit
-#endif
 
     character(*), intent(in)  :: infile
     character(*), intent(out) :: title
@@ -79,12 +76,7 @@ contains
 
     ! open input file
     if (p_info%IOP) then
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=lun,file=trim(infile),status='old',position='rewind',action='read',iostat=ios)
-#else
-      call new_unit (lun)
-      open(unit=lun,file=trim(infile),status='old',position='rewind',action='read',iostat=ios)
-#endif
     else
       lun = -1
     end if

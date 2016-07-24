@@ -1,8 +1,3 @@
-project(TruchasTools)
-
-message(STATUS "configuring the Truchas tools directory")
-
-
 # Post processing tools (probes, restart)
 add_subdirectory(post_processors)
 

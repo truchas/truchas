@@ -54,7 +54,7 @@ contains
 
   subroutine init (this, disc, mask, setids, params, stat, errmsg)
 
-    class(cell_grad), intent(out) :: this
+    class(cell_grad), intent(out), target :: this
     type(mfd_disc), intent(in), target :: disc
     logical, intent(in) :: mask(:)
     integer, intent(in) :: setids(:)

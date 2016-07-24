@@ -64,11 +64,7 @@ CONTAINS
     use pgslib_module,    only: PGSLib_GLOBAL_SUM, pgslib_collate
     use time_step_module, only: cycle_number, t
     use output_utilities, only: ANNOUNCE_FILE_WRITE
-#ifdef SUPPORTS_NEWUNIT
     use truchas_env, only: output_file_name
-#else
-    use truchas_env, only: output_file_name, new_unit
-#endif
  
     ! Local Variables
     integer  :: v, n, nicells_tot
@@ -78,12 +74,7 @@ CONTAINS
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
     
     if (p_info%IOP .and. .not.int_file_opened) then
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=int_lun,file=output_file_name('int'),form='unformatted',action='write',status='replace')
-#else
-      call new_unit (int_lun)
-      open(unit=int_lun,file=output_file_name('int'),form='unformatted',action='write',status='replace')
-#endif
       int_file_opened = .true.
     end if
 

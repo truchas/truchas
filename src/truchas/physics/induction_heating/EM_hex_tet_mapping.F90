@@ -51,11 +51,7 @@ contains
     use altmesh_input, only: grid_transfer_file
     use parameter_module, only: string_len
     use truchas_logging_services
-#ifdef SUPPORTS_NEWUNIT
     use truchas_env, only: output_dir
-#else
-    use truchas_env, only: output_dir, new_unit
-#endif
 
     type(gm_mesh), intent(in) :: hexmesh, tetmesh
     type(grid_int_vols), intent(out) :: gmd
@@ -71,12 +67,7 @@ contains
     inquire(file=grid_transfer_file,exist=file_exists)
     if (file_exists) then
       call TLS_info ('   Reading the hex-tet grid mapping data from ' // trim(grid_transfer_file))
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=lun,file=grid_transfer_file,action='read',position='rewind',form='unformatted',iostat=status)
-#else
-      call new_unit (lun)
-      open(lun,file=grid_transfer_file,action='read',position='rewind',form='unformatted',iostat=status)
-#endif
       if (status == 0) then
         call read_int_volumes (gmd, lun, status)
         close(lun)
@@ -103,12 +94,7 @@ contains
       call compute_int_volumes (hexmesh, tetmesh, gmd)
       call TLS_info ('   Writing the hex-tet grid mapping data to ' // trim(mapfile))
       mapfile = trim(output_dir) // trim(mapfile)
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=lun,file=trim(mapfile),action='write',position='rewind',form='unformatted',iostat=status)
-#else
-      call new_unit (lun)
-      open(lun,file=trim(mapfile),action='write',position='rewind',form='unformatted',iostat=status)
-#endif
       if (status == 0 ) then
         call write_int_volumes (gmd, lun)
         close(lun)

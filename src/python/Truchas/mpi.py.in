@@ -19,8 +19,8 @@ except ImportError:
 
 class MpiInterface(object):
 
-    def __init__(self,mpirun_exe='mpiexec',
-	              nproc_flag='-n',
+    def __init__(self,mpirun_exe='@MPIEXEC@',
+	              nproc_flag='@MPIEXEC_NUMPROC_FLAG@',
 		      mpirun_preflags=None, mpirun_postflags=None):
         
         self.mpirun_exe = mpirun_exe

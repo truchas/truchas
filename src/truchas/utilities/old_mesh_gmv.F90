@@ -47,7 +47,7 @@
 module old_mesh_gmv
 
   use kinds, only: r8
-  use fgmvwrite
+  use gmvwrite_c_binding
   use parallel_communication
   implicit none
   private

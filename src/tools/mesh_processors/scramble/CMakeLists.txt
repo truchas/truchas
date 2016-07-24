@@ -1,6 +1,4 @@
-project(TruchasToolsScramble)
-
-message(STATUS "configuring the Truchas scramble directory")
+project(TruchasToolsScramble Fortran)
 
 # --- CMake modules
 include(FortranPreprocessFiles)
@@ -28,10 +26,7 @@ fortran_preprocess_files(SCRAMBLE_SOURCE_FILES
 			 FPP_EXECUTABLE ${SCRAMBLE_PREPROCESSOR}
 			 FPP_FLAGS -I${TruchasToolsScramble_SOURCE_DIR}
 			 PROCESS_TARGET ProcessScrambleFiles)
-set(fc_flags -I${NETCDF_INCLUDE_DIR})
-build_whitespace_string(SCRAMBLE_COMPILE_FLAGS ${fc_flags})
-set_source_files_properties(${SCRAMBLE_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS ${SCRAMBLE_COMPILE_FLAGS})
+
 add_executable(scramble ${SCRAMBLE_SOURCE_FILES})
 add_dependencies(scramble ProcessScrambleFiles)
 target_link_libraries(scramble truchas ${Truchas_LINK_LIBS})

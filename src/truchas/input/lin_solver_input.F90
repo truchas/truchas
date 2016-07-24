@@ -846,29 +846,14 @@ CONTAINS
        Ubik%solver = solver_NONE
     case ('cg')
        Ubik%solver = solver_CG
-#ifndef LINUX
-       call Ubik_set_method (Ubik%control, Ubik_method_CG)
-#endif
     case ('gmres')
        Ubik%solver = solver_GMRES
-#ifndef LINUX
-       call Ubik_set_method (Ubik%control, Ubik_method_GMRES)
-#endif
     case ('fgmres')
        Ubik%solver = solver_FGMRES
-#ifndef LINUX
-       call Ubik_set_method (Ubik%control, Ubik_method_FGMRES)
-#endif
     case ('tfqmr')
        Ubik%solver = solver_TFQMR
-#ifndef LINUX
-       call Ubik_set_method (Ubik%control, Ubik_method_TFQMR)
-#endif
     case ('bcgstab')
        Ubik%solver = solver_BCGSTAB
-#ifndef LINUX
-       call Ubik_set_method (Ubik%control, Ubik_method_BCGSTAB)
-#endif
     case default
        call TLS_fatal ('SET_UBIK: Invalid solution method choice')
     end select

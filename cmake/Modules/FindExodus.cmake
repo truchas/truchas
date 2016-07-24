@@ -1,56 +1,54 @@
+# This module finds the Exodus library and header file directory.
+# EXODUS_FOUND is set to True if both are found and the following
+# variables are returned.
 #
-# Find the Exodus library and include directory.
-# Variables set by this find module:
-#
-#  EXODUS_FOUND        - true if exodus was found
-#  EXODUS_INCLUDE_DIRS - where to find exodusII.h
-#  EXODUS_LIBRARIES    - list of link libraries for exodus
+#  EXODUS_INCLUDE_DIRS - required include directories
+#  EXODUS_LIBRARIES    - required link libraries
 #  EXODUS_VERSION      - version of exodus found
 #
-# This module will first search the Exodus installation root specified
-# by the environment variable EXODUS_ROOT or the cmake variable 
-# EXODUS_INSTALL_PREFIX for the library and header file before searching
-# in the standards locations.
+# This module also defines the imported library target "exodus".  It is
+# generally enough to include "exodus" as a target link library; cmake
+# will automatically handle adding the appropriate compile include flags
+# and collection of link libraries.
 #
+# Set the variable CMAKE_PREFIX_PATH to provide a hint to the module for
+# where to find the library and header file.  This is searched before the
+# standard system locations.
+#
+# Find_package(NetCDF) should be run before using this module.
 
-# Search paths
-set(_exodus_search_paths
-    ${EXODUS_INSTALL_PREFIX}
-    ENV EXODUS_ROOT)
+#if(Exodus_FIND_QUIETLY)
+#  set(_find_netcdf_arg QUIET)
+#endif()
+#find_package(NetCDF ${_find_netcdf_arg})
+#unset(_find_netcdf_arg)
 
-# Locate the include directory
-find_path(EXODUS_INCLUDE_DIR
-          NAMES exodusII.h
-          HINTS ${_exodus_search_paths}
-          PATH_SUFFIXES include)
+find_path(EXODUS_INCLUDE_DIR exodusII.h)
+find_library(EXODUS_LIBRARY exoIIv2c)
 
-# Locate the library        
-find_library(EXODUS_LIBRARY
-             NAMES exoIIv2c
-             HINTS ${_exodus_search_paths}
-             PATH_SUFFIXES lib)
-
-# Identify the library version
-find_file(_exodus_h NAMES exodusII.h HINTS ${EXODUS_INCLUDE_DIR})
-if(_exodus_h)
-  file(STRINGS "${_exodus_h}" _ex_api_vers_nodot REGEX "^#define EX_API_VERS_NODOT")
-  string(REGEX REPLACE "[^0-9]" "" EXODUS_VERSION "${_ex_api_vers_nodot}")
-else()
-  unset(EXODUS_VERSION)
+# Identify the ExodusII API version (not exactly the library version)
+if(EXODUS_INCLUDE_DIR)
+  set(exodusii_h ${EXODUS_INCLUDE_DIR}/exodusII.h)
+  include(SearchHeaderFile)
+  search_header_file(${exodusii_h} "EX_API_VERS_NODOT" EXODUS_VERSION)
 endif()
 
 # Set EXODUS_FOUND to TRUE of the REQUIRED variables have been set.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Exodus
-                                  REQUIRED_VARS EXODUS_LIBRARY EXODUS_INCLUDE_DIR 
-                                  VERSION_VAR EXODUS_VERSION
-                                  HANDLE_COMPONENTS)
+                                  REQUIRED_VARS EXODUS_LIBRARY EXODUS_INCLUDE_DIR
+                                  VERSION_VAR EXODUS_VERSION)
+
 if(EXODUS_FOUND)
-  set(EXODUS_INCLUDE_DIRS ${EXODUS_INCLUDE_DIR})
-  set(EXODUS_LIBRARIES ${EXODUS_LIBRARY})
-  if(NETCDF_FOUND AND NETCDF_C_LIBRARIES)
-    list(APPEND EXODUS_LIBRARIES ${NETCDF_C_LIBRARIES})
-  else()
-    message(WARNING "EXODUS_LIBRARIES does not contain the NetCDF libraries")
+  set(EXODUS_INCLUDE_DIRS ${EXODUS_INCLUDE_DIR} ${NETCDF_C_INCLUDE_DIRS})
+  set(EXODUS_LIBRARIES ${EXODUS_LIBRARY} ${NETCDF_C_LIBRARIES})
+  list(REMOVE_DUPLICATES EXODUS_INCLUDE_DIRS)
+  mark_as_advanced(EXODUS_INCLUDE_DIR EXODUS_LIBRARY)
+  if(NOT TARGET exodus)
+    add_library(exodus UNKNOWN IMPORTED)
+    set_target_properties(exodus PROPERTIES
+        IMPORTED_LOCATION "${EXODUS_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${EXODUS_INCLUDE_DIRS}"
+        INTERFACE_LINK_LIBRARIES "${NETCDF_C_LIBRARIES}")
   endif()
 endif()

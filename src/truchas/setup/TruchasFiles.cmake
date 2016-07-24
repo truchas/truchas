@@ -55,7 +55,6 @@ list(APPEND SETUP_FILES ${SETUP_RESTART_FILES})
 
 # - scalars
 set(SETUP_SCALARS_FILES
-          setup/scalars/code_module.F90
           setup/scalars/constants_module.F90
           setup/scalars/cutoffs_module.F90
           setup/scalars/debug_control_data.F90
@@ -85,13 +84,8 @@ fortran_preprocess_files(SETUP_SOURCE_FILES
 
 include(BuildWhitespaceString)
 set(fc_flags -I${Danu_Fortran_MODULE_DIR})
-if(ENABLE_PGSLib)
-  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
-endif()
-if(ENABLE_UbikSolve)
-  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
-endif()
-list(APPEND fc_flags -I${NETCDF_INCLUDE_DIR})
+list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(SETUP_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${SETUP_SOURCE_FILES} PROPERTIES
                               COMPILE_FLAGS ${SETUP_COMPILE_FLAGS})

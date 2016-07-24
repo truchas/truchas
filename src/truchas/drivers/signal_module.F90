@@ -23,15 +23,14 @@ Module signal_module
   Public SignalSet, SignalInquire
 
   Interface
-     Subroutine SignalSet ()
+     Subroutine SignalSet() bind(c, name='signalset')
      End Subroutine SignalSet
   End Interface
 
   Interface
-     Subroutine SignalInquire (hup, usr2, urg)
-       Integer :: hup
-       Integer :: usr2
-       Integer :: urg
+     Subroutine SignalInquire(hup, usr2, urg) bind(c, name='signalinquire')
+       use,intrinsic :: iso_c_binding, only: c_int
+       Integer(c_int), intent(out) :: hup, usr2, urg
      End Subroutine SignalInquire
   End Interface
 

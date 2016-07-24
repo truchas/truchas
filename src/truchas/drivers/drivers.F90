@@ -21,7 +21,6 @@ MODULE DRIVERS
   !           CYCLE_INIT
   !           PROGRAM_SPECIFICATIONS
   !           PROCESS_COMMAND_LINE
-  !           PREPROCESSOR_DEFS
   !
   ! Author(s): Bryan Lally (lally@lanl.gov)
   !            Douglas B. Kothe (dbk@lanl.gov)
@@ -111,9 +110,6 @@ CONTAINS
     character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
 
     !---------------------------------------------------------------------------
-
-    ! assign preprocessor definitions to global variables
-    call PREPROCESSOR_DEFS ()
 
     ! initialize parallelism
     call PARALLEL_INIT (argv)
@@ -398,28 +394,31 @@ call hijack_truchas ()
     !
     !   print build time and run time information
     !---------------------------------------------------------------------------
-    use code_module,          only: code_name, code_version, libraries,                      &
-                                    build_date, build_architecture, build_flags, build_host, &
-                                    run_architecture, run_host
     use parallel_info_module, only: p_info
     use utilities_module,     only: TIMESTAMP
     use truchas_logging_services
     use string_utilities, only: i_to_c
 
-    character(LEN=32)  :: run_date
+    character(LEN=32)  :: run_date, run_host, run_architecture
+
+    interface
+      subroutine getrunhostinfo(arch, host) bind(c, name='getrunhostinfo')
+        use,intrinsic :: iso_c_binding, only: c_char
+        character(kind=c_char), intent(out) :: arch(*), host(*)
+      end subroutine
+    end interface
 
     run_architecture = ""
     run_host         = ""
     call getrunhostinfo (run_architecture, run_host)
     call TIMESTAMP (run_date)
 
-    call TLS_info ('   code:                ' // code_name)
-    call TLS_info ('   version:             ' // code_version)
-    call TLS_info ('   libraries:           ' // libraries)
-    call TLS_info ('   build architecture:  ' // build_architecture)
-    call TLS_info ('   build date/time:     ' // build_date)
-    call TLS_info ('   build flags:         ' // build_flags)
-    call TLS_info ('   build host:          ' // build_host)
+    call TLS_info ('   code:                ' // 'Truchas')
+    call TLS_info ('   version:             ' // VERSION)
+    call TLS_info ('   build architecture:  ' // ARCHITECTURE)
+    call TLS_info ('   build date/time:     ' // BUILD_DATE)
+    call TLS_info ('   build flags:         ' // COMPILER_FLAGS)
+    call TLS_info ('   build host:          ' // HOST_NAME)
     call TLS_info ('   run architecture:    ' // run_architecture)
     call TLS_info ('   run host:            ' // run_host)
     call TLS_info ('   run date/time:       ' // run_date(5:22))
@@ -824,36 +823,6 @@ call hijack_truchas ()
     end subroutine TLS_warn
 
   END SUBROUTINE PROCESS_COMMAND_LINE
-
-  SUBROUTINE PREPROCESSOR_DEFS ()
-    !---------------------------------------------------------------------------
-    ! Purpose:
-    !
-    !    get preprocessor definitions into global variables
-    !
-    !    we need this before we can punt!
-    !---------------------------------------------------------------------------
-    use code_module, only: code_name, code_version, libraries,                      &
-                           build_date, build_architecture, build_flags, build_host
-
-    !---------------------------------------------------------------------------
-
-    ! Get the preprocessor definitions into variables.
-    code_name           = CODE_NAME
-    code_version        = VERSION
-    libraries           = UBIKSOLVE
-    libraries           = TRIM(ADJUSTL(libraries)) // ', ' // PGSLIB
-#ifdef USE_CHACO
-    libraries           = TRIM(ADJUSTL(libraries)) // ', ' // CHACO
-#endif
-    build_date          = BUILD_DATE
-    build_architecture  = &
-      ARCHITECTURE
-    build_flags         = FFLAGS_TRIMMED_1 // &
-                          FFLAGS_TRIMMED_2
-    build_host          = HOST_NAME
-
-  END SUBROUTINE PREPROCESSOR_DEFS
 
 
   SUBROUTINE CYCLE_INIT()

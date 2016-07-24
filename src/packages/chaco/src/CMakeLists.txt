@@ -1,6 +1,4 @@
-project(ChacoSRC)
-
-message(STATUS "Entering the src directory")
+project(ChacoSRC C)
 
 # --- Add include directories
 include_directories(${ChacoSRC_SOURCE_DIR}/main)

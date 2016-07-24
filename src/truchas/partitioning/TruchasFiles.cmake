@@ -13,13 +13,9 @@ set(PART_TARGET_NAME ProcessTruchasPartitioningFiles)
 set(PART_FILES
         partitioning/graph_partitioner_class.F90
         partitioning/graph_partitioner_factory.F90
-        partitioning/block_partitioner_type.F90)
-
-if(ENABLE_Chaco)
-  list(APPEND PART_FILES
+        partitioning/block_partitioner_type.F90
         partitioning/chaco_c_binding.F90
         partitioning/chaco_partitioner_type.F90)
-endif()
 
 set(PART_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities
@@ -34,8 +30,8 @@ fortran_preprocess_files(PART_SOURCE_FILES
 
 # Define compile flags
 include(BuildWhitespaceString)
-set(part_source_flags -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR} -I${PETACA_MODULE_DIR})
-if(Fortran_COMPILER_IS_INTEL)
+set(part_source_flags -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR})
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND part_source_flags "-assume realloc_lhs")
 endif()
 

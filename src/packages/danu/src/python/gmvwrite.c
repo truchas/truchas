@@ -23,9 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#if HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #include <math.h>
 
 #define FLOAT32 4

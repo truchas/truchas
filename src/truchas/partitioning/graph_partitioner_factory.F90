@@ -47,9 +47,7 @@ contains
   subroutine alloc_graph_partitioner (this, params)
 
     use block_partitioner_type
-#ifdef USE_CHACO
     use chaco_partitioner_type
-#endif
     use truchas_logging_services
     use string_utilities, only: raise_case
 
@@ -65,11 +63,7 @@ contains
     case ('BLOCK')
       allocate(this, source=block_partitioner())
     case ('CHACO')
-#ifdef USE_CHACO
       allocate(this, source=chaco_partitioner())
-#else
-      call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: chaco partitioning not available')
-#endif
     case default
       call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: unknown "partitioner": ' // partitioner)
     end select

@@ -1,4 +1,4 @@
-project(ChaparralVF)
+project(ChaparralVF C)
 
 # --- Include Directories
 if (ENABLE_MPI)

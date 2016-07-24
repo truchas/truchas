@@ -809,7 +809,7 @@ contains
 !FIXME -- REWRITE TO OPERATE ON A UNSTR_MESH TYPE MESH
 !  subroutine write_mesh_surface (file, mesh, faces, efaces)
 !
-!    use fgmvwrite
+!    use gmvwrite_c_binding
 !    use parallel_communication
 !    use index_partitioning
 !    use unstr_mesh_type

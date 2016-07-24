@@ -1,7 +1,4 @@
-project(PGSLibMpi)
-
-message(STATUS "Configuring directory par-src")
-
+project(PGSLibMpi C)
 
 # --- Include paths
 

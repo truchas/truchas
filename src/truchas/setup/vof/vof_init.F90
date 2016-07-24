@@ -1071,10 +1071,6 @@ contains
 
    subroutine add_cell_to_gmv_file (vertices)
 
-#ifndef SUPPORTS_NEWUNIT
-      use truchas_env, only: new_unit
-
-#endif
       ! arguments
       type (vertex_info), dimension(nvc), intent(in) :: vertices
 
@@ -1087,12 +1083,7 @@ contains
       !-------------------------------------------------------------------------
 
       if (first_time) then
-#ifdef SUPPORTS_NEWUNIT
          open (newunit=lun, file='gmv.data')
-#else
-         call new_unit (lun)
-         open (lun, file='gmv.data')
-#endif
          first_time = .false.
          n = 1
       end if

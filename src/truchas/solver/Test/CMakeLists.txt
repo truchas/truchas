@@ -1,4 +1,4 @@
-project(HyprePCGTypeTest)
+project(HyprePCGTypeTest Fortran)
 
 include(CTest)
 

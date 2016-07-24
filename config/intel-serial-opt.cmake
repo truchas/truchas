@@ -1,21 +1,11 @@
-##############################################################################
-#                                                                             
-# Truchas build configuration: Intel compilers, serial, optimized                                                 
-#                                                                             
-##############################################################################
+# Generic Linux with the Intel Compilers
 
-# Compilers
-set(CMAKE_C_COMPILER icc CACHE STRING "C Compiler")
-set(CMAKE_CXX_COMPILER icpc CACHE STRING "C++ Compiler")
-set(CMAKE_Fortran_COMPILER ifort CACHE STRING "Fortran Compiler")
-
-# Compiler flags.  The C/C++ flags default to acceptable CMake-defined
-# built-ins that depend on the compiler ID and build type.  Not so for
-# Fortran Flags -- we must specify them (or get none).
-set(CMAKE_Fortran_FLAGS "-O -u" CACHE STRING "Fortran compile flags")
-
-# Optimized build
+set(ENABLE_MPI NO CACHE BOOL "Parallel Truchas")
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
 
-# Serial executable
-set(ENABLE_MPI False CACHE BOOL "MPI build control flag")
+set(CMAKE_C_COMPILER icc CACHE STRING "C Compiler")
+set(CMAKE_Fortran_COMPILER ifort CACHE STRING "Fortran Compiler")
+
+# Additional flags to the default CMAKE_<lang>_FLAGS_<build_type> flags
+set(CMAKE_C_FLAGS "-traceback" CACHE STRING "C compile flags")
+set(CMAKE_Fortran_FLAGS "-u" CACHE STRING "Fortran compile flags")

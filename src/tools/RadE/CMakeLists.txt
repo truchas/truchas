@@ -1,6 +1,4 @@
-project(TruchasToolsRade)
-
-message(STATUS "configuring the Truchas RadE directory")
+project(TruchasToolsRade C Fortran)
 
 # --- CMake modules
 include(FortranPreprocessFiles)
@@ -16,13 +14,8 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 # Truchas module directory
 include_directories(${Truchas_MODULE_DIR})
 
-# NETCDF
-include_directories(${NETCDF_INCLUDE_DIR})
-
 # Chaparral
-if(ENABLE_Chaparral)
-  include_directories(${ChaparralVF_SOURCE_DIR})
-endif()
+include_directories(${ChaparralVF_SOURCE_DIR})
 
 # MPI
 if ( ENABLE_MPI )
@@ -45,7 +38,7 @@ build_whitespace_string(fpp_flags ${fpp_flags_list})
 set(LIBRE_FORTRAN_FILES
           scl.F90
 	  f90_assert.F90
-	  chaparral.F90
+	  chaparral_c_binding.F90
           re_io.F90
 	  re_utilities.F90
 	  re_encl_type.F90
@@ -60,14 +53,12 @@ fortran_preprocess_files(LIBRARY_RADE_FILES
 			 FPP_FLAGS ${fpp_flags_list}
 			 PROCESS_TARGET ProcessRadeFiles)
 list(APPEND LIBRARY_RADE_FILES
-            chaparral_f77.c
+            chaparral_ext.c
 	    scl_f77.c)
-set_source_files_properties(chaparral_f77.c scl_f77.c PROPERTIES
-                            COMPILE_FLAGS -I${Truchas_FCIface_INCLUDE_DIR})
                             
 add_library(rade ${LIBRARY_RADE_FILES})
-add_dependencies(rade ProcessRadeFiles)
-target_link_libraries(rade truchas ${Truchas_LINK_LIBS})
+add_dependencies(rade ProcessRadeFiles vflib)
+target_link_libraries(rade truchas ${Truchas_LINK_LIBS} vflib)
 
 # --- cmpre binary
 fortran_preprocess_files(CMPRE_SOURCE_FILES

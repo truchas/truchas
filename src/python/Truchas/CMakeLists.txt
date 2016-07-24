@@ -1,6 +1,4 @@
-project(TruchasHarness)
-
-message(STATUS "configuring the Truchas Python harness directory")
+project(TruchasHarness NONE)
 
 # --- Variable (list) to hold all the install files
 set(TruchasHarness_INSTALL_FILES)

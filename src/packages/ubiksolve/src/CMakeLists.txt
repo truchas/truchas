@@ -1,6 +1,4 @@
-project(UbikSolveSource)
-
-message(STATUS "Configuring directory src")
+project(UbikSolveSource Fortran)
 
 include(FortranPreprocessFiles)
 

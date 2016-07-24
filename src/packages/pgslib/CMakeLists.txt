@@ -19,18 +19,8 @@ set(PGSLib_VERSION ${PGSLib_MAJOR_VERSION}.${PGSLib_MINOR_VERSION}.${PGSLib_PATC
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PGSLib_SOURCE_DIR}")
 
 # Create all the Fortran module files in a directory at the root build directory
-set(PGSLib_MODULE_DIR ${PGSLib_BINARY_DIR}/include)
-global_set(PGSLib_MODULE_DIR ${PGSLib_MODULE_DIR})
+set(PGSLib_MODULE_DIR ${PGSLib_BINARY_DIR}/include CACHE INTERNAL "")
 set(CMAKE_Fortran_MODULE_DIRECTORY ${PGSLib_MODULE_DIR})
-
-# ---------------------------------------------------------------------------- #
-# Compiler flags and definitions
-# ---------------------------------------------------------------------------- #
-
-#if (CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG)
-#  set(_tmp_flag_str ${CMAKE_Fortran_FLAGS})
-#  string(REPLACE "-C=all" "" CMAKE_Fortran_FLAGS "${_tmp_flag_str}")
-#endif(CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG)
 
 # ---------------------------------------------------------------------------- #
 # Preprocessor definitions 
