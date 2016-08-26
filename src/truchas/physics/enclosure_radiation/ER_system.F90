@@ -176,7 +176,7 @@ contains
  !! method.
  !!
  !! The Chebyshev iteration parameters c and d should define a family of
- !! ellipses in the right-hand plane with foci d±c that contain the spectrum
+ !! ellipses in the right-hand plane with foci dÂ±c that contain the spectrum
  !! of the system coefficient matrix.
  !!
  !! The radiosity system matrix has the form I - B.  The matrix B has real
