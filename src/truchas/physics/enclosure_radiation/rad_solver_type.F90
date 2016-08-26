@@ -237,7 +237,7 @@ contains
  !!
  !! (1) The Chebyshev iteration parameters c and d must be chosen so that the
  !! spectrum of the radiosity system matrix is enclosed by an ellipse in the
- !! right half plane from the family of ellipses with foci d±c.  Parameters
+ !! right half plane from the family of ellipses with foci dÂ±c.  Parameters
  !! producing the smallest such ellipse give optimal convergence.  Since
  !! the spectrum is contained in the interval (0,2), the degenerate ellipse
  !! with the min and max eigenvalues as foci is optimal; that is,
