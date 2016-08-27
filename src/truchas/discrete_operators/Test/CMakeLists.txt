@@ -1,4 +1,4 @@
-project(DiscOpTest)
+project(DiscOpTest Fortran)
 
 include(CTest)
 

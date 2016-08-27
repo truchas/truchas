@@ -32,20 +32,15 @@ fortran_preprocess_files(DRIVERS_SOURCE_FILES
 
 # Set compile flags		       
 include(BuildWhitespaceString)
-set(fc_flags -I${NETCDF_INCLUDE_DIR})
-list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR} -I${PETACA_MODULE_DIR})
-if(ENABLE_PGSLib)
-  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
-endif()
+set(fc_flags -I${Danu_Fortran_MODULE_DIR})
+list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
 build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${DRIVERS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
 
 # drivers.F90 requires extra flags
 list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
-if(ENABLE_UbikSolve)
-  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
-endif()
+list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${TruchasExe_BINARY_DIR}/drivers.f90
                             COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
@@ -54,9 +49,6 @@ set_source_files_properties(${TruchasExe_BINARY_DIR}/drivers.f90
 # Add the C source files
 set(DRIVERS_C_SOURCE_FILES drivers/runinfo.c drivers/signal.c)
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DRIVERS_C_SOURCE_FILES})
-set_source_files_properties(drivers/runinfo.c drivers/signal.c PROPERTIES
-                            COMPILE_FLAGS -I${Truchas_FCIface_INCLUDE_DIR})
-                           
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DRIVERS_SOURCE_FILES})		       
 list(APPEND Truchas_PROCESS_TARGETS ${DRIVERS_TARGET_NAME})
 

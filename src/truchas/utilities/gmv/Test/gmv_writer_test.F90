@@ -8,18 +8,19 @@
 
 program gmv_writer_test
 
-#ifdef NAG
-  use f90_unix_proc, only: system, exit
+#ifdef NAGFOR
+  use,intrinsic :: f90_unix_proc, only: system, exit
 #endif
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mesh_manager
-  use gmv_writer
+  use unstr_mesh_type
+  use unstr_mesh_gmv
   use parallel_communication
   implicit none
 
-  integer, parameter :: r8 = selected_real_kind(10,50)  ! 8-byte IEEE float
   integer :: status, j
   
-  type(dist_mesh), pointer :: mesh
+  type(unstr_mesh), pointer :: mesh
   real(kind=r8), allocatable :: u(:)
   real(kind=r8) :: xc(3)
   
@@ -29,7 +30,7 @@ program gmv_writer_test
   call read_mesh_namelists (10)
   call init_mesh_manager ()
   
-  mesh => named_mesh_ptr('mesh1')
+  mesh => unstr_mesh_ptr('mesh1')
   
   allocate(u(mesh%ncell))
   do j = 1, mesh%ncell

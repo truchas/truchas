@@ -239,7 +239,7 @@ class TruchasMpiBinary(TruchasBinary):
     except:
       raise
     else:
-      status = mpi.exit_code or self._exit_from_text()
+      status = mpi.exit_code #or self._exit_from_text()
       if status != 0:
         errmess='Non-zero exit code returned ' + str(status)
         raise TruchasRuntimeError(errmess)
@@ -276,7 +276,7 @@ class TruchasSerialBinary(TruchasBinary):
           num_kills=num_kills+1
         if pipe.poll() == None and num_kills >= 100:
           print 'W A R N I N G!!!!!! Could not kill PID ' + str(pipe.pid)
-    exit_code=pipe.returncode or self._exit_from_text()
+    exit_code=pipe.returncode #or self._exit_from_text()
     if exit_code != 0:
       msg='Truchas returned non-zero exit status %i'%exit_code
       raise TruchasRuntimeError(msg)

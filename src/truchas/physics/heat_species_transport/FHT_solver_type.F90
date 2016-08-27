@@ -497,7 +497,7 @@ contains
   end subroutine gmv_write_field
   subroutine gmv_write_face_field (this, array, name)
     use unstr_mesh_gmv
-    use fgmvwrite
+    use gmvwrite_c_binding
     type(FHT_solver), intent(in) :: this
     real(r8), intent(in) :: array(:)
     character(*), intent(in) :: name

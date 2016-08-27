@@ -1,426 +1,236 @@
-# ############################################################################ #
-#                                                                              #
-# Truchas                                                                      #
-#                                                                              #
-# ############################################################################ #
-
-# ---------------------------------------------------------------------------- #
-# Set policy and CMake version requirements
-# ---------------------------------------------------------------------------- #
-cmake_minimum_required( VERSION 2.8.12 )
-
-# allow more human readable "if then else" constructs
-set( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS True )
-
-if("${CMAKE_PATCH_VERSION}" GREATER 3 )
-  cmake_policy(SET CMP0017 NEW)
-endif()
-
-# Disallow in-source builds
-if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
-  message(FATAL_ERROR "ERROR! Truchas does not allow in-source builds! "
-    "Please create a separate directory and configure Truchas there; for example:\n"
-    "  $ mkdir MY_BUILD\n"
-    "  $ cd MY_BUILD\n"
-    "  $ cmake [OPTIONS] .."
-    "\n"
-    "NOTE: You must first delete the newly created CMakeCache.txt file and "
-    "CMakeFiles directory under the source directory or you will not be able to "
-    "configure Truchas correctly!  For example:\n"
-    "  $ rm -r CMakeCache.txt CMakeFiles"
-    )
-endif()
+cmake_minimum_required(VERSION 3.5)
 
 # Location of project defined include and FindXXX.cmake files
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" 
-                      "${CMAKE_SOURCE_DIR}/cmake"
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
                       "${CMAKE_SOURCE_DIR}/cmake/Modules"
                       "${CMAKE_SOURCE_DIR}/cmake/Utils")
 
-# ---------------------------------------------------------------------------- #
-# Project definitions
-# ---------------------------------------------------------------------------- #
-project(Truchas C CXX Fortran)
+include(NoInSourceBuild)
 
-# Version
-set(Truchas_MAJOR_VERSION 3)
-set(Truchas_MINOR_VERSION 1)
-set(Truchas_PATCH_VERSION dev)
-set(Truchas_VERSION ${Truchas_MAJOR_VERSION}.${Truchas_MINOR_VERSION}.${Truchas_PATCH_VERSION})
+project(Truchas VERSION 3.1.0 LANGUAGES C Fortran)
 
-# Build date
-try_run(BUILD_DATE_FAILED BUILD_DATE_COMPILED
-        ${Truchas_BINARY_DIR} ${Truchas_SOURCE_DIR}/cmake/build_date.c
-        RUN_OUTPUT_VARIABLE Truchas_BUILD_DATE)
-
-if (BUILD_DATE_FAILED)
-  message(WARNING "Failed to determine the build date stamp")
-  if (NOT BUILD_DATE_COMPILED)
-    message(WARNING "Could not compile build_date.c")
-  endif()
-  set(Truchas_BUILD_DATE NOW)
+# Append a pre-release tag to the version if needed
+set(Truchas_PRERELEASE alpha)
+if(Truchas_PRERELEASE)
+  string(APPEND Truchas_VERSION -${Truchas_PRERELEASE})
 endif()
 
-# Build hostname
-try_run(HOSTNAME_FAILED HOSTNAME_COMPILED
-        ${Truchas_BINARY_DIR} ${Truchas_SOURCE_DIR}/cmake/get_hostname.c
-        RUN_OUTPUT_VARIABLE Truchas_HOSTNAME)
-
-if (HOSTNAME_FAILED)
-  message(WARNING "Failed to define hostname")
-  if(NOT HOSTNAME_COMPILED)
-    message(WARNING "Could not compile get_hostname.c")
-  endif()
-  set(Truchas_HOSTNAME ${CMAKE_HOST_SYSTEM_NAME}-generic)
+# Fix a few things that cmake gets wrong for the NAG compiler.
+if(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
+  set(CMAKE_Fortran_COMPILE_OPTIONS_PIE "-PIC")
+  include(NAGFortranCompilerVersion)
 endif()
 
 # Create all the Fortran module files in a directory at the root build directory
 set(Truchas_MODULE_DIR ${Truchas_BINARY_DIR}/modules)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${Truchas_MODULE_DIR})
 
-# Modules/Compiler/NAG-Fortran.cmake is missing this.
-if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
-  set(CMAKE_Fortran_COMPILE_OPTIONS_PIC "-PIC")
-endif()
-
-
-# ---------------------------------------------------------------------------- #
-# Global CMake Utilities 
-# ---------------------------------------------------------------------------- #
-
-# Useful print macro
-include(PrintVariable)
-
-# Set macros global_set, etc.
-include(SetMacros)
-
 # ---------------------------------------------------------------------------- #
 # Build Options 
 # ---------------------------------------------------------------------------- #
 
-# Build type default:Release (optimized)
-if ( NOT CMAKE_BUILD_TYPE )
-  message(STATUS "CMAKE_BUILD_TYPE not set. Will use default Release (optimized)")
-  set(CMAKE_BUILD_TYPE Release)
-endif()    
+# Validate a user-supplied value for CMAKE_BUILD_TYPE.
+if(CMAKE_BUILD_TYPE)
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UC)
+  if(NOT "${CMAKE_BUILD_TYPE_UC}" MATCHES "^(DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL)$")
+    message(FATAL_ERROR "CMAKE_BUILD_TYPE must be {Debug|Release|RelWithDebInfo|MinSizeRel}")
+  endif()
+endif()
 
 # Build with MPI
 option(ENABLE_MPI "Build the parallel (MPI) library" True)
-
-# Build with PGSLib
-option(ENABLE_PGSLib "Build with PGSLib support"  True)
-
-# Build with UbikSolve
-option(ENABLE_UbikSolve "Build with UbikSolve support"  True)
-
-# Build with Chaco
-option(ENABLE_Chaco "Build with Chaco support"  True)
-
-# Build with Chaparral
-option(ENABLE_Chaparral "Build with Chaparral support"  True)
 
 # Build with support for dynamic loading of user functions
 option(ENABLE_DYNAMIC_LOADING "Build with support for dynamic loading of user functions" True)
 
 # Build with PIC (position in code)
 option(WITH_PIC "Build with PIC support" True)
+if(WITH_PIC)
+  set(CMAKE_POSITION_INDEPENDENT_CODE True)
+endif()
 
 # Build shared libs
-option(ENABLE_SHARED "Build shared libraries" False)
-
-# Enable search for external packages
-option(ENABLE_ExternalSearch "Enable external (NetCDF,HDF5,etc.) search" True)
+option(ENABLE_SHARED "Build shared libraries" True)
+if(ENABLE_SHARED)
+  set(BUILD_SHARED_LIBS True)
+else()
+  set(BUILD_SHARED_LIBS False)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  set(CMAKE_EXE_LINKER_FLAGS "-static")
+endif()
 
 # Strip RPATH from installed binaries/libraries 
 option(ENABLE_INSTALL_RPATH "Use RPATH in installed binaries and libraries" True)
-
-# Test - need a swith here to enable testing
-enable_testing()
-
-# Set the BUILD_SHARED_LIBS variable
-if(ENABLE_SHARED)
-  set(BUILD_SHARED_LIBS True)
-endif()
-
-# Define the build id
-include(GetTruchasBuildId)
-get_truchas_build_id(Truchas_BUILD_ID)
-
-# ---------------------------------------------------------------------------- #
-# Fortran/C Interface 
-# ---------------------------------------------------------------------------- #
-include(FortranCInterface)
-
-# Create the FortranCInterface Header (name mangling)
-include(FortranCInterface)
-FortranCInterface_HEADER(FortranCInterface_names.h 
-                         MACRO_NAMESPACE TR_ROUTINE_)
-set(Truchas_FCIface_INCLUDE_DIR ${Truchas_BINARY_DIR})		       
-
-# Check the compatibility of the Fortran/C compilers
-# Test does fail when it shouldn't, hence QUIET
-FortranCInterface_VERIFY(QUIET)
-
-# Handle errors here
-if ( NOT FortranCInterface_GLOBAL_FOUND )
-  message(FATAL_ERROR "Could not find the global name-mangling for Fortran/C")
-endif(NOT FortranCInterface_GLOBAL_FOUND )
-
-
-# ---------------------------------------------------------------------------- #
-# Setting Some Useful Language Variables 
-# ---------------------------------------------------------------------------- #
-
-# Because I get tried typing CMAKE_<LANG>_COMPILER_ID MATHCHES blah
-# Set all to FALSE initially
-foreach ( id GNU G95 INTEL NAG PGI ABSOFT )
-  set(var_name Fortran_COMPILER_IS_${id})
-  set(${var_name} FALSE)
-endforeach()
-
-# Now set the correct variable to true
-string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}" uc_id)
-set(Fortran_COMPILER_IS_${uc_id} True)
-# ---------------------------------------------------------------------------- #
-# Configuration Tests 
-# ---------------------------------------------------------------------------- #
-
-# newunit
-try_compile(SUPPORTS_NEWUNIT
-            ${Truchas_BINARY_DIR}
-            ${Truchas_SOURCE_DIR}/cmake/newunit.f90)
-
-# PIC support
-if ( WITH_PIC )
-  include(CheckCCompilerFlag)
-  include(UpdateCompilerFlags)
-  set(test_pic_flags -fPIC -fpic -PIC -pic)
-  set(pic_flag pic_flag-NOTFOUND)
-  foreach(flag ${test_pic_flags})
-    set(res_var pic_flag_ctest${flag})
-    check_c_compiler_flag(${flag} ${res_var})
-    if ( ${${res_var}} )
-      set(pic_flag ${flag})
-      break()
-    endif(${${res_var}})
-  endforeach()
-
-  if(pic_flag)
-    message(STATUS "Adding ${pic_flag} to CMAKE_C_FLAGS")
-    update_compiler_flags(C FLAGS ${pic_flag})
-  else()
-    message(FATAL_ERROR "Could not determine the PIC flag for this C compiler. "
-                        "Tried: ${test_pic_flags} all failed")
-  endif()
-
-  include(CheckCXXCompilerFlag)
-  set(test_pic_flags -fPIC -fpic -PIC -pic)
-  set(pic_flag pic_flag-NOTFOUND)
-  foreach(flag ${test_pic_flags})
-    set(res_var pic_flag_cxxtest${flag})
-    check_cxx_compiler_flag(${flag} ${res_var})
-    if ( ${${res_var}} )
-      set(pic_flag ${flag})
-      break()
-    endif(${${res_var}})
-  endforeach()
-
-  if(pic_flag)
-    message(STATUS "Adding ${pic_flag} to CMAKE_CXX_FLAGS")
-    update_compiler_flags(CXX FLAGS ${pic_flag})
-  else()
-    message(FATAL_ERROR "Could not determine the PIC flag for this C++ compiler. "
-                        "Tried: ${test_pic_flags} all failed")
-  endif()
-
-  # CMake does not have equivalent CheckFortran*.cmake modules
-  # for now we'll hard code these flags by compiler type.
-  set(pic_flag pic_flag-NOTFOUND)
-  if(CMAKE_Fortran_COMPILE_OPTIONS_PIC)
-    set(pic_flag ${CMAKE_Fortran_COMPILE_OPTIONS_PIC})
-  else()
-    if (Fortran_COMPILER_IS_NAG)
-      set(pic_flag -PIC)
-    elseif(Fortran_COMPILER_IS_INTEL)
-      set(pic_flag -fpic)
-    else()
-      message(STATUS "PIC (position in code) compiler flag is not set for ${CMAKE_Fortran_COMPILER+ID}")
-    endif()
-  endif()
-
-  if(pic_flag)
-    message(STATUS "Adding ${pic_flag} to CMAKE_Fortran_FLAGS")
-    update_compiler_flags(Fortran FLAGS ${pic_flag})
-  else()
-    message(FATAL_ERROR "Could not determine the PIC flag for this Fortran compiler.")
-  endif()
-  
-endif()
 
 # ---------------------------------------------------------------------------- #
 # External Dependencies 
 # ---------------------------------------------------------------------------- #
 
 # MPI
-if (ENABLE_MPI)
-
-  # Attempt to find MPI without hints
-  find_package(MPI)
-
-  if ( NOT MPI_C_FOUND  OR NOT MPI_Fortran_FOUND)
-
-    # Notify the user that the default search failed 
-    message(STATUS "Initial MPI search failed")
-    if (MPI_ROOT)
-      message(STATUS "Search for MPI installation in ${MPI_ROOT}")
-    endif()
-
-    # First search failed, now look for mpicc in the usual places
-    find_program(MPI_C_COMPILER
-                 name mpicc
-		 HINTS ${MPI_ROOT} ENV MPI_ROOT ENV MPIROOT ENV MPICH_ROOT
-		 PATH_SUFFIXES bin)
-
-    # First search failed, now look for mpicc in the usual places
-    find_program(MPI_Fortran_COMPILER
-                 NAMES mpif90 mpif77
-		 HINTS ${MPI_ROOT} ENV MPI_ROOT ENV MPIROOT ENV MPICH_ROOT
-		 PATH_SUFFIXES bin)
-
-    # Attempt to locate the mpiexec command if the test suite is active
-    if (ENABLE_TESTS)
-      find_program(MPIEXEC
-                   NAMES mpiexec mpirun aprun poe
-	   	   HINTS ${MPI_ROOT} ENV MPI_ROOT ENV MPIROOT ENV MPICH_ROOT
-		   PATH_SUFFIXES bin)
-      if (NOT MPIEXEC_NUMPROC_FLAG)
-	set(MPIEXEC_NUMPROC_FLAG -n)
-      endif()
-
-    endif()
-
-    if (MPI_C_COMPILER OR MPI_Fortran_COMPILER)
-      message(STATUS "Setting MPI_C_COMPILER=${MPI_C_COMPILER} "
-	             " and MPI_Fortran_COMPILER=${MPI_Fortran_COMPILER} to find MPI")
-      find_package(MPI)
-      if (NOT MPI_C_FOUND)
-	message(WARNING "After setting MPI_C_COMPILER still can not locate MPI")
-      endif()
-    else()
-      message(WARNING "Can not locate a C wrapper for MPI could not repeat MPI search")
-    endif()
-
-    # And now die because we really can not find MPI
-    if (NOT MPI_C_FOUND)
-      message(FATAL_ERROR "Can not locate an MPI installation"
-                          "Either define an MPI installation with -D MPI_ROOT or"
-                          "Explicitly set -D MPI_C_INCLUDE_PATH and "
-			  "-D MPI_C_LIBRARIES to bypass this search")
-    endif()			
-
-  endif()  
-
+if(ENABLE_MPI)
+  find_package(MPI REQUIRED)
 endif()
 
-# Python
-find_package(Python)
-
-# NumPy - Numerical Python
+# Python and NumPy
+find_package(PythonInterp REQUIRED)
+set(_tmp "${CMAKE_FIND_LIBRARY_SUFFIXES}")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
+find_package(PythonLibs REQUIRED)
+set(CMAKE_FIND_LIBRARY_SUFFIXES "${_tmp}")
 find_package(NumPy)
 
-# LAPACK
+# BLAS and LAPACK -- these are not required
 find_package(LAPACK)
-
-# BLAS
 find_package(BLAS)
+
+# Rest are external dependencies that can be provided by the Truchas TPL build
+
+set(CMAKE_PREFIX_PATH ${TRUCHAS_TPL_DIR})
+
+# HYPRE library
+find_package(HYPRE 2.6.0 EXACT)
+if(HYPRE_FOUND)
+  if(ENABLE_MPI)
+    if(NOT HYPRE_IS_PARALLEL)
+      set(HYPRE_FOUND False)
+      message(STATUS "Require parallel HYPRE library but found unsuitable serial library")
+    endif()
+  else()
+    if(HYPRE_IS_PARALLEL)
+      set(HYPRE_FOUND False)
+      message(STATUS "Require serial HYPRE library but found unsuitable parallel library")
+    endif()
+  endif()
+endif()
+if(NOT HYPRE_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Hypre installation")
+endif()
+
+# HDF5 library
+if(ENABLE_MPI)
+  set(HDF5_PREFER_PARALLEL True)
+endif()
+find_package(HDF5 "1.8.8" COMPONENTS C HL)
+if(HDF5_FOUND)
+  if(ENABLE_MPI)
+    if(NOT HDF5_IS_PARALLEL)
+      set(HDF5_FOUND False)
+      message(STATUS "Require parallel HDF5 library but found unsuitable serial library")
+    endif()
+  else()
+    if(HDF5_IS_PARALLEL)
+      set(HDF5_FOUND False)
+      message(STATUS "Require serial HDF5 library but found unsuitable parallel library")
+    endif()
+  endif()
+endif()
+if(HDF5_FOUND)
+  add_library(hdf5 INTERFACE)
+  target_link_libraries(hdf5 INTERFACE ${HDF5_LIBRARIES})
+  target_include_directories(hdf5 INTERFACE ${HDF5_INCLUDE_DIRS})
+  target_compile_definitions(hdf5 INTERFACE ${HDF5_DEFINITIONS})
+else()
+  message(FATAL_ERROR "Could NOT find a suitable HDF5 installation")
+endif()
+
+# NetCDF library
+find_package(NetCDF "4.1.3" COMPONENTS Fortran)
+if(NETCDF_FOUND)
+  if(NOT NETCDF_HAS_NC4)
+    message(STATUS "Found unsuitable NetCDF without the required netcdf-4 feature")
+    set(NETCDF_FOUND False)
+  endif()
+endif()
+if(NOT NETCDF_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable NetCDF installation")
+endif()
+
+# ExodusII library
+find_package(Exodus "514")
+if(NOT EXODUS_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Exodus installation")
+endif()
+
+# Petaca library and its dependency libyajl
+find_package(PETACA)
+if(NOT PETACA_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
+endif()
+
+# SWIG program
+find_package(SWIG)
+if(SWIG_FOUND)
+  if(SWIG_VERSION VERSION_LESS "2" OR NOT (SWIG_VERSION VERSION_LESS "3"))
+    set(SWIG_FOUND FALSE)
+    message(STATUS "Could NOT find a suitable SWIG: version 2 is required")
+  endif()
+endif()
+if(NOT SWIG_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable swig executable")
+endif()
+
+# Test - need a swith here to enable testing
+enable_testing()
+
+# The value of SERIAL_COMMAND_PREFACE will preface the command line of serial
+# unit tests.  Normally this is empty, but in the Cray Linux environment.
+if(CRAY)
+  set(SERIAL_COMMAND_PREFACE ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1)
+else()
+  set(SERIAL_COMMAND_PREFACE)
+endif()
 
 # ---------------------------------------------------------------------------- #
 # Preprocessor definitions 
 # ---------------------------------------------------------------------------- #
 
 # Preprocessor - allow this to be a list to define global flags easily
-if ( NOT Truchas_PREPROCESSOR )
+if(NOT Truchas_PREPROCESSOR)
   set(Truchas_PREPROCESSOR cpp -traditional-cpp)
 endif()
 
 # Turn off assertions in Truchas Fortran code
-if ( ${CMAKE_BUILD_TYPE} STREQUAL "Release" )
-  list(APPEND Truchas_PREPROCESSOR -DNDEBUG)
+if(CMAKE_BUILD_TYPE)
+  if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+    list(APPEND Truchas_PREPROCESSOR -DNDEBUG)
+  endif()
 endif()
 
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "-D${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
-if ( Fortran_COMPILER_IS_NAG )
-  add_definitions(${Truchas_Compiler_Define})
-  list(APPEND Truchas_PREPROCESSOR 
-             ${Truchas_Compiler_Define}
-	     ${Truchas_Compiler_Define}_WORKAROUND)
-else()
-  add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
-  list(APPEND Truchas_PREPROCESSOR 
-              ${Truchas_Compiler_Define}
-              ${Truchas_Compiler_Define}_WORKAROUND)
-endif()
+add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
+list(APPEND Truchas_PREPROCESSOR 
+            ${Truchas_Compiler_Define}
+            ${Truchas_Compiler_Define}_WORKAROUND)
 
 # Specific compiler bug workarounds
-include (CMakeFortranCompilerVersion)
-if (Fortran_COMPILER_IS_INTEL)
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362026)
-  if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.0")
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.0")
     list(APPEND Truchas_PREPROCESSOR -DINTEL_INTEGER_SET_ICE)
   endif()
-  if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "14.0.3" AND
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "14.0.3" AND
       CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "15.0.2")
     list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362104)
   endif()
 endif()
 
-# Add USE_PGSLIB
-if (ENABLE_PGSLib)
-  list(APPEND Truchas_PREPROCESSOR -DUSE_PGSLIB)
-endif()
-
-# UbikSolve defines
-if (ENABLE_UbikSolve)
-  list(APPEND Truchas_PREPROCESSOR -DUSE_UBIKSOLVE)
-endif()
-
-# Chaco defines
-if (ENABLE_Chaco)
-  list(APPEND Truchas_PREPROCESSOR -DUSE_CHACO)
-endif()
-
-# Chaparral defines
-if (ENABLE_Chaparral)
-  list(APPEND Truchas_PREPROCESSOR -DCHAPARRAL_SUPPORT)
-endif()
-
-if (ENABLE_DYNAMIC_LOADING)
+if(ENABLE_DYNAMIC_LOADING)
   list(APPEND Truchas_PREPROCESSOR -DENABLE_DYNAMIC_LOADING)
 endif()
 
-# NEWUNIT support
-if (SUPPORTS_NEWUNIT)
-  list(APPEND Truchas_PREPROCESSOR -DSUPPORTS_NEWUNIT)
-endif()
-
-# Arch x86_64 flag hard code for now
-list(APPEND Truchas_PREPROCESSOR -DM64)
-
-# OS defines -- hard code for now
-list(APPEND Truchas_PREPROCESSOR -DLINUX)
-
 # More hardcoded defines - only used in drivers.f90 need to move
-list(APPEND Truchas_PREPROCESSOR -DCODE_NAME='DUMMY')
-list(APPEND Truchas_PREPROCESSOR -DUBIKSOLVE='UbikSolve')
-list(APPEND Truchas_PREPROCESSOR -DPGSLIB='PGSLib')
-list(APPEND Truchas_PREPROCESSOR -DCHACO='Chaco')
+string(TIMESTAMP Truchas_BUILD_DATE "%Y-%m-%d %H:%M:%S")
+site_name(Truchas_HOSTNAME)
 list(APPEND Truchas_PREPROCESSOR -DVERSION='${Truchas_VERSION}')
 list(APPEND Truchas_PREPROCESSOR -DBUILD_DATE='${Truchas_BUILD_DATE}')
 list(APPEND Truchas_PREPROCESSOR -DHOST_NAME='${Truchas_HOSTNAME}')
 list(APPEND Truchas_PREPROCESSOR -DARCHITECTURE='${CMAKE_SYSTEM_PROCESSOR}')
-list(APPEND Truchas_PREPROCESSOR -DFFLAGS_TRIMMED_1='${CMAKE_Fortran_FLAGS}')
-list(APPEND Truchas_PREPROCESSOR -DFFLAGS_TRIMMED_2='${CMAKE_Fortran_FLAGS_RELEASE}')
+if(CMAKE_BUILD_TYPE)
+  list(APPEND Truchas_PREPROCESSOR "-DCOMPILER_FLAGS='${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UC}}'")
+else()
+  list(APPEND Truchas_PREPROCESSOR -DCOMPILER_FLAGS='${CMAKE_Fortran_FLAGS}')
+endif()
 
 # Add any user defined preprocessor flags
 if (Truchas_FPP_FLAGS)
@@ -432,6 +242,10 @@ endif()
 # ---------------------------------------------------------------------------- #
 
 # Need the paths defined before adding src to the build
+
+# Define the build id
+include(GetTruchasBuildId)
+get_truchas_build_id(Truchas_BUILD_ID)
 
 # Default installation location is the Truchas_SOURCE_DIR
 set(Truchas_DFLT_INSTALL_PREFIX ${Truchas_SOURCE_DIR}/install/${Truchas_BUILD_ID})
@@ -466,11 +280,6 @@ if (NOT Truchas_CONFIG_INSTALL_DIR)
   set(Truchas_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/share/cmake/truchas)
 endif()
 
-# External project (netCDF, HDF5, HYPRE,etc.) install prefix
-if (NOT TruchasExternal_INSTALL_PREFIX)
-  set(TruchasExternal_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/external)
-endif()
-
 # ---------------------------------------------------------------------------- #
 # RPATH handling  (http://www.cmake.org/Wiki/CMake_RPATH_handling) 
 # ---------------------------------------------------------------------------- #
@@ -485,7 +294,7 @@ SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 # Library install directories
 set(Truchas_LIBRARY_INSTALL_DIRS
      ${Truchas_LIBRARY_INSTALL_DIR}
-     ${TruchasExternal_INSTALL_PREFIX}/lib)
+     ${TRUCHAS_TPL_DIR}/lib)
 
 # Add RPATH to binaries,libraries, *so, etc.   
 if (ENABLE_INSTALL_RPATH)
@@ -508,12 +317,7 @@ endif()
 # Source Directories 
 # ---------------------------------------------------------------------------- #
 
-# External Projects
-add_subdirectory(external)
-
-# Main source directory
 add_subdirectory(src)
-
 add_subdirectory(test)
 
 # ---------------------------------------------------------------------------- #
@@ -540,9 +344,9 @@ add_subdirectory(test)
 set(CPACK_PACKAGE_NAME truchas)
 
 # Version information
-set(CPACK_PACKAGE_VERSION_MAJOR "${Truchas_MAJOR_VERSION}")
-set(CPACK_PACKAGE_VERSION_MINOR "${Truchas_MINOR_VERSION}")
-set(CPACK_PACKAGE_VERSION_PATCH "${Truchas_PATCH_LEVEL}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${Truchas_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${Truchas_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${Truchas_VERSION_PATCH}")
 set(CPACK_PACKAGE_VERSION       "${Truchas_VERSION}")
 
 # Basic package information
@@ -574,216 +378,5 @@ set(CPACK_SOURCE_IGNORE_FILES
 # This will add a 'package' and 'package_source' targets
 include(CPack)
 
-
-# ---------------------------------------------------------------------------- #
-# Status 
-# ---------------------------------------------------------------------------- #
-
-# To print out the flags correctly need the upper case string
-if (CMAKE_BUILD_TYPE)
-  string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UC)
-endif()
-
-# Remove the ; for a nice print out
-foreach(i ${Truchas_PREPROCESSOR})
-  set(Truchas_PREPROCESSOR_STRING "${Truchas_PREPROCESSOR_STRING} ${i}")
-endforeach()
-
-# Status Report
-message(STATUS) 
-message(STATUS "-------------------------------------------------------") 
-message(STATUS)
-message(STATUS "Version: ${Truchas_VERSION}")
-message(STATUS)
-message(STATUS "Build identifier: ${Truchas_BUILD_ID}")
-message(STATUS)
-message(STATUS "Build date: ${Truchas_BUILD_DATE}")
-message(STATUS)
-message(STATUS "Installation prefix: ${CMAKE_INSTALL_PREFIX}")
-message(STATUS)
-if (CMAKE_BUILD_TYPE)
-message(STATUS "CMAKE_BUILD_TYPE:\t${CMAKE_BUILD_TYPE}")
-message(STATUS)
-endif(CMAKE_BUILD_TYPE)
-message(STATUS "Compiler Define Flag:\t${Truchas_Compiler_Define}")
-message(STATUS)
-message(STATUS "C Compiler")
-message(STATUS "\t${CMAKE_C_COMPILER}")
-message(STATUS "\tID:${CMAKE_C_COMPILER_ID}")
-message(STATUS "\tVERSION:${CMAKE_C_COMPILER_VERSION}")
-if (CMAKE_BUILD_TYPE_UC)
-  message(STATUS "\tCMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UC}\t"
-                      "=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
-endif()		    
-if (CMAKE_C_FLAGS)
-  message(STATUS "\tCMAKE_C_FLAGS\t"
-                      "=${CMAKE_C_FLAGS}")
-endif()	
-message(STATUS)
-message(STATUS "CXX Compiler")
-message(STATUS "\t${CMAKE_CXX_COMPILER}")
-message(STATUS "\tID:${CMAKE_CXX_COMPILER_ID}")
-message(STATUS "\tVERSION:${CMAKE_CXX_COMPILER_VERSION}")
-if (CMAKE_BUILD_TYPE_UC)
-  message(STATUS "\tCMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UC}\t"
-                      "=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
-endif()		    
-if (CMAKE_CXX_FLAGS)
-  message(STATUS "\tCMAKE_CXX_FLAGS\t"
-                      "=${CMAKE_CXX_FLAGS}")
-endif()	
-message(STATUS)
-message(STATUS "Fortran Compiler")
-message(STATUS "\t${CMAKE_Fortran_COMPILER}")
-message(STATUS "\tID:${CMAKE_Fortran_COMPILER_ID}")
-message(STATUS "\tVERSION:${CMAKE_Fortran_COMPILER_VERSION}")
-if (CMAKE_BUILD_TYPE_UC)
-  message(STATUS "\tCMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UC}\t"
-                      "=${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UC}}")
-endif()		    
-if (CMAKE_Fortran_FLAGS)
-  message(STATUS "\tCMAKE_Fortran_FLAGS\t"
-                      "=${CMAKE_Fortran_FLAGS}")
-endif()		
-message(STATUS)
-if(ENABLE_SHARED AND ENABLE_INSTALL_RPATH)
-   message(STATUS "Add install locations to RPATH enabled")
-   message(STATUS "\tCMAKE_INSTALL_RPATH\t=${CMAKE_INSTALL_RPATH}")
-   message(STATUS)
-endif()
-if(ENABLE_MPI)
-message(STATUS "MPI")
-message(STATUS "\tC include and libraries found: ${MPI_C_FOUND}")
-if(MPI_C_FOUND)
-message(STATUS "\tC Include path(s):${MPI_C_INCLUDE_PATH}")
-message(STATUS "\tC Libraries: ${MPI_C_LIBRARIES}")
-endif()
-message(STATUS "\tFortran libraries found: ${MPI_Fortran_FOUND}")
-if(MPI_C_FOUND)
-message(STATUS "\tFortran Libraries: ${MPI_Fortran_LIBRARIES}")
-endif()
-if(ENABLE_TESTS)
-message(STATUS "\tMPIEXEC: ${MPIEXEC}")
-message(STATUS "\tMPIEXEC_NUMPROC_FLAG: ${MPIEXEC_NUMPROC_FLAG}")
-endif()
-endif()
-message(STATUS)
-message(STATUS "Python")
-message(STATUS "\tPYTHON_VERSION=${PYTHON_VERSION}")
-message(STATUS "\tPYTHON_INCLUDE_DIRS=${PYTHON_INCLUDE_DIRS}")
-message(STATUS "\tPYTHON_LIBRARIES=${PYTHON_LIBRARIES}")
-message(STATUS)
-message(STATUS "NumPy")
-message(STATUS "\tNUMPY_VERSION=${NUMPY_VERSION}")
-message(STATUS "\tNUMPY_INCLUDE_DIRS=${NUMPY_INCLUDE_DIRS}")
-message(STATUS)
-message(STATUS "LAPACK")
-message(STATUS "\tLAPACK_FOUND=${LAPACK_FOUND}")
-message(STATUS "\tLAPACK_LINKER_FLAGS=${LAPACK_LINKER_FLAGS}")
-message(STATUS "\tLAPACK_LIBRARIES=${LAPACK_LIBRARIES}")
-message(STATUS)
-message(STATUS "BLAS")
-message(STATUS "\tBLAS_FOUND=${BLAS_FOUND}")
-message(STATUS "\tBLAS_LINKER_FLAGS=${BLAS_LINKER_FLAGS}")
-message(STATUS "\tBLAS_LIBRARIES=${BLAS_LIBRARIES}")
-message(STATUS)
-message(STATUS)
-message(STATUS "External Projects")
-message(STATUS)
-message(STATUS "Swig")
-if(NOT SWIG_BUILD_TARGET)
-  message(STATUS "\tSWIG_FOUND=${SWIG_FOUND}")
-  message(STATUS "\tSWIG_VERSION=${SWIG_VERSION}")
-  message(STATUS "\tSWIG_EXECUTABLE=${SWIG_EXECUTABLE}")
-else()
-  message(STATUS "\tAdded to the build")
-  message(STATUS "\tBuild target: ${SWIG_BUILD_TARGET}")
-  message(STATUS "\tInstall directory: ${TruchasExternal_INSTALL_PREFIX}")
-endif()  
-message(STATUS)
-message(STATUS "HYPRE")
-if (NOT HYPRE_BUILD_TARGET)
-  message(STATUS "\tHYPRE_FOUND=${HYPRE_FOUND}")
-  message(STATUS "\tHYPRE_VERSION=${HYPRE_VERSION}")
-  message(STATUS "\tHYPRE_IS_PARALLEL=${HYPRE_IS_PARALLEL}")
-  message(STATUS "\tHYPRE_INCLUDE_DIRS=${HYPRE_INCLUDE_DIRS}")
-  message(STATUS "\tHYPRE_LIBRARIES=${HYPRE_LIBRARIES}")
-else()
-  message(STATUS "\tAdded to the build")
-  message(STATUS "\tBuild target: ${HYPRE_BUILD_TARGET}")
-  message(STATUS "\tInstall directory: ${TruchasExternal_INSTALL_PREFIX}")
-endif()
-message(STATUS)
-message(STATUS "HDF5")
-if( NOT HDF5_BUILD_TARGET)
-  message(STATUS "\tHDF5_FOUND=${HDF5_FOUND}")
-  message(STATUS "\tHDF5_VERSION=${HDF5_VERSION}")
-  message(STATUS "\tHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}")
-  message(STATUS "\tHDF5_INCLUDE_DIRS=${HDF5_INCLUDE_DIRS}")
-  message(STATUS "\tHDF5_C_LIBRARIES=${HDF5_C_LIBRARIES}")
-else()  
-  message(STATUS "\tAdded to the build")
-  message(STATUS "\tBuild Target: ${HDF5_BUILD_TARGET}")
-  message(STATUS "\tInstall directory: ${TruchasExternal_INSTALL_PREFIX}")
-endif()  
-message(STATUS)
-message(STATUS "NETCDF")
-if(NOT NETCDF_BUILD_TARGET)
-  message(STATUS "\tNETCDF_FOUND=${NETCDF_FOUND}")
-  message(STATUS "\tNETCDF_VERSION=${NETCDF_VERSION}")
-  message(STATUS "\tNETCDF_INCLUDE_DIR=${NETCDF_INCLUDE_DIR}")
-  message(STATUS "\tNETCDF_INCLUDE_DIRS=${NETCDF_INCLUDE_DIRS}")
-  message(STATUS "\tNETCDF_Fortran_LIBRARIES=${NETCDF_Fortran_LIBRARIES}")
-else()  
-  message(STATUS "\tAdded to the build")
-  message(STATUS "\tBuild Target: ${NETCDF_BUILD_TARGET}")
-  message(STATUS "\tInstall directory: ${TruchasExternal_INSTALL_PREFIX}")
-endif()
-message(STATUS)
-message(STATUS "EXODUS")
-if(NOT EXODUS_BUILD_TARGET)
-  message(STATUS "\tEXODUS_FOUND=${EXODUS_FOUND}")
-  message(STATUS "\tEXODUS_VERSION=${EXODUS_VERSION}")
-  message(STATUS "\tEXODUS_INCLUDE_DIR=${EXODUS_INCLUDE_DIR}")
-  message(STATUS "\tEXODUS_INCLUDE_DIRS=${EXODUS_INCLUDE_DIRS}")
-  message(STATUS "\tEXODUS_LIBRARIES=${EXODUS_LIBRARIES}")
-else()  
-  message(STATUS "\tAdded to the build")
-  message(STATUS "\tBuild Target: ${EXODUS_BUILD_TARGET}")
-  message(STATUS "\tInstall directory: ${TruchasExternal_INSTALL_PREFIX}")
-endif()
-message(STATUS)
-message(STATUS "YAJL")
-if ( NOT YAJL_BUILD_TARGET )
-  message(STATUS "\tYAJL_FOUND=${YAJL_FOUND}")
-  message(STATUS "\tYAJL_VERSION=${YAJL_VERSION}")
-  message(STATUS "\tYAJL_INCLUDE_DIR=${YAJL_INCLUDE_DIR}")
-  message(STATUS "\tYAJL_LIBRARY_STATIC=${YAJL_LIBRARY_STATIC}")
-  message(STATUS "\tYAJL_LIBRARY=${YAJL_LIBRARY}")
-  message(STATUS "\tYAJL_LIBRARY_DIR=${YAJL_LIBRARY_DIR}")
-else()  
-  message(STATUS "\tAdded to the build")
-  message(STATUS "\tBuild Target: ${YAJL_BUILD_TARGET}")
-  message(STATUS "\tInstall directory: ${TruchasExternal_INSTALL_PREFIX}")
-endif()
-message(STATUS)
-message(STATUS "Petaca")
-if ( NOT PETACA_BUILD_TARGET )
-  message(STATUS "\tPETACA_FOUND=${PETACA_FOUND}")
-  message(STATUS "\tPETACA_VERSION=${PETACA_VERSION}")
-  message(STATUS "\tPETACA_MODULE_DIR=${PETACA_MODULE_DIR}")
-  message(STATUS "\tPETACA_INCLUDE_DIRS=${PETACA_INCLUDE_DIRS}")
-  message(STATUS "\tPETACA_LIBRARY=${PETACA_LIBRARY}")
-  message(STATUS "\tPETACA_LIBRARIES=${PETACA_LIBRARIES}")
-else()  
-  message(STATUS "\tAdded to the build")
-  message(STATUS "\tBuild Target: ${PETACA_BUILD_TARGET}")
-  message(STATUS "\tInstall directory: ${TruchasExternal_INSTALL_PREFIX}")
-endif()
-
-message(STATUS)
-message(STATUS)
-message(STATUS "Preprocessor Command:${Truchas_PREPROCESSOR_STRING}")
-message(STATUS "-------------------------------------------------------") 
-
-
+# Print a summary of the build configuration
+include(configuration_summary)

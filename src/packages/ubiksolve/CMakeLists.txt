@@ -20,8 +20,7 @@ set(UbikSolve_VERSION ${UbikSolve_MAJOR_VERSION}.${UbikSolve_MINOR_VERSION}.${Ub
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${UbikSolve_SOURCE_DIR}")
 
 # Create all the Fortran module files in a directory at the root build directory
-set(UbikSolve_MODULE_DIR ${UbikSolve_BINARY_DIR}/modules)
-global_set(UbikSolve_MODULE_DIR ${UbikSolve_BINARY_DIR}/modules)
+set(UbikSolve_MODULE_DIR ${UbikSolve_BINARY_DIR}/modules CACHE INTERNAL "")
 set(CMAKE_Fortran_MODULE_DIRECTORY ${UbikSolve_MODULE_DIR})
 
 
@@ -49,10 +48,10 @@ endif()
 # Compiler Flags and Definitions 
 # ---------------------------------------------------------------------------- #
 
-if ( CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG )
+if(CMAKE_Fortran_FLAGS AND CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   set(_tmp_flag_str ${CMAKE_Fortran_FLAGS})
   string(REPLACE "-C=all" "" CMAKE_Fortran_FLAGS ${_tmp_flag_str})
-endif(CMAKE_Fortran_FLAGS AND Fortran_COMPILER_IS_NAG)
+endif()
 
 # ---------------------------------------------------------------------------- #
 # Preprocessor definitions 

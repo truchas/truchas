@@ -265,22 +265,13 @@ module truchas_logging_services
 contains
 
   subroutine TLS_initialize
-#ifdef SUPPORTS_NEWUNIT
     use truchas_env, only: output_file_name
-#else
-    use truchas_env, only: output_file_name, new_unit
-#endif
     use,intrinsic :: iso_fortran_env, only: output_unit
     !! Initialize the devices the log messages will be written to.
     if (is_IOP) then
       allocate(log_unit(2))
       log_unit(1) = output_unit ! pre-connected output unit (stdout)
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=log_unit(2), file=output_file_name('log'))
-#else
-      call new_unit (log_unit(2))
-      open(unit=log_unit(2), file=output_file_name('log'))
-#endif
     end if
   end subroutine TLS_initialize
 
@@ -531,9 +522,6 @@ contains
   end subroutine TLS_get_debug_unit
 
   subroutine open_debug_file
-#ifndef SUPPORTS_NEWUNIT
-    use truchas_env, only: new_unit
-#endif
     use parallel_communication, only: nPE, this_PE
     use string_utilities, only: i_to_c
     character(16) :: string
@@ -544,13 +532,7 @@ contains
       n = len_trim(string)
       write(string,'("(a,i",i0,".",i0,")")') n, n
       write(dbg_file,string) 'debug.', this_PE
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=dbg_unit,file=trim(dbg_file),action='write',status='replace',iostat=ios)
-#else
-      call new_unit (dbg_unit)
-      if (dbg_unit == -1) call TLS_panic ('TLS_DEBUG: unable to acquire I/O unit for opening debug file')
-      open(unit=dbg_unit,file=trim(dbg_file),action='write',status='replace',iostat=ios)
-#endif
       if (ios /= 0) call TLS_panic ('TLS_DEBUG: error opening file "' // trim(dbg_file) // &
                                     '": iostat=' // i_to_c(ios))
     end if
@@ -558,9 +540,6 @@ contains
     
 
   integer function TLS_debug_unit () result (unit)
-#ifndef SUPPORTS_NEWUNIT
-    use truchas_env, only: new_unit
-#endif
     use parallel_communication, only: nPE, this_PE
     use string_utilities, only: i_to_c
     character(16) :: string
@@ -571,13 +550,7 @@ contains
       n = len_trim(string)
       write(string,'("(a,i",i0,".",i0,")")') n, n
       write(dbg_file,string) 'debug.', this_PE
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=dbg_unit,file=trim(dbg_file),action='write',status='replace',iostat=ios)
-#else
-      call new_unit (dbg_unit)
-      if (dbg_unit == -1) call TLS_panic ('TLS_DEBUG: unable to acquire I/O unit for opening debug file')
-      open(unit=dbg_unit,file=trim(dbg_file),action='write',status='replace',iostat=ios)
-#endif
       if (ios /= 0) call TLS_panic ('TLS_DEBUG: error opening file "' // trim(dbg_file) // &
                                     '": iostat=' // i_to_c(ios))
     end if

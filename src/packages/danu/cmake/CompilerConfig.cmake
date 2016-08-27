@@ -43,30 +43,30 @@ endif()
 # ---------------------------------------------------------------------------- #
 if(ENABLE_Fortran)
 
-  include(FortranCInterface)
-
-  option(ENABLE_FortranCIface_Check ON "Check the Fortran/C interface")
-  if ( ENABLE_FortranCIface_Check)
-    FortranCInterface_VERIFY()
-  endif()
+#  include(FortranCInterface)
+#
+#  option(ENABLE_FortranCIface_Check ON "Check the Fortran/C interface")
+#  if ( ENABLE_FortranCIface_Check)
+#    FortranCInterface_VERIFY()
+#  endif()
 
   add_definitions(-DENABLE_FORTRAN)
   include_directories("${Danu_BINARY_DIR}/src")
 
-  # Test the iso_c_binding support
-  message(STATUS "Test ${CMAKE_Fortran_COMPILER} for iso_c_binding support")
-  set(test_fort_code "${Danu_SOURCE_DIR}/cmake/comp_tests/iso_check.f90")
-  try_run(run_result Fortran_COMPILER_SUPPORTS_ISO_C_BINDING
-          ${Danu_BINARY_DIR}  ${test_fort_code}
-          OUTPUT_VARIABLE out_result)
-  if(Fortran_COMPILER_SUPPORTS_ISO_C_BINDING)
-    message(STATUS "${CMAKE_Fortran_COMPILER} supports iso_c_binding")
-  else()  
-    message(ERROR "Output from compile test=${out_result}")
-    message(FATAL_ERROR "Fortran interfaces depend on iso_c_binding."
-                        " ${CMAKE_Fortran_COMPILER} does not appear"
-			" to support this module")
-  endif()		      
+#  # Test the iso_c_binding support
+#  message(STATUS "Test ${CMAKE_Fortran_COMPILER} for iso_c_binding support")
+#  set(test_fort_code "${Danu_SOURCE_DIR}/cmake/comp_tests/iso_check.f90")
+#  try_run(run_result Fortran_COMPILER_SUPPORTS_ISO_C_BINDING
+#          ${Danu_BINARY_DIR}  ${test_fort_code}
+#          OUTPUT_VARIABLE out_result)
+#  if(Fortran_COMPILER_SUPPORTS_ISO_C_BINDING)
+#    message(STATUS "${CMAKE_Fortran_COMPILER} supports iso_c_binding")
+#  else()  
+#    message(ERROR "Output from compile test=${out_result}")
+#    message(FATAL_ERROR "Fortran interfaces depend on iso_c_binding."
+#                        " ${CMAKE_Fortran_COMPILER} does not appear"
+#			" to support this module")
+#  endif()		      
 
 endif()
 
@@ -75,30 +75,30 @@ endif()
 # ---------------------------------------------------------------------------- #
 
 # Add the PIC flag (Position In Code)
-if (ENABLE_PIC)
-  include(CheckCCompilerFlag)
-  set(test_pic_flags -fPIC -fpic -PIC -pic)
-  set(pic_flag pic_flag-NOTFOUND)
-  set(i 1)
-  foreach(flag ${test_pic_flags})
-    set(res_var pic_flag_test${i})
-    check_c_compiler_flag(${flag} ${res_var})
-    if ( ${${res_var}} )
-      set(pic_flag ${flag})
-      break()
-    endif(${${res_var}})  
-    math(EXPR i "${i}+1")
-  endforeach()
-
-  if(pic_flag)
-    message(STATUS "Adding ${pic_flag} to CMAKE_C_FLAGS") 
-    set(CMAKE_C_FLAGS "${pic_flag} ${CMAKE_C_FLAGS}")
-  else()
-    message(FATAL_ERROR "Could not determine the PIC flag for this compiler. "
-                        "Tried: ${test_pic_flags} all failed")
-  endif()		      
-
-endif()  
+#if (ENABLE_PIC)
+#  include(CheckCCompilerFlag)
+#  set(test_pic_flags -fPIC -fpic -PIC -pic)
+#  set(pic_flag pic_flag-NOTFOUND)
+#  set(i 1)
+#  foreach(flag ${test_pic_flags})
+#    set(res_var pic_flag_test${i})
+#    check_c_compiler_flag(${flag} ${res_var})
+#    if ( ${${res_var}} )
+#      set(pic_flag ${flag})
+#      break()
+#    endif(${${res_var}})  
+#    math(EXPR i "${i}+1")
+#  endforeach()
+#
+#  if(pic_flag)
+#    message(STATUS "Adding ${pic_flag} to CMAKE_C_FLAGS") 
+#    set(CMAKE_C_FLAGS "${pic_flag} ${CMAKE_C_FLAGS}")
+#  else()
+#    message(FATAL_ERROR "Could not determine the PIC flag for this compiler. "
+#                        "Tried: ${test_pic_flags} all failed")
+#  endif()		      
+#
+#endif()  
 
 #DEBUGif(CMAKE_C_COMPILER_ID MATCHES GNU)
 #DEBUG

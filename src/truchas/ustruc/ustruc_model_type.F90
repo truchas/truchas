@@ -323,7 +323,7 @@ call mem_diag_write ('***C returning from ustruc_model%update_state')
     use cell_grad_type
     use index_partitioning, only: gather_boundary
 
-    class(ustruc_model), intent(inout) :: this
+    class(ustruc_model), intent(inout), target :: this
     real(r8), intent(in)  :: liq_vf(:), sol_vf(:)
     real(r8), allocatable, intent(out) :: sol_frac(:), sol_frac_grad(:,:)
     logical,  allocatable, intent(out) :: invalid(:)

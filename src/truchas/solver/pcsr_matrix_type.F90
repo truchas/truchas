@@ -202,7 +202,9 @@ contains
   !! Final subroutine for PCSR_MATRIX type objects.
   subroutine pcsr_matrix_delete (this)
     type(pcsr_matrix), intent(inout) :: this
-    if (this%graph_dealloc .and. associated(this%graph)) deallocate(this%graph)
+    if (this%graph_dealloc) then
+      if (associated(this%graph)) deallocate(this%graph)
+    end if
   end subroutine pcsr_matrix_delete
 
   !! Initialize the sparse matrix with non-zero structure GRAPH.

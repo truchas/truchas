@@ -7,47 +7,7 @@ static int *displs=NULL;
 static int my_rank;
 static int my_size;
 
-#include <FortranCInterface_names.h>
-
-#define MPI_Bcast_int_scalar      TR_ROUTINE_GLOBAL_(mpi_bcast_int_scalar,MPI_BCAST_INT_SCALAR)
-#define MPI_Bcast_int_vector      TR_ROUTINE_GLOBAL_(mpi_bcast_int_vector,MPI_BCAST_INT_VECTOR)
-#define MPI_Bcast_logical_scalar  TR_ROUTINE_GLOBAL_(mpi_bcast_logical_scalar,MPI_BCAST_LOGICAL_SCALAR)
-#define MPI_Bcast_logical_vector  TR_ROUTINE_GLOBAL_(mpi_bcast_logical_vector,MPI_BCAST_LOGICAL_VECTOR)
-#define MPI_Bcast_float_scalar    TR_ROUTINE_GLOBAL_(mpi_bcast_float_scalar,MPI_BCAST_FLOAT_SCALAR)
-#define MPI_Bcast_float_vector    TR_ROUTINE_GLOBAL_(mpi_bcast_float_vector,MPI_BCAST_FLOAT_VECTOR)
-#define MPI_Bcast_double_scalar   TR_ROUTINE_GLOBAL_(mpi_bcast_double_scalar,MPI_BCAST_DOUBLE_SCALAR)
-#define MPI_Bcast_double_vector   TR_ROUTINE_GLOBAL_(mpi_bcast_double_vector,MPI_BCAST_DOUBLE_VECTOR)
-#define MPI_Bcast_char_vector     TR_ROUTINE_GLOBAL_(mpi_bcast_char_vector,MPI_BCAST_CHAR_VECTOR)
-#define MPI_Gather_int            TR_ROUTINE_GLOBAL_(mpi_gather_int,MPI_GATHER_INT)
-#define MPI_Gatherv_int           TR_ROUTINE_GLOBAL_(mpi_gatherv_int,MPI_GATHERV_INT)
-#define MPI_Gather_float          TR_ROUTINE_GLOBAL_(mpi_gather_float,MPI_GATHER_FLOAT)
-#define MPI_Gatherv_float         TR_ROUTINE_GLOBAL_(mpi_gatherv_float,MPI_GATHERV_FLOAT)
-#define MPI_Gather_double         TR_ROUTINE_GLOBAL_(mpi_gather_double,MPI_GATHER_DOUBLE)
-#define MPI_Gatherv_double        TR_ROUTINE_GLOBAL_(mpi_gatherv_double,MPI_GATHERV_DOUBLE)
-#define MPI_Allgather_int         TR_ROUTINE_GLOBAL_(mpi_allgather_int,MPI_ALLGATHER_INT)
-#define MPI_Allgatherv_int        TR_ROUTINE_GLOBAL_(mpi_allgatherv_int,MPI_ALLGATHERV_INT)
-#define MPI_Allgather_float       TR_ROUTINE_GLOBAL_(mpi_allgather_float,MPI_ALLGATHER_FLOAT)
-#define MPI_Allgatherv_float      TR_ROUTINE_GLOBAL_(mpi_allgatherv_float,MPI_ALLGATHERV_FLOAT)
-#define MPI_Scatter_int           TR_ROUTINE_GLOBAL_(mpi_scatter_int,MPI_SCATTER_INT)
-#define MPI_Scatterv_int          TR_ROUTINE_GLOBAL_(mpi_scatterv_int,MPI_SCATTERV_INT)
-#define MPI_Scatter_float         TR_ROUTINE_GLOBAL_(mpi_scatter_float,MPI_SCATTER_FLOAT)
-#define MPI_Scatterv_float        TR_ROUTINE_GLOBAL_(mpi_scatterv_float,MPI_SCATTERV_FLOAT)
-#define MPI_Scatter_double        TR_ROUTINE_GLOBAL_(mpi_scatter_double,MPI_SCATTER_DOUBLE)
-#define MPI_Scatterv_double       TR_ROUTINE_GLOBAL_(mpi_scatterv_double,MPI_SCATTERV_DOUBLE)
-#define MPI_Allreduce_sum_int     TR_ROUTINE_GLOBAL_(mpi_allreduce_sum_int,MPI_ALLREDUCE_SUM_INT)
-#define MPI_Allreduce_sum_float   TR_ROUTINE_GLOBAL_(mpi_allreduce_sum_float,MPI_ALLREDUCE_SUM_FLOAT)
-#define MPI_Allreduce_sum_double  TR_ROUTINE_GLOBAL_(mpi_allreduce_sum_double,MPI_ALLREDUCE_SUM_DOUBLE)
-#define MPI_Allreduce_max_int     TR_ROUTINE_GLOBAL_(mpi_allreduce_max_int,MPI_ALLREDUCE_MAX_INT)
-#define MPI_Allreduce_max_float   TR_ROUTINE_GLOBAL_(mpi_allreduce_max_float,MPI_ALLREDUCE_MAX_FLOAT)
-#define MPI_Allreduce_max_double  TR_ROUTINE_GLOBAL_(mpi_allreduce_max_double,MPI_ALLREDUCE_MAX_DOUBLE)
-#define MPI_Send_int              TR_ROUTINE_GLOBAL_(mpi_send_int,MPI_SEND_INT)
-#define MPI_Send_float            TR_ROUTINE_GLOBAL_(mpi_send_float,MPI_SEND_FLOAT)
-#define MPI_Send_double           TR_ROUTINE_GLOBAL_(mpi_send_double,MPI_SEND_DOUBLE)
-#define MPI_Recv_int              TR_ROUTINE_GLOBAL_(mpi_recv_int,MPI_RECV_INT)
-#define MPI_Recv_float            TR_ROUTINE_GLOBAL_(mpi_recv_float,MPI_RECV_FLOAT)
-#define MPI_Recv_double           TR_ROUTINE_GLOBAL_(mpi_recv_double,MPI_RECV_DOUBLE)
-
-void TR_ROUTINE_GLOBAL(initialize,INITIALIZE) ()
+void initialize()
 {
 #ifdef USE_MPI
   int flag;
@@ -63,7 +23,7 @@ void TR_ROUTINE_GLOBAL(initialize,INITIALIZE) ()
 #endif
 }
 
-void TR_ROUTINE_GLOBAL_(finalize,FINALIZE) ()
+void finalize()
 {
 #ifdef USE_MPI
   free(displs);
@@ -71,12 +31,12 @@ void TR_ROUTINE_GLOBAL_(finalize,FINALIZE) ()
 #endif
 }
 
-int TR_ROUTINE_GLOBAL_(f77_comm_size,F77_COMM_SIZE) ()
+int f77_comm_size()
 {
   return my_size;
 }
 
-int TR_ROUTINE_GLOBAL(f77_comm_rank,F77_COMM_RANK) ()
+int f77_comm_rank()
 {
   return my_rank;
 }
@@ -182,10 +142,10 @@ void MPI_Bcast_double_vector(double *buffer, int *len, int *root)
 #endif
 }
 
-void MPI_Bcast_char_vector(char *buffer, int *root, int len)
+void MPI_Bcast_char_vector(char *buffer, int *len, int *root)
 {
 #ifdef USE_MPI
-  MPI_Bcast(buffer,len,MPI_CHAR,*root,my_comm);
+  MPI_Bcast(buffer,*len,MPI_CHAR,*root,my_comm);
 #endif
 }
 

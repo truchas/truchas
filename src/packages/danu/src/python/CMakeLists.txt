@@ -105,26 +105,6 @@ set_source_files_properties(${GMV_SIWG_I_FILES}
                               PROPERTIES 
                               CMAKE_SWIG_FLAGS "${SWIG_FLAGS}")
 
-# The gmvwrite.c file includes malloc.h
-# On some systems (MacOSX) this has been deprecated
-# and malloc is now part of stdlib.h
-# Check to see if the the include file is present.
-# If not make sure malloc exists and exit if it is
-# not found.
-include(CheckIncludeFile)
-check_include_file(malloc.h HAVE_MALLOC_H)
-if ( NOT HAVE_MALLOC_H )
-  include(CheckFunctionExists)
-  check_function_exists(malloc HAVE_MALLOC)
-  if ( NOT HAVE_MALLOC )
-    message(FATAL_ERROR "C function malloc is not found. gmvwrite.c requires malloc")
-  endif()
-else()
-  set_source_files_properties(gmvwrite.c PROPERTIES
-                              COMPILE_DEFINITIONS "HAVE_MALLOC_H")
-endif()			   
-
-
 SWIG_ADD_MODULE(GMV python GMV.i ${GMV_C_SOURCE})
 set_target_properties(_GMV
                       PROPERTIES

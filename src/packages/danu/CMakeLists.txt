@@ -4,6 +4,10 @@
 #  
 # ############################################################################ #
 
+# The file ${Danu_TARGETS_FILE} created by export() should no longer be
+# installed with install(); see "cmake --help-policy CMP0062".  Force the
+# old behavior until we can fix this.
+cmake_policy(SET CMP0062 OLD)
 
 # ---------------------------------------------------------------------------- #
 # Enabled interfaces (Default: OFF) 
@@ -14,7 +18,7 @@ set(ENABLE_Python  ON)
 # ---------------------------------------------------------------------------- #
 # Project definitions
 # ---------------------------------------------------------------------------- #
-project(Danu C CXX Fortran)
+project(Danu C Fortran)
 
 # Location of project defined include and FindXXX.cmake files
 set(CMAKE_MODULE_PATH
@@ -30,8 +34,6 @@ set( Danu_PATCH_LEVEL 0 )
 if ( ${Danu_PATCH_LEVEL} GREATER 0 )
   set( Danu_VERSION "${Danu_VERSION}-${Danu_PATCH_LEVEL}")
 endif()
-message(STATUS "Danu Version: ${Danu_VERSION}")
-
 
 # ---------------------------------------------------------------------------- #
 # Build Configuration
@@ -42,7 +44,6 @@ set(Danu_BUILD_TYPE_DFLT Release)
 if ( NOT CMAKE_BUILD_TYPE )
   set(CMAKE_BUILD_TYPE ${Danu_BUILD_TYPE_DFLT})
 endif()
-message(STATUS "Build configuration type ${CMAKE_BUILD_TYPE}")
 
 # Need the upper case name to report build flags at the end
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UC)

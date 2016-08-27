@@ -1,4 +1,4 @@
-project(UbikSolveTest)
+project(UbikSolveTest Fortran)
 
 message(STATUS "configuring directory test")
 

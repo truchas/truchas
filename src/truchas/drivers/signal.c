@@ -28,33 +28,22 @@
 
 #include <signal.h>
 
-#include <FortranCInterface_names.h>
-
-#ifdef LINUX
-#define _TRUCHAS_CALLFRAME int s
-#else
-#define _TRUCHAS_CALLFRAME
-#endif
-
-#define signalset TR_ROUTINE_GLOBAL(signalset,SIGNALSET)
-#define signalinquire TR_ROUTINE_GLOBAL(signalinquire,SIGNALINQUIRE)
-
 static int HUP  = 0;
-void sighup(_TRUCHAS_CALLFRAME)
+void sighup(int s)
 {
   signal (SIGHUP,  &sighup);
   HUP++;
 }
 
 static int USR2 = 0;
-void sigusr2(_TRUCHAS_CALLFRAME)
+void sigusr2(int s)
 {
   signal (SIGUSR2, &sigusr2);
   USR2++;
 }
 
 static int URG = 0;
-void sigurg(_TRUCHAS_CALLFRAME)
+void sigurg(int s)
 {
   signal (SIGURG, &sigurg);
   URG++;

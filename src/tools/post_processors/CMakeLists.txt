@@ -1,6 +1,4 @@
-project(TruchasToolsPP)
-
-message(STATUS "configuring the Truchas post_processors directory")
+project(TruchasToolsPP Fortran)
 
 # --- CMake modules
 include(FortranPreprocessFiles)
@@ -32,9 +30,9 @@ fortran_preprocess_files(WRITE_RESTART_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${fpp_flags_list}
 			 PROCESS_TARGET ProcessWriteRestartFiles)
-set(fc_flags -I${NETCDF_INCLUDE_DIR})
+set(fc_flags)
 list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
-if(Fortran_COMPILER_IS_INTEL)
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND fc_flags "-assume realloc_lhs")
 endif()
 build_whitespace_string(WRITE_RESTART_COMPILE_FLAGS ${fc_flags})

@@ -8,7 +8,7 @@ include(FindPackageHandleStandardArgs)
 
 if ( NOT NUMPY_INCLUDE_DIRS )
 
-  find_package(Python REQUIRED QUIET)
+  find_package(PythonInterp REQUIRED QUIET)
 
   
   # --- Determine the include path
@@ -38,7 +38,7 @@ endif()
 
 if ( NOT NUMPY_VERSION )
 
-  find_package(Python REQUIRED QUIET)
+  find_package(PythonInterp REQUIRED QUIET)
 
   # --- Now find the NumPy version
   set(_tmp_py_file ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/findNumPyversion.py)

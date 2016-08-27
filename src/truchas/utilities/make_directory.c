@@ -4,15 +4,15 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 
-#include <FortranCInterface_names.h>
+void make_directory_c(char*,int*);
 
-void TR_ROUTINE_GLOBAL_(make_directory_hier_c,MAKE_DIRECTORY_HIER_C) (char *path, int *status)
+void make_directory_hier_c(char *path, int *status)
 {
   struct stat buf;
   char *tmppath;
   char *c;
-  extern void make_directory_c_(char *path, int *status);
   /* make a copy of our path */
   tmppath = (char *) malloc((10+strlen(path))*sizeof(char));
 
@@ -30,7 +30,7 @@ void TR_ROUTINE_GLOBAL_(make_directory_hier_c,MAKE_DIRECTORY_HIER_C) (char *path
     }
 
     /* attempt to make the named directory */
-    (void) make_directory_c_ (tmppath, status);
+    (void) make_directory_c(tmppath, status);
 
     /* Did an error occur in creating directory */
     if ( *status) break; 
@@ -42,7 +42,7 @@ void TR_ROUTINE_GLOBAL_(make_directory_hier_c,MAKE_DIRECTORY_HIER_C) (char *path
 
 }
 
-void TR_ROUTINE_GLOBAL_(make_directory_c,MAKE_DIRECTORY_C) (char *path, int *status)
+void make_directory_c(char *path, int *status)
 {
   struct stat buf;
 

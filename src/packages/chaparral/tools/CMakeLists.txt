@@ -1,10 +1,7 @@
-project(ChaparralTools)
-
-message(STATUS "configuring directory tools")
+project(ChaparralTools C)
 
 # --- Include directories
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
-message(STATUS "${ChaparralVF_SOURCE_DIR}")
 include_directories(${ChaparralVF_SOURCE_DIR})
 if (ENABLE_MPI)
   include_directories(${MPI_C_INCLUDE_PATH})

@@ -1,6 +1,4 @@
-project(TruchasTest)
-
-message(STATUS "configuring the Truchas test directory")
+project(TruchasTest NONE)
 
 set(CMAKE_MODULE_PATH ${TruchasTest_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 

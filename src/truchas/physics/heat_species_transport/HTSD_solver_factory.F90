@@ -26,11 +26,7 @@ contains
     use fluid_data_module,  only: fluid_flow
     use parallel_communication
     use diffusion_solver_data
-#ifdef SUPPORTS_NEWUNIT
     use truchas_env, only: output_file_name
-#else
-    use truchas_env, only: output_file_name, new_unit
-#endif
 
     type(mat_mf), intent(in), target :: mmf
     type(HTSD_model), intent(in), target :: model
@@ -52,14 +48,7 @@ contains
     params%verbose_stepping = verbose_stepping
     if (verbose_stepping) then
       lun = -1
-#ifdef SUPPORTS_NEWUNIT
       if (is_IOP) open(newunit=lun,file=output_file_name('bdf2.out'),position='rewind',action='write')
-#else
-      if (is_IOP) then
-        call new_unit (lun)
-        open(lun,file=output_file_name('bdf2.out'),position='rewind',action='write')
-      end if
-#endif
       params%output_unit = lun
     end if
 !    if (mmf_has_matID(mmf,0) .and. fluid_flow) then

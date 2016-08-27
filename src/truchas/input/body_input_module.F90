@@ -788,9 +788,6 @@ CONTAINS
     !=======================================================================
     use interfaces_module, only: File_Name, RZ_Tabular_Pt, Rtheta_Tabular_Pt
     use input_utilities, only: seek_to_namelist
-#ifndef SUPPORTS_NEWUNIT
-    use truchas_env, only: new_unit
-#endif
 
     ! Argument List
     integer :: m
@@ -814,12 +811,7 @@ CONTAINS
        call TLS_fatal ('file does not exist: ' // trim(file_name(m)))
     else
        ! Read Data
-#ifdef SUPPORTS_NEWUNIT
        open (NEWUNIT = tab_lun, FILE = File_Name(m)(1:l), STATUS = 'old')
-#else
-       call new_unit (tab_lun)
-       open (UNIT = tab_lun, FILE = File_Name(m)(1:l), STATUS = 'old')
-#endif
        open (UNIT = tab_lun, FILE = File_Name(m)(1:l), STATUS = 'old')
        call seek_to_namelist (tab_lun, 'TABULAR_DATA', found)
        if (.not.found) go to 20

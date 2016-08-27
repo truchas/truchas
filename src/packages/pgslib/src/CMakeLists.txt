@@ -1,5 +1,3 @@
-project(PGSLibSource)
-
 # Serial library
 add_subdirectory(serial-src)
 

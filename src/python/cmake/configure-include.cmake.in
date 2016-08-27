@@ -20,6 +20,8 @@ set(TruchasPython_INSTALL_PREFIX      @TruchasPython_INSTALL_PREFIX@)
 
 # Configuration variables
 set(ENABLE_MPI_FLAG                   @ENABLE_MPI_FLAG@)
+set(MPIEXEC                           @MPIEXEC@)
+set(MPIEXEC_NUMPROC_FLAG              @MPIEXEC_NUMPROC_FLAG@)
 set(Python_INSTALL_PREFIX             @Python_INSTALL_PREFIX@)
 set(TruchasPython_INSTALL_PREFIX      @Python_INSTALL_PREFIX@)
 set(Truchas_LIBRARY_INSTALL_DIRS      @Truchas_LIBRARY_INSTALL_DIRS@)

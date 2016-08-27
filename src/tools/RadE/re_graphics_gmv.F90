@@ -12,79 +12,19 @@ module re_graphics_gmv
 
   use kinds, only: r8
   use re_encl_type
+  use gmvwrite_c_binding
   implicit none
   private
   
   public :: gmv_open, gmv_close, gmv_write_encl
   public :: gmv_begin_variables, gmv_end_variables, gmv_write_face_var
 
-  integer, parameter :: CELLDATA = 0, NODEDATA = 1
-
-  !! Interfaces to the external Fortran-compatible C-procedures in f_gmvwrite.c
-  interface
-    subroutine gmvwrite_openfile_ir_f (filenam, isize, rsize)
-      character(len=*) :: filenam
-      integer :: isize, rsize
-      end subroutine
-    subroutine gmvwrite_closefile_f ()
-      end subroutine
-    subroutine gmvwrite_node_data_f (nndes, x, y, z)
-      integer :: nndes
-      real :: x(*), y(*), z(*)
-      end subroutine
-    subroutine gmvwrite_cell_header_f (ncells)
-      integer :: ncells
-      end subroutine
-    subroutine gmvwrite_cell_type_f (cell_type, nverts, nodes)
-      character(len=*) :: cell_type
-      integer :: nverts, nodes(*)
-      end subroutine
-    subroutine gmvwrite_material_header_f (nmats, data_type)
-      integer :: nmats, data_type
-      end subroutine
-    subroutine gmvwrite_material_name_f (matname)
-      character(len=*) :: matname
-      end subroutine
-    subroutine gmvwrite_material_ids_f (matids, data_type)
-      integer :: matids(*), data_type
-      end subroutine
-    subroutine gmvwrite_flag_header_f ()
-      end subroutine gmvwrite_flag_header_f
-    subroutine gmvwrite_flag_name_f (flagname, numtypes, data_type)
-      character(len=*) :: flagname
-      integer :: numtypes, data_type
-      end subroutine
-    subroutine gmvwrite_flag_subname_f (subname)
-      character(len=*) :: subname
-      end subroutine
-    subroutine gmvwrite_flag_data_f (data_type, flag_data)
-      integer :: data_type, flag_data(*)
-      end subroutine
-    subroutine gmvwrite_flag_endflag_f ()
-      end subroutine gmvwrite_flag_endflag_f
-    subroutine gmvwrite_probtime_f (ptime)
-      real :: ptime
-      end subroutine gmvwrite_probtime_f
-    subroutine gmvwrite_cycleno_f (cyclenum)
-      integer :: cyclenum
-      end subroutine gmvwrite_cycleno_f
-    subroutine gmvwrite_variable_header_f ()
-      end subroutine gmvwrite_variable_header_f
-    subroutine gmvwrite_variable_name_data_f (data_type, varname, vids)
-      integer :: data_type
-      character(len=*) :: varname
-      real :: vids(*)
-      end subroutine
-    subroutine gmvwrite_variable_endvars_f ()
-      end subroutine
-  end interface
-
 contains
 
   subroutine gmv_open (file)
     character(len=*) :: file
-    !! 4-byte integer data and 8-byte real data.
-    call gmvwrite_openfile_ir_f (file, 4, 4)
+    !! 4-byte integer data and 4-byte real data.
+    call gmvwrite_openfile_ir_f(file, 4, 4)
   end subroutine gmv_open
 
   subroutine gmv_close ()

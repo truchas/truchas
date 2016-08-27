@@ -179,21 +179,17 @@ fortran_preprocess_files(PHYSICS_SOURCE_FILES
 # Set compile flags
 include(BuildWhitespaceString)
 set(fc_flags -I${Danu_Fortran_MODULE_DIR})
-if (ENABLE_PGSLib)
-  list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
-endif()
-if (ENABLE_UbikSolve)
-  list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
-endif()
-build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags} -I${NETCDF_INCLUDE_DIR})
+list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${PHYSICS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${PHYSICS_COMPILE_FLAGS})
 
 set_source_files_properties(${TruchasExe_BINARY_DIR}/ER_file.f90 PROPERTIES
-                            COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS} -I${NETCDF_INCLUDE_DIR}")
+                            COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS}")
 
 # Add special Intel flag for certain sources (A DAMN UGLY HACK)
-if (Fortran_COMPILER_IS_INTEL)
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   set_source_files_properties(${TruchasExe_BINARY_DIR}/mfd_disc_type.f90
                               ${TruchasExe_BINARY_DIR}/diffusion_matrix.f90
                               PROPERTIES

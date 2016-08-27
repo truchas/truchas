@@ -20,15 +20,11 @@
 #include <unistd.h>
 #include <string.h>
 
-#include <FortranCInterface_names.h>
-
 static void f90strcpy(char *ostring, char *istring)
 {
   while (*istring)
     *ostring++ = *istring++;
 }
-
-#define getrunhostinfo TR_ROUTINE_GLOBAL(getrunhostinfo,GETRUNHOSTINFO)
 
 void getrunhostinfo(char *arch, char *host)
 {

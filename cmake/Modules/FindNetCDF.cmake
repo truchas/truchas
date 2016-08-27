@@ -1,240 +1,149 @@
-# -*- mode: cmake -*-
-# Usage:
-#    Control the search through NETCDF_INSTALL_PREFIX or setting environment variable
-#    NETCDF_ROOT to the NETCDF installation prefix.
-#    By default only searches for C library. To search for the C++ library
-#    set 'CXX' in the COMPONENTS option in find_package(NETCDF) 
+# - Find NetCDF
+# Find the NetCDF includes and libraries
 #
-#    This module does not search default paths! 
+# This module finds the netCDF library and header file directory for the
+# C interface, and if the "Fortran" component is requested, those for the
+# Fortran interface.
 #
-#    Following variables are set:
-#    NETCDF_FOUND            (BOOL)       Flag indicating if NETCDF was found
-#    NETCDF_INCLUDE_DIR      (PATH)       Path to the NETCDF include file
-#    NETCDF_INCLUDE_DIRS     (LIST)       List of all required include files
-#    NETCDF_C_LIBRARIES      (LIST)       List of all required libraries to link to 
-#                                          the NETCDF C library
-#    NETCDF_CXX_LIBRARIES    (LIST)       List of all required libraries to link to 
-#                                          the NETCDF C++ library (If CXX is in COMPONENTS)
+# If everything is found, NETCDF_FOUND is set to True and the following
+# variables are defined.
 #
-#    Additional variables set
-#    NETCDF_C_LIBRARY        (FILE)       NETCDF C library
-#    NETCDF_CXX_LIBRARY      (FILE)       NETCDF C++ library (If CXX is in the COMPONENTS)
-#    NETCDF_LARGE_DIMS       (BOOL)       Checks the header files for size of 
-#                                          NC_MAX_DIMS, NC_MAX_VARS and NC_MAX_VARS_DIMS
-#                                          Returns TRUE if
-#                                          NC_MAX_DIMS >= 655363
-#                                          NC_MAX_VARS >= 524288
-#                                          NC_MAX_VAR_DIMS >= 8
+#  NETCDF_VERSION              - Version of NetCDF found
+#  NETCDF_HAS_NC4              - True if NetCDF includes NetCDF-4 support
+#  NETCDF_LARGE_MODEL          - True if header file has large model tweaks
+#  NETCDF_LIBRARIES            - Link libraries for all interfaces
+#  NETCDF_INCLUDE_DIRS         - All include directories
+#  NETCDF_C_LIBRARIES          - Link libraries for C interface
+#  NETCDF_C_INCLUDE_DIRS       - Include directories for C interface
 #
-# #############################################################################
-
-# Standard CMake modules see CMAKE_ROOT/Modules
-include(FindPackageHandleStandardArgs)
-
-# ######################################
-# Begin local macros/functions
+# If the Fortran interface was requested, these are also defined.
 #
-# Macro to handle print out
-macro(_netcdf_status mess)
-  if(NOT NETCDF_FIND_QUIETLY)
-    message(STATUS "${mess}")
-  endif()
-endmacro()
+#  NETCDF_Fortran_LIBRARIES    - Link libraries for Fortran interface
+#  NETCDF_Fortran_INCLUDE_DIRS - Include directories for Fortran interface
 #
-# End local macros/functions
-# ######################################
+# The NETCDF_LIBARIES and NETCDF_INCLUDE_DIRS variables are just unions of the
+# correspondig language-specific variables.
 
+# Validate the optional component list
+set(NETCDF_VALID_COMPONENTS Fortran)
+set(NETCDF_LANGUAGE_BINDINGS "C")
+if(NetCDF_FIND_COMPONENTS)
+  foreach(_comp ${NetCDF_FIND_COMPONENTS})
+    list(FIND NETCDF_VALID_COMPONENTS ${_comp} _loc)
+    if(${_loc} EQUAL -1)
+      message(FATAL_ERROR "\"${_comp}\" is not a valid NetCDF component.")
+    else()
+      list(APPEND NETCDF_LANGUAGE_BINDINGS ${_comp})
+    endif()
+  endforeach()
+  unset(_comp)
+  unset(_loc)
+endif()
+unset(NETCDF_VALID_COMPONENTS)
 
-# Search paths
-set(_netcdf_search_paths
-     ${NETCDF_INSTALL_PREFIX}
-     ENV NETCDF_ROOT)
-
-# Locate the config binary
-# Search for the nc-config binary
-find_program(NETCDF_CONFIG_BINARY nc-config
-             HINTS ${NETCDF_INSTALL_PREFIX} ${NETCDF_BIN_DIR}
-	     PATH_SUFFIXES bin Bin
-	     DOC "NETCDF configuration script")
-
-# Determine if HDF5 is present           
-set(NETCDF_HAS_HDF5 False)
-if(NETCDF_CONFIG_BINARY)
-
-  execute_process(COMMAND ${NETCDF_CONFIG_BINARY} --has-hdf5
-                  RESULT_VARIABLE result
-                  OUTPUT_VARIABLE out
+# Check whether netCDF-4 support is available (uses HDF5)
+find_program(NC_CONFIG nc-config)
+if(NC_CONFIG)
+  execute_process(COMMAND ${NC_CONFIG} --has-nc4
+                  OUTPUT_VARIABLE NETCDF_HAS_NC4
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-
- if (NOT ${result})              
-   if ( "${out}" MATCHES "yes" )
-     set(NETCDF_HAS_HDF5 True)
-   else("${out}" MATCHES "yes")
-     set(NETCDF_HAS_HDF5 False)
-   endif("${out}" MATCHES "yes")
- endif(NOT ${result})  
-
-endif(NETCDF_CONFIG_BINARY)  
-
-# Locate a HDF5 installation
-if(NETCDF_HAS_HDF5)
-  find_package(HDF5)
+else()
+  set(NETCDF_HAS_NC4 NETCDF_HAS_NC4-NOTFOUND)
 endif()
 
-# Include file search
-if ( NOT NETCDF_INCLUDE_DIRS )
+# Should call find_package(HDF5) before calling this module
+#if(NETCDF_HAS_NC4)
+#  find_package(HDF5)
+#endif()
 
-  if(NETCDF_CONFIG_BINARY)
+# Always find the C interface
+find_path(NETCDF_C_INCLUDE_DIR netcdf.h HINTS ENV NETCDF_DIR PATH_SUFFIXES include)
+find_library(NETCDF_C_LIBRARY netcdf HINTS ENV NETCDF_DIR PATH_SUFFIXES lib)
+mark_as_advanced(NETCDF_C_INCLUDE_DIR NETCDF_C_LIBRARY)
+set(NETCDF_C_INCLUDE_DIRS ${NETCDF_C_INCLUDE_DIR})
+set(NETCDF_C_LIBRARIES ${NETCDF_C_LIBRARY})
+set(NETCDF_INCLUDE_DIRS ${NETCDF_C_INCLUDE_DIRS})
+set(NETCDF_LIBRARIES ${NETCDF_C_LIBRARIES})
 
-    execute_process(COMMAND ${NETCDF_CONFIG_BINARY} --includedir
-                    RESULT_VARIABLE result
-                    OUTPUT_VARIABLE dir
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    if(NOT ${result})              
-      set(NETCDF_INCLUDE_DIR ${dir})
-    endif(NOT ${result})
-
-  endif(NETCDF_CONFIG_BINARY) 
-
-  find_path(NETCDF_INCLUDE_DIR
-            NAMES netcdf.h
-            HINTS ${_netcdf_search_paths}
-            PATH_SUFFIXES include)
-
-  list(APPEND NETCDF_INCLUDE_DIRS ${NETCDF_INCLUDE_DIR})       
-
-  # Add HDF5 if present
-  if( NETCDF_HAS_HDF5)
-    if(HDF5_FOUND)
-      list(APPEND NETCDF_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
-    endif(HDF5_FOUND)
-  endif(NETCDF_HAS_HDF5)    
-
-endif(NOT NETCDF_INCLUDE_DIRS)
-
-# NETCDF_LIBRARY (NETCDF_C_LIBRARY)
-find_library(NETCDF_C_LIBRARY
-             NAMES netcdf
-             HINTS ${_netcdf_search_paths} ${NETCDF_LIB_DIR}
-             PATH_SUFFIXES lib Lib)
-set(NETCDF_LIBRARY ${NETCDF_C_LIBRARY})
-
-# NETCDF_CXX_LIBRARY
-find_library(NETCDF_CXX_LIBRARY
-             NAMES netcdf_c++ 
-	     HINTS ${_netcdf_search_paths} ${NETCDF_LIB_DIR}
-	     PATH_SUFFIXES lib Lib)
-
-# NETCDF_Fortran_LIBRARY
-
-find_library(NETCDF_Fortran_LIBRARY
-             NAMES netcdff 
-	     HINTS ${_netcdf_search_paths} ${NETCDF_LIB_DIR}
-	     PATH_SUFFIXES lib Lib)
-
-# NETCDF_C_LIBRARIES
-if(NETCDF_C_LIBRARY)
-  set(NETCDF_C_LIBRARIES ${NETCDF_C_LIBRARY})
-  if ( NETCDF_HAS_HDF5 AND HDF5_FOUND )
-    list(APPEND NETCDF_C_LIBRARIES ${HDF5_C_LIBRARY} ${HDF5_LINK_LIBRARIES})
+# Fortran interface (optional)
+list(FIND NETCDF_LANGUAGE_BINDINGS Fortran index)
+if(index GREATER -1)
+  find_path(NETCDF_Fortran_INCLUDE_DIR NAMES netcdf.mod NETCDF.mod
+    HINTS ENV NETCDF_DIR PATH_SUFFIXES include)
+  find_library(NETCDF_Fortran_LIBRARY netcdff HINTS ENV NETCDF_DIR PATH_SUFFIXES lib)
+  mark_as_advanced(NETCDF_Fortran_INCLUDE_DIR NETCDF_Fortran_LIBRARY)
+  if(NETCDF_Fortran_INCLUDE_DIR AND NETCDF_Fortran_LIBRARY)
+    set(NetCDF_Fortran_FOUND True)
+  else()
+    set(NetCDF_Fortran_FOUND False)
   endif()
-else()
-  set(NETCDF_C_LIBRARIES NETCDF_C_LIBRARIES-NOTFOUND)
-endif()  
-
-# NETCDF_CXX_LIBRARIES
-if(NETCDF_CXX_LIBRARY)
-  set(NETCDF_CXX_LIBRARIES ${NETCDF_CXX_LIBRARY} ${NETCDF_C_LIBRARIES})
-else()  
-  set(NETCDF_CXX_LIBRARIES NETCDF_CXX_LIBRARIES-NOTFOUND)
-endif()  
-
-# NETCDF_Fortran_LIBRARIES
-if(NETCDF_Fortran_LIBRARY)
+  set(NETCDF_Fortran_INCLUDE_DIRS ${NETCDF_Fortran_INCLUDE_DIR})
   set(NETCDF_Fortran_LIBRARIES ${NETCDF_Fortran_LIBRARY} ${NETCDF_C_LIBRARIES})
-else()  
-  set(NETCDF_Fortran_LIBRARIES NETCDF_Fortran_LIBRARIES-NOTFOUND)
-endif()  
+  list(APPEND NETCDF_INCLUDE_DIRS ${NETCDF_Fortran_INCLUDE_DIR})
+  list(REMOVE_DUPLICATES NETCDF_INCLUDE_DIRS)
+  list(INSERT NETCDF_LIBRARIES 0 ${NETCDF_Fortran_LIBRARY})
+endif()
 
 # NETCDF Version
-if(NETCDF_CONFIG_BINARY)
-  execute_process(COMMAND "${NETCDF_CONFIG_BINARY}" "--version"
-                  RESULT_VARIABLE _ret_code
-                  OUTPUT_VARIABLE _stdout
-                  ERROR_VARIABLE  _stderr)
-  
-  string(REGEX REPLACE "[\n\r ]" "" _version_answer "${_stdout}")
-  string(REGEX REPLACE "netCDF" "" NETCDF_VERSION "${_version_answer}")
-else()  
-  set(NETCDF_VERSION NETCDF-NOTFOUND)
-endif()   
-
-# Large dimension check
-if ( NETCDF_INCLUDE_DIR ) 
-       
-  set(netcdf_h "${NETCDF_INCLUDE_DIR}/netcdf.h" )
-  if ( EXISTS ${netcdf_h} )
-    #_netcdf_status( "NetCDF include file ${netcdf_h} will be searched for define values")
-
-    file(STRINGS "${netcdf_h}" netcdf_max_dims_string REGEX "^#define NC_MAX_DIMS")
-    string(REGEX REPLACE "[^0-9]" "" netcdf_max_dims "${netcdf_max_dims_string}")
-
-    file(STRINGS "${netcdf_h}" netcdf_max_vars_string REGEX "^#define NC_MAX_VARS")
-    string(REGEX REPLACE "[^0-9]" "" netcdf_max_vars "${netcdf_max_vars_string}")
-
-    file(STRINGS "${netcdf_h}" netcdf_max_var_dims_string REGEX "^#define NC_MAX_VAR_DIMS")
-    string(REGEX REPLACE "[^0-9]" "" netcdf_max_var_dims "${netcdf_max_var_dims_string}")
-
-
-    if ( 
-         ( (netcdf_max_dims EQUAL 65536)  OR (netcdf_max_dims GREATER 65536)  ) AND
-         ( (netcdf_max_vars EQUAL 524288) OR (netcdf_max_vars GREATER 524288) ) AND
-         ( (netcdf_max_var_dims EQUAL 8)  OR  (netcdf_max_var_dims GREATER 8) )
-
-       )
-         set(NETCDF_LARGE_DIMS TRUE)
-    else()
-         message(WARNING "The NetCDF found in ${NetCDF_INSTALL_PREFIX} does not have the correct NC_MAX_DIMS, NC_MAX_VARS and NC_MAX_VAR_DIMS\n"
-                         "It may not be compatible with other TPL libraries such MOAB and ExodusII\n" )
-       set(NETCDF_LARGE_DIMS FALSE)
-    endif()
-
-  else() 
-
-    set(NETCDF_LARGE_DIMS NETCDF_LARGE_DIMS-NOTFOUND)
-
-  endif()  
+if(NC_CONFIG)
+  execute_process(COMMAND ${NC_CONFIG} --version
+                  OUTPUT_VARIABLE NETCDF_VERSION)
+  string(REGEX REPLACE "[\n\r ]" "" NETCDF_VERSION "${NETCDF_VERSION}")
+  string(REGEX REPLACE "netCDF"  "" NETCDF_VERSION "${NETCDF_VERSION}")
 else()
-  set(NETCDF_LARGE_DIMS NETCDF_LARGE_DIMS-NOTFOUND)
-endif()    
+  set(NETCDF_VERSION NETCDF_VERSION-NOTFOUND)
+endif()
 
-# Now set the component flags need NetCDF_<lang>_FOUND
-# to trigger the HANDLE_COMPONENTS correctly
-foreach(lang C CXX Fortran)
-  set(lib_var NETCDF_${lang}_LIBRARY)
-  if(${lib_var})
-    set(NetCDF_${lang}_FOUND True)
-    set(NETCDF_${lang}_FOUND True)
-  else()  
-    set(NetCDF_${lang}_FOUND False)
-    set(NETCDF_${lang}_FOUND False)
+# Check for the "large model modifications" desired by the ExodusII library
+if(NETCDF_C_INCLUDE_DIR)
+  set(netcdf_h "${NETCDF_C_INCLUDE_DIR}/netcdf.h")
+  include(SearchHeaderFile)
+  search_header_file(${netcdf_h} "NC_MAX_DIMS" max_dims)
+  search_header_file(${netcdf_h} "NC_MAX_VARS" max_vars)
+  search_header_file(${netcdf_h} "NC_MAX_VAR_DIMS" max_var_dims)
+  if((max_dims EQUAL 65536) AND (max_vars EQUAL 524288) AND (max_var_dims EQUAL 8))
+    set(NETCDF_LARGE_MODEL True)
+  else()
+    set(NETCDF_LARGE_MODEL False)
   endif()
-endforeach()  
+  unset(max_dims)
+  unset(max_vars)
+  unset(max_var_dims)
+  unset(netcdf_h)
+else()
+  set(NETCDF_LARGE_MODEL NETCDF_LARGE_MODEL-NOTFOUND)
+endif()
 
+include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(NetCDF
-                                  REQUIRED_VARS 
-				      NETCDF_INCLUDE_DIR 
-				      NETCDF_LIBRARY
-				      NETCDF_INCLUDE_DIRS
-				      NETCDF_C_LIBRARIES
-				  VERSION_VAR NETCDF_VERSION
-				  HANDLE_COMPONENTS)
+    REQUIRED_VARS NETCDF_LIBRARIES NETCDF_INCLUDE_DIRS
+    VERSION_VAR NETCDF_VERSION
+    HANDLE_COMPONENTS)
 
+if(NETCDF_FOUND)
+  if(NETCDF_C_LIBRARY AND NETCDF_C_INCLUDE_DIR)
+    if(NOT TARGET netcdf)
+      add_library(netcdf UNKNOWN IMPORTED)
+      set_target_properties(netcdf PROPERTIES
+          IMPORTED_LOCATION "${NETCDF_C_LIBRARY}"
+          INTERFACE_INCLUDE_DIRECTORIES "${NETCDF_C_INCLUDE_DIR}")
+      if(NETCDF_HAS_NC4)
+        set_target_properties(netcdf PROPERTIES
+            INTERFACE_LINK_LIBRARIES "${HDF5_C_LIBRARIES}")
+      endif()
+    endif()
+  endif()
+  if(NETCDF_Fortran_LIBRARY AND NETCDF_Fortran_INCLUDE_DIR)
+    if(NOT TARGET netcdff)
+      add_library(netcdff UNKNOWN IMPORTED)
+      set_target_properties(netcdff PROPERTIES
+          IMPORTED_LOCATION "${NETCDF_Fortran_LIBRARY}"
+          INTERFACE_INCLUDE_DIRECTORIES "${NETCDF_Fortran_INCLUDE_DIR}"
+          INTERFACE_LINK_LIBRARIES netcdf)
+    endif()
+  endif()
+endif()
 
-
-                  
-
-
-
-
+# clean up
+unset(NETCDF_LANGUAGE_BINDINGS)
+unset(NC_CONFIG)

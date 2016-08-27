@@ -522,10 +522,6 @@ contains
   
   subroutine hiptmair_is_symmetric (sys)
     
-#ifndef SUPPORTS_NEWUNIT
-    use truchas_env, only: new_unit
-#endif
-    
     type(system), intent(in), target :: sys
     
     integer :: j, jproc, k, kproc, kstart, lun, nedge_onP, n, m, bsize_vector(nPE)
@@ -552,12 +548,7 @@ contains
     call collate (etype, edge_type(:nedge_onP))
     
     if (is_IOP) then
-#ifdef SUPPORTS_NEWUNIT
       open(newunit=lun,file='hiptmair.dat',status='replace',action='write')
-#else
-      call new_unit(lun)
-      open(unit=lun,file='hiptmair.dat',status='replace',action='write')
-#endif
       write(unit=lun,fmt=*) nPE
       write(unit=lun,fmt=*) bsize_vector
     end if

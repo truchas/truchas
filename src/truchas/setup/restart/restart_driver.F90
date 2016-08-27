@@ -102,9 +102,6 @@ contains
     use pgslib_module, only: pgslib_bcast
     use restart_utilities, only: read_var, info, halt
     use string_utilities, only: i_to_c
-#ifndef SUPPORTS_NEWUNIT
-    use truchas_env, only: new_unit
-#endif
 
     integer :: j, n, ios
     character(len=8) :: fileid
@@ -115,14 +112,7 @@ contains
 
     !! Open the restart file.
     unit = -1
-#ifdef SUPPORTS_NEWUNIT
     if (p_info%IOP) open(newunit=unit,file=restart_file,form='unformatted',action='read',status='old',position='rewind',iostat=ios)
-#else
-    if (p_info%IOP) then
-      call new_unit (unit)
-      open(unit,file=restart_file,form='unformatted',action='read',status='old',position='rewind',iostat=ios)
-    end if
-#endif
     call pgslib_bcast (ios)
     if (ios /= 0) call halt ('Unable to open restart file ' // trim(restart_file) // &
                              ' for unformatted reading: iostat=' // i_to_c(ios))

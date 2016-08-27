@@ -1,4 +1,4 @@
-project(MFDdiscTest)
+project(MFDdiscTest Fortran)
 
 include(CTest)
 
@@ -12,9 +12,8 @@ include_directories(${Danu_Fortran_MODULE_DIR})
 add_executable(test_mfd_polygon_matrix_inv test_mfd_polygon_matrix_inv.F90)
 target_link_libraries(test_mfd_polygon_matrix_inv truchas ${Truchas_LINK_LIBS})
 
-set(test_launch test_mfd_polygon_matrix_inv)
+add_test(mfd_polygon_matrix_inv ${SERIAL_COMMAND_PREFACE}
+         ${CMAKE_CURRENT_BINARY_DIR}/test_mfd_polygon_matrix_inv)
 
-add_test(mfd_polygon_matrix_inv ${test_launch})
-
-#set_tests_properties(hypre_cell_scheme_matrix_type PROPERTIES PROCESSORS 4)
-#set_property(TEST hypre_cell_scheme_matrix_type PROPERTY LABELS UNIT)
+set_tests_properties(mfd_polygon_matrix_inv PROPERTIES PROCESSORS 1)
+set_property(TEST mfd_polygon_matrix_inv PROPERTY LABELS UNIT)
