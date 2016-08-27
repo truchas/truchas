@@ -1,4 +1,4 @@
-# Generic Linux with NAG Fortran and GNU C
+# Generic Linux with GNU Fortran and GNU C
 
 set(ENABLE_MPI NO CACHE BOOL "Parallel Truchas")
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
