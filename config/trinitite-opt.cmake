@@ -3,6 +3,7 @@
 set(ENABLE_MPI ON CACHE BOOL "Parallel Truchas")
 set(ENABLE_SHARED OFF CACHE BOOL "Build shared libraries")
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+set(ENABLE_INSTALL_RPATH OFF CACHE BOOL "")
 
 # Cray compiler wrappers
 set(CMAKE_C_COMPILER cc CACHE STRING "C Compiler")
