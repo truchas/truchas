@@ -1,0 +1,93 @@
+#!/bin/bash
+
+#### Builds and then installs Truchas.
+#### See config/ directory for configurations
+
+
+## Stop if errors encountered
+set -e
+
+## Show status
+echo "Configuring Truchas"
+
+
+
+#### Parse Arguments ####
+
+## Override to ignore build
+for arg in ${@}; do
+   if [ ${arg} == "skip" ]; then
+      echo "Truchas: skip argument present. Ignoring Truchas build."
+      exit 0
+   fi
+done
+
+# check for arguments
+if [ ${#} -lt 5 ]; then
+   echo "ERROR: This script builds Truchas. It requires 5 arguments"
+   echo "Argument 1: Location to install Truchas. The entire path will be created if nonexistent"
+   echo "Argument 2: Location where TPLs are installed"
+   echo "Argument 3: Compiler. Allowed values: intel, nag, gcc"
+   echo "Argument 4: Mode. Allowed values: serial, parallel"
+   echo "Argument 5: Build. Allowed values: dbg, opt, check"
+   echo "Optional argument: skip. If skip is present at any argument, script exits without doing anything."
+
+   exit 1
+elif [ ${#} -gt 5 ]; then
+   echo "Ignored arguments:" ${@:6}
+fi
+
+
+
+#### Obtain absolute paths to directories ####
+
+## Location from which the script is called
+RUN_DIR=$(pwd)
+echo "RUN DIRECTORY:" ${RUN_DIR}
+
+## Location of the script
+cd ${BASH_SOURCE%/*}/..
+SOURCE_DIR=$(pwd)
+echo "SOURCE DIRECTORY:" ${SOURCE_DIR}
+
+## TPL Directory
+cd ${RUN_DIR}
+cd ${2}
+TPL_DIR=$(pwd)
+echo "TPL DIRECTORY:" ${TPL_DIR}
+
+## Install directory
+cd ${RUN_DIR}
+mkdir -p ${1}
+cd $1
+INSTALL_DIR=$(pwd)
+echo "INSTALL DIRECTORY:" ${INSTALL_DIR}
+
+## Build Directory
+BUILD_DIR=$INSTALL_DIR/build_truchas
+mkdir -p ${BUILD_DIR}
+cd ${BUILD_DIR}
+echo "BUILD DIRECTORY:" ${BUILD_DIR}
+
+
+
+#### Check CMake Config ####
+CMAKE_CONFIG=${SOURCE_DIR}/config/${3}-${4}-${5}.cmake
+
+if [ ! -f ${CMAKE_CONFIG} ]; then
+   echo "Missing CMake configuration:" ${CMAKE_CONFIG}
+   exit 1
+fi
+
+
+
+#### Configure & Build Truchas ####
+cmake -C ${CMAKE_CONFIG} -D TRUCHAS_TPL_DIR=${TPL_DIR} -D CMAKE_INSTALL_PREFIX=${INSTALL_DIR} ${SOURCE_DIR}
+
+echo "Building Truchas in parallel"
+make -j install
+echo "Truchas Installation complete"
+
+
+## Don't remove BUILD_DIR. It's needed to ctest.
+echo "build_truchas: done"

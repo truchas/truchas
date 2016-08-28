@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#### Builds and installs TPL, then builds and installs Truchas
+#### See build_tpl and build_truchas for more details
+
+
+## Stop if errors encountered
+set -e
+
+
+#### Parse Arguments ####
+if [ ${#} -lt 4 ]; then
+   echo "ERROR: This script builds Truchas. It requires 5 arguments"
+   echo "Argument 1: Location to install TPL and Truchas. The entire path will be created if nonexistent"
+   echo "Argument 2: Compiler. Allowed values: intel, nag, gcc"
+   echo "Argument 3: Mode. Allowed values: serial, parallel"
+   echo "Argument 4: Build. Allowed values: dbg, opt, check"
+
+   exit 1
+fi
+
+
+## Build TPL
+${BASH_SOURCE%/*}/build_tpl ${@}
+
+## Build Truchas
+${BASH_SOURCE%/*}/build_truchas ${1} ${@}

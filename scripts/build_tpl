@@ -1,0 +1,90 @@
+#!/bin/bash
+
+#### Builds and then installs TPLs
+#### See tpl/config/ directory for configurations
+
+
+## Stop if errors encountered
+set -e
+
+## Show status
+echo "Configuring TPL"
+
+
+
+#### Parse Arguments ####
+
+## Override to ignore build
+for arg in ${@}; do
+   if [ ${arg} == "skip" ]; then
+      echo "TPL: skip argument present. Ignoring TPL build"
+      exit 0
+   fi
+done
+
+# check for arguments
+if [ ${#} -lt 3 ]; then
+   echo "ERROR: This script builds TPLs required for Truchas. It requires 3 arguments"
+   echo "Argument 1: Location to install the TPLs. The entire path will be created if nonexistent"
+   echo "Argument 2: Compiler. Allowed values: intel, nag, gcc"
+   echo "Argument 3: Mode. Allowed values: serial, parallel"
+   echo "Optional argument: skip. If skip is present at any argument, script exits without doing anything."
+
+   exit 1
+elif [ ${#} -gt 3 ]; then
+   echo "Ignored arguments:" ${@:4}
+fi
+
+
+
+#### Obtain absolute paths to directories ####
+
+## Location from which the script is called
+RUN_DIR=$(pwd)
+echo "RUN DIRECTORY:" ${RUN_DIR}
+
+## Location of the script
+cd ${BASH_SOURCE%/*}/..
+SOURCE_DIR=$(pwd)
+echo "SOURCE DIRECTORY:" ${SOURCE_DIR}
+
+## Install Directory
+cd ${RUN_DIR}
+mkdir -p ${1}
+cd $1
+INSTALL_DIR=$(pwd)
+echo "INSTALL DIRECTORY:" ${INSTALL_DIR}
+
+## Build Directory
+BUILD_DIR=$INSTALL_DIR/build_tpl
+mkdir -p ${BUILD_DIR}
+cd ${BUILD_DIR}
+echo "BUILD DIRECTORY:" ${BUILD_DIR}
+
+
+
+#### Check CMake Config ####
+CMAKE_CONFIG=${SOURCE_DIR}/tpl/config/${2}-${3}.cmake
+
+if [ ! -f ${CMAKE_CONFIG} ]; then
+   echo "Missing CMake configuration:" ${CMAKE_CONFIG}
+   exit 1
+fi
+
+
+
+#### Configure & Build TPL ####
+cmake -C ${CMAKE_CONFIG} -D CMAKE_INSTALL_PREFIX=${INSTALL_DIR} ${SOURCE_DIR}/tpl
+
+echo "Building TPL in parallel"
+make -j
+echo "TPL installation complete"
+
+
+
+#### Removing Build Folder ####
+echo "Removing build folder"
+cd ..
+rm -rf ${BUILD_DIR}
+
+echo "build_tpl: done"
