@@ -1,4 +1,5 @@
-# Truchas third-party library superbuild
+Truchas Third-Party Library Superbuild
+------------------------------------------------------------------------------
 This directory contains a cmake system for building most of the third party
 packages needed by Truchas.  While we endeavor to make this as robust as
 possible, especially for the platforms we use and test on, it is inevitable
@@ -7,7 +8,7 @@ you can build them manually (or obtain them otherwise); you don't have to
 make this system work.  All that matters is that the Truchas cmake step can
 find them.
 
-## Quick Start Guide
+### Quick Start Guide
 The packages that can be built are HDF5, NetCDF, Exodus, HYPRE, Petaca, YAJL,
 and SWIG.  Compressed tarfiles of their source distributions can be found in
 the tarfiles subdirectory.
@@ -30,9 +31,11 @@ variables directly on the cmake command line (using the `-D` flag).  By
 default the packages are installed into the `install` subdirectory of the
 build directory. Add `-D CMAKE_INSTALL_PREFIX=<truchas_tpl_dir>` to the cmake
 command line to specify a different directory (replace `<truchas_tpl_dir>`
-with the directory path; it must be an absolute path.)  Note that moving
-the libraries after they are installed will often break things, so it is
-better to decide where you want them before starting.
+with the directory path; it must be an absolute path.)  Note that no `make
+install` command is necessary; the packages are automatically installed by the
+`make` command.  Also note that moving the libraries after they are installed
+will often break things, so it is better to decide where you want them before
+starting.
 
 By default cmake will search for an existing installation of each package
 and only configure a package build if it cannot find a suitable version.
@@ -48,7 +51,7 @@ for both is `yes`.  Setting `ENABLE_SHARED` to `no`, meaning find and build
 static libraries, generally doesn't work currently except on platforms that
 provide a "full" set of static system libraries (Cray, for example).
 
-## Package configuration notes
+### Package Configuration Notes
 If you find you have to build some packages manually (or obtain pre-built
 ones), here are some points to keep in mind.  Also look at the files in the
 `cmake` directory to see how we are configuring them.
