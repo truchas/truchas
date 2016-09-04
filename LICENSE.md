@@ -1,11 +1,13 @@
+Truchas Copyright and License
+=============================
 Truchas version 3 (LA-CC-15-097) is distributed under the following 3-clause
 BSD license with government-use exception.  Truchas also includes third-party
-software and libraries, which are listed in the file TPL-LICENSE.md with their
-respective licenses.
+software and libraries, which are listed in the file
+[TPL-LICENSES.md](TPL-LICENSES.md) with their respective licenses.
 
 --------------------------------------------------------------------------------
 
-Copyright (c) 2007-2015. Los Alamos National Security, LLC.
+Copyright (c) 2007-2016. Los Alamos National Security, LLC.
 All rights reserved.
 
 This software was produced under U.S. Government contract DE-AC52-06NA25396
@@ -16,18 +18,18 @@ GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
 OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
 is modified to produce derivative works, such modified software should be
 clearly marked, so as not to confuse it with the version available from LANL.
- 
+
 Additionally, redistribution and use in source and binary forms, with or
 without modification, are permitted provided that the following conditions
 are met:
 
 1. Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
 3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
    Laboratory, LANL, the U.S. Government, nor the names of its contributors
    may be used to endorse or promote products derived from this software
@@ -44,4 +46,3 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- 
