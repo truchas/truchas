@@ -114,20 +114,6 @@ def main(filename, filename_out, filename_mesh):
         })
         xdmf_dataitem.text="%s:/Simulations_MAIN_Mesh/Element Connectivity" % filename_mesh
 
-        # Sets
-        for i in range(len(ids)):
-            xdmf_set = SubElement(xdmf_grid, "Set", {
-                "SetType": "Cell",
-                "Name": "Block %d" % ids[i],
-            })
-            xdmf_dataitem = SubElement(xdmf_set, "DataItem", {
-                "NumberType": "Int",
-                "Dimensions": "%d" % size(element_blocks[i]),
-                "Format": "HDF",
-            })
-            xdmf_dataitem.text="%s:/Simulations_MAIN_Mesh/Element Blocks %d" \
-                    % (filename_mesh, i)
-
 
         # Time step
         seq_name = sim.get_sequence_name(n)
