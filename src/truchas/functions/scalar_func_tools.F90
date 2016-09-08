@@ -91,6 +91,11 @@ contains
 
     type is (tabular_scalar_func)
 
+      if (allocated(f%t)) then
+        stat = -1
+        errmsg = 'unable to create antiderivative for a smoothed tabular function'
+        return
+      end if
       call alloc_tabular_ad_scalar_func (g, f, x0, g0)
 
     type is (poly_scalar_func)
@@ -159,6 +164,7 @@ contains
         fg%coef = f%const * fg%coef
       type is (tabular_scalar_func)
         fg%y = f%const * fg%y
+        if (allocated(fg%t)) fg%t = f%const * fg%t
       type is (tabular_ad_scalar_func)
         fg%y = f%const * fg%y
         fg%c = f%const * fg%c
