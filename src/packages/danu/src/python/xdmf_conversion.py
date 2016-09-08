@@ -165,12 +165,25 @@ def main(filename, filename_out, filename_mesh):
                     "Z_VC": "Velocity",
                 }
 
-            if dims[0] == nodes.shape[0]:
-                cell_type = "Node"
-            elif dims[0] == elements.shape[0]:
-                cell_type = "Cell"
+            # Determine if we have a Cell or a Node array. If FIELDTYPE
+            # attribute is not present, we will skip this field. Otherwise we
+            # raise an exception if the type is anything other than CELL or
+            # NODE.
+            fieldtype = attrs.get("FIELDTYPE")
+            if fieldtype:
+                if fieldtype == "CELL":
+                    cell_type = "Cell"
+                    if dims[0] != elements.shape[0]:
+                        raise Exception("Incorrect size of a cell array")
+                elif fieldtype == "NODE":
+                    cell_type = "Node"
+                    if dims[0] != nodes.shape[0]:
+                        raise Exception("Incorrect size of a node array")
+                else:
+                    raise Exception("Unsupported array size (neither Node nor Cell).")
             else:
-                raise Exception("Unsupported array size (neither Node nor Cell).")
+                continue
+
 
             if type_str == "Matrix":
                 # XDMF type 'Matrix' should work for a matrix (p, m), but for
