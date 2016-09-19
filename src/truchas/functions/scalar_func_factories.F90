@@ -109,13 +109,14 @@ contains
     allocate(f, source=poly_scalar_func(c, e, x0))
   end subroutine alloc_poly_scalar_func
 
-  subroutine alloc_tabular_scalar_func (f, x, y, dim, smooth)
+  subroutine alloc_tabular_scalar_func (f, x, y, dim, smooth, extrap)
     use tabular_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: x(:), y(:)
     integer, intent(in), optional :: dim
     logical, intent(in), optional :: smooth
-    allocate(f, source=tabular_scalar_func(x, y, dim, smooth))
+    character(*), intent(in), optional :: extrap
+    allocate(f, source=tabular_scalar_func(x, y, dim, smooth, extrap))
   end subroutine alloc_tabular_scalar_func
 
   subroutine alloc_tabular_ad_scalar_func (f, df, x0, y0)
@@ -177,13 +178,14 @@ contains
     allocate(f, source=poly_scalar_func(c, e, x0))
   end function new_poly_scalar_func
 
-  function new_tabular_scalar_func (x, y, dim, smooth) result (f)
+  function new_tabular_scalar_func (x, y, dim, smooth, extrap) result (f)
     use tabular_scalar_func_type
     real(r8), intent(in) :: x(:), y(:)
     integer, intent(in), optional :: dim
     logical, intent(in), optional :: smooth
+    character(*), intent(in), optional :: extrap
     class(scalar_func), pointer :: f
-    allocate(f, source=tabular_scalar_func(x, y, dim, smooth))
+    allocate(f, source=tabular_scalar_func(x, y, dim, smooth, extrap))
   end function new_tabular_scalar_func
 
   function new_tabular_ad_scalar_func (df, x0, y0) result (f)

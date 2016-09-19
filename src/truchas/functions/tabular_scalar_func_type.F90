@@ -48,6 +48,7 @@ module tabular_scalar_func_type
     !private  ! scalar_func_tools needs access
     real(r8), allocatable :: x(:), y(:), t(:)
     integer :: dim = 1
+    integer :: extrap
   contains
     procedure :: eval
   end type tabular_scalar_func
@@ -61,6 +62,7 @@ module tabular_scalar_func_type
     !private  ! scalar_func_tools needs access
     real(r8), allocatable :: x(:), y(:), c(:)
     integer :: dim = 1
+    integer :: extrap
   contains
     procedure :: eval => eval_ad
   end type tabular_ad_scalar_func
@@ -70,14 +72,17 @@ module tabular_scalar_func_type
     procedure tabular_ad_scalar_func_deriv
   end interface
 
+  integer, parameter :: EXTRAP_NEAREST = 1, EXTRAP_LINEAR = 2
+
 contains
 
   !! Constructor for TABULAR_SCALAR_FUNC objects
-  function tabular_scalar_func_value (x, y, dim, smooth) result (f)
+  function tabular_scalar_func_value (x, y, dim, smooth, extrap) result (f)
 
     real(r8), intent(in) :: x(:), y(:)
     integer, intent(in), optional :: dim
     logical, intent(in), optional :: smooth
+    character(*), intent(in), optional :: extrap
     type(tabular_scalar_func) :: f
 
     integer :: j, n
@@ -92,6 +97,18 @@ contains
     if (present(dim)) f%dim = dim
     if (present(smooth)) then
       if (smooth) allocate(f%t(size(x)))
+    end if
+
+    f%extrap = EXTRAP_NEAREST
+    if (present(extrap)) then
+      select case (extrap)
+      case ('nearest')
+        f%extrap = EXTRAP_NEAREST
+      case ('linear')
+        f%extrap = EXTRAP_LINEAR
+      case default
+        INSIST(.false.)
+      end select
     end if
 
     !! Tangent slope at nodes for Akima interpolation algorithm.
@@ -143,9 +160,27 @@ contains
     n = size(this%x)
     xdim = x(this%dim)
     if (xdim <= this%x(1)) then
-      fx = this%y(1)
+      select case (this%extrap)
+      case (EXTRAP_NEAREST)
+        fx = this%y(1)
+      case (EXTRAP_LINEAR)
+        if (allocated(this%t)) then
+          fx = this%y(1) + this%t(1)*(xdim-this%x(1))
+        else
+          fx = this%y(1) + ((this%y(2)-this%y(1))/(this%x(2)-this%x(1)))*(xdim-this%x(1))
+        end if
+      end select
     else if (xdim >= this%x(n)) then
-      fx = this%y(n)
+      select case (this%extrap)
+      case (EXTRAP_NEAREST)
+        fx = this%y(n)
+      case (EXTRAP_LINEAR)
+        if (allocated(this%t)) then
+          fx = this%y(n) + this%t(n)*(xdim-this%x(n))
+        else
+          fx = this%y(n) + ((this%y(n)-this%y(n-1))/(this%x(n)-this%x(n-1)))*(xdim-this%x(n))
+        end if
+      end select
     else
       !! Binary search to find the interval x(j1) < x <= x(j2), j2 = j1+1.
       j1 = 1; j2 = n
@@ -186,6 +221,7 @@ contains
     end do
     adf%c(0) = f%y(1)
     adf%c(n) = f%y(n)
+    adf%extrap = f%extrap
     adf%y = adf%y - adf%eval([x0]) + y0 ! shift to satisfy adf(x0)==y0
     adf%dim = f%dim
   end function tabular_ad_scalar_func_deriv
@@ -198,9 +234,21 @@ contains
     n = size(this%x)
     xdim = x(this%dim)
     if (xdim <= this%x(1)) then
-      fx = this%y(1) + this%c(0)*(xdim - this%x(1))
+      select case (this%extrap)
+      case (EXTRAP_NEAREST)
+        fx = this%y(1) + this%c(0)*(xdim - this%x(1))
+      case (EXTRAP_LINEAR)
+        fx = this%y(1) + this%c(0)*(xdim - this%x(1)) &
+           - this%c(1)*((xdim-this%x(1))/(this%x(2)-this%x(1)))**2
+      end select
     else if (xdim >= this%x(n)) then
-      fx = this%y(n) + this%c(n)*(xdim - this%x(n))
+      select case (this%extrap)
+      case (EXTRAP_NEAREST)
+        fx = this%y(n) + this%c(n)*(xdim - this%x(n))
+      case (EXTRAP_LINEAR)
+        fx = this%y(n) + this%c(n)*(xdim - this%x(n)) &
+           - this%c(n-1)*((xdim - this%x(n))/(this%x(n)-this%x(n-1)))**2
+      end select
     else
       !! Binary search to find the interval x(j1) < x <= x(j2), j2 = j1+1.
       j1 = 1; j2 = n
