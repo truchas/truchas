@@ -114,10 +114,10 @@ contains
 
     ASSERT(tstar > t0)
 
-    a0 = (tstar - t0)/h0
+    a0 = min((tstar - t0)/h0, this%n + 1.0_r8)
     n0 = ceiling(a0)
 
-    a1 = (tstar - t0)/h1
+    a1 = min((tstar - t0)/h1, this%n + 1.0_r8)
     n1 = ceiling(a1)
 
     if (n0 <= this%n) then ! capture for soft landing
