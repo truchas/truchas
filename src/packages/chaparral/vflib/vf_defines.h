@@ -341,6 +341,7 @@ if (!(x)) fprintf(stderr," Assert failed: x\n");
 
 
 #define VF_GlobalSumInt(a)               VF_GlobalSum_Int((a),__FILE__,__LINE__)
+#define VF_GlobalSumUInt64(a)            VF_GlobalSum_UInt64((a),__FILE__,__LINE__)
 #define VF_GlobalSumFloat(a)             VF_GlobalSum_Float((a),__FILE__,__LINE__)
 #define VF_GlobalSumDouble(a)            VF_GlobalSum_Double((a),__FILE__,__LINE__)
 #define VF_GlobalMinInt(a)               VF_GlobalMin_Int((a),__FILE__,__LINE__)

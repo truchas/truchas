@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "vf.h"
 
@@ -139,6 +140,22 @@ void VF_GlobalSum_Int(int *value, char *file, int line)
   err = MPI_Allreduce(&tmp,value,1,MPI_INT,MPI_SUM,VFLIB_Comm);
   if (err) {
     fprintf(stderr,"MPI error in VF_GlobalSum_Int() in %s, line %d\n",file,line);
+    VF_Exit(1);
+  }
+#endif
+}
+
+void VF_GlobalSum_UInt64(uint64_t *value, char *file, int line)
+{
+#ifndef VF_NO_MPI
+  int err;
+  uint64_t tmp;
+
+  if (VFLIB_Size==1) return;
+  tmp = *value;
+  err = MPI_Allreduce(&tmp,value,1,MPI_UINT64_T,MPI_SUM,VFLIB_Comm);
+  if (err) {
+    fprintf(stderr,"MPI error in VF_GlobalSum_UInt64() in %s, line %d\n",file,line);
     VF_Exit(1);
   }
 #endif

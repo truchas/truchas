@@ -21,6 +21,8 @@
 
 #define _VF_PROTO_H_
 
+#include <inttypes.h>
+
 #include "vf_defines.h"
 #include "vf_api.h"
 
@@ -61,6 +63,7 @@ void     VF_StagedIO_Start(void);
 void     VF_StagedIO_End(void);
 
 void     VF_GlobalSum_Int(int*, char*, int);
+void     VF_GlobalSum_UInt64(uint64_t*, char*, int);
 void     VF_GlobalSum_Float(float*, char*, int);
 void     VF_GlobalSum_Double(double*, char*, int);
 void     VF_GlobalMin_Int(int*, char*, int);

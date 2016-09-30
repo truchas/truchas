@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #if defined(sun) || defined(sgi) || defined(dec) || defined(aix) || defined(linux)
 #  include <unistd.h>
@@ -265,20 +266,28 @@ void VF_MemoryInfo(char *s)
 double
 VF_GetMemoryUsage(void)
 {
-  int size=0;
 #ifdef __PUMAGON__
+  int size=0;
   int fragments;    /* total number of links     */
   int total_free;   /* total free memory (bytes) */
   int largest_free; /* largest free link (bytes) */
 
   heap_info(&fragments,&total_free,&largest_free,&size);
+#elif defined(linux)
+  uint64_t size;
+  unsigned int data;
+  FILE *fp;
+  if ((fp = fopen("/proc/self/statm","r")) != NULL) {
+    fscanf(fp,"%*s %*s %*s %*s %*s %u",&data);
+    fclose(fp);
+    size = sysconf(_SC_PAGESIZE) * (uint64_t) data;
+  } else {
+    size = 0;
+  }
 #elif !defined (WIN32)
-  char s[20];
-  void *addr;
-    
-  addr = (void*)sbrk(0);
-  sprintf(s,"%u",addr);
-  sscanf(s,"%d",&size);
+  uint64_t size = (uint64_t)sbrk(0);
+#else
+  size=0;
 #endif
   /* CONVERT TO MEGEBYTES */
   return (double)size/1048576.0;

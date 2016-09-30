@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include "vf.h"
 
@@ -36,7 +37,8 @@ void VF_MatrixRowStats(VFsparse_array*, int, int*, int*, int*);
 
 void VF_MakeMatrixSymmetric(int encl, int method, int output)
 {
-  int    i, j, cnt0, cnt1, cnt2, knt0, knt1, knt2;
+  int    i, j, cnt0, knt0;
+  uint64_t cnt1, cnt2, knt1, knt2;
   int    nrows_g, nrows_l, icnt, master; 
   float  *colVF, *rowVF;
   double fct1, fct2;
@@ -78,8 +80,8 @@ void VF_MakeMatrixSymmetric(int encl, int method, int output)
     if (output>=VF_OUTPUT_VERBOSE) {
       VF_MatrixStats(&cnt0, &cnt1, &cnt2);
       if (VFLIB_Rank==0) {
-        printf("       Nonzero lower triangular entries = %d\n",cnt1);
-        printf("       Nonzero upper triangular entries = %d\n",cnt2);
+        printf("       Nonzero lower triangular entries = %" PRIu64 "\n",cnt1);
+        printf("       Nonzero upper triangular entries = %" PRIu64 "\n",cnt2);
       }
       fflush(stdout);
     }
@@ -152,8 +154,8 @@ void VF_MakeMatrixSymmetric(int encl, int method, int output)
       if (output==VF_OUTPUT_SUMMARY) {
         printf("       Elapsed time = %.2f\n",enclosure->time_vf_symmetry);
       } else if (output>=VF_OUTPUT_VERBOSE) {
-        printf("       Nonzero lower triangular entries = %d changed to %d\n",cnt1,knt1);
-        printf("       Nonzero upper triangular entries = %d changed to %d\n",cnt2,knt2);
+        printf("       Nonzero lower triangular entries = %" PRIu64 " changed to %" PRIu64 "\n",cnt1,knt1);
+        printf("       Nonzero upper triangular entries = %" PRIu64 " changed to %" PRIu64 "\n",cnt2,knt2);
         printf("       Elapsed time                     = %.2f\n",enclosure->time_vf_symmetry);
       }
       fflush(stdout);
@@ -161,7 +163,7 @@ void VF_MakeMatrixSymmetric(int encl, int method, int output)
   }
 }
 
-void VF_MatrixStats(int *diag, int *lower, int *upper)
+void VF_MatrixStats(int *diag, uint64_t *lower, uint64_t *upper)
 {
   int         i, ii, nrows_l;
   VFenclosure *enclosure=VF_CurrentEnclosure();
@@ -178,12 +180,12 @@ void VF_MatrixStats(int *diag, int *lower, int *upper)
                       ii, diag, lower, upper);
   }
   VF_GlobalSumInt(diag);
-  VF_GlobalSumInt(lower);
-  VF_GlobalSumInt(upper);
+  VF_GlobalSumUInt64(lower);
+  VF_GlobalSumUInt64(upper);
 }
 
 void VF_MatrixRowStats(VFsparse_array *array, int diag_index,
-                       int *diag, int *lower, int *upper)
+                       int *diag, uint64_t *lower, uint64_t *upper)
 {
   int i, nonzeros, *index;
 
