@@ -31,10 +31,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include "vf.h"
 
-void   VF_MatrixStats(int*, int*, int*);
+void   VF_MatrixStats(int*, uint64_t*, uint64_t*);
 void   ResidualSM(double wt, double d[], 
                   double b[], double u[], double r[]);
 void   MatVecMulSM0(double wt, 
@@ -72,7 +73,8 @@ void VF_SmoothMatrix(int encl, double wt, double tol, int max_iter,
 {
   int    i, ii, nrows_g, nrows_l, sym_method, bad=0;
   int    pass=0, max_passes=5, done=0;
-  int    knt0, knt1, knt2, converged, iter;
+  int    knt0, converged, iter;
+  uint64_t knt1, knt2;
   double L2_norm0, L2_norm, rowsum, area;
   double beta, p_ap_dot, alpha, nalpha;
   double *sol, *rhs, r_z_dot, r_z_dot_old;
@@ -305,8 +307,8 @@ void VF_SmoothMatrix(int encl, double wt, double tol, int max_iter,
             } else {
               printf("       maximum number of passes (%d) exceeded\n",max_passes);
             }  
-            printf("       Nonzero lower triangular entries = %d\n",knt1);
-            printf("       Nonzero upper triangular entries = %d\n",knt2);
+            printf("       Nonzero lower triangular entries = %" PRIu64 "\n",knt1);
+            printf("       Nonzero upper triangular entries = %" PRIu64 "\n",knt2);
             printf("\n");
             fflush(stdout);
           }

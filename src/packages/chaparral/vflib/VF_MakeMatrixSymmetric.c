@@ -32,8 +32,8 @@
 
 #include "vf.h"
 
-void VF_MatrixStats(int*, int*, int*);
-void VF_MatrixRowStats(VFsparse_array*, int, int*, int*, int*);
+void VF_MatrixStats(int*, uint64_t*, uint64_t*);
+void VF_MatrixRowStats(VFsparse_array*, int, int*, uint64_t*, uint64_t*);
 
 void VF_MakeMatrixSymmetric(int encl, int method, int output)
 {
