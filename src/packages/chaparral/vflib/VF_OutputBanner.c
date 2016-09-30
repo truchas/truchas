@@ -51,6 +51,8 @@ void VF_OutputCalcStartBanner(void)
   VFtopology  *topology=VF_CurrentTopology();
   VFenclosure *enclosure=VF_CurrentEnclosure();
 
+  double dsize = VF_GetMemoryUsage();
+  VF_GlobalSumDouble(&dsize);
   if (enclosure->debug_level>=VF_OUTPUT_SUMMARY && VFLIB_Rank==0) {
     if (enclosure->vf_method!=VF_FILE_READ) {
       maxDepth    = 0;
@@ -126,7 +128,7 @@ void VF_OutputCalcStartBanner(void)
       printf("     output level:          %d\n",enclosure->debug_level);
     }
     printf("\n");
-    printf("   Data segment memory size = %.2fMb\n\n",VF_GetMemoryUsage());
+    printf("   Data segment memory size = %.2fMb\n\n",dsize);
     switch (enclosure->vf_method) {
     case VF_PAIRWISE:
       printf("   Calling VF_Adaptive()...\n");
@@ -197,6 +199,8 @@ void VF_OutputCalcEndBanner(void)
       VF_MaxInt(&(enclosure->hemicube.imax),0);
       VF_MaxInt(&(enclosure->hemicube.jmax),0);
     }
+    double dsize = VF_GetMemoryUsage();
+    VF_GlobalSumDouble(&dsize);
     if (VFLIB_Rank==0) {
       if (enclosure->vf_method==VF_HEMICUBE) {
         printf("     Minimum effective surface radius    = %g\n",
@@ -214,7 +218,7 @@ void VF_OutputCalcEndBanner(void)
         printf("     N numerical  = %d\n",enclosure->adaptive.num_numerical);
       }
       printf("\n");
-      printf("   Data segment memory size = %.2fMb\n",VF_GetMemoryUsage());
+      printf("   Data segment memory size = %.2fMb\n",dsize);
       printf("\n");
       printf("   Elapsed time = %.2f\n",enclosure->time_vf_calc);
       printf("\n\n");
@@ -296,6 +300,8 @@ void VF_OutputMatrixSummaryBanner(void)
       VF_MinInt(&(enclosure->hemicube.imax),0);
       VF_MinInt(&(enclosure->hemicube.jmax),0);
     }
+    double dsize = VF_GetMemoryUsage();
+    VF_GlobalSumDouble(&dsize);
     if (VFLIB_Rank==0) {
       printf("   Target rowsum                  = %d\n",enclosure->npatches_g);
       printf("   Raw rowsum total               = %f\n",tsum0);
@@ -317,7 +323,7 @@ void VF_OutputMatrixSummaryBanner(void)
       printf("     (Calculation)    = %.2f\n",enclosure->time_vf_calc);
       printf("     (Smoothing)      = %.2f\n",enclosure->time_vf_symmetry+enclosure->time_vf_smooth);
       printf("\n");
-      printf("   Data segment memory size  = %.2fMb\n",VF_GetMemoryUsage());
+      printf("   Data segment memory size  = %.2fMb\n",dsize);
       printf("\n\n");
       fflush(stdout);
     }
