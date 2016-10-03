@@ -137,7 +137,7 @@ contains
 
     if (scl_rank() > 1) return
 
-    cmode = ior(NF90_CLOBBER, NF90_64BIT_OFFSET)
+    cmode = ior(NF90_CLOBBER, NF90_HDF5)
     status = nf90_create(path, cmode, ncid)
     call handle_netcdf_error (status)
 
