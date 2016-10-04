@@ -102,19 +102,21 @@ contains
 
   subroutine load_view_factors (this, ncid, bsize)
 
+    use,intrinsic :: iso_fortran_env, only: i8 => int64
     use ER_file
 
     type(rad_system), intent(out) :: this
     integer, intent(in) :: ncid
     integer, intent(in) :: bsize(:)
 
-    integer :: j, n, nface, nface_tot, start
+    integer(i8) :: nnonz, start
+    integer :: j, n, nface, nface_tot
     integer :: vf_bsize(nPE), lengths(nPE), idum0(0)
     real :: rdum0(0)
     integer, pointer :: ibuf(:) => null()
     real,    pointer :: rbuf(:) => null()
 
-    if (is_IOP) call ERF_get_vf_dims (ncid, nface_tot, n)
+    if (is_IOP) call ERF_get_vf_dims (ncid, nface_tot, nnonz)
     call broadcast (nface_tot)
     nface = bsize(this_PE)
 
@@ -162,7 +164,7 @@ contains
     !! the usual 'single code path' pattern.
 
     if (is_IOP) then
-      call ERF_get_vf_rows (ncid, this%vf, this%ja, start=1)
+      call ERF_get_vf_rows (ncid, this%vf, this%ja, start=1_i8)
       if (nPE > 1) then
         n = maxval(vf_bsize(2:))
         allocate(ibuf(n), rbuf(n))
