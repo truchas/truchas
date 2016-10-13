@@ -184,7 +184,7 @@ Sequence * create_sequence_object(const Simulation *sim, const char *seriesname,
 
     if ( seriesname ) {
       stat = sequence_get_handle(sid,seriesname,&nsid);
-      use_name=DANU_MALLOC(char,sizeof(seriesname)+1);
+      use_name=DANU_MALLOC(char,strlen(seriesname)+1);
       strcpy(use_name,seriesname);
       stat = stat || sequence_get_id(nsid,&id);
       stat = stat || sequence_get_cycle(nsid,&use_cycle);
