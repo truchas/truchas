@@ -7,6 +7,7 @@
 ==============================================================================*/
 
 #include <danu_xdmf_mesh.h>
+#include <stdlib.h>
 
 struct DanuXDMFMeshHandle * danu_h5_create_handle()
 {
