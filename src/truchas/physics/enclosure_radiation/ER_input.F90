@@ -342,12 +342,11 @@ contains
 
   subroutine ERI_get_file (name, file)
     character(len=*), intent(in)  :: name
-    character(len=*), intent(out) :: file
+    character(:), allocatable, intent(out) :: file
     type(er_list_node), pointer :: nml
     nml => er_namelist_with_name(name)
     INSIST(associated(nml))
-    INSIST(len_trim(nml%file) <= len(file))
-    file = nml%file
+    file = trim(nml%file)
   end subroutine ERI_get_file
 
   subroutine ERI_get_ambient (name, tamb)

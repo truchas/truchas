@@ -12,6 +12,8 @@ set(PHYSICS_TARGET_NAME ProcessTruchasPhysicsFiles)
 
 # - enclosure_radiation
 list(APPEND PHYSICS_FILES
+           physics/enclosure_radiation/netcdf_c_binding.F90
+           physics/enclosure_radiation/netcdf_file_type.F90
            physics/enclosure_radiation/rad_encl_type.F90
            physics/enclosure_radiation/rad_encl_func_type.F90
            physics/enclosure_radiation/rad_solver_type.F90
@@ -19,7 +21,7 @@ list(APPEND PHYSICS_FILES
            physics/enclosure_radiation/rad_encl_gmv.F90
            physics/enclosure_radiation/rad_solver_gmv.F90
            physics/enclosure_radiation/rad_problem_gmv.F90
-           physics/enclosure_radiation/ER_file.F90
+           physics/enclosure_radiation/rad_encl_file_type.F90
            physics/enclosure_radiation/ER_input.F90
            physics/enclosure_radiation/rad_system_type.F90)
 

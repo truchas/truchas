@@ -1,55 +1,19 @@
-THINGS THAT NEED TO BE DONE
----------------------------
-
-* Implement a decent build system; this one is still a hack job.
-  Discussed this with Bryan, and within the context of the current
-  Truchas build we should lay things out like this:
-  
-      truchas/packages/RadE/src
-                           /linux.i386.nag.parallel.opt
-                           /linux.x86_64.lahey.serial.dbg
-                           
-  and so on.  Some sort of makefile in the RadE directory; src
-  gets copied over to individual build directories; etc.  Much
-  like we build the libraries in the packages tree.
-
+THINGS THAT OUGHT TO BE DONE
+----------------------------
 * Include enclosure name in the radiation enclosure dataset.
-* Replace the ia indexing array with row counts in the dataset.
-  Still want to keep the ia indexing array in the dist_vf struct.
 * Implement a mod to the Chaparral library that results in progress
   messages with a time stamp being written during the VF calc.
   This will help us gauge how much time will be required for a full run.
-* The read/write_encl methods in re_encl_type.F90 are still calling
-  netCDF directly.  Access to the data elements needs to be abstracted
-  out like was done for the read/write_dist_vf methods, and those access
-  methods moved into re_io.F90.
 * The methods in re_graphics_gmv.F90 are still serial.  Think about
   making them parallel, in the sense they only do stuff from process rank 1.
   This would make it consist with the other modules.
 * Review the get col/row methods from re_dist_vf_type.F90.
-* Rename the function name macros in chaparral_f77.c so that they differ
-  from the upper and lower case strings (recursive macro?).  Just make
-  it mixed case like the actual C functions.
 * Finish documenting all the modules.
 * Write some end-user documentation for the programs.
 
 
 Reorganizations
 ---------------
-* The re_io.F90 module needs to go into the Truchas tree (after implementing
-  the associated change above).  Truchas will need to read the radiation
-  enclosure files, and this is our component for doing it.  Truchas' encl
-  and dist_vf data types will probably be different (different needs) so
-  nothing else from here is really usable.
-
-* The chaparral.F90 and chaparral_f77.F90 could go into Truchas as well,
-  replacing the current chaparral_interface.F90 and chaparral_VF_F77_api.C
-  files if some minor mods are made.  Longer term Truchas won't use
-  Chaparral at all; only this package will.  At that time it would be
-  appropriate to move Chaparral here and build it as part of this package's
-  build.  In view of that we might just keep the chaparral.F90 and
-  chaparral_f77.c files here.
-  
 * The vizre_command_line module contains some generic code for splitting
   strings on a character.  Consider moving this to the string_utilities
   module in the Truchas tree.  Also there is code for parsing Fortran-style

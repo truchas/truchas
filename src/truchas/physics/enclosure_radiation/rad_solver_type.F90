@@ -58,24 +58,25 @@ contains
     if (associated(this%eps)) deallocate(this%eps)
   end subroutine rad_solver_delete
 
-  subroutine init (this, file, csf, color)
+  subroutine init (this, path, csf, color)
 
-    use ER_file
+    use rad_encl_file_type
     use index_partitioning
 
     class(rad_solver), intent(out) :: this
-    character(len=*), intent(in) :: file
+    character(*), intent(in) :: path
     real(r8), intent(in) :: csf
     integer, intent(in) :: color(:)
 
-    integer :: j, ncid, offset, bsize(nPE)
+    type(rad_encl_file) :: file
+    integer :: j, offset, bsize(nPE)
     logical :: renumbered
 
-    if (is_IOP) call ERF_open_ro (file, ncid)
+    if (is_IOP) call file%open_ro(path)
 
     !! Load the distributed enclosure surface.
     allocate(this%encl)
-    call this%encl%init (ncid, color)
+    call this%encl%init (file, color)
 
     if (csf /= 1.0_r8) this%encl%coord = csf * this%encl%coord
 
@@ -94,19 +95,19 @@ contains
     !! Load the distributed view factor matrix.
     call collate (bsize, this%nface)
     call broadcast (bsize)
-    call load_view_factors (this%sys, ncid, bsize)
+    call load_view_factors (this%sys, file, bsize)
 
-    if (is_IOP) call ERF_close (ncid)
+    if (is_IOP) call file%close
 
   end subroutine init
 
-  subroutine load_view_factors (this, ncid, bsize)
+  subroutine load_view_factors (this, file, bsize)
 
     use,intrinsic :: iso_fortran_env, only: i8 => int64
-    use ER_file
+    use rad_encl_file_type
 
     type(rad_system), intent(out) :: this
-    integer, intent(in) :: ncid
+    type(rad_encl_file), intent(in) :: file
     integer, intent(in) :: bsize(:)
 
     integer(i8) :: nnonz, start
@@ -116,7 +117,7 @@ contains
     integer, pointer :: ibuf(:) => null()
     real,    pointer :: rbuf(:) => null()
 
-    if (is_IOP) call ERF_get_vf_dims (ncid, nface_tot, nnonz)
+    if (is_IOP) call file%get_vf_dims(nface_tot, nnonz)
     call broadcast (nface_tot)
     nface = bsize(this_PE)
 
@@ -128,14 +129,14 @@ contains
 
     !! Read and distribute the ambient view factors.
     call allocate_collated_array (rbuf, this%nface_tot)
-    if (is_IOP) call ERF_get_ambient (ncid, rbuf)
+    if (is_IOP) call file%get_ambient(rbuf)
     allocate(this%amb_vf(this%nface))
     call distribute (this%amb_vf, rbuf)
     deallocate(rbuf)
 
     !! Read and distribute the VF matrix nonzero row counts.
     call allocate_collated_array (ibuf, this%nface_tot)
-    if (is_IOP) call ERF_get_vf_rowcount (ncid, ibuf)
+    if (is_IOP) call file%get_vf_rowcount(ibuf)
     allocate(this%ia(this%nface+1))
     call distribute (this%ia(2:), ibuf)
     deallocate(ibuf)
@@ -164,17 +165,17 @@ contains
     !! the usual 'single code path' pattern.
 
     if (is_IOP) then
-      call ERF_get_vf_rows (ncid, this%vf, this%ja, start=1_i8)
+      call file%get_vf_rows(this%vf, this%ja, start=1_i8)
       if (nPE > 1) then
         n = maxval(vf_bsize(2:))
         allocate(ibuf(n), rbuf(n))
         lengths = 0
         start = 1 + vf_bsize(1)
         do n = 2, nPE
-          call ERF_get_vf_rows (ncid, rbuf(:vf_bsize(n)), ibuf(:vf_bsize(n)), start)
+          call file%get_vf_rows(rbuf(:vf_bsize(n)), ibuf(:vf_bsize(n)), start)
           lengths(n) = vf_bsize(n)
-          call distribute (rdum0, rbuf, lengths)
-          call distribute (idum0, ibuf, lengths)
+          call distribute(rdum0, rbuf, lengths)
+          call distribute(idum0, ibuf, lengths)
           lengths(n) = 0
           start = start + vf_bsize(n)
         end do
@@ -183,11 +184,11 @@ contains
     else  ! everybody else just participates in the distribute calls.
       do n = 2, nPE
         if (n == this_PE) then
-          call distribute (this%vf, rdum0, lengths)
-          call distribute (this%ja, idum0, lengths)
+          call distribute(this%vf, rdum0, lengths)
+          call distribute(this%ja, idum0, lengths)
         else
-          call distribute (rdum0, rdum0, lengths)
-          call distribute (idum0, idum0, lengths)
+          call distribute(rdum0, rdum0, lengths)
+          call distribute(idum0, idum0, lengths)
         end if
       end do
     end if

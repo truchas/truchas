@@ -43,9 +43,9 @@ rad_problem_type.F90
   the 3D heat transport problem.  The fully coupled 3D heat transport problem
   may involve multiple rad_problem objects, one for each independent enclosure.
 
-ER_file.F90
-  This module provides procedures for interacting with the NetCDF radiation
-  enclosure disk file, for both reading and writing data.
+rad_encl_file_type.F90
+  This defines the rad_encl_file derived type, which provides the interface
+  to the radiation enclosure disk file, for both reading and writing data.
 
 ER_input.F90
   This module provides the interface to input data.  It provides procedures

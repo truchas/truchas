@@ -42,16 +42,14 @@ program genre
   call read_chaparral_namelist (10, cpar, found)
   if (found) then
     call calculate_vf (e, cpar, vf)
-    if (is_IOP) call write_encl (e, outfile)
-    call write_dist_vf (vf, outfile)
+    if (is_IOP) call write_encl (e, trim(outfile))
+    call write_dist_vf (vf, trim(outfile))
     call re_info ('Enclosure and VF data written to ' // trim(outfile))
     call destroy (vf)
-    call destroy (e)
   else
-    call write_encl (e, outfile)
+    call write_encl (e, trim(outfile))
     call re_info ('No CHAPARRAL namelist found')
     call re_info ('Enclosure data only written to ' // trim(outfile))
-    call destroy (e)
   end if
 
   call scl_finalize()
