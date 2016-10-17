@@ -87,7 +87,7 @@ contains
     !! Read the Exodus mesh file into MESH.
     if (is_IOP) then
       call params%get ('mesh-file', mesh_file)
-      call TLS_info ('  Reading ExodusII mesh file "' // mesh_file // '"')
+      call TLS_info ('  reading ExodusII mesh file "' // mesh_file // '"')
       call read_exodus_mesh (mesh_file, mesh, stat, errmsg)
       if (stat /= 0) errmsg = 'error reading mesh file: ' // errmsg
     end if
@@ -102,7 +102,7 @@ contains
           associate (id => mesh%eblk(n)%id)
             new_id = modulo(id, exodus_block_modulus)
             if (new_id /= id) then
-              msg = '  Element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id)
+              msg = '  element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id)
               call TLS_info (msg, TLS_VERB_NORMAL)
               id = new_id
             end if
@@ -117,6 +117,7 @@ contains
     !! Create internal interfaces from gap element blocks.
     if (is_IOP) then
       if (params%is_parameter('gap-element-block-ids')) then
+        call TLS_info ('  processing gap element blocks', TLS_VERB_NORMAL)
         call params%get ('gap-element-block-ids', ebid)
         call convert_cells_to_links (mesh, ebid, stat, errmsg)
         if (stat /= 0) errmsg = 'error processing gap element blocks: ' // errmsg
@@ -130,6 +131,7 @@ contains
     !! Create internal interfaces from side sets.
     if (is_IOP) then
       if (params%is_parameter('interface-side-set-ids')) then
+        call TLS_info ('  processing interface side sets', TLS_VERB_NORMAL)
         call params%get ('interface-side-set-ids', ssid)
         call create_internal_interfaces (mesh, ssid, stat, errmsg)
         if (stat /= 0) errmsg = 'error processing interface side sets: ' // errmsg
@@ -148,6 +150,7 @@ contains
 
     !! Generate the cell and link neighbor arrays.
     if (is_IOP) then
+      call TLS_info ('  finding cell neighbors', TLS_VERB_NORMAL)
       call get_cell_neighbor_array (xcnode, cnode, mesh%xlnode, mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
       if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
     else
@@ -160,6 +163,7 @@ contains
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
     if (is_IOP) then
+      call TLS_info ('  partitioning the mesh cells', TLS_VERB_NORMAL)
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
       call partition_cells (xcnhbr, cnhbr, lnhbr, nPE, part)
@@ -186,6 +190,7 @@ contains
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
+      call TLS_info ('  partitioning the mesh nodes', TLS_VERB_NORMAL)
       call partition_facets (xcnode, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
       call reorder (mesh%coord, node_perm)
@@ -213,6 +218,7 @@ contains
     !! Enumerate and partition the mesh faces.
     allocate(cfpar(ncell))
     if (is_IOP) then
+      call TLS_info ('  numbering the mesh faces', TLS_VERB_NORMAL)
       call label_mesh_faces (xcnode, cnode, mesh%xlnode, mesh%lnode, nface, xcface, cface, lface)
       !! Extract the relative face orientation info.
       cfpar = 0
@@ -229,6 +235,7 @@ contains
         end associate
       end do
       !! Partition and order the faces.
+      call TLS_info ('  partitioning the mesh faces', TLS_VERB_NORMAL)
       allocate(perm(nface))
       call partition_facets (xcface, cface, cell_psize, face_psize, perm)
       call invert_perm (perm)
@@ -245,11 +252,13 @@ contains
     end if
 
     !! Identify off-process ghost cells to include with each partition.
+    call TLS_info ('  identifying off-process ghost cells', TLS_VERB_NORMAL)
     call select_ghost_cells (cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
                              xcface, cface, face_psize, lnhbr, offP_size, offP_index)
     deallocate(xcnhbr, cnhbr)
 
     !! Begin initializing the UNSTR_MESH result object.
+    call TLS_info ('  generating parallel mesh structure')
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
