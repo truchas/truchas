@@ -64,8 +64,8 @@ contains
     read(lun,*,iostat=stat) part
     close(lun)
     if (stat /= 0) then
-      errmsg = 'error reading file ' // file // ': iostat=' // i_to_c(stat) &
-          // '; attempted to read ' // i_to_c(size(part)) // ' integers'
+      errmsg = 'error reading file ' // file // ' (iostat=' // i_to_c(stat) &
+          // '); attempted to read ' // i_to_c(size(part)) // ' integers'
       stat = 1
       return
     end if

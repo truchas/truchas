@@ -122,6 +122,7 @@ list(APPEND PHYSICS_FILES
 
 # - induction_heating
 list(APPEND PHYSICS_FILES
+           physics/induction_heating/altmesh_namelist.F90
            physics/induction_heating/CGSolver.F90
            physics/induction_heating/EM.F90
            physics/induction_heating/EM_boundary_data.F90

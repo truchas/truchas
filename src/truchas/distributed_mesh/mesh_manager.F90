@@ -169,7 +169,7 @@ contains
 
   subroutine read_truchas_mesh_namelists (lun)
 
-    use altmesh_input
+    use altmesh_namelist
 
     integer, intent(in) :: lun
 
@@ -182,13 +182,18 @@ contains
     call read_mesh_namelist (lun, plist)
 
     !! The ALTMESH namelist: the "ALT" mesh used by EM
-    call read_altmesh_input (lun)
+    call read_altmesh_namelist (lun)
     if (altmesh_exists) then
       plist => meshes%sublist('ALT')
       call plist%set ('mesh', any_mesh())
       call plist%set ('mesh-file', trim(altmesh_file))
       call plist%set ('coord-scale-factor', altmesh_coordinate_scale_factor)
       call plist%set ('em-mesh', .true.)
+      call plist%set ('partitioner', trim(partitioner))
+      if (partitioner == 'file') then
+        call plist%set ('partition-file', trim(partition_file))
+        call plist%set ('first-partition', first_partition)
+      end if
     end if
 
   end subroutine read_truchas_mesh_namelists
