@@ -60,6 +60,7 @@ contains
     use exodus_mesh_tools
     use exodus_mesh_io, only: read_exodus_mesh
     use permutations
+    use simple_partitioning_methods, only: get_block_partition, read_partition
     use index_partitioning
     use unstr_mesh_tools
     use parallel_communication
@@ -71,14 +72,14 @@ contains
     character(:), allocatable :: errmsg
     type(unstr_mesh), pointer :: this
 
-    integer :: j, k, n, nnode, nface, ncell, new_id, exodus_block_modulus
+    integer :: j, k, n, nnode, nface, ncell, new_id, exodus_block_modulus, pfirst
     integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
     integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), part(:)
     integer, allocatable :: xcface(:), cface(:), cfpar(:), lnhbr(:,:), lface(:,:)
     integer, allocatable :: cell_perm(:), node_perm(:), offP_size(:), offP_index(:)
     integer, allocatable :: perm(:), ssid(:), ebid(:)
     type(ext_exodus_mesh) :: mesh
-    character(:), allocatable :: mesh_file, msg
+    character(:), allocatable :: mesh_file, msg, string
     real(r8) :: csf
     logical :: have_parent_node ! TEMPORARY
 
@@ -166,7 +167,27 @@ contains
       call TLS_info ('  partitioning the mesh cells', TLS_VERB_NORMAL)
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
-      call partition_cells (xcnhbr, cnhbr, lnhbr, nPE, part)
+      call params%get ('partitioner', string, default='chaco')
+      if (nPE == 1) then
+        part = 1
+        stat = 0
+      else if (string == 'block') then
+        call get_block_partition (nPE, part)
+        stat = 0
+      else if (string == 'file') then
+        call params%get ('partition-file', string)
+        call params%get ('first-partition', pfirst, default=0)
+        call read_partition (string, pfirst, nPE, part, stat, errmsg)
+        if (stat /= 0) errmsg = 'error reading cell partition: ' // errmsg
+      else
+        call partition_cells (params, xcnhbr, cnhbr, lnhbr, nPE, part, stat, errmsg)
+        if (stat /= 0) errmsg = 'error computing cell partition: ' // errmsg
+      end if
+    end if
+    call broadcast_status (stat, errmsg)
+    if (stat /= 0) return
+
+    if (is_IOP) then
       !! Compute the partition sizes and the permutation making this a block partition.
       call blocked_partition (part, cell_psize, cell_perm)
       !! Reorder cell-based arrays.
@@ -335,25 +356,26 @@ contains
 
 !!!! AUXILIARY PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine partition_cells (xcnhbr, cnhbr, lnhbr, npart, part)
+  subroutine partition_cells (params, xcnhbr, cnhbr, lnhbr, npart, part, stat, errmsg)
 
     use graph_type
     use graph_partitioner_factory
-    use parameter_list_type
 
+    type(parameter_list) :: params
     integer, intent(in)  :: xcnhbr(:), cnhbr(:) ! cell neighbor array
     integer, intent(in)  :: lnhbr(:,:)  ! link neighbor array
     integer, intent(in)  :: npart   ! number of partitions
     integer, intent(out) :: part(:) ! cell partition assignment
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
-    integer :: i, j, k, ncell, stat, n1, n2
+    integer :: i, j, k, ncell, n1, n2
 
     type(graph), allocatable :: g
     integer, allocatable :: xadj(:), adjncy(:)
     real, allocatable :: ewgt(:)
     real, parameter :: LINK_WEIGHT = 1.0
     class(graph_partitioner), allocatable :: gpart
-    type(parameter_list) :: params
 
     ASSERT(npart > 0)
     ASSERT(size(part) == size(xcnhbr)-1)
@@ -407,9 +429,8 @@ contains
       ewgt(i) = LINK_WEIGHT
     end do
 
-    call params%set ('partitioner', 'chaco')
     call alloc_graph_partitioner (gpart, params)
-    call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat)
+    call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
 
   end subroutine partition_cells
 

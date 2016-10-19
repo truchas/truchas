@@ -400,10 +400,9 @@ contains
       call alloc_graph_partitioner (gpart, params)
       allocate(ewgt(size(adjncy)), part(ncell))
       ewgt = 1.0
-      call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat)
+      call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
       if (stat /= 0) then
         stat = -2
-        errmsg = 'chaco graph partitioner error: ierr=' // i_to_c(stat)
         return
       end if
 

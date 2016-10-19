@@ -200,7 +200,7 @@ contains
 
     use kinds, only: r8
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_I
-    use string_utilities, only: i_to_c
+    use string_utilities, only: i_to_c, lower_case
     use truchas_env, only: input_dir
     use parallel_communication, only: is_IOP, broadcast
     use exodus_truchas_hack, only: read_exodus_mesh_size
@@ -213,11 +213,13 @@ contains
     integer, allocatable :: iarray(:)
 
     !! Namelist variables
-    character(120) :: mesh_file
+    character(16)  :: partitioner
+    character(120) :: mesh_file, partition_file
     real(r8) :: coordinate_scale_factor
-    integer :: exodus_block_modulus, gap_element_blocks(50), interface_side_sets(127)
+    integer :: exodus_block_modulus, gap_element_blocks(50), interface_side_sets(127), first_partition
     namelist /mesh/ mesh_file, coordinate_scale_factor, exodus_block_modulus, &
-                    gap_element_blocks, interface_side_sets
+                    gap_element_blocks, interface_side_sets, &
+                    partitioner, partition_file, first_partition
 
     call TLS_info ('')
     call TLS_info ('Reading MESH Namelist ...')
@@ -239,6 +241,9 @@ contains
       exodus_block_modulus = 10000
       gap_element_blocks = NULL_I
       interface_side_sets = NULL_I
+      partitioner = NULL_C
+      partition_file = NULL_C
+      first_partition = NULL_I
       read(lun,nml=mesh,iostat=ios)
     end if
     call broadcast(ios)
@@ -250,6 +255,9 @@ contains
     call broadcast (exodus_block_modulus)
     call broadcast (gap_element_blocks)
     call broadcast (interface_side_sets)
+    call broadcast (partitioner)
+    call broadcast (partition_file)
+    call broadcast (first_partition)
 
     !! Check and process the namelist variables, and stuff them into the return PLIST.
     if (mesh_file == NULL_C) call TLS_fatal ('MESH_FILE not specified')
@@ -272,6 +280,25 @@ contains
 
     iarray = pack(interface_side_sets, mask=(interface_side_sets /= NULL_I))
     if (size(iarray) > 0) call plist%set ('interface-side-set-ids', iarray)
+
+    if (partitioner == NULL_C) partitioner = 'chaco'
+    select case (lower_case(partitioner))
+    case ('chaco')
+    case ('block')
+    case ('file')
+      if (partition_file == NULL_C) call TLS_fatal ('PARTITION_FILE not specified')
+      if (partition_file(1:1) /= '/') partition_file = trim(input_dir) // trim(partition_file)
+      if (is_IOP) inquire(file=partition_file,exist=found)
+      call broadcast (found)
+      if (.not.found) call TLS_fatal ('PARTITION_FILE not found: ' // trim(partition_file))
+      call plist%set ('partition-file', trim(partition_file))
+      if (first_partition == NULL_I) first_partition = 0
+      if (.not.any(first_partition == [0,1])) call TLS_fatal ('FIRST_PARTITION must be 0 or 1')
+      call plist%set ('first-partition', first_partition)
+    case default
+      call TLS_fatal ('unknown value for PARTITIONER: ' // trim(partitioner))
+    end select
+    call plist%set ('partitioner', lower_case(partitioner))
 
     !! Read the number of cells and nodes from the file (HACK!)
     if (is_IOP) call read_exodus_mesh_size (trim(mesh_file), nnodes, ncells, stat)
