@@ -18,6 +18,8 @@
 #include <hdf5.h>
 
 /* Public defines */
+#define DANU_VERSION_MAJOR 1
+#define DANU_VERSION_MINOR 0
 
 /* Public Functions */
 hbool_t output_file_is_valid(hid_t fid);
