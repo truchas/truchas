@@ -21,6 +21,7 @@
 #include <danu_file.h>
 #include <danu_group.h>
 #include <danu_dataset.h>
+#include <danu_attribute.h>
 
 #include <danu_mesh.h>
 #include <danu_sim.h>
@@ -211,6 +212,10 @@ herr_t output_file_create(const char * filename, hid_t *fid)
     *fid = output_file_open(filename,DANU_FILE_ACC_RDWR,DANU_FILE_ACT_CREATE);
 
     if ( H5_ISA_VALID_ID(*fid) ) {
+        /* Add attributes to the root group */
+        if (danu_attr_write_string(*fid, "filetype", "truchas")) return status;
+        if (danu_attr_write_uint(*fid, "version_major", DANU_VERSION_MAJOR)) return status;
+        if (danu_attr_write_uint(*fid, "version_minor", DANU_VERSION_MINOR)) return status;
         status = 0;
     }
 
