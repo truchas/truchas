@@ -64,6 +64,7 @@
 
 module re_dist_vf_type
 
+  use,intrinsic :: iso_fortran_env, only: i8 => int64
   use scl
   implicit none
   private
@@ -104,9 +105,10 @@ contains
     type(dist_vf), intent(in) :: this
     character(len=*), intent(in) :: path
 
-    integer :: n, nproc, my_rank, bsize(scl_size()), offset, ncid, start
-    integer, allocatable :: ia(:), ibuf(:)
+    integer :: n, nproc, my_rank, bsize(scl_size()), offset, ncid
+    integer, allocatable :: rowcount(:), ibuf(:)
     real, allocatable :: ambient(:), rbuf(:)
+    integer(i8) :: start
 
     nproc   = scl_size()
     my_rank = scl_rank()
@@ -114,32 +116,27 @@ contains
     if (nproc == 1) then
 
       call re_open_rw (path, ncid)
-      call re_init_vf (ncid, size(this%val))
+      call re_init_vf (ncid, size(this%val,kind=i8))
       call re_put_ia (ncid, this%ia)
       call re_put_ambient (ncid, this%ambient)
-      call re_put_vf_rows (ncid, this%val, this%ja, start=1)
+      call re_put_vf_rows (ncid, this%val, this%ja, start=1_i8)
       call re_close (ncid)
 
     else
 
-      if (my_rank == 1) then
-        allocate(ia(this%nface_tot+1), ambient(this%nface_tot))
-        ia(1) = 1
-      else
-        allocate(ia(0), ambient(0))
-      end if
-      call scl_allgather (size(this%val), bsize)
-      offset = sum(bsize(:my_rank-1))
-      call scl_gather (this%ia(2:)+offset, ia(2:))
+      n = merge(this%nface_tot, 0, my_rank==1)
+      allocate(rowcount(n), ambient(n))
+      call scl_gather (this%ia(2:)-this%ia(:this%nface), rowcount)
       call scl_gather (this%ambient, ambient)
+      call scl_allgather (size(this%val), bsize)
 
       if (my_rank == 1) then
         call re_open_rw (path, ncid)
-        call re_init_vf (ncid, sum(bsize))
-        call re_put_ia (ncid, ia)
+        call re_init_vf (ncid, sum(int(bsize,kind=i8)))
+        call re_put_icount (ncid, rowcount)
         call re_put_ambient (ncid, ambient)
       end if
-      deallocate(ia, ambient)
+      deallocate(rowcount, ambient)
 
       !! Write the VF matrix in process-sized blocks,
       !! receiving it from the owning process as we go.
@@ -147,7 +144,7 @@ contains
         call scl_send (this%val, dest=1, tag=my_rank)
         call scl_send (this%ja,  dest=1, tag=my_rank)
       else
-        call re_put_vf_rows (ncid, this%val, this%ja, start=1)
+        call re_put_vf_rows (ncid, this%val, this%ja, start=1_i8)
         n = maxval(bsize)
         allocate(ibuf(n), rbuf(n))
         start = 1 + bsize(1)
@@ -172,9 +169,10 @@ contains
     type(dist_vf), intent(out) :: this
     character(len=*), intent(in) :: path
 
-    integer :: j, n, nproc, my_rank, ncid, nface, nface_tot, start, bsize(scl_size())
-    integer, allocatable :: ia(:), rowcount(:), ibuf(:)
+    integer :: j, n, nproc, my_rank, ncid, nface, nface_tot, bsize(scl_size())
+    integer, allocatable :: rowcount(:), ibuf(:)
     real, allocatable :: ambient(:), rbuf(:)
+    integer(i8) :: nnonz, start
 
     nproc   = scl_size()
     my_rank = scl_rank()
@@ -182,16 +180,16 @@ contains
     if (nproc == 1) then
 
       call re_open_ro (path, ncid)
-      call re_get_vf_dims (ncid, nface, n)
+      call re_get_vf_dims (ncid, nface, nnonz)
 
       this%nface  = nface
       this%offset = 0
       this%nface_tot = nface
-      allocate(this%ia(nface+1), this%ambient(nface), this%val(n), this%ja(n))
+      allocate(this%ia(nface+1), this%ambient(nface), this%val(nnonz), this%ja(nnonz))
 
       call re_get_ia (ncid, this%ia)
       call re_get_ambient (ncid, this%ambient)
-      call re_get_vf_rows (ncid, this%val, this%ja, start=1)
+      call re_get_vf_rows (ncid, this%val, this%ja, start=1_i8)
 
       call re_close (ncid)
 
@@ -199,18 +197,16 @@ contains
 
       if (my_rank == 1) then
         call re_open_ro (path, ncid)
-        call re_get_vf_dims (ncid, nface_tot, n)
+        call re_get_vf_dims (ncid, nface_tot, nnonz)
       end if
 
       call scl_bcast (nface_tot)
 
       !! Get the VF matrix row counts and ambient view factors.
       if (my_rank == 1) then
-        allocate(ia(nface_tot+1), ambient(nface_tot), rowcount(nface_tot))
-        call re_get_ia (ncid, ia)
+        allocate(ambient(nface_tot), rowcount(nface_tot))
+        call re_get_icount (ncid, rowcount)
         call re_get_ambient (ncid, ambient)
-        rowcount = ia(2:) - ia(:nface_tot)
-        deallocate(ia)
       else
         allocate(ambient(0), rowcount(0))
       end if
@@ -247,7 +243,7 @@ contains
         call scl_recv (this%val, source=1, tag=my_rank)
         call scl_recv (this%ja,  source=1, tag=my_rank)
       else
-        call re_get_vf_rows (ncid, this%val, this%ja, start=1)
+        call re_get_vf_rows (ncid, this%val, this%ja, start=1_i8)
         n = maxval(bsize)
         allocate(ibuf(n), rbuf(n))
         start = 1 + bsize(1)

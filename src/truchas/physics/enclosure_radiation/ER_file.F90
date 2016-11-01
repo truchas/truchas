@@ -5,12 +5,39 @@
 !! in the LICENSE file found in the top-level directory of this distribution.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! IMPLEMENTATION NOTES
+!!
+!! With one exception, the present implementation limits the problem size to
+!! that representable with default integer variables.  That means all positive
+!! integer values are limited to 2**31 (about 2e9).  The exception is the size
+!! of the view factor matrix which is represented with a 64 bit integer.
+!!
+!! 1. While the native C netCDF interface uses size_t values (typically 64 bit)
+!! to represent dimension sizes, its Fortran interface uses default integer,
+!! which are 32 bits.  Thus to define/retrieve a 64-bit dimension we have to
+!! use the C functions.
+!!
+!! 2. Because the (global) view factor matrix size is limited by the largest
+!! 64-bit integer, the IA array of the standard CSR representation would also
+!! need to use 64-bit integers.  An alternative for the disk file, is to
+!! instead store the number of non-zeros per row.  These are legitimately
+!! limited to 32-bit integers.
+!!
+!! 3. The C interface (nc_*) apparently uses 0-based IDs for variables and
+!! dimensions, whereas the Fortran interface (nf90_*) uses 1-based IDs.
+!! Consequently an ID returned by an nc_* call must be passed as ID+1 to a
+!! nf90_* call, and an ID returned by an nf90_* call must be passed as ID-1
+!! to an nc_* call. (I frankly do not understand why there is this difference
+!! in the first place; the IDs mean absolutely nothing to the user code.)
+!!
 
 #include "f90_assert.fpp"
 
 module ER_file
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64, i8 => int64
+  use,intrinsic :: iso_c_binding, only: c_int, c_size_t, c_char, c_null_char, c_float
   use netcdf
   implicit none
   private
@@ -24,6 +51,57 @@ module ER_file
   public :: ERF_put_ia, ERF_get_ia, ERF_get_vf_rowcount
   public :: ERF_put_vf_rows, ERF_get_vf_rows
   public :: ERF_put_ambient, ERF_get_ambient
+  public :: ERF_put_icount, ERF_get_icount
+
+  !! Bindings to netCDF C interface functions. Needed for large dimensions; see Note 1.
+  interface
+    function nc_def_dim(ncid, name, len, idp) result(status) bind(c,name='nc_def_dim')
+      import c_char, c_int, c_size_t
+      integer(c_int), value :: ncid
+      character(kind=c_char), intent(in) :: name(*)
+      integer(c_size_t), value :: len
+      integer(c_int) :: idp
+      integer(c_int) :: status
+    end function
+    function nc_inq_dimlen(ncid, dimid, lenp) result(status) bind(c,name='nc_inq_dimlen')
+      import c_int, c_size_t
+      integer(c_int), value :: ncid, dimid
+      integer(c_size_t) :: lenp
+      integer(c_int) :: status
+    end function
+    function nc_put_vara_int(ncid, varid, startp, countp, op) result(status) &
+        bind(c,name='nc_put_vara_int')
+      import c_int, c_size_t
+      integer(c_int), value :: ncid, varid
+      integer(c_size_t), intent(in) :: startp(*), countp(*)
+      integer(c_int), intent(in) :: op(*)
+      integer(c_int) :: status
+    end function
+    function nc_put_vara_float(ncid, varid, startp, countp, op) result(status) &
+        bind(c,name='nc_put_vara_float')
+      import c_int, c_size_t, c_float
+      integer(c_int), value :: ncid, varid
+      integer(c_size_t), intent(in) :: startp(*), countp(*)
+      real(c_float), intent(in) :: op(*)
+      integer(c_int) :: status
+    end function
+    function nc_get_vara_int(ncid, varid, startp, countp, ip) result(status) &
+        bind(c,name='nc_get_vara_int')
+      import c_int, c_size_t
+      integer(c_int), value :: ncid, varid
+      integer(c_size_t), intent(in) :: startp(*), countp(*)
+      integer(c_int), intent(out) :: ip(*)
+      integer(c_int) :: status
+    end function
+    function nc_get_vara_float(ncid, varid, startp, countp, ip) result(status) &
+        bind(c,name='nc_get_vara_float')
+      import c_int, c_size_t, c_float
+      integer(c_int), value :: ncid, varid
+      integer(c_size_t), intent(in) :: startp(*), countp(*)
+      real(c_float), intent(out) :: ip(*)
+      integer(c_int) :: status
+    end function
+  end interface
 
 contains
 
@@ -34,7 +112,7 @@ contains
 
     integer :: cmode, status
 
-    cmode = ior(NF90_CLOBBER, NF90_64BIT_OFFSET)
+    cmode = ior(NF90_CLOBBER, NF90_HDF5)
     status = nf90_create(path, cmode, ncid)
     call handle_netcdf_error (status)
 
@@ -393,7 +471,8 @@ contains
 
   subroutine ERF_init_vf (ncid, nnonz)
 
-    integer, intent(in) :: ncid, nnonz
+    integer, intent(in) :: ncid
+    integer(c_size_t), intent(in) :: nnonz
 
     integer :: status, dim1, dim2, varid, nface
 
@@ -407,17 +486,23 @@ contains
     call handle_netcdf_error (status)
 
     !! Define the VAL and JA arrays.
-    status = nf90_def_dim(ncid, 'num_nonzero', nnonz, dim2)
+    !status = nf90_def_dim(ncid, 'num_nonzero', nnonz, dim2)
+    status = nc_def_dim(ncid, 'num_nonzero'//c_null_char, nnonz, dim2)
     call handle_netcdf_error (status)
-    status = nf90_def_var(ncid, 'val', NF90_FLOAT, (/dim2/), varid)
+    status = nf90_def_var(ncid, 'val', NF90_FLOAT, (/dim2+1/), varid)
     call handle_netcdf_error (status)
-    status = nf90_def_var(ncid, 'ja', NF90_INT, (/dim2/), varid)
+    status = nf90_def_var(ncid, 'ja', NF90_INT, (/dim2+1/), varid)
     call handle_netcdf_error (status)
 
-    !! Define the IA array.
-    status = nf90_def_dim(ncid, 'num_ia', nface+1, dim2)
-    call handle_netcdf_error (status)
-    status = nf90_def_var(ncid, 'ia', NF90_INT, (/dim2/), varid)
+    ! Replace IA with ICOUNT; see Note 2.
+    ! !! Define the IA array.
+    ! status = nf90_def_dim(ncid, 'num_ia', nface+1, dim2)
+    ! call handle_netcdf_error (status)
+    ! status = nf90_def_var(ncid, 'ia', NF90_INT, (/dim2/), varid)
+    ! call handle_netcdf_error (status)
+
+    !! Define the ICOUNT array.
+    status = nf90_def_var(ncid, 'icount', NF90_INT, (/dim1/), varid)
     call handle_netcdf_error (status)
 
     !! Define the ambient view factor array.
@@ -432,7 +517,8 @@ contains
   subroutine ERF_get_vf_dims (ncid, nface, nnonz)
 
     integer, intent(in)  :: ncid
-    integer, intent(out) :: nface, nnonz
+    integer, intent(out) :: nface
+    integer(c_size_t), intent(out) :: nnonz
 
     integer :: status, dimid
 
@@ -445,49 +531,65 @@ contains
     !! Get the number of nonzeros in the VF matrix.
     status = nf90_inq_dimid(ncid, 'num_nonzero', dimid)
     call handle_netcdf_error (status)
-    status = nf90_inquire_dimension(ncid, dimid, len=nnonz)
+    !status = nf90_inquire_dimension(ncid, dimid, len=nnonz)
+    status = nc_inq_dimlen(ncid, dimid-1, nnonz)  ! see Note 3
     call handle_netcdf_error (status)
 
   end subroutine ERF_get_vf_dims
 
+  !! Keep for backward compatibility with client code.
   subroutine ERF_put_ia (ncid, ia)
     integer, intent(in) :: ncid, ia(:)
-    integer :: status, varid
-    !! Should check the length is correct
-    status = nf90_inq_varid(ncid, 'ia', varid)
-    call handle_netcdf_error (status)
-    status = nf90_put_var(ncid, varid, ia)
-    call handle_netcdf_error (status)
+    call ERF_put_icount(ncid, ia(2:)-ia(:size(ia)-1))
   end subroutine ERF_put_ia
 
+  subroutine ERF_put_icount (ncid, icount)
+    integer, intent(in) :: ncid, icount(:)
+    integer :: status, varid
+    !! Should check the length is correct
+    status = nf90_inq_varid(ncid, 'icount', varid)
+    call handle_netcdf_error (status)
+    status = nf90_put_var(ncid, varid, icount)
+    call handle_netcdf_error (status)
+  end subroutine ERF_put_icount
+
+  !! Keep for backward compatibility with client code.
   subroutine ERF_get_ia (ncid, ia)
     integer, intent(in)  :: ncid
     integer, intent(out) :: ia(:)
+    integer :: j
+    call ERF_get_icount (ncid, ia(2:))
+    ia(1) = 1
+    do j = 2, size(ia)
+      ia(j) = ia(j) + ia(j-1)
+    end do
+  end subroutine ERF_get_ia
+
+  subroutine ERF_get_icount (ncid, icount)
+    integer, intent(in)  :: ncid
+    integer, intent(out) :: icount(:)
     integer :: status, varid
     !! Should check the length is correct
-    status = nf90_inq_varid(ncid, 'ia', varid)
+    status = nf90_inq_varid(ncid, 'icount', varid)
     call handle_netcdf_error (status)
-    status = nf90_get_var(ncid, varid, ia)
+    status = nf90_get_var(ncid, varid, icount)
     call handle_netcdf_error (status)
-  end subroutine ERF_get_ia
+  end subroutine ERF_get_icount
 
   subroutine ERF_get_vf_rowcount (ncid, rowcount)
     integer, intent(in)  :: ncid
     integer, intent(out) :: rowcount(:)
-    integer :: status, varid, j
+    integer :: status, varid
     !! Should check the length is correct
-    status = nf90_inq_varid(ncid, 'ia', varid)
+    status = nf90_inq_varid(ncid, 'icount', varid)
     call handle_netcdf_error (status)
-    status = nf90_get_var(ncid, varid, rowcount, (/2/))
+    status = nf90_get_var(ncid, varid, rowcount)
     call handle_netcdf_error (status)
-    do j = size(rowcount), 2, -1
-      rowcount(j) = rowcount(j) - rowcount(j-1)
-    end do
-    rowcount(1) = rowcount(1) - 1
   end subroutine ERF_get_vf_rowcount
 
   subroutine ERF_put_vf_rows (ncid, val, ja, start)
-    integer, intent(in) :: ncid, ja(:), start
+    integer, intent(in) :: ncid, ja(:)
+    integer(i8), intent(in) :: start
     real, intent(in) :: val(:)
     integer :: status, varid
     ASSERT( size(ja) == size(val) )
@@ -495,16 +597,19 @@ contains
     !! Should check that we're not trying to write too much data
     status = nf90_inq_varid(ncid, 'val', varid)
     call handle_netcdf_error (status)
-    status = nf90_put_var(ncid, varid, val, (/start/))
+    !status = nf90_put_var(ncid, varid, val, (/start/))
+    status = nc_put_vara_float(ncid, varid-1, [start-1], [size(val,kind=i8)], val) ! see Note 3
     call handle_netcdf_error (status)
     status = nf90_inq_varid(ncid, 'ja', varid)
     call handle_netcdf_error (status)
-    status = nf90_put_var(ncid, varid, ja, (/start/))
+    !status = nf90_put_var(ncid, varid, ja, (/start/))
+    status = nc_put_vara_int(ncid, varid-1, [start-1], [size(ja,kind=i8)], ja) ! see Note 3
     call handle_netcdf_error (status)
   end subroutine
 
   subroutine ERF_get_vf_rows (ncid, val, ja, start)
-    integer, intent(in)  :: ncid, start
+    integer, intent(in)  :: ncid
+    integer(i8), intent(in) :: start
     integer, intent(out) :: ja(:)
     real,    intent(out) :: val(:)
     integer :: status, varid
@@ -513,11 +618,13 @@ contains
     !! Should check that we're not trying to read too much data
     status = nf90_inq_varid(ncid, 'val', varid)
     call handle_netcdf_error (status)
-    status = nf90_get_var(ncid, varid, val, (/start/))
+    !status = nf90_get_var(ncid, varid, val, (/start/))
+    status = nc_get_vara_float(ncid, varid-1, [start-1], [size(val,kind=i8)], val) ! see Note 3
     call handle_netcdf_error (status)
     status = nf90_inq_varid(ncid, 'ja', varid)
     call handle_netcdf_error (status)
-    status = nf90_get_var(ncid, varid, ja, (/start/))
+    !status = nf90_get_var(ncid, varid, ja, (/start/))
+    status = nc_get_vara_int(ncid, varid-1, [start-1], [size(ja,kind=i8)], ja) ! see Note 3
     call handle_netcdf_error (status)
   end subroutine
 
