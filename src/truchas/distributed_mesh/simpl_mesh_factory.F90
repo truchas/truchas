@@ -143,7 +143,7 @@ contains
 
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
-    if (is_IOP) call partition_cells (cnode, nPE, cell_bsize, cell_perm, stat, errmsg)
+    if (is_IOP) call partition_cells (params, cnode, nPE, cell_bsize, cell_perm, stat, errmsg)
     call broadcast_status (stat, errmsg)
     if (stat /= 0) return
     if (is_IOP) then
@@ -336,14 +336,16 @@ contains
   !! This implementation does not currently do anything about well-ordering
   !! the cells within a partition (FIXME!); RCM would be better than nothing.
 
-  subroutine partition_cells (cnode, npart, bsize, perm, stat, errmsg)
+  subroutine partition_cells (params, cnode, npart, bsize, perm, stat, errmsg)
 
     use permutations
     use simpl_mesh_tools, only: get_tet_neighbor_array
     use graph_partitioner_factory
+    use simple_partitioning_methods, only: get_block_partition, read_partition
     use parameter_list_type
     use string_utilities, only: i_to_c
 
+    type(parameter_list) :: params
     integer, intent(in)  :: cnode(:,:)    ! the cell node array
     integer, intent(in)  :: npart         ! number of partitions
     integer, intent(out) :: bsize(:)      ! partition block size
@@ -351,12 +353,12 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: j, ncell
+    integer :: j, ncell, pfirst
     integer, allocatable :: cnhbr(:,:), xadj(:), adjncy(:)
-    type(parameter_list) :: params
     class(graph_partitioner), allocatable :: gpart
     integer, allocatable :: part(:)
     real, allocatable :: ewgt(:)
+    character(:), allocatable :: string
 
     ASSERT(npart > 0)
     ASSERT(size(bsize) == npart)
@@ -365,12 +367,28 @@ contains
     ncell = size(cnode,dim=2)
 
     if (npart == 1) then  ! single partition (serial mode)
-
       bsize(1) = ncell
       perm = identity_perm(ncell)
+      stat = 0
+      return
+    end if
 
-    else
-
+    allocate(part(ncell))
+    call params%get ('partitioner', string, default='chaco')
+    select case (string)
+    case ('block')
+      call get_block_partition (npart, part)
+      stat = 0
+    case ('file')
+      call params%get ('partition-file', string)
+      call params%get ('first-partition', pfirst, default=0)
+      call read_partition (string, pfirst, npart, part, stat, errmsg)
+      if (stat /= 0) then
+        stat = -2
+        errmsg = 'error reading cell partition: ' // errmsg
+        return
+      end if
+    case ('chaco')
       !! Generate the cell neighbor data array CNHBR.
       allocate(cnhbr, mold=cnode) ! valid for simplicial cells
       call get_tet_neighbor_array (cnode, cnhbr, stat)
@@ -396,21 +414,21 @@ contains
       end do
 
       !! Call Chaco to partition the cell adjacency graph.
-      call params%set ('partitioner', 'chaco')
       call alloc_graph_partitioner (gpart, params)
-      allocate(ewgt(size(adjncy)), part(ncell))
+      allocate(ewgt(size(adjncy)))
       ewgt = 1.0
-      call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat)
+      call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
       if (stat /= 0) then
         stat = -2
-        errmsg = 'chaco graph partitioner error: ierr=' // i_to_c(stat)
+        errmsg = 'error computing cell partition: ' // errmsg
         return
       end if
+    case default
+      INSIST(.false.)
+    end select
 
-      !! Compute the permutation
-      call blocked_partition (part, bsize, perm)
-
-    end if
+    !! Compute the permutation
+    call blocked_partition (part, bsize, perm)
 
   end subroutine partition_cells
 

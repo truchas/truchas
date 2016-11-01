@@ -48,7 +48,7 @@ contains
 
   subroutine get_grid_mapping_data (hexmesh, tetmesh, gmd)
 
-    use altmesh_input, only: grid_transfer_file
+    use altmesh_namelist, only: grid_transfer_file
     use parameter_module, only: string_len
     use truchas_logging_services
     use truchas_env, only: output_dir

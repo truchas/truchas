@@ -39,10 +39,11 @@ module chaco_partitioner_type
 
 contains
 
-  subroutine compute (this, nvrtx, xadj, adjncy, ewgt, npart, part, stat)
+  subroutine compute (this, nvrtx, xadj, adjncy, ewgt, npart, part, stat, errmsg)
 
     use chaco_c_binding, only: interface
     use,intrinsic :: iso_c_binding, only: c_short, c_long, c_null_ptr, c_double
+    use string_utilities, only: i_to_c
 
     class(chaco_partitioner), intent(inout) :: this
     integer, intent(in)  :: nvrtx, xadj(:), adjncy(:) ! the graph
@@ -50,6 +51,7 @@ contains
     integer, intent(in)  :: npart   ! number of parts
     integer, intent(out) :: part(:) ! graph vertex partition vector
     integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer(c_short) :: part_short(nvrtx)
 
@@ -67,6 +69,7 @@ contains
         c_null_ptr, c_null_ptr, c_null_ptr, c_null_ptr, c_null_ptr, &
         part_short, 1, 0, [npart, 0, 0], c_null_ptr, &
         1, 1, 0, 1000, 1, 1.0e-4_c_double, 1234567_c_long)
+    if (stat /= 0) errmsg = 'chaco returned an error ('//i_to_c(stat)//')'
 
     !! Chaco uses a 0-based part numbering; we want 1-based numbering.
     part = part_short + 1

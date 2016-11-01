@@ -11,9 +11,9 @@ set(PART_SOURCE_FILES)
 set(PART_TARGET_NAME ProcessTruchasPartitioningFiles)
 
 set(PART_FILES
+        partitioning/simple_partitioning_methods.F90
         partitioning/graph_partitioner_class.F90
         partitioning/graph_partitioner_factory.F90
-        partitioning/block_partitioner_type.F90
         partitioning/chaco_c_binding.F90
         partitioning/chaco_partitioner_type.F90)
 

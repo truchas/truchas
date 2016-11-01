@@ -13,7 +13,6 @@ set(INPUT_TARGET_NAME ProcessTruchasInputFiles)
 
 set(INPUT_FILES
          input/EM_input.F90
-         input/altmesh_input.F90
          input/bc_input_module.F90
          input/body_input_module.F90
          input/input_driver.F90

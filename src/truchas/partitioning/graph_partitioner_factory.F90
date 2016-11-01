@@ -46,7 +46,6 @@ contains
 
   subroutine alloc_graph_partitioner (this, params)
 
-    use block_partitioner_type
     use chaco_partitioner_type
     use truchas_logging_services
     use string_utilities, only: raise_case
@@ -60,8 +59,6 @@ contains
     call params%get ('partitioner', partitioner, stat=stat, errmsg=errmsg)
     if (stat /= 0) call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: ' // errmsg)
     select case (raise_case(partitioner))
-    case ('BLOCK')
-      allocate(this, source=block_partitioner())
     case ('CHACO')
       allocate(this, source=chaco_partitioner())
     case default

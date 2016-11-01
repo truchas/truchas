@@ -22,7 +22,7 @@ module graph_partitioner_class
   end type graph_partitioner
 
   abstract interface
-    subroutine gpc (this, nvrtx, xadj, adjncy, ewgt, npart, part, stat)
+    subroutine gpc (this, nvrtx, xadj, adjncy, ewgt, npart, part, stat, errmsg)
       import graph_partitioner
       class(graph_partitioner), intent(inout) :: this
       integer, intent(in)  :: nvrtx, xadj(:), adjncy(:) ! the graph
@@ -30,6 +30,7 @@ module graph_partitioner_class
       integer, intent(in)  :: npart   ! number of parts
       integer, intent(out) :: part(:) ! graph vertex partition vector
       integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
     end subroutine
   end interface
 
