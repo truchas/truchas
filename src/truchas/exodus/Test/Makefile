@@ -9,7 +9,7 @@ NETCDF_MOD_DIR=../../../packages/netcdf/linux-x86_64-nag/include
 NETCDF_LIB_DIR=../../../packages/netcdf/linux-x86_64-nag/lib
 
 INC= -I$(NETCDF_MOD_DIR)
-LIB= -L$(NETCDF_LIB_DIR) -lnetcdff -lnetcdf
+LIB= -L$(NETCDF_LIB_DIR) -lnetcdf
 
 PROGS= test1
 
