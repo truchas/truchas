@@ -39,7 +39,6 @@ set(LIBRE_FORTRAN_FILES
           scl.F90
 	  f90_assert.F90
 	  chaparral_c_binding.F90
-          re_io.F90
 	  re_utilities.F90
 	  re_encl_type.F90
 	  re_dist_vf_type.F90 

@@ -70,7 +70,7 @@ list(APPEND Truchas_DEPENDS danu_f)
 add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
-set(Truchas_LINK_LIBS exodus netcdff hypre petaca)
+set(Truchas_LINK_LIBS exodus hypre petaca)
 
 list(APPEND Truchas_LINK_LIBS pgslib_fe)
 if (ENABLE_MPI)

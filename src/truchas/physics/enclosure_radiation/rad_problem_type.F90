@@ -68,7 +68,7 @@ contains
     character(len=*),   intent(in)  :: name
 
     integer :: n, stat
-    character(len=255) :: file
+    character(:), allocatable :: file
     character(len=127) :: errmsg
     character(len=32)  :: method
     integer, pointer :: color(:), color_l(:), setids(:)
@@ -204,31 +204,31 @@ contains
  !! NB: this routine doesn't check for correctly matching geometry.
  !!
 
-  subroutine connect_to_mesh (mesh, file, lm_faces, ge_faces, stat)
+  subroutine connect_to_mesh (mesh, path, lm_faces, ge_faces, stat)
 
     use unstr_mesh_type
     use index_partitioning
     use permutations
-    use ER_file
+    use rad_encl_file_type
 
     type(unstr_mesh), intent(in) :: mesh
-    character(len=*), intent(in) :: file
+    character(*), intent(in) :: path
     integer, allocatable :: lm_faces(:) ! returned list of local HC mesh faces
     integer, allocatable :: ge_faces(:) ! returned list of global ER faces
     integer, intent(out) :: stat
 
-    integer :: j, n, offset, ncid, nface, nnode, nfnode, ngroup
+    integer :: j, n, offset, nface
     integer :: last(nPE), bsize(nPE)
     integer, allocatable :: fcell(:), fcell_l(:), fside(:), fside_l(:), perm(:), perm2(:)
     integer, pointer :: map(:)
+    type(rad_encl_file) :: file
 
     !! Read the source info from the enclosure file: FCELL and FSIDE.
     if (is_IOP) then
-      call ERF_open_ro (file, ncid)
-      call ERF_get_dims (ncid, nface, nnode, nfnode, ngroup)
-      allocate(fcell(nface), fside(nface))
-      call ERF_get_source_info (ncid, fcell, fside)
-      call ERF_close (ncid)
+      call file%open_ro(path)
+      call file%get_source_info(fcell, fside)
+      call file%close
+      nface = size(fcell)
     else
       allocate(fcell(0), fside(0))
     end if

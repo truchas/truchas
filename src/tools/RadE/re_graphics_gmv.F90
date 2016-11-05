@@ -60,7 +60,6 @@ contains
     type(encl), intent(in) :: e
     
     integer :: j
-    integer, pointer :: list(:)
     real, dimension(e%nnode) :: x, y, z
     
     !! Write the node coordinate data.
@@ -72,15 +71,16 @@ contains
     !! Write the cell data.
     call gmvwrite_cell_header_f (e%nface)
     do j = 1, e%nface
-      list => e%fnode(e%xface(j):e%xface(j+1)-1)
-      select case (size(list))
-      case (3)
-        call gmvwrite_cell_type_f ('tri', 3, list)
-      case (4)
-        call gmvwrite_cell_type_f ('quad', 4, list)
-      case default
-        INSIST( .false. )
-      end select
+      associate(list => e%fnode(e%xface(j):e%xface(j+1)-1))
+        select case (size(list))
+        case (3)
+          call gmvwrite_cell_type_f ('tri', 3, list)
+        case (4)
+          call gmvwrite_cell_type_f ('quad', 4, list)
+        case default
+          INSIST( .false. )
+        end select
+      end associate
     end do
     
     !! Write the group IDs as  the cell meterial.
@@ -237,7 +237,6 @@ contains
       character(len=*), pointer :: gen_name(:), copy_name(:)
       
       integer :: n, nnode, i, j, k, ncopy
-      integer, pointer :: list(:)
       
       !! The number of mesh copies from applying the symmetries.
       ncopy = 2**count(e%mirror)
@@ -250,16 +249,17 @@ contains
       !! Copy the generating surface faces into the initial part of FNODE.
       gen_name(1) = 'Original'
       do j = 1, e%nface
-        list => e%fnode(e%xface(j):e%xface(j+1)-1)
-        select case (size(list))
-        case (3)
-          fnode(:3,j) = list
-          fnode(4,j)  = 0
-        case (4)
-          fnode(:,j) = list
-        case default
-          INSIST(.false.)
-        end select
+        associate(list => e%fnode(e%xface(j):e%xface(j+1)-1))
+          select case (size(list))
+          case (3)
+            fnode(:3,j) = list
+            fnode(4,j)  = 0
+          case (4)
+            fnode(:,j) = list
+          case default
+            INSIST(.false.)
+          end select
+        end associate
         gen(j)  = 1
         gnum(j) = e%gnum(j)
       end do

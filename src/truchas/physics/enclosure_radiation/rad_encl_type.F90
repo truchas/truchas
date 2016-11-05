@@ -39,33 +39,32 @@ module rad_encl_type
 
 contains
 
-  subroutine init (this, ncid, fcolor)
+  subroutine init (this, file, fcolor)
 
-    use ER_file
+    use rad_encl_file_type
     use permutations
     use parallel_communication
 
     class(rad_encl), intent(out) :: this
-    integer, intent(in) :: ncid
+    type(rad_encl_file), intent(in) :: file
     integer, intent(in) :: fcolor(:)
 
-    integer :: j, n, nnode, nface, nfnode, ngroup
+    integer :: j, n, nnode, nface
     integer, allocatable :: fsize(:), fnode(:), group_ids(:), gnum(:)
     integer, allocatable :: node_map(:), face_map(:), fsize_l(:), offP_index(:)
     real(r8), allocatable :: coord(:,:)
     integer :: face_bsize(nPE), node_bsize(nPE)
 
-    !! Read the enclosure data from the NetCDF file
+    !! Read the enclosure data from the file
     if (is_IOP) then
 
       !! Read the surface mesh.
-      call ERF_get_dims (ncid, nface, nnode, nfnode, ngroup)
-      allocate (fsize(nface), fnode(nfnode), coord(3,nnode))
-      call ERF_get_surface (ncid, fsize, fnode, coord)
+      call file%get_surface(fsize, fnode, coord)
+      nface = size(fsize)
+      nnode = size(coord,dim=2)
 
       !! Read the face block data.
-      allocate(gnum(nface), group_ids(ngroup))
-      call ERF_get_group_info (ncid, gnum, group_ids)
+      call file%get_group_info(gnum, group_ids)
 
       ASSERT(size(fcolor) == nface)
       ASSERT(minval(fcolor) >= 1)

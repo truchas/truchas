@@ -100,12 +100,13 @@ contains
 
   subroutine write_dist_vf (this, path)
 
-    use re_io
+    use rad_encl_file_type
 
     type(dist_vf), intent(in) :: this
     character(len=*), intent(in) :: path
 
-    integer :: n, nproc, my_rank, bsize(scl_size()), offset, ncid
+    type(rad_encl_file) :: file
+    integer :: n, nproc, my_rank, bsize(scl_size())
     integer, allocatable :: rowcount(:), ibuf(:)
     real, allocatable :: ambient(:), rbuf(:)
     integer(i8) :: start
@@ -115,47 +116,47 @@ contains
 
     if (nproc == 1) then
 
-      call re_open_rw (path, ncid)
-      call re_init_vf (ncid, size(this%val,kind=i8))
-      call re_put_ia (ncid, this%ia)
-      call re_put_ambient (ncid, this%ambient)
-      call re_put_vf_rows (ncid, this%val, this%ja, start=1_i8)
-      call re_close (ncid)
+      call file%open_rw(path)
+      call file%init_vf(size(this%val,kind=i8))
+      call file%put_vf_rowcount(this%ia(2:)-this%ia(:size(this%ia)-1))
+      call file%put_vf_rows(this%val, this%ja, start=1_i8)
+      call file%put_ambient(this%ambient)
+      call file%close
 
     else
 
       n = merge(this%nface_tot, 0, my_rank==1)
       allocate(rowcount(n), ambient(n))
-      call scl_gather (this%ia(2:)-this%ia(:this%nface), rowcount)
-      call scl_gather (this%ambient, ambient)
-      call scl_allgather (size(this%val), bsize)
+      call scl_gather(this%ia(2:)-this%ia(:this%nface), rowcount)
+      call scl_gather(this%ambient, ambient)
+      call scl_allgather(size(this%val), bsize)
 
       if (my_rank == 1) then
-        call re_open_rw (path, ncid)
-        call re_init_vf (ncid, sum(int(bsize,kind=i8)))
-        call re_put_icount (ncid, rowcount)
-        call re_put_ambient (ncid, ambient)
+        call file%open_rw(path)
+        call file%init_vf(sum(int(bsize,kind=i8)))
+        call file%put_vf_rowcount(rowcount)
+        call file%put_ambient(ambient)
       end if
       deallocate(rowcount, ambient)
 
       !! Write the VF matrix in process-sized blocks,
       !! receiving it from the owning process as we go.
       if (my_rank > 1) then
-        call scl_send (this%val, dest=1, tag=my_rank)
-        call scl_send (this%ja,  dest=1, tag=my_rank)
+        call scl_send(this%val, dest=1, tag=my_rank)
+        call scl_send(this%ja,  dest=1, tag=my_rank)
       else
-        call re_put_vf_rows (ncid, this%val, this%ja, start=1_i8)
+        call file%put_vf_rows(this%val, this%ja, start=1_i8)
         n = maxval(bsize)
         allocate(ibuf(n), rbuf(n))
         start = 1 + bsize(1)
         do n = 2, nproc
-          call scl_recv (rbuf(:bsize(n)), source=n, tag=n)
-          call scl_recv (ibuf(:bsize(n)), source=n, tag=n)
-          call re_put_vf_rows (ncid, rbuf(:bsize(n)), ibuf(:bsize(n)), start)
+          call scl_recv(rbuf(:bsize(n)), source=n, tag=n)
+          call scl_recv(ibuf(:bsize(n)), source=n, tag=n)
+          call file%put_vf_rows(rbuf(:bsize(n)), ibuf(:bsize(n)), start)
           start = start + bsize(n)
         end do
         deallocate(ibuf, rbuf)
-        call re_close (ncid)
+        call file%close
       end if
 
     end if
@@ -164,12 +165,13 @@ contains
 
   subroutine read_dist_vf (this, path)
 
-    use re_io
+    use rad_encl_file_type
 
     type(dist_vf), intent(out) :: this
     character(len=*), intent(in) :: path
 
-    integer :: j, n, nproc, my_rank, ncid, nface, nface_tot, bsize(scl_size())
+    type(rad_encl_file) :: file
+    integer :: j, n, nproc, my_rank, nface, nface_tot, bsize(scl_size())
     integer, allocatable :: rowcount(:), ibuf(:)
     real, allocatable :: ambient(:), rbuf(:)
     integer(i8) :: nnonz, start
@@ -179,34 +181,38 @@ contains
 
     if (nproc == 1) then
 
-      call re_open_ro (path, ncid)
-      call re_get_vf_dims (ncid, nface, nnonz)
+      call file%open_ro(path)
+      call file%get_vf_dims(nface, nnonz)
 
       this%nface  = nface
       this%offset = 0
       this%nface_tot = nface
       allocate(this%ia(nface+1), this%ambient(nface), this%val(nnonz), this%ja(nnonz))
 
-      call re_get_ia (ncid, this%ia)
-      call re_get_ambient (ncid, this%ambient)
-      call re_get_vf_rows (ncid, this%val, this%ja, start=1_i8)
+      call file%get_vf_rowcount(this%ia(2:))
+      call file%get_ambient(this%ambient)
+      call file%get_vf_rows(this%val, this%ja, start=1_i8)
+      call file%close
 
-      call re_close (ncid)
+      this%ia(1) = 1
+      do j = 2, ubound(this%ia,1)
+        this%ia(j) = this%ia(j) + this%ia(j-1)
+      end do
 
     else
 
       if (my_rank == 1) then
-        call re_open_ro (path, ncid)
-        call re_get_vf_dims (ncid, nface_tot, nnonz)
+        call file%open_ro(path)
+        call file%get_vf_dims(nface_tot, nnonz)
       end if
 
-      call scl_bcast (nface_tot)
+      call scl_bcast(nface_tot)
 
       !! Get the VF matrix row counts and ambient view factors.
       if (my_rank == 1) then
         allocate(ambient(nface_tot), rowcount(nface_tot))
-        call re_get_icount (ncid, rowcount)
-        call re_get_ambient (ncid, ambient)
+        call file%get_vf_rowcount(rowcount)
+        call file%get_ambient(ambient)
       else
         allocate(ambient(0), rowcount(0))
       end if
@@ -214,19 +220,19 @@ contains
       !! Divvy up the rows.
       nface = nface_tot/nproc
       if (my_rank <= modulo(nface_tot,nproc)) nface = nface + 1
-      ASSERT( scl_global_sum(nface) == nface_tot )
+      ASSERT(scl_global_sum(nface) == nface_tot)
 
       this%nface = nface
       this%nface_tot = nface_tot
 
-      call scl_allgather (nface, bsize)
+      call scl_allgather(nface, bsize)
       this%offset = sum(bsize(1:my_rank-1))
 
       !! Distribute the ambient viewfactors and the row counts;
       !! generate the local IA indexing array from the counts.
       allocate(this%ia(nface+1), this%ambient(nface))
-      call scl_scatter (ambient, this%ambient)
-      call scl_scatter (rowcount, this%ia(2:))
+      call scl_scatter(ambient, this%ambient)
+      call scl_scatter(rowcount, this%ia(2:))
       this%ia(1) = 1
       do j = 2, ubound(this%ia,1)
         this%ia(j) = this%ia(j) + this%ia(j-1)
@@ -235,26 +241,26 @@ contains
       !! Determine the sizes of the distributed VF matrix.
       n = this%ia(this%nface+1) - this%ia(1)
       allocate(this%val(n), this%ja(n))
-      call scl_allgather (n, bsize)
+      call scl_allgather(n, bsize)
 
       !! Read the VF matrix in process-sized blocks,
       !! sending it to the owning process as we go.
       if (my_rank > 1) then
-        call scl_recv (this%val, source=1, tag=my_rank)
-        call scl_recv (this%ja,  source=1, tag=my_rank)
+        call scl_recv(this%val, source=1, tag=my_rank)
+        call scl_recv(this%ja,  source=1, tag=my_rank)
       else
-        call re_get_vf_rows (ncid, this%val, this%ja, start=1_i8)
+        call file%get_vf_rows(this%val, this%ja, start=1_i8)
         n = maxval(bsize)
         allocate(ibuf(n), rbuf(n))
         start = 1 + bsize(1)
         do n = 2, nproc
-          call re_get_vf_rows (ncid, rbuf(:bsize(n)), ibuf(:bsize(n)), start)
-          call scl_send (rbuf(:bsize(n)), dest=n, tag=n)
-          call scl_send (ibuf(:bsize(n)), dest=n, tag=n)
+          call file%get_vf_rows(rbuf(:bsize(n)), ibuf(:bsize(n)), start)
+          call scl_send(rbuf(:bsize(n)), dest=n, tag=n)
+          call scl_send(ibuf(:bsize(n)), dest=n, tag=n)
           start = start + bsize(n)
         end do
         deallocate(ibuf, rbuf)
-        call re_close (ncid)
+        call file%close
       end if
 
     end if

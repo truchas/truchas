@@ -37,7 +37,7 @@ program vizre
 
   if (has_vf) then ! we have a view factor matrix
 
-    call read_dist_vf (dvf, enclosure_file)
+    call read_dist_vf (dvf, trim(enclosure_file))
 
     if (is_IOP) call gmv_begin_variables ()
     var => get_ambient_vf(dvf)
@@ -80,7 +80,6 @@ program vizre
 
   if (is_IOP) call gmv_close ()
 
-  call destroy (e)
   call destroy (dvf)
 
   call scl_finalize()
