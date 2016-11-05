@@ -63,9 +63,7 @@ ones), here are some points to keep in mind.  Also look at the files in the
 
 #### NetCDF
 * Use `--with-netcdf-4`
-* Only need the C and Fortran interface
-* The Fortran interface must be built with the Fortran compiler you will use
-  to build truchas.  Fortran is not ABI compatible between compilers.
+* Only need the C interface (`--disable-fortran --disable-cxx`)
 
 #### Exodus
 * We use and test with a relative old version 5.14.  There are reported

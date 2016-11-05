@@ -134,7 +134,7 @@ else()
 endif()
 
 # NetCDF library
-find_package(NetCDF "4.1.3" COMPONENTS Fortran)
+find_package(NetCDF "4.1.3")
 if(NETCDF_FOUND)
   if(NOT NETCDF_HAS_NC4)
     message(STATUS "Found unsuitable NetCDF without the required netcdf-4 feature")

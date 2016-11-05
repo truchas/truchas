@@ -1,6 +1,6 @@
 if(SEARCH_FOR_NETCDF)
   message(STATUS "Searching for a suitable NetCDF library ...")
-  find_package(NetCDF "4.1.3" COMPONENTS Fortran)
+  find_package(NetCDF "4.1.3")
   if(NETCDF_FOUND)
     if(NOT NETCDF_HAS_NC4)
       message(STATUS "Found unsuitable NetCDF without required netcdf-4 feature")
@@ -18,13 +18,6 @@ else()
     set(netcdf_shlib_flag "--enable-shared" "--disable-static")
   else()
     set(netcdf_shlib_flag "--enable-static" "--disable-shared")
-  endif()
-
-  # Defines to get the name-mangling correct for the Fortran interface
-  if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel|GNU")
-    set(netcdf_cflags "${cflags} -DpgiFortran")
-  elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
-    set(netcdf_cflags "${cflags} -DNAGf90Fortran")
   endif()
 
   # Add include directories to find the correct HDF5 header files
@@ -45,13 +38,12 @@ else()
     CONFIGURE_COMMAND <SOURCE_DIR>/configure
                       CC=${CMAKE_C_COMPILER}
                       CFLAGS=${netcdf_cflags}
-                      FC=${CMAKE_Fortran_COMPILER}
-                      FCFLAGS=${fflags}
                       LDFLAGS=${netcdf_ldflags}
                       --enable-netcdf-4
                       --disable-examples
                       --disable-dap
                       --disable-cxx
+                      --disable-fortran
                       ${netcdf_shlib_flag}
                       --prefix=${CMAKE_INSTALL_PREFIX}
     PATCH_COMMAND patch -p1 < ${TARFILE_DIR}/netcdf-4.1.3.patch
