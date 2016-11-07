@@ -33,7 +33,7 @@ module function_namelist
 
   use kinds
   use parallel_communication
-  use string_utilities, only: raise_case, i_to_c
+  use string_utilities, only: lower_case, raise_case, i_to_c
   use input_utilities, only: seek_to_namelist
   use scalar_func_map_type
   use scalar_func_factories
@@ -67,20 +67,22 @@ contains
     integer, intent(in) :: lun
 
     !! local variables
-    logical :: found
+    logical :: found, tabular_smooth
     integer :: n, stat, ncoef, nvar, npar, npts
     class(scalar_func), allocatable :: f
 
     !! namelist variables
     character(len=31)  :: name, type
     character(len=128) :: library_path, library_symbol
+    character(len=8)   :: tabular_interp, tabular_extrap
     real(r8) :: poly_coefficients(MAX_COEF), poly_refvars(MAX_VAR), tabular_data(2,100)
     integer  :: poly_exponents(MAX_VAR,MAX_COEF), tabular_dim
     real(r8) :: parameters(MAX_PARAM)
     real(r8) :: smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1
 
     namelist/function/ name, type, parameters, library_path, library_symbol, &
-        tabular_data, tabular_dim, poly_coefficients, poly_exponents, poly_refvars, &
+        tabular_data, tabular_dim, tabular_interp, tabular_extrap, &
+        poly_coefficients, poly_exponents, poly_refvars, &
         smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1
 
     call TLS_info ('')
@@ -113,6 +115,8 @@ contains
         parameters        = NULL_R
         tabular_data      = NULL_R
         tabular_dim       = NULL_I
+        tabular_interp    = NULL_C
+        tabular_extrap    = NULL_C
         smooth_step_x0    = NULL_R
         smooth_step_y0    = NULL_R
         smooth_step_x1    = NULL_R
@@ -134,6 +138,8 @@ contains
       call broadcast (parameters)
       call broadcast (tabular_data)
       call broadcast (tabular_dim)
+      call broadcast (tabular_interp)
+      call broadcast (tabular_extrap)
       call broadcast (smooth_step_x0)
       call broadcast (smooth_step_y0)
       call broadcast (smooth_step_x1)
@@ -144,7 +150,7 @@ contains
       if (ftable%mapped(name)) then
         call TLS_fatal ('already read a FUNCTION namelist with this name: ' // trim(name))
       end if
-      
+
       !! Identify the number of parameters.
       do npar = size(parameters), 1, -1
         if (parameters(npar) /= NULL_R) exit
@@ -190,6 +196,10 @@ contains
             call TLS_warn ('TABULAR_DATA is ignored when TYPE="' // trim(type) // '"')
         if (tabular_dim /= NULL_I) &
             call TLS_warn ('TABULAR_DIM is ignored when TYPE="' // trim(type) // '"')
+        if (tabular_interp /= NULL_C) &
+            call TLS_warn ('TABULAR_INTERP is ignored when TYPE="' // trim(type) // '"')
+        if (tabular_extrap /= NULL_C) &
+            call TLS_warn ('TABULAR_EXTRAP is ignored when TYPE="' // trim(type) // '"')
       end if
 
       if (raise_case(type) /= 'SMOOTH STEP') then
@@ -286,7 +296,27 @@ contains
           call TLS_fatal ('TABULAR_DIM must be >0')
         end if
 
-        call alloc_tabular_scalar_func (f, tabular_data(1,:npts), tabular_data(2,:npts), tabular_dim)
+        if (tabular_interp == NULL_C) tabular_interp = 'linear'
+        select case (raise_case(tabular_interp))
+        case ('LINEAR')
+          tabular_smooth = .false.
+        case ('AKIMA')
+          tabular_smooth = .true.
+        case default
+          call TLS_fatal ('unknown value for TABULAR_INTERP: ' // trim(tabular_interp))
+        end select
+
+        if (tabular_extrap == NULL_C) tabular_extrap = 'nearest'
+        tabular_extrap = lower_case(tabular_extrap)
+        select case (tabular_extrap)
+        case ('nearest')
+        case ('linear')
+        case default
+          call TLS_fatal ('unknown value for TABULAR_EXTRAP: ' // trim(tabular_extrap))
+        end select
+
+        call alloc_tabular_scalar_func (f, tabular_data(1,:npts), tabular_data(2,:npts), &
+            tabular_dim, tabular_smooth, tabular_extrap)
         call ftable%insert (name, f)
 
       case ('SMOOTH STEP')
@@ -296,7 +326,7 @@ contains
         if (smooth_step_x1 == NULL_R) call TLS_fatal ('SMOOTH_STEP_X1 must be assigned a value')
         if (smooth_step_y1 == NULL_R) call TLS_fatal ('SMOOTH_STEP_Y1 must be assigned a value')
         if (smooth_step_x0 >= smooth_step_x1) call TLS_fatal ('require SMOOTH_STEP_X0 < SMOOTH_STEP_X1')
-        
+
         call alloc_sstep_scalar_func (f, smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1)
         call ftable%insert (name, f)
 
