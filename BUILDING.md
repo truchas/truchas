@@ -33,11 +33,13 @@ Compiling Truchas for the first time is usually a two-stage process.  The
 first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
-found in the `tpl` subdirectory.  See the README file in that directory for
+found in the `tpl` subdirectory.  See [tpl/README.md](./tpl/README.md) for
 instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
-straightforward. You create a build directory, run cmake from that directory, and then run make. What you choose for a build directory is irrelevant (other than it must be different than the current directory). Here is an example:
+straightforward. You create a build directory, run cmake from that directory,
+and then run make. What you choose for a build directory is irrelevant (other
+than it must be different than the current directory). Here is an example:
 
     $ mkdir build
     $ cd build
@@ -63,3 +65,4 @@ From the build directory run the command
 
 to run the regression test suite. On multi-core systems use the `-j<n>` option
 to tell ctest how many processes it can run simultaneously; `-j8`, for example.
+All tests should pass.
