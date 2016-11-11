@@ -1,0 +1,20 @@
+&ENCLOSURE
+  name = 'casting'
+  mesh_file = 'vfrad3.gen'
+  side_set_ids = 3, 4
+  ignore_block_ids = 3
+  symmetries = 'mirrorx', 'mirrory', 'mirrorz'
+/
+
+&CHAPARRAL
+  blocking_enclosure  = .true.
+  partial_enclosure   = .false.
+  BSP_max_tree_depth  = 10
+  BSP_min_leaf_length = 25
+  spatial_tolerance   = 1.0e-8
+  hemicube_resolution = 200
+  min_separation      = 20.0
+  max_subdivisions    = 30
+  smoothing_tolerance = 1.0e-8
+  smoothing_max_iter  = 100
+/

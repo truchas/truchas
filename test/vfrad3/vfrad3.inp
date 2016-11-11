@@ -1,0 +1,149 @@
+VIEW FACTOR RADIATION TEST 3
+
+3D heat conduction and view factor radiation in a casting-like configuration
+with an outer shell mold and inner core mold (not connected) separated by a
+meshed void region (the casting cavity).  There is an interface between core
+and cavity and shell and cavity, with a dummy 0-HTC condition, and enclosure
+view factor radiation in the cavity, which is the sole means of heating the
+core.
+
+&MESH
+  mesh_file = 'vfrad3.gen'
+  interface_side_sets = 3, 4
+/
+
+&OUTPUTS
+  Output_T = 0.0, 0.15
+  Output_Dt = 0.15
+/
+
+&SIMULATION_CONTROL
+  phase_start_times = 0.15
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  fluid_flow = .false.
+/
+
+&PHYSICAL_CONSTANTS
+  stefan_boltzmann = 1.0
+  absolute_zero = 0.0
+/
+
+&NUMERICS
+  dt_init = 1.0d-4
+  dt_min  = 1.0d-5
+  dt_grow = 10.0
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 0.1
+  max_nlk_itr        = 5
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+!! RADIATION WITHIN THE CASTING CAVITY
+
+&ENCLOSURE_RADIATION
+  name = 'casting cavity'
+  enclosure_file = 'intvf.nc'
+  ambient_constant = 1.0  ! required, but not used
+  error_tolerance = 1.0e-8
+/
+
+&ENCLOSURE_SURFACE
+  name = 'core/shell'
+  enclosure_name = 'casting cavity'
+  face_block_ids = 3, 4    ! references face blocks in 'intvf.nc'
+  emissivity_constant = 0.5
+/
+
+!! DUMMY INTERNAL HTC ON SHELL/CASTING, CORE/CASTING INTERFACE
+
+&DS_INTERFACE_CONDITION
+  name = 'casting/shell,core'
+  variable = 'temperature'
+  condition = 'htc'
+  data_constant = 0.0
+  face_set_ids = 3, 4   ! reference IDs from interface_side_sets
+/
+
+!! SIMPLE RADIATION TO AMBIENT FROM EXTERNAL SURFACE
+
+&DS_BOUNDARY_CONDITION
+  name = 'external surface'
+  variable = 'temperature'
+  condition = 'radiation'
+  data_constant = 0.5, 2.0
+  face_set_ids = 2
+/
+
+!! NO HEAT FLUX ON SYMMETRY PLANES
+
+&DS_BOUNDARY_CONDITION
+  name = 'symmetry planes'
+  variable = 'temperature'
+  condition = 'flux'
+  data_constant = 0.0
+  face_set_ids = 1
+/
+
+!! THE OUTER SHELL
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 1.0
+/
+
+!! THE INNER CORE
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  temperature = 1.0
+/
+
+&MATERIAL
+  material_number  = 1
+  material_name    = 'solid'
+  material_feature = 'background'
+  density          = 4.0
+/
+
+&PHASE
+  name = 'solid'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 0.5
+/
+
+&MATERIAL_SYSTEM
+  name   = 'solid'
+  phases = 'solid'
+/
+
+!! THE VOID-FILLED CASTING CAVITY
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 3
+  material_number = 2
+  temperature = 1.0
+/
+
+&MATERIAL
+  material_number = 2
+  material_name   = 'void'
+  density         = 0.0
+  void_temperature = 1.0
+/

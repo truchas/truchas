@@ -133,7 +133,7 @@ add_pytruchas_test(htvoid3
 add_pytruchas_test(htvoid4
                    htvoid4/testHTVoid4.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION)
+		   LABELS DIFFUSION RADIATION)
 
 add_pytruchas_test(broken-dam
                    broken-dam/testBrokenDam.py
@@ -208,17 +208,22 @@ add_pytruchas_test(gap-rad-flow
 add_pytruchas_test(vfrad1
                    vfrad1/testVFRad1.py
 		   PROCESSORS 4
-		   LABELS CONDUCTION HEX)
+		   LABELS RADIATION CONDUCTION HEX)
 
 add_pytruchas_test(vfrad1-tet
                    vfrad1-tet/testVFRad1Tet.py
 		   PROCESSORS 4
-		   LABELS CONDUCTION TET)
+		   LABELS RADIATION CONDUCTION TET)
 
 add_pytruchas_test(vfrad2
                    vfrad2/testVFRad2.py
 		   PROCESSORS 4
-		   LABELS CONDUCTION)
+		   LABELS RADIATION CONDUCTION)
+
+add_pytruchas_test(vfrad3
+                   vfrad3/testVFRad3.py
+		   PROCESSORS 4
+		   LABELS RADIATION CONDUCTION)
 
 add_pytruchas_test(contact-box-close
                    contact-box-close/testContactBoxClose.py

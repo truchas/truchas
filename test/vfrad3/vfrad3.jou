@@ -1,0 +1,42 @@
+## /opt/cubit/15.2-404945/bin/clarox
+## Cubit Version 15.2
+## Cubit Build 404945
+## Revised 2016-07-13 16:13:26 -0600 (Wed, 13 Jul 2016)
+## Running 11/11/2016 10:39:14 AM
+## Command Options:
+brick x 1 y 1 z 1
+move volume 1 x 0.5 y 0.5 z 0.5 include_merged
+brick x 1.5 y 1.5 z 1.5
+chop volume 1 with volume 2
+brick x 1 y 1 z 1
+chop volume 3 with volume 5
+compress all
+imprint volume all
+merge volume all
+
+volume all size 0.125
+mesh volume all
+
+set duplicate block elements off
+block 1 add volume 1
+set duplicate block elements off
+block 2 add volume 2
+set duplicate block elements off
+block 3 add volume 3
+
+block 1 name "shell"
+block 2 name "core"
+block 3 name "casting"
+
+sideset 1 add surface 17 23 10 16 22 12 18 24 11
+sideset 2 add surface 3 2 1
+sideset 3 add surface 15 13 14 both
+sideset 4 add surface 4 6 5 both
+
+sideset 1 name "symmetry planes"
+sideset 2 name "external surface"
+sideset 3 name "core/casting"
+sideset 4 name "shell/casting"
+
+#set exodus netcdf4 on
+export genesis "vfrad3.gen" overwrite
