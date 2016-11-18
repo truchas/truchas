@@ -62,6 +62,7 @@ contains
     use solid_mechanics_input,     only: solid_mechanics
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
+    use toolpath_namelist,         only: read_toolpath_namelists
     use timing_tree
     use truchas_logging_services
     use string_utilities, only: i_to_c
@@ -91,6 +92,7 @@ contains
 
     call read_physical_constants (lun)
     call read_function_namelists (lun)
+    call read_toolpath_namelists (lun)
     call read_phase_namelists (lun)
     call read_material_system_namelists (lun)
 

@@ -1,0 +1,272 @@
+!!
+!! TOOLPATH_TYPE
+!!
+!! This module defines the derived type TOOLPATH that is intended to describe
+!! the 3D path taken by a machine tool, such as a laser, cutting head, etc.
+!! It is designed to emulate the paths that are typical of CNC processes.
+!!
+!! Neil N. Carlson <nnc@lanl.gov>
+!! June 2016
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! PROGRAMMING INTERFACE
+!!
+!!  The TOOLPATH type represents a 3D path as a sequence of continuous path
+!!  segments on time intervals [-\infty,t1], [t1,t2], ..., [tn,\infty].  The
+!!  individual segments are typically simple paths (e.g., no motion, linear
+!!  motion), and associated with each segment is a set of flags (0 through 31)
+!!  that are either set or clear.  A flag can be used to indicate whether the
+!!  laser is on or off for the duration of the segment, for example.  While
+!!  the overall path is typically continuous (though this isn't strictly
+!!  required), the flags may change their settings from one segment to the
+!!  next, and so the path is regarded as having potential discontinuities
+!!  at the segment end points.  For this reason the toolpath has the notion
+!!  of a current path segment.  Queries about position or flag settings are
+!!  made using the info for this segment, including at the endpoints.  Client
+!!  code makes the determination when to advance the toolpath to the next
+!!  segment.
+!!
+!!  The type has the following type bound procedures:
+!!
+!!  GET_POSITION(T, R) returns the path position R at time T for the current
+!!     path segment.  T must belong to the time interval for the segment.
+!!
+!!  IS_FLAG_SET(N) returns true if flag N is set for the current path segment.
+!!
+!!  SET_SEGMENT(T) sets the current path segment to the one whose time interval
+!!    contains T, but is not bounded above by T.
+!!
+!!  NEXT_SEGMENT() advances the current path segment to the next segment.
+!!
+!!  GET_SEGMENT_STARTS(TIMES, DISCONT) returns the list of segment end-points
+!!    t1, t2, ..., tn in the array TIMES.  The corresponding logical array
+!!    DISCONT returns true if any of the flags changed their setting at the
+!!    times.  Both arrays are allocatable and allocated by the subroutine.
+!!
+!!  IS_VALID() returns true if the toolpath data appears valid.  What this
+!!    means is that there is a sequence of paths and that they properly tile
+!!    the entire real line (time).  It does not examine the individual paths
+!!    beyond their time end points.
+!!
+!!  This module does not provide a method for creating a toolpath object (see
+!!  the TOOLPATH_FACTORY module), but it does provide some basic tools for doing
+!!  so.  The following functions return a pointer to a path segment:
+!!
+!!  NEW_PATH_SEGMENT(MOVE, FLAGS) creates a segment with path MOVE and flag
+!!    settings given by the integer FLAGS (the flags are the individual bits
+!!    of the integer). MOVE is an allocatable class XYZ_MOTION variable. Its
+!!    allocation is taken by the segment result and returned unallocated.
+!!
+!!  NEW_START_SEGMENT(T, R, FLAGS) creates a segment with constant path at
+!!    position R for t <= T, and flag settings given by FLAGS.  The initial
+!!    toolpath segment must be one of these.
+!!
+!!  NEW_FINAL_SEGMENT(T, R, FLAGS) creates a segment with constant path at
+!!    position R for t >= T, and flag settings given by FLAGS.  The final
+!!    toolpath segment must be one of these.
+!!
+!!  Use of these path segment function expressions is limited to the actual
+!!  argument of the TOOLPATH type bound subroutine APPEND_PATH_SEGMENT, as in
+!!
+!!    TYPE(TOOLPATH) :: TP
+!!    CALL TP%APPEND_PATH_SEGMENT(NEW_START_SEGMENT(...))
+!!
+!!  See the TOOLPATH_FACTORY module for example usage.
+!!
+
+#include "f90_assert.fpp"
+
+module toolpath_type
+
+  use xyz_motion_class
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  implicit none
+  private
+
+  type, public :: toolpath
+    private
+    type(path_segment), pointer :: first => null(), last => null(), curr => null()
+  contains
+    procedure :: get_position
+    procedure :: is_flag_set
+    procedure :: set_segment
+    procedure :: next_segment
+    procedure :: get_segment_starts
+    procedure :: is_valid => valid_toolpath
+    procedure :: append_path_segment
+    final :: toolpath_delete
+  end type
+
+  type :: path_segment
+    private
+    type(path_segment), pointer :: next => null()
+    class(xyz_motion), allocatable :: move
+    integer :: flags = 0
+  contains
+    final :: path_segment_delete
+  end type
+
+  public :: new_path_segment, new_start_segment, new_final_segment
+
+contains
+
+  !! Final subroutine for TOOLPATH objects.
+  subroutine toolpath_delete (this)
+    type(toolpath), intent(inout) :: this
+    if (associated(this%first)) deallocate(this%first)
+  end subroutine toolpath_delete
+
+  !! Sets the current segment to the segment containing the given time.
+  subroutine set_segment(this, t)
+    class(toolpath), intent(inout) :: this
+    real(r8), intent(in) :: t
+    this%curr => this%first
+    do while (associated(this%curr))
+      if (t < this%curr%move%final_time()) exit
+      this%curr => this%curr%next
+    end do
+    !INSIST(associated(this%curr))
+    !INSIST(t >= this%curr%move%start_time())
+  end subroutine set_segment
+
+  !! Returns the toolpath position at the given time.
+  subroutine get_position(this, t, r)
+    class(toolpath), intent(in) :: this
+    real(r8), intent(in)  :: t
+    real(r8), intent(out) :: r(:)
+    ASSERT(t >= this%curr%move%start_time())
+    ASSERT(t <= this%curr%move%final_time())
+    r = this%curr%move%coord(t)
+  end subroutine get_position
+
+  !! Returns true if flag N is set.
+  logical function is_flag_set(this, n)
+    class(toolpath), intent(in) :: this
+    integer, intent(in) :: n
+    ASSERT(n >= 0 .and. n < bit_size(this%curr%flags))
+    is_flag_set = btest(this%curr%flags,n)
+  end function is_flag_set
+
+  !! Advance to the next path segment.
+  subroutine next_segment(this)
+    class(toolpath), intent(inout) :: this
+    if (associated(this%curr%next)) this%curr => this%curr%next
+  end subroutine next_segment
+
+  !! Appends the given PATH_SEGMENT (as made by NEW_PATH_SEGMENT) to the list.
+  subroutine append_path_segment(this, segment)
+    class(toolpath), intent(inout) :: this
+    type(path_segment), pointer, intent(in) :: segment
+    if (associated(this%last)) then
+      this%last%next => segment
+    else
+      this%first => segment
+    end if
+    this%last => segment
+  end subroutine append_path_segment
+
+  subroutine get_segment_starts (this, times, discont)
+    class(toolpath), intent(in) :: this
+    real(r8), allocatable, intent(out) :: times(:)
+    logical, allocatable, intent(out), optional :: discont(:)
+    type(path_segment), pointer :: seg
+    integer :: n
+    integer :: flags
+    n = 0; seg => this%first
+    do while (associated(seg))
+      n = n + 1
+      seg => seg%next
+    end do
+    n = n - 1
+    !INSIST(n > 0)
+    allocate(times(n))
+    if (present(discont)) allocate(discont(n))
+    flags = this%first%flags
+    n = 0
+    seg => this%first%next
+    do n = 1, size(times)
+      times(n) = seg%move%start_time()
+      if (present(discont)) discont(n) = (seg%flags /= flags)
+      flags = seg%flags
+      seg => seg%next
+    end do
+  end subroutine get_segment_starts
+
+  logical function valid_toolpath (this)
+    class(toolpath), intent(in) :: this
+    real(r8) :: t
+    type(path_segment), pointer :: seg
+    valid_toolpath = .false.
+    if (.not.associated(this%first)) return
+    if (this%first%move%start_time() /= -huge(1.0_r8)) return
+    if (.not.associated(this%last)) return
+    if (this%last%move%final_time() /= huge(1.0_r8)) return
+    t = this%first%move%final_time()
+    seg => this%first%next
+    do while (associated(seg))
+      if (t /= seg%move%start_time()) return
+      if (t >= seg%move%final_time()) return
+      t = seg%move%final_time()
+      seg => seg%next
+    end do
+    valid_toolpath = .true.
+  end function valid_toolpath
+
+  !! Final subroutine for PATH_SEGMENT objects.  This recursively follows the
+  !! NEXT pointer.  When deallocating a linked list, only the root needs to be
+  !! explicitly deallocated. When the desire is to deallocate a single object,
+  !! first nullify the NEXT pointer to prevent the recursive finalization from
+  !! deallocating more than it should.
+  recursive subroutine path_segment_delete (this)
+    type(path_segment), intent(inout) :: this
+    if (associated(this%next)) deallocate(this%next)
+  end subroutine path_segment_delete
+
+  !! Returns a pointer to a new initialized (but unlinked) PATH_SEGMENT.
+  function new_path_segment(move, flags) result(segment)
+    class(xyz_motion), allocatable, intent(inout) :: move
+    integer, intent(in) :: flags
+    type(path_segment), pointer :: segment
+    allocate(segment)
+    call move_alloc(move, segment%move)
+    segment%flags = flags
+  end function new_path_segment
+
+  !! Returns a pointer to a new (but unlinked) start PATH_SEGMENT.
+  function new_start_segment(t, r, flags) result(segment)
+    use dwell_xyz_motion_type
+    real(r8), intent(in) :: t, r(:)
+    integer,  intent(in) :: flags
+    type(path_segment), pointer :: segment
+    allocate(segment)
+#ifdef NO_2008_LHS_POLY_REALLOC
+    allocate(segment%move, source=dwell_xyz_motion(r=r, t1=t))
+#else
+    segment%move = dwell_xyz_motion(r=r, t1=t)
+#endif
+    segment%flags = flags
+  end function new_start_segment
+
+  !! Returns a pointer to a new (but unlinked) final PATH_SEGMENT.
+  function new_final_segment(t, r, flags) result(segment)
+    use dwell_xyz_motion_type
+    real(r8), intent(in) :: t, r(:)
+    integer,  intent(in) :: flags
+    type(path_segment), pointer :: segment
+    allocate(segment)
+#ifdef NO_2008_LHS_POLY_REALLOC
+    allocate(segment%move, source=dwell_xyz_motion(r=r, t0=t))
+#else
+    segment%move = dwell_xyz_motion(r=r, t0=t)
+#endif
+    segment%flags = flags
+  end function new_final_segment
+
+end module toolpath_type
