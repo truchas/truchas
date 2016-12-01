@@ -45,13 +45,16 @@ CONTAINS
     !
     !=======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
-    use input_utilities,         only: seek_to_namelist
+    use input_utilities,         only: seek_to_namelist, NULL_I, NULL_C
     use interface_output_module, only: Int_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T, precise_output
     use parallel_info_module,    only: p_info
+    use pgslib_module,           only: PGSLIB_BCAST
     use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
+    use output_control,          only: part, part_path
+    use toolpath_table,          only: toolpath_ptr
          
     integer, intent(in) :: lun
 
@@ -59,6 +62,8 @@ CONTAINS
     logical :: fatal, found
     integer :: ioerror
     character(128) :: fatal_error_string
+    integer :: move_block_ids(32)
+    character(32) :: move_toolpath_name
 
     ! Define OUTPUTS namelist
     namelist /OUTPUTS/ Output_Dt_Multiplier,       &
@@ -68,7 +73,8 @@ CONTAINS
                        Short_Output_Dt_Multiplier,     &
                        Probe_Output_Cycle_Multiplier,  &
                        precise_output,                 &
-                       retain_last_step
+                       retain_last_step, &
+                       move_block_ids, move_toolpath_name
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -94,6 +100,8 @@ CONTAINS
 
        if (.not. fatal) then
           ! Read namelist
+          move_block_ids = NULL_I
+          move_toolpath_name = NULL_C
           read (lun, outputs, IOSTAT = ioerror)
           fatal_error_string = 'OUTPUTS_INPUT: Error reading OUTPUTS namelist'
           fatal = (ioerror/=0)
@@ -105,10 +113,26 @@ CONTAINS
 
     ! Broadcast data if no errors so far
     call OUTPUTS_INPUT_PARALLEL ()
+    call PGSLIB_BCAST (move_block_ids)
+    call PGSLIB_BCAST (move_toolpath_name)
 
     ! Check namelist
     call OUTPUTS_CHECK (fatal)
     call TLS_fatal_if_any (fatal, 'OUTPUTS_INPUT: OUTPUTS Namelist input error')
+
+    if (any(move_block_ids /= NULL_I)) then
+      if (move_toolpath_name == NULL_C) call TLS_fatal('MOVE_TOOLPATH_NAME not specified')
+    else if (move_toolpath_name /= NULL_C) then
+      call TLS_fatal('MOVE_BLOCK_IDS not specified')
+    end if
+
+    allocate(part(count(move_block_ids/=NULL_I)))
+    part = pack(move_block_ids,mask=move_block_ids/=NULL_I)
+    if (move_toolpath_name /= NULL_C) then
+      part_path => toolpath_ptr(move_toolpath_name)
+      if (.not.associated(part_path)) &
+          call TLS_fatal('no such toolpath: ' // trim(move_toolpath_name))
+    end if
 
   END SUBROUTINE OUTPUTS_INPUT
 
