@@ -134,6 +134,18 @@ interface
 end interface
 
 interface
+    subroutine danu_attr_write_int1_f(ptr,attr_name,name_len,value,dim,flag) bind(c)
+    use iso_c_binding
+    type(C_PTR),                     intent(in)    :: ptr
+    character(kind=C_CHAR),          intent(in)    :: attr_name(*)
+    integer(kind=C_INT),             intent(in)    :: name_len
+    integer(kind=C_INT),             intent(in)    :: value(*)
+    integer(kind=C_INT),             intent(in)    :: dim
+    integer(kind=C_INT),             intent(out)   :: flag
+    end subroutine danu_attr_write_int1_f
+end interface
+
+interface
     subroutine danu_attr_read_int_f(ptr,attr_name,name_len,buffer,flag) bind(c)
     use iso_c_binding
     type(C_PTR),                     intent(in)    :: ptr
@@ -177,6 +189,19 @@ interface
     real(kind=C_DOUBLE),             intent(in)    :: value
     integer(kind=C_INT),             intent(out)   :: flag
     end subroutine danu_attr_write_real8_f
+end interface
+
+interface
+    subroutine danu_attr_write_real81_f(ptr,attr_name,name_len,value,dim,flag) &
+                                       bind(c)
+    use iso_c_binding
+    type(C_PTR),                     intent(in)    :: ptr
+    character(kind=C_CHAR),          intent(in)    :: attr_name(*)
+    integer(kind=C_INT),             intent(in)    :: name_len
+    real(kind=C_DOUBLE),             intent(in)    :: value(*)
+    integer(kind=C_INT),             intent(in)    :: dim
+    integer(kind=C_INT),             intent(out)   :: flag
+    end subroutine danu_attr_write_real81_f
 end interface
 
 interface

@@ -242,8 +242,10 @@ end interface attribute_list
 
 interface attribute_write
      module procedure df90_attr_write_integer
+     module procedure df90_attr_write_integer1
      module procedure df90_attr_write_real4
      module procedure df90_attr_write_real8
+     module procedure df90_attr_write_real81
      module procedure df90_attr_write_character0
      module procedure df90_attr_write_character1
 end interface attribute_write     
@@ -1102,6 +1104,33 @@ end subroutine df90_attr_write_integer
 
 ! ------------------------------------------------------------------------------
 
+subroutine df90_attr_write_integer1(id,attr_name,value,stat)
+
+! --- Calling arguments
+
+      type(C_PTR),       intent(in)  :: id
+      character(len=*),  intent(in)  :: attr_name
+      integer,           intent(in)  :: value(:)
+
+      integer, intent(out), optional :: stat
+
+! --- Local variables
+
+      integer :: name_len
+      integer(C_INT) :: ierr
+
+! --- Code
+
+      name_len = len_trim(attr_name)
+      call danu_attr_write_int1_f(id,attr_name,name_len,value,size(value),ierr)
+      if (present(stat)) then
+          call define_return_status(ierr,stat)
+      endif       
+
+end subroutine df90_attr_write_integer1
+
+! ------------------------------------------------------------------------------
+
 subroutine df90_attr_read_integer(id,attr_name,value,stat)
 
 ! --- Calling arguments
@@ -1180,6 +1209,33 @@ subroutine df90_attr_read_real4(id,attr_name,value,stat)
       endif       
 
 end subroutine df90_attr_read_real4
+
+! ------------------------------------------------------------------------------
+
+subroutine df90_attr_write_real81(id,attr_name,value,stat)
+
+! --- Calling arguments
+
+      type(C_PTR),         intent(in)  :: id
+      character(len=*),    intent(in)  :: attr_name
+      real(kind=C_DOUBLE), intent(in)  :: value(:)
+
+      integer, intent(out), optional   :: stat
+
+! --- Local variables
+
+      integer :: name_len
+      integer(C_INT) :: ierr
+
+! --- Code
+
+      name_len = len_trim(attr_name)
+      call danu_attr_write_real81_f(id,attr_name,name_len,value,size(value),ierr)
+      if (present(stat)) then
+          call define_return_status(ierr,stat)
+      endif       
+
+end subroutine df90_attr_write_real81
 
 ! ------------------------------------------------------------------------------
 

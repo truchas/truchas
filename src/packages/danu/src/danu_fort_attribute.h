@@ -27,8 +27,10 @@
 #define danu_attr_names_f            FORTRAN_FUNC_GLOBAL_(danu_attr_names_f,DANU_ATTR_NAMES_F)
 
 #define danu_attr_write_int_f        FORTRAN_FUNC_GLOBAL_(danu_attr_write_int_f,DANU_ATTR_WRITE_INT_F)
+#define danu_attr_write_int1_f       FORTRAN_FUNC_GLOBAL_(danu_attr_write_int1_f,DANU_ATTR_WRITE_INT1_F)
 #define danu_attr_write_real4_f      FORTRAN_FUNC_GLOBAL_(danu_attr_write_real4_f,DANU_ATTR_WRITE_REAL4_F)
 #define danu_attr_write_real8_f      FORTRAN_FUNC_GLOBAL_(danu_attr_write_real8_f,DANU_ATTR_WRITE_REAL8_F)
+#define danu_attr_write_real81_f     FORTRAN_FUNC_GLOBAL_(danu_attr_write_real81_f,DANU_ATTR_WRITE_REAL81_F)
 #define danu_attr_write_char_f       FORTRAN_FUNC_GLOBAL_(danu_attr_write_char_f,DANU_ATTR_WRITE_CHAR_F)
 
 #define danu_attr_read_int_f         FORTRAN_FUNC_GLOBAL_(danu_attr_read_int_f,DANU_ATTR_READ_INT_F)
@@ -48,8 +50,10 @@ void danu_attr_names_f(hid_t_ptr *ptr, char *names, int *flen, int *num, int *ie
 
 /* Attribute write */
 void danu_attr_write_int_f(hid_t_ptr *ptr, const char *name, int *name_flen, int *value, int *ierr);
+void danu_attr_write_int1_f(hid_t_ptr *ptr, const char *name, int *name_flen, int *value, int *dim, int *ierr);
 void danu_attr_write_real4_f(hid_t_ptr *ptr, const char *name, int *name_flen, float *value, int *ierr);
 void danu_attr_write_real8_f(hid_t_ptr *ptr, const char *name, int *name_flen, double *value, int *ierr);
+void danu_attr_write_real81_f(hid_t_ptr *ptr, const char *name, int *name_flen, double *value, int *dim, int *ierr);
 void danu_attr_write_char_f(hid_t_ptr *ptr, const char *name, int *name_flen, const char *string, int *str_flen, int *ierr);
 
 /* Attribute read */
