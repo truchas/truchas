@@ -39,7 +39,7 @@ contains
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities, only: i_to_c
     use input_utilities, only: seek_to_namelist, NULL_R, NULL_C
-    use truchas_env, only: input_dir
+    use truchas_env, only: input_dir, output_dir
     use toolpath_table, only: known_toolpath
     use truchas_logging_services
 
@@ -52,10 +52,11 @@ contains
     character(31) :: name
     character(256) :: command_file
     character(1000) :: command_string
-    real(r8) :: start_time, start_coord(3), time_scale_factor, coord_scale_factor
+    real(r8) :: start_time, start_coord(3), time_scale_factor, coord_scale_factor, plotfile_dt
+    logical :: write_plotfile
 
     namelist /toolpath/ name, start_time, start_coord, time_scale_factor, coord_scale_factor, &
-                        command_string, command_file
+                        command_string, command_file, write_plotfile, plotfile_dt
 
     call TLS_info('')
     call TLS_info('Reading TOOLPATH namelists ...')
@@ -84,6 +85,8 @@ contains
         coord_scale_factor = NULL_R
         command_string = NULL_C
         command_file = NULL_C
+        write_plotfile = .false.
+        plotfile_dt = NULL_R
         read(lun,nml=toolpath,iostat=ios)
       end if
       call broadcast(ios)
@@ -97,6 +100,8 @@ contains
       call broadcast(coord_scale_factor)
       call broadcast(command_string)
       call broadcast(command_file)
+      call broadcast(write_plotfile)
+      call broadcast(plotfile_dt)
 
       !! Check the name.
       if (name == NULL_C .or. name == '') &
@@ -133,6 +138,13 @@ contains
         if (any(start_coord == NULL_R)) call TLS_fatal('START_COORD not completely specified')
       end if
 
+      !! Check PLOTFILE_DT if needed
+      if (write_plotfile) then
+        if (plotfile_dt == NULL_R) call TLS_fatal('PLOTFILE_DT not specified')
+        if (plotfile_dt <= 0.0_r8) call TLS_fatal('PLOTFILE_DT must be > 0')
+        if (time_scale_factor /= NULL_R) plotfile_dt = time_scale_factor * plotfile_dt
+      end if
+
       call make_toolpath
 
     end do
@@ -147,9 +159,10 @@ contains
 
       type(parameter_list) :: params
       type(toolpath), allocatable :: path
-      integer :: stat
-      character(:), allocatable :: errmsg
+      integer :: stat, lun, ios
+      character(:), allocatable :: errmsg, plotfile
 
+      !! Form the input parameter list for the toolpath factory.
       if (start_time /= NULL_R) call params%set('start-time', start_time)
       if (any(start_coord /= NULL_R)) call params%set('start-coord', start_coord)
       if (time_scale_factor /= NULL_R) call params%set('time-scale-factor', time_scale_factor)
@@ -159,8 +172,25 @@ contains
       else
         call params%set('command-file', trim(command_file))
       end if
+
+      !! Instantiate the toolpath.
       call alloc_toolpath(path, params, stat, errmsg)
       if (stat /= 0) call TLS_fatal('error creating toolpath: ' // errmsg)
+
+      !! Write the toolpath if requested.
+      if (write_plotfile) then
+        plotfile = trim(output_dir) // 'toolpath-' // trim(name) // '.dat'
+        if (is_IOP) then
+          open(newunit=lun,file=plotfile,action='write',status='replace',iostat=ios)
+          if (ios == 0) then
+            call path%write_plotfile(lun, plotfile_dt)
+            close(lun)
+          end if
+        end if
+        call broadcast(ios)
+        if (ios /= 0) call TLS_fatal('error opening ' // plotfile // ': iostat=' // i_to_c(ios))
+      end if
+
       call insert_toolpath(trim(name), path)
 
     end subroutine make_toolpath

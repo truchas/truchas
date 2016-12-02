@@ -100,6 +100,7 @@ module toolpath_type
     procedure :: next_segment
     procedure :: get_segment_starts
     procedure :: is_valid => valid_toolpath
+    procedure :: write_plotfile
     procedure :: append_path_segment
     final :: toolpath_delete
   end type
@@ -218,6 +219,57 @@ contains
     end do
     valid_toolpath = .true.
   end function valid_toolpath
+
+  subroutine write_plotfile(this, unit, dt)
+
+    class(toolpath), intent(in) :: this
+    integer, intent(in) :: unit
+    real(r8), intent(in) :: dt
+
+    integer :: i, j, n, nseg
+    real(r8) :: t0, t1, t, r(3)
+    type(path_segment), pointer :: seg
+    integer(kind(seg%flags)) :: bitmask
+    integer, allocatable :: flags(:)
+
+    n = 0; bitmask = 0; seg => this%first
+    do while (associated(seg))
+      n = n + 1
+      bitmask = ior(bitmask,seg%flags)
+      seg => seg%next
+    end do
+    nseg = n - 2 ! not counting first and last
+    ASSERT(nseg >= 0)
+
+    flags = [(n,n=0,bit_size(bitmask)-1)]
+    flags = pack(flags, mask=btest(bitmask,pos=flags))
+
+    write(unit,'(a,:,*("  F",i0,:))') '#  N  T  X  Y  Z', flags
+
+    seg => this%first
+    do i = 0, nseg+1
+      if (i == 0) then  ! initial unbounded segment
+        t1 = seg%move%final_time()
+        n = 2
+        t0 = t1 - n*dt
+      else if (i == nseg+1) then ! final unbounded segment
+        t0 = seg%move%start_time()
+        n = 2
+        t1 = t0 + n*dt
+      else
+        t0 = seg%move%start_time()
+        t1 = seg%move%final_time()
+        n = ceiling((t1-t0)/dt)
+      end if
+      do j = 0, n
+        t = t0*(real(n-j,r8)/real(n,r8)) + t1*(real(j,r8)/real(n,r8))
+        r = seg%move%coord(t)
+        write(unit,'(i0,4es15.7,*(i2))') i, t, r, merge(1,0,btest(seg%flags,pos=flags))
+      end do
+      seg => seg%next
+    end do
+
+  end subroutine write_plotfile
 
   !! Final subroutine for PATH_SEGMENT objects.  This recursively follows the
   !! NEXT pointer.  When deallocating a linked list, only the root needs to be
