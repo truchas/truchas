@@ -44,13 +44,14 @@ module linear_xyz_motion_type
   type, extends(xyz_motion), public :: linear_xyz_motion
     private
     real(r8) :: t0, r0(3), dr(3)  ! independent data
-    real(r8) :: ts, td, t1, ca, cd, fts, ftd  ! derived data
+    real(r8) :: ts, td, t1, ca, cd, fs, fd  ! derived data
   contains
     procedure :: coord
     procedure :: start_coord
     procedure :: final_coord
     procedure :: start_time
     procedure :: final_time
+    procedure :: partition
   end type linear_xyz_motion
 
   !! Defined constructor
@@ -96,8 +97,8 @@ contains
       this%td = this%t1
       this%ca = 0
       this%cd = 0
-      this%fts = 0
-      this%ftd = 1
+      this%fs = 0
+      this%fd = 1
       return
     end if
 
@@ -111,8 +112,8 @@ contains
       this%td = this%t1 - dt_decel
       this%ca = accel/(2*dist)
       this%cd = decel/(2*dist)
-      this%fts = this%ca * (this%ts-this%t0)**2
-      this%ftd = 1 - this%cd * (this%t1-this%td)**2
+      this%fs = this%ca * (this%ts-this%t0)**2
+      this%fd = 1 - this%cd * (this%t1-this%td)**2
     else  ! exceptional case: do not attain speed
         tmp = sqrt(tmp)
         dt_accel = tmp/accel
@@ -122,6 +123,8 @@ contains
       this%ts = this%td
       this%ca = accel/(2*dist)
       this%cd = decel/(2*dist)
+      this%fs = this%ca * (this%ts-this%t0)**2
+      this%fd = this%fs
     end if
 
   end function init
@@ -136,7 +139,7 @@ contains
     else if (t >= this%td) then
       f = 1 - this%cd*(this%t1-t)**2
     else
-      f = this%fts*((this%td-t)/(this%td-this%ts)) + this%ftd*((t-this%ts)/(this%td-this%ts))
+      f = this%fs*((this%td-t)/(this%td-this%ts)) + this%fd*((t-this%ts)/(this%td-this%ts))
     end if
     r = this%r0 + f*this%dr
   end function coord
@@ -164,6 +167,37 @@ contains
     real(r8) :: t
     t = this%t1
   end function final_time
+
+  pure function partition(this, ds) result(t)
+
+    class(linear_xyz_motion), intent(in) :: this
+    real(r8), intent(in) :: ds
+    real(r8), allocatable :: t(:)
+
+    integer :: n, j, ns, nd
+    real(r8) :: f
+
+    n = ceiling(vector_length(this%dr)/ds)
+    allocate(t(0:n))
+
+    ns = floor(n*this%fs)
+    t(0) = this%t0
+    do j = 1, ns
+      t(j) = this%t0 + sqrt(j/(n*this%ca))
+    end do
+
+    nd = floor(n*this%fd)
+    do j = ns+1, nd
+      f = j/real(n,r8)
+      t(j) = this%ts*((this%fd-f)/(this%fd-this%fs)) + this%td*((f-this%fs)/(this%fd-this%fs))
+    end do
+
+    t(n) = this%t1
+    do j = 1, n-nd-1
+      t(n-j) = this%t1 - sqrt(j/(n*this%cd))
+    end do
+
+  end function partition
 
   pure function vector_length(x) result(len_x)
     real(r8), intent(in) :: x(:)

@@ -55,6 +55,25 @@
 !!    the entire real line (time).  It does not examine the individual paths
 !!    beyond their time end points.
 !!
+!!  The following partition subroutines are optional and have no impact on
+!!  the behavior of the preceding procedures.  They assume (and check for)
+!!  an overall continuous path.
+!!
+!!  SET_PARTITION(DS) generates an internal partition of the path that is
+!!    subordinate to the path segments.  This is an ordered sequence of times
+!!    and corresponding path coordinates that includes the end points of the
+!!    path segments, and that also includes equally spaced points within each
+!!    segment separated by an arclength approximately equal to, but no greater
+!!    than, DS.  The generated partition data can be retrived with GET_PARTITION.
+!!
+!!  GET_PARTITION(TIME, COORD, HASH) retrieves a previously generated partition.
+!!    all arguments are optional allocatable arrays, and must be specified with
+!!    keywords.  TIME(:) is the ordered list of times, COORD(3,:) the list of
+!!    path coordinates, and HASH(:) is a character array (deferred length)
+!!    of a hash of the coordinates (first 7 characters of the sha1 hash), which
+!!    are useful for naming files associated with the coordinates, for example.
+!!    There is guaranteed to be no hash collision.
+!!
 !!  This module does not provide a method for creating a toolpath object (see
 !!  the TOOLPATH_FACTORY module), but it does provide some basic tools for doing
 !!  so.  The following functions return a pointer to a path segment:
@@ -80,6 +99,22 @@
 !!
 !!  See the TOOLPATH_FACTORY module for example usage.
 !!
+!! IMPLEMENTATION NOTES
+!!
+!! 1. The partition capability is driven by the moving radiation enclosure
+!! use case.  Here a toolpath describes the motion of part of the enclosure.
+!! Computing the changing view factor matrix at each time step is impractical.
+!! Instead we compute (and save, typically offline) the view factor matrix
+!! at a select set of configurations.  That is the partition.
+!!
+!! The current implementation feels a bit of a hack, being optional extra stuff
+!! tacked onto the toolpath type. A more sensible design would simply generate
+!! external partition data from a toolpath, but the problem is both enclosure
+!! radiation and genre need this info and there is no good owner for the data.
+!! Hence the expedient choice to let the toolpath hold it internally. A possible
+!! alternative approach worth exploring is to define an extension of the
+!! toolpath type that adds the extra data.
+!!
 
 #include "f90_assert.fpp"
 
@@ -93,6 +128,9 @@ module toolpath_type
   type, public :: toolpath
     private
     type(path_segment), pointer :: first => null(), last => null(), curr => null()
+    !! Optional partition of the path subordinate to the segments
+    real(r8), allocatable :: time(:), coord(:,:)
+    character(7), allocatable :: hash(:)
   contains
     procedure :: get_position
     procedure :: is_flag_set
@@ -101,6 +139,8 @@ module toolpath_type
     procedure :: get_segment_starts
     procedure :: is_valid => valid_toolpath
     procedure :: write_plotfile
+    procedure :: set_partition
+    procedure :: get_partition
     procedure :: append_path_segment
     final :: toolpath_delete
   end type
@@ -115,6 +155,10 @@ module toolpath_type
   end type
 
   public :: new_path_segment, new_start_segment, new_final_segment
+
+  !! Barrier used to force use of argument keywords
+  type :: kwarg_barrier
+  end type
 
 contains
 
@@ -173,7 +217,7 @@ contains
     this%last => segment
   end subroutine append_path_segment
 
-  subroutine get_segment_starts (this, times, discont)
+  subroutine get_segment_starts(this, times, discont)
     class(toolpath), intent(in) :: this
     real(r8), allocatable, intent(out) :: times(:)
     logical, allocatable, intent(out), optional :: discont(:)
@@ -200,7 +244,7 @@ contains
     end do
   end subroutine get_segment_starts
 
-  logical function valid_toolpath (this)
+  logical function valid_toolpath(this)
     class(toolpath), intent(in) :: this
     real(r8) :: t
     type(path_segment), pointer :: seg
@@ -270,6 +314,89 @@ contains
     end do
 
   end subroutine write_plotfile
+
+  logical function is_continuous(this)
+    class(toolpath), intent(in) :: this
+    type(path_segment), pointer :: seg
+    real(r8) :: r(3)
+    ASSERT(associated(this%first))
+    is_continuous = .false.
+    r = this%first%move%final_coord()
+    seg => this%first%next
+    do while (associated(seg))
+      if (any(seg%move%start_coord() /= r)) return
+      r = seg%move%final_coord()
+      seg => seg%next
+    end do
+    is_continuous = .true.
+  end function is_continuous
+
+  subroutine set_partition(this, ds)
+
+    use sha1_hash_type
+
+    class(toolpath), intent(inout) :: this
+    real(r8), intent(in) :: ds
+
+    integer :: n, j
+    real(r8), allocatable :: times(:)
+    type(path_segment), pointer :: seg
+    type(sha1_hash) :: hash
+
+    ASSERT(ds > 0)
+    INSIST(this%is_valid())
+    INSIST(is_continuous(this))
+
+    n = 1; seg => this%first%next
+    do while (associated(seg%next))
+      times = seg%move%partition(ds)
+      n = n + size(times) - 1
+      seg => seg%next
+    end do
+
+    if (allocated(this%time)) then
+      if (size(this%time) /= n) deallocate(this%time, this%coord, this%hash)
+    end if
+    if (.not.allocated(this%time)) allocate(this%time(n), this%coord(3,n), this%hash(n))
+
+    n = 1; seg => this%first%next
+    this%time(1) = seg%move%start_time()
+    this%coord(:,1) = seg%move%start_coord()
+    call hash%update(this%coord(:,1))
+    this%hash(1) = hash%hexdigest()
+    do while (associated(seg%next))
+      times = seg%move%partition(ds)
+      do j = 2, size(times)
+        n = n + 1
+        this%time(n) = times(j)
+        this%coord(:,n) = seg%move%coord(times(j))
+        call hash%update(this%coord(:,n))
+        this%hash(n) = hash%hexdigest()
+      end do
+      seg => seg%next
+    end do
+
+    !! Ensure there are no hash collisions.
+    do n = 2, size(this%hash)
+      do j = 1, n-1
+        if (this%hash(j) == this%hash(n)) then
+          INSIST(all(this%coord(:,j) == this%coord(:,n)))
+        end if
+      end do
+    end do
+
+  end subroutine set_partition
+
+  subroutine get_partition(this, kwarg, time, coord, hash)
+    class(toolpath), intent(in) :: this
+    type(kwarg_barrier), optional :: kwarg
+    real(r8), allocatable, intent(out), optional :: time(:), coord(:,:)
+    character(:), allocatable, intent(out), optional :: hash(:)
+    INSIST(allocated(this%time))
+    if (present(time)) time = this%time
+    if (present(coord)) coord = this%coord
+    if (present(hash)) hash = this%hash
+  end subroutine get_partition
 
   !! Final subroutine for PATH_SEGMENT objects.  This recursively follows the
   !! NEXT pointer.  When deallocating a linked list, only the root needs to be

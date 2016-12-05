@@ -49,6 +49,7 @@ module dwell_xyz_motion_type
     procedure :: final_coord => start_coord
     procedure :: start_time
     procedure :: final_time
+    procedure :: partition
   end type dwell_xyz_motion
 
   !! Defined constructor
@@ -103,5 +104,18 @@ contains
     real(r8) :: t
     t = this%t1
   end function final_time
+
+  pure function partition(this, ds) result(t)
+    class(dwell_xyz_motion), intent(in) :: this
+    real(r8), intent(in) :: ds
+    real(r8), allocatable :: t(:)
+    if (this%t0 == -huge(1.0_r8)) then
+      t = [this%t1]
+    else if (this%t1 == huge(1.0_r8)) then
+      t = [this%t0]
+    else
+      t = [this%t0, this%t1]
+    end if
+  end function partition
 
 end module dwell_xyz_motion_type

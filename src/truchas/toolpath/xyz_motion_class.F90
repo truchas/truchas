@@ -41,6 +41,7 @@ module xyz_motion_class
     procedure(start_coord), deferred :: final_coord
     procedure(start_time),  deferred :: start_time
     procedure(start_time),  deferred :: final_time
+    procedure(partition),   deferred :: partition
   end type xyz_motion
 
   abstract interface
@@ -59,6 +60,12 @@ module xyz_motion_class
       import r8, xyz_motion
       class(xyz_motion), intent(in) :: this
       real(r8) :: t
+    end function
+    pure function partition(this, ds) result(t)
+      import r8, xyz_motion
+      class(xyz_motion), intent(in) :: this
+      real(r8), intent(in) :: ds
+      real(r8), allocatable :: t(:)
     end function
   end interface
 

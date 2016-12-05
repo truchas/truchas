@@ -52,11 +52,12 @@ contains
     character(31) :: name
     character(256) :: command_file
     character(1000) :: command_string
-    real(r8) :: start_time, start_coord(3), time_scale_factor, coord_scale_factor, plotfile_dt
+    real(r8) :: start_time, start_coord(3), time_scale_factor, coord_scale_factor
+    real(r8) :: plotfile_dt, partition_ds
     logical :: write_plotfile
 
     namelist /toolpath/ name, start_time, start_coord, time_scale_factor, coord_scale_factor, &
-                        command_string, command_file, write_plotfile, plotfile_dt
+                        command_string, command_file, write_plotfile, plotfile_dt, partition_ds
 
     call TLS_info('')
     call TLS_info('Reading TOOLPATH namelists ...')
@@ -87,6 +88,7 @@ contains
         command_file = NULL_C
         write_plotfile = .false.
         plotfile_dt = NULL_R
+        partition_ds = NULL_R
         read(lun,nml=toolpath,iostat=ios)
       end if
       call broadcast(ios)
@@ -102,6 +104,7 @@ contains
       call broadcast(command_file)
       call broadcast(write_plotfile)
       call broadcast(plotfile_dt)
+      call broadcast(partition_ds)
 
       !! Check the name.
       if (name == NULL_C .or. name == '') &
@@ -143,6 +146,11 @@ contains
         if (plotfile_dt == NULL_R) call TLS_fatal('PLOTFILE_DT not specified')
         if (plotfile_dt <= 0.0_r8) call TLS_fatal('PLOTFILE_DT must be > 0')
         if (time_scale_factor /= NULL_R) plotfile_dt = time_scale_factor * plotfile_dt
+      end if
+
+      if (partition_ds /= NULL_R) then
+        if (partition_ds <= 0.0_r8) call TLS_fatal('PARTITION_DS must be > 0')
+        if (coord_scale_factor /= NULL_R) partition_ds = coord_scale_factor * partition_ds
       end if
 
       call make_toolpath
@@ -190,6 +198,9 @@ contains
         call broadcast(ios)
         if (ios /= 0) call TLS_fatal('error opening ' // plotfile // ': iostat=' // i_to_c(ios))
       end if
+
+      !! Add path partition data if requested.
+      if (partition_ds /= NULL_R) call path%set_partition(partition_ds)
 
       call insert_toolpath(trim(name), path)
 
