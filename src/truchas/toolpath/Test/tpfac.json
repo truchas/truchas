@@ -1,0 +1,12 @@
+// Test toolpath
+[
+  ["setflag",1],
+  ["dwell",2],
+  ["moverel",[3,0,-4],1,0.5,0.25], // a comment
+  ["setflag",3,4],
+  ["moverel",[-3,4,0],1,0.5],
+  ["clrflag",1,4],
+  ["dwell",1],
+  ["moverel",[3,0,4],1],
+  ["clrflag",3]
+]

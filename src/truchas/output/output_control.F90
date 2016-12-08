@@ -22,6 +22,7 @@ module output_control
 
   use kinds, only: r8
   use parameter_module, only: mops
+  use toolpath_type
   implicit none
   private
 
@@ -31,5 +32,8 @@ module output_control
   integer,  save, public :: nops, next_op
   logical,  save, public :: precise_output
   logical,  save, public :: retain_last_step = .false.
+
+  integer, allocatable, public :: part(:)
+  type(toolpath), pointer, public :: part_path => null()
 
 end module output_control

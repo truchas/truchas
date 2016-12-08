@@ -67,6 +67,7 @@ contains
     use kinds, only: r8
     use legacy_mesh_api, only: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
     use legacy_mesh_api, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
+    use output_control,  only: part
     use truchas_logging_services
     
     integer :: stat, k
@@ -157,6 +158,13 @@ contains
     if (is_IOP) call data_write (sid, 'NUMPROCS', nPE, stat)
     call broadcast (stat)
     INSIST(stat == DANU_SUCCESS)
+
+    !! Parts for movement
+    if (size(part) > 0) then
+      if (is_IOP) call data_write(sid, 'part1', part, stat)
+      call broadcast(stat)
+      INSIST(stat == DANU_SUCCESS)
+    end if
     
   end subroutine TDO_write_default_mesh
   
@@ -201,8 +209,10 @@ contains
     use solid_mechanics_input, only: solid_mechanics
     use gap_output, only: set_gap_element_output
     use ustruc_driver, only: ustruc_output
+    use output_control, only: part_path
     
     integer :: stat
+    real(r8) :: r(3)
   
     if (is_IOP) then
       INSIST(c_associated(sid))
@@ -213,7 +223,16 @@ contains
     if (is_IOP) call attribute_write (seq_id, 'time step', dt, stat)
     call broadcast (stat)
     INSIST(stat == DANU_SUCCESS)
-    
+
+    !! Part movement
+    if (associated(part_path)) then
+      call part_path%set_segment(t)
+      call part_path%get_position(t, r)
+      if (is_IOP) call attribute_write(seq_id, 'translate_part1', r, stat)
+      call broadcast (stat)
+      INSIST(stat == DANU_SUCCESS)
+    end if
+
     !! Prior to writing, overwrite (bogus) field data on gap elements with
     !! something reasonable.  This doesn't belong here and should be moved.
     !! Currently commented out, because the TBrook output does this.  When

@@ -108,6 +108,27 @@ void danu_attr_write_int_f(hid_t_ptr *ptr, const char *name, int *name_flen, int
 
 }
 
+void danu_attr_write_int1_f(hid_t_ptr *ptr, const char *name, int *name_flen, int *value, int *dim, int *ierr)
+{
+  hid_t loc = GET_HID_VALUE(ptr);
+  herr_t err;
+  int  c_len  = *name_flen+1;
+  char *c_name = DANU_MALLOC(char, c_len);
+  danu_err_t status  = convert_string_f2c(name,*name_flen,c_name,c_len);
+
+  err = DANU_FAILURE;
+  if ( status == DANU_SUCCESS ) {
+    err = danu_attr_write_int1(loc, c_name, value, *dim);
+    DANU_FREE(c_name);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to convert Fortran string to C string");
+  }
+
+  error_translate(err,ierr);
+
+}
+
 void danu_attr_write_real4_f(hid_t_ptr *ptr, const char *name, int *name_flen, float *value, int *ierr)
 {
   hid_t loc = GET_HID_VALUE(ptr);
@@ -139,6 +160,26 @@ void danu_attr_write_real8_f(hid_t_ptr *ptr, const char *name, int *name_flen, d
   err = DANU_FAILURE;
   if ( status == DANU_SUCCESS ) {
     err = danu_attr_write_double(loc, c_name, *value);
+    DANU_FREE(c_name);
+  }
+  else {
+    DANU_ERROR_MESS("Failed to convert Fortran string to C string");
+  }
+
+  error_translate(err,ierr);
+}
+
+void danu_attr_write_real81_f(hid_t_ptr *ptr, const char *name, int *name_flen, double *value, int *dim, int *ierr)
+{
+  hid_t loc = GET_HID_VALUE(ptr);
+  herr_t err;
+  int  c_len  = *name_flen+1;
+  char *c_name = DANU_MALLOC(char, c_len);
+  danu_err_t status  = convert_string_f2c(name,*name_flen,c_name,c_len);
+
+  err = DANU_FAILURE;
+  if ( status == DANU_SUCCESS ) {
+    err = danu_attr_write_double1(loc, c_name, value, *dim);
     DANU_FREE(c_name);
   }
   else {

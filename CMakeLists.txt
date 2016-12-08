@@ -203,8 +203,11 @@ list(APPEND Truchas_PREPROCESSOR
             ${Truchas_Compiler_Define}
             ${Truchas_Compiler_Define}_WORKAROUND)
 
-# Specific compiler bug workarounds
+# Specific compiler bug workarounds and defines. These are used by
+# the custom Fortran preprocessing step (that need to be eliminated).
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  list(APPEND Truchas_PREPROCESSOR -DNO_2008_LHS_POLY_REALLOC)
+  list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200237439)
   list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200362026)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.0")
     list(APPEND Truchas_PREPROCESSOR -DINTEL_INTEGER_SET_ICE)
@@ -217,6 +220,13 @@ endif()
 
 if(ENABLE_DYNAMIC_LOADING)
   list(APPEND Truchas_PREPROCESSOR -DENABLE_DYNAMIC_LOADING)
+endif()
+
+# Specific compiler bug workarounds and defines.
+# These are used when compiling code that has not been preprocessed.
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  add_definitions(-DNO_2008_LHS_POLY_REALLOC)
+  add_definitions(-DINTEL_DPD200237439)
 endif()
 
 # More hardcoded defines - only used in drivers.f90 need to move

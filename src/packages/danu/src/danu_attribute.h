@@ -27,10 +27,11 @@ herr_t danu_attr_names(hid_t loc, int num, char **names, int *num_found);
 char danu_attr_get_type(hid_t loc, const char *attr_name);
 size_t danu_attr_get_size(hid_t loc, const char *name);
 
-herr_t danu_attr_write(hid_t loc,const char * name, void * value, hid_t type);
+herr_t danu_attr_write(hid_t loc,const char * name, void * value, int dim, hid_t type);
 herr_t danu_attr_read(hid_t loc,const char * name, void * buffer, hid_t type);
 
 herr_t danu_attr_write_int(hid_t loc,const char * name, int value);
+herr_t danu_attr_write_int1(hid_t loc,const char * name, int *value, int dim);
 herr_t danu_attr_read_int(hid_t loc,const char * name, int * buffer);
 
 herr_t danu_attr_write_uint(hid_t loc,const char * name, unsigned int value);
@@ -40,6 +41,7 @@ herr_t danu_attr_write_float(hid_t loc,const char * name, float value);
 herr_t danu_attr_read_float(hid_t loc,const char * name, float * buffer);
 
 herr_t danu_attr_write_double(hid_t loc,const char * name, double value);
+herr_t danu_attr_write_double1(hid_t loc,const char * name, double *value, int dim);
 herr_t danu_attr_read_double(hid_t loc,const char * name, double * buffer);
 
 herr_t danu_attr_write_string(hid_t loc,const char * name, const char * string);

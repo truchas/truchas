@@ -36,6 +36,7 @@ include(physics/TruchasFiles.cmake)
 include(setup/TruchasFiles.cmake)
 include(solver/TruchasFiles.cmake)
 include(utilities/TruchasFiles.cmake)
+include(toolpath/TruchasFiles.cmake)
 
 # --- Custom target to process Fortran files
 add_custom_target(ProcessTruchasFiles
@@ -136,3 +137,4 @@ add_subdirectory(solver/Test)
 add_subdirectory(physics/heat_species_transport/Test)
 add_subdirectory(discrete_operators/Test)
 add_subdirectory(utilities/Test)
+add_subdirectory(toolpath/Test)

@@ -529,12 +529,12 @@ size_t danu_attr_get_size(hid_t loc, const char *name)
  *         returns immediately. Returns a neagtive value if an error occurs.
  *
 */
-herr_t danu_attr_write(hid_t loc, const char * name, void * value, hid_t type)
+herr_t danu_attr_write(hid_t loc, const char * name, void * value, int dim, hid_t type)
 {
     herr_t status;
     hid_t  attr, dataspace, datatype;
     int attr_exists;
-    hsize_t  dims[1] = {1};
+    hsize_t  dims[1];
     size_t   rank = 1;
 
     if ( H5_ISA_INVALID_ID(loc) ) {
@@ -545,6 +545,11 @@ herr_t danu_attr_write(hid_t loc, const char * name, void * value, hid_t type)
 
     if ( DANU_BAD_STRING(name) ) {
         DANU_ERROR_MESS("Invalid name argument");
+        return DANU_FAILURE;
+    }
+
+    if ( dim < 1 ) {
+        DANU_ERROR_MESS("Invalid dim value");
         return DANU_FAILURE;
     }
 
@@ -564,6 +569,7 @@ herr_t danu_attr_write(hid_t loc, const char * name, void * value, hid_t type)
       return status;
     }
 
+    dims[0] = dim;
 
     attr=H5I_INVALID_HID;
     datatype=H5I_INVALID_HID;
@@ -710,7 +716,11 @@ herr_t danu_attr_read(hid_t loc, const char * name, void * buffer, hid_t mem_typ
 */
 herr_t danu_attr_write_int(hid_t loc, const char * name, int value)
 {
-    return danu_attr_write(loc,name,&value,H5T_NATIVE_INT);
+    return danu_attr_write(loc,name,&value,1,H5T_NATIVE_INT);
+}
+herr_t danu_attr_write_int1(hid_t loc, const char * name, int *value, int dim)
+{
+    return danu_attr_write(loc,name,value,dim,H5T_NATIVE_INT);
 }
 /*
  * Routine: herr_t danu_attr_read_int(hid_t loc,char *name, int * buffer)
@@ -754,7 +764,7 @@ herr_t danu_attr_read_int(hid_t loc, const char * name, int * buffer)
 */
 herr_t danu_attr_write_uint(hid_t loc, const char * name, unsigned int value)
 {
-    return danu_attr_write(loc,name,&value,H5T_NATIVE_UINT);
+    return danu_attr_write(loc,name,&value,1,H5T_NATIVE_UINT);
 }
 /*
  * Routine: herr_t danu_attr_read_uint(hid_t loc,char *name, unsigned int * buffer)
@@ -798,7 +808,7 @@ herr_t danu_attr_read_uint(hid_t loc, const char * name, unsigned int * buffer)
 */
 herr_t danu_attr_write_float(hid_t loc, const char * name, float value)
 {
-    return danu_attr_write(loc,name,&value,H5T_NATIVE_FLOAT);
+    return danu_attr_write(loc,name,&value,1,H5T_NATIVE_FLOAT);
 }
 /*
  * Routine: herr_t danu_attr_read_float(hid_t loc,char *name, float * buffer)
@@ -842,7 +852,11 @@ herr_t danu_attr_read_float(hid_t loc, const char * name, float * buffer)
 */
 herr_t danu_attr_write_double(hid_t loc, const char * name, double value)
 {
-    return danu_attr_write(loc,name,&value,H5T_NATIVE_DOUBLE);
+    return danu_attr_write(loc,name,&value,1,H5T_NATIVE_DOUBLE);
+}
+herr_t danu_attr_write_double1(hid_t loc, const char * name, double *value, int dim)
+{
+    return danu_attr_write(loc,name,value,dim,H5T_NATIVE_DOUBLE);
 }
 /*
  * Routine: herr_t danu_attr_read_double(hid_t loc,char *name, double * buffer)
@@ -893,7 +907,7 @@ herr_t danu_attr_write_string(hid_t loc, const char * name, const char * string)
     H5Tset_size(string_type,strlen(string)+1);
     H5Tset_strpad(string_type,H5T_STR_NULLTERM);
     H5Tset_order(string_type,H5T_ORDER_NONE);
-    status = danu_attr_write(loc,name,(void*)string,string_type);
+    status = danu_attr_write(loc,name,(void*)string,1,string_type);
     H5Tclose(string_type);
     return status;
 }
