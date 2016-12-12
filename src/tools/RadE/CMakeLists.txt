@@ -22,6 +22,11 @@ if ( ENABLE_MPI )
   include_directories(${MPI_C_INCLUDE_PATH})
 endif()
 
+# Ensure necessary Intel compiler options are there.
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume realloc_lhs")
+endif()
+
 # --- Compile defines
 if(ENABLE_MPI)
   add_definitions(-DUSE_MPI)
