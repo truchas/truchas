@@ -157,18 +157,21 @@ contains
       use ds_boundary_condition_input, only: get_boundary_data
       use ds_interface_condition_input, only: get_interface_data
       use index_partitioning, only: gather_boundary
-      use bitfield_type, only: btest
+      use bitfield_type
       use physical_constants, only: stefan_boltzmann, absolute_zero
-      use parallel_communication, only: global_any
+      use parallel_communication, only: global_any, global_count
+      use string_utilities, only: i_to_c
 
       type(unstr_mesh), intent(in), target :: mesh
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
       character(len=*), intent(out) :: errmsg
 
-      integer :: j
+      integer :: j, n
       logical, allocatable :: mask(:), rmask(:), fmask(:)
       integer, allocatable :: setids(:)
+      character(len(errmsg)) :: string1, string2
+      type(bitfield) :: bitmask
 
       allocate(mask(mesh%nface))
 
@@ -253,19 +256,32 @@ contains
       mask(model%bc_dir%faces) = .true. ! mark the dirichlet faces
 
       !! Finally verify that a condition has been applied to every boundary face.
-      !! TODO: THIS DOESN'T WORK PROPERLY IN PARALLEL
-      if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then
-        mask = mask .neqv. btest(mesh%face_set_mask,0)
-        call mesh%get_face_set_IDs (pack([(j,j=1,mesh%nface)], mask), setids)
+      mask = mask .neqv. btest(mesh%face_set_mask,0)
+      if (global_any(mask)) then
+        call mesh%get_face_set_ids(pack([(j,j=1,mesh%nface)], mask), setids)
+        if (size(setids) == 0) then
+          string1 = ' (none)'
+        else
+          write(string1,'(i0,*(:,", ",i0))') setids
+        end if
+        call mesh%get_link_set_ids(mask, setids)
+        if (size(setids) == 0) then
+          string2 = ' (none)'
+        else
+          write(string2,'(i0,*(:,", ",i0))') setids
+        end if
+        errmsg = 'incomplete temperature boundary/interface specification;' // &
+            ' remaining boundary faces belong to face sets ' // trim(string1) // &
+            '; and interface link sets ' // trim(string2)
+        bitmask = ibset(ZERO_BITFIELD, 0)
+        mask = mask .and. (mesh%face_set_mask == bitmask)
+        mask(mesh%lface(1,:)) = .false.
+        mask(mesh%lface(2,:)) = .false.
+        n = global_count(mask(:mesh%nface_onP))
+        if (n > 0) errmsg = trim(errmsg) // '; ' // i_to_c(n) // ' faces belong to neither'
         stat = -1
-        write(errmsg,'(a,99(:,1x,i0))') &
-          'incomplete temperature boundary/interface condition specification; ' // &
-          'remaining boundary faces belong to face sets', setids
-        deallocate(setids)
         return
       end if
-
-      deallocate(mask)
 
       stat = 0
       errmsg = ''

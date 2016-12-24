@@ -161,6 +161,7 @@ module unstr_mesh_type
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: check_bndry_face_set
+    procedure :: get_link_set_ids
   end type unstr_mesh
 
 contains
@@ -393,5 +394,26 @@ contains
     call TLS_info(repeat('*',79))
 
   end subroutine check_bndry_face_set
+
+  subroutine get_link_set_ids(this, mask, setids)
+
+    class(unstr_mesh), intent(in) :: this
+    logical, intent(in) :: mask(:)
+    integer, allocatable, intent(out) :: setids(:)
+
+    integer :: j
+    type(bitfield) :: bitmask
+
+    ASSERT(size(mask) == this%nface)
+
+    bitmask = ZERO_BITFIELD
+    do j = 1, this%nlink_onP
+      if (any(mask(this%lface(:,j)))) bitmask = ior(bitmask, this%link_set_mask(j))
+    end do
+    bitmask = global_ior(bitmask)
+
+    setids = pack(this%link_set_id, mask=btest(bitmask, pos=[(j,j=1,size(this%link_set_id))]))
+
+  end subroutine get_link_set_ids
 
 end module unstr_mesh_type
