@@ -160,6 +160,8 @@ module unstr_mesh_type
     procedure :: get_global_cface_array
     procedure :: compute_geometry
     procedure :: write_profile
+    procedure :: check_bndry_face_set
+    procedure :: get_link_set_ids
   end type unstr_mesh
 
 contains
@@ -318,5 +320,100 @@ contains
     end do
 
   end subroutine write_profile
+
+  !! This looks for boundary faces that do not belong to any face set, nor any
+  !! link. If any are found, a warning message is written.  In such cases it
+  !! may not be possible to specify a complete set of boundary conditions.
+
+  subroutine check_bndry_face_set(this)
+
+    use string_utilities, only: i_to_c
+    use truchas_logging_services
+
+    class(unstr_mesh), intent(in) :: this
+
+    integer, parameter :: MAX_PRINT = 10
+    integer :: j, n, nqf, array(nPE)
+    logical, allocatable :: mask(:)
+    real(r8), allocatable :: xc(:,:), xc_l(:,:)
+    character(70), allocatable :: msg(:)
+    type(bitfield) :: bitmask
+
+    !! Boundary faces that do not belong to any face set.
+    bitmask = ibset(ZERO_BITFIELD, pos=0)
+    mask = (this%face_set_mask == bitmask)
+
+    !! These boundary faces are associated with links and are okay.
+    mask(this%lface(1,:)) = .false.
+    mask(this%lface(2,:)) = .false.
+
+    !! Count the number of questionable boundary faces (on-process).
+    nqf = count(mask(:this%nface_onP))
+    call collate(array, nqf)
+    if (is_IOP) nqf = sum(array)
+    call broadcast(nqf)
+
+    if (nqf == 0) return  ! nothing to see here
+
+    !! Distribute the number of faces each process will supply data for.
+    if (is_IOP) then
+      n = MAX_PRINT
+      do j = 1, nPE
+        array(j) = min(array(j), n)
+        n = n - array(j)
+      end do
+      allocate(xc(3,sum(array)))
+    else
+      allocate(xc(3,0))
+    end if
+    call distribute(n, array)
+    allocate(xc_l(3,n))
+
+    !! Collect the face centroid data.
+    n = 0
+    do j = 1, this%nface_onP
+      if (.not.mask(j)) cycle
+      n = n + 1
+      if (n > size(xc_l,dim=2)) exit
+      associate (fnode => this%fnode(this%xfnode(j):this%xfnode(j+1)-1))
+        xc_l(:,n) = sum(this%x(:,fnode),dim=2) / size(fnode)
+      end associate
+    end do
+    call collate(xc, xc_l)
+
+    !! Write the warning message.
+    allocate(msg(3+size(xc,dim=2)))
+    msg(1) = i_to_c(nqf) // ' boundary faces do not belong to any face set or interface.'
+    msg(2) = 'This may make it impossible to specify a complete set of BC.'
+    msg(3) = 'Some of the face centroids are'
+    do j = 1, size(xc,dim=2)
+      write(msg(3+j),'("(",es13.5,2(",",es13.5)," )")') xc(:,j)
+    end do
+    call TLS_info(repeat('*',79))
+    call TLS_warn(msg)
+    call TLS_info(repeat('*',79))
+
+  end subroutine check_bndry_face_set
+
+  subroutine get_link_set_ids(this, mask, setids)
+
+    class(unstr_mesh), intent(in) :: this
+    logical, intent(in) :: mask(:)
+    integer, allocatable, intent(out) :: setids(:)
+
+    integer :: j
+    type(bitfield) :: bitmask
+
+    ASSERT(size(mask) == this%nface)
+
+    bitmask = ZERO_BITFIELD
+    do j = 1, this%nlink_onP
+      if (any(mask(this%lface(:,j)))) bitmask = ior(bitmask, this%link_set_mask(j))
+    end do
+    bitmask = global_ior(bitmask)
+
+    setids = pack(this%link_set_id, mask=btest(bitmask, pos=[(j,j=1,size(this%link_set_id))]))
+
+  end subroutine get_link_set_ids
 
 end module unstr_mesh_type

@@ -151,6 +151,7 @@ contains
           if (stat /= 0) call TLS_fatal (errmsg)
           call plist%set ('mesh', any_mesh(umesh))
           call umesh%write_profile
+          call umesh%check_bndry_face_set
 #ifdef DEBUG_MESH
           call gmv_open (piter%name()//'.gmv')
           call gmv_write_unstr_mesh (umesh)

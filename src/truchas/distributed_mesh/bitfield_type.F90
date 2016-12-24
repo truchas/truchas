@@ -291,7 +291,7 @@ contains
       if (is_IOP) then
         tmp = array(1)
         do p = 2, nPE
-          tmp = ieor(tmp, array(p))
+          tmp = ior(tmp, array(p))
         end do
         bf_out%chunk(n) = tmp
       end if
