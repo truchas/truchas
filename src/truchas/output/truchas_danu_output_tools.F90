@@ -21,7 +21,7 @@
 module truchas_danu_output_tools
 
   use kinds, only: r8
-  use danu_module
+  use truchasio, only: output_dataset, DANU_SUCCESS, sequence
   use parallel_communication
   use,intrinsic :: iso_c_binding, only: c_ptr
   implicit none
@@ -39,210 +39,144 @@ module truchas_danu_output_tools
 
 contains
   
-  subroutine write_seq_cell_field_r0 (seq_id, ldata, name, for_viz, viz_name)
+  subroutine write_seq_cell_field_r0 (seq, ldata, name, for_viz, viz_name)
   
     use legacy_mesh_api, only: ncells, ncells_tot
 
-    type(c_ptr), intent(in) :: seq_id
+    class(sequence), intent(in) :: seq
     real(r8), intent(in) :: ldata(:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name
 
     integer :: stat
-    real(r8), allocatable :: gdata(:)
-    type(c_ptr) :: dataset_id
+    type(output_dataset) :: dataset
     
     INSIST(size(ldata) == ncells)
     
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(ncells_tot))
-      else
-        allocate(gdata(0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
+    call seq%data_write (name, ncells_tot, ldata, stat)
     
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
+      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'CELL', stat)
-      call broadcast (stat)
+      call dataset%attribute_write ('FIELDTYPE', 'CELL', stat)
       INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) then
-        if (present(viz_name)) then
-          call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-        else
-          call attribute_write (dataset_id, 'FIELDNAME', name, stat)
-        end if
+      if (present(viz_name)) then
+        call dataset%attribute_write ('FIELDNAME', viz_name, stat)
+      else
+        call dataset%attribute_write ('FIELDNAME', name, stat)
       end if
-      call broadcast (stat)
       INSIST(stat == DANU_SUCCESS)
     end if
     
   end subroutine write_seq_cell_field_r0
   
-  subroutine write_seq_cell_field_r1 (seq_id, ldata, name, for_viz, viz_name)
+  subroutine write_seq_cell_field_r1 (seq, ldata, name, for_viz, viz_name)
   
     use legacy_mesh_api, only: ncells, ncells_tot
     use string_utilities, only: i_to_c
 
-    type(c_ptr), intent(in) :: seq_id
+    class(sequence), intent(in) :: seq
     real(r8), intent(in) :: ldata(:,:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name(:)
 
     integer :: stat, n
-    real(r8), allocatable :: gdata(:,:)
-    type(c_ptr) :: dataset_id
+    type(output_dataset) :: dataset
     
     INSIST(size(ldata,dim=2) == ncells)
     
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(size(ldata,1),ncells_tot))
-      else
-        allocate(gdata(size(ldata,1),0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
+    call seq%data_write (name, ncells_tot, ldata, stat)
     
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
+      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'CELL', stat)
-      call broadcast (stat)
+      call dataset%attribute_write ('FIELDTYPE', 'CELL', stat)
       INSIST(stat == DANU_SUCCESS)
       INSIST(present(viz_name))
       INSIST(size(viz_name) == size(ldata,1))
       ! Argh, no array attributes!  So we'll do it this way for now.
-      !if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-      !call broadcast (stat)
+      !call dataset%attribute_write ('FIELDNAME', viz_name, stat)
       !INSIST(stat == DANU_SUCCESS)
       do n = 1, size(viz_name)
-        if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
-        call broadcast (stat)
+        call dataset%attribute_write ('FIELDNAME'//i_to_c(n), viz_name(n), stat)
         INSIST(stat == DANU_SUCCESS)
       end do
     end if
     
   end subroutine write_seq_cell_field_r1
   
-  subroutine write_seq_node_field_r0 (seq_id, ldata, name, for_viz, viz_name)
+  subroutine write_seq_node_field_r0 (seq, ldata, name, for_viz, viz_name)
   
     use legacy_mesh_api, only: nnodes, nnodes_tot
 
-    type(c_ptr), intent(in) :: seq_id
+    class(sequence), intent(in) :: seq
     real(r8), intent(in) :: ldata(:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name
 
     integer :: stat
-    real(r8), allocatable :: gdata(:)
-    type(c_ptr) :: dataset_id
+    type(output_dataset) :: dataset
     
     INSIST(size(ldata) == nnodes)
     
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(nnodes_tot))
-      else
-        allocate(gdata(0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
+    call seq%data_write (name, nnodes_tot, ldata, stat)
     
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
+      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'NODE', stat)
-      call broadcast (stat)
+      call dataset%attribute_write ('FIELDTYPE', 'NODE', stat)
       INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) then
-        if (present(viz_name)) then
-          call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-        else
-          call attribute_write (dataset_id, 'FIELDNAME', name, stat)
-        end if
+      if (present(viz_name)) then
+        call dataset%attribute_write ('FIELDNAME', viz_name, stat)
+      else
+        call dataset%attribute_write ('FIELDNAME', name, stat)
       end if
-      call broadcast (stat)
       INSIST(stat == DANU_SUCCESS)
     end if
     
   end subroutine write_seq_node_field_r0
   
-  subroutine write_seq_node_field_r1 (seq_id, ldata, name, for_viz, viz_name)
+  subroutine write_seq_node_field_r1 (seq, ldata, name, for_viz, viz_name)
   
     use legacy_mesh_api, only: nnodes, nnodes_tot
     use string_utilities, only: i_to_c
 
-    type(c_ptr), intent(in) :: seq_id
+    class(sequence), intent(in) :: seq
     real(r8), intent(in) :: ldata(:,:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name(:)
 
     integer :: stat, n
-    real(r8), allocatable :: gdata(:,:)
-    type(c_ptr) :: dataset_id
+    type(output_dataset) :: dataset
     
     INSIST(size(ldata,dim=2) == nnodes)
     
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, ldata, stat)
-    else
-      if (is_IOP) then
-        allocate(gdata(size(ldata,1),nnodes_tot))
-      else
-        allocate(gdata(size(ldata,1),0))
-      end if
-      call collate (gdata, ldata)
-      if (is_IOP) call simulation_data_write (seq_id, name, gdata, stat)
-      call broadcast (stat)
-    end if
+    call seq%data_write (name, nnodes_tot, ldata, stat)
     
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      if (is_IOP) call simulation_open_data (seq_id, name, dataset_id, stat)
-      call broadcast (stat)
+      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) call attribute_write (dataset_id, 'FIELDTYPE', 'NODE', stat)
-      call broadcast (stat)
+      call dataset%attribute_write ('FIELDTYPE', 'NODE', stat)
       INSIST(stat == DANU_SUCCESS)
       INSIST(present(viz_name))
       INSIST(size(viz_name) == size(ldata,1))
       ! Argh, no array attributes!  So we'll do it this way for now.
-      !if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME', viz_name, stat)
-      !call broadcast (stat)
+      !call dataset%attribute_write ('FIELDNAME', viz_name, stat)
       !INSIST(stat == DANU_SUCCESS)
       do n = 1, size(viz_name)
-        if (is_IOP) call attribute_write (dataset_id, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
-        call broadcast (stat)
+        call dataset%attribute_write ('FIELDNAME'//i_to_c(n), viz_name(n), stat)
         INSIST(stat == DANU_SUCCESS)
       end do
     end if

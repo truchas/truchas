@@ -52,8 +52,7 @@ CONTAINS
     use parallel_info_module,   only: p_info
     use time_step_module,       only: t2, cycle_number
     use diagnostics_module,     only: PROBES_FIELDS
-    use truchas_danu_output_data, only: sid
-    use danu_module
+    use truchasio,              only: DANU_SUCCESS
     use parallel_communication, only: is_IOP, broadcast
 
     ! Local Variables
@@ -83,8 +82,7 @@ CONTAINS
           ! Create the probe data set in the HDF file
           allocate(probe_data(size(probe_cycle),1))
           probe_data(:,1) = probe_cycle
-          if (is_IOP) call probe_data_write (probes(i)%pid(count), probe_data, stat)
-          call broadcast (stat)
+          call probes(i)%probe(count)%data_write(probe_data, stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
 
@@ -106,8 +104,7 @@ CONTAINS
           ! Create the probe data set in the HDF file
           allocate(probe_data(size(probe_cycle),1))
           probe_data(:,1) = probe_cycle
-          if (is_IOP) call probe_data_write (probes(i)%pid(count), probe_data, stat)
-          call broadcast (stat)
+          call probes(i)%probe(count)%data_write(probe_data, stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
 
@@ -129,8 +126,7 @@ CONTAINS
           ! Create the probe data set in the HDF file
           allocate(probe_data(size(probe_cycle),1))
           probe_data(:,1) = probe_cycle
-          if (is_IOP) call probe_data_write (probes(i)%pid(count), probe_data, stat)
-          call broadcast (stat)
+          call probes(i)%probe(count)%data_write(probe_data, stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
           
@@ -347,15 +343,15 @@ CONTAINS
     use parameter_module,       only: nprobes
     use time_step_module,       only: t, cycle_number
     use diagnostics_module,     only: PROBES_POSITIONS                   
-    use truchas_danu_output_data, only: sid
-    use danu_module
+    use truchas_danu_output_data, only: sim
+    use truchasio,              only: output_probe, DANU_SUCCESS
     use parallel_communication, only: is_IOP, broadcast
     use,intrinsic :: iso_c_binding, only: c_ptr 
 
     ! Local Variables 
     integer :: i, j, count, scalarsize, vectorsize, tensorsize, stat
     real(r8), pointer, dimension(:) :: probe_cycle, probe_cycleV, probe_cycleT
-    type(c_ptr) :: pid
+    type(output_probe) :: probe
     character(64) :: dataset
     real(r8), allocatable :: probe_data(:,:)
 
@@ -390,35 +386,31 @@ CONTAINS
           allocate(probe_data(size(probe_cycle),1))
           probe_data(:,1) = probe_cycle
           write(dataset,'(a,i3.3,2a)') 'P', i, ':', trim(adjustl(probes(i)%NameLU(count)))
-          if (is_IOP) call probe_create_data (sid, trim(dataset), probe_data, probes(i)%pid(count), stat)
-          call broadcast (stat)
+          call sim%probe_create_data (trim(dataset), probe_data, probes(i)%probe(count), stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
-          if (is_IOP) call probe_data_open (sid, dataset, pid, stat)
-          call broadcast (stat)
+          call sim%probe_data_open (dataset, probe, stat)
           INSIST(stat == DANU_SUCCESS)
-          if (is_IOP) then
-            call attribute_write (pid, 'NAME', trim(probes(i)%name), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'X', probes(i)%coords(1), stat)
-            call attribute_write (pid, 'Y', probes(i)%coords(2), stat)
-            call attribute_write (pid, 'Z', probes(i)%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'DESCRIPTION', trim(probes(i)%description), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'CELL_INDEX', probes(i)%cell%index, stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'CELL_X', probes(i)%cell%coords(1), stat)
-            call attribute_write (pid, 'CELL_Y', probes(i)%cell%coords(2), stat)
-            call attribute_write (pid, 'CELL_Z', probes(i)%cell%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'NODE_INDEX', probes(i)%node%index, stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'NODE_X', probes(i)%node%coords(1), stat)
-            call attribute_write (pid, 'NODE_Y', probes(i)%node%coords(2), stat)
-            call attribute_write (pid, 'NODE_Z', probes(i)%node%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-          end if
+          call probe%attribute_write ('NAME', trim(probes(i)%name), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('X', probes(i)%coords(1), stat)
+          call probe%attribute_write ('Y', probes(i)%coords(2), stat)
+          call probe%attribute_write ('Z', probes(i)%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('DESCRIPTION', trim(probes(i)%description), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('CELL_INDEX', probes(i)%cell%index, stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('CELL_X', probes(i)%cell%coords(1), stat)
+          call probe%attribute_write ('CELL_Y', probes(i)%cell%coords(2), stat)
+          call probe%attribute_write ('CELL_Z', probes(i)%cell%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('NODE_INDEX', probes(i)%node%index, stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('NODE_X', probes(i)%node%coords(1), stat)
+          call probe%attribute_write ('NODE_Y', probes(i)%node%coords(2), stat)
+          call probe%attribute_write ('NODE_Z', probes(i)%node%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
           count = count + 1
        end do
 
@@ -428,35 +420,31 @@ CONTAINS
           allocate(probe_data(size(probe_cycleV),1))
           probe_data(:,1) = probe_cycleV
           write(dataset,'(a,i3.3,2a)') 'P', i, ':', trim(adjustl(probes(i)%NameLU(count)))
-          if (is_IOP) call probe_create_data (sid, trim(dataset), probe_data, probes(i)%pid(count), stat)
-          call broadcast (stat)
+          call sim%probe_create_data (trim(dataset), probe_data, probes(i)%probe(count), stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
-          if (is_IOP) call probe_data_open (sid, dataset, pid, stat)
-          call broadcast (stat)
+          call sim%probe_data_open (dataset, probe, stat)
           INSIST(stat == DANU_SUCCESS)
-          if (is_IOP) then
-            call attribute_write (pid, 'NAME', trim(probes(i)%name), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'X', probes(i)%coords(1), stat)
-            call attribute_write (pid, 'Y', probes(i)%coords(2), stat)
-            call attribute_write (pid, 'Z', probes(i)%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'DESCRIPTION', trim(probes(i)%description), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'CELL_INDEX', probes(i)%cell%index, stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'CELL_X', probes(i)%cell%coords(1), stat)
-            call attribute_write (pid, 'CELL_Y', probes(i)%cell%coords(2), stat)
-            call attribute_write (pid, 'CELL_Z', probes(i)%cell%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'NODE_INDEX', probes(i)%node%index, stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'NODE_X', probes(i)%node%coords(1), stat)
-            call attribute_write (pid, 'NODE_Y', probes(i)%node%coords(2), stat)
-            call attribute_write (pid, 'NODE_Z', probes(i)%node%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-          end if
+          call probe%attribute_write ('NAME', trim(probes(i)%name), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('X', probes(i)%coords(1), stat)
+          call probe%attribute_write ('Y', probes(i)%coords(2), stat)
+          call probe%attribute_write ('Z', probes(i)%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('DESCRIPTION', trim(probes(i)%description), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('CELL_INDEX', probes(i)%cell%index, stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('CELL_X', probes(i)%cell%coords(1), stat)
+          call probe%attribute_write ('CELL_Y', probes(i)%cell%coords(2), stat)
+          call probe%attribute_write ('CELL_Z', probes(i)%cell%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('NODE_INDEX', probes(i)%node%index, stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('NODE_X', probes(i)%node%coords(1), stat)
+          call probe%attribute_write ('NODE_Y', probes(i)%node%coords(2), stat)
+          call probe%attribute_write ('NODE_Z', probes(i)%node%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
           count = count + 1
        end do
 
@@ -466,35 +454,31 @@ CONTAINS
           allocate(probe_data(size(probe_cycleT),1))
           probe_data(:,1) = probe_cycleT
           write(dataset,'(a,i3.3,2a)') 'P', i, ':', trim(adjustl(probes(i)%NameLU(count)))
-          if (is_IOP) call probe_create_data (sid, trim(dataset), probe_data, probes(i)%pid(count), stat)
-          call broadcast (stat)
+          call sim%probe_create_data (trim(dataset), probe_data, probes(i)%probe(count), stat)
           INSIST(stat == DANU_SUCCESS)
           deallocate(probe_data)
-          if (is_IOP) call probe_data_open (sid, dataset, pid, stat)
-          call broadcast (stat)
+          call sim%probe_data_open (dataset, probe, stat)
           INSIST(stat == DANU_SUCCESS)
-          if (is_IOP) then
-            call attribute_write (pid, 'NAME', trim(probes(i)%name), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'X', probes(i)%coords(1), stat)
-            call attribute_write (pid, 'Y', probes(i)%coords(2), stat)
-            call attribute_write (pid, 'Z', probes(i)%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'DESCRIPTION', trim(probes(i)%description), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'CELL_INDEX', probes(i)%cell%index, stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'CELL_X', probes(i)%cell%coords(1), stat)
-            call attribute_write (pid, 'CELL_Y', probes(i)%cell%coords(2), stat)
-            call attribute_write (pid, 'CELL_Z', probes(i)%cell%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'NODE_INDEX', probes(i)%node%index, stat)
-            INSIST(stat == DANU_SUCCESS)
-            call attribute_write (pid, 'NODE_X', probes(i)%node%coords(1), stat)
-            call attribute_write (pid, 'NODE_Y', probes(i)%node%coords(2), stat)
-            call attribute_write (pid, 'NODE_Z', probes(i)%node%coords(3), stat)
-            INSIST(stat == DANU_SUCCESS)
-          end if
+          call probe%attribute_write ('NAME', trim(probes(i)%name), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('X', probes(i)%coords(1), stat)
+          call probe%attribute_write ('Y', probes(i)%coords(2), stat)
+          call probe%attribute_write ('Z', probes(i)%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('DESCRIPTION', trim(probes(i)%description), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('CELL_INDEX', probes(i)%cell%index, stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('CELL_X', probes(i)%cell%coords(1), stat)
+          call probe%attribute_write ('CELL_Y', probes(i)%cell%coords(2), stat)
+          call probe%attribute_write ('CELL_Z', probes(i)%cell%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('NODE_INDEX', probes(i)%node%index, stat)
+          INSIST(stat == DANU_SUCCESS)
+          call probe%attribute_write ('NODE_X', probes(i)%node%coords(1), stat)
+          call probe%attribute_write ('NODE_Y', probes(i)%node%coords(2), stat)
+          call probe%attribute_write ('NODE_Z', probes(i)%node%coords(3), stat)
+          INSIST(stat == DANU_SUCCESS)
           count = count + 1
        end do
 

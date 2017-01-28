@@ -1056,7 +1056,7 @@ CONTAINS
     use parallel_communication
     use permutations
     use mesh_manager, only: simpl_mesh, simpl_mesh_ptr
-    use danu_module, only: DANU_SUCCESS
+    use truchasio, only: DANU_SUCCESS
     
     real(rk), intent(in) :: t
 
@@ -1095,7 +1095,7 @@ CONTAINS
     call collate (col_joule, joule)
 
     !! Write the data.
-    if (is_IOP) call write_data (status)
+    call write_data (status)
     deallocate(cell_perm, col_mu, col_sigma, col_joule)
     call broadcast (status)
     if (status /= DANU_SUCCESS) call TLS_fatal ('DANU_WRITE_JOULE: Error writing Joule data to h5 file')
@@ -1111,8 +1111,8 @@ CONTAINS
 
     subroutine write_data (status)
 
-      use danu_module
-      use truchas_danu_output_data, only: fid
+      use truchasio, only: simulation, DANU_SUCCESS
+      use truchas_danu_output_data, only: foutput
       use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
 
       integer, intent(out) :: status
@@ -1120,30 +1120,29 @@ CONTAINS
       integer :: stat, n
       integer, save :: sim_num = 0
       character(32) :: sim_name
-      type(c_ptr) :: sim_id = C_NULL_PTR
+      type(simulation) :: sim
 
       sim_num = sim_num + 1
-      write(sim_name,'(a,i3.3)') 'EM', sim_num
+      if (is_IOP) write(sim_name,'(a,i3.3)') 'EM', sim_num
     
       call TLS_info ('DANU: adding EM simulation ' // trim(sim_name))
-      INSIST(c_associated(fid))
-      call simulation_add (fid, sim_name, sim_id, status)
+      call foutput%simulation_add (sim_name, sim, status)
           if (status /= DANU_SUCCESS) return
-      call attribute_write (sim_id, 'TIME', t, status)
+      call sim%attribute_write ('TIME', t, status)
           if (status /= DANU_SUCCESS) return
 
       call TLS_info ('DANU: writing EM restart data for ' // trim(sim_name))
-      call data_write (sim_id, 'FREQ', freq_q, status)
+      call sim%data_write ('FREQ', freq_q, status)
           if (status /= DANU_SUCCESS) return
-      call data_write (sim_id, 'UHFS', uhfs_q, status)
+      call sim%data_write ('UHFS', uhfs_q, status)
           if (status /= DANU_SUCCESS) return
-      call data_write (sim_id, 'COILS', solenoid_serialize(coil_q), status)
+      call sim%data_write ('COILS', solenoid_serialize(coil_q), status)
           if (status /= DANU_SUCCESS) return
-      call data_write (sim_id, 'MU', col_mu, status)
+      call sim%data_write ('MU', col_mu, status)
           if (status /= DANU_SUCCESS) return
-      call data_write (sim_id, 'SIGMA', col_sigma, status)
+      call sim%data_write ('SIGMA', col_sigma, status)
           if (status /= DANU_SUCCESS) return
-      call data_write (sim_id, 'JOULE', col_joule, status)
+      call sim%data_write ('JOULE', col_joule, status)
           if (status /= DANU_SUCCESS) return
 
     end subroutine write_data

@@ -382,13 +382,14 @@ contains
   !! that is available.  NB: The choice of things to write must be consistent
   !! with the analysis modules instantiated by USTRUC_COMP_FACTORY.
 
-  subroutine ustruc_output (seq_id)
+  subroutine ustruc_output (seq)
 
     use legacy_mesh_api, only: ncells
     use truchas_danu_output_tools
+    use truchasio, only: sequence
     use,intrinsic :: iso_c_binding, only: c_ptr
 
-    type(c_ptr), intent(in) :: seq_id
+    class(sequence), intent(in) :: seq
 
     real(r8), allocatable :: scalar_out(:), vector_out(:,:)
 
@@ -428,7 +429,7 @@ contains
     call stop_timer ('Microstructure')
     
     !! Additional checkpoint data gets written at the same time.
-    call ustruc_write_checkpoint (seq_id)
+    call ustruc_write_checkpoint (seq)
 
   contains
 
@@ -437,7 +438,7 @@ contains
       if (this%model%has(data_name)) then
         call this%model%get (data_name, scalar_out)
         scalar_out(this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
-        call write_seq_cell_field (seq_id, scalar_out, hdf_name, for_viz=.true., viz_name=viz_name)
+        call write_seq_cell_field (seq, scalar_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
 
@@ -446,7 +447,7 @@ contains
       if (this%model%has(data_name)) then
         call this%model%get (data_name, vector_out)
         vector_out(:,this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
-        call write_seq_cell_field (seq_id, vector_out, hdf_name, for_viz=.true., viz_name=viz_name)
+        call write_seq_cell_field (seq, vector_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
 
@@ -457,21 +458,21 @@ contains
   !! by USTRUC_SET_INITIAL_STATE, and it corresponds to data recorded during the
   !! course of integration.
   
-  subroutine ustruc_write_checkpoint (seq_id)
+  subroutine ustruc_write_checkpoint (seq)
   
     use,intrinsic :: iso_c_binding, only: c_ptr
     use,intrinsic :: iso_fortran_env, only: int8
-    use danu_module, only: simulation_data_write, simulation_open_data, attribute_write, DANU_SUCCESS
+    use truchasio, only: output_dataset, DANU_SUCCESS, sequence
     use parallel_communication, only: nPE, is_IOP, collate, broadcast, global_sum
     use string_utilities, only: i_to_c
 
-    type(c_ptr), intent(in) :: seq_id
+    class(sequence), intent(in) :: seq
 
     integer :: j, n, stat
-    integer, allocatable :: cid(:), lmap(:), gmap(:)
-    integer(int8), allocatable :: lar(:,:), gar(:,:)
+    integer, allocatable :: cid(:), lmap(:)
+    integer(int8), allocatable :: lar(:,:)
     character(:), allocatable :: name
-    type(c_ptr) :: dataset_id
+    type(output_dataset) :: dataset
     
     if (.not.allocated(this)) return
     call start_timer ('Microstructure')
@@ -480,16 +481,8 @@ contains
     call this%model%get_map (lmap)
     lmap = this%mesh%xcell(lmap)
     name = 'CP-USTRUC-MAP'
-    if (nPE == 1) then
-      call simulation_data_write (seq_id, name, lmap, stat)
-    else
-      n = global_sum(size(lmap))
-      allocate(gmap(merge(n,0,is_IOP)))
-      call collate (gmap, lmap)
-      if (is_IOP) call simulation_data_write (seq_id, name, gmap, stat)
-      call broadcast (stat)
-      deallocate(lmap, gmap)
-    end if
+    n = global_sum(size(lmap))
+    call seq%data_write (name, merge(n,0,is_IOP), lmap, stat)
     INSIST(stat == DANU_SUCCESS)
 
     !! Get the list of analysis components ...
@@ -500,21 +493,10 @@ contains
       if (.not.allocated(lar))  cycle ! no checkpoint data for this analysis component
       if (size(lar,dim=1) == 0) cycle ! no checkpoint data for this analysis component
       name = 'CP-USTRUC-COMP-' // i_to_c(j)
-      if (nPE == 1) then
-        call simulation_data_write (seq_id, name, lar, stat)
-      else
-        allocate(gar(size(lar,1),merge(n,0,is_IOP)))
-        call collate (gar, lar)
-        if (is_IOP) call simulation_data_write (seq_id, name, gar, stat)
-        call broadcast (stat)
-        deallocate(gar)
-      end if
+      call seq%data_write (name, merge(n,0,is_IOP), lar, stat)
       INSIST(stat == DANU_SUCCESS)
-      if (is_IOP) then
-        call simulation_open_data (seq_id, name, dataset_id, stat)
-        call attribute_write (dataset_id, 'COMP-ID', cid(j), stat)
-      end if
-      call broadcast (stat)
+      call seq%open_data (name, dataset, stat)
+      call dataset%attribute_write ('COMP-ID', cid(j), stat)
       INSIST(stat == DANU_SUCCESS)
     end do
 
