@@ -9,6 +9,9 @@ add_subdirectory(chaparral)
 message(STATUS "Configuring src/packages/pgslib")
 add_subdirectory(pgslib)
 
+message(STATUS "Configuring src/packages/scorpio")
+add_subdirectory(scorpio)
+
 message(STATUS "Configuring src/packages/ubiksolve")
 add_subdirectory(ubiksolve)
 
