@@ -163,6 +163,10 @@ list(APPEND PGSLibIface_SOURCE_FILES utility/get_process_info.c)
 add_library(pgslib_fe ${PGSLibIface_SOURCE_FILES})
 add_custom_target(ProcessPGSLibIfaceFiles ALL DEPENDS ${PGSLibIface_SOURCE_FILES})
 add_dependencies(pgslib_fe ProcessPGSLibIfaceFiles)
+add_library(truchas::pgslib_fe ALIAS pgslib_fe)
+set_property(TARGET pgslib_fe APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+    $<BUILD_INTERFACE:${PGSLib_MODULE_DIR}>
+)
 
 # Set the library properties
 set_target_properties(pgslib_fe PROPERTIES
