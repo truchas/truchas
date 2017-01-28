@@ -323,6 +323,7 @@ herr_t danu_file_close(hid_t fid)
     /* Free memory */
     DANU_FREE(objects);
 
+    return 0;
     return H5Fclose(fid);
 }
 /*
