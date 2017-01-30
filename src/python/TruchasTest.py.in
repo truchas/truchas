@@ -73,9 +73,9 @@ class BaseTestCase(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls.truchas_is_parallel=@ENABLE_MPI_FLAG@
+    cls.truchas_is_parallel=True
     executable=get_executable() 
-    cls.truchas=Truchas.SelectTruchasBinary(parallel=@ENABLE_MPI_FLAG@,filename=executable)
+    cls.truchas=Truchas.SelectTruchasBinary(parallel=True,filename=executable)
     cls.truchas.restart_executable=get_restart_executable()
     cls._is_initialized = True
 
@@ -137,9 +137,9 @@ class GoldenTestCase(BaseTestCase):
   @classmethod
   def setUpClass(cls):
     # Define the truchas binary 
-    cls.truchas_is_parallel=@ENABLE_MPI_FLAG@
+    cls.truchas_is_parallel=True
     executable=get_executable()
-    cls.truchas=Truchas.SelectTruchasBinary(parallel=@ENABLE_MPI_FLAG@,filename=executable)
+    cls.truchas=Truchas.SelectTruchasBinary(parallel=True,filename=executable)
     cls.truchas.restart_executable=get_restart_executable()
     # Define the input file
     cls.truchas.input=os.path.join(get_test_source_rootdir(),cls.test_name,cls.test_name+'.inp')

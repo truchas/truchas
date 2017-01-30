@@ -18,9 +18,7 @@ include_directories(${Truchas_MODULE_DIR})
 include_directories(${ChaparralVF_SOURCE_DIR})
 
 # MPI
-if ( ENABLE_MPI )
-  include_directories(${MPI_C_INCLUDE_PATH})
-endif()
+include_directories(${MPI_C_INCLUDE_PATH})
 
 # Ensure necessary Intel compiler options are there.
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
@@ -28,11 +26,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 endif()
 
 # --- Compile defines
-if(ENABLE_MPI)
-  add_definitions(-DUSE_MPI)
-else()
-  add_definitions(-DVF_NO_MPI)
-endif()
+add_definitions(-DUSE_MPI)
 
 # --- Preprocessing flags
 set(fpp_flags_list 
@@ -73,11 +67,7 @@ fortran_preprocess_files(CMPRE_SOURCE_FILES
 add_executable(cmpre ${CMPRE_SOURCE_FILES})
 add_dependencies(cmpre ProcessCmpreFiles)
 target_link_libraries(cmpre rade truchas ${Truchas_LINK_LIBS})
-if(ENABLE_MPI)
-  set(output_name pcmpre)
-else()
-  set(output_name cmpre)
-endif()
+set(output_name cmpre)
 set_target_properties(cmpre PROPERTIES
                       OUTPUT_NAME ${output_name})
 
@@ -90,11 +80,7 @@ fortran_preprocess_files(GENRE_SOURCE_FILES
 add_executable(genre ${GENRE_SOURCE_FILES})
 add_dependencies(genre ProcessGenreFiles)
 target_link_libraries(genre rade truchas ${Truchas_LINK_LIBS})
-if(ENABLE_MPI)
-  set(output_name pgenre)
-else()
-  set(output_name genre)
-endif()
+set(output_name genre)
 set_target_properties(genre PROPERTIES
                       OUTPUT_NAME ${output_name})
 
@@ -107,11 +93,7 @@ fortran_preprocess_files(VIZRE_SOURCE_FILES
 add_executable(vizre ${VIZRE_SOURCE_FILES})
 add_dependencies(vizre ProcessVizreFiles)
 target_link_libraries(vizre rade truchas ${Truchas_LINK_LIBS})
-if(ENABLE_MPI)
-  set(output_name pvizre)
-else()
-  set(output_name vizre)
-endif()
+set(output_name vizre)
 set_target_properties(vizre PROPERTIES
                       OUTPUT_NAME ${output_name})
  

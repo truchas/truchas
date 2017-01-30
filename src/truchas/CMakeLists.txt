@@ -55,11 +55,7 @@ set(Truchas_DEPENDS ${Truchas_PROCESS_TARGETS})
 
 # PGSLib
 list(APPEND Truchas_DEPENDS pgslib_fe)
-if (ENABLE_MPI)
-  list(APPEND Truchas_DEPENDS pgslib_mpi)
-else()
-  list(APPEND Truchas_DEPENDS pgslib_serial)
-endif()  
+list(APPEND Truchas_DEPENDS pgslib_mpi)
 
 list(APPEND Truchas_DEPENDS ubiksolve)
 list(APPEND Truchas_DEPENDS chaco)
@@ -74,12 +70,7 @@ add_dependencies(truchas ${Truchas_DEPENDS})
 set(Truchas_LINK_LIBS exodus hypre petaca)
 
 list(APPEND Truchas_LINK_LIBS pgslib_fe)
-if (ENABLE_MPI)
-  list(APPEND Truchas_LINK_LIBS pgslib_mpi)
-else()
-  list(APPEND Truchas_LINK_LIBS pgslib_serial)
-endif()
-
+list(APPEND Truchas_LINK_LIBS pgslib_mpi)
 list(APPEND Truchas_LINK_LIBS ubiksolve)
 list(APPEND Truchas_LINK_LIBS chaco)
 list(APPEND Truchas_LINK_LIBS danu_f)

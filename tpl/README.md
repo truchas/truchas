@@ -21,7 +21,7 @@ ways.  Here's an example:
 
     $ mkdir build
     $ cd build
-    $ cmake -C ../config/intel-parallel.cmake ..
+    $ cmake -C ../config/linux-intel.cmake ..
     $ make
 
 The `-C` argument preloads the cmake cache with settings from the following
@@ -46,10 +46,10 @@ sometimes necessary when cmake finds a package that you don't want it to use.
 Also note that that when searching, cmake always looks first in the
 installation directory.
 
-Other command line variables are `ENABLE_MPI`and `ENABLE_SHARED`.  The default
-for both is `yes`.  Setting `ENABLE_SHARED` to `no`, meaning find and build
-static libraries, generally doesn't work currently except on platforms that
-provide a "full" set of static system libraries (Cray, for example).
+Another command line variables is `ENABLE_SHARED`.  The default is `yes`.
+Setting `ENABLE_SHARED` to `no`, meaning find and build static libraries,
+generally doesn't work currently except on platforms that provide a "full"
+set of static system libraries (Cray, for example).
 
 ### Package Configuration Notes
 If you find you have to build some packages manually (or obtain pre-built
@@ -59,7 +59,7 @@ ones), here are some points to keep in mind.  Also look at the files in the
 #### HDF5
 * Only the C interface is needed.
 * The high-level library (HL) is needed.
-* Be sure to enable parallel (or not) as appropriate
+* Be sure to enable parallel HDF5.
 
 #### NetCDF
 * Use `--with-netcdf-4`
@@ -71,7 +71,7 @@ ones), here are some points to keep in mind.  Also look at the files in the
 
 #### HYPRE
 * Only the C interface is needed (`--disable-fortran`)
-* Set `--with-MPI` or `--without-MPI` as appropriate
+* Use `--with-MPI`.
 * Use `--without-fei`; it is not needed and has compilation problems.
 * We "require" an older 2.6.0b version, but newer version really should work
   too, but small numerical differences are producing enough variation in the

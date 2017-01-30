@@ -24,13 +24,6 @@ set(TruchasPython_CONFIGURE_INCLUDE ${TruchasPython_SOURCE_DIR}/cmake/configure-
 # Executable
 get_target_property(Truchas_EXECUTABLE truchas_exe OUTPUT_NAME)
 
-# MPI flag for python file configuration
-if(${ENABLE_MPI})
-  set(ENABLE_MPI_FLAG "True")
-else()
-  set(ENABLE_MPI_FLAG "False")
-endif()
-
 # Full Python install path
 if (IS_ABSOLUTE "${TruchasPython_INSTALL_PREFIX}")
   set(Python_INSTALL_PREFIX ${TruchasPython_INSTALL_PREFIX})

@@ -4,9 +4,7 @@
 #                    [CONFIGURATION [Debug|Release|...]]
 #                    [DEPENDS test1 test2 ...] [LABELS lab1 lab2 ...]
 #                    [ENVIRONMENT MYVAR1=VAL1 MYVAR2=VAR2 ... ]
-#                    [PROCESSORS n] [RUN_SERIAL]
-#                    [SERIAL_ONLY] [PARALLEL_ONLY]
-#                    [TIMEOUT t] [WILL_FAIL])
+#                    [PROCESSORS n] [TIMEOUT t] [WILL_FAIL])
 #
 # Add a TruchasTest script to the CTest suite. Test will be named <name> and
 # <test_script> will be executed for the test. Other options are:
@@ -27,19 +25,7 @@
 #                                         the variables passed in.
 #
 # PROCESSORS n                            Number of processors required for
-#                                         MPI (parallel) tests. Ignored if
-#                                         ENABLE_MPI=False
-#
-# RUN_SERIAL                              Flag that forces CTest to NOT run other
-#                                         tests in parallel while this test is
-#                                         running.
-#                                         
-#
-# SERIAL_ONLY                             Only run test if the Truchas binary
-#                                         is a serial build
-#
-# PARALLEL_ONLY                           Only run test if the Truchas binary
-#                                         is a MPI (parallel) build
+#                                         MPI (parallel) tests.
 #
 # TIMEOUT t                               Test should be marked as timeout (FAIL)
 #                                         if run time exceeds t seconds
@@ -52,7 +38,7 @@ include(CMakeParseArguments)
 FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
 
   # Parse the arguments
-  set(options RUN_SERIAL SERIAL_ONLY PARALLEL_ONLY WILL_FAIL)
+  set(options WILL_FAIL)
   set(oneValueArgs PROCESSORS TIMEOUT)
   set(multiValueArgs CONFIGURATION DEPENDS LABELS ENVIRONMENT)
   cmake_parse_arguments(MY_ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -60,16 +46,6 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
   # Exit now if PYTHON_EXECUTABLE has not been defined
   if ( NOT PYTHON_EXECUTABLE )
     message(FATAL_ERROR "Must define PYTHON_EXECUTABLE before calling ADD_PYTRUCHAS_TEST")
-  endif()
-
-  # Return immediately if this is a {SERAIL,PARALLEL}_ONLY and ENABLE_MPI
-  # is not compatible.
-  if ( ENABLE_MPI AND MY_ARG_SERIAL_ONLY )
-    return()
-  endif()
-
-  if (NOT ENABLE_MPI AND MY_ARG_PARALLEL_ONLY)
-    return()
   endif()
 
   # Now add the test
@@ -87,12 +63,8 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
     list(APPEND test_properties WILL_FAIL TRUE)
   endif()
 
-  if ( MY_ARG_PROCESSORS AND ENABLE_MPI )
+  if ( MY_ARG_PROCESSORS )
     list(APPEND test_properties PROCESSORS ${MY_ARG_PROCESSORS})
-  endif()
-
-  if ( MY_ARG_RUN_SERIAL )
-    list(APPEND test_properties RUN_SERIAL TRUE)
   endif()
 
   if ( MY_ARG_TIMEOUT )

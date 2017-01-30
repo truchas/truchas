@@ -1,6 +1,5 @@
 # Cray Linux Environment (CLE) -- Trinitite
 
-set(ENABLE_MPI YES CACHE BOOL "Parallel libraries")
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries")
 

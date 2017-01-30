@@ -1,6 +1,5 @@
 # Generic Linux with the Intel Compilers
 
-set(ENABLE_MPI YES CACHE BOOL "Parallel Truchas")
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type")
 
 set(CMAKE_C_COMPILER icc CACHE STRING "C Compiler")
