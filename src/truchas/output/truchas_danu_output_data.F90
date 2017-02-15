@@ -10,6 +10,6 @@ module truchas_danu_output_data
   use truchasio, only: output_file, simulation
   implicit none
   private
-  type(output_file), public :: foutput
+  type(output_file), target, public :: foutput
   type(simulation), public :: sim
 end module truchas_danu_output_data

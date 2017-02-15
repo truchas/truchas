@@ -1065,7 +1065,6 @@ CONTAINS
     integer, pointer :: cell_perm(:) => null()
     real(kind=rk), pointer :: col_mu(:)    => null()
     real(kind=rk), pointer :: col_sigma(:) => null()
-    real(kind=rk), pointer :: col_joule(:) => null()
 
     ASSERT( allocated(mu_q) )
     ASSERT( allocated(sigma_q) )
@@ -1075,6 +1074,12 @@ CONTAINS
     
     mesh => simpl_mesh_ptr('alt')
     n = global_sum(mesh%ncell_onP)
+
+    !! NNC, 2/2017. Not entirely sure why the reordering for MU and SIGMA is
+    !! necessary.  I believe if we wrote the cell map for the tet mesh, then
+    !! post-processing tools could do it when needed, as is done for the main
+    !! mesh, and we could dispense with the collation here and truly write in
+    !! parallel.  FIXME
 
     !! Collate the cell permutation array.
     call allocate_collated_array (cell_perm, n)
@@ -1090,13 +1095,9 @@ CONTAINS
     call collate (col_sigma, sigma_q(:mesh%ncell_onP))
     if (is_IOP) call reorder (col_sigma, cell_perm, forward=.true.)
 
-    !! Collate the cell-based JOULE array; the XML parser will handle the permutation.
-    call allocate_collated_array (col_joule, global_sum(size(joule)))
-    call collate (col_joule, joule)
-
     !! Write the data.
     call write_data (status)
-    deallocate(cell_perm, col_mu, col_sigma, col_joule)
+    deallocate(cell_perm, col_mu, col_sigma)
     call broadcast (status)
     if (status /= DANU_SUCCESS) call TLS_fatal ('DANU_WRITE_JOULE: Error writing Joule data to h5 file')
 
@@ -1123,26 +1124,25 @@ CONTAINS
       type(simulation) :: sim
 
       sim_num = sim_num + 1
-      if (is_IOP) write(sim_name,'(a,i3.3)') 'EM', sim_num
+      write(sim_name,'(a,i3.3)') 'EM', sim_num
     
       call TLS_info ('DANU: adding EM simulation ' // trim(sim_name))
-      call foutput%simulation_add (sim_name, sim, status)
+      call foutput%simulation_add (trim(sim_name), sim, status)
           if (status /= DANU_SUCCESS) return
-      call sim%attribute_write ('TIME', t, status)
+      call sim%write_attr ('TIME', t, status)
           if (status /= DANU_SUCCESS) return
-
       call TLS_info ('DANU: writing EM restart data for ' // trim(sim_name))
-      call sim%data_write ('FREQ', freq_q, status)
+      call sim%write_repl_data('FREQ', freq_q, status)
           if (status /= DANU_SUCCESS) return
-      call sim%data_write ('UHFS', uhfs_q, status)
+      call sim%write_repl_data('UHFS', uhfs_q, status)
           if (status /= DANU_SUCCESS) return
-      call sim%data_write ('COILS', solenoid_serialize(coil_q), status)
+      call sim%write_repl_data('COILS', solenoid_serialize(coil_q), status)
           if (status /= DANU_SUCCESS) return
-      call sim%data_write ('MU', col_mu, status)
+      call sim%write_repl_data('MU', col_mu, status)
           if (status /= DANU_SUCCESS) return
-      call sim%data_write ('SIGMA', col_sigma, status)
+      call sim%write_repl_data('SIGMA', col_sigma, status)
           if (status /= DANU_SUCCESS) return
-      call sim%data_write ('JOULE', col_joule, status)
+      call sim%write_dist_array('JOULE', joule, global_sum(size(joule)), status)
           if (status /= DANU_SUCCESS) return
 
     end subroutine write_data

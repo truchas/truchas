@@ -12,8 +12,6 @@
 
 #include "scorpio.h"
 
-#include <danu_fort_hid.h>
-
 struct TruchasScorpioFileHandle {
   int fhandle; // Scorpio file handle
   iogroup_t myIOgroup; // Internal Scorpio data
@@ -21,8 +19,6 @@ struct TruchasScorpioFileHandle {
 
 struct TruchasScorpioFileHandle * truchas_scorpio_create_handle(
         const char *filename, int numIOgroups);
-
-void truchas_scorpio_free_handle(struct TruchasScorpioFileHandle *h);
 
 void truchas_scorpio_write_dataset_1d_integer(
         struct TruchasScorpioFileHandle *h,
@@ -32,10 +28,6 @@ void truchas_scorpio_write_dataset_1d_integer(
 void truchas_scorpio_write_dataset_1d_double(struct TruchasScorpioFileHandle *h,
         const char *name,
         double *vector, int global_dim, int local_dim);
-
-int truchas_scorpio_get_group_name(hid_t_ptr gid, char **cname);
-
-void truchas_scorpio_str_free(char *cname);
 
 hid_t truchas_scorpio_get_hdf5_handle(struct TruchasScorpioFileHandle *h);
 

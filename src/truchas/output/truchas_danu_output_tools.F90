@@ -21,7 +21,7 @@
 module truchas_danu_output_tools
 
   use kinds, only: r8
-  use truchasio, only: output_dataset, DANU_SUCCESS, sequence
+  use truchasio, only: DANU_SUCCESS, sequence
   use parallel_communication
   use,intrinsic :: iso_c_binding, only: c_ptr
   implicit none
@@ -50,7 +50,6 @@ contains
     character(*), intent(in), optional :: viz_name
 
     integer :: stat
-    type(output_dataset) :: dataset
     
     INSIST(size(ldata) == ncells)
     
@@ -59,14 +58,13 @@ contains
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      call dataset%attribute_write ('FIELDTYPE', 'CELL', stat)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'CELL', stat)
       INSIST(stat == DANU_SUCCESS)
       if (present(viz_name)) then
-        call dataset%attribute_write ('FIELDNAME', viz_name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
       else
-        call dataset%attribute_write ('FIELDNAME', name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', name, stat)
       end if
       INSIST(stat == DANU_SUCCESS)
     end if
@@ -85,7 +83,6 @@ contains
     character(*), intent(in), optional :: viz_name(:)
 
     integer :: stat, n
-    type(output_dataset) :: dataset
     
     INSIST(size(ldata,dim=2) == ncells)
     
@@ -94,17 +91,16 @@ contains
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      call dataset%attribute_write ('FIELDTYPE', 'CELL', stat)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'CELL', stat)
       INSIST(stat == DANU_SUCCESS)
       INSIST(present(viz_name))
       INSIST(size(viz_name) == size(ldata,1))
       ! Argh, no array attributes!  So we'll do it this way for now.
-      !call dataset%attribute_write ('FIELDNAME', viz_name, stat)
+      !call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
       !INSIST(stat == DANU_SUCCESS)
       do n = 1, size(viz_name)
-        call dataset%attribute_write ('FIELDNAME'//i_to_c(n), viz_name(n), stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
         INSIST(stat == DANU_SUCCESS)
       end do
     end if
@@ -122,7 +118,6 @@ contains
     character(*), intent(in), optional :: viz_name
 
     integer :: stat
-    type(output_dataset) :: dataset
     
     INSIST(size(ldata) == nnodes)
     
@@ -131,14 +126,13 @@ contains
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      call dataset%attribute_write ('FIELDTYPE', 'NODE', stat)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'NODE', stat)
       INSIST(stat == DANU_SUCCESS)
       if (present(viz_name)) then
-        call dataset%attribute_write ('FIELDNAME', viz_name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
       else
-        call dataset%attribute_write ('FIELDNAME', name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', name, stat)
       end if
       INSIST(stat == DANU_SUCCESS)
     end if
@@ -157,7 +151,6 @@ contains
     character(*), intent(in), optional :: viz_name(:)
 
     integer :: stat, n
-    type(output_dataset) :: dataset
     
     INSIST(size(ldata,dim=2) == nnodes)
     
@@ -166,17 +159,16 @@ contains
     INSIST(stat == DANU_SUCCESS)
     
     if (for_viz) then
-      call seq%open_data (name, dataset, stat)
       INSIST(stat == DANU_SUCCESS)
-      call dataset%attribute_write ('FIELDTYPE', 'NODE', stat)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'NODE', stat)
       INSIST(stat == DANU_SUCCESS)
       INSIST(present(viz_name))
       INSIST(size(viz_name) == size(ldata,1))
       ! Argh, no array attributes!  So we'll do it this way for now.
-      !call dataset%attribute_write ('FIELDNAME', viz_name, stat)
+      !call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
       !INSIST(stat == DANU_SUCCESS)
       do n = 1, size(viz_name)
-        call dataset%attribute_write ('FIELDNAME'//i_to_c(n), viz_name(n), stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
         INSIST(stat == DANU_SUCCESS)
       end do
     end if

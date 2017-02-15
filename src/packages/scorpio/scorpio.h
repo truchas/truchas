@@ -418,6 +418,19 @@ extern "C"
 	 * @return error code
 	 */
 	int scorpio_close_dataset_group( int groupid, int fhandle, iogroup_t *myIOgroup);
+
+        /**
+         * @brief Creates a soft link to an object in the given file
+         *
+         * @param target path to the target object
+         * @param link_name name of the new soft link
+         * @param fhandle file handle
+         * @param myIOgroup IOgroup used to open the file
+         *
+         * @return error code
+         */
+        int scorpio_create_link(char *target, int link_loc_id, char *link_name, int fhandle, iogroup_t *myIOgroup);
+
 #ifdef __cplusplus
 }
 #endif

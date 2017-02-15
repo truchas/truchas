@@ -93,6 +93,24 @@ int scorpio_create_dataset_group( char *group_name, int fhandle, iogroup_t *myIO
 	return 0;
 }
 
+int scorpio_create_link(char *target, int link_loc_id, char *link_name, int fhandle, iogroup_t *myIOgroup)
+{
+	if ( myIOgroup->localrank == 0)
+	{
+		iofile_t *currfile;
+		currfile = myIOgroup->file[fhandle];
+
+		H5Eset_auto2(H5E_DEFAULT, NULL, stderr);
+
+                herr_t ret = H5Lcreate_soft(target, link_loc_id, link_name, H5P_DEFAULT, H5P_DEFAULT);
+                assert(ret != FAILURE);
+
+		H5Eset_auto2(H5E_DEFAULT, (H5E_auto2_t) H5Eprint2, stderr);
+	}
+
+	return 0;
+}
+
 int scorpio_write_dataset1( void *vector, datatype_t mytype, int ndims, int *globaldims, int *localdims, int fhandle, char *dset_name,  iogroup_t *myIOgroup)
 {
 	/* Some compilers generate warning messages about variables like buffer being used before initializing */
@@ -427,7 +445,8 @@ int scorpio_write_dataset2( void *vector, datatype_t mytype, int ndims, int *glo
 #endif		
 
 		/* write data collectively */
-		ret = H5Dwrite(currfile->dataset, myIOgroup->hdf_type, currfile->mem_dataspace, currfile->file_dataspace, currfile->xfer_plist, buffer);
+		if (globaldims[0] > 0)
+		  ret = H5Dwrite(currfile->dataset, myIOgroup->hdf_type, currfile->mem_dataspace, currfile->file_dataspace, currfile->xfer_plist, buffer);
 		assert(ret != FAILURE);
 		PRINT_MSG(( SCORPIO_VERBOSE, "IOnode after write"));
 
@@ -770,7 +789,7 @@ int scorpio_write_attr(char *attr_name, void *attr_data, datatype_t mytype, int 
 	int i;
 
 	initialize_datatype(mytype, myIOgroup);
-	if ( myIOgroup->globalrank == 0)
+	if ( myIOgroup->localrank == 0)
 	{
 		/* only do this on root process - rank 0 */
 		iofile_t *currfile;

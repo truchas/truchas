@@ -64,8 +64,8 @@ contains
     use truchas_logging_services
     
     integer :: stat, k
-    real(r8), pointer :: x(:), y(:), z(:)
-    integer, pointer :: cnode(:,:), iarray(:)
+    real(r8), allocatable :: x(:,:)
+    integer, allocatable :: cnode(:,:)
     
     !! Create the mesh entry.
     call TLS_info ('DANU: adding default mesh entry')
@@ -73,24 +73,18 @@ contains
     INSIST(stat == DANU_SUCCESS)
     
     !! Write the node coordinates.
-    INSIST(ndim == 3)
-    call allocate_collated_array (x, nnodes_tot)
-    call collate (x, vertex(:)%coord(1))
-    call allocate_collated_array (y, nnodes_tot)
-    call collate (y, vertex(:)%coord(2))
-    call allocate_collated_array (z, nnodes_tot)
-    call collate (z, vertex(:)%coord(3))
-    call TLS_info ('DANU: writing mesh node coordinates')
-    call out_mesh%write_coordinates (nnodes_tot, x, y, z, stat)
-    deallocate(x, y, z)
+    allocate(x(3,nnodes))
+    x(1,:) = vertex%coord(1); x(2,:) = vertex%coord(2); x(3,:) = vertex%coord(3)
+    call out_mesh%write_coordinates(nnodes_tot, x, stat)
+    deallocate(x)
     INSIST(stat == DANU_SUCCESS)
     
     !! Write the cell connectivity.
-    call allocate_collated_array (cnode, nvc, ncells_tot)
+    allocate(cnode(nvc,ncells))
     do k = 1, nvc
-      call collate (cnode(k,:), mesh%ngbr_vrtx_orig(k)) ! then internal serial numbering
+      cnode(k,:) = mesh%ngbr_vrtx_orig(k)
     end do
-    call out_mesh%write_connectivity (ncells_tot, cnode, stat)
+    call out_mesh%write_connectivity(ncells_tot, cnode, stat)
     deallocate(cnode)
     INSIST(stat == DANU_SUCCESS)
     
@@ -101,45 +95,31 @@ contains
     !! of the simulation.  Soon we will write these in the mesh section.
     
     !! Mapping from internal serial cell numbering to external numbering.
-    call allocate_collated_array (iarray, ncells_tot)
-    call collate (iarray, unpermute_mesh_vector)
-    call sim%data_write ('CELLMAP', iarray, stat)
+    call sim%write_dist_array('CELLMAP', unpermute_mesh_vector, ncells_tot, stat)
     INSIST(stat == DANU_SUCCESS)
     
     !! Cell block IDs.
-    if (mesh_has_cblockid_data) then
-      call collate (iarray, mesh%cblockid)
-      call sim%data_write ('BLOCKID', iarray, stat)
-      INSIST(stat == DANU_SUCCESS)
-    end if
+    call sim%write_dist_array('BLOCKID', mesh%cblockid, ncells_tot, stat)
+    INSIST(stat == DANU_SUCCESS)
     
     !! Cell partition assignment.
-    if (nPE > 1) then
-      call collate (iarray, spread(this_PE, dim=1, ncopies=ncells))
-      call sim%data_write ('CELLPART', iarray, stat)
-      INSIST(stat == DANU_SUCCESS)
-    end if
-    deallocate(iarray)
+    call sim%write_dist_array('CELLPART', spread(this_PE,dim=1,ncopies=ncells), ncells_tot, stat)
+    INSIST(stat == DANU_SUCCESS)
     
     !! Mapping from internal serial node numbering to external numbering.
-    call allocate_collated_array (iarray, nnodes_tot)
-    call collate (iarray, unpermute_vertex_vector)
-    call sim%data_write ('NODEMAP', iarray, stat)
+    call sim%write_dist_array('NODEMAP', unpermute_vertex_vector, nnodes_tot, stat)
+    INSIST(stat == DANU_SUCCESS)
     
     !! Node partition assignment.
-    if (nPE > 1) then
-      call collate (iarray, spread(this_PE, dim=1, ncopies=nnodes))
-      call sim%data_write ('NODEPART', iarray, stat)
-      INSIST(stat == DANU_SUCCESS)
-    end if
-    deallocate(iarray)
+    call sim%write_dist_array('NODEPART', spread(this_PE,dim=1,ncopies=nnodes), nnodes_tot, stat)
+    INSIST(stat == DANU_SUCCESS)
     
-    call sim%data_write ('NUMPROCS', nPE, stat)
+    call sim%write_repl_data('NUMPROCS', nPE, stat)
     INSIST(stat == DANU_SUCCESS)
 
     !! Parts for movement
     if (size(part) > 0) then
-      call sim%data_write('part1', part, stat)
+      call sim%write_repl_data('part1', part, stat)
       INSIST(stat == DANU_SUCCESS)
     end if
     
@@ -160,7 +140,7 @@ contains
     INSIST(stat == DANU_SUCCESS)
     
     if (species_transport) then
-      call sim%attribute_write ('NUM_SPECIES', number_of_species, stat)
+      call sim%write_attr('NUM_SPECIES', number_of_species, stat)
       INSIST(stat == DANU_SUCCESS)
     end if
     
@@ -182,14 +162,14 @@ contains
   
     call sim%sequence_next_id (cycle_number, t, seq, stat)
     INSIST(stat == DANU_SUCCESS)
-    call seq%attribute_write ('time step', dt, stat)
+    call seq%write_attr('time step', dt, stat)
     INSIST(stat == DANU_SUCCESS)
 
     !! Part movement
     if (associated(part_path)) then
       call part_path%set_segment(t)
       call part_path%get_position(t, r)
-      call seq%attribute_write('translate_part1', r, stat)
+      call seq%write_attr('translate_part1', r, stat)
       INSIST(stat == DANU_SUCCESS)
     end if
 
@@ -367,16 +347,16 @@ contains
       do n = 1, nipc
         call get_smech_ip_total_strain(n,scratch2)
         write(name,'(a,i2.2)') 'TOTAL_STRAIN_', n
-        call write_seq_cell_field (seq, scratch2, name, for_viz=.false.)
+        call write_seq_cell_field (seq, scratch2, trim(name), for_viz=.false.)
         call get_smech_ip_elastic_stress(n,scratch2)
         write(name,'(a,i2.2)') 'ELASTIC_STRESS_', n
-        call write_seq_cell_field (seq, scratch2, name, for_viz=.false.)
+        call write_seq_cell_field (seq, scratch2, trim(name), for_viz=.false.)
         call get_smech_ip_plastic_strain(n,scratch2)
         write(name,'(a,i2.2)') 'PLASTIC_STRAIN_', n
-        call write_seq_cell_field (seq, scratch2, name, for_viz=.false.)
+        call write_seq_cell_field (seq, scratch2, trim(name), for_viz=.false.)
         call get_smech_ip_plastic_strain_rate(n,scratch1)
         write(name,'(a,i2.2)') 'PLASTIC_STRAIN_RATE_', n
-        call write_seq_cell_field (seq, scratch1, name, for_viz=.false.)
+        call write_seq_cell_field (seq, scratch1, trim(name), for_viz=.false.)
       end do
       deallocate(scratch1)
       deallocate(scratch2)
@@ -438,9 +418,9 @@ contains
         call get_sm_node_norm_trac(n,node_norm_trac)
         if (global_any((node_gap /= 0.0_r8) .or. (node_norm_trac /= 0.0_r8))) then
           write(name,'(a,i2.2)') 'GAP_', interface_list(n)
-          call write_seq_node_field (seq, node_gap, name, for_viz=.true.)
+          call write_seq_node_field (seq, node_gap, trim(name), for_viz=.true.)
           write(name,'(a,i2.2)') 'NTRAC_', interface_list(n)
-          call write_seq_node_field (seq, node_norm_trac, name, for_viz=.true.)
+          call write_seq_node_field (seq, node_norm_trac, trim(name), for_viz=.true.)
         end if
       end do
       deallocate(node_gap)

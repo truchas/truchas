@@ -462,7 +462,7 @@ contains
   
     use,intrinsic :: iso_c_binding, only: c_ptr
     use,intrinsic :: iso_fortran_env, only: int8
-    use truchasio, only: output_dataset, DANU_SUCCESS, sequence
+    use truchasio, only: DANU_SUCCESS, sequence
     use parallel_communication, only: nPE, is_IOP, collate, broadcast, global_sum
     use string_utilities, only: i_to_c
 
@@ -472,7 +472,6 @@ contains
     integer, allocatable :: cid(:), lmap(:)
     integer(int8), allocatable :: lar(:,:)
     character(:), allocatable :: name
-    type(output_dataset) :: dataset
     
     if (.not.allocated(this)) return
     call start_timer ('Microstructure')
@@ -482,7 +481,7 @@ contains
     lmap = this%mesh%xcell(lmap)
     name = 'CP-USTRUC-MAP'
     n = global_sum(size(lmap))
-    call seq%data_write (name, merge(n,0,is_IOP), lmap, stat)
+    call seq%data_write (name, n, lmap, stat)
     INSIST(stat == DANU_SUCCESS)
 
     !! Get the list of analysis components ...
@@ -492,11 +491,11 @@ contains
       call this%model%serialize (cid(j), lar)
       if (.not.allocated(lar))  cycle ! no checkpoint data for this analysis component
       if (size(lar,dim=1) == 0) cycle ! no checkpoint data for this analysis component
+      n = global_sum(size(lar,dim=2))
       name = 'CP-USTRUC-COMP-' // i_to_c(j)
-      call seq%data_write (name, merge(n,0,is_IOP), lar, stat)
+      call seq%data_write (name, n, lar, stat)
       INSIST(stat == DANU_SUCCESS)
-      call seq%open_data (name, dataset, stat)
-      call dataset%attribute_write ('COMP-ID', cid(j), stat)
+      call seq%write_dataset_attr(name, 'COMP-ID', cid(j), stat)
       INSIST(stat == DANU_SUCCESS)
     end do
 
