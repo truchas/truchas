@@ -1056,15 +1056,20 @@ CONTAINS
     use parallel_communication
     use permutations
     use mesh_manager, only: simpl_mesh, simpl_mesh_ptr
-    use truchasio, only: DANU_SUCCESS
+    use truchas_h5_outfile, only: th5_sim_group
+    use truchas_danu_output_data, only: outfile
     
     real(rk), intent(in) :: t
 
-    integer :: status, n
+    integer :: n
     type(simpl_mesh), pointer :: mesh => null()
     integer, pointer :: cell_perm(:) => null()
     real(kind=rk), pointer :: col_mu(:)    => null()
     real(kind=rk), pointer :: col_sigma(:) => null()
+
+    integer, save :: sim_num = 0
+    character(32) :: sim_name
+    type(th5_sim_group) :: sim
 
     ASSERT( allocated(mu_q) )
     ASSERT( allocated(sigma_q) )
@@ -1096,56 +1101,20 @@ CONTAINS
     if (is_IOP) call reorder (col_sigma, cell_perm, forward=.true.)
 
     !! Write the data.
-    call write_data (status)
+    sim_num = sim_num + 1
+    write(sim_name,'(a,i3.3)') 'EM', sim_num
+    call TLS_info ('Adding EM simulation ' // trim(sim_name))
+    call outfile%add_sim_group(trim(sim_name), sim)
+    call sim%write_attr ('TIME', t)
+    call TLS_info ('Writing EM restart data for ' // trim(sim_name))
+    call sim%write_repl_data('FREQ', freq_q)
+    call sim%write_repl_data('UHFS', uhfs_q)
+    call sim%write_repl_data('COILS', solenoid_serialize(coil_q))
+    call sim%write_repl_data('MU', col_mu)
+    call sim%write_repl_data('SIGMA', col_sigma)
+    call sim%write_dist_array('JOULE', joule, global_sum(size(joule)))
+
     deallocate(cell_perm, col_mu, col_sigma)
-    call broadcast (status)
-    if (status /= DANU_SUCCESS) call TLS_fatal ('DANU_WRITE_JOULE: Error writing Joule data to h5 file')
-
-  contains
-
-    !!
-    !! Auxillary procedure (serial) that writes the data, returning a non-zero
-    !! STATUS value in the event of any I/O error.  Writes a JOULEHEAT tag to
-    !! the xml output file.  The data itself is written to a binary look-aside
-    !! file (a new one for each call).
-    !!
-
-    subroutine write_data (status)
-
-      use truchasio, only: simulation, DANU_SUCCESS
-      use truchas_danu_output_data, only: foutput
-      use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
-
-      integer, intent(out) :: status
-
-      integer :: stat, n
-      integer, save :: sim_num = 0
-      character(32) :: sim_name
-      type(simulation) :: sim
-
-      sim_num = sim_num + 1
-      write(sim_name,'(a,i3.3)') 'EM', sim_num
-    
-      call TLS_info ('DANU: adding EM simulation ' // trim(sim_name))
-      call foutput%simulation_add (trim(sim_name), sim, status)
-          if (status /= DANU_SUCCESS) return
-      call sim%write_attr ('TIME', t, status)
-          if (status /= DANU_SUCCESS) return
-      call TLS_info ('DANU: writing EM restart data for ' // trim(sim_name))
-      call sim%write_repl_data('FREQ', freq_q, status)
-          if (status /= DANU_SUCCESS) return
-      call sim%write_repl_data('UHFS', uhfs_q, status)
-          if (status /= DANU_SUCCESS) return
-      call sim%write_repl_data('COILS', solenoid_serialize(coil_q), status)
-          if (status /= DANU_SUCCESS) return
-      call sim%write_repl_data('MU', col_mu, status)
-          if (status /= DANU_SUCCESS) return
-      call sim%write_repl_data('SIGMA', col_sigma, status)
-          if (status /= DANU_SUCCESS) return
-      call sim%write_dist_array('JOULE', joule, global_sum(size(joule)), status)
-          if (status /= DANU_SUCCESS) return
-
-    end subroutine write_data
 
   end subroutine danu_write_joule
   

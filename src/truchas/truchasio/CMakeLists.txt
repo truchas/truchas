@@ -1,6 +1,8 @@
 set(SRC
-    truchasio.F90
-    io_scorpio.c
+    scorpio_c_binding.F90
+    scorpio_file_type.F90
+    truchas_h5_outfile.F90
+    scorpio_ext.c
     )
 
 add_library(truchas_io ${SRC})

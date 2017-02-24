@@ -427,13 +427,13 @@ contains
 #ifdef NAG_COMPILER
     use,intrinsic :: f90_unix, only: exit
 #endif
-    use truchas_danu_output_data, only: foutput
+    use truchas_danu_output_data, only: outfile
     use pgslib_module, only: pgslib_finalize
     use utilities_module, only: timestamp
     character(*), intent(in) :: message
     character(32) :: date_time
     call labeled_message_scalar ('FATAL: ', message)
-    call foutput%close ()
+    call outfile%close ()
     call timestamp (date_time)
     call TLS_info ('truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22))
     call TLS_finalize

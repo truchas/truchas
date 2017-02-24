@@ -25,7 +25,7 @@ module truchas_danu_output
   use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
   use parallel_communication
   use truchas_logging_services
-  use truchasio, only: DANU_SUCCESS, output_file, output_mesh, sequence
+  use truchas_h5_outfile, only: th5_mesh_group, th5_seq_group
   use kinds, only: r8
   implicit none
   private
@@ -35,24 +35,20 @@ module truchas_danu_output
   public :: TDO_start_simulation
   public :: TDO_write_timestep
   
-  type(output_mesh), save :: out_mesh
-  type(sequence), save :: seq
+  type(th5_mesh_group), save :: out_mesh
+  type(th5_seq_group), save :: seq
   
-  public :: foutput ! others may want to write here
+  public :: outfile ! others may want to write here
   
 contains
 
   subroutine TDO_open ()
     use truchas_env, only: output_file_name
-    integer :: stat
-    call TLS_info ('DANU: Opening h5 output file')
-    call foutput%open (output_file_name('h5'), is_IOP, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call outfile%open (output_file_name('h5'), io_group_size, is_IOP)
   end subroutine TDO_open
   
   subroutine TDO_close ()
-    call TLS_info ('DANU: Closing h5 output file')
-    call foutput%close()
+    call outfile%close()
   end subroutine TDO_close
   
   subroutine TDO_write_default_mesh
@@ -63,30 +59,26 @@ contains
     use output_control,  only: part
     use truchas_logging_services
     
-    integer :: stat, k
+    integer :: k
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: cnode(:,:)
     
     !! Create the mesh entry.
-    call TLS_info ('DANU: adding default mesh entry')
-    call foutput%mesh_add_unstructured ('DEFAULT', nvc, ndim, out_mesh, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call outfile%add_unstr_mesh_group('DEFAULT', nvc, ndim, out_mesh)
     
     !! Write the node coordinates.
     allocate(x(3,nnodes))
     x(1,:) = vertex%coord(1); x(2,:) = vertex%coord(2); x(3,:) = vertex%coord(3)
-    call out_mesh%write_coordinates(nnodes_tot, x, stat)
+    call out_mesh%write_coordinates(nnodes_tot, x)
     deallocate(x)
-    INSIST(stat == DANU_SUCCESS)
     
     !! Write the cell connectivity.
     allocate(cnode(nvc,ncells))
     do k = 1, nvc
       cnode(k,:) = mesh%ngbr_vrtx_orig(k)
     end do
-    call out_mesh%write_connectivity(ncells_tot, cnode, stat)
+    call out_mesh%write_connectivity(ncells_tot, cnode)
     deallocate(cnode)
-    INSIST(stat == DANU_SUCCESS)
     
     ! I don't know where this should go
     call TDO_start_simulation
@@ -95,33 +87,24 @@ contains
     !! of the simulation.  Soon we will write these in the mesh section.
     
     !! Mapping from internal serial cell numbering to external numbering.
-    call sim%write_dist_array('CELLMAP', unpermute_mesh_vector, ncells_tot, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%write_dist_array('CELLMAP', unpermute_mesh_vector, ncells_tot)
     
     !! Cell block IDs.
-    call sim%write_dist_array('BLOCKID', mesh%cblockid, ncells_tot, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%write_dist_array('BLOCKID', mesh%cblockid, ncells_tot)
     
     !! Cell partition assignment.
-    call sim%write_dist_array('CELLPART', spread(this_PE,dim=1,ncopies=ncells), ncells_tot, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%write_dist_array('CELLPART', spread(this_PE,dim=1,ncopies=ncells), ncells_tot)
     
     !! Mapping from internal serial node numbering to external numbering.
-    call sim%write_dist_array('NODEMAP', unpermute_vertex_vector, nnodes_tot, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%write_dist_array('NODEMAP', unpermute_vertex_vector, nnodes_tot)
     
     !! Node partition assignment.
-    call sim%write_dist_array('NODEPART', spread(this_PE,dim=1,ncopies=nnodes), nnodes_tot, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%write_dist_array('NODEPART', spread(this_PE,dim=1,ncopies=nnodes), nnodes_tot)
     
-    call sim%write_repl_data('NUMPROCS', nPE, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%write_repl_data('NUMPROCS', nPE)
 
     !! Parts for movement
-    if (size(part) > 0) then
-      call sim%write_repl_data('part1', part, stat)
-      INSIST(stat == DANU_SUCCESS)
-    end if
+    if (size(part) > 0) call sim%write_repl_data('part1', part)
     
   end subroutine TDO_write_default_mesh
   
@@ -129,19 +112,13 @@ contains
   
     use physics_module, only: species_transport, number_of_species
 
-    integer :: stat
-  
-    call TLS_info ('DANU: adding main simulation entry')
-    call foutput%simulation_add ('MAIN', sim, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call outfile%add_sim_group('MAIN', sim)
 
     !! Hard-wired for the moment. Need to accomodate EM simulation 
-    call foutput%simulation_link_mesh(sim,'DEFAULT',stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%add_mesh_link('DEFAULT')
     
     if (species_transport) then
-      call sim%write_attr('NUM_SPECIES', number_of_species, stat)
-      INSIST(stat == DANU_SUCCESS)
+      call sim%write_attr('NUM_SPECIES', number_of_species)
     end if
     
   end subroutine TDO_start_simulation
@@ -160,17 +137,14 @@ contains
     integer :: stat
     real(r8) :: r(3)
   
-    call sim%sequence_next_id (cycle_number, t, seq, stat)
-    INSIST(stat == DANU_SUCCESS)
-    call seq%write_attr('time step', dt, stat)
-    INSIST(stat == DANU_SUCCESS)
+    call sim%next_seq_group(cycle_number, t, seq)
+    call seq%write_attr('time step', dt)
 
     !! Part movement
     if (associated(part_path)) then
       call part_path%set_segment(t)
       call part_path%get_position(t, r)
-      call seq%write_attr('translate_part1', r, stat)
-      INSIST(stat == DANU_SUCCESS)
+      call seq%write_attr('translate_part1', r)
     end if
 
     !! Prior to writing, overwrite (bogus) field data on gap elements with

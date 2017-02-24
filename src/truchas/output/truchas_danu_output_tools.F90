@@ -21,7 +21,7 @@
 module truchas_danu_output_tools
 
   use kinds, only: r8
-  use truchasio, only: DANU_SUCCESS, sequence
+  use truchas_h5_outfile, only: th5_seq_group
   use parallel_communication
   use,intrinsic :: iso_c_binding, only: c_ptr
   implicit none
@@ -43,30 +43,23 @@ contains
   
     use legacy_mesh_api, only: ncells, ncells_tot
 
-    class(sequence), intent(in) :: seq
+    type(th5_seq_group), intent(in) :: seq
     real(r8), intent(in) :: ldata(:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name
-
-    integer :: stat
     
     INSIST(size(ldata) == ncells)
     
-    call seq%data_write (name, ncells_tot, ldata, stat)
-    
-    INSIST(stat == DANU_SUCCESS)
+    call seq%write_dist_array(name, ncells_tot, ldata)
     
     if (for_viz) then
-      INSIST(stat == DANU_SUCCESS)
-      call seq%write_dataset_attr(name, 'FIELDTYPE', 'CELL', stat)
-      INSIST(stat == DANU_SUCCESS)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'CELL')
       if (present(viz_name)) then
-        call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', viz_name)
       else
-        call seq%write_dataset_attr(name, 'FIELDNAME', name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', name)
       end if
-      INSIST(stat == DANU_SUCCESS)
     end if
     
   end subroutine write_seq_cell_field_r0
@@ -76,32 +69,26 @@ contains
     use legacy_mesh_api, only: ncells, ncells_tot
     use string_utilities, only: i_to_c
 
-    class(sequence), intent(in) :: seq
+    type(th5_seq_group), intent(in) :: seq
     real(r8), intent(in) :: ldata(:,:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name(:)
 
-    integer :: stat, n
+    integer :: n
     
     INSIST(size(ldata,dim=2) == ncells)
     
-    call seq%data_write (name, ncells_tot, ldata, stat)
-    
-    INSIST(stat == DANU_SUCCESS)
+    call seq%write_dist_array(name, ncells_tot, ldata)
     
     if (for_viz) then
-      INSIST(stat == DANU_SUCCESS)
-      call seq%write_dataset_attr(name, 'FIELDTYPE', 'CELL', stat)
-      INSIST(stat == DANU_SUCCESS)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'CELL')
       INSIST(present(viz_name))
       INSIST(size(viz_name) == size(ldata,1))
       ! Argh, no array attributes!  So we'll do it this way for now.
-      !call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
-      !INSIST(stat == DANU_SUCCESS)
+      !call seq%write_dataset_attr(name, 'FIELDNAME', viz_name)
       do n = 1, size(viz_name)
-        call seq%write_dataset_attr(name, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
-        INSIST(stat == DANU_SUCCESS)
+        call seq%write_dataset_attr(name, 'FIELDNAME'//i_to_c(n), viz_name(n))
       end do
     end if
     
@@ -111,30 +98,23 @@ contains
   
     use legacy_mesh_api, only: nnodes, nnodes_tot
 
-    class(sequence), intent(in) :: seq
+    type(th5_seq_group), intent(in) :: seq
     real(r8), intent(in) :: ldata(:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name
 
-    integer :: stat
-    
     INSIST(size(ldata) == nnodes)
     
-    call seq%data_write (name, nnodes_tot, ldata, stat)
-    
-    INSIST(stat == DANU_SUCCESS)
+    call seq%write_dist_array(name, nnodes_tot, ldata)
     
     if (for_viz) then
-      INSIST(stat == DANU_SUCCESS)
-      call seq%write_dataset_attr(name, 'FIELDTYPE', 'NODE', stat)
-      INSIST(stat == DANU_SUCCESS)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'NODE')
       if (present(viz_name)) then
-        call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', viz_name)
       else
-        call seq%write_dataset_attr(name, 'FIELDNAME', name, stat)
+        call seq%write_dataset_attr(name, 'FIELDNAME', name)
       end if
-      INSIST(stat == DANU_SUCCESS)
     end if
     
   end subroutine write_seq_node_field_r0
@@ -144,32 +124,26 @@ contains
     use legacy_mesh_api, only: nnodes, nnodes_tot
     use string_utilities, only: i_to_c
 
-    class(sequence), intent(in) :: seq
+    type(th5_seq_group), intent(in) :: seq
     real(r8), intent(in) :: ldata(:,:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name(:)
 
-    integer :: stat, n
+    integer :: n
     
     INSIST(size(ldata,dim=2) == nnodes)
     
-    call seq%data_write (name, nnodes_tot, ldata, stat)
-    
-    INSIST(stat == DANU_SUCCESS)
+    call seq%write_dist_array(name, nnodes_tot, ldata)
     
     if (for_viz) then
-      INSIST(stat == DANU_SUCCESS)
-      call seq%write_dataset_attr(name, 'FIELDTYPE', 'NODE', stat)
-      INSIST(stat == DANU_SUCCESS)
+      call seq%write_dataset_attr(name, 'FIELDTYPE', 'NODE')
       INSIST(present(viz_name))
       INSIST(size(viz_name) == size(ldata,1))
       ! Argh, no array attributes!  So we'll do it this way for now.
-      !call seq%write_dataset_attr(name, 'FIELDNAME', viz_name, stat)
-      !INSIST(stat == DANU_SUCCESS)
+      !call seq%write_dataset_attr(name, 'FIELDNAME', viz_name)
       do n = 1, size(viz_name)
-        call seq%write_dataset_attr(name, 'FIELDNAME'//i_to_c(n), viz_name(n), stat)
-        INSIST(stat == DANU_SUCCESS)
+        call seq%write_dataset_attr(name, 'FIELDNAME'//i_to_c(n), viz_name(n))
       end do
     end if
     

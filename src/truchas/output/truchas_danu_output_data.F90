@@ -7,9 +7,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module truchas_danu_output_data
-  use truchasio, only: output_file, simulation
+  use truchas_h5_outfile, only: th5_file, th5_sim_group
   implicit none
   private
-  type(output_file), target, public :: foutput
-  type(simulation), public :: sim
+  integer, public :: io_group_size
+  type(th5_file), target, public :: outfile
+  type(th5_sim_group), public :: sim
 end module truchas_danu_output_data

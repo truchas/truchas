@@ -19,7 +19,7 @@ MODULE probe_module
   use kinds, only: r8
   use parameter_module, only: string_len
   use legacy_mesh_api,  only: ndim
-  use truchasio, only: output_probe
+  use truchas_h5_outfile, only: th5_probe
   use,intrinsic :: iso_c_binding, only: c_ptr
   implicit none 
   private 
@@ -65,7 +65,7 @@ MODULE probe_module
      type(probe_node) :: node                !nearest node (index,coords) to probe
      type(probe_cell) :: cell                !nearest cell (index,coords) to probe
 
-     class(output_probe), dimension(:), pointer :: probe        ! Truchas IO probe data
+     class(th5_probe), dimension(:), pointer :: probe        ! Truchas IO probe data
      character(LEN=string_len), dimension(:), pointer ::NameLU      !list containing names of all probe's fields
      type(probe_scalarfield), dimension(:), pointer   ::ScalarVarLU !list containing the probe's scalar fields
      type(probe_vectorfield), dimension(:), pointer   ::VectorVarLU !list containing the probe's vector fields
