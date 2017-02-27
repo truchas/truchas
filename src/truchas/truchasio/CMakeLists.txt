@@ -13,3 +13,9 @@ add_library(truchas::io ALIAS truchas_io)
 set_property(TARGET truchas_io APPEND PROPERTY INCLUDE_DIRECTORIES
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
+
+install(TARGETS truchas_io
+        EXPORT  truchas_io
+	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
