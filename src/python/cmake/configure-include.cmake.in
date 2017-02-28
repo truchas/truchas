@@ -19,7 +19,6 @@ set(Truchas_BUILD_ID                  @Truchas_BUILD_ID@)
 set(TruchasPython_INSTALL_PREFIX      @TruchasPython_INSTALL_PREFIX@)
 
 # Configuration variables
-set(ENABLE_MPI_FLAG                   @ENABLE_MPI_FLAG@)
 set(MPIEXEC                           @MPIEXEC@)
 set(MPIEXEC_NUMPROC_FLAG              @MPIEXEC_NUMPROC_FLAG@)
 set(Python_INSTALL_PREFIX             @Python_INSTALL_PREFIX@)

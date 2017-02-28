@@ -22,7 +22,6 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 option(BUILD_SHARED_LIBS "Find/build shared TPLs" ON)
-option(ENABLE_MPI "Find/build MPI-parallel TPLs where appropriate" ON)
 option(SEARCH_FOR_HDF5 "Search for suitable HDF5 library" ON)
 option(SEARCH_FOR_NETCDF "Search for suitable NetCDF library" ON)
 option(SEARCH_FOR_EXODUS "Search for suitable Exodus library" ON)
@@ -81,9 +80,7 @@ macro(dir_list_to_link_dirs var)
 endmacro()
 
 # MPI (needed by HYPRE, HDF5)
-if(ENABLE_MPI)
-  find_package(MPI REQUIRED)
-endif()
+find_package(MPI REQUIRED)
 
 # Python (needed by SWIG)
 find_package(PythonInterp REQUIRED)

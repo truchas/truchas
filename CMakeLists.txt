@@ -37,9 +37,6 @@ if(CMAKE_BUILD_TYPE)
   endif()
 endif()
 
-# Build with MPI
-option(ENABLE_MPI "Build the parallel (MPI) library" True)
-
 # Build with support for dynamic loading of user functions
 option(ENABLE_DYNAMIC_LOADING "Build with support for dynamic loading of user functions" True)
 
@@ -67,9 +64,7 @@ option(ENABLE_INSTALL_RPATH "Use RPATH in installed binaries and libraries" True
 # ---------------------------------------------------------------------------- #
 
 # MPI
-if(ENABLE_MPI)
-  find_package(MPI REQUIRED)
-endif()
+find_package(MPI REQUIRED)
 
 # Python and NumPy
 find_package(PythonInterp REQUIRED)
@@ -90,16 +85,9 @@ set(CMAKE_PREFIX_PATH ${TRUCHAS_TPL_DIR})
 # HYPRE library
 find_package(HYPRE 2.6.0 EXACT)
 if(HYPRE_FOUND)
-  if(ENABLE_MPI)
-    if(NOT HYPRE_IS_PARALLEL)
-      set(HYPRE_FOUND False)
-      message(STATUS "Require parallel HYPRE library but found unsuitable serial library")
-    endif()
-  else()
-    if(HYPRE_IS_PARALLEL)
-      set(HYPRE_FOUND False)
-      message(STATUS "Require serial HYPRE library but found unsuitable parallel library")
-    endif()
+  if(NOT HYPRE_IS_PARALLEL)
+    set(HYPRE_FOUND False)
+    message(STATUS "Require parallel HYPRE library but found unsuitable serial library")
   endif()
 endif()
 if(NOT HYPRE_FOUND)
@@ -107,21 +95,12 @@ if(NOT HYPRE_FOUND)
 endif()
 
 # HDF5 library
-if(ENABLE_MPI)
-  set(HDF5_PREFER_PARALLEL True)
-endif()
+set(HDF5_PREFER_PARALLEL True)
 find_package(HDF5 "1.8.8" COMPONENTS C HL)
 if(HDF5_FOUND)
-  if(ENABLE_MPI)
-    if(NOT HDF5_IS_PARALLEL)
-      set(HDF5_FOUND False)
-      message(STATUS "Require parallel HDF5 library but found unsuitable serial library")
-    endif()
-  else()
-    if(HDF5_IS_PARALLEL)
-      set(HDF5_FOUND False)
-      message(STATUS "Require serial HDF5 library but found unsuitable parallel library")
-    endif()
+  if(NOT HDF5_IS_PARALLEL)
+    set(HDF5_FOUND False)
+    message(STATUS "Require parallel HDF5 library but found unsuitable serial library")
   endif()
 endif()
 if(HDF5_FOUND)

@@ -121,8 +121,7 @@ def main():
 
   # Grab a Truchas Python instance
   executable=get_executable()
-  parallel_flag='@ENABLE_MPI_FLAG@'
-  truchas=SelectTruchasBinary(parallel=parallel_flag,filename=executable)
+  truchas=SelectTruchasBinary(parallel=True,filename=executable)
 
   # Set the Truchas options
   truchas.input=cl_opts.input
