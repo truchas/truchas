@@ -16,8 +16,7 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
 * Standard software development tools: make, patch, perl
 * Python, versions 2.5, 2.6, or 2.7, including the development libraries
 * NumPy
-* MPI, if building a parallel executable.  The C compiler wrapper (`mpicc`,
-  for example) must be in your path.
+* MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
 
 Truchas requires some additional libraries, but these can be built by the
 third party library build step described below.
@@ -43,7 +42,7 @@ than it must be different than the current directory). Here is an example:
 
     $ mkdir build
     $ cd build
-    $ cmake -C ../config/intel-parallel-opt.cmake \
+    $ cmake -C ../config/intel-opt.cmake \
             -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
     $ make
     $ make install
