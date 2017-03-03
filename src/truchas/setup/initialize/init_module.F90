@@ -83,6 +83,8 @@ CONTAINS
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
+    use physics_module,         only: heat_transport
+    use ded_head_driver,        only: ded_head_init
 
     real(r8), intent(in) :: t, dt
 
@@ -179,6 +181,8 @@ CONTAINS
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
     if (solid_mechanics) Call SOLID_MECH_INIT
 
+    call ded_head_init(t)
+
     ! Get the initial species concentration fields.
     if (ds_enabled .and. num_species > 0) then
       allocate(phi(ncells,num_species))
@@ -234,7 +238,7 @@ CONTAINS
     call constant_property_check (matids, 'density', stat, errmsg)
     if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
 
-    if (heat_transport .or. heat_species_transport) then
+    if (heat_transport) then
       call required_property_check (matids, 'specific heat', stat, errmsg)
       if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
 
@@ -324,7 +328,7 @@ CONTAINS
     use projection_data_module, only: dirichlet_pressure
     use property_module,        only: Get_Truchas_Material_Id
     use solid_mechanics_input,  only: solid_mechanics
-    use physics_module,         only: heat_transport, heat_species_transport
+    use physics_module,         only: heat_transport
     use string_utilities,       only: i_to_c
     use vector_func_factories
 
@@ -380,7 +384,7 @@ CONTAINS
        BC_Zero = 0.0_r8
        ALLOCATE (BC_Mat(nfc,ncells))
        BC_Mat = NULL_I
-       if (heat_transport .or. heat_species_transport) then
+       if (heat_transport) then
           ALLOCATE (BC_Temp(nfc,ncells))
           BC_Temp = NULL_R
        end if
@@ -632,7 +636,7 @@ CONTAINS
 
              where (Mask1) BC_Mat(f,:)  = Get_Truchas_Material_Id(Inflow_Material(Inflow_Index(p)))
 
-             if (heat_transport .or. heat_species_transport) then
+             if (heat_transport) then
                 where (Mask1) BC_Temp(f,:) = Inflow_Temperature(Inflow_Index(p))
              end if
 
@@ -1033,7 +1037,7 @@ CONTAINS
     use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
     use zone_module,          only: Zone
     use restart_variables,    only: restart
-    use physics_module, only: heat_transport, heat_species_transport
+    use physics_module, only: heat_transport
 
     ! Arguments
     real(r8), dimension(nbody,ncells), intent(IN) :: Hits_Vol
@@ -1067,7 +1071,7 @@ CONTAINS
 
     RESTARTCHECK: if (restart) then
 
-      if (heat_transport .or. heat_species_transport) then
+      if (heat_transport) then
         !FIXME: compute Zone%Enthalpy or is it read from the restart file?
         Zone%Enthalpy_old = Zone%Enthalpy
       else

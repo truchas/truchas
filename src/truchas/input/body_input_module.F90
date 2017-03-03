@@ -549,7 +549,7 @@ CONTAINS
     use property_module,        only: Get_Truchas_Material_ID
 
     use scalar_func_factories,  only: alloc_const_scalar_func
-    use function_namelist,      only: lookup_func
+    use scalar_func_table,      only: lookup_func
 
     ! Argument List
     integer, intent(in) :: lun

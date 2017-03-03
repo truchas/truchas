@@ -17,7 +17,8 @@ remain identical as they should.
 /
 
 &PHYSICS
-  heat_species_transport = .true.
+  heat_transport = .true.
+  species_transport = .true.
   number_of_species = 1
   fluid_flow = .false.
 /

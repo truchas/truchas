@@ -57,6 +57,8 @@
 !!  from one event to the next.
 !!
 
+#include "f90_assert.fpp"
+
 module simulation_event_queue
 
   use kinds, only: r8
@@ -64,25 +66,117 @@ module simulation_event_queue
   implicit none
   private
 
-  public :: read_simulation_control_namelist, next_event
+  public :: read_simulation_control_namelist, add_event, next_event
+
+  integer, parameter, public :: DT_POLICY_NONE   = 0
+  integer, parameter, public :: DT_POLICY_NEXT   = 1
+  integer, parameter, public :: DT_POLICY_FACTOR = 2
+  integer, parameter, public :: DT_POLICY_VALUE  = 3
 
   type, public :: sim_event
     private
-    real(r8) :: t, c
-    integer ::  dt_policy
+    real(r8) :: t
+    integer  :: dt_policy = DT_POLICY_NONE
+    real(r8) :: c
   contains
     procedure :: time => sim_event_time
     procedure :: init_dt => sim_event_init_dt
   end type sim_event
 
-  integer, parameter :: DT_POLICY_NEXT   = 1
-  integer, parameter :: DT_POLICY_FACTOR = 2
-  integer, parameter :: DT_POLICY_VALUE  = 3
+  !! Defined constructor
+  interface sim_event
+    module procedure sim_event_values
+  end interface
 
-  type(sim_event), allocatable, target :: event_queue(:)
-  integer :: top
+  type :: sim_event_queue
+    type(queue_item), pointer :: top => null()
+  contains
+    procedure :: add
+    procedure :: pop
+    procedure :: is_empty
+  end type sim_event_queue
+
+  type :: queue_item
+    type(sim_event) :: event
+    type(queue_item), pointer :: next => null()
+  end type queue_item
+
+  type(sim_event_queue) :: event_queue
 
 contains
+
+  function sim_event_values(t, dt_policy, c) result(this)
+    real(r8), intent(in) :: t
+    integer, intent(in) :: dt_policy
+    real(r8), intent(in), optional :: c
+    type(sim_event) :: this
+    this%t = t
+    this%dt_policy = dt_policy
+    if (present(c)) this%c = c
+  end function sim_event_values
+
+  subroutine add(this, event)
+    use truchas_logging_services
+    class(sim_event_queue), intent(inout) :: this
+    type(sim_event), intent(in) :: event
+    type(queue_item), pointer :: item, new_item
+    item => find_queue_item(this, event%t)
+    if (associated(item)) then
+      if (item%event%t == event%t) then ! arbitrate on policy
+        if (item%event%dt_policy == DT_POLICY_NONE) then
+          item%event = event
+        else
+          call TLS_warn('SIMULATION_EVENT_QUEUE: conflicting DT policy')
+        end if
+      else ! insert after item
+        allocate(new_item)
+        new_item%event = event
+        new_item%next => item%next
+        item%next => new_item
+      end if
+    else ! insert at the front of the list
+      allocate(new_item)
+      new_item%event = event
+      new_item%next => this%top
+      this%top => new_item
+    end if
+  end subroutine add
+
+  function pop(this) result(event)
+    class(sim_event_queue), intent(inout) :: this
+    type(sim_event) :: event
+    type(queue_item), pointer :: item
+    INSIST(associated(this%top))
+    event = this%top%event
+    item => this%top
+    this%top => item%next
+    deallocate(item)
+  end function pop
+
+  logical function is_empty(this)
+    class(sim_event_queue), intent(in) :: this
+    is_empty = .not.associated(this%top)
+  end function is_empty
+
+  !! Returns a pointer to the QUEUE_ITEM in the ordered list positioned at the
+  !! given time.  This is the insertion point of an event with this time, but
+  !! note that the event time of the item may equal the given time.  A null
+  !! pointer is returned if the insertion point is at the head of the list.
+  function find_queue_item(this, t) result(item)
+    class(sim_event_queue), intent(in) :: this
+    real(r8), intent(in) :: t
+    type(queue_item), pointer :: item
+    item => this%top
+    if (.not.associated(item)) return
+    if (t < item%event%t) then
+      item => null()
+      return
+    end if
+    do while (associated(item%next))
+      if (t < item%next%event%t) return
+      item => item%next
+    end do
+  end function find_queue_item
 
   pure function sim_event_time (this) result (t)
     class(sim_event), intent(in) :: this
@@ -95,7 +189,7 @@ contains
     real(r8), intent(in) :: dt_last, dt_next
     real(r8) :: dt
     select case (this%dt_policy)
-    case (DT_POLICY_NEXT)
+    case (DT_POLICY_NONE, DT_POLICY_NEXT)
       dt = dt_next
     case (DT_POLICY_FACTOR)
       dt = this%c*dt_last
@@ -106,21 +200,27 @@ contains
     end select
   end function sim_event_init_dt
 
+  subroutine add_event (event)
+    type(sim_event), intent(in) :: event
+    call event_queue%add(event)
+  end subroutine add_event
+
   function next_event (t) result (event)
     real(r8), intent(in), optional :: t
     type(sim_event), pointer :: event
-    integer :: j
     event => null()
-    if (.not.allocated(event_queue)) return
+    if (event_queue%is_empty()) return
+    allocate(event)
+    event = event_queue%pop()
     if (present(t)) then
-      do j = top, size(event_queue)
-        if (t < event_queue(j)%time()) exit
+      do while (event%time() <= t)
+        if (event_queue%is_empty()) then
+          deallocate(event)
+          return
+        end if
+        event = event_queue%pop()
       end do
-      top = j
     end if
-    if (top > size(event_queue)) return
-    event => event_queue(top)
-    top = top + 1
   end function next_event
 
   subroutine read_simulation_control_namelist (lun)
@@ -128,15 +228,19 @@ contains
     use kinds, only: r8
     use input_utilities, only: seek_to_namelist, NULL_R
     use sort_module, only: sort
-    use string_utilities, only: i_to_c, raise_case
+    use string_utilities, only: i_to_c
     use parallel_communication, only: is_IOP, broadcast
     use truchas_logging_services
 
     integer, intent(in) :: lun
 
-    integer :: ios
+    integer :: ios, j, dt_policy
     logical :: found
+    real(r8) :: c
     real(r8), allocatable :: array(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    type(sim_event) :: event
+#endif
 
     real(r8) :: phase_init_dt, phase_init_dt_factor, phase_start_times(500)
     namelist /simulation_control/ phase_start_times, phase_init_dt, phase_init_dt_factor
@@ -177,23 +281,29 @@ contains
     if (size(array) == 0) call TLS_fatal ('no values assigned to PHASE_START_TIMES')
     call sort (array) !NB: should check for, or cull, duplicates
     !call params%set ('phase-start-times', array)
-    allocate(event_queue(size(array)))
-    event_queue%t = array
-    top = 1
 
     if (phase_init_dt == NULL_R .eqv. phase_init_dt_factor == NULL_R) then
       call TLS_fatal ('Either PHASE_INIT_DT or PHASE_INIT_DT_FACTOR must be defined but not both')
     else if (phase_init_dt /= NULL_R) then
       if (phase_init_dt <= 0.0_r8) call TLS_fatal ('PHASE_INIT_DT must be > 0')
       !call params%set ('phase-init-dt', phase_init_dt)
-      event_queue%dt_policy = DT_POLICY_VALUE
-      event_queue%c = phase_init_dt
+      dt_policy = DT_POLICY_VALUE
+      c = phase_init_dt
     else if (phase_init_dt_factor /= NULL_R) then
       if (phase_init_dt_factor <= 0.0_r8) call TLS_fatal ('PHASE_INIT_DT_FACTOR must be > 0')
       !call params%set ('phase-init-dt-factor', phase_init_dt_factor)
-      event_queue%dt_policy = DT_POLICY_FACTOR
-      event_queue%c = phase_init_dt_factor
+      dt_policy = DT_POLICY_FACTOR
+      c = phase_init_dt_factor
     end if
+
+    do j = size(array), 1, -1
+#ifdef INTEL_COMPILER_WORKAROUND
+      event = sim_event(array(j), dt_policy, c)
+      call event_queue%add(event)
+#else
+      call event_queue%add(sim_event(array(j), dt_policy, c))
+#endif
+    end do
 
   end subroutine read_simulation_control_namelist
 

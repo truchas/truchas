@@ -32,7 +32,8 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
 /
 
 &PHYSICS
-  heat_species_transport = .true.
+  heat_transport = .true.
+  species_transport = .true.
   number_of_species = 2
   fluid_flow = .false.
 /

@@ -170,7 +170,7 @@ contains
   
   subroutine TDO_start_simulation
   
-    use physics_module, only: species_transport, heat_species_transport, number_of_species
+    use physics_module, only: species_transport, number_of_species
 
     integer :: stat
   
@@ -192,7 +192,7 @@ contains
     call broadcast (stat)
     INSIST(stat == DANU_SUCCESS)
     
-    if (species_transport .or. heat_species_transport) then
+    if (species_transport) then
       if (is_IOP) call attribute_write (sid, 'NUM_SPECIES', number_of_species, stat)
       call broadcast (stat)
       INSIST(stat == DANU_SUCCESS)
@@ -204,7 +204,7 @@ contains
   
     use time_step_module, only: t, dt, cycle_number
     use fluid_data_module, only: fluid_flow
-    use physics_module, only: heat_transport, species_transport, heat_species_transport
+    use physics_module, only: heat_transport, species_transport
     use EM_data_proxy, only: EM_is_on
     use solid_mechanics_input, only: solid_mechanics
     use gap_output, only: set_gap_element_output
@@ -246,7 +246,7 @@ contains
     if (fluid_flow) call write_fluid_flow_data
     
     !! Heat transfer fields (other than temperature).
-    if (heat_transport .or. heat_species_transport) call write_heat_transfer_data
+    if (heat_transport) call write_heat_transfer_data
     
     !! Induction heating fields.
     if (EM_is_on()) call write_EM_data
@@ -255,7 +255,7 @@ contains
     if (solid_mechanics) call write_solid_mech_data
     
     !! Species fields.
-    if (species_transport .or. heat_species_transport) call write_species_data
+    if (species_transport) call write_species_data
 
     !! Microstructure analysis data (if enabled)
     call ustruc_output (seq_id)

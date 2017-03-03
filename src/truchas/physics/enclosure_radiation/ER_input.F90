@@ -12,7 +12,7 @@ module ER_input
 
   use kinds
   use parallel_communication
-  use function_namelist, only: lookup_func
+  use scalar_func_table, only: lookup_func
   use scalar_func_class
   use truchas_logging_services
   use string_utilities, only: i_to_c, raise_case

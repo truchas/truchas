@@ -204,6 +204,7 @@ call hijack_truchas ()
     use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
+    use ded_head_driver,          only: ded_head_start_sim_phase
     use truchas_logging_services
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -284,6 +285,7 @@ call hijack_truchas ()
                 t2 = t1 + dt
              end if
              ! required physics kernel restarts
+             call ded_head_start_sim_phase
              call ds_restart (t2 - t1)
           else
              t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time

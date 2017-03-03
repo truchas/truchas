@@ -29,7 +29,7 @@ contains
   subroutine read_phase_namelists (lun)
 
     use scalar_func_factories
-    use function_namelist, only: lookup_func
+    use scalar_func_table, only: lookup_func
     use phase_property_table
     use input_utilities, only: seek_to_namelist
     use string_utilities, only: i_to_c

@@ -20,11 +20,9 @@ module physics_module
 
   implicit none
   private
-  
-  !! The following physics kernels are mutually exclusive.
+
   logical, public, save :: heat_transport = .false.
   logical, public, save :: species_transport = .false.
-  logical, public, save :: heat_species_transport = .false.
   integer, public, save :: number_of_species = 0
-  
+
 end module physics_module

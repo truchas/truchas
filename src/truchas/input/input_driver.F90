@@ -63,6 +63,8 @@ contains
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_namelist,         only: read_toolpath_namelists
+    use ded_head_namelist,         only: read_ded_head_namelist
+    use physics_module,            only: heat_transport
     use timing_tree
     use truchas_logging_services
     use string_utilities, only: i_to_c
@@ -148,6 +150,7 @@ contains
 
     ! Read diffusion solver namelists
     if (ds_enabled) then
+      if (heat_transport) call read_ded_head_namelist (lun)
       call read_ds_namelists (lun)
       if (heat_eqn) call read_microstructure_namelist (lun)
     end if
