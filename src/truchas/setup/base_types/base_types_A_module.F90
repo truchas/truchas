@@ -130,7 +130,7 @@ CONTAINS
        nprobevars     = nprobescavars + nprobevecvars + nprobetensvars
 
        do i=1,nprobes
-          ALLOCATE(probes(i)%pid(nprobevars), STAT = memstat)
+          ALLOCATE(probes(i)%probe(nprobevars), STAT = memstat)
           ALLOCATE(probes(i)%NameLU(nprobevars), STAT = memstat)
           ALLOCATE(probes(i)%ScalarVarLU(nprobescavars), STAT = memstat)
           ALLOCATE(probes(i)%VectorVarLU(nprobevecvars), STAT = memstat)

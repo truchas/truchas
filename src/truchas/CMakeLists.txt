@@ -1,5 +1,8 @@
 project(TruchasExe C Fortran)
 
+# The Truchas IO module
+add_subdirectory(truchasio)
+
 # --- CMake modules
 include(FortranPreprocessFiles)
 
@@ -59,7 +62,7 @@ list(APPEND Truchas_DEPENDS pgslib_mpi)
 
 list(APPEND Truchas_DEPENDS ubiksolve)
 list(APPEND Truchas_DEPENDS chaco)
-list(APPEND Truchas_DEPENDS danu_f)
+list(APPEND Truchas_DEPENDS truchas::io)
 
 # Force the completion of the targets defined 
 # in Truchas_DEPENDS before compiling source for
@@ -73,7 +76,7 @@ list(APPEND Truchas_LINK_LIBS pgslib_fe)
 list(APPEND Truchas_LINK_LIBS pgslib_mpi)
 list(APPEND Truchas_LINK_LIBS ubiksolve)
 list(APPEND Truchas_LINK_LIBS chaco)
-list(APPEND Truchas_LINK_LIBS danu_f)
+list(APPEND Truchas_LINK_LIBS truchas::io)
 
 # To pick up the dlopen and dlclose symbols
 list(APPEND Truchas_LINK_LIBS ${CMAKE_DL_LIBS})
@@ -96,8 +99,7 @@ fortran_preprocess_files(MAIN_SOURCE_FILES
                          FPP_FLAGS ${Truchas_FPP_FLAGS}
                          PROCESS_TARGET ProcessTruchasMainFiles)
 
-set(fc_flags -I${Danu_Fortran_MODULE_DIR})
-list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+set(fc_flags -I${PGSLib_MODULE_DIR})
 list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   list(APPEND fc_flags -C)

@@ -138,6 +138,14 @@ if (ENABLE_Fortran)
 		   HEADER_DESTINATION ${Danu_INCLUDE_INSTALL_DIR}
                    LINK_LIBS danu)
 
+  set_property(TARGET danu_f APPEND PROPERTY INCLUDE_DIRECTORIES
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_BINARY_DIR}>
+  )
+  set_property(TARGET danu_f APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/src/packages/danu/src/mod_files;${CMAKE_CURRENT_SOURCE_DIR}>
+  )
+  add_library(truchas::danu ALIAS danu_f)
+
                  
   install(CODE
     "EXECUTE_PROCESS (COMMAND \"${CMAKE_COMMAND}\" -E copy_directory \"${CMAKE_Fortran_MODULE_DIRECTORY}\" \"${Danu_MODULE_INSTALL_DIR}\")"

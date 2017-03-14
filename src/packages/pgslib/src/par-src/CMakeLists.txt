@@ -96,6 +96,8 @@ set_target_properties(pgslib_mpi PROPERTIES
 # Define target link libraries		 
 target_link_libraries(pgslib_mpi ${MPI_C_LIBRARIES})
 
+add_library(truchas::pgslib_mpi ALIAS pgslib_mpi)
+
 # Define the installation location
 install(TARGETS pgslib_mpi
         EXPORT  pgslib_mpi

@@ -75,88 +75,88 @@ module danu_module
     public HEX_ELEM
 
     ! Functions
-    public ::                    &
-        output_file_is_valid
+    !public ::                    &
+    !    output_file_is_valid
 
     ! Subroutines
 
     ! Basic file control 
     public ::                    &
-        danu_file_create,        &
+    !    danu_file_create,        &
         danu_file_close,         &
-        danu_file_open_rdonly,   &
-        danu_file_open_rdwr
+        danu_file_open_rdonly
+    !    danu_file_open_rdwr
 
     ! Attributes 
     public ::                    &
-        attribute_exists,        &
-        attribute_count,         &
-        attribute_list,          & 
-        attribute_write,         &    
+    !    attribute_exists,        &
+    !    attribute_count,         &
+    !    attribute_list,          &
+        attribute_write,         &
         attribute_read
 
     ! Basic output file control
     public ::                    &
         output_file_create,      &
-        output_file_open_rdonly, &
-        output_file_open_rdwr,   &
-        output_file_open_append, &
+    !    output_file_open_rdonly, &
+    !    output_file_open_rdwr,   &
+    !    output_file_open_append, &
         output_file_close      
 
     ! Group control
-    public ::                    &
-        group_exists,            &
-        group_create,            &
-        group_open,              &
-        group_close 
+    !public ::                    &
+    !    group_exists,            &
+    !    group_create,            &
+    !    group_open,              &
+    !    group_close 
 
     ! Meshes
     public ::                         &
-        mesh_count,                   &
-        mesh_list,                    &
-        mesh_exists,                  &
+    !    mesh_count,                   &
+    !    mesh_list,                    &
+    !    mesh_exists,                  &
         mesh_open,                    &
         mesh_add_unstructured,        &
-        mesh_create_hex_unstruct,     &
+    !    mesh_create_hex_unstruct,     &
         mesh_write_coordinates,       &
         mesh_read_coordinates,        &
         mesh_write_connectivity,      &
-        mesh_read_connectivity,       &
-        mesh_get_type,                &
-        mesh_get_elementtype,         &
-        mesh_get_dimension,           &
-        mesh_get_nnodes,              &
-        mesh_get_nelem,               &
-        mesh_get_elem_order
+        mesh_read_connectivity
+    !    mesh_get_type,                &
+    !    mesh_get_elementtype,         &
+    !    mesh_get_dimension,           &
+    !    mesh_get_nnodes,              &
+    !    mesh_get_nelem,               &
+    !    mesh_get_elem_order
 
     ! Simulations
     public ::                         &
-        simulation_count,             &
+    !    simulation_count,             &
         simulation_exists,            &
-        simulation_list,              &
+    !    simulation_list,              &
         simulation_add,               &
         simulation_open,              &
-        simulation_link_mesh,         &
-        simulation_open_mesh_link,    &
-        simulation_mesh_link_exists
+        simulation_link_mesh
+    !    simulation_open_mesh_link,    &
+    !    simulation_mesh_link_exists
    
     ! Non-series datasets
     public ::                         &
-        data_open_dataset,            &
+    !    data_open_dataset,            &
         data_exists,                  &
-        data_count,                   &
-        data_type,                    &
-        data_rank,                    &
+    !    data_count,                   &
+    !    data_type,                    &
+    !    data_rank,                    &
         data_dimensions,              &
-        data_list,                    &
+    !    data_list,                    &
         data_write,                   &
         data_read
 
     ! Series group
     public ::                         &
-        sequence_exists,              &
+    !    sequence_exists,              &
         sequence_count,               &
-        sequence_list,                &
+    !    sequence_list,                &
         sequence_next_id,             &
         sequence_get_id
 
@@ -164,17 +164,17 @@ module danu_module
     public ::                         &
         simulation_open_data,         &
         simulation_data_exists,       &
-        simulation_data_count,        &
-        simulation_data_list,         &
+    !    simulation_data_count,        &
+    !    simulation_data_list,         &
         simulation_data_write,        &
         simulation_data_read,         &
-        simulation_data_type,         &
-        simulation_data_dimensions,   &
-        simulation_data_rank
+    !    simulation_data_type,         &
+        simulation_data_dimensions
+    !    simulation_data_rank
 
     ! Probes
     public ::                         &
-        probe_data_exists,            &
+    !    probe_data_exists,            &
         probe_data_count,             &
         probe_data_list,              &
         probe_data_open,              &
@@ -243,11 +243,11 @@ end interface attribute_list
 interface attribute_write
      module procedure df90_attr_write_integer
      module procedure df90_attr_write_integer1
-     module procedure df90_attr_write_real4
+!     module procedure df90_attr_write_real4
      module procedure df90_attr_write_real8
      module procedure df90_attr_write_real81
      module procedure df90_attr_write_character0
-     module procedure df90_attr_write_character1
+!     module procedure df90_attr_write_character1
 end interface attribute_write     
  
 interface attribute_read
@@ -299,8 +299,8 @@ end interface mesh_create_hex_unstruct
 
 interface mesh_write_coordinates
     module procedure df90_mesh_write_coordinates_3d
-    module procedure df90_mesh_write_coordinates_2d
-    module procedure df90_mesh_write_coordinates_1d
+!    module procedure df90_mesh_write_coordinates_2d
+!    module procedure df90_mesh_write_coordinates_1d
 end interface mesh_write_coordinates
 
 interface mesh_read_coordinates
@@ -403,22 +403,22 @@ interface data_list
 end interface data_list
 
 interface data_write
-  module procedure df90_data_write_byte_rank0
-  module procedure df90_data_write_byte_rank1
-  module procedure df90_data_write_byte_rank2
-  module procedure df90_data_write_byte_rank3
+!  module procedure df90_data_write_byte_rank0
+!  module procedure df90_data_write_byte_rank1
+!  module procedure df90_data_write_byte_rank2
+!  module procedure df90_data_write_byte_rank3
   module procedure df90_data_write_integer_rank0
   module procedure df90_data_write_integer_rank1
-  module procedure df90_data_write_integer_rank2
-  module procedure df90_data_write_integer_rank3
-  module procedure df90_data_write_real4_rank0
-  module procedure df90_data_write_real4_rank1
-  module procedure df90_data_write_real4_rank2
-  module procedure df90_data_write_real4_rank3
+!  module procedure df90_data_write_integer_rank2
+!  module procedure df90_data_write_integer_rank3
+!  module procedure df90_data_write_real4_rank0
+!  module procedure df90_data_write_real4_rank1
+!  module procedure df90_data_write_real4_rank2
+!  module procedure df90_data_write_real4_rank3
   module procedure df90_data_write_real8_rank0
   module procedure df90_data_write_real8_rank1
   module procedure df90_data_write_real8_rank2
-  module procedure df90_data_write_real8_rank3
+!  module procedure df90_data_write_real8_rank3
 end interface data_write
 
 interface data_read
@@ -490,22 +490,22 @@ interface simulation_data_list
 end interface simulation_data_list
 
 interface simulation_data_write
-  module procedure df90_sim_data_write_byte_rank0
-  module procedure df90_sim_data_write_byte_rank1
+!  module procedure df90_sim_data_write_byte_rank0
+!  module procedure df90_sim_data_write_byte_rank1
   module procedure df90_sim_data_write_byte_rank2
-  module procedure df90_sim_data_write_byte_rank3
-  module procedure df90_sim_data_write_integer_rank0
+!  module procedure df90_sim_data_write_byte_rank3
+!  module procedure df90_sim_data_write_integer_rank0
   module procedure df90_sim_data_write_integer_rank1
-  module procedure df90_sim_data_write_integer_rank2
-  module procedure df90_sim_data_write_integer_rank3
-  module procedure df90_sim_data_write_real4_rank0
-  module procedure df90_sim_data_write_real4_rank1
-  module procedure df90_sim_data_write_real4_rank2
-  module procedure df90_sim_data_write_real4_rank3
-  module procedure df90_sim_data_write_real8_rank0
+!  module procedure df90_sim_data_write_integer_rank2
+!  module procedure df90_sim_data_write_integer_rank3
+!  module procedure df90_sim_data_write_real4_rank0
+!  module procedure df90_sim_data_write_real4_rank1
+!  module procedure df90_sim_data_write_real4_rank2
+!  module procedure df90_sim_data_write_real4_rank3
+!  module procedure df90_sim_data_write_real8_rank0
   module procedure df90_sim_data_write_real8_rank1
   module procedure df90_sim_data_write_real8_rank2
-  module procedure df90_sim_data_write_real8_rank3
+!  module procedure df90_sim_data_write_real8_rank3
 end interface simulation_data_write
 
 interface simulation_data_read
@@ -548,20 +548,20 @@ interface probe_data_open
 end interface probe_data_open
 
 interface probe_create_data
-  module procedure df90_probe_create_data_integer0
-  module procedure df90_probe_create_data_integer
-  module procedure df90_probe_create_data_real40
-  module procedure df90_probe_create_data_real4
-  module procedure df90_probe_create_data_real80
+!  module procedure df90_probe_create_data_integer0
+!  module procedure df90_probe_create_data_integer
+!  module procedure df90_probe_create_data_real40
+!  module procedure df90_probe_create_data_real4
+!  module procedure df90_probe_create_data_real80
   module procedure df90_probe_create_data_real8
 end interface probe_create_data
 
 interface probe_data_write
-  module procedure df90_probe_data_write_integer0
-  module procedure df90_probe_data_write_integer
-  module procedure df90_probe_data_write_real40
-  module procedure df90_probe_data_write_real4
-  module procedure df90_probe_data_write_real80
+!  module procedure df90_probe_data_write_integer0
+!  module procedure df90_probe_data_write_integer
+!  module procedure df90_probe_data_write_real40
+!  module procedure df90_probe_data_write_real4
+!  module procedure df90_probe_data_write_real80
   module procedure df90_probe_data_write_real8
 end interface probe_data_write  
 

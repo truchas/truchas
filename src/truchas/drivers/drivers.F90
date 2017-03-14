@@ -474,12 +474,14 @@ call hijack_truchas ()
     use debug_control_data
     use restart_variables,    only: restart_file, restart
     use file_utility,         only: count_tokens, get_token
+    use string_utilities,     only: i_to_c
+    use truchas_danu_output_data, only: io_group_size
 
     ! arguments
     character(*), dimension(:), pointer :: argv
 
     ! local variables
-    integer :: status
+    integer :: status, ios
     logical :: file_exist
     character (LEN=1024) :: string
     character (LEN=1024) :: token
@@ -494,7 +496,8 @@ call hijack_truchas ()
     logical :: r
     logical :: h
     logical :: f
-    character (LEN=string_len), dimension(9) :: usage = (/                       &
+    logical :: g
+    character (LEN=string_len), dimension(10) :: usage = (/                       &
        'usage: truchas [options] infile                                       ', &
        '                                                                      ', &
        'options:                                                              ', &
@@ -503,6 +506,7 @@ call hijack_truchas ()
        '  -o:filename   output filename root                                  ', &
        '  -r:filename   restart path/filename                                 ', &
        '  -m            turn on memory diagnostics                            ', &
+       '  -g:n          output group size                                     ', &
        '  -h            help                                                  ' /)
 
     !---------------------------------------------------------------------------
@@ -514,6 +518,7 @@ call hijack_truchas ()
     r = .false.                         ! restart file
     h = .false.                         ! help
     f = .false.                         ! input file
+    g = .false.                         ! h5 output group size
     ! there must be at least one argument
     if (SIZE(argv) < 2) then
        call TLS_error ('insufficient arguments')
@@ -582,6 +587,26 @@ call hijack_truchas ()
           case ('m')
              ! Turn memory diagnostics on. - Added August 3rd, 2007.
              mem_on = .true.
+          case ('g')
+             if (g) then
+                call TLS_error('repeated argument: ' // trim(string))
+                call ERROR_CHECK(.true., usage, 'PROCESS_COMMAND_LINE')
+             end if
+             g = .true.
+             if (n_tokens == 1) then
+                call TLS_error('missing value for -g: ' // trim(string))
+                call ERROR_CHECK(.true., usage, 'PROCESS_COMMAND_LINE')
+             else
+                call GET_TOKEN(token,2,string,':')
+                read(token,*,iostat=ios) io_group_size
+                if (ios /= 0) then
+                   call TLS_error('invalid value for -g: ' // trim(token))
+                   call ERROR_CHECK(.true., usage, 'PROCESS_COMMAND_LINE')
+                else if (io_group_size < 0) then
+                   call TLS_error('invalid value for -g: ' // i_to_c(io_group_size))
+                   call ERROR_CHECK(.true., usage, 'PROCESS_COMMAND_LINE')
+                end if
+             end if
           case ('h')
              if (h) then
                 call TLS_error ('repeated argument: ' // trim(string))
@@ -684,6 +709,10 @@ call hijack_truchas ()
 
     if (h) then
        call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
+    end if
+
+    if (.not. g) then
+       io_group_size = 1
     end if
 
     if (.not. d) then
