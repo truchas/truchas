@@ -533,7 +533,7 @@ contains
     integer(int8), allocatable, intent(out) :: array(:,:)
 
     integer :: j, offset
-#idef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_COMPILER_WORKAROUND
     integer :: NBYTES
     NBYTES = storage_size(this%ustruc_state%G)/8 + &
              storage_size(this%ustruc_state%V)/8 + &
@@ -574,7 +574,7 @@ contains
     integer(int8), intent(in) :: array(:,:)
 
     integer :: j, offset
-#idef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_COMPILER_WORKAROUND
     integer :: NBYTES
     NBYTES = storage_size(this%ustruc_state%G)/8 + &
              storage_size(this%ustruc_state%V)/8 + &
