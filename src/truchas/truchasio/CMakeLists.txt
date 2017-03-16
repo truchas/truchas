@@ -1,3 +1,6 @@
+# Currently the .mod files are going here, and not the build directory.
+include_directories(${CMAKE_Fortran_MODULE_DIRECTORY})
+
 set(SRC
     scorpio_c_binding.F90
     scorpio_file_type.F90
