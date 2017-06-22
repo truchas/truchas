@@ -171,8 +171,10 @@ list(APPEND PHYSICS_FILES
            physics/additive_manufacturing/ded_head_driver.F90
            physics/additive_manufacturing/ded_head_namelist.F90
            physics/additive_manufacturing/ded_head_type.F90
-           physics/additive_manufacturing/gb_laser_type.F90)
-           
+           physics/additive_manufacturing/laser_irrad_class.F90
+           physics/additive_manufacturing/laser_irrad_factory.F90
+           physics/additive_manufacturing/beam_laser_irrad_type.F90
+           physics/additive_manufacturing/gauss_laser_irrad_type.F90)
 
 # Preprocess flags	 
 set(PHYSICS_FPP_FLAGS
