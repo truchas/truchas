@@ -134,6 +134,9 @@ module toolpath_type
   contains
     procedure :: get_position
     procedure :: is_flag_set
+    procedure :: start_time
+    procedure :: final_time
+    procedure :: prec_flag_flip_time
     procedure :: set_segment
     procedure :: next_segment
     procedure :: get_segment_starts
@@ -147,7 +150,7 @@ module toolpath_type
 
   type :: path_segment
     private
-    type(path_segment), pointer :: next => null()
+    type(path_segment), pointer :: next => null(), prev => null()
     class(xyz_motion), allocatable :: move
     integer :: flags = 0
   contains
@@ -205,12 +208,43 @@ contains
     if (associated(this%curr%next)) this%curr => this%curr%next
   end subroutine next_segment
 
+  !! Start time for the current path segment.
+  function start_time(this) result(t)
+    class(toolpath), intent(in) :: this
+    real(r8) :: t
+    t = this%curr%move%start_time()
+  end function start_time
+
+  !! Final time for the current path segment.
+  function final_time(this) result(t)
+    class(toolpath), intent(in) :: this
+    real(r8) :: t
+    t = this%curr%move%final_time()
+  end function final_time
+
+  !! Returns the most recent time preceding the current path segment when
+  !! flag N flipped state, or -HUGE(1.0_r8) if flag N did not flip state.
+  function prec_flag_flip_time(this, n) result(t)
+    class(toolpath), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8) :: t
+    type(path_segment), pointer :: seg
+    ASSERT(associated(this%curr))
+    seg => this%curr
+    do while (associated(seg%prev))
+      if (btest(seg%prev%flags,n) .neqv. btest(this%curr%flags,n)) exit
+      seg => seg%prev
+    end do
+    t = seg%move%start_time()
+  end function prec_flag_flip_time
+
   !! Appends the given PATH_SEGMENT (as made by NEW_PATH_SEGMENT) to the list.
   subroutine append_path_segment(this, segment)
     class(toolpath), intent(inout) :: this
     type(path_segment), pointer, intent(in) :: segment
     if (associated(this%last)) then
       this%last%next => segment
+      segment%prev => this%last
     else
       this%first => segment
     end if

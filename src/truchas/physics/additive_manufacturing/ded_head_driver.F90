@@ -55,12 +55,10 @@ contains
 
     if (.not.associated(ded_params)) return ! move along, nothing to see here
     
-    !! Instantiate the DED_HEAD module object using the input parameters.
+    !! Instantiate the DED_HEAD module object using the input parameters,
+    !! positioning the toolpath at the initial simulation time.
     allocate(head)
-    call head%init(ded_params)
-
-    !! Position the toolpath at the initial simulation time.
-    call head%tp%set_segment(t)
+    call head%init(ded_params, t)
 
     !! Add toolpath segment endpoints to the list of simulation events.
     call head%tp%get_segment_starts(times, discont)
@@ -80,8 +78,9 @@ contains
   !! DEFINED BY THE SIMULATION_CONTROL NAMELIST.  NEED TO REGISTER THE ACTIONS
   !! TO TAKE WITH EACH SIMULATION EVENT.
 
-  subroutine ded_head_start_sim_phase
-    if (allocated(head)) call head%tp%next_segment()
+  subroutine ded_head_start_sim_phase(t)
+    real(r8), intent(in) :: t
+    if (allocated(head)) call head%next_tp_segment(t)
   end subroutine ded_head_start_sim_phase
 
 !!!! SCALAR_FUNC ADAPTER FOR THE LASER SOURCE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
