@@ -43,9 +43,9 @@ contains
     type(parameter_list), pointer :: plist
 
     character(31) :: toolpath, laser_type
-    real(r8) :: laser_absorp, laser_power
+    real(r8) :: laser_absorp, laser_time_const, laser_power
     real(r8) :: laser_sigma, laser_wave_length, laser_waist_radius, laser_beam_param
-    namelist /ded_head/ toolpath, laser_absorp, laser_power, laser_type, &
+    namelist /ded_head/ toolpath, laser_absorp, laser_time_const, laser_power, laser_type, &
         laser_sigma, laser_wave_length, laser_waist_radius, laser_beam_param
 
     !! Locate the optional DED_HEAD namelist (first occurence).
@@ -66,6 +66,7 @@ contains
     if (is_IOP) then
       toolpath = NULL_C
       laser_absorp = NULL_R
+      laser_time_const = NULL_R
       laser_power = NULL_R
       laser_type = NULL_C
       laser_sigma = NULL_R
@@ -80,6 +81,7 @@ contains
     !! Broadcast the namelist variables.
     call broadcast(toolpath)
     call broadcast(laser_absorp)
+    call broadcast(laser_time_const)
     call broadcast(laser_power)
     call broadcast(laser_type)
     call broadcast(laser_sigma)
@@ -91,6 +93,7 @@ contains
     if (toolpath == NULL_C) call TLS_fatal('TOOLPATH not specified')
     if (.not.known_toolpath(toolpath)) call TLS_fatal('unknown TOOLPATH name: ' // trim(toolpath))
     if (laser_absorp == NULL_R) call TLS_fatal('LASER_ABSORP not defined')
+    if (laser_time_const == NULL_R) call TLS_fatal('LASER_TIME_CONST not defined')
     if (laser_power == NULL_R) call TLS_fatal('LASER_POWER not defined')
     if (laser_type == NULL_C) call TLS_fatal('LASER_TYPE not defined')
     select case (laser_type)
@@ -108,6 +111,7 @@ contains
     allocate(ded_params)
     call ded_params%set('toolpath', toolpath)
     call ded_params%set('laser-absorp', laser_absorp)
+    call ded_params%set('laser-time-constant', laser_time_const)
     plist => ded_params%sublist('laser')
     call plist%set('power', laser_power)
     call plist%set('type', laser_type)
