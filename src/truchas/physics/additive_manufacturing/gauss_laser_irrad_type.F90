@@ -39,7 +39,7 @@ contains
     real(r8), parameter :: PI = 3.141592653589793_r8
     call params%get('sigma', sigma)
     call params%get('power', p, default=1.0_r8)
-    this%c1 = 0.5_r8 * sigma**2   ! length^2
+    this%c1 = 2.0_r8 * sigma**2   ! length^2
     this%c2 = p / (PI * this%c1)
   end subroutine init
 
