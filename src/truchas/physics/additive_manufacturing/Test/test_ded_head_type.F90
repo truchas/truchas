@@ -73,7 +73,7 @@ contains
     call params%set('laser-time-constant', 0.5_r8)
     laser_params => params%sublist('laser')
     call laser_params%set('type', 'gaussian')
-    call laser_params%set('power', 0.5_r8*PI)
+    call laser_params%set('power', 2.0_r8*PI)
     call laser_params%set('sigma', 1.0_r8)
 
     do n = 0, 2
@@ -145,7 +145,7 @@ contains
     call params%set('laser-time-constant', 0.0_r8)
     laser_params => params%sublist('laser')
     call laser_params%set('type', 'gaussian')
-    call laser_params%set('power', 0.5_r8*PI)
+    call laser_params%set('power', 2.0_r8*PI)
     call laser_params%set('sigma', 1.0_r8)
 
     t = 0.0_r8
@@ -203,7 +203,7 @@ contains
     call params%set('laser-time-constant', 0.5_r8)
     laser_params => params%sublist('laser')
     call laser_params%set('type', 'gaussian')
-    call laser_params%set('power', 0.5_r8*PI)
+    call laser_params%set('power', 2.0_r8*PI)
     call laser_params%set('sigma', 1.0_r8)
 
     stat = 0
