@@ -97,7 +97,7 @@ contains
     type(unstr_mesh), intent(in) :: mesh
 
     integer :: j, ncell, nnode
-    integer, allocatable :: xcnode(:), cnode(:), map(:)
+    integer, allocatable :: xcnode(:), cnode(:), map(:), iflag(:)
     integer(kind(mesh%cell_set_mask)), allocatable :: cell_set_mask(:)
     real(r8), allocatable :: x(:,:)
 
@@ -172,9 +172,29 @@ contains
         end do
         call gmvwrite_flag_data_f (CELLDATA, map)
       end if
-      deallocate(map)
+
+      !! On/off-process cells for each process
+      allocate(iflag(mesh%ncell))
+      do j = 1, nPE
+        if (this_PE /= j) then
+          iflag(:mesh%ncell_onP) = 1
+          iflag(mesh%ncell_onP+1:) = 0
+        else
+          iflag = 2
+        end if
+        call scatter_boundary_sum(mesh%cell_ip, iflag)
+        call collate(map, iflag(:mesh%ncell_onP))
+        if (is_IOP) then
+          call gmvwrite_flag_name_f('P'//i_to_c(j)//'cells', 3, CELLDATA)
+          call gmvwrite_flag_subname_f('other') ! for iflag==1
+          call gmvwrite_flag_subname_f('owned') ! for iflag==2
+          call gmvwrite_flag_subname_f('ghost') ! for iflag==3
+          call gmvwrite_flag_data_f(CELLDATA, map)
+        end if
+      end do
 
       !! Node partitioning info ...
+      deallocate(map)
       allocate(map(nnode))
       call collate (map, spread(this_PE, dim=1, ncopies=mesh%node_ip%onP_size()))
       if (is_IOP) then
