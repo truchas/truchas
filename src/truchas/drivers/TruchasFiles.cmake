@@ -13,7 +13,6 @@ set(DRIVERS_TARGET_NAME ProcessTruchasDriversFiles)
 set(DRIVERS_FILES
            drivers/drivers.F90
            drivers/physics_module.F90
-           drivers/signal_module.F90
            drivers/time_step_module.F90
            drivers/time_step_sync_type.F90
            drivers/simulation_event_queue.F90
@@ -47,7 +46,7 @@ set_source_files_properties(${TruchasExe_BINARY_DIR}/drivers.f90
 
 
 # Add the C source files
-set(DRIVERS_C_SOURCE_FILES drivers/runinfo.c drivers/signal.c)
+set(DRIVERS_C_SOURCE_FILES drivers/runinfo.c)
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DRIVERS_C_SOURCE_FILES})
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DRIVERS_SOURCE_FILES})		       
 list(APPEND Truchas_PROCESS_TARGETS ${DRIVERS_TARGET_NAME})
