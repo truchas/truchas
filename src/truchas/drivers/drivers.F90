@@ -100,7 +100,7 @@ CONTAINS
     use timing_tree
     use truchas_timing
     use random_module,          only: INITIALIZE_RANDOM
-    use signal_module,          only: SignalSet
+    use signal_handler
     use pgslib_module,          only: PGSLib_CL_MAX_TOKEN_LENGTH
     use output_utilities,       only: announce
     use truchas_logging_services
@@ -123,7 +123,7 @@ CONTAINS
     call PROCESS_COMMAND_LINE (argv)
 
     ! arrange to catch signals
-    call SignalSet ()
+    call init_signal_handler(SIGUSR2)
 
     ! start overall timing
     call start_timer ("Total")
@@ -197,7 +197,7 @@ call hijack_truchas ()
     use solid_mechanics_module,   only: THERMO_MECHANICS
     use pgslib_module,            only: PGSLib_GLOBAL_ANY
     use restart_variables,        only: restart
-    use signal_module,            only: SignalInquire
+    use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
                                         TIME_STEP
     use timing_tree
@@ -213,12 +213,9 @@ call hijack_truchas ()
     use time_step_sync_type
 
     ! Local Variables
-    Logical :: quit = .False.
+    Logical :: quit = .False., sig_rcvd
     integer :: errc
     Integer :: c
-    Integer :: HUP                      ! signal flag
-    Integer :: USR2                     ! signal flag
-    Integer :: URG                      ! signal flag
     type(sim_event), pointer :: event
     type(time_step_sync) :: ts_sync
 
@@ -243,13 +240,10 @@ call hijack_truchas ()
     MAIN_CYCLE: do c = 1, cycle_max+1
        
        ! See if a signal was caught.
-       call SignalInquire (HUP, USR2, URG)
-       ! signal actions
-       if (PGSLib_Global_Any(HUP  /= 0)) call TLS_info ('received signal HUP')
-       if (PGSLib_Global_Any(USR2 /= 0)) call TLS_info ('received signal USR2')
-       if (PGSLib_Global_Any(URG  /= 0)) then
+       call read_signal(SIGUSR2, sig_rcvd)
+       if (PGSLib_Global_Any(sig_rcvd)) then
           call TLS_info ('')
-          call TLS_info ('received signal URG, writing timestep data and terminating')
+          call TLS_info ('Received signal USR2; writing time step data and terminating')
           call TDO_write_timestep
           exit MAIN_CYCLE
        end if

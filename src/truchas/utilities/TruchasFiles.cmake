@@ -20,6 +20,7 @@ set(UTIL_FILES
          utilities/old_mesh_gmv.F90
          utilities/permutations.F90
          utilities/process_info_module.F90
+         utilities/signal_handler.F90
          utilities/sort_module.F90
          utilities/sort_utilities.F90
          utilities/string_utilities.F90
