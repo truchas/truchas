@@ -156,10 +156,12 @@ contains
 
       use ds_boundary_condition_input, only: get_boundary_data
       use ds_interface_condition_input, only: get_interface_data
+      use evaporation_namelist, only: evap_params => params
+      use evap_heat_flux_type
       use index_partitioning, only: gather_boundary
       use bitfield_type
       use physical_constants, only: stefan_boltzmann, absolute_zero
-      use parallel_communication, only: global_any, global_count
+      use parallel_communication, only: global_all, global_any, global_count
       use string_utilities, only: i_to_c
 
       type(unstr_mesh), intent(in), target :: mesh
@@ -171,7 +173,9 @@ contains
       logical, allocatable :: mask(:), rmask(:), fmask(:)
       integer, allocatable :: setids(:)
       character(len(errmsg)) :: string1, string2
+      character(:), allocatable :: errmsg2
       type(bitfield) :: bitmask
+      type(evap_heat_flux), allocatable :: evap_flux
 
       allocate(mask(mesh%nface))
 
@@ -241,6 +245,22 @@ contains
       fmask(model%bc_rad%faces) = .true. ! mark the radiation faces
       model%sbconst = stefan_boltzmann
       model%abszero = absolute_zero
+
+      !! Define the evaporation heat flux boundary condition
+      if (allocated(evap_params)) then
+        allocate(evap_flux)
+        call evap_flux%init(mesh, evap_params, stat, errmsg2)
+        if (stat /= 0) then
+          errmsg = errmsg2
+          return
+        end if
+        if (.not.global_all(fmask(evap_flux%index))) then
+          stat = -1
+          errmsg = 'evaporation heat flux applied to non-flux boundary'
+          return
+        end if
+        call move_alloc(evap_flux, model%evap_flux)
+      end if
 
       !! Merge flux mask into main mask.
       mask = mask .or. fmask

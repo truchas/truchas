@@ -255,6 +255,15 @@ contains
       call dm%incr_face_diag (faces, values)
       deallocate(values)
 
+      !! Experimental evaporation heat flux contribution.
+      if (allocated(this%model%ht%evap_flux)) then
+        call this%model%ht%evap_flux%compute_deriv(t, Tface)
+        associate (index => this%model%ht%evap_flux%index, &
+                   deriv => this%model%ht%evap_flux%deriv)
+          call dm%incr_face_diag(index, this%mesh%area(index)*deriv)
+        end associate
+      endif
+
       !! Internal HTC interface condition contribution.
       call if_data_eval (this%model%ht%ic_htc, t)
       allocate(values(size(this%model%ht%ic_htc%faces,dim=2)))
