@@ -50,6 +50,7 @@ contains
     use mesh_manager,              only: read_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
+    use evaporation_namelist,      only: read_evaporation_namelist
     use ustruc_driver,             only: read_microstructure_namelist
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
@@ -150,7 +151,10 @@ contains
 
     ! Read diffusion solver namelists
     if (ds_enabled) then
-      if (heat_transport) call read_ded_head_namelist (lun)
+      if (heat_transport) then
+        call read_ded_head_namelist (lun)
+        call read_evaporation_namelist (lun)
+      end if
       call read_ds_namelists (lun)
       if (heat_eqn) call read_microstructure_namelist (lun)
     end if
