@@ -149,6 +149,7 @@ module simpl_mesh_type
     procedure :: get_global_cblock_array
     procedure :: compute_geometry
     procedure :: write_profile
+    procedure :: write_faces_vtk
   end type simpl_mesh
 
 contains
@@ -271,5 +272,87 @@ contains
     end do
 
   end subroutine write_profile
+
+  subroutine write_faces_vtk(this, mask, file, comment)
+
+    use parallel_communication, only: nPE, is_IOP, this_PE, broadcast, collate, global_sum
+
+    class(simpl_mesh), intent(in) :: this
+    logical,      intent(in) :: mask(:) ! faces to be written
+    character(*), intent(in) :: file    ! file path
+    character(*), intent(in) :: comment ! arbitrary vtk description string
+
+    integer :: lun, j, n, sizes(nPE), offset, ntot
+    integer, allocatable :: map(:), fnode_loc(:,:), fnode_all(:,:)
+    real(r8), allocatable :: x_loc(:,:), x_all(:,:)
+
+    if (is_IOP) then
+      open(newunit=lun,file=file,action='write',position='rewind',status='replace')
+      write(lun,'("# vtk DataFile Version 3.0")')
+      write(lun,'(a)') comment
+      write(lun,'("ASCII")')
+      write(lun,'("DATASET POLYDATA")')
+    end if
+
+    !! Mark nodes that belong to one of the specified faces.
+    allocate(map(this%nnode))
+    map = 0
+    do j = 1, this%nface_onP
+      if (mask(j)) map(this%fnode(:,j)) = 1
+    end do
+    call scatter_boundary_max(this%node_ip, map)
+
+    n = sum(map(:this%nnode_onP))
+    call collate(sizes, n)
+    call broadcast(sizes)
+    ntot = sum(sizes)
+    offset = sum(sizes(:this_PE-1)) ! node numbering offset
+
+    !! Collate the nodes to be written onto the IO process,
+    !! and generate the global numbering of that node subset.
+    allocate(x_loc(3,n))
+    n = 0
+    do j = 1, this%nnode_onP
+      if (map(j) == 1) then
+        n = n + 1
+        x_loc(:,n) = this%x(:,j)
+        map(j) = n + offset
+      end if
+    end do
+    call gather_boundary(this%node_ip, map)
+    allocate(x_all(3,merge(ntot,0,is_IOP)))
+    call collate(x_all, x_loc)
+
+    !! Write the node coordinate data.
+    if (is_IOP) then
+      write(lun,'("POINTS ",i0," double")') ntot
+      write(lun,'((3es13.5))') x_all
+    end if
+    deallocate(x_all, x_loc)
+
+    !! Collate the faces to be written onto the IO process.
+    !! The face connectivity data is remapped to the node subset numbering.
+    n = count(mask(:this%nface_onP))
+    ntot = global_sum(n)
+    allocate(fnode_loc(3,n))
+    n = 0
+    do j = 1, this%nface_onP
+      if (mask(j)) then
+        n = n + 1
+        fnode_loc(:,n) = map(this%fnode(:,j)) - 1 ! vtk uses 0-based numbering
+      end if
+    end do
+    allocate(fnode_all(3,merge(ntot,0,is_IOP)))
+    call collate(fnode_all, fnode_loc)
+
+    !! Write the face connectivity data.
+    if (is_IOP) then
+      write(lun,'("POLYGONS ",i0,1x,i0)') ntot, 4*ntot
+      write(lun,'(("3",3(1x,i0)))') fnode_all
+    end if
+
+    if (is_IOP) close(lun)
+
+  end subroutine write_faces_vtk
 
 end module simpl_mesh_type
