@@ -300,6 +300,9 @@ contains
   subroutine generate_bface (gm, mesh, filter, group, bface, status)
   
     use GeometricModeler
+    use truchas_env, only: output_dir
+    use parallel_communication, only: global_any
+    use truchas_logging_services
     
     type(GeometricModel), intent(in) :: gm
     type(simpl_mesh), intent(in) :: mesh
@@ -310,6 +313,8 @@ contains
     
     integer :: i, j
     integer, pointer :: surf(:)
+    logical :: mask(mesh%nface)
+    character(:), allocatable :: vtk_file
     
     ASSERT( size(filter) == mesh%nface )
     ASSERT( size(bface) == mesh%nface )
@@ -347,18 +352,16 @@ contains
       deallocate(surf)
     end do
     
-    if (any(bface == 0 .and. filter)) then
+    mask = ((bface == 0) .and. filter)
+    if (global_any(mask)) then
       if (present(status)) then
         status = -1
         return
       else
-        print *, 'GENERATE_BFACE: PANIC! not all faces assigned to a group'
-        do j = 1, size(bface)
-          if (bface(j) == 0 .and. filter(j)) then
-            print '(i0,(t10,i0,3es13.6))', j, (mesh%fnode(i,j), mesh%x(:,mesh%fnode(i,j)), i=1,3)
-          end if
-        end do
-        stop
+        vtk_file = trim(output_dir) // 'em_no_bc.vtk'
+        call mesh%write_faces_vtk(mask, vtk_file, 'Boundary faces without BC')
+        call TLS_fatal('GENERATE_BFACE: no BC for some EM mesh boundary faces;&
+            & problem faces written to ' // vtk_file)
       end if
     end if
     
