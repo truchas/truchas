@@ -59,8 +59,8 @@ void initialize_datatype(datatype_t mytype, iogroup_t *myIOgroup)
 		case SCORPIO_BYTE: 
 			myIOgroup->datatype_size = 1; /* 1 byte */
 			myIOgroup->mpi_type = MPI_BYTE;
-			/* This is an 8-bit integer, can be used as a carrier for bytes. Can switch to something else if that is better suited */
-			myIOgroup->hdf_type = H5T_NATIVE_INT8; 
+			/* uninterpreted bytes */
+			myIOgroup->hdf_type = H5T_NATIVE_OPAQUE;
 			break;
 	}
 }
