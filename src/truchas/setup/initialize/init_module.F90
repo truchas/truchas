@@ -70,6 +70,7 @@ CONTAINS
                                       OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: nmat
     use legacy_mesh_api,        only: ncells
+    use mesh_manager, only: unstr_mesh_ptr
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use property_module,        only: DENSITY_MATERIAL
@@ -83,6 +84,7 @@ CONTAINS
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
+    use flow_driver, only: flow_init, flow_set_initial_vof, flow_enabled
     use physics_module,         only: heat_transport
     use ded_head_driver,        only: ded_head_init
 
@@ -131,7 +133,12 @@ CONTAINS
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
 
-    volume_fractions = vof_initialize()
+    print *, 'flow_enabled check: ', flow_enabled()
+    if (flow_enabled()) then
+       call flow_set_initial_vof(unstr_mesh_ptr('MAIN'), nbody, volume_fractions)
+    else
+       volume_fractions = vof_initialize()
+    end if
     hits_vol = volume_fractions   ! temporary compatibility
 
     ! Either read Zone and Matl from a restart file or initialize them
@@ -210,7 +217,7 @@ CONTAINS
         deallocate(phi)
       end select
     end if
-    
+
     ! Initialize the microstructure modeling driver (if enabled).
     call ustruc_driver_init (t)
     call restart_ustruc

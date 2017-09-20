@@ -32,6 +32,7 @@ include(input/TruchasFiles.cmake)
 include(materials/TruchasFiles.cmake)
 include(ustruc/TruchasFiles.cmake)
 include(ode/TruchasFiles.cmake)
+include(flow/TruchasFiles.cmake)
 include(legacy_mesh/TruchasFiles.cmake)
 include(output/TruchasFiles.cmake)
 include(partitioning/TruchasFiles.cmake)
@@ -64,7 +65,7 @@ list(APPEND Truchas_DEPENDS ubiksolve)
 list(APPEND Truchas_DEPENDS chaco)
 list(APPEND Truchas_DEPENDS truchas::io)
 
-# Force the completion of the targets defined 
+# Force the completion of the targets defined
 # in Truchas_DEPENDS before compiling source for
 # this library
 add_dependencies(truchas ${Truchas_DEPENDS})
@@ -85,11 +86,11 @@ target_link_libraries(truchas ${Truchas_LINK_LIBS})
 
 # The linking of external packages is broken. Binaries
 # and libraries that link to truchas library should not
-# need to explicitly add the Truchas_LINK_LIBS. 
+# need to explicitly add the Truchas_LINK_LIBS.
 # Push this variable definition up one level as
 # a work-around until this is fixed.
 set(Truchas_LINK_LIBS ${Truchas_LINK_LIBS} PARENT_SCOPE)
-       
+
 # --- Main executable
 
 # Process the files
@@ -108,18 +109,18 @@ build_whitespace_string(MAIN_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${MAIN_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${MAIN_COMPILE_FLAGS})
 
-# Add the executable with required dependencies and libraries         
+# Add the executable with required dependencies and libraries
 add_executable(truchas_exe ${MAIN_SOURCE_FILES})
 add_dependencies(truchas_exe ProcessTruchasMainFiles)
 target_link_libraries(truchas_exe truchas ${Truchas_LINK_LIBS})
 
-# Keep binary name consistent with old naming convention 
+# Keep binary name consistent with old naming convention
 set(truchas_exe_name t-${Truchas_BUILD_ID}-${Truchas_VERSION})
 set_target_properties(truchas_exe PROPERTIES
                       OUTPUT_NAME ${truchas_exe_name}
                       EchoString "Built Truchas executable ${truchas_exe_name}")
 
-# --- Install rules    
+# --- Install rules
 install(TARGETS truchas truchas_exe
         RUNTIME DESTINATION ${Truchas_BIN_INSTALL_DIR}
         LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}

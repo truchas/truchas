@@ -144,7 +144,7 @@ CONTAINS
 
     ! initialize the random number generator
     call INITIALIZE_RANDOM()
-    
+
     ! read the data file
     call ANNOUNCE ('INPUT')
     call READ_INPUT (input_file, title)
@@ -158,7 +158,7 @@ CONTAINS
 #ifdef HIJACK
 call hijack_truchas ()
 #else
-    
+
     ! cycle through the problem
     call ANNOUNCE ('EXECUTION')
     call CYCLE_DRIVER ()
@@ -169,7 +169,7 @@ call hijack_truchas ()
 
     !Stop main timer
     call stop_timer("Total")
-    
+
     ! close the danu output file
     call TDO_close
 
@@ -189,7 +189,7 @@ call hijack_truchas ()
     !---------------------------------------------------------------------------
     use advection_module,         only: ADVECT_MASS
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST, &
-                                        CYCLE_OUTPUT_DRIVER
+         CYCLE_OUTPUT_DRIVER
     use fluid_flow_module,        only: FLUID_FLOW_DRIVER
     use EM,                       only: INDUCTION_HEATING
     use solid_mechanics_module,   only: THERMO_MECHANICS
@@ -197,10 +197,12 @@ call hijack_truchas ()
     use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
-                                        TIME_STEP
+         TIME_STEP
     use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
+    use flow_driver,            only: flow_update_vof, flow_update_velocity, &
+         flow_enabled
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -218,7 +220,7 @@ call hijack_truchas ()
     type(time_step_sync) :: ts_sync
 
     !---------------------------------------------------------------------------
-    
+
     if (mem_on) call mem_diag_open
 
     ts_sync = time_step_sync(5)
@@ -231,12 +233,12 @@ call hijack_truchas ()
 
     ! Prepass to initialize a solenoidal velocity field for Advection
     if(.not.restart) call Fluid_Flow_Driver (t)
-  
+
     call mem_diag_write ('Before main loop:')
 
     ! Main computation loop.
     MAIN_CYCLE: do c = 1, cycle_max+1
-       
+
        ! See if a signal was caught.
        call read_signal(SIGUSR2, sig_rcvd)
        if (PGSLib_Global_Any(sig_rcvd)) then
@@ -298,9 +300,12 @@ call hijack_truchas ()
        ! Evaluate the Joule heat source for the enthalpy calculation.
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
        call INDUCTION_HEATING (t1, t2)
-      
+
        ! move materials and associated quantities
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
+       if (flow_enabled()) then
+          call flow_update_vof(t)
+       end if
        call ADVECT_MASS ()
 
        ! solve heat transfer and phase change
@@ -308,16 +313,19 @@ call hijack_truchas ()
 
        ! Diffusion solver: species concentration and/or heat.
        if (ds_enabled) then
-         call ds_step (dt, dt_ds, errc)
-         if (errc /= 0) call TLS_fatal ('CYCLE_DRIVER: Diffusion Solver step failed')
-         ! The step size may have been reduced.  This assumes all other physics
-         ! is off, and will need to be redone when the diffusion solver is made
-         ! co-operable with the rest of the physics.
-         t2 = t1 + dt
+          call ds_step (dt, dt_ds, errc)
+          if (errc /= 0) call TLS_fatal ('CYCLE_DRIVER: Diffusion Solver step failed')
+          ! The step size may have been reduced.  This assumes all other physics
+          ! is off, and will need to be redone when the diffusion solver is made
+          ! co-operable with the rest of the physics.
+          t2 = t1 + dt
        end if
 
        ! calculate new velocity field
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
+       if (flow_enabled()) then
+          call flow_update_velocity(t)
+       end if
        call FLUID_FLOW_DRIVER (t)
 
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
@@ -325,13 +333,13 @@ call hijack_truchas ()
 
        ! output iteration information
        call CYCLE_OUTPUT_POST ()
-       
+
        ! post-processing modules (no side effects)
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before microstructure:')
        call ustruc_update (t2) ! microstructure modeling
 
     end do MAIN_CYCLE
- 
+
     ! stop the main cycle timer
     call  stop_timer ("Main Cycle")
 
@@ -346,17 +354,19 @@ call hijack_truchas ()
     use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
     use debug_control_data
     use fluid_utilities_module, only: FLUID_DEALLOCATE
+    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
     use truchas_logging_services
     use truchas_timers
-    
+
     character(128) :: message
 
     !---------------------------------------------------------------------------
 
     !deallocate the fluidvof array, and others
     call FLUID_DEALLOCATE()
+    call flow_destroy()
 
     ! deallocate the base types
     call BASE_TYPES_A_DEALLOCATE ()
@@ -372,7 +382,7 @@ call hijack_truchas ()
 
     ! report the timing info
     call write_timer_data
-    
+
     call mem_diag_write ('before termination')
     call mem_diag_close
 
@@ -444,7 +454,7 @@ call hijack_truchas ()
     !       -t   debug, run all tests, mostly quiet
     !       -r   restart (not yet implemented here)
     !       -m   turn mem diagnostics off/on
-    ! 
+    !
     !    We have two global integer variables, verbose and debug, that
     !    have values of 0, 1, 2.  0 is quiet, 1 is normal, 2 is
     !    verbose.  debug is 0 unless debug is explicitly turned on,
@@ -776,7 +786,7 @@ call hijack_truchas ()
     ! set prefix
     if (.not. o) then
        prefix = input_file(1:LEN_TRIM(input_file)-4)
-       output_dir = TRIM(ADJUSTL(prefix)) // '_output/' 
+       output_dir = TRIM(ADJUSTL(prefix)) // '_output/'
     else
        output_dir = trim(ADJUSTL(prefix))
        if (prefix(LEN(TRIM(prefix)):LEN_TRIM(prefix)) /= '/') then
@@ -791,20 +801,20 @@ call hijack_truchas ()
     indx = INDEX(input_file, '/', .true.)
     if(indx > 0) then
        input_dir = input_file(1:indx)
-    else 
+    else
        input_dir = './'
     end if
 
     if ( indx > 0 ) then
        prefix = TRIM(ADJUSTL(output_dir)) //  input_file(indx+1:LEN_TRIM(input_file)-4)
-    else 
+    else
        prefix = TRIM(ADJUSTL(output_dir)) //  input_file(1:LEN_TRIM(input_file)-4)
     end if
 
     return
-    
+
   CONTAINS
-  
+
     !! NNC, April 2012.  These are temporary stand-ins for ERROR_MODULE:ERROR_CHECK
     !! and TRUCHAS_LOGGING_SYSTEM:TLS_ERROR.  We can't use the new logging facilities
     !! because the output directory hasn't been created yet (that's one of the things
@@ -812,7 +822,7 @@ call hijack_truchas ()
     !! (assuming we continue to insist upon logging to a file there, and not just stdout).
     !! This routine is processing the command line and any errors ought to be sent
     !! directly to stderr.  THIS ROUTINE NEEDS TO BE REFACTORED.
-  
+
     subroutine ERROR_CHECK (flag, message, name)
       use,intrinsic :: iso_fortran_env, only: error_unit
       use parallel_info_module, only: p_info
@@ -829,14 +839,14 @@ call hijack_truchas ()
       call pgslib_finalize
       stop
     end subroutine ERROR_CHECK
-    
+
     subroutine TLS_error (message)
       use,intrinsic :: iso_fortran_env, only: error_unit
       use parallel_info_module, only: p_info
       character(*), intent(in) :: message
       if (p_info%IOP) write(error_unit,'(a)') 'ERROR: ' // message(:len_trim(message))
     end subroutine TLS_error
-    
+
     subroutine TLS_warn (message)
       use,intrinsic :: iso_fortran_env, only: error_unit
       use parallel_info_module, only: p_info

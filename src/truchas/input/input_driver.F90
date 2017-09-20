@@ -31,7 +31,7 @@ contains
     !
     !   driver for reading input file
     !=======================================================================
-    use probe_input_module,        only: probe_input  
+    use probe_input_module,        only: probe_input
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use interfaces_input_module,   only: interfaces_input
@@ -51,6 +51,7 @@ contains
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
     use ustruc_driver,             only: read_microstructure_namelist
+    use flow_driver,             only: read_flow_namelist
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use phase_namelist,            only: read_phase_namelists
@@ -103,7 +104,7 @@ contains
 
     ! read output specifications
     call outputs_input (lun)
-    
+
     call read_simulation_control_namelist (lun)
 
     if (restart) then
@@ -119,12 +120,13 @@ contains
     call material_input (lun)
     call material_sizes ()
 
+    call read_flow_namelist(lun)
     ! read namelists for flow options and enable new mesh
     if (fluid_flow) then
       if (.not.inviscid)   call read_turbulence_namelist (lun)
       if (surface_tension) call read_surface_tension_namelist (lun)
     end if
-    
+
     ! read namelists for solid mechanics options
     if (solid_mechanics) then
       call read_viscoplastic_model_namelists (lun)
