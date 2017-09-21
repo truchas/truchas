@@ -25,7 +25,7 @@ contains
       do j = 1, size(this%index)
         temp = var(this%index(j))
         this%value(j) = this%a * exp(-this%b/temp)
-        this%deriv(j) = this%value(j) * (this%b/temp)
+        this%deriv(j) = this%value(j) * (this%b/temp**2)
       end do
     else
       do j = 1, size(this%index)
