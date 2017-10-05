@@ -34,6 +34,7 @@ module mapped_restart
     real(r8), pointer :: coord(:,:)   => null() ! node coordinates
     integer,  pointer :: connect(:,:) => null() ! cell connectivity
     integer,  pointer :: blockid(:)   => null() ! cell block IDs
+    logical :: is_tet_mesh = .false.
   end type base_mesh
   
   private :: base_mesh_init, base_mesh_delete
@@ -224,13 +225,21 @@ contains
     gm_src%nnod = src%nnode
     gm_src%nelt = src%ncell
     gm_src%pos_node  = src%coord
-    gm_src%node_elt  = src%connect
+    if (src%is_tet_mesh) then
+      gm_src%node_elt  = src%connect(2:5,:)
+    else
+      gm_src%node_elt  = src%connect
+    end if
     gm_src%block_elt = src%blockid
     !! Wire the mapping destination mesh.
     gm_dest%nnod = dest%nnode
     gm_dest%nelt = dest%ncell
     gm_dest%pos_node  = dest%coord
-    gm_dest%node_elt  = dest%connect
+    if (dest%is_tet_mesh) then
+      gm_dest%node_elt = dest%connect(2:5,:)
+    else
+      gm_dest%node_elt  = dest%connect
+    end if
     gm_dest%block_elt = dest%blockid
     !! Compute the mesh mapping data.
     call compute_int_volumes (gm_src, gm_dest, this%map_data)
@@ -282,6 +291,7 @@ contains
     call h5out_get_connectivity (ofile, this%connect)
     allocate(this%blockid(this%ncell))
     call h5out_get_block_ids (ofile, this%blockid)
+    this%is_tet_mesh = all(this%connect(1,:) == this%connect(2,:))
   end subroutine base_mesh_init_danu
   
   !! Initialize a BASE_MESH from an ExodusII mesh
@@ -315,10 +325,11 @@ contains
     this%coord = mesh%coord
 
     allocate(this%connect(8,this%ncell), this%blockid(this%ncell))
-    
+
     !! Translate Exodus element connectivity to Truchas convention.
     n = 0
     non_hex_mesh = .false.
+    this%is_tet_mesh = .true.
     do i = 1, mesh%num_eblk
       nodes_per_elem = size(mesh%eblk(i)%connect,dim=1)
       !! Translate Exodus element connectivity to Truchas convention.  See the ExodusII
@@ -326,6 +337,7 @@ contains
       !! non-hex elements into degenerate hexes as the reference for what must be done here.
       select case (nodes_per_elem)
       case (HEX)
+        this%is_tet_mesh = .false.
         do j = 1, mesh%eblk(i)%num_elem
           n = n + 1
           this%blockid(n) = mesh%eblk(i)%ID
@@ -339,6 +351,7 @@ contains
           this%connect(:,n) = mesh%eblk(i)%connect(TET_NODE_MAP,j)
         end do
       case (WEDGE)
+        this%is_tet_mesh = .false.
         non_hex_mesh = .true.
         do j = 1, mesh%eblk(i)%num_elem
           n = n + 1
@@ -352,7 +365,7 @@ contains
     end do
     INSIST(n == this%ncell)
 
-    if (non_hex_mesh) then
+    if (non_hex_mesh .and. .not.this%is_tet_mesh) then
       write(error_unit,'(a)') 'Warning: target mesh contains degenerate hex elements'
     end if
 
