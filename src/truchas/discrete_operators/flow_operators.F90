@@ -21,10 +21,10 @@ contains
     do i = 1, m%nface
       associate (fn => m%fnode(m%xfnode(i):m%xfnode(i+1)-1))
         select case (size(fn))
-        case (3)
-          w_face(i) = lerp3(m%x(:,fn), w_node0(fn), sum(m%x(:,fn),dim=2)/3.0_r8)
-        case (4)
-
+        case (3,4)
+          ! linear interpolation of vertex values to face centroid is arithmetic mean
+          ! for triangle and quadrilateral faces
+          w_face(i) = sum(w_node0(fn))/real(size(fn),r8)
         case default
           call TLS_fatal("wrong number of faces in gradient_cc")
         end select
@@ -59,32 +59,4 @@ contains
     end do
   end subroutine node_avg
 
-
-  function lerp3(x, v, p)
-    real(r8), intent(in) :: x(:,:), v(:), p(:)
-    real(r8) :: lerp3
-
-    real(r8) :: t0(3), t1(3), s(3), c0, c1
-
-    t0 = x(:,2) - x(:,1)
-    t1 = x(:,3) - x(:,1)
-    s = p - x(:,1)
-
-    ! write s in terms of t0, t1
-    c0 = (s(1)*(t0(1)*t1(2)**2 + t0(1)*t1(3)**2 - t0(2)*t1(1)*t1(2) - t0(3)*t1(1)*t1(3)) &
-        + s(2)*(-t0(1)*t1(1)*t1(2) + t0(2)*t1(1)**2 + t0(2)*t1(3)**2 - t0(3)*t1(2)*t1(3)) &
-        + s(3)*(-t0(1)*t1(1)*t1(3) - t0(2)*t1(2)*t1(3) + t0(3)*t1(1)**2 + t0(3)*t1(2)**2))/ &
-        (t0(1)**2*t1(2)**2 + t0(1)**2*t1(3)**2 - 2*t0(1)*t0(2)*t1(1)*t1(2) - &
-        2*t0(1)*t0(3)*t1(1)*t1(3) + t0(2)**2*t1(1)**2 + t0(2)**2*t1(3)**2 - &
-        2*t0(2)*t0(3)*t1(2)*t1(3) + t0(3)**2*t1(1)**2 + t0(3)**2*t1(2)**2)
-    c1 = -(s(1)*(t0(1)*t0(2)*t1(2) + t0(1)*t0(3)*t1(3) - t0(2)**2*t1(1) - t0(3)**2*t1(1)) &
-        + s(2)*(-t0(1)**2*t1(2) + t0(1)*t0(2)*t1(1) + t0(2)*t0(3)*t1(3) - t0(3)**2*t1(2)) &
-        + s(3)*(-t0(1)**2*t1(3) + t0(1)*t0(3)*t1(1) - t0(2)**2*t1(3) + t0(2)*t0(3)*t1(2))) / &
-        (t0(1)**2*t1(2)**2 + t0(1)**2*t1(3)**2 - 2*t0(1)*t0(2)*t1(1)*t1(2) - &
-        2*t0(1)*t0(3)*t1(1)*t1(3) + t0(2)**2*t1(1)**2 + t0(2)**2*t1(3)**2 - &
-        2*t0(2)*t0(3)*t1(2)*t1(3) + t0(3)**2*t1(1)**2 + t0(3)**2*t1(2)**2)
-
-    lerp3 = c0*v(0) + c0*v(1) - c1*v(0) + c1*v(2) + v(0)
-
-  end function lerp3
 end module flow_operators
