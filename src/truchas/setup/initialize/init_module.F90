@@ -135,7 +135,8 @@ CONTAINS
 
     print *, 'flow_enabled check: ', flow_enabled()
     if (flow_enabled()) then
-       call flow_set_initial_vof(unstr_mesh_ptr('MAIN'), nbody, volume_fractions)
+       call flow_init(unstr_mesh_ptr('MAIN'))
+       call flow_set_initial_vof(nbody, volume_fractions)
     else
        volume_fractions = vof_initialize()
     end if

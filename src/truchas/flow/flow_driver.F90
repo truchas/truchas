@@ -28,8 +28,11 @@ module flow_driver
   type :: flow_state
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     !integer, allocatable :: sol_matid(:), liq_matid(:)
-    type(flow_model_t) :: flow_t
-    type(vof_model_t) :: vof_t
+    type(flow_model_t) :: flow
+    type(vof_model_t) :: vof
+    integer :: nfluids    ! number of fluids in simulation
+    integer, allocatable :: fluid_phases(:)
+    logical :: void_fluid ! true if there is void in this simulation
  end type flow_state
   type(flow_state), allocatable, save :: state
 
@@ -61,9 +64,49 @@ contains
   !! This initializes the driver.  It should only be called if heat transfer is
   !! enabled, and after its initialization (mesh_interop data).
 
-  subroutine flow_init (t)
-    real(r8), intent(in) :: t
-    print *, 'flow_init(t) :', t
+  subroutine flow_init (mesh)
+    use material_interop, only: material_to_phase, void_material_index
+    use parameter_module, only: nmat
+    implicit none
+    type(unstr_mesh), intent(in), pointer :: mesh
+    !-
+    integer :: i, phase, visc, j
+
+    state%mesh => mesh
+
+    ! determine number of fluids and void presence in simulation
+    state%nfluids = 0
+    state%void_fluid = void_material_index > 0
+
+    if (ppt_has_property("viscosity")) then
+       visc = ppt_property_id("viscosity")
+    else
+       return
+    end if
+
+    do i=1,nmat
+       if (i == void_material_index) cycle
+
+       phase = material_to_phase(i)
+       if (ppt_has_phase_property(phase, visc)) &
+            state%nfluids = state%nfluids+1
+    end do
+
+    if (state%nfluids == 0) return
+    allocate(state%fluid_phases(state%nfluids))
+
+    j = 1
+    do i=1,nmat
+       if (i == void_material_index) cycle
+
+       phase = material_to_phase(i)
+       if (ppt_has_phase_property(phase, visc)) then
+          state%fluid_phases(j) = phase
+          j = j+1
+       end if
+    end do
+
+    call state%vof_init(mesh, state%nfluids, state%void_fluid)
   end subroutine flow_init
 
   subroutine flow_update_vof (t)
@@ -81,6 +124,11 @@ contains
     integer, intent(in) :: nbody
     real(r8), intent(out) :: vof(:,:)
     print *, 'flow_set_initial_vof'
-    call state%vof_t%initial_state_all(mesh, nbody, vof)
+    call state%vof%initial_state_all(mesh, nbody, vof)
   end subroutine flow_set_initial_vof
+
+  subroutine flow_advance_vof (mesh)
+    type(unstr_mesh), intent(in) :: mesh
+
+  end subroutine flow_advance_vof
 end module flow_driver

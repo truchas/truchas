@@ -13,9 +13,15 @@ module vof_model
   private
 
   type, public :: vof_model_t
+     type(unstr_mesh), pointer :: mesh  ! unowned reference
+     real(r8), allocatable :: vof_n(:,:) ! volume fraction field at time n
+     real(r8), allocatable :: vof_i(:,:) ! intermediate volume fraction field
+     real(r8), allocatable :: vof_n1(:,:) ! volume fraction field at time n+1
    contains
+     procedure :: init
      procedure :: initial_state_cell
      procedure :: initial_state_all
+
   end type vof_model_t
 
   integer, parameter :: tet4_ntets = 8
@@ -51,6 +57,17 @@ module vof_model
 
 
 contains
+
+  subroutine init(this, mesh, nfluids, void_fluid)
+    implicit none
+    class(vof_model_t), intent(inout) :: this
+    type(unstr_mesh), intent(in) :: mesh
+    integer, intent(in) :: nfluids
+    logical, intent(in) :: void_fluid
+
+    this%mesh => mesh
+
+  end subroutine init
 
   ! return array of (nbody) floats indicitating vofs for this cell
   function initial_state_cell(this, m, nbody, ci) result (v)
@@ -257,6 +274,7 @@ contains
        print *, 'cell:', i
        vof(:,i) = this%initial_state_cell(mesh, nbody, i)
     end do
+
 
   end subroutine initial_state_all
 
