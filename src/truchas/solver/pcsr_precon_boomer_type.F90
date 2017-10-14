@@ -58,7 +58,7 @@ module pcsr_precon_boomer_type
   use pcsr_matrix_type
   use pcsr_precon_class
   use parameter_list_type
-  use timing_tree
+  use truchas_timers
   implicit none
   private
 

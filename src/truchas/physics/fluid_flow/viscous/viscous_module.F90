@@ -20,6 +20,7 @@ MODULE VISCOUS_MODULE
   !=======================================================================
   use kinds, only: r8
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 
@@ -102,7 +103,6 @@ CONTAINS
     !   Mom_Delta = dt * Stress Gradient
     !======================================================================= 
     use legacy_mesh_api,      only: ncells, ndim
-    use timing_tree
     use zone_module,          only: Zone
     use viscous_data_module,  only: viscous_implicitness, Stress_Grad_BC
 

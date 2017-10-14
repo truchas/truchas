@@ -65,8 +65,8 @@ contains
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
     use physics_module,            only: heat_transport
-    use timing_tree
     use truchas_logging_services
+    use truchas_timers
     use string_utilities, only: i_to_c
 
     character(*), intent(in)  :: infile

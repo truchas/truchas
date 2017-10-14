@@ -42,6 +42,7 @@ Module SOLID_MECHANICS_MODULE
   use solid_mechanics_input, only: solid_mechanics_body_force
   use nonlinear_solution, only: NK_SOLUTION_FIELD
   use truchas_logging_services
+  use truchas_timers
   Implicit None
   Private
 
@@ -79,7 +80,6 @@ Contains
     Use node_operator_module, Only: nipc
     use solid_mechanics_input, only: solid_mechanics
     use solid_mechanics_mesh, only: ndim, ncomps
-    use timing_tree
 
     Integer :: ip
 
@@ -206,7 +206,6 @@ Contains
     use legacy_mesh_api,      only: EN_GATHER, EN_SUM_SCATTER
     use node_operator_module, only: cv_init, CV_Internal, nipc, LINEAR_GRAD
     use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
-    use timing_tree
     use UbikSolve_module
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
@@ -442,7 +441,6 @@ Contains
     use parameter_module,     only: nmat, mat_slot
     use legacy_mesh_api,      only: nnodes, ncells
     Use node_operator_module, Only: nipc
-    use timing_tree
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
                                     VISCOPLASTIC_STRAIN_RATE, PLASTIC_STRAIN_INCREMENT,&
                                     DEVIATORIC_STRESS
@@ -892,7 +890,6 @@ Contains
     use legacy_mesh_api,        only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig
     use node_operator_module,   only: mech_precond_init
     use mech_bc_data_module
-    use timing_tree
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
     use solid_mechanics_mesh,   only: ndim
 

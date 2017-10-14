@@ -70,6 +70,7 @@ module ustruc_model_type
   use ustruc_comp_class
   use parameter_list_type
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 
@@ -169,7 +170,6 @@ contains
   end subroutine set_state
 
   subroutine update_state (this, t, tcell, tface, liq_vf, sol_vf)
-    use timing_tree
 use process_info_module
     class(ustruc_model), intent(inout) :: this
     real(r8), intent(in) :: t, tcell(:), tface(:), liq_vf(:), sol_vf(:)

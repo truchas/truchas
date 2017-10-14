@@ -97,11 +97,11 @@ CONTAINS
     use legacy_mesh_api,          only: ncells, ndim, nfc 
     use property_module,          only: fluid_properties 
     use restart_variables,        only: restart
-    use timing_tree
     use zone_module,              only: Zone
     use surface_tension_module,   only: surface_tension
     use diffusion_solver_data,    only: ds_enabled
     use truchas_logging_services
+    use truchas_timers
 
     ! Local Variables 
     integer :: n, s, status

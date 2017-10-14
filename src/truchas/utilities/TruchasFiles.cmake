@@ -26,10 +26,9 @@ set(UTIL_FILES
          utilities/string_utilities.F90
          utilities/tabular_utilities.F90
          utilities/tensor_module.F90
-         utilities/timing_tree.F90
          utilities/truchas_env.F90
          utilities/truchas_logging_services.F90
-         utilities/truchas_timing.F90
+         utilities/truchas_timers.F90
          utilities/utilities_module.F90
          utilities/var_vector_module.F90
          utilities/gmv/gmvwrite_c_binding.F90)

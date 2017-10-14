@@ -55,7 +55,7 @@ module ustruc_driver
   use ustruc_model_type
   use parameter_list_type
   use truchas_logging_services
-  use timing_tree
+  use truchas_timers
   implicit none
   private
 

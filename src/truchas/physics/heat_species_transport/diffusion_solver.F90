@@ -30,7 +30,7 @@ module diffusion_solver
   use FHT_solver_type
   use HTSD_model_type
   use HTSD_solver_type
-  use timing_tree
+  use truchas_timers
   use truchas_logging_services
   use unstr_mesh_type
   implicit none

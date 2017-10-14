@@ -64,8 +64,8 @@ CONTAINS
     !=======================================================================
     use parameter_module, only: nicells
     use legacy_mesh_api,  only: nvc
-    use timing_tree
     use vof_data_module,  only: volume_track_brents_method
+    use truchas_timers
  
     ! Local Variables
     real(r8), dimension(nicells,nvc) :: V_v

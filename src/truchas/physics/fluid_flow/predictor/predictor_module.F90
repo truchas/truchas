@@ -26,6 +26,7 @@ MODULE PREDICTOR_MODULE
   !=======================================================================
 
   use kinds, only: r8
+  use truchas_timers
   implicit none
   private
 
@@ -61,7 +62,6 @@ CONTAINS
     use porous_drag_data,        only: porous_flow
     use porous_drag_module,      only: POROUS_DRAG
     use time_step_module,        only: dt
-    use timing_tree
     use turbulence_module,       only: turbulence_model, TURBULENCE
     use viscous_data_module,     only: inviscid, stokes, viscous_implicitness
     use viscous_module,          only: viscousExplicit

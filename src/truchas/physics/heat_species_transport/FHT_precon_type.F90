@@ -21,7 +21,7 @@ module FHT_precon_type
   use boundary_data
   use interface_data
   use property_mesh_function
-  use timing_tree
+  use truchas_timers
   implicit none
   private
   

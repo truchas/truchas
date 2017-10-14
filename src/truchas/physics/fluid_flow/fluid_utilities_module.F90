@@ -22,6 +22,7 @@ MODULE FLUID_UTILITIES_MODULE
   !=======================================================================
   use kinds, only: r8
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 
@@ -508,7 +509,6 @@ CONTAINS
                                       dt_gradP_over_Rho, ghc, ghn,dtCsf_over_Rho, &
                                       dtRhoG_over_Rho
     use time_step_module,       only: dt
-    use timing_tree
     use zone_module,            only: Zone
     use discrete_op_module,     only: DYNAMIC_PRESSURE_FACE_GRADIENT
 !-mf Jan04

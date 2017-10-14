@@ -20,7 +20,7 @@ module HTSD_model_type
   use interface_data
   use rad_problem_type
   use index_partitioning
-  use timing_tree
+  use truchas_timers
   implicit none
   private
   

@@ -22,7 +22,7 @@ MODULE ORTHO_MATVEC
   !
   !=======================================================================
   use kinds, only: r8
-  use timing_tree
+  use truchas_timers
   Implicit None
   Private
 

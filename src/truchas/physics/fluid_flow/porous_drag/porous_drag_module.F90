@@ -19,6 +19,7 @@ MODULE POROUS_DRAG_MODULE
   !
   !=======================================================================
   use truchas_logging_services
+  use truchas_timers
   use kinds, only: r8
   implicit none
   private
@@ -53,7 +54,6 @@ CONTAINS
     use legacy_mesh_api,      only: ncells, ndim
     use porous_drag_data,     only: porous_implicitness
     use property_data_module, only: Permeability_Constant
-    use timing_tree
     use zone_module,          only: Zone
 
     ! Argument List
