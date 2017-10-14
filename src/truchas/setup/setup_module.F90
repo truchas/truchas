@@ -53,12 +53,12 @@ CONTAINS
     use time_step_module,       only: cycle_number, cycle_number_restart, &
                                       dt, t, t1, t2
     use init_module,            only: INITIAL
-    use timing_tree
     use tensor_module,          only: TENSOR_MATRIX
     use mesh_manager,           only: init_mesh_manager
     use legacy_mesh_api,        only: init_legacy_mesh_api
     use EM,                     only: initialize_EM
     use truchas_danu_output,    only: TDO_write_default_mesh
+    use truchas_timers
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

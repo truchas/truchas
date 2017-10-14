@@ -44,6 +44,7 @@ MODULE ADVECT_VOLUME_MODULE
   !=======================================================================
   use kinds, only: r8
   use truchas_logging_services  ! entities prefixed with TLS_
+  use truchas_timers
   implicit none
   private
 
@@ -77,7 +78,6 @@ CONTAINS
     use parameter_module,    only: nmat
     use legacy_mesh_api,     only: nfc, ncells
     use time_step_module,    only: dt
-    use timing_tree
     use vof_data_module,     only: adv_dt, volume_track_subcycles, volume_track_interfaces
     use volume_track_module, only: VOLUME_TRACK
 

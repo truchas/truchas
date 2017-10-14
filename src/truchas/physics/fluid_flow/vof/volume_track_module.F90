@@ -61,9 +61,9 @@ CONTAINS
     use parameter_module,          only: nicells, nmat
     use pgslib_module,             only: PGSLib_Global_MAXVAL
     use property_data_module,      only: Matpri
-    use timing_tree
     use truncate_volume_module,    only: Trunc_Vol, TRUNCATE_VOLUME, FACE_PARAM
     use vof_data_module,           only: adv_dt, interface_area
+    use truchas_timers
  
     ! Arguments
     real(r8), dimension(nmat,ncells),     intent(IN)    :: Vof

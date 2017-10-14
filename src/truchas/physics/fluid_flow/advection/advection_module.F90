@@ -45,6 +45,7 @@ MODULE ADVECTION_MODULE
   !=======================================================================
   use kinds, only: r8
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
               
@@ -70,7 +71,6 @@ CONTAINS
     use parameter_module,     only: nmat
     use pgslib_module,        only: PGSLib_Global_ANY, PGSLib_Global_SUM
     use time_step_module,     only: dt    
-    use timing_tree
     use vof_data_module,      only: volume_track_interfaces, VT_Interface_Mask
 
     ! Local Variables
@@ -265,7 +265,6 @@ CONTAINS
     !=======================================================================
     use advection_data,       only: advection_order_momentum, Momentum_Delta
     use time_step_module,     only: dt
-    use timing_tree
 
     ! Start Timer
     call start_timer("Momentum Advection")

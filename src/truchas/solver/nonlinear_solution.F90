@@ -17,8 +17,8 @@ MODULE NONLINEAR_SOLUTION
   use kinds, only: r8
   use parameter_module, only: string_len
   use UbikSolve_module
-  use timing_tree
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 

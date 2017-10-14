@@ -58,7 +58,7 @@ CONTAINS
     use legacy_mesh_api,        only: ncells, ndim, nfc, Cell
     use projection_data_module, only: Coeff, Vol_over_RhoCsqDt
     use time_step_module,       only: dt
-    use timing_tree
+    use truchas_timers
     use UbikSolve_module
 
     ! Arguments

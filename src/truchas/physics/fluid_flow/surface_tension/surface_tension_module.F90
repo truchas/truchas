@@ -36,9 +36,10 @@ module surface_tension_module
   !
   !=======================================================================
   use kinds, only: r8
-  use truchas_logging_services
   use scalar_func_class
   use scalar_func_containers
+  use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 
@@ -85,7 +86,6 @@ contains
     use legacy_mesh_api,      only: ncells, ndim
     use property_module,      only: density_material
     use zone_module,          only: Zone
-    use timing_tree
     use legacy_mesh_api,      only: ncells, mesh_face_set
 
     real(r8), intent(in) :: dt
@@ -246,7 +246,6 @@ contains
     use parameter_module,            only: nmat
     use legacy_mesh_api,             only: ncells, ndim, nfc, nvc, nnodes
     use legacy_mesh_api,             only: EN_GATHER, LINEAR_PROP 
-    use timing_tree
     use zone_module,                 only: Zone 
     use kernel_interpolation_module, only: KERN_CONVOLUTION_CENTER
  

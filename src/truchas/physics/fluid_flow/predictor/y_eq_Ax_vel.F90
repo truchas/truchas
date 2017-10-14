@@ -53,7 +53,7 @@ CONTAINS
 
     use kinds, only: r8
     use porous_drag_data,     only: porous_flow, porous_implicitness
-    use timing_tree
+    use truchas_timers
     use viscous_data_module,  only: viscous_implicitness
  
     use viscous_module,       only: STRESS_GRADIENT

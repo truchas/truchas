@@ -31,6 +31,7 @@ MODULE CYCLE_OUTPUT_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !=======================================================================
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 
@@ -157,7 +158,6 @@ CONTAINS
     use output_control,          only: next_op, nops, Output_Dt, Output_T
     use time_step_module,        only: cycle_number, cycle_number_restart, t1, t2, &
                                        cycle_max, t
-    use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use diagnostics_module,      only: DIAGNOSTICS
     use probe_output_module,     only: PROBES_OUTPUT, Probe_Output_Cycle_Multiplier

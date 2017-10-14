@@ -36,6 +36,7 @@ MODULE PROJECTION_MODULE
   !=======================================================================
   use kinds, only: r8
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 
@@ -74,7 +75,6 @@ CONTAINS
                                       Fcsf_new,dtCsf_over_Rho
     use surface_tension_module, only: CSF_FACE, csf_normal
     use time_step_module,       only: dt
-    use timing_tree
     use fischer_module
 
     ! Local Variables
@@ -241,7 +241,6 @@ CONTAINS
                                       Vol_over_RhoCsqDt
     use property_data_module,   only: Sound_Speed
     use time_step_module,       only: t, dt
-    use timing_tree
     use zone_module,            only: Zone
     use UbikSolve_module
 
@@ -777,7 +776,6 @@ CONTAINS
     use projection_data_module, only: Boundary_Flag, Coeff, UBIK_PRESSURE
     use y_eq_Ax_prs,            only: Y_EQ_AX_PRESSURE
     use time_step_module,       only: dt
-    use timing_tree
     use UbikSolve_module
     use fischer_module
 
@@ -1057,7 +1055,6 @@ CONTAINS
                                       fluidVof
     use legacy_mesh_api,        only: ndim, ncells
     use time_step_module,       only: dt
-    use timing_tree
     use zone_module,            only: Zone
     use fluid_utilities_module, only: CC_GRADP_DYNAMIC
 

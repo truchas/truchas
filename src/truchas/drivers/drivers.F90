@@ -97,15 +97,13 @@ CONTAINS
     use parallel_util_module,   only: PARALLEL_INIT
     use parallel_communication, only: init_parallel_communication
     use setup_module,           only: SETUP
-    use timing_tree
-    use truchas_timing
     use random_module,          only: INITIALIZE_RANDOM
     use signal_handler
     use pgslib_module,          only: PGSLib_CL_MAX_TOKEN_LENGTH
     use output_utilities,       only: announce
-    use truchas_logging_services
     use truchas_danu_output, only: TDO_open, TDO_close
-    implicit none
+    use truchas_logging_services
+    use truchas_timers
 
     character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
 
@@ -200,17 +198,17 @@ call hijack_truchas ()
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
                                         TIME_STEP
-    use timing_tree
     use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
     use ded_head_driver,          only: ded_head_start_sim_phase
-    use truchas_logging_services
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
     use probe_output_module, only: probe_init_danu
     use simulation_event_queue, only: sim_event, next_event
     use time_step_sync_type
+    use truchas_logging_services
+    use truchas_timers
 
     ! Local Variables
     Logical :: quit = .False., sig_rcvd
@@ -349,10 +347,9 @@ call hijack_truchas ()
     use debug_control_data
     use fluid_utilities_module, only: FLUID_DEALLOCATE
     use time_step_module,       only: t, cycle_number
-    use timing_tree
-    use truchas_timing
     use diffusion_solver,       only: ds_delete
     use truchas_logging_services
+    use truchas_timers
     
     character(128) :: message
 
@@ -374,7 +371,7 @@ call hijack_truchas ()
     call TLS_info ('')
 
     ! report the timing info
-    call report_tree_timing()
+    call write_timer_data
     
     call mem_diag_write ('before termination')
     call mem_diag_close

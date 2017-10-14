@@ -81,7 +81,7 @@ MODULE PRECONDITIONERS
   use kinds, only: r8
   use var_vector_module
   use UbikSolve_module
-  use timing_tree
+  use truchas_timers
   use truchas_logging_services
   implicit none
   private
