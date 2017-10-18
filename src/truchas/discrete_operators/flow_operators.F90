@@ -12,7 +12,7 @@ contains
     real(r8), intent(out) :: gx(:), gy(:), gz(:), w_node(:), w_face(:)
     real(r8), intent(in) :: x(:)
 
-    integer :: i, j
+    integer :: i, j, k
 
     ! node average data stored in w_node0 workspace array
     call node_avg(m, x, w_node0, w_node1)
@@ -31,6 +31,28 @@ contains
       end associate
     end do
 
+    do i = 1, m%ncell_onP
+      gx(i) = 0.0_r8
+      gy(i) = 0.0_r8
+      gz(i) = 0.0_r8
+      associate (fi => m%cface(m%xcface(i):m%xcface(i+1)-1))
+        do j = 1, size(fi)
+          k = fi(j)
+          if (btest(m%cfpar(i),pos=j)) then ! true if normal points inward
+            gx(i) = gx(i) - m%normal(1,k)*m%area(k)*w_face(k)
+            gy(i) = gy(i) - m%normal(2,k)*m%area(k)*w_face(k)
+            gz(i) = gz(i) - m%normal(3,k)*m%area(k)*w_face(k)
+          else
+            gx(i) = gx(i) + m%normal(1,k)*m%area(k)*w_face(k)
+            gy(i) = gy(i) + m%normal(2,k)*m%area(k)*w_face(k)
+            gz(i) = gz(i) + m%normal(3,k)*m%area(k)*w_face(k)
+          end if
+        end do
+      end associate
+      gx(i) = gx(i)/m%volume(i)
+      gy(i) = gy(i)/m%volume(i)
+      gz(i) = gz(i)/m%volume(i)
+    end do
 
   end subroutine gradient_cc
 
