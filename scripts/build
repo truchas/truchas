@@ -9,12 +9,11 @@ set -e
 
 
 #### Parse Arguments ####
-if [ ${#} -lt 4 ]; then
+if [ ${#} -lt 3 ]; then
    echo "ERROR: This script builds Truchas. It requires 5 arguments"
    echo "Argument 1: Location to install TPL and Truchas. The entire path will be created if nonexistent"
    echo "Argument 2: Compiler. Allowed values: intel, nag, gcc"
-   echo "Argument 3: Mode. Allowed values: serial, parallel"
-   echo "Argument 4: Build. Allowed values: dbg, opt, check"
+   echo "Argument 3: Build. Allowed values: dbg, opt, chk"
 
    exit 1
 fi

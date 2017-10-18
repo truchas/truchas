@@ -23,16 +23,15 @@ for arg in ${@}; do
 done
 
 # check for arguments
-if [ ${#} -lt 3 ]; then
+if [ ${#} -lt 2 ]; then
    echo "ERROR: This script builds TPLs required for Truchas. It requires 3 arguments"
    echo "Argument 1: Location to install the TPLs. The entire path will be created if nonexistent"
    echo "Argument 2: Compiler. Allowed values: intel, nag, gcc"
-   echo "Argument 3: Mode. Allowed values: serial, parallel"
    echo "Optional argument: skip. If skip is present at any argument, script exits without doing anything."
 
    exit 1
-elif [ ${#} -gt 3 ]; then
-   echo "Ignored arguments:" ${@:4}
+elif [ ${#} -gt 2 ]; then
+   echo "Ignored arguments:" ${@:3}
 fi
 
 
@@ -64,7 +63,7 @@ echo "BUILD DIRECTORY:" ${BUILD_DIR}
 
 
 #### Check CMake Config ####
-CMAKE_CONFIG=${SOURCE_DIR}/tpl/config/${2}-${3}.cmake
+CMAKE_CONFIG=${SOURCE_DIR}/tpl/config/linux-${2}.cmake
 
 if [ ! -f ${CMAKE_CONFIG} ]; then
    echo "Missing CMake configuration:" ${CMAKE_CONFIG}
