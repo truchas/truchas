@@ -127,7 +127,13 @@ module toolpath_type
 
   type, public :: toolpath
     private
+#ifdef INTEL18_WORKAROUND
+    type(path_segment), pointer :: first => null()
+    type(path_segment), pointer :: last => null()
+    type(path_segment), pointer :: curr => null()
+#else
     type(path_segment), pointer :: first => null(), last => null(), curr => null()
+#endif
     !! Optional partition of the path subordinate to the segments
     real(r8), allocatable :: time(:), coord(:,:)
     character(7), allocatable :: hash(:)
