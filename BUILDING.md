@@ -21,19 +21,13 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
 Truchas requires some additional libraries, but these can be built by the
 third party library build step described below.
 
-#### First Time Users
-First time users may find it easiest to use one or more of the build scripts
-located in the `scripts` directory.  These scripts are simple-to-use drivers
-for the compilation procedure described below.
-See [scripts/README.md](./scripts/README.md) for usage instructions.
-
 #### Compiling
 Compiling Truchas for the first time is usually a two-stage process.  The
 first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
-found in the `tpl` subdirectory.  See [tpl/README.md](./tpl/README.md) for
-instructions.
+found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
+on GitLab. See its README file for instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
 straightforward. You create a build directory, run cmake from that directory,
