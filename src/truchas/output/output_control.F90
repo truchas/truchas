@@ -29,6 +29,9 @@ module output_control
   real(r8), save, public :: output_dt(mops)
   real(r8), save, public :: output_t(mops+1)
   integer,  save, public :: output_dt_multiplier(mops) = 1
+  real(r8), save, public :: face_dump_time = -1e10
+  logical,  save, public :: face_dumped = .false.
+  real(r8), save, public :: face_dump_bbox(6)
   integer,  save, public :: nops, next_op
   logical,  save, public :: precise_output
   logical,  save, public :: retain_last_step = .false.
