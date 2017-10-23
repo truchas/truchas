@@ -55,9 +55,9 @@ contains
 
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
-  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
+  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt, svof)
     type(volume_tracker), intent(in) :: this
-    real(r8), intent(in) :: vel(:), vof_n(:,:), dt
+    real(r8), intent(in) :: vel(:), vof_n(:,:), dt, svof(:)
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
@@ -72,35 +72,35 @@ contains
 
       call this%donor_fluxes_nd(vel, vof, sub_dt)
 
-      call this%flux_renorm(vel, vof_n, flux_vol, fluids, void, sub_dt)
+      call this%flux_renorm(vel, vof_n, flux_vol, sub_dt)
 
-      call this%flux_acceptor(volume_flux_sub)
+      call this%flux_acceptor()
 
       call this%flux_bc(fluxing_velocity, vof_n, volume_flux_sub)
 
-      ! add the volume fluxes from this subcycle (volume_flux_sub) to the
-      ! total flux array (volume_flux_tot), and update the volume fraction
-      ! array (vof).
-      call this%volume_advance(volume_flux_sub, volume_flux_tot, vof)
+      call this%accumulate_volume(vof, flux_vol)
+
+      call this%enforce_bounded_vof(vof, flux_vol, fluids, void, svof)
     end do
 
   end subroutine flux_volumes
 
 
-  subroutine normals(this, vof, fluids, void)
+  subroutine normals(this, vof)
 
     use flow_operators, only: gradient_cc
     intrinsic :: norm2, findloc
 
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: vof(:,:)
-    integer, intent(in) :: fluids, void
 
-    integer :: i,j,k,c
+    integer :: i,j,k,c,nmat
     logical :: hasvof(size(vof,dim=1))
 
+    nmat = size(vof,dim=1)
+
     call start_timer('normals')
-    do i = 1 , fluids+void
+    do i = 1 , nmat
       call gradient_cc(this%mesh, this%normal(1,i,:), this%normal(2,i,:), this%normal(3,i,:), &
           vof(i,:), this%w_node(1,:), this%w_node(2,:), this%w_face(1,:))
     end do
@@ -122,7 +122,7 @@ contains
       endif
 
       ! normalize and remove smallish components due to robustness issues in nested disection
-      do j = 1 , fluids+void
+      do j = 1 , nmat
         if (vof(j,i) <= 0.0_r8) cycle ! should this be cutoff?
 
         this%normal(:,j,i) = this%normal(:,j,i)/norm2(this%normal(:,j,i))
@@ -132,6 +132,8 @@ contains
         this%normal(:,j,i) = this%normal(:,j,i)/norm2(this%normal(:,j,i))
       end do
     end do
+    ! will need normals for vof reconstruction in ghost cells
+    call gather_boundary(this%mesh%cell_ip, this%normal)
     call end_timer('normals')
 
   end subroutine normals
@@ -152,7 +154,7 @@ contains
     ! calculate the flux volumes for each face
     call start_timer('reconstruct/advect')
 
-    do i = 1, this%mesh%ncell_onP
+    do i = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
           fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
 
@@ -207,7 +209,7 @@ contains
       end associate
     end do
 
-    call stop_timer ('reconstruct/advect')
+    call stop_timer('reconstruct/advect')
 
   end subroutine donor_fluxes_nd
 
@@ -227,7 +229,7 @@ contains
   ! true for partially solid/void cells.  In these cases, the fluxes will be balanced upwards
   ! towards a ficticiously large flux volume.  This routine also permits the creation of volume
   ! fluxes for materials which may not be present in the cell.
-  subroutine flux_renorm (this, vel, vof_n, flux_vol, dt)
+  subroutine flux_renorm(this, vel, vof_n, flux_vol, dt)
 
     use near_zero_function
 
@@ -253,7 +255,10 @@ contains
           mat_flux_cur = sum(this%flux_vol_sub(m,f0:f1))
           if (near_zero(mat_flux_cur)) cycle
 
-          mat_flux_acc = sum(flux_vol(m,f0:f1))
+          mat_flux_acc = 0.0_r8
+          do j = f0, f1
+            if (flux_vol(m,j) > 0.0_r8) mat_flux_acc = mat_flux_acc + flux_vol(m,j)
+          end do
           mat_avail = vof_n(m,i)*this%mesh%volume(i)
           ! check/correct for overflow
           if ((mat_flux_acc + mat_flux_cur) > mat_avail) then
@@ -306,109 +311,210 @@ contains
   end subroutine flux_renorm
 
 
-  ! renorm_cell: ensure no materials are over-exhausted in a given cell
-  !
-  subroutine renorm_cell (volume_flux_sub, volume_flux_tot, vof_n, &
-       total_face_flux, cell_volume, matl_is_fluid, ierr)
+  ! On entrance, this%flux_vol_sub only contains outward (i.e. positive) flux volumes.  On exit,
+  ! this%flux_vol_sub is made consistent with appropriate negative entries
+  subroutine flux_acceptor(this)
+
+    class(volume_tracker), intent(inout) :: this
+
+    integer :: m,j,i,f0,f1,nmat
+
+    nmat = size(this%flux_vol_sub,dim=1)
+    this%w_face(1:nmat,:) = 0.0_r8
+
+    do i = 1, this%mesh%ncell
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      do j = f0, f1
+        do m = 1, nmat
+          if (this%flux_vol_sub(m,j,i) > 0.0_r8) &
+              this%w_face(m,this%mesh%cface(j)) = this%flux_vol_sub(m,j,i)
+        end do
+      end do
+    end do
+
+    do i = 1, this%mesh%ncell_onP
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      do j = f0, f1
+        do m = 1, nmat
+          if (this%flux_vol_sub(m,j,i) /= this%w_face(m,this%mesh%cface(j))) &
+              this%flux_vol_sub(m,j,i) = -this%w_face(m,this%mesh%cface(j))
+        end do
+      end do
+    end do
+
+  end subroutine flux_acceptor
 
 
+  subroutine accumulate_volume(this, vof, flux_vol)
 
-    real(r8), intent(inout) :: volume_flux_sub(:,:)
-    real(r8), intent(in)    :: volume_flux_tot(:,:), vof_n(:), &
-         total_face_flux(:), cell_volume
-    logical, intent(in) :: matl_is_fluid(:)
-    integer,  intent(out)   :: ierr
+    class(volume_tracker), intent(inout) :: this
+    real(r8), intent(inout) :: flux_vol(:,:), vof(:,:)
 
-    real(r8) :: Ratio, total_material_flux, cumulative_outward_material_flux, &
-        total_flux_through_face, total_flux_through_face_not_maxed
-    integer  :: norm_iter, f, m, number_not_maxed
-    logical  :: flux_reduced, maxed(size(vof_n))
+    integer :: i,nmat,j,f0,f1
 
-    maxed = .false.
-    ierr = 0
+    nmat = size(vof,dim=1)
 
-    ! Loop over the renorm_loop a maximum of nmat - 1 times, to resolve all instances
-    ! of fluxing more material than was in the cell at the beginning of the timestep
-    do norm_iter = 1, size(vof_n)+1
-      flux_reduced = .false.
+    do i = 1, this%mesh%ncell_onP
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
 
-      ! see note 1
+      do j = f0, f1
+        do m = 1, nmat
+          flux_vol(m,j) = flux_vol(m,j) + this%flux_vol_sub(m,j)
+          vof(m,j) = vof(m,j) - this%flux_vol_sub(m,j)/this%mesh%volume(i)
+      end do
+    end do
 
-      ! The first step is to determine if any material is being over-exhausted from
-      ! a cell.  If so mark it as MAXED and lower the Volume_Flux_Sub's so that the
-      ! material is just exhausted.
-      do m = 1,size(vof_n)
-        ! volume of material m attempting to leave the cell in this volume_track_subcycle
-        total_material_flux = sum(Volume_Flux_Sub(m,:))
-        if (near_zero(total_material_flux)) cycle
-
-        ! If the cumulative_outward_material_flux exceeds the amount of material
-        ! originally in the cell (from vof_n), calculate the 'Ratio' of fluid material volume
-        ! still allowed to be fluxed to the flux volume, and note that we're not 'Done'
+  end subroutine accumulate_volume
 
 
-        ! cumulative volume of material m that left the cell in previous subcycles
-        ! why is the mask checking for volume_flux_tot > 0?  Why does that matter?
-        cumulative_outward_material_flux = sum(volume_flux_tot(m,:), mask=volume_flux_tot(m,:) > 0)
+  ! Enforce boundedness by allowing _inconsistent_ material flux volumes at faces
+  subroutine enforce_bounded_vof(this, vof, flux_vol, fluids, void, svof)
 
-        ! ratio between the volume of original (from beginning of flow cycle)
-        ! material remaining in the cell (material that has entered is disregarded)
-        ! and the volume of material m attempting to leave the cell in this volume track cycle
-        if (matl_is_fluid(m)) then
-          ratio = (vof_n(m)*cell_volume - cumulative_outward_material_flux) / total_material_flux
+    class(volume_tracker), intent(inout) :: this
+    real(r8), intent(inout) :: vof(:,:), flux_vol(:,:)
+    real(r8), intent(in) :: svof(:)
+    integer, intent(in) :: fluids, void
+
+    integer :: i,m,f0,f1
+    real(r8) :: a1, v, q, excess
+
+    a1 = 1.0_r8 - this%cutoff
+
+    do i = 1, this%mesh%ncell_onP
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+
+      do m = 1, fluids
+        if (vof(m,i) > a1 .and. vof(m,i) /= 1.0_r8) then
+          call adjust_matl_flux(flux_vol(m,f0:f1), this%mesh%volume(i)*(1.0_r8-vof(m,i)))
+          vof(m,i) = 1.0_r8
+        else if (vof(m,i) < this%cutoff .and. vof(m,i) /= 0) then
+          call adjust_matl_flux(flux_vol(m,f0:f1), -this%mesh%volume(i)*vof(m,i))
+          vof(m,i) = 0.0_r8
+        end if
+      end do
+
+      do m = fluids+1, fluids+void
+        if (vof(m,i) > a1 .and. vof(m,i) /= 1.0_r8) then
+          vof(m,i) = 1.0_r8
+        else if (vof(m,i) < this%cutoff .and. vof(m,i) /= 0) then
+          vof(m,i) = 0.0_r8
+        end if
+      end do
+
+      v = sum(vof(:,i)) + svof(i)
+      excess = v - 1.0_r8
+      if (excess == 0.0_r8) cycle
+
+      q = sum(vof(fluids+1:fluids+void,i))
+
+      if (q > 0.0_r8) then
+         ! we can add or remove enough void from cell
+        if (excess < 0.0_r8 .or. (excess > 0.0_r8 .and. q >= excess)) then
+          do m = fluids+1, fluids+void
+            vof(m,i) = vof(m,i) * (1.0_r8 - excess/q)
+          end do
+        else ! we cannot remove enough void from cell
+          do m = fluids+1, fluids+void
+            vof(m,i) = 0.0_r8
+          end do
+          call adjust_flux_total(flux_vol(:,f0:f1), vof(:,i), q-excess, this%mesh%volume(i), fluids)
+        end if
+        cycle
+      end if
+
+      ! There is no void to adjust in this cell.
+      call adjust_flux_total(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids)
+    end do
+
+  end subroutine enforce_bounded_vof
+
+
+  ! Adjust the material volume fluxes on the faces of a single cell to match the evaluated material
+  ! volume to a target value. vof_delta is desired_vof-actual_vof
+  ! IGNORES BC's FOR NOW
+  ! The result of this process is an _inconsitent_ view of material flux volumes
+  subroutine adjust_flux_matl(flux_vol, vol_delta)
+
+    real(r8), intent(inout) :: flux_vol(:)
+    real(r8), intent(in) :: vol_delta
+
+    integer        :: i
+    real(r8)       :: flux_vol_adj
+
+    ! both inflow and outflow will be rescaled so take abs
+    flux_vol_adj = sum(abs(flux_vol))
+
+    if (flux_vol_adj > 0.0_r8) then
+      r = vol_delta/flux_vol_adj
+
+      do i = 1, size(flux_vol)
+        if (flux_vol(i) > 0.0_r8) then
+          flux_vol(i) = (1.0_r8-r)*flux_vol(i)
         else
-          ratio = 0.0_r8
+          flux_vol(i) = (1.0_r8+r)*flux_vol(i)
         end if
+      end do
 
-        if (Ratio < 1) then
-          ! lower the fluxes to match the material volume within the cell,
-          ! and flag the material number as maxed
-          flux_reduced = .true.
-          maxed(m) = .true.
-          volume_flux_sub(m,:) = ratio * volume_flux_sub(m,:)
+    else if (vol_delta < 0.0_r8) then
+      ! jms Note:   If the material is to be removed from the cell
+      ! look for a face that doesn't have incoming material, and
+      ! flux it out through that face
+      do i = 1, size(flux_vol)
+        if (flux_vol(i) >= 0.0_r8) then
+          flux_vol(i) = flux_vol(i) - vol_delta
+          exit
         end if
-      end do ! material loop
+      end do
+      !
+      ! WHY IS THERE NO CHECK THAT THE FLUXES HAVE ACTUALLY BEEN ADJUSTED?
+      !
+    else
+      !
+      ! WHY NOT ARBITRARILY FLUX VOLUME IN AS WELL IF NEED BE?
+      !
+    end if
 
-      if (.not.flux_reduced) exit
+  end subroutine adjust_flux_matl
 
-      ! This cell had one/more fluxes reduced.  For each of the faces, if the sum
-      ! of material fluxes is less than Total_Face_Flux, multiply all non-maxed
-      ! fluxes by another 'Ratio' (this time > 1) that restores the flux balance.
-      ! This may in turn over-exhaust one or more of these materials, and so from
-      ! the bottom of this loop, we head back to the top.
-      do f = 1,NFC
-        ! Calculate the total flux volume through the cell face (is this already
-        ! available elsewhere?), and if the flux volume is greater than zero,
-        ! then concern ourselves with adjusting individual material fluxes.
-        if (Total_Face_Flux(f) > cutvof*cell_volume) then
-          ! calculate the sum of material fluxes at a face, and the sum of un-maxed material fluxes.
-          total_flux_through_face           = sum(Volume_Flux_Sub(:,f))
-          total_flux_through_face_not_maxed = sum(volume_flux_sub(:,f), mask=.not.maxed)
+  ! Adjust all the material volume fluxes on the faces of a single cell to match the evaluated
+  ! material volume to a target value. vof_delta is desired_vof-actual_vof
+  ! IGNORES BC's FOR NOW The
+  ! result of this process is an _inconsitent_ view of material flux volumes
+  subroutine adjust_flux_all(flux_vol, vof, vof_delta, vol, fluids)
 
-          ! Ratio as defined below, when used to multiply the non-maxed fluxes at
-          ! a face, will restore the flux balance.
-          if (total_flux_through_face_not_maxed > 0) then
-            Ratio = (Total_Face_Flux(f) + total_flux_through_face_not_maxed &
-                - total_flux_through_face) &
-                / total_flux_through_face_not_maxed
-            where (.not.maxed) Volume_Flux_Sub(:,f) = Ratio * Volume_Flux_Sub(:,f)
+    real(r8), intent(inout) :: flux_vol(:,:), vof(:)
+    real(r8), intent(in) :: vof_delta, vol
+    integer, intent(in) :: fluids
+
+    integer :: i, j
+    real(r8) :: flux_vol_adj, excess
+
+    ! both inflow and outflow will be rescaled so take abs. Ignore BCs for now
+    flux_vol_adj = sum(abs(flux_vol(1:fluids,:)))
+
+    if (flux_vol_adj > 0.0_r8) then
+      r = vof_delta/flux_vol_adj
+
+      do j = 1, size(flux_vol,dim=2)
+        do i = 1, fluids
+          if (flux_vol(i,j) > 0.0_r8) then
+            vof(i) = vof(i) + r*flux_vol(i,j)
+            flux_vol(i,j) = (1.0_r8-r*vol)*flux_vol(i,j)
           else
-            number_not_maxed = count(.not.Maxed.and.matl_is_fluid)
-            if (number_not_maxed == 0) then
-              ierr = 1
-              return
-            end if
-
-            where (.not.Maxed.and.matl_is_fluid) &
-                Volume_Flux_Sub(:,f) = (Total_Face_Flux(f) - total_flux_through_face) &
-                / number_not_maxed
+            vof(i) = vof(i) - r*flux_vof(i,j)
+            flux_vol(i,j) = (1.0_r8+r*vol)*flux_vol(i,j)
           end if
+        end do
+      end do
+    else
+      ! truchas prints a warning... why is the matl routine different?
+      return
+    end if
 
-        end if
-      end do ! face loop
-
-    end do ! renorm loop
-
-  end subroutine renorm_cell
+  end subroutine adjust_flux_all
 
 end module volume_tracker_type

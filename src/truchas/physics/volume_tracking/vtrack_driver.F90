@@ -66,10 +66,11 @@ module vtrack_driver
   !! derived type.  All procedures use/modify this object.
   type :: vtrack_driver_data
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
-    integer, allocatable :: liq_matid(:)
+    integer, allocatable :: liq_matid(:), sol_matid(:)
     integer, allocatable :: liq_pri(:)
     type(volume_tracker) :: vt
     real(r8), allocatable :: vof(:,:) ! volume fractions for all materials
+    real(r8), allocatable :: svof(:) ! sum of solid volume fractions
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
     real(r8), allocatable :: flux_vol(:,:) ! flux volumes
@@ -168,7 +169,7 @@ contains
 
     real(r8), intent(in) :: t
     type(unstr_mesh), intent(in) :: mesh
-    integer :: i,j,v
+    integer :: i,j,v,k
 
     if (.not.allocated(this)) return
 
@@ -194,13 +195,16 @@ contains
       if (ppt_has_phase_property(material_to_phase(i), v)) this%fluids = this%fluids + 1
     end do
     allocate(this%liq_matid(this%fluids+this%void))
+    allocate(this%sol_matid(nmat-(this%fluds+this%void)))
     allocate(this%liq_pri(this%fluids+this%void))
     allocate(this%fvof_i(this%fluids+this%void, mesh%ncell))
     allocate(this%fvof_o(this%fluids+this%void, mesh%ncell))
     allocate(this%flux_vol(this%fluids,???))
     allocate(this%vof(nbody, mesh%ncell))
+    allocate(this%svof(mesh%ncell))
 
     j = 1
+    k = 1
     do i = 1, nmat
       if (i == void_material_index) then
         this%liq_matid(this%fluids+1) = i
@@ -208,6 +212,9 @@ contains
       else if (ppt_has_phase_property(material_to_phase(i), v)) then
         this%liq_matid(j) = i
         j = j + 1
+      else
+        this%sol_matid(k) = i
+        k = k + 1
       end if
     end do
 
@@ -236,13 +243,24 @@ contains
     call start_timer('Volumetracking')
     call start_timer('update')
 
+
     n = this%mesh%ncell_onP
-    do i = 1, this%fluids+this%void
-      call gather_vof(this%liq_matid(i), this%fvof_i(i,:n))
+    this%svof = 0.0_r8
+
+    do i = 1, size(liq_matid) + size(this%sol_matid)
+      call gather_vof(i, this%vof(i,:n))
+    end do
+    do i = 1, size(liq_matid)
+      this%fvof_i(i,:n) = this%vof(liq_matid(i),:n)
+    end do
+    do i = 1, size(sol_matid)
+      this%svof(:n) = this%svof(:n) + this%vof(sol_matid(i),:n)
     end do
     call gather_boundary(this%mesh%cell_ip, this%fvof_i)
+    ! don't need to communicate svof
 
-    call this%vt%flux_volumes(fluxing_velocity, this%fvof_i, this%flux_vol, this%fluids, this%void, dt)
+    call this%vt%flux_volumes(fluxing_velocity, this%fvof_i, this%fvof_o, this%flux_vol, &
+        this%fluids, this%void, dt, this%svof)
     call this%vt%advect(this%flux_vol, this%fvof_i, this%fvof_o, this%fluids)
 
     do i = 1, this%fluids+this%void
