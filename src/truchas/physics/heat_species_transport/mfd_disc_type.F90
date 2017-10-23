@@ -149,16 +149,19 @@ contains
     if (define_minv) call init_minv (this)
   end subroutine mfd_disc_init
 
-  subroutine mfd_disc_apply_diff (this, coef, ucell, uface, rcell, rface)
+  subroutine mfd_disc_apply_diff (this, coef, ucell, uface, rcell, rface, fface)
 
     use upper_packed_matrix, only: sym_matmul
+    use bitfield_type, only: btest
 
     class(mfd_disc), intent(in) :: this
     real(r8), intent(in)  :: coef(:)
     real(r8), intent(in)  :: ucell(:), uface(:)
     real(r8), intent(out) :: rcell(:), rface(:)
+    real(r8), intent(out), optional :: fface(:)
 
-    integer :: j
+    integer :: j,k,f
+    real(r8) :: fnorm,fweight
     real(r8), allocatable :: flux(:)
 
     ASSERT(size(coef) == this%mesh%ncell)
@@ -168,12 +171,25 @@ contains
     ASSERT(size(rface) == size(uface))
 
     rface = 0.0_r8
+    if (present(fface)) fface = 0.0_r8
+    
     do j = 1, this%mesh%ncell
       associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
                  minv  => this%minv(this%xminv(j):this%xminv(j+1)-1))
         flux = coef(j) * sym_matmul(minv, ucell(j) - uface(cface))
         rface(cface) = rface(cface) - flux
         rcell(j) = sum(flux)
+        
+        if (present(fface)) then
+          do k=1,size(cface)
+            f = cface(k)
+            fnorm = 1.
+            fweight = 0.5
+            if (btest(this%mesh%cfpar(j),k)) fnorm = -1.
+            if (btest(this%mesh%face_set_mask(f),0)) fweight = 1.
+            fface(f) = fface(f) + flux(k)*fnorm*fweight
+          enddo  
+        endif
       end associate
     end do
 

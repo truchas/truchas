@@ -17,6 +17,7 @@ module HTSD_model_type
   use property_mesh_function
   use source_mesh_function
   use boundary_data
+  use bndry_func_class
   use interface_data
   use rad_problem_type
   use index_partitioning
@@ -36,9 +37,11 @@ module HTSD_model_type
     type(bd_data) :: bc_rad  ! simple radiation (eps, amb temp)
     type(if_data) :: ic_htc  ! internal HTC
     type(if_data) :: ic_rad  ! internal gap radiation
+    class(bndry_func), allocatable :: evap_flux
     real(r8) :: sbconst, abszero ! Stefan-Boltzmann constant and absolute zero for radiation BC
     !! Enclosure radiation problems
     type(rad_problem), pointer :: vf_rad_prob(:) => null()
+    real(r8), allocatable :: face_flux(:), face_temp(:)
   end type HT_model
   
   type, public :: SD_model
@@ -116,6 +119,8 @@ contains
           this%rad_segid(n) = alloc_segment(this%layout, size(this%ht%vf_rad_prob(n)%faces))
         end do
       end if
+      allocate (this%ht%face_flux(this%mesh%nface))
+      allocate (this%ht%face_temp(this%mesh%nface))      
     end if
     if (associated(this%sd)) then
       ASSERT(size(this%sd) > 0)
@@ -162,6 +167,8 @@ contains
     call if_data_destroy (this%ic_htc)
     call if_data_destroy (this%ic_rad)
     if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
+    if (allocated(this%face_flux)) deallocate(this%face_flux)
+    if (allocated(this%face_temp)) deallocate(this%face_temp)
   end subroutine HT_model_delete
   
   subroutine SD_model_delete (this)
@@ -239,6 +246,7 @@ contains
 
       integer :: j, n, n1, n2
       real(r8) :: term
+      real(r8) :: bcflux
       real(r8), pointer :: uptr(:), fptr(:), qrad(:)
       real(r8), dimension(this%mesh%ncell) :: Fcell, Tcell, Hdot, value
       real(r8), dimension(this%mesh%nface) :: Fface, Tface
@@ -280,7 +288,7 @@ contains
       !! Compute the generic heat equation residual.
       call pmf_eval (this%ht%conductivity, state, value)
       if (associated(this%void_cell)) where (this%void_cell) value = 0.0_r8
-      call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
+      call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface,this%ht%face_flux)
       call smf_eval (this%ht%source, t, value)
       Fcell = Fcell + this%mesh%volume*(Hdot - value)
 
@@ -295,15 +303,19 @@ contains
       call bd_data_eval (this%ht%bc_flux, t)
       do j = 1, size(this%ht%bc_flux%faces)
         n = this%ht%bc_flux%faces(j)
-        Fface(n) = Fface(n) + this%mesh%area(n) * this%ht%bc_flux%values(1,j)
+        bcflux = this%ht%bc_flux%values(1,j) 
+        Fface(n) = Fface(n) + this%mesh%area(n) * bcflux
+        this%ht%face_flux(n) = bcflux
       end do
 
       !! External HTC flux contribution.
       call bd_data_eval (this%ht%bc_htc, t)
       do j = 1, size(this%ht%bc_htc%faces)
         n = this%ht%bc_htc%faces(j)
-        Fface(n) = Fface(n) + this%mesh%area(n) * this%ht%bc_htc%values(1,j) * &
+        bcflux = this%ht%bc_htc%values(1,j) * &
                                   (Tface(n) - this%ht%bc_htc%values(2,j))
+        Fface(n) = Fface(n) + this%mesh%area(n) * bcflux
+!        this%ht%face_flux(n) = this%ht%face_flux(n) + bcflux      
       end do
 
       !! Internal HTC flux contribution.
@@ -320,9 +332,12 @@ contains
         if (void_link(j)) cycle
         n1 = this%ht%ic_htc%faces(1,j)
         n2 = this%ht%ic_htc%faces(2,j)
-        term = this%mesh%area(n1) * this%ht%ic_htc%values(1,j) * (Tface(n1) - Tface(n2))
+        bcflux = this%ht%ic_htc%values(1,j) * (Tface(n1) - Tface(n2))
+        term = this%mesh%area(n1) * bcflux
         Fface(n1) = Fface(n1) + term
         Fface(n2) = Fface(n2) - term
+!        this%ht%face_flux(n1) = this%ht%face_flux(n1) + bcflux
+!        this%ht%face_flux(n2) = this%ht%face_flux(n2) - bcflux        
       end do
       if (allocated(void_link)) deallocate(void_link)
       
@@ -340,10 +355,13 @@ contains
         if (void_link(j)) cycle
         n1 = this%ht%ic_rad%faces(1,j)
         n2 = this%ht%ic_rad%faces(2,j)
-        term = this%mesh%area(n1) * this%ht%ic_rad%values(1,j) * this%ht%sbconst * &
+        bcflux = this%ht%ic_rad%values(1,j) * this%ht%sbconst * &
                ((Tface(n1)-this%ht%abszero)**4 - (Tface(n2)-this%ht%abszero)**4)
+        term = this%mesh%area(n1) * bcflux
         Fface(n1) = Fface(n1) + term
         Fface(n2) = Fface(n2) - term
+!        this%ht%face_flux(n1) = this%ht%face_flux(n1) + bcflux
+!        this%ht%face_flux(n2) = this%ht%face_flux(n2) - bcflux        
       end do
       if (allocated(void_link)) deallocate(void_link)
 
@@ -351,10 +369,23 @@ contains
       call bd_data_eval (this%ht%bc_rad, t)
       do j = 1, size(this%ht%bc_rad%faces)
         n = this%ht%bc_rad%faces(j)
-        Fface(n) = Fface(n) + this%mesh%area(n) * this%ht%bc_rad%values(1,j) * &
+        bcflux = this%ht%bc_rad%values(1,j) * &
                                 this%ht%sbconst * ((Tface(n) - this%ht%abszero)**4 - &
                                            (this%ht%bc_rad%values(2,j)-this%ht%abszero)**4)
+        Fface(n) = Fface(n) + this%mesh%area(n) * bcflux
+        this%ht%face_flux(n) = this%ht%face_flux(n) + bcflux
       end do
+
+      !! Experimental evaporation heat flux
+      if (allocated(this%ht%evap_flux)) then
+        call this%ht%evap_flux%compute_value(t, Tface)
+        do j = 1, size(this%ht%evap_flux%index)
+          n = this%ht%evap_flux%index(j)
+          bcflux = this%ht%evap_flux%value(j)
+          Fface(n) = Fface(n) + this%mesh%area(n)*bcflux
+          this%ht%face_flux(n) = this%ht%face_flux(n) + bcflux
+        end do
+      end if
 
       !! Overwrite function value on void cells and faces with dummy equation T=0.
       if (associated(this%void_cell)) where (this%void_cell) Fcell = Tcell - this%void_temp
@@ -383,6 +414,8 @@ contains
       !! Return the on-process part of the heat conduction residuals (the rest is junk)
       call HTSD_model_set_cell_temp (this, Fcell, f)
       call HTSD_model_set_face_temp (this, Fface, f)
+
+      this%ht%face_temp(:) = Tface(:)
 
     end subroutine HT_model_compute_f
 

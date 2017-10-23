@@ -47,9 +47,10 @@ CONTAINS
     use edit_module,             only: Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist, NULL_I, NULL_C
     use interface_output_module, only: Int_Output_Dt_Multiplier
-    use output_control,          only: Output_Dt, Output_T, precise_output
+    use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time, face_dump_bbox
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
+    use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
     use output_control,          only: part, part_path
@@ -73,7 +74,8 @@ CONTAINS
                        Probe_Output_Cycle_Multiplier,  &
                        precise_output,                 &
                        retain_last_step, &
-                       move_block_ids, move_toolpath_name
+                       move_block_ids, move_toolpath_name, &
+                       face_dump_time, face_dump_bbox
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -145,7 +147,8 @@ CONTAINS
     use kinds, only: r8
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump
-    use output_control,          only: Output_Dt, Output_T, precise_output
+    use output_control,          only: Output_Dt, Output_T, precise_output, face_dump_time,face_dump_bbox
+    use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
 
@@ -154,7 +157,9 @@ CONTAINS
     ! Output & delta times
     Output_Dt = 0
     Output_T  = 0
-
+    face_dump_time = -1e10
+    face_dump_bbox(:) = 0.
+    
     ! do output at exactly the specified time, deprecated
     precise_output = .false.
 
@@ -182,9 +187,10 @@ CONTAINS
     !======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier
-    use output_control,          only: Output_Dt, Output_T, precise_output
+    use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time,face_dumped,face_dump_bbox
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
+    use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier  
 
@@ -196,6 +202,9 @@ CONTAINS
        call PGSLIB_BCAST (Output_Dt)
        call PGSLIB_BCAST (Output_T)
        call PGSLIB_BCAST (precise_output)
+       call PGSLIB_BCAST (face_dump_time)
+       call PGSLIB_BCAST (face_dumped)
+       call PGSLIB_BCAST (face_dump_bbox)
        call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
        call PGSLIB_BCAST (retain_last_step)
        call PGSLIB_BCAST (Output_Dt_Multiplier)

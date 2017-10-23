@@ -155,13 +155,15 @@ CONTAINS
     use edit_module,             only: EDIT_SHORT, short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump, &
                                        time_for_int_dump
-    use output_control,          only: next_op, nops, Output_Dt, Output_T
+    use output_control,          only: next_op, nops, Output_Dt, Output_T, face_dump_time,face_dumped
     use time_step_module,        only: cycle_number, cycle_number_restart, t1, t2, &
                                        cycle_max, t
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use diagnostics_module,      only: DIAGNOSTICS
     use probe_output_module,     only: PROBES_OUTPUT, Probe_Output_Cycle_Multiplier
     use truchas_danu_output,     only: TDO_write_timestep
+    use face_output,             only: write_face_data,open_face_file,close_face_file
+    use truchas_logging_services
 
     ! Argument List
     integer, intent(IN)    :: cycle
@@ -175,6 +177,8 @@ CONTAINS
 
     ! Start the outputs timer
     call start_timer("Output")
+
+
     
     ! Calculate diagnostics quantities needed for output
     call DIAGNOSTICS
@@ -236,6 +240,8 @@ CONTAINS
     ! all output multipliers and perform all outputs as may be
     ! requested.  Perform outputs if either the new or the old
     ! frequency is non-zero.
+
+
     TIME_OUTPUT: if (t1 < Output_T(next_op) .and. &
                      cycle_number /= cycle_number_restart) then
 
@@ -300,6 +306,8 @@ CONTAINS
 
     end if MULTIPLIER_OUTPUT
 
+!    call system_clock(cnt1,count_rate,count_max)
+!    cnt0=cnt1
     ! Check cycle outputs
     EVERY_CYCLE_OUTPUT: if (cycle_number /= cycle_number_restart) then
 
@@ -324,6 +332,11 @@ CONTAINS
        if (retain_last_step) then
        end if
 
+!       call system_clock(cnt1,count_rate,count_max)
+!       elapsed_time = (cnt1-cnt0)
+!       write(string,101) 'PPO:',elapsed_time
+!       cnt0=cnt1
+!       call TLS_info(string)
 
        if (Probe_Output_Cycle_Multiplier > 0) then
           if (MOD(cycle_number, Probe_Output_Cycle_Multiplier) <= &
@@ -332,7 +345,24 @@ CONTAINS
           end if
        end if
 
+!       call system_clock(cnt1,count_rate,count_max)
+!       elapsed_time = (cnt1-cnt0)
+!       write(string,101) 'PO:',elapsed_time
+!       cnt0=cnt1
+!       call TLS_info(string)
+
     end if EVERY_CYCLE_OUTPUT
+   
+    ! if the face_dump_time has been set to a non-negative number, and
+    ! the initial temperature dump hasn't happened,then we need to open
+    ! the file. otherwise,just write out the data
+    if (face_dump_time.ge.0.and.t2.ge.face_dump_time) then
+      if (face_dumped.eq..false.) then 
+        call open_face_file
+        face_dumped = .true.
+      endif
+      call write_face_data
+    endif
 
 25  continue
 
@@ -353,6 +383,11 @@ CONTAINS
        if (do_xml_output) then
           call TDO_write_timestep
        end if
+       
+       ! if a face dump file was created, close it and clean up
+       if (face_dumped.eq..true.) then
+         call close_face_file
+       endif
 
     end if TERMINATION_OUTPUT
 
@@ -360,6 +395,7 @@ CONTAINS
 
     ! Stop the outputs timer
     call stop_timer("Output")
+101  format (4x,' *^! ',a,2x,i20)
 
   END SUBROUTINE CYCLE_OUTPUT_DRIVER
 

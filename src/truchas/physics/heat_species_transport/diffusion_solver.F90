@@ -48,6 +48,8 @@ module diffusion_solver
   !! These return results relative to the new distributed mesh.
   public :: ds_get_cell_temp, ds_get_face_temp
 
+  public :: ds_get_face_temp_copy, ds_get_face_flux_copy
+  
   type :: ds_driver
     !! Problem characteristics.
     logical :: have_heat_transfer = .false.
@@ -358,6 +360,18 @@ contains
       INSIST(.false.)
     end select
   end subroutine ds_get_face_temp
+  
+  subroutine ds_get_face_temp_copy (copy)
+    real(r8), intent(inout) :: copy(:)
+    ASSERT(size(copy) >= this%mesh%nface)
+    copy = this%sol1%model%ht%face_temp
+  end subroutine ds_get_face_temp_copy
+  
+  subroutine ds_get_face_flux_copy (copy)
+    real(r8), intent(inout) :: copy(:)
+    ASSERT(size(copy) >= this%mesh%nface)
+    copy = this%sol1%model%ht%face_flux
+  end subroutine ds_get_face_flux_copy 
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
