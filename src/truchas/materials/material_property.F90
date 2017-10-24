@@ -44,7 +44,7 @@ module material_property
   implicit none
   private
 
-  public :: mp_create, mp_eval, mp_eval_deriv, destroy
+  public :: mp_create, mp_eval, mp_eval_deriv
 
   type :: box
     integer :: id = 0
@@ -58,16 +58,14 @@ module material_property
     integer :: eval_type = -1
     type(mat_system), pointer :: ms => null()
     type(box), allocatable :: phase(:)
+  contains
+    final :: mat_prop_delete
   end type mat_prop
 
   !! Values for EVAL_TYPE.
   integer, parameter :: SINGLE_PHASE = 1
   integer, parameter :: MULTI_PHASE_SINGLE_COMPONENT = 2
   integer, parameter :: MULTI_PHASE_MULTI_COMPONENT = 3
-
-  interface destroy
-    module procedure destroy_mat_prop
-  end interface
 
 contains
 
@@ -183,14 +181,9 @@ contains
     
   end subroutine mp_eval_deriv
 
-  elemental subroutine destroy_mat_prop (this)
+  elemental subroutine mat_prop_delete(this)
     type(mat_prop), intent(inout) :: this
-    type(mat_prop) :: default
-    !! N.B.  The MAT_PROP structure does not own the targets of the
-    !! MAT_SYSTEM and SCAFUN pointer components and so this routine
-    !! must not deallocate/destroy them.
     if (allocated(this%phase)) deallocate(this%phase)
-    this = default  ! assign default initialization values
-  end subroutine destroy_mat_prop
+  end subroutine mat_prop_delete
 
 end module material_property
