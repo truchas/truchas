@@ -9,7 +9,8 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
   The following compilers are supported.
   - Intel Fortran and C/C++. Versions 16.0.n (n >= 2) and 17.0.n (n >= 1).
     *The latest 18.0.0 Fortran compiler has issues and is not supported.*
-  - NAG Fortran 6.0, builds 1067 and 1071, with GNU C/C++
+  - NAG Fortran 6.0 (builds 1067 and 1071) and 6.1 (build 6140 or later)
+    with GNU C/C++
   - GFortran is *not* currently supported due to incomplete and/or flawed
     support for some Fortran 2003 features. For internal testing purposes
     there are configuration files for GFortran, which you can try if you
