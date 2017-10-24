@@ -7,7 +7,7 @@ software and libraries, which are listed in the file
 
 --------------------------------------------------------------------------------
 
-Copyright (c) 2007-2016. Los Alamos National Security, LLC.
+Copyright (c) 2007-2017. Los Alamos National Security, LLC.
 All rights reserved.
 
 This software was produced under U.S. Government contract DE-AC52-06NA25396
