@@ -35,14 +35,14 @@ contains
 
   ! given a set of VoFs, normals, and an order,
   ! create child polyhedra for each material
-  subroutine partition (this, vof, norm, cut_precision, max_iterations)
+  subroutine partition (this, vof, norm, cutvof, cut_precision, max_iterations)
 
     use near_zero_function
     use plane_type
     use locate_plane_nd_module
 
     class(multimat_cell), intent(inout) :: this
-    real(r8),             intent(in)    :: vof(:), norm(:,:)
+    real(r8),             intent(in)    :: vof(:), norm(:,:), cutvof
     real(r8), intent(in), optional :: cut_precision
     integer, intent(in), optional :: max_iterations
 
@@ -176,12 +176,12 @@ contains
 
   end function volumes_behind_plane
 
-  function outward_volflux (this, adv_dt, fluxing_velocity, face_area, ierr)
+  function outward_volflux (this, adv_dt, fluxing_velocity, face_area, cutvof, ierr)
 
     use plane_type
 
     class(multimat_cell), intent(inout) :: this !inout because of call to volume
-    real(r8),             intent(in)    :: adv_dt, fluxing_velocity(:), face_area(:)
+    real(r8),             intent(in)    :: adv_dt, fluxing_velocity(:), face_area(:), cutvof
     integer, intent(out) :: ierr
     real(r8)                            :: outward_volflux(size(this%mat_poly),size(face_area))
 

@@ -200,11 +200,12 @@ contains
 
         if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
 
-        call cell%partition(vof(:,i), this%normal(:,:,i))
+        call cell%partition(vof(:,i), this%normal(:,:,i), this%cutvof, this%location_tol, &
+            this%location_iter_max)
 
         this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
             cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
-                                 this%mesh%area(fi), ierr)
+                                 this%mesh%area(fi), this%cutvof, ierr)
         if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
       end associate
     end do
