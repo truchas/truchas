@@ -50,7 +50,6 @@ CONTAINS
     use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time, face_dump_bbox
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
-    use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
     use output_control,          only: part, part_path
@@ -148,7 +147,6 @@ CONTAINS
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump
     use output_control,          only: Output_Dt, Output_T, precise_output, face_dump_time,face_dump_bbox
-    use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
 
@@ -190,7 +188,6 @@ CONTAINS
     use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time,face_dumped,face_dump_bbox
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
-    use timing_tree
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier  
 
