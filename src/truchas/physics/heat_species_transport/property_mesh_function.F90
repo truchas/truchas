@@ -353,10 +353,7 @@ contains
     !! component and so this routine must not deallocate/destroy it.
     if (associated(this%reg)) then
       do j = 1, size(this%reg)
-        if (associated(this%reg(j)%mp)) then
-          call destroy (this%reg(j)%mp)
-          deallocate(this%reg(j)%mp)
-        end if
+        if (associated(this%reg(j)%mp)) deallocate(this%reg(j)%mp)
       end do
       deallocate(this%reg)
     end if

@@ -1698,7 +1698,6 @@ CONTAINS
         deallocate(pfrac)
       end if
       deallocate(phase_id)
-      call destroy (mp)
     end do
 
   end subroutine compute_cell_enthalpy
