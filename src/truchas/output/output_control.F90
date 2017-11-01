@@ -32,6 +32,7 @@ module output_control
   real(r8), save, public :: face_dump_time = -1e10
   logical,  save, public :: face_dumped = .false.
   real(r8), save, public :: face_dump_bbox(6)
+  integer,  save, public :: temp_dump_freq
   integer,  save, public :: nops, next_op
   logical,  save, public :: precise_output
   logical,  save, public :: retain_last_step = .false.

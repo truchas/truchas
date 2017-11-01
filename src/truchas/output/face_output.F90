@@ -21,9 +21,10 @@ module face_output
    implicit none
    private
    
-   integer, save, private :: unit
+   integer, save, private :: fluxunit,tempunit
    ! public procedures
    integer, save, allocatable :: facelist(:)
+   integer, save, allocatable :: zonelist(:)
    public :: write_face_data
    public :: open_face_file
    public :: close_face_file
@@ -40,12 +41,14 @@ CONTAINS
    use diffusion_solver, only: ds_get_face_temp_copy,ds_get_face_flux_copy
    use unstr_mesh_type,  only: unstr_mesh 
    use mesh_manager,     only: unstr_mesh_ptr
-   use time_step_module, only: t, dt, cycle_number 
-     
+   use time_step_module, only: t, dt, cycle_number
+   use output_control, only: temp_dump_freq
+   use zone_module, only: zone
+   
    type(unstr_mesh),pointer :: mesh
    real(r8), allocatable::face_temp(:),face_flux(:) ! should these just be pointers?
-   integer n,k,f
-   real(r8) fx(3)
+   integer n,k,f,c
+   real(r8) fx(3),cx(3)
    character(1024) filename
    
    ! is this the best way to get the mesh pointer for this situation?
@@ -63,20 +66,32 @@ CONTAINS
    call ds_get_face_temp_copy(face_temp) 
    call ds_get_face_flux_copy(face_flux)
    
-      
+   
    ! write the face data out. inlcude face number,cycle number, time, face coordinate,
    ! face temperature, face flux, and face normal (to interpret sign of flux)
    do n = 1,size(facelist)
-    f = facelist(n)
-    associate (fnode => mesh%fnode(mesh%xfnode(f):mesh%xfnode(f+1)-1))
-      fx(1:3) = sum(mesh%x(:,fnode),dim=2) / size(fnode)
-    end associate
-    write(unit,'(2i10,100es20.10)') n,cycle_number,t,fx(:),face_temp(f),face_flux(f),mesh%normal(:,f)
-   enddo 
-   
+     f = facelist(n)
+     associate (fnode => mesh%fnode(mesh%xfnode(f):mesh%xfnode(f+1)-1))
+       fx(1:3) = sum(mesh%x(:,fnode),dim=2) / size(fnode)
+     end associate
+     write(fluxunit,'(2i10,100es20.10)') n,cycle_number,t,fx(:),face_temp(f),face_flux(f),mesh%normal(:,f)
+   enddo
+
    deallocate(face_temp)
    deallocate(face_flux)
 
+   if (mod(cycle_number,temp_dump_freq).eq.0) then
+     do n = 1,size(zonelist)
+       c = zonelist(n)
+       associate (cnode => mesh%cnode(mesh%xcnode(c):mesh%xcnode(c+1)-1))
+         cx(1:3) = sum(mesh%x(:,cnode),dim=2) / size(cnode)
+       end associate
+       write(tempunit,'(2i10,100es20.10)') c,cycle_number,t,cx(:),zone(c)%temp
+      
+     enddo
+   endif
+   
+   
    end subroutine write_face_data
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine open_face_file
@@ -96,9 +111,9 @@ CONTAINS
    real(r8) bbox1(3),bbox2(3)
    type(unstr_mesh),pointer :: mesh
    character(1024) filename
-   integer n,k,inside,numfaces,f,c
+   integer n,k,inside,numfaces,numzones,f,c
    real(r8) fx(3),cx(3),tol,mindist
-   integer, allocatable::face_tag(:)
+   integer, allocatable::face_tag(:),zone_tag(:)
    integer count
    
    tol = 1e-6
@@ -153,6 +168,7 @@ CONTAINS
    
    ! now actually create the list of faces that are on the bbox
    allocate(facelist(numfaces))
+   
    numfaces = 0
    do n = 1,mesh%nface_onp
     if (face_tag(n).eq.1) then
@@ -163,12 +179,14 @@ CONTAINS
    deallocate(face_tag)
 
 
-   ! write out the temperature data for all zones inside the bbox
-   filename = make_file_name('tempdata',p_info%thisPE)
-
-   open(newunit = unit, file = filename, status = 'replace')
+ 
    
-   ! write out temperatures
+   
+   ! tag zones
+   allocate(zone_tag(mesh%ncell_onp))
+   zone_tag = 0
+   numzones = 0
+   
    do c = 1,mesh%ncell_onp
       associate (cnode => mesh%cnode(mesh%xcnode(c):mesh%xcnode(c+1)-1))
         cx(1:3) = sum(mesh%x(:,cnode),dim=2) / size(cnode)
@@ -179,26 +197,51 @@ CONTAINS
           inside = 0
         endif
       enddo
-      if (inside.eq.1) write(unit,'(2i10,100es20.10)') c,cycle_number,t,cx(:),zone(c)%temp
-   enddo 
-   
-   close(unit)
+      if (inside.eq.1) then
+         zone_tag(c)=1
+         numzones = numzones + 1
+      endif   
+   enddo
 
+   ! create zone list
+   allocate(zonelist(numzones))
+   numzones = 0
+   do c = 1,mesh%ncell_onp
+     if (zone_tag(c).eq.1) then
+        numzones = numzones+1
+        zonelist(numzones) = c
+     endif   
+   enddo
+   deallocate(zone_tag)
+
+
+   ! write out the temperature data for all zones inside the bbox
+   filename = make_file_name('tempdata',p_info%thisPE)
+   open(newunit = tempunit, file = filename, status = 'replace')
+   do n = 1,size(zonelist)
+     c = zonelist(n)
+     associate (cnode => mesh%cnode(mesh%xcnode(c):mesh%xcnode(c+1)-1))
+       cx(1:3) = sum(mesh%x(:,cnode),dim=2) / size(cnode)
+     end associate
+     write(tempunit,'(2i10,100es20.10)') c,cycle_number,t,cx(:),zone(c)%temp
+      
+   enddo
 
 
    ! open a file, one per pe, for the flux data to be written
    ! what would happen to this during a restart? Probably nothing good.
    
    filename = make_file_name('fluxdata',p_info%thisPE)
-
-   open(newunit = unit, file = filename, status = 'replace')
+   open(newunit = fluxunit, file = filename, status = 'replace')
    
    end subroutine open_face_file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
    subroutine close_face_file
     ! cleanup
-    close(unit)
+    close(fluxunit)
+    close(tempunit)
     deallocate(facelist)
+    deallocate(zonelist)
    end subroutine close_face_file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 end module face_output

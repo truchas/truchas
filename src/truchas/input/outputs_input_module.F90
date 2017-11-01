@@ -47,7 +47,7 @@ CONTAINS
     use edit_module,             only: Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist, NULL_I, NULL_C
     use interface_output_module, only: Int_Output_Dt_Multiplier
-    use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time, face_dump_bbox
+    use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time, face_dump_bbox,temp_dump_freq
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
@@ -74,7 +74,7 @@ CONTAINS
                        precise_output,                 &
                        retain_last_step, &
                        move_block_ids, move_toolpath_name, &
-                       face_dump_time, face_dump_bbox
+                       face_dump_time, face_dump_bbox, temp_dump_freq
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -101,11 +101,13 @@ CONTAINS
        if (.not. fatal) then
           ! Read namelist
           move_block_ids = NULL_I
+          temp_dump_freq = 10000000
           move_toolpath_name = NULL_C
           read (lun, outputs, IOSTAT = ioerror)
           fatal_error_string = 'OUTPUTS_INPUT: Error reading OUTPUTS namelist'
           fatal = (ioerror/=0)
        end if
+       write(*,*) "***********??????????? ",temp_dump_freq
     end if IO_PE_ONLY
 
     ! Check read errors
@@ -147,6 +149,7 @@ CONTAINS
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump
     use output_control,          only: Output_Dt, Output_T, precise_output, face_dump_time,face_dump_bbox
+    use output_control,           only: temp_dump_freq
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
 
@@ -157,6 +160,7 @@ CONTAINS
     Output_T  = 0
     face_dump_time = -1e10
     face_dump_bbox(:) = 0.
+    temp_dump_freq = 10000000
     
     ! do output at exactly the specified time, deprecated
     precise_output = .false.
@@ -185,7 +189,7 @@ CONTAINS
     !======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier
-    use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time,face_dumped,face_dump_bbox
+    use output_control,          only: Output_Dt, Output_T, precise_output,face_dump_time,face_dumped,face_dump_bbox,temp_dump_freq
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
     use output_control,          only: Output_Dt_Multiplier, retain_last_step
@@ -202,6 +206,7 @@ CONTAINS
        call PGSLIB_BCAST (face_dump_time)
        call PGSLIB_BCAST (face_dumped)
        call PGSLIB_BCAST (face_dump_bbox)
+       call PGSLIB_BCAST (temp_dump_freq)
        call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
        call PGSLIB_BCAST (retain_last_step)
        call PGSLIB_BCAST (Output_Dt_Multiplier)
