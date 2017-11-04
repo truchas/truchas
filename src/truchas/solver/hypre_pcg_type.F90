@@ -123,6 +123,7 @@ contains
     !! values without completely destroying the solver and recreating it.
     if (hypre_associated(this%precon)) call fHYPRE_BoomerAMGDestroy (this%precon, ierr)
     call fHYPRE_BoomerAMGCreate (this%precon, ierr)
+    call fHYPRE_BoomerAMGSetOldDefault(this%precon, ierr)
     INSIST(ierr == 0)
 
     !! Create the Hypre PCG solver object. This supposes that once the solver
