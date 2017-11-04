@@ -43,7 +43,7 @@ A kludge to force hitting the final time exactly
   rel_temp_tol       = 1.0e-3
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 0.05
+  nlk_tol            = 0.02
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 1
   verbose_stepping   = .true.

@@ -27,7 +27,7 @@ class DS6(TruchasTest.GoldenTestCase):
 
   def test_early_temperature(self):
     '''DS6: verifying the temperature field at early time'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
@@ -36,7 +36,7 @@ class DS6(TruchasTest.GoldenTestCase):
 
   def test_final_temperature(self):
     '''DS6: verifying the temperature field at final time'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     test = self.test_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
@@ -46,7 +46,7 @@ class DS6(TruchasTest.GoldenTestCase):
   def test_early_phi1(self):
     '''DS6: verifying the phi1 field at early time'''
 
-    tol = 1.0e-10
+    tol = 1.0e-6
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
@@ -55,7 +55,7 @@ class DS6(TruchasTest.GoldenTestCase):
 
   def test_final_phi1(self):
     '''DS6: verifying the phi1 field at final time'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=3).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
@@ -65,7 +65,7 @@ class DS6(TruchasTest.GoldenTestCase):
   def test_early_phi2(self):
     '''DS6: verifying the phi2 field at early time'''
 
-    tol = 1.0e-10
+    tol = 1.0e-6
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi2')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi2')
     error = max(abs(C-Cref)/Cref)
@@ -74,7 +74,7 @@ class DS6(TruchasTest.GoldenTestCase):
 
   def test_final_phi2(self):
     '''DS6: verifying the phi2 field at final time'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi2')
     Cref = self.gold_output.get_simulation().find_series(id=3).get_data('phi2')
     error = max(abs(C-Cref)/Cref)

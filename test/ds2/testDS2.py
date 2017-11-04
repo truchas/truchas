@@ -21,7 +21,7 @@ class DS2(TruchasTest.GoldenTestCase):
 
   def test_final_temperature(self):
     '''DS2: verifying the final temperature field'''
-    tol = 1.0e-10
+    tol = 1.0e-5
     T    = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     Tref = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(T-Tref)/Tref)

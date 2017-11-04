@@ -21,7 +21,7 @@ class VFRad3(TruchasTest.GoldenTestCase):
 
   def test_final_temperature(self):
     '''VFRAD3: verifying the final temperature field'''
-    tol = 1.0e-8
+    tol = 1.0e-5
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)

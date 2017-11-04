@@ -31,6 +31,12 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
   Output_Dt = 0.02, 0.5
 /
 
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 0.5
+  phase_init_dt_factor = 1.0
+/
+
 &PHYSICS
   heat_transport = .true.
   species_transport = .true.
@@ -47,6 +53,7 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
   rel_conc_tol       = 1.0e-3
   nlk_tol            = 0.05
   nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles      = 2
 /
 
 &NUMERICS

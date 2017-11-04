@@ -25,16 +25,22 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
   Output_Dt = 0.1
 /
 
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 0.1
+  phase_init_dt_factor = 1.0
+/
+
 &PHYSICS
   heat_transport = .true.
   fluid_flow = .false.
 /
 
 &DIFFUSION_SOLVER
-  abs_temp_tol       = 1.0e-4
-  rel_temp_tol       = 1.0e-2
-  abs_enthalpy_tol   = 1.00e-4
-  rel_enthalpy_tol   = 1.0e-2
+  abs_temp_tol       = 1.0e-5
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 1.0e-5
+  rel_enthalpy_tol   = 1.0e-3
   nlk_tol            = 5.0e-3
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.

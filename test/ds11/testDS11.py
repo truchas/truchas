@@ -38,7 +38,7 @@ class DS11(TruchasTest.GoldenTestCase):
 
   def test_temperature(self):
     '''Verifying the temperature field'''
-    tol = 1.0e-9
+    tol = 1.0e-6
     fail = 0
     for n in [3,4]:
       gold=self.gold_output.get_simulation().find_series(id=n).get_data('Z_TEMP',region=self.gold_reg)
@@ -54,7 +54,7 @@ class DS11(TruchasTest.GoldenTestCase):
 
   def test_fluid_fraction(self):
     '''Verifying the fluid volume fraction field'''
-    tol = 1.0e-8
+    tol = 1.0e-7
     fail = 0
     for n in [3,4]:
       gold=self.gold_output.get_simulation().find_series(id=n).get_data('VOF')
