@@ -169,8 +169,8 @@ contains
       status = 1
     end if
 
-    if (maxerr > 2.0e-9) then
-      if (is_IOP) write(*,'(a,es9.2)') 'error: expected maxerr < 2.0e-9; got', maxerr
+    if (maxerr > 2.0e-8) then
+      if (is_IOP) write(*,'(a,es9.2)') 'error: expected maxerr < 2.0e-8; got', maxerr
       status = 1
     end if
   
@@ -300,13 +300,13 @@ contains
       status = 1
     end if
 
-    if (num_pcg_itr /= 5) then
-      if (is_IOP) write(*,'(a,i0)') 'error: expected 5 AMG preconditioned GMRES iterations; got ', num_pcg_itr
+    if (num_pcg_itr /= 6) then
+      if (is_IOP) write(*,'(a,i0)') 'error: expected 6 AMG preconditioned GMRES iterations; got ', num_pcg_itr
       status = 1
     end if
 
-    if (maxerr > 3.0e-7) then
-      if (is_IOP) write(*,'(a,es9.2)') 'error: expected maxerr < 3.0e-7; got', maxerr
+    if (maxerr > 2.0e-6) then
+      if (is_IOP) write(*,'(a,es9.2)') 'error: expected maxerr < 2.0e-6; got', maxerr
       status = 1
     end if
     
