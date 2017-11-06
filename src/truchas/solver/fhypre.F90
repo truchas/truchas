@@ -120,6 +120,7 @@ module fhypre
   public :: fHYPRE_BoomerAMGSetCycleType
   public :: fHYPRE_BoomerAMGSetDebugFlag
   public :: fHYPRE_BoomerAMGSetLogging
+  public :: fHYPRE_BoomerAMGSetOldDefault
 
   !! PCG interface procedures
   public :: fHYPRE_PCGCreate
@@ -414,6 +415,12 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_BoomerAMGSetLogging(solver, logging)
   end subroutine
+
+  subroutine fHYPRE_BoomerAMGSetOldDefault(solver, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetOldDefault(solver)
+  end subroutine fHYPRE_BoomerAMGSetOldDefault
 
   !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -21,7 +21,7 @@ class DS4(TruchasTest.GoldenTestCase):
 
   def test_final_temperature(self):
     '''DS4: verifying the final temperature field'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     T    = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     Tref = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(T-Tref)/Tref)
@@ -30,7 +30,7 @@ class DS4(TruchasTest.GoldenTestCase):
 
   def test_final_vof(self):
     '''DS4: verifying the final fluid volume fraction field'''
-    tol = 1.0e-7
+    tol = 1.0e-6
     test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('VOF')
     error = max(abs(test[:,2]-gold[:,2]))

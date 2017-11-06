@@ -3,25 +3,25 @@
 
 PROGRAM INFORMATION
 
-   code:                DUMMY
-   version:             2.9.dev
-   libraries:           UbikSolve, PGSLib, Chaco
+   code:                Truchas
+   version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     27 Jun 2015 13:38:32
-   build flags:         -u -O -fPIC-O3
+   build date/time:     2017-10-26 16:48:48
+   build flags:         -u -O2
    build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 3.15.10-201.fc20.x86_64 #1 SMP Wed Aug 27 21:10:06 UTC 2014 x86_64
-   run host:            noether.lanl.gov
-   run date/time:       28 Jun 15 07:39:19
+   run architecture:    Linux noether.lanl.gov 4.11.12-2
+   run host:            noether.lanl.gov1 SMP Fri Jul 21
+   run date/time:       05 Nov 17 06:30:22
    processors:          4 (processor 1 is performing I/O)
 
 ================================================================================
 
 COPYRIGHT
 
-   Copyright 2007-2013. Los Alamos National Security, LLC.
+   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
+   All rights reserved.
 
-   This material was produced under U.S. Government contract DE-AC52-06NA25396
+   This software was produced under U.S. Government contract DE-AC52-06NA25396
    for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
    National Security, LLC for the U.S. Department of Energy. The U.S. Government
    has rights to use, reproduce, and distribute this software.  NEITHER THE
@@ -30,32 +30,51 @@ COPYRIGHT
    is modified to produce derivative works, such modified software should be
    clearly marked, so as not to confuse it with the version available from LANL.
 
-   Additionally, this program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or (at your
-   option) any later version. Accordingly, this program is distributed in the
-   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-   See the GNU General Public License for more details.
+   Additionally, redistribution and use in source and binary forms, with or
+   without modification, are permitted provided that the following conditions
+   are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
+      Laboratory, LANL, the U.S. Government, nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
+   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
+   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 
 DISCLAIMER
 
    This Truchas release is registered with the Los Alamos National
-   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
-DANU: Opening h5 output file
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
 
 ================================================================================
 
 INPUT
 
 Opening input file ds1.inp ...
- Reading PARALLEL_PARAMETERS Namelist ...
-PARALLEL_PARAMETERS namelist not found; using defaults.
 
 Reading FUNCTION namelists ...
   Reading FUNCTION namelist #1
+
+Reading TOOLPATH namelists ...
 
 Reading PHASE namelists ...
   Reading PHASE namelist #1
@@ -73,9 +92,9 @@ Reading PHYSICS namelist ...
 
  Reading OUTPUTS Namelist ...
 
+Reading SIMULATION_CONTROL namelist ...
+
 Reading MESH Namelist ...
-         Opened mesh file ./ds1-randomized.gen
-           containing 1836 nodes and 850 cells
 
  Reading MATERIAL Namelist # 1 ...
 
@@ -153,92 +172,34 @@ Input file ds1.inp closed.
 
 INITIALIZATION
 
-Allocating mesh derived types ... done.
- Automatic partitioner selection: Chaco
 
-Reading ExodusII mesh file ./ds1-randomized.gen ...
- Closed ExodusII mesh file ./ds1-randomized.gen
-
- Determining mesh partitions and permutation vectors.
- Using 4 partitions.
- Partitioning with Chaco.
-
- Permuting mesh ... done.
- Permuting vertices ... done.
- Renumbering vertices ... done.
-
- Establishing mesh connectivity for      5100 faces ...
-
-   Sorting face vertex 1 ...
-   Sorting face vertex 2 ...
-   Sorting face vertex 3 ...
-   Sorting face vertex 4 ...
-   There are       1834 external boundary faces.
- Mesh connectivity established.
-
- Finding all cell neighbors ... done.
-
-Allocating base derived types ...done.
-
-                               Mesh Diagnostics
-                               ----------------
-
-                   Element Type   Number     Face Type   Number
-                   ------------   ------     ---------   ------
-                      Hex           850       Point           0
-                      Prism           0       Line            0
-                      Pyramid         0       Triangle        0
-                      Tet             0       Quad         5100
-
-                            Nodes               Cells
-                            -----               -----
-                                8 are shared by   1
-                              260 are shared by   2
-                             1568 are shared by   4
-
-Computing cell geometry ... 
-                    Min        Cell       Max        Cell       Total
-                    ---        ----       ---        ----       -----
-       Volumes   2.7722E-06       746   3.9209E-06       590    2.8125E-03
-
-
-                0 out of      850 total cells are orthogonal
-
-    use_ortho_face_gradient = F
-
-    Using full pivoting for LSLR_ operators
-
-done.
-
-                    Min Coord        Max Coord
-                    ---------        ---------
-                  -3.7500E-01       3.7500E-01
-                   0.0000E+00       2.5000E-01
-                  -2.5000E-03       1.2500E-02
-
- Finding face neighbors ... done.
-
-Initializing distributed mesh MAIN ...
-  Reading ExodusII mesh file ./ds1-randomized.gen
+Initializing mesh "MAIN" ...
+  reading ExodusII mesh file "./ds1-randomized.gen"
+  finding cell neighbors
+  partitioning the mesh cells
+  partitioning the mesh nodes
+  numbering the mesh faces
+  partitioning the mesh faces
+  identifying off-process ghost cells
+  generating parallel mesh structure
   UNSTR_MESH Profile:
      PE|    nnode    nface    ncell
     ---+---------------------------
       1|      560     1020      247
-      2|      488      882      213
-      3|      524      951      230
-      4|      488      882      213
+      2|      526      955      231
+      3|      560     1020      247
+      4|      526      955      231
   Mesh Communication Profile:
               Nodes           Faces           Cells
      PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
     ---+------------------------------------------------
       1|     74      486    142      878     35      212
-      2|     38      450     18      864      0      213
-      3|     74      450     90      861     18      212
-      4|     38      450     18      864      0      213
-  Distributed mesh MAIN initialized.
-DANU: adding default mesh entry
-DANU: writing mesh node coordinates
-DANU: adding main simulation entry
+      2|     76      450     91      864     18      213
+      3|    110      450    159      861     35      212
+      4|     76      450     91      864     18      213
+  Mesh "MAIN" initialized
+
+Allocating base derived types A ...done.
 
 Computing initial volume fractions ...
 
@@ -252,9 +213,9 @@ Computing initial volume fractions ...
     Tallied   4 x   5**2 =    100 interface particles
     Tallied   5 x   5**2 =    125 interface particles
 
-    Body # 2 was clipped in    123 cells because of previously defined bodies
-ERROR: volume fraction sum < 1 in cells: 242 256 257 261 274 [84 more items omitted]
-       minimum volume fraction sum less 1: -3.21965E-15
+    Body # 2 was clipped in    126 cells because of previously defined bodies
+ERROR: volume fraction sum < 1 in cells: 426 428 434 436 437 [89 more items omitted]
+       minimum volume fraction sum less 1: -3.44169E-15
   Computed volume fractions are invalid; attempting to normalize.
   Normalization was successful.
   Initial volume fractions computed.
@@ -1001,57 +962,55 @@ DS: dt=1.517E-03, NFUN:NPC=0000794:00013, NNR:NNF:NSR=0009:0000:0000
 
 DS: dt=1.546E-03, NFUN:NPC=0000799:00013, NNR:NNF:NSR=0009:0000:0000
 
-        178: t =   9.23635E-02, dt(diffusion solver) =   1.57428E-03
+        178: t =   9.23635E-02, dt(diffusion solver) =   1.53967E-03
 
-DS: dt=1.574E-03, NFUN:NPC=0000807:00014, NNR:NNF:NSR=0010:0000:0000
+DS: dt=1.540E-03, NFUN:NPC=0000804:00013, NNR:NNF:NSR=0009:0000:0000
 
-        179: t =   9.39378E-02, dt(diffusion solver) =   1.59857E-03
+        179: t =   9.39032E-02, dt(diffusion solver) =   1.53346E-03
 
-DS: dt=1.599E-03, NFUN:NPC=0000810:00014, NNR:NNF:NSR=0010:0000:0000
+DS: dt=1.533E-03, NFUN:NPC=0000809:00013, NNR:NNF:NSR=0009:0000:0000
 
-        180: t =   9.55364E-02, dt(diffusion solver) =   1.57448E-03
+        180: t =   9.54366E-02, dt(diffusion solver) =   1.52728E-03
 
-DS: dt=1.574E-03, NFUN:NPC=0000813:00014, NNR:NNF:NSR=0010:0000:0000
+DS: dt=1.527E-03, NFUN:NPC=0000817:00014, NNR:NNF:NSR=0010:0000:0000
 
-        181: t =   9.71108E-02, dt(diffusion solver) =   1.58919E-03
+        181: t =   9.69639E-02, dt(diffusion solver) =   1.52112E-03
 
-DS: dt=1.589E-03, NFUN:NPC=0000816:00014, NNR:NNF:NSR=0010:0000:0000
+DS: dt=1.521E-03, NFUN:NPC=0000820:00014, NNR:NNF:NSR=0010:0000:0000
 
-        182: t =   9.87000E-02, dt(diffusion solver) =   1.58503E-03
+        182: t =   9.84850E-02, dt(diffusion solver) =   1.51498E-03
 
-DS: dt=1.585E-03, NFUN:NPC=0000819:00014, NNR:NNF:NSR=0010:0000:0000
+DS: dt=1.515E-03, NFUN:NPC=0000823:00014, NNR:NNF:NSR=0010:0000:0000
 
 ================================================================================
 
 TERMINATION
 
-DANU: Closing h5 output file
-Warning: DANU: Danu fid is still associated
-                 Final Time:  1.0029E-01 after   182 steps
+                 Final Time:  1.0000E-01 after   182 steps
 
 
-  TIMING SUMMARY                       AVERAGE        MIN          MAX
-  --------------                      ---------    ---------    ---------
-  Total                               2.158E-01    2.150E-01    2.170E-01
-    Input                               1.000E-02    1.000E-02    1.000E-02
-    Initialization                      5.600E-02    5.600E-02    5.600E-02
-      HTSD function                       0.000E+00    0.000E+00    0.000E+00
-        SD function                         0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          1.470E-01    1.460E-01    1.480E-01
-      Output                              1.250E-03    1.000E-03    2.000E-03
-      Time Step                           1.000E-03    0.000E+00    2.000E-03
-      Diffusion Solver                    1.402E-01    1.380E-01    1.420E-01
-        HTSD precon compute                 2.250E-03    0.000E+00    7.000E-03
-          ssor-setup                          5.000E-04    0.000E+00    2.000E-03
-        HTSD function                       2.925E-02    2.400E-02    3.800E-02
-          SD function                         2.600E-02    2.300E-02    3.300E-02
-        HTSD precon apply                   7.925E-02    7.600E-02    8.200E-02
-          SD precon apply                     7.900E-02    7.500E-02    8.200E-02
-            ssor-solve                          6.975E-02    6.700E-02    7.300E-02
+TIMING SUMMARY
+--------------
+  2.301E-01 --- Total
+    4.579E-03 --- Input
+    2.807E-02 --- Initialization
+      6.000E-05 --- HTSD function
+        5.500E-05 --- SD function
+    1.938E-01 --- Main Cycle
+      2.258E-03 --- Output
+      4.159E-04 --- Time Step
+      1.886E-01 --- Diffusion Solver
+        2.930E-03 --- HTSD precon compute
+          7.600E-05 --- ssor-setup
+        3.815E-02 --- HTSD function
+          3.578E-02 --- SD function
+        1.249E-01 --- HTSD precon apply
+          1.243E-01 --- SD precon apply
+            1.053E-01 --- ssor-solve
 
-         Smallest process virtual memory used: 2.18E+02 mB
-          Largest process virtual memory used: 2.21E+02 mB
-                    Total virtual memory used: 8.75E+02 mB
-                                   words/cell: 134945
+         Smallest process virtual memory used: 5.58E+02 mB
+          Largest process virtual memory used: 5.59E+02 mB
+                    Total virtual memory used: 2.23E+03 mB
+                                   words/cell: 344194
 
-truchas terminated normally on 28 Jun 15 at 07:39:20
+truchas terminated normally on 05 Nov 17 at 06:30:22

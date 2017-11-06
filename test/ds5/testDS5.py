@@ -27,7 +27,7 @@ class DS5(TruchasTest.GoldenTestCase):
 
   def test_early_phi1(self):
     '''DS5: verifying the phi1 field at early time'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
@@ -36,7 +36,7 @@ class DS5(TruchasTest.GoldenTestCase):
 
   def test_final_phi1(self):
     '''DS5: verifying the phi1 field at final time'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     C    = self.test_output.get_simulation().find_series(id=3).get_data('phi1')
     Cref = self.gold_output.get_simulation().find_series(id=3).get_data('phi1')
     error = max(abs(C-Cref)/Cref)
