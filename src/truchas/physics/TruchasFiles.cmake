@@ -89,6 +89,10 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/vof/vof_data_module.F90
            physics/fluid_flow/vof/volume_track_module.F90)
 
+# - volume_tracking
+list(APPEND PHYSICS_FILES
+           physics/volume_tracking/advection_velocity_namelist.F90)
+
 # - heat_species_transport
 list(APPEND PHYSICS_FILES
            physics/heat_species_transport/FHT_model_factory.F90

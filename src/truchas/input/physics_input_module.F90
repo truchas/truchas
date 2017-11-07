@@ -184,6 +184,7 @@ CONTAINS
                        solid_mechanics_body_force,     &
                        void_pressure,                  &
                        electromagnetics,               &
+                       vof_advection,                  &
                        applyflow
 
     ! The following option is left here for possible future use (MAC)
@@ -240,6 +241,13 @@ CONTAINS
     ! Check for stupid input errors.
     call PHYSICS_CHECK (fatal)
  
+    !NNC: temporary test code
+    if (vof_advection .and. (fluid_flow .or. heat_transport .or. species_transport &
+                                        .or. solid_mechanics .or. electromagnetics)) then
+       call TLS_warn('experimental vof_advection is not compatible with any other physics')
+       fatal = .true.
+    end if
+
     ! Halt all PE's if fatal error
     call TLS_fatal_if_any (fatal, 'PHYSICS_INPUT: physics namelist input error')
  
@@ -300,6 +308,7 @@ CONTAINS
        call PGSLib_BCAST (solid_mechanics)
        call PGSLib_BCAST (solid_mechanics_body_force)
        call PGSLib_BCAST (electromagnetics)
+       call PGSLib_BCAST (vof_advection)
 
     end if BROADCAST_VARIABLES
  

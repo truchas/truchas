@@ -57,7 +57,7 @@ contains
     use phase_namelist,            only: read_phase_namelists
     use material_system_namelist,  only: read_material_system_namelists
     use surface_tension_module,    only: surface_tension, read_surface_tension_namelist
-    use fluid_data_module,         only: fluid_flow
+    use fluid_data_module,         only: fluid_flow, applyflow
     use viscous_data_module,       only: inviscid
     use turbulence_module,         only: read_turbulence_namelist
     use solid_mechanics_input,     only: solid_mechanics
@@ -65,7 +65,8 @@ contains
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
-    use physics_module,            only: heat_transport
+    use physics_module,            only: heat_transport, vof_advection
+    use advection_velocity_namelist, only: read_advection_velocity_namelist
     use truchas_logging_services
     use truchas_timers
     use string_utilities, only: i_to_c
@@ -126,6 +127,8 @@ contains
       if (.not.inviscid)   call read_turbulence_namelist (lun)
       if (surface_tension) call read_surface_tension_namelist (lun)
     end if
+
+    if (vof_advection .or. applyflow) call read_advection_velocity_namelist(lun)
 
     ! read namelists for solid mechanics options
     if (solid_mechanics) then

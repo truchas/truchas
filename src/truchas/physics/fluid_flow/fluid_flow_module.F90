@@ -154,16 +154,20 @@ CONTAINS
     !
     !======================================================================
     use fluid_data_module,      only: fluid_flow, Solid_Face, isPureImmobile, fluidDeltaRho
-    use legacy_mesh_api,        only: ncells, nfc
+    use fluid_data_module,      only: fluxing_velocity
+    use legacy_mesh_api,        only: ncells, nfc, cell
     use projection_data_module, only: Face_Density
     use property_module,        only: FLUID_PROPERTIES
-    use overwrite_module,       only: PRESCRIBE_VELOCITY
+    !use overwrite_module,       only: PRESCRIBE_VELOCITY
+    use zone_module, only: zone
+    use advection_velocity_namelist, only: adv_vel
     
     real(r8), intent(in) :: t
 
     ! Local Variables
     integer :: status
     logical :: abort
+    real(r8) :: args(0:3)
 
     if (.not. fluid_flow) return
 
@@ -178,7 +182,17 @@ CONTAINS
 
     call fluid_properties(abort, t)
 
-    call PRESCRIBE_VELOCITY('diagxz')
+    !call PRESCRIBE_VELOCITY('diagxz')
+
+    args(0) = t
+    do j = 1, ncells
+      arg(1:3) = cell(j)%centroid
+      zone(j)%vc = adv_vel%eval(args)
+      do k = 1, nfc
+        arg(1:3) = cell(j)%face_centroid(:,k)
+        fluxing_velocity(k,j) = dot_product(cell(j)%face_normal(:,j), adv_vel%eval(args))
+      end do
+    end do
 
     DEALLOCATE (Solid_Face)
     DEALLOCATE (isPureImmobile)
