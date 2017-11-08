@@ -167,7 +167,7 @@ CONTAINS
     ! Local Variables
     integer :: j, k, status
     logical :: abort
-    real(r8) :: args(0:3)
+    real(r8) :: args(0:3), vel(3)
 
     if (.not. fluid_flow) return
 
@@ -190,7 +190,8 @@ CONTAINS
       zone(j)%vc = adv_vel%eval(args)
       do k = 1, nfc
         args(1:3) = cell(j)%face_centroid(:,k)
-        fluxing_velocity(k,j) = dot_product(cell(j)%face_normal(:,j), adv_vel%eval(args))
+        vel = adv_vel%eval(args)
+        fluxing_velocity(k,j) = dot_product(cell(j)%face_normal(:,k), vel)
       end do
     end do
 

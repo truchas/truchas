@@ -269,3 +269,8 @@ add_pytruchas_test(ustruc2
                    ustruc2/test.py
 		   PROCESSORS 4
 		   LABELS MICROSTRUCTURE CONDUCTION MIXED RESTART)
+
+add_pytruchas_test(diag-advect
+                   diag-advect/test.py
+		   PROCESSORS 4
+		   LABELS ADVECTION)

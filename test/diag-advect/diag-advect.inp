@@ -1,0 +1,82 @@
+&OUTPUTS
+  output_t  = 0.0, 1.0
+  output_dt = 0.2
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 1.0
+  phase_init_dt_factor = 1.0
+/
+
+&MESH
+  mesh_file = 'square-32x32.g'
+/
+ 
+&PHYSICS
+  fluid_flow = .true.
+  applyflow  = .true.
+/
+
+&ADVECTION_VELOCITY
+  velocity_constant = 0.4, 0.3, 0.0
+/
+
+&NUMERICS
+  !dt_constant = 0.025
+  dt_init = 0.025
+  dt_grow = 1.05
+  dt_min  = 0.01
+  dt_max  = 0.1
+  courant_number = 0.5
+  volume_track_subcycles = 4
+/
+
+&BODY
+  surface_name = 'cylinder'
+  axis = 'z'
+  fill = 'inside'
+  translation_pt = 0.3, 0.35, -0.5
+  radius = 0.15
+  height = 1.0
+  material_number = 1
+  temperature = 0.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 2
+  temperature = 0.0
+/
+&MATERIAL
+  material_number  = 1
+  material_name = 'oil'
+  density = 1.0
+ /
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/
+
+&MATERIAL
+  material_number = 2
+  material_name = 'water'
+  material_feature = 'background'
+  density = 1.0
+ /
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
