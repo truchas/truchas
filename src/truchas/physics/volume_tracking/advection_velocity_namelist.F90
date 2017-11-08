@@ -1,4 +1,4 @@
-#include "f90_asser.fpp"
+#include "f90_assert.fpp"
 
 module advection_velocity_namelist
 
@@ -54,7 +54,7 @@ contains
 
     if (all(velocity_constant == NULL_R)) call TLS_fatal('ADVECTION_VELOCITY not defined')
     if (any(velocity_constant == NULL_R)) call TLS_fatal('ADVECTION_VELOCITY not fully defined')
-    call alloc_const_vector_function(adv_vel, velocity_constant)
+    call alloc_const_vector_func(adv_vel, velocity_constant)
 
   end subroutine read_advection_velocity_namelist
 

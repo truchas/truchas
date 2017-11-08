@@ -61,7 +61,7 @@ contains
   subroutine init(this, mesh, nfluids, void_fluid)
     implicit none
     class(vof_model_t), intent(inout) :: this
-    type(unstr_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nfluids
     logical, intent(in) :: void_fluid
 

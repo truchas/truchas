@@ -201,8 +201,8 @@ call hijack_truchas ()
     use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
-    use flow_driver,            only: flow_update_vof, flow_update_velocity, &
-         flow_enabled
+!NNC    use flow_driver,            only: flow_update_vof, flow_update_velocity, &
+!NNC         flow_enabled
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -303,9 +303,9 @@ call hijack_truchas ()
 
        ! move materials and associated quantities
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
-       if (flow_enabled()) then
-          call flow_update_vof(t)
-       end if
+!NNC       if (flow_enabled()) then
+!NNC          call flow_update_vof(t)
+!NNC       end if
        call ADVECT_MASS ()
 
        ! solve heat transfer and phase change
@@ -323,9 +323,9 @@ call hijack_truchas ()
 
        ! calculate new velocity field
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
-       if (flow_enabled()) then
-          call flow_update_velocity(t)
-       end if
+!NNC       if (flow_enabled()) then
+!NNC          call flow_update_velocity(t)
+!NNC       end if
        call FLUID_FLOW_DRIVER (t)
 
        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
@@ -354,7 +354,7 @@ call hijack_truchas ()
     use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
     use debug_control_data
     use fluid_utilities_module, only: FLUID_DEALLOCATE
-    use flow_driver, only: flow_destroy
+!NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
     use truchas_logging_services
@@ -366,7 +366,7 @@ call hijack_truchas ()
 
     !deallocate the fluidvof array, and others
     call FLUID_DEALLOCATE()
-    call flow_destroy()
+!NNC    call flow_destroy()
 
     ! deallocate the base types
     call BASE_TYPES_A_DEALLOCATE ()

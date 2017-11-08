@@ -165,7 +165,7 @@ CONTAINS
     real(r8), intent(in) :: t
 
     ! Local Variables
-    integer :: status
+    integer :: j, k, status
     logical :: abort
     real(r8) :: args(0:3)
 
@@ -186,10 +186,10 @@ CONTAINS
 
     args(0) = t
     do j = 1, ncells
-      arg(1:3) = cell(j)%centroid
+      args(1:3) = cell(j)%centroid
       zone(j)%vc = adv_vel%eval(args)
       do k = 1, nfc
-        arg(1:3) = cell(j)%face_centroid(:,k)
+        args(1:3) = cell(j)%face_centroid(:,k)
         fluxing_velocity(k,j) = dot_product(cell(j)%face_normal(:,j), adv_vel%eval(args))
       end do
     end do

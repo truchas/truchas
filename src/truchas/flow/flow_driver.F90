@@ -12,7 +12,7 @@ module flow_driver
   use vof_model
   use parameter_list_type
   use truchas_logging_services
-  use timing_tree
+  use truchas_timers
   implicit none
   private
 

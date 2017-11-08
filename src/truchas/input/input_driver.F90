@@ -51,7 +51,7 @@ contains
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
     use ustruc_driver,             only: read_microstructure_namelist
-    use flow_driver,             only: read_flow_namelist
+!NNC    use flow_driver,               only: read_flow_namelist
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use phase_namelist,            only: read_phase_namelists
@@ -121,7 +121,7 @@ contains
     call material_input (lun)
     call material_sizes ()
 
-    call read_flow_namelist(lun)
+!NNC    call read_flow_namelist(lun)
     ! read namelists for flow options and enable new mesh
     if (fluid_flow) then
       if (.not.inviscid)   call read_turbulence_namelist (lun)

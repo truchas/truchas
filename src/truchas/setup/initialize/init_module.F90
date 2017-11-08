@@ -84,7 +84,7 @@ CONTAINS
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
-    use flow_driver, only: flow_init, flow_set_initial_vof, flow_enabled
+!NNC    use flow_driver, only: flow_init, flow_set_initial_vof, flow_enabled
     use physics_module,         only: heat_transport
     use ded_head_driver,        only: ded_head_init
 
@@ -133,13 +133,13 @@ CONTAINS
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
 
-    print *, 'flow_enabled check: ', flow_enabled()
-    if (flow_enabled()) then
-       call flow_init(unstr_mesh_ptr('MAIN'))
-       call flow_set_initial_vof(nbody, volume_fractions)
-    else
+!NNC    print *, 'flow_enabled check: ', flow_enabled()
+!NNC    if (flow_enabled()) then
+!NNC       call flow_init(unstr_mesh_ptr('MAIN'))
+!NNC       call flow_set_initial_vof(nbody, volume_fractions)
+!NNC    else
        volume_fractions = vof_initialize()
-    end if
+!NNC    end if
     hits_vol = volume_fractions   ! temporary compatibility
 
     ! Either read Zone and Matl from a restart file or initialize them
