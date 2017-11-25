@@ -61,15 +61,28 @@
 !!  is bad.
 !!
 
+#if defined(GNU_PR83148)
+module fhypre_types
+  use,intrinsic :: iso_c_binding, only: hypre_obj => c_ptr
+  use,intrinsic :: iso_c_binding, only: hypre_null_obj => c_null_ptr
+  use,intrinsic :: iso_c_binding, only: hypre_associated => c_associated
+  public
+end module fhypre_types
+#endif
+
 module fhypre
 
   use kinds, only: r8
   use hypre_c_binding
   use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
+#if defined(GNU_PR83148)
+  use fhypre_types
+#else
   use,intrinsic :: iso_c_binding, only: hypre_obj => c_ptr
   use,intrinsic :: iso_c_binding, only: hypre_null_obj => c_null_ptr
 #ifndef INTEL_SRN04330341
   use,intrinsic :: iso_c_binding, only: hypre_associated => c_associated
+#endif
 #endif
   implicit none
   private
