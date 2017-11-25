@@ -132,6 +132,9 @@ contains
     type(parameter_list_iterator) :: piter
     type(unstr_mesh), pointer :: umesh
     type(simpl_mesh), pointer :: smesh
+#if defined(GNU_PR49213)
+    type(any_mesh) :: fubar
+#endif
 
     piter = parameter_list_iterator(meshes)
     do while (.not.piter%at_end())
@@ -144,12 +147,22 @@ contains
         if (em_mesh) then
           smesh => new_simpl_mesh(plist, stat, errmsg)
           if (stat /= 0) call TLS_fatal (errmsg)
+#if defined(GNU_PR49213)
+          fubar%mesh => smesh
+          call plist%set ('mesh', fubar)
+#else
           call plist%set ('mesh', any_mesh(smesh))
+#endif
           call smesh%write_profile
         else
           umesh => new_unstr_mesh(plist, stat, errmsg)
           if (stat /= 0) call TLS_fatal (errmsg)
+#if defined(GNU_PR49213)
+          fubar%mesh => umesh
+          call plist%set ('mesh', fubar)
+#else
           call plist%set ('mesh', any_mesh(umesh))
+#endif
           call umesh%write_profile
           call umesh%check_bndry_face_set
 #ifdef DEBUG_MESH

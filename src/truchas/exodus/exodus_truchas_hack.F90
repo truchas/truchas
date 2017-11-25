@@ -156,6 +156,27 @@ contains
 
       integer :: b, l
 
+#if defined(GNU_PR83146)
+      !! Locate element J as element L of block B.
+      b = 1
+      l = j
+      do while (l > file%elem_blk(b)%num_elem)
+        l = l - file%elem_blk(b)%num_elem
+        b = b + 1
+      end do
+
+      !! Map the ExodusII side index to the corresponding Truchas index.
+      select case (file%elem_blk(b)%num_nodes_per_elem)
+      case (TET)
+        truchas_side = TET_SIDE_MAP(k)
+      case (WEDGE)
+        truchas_side = WEDGE_SIDE_MAP(k)
+      case (HEX)
+        truchas_side = HEX_SIDE_MAP(k)
+      case default
+        truchas_side = 0
+      end select
+#else
       associate (eblk_size => file%elem_blk%num_elem, &
                  eblk_type => file%elem_blk%num_nodes_per_elem)
       !! Locate element J as element L of block B.
@@ -178,6 +199,7 @@ contains
         truchas_side = 0
       end select
       end associate
+#endif
 
     end function truchas_side
 
