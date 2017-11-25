@@ -592,8 +592,13 @@ CONTAINS
   
   function get_EM_domain_type () result (string)
     use EM_input, only: EM_Domain_Type
+#if defined(GNU_PR83149)
+    character(len(EM_Domain_Type)) :: string
+    string = EM_Domain_Type
+#else
     character(len=len_trim(EM_Domain_Type)) :: string
     string = EM_Domain_Type
+#endif
   end function get_EM_domain_type
   
   function symmetry_axis ()
