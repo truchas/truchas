@@ -177,6 +177,11 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
     # This applies to 18.0.0 because of the version tweak number
     list(APPEND Truchas_PREPROCESSOR -DINTEL18_WORKAROUND)
   endif()
+elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+  list(APPEND Truchas_PREPROCESSOR -DGNU_PR49213)
+  list(APPEND Truchas_PREPROCESSOR -DGNU_PR83146)
+  list(APPEND Truchas_PREPROCESSOR -DGNU_PR83148)
+  list(APPEND Truchas_PREPROCESSOR -DGNU_PR83149)
 endif()
 
 if(ENABLE_DYNAMIC_LOADING)
