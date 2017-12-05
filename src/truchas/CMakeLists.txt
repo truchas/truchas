@@ -32,7 +32,6 @@ include(input/TruchasFiles.cmake)
 include(materials/TruchasFiles.cmake)
 include(ustruc/TruchasFiles.cmake)
 include(ode/TruchasFiles.cmake)
-#include(flow/TruchasFiles.cmake)
 include(legacy_mesh/TruchasFiles.cmake)
 include(output/TruchasFiles.cmake)
 include(partitioning/TruchasFiles.cmake)
@@ -71,7 +70,7 @@ list(APPEND Truchas_DEPENDS truchas::io)
 add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
-set(Truchas_LINK_LIBS exodus hypre petaca)
+set(Truchas_LINK_LIBS blas lapack exodus hypre petaca)
 
 list(APPEND Truchas_LINK_LIBS pgslib_fe)
 list(APPEND Truchas_LINK_LIBS pgslib_mpi)

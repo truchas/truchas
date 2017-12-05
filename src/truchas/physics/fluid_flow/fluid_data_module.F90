@@ -83,7 +83,7 @@ MODULE FLUID_DATA_MODULE
   ! Arrays related to partially/totally solidified cells.
   logical, pointer, public, save, dimension(:)   :: isPureImmobile
   logical, pointer, public, save, dimension(:,:) :: Solid_Face
- 
+
   ! Non-Void Cell list
   logical, pointer, public, save, dimension(:)   :: Cell_isnt_Void
   logical, pointer, public, save, dimension(:,:) :: Ngbr_isnt_Void
@@ -96,9 +96,9 @@ MODULE FLUID_DATA_MODULE
   ! Storage moved to a single-allocation per run, rather than once per time-step (MAC)
   real(r8), public, allocatable, save, dimension(:,:) :: Mom_Delta
   real(r8), public, allocatable, save, dimension(:)   :: pc_delta_rho
-  real(r8), public, save, dimension(ndim) :: minVel, maxVel   
+  real(r8), public, save, dimension(ndim) :: minVel, maxVel
 
- contains 
+ contains
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

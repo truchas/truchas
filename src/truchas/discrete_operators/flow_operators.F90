@@ -1,15 +1,20 @@
 module flow_operators
 
+  use kinds, only: r8
+  use truchas_logging_services
   use unstr_mesh_type
+  use index_partitioning
   implicit none
   private
+
+  public :: gradient_cc
 
 contains
 
   ! gradient of cell-centered scalar `x` evaluated at cell centers
   subroutine gradient_cc(m, gx, gy, gz, x, w_node0, w_node1, w_face)
     type(unstr_mesh), intent(in) :: m
-    real(r8), intent(out) :: gx(:), gy(:), gz(:), w_node(:), w_face(:)
+    real(r8), intent(out) :: gx(:), gy(:), gz(:), w_node0(:), w_node1(:), w_face(:)
     real(r8), intent(in) :: x(:)
 
     integer :: i, j, k

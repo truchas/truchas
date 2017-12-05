@@ -54,7 +54,8 @@ module vtrack_driver
   use volume_tracker_type
   use parameter_list_type
   use truchas_logging_services
-  use timing_tree
+  use truchas_timers
+  use index_partitioning
   implicit none
   private
 
@@ -74,6 +75,7 @@ module vtrack_driver
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
     real(r8), allocatable :: flux_vol(:,:) ! flux volumes
+    real(r8), allocatable :: flux_vel(:) ! FOR TEMPORARY TESTING PURPOSES ONLY
     integer :: fluids ! number of fluids (not including void) to advance
     integer :: void ! 1 if simulation includes void else 0
   end type vtrack_driver_data
@@ -106,7 +108,7 @@ contains
 
     integer, intent(in) :: lun
 
-    integer :: ios, location_iter_max, subcyles
+    integer :: ios, location_iter_max, subcycles
     real(r8) :: location_tol, cutoff
     logical :: found, use_brents_method
     character(128) :: iom
@@ -133,7 +135,7 @@ contains
       use_brents_method = .true.
       location_iter_max = 20
       location_tol = 1.0e-8_r8
-      subcyles = 2
+      subcycles = 2
       cutoff = 1.0e-8_r8
       read(lun,nml=volumetracking,iostat=ios,iomsg=iom)
     end if
@@ -144,7 +146,7 @@ contains
     call broadcast(use_brents_method)
     call broadcast(location_tol)
     call broadcast(location_iter_max)
-    call broadcast(subcyles)
+    call broadcast(subcycles)
     call broadcast(cutoff)
 
     call params%set('use_brents_method', use_brents_method)
@@ -160,16 +162,19 @@ contains
   end subroutine read_volumetracking_namelist
 
 
-  subroutine vtrack_driver_init(t, mesh)
+  subroutine vtrack_driver_init(t, mesh, vf)
 
-    use material_interop, only: phase_to_material, void_material_index
+    use material_interop, only: phase_to_material, material_to_phase, void_material_index
+    use phase_property_table
     use parameter_module, only: nmat
     use interfaces_module, only: nbody
     use volume_initialization
 
     real(r8), intent(in) :: t
-    type(unstr_mesh), intent(in) :: mesh
+    type(unstr_mesh), pointer, intent(in) :: mesh
+    real(r8), intent(out) :: vf(:,:)
     integer :: i,j,v,k
+    real(r8) :: cent(3)
 
     if (.not.allocated(this)) return
 
@@ -187,6 +192,7 @@ contains
     if (ppt_has_property("viscosity")) then
       v = ppt_property_id("viscosity")
     else
+      print *, "no viscosity found in table"
       return ! hmmm
     end if
 
@@ -194,12 +200,14 @@ contains
       if (i == void_material_index) cycle
       if (ppt_has_phase_property(material_to_phase(i), v)) this%fluids = this%fluids + 1
     end do
+
     allocate(this%liq_matid(this%fluids+this%void))
-    allocate(this%sol_matid(nmat-(this%fluds+this%void)))
+    allocate(this%sol_matid(nmat-(this%fluids+this%void)))
     allocate(this%liq_pri(this%fluids+this%void))
     allocate(this%fvof_i(this%fluids+this%void, mesh%ncell))
     allocate(this%fvof_o(this%fluids+this%void, mesh%ncell))
-    allocate(this%flux_vol(this%fluids,???))
+    allocate(this%flux_vol(this%fluids,size(mesh%cface)))
+    allocate(this%flux_vel(size(mesh%cface)))
     allocate(this%vof(nbody, mesh%ncell))
     allocate(this%svof(mesh%ncell))
 
@@ -219,26 +227,61 @@ contains
     end do
 
     call start_timer('Initialization')
-    call this%vt%init(mesh)
-    call call compute_initial_volumes(mesh, this%vof)
+    call this%vt%init(mesh, this%fluids+this%void)
+    call compute_initial_volumes(mesh, this%vof)
     call stop_timer('Initialization')
 
+    vf = this%vof
+    ! some debugging
+    open(unit=50, file='vof-output')
+    do i = 1, nmat
+      do j = 1, this%mesh%ncell_onP
+        associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+          cent = sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8)
+          write(50,'(3es15.5)') cent(1:2), vf(i,j)/this%mesh%volume(j)
+        end associate
+      end do
+      write(50,*) ''
+      write(50,*) ''
+    end do
+    close(50)
     call stop_timer('Volumetracking')
-
   end subroutine vtrack_driver_init
 
 
   subroutine vtrack_update(t, dt)
 
-    use flow_driver, only: fluxing_velocity
+    !use fluid_data_module, only: fluxing_velocity
     use matl_module, only: gather_vof, scatter_vof
+    use advection_velocity_namelist, only: adv_vel
     real(r8), intent(in) :: t, dt
 
-    integer :: i, n
+    real(r8) :: args(0:3), vel(3)
+    integer :: i, n, j, ncell, nfc, k, f0, f1, fi
 
     if (.not.allocated(this)) return
     if (this%fluids == 0) return
 
+    args(0) = t
+    ! SET FLUXING VELOCITY FOR TEMPORARY TESTING PURPOSES
+    associate (m => this%mesh)
+      do i = 1, m%ncell
+        f0 = m%xcface(i)
+        f1 = m%xcface(i+1)-1
+        do j = f0, f1
+          k = m%cface(j)
+          associate(fn => m%fnode(m%xfnode(k):m%xfnode(k+1)-1))
+            args(1:3) = sum(m%x(:,fn),dim=2)/real(size(fn),r8)
+            vel = adv_vel%eval(args)
+          end associate
+          if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
+            this%flux_vel(j) = -dot_product(m%normal(:,k), vel)
+          else
+            this%flux_vel(j) = dot_product(m%normal(:,k), vel)
+          end if
+        end do
+      end do
+    end associate
 
     call start_timer('Volumetracking')
     call start_timer('update')
@@ -247,21 +290,20 @@ contains
     n = this%mesh%ncell_onP
     this%svof = 0.0_r8
 
-    do i = 1, size(liq_matid) + size(this%sol_matid)
+    do i = 1, size(this%liq_matid) + size(this%sol_matid)
       call gather_vof(i, this%vof(i,:n))
     end do
-    do i = 1, size(liq_matid)
-      this%fvof_i(i,:n) = this%vof(liq_matid(i),:n)
+    do i = 1, size(this%liq_matid)
+      this%fvof_i(i,:n) = this%vof(this%liq_matid(i),:n)
     end do
-    do i = 1, size(sol_matid)
-      this%svof(:n) = this%svof(:n) + this%vof(sol_matid(i),:n)
+    do i = 1, size(this%sol_matid)
+      this%svof(:n) = this%svof(:n) + this%vof(this%sol_matid(i),:n)
     end do
     call gather_boundary(this%mesh%cell_ip, this%fvof_i)
     ! don't need to communicate svof
 
-    call this%vt%flux_volumes(fluxing_velocity, this%fvof_i, this%fvof_o, this%flux_vol, &
+    call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
         this%fluids, this%void, dt, this%svof)
-    call this%vt%advect(this%flux_vol, this%fvof_i, this%fvof_o, this%fluids)
 
     do i = 1, this%fluids+this%void
       call scatter_vof(this%liq_matid(i), this%fvof_o(i,:n))

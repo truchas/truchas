@@ -147,7 +147,7 @@ contains
       ! write(*,'(a,es20.10)') 'error:                    ',&
       !     abs(tmp(1)%volume() / this%volume() - (1.0_r8 - sum(vof(:m))))
 
-      call LS_fatal ("partition error")
+      call TLS_fatal ("partition error")
     end subroutine partitionError
 
   end subroutine partition
@@ -228,7 +228,7 @@ contains
 
           call this%print_data ()
 
-          call LS_fatal ("in nested dissection outward_volflux: negative fluxes calculated!")
+          call TLS_fatal ("in nested dissection outward_volflux: negative fluxes calculated!")
         end if
       end if
     end do

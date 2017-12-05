@@ -1,8 +1,10 @@
 module volume_tracker_type
 
+  use kinds, only: r8
   use truchas_logging_services
-  use timing_tree
+  use truchas_timers
   use unstr_mesh_type
+  use index_partitioning
   implicit none
   private
 
@@ -10,19 +12,25 @@ module volume_tracker_type
 
   type :: volume_tracker
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
-    integer :: subcyles
+    integer :: subcycles
     logical :: use_brents_method
     real(r8) :: location_tol ! tolerance of plic fit
     real(r8) :: cutoff ! allow volume fraction {0,(cutoff,1]}
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     type(unstr_mesh), pointer :: mesh ! unowned reference
     ! node/face/cell workspace
-    real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:)
+    real(r8), allocatable :: w_node(:,:), w_face(:,:)
   contains
     procedure :: read_params
     procedure :: init
     procedure :: flux_volumes
-    procedure :: advect
+    procedure :: normals
+    procedure :: donor_fluxes_nd
+    procedure :: flux_renorm
+    procedure :: flux_acceptor
+    !procedure :: flux_bc
+    procedure :: accumulate_volume
+    procedure :: enforce_bounded_vof
   end type volume_tracker
 
 
@@ -30,33 +38,33 @@ contains
 
   subroutine read_params(this, p)
     use parameter_list_type
-    type(volume_tracker), intent(inout) :: this
-    type(parameter_list), intent(in) :: p
+    class(volume_tracker), intent(inout) :: this
+    type(parameter_list), intent(inout) :: p
     call p%get('location_iter_max', this%location_iter_max)
     call p%get('location_tol', this%location_tol)
     call p%get('cutoff', this%cutoff)
-    call p%get('subcycles', this%subcyles)
+    call p%get('subcycles', this%subcycles)
     call p%get('use_brents_method', this%use_brents_method)
   end subroutine read_params
 
   subroutine init(this, m, fluids_and_void)
-    type(volume_tracker), intent(inout) :: this
-    type(unstr_mesh), intent(in) :: m
+    class(volume_tracker), intent(inout) :: this
+    type(unstr_mesh), pointer, intent(in) :: m
     integer, intent(in) :: fluids_and_void
 
-    this%mesh = m
-    allocate(this%flux_vol_sub(fluid_and_void,size(m%cface)))
-    allocate(this%normal(fluid_and_void,m%ncell))
+    this%mesh => m
+    allocate(this%flux_vol_sub(fluids_and_void,size(m%cface)))
+    allocate(this%normal(3,fluids_and_void,m%ncell))
     ! workspace
-    allocate(w_node(?,m%nnode))
-    allocate(w_face(?,m%nface))
-    allocate(w_cell(?,m%ncell))
+    allocate(this%w_node(2,m%nnode))
+    allocate(this%w_face(fluids_and_void,m%nface))
+
   end subroutine init
 
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
   subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt, svof)
-    type(volume_tracker), intent(in) :: this
+    class(volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt, svof(:)
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
@@ -65,10 +73,11 @@ contains
     real(r8) :: sub_dt
 
     flux_vol = 0.0_r8
-    sub_dt = dt/real(this%subcycle, r8)
+    sub_dt = dt/real(this%subcycles, r8)
+    vof = vof_n
 
     do i = 1, this%subcycles
-      call this%normals(vof, fluids, void)
+      call this%normals(vof)
 
       call this%donor_fluxes_nd(vel, vof, sub_dt)
 
@@ -76,7 +85,7 @@ contains
 
       call this%flux_acceptor()
 
-      call this%flux_bc(fluxing_velocity, vof_n, volume_flux_sub)
+      !call this%flux_bc(fluxing_velocity, vof_n, volume_flux_sub)
 
       call this%accumulate_volume(vof, flux_vol)
 
@@ -89,11 +98,13 @@ contains
   subroutine normals(this, vof)
 
     use flow_operators, only: gradient_cc
-    intrinsic :: norm2, findloc
+    use f08_intrinsics, only: findloc
+    intrinsic :: norm2
 
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: vof(:,:)
 
+    real(r8) :: mag
     integer :: i,j,k,c,nmat
     logical :: hasvof(size(vof,dim=1))
 
@@ -123,18 +134,17 @@ contains
 
       ! normalize and remove smallish components due to robustness issues in nested disection
       do j = 1 , nmat
-        if (vof(j,i) <= 0.0_r8) cycle ! should this be cutoff?
-
-        this%normal(:,j,i) = this%normal(:,j,i)/norm2(this%normal(:,j,i))
+        if (vof(j,i) <= this%cutoff) cycle ! should this be 0 or cutoff?
         do k = 1, 3
           if (abs(this%normal(k,j,i)) < 1.0e-6_r8) this%normal(k,j,i) = 0.0_r8
         end do
-        this%normal(:,j,i) = this%normal(:,j,i)/norm2(this%normal(:,j,i))
+        mag = norm2(this%normal(:,j,i))
+        if (mag > epsilon(1.0_r8)) this%normal(:,j,i) = this%normal(:,j,i)/mag
       end do
     end do
     ! will need normals for vof reconstruction in ghost cells
     call gather_boundary(this%mesh%cell_ip, this%normal)
-    call end_timer('normals')
+    call stop_timer('normals')
 
   end subroutine normals
 
@@ -200,12 +210,12 @@ contains
 
         if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
 
-        call cell%partition(vof(:,i), this%normal(:,:,i), this%cutvof, this%location_tol, &
+        call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%location_tol, &
             this%location_iter_max)
 
         this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
             cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
-                                 this%mesh%area(fi), this%cutvof, ierr)
+                                 this%mesh%area(fi), this%cutoff, ierr)
         if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
       end associate
     end do
@@ -237,7 +247,7 @@ contains
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), flux_vol(:,:), dt
 
-    integer :: i,o,m,f0,f1,navail,nmat
+    integer :: i,j,o,m,f0,f1,navail,nmat
     logical  :: adjust_fluxes, avail(size(vof_n,dim=1))
     real(r8) :: mat_flux_cur, mat_flux_acc, mat_avail
     real(r8) :: face_flux_fixed, face_flux_adjustable, face_flux
@@ -278,7 +288,7 @@ contains
           if (face_flux > this%cutoff*this%mesh%volume(i)) then
             face_flux_fixed = 0.0_r8
             face_flux_adjustable = 0.0_r8
-            do m = 1, fluids+void
+            do m = 1, nmat
               if (avail(m)) then
                 face_flux_adjustable = face_flux_adjustable + this%flux_vol_sub(m,j)
               else
@@ -328,8 +338,8 @@ contains
       f1 = this%mesh%xcface(i+1)-1
       do j = f0, f1
         do m = 1, nmat
-          if (this%flux_vol_sub(m,j,i) > 0.0_r8) &
-              this%w_face(m,this%mesh%cface(j)) = this%flux_vol_sub(m,j,i)
+          if (this%flux_vol_sub(m,j) > 0.0_r8) &
+              this%w_face(m,this%mesh%cface(j)) = this%flux_vol_sub(m,j)
         end do
       end do
     end do
@@ -339,8 +349,8 @@ contains
       f1 = this%mesh%xcface(i+1)-1
       do j = f0, f1
         do m = 1, nmat
-          if (this%flux_vol_sub(m,j,i) /= this%w_face(m,this%mesh%cface(j))) &
-              this%flux_vol_sub(m,j,i) = -this%w_face(m,this%mesh%cface(j))
+          if (this%flux_vol_sub(m,j) /= this%w_face(m,this%mesh%cface(j))) &
+              this%flux_vol_sub(m,j) = -this%w_face(m,this%mesh%cface(j))
         end do
       end do
     end do
@@ -353,7 +363,7 @@ contains
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: flux_vol(:,:), vof(:,:)
 
-    integer :: i,nmat,j,f0,f1
+    integer :: i,nmat,j,f0,f1,m
 
     nmat = size(vof,dim=1)
 
@@ -364,10 +374,10 @@ contains
       do j = f0, f1
         do m = 1, nmat
           flux_vol(m,j) = flux_vol(m,j) + this%flux_vol_sub(m,j)
-          vof(m,j) = vof(m,j) - this%flux_vol_sub(m,j)/this%mesh%volume(i)
+          vof(m,i) = vof(m,i) - this%flux_vol_sub(m,j)/this%mesh%volume(i)
+        end do
       end do
     end do
-
   end subroutine accumulate_volume
 
 
@@ -390,10 +400,10 @@ contains
 
       do m = 1, fluids
         if (vof(m,i) > a1 .and. vof(m,i) /= 1.0_r8) then
-          call adjust_matl_flux(flux_vol(m,f0:f1), this%mesh%volume(i)*(1.0_r8-vof(m,i)))
+          call adjust_flux_matl(flux_vol(m,f0:f1), this%mesh%volume(i)*(1.0_r8-vof(m,i)))
           vof(m,i) = 1.0_r8
         else if (vof(m,i) < this%cutoff .and. vof(m,i) /= 0) then
-          call adjust_matl_flux(flux_vol(m,f0:f1), -this%mesh%volume(i)*vof(m,i))
+          call adjust_flux_matl(flux_vol(m,f0:f1), -this%mesh%volume(i)*vof(m,i))
           vof(m,i) = 0.0_r8
         end if
       end do
@@ -422,13 +432,13 @@ contains
           do m = fluids+1, fluids+void
             vof(m,i) = 0.0_r8
           end do
-          call adjust_flux_total(flux_vol(:,f0:f1), vof(:,i), q-excess, this%mesh%volume(i), fluids)
+          call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), q-excess, this%mesh%volume(i), fluids)
         end if
         cycle
       end if
 
       ! There is no void to adjust in this cell.
-      call adjust_flux_total(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids)
+      call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids)
     end do
 
   end subroutine enforce_bounded_vof
@@ -444,7 +454,7 @@ contains
     real(r8), intent(in) :: vol_delta
 
     integer        :: i
-    real(r8)       :: flux_vol_adj
+    real(r8)       :: flux_vol_adj, r
 
     ! both inflow and outflow will be rescaled so take abs
     flux_vol_adj = sum(abs(flux_vol))
@@ -492,7 +502,7 @@ contains
     integer, intent(in) :: fluids
 
     integer :: i, j
-    real(r8) :: flux_vol_adj, excess
+    real(r8) :: flux_vol_adj, excess, r
 
     ! both inflow and outflow will be rescaled so take abs. Ignore BCs for now
     flux_vol_adj = sum(abs(flux_vol(1:fluids,:)))
@@ -506,7 +516,7 @@ contains
             vof(i) = vof(i) + r*flux_vol(i,j)
             flux_vol(i,j) = (1.0_r8-r*vol)*flux_vol(i,j)
           else
-            vof(i) = vof(i) - r*flux_vof(i,j)
+            vof(i) = vof(i) - r*flux_vol(i,j)
             flux_vol(i,j) = (1.0_r8+r*vol)*flux_vol(i,j)
           end if
         end do

@@ -79,7 +79,7 @@ contains
   ! intersecting each one is above or below the target volume,
   ! thereby bracketing the allowed range of plane constants
   subroutine rho_bracket (rho_min,rho_mid,rho_max, norm, poly, volume_error)
-    use logging_services
+    use truchas_logging_services
 
     real(r8),                intent(out) :: rho_min, rho_mid, rho_max
     real(r8),                intent(in)  :: norm(:)

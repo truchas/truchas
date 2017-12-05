@@ -1,8 +1,10 @@
 module volume_initialization
 
+  use kinds, only: r8
   use unstr_mesh_type
   use cell_topology
   use cell_geometry
+  use truchas_logging_services
   implicit none
   private
 
@@ -37,7 +39,7 @@ contains
 
   subroutine compute_initial_volumes(m, vols)
     type(unstr_mesh), intent(in) :: m
-    real(r8), intent(in) :: vols(:,:)
+    real(r8), intent(out) :: vols(:,:)
 
     integer :: i, j, id(nverts_max), nnodes, nfaces
     real(r8) :: v_tot, v(size(vols,dim=1)), verts(3,nverts_max)
@@ -95,7 +97,7 @@ contains
         case (8) ! hex
           nnodes = size(cn)
           nfaces = 6
-          verts(:,1:nnodes) = m%x(:,cell_nodes)
+          verts(:,1:nnodes) = m%x(:,cn)
           call vertex_ids(verts, id, nnodes)
 
           if (all(id(:nnodes).eq.id(1))) then
@@ -418,7 +420,7 @@ contains
           ! in the polygon, given by rtab(0:npoly,ib) and
           ! ztab(0:npoly,ib).
 
-          call tls_fatal ('body_id_from_vertex: vof_method divide with tabular bodies not yet implemented')
+          call TLS_fatal ('body_id_from_vertex: vof_method divide with tabular bodies not yet implemented')
 
           !                npoly = nint(sgeom(3,is,ib))
           !                rtab(0,ib) = rtab(npoly,ib)
@@ -469,7 +471,7 @@ contains
           ! get material distribution from mesh file; whereever the mesh_material
           ! array matches the material number of this body, we have a hit.
 
-          call tls_fatal ('body_id_from_vertex: vof_method divide with mesh materials not yet implemented')
+          call TLS_fatal ('body_id_from_vertex: vof_method divide with mesh materials not yet implemented')
 
           !                lsf = .false.
           !                if (associated(mesh_material)) then
@@ -493,3 +495,4 @@ contains
     end do
 
   end function body_id_from_vertex
+end module volume_initialization

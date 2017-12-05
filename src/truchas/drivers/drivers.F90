@@ -189,7 +189,7 @@ call hijack_truchas ()
     !---------------------------------------------------------------------------
     use advection_module,         only: ADVECT_MASS
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST, &
-         CYCLE_OUTPUT_DRIVER
+        CYCLE_OUTPUT_DRIVER
     use fluid_flow_module,        only: FLUID_FLOW_DRIVER
     use EM,                       only: INDUCTION_HEATING
     use solid_mechanics_module,   only: THERMO_MECHANICS
@@ -197,12 +197,13 @@ call hijack_truchas ()
     use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
-         TIME_STEP
+        TIME_STEP
     use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
-!NNC    use flow_driver,            only: flow_update_vof, flow_update_velocity, &
-!NNC         flow_enabled
+    !NNC    use flow_driver,            only: flow_update_vof, flow_update_velocity, &
+    !NNC         flow_enabled
+    use vtrack_driver, only: vtrack_update, vtrack_enabled
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -239,104 +240,106 @@ call hijack_truchas ()
     ! Main computation loop.
     MAIN_CYCLE: do c = 1, cycle_max+1
 
-       ! See if a signal was caught.
-       call read_signal(SIGUSR2, sig_rcvd)
-       if (PGSLib_Global_Any(sig_rcvd)) then
-          call TLS_info ('')
-          call TLS_info ('Received signal USR2; writing time step data and terminating')
-          call TDO_write_timestep
-          exit MAIN_CYCLE
-       end if
+      ! See if a signal was caught.
+      call read_signal(SIGUSR2, sig_rcvd)
+      if (PGSLib_Global_Any(sig_rcvd)) then
+        call TLS_info ('')
+        call TLS_info ('Received signal USR2; writing time step data and terminating')
+        call TDO_write_timestep
+        exit MAIN_CYCLE
+      end if
 
-       ! set current time
-       t = t2
+      ! set current time
+      t = t2
 
-       ! Reset any time dependent conditions for the present cycle
-       call Cycle_Init()
+      ! Reset any time dependent conditions for the present cycle
+      call Cycle_Init()
 
-       ! perform any necessary cyclic output and check for termination
-       call CYCLE_OUTPUT_DRIVER (quit, c)
+      ! perform any necessary cyclic output and check for termination
+      call CYCLE_OUTPUT_DRIVER (quit, c)
 
-       ! check for termination; exit if time to quit
-       if (quit) exit MAIN_CYCLE
+      ! check for termination; exit if time to quit
+      if (quit) exit MAIN_CYCLE
 
-       ! increment time step counter
-       cycle_number = cycle_number + 1
-       ! set beginning cycle time (= previous cycle's end time)
-       t1 = t2
+      ! increment time step counter
+      cycle_number = cycle_number + 1
+      ! set beginning cycle time (= previous cycle's end time)
+      t1 = t2
 
-       ! get the new time step
-       call TIME_STEP ()
+      ! get the new time step
+      call TIME_STEP ()
 
-       ! simulation phases (optional)
-       if (associated(event)) then
-          if (t1 == event%time()) then ! at start of the next phase
-             dt = event%init_dt(dt_old, dt)
-             event => next_event()
-             if (associated(event)) then
-                t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
-             else
-                t2 = t1 + dt
-             end if
-             ! required physics kernel restarts
-             call ded_head_start_sim_phase(t1)
-             call ds_restart (t2 - t1)
+      ! simulation phases (optional)
+      if (associated(event)) then
+        if (t1 == event%time()) then ! at start of the next phase
+          dt = event%init_dt(dt_old, dt)
+          event => next_event()
+          if (associated(event)) then
+            t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
           else
-             t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
+            t2 = t1 + dt
           end if
-       else
-          t2 = t1 + dt
-       end if
+          ! required physics kernel restarts
+          call ded_head_start_sim_phase(t1)
+          call ds_restart (t2 - t1)
+        else
+          t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
+        end if
+      else
+        t2 = t1 + dt
+      end if
 
-       dt = t2 - t1
+      dt = t2 - t1
 
-       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': Before output cycle:')
+      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': Before output cycle:')
 
-       ! output cycle time step
-       call CYCLE_OUTPUT_PRE ()
+      ! output cycle time step
+      call CYCLE_OUTPUT_PRE ()
 
-       ! call each physics package in turn
+      ! call each physics package in turn
 
-       ! Evaluate the Joule heat source for the enthalpy calculation.
-       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
-       call INDUCTION_HEATING (t1, t2)
+      ! Evaluate the Joule heat source for the enthalpy calculation.
+      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
+      call INDUCTION_HEATING (t1, t2)
 
-       ! move materials and associated quantities
-       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
-!NNC       if (flow_enabled()) then
-!NNC          call flow_update_vof(t)
-!NNC       end if
-       call ADVECT_MASS ()
+      ! move materials and associated quantities
+      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
 
-       ! solve heat transfer and phase change
-       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')
+      if (vtrack_enabled()) then
+        call vtrack_update(t, dt)
+      else
+        call ADVECT_MASS ()
+      end if
 
-       ! Diffusion solver: species concentration and/or heat.
-       if (ds_enabled) then
-          call ds_step (dt, dt_ds, errc)
-          if (errc /= 0) call TLS_fatal ('CYCLE_DRIVER: Diffusion Solver step failed')
-          ! The step size may have been reduced.  This assumes all other physics
-          ! is off, and will need to be redone when the diffusion solver is made
-          ! co-operable with the rest of the physics.
-          t2 = t1 + dt
-       end if
+      ! solve heat transfer and phase change
+      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')
 
-       ! calculate new velocity field
-       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
-!NNC       if (flow_enabled()) then
-!NNC          call flow_update_velocity(t)
-!NNC       end if
-       call FLUID_FLOW_DRIVER (t)
+      ! Diffusion solver: species concentration and/or heat.
+      if (ds_enabled) then
+        call ds_step (dt, dt_ds, errc)
+        if (errc /= 0) call TLS_fatal ('CYCLE_DRIVER: Diffusion Solver step failed')
+        ! The step size may have been reduced.  This assumes all other physics
+        ! is off, and will need to be redone when the diffusion solver is made
+        ! co-operable with the rest of the physics.
+        t2 = t1 + dt
+      end if
 
-       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
-       call THERMO_MECHANICS ()
+      ! calculate new velocity field
+      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
+      !NNC       if (flow_enabled()) then
+      !NNC          call flow_update_velocity(t)
+      !NNC       end if
+      call FLUID_FLOW_DRIVER (t)
 
-       ! output iteration information
-       call CYCLE_OUTPUT_POST ()
+      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
+      call THERMO_MECHANICS ()
 
-       ! post-processing modules (no side effects)
-       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before microstructure:')
-       call ustruc_update (t2) ! microstructure modeling
+      ! output iteration information
+      call CYCLE_OUTPUT_POST ()
+
+      ! post-processing modules (no side effects)
+      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before microstructure:')
+      call ustruc_update (t2) ! microstructure modeling
 
     end do MAIN_CYCLE
 

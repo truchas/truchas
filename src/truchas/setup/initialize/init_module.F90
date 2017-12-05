@@ -52,7 +52,7 @@ CONTAINS
 
   ! <><><><><><><><><><><><> PUBLIC ROUTINES <><><><><><><><><><><><><><><>
 
-  SUBROUTINE INITIAL (t, dt)
+  subroutine INITIAL (t, dt)
     !=======================================================================
     ! Purpose(s):
     !
@@ -62,12 +62,12 @@ CONTAINS
     !
     !=======================================================================
     use fluid_data_module,      only: Void_Material_Exists,     &
-                                      Void_Material_Index,      &
-                                      Void_Material_Count, fluid_flow
+        Void_Material_Index,      &
+        Void_Material_Count, fluid_flow
     use fluid_utilities_module, only: FLUID_INIT
     use interfaces_module,      only: nbody
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
-                                      OVERWRITE_VEL, OVERWRITE_ZONE
+        OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: nmat
     use legacy_mesh_api,        only: ncells
     use mesh_manager, only: unstr_mesh_ptr
@@ -79,12 +79,13 @@ CONTAINS
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use vof_init,               only: VOF_INITIALIZE
     use diffusion_solver_data,  only: ds_enabled, num_species, &
-                                      ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
+        ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
     use diffusion_solver,       only: ds_init, ds_set_initial_state
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
-!NNC    use flow_driver, only: flow_init, flow_set_initial_vof, flow_enabled
+    !NNC    use flow_driver, only: flow_init, flow_set_initial_vof, flow_enabled
+    use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport
     use ded_head_driver,        only: ded_head_init
 
@@ -113,12 +114,12 @@ CONTAINS
     Void_Material_Index  = 0
     Void_Material_Count  = 0
     MATERIALS: do m = 1,nmat
-       density = DENSITY_MATERIAL(m)
-       if (density == 0.0_r8) then
-          Void_Material_Exists = .true.
-          Void_Material_Count = Void_Material_Count + 1
-          Void_Material_Index(Void_Material_Count) = m
-       end if
+      density = DENSITY_MATERIAL(m)
+      if (density == 0.0_r8) then
+        Void_Material_Exists = .true.
+        Void_Material_Count = Void_Material_Count + 1
+        Void_Material_Index(Void_Material_Count) = m
+      end if
     end do MATERIALS
 
 
@@ -133,27 +134,30 @@ CONTAINS
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
 
-!NNC    print *, 'flow_enabled check: ', flow_enabled()
-!NNC    if (flow_enabled()) then
-!NNC       call flow_init(unstr_mesh_ptr('MAIN'))
-!NNC       call flow_set_initial_vof(nbody, volume_fractions)
-!NNC    else
-       volume_fractions = vof_initialize()
-!NNC    end if
+    !NNC    print *, 'flow_enabled check: ', flow_enabled()
+    !NNC    if (flow_enabled()) then
+    !NNC       call flow_init(unstr_mesh_ptr('MAIN'))
+    !NNC       call flow_set_initial_vof(nbody, volume_fractions)
+    !NNC    else
+    if (vtrack_enabled()) then
+      call vtrack_driver_init(t, unstr_mesh_ptr('MAIN'), volume_fractions)
+    else
+      volume_fractions = vof_initialize()
+    end if
     hits_vol = volume_fractions   ! temporary compatibility
 
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then
 
-       call restart_matlzone ()
-       call restart_solid_mechanics ()
+      call restart_matlzone ()
+      call restart_solid_mechanics ()
 
     else
 
-       ! Initialize Matl%Cell and Zone%Vc.
-       call MATL_INIT (Hits_Vol)
+      ! Initialize Matl%Cell and Zone%Vc.
+      call MATL_INIT (Hits_Vol)
 
-       call TLS_info ('  Initial volume fractions computed.')
+      call TLS_info ('  Initial volume fractions computed.')
 
     end if
 
