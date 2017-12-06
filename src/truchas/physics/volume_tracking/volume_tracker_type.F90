@@ -136,7 +136,7 @@ contains
       do j = 1 , nmat
         if (vof(j,i) <= this%cutoff) cycle ! should this be 0 or cutoff?
         do k = 1, 3
-          if (abs(this%normal(k,j,i)) < 1.0e-6_r8) this%normal(k,j,i) = 0.0_r8
+          if (abs(this%normal(k,j,i)) < 1.0e-6_r8) this%normal(k,j,i) = 1.0_r8
         end do
         mag = norm2(this%normal(:,j,i))
         if (mag > epsilon(1.0_r8)) this%normal(:,j,i) = this%normal(:,j,i)/mag

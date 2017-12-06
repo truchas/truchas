@@ -233,16 +233,13 @@ contains
 
     vf = this%vof
     ! some debugging
-    open(unit=50, file='vof-output')
+    open(unit=50, file='cent.dat', status='replace', access='stream')
     do i = 1, nmat
       do j = 1, this%mesh%ncell_onP
         associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-          cent = sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8)
-          write(50,'(3es15.5)') cent(1:2), vf(i,j)/this%mesh%volume(j)
+          write(50) sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8)
         end associate
       end do
-      write(50,*) ''
-      write(50,*) ''
     end do
     close(50)
     call stop_timer('Volumetracking')
@@ -253,6 +250,7 @@ contains
 
     !use fluid_data_module, only: fluxing_velocity
     use matl_module, only: gather_vof, scatter_vof
+    use matl_utilities, only: MATL_SET_VOF
     use advection_velocity_namelist, only: adv_vel
     real(r8), intent(in) :: t, dt
 
@@ -305,10 +303,12 @@ contains
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
         this%fluids, this%void, dt, this%svof)
 
-    do i = 1, this%fluids+this%void
-      call scatter_vof(this%liq_matid(i), this%fvof_o(i,:n))
-    end do
+    ! HOW COME SCATTER_VOF DOESN'T WORK?  WHY DO I NEED TO USE MATL_SET_VOF?
+!!$    do i = 1, this%fluids+this%void
+!!$      call scatter_vof(this%liq_matid(i), this%fvof_o(i,:n))
+!!$    end do
 
+    call MATL_SET_VOF(this%fvof_o(:,:n))
     call stop_timer('update')
     call stop_timer('Volumetracking')
   end subroutine vtrack_update

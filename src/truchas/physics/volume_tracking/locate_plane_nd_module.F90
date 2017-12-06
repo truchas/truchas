@@ -115,6 +115,7 @@ contains
     ! make sure the bounds were set
     if (rho_min==-huge(1.0_r8) .or. rho_max==huge(1.0_r8)) then
       P%normal = norm
+      print *,norm
       call poly%print_data (normalized=.true.)
       !write(*,*) 'volume ',poly%volume ()
       do i = 1,poly%nVerts
