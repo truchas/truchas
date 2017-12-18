@@ -44,13 +44,15 @@ contains
         do j = 1, size(fi)
           k = fi(j)
           if (btest(m%cfpar(i),pos=j)) then ! true if normal points inward
-            gx(i) = gx(i) - m%normal(1,k)*m%area(k)*w_face(k)
-            gy(i) = gy(i) - m%normal(2,k)*m%area(k)*w_face(k)
-            gz(i) = gz(i) - m%normal(3,k)*m%area(k)*w_face(k)
+            ! note the thae normal associate with the mesh object has already been scaled
+            ! by the face area, so we do not do it again
+            gx(i) = gx(i) - m%normal(1,k)*w_face(k)
+            gy(i) = gy(i) - m%normal(2,k)*w_face(k)
+            gz(i) = gz(i) - m%normal(3,k)*w_face(k)
           else
-            gx(i) = gx(i) + m%normal(1,k)*m%area(k)*w_face(k)
-            gy(i) = gy(i) + m%normal(2,k)*m%area(k)*w_face(k)
-            gz(i) = gz(i) + m%normal(3,k)*m%area(k)*w_face(k)
+            gx(i) = gx(i) + m%normal(1,k)*w_face(k)
+            gy(i) = gy(i) + m%normal(2,k)*w_face(k)
+            gz(i) = gz(i) + m%normal(3,k)*w_face(k)
           end if
         end do
       end associate

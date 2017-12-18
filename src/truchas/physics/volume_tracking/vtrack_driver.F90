@@ -232,16 +232,16 @@ contains
     call stop_timer('Initialization')
 
     vf = this%vof
-    ! some debugging
-    open(unit=50, file='cent.dat', status='replace', access='stream')
-    do i = 1, nmat
-      do j = 1, this%mesh%ncell_onP
-        associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-          write(50) sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8)
-        end associate
-      end do
-    end do
-    close(50)
+!!$    ! some debugging
+!!$    open(unit=50, file='cent.dat', status='replace', access='stream')
+!!$    do i = 1, nmat
+!!$      do j = 1, this%mesh%ncell_onP
+!!$        associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+!!$          write(50) sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8)
+!!$        end associate
+!!$      end do
+!!$    end do
+!!$    close(50)
     call stop_timer('Volumetracking')
   end subroutine vtrack_driver_init
 
@@ -273,13 +273,22 @@ contains
             vel = adv_vel%eval(args)
           end associate
           if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
-            this%flux_vel(j) = -dot_product(m%normal(:,k), vel)
+            this%flux_vel(j) = -dot_product(m%normal(:,k), vel)/m%area(k)
           else
-            this%flux_vel(j) = dot_product(m%normal(:,k), vel)
+            this%flux_vel(j) = dot_product(m%normal(:,k), vel)/m%area(k)
           end if
         end do
       end do
     end associate
+
+!!$    ! check flux_veloctiy
+!!$    open(unit=50, file='flux_vel')
+!!$    associate (m => this%mesh)
+!!$      do i = 1, m%ncell
+!!$        write(50, '(6es15.5)') this%flux_vel(m%xcface(i):m%xcface(i+1)-1)
+!!$      end do
+!!$    end associate
+!!$    close(50)
 
     call start_timer('Volumetracking')
     call start_timer('update')

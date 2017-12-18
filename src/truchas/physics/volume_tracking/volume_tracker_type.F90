@@ -69,8 +69,8 @@ contains
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
-    integer :: i
-    real(r8) :: sub_dt
+    integer :: i,ii,j,k,f0,f1,kk
+    real(r8) :: sub_dt, disp(3), cent(3)
 
     flux_vol = 0.0_r8
     sub_dt = dt/real(this%subcycles, r8)
@@ -80,6 +80,49 @@ contains
       call this%normals(vof)
 
       call this%donor_fluxes_nd(vel, vof, sub_dt)
+
+!!$      open(unit=50, file='flux_vol_sub-1')
+!!$      open(unit=51, file='flux_vol_sub-2')
+!!$      do ii = 1, this%mesh%ncell
+!!$        associate (cn => this%mesh%cnode(this%mesh%xcnode(ii):this%mesh%xcnode(ii+1)-1), &
+!!$            fi => this%mesh%cface(this%mesh%xcface(ii):this%mesh%xcface(ii+1)-1))
+!!$
+!!$          f0 = this%mesh%xcface(ii)
+!!$          f1 = this%mesh%xcface(ii+1)-1
+!!$
+!!$          do j = 1, size(fi)
+!!$            k = fi(j)
+!!$            kk = f0+j-1
+!!$            if (this%flux_vol_sub(1,kk)>0.0_r8) then
+!!$              ! write centroid and displacement along outward normal
+!!$              associate(fn => this%mesh%fnode(this%mesh%xfnode(k):this%mesh%xfnode(k+1)-1))
+!!$                cent = sum(this%mesh%x(:,fn),dim=2)/real(size(fn),r8)
+!!$                if (btest(this%mesh%cfpar(ii),pos=j)) then
+!!$                  write(50,'(6es15.5)') cent, -this%mesh%normal(:,k)*this%flux_vol_sub(1,kk)/this%mesh%area(k)
+!!$                else
+!!$                  write(50,'(6es15.5)') cent,  this%mesh%normal(:,k)*this%flux_vol_sub(1,kk)/this%mesh%area(k)
+!!$                end if
+!!$              end associate
+!!$            end if
+!!$
+!!$            if (this%flux_vol_sub(2,kk)>0.0_r8) then
+!!$              ! write centroid and displacement along outward normal
+!!$              associate(fn => this%mesh%fnode(this%mesh%xfnode(k):this%mesh%xfnode(k+1)-1))
+!!$                cent = sum(this%mesh%x(:,fn),dim=2)/real(size(fn),r8)
+!!$                if (btest(this%mesh%cfpar(ii),pos=j)) then
+!!$                  write(51,'(6es15.5)') cent, -this%mesh%normal(:,k)*this%flux_vol_sub(2,kk)/this%mesh%area(k)
+!!$                else
+!!$                  write(51,'(6es15.5)') cent,  this%mesh%normal(:,k)*this%flux_vol_sub(2,kk)/this%mesh%area(k)
+!!$                end if
+!!$              end associate
+!!$            end if
+!!$          end do
+!!$        end associate
+!!$      end do
+!!$
+!!$      close(50)
+!!$      close(51)
+!!$      stop
 
       call this%flux_renorm(vel, vof_n, flux_vol, sub_dt)
 
@@ -119,31 +162,63 @@ contains
     do i = 1, this%mesh%ncell_onP
       hasvof = vof(:,i) > 0.0_r8
       c = count(hasvof)
-      if (c < 2) then
-        this%normal(:,:,i) = 1.0_r8
-        cycle
-      end if
+!!$      if (c < 2) then
+!!$        this%normal(:,:,i) = 1.0_r8
+!!$        cycle
+!!$      end if
 
       this%normal(:,:,i) = -this%normal(:,:,i)
       ! enforce consistency for two materials
       if (c == 2) then
         j = findloc(hasvof,.true.)
-        k = findloc(hasvof(j+1:),.true.)
+        k = findloc(hasvof,.true.,back=.true.)
         this%normal(:,k,i) = -this%normal(:,j,i)
       endif
 
       ! normalize and remove smallish components due to robustness issues in nested disection
       do j = 1 , nmat
-        if (vof(j,i) <= this%cutoff) cycle ! should this be 0 or cutoff?
+        !if (vof(j,i) <= this%cutoff) cycle ! should this be 0 or cutoff?
+        ! remove small values
         do k = 1, 3
-          if (abs(this%normal(k,j,i)) < 1.0e-6_r8) this%normal(k,j,i) = 1.0_r8
+          if (abs(this%normal(k,j,i)) < epsilon(1.0_r8)) this%normal(k,j,i) = 0.0_r8
         end do
+        ! normalize if possible
         mag = norm2(this%normal(:,j,i))
         if (mag > epsilon(1.0_r8)) this%normal(:,j,i) = this%normal(:,j,i)/mag
+        ! remove slightly larger values
+        do k = 1, 3
+          if (abs(this%normal(k,j,i)) < 1.0e-6_r8) this%normal(k,j,i) = 0.0_r8
+        end do
+        ! normalize if possible
+        mag = norm2(this%normal(:,j,i))
+        if (mag > epsilon(1.0_r8)) then
+          this%normal(:,j,i) = this%normal(:,j,i)/mag
+        else
+          this%normal(:,j,i) = 1.0_r8
+        end if
       end do
     end do
     ! will need normals for vof reconstruction in ghost cells
     call gather_boundary(this%mesh%cell_ip, this%normal)
+
+!!$    ! dump to file
+!!$    open(unit=50, file='normals-1')
+!!$    do i = 1, this%mesh%ncell_onP
+!!$      associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1))
+!!$        write(50, '(6es15.5)') sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8), this%normal(:,1,i)
+!!$      end associate
+!!$    end do
+!!$    close(50)
+!!$
+!!$    open(unit=50, file='normals-2')
+!!$    do i = 1, this%mesh%ncell_onP
+!!$      associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1))
+!!$        write(50, '(6es15.5)') sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8), this%normal(:,2,i)
+!!$      end associate
+!!$    end do
+!!$    close(50)
+!!$    stop
+
     call stop_timer('normals')
 
   end subroutine normals
@@ -171,9 +246,9 @@ contains
         do j = 1, size(fi)
           k = fi(j)
           if (btest(this%mesh%cfpar(i),pos=j)) then
-            face_normal(:,j) = -this%mesh%normal(:,k)
+            face_normal(:,j) = -this%mesh%normal(:,k)/this%mesh%area(k)
           else
-            face_normal(:,j) = this%mesh%normal(:,k)
+            face_normal(:,j) = this%mesh%normal(:,k)/this%mesh%area(k)
           end if
         end do
 
