@@ -29,7 +29,7 @@ MODULE DRIVERS
   use process_info_module
   implicit none
   private
-
+    real*8,save :: starttime
   ! Public Procedures
   public :: CODE
 
@@ -108,7 +108,9 @@ CONTAINS
     character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
 
     !---------------------------------------------------------------------------
-
+    ! get the start time for the run
+    call cpu_time(starttime)
+    
     ! initialize parallelism
     call PARALLEL_INIT (argv)
     call init_parallel_communication ()
@@ -193,7 +195,7 @@ call hijack_truchas ()
     use fluid_flow_module,        only: FLUID_FLOW_DRIVER
     use EM,                       only: INDUCTION_HEATING
     use solid_mechanics_module,   only: THERMO_MECHANICS
-    use pgslib_module,            only: PGSLib_GLOBAL_ANY
+    use pgslib_module,            only: PGSLib_GLOBAL_ANY,PGSLib_GLOBAL_MINVAL
     use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
@@ -209,16 +211,26 @@ call hijack_truchas ()
     use time_step_sync_type
     use truchas_logging_services
     use truchas_timers
+    use parallel_communication, only: is_IOP
 
     ! Local Variables
-    Logical :: quit = .False., sig_rcvd
+    Logical :: quit = .False., sig_rcvd, found
     integer :: errc
-    Integer :: c
+    Integer :: c,unit
     type(sim_event), pointer :: event
     type(time_step_sync) :: ts_sync
+    real*8 :: walltime, currenttime,timeleft
+    character(len=255) :: cwalltime
 
     !---------------------------------------------------------------------------
     
+    call get_environment_variable("PBS_WALLTIME",cwalltime)
+    read(cwalltime,*) walltime
+    call TLS_info('PBS_WALLTIME=')
+    write(cwalltime,"(F10.2)") walltime
+    call TLS_info(cwalltime)
+    
+
     if (mem_on) call mem_diag_open
 
     ts_sync = time_step_sync(5)
@@ -245,6 +257,39 @@ call hijack_truchas ()
           call TDO_write_timestep
           exit MAIN_CYCLE
        end if
+
+       call cpu_time(currenttime)
+       timeleft = walltime-(currenttime-starttime)
+       if (PGSLib_Global_MinVal(timeleft).lt.300.and.walltime.gt.300) then
+          call TLS_info('')
+          call TLS_info('Less than 300 seconds left in allocation; writing time step data and terminating')
+          call TDO_write_timestep
+          if (is_IOP) then
+            open(newunit=unit,file='needrestart',status='replace')
+          endif
+        !   should read the restart file number file
+          ! increment it
+          exit MAIN_CYCLE
+       endif
+
+       ! see if a kill file is present - a stupid workaround until signal
+       ! handling gets fixed in slurm/openmpi
+       inquire(file='stopnow',exist=found)
+       if (PGSLib_Global_Any(found)) then
+         call TLS_info('Found kill file; writing time step data and terminating')
+         call TDO_write_timestep
+         if (is_IOP) then
+           open(newunit=unit,file='stopnow',status='old')
+           close(unit,status='delete')
+         endif
+         exit MAIN_CYCLE
+       endif  
+       
+       
+       write(cwalltime,"(F10.2)") walltime-(currenttime-starttime)
+       
+       call TLS_info("Time left (sec):")
+       call TLS_info(cwalltime)
 
        ! set current time
        t = t2
