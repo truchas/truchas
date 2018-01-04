@@ -110,11 +110,11 @@ contains
 
     integer :: ios, location_iter_max, subcycles
     real(r8) :: location_tol, cutoff
-    logical :: found, use_brents_method
+    logical :: found, use_brents_method, nested_dissection
     character(128) :: iom
 
     namelist /volumetracking/ use_brents_method, location_iter_max, subcycles, location_tol, &
-        cutoff
+        cutoff, nested_dissection
 
     !! Locate the MICROSTRUCTURE namelist (first occurrence)
     if (is_IOP) then
@@ -132,6 +132,7 @@ contains
 
     !! Read the namelist.
     if (is_IOP) then
+      nested_dissection = .true.
       use_brents_method = .true.
       location_iter_max = 20
       location_tol = 1.0e-8_r8
@@ -148,12 +149,14 @@ contains
     call broadcast(location_iter_max)
     call broadcast(subcycles)
     call broadcast(cutoff)
+    call broadcast(nested_dissection)
 
     call params%set('use_brents_method', use_brents_method)
     call params%set('location_tol', location_tol)
     call params%set('location_iter_max', location_iter_max)
     call params%set('subcycles', subcycles)
     call params%set('cutoff', cutoff)
+    call params%set('nested_dissection', nested_dissection)
 
     allocate(this)
 
