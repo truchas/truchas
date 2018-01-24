@@ -183,7 +183,6 @@ contains
 
     call TLS_info('')
     call TLS_info('Configuring volume tracking ...')
-    call start_timer('Volumetracking')
 
     this%mesh => mesh
     INSIST(associated(this%mesh))
@@ -229,10 +228,10 @@ contains
       end if
     end do
 
-    call start_timer('Initialization')
+    call start_timer('Vof Initialization')
     call this%vt%init(mesh, this%fluids+this%void)
     call compute_initial_volumes(mesh, this%vof)
-    call stop_timer('Initialization')
+    call stop_timer('Vof Initialization')
 
     vf = this%vof
 !!$    ! some debugging
@@ -245,13 +244,13 @@ contains
 !!$      end do
 !!$    end do
 !!$    close(50)
-    call stop_timer('Volumetracking')
   end subroutine vtrack_driver_init
 
 
   subroutine vtrack_update(t, dt)
 
     !use fluid_data_module, only: fluxing_velocity
+    use constants_module
     use matl_module, only: gather_vof, scatter_vof
     use matl_utilities, only: MATL_SET_VOF
     use advection_velocity_namelist, only: adv_vel
@@ -273,7 +272,11 @@ contains
           k = m%cface(j)
           associate(fn => m%fnode(m%xfnode(k):m%xfnode(k+1)-1))
             args(1:3) = sum(m%x(:,fn),dim=2)/real(size(fn),r8)
-            vel = adv_vel%eval(args)
+            vel(1) = 2.0_r8*sin(pi*args(1))**2*sin(2.0_r8*pi*args(2))*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
+            vel(2) = -sin(2.0_r8*pi*args(1))*sin(pi*args(2))**2*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
+            vel(3) = -sin(2.0_r8*pi*args(1))*sin(2.0_r8*pi*args(2))*sin(pi*args(3))**2*cos(pi*t/3.0_r8)
+
+            !vel = adv_vel%eval(args)
           end associate
           if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
             this%flux_vel(j) = -dot_product(m%normal(:,k), vel)/m%area(k)
@@ -294,9 +297,6 @@ contains
 !!$    close(50)
 
     call start_timer('Volumetracking')
-    call start_timer('update')
-
-
     n = this%mesh%ncell_onP
     this%svof = 0.0_r8
 
@@ -321,7 +321,6 @@ contains
 !!$    end do
 
     call MATL_SET_VOF(this%fvof_o(:,:n))
-    call stop_timer('update')
     call stop_timer('Volumetracking')
   end subroutine vtrack_update
 
