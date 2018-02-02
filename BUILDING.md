@@ -8,12 +8,13 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
   We use and test with the following compilers.
     - Intel Fortran and C/C++:
-        - version 16.0.2, 16.0.3 (anything 16.0.2 or later should be okay)
-        - version 17.0.1, 17.0.4 (anything 17.0.1 or later should be okay)
-        - version 18.0.1 (18.0.0 is badly broken)
-    - NAG Fortran 6.0 (with GNU C/C++):
+        - version 16.0.{2, 3} (anything 16.0.2 or later should be okay)
+        - version 17.0.{1, 4, 6} (anything 17.0.1 or later should be okay)
+        - version 18.0.1 (18.0.0 is broken) *may* work; heard reports of issues 
+    - NAG Fortran (with GNU C/C++):
         - version 6.0, builds 1067 or 1071
-        - version 6.1, build 6140 or later
+        - version 6.1, build 6140 or later (preferred version)
+        - version 6.2 does not currently work; we are investigating
         - most any version of GNU C/C++ should be okay
     - GFortran is *not* currently supported due to incomplete and/or flawed
       support for some Fortran 2003 features. There are GFortran configuration
