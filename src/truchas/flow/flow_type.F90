@@ -3,6 +3,7 @@ module flow_type
   use kinds, only: r8
   use truchas_logging_services
   use truchas_timers
+  use flow_mesh_type
   use unstr_mesh_type
   use index_partitioning
   implicit none
@@ -11,7 +12,7 @@ module flow_type
   public :: flow
 
   type :: flow
-    type(unstr_mesh), pointer :: mesh ! unowned reference
+    type(flow_mesh), pointer :: mesh ! unowned reference
     real(r8), allocatable :: vel_cc(:,:) ! cell-centered velocity (dims, ncells)
 
   contains
@@ -32,7 +33,7 @@ contains
 
   subroutine init(this, m)
     class(flow), intent(inout) :: this
-    type(unstr_mesh), pointer, intent(in) :: m
+    type(flow_mesh), pointer, intent(in) :: m
 
     this%mesh => m
 
@@ -41,6 +42,12 @@ contains
     print *, 'initialization required in flow%init'
   end subroutine init
 
+  subroutine zero_out_solid_velocities(this, props)
+    class(flow), intent(inout) :: this
+    type(flow_props), intent(in) :: props
+
+    print *, 'zero out all velocities on solid cells and faces'
+  end subroutine zero_out_solid_velocities
 
   subroutine step(this, t, dt)
     class(flow), intent(inout) :: this

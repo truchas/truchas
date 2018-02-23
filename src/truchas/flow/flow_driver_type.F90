@@ -3,7 +3,7 @@
 module flow_driver_type
 
   use kinds, only: r8
-  use unstr_mesh_type
+  use flow_mesh_type
   use flow_type
   use parameter_list_type
   use truchas_logging_services
@@ -16,7 +16,7 @@ module flow_driver_type
   public :: flow_driver_init, flow_step, flow_final, flow_enabled
 
   type :: flow_driver
-    type(unstr_mesh), pointer :: mesh => null() ! reference only -- do not own
+    type(flow_mesh), pointer :: mesh => null()
     type(flow) :: flow
     type(flow_props) :: props
   end type flow_driver
@@ -51,6 +51,8 @@ contains
     real(r8), intent(in) :: t
     type(unstr_mesh), pointer, intent(in) :: mesh
 
+
+
     ..............
   end subroutine flow_driver_init
 
@@ -61,6 +63,8 @@ contains
     ! need to duplicate the matl query code here.  When the vof and flow drivers are subsumed
     ! into a more inteligent driver structure, this should be reworked.
 
+    call props%update(vof, temperature_cc, initial=.false.)
+    call flow%zero_out_solid_velocities(props)
 
   end subroutine flow_step
 

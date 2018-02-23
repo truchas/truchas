@@ -173,18 +173,27 @@ contains
     end do
     do j = 1, this%mesh%nface ! methinks this loop should be shortend to nface_onP
       associate (w1 => this%w_face(j,1), w2 => this%w_face(j,2))
-      if (w1 > 0.0_r8 .and. w2 > 0.0_r8) then
-        this%mu_fc(j) = 2.0_r8*w1*w2/(w1+w2)
-      else if (w1 > 0.0_r8) then
-        this%mu_fc(j) = w1
-      else if (w2 > 0.0_r8) then
-        this%mu_fc(j) = w2
-      else
-        this%mu_fc(j) = 0.0_r8
-      end if
+        if (w1 > 0.0_r8 .and. w2 > 0.0_r8) then
+          this%mu_fc(j) = 2.0_r8*w1*w2/(w1+w2)
+        else if (w1 > 0.0_r8) then
+          this%mu_fc(j) = w1
+        else if (w2 > 0.0_r8) then
+          this%mu_fc(j) = w2
+        else
+          this%mu_fc(j) = 0.0_r8
+        end if
+      end associate
     end do
 
+    if (ini) then
+      this%rho_cc_n(:) = this%rho_cc(:)
+      this%rho_fc_n(:) = this%rho_fc(:)
+      this%mu_cc_n(:) = this%mu_cc(:)
+      this%mu_fc_n(:) = this%mu_fc(:)
+      this%vof_n(:) = this%vof(:)
+      this%vof_novoid_n(:) = this%vof_novoid(:)
+    end if
 
   end subroutine update
 
-end module flow_driver_type
+end module flow_props_type
