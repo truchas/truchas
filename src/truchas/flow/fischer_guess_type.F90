@@ -31,7 +31,6 @@
 !!  UPDATE(REAL(R8) SOLUTION(:), REAL(R8) RHS(:), PCSR_MATRIX LHS)
 !!    update internals with the computed solution
 !!
-!!
 !! USAGE (after init)
 !!
 !!    call fischer_guess%guess( x', b)
@@ -69,7 +68,7 @@ contains
     class(fischer_guess), intent(inout) :: this
     type(parameter_list), intent(inout) :: p
 
-    call p%get('fischer_history', this%max_size)
+    call p%get('fischer_history', this%max_size, 6)
 
   end subroutine read_params
 
@@ -99,7 +98,7 @@ contains
 
   ! Given the new right hand side b, this computes a new guess for
   ! the solution x based on previous stored solution values
-  subroutine guess (this, x, b)
+  subroutine guess (this, b, x)
     class(fischer_guess), intent(inout) :: this
     real(r8),       intent(out)   :: x(:)
     real(r8),       intent(in)    :: b(:)
@@ -128,10 +127,10 @@ contains
 
   ! After a PPE solution, the set of projection vectors
   ! (i.e. previous solutions and right hand sides) is updated.
-  subroutine update (this, x_soln, b, lhs)
-    class(fischer_guess),   intent(inout) :: this
-    real(r8),         intent(in)    :: x_soln(:), b(:)
-    type(pcsr_matrix), intent(in)    :: lhs
+  subroutine update (this, b, x_soln, lhs)
+    class(fischer_guess), intent(inout) :: this
+    real(r8), intent(in) :: x_soln(:), b(:)
+    type(pcsr_matrix), pointer, intent(in) :: lhs
 
     integer :: i, idx, nop
     real(r8) :: b_norm, alpha(this%max_size)
@@ -148,7 +147,7 @@ contains
 
     do i = 1, nop
       call lhs%get_row_view(i, mval, midx)
-      b_tilde(i, idx) = sum(mval*x_tilde(midx,idx))
+      b_tilde(i, idx) = dot_product(mval,x_tilde(midx,idx))
     end do
 
     do i = 1, this%size

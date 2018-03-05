@@ -40,6 +40,7 @@ include(setup/TruchasFiles.cmake)
 include(solver/TruchasFiles.cmake)
 include(utilities/TruchasFiles.cmake)
 include(toolpath/TruchasFiles.cmake)
+include(flow/TruchasFiles.cmake)
 
 # --- Custom target to process Fortran files
 add_custom_target(ProcessTruchasFiles

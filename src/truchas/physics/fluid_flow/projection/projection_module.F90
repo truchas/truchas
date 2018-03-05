@@ -10,7 +10,7 @@ MODULE PROJECTION_MODULE
   !=======================================================================
   ! Purpose(s):
   !
-  !   Define procedures cell-face and cell-centered velocity 
+  !   Define procedures cell-face and cell-centered velocity
   !   projection operations.
   !
   !   Public Interface:
@@ -40,7 +40,7 @@ MODULE PROJECTION_MODULE
   implicit none
   private
 
-  public :: PROJECTION, ORTHO_STENCIL 
+  public :: PROJECTION, ORTHO_STENCIL
 
   ! Power for averaging of sound speed by material
   integer, parameter :: navg = 1
@@ -54,8 +54,8 @@ CONTAINS
     ! Purpose(s):
     !
     !   Projection phase of the incompressible Navier-Stokes solution
-    !   algorithm.  Begins by extrapolating time '*' cell-centered 
-    !   velocities to faces, applies a MAC_PROJECTION to yield a 
+    !   algorithm.  Begins by extrapolating time '*' cell-centered
+    !   velocities to faces, applies a MAC_PROJECTION to yield a
     !   solenoidal face-velocity field via a cell-centered pressure, and
     !   concludes by applying the pressure gradient to the cell-centered
     !   velocities.
@@ -129,7 +129,7 @@ CONTAINS
 
     ! Calculate Face Value of the Fluid Density
     call FluidDensityFace
-        
+
     if (csf_normal) then
        call CSF_FACE(Fcsf_new)
     endif
@@ -137,14 +137,14 @@ CONTAINS
     ! Transfer Cell Centered Velocity to Faces
     !  (use the Rhie-Chow algorithm for the pressure and buoyant terms)
     call VELOCITY_TO_FACES()
-      
-    if (csf_normal) then 
+
+    if (csf_normal) then
        do f=1,nfc
-          do n=1,ndim 
+          do n=1,ndim
              ! particular case when void cells. density = zero
-             where (Rho_Face(f,:) <= alittle) 
+             where (Rho_Face(f,:) <= alittle)
                 dtCsf_over_Rho(n,f,:)=0
-             elsewhere 
+             elsewhere
                 dtCsf_over_Rho(n,f,:)=dt*Fcsf_new(n,f,:)/Rho_Face(f,:)
              endwhere
           end do
@@ -166,7 +166,7 @@ CONTAINS
     call MAC_PROJECTION(Fluxing_Velocity)
 
     ! Void cells don't have physical (nor solenoidal) Fluxing_Velocity's
-    ! Set Fluxing_Velocity on faces that adjoin 'real' fluid cells to the 
+    ! Set Fluxing_Velocity on faces that adjoin 'real' fluid cells to the
     ! corresponding velocity on the other side of the face (corrected for direction)
     call EE_GATHER(Scalar_Cell_Face, -Fluxing_Velocity)
     do f = 1,nfc
@@ -180,7 +180,7 @@ CONTAINS
 
     ! Apply the solenoidal correction to the cell-centered predictor velocities.
     call PROJECTION_CORRECTOR()
-    
+
     ! Save old time face densities for the next step Velocity_to_Faces
     Rho_Face_n = Rho_Face
 
@@ -189,12 +189,12 @@ CONTAINS
     DEALLOCATE (Scalar_Cell_Ngbr)
     DEALLOCATE (dt_gradP_over_Rho)
     DEALLOCATE (Vol_over_RhoCsqDt)
-    DEALLOCATE (Rho_Face) 
+    DEALLOCATE (Rho_Face)
 
     if (.not. use_ortho_face_gradient) then
        DEALLOCATE (dtRhoG_over_Rho)
     endif
-    
+
     if (use_ortho_face_gradient) then
        DEALLOCATE (ghc)
        DEALLOCATE (ghn)
@@ -204,7 +204,7 @@ CONTAINS
        DEALLOCATE (Fcsf_new)
        DEALLOCATE (dtCsf_over_Rho)
     endif
-    
+
     ! Stop the projection timer
     call stop_timer("timer_projection")
 
@@ -298,7 +298,7 @@ CONTAINS
     call MAC_RHS (Fluxing_Velocity, RHS)
 
     do f = 1,nfc
-       
+
        where (Boundary_Flag(f,:) == 0) &
           RHS = RHS - Fluxing_velocity(f,:)*Cell%Face_Area(f)
 
@@ -321,7 +321,7 @@ CONTAINS
 
     ! set RHS to zero in void cells because we are solving for the change in pressure
     ! (RHS divided by dt in NONORTHO_PROJECTION)
-    ! Scaling of the RHS  requires multiplying by dt here for 
+    ! Scaling of the RHS  requires multiplying by dt here for
     ! global scaling of RHS by dt/Volume.
     where (FluidRho(:) == 0 .or. isPureImmobile(:)) RHS(:) = (void_pressure-Zone(:)%P)
 
@@ -333,7 +333,7 @@ CONTAINS
 
     ! Apply the solenoidal correction to the face-centered velocities.
     call MAC_CORRECTOR (Solution, Face_Density, Fluxing_Velocity)
-        
+
     ! Computed divergence norms based on the correct fluxing velocity.
     call VF_DIVERGENCE_NORMS (Fluxing_Velocity)
 
@@ -387,7 +387,7 @@ CONTAINS
     use zone_module,            only: Zone
     use discrete_op_module,     only: DYNAMIC_PRESSURE_FACE_GRADIENT
     use surface_tension_module, only: csf_normal
- 
+
     ! local variables
     integer :: n, f, status
     logical,  dimension(:),   allocatable :: Mask
@@ -397,7 +397,7 @@ CONTAINS
     real(r8), dimension(:,:,:), allocatable :: Gradient
     integer :: PSolveTech
     type(DO_Specifier),pointer,save :: Projection_SS2 =>NULL()
-    
+
    ! First, allocate temporary array space
    ALLOCATE (Mask(ncells),                 &
              Scalar_Cell_Center(ncells),   &
@@ -408,14 +408,14 @@ CONTAINS
 
     ALLOCATE (Grad_Dot_N(ncells), STAT = status)
     if (status /= 0) call TLS_panic ('VELOCITY_TO_FACES: Grad_Dot_N(ncells) allocation failed')
-   
+
     ! Begin by extrapolating the time '*' cell-centered velocity to the faces
 
     call INTERPOLATE_VELOCITY_TO_FACES
 
     ! Use the real Pressures at Dirichlet boundaries in this pressure gradient calculation
     BC_Prs => BC_Pressure
-    
+
     if(.not.ASSOCIATED(Projection_SS2))then
        PSolveTech=DO_SOLVE_LU_LSLR; if(use_ortho_face_gradient)PSolveTech=DO_SOLVE_ORTHO
        call do_init_ss(Projection_SS2,SOLVETECH=PSolveTech,BC_SPEC=Pressure_BC)
@@ -429,17 +429,17 @@ CONTAINS
        call DO_GRADIENT_FACE(PHI=Scalar_Cell_Center, SOLVESPEC=Projection_SS2, GRAD=Gradient)
     else
        ! calculate the gradient of the dynamic pressure
-       ! ie; the total pressure less the gravity  head. 
+       ! ie; the total pressure less the gravity  head.
        call DYNAMIC_PRESSURE_FACE_GRADIENT(Gradient, Scalar_Cell_Center, ghc, ghn)
     end if
 
-    FACE_LOOP : do f = 1,nfc   
+    FACE_LOOP : do f = 1,nfc
 
        ! Store the inverse face density. (needed for the surface tension model)
        dt_over_Rho = 0
        where (Rho_Face(f,:) /= 0) &
             dt_over_Rho = dt/Rho_Face(f,:)
-  
+
        do n = 1,ndim
           Grad(n,:) = Gradient(n,f,:)
        enddo
@@ -469,10 +469,10 @@ CONTAINS
                  Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) - &
                              dt_over_Rho*Grad(n,:)*Cell(:)%Face_Normal(n,f)
 
-          ! Add the surface tension force 
+          ! Add the surface tension force
           if (csf_normal) then
             Fluxing_Velocity(f,:) = Fluxing_Velocity(f,:) + dt_over_Rho*Fcsf_new(n,f,:)*Cell(:)%Face_Normal(n,f)
-          endif  
+          endif
 
        end do
 
@@ -495,10 +495,10 @@ CONTAINS
     !=======================================================================
     ! Purpose(s):
     !
-    !   Interpolate cell centered velocity vectors to normal velocity 
+    !   Interpolate cell centered velocity vectors to normal velocity
     !   components on faces
     !       Jim Sicilian,   May 2006
-    !======================================================================= 
+    !=======================================================================
     use bc_module,              only: bndry_vel !BC_Vel
     use fluid_data_module,      only: Fluxing_Velocity, Face_Interpolation_Factor,  &
                                       fluidRho, IsPureImmobile, Solid_Face,         &
@@ -511,7 +511,7 @@ CONTAINS
     ! Local Variables
     real(r8), dimension(:,:), allocatable, target :: Fluxing_Velocity_Ngbr
     real(r8), dimension(:,:), pointer             :: fluidRho_Ngbr, Velocity_Component_Ngbr
-    real(r8), dimension(:),   allocatable         :: Velocity_Component, Int_factor 
+    real(r8), dimension(:),   allocatable         :: Velocity_Component, Int_factor
     integer :: f, n, c, status
 
     ! First, allocate temporary array space
@@ -646,7 +646,7 @@ CONTAINS
 
        ! Store the inverse face density.
        dt_over_Rho = 0
-       where (Rho_Face(f,:) /= 0)  & 
+       where (Rho_Face(f,:) /= 0)  &
             dt_over_Rho = dt/Rho_Face(f,:)
 
        ! Recompute the face gradient at Dirichlet faces
@@ -888,7 +888,7 @@ CONTAINS
 
     ! Solve the linear system.
     call start_timer(timer_flag)
-    
+
     call LINEAR_SOLVER(Solution, RHS, Ubik_user(UBIK_PRESSURE), &
                        Y_EQ_AX_PRESSURE, PRECONDITION)
 
@@ -1039,7 +1039,7 @@ CONTAINS
     !=======================================================================
     ! Purpose(s):
     !
-    !   The last step in the PROJECTION call, this routine calculates a 
+    !   The last step in the PROJECTION call, this routine calculates a
     !   time 'n+1' cell-centered pressure gradient, and applies it to the
     !   cell-centered velocities.
     !=======================================================================
@@ -1089,15 +1089,15 @@ CONTAINS
         Kappa = 1
     !endif
 
-    ! Remove the old time dynamic pressure gradient acceleration from the 
+    ! Remove the old time dynamic pressure gradient acceleration from the
     ! cell centered velocity
     do n = 1,ndim
        Zone%Vc(n) = Zone%Vc(n) + dt * Centered_GradP_Dynamic(n,:)
        Momentum_by_Volume(n,:) = Momentum_by_Volume(n,:) + &
                       Centered_GradP_Dynamic(n,:)*dt*fluidRho*fluidVof/Kappa
-       ! This should probably be here to ensure the zero's are consistent w. the 
+       ! This should probably be here to ensure the zero's are consistent w. the
        ! loop following cc_gradp_dynamic() below.
-       where (FluidRho == 0 .or. isPureImmobile) 
+       where (FluidRho == 0 .or. isPureImmobile)
           Zone%Vc(n) = 0
           Momentum_by_Volume(n,:) = 0
        endwhere
@@ -1105,13 +1105,13 @@ CONTAINS
 
     call CC_GRADP_DYNAMIC()
 
-    ! Apply the cell-centered gradient to Zone%Vc, and zero out values in 
-    ! void and solid cells.    
+    ! Apply the cell-centered gradient to Zone%Vc, and zero out values in
+    ! void and solid cells.
     do n = 1,ndim
        Zone%Vc(n) = Zone%Vc(n) - Centered_GradP_Dynamic(n,:) * dt
        Momentum_by_Volume(n,:) = Momentum_by_Volume(n,:) - &
                      Centered_GradP_Dynamic(n,:) * dt * fluidRho*fluidVof/Kappa
-       where (FluidRho == 0 .or. isPureImmobile) 
+       where (FluidRho == 0 .or. isPureImmobile)
                 Zone%Vc(n) = 0
                 Momentum_by_Volume(n,:) = 0
        endwhere

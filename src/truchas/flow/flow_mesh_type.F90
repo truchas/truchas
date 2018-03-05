@@ -26,7 +26,7 @@ contains
     !-
     integer :: i
 
-    this%mesh = m
+    this%mesh => m
     allocate(this%face_centroid(3, m%nface))
     allocate(this%cell_centroid(3, m%ncell))
 

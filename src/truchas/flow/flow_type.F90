@@ -4,6 +4,7 @@ module flow_type
   use truchas_logging_services
   use truchas_timers
   use flow_mesh_type
+  use flow_projection_type
   use unstr_mesh_type
   use index_partitioning
   implicit none
@@ -14,7 +15,9 @@ module flow_type
   type :: flow
     type(flow_mesh), pointer :: mesh ! unowned reference
     real(r8), allocatable :: vel_cc(:,:) ! cell-centered velocity (dims, ncells)
-
+    real(r8), allocatable :: vel_fn(:) ! outward oriented face-normal velocity
+    real(r8), allocatable :: P_cc(:) ! cell-centered pressure
+    type(flow_projection) :: fp
   contains
     procedure :: read_params
     procedure :: init
@@ -28,18 +31,27 @@ contains
     type(parameter_list), intent(inout) :: p
 
     print *, 'figure out flow parameters'
+    call fp%read_params(p)
   end subroutine read_params
 
 
   subroutine init(this, m)
     class(flow), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: m
+    !-
+    type(unstr_mesh), pointer :: mesh
 
     this%mesh => m
+    mesh => m%mesh
+
+    allocate(this%vel_cc(3, mesh%ncell))
+    allocate(this%P_cc(mesh%ncell))
+    allocate(this%vel_fn(size(m%cface)))
 
     print *, 'allocation required in flow%init'
 
     print *, 'initialization required in flow%init'
+    call fp%init(m)
   end subroutine init
 
   subroutine zero_out_solid_velocities(this, props)
@@ -49,60 +61,16 @@ contains
     print *, 'zero out all velocities on solid cells and faces'
   end subroutine zero_out_solid_velocities
 
-  subroutine step(this, t, dt)
+  subroutine step(this, t, dt, props)
     class(flow), intent(inout) :: this
     real(r8), intent(in) :: t, dt
+    type(flow_props), intent(in) :: props
 
-    !=================================================================
-    ! outline of routine from truchas below
-    !=================================================================
-    fluidRho = 0.0_r8
+    ! predictor
 
-    ! =================================================================
-    ! ?? move fluid property calculations to driver...
-    ! Do we need to track things like isPureImmobile, Solid_face...
-    ! Or can they be hidden from the flow solver and handled in material property
-    ! calculations only...
-    ! =================================================================
-    ! Evaluate cell properties excluding immobile materials, and
-    ! check that there are at least some flow equations to solve
-    call FLUID_PROPERTIES (abort, t)
+    ! corrector
+    call this%fp%setup(props, this%vel, dt)
 
-    if (.not. abort) then
-
-       fluid_to_move = .true.
-       ! Predictor Step
-        call PREDICTOR()
-
-        ! Projection Step
-        call PROJECTION()
-
-        if(cycle_number == 0) then
-           ! Special operations required during the prepass
-           prelim_projection_iterations = mac_projection_iterations
-           prelim_viscous_iterations = viscous_iterations
-           do n = 1,ndim
-              Zone%Vc(n) = Zone%Vc_Old(n)
-           end do
-        endif
-
-    else
-
-       ! Everything solid; set velocities equal to zero, and check again in the
-       ! next timestep.
-       fluid_to_move = .false.
-       Fluxing_Velocity = 0
-       do n = 1,ndim
-          Zone%Vc(n) = 0
-          Zone%Vc_Old(n) = 0
-       end do
-
-       if(cycle_number == 0) then
-          prelim_projection_iterations = 0
-          prelim_viscous_iterations = 0
-       endif
-
-    endif
   end subroutine step
 
 end module flow_type

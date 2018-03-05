@@ -10,11 +10,13 @@ module flow_props_type
   use truchas_timers
   use index_partitioning
   use parallel_communication
+  use phase_property_table
+  use scalar_func_class
   implicit none
   private
 
   type :: flow_props
-    type(unstr_mesh), pointer :: mesh => null() ! reference only -- do not own
+    type(flow_mesh), pointer :: mesh => null() ! reference only -- do not own
     real(r8), allocatable :: rho_cc(:), rho_cc_n(:) ! cell centered fluid density
     real(r8), allocatable :: rho_fc(:), rho_fc_n(:) ! face centered fluid density
     real(r8), allocatable :: mu_cc(:), mu_cc_n(:) ! cell centered fluid viscosity
@@ -30,7 +32,7 @@ module flow_props_type
     real(r8) :: minrho
     !
     real(r8), allocatable :: density(:)
-    real(r8), allocatable :: viscosity(:)
+    class(scalar_func), allocatable :: density_delta(:), viscosity(:)
   contains
     procedure :: read_params
     procedure :: init
@@ -42,14 +44,15 @@ contains
     class(flow_props), intent(inout) :: this
     type(parameter_list), intent(in) :: params
     !-
-    params%get("fluid_cutvof", this%cutvof, 0.01_r8)
-    params%get("fluid_min_face_fraction", this%min_face_fraction, 0.001_r8)
+    params%get("cutvof", this%cutvof, 0.01_r8)
+    params%get("min_face_fraction", this%min_face_fraction, 0.001_r8)
   end subroutine read_params
 
-  subroutine init(this, mesh, density, viscosity, contains_void)
+  subroutine init(this, mesh, density, density_delta, viscosity, contains_void)
     class(flow_props), intent(inout) :: this
-    type(unstr_mesh), pointer, intent(in) :: mesh
+    type(flow_mesh), pointer, intent(in) :: mesh
     real(r8), intent(in) :: density(:), viscosity(:)
+    class(scalar_func), intent(in) :: density_delta(:)
     logical, intent(in) :: contains_void
     !-
     integer :: nc, fc, s
@@ -59,6 +62,7 @@ contains
     ! use automagic lhs allocation
     this%density = density
     this%viscosity = viscosity
+    this%density_delta = density_delta
 
     nc = this%mesh%ncell
     fc = this%mesh%nface
@@ -76,8 +80,6 @@ contains
   end subroutine init
 
   subroutine update(this, vof, temperature_cc, initial)
-    use property_module, only: get_density_delta ! should look into replacing this...
-    class(flow_props), intent(intout) :: this
     real(r8), intent(in) :: vof(:,:), temerature_cc(:)
     logical, optional, intent(in) :: initial
     !-
@@ -91,10 +93,7 @@ contains
       ini = .false.
     end if
 
-    ! XXX Fixme: this call relies on old mesh and material infrastructure
     m = this%mesh%ncell_onP
-    call get_density_delta(temperature_cc(1:m), this%rho_delta_cc(1:m))
-    call gather_boundary(this%mesh%cell_ip, this%rho_delta_cc)
 
     minrho = huge(1.0_r8)
     ! cell-centered quantities
@@ -104,11 +103,13 @@ contains
       this%rho_delta_cc(i) = 0.0_r8
       do m = 1, size(this%density)
         this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
-        this%mu_cc(i) = this%mu_cc(i) + vof(m,i)*this%viscosity(m)
+        this%mu_cc(i) = this%mu_cc(i) + vof(m,i)*this%viscosity(m)%eval(temperature_cc(i))
+        this%rho_delta_cc = this%rho_delta_cc(i) + &
+            vof(m,i)*this%density_delta(m)%eval(temperature_cc(i))
       end do
       this%vof(i) = sum(vof(:,i))
       if (this%contains_void) then
-        this%vof_novoid(i) = sum(vof(:size(this%density)-1,i))
+        this%vof_novoid(i) = sum(vof(:size(this%density),i))
       else
         this%vof_novoid(i) = this%vof(i)
       end if
