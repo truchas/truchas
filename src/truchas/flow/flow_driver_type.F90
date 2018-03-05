@@ -3,14 +3,18 @@
 module flow_driver_type
 
   use kinds, only: r8
+  use unstr_mesh_type
   use flow_mesh_type
   use flow_type
+  use flow_props_type
   use parameter_list_type
+  use phase_property_table
   use truchas_logging_services
   use truchas_timers
   use index_partitioning
-  use scalar_func_type
+  use scalar_func_class
   use scalar_func_tools
+  use scalar_func_containers
   implicit none
   private
 
@@ -38,7 +42,7 @@ contains
   subroutine read_flow_params(pl_props, pl_proj)
     type(parameter_list), intent(inout) :: pl_props, pl_proj
     allocate(this)
-    call this%flow_props(read_params(pl_props))
+    call this%props%read_params(pl_props)
     call this%flow%read_params(pl_proj)
   end subroutine read_flow_params
 
@@ -58,7 +62,7 @@ contains
     real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
     integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
     integer :: print_level, amg_max_levels, amg_coarsen_type, amg_coarsen_sweeps
-    integer :: amg_smoothing_method, amg_interp_method
+    integer :: amg_smoothing_method, amg_smoothing_sweeps, amg_interp_method
 
     character(:), allocatable :: krylov_method, amg_coarsen_method
 
@@ -93,7 +97,7 @@ contains
       if (ios /= 0) call TLS_fatal('error reading FLOWPROPS namelist: ' // trim(iom))
 
       call broadcast(fluid_cutvof)
-      call broadcast(min_face_rho)
+      call broadcast(min_face_fraction)
       if (fluid_cutvof /= NULL_R) call pl_props%set('cutvof', fluid_cutvof)
       if (min_face_fraction /= NULL_R) call pl_props%set('min_face_fraction', min_face_fraction)
     end if
@@ -159,7 +163,7 @@ contains
       if (max_amg_iter /= NULL_I) call pl_proj%set('max-amg-iter', max_amg_iter)
       if (allocated(krylov_method)) call pl_proj%set('krylov-method', krylov_method)
       if (gmres_krylov_dim /= NULL_I) call pl_proj%set('gmres-krylov-dim', gmres_krylov_dim)
-      if (cg_use_two_norm /= NULL_I) call pl_proj%set('cg-use-two-norm', cg_use_two_norm \= 0)
+      if (cg_use_two_norm /= NULL_I) call pl_proj%set('cg-use-two-norm', cg_use_two_norm /= 0)
       if (logging_level /= NULL_I) call pl_proj%set('logging-level', logging_level)
       if (print_level /= NULL_I) call pl_proj%set('print-level', print_level)
       if (amg_strong_threshold /= NULL_R) call pl_proj%set('amg-strong-threshold', amg_strong_threshold)
@@ -172,21 +176,22 @@ contains
 
     end if
 
-     allocate(this)
+    allocate(this)
 
-    call this%flow_props(read_params(pl_props))
+    call this%props%read_params(pl_props)
     call this%flow%read_params(pl_proj)
   end subroutine read_flow_namelist
 
 
-  subroutine flow_driver_init(this, mesh)
-    type(flow_driver), intent(inout) :: this
+  subroutine flow_driver_init(mesh)
     type(unstr_mesh), pointer, intent(in) :: mesh
     !-
     integer :: void, mu_id, rho_id, rho_delta_id, i
-    integer, allocatable :: phases(:), fluids(:)
+    integer, pointer :: phases(:)
+    integer, allocatable :: fluids(:)
     real(r8), allocatable :: density(:)
-    class(scalar_func), allocatable :: density_delta(:), viscosity(:)
+    real(r8) :: state(1)
+    class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
     class(scalar_func), allocatable :: f
 
     if (.not.allocated(this)) return
@@ -205,6 +210,7 @@ contains
     rho_delta_id = ppt_property_id("density deviation")
 
     void = 0
+    state(1) = 0.0_r8
     call ppt_get_phase_ids(phases)
     do i = 1, size(phases)
       ! all fluids have a viscosity and density
@@ -214,7 +220,7 @@ contains
         call ppt_get_phase_property(phases(i), rho_id, f)
         ASSERT(allocated(f))
         ASSERT(is_const(f))
-        if (f%eval(0.0_r8) == 0.0_r8) then
+        if (f%eval(state) == 0.0_r8) then
           void = void + 1
           cycle
         end if
@@ -228,11 +234,11 @@ contains
 
     do i = 1, size(fluids)
       call ppt_get_phase_property(fluids(i), rho_id, f)
-      density(i) = f%eval(0.0_r8)
+      density(i) = f%eval(state)
       call ppt_get_phase_property(fluids(i), mu_id, f)
-      viscosity(i) = f
+      call move_alloc(f, viscosity(i)%f)
       call ppt_get_phase_property(fluids(i), rho_delta_id, f)
-      density_delta(i) = f
+      call move_alloc(f, density_delta(i)%f)
     end do
 
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
@@ -242,8 +248,8 @@ contains
     real(r8), intent(in) :: t, dt, vof(:,:), temperature_cc(:)
     !-
 
-    call props%update(vof, temperature_cc, initial=.false.)
-    call flow%zero_out_solid_velocities(props)
+    call this%props%update(vof, temperature_cc, initial=.false.)
+    call this%flow%zero_out_solid_velocities(this%props)
 
   end subroutine flow_step
 

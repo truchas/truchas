@@ -43,9 +43,11 @@
 module fischer_guess_type
 
   use kinds, only: r8
-  use flow_mesh
+  use flow_mesh_type
+  use index_partitioning
   use parallel_communication
   use pcsr_matrix_type
+  use parameter_list_type
   implicit none
   private
 
@@ -104,7 +106,7 @@ contains
     real(r8),       intent(in)    :: b(:)
 
     real(r8) :: alpha(this%size)
-    integer :: i, nop
+    integer :: i, j, nop
 
     x = 0.0_r8
     if (this%max_size < 1) return
@@ -132,7 +134,7 @@ contains
     real(r8), intent(in) :: x_soln(:), b(:)
     type(pcsr_matrix), pointer, intent(in) :: lhs
 
-    integer :: i, idx, nop
+    integer :: i, j, idx, nop
     real(r8) :: b_norm, alpha(this%max_size)
     real(r8), pointer :: mval(:)
     integer, pointer :: midx(:)
@@ -147,28 +149,28 @@ contains
 
     do i = 1, nop
       call lhs%get_row_view(i, mval, midx)
-      b_tilde(i, idx) = dot_product(mval,x_tilde(midx,idx))
+      this%b_tilde(i, idx) = dot_product(mval,this%x_tilde(midx,idx))
     end do
 
     do i = 1, this%size
-      alpha(i) = global_dot_product(b_tilde(1:nop,idx), b_tilde(1:nop,i))
+      alpha(i) = global_dot_product(this%b_tilde(1:nop,idx), this%b_tilde(1:nop,i))
       do j = 1, nop
-        b_tilde(j,idx) = b_tilde(j,idx) - alpha(i)*b_tilde(j,i)
-        x_tilde(j,idx) = x_tilde(j,idx) - alpha(i)*x_tilde(j,i)
+        this%b_tilde(j,idx) = this%b_tilde(j,idx) - alpha(i)*this%b_tilde(j,i)
+        this%x_tilde(j,idx) = this%x_tilde(j,idx) - alpha(i)*this%x_tilde(j,i)
       end do
     end do
 
-    b_norm = sqrt(global_dot_product(b_tilde(1:nop,idx), b_tilde(1:nop,idx)))
+    b_norm = sqrt(global_dot_product(this%b_tilde(1:nop,idx), this%b_tilde(1:nop,idx)))
 
     if (b_norm > epsilon(1.0_r8)) then
       if (this%size == this%max_size) then
         ! reuse the least-recently-inserted entry
-        b_tilde(:,this%lri) = b_tilde(:,idx)/b_norm
-        x_tilde(:,this%lri) = x_tilde(:,idx)/b_norm
+        this%b_tilde(:,this%lri) = this%b_tilde(:,idx)/b_norm
+        this%x_tilde(:,this%lri) = this%x_tilde(:,idx)/b_norm
         this%lri = 1+mod(this%lri, this%max_size)
       else
-        b_tilde(:,idx) = b_tilde(:,idx)/b_norm
-        x_tilde(:,idx) = x_tilde(:,idx)/b_norm
+        this%b_tilde(:,idx) = this%b_tilde(:,idx)/b_norm
+        this%x_tilde(:,idx) = this%x_tilde(:,idx)/b_norm
         this%size = idx
       end if
     end if

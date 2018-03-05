@@ -5,6 +5,7 @@ module flow_type
   use truchas_timers
   use flow_mesh_type
   use flow_projection_type
+  use flow_props_type
   use unstr_mesh_type
   use index_partitioning
   implicit none
@@ -21,6 +22,8 @@ module flow_type
   contains
     procedure :: read_params
     procedure :: init
+    procedure :: step
+    procedure :: zero_out_solid_velocities
   end type flow
 
 contains
@@ -31,7 +34,7 @@ contains
     type(parameter_list), intent(inout) :: p
 
     print *, 'figure out flow parameters'
-    call fp%read_params(p)
+    call this%fp%read_params(p)
   end subroutine read_params
 
 
@@ -46,12 +49,12 @@ contains
 
     allocate(this%vel_cc(3, mesh%ncell))
     allocate(this%P_cc(mesh%ncell))
-    allocate(this%vel_fn(size(m%cface)))
+    allocate(this%vel_fn(size(mesh%cface)))
 
     print *, 'allocation required in flow%init'
 
     print *, 'initialization required in flow%init'
-    call fp%init(m)
+    call this%fp%init(m)
   end subroutine init
 
   subroutine zero_out_solid_velocities(this, props)
@@ -69,7 +72,7 @@ contains
     ! predictor
 
     ! corrector
-    call this%fp%setup(props, this%vel, dt)
+    call this%fp%setup(props, this%vel_fn, dt)
 
   end subroutine step
 

@@ -53,9 +53,10 @@ module flow_projection_type
   use truchas_timers
   use flow_mesh_type
   use unstr_mesh_type
+  use flow_props_type
   use fischer_guess_type
   use index_partitioning
-  use hypre_hybrid
+  use hypre_hybrid_type
   use pcsr_matrix_type
   use parameter_list_type
   implicit none
@@ -72,7 +73,6 @@ module flow_projection_type
     real(r8), allocatable :: rhs(:)
     real(r8), allocatable :: dx_scaled(:,:) ! dxyz/||dxyz||^2
   contains
-    public
     procedure :: read_params
     procedure :: init
     procedure :: setup
@@ -95,14 +95,16 @@ contains
     class(flow_projection), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
     !-
-    integer :: j, i, fi, ni, ri
+    integer :: j, i, fi, ni, ri, f0
     type(pcsr_graph), pointer :: g
     type(pcsr_matrix), pointer :: A
     type(ip_desc), pointer :: row_ip
     type(unstr_mesh), pointer :: m
+    type(parameter_list), pointer :: p
 
     this%mesh => mesh
     m => mesh%mesh
+    p = this%p
 
     allocate(this%rhs(m%ncell))
     allocate(this%dx_scaled(3, size(m%cface)))
@@ -123,33 +125,31 @@ contains
 
     allocate(A)
     call A%init(g, take_graph=.true.)
-    call this%solver%init(A, this%p)
+    call this%solver%init(A, p)
 
     !! Create dx_scaled to compute face centered gradients of pressure
     this%dx_scaled = 0.0_r8
 
     do j = 1, m%ncell
-      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
-          fn => m%xcface(j):m%xcface(j+1)-1)
-
-        ASSERT(size(cn) == size(fn))
+      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
+        f0 = m%xcface(j)-1
 
         do i = 1, size(cn)
-          ri = fn(i) ! ''ragged'' index
+          ri = f0+i ! ''ragged'' index
           fi = m%cface(ri) ! face index
           ni = cn(i) ! neighbor index
 
           if (ni > 0) then
-            this%dx_scaled(:,ri) = m%cell_centroid(:,ni) - m%cell_centroid(:,j)
+            this%dx_scaled(:,ri) = this%mesh%cell_centroid(:,ni) - this%mesh%cell_centroid(:,j)
           else
-            this%dx_scaled(:,ri) = m%face_centroid(:,fi) - m%cell_centroid(:,j)
+            this%dx_scaled(:,ri) = this%mesh%face_centroid(:,fi) - this%mesh%cell_centroid(:,j)
           end if
-          this%dx_scaled(:,ri) = this%dx_scaled(:,ri)/sum(this%dx_scalled(:,ri)**2)
+          this%dx_scaled(:,ri) = this%dx_scaled(:,ri)/sum(this%dx_scaled(:,ri)**2)
         end do
       end associate
     end do
 
-    call fg%init(mesh)
+    call this%fg%init(mesh)
 
   end subroutine init
 
@@ -161,7 +161,7 @@ contains
     !-
     type(pcsr_matrix), pointer :: A
     type(unstr_mesh), pointer :: m
-    integer :: i, j, fi, ni, f0, f1, ri
+    integer :: i, j, k, fi, ni, f0, f1, ri
     real(r8) :: coeff
 
     A = this%solver%matrix()
@@ -170,13 +170,11 @@ contains
     m => this%mesh%mesh
 
     do j = 1, m%ncell_onP
-      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
-          fn => m%xcface(j):m%xcface(j+1)-1)
-
-        ASSERT(size(cn) == size(fn))
+      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
+        f0 = m%xcface(j)-1
 
         do i = 1, size(cn)
-          ri = fn(i) ! ragged index
+          ri = f0+i ! ! ragged index
           fi = m%cface(ri) ! face index
           ni = cn(i) ! neighbor index
 
@@ -203,7 +201,7 @@ contains
 
     this%rhs = 0.0_r8
     !! FIXME: need correction for void
-    do j = 1, ncell_onP
+    do j = 1, m%ncell_onP
       f0 = m%xcface(j)
       f1 = m%xcface(j+1)-1
       do i = f0, f1
@@ -231,8 +229,9 @@ contains
   end subroutine solve
 
 
-  subroutine correct_face_velocity(this, dp, vel_old, dt, vel)
+  subroutine correct_face_velocity(this, props, dp, vel_old, dt, vel)
     class(flow_projection), intent(inout) :: this
+    type(flow_props) :: props
     real(r8), intent(in) :: dp(:), vel_old(:), dt
     real(r8), intent(out) :: vel(:)
     !-
@@ -242,13 +241,11 @@ contains
     m => this%mesh%mesh
 
     do j = 1, m%ncell_onP
-      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
-          fn => m%xcface(j):m%xcface(j+1)-1)
-
-        ASSERT(size(cn) == size(fn))
+      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
+        f0 = m%xcface(j)-1
 
         do i = 1, size(cn)
-          ri = fn(i) ! ragged index
+          ri = f0+i ! ragged index
           fi = m%cface(ri) ! face index
           ni = cn(i) ! neighbor index
 
@@ -280,7 +277,7 @@ contains
 
     !! FOR DEBUGGING PURPOSES
     open(file='divergence', newunit=out)
-    do j = 1, ncell_onP
+    do j = 1, m%ncell_onP
       f0 = m%xcface(j)
       f1 = m%xcface(j+1)-1
       do i = f0, f1
@@ -294,4 +291,4 @@ contains
     ! FIXEME: Truchas zeros out divergence in solid/void cells.  Seems like a hack
   end subroutine divergence
 
-end module flow_type
+end module flow_projection_type

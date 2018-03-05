@@ -4,16 +4,18 @@ module flow_props_type
 
   use kinds, only: r8
   use unstr_mesh_type
-  use flow_type
+  use flow_mesh_type
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
   use index_partitioning
   use parallel_communication
   use phase_property_table
-  use scalar_func_class
+  use scalar_func_containers
   implicit none
   private
+
+  public :: flow_props
 
   type :: flow_props
     type(flow_mesh), pointer :: mesh => null() ! reference only -- do not own
@@ -32,40 +34,47 @@ module flow_props_type
     real(r8) :: minrho
     !
     real(r8), allocatable :: density(:)
-    class(scalar_func), allocatable :: density_delta(:), viscosity(:)
+    class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
   contains
     procedure :: read_params
     procedure :: init
+    procedure :: update
   end type flow_props
 
 contains
 
   subroutine read_params(this, params)
     class(flow_props), intent(inout) :: this
-    type(parameter_list), intent(in) :: params
+    type(parameter_list), intent(inout) :: params
     !-
-    params%get("cutvof", this%cutvof, 0.01_r8)
-    params%get("min_face_fraction", this%min_face_fraction, 0.001_r8)
+    call params%get("cutvof", this%cutvof, 0.01_r8)
+    call params%get("min_face_fraction", this%min_face_fraction, 0.001_r8)
   end subroutine read_params
 
   subroutine init(this, mesh, density, density_delta, viscosity, contains_void)
     class(flow_props), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
-    real(r8), intent(in) :: density(:), viscosity(:)
-    class(scalar_func), intent(in) :: density_delta(:)
+    real(r8), intent(in) :: density(:)
+    class(scalar_func_box), intent(inout) :: density_delta(:), viscosity(:)
     logical, intent(in) :: contains_void
     !-
     integer :: nc, fc, s
 
-    this%mesh = mesh
+    this%mesh => mesh
     this%contains_void = contains_void
-    ! use automagic lhs allocation
     this%density = density
-    this%viscosity = viscosity
-    this%density_delta = density_delta
 
-    nc = this%mesh%ncell
-    fc = this%mesh%nface
+    ASSERT(size(viscosity) == size(density_delta))
+    allocate(this%viscosity(size(viscosity)))
+    allocate(this%density_delta(size(density_delta)))
+
+    do s = 1, size(viscosity)
+      call move_alloc(viscosity(s)%f, this%viscosity(s)%f)
+      call move_alloc(density_delta(s)%f, this%density_delta(s)%f)
+    end do
+
+    nc = this%mesh%mesh%ncell
+    fc = this%mesh%mesh%nface
 
     allocate(this%rho_cc(nc), this%rho_cc_n(nc), &
         this%rho_fc(fc), this%rho_fc_n(fc), &
@@ -75,37 +84,40 @@ contains
         this%vof_novoid(nc), this%vof_novoid_n(nc), &
         this%rho_delta_cc(nc), &
         this%w_face(fc, 2), stat=s)
-    if (s \= 0) call TLS_Fatal("allocation of flow_props failed")
+    if (s /= 0) call TLS_Fatal("allocation of flow_props failed")
 
   end subroutine init
 
   subroutine update(this, vof, temperature_cc, initial)
-    real(r8), intent(in) :: vof(:,:), temerature_cc(:)
+    class(flow_props), intent(inout) :: this
+    real(r8), intent(in) :: vof(:,:), temperature_cc(:)
     logical, optional, intent(in) :: initial
     !-
     logical :: ini
     integer :: m, i, j
-    real(r8) :: minrho, w, min_face_rho
+    real(r8) :: minrho, w, min_face_rho, state(1)
+    type(unstr_mesh), pointer :: mesh
 
     if (present(initial)) then
       ini = initial
     else
       ini = .false.
     end if
-
-    m = this%mesh%ncell_onP
+    mesh => this%mesh%mesh
 
     minrho = huge(1.0_r8)
     ! cell-centered quantities
-    do i = 1, this%mesh%ncell
+    do i = 1, mesh%ncell
       this%rho_cc(i) = 0.0_r8
       this%mu_cc(i) = 0.0_r8
       this%rho_delta_cc(i) = 0.0_r8
+      state(1) = temperature_cc(i)
       do m = 1, size(this%density)
         this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
-        this%mu_cc(i) = this%mu_cc(i) + vof(m,i)*this%viscosity(m)%eval(temperature_cc(i))
+        this%mu_cc(i) = this%mu_cc(i) + &
+            vof(m,i)*this%viscosity(m)%f%eval(state)
         this%rho_delta_cc = this%rho_delta_cc(i) + &
-            vof(m,i)*this%density_delta(m)%eval(temperature_cc(i))
+            vof(m,i)*this%density_delta(m)%f%eval(state)
       end do
       this%vof(i) = sum(vof(:,i))
       if (this%contains_void) then
@@ -137,14 +149,14 @@ contains
     ! 4) any non-zero face density is forced to be at least min_face_rho
     this%w_face(:,1) = 0.0_r8
     this%rho_fc(:) = 0.0_r8
-    do i = 1, this%mesh%ncell
-      associate(fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
-        w = this%mesh%volume(i)*this%vof(i)
-        this%w_face(fi) = this%w_face(fi) + w
+    do i = 1, mesh%ncell
+      associate(fi => mesh%cface(mesh%xcface(i):mesh%xcface(i+1)-1))
+        w = mesh%volume(i)*this%vof(i)
+        this%w_face(fi,1) = this%w_face(fi,1) + w
         this%rho_fc(fi) = this%rho_fc(fi) + w*this%rho_cc(i)
       end associate
     end do
-    do j = 1, this%mesh%nface ! methinks this loop should be shortend to nface_onP
+    do j = 1, mesh%nface ! methinks this loop should be shortend to nface_onP
       if (this%w_face(j,1) > 0.0_r8) then
         this%rho_fc(j) = max(min_face_rho, this%rho_fc(j)/this%w_face(j,1))
       else
@@ -161,10 +173,10 @@ contains
     ! 3) If the face is shared by two solid cells
     ! - the face viscosity is 0
     this%w_face(:,:) = 0.0_r8
-    do i = 1, this%mesh%ncell
-      associate(fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
+    do i = 1, mesh%ncell
+      associate(fi => mesh%cface(mesh%xcface(i):mesh%xcface(i+1)-1))
         do j = 1, size(fi)
-          if (btest(this%mesh%cfpar(i), pos=j)) then
+          if (btest(mesh%cfpar(i), pos=j)) then
             this%w_face(fi(j), 1) = this%mu_cc(i)
           else
             this%w_face(fi(j), 2) = this%mu_cc(i)
@@ -172,7 +184,7 @@ contains
         end do
       end associate
     end do
-    do j = 1, this%mesh%nface ! methinks this loop should be shortend to nface_onP
+    do j = 1, mesh%nface ! methinks this loop should be shortend to nface_onP
       associate (w1 => this%w_face(j,1), w2 => this%w_face(j,2))
         if (w1 > 0.0_r8 .and. w2 > 0.0_r8) then
           this%mu_fc(j) = 2.0_r8*w1*w2/(w1+w2)

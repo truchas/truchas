@@ -4,9 +4,6 @@ module flow_mesh_type
 
   use kinds, only: r8
   use unstr_mesh_type
-  use index_partitioning
-  use parallel_communication
-  use bitfield_type
   implicit none
   private
 
@@ -31,7 +28,7 @@ contains
     allocate(this%cell_centroid(3, m%ncell))
 
     do i = 1, m%nface
-      associate(fn => m%fnode(m%xfnode(j):m%xfnode(j+1)-1))
+      associate(fn => m%fnode(m%xfnode(i):m%xfnode(i+1)-1))
         this%face_centroid(:,i) = sum(m%x(:,fn))/real(size(fn),r8)
       end associate
     end do
@@ -39,7 +36,7 @@ contains
     ! TODO: the center-of-mass is not necessarily the arithmetic mean of the
     ! vertices.  This is a simple approximation which may or may not matter
     do i = 1, m%ncell
-      associate(cn => m%cnode(m%xcnode(j):m%xcnode(j+1)-1))
+      associate(cn => m%cnode(m%xcnode(i):m%xcnode(i+1)-1))
         this%cell_centroid(:,i) = sum(m%x(:,cn))/real(size(cn),r8)
       end associate
     end do
