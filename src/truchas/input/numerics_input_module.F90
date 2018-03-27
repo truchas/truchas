@@ -28,7 +28,7 @@ MODULE NUMERICS_INPUT_MODULE
   ! Author(s): The Telluridians (telluride-info@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
+use kinds, only: r8
   use truchas_logging_services
   implicit none
   private
@@ -51,7 +51,8 @@ CONTAINS
                                       body_force_face_method
     use fluid_data_module,      only: MinFaceFraction,  &
                                       momentum_solidify_implicitness, &
-                                      mass_limiter, mass_limiter_cutoff
+                                      mass_limiter, mass_limiter_cutoff, &
+                                      fluid_cutoff
     use flux_volume_module,     only: flux_vol_iter_max
     use input_utilities,        only: seek_to_namelist
     use interface_module,       only: interface_topology_model
@@ -97,7 +98,7 @@ CONTAINS
 
     ! Define NUMERICS namelist.
     namelist /NUMERICS/                                          &
-         alittle, cutvof,                                        &
+         alittle, cutvof, fluid_cutoff,                          &
 
          courant_number,                                         &
          momentum_solidify_implicitness,                         &
@@ -876,7 +877,8 @@ CONTAINS
                                       body_force_face_method
     use fluid_data_module,      only: MinFaceFraction,                     &
                                       momentum_solidify_implicitness,      &
-                                      mass_limiter, mass_limiter_cutoff
+                                      mass_limiter, mass_limiter_cutoff,   &
+                                      fluid_cutoff
     use flux_volume_module,     only: flux_vol_iter_max
     use interface_module,       only: interface_topology_model
     use linear_solution,        only: UBIK_PRESSURE_DEFAULT, UBIK_DISPLACEMENT_DEFAULT, ubik_viscous_default
@@ -986,6 +988,7 @@ CONTAINS
 
     ! Cutoff parameters.
     cutvof  = 1.0d-8 ! volume fraction cutoff
+    fluid_cutoff = 0.01 ! fluid if fluidVof > fluid_cutoff, otherise solid
 
     ! Mass limiter parameters
     mass_limiter                   = .true.       ! mass limiter

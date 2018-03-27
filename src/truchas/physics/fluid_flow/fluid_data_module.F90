@@ -57,7 +57,7 @@ MODULE FLUID_DATA_MODULE
   real(r8), public, save :: qin, qout
 
   ! Volume Fraction Cutoff Value  (no flow solution if Vof < fluid_cutoff)
-  real(r8), public, parameter :: fluid_cutoff = 0.01
+  real(r8), public, save :: fluid_cutoff = 0.01
 
   ! Time-weighting for treatment of momentum deposition due to solidification
   real(r8), public, save :: momentum_solidify_implicitness

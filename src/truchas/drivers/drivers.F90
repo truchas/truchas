@@ -219,17 +219,28 @@ call hijack_truchas ()
     Integer :: c,unit
     type(sim_event), pointer :: event
     type(time_step_sync) :: ts_sync
+    integer :: varlen
     real*8 :: walltime, currenttime,timeleft
     character(len=255) :: cwalltime
+!-------------------------------------------------------
+! clear out the needrestart file if it exists
+    inquire(file='needrestart',exist=found)
+    if (PGSLib_Global_Any(found)) then
+      if (is_IOP) then
+        open(newunit=unit,file='needrestart',status='old')
+        close(unit,status='delete')
+      endif
+    endif 
 
-    !---------------------------------------------------------------------------
-    
-    call get_environment_variable("PBS_WALLTIME",cwalltime)
-    read(cwalltime,*) walltime
-    call TLS_info('PBS_WALLTIME=')
-    write(cwalltime,"(F10.2)") walltime
-    call TLS_info(cwalltime)
-    
+! get the wall time for the allocation.  If it doesn't exist, set to zero and ignore.
+    call get_environment_variable("PBS_WALLTIME",cwalltime,varlen)
+    walltime = 0.
+    if (varlen.gt.0) then
+            read(cwalltime,*) walltime
+      call TLS_info('PBS_WALLTIME=')
+      write(cwalltime,"(F10.2)") walltime
+      call TLS_info(cwalltime)
+    endif
 
     if (mem_on) call mem_diag_open
 
@@ -288,8 +299,10 @@ call hijack_truchas ()
        
        write(cwalltime,"(F10.2)") walltime-(currenttime-starttime)
        
-       call TLS_info("Time left (sec):")
-       call TLS_info(cwalltime)
+       if (walltime>0) then 
+         call TLS_info("Time left (sec):")
+         call TLS_info(cwalltime)
+       endif  
 
        ! set current time
        t = t2
