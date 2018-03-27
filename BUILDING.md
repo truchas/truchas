@@ -6,15 +6,20 @@ Building Truchas
 The Truchas build system assumes a UNIX-like environment. Current development
 and testing is done on 64-bit Linux and Cray CLE platforms.
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
-  The following compilers are supported.
-  - Intel Fortran and C/C++. Versions 16.0.n (n >= 2) and 17.0.n (n >= 1).
-    *The latest 18.0.0 Fortran compiler has issues and is not supported.*
-  - NAG Fortran 6.0 (builds 1067 and 1071) and 6.1 (build 6140 or later)
-    with GNU C/C++
-  - GFortran is *not* currently supported due to incomplete and/or flawed
-    support for some Fortran 2003 features. For internal testing purposes
-    there are configuration files for GFortran, which you can try if you
-    are feeling adventurous.
+  We use and test with the following compilers.
+    - Intel Fortran and C/C++:
+        - version 16.0.{2, 3} (anything 16.0.2 or later should be okay)
+        - version 17.0.{1, 4, 6} (anything 17.0.1 or later should be okay)
+        - version 18.0.1 (18.0.0 is broken) *may* work; heard reports of issues 
+    - NAG Fortran (with GNU C/C++):
+        - version 6.0, builds 1067 or 1071
+        - version 6.1, build 6140 or later (preferred version)
+        - version 6.2 does not currently work; we are investigating
+        - most any version of GNU C/C++ should be okay
+    - GFortran is *not* currently supported due to incomplete and/or flawed
+      support for some Fortran 2003 features. There are GFortran configuration
+      files for internal testing purposes, which you can try if you are feeling
+      adventurous.
 * Cmake version 3.5 or later; but not 3.6.0 and 3.6.1.
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
