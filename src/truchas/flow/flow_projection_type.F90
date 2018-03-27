@@ -30,7 +30,7 @@
 !!  INIT(FLOW_MESH M) - Allocates the data members for this object and initializes the
 !!    internal solver
 !!
-!!  SETUP(FLOW_PROPS FP, REAL(R8) FACE_VELOCITY(:), REAL(R8) DT)
+!!  SETUP(FLOW_PROPS FP, REAL(R8) CELL_VELOCITY(:), REAL(R8) DT)
 !!    prepares the lhs and rhs of the poisson system. FACE_VELOCITY is an array of outward
 !!    face normal velocities in a "ragged" format indexed directly with xcface.
 !!    All face data associated with on process cells must be valid
@@ -71,6 +71,8 @@ module flow_projection_type
     type(hypre_hybrid) :: solver
     type(parameter_list) :: p
     real(r8), allocatable :: rhs(:)
+    real(r8), allocatable :: gravity_head(:)
+    real(r8), allocatable :: flux_vel(:)
     real(r8), allocatable :: dx_scaled(:,:) ! dxyz/||dxyz||^2
   contains
     procedure :: read_params
@@ -78,6 +80,8 @@ module flow_projection_type
     procedure :: setup
     procedure :: solve
     procedure :: correct_face_velocity
+    procedure :: face_velocity
+    procedure :: gravity
     procedure :: divergence
   end type flow_projection
 
@@ -263,6 +267,34 @@ contains
 
   end subroutine correct_face_velocity
 
+
+  subroutine gravity(this, props, body_force)
+    class(flow_projection), intent(inout) :: this
+    type(flow_props), intent(in) :: props
+    real(r8), intent(in) :: body_force(:)
+    !-
+    type(unstr_mesh), pointer :: m
+    integer :: j, f0, f1, i, k
+    real(r8) :: rho
+
+    m => this%mesh%mesh
+
+    this%gravity_head = 0.0_r8
+
+    do j = 1, m%ncell
+      rho = this%props%rho_cc(j) + this%props%rho_delta_cc(j)
+      f0 = m%xcface(j)
+      f1 = m%xcface(j+1)-1
+
+      do i = f0, f1
+        k = m%cface(i)
+        this%gravity(i) = -rho*dot_product(body_force, &
+            this%mesh%cell_centroid(:,j)-this%mesh%face_centroid(:,k))
+      end do
+    end do
+
+    ! Truchas has a gravity_limiter... Do we need this?
+  end subroutine gravity
 
   subroutine divergence(this, vel, div)
     class(flow_projection), intent(inout) :: this
