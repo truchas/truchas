@@ -84,6 +84,7 @@ module hypre_c_binding
   public :: HYPRE_BoomerAMGSetCycleType
   public :: HYPRE_BoomerAMGSetDebugFlag
   public :: HYPRE_BoomerAMGSetLogging
+  public :: HYPRE_BoomerAMGSetOldDefault
 
   !! Functions from the PCG interface
   public :: HYPRE_PCGDestroy
@@ -374,6 +375,12 @@ module hypre_c_binding
       import c_ptr, c_int
       type(c_ptr), value :: solver
       integer(c_int), value :: logging
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_BoomerAMGSetOldDefault(solver) &
+        result(ierr) bind(c, name="HYPRE_BoomerAMGSetOldDefault")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
       integer(c_int) :: ierr
     end function
   end interface

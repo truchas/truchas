@@ -11,8 +11,8 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
-!! Pececillo code (C17093) and is subject to a modified BSD license; see the
-!! file LICENSE located in the top-level directory of this distribution.
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -30,25 +30,22 @@
 
 module bndry_func_class
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
   type, abstract, public :: bndry_func
     integer,  allocatable, public :: index(:)
     real(r8), allocatable, public :: value(:)
-    real(r8), allocatable, public :: deriv(:)
-  contains
+ contains
     procedure(compute), deferred :: compute
-    procedure(compute), deferred :: compute_value
-    procedure(compute), deferred :: compute_deriv
   end type bndry_func
 
   abstract interface
-    subroutine compute(this, t, var)
+    subroutine compute(this, t)
       import r8, bndry_func
       class(bndry_func), intent(inout) :: this
-      real(r8), intent(in) :: t, var(:)
+      real(r8), intent(in) :: t
     end subroutine
   end interface
 

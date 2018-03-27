@@ -16,6 +16,12 @@ remain identical as they should.
   Output_Dt = 0.1
 /
 
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 0.1
+  phase_init_dt_factor = 1.0
+/
+
 &PHYSICS
   heat_transport = .true.
   species_transport = .true.
@@ -24,14 +30,16 @@ remain identical as they should.
 /
 
 &DIFFUSION_SOLVER
-  abs_temp_tol       = 1.0e-4
-  rel_temp_tol       = 1.0e-2
-  abs_conc_tol       = 1.0e-4
-  rel_conc_tol       = 1.0e-2
-  abs_enthalpy_tol   = 1.0e-4
-  rel_enthalpy_tol   = 1.0e-2
-  nlk_tol            = 5.0e-3
+  abs_temp_tol       = 1.0e-5
+  rel_temp_tol       = 1.0e-3
+  abs_conc_tol       = 1.0e-5
+  rel_conc_tol       = 1.0e-3
+  abs_enthalpy_tol   = 1.0e-5
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 2.0e-3
   nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles      = 2
+  verbose_stepping   = .true.
 /
 
 &NUMERICS

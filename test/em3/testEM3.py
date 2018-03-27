@@ -21,7 +21,7 @@ class EM3(TruchasTest.GoldenTestCase):
 
   def test_joule_heat(self):
     '''Verify the Joule heat fields'''
-    tol = 1.0e-8
+    tol = 1.0e-6
     test = self.get_test_field('Joule_P',cycle=0)
     gold = self.get_gold_field('Joule_P',cycle=0)
     error = max(abs((test-gold)/gold))
@@ -34,7 +34,7 @@ class EM3(TruchasTest.GoldenTestCase):
 
   def test_final_temperature(self):
     '''Verify the final temperature field'''
-    tol = 1.0e-10
+    tol = 1.0e-6
     test = self.get_test_field('Z_TEMP',cycle=30)
     gold = self.get_gold_field('Z_TEMP',cycle=30)
     error = max(abs((test-gold)/gold))

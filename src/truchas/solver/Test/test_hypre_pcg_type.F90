@@ -30,7 +30,7 @@ program test_hypre_pcg_type
   type(hypre_pcg) :: solver
   type(parameter_list), pointer :: params
   real(r8), allocatable :: x(:), b(:), u(:)
-  integer :: nrow, kx, ky, kz, num_itr, stat
+  integer :: nrow, kx, ky, kz, num_itr, stat, maxitr
   real(r8) :: a, maxerr, l2err, rtol
   real(r8), parameter :: PI = 3.1415926535897931_r8
   
@@ -64,15 +64,28 @@ program test_hypre_pcg_type
 
   maxerr = global_maxval(abs(u-x))
   l2err = sqrt(global_sum((u-x)**2) / matrix%graph%row_ip%global_size())
-  if (is_IOP) print '(a,i2,2(a,es9.2))', 'itr=', num_itr, ', maxerr=', maxerr, ', l2err=', l2err
+  if (is_IOP) print '(a,i2,2(a,es9.2),/)', 'itr=', num_itr, ', maxerr=', maxerr, ', l2err=', l2err
+
+  stat = 0
+  maxitr = 11
+  if (num_itr <= maxitr) then
+    if (is_IOP) print '(a,i0)', 'PASS: expected number of iterations <= ', maxitr
+  else
+    stat = 1
+    if (is_IOP) print '(a,i0)', 'FAIL: expected number of iterations <= ', maxitr
+  end if
+
+  maxerr = 20*rtol
+  if (l2err <= maxerr) then
+    if (is_IOP) print '(a,es10.3)', 'PASS: expected l2 error <=', maxerr
+  else
+    stat = 1
+    if (is_IOP) print '(a,es10.3)', 'FAIL: expected l2 error <=', maxerr
+  end if
 
   call pgslib_finalize
 
-  if (num_itr <= 9 .and. l2err <= 20*rtol) then
-    call exit (0)
-  else
-    call exit (1)
-  end if
+  call exit(stat)
 
 contains
 
