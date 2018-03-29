@@ -55,6 +55,7 @@ contains
     use vtrack_driver, only: read_volumetracking_namelist
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
+    use vfunction_namelist,        only: read_vfunction_namelists
     use phase_namelist,            only: read_phase_namelists
     use material_system_namelist,  only: read_material_system_namelists
     use surface_tension_module,    only: surface_tension, read_surface_tension_namelist
@@ -97,6 +98,7 @@ contains
 
     call read_physical_constants (lun)
     call read_function_namelists (lun)
+    call read_vfunction_namelists (lun)
     call read_toolpath_namelists (lun)
     call read_phase_namelists (lun)
     call read_material_system_namelists (lun)
