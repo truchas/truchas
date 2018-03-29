@@ -1,11 +1,11 @@
 module evap_heat_flux_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use bndry_func_class
+  use tdep_bndry_func_class
   implicit none
   private
 
-  type, extends(bndry_func), public :: evap_heat_flux
+  type, extends(tdep_bndry_func), public :: evap_heat_flux
     real(r8), private :: a, beta, b
   contains
     procedure :: init

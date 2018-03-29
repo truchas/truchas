@@ -17,7 +17,7 @@ module HTSD_model_type
   use property_mesh_function
   use source_mesh_function
   use boundary_data
-  use bndry_func_class
+  use tdep_bndry_func_class
   use interface_data
   use rad_problem_type
   use index_partitioning
@@ -37,7 +37,7 @@ module HTSD_model_type
     type(bd_data) :: bc_rad  ! simple radiation (eps, amb temp)
     type(if_data) :: ic_htc  ! internal HTC
     type(if_data) :: ic_rad  ! internal gap radiation
-    class(bndry_func), allocatable :: evap_flux
+    class(tdep_bndry_func), allocatable :: evap_flux
     real(r8) :: sbconst, abszero ! Stefan-Boltzmann constant and absolute zero for radiation BC
     !! Enclosure radiation problems
     type(rad_problem), pointer :: vf_rad_prob(:) => null()
