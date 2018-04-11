@@ -36,7 +36,9 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. See its README file for instructions.
+on GitLab. This version of Truchas is tested against the "v4" bundle of TPLs;
+do a `git checkout v4` after cloning the TPL repository. See its README file
+for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
 straightforward. You create a build directory, run cmake from that directory,
