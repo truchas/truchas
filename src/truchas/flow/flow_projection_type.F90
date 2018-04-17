@@ -31,19 +31,16 @@
 !!    internal solver
 !!
 !!  SETUP(FLOW_PROPS FP, REAL(R8) CELL_VELOCITY(:), REAL(R8) DT)
-!!    prepares the lhs and rhs of the poisson system. FACE_VELOCITY is an array of outward
-!!    face normal velocities in a "ragged" format indexed directly with xcface.
+!!    prepares the lhs and rhs of the poisson system. CELL_VELOCITY is an array of cell
+!!    centered velocitiesnormal velocities in a "ragged" format indexed directly with xcface.
 !!    All face data associated with on process cells must be valid
 !!
 !!  SOLVE(REAL(R8) SOLUTION(:))
 !!    solves the system and returns the solution.  Only the on_process portion of
 !!    SOLUTION is valid.
 !!
-!!  CORRECT_FACE_VELOCITY(REAL(R8) DP(:), REAL(R8) old_vel(:), REAL(R8) DT, REAL(R8) new_vel(:))
-!!    Uses DP to project the predicted face velocity (old_vel) onto a divergence free
-!!    field (new_vel)
-!!
-!!
+!!  ACCEPT()
+!!    Copies new state to the `n` level for use in next time step
 
 
 module flow_projection_type
@@ -54,6 +51,7 @@ module flow_projection_type
   use flow_mesh_type
   use unstr_mesh_type
   use flow_props_type
+  use flow_bc_type
   use fischer_guess_type
   use index_partitioning
   use hypre_hybrid_type
@@ -67,22 +65,31 @@ module flow_projection_type
   type :: flow_projection
     private
     type(flow_mesh), pointer :: mesh ! unowned reference
+    type(flow_bc), pointer :: bc ! unowned reference
     type(fischer_guess) :: fg
     type(hypre_hybrid) :: solver
     type(parameter_list) :: p
     real(r8), allocatable :: rhs(:)
-    real(r8), allocatable :: gravity_head(:)
-    real(r8), allocatable :: flux_vel(:)
-    real(r8), allocatable :: dx_scaled(:,:) ! dxyz/||dxyz||^2
+    real(r8), allocatable :: grad_fc(:,:) ! face centered gradient
+    real(r8), allocatable :: grad_p_rho_cc(:) ! dynamic pressure gradient over rho -> cell centered
+    real(r8), allocatable :: grad_p_rho_cc_n(:) ! dynamic pressure gradient over rho -> cell centered
+    real(r8), allocatable :: delta_p_cc(:)
+    real(r8), allocatable :: gravity_head(:,:)
+    real(r8), allocatable :: weights_cf(:,:) ! weights for f->c interpolation
   contains
+    public
     procedure :: read_params
     procedure :: init
     procedure :: setup
     procedure :: solve
-    procedure :: correct_face_velocity
-    procedure :: face_velocity
-    procedure :: gravity
-    procedure :: divergence
+    procedure :: accept
+    private
+    procedure :: setup_face_velocity
+    procedure :: setup_gravity
+    procedure :: setup_solver
+    procedure :: velocity_fc_correct
+    procedure :: pressure_cc_correct
+    procedure :: velocity_cc_correct
   end type flow_projection
 
 contains
@@ -95,9 +102,10 @@ contains
     call this%fg%read_params(p)
   end subroutine read_params
 
-  subroutine init(this, mesh)
+  subroutine init(this, mesh, bc)
     class(flow_projection), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
+    type(flow_bc), target, intent(inout) :: bc
     !-
     integer :: j, i, fi, ni, ri, f0
     type(pcsr_graph), pointer :: g
@@ -105,13 +113,27 @@ contains
     type(ip_desc), pointer :: row_ip
     type(unstr_mesh), pointer :: m
     type(parameter_list), pointer :: p
+    real(r8) :: w
 
     this%mesh => mesh
+    this%bc => bc
     m => mesh%mesh
     p = this%p
 
+    allocate(weights_cf(2,m%nface))
+
+    do j = 1, m%nface_onP
+      associate (n => mesh%fcell(:,j), fc => mesh%face_centriod(:,j), cc => mesh%cell_centroid(:,j))
+        if (n(1) > 0) then
+          weights_cf(1,j) = sum((fc(:,j)-cc(:,n(1)))**2)
+          weights_cf(2,j) = sum((fc(:,j)-cc(:,n(2)))**2)
+          weights_cf(:,j) = weights_cf(:,j) / sum(weights_fc(:,j))
+        else
+          weights_cf(:,j) = [0.0_r8, 1.0_r8]
+        end if
+      end associate
+    end do
     allocate(this%rhs(m%ncell))
-    allocate(this%dx_scaled(3, size(m%cface)))
 
     !! Create a CSR matrix graph for the pressure poisson system.
     allocate(g)
@@ -130,197 +152,293 @@ contains
     allocate(A)
     call A%init(g, take_graph=.true.)
     call this%solver%init(A, p)
-
-    !! Create dx_scaled to compute face centered gradients of pressure
-    this%dx_scaled = 0.0_r8
-
-    do j = 1, m%ncell
-      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
-        f0 = m%xcface(j)-1
-
-        do i = 1, size(cn)
-          ri = f0+i ! ''ragged'' index
-          fi = m%cface(ri) ! face index
-          ni = cn(i) ! neighbor index
-
-          if (ni > 0) then
-            this%dx_scaled(:,ri) = this%mesh%cell_centroid(:,ni) - this%mesh%cell_centroid(:,j)
-          else
-            this%dx_scaled(:,ri) = this%mesh%face_centroid(:,fi) - this%mesh%cell_centroid(:,j)
-          end if
-          this%dx_scaled(:,ri) = this%dx_scaled(:,ri)/sum(this%dx_scaled(:,ri)**2)
-        end do
-      end associate
-    end do
-
     call this%fg%init(mesh)
 
   end subroutine init
 
 
-  subroutine setup(this, props, vel, dt)
+  subroutine setup(this, dt, props, body_force, vel_cc, P_cc, vel_fn)
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
-    real(r8), intent(in) :: vel(:), dt
+    real(r8), intent(in) :: vel_cc(:,:), dt, P_cc(:), body_force(:)
+    real(r8), intent(out) :: vel_fn(:)
+
+    call this%setup_gravity(props, body_force)
+    call this%setup_face_velocity(dt, props, vel_cc, P_cc, vel_fn)
+    call this%setup_solver(dt, props, vel_fn)
+  end subroutine setup
+
+  subroutine accept(this)
+    class(flow_projection), intent(inout) :: this
+    this%grad_p_rho_cc_n = this%grad_p_rho_cc
+  end subroutine accept
+
+  subroutine setup_solver(this, dt, props, vel)
+    class(flow_projection), intent(inout) :: this
+    type(flow_props), intent(in) :: props
+    real(r8), intent(in) :: vel(:)
     !-
     type(pcsr_matrix), pointer :: A
-    type(unstr_mesh), pointer :: m
-    integer :: i, j, k, fi, ni, f0, f1, ri
+    real(r8), pointer :: ds(:,:)
+    integer :: i, j, fi, ni
     real(r8) :: coeff
 
     A = this%solver%matrix()
     call A%set_all(0.0_r8)
 
-    m => this%mesh%mesh
+    ds = flow_gradient_coefficients()
 
-    do j = 1, m%ncell_onP
-      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
-        f0 = m%xcface(j)-1
+    associate (m => this%mesh%mesh, rho_f => props%rho_fc)
+      do j = 1, m%ncell_onP
+        associate (nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
+            face => m%cface(m%xcface(j):m%xcface(j+1)-1))
+          do i = 1, size(nhbr)
+            fi = face(i)
+            ni = nhbr(i)
 
-        do i = 1, size(cn)
-          ri = f0+i ! ! ragged index
-          fi = m%cface(ri) ! face index
-          ni = cn(i) ! neighbor index
-
-          !! FIXME: COME BACK AND HANDLE SOLID FACES, AND SOLID/VOID CELLS
-          ! note that normal is already weighted by face area
-          if (btest(m%cfpar(j), pos=i)) then
-            coeff = dot_product(this%dx_scaled(:,ri), m%normal(:,fi))/props%rho_fc(fi)
-          else
-            coeff = -dot_product(this%dx_scaled(:,ri), m%normal(:,fi))/props%rho_fc(fi)
-          end if
-
-          if (ni > 0) then
-            ! DOUBLE CHECK THE SIGN OF THESE COEFFICIENTS
+            if (rho_f(fi) == 0.0_r8) then
+              coeff = 0.0_r8
+            elseif (btest(m%cfpar(j), pos=i)) then
+              ! note that normal is already weighted by face area
+              coeff = dot_product(this%dx_scaled(:,fi), m%normal(:,fi))/rho_f(fi)
+            else
+              -coeff = dot_product(this%dx_scaled(:,fi), m%normal(:,fi))/rho_f(fi)
+            end if
             call A%add_to(j, j, coeff)
-            call A%add_to(j, ni, -coeff)
-          else
-            call A%add_to(j, j, coeff)
-          end if
-        end do
-      end associate
-    end do
+            if (ni > 0) call A%add_to(j, ni, -coeff)
+          end do
+        end associate
+      end do
+    end associate
 
     call this%solver%setup()
 
-    this%rhs = 0.0_r8
-    !! FIXME: need correction for void
-    do j = 1, m%ncell_onP
-      f0 = m%xcface(j)
-      f1 = m%xcface(j+1)-1
-      do i = f0, f1
-        k = m%cface(i)
-        this%rhs(j) = this%rhs(j) + vel(i)*m%area(k)
-      end do
-      this%rhs(j) = this%rhs(j) / dt
-    end do
-
-
-  end subroutine setup
-
-
-  subroutine solve(this, solution)
-    class(flow_projection), intent(inout) :: this
-    real(r8), intent(inout) :: solution(:)
-    !-
-    integer :: ierr
-
-    call this%fg%guess(this%rhs, solution)
-    call this%solver%solve(this%rhs, solution, ierr)
-    if (ierr /= 0) call tls_error("projection solve unsuccessful")
-    call this%fg%update(this%rhs, solution, this%solver%matrix())
-
-  end subroutine solve
-
-
-  subroutine correct_face_velocity(this, props, dp, vel_old, dt, vel)
-    class(flow_projection), intent(inout) :: this
-    type(flow_props) :: props
-    real(r8), intent(in) :: dp(:), vel_old(:), dt
-    real(r8), intent(out) :: vel(:)
-    !-
-    type(unstr_mesh), pointer :: m
-    integer :: i, j, fi, ni, f0, f1, ri
-
-    m => this%mesh%mesh
-
-    do j = 1, m%ncell_onP
-      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
-        f0 = m%xcface(j)-1
-
-        do i = 1, size(cn)
-          ri = f0+i ! ragged index
-          fi = m%cface(ri) ! face index
-          ni = cn(i) ! neighbor index
-
-          !! FIXME: COME BACK AND HANDLE SOLID FACES, AND SOLID/VOID CELLS
-          if (btest(m%cfpar(j), pos=i)) then
-            vel(ri) = vel_old(ri) + dt*dot_product(this%dx_scaled(:,ri),m%normal(:,fi))/&
-                (props%rho_fc(fi)*m%area(fi))
-          else
-            vel(ri) = vel_old(ri) - dt*dot_product(this%dx_scaled(:,ri),m%normal(:,fi))/&
-                (props%rho_fc(fi)*m%area(fi))
-          end if
+    !! FIXME: need correction for void/solid... maybe
+    associate (m => this%mesh%mesh, rhs => this%rhs)
+      do j = 1, m%ncell_onP
+        rhs(j) = 0.0_r8
+        associate( fn => m%cface(m%xcface(j):m%xcface(j+1)-1))
+          do i = 1, size(fn)
+            ! face velocity follows the convention of being positive in the inward
+            ! face direction as is the normal.  Boundary conditions have already been
+            ! applied in computing `vel` so we shouldn't need to use them here again
+            if (btest(m%cfpar(j), pos=i)) then
+              this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
+            else
+              this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
+            end if
+          end do
+          this%rhs(j) = this%rhs(j) / dt
         end do
-      end associate
-    end do
+      end do
+    end associate
+  end subroutine setup_solver
 
-  end subroutine correct_face_velocity
 
 
-  subroutine gravity(this, props, body_force)
+  subroutine setup_gravity(this, props, body_force)
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: body_force(:)
     !-
-    type(unstr_mesh), pointer :: m
-    integer :: j, f0, f1, i, k
+
+    integer :: j, i, n
     real(r8) :: rho
 
-    m => this%mesh%mesh
+    associate( fcell => this%mesh%fcell, m => this%mesh%mesh, g => this%gravity_head, &
+        cc => this%mesh%cell_centroid, fc => this%mesh%face_centroid, p => this%props)
 
-    this%gravity_head = 0.0_r8
+      g = 0.0_r8
 
-    do j = 1, m%ncell
-      rho = this%props%rho_cc(j) + this%props%rho_delta_cc(j)
-      f0 = m%xcface(j)
-      f1 = m%xcface(j+1)-1
+      do j = 1, m%nface_onP
+        do i = 1, 2
+          n = fcell(i,j)
+          if (n == 0) cycle
 
-      do i = f0, f1
-        k = m%cface(i)
-        this%gravity(i) = -rho*dot_product(body_force, &
-            this%mesh%cell_centroid(:,j)-this%mesh%face_centroid(:,k))
+          rho = p%rho_cc(n) + p%rho_delta_cc(n)
+          g(i,j) = -rho*dot_product(body_force, cc(:,i)-fc(:,j))
+        end do
       end do
-    end do
 
+      call gather_boundary(m%face_ip, g(1,:))
+      call gather_boundary(m%face_ip, g(2,:))
+    end associate
     ! Truchas has a gravity_limiter... Do we need this?
-  end subroutine gravity
+  end subroutine setup_gravity
 
-  subroutine divergence(this, vel, div)
+  subroutine setup_face_velocity(this, dt, props, vel_cc, p_cc, vel_fn)
     class(flow_projection), intent(inout) :: this
-    real(r8), intent(in) :: vel(:)
-    real(r8), intent(out) :: div(:)
+    real(r8), intent(in) :: dt
+    type(flow_props), intent(in) :: props
+    real(r8), intent(in) :: vel_cc(:,:), p_cc(:)
+    real(r8), intent(out) :: vel_fn(:)
     !-
-    type(unstr_mesh), pointer :: m
-    integer :: j, f0, f1, i, k, out
+    integer :: i, j
 
-    div = 0.0_r8
-    m => this%mesh%mesh
-
-    !! FOR DEBUGGING PURPOSES
-    open(file='divergence', newunit=out)
-    do j = 1, m%ncell_onP
-      f0 = m%xcface(j)
-      f1 = m%xcface(j+1)-1
-      do i = f0, f1
-        k = m%cface(i)
-        div(j) = div(j) + vel(i)*m%area(k)
+    ! cell -> face interpolation
+    associate (m => this%mesh%mesh, v => this%vel_cc_star, gpn => this%grad_p_rho_cc_n, &
+        w => this%weights_cf)
+      do i=1, m%ncell
+        v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
-      write(out, '(4es13.5)') this%mesh%cell_centroid(:,j), div(j)
-    end do
-    close(out)
+      call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%inactive_f, 0.0_r8)
+    end associate
 
-    ! FIXEME: Truchas zeros out divergence in solid/void cells.  Seems like a hack
-  end subroutine divergence
+    ! subtract dynamic pressure grad
+    associate (m => this%mesh%mesh, gfc => this%grad_fc, rho_fc => props%rho_fc)
+
+      call gradient_cf(gfc, p_cc, time, this%bc%p_neumann, &
+          this%bc%p_dirichlet, props%inactive_f, 0.0_rp, this%gravity_head)
+
+      do j = 1, m%nface_onP
+        if (rho_fc(j) > 0.0_r8) then
+          vel_fn(j) = vel_fn(j) - dt*dot_product(m%normal(:,j),gfc(:,j))/(m%area(j)*rho_fc(j))
+        else
+          ! there may be something special with void here....
+          vel_fn(j) = 0.0_r8
+        end if
+      end do
+      call gather_boundary(m%face_ip, vel_fn)
+    end associate
+  end subroutine setup_face_velocity
+
+
+  subroutine solve(this, dt, props, p_cc, vel_cc, vel_fc)
+    class(flow_projection), intent(inout) :: this
+    real(r8), intent(in) :: dt
+    type(flow_props), intent(in) :: props
+    real(r8), intent(inout) :: p_cc(:), vel_cc(:), vel_fc(:)
+    !-
+    real(r8) :: dp_vof, vof, dec
+    integer :: ierr, j, i
+
+    ! solve the pressure poisson system
+    this%delta_p_cc = 0.0_r8
+    call this%fg%guess(this%rhs, this%delta_p_cc)
+    call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
+    if (ierr /= 0) call tls_error("projection solve unsuccessful")
+    call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
+
+    ! not sure if this call is necesary
+    call gather_boundary(this%mesh%mesh%cell_ip, this%delta_p_cc)
+
+    ! correct face and cell centered quantities
+    call this%velocity_fc_correct(dt, props, vel_fc)
+    call this%pressure_cc_correct(props, p_cc)
+    call this%velocity_cc_correct(dt, props, p_cc, vel_cc)
+  end subroutine solve
+
+
+  subroutine velocity_fc_correct(this, dt, props, vel_fc)
+    class(flow_projection), intent(inout) :: this
+    real(r8), intent(in) :: dt
+    type(flow_props), intent(in) :: props
+    real(r8), intent(inout) :: vel_fc(:)
+    !-
+    integer :: ierr, j, i
+
+    ! face gradient of solution
+    call gradient_cf(this%grad_fc, this%delta_p_cc, time, this%bc%p_neumann, &
+        this%bc%p_dirichlet, props%inactive_f, 0.0_rp)
+
+    ! divergence free face velocity
+    associate (m => this%mesh%mesh)
+      do j = 1, m%nface_onP
+        if (props%inactive_f(j) > 0) then
+          vel_fc(j) = 0.0_rp
+        else
+          vel_fc(j) = this%vel_fc_star(j) - &
+              dt*dot_product(this%grad_fc(:,j),m%normal(:,j)/m%area(j))/props%rho_fc(j)
+        end if
+      end do
+
+      call this%bc%v_dirichlet%compute(t)
+      associate (index => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
+        do i = 1, size(index)
+          j = index(i)
+          ! is the convention to specify boundary velocity as into or out of domain??????
+          ! the following assumes _out_
+          if (props%inactive_f(j) == 0) &
+              vel_fc(j) = -dot_product(value(:,j), m%normal(:,j))/m%area(j)
+        end do
+      end associate
+
+      call gather_boundary(m%face_ip, vel_fc)
+    end associate
+
+    ! there may be some magic here about setting fluxing velocities on void cells.
+    ! not sure if it's applicable when using face based (as opposed to side based) indexing
+  end subroutine velocity_fc_correct
+
+
+  subroutine pressure_cc_correct(this, props, p_cc)
+    class(flow_projection), intent(inout) :: this
+    real(r8), intent(in) :: dt
+    type(flow_props), intent(in) :: props
+    real(r8), intent(inout) :: p_cc(:)
+    !-
+    real(r8) :: dp_vof, vof, dec
+    integer :: i
+
+    associate (m => this%mesh%mesh, p => props, dp => this%delta_p_cc)
+      ! remove null space from dp if applicable
+      if (.not.(this%bc%dirichlet_p .or. p%any_void)) then
+        ! maybe this should use inactive_c... needs to be consistenent with how
+        ! the operator is constructed
+        dp_vof = 0.0_r8
+        vof = 0.0_r8
+        do i = 1, m%ncell_onP
+          vof = vof + p%vof(i)
+          dp_vof = dp_vof + p%vof(i)*dp(i)
+        end do
+        vof = global_sum(vof)
+        dp_vof = global_sum(dp_vof)
+        dp(1:m%ncell_onP) = dp(1:m%ncell_onP) - dp_vof/vof
+      endif
+      p_cc = p_cc + dp
+      call gather_boundary(m%cell_ip, p_cc)
+    end associate
+  end subroutine pressure_cc_correct
+
+
+  subroutine velocity_cc_correct(this, dt, props, p_cc, vel_cc)
+    class(flow_projection), intent(inout) :: this
+    real(r8), intent(in) :: dt
+    type(flow_props), intent(in) :: props
+    real(r8), intent(in) :: p_cc(:)
+    real(r8), intent(inout) :: vel_cc(:,:)
+    !-
+    integer :: i, j, k, f0, f1
+
+    call gradient_cf(this%grad_fc, p_cc, time, this%bc%p_neumann, &
+        this%bc%p_dirichlet, props%inactive_f, 0.0_rp, this%gravity_head)
+
+    associate (m => this%mesh%mesh, gfc => this%grad_fc, rho_fc => props%rho_fc,
+      gpn => this%grad_p_rho_cc_n, gp => this%grad_p_rho_cc)
+
+      do j = 1, m%nface_onP
+        if (rho_fc(j) > 0.0_r8) then
+          gfc(:,j) = gfc(:,j)/rho_fc(j)
+        else
+          gfc(:,j) = 0.0_r8
+        end if
+      end do
+      call gather_boundary(m%face_ip, gfc)
+      call interpolate_fc(gp, gfc)
+
+      do i = 1, m%ncell_onP
+        ! is this check actually necessary.. would gpn or gp be non-zero
+        ! in either of these cases?
+        if (props%rho_cc(i) == 0.0_r8 .or. props%inactive_c(i)) then
+          vel_cc(:,i) = 0.0_r8
+        else
+          vel_cc(:,i) = vel_cc(:,i) + dt*(gpn(:,i)-gp(:,i))
+        end if
+      end do
+
+    end associate
+  end subroutine velocity_cc_correct
+
+
 
 end module flow_projection_type

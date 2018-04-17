@@ -7,9 +7,16 @@ module flow_mesh_type
   implicit none
   private
 
+  ! fcell(1:2,i) -> contains the 2 cellids of the cells which share this face
+  !                 In general, only the entries for i in [1,nface_onP] can be relied on
+  !                 The first entry is always the cell for which the face normal points inward
+  !                 The second entry is always the cell for which the face normal points outward
+  ! for i in [1,nface_onP], the first entry will only be 0 at the boundary
+  !                         the second entry will never be 0.
+
   type, public :: flow_mesh
     type(unstr_mesh), pointer :: mesh => null() ! read only
-    integer, allocatable :: xfcell(:), fcell(:) ! face cells
+    integer, allocatable :: fcell(:,:) ! face cells
     real(r8), allocatable :: face_centroid(:,:)
     real(r8), allocatable :: cell_centroid(:,:)
   contains
@@ -23,7 +30,6 @@ contains
     type(unstr_mesh), pointer, intent(in) :: m
     !-
     integer :: i, j, s
-    integer, allocatable :: fp(:), fm(:)
 
     this%mesh => m
     allocate(this%face_centroid(3, m%nface))
@@ -43,70 +49,42 @@ contains
       end associate
     end do
 
-
-    ! build face->cell indexing
-    allocate(fp(m%nface))
-    allocate(fm(m%nface))
-    fp = 0
-    fm = 0
+    allocate(this%fcell(2,m%nface))
+    this%fcell = 0
 
     do i = 1, m%ncell
       associate (fn => m%cface(m%xcface(i):m%xcface(i+1)-1))
         do j = 1, size(fn)
+          if (fn(j) == 0) cycle
           if (btest(m%cfpar(i,pos=j))) then
-            fp(fn(j)) = i
+            this%fcell(1,fn(j)) = i
           else
-            fm(fn(j)) = i
+            this%fcell(2,fn(j)) = i
           endif
         end do
       end associate
-    end do
-    s = count(fp > 0) + count(fm > 0)
-    allocate(this%fcell(s))
-    allocate(this%xfcell(m%nface+1))
-
-    j = 1
-    this%xfcell(i) = j
-    do i = 1, m%nface
-      if (fp(i) > 0 .and. fm(i) > 0) then
-        this%fcell(j) = fp(i)
-        this%fcell(j+1) = fm(i)
-        j = j+2
-      elseif (fp(i) > 0) then
-        this%fcell(j) = fp(i)
-        j = j+1
-      elseif (fm(i) > 0) then
-        this%fcell(j) = fm(i)
-        j = j+1
-      end if
-      this%xfcell(i+1) = j
     end do
 
     !! DEBUGGING CHECK
     do i = 1, m%ncell_onP
       associate (cn => m%cnhbr(m%xcnhbr(i):m%xcnhbr(i+1)-1), &
           fi => m%cface(m%xcface(i):m%xcface(i+1)-1))
-
         do j = 1, size(cn)
-          associate(fc => this%fcell(this%xfcell(fi(j)):this%xfcell(fi(j)+1)-1))
-            if (cn(j) > 0) then
-              assert(size(fc) == 2)
-              if (fc(1) == i) then
-                assert(fc(2) == cn(j))
-              else
-                assert(fc(1) == cn(j))
-                assert(fc(2) == i)
-              end if
+          if (cn(j) > 0) then
+            assert(all(this%fcell(:,fi(j))) > 0)
+            if (btest(m%cfpar(i,pos=j))) then
+              assert(this%fcell(1,fi(j)) == i)
+              assert(this%fcell(2,fi(j)) == cn(j))
             else
-              assert(size(fc) == 1)
-              assert(fc(1) == i)
-            endif
-          end do
+              assert(this%fcell(1,fi(j)) == cn(j))
+              assert(this%fcell(2,fi(j)) == i)
+            end if
+          else
+            assert(this%fcell(1,fi(j)) == 0)
+            assert(this%fcell(2,fi(j)) == i)
+          endif
         end do
       end associate
     end do
-
-    deallocate(fp)
-    deallocate(fm)
   end subroutine init
 end module flow_mesh_type

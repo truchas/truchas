@@ -6,6 +6,7 @@ module flow_type
   use flow_mesh_type
   use flow_projection_type
   use flow_props_type
+  use flow_bc_type
   use unstr_mesh_type
   use index_partitioning
   implicit none
@@ -19,6 +20,7 @@ module flow_type
     real(r8), allocatable :: vel_fn(:) ! outward oriented face-normal velocity
     real(r8), allocatable :: P_cc(:) ! cell-centered pressure
     type(flow_projection) :: fp
+    type(flow_bc), target :: bc
   contains
     procedure :: read_params
     procedure :: init
@@ -54,7 +56,7 @@ contains
     print *, 'allocation required in flow%init'
 
     print *, 'initialization required in flow%init'
-    call this%fp%init(m)
+    call this%fp%init(m, bc)
   end subroutine init
 
   subroutine zero_out_solid_velocities(this, props)
@@ -72,7 +74,7 @@ contains
     ! predictor
 
     ! corrector
-    call this%fp%setup(props, this%vel_fn, dt)
+    call this%fp%setup(dt, props, bc, this%vel_cc, this%P_cc, this%vel_fn)
 
   end subroutine step
 

@@ -5,15 +5,16 @@ module flow_bc_type
   use truchas_timers
   use flow_mesh_type
   use flow_bc_factory_type
+  use parallel_communication
   implicit none
   private
 
   public :: flow_bc
 
   type :: flow_bc
-    class(bndry_func), allocatable :: p_dirichlet
+    class(bndry_func), allocatable :: p_dirichlet, p_neumann
     class(bndry_vfunc), allocatable :: v_dirichlet
-
+    logical :: pressure_d
   contains
     procedure :: init
   end type flow_bc
@@ -29,6 +30,11 @@ contains
     call f%init(mesh, p)
     call f%alloc_bc("velocity-dirichlet", v_dirichlet)
     call f%alloc_bc("pressure-dirichlet", p_dirichlet)
+    ! need to have a p_neumann here... to complement velocity-dirichlet
+
+    this%pressure_d = global_sum(size(p_dirichlet%index)) > 0
+
+
 
   end subroutine init
 

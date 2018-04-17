@@ -9,11 +9,11 @@ module flow_operators
   implicit none
   private
 
-  public :: gradient_cc
+  public :: gradient_cc, gradient_fc, interpolate_fc, interpolate_cf
 
   type :: flow_operator
     type(flow_mesh), pointer :: mesh => null()
-    real(r8), allocatable :: ds(:,:) ! dxyz/||dxyz||^2
+    real(r8), allocatable, target :: ds(:,:) ! dxyz/||dxyz||^2
   end type flow_operator
 
   type(flow_operator), allocatable :: this
@@ -24,7 +24,7 @@ contains
     type(flow_mesh), pointer, intent(in) :: mesh
     !
     type(unstr_mesh), pointer :: m
-    integer :: j
+    integer :: j, c1, c2
 
     if (allocated(this)) return
 
@@ -35,21 +35,27 @@ contains
 
     this%ds = 0.0_r8
 
-    do j = 1, m%nface
-      associate (fc => mesh%fcell(mesh%xfcell(j):mesh%xfcell(j+1)-1))
-
-        select case (size(fc))
-        case (1)
-          this%ds(:,j) = mesh%face_centroid(:,j) - mesh%cell_centroid(:,fc(1))
-          this%ds(:,j) = this%ds(:,j)/sum(this%ds(:,j)**2)
-        case (2)
-          this%ds(:,j) = mesh%cell_centroid(:,fc(2)) - mesh%cell_centroid(:,fc(1))
-          this%ds(:,j) = this%ds(:,j)/sum(this%ds(:,j)**2)
-        end select
-      end associate
+    do j = 1, m%nface_onP
+      c1 = mesh%fcell(1,j)
+      c2 = mesh%fcell(2,j)
+      if (c1 == 0) then
+        this%ds(:,j) = mesh%face_centroid(:,j) - mesh%cell_centroid(:,c2)
+        this%ds(:,j) = this%ds(:,j)/sum(this%ds(:,j)**2)
+      else
+        this%ds(:,j) = mesh%cell_centroid(:,c1) - mesh%cell_centroid(:,c2)
+        this%ds(:,j) = this%ds(:,j)/sum(this%ds(:,j)**2)
+      end if
     end do
 
+    do j = 1, 3
+      call gather_boundary(m%face_ip, this%ds(j,:))
+    end do
   end subroutine flow_operators_init
+
+  function flow_gradient_coefficients() result(p)
+    real(r8), pointer :: p(:,:)
+    p => this%ds
+  end function flow_gradient_coefficients
 
   ! gradient of cell-centered scalar `x` evaluated at cell centers
   subroutine gradient_cc(gx, gy, gz, x, w_node0, w_node1, w_face)
@@ -132,22 +138,33 @@ contains
 
   ! gradient of cell-centered scalar `x` evaluated at face centers
   ! result only valid on nface_onP
-  subroutine gradient_cf(g, x, t, normal_flux_bc, dirichlet_bc)
+  subroutine gradient_cf(g, x, t, normal_flux_bc, dirichlet_bc, &
+      inactive_faces, inactive_default, gravity)
     real(r8), intent(out) :: g(:,:)
     real(r8), intent(in) :: x(:), t
     class(bndry_func), optional, intent(inout) :: normal_flux_bc, dirichlet_bc
+    integer, intent(in), optional :: inactive_faces(:)
+    real(r8), intent(in), optional :: inactive_default
+    real(r8), intent(in), optional :: gravity(:,:) ! for dynamic pressure grad
 
     integer :: j,i
 
     g = 0.0_r8
 
     associate (m => this%mesh%mesh, f=> this%mesh)
-
-      do j = 1, m%nface_onP
-        associate (fc => f%fcell(f%xfcell(j):f%xfcell(j+1)-1))
-          if (size(fc) == 2) g(:,j) = this%ds(:,j) * (x(fc(2))-x(fc(1)))
-        end associate
-      end do
+      if (present(gravity)) then
+        do j = 1, m%nface_onP
+          associate (n => f%fcell(:,j), y => gravity(:,j))
+            if (n(1) > 0) g(:,j) = this%ds(:,j) * (x(n(1))+y(1)-x(n(2))-y(2))
+          end associate
+        end do
+      else
+        do j = 1, m%nface_onP
+          associate (n => f%fcell(:,j))
+            if (n(1) > 0) g(:,j) = this%ds(:,j) * (x(n(1))-x(n(2)))
+          end associate
+        end do
+      end if
 
       if (present(normal_flux_bc)) then
         call normal_flux_bc%compute(t)
@@ -158,19 +175,99 @@ contains
 
       if (present(dirichlet_bc)) then
         call dirichlet_bc%compute(t)
-        associate (index => normal_flux_bc%index, value => normal_flux_bc%value)
-          do i = 1, size(index)
-            j = index(i)
-            associate(fc => f%fcell(f%xfcell(j):f%xfcell(j+1)-1))
-              g(:,j) = this%ds(:,j)*(value(i)-x(fc(1)))
-            end associate
-          end do
+        associate (index => dirichlet_bc%index, value => dirichlet_bc%value)
+          if (present(gravity)) then
+            do i = 1, size(index)
+              j = index(i)
+              associate(n => f%fcell(2,j), y => gravity(2,j))
+                g(:,j) = this%ds(:,j)*(value(i)-x(n)-y)
+              end associate
+            end do
+          else
+            do i = 1, size(index)
+              j = index(i)
+              associate(n => f%fcell(2,j))
+                g(:,j) = this%ds(:,j)*(value(i)-x(n))
+              end associate
+            end do
+          end if
         end associate
+      end if
+
+
+      if (present(inactive_faces) .and. present(inactive_default)) then
+        do j = 1, m%nface_onP
+          if (inactive_faces(j) > 0) g(:,j) = inactive_default
+        end do
       end if
 
     end associate
 
   end subroutine gradient_cf
+
+  ! interpolation of vector quantitiy xf to faces
+  ! result only valid on ncell_onP
+  subroutine interpolate_fc(ic, xf)
+    real(r8), intent(out) :: ic(:,:)
+    real(r8), intent(in) :: xf(:,:)
+
+    integer :: i, dim
+
+
+    associate (m => this%mesh%mesh, f=> this%mesh)
+      do i = 1, m%ncell_onP
+        associate (fn => m%cface(m%xcface(i):m%xcface(i+1)-1))
+          do dim = 1, size(ic,dim=1)
+            g(dim,i) = dot_product(abs(m%normal(dim,fn)), xf(dim,fn))/sum(abs(m%normal(dim,fn)))
+          end do
+        end associate
+      end do
+    end associate
+  end subroutine interpolate_fc
+
+
+  ! normal component of interpolation of vector cell centered vector
+  ! quantity 'x' to face centers, using weights 'w'.  Dirichlet
+  ! boundary conditions on faces may be supplied as well a list of
+  ! inactive faces and a default value for xf at inactive faces.
+  ! result only valid on nface_onP
+  subroutine interpolate_cf(xf, x, w, bc, inactive_faces, inactive_default)
+    real(r8), intent(out) :: xf(:)
+    real(r8), intent(in) :: x(:,:), w(:,:)
+    class(bndry_func), optional, intent(inout) :: bc
+    integer, intent(in), optional :: inactive_faces(:)
+    real(r8), intent(in), optional :: inactive_default
+
+    integer :: j,i
+
+    associate (m => this%mesh%mesh, f=> this%mesh)
+      do j = 1, m%nface_onP
+        associate (n => f%fcell(:,j))
+          if (n(1) > 0) then
+            xf(j) = (w(1,j)*dot_product(m%normal(:,j),x(i,n(1))) + &
+                w(2,j)*dot_product(m%normal(:,j),x(i,n(2)))) / m%area(j)
+          else
+            xf(j) = dot_product(m%normal(:,j),xf(:,n(2)))/m%area(j)
+          end if
+        end associate
+      end do
+
+      if (present(bc)) then
+        associate (index => bc%index, value => bc%value)
+          do i = 1, size(index)
+            j = index(i)
+            xf(j) = dot_product(m%normal(:,j),value(:,j))/m%area(j)
+          end do
+        end associate
+      end if
+
+      if (present(inactive_faces) .and. present(inactive_default)) then
+        do j = 1, m%nface_onP
+          if (inactive_faces(j) > 0) xf(j) = inactive_default
+        end do
+      end if
+    end associate
+  end subroutine interpolate_cf
 
 
 end module flow_operators
