@@ -31,15 +31,9 @@ find_package(YAJL "2.0.4" ${_FIND_YAJL_ARG})
 if(YAJL_FOUND)
   find_library(PETACA_LIBRARY petaca)
 
-  # Infer the location of the module files from that of the library.
-  # Really should be looking for specific module files.
+  # Module files are installed with the library file.
   if(PETACA_LIBRARY)
     get_filename_component(PETACA_MODULE_DIR ${PETACA_LIBRARY} DIRECTORY)
-    get_filename_component(PETACA_MODULE_DIR ${PETACA_MODULE_DIR} DIRECTORY)
-    set(PETACA_MODULE_DIR ${PETACA_MODULE_DIR}/include)
-    if(NOT EXISTS ${PETACA_MODULE_DIR})
-      set(PETACA_MODULE_DIR PETACA_MODULE_DIR-NOTFOUND)
-    endif()
   endif()
 
   # No version number is currently available

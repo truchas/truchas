@@ -206,8 +206,8 @@ contains
     class(scalar_func), pointer :: f
 
     real(r8) :: x0, t0, v0, t1, v1
-    integer, allocatable :: expon(:)
-    real(r8), allocatable :: coef(:), x(:), y(:)
+    integer, allocatable :: expon(:), expon2(:,:)
+    real(r8), allocatable :: coef(:), x(:), y(:), x0_def(:), x02(:)
     character(:), allocatable :: ftype
 
     call params%get ('type', ftype)
@@ -216,11 +216,22 @@ contains
       call params%get ('value', v0)
       f => new_const_scalar_func(v0)
     case ('polynomial')
-      call params%get ('polynomial coefficients', coef)
-      call params%get ('polynomial exponents', expon)
-      call params%get ('polynomial reference point', x0, default=0.0_r8)
-      ASSERT(size(coef) == size(expon))
-      f => new_poly_scalar_func(coef, expon, x0)
+      call params%get ('poly-coef', coef)
+      if (params%is_vector('poly-powers')) then
+        call params%get('poly-powers', expon)
+        call params%get('poly-center', x0, default=0.0_r8)
+        ASSERT(size(coef) == size(expon))
+        f => new_poly_scalar_func(coef, expon, x0)
+      else if (params%is_matrix('poly-powers')) then
+        call params%get('poly-powers', expon2)
+        ASSERT(size(coef) == size(expon2,2))
+        allocate(x0_def(size(expon2,1)))
+        x0_def = 0.0_r8
+        call params%get ('poly-center', x02, default=x0_def)
+        f => new_mpoly_scalar_func(coef, expon2, x02)
+      else
+        INSIST(.false.)
+      end if
     case ('tabular')
       call params%get ('tabular x', x)
       call params%get ('tabular y', y)
@@ -247,8 +258,8 @@ contains
     type(parameter_list), intent(inout) :: params
 
     real(r8) :: x0, t0, v0, t1, v1
-    integer, allocatable :: expon(:)
-    real(r8), allocatable :: coef(:), x(:), y(:)
+    integer, allocatable :: expon(:), expon2(:,:)
+    real(r8), allocatable :: coef(:), x(:), y(:), x0_def(:), x02(:)
     character(:), allocatable :: ftype
 
     call params%get ('type', ftype)
@@ -257,11 +268,22 @@ contains
       call params%get ('value', v0)
       call alloc_const_scalar_func (f, v0)
     case ('polynomial')
-      call params%get ('polynomial coefficients', coef)
-      call params%get ('polynomial exponents', expon)
-      call params%get ('polynomial reference point', x0, default=0.0_r8)
-      ASSERT(size(coef) == size(expon))
-      call alloc_poly_scalar_func (f, coef, expon, x0)
+      call params%get('poly-coef', coef)
+      if (params%is_vector('poly-powers')) then
+        call params%get('poly-powers', expon)
+        call params%get('poly-center', x0, default=0.0_r8)
+        ASSERT(size(coef) == size(expon))
+        call alloc_poly_scalar_func (f, coef, expon, x0)
+      else if (params%is_matrix('poly-powers')) then
+        call params%get('poly-powers', expon2)
+        ASSERT(size(coef) == size(expon2,2))
+        allocate(x0_def(size(expon2,1)))
+        x0_def = 0.0_r8
+        call params%get ('poly-center', x02, default=x0_def)
+        call alloc_mpoly_scalar_func(f, coef, expon2, x02)
+      else
+        INSIST(.false.)
+      end if
     case ('tabular')
       call params%get ('tabular x', x)
       call params%get ('tabular y', y)
