@@ -1,3 +1,14 @@
+Release Notes for Truchas 3.0.1 (4/25/2018)
+-------------------------------------------
+
+Back-ported some fixes on the main development branch that allow building
+with contemporary cpp versions and the NAG 6.1 compiler.
+
+This version builds with the newer Intel 17 and 18, and NAG 6.1 compilers,
+in addition to the older compilers supported by 3.0, though it has not been
+thoroughly tested with the newer compilers.
+
+
 Release Notes for Truchas 3.0
 -----------------------------
 
