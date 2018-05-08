@@ -30,6 +30,9 @@
 !!
 !!  APPLY(REAL(R8) CELL_VISCOSITY(:))
 !!    updates the cell-centered viscosity based on model
+!!
+!!  ACCEPT()
+!!    updates any internal state after timestep is accepted
 
 
 module turbulence_model_class
@@ -44,10 +47,11 @@ module turbulence_model_class
   type, abstract :: turbulence_model
     type(flow_mesh), pointer :: mesh => null()
   contains
-    procedure(read_params) :: read_params
+    procedure(read_params), deferred :: read_params
     procedure(init), deferred :: init
     procedure(setup), deferred :: setup
     procedure(apply), deferred :: apply
+    procedure(accept), deferred :: accept
   end type turbulence_model
 
   abstract interface
@@ -69,10 +73,15 @@ module turbulence_model_class
       real(r8), intent(in) :: vel_cc(:,:)
     end subroutine setup
 
-    subroutine apply
+    subroutine apply(this, visc_cc)
       import
       class(turbulence_model), intent(inout) :: this
       real(r8), intent(inout) :: visc_cc(:)
     end subroutine apply
+
+    subroutine accept(this, visc_cc)
+      import
+      class(turbulence_model), intent(inout) :: this
+    end subroutine accept
   end interface
 end module turbulence_model_class

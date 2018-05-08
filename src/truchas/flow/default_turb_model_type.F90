@@ -59,11 +59,17 @@ contains
     ! nothing
   end subroutine setup
 
-  subroutine apply
+  subroutine apply(this, visc_cc)
     class(default_turb_model), intent(inout) :: this
     real(r8), intent(inout) :: visc_cc(:)
 
     !nothing
   end subroutine apply
+
+  subroutine accept(this)
+    class(default_turb_model), intent(inout) :: this
+
+    !nothing
+  end subroutine accept
 
 end module default_turb_model_type

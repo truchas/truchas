@@ -94,9 +94,14 @@ contains
 
   end subroutine setup
 
-  subroutine apply
+  subroutine apply(this, visc_cc)
     class(algebraic_turb_model), intent(inout) :: this
     real(r8), intent(inout) :: visc_cc(:)
   end subroutine apply
+
+  subroutine accept(this)
+    class(algebraic_turb_model), intent(inout) :: this
+    ! nothing
+  end subroutine accept
 
 end module algebraic_turb_model_type
