@@ -55,10 +55,10 @@
 
 #include "f90_assert.fpp"
 
-module bndry_face_func_type
+module bndry_face_vfunc_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use bndry_func_class
+  use bndry_vfunc_class
   use unstr_mesh_type
   use vector_func_class
   use vector_func_containers
@@ -66,7 +66,7 @@ module bndry_face_func_type
   implicit none
   private
 
-  type, extends(bndry_vfunc), public :: bndry_face_func
+  type, extends(bndry_vfunc), public :: bndry_face_vfunc
     private
     type(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
     logical :: evaluated = .false.
@@ -83,7 +83,7 @@ module bndry_face_func_type
     procedure :: add
     procedure :: add_complete
     procedure :: compute
-  end type bndry_face_func
+  end type bndry_face_vfunc
 
   !! Optimization hint values.
   integer, parameter :: DATA_HINT_NONE    = 0
@@ -124,6 +124,7 @@ contains
     !! For now we don't expose optimization hinting to the user,
     !! but we can determine directly which functions are constant.
     allocate(this%hint(this%ngroup))
+    allocate(this%dims(this%ngroup))
     do n = 1, this%ngroup
       this%dims(n) = this%farray(n)%f%dim
       select type (f => this%farray(n)%f)
@@ -134,7 +135,7 @@ contains
       end select
     end do
 
-    allocate(this%value(maxval(this%farray(:)%f%dim),size(this%index)))
+    allocate(this%value(maxval(this%dims),size(this%index)))
   end subroutine add_complete
 
 
@@ -145,6 +146,7 @@ contains
 
     integer :: n, j, d
     real(r8) :: args(0:size(this%mesh%x,dim=1))
+    real(r8), allocatable :: r(:)
 
     !! Verify that THIS is in the correct state.
     ASSERT(allocated(this%index))
@@ -153,14 +155,23 @@ contains
 
     args(0) = t
     do n = 1, this%ngroup
-      d = this%farray(n)%f%dim
+      d = this%dims(n)
+      allocate(r(d))
       associate(faces => this%index(this%xgroup(n):this%xgroup(n+1)-1), &
-                value => this%value(:,this%xgroup(n):this%xgroup(n+1)-1))
+          value => this%value(:,this%xgroup(n):this%xgroup(n+1)-1))
         select case (this%hint(n))
         case (DATA_HINT_CONST)
-          if (.not.this%evaluated) value(:d,:) = this%farray(n)%f%eval(args)
+          if (.not.this%evaluated) then
+            r = this%farray(n)%f%eval(args)
+            do j = 1, size(faces)
+                value(:d,j) = r
+            end do
+          end if
         case (DATA_HINT_X_INDEP)
-          value(:d,:) = this%farray(n)%f%eval(args)
+          r = this%farray(n)%f%eval(args)
+          do j = 1, size(faces)
+            value(:d,j) = r
+          end do
         case (DATA_HINT_T_INDEP)
           if (.not.this%evaluated) then
             do j = 1, size(faces)
@@ -179,6 +190,7 @@ contains
           end do
         end select
       end associate
+      deallocate(r)
     end do
 
     this%tlast = t
@@ -186,4 +198,4 @@ contains
 
   end subroutine compute
 
-end module bndry_face_func_type
+end module bndry_face_vfunc_type

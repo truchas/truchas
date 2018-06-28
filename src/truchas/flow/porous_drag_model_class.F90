@@ -1,7 +1,7 @@
 !!
-!! TURBULENCE_MODEL_CLASS
+!! POROUS_DRAG_MODEL_CLASS
 !!
-!! This module provides an abstract type that encapsulates truchas turbulence models
+!! This module provides an abstract type that encapsulates truchas porous drag models
 !!
 !! Peter Brady <ptb@lanl.gov>
 !! May 2018
@@ -35,16 +35,16 @@
 !!    updates any internal state after timestep is accepted
 
 
-module turbulence_model_class
+module porous_drag_model_class
   use kinds, only: r8
   use flow_mesh_type
   use parameter_list_type
   implicit none
   private
 
-  public :: turbulence_model
+  public :: porous_drag_model
 
-  type, abstract :: turbulence_model
+  type, abstract :: porous_drag_model
     type(flow_mesh), pointer :: mesh => null()
   contains
     procedure(read_params), deferred :: read_params
@@ -52,36 +52,36 @@ module turbulence_model_class
     procedure(setup), deferred :: setup
     procedure(apply), deferred :: apply
     procedure(accept), deferred :: accept
-  end type turbulence_model
+  end type porous_drag_model
 
   abstract interface
     subroutine read_params(this, params)
       import
-      class(turbulence_model), intent(inout) :: this
+      class(porous_drag_model), intent(inout) :: this
       type(parameter_list), pointer, intent(in) :: params
     end subroutine read_params
 
     subroutine init(this, mesh)
       import
-      class(turbulence_model), intent(inout) :: this
+      class(porous_drag_model), intent(inout) :: this
       type(flow_mesh), pointer, intent(in) :: mesh
     end subroutine init
 
     subroutine setup(this, vel_cc)
       import
-      class(turbulence_model), intent(inout) :: this
+      class(porous_drag_model), intent(inout) :: this
       real(r8), intent(in) :: vel_cc(:,:)
     end subroutine setup
 
     subroutine apply(this, visc_cc)
       import
-      class(turbulence_model), intent(inout) :: this
+      class(porous_drag_model), intent(inout) :: this
       real(r8), intent(inout) :: visc_cc(:)
     end subroutine apply
 
-    subroutine accept(this)
+    subroutine accept(this, visc_cc)
       import
-      class(turbulence_model), intent(inout) :: this
+      class(porous_drag_model), intent(inout) :: this
     end subroutine accept
   end interface
-end module turbulence_model_class
+end module porous_drag_model_class

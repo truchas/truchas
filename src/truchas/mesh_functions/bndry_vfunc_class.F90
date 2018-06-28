@@ -43,8 +43,8 @@ module bndry_vfunc_class
 
   abstract interface
     subroutine compute(this, t)
-      import r8, bndry_func
-      class(bndry_func), intent(inout) :: this
+      import r8, bndry_vfunc
+      class(bndry_vfunc), intent(inout) :: this
       real(r8), intent(in) :: t
     end subroutine
   end interface

@@ -11,13 +11,21 @@ set(FLOW_SOURCE_FILES)
 set(FLOW_TARGET_NAME ProcessTruchasFlowFiles)
 
 set(FLOW_FILES
-        flow/flow_driver_type.F90
         flow/fischer_guess_type.F90
-        flow/flow_mesh_type.F90
-        flow/flow_projection_type.F90
-        flow/flow_props_type.F90
-        flow/flow_type.F90
-        )
+	flow/flow_bc_factory_type.F90
+	flow/flow_bc_type.F90
+	flow/flow_driver_type.F90
+	flow/flow_mesh_type.F90
+	flow/flow_operators.F90
+	flow/turbulence_model_class.F90
+	flow/default_turb_model_type.F90
+	flow/algebraic_turb_model_type.F90
+	flow/turbulence_models.F90
+	flow/flow_projection_type.F90
+	flow/flow_prediction_type.F90
+	flow/flow_props_type.F90
+	flow/flow_type.F90
+	)
 
 set(FLOW_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/utilities

@@ -39,9 +39,13 @@ contains
     flow_enabled = allocated(this)
   end function flow_enabled
 
-  subroutine read_flow_params(pl_props, pl_proj)
-    type(parameter_list), intent(inout) :: pl_props, pl_proj
+  subroutine read_flow_params(p)
+    type(parameter_list), pointer, intent(in) :: p
+    type(parameter_list), pointer :: pl_proj, pl_props
+
     allocate(this)
+    pl_props => p%sublist("properties")
+    pl_proj => p%sublist("projection")
     call this%props%read_params(pl_props)
     call this%flow%read_params(pl_proj)
   end subroutine read_flow_params
@@ -55,7 +59,7 @@ contains
     integer :: ios
     logical :: found
     character(128) :: iom
-    type(parameter_list) :: pl_props, pl_proj
+    type(parameter_list), pointer :: p, pl_props, pl_proj, pl_fischer, pl_solver
     real(r8) :: fluid_cutvof, min_face_fraction
     integer :: fischer_history
     !- hypre related items
@@ -73,6 +77,12 @@ contains
         logging_level, print_level, amg_strong_threshold, &
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
+
+    allocate(p)
+    pl_props => p%sublist("properties")
+    pl_proj => p%sublist("projection")
+    pl_fischer => pl_proj%sublist("fischer")
+    pl_solver => pl_proj%sublist("solver")
 
     ! handle cutoffs
     fluid_cutvof = NULL_R
@@ -155,31 +165,28 @@ contains
       call broadcast(conv_rate_tol)
       call broadcast(amg_strong_threshold)
 
-      if (fischer_history /= NULL_I) call pl_proj%set('fischer_history', fischer_history)
-      if (rel_tol /= NULL_R) call pl_proj%set('rel-tol', rel_tol)
-      if (abs_tol /= NULL_R) call pl_proj%set('abs-tol', abs_tol)
-      if (conv_rate_tol /= NULL_R) call pl_proj%set('conv-rate-tol', conv_rate_tol)
-      if (max_ds_iter /= NULL_I) call pl_proj%set('max-ds-iter', max_ds_iter)
-      if (max_amg_iter /= NULL_I) call pl_proj%set('max-amg-iter', max_amg_iter)
-      if (allocated(krylov_method)) call pl_proj%set('krylov-method', krylov_method)
-      if (gmres_krylov_dim /= NULL_I) call pl_proj%set('gmres-krylov-dim', gmres_krylov_dim)
-      if (cg_use_two_norm /= NULL_I) call pl_proj%set('cg-use-two-norm', cg_use_two_norm /= 0)
-      if (logging_level /= NULL_I) call pl_proj%set('logging-level', logging_level)
-      if (print_level /= NULL_I) call pl_proj%set('print-level', print_level)
-      if (amg_strong_threshold /= NULL_R) call pl_proj%set('amg-strong-threshold', amg_strong_threshold)
-      if (amg_max_levels /= NULL_I) call pl_proj%set('amg-max-levels', amg_max_levels)
-      if (allocated(amg_coarsen_method)) call pl_proj%set('amg-coarsen-method', amg_coarsen_method)
-      if (amg_coarsen_type /= NULL_I) call pl_proj%set('amg-coarsen-type', amg_coarsen_type)
-      if (amg_smoothing_sweeps /= NULL_I) call pl_proj%set('amg-smoothing-sweeps', amg_smoothing_sweeps)
-      if (amg_smoothing_method /= NULL_I) call pl_proj%set('amg-smoothing-method', amg_smoothing_method)
-      if (amg_interp_method /= NULL_I) call pl_proj%set('amg-interp-method', amg_interp_method)
+      if (fischer_history /= NULL_I) call pl_fischer%set('history', fischer_history)
+      if (rel_tol /= NULL_R) call pl_solver%set('rel-tol', rel_tol)
+      if (abs_tol /= NULL_R) call pl_solver%set('abs-tol', abs_tol)
+      if (conv_rate_tol /= NULL_R) call pl_solver%set('conv-rate-tol', conv_rate_tol)
+      if (max_ds_iter /= NULL_I) call pl_solver%set('max-ds-iter', max_ds_iter)
+      if (max_amg_iter /= NULL_I) call pl_solver%set('max-amg-iter', max_amg_iter)
+      if (allocated(krylov_method)) call pl_solver%set('krylov-method', krylov_method)
+      if (gmres_krylov_dim /= NULL_I) call pl_solver%set('gmres-krylov-dim', gmres_krylov_dim)
+      if (cg_use_two_norm /= NULL_I) call pl_solver%set('cg-use-two-norm', cg_use_two_norm /= 0)
+      if (logging_level /= NULL_I) call pl_solver%set('logging-level', logging_level)
+      if (print_level /= NULL_I) call pl_solver%set('print-level', print_level)
+      if (amg_strong_threshold /= NULL_R) call pl_solver%set('amg-strong-threshold', amg_strong_threshold)
+      if (amg_max_levels /= NULL_I) call pl_solver%set('amg-max-levels', amg_max_levels)
+      if (allocated(amg_coarsen_method)) call pl_solver%set('amg-coarsen-method', amg_coarsen_method)
+      if (amg_coarsen_type /= NULL_I) call pl_solver%set('amg-coarsen-type', amg_coarsen_type)
+      if (amg_smoothing_sweeps /= NULL_I) call pl_solver%set('amg-smoothing-sweeps', amg_smoothing_sweeps)
+      if (amg_smoothing_method /= NULL_I) call pl_solver%set('amg-smoothing-method', amg_smoothing_method)
+      if (amg_interp_method /= NULL_I) call pl_solver%set('amg-interp-method', amg_interp_method)
 
     end if
 
-    allocate(this)
-
-    call this%props%read_params(pl_props)
-    call this%flow%read_params(pl_proj)
+    call read_flow_params(p)
   end subroutine read_flow_namelist
 
 
@@ -248,9 +255,13 @@ contains
     real(r8), intent(in) :: t, dt, vof(:,:), temperature_cc(:)
     !-
 
-    call this%props%update(vof, temperature_cc, initial=.false.)
-    call this%flow%zero_out_solid_velocities(this%props)
+    call this%props%update_cc(vof, temperature_cc, initial=.false.)
+    call this%flow%step(...)
 
   end subroutine flow_step
+
+  subroutine flow_accent()
+
+  end subroutine flow_accent
 
 end module flow_driver_type

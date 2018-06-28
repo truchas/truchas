@@ -68,9 +68,9 @@ contains
 
   subroutine read_params(this, p)
     class(fischer_guess), intent(inout) :: this
-    type(parameter_list), intent(inout) :: p
+    type(parameter_list), pointer, intent(in) :: p
 
-    call p%get('fischer_history', this%max_size, 6)
+    call p%get('history', this%max_size, 6)
 
   end subroutine read_params
 

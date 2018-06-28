@@ -37,7 +37,7 @@ contains
 
     do i = 1, m%nface
       associate(fn => m%fnode(m%xfnode(i):m%xfnode(i+1)-1))
-        this%face_centroid(:,i) = sum(m%x(:,fn))/real(size(fn),r8)
+        this%face_centroid(:,i) = sum(m%x(:,fn), dim=2)/real(size(fn),r8)
       end associate
     end do
 
@@ -45,7 +45,7 @@ contains
     ! vertices.  This is a simple approximation which may or may not matter
     do i = 1, m%ncell
       associate(cn => m%cnode(m%xcnode(i):m%xcnode(i+1)-1))
-        this%cell_centroid(:,i) = sum(m%x(:,cn))/real(size(cn),r8)
+        this%cell_centroid(:,i) = sum(m%x(:,cn), dim=2)/real(size(cn),r8)
       end associate
     end do
 
@@ -56,7 +56,7 @@ contains
       associate (fn => m%cface(m%xcface(i):m%xcface(i+1)-1))
         do j = 1, size(fn)
           if (fn(j) == 0) cycle
-          if (btest(m%cfpar(i,pos=j))) then
+          if (btest(m%cfpar(i),pos=j)) then
             this%fcell(1,fn(j)) = i
           else
             this%fcell(2,fn(j)) = i
@@ -71,17 +71,17 @@ contains
           fi => m%cface(m%xcface(i):m%xcface(i+1)-1))
         do j = 1, size(cn)
           if (cn(j) > 0) then
-            assert(all(this%fcell(:,fi(j))) > 0)
-            if (btest(m%cfpar(i,pos=j))) then
-              assert(this%fcell(1,fi(j)) == i)
-              assert(this%fcell(2,fi(j)) == cn(j))
+            ASSERT(all(this%fcell(:,fi(j)) > 0))
+            if (btest(m%cfpar(i),pos=j)) then
+              ASSERT(this%fcell(1,fi(j)) == i)
+              ASSERT(this%fcell(2,fi(j)) == cn(j))
             else
-              assert(this%fcell(1,fi(j)) == cn(j))
-              assert(this%fcell(2,fi(j)) == i)
+              ASSERT(this%fcell(1,fi(j)) == cn(j))
+              ASSERT(this%fcell(2,fi(j)) == i)
             end if
           else
-            assert(this%fcell(1,fi(j)) == 0)
-            assert(this%fcell(2,fi(j)) == i)
+            ASSERT(this%fcell(1,fi(j)) == 0)
+            ASSERT(this%fcell(2,fi(j)) == i)
           endif
         end do
       end associate

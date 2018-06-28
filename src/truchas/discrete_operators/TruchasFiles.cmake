@@ -23,7 +23,7 @@ set(DISOP_FILES
          discrete_operators/do_update_module.F90
          discrete_operators/ff_discrete_ops_data.F90
          discrete_operators/cell_grad_type.F90
-	 discrete_operators/flow_operators.F90)
+	 )
 
 set(DISOP_FPP_FLAGS
 	-I${TruchasExe_SOURCE_DIR}/utilities ${Truchas_FPP_FLAGS})

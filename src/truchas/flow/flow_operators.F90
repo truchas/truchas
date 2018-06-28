@@ -2,18 +2,24 @@ module flow_operators
 
   use kinds, only: r8
   use truchas_logging_services
-  use unstr_mesh
+  use unstr_mesh_type
   use flow_mesh_type
   use bndry_func_class
+  use bndry_vfunc_class
   use index_partitioning
   implicit none
   private
 
-  public :: gradient_cc, gradient_fc, interpolate_fc, interpolate_cf
+  public :: gradient_cc, gradient_cf, interpolate_fc, interpolate_cf, &
+      flow_gradient_coefficients, flow_operators_init
+
+  interface gradient_cf
+    module procedure :: gradient_cf_scalar, gradient_cf_vector
+  end interface gradient_cf
 
   type :: flow_operator
     type(flow_mesh), pointer :: mesh => null()
-    real(r8), allocatable, target :: ds(:,:) ! dxyz/||dxyz||^2
+    real(r8), pointer :: ds(:,:) ! dxyz/||dxyz||^2
   end type flow_operator
 
   type(flow_operator), allocatable :: this
@@ -31,7 +37,7 @@ contains
     allocate(this)
     this%mesh => mesh
     m => mesh%mesh
-    allocate(ds(3, size(m%nface)))
+    allocate(this%ds(3, m%nface))
 
     this%ds = 0.0_r8
 
@@ -138,10 +144,10 @@ contains
 
   ! gradient of cell-centered scalar `x` evaluated at face centers
   ! result only valid on nface_onP
-  subroutine gradient_cf(g, x, t, normal_flux_bc, dirichlet_bc, &
+  subroutine gradient_cf_scalar(g, x, normal_flux_bc, dirichlet_bc, &
       inactive_faces, inactive_default, gravity)
     real(r8), intent(out) :: g(:,:)
-    real(r8), intent(in) :: x(:), t
+    real(r8), intent(in) :: x(:)
     class(bndry_func), optional, intent(inout) :: normal_flux_bc, dirichlet_bc
     integer, intent(in), optional :: inactive_faces(:)
     real(r8), intent(in), optional :: inactive_default
@@ -167,25 +173,26 @@ contains
       end if
 
       if (present(normal_flux_bc)) then
-        call normal_flux_bc%compute(t)
-        associate (index => normal_flux_bc%index, value => normal_flux_bc%value)
-          g(:,index) = value*m%normal(:,index)/m%area(index)
+        associate (faces => normal_flux_bc%index, value => normal_flux_bc%value)
+          do i = 1, size(faces)
+            j = faces(i)
+            g(:,j) = value(i)*m%normal(:,j)/m%area(j)
+          end do
         end associate
       end if
 
       if (present(dirichlet_bc)) then
-        call dirichlet_bc%compute(t)
-        associate (index => dirichlet_bc%index, value => dirichlet_bc%value)
+        associate (faces => dirichlet_bc%index, value => dirichlet_bc%value)
           if (present(gravity)) then
-            do i = 1, size(index)
-              j = index(i)
+            do i = 1, size(faces)
+              j = faces(i)
               associate(n => f%fcell(2,j), y => gravity(2,j))
                 g(:,j) = this%ds(:,j)*(value(i)-x(n)-y)
               end associate
             end do
           else
-            do i = 1, size(index)
-              j = index(i)
+            do i = 1, size(faces)
+              j = faces(i)
               associate(n => f%fcell(2,j))
                 g(:,j) = this%ds(:,j)*(value(i)-x(n))
               end associate
@@ -203,7 +210,78 @@ contains
 
     end associate
 
-  end subroutine gradient_cf
+  end subroutine gradient_cf_scalar
+
+
+  ! gradient of cell-centered vector `x` evaluated at face centers
+  ! result only valid on nface_onP.  This routine assumes that all
+  ! components of the gradient are zero on neumann walls
+  subroutine gradient_cf_vector(g, x, zero_normal_bc, dirichlet_bc, &
+      inactive_faces, inactive_default)
+    real(r8), intent(out) :: g(:,:,:)
+    real(r8), intent(in) :: x(:,:)
+    class(bndry_vfunc), optional, intent(inout) :: zero_normal_bc, dirichlet_bc
+    integer, intent(in), optional :: inactive_faces(:)
+    real(r8), intent(in), optional :: inactive_default
+
+    real(r8) :: v_normal, v(3)
+    integer :: j,i,d
+
+    g = 0.0_r8
+
+    associate (m => this%mesh%mesh, f => this%mesh, ndim => size(x,dim=1))
+
+      do j = 1, m%nface_onP
+        associate (n => f%fcell(:,j))
+          if (n(1) > 0) then
+            do d = 1, ndim
+              g(:,d,j) = this%ds(:,j) * (x(d,n(1))-x(d,n(2)))
+            end do
+          end if
+        end associate
+      end do
+
+
+      if (present(zero_normal_bc)) then
+        associate (faces => zero_normal_bc%index)
+          do i = 1, size(faces)
+            j = faces(i)
+            associate(n => f%fcell(2,j))
+              ! double check the signs of variables here
+              v_normal = dot_product(x(:,n), m%normal(:,n))/m%area(j)
+              v = x(:,d) - v_normal*m%normal(:,n)/m%area(j)
+              do d = 1, ndim
+                g(:,d,j) = this%ds(:,j)*(v(d)-x(d,n))
+              end do
+            end associate
+          end do
+        end associate
+      end if
+
+      if (present(dirichlet_bc)) then
+        associate (faces => dirichlet_bc%index, value => dirichlet_bc%value)
+          do i = 1, size(faces)
+            j = faces(i)
+            associate(n => f%fcell(2,j))
+              do d = 1, ndim
+                g(:,d,j) = this%ds(:,j)*(value(d,i)-x(d,n))
+              end do
+            end associate
+          end do
+        end associate
+      end if
+
+
+      if (present(inactive_faces) .and. present(inactive_default)) then
+        do j = 1, m%nface_onP
+          if (inactive_faces(j) > 0) g(:,:,j) = inactive_default
+        end do
+      end if
+
+    end associate
+
+  end subroutine gradient_cf_vector
+
 
   ! interpolation of vector quantitiy xf to faces
   ! result only valid on ncell_onP
@@ -218,7 +296,7 @@ contains
       do i = 1, m%ncell_onP
         associate (fn => m%cface(m%xcface(i):m%xcface(i+1)-1))
           do dim = 1, size(ic,dim=1)
-            g(dim,i) = dot_product(abs(m%normal(dim,fn)), xf(dim,fn))/sum(abs(m%normal(dim,fn)))
+            ic(dim,i) = dot_product(abs(m%normal(dim,fn)), xf(dim,fn))/sum(abs(m%normal(dim,fn)))
           end do
         end associate
       end do
@@ -234,7 +312,7 @@ contains
   subroutine interpolate_cf(xf, x, w, bc, inactive_faces, inactive_default)
     real(r8), intent(out) :: xf(:)
     real(r8), intent(in) :: x(:,:), w(:,:)
-    class(bndry_func), optional, intent(inout) :: bc
+    class(bndry_vfunc), optional, intent(inout) :: bc
     integer, intent(in), optional :: inactive_faces(:)
     real(r8), intent(in), optional :: inactive_default
 
@@ -244,19 +322,19 @@ contains
       do j = 1, m%nface_onP
         associate (n => f%fcell(:,j))
           if (n(1) > 0) then
-            xf(j) = (w(1,j)*dot_product(m%normal(:,j),x(i,n(1))) + &
-                w(2,j)*dot_product(m%normal(:,j),x(i,n(2)))) / m%area(j)
+            xf(j) = (w(1,j)*dot_product(m%normal(:,j),x(:,n(1))) + &
+                w(2,j)*dot_product(m%normal(:,j),x(:,n(2)))) / m%area(j)
           else
-            xf(j) = dot_product(m%normal(:,j),xf(:,n(2)))/m%area(j)
+            xf(j) = dot_product(m%normal(:,j),x(:,n(2)))/m%area(j)
           end if
         end associate
       end do
 
       if (present(bc)) then
-        associate (index => bc%index, value => bc%value)
-          do i = 1, size(index)
-            j = index(i)
-            xf(j) = dot_product(m%normal(:,j),value(:,j))/m%area(j)
+        associate (faces => bc%index, value => bc%value)
+          do i = 1, size(faces)
+            j = faces(i)
+            xf(j) = dot_product(m%normal(:,j),value(:,i))/m%area(j)
           end do
         end associate
       end if

@@ -124,7 +124,7 @@ contains
     class(vector_func_box), intent(in) :: this
     integer, intent(in) :: i
     real(r8), intent(in) :: x(:)
-    real(r8) :: fx
+    real(r8) :: fx(this%f%dim)
     fx = this%f%eval(x)
   end function vector_func_box_eval_comp
 

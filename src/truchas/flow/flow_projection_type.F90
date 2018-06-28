@@ -1,3 +1,4 @@
+#include "f90_assert.fpp"
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -52,8 +53,10 @@ module flow_projection_type
   use unstr_mesh_type
   use flow_props_type
   use flow_bc_type
+  use flow_operators
   use fischer_guess_type
   use index_partitioning
+  use parallel_communication
   use hypre_hybrid_type
   use pcsr_matrix_type
   use parameter_list_type
@@ -68,38 +71,39 @@ module flow_projection_type
     type(flow_bc), pointer :: bc ! unowned reference
     type(fischer_guess) :: fg
     type(hypre_hybrid) :: solver
-    type(parameter_list) :: p
+    type(parameter_list), pointer :: p
     real(r8), allocatable :: rhs(:)
     real(r8), allocatable :: grad_fc(:,:) ! face centered gradient
-    real(r8), allocatable :: grad_p_rho_cc(:) ! dynamic pressure gradient over rho -> cell centered
-    real(r8), allocatable :: grad_p_rho_cc_n(:) ! dynamic pressure gradient over rho -> cell centered
+    real(r8), allocatable :: grad_p_rho_cc(:,:) ! dynamic pressure gradient over rho -> cell centered
+    real(r8), allocatable :: grad_p_rho_cc_n(:,:)
     real(r8), allocatable :: delta_p_cc(:)
     real(r8), allocatable :: gravity_head(:,:)
     real(r8), allocatable :: weights_cf(:,:) ! weights for f->c interpolation
+    real(r8), allocatable :: vel_cc_star(:,:)
   contains
-    public
     procedure :: read_params
     procedure :: init
     procedure :: setup
     procedure :: solve
     procedure :: accept
-    private
-    procedure :: setup_face_velocity
-    procedure :: setup_gravity
-    procedure :: setup_solver
-    procedure :: velocity_fc_correct
-    procedure :: pressure_cc_correct
-    procedure :: velocity_cc_correct
+    procedure, private :: setup_face_velocity
+    procedure, private :: setup_gravity
+    procedure, private :: setup_solver
+    procedure, private :: velocity_fc_correct
+    procedure, private :: pressure_cc_correct
+    procedure, private :: velocity_cc_correct
   end type flow_projection
 
 contains
 
   subroutine read_params(this, p)
     class(flow_projection), intent(inout) :: this
-    type(parameter_list), intent(inout) :: p
+    type(parameter_list), pointer, intent(in) :: p
+    type(parameter_list), pointer :: sub
 
-    this%p = p
-    call this%fg%read_params(p)
+    this%p => p
+    sub => p%sublist("fischer")
+    call this%fg%read_params(sub)
   end subroutine read_params
 
   subroutine init(this, mesh, bc)
@@ -107,29 +111,42 @@ contains
     type(flow_mesh), pointer, intent(in) :: mesh
     type(flow_bc), target, intent(inout) :: bc
     !-
-    integer :: j, i, fi, ni, ri, f0
+    integer :: j, i
     type(pcsr_graph), pointer :: g
     type(pcsr_matrix), pointer :: A
     type(ip_desc), pointer :: row_ip
     type(unstr_mesh), pointer :: m
-    type(parameter_list), pointer :: p
-    real(r8) :: w
+    type(parameter_list), pointer :: sub
 
     this%mesh => mesh
     this%bc => bc
     m => mesh%mesh
-    p = this%p
 
-    allocate(weights_cf(2,m%nface))
+    allocate(this%grad_fc(3,m%nface))
+    allocate(this%grad_p_rho_cc(3,m%ncell))
+    allocate(this%grad_p_rho_cc_n(3,m%ncell))
+    allocate(this%delta_p_cc(m%ncell))
+    allocate(this%gravity_head(2,m%nface))
+    allocate(this%vel_cc_star(3,m%ncell))
+    allocate(this%weights_cf(2,m%nface))
+
+    this%grad_fc = 0.0_r8
+    this%grad_p_rho_cc = 0.0_r8
+    this%grad_p_rho_cc_n = 0.0_r8
+    this%delta_p_cc = 0.0_r8
+    this%gravity_head = 0.0_r8
+    this%vel_cc_star = 0.0_r8
+
 
     do j = 1, m%nface_onP
-      associate (n => mesh%fcell(:,j), fc => mesh%face_centriod(:,j), cc => mesh%cell_centroid(:,j))
+      associate (n => mesh%fcell(:,j), fc => mesh%face_centroid(:,j), &
+          cc => mesh%cell_centroid, w => this%weights_cf(:,j))
         if (n(1) > 0) then
-          weights_cf(1,j) = sum((fc(:,j)-cc(:,n(1)))**2)
-          weights_cf(2,j) = sum((fc(:,j)-cc(:,n(2)))**2)
-          weights_cf(:,j) = weights_cf(:,j) / sum(weights_fc(:,j))
+          w(1) = sum((fc(:)-cc(:,n(1)))**2)
+          w(2) = sum((fc(:)-cc(:,n(2)))**2)
+          w(:) = w(:) / sum(w(:))
         else
-          weights_cf(:,j) = [0.0_r8, 1.0_r8]
+          w(:) = [0.0_r8, 1.0_r8]
         end if
       end associate
     end do
@@ -143,7 +160,7 @@ contains
       call g%add_edge(j,j)
       associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
         do i = 1, size(cn)
-          if (cn(i) > 0) call g%add_edge(j, i)
+          if (cn(i) > 0) call g%add_edge(j, cn(i))
         end do
       end associate
     end do
@@ -151,7 +168,8 @@ contains
 
     allocate(A)
     call A%init(g, take_graph=.true.)
-    call this%solver%init(A, p)
+    sub => this%p%sublist("solver")
+    call this%solver%init(A, sub)
     call this%fg%init(mesh)
 
   end subroutine init
@@ -165,7 +183,9 @@ contains
 
     call this%setup_gravity(props, body_force)
     call this%setup_face_velocity(dt, props, vel_cc, P_cc, vel_fn)
+    print *, "SETUP_FACE_VELOCITY FINISHED"
     call this%setup_solver(dt, props, vel_fn)
+    print *, "PROJECTION SETUP FINISHED"
   end subroutine setup
 
   subroutine accept(this)
@@ -176,17 +196,18 @@ contains
   subroutine setup_solver(this, dt, props, vel)
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
-    real(r8), intent(in) :: vel(:)
+    real(r8), intent(in) :: vel(:), dt
     !-
     type(pcsr_matrix), pointer :: A
-    real(r8), pointer :: ds(:,:)
+    real(r8), pointer :: ds(:,:), row_val(:)
+    integer, pointer :: row_idx(:)
     integer :: i, j, fi, ni
     real(r8) :: coeff
 
-    A = this%solver%matrix()
+    A => this%solver%matrix()
     call A%set_all(0.0_r8)
 
-    ds = flow_gradient_coefficients()
+    ds => flow_gradient_coefficients()
 
     associate (m => this%mesh%mesh, rho_f => props%rho_fc)
       do j = 1, m%ncell_onP
@@ -196,22 +217,18 @@ contains
             fi = face(i)
             ni = nhbr(i)
 
-            if (rho_f(fi) == 0.0_r8) then
-              coeff = 0.0_r8
-            elseif (btest(m%cfpar(j), pos=i)) then
+            ! ni == 0 implies a domain boundary cell, handle these separately
+            if (rho_f(fi) /= 0.0_r8 .and. ni > 0) then
               ! note that normal is already weighted by face area
-              coeff = dot_product(this%dx_scaled(:,fi), m%normal(:,fi))/rho_f(fi)
-            else
-              -coeff = dot_product(this%dx_scaled(:,fi), m%normal(:,fi))/rho_f(fi)
+              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)
+              call A%add_to(j, j, coeff)
+              call A%add_to(j, ni, -coeff)
             end if
-            call A%add_to(j, j, coeff)
-            if (ni > 0) call A%add_to(j, ni, -coeff)
           end do
         end associate
       end do
     end associate
 
-    call this%solver%setup()
 
     !! FIXME: need correction for void/solid... maybe
     associate (m => this%mesh%mesh, rhs => this%rhs)
@@ -227,11 +244,51 @@ contains
             else
               this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
             end if
+            !write(*,'("vel(",i4,"):",es15.5)') fn(i), vel(fn(i))
           end do
-          this%rhs(j) = this%rhs(j) / dt
-        end do
+        end associate
+        this%rhs(j) = this%rhs(j) / dt
+        !write(*,'("rhs(",i4,"):",es15.5)') i, this%rhs(j)
+        !this%rhs(j) = 0.0_r8
       end do
+
+      ! handle dirichlet bcs
+      !print *, "DEBUGGING PRESSURE BOUNDARY CONDITIONS"
+      associate (faces => this%bc%p_dirichlet%index, values => this%bc%p_dirichlet%value, &
+          rho_f => props%rho_fc)
+        do i = 1, size(faces)
+          fi = faces(i)
+          j = this%mesh%fcell(2,fi) ! cell index
+          ASSERT(this%mesh%fcell(1,fi) == 0)
+          if (rho_f(fi) /=  0.0_r8) then
+            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)
+            call A%add_to(j, j, coeff)
+            this%rhs(j) = this%rhs(j) - coeff*values(i)
+            !this%rhs(j) = coeff*values(i)
+          end if
+!!$          call A%get_row_view(j, row_val, row_idx)
+!!$          print *, j, row_idx
+!!$          print *, j, row_val
+!!$          write(*,'("rhs(",i4,"):",es15.5)') j, this%rhs(j)
+        end do
+      end associate
+
+!!$      open(file="matrix_idx",newunit=fi,status='replace')
+!!$      open(file="matrix_val",newunit=ni,status='replace')
+!!$      open(file="rhs_val",newunit=i,status='replace')
+!!$      do j = 1, m%ncell_onP
+!!$        call A%get_row_view(j, row_val, row_idx)
+!!$        write(fi, *) row_idx
+!!$        write(ni, *) row_val
+!!$        write(i, *) this%rhs(j)
+!!$      end do
+!!$      close(fi)
+!!$      close(ni)
+!!$      close(i)
     end associate
+
+    call this%solver%setup()
+
   end subroutine setup_solver
 
 
@@ -246,7 +303,7 @@ contains
     real(r8) :: rho
 
     associate( fcell => this%mesh%fcell, m => this%mesh%mesh, g => this%gravity_head, &
-        cc => this%mesh%cell_centroid, fc => this%mesh%face_centroid, p => this%props)
+        cc => this%mesh%cell_centroid, fc => this%mesh%face_centroid, p => props)
 
       g = 0.0_r8
 
@@ -287,12 +344,13 @@ contains
     ! subtract dynamic pressure grad
     associate (m => this%mesh%mesh, gfc => this%grad_fc, rho_fc => props%rho_fc)
 
-      call gradient_cf(gfc, p_cc, time, this%bc%p_neumann, &
-          this%bc%p_dirichlet, props%inactive_f, 0.0_rp, this%gravity_head)
-
+      call gradient_cf(gfc, p_cc, this%bc%p_neumann, &
+          this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
       do j = 1, m%nface_onP
+        !write(*,'(">>velfn(",i4,"):",es15.5)') j, vel_fn(j)
         if (rho_fc(j) > 0.0_r8) then
           vel_fn(j) = vel_fn(j) - dt*dot_product(m%normal(:,j),gfc(:,j))/(m%area(j)*rho_fc(j))
+          !write(*,'("<<velfn(",i4,"):",es15.5)') j, vel_fn(j)
         else
           ! there may be something special with void here....
           vel_fn(j) = 0.0_r8
@@ -303,14 +361,13 @@ contains
   end subroutine setup_face_velocity
 
 
-  subroutine solve(this, dt, props, p_cc, vel_cc, vel_fc)
+  subroutine solve(this, dt, props, vel_cc, p_cc, vel_fc)
     class(flow_projection), intent(inout) :: this
     real(r8), intent(in) :: dt
     type(flow_props), intent(in) :: props
-    real(r8), intent(inout) :: p_cc(:), vel_cc(:), vel_fc(:)
+    real(r8), intent(inout) :: p_cc(:), vel_cc(:,:), vel_fc(:)
     !-
-    real(r8) :: dp_vof, vof, dec
-    integer :: ierr, j, i
+    integer :: ierr, i, in
 
     ! solve the pressure poisson system
     this%delta_p_cc = 0.0_r8
@@ -318,6 +375,15 @@ contains
     call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
+
+!!$    open(file='dp_cc', newunit=in)
+!!$    associate (m => this%mesh%mesh, cc => this%mesh%cell_centroid, p => this%delta_p_cc)
+!!$      do i = 1, m%ncell_onP
+!!$        write(in, '(4es15.5)') cc(:,i), p(i)
+!!$      end do
+!!$    end associate
+!!$    close(in)
+!!$    print *, "done writing file"
 
     ! not sure if this call is necesary
     call gather_boundary(this%mesh%mesh%cell_ip, this%delta_p_cc)
@@ -335,31 +401,30 @@ contains
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: vel_fc(:)
     !-
-    integer :: ierr, j, i
+    integer :: j, i
 
     ! face gradient of solution
-    call gradient_cf(this%grad_fc, this%delta_p_cc, time, this%bc%p_neumann, &
-        this%bc%p_dirichlet, props%inactive_f, 0.0_rp)
+    call gradient_cf(this%grad_fc, this%delta_p_cc, this%bc%p_neumann, &
+        this%bc%p_dirichlet, props%inactive_f, 0.0_r8)
 
     ! divergence free face velocity
     associate (m => this%mesh%mesh)
       do j = 1, m%nface_onP
         if (props%inactive_f(j) > 0) then
-          vel_fc(j) = 0.0_rp
+          vel_fc(j) = 0.0_r8
         else
-          vel_fc(j) = this%vel_fc_star(j) - &
+          vel_fc(j) = vel_fc(j) - &
               dt*dot_product(this%grad_fc(:,j),m%normal(:,j)/m%area(j))/props%rho_fc(j)
         end if
       end do
 
-      call this%bc%v_dirichlet%compute(t)
       associate (index => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
         do i = 1, size(index)
           j = index(i)
           ! is the convention to specify boundary velocity as into or out of domain??????
           ! the following assumes _out_
           if (props%inactive_f(j) == 0) &
-              vel_fc(j) = -dot_product(value(:,j), m%normal(:,j))/m%area(j)
+              vel_fc(j) = -dot_product(value(:,i), m%normal(:,j))/m%area(j)
         end do
       end associate
 
@@ -373,16 +438,15 @@ contains
 
   subroutine pressure_cc_correct(this, props, p_cc)
     class(flow_projection), intent(inout) :: this
-    real(r8), intent(in) :: dt
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: p_cc(:)
     !-
-    real(r8) :: dp_vof, vof, dec
+    real(r8) :: dp_vof, vof
     integer :: i
 
     associate (m => this%mesh%mesh, p => props, dp => this%delta_p_cc)
       ! remove null space from dp if applicable
-      if (.not.(this%bc%dirichlet_p .or. p%any_void)) then
+      if (.not.(this%bc%pressure_d .or. p%any_void)) then
         ! maybe this should use inactive_c... needs to be consistenent with how
         ! the operator is constructed
         dp_vof = 0.0_r8
@@ -408,13 +472,13 @@ contains
     real(r8), intent(in) :: p_cc(:)
     real(r8), intent(inout) :: vel_cc(:,:)
     !-
-    integer :: i, j, k, f0, f1
+    integer :: i, j
 
-    call gradient_cf(this%grad_fc, p_cc, time, this%bc%p_neumann, &
-        this%bc%p_dirichlet, props%inactive_f, 0.0_rp, this%gravity_head)
+    call gradient_cf(this%grad_fc, p_cc, this%bc%p_neumann, &
+        this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
 
-    associate (m => this%mesh%mesh, gfc => this%grad_fc, rho_fc => props%rho_fc,
-      gpn => this%grad_p_rho_cc_n, gp => this%grad_p_rho_cc)
+    associate (m => this%mesh%mesh, gfc => this%grad_fc, rho_fc => props%rho_fc, &
+        gpn => this%grad_p_rho_cc_n, gp => this%grad_p_rho_cc)
 
       do j = 1, m%nface_onP
         if (rho_fc(j) > 0.0_r8) then
@@ -429,7 +493,7 @@ contains
       do i = 1, m%ncell_onP
         ! is this check actually necessary.. would gpn or gp be non-zero
         ! in either of these cases?
-        if (props%rho_cc(i) == 0.0_r8 .or. props%inactive_c(i)) then
+        if (props%rho_cc(i) == 0.0_r8 .or. props%inactive_c(i) == 1) then
           vel_cc(:,i) = 0.0_r8
         else
           vel_cc(:,i) = vel_cc(:,i) + dt*(gpn(:,i)-gp(:,i))

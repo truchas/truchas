@@ -28,7 +28,8 @@ module flow_bc_factory_type
     type(parameter_list), pointer :: params => null() ! reference only - do not own
   contains
     procedure :: init
-    generic :: alloc_bc => alloc_vector_bc, alloc_scalar_bc
+    procedure :: alloc_vector_bc
+    procedure :: alloc_scalar_bc
   end type flow_bc_factory
 
 contains
@@ -179,7 +180,7 @@ contains
     class(vector_func), allocatable, intent(out) :: f
 
     integer :: stat
-    real(r8) :: const
+    real(r8), allocatable :: const(:)
     character(:), allocatable :: name
 
     call plist%get(param, const, stat=stat)

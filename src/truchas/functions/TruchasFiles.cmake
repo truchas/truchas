@@ -13,6 +13,7 @@ set(FUNC_TARGET_NAME ProcessTruchasFunctionFiles)
 
 set(FUNC_FILES
         functions/scalar_func_table.F90
+	functions/vector_func_table.F90
         functions/function_namelist.F90
 	functions/vfunction_namelist.F90
         functions/scalar_func_class.F90

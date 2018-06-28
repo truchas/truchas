@@ -94,9 +94,17 @@ contains
 
   end subroutine setup
 
-  subroutine apply(this, visc_cc)
+  subroutine apply(this, props)
     class(algebraic_turb_model), intent(inout) :: this
-    real(r8), intent(inout) :: visc_cc(:)
+    type(flow_props), intent(inout) :: props
+    !-
+    integer :: i
+
+    associate (m => this%mesh%mesh, rho => props%rho_cc, mu => props%visc_cc)
+      do i = 1, m%ncell
+        mu(i) = mu(i) + rho(i)*this%nu_turb(i)
+      end do
+    end associate
   end subroutine apply
 
   subroutine accept(this)

@@ -36,12 +36,12 @@ include(ode/TruchasFiles.cmake)
 include(legacy_mesh/TruchasFiles.cmake)
 include(output/TruchasFiles.cmake)
 include(partitioning/TruchasFiles.cmake)
+include(flow/TruchasFiles.cmake)
 include(physics/TruchasFiles.cmake)
 include(setup/TruchasFiles.cmake)
 include(solver/TruchasFiles.cmake)
 include(utilities/TruchasFiles.cmake)
 include(toolpath/TruchasFiles.cmake)
-include(flow/TruchasFiles.cmake)
 
 # --- Custom target to process Fortran files
 add_custom_target(ProcessTruchasFiles
