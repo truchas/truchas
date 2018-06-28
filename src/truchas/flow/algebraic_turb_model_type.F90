@@ -30,31 +30,40 @@
 !!   kinematic viscosity (nu), which is given by mu / rho.
 !!
 module algebraic_turb_model_type
+
   use kinds
   use turbulence_model_class
   use parameter_list_type
   use truchas_logging_services
-  implicit none
+  use flow_mesh_type
+  use flow_props_type
+    implicit none
   private
 
-  public :: algebraic_turb_model, alloc_algebraic_turb_moel
+  public :: algebraic_turb_model, alloc_algebraic_turb_model
 
   type, extends(turbulence_model) :: algebraic_turb_model
     real(r8) :: length
     real(r8) :: cmu
     real(r8) :: ke_fraction
     real(r8), allocatable :: nu_turb(:)
+  contains
+    procedure :: read_params
+    procedure :: init
+    procedure :: setup
+    procedure :: apply
+    procedure :: accept
   end type algebraic_turb_model
 
 contains
 
-  subroutine alloc_algebraic_turb_moel(t)
+  subroutine alloc_algebraic_turb_model(t)
     class(turbulence_model), allocatable, intent(out) :: t
     type(algebraic_turb_model), allocatable :: m
 
     allocate(m)
     call move_alloc(m, t)
-  end subroutine alloc_algebraic_turb_moel
+  end subroutine alloc_algebraic_turb_model
 
 
   subroutine read_params(this, params)
@@ -88,7 +97,7 @@ contains
 
     associate(cmu => this%cmu, l => this%length, f => this%ke_fraction)
       do i = 1, this%mesh%mesh%ncell
-        nu_turb(i) = cmu*l*sqrt(0.5_r8*f*sum(vel_cc(:,i)**2))
+        this%nu_turb(i) = cmu*l*sqrt(0.5_r8*f*sum(vel_cc(:,i)**2))
       end do
     end associate
 
@@ -100,7 +109,7 @@ contains
     !-
     integer :: i
 
-    associate (m => this%mesh%mesh, rho => props%rho_cc, mu => props%visc_cc)
+    associate (m => this%mesh%mesh, rho => props%rho_cc, mu => props%mu_cc)
       do i = 1, m%ncell
         mu(i) = mu(i) + rho(i)*this%nu_turb(i)
       end do

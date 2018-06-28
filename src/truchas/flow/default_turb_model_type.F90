@@ -20,12 +20,20 @@ module default_turb_model_type
   use kinds
   use turbulence_model_class
   use parameter_list_type
+  use flow_mesh_type
+  use flow_props_type
   implicit none
   private
 
   public :: default_turb_model, alloc_default_turb_model
 
   type, extends(turbulence_model) :: default_turb_model
+  contains
+    procedure :: read_params
+    procedure :: init
+    procedure :: setup
+    procedure :: apply
+    procedure :: accept
   end type default_turb_model
 
 contains
@@ -59,9 +67,9 @@ contains
     ! nothing
   end subroutine setup
 
-  subroutine apply(this, visc_cc)
+  subroutine apply(this, props)
     class(default_turb_model), intent(inout) :: this
-    real(r8), intent(inout) :: visc_cc(:)
+    type(flow_props), intent(inout) :: props
 
     !nothing
   end subroutine apply

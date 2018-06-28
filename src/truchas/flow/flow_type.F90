@@ -105,15 +105,15 @@ contains
     print *, 'zero out all velocities on solid cells and faces'
   end subroutine zero_out_solid_velocities
 
-  subroutine step(this, t, dt, props)
+  subroutine step(this, t, dt, props, flux_volumes)
     class(flow), intent(inout) :: this
-    real(r8), intent(in) :: t, dt
+    real(r8), intent(in) :: t, dt, flux_volumes(:,:)
     type(flow_props), intent(inout) :: props
 
     call this%bc%compute(t)
 
     call this%pred%setup(dt, props, this%vel_cc)
-    call this%pred%solve(...)
+    call this%pred%solve(dt, props, this%grad_p_rho_cc, flux_volumes, this%vel_fc, this%vel_cc)
 
     call this%proj%setup(dt, props, this%body_force, this%vel_cc, this%P_cc, this%vel_fn)
     call this%proj%solve(dt, props, this%vel_cc, this%P_cc, this%vel_fn)
@@ -123,7 +123,6 @@ contains
   subroutine accept(this)
     class(flow), intent(inout) :: this
 
-    call props%accept()
     call this%pred%accept()
     call this%proj%accept()
 

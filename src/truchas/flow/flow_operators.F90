@@ -220,7 +220,8 @@ contains
       inactive_faces, inactive_default)
     real(r8), intent(out) :: g(:,:,:)
     real(r8), intent(in) :: x(:,:)
-    class(bndry_vfunc), optional, intent(inout) :: zero_normal_bc, dirichlet_bc
+    class(bndry_func), optional, intent(in) :: zero_normal_bc
+    class(bndry_vfunc), optional, intent(in) :: dirichlet_bc
     integer, intent(in), optional :: inactive_faces(:)
     real(r8), intent(in), optional :: inactive_default
 

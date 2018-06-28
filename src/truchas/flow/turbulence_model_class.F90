@@ -38,6 +38,7 @@
 module turbulence_model_class
   use kinds, only: r8
   use flow_mesh_type
+  use flow_props_type
   use parameter_list_type
   implicit none
   private
@@ -73,10 +74,10 @@ module turbulence_model_class
       real(r8), intent(in) :: vel_cc(:,:)
     end subroutine setup
 
-    subroutine apply(this, visc_cc)
+    subroutine apply(this, props)
       import
       class(turbulence_model), intent(inout) :: this
-      real(r8), intent(inout) :: visc_cc(:)
+      type(flow_props), intent(inout) :: props
     end subroutine apply
 
     subroutine accept(this)

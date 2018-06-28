@@ -251,17 +251,18 @@ contains
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
   end subroutine flow_driver_init
 
-  subroutine flow_step(t, dt, vof, temperature_cc)
-    real(r8), intent(in) :: t, dt, vof(:,:), temperature_cc(:)
+  subroutine flow_step(t, dt, vof, temperature_cc, flux_volumes)
+    real(r8), intent(in) :: t, dt, vof(:,:), temperature_cc(:), flux_volumes(:,:)
     !-
 
     call this%props%update_cc(vof, temperature_cc, initial=.false.)
-    call this%flow%step(...)
+    call this%flow%step(t, dt, this%props, flux_volumes)
 
   end subroutine flow_step
 
-  subroutine flow_accent()
-
-  end subroutine flow_accent
+  subroutine flow_accept()
+    call this%props%accept()
+    call this%flow%accept()
+  end subroutine flow_accept
 
 end module flow_driver_type

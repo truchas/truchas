@@ -1,7 +1,7 @@
 module turbulence_models
   use turbulence_model_class
-  use algebraic_turb_model
-  use default_turb_model
+  use algebraic_turb_model_type
+  use default_turb_model_type
   use parameter_list_type
   implicit none
   private
@@ -26,14 +26,14 @@ contains
       off_ = .false.
     end if
 
-    call params%get('type', model, stat)
+    call params%get('type', model, stat=stat)
 
     if (stat == 0 .or. off_) then
       call alloc_default_turb_model(turb)
     else
       select case (model)
       case ("alg")
-        call alloc_algebraic_turb_moel(turb)
+        call alloc_algebraic_turb_model(turb)
       case default
         call alloc_default_turb_model(turb)
       end select

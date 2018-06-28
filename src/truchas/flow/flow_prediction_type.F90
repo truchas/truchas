@@ -1,17 +1,66 @@
+#include "f90_assert.fpp"
+!!
+!! FLOW_PROJECTION_TYPE
+!!
+!! This module provides a type that encapsulates the projection of the face
+!! velocities onto a solenoidal field
+!!
+!! Peter Brady <ptb@lanl.gov>
+!! Feb 2018
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+!! in the LICENSE file found in the top-level directory of this distribution.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! PROGRAMMING INTERFACE
+!!
+!!  The module defines the derived type FLOW_PROJECTION that encapsulates the data
+!!  and procedures for setting up and solving the pressure poisson system and
+!!  projecting the face velocities onto a solenoidal field.
+!!
+!!  Interaction with this object occurs through its methods, generally via the flow_driver
+!!
+!!  READ_PARAMS(PARAMETER_LIST P) - Initializes the parameter list for this object.
+!!    This must be call first for the object to behave sensibly.  P is passed on to
+!!    a HYPRE_HYBRID instance.
+!!
+!!  INIT(FLOW_MESH M) - Allocates the data members for this object and initializes the
+!!    internal solver
+!!
+!!  SETUP(FLOW_PROPS FP, REAL(R8) CELL_VELOCITY(:), REAL(R8) DT)
+!!    prepares the lhs and rhs of the poisson system. CELL_VELOCITY is an array of cell
+!!    centered velocitiesnormal velocities in a "ragged" format indexed directly with xcface.
+!!    All face data associated with on process cells must be valid
+!!
+!!  SOLVE(REAL(R8) SOLUTION(:))
+!!    solves the system and returns the solution.  Only the on_process portion of
+!!    SOLUTION is valid.
+!!
+!!  ACCEPT()
+!!    Copies new state to the `n` level for use in next time step
+
 module flow_prediction_type
 
   use kinds, only: r8
   use truchas_logging_services
   use truchas_timers
   use parameter_list_type
+  use index_partitioning
+  use flow_operators
   use flow_mesh_type
   use flow_props_type
   use flow_bc_type
   use turbulence_models
+  use hypre_hybrid_type
+  use pcsr_matrix_type
   implicit none
   private
 
-  public :: flow_prediction_type
+  public :: flow_prediction
 
   type :: flow_prediction
     type(flow_mesh), pointer :: mesh
@@ -136,7 +185,7 @@ contains
 
         do k = 1, size(A)
           allocate(A(k)%A)
-          call A(k)%A%init(g(k), take_graph=.true.)
+          call A(k)%A%init(g(k)%g, take_graph=.true.)
           sub => this%p%sublist("solver")
           call this%solver(k)%init(A(k)%A, sub)
         end do
@@ -262,7 +311,9 @@ contains
 
 
     ! copies data to hypre -> call this last!!!!!
-    call this%solver%setup()
+    do k = 1, size(this%solver)
+      call this%solver(k)%setup()
+    end do
 
   end subroutine setup_solver
 
@@ -270,11 +321,12 @@ contains
   subroutine accumulate_rhs_pressure(this, dt, props, grad_p_rho_cc)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, grad_p_rho_cc(:,:)
+    type(flow_props), intent(in) :: props
     integer :: j
 
     associate (m => this%mesh%mesh)
       do j = 1, m%ncell_onP
-        rhs(:,j) = rhs(:,j) + dt*grad_p_rho_cc(:,j)*props%rho_cc(j)
+        this%rhs(:,j) = this%rhs(:,j) + dt*grad_p_rho_cc(:,j)*props%rho_cc(j)
       end do
     end associate
 
@@ -283,7 +335,7 @@ contains
 
   subroutine accumulate_rhs_viscous_stress(this, dt, props, vel_cc)
     class(flow_prediction), intent(inout) :: this
-    real(r8), intent(in) :: dt, vel_cc(:)
+    real(r8), intent(in) :: dt, vel_cc(:,:)
     type(flow_props), intent(in) :: props
     !
     integer :: i, j
@@ -318,17 +370,17 @@ contains
   end subroutine accumulate_rhs_viscous_stress
 
 
-  subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fc, flux_volumes, flux_vel)
+  subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fc, flux_volumes)
     class(flow_prediction), intent(inout) :: this
-    real(r8), intent(in) :: flux_volumes(:,:), flux_vel(:), vel_cc(:,:), vel_fc(:,:)
+    real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fc(:,:)
     type(flow_props), intent(in) :: props
     !
-    integer :: i, j, f0, f1, nhbr, cn
+    integer :: i, j, f0, f1, nhbr, cn, k
     real(r8) :: v
 
     ! we're going to assume here that the boundary conditions on flux_volumes
     ! and flux_vel have already been set..
-    associate (m => this%mesh%mesh)
+    associate (m => this%mesh%mesh, rhs => this%rhs)
       do i = 1, m%ncell_onP
         f0 = m%xcface(i)
         f1 = m%xcface(i+1)-1
@@ -363,7 +415,7 @@ contains
 
   subroutine accumulate_rhs_solidified_rho(this, props, vel_cc)
     class(flow_prediction), intent(inout) :: this
-    real(r8), intent(in) :: vel_cc(:,:), dt
+    real(r8), intent(in) :: vel_cc(:,:)
     type(flow_props), intent(in) :: props
     !
     integer :: j
@@ -371,9 +423,9 @@ contains
 
     w = 1.0_r8-this%solidify_implicitness
 
-    if (this%solidify_implicitness < 1.0_rp) then
+    if (this%solidify_implicitness < 1.0_r8) then
 
-      associate (m => this%mesh%mesh, rho => props%solidified_rho)
+      associate (m => this%mesh%mesh, rho => props%solidified_rho, rhs => this%rhs)
         do j = 1, m%ncell_onP
           rhs(:,j) = rhs(:,j) - w*rho(j)*vel_cc(:,j)
         end do
@@ -382,9 +434,10 @@ contains
   end subroutine accumulate_rhs_solidified_rho
 
 
-  subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, flux_vel)
+  subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, vel_fc, vel_cc)
     class(flow_prediction), intent(inout) :: this
-    real(r8), intent(in) :: dt, flux_volumes(:,:), flux_vel(:)
+    real(r8), intent(in) :: dt, flux_volumes(:,:), grad_p_rho_cc(:,:), vel_fc(:,:)
+    real(r8), intent(inout) :: vel_cc(:,:)
     type(flow_props), intent(in) :: props
     !
     integer :: i, j, ierr
@@ -394,19 +447,19 @@ contains
     ! Once a better solid/fluid model is used, change this numerical hackjob.
     call this%accumulate_rhs_pressure(dt, props, grad_p_rho_cc)
     call this%accumulate_rhs_viscous_stress(dt, props, vel_cc)
-    associate (m => this%mesh%mesh)
+    associate (m => this%mesh%mesh, rhs => this%rhs)
       do j = 1, m%ncell_onP
         rhs(:,j) = rhs(:,j)*props%vof(j)
       end do
     end associate
 
-    call this%accumulate_rhs_momentum()
-    call this%accumulate_rhs_solidified_rho()
+    call this%accumulate_rhs_momentum(props, vel_cc, vel_fc, flux_volumes)
+    call this%accumulate_rhs_solidified_rho(props, vel_cc)
 
     ! handle surface tension
     ! handle porous drag
 
-    associate (m => this%mesh%mesh, rho => props%rho_cc_n, vof => props%vof_n)
+    associate (m => this%mesh%mesh, rho => props%rho_cc_n, vof => props%vof_n, rhs => this%rhs)
       do j = 1, m%ncell_onP
         rhs(:,j) = rhs(:,j) + rho(j)*vof(j)*vel_cc(:,j)
       end do
