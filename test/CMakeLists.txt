@@ -135,6 +135,11 @@ add_pytruchas_test(htvoid4
 		   PROCESSORS 4
 		   LABELS DIFFUSION RADIATION)
 
+add_pytruchas_test(evap
+                   evap/test.py
+		   PROCESSORS 4
+		   LABELS CONDUCTION)
+
 add_pytruchas_test(broken-dam
                    broken-dam/testBrokenDam.py
 		   PROCESSORS 4
