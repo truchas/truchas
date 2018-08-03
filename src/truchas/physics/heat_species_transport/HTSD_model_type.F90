@@ -17,6 +17,7 @@ module HTSD_model_type
   use property_mesh_function
   use source_mesh_function
   use boundary_data
+  use bndry_func2_class
   use interface_data
   use rad_problem_type
   use index_partitioning
@@ -36,6 +37,7 @@ module HTSD_model_type
     type(bd_data) :: bc_rad  ! simple radiation (eps, amb temp)
     type(if_data) :: ic_htc  ! internal HTC
     type(if_data) :: ic_rad  ! internal gap radiation
+    class(bndry_func2), allocatable :: evap_flux
     real(r8) :: sbconst, abszero ! Stefan-Boltzmann constant and absolute zero for radiation BC
     !! Enclosure radiation problems
     type(rad_problem), pointer :: vf_rad_prob(:) => null()
@@ -355,6 +357,15 @@ contains
                                 this%ht%sbconst * ((Tface(n) - this%ht%abszero)**4 - &
                                            (this%ht%bc_rad%values(2,j)-this%ht%abszero)**4)
       end do
+
+      !! Experimental evaporation heat flux
+      if (allocated(this%ht%evap_flux)) then
+        call this%ht%evap_flux%compute_value(t, Tface)
+        do j = 1, size(this%ht%evap_flux%index)
+          n = this%ht%evap_flux%index(j)
+          Fface(n) = Fface(n) + this%mesh%area(n)*this%ht%evap_flux%value(j)
+        end do
+      end if
 
       !! Overwrite function value on void cells and faces with dummy equation T=0.
       if (associated(this%void_cell)) where (this%void_cell) Fcell = Tcell - this%void_temp
