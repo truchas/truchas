@@ -11,10 +11,11 @@ set(FLOW_SOURCE_FILES)
 set(FLOW_TARGET_NAME ProcessTruchasFlowFiles)
 
 set(FLOW_FILES
+        flow/flow_input_utils.F90
         flow/fischer_guess_type.F90
 	flow/flow_bc_factory_type.F90
 	flow/flow_bc_type.F90
-	flow/flow_driver_type.F90
+	flow/flow_driver.F90
 	flow/flow_mesh_type.F90
 	flow/flow_operators.F90
 	flow/turbulence_model_class.F90

@@ -62,6 +62,7 @@ module vtrack_driver
   public :: read_volumetracking_namelist
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
+  public :: vtrack_vof_view, vtrack_flux_vol_view
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -70,16 +71,17 @@ module vtrack_driver
     integer, allocatable :: liq_matid(:), sol_matid(:)
     integer, allocatable :: liq_pri(:)
     type(volume_tracker) :: vt
-    real(r8), allocatable :: vof(:,:) ! volume fractions for all materials
+    real(r8), allocatable  :: vof(:,:) ! volume fractions for all materials
     real(r8), allocatable :: svof(:) ! sum of solid volume fractions
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
     real(r8), allocatable :: flux_vol(:,:) ! flux volumes
-    real(r8), allocatable :: flux_vel(:) ! FOR TEMPORARY TESTING PURPOSES ONLY
+    real(r8), allocatable :: flux_vel(:) ! fluxing velocity - ragged form
     integer :: fluids ! number of fluids (not including void) to advance
     integer :: void ! 1 if simulation includes void else 0
+    logical :: active
   end type vtrack_driver_data
-  type(vtrack_driver_data), allocatable, save :: this
+  type(vtrack_driver_data), allocatable, target :: this
 
   !! Input data cached in a private parameter list.
   type(parameter_list), save :: params
@@ -93,6 +95,18 @@ contains
   logical function vtrack_enabled()
     vtrack_enabled = allocated(this)
   end function vtrack_enabled
+
+  function vtrack_vof_view() result(p)
+    real(r8), pointer :: p(:,:)
+    ASSERT(vtrack_enabled())
+    p => this%fvof_o
+  end function vtrack_vof_view
+
+  function vtrack_flux_vol_view() result(p)
+    real(r8), pointer :: p(:,:)
+    ASSERT(vtrack_enabled())
+    p => this%flux_vol
+  end function vtrack_flux_vol_view
 
   !! Current Truchas design requires that parameter input and object
   !! initialization be separated and occur at distinct execution stages.
@@ -110,11 +124,11 @@ contains
 
     integer :: ios, location_iter_max, subcycles
     real(r8) :: location_tol, cutoff
-    logical :: found, use_brents_method, nested_dissection
+    logical :: found, use_brents_method, nested_dissection, active
     character(128) :: iom
 
     namelist /volumetracking/ use_brents_method, location_iter_max, subcycles, location_tol, &
-        cutoff, nested_dissection
+        cutoff, nested_dissection, active
 
     !! Locate the MICROSTRUCTURE namelist (first occurrence)
     if (is_IOP) then
@@ -132,6 +146,7 @@ contains
 
     !! Read the namelist.
     if (is_IOP) then
+      active = .true.
       nested_dissection = .true.
       use_brents_method = .true.
       location_iter_max = 20
@@ -144,6 +159,7 @@ contains
     if (ios /= 0) call TLS_fatal('error reading VOLUMETRACKING namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables
+    call broadcast(active)
     call broadcast(use_brents_method)
     call broadcast(location_tol)
     call broadcast(location_iter_max)
@@ -159,8 +175,9 @@ contains
     call params%set('nested_dissection', nested_dissection)
 
     allocate(this)
+    this%active = active
 
-    call this%vt%read_params(params)
+    if (this%active) call this%vt%read_params(params)
 
   end subroutine read_volumetracking_namelist
 
@@ -186,6 +203,14 @@ contains
 
     this%mesh => mesh
     INSIST(associated(this%mesh))
+
+    if (.not.this%active) then
+      allocate(this%fvof_o(1, mesh%ncell))
+      allocate(this%flux_vol(1,size(mesh%cface)))
+      this%fvof_o = 1.0_r8
+      vf(1,:) = this%mesh%volume
+      return
+    end if
 
     this%fluids = 0
     this%void = 0
@@ -247,45 +272,63 @@ contains
   end subroutine vtrack_driver_init
 
 
-  subroutine vtrack_update(t, dt)
-
-    !use fluid_data_module, only: fluxing_velocity
+  ! vel_fn is the outward oriented face-normal velocity
+  subroutine vtrack_update(t, dt, vel_fn)
     use constants_module
     use matl_module, only: gather_vof, scatter_vof
     use matl_utilities, only: MATL_SET_VOF
-    use advection_velocity_namelist, only: adv_vel
     real(r8), intent(in) :: t, dt
+    real(r8), intent(in) :: vel_fn(:)
 
     real(r8) :: args(0:3), vel(3)
     integer :: i, n, j, ncell, nfc, k, f0, f1, fi
 
     if (.not.allocated(this)) return
+    if (.not.this%active) then
+      ! compute flux volumes for transport
+      associate (m => this%mesh)
+        do i = 1, m%ncell
+          f0 = m%xcface(i)
+          f1 = m%xcface(i+1)-1
+          do j = f0, f1
+            k = m%cface(j)
+            if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
+              this%flux_vol(1,j) = -vel_fn(k)*m%area(k)*dt
+            else
+              this%flux_vol(1,j) = vel_fn(k)*m%area(k)*dt
+            end if
+          end do
+        end do
+      end associate
+      return
+    end if
+
     if (this%fluids == 0) return
 
-    args(0) = t
-    ! SET FLUXING VELOCITY FOR TEMPORARY TESTING PURPOSES
-    associate (m => this%mesh)
-      do i = 1, m%ncell
-        f0 = m%xcface(i)
-        f1 = m%xcface(i+1)-1
-        do j = f0, f1
-          k = m%cface(j)
-          associate(fn => m%fnode(m%xfnode(k):m%xfnode(k+1)-1))
-            args(1:3) = sum(m%x(:,fn),dim=2)/real(size(fn),r8)
-            vel(1) = 2.0_r8*sin(pi*args(1))**2*sin(2.0_r8*pi*args(2))*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
-            vel(2) = -sin(2.0_r8*pi*args(1))*sin(pi*args(2))**2*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
-            vel(3) = -sin(2.0_r8*pi*args(1))*sin(2.0_r8*pi*args(2))*sin(pi*args(3))**2*cos(pi*t/3.0_r8)
-
-            !vel = adv_vel%eval(args)
-          end associate
-          if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
-            this%flux_vel(j) = -dot_product(m%normal(:,k), vel)/m%area(k)
-          else
-            this%flux_vel(j) = dot_product(m%normal(:,k), vel)/m%area(k)
-          end if
-        end do
-      end do
-    end associate
+!!$    args(0) = t
+!!$    ! SET FLUXING VELOCITY FOR TEMPORARY TESTING PURPOSES
+!!$    associate (m => this%mesh)
+!!$      do i = 1, m%ncell
+!!$        f0 = m%xcface(i)
+!!$        f1 = m%xcface(i+1)-1
+!!$        do j = f0, f1
+!!$          k = m%cface(j)
+!!$          associate(fn => m%fnode(m%xfnode(k):m%xfnode(k+1)-1))
+!!$            args(1:3) = sum(m%x(:,fn),dim=2)/real(size(fn),r8)
+!!$            vel(1) = 2.0_r8*sin(pi*args(1))**2*sin(2.0_r8*pi*args(2))*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
+!!$            vel(2) = -sin(2.0_r8*pi*args(1))*sin(pi*args(2))**2*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
+!!$            vel(3) = -sin(2.0_r8*pi*args(1))*sin(2.0_r8*pi*args(2))*sin(pi*args(3))**2*cos(pi*t/3.0_r8)
+!!$
+!!$            !vel = adv_vel%eval(args)
+!!$          end associate
+!!$          if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
+!!$            this%flux_vel(j) = -dot_product(m%normal(:,k), vel)/m%area(k)
+!!$          else
+!!$            this%flux_vel(j) = dot_product(m%normal(:,k), vel)/m%area(k)
+!!$          end if
+!!$        end do
+!!$      end do
+!!$    end associate
 
 !!$    ! check flux_veloctiy
 !!$    open(unit=50, file='flux_vel')

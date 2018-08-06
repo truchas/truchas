@@ -56,7 +56,7 @@ MODULE PROJECTION_DATA_MODULE
   real(r8), public, allocatable, dimension(:,:,:)   :: dtRhoG_over_Rho
 
   ! Array related to boundary conditions.
-  integer, pointer, public, save, dimension(:,:) :: Boundary_Flag
+  integer, pointer, public, save, dimension(:,:) :: Boundary_Flag => null()
 
   ! Compressibility Array
   real(r8), allocatable, public, dimension(:) :: Vol_over_RhoCsqDt

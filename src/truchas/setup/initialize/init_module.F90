@@ -84,8 +84,9 @@ CONTAINS
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
-    !NNC    use flow_driver, only: flow_init, flow_set_initial_vof, flow_enabled
-    use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
+    use flow_driver, only: flow_driver_init, flow_enabled
+    use vtrack_driver, only: vtrack_driver_init, vtrack_enabled, &
+        vtrack_vof_view, vtrack_flux_vol_view
     use physics_module,         only: heat_transport
     use ded_head_driver,        only: ded_head_init
 
@@ -99,6 +100,8 @@ CONTAINS
     real(r8), dimension(nbody,ncells) :: Hits_Vol
     real(r8), dimension(nbody,ncells) :: volume_fractions
     real(r8), allocatable :: phi(:,:)
+    real(r8), pointer :: vtrack_vof(:,:) => null()
+    real(r8), pointer :: vtrack_flux_vol(:,:) => null()
     character(200) :: errmsg
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -134,13 +137,10 @@ CONTAINS
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
 
-    !NNC    print *, 'flow_enabled check: ', flow_enabled()
-    !NNC    if (flow_enabled()) then
-    !NNC       call flow_init(unstr_mesh_ptr('MAIN'))
-    !NNC       call flow_set_initial_vof(nbody, volume_fractions)
-    !NNC    else
     if (vtrack_enabled()) then
       call vtrack_driver_init(t, unstr_mesh_ptr('MAIN'), volume_fractions)
+      vtrack_vof => vtrack_vof_view()
+      vtrack_flux_vol => vtrack_flux_vol_view()
     else
       volume_fractions = vof_initialize()
     end if
@@ -181,8 +181,16 @@ CONTAINS
     !! relevant properties are defined belongs there but for now it's here so
     !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
     !! always because fluid_init uses its results regardless of whether flow is on.
-    call flow_property_init
-    call FLUID_INIT (t)
+    print *, 'flow_enabled check: ', flow_enabled()
+    if (flow_enabled()) then
+      INSIST(associated(vtrack_vof))
+      INSIST(associated(vtrack_flux_vol))
+      call flow_driver_init(unstr_mesh_ptr('MAIN'), vtrack_vof, vtrack_flux_vol)
+    else
+      call flow_property_init
+      call FLUID_INIT (t)
+    end if
+
 
     ! Allow arbitrary overwriting of the Matl, Zone, and BC types.
     call OVERWRITE_MATL ()

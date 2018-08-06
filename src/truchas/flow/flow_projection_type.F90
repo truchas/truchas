@@ -63,19 +63,19 @@ module flow_projection_type
   implicit none
   private
 
-  public :: flow_projection
+  public :: flow_projection, read_flow_corrector_namelist
 
   type :: flow_projection
     private
-    type(flow_mesh), pointer :: mesh ! unowned reference
-    type(flow_bc), pointer :: bc ! unowned reference
+    type(flow_mesh), pointer :: mesh => null() ! unowned reference
+    type(flow_bc), pointer :: bc => null() ! unowned reference
     type(fischer_guess) :: fg
     type(hypre_hybrid) :: solver
-    type(parameter_list), pointer :: p
+    type(parameter_list), pointer :: p => null()
     real(r8), allocatable :: rhs(:)
     real(r8), allocatable :: grad_fc(:,:) ! face centered gradient
-    real(r8), allocatable :: grad_p_rho_cc(:,:) ! dynamic pressure gradient over rho -> cell centered
-    real(r8), allocatable :: grad_p_rho_cc_n(:,:)
+    real(r8), allocatable :: grad_p_rho_cc(:,:)
+    real(r8), allocatable :: grad_p_rho_fc(:,:)
     real(r8), allocatable :: delta_p_cc(:)
     real(r8), allocatable :: gravity_head(:,:)
     real(r8), allocatable :: weights_cf(:,:) ! weights for f->c interpolation
@@ -89,6 +89,7 @@ module flow_projection_type
     procedure, private :: setup_face_velocity
     procedure, private :: setup_gravity
     procedure, private :: setup_solver
+    procedure, private :: grad_p_rho
     procedure, private :: velocity_fc_correct
     procedure, private :: pressure_cc_correct
     procedure, private :: velocity_cc_correct
@@ -96,20 +97,129 @@ module flow_projection_type
 
 contains
 
+  subroutine read_flow_corrector_namelist(lun, p)
+    use string_utilities, only: i_to_c
+    use parallel_communication, only: is_IOP, broadcast
+    use flow_input_utils
+
+    integer, intent(in) :: lun
+    type(parameter_list), pointer, intent(inout) :: p
+    type(parameter_list), pointer :: pp
+    integer :: ios
+    logical :: found
+    character(128) :: iom
+
+    integer :: fischer_history
+    !- hypre related items
+    real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
+    integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
+    integer :: print_level, amg_max_levels, amg_coarsen_type, amg_coarsen_sweeps
+    integer :: amg_smoothing_method, amg_smoothing_sweeps, amg_interp_method
+    character(128) :: krylov_method, amg_coarsen_method
+
+
+    namelist /flow_corrector/ fischer_history, rel_tol, &
+        abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
+        krylov_method, gmres_krylov_dim, cg_use_two_norm, &
+        logging_level, print_level, amg_strong_threshold, &
+        amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
+        amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
+
+    pp => p%sublist("corrector")
+
+    fischer_history = NULL_I
+    max_ds_iter = NULL_I
+    max_amg_iter = NULL_I
+    gmres_krylov_dim = NULL_I
+    cg_use_two_norm = NULL_I
+    logging_level = NULL_I
+    print_level = NULL_I
+    amg_max_levels = NULL_I
+    amg_coarsen_type = NULL_I
+    amg_coarsen_sweeps = NULL_I
+    amg_smoothing_method = NULL_I
+    amg_smoothing_sweeps = NULL_I
+    amg_interp_method = NULL_I
+    rel_tol = NULL_R
+    abs_tol = NULL_R
+    conv_rate_tol = NULL_R
+    amg_strong_threshold = NULL_R
+    krylov_method = NULL_C
+    amg_coarsen_method = NULL_C
+
+    if (is_IOP) then
+      rewind lun
+      call seek_to_namelist(lun, 'FLOW_CORRECTOR', found, iostat=ios)
+    end if
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
+
+    call broadcast(found)
+    if (found) then
+      call TLS_info('')
+      call TLS_info('Reading FLOW_CORRECTOR namelist ...')
+      !! Read the namelist.
+      if (is_IOP) then
+        read(lun,nml=flow_corrector,iostat=ios,iomsg=iom)
+      end if
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading FLOW_CORRECTOR namelist: ' // trim(iom))
+
+      call broadcast(fischer_history)
+      call broadcast(max_ds_iter)
+      call broadcast(max_amg_iter)
+      call broadcast(gmres_krylov_dim)
+      call broadcast(cg_use_two_norm)
+      call broadcast(logging_level)
+      call broadcast(print_level)
+      call broadcast(amg_max_levels)
+      call broadcast(amg_coarsen_type)
+      call broadcast(amg_coarsen_sweeps)
+      call broadcast(amg_smoothing_method)
+      call broadcast(amg_interp_method)
+      call broadcast(rel_tol)
+      call broadcast(abs_tol)
+      call broadcast(conv_rate_tol)
+      call broadcast(amg_strong_threshold)
+      call broadcast(krylov_method)
+      call broadcast(amg_coarsen_method)
+
+
+      call plist_set_if(pp, 'history', fischer_history)
+      pp => pp%sublist("solver")
+      call plist_set_if(pp, "rel-tol", rel_tol)
+      call plist_set_if(pp, 'abs-tol', abs_tol)
+      call plist_set_if(pp, 'conv-rate-tol', conv_rate_tol)
+      call plist_set_if(pp, 'max-ds-iter', max_ds_iter)
+      call plist_set_if(pp, 'max-amg-iter', max_amg_iter)
+      call plist_set_if(pp, 'krylov-method', krylov_method)
+      call plist_set_if(pp, 'gmres-krylov-dim', gmres_krylov_dim)
+      call plist_set_if(pp, 'cg-use-two-norm', cg_use_two_norm /= 0)
+      call plist_set_if(pp, 'logging-level', logging_level)
+      call plist_set_if(pp, 'print-level', print_level)
+      call plist_set_if(pp, 'amg-strong-threshold', amg_strong_threshold)
+      call plist_set_if(pp, 'amg-max-levels', amg_max_levels)
+      call plist_set_if(pp, 'amg-coarsen-method', amg_coarsen_method)
+      call plist_set_if(pp, 'amg-coarsen-type', amg_coarsen_type)
+      call plist_set_if(pp, 'amg-smoothing-sweeps', amg_smoothing_sweeps)
+      call plist_set_if(pp, 'amg-smoothing-method', amg_smoothing_method)
+      call plist_set_if(pp, 'amg-interp-method', amg_interp_method)
+    end if
+  end subroutine read_flow_corrector_namelist
+
+
   subroutine read_params(this, p)
     class(flow_projection), intent(inout) :: this
     type(parameter_list), pointer, intent(in) :: p
-    type(parameter_list), pointer :: sub
 
     this%p => p
-    sub => p%sublist("fischer")
-    call this%fg%read_params(sub)
+    call this%fg%read_params(p)
   end subroutine read_params
 
   subroutine init(this, mesh, bc)
     class(flow_projection), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
-    type(flow_bc), target, intent(inout) :: bc
+    type(flow_bc), pointer, intent(in) :: bc
     !-
     integer :: j, i
     type(pcsr_graph), pointer :: g
@@ -123,20 +233,20 @@ contains
     m => mesh%mesh
 
     allocate(this%grad_fc(3,m%nface))
-    allocate(this%grad_p_rho_cc(3,m%ncell))
-    allocate(this%grad_p_rho_cc_n(3,m%ncell))
     allocate(this%delta_p_cc(m%ncell))
     allocate(this%gravity_head(2,m%nface))
     allocate(this%vel_cc_star(3,m%ncell))
     allocate(this%weights_cf(2,m%nface))
+    allocate(this%grad_p_rho_cc(3,m%ncell))
+    allocate(this%grad_p_rho_fc(3,m%nface))
+
 
     this%grad_fc = 0.0_r8
-    this%grad_p_rho_cc = 0.0_r8
-    this%grad_p_rho_cc_n = 0.0_r8
     this%delta_p_cc = 0.0_r8
     this%gravity_head = 0.0_r8
     this%vel_cc_star = 0.0_r8
-
+    this%grad_p_rho_cc = 0.0_r8
+    this%grad_p_rho_fc = 0.0_r8
 
     do j = 1, m%nface_onP
       associate (n => mesh%fcell(:,j), fc => mesh%face_centroid(:,j), &
@@ -168,29 +278,47 @@ contains
 
     allocate(A)
     call A%init(g, take_graph=.true.)
-    sub => this%p%sublist("solver")
+    sub => this%p%sublist("corrector")
+    ASSERT(sub%count() > 0)
+    sub => sub%sublist("solver")
+    ASSERT(sub%count() > 0)
     call this%solver%init(A, sub)
     call this%fg%init(mesh)
-
   end subroutine init
 
-
-  subroutine setup(this, dt, props, body_force, vel_cc, P_cc, vel_fn)
+  subroutine setup(this, dt, props, grad_p_rho_cc_n, body_force, vel_cc, P_cc, vel_fn, initial)
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
-    real(r8), intent(in) :: vel_cc(:,:), dt, P_cc(:), body_force(:)
+    real(r8), intent(in) :: vel_cc(:,:), dt, P_cc(:), body_force(:), grad_p_rho_cc_n(:,:)
     real(r8), intent(out) :: vel_fn(:)
+    logical, optional, intent(in) :: initial
+    logical :: init
+
+    init = .false.
+    if (present(initial)) init = initial
 
     call this%setup_gravity(props, body_force)
-    call this%setup_face_velocity(dt, props, vel_cc, P_cc, vel_fn)
+    call this%grad_p_rho(props, P_cc)
+    call this%setup_face_velocity(dt, props, grad_p_rho_cc_n, vel_cc, vel_fn)
+#ifndef NDEBUG
     print *, "SETUP_FACE_VELOCITY FINISHED"
-    call this%setup_solver(dt, props, vel_fn)
+#endif
+    ! we pass in dt == 0 to setup initial pass, this causes division by zero
+    ! in rhs, so pass in 1.
+    if (init) then
+      call this%setup_solver(1.0_r8, props, vel_fn)
+    else
+      call this%setup_solver(dt, props, vel_fn)
+    end if
+#ifndef NDEBUG
     print *, "PROJECTION SETUP FINISHED"
+#endif
   end subroutine setup
 
-  subroutine accept(this)
+  subroutine accept(this, grad_p_rho_cc_n)
     class(flow_projection), intent(inout) :: this
-    this%grad_p_rho_cc_n = this%grad_p_rho_cc
+    real(r8), intent(inout) :: grad_p_rho_cc_n(:,:)
+    grad_p_rho_cc_n = this%grad_p_rho_cc
   end subroutine accept
 
   subroutine setup_solver(this, dt, props, vel)
@@ -220,7 +348,7 @@ contains
             ! ni == 0 implies a domain boundary cell, handle these separately
             if (rho_f(fi) /= 0.0_r8 .and. ni > 0) then
               ! note that normal is already weighted by face area
-              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)
+              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)!/m%volume(j)
               call A%add_to(j, j, coeff)
               call A%add_to(j, ni, -coeff)
             end if
@@ -232,6 +360,9 @@ contains
 
     !! FIXME: need correction for void/solid... maybe
     associate (m => this%mesh%mesh, rhs => this%rhs)
+#ifndef NDEBUG
+      write(*, *) ">> Projection rhs before Pressure BC's"
+#endif
       do j = 1, m%ncell_onP
         rhs(j) = 0.0_r8
         associate( fn => m%cface(m%xcface(j):m%xcface(j+1)-1))
@@ -239,58 +370,47 @@ contains
             ! face velocity follows the convention of being positive in the inward
             ! face direction as is the normal.  Boundary conditions have already been
             ! applied in computing `vel` so we shouldn't need to use them here again
-            if (btest(m%cfpar(j), pos=i)) then
-              this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
+            if (btest(m%cfpar(j),pos=i)) then
+              this%rhs(j) = this%rhs(j) + vel(fn(i))*m%area(fn(i))!/m%volume(j)
             else
-              this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
+              this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))!/m%volume(j)
             end if
-            !write(*,'("vel(",i4,"):",es15.5)') fn(i), vel(fn(i))
+#ifndef NDEBUG
+            write(*,'("cell(",i4,"), face(",i4,") vel: ",es15.5, " normal: ", 3es15.5)') &
+                j,fn(i), vel(fn(i)), m%normal(:,fn(i))/m%area(fn(i))
+#endif
           end do
         end associate
         this%rhs(j) = this%rhs(j) / dt
-        !write(*,'("rhs(",i4,"):",es15.5)') i, this%rhs(j)
-        !this%rhs(j) = 0.0_r8
+#ifndef NDEBUG
+        write(*,'("rhs(",i4,"):",es15.5)') j, this%rhs(j)
+#endif
       end do
 
       ! handle dirichlet bcs
       !print *, "DEBUGGING PRESSURE BOUNDARY CONDITIONS"
-      associate (faces => this%bc%p_dirichlet%index, values => this%bc%p_dirichlet%value, &
+      associate (faces => this%bc%dp_dirichlet%index, values => this%bc%dp_dirichlet%value, &
           rho_f => props%rho_fc)
         do i = 1, size(faces)
           fi = faces(i)
           j = this%mesh%fcell(2,fi) ! cell index
           ASSERT(this%mesh%fcell(1,fi) == 0)
           if (rho_f(fi) /=  0.0_r8) then
-            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)
+            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)!/this%mesh%mesh%volume(j)
             call A%add_to(j, j, coeff)
-            this%rhs(j) = this%rhs(j) - coeff*values(i)
-            !this%rhs(j) = coeff*values(i)
+#ifndef NDEBUG
+            write(*,'("dp_dirichlet[",i3,"]: ", es15.5)') j, values(i)
+#endif
+            this%rhs(j) = this%rhs(j) + coeff*values(i)
           end if
-!!$          call A%get_row_view(j, row_val, row_idx)
-!!$          print *, j, row_idx
-!!$          print *, j, row_val
-!!$          write(*,'("rhs(",i4,"):",es15.5)') j, this%rhs(j)
         end do
       end associate
-
-!!$      open(file="matrix_idx",newunit=fi,status='replace')
-!!$      open(file="matrix_val",newunit=ni,status='replace')
-!!$      open(file="rhs_val",newunit=i,status='replace')
-!!$      do j = 1, m%ncell_onP
-!!$        call A%get_row_view(j, row_val, row_idx)
-!!$        write(fi, *) row_idx
-!!$        write(ni, *) row_val
-!!$        write(i, *) this%rhs(j)
-!!$      end do
-!!$      close(fi)
-!!$      close(ni)
-!!$      close(i)
     end associate
+
 
     call this%solver%setup()
 
   end subroutine setup_solver
-
 
 
   subroutine setup_gravity(this, props, body_force)
@@ -323,75 +443,100 @@ contains
     ! Truchas has a gravity_limiter... Do we need this?
   end subroutine setup_gravity
 
-  subroutine setup_face_velocity(this, dt, props, vel_cc, p_cc, vel_fn)
+  subroutine setup_face_velocity(this, dt, props, grad_p_rho_cc_n, vel_cc, vel_fn)
     class(flow_projection), intent(inout) :: this
     real(r8), intent(in) :: dt
     type(flow_props), intent(in) :: props
-    real(r8), intent(in) :: vel_cc(:,:), p_cc(:)
+    real(r8), intent(in) :: vel_cc(:,:), grad_p_rho_cc_n(:,:)
     real(r8), intent(out) :: vel_fn(:)
     !-
     integer :: i, j
 
     ! cell -> face interpolation
-    associate (m => this%mesh%mesh, v => this%vel_cc_star, gpn => this%grad_p_rho_cc_n, &
+    associate (m => this%mesh%mesh, v => this%vel_cc_star, gpn => grad_p_rho_cc_n, &
         w => this%weights_cf)
       do i=1, m%ncell
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
       call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%inactive_f, 0.0_r8)
-    end associate
-
-    ! subtract dynamic pressure grad
-    associate (m => this%mesh%mesh, gfc => this%grad_fc, rho_fc => props%rho_fc)
-
-      call gradient_cf(gfc, p_cc, this%bc%p_neumann, &
-          this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
+#ifndef NDEBUG
+      write(*, *) " >> <u*+dt*Grad_P>_c->f"
       do j = 1, m%nface_onP
-        !write(*,'(">>velfn(",i4,"):",es15.5)') j, vel_fn(j)
-        if (rho_fc(j) > 0.0_r8) then
-          vel_fn(j) = vel_fn(j) - dt*dot_product(m%normal(:,j),gfc(:,j))/(m%area(j)*rho_fc(j))
-          !write(*,'("<<velfn(",i4,"):",es15.5)') j, vel_fn(j)
-        else
-          ! there may be something special with void here....
-          vel_fn(j) = 0.0_r8
-        end if
+        if (abs(m%normal(1,j)) > 1e-10_r8) &
+          write(*,'(a,i3,2(a,es15.5))') "vel_fnx(",j,"):",vel_fn(j), " normal: ", m%normal(1,j)/m%area(j)
       end do
+#endif
+    end associate
+    ! subtract dynamic pressure grad
+    associate (m => this%mesh%mesh, gp_fc => this%grad_p_rho_fc)
+      ! enforced in grad_p_rho: this%grad_p_rho_fc == 0 where rho_fc == 0
+      do j = 1, m%nface_onP
+        vel_fn(j) = vel_fn(j) - dt*dot_product(m%normal(:,j), gp_fc(:,j))/m%area(j)
+      end do
+      ! should boundary conditions on vel_fn be enforced here again?
+      associate (faces => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
+        do j = 1, size(faces)
+          i = faces(j)
+          vel_fn(i) = dot_product(m%normal(:,i), value(:,j))/m%area(i)
+        end do
+      end associate
       call gather_boundary(m%face_ip, vel_fn)
+#ifndef NDEBUG
+      write(*, *) " >> <u*+dt*<Grad_P>_f->c>_c->f-dt*Grad_P"
+      do j = 1, m%nface_onP
+        if (abs(m%normal(1,j)) > 1e-10_r8) &
+          write(*,'(a,i3,2(a,es15.5))') "vel_fnx(",j,"):",vel_fn(j), " normal: ", m%normal(1,j)/m%area(j)
+      end do
+      do j = 1, m%nface_onP
+        if (abs(m%normal(2,j)) > 1e-10_r8) &
+          write(*,'(a,i3,2(a,es15.5))') "vel_fny(",j,"):",vel_fn(j), " normal: ", m%normal(2,j)/m%area(j)
+      end do
+#endif
     end associate
   end subroutine setup_face_velocity
 
-
-  subroutine solve(this, dt, props, vel_cc, p_cc, vel_fc)
+  subroutine solve(this, dt, props, grad_p_rho_cc_n, vel_cc, p_cc, vel_fc, initial)
     class(flow_projection), intent(inout) :: this
-    real(r8), intent(in) :: dt
+    real(r8), intent(in) :: dt, grad_p_rho_cc_n(:,:)
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: p_cc(:), vel_cc(:,:), vel_fc(:)
+    logical, optional, intent(in) :: initial
     !-
     integer :: ierr, i, in
+
+    ! walk through solve with initial dt = 0 to get divergence free pressure field
+!!$    if (present(initial)) then
+!!$      if (initial) return
+!!$    end if
 
     ! solve the pressure poisson system
     this%delta_p_cc = 0.0_r8
     call this%fg%guess(this%rhs, this%delta_p_cc)
+
+#ifndef NDEBUG
+    write(*,*) "<<< RHS Passed to solve: norm = ", norm2(this%rhs(1:this%mesh%mesh%ncell_onP))
+    write(*,*)
+    do i = 1, this%mesh%mesh%ncell_onP
+      write(*,'("RHS[", i3, "]: ",es15.5)') i, this%rhs(i)
+    end do
+#endif
     call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
-
-!!$    open(file='dp_cc', newunit=in)
-!!$    associate (m => this%mesh%mesh, cc => this%mesh%cell_centroid, p => this%delta_p_cc)
-!!$      do i = 1, m%ncell_onP
-!!$        write(in, '(4es15.5)') cc(:,i), p(i)
-!!$      end do
-!!$    end associate
-!!$    close(in)
-!!$    print *, "done writing file"
-
+#ifndef NDEBUG
+    write(*,*) "<<< DP"
+    do i = 1, this%mesh%mesh%ncell_onP
+      write(*,'("DP[",i3,"]: ",es15.5)') i, this%delta_p_cc(i)
+    end do
+#endif
     ! not sure if this call is necesary
     call gather_boundary(this%mesh%mesh%cell_ip, this%delta_p_cc)
 
     ! correct face and cell centered quantities
     call this%velocity_fc_correct(dt, props, vel_fc)
     call this%pressure_cc_correct(props, p_cc)
-    call this%velocity_cc_correct(dt, props, p_cc, vel_cc)
+    call this%grad_p_rho(props, p_cc)
+    call this%velocity_cc_correct(dt, props, grad_p_rho_cc_n, vel_cc)
   end subroutine solve
 
 
@@ -405,7 +550,7 @@ contains
 
     ! face gradient of solution
     call gradient_cf(this%grad_fc, this%delta_p_cc, this%bc%p_neumann, &
-        this%bc%p_dirichlet, props%inactive_f, 0.0_r8)
+        this%bc%dp_dirichlet, props%inactive_f, 0.0_r8)
 
     ! divergence free face velocity
     associate (m => this%mesh%mesh)
@@ -421,10 +566,7 @@ contains
       associate (index => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
         do i = 1, size(index)
           j = index(i)
-          ! is the convention to specify boundary velocity as into or out of domain??????
-          ! the following assumes _out_
-          if (props%inactive_f(j) == 0) &
-              vel_fc(j) = -dot_product(value(:,i), m%normal(:,j))/m%area(j)
+          vel_fc(j) = dot_product(value(:,i), m%normal(:,j))/m%area(j)
         end do
       end associate
 
@@ -465,41 +607,47 @@ contains
   end subroutine pressure_cc_correct
 
 
-  subroutine velocity_cc_correct(this, dt, props, p_cc, vel_cc)
+  ! compute face and cell centered dynamic_pressure_gradient/rho
+  subroutine grad_p_rho(this, props, p_cc)
+    class(flow_projection), intent(inout) :: this
+    type(flow_props), intent(in) :: props
+    real(r8), intent(in) :: p_cc(:)
+    !-
+    integer :: i, j
+
+    associate (m => this%mesh%mesh, rho => props%rho_fc, &
+        gp_cc => this%grad_p_rho_cc, gp_fc => this%grad_p_rho_fc)
+
+    call gradient_cf(gp_fc, p_cc, this%bc%p_neumann, &
+        this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
+
+      do j = 1, m%nface_onP
+        if (rho(j) > 0.0_r8) then
+          gp_fc(:,j) = gp_fc(:,j)/rho(j)
+        else
+          gp_fc(:,j) = 0.0_r8
+        end if
+      end do
+      call gather_boundary(m%face_ip, gp_fc)
+      call interpolate_fc(gp_cc, gp_fc)
+    end associate
+  end subroutine grad_p_rho
+
+
+  subroutine velocity_cc_correct(this, dt, props, grad_p_rho_cc_n, vel_cc)
     class(flow_projection), intent(inout) :: this
     real(r8), intent(in) :: dt
     type(flow_props), intent(in) :: props
-    real(r8), intent(in) :: p_cc(:)
+    real(r8), intent(in) :: grad_p_rho_cc_n(:,:)
     real(r8), intent(inout) :: vel_cc(:,:)
     !-
     integer :: i, j
 
-    call gradient_cf(this%grad_fc, p_cc, this%bc%p_neumann, &
-        this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
-
-    associate (m => this%mesh%mesh, gfc => this%grad_fc, rho_fc => props%rho_fc, &
-        gpn => this%grad_p_rho_cc_n, gp => this%grad_p_rho_cc)
-
-      do j = 1, m%nface_onP
-        if (rho_fc(j) > 0.0_r8) then
-          gfc(:,j) = gfc(:,j)/rho_fc(j)
-        else
-          gfc(:,j) = 0.0_r8
-        end if
-      end do
-      call gather_boundary(m%face_ip, gfc)
-      call interpolate_fc(gp, gfc)
-
+    associate (m => this%mesh%mesh)
+      ! assumes dynamic pressure gradients have already been computed
       do i = 1, m%ncell_onP
-        ! is this check actually necessary.. would gpn or gp be non-zero
-        ! in either of these cases?
-        if (props%rho_cc(i) == 0.0_r8 .or. props%inactive_c(i) == 1) then
-          vel_cc(:,i) = 0.0_r8
-        else
-          vel_cc(:,i) = vel_cc(:,i) + dt*(gpn(:,i)-gp(:,i))
-        end if
+        vel_cc(:,i) = vel_cc(:,i) + dt*(grad_p_rho_cc_n(:,i)-this%grad_p_rho_cc(:,i))
       end do
-
     end associate
   end subroutine velocity_cc_correct
 

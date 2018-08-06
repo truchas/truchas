@@ -126,8 +126,9 @@ contains
     allocate(this%hint(this%ngroup))
     do n = 1, this%ngroup
       select type (f => this%farray(n)%f)
-      type is (const_scalar_func)
-        this%hint(n) = DATA_HINT_CONST
+        ! these hints don't play well with the dp pressure boundary conditions
+!!$     type is (const_scalar_func)
+!!$        this%hint(n) = DATA_HINT_CONST
       class default
         this%hint(n) = DATA_HINT_NONE
       end select

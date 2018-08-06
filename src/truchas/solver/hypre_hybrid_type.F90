@@ -133,19 +133,19 @@ contains
     if (hypre_associated(this%solver)) call fHYPRE_ParCSRHybridDestroy (this%solver, ierr)
     call fHYPRE_ParCSRHybridCreate (this%solver, ierr)
     INSIST(ierr == 0)
-    
+
     !! Krylov solver relative tolerance for Krylov solver (required)
     call this%params%get ('rel-tol', rpar)
     INSIST(rpar >= 0.0_r8)  !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetTol (this%solver, rpar, ierr)
     INSIST(ierr == 0)
-    
+
     !! Krylov solver absolute tolerance (optional, default none (=0))
     call this%params%get ('abs-tol', rpar, default=0.0_r8)
     INSIST(rpar >= 0.0_r8)  !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetAbsoluteTol (this%solver, rpar, ierr)
     INSIST(ierr == 0)
-    
+
     !! Convergence rate tolerance (optional, use Hypre default)
     if (this%params%is_parameter('conv-rate-tol')) then
       call this%params%get ('conv-rate-tol', rpar)
@@ -153,19 +153,19 @@ contains
       call fHYPRE_ParCSRHybridSetConvergenceTol (this%solver, rpar, ierr)
       INSIST(ierr == 0)
     end if
-    
+
     !! Max number of diagonally-scaled Krylov iterations (required)
     call this%params%get ('max-ds-iter', ipar)
     INSIST(ipar > 0)  !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetDSCGMaxIter (this%solver, ipar, ierr)
     INSIST(ierr == 0)
-    
+
     !! Max number of AMG-preconditioned Krylov iterations (required)
     call this%params%get ('max-amg-iter', ipar)
     INSIST(ipar > 0)  !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetPCGMaxIter (this%solver, ipar, ierr)
     INSIST(ierr == 0)
-    
+
     !! Kyrlov method (required)
     call this%params%get ('krylov-method', cpar)
     select case (cpar)
@@ -179,7 +179,7 @@ contains
       INSIST(.false.) !TODO: replace with proper error handling
     end select
     INSIST(ierr == 0)
-    
+
     !! Krylov space dimension for restarted GMRES (required for GMRES)
     if (cpar == 'gmres') then
       call this%params%get ('gmres-krylov-dim', ipar)
@@ -187,7 +187,7 @@ contains
       call fHYPRE_ParCSRHybridSetKDim (this%solver, ipar, ierr)
       INSIST(ierr == 0)
     end if
-    
+
     !! Two norm for CG (optional, use Hypre default)
     if (cpar == 'cg') then ! TODO: should this apply to bicgstab too?
       if (this%params%is_parameter('cg-use-two-norm')) then
@@ -200,25 +200,25 @@ contains
         INSIST(ierr == 0)
       end if
     end if
-    
+
     !! Logging level (optional, default is none)
     call this%params%get ('logging-level', ipar, default=0)
     INSIST(ipar >= 0) !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetLogging (this%solver, ipar, ierr)
     INSIST(ierr == 0)
-    
+
     !! Print level (optional, default is no output)
     call this%params%get ('print-level', ipar, default=0)
     INSIST(ipar >= 0) !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetPrintLevel (this%solver, ipar, ierr)
     INSIST(ierr == 0)
-    
+
     !! AMG strength threshold (default 0.5 (3D Laplace))
     call this%params%get ('amg-strong-threshold', rpar, default=0.5_r8)
     INSIST(rpar > 0.0_r8 .and. rpar < 1.0_r8) !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetStrongThreshold (this%solver, rpar, ierr)
     INSIST(ierr == 0)
-    
+
     !! Maximum number of AMG levels (optional, use Hypre default)
     if (this%params%is_parameter('amg-max-levels')) then
       call this%params%get ('amg-max-levels', ipar)
@@ -226,7 +226,7 @@ contains
       call fHYPRE_ParCSRHybridSetMaxLevels (this%solver, ipar, ierr)
       INSIST(ierr == 0)
     end if
-    
+
     !! The AMG coarsening method (optional, use Hypre default)
     if (this%params%is_parameter('amg-coarsen-method')) then
       call this%params%get ('amg-coarsen-type', ipar)
@@ -234,13 +234,13 @@ contains
       call fHYPRE_ParCSRHybridSetCoarsenType (this%solver, ipar, ierr)
       INSIST(ierr == 0)
     end if
-    
+
     !! Number of AMG smoother sweeps (optional, default 1)
     call this%params%get ('amg-smoothing-sweeps', ipar, default=1)
     INSIST(ipar >= 0) !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetNumSweeps (this%solver, ipar, ierr)
     INSIST(ierr == 0)
-    
+
     !! The AMG smoothing method (optional, use Hypre default)
     if (this%params%is_parameter('amg-smoothing-method')) then
       call this%params%get ('amg-smoothing-method', ipar)
@@ -248,7 +248,7 @@ contains
       call fHYPRE_ParCSRHybridSetRelaxType (this%solver, ipar, ierr)
       INSIST(ierr == 0)
     end if
-    
+
     !! The AMG interpolation method (optional, use Hypre default)
     if (this%params%is_parameter('amg-interp-method')) then
       call this%params%get ('amg-interp-method', ipar)

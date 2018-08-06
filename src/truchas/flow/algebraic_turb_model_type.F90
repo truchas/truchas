@@ -72,12 +72,12 @@ contains
 
     call params%get('length', this%length)
     call params%get('cmu', this%cmu, 0.05_r8)
-    call params%get('ke-fraction', this%ke_fraction, 0.1_r8)
+    call params%get('ke fraction', this%ke_fraction, 0.1_r8)
 
     if (this%length <= 0.0_r8) call TLS_fatal("turbulence length must be > 0")
     if (this%cmu <= 0.0_r8) call TLS_fatal("turbulence cmu must > 0")
     if (this%ke_fraction <= 0.0_r8 .or. this%ke_fraction >= 1.0_r8) &
-        call TLS_fatal("turbulence ke-fraction must be in (0,1)")
+        call TLS_fatal("turbulence ke fraction must be in (0,1)")
 
   end subroutine read_params
 

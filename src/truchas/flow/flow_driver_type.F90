@@ -1,6 +1,53 @@
+!!
+!! VOLUME_TRACKING_DRIVER
+!!
+!! This code is meant to be deleted and subsumed by high-level cycle driver.
+!! At the moment, this driver serves as a mediator between the volume tracking
+!! code with the desired api and the rest of truchas
+!!
+!! Peter Brady <ptb@lanl.gov>
+!! 2017
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! PROGRAMMING INTERFACE
+!!
+!!  This module provides procedures for driving the microstructure modeling
+!!  kernel.  It serves as an adapter between top-level Truchas drivers (input,
+!!  initialization, cycle, and output) and the microstructure modeling object.
+!!  The existing top-level drivers manage no data; they merely provide for
+!!  orchestrating the sequence of procedural steps.  Thus a major role of
+!!  these subroutines is to assemble the data from various Truchas components
+!!  that must be passed the the microstructure modeling object.
+!!
+!!  CALL READ_VOLUMETRACKING_NAMELIST (LUN) reads the first instance of the
+!!    VOLUMETRACKING namelist from the file opened on logical unit LUN.  This
+!!    is a collective procedure; the file is read on the I/O process and the
+!!    data replicated to all other processes.  If an error occurs (I/O error
+!!    or invalid data) a message is written and execution is halted.  The
+!!    presence of this namelist serves to enable the the volumetracker; it
+!!    is permissible for there to be no instance of this namelist.
+!!    NB: this should be called ONLY when flow is active.
+!!
+!!  CALL VTRACK_DRIVER_INIT (T) initializes the driver.  T is the initial time.
+!!    This should be called only if heat transfer physics is enabled, and after
+!!    its initialization.  If microstructure analysis has not been enabled this
+!!    subroutine does nothing, and so may always be called.
+!!
+!!  CALL VTRACK_UPDATE (T) updates or advances the microstructure model to the
+!!    next time level.  The subroutine handles collecting all the necessary
+!!    mesh-based state arrays required by the model; only the current time T
+!!    needs to be passed.
+!!
+!! NOTES
+!!
+!! The allocatation status of the private module variable THIS serves to
+!! indicate whether the microstructure modeling kernel is enabled.  It is
+!! allocated by READ_MICROSTRUCTURE_NAMELIST if the microstructure namelist
+!! is present in the input file.
+!!
 #include "f90_assert.fpp"
 
-module flow_driver_type
+module flow_driver
 
   use kinds, only: r8
   use unstr_mesh_type
@@ -21,12 +68,12 @@ module flow_driver_type
   public :: read_flow_namelist, read_flow_params
   public :: flow_driver_init, flow_step, flow_final, flow_enabled
 
-  type :: flow_driver
+  type :: flow_driver_data
     type(flow_mesh), pointer :: mesh => null()
     type(flow) :: flow
     type(flow_props) :: props
-  end type flow_driver
-  type(flow_driver), allocatable :: this
+  end type flow_driver_data
+  type(flow_driver_data), allocatable :: this
 
 contains
 
@@ -41,13 +88,14 @@ contains
 
   subroutine read_flow_params(p)
     type(parameter_list), pointer, intent(in) :: p
-    type(parameter_list), pointer :: pl_proj, pl_props
+    type(parameter_list), pointer :: pl_flow, pl_props
 
-    allocate(this)
+    if (.not.allocated(this)) allocate(this)
+
     pl_props => p%sublist("properties")
-    pl_proj => p%sublist("projection")
+    pl_flow => p%sublist("flow")
     call this%props%read_params(pl_props)
-    call this%flow%read_params(pl_proj)
+    call this%flow%read_params(pl_flow)
   end subroutine read_flow_params
 
   subroutine read_flow_namelist(lun)
@@ -70,13 +118,15 @@ contains
 
     character(:), allocatable :: krylov_method, amg_coarsen_method
 
-    namelist /FLOW_CUTOFFS/ fluid_cutvof, min_face_fraction
+    namelist /flow_cutoffs/ fluid_cutvof, min_face_fraction
     namelist /FLOW_PROJECTION/ fischer_history, rel_tol, &
         abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
         krylov_method, gmres_krylov_dim, cg_use_two_norm, &
         logging_level, print_level, amg_strong_threshold, &
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
+
+    if (.not.allocated(this)) allocate(this)
 
     allocate(p)
     pl_props => p%sublist("properties")
@@ -190,7 +240,7 @@ contains
   end subroutine read_flow_namelist
 
 
-  subroutine flow_driver_init(mesh)
+  subroutine flow_driver_data_init(mesh)
     type(unstr_mesh), pointer, intent(in) :: mesh
     !-
     integer :: void, mu_id, rho_id, rho_delta_id, i
@@ -249,7 +299,7 @@ contains
     end do
 
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
-  end subroutine flow_driver_init
+  end subroutine flow_driver_data_init
 
   subroutine flow_step(t, dt, vof, temperature_cc, flux_volumes)
     real(r8), intent(in) :: t, dt, vof(:,:), temperature_cc(:), flux_volumes(:,:)
@@ -265,4 +315,4 @@ contains
     call this%flow%accept()
   end subroutine flow_accept
 
-end module flow_driver_type
+end module flow_driver

@@ -1,3 +1,70 @@
+!!
+!! FLOW_PROPS_TYPE
+!!
+!! Defines type(flow_props), a container for flow related material properties.
+!! All data members are public since they are needed throughout flow but should
+!! not be changed, except through `update_XX` subroutines
+!!
+!! Peter Brady <ptb@lanl.gov>
+!! 2018
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!  The supported usage pattern of a flow_props instance is:
+!!
+!!  call fp%read_params
+!!  call fp%init
+!!  call fp%update_cc(...,initial=.true.)
+!!  call fp%update_fc(...,initial=.true.)
+!!
+!!  do while (flow_simulation)
+!!    ...
+!!    call fp%update_cc(...)
+!!    ...
+!!    call fp%update_fc(...)
+!!    ...
+!!    call fp%accept()
+!!    ...
+!!  end do
+!!
+!!
+!!
+!! PROGRAMMING INTERFACE - MODULE PROCEDURES
+!!
+!!  READ_FLOW_PROPS_NAMELIST (LUN, PARAMETER_LIST) reads the flow_cutoffs namelist.
+!!    This is currently a collection of magic numbers describing when flow should
+!!    treat certain things as solid faces and cells.  This is currently called by the
+!!    flow driver.
+!!
+!! PROGRAMMING INTERFACE - TYPE BOUND PROCEDURES
+!!
+!!  READ_PARAMS(this, PARAMETER_LIST)
+!!    extracts `cutvof` and `min face fraction` from parameter list and stores
+!!    them in `this`.
+!!
+!!  INIT(this, FLOW_MESH, REAL DENSITY(:), SCALAR_FUNC_BOX DENSITY_DELTA(:),
+!!             SCALAR_FUNC_BOX VISCOSITY (:), LOGICAL CONTAINS_VOID)
+!!    Initializes `this` and allocates all data.  Steals the allocations
+!!    of DENSITY_DELTA and VISCOSITY.  Both of these are scalar functions
+!!    of temperature.  The i'th index of DENSITY, DENSITY_DELTA, and VISCOSITY
+!!    must all refer to the _same_ material
+!!
+!!  UPDATE_CC(this, REAL VOF(:,:), REAL TEMPERATURE_CC(:) [, LOGICAL INITIAL])
+!!    Constructs cell-centered material propererties in this%xxx_cc.
+!!    Linear averaging using VOF is used to build the properties (i.e:
+!!    rho_cc, mu_cc, ...).  VOF is of the form VOF(nmaterials,
+!!    ncells).  VOF(i,:) must be the same material as DENSITY(i),
+!!    VISCOSITY(i).  If INITIAL is specified, copy all data to this%xxx_cc_n
+!!
+!!  UPDATE_FC (this [, LOGICAL INITIAL])
+!!    Computes face centered density via volume averaging and face
+!!    centered viscosity via harmoic averaging.  This is separate from
+!!    this%update_cc since the turbulence model is allowed to modify
+!!    the cell centered viscosity.
+!!
+!!  ACCEPT (this)
+!!    Called if the timestep taken by the flow driver is acceptable.
+!!    Copies all data to their `_n` counterparts
+!!
 #include "f90_assert.fpp"
 
 module flow_props_type
@@ -15,10 +82,10 @@ module flow_props_type
   implicit none
   private
 
-  public :: flow_props
+  public :: flow_props, read_flow_props_namelist
 
   type :: flow_props
-    type(flow_mesh), pointer :: mesh => null() ! reference only -- do not own
+    type(flow_mesh), pointer, private :: mesh => null() ! reference only -- do not own
     real(r8), allocatable :: rho_cc(:), rho_cc_n(:) ! cell centered fluid density
     real(r8), allocatable :: rho_fc(:), rho_fc_n(:) ! face centered fluid density
     real(r8), allocatable :: mu_cc(:), mu_cc_n(:) ! cell centered fluid viscosity
@@ -48,12 +115,63 @@ module flow_props_type
 
 contains
 
+  subroutine read_flow_props_namelist(lun, params)
+    use string_utilities, only: i_to_c
+    use parallel_communication, only: is_IOP, broadcast
+    use flow_input_utils
+
+    integer, intent(in) :: lun
+    type(parameter_list), pointer, intent(inout) :: params
+
+    integer :: ios
+    logical :: found
+    character(128) :: iom
+    type(parameter_list), pointer :: pp
+    real(r8) :: fluid_cutvof, min_face_fraction
+
+    ! magic numbers
+    namelist /flow_cutoffs/ fluid_cutvof, min_face_fraction
+
+    pp => params%sublist("cutoffs")
+
+    ! handle cutoffs
+    fluid_cutvof = null_r
+    min_face_fraction = null_r
+
+    if (is_IOP) then
+      rewind lun
+      call seek_to_namelist(lun, 'FLOW_CUTOFFS', found, iostat=ios)
+    end if
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
+
+    call broadcast(found)
+    if (found) then
+      call TLS_info('')
+      call TLS_info('Reading FLOW_CUTOFFS namelist ...')
+      !! Read the namelist.
+      if (is_IOP) then
+        read(lun,nml=flow_cutoffs,iostat=ios,iomsg=iom)
+      end if
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading FLOW_CUTOFFS namelist: ' // trim(iom))
+
+      call broadcast(fluid_cutvof)
+      call broadcast(min_face_fraction)
+      call plist_set_if(pp, 'cutvof', fluid_cutvof)
+      call plist_set_if(pp, 'min face fraction', min_face_fraction)
+    end if
+
+  end subroutine read_flow_props_namelist
+
   subroutine read_params(this, params)
     class(flow_props), intent(inout) :: this
-    type(parameter_list), intent(inout) :: params
+    type(parameter_list), pointer, intent(in) :: params
+    type(parameter_list), pointer :: pp
     !-
-    call params%get("cutvof", this%cutoff, 0.01_r8)
-    call params%get("min_face_fraction", this%min_face_fraction, 0.001_r8)
+    pp => params%sublist("cutoffs")
+    call pp%get("cutvof", this%cutoff, 0.01_r8)
+    call pp%get("min face fraction", this%min_face_fraction, 0.001_r8)
   end subroutine read_params
 
   subroutine init(this, mesh, density, density_delta, viscosity, contains_void)
@@ -103,146 +221,136 @@ contains
     logical :: ini
     integer :: m, i, j
     real(r8) :: minrho, w(2), min_face_rho, state(1)
-    type(unstr_mesh), pointer :: mesh
+
 
     if (present(initial)) then
       ini = initial
     else
       ini = .false.
     end if
-    mesh => this%mesh%mesh
 
     minrho = huge(1.0_r8)
 
     ! Fix this when VOF is coupled in
     this%solidified_rho(:) = 0.0_r8
 
-    do i = 1, mesh%ncell
-      this%rho_cc(i) = 0.0_r8
-      this%mu_cc(i) = 0.0_r8
-      this%rho_delta_cc(i) = 0.0_r8
-      state(1) = temperature_cc(i)
-      do m = 1, size(this%density)
-        this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
-        this%mu_cc(i) = this%mu_cc(i) + &
-            vof(m,i)*this%viscosity(m)%f%eval(state)
-        this%rho_delta_cc = this%rho_delta_cc(i) + &
-            vof(m,i)*this%density_delta(m)%f%eval(state)
+    associate (mesh => this%mesh%mesh)
+      do i = 1, mesh%ncell
+        this%rho_cc(i) = 0.0_r8
+        this%mu_cc(i) = 0.0_r8
+        this%rho_delta_cc(i) = 0.0_r8
+        state(1) = temperature_cc(i)
+        do m = 1, size(this%density)
+          this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
+          this%mu_cc(i) = this%mu_cc(i) + &
+              vof(m,i)*this%viscosity(m)%f%eval(state)
+          this%rho_delta_cc = this%rho_delta_cc(i) + &
+              vof(m,i)*this%density_delta(m)%f%eval(state)
+        end do
+        this%vof(i) = sum(vof(:,i))
+        if (this%contains_void) then
+          this%vof_novoid(i) = sum(vof(:size(this%density),i))
+        else
+          this%vof_novoid(i) = this%vof(i)
+        end if
+
+        if (this%vof(i) > 0.0_r8) then
+          this%rho_cc(i) = this%rho_cc(i) / this%vof(i)
+          this%rho_delta_cc(i) = this%rho_delta_cc(i) / this%vof(i)
+        end if
+
+        if (this%vof(i) < this%cutoff) then
+          this%inactive_c(i) = 1
+        else
+          this%inactive_c(i) = 0
+        end if
+
+        if (this%vof_novoid(i) > 0.0_r8) then
+          minrho = min(minrho, this%rho_cc(i)*this%vof(i) / this%vof_novoid(i))
+        end if
       end do
-      this%vof(i) = sum(vof(:,i))
-      if (this%contains_void) then
-        this%vof_novoid(i) = sum(vof(:size(this%density),i))
-      else
-        this%vof_novoid(i) = this%vof(i)
-      end if
-
-      if (this%vof(i) > 0.0_r8) then
-        this%rho_cc(i) = this%rho_cc(i) / this%vof(i)
-        this%rho_delta_cc(i) = this%rho_delta_cc(i) / this%vof(i)
-      end if
-
-      if (this%vof(i) < this%cutoff) then
-        this%inactive_c(i) = 1
-      else
-        this%inactive_c(i) = 0
-      end if
-
-      if (this%vof_novoid(i) > 0.0_r8) then
-        minrho = min(minrho, this%rho_cc(i)*this%vof(i) / this%vof_novoid(i))
-      end if
-    end do
+    end associate
 
     this%minrho = global_minval(minrho)
 
     if (ini) then
+      call this%update_fc()
       call this%accept()
     end if
 
   end subroutine update_cc
 
-  subroutine update_fc(this, initial)
+  subroutine update_fc(this)
     class(flow_props), intent(inout) :: this
-    logical, optional, intent(in) :: initial
     !-
-    logical :: ini
     integer :: m, i, j
     real(r8) :: minrho, w(2), min_face_rho
-    type(unstr_mesh), pointer :: mesh
-
-    if (present(initial)) then
-      ini = initial
-    else
-      ini = .false.
-    end if
-
-    mesh => this%mesh%mesh
 
     min_face_rho = this%minrho*this%min_face_fraction
 
-    ! compute inactive faces
-    do j = 1, mesh%nface_onP
-      associate(cn => this%mesh%fcell(:,j))
-        if (cn(1) > 0) then
-          this%inactive_f(j) = maxval(this%inactive_c(cn))
-        else
-          this%inactive_f(j) = this%inactive_c(cn(2))
-        end if
-      end associate
-    end do
-    call gather_boundary(mesh%face_ip, this%inactive_f)
+
+    associate (mesh => this%mesh%mesh)
+      ! compute inactive faces
+      do j = 1, mesh%nface_onP
+        associate(cn => this%mesh%fcell(:,j))
+          if (cn(1) > 0) then
+            this%inactive_f(j) = maxval(this%inactive_c(cn))
+          else
+            this%inactive_f(j) = this%inactive_c(cn(2))
+          end if
+        end associate
+      end do
+      call gather_boundary(mesh%face_ip, this%inactive_f)
 
 
-    ! linear averaged face-centered density
-    ! special cases:
-    ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
-    ! - the face density is simply the cell density
-    ! 2) If the face has shared by a solid cell (where rho_cc == 0) and a fluid cell
-    ! - the face density is the fluid cell density
-    ! 3) If the face is shared by two solid cells
-    ! - the face density is 0
-    ! 4) any non-zero face density is forced to be at least min_face_rho
-    this%rho_fc = 0.0_r8
-    do j = 1, mesh%nface_onP
-      associate(cn => this%mesh%fcell(:,j))
-        if (cn(1) > 0) then
-          w = mesh%volume(cn)*this%vof(cn)*(1-this%inactive_c(cn))
-          if (sum(w) > 0.0_r8) this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
-        elseif (this%inactive_f(j) == 0) then
-          this%rho_fc(j) = max(min_face_rho, this%rho_cc(cn(2)))
-        end if
-      end associate
-    end do
-    call gather_boundary(mesh%face_ip, this%rho_fc)
+      ! linear averaged face-centered density
+      ! special cases:
+      ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
+      ! - the face density is simply the cell density
+      ! 2) If the face has shared by a solid cell (where rho_cc == 0) and a fluid cell
+      ! - the face density is the fluid cell density
+      ! 3) If the face is shared by two solid cells
+      ! - the face density is 0
+      ! 4) any non-zero face density is forced to be at least min_face_rho
+      this%rho_fc = 0.0_r8
+      do j = 1, mesh%nface_onP
+        associate(cn => this%mesh%fcell(:,j))
+          if (cn(1) > 0) then
+            w = mesh%volume(cn)*this%vof(cn)*(1-this%inactive_c(cn))
+            if (sum(w) > 0.0_r8) this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
+          elseif (this%inactive_f(j) == 0) then
+            this%rho_fc(j) = max(min_face_rho, this%rho_cc(cn(2)))
+          end if
+        end associate
+      end do
+      call gather_boundary(mesh%face_ip, this%rho_fc)
 
-    ! harmonic averaged face viscosity
-    ! special cases:
-    ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
-    ! - the face viscosity is the cell viscosity
-    ! 2) If the face is shared by a solid cell (where mu_cc == 0) and a fluid cell
-    ! - the face viscosity is the fluid cell viscosity
-    ! 3) If the face is shared by two solid cells
-    ! - the face viscosity is 0
-    this%mu_fc = 0.0_r8
-    do j = 1, mesh%nface_onP
-      associate(cn => this%mesh%fcell(:,j))
-        if (cn(1) > 0) then
-          select case (sum(this%inactive_c(cn)))
-          case (0)
-            this%mu_fc(j) = 2.0_r8*product(this%mu_cc(cn))/sum(this%mu_cc(cn))
-          case (1)
-            this%mu_fc(j) = maxval(this%mu_cc(cn))
-          end select
-        else
-          this%mu_fc(j) = this%mu_cc(cn(2))
-        end if
-      end associate
-    end do
-    call gather_boundary(mesh%face_ip, this%mu_fc)
+      ! harmonic averaged face viscosity
+      ! special cases:
+      ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
+      ! - the face viscosity is the cell viscosity
+      ! 2) If the face is shared by a solid cell (where mu_cc == 0) and a fluid cell
+      ! - the face viscosity is the fluid cell viscosity
+      ! 3) If the face is shared by two solid cells
+      ! - the face viscosity is 0
+      this%mu_fc = 0.0_r8
+      do j = 1, mesh%nface_onP
+        associate(cn => this%mesh%fcell(:,j))
+          if (cn(1) > 0) then
+            select case (sum(this%inactive_c(cn)))
+            case (0)
+              this%mu_fc(j) = 2.0_r8*product(this%mu_cc(cn))/sum(this%mu_cc(cn))
+            case (1)
+              this%mu_fc(j) = maxval(this%mu_cc(cn))
+            end select
+          else
+            this%mu_fc(j) = this%mu_cc(cn(2))
+          end if
+        end associate
+      end do
+      call gather_boundary(mesh%face_ip, this%mu_fc)
+    end associate
 
-    ! this is dumb.  do something smarter
-    if (ini) then
-      call this%accept()
-    end if
 
   end subroutine update_fc
 

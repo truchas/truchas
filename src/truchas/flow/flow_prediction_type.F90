@@ -60,15 +60,15 @@ module flow_prediction_type
   implicit none
   private
 
-  public :: flow_prediction
+  public :: flow_prediction, read_flow_predictor_namelist
 
   type :: flow_prediction
-    type(flow_mesh), pointer :: mesh
-    type(flow_bc), pointer :: bc
+    type(flow_mesh), pointer :: mesh => null()
+    type(flow_bc), pointer :: bc => null()
     class(turbulence_model), allocatable :: turb
     !class(porous_drag_model), allocatable :: drag
     type(hypre_hybrid) :: solver(3)
-    type(parameter_list), pointer :: p
+    type(parameter_list), pointer :: p => null()
     logical :: inviscid
     logical :: stokes
     real(r8), allocatable :: rhs(:,:), sol(:), rhs1d(:)
@@ -99,46 +99,139 @@ module flow_prediction_type
 
 contains
 
+  subroutine read_flow_predictor_namelist(lun, p)
+    use string_utilities, only: i_to_c
+    use parallel_communication, only: is_IOP, broadcast
+    use flow_input_utils
+
+    integer, intent(in) :: lun
+    type(parameter_list), pointer, intent(inout) :: p
+    type(parameter_list), pointer :: pp
+    integer :: ios
+    logical :: found
+    character(128) :: iom
+
+    !- hypre related items
+    real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
+    integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
+    integer :: print_level, amg_max_levels, amg_coarsen_type, amg_coarsen_sweeps
+    integer :: amg_smoothing_method, amg_smoothing_sweeps, amg_interp_method
+    character(128) :: krylov_method, amg_coarsen_method
+
+
+    namelist /flow_predictor/ rel_tol, &
+        abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
+        krylov_method, gmres_krylov_dim, cg_use_two_norm, &
+        logging_level, print_level, amg_strong_threshold, &
+        amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
+        amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
+
+    pp => p%sublist("predictor")
+    max_ds_iter = NULL_I
+    max_amg_iter = NULL_I
+    gmres_krylov_dim = NULL_I
+    cg_use_two_norm = NULL_I
+    logging_level = NULL_I
+    print_level = NULL_I
+    amg_max_levels = NULL_I
+    amg_coarsen_type = NULL_I
+    amg_coarsen_sweeps = NULL_I
+    amg_smoothing_method = NULL_I
+    amg_smoothing_sweeps = NULL_I
+    amg_interp_method = NULL_I
+    rel_tol = NULL_R
+    abs_tol = NULL_R
+    conv_rate_tol = NULL_R
+    amg_strong_threshold = NULL_R
+    krylov_method = NULL_C
+    amg_coarsen_method = NULL_C
+
+    if (is_IOP) then
+      rewind lun
+      call seek_to_namelist(lun, 'FLOW_PREDICTOR', found, iostat=ios)
+    end if
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
+
+    call broadcast(found)
+    if (found) then
+      call TLS_info('')
+      call TLS_info('Reading FLOW_PREDICTOR namelist ...')
+      !! Read the namelist.
+      if (is_IOP) then
+        read(lun,nml=flow_predictor,iostat=ios,iomsg=iom)
+      end if
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading FLOW_PREDICTOR namelist: ' // trim(iom))
+
+      call broadcast(max_ds_iter)
+      call broadcast(max_amg_iter)
+      call broadcast(gmres_krylov_dim)
+      call broadcast(cg_use_two_norm)
+      call broadcast(logging_level)
+      call broadcast(print_level)
+      call broadcast(amg_max_levels)
+      call broadcast(amg_coarsen_type)
+      call broadcast(amg_coarsen_sweeps)
+      call broadcast(amg_smoothing_method)
+      call broadcast(amg_interp_method)
+      call broadcast(rel_tol)
+      call broadcast(abs_tol)
+      call broadcast(conv_rate_tol)
+      call broadcast(amg_strong_threshold)
+      call broadcast(krylov_method)
+      call broadcast(amg_coarsen_method)
+
+      pp => pp%sublist("solver")
+      call plist_set_if(pp, "rel-tol", rel_tol)
+      call plist_set_if(pp, 'abs-tol', abs_tol)
+      call plist_set_if(pp, 'conv-rate-tol', conv_rate_tol)
+      call plist_set_if(pp, 'max-ds-iter', max_ds_iter)
+      call plist_set_if(pp, 'max-amg-iter', max_amg_iter)
+      call plist_set_if(pp, 'krylov-method', krylov_method)
+      call plist_set_if(pp, 'gmres-krylov-dim', gmres_krylov_dim)
+      call plist_set_if(pp, 'cg-use-two-norm', cg_use_two_norm /= 0)
+      call plist_set_if(pp, 'logging-level', logging_level)
+      call plist_set_if(pp, 'print-level', print_level)
+      call plist_set_if(pp, 'amg-strong-threshold', amg_strong_threshold)
+      call plist_set_if(pp, 'amg-max-levels', amg_max_levels)
+      call plist_set_if(pp, 'amg-coarsen-method', amg_coarsen_method)
+      call plist_set_if(pp, 'amg-coarsen-type', amg_coarsen_type)
+      call plist_set_if(pp, 'amg-smoothing-sweeps', amg_smoothing_sweeps)
+      call plist_set_if(pp, 'amg-smoothing-method', amg_smoothing_method)
+      call plist_set_if(pp, 'amg-interp-method', amg_interp_method)
+    end if
+  end subroutine read_flow_predictor_namelist
+
   subroutine read_params(this, p)
     class(flow_prediction) :: this
     type(parameter_list), pointer, intent(in) :: p
     !-
     character(:), allocatable :: flow_type
     integer :: stat
-    type(parameter_list), pointer :: sub
+    type(parameter_list), pointer :: pp
 
     this%p => p
 
-    ! default is full navier-stokes equations
-    this%inviscid = .false.
-    this%stokes =.false.
-
-    call p%get('flow-type', flow_type, stat=stat)
-    if(flow_type == 'inviscid') then
-      this%inviscid = .true.
-    else if(flow_type == 'stokes') then
-      this%stokes = .true.
-    else
-      call TLS_fatal("Unsupported flow-type"//flow_type)
-    end if
+    pp => p%sublist("options")
 
     ! default to crank-nicolson
-    call p%get('viscous-implicitness', this%viscous_implicitness, 0.5_r8)
+    call pp%get('viscous implicitness', this%viscous_implicitness, 0.5_r8)
     ! default to fully implicit
-    call p%get('solidfy-implicitness', this%solidify_implicitness, 1.0_r8)
+    call pp%get('solidfy implicitness', this%solidify_implicitness, 1.0_r8)
 
-    sub => p%sublist("turbulence-model")
-    call turbulence_models_read_params(this%turb, sub, off=this%inviscid)
+    call turbulence_models_read_params(this%turb, p, off=this%inviscid)
 
     !sub => p%sublist("porous-drag-model")
     !call porous_drag_models_read_params(this%drag, sub, off=this%inviscid)
   end subroutine read_params
 
 
-  subroutine init(this, mesh, bc)
+  subroutine init(this, mesh, bc, inviscid, stokes)
     class(flow_prediction), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
-    type(flow_bc), target, intent(inout) :: bc
+    type(flow_bc), pointer, intent(in) :: bc
+    logical, intent(in) :: inviscid, stokes
     !-
     type(graph_container) :: g(size(this%solver))
     type(matrix_container) :: A(size(this%solver))
@@ -148,6 +241,8 @@ contains
 
     this%mesh => mesh
     this%bc => bc
+    this%inviscid = inviscid
+    this%stokes = stokes
 
     associate (m => mesh%mesh)
       allocate(this%rhs(3,m%ncell))
@@ -183,20 +278,29 @@ contains
           call g(k)%g%add_complete()
         end do
 
+        sub => this%p%sublist("predictor")
+        ASSERT(sub%count() > 0)
+        sub => sub%sublist("solver")
+        ASSERT(sub%count() > 0)
+        !sub => this%p%sublist("predictor")%sublist("solver")
         do k = 1, size(A)
           allocate(A(k)%A)
           call A(k)%A%init(g(k)%g, take_graph=.true.)
-          sub => this%p%sublist("solver")
           call this%solver(k)%init(A(k)%A, sub)
         end do
       end if
     end associate
   end subroutine init
 
-  subroutine setup(this, dt, props, vel_cc)
+  subroutine setup(this, dt, props, vel_cc, initial)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, vel_cc(:,:)
     type(flow_props), intent(inout) :: props
+    logical, optional, intent(in) :: initial
+
+    if (present(initial)) then
+      if (initial) return
+    end if
 
     this%rhs = 0.0_r8
 
@@ -222,7 +326,8 @@ contains
     real(r8) :: coeff, dtv
     type(matrix_container) :: A(size(this%solver))
 
-    !if (this%inviscid .or. this%viscous_implicitness == 0.0_r8) return
+    ! this should be changed to check all other terms which may be treated implicitly
+    if (this%inviscid .or. this%viscous_implicitness == 0.0_r8) return
 
     do k = 1, size(A)
       A(k)%A => this%solver(k)%matrix()
@@ -324,9 +429,23 @@ contains
     type(flow_props), intent(in) :: props
     integer :: j
 
+#ifndef NDEBUG
+    print *, "ACCUMULATE RHS PRESSURE"
     associate (m => this%mesh%mesh)
       do j = 1, m%ncell_onP
-        this%rhs(:,j) = this%rhs(:,j) + dt*grad_p_rho_cc(:,j)*props%rho_cc(j)
+        write(*,'("GradPx[", i3, "]: ", es15.5)') j, grad_p_rho_cc(1,j)
+      end do
+      do j = 1, m%ncell_onP
+        write(*,'("GradPy[", i3, "]: ", es15.5)') j, grad_p_rho_cc(2,j)
+      end do
+    end associate
+#endif
+    associate (m => this%mesh%mesh)
+      do j = 1, m%ncell_onP
+        this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc(j)
+#ifndef NDEBUG
+        write(*,'("rhs(",i3,"):",3es15.5)') j, this%rhs(:,j)
+#endif
       end do
     end associate
 
@@ -341,6 +460,9 @@ contains
     integer :: i, j
     real(r8) :: dtv
 
+#ifndef NDEBUG
+    print *, "ACCUMULATE RHS VISCOUS STRESS"
+#endif
     if (this%inviscid .or. this%viscous_implicitness == 1.0_r8) return
 
     dtv = dt*(1.0_r8 - this%viscous_implicitness)
@@ -354,25 +476,30 @@ contains
         associate (n1 => this%mesh%fcell(1,j), n2 => this%mesh%fcell(2,j), rhs => this%rhs)
           if (n1 > 0) then ! inward oriented normal
             do i = 1, 3
-              rhs(i,n1) = rhs(i,n1) + &
+              rhs(i,n1) = rhs(i,n1) - &
                   dtv*mu(j)*dot_product(m%normal(:,j),g(:,i,j))/m%volume(n1)
             end do
           end if
           if (n2 > 0) then ! outward oriented normal
             do i = 1, 3
-              rhs(i,n2) = rhs(i,n2) - &
+              rhs(i,n2) = rhs(i,n2) + &
                   dtv*mu(j)*dot_product(m%normal(:,j),g(:,i,j))/m%volume(n2)
             end do
           end if
         end associate
       end do
+#ifndef NDEBUG
+      do j = 1, m%ncell
+        write(*,'("rhs(",i3,"):",3es15.5)') j, this%rhs(:,j)
+      end do
+#endif
     end associate
   end subroutine accumulate_rhs_viscous_stress
 
 
-  subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fc, flux_volumes)
+  subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fn, flux_volumes)
     class(flow_prediction), intent(inout) :: this
-    real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fc(:,:)
+    real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fn(:)
     type(flow_props), intent(in) :: props
     !
     integer :: i, j, f0, f1, nhbr, cn, k
@@ -380,34 +507,62 @@ contains
 
     ! we're going to assume here that the boundary conditions on flux_volumes
     ! and flux_vel have already been set..
+#ifndef NDEBUG
+    print *, "ACCUMULATE_RHS_MOMENTUM"
+#endif
     associate (m => this%mesh%mesh, rhs => this%rhs)
       do i = 1, m%ncell_onP
         f0 = m%xcface(i)
         f1 = m%xcface(i+1)-1
         nhbr = m%xcnhbr(i)
 
+#ifndef NDEBUG
+        write(*, "('flux_volumes[',i3,']: ',6es15.5): ") i, flux_volumes(1,f0:f1)
+#endif
         do j = f0, f1
+
           k = m%cface(j)
           v = m%volume(i)
+
           ! donor cell upwinding
           if (any(flux_volumes(:,j) > 0.0_r8)) then
-            rhs(:,i) = rhs(:,i) - vel_cc(:,i)* &
+            rhs(:,i) = rhs(:,i) - abs(vel_cc(:,i))* &
                 dot_product(flux_volumes(:,j),props%density(:))/v
+#ifndef NDEBUG
+            write(*,"('u_cc[',i3,']: ',es15.5, ' deltaX  : ', 2es15.5)") i, vel_cc(1,i), &
+                -abs(vel_cc(1,i))*dot_product(flux_volumes(:,j),props%density(:))/v
+            write(*,"('v_cc[',i3,']: ',es15.5, ' deltaY  : ', 2es15.5)") i, vel_cc(2,i), &
+                -abs(vel_cc(2,i))*dot_product(flux_volumes(:,j),props%density(:))/v
+#endif
           else
             ! neighbor index
-            cn = m%cnhbr(nhbr+(j-f0+1))
+            cn = m%cnhbr(nhbr+(j-f0))
             if (cn > 0) then
-              rhs(:,i) = rhs(:,i) - vel_cc(:,cn)* &
+              rhs(:,i) = rhs(:,i) - abs(vel_cc(:,cn))* &
                   dot_product(flux_volumes(:,j),props%density(:))/v
+#ifndef NDEBUG
+              write(*,"('u_cc[',i3,']: ',es15.5, ' deltaX  : ', es15.5)") cn, vel_cc(1,cn), &
+                  -abs(vel_cc(1,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
+              write(*,"('v_cc[',i3,']: ',es15.5, ' deltaY  : ', es15.5)") cn, vel_cc(2,cn), &
+                  -abs(vel_cc(2,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
+#endif
             else
-              ! this must be an inflow boundary so use face velocity
-              ! not so sure if this is the best approach.  I might need a bc for
-              ! velocity inflow
-              rhs(:,i) = rhs(:,i) - vel_fc(:,k)* &
+              ! this must be an inflow boundary so use face velocity.  This seems overly
+              ! restrictive and does not account for 'angled' inflow
+#ifndef NDEBUG
+              write(*,"('V_fn[',i3,']: ',es15.5, ' deltaX/Y: ', 2es15.5)") k, vel_fn(k), &
+                  vel_fn(k)*abs(m%normal(1,k)/m%area(k))* dot_product(flux_volumes(:,j),props%density(:))/v, &
+                  vel_fn(k)*abs(m%normal(2,k)/m%area(k))* dot_product(flux_volumes(:,j),props%density(:))/v
+#endif
+
+              rhs(:,i) = rhs(:,i) + vel_fn(k)*abs(m%normal(:,k)/m%area(k))*&
                   dot_product(flux_volumes(:,j),props%density(:))/v
             end if
           end if
         end do
+#ifndef NDEBUG
+        write(*,'("rhs(",i3,"):",3es15.5)') i, this%rhs(:,i)
+#endif
       end do
     end associate
   end subroutine accumulate_rhs_momentum
@@ -434,13 +589,18 @@ contains
   end subroutine accumulate_rhs_solidified_rho
 
 
-  subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, vel_fc, vel_cc)
+  subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, vel_fn, vel_cc, initial)
     class(flow_prediction), intent(inout) :: this
-    real(r8), intent(in) :: dt, flux_volumes(:,:), grad_p_rho_cc(:,:), vel_fc(:,:)
+    real(r8), intent(in) :: dt, flux_volumes(:,:), grad_p_rho_cc(:,:), vel_fn(:)
     real(r8), intent(inout) :: vel_cc(:,:)
     type(flow_props), intent(in) :: props
+    logical, optional, intent(in) :: initial
     !
     integer :: i, j, ierr
+
+    if (present(initial)) then
+      if (initial) return
+    end if
 
     ! Pressure and viscous forces are unaware of solid/fluid boundaries.
     ! These forces are computed first and scaled by vof as a crude approximation.
@@ -453,7 +613,7 @@ contains
       end do
     end associate
 
-    call this%accumulate_rhs_momentum(props, vel_cc, vel_fc, flux_volumes)
+    call this%accumulate_rhs_momentum(props, vel_cc, vel_fn, flux_volumes)
     call this%accumulate_rhs_solidified_rho(props, vel_cc)
 
     ! handle surface tension
@@ -478,13 +638,22 @@ contains
           end if
         end do
 
-        call this%solver(i)%solve(rhs1d, sol, ierr)
-        if (ierr /= 0) call tls_error("prediction solve unsuccessful")
-        call gather_boundary(m%cell_ip, sol)
-        do j = 1, m%ncell
-          vel_cc(i,j) = sol(j)
-        end do
+        if (associated(this%solver(i)%matrix())) then
+          call this%solver(i)%solve(rhs1d, sol, ierr)
+          if (ierr /= 0) call tls_error("prediction solve unsuccessful")
+          call gather_boundary(m%cell_ip, sol)
+          do j = 1, m%ncell
+            vel_cc(i,j) = sol(j)
+          end do
+        else
+          call gather_boundary(m%cell_ip, rhs1d)
+          do j = 1, m%ncell
+            vel_cc(i,j) = rhs1d(j)
+          end do
+        end if
+
       end do
+
     end associate
   end subroutine solve
 

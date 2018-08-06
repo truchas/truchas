@@ -17,7 +17,7 @@ MODULE CYCLE_OUTPUT_MODULE
   !     * call CYCLE_OUTPUT_PRE ()
   !     * call CYCLE_OUTPUT_POST ()
   !
-  !         Output key cycle information such as the time step, cycle 
+  !         Output key cycle information such as the time step, cycle
   !         number, and iteration count, to stdout and other output files.
   !         use _pre before the cycle computation, and _post after.
   !
@@ -73,75 +73,94 @@ CONTAINS
     !   write cycle information that is known after the cycle ends
     !   (iteration counts) to stdout and various output files
     !=======================================================================
+    use kinds
     use debug_control_data
     use fluid_data_module,      only: fluid_flow, minVel, maxVel
     use process_info_module,    only: get_process_size
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXVAL, PGSLIB_GLOBAL_SUM
+    use parallel_communication
     use projection_data_module, only: mac_projection_iterations, &
-                                      prelim_projection_iterations
+        prelim_projection_iterations
     use viscous_data_module,    only: inviscid,             &
-                                      viscous_implicitness, &
-                                      viscous_iterations,   &
-                                      prelim_viscous_iterations
+        viscous_implicitness, &
+        viscous_iterations,   &
+        prelim_viscous_iterations
     use solid_mechanics_module, only: thermo_elastic_iterations, viscoplastic_iterations
     use solid_mechanics_input,  only: solid_mechanics
     use time_step_module,       only: cycle_number
     use fluid_utilities_module
+    use flow_driver, only: flow_enabled, flow_vel_cc_view
 
     ! Local variables.
     integer :: vmsize, rssize, dsize
     character(128) :: string
+    real(r8), pointer :: vel_cc(:,:)
+    real(r8) :: x(3)
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
 110 format ('SOLVER="',a,'" COUNT="',i10,'"')
 
     ! Count the linear and nonlinear iterations.
     if (fluid_flow) then
-       if(cycle_number == 1) then
-         write (string, 10) prelim_projection_iterations,'Preliminary projection iterations (linear)'
-         call TLS_info (string)
-         if (.not. inviscid .and. viscous_implicitness > 0) then
-               write (string, 10) prelim_viscous_iterations,'Preliminary Viscous iterations (linear)'
-               call TLS_info (string)
-         end if
-       endif
-       write (string, 10) mac_projection_iterations,'Projection iterations (linear)'
-       call TLS_info (string)
-       if (.not. inviscid .and. viscous_implicitness > 0) then
-             write (string, 10) viscous_iterations,'Viscous iterations (linear)'
-             call TLS_info (string)
-       end if
+      if(cycle_number == 1) then
+        write (string, 10) prelim_projection_iterations,'Preliminary projection iterations (linear)'
+        call TLS_info (string)
+        if (.not. inviscid .and. viscous_implicitness > 0) then
+          write (string, 10) prelim_viscous_iterations,'Preliminary Viscous iterations (linear)'
+          call TLS_info (string)
+        end if
+      endif
+      write (string, 10) mac_projection_iterations,'Projection iterations (linear)'
+      call TLS_info (string)
+      if (.not. inviscid .and. viscous_implicitness > 0) then
+        write (string, 10) viscous_iterations,'Viscous iterations (linear)'
+        call TLS_info (string)
+      end if
     end if
     if (solid_mechanics) then
-       write (string, 10) thermo_elastic_iterations,'Solid mechanics iterations (linear)'
-       call TLS_info (string)
-       write (string, 10) viscoplastic_iterations,'Solid mechanics iterations (nonlinear)'
-       call TLS_info (string)
+      write (string, 10) thermo_elastic_iterations,'Solid mechanics iterations (linear)'
+      call TLS_info (string)
+      write (string, 10) viscoplastic_iterations,'Solid mechanics iterations (nonlinear)'
+      call TLS_info (string)
     end if
 10  format (8x,i5,1x,a)
 
     ! Output diagnostics by physics
-    if (fluid_flow) then
-       ! Output the min/max velocities
-       call calcVelLimits()
-       call TLS_info ('')
-       write(string, 30) minVel(1), minVel(2), minVel(3)
-30     format(12x,'Min Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
-       call TLS_info (string)
-       write(string, 40) maxVel(1), maxVel(2), maxVel(3)
-40     format(12x,'Max Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
-       call TLS_info (string)
+    if (flow_enabled()) then
+      vel_cc => flow_vel_cc_view()
+      x(1) = global_minval(vel_cc(1,:))
+      x(2) = global_minval(vel_cc(2,:))
+      x(3) = global_minval(vel_cc(3,:))
+      call TLS_info ('')
+      write(string, 99) x
+99    format(12x,'Min Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
+      call TLS_info (string)
+      x(1) = global_maxval(vel_cc(1,:))
+      x(2) = global_maxval(vel_cc(2,:))
+      x(3) = global_maxval(vel_cc(3,:))
+      write(string, 98) x
+98    format(12x,'Max Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
+      call TLS_info (string)
+    else if(fluid_flow) then
+      ! Output the min/max velocities
+      call calcVelLimits()
+      call TLS_info ('')
+      write(string, 30) minVel(1), minVel(2), minVel(3)
+30    format(12x,'Min Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
+      call TLS_info (string)
+      write(string, 40) maxVel(1), maxVel(2), maxVel(3)
+40    format(12x,'Max Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
+      call TLS_info (string)
     endif
 
     ! If debug, write out additional memory usage info.
     if (debug >= DEBUG_NOISY) then
-       call get_process_size (vmsize, rssize, dsize)
-       if (vmsize /= -1) Then
-          write (string, 20) PGSLIB_GLOBAL_MAXVAL(vmsize), PGSLIB_GLOBAL_SUM(vmsize)
-20        format (8x,'vmsize, largest, total: ',i12,', ',i12,' kb')
-          call TLS_info (string)
-       end if
+      call get_process_size (vmsize, rssize, dsize)
+      if (vmsize /= -1) Then
+        write (string, 20) PGSLIB_GLOBAL_MAXVAL(vmsize), PGSLIB_GLOBAL_SUM(vmsize)
+20      format (8x,'vmsize, largest, total: ',i12,', ',i12,' kb')
+        call TLS_info (string)
+      end if
     end if
 
   END SUBROUTINE CYCLE_OUTPUT_POST
@@ -175,7 +194,7 @@ CONTAINS
 
     ! Start the outputs timer
     call start_timer("Output")
-    
+
     ! Calculate diagnostics quantities needed for output
     call DIAGNOSTICS
 
@@ -231,7 +250,7 @@ CONTAINS
        go to 15
     end if
 
-    ! If there is a new output specification since last time 
+    ! If there is a new output specification since last time
     ! step and the user has not just started a new run,  check
     ! all output multipliers and perform all outputs as may be
     ! requested.  Perform outputs if either the new or the old
@@ -312,7 +331,7 @@ CONTAINS
           call TDO_write_timestep
           do_xml_output=.false.
        end if
-             
+
        if (Probe_Output_Cycle_Multiplier < 0) then
           call PROBES_OUTPUT ()
        end if
@@ -327,7 +346,7 @@ CONTAINS
 
        if (Probe_Output_Cycle_Multiplier > 0) then
           if (MOD(cycle_number, Probe_Output_Cycle_Multiplier) <= &
-               MOD(cycle_number-1, Probe_Output_Cycle_Multiplier)) then 
+               MOD(cycle_number-1, Probe_Output_Cycle_Multiplier)) then
              call PROBES_OUTPUT()
           end if
        end if

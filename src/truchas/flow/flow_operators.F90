@@ -14,7 +14,7 @@ module flow_operators
       flow_gradient_coefficients, flow_operators_init
 
   interface gradient_cf
-    module procedure :: gradient_cf_scalar, gradient_cf_vector
+    module procedure gradient_cf_scalar, gradient_cf_vector
   end interface gradient_cf
 
   type :: flow_operator

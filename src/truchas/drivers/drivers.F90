@@ -201,9 +201,8 @@ call hijack_truchas ()
     use diffusion_solver,         only: ds_step, ds_restart
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
-    !NNC    use flow_driver,            only: flow_update_vof, flow_update_velocity, &
-    !NNC         flow_enabled
-    use vtrack_driver, only: vtrack_update, vtrack_enabled
+    use flow_driver,            only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view
+    use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -212,6 +211,7 @@ call hijack_truchas ()
     use time_step_sync_type
     use truchas_logging_services
     use truchas_timers
+    use kinds
 
     ! Local Variables
     Logical :: quit = .False., sig_rcvd
@@ -219,9 +219,9 @@ call hijack_truchas ()
     Integer :: c
     type(sim_event), pointer :: event
     type(time_step_sync) :: ts_sync
+    real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:)
 
     !---------------------------------------------------------------------------
-
     if (mem_on) call mem_diag_open
 
     ts_sync = time_step_sync(5)
@@ -233,7 +233,7 @@ call hijack_truchas ()
     call start_timer ("Main Cycle")
 
     ! Prepass to initialize a solenoidal velocity field for Advection
-    if(.not.restart) call Fluid_Flow_Driver (t)
+    if(.not.restart .and. .not.flow_enabled()) call Fluid_Flow_Driver (t)
 
     call mem_diag_write ('Before main loop:')
 
@@ -306,7 +306,10 @@ call hijack_truchas ()
       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
 
       if (vtrack_enabled()) then
-        call vtrack_update(t, dt)
+        vel_fn => flow_vel_fn_view()
+        call vtrack_update(t, dt, vel_fn)
+        vof => vtrack_vof_view()
+        flux_vol => vtrack_flux_vol_view()
       else
         call ADVECT_MASS ()
       end if
@@ -326,10 +329,14 @@ call hijack_truchas ()
 
       ! calculate new velocity field
       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
-      !NNC       if (flow_enabled()) then
-      !NNC          call flow_update_velocity(t)
-      !NNC       end if
-      call FLUID_FLOW_DRIVER (t)
+      if (flow_enabled()) then
+        call flow_step(t,dt,vof,flux_vol)
+        ! since this driver doesn't know any better, always accept
+        call flow_accept()
+      else
+        print *, "calling old fluid flow driver"
+        call FLUID_FLOW_DRIVER (t)
+      end if
 
       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
       call THERMO_MECHANICS ()

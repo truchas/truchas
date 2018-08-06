@@ -267,14 +267,14 @@ CONTAINS
     ! deallocate the fluidRho array
     if (ASSOCIATED(fluidRho)) DEALLOCATE (fluidRho)
 
-     ! deallocate the fluidrho_n array
-     DEALLOCATE (fluidRho_n)
+    ! deallocate the fluidrho_n array
+    if (ASSOCIATED(fluidRho_n)) DEALLOCATE (fluidRho_n)
 
-     ! deallocate the Momentum_Delta array
-     if (ALLOCATED(Momentum_Delta)) DEALLOCATE (Momentum_Delta)
+    ! deallocate the Momentum_Delta array
+    if (allocated(Momentum_Delta)) deallocate (Momentum_Delta)
 
-     ! deallocate the Mom_Delta array
-     if (ALLOCATED(Mom_Delta)) DEALLOCATE(Mom_Delta)
+    ! deallocate the Mom_Delta array
+    if (allocated(Mom_Delta)) deallocate(Mom_Delta)
 
     ! deallocate the void cell indication arrays
     if (ASSOCIATED(Cell_isnt_Void)) DEALLOCATE (Cell_isnt_Void)
@@ -283,11 +283,11 @@ CONTAINS
     if (ASSOCIATED(Ngbr_isnt_Void)) DEALLOCATE (Ngbr_isnt_Void)
 
     ! deallocate the Projection / Predictor communiation arrays
-     DEALLOCATE (Centered_GradP_Dynamic)
+    if (allocated(Centered_gradP_Dynamic)) deallocate (Centered_GradP_Dynamic)
 
-     DEALLOCATE (Rho_Face_n)
+    if (allocated(Rho_Face_n)) deallocate (Rho_Face_n)
 
-    DEALLOCATE (Boundary_Flag)
+    if (associated(boundary_flag)) deallocate (Boundary_Flag)
 
     if (ALLOCATED(DVol_by_Dt_over_Vol)) DEALLOCATE(DVol_by_Dt_over_Vol)
     if (ASSOCIATED(Momentum_by_Volume)) DEALLOCATE(Momentum_by_Volume)

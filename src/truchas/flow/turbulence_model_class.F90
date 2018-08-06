@@ -4,7 +4,7 @@
 !! This module provides an abstract type that encapsulates truchas turbulence models
 !!
 !! Peter Brady <ptb@lanl.gov>
-!! May 2018
+!! 2018
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!

@@ -58,17 +58,17 @@ CONTAINS
     !
     !======================================================================
     use fluid_data_module,      only: fluid_flow, fluidRho, Solid_Face, &
-                                      isPureImmobile, fluidDeltaRho,      &
-                                      fluid_to_move, Fluxing_Velocity
+        isPureImmobile, fluidDeltaRho,      &
+        fluid_to_move, Fluxing_Velocity
     use legacy_mesh_api,        only: ncells, nfc, ndim
     use predictor_module,       only: PREDICTOR
     use projection_data_module, only: Face_Density, mac_projection_iterations, &
-                                      prelim_projection_iterations
+        prelim_projection_iterations
     use projection_module,      only: PROJECTION
     use property_module,        only: FLUID_PROPERTIES
     use time_step_module,       only: cycle_number
     use viscous_data_module,    only: prelim_viscous_iterations, &
-                                      viscous_iterations
+        viscous_iterations
     use zone_module,            only: Zone
 
     ! Local Variables
@@ -85,16 +85,16 @@ CONTAINS
 
     ALLOCATE (Solid_Face(nfc,ncells), STAT = status)
     if (status /= 0) &
-         call TLS_panic ('FLUID_FLOW: Solid_Face(nfc,ncells) allocation failed')
+        call TLS_panic ('FLUID_FLOW: Solid_Face(nfc,ncells) allocation failed')
     ALLOCATE (isPureImmobile(ncells), STAT = status)
     if (status /= 0) &
-         call TLS_panic ('FLUID_FLOW: isPureImmobile(ncells) allocation failed')
+        call TLS_panic ('FLUID_FLOW: isPureImmobile(ncells) allocation failed')
     ALLOCATE (fluidDeltaRho(ncells), STAT = status)
     if (status /= 0) &
-         call TLS_panic ('FLUID_FLOW: fluidDeltaRho(ncells) allocation failed')
+        call TLS_panic ('FLUID_FLOW: fluidDeltaRho(ncells) allocation failed')
     ALLOCATE (Face_Density(nfc,ncells), STAT = status)
     if (status /= 0) &
-       call TLS_panic ('FLUID_FLOW: Face_Density(nfc,ncells) allocation failed')
+        call TLS_panic ('FLUID_FLOW: Face_Density(nfc,ncells) allocation failed')
 
     fluidRho = 0.0_r8
 
@@ -104,37 +104,52 @@ CONTAINS
 
     if (.not. abort) then
 
-       fluid_to_move = .true.
-       ! Predictor Step
-        call PREDICTOR()
+      fluid_to_move = .true.
+      print *, "<< Pre Predictor"
+      do n = 1, ncells
+        write(*,'("cell ",i4, " vel_cc: ", 2es15.5, " P_cc: ", es15.5)') &
+            n, Zone(n)%Vc(1:2), Zone(n)%P
+      end do
+      ! Predictor Step
+      call PREDICTOR()
+      print *, "<< Post Predictor"
+      do n = 1, ncells
+        write(*,'("cell ",i4, " vel_cc: ", 2es15.5, " P_cc: ", es15.5)') &
+            n, Zone(n)%Vc(1:2), Zone(n)%P
+      end do
+      ! Projection Step
+      call PROJECTION()
+      print *, "<< Post Projection"
+      do n = 1, ncells
+        write(*,'("cell ",i4, " vel_cc: ", 2es15.5, " P_cc: ", es15.5)') &
+            n, Zone(n)%Vc(1:2), Zone(n)%P
+      end do
 
-        ! Projection Step
-        call PROJECTION()
 
-        if(cycle_number == 0) then
-           ! Special operations required during the prepass
-           prelim_projection_iterations = mac_projection_iterations
-           prelim_viscous_iterations = viscous_iterations
-           do n = 1,ndim
-              Zone%Vc(n) = Zone%Vc_Old(n)
-           end do
-        endif
+      if(cycle_number == 0) then
+        ! Special operations required during the prepass
+        prelim_projection_iterations = mac_projection_iterations
+        prelim_viscous_iterations = viscous_iterations
+        do n = 1,ndim
+          Zone%Vc(n) = Zone%Vc_Old(n)
+        end do
+      endif
 
     else
 
-       ! Everything solid; set velocities equal to zero, and check again in the
-       ! next timestep.
-       fluid_to_move = .false.
-       Fluxing_Velocity = 0
-       do n = 1,ndim
-          Zone%Vc(n) = 0
-          Zone%Vc_Old(n) = 0
-       end do
+      ! Everything solid; set velocities equal to zero, and check again in the
+      ! next timestep.
+      fluid_to_move = .false.
+      Fluxing_Velocity = 0
+      do n = 1,ndim
+        Zone%Vc(n) = 0
+        Zone%Vc_Old(n) = 0
+      end do
 
-       if(cycle_number == 0) then
-          prelim_projection_iterations = 0
-          prelim_viscous_iterations = 0
-       endif
+      if(cycle_number == 0) then
+        prelim_projection_iterations = 0
+        prelim_viscous_iterations = 0
+      endif
 
     endif
 
