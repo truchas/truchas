@@ -211,6 +211,7 @@ call hijack_truchas ()
     use time_step_sync_type
     use truchas_logging_services
     use truchas_timers
+    use zone_module, only: Zone
     use kinds
 
     ! Local Variables
@@ -233,6 +234,13 @@ call hijack_truchas ()
     call start_timer ("Main Cycle")
 
     ! Prepass to initialize a solenoidal velocity field for Advection
+    Zone%P = 0.0_r8
+    Zone%Vc_old(1) = 1.0_r8
+    Zone%Vc_old(2) = 1.0_r8
+    Zone%Vc_old(3) = 0.0_r8
+    Zone%Vc(1) = 1.0_r8
+    Zone%Vc(2) = 1.0_r8
+    Zone%Vc(3) = 0.0_r8
     if(.not.restart .and. .not.flow_enabled()) call Fluid_Flow_Driver (t)
 
     call mem_diag_write ('Before main loop:')

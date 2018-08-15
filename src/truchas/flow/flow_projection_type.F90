@@ -367,12 +367,12 @@ contains
         rhs(j) = 0.0_r8
         associate( fn => m%cface(m%xcface(j):m%xcface(j+1)-1))
           do i = 1, size(fn)
-            ! face velocity follows the convention of being positive in the inward
-            ! face direction as is the normal.  Boundary conditions have already been
+            ! face velocity follows the convention of being positive in the face normal
+            ! Boundary conditions have already been
             ! applied in computing `vel` so we shouldn't need to use them here again
-            if (btest(m%cfpar(j),pos=i)) then
+            if (btest(m%cfpar(j),pos=i)) then ! inward face
               this%rhs(j) = this%rhs(j) + vel(fn(i))*m%area(fn(i))!/m%volume(j)
-            else
+            else ! outward face
               this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))!/m%volume(j)
             end if
 #ifndef NDEBUG
@@ -405,6 +405,24 @@ contains
           end if
         end do
       end associate
+
+!!$      ! set the pressure at an arbitrary boundary point to 0 if all neumann
+!!$      if (.not.this%bc%pressure_d) then
+!!$        associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
+!!$          i = 1
+!!$          fi = faces(i)
+!!$          j = this%mesh%fcell(2,fi) ! cell index
+!!$          ASSERT(this%mesh%fcell(1,fi) == 0)
+!!$
+!!$          if (rho_f(fi) /=  0.0_r8) then
+!!$            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)!/this%mesh%mesh%volume(j)
+!!$            call A%add_to(j, j, coeff)
+!!$            this%rhs(j) = this%rhs(j)
+!!$          else
+!!$            print *, "FIX THIS: setting ficticous pressure in solid"
+!!$          end if
+!!$        end associate
+!!$      end if
     end associate
 
 
@@ -453,6 +471,7 @@ contains
     integer :: i, j
 
     ! cell -> face interpolation
+    vel_fn = 0.0_r8
     associate (m => this%mesh%mesh, v => this%vel_cc_star, gpn => grad_p_rho_cc_n, &
         w => this%weights_cf)
       do i=1, m%ncell
@@ -628,8 +647,14 @@ contains
           gp_fc(:,j) = 0.0_r8
         end if
       end do
+!!$      associate (faces => m%cface(m%xcface(33):m%xcface(34)-1))
+!!$        write(*,'("grad(p) at [",i4,"] y- ",3es20.12)') faces(1), gp_fc(:,faces(1))
+!!$        write(*,'("grad(p) at [",i4,"] y+ ",3es20.12)') faces(3), gp_fc(:,faces(3))
+!!$        write(*,'("grad(p) at [",i4,"] x- ",3es20.12)') faces(5), gp_fc(:,faces(5))
+!!$        write(*,'("grad(p) at [",i4,"] x+ ",3es20.12)') faces(6), gp_fc(:,faces(6))
+!!$      end associate
       call gather_boundary(m%face_ip, gp_fc)
-      call interpolate_fc(gp_cc, gp_fc)
+      call interpolate_fc(gp_cc, gp_fc, props%inactive_f, this%bc%p_neumann%index)
     end associate
   end subroutine grad_p_rho
 
@@ -643,10 +668,14 @@ contains
     !-
     integer :: i, j
 
+!!$    write(*,'("grad_p_rho_cc_n(33):", 3es20.12)') grad_p_rho_cc_n(:,33)
+!!$    write(*,'("grad_p_rho_cc(33)  :", 3es20.12)') this%grad_p_rho_cc(:,33)
+
     associate (m => this%mesh%mesh)
       ! assumes dynamic pressure gradients have already been computed
       do i = 1, m%ncell_onP
-        vel_cc(:,i) = vel_cc(:,i) + dt*(grad_p_rho_cc_n(:,i)-this%grad_p_rho_cc(:,i))
+        ! -dt * grad(dP)/rho
+        vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
       end do
     end associate
   end subroutine velocity_cc_correct

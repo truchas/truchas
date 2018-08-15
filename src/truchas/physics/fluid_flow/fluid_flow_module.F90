@@ -105,25 +105,17 @@ CONTAINS
     if (.not. abort) then
 
       fluid_to_move = .true.
-      print *, "<< Pre Predictor"
-      do n = 1, ncells
-        write(*,'("cell ",i4, " vel_cc: ", 2es15.5, " P_cc: ", es15.5)') &
-            n, Zone(n)%Vc(1:2), Zone(n)%P
-      end do
+      write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 284, Zone(284)%Vc(1:3)
+
       ! Predictor Step
       call PREDICTOR()
-      print *, "<< Post Predictor"
-      do n = 1, ncells
-        write(*,'("cell ",i4, " vel_cc: ", 2es15.5, " P_cc: ", es15.5)') &
-            n, Zone(n)%Vc(1:2), Zone(n)%P
-      end do
+      write(*, '("Post-Predictor u[",i4,"]: ", 3es20.12)') 284, Zone(284)%Vc(1:3)
+      write(*, '("Post-Predictor P[",i4,"]: ", es20.12)') 284, Zone(284)%P
+
       ! Projection Step
       call PROJECTION()
-      print *, "<< Post Projection"
-      do n = 1, ncells
-        write(*,'("cell ",i4, " vel_cc: ", 2es15.5, " P_cc: ", es15.5)') &
-            n, Zone(n)%Vc(1:2), Zone(n)%P
-      end do
+      write(*, '("Post-Projection u[",i4,"]: ", 3es20.12)') 284, Zone(284)%Vc(1:3)
+      write(*, '("Post-Projection P[",i4,"]: ", es20.12)') 284, Zone(284)%P
 
 
       if(cycle_number == 0) then

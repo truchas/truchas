@@ -391,7 +391,7 @@ contains
           do k = 1, size(A)
             call A(k)%A%add_to(j, j, coeff)
           end do
-          this%rhs(:,j) = this%rhs(:,j) - coeff*value(:,i)
+          this%rhs(:,j) = this%rhs(:,j) + coeff*value(:,i)
         end do
       end associate
 
@@ -422,7 +422,9 @@ contains
 
   end subroutine setup_solver
 
-
+  ! accumulate [-dt * grad(P)^n]
+  ! the full contribution to the velocity update is [-dt * grad(P)^n]/rho^n+1
+  ! The divisor is handled in the solve routine
   subroutine accumulate_rhs_pressure(this, dt, props, grad_p_rho_cc)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, grad_p_rho_cc(:,:)
@@ -442,7 +444,7 @@ contains
 #endif
     associate (m => this%mesh%mesh)
       do j = 1, m%ncell_onP
-        this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc(j)
+        this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc_n(j)
 #ifndef NDEBUG
         write(*,'("rhs(",i3,"):",3es15.5)') j, this%rhs(:,j)
 #endif
@@ -451,7 +453,9 @@ contains
 
   end subroutine accumulate_rhs_pressure
 
-
+  ! accumulate (1-theta_mu)[ dt * div(mu_f*grad(u_i))^n]
+  ! the full contribution to the velocity update is (1-theta_mu)[dt * div(mu_f*grad(u_i))^n]/rho^n+1
+  ! The divisor is handled in the solve routine
   subroutine accumulate_rhs_viscous_stress(this, dt, props, vel_cc)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, vel_cc(:,:)
@@ -468,9 +472,22 @@ contains
     dtv = dt*(1.0_r8 - this%viscous_implicitness)
 
     associate (m => this%mesh%mesh, g => this%grad_fc_vector, mu => props%mu_fc)
-      ! velocity gradient tensor at faces
+      !write(*,'("Mu_face(:,33):", 6es15.5)') mu(m%cface(m%xcface(1089):m%xcface(1090)-1))
+
+      ! velocity gradient tensor at faces such that
+      ! g(:,1,j) = grad_at_face_j(u_1)
+      ! g(:,2,j) = grad_at_face_j(u_2)
+      ! g(:,3,j) = grad_at_face_j(u_3)
       call gradient_cf(g, vel_cc, this%bc%v_zero_normal, this%bc%v_dirichlet)
       call gather_boundary(m%face_ip, g)
+
+      associate( faces => m%cface(m%xcface(1):m%xcface(2)-1))
+        write(*,'("grad(u) at [",i4,"] y- ",3es20.12)') faces(1), g(:,1,faces(1))
+        write(*,'("grad(u) at [",i4,"] y+ ",3es20.12)') faces(3), g(:,1,faces(3))
+        write(*,'("grad(u) at [",i4,"] x- ",3es20.12)') faces(5), g(:,1,faces(5))
+        write(*,'("grad(u) at [",i4,"] x+ ",3es20.12)') faces(6), g(:,1,faces(6))
+        !write(*,'(a,3es20.12)') 'dx at y+: ', this%mesh%face_centroid(:,faces(3)) - this%mesh%cell_centroid(:,33)
+      end associate
 
       do j = 1, m%nface
         associate (n1 => this%mesh%fcell(1,j), n2 => this%mesh%fcell(2,j), rhs => this%rhs)
@@ -496,7 +513,11 @@ contains
     end associate
   end subroutine accumulate_rhs_viscous_stress
 
-
+  ! accumulate [-dt*div(rho*u*u)]
+  ! flux_volumes is in ragged format where each cell has a potentially unique flux_value
+  ! for a given cell face
+  ! The flux volume for a given material is dt*A*vel_fn.  A positive value indicates outward flux
+  ! Momentum is transported via flux-volumes using a first order upwind scheme
   subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fn, flux_volumes)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fn(:)
@@ -606,7 +627,9 @@ contains
     ! These forces are computed first and scaled by vof as a crude approximation.
     ! Once a better solid/fluid model is used, change this numerical hackjob.
     call this%accumulate_rhs_pressure(dt, props, grad_p_rho_cc)
+    write(*,"('post accumulate_rhs_pressure rhs[',i4,']:',3es20.12)") 284, this%rhs(:,284)
     call this%accumulate_rhs_viscous_stress(dt, props, vel_cc)
+    write(*,"('post accumulate_rhs_viscous  rhs[',i4,']:',3es20.12)") 284, this%rhs(:,284)
     associate (m => this%mesh%mesh, rhs => this%rhs)
       do j = 1, m%ncell_onP
         rhs(:,j) = rhs(:,j)*props%vof(j)
@@ -614,6 +637,7 @@ contains
     end associate
 
     call this%accumulate_rhs_momentum(props, vel_cc, vel_fn, flux_volumes)
+    write(*,"('post accumulate_rhs_momentum rhs[',i4,']:',3es20.12)") 284, this%rhs(:,284)
     call this%accumulate_rhs_solidified_rho(props, vel_cc)
 
     ! handle surface tension
@@ -655,6 +679,8 @@ contains
       end do
 
     end associate
+
+    !write(*,"('after prediction u[',i4,']:',3es20.12)") 1089, vel_cc(:, 1089)
   end subroutine solve
 
   subroutine accept(this)

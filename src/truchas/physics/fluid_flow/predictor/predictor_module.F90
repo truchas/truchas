@@ -88,11 +88,13 @@ CONTAINS
     ! Explicit Pressure Gradient and Buoyant Force
     call PressureExplicit(dt, Mom_Delta)
 
+#ifndef NDEBUG
     print *, "ACCUMULATE RHS PRESSURE"
     do n = 1, ncells
       write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
     end do
-
+#endif
+    write(*,'("rhs pressure (",i3,"):",3es15.5)') 1, Mom_Delta(:,1)
     ! Explicit Viscous Stress.
     if (.not. inviscid) then
       call TURBULENCE(turbulence_model)
@@ -103,10 +105,13 @@ CONTAINS
       end if
     end if
 
+#ifndef NDEBUG
     print *, "ACCUMULATE RHS VISCOUS STRESS"
     do n = 1, ncells
       write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
     end do
+#endif
+    write(*,'("rhs viscous (",i3,"):",3es15.5)') 1, Mom_Delta(:,1)
     ! Multiply Pressure Gradient and Viscous Stress by FluidVof
     ! (This is a crude way to account for solid material within the cell.
     ! In SOLVE_FOR_VELOCITY we also divide by FluidVof to account for
@@ -124,10 +129,13 @@ CONTAINS
     if (.not. stokes) then
       call ADVECT_MOMENTUM(Mom_Delta)
     end if
+#ifndef NDEBUG
     print *, "ACCUMULATE RHS MOMENTUM"
     do n = 1, ncells
       write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
     end do
+#endif
+    write(*,'("rhs mtm(",i3,"):",3es15.5)') 1, Mom_Delta(:,1)
     ! Calculate the RHS momentum change due to the solidification of fluid.
     if (HAVE_SOLIDIFYING_FLOW()) then
       ! MAC note: Here, there can be problems with the explicit term of the
@@ -210,6 +218,7 @@ CONTAINS
     ! Local variables
     integer :: n
 
+#ifndef NDEBUG
     print *, "PRESSURE EXPLICIT"
     do n = 1, ncells
       write(*,'("GradPx[", i3, "]: ", es15.5)') n, Centered_GradP_Dynamic(1,n)
@@ -217,7 +226,7 @@ CONTAINS
     do n = 1, ncells
       write(*,'("GradPy[", i3, "]: ", es15.5)') n, Centered_GradP_Dynamic(2,n)
     end do
-
+#endif
     do n = 1,ndim
        where (fluidRho_n == 0) Centered_GradP_Dynamic(n,:) = 0
        where (fluidRho(:) > 0)

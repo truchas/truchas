@@ -97,7 +97,7 @@ contains
     type(parameter_list), pointer, intent(in) :: p
 
     this%plist => p%sublist("bc")
-#ifdef FLOW_DEBUG
+#ifndef NDEBUG
     print *, "size of bc plist", this%plist%count()
 #endif
   end subroutine read_params
@@ -129,7 +129,7 @@ contains
     call f%alloc_scalar_bc(["slip"], this%v_zero_normal, default=0.0_r8)
 
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0
-#ifdef FLOW_DEBUG
+#ifndef NDEBUG
     print *, "size of p dirichlet: ", size(this%p_dirichlet%index)
     print *, "size of p neumann: ", size(this%p_neumann%index)
     print *, "size of v dirichlet: ", size(this%v_dirichlet%index)
@@ -142,6 +142,7 @@ contains
     logical, optional, intent(in) :: initial
     !-
     logical :: init
+    integer :: i
 
     if (present(initial)) then
       init = initial
@@ -156,6 +157,14 @@ contains
 
     if (init) then
       call this%dp_dirichlet%compute(t)
+#ifndef NDEBUG
+      print *, "<<< V_DIRICHLET VALUES"
+      associate(faces => this%v_dirichlet%index, v => this%v_dirichlet%value)
+        do i = 1, size(faces)
+          write(*, '("face_vel [", i4, "]: ", 3es15.5)') faces(i), v(:,i)
+        end do
+      end associate
+#endif
     else
       call this%dp_dirichlet%compute(t+dt)
       this%dp_dirichlet%value(:) = this%dp_dirichlet%value(:) - this%p_dirichlet%value(:)

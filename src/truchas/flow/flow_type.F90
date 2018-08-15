@@ -129,8 +129,9 @@ contains
   subroutine init(this, m, vel_cc, P_cc)
     class(flow), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: m
-    real(r8), optional, intent(in) :: vel_cc, P_cc
+    real(r8), optional, intent(in) :: vel_cc(:), P_cc
     !-
+    integer :: i
 
     this%mesh => m
 
@@ -145,9 +146,17 @@ contains
 
 
     if (present(vel_cc)) then
-      this%vel_cc = vel_cc
+      do i = 1, m%mesh%ncell
+        this%vel_cc(:,i) = vel_cc
+      end do
+      ! add parallel communication here
+!!$      do i = 1, m%mesh%nface_onP
+!!$        this%vel_fn(i) = dot_product(m%mesh%normal(:,i), vel_cc(:))/m%mesh%area(i)
+!!$      end do
+      this%vel_fn = 0.0_r8
     else
       this%vel_cc = 0.0_r8
+      this%vel_fn = 0.0_r8
     end if
 
     if (present(P_cc)) then
@@ -157,7 +166,6 @@ contains
     end if
 
     this%grad_p_rho_cc_n = 0.0_r8
-    this%vel_fn = 0.0_r8
 
     call this%pred%init(m, this%bc, this%inviscid, this%stokes)
     call this%proj%init(m, this%bc)
@@ -189,12 +197,15 @@ contains
           j,this%vel_cc(1:2,j), this%P_cc(j)
     end do
 #endif
-!!$    do j = 1, this%mesh%mesh%nface_onP
-!!$      write(*,'(a,i3,a,3es15.5)') "vel_fn(",j,"):",this%vel_fn(j)
-!!$    end do
+    write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 284, this%vel_cc(:,284)
+    write(*, '("Pre-Predictor P[",i4,"]: ", es20.12)') 284, this%P_cc(284)
 
     call this%pred%setup(dt, props, this%vel_cc, initial=initial)
     call this%pred%solve(dt, props, this%grad_p_rho_cc_n, flux_volumes, this%vel_fn, this%vel_cc, initial=initial)
+
+    write(*, '("Post-Predictor u[",i4,"]: ", 3es20.12)') 284, this%vel_cc(:,284)
+    write(*, '("Post-Predictor P[",i4,"]: ", es20.12)') 284, this%P_cc(284)
+
 
 #ifndef NDEBUG
     write(*, *) " >> Post Predictor"
@@ -203,13 +214,13 @@ contains
           j,this%vel_cc(1:2,j), this%P_cc(j)
     end do
 #endif
-!!$    do j = 1, this%mesh%mesh%nface_onP
-!!$      write(*,'(a,i3,a,3es15.5)') "vel_fn(",j,"):",this%vel_fn(j)
-!!$    end do
 
-
+    !print*, "DISABLING PROJECTION"
     call this%proj%setup(dt, props, this%grad_p_rho_cc_n, this%body_force, this%vel_cc, this%P_cc, this%vel_fn, initial=initial)
     call this%proj%solve(dt, props, this%grad_p_rho_cc_n, this%vel_cc, this%P_cc, this%vel_fn, initial=initial)
+
+    write(*, '("Post-Projection u[",i4,"]: ", 3es20.12)') 284, this%vel_cc(:,284)
+    write(*, '("Post-Projection P[",i4,"]: ", es20.12)') 284, this%P_cc(284)
 
     p_min = global_minval(this%p_cc)
     p_max = global_maxval(this%p_cc)

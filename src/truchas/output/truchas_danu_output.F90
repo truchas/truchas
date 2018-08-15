@@ -275,16 +275,16 @@ contains
     end subroutine write_fluid_flow_data
 
     subroutine write_new_flow_data
-
+      use legacy_mesh_api, only: ndim, ncells
       use flow_driver
 
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
 
       vec_cc => flow_vel_cc_view()
-      call write_seq_cell_field(seq, vec_cc, 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
+      call write_seq_cell_field(seq, vec_cc(:,1:ncells), 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
 
       scalar_cc => flow_P_cc_view()
-      call write_seq_cell_field (seq, scalar_cc, 'Z_P', for_viz=.true., viz_name='P')
+      call write_seq_cell_field (seq, scalar_cc(1:ncells), 'Z_P', for_viz=.true., viz_name='P')
 
 !!$
 !!$      !! Face fluxing velocities.

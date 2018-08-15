@@ -17,9 +17,15 @@ module flow_operators
     module procedure gradient_cf_scalar, gradient_cf_vector
   end interface gradient_cf
 
+
   type :: flow_operator
     type(flow_mesh), pointer :: mesh => null()
-    real(r8), pointer :: ds(:,:) ! dxyz/||dxyz||^2
+    ! ds = dxyz/||dxyz||^2 -- coefficients for computing face gradients
+    ! for a face `f` adjacent to cells `i`,`j` oriented such that the face normal
+    ! points into cell `i`, the face gradient is given by ds(:,f)*(P(i)-P(j))
+    real(r8), pointer :: ds(:,:)
+    ! face workspace
+    real(r8), allocatable :: work(:)
   end type flow_operator
 
   type(flow_operator), allocatable :: this
@@ -38,12 +44,12 @@ contains
     this%mesh => mesh
     m => mesh%mesh
     allocate(this%ds(3, m%nface))
-
+    allocate(this%work(m%nface))
     this%ds = 0.0_r8
 
     do j = 1, m%nface_onP
-      c1 = mesh%fcell(1,j)
-      c2 = mesh%fcell(2,j)
+      c1 = mesh%fcell(1,j) ! in
+      c2 = mesh%fcell(2,j) ! out
       if (c1 == 0) then
         this%ds(:,j) = mesh%face_centroid(:,j) - mesh%cell_centroid(:,c2)
         this%ds(:,j) = this%ds(:,j)/sum(this%ds(:,j)**2)
@@ -286,19 +292,34 @@ contains
 
   ! interpolation of vector quantitiy xf to faces
   ! result only valid on ncell_onP
-  subroutine interpolate_fc(ic, xf)
+  ! inactive_faces and extra_ignore_faces do not participate in averaging
+  subroutine interpolate_fc(ic, xf, inactive_faces, extra_ignore_faces)
     real(r8), intent(out) :: ic(:,:)
     real(r8), intent(in) :: xf(:,:)
+    integer, intent(in) , optional :: inactive_faces(:)
+    integer, intent(in) , optional :: extra_ignore_faces(:)
 
     integer :: i, dim
 
+    this%work = 1.0_r8
+    if (present(inactive_faces)) then
+      this%work(inactive_faces) = 0.0_r8
+    end if
+    if (present(extra_ignore_faces)) then
+      this%work(extra_ignore_faces) = 0.0_r8
+    end if
 
     associate (m => this%mesh%mesh, f=> this%mesh)
       do i = 1, m%ncell_onP
         associate (fn => m%cface(m%xcface(i):m%xcface(i+1)-1))
-          do dim = 1, size(ic,dim=1)
-            ic(dim,i) = dot_product(abs(m%normal(dim,fn)), xf(dim,fn))/sum(abs(m%normal(dim,fn)))
-          end do
+          if (sum(this%work(fn)) >= 1.0_r8) then
+            do dim = 1, size(ic,dim=1)
+              ic(dim,i) = dot_product(this%work(fn)*abs(m%normal(dim,fn)), xf(dim,fn))/ &
+                  sum(this%work(fn)*abs(m%normal(dim,fn)))
+            end do
+          else
+            ic(:,i) = 0.0_r8
+          end if
         end associate
       end do
     end associate
@@ -347,6 +368,5 @@ contains
       end if
     end associate
   end subroutine interpolate_cf
-
 
 end module flow_operators

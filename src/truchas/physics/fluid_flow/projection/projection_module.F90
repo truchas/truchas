@@ -161,12 +161,12 @@ CONTAINS
         end do
       end do
     end if
-
+#ifndef NDEBUG
     write(*,*) "<< Pre Correction Fluxing Velocities"
     do n = 1, ncells
       write(*,'("Cell [",i3,"]:",6es15.5)') n, Fluxing_Velocity(:,n)
     end do
-
+#endif
     ! Correct the Fluxing_Velocity's with a MAC projection to make them solenoidal.
     call MAC_PROJECTION(Fluxing_Velocity)
 
@@ -329,12 +329,12 @@ CONTAINS
     ! Scaling of the RHS  requires multiplying by dt here for
     ! global scaling of RHS by dt/Volume.
     where (FluidRho(:) == 0 .or. isPureImmobile(:)) RHS(:) = (void_pressure-Zone(:)%P)
-
+#ifndef NDEBUG
     write(*,*) "<<< Baseline RHS"
     do f = 1, ncells
       write(*,'("Rhs[",i3, "]: ", es15.5)') f, RHS(f)
     end do
-
+#endif
     call NONORTHO_PROJECTION (RHS, Face_Density, Solution, "timer_projection_solver")
 
     ! Store the number of iterations.
@@ -343,11 +343,12 @@ CONTAINS
 
     ! Apply the solenoidal correction to the face-centered velocities.
     call MAC_CORRECTOR (Solution, Face_Density, Fluxing_Velocity)
+#ifndef NDEBUG
     write(*,*) "<<< DP"
     do f = 1, ncells
       write(*,'("DP[",i3, "]: ", es15.5)') f, Solution(f)
     end do
-
+#endif
     ! Computed divergence norms based on the correct fluxing velocity.
     call VF_DIVERGENCE_NORMS (Fluxing_Velocity)
 
@@ -763,11 +764,12 @@ CONTAINS
 
     !  Add in the volume change rate term due to the Enthalpy Solution
     RHS = RHS -  DVol_by_Dt_over_Vol*Cell%Volume
+#ifndef NDEBUG
     write(*,*) "<<< Pre Boundary Conditions RHS"
     do f = 1, ncells
       write(*,'("Rhs[",i3, "]: ", es15.5)') f, RHS(f)
     end do
-
+#endif
 !!$    Don't add this in because we are solving for delta-P
 !!$    RHS = RHS - Vol_over_RhoCsqDt*Zone%P
 
@@ -887,12 +889,12 @@ CONTAINS
     elsewhere
       RHS(:) = RHS(:)/(dt*Cell(:)%Volume)
     endwhere
-
+#ifndef NDEBUG
     write(*,*) "<<< RHS fed to Ubik"
     do f = 1, ncells
       write(*,'("Rhs[",i3, "]: ", es15.5)') f, RHS(f)
     end do
-
+#endif
 
     ! Calculate scaling factor for L2 norm of the residual
     original_criterion = Ubik_eps(Ubik_user(UBIK_PRESSURE)%Control)
@@ -905,7 +907,6 @@ CONTAINS
     ! prevent use of an initial guess of zero if the right-hand side is also zero
     RHSnorm = L1NORM(RHS)
     if (RHSNorm < alittle) then
-      print *, "STARTING with a solution of 1.0"
       Solution = 1.0
     else
       call Fischer_Initial_Guess( Solution, RHS )
