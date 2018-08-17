@@ -1,4 +1,6 @@
 #include "f90_assert.fpp"
+#define ASDF 0
+#define Q 771
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -305,11 +307,11 @@ contains
 #endif
     ! we pass in dt == 0 to setup initial pass, this causes division by zero
     ! in rhs, so pass in 1.
-    if (init) then
-      call this%setup_solver(1.0_r8, props, vel_fn)
-    else
+!!$    if (init) then
+!!$      call this%setup_solver(1.0_r8, props, vel_fn)
+!!$    else
       call this%setup_solver(dt, props, vel_fn)
-    end if
+    !end if
 #ifndef NDEBUG
     print *, "PROJECTION SETUP FINISHED"
 #endif
@@ -348,7 +350,7 @@ contains
             ! ni == 0 implies a domain boundary cell, handle these separately
             if (rho_f(fi) /= 0.0_r8 .and. ni > 0) then
               ! note that normal is already weighted by face area
-              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)!/m%volume(j)
+              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
               call A%add_to(j, j, coeff)
               call A%add_to(j, ni, -coeff)
             end if
@@ -360,6 +362,16 @@ contains
 
     !! FIXME: need correction for void/solid... maybe
     associate (m => this%mesh%mesh, rhs => this%rhs)
+#if ASDF
+      associate( faces => m%cface(m%xcface(Q):m%xcface(Q)-1))
+        write(*,'("vel_fn/normal at [",i4,"] y- ",2es20.12)') faces(1), vel(faces(1)), m%normal(2,faces(1))
+        write(*,'("vel_fn/normal at [",i4,"] y+ ",2es20.12)') faces(3), vel(faces(3)), m%normal(2,faces(3))
+        write(*,'("vel_fn/normal at [",i4,"] x- ",2es20.12)') faces(5), vel(faces(5)), m%normal(1,faces(5))
+        write(*,'("vel_fn/normal at [",i4,"] x+ ",2es20.12)') faces(6), vel(faces(6)), m%normal(1,faces(6))
+        write(*,'("faces areas: ",4es20.12)') m%area([faces(1),faces(3),faces(5),faces(6)])
+      end associate
+#endif
+
 #ifndef NDEBUG
       write(*, *) ">> Projection rhs before Pressure BC's"
 #endif
@@ -381,7 +393,8 @@ contains
 #endif
           end do
         end associate
-        this%rhs(j) = this%rhs(j) / dt
+        !if (j == 771) write(*, '("rhs [",i4,"]: ",es20.12)') 771, this%rhs(771)
+        this%rhs(j) = this%rhs(j) / (dt*m%volume(j))
 #ifndef NDEBUG
         write(*,'("rhs(",i4,"):",es15.5)') j, this%rhs(j)
 #endif
@@ -396,7 +409,7 @@ contains
           j = this%mesh%fcell(2,fi) ! cell index
           ASSERT(this%mesh%fcell(1,fi) == 0)
           if (rho_f(fi) /=  0.0_r8) then
-            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)!/this%mesh%mesh%volume(j)
+            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
             call A%add_to(j, j, coeff)
 #ifndef NDEBUG
             write(*,'("dp_dirichlet[",i3,"]: ", es15.5)') j, values(i)
@@ -406,23 +419,23 @@ contains
         end do
       end associate
 
-!!$      ! set the pressure at an arbitrary boundary point to 0 if all neumann
-!!$      if (.not.this%bc%pressure_d) then
-!!$        associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
-!!$          i = 1
-!!$          fi = faces(i)
-!!$          j = this%mesh%fcell(2,fi) ! cell index
-!!$          ASSERT(this%mesh%fcell(1,fi) == 0)
-!!$
-!!$          if (rho_f(fi) /=  0.0_r8) then
-!!$            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)!/this%mesh%mesh%volume(j)
-!!$            call A%add_to(j, j, coeff)
-!!$            this%rhs(j) = this%rhs(j)
-!!$          else
-!!$            print *, "FIX THIS: setting ficticous pressure in solid"
-!!$          end if
-!!$        end associate
-!!$      end if
+      ! set the pressure at an arbitrary boundary point to 0 if all neumann
+      if (.not.this%bc%pressure_d .and. is_IOP) then
+        associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
+          i = 1
+          fi = faces(i)
+          j = this%mesh%fcell(2,fi) ! cell index
+          ASSERT(this%mesh%fcell(1,fi) == 0)
+
+          if (rho_f(fi) /=  0.0_r8) then
+            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
+            call A%add_to(j, j, coeff)
+            ! no adjust to rhs requires for 0 dirichlet value
+          else
+            print *, "FIX THIS: setting ficticous pressure in solid"
+          end if
+        end associate
+      end if
     end associate
 
 
@@ -511,6 +524,9 @@ contains
           write(*,'(a,i3,2(a,es15.5))') "vel_fny(",j,"):",vel_fn(j), " normal: ", m%normal(2,j)/m%area(j)
       end do
 #endif
+#if ASDF
+      write(*,'("Vel_Fn[",i4,"]: ",6es16.8)') Q, vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
+#endif
     end associate
   end subroutine setup_face_velocity
 
@@ -539,6 +555,10 @@ contains
       write(*,'("RHS[", i3, "]: ",es15.5)') i, this%rhs(i)
     end do
 #endif
+
+#if ASDF
+    write(*,'("PRESSURE RHS[", i3, "]: ",es15.5)') Q, this%rhs(Q)
+#endif
     call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
@@ -547,6 +567,9 @@ contains
     do i = 1, this%mesh%mesh%ncell_onP
       write(*,'("DP[",i3,"]: ",es15.5)') i, this%delta_p_cc(i)
     end do
+#endif
+#if ASDF
+    write(*,'("DP[",i3,"]: ",es15.5)') Q, this%delta_p_cc(Q)
 #endif
     ! not sure if this call is necesary
     call gather_boundary(this%mesh%mesh%cell_ip, this%delta_p_cc)
@@ -602,27 +625,34 @@ contains
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: p_cc(:)
     !-
-    real(r8) :: dp_vof, vof
+    real(r8) :: dp_vof, vof, g_vof, g_dp_vof
     integer :: i
 
     associate (m => this%mesh%mesh, p => props, dp => this%delta_p_cc)
       ! remove null space from dp if applicable
-      if (.not.(this%bc%pressure_d .or. p%any_void)) then
-        ! maybe this should use inactive_c... needs to be consistenent with how
-        ! the operator is constructed
-        dp_vof = 0.0_r8
-        vof = 0.0_r8
-        do i = 1, m%ncell_onP
-          vof = vof + p%vof(i)
-          dp_vof = dp_vof + p%vof(i)*dp(i)
-        end do
-        vof = global_sum(vof)
-        dp_vof = global_sum(dp_vof)
-        dp(1:m%ncell_onP) = dp(1:m%ncell_onP) - dp_vof/vof
-      endif
+!!$      if (.not.(this%bc%pressure_d .or. p%any_void)) then
+!!$        ! maybe this should use inactive_c... needs to be consistenent with how
+!!$        ! the operator is constructed
+!!$        dp_vof = 0.0_r8
+!!$        vof = 0.0_r8
+!!$        do i = 1, m%ncell_onP
+!!$          vof = vof + p%vof(i)*m%volume(i)
+!!$          dp_vof = dp_vof + p%vof(i)*m%volume(i)*dp(i)
+!!$        end do
+!!$        g_vof = global_sum(vof)
+!!$        g_dp_vof = global_sum(dp_vof)
+!!$#if ASDF
+!!$        print* , "<VOF>: ", g_vof
+!!$        print* , "<DP_VOF>: ", g_dp_vof
+!!$#endif
+!!$        dp(1:m%ncell_onP) = dp(1:m%ncell_onP) - g_dp_vof/g_vof
+!!$      endif
       p_cc = p_cc + dp
       call gather_boundary(m%cell_ip, p_cc)
     end associate
+#if ASDF
+    write(*,'("Corrected P_CC[",i3,"]: ",es15.5)') Q, p_cc(Q)
+#endif
   end subroutine pressure_cc_correct
 
 
@@ -637,8 +667,8 @@ contains
     associate (m => this%mesh%mesh, rho => props%rho_fc, &
         gp_cc => this%grad_p_rho_cc, gp_fc => this%grad_p_rho_fc)
 
-    call gradient_cf(gp_fc, p_cc, this%bc%p_neumann, &
-        this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
+      call gradient_cf(gp_fc, p_cc, this%bc%p_neumann, &
+          this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
 
       do j = 1, m%nface_onP
         if (rho(j) > 0.0_r8) then
@@ -647,14 +677,19 @@ contains
           gp_fc(:,j) = 0.0_r8
         end if
       end do
-!!$      associate (faces => m%cface(m%xcface(33):m%xcface(34)-1))
-!!$        write(*,'("grad(p) at [",i4,"] y- ",3es20.12)') faces(1), gp_fc(:,faces(1))
-!!$        write(*,'("grad(p) at [",i4,"] y+ ",3es20.12)') faces(3), gp_fc(:,faces(3))
-!!$        write(*,'("grad(p) at [",i4,"] x- ",3es20.12)') faces(5), gp_fc(:,faces(5))
-!!$        write(*,'("grad(p) at [",i4,"] x+ ",3es20.12)') faces(6), gp_fc(:,faces(6))
-!!$      end associate
+#if ASDF
+      associate (faces => m%cface(m%xcface(771):m%xcface(772)-1))
+        write(*,'("grad(p) at [",i4,"] y- ",3es20.12)') faces(1), gp_fc(:,faces(1))
+        write(*,'("grad(p) at [",i4,"] y+ ",3es20.12)') faces(3), gp_fc(:,faces(3))
+        write(*,'("grad(p) at [",i4,"] x- ",3es20.12)') faces(5), gp_fc(:,faces(5))
+        write(*,'("grad(p) at [",i4,"] x+ ",3es20.12)') faces(6), gp_fc(:,faces(6))
+      end associate
+#endif
       call gather_boundary(m%face_ip, gp_fc)
       call interpolate_fc(gp_cc, gp_fc, props%inactive_f, this%bc%p_neumann%index)
+#if ASDF
+      write(*,'("grad_p_rho_cc[",i4,"] ",3es20.12)') Q, gp_cc(:,Q)
+#endif
     end associate
   end subroutine grad_p_rho
 
@@ -668,9 +703,13 @@ contains
     !-
     integer :: i, j
 
-!!$    write(*,'("grad_p_rho_cc_n(33):", 3es20.12)') grad_p_rho_cc_n(:,33)
-!!$    write(*,'("grad_p_rho_cc(33)  :", 3es20.12)') this%grad_p_rho_cc(:,33)
-
+#if ASDF
+    write(*,*) "<<< VELOCITY_CC_CORRECT"
+    write(*,*) "dt: ", dt
+    write(*,'("vel_cc[",i4,"] ",3es20.12)') Q, vel_cc(:,Q)
+    write(*,'("grad_p_rho_cc_n[",i4,"] ",3es20.12)') Q, grad_p_rho_cc_n(:,Q)
+    write(*,'("grad_p_rho_cc[",i4,"]   ",3es20.12)') Q, this%grad_p_rho_cc(:,Q)
+#endif
     associate (m => this%mesh%mesh)
       ! assumes dynamic pressure gradients have already been computed
       do i = 1, m%ncell_onP
@@ -678,6 +717,9 @@ contains
         vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
       end do
     end associate
+#if ASDF
+    write(*,'("vel_cc[",i4,"] ",3es20.12)') Q, vel_cc(:,Q)
+#endif
   end subroutine velocity_cc_correct
 
 

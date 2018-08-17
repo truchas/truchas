@@ -121,7 +121,8 @@ CONTAINS
        call UPDATE_MASS (Fluxing_Velocity, Vof, Vof_n)
     end if
 
-    write(*,"('Fluxing_velocity[',i4,']: ', 6es15.7)") 1, Fluxing_Velocity(:,1)
+    write(*,"('Fluxing_velocity[',i4,']: ', 6es15.7)") 771, Fluxing_Velocity(:,771)
+    write(*,"('volume_flux[',i4,']: ', 6es15.7)") 771, volume_flux(1,:,771)
     ! Return Vof values at this point back into the Matl structure.
     call MATL_SET_VOF (Vof)
 
@@ -561,6 +562,7 @@ CONTAINS
     !=======================================================================
     use advection_data, only: Momentum_Delta
     real(r8), dimension(:,:), intent(INOUT) :: Mom_Delta
+    write(*,'("Momentum_Delta(",i4,"):",3es15.5)') 771, Momentum_Delta(:,771)
     Mom_Delta = Mom_Delta + Momentum_Delta
   END SUBROUTINE ADVECT_MOMENTUM
 

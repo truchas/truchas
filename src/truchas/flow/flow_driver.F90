@@ -52,6 +52,7 @@
 !! file.
 !!
 #include "f90_assert.fpp"
+#define ASDF 0
 
 module flow_driver
 
@@ -291,9 +292,9 @@ contains
   end subroutine read_flow_namelist
 
 
-  subroutine flow_driver_init(mesh, vof, flux_vol)
+  subroutine flow_driver_init(mesh)
     type(unstr_mesh), pointer, intent(in) :: mesh
-    real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
+    !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
     integer :: void, mu_id, rho_id, rho_delta_id, i
     integer, pointer :: phases(:)
@@ -361,8 +362,8 @@ contains
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
     call this%flow%init(this%mesh, vel_cc=[1.0_r8, 1.0_r8, 0.0_r8])
 
-    call flow_step(0.0_r8, 0.0_r8, vof, flux_vol, initial=.true.)
-    call flow_accept()
+!!$    call flow_step(0.0_r8, 1.0_r8, vof, flux_vol, initial=.true.)
+!!$    call flow_accept()
     print *, 'out of flow driver init'
   end subroutine flow_driver_init
 
@@ -373,6 +374,11 @@ contains
     logical, optional, intent(in) :: initial
     !-
 
+#if ASDF
+    associate (m => this%mesh%mesh)
+      write(*, "('TOP LEVEL flux_vol[',i3,']: ',6es15.5): ") 771, flux_vol(1,m%xcface(771):m%xcface(772)-1)
+    end associate
+#endif
     this%temperature_cc(1:this%mesh%mesh%ncell_onP) = Zone%Temp
     call gather_boundary(this%mesh%mesh%cell_ip, this%temperature_cc)
 

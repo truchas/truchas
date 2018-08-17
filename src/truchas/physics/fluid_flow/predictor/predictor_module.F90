@@ -94,7 +94,7 @@ CONTAINS
       write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
     end do
 #endif
-    write(*,'("rhs pressure (",i3,"):",3es15.5)') 1, Mom_Delta(:,1)
+    write(*,'("rhs pressure (",i3,"):",3es15.5)') 771, Mom_Delta(:,771)
     ! Explicit Viscous Stress.
     if (.not. inviscid) then
       call TURBULENCE(turbulence_model)
@@ -111,7 +111,7 @@ CONTAINS
       write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
     end do
 #endif
-    write(*,'("rhs viscous (",i3,"):",3es15.5)') 1, Mom_Delta(:,1)
+    write(*,'("rhs viscous (",i3,"):",3es15.5)') 771, Mom_Delta(:,771)
     ! Multiply Pressure Gradient and Viscous Stress by FluidVof
     ! (This is a crude way to account for solid material within the cell.
     ! In SOLVE_FOR_VELOCITY we also divide by FluidVof to account for
@@ -135,7 +135,7 @@ CONTAINS
       write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
     end do
 #endif
-    write(*,'("rhs mtm(",i3,"):",3es15.5)') 1, Mom_Delta(:,1)
+    write(*,'("rhs mtm(",i3,"):",3es15.5)') 771, Mom_Delta(:,771)
     ! Calculate the RHS momentum change due to the solidification of fluid.
     if (HAVE_SOLIDIFYING_FLOW()) then
       ! MAC note: Here, there can be problems with the explicit term of the

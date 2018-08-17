@@ -1,3 +1,4 @@
+#define ASDF 0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
@@ -213,7 +214,10 @@ call hijack_truchas ()
     use truchas_timers
     use zone_module, only: Zone
     use kinds
-
+#if ASDF
+    use constants_module
+    use legacy_mesh_api,        only: ncells, cell
+#endif
     ! Local Variables
     Logical :: quit = .False., sig_rcvd
     integer :: errc
@@ -221,7 +225,11 @@ call hijack_truchas ()
     type(sim_event), pointer :: event
     type(time_step_sync) :: ts_sync
     real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:)
-
+    !-
+#if ASDF
+    integer :: i
+    real(r8) :: xc, yc, sigma, x, y, r2, theta, w
+#endif
     !---------------------------------------------------------------------------
     if (mem_on) call mem_diag_open
 
@@ -233,15 +241,37 @@ call hijack_truchas ()
     ! start the cycle timer
     call start_timer ("Main Cycle")
 
+#if ASDF
     ! Prepass to initialize a solenoidal velocity field for Advection
-    Zone%P = 0.0_r8
-    Zone%Vc_old(1) = 1.0_r8
-    Zone%Vc_old(2) = 1.0_r8
-    Zone%Vc_old(3) = 0.0_r8
-    Zone%Vc(1) = 1.0_r8
-    Zone%Vc(2) = 1.0_r8
-    Zone%Vc(3) = 0.0_r8
-    if(.not.restart .and. .not.flow_enabled()) call Fluid_Flow_Driver (t)
+    print *, "<<<< HIJACKING FLOW INITIAL CONDITIONS >>>> "
+    xc = 0.5_r8
+    yc = 0.5_r8
+    sigma = 0.1_r8
+    do i = 1, ncells
+      x = cell(i)%centroid(1) - xc
+      y = cell(i)%centroid(2) - yc
+      theta = atan2(y, x)
+      r2 = (sqrt(x**2+y**2) - 0.25_r8)**2
+      ! gaussian
+      w = exp(-r2/(2.0_r8*sigma**2))/sqrt(2.0_r8*pi*sigma)
+      Zone(i)%P = 0.0_r8
+      Zone(i)%Vc_old = [-w*sin(theta), w*cos(theta), 0.0_r8]
+      Zone(i)%Vc = [-w*sin(theta), w*cos(theta), 0.0_r8]
+    end do
+#endif
+    if(.not.restart .and. flow_enabled()) then
+      vel_fn => flow_vel_fn_view()
+
+      call vtrack_update(t, dt, vel_fn)
+      vof => vtrack_vof_view()
+      flux_vol => vtrack_flux_vol_view()
+
+      call flow_step(t,dt,vof,flux_vol,initial=.true.)
+      ! since this driver doesn't know any better, always accept
+      call flow_accept()
+    else if(.not.restart .and. .not.flow_enabled()) then
+      call Fluid_Flow_Driver (t)
+    end if
 
     call mem_diag_write ('Before main loop:')
 

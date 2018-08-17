@@ -19,6 +19,7 @@ module flow_bc_type
     class(bndry_func), allocatable :: p_dirichlet, dp_dirichlet, p_neumann, v_zero_normal
     class(bndry_vfunc), allocatable :: v_dirichlet
     logical :: pressure_d
+    logical :: fix_neumann
     type(parameter_list), pointer :: plist => null()
   contains
     procedure :: read_params
@@ -106,6 +107,8 @@ contains
     class(flow_bc), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
     type(flow_bc_factory) :: f
+    integer :: nc
+    integer, allocatable :: neumann_count(:)
 
     ! need to generalize this to allow user input:
     ! - no slip walls (=> velocity-dirichlet + pressure_neumann)
@@ -114,6 +117,8 @@ contains
     ! - velocity inlet (=> v_dirichlet + pressure_neumann)
 
     ASSERT(associated(this%plist))
+
+    this%fix_neumann = .false.
 
     call f%init(mesh, this%plist)
     call f%alloc_vector_bc( &
@@ -129,6 +134,13 @@ contains
     call f%alloc_scalar_bc(["slip"], this%v_zero_normal, default=0.0_r8)
 
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0
+
+    if (.not.this%pressure_d) then
+      ! this should be replaced with something smarter
+      if (is_IOP) then
+        INSIST(size(this%p_neumann%index) > 0)
+      end if
+    end if
 #ifndef NDEBUG
     print *, "size of p dirichlet: ", size(this%p_dirichlet%index)
     print *, "size of p neumann: ", size(this%p_neumann%index)

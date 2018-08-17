@@ -136,7 +136,9 @@ CONTAINS
 
     ! Transfer Cell Centered Velocity to Faces
     !  (use the Rhie-Chow algorithm for the pressure and buoyant terms)
+    write(*, '("Pre-VELOCITY_TO_FACES FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
     call VELOCITY_TO_FACES()
+    write(*, '("Post-VELOCITY_TO_FACES FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
 
     if (csf_normal) then
       do f=1,nfc
@@ -425,9 +427,9 @@ CONTAINS
     if (status /= 0) call TLS_panic ('VELOCITY_TO_FACES: Grad_Dot_N(ncells) allocation failed')
 
     ! Begin by extrapolating the time '*' cell-centered velocity to the faces
-
+    write(*, '("Pre-INTERPOLATE FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
     call INTERPOLATE_VELOCITY_TO_FACES
-
+    write(*, '("Post-INTERPOLATE FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
     ! Use the real Pressures at Dirichlet boundaries in this pressure gradient calculation
     BC_Prs => BC_Pressure
 
@@ -537,12 +539,17 @@ CONTAINS
 
     Velocity_Component_Ngbr => Fluxing_Velocity_Ngbr
     Fluxing_Velocity = 0
+    write(*, '("  Face_Interpolation_Factor[",i4,"]: ", 6es20.12)') 771, Face_Interpolation_Factor(:,771)
     do n = 1, ndim
        Velocity_Component(:) = Zone(:)%Vc(n)
        where(fluidRho(:) > 0)
           Velocity_Component(:) = Velocity_Component(:) + dt*Centered_GradP_Dynamic(n,:)
        endwhere
        call EE_GATHER(Velocity_Component_Ngbr,Velocity_Component)
+       write(*, '("    VC[",i4,"]: ", es20.12)') 771, Velocity_Component(771)
+!!$       write(*, '("    VC[",i4,"] y-/+: ", 2es20.12)') 771, Velocity_Component(21), Velocity_Component(23)
+!!$       write(*, '("    VC[",i4,"] y-/+: ", 2es20.12)') 771, Velocity_Component(2), Velocity_Component(42)
+       write(*, '("    VCN[",i4,"]: ", 6es20.12)') 771, Velocity_Component_Ngbr(:,771)
        do f = 1, nfc
           where(Boundary_Flag(f,:)<0)
              ! Interpolate at all interior faces
@@ -565,7 +572,7 @@ CONTAINS
        enddo
     enddo
     NULLIFY(Velocity_Component_Ngbr)
-
+    write(*, '("  Pre-SPECIAL CASES FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
     ! Correct Special Cases
     fluidRho_Ngbr => Fluxing_Velocity_Ngbr
     call EE_Gather(fluidRho_Ngbr, fluidRho)
@@ -770,6 +777,9 @@ CONTAINS
       write(*,'("Rhs[",i3, "]: ", es15.5)') f, RHS(f)
     end do
 #endif
+
+    write(*,'("Fluxing_Velocity[",i4,"]: ", 6es16.8)') 771, Fluxing_Velocity(:,771)
+    write(*,'("MAC_RHS[",i4,"]: ", es16.8)') 771, RHS(771)
 !!$    Don't add this in because we are solving for delta-P
 !!$    RHS = RHS - Vol_over_RhoCsqDt*Zone%P
 
@@ -896,6 +906,7 @@ CONTAINS
     end do
 #endif
 
+    write(*,'("PRESSURE RHS[",i4, "]: ", es15.5)') 771, RHS(771)
     ! Calculate scaling factor for L2 norm of the residual
     original_criterion = Ubik_eps(Ubik_user(UBIK_PRESSURE)%Control)
     convergence_criterion = original_criterion/(dt*dt)

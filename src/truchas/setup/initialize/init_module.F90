@@ -85,8 +85,7 @@ CONTAINS
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled
-    use vtrack_driver, only: vtrack_driver_init, vtrack_enabled, &
-        vtrack_vof_view, vtrack_flux_vol_view
+    use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport
     use ded_head_driver,        only: ded_head_init
 
@@ -100,8 +99,6 @@ CONTAINS
     real(r8), dimension(nbody,ncells) :: Hits_Vol
     real(r8), dimension(nbody,ncells) :: volume_fractions
     real(r8), allocatable :: phi(:,:)
-    real(r8), pointer :: vtrack_vof(:,:) => null()
-    real(r8), pointer :: vtrack_flux_vol(:,:) => null()
     character(200) :: errmsg
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -139,8 +136,6 @@ CONTAINS
 
     if (vtrack_enabled()) then
       call vtrack_driver_init(t, unstr_mesh_ptr('MAIN'), volume_fractions)
-      vtrack_vof => vtrack_vof_view()
-      vtrack_flux_vol => vtrack_flux_vol_view()
     else
       volume_fractions = vof_initialize()
     end if
@@ -183,9 +178,7 @@ CONTAINS
     !! always because fluid_init uses its results regardless of whether flow is on.
     print *, 'flow_enabled check: ', flow_enabled()
     if (flow_enabled()) then
-      INSIST(associated(vtrack_vof))
-      INSIST(associated(vtrack_flux_vol))
-      call flow_driver_init(unstr_mesh_ptr('MAIN'), vtrack_vof, vtrack_flux_vol)
+      call flow_driver_init(unstr_mesh_ptr('MAIN'))
     else
       call flow_property_init
       call FLUID_INIT (t)

@@ -105,18 +105,25 @@ CONTAINS
     if (.not. abort) then
 
       fluid_to_move = .true.
-      write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 284, Zone(284)%Vc(1:3)
+      write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 771, Zone(771)%Vc(1:3)
+!!$      write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 21, Zone(21)%Vc(1:3)
+!!$      write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 2, Zone(2)%Vc(1:3)
+!!$      write(*, '("Pre-Predictor P[",i4,"]: ", 3es20.12)') 771, Zone(771)%P
+      write(*, '("Pre-Predictor FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
 
       ! Predictor Step
       call PREDICTOR()
-      write(*, '("Post-Predictor u[",i4,"]: ", 3es20.12)') 284, Zone(284)%Vc(1:3)
-      write(*, '("Post-Predictor P[",i4,"]: ", es20.12)') 284, Zone(284)%P
+      write(*, '("Post-Predictor u[",i4,"]: ", 3es20.12)') 771, Zone(771)%Vc(1:3)
+!!$      write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 21, Zone(21)%Vc(1:3)
+!!$      write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') 2, Zone(2)%Vc(1:3)
+      write(*, '("Post-Predictor P[",i4,"]: ", es20.12)') 771, Zone(771)%P
+      write(*, '("Post-Predictor FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
 
       ! Projection Step
       call PROJECTION()
-      write(*, '("Post-Projection u[",i4,"]: ", 3es20.12)') 284, Zone(284)%Vc(1:3)
-      write(*, '("Post-Projection P[",i4,"]: ", es20.12)') 284, Zone(284)%P
-
+      write(*, '("Post-Projection u[",i4,"]: ", 3es20.12)') 771, Zone(771)%Vc(1:3)
+      write(*, '("Post-Projection P[",i4,"]: ", es20.12)') 771, Zone(771)%P
+      write(*, '("Post-Predictor FV[",i4,"]: ", 6es20.12)') 771, Fluxing_Velocity(:,771)
 
       if(cycle_number == 0) then
         ! Special operations required during the prepass

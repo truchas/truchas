@@ -1,4 +1,6 @@
 #include "f90_assert.fpp"
+#define ASDF 0
+#define Q 771
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -298,9 +300,9 @@ contains
     type(flow_props), intent(inout) :: props
     logical, optional, intent(in) :: initial
 
-    if (present(initial)) then
-      if (initial) return
-    end if
+!!$    if (present(initial)) then
+!!$      if (initial) return
+!!$    end if
 
     this%rhs = 0.0_r8
 
@@ -481,14 +483,15 @@ contains
       call gradient_cf(g, vel_cc, this%bc%v_zero_normal, this%bc%v_dirichlet)
       call gather_boundary(m%face_ip, g)
 
-      associate( faces => m%cface(m%xcface(1):m%xcface(2)-1))
+#if ASDF
+      associate( faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
         write(*,'("grad(u) at [",i4,"] y- ",3es20.12)') faces(1), g(:,1,faces(1))
         write(*,'("grad(u) at [",i4,"] y+ ",3es20.12)') faces(3), g(:,1,faces(3))
         write(*,'("grad(u) at [",i4,"] x- ",3es20.12)') faces(5), g(:,1,faces(5))
         write(*,'("grad(u) at [",i4,"] x+ ",3es20.12)') faces(6), g(:,1,faces(6))
         !write(*,'(a,3es20.12)') 'dx at y+: ', this%mesh%face_centroid(:,faces(3)) - this%mesh%cell_centroid(:,33)
       end associate
-
+#endif
       do j = 1, m%nface
         associate (n1 => this%mesh%fcell(1,j), n2 => this%mesh%fcell(2,j), rhs => this%rhs)
           if (n1 > 0) then ! inward oriented normal
@@ -525,13 +528,22 @@ contains
     !
     integer :: i, j, f0, f1, nhbr, cn, k
     real(r8) :: v
+#if ASDF
+    real(r8) momentum_delta(3)
+    momentum_delta = this%rhs(:,Q)
+#endif
 
     ! we're going to assume here that the boundary conditions on flux_volumes
     ! and flux_vel have already been set..
 #ifndef NDEBUG
     print *, "ACCUMULATE_RHS_MOMENTUM"
 #endif
+
     associate (m => this%mesh%mesh, rhs => this%rhs)
+#if ASDF
+      write(*, "('vel_fn[',i3,']: ',6es15.5): ") Q, vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
+      write(*, "('flux_volumes[',i3,']: ',6es15.5): ") Q, flux_volumes(1,m%xcface(Q):m%xcface(Q+1)-1)
+#endif
       do i = 1, m%ncell_onP
         f0 = m%xcface(i)
         f1 = m%xcface(i+1)-1
@@ -547,35 +559,38 @@ contains
 
           ! donor cell upwinding
           if (any(flux_volumes(:,j) > 0.0_r8)) then
-            rhs(:,i) = rhs(:,i) - abs(vel_cc(:,i))* &
-                dot_product(flux_volumes(:,j),props%density(:))/v
-#ifndef NDEBUG
-            write(*,"('u_cc[',i3,']: ',es15.5, ' deltaX  : ', 2es15.5)") i, vel_cc(1,i), &
-                -abs(vel_cc(1,i))*dot_product(flux_volumes(:,j),props%density(:))/v
-            write(*,"('v_cc[',i3,']: ',es15.5, ' deltaY  : ', 2es15.5)") i, vel_cc(2,i), &
-                -abs(vel_cc(2,i))*dot_product(flux_volumes(:,j),props%density(:))/v
+            rhs(:,i) = rhs(:,i) - vel_cc(:,i)*dot_product(flux_volumes(:,j),props%density(:))/v
+#if ASDF
+            if (i == Q) then
+              write(*, "('face offset: ',i4)") j-f0+1
+!!$              write(*,"('u_cc[',i4,']: ',es15.5, ' deltaX  : ', 2es15.5)") i, vel_cc(1,i), &
+!!$                  -abs(vel_cc(1,i))*dot_product(flux_volumes(:,j),props%density(:))/v
+
+!!$              write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', 2es15.5)") i, vel_cc(2,i), &
+!!$                  -abs(vel_cc(2,i))*dot_product(flux_volumes(:,j),props%density(:))/v
+              write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', 2es15.5)") i, vel_cc(2,i), &
+                  -vel_cc(2,i)*dot_product(flux_volumes(:,j),props%density(:))/v
+            end if
 #endif
           else
             ! neighbor index
             cn = m%cnhbr(nhbr+(j-f0))
             if (cn > 0) then
-              rhs(:,i) = rhs(:,i) - abs(vel_cc(:,cn))* &
-                  dot_product(flux_volumes(:,j),props%density(:))/v
-#ifndef NDEBUG
-              write(*,"('u_cc[',i3,']: ',es15.5, ' deltaX  : ', es15.5)") cn, vel_cc(1,cn), &
-                  -abs(vel_cc(1,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
-              write(*,"('v_cc[',i3,']: ',es15.5, ' deltaY  : ', es15.5)") cn, vel_cc(2,cn), &
-                  -abs(vel_cc(2,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
+              rhs(:,i) = rhs(:,i)-vel_cc(:,cn)*dot_product(flux_volumes(:,j),props%density(:))/v
+#if ASDF
+              if (i == Q) then
+!!$                write(*,"('u_cc[',i4,']: ',es15.5, ' deltaX  : ', es15.5)") cn, vel_cc(1,cn), &
+!!$                    -abs(vel_cc(1,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
+                write(*, "('face offset: ',i4)") j-f0+1
+!!$                write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', es15.5)") cn, vel_cc(2,cn), &
+!!$                    -abs(vel_cc(2,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
+                write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', es15.5)") cn, vel_cc(2,cn), &
+                    -vel_cc(2,cn)*dot_product(flux_volumes(:,j),props%density(:))/v
+              end if
 #endif
             else
               ! this must be an inflow boundary so use face velocity.  This seems overly
               ! restrictive and does not account for 'angled' inflow
-#ifndef NDEBUG
-              write(*,"('V_fn[',i3,']: ',es15.5, ' deltaX/Y: ', 2es15.5)") k, vel_fn(k), &
-                  vel_fn(k)*abs(m%normal(1,k)/m%area(k))* dot_product(flux_volumes(:,j),props%density(:))/v, &
-                  vel_fn(k)*abs(m%normal(2,k)/m%area(k))* dot_product(flux_volumes(:,j),props%density(:))/v
-#endif
-
               rhs(:,i) = rhs(:,i) + vel_fn(k)*abs(m%normal(:,k)/m%area(k))*&
                   dot_product(flux_volumes(:,j),props%density(:))/v
             end if
@@ -585,6 +600,10 @@ contains
         write(*,'("rhs(",i3,"):",3es15.5)') i, this%rhs(:,i)
 #endif
       end do
+#if ASDF
+      momentum_delta = this%rhs(:,Q)-momentum_delta
+      write(*,'("Momentum_Delta(",i4,"):",3es15.5)') Q, Momentum_Delta(:)
+#endif
     end associate
   end subroutine accumulate_rhs_momentum
 
@@ -619,17 +638,21 @@ contains
     !
     integer :: i, j, ierr
 
-    if (present(initial)) then
-      if (initial) return
-    end if
+!!$    if (present(initial)) then
+!!$      if (initial) return
+!!$    end if
 
     ! Pressure and viscous forces are unaware of solid/fluid boundaries.
     ! These forces are computed first and scaled by vof as a crude approximation.
     ! Once a better solid/fluid model is used, change this numerical hackjob.
     call this%accumulate_rhs_pressure(dt, props, grad_p_rho_cc)
-    write(*,"('post accumulate_rhs_pressure rhs[',i4,']:',3es20.12)") 284, this%rhs(:,284)
+#if ASDF
+    write(*,"('post accumulate_rhs_pressure rhs[',i4,']:',3es20.12)") Q, this%rhs(:,Q)
+#endif
     call this%accumulate_rhs_viscous_stress(dt, props, vel_cc)
-    write(*,"('post accumulate_rhs_viscous  rhs[',i4,']:',3es20.12)") 284, this%rhs(:,284)
+#if ASDF
+    write(*,"('post accumulate_rhs_viscous  rhs[',i4,']:',3es20.12)") Q, this%rhs(:,Q)
+#endif
     associate (m => this%mesh%mesh, rhs => this%rhs)
       do j = 1, m%ncell_onP
         rhs(:,j) = rhs(:,j)*props%vof(j)
@@ -637,7 +660,9 @@ contains
     end associate
 
     call this%accumulate_rhs_momentum(props, vel_cc, vel_fn, flux_volumes)
-    write(*,"('post accumulate_rhs_momentum rhs[',i4,']:',3es20.12)") 284, this%rhs(:,284)
+#if ASDF
+    write(*,"('post accumulate_rhs_momentum rhs[',i4,']:',3es20.12)") Q, this%rhs(:,Q)
+#endif
     call this%accumulate_rhs_solidified_rho(props, vel_cc)
 
     ! handle surface tension
@@ -679,8 +704,9 @@ contains
       end do
 
     end associate
-
-    !write(*,"('after prediction u[',i4,']:',3es20.12)") 1089, vel_cc(:, 1089)
+#if ASDF
+    write(*,"('after prediction u[',i4,']:',3es20.12)") Q, vel_cc(:, Q)
+#endif
   end subroutine solve
 
   subroutine accept(this)

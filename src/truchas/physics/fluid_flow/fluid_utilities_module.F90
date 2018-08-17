@@ -666,10 +666,8 @@ CONTAINS
     end if
 
     write(*,*) "<< CC_GRADP_DYNAMIC"
-    write(*, '("P[",i3,"]: ", es20.12)') 32, Zone(32)%P
-    write(*, '("P[",i3,"]: ", es20.12)') 33, Zone(33)%P
-    write(*, '("P[",i3,"]: ", es20.12)') 66, Zone(66)%P
-    write(*, '("GradP_rho_cc[",i3,"]: ", 3es20.12)') 33, Centered_GradP_Dynamic(:,33)
+    write(*, '("P[",i3,"]: ", es20.12)') 771, Zone(771)%P
+    write(*, '("GradP_rho_cc[",i3,"]: ", 3es20.12)') 771, Centered_GradP_Dynamic(:,771)
 
     ! Reset the pointer for pressures to BC_Zero for the pressure change solution
     BC_Prs => BC_Zero
