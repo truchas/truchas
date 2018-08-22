@@ -208,7 +208,7 @@ contains
       allocate(this%fvof_o(1, mesh%ncell))
       allocate(this%flux_vol(1,size(mesh%cface)))
       this%fvof_o = 1.0_r8
-      vf(1,:) = this%mesh%volume
+      vf(1,:) = this%mesh%volume(1:mesh%ncell_onP)
       return
     end if
 
@@ -258,17 +258,7 @@ contains
     call compute_initial_volumes(mesh, this%vof)
     call stop_timer('Vof Initialization')
 
-    vf = this%vof
-!!$    ! some debugging
-!!$    open(unit=50, file='cent.dat', status='replace', access='stream')
-!!$    do i = 1, nmat
-!!$      do j = 1, this%mesh%ncell_onP
-!!$        associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-!!$          write(50) sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8)
-!!$        end associate
-!!$      end do
-!!$    end do
-!!$    close(50)
+    vf = this%vof(:,1:mesh%ncell_onP)
   end subroutine vtrack_driver_init
 
 
@@ -305,40 +295,6 @@ contains
 
     if (this%fluids == 0) return
 
-!!$    args(0) = t
-!!$    ! SET FLUXING VELOCITY FOR TEMPORARY TESTING PURPOSES
-!!$    associate (m => this%mesh)
-!!$      do i = 1, m%ncell
-!!$        f0 = m%xcface(i)
-!!$        f1 = m%xcface(i+1)-1
-!!$        do j = f0, f1
-!!$          k = m%cface(j)
-!!$          associate(fn => m%fnode(m%xfnode(k):m%xfnode(k+1)-1))
-!!$            args(1:3) = sum(m%x(:,fn),dim=2)/real(size(fn),r8)
-!!$            vel(1) = 2.0_r8*sin(pi*args(1))**2*sin(2.0_r8*pi*args(2))*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
-!!$            vel(2) = -sin(2.0_r8*pi*args(1))*sin(pi*args(2))**2*sin(2.0_r8*pi*args(3))*cos(pi*t/3.0_r8)
-!!$            vel(3) = -sin(2.0_r8*pi*args(1))*sin(2.0_r8*pi*args(2))*sin(pi*args(3))**2*cos(pi*t/3.0_r8)
-!!$
-!!$            !vel = adv_vel%eval(args)
-!!$          end associate
-!!$          if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
-!!$            this%flux_vel(j) = -dot_product(m%normal(:,k), vel)/m%area(k)
-!!$          else
-!!$            this%flux_vel(j) = dot_product(m%normal(:,k), vel)/m%area(k)
-!!$          end if
-!!$        end do
-!!$      end do
-!!$    end associate
-
-!!$    ! check flux_veloctiy
-!!$    open(unit=50, file='flux_vel')
-!!$    associate (m => this%mesh)
-!!$      do i = 1, m%ncell
-!!$        write(50, '(6es15.5)') this%flux_vel(m%xcface(i):m%xcface(i+1)-1)
-!!$      end do
-!!$    end associate
-!!$    close(50)
-
     call start_timer('Volumetracking')
     n = this%mesh%ncell_onP
     this%svof = 0.0_r8
@@ -358,7 +314,7 @@ contains
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
         this%fluids, this%void, dt, this%svof)
 
-    ! HOW COME SCATTER_VOF DOESN'T WORK?  WHY DO I NEED TO USE MATL_SET_VOF?
+    ! SCATTER_VOF DOESN'T WORK
 !!$    do i = 1, this%fluids+this%void
 !!$      call scatter_vof(this%liq_matid(i), this%fvof_o(i,:n))
 !!$    end do

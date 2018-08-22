@@ -162,7 +162,7 @@ contains
     call start_timer('normals')
     do i = 1 , nmat
       call gradient_cc(this%normal(1,i,:), this%normal(2,i,:), this%normal(3,i,:), &
-          vof(i,:), this%w_node(1,:), this%w_node(2,:), this%w_face(1,:))
+          vof(i,:), this%w_node(1,:), this%w_node(2,:))
     end do
 
     do i = 1, this%mesh%ncell_onP

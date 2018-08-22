@@ -169,14 +169,6 @@ contains
 
     if (init) then
       call this%dp_dirichlet%compute(t)
-#ifndef NDEBUG
-      print *, "<<< V_DIRICHLET VALUES"
-      associate(faces => this%v_dirichlet%index, v => this%v_dirichlet%value)
-        do i = 1, size(faces)
-          write(*, '("face_vel [", i4, "]: ", 3es15.5)') faces(i), v(:,i)
-        end do
-      end associate
-#endif
     else
       call this%dp_dirichlet%compute(t+dt)
       this%dp_dirichlet%value(:) = this%dp_dirichlet%value(:) - this%p_dirichlet%value(:)

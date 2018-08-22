@@ -144,7 +144,7 @@ contains
     nop = this%mesh%mesh%ncell_onP
     idx = this%size+1
 
-    this%x_tilde(:,idx) = x_soln - this%x_guess
+    this%x_tilde(1:nop,idx) = x_soln(1:nop) - this%x_guess(1:nop)
     call gather_boundary(this%mesh%mesh%cell_ip, this%x_tilde(:,idx))
 
     do i = 1, nop

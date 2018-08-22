@@ -212,13 +212,6 @@ contains
 
     call this%bc%compute(t, dt, initial=initial)
 
-#ifndef NDEBUG
-    write(*, *) " >> Pre Predictor"
-    do j = 1, this%mesh%mesh%ncell_onP
-      write(*,'("v[",i3,"]: ",2es15.5, " | P:",es15.5)') &
-          j,this%vel_cc(1:2,j), this%P_cc(j)
-    end do
-#endif
 #if ASDF
     write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
     write(*, '("Pre-Predictor P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
@@ -228,14 +221,6 @@ contains
 #if ASDF
     write(*, '("Post-Predictor u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
     write(*, '("Post-Predictor P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
-#endif
-
-#ifndef NDEBUG
-    write(*, *) " >> Post Predictor"
-    do j = 1, this%mesh%mesh%ncell_onP
-      write(*,'("v[",i3,"]: ",2es15.5, " | P:",es15.5)') &
-          j,this%vel_cc(1:2,j), this%P_cc(j)
-    end do
 #endif
 
     !print*, "DISABLING PROJECTION"
@@ -250,20 +235,14 @@ contains
     end associate
 #endif
 
-    p_min = global_minval(this%p_cc)
-    p_max = global_maxval(this%p_cc)
+    !p_min = global_minval(this%p_cc)
+    !p_max = global_maxval(this%p_cc)
 
     if (present(initial)) then
       if (initial) then
         this%vel_cc = this%vel_cc_n
       end if
     end if
-
-
-#ifndef NDEBUG
-    write(*,'(a,es15.5)') "<< time : ", t
-    write(*,'(a,2es15.5)') "   [P_min, P_max]: ", p_min, p_max
-#endif
   end subroutine step
 
   subroutine accept(this)

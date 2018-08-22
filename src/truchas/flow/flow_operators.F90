@@ -1,3 +1,4 @@
+#include "f90_assert.fpp"
 module flow_operators
 
   use kinds, only: r8
@@ -70,61 +71,63 @@ contains
   end function flow_gradient_coefficients
 
   ! gradient of cell-centered scalar `x` evaluated at cell centers
-  subroutine gradient_cc(gx, gy, gz, x, w_node0, w_node1, w_face)
-    real(r8), intent(out) :: gx(:), gy(:), gz(:), w_node0(:), w_node1(:), w_face(:)
+  subroutine gradient_cc(gx, gy, gz, x, w_node0, w_node1)
+    real(r8), intent(out) :: gx(:), gy(:), gz(:), w_node0(:), w_node1(:)
     real(r8), intent(in) :: x(:)
 
-    type(unstr_mesh), pointer :: m
     integer :: i, j, k
 
-    m => this%mesh%mesh
-    ! node average data stored in w_node0 workspace array
-    call node_avg(m, x, w_node0, w_node1)
-    call gather_boundary(m%node_ip, w_node0)
+    ! initialization routines are currently handled by flow.  This routine is called by
+    ! volume tracker so there is a chance of calling things out of sync.
+    INSIST(allocated(this))
 
-    do i = 1, m%nface
-      associate (fn => m%fnode(m%xfnode(i):m%xfnode(i+1)-1))
-        select case (size(fn))
-        case (3,4)
-          ! linear interpolation of vertex values to face centroid is arithmetic mean
-          ! for triangle and quadrilateral faces
-          w_face(i) = sum(w_node0(fn))/real(size(fn),r8)
-        case default
-          call TLS_fatal("wrong number of faces in gradient_cc")
-        end select
-      end associate
-    end do
+    associate (m => this%mesh%mesh, w_face => this%work)
+      ! node average data stored in w_node0 workspace array
+      call node_avg(x, w_node0, w_node1)
+      call gather_boundary(m%node_ip, w_node0)
 
-    do i = 1, m%ncell_onP
-      gx(i) = 0.0_r8
-      gy(i) = 0.0_r8
-      gz(i) = 0.0_r8
-      associate (fi => m%cface(m%xcface(i):m%xcface(i+1)-1))
-        do j = 1, size(fi)
-          k = fi(j)
-          if (btest(m%cfpar(i),pos=j)) then ! true if normal points inward
-            ! note the thae normal associate with the mesh object has already been scaled
-            ! by the face area, so we do not do it again
-            gx(i) = gx(i) - m%normal(1,k)*w_face(k)
-            gy(i) = gy(i) - m%normal(2,k)*w_face(k)
-            gz(i) = gz(i) - m%normal(3,k)*w_face(k)
-          else
-            gx(i) = gx(i) + m%normal(1,k)*w_face(k)
-            gy(i) = gy(i) + m%normal(2,k)*w_face(k)
-            gz(i) = gz(i) + m%normal(3,k)*w_face(k)
-          end if
-        end do
-      end associate
-      gx(i) = gx(i)/m%volume(i)
-      gy(i) = gy(i)/m%volume(i)
-      gz(i) = gz(i)/m%volume(i)
-    end do
+      do i = 1, m%nface
+        associate (fn => m%fnode(m%xfnode(i):m%xfnode(i+1)-1))
+          select case (size(fn))
+          case (3,4)
+            ! linear interpolation of vertex values to face centroid is arithmetic mean
+            ! for triangle and quadrilateral faces
+            w_face(i) = sum(w_node0(fn))/real(size(fn),r8)
+          case default
+            call TLS_fatal("wrong number of faces in gradient_cc")
+          end select
+        end associate
+      end do
 
+      do i = 1, m%ncell_onP
+        gx(i) = 0.0_r8
+        gy(i) = 0.0_r8
+        gz(i) = 0.0_r8
+        associate (fi => m%cface(m%xcface(i):m%xcface(i+1)-1))
+          do j = 1, size(fi)
+            k = fi(j)
+            if (btest(m%cfpar(i),pos=j)) then ! true if normal points inward
+              ! note the thae normal associate with the mesh object has already been scaled
+              ! by the face area, so we do not do it again
+              gx(i) = gx(i) - m%normal(1,k)*w_face(k)
+              gy(i) = gy(i) - m%normal(2,k)*w_face(k)
+              gz(i) = gz(i) - m%normal(3,k)*w_face(k)
+            else
+              gx(i) = gx(i) + m%normal(1,k)*w_face(k)
+              gy(i) = gy(i) + m%normal(2,k)*w_face(k)
+              gz(i) = gz(i) + m%normal(3,k)*w_face(k)
+            end if
+          end do
+        end associate
+        gx(i) = gx(i)/m%volume(i)
+        gy(i) = gy(i)/m%volume(i)
+        gz(i) = gz(i)/m%volume(i)
+      end do
+    end associate
   end subroutine gradient_cc
 
 
-  subroutine node_avg(m, x_cell, x_node, w_node)
-    type(unstr_mesh), intent(in) :: m
+  subroutine node_avg(x_cell, x_node, w_node)
     real(r8), intent(in) :: x_cell(:)
     real(r8), intent(out) :: x_node(:), w_node(:)
 
@@ -133,18 +136,20 @@ contains
     x_node = 0.0_r8
     w_node = 0.0_r8
 
-    do i = 1, m%ncell
-      associate (cn => m%cnode(m%xcnode(i):m%xcnode(i+1)-1))
-        do j = 1, size(cn)
-          x_node(cn(j)) = x_node(cn(j)) + m%volume(i)*x_cell(i)
-          w_node(cn(j)) = w_node(cn(j)) + m%volume(i)
-        end do
-      end associate
-    end do
+    associate (m => this%mesh%mesh)
+      do i = 1, m%ncell
+        associate (cn => m%cnode(m%xcnode(i):m%xcnode(i+1)-1))
+          do j = 1, size(cn)
+            x_node(cn(j)) = x_node(cn(j)) + m%volume(i)*x_cell(i)
+            w_node(cn(j)) = w_node(cn(j)) + m%volume(i)
+          end do
+        end associate
+      end do
 
-    do i = 1, m%nnode_onP
-      x_node(i) = x_node(i)/w_node(i)
-    end do
+      do i = 1, m%nnode_onP
+        x_node(i) = x_node(i)/w_node(i)
+      end do
+    end associate
   end subroutine node_avg
 
 
@@ -303,7 +308,9 @@ contains
 
     this%work = 1.0_r8
     if (present(inactive_faces)) then
-      this%work(inactive_faces) = 0.0_r8
+      do i = 1, this%mesh%mesh%nface_onP
+        if (inactive_faces(i) > 0) this%work(inactive_faces(i)) = 0.0_r8
+      end do
     end if
     if (present(extra_ignore_faces)) then
       this%work(extra_ignore_faces) = 0.0_r8

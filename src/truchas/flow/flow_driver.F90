@@ -310,7 +310,7 @@ contains
     call this%mesh%init(mesh)
 
     allocate(this%temperature_cc(mesh%ncell))
-    print *, 'in flow driver init'
+
     ! lots of duplication here from vtrack_driver.  This should all be subsumed and handled
     ! properly by a sufficiently intelligent physics driver at some point
     if (ppt_has_property("viscosity")) then
@@ -362,9 +362,6 @@ contains
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
     call this%flow%init(this%mesh, vel_cc=[1.0_r8, 1.0_r8, 0.0_r8])
 
-!!$    call flow_step(0.0_r8, 1.0_r8, vof, flux_vol, initial=.true.)
-!!$    call flow_accept()
-    print *, 'out of flow driver init'
   end subroutine flow_driver_init
 
   subroutine flow_step(t, dt, vof, flux_vol, initial)

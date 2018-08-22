@@ -302,9 +302,6 @@ contains
     call this%setup_gravity(props, body_force)
     call this%grad_p_rho(props, P_cc)
     call this%setup_face_velocity(dt, props, grad_p_rho_cc_n, vel_cc, vel_fn)
-#ifndef NDEBUG
-    print *, "SETUP_FACE_VELOCITY FINISHED"
-#endif
     ! we pass in dt == 0 to setup initial pass, this causes division by zero
     ! in rhs, so pass in 1.
 !!$    if (init) then
@@ -312,9 +309,6 @@ contains
 !!$    else
       call this%setup_solver(dt, props, vel_fn)
     !end if
-#ifndef NDEBUG
-    print *, "PROJECTION SETUP FINISHED"
-#endif
   end subroutine setup
 
   subroutine accept(this, grad_p_rho_cc_n)
@@ -372,9 +366,6 @@ contains
       end associate
 #endif
 
-#ifndef NDEBUG
-      write(*, *) ">> Projection rhs before Pressure BC's"
-#endif
       do j = 1, m%ncell_onP
         rhs(j) = 0.0_r8
         associate( fn => m%cface(m%xcface(j):m%xcface(j+1)-1))
@@ -387,17 +378,10 @@ contains
             else ! outward face
               this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))!/m%volume(j)
             end if
-#ifndef NDEBUG
-            write(*,'("cell(",i4,"), face(",i4,") vel: ",es15.5, " normal: ", 3es15.5)') &
-                j,fn(i), vel(fn(i)), m%normal(:,fn(i))/m%area(fn(i))
-#endif
           end do
         end associate
         !if (j == 771) write(*, '("rhs [",i4,"]: ",es20.12)') 771, this%rhs(771)
         this%rhs(j) = this%rhs(j) / (dt*m%volume(j))
-#ifndef NDEBUG
-        write(*,'("rhs(",i4,"):",es15.5)') j, this%rhs(j)
-#endif
       end do
 
       ! handle dirichlet bcs
@@ -411,9 +395,6 @@ contains
           if (rho_f(fi) /=  0.0_r8) then
             coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
             call A%add_to(j, j, coeff)
-#ifndef NDEBUG
-            write(*,'("dp_dirichlet[",i3,"]: ", es15.5)') j, values(i)
-#endif
             this%rhs(j) = this%rhs(j) + coeff*values(i)
           end if
         end do
@@ -487,17 +468,11 @@ contains
     vel_fn = 0.0_r8
     associate (m => this%mesh%mesh, v => this%vel_cc_star, gpn => grad_p_rho_cc_n, &
         w => this%weights_cf)
-      do i=1, m%ncell
+      do i=1, m%ncell_onP
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
+      call gather_boundary(m%cell_ip, v)
       call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%inactive_f, 0.0_r8)
-#ifndef NDEBUG
-      write(*, *) " >> <u*+dt*Grad_P>_c->f"
-      do j = 1, m%nface_onP
-        if (abs(m%normal(1,j)) > 1e-10_r8) &
-          write(*,'(a,i3,2(a,es15.5))') "vel_fnx(",j,"):",vel_fn(j), " normal: ", m%normal(1,j)/m%area(j)
-      end do
-#endif
     end associate
     ! subtract dynamic pressure grad
     associate (m => this%mesh%mesh, gp_fc => this%grad_p_rho_fc)
@@ -513,17 +488,6 @@ contains
         end do
       end associate
       call gather_boundary(m%face_ip, vel_fn)
-#ifndef NDEBUG
-      write(*, *) " >> <u*+dt*<Grad_P>_f->c>_c->f-dt*Grad_P"
-      do j = 1, m%nface_onP
-        if (abs(m%normal(1,j)) > 1e-10_r8) &
-          write(*,'(a,i3,2(a,es15.5))') "vel_fnx(",j,"):",vel_fn(j), " normal: ", m%normal(1,j)/m%area(j)
-      end do
-      do j = 1, m%nface_onP
-        if (abs(m%normal(2,j)) > 1e-10_r8) &
-          write(*,'(a,i3,2(a,es15.5))') "vel_fny(",j,"):",vel_fn(j), " normal: ", m%normal(2,j)/m%area(j)
-      end do
-#endif
 #if ASDF
       write(*,'("Vel_Fn[",i4,"]: ",6es16.8)') Q, vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
 #endif
@@ -548,26 +512,12 @@ contains
     this%delta_p_cc = 0.0_r8
     call this%fg%guess(this%rhs, this%delta_p_cc)
 
-#ifndef NDEBUG
-    write(*,*) "<<< RHS Passed to solve: norm = ", norm2(this%rhs(1:this%mesh%mesh%ncell_onP))
-    write(*,*)
-    do i = 1, this%mesh%mesh%ncell_onP
-      write(*,'("RHS[", i3, "]: ",es15.5)') i, this%rhs(i)
-    end do
-#endif
-
 #if ASDF
     write(*,'("PRESSURE RHS[", i3, "]: ",es15.5)') Q, this%rhs(Q)
 #endif
     call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
-#ifndef NDEBUG
-    write(*,*) "<<< DP"
-    do i = 1, this%mesh%mesh%ncell_onP
-      write(*,'("DP[",i3,"]: ",es15.5)') i, this%delta_p_cc(i)
-    end do
-#endif
 #if ASDF
     write(*,'("DP[",i3,"]: ",es15.5)') Q, this%delta_p_cc(Q)
 #endif

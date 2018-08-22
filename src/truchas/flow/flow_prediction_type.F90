@@ -59,6 +59,7 @@ module flow_prediction_type
   use turbulence_models
   use hypre_hybrid_type
   use pcsr_matrix_type
+  !use pgslib_module ! barriers for debugging
   implicit none
   private
 
@@ -387,7 +388,9 @@ contains
         do i = 1, size(faces)
           fi = faces(i)
           j = this%mesh%fcell(2,fi) ! cell index
+          if (j > m%ncell_onP) cycle
           ASSERT(this%mesh%fcell(1,fi) == 0)
+          ASSERT(j > 0 .and. j <= m%ncell_onP)
 
           coeff = dtv*dot_product(ds(:,fi), m%normal(:,fi))*mu_f(fi)/m%volume(j)
           do k = 1, size(A)
@@ -433,23 +436,9 @@ contains
     type(flow_props), intent(in) :: props
     integer :: j
 
-#ifndef NDEBUG
-    print *, "ACCUMULATE RHS PRESSURE"
-    associate (m => this%mesh%mesh)
-      do j = 1, m%ncell_onP
-        write(*,'("GradPx[", i3, "]: ", es15.5)') j, grad_p_rho_cc(1,j)
-      end do
-      do j = 1, m%ncell_onP
-        write(*,'("GradPy[", i3, "]: ", es15.5)') j, grad_p_rho_cc(2,j)
-      end do
-    end associate
-#endif
     associate (m => this%mesh%mesh)
       do j = 1, m%ncell_onP
         this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc_n(j)
-#ifndef NDEBUG
-        write(*,'("rhs(",i3,"):",3es15.5)') j, this%rhs(:,j)
-#endif
       end do
     end associate
 
@@ -466,9 +455,6 @@ contains
     integer :: i, j
     real(r8) :: dtv
 
-#ifndef NDEBUG
-    print *, "ACCUMULATE RHS VISCOUS STRESS"
-#endif
     if (this%inviscid .or. this%viscous_implicitness == 1.0_r8) return
 
     dtv = dt*(1.0_r8 - this%viscous_implicitness)
@@ -508,11 +494,6 @@ contains
           end if
         end associate
       end do
-#ifndef NDEBUG
-      do j = 1, m%ncell
-        write(*,'("rhs(",i3,"):",3es15.5)') j, this%rhs(:,j)
-      end do
-#endif
     end associate
   end subroutine accumulate_rhs_viscous_stress
 
@@ -535,10 +516,6 @@ contains
 
     ! we're going to assume here that the boundary conditions on flux_volumes
     ! and flux_vel have already been set..
-#ifndef NDEBUG
-    print *, "ACCUMULATE_RHS_MOMENTUM"
-#endif
-
     associate (m => this%mesh%mesh, rhs => this%rhs)
 #if ASDF
       write(*, "('vel_fn[',i3,']: ',6es15.5): ") Q, vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
@@ -549,9 +526,6 @@ contains
         f1 = m%xcface(i+1)-1
         nhbr = m%xcnhbr(i)
 
-#ifndef NDEBUG
-        write(*, "('flux_volumes[',i3,']: ',6es15.5): ") i, flux_volumes(1,f0:f1)
-#endif
         do j = f0, f1
 
           k = m%cface(j)
@@ -596,9 +570,6 @@ contains
             end if
           end if
         end do
-#ifndef NDEBUG
-        write(*,'("rhs(",i3,"):",3es15.5)') i, this%rhs(:,i)
-#endif
       end do
 #if ASDF
       momentum_delta = this%rhs(:,Q)-momentum_delta
