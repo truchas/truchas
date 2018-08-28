@@ -35,28 +35,28 @@ MODULE PREDICTOR_MODULE
 CONTAINS
 
   SUBROUTINE PREDICTOR ()
-    !===============================================================================
-    ! Purpose(s):
-    !
-    !   Predictor phase of the incompressible Navier-Stokes solution
-    !   algorithm. This routine is the main driver for advancing the
-    !   cell-centered velocity from time "n" to time "*". The "*" time
-    !   level velocity field is an estimate of the "n+1" velocity field
-    !   without regard for the solenoidal constraint.
-    !
-    !   This routine basically completes the entire RHS for the momentum equations,
-    !   then calls SOLVE_FOR_VELOCITY to get the predicited velocity, i.e., the *
-    !   state.
-    !
-    !===============================================================================
+!===============================================================================
+! Purpose(s):
+!
+!   Predictor phase of the incompressible Navier-Stokes solution
+!   algorithm. This routine is the main driver for advancing the
+!   cell-centered velocity from time "n" to time "*". The "*" time
+!   level velocity field is an estimate of the "n+1" velocity field
+!   without regard for the solenoidal constraint.
+!
+!   This routine basically completes the entire RHS for the momentum equations,
+!   then calls SOLVE_FOR_VELOCITY to get the predicited velocity, i.e., the *
+!   state.
+!
+!===============================================================================
     use advection_module,        only: ADVECT_MOMENTUM
     use body_data_module,        only: body_force_face_method
     use body_force_module,       only: add_cell_body_force
     use fluid_data_module,       only: fluidRho, fluidRho_n,           &
-        fluidVof, fluidVof_n,           &
-        Drag_Coefficient,               &
-        Mom_Delta,                      &
-        momentum_solidify_implicitness
+                                       fluidVof, fluidVof_n,           &
+                                       Drag_Coefficient,               &
+                                       Mom_Delta,                      &
+                                       momentum_solidify_implicitness
     use flow_phase_change,       only: have_solidifying_flow, solidified_rho
     use legacy_mesh_api,         only: ncells, ndim
     use porous_drag_data,        only: porous_flow
@@ -67,7 +67,7 @@ CONTAINS
     use viscous_module,          only: viscousExplicit
     use zone_module,             only: Zone
     use surface_tension_module,  only: CSF, surface_tension, csf_tangential, &
-        csf_boundary
+                                       csf_boundary
 
     ! Local Variables
     integer :: i, n
@@ -88,30 +88,16 @@ CONTAINS
     ! Explicit Pressure Gradient and Buoyant Force
     call PressureExplicit(dt, Mom_Delta)
 
-#ifndef NDEBUG
-    print *, "ACCUMULATE RHS PRESSURE"
-    do n = 1, ncells
-      write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
-    end do
-#endif
-    write(*,'("rhs pressure (",i3,"):",3es15.5)') 771, Mom_Delta(:,771)
     ! Explicit Viscous Stress.
     if (.not. inviscid) then
-      call TURBULENCE(turbulence_model)
+       call TURBULENCE(turbulence_model)
 
-      ! Add in the explicit evaluation of the Standard Newtonian stress tensor.
-      if(viscous_implicitness < 1) then
-        call viscousExplicit(dt, Mom_Delta)
-      end if
+       ! Add in the explicit evaluation of the Standard Newtonian stress tensor.
+       if(viscous_implicitness < 1) then
+          call viscousExplicit(dt, Mom_Delta)
+       end if
     end if
 
-#ifndef NDEBUG
-    print *, "ACCUMULATE RHS VISCOUS STRESS"
-    do n = 1, ncells
-      write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
-    end do
-#endif
-    write(*,'("rhs viscous (",i3,"):",3es15.5)') 771, Mom_Delta(:,771)
     ! Multiply Pressure Gradient and Viscous Stress by FluidVof
     ! (This is a crude way to account for solid material within the cell.
     ! In SOLVE_FOR_VELOCITY we also divide by FluidVof to account for
@@ -119,34 +105,28 @@ CONTAINS
     ! term.  Momentum advection is specifically excluded because the VOF
     ! is already accounting for the solid material.)
     do i = 1, ncells
-      do n = 1, ndim
-        Mom_Delta(n,i) = FluidVof(i)*Mom_Delta(n,i)
-      end do
+       do n = 1, ndim
+          Mom_Delta(n,i) = FluidVof(i)*Mom_Delta(n,i)
+       end do
     end do
 
     ! Advect Momentum... No real advection is done here, instead, the increment from
     ! momentum advection is just accumulated into Mom_Delta.
     if (.not. stokes) then
-      call ADVECT_MOMENTUM(Mom_Delta)
+       call ADVECT_MOMENTUM(Mom_Delta)
     end if
-#ifndef NDEBUG
-    print *, "ACCUMULATE RHS MOMENTUM"
-    do n = 1, ncells
-      write(*,'("rhs(",i3,"):",3es15.5)') n, Mom_Delta(:,n)
-    end do
-#endif
-    write(*,'("rhs mtm(",i3,"):",3es15.5)') 771, Mom_Delta(:,771)
+
     ! Calculate the RHS momentum change due to the solidification of fluid.
     if (HAVE_SOLIDIFYING_FLOW()) then
-      ! MAC note: Here, there can be problems with the explicit term of the
-      ! momentum  sink due to solidification.  If the fluid velocity at time
-      ! level n is zero, there is no contribution to the sink term.  For this
-      ! reason, the recommended practice, for now, is to use
-      ! momentum_solidify_implicitness = 1.0.  This is the default.
-      tweight = 1.0 - momentum_solidify_implicitness
-      do i = 1, ncells
-        Mom_Delta(:,i) = Mom_Delta(:,i) - tweight*solidified_rho(i)*Zone(i)%Vc
-      end do
+       ! MAC note: Here, there can be problems with the explicit term of the
+       ! momentum  sink due to solidification.  If the fluid velocity at time
+       ! level n is zero, there is no contribution to the sink term.  For this
+       ! reason, the recommended practice, for now, is to use
+       ! momentum_solidify_implicitness = 1.0.  This is the default.
+       tweight = 1.0 - momentum_solidify_implicitness
+       do i = 1, ncells
+          Mom_Delta(:,i) = Mom_Delta(:,i) - tweight*solidified_rho(i)*Zone(i)%Vc
+       end do
     end if
 
     ! Tangential surface tension
@@ -179,22 +159,22 @@ CONTAINS
 
     ! Add in the simple cell-centered body force
     if (.not. body_force_face_method) then
-      call add_cell_body_force(dt, Mom_Delta)
+       call add_cell_body_force(dt, Mom_Delta)
     endif
 
     ! Complete the RHS terms in Mom_Delta by including the momentum at time 'n'
     do i = 1, ncells
-      do n = 1, ndim
-        Mom_Delta(n,i) = Mom_Delta(n,i) + &
-            fluidRho_n(i)*fluidVof_n(i)*Zone(i)%Vc_old(n)
-      end do
+       do n = 1, ndim
+          Mom_Delta(n,i) = Mom_Delta(n,i) + &
+               fluidRho_n(i)*fluidVof_n(i)*Zone(i)%Vc_old(n)
+       end do
     end do
 
-    ! Solve for Star time velocity
+    ! Solve for Star time velocity 
     call SOLVE_FOR_VELOCITY(Mom_Delta)
 
     call predictorCleanup()
-
+     
     ! Stop Timer
     call stop_timer("Predictor")
 
@@ -203,14 +183,14 @@ CONTAINS
   SUBROUTINE PressureExplicit (dt, Mom_Delta)
 !===============================================================================
 ! Purpose(s):
-!
-! Compute the pressure gradient at time-level 'n' for the RHS of the
+! 
+! Compute the pressure gradient at time-level 'n' for the RHS of the 
 ! momentum equations.
 !
 !===============================================================================
     use legacy_mesh_api, only: ncells, ndim
     use fluid_data_module, only: Centered_GradP_Dynamic, fluidRho, fluidRho_n
-
+    
     ! Arguments...
     real(r8), intent(IN) :: dt
     real(r8), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
@@ -218,15 +198,6 @@ CONTAINS
     ! Local variables
     integer :: n
 
-#ifndef NDEBUG
-    print *, "PRESSURE EXPLICIT"
-    do n = 1, ncells
-      write(*,'("GradPx[", i3, "]: ", es15.5)') n, Centered_GradP_Dynamic(1,n)
-    end do
-    do n = 1, ncells
-      write(*,'("GradPy[", i3, "]: ", es15.5)') n, Centered_GradP_Dynamic(2,n)
-    end do
-#endif
     do n = 1,ndim
        where (fluidRho_n == 0) Centered_GradP_Dynamic(n,:) = 0
        where (fluidRho(:) > 0)
@@ -282,13 +253,13 @@ CONTAINS
     real(r8), dimension(ncells)       :: mscale
     real(r8), dimension(:), pointer   :: diag
 
-    ! Parameters used for the mass limiter. At some point, it may be
-    ! necessary to provide a user interface to adjust the exponential width.
-    ! For now, an on-off toggle has been provided to switch off the
+    ! Parameters used for the mass limiter. At some point, it may be 
+    ! necessary to provide a user interface to adjust the exponential width.  
+    ! For now, an on-off toggle has been provided to switch off the 
     ! mass limiter when desired.
     real(r8) :: cmass, width, cutoff, offset, xi
 
-    ! The cutoff should really be cast in terms of a mass rather than volume
+    ! The cutoff should really be cast in terms of a mass rather than volume 
     ! fractions ... but make do with what is here.  The width of the exponential
     ! function is based on 6-decades from the cutvof level of mass by default.
     ! For cutvof values larger than the default, then the width shrinks while
@@ -321,12 +292,12 @@ CONTAINS
     ! Setup the mass limiter if it is enabled (the default).
     if (have_solidifying_flow() .and. mass_limiter) then
        do i = 1, ncells
-          ! Setup the mass limiter
+          ! Setup the mass limiter 
           mscale(i) = 1
           cutoff = width*cutRho(i)
           if(solidified_rho(i) > 0 .and. rho(i) > cutRho(i) .and. rho(i) < cutoff) then
              ! Here, define xi = amp*cutRho(i)/(cutoff - cutRho(i)), but
-             ! scale by something roughly proportional to 1/cutRho(i)
+             ! scale by something roughly proportional to 1/cutRho(i) 
              ! for robust behavior.
              xi = 1/(cutoff - cutRho(i))
              offset = xi + xi*xi/2
@@ -339,7 +310,7 @@ CONTAINS
     ! Treat the explicit cases first
     if(viscous_implicitness == 0 .or. inviscid) then
 
-       ! Setup the base 'mass matrix'.  Here, the mass matrix is
+       ! Setup the base 'mass matrix'.  Here, the mass matrix is 
        ! just a generic array used to hold the left-hand-side terms
        ! for the momentum.  These terms can include the average density,
        ! the porous drag, and momentum sink terms due to solidification.
@@ -368,7 +339,7 @@ CONTAINS
           end do
        end if
 
-       ! Now calculate the time '*' velocity by ! dividing by the
+       ! Now calculate the time '*' velocity by ! dividing by the 
        ! mass matrix with all the appropriate terms in it.
        ! By default, the mass limiter version of the predictor is used.
        if (have_solidifying_flow() .and. mass_limiter) then
@@ -389,10 +360,10 @@ CONTAINS
           ! Original update -- can lead to spurious velocities with void present
           do n = 1, ndim
           ! Old treatment of momentum
-          ! where (rho > 0) OR generally where (mass(n,:) > 0)
+          ! where (rho > 0) OR generally where (mass(n,:) > 0)  
              where (mass(n,:) > 0)
                 Zone%Vc(n) = Mom_Delta(n,:)/mass(n,:)
-             elsewhere
+             elsewhere 
                 Zone%Vc(n) = 0
              endwhere
           end do ! End of Ndim loop
@@ -402,8 +373,8 @@ CONTAINS
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-       ! Do the linear solve with viscous/drag/solidification effects treated
-       ! implicitly.
+       ! Do the linear solve with viscous/drag/solidification effects treated 
+       ! implicitly. 
        ! Note: Things are rescaled by 1/FluidVof(:) here.  This affects the
        ! calculation of the terms in setupDiagonal below and in y_eq_A_x.F90.
        !
@@ -448,14 +419,14 @@ CONTAINS
        end do
 
        ! Skip solution if the RHS is already essentially zero.
-       ! BAD Construction here -- partial fix is to the test both the
-       ! min/max values accounting for the possibility that negative
-       ! values are present.
+       ! BAD Construction here -- partial fix is to the test both the 
+       ! min/max values accounting for the possibility that negative 
+       ! values are present. 
        !
        ! The previous hard-coded value of 1.0e-10 was reduced to 1.0e-12
        ! to force the viscous solution to iterate.  In general, this
        ! construction is poor, but will have to fix later. (MAC)
-       ! Converted hard-coded value to epsilon(0.D0) as the correct way to
+       ! Converted hard-coded value to epsilon(0.D0) as the correct way to 
        ! test on a zero rhs.
        rhsmax = pgslib_global_maxval(rhs)
        rhsmin = pgslib_global_minval(rhs)
@@ -463,7 +434,7 @@ CONTAINS
        if(rhsmax > epsilon(0.D0)) then
           ! call the linear solver with the y_eq_ax_velocity matvec...
           call LINEAR_SOLVER(Solution, RHS, Ubik_user(UBIK_VISCOUS), &
-                             Y_EQ_AX_VELOCITY, PRECONDITION)
+                             Y_EQ_AX_VELOCITY, PRECONDITION)    
        endif
 
        ! Store the number of iterations.
@@ -545,7 +516,7 @@ CONTAINS
     use time_step_module,     only: dt
     use viscous_data_module,  only: viscous_implicitness, Mu_Face, Mask
     use porous_drag_data,     only: porous_flow, porous_implicitness
-
+ 
     ! Arguments
     real(r8), intent(inout) :: diag(:)
 
@@ -570,7 +541,7 @@ CONTAINS
           mask    = (FREE_SLIP(BC%Flag, Vel%Face_bit(f)))
           do i = 1, ncells
              j = (i-1)*ndim + n
-             if (mask(i)) then
+             if (mask(i)) then 
                diag(j) = diag(j) - &
                Mu_Face(f,i)*beta(f,i)*cell(i)%Face_Normal(n,f)*cell(i)%Face_Normal(n,f)
              else
@@ -618,19 +589,19 @@ CONTAINS
     end if
 
     ! For an immobile material where the viscosity/drag is zero,
-    ! this provides forces the diagonal and assumes that the RHS entry
+    ! this provides forces the diagonal and assumes that the RHS entry 
     ! has been set to zero.   In Solve_For_Velocity, we enforce this
     ! constraint on the RHS for consistency.  Note an alternative would
     ! be to use a penalty enforcement of the condition on velocity.
     !
-    ! Note: Also need to trap on the case of all-void cells.  This is a
+    ! Note: Also need to trap on the case of all-void cells.  This is a 
     ! little bogus, but essentially forces a sane diagonal (unity) for
     ! void cells.  There is a patch-up that occurs the in mat-vec call back
     ! y_eq_Ax_vel.F90
     do i = 1, ncells
        do n = 1, ndim
           j = (i-1)*ndim+n
-          if (isPureImmobile(i) .or. diag(j) == 0) diag(j) = 1
+          if (isPureImmobile(i) .or. diag(j) == 0) diag(j) = 1 
        end do
     end do
 
@@ -657,7 +628,7 @@ CONTAINS
   integer :: i, f
   real(r8) :: dx, dy, dz, delta_mag
 
-  ! This could be pre-allocated for the diagonal preconditioner a-priori,
+  ! This could be pre-allocated for the diagonal preconditioner a-priori, 
   ! but for now, leave it local to the routine as an automatic (MAC)
   real(r8), dimension(nfc,ncells) :: xnbr, ynbr, znbr
 
@@ -704,7 +675,7 @@ CONTAINS
                      dy*Cell(i)%Face_Normal(2,f) +  &
                      dz*Cell(i)%Face_Normal(3,f))*Cell(i)%Face_Area(f)/delta_mag
      end do
-
+     
   end do ! End face loop
 
   end subroutine calcBeta

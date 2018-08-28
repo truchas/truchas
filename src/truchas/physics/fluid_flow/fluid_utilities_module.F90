@@ -38,7 +38,7 @@ CONTAINS
     !=======================================================================
     ! Purpose:
     !
-    ! Allocate and Initialize the volume fraction of each cell that holds a
+    ! Allocate and Initialize the volume fraction of each cell that holds a 
     ! material that flows.  Also sets up Cell_isnt_Void and Ngbr_isnt_Void
     ! logical arrays.
     !
@@ -159,7 +159,7 @@ CONTAINS
 
     ! Initialize the average density for body forces
     avgRho_n = fluidVof*(fluidRho+fluidDeltaRho)
-
+    
     ! Initialise courant number array
     courant = 0.0_r8
 
@@ -252,7 +252,7 @@ CONTAINS
 
     ! Local Variables
     integer :: memstat
-
+    
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! deallocate the Face_Interpolation_Factor array.
@@ -267,14 +267,14 @@ CONTAINS
     ! deallocate the fluidRho array
     if (ASSOCIATED(fluidRho)) DEALLOCATE (fluidRho)
 
-    ! deallocate the fluidrho_n array
-    if (ASSOCIATED(fluidRho_n)) DEALLOCATE (fluidRho_n)
+     ! deallocate the fluidrho_n array
+     DEALLOCATE (fluidRho_n)
 
-    ! deallocate the Momentum_Delta array
-    if (allocated(Momentum_Delta)) deallocate (Momentum_Delta)
+     ! deallocate the Momentum_Delta array
+     if (ALLOCATED(Momentum_Delta)) DEALLOCATE (Momentum_Delta)
 
-    ! deallocate the Mom_Delta array
-    if (allocated(Mom_Delta)) deallocate(Mom_Delta)
+     ! deallocate the Mom_Delta array
+     if (ALLOCATED(Mom_Delta)) DEALLOCATE(Mom_Delta)
 
     ! deallocate the void cell indication arrays
     if (ASSOCIATED(Cell_isnt_Void)) DEALLOCATE (Cell_isnt_Void)
@@ -283,12 +283,12 @@ CONTAINS
     if (ASSOCIATED(Ngbr_isnt_Void)) DEALLOCATE (Ngbr_isnt_Void)
 
     ! deallocate the Projection / Predictor communiation arrays
-    if (allocated(Centered_gradP_Dynamic)) deallocate (Centered_GradP_Dynamic)
+     DEALLOCATE (Centered_GradP_Dynamic)
 
-    if (allocated(Rho_Face_n)) deallocate (Rho_Face_n)
+     DEALLOCATE (Rho_Face_n)
 
-    if (associated(boundary_flag)) deallocate (Boundary_Flag)
-
+    DEALLOCATE (Boundary_Flag)
+    
     if (ALLOCATED(DVol_by_Dt_over_Vol)) DEALLOCATE(DVol_by_Dt_over_Vol)
     if (ASSOCIATED(Momentum_by_Volume)) DEALLOCATE(Momentum_by_Volume)
     if (ALLOCATED(Drag_Coefficient)) DEALLOCATE(Drag_Coefficient)
@@ -332,7 +332,7 @@ CONTAINS
     real(r8), dimension(:,:), allocatable       :: Grad
     real(r8), dimension(:,:,:), allocatable     :: Gradient
 !-mf Jan04
-    real(r8), dimension(:,:,:), allocatable     :: Fcsf
+    real(r8), dimension(:,:,:), allocatable     :: Fcsf    
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -374,7 +374,7 @@ CONTAINS
 
     ! calculate gravity head ghc and ghn...
     if (use_ortho_face_gradient) then
-       if (body_force_face_method) then
+       if (body_force_face_method) then 
           call COMPUTE_GRAVITYHEAD()
        else
           ghc = 0.0
@@ -391,11 +391,11 @@ CONTAINS
       ! dtCsf_over_Rho for use in CC_GRADP_DYNAMIC...
 
       do f=1,nfc
-        do n=1,ndim
+        do n=1,ndim 
           !-particular case when void cells. density = zero
-          where (Rho_Face(f,:) <= alittle)
+          where (Rho_Face(f,:) <= alittle) 
             dtCsf_over_Rho(n,f,:)=0.0_r8
-          elsewhere
+          elsewhere 
             dtCsf_over_Rho(n,f,:)=dt*Fcsf(n,f,:)/Rho_Face(f,:)
           endwhere
         enddo
@@ -453,7 +453,7 @@ CONTAINS
    if (status /= 0) call TLS_panic ('FluidDensityFace: fluidvof_Ngbr(nfc,ncells) allocation failed')
    ALLOCATE (CellVolume(ncells), STAT = status)
    if (status /= 0) call TLS_panic ('FluidDensityFace: CellVolume(ncells) allocation failed')
-
+   
    ! Evaluate Weighted Face Densities
 
     ! Move Cell%Volume to a simple array for EE_GATHER
@@ -465,13 +465,13 @@ CONTAINS
 
     do i = 1,ncells
        do f = 1,nfc
-          if (Mesh(i)%Ngbr_Cell(f) == DEGENERATE_FACE) then
+          if (Mesh(i)%Ngbr_Cell(f) == DEGENERATE_FACE) then 
              rho_face(f,i) = fluidRho(i)
-          else if (Solid_Face(f,i)) then
+          else if (Solid_Face(f,i)) then 
              rho_face(f,i) = fluidRho(i)
           else if (Mesh(i)%Ngbr_Cell(f) == 0) then
              rho_face(f,i) = fluidRho(i)
-          else
+          else 
              weight_ngbr   = Volume_Ngbr(f,i)*fluidvof_Ngbr(f,i)
              weight        = CellVolume(i)*fluidvof(i)
              rho_face(f,i) = (fluidrho(i)*weight + fluidrho_Ngbr(f,i)*weight_ngbr)/    &
@@ -492,7 +492,7 @@ CONTAINS
     !=======================================================================
     ! Purpose(s):
     !
-    !   The last step in the PROJECTION call, this routine calculates a
+    !   The last step in the PROJECTION call, this routine calculates a 
     !   time 'n+1' cell-centered pressure gradient, and applies it to the
     !   cell-centered velocities.
     !=======================================================================
@@ -539,7 +539,7 @@ CONTAINS
               Gradient(ndim,nfc,ncells), &
               Grad_Dot_N(ncells), STAT = status)
     if (status /= 0) call TLS_panic ('CC_GRADP_DYNAMIC: allocation failed')
-
+       
     if(.not.ASSOCIATED(PCorrector_SS))then
        PCSolveTech=DO_SOLVE_LU_LSLR; if(use_ortho_face_gradient)PCSolveTech=DO_SOLVE_ORTHO
        call do_init_ss(PCorrector_SS,SOLVETECH=PCSolveTech,BC_SPEC=Pressure_BC)
@@ -555,14 +555,14 @@ CONTAINS
        call DO_GRADIENT_FACE(PHI=Scalar_Cell_Center, SOLVESPEC=PCorrector_SS, GRAD=Gradient)
     else
        ! calculate the gradient of the dynamic pressure
-       ! ie; the total pressure less the gravity  head.
+       ! ie; the total pressure less the gravity  head. 
        call DYNAMIC_PRESSURE_FACE_GRADIENT(Gradient, Scalar_Cell_Center, ghc, ghn)
     end if
-
+    
     dt_gradP_over_Rho = 0.0_r8
 
-    FACE_LOOP : do f = 1,nfc
-
+    FACE_LOOP : do f = 1,nfc   
+      
        do n = 1,ndim
           Grad(n,:) = Gradient(n,f,:)
        enddo
@@ -606,34 +606,34 @@ CONTAINS
           where (Rho_Face(f,:) /= 0.0_r8) &
                dt_gradP_over_Rho(n,f,:) = dt*Grad(n,:)/Rho_Face(f,:)
        enddo
-
+          
     enddo FACE_LOOP
-
+    
     Centered_GradP_Dynamic = 0.0_r8
     Grad = 0.0_r8
-
+    
     if (.not. use_ortho_face_gradient) then
       ! we are working with the total pressure...
       do n = 1,ndim
          cell_vol = 0.0_r8
          do f = 1,nfc
-            Mask = (Mesh%Ngbr_cell(f) /= 0 .OR. DIRICHLET (BC%Flag, Prs%Face_bit(f))) &
+            Mask = (Mesh%Ngbr_cell(f) /= 0 .OR. DIRICHLET (BC%Flag, Prs%Face_bit(f))) & 
                     .AND. .NOT. Solid_Face(f,:)
             where (Mask)
                cell_vol = cell_vol + ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))
                Grad(n,:) = Grad(n,:) + (dt_gradP_over_Rho(n,f,:) - dtRhoG_over_Rho(n,f,:))&
                                      * ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))
-            end where
+            end where   
             !-mf Jan04
             if (csf_normal) then
-              where (Mask)
-                 Grad(n,:) = Grad(n,:) - dtCsf_over_Rho(n,f,:) &
+              where (Mask) 
+                 Grad(n,:) = Grad(n,:) - dtCsf_over_Rho(n,f,:) & 
                                        * ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))
-              end where
-            endif
+              end where 
+            endif                         
 
          end do
-         where (cell_vol > 0.0_r8)
+         where (cell_vol > 0.0_r8) 
             Grad(n,:) = Grad(n,:)/cell_vol
             Centered_GradP_Dynamic(n,:) = Centered_GradP_Dynamic(n,:) + Grad(n,:) / dt
          endwhere
@@ -648,35 +648,31 @@ CONTAINS
             where (Mask)
                cell_vol = cell_vol + ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))
                Grad(n,:) = Grad(n,:) + (dt_gradP_over_Rho(n,f,:))&
-                                     * ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))
-            end where
+                                     * ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))   
+            end where 
             !-mf Jan04
             if (csf_normal) then
               where (Mask)
                  Grad(n,:) = Grad(n,:) - dtCsf_over_Rho(n,f,:)&
-                                       * ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))
-              end where
+                                       * ABS(Cell%Face_Area(f)*Cell%Face_normal(n,f))       
+              end where 
             endif
          end do
-         where (cell_vol > 0.0_r8)
+         where (cell_vol > 0.0_r8) 
              Grad(n,:) = Grad(n,:)/cell_vol
              Centered_GradP_Dynamic(n,:) = Centered_GradP_Dynamic(n,:) + Grad(n,:) / dt
           endwhere
        end do
     end if
-
-    write(*,*) "<< CC_GRADP_DYNAMIC"
-    write(*, '("P[",i3,"]: ", es20.12)') 771, Zone(771)%P
-    write(*, '("GradP_rho_cc[",i3,"]: ", 3es20.12)') 771, Centered_GradP_Dynamic(:,771)
-
+    
     ! Reset the pointer for pressures to BC_Zero for the pressure change solution
     BC_Prs => BC_Zero
-
+    
     DEALLOCATE(Mask, cell_vol, Grad, Weight, Scalar_Cell_Center, Gradient, Grad_Dot_N)
-
+    
     ! Stop the projection_corrector timer.
     call stop_timer("timer_projection_corrector")
-
+    
   END SUBROUTINE CC_GRADP_DYNAMIC
 
   subroutine calcVelLimits()
@@ -699,10 +695,10 @@ CONTAINS
     maxVel(:) = -huge(0.0_r8)
     do i = 1, ncells
        do j = 1, ndim
-          if( Zone(i)%Vc(j) .le. minVel(j)) then
+          if( Zone(i)%Vc(j) .le. minVel(j)) then 
              minVel(j) = Zone(i)%Vc(j)
           endif
-          if( Zone(i)%Vc(j) .ge. maxVel(j)) then
+          if( Zone(i)%Vc(j) .ge. maxVel(j)) then 
              maxVel(j) = Zone(i)%Vc(j)
           endif
        end do
@@ -713,7 +709,7 @@ CONTAINS
       minVel(j) = pgslib_global_minval(minvel(j))
       maxVel(j) = pgslib_global_maxval(maxvel(j))
    end do
-
+        
   end subroutine calcVelLimits
 
 END MODULE FLUID_UTILITIES_MODULE

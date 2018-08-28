@@ -63,30 +63,30 @@ MODULE FLUID_DATA_MODULE
   real(r8), public, save :: momentum_solidify_implicitness
 
   ! Flow arrays.
-  real(r8), pointer, public, save, dimension(:,:) :: Fluxing_Velocity => null()
-  real(r8), pointer, public, save, dimension(:,:) :: Face_Interpolation_Factor => null()
-  real(r8), pointer, public, save, dimension(:,:) :: Momentum_by_Volume => null()
-  real(r8), pointer, public, save, dimension(:)   :: fluidVof =>null(), fluidVof_n => null()
-  real(r8), pointer, public, save, dimension(:)   :: fluidRho => null()
-  real(r8), pointer, public, save, dimension(:)   :: fluidRho_n => null()
-  real(r8), pointer, public, save, dimension(:)   :: fluidDeltaRho => null()
-  real(r8), pointer, public, save, dimension(:)   :: realfluidVof => null()
-  real(r8), pointer, public, save, dimension(:)   :: cutRho => null()
+  real(r8), pointer, public, save, dimension(:,:) :: Fluxing_Velocity
+  real(r8), pointer, public, save, dimension(:,:) :: Face_Interpolation_Factor
+  real(r8), pointer, public, save, dimension(:,:) :: Momentum_by_Volume
+  real(r8), pointer, public, save, dimension(:)   :: fluidVof, fluidVof_n
+  real(r8), pointer, public, save, dimension(:)   :: fluidRho
+  real(r8), pointer, public, save, dimension(:)   :: fluidRho_n
+  real(r8), pointer, public, save, dimension(:)   :: fluidDeltaRho
+  real(r8), pointer, public, save, dimension(:)   :: realfluidVof
+  real(r8), pointer, public, save, dimension(:)   :: cutRho
 
 ! Volume-fraction averaged density at n, n+1 for body force terms
-  real(r8), pointer, public, save, dimension(:) :: avgRho => null()
-  real(r8), pointer, public, save, dimension(:) :: avgRho_n => null()
+  real(r8), pointer, public, save, dimension(:) :: avgRho
+  real(r8), pointer, public, save, dimension(:) :: avgRho_n
 
   real(r8), allocatable, public, save, dimension(:,:) :: Drag_Coefficient
-  real(r8), pointer, public, save, dimension(:)       :: courant => null()
+  real(r8), pointer, public, save, dimension(:)       :: courant
 
   ! Arrays related to partially/totally solidified cells.
-  logical, pointer, public, save, dimension(:)   :: isPureImmobile => null()
-  logical, pointer, public, save, dimension(:,:) :: Solid_Face => null()
-
+  logical, pointer, public, save, dimension(:)   :: isPureImmobile
+  logical, pointer, public, save, dimension(:,:) :: Solid_Face
+ 
   ! Non-Void Cell list
-  logical, pointer, public, save, dimension(:)   :: Cell_isnt_Void => null()
-  logical, pointer, public, save, dimension(:,:) :: Ngbr_isnt_Void => null()
+  logical, pointer, public, save, dimension(:)   :: Cell_isnt_Void
+  logical, pointer, public, save, dimension(:,:) :: Ngbr_isnt_Void
 
   ! Projection / Predictor Communication Arrays
   real(r8), public, allocatable, save, dimension(:,:) :: Centered_GradP_Dynamic
@@ -96,9 +96,9 @@ MODULE FLUID_DATA_MODULE
   ! Storage moved to a single-allocation per run, rather than once per time-step (MAC)
   real(r8), public, allocatable, save, dimension(:,:) :: Mom_Delta
   real(r8), public, allocatable, save, dimension(:)   :: pc_delta_rho
-  real(r8), public, save, dimension(ndim) :: minVel, maxVel
+  real(r8), public, save, dimension(ndim) :: minVel, maxVel   
 
- contains
+ contains 
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

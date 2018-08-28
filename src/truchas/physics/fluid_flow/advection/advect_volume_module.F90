@@ -133,7 +133,7 @@ CONTAINS
 
           ! Compute the acceptor fluxes.
           call FLUX_ACCEPTOR (Volume_Flux_Sub)
-
+   
           ! Compute BC (inflow) fluxes.
           call FLUX_BC (Fluxing_Velocity, Vof_n, Volume_Flux_Sub)
 
@@ -150,7 +150,7 @@ CONTAINS
           ! Compute the acceptor fluxes.  Note that here we send in the total
           ! volume flux for the timestep, because there's no subcycling.
           call FLUX_ACCEPTOR (Volume_Flux_Tot)
-
+   
           ! Compute BC (inflow) fluxes.  Note that here we send in the total
           ! volume flux for the timestep, because there's no subcycling.
           call FLUX_BC (Fluxing_Velocity, Vof_n, Volume_Flux_Tot)
@@ -162,8 +162,7 @@ CONTAINS
 
        ! Make sure volume fractions of a particular material are within
        ! the allowed range (0 <= Vof <= 1) and that all materials sum to one.
-       print *, "VOF_BOUNDS HAS BEEN DISABLED!!!!"
-       !call VOF_BOUNDS (Vof, Volume_Flux_Tot)
+       call VOF_BOUNDS (Vof, Volume_Flux_Tot)
 
     end do FLUXING_PASSES
 
@@ -200,7 +199,7 @@ CONTAINS
     real(r8) :: Flux_Vol
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
+   
     ! Calculate material volume fluxes out of cells, including through mesh
     ! boundary faces, in proportion to the fluid volumes in the donor cell.
 
@@ -316,18 +315,18 @@ CONTAINS
 
           ! Calculate the inflow flux volumes.
           where (Inflow_Mask) Flux_Vol = adv_dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)
-
+   
           ! Zero out the subcycle volume fluxes at inflow faces.
           do m = 1,nmat
              where (Inflow_Mask) Volume_Flux_Sub(m,f,:) = 0.0_r8
           end do
-
+   
           ! If inflow material specified as a BC, assign it.
           do n = 1,ncells
              if (Inflow_Mask(n) .and. BC_Mat(f,n) /= NULL_I) &
                 Volume_Flux_Sub(BC_Mat(f,n),f,n) = Flux_Vol(n)
           end do
-
+   
           ! If the user didn't specify an inflow material, assume that what's flowing in
           ! is more of what was in the cell at the beginning of the timestep.
           do n = 1,ncells
@@ -369,7 +368,7 @@ CONTAINS
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
     use vof_data_module,      only: adv_dt
-
+ 
     ! Arguments
     real(r8), dimension(nfc,ncells),      intent(IN)    :: Fluxing_Velocity
     real(r8), dimension(nmat,ncells),     intent(IN)    :: Vof_n
@@ -396,16 +395,16 @@ CONTAINS
           Done_Renorm = .True.
 
        ! We stay in this loop until the sum of material fluxes from each face of
-       ! the cell equals the total face volume flux.  Where the cumulative sum of
-       ! individual material fluxes (from this and previous volume_track_subcycles)
-       ! exceeds the volume of a particular material originally within a
+       ! the cell equals the total face volume flux.  Where the cumulative sum of 
+       ! individual material fluxes (from this and previous volume_track_subcycles) 
+       ! exceeds the volume of a particular material originally within a 
        ! cell, we decrease those fluxes to equal the volume of material still available
        ! to be fluxed, and increase other fluxes appropriately.  If this increase
        ! leads to the over-exhaustion of other materials, we work our way through
        ! this loop again, and again, and again, and ... , until we're done.
 
-       ! The first step is to determine if any material is being over-exhausted from
-       ! a cell.  If so mark it as MAXED and lower the Volume_Flux_Sub's so that the
+       ! The first step is to determine if any material is being over-exhausted from 
+       ! a cell.  If so mark it as MAXED and lower the Volume_Flux_Sub's so that the 
        ! material is just exhausted.
 
           MAT_LOOP: do m = 1,nmat
@@ -422,13 +421,13 @@ CONTAINS
              end do
              if (Sum == 0.0_r8) CYCLE MAT_LOOP
              Cumul_Sum = Cumul_Sum + Sum
-
+ 
              ! If the CUMULATIVE sum of outward fluxes across faces (Cumul_Sum)
              ! exceeds the amount of material ORIGINALLY in the cell (from Vof_n),
              ! calculate the 'Ratio' of fluid material volume still allowed to be
              ! fluxed to the flux volume, and note that we're not 'Done'
              Ratio = 0.0_r8  ! if none of this material was originally in the cell
-             ! Update the Ratio for fluid materials; if the material isImmobile,
+             ! Update the Ratio for fluid materials; if the material isImmobile, 
              ! leave Ratio = 0.0_r8
              if (.not. isImmobile(m)) then
                 Ratio = (Vof_n(m,n)*Cell(n)%Volume - (Cumul_Sum-Sum)) / Sum
@@ -445,27 +444,27 @@ CONTAINS
                    Volume_Flux_Sub(m,f,n) = Ratio * Volume_Flux_Sub(m,f,n)
                 end do
              end if
-
+ 
           end do MAT_LOOP
 
           if (Done_Renorm) exit RENORM_LOOP
 
        ! This cell had one/more fluxes reduced.  For each of the faces, if the sum
-       ! of material fluxes is less than Total_Face_Flux, multiply all non-maxed
-       ! fluxes by another 'Ratio' (this time > 1) that restores the flux balance.
+       ! of material fluxes is less than Total_Face_Flux, multiply all non-maxed 
+       ! fluxes by another 'Ratio' (this time > 1) that restores the flux balance.  
        ! This may in turn over-exhaust one or more of these materials, and so from
        ! the bottom of this loop, we head back to the top.
 
           do f = 1,nfc
 
              ! Calculate the total flux volume through the cell face (is this already
-             ! available elsewhere?), and if the flux volume is greater than zero,
+             ! available elsewhere?), and if the flux volume is greater than zero, 
              ! then concern ourselves with adjusting individual material fluxes.
 
              Total_Face_Flux = adv_dt*Fluxing_Velocity(f,n)*Cell(n)%Face_Area(f)
              if (Total_Face_Flux > cutvof*Cell(n)%Volume) then
-
-                ! Add up the sum of material fluxes at a face (Sum), and the sum of
+ 
+                ! Add up the sum of material fluxes at a face (Sum), and the sum of 
                 ! un-maxed material fluxes (Sum_not_maxed).
                 Sum = 0.0_r8
                 Sum_not_maxed = 0.0_r8
@@ -474,7 +473,7 @@ CONTAINS
                    if (.not. Maxed(m)) Sum_not_maxed = Sum_not_maxed + Volume_Flux_Sub(m,f,n)
                 end do
 
-                ! Ratio as defined below, when used to multiply the non-maxed fluxes at
+                ! Ratio as defined below, when used to multiply the non-maxed fluxes at 
                 ! a face, will restore the flux balance.
                 if (Sum_not_maxed > 0.0_r8) then
                 ! jms Note:  Ratio = (Total_Face_Flux - Maxed_Face_Flux) / Sum_not_maxed
@@ -505,7 +504,7 @@ CONTAINS
     end do CELLS
 
   END SUBROUTINE FLUX_RENORM
-
+ 
 
   SUBROUTINE VOLUME_ADVANCE (Volume_Flux_Sub, Volume_Flux_Tot, Vof)
     !=======================================================================
@@ -553,7 +552,7 @@ CONTAINS
     use legacy_mesh_api,    only: ncells, nfc
     use parameter_module,   only: nmat
 
-    ! Arguments
+    ! Arguments 
     real(r8), dimension(nmat,ncells),     intent(INOUT) :: Vof
     real(r8), dimension(nmat,nfc,ncells), intent(INOUT) :: Volume_Flux_Tot
 
@@ -603,7 +602,7 @@ CONTAINS
              end if
 
           end if   ! end of the isImmobile test
-
+   
           Ftot = Ftot + Vof(m,n)
 
        end do
@@ -663,7 +662,7 @@ CONTAINS
        cycle CELLS
 
     end do CELLS
-
+ 
   END SUBROUTINE VOF_BOUNDS
 
   SUBROUTINE ADJUST_VOFS (Vof, n, Delta_Vol)
@@ -683,7 +682,7 @@ CONTAINS
     real(r8), dimension(nmat,ncells), intent(INOUT) :: Vof
     integer, intent(in) :: n
     real(r8), dimension(nmat), intent(In) :: Delta_Vol
-
+ 
     ! Local Variables
     integer :: m
 
@@ -733,7 +732,7 @@ CONTAINS
        end if
     end do
 
-    ! Calculate the fractional change needed to adjust the current volume
+    ! Calculate the fractional change needed to adjust the current volume 
     ! to the target value.  The same fractional increase/decrease is applied
     ! to incoming and outgoing flows.
     Total_Flow = Inflow_Volume + Outflow_Volume
@@ -744,7 +743,7 @@ CONTAINS
      else
         if(Change_Fraction < 0.0_r8) then
             ! jms Note:   If the material is to be removed from the cell
-           ! look for a face that doesn't have incoming material, and
+           ! look for a face that doesn't have incoming material, and 
            ! flux it out through that face
            do f = 1,nfc
               if (Boundary_Flag(f,n)==2 .or.        &
@@ -753,7 +752,7 @@ CONTAINS
                  exit
            enddo
         else
-           if (ABS(Change_Fraction) > WMaxMatU) then
+           if (ABS(Change_Fraction) > WMaxMatU) then 
               WCountMatU = 0
               WMaxMatU = ABS(Change_Fraction)
               write(message,'(2(a,i0),a,es11.3)') 'unable to adjust material volume: cell=', n, &
@@ -793,7 +792,7 @@ CONTAINS
           Volume_Flux_Tot(MatID,f,n) = (1.0_r8+Change_Fraction)*Volume_Flux_Tot(MatID,f,n)
        end if
     end do
-
+    
   END SUBROUTINE ADJUST_FLUX_MATL
 
   SUBROUTINE ADJUST_FLUX_TOTAL (Volume_Flux_Tot, n, Current_Vof, Delta_Vol)
@@ -846,7 +845,7 @@ CONTAINS
           enddo
     end do MAT_LOOP
 
-    ! Calculate the fractional change needed to adjust the current volume
+    ! Calculate the fractional change needed to adjust the current volume 
     ! to the target value.  The same fractional increase/decrease is applied
     ! to incoming and outgoing flows.
     Total_Flow = Inflow_Volume + Outflow_Volume
@@ -855,7 +854,7 @@ CONTAINS
        Volume_Change = Volume_Change*Cell(n)%Volume
        Change_Fraction = Volume_Change/Total_Flow
     else
-       if (ABS(Volume_Change) > WMaxTotU) then
+       if (ABS(Volume_Change) > WMaxTotU) then 
           WCountTotU = 0
           WMaxTotU   = ABS(Volume_Change)
        elseif (WCountTotU < Wlimit) then
@@ -903,7 +902,7 @@ CONTAINS
                 end if
           end do
     end do MAT_LOOP2
-
+    
   END SUBROUTINE ADJUST_FLUX_TOTAL
 
 END MODULE ADVECT_VOLUME_MODULE

@@ -48,7 +48,7 @@ MODULE ADVECTION_MODULE
   use truchas_timers
   implicit none
   private
-
+              
   public :: ADVECT_MASS, ADVECT_MOMENTUM
   public :: compute_advected_enthalpy, advected_phi
 
@@ -70,7 +70,7 @@ CONTAINS
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
     use pgslib_module,        only: PGSLib_Global_ANY, PGSLib_Global_SUM
-    use time_step_module,     only: dt
+    use time_step_module,     only: dt    
     use vof_data_module,      only: volume_track_interfaces, VT_Interface_Mask
 
     ! Local Variables
@@ -79,14 +79,14 @@ CONTAINS
     logical,  dimension(:),   allocatable :: Mask
     real(r8), dimension(:),   allocatable :: Tmp
     real(r8), dimension(:,:), allocatable :: Vof, Vof_n
-
+   
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     if (.not.fluid_to_move) return
 
     ! Start Volume Advection Timer
     call start_timer("Mass Advection")
-
+    
     ! Allocate working arrays
     ALLOCATE (Mask(ncells),                     &
               Tmp(ncells),                      &
@@ -115,14 +115,12 @@ CONTAINS
     call ADVECT_VOLUME (Vof, Vof_n, Fluxing_Velocity, Volume_Flux)
 
     ! Update the mass & concentration distributions.
-    if (volume_track_interfaces) then
+    if (volume_track_interfaces) then 
        call UPDATE_MASS (Fluxing_Velocity, Vof, Vof_n, VT_Interface_Mask)
     else
        call UPDATE_MASS (Fluxing_Velocity, Vof, Vof_n)
     end if
 
-    write(*,"('Fluxing_velocity[',i4,']: ', 6es15.7)") 771, Fluxing_Velocity(:,771)
-    write(*,"('volume_flux[',i4,']: ', 6es15.7)") 771, volume_flux(1,:,771)
     ! Return Vof values at this point back into the Matl structure.
     call MATL_SET_VOF (Vof)
 
@@ -257,7 +255,7 @@ CONTAINS
     DEALLOCATE (Mask)
 
   END SUBROUTINE UPDATE_MASS
-
+ 
   SUBROUTINE ADVECT_MOMENTUM_ACCUMULATION ()
     !=======================================================================
     ! Purpose(s):
@@ -338,7 +336,7 @@ CONTAINS
     do m = 1,nmat
        Mass_Flux(m,:,:) = Volume_Flux(m,:,:) * DENSITY_MATERIAL(m)
     end do
-
+ 
     ! Loop over each velocity component.
     DIMENSIONS: do n = 1, ndim
 
@@ -389,8 +387,8 @@ CONTAINS
 
              ! fix up for 1D_plug_flow problem
              if (cycle_number == 1) then
-
-                where (Mask .and. Zone(:)%Rho_old>0.0_r8)
+                
+                where (Mask .and. Zone(:)%Rho_old>0.0_r8) 
                     Momentum(f,:) = dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)*Zone%Vc_Old(n)*Zone%Rho_Old
                   elsewhere (Mask)
                     Momentum(f,:) = dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)*Inflow_Vel*Inflow_Density
@@ -431,7 +429,7 @@ CONTAINS
     !=======================================================================
     ! Purpose(s):
     !
-    !   Compute the liquid momentum advection term using second-order scheme
+    !   Compute the liquid momentum advection term using second-order scheme 
     !
     !=======================================================================
     use advection_data,       only: Volume_Flux
@@ -507,7 +505,7 @@ CONTAINS
                 if (v /= NULL_R) InflowPhi(f,nc) = v
              end do
              if (cycle_number == 1) then
-               where (InflowMask(f,:) .and. Zone(:)%Rho_old > 0.0_r8)
+               where (InflowMask(f,:) .and. Zone(:)%Rho_old > 0.0_r8) 
                  InflowPhi(f,:) = Zone%Vc(n)
                end where
              end if
@@ -518,7 +516,7 @@ CONTAINS
        do nc = 1,ncells
           do f = 1,nfc
              sum = 0.0_r8
-             do m = 1,nmat
+             do m = 1,nmat             
                 sum = sum + Mass_Flux(m,f,nc)
              end do
              ModFluxVolume(f,nc) = sum
@@ -562,15 +560,14 @@ CONTAINS
     !=======================================================================
     use advection_data, only: Momentum_Delta
     real(r8), dimension(:,:), intent(INOUT) :: Mom_Delta
-    write(*,'("Momentum_Delta(",i4,"):",3es15.5)') 771, Momentum_Delta(:,771)
     Mom_Delta = Mom_Delta + Momentum_Delta
   END SUBROUTINE ADVECT_MOMENTUM
 
 !---------------mf----------------
   subroutine advected_phi(phi,delta_phi)
-
+    
 ! advect scalar phi using DC
-! dt
+! dt 
     use fluid_data_module, only : Fluxing_Velocity
     use legacy_mesh_api,   only : ncells, nfc, Cell, EE_GATHER
     use pgslib_module,     only : PGSLib_Global_Any
@@ -581,20 +578,20 @@ CONTAINS
 
 
     integer :: status
-    integer :: j,f
+    integer :: j,f 
     logical, dimension(:),    allocatable :: Mask
     real(r8), dimension(:),   allocatable :: Inflow_Conc
     real(r8), dimension(:,:), allocatable :: Conc_Flux
-    real(r8), dimension(:,:), allocatable :: phi_ngbr
+    real(r8), dimension(:,:), allocatable :: phi_ngbr 
 
     Allocate (Mask(ncells),            &
               Inflow_Conc(ncells),     &
-              Conc_Flux(nfc,ncells),   &
+              Conc_Flux(nfc,ncells),   & 
               phi_ngbr(nfc,ncells),    &
               STAT=status)
     call TLS_fatal_if_any (status /= 0, 'ADVECTED_PHI: allocation failed')
 
-    ! get the neighbor values of phi
+    ! get the neighbor values of phi 
     call EE_GATHER(phi_ngbr,phi)
 
     Conc_Flux = 0.0_r8
@@ -609,18 +606,18 @@ CONTAINS
       enddo !nfc
     enddo !ncells
 
-
+        
 !    TI_INFLOW_LOOP: do f = 1,nfc
 !       ! Find inflow faces.
 !       Mask = IN_FLOW (f, Fluxing_Velocity)
 !       if (PGSLIB_GLOBAL_ANY(Mask)) then
 !         Inflow_Conc = phi
 !         if (ASSOCIATED(BC_Conc)) then
-!           where (BC_Conc(f,:) /= NULL_R)
+!           where (BC_Conc(f,:) /= NULL_R) 
 !              Inflow_Conc = BC_Conc(f,:)
 !           end where
 !         end if
-!         where (Mask)
+!         where (Mask) 
 !           Conc_Flux(f,:) = &
 !                dt*Fluxing_Velocity(f,:)*Cell%Face_Area(f)*Inflow_Conc
 !         end where
@@ -628,9 +625,9 @@ CONTAINS
 !    end do TI_INFLOW_LOOP
 
 
-    delta_phi = 0.0_r8
+    delta_phi = 0.0_r8  
     do f=1,nfc
-      delta_phi(:) = delta_phi(:) - Conc_Flux(f,:) !/Cell%Volume
+      delta_phi(:) = delta_phi(:) - Conc_Flux(f,:) !/Cell%Volume 
     enddo
 
     Deallocate(Mask, Inflow_Conc, Conc_Flux, phi_ngbr)
@@ -660,10 +657,10 @@ CONTAINS
  !! (3) TODO: I'm continuing to treat the boundary inflow temperature as
  !!     before, but I think this needs to be changed to use the diffusion
  !!     solvers heat equation dirichlet boundary condition data.
- !!
+ !! 
 
   subroutine compute_advected_enthalpy (Tcell, Hdelta, Tmin, Tmax)
-
+  
     use legacy_mesh_api,  only: ncells, nfc, EE_GATHER
     use parameter_module, only: nmat
     use input_utilities,  only: NULL_R
@@ -671,16 +668,16 @@ CONTAINS
     use fluid_data_module, only: Fluxing_Velocity
     use advection_data, only: Volume_Flux
     use material_interop, only: ds_enthalpy_density, void_material_index
-
+    
     real(r8), intent(in) :: Tcell(:)
     real(r8), intent(out) :: Hdelta(:)
     real(r8), intent(out), optional :: Tmin(:), Tmax(:)
-
+    
     integer :: k, j, m
     logical, allocatable :: mask(:)
     real(r8), allocatable :: Tnbr(:,:)
     real(r8) :: state(1), sum
-
+    
     ASSERT(size(Tcell) == ncells)
     ASSERT(size(Hdelta) == ncells)
     ASSERT(present(Tmin) .eqv. present(Tmax))
@@ -688,7 +685,7 @@ CONTAINS
       ASSERT(size(Tmin) == ncells)
       ASSERT(size(Tmax) == ncells)
     end if
-
+    
     !! Caution!  Volume_Flux may not yet be allocated because ADVECT_MASS
     !! has not yet been called with fluid_to_move==.true.
     if (.not.allocated(Volume_Flux)) then
@@ -699,7 +696,7 @@ CONTAINS
       end if
       return
     end if
-
+    
     !! Gather the neighbor cell temperatures.  I'm not sure what EE_GATHER does
     !! when there is no neighbor -- I'd guess it uses the cell temperature --
     !! but this data is only used when VOLUME_FLUX < 0, and for those faces we
@@ -707,7 +704,7 @@ CONTAINS
     !! only when FLUXING_VELOCITY < 0).
     allocate(Tnbr(nfc,ncells))
     call EE_GATHER(Tnbr, Tcell)
-
+    
     !! At boundary inflow faces, overwrite the neighbor temperature with
     !! the boundary temperature, when specified, else the cell temperature.
     allocate(mask(ncells))
@@ -723,7 +720,7 @@ CONTAINS
       end do
     end do
     deallocate(mask)
-
+    
     !! Accumulate the net change in enthalpy due to fluxed material.
     if (present(Tmin)) then
       do j = 1, ncells
@@ -765,7 +762,7 @@ CONTAINS
       end do
     end if
     deallocate(Tnbr)
-
+    
   end subroutine compute_advected_enthalpy
 
 END MODULE ADVECTION_MODULE
