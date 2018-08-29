@@ -268,7 +268,7 @@ CONTAINS
     if (ASSOCIATED(fluidRho)) DEALLOCATE (fluidRho)
 
      ! deallocate the fluidrho_n array
-     DEALLOCATE (fluidRho_n)
+     if (ASSOCIATED(fluidRho_n)) DEALLOCATE (fluidRho_n)
 
      ! deallocate the Momentum_Delta array
      if (ALLOCATED(Momentum_Delta)) DEALLOCATE (Momentum_Delta)
@@ -283,11 +283,11 @@ CONTAINS
     if (ASSOCIATED(Ngbr_isnt_Void)) DEALLOCATE (Ngbr_isnt_Void)
 
     ! deallocate the Projection / Predictor communiation arrays
-     DEALLOCATE (Centered_GradP_Dynamic)
+    if (ALLOCATED(Centered_GradP_Dynamic)) DEALLOCATE (Centered_GradP_Dynamic)
 
-     DEALLOCATE (Rho_Face_n)
+    if (ALLOCATED(Rho_Face_n)) DEALLOCATE (Rho_Face_n)
 
-    DEALLOCATE (Boundary_Flag)
+    if (ASSOCIATED(Boundary_Flag)) DEALLOCATE (Boundary_Flag)
     
     if (ALLOCATED(DVol_by_Dt_over_Vol)) DEALLOCATE(DVol_by_Dt_over_Vol)
     if (ASSOCIATED(Momentum_by_Volume)) DEALLOCATE(Momentum_by_Volume)
