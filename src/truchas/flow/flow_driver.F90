@@ -360,7 +360,7 @@ contains
 
     call flow_operators_init(this%mesh)
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
-    call this%flow%init(this%mesh, vel_cc=[1.0_r8, 1.0_r8, 0.0_r8])
+    call this%flow%init(this%mesh)
 
   end subroutine flow_driver_init
 
