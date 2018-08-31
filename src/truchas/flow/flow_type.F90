@@ -204,11 +204,18 @@ contains
     logical, optional, intent(in) ::  initial
     !-
     real(r8) :: p_max, p_min
+    real(r8), allocatable :: vel_fn_n(:)
     integer :: j
 
     ! a useless copy when the previous solution hase been accepted but
     ! probably not a performance bottleneck
     this%vel_cc = this%vel_cc_n
+
+    if (present(initial)) then
+      if (initial) then
+        vel_fn_n = this%vel_fn
+      end if
+    end if
 
     call this%bc%compute(t, dt, initial=initial)
 
@@ -241,6 +248,7 @@ contains
     if (present(initial)) then
       if (initial) then
         this%vel_cc = this%vel_cc_n
+        this%vel_fn = vel_fn_n
       end if
     end if
   end subroutine step
