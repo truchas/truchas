@@ -148,6 +148,13 @@ contains
 #endif
   end subroutine init
 
+  ! note 1: The bndry_func_class checks if values were already computed for the given time,
+  !         and skips if so. Since dp_dirichlet values get modified after calling compute,
+  !         and the flow solver is run for initialization, this presents a problem for the
+  !         first timestep, where the boundary condition values are registered as already
+  !         calculated and therefore compute is skipped, but then they are still modified.
+  !         Right now we have a hack to initialize the dp_dirichlet BCs, then never update
+  !         them, assuming them to be constant.
   subroutine compute(this, t, dt, initial)
     class(flow_bc), intent(inout) :: this
     real(r8), intent(in) :: t, dt
@@ -171,8 +178,11 @@ contains
     ! since the poisson equation has boundary information encoded
     ! in the right hand side if the predictor is called first.
 
-    call this%dp_dirichlet%compute(t+dt)
-    this%dp_dirichlet%value(:) = this%dp_dirichlet%value(:) - this%p_dirichlet%value(:)
+    ! WARN: see note 1
+    if (init) then
+      call this%dp_dirichlet%compute(t+dt)
+      this%dp_dirichlet%value(:) = this%dp_dirichlet%value(:) - this%p_dirichlet%value(:)
+    end if
 
     ! skip compute call for v_zero_normal for now.  perhaps there is a better abstraction
     ! for this, some sort of cell_face_boundary_condition which takes the current value
