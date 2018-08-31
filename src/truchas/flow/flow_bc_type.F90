@@ -167,12 +167,12 @@ contains
     call this%v_dirichlet%compute(t)
 
 
-    if (init) then
-      call this%dp_dirichlet%compute(t)
-    else
-      call this%dp_dirichlet%compute(t+dt)
-      this%dp_dirichlet%value(:) = this%dp_dirichlet%value(:) - this%p_dirichlet%value(:)
-    end if
+    ! dp_dirichlet doesn't need special treatment for initialization,
+    ! since the poisson equation has boundary information encoded
+    ! in the right hand side if the predictor is called first.
+
+    call this%dp_dirichlet%compute(t+dt)
+    this%dp_dirichlet%value(:) = this%dp_dirichlet%value(:) - this%p_dirichlet%value(:)
 
     ! skip compute call for v_zero_normal for now.  perhaps there is a better abstraction
     ! for this, some sort of cell_face_boundary_condition which takes the current value
