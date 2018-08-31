@@ -445,7 +445,7 @@ contains
           if (n == 0) cycle
 
           rho = p%rho_cc(n) + p%rho_delta_cc(n)
-          g(i,j) = -rho*dot_product(body_force, cc(:,i)-fc(:,j))
+          g(i,j) = -rho*dot_product(body_force, cc(:,n)-fc(:,j))
         end do
       end do
 
