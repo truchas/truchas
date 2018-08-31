@@ -366,11 +366,13 @@ contains
 
   subroutine flow_step(t, dt, vof, flux_vol, initial)
     use zone_module, only: Zone
+    use truchas_timers
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     logical, optional, intent(in) :: initial
     !-
 
+    call start_timer('Flow')
 #if ASDF
     associate (m => this%mesh%mesh)
       write(*, "('TOP LEVEL flux_vol[',i3,']: ',6es15.5): ") 771, flux_vol(1,m%xcface(771):m%xcface(772)-1)
@@ -381,6 +383,7 @@ contains
 
     call this%props%update_cc(vof, this%temperature_cc, initial=initial)
     call this%flow%step(t, dt, this%props, flux_vol, initial=initial)
+    call stop_timer('Flow')
 
   end subroutine flow_step
 
