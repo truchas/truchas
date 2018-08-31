@@ -299,6 +299,22 @@ contains
     n = this%mesh%ncell_onP
     this%svof = 0.0_r8
 
+    ! copy face velocities into cell-oriented array
+    do i = 1,this%mesh%ncell
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      do j = f0, f1
+        k = this%mesh%cface(j)
+
+        if (btest(this%mesh%cfpar(i),pos=1+j-f0)) then ! normal points inward
+          this%flux_vel(j) = -vel_fn(k)
+        else
+          this%flux_vel(j) = vel_fn(k)
+        end if
+
+      end do
+    end do
+
     do i = 1, size(this%liq_matid) + size(this%sol_matid)
       call gather_vof(i, this%vof(i,:n))
     end do
