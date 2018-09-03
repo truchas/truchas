@@ -138,32 +138,32 @@ add_pytruchas_test(htvoid4
 add_pytruchas_test(broken-dam
                    broken-dam/testBrokenDam.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(channel-flow
                    channel-flow/testChannelFlow.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(diverging-duct
                    diverging-duct/testDivergingDuct.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(diverging-duct-td
                    diverging-duct-td/testDivergingDuctTD.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(hydrostatic
                    hydrostatic/testHydrostatic.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(static-wall
                    static-wall/testStaticWall.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(natural-convection
                    natural-convection/testNaturalConvection.py
@@ -173,27 +173,27 @@ add_pytruchas_test(natural-convection
 add_pytruchas_test(natural-conv-tet
                    natural-conv-tet/test.py
 		   PROCESSORS 4
-		   LABELS FLOW CONDUCTION TET)
+		   LABELS OLD_FLOW CONDUCTION TET)
 
 add_pytruchas_test(porous-drag
                    porous-drag/testPorousDrag.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(sloshing-flow
                    sloshing-flow/testSloshingFlow.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(void-collapse
                    void-collapse/testVoidCollapse.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(turbulence
                    turbulence/testTurbulence.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(gap-rad
                    gap-rad/testGapRad.py
@@ -203,7 +203,7 @@ add_pytruchas_test(gap-rad
 add_pytruchas_test(gap-rad-flow
                    gap-rad-flow/testGapRadFlow.py
 		   PROCESSORS 4
-                   LABELS DIFFUSION FLOW)
+                   LABELS DIFFUSION OLD_FLOW)
 
 add_pytruchas_test(vfrad1
                    vfrad1/testVFRad1.py
@@ -258,7 +258,7 @@ add_pytruchas_test(tm-pc
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION FLOW)
+		   LABELS DIFFUSION OLD_FLOW)
 
 add_pytruchas_test(ustruc1
                    ustruc1/test.py
@@ -274,3 +274,29 @@ add_pytruchas_test(diag-advect
                    diag-advect/test.py
 		   PROCESSORS 4
 		   LABELS ADVECTION)
+
+# PIPE FLOW TESTS -- OLD FLOW SOLVER
+# Commented-out tests will fail, but shouldn't, due to known solver issues
+# see https://gitlab.com/truchas/truchas/issues/163
+add_pytruchas_test(pipe-flow-old-inviscid-1 pipe-flow-old/test1.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(pipe-flow-old-inviscid-2 pipe-flow-old/test2.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(pipe-flow-old-inviscid-3 pipe-flow-old/test3.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(pipe-flow-old-inviscid-4 pipe-flow-old/test4.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(pipe-flow-old-1 pipe-flow-old/test5.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(pipe-flow-old-2 pipe-flow-old/test6.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(pipe-flow-old-3 pipe-flow-old/test7.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(pipe-flow-old-4 pipe-flow-old/test8.py PROCESSORS 4 LABELS OLD_FLOW)
+
+# PIPE FLOW TESTS -- NEW FLOW SOLVER
+add_pytruchas_test(pipe-flow-inviscid-1 pipe-flow/test1.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(pipe-flow-inviscid-2 pipe-flow/test2.py PROCESSORS 4 LABELS FLOW)
+# These should work after the discretization is fixed
+# see https://gitlab.com/truchas/truchas/issues/163
+#add_pytruchas_test(pipe-flow-inviscid-3 pipe-flow/test3.py PROCESSORS 4 LABELS FLOW)
+#add_pytruchas_test(pipe-flow-inviscid-4 pipe-flow/test4.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(pipe-flow-1 pipe-flow/test5.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(pipe-flow-2 pipe-flow/test6.py PROCESSORS 4 LABELS FLOW)
+# These should work after the discretization is fixed
+# see https://gitlab.com/truchas/truchas/issues/163
+#add_pytruchas_test(pipe-flow-3 pipe-flow/test7.py PROCESSORS 4 LABELS FLOW)
+#add_pytruchas_test(pipe-flow-4 pipe-flow/test8.py PROCESSORS 4 LABELS FLOW)
