@@ -390,6 +390,7 @@ contains
           rho_f => props%rho_fc)
         do i = 1, size(faces)
           fi = faces(i)
+          if (fi > this%mesh%mesh%nface_onP) cycle
           j = this%mesh%fcell(2,fi) ! cell index
           ASSERT(this%mesh%fcell(1,fi) == 0)
           if (rho_f(fi) /=  0.0_r8) then
