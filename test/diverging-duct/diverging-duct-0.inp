@@ -1,0 +1,127 @@
+Inviscid Flow in 2D Diverging Duct
+----------------------------------
+
+This is the original diverging duct problem. Domain is a 2D diverging channel
+of length 10, width 1 at the left inlet side (x=0), width 1.25 at the right
+outlet side (x=10). Inflow velocity is 1 and outlet pressure is 0.68. Free-slip
+BC on the remaining sides. The domain is crudely discretized by a 1D line of
+cells. The expected velocity (directed along the axis of the channel) is given
+by the divergence free condition
+
+    V = 1/(1 + 0.025*x)
+
+and expected pressure is given by Bernoulli's principle 
+
+    P/rho + V**2/2 = const ==> P = 1 - 0.5 / (1 + 0.025*x)**2
+
+
+&MESH
+  mesh_file = 'mesh0.gen'
+/
+
+&OUTPUTS
+  output_t = 0.0, 20.0
+  output_dt = 1.0
+/
+
+Hack to hit the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 20.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  fluid_flow = .false.  ! use new flow
+/
+
+&FLOW_DRIVER new_driver = .true. /
+
+&FLOW_OPTIONS
+  active = .true.
+  inviscid = .true.
+  courant_number = 0.5
+/
+
+TODO: delete this namelist?
+&FLOW_PREDICTOR
+  rel_tol = 1.0e-10
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/ 
+
+&FLOW_CORRECTOR
+  rel_tol = 1.0e-10
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/
+
+TODO: delete this namelist?
+&VOLUMETRACKING active = f /
+
+&NUMERICS
+  dt_init = 1.e-03
+  dt_grow = 1.05
+  dt_min  = 1.e-03
+  dt_max  = 1.
+/
+
+Inlet velocity
+&FLOW_BC
+  face_sets = 1
+  condition = 'velocity dirichlet'
+  data      = 1.0, 0.0, 0.0
+/
+&FLOW_BC
+  face_sets = 1
+  condition = 'pressure neumann'
+/
+
+Outlet pressure
+&FLOW_BC
+  face_sets = 2
+  condition = 'pressure dirichlet'
+  data      = 0.68
+/
+&FLOW_BC
+  face_sets = 2
+  condition = 'velocity neumann'
+/
+
+Pipe walls
+&FLOW_BC
+  face_sets = 3
+  condition = 'free slip'
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  !TODO: delete the viscosity and density deviation properties
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0e-1
+  property_name(4) = 'density deviation', property_constant(4) = 0.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

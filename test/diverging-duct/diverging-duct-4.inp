@@ -1,0 +1,127 @@
+INVISCID FLOW IN 2D DIVERGING DUCT
+----------------------------------
+Radial inviscid flow across a narrow sector of an annulus with inner radius 1
+and outer radius 2. Unit radial velocity at inlet (r=1) and pressure 2 at the
+outlet (r=2). Free slip BC along the walls. rho = 4. The analytic solution is
+
+  (u,v) = (\cos\theta,\sin\theta)*(1/r),  p = 5/2 - 2/r^2
+
+NB: Due to current limitations, the velocity is a constant directed along
+the axis of the flow channel and is not exactly radially directed. This
+certainly has an effect on the solution. In addition, we are using ortho
+operators here, though this ought to be very good for the mesh used. Also
+we would prefer to initialize the velocity with the exact solution, but
+this isn't currently possible, so we have some initial transient we aren't
+really interested in computing.
+
+
+&MESH mesh_file = 'mesh1-rotz.gen'/
+
+&OUTPUTS
+  output_t = 0.0, 20.0
+  output_dt = 1.0
+/
+
+Hack to hit the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 20.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  fluid_flow = .false. ! use new flow
+/
+
+&FLOW_DRIVER new_driver = .true. /
+
+&FLOW_OPTIONS
+  active = .true.
+  inviscid = .true.
+  courant_number = 0.5
+/
+
+TODO: delete this namelist?
+&FLOW_PREDICTOR
+  rel_tol = 1.0e-10
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/
+
+&FLOW_CORRECTOR
+  rel_tol = 1.0e-10
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/
+
+TODO: delete this namelist?
+&VOLUMETRACKING active = f /
+
+&NUMERICS
+  dt_init = 0.00001
+  dt_grow = 1.05
+  dt_min  = 1.0e-6
+  dt_max  = 1.0
+/
+
+TODO: WE WANT A FUNCTION HERE: (u,v,w) = (x,y,0) => radial unit velocity on r = 0.
+Inlet velocity
+&FLOW_BC
+  face_sets = 1
+  condition = 'velocity dirichlet'
+  data      = 1.0, 0.0, 0.0
+/
+&FLOW_BC
+  face_sets = 1
+  condition = 'pressure neumann'
+/
+
+Outlet pressure
+&FLOW_BC
+  face_sets = 2
+  condition = 'pressure dirichlet'
+  data      = 2.0
+/
+&FLOW_BC
+  face_sets = 2
+  condition = 'velocity neumann'
+/
+
+Pipe walls
+&FLOW_BC
+  face_sets = 3
+  condition = 'free slip'
+/
+
+!TODO: WE WANT A FUNCTION HERE: (u,v,w) = (x/(x^2+y^2), y/(x^2+y^2), 0)
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  !TODO: delete the viscosity and density deviation properties
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0e-1
+  property_name(4) = 'density deviation', property_constant(4) = 0.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

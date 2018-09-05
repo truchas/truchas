@@ -11,7 +11,7 @@ import TruchasTest
 
 class DivergingDuct(TruchasTest.GoldenTestCase):
 
-  test_name = 'diverging-duct'
+  test_name = 'diverging-duct-old-0'
   num_procs = 4 # with a parallel executable
 
   def setUp(self):

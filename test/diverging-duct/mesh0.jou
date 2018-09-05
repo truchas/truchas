@@ -22,9 +22,12 @@ mesh volume 1
 
 block 1 volume 1
 sideset 1 surface 5
+sideset 1 name "inlet"
 sideset 2 surface 3
+sideset 2 name "outlet"
 sideset 3 surface 6 2 1 4
+sideset 3 name "walls"
 
 set large exodus file off
-export genesis "diverging-duct.gen" overwrite
+export genesis "mesh0.gen" overwrite
 

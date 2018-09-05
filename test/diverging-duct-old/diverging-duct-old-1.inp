@@ -1,0 +1,86 @@
+&MESH
+  mesh_file = 'mesh1.gen'
+/
+
+&OUTPUTS
+  output_t  = 0., 20.
+  output_dt = 20.
+/
+
+Hack to hit the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 20.0
+  phase_init_dt_factor = 1.0
+/
+ 
+&LINEAR_SOLVER
+  name                    = 'projection'
+  method                  = 'fgmres'
+  convergence_criterion   = 1.0e-10
+  maximum_iterations      = 100
+  krylov_vectors          = 200
+  preconditioning_method  = 'ssor'
+  relaxation_parameter    = 1.4
+  preconditioning_steps   = 1
+/
+
+&NUMERICS
+  dt_init                     = 1.e-03
+  dt_grow                     = 1.05
+  dt_min                      = 1.e-03
+  dt_max                      = 1.
+  courant_number              = 0.5
+  projection_linear_solution  = 'projection'
+  volume_track_interfaces     = .false.
+  volume_track_brents_method  = .true.
+  volume_track_iter_tol       = 1.0e-12
+  cutvof                      = 1.0e-08
+  discrete_ops_type           = 'ortho'
+/
+
+&PHYSICS
+  fluid_flow = .true.
+  inviscid = .true.
+/
+
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable  = 'velocity'
+  bc_type      = 'dirichlet'
+  bc_value     = 1.0, 0.0, 0.0
+/
+
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 2.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

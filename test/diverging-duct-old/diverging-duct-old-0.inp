@@ -47,7 +47,7 @@ resolution, in part due to the first order momentum advection.
 
 &MESH
 
-    mesh_file         = 'diverging-duct.gen'
+    mesh_file         = 'mesh0.gen'
 
 /
 

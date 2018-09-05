@@ -1,0 +1,45 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 09/04/2018 07:26:33 AM
+## Command Options:
+create cylinder height 0.05 radius 2
+webcut volume 1 with cylinder radius 1 axis z
+webcut volume 1 with plane yplane offset 0 rotate 1.432394488 about z noimprint nomerge
+webcut volume 1 with plane yplane offset 0 rotate -1.432394488 about z noimprint nomerge
+delete volume 1 2 3
+compress all
+
+curve 12 interval 5  # cells in y
+curve 12 scheme equal
+curve 8 interval 3   # cells in z
+curve 8 scheme equal
+curve 7 interval 15  # cells in x
+curve 7 scheme equal
+volume 1 scheme map
+mesh volume 1
+
+set duplicate block elements off
+block 1 add volume 1
+sideset 1 add surface 5
+sideset 1 name "inlet"
+sideset 2 add surface 3
+sideset 2 name "outlet"
+sideset 3 add surface 1 2 4 6
+sideset 3 name "walls"
+
+set exodus netcdf4 off
+set large exodus file on
+export genesis "mesh1.gen" overwrite
+
+rotate volume 1 angle 45 about z include_merged
+export genesis "mesh1-rotz.gen" overwrite
+
+rotate volume 1 angle -45 about z include_merged
+rotate volume 1 angle -45 about y include_merged
+export genesis "mesh1-roty.gen" overwrite
+
+rotate volume 1 angle 45 about y include_merged
+rotate volume 1 angle 45 about x include_merged
+export genesis "mesh1-rotx.gen" overwrite
