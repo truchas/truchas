@@ -253,7 +253,7 @@ contains
       allocate(this%sol(m%ncell))
       allocate(this%rhs1d(m%ncell))
 
-      if (this%viscous_implicitness > 0.0_r8) then
+      if (this%viscous_implicitness > 0.0_r8 .and. .not.this%inviscid) then
         ! build csr matrix graph for momentum solve, all components can reuse
         ! the same graph/matrix.
         row_ip => m%cell_ip
@@ -666,9 +666,11 @@ contains
             vel_cc(i,j) = sol(j)
           end do
         else
+          ! WARN: Need to replace this with a mass matrix LHS to handle implicit
+          !       terms for solidification and porosity.
           call gather_boundary(m%cell_ip, rhs1d)
           do j = 1, m%ncell
-            vel_cc(i,j) = rhs1d(j)
+            vel_cc(i,j) = rhs1d(j) / props%rho_cc(j)
           end do
         end if
 
