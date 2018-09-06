@@ -1456,6 +1456,8 @@ CONTAINS
           Zone%Vc(n) = Massc/(Mass + alittle)
        end where
 
+       Zone%Vc_old(n) = Zone%Vc(n)
+
     end do
 
   END SUBROUTINE VELOCITY_INIT
