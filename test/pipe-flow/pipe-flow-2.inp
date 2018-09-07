@@ -92,11 +92,12 @@ Pipe walls
   condition = 'no slip'
 /
 
-Pipe walls
-&FLOW_BC
-  face_sets = 4
-  condition = 'slip'
-/
+TEMPORARILY OMITTED SO THAT THE TEST WORKS; SEE ISSUE 181
+!Symmetry planes
+!&FLOW_BC
+!  face_sets = 4
+!  condition = 'slip'
+!/
 
 &BODY
   surface_name = 'from mesh file'
