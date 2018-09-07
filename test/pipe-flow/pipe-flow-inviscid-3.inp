@@ -83,7 +83,7 @@ Outlet pressure
 Pipe walls
 &FLOW_BC
   face_sets = 3
-  condition = 'free slip'
+  condition = 'slip'
 /
 
 &BODY

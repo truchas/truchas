@@ -130,7 +130,7 @@ contains
     ! need to have a p_neumann here... to complement velocity-dirichlet
 
     call f%alloc_scalar_bc(&
-        [character(len=32) :: "pressure neumann", "no slip"], this%p_neumann, default=0.0_r8)
+        [character(len=32) :: "pressure neumann", "no slip", "slip"], this%p_neumann, default=0.0_r8)
     call f%alloc_scalar_bc(["slip"], this%v_zero_normal, default=0.0_r8)
 
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0

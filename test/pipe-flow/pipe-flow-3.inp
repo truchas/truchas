@@ -95,7 +95,7 @@ Pipe walls
 Pipe walls
 &FLOW_BC
   face_sets = 4
-  condition = 'free slip'
+  condition = 'slip'
 /
 
 &BODY
