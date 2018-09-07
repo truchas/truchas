@@ -150,11 +150,6 @@ add_pytruchas_test(diverging-duct-td
 		   PROCESSORS 4
 		   LABELS OLD_FLOW)
 
-add_pytruchas_test(hydrostatic
-                   hydrostatic/testHydrostatic.py
-		   PROCESSORS 4
-		   LABELS OLD_FLOW)
-
 add_pytruchas_test(static-wall
                    static-wall/testStaticWall.py
 		   PROCESSORS 4
@@ -163,7 +158,7 @@ add_pytruchas_test(static-wall
 add_pytruchas_test(natural-convection
                    natural-convection/testNaturalConvection.py
 		   PROCESSORS 4
-		   LABELS FLOW CONDUCTION HEX)
+		   LABELS OLD_FLOW CONDUCTION HEX)
 
 add_pytruchas_test(natural-conv-tet
                    natural-conv-tet/test.py
@@ -243,7 +238,7 @@ add_pytruchas_test(shear-constr-heat
 add_pytruchas_test(simple-gap
                    simple-gap/testSimpleGap.py
 		   PROCESSORS 4
-		   LABELS FLOW)
+		   LABELS OLD_FLOW)
 
 add_pytruchas_test(tm-pc
                    tm-pc/testTMPC.py
@@ -313,3 +308,40 @@ add_pytruchas_test(diverging-duct-2 diverging-duct-2/test2.py PROCESSORS 4 LABEL
 # see https://gitlab.com/truchas/truchas/issues/163
 #add_pytruchas_test(diverging-duct-3 diverging-duct-3/test3.py PROCESSORS 4 LABELS FLOW)
 #add_pytruchas_test(diverging-duct-4 diverging-duct-4/test4.py PROCESSORS 4 LABELS FLOW)
+
+# HYDROSTATIC TESTS -- OLD FLOW SOLVER
+add_pytruchas_test(hydrostatic hydrostatic-old/testHydrostatic.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-1a hydrostatic-old-1a/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-1b hydrostatic-old-1b/test1b.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-1c hydrostatic-old-1c/test1c.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-1d hydrostatic-old-1d/test1d.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-2a hydrostatic-old-2a/test2a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-2b hydrostatic-old-2b/test2b.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-2c hydrostatic-old-2c/test2c.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-2d hydrostatic-old-2d/test2d.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-3a hydrostatic-old-3a/test3a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-3b hydrostatic-old-3b/test3b.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-3c hydrostatic-old-3c/test3c.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-3d hydrostatic-old-3d/test3d.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-4a hydrostatic-old-4a/test4a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-4b hydrostatic-old-4b/test4b.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-4c hydrostatic-old-4c/test4c.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(hydrostatic-old-4d hydrostatic-old-4d/test4d.py PROCESSORS 4 LABELS OLD_FLOW)
+
+# HYDROSTATIC TESTS -- NEW FLOW SOLVER
+add_pytruchas_test(hydrostatic-1a hydrostatic-1a/test1a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-1b hydrostatic-1b/test1b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-1c hydrostatic-1c/test1c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-1d hydrostatic-1d/test1d.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-2a hydrostatic-2a/test2a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-2b hydrostatic-2b/test2b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-2c hydrostatic-2c/test2c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-2d hydrostatic-2d/test2d.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-3a hydrostatic-3a/test3a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-3b hydrostatic-3b/test3b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-3c hydrostatic-3c/test3c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-3d hydrostatic-3d/test3d.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-4a hydrostatic-4a/test4a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-4b hydrostatic-4b/test4b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-4c hydrostatic-4c/test4c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-4d hydrostatic-4d/test4d.py PROCESSORS 4 LABELS FLOW)

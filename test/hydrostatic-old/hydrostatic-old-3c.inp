@@ -1,0 +1,98 @@
+TWO-FLUID 2D HYDROSTATIC TEST
+-----------------------------
+
+Two inviscid fluids at rest in a [-5,5]^2 domain subject to gravity; lighter
+fluid on top. Fluid should remain at rest, with a linear pressure field.
+
+With g=(0,-1,0): rho2 = 2, p = c1 - 2*y, in y < 0;
+                 rho1 = 1, p = c2 - y, in y > 0.
+
+Variations use rotated meshes (and rotated g)
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+&MESH
+  mesh_file = 'mesh1-roty.gen'
+/
+
+&PHYSICS
+  fluid_flow = .true.
+  inviscid   = .true.
+  body_force = 0.0, -1.0, 0.0
+/
+
+&NUMERICS
+  dt_constant = 0.125
+  projection_linear_solution  = 'projection'
+  discrete_ops_type           = 'ortho'
+  body_force_face_method      = .true.
+  courant_number              = 0.5
+/
+
+&LINEAR_SOLVER
+  name = 'projection'
+  method = 'fgmres'
+  preconditioning_method = 'ssor'
+  convergence_criterion = 1.0e-12
+  relaxation_parameter = 1.4
+  preconditioning_steps = 2
+  maximum_iterations = 200
+/
+
+# FREE SLIP BC ALL AROUND
+
+Lower half
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+upper half
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 2
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 2.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name    = 'oil'
+  material_number  = 2
+  density          = 1.0  ! not void
+/
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/

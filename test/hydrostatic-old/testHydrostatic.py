@@ -12,7 +12,7 @@ import TruchasTest
 
 class Hydrostatic(TruchasTest.GoldenTestCase):
 
-  test_name = 'hydrostatic'
+  test_name = 'hydrostatic-old'
   num_procs = 4 # with a parallel executable
 
   def setUp(self):
