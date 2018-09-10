@@ -12,7 +12,7 @@ import TruchasTest
 
 class mytest(TruchasTest.GoldenTestCase):
 
-  test_name = 'hydrostatic-old-3c'
+  test_name = 'hydrostatic-old-5a'
   num_procs = 4 # with a parallel executable
 
   # Override the default setUp, omitting the opening of the golden output
@@ -21,7 +21,7 @@ class mytest(TruchasTest.GoldenTestCase):
       self.setUpClass()
     self.test_output=Truchas.TruchasOutput(self.get_output_file())
 
-  def pressure_test(self, id):
+  def pressure_test(self, id, tol):
 
     # The centroids function does not serialize, so we don't want to here either.
     test = self.test_output.get_simulation().find_series(id).get_data('Z_P',serialize=False)
@@ -29,13 +29,11 @@ class mytest(TruchasTest.GoldenTestCase):
 
     # Analytic pressure solution at cell centrioids
     cc = self.test_output.get_mesh().centroids()
-    p = numpy.array([-2*y if y < 0 else -y for y in cc[:,1]])
+    p = numpy.array([-2*y if y < 0 else -y-0.5 for y in cc[:,1]])
     
     # Error array, accounting for arbitrary constant
     d = (test-p) - numpy.mean(test-p)
-
-    tol = 1e-10
-    error = max(abs(d))
+    error = numpy.linalg.norm(d)/d.size
     if error > tol:
       print 'pressure at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
       self.assertTrue(False)
@@ -44,11 +42,11 @@ class mytest(TruchasTest.GoldenTestCase):
 
   def test_pressure1(self):
     '''Verify initial pressure field'''
-    self.pressure_test(1)
+    self.pressure_test(1, 8e-3)
 
   def test_pressure2(self):
     '''Verify final pressure field'''
-    self.pressure_test(2)
+    self.pressure_test(2, 8e-3)
 
   def test_final_velocity(self):
     '''Verify final velocity field'''

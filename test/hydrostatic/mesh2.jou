@@ -1,0 +1,45 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 09/06/2018 07:59:07 AM
+## Command Options:
+brick x 10 y 10 z 3
+webcut volume 1 with plane yplane offset 0 noimprint nomerge
+imprint volume all
+merge volume all
+compress all
+
+volume all size 1
+mesh volume all
+
+block 1 add volume 1
+block 1 name "lower"
+block 2 add volume 2
+block 2 name "upper"
+
+sideset 1 add surface 5 11
+sideset 1 name "left"
+sideset 2 add surface 7 8
+sideset 2 name "right"
+sideset 3 add surface 1
+sideset 3 name "bottom"
+sideset 4 add surface 2
+sideset 4 name "top"
+sideset 5 add surface 4 6 9 10
+sideset 4 name "symmetry"
+
+set exodus netcdf4 off
+set large exodus file on
+export genesis "mesh2.gen" overwrite
+
+rotate volume 1 angle 45 about z include_merged
+export genesis "mesh2-rotz.gen" overwrite
+
+rotate volume 1 angle -45 about z include_merged
+rotate volume 1 angle -45 about y include_merged
+export genesis "mesh2-roty.gen" overwrite
+
+rotate volume 1 angle 45 about y include_merged
+rotate volume 1 angle 45 about x include_merged
+export genesis "mesh2-rotx.gen" overwrite

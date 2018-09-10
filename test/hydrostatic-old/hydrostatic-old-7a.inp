@@ -1,0 +1,105 @@
+TWO-FLUID 3D HYDROSTATIC TEST WITH MIXED CELLS
+----------------------------------------------
+Two inviscid fluids at rest in a 5^3 domain subject to gravity. The domain is
+centered on the orgin and rotated 45 degrees about the z axis and then 54.75
+degrees about the x axis to align one of the cube diagonals with the z axis.
+Gravity force is directed in the negative z direction, with lighter fluid
+in the upper part of the domain. Fluid should remain at rest, with a linear
+pressure field.
+
+    rho2 = 2, p = -2*(z-sqrt(3)) + c, in z < sqrt(3);
+    rho1 = 1, p = -(z-sqrt(3)) + c, in z > sqrt(3).
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+&MESH
+  mesh_file = 'mesh3.gen'
+/
+
+&PHYSICS
+  fluid_flow = .true.
+  inviscid   = .true.
+  body_force = 0.0, 0.0, -1.0
+/
+
+&NUMERICS
+  dt_constant = 0.125
+  projection_linear_solution  = 'projection'
+  discrete_ops_type           = 'ortho'
+  body_force_face_method      = .true.
+  courant_number              = 0.5
+/
+
+&LINEAR_SOLVER
+  name = 'projection'
+  method = 'fgmres'
+  preconditioning_method = 'ssor'
+  convergence_criterion = 1.0e-12
+  relaxation_parameter = 1.4
+  preconditioning_steps = 2
+  maximum_iterations = 200
+/
+
+# FREE SLIP BC ALL AROUND
+
+Lower half
+&BODY
+  surface_name = 'plane'
+  axis = 'z'
+  fill = 'outside'
+  material_number = 1
+  translation_pt = 0.0, 0.0, 1.73205080756888 ! sqrt(3)
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+  vof_tolerance = 1.0e-5
+/
+
+upper half
+&BODY
+  surface_name = 'background'
+  material_number = 2
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 2.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name    = 'oil'
+  material_number  = 2
+  density          = 1.0  ! not void
+/
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/
