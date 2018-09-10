@@ -130,7 +130,7 @@ contains
   subroutine init(this, m, vel_cc, P_cc)
     class(flow), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: m
-    real(r8), optional, intent(in) :: vel_cc(:), P_cc
+    real(r8), optional, intent(in) :: vel_cc(:,:), P_cc
     !-
     integer :: i
     real(r8) :: xc, yc, sigma, x, y, r2, theta, w
@@ -168,7 +168,7 @@ contains
       end do
 #else
       do i = 1, m%mesh%ncell
-        this%vel_cc(:,i) = vel_cc
+        this%vel_cc(:,i) = vel_cc(:,i)
       end do
 #endif
       this%vel_fn = 0.0_r8
@@ -197,6 +197,26 @@ contains
     print *, 'zero out all velocities on solid cells and faces'
   end subroutine zero_out_solid_velocities
 
+  ! note 1: On the initial pass, calculate initial pressure
+  !         and pressure gradients, but revert cell-centered
+  !         and face-centered velocities to initial values.
+  !         Some issues can arise here with non-uniform, but
+  !         analytically solenoidal velocity fields, which
+  !         are difficult to set discretely on faces of an
+  !         unstructured mesh. One pass of the flow solver
+  !         calculate discretely divergence-free face
+  !         velocities, but one timestep offset from the
+  !         cell-centered velocities, which introduces an
+  !         inconsistency in unsteady flow because the
+  !         predictor uses the face velocity as the donor-cell
+  !         velocity along boundaries. Since this term uses
+  !         a mix of cell- and face-centered velocities,
+  !         the initial mismatch introduces a momentum sync
+  !         in the first timestep. By reverting the
+  !         face-velocities to initial values, we avoid this
+  !         issue and produce the correct result for initially
+  !         uniform velocity fields. Further consideration is
+  !         necessary for non-uniform initial velocity fields.
   subroutine step(this, t, dt, props, flux_volumes, initial)
     class(flow), intent(inout) :: this
     real(r8), intent(in) :: t, dt, flux_volumes(:,:)

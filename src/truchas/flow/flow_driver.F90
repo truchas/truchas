@@ -293,13 +293,15 @@ contains
 
 
   subroutine flow_driver_init(mesh)
+    use zone_module, only: zone
+
     type(unstr_mesh), pointer, intent(in) :: mesh
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
     integer :: void, mu_id, rho_id, rho_delta_id, i
     integer, pointer :: phases(:)
     integer, allocatable :: fluids(:)
-    real(r8), allocatable :: density(:)
+    real(r8), allocatable :: density(:), velocity_cc(:,:)
     real(r8) :: state(1)
     class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
     class(scalar_func), allocatable :: f
@@ -360,7 +362,13 @@ contains
 
     call flow_operators_init(this%mesh)
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
-    call this%flow%init(this%mesh)
+
+    ! the initial velocity is provided from the velocity_init routine
+    allocate(velocity_cc(3, this%mesh%mesh%ncell))
+    do i = 1,this%mesh%mesh%ncell
+      velocity_cc(:,i) = zone(i)%vc
+    end do
+    call this%flow%init(this%mesh, velocity_cc)
 
   end subroutine flow_driver_init
 

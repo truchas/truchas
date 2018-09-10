@@ -565,8 +565,8 @@ contains
             else
               ! this must be an inflow boundary so use face velocity.  This seems overly
               ! restrictive and does not account for 'angled' inflow
-              rhs(:,i) = rhs(:,i) + vel_fn(k)*abs(m%normal(:,k)/m%area(k))*&
-                  dot_product(flux_volumes(:,j),props%density(:))/v
+              rhs(:,i) = rhs(:,i) - vel_fn(k)*m%normal(:,k)/m%area(k) * &
+                    dot_product(flux_volumes(:,j),props%density(:))/v
             end if
           end if
         end do
