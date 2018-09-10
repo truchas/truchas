@@ -1,6 +1,5 @@
 FLUID/VOID 2D HYDROSTATIC TEST
 ------------------------------
-
 Inviscid fluid at rest in lower half of a [-5,5]^2 domain with void above,
 subject to gravity. Fluid should remain at rest, with a linear pressure field.
 
@@ -37,7 +36,7 @@ TODO: delete this namelist
   max_ds_iter = 50
   max_amg_iter = 5
   krylov_method = 'cg'
-/ 
+/
 
 &FLOW_CORRECTOR
   rel_tol = 1.0e-12
@@ -47,7 +46,6 @@ TODO: delete this namelist
   krylov_method = 'cg'
 /
 
-TODO: delete this namelist
 &VOLUMETRACKING active = t /
 
 &NUMERICS
