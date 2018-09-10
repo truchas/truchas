@@ -1,0 +1,131 @@
+TWO-FLUID 2D HYDROSTATIC TEST WITH MIXED CELLS
+----------------------------------------------
+
+Two inviscid fluids at rest in a [-5,5]^2 domain subject to gravity; lighter
+fluid on top. Fluid should remain at rest, with a linear pressure field.
+
+With g=(0,-1,0): rho2 = 2, p = -2*y + c, in y < 1/2;
+                 rho1 = 1, p = -y - 0.5 + c, in y > 1/2.
+
+Fluid interface placed at cell midpoint.
+
+Variations use rotated meshes (and rotated g)
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+&MESH
+  mesh_file = 'mesh2-rotz.gen'
+/
+
+&PHYSICS
+  fluid_flow = .false.  ! use new flow
+/
+
+&FLOW_DRIVER new_driver = .true. /
+
+&FLOW_OPTIONS
+  active = .true.
+  inviscid = .true.
+  courant_number = 0.5
+  body_force = 0.707106781186547, -0.707106781186547, 0.0
+/
+
+TODO: delete this namelist
+&FLOW_PREDICTOR
+  rel_tol = 1.0e-12
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/ 
+
+&FLOW_CORRECTOR
+  rel_tol = 1.0e-12
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/
+
+&VOLUMETRACKING active = t /
+
+&NUMERICS
+  dt_constant = 0.125
+/
+
+# FREE SLIP BC ALL AROUND
+&FLOW_BC
+  face_sets = 1, 2, 3, 4, 5
+  condition = 'slip'
+/
+
+# FREE SLIP BC ALL AROUND
+
+Lower half
+&BODY
+  surface_name = 'plane'
+  axis = 'y'
+  fill = 'outside'
+  rotation_angle = 0, 0, 45
+  translation_pt = -0.353553390593274, 0.3535533905932747, 0.0 ! 1/(2*sqrt(2))
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+/
+
+upper half
+&BODY
+  surface_name = 'background'
+  material_number = 2
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 2.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  !TODO: delete the viscosity and density deviation properties
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0
+  property_name(4) = 'density deviation', property_constant(4) = 0.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name    = 'oil'
+  material_number  = 2
+  density          = 1.0  ! not void
+/
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  !TODO: delete the viscosity and density deviation properties
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0
+  property_name(4) = 'density deviation', property_constant(4) = 0.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/
