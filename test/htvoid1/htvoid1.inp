@@ -82,7 +82,8 @@ Fluid plug at left end of the channel
   length = 3.0, 2.0, 2.0
   translation_pt = -1.5, 0.0, 0.0
   material_number = 1
-  velocity        = 0.5, 0.0, 0.0
+  !velocity        = 0.5, 0.0, 0.0 ! Truchas originally overwrote this with 0
+  velocity        = 0.0, 0.0, 0.0
   temperature_function = 'init-temp'
 /
 

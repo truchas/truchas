@@ -80,7 +80,8 @@ FLUID CHANNEL
   surface_name    = 'from mesh file'
   mesh_material_number = 1
   material_number = 2
-  velocity        = 1.0, 0.0, 0.0
+  !velocity        = 1.0, 0.0, 0.0 ! Truchas originally overwrote this with zero
+  velocity        = 0.0, 0.0, 0.0
   temperature_function = 'init-temp'
 /
 

@@ -74,7 +74,8 @@ BC #1. Velocity BC: Inlet
  
        Material_number = 1,
        Surface_Name    = 'background',
-       Velocity        = 1.0, 0.0, 0.0,
+       !Velocity        = 1.0, 0.0, 0.0, ! Truchas original overwrote this with zero
+       Velocity        = 0.0, 0.0, 0.0,
        Temperature     = 273.0
 
 
