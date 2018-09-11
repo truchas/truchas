@@ -278,14 +278,14 @@ add_pytruchas_test(pipe-flow-old-2 pipe-flow-old/test6.py PROCESSORS 4 LABELS OL
 #add_pytruchas_test(pipe-flow-old-4 pipe-flow-old/test8.py PROCESSORS 4 LABELS OLD_FLOW)
 
 # PIPE FLOW TESTS -- NEW FLOW SOLVER
-add_pytruchas_test(pipe-flow-inviscid-1 pipe-flow/test1.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(pipe-flow-inviscid-2 pipe-flow/test2.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(pipe-flow-inviscid-1 pipe-flow/test1.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(pipe-flow-inviscid-2 pipe-flow/test2.py PROCESSORS 4 LABELS FLOW)
 # These should work after the discretization is fixed
 # see https://gitlab.com/truchas/truchas/issues/163
 #add_pytruchas_test(pipe-flow-inviscid-3 pipe-flow/test3.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 #add_pytruchas_test(pipe-flow-inviscid-4 pipe-flow/test4.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(pipe-flow-1 pipe-flow/test5.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(pipe-flow-2 pipe-flow/test6.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(pipe-flow-1 pipe-flow/test5.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(pipe-flow-2 pipe-flow/test6.py PROCESSORS 4 LABELS FLOW)
 # These should work after the discretization is fixed
 # see https://gitlab.com/truchas/truchas/issues/163
 #add_pytruchas_test(pipe-flow-3 pipe-flow/test7.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
@@ -356,12 +356,12 @@ add_pytruchas_test(hydrostatic-4b hydrostatic/test4b.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(hydrostatic-4c hydrostatic/test4c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(hydrostatic-4d hydrostatic/test4d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(hydrostatic-5a hydrostatic/test5a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(hydrostatic-5b hydrostatic/test5b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(hydrostatic-5b hydrostatic/test5b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-5c hydrostatic/test5c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(hydrostatic-5d hydrostatic/test5d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(hydrostatic-6a hydrostatic/test6a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(hydrostatic-6b hydrostatic/test6b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(hydrostatic-6c hydrostatic/test6c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(hydrostatic-6d hydrostatic/test6d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(hydrostatic-7a hydrostatic/test7a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(hydrostatic-7a hydrostatic/test7a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-7b hydrostatic/test7b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
