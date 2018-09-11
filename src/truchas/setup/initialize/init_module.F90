@@ -135,11 +135,13 @@ CONTAINS
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
 
-    if (vtrack_enabled()) then
-      call compute_initial_volumes(unstr_mesh_ptr('MAIN'), volume_fractions)
-    else
-      volume_fractions = vof_initialize()
-    end if
+    ! New marching tets procedure has same limitations as the old 'divide' method.
+    ! Disable until feature set matches the old 'points' method.
+!!$    if (vtrack_enabled()) then
+!!$      call compute_initial_volumes(unstr_mesh_ptr('MAIN'), volume_fractions)
+!!$    else
+    volume_fractions = vof_initialize()
+!!$    end if
     hits_vol = volume_fractions   ! temporary compatibility
 
     ! Either read Zone and Matl from a restart file or initialize them
