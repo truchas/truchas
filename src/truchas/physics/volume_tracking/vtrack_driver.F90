@@ -182,17 +182,13 @@ contains
   end subroutine read_volumetracking_namelist
 
 
-  subroutine vtrack_driver_init(t, mesh, vf)
+  subroutine vtrack_driver_init(mesh)
 
     use material_interop, only: phase_to_material, material_to_phase, void_material_index
     use phase_property_table
     use parameter_module, only: nmat
-    use interfaces_module, only: nbody
-    use volume_initialization
 
-    real(r8), intent(in) :: t
     type(unstr_mesh), pointer, intent(in) :: mesh
-    real(r8), intent(out) :: vf(:,:)
     integer :: i,j,v,k
     real(r8) :: cent(3)
 
@@ -203,14 +199,6 @@ contains
 
     this%mesh => mesh
     INSIST(associated(this%mesh))
-
-    if (.not.this%active) then
-      allocate(this%fvof_o(1, mesh%ncell))
-      allocate(this%flux_vol(1,size(mesh%cface)))
-      this%fvof_o = 1.0_r8
-      vf(1,:) = this%mesh%volume(1:mesh%ncell_onP)
-      return
-    end if
 
     this%fluids = 0
     this%void = 0
@@ -228,6 +216,7 @@ contains
       if (ppt_has_phase_property(material_to_phase(i), v)) this%fluids = this%fluids + 1
     end do
 
+    print *, "NMAT: ", nmat
     allocate(this%liq_matid(this%fluids+this%void))
     allocate(this%sol_matid(nmat-(this%fluids+this%void)))
     allocate(this%liq_pri(this%fluids+this%void))
@@ -235,7 +224,7 @@ contains
     allocate(this%fvof_o(this%fluids+this%void, mesh%ncell))
     allocate(this%flux_vol(this%fluids,size(mesh%cface)))
     allocate(this%flux_vel(size(mesh%cface)))
-    allocate(this%vof(nbody, mesh%ncell))
+    allocate(this%vof(nmat, mesh%ncell))
     allocate(this%svof(mesh%ncell))
 
     j = 1
@@ -254,18 +243,41 @@ contains
     end do
 
     call start_timer('Vof Initialization')
+    call get_vof_from_matl()
+    this%fvof_o(:,:) = this%fvof_i(:,:)
     call this%vt%init(mesh, this%fluids+this%void)
-    call compute_initial_volumes(mesh, this%vof)
     call stop_timer('Vof Initialization')
 
-    vf = this%vof(:,1:mesh%ncell_onP)
   end subroutine vtrack_driver_init
 
+  subroutine get_vof_from_matl()
+
+    use matl_module, only: gather_vof
+    integer :: i
+
+    associate (n => this%mesh%ncell_onP)
+
+      do i = 1, size(this%liq_matid) + size(this%sol_matid)
+        call gather_vof(i, this%vof(i,:n))
+      end do
+
+      do i = 1, size(this%liq_matid)
+        this%fvof_i(i,:n) = this%vof(this%liq_matid(i),:n)
+      end do
+
+      this%svof = 0.0_r8
+
+      do i = 1, size(this%sol_matid)
+        this%svof(:n) = this%svof(:n) + this%vof(this%sol_matid(i),:n)
+      end do
+      call gather_boundary(this%mesh%cell_ip, this%fvof_i)
+      ! don't need to communicate svof
+    end associate
+  end subroutine get_vof_from_matl
 
   ! vel_fn is the outward oriented face-normal velocity
   subroutine vtrack_update(t, dt, vel_fn)
     use constants_module
-    use matl_module, only: gather_vof, scatter_vof
     use matl_utilities, only: MATL_SET_VOF
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vel_fn(:)
@@ -283,10 +295,11 @@ contains
           do j = f0, f1
             k = m%cface(j)
             if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
-              this%flux_vol(1,j) = -vel_fn(k)*m%area(k)*dt
+              this%flux_vel(j) = -vel_fn(k)
             else
-              this%flux_vol(1,j) = vel_fn(k)*m%area(k)*dt
+              this%flux_vel(j) = vel_fn(k)
             end if
+            this%flux_vol(1,j) = this%flux_vel(j)*m%area(k)*dt
           end do
         end do
       end associate
@@ -296,8 +309,6 @@ contains
     if (this%fluids == 0) return
 
     call start_timer('Volumetracking')
-    n = this%mesh%ncell_onP
-    this%svof = 0.0_r8
 
     ! copy face velocities into cell-oriented array
     do i = 1,this%mesh%ncell
@@ -315,25 +326,11 @@ contains
       end do
     end do
 
-    do i = 1, size(this%liq_matid) + size(this%sol_matid)
-      call gather_vof(i, this%vof(i,:n))
-    end do
-    do i = 1, size(this%liq_matid)
-      this%fvof_i(i,:n) = this%vof(this%liq_matid(i),:n)
-    end do
-    do i = 1, size(this%sol_matid)
-      this%svof(:n) = this%svof(:n) + this%vof(this%sol_matid(i),:n)
-    end do
-    call gather_boundary(this%mesh%cell_ip, this%fvof_i)
-    ! don't need to communicate svof
+    call get_vof_from_matl()
 
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
         this%fluids, this%void, dt, this%svof)
 
-    ! SCATTER_VOF DOESN'T WORK
-!!$    do i = 1, this%fluids+this%void
-!!$      call scatter_vof(this%liq_matid(i), this%fvof_o(i,:n))
-!!$    end do
 
     call MATL_SET_VOF(this%fvof_o(:,:n))
     call stop_timer('Volumetracking')

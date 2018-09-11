@@ -78,6 +78,7 @@ CONTAINS
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use vof_init,               only: VOF_INITIALIZE
+    use volume_initialization, only: compute_initial_volumes
     use diffusion_solver_data,  only: ds_enabled, num_species, &
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
     use diffusion_solver,       only: ds_init, ds_set_initial_state
@@ -135,7 +136,7 @@ CONTAINS
     call TLS_info ('Computing initial volume fractions ... ')
 
     if (vtrack_enabled()) then
-      call vtrack_driver_init(t, unstr_mesh_ptr('MAIN'), volume_fractions)
+      call compute_initial_volumes(unstr_mesh_ptr('MAIN'), volume_fractions)
     else
       volume_fractions = vof_initialize()
     end if
@@ -178,6 +179,8 @@ CONTAINS
     !! always because fluid_init uses its results regardless of whether flow is on.
     print *, 'flow_enabled check: ', flow_enabled()
     if (flow_enabled()) then
+      INSIST(vtrack_enabled())
+      call vtrack_driver_init(unstr_mesh_ptr('MAIN'))
       call flow_driver_init(unstr_mesh_ptr('MAIN'))
     else
       call flow_property_init
