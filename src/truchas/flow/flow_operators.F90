@@ -305,6 +305,7 @@ contains
     integer, intent(in) , optional :: extra_ignore_faces(:)
 
     integer :: i, dim
+    real(r8) :: tmp
 
     this%work = 1.0_r8
     if (present(inactive_faces)) then
@@ -321,8 +322,12 @@ contains
         associate (fn => m%cface(m%xcface(i):m%xcface(i+1)-1))
           if (sum(this%work(fn)) >= 1.0_r8) then
             do dim = 1, size(ic,dim=1)
-              ic(dim,i) = dot_product(this%work(fn)*abs(m%normal(dim,fn)), xf(dim,fn))/ &
-                  sum(this%work(fn)*abs(m%normal(dim,fn)))
+              tmp = sum(this%work(fn)*abs(m%normal(dim,fn)))
+              if (tmp /= 0.0_r8) then
+                ic(dim,i) = dot_product(this%work(fn)*abs(m%normal(dim,fn)), xf(dim,fn)) / tmp
+              else
+                ic(dim,i) = 0.0_r8
+              end if
             end do
           else
             ic(:,i) = 0.0_r8
