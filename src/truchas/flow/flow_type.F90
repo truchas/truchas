@@ -167,7 +167,7 @@ contains
         this%vel_cc(:,i) = [-w*sin(theta), w*cos(theta), 0.0_r8]
       end do
 #else
-      do i = 1, m%mesh%ncell
+      do i = 1, m%mesh%ncell_onP
         this%vel_cc(:,i) = vel_cc(:,i)
       end do
 #endif

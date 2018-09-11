@@ -364,8 +364,8 @@ contains
     call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
 
     ! the initial velocity is provided from the velocity_init routine
-    allocate(velocity_cc(3, this%mesh%mesh%ncell))
-    do i = 1,this%mesh%mesh%ncell
+    allocate(velocity_cc(3, this%mesh%mesh%ncell_onP))
+    do i = 1,this%mesh%mesh%ncell_onP
       velocity_cc(:,i) = zone(i)%vc
     end do
     call this%flow%init(this%mesh, velocity_cc)
