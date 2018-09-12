@@ -170,6 +170,7 @@ contains
       do i = 1, m%mesh%ncell_onP
         this%vel_cc(:,i) = vel_cc(:,i)
       end do
+      call gather_boundary(m%mesh%cell_ip, this%vel_cc)
 #endif
       this%vel_fn = 0.0_r8
     else
