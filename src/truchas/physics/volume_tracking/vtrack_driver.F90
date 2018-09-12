@@ -283,7 +283,7 @@ contains
     real(r8), intent(in) :: vel_fn(:)
 
     real(r8) :: args(0:3), vel(3)
-    integer :: i, n, j, ncell, nfc, k, f0, f1, fi
+    integer :: i, j, k, f0, f1, fi
 
     if (.not.allocated(this)) return
     if (.not.this%active) then
@@ -332,7 +332,7 @@ contains
         this%fluids, this%void, dt, this%svof)
 
 
-    call MATL_SET_VOF(this%fvof_o(:,:n))
+    call MATL_SET_VOF(this%fvof_o(:,:this%mesh%ncell))
     call stop_timer('Volumetracking')
   end subroutine vtrack_update
 
