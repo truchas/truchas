@@ -61,28 +61,20 @@ TODO: delete this namelist
 /
 
 &BODY
-  surface_name = 'background'
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
   material_number = 1
   velocity = 3*0.0
   temperature = 0.0
 /
 
-! Preferred alternative
-!&BODY
-!  surface_name = 'from mesh file'
-!  mesh_material_number = 1
-!  material_number = 1
-!  velocity = 3*0.0
-!  temperature = 0.0
-!/
-!
-!&BODY
-!  surface_name = 'from mesh file'
-!  mesh_material_number = 2
-!  material_number = 1
-!  velocity = 3*0.0
-!  temperature = 0.0
-!/
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
 
 &MATERIAL
   material_name    = 'water'
