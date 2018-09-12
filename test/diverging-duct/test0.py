@@ -25,7 +25,7 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
   def test_pressure(self):
     '''Verify pressure field against expected analytic value'''
     
-    n = 274
+    n = 203
     tol = 5.0e-3
     # The centroids function does not serialize, so we don't want to here either.
     test = self.get_test_field('Z_P',cycle=n,serialize=False)
@@ -43,7 +43,7 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
   def test_velocity(self):
     '''Verify velocity field against expected analytic value'''
     
-    n = 274
+    n = 203
     tol = 5.0e-3
     # The centroids function does not serialize, so we don't want to here either.
     test = self.get_test_field('Z_VC',cycle=n,serialize=False)
