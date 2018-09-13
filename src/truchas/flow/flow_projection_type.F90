@@ -488,6 +488,14 @@ contains
           vel_fn(i) = dot_product(m%normal(:,i), value(:,j))/m%area(i)
         end do
       end associate
+      ! handle zero_normal bcs
+      associate (faces => this%bc%v_zero_normal%index)
+        do i = 1, size(faces)
+          j = faces(i)
+          ASSERT(this%mesh%fcell(1,j) == 0)
+          vel_fn(j) = 0
+        end do
+      end associate
       call gather_boundary(m%face_ip, vel_fn)
 #if ASDF
       write(*,'("Vel_Fn[",i4,"]: ",6es16.8)') Q, vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
@@ -560,6 +568,15 @@ contains
         do i = 1, size(index)
           j = index(i)
           vel_fc(j) = dot_product(value(:,i), m%normal(:,j))/m%area(j)
+        end do
+      end associate
+
+      ! handle zero_normal bcs
+      associate (faces => this%bc%v_zero_normal%index)
+        do i = 1, size(faces)
+          j = faces(i)
+          ASSERT(this%mesh%fcell(1,j) == 0)
+          vel_fc(j) = 0
         end do
       end associate
 
@@ -667,6 +684,7 @@ contains
         ! -dt * grad(dP)/rho
         vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
       end do
+      call gather_boundary(m%cell_ip, vel_cc)
     end associate
 #if ASDF
     write(*,'("vel_cc[",i4,"] ",3es20.12)') Q, vel_cc(:,Q)
