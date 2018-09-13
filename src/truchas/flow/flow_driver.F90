@@ -294,11 +294,12 @@ contains
 
   subroutine flow_driver_init(mesh)
     use zone_module, only: zone
+    use material_interop, only: void_material_index
 
     type(unstr_mesh), pointer, intent(in) :: mesh
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
-    integer :: void, mu_id, rho_id, rho_delta_id, i
+    integer :: mu_id, rho_id, rho_delta_id, i
     integer, pointer :: phases(:)
     integer, allocatable :: fluids(:)
     real(r8), allocatable :: density(:), velocity_cc(:,:)
@@ -324,21 +325,16 @@ contains
     rho_id = ppt_property_id("density")
     rho_delta_id = ppt_property_id("density deviation")
 
-    void = 0
     state(1) = 0.0_r8
     call ppt_get_phase_ids(phases)
     do i = 1, size(phases)
       ! all fluids have a viscosity and density
       if (ppt_has_phase_property(phases(i), mu_id) .and. &
           ppt_has_phase_property(phases(i), rho_id)) then
-        ! void has zero density
+
         call ppt_get_phase_property(phases(i), rho_id, f)
         ASSERT(allocated(f))
         ASSERT(is_const(f))
-        if (f%eval(state) == 0.0_r8) then
-          void = void + 1
-          cycle
-        end if
         if (allocated(fluids)) then
           fluids = [fluids, phases(i)]
         else
@@ -361,7 +357,7 @@ contains
     end do
 
     call flow_operators_init(this%mesh)
-    call this%props%init(this%mesh, density, density_delta, viscosity, void > 0)
+    call this%props%init(this%mesh, density, density_delta, viscosity, void_material_index > 0)
 
     ! the initial velocity is provided from the velocity_init routine
     allocate(velocity_cc(3, this%mesh%mesh%ncell_onP))

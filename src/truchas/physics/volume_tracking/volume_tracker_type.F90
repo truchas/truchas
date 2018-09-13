@@ -87,48 +87,6 @@ contains
         call this%donor_fluxes_os(vel, vof, sub_dt)
       end if
 
-!!$      open(unit=50, file='flux_vol_sub-1')
-!!$      open(unit=51, file='flux_vol_sub-2')
-!!$      do ii = 1, this%mesh%ncell
-!!$        associate (cn => this%mesh%cnode(this%mesh%xcnode(ii):this%mesh%xcnode(ii+1)-1), &
-!!$            fi => this%mesh%cface(this%mesh%xcface(ii):this%mesh%xcface(ii+1)-1))
-!!$
-!!$          f0 = this%mesh%xcface(ii)
-!!$          f1 = this%mesh%xcface(ii+1)-1
-!!$
-!!$          do j = 1, size(fi)
-!!$            k = fi(j)
-!!$            kk = f0+j-1
-!!$            if (this%flux_vol_sub(1,kk)>0.0_r8) then
-!!$              ! write centroid and displacement along outward normal
-!!$              associate(fn => this%mesh%fnode(this%mesh%xfnode(k):this%mesh%xfnode(k+1)-1))
-!!$                cent = sum(this%mesh%x(:,fn),dim=2)/real(size(fn),r8)
-!!$                if (btest(this%mesh%cfpar(ii),pos=j)) then
-!!$                  write(50,'(6es15.5)') cent, -this%mesh%normal(:,k)*this%flux_vol_sub(1,kk)/this%mesh%area(k)
-!!$                else
-!!$                  write(50,'(6es15.5)') cent,  this%mesh%normal(:,k)*this%flux_vol_sub(1,kk)/this%mesh%area(k)
-!!$                end if
-!!$              end associate
-!!$            end if
-!!$
-!!$            if (this%flux_vol_sub(2,kk)>0.0_r8) then
-!!$              ! write centroid and displacement along outward normal
-!!$              associate(fn => this%mesh%fnode(this%mesh%xfnode(k):this%mesh%xfnode(k+1)-1))
-!!$                cent = sum(this%mesh%x(:,fn),dim=2)/real(size(fn),r8)
-!!$                if (btest(this%mesh%cfpar(ii),pos=j)) then
-!!$                  write(51,'(6es15.5)') cent, -this%mesh%normal(:,k)*this%flux_vol_sub(2,kk)/this%mesh%area(k)
-!!$                else
-!!$                  write(51,'(6es15.5)') cent,  this%mesh%normal(:,k)*this%flux_vol_sub(2,kk)/this%mesh%area(k)
-!!$                end if
-!!$              end associate
-!!$            end if
-!!$          end do
-!!$        end associate
-!!$      end do
-!!$
-!!$      close(50)
-!!$      close(51)
-!!$      stop
 
       call this%flux_renorm(vel, vof_n, flux_vol, sub_dt)
 
@@ -206,24 +164,6 @@ contains
     end do
     ! will need normals for vof reconstruction in ghost cells
     call gather_boundary(this%mesh%cell_ip, this%normal)
-
-!!$    ! dump to file
-!!$    open(unit=50, file='normals-1')
-!!$    do i = 1, this%mesh%ncell_onP
-!!$      associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1))
-!!$        write(50, '(6es15.5)') sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8), this%normal(:,1,i)
-!!$      end associate
-!!$    end do
-!!$    close(50)
-!!$
-!!$    open(unit=50, file='normals-2')
-!!$    do i = 1, this%mesh%ncell_onP
-!!$      associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1))
-!!$        write(50, '(6es15.5)') sum(this%mesh%x(:,cn),dim=2)/real(size(cn),r8), this%normal(:,2,i)
-!!$      end associate
-!!$    end do
-!!$    close(50)
-!!$    stop
 
     call stop_timer('normals')
 
@@ -559,7 +499,7 @@ contains
     real(r8) :: mat_flux_cur, mat_flux_acc, mat_avail
     real(r8) :: face_flux_fixed, face_flux_adjustable, face_flux
 
-    nmat = size(vof_n,dim=1)
+    nmat = size(flux_vol,dim=1)
 
     do i = 1, this%mesh%ncell
       avail = .true.
@@ -670,16 +610,16 @@ contains
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: flux_vol(:,:), vof(:,:)
 
-    integer :: i,nmat,j,f0,f1,m
+    integer :: i,fluids,j,f0,f1,m
 
-    nmat = size(vof,dim=1)
+    fluids = size(flux_vol,dim=1)
 
     do i = 1, this%mesh%ncell_onP
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
 
       do j = f0, f1
-        do m = 1, nmat
+        do m = 1, fluids
           flux_vol(m,j) = flux_vol(m,j) + this%flux_vol_sub(m,j)
           vof(m,i) = vof(m,i) - this%flux_vol_sub(m,j)/this%mesh%volume(i)
         end do

@@ -216,7 +216,6 @@ contains
       if (ppt_has_phase_property(material_to_phase(i), v)) this%fluids = this%fluids + 1
     end do
 
-    print *, "NMAT: ", nmat
     allocate(this%liq_matid(this%fluids+this%void))
     allocate(this%sol_matid(nmat-(this%fluids+this%void)))
     allocate(this%liq_pri(this%fluids+this%void))

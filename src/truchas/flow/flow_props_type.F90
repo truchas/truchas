@@ -329,20 +329,20 @@ contains
       ! special cases:
       ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
       ! - the face viscosity is the cell viscosity
-      ! 2) If the face is shared by a solid cell (where mu_cc == 0) and a fluid cell
+      ! 2) If the face is shared by a void/solid cell (where mu_cc == 0) and a fluid cell
       ! - the face viscosity is the fluid cell viscosity
-      ! 3) If the face is shared by two solid cells
+      ! 3) If the face is shared by two void/solid cells
       ! - the face viscosity is 0
       this%mu_fc = 0.0_r8
       do j = 1, mesh%nface_onP
         associate(cn => this%mesh%fcell(:,j))
           if (cn(1) > 0) then
-            select case (sum(this%inactive_c(cn)))
-            case (0)
+            ! is this robust?
+            if (product(this%mu_cc(cn)) > epsilon(1.0_r8)) then
               this%mu_fc(j) = 2.0_r8*product(this%mu_cc(cn))/sum(this%mu_cc(cn))
-            case (1)
+            else
               this%mu_fc(j) = maxval(this%mu_cc(cn))
-            end select
+            end if
           else
             this%mu_fc(j) = this%mu_cc(cn(2))
           end if

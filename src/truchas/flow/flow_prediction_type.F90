@@ -670,7 +670,11 @@ contains
           !       terms for solidification and porosity.
           call gather_boundary(m%cell_ip, rhs1d)
           do j = 1, m%ncell
-            vel_cc(i,j) = rhs1d(j) / props%rho_cc(j)
+            if (props%inactive_c(j) > 0 .or. props%vof_novoid(j) <= props%cutoff) then
+              vel_cc(i,j) = rhs1d(j)
+            else
+              vel_cc(i,j) = rhs1d(j) / props%rho_cc(j)
+            end if
           end do
         end if
 
