@@ -138,7 +138,7 @@ CONTAINS
     use property_module,      only: get_density_delta
     use time_step_module,     only: dt
     use discrete_op_module,   only: GRADIENT_CELL
-    use matl_module,          only: GATHER_VOF
+    use legacy_matl_api,      only: GATHER_VOF, nmat
     use EM_data_proxy,        only: joule_power_density, EM_is_on
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_output, only: get_smech_cell_plastic_strain_rate, &
@@ -151,7 +151,7 @@ CONTAINS
                                       get_sm_node_gap,                    &
                                       get_sm_node_norm_trac
     use probe_module,           only: probes
-    use parameter_module,       only: string_len, nmat, nprobes, ncomps
+    use parameter_module,       only: string_len, nprobes, ncomps
     use legacy_mesh_api,        only: ncells, ndim, nnodes
 
     ! Local variables.

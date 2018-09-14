@@ -52,8 +52,8 @@ CONTAINS
     !
     !=======================================================================
     use input_utilities,      only: NULL_I, NULL_R
-    use matl_module,          only: relation_forms
-    use parameter_module,     only: maxcon, maxmat, max_Relation_forms , nmat
+    use legacy_matl_api,      only: nmat
+    use parameter_module,     only: maxcon, maxmat
     use property_data_module, only: background_material,                          &
                                     density, material_name, matpri, priority,     &
                                     Permeability_Constant,                        &
@@ -223,9 +223,8 @@ CONTAINS
     !   Default MATERIAL namelist.
     !
     !=======================================================================
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: nmat
     use input_utilities,      only: NULL_I, NULL_R
-    use matl_module,          only: relation_forms
     use property_data_module, only: background_material,                          &
                                     density, material_name, matpri,               &
                                     Permeability_Constant, Material_Feature,      &
@@ -252,14 +251,6 @@ CONTAINS
     Void_Temperature             = 0
     Sound_Speed                  = 0
     
-    ! Valid character strings for property relations
-    relation_forms = ''
-    relation_forms(1) = 'constant'  
-    relation_forms(2) = 'const'
-    relation_forms(3) = 'temperature polynomial'
-    relation_forms(4) = 'temperature_polynomial'
-    relation_forms(5) = 'temp polynomial'
-
   END SUBROUTINE MATERIAL_DEFAULT
 
   SUBROUTINE MATERIAL_INPUT (lun)
@@ -271,7 +262,7 @@ CONTAINS
     !=======================================================================
     use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R
     use parallel_info_module,   only: p_info
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: nmat
     use property_module,        only: Set_User_Material_ID
     use property_data_module,   only: density, material_name, priority,               &
                                       Permeability_Constant,                          &
@@ -458,12 +449,9 @@ CONTAINS
      !   Set the relevant problem material dimensions.
      !
      !=======================================================================
-     use parameter_module, only: mat_slot_new, mmat, nmat
+     use legacy_matl_api, only: mat_slot_new, nmat
 
      ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-     ! Set max number of materials.
-     mmat = nmat
 
      ! Use 1 slot if we only have 1 material (= nmat); otherwise use 2
      ! slots. More slots are automatically allocated as needed.

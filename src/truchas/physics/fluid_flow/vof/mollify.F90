@@ -54,7 +54,7 @@ CONTAINS
        use cutoffs_module, only: cutvof
        use legacy_mesh_api, only: ncells, ncells_tot, ndim, nfc, Mesh, Cell, degenerate_face
        use pgslib_module, only: PGSLIB_BCast, PGSLIB_Collate, PGSLib_GLOBAL_Maxval
-       use parameter_module, only: nmat
+       use legacy_matl_api, only: nmat
        use var_vector_module
 
        real(r8), dimension(ncells), INTENT(IN) :: Scal_Field

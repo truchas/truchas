@@ -93,11 +93,10 @@ contains
   
   subroutine get_fluid_density (rho)
 
-    use parameter_module, only: mat_slot
     use legacy_mesh_api, only: ncells
     use fluid_data_module, only: isImmobile
     use property_module, only: density_material
-    use matl_module, only: Matl
+    use legacy_matl_api, only: Matl, mat_slot
 
     real(r8), intent(out) :: rho(:)
 

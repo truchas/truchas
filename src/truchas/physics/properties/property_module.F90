@@ -47,7 +47,7 @@ contains
   end subroutine set_user_material_id
 
   integer function get_user_material_id (id_truchas) result (id_user)
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: nmat
     integer, intent(in) :: id_truchas
     if (id_truchas >= 1 .and. id_truchas <= nmat) then
       id_user = user_material_number(id_truchas)
@@ -59,7 +59,7 @@ contains
   end function get_user_material_id
 
   integer function get_truchas_material_id (id_user) result (id_truchas)
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: nmat
     use input_utilities, only: NULL_I
     integer, intent(in) :: id_user
     if (id_user == 0) then
@@ -83,11 +83,10 @@ contains
   subroutine get_density_delta (temp, drho)
 
     use kinds, only: r8
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
-    use matl_module, only: gather_vof
+    use legacy_matl_api, only: gather_vof, nmat
     use fluid_data_module, only: isImmobile
     use scalar_func_class
     use scalar_func_tools, only: is_const
@@ -133,10 +132,9 @@ contains
 
   subroutine get_viscosity (mu)
   
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
     use fluid_data_module, only: IsImmobile, FluidRho
-    use matl_module, only: gather_vof
+    use legacy_matl_api,   only: gather_vof, nmat
     use turbulence_module, only: turbulence_model, Nu_Turb
     use zone_module, only: Zone
 
@@ -232,8 +230,7 @@ contains
                                       boussinesq_approximation,               &
                                       Cell_isnt_Void, Ngbr_isnt_Void,         &
                                       Fluxing_Velocity,MinFluidRho
-    use matl_module,            only: GATHER_VOF
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: GATHER_VOF, nmat
     use legacy_mesh_api,        only: ncells, nfc, ndim, Cell, EE_GATHER
     use projection_data_module, only: Boundary_Flag
     use pgslib_module,          only: PGSLIB_GLOBAL_ALL, PGSLIB_GLOBAL_ANY, PGSLIB_GLOBAL_MINVAL
@@ -506,14 +503,13 @@ contains
   subroutine compute_cell_property (prop, temp, value, fluid)
 
     use kinds, only: r8
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
     use fluid_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
     use scalar_func_class
     use scalar_func_tools, only: is_const
-    use matl_module, only: gather_vof
+    use legacy_matl_api, only: gather_vof, nmat
 
     character(*), intent(in) :: prop
     real(r8), intent(in) :: temp(:)
@@ -571,7 +567,7 @@ contains
   subroutine request_fluid_property (prop, default)
 
     use phase_property_table
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: nmat
     use fluid_data_module, only: isImmobile
     use material_interop, only: void_material_index, material_to_phase
     use scalar_func_factories

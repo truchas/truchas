@@ -201,7 +201,6 @@ Contains
     !
     !---------------------------------------------------------------------------
 
-    use parameter_module,     only: nmat, mat_slot
     use legacy_mesh_api,      only: nnodes, ncells, Cell, Mesh, GAP_ELEMENT_1
     use legacy_mesh_api,      only: EN_GATHER, EN_SUM_SCATTER
     use node_operator_module, only: cv_init, CV_Internal, nipc, LINEAR_GRAD
@@ -211,7 +210,7 @@ Contains
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
     use fluid_data_module,    only: isImmobile
-    use matl_module,          only: Matl
+    use legacy_matl_api,      only: Matl, nmat, mat_slot
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_mesh,   only: SM_MESH_INIT, ndim, nvc, nfc
@@ -438,14 +437,13 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    use parameter_module,     only: nmat, mat_slot
     use legacy_mesh_api,      only: nnodes, ncells
     Use node_operator_module, Only: nipc
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
                                     VISCOPLASTIC_STRAIN_RATE, PLASTIC_STRAIN_INCREMENT,&
                                     DEVIATORIC_STRESS
     use fluid_data_module,    only: isImmobile
-    use matl_module,          only: Matl
+    use legacy_matl_api,      only: Matl, nmat, mat_slot
     use solid_mech_constraints, only: FACE_GAP_UPDATE
     use solid_mechanics_input, only: solid_mechanics
     use solid_mechanics_mesh, only: ndim, ncomps
@@ -1799,7 +1797,7 @@ Contains
   
   subroutine define_tm_density_property (stat, errmsg)
   
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: nmat
     use material_interop, only: void_material_index, material_to_phase
     use fluid_data_module, only: isImmobile
     use phase_property_table
@@ -1884,12 +1882,11 @@ Contains
   
   subroutine compute_cell_property (prop, temp, value)
   
-    use parameter_module, only: nmat
     use legacy_mesh_api,  only: ncells
     use fluid_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
-    use matl_module, only: gather_vof
+    use legacy_matl_api,  only: gather_vof, nmat
     use scalar_func_class
     use scalar_func_tools, only: is_const
     

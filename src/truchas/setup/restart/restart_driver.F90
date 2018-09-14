@@ -202,7 +202,7 @@ contains
 
   subroutine restart_matlzone ()
     use zone_module, only: read_zone_data
-    use matl_utilities, only: read_matl_data
+    use legacy_matl_api, only: read_matl_data
     use fluid_data_module, only: read_flow_data
     call read_zone_data (unit, version)
     call read_flow_data (unit, version)

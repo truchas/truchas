@@ -93,11 +93,10 @@ CONTAINS
     !
     !=======================================================================
 !    use constants_module, only: pi
-!    use parameter_module, only: max_slots
 !    use legacy_mesh_api,  only: ncells, nnodes, ndim
 !    use zone_module,      only: Zone
 !    use legacy_mesh_api,  only: Mesh, Cell, Vertex
-!    use matl_module,      only: Matl
+!    use legacy_matl_api,  only: Matl, max_slots
 
     ! Arguments
 
@@ -207,9 +206,8 @@ CONTAINS
     !=======================================================================
     
 !!$    use error_module,         only: ERROR_CHECK
-!!$    use matl_module,          only: GATHER_VOF
+!!$    use legacy_matl_api,      only: GATHER_VOF, max_slots, mat_slot, nmat
 !!$    use legacy_mesh_api,      only: Mesh, Cell, Vertex
-!!$    use parameter_module,     only: max_slots, mat_slot, nmat
 !!$    use legacy_mesh_api,      only: ncells, nnodes
 !!$    use thermo,               only: Volume_Fraction
 !!$    use zone_module,          only: Zone
@@ -277,7 +275,7 @@ CONTAINS
      !--------------------------------------------------------------------------
 
      use legacy_mesh_api,   only: ncells, nfc, EE_GATHER
-     use matl_module,       only: gather_vof
+     use legacy_matl_api,   only: gather_vof
 
      ! arguments
      logical, dimension(:,:) :: mask

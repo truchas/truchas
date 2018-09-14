@@ -44,7 +44,6 @@ MODULE MATL_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: max_relation_forms, max_slots
   use truchas_logging_services
   implicit none
   private
@@ -56,6 +55,10 @@ MODULE MATL_MODULE
             SLOT_DECREASE, SLOT_INCREASE, SLOT_COMPRESS,      &
             SLOT_SET, GATHER_VOF_OLD, SLOT_RESIZE
 
+  ! Moved here from parameter_module
+  integer, parameter, public :: max_slots = 10
+  integer, public :: nmat, mat_slot = 0, mat_slot_new = 0
+
   INTERFACE COLLATE
      MODULE PROCEDURE COLLATE_MATL
   END INTERFACE
@@ -65,10 +68,6 @@ MODULE MATL_MODULE
   end interface
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  ! Variables needed in processing the namelist input
-  character(LEN = 80), dimension(max_relation_forms), public, save :: &
-                       Relation_Forms, P_Change_Forms
 
   ! Define MATERIAL Structure
   type MATERIAL
@@ -100,7 +99,6 @@ CONTAINS
     !   Gather material m volume fractions from the Matl derived
     !   type and place them into array Vof.
     !=======================================================================
-    use parameter_module, only: mat_slot
 
     ! Argument List
     integer,  intent(IN)  :: m
@@ -129,7 +127,6 @@ CONTAINS
     !   Gather material m volume fractions from the Matl derived
     !   type and place them into array Vof.
     !=======================================================================
-    use parameter_module, only: mat_slot
     use legacy_mesh_api,  only: ncells
 
     ! Argument List
@@ -159,7 +156,6 @@ CONTAINS
     !   Scatter material m volume fractions in array Vof into the
     !   appropriate slots of the Matl derived type.
     !=======================================================================
-    use parameter_module, only: mat_slot
     use legacy_mesh_api,  only: ncells
 
     ! Argument List
@@ -185,7 +181,6 @@ CONTAINS
     ! Purpose(s):
     !   Decrease the ABC structure size from slot to slot_new.
     !=======================================================================
-    use parameter_module, only: max_slots
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -222,7 +217,6 @@ CONTAINS
     ! Purpose(s):
     !   Increase the ABC structure size from slot to slot_new.
     !=======================================================================
-    use parameter_module, only: max_slots
     use legacy_mesh_api,  only: ncells
 
     ! Argument List
@@ -304,7 +298,6 @@ CONTAINS
     !   This routine compresses the slot structure to remove unused holes.
     !
     !=======================================================================
-    use parameter_module, only: max_slots
     use legacy_mesh_api,  only: ncells
 
     ! Argument List
@@ -356,7 +349,6 @@ CONTAINS
     ! Purpose(s):
     !   Initialize the ABC structure for slot s.
     !=======================================================================
-    use parameter_module, only: max_slots
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -382,7 +374,6 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed matl into a single large matl on IO PE
     !==================================================================
-    use parameter_module,     only: mat_slot, max_slots
     use pgslib_module,        only: PGSLib_COLLATE
 
     ! Arguments
@@ -414,7 +405,6 @@ CONTAINS
     !   max_slots slots, of which mat_slot are used.
     !
     !====================================================================
-    use parameter_module, only: mat_slot, max_slots
 
     ! Arguments
     type(MATL_SLOT), dimension(max_slots), intent(IN)  :: Matl_Src

@@ -148,7 +148,8 @@ CONTAINS
     !
     ! Author(s): Sharen Cummins (scummins@lanl.gov)
     !=======================================================================
-    use parameter_module,            only: nprobes, nmat
+    use parameter_module,            only: nprobes
+    use legacy_matl_api,             only: nmat
     use solid_mechanics_input,       only: solid_mechanics
     use EM_data_proxy,               only: EM_is_on
     use input_utilities,             only: NULL_I

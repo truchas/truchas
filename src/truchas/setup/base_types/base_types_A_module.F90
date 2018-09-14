@@ -54,9 +54,9 @@ CONTAINS
     !
     !=======================================================================
     use bc_module,           only: BC
-    use matl_module,         only: SLOT_INCREASE, Matl
+    use legacy_matl_api,     only: SLOT_INCREASE, Matl, mat_slot, mat_slot_new, nmat
     use legacy_mesh_api,     only: nfc, ncells
-    use parameter_module,    only: mat_slot, mat_slot_new, nmat, nprobes
+    use parameter_module,    only: nprobes
     use zone_module,            only: Zone
     use fluid_data_module,       only: Fluxing_Velocity
     use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
@@ -157,8 +157,8 @@ CONTAINS
     !
     !=======================================================================
     use bc_module,         only: BC
-    use matl_module,       only: SLOT_DECREASE, Matl
-    use parameter_module,  only: mat_slot, mat_slot_new, nprobes
+    use legacy_matl_api,   only: SLOT_DECREASE, Matl, mat_slot, mat_slot_new
+    use parameter_module,  only: nprobes
     use probe_module,      only: probes
     use zone_module,       only: ZONE
     use fluid_data_module, only: Fluxing_Velocity

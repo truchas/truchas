@@ -58,7 +58,8 @@ CONTAINS
     use interface_triangle_module, only: INTERFACE_TRIANGLES
     use locate_plane_module,       only: LOCATE_PLANE
     use legacy_mesh_api,           only: ncells, ndim, nfc, nvc, Cell, Vertex, EN_GATHER
-    use parameter_module,          only: nicells, nmat
+    use legacy_matl_api,           only: nmat
+    use parameter_module,          only: nicells
     use pgslib_module,             only: PGSLib_Global_MAXVAL
     use property_data_module,      only: Matpri
     use truncate_volume_module,    only: Trunc_Vol, TRUNCATE_VOLUME, FACE_PARAM
@@ -350,7 +351,7 @@ CONTAINS
     use discrete_op_module,   only: GRADIENT
     use interface_module,     only: interface_topology_model
     use mollify,              only: MOLLIFY_CONV_SAVEMEM
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: nmat
     use legacy_mesh_api,      only: ncells, ndim
     use property_data_module, only: Matpri
     use vof_data_module,      only: interface_geometry

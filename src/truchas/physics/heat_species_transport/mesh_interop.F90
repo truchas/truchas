@@ -172,8 +172,7 @@ contains
 
   subroutine update_mmf_from_matl (mmf)
 
-    use matl_module, only: gather_vof
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: gather_vof, nmat
     use legacy_mesh_api, only: ncells
     use index_partitioning, only: gather_boundary
     use material_interop, only: material_to_system
@@ -254,8 +253,7 @@ contains
 
     use material_system
     use material_table
-    use matl_utilities, only: update_matl, matl_get_cell_vof
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: update_matl, matl_get_cell_vof, nmat
     use legacy_mesh_api, only: ncells
     use material_interop, only: phase_to_material, void_material_index
 #ifdef EXTRA_VOF_DIAGNOSTICS

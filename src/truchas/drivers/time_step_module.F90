@@ -92,8 +92,7 @@ CONTAINS
     !======================================================================= 
     use fluid_data_module,        only: fluid_flow, FluidDeltaRho, & 
                                         Solid_face, isPureImmobile, Fluxing_Velocity
-    use matl_module,              only: Matl 
-    use parameter_module,         only: mat_slot
+    use legacy_matl_api,          only: Matl, mat_slot
     use legacy_mesh_api,          only: ncells, ndim, nfc 
     use property_module,          only: fluid_properties 
     use restart_variables,        only: restart

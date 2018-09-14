@@ -66,9 +66,8 @@ CONTAINS
     use advection_data,       only: Volume_Flux
     use bc_module,            only: IN_FLOW, OUT_FLOW
     use fluid_data_module,    only: qin, qout, fluid_to_move, Fluxing_Velocity
-    use matl_utilities,       only: MATL_GET_VOF, MATL_SET_VOF
+    use legacy_matl_api,      only: MATL_GET_VOF, MATL_SET_VOF, nmat
     use legacy_mesh_api,      only: ncells, nfc, Cell
-    use parameter_module,     only: nmat
     use pgslib_module,        only: PGSLib_Global_ANY, PGSLib_Global_SUM
     use time_step_module,     only: dt    
     use vof_data_module,      only: volume_track_interfaces, VT_Interface_Mask
@@ -163,7 +162,7 @@ CONTAINS
     use fluid_data_module,      only: fluidVof, fluidVof_n, fluidRho, fluidRho_n, isImmobile, &
                                       Cell_isnt_Void, Ngbr_isnt_Void
     use legacy_mesh_api,        only: ncells, nfc, EE_GATHER
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: nmat
     use property_module,        only: DENSITY_MATERIAL
     use zone_module,            only: Zone
 
@@ -295,7 +294,7 @@ CONTAINS
     use input_utilities,      only: NULL_R
     use fluid_data_module,    only: Fluxing_Velocity
     use legacy_mesh_api,      only: ncells, ndim, nfc, Cell, EE_GATHER
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: nmat
     use pgslib_module,        only: PGSLib_Global_ANY
     use time_step_module,     only: cycle_number
     use zone_module,          only: Zone
@@ -437,7 +436,7 @@ CONTAINS
     use input_utilities,      only: NULL_R
     use fluid_data_module,    only: Fluxing_Velocity
     use legacy_mesh_api,      only: ncells, ndim, nfc, EE_GATHER
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: nmat
     use pgslib_module,        only: PGSLib_Global_ANY
     use time_step_module,     only: cycle_number
     use zone_module,          only: Zone
@@ -662,7 +661,7 @@ CONTAINS
   subroutine compute_advected_enthalpy (Tcell, Hdelta, Tmin, Tmax)
   
     use legacy_mesh_api,  only: ncells, nfc, EE_GATHER
-    use parameter_module, only: nmat
+    use legacy_matl_api,  only: nmat
     use input_utilities,  only: NULL_R
     use bc_module, only: IN_FLOW, BC_Temp
     use fluid_data_module, only: Fluxing_Velocity

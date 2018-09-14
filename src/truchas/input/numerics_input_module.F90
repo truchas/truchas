@@ -223,8 +223,9 @@ CONTAINS
     use nonlinear_solution,       only: NK_DEFAULT, NKuser,                   &
                                         nonlinear_solutions,                  &
                                         DEFAULT_NK_CONTROLS
-    use parameter_module,         only: nmat, string_len, max_topology_models
+    use parameter_module,         only: string_len, max_topology_models
     use legacy_mesh_api,          only: ndim
+    use legacy_matl_api,          only: nmat
     use porous_drag_data,         only: porous_implicitness
     use projection_data_module,   only: projection_linear_solution,           &
                                         UBIK_PRESSURE
@@ -881,7 +882,7 @@ CONTAINS
     use interface_module,       only: interface_topology_model
     use linear_solution,        only: UBIK_PRESSURE_DEFAULT, UBIK_DISPLACEMENT_DEFAULT, ubik_viscous_default
     use nonlinear_solution,     only: NK_DEFAULT
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: nmat
     use porous_drag_data,       only: porous_implicitness
     use projection_data_module, only: mac_projection_iterations,           &
                                       mac_projection_precond_iter,         &

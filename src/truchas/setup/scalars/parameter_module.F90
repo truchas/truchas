@@ -47,9 +47,6 @@ MODULE PARAMETER_MODULE
   ! Number of different BC variable character string forms. 
   integer, parameter :: bc_forms = 30
 
-  ! Number of material relation character strings allowed
-  integer, parameter :: max_relation_forms = 15
-
   ! Number of interface topology character strings allowed
   integer, parameter :: max_topology_models = 5
 
@@ -67,7 +64,6 @@ MODULE PARAMETER_MODULE
   integer, parameter :: mregion =  50
 
   ! Maximum number of material constants          
-  integer, parameter :: max_slots = 10
   integer, parameter :: maxmat = 64
   integer, parameter :: maxcon = 10
   integer, parameter :: maxform = 8
@@ -80,10 +76,7 @@ MODULE PARAMETER_MODULE
 
   ! Array sizes
   integer, dimension(ndim) :: Nx, Mx, Nx_tot, Mx_tot
-  integer :: nmat, mmat, nicells, nicells_tot,           &
-                              nfaces, boundary_faces, boundary_faces_tot, &
-                              mat_slot = 0, mat_slot_new = 0,             &
-                              mat_slot_tmp = 0, mat_slot_tmp_new = 0
+  integer :: nicells, nicells_tot, nfaces, boundary_faces, boundary_faces_tot
 
   ! maximum number of probes allowed in input file
   integer, parameter :: MAX_PROBES = 20

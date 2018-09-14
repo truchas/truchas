@@ -44,7 +44,7 @@ module vof_init
    use kinds, only: r8
    use legacy_mesh_api, only: ndim, nvc, ncells, nfc, nec
    use interfaces_module, only: nbody, vof_method, vof_tolerance, vof_max_recursion
-   use parameter_module, only: nmat
+   use legacy_matl_api, only: nmat
    use truchas_logging_services
    implicit none
    private

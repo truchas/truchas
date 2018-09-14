@@ -630,7 +630,7 @@ contains
 
   subroutine get_vol_frac (matid, vf)
 
-    use matl_module, only: gather_vof
+    use legacy_matl_api, only: gather_vof
     use legacy_mesh_api, only: ncells
 
     integer, intent(in) :: matid(:)

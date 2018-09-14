@@ -81,8 +81,7 @@ contains
     !=======================================================================
     use cutoffs_module,       only: alittle, cutvof
     use discrete_op_module,   only: GRADIENT
-    use matl_module,          only: GATHER_VOF
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: GATHER_VOF, nmat
     use legacy_mesh_api,      only: ncells, ndim
     use property_module,      only: density_material
     use zone_module,          only: Zone
@@ -240,10 +239,9 @@ contains
     use discrete_derivatives,        only: GRADIENT_FACE
     use discrete_op_module,          only: GRADIENT,VERTEX_AVG 
     use discrete_ops_data,           only: use_ortho_face_gradient
-    use matl_module,                 only: GATHER_VOF
+    use legacy_matl_api,             only: GATHER_VOF, nmat
     use mollify,                     only: MOLLIFY_CONV_SAVEMEM,     &
                                            interface_smoothing_length
-    use parameter_module,            only: nmat
     use legacy_mesh_api,             only: ncells, ndim, nfc, nvc, nnodes
     use legacy_mesh_api,             only: EN_GATHER, LINEAR_PROP 
     use zone_module,                 only: Zone 

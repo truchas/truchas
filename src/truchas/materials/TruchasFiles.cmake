@@ -20,7 +20,8 @@ set(MAT_FILES
        materials/material_table.F90
        materials/material_utilities.F90
        materials/phase_namelist.F90
-       materials/phase_property_table.F90)
+       materials/phase_property_table.F90
+       materials/legacy_matl_api.F90)
 
 set(MAT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities

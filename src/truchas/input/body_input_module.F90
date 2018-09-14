@@ -47,8 +47,9 @@ CONTAINS
                                  Rtheta_Tabular_Pt, RZ_Tabular_Pt,     &
                                  Sgeom, Surface_Name, Tab_Type,        &
                                  Length, Ztab, Mesh_Matnum
-    use parameter_module,  only: msurf, mtab, mtype, nmat
+    use parameter_module,  only: msurf, mtab, mtype
     use legacy_mesh_api,   only: ndim
+    use legacy_matl_api,   only: nmat
     use property_module,   only: Get_User_Material_ID
 
     ! Argument List

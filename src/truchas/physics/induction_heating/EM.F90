@@ -131,7 +131,7 @@ contains
     subroutine add_property (prop, default)
     
       use phase_property_table
-      use parameter_module, only: nmat
+      use legacy_matl_api, only: nmat
       use material_interop, only: void_material_index, material_to_phase
       use scalar_func_factories
       

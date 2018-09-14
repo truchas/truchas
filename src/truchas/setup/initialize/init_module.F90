@@ -68,7 +68,7 @@ CONTAINS
     use interfaces_module,      only: nbody
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
                                       OVERWRITE_VEL, OVERWRITE_ZONE
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: nmat
     use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
@@ -806,9 +806,9 @@ CONTAINS
     use cutoffs_module,       only: cutvof
     use interfaces_module,    only: background_body, Body_Mass, Matnum, nbody,   &
                                     Body_Temp
-    use matl_module,          only: Matl, SLOT_INCREASE, SLOT_SET
+    use legacy_matl_api,      only: Matl, SLOT_INCREASE, SLOT_SET, mat_slot, mat_slot_new, nmat
     use legacy_mesh_api,      only: ncells, Cell
-    use parameter_module,     only: mat_slot, mat_slot_new, maxmat, mbody, nmat
+    use parameter_module,     only: maxmat, mbody
     use pgslib_module,        only: PGSLib_GLOBAL_MAXVAL
     use property_data_module, only: background_material
     use restart_variables,    only: restart
@@ -1029,11 +1029,9 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,       only: alittle
     use interfaces_module,    only: Body_Temp, Matnum, nbody
-    use matl_module,          only: Matl, GATHER_VOF
-    use matl_utilities,       only: update_matl
+    use legacy_matl_api,      only: Matl, GATHER_VOF, update_matl, mat_slot, nmat
     use legacy_mesh_api,      only: ncells, Cell
 
-    use parameter_module,     only: mat_slot, nmat
     use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
     use zone_module,          only: Zone
     use restart_variables,    only: restart
@@ -1203,9 +1201,8 @@ CONTAINS
 
   subroutine check_vof (stat)
 
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells, unpermute_mesh_vector
-    use matl_utilities, only: matl_get_vof
+    use legacy_matl_api, only: matl_get_vof, nmat
     use property_module, only: get_user_material_id
 
     integer, intent(out) :: stat
@@ -1458,7 +1455,7 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,    only: cutvof
     use legacy_mesh_api,   only: ncells, nfc, EE_GATHER
-    use matl_module,       only: GATHER_VOF
+    use legacy_matl_api,   only: GATHER_VOF
 
     ! Arguments
     integer, intent(IN) :: face
@@ -1526,7 +1523,7 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,    only: cutvof
-    use matl_module,       only: GATHER_VOF
+    use legacy_matl_api,   only: GATHER_VOF
     use legacy_mesh_api,   only: ncells, Mesh
 
     ! Arguments
@@ -1625,7 +1622,7 @@ CONTAINS
 
   subroutine compute_cell_enthalpy (T, vof, H)
 
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: nmat
     use phase_property_table
     use material_table
     use material_system

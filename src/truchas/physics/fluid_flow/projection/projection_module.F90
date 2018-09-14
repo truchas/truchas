@@ -228,10 +228,9 @@ CONTAINS
     use fluid_data_module,      only: fluidRho, Solid_Face, &
                                       void_pressure, IsPureImmobile,  &
                                       Rho_Face, IsImmobile
-    use matl_module,            only: Matl
+    use legacy_matl_api,        only: Matl, nmat, mat_slot
     use linear_solution,        only: Ubik_user
     use legacy_mesh_api,        only: ncells, ndim, nfc, ncells_tot, Cell
-    use parameter_module,       only: nmat, mat_slot
     use pgslib_module,          only: PGSLIB_GLOBAL_SUM, PGSLIB_GLOBAL_ANY
     use projection_data_module, only: mac_projection_iterations,    &
                                       mac_projection_precond_iter,  &

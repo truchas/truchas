@@ -33,8 +33,7 @@ CONTAINS
     ! Written by:
     ! Markus Bussmann (University of Toronto)
     !===========================================================================
-    use matl_module,      only: Matl
-    use parameter_module, only: nmat, mat_slot
+    use matl_module,      only: Matl, mat_slot, nmat
     use legacy_mesh_api,  only: ncells
 
     ! Arguments
@@ -67,8 +66,7 @@ CONTAINS
 
   subroutine matl_get_cell_vof (n, vof)
   
-    use matl_module, only: matl
-    use parameter_module, only: nmat, mat_slot
+    use matl_module, only: matl, mat_slot, nmat
     use legacy_mesh_api,  only: ncells
     
     integer, intent(in) :: n
@@ -96,8 +94,7 @@ CONTAINS
     ! Written by:
     ! Markus Bussmann (University of Toronto)
     !===========================================================================
-    use matl_module,       only: Matl, SLOT_COMPRESS, SLOT_DECREASE, SLOT_INCREASE
-    use parameter_module,  only: nmat, mat_slot
+    use matl_module,       only: Matl, SLOT_COMPRESS, SLOT_DECREASE, SLOT_INCREASE, mat_slot, nmat
     use legacy_mesh_api,   only: ncells
     use pgslib_module,     only: PGSLib_Global_MAXVAL
 
@@ -178,8 +175,7 @@ CONTAINS
     !  Update the matl pointer with the new  volume fractions and  densitiy
     !  values
     !===========================================================================
-    use matl_module, only: Matl, SLOT_INCREASE, SLOT_DECREASE
-    use parameter_module, only: mat_slot, mat_slot_new, nmat
+    use matl_module, only: Matl, SLOT_INCREASE, SLOT_DECREASE, mat_slot, mat_slot_new, nmat
     use legacy_mesh_api, only: ncells
     use pgslib_module, only: PGSLIB_GLOBAL_MAXVAL
 
@@ -262,9 +258,8 @@ CONTAINS
 
   subroutine define_matl (vf, matl)
 
-    use parameter_module, only: nmat, mat_slot
     use legacy_mesh_api, only: ncells
-    use matl_module, only: material, matl_slot, slot_resize
+    use matl_module, only: material, matl_slot, slot_resize, mat_slot, nmat
     use pgslib_module, only: pgslib_global_maxval
 
     real(r8), intent(in)    :: vf(:,:)
@@ -337,9 +332,8 @@ CONTAINS
 
   subroutine read_matl_data (unit, version)
 
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells, pcell => unpermute_mesh_vector
-    use matl_module, only: matl
+    use matl_module, only: matl, nmat
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
 

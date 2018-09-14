@@ -70,10 +70,10 @@ CONTAINS
                                       BC
     use constants_module,       only: zero
     use cell_geometry_module,   only: FACE_CENTROID_PHYS
-    use matl_module,            only: MATL_SLOT
+    use legacy_matl_api,        only: MATL_SLOT, max_slots
     use mesh_module, only: Cell, Mesh, Vertex
     use output_module,          only: blank_line, Output_String
-    use parameter_module,       only: max_slots, ncells, ndim, nfc, nnodes
+    use parameter_module,       only: ncells, ndim, nfc, nnodes
     use projection_data_module, only: dirichlet_pressure
     use zone_module,            only: CELL_AVG
 
@@ -206,8 +206,8 @@ CONTAINS
     !=======================================================================
     use constants_module, only: one
     use mesh_module, only: Cell, Mesh, Vertex
-    use matl_module,      only: MATL_SLOT
-    use parameter_module, only: max_slots, ncells, nnodes
+    use legacy_matl_api,  only: MATL_SLOT, max_slots
+    use parameter_module, only: ncells, nnodes
     use zone_module,      only: CELL_AVG
 
     ! Arguments
@@ -234,10 +234,10 @@ CONTAINS
     !   velocities computed in VELOCITY_INIT
     !
     !=======================================================================
-    use parameter_module, only: max_slots, ncells, nnodes
+    use parameter_module, only: ncells, nnodes
     use zone_module,      only: CELL_AVG
     use mesh_module, only: Mesh, Cell, Vertex
-    use matl_module,      only: MATL_SLOT
+    use legacy_matl_api,  only: MATL_SLOT, max_slots
 
     ! Arguments
     type(CELL_AVG),  dimension(ncells),    intent(IN) :: Zone
@@ -255,8 +255,8 @@ CONTAINS
     !=======================================================================
     use constants_module, only: one, pi, two, zero
     use mesh_module, only: Cell, Mesh, Vertex
-    use matl_module,      only: MATL_SLOT
-    use parameter_module, only: max_slots, ncells, ndim, nnodes
+    use legacy_matl_api,  only: MATL_SLOT, max_slots
+    use parameter_module, only: ncells, ndim, nnodes
     use zone_module,      only: CELL_AVG
 
     ! Arguments

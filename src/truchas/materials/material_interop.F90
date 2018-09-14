@@ -82,7 +82,7 @@ module material_interop
 
   use kinds, only: r8
   use phase_property_table
-  use parameter_module, only: nmat
+  use legacy_matl_api, only: nmat
   use property_data_module, only: material_name, density
   use scalar_func_containers
 

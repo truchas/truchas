@@ -178,11 +178,10 @@ contains
   
     subroutine write_common_data
 
-      use parameter_module, only: nmat
       use legacy_mesh_api, only: ndim, ncells, cell
       use zone_module, only: zone
       use property_module, only: get_density, get_user_material_id
-      use matl_module, only: gather_vof
+      use legacy_matl_api, only: gather_vof, nmat
 
       integer :: j, m, stat
       real(r8), allocatable :: rho(:), vof(:,:), xc(:,:)

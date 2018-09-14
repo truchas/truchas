@@ -76,7 +76,7 @@ Contains
 
   subroutine viscoplasticity_init (plastic)
 
-    use parameter_module, only: nmat
+    use legacy_matl_api, only: nmat
     use material_interop, only: void_material_index, material_to_phase
     use phase_property_table
     use viscoplastic_model_namelist
@@ -402,8 +402,7 @@ Contains
 
   subroutine viscoplastic_strain_rate_one (icell, stress, temp, strain_rate)
 
-    use parameter_module, only: mat_slot
-    use matl_module, only: matl
+    use legacy_matl_api,  only: matl, mat_slot
     use time_step_module, Only: dt
 
     integer,  intent(in)  :: icell
@@ -432,11 +431,10 @@ Contains
 
   subroutine viscoplastic_strain_rate_all (stress, temp, strain_rate)
 
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
     use fluid_data_module, only: isImmobile
     use material_interop, only: void_material_index
-    use matl_module, only: gather_vof
+    use legacy_matl_api,  only: gather_vof, nmat
     use time_step_module, only: dt
 
     real(r8), intent(in)  :: stress(:)

@@ -75,7 +75,7 @@ CONTAINS
     !   the volume fluxes.
     !
     !=======================================================================
-    use parameter_module,    only: nmat
+    use legacy_matl_api,     only: nmat
     use legacy_mesh_api,     only: nfc, ncells
     use time_step_module,    only: dt
     use vof_data_module,     only: adv_dt, volume_track_subcycles, volume_track_interfaces
@@ -186,7 +186,7 @@ CONTAINS
     !=======================================================================
     use fluid_data_module,      only: fluidVof, isImmobile
     use legacy_mesh_api,        only: ncells, nfc, Cell
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: nmat
     use vof_data_module,        only: adv_dt
 
     ! Arguments
@@ -230,7 +230,7 @@ CONTAINS
     !=======================================================================
     use fluid_data_module,    only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: nmat
     implicit none
 
     ! Arguments
@@ -260,7 +260,7 @@ CONTAINS
     !
     !=======================================================================
     use legacy_mesh_api,  only: ncells, nfc, EE_GATHER
-    use parameter_module, only: nmat
+    use legacy_matl_api,  only: nmat
 
     ! Arguments
     real(r8), dimension(nmat,nfc,ncells), intent(INOUT) :: Volume_Flux_Sub
@@ -289,7 +289,7 @@ CONTAINS
     use input_utilities,   only: NULL_I
     use fluid_data_module, only: isImmobile
     use legacy_mesh_api,   only: ncells, nfc, Cell
-    use parameter_module,  only: nmat
+    use legacy_matl_api,   only: nmat
     use pgslib_module,     only: PGSLIB_GLOBAL_ANY
     use vof_data_module,   only: adv_dt
 
@@ -366,7 +366,7 @@ CONTAINS
     use cutoffs_module,       only: cutvof
     use fluid_data_module,    only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: nmat
     use vof_data_module,      only: adv_dt
  
     ! Arguments
@@ -515,7 +515,7 @@ CONTAINS
     !=======================================================================
     use fluid_data_module,    only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
-    use parameter_module,     only: nmat
+    use legacy_matl_api,      only: nmat
 
     ! Arguments
     real(r8), dimension(nmat,nfc,ncells), intent(IN)    :: Volume_Flux_Sub
@@ -550,7 +550,7 @@ CONTAINS
     use fluid_data_module,  only: Void_Material_Exists, Void_Material_Index, &
                                   Void_Material_Count, isImmobile
     use legacy_mesh_api,    only: ncells, nfc
-    use parameter_module,   only: nmat
+    use legacy_matl_api,    only: nmat
 
     ! Arguments 
     real(r8), dimension(nmat,ncells),     intent(INOUT) :: Vof
@@ -676,7 +676,7 @@ CONTAINS
     !
     !======================================================================
     use legacy_mesh_api,  only: ncells, Cell
-    use parameter_module, only: nmat
+    use legacy_matl_api,  only: nmat
 
     ! Arguments
     real(r8), dimension(nmat,ncells), intent(INOUT) :: Vof
@@ -703,7 +703,7 @@ CONTAINS
     !
     !=======================================================================
     use legacy_mesh_api,        only: ncells, nfc, Cell
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: nmat
     use projection_data_module, only: Boundary_Flag
 
     ! Arguments
@@ -807,7 +807,7 @@ CONTAINS
     !=======================================================================
     use fluid_data_module,      only: Void_material_Exists, Void_Material_Index, Void_Material_Count
     use legacy_mesh_api,        only: ncells, nfc, Cell
-    use parameter_module,       only: nmat
+    use legacy_matl_api,        only: nmat
     use projection_data_module, only: Boundary_Flag
 
     ! Arguments
