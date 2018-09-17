@@ -34,7 +34,7 @@ class mytest(TruchasTest.GoldenTestCase):
     # Error array, accounting for arbitrary constant
     d = (test-p) - numpy.mean(test-p)
 
-    tol = 4e-9
+    tol = 5e-9
     error = max(abs(d))
     if error > tol:
       print 'pressure at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
