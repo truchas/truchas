@@ -35,6 +35,7 @@ module hypre_hybrid_type
     type(hypre_obj) :: bh = hypre_null_obj     ! HYPRE_IJVector object handles
     type(hypre_obj) :: xh = hypre_null_obj     ! HYPRE_IJVector object handles
     type(parameter_list), pointer :: params    ! reference only -- do not own
+    real(r8) :: rel_tol
   contains
     procedure :: init
     procedure :: setup
@@ -136,6 +137,7 @@ contains
     
     !! Krylov solver relative tolerance for Krylov solver (required)
     call this%params%get ('rel-tol', rpar)
+    this%rel_tol = rpar ! store rel-tol to check convergence
     INSIST(rpar >= 0.0_r8)  !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetTol (this%solver, rpar, ierr)
     INSIST(ierr == 0)
@@ -203,6 +205,7 @@ contains
     
     !! Logging level (optional, default is none)
     call this%params%get ('logging-level', ipar, default=0)
+    ipar = max(ipar, 1) ! set the logging-level to at least 1, so we can check convergence
     INSIST(ipar >= 0) !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetLogging (this%solver, ipar, ierr)
     INSIST(ierr == 0)
@@ -289,7 +292,7 @@ contains
     integer, intent(out) :: stat
 
     integer :: i, ierr, rows(this%nrows)
-    real(r8) :: norm
+    real(r8) :: rel_res_norm
 
     call fHYPRE_ClearAllErrors
 
@@ -317,6 +320,14 @@ contains
     else
       stat = 0
     end if
+
+    !! Check if we have converged
+    ! WARN: Hypre does not expose the final absolute residual norm,
+    !       so we can only check that the relative residual norm is
+    !       within requested tolerance
+    call fHYPRE_ParCSRHybridGetFinalRelativeResidualNorm(this%solver, rel_res_norm, ierr)
+    INSIST(ierr == 0)
+    if (rel_res_norm > this%rel_tol) stat = 1
 
     !! Retrieve the solution vector from HYPRE.
     call fHYPRE_IJVectorGetValues (this%xh, this%nrows, rows, x, ierr)
