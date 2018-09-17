@@ -31,7 +31,7 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     cc = self.test_output.get_mesh().centroids()
     p = 2.5 - 2 / (cc[:,0]**2 + cc[:,1]**2)
 
-    tol = 0.16
+    tol = 0.17
     error = max(abs((test-p)/p))
     if error > tol:
       print 'pressure: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
@@ -52,7 +52,7 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
 
     fail = 0
 
-    tol = 0.015
+    tol = 0.017
     error = max(abs(test[:,0] - u)/max(abs(u)))
     if error > tol:
       fail += 1
@@ -60,7 +60,7 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     else:
       print 'x-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
-    tol = 0.18
+    tol = 0.02
     error = max(abs(test[:,1] - v)/max(abs(v)))
     if error > tol:
       fail += 1

@@ -93,7 +93,7 @@ Outlet pressure
 Pipe walls
 &FLOW_BC
   face_sets = 3
-  condition = 'free slip'
+  condition = 'slip'
 /
 
 !TODO: WE WANT A FUNCTION HERE: (u,v,w) = (x/(x^2+y^2), y/(x^2+y^2), 0)
