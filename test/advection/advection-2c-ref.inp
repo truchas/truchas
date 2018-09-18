@@ -63,6 +63,7 @@ TODO: delete this namelist
 
 &NUMERICS
   dt_constant = 0.03125
+  cycle_max = 1
 /
 
 !TODO: remove this namelist
@@ -77,7 +78,7 @@ TODO: delete this namelist
   axis = 'z'
   height = 5
   radius = 8
-  translation_pt = -4.0, -3.0, -2.5
+  translation_pt = 4.0, 3.0, -2.5
   material_number = 3
   temperature = 0.0
 /
@@ -85,7 +86,7 @@ TODO: delete this namelist
 &BODY
   surface_name = 'plane'
   axis = 'x'
-  translation_pt = -4.0, -3.0, 0.0
+  translation_pt = 4.0, 3.0, 0.0
   material_number = 2
   temperature = 0.0
 /
@@ -112,6 +113,9 @@ TODO: delete this namelist
 &PHASE
   name = 'water'
   property_name(1) = 'density', property_constant(1) = 1.0
+  !TODO: delete the viscosity and density deviation properties
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0
+  property_name(4) = 'density deviation', property_constant(4) = 0.0
 /
 
 &MATERIAL_SYSTEM
