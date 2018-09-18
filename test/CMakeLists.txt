@@ -135,10 +135,8 @@ add_pytruchas_test(htvoid4
 		   PROCESSORS 4
 		   LABELS DIFFUSION RADIATION)
 
-add_pytruchas_test(broken-dam
-                   broken-dam/testBrokenDam.py
-		   PROCESSORS 4
-		   LABELS OLD_FLOW)
+add_pytruchas_test(broken-dam-old broken-dam-old/test.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(broken-dam broken-dam/test.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
 add_pytruchas_test(channel-flow
                    channel-flow/testChannelFlow.py
