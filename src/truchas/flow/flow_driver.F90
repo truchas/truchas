@@ -370,13 +370,36 @@ contains
 
   subroutine flow_step(t, dt, vof, flux_vol, initial)
     use zone_module, only: Zone
+    use physics_module, only: vof_advection
+    use advection_velocity_namelist, only: adv_vel
     use truchas_timers
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     logical, optional, intent(in) :: initial
-    !-
 
     call start_timer('Flow')
+    if (vof_advection) then
+      block
+        integer :: j
+        real(r8) :: args(0:3)
+        args(0) = t
+        do j = 1, this%mesh%mesh%ncell
+          args(1:3) = this%mesh%cell_centroid(:,j)
+          this%flow%vel_cc(:,j) = adv_vel%eval(args)
+        end do
+        do j = 1, this%mesh%mesh%nface
+          args(1:3) = this%mesh%face_centroid(:,j)
+          this%flow%vel_fn(j) = dot_product(adv_vel%eval(args), &
+              this%mesh%mesh%normal(:,j))/this%mesh%mesh%area(j)
+        end do
+      end block
+      ! This will be needed by timestep
+      this%temperature_cc(1:this%mesh%mesh%ncell_onP) = Zone%Temp
+      call gather_boundary(this%mesh%mesh%cell_ip, this%temperature_cc)
+      call this%props%update_cc(vof, this%temperature_cc, initial=initial)
+      call stop_timer('Flow')
+      return
+    end if
 #if ASDF
     associate (m => this%mesh%mesh)
       write(*, "('TOP LEVEL flux_vol[',i3,']: ',6es15.5): ") 771, flux_vol(1,m%xcface(771):m%xcface(772)-1)

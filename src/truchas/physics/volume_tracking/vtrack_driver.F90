@@ -331,7 +331,7 @@ contains
         this%fluids, this%void, dt, this%svof)
 
 
-    call MATL_SET_VOF(this%fvof_o(:,:this%mesh%ncell))
+    call MATL_SET_VOF(this%fvof_o(:,:this%mesh%ncell_onP))
     call stop_timer('Volumetracking')
   end subroutine vtrack_update
 
