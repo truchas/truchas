@@ -29,7 +29,6 @@ class mytest(TruchasTest.GoldenTestCase):
 
     # Analytic pressure solution at cell centrioids
     cc = self.test_output.get_mesh().centroids()
-    p = -2*cc[:,1]
     p = numpy.array([-2*y if y < 0 else -y for y in cc[:,1]])
     
     # Error array, accounting for arbitrary constant
