@@ -223,7 +223,7 @@ contains
     allocate(this%fvof_o(this%fluids+this%void, mesh%ncell))
     allocate(this%flux_vol(this%fluids,size(mesh%cface)))
     allocate(this%flux_vel(size(mesh%cface)))
-    allocate(this%vof(nmat, mesh%ncell))
+    allocate(this%vof(nmat, mesh%ncell_onP))
     allocate(this%svof(mesh%ncell))
 
     j = 1
@@ -251,33 +251,37 @@ contains
 
   subroutine get_vof_from_matl()
 
-    use matl_module, only: gather_vof
-    integer :: i
+    use matl_utilities, only: matl_get_vof
 
-    associate (n => this%mesh%ncell_onP)
+    integer :: i, n
 
-      do i = 1, size(this%liq_matid) + size(this%sol_matid)
-        call gather_vof(i, this%vof(i,:n))
-      end do
+    n = this%mesh%ncell_onP
+    call matl_get_vof(this%vof)
+    do i = 1, size(this%liq_matid)
+      this%fvof_i(i,:n) = this%vof(this%liq_matid(i),:)
+    end do
+    call gather_boundary(this%mesh%cell_ip, this%fvof_i)
 
-      do i = 1, size(this%liq_matid)
-        this%fvof_i(i,:n) = this%vof(this%liq_matid(i),:n)
-      end do
+    this%svof = 0.0_r8
+    do i = 1, size(this%sol_matid)
+      this%svof(:n) = this%svof(:n) + this%vof(this%sol_matid(i),:)
+    end do
+    ! don't need to communicate svof
 
-      this%svof = 0.0_r8
-
-      do i = 1, size(this%sol_matid)
-        this%svof(:n) = this%svof(:n) + this%vof(this%sol_matid(i),:n)
-      end do
-      call gather_boundary(this%mesh%cell_ip, this%fvof_i)
-      ! don't need to communicate svof
-    end associate
   end subroutine get_vof_from_matl
+
+  subroutine put_vof_into_matl()
+    use matl_utilities, only: matl_set_vof
+    integer :: i
+    do i = 1, size(this%liq_matid)
+      this%vof(this%liq_matid(i),:) = this%fvof_o(i,:this%mesh%ncell_onP)
+    end do
+    call matl_set_vof(this%vof)
+  end subroutine put_vof_into_matl
 
   ! vel_fn is the outward oriented face-normal velocity
   subroutine vtrack_update(t, dt, vel_fn)
     use constants_module
-    use matl_utilities, only: MATL_SET_VOF
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vel_fn(:)
 
@@ -330,8 +334,8 @@ contains
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
         this%fluids, this%void, dt, this%svof)
 
+    call put_vof_into_matl()
 
-    call MATL_SET_VOF(this%fvof_o(:,:this%mesh%ncell_onP))
     call stop_timer('Volumetracking')
   end subroutine vtrack_update
 
