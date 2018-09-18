@@ -1,0 +1,97 @@
+SINGLE FLUID 2D ADVECTION
+-------------------------
+An utterly trivial problem of advection in a single fluid domain using a
+constant uniform velocity. Domain is 31x31x3 with unit cells. Velocity
+is directed diagonally across the mesh.
+
+There's not much we can check here other than the run completes without
+error.
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 2.0
+  phase_init_dt_factor = 1.0
+/
+
+&MESH
+  mesh_file = 'mesh1a.gen'
+/
+ 
+&PHYSICS
+  fluid_flow = .false. ! use new flow
+  applyflow  = .true.
+/
+
+&ADVECTION_VELOCITY
+  velocity_constant = 4.0, 3.0, 0.0
+/
+
+&FLOW_DRIVER new_driver = .true. /
+
+&FLOW_OPTIONS
+  active = .true.
+  !inviscid = .true.
+  courant_number = 0.5
+/
+
+TODO: delete this namelist
+&FLOW_PREDICTOR
+  rel_tol = 1.0e-12
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/ 
+
+TODO: delete this namelist
+&FLOW_CORRECTOR
+  rel_tol = 1.0e-12
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/
+
+&VOLUMETRACKING
+  active = t
+  subcycles = 4
+/
+
+&NUMERICS
+  dt_constant = 0.0625
+/
+&FLOW_BC
+  face_sets = 1, 2, 3, 4, 5
+  condition = 'slip'
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 1
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+  material_feature = 'background'
+ /
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+  !TODO: delete the viscosity and density deviation properties
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0
+  property_name(4) = 'density deviation', property_constant(4) = 0.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

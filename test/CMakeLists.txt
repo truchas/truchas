@@ -265,6 +265,26 @@ add_pytruchas_test(diag-advect
 		   PROCESSORS 4
 		   LABELS ADVECTION)
 
+# PURE ADVECTION TESTS -- OLD FLOW SOLVER
+add_pytruchas_test(advection-old-0  advection-old/test0.py  PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(advection-old-1a advection-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(advection-old-1b advection-old/test1b.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(advection-old-1c advection-old/test1c.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(advection-old-1d advection-old/test1d.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(advection-old-2a advection-old/test2a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(advection-old-2b advection-old/test2b.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(advection-old-2c advection-old/test2c.py PROCESSORS 4 LABELS OLD_FLOW)
+
+# PURE ADVECTION TESTS -- NEW FLOW SOLVER
+add_pytruchas_test(advection-0  advection/test0.py  PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(advection-1a advection/test1a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-1b advection/test1b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-1c advection/test1c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-1d advection/test1d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-2a advection/test2a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-2b advection/test2b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-2c advection/test2c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+
 # PIPE FLOW TESTS -- OLD FLOW SOLVER
 # Commented-out tests will fail, but shouldn't, due to known solver issues
 # see https://gitlab.com/truchas/truchas/issues/163

@@ -1,0 +1,120 @@
+THREE-FLUID 2D ADVECTION
+------------------------
+Advection in a multi-fluid 2D domain with uniform constant velocity directed
+diagonally across mesh. One fluid lies outside a disk, and two other fluids
+fill the disk with a planar interface between them. Domain is 31x31x1 with
+unit cells.
+
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 2.0
+  phase_init_dt_factor = 1.0
+/
+
+&MESH
+  mesh_file = 'mesh2a.gen'
+/
+ 
+&PHYSICS
+  fluid_flow = .true.
+  applyflow  = .true.
+/
+
+&ADVECTION_VELOCITY
+  velocity_constant = 4.0, 3.0, 0.0
+/
+
+&NUMERICS
+  dt_constant = 0.03125
+  !dt_grow = 1.1
+  courant_number = 0.5
+  volume_track_subcycles = 4
+/
+
+&BODY
+  surface_name = 'cylinder'
+  fill = 'outside'
+  axis = 'z'
+  height = 5
+  radius = 8
+  translation_pt = -4.0, -3.0, -2.5
+  material_number = 3
+  temperature = 0.0
+/
+
+&BODY
+  surface_name = 'plane'
+  axis = 'x'
+  translation_pt = -4.0, -3.0, 0.0
+  material_number = 2
+  temperature = 0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+  vof_tolerance = 1.0e-2
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 1
+  temperature = 0.0
+/
+
+&MATERIAL
+  priority = 3
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+  material_feature = 'background'
+ /
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  priority = 2
+  material_name = 'oil'
+  material_number = 2
+  density = 1.0 ! not void
+ /
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density', property_constant(1) = 2.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/
+
+&MATERIAL
+  priority = 1
+  material_name = 'void'
+  material_number = 3
+  density = 1.0 ! not void
+ /
+
+&PHASE
+  name = 'void'
+  property_name(1) = 'density', property_constant(1) = 1.e-3
+/
+
+&MATERIAL_SYSTEM
+  name = 'void'
+  phases = 'void'
+/
