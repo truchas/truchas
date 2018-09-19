@@ -133,7 +133,7 @@ contains
     real(r8), optional, intent(in) :: vel_cc(:,:), P_cc
     !-
     integer :: i
-    real(r8) :: xc, yc, sigma, x, y, r2, theta, w
+    real(r8) :: xc, yc, sigma, x, y, r2, theta, w, vel(3)
 
     this%mesh => m
 
@@ -172,7 +172,19 @@ contains
       end do
       call gather_boundary(m%mesh%cell_ip, this%vel_cc)
 #endif
-      this%vel_fn = 0.0_r8
+      ! set the face velocities
+      ! WARN: This will only give reasonable results when the initial velocity
+      !       is uniform. A real solution should get velocities from an input
+      !       function and ensure the face velocities are discretely solenoidal.
+      do i = 1, m%mesh%nface_onP
+        vel = this%vel_cc(:,m%fcell(2,i))
+        if (m%fcell(1,i) /= 0) then
+          vel = vel + this%vel_cc(:,m%fcell(1,i))
+          vel = vel / 2
+        end if
+        this%vel_fn(i) = dot_product(m%mesh%normal(:,i), vel)
+      end do
+      call gather_boundary(m%mesh%face_ip, this%vel_fn)
     else
       this%vel_cc = 0.0_r8
       this%vel_fn = 0.0_r8

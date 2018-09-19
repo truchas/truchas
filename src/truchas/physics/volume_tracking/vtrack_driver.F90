@@ -280,10 +280,11 @@ contains
   end subroutine put_vof_into_matl
 
   ! vel_fn is the outward oriented face-normal velocity
-  subroutine vtrack_update(t, dt, vel_fn)
+  subroutine vtrack_update(t, dt, vel_fn, initial)
     use constants_module
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vel_fn(:)
+    logical, intent(in), optional :: initial
 
     real(r8) :: args(0:3), vel(3)
     integer :: i, j, k, f0, f1, fi
@@ -334,7 +335,13 @@ contains
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
         this%fluids, this%void, dt, this%svof)
 
-    call put_vof_into_matl()
+    ! update the matl structure if this isn't the initial pass
+    if (present(initial)) then
+      if (.not.initial) &
+          call put_vof_into_matl()
+    else
+      call put_vof_into_matl()
+    end if
 
     call stop_timer('Volumetracking')
   end subroutine vtrack_update

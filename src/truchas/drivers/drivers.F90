@@ -262,7 +262,7 @@ call hijack_truchas ()
     if(.not.restart .and. flow_enabled()) then
       vel_fn => flow_vel_fn_view()
 
-      call vtrack_update(t, dt, vel_fn)
+      call vtrack_update(t, dt, vel_fn, initial=.true.)
       vof => vtrack_vof_view()
       flux_vol => vtrack_flux_vol_view()
 
