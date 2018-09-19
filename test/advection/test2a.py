@@ -58,7 +58,7 @@ class mytest(TruchasTest.GoldenTestCase):
 
   def test_vof2(self):
     '''Verify final vof field'''
-    self.vof_test(2, 0.04)
+    self.vof_test(2, 0.043)
 
 if __name__ == '__main__':
   import unittest

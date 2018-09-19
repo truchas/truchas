@@ -688,6 +688,8 @@ contains
       call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids)
     end do
 
+    call gather_boundary(this%mesh%cell_ip, vof)
+
   end subroutine enforce_bounded_vof
 
 
