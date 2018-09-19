@@ -279,7 +279,7 @@ add_pytruchas_test(advection-1a advection/test1a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-1b advection/test1b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-1c advection/test1c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-1d advection/test1d.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(advection-2a advection/test2a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-2a advection/test2a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-2b advection/test2b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-2c advection/test2c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
