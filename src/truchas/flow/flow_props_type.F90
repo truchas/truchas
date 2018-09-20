@@ -245,7 +245,7 @@ contains
           this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
           this%mu_cc(i) = this%mu_cc(i) + &
               vof(m,i)*this%viscosity(m)%f%eval(state)
-          this%rho_delta_cc = this%rho_delta_cc(i) + &
+          this%rho_delta_cc(i) = this%rho_delta_cc(i) + &
               vof(m,i)*this%density_delta(m)%f%eval(state)
         end do
         this%vof(i) = sum(vof(:,i))
