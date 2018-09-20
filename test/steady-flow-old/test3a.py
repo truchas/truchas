@@ -65,16 +65,23 @@ class mytest(TruchasTest.GoldenTestCase):
     else:
       print 'velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
-  def test_final_pressure(self):
-    '''Verify final pressure'''
-    data = self.test_output.get_simulation().find_series(id=3).get_data('Z_P')
+  def pressure_test(self, id, tol):
+    data = self.test_output.get_simulation().find_series(id).get_data('Z_P')
+    time = self.test_output.get_simulation().find_series(id).time
     error = numpy.amax(abs(data))
-    tol = 1.0e-10
     if error > tol:
-      print 'pressure: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      print 'pressure at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
       self.assertTrue(False)
     else:
-      print 'pressure: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+      print 'pressure at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
+
+  def test_initial_pressure(self):
+    '''Verify initial pressure'''
+    self.pressure_test(1,1e-10)
+
+  def test_final_pressure(self):
+    '''Verify final pressure'''
+    self.pressure_test(3,1e-10)
 
 if __name__ == '__main__':
   import unittest
