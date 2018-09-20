@@ -299,6 +299,7 @@ contains
     init = .false.
     if (present(initial)) init = initial
 
+    call start_timer("setup")
     call this%setup_gravity(props, body_force)
     call this%grad_p_rho(props, P_cc)
     call this%setup_face_velocity(dt, props, grad_p_rho_cc_n, vel_cc, vel_fn)
@@ -309,6 +310,7 @@ contains
 !!$    else
       call this%setup_solver(dt, props, vel_fn)
     !end if
+    call stop_timer("setup")
   end subroutine setup
 
   subroutine accept(this, grad_p_rho_cc_n)
@@ -517,6 +519,8 @@ contains
 !!$      if (initial) return
 !!$    end if
 
+    call start_timer("solve")
+
     ! solve the pressure poisson system
     this%delta_p_cc = 0.0_r8
     call this%fg%guess(this%rhs, this%delta_p_cc)
@@ -524,7 +528,9 @@ contains
 #if ASDF
     write(*,'("PRESSURE RHS[", i3, "]: ",es15.5)') Q, this%rhs(Q)
 #endif
+    call start_timer("hypre solve")
     call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
+    call stop_timer("hypre solve")
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
 #if ASDF
@@ -538,6 +544,9 @@ contains
     call this%pressure_cc_correct(props, p_cc)
     call this%grad_p_rho(props, p_cc)
     call this%velocity_cc_correct(dt, props, grad_p_rho_cc_n, vel_cc)
+
+    call stop_timer("solve")
+
   end subroutine solve
 
 

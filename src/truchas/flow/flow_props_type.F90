@@ -222,6 +222,7 @@ contains
     integer :: m, i, j
     real(r8) :: minrho, w(2), min_face_rho, state(1)
 
+    call start_timer("update properties")
 
     if (present(initial)) then
       ini = initial
@@ -277,6 +278,8 @@ contains
       call this%update_fc()
       call this%accept()
     end if
+
+    call stop_timer("update properties")
 
   end subroutine update_cc
 

@@ -305,6 +305,8 @@ contains
 !!$      if (initial) return
 !!$    end if
 
+    call start_timer("setup")
+
     this%rhs = 0.0_r8
 
     ! account for turbulence model
@@ -315,6 +317,9 @@ contains
     call props%update_fc()
 
     call this%setup_solver(dt, props)
+
+    call stop_timer("setup")
+
   end subroutine setup
 
   ! solver matrix => lhs of predictor step
@@ -613,6 +618,8 @@ contains
 !!$      if (initial) return
 !!$    end if
 
+    call start_timer("solve")
+
     ! Pressure and viscous forces are unaware of solid/fluid boundaries.
     ! These forces are computed first and scaled by vof as a crude approximation.
     ! Once a better solid/fluid model is used, change this numerical hackjob.
@@ -659,7 +666,9 @@ contains
         end do
 
         if (associated(this%solver(i)%matrix())) then
+          call start_timer("hypre solve")
           call this%solver(i)%solve(rhs1d, sol, ierr)
+          call stop_timer("hypre solve")
           if (ierr /= 0) call tls_error("prediction solve unsuccessful")
           call gather_boundary(m%cell_ip, sol)
           do j = 1, m%ncell
@@ -684,6 +693,9 @@ contains
 #if ASDF
     write(*,"('after prediction u[',i4,']:',3es20.12)") Q, vel_cc(:, Q)
 #endif
+
+    call stop_timer("solve")
+
   end subroutine solve
 
   subroutine accept(this)

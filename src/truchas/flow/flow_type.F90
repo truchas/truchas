@@ -256,16 +256,19 @@ contains
     write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
     write(*, '("Pre-Predictor P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
 #endif
+    call start_timer("prediction")
     call this%pred%setup(dt, props, this%vel_cc, initial=initial)
     call this%pred%solve(dt, props, this%grad_p_rho_cc_n, flux_volumes, this%vel_fn, this%vel_cc, initial=initial)
+    call stop_timer("prediction")
 #if ASDF
     write(*, '("Post-Predictor u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
     write(*, '("Post-Predictor P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
 #endif
 
-    !print*, "DISABLING PROJECTION"
+    call start_timer("projection")
     call this%proj%setup(dt, props, this%grad_p_rho_cc_n, this%body_force, this%vel_cc, this%P_cc, this%vel_fn, initial=initial)
     call this%proj%solve(dt, props, this%grad_p_rho_cc_n, this%vel_cc, this%P_cc, this%vel_fn, initial=initial)
+    call stop_timer("projection")
 #if ASDF
     write(*, '("Post-Projection u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
     write(*, '("Post-Projection P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
