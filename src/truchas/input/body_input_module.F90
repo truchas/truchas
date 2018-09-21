@@ -498,16 +498,14 @@ CONTAINS
     !   Default BODY namelist.
     !
     !=======================================================================
-    use interfaces_module,   only: Ar, Body_mass, Body_vel, Cosa, Offset, &
-                                   old_Body_mass, Rotangl, Rotpt, Rtab,   &
+    use interfaces_module,   only: Ar, Body_vel, Cosa, Offset, &
+                                   Rotangl, Rotpt, Rtab,   &
                                    Sgeom, Sina, Surface_Name, Ztab
 
     ! Constants
     Ar = 0
 
-    Body_mass     = 0
     Body_Vel      = 0
-    Old_Body_Mass = 0
     Surface_Name  = ' '
 
     Cosa   = 0

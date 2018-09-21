@@ -19,15 +19,10 @@ MODULE MATERIAL_INPUT_MODULE
   !       Defaults, reads, checks, and broadcasts input variables
   !       in the MATERIAL namelist(s).
   !
-  !     * call MATERIAL_SIZES ()
-  !
-  !       Set the relevant problem material dimensions.
-  !
   ! Contains: MATERIAL_CHECK
   !           MATERIAL_DEFAULT
   !           MATERIAL_INPUT
   !           MATERIAL_INPUT_PARALLEL
-  !           MATERIAL_SIZES
   !
   ! Author(s): Jerry S. Brock (jsbrock@lanl.gov)
   !            Douglas B. Kothe (dbk@lanl.gov)
@@ -38,7 +33,7 @@ MODULE MATERIAL_INPUT_MODULE
   implicit none
   private
 
-  public :: MATERIAL_INPUT, MATERIAL_SIZES
+  public :: MATERIAL_INPUT
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -442,23 +437,6 @@ CONTAINS
     
   END SUBROUTINE MATERIAL_INPUT_PARALLEL
   
-  SUBROUTINE MATERIAL_SIZES ()
-     !=======================================================================
-     ! Purpose(s):
-     !
-     !   Set the relevant problem material dimensions.
-     !
-     !=======================================================================
-     use legacy_matl_api, only: mat_slot_new, nmat
-
-     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-     ! Use 1 slot if we only have 1 material (= nmat); otherwise use 2
-     ! slots. More slots are automatically allocated as needed.
-     mat_slot_new = merge(1, 2, nmat <= 1)
-
-  END SUBROUTINE MATERIAL_SIZES
-
 end module MATERIAL_INPUT_MODULE
 
 

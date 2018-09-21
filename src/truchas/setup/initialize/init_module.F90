@@ -142,8 +142,11 @@ CONTAINS
 
     else
 
-       ! Initialize Matl%Cell and Zone%Vc.
+       ! Initialize Matl from body volumes
        call MATL_INIT (Hits_Vol)
+
+       ! Compute cell velocities xone%vc from body velocities
+       call VELOCITY_INIT (Hits_Vol)
 
        call TLS_info ('  Initial volume fractions computed.')
 
@@ -795,230 +798,134 @@ CONTAINS
 
   END FUNCTION BC_SURFACE
 
-  SUBROUTINE MATL_INIT (Hits_Vol)
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Initialize the Matl structure and the velocity part of
-    !   the Zone structure
-    !
-    !=======================================================================
-    use cutoffs_module,       only: cutvof
-    use interfaces_module,    only: background_body, Body_Mass, Matnum, nbody,   &
-                                    Body_Temp
-    use legacy_matl_api,      only: Matl, SLOT_INCREASE, SLOT_SET, mat_slot, mat_slot_new, nmat
-    use legacy_mesh_api,      only: ncells, Cell
-    use parameter_module,     only: maxmat, mbody
-    use pgslib_module,        only: PGSLib_GLOBAL_MAXVAL
+  subroutine matl_init(hits_vol)
+
+    use integer_set_type
+    use material_table, only: mt_get_material
+    use material_system, only: mat_system, ms_get_phase_id
+    use material_interop, only: material_to_system, phase_to_material, void_material_index
+    use cutoffs_module, only: cutvof
+    use interfaces_module, only: matnum, nbody
+    use fluid_data_module, only: isImmobile
     use property_data_module, only: background_material
-    use restart_variables,    only: restart
-    use property_module,      only: density_material
+    use legacy_mesh_api, only: ncells, cell
+    use legacy_matl_api, only: matl_redef, matl_enddef, matl_add_cell_mat, &
+        matl_set_cell_vof, matl_normalize_vof
 
-    ! Arguments
-    real(r8), dimension(nbody,ncells), intent(INOUT) :: Hits_Vol
+    real(r8), intent(inout) :: hits_vol(:,:)
 
-    ! Local Variables
-    integer :: stat
-    logical :: fatal
-    integer :: ib, jb, m, s
-    integer,  dimension(maxmat) :: Nbodym
-    integer,  dimension(mbody,maxmat) :: Body_Num
-    logical,  dimension(ncells) :: Insert_mat
-    real(r8), dimension(ncells) :: Vofm, Total, Tmp1
-    integer,  dimension(ncells) :: Nmtl
+    integer :: b, i, j, offset, stat
+    integer, allocatable :: body_mat_id(:), mcount(:), mlist(:)
+    real(r8), allocatable :: vfrac(:)
 
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    ASSERT(size(hits_vol,dim=1) == nbody)
+    ASSERT(size(hits_vol,dim=2) == ncells)
 
+    !NNC: have no assurance at this time that hits_vol data is sane.
+    INSIST(all(sum(hits_vol,dim=1) <= cell%volume))
+    INSIST(all(hits_vol >= 0.0_r8))
 
-    if ( restart ) then
-       ! Don't do any work
-       return
-    end if
-
-    ! Set up arrays that count the number of bodies
-    ! of a given material and the body number of each.
-    Nbodym   = 0
-    Body_Num = 0
-
-    Total = 0.0_r8
-    do ib = 1,nbody
-       m = matnum(ib)
-       Nbodym(m) = Nbodym(m) + 1
-       Body_Num(Nbodym(m),m) = ib
-
-       where (Hits_Vol(ib,:)/Cell%Volume < cutvof) Hits_Vol(ib,:) = 0.0_r8
-       Total = Total + Hits_Vol(ib,:)
+    !NNC: preserve the original side effect of this procedure for now.
+    do b = 1, nbody
+      where (hits_vol(b,:)/cell%volume < cutvof) hits_vol(b,:) = 0.0_r8
     end do
 
-    ! Convert from total volume to volume fraction
-    ! and set to 0 or 1 if within cutvof away
-    Total = Total / Cell%Volume
-    where (ABS(Total) < cutvof) Total = 0.0_r8
-    where (ABS(Total - 1.0_r8) < cutvof) Total = 1.0_r8
+    !! Precompute the map from material IDs to material ID sets that should be
+    !! included in matl. When a material is assigned to a body, every material
+    !! that belongs to the same system must have reserved space in matl for
+    !! those cells intersecting the body. In addition, if the problem includes
+    !! void it must be included too if any of those materials is fluid.
 
-1   continue
+    block
 
-    ! Zero out Matl
-    do s = 1,mat_slot
-       call SLOT_SET (Matl, s)
+      integer :: ms_id
+      integer, allocatable :: iarray(:)
+      integer, pointer :: mid(:) => null()
+      type(integer_set), allocatable :: body_mat_set(:)
+      type(mat_system), pointer :: ms
+
+      allocate(body_mat_id(0:nbody))
+      body_mat_id(0) = background_material
+      body_mat_id(1:) = matnum(1:nbody)
+      allocate(body_mat_set(0:nbody))
+      do b = 0, nbody
+        ms_id = material_to_system(body_mat_id(b))
+        if (ms_id == 0) then ! this is the void material
+          call body_mat_set(b)%add(body_mat_id(b))
+        else
+          ms => mt_get_material(ms_id)
+          call ms_get_phase_id(ms, mid)
+          mid = phase_to_material(mid)
+          do i = 1, size(mid)
+            call body_mat_set(b)%add(mid(i))
+          end do
+          if (void_material_index > 0 .and. .not.all(isImmobile(mid))) &
+              call body_mat_set(b)%add(void_material_index)
+          deallocate(mid)
+        end if
+      end do
+
+      allocate(mcount(0:nbody))
+      mcount(:) = body_mat_set%size()
+      allocate(mlist(sum(mcount)))
+      offset = 0
+      do b = 0, nbody
+        iarray = body_mat_set(b)  ! lhs must be allocatable :-(
+        mlist(offset+1:offset+mcount(b)) = iarray
+        offset = offset + mcount(b)
+      end do
+
+    end block
+
+    !! Define the materials that may be present in the mesh cells.
+    call matl_redef
+    allocate(vfrac(0:nbody))
+    do j = 1, ncells
+      vfrac(1:) = hits_vol(:,j) / cell(j)%volume
+      vfrac(0)  = max(0.0_r8, 1 - sum(vfrac(1:))) ! the background material
+      where (vfrac < cutvof) vfrac = 0.0_r8
+      !vfrac = vfrac / sum(vfrac)  ! not needed here; see below
+      offset = 0
+      do b = 0, nbody
+        if (vfrac(b) > 0) then
+          associate (list => mlist(offset+1:offset+mcount(b)))
+            do i = 1, size(list)
+              call matl_add_cell_mat(j, list(i))
+            end do
+          end associate
+        end if
+        offset = offset + mcount(b)
+      end do
     end do
-    Nmtl = 0
+    call matl_enddef
 
-    ! Count the required number of material slots
-    ! Background materials must reside where 0.0 <= Total < 1.0
-    where (Total >= 0.0_r8 .and. Total < 1.0_r8)
-       Nmtl = 1
-       Matl(1)%Cell%Id = background_material
-    end where
-
-    ! Set the Matl Id
-    SET_MATL_ID: do m = 1,nmat
-
-       Vofm = 0.0_r8
-       do jb = 1,Nbodym(m)
-          ib = Body_Num(jb,m)
-          Vofm = Vofm + Hits_Vol(ib,:) / Cell%Volume
-       end do
-
-       Insert_mat = .false.
-       where (Vofm > 0.0_r8) Insert_mat = .true.
-       do s = 1,mat_slot
-          Insert_mat = Insert_mat .and. .not.(Matl(s)%Cell%Id == m)
-       end do
-       where (Insert_mat) Nmtl = Nmtl + 1
-       do s = 1,mat_slot
-          where (Nmtl == s .and. Insert_mat)
-             Matl(s)%Cell%Id = m
-          end where
-       end do
-
-    end do SET_MATL_ID
-
-    mat_slot_new = PGSLib_GLOBAL_MAXVAL(Nmtl)
-
-    ! Print out the number of slots needed, the current
-    ! number allocated, and enlarge Matl if necessary
-#if DEBUG_MAT_SLOT
-    write (message, 2) mat_slot_new, mat_slot
-2   format(4x,i2,' material slots are needed: ',i2, ' material slots allocated')
-    call TLS_info (message)
-#endif
-
-    if (mat_slot_new > mat_slot) then
-       call SLOT_INCREASE (Matl, mat_slot, mat_slot_new)
-       go to 1     ! Go back up to see if mat_slot is sufficient
-    end if
-
-    ! Compute volume fractions and body volumes for each material.
-    SET_MATL_VOF: do m = 1,nmat
-
-       Vofm = 0.0_r8
-
-       do jb = 1,Nbodym(m)
-
-          ib = Body_Num(jb,m)
-
-          ! Accumulate the volume fractions
-          Vofm = Vofm + Hits_Vol(ib,:)/Cell%Volume
-
-          ! Accumulate the body mass
-          Body_mass(ib) = SUM (Hits_Vol(ib,:)*density_material(m))
-
-       end do
-
-       ! Put the material quantities into the appropriate slot
-       do s = 1,mat_slot
-
-          where (Matl(s)%Cell%Id == m)
-             Matl(s)%Cell%Vof = Vofm
-          end where
-
-       end do
-
-    end do SET_MATL_VOF
-
-    ! Total the volume fractions over all materials
-    Total = 0.0_r8
-    do s = 1,mat_slot
-       Total = Total + Matl(s)%Cell%Vof
+    !! Set the volume fractions in the matl structure.
+    do j = 1, ncells
+      vfrac(1:) = hits_vol(:,j) / cell(j)%volume
+      vfrac(0)  = max(0.0_r8, 1 - sum(vfrac(1:))) ! the background material
+      where (vfrac < cutvof) vfrac = 0.0_r8
+      vfrac = vfrac / sum(vfrac)  ! renormalize in case some materials thrown away
+      offset = 0
+      do b = 0, nbody
+        if (vfrac(b) > 0) call matl_set_cell_vof(j, body_mat_id(b), vfrac(b))
+      end do
     end do
 
-    ! Fill background with material "background_material", if not already filled
-    Tmp1 = MIN(MAX(1.0_r8 - Total, 0.0_r8), 1.0_r8)
-
-    ! Set up background_material material arrays
-    Vofm = 0.0_r8
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Id == background_material)
-          Vofm = Matl(s)%Cell%Vof
-       end where
-    end do
-
-    where (Tmp1 > cutvof)
-       Vofm = Vofm + Tmp1
-       Tmp1  = Tmp1*density_material(matnum(background_body))*Cell%Volume
-    end where
-
-    ! Put modified background_material materials back into the appropriate slots
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Id == background_material)
-          Matl(s)%Cell%Vof = Vofm
-       end where
-    end do
-
-    !! NNC, Feb 2013.  At this point (original commented-out code below) we
-    !! check that computed volume fractions (matl) are valid and then go-ahead
-    !! and normalize them anyway!  Why the vofs can't be expected to valid at
-    !! this point I don't understand and isn't proper.  Needs to be fixed!
-
-!    ! Total the volume fractions
-!    Total = 0.0_r8
-!    do s = 1,mat_slot
-!       Total = Total + Matl(s)%Cell%Vof
-!    end do
-!
-!    ! Check to see if the Sum(Vof) = 1.0
-!    call CHECK_VOF (fatal)
-!    call check_vof (stat)
-!    if (stat /= 0) call TLS_fatal ('computed volume fractions are invalid')
-!
-!    ! Renormalize Vofm array in case they are under or over-filled.
-!    ! Also initialize Rho_Old
-!    Total = 1.0_r8/Total
-!    do s = 1,mat_slot
-!       Matl(s)%Cell%Vof     = Total*Matl(s)%Cell%Vof
-!       where (Matl(s)%Cell%Vof == 0.0_r8) Matl(s)%Cell%Id = 0
-!    end do
-
-    !! Preserved from the above code -- is it really necessary?
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Vof == 0.0_r8) Matl(s)%Cell%Id = 0
-    end do
-
+    !NNC-TODO: no longer necessary I think
     !! Check that the computed VoFs are valid.
-    call check_vof (stat)
+    call check_vof(stat)
     if (stat /= 0) then
-      call TLS_info ('  Computed volume fractions are invalid; attempting to normalize.')
-      Total = 0.0_r8
-      do s = 1,mat_slot
-        Total = Total + Matl(s)%Cell%Vof
-      end do
-      Total = 1.0_r8/Total
-      do s = 1,mat_slot
-        Matl(s)%Cell%Vof = Total*Matl(s)%Cell%Vof
-      end do
-      call check_vof (stat)
+      call TLS_info('  Computed volume fractions are invalid; attempting to normalize.')
+      call matl_normalize_vof
+      call check_vof(stat)
       if (stat /= 0) then
-        call TLS_fatal ('normalized volume fractions are invalid')
+        call TLS_fatal('normalized volume fractions are invalid')
       else
-        call TLS_info ('  Normalization was successful.')
+        call TLS_info('  Normalization was successful.')
       end if
     end if
 
-    ! Compute mesh Velocities from body velocities
-    call VELOCITY_INIT (Hits_Vol)
-
-  END SUBROUTINE MATL_INIT
+  end subroutine matl_init
 
   subroutine ZONE_INIT (Hits_Vol)
     !=======================================================================

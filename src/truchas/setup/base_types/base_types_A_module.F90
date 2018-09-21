@@ -50,12 +50,12 @@ CONTAINS
     !=======================================================================
     ! Purpose(s):
     !
-    !   Allocate the Cell, Matl, and Zone base types and Fluxing_Velocity
+    !   Allocate the Cell and Zone base types and Fluxing_Velocity
     !
     !=======================================================================
     use bc_module,           only: BC
-    use legacy_matl_api,     only: SLOT_INCREASE, Matl, mat_slot, mat_slot_new, nmat
     use legacy_mesh_api,     only: nfc, ncells
+    use legacy_matl_api,     only: nmat
     use parameter_module,    only: nprobes
     use zone_module,            only: Zone
     use fluid_data_module,       only: Fluxing_Velocity
@@ -94,9 +94,6 @@ CONTAINS
     !Allocate Fluxing Velocity variable
     ALLOCATE (Fluxing_Velocity(nfc,ncells), STAT = memstat)
     if (memstat /= 0) call TLS_panic ('BASE_TYPES_A_ALLOCATE: Fluxing_Velocity derived type memory allocation error')
-
-    ! Allocate the Matl derived type.
-    call SLOT_INCREASE (Matl, mat_slot, mat_slot_new)
 
     ! Allocate the material property, displacement, strain, and stress arrays
     call SOLID_MECHANICS_ALLOCATE ()
@@ -157,7 +154,6 @@ CONTAINS
     !
     !=======================================================================
     use bc_module,         only: BC
-    use legacy_matl_api,   only: SLOT_DECREASE, Matl, mat_slot, mat_slot_new
     use parameter_module,  only: nprobes
     use probe_module,      only: probes
     use zone_module,       only: ZONE
@@ -186,10 +182,6 @@ CONTAINS
        end do
        DEALLOCATE (probes)
     end if
-
-    ! Deallocate the Matl derived type by decreasing to zero slots.
-    mat_slot_new = 0
-    call SLOT_DECREASE (Matl, mat_slot, mat_slot_new)
 
   END SUBROUTINE BASE_TYPES_A_DEALLOCATE
 

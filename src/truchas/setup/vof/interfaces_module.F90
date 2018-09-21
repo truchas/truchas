@@ -46,8 +46,7 @@ MODULE INTERFACES_MODULE
   real(r8), dimension(ndim,mbody), public, save :: Body_Vel
   real(r8), dimension(0:mtab,mbody), public, save :: Rtab, Ztab
   real(r8), dimension(2,mtab), public, save :: RZ_Tabular_Pt, Rtheta_Tabular_Pt
-  real(r8), dimension(mbody), public, save :: Body_Mass, Body_Enthalpy,         &
-                                                            Body_Conc, Old_Body_Mass
+  real(r8), dimension(mbody), public, save :: Body_Enthalpy, Body_Conc
   real(r8), dimension(mbody,mphi), public, save :: Body_Phi
   real(r8), dimension(ndim,msurf), public, save :: Rotation_Pt, Translation_Pt, &
                                                                  Radius, Length
