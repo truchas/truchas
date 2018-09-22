@@ -32,7 +32,7 @@ module HTSD_model_factory
   use HTSD_model_type
   use unstr_mesh_type
   use mfd_disc_type
-  use material_mesh_function
+  use matl_mesh_func_type
   implicit none
   private
 
@@ -47,7 +47,7 @@ contains
     use material_interop, only: void_material_index
 
     type(mfd_disc), intent(in), target :: disc
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     type(HTSD_model), pointer :: model
@@ -80,7 +80,7 @@ contains
     use rad_problem_type
 
     type(unstr_mesh), intent(in), target :: mesh
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     type(HT_model), pointer :: model
@@ -105,21 +105,21 @@ contains
 
       use phase_property_table
       use material_utilities
-      use material_mesh_function
+      use matl_mesh_func_type
       use property_mesh_function
       use ds_source_input, only: define_external_source
       use parallel_communication, only: global_any
 
       type(unstr_mesh), intent(in), target :: mesh
-      type(mat_mf), intent(in), target :: mmf
+      type(matl_mesh_func), intent(in), target :: mmf
       type(HT_model), intent(inout) :: model
       integer, intent(out) :: stat
       character(len=*), intent(out) :: errmsg
 
-      integer, pointer :: matid(:)
+      integer, allocatable :: matid(:)
 
       !! Retrieve a list of all the material IDs that may be encountered.
-      call mmf_get_all_matid (mmf, matid, drop_void=.true.)
+      call mmf%get_all_matl(matid, drop_void=.true.)
 
       !! Enthalpy density.
       call required_property_check (matid, 'enthalpy density', stat, errmsg)
@@ -144,8 +144,6 @@ contains
 
       !! External heat source.
       call define_external_source (mesh, 'temperature', model%source)
-
-      deallocate(matid)
 
       stat = 0
       errmsg = ''
@@ -377,7 +375,7 @@ contains
     use parallel_communication, only: global_any
 
     type(unstr_mesh), intent(in), target :: mesh
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     type(SD_model), pointer :: model(:)
@@ -385,13 +383,12 @@ contains
     integer :: n, j
     logical :: mask(mesh%nface)
     character(len=31) :: property, variable
-    integer, allocatable :: setids(:)
-    integer, pointer :: matids(:)
+    integer, allocatable :: setids(:), matids(:)
 
     allocate(model(num_species))
 
     !! Define the equation parameter components of MODEL.
-    call mmf_get_all_matid (mmf, matids, drop_void=.true.)
+    call mmf%get_all_matl(matids, drop_void=.true.)
     do n = 1, num_species
       write(variable,'(a,i0)') 'concentration', n
       write(property,'(a,i0)') 'diffusivity', n
@@ -416,7 +413,6 @@ contains
         end if
       end if
     end do
-    deallocate(matids)
 
     !! Define the boundary condition components of MODEL.
     do n = 1, num_species

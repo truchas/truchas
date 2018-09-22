@@ -12,7 +12,7 @@ module FHT_solver_factory
 
   use FHT_model_type
   use FHT_solver_type
-  use material_mesh_function
+  use matl_mesh_func_type
   implicit none
   private
   
@@ -28,7 +28,7 @@ contains
     use diffusion_solver_data
     use truchas_env, only: output_file_name
     
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     type(FHT_model), intent(in), target :: model
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg

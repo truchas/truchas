@@ -15,6 +15,7 @@ set(MESH_FUNC_FILES
     mesh_functions/bndry_func2_class.F90
     mesh_functions/bndry_face_func_type.F90
     mesh_functions/bndry_face_group_builder_type.F90
+    mesh_functions/cell_group_builder_type.F90
 )
 
 set(MESH_FUNC_FPP_FLAGS 

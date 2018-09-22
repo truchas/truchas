@@ -13,7 +13,7 @@ set(MAT_TARGET_NAME ProcessTruchasMaterialFiles)
 
 set(MAT_FILES
        materials/material_interop.F90
-       materials/material_mesh_function.F90
+       materials/matl_mesh_func_type.F90
        materials/material_property.F90
        materials/material_system.F90
        materials/material_system_namelist.F90

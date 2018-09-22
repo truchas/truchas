@@ -70,7 +70,8 @@ module integer_set_type
 #else
     procedure, private :: set_add
     procedure, private :: set_add_set
-    generic   :: add => set_add, set_add_set
+    procedure, private :: set_add_array
+    generic   :: add => set_add, set_add_set, set_add_array
 #endif
     procedure :: remove => set_remove
     procedure :: copy_to_array
@@ -178,6 +179,16 @@ contains
       q => q%next
     end do nextq
   end subroutine set_add_set
+
+  !! Adds values from an array to the set; no duplicates.
+  subroutine set_add_array (this, values)
+    class(integer_set), intent(inout) :: this
+    integer, intent(in) :: values(:)
+    integer :: j
+    do j = 1, size(values)
+      call set_add (this, values(j))
+    end do
+  end subroutine set_add_array
 
   !! Removes a value from the set.
   elemental subroutine set_remove (this, value)

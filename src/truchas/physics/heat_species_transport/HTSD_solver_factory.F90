@@ -12,7 +12,7 @@ module HTSD_solver_factory
 
   use HTSD_model_type
   use HTSD_solver_type
-  use material_mesh_function
+  use matl_mesh_func_type
   implicit none
   private
   
@@ -28,7 +28,7 @@ contains
     use diffusion_solver_data
     use truchas_env, only: output_file_name
 
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     type(HTSD_model), intent(in), target :: model
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
@@ -51,7 +51,7 @@ contains
       if (is_IOP) open(newunit=lun,file=output_file_name('bdf2.out'),position='rewind',action='write')
       params%output_unit = lun
     end if
-!    if (mmf_has_matID(mmf,0) .and. fluid_flow) then
+!    if (mmf%has_matID(0) .and. fluid_flow) then
 !      params%step_method = 1
 !    else
 !      params%step_method = 0

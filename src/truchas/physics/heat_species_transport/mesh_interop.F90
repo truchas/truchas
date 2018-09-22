@@ -56,7 +56,7 @@ module mesh_interop
 
   use kinds, only: r8
   use base_mesh_class
-  use material_mesh_function
+  use matl_mesh_func_type
   use truchas_logging_services, only: TLS_info
   implicit none
   private
@@ -92,7 +92,7 @@ contains
  !!   mapping; i.e., the first region cell is cell 1, the seccond is cell 2, 
  !!   and so forth.                                                          
  !!
- !! These two lists (MMF_REG_CELL, MMF_REG_MATID) are normally needed to
+ !! These two lists (MMF%REG_CELL, MMF%REG_MATL) are normally needed to
  !! associate the elements of the rank-2 array returned by MMF_REG_VOL_FRAC
  !! to a cell and material system, but in this case the array indices are
  !! themselves the cell number and material system ID.
@@ -113,9 +113,9 @@ contains
     use material_interop, only: void_material_index
 
     class(base_mesh), intent(in), target :: mesh
-    type(mat_mf), intent(out) :: mmf
+    type(matl_mesh_func), intent(out) :: mmf
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: j
     integer, allocatable :: all_materials(:)
@@ -130,27 +130,26 @@ contains
     end if
     call mt_get_material_ids (all_materials(1:))
     all_cell_sets => mesh%cell_set_id
-    call mmf_prep (mmf, mesh)
-    call mmf_define_region (mmf, all_cell_sets, all_materials, stat, errmsg)
+    call mmf%init(mesh)
+    call mmf%define_region(all_cell_sets, all_materials, stat, errmsg)
     deallocate(all_materials)
     if (stat /= 0) then
       errmsg = 'error defining MMF region: ' // trim(errmsg)
       return
     end if
-    call mmf_done (mmf, stat, errmsg)
+    call mmf%define_complete(stat, errmsg)
     if (stat /= 0) then
       errmsg = 'error creating MMF: ' // trim(errmsg)
       return
     end if
 
     !! Assumed condition; see note.
-    INSIST(all(mmf_reg_cell(mmf,1) == (/(j,j=1,mesh%ncell)/)))
+    INSIST(all(mmf%reg_cell(1) == (/(j,j=1,mesh%ncell)/)))
 
     !! Finally initialize the MMF volume fraction data from the MATL VoF data.
     call update_mmf_from_matl (mmf)
 
     stat = 0
-    errmsg = ''
 
   end subroutine mmf_init
 
@@ -182,7 +181,7 @@ contains
     use parallel_communication, only: global_minval, global_maxval
 #endif
 
-    type(mat_mf), intent(inout) :: mmf
+    type(matl_mesh_func), intent(inout) :: mmf
 
     integer :: i, m
     integer, pointer :: material_id(:)
@@ -193,17 +192,17 @@ contains
     character(len=90) :: string
 #endif
 
-    ASSERT(mmf_num_reg(mmf) == 1)
+    ASSERT(mmf%num_reg() == 1)
 
-    mesh  => mmf_mesh(mmf)
-    vfrac => mmf_reg_vol_frac(mmf,1)
+    mesh  => mmf%mesh_ptr()
+    vfrac => mmf%reg_vol_frac(1)
 
     if (.not.associated(vfrac)) return  ! single-material region; vfrac=1
 
     !! We assume an identity mapping from region cells to mesh cells.
-    ASSERT(all(mmf_reg_cell(mmf,1) == (/(m,m=1,mesh%ncell)/)))
+    ASSERT(all(mmf%reg_cell(1) == (/(m,m=1,mesh%ncell)/)))
 
-    material_id => mmf_reg_matid(mmf,1) ! array of material system IDs
+    material_id => mmf%reg_matl(1) ! array of material system IDs
 
     allocate(vofm(ncells), vf(mesh%ncell))
     vfrac = 0.0_r8
@@ -263,7 +262,7 @@ contains
     use parallel_communication, only: global_minval, global_maxval
 #endif
 
-    type(mat_mf), intent(inout) :: mmf
+    type(matl_mesh_func), intent(inout) :: mmf
     real(r8), intent(in) :: state(:,:)
 
     integer :: i, j, k, m
@@ -276,18 +275,18 @@ contains
     character(len=90) :: string
 #endif
 
-    mesh => mmf_mesh(mmf)
+    mesh => mmf%mesh_ptr()
 
-    ASSERT(mmf_num_reg(mmf) == 1)
+    ASSERT(mmf%num_reg() == 1)
     ASSERT(size(state,dim=1) == mesh%ncell_onP)
 
-    material_id => mmf_reg_matid(mmf,1)
+    material_id => mmf%reg_matl(1)
 
-    mesh  => mmf_mesh(mmf)
-    vfrac => mmf_reg_vol_frac(mmf,1)
+    mesh  => mmf%mesh_ptr()
+    vfrac => mmf%reg_vol_frac(1)
 
     !! We assume an identity mapping from region cells to mesh cells.
-    ASSERT(all(mmf_reg_cell(mmf,1) == (/(m,m=1,mesh%ncell)/)))
+    ASSERT(all(mmf%reg_cell(1) == (/(m,m=1,mesh%ncell)/)))
 
     allocate(vof(0:nmat,ncells), vofm(ncells))
     vof = 0.0_r8
