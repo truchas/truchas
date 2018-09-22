@@ -96,24 +96,20 @@ contains
     use legacy_mesh_api, only: ncells
     use fluid_data_module, only: isImmobile
     use property_module, only: density_material
-    use legacy_matl_api, only: Matl, mat_slot
+    use legacy_matl_api, only: nmat, gather_vof
 
     real(r8), intent(out) :: rho(:)
 
-    integer :: j, s, m
-    real(r8) :: sum
-    
+    integer :: m
+    real(r8) :: vofm(ncells)
+
     ASSERT(size(rho) == ncells)
 
-    do j = 1, ncells 
-      sum = 0.0_r8
-      do s = 1, mat_slot
-        m = matl(s)%cell(j)%id
-        if(m <= 0) cycle  ! unused slot
-        if(isImmobile(m)) cycle ! not a fluid material
-        sum = sum + Matl(s)%cell(j)%vof * density_material(m)
-      end do
-      rho(j) = sum
+    rho = 0.0_r8
+    do m = 1, nmat
+      if (isImmobile(m)) cycle
+      call gather_vof(m, vofm)
+      rho = rho + vofm * density_material(m)
     end do
 
   end subroutine get_fluid_density

@@ -228,7 +228,7 @@ CONTAINS
     use fluid_data_module,      only: fluidRho, Solid_Face, &
                                       void_pressure, IsPureImmobile,  &
                                       Rho_Face, IsImmobile
-    use legacy_matl_api,        only: Matl, nmat, mat_slot
+    use legacy_matl_api,        only: nmat, gather_vof
     use linear_solution,        only: Ubik_user
     use legacy_mesh_api,        only: ncells, ndim, nfc, ncells_tot, Cell
     use pgslib_module,          only: PGSLIB_GLOBAL_SUM, PGSLIB_GLOBAL_ANY
@@ -242,6 +242,7 @@ CONTAINS
     use time_step_module,       only: t, dt
     use zone_module,            only: Zone
     use UbikSolve_module
+    use material_interop,       only: void_material_index
 
     ! Argument List
     real(r8), dimension(nfc,ncells), intent(INOUT) :: Fluxing_Velocity
@@ -250,7 +251,7 @@ CONTAINS
 !    integer :: status
     logical :: Void_Cell_Found
     integer :: f, i, m, n, s, status
-    real(r8), dimension(:), allocatable :: RHS, Solution, boundary_fv
+    real(r8), dimension(:), allocatable :: RHS, Solution, boundary_fv, vofm
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -269,21 +270,18 @@ CONTAINS
     ! Temporary use of RHS
     RHS = 0
     ! Temporarily store averaged sound speed in Vol_over_RhoCsqDt
-    do m = 1,nmat
-        if(.not.isImmobile(m)) then
-           do s = 1, mat_slot
-              where (Matl(s)%Cell%Id == m) &
-                    RHS = RHS +  Matl(s)%Cell%Vof**navg
-           end do
-        endif
-        ! calculate the contribution of material m to the reciprocal sound speed square
-        if(Sound_Speed(m) > 0) then
-            do s = 1, mat_slot
-               where (Matl(s)%Cell%Id == m) &
-                    Vol_over_RhoCsqDt = Vol_over_RhoCsqDt + Matl(s)%Cell%Vof**navg/sound_speed(m)**2
-            end do
-        endif
-    enddo
+    if (void_material_index > 0) then ! void is present
+      if (sound_speed(void_material_index) > 0) then
+        allocate(vofm(ncells))
+        do m = 1, nmat
+          if (isImmobile(m)) cycle  ! not a fluid
+          call gather_vof(m, vofm)
+          RHS = RHS + vofm
+          if (m == void_material_index) Vol_over_RhoCsqDt = vofm/sound_speed(m)**2
+        end do
+        deallocate(vofm)
+      end if
+    end if
     ! Normalize by the total fluid fraction, Multiply by the Cell Volume and divide by dt
     ! (This puts the array in the most efficient form for Y_EQ_AX_PRS)
     where( RHS > 0 )  Vol_over_RhoCsqDt = Cell%Volume*Vol_over_RhoCsqDt / (dt*RHS)

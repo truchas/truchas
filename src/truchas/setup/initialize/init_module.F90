@@ -936,10 +936,9 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,       only: alittle
     use interfaces_module,    only: Body_Temp, Matnum, nbody
-    use legacy_matl_api,      only: Matl, GATHER_VOF, update_matl, mat_slot, nmat
     use legacy_mesh_api,      only: ncells, Cell
 
-    use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
+    use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL, get_density
     use zone_module,          only: Zone
     use restart_variables,    only: restart
     use physics_module, only: heat_transport
@@ -951,28 +950,14 @@ CONTAINS
     integer :: i, ib, iz, m, s
     real(r8), pointer, dimension(:)   :: enth_sum, scratch
     real(r8), pointer, dimension(:,:) :: bzRho
-    real(r8), pointer, dimension(:)   :: mass_sum, vof
+    real(r8), pointer, dimension(:)   :: mass_sum
     real(r8) :: enth_matl, rho, temp
-    real(r8), allocatable :: Volume_Fraction(:,:)
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ALLOCATE (Volume_Fraction(0:nmat,ncells), STAT=s)
-    call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating Volume_Fraction')
 
     ! scratch(1:ncells) is used for various values of that dimension.
     ! Pointers with meaningful names are associated with it prior to use.
     ALLOCATE (scratch(ncells), STAT=s)
     call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating scratch')
-
-    ! Gather volume fractions of materials using enth_sum as a temporary
-    ! Volume Fraction is need later inside of the T_of_H call
-    Volume_Fraction = 0.0_r8
-    vof => scratch
-    do i = 1,nmat
-       call GATHER_VOF (i, vof)
-       Volume_Fraction(i,:) = vof
-    end do
-    NULLIFY(vof)
 
     RESTARTCHECK: if (restart) then
 
@@ -1019,12 +1004,8 @@ CONTAINS
       call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating enth_sum')
 
       ! Compute a cell-average density
-      Zone%Rho = 0.0_r8
-      do s = 1,mat_slot
-        do i = 1, ncells
-          Zone(i)%Rho = Zone(i)%Rho + Matl(s)%Cell(i)%Vof * DENSITY_MATERIAL(Matl(s)%Cell(i)%Id)
-        end do
-      end do
+      ! NB: zone%temp not yet defined, but density doesn't use it anyway.
+      call get_density(zone%temp, zone%rho)
       Zone%Rho_Old = Zone%Rho
 
       ! Initialize target arrays to zero
@@ -1084,14 +1065,11 @@ CONTAINS
       Zone(:)%Temp_Old = Zone(:)%Temp
       NULLIFY(mass_sum)
 
-      call update_matl (Volume_Fraction)
-
       DEALLOCATE (enth_sum)
 
     end if RESTARTCHECK
 
     DEALLOCATE (scratch)
-    DEALLOCATE (Volume_Fraction)
 
   end subroutine ZONE_INIT
 

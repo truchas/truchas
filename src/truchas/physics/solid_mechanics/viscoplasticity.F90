@@ -402,7 +402,7 @@ Contains
 
   subroutine viscoplastic_strain_rate_one (icell, stress, temp, strain_rate)
 
-    use legacy_matl_api,  only: matl, mat_slot
+    use legacy_matl_api,  only: nmat, matl_get_cell_vof
     use time_step_module, Only: dt
 
     integer,  intent(in)  :: icell
@@ -410,16 +410,15 @@ Contains
     real(r8), intent(in)  :: temp
     real(r8), intent(out) :: strain_rate
 
-    integer :: s, m
-    real(r8) :: rate_mat
+    integer :: m
+    real(r8) :: rate_mat, vof(nmat)
 
+    call matl_get_cell_vof(icell, vof)
     strain_rate = 0.0_r8
-    do s = 1, mat_slot
-      m = matl(s)%cell(icell)%id
-      if (m == 0) cycle ! TODO: can we exit?  Are the unused slots always at the end?
+    do m = 1, nmat
       if (.not.associated(vp(m)%model)) cycle
       rate_mat = vp(m)%model%strain_rate(stress, temp, dt)
-      strain_rate = strain_rate + matl(s)%cell(icell)%vof * rate_mat
+      strain_rate = strain_rate + vof(m) * rate_mat
     end do
 
   end subroutine viscoplastic_strain_rate_one

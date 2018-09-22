@@ -209,8 +209,7 @@ Contains
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
-    use fluid_data_module,    only: isImmobile
-    use legacy_matl_api,      only: Matl, nmat, mat_slot
+    use legacy_matl_api,      only: matl_get_solid
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_mesh,   only: SM_MESH_INIT, ndim, nvc, nfc
@@ -222,7 +221,7 @@ Contains
     real(r8), Dimension(nvc,ncells,ndim)  :: U
     real(r8), Dimension(ndim,ncells)      :: Arow
     real(r8), Dimension(ndim,ndim,ncells) :: Ugrad
-    integer :: idim, inodes, ip, i, j, k, status, icell, imat, islot
+    integer :: idim, inodes, ip, i, j, k, status
     real(r8), pointer, dimension(:) :: Lame2_Node, Nvol, L2tmp
     real(r8), dimension(nfc) :: htemp
 
@@ -301,18 +300,7 @@ Contains
 !    cscale = PGSLib_Global_MAXVAL(Lame2) * 0.0001
 
     ! Initialize mask to find all cells that contain any solid (immobile) material
-    Solid_Mask = .false.
-    do icell = 1, ncells
-       do imat = 1,nmat
-          if (isImmobile(imat)) then
-             do islot = 1, mat_slot
-                if (Matl(islot)%Cell(icell)%Id == imat) then
-                   Solid_Mask(icell) = .true.
-                end if
-             end do
-          end if
-       end do
-    end do
+    call matl_get_solid(Solid_Mask)
 
     !! Calculate the initial thermo-elastic state if necessary.
     have_initial_state = restart .and. have_solid_mechanics_data .and. .not.ignore_solid_mechanics
@@ -442,14 +430,13 @@ Contains
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
                                     VISCOPLASTIC_STRAIN_RATE, PLASTIC_STRAIN_INCREMENT,&
                                     DEVIATORIC_STRESS
-    use fluid_data_module,    only: isImmobile
-    use legacy_matl_api,      only: Matl, nmat, mat_slot
+    use legacy_matl_api,      only: matl_get_solid
     use solid_mech_constraints, only: FACE_GAP_UPDATE
     use solid_mechanics_input, only: solid_mechanics
     use solid_mechanics_mesh, only: ndim, ncomps
     use zone_module, only: zone
 
-    integer :: idim, inodes, ip, icell, imat, islot
+    integer :: idim, inodes, ip, icell
     real(r8), Dimension(ndim*nnodes) :: Temp
     real(r8), Dimension(ncomps,ncells) :: Pl_Inc_Cell, Dummy
 
@@ -461,18 +448,7 @@ Contains
     call start_timer("Solid Mechanics")
 
     ! Update solid material mask
-    Solid_Mask = .false.
-    do icell = 1, ncells
-       do imat = 1,nmat
-          if (isImmobile(imat)) then
-             MAT_SLOT_LOOP: do islot = 1, mat_slot
-                if (Matl(islot)%Cell(icell)%Id == imat) then
-                   Solid_Mask(icell) = .true.
-                end if
-             end do MAT_SLOT_LOOP
-          end if
-       end do
-    end do
+    call matl_get_solid(Solid_Mask)
 
     ! Set stresses, strains and plastic strain rate at the beginning of the time step
 
