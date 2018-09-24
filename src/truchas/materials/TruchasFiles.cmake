@@ -21,7 +21,11 @@ set(MAT_FILES
        materials/material_utilities.F90
        materials/phase_namelist.F90
        materials/phase_property_table.F90
-       materials/legacy_matl_api.F90)
+       materials/legacy_matl_api.F90
+       materials/legacy_matl_adapter_class.F90
+       materials/legacy_matl_adapter0_type.F90
+       materials/legacy_matl_adapter1_type.F90
+)
 
 set(MAT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities
