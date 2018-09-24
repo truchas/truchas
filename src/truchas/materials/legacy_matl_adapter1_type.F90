@@ -143,7 +143,7 @@ contains
 
   subroutine read_data(this, unit, version)
 
-    use legacy_matl_api, only: nmat
+    use matl_module, only: nmat
     use legacy_mesh_api, only: ncells, pcell => unpermute_mesh_vector
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
@@ -151,24 +151,18 @@ contains
     class(legacy_matl_adapter1), intent(inout) :: this
     integer, intent(in) :: unit, version
 
-    integer :: n, m
-    real(r8), allocatable :: vf(:,:)
+    integer :: n
+
+    this%nmat = nmat
+    this%ncells = ncells
 
     !! Read the number of materials defined in the restart file.
     call read_var(unit, n, 'READ_MATL_DATA: error reading NMAT record')
     if (n /= nmat) call halt('READ_MATL_DATA: incompatible NMAT value: ' // i_to_c(n))
 
     !! Read the volume fraction array.
-    allocate(vf(n,ncells))
-    call read_dist_array(unit, vf, pcell, 'READ_MATL_DATA: error reading VF records')
-
-    this%nmat = nmat
-    this%ncells = ncells
-    if (allocated(this%vfrac)) deallocate(this%vfrac)
-    allocate(this%vfrac(this%ncells,this%nmat))
-    do m = 1, nmat
-      this%vfrac(:,m) = vf(m,:)
-    end do
+    allocate(this%vfrac(this%nmat,this%ncells))
+    call read_dist_array(unit, this%vfrac, pcell, 'READ_MATL_DATA: error reading VF records')
 
   end subroutine
 
