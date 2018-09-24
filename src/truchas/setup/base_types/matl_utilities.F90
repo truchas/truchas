@@ -37,7 +37,7 @@ CONTAINS
     use legacy_mesh_api,  only: ncells
 
     ! Arguments
-    real(r8), dimension(nmat,ncells), intent(INOUT) :: VOF
+    real(r8), dimension(nmat,ncells), intent(OUT) :: VOF
 
     ! Local Variables
     integer :: m, n, s
@@ -99,7 +99,7 @@ CONTAINS
     use pgslib_module,     only: PGSLib_Global_MAXVAL
 
     ! Arguments
-    real(r8), dimension(nmat,ncells), intent(INOUT) :: VOF
+    real(r8), dimension(nmat,ncells), intent(IN) :: VOF
 
     ! Local Variables
     integer, dimension(ncells) :: mat
