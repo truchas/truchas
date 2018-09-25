@@ -52,6 +52,7 @@ module flow_prediction_type
   use truchas_timers
   use parameter_list_type
   use index_partitioning
+  use flow_domain_types
   use flow_operators
   use flow_mesh_type
   use flow_props_type
@@ -347,11 +348,19 @@ contains
     dtv = dt*this%viscous_implicitness
 
     associate (m => this%mesh%mesh, mu_f => props%mu_fc, rho => props%rho_cc, &
-        vof => props%vof)
+        vof => props%vof, cell_t => props%cell_t, face_t => props%face_t)
 
       do j = 1, m%ncell_onP
         associate (nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
             face => m%cface(m%xcface(j):m%xcface(j+1)-1))
+
+          if (cell_t(j) /= regular_t) then
+            ! solve dummy equations on solid/void
+            do k = 1, size(A)
+              call A(k)%A%add_to(j,j,1.0_r8)
+            end do
+            cycle
+          end if
 
           ! inertial terms
           do k = 1, size(A)
@@ -368,10 +377,20 @@ contains
               if (ni > 0) then
                 ! note that normal is already weighted by face area
                 coeff = dtv*dot_product(ds(:,fi), m%normal(:,fi))*mu_f(fi)/m%volume(j)
-                do k = 1, size(A)
-                  call A(k)%A%add_to(j, j, coeff)
-                  call A(k)%A%add_to(j, ni, -coeff)
-                end do
+                if (face_t(fi) == regular_t) then
+                  do k = 1, size(A)
+                    call A(k)%A%add_to(j, j, coeff)
+                    call A(k)%A%add_to(j, ni, -coeff)
+                  end do
+                else if (face_t(fi) == solid_t) then
+                  do k = 1, size(A)
+                    call A(k)%A%add_to(j, j, coeff)
+                  end do
+                  ! there is no adjustment to the rhs here since it is assumed that the
+                  ! velocity in solid cells is zero
+                end if
+                ! there is no check for a void_t face since that acts as a neumann condition
+                ! on velocity which does not contribute to the lhs
               end if
             end do
           end if
@@ -393,9 +412,10 @@ contains
         do i = 1, size(faces)
           fi = faces(i)
           j = this%mesh%fcell(2,fi) ! cell index
-          if (j > m%ncell_onP) cycle
+          if (j > m%ncell_onP) cycle ! this cell will be properly handled by a different pe
+          if (face_t(fi) /= regular_t) cycle ! no bcs on non-regular faces
+
           ASSERT(this%mesh%fcell(1,fi) == 0)
-          ASSERT(j > 0 .and. j <= m%ncell_onP)
 
           coeff = dtv*dot_product(ds(:,fi), m%normal(:,fi))*mu_f(fi)/m%volume(j)
           do k = 1, size(A)
@@ -410,6 +430,9 @@ contains
         do i = 1, size(faces)
           fi = faces(i)
           j = this%mesh%fcell(2,fi) ! cell index
+          if (j > m%ncell_onP) cycle ! this cell will be properly handled by a different pe
+          if (face_t(fi) /= regular_t) cycle ! no bcs on non-regular faces
+
           ASSERT(this%mesh%fcell(1,fi) == 0)
 
           coeff = dtv*dot_product(ds(:,fi), m%normal(:,fi))*mu_f(fi)/m%volume(j)
@@ -419,9 +442,6 @@ contains
         end do
       end associate
       ! zero gradient of neumann bcs already handled
-
-
-      ! XXX fixup for solid/void cells
     end associate
 
 
@@ -619,6 +639,9 @@ contains
 !!$    end if
 
     call start_timer("solve")
+    ! The accumulate routines may add contributions to non-regular cells.  These
+    ! contributions are ignored by the solver
+
 
     ! Pressure and viscous forces are unaware of solid/fluid boundaries.
     ! These forces are computed first and scaled by vof as a crude approximation.
@@ -653,12 +676,13 @@ contains
     end associate
 
     ! skip all the wild limiter hackery for now
-    associate (m => this%mesh%mesh, rhs1d => this%rhs1d, rhs => this%rhs, sol => this%sol)
+    associate (m => this%mesh%mesh, rhs1d => this%rhs1d, rhs => this%rhs, &
+        sol => this%sol, cell_t => props%cell_t)
       do i = 1, 3
         ! per-component solve for predictor velocity
         do j = 1, m%ncell_onP
           sol(j) = vel_cc(i,j)
-          if (props%inactive_c(j) > 0 .or. props%vof_novoid(j) <= props%cutoff) then
+          if (cell_t(j) /= regular_t) then
             rhs1d(j) = 0.0_r8
           else
             rhs1d(j) = rhs(i,j) / props%vof(j)
@@ -679,7 +703,7 @@ contains
           !       terms for solidification and porosity.
           call gather_boundary(m%cell_ip, rhs1d)
           do j = 1, m%ncell
-            if (props%inactive_c(j) > 0 .or. props%vof_novoid(j) <= props%cutoff) then
+            if (cell_t(j) /= regular_t) then
               vel_cc(i,j) = rhs1d(j)
             else
               vel_cc(i,j) = rhs1d(j) / props%rho_cc(j)

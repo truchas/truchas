@@ -51,6 +51,7 @@ module flow_projection_type
   use kinds, only: r8
   use truchas_logging_services
   use truchas_timers
+  use flow_domain_types
   use flow_mesh_type
   use unstr_mesh_type
   use flow_props_type
@@ -329,26 +330,40 @@ contains
     integer, pointer :: row_idx(:)
     integer :: i, j, fi, ni
     real(r8) :: coeff
+    logical :: pressure_pinned
 
     A => this%solver%matrix()
     call A%set_all(0.0_r8)
 
     ds => flow_gradient_coefficients()
 
-    associate (m => this%mesh%mesh, rho_f => props%rho_fc)
+    associate (m => this%mesh%mesh, rho_f => props%rho_fc, &
+        cell_t => props%cell_t, face_t => props%face_t)
       do j = 1, m%ncell_onP
         associate (nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
             face => m%cface(m%xcface(j):m%xcface(j+1)-1))
+
+          if (cell_t(j) /= regular_t) then
+            ! solve dummy equations in void/solid cells
+            call A%add_to(j, j, 1.0_r8)
+            cycle
+          end if
+
           do i = 1, size(nhbr)
             fi = face(i)
             ni = nhbr(i)
 
             ! ni == 0 implies a domain boundary cell, handle these separately
-            if (rho_f(fi) /= 0.0_r8 .and. ni > 0) then
+            if (ni > 0) then
               ! note that normal is already weighted by face area
               coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
-              call A%add_to(j, j, coeff)
-              call A%add_to(j, ni, -coeff)
+              if (face_t(fi) == regular_t) then
+                call A%add_to(j, j, coeff)
+                call A%add_to(j, ni, -coeff)
+              else if (face_t(fi) == void_t) then ! void acts as 0 dirichlet pressure
+                call A%add_to(j, j, coeff)
+              end if
+              ! solid acts as a neumann condition - don't need to explicitly here
             end if
           end do
         end associate
@@ -356,8 +371,8 @@ contains
     end associate
 
 
-    !! FIXME: need correction for void/solid... maybe
     associate (m => this%mesh%mesh, rhs => this%rhs)
+
 #if ASDF
       associate( faces => m%cface(m%xcface(Q):m%xcface(Q)-1))
         write(*,'("vel_fn/normal at [",i4,"] y- ",2es20.12)') faces(1), vel(faces(1)), m%normal(2,faces(1))
@@ -370,6 +385,8 @@ contains
 
       do j = 1, m%ncell_onP
         rhs(j) = 0.0_r8
+        if (props%cell_t(j) /= regular_t) cycle
+
         associate( fn => m%cface(m%xcface(j):m%xcface(j+1)-1))
           do i = 1, size(fn)
             ! face velocity follows the convention of being positive in the face normal
@@ -382,43 +399,47 @@ contains
             end if
           end do
         end associate
-        !if (j == 771) write(*, '("rhs [",i4,"]: ",es20.12)') 771, this%rhs(771)
         this%rhs(j) = this%rhs(j) / (dt*m%volume(j))
       end do
 
       ! handle dirichlet bcs
-      !print *, "DEBUGGING PRESSURE BOUNDARY CONDITIONS"
+      ! print *, "DEBUGGING PRESSURE BOUNDARY CONDITIONS"
       associate (faces => this%bc%dp_dirichlet%index, values => this%bc%dp_dirichlet%value, &
           rho_f => props%rho_fc)
         do i = 1, size(faces)
           fi = faces(i)
           if (fi > this%mesh%mesh%nface_onP) cycle
+          if (props%face_t(fi) /= regular_t) cycle ! no bcs on non-regular faces
+
           j = this%mesh%fcell(2,fi) ! cell index
           ASSERT(this%mesh%fcell(1,fi) == 0)
-          if (rho_f(fi) /=  0.0_r8) then
-            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
-            call A%add_to(j, j, coeff)
-            this%rhs(j) = this%rhs(j) + coeff*values(i)
-          end if
+
+          coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
+          call A%add_to(j, j, coeff)
+          this%rhs(j) = this%rhs(j) + coeff*values(i)
+
         end do
       end associate
 
       ! set the pressure at an arbitrary boundary point to 0 if all neumann
-      if (.not.this%bc%pressure_d .and. this%bc%is_p_neumann_fix_PE) then
+      if (.not.(this%bc%pressure_d .or. props%any_void) .and. this%bc%is_p_neumann_fix_PE) then
+        pressure_pinned = .false.
         associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
-          i = 1
-          fi = faces(i)
-          j = this%mesh%fcell(2,fi) ! cell index
-          ASSERT(this%mesh%fcell(1,fi) == 0)
+          pressure_fix: do i = 1, size(faces)
+            fi = faces(i)
+            j = this%mesh%fcell(2,fi) ! cell index
+            ASSERT(this%mesh%fcell(1,fi) == 0)
 
-          if (rho_f(fi) /=  0.0_r8) then
-            coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
-            call A%add_to(j, j, coeff)
-            ! no adjust to rhs requires for 0 dirichlet value
-          else
-            print *, "FIX THIS: setting ficticous pressure in solid"
-          end if
+            if (props%face_t(fi) == regular_t) then
+              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
+              call A%add_to(j, j, coeff)
+              pressure_pinned = .true.
+              ! no adjust to rhs requires for 0 dirichlet value
+              exit pressure_fix
+            end if
+          end do pressure_fix
         end associate
+        if (.not.pressure_pinned) call TLS_fatal("Cannot pin pressure.  Please fix algorithm.")
       end if
     end associate
 
@@ -475,7 +496,7 @@ contains
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
       call gather_boundary(m%cell_ip, v)
-      call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%inactive_f, 0.0_r8)
+      call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%face_t, 0.0_r8)
     end associate
     ! subtract dynamic pressure grad
     associate (m => this%mesh%mesh, gp_fc => this%grad_p_rho_fc)
@@ -560,12 +581,12 @@ contains
 
     ! face gradient of solution
     call gradient_cf(this%grad_fc, this%delta_p_cc, this%bc%p_neumann, &
-        this%bc%dp_dirichlet, props%inactive_f, 0.0_r8)
+        this%bc%dp_dirichlet, props%face_t, 0.0_r8)
 
     ! divergence free face velocity
     associate (m => this%mesh%mesh)
       do j = 1, m%nface_onP
-        if (props%inactive_f(j) > 0) then
+        if (props%face_t(j) /= regular_t) then
           vel_fc(j) = 0.0_r8
         else
           vel_fc(j) = vel_fc(j) - &
@@ -645,10 +666,10 @@ contains
         gp_cc => this%grad_p_rho_cc, gp_fc => this%grad_p_rho_fc)
 
       call gradient_cf(gp_fc, p_cc, this%bc%p_neumann, &
-          this%bc%p_dirichlet, props%inactive_f, 0.0_r8, this%gravity_head)
+          this%bc%p_dirichlet, props%face_t, 0.0_r8, this%gravity_head)
 
       do j = 1, m%nface_onP
-        if (rho(j) > 0.0_r8) then
+        if (props%face_t(j) == regular_t) then
           gp_fc(:,j) = gp_fc(:,j)/rho(j)
         else
           gp_fc(:,j) = 0.0_r8
@@ -663,7 +684,7 @@ contains
       end associate
 #endif
       call gather_boundary(m%face_ip, gp_fc)
-      call interpolate_fc(gp_cc, gp_fc, props%inactive_f, this%bc%p_neumann%index)
+      call interpolate_fc(gp_cc, gp_fc, props%face_t, this%bc%p_neumann%index)
 #if ASDF
       write(*,'("grad_p_rho_cc[",i4,"] ",3es20.12)') Q, gp_cc(:,Q)
 #endif

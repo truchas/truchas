@@ -357,7 +357,7 @@ contains
     end do
 
     call flow_operators_init(this%mesh)
-    call this%props%init(this%mesh, density, density_delta, viscosity, void_material_index > 0)
+    call this%props%init(this%mesh, density, density_delta, viscosity)
 
     ! the initial velocity is provided from the velocity_init routine
     allocate(velocity_cc(3, this%mesh%mesh%ncell_onP))

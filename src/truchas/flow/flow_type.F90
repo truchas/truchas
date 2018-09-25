@@ -3,6 +3,7 @@
 module flow_type
 
   use kinds, only: r8
+  use flow_domain_types
   use constants_module
   use truchas_logging_services
   use truchas_timers
@@ -38,7 +39,7 @@ module flow_type
     procedure :: init
     procedure :: step
     procedure :: accept
-    procedure :: zero_out_solid_velocities
+    procedure :: correct_non_regular_cells
     procedure :: timestep
     ! views into data
     procedure :: vel_cc_view
@@ -203,12 +204,27 @@ contains
 
   end subroutine init
 
-  subroutine zero_out_solid_velocities(this, props)
+  subroutine correct_non_regular_cells(this, props)
     class(flow), intent(inout) :: this
     type(flow_props), intent(in) :: props
+    !-
+    integer :: i
 
-    print *, 'zero out all velocities on solid cells and faces'
-  end subroutine zero_out_solid_velocities
+    associate (m => this%mesh%mesh, cell_t => props%cell_t, face_t => props%face_t)
+      do i = 1, m%ncell
+        if (cell_t(i) /= regular_t) then
+          this%vel_cc(:,i) = 0.0_r8
+          this%P_cc(i) = 0.0_r8
+        end if
+      end do
+
+      do i = 1, m%nface_onP
+        if (face_t(i) /= regular_t) then
+          this%vel_fn(i) = 0.0_r8
+        end if
+      end do
+    end associate
+  end subroutine correct_non_regular_cells
 
   ! note 1: On the initial pass, calculate initial pressure
   !         and pressure gradients, but revert cell-centered
@@ -278,6 +294,7 @@ contains
     end associate
 #endif
 
+    call this%correct_non_regular_cells(props)
     !p_min = global_minval(this%p_cc)
     !p_max = global_maxval(this%p_cc)
 

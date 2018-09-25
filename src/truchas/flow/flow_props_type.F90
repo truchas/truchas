@@ -5,6 +5,7 @@
 !! All data members are public since they are needed throughout flow but should
 !! not be changed, except through `update_XX` subroutines
 !!
+!!
 !! Peter Brady <ptb@lanl.gov>
 !! 2018
 !!
@@ -42,7 +43,7 @@
 !!    them in `this`.
 !!
 !!  INIT(this, FLOW_MESH, REAL DENSITY(:), SCALAR_FUNC_BOX DENSITY_DELTA(:),
-!!             SCALAR_FUNC_BOX VISCOSITY (:), LOGICAL CONTAINS_VOID)
+!!             SCALAR_FUNC_BOX VISCOSITY (:))
 !!    Initializes `this` and allocates all data.  Steals the allocations
 !!    of DENSITY_DELTA and VISCOSITY.  Both of these are scalar functions
 !!    of temperature.  The i'th index of DENSITY, DENSITY_DELTA, and VISCOSITY
@@ -70,6 +71,7 @@
 module flow_props_type
 
   use kinds, only: r8
+  use flow_domain_types
   use unstr_mesh_type
   use flow_mesh_type
   use parameter_list_type
@@ -94,13 +96,12 @@ module flow_props_type
     real(r8), allocatable :: vof_novoid(:), vof_novoid_n(:) ! non-void fluid volume fraction
     real(r8), allocatable :: rho_delta_cc(:) ! temperature dependent density deviation
     real(r8), allocatable :: solidified_rho(:) ! change in fluid density due to solidification
-    integer, allocatable :: inactive_f(:), inactive_c(:) ! mark a face/cell as inactive
+    integer, allocatable :: cell_t(:), face_t(:) ! cell and face types (fluid, void or solid)
 
-    logical :: contains_void ! true if the simulation contains the possiblity of void material
     logical :: any_void ! true if there is void in the current timestep
     real(r8) :: cutoff ! fluid volume fractions below this are considered solid
     real(r8) :: min_face_fraction
-    real(r8) :: cutrho
+    ! real(r8) :: cutrho not entirely sure what to do with this
     real(r8) :: minrho
     !
     real(r8), allocatable :: density(:)
@@ -174,17 +175,15 @@ contains
     call pp%get("min face fraction", this%min_face_fraction, 0.001_r8)
   end subroutine read_params
 
-  subroutine init(this, mesh, density, density_delta, viscosity, contains_void)
+  subroutine init(this, mesh, density, density_delta, viscosity)
     class(flow_props), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
     real(r8), intent(in) :: density(:)
     class(scalar_func_box), intent(inout) :: density_delta(:), viscosity(:)
-    logical, intent(in) :: contains_void
     !-
     integer :: nc, fc, s
 
     this%mesh => mesh
-    this%contains_void = contains_void
     this%density = density
 
     ASSERT(size(viscosity) == size(density_delta))
@@ -206,8 +205,8 @@ contains
         this%vof(nc), this%vof_n(nc), &
         this%vof_novoid(nc), this%vof_novoid_n(nc), &
         this%rho_delta_cc(nc), &
-        this%inactive_f(fc), this%inactive_c(nc), &
         this%solidified_rho(nc), &
+        this%cell_t(nc), this%face_t(fc), &
         stat=s)
     if (s /= 0) call TLS_Fatal("allocation of flow_props failed")
 
@@ -248,22 +247,22 @@ contains
           this%rho_delta_cc(i) = this%rho_delta_cc(i) + &
               vof(m,i)*this%density_delta(m)%f%eval(state)
         end do
+
         this%vof(i) = sum(vof(:,i))
-        if (this%contains_void) then
-          this%vof_novoid(i) = sum(vof(:size(this%density),i))
-        else
-          this%vof_novoid(i) = this%vof(i)
-        end if
+        ! last element of input vof array is void
+        this%vof_novoid(i) = sum(vof(:size(this%density),i))
 
         if (this%vof(i) > 0.0_r8) then
           this%rho_cc(i) = this%rho_cc(i) / this%vof(i)
           this%rho_delta_cc(i) = this%rho_delta_cc(i) / this%vof(i)
         end if
 
-        if (this%vof(i) < this%cutoff) then
-          this%inactive_c(i) = 1
-        else
-          this%inactive_c(i) = 0
+        if (this%vof(i) < this%cutoff) then ! criteria for solid
+          this%cell_t(i) = solid_t
+        elseif (this%vof_novoid(i) < this%cutoff) then ! criteria for void
+          this%cell_t(i) = void_t
+        else ! regular
+          this%cell_t(i) = regular_t
         end if
 
         if (this%vof_novoid(i) > 0.0_r8) then
@@ -273,6 +272,7 @@ contains
     end associate
 
     this%minrho = global_minval(minrho)
+    this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
 
     if (ini) then
       call this%update_fc()
@@ -293,36 +293,35 @@ contains
 
 
     associate (mesh => this%mesh%mesh)
-      ! compute inactive faces
+      ! compute face types
       do j = 1, mesh%nface_onP
         associate(cn => this%mesh%fcell(:,j))
           if (cn(1) > 0) then
-            this%inactive_f(j) = maxval(this%inactive_c(cn))
+            this%face_t(j) = maxval(this%cell_t(cn))
           else
-            this%inactive_f(j) = this%inactive_c(cn(2))
+            this%face_t(j) = this%cell_t(cn(2))
           end if
         end associate
       end do
-      call gather_boundary(mesh%face_ip, this%inactive_f)
+      call gather_boundary(mesh%face_ip, this%face_t)
 
 
       ! linear averaged face-centered density
-      ! special cases:
       ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
       ! - the face density is simply the cell density
       ! 2) If the face has shared by a solid cell (where rho_cc == 0) and a fluid cell
       ! - the face density is the fluid cell density
-      ! 3) If the face is shared by two solid cells
+      ! 3) If the face is shared by two void/solid cells
       ! - the face density is 0
       ! 4) any non-zero face density is forced to be at least min_face_rho
       this%rho_fc = 0.0_r8
       do j = 1, mesh%nface_onP
         associate(cn => this%mesh%fcell(:,j))
-          if (cn(1) > 0) then
-            w = mesh%volume(cn)*this%vof(cn)*(1-this%inactive_c(cn))
-            if (sum(w) > 0.0_r8) this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
-          elseif (this%inactive_f(j) == 0) then
-            this%rho_fc(j) = max(min_face_rho, this%rho_cc(cn(2)))
+          if (cn(1) == 0) then
+            this%rho_fc(j) = this%rho_cc(cn(2))
+          else if (any(this%cell_t(cn) == regular_t)) then
+            w = mesh%volume(cn)*this%vof(cn)
+            this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
           end if
         end associate
       end do
@@ -332,22 +331,21 @@ contains
       ! special cases:
       ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
       ! - the face viscosity is the cell viscosity
-      ! 2) If the face is shared by a void/solid cell (where mu_cc == 0) and a fluid cell
+      ! 2) If the face is shared by a solid cell (where mu_cc == 0) and a fluid cell
       ! - the face viscosity is the fluid cell viscosity
-      ! 3) If the face is shared by two void/solid cells
+      ! 3) If the face is shared by a void cell (where mu_cc == 0) and a fluid cell
+      ! - the face viscosity is the void cell viscosity (i.e. 0)
+      ! 4) If the face is shared by two void/solid cells
       ! - the face viscosity is 0
       this%mu_fc = 0.0_r8
       do j = 1, mesh%nface_onP
         associate(cn => this%mesh%fcell(:,j))
-          if (cn(1) > 0) then
-            ! is this robust?
-            if (product(this%mu_cc(cn)) > epsilon(1.0_r8)) then
-              this%mu_fc(j) = 2.0_r8*product(this%mu_cc(cn))/sum(this%mu_cc(cn))
-            else
-              this%mu_fc(j) = maxval(this%mu_cc(cn))
-            end if
-          else
-            this%mu_fc(j) = this%mu_cc(cn(2))
+          if (cn(1) == 0) then
+            this%mu_fc(j) = this%mu_cc(cn(2)) ! boundary
+          else if (this%face_t(j) == solid_t) then
+            this%mu_fc(j) = maxval(this%mu_cc(cn))
+          else if (product(this%mu_cc(cn))  > epsilon(1.0_r8)) then
+            this%mu_fc(j) = 2.0_r8*product(this%mu_cc(cn))/sum(this%mu_cc(cn))
           end if
         end associate
       end do

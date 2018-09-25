@@ -4,6 +4,7 @@ module flow_operators
   use kinds, only: r8
   use truchas_logging_services
   use unstr_mesh_type
+  use flow_domain_types
   use flow_mesh_type
   use bndry_func_class
   use bndry_vfunc_class
@@ -156,12 +157,12 @@ contains
   ! gradient of cell-centered scalar `x` evaluated at face centers
   ! result only valid on nface_onP
   subroutine gradient_cf_scalar(g, x, normal_flux_bc, dirichlet_bc, &
-      inactive_faces, inactive_default, gravity)
+      face_t, non_regular_default, gravity)
     real(r8), intent(out) :: g(:,:)
     real(r8), intent(in) :: x(:)
     class(bndry_func), optional, intent(inout) :: normal_flux_bc, dirichlet_bc
-    integer, intent(in), optional :: inactive_faces(:)
-    real(r8), intent(in), optional :: inactive_default
+    integer, intent(in), optional :: face_t(:)
+    real(r8), intent(in), optional :: non_regular_default
     real(r8), intent(in), optional :: gravity(:,:) ! for dynamic pressure grad
 
     integer :: j,i
@@ -213,9 +214,9 @@ contains
       end if
 
 
-      if (present(inactive_faces) .and. present(inactive_default)) then
+      if (present(face_t) .and. present(non_regular_default)) then
         do j = 1, m%nface_onP
-          if (inactive_faces(j) > 0) g(:,j) = inactive_default
+          if (face_t(j) /= regular_t) g(:,j) = non_regular_default
         end do
       end if
 
@@ -228,13 +229,13 @@ contains
   ! result only valid on nface_onP.  This routine assumes that all
   ! components of the gradient are zero on neumann walls
   subroutine gradient_cf_vector(g, x, zero_normal_bc, dirichlet_bc, &
-      inactive_faces, inactive_default)
+      face_t, non_regular_default)
     real(r8), intent(out) :: g(:,:,:)
     real(r8), intent(in) :: x(:,:)
     class(bndry_func), optional, intent(in) :: zero_normal_bc
     class(bndry_vfunc), optional, intent(in) :: dirichlet_bc
-    integer, intent(in), optional :: inactive_faces(:)
-    real(r8), intent(in), optional :: inactive_default
+    integer, intent(in), optional :: face_t(:)
+    real(r8), intent(in), optional :: non_regular_default
 
     real(r8) :: v_normal, v(3)
     integer :: j,i,d
@@ -284,9 +285,9 @@ contains
       end if
 
 
-      if (present(inactive_faces) .and. present(inactive_default)) then
+      if (present(face_t) .and. present(non_regular_default)) then
         do j = 1, m%nface_onP
-          if (inactive_faces(j) > 0) g(:,:,j) = inactive_default
+          if (face_t(j) /= regular_t) g(:,:,j) = non_regular_default
         end do
       end if
 
@@ -298,19 +299,19 @@ contains
   ! interpolation of vector quantitiy xf to faces
   ! result only valid on ncell_onP
   ! inactive_faces and extra_ignore_faces do not participate in averaging
-  subroutine interpolate_fc(ic, xf, inactive_faces, extra_ignore_faces)
+  subroutine interpolate_fc(ic, xf, face_t, extra_ignore_faces)
     real(r8), intent(out) :: ic(:,:)
     real(r8), intent(in) :: xf(:,:)
-    integer, intent(in) , optional :: inactive_faces(:)
+    integer, intent(in) , optional :: face_t(:)
     integer, intent(in) , optional :: extra_ignore_faces(:)
 
     integer :: i, dim
     real(r8) :: tmp
 
     this%work = 1.0_r8
-    if (present(inactive_faces)) then
+    if (present(face_t)) then
       do i = 1, this%mesh%mesh%nface_onP
-        if (inactive_faces(i) > 0) this%work(inactive_faces(i)) = 0.0_r8
+        if (face_t(i) /= regular_t) this%work(i) = 0.0_r8
       end do
     end if
     if (present(extra_ignore_faces)) then
@@ -343,12 +344,12 @@ contains
   ! boundary conditions on faces may be supplied as well a list of
   ! inactive faces and a default value for xf at inactive faces.
   ! result only valid on nface_onP
-  subroutine interpolate_cf(xf, x, w, bc, inactive_faces, inactive_default)
+  subroutine interpolate_cf(xf, x, w, bc, face_t, non_regular_default)
     real(r8), intent(out) :: xf(:)
     real(r8), intent(in) :: x(:,:), w(:,:)
     class(bndry_vfunc), optional, intent(inout) :: bc
-    integer, intent(in), optional :: inactive_faces(:)
-    real(r8), intent(in), optional :: inactive_default
+    integer, intent(in), optional :: face_t(:)
+    real(r8), intent(in), optional :: non_regular_default
 
     integer :: j,i
 
@@ -373,9 +374,9 @@ contains
         end associate
       end if
 
-      if (present(inactive_faces) .and. present(inactive_default)) then
+      if (present(face_t) .and. present(non_regular_default)) then
         do j = 1, m%nface_onP
-          if (inactive_faces(j) > 0) xf(j) = inactive_default
+          if (face_t(j) /= regular_t) xf(j) = non_regular_default
         end do
       end if
     end associate
