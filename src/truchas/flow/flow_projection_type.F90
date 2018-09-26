@@ -404,7 +404,7 @@ contains
       end associate
 
       ! set the pressure at an arbitrary boundary point to 0 if all neumann
-      if (.not.this%bc%pressure_d .and. is_IOP) then
+      if (.not.this%bc%pressure_d .and. this%bc%is_p_neumann_fix_PE) then
         associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
           i = 1
           fi = faces(i)

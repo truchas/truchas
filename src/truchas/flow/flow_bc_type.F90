@@ -20,6 +20,7 @@ module flow_bc_type
     class(bndry_vfunc), allocatable :: v_dirichlet
     logical :: pressure_d
     logical :: fix_neumann
+    logical :: is_p_neumann_fix_PE
     type(parameter_list), pointer :: plist => null()
   contains
     procedure :: read_params
@@ -107,8 +108,7 @@ contains
     class(flow_bc), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
     type(flow_bc_factory) :: f
-    integer :: nc
-    integer, allocatable :: neumann_count(:)
+    integer :: nc, flag, has_p_neumann(nPE)
 
     ! need to generalize this to allow user input:
     ! - no slip walls (=> velocity-dirichlet + pressure_neumann)
@@ -136,10 +136,18 @@ contains
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0
 
     if (.not.this%pressure_d) then
-      ! this should be replaced with something smarter
+      ! find the lowest PE with a pressure neumann boundary
+      flag = merge(1, 0, size(this%p_neumann%index) > 0)
+      call collate(has_p_neumann, flag)
       if (is_IOP) then
-        INSIST(size(this%p_neumann%index) > 0)
+        ! note: can replace this with Fortran 2008's findloc intrinsic once compilers support it
+        do flag = 1,nPE
+          if (has_p_neumann(flag) == 1) exit
+        end do
+        INSIST(flag <= nPE)
       end if
+      call broadcast(flag)
+      this%is_p_neumann_fix_PE = (flag == this_PE)
     end if
 #ifndef NDEBUG
     print *, "size of p dirichlet: ", size(this%p_dirichlet%index)
