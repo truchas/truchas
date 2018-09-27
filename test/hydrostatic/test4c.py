@@ -12,7 +12,7 @@ import TruchasTest
 
 class mytest(TruchasTest.GoldenTestCase):
 
-  test_name = 'hydrostatic-3c'
+  test_name = 'hydrostatic-4c'
   num_procs = 4 # with a parallel executable
 
   # Override the default setUp, omitting the opening of the golden output
@@ -29,9 +29,8 @@ class mytest(TruchasTest.GoldenTestCase):
 
     # Analytic pressure solution at cell centrioids
     cc = self.test_output.get_mesh().centroids()
-    p = -2*cc[:,1]
     p = numpy.array([-2*y if y < 0 else 0 for y in cc[:,1]])
-    
+
     tol = 1e-10
     error = max(abs(test-p))
     if error > tol:
