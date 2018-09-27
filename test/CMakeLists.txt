@@ -49,7 +49,7 @@ add_pytruchas_test(3d-ss-hc-linear-mixed
                    PROCESSORS 4
                    LABELS CONDUCTION MIXED)
 
-add_pytruchas_test(RestartSuite restart/testRestartSuite.py 
+add_pytruchas_test(RestartSuite restart/testRestartSuite.py
                    PROCESSORS 4)
 
 add_pytruchas_test(remap remap/testRemap.py PROCESSORS 4)
@@ -92,19 +92,19 @@ add_pytruchas_test(ds5 ds5/testDS5.py
 		   LABELS DIFFUSION)
 
 add_pytruchas_test(ds6 ds6/testDS6.py
-                   PROCESSORS 4 
+                   PROCESSORS 4
 		   LABELS DIFFUSION)
 
 add_pytruchas_test(ds7 ds7/testDS7.py
-                   PROCESSORS 4 
+                   PROCESSORS 4
 		   LABELS DIFFUSION)
 
 add_pytruchas_test(ds8 ds8/testDS8.py
-                   PROCESSORS 4 
+                   PROCESSORS 4
 		   LABELS DIFFUSION)
 
 add_pytruchas_test(ds9 ds9/testDS9.py
-                   PROCESSORS 4 
+                   PROCESSORS 4
 		   LABELS DIFFUSION)
 
 add_pytruchas_test(ds10 ds10/testDS10.py
@@ -369,18 +369,18 @@ add_pytruchas_test(hydrostatic-3a hydrostatic/test3a.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(hydrostatic-3b hydrostatic/test3b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-3c hydrostatic/test3c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-3d hydrostatic/test3d.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(hydrostatic-4a hydrostatic/test4a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(hydrostatic-4b hydrostatic/test4b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(hydrostatic-4a hydrostatic/test4a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-4b hydrostatic/test4b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-4c hydrostatic/test4c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(hydrostatic-4d hydrostatic/test4d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(hydrostatic-4d hydrostatic/test4d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-5a hydrostatic/test5a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-5b hydrostatic/test5b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-5c hydrostatic/test5c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-5d hydrostatic/test5d.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(hydrostatic-6a hydrostatic/test6a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(hydrostatic-6b hydrostatic/test6b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(hydrostatic-6c hydrostatic/test6c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(hydrostatic-6d hydrostatic/test6d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(hydrostatic-6a hydrostatic/test6a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-6b hydrostatic/test6b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-6c hydrostatic/test6c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-6d hydrostatic/test6d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-7a hydrostatic/test7a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-7b hydrostatic/test7b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
