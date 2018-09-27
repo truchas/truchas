@@ -1,6 +1,6 @@
 #include "f90_assert.fpp"
 #define ASDF 0
-#define Q 771
+#define Q 42
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -360,7 +360,7 @@ contains
               if (face_t(fi) == regular_t) then
                 call A%add_to(j, j, coeff)
                 call A%add_to(j, ni, -coeff)
-              else if (face_t(fi) == void_t) then ! void acts as 0 dirichlet pressure
+              else if (face_t(fi) == regular_void_t) then ! void acts as 0 dirichlet pressure
                 call A%add_to(j, j, coeff)
               end if
               ! solid acts as a neumann condition - don't need to explicitly here
@@ -374,7 +374,7 @@ contains
     associate (m => this%mesh%mesh, rhs => this%rhs)
 
 #if ASDF
-      associate( faces => m%cface(m%xcface(Q):m%xcface(Q)-1))
+      associate( faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
         write(*,'("vel_fn/normal at [",i4,"] y- ",2es20.12)') faces(1), vel(faces(1)), m%normal(2,faces(1))
         write(*,'("vel_fn/normal at [",i4,"] y+ ",2es20.12)') faces(3), vel(faces(3)), m%normal(2,faces(3))
         write(*,'("vel_fn/normal at [",i4,"] x- ",2es20.12)') faces(5), vel(faces(5)), m%normal(1,faces(5))
@@ -586,7 +586,7 @@ contains
     ! divergence free face velocity
     associate (m => this%mesh%mesh)
       do j = 1, m%nface_onP
-        if (props%face_t(j) /= regular_t) then
+        if (props%face_t(j) > regular_t) then
           vel_fc(j) = 0.0_r8
         else
           vel_fc(j) = vel_fc(j) - &
@@ -665,18 +665,38 @@ contains
     associate (m => this%mesh%mesh, rho => props%rho_fc, &
         gp_cc => this%grad_p_rho_cc, gp_fc => this%grad_p_rho_fc)
 
+#if ASDF
+      associate (faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
+        write(*,'("<< face_t at [",i4,"] y- ",i4)') faces(1), props%face_t(faces(1))
+        write(*,'("<< face_t at [",i4,"] y+ ",i4)') faces(3), props%face_t(faces(3))
+        write(*,'("<< face_t at [",i4,"] x- ",i4)') faces(5), props%face_t(faces(5))
+        write(*,'("<< face_t at [",i4,"] x+ ",i4)') faces(6), props%face_t(faces(6))
+      end associate
+#endif
+
+
       call gradient_cf(gp_fc, p_cc, this%bc%p_neumann, &
           this%bc%p_dirichlet, props%face_t, 0.0_r8, this%gravity_head)
 
+#if ASDF
+      associate (faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
+        write(*,'("<< grad(p) at [",i4,"] y- ",3es20.12)') faces(1), gp_fc(:,faces(1))
+        write(*,'("<< grad(p) at [",i4,"] y+ ",3es20.12)') faces(3), gp_fc(:,faces(3))
+        write(*,'("<< grad(p) at [",i4,"] x- ",3es20.12)') faces(5), gp_fc(:,faces(5))
+        write(*,'("<< grad(p) at [",i4,"] x+ ",3es20.12)') faces(6), gp_fc(:,faces(6))
+      end associate
+#endif
+
+
       do j = 1, m%nface_onP
-        if (props%face_t(j) == regular_t) then
+        if (props%face_t(j) <= regular_t) then
           gp_fc(:,j) = gp_fc(:,j)/rho(j)
         else
           gp_fc(:,j) = 0.0_r8
         end if
       end do
 #if ASDF
-      associate (faces => m%cface(m%xcface(771):m%xcface(772)-1))
+      associate (faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
         write(*,'("grad(p) at [",i4,"] y- ",3es20.12)') faces(1), gp_fc(:,faces(1))
         write(*,'("grad(p) at [",i4,"] y+ ",3es20.12)') faces(3), gp_fc(:,faces(3))
         write(*,'("grad(p) at [",i4,"] x- ",3es20.12)') faces(5), gp_fc(:,faces(5))

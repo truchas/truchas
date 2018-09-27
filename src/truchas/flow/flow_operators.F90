@@ -216,7 +216,7 @@ contains
 
       if (present(face_t) .and. present(non_regular_default)) then
         do j = 1, m%nface_onP
-          if (face_t(j) /= regular_t) g(:,j) = non_regular_default
+          if (face_t(j) > regular_t) g(:,j) = non_regular_default
         end do
       end if
 
@@ -287,7 +287,7 @@ contains
 
       if (present(face_t) .and. present(non_regular_default)) then
         do j = 1, m%nface_onP
-          if (face_t(j) /= regular_t) g(:,:,j) = non_regular_default
+          if (face_t(j) > regular_t) g(:,:,j) = non_regular_default
         end do
       end if
 
@@ -311,7 +311,7 @@ contains
     this%work = 1.0_r8
     if (present(face_t)) then
       do i = 1, this%mesh%mesh%nface_onP
-        if (face_t(i) /= regular_t) this%work(i) = 0.0_r8
+        if (face_t(i) > regular_t) this%work(i) = 0.0_r8
       end do
     end if
     if (present(extra_ignore_faces)) then
@@ -376,7 +376,7 @@ contains
 
       if (present(face_t) .and. present(non_regular_default)) then
         do j = 1, m%nface_onP
-          if (face_t(j) /= regular_t) xf(j) = non_regular_default
+          if (face_t(j) > regular_t) xf(j) = non_regular_default
         end do
       end if
     end associate

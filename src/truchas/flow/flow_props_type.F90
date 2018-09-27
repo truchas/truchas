@@ -67,7 +67,8 @@
 !!    Copies all data to their `_n` counterparts
 !!
 #include "f90_assert.fpp"
-
+#define ASDF 0
+#define Q 42
 module flow_props_type
 
   use kinds, only: r8
@@ -269,7 +270,19 @@ contains
           minrho = min(minrho, this%rho_cc(i)*this%vof(i) / this%vof_novoid(i))
         end if
       end do
+
+#if ASDF
+    associate (cn => mesh%cnhbr(mesh%xcnhbr(Q):mesh%xcnhbr(Q+1)-1))
+      write(*,'("Cell_t[",i4,"]: ",i4)') Q, this%cell_t(Q)
+      write(*,'("<< cell_t at [",i4,"] y- ",i4)') cn(1), this%cell_t(cn(1))
+      write(*,'("<< cell_t at [",i4,"] y+ ",i4)') cn(3), this%cell_t(cn(3))
+      write(*,'("<< cell_t at [",i4,"] x- ",i4)') cn(5), this%cell_t(cn(5))
+      write(*,'("<< cell_t at [",i4,"] x+ ",i4)') cn(6), this%cell_t(cn(6))
     end associate
+#endif
+
+    end associate
+
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
@@ -297,7 +310,11 @@ contains
       do j = 1, mesh%nface_onP
         associate(cn => this%mesh%fcell(:,j))
           if (cn(1) > 0) then
-            this%face_t(j) = maxval(this%cell_t(cn))
+            if (any(this%cell_t(cn) == void_t) .and. any(this%cell_t(cn) == regular_t)) then
+              this%face_t(j) = regular_void_t
+            else
+              this%face_t(j) = maxval(this%cell_t(cn))
+            end if
           else
             this%face_t(j) = this%cell_t(cn(2))
           end if

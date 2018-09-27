@@ -148,7 +148,6 @@ contains
       allocate(this%grad_p_rho_cc_n(3,nc))
     end associate
 
-
     if (present(vel_cc)) then
       ! vortex centered at x=0.5, y=0.5
       xc = 0.5_r8
@@ -219,7 +218,7 @@ contains
       end do
 
       do i = 1, m%nface_onP
-        if (face_t(i) /= regular_t) then
+        if (face_t(i) > regular_t) then
           this%vel_fn(i) = 0.0_r8
         end if
       end do
