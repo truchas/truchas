@@ -86,7 +86,7 @@ class mytest(TruchasTest.GoldenTestCase):
 
   def test_initial_pressure(self):
     '''Verify initial pressure'''
-    self.pressure_test(1,1e-10)
+    self.pressure_test(1,3e-10)
 
   def test_final_pressure(self):
     '''Verify final pressure'''

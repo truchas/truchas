@@ -262,9 +262,14 @@ call hijack_truchas ()
     if(.not.restart .and. flow_enabled()) then
       vel_fn => flow_vel_fn_view()
 
-      call vtrack_update(t, dt, vel_fn, initial=.true.)
+      ! For initialization, we set the flux_vols to 0. We also skip volume
+      ! fraction update (and hence density update). These two decisions
+      ! together amount to an assumption of steady-state.
+
+      !call vtrack_update(t, dt, vel_fn, initial=.true.)
       vof => vtrack_vof_view()
       flux_vol => vtrack_flux_vol_view()
+      flux_vol = 0
 
       call flow_step(t,dt,vof,flux_vol,initial=.true.)
       ! since this driver doesn't know any better, always accept

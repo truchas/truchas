@@ -51,8 +51,8 @@ TODO: delete this namelist
 &FLOW_CORRECTOR
   rel_tol = 1.0e-10
   abs_tol = 0.0
-  max_ds_iter = 5
-  max_amg_iter = 10
+  max_ds_iter = 100
+  max_amg_iter = 50
   krylov_method = 'cg'
 /
 

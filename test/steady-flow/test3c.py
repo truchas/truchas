@@ -60,7 +60,7 @@ class mytest(TruchasTest.GoldenTestCase):
     data[:,0] -= 2.82842712474619
     data[:,2] -= 2.82842712474619
     error = numpy.amax(abs(data))
-    tol = 1.0e-13
+    tol = 3.3e-13
     if error > tol:
       print 'velocity: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
       self.assertTrue(False)
@@ -83,7 +83,7 @@ class mytest(TruchasTest.GoldenTestCase):
 
   def test_final_pressure(self):
     '''Verify final pressure'''
-    self.pressure_test(3,1e-10)
+    self.pressure_test(3,1.5e-10)
 
 if __name__ == '__main__':
   import unittest
