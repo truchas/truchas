@@ -382,7 +382,7 @@ add_pytruchas_test(hydrostatic-6b hydrostatic/test6b.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(hydrostatic-6c hydrostatic/test6c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-6d hydrostatic/test6d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-7a hydrostatic/test7a.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(hydrostatic-7b hydrostatic/test7b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(hydrostatic-7b hydrostatic/test7b.py PROCESSORS 4 LABELS FLOW)
 
 
 add_pytruchas_test(steady-flow-old-1a steady-flow-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
