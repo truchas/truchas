@@ -283,31 +283,37 @@ add_pytruchas_test(advection-2a advection/test2a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-2b advection/test2b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-2c advection/test2c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
+# INVISCID PIPE FLOW TESTS -- OLD FLOW SOLVER
+# Commented-out tests will fail, but shouldn't, due to known solver issues
+# see https://gitlab.com/truchas/truchas/issues/163
+add_pytruchas_test(inviscid-pipe-flow-old-1a inviscid-pipe-flow-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(inviscid-pipe-flow-old-1b inviscid-pipe-flow-old/test1b.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(inviscid-pipe-flow-old-1c inviscid-pipe-flow-old/test1c.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(inviscid-pipe-flow-old-1d inviscid-pipe-flow-old/test1d.py PROCESSORS 4 LABELS OLD_FLOW)
+
 # PIPE FLOW TESTS -- OLD FLOW SOLVER
 # Commented-out tests will fail, but shouldn't, due to known solver issues
 # see https://gitlab.com/truchas/truchas/issues/163
-add_pytruchas_test(pipe-flow-old-inviscid-1 pipe-flow-old/test1.py PROCESSORS 4 LABELS OLD_FLOW)
-add_pytruchas_test(pipe-flow-old-inviscid-2 pipe-flow-old/test2.py PROCESSORS 4 LABELS OLD_FLOW)
-#add_pytruchas_test(pipe-flow-old-inviscid-3 pipe-flow-old/test3.py PROCESSORS 4 LABELS OLD_FLOW)
-#add_pytruchas_test(pipe-flow-old-inviscid-4 pipe-flow-old/test4.py PROCESSORS 4 LABELS OLD_FLOW)
-add_pytruchas_test(pipe-flow-old-1 pipe-flow-old/test5.py PROCESSORS 4 LABELS OLD_FLOW)
-add_pytruchas_test(pipe-flow-old-2 pipe-flow-old/test6.py PROCESSORS 4 LABELS OLD_FLOW)
-#add_pytruchas_test(pipe-flow-old-3 pipe-flow-old/test7.py PROCESSORS 4 LABELS OLD_FLOW)
-#add_pytruchas_test(pipe-flow-old-4 pipe-flow-old/test8.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(pipe-flow-old-1a pipe-flow-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(pipe-flow-old-1b pipe-flow-old/test1b.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(pipe-flow-old-1c pipe-flow-old/test1c.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(pipe-flow-old-1d pipe-flow-old/test1d.py PROCESSORS 4 LABELS OLD_FLOW)
 
-# PIPE FLOW TESTS -- NEW FLOW SOLVER
-add_pytruchas_test(pipe-flow-inviscid-1 pipe-flow/test1.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(pipe-flow-inviscid-2 pipe-flow/test2.py PROCESSORS 4 LABELS FLOW)
+# INVISCID PIPE FLOW TESTS
+add_pytruchas_test(inviscid-pipe-flow-1a inviscid-pipe-flow/test1a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(inviscid-pipe-flow-1b inviscid-pipe-flow/test1b.py PROCESSORS 4 LABELS FLOW)
 # These should work after the discretization is fixed
 # see https://gitlab.com/truchas/truchas/issues/163
-#add_pytruchas_test(pipe-flow-inviscid-3 pipe-flow/test3.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-#add_pytruchas_test(pipe-flow-inviscid-4 pipe-flow/test4.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(pipe-flow-1 pipe-flow/test5.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(pipe-flow-2 pipe-flow/test6.py PROCESSORS 4 LABELS FLOW)
+#add_pytruchas_test(inviscid-pipe-flow-1c inviscid-pipe-flow/test1c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(inviscid-pipe-flow-1d inviscid-pipe-flow/test1d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+
+# PIPE FLOW TESTS
+add_pytruchas_test(pipe-flow-1a pipe-flow/test1a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(pipe-flow-1b pipe-flow/test1b.py PROCESSORS 4 LABELS FLOW)
 # These should work after the discretization is fixed
 # see https://gitlab.com/truchas/truchas/issues/163
-#add_pytruchas_test(pipe-flow-3 pipe-flow/test7.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-#add_pytruchas_test(pipe-flow-4 pipe-flow/test8.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(pipe-flow-1c pipe-flow/test1c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(pipe-flow-1d pipe-flow/test1d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
 # DIVERGING DUCT TESTS -- OLD FLOW SOLVER
 add_pytruchas_test(diverging-duct-old-0 diverging-duct-old-0/test0.py PROCESSORS 4 LABELS OLD_FLOW)
