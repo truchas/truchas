@@ -5,35 +5,39 @@
 ## Running 08/28/2018 11:02:01 AM
 ## Command Options:
 
-brick x 1 y 1 z 0.6
-move volume 1 y 0.5
+brick x 1 y 1.2 z 0.6
+move volume 1 y 0.6
+webcut volume 1 with plane yplane offset 1 noimprint nomerge
+imprint volume all
+merge volume all
+
 surface 3 size 0.2
 mesh surface 3
-volume 1 size 0.1
+volume 1 2 size 0.1
 mesh volume 1
+mesh volume 2
 
 block 1 add volume 1
-sideset 1 add surface 4
+block 2 add volume 2
+sideset 1 add surface 9
 sideset 1 name "inlet"
-sideset 2 add surface 6 
+sideset 2 add surface 11
 sideset 2 name "outlet"
-sideset 3 add surface 5
-sideset 3 name "wall"
-sideset 4 add surface 1 2 3
+sideset 4 add surface 3 8 10
 sideset 4 name "symmetry"
 
 set exodus netcdf4 off
 set large exodus file on
 
-export genesis "mesh1a.gen" overwrite
+export genesis "mesh2a.gen" overwrite
 
 rotate volume 1 angle 45 about z include_merged
-export genesis "mesh1a-rotz.gen" overwrite
+export genesis "mesh2a-rotz.gen" overwrite
 
 rotate volume 1 angle -45 about z include_merged
 rotate volume 1 angle -45 about y include_merged
-export genesis "mesh1a-roty.gen" overwrite
+export genesis "mesh2a-roty.gen" overwrite
 
 rotate volume 1 angle 45 about y include_merged
 rotate volume 1 angle 45 about x include_merged
-export genesis "mesh1a-rotx.gen" overwrite
+export genesis "mesh2a-rotx.gen" overwrite
