@@ -552,6 +552,7 @@ contains
     call start_timer("hypre solve")
     call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
     call stop_timer("hypre solve")
+    call tls_info('projection solve: ' // this%solver%metrics_string())
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
 #if ASDF

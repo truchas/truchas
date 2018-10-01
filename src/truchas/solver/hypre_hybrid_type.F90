@@ -42,6 +42,7 @@ module hypre_hybrid_type
     procedure :: solve
     procedure :: matrix
     procedure :: get_metrics
+    procedure :: metrics_string
     final :: hypre_hybrid_delete
   end type hypre_hybrid
 
@@ -117,6 +118,18 @@ contains
       INSIST(ierr == 0)
     end if
   end subroutine get_metrics
+
+  function metrics_string(this) result(string)
+    class(hypre_hybrid), intent(in) :: this
+    character(:), allocatable :: string
+    character(80) :: buffer
+    integer :: num_itr, num_dscg_itr, num_pcg_itr
+    real(r8) :: rel_res_norm
+    call get_metrics(this, num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
+    write(buffer,'(i4," (DS), ",i4," (AMG), ",es10.4," (|r|/|b|)")') &
+        num_dscg_itr, num_pcg_itr, rel_res_norm
+    string = trim(buffer)
+  end function metrics_string
 
   subroutine setup (this)
 

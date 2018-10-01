@@ -634,6 +634,8 @@ contains
     !
     integer :: i, j, ierr
 
+    character(18), parameter :: slabel(3) = 'predictor' // ['1', '2', '3'] // ' solve: '
+
 !!$    if (present(initial)) then
 !!$      if (initial) return
 !!$    end if
@@ -693,6 +695,7 @@ contains
           call start_timer("hypre solve")
           call this%solver(i)%solve(rhs1d, sol, ierr)
           call stop_timer("hypre solve")
+          call tls_info(slabel(i) // this%solver(i)%metrics_string())
           if (ierr /= 0) call tls_error("prediction solve unsuccessful")
           call gather_boundary(m%cell_ip, sol)
           do j = 1, m%ncell
