@@ -397,6 +397,14 @@ add_pytruchas_test(hydrostatic-6c hydrostatic/test6c.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(hydrostatic-6d hydrostatic/test6d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-7a hydrostatic/test7a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-7b hydrostatic/test7b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-8a hydrostatic/test8a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-8b hydrostatic/test8b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-8c hydrostatic/test8c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-8d hydrostatic/test8c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-9a hydrostatic/test9a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-9b hydrostatic/test9b.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-9c hydrostatic/test9c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-9d hydrostatic/test9d.py PROCESSORS 4 LABELS FLOW)
 
 
 add_pytruchas_test(steady-flow-old-1a steady-flow-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
@@ -432,7 +440,7 @@ add_pytruchas_test(steady-flow-2b steady-flow/test2b.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(steady-flow-2c steady-flow/test2c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-2d steady-flow/test2d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-3a steady-flow/test3a.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(steady-flow-3b steady-flow/test3b.py PROCESSORS 4 LABELS FLOW TIMEOUT 3)
+add_pytruchas_test(steady-flow-3b steady-flow/test3b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-3c steady-flow/test3c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-3d steady-flow/test3d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-4a steady-flow/test4a.py PROCESSORS 4 LABELS FLOW)

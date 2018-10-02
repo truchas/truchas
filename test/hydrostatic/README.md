@@ -11,44 +11,56 @@ Tests
 -----
 
 ### 2D Single fluid, gravity aligned with mesh (mesh1)
-* test1a/hydrostatic-old-1a. Coordinate-aligned mesh
-* test1b/hydrostatic-old-1b. Rotated 45 degrees about x
-* test1c/hydrostatic-old-1c. Rotated 45 degrees about y
-* test1d/hydrostatic-old-1d. Rotated 45 degrees about z
+* test1a/hydrostatic-1a. Coordinate-aligned mesh
+* test1b/hydrostatic-1b. Rotated 45 degrees about x
+* test1c/hydrostatic-1c. Rotated 45 degrees about y
+* test1d/hydrostatic-1d. Rotated 45 degrees about z
 
 ### 2D Single fluid, gravity directed diagonally across mesh (mesh1)
-* test2a/hydrostatic-old-2a. Coordinate-aligned mesh
-* test2b/hydrostatic-old-2b. Rotated 45 degrees about x
-* test2c/hydrostatic-old-2c. Rotated 45 degrees about y
-* test2d/hydrostatic-old-2d. Rotated 45 degrees about z
+* test2a/hydrostatic-2a. Coordinate-aligned mesh
+* test2b/hydrostatic-2b. Rotated 45 degrees about x
+* test2c/hydrostatic-2c. Rotated 45 degrees about y
+* test2d/hydrostatic-2d. Rotated 45 degrees about z
 
 ### 2D Two fluids, gravity aligned with mesh, lighter fluid on top (mesh1)
-* test3a/hydrostatic-old-3a. Coordinate-aligned mesh
-* test3b/hydrostatic-old-3b. Rotated 45 degrees about x
-* test3c/hydrostatic-old-3c. Rotated 45 degrees about y
-* test3d/hydrostatic-old-3d. Rotated 45 degrees about z
+* test3a/hydrostatic-3a. Coordinate-aligned mesh
+* test3b/hydrostatic-3b. Rotated 45 degrees about x
+* test3c/hydrostatic-3c. Rotated 45 degrees about y
+* test3d/hydrostatic-3d. Rotated 45 degrees about z
 
 ### 2D Fluid/void, gravity aligned with mesh, void on top (mesh1)
-* test4a/hydrostatic-old-4a. Coordinate-aligned mesh
-* test4b/hydrostatic-old-4b. Rotated 45 degrees about x
-* test4c/hydrostatic-old-4c. Rotated 45 degrees about y
-* test4d/hydrostatic-old-4d. Rotated 45 degrees about z
+* test4a/hydrostatic-4a. Coordinate-aligned mesh
+* test4b/hydrostatic-4b. Rotated 45 degrees about x
+* test4c/hydrostatic-4c. Rotated 45 degrees about y
+* test4d/hydrostatic-4d. Rotated 45 degrees about z
 
 ### 2D Two fluids, gravity aligned with mesh, with mixed material cells (mesh2)
-* test5a/hydrostatic-old-5a. Coordinate-aligned mesh
-* test5b/hydrostatic-old-5b. Rotated 45 degrees about x
-* test5c/hydrostatic-old-5c. Rotated 45 degrees about y
-* test5d/hydrostatic-old-5d. Rotated 45 degrees about z
+* test5a/hydrostatic-5a. Coordinate-aligned mesh
+* test5b/hydrostatic-5b. Rotated 45 degrees about x
+* test5c/hydrostatic-5c. Rotated 45 degrees about y
+* test5d/hydrostatic-5d. Rotated 45 degrees about z
 
 ### 2D Fluid/void, gravity aligned with mesh, with mixed material cells (mesh2)
-* test6a/hydrostatic-old-6a. Coordinate-aligned mesh
-* test6b/hydrostatic-old-6b. Rotated 45 degrees about x
-* test6c/hydrostatic-old-6c. Rotated 45 degrees about y
-* test6d/hydrostatic-old-6d. Rotated 45 degrees about z
+* test6a/hydrostatic-6a. Coordinate-aligned mesh
+* test6b/hydrostatic-6b. Rotated 45 degrees about x
+* test6c/hydrostatic-6c. Rotated 45 degrees about y
+* test6d/hydrostatic-6d. Rotated 45 degrees about z
 
 ### 3D multimaterial, mixed material cells, diagonally directed gravity (mesh3)
-* test7a/hydrostatic-old-7a. Two fluids
-* test7b/hydrostatic-old-7b. Fluid/void
+* test7a/hydrostatic-7a. Two fluids
+* test7b/hydrostatic-7b. Fluid/void
+
+### 2D Solid-Fluid, mesh-aligned gravity, perpendicular to solid-fluid interface
+* test8a/hydrostatic-8a. Coordinate-aligned mesh
+* test8b/hydrostatic-8b. Rotated 45 degrees about x
+* test8c/hydrostatic-8c. Rotated 45 degrees about y
+* test8d/hydrostatic-8d. Rotated 45 degrees about z
+
+### 2D Solid-Fluid, mesh-aligned gravity, parallel to solid-fluid interface
+* test9a/hydrostatic-9a. Coordinate-aligned mesh
+* test9b/hydrostatic-9b. Rotated 45 degrees about x
+* test9c/hydrostatic-9c. Rotated 45 degrees about y
+* test9d/hydrostatic-9d. Rotated 45 degrees about z
 
 Meshes
 ------
