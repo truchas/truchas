@@ -119,6 +119,7 @@ contains
     use string_utilities, only: i_to_c
     use parallel_communication, only: is_IOP, broadcast
     use input_utilities, only: seek_to_namelist
+    use phase_property_table, only: ppt_num_phase
 
     integer, intent(in) :: lun
 
@@ -139,24 +140,29 @@ contains
     if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
 
     call broadcast(found)
-    if (.not.found) return  ! the namelist is optional
 
-    call TLS_info('')
-    call TLS_info('Reading VOLUMETRACKING namelist ...')
-
-    !! Read the namelist.
+    !! Set defaults
     if (is_IOP) then
-      active = .true.
+      ! default is active when more than one phase, and inactive with only one phase
+      active = ppt_num_phase() > 1
       nested_dissection = .true.
       use_brents_method = .true.
       location_iter_max = 20
       location_tol = 1.0e-8_r8
       subcycles = 2
       cutoff = 1.0e-8_r8
-      read(lun,nml=volumetracking,iostat=ios,iomsg=iom)
     end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading VOLUMETRACKING namelist: ' // trim(iom))
+
+    !! Read the namelist (optional).
+    if (found) then
+      call TLS_info('')
+      call TLS_info('Reading VOLUMETRACKING namelist ...')
+
+      if (is_IOP) &
+          read(lun,nml=volumetracking,iostat=ios,iomsg=iom)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading VOLUMETRACKING namelist: ' // trim(iom))
+    end if
 
     !! Broadcast the namelist variables
     call broadcast(active)

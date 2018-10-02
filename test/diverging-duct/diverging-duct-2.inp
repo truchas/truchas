@@ -48,9 +48,6 @@ Hack to hit the final time exactly
   krylov_method = 'cg'
 /
 
-TODO: delete this namelist?
-&VOLUMETRACKING active = f /
-
 &NUMERICS
   dt_init = 0.00001
   dt_grow = 1.05

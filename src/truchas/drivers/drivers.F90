@@ -348,7 +348,7 @@ call hijack_truchas ()
       ! move materials and associated quantities
       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
 
-      if (vtrack_enabled()) then
+      if (vtrack_enabled() .and. flow_enabled()) then
         vel_fn => flow_vel_fn_view()
         call vtrack_update(t, dt, vel_fn)
         vof => vtrack_vof_view()

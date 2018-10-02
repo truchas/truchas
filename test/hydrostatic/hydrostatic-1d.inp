@@ -38,9 +38,6 @@ Variations use rotated meshes (and rotated g)
   krylov_method = 'cg'
 /
 
-TODO: delete this namelist
-&VOLUMETRACKING active = f /
-
 &NUMERICS
   dt_constant = 0.125
 /
