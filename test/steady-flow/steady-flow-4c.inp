@@ -40,15 +40,6 @@ A kludge to force hitting the final time exactly
   courant_number = 0.5
 /
 
-TODO: delete this namelist
-&FLOW_PREDICTOR
-  rel_tol = 1.0e-12
-  abs_tol = 0.0
-  max_ds_iter = 50
-  max_amg_iter = 5
-  krylov_method = 'cg'
-/
-
 &FLOW_CORRECTOR
   rel_tol = 1.0e-12
   abs_tol = 0.0

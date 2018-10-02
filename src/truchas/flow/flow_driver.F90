@@ -295,6 +295,7 @@ contains
   subroutine flow_driver_init(mesh)
     use zone_module, only: zone
     use material_interop, only: void_material_index
+    use physics_module, only: vof_advection
 
     type(unstr_mesh), pointer, intent(in) :: mesh
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
@@ -364,7 +365,7 @@ contains
     do i = 1,this%mesh%mesh%ncell_onP
       velocity_cc(:,i) = zone(i)%vc
     end do
-    call this%flow%init(this%mesh, velocity_cc)
+    call this%flow%init(this%mesh, vof_advection, velocity_cc)
 
   end subroutine flow_driver_init
 

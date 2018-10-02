@@ -31,7 +31,7 @@ module flow_type
     type(flow_projection) :: proj
     type(flow_prediction) :: pred
     type(flow_bc), pointer :: bc
-    logical :: inviscid, stokes
+    logical :: inviscid, stokes, prescribed
     real(r8) :: viscous_number
     real(r8) :: courant_number
   contains
@@ -128,9 +128,10 @@ contains
   end subroutine read_params
 
 
-  subroutine init(this, m, vel_cc, P_cc)
+  subroutine init(this, m, prescribed, vel_cc, P_cc)
     class(flow), intent(inout) :: this
     type(flow_mesh), pointer, intent(in) :: m
+    logical, optional, intent(in) :: prescribed
     real(r8), optional, intent(in) :: vel_cc(:,:), P_cc
     !-
     integer :: i
@@ -197,6 +198,14 @@ contains
     end if
 
     this%grad_p_rho_cc_n = 0.0_r8
+
+    ! disable the prediction and projection solvers if we have prescribed flow
+    if (present(prescribed)) then
+      this%prescribed = prescribed
+    else
+      this%prescribed = .false.
+    end if
+    if (this%prescribed) return
 
     call this%pred%init(m, this%bc, this%inviscid, this%stokes)
     call this%proj%init(m, this%bc)
@@ -309,6 +318,9 @@ contains
     class(flow), intent(inout) :: this
 
     this%vel_cc_n = this%vel_cc
+
+    ! disable the prediction and projection solvers if we have prescribed flow
+    if (this%prescribed) return
 
     call this%pred%accept()
     call this%proj%accept(this%grad_p_rho_cc_n)
