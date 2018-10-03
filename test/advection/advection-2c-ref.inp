@@ -48,12 +48,6 @@ A kludge to force hitting the final time exactly
   cycle_max = 1
 /
 
-!TODO: remove this namelist
-&FLOW_BC
-  face_sets = 1, 2, 3, 4, 5
-  condition = 'slip'
-/
-
 &BODY
   surface_name = 'cylinder'
   fill = 'outside'

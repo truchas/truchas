@@ -139,8 +139,6 @@ contains
 
     this%mesh => m
 
-    call this%bc%init(m)
-
     associate (nc => m%mesh%ncell, nf => m%mesh%nface)
       allocate(this%vel_cc(3, nc))
       allocate(this%vel_cc_n(3, nc))
@@ -199,7 +197,8 @@ contains
 
     this%grad_p_rho_cc_n = 0.0_r8
 
-    ! disable the prediction and projection solvers if we have prescribed flow
+    ! Disable BC initialization and the prediction and
+    ! projection solvers if we have prescribed flow.
     if (present(prescribed)) then
       this%prescribed = prescribed
     else
@@ -207,6 +206,7 @@ contains
     end if
     if (this%prescribed) return
 
+    call this%bc%init(m)
     call this%pred%init(m, this%bc, this%inviscid, this%stokes)
     call this%proj%init(m, this%bc)
 
