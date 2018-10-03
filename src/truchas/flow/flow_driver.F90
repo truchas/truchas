@@ -137,6 +137,7 @@ contains
     use string_utilities, only: i_to_c
     use parallel_communication, only: is_IOP, broadcast
     use flow_input_utils
+    use physics_module, only: body_force_density
 
     integer, intent(in) :: lun
     type(parameter_list), pointer, intent(inout) :: p
@@ -146,17 +147,16 @@ contains
     character(128) :: iom
     ! flow_options namelist
     logical :: inviscid, stokes
-    real(r8) :: viscous_implicitness, solidify_implicitness, body_force(3)
+    real(r8) :: viscous_implicitness, solidify_implicitness
     real(r8) :: viscous_number, courant_number
 
-    namelist /flow_options/ body_force, inviscid, stokes, &
+    namelist /flow_options/ inviscid, stokes, &
         viscous_implicitness, solidify_implicitness, viscous_number, &
         courant_number
 
     pp => p%sublist("options")
     inviscid = .false.
     stokes = .false.
-    body_force = null_r
     viscous_implicitness = null_r
     solidify_implicitness = null_r
     viscous_number = null_r
@@ -187,7 +187,6 @@ contains
       call broadcast(stokes)
       call broadcast(viscous_implicitness)
       call broadcast(solidify_implicitness)
-      call broadcast(body_force)
       call broadcast(viscous_number)
       call broadcast(courant_number)
 
@@ -196,7 +195,7 @@ contains
       call plist_set_if(pp, 'solidify implicitness', solidify_implicitness)
       call plist_set_if(pp, 'courant number', courant_number)
       call plist_set_if(pp, 'viscous number', viscous_number)
-      call plist_set_if(pp, 'body force', body_force)
+      call plist_set_if(pp, 'body force', body_force_density)
     end if
 
     call pp%set('inviscid', inviscid)

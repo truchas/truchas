@@ -65,6 +65,7 @@ A kludge to force hitting the final time exactly
 
 &PHYSICS
   flow = .true.
+  body_force_density = 0.0, -9.81, 0.0
 /
 
 &NUMERICS
@@ -78,7 +79,6 @@ A kludge to force hitting the final time exactly
 &FLOW_OPTIONS
   inviscid = t
   courant_number = 0.4
-  body_force = 0.0, -9.81, 0.0
 /
 
 ! TODO: Remove this unnecessary namelist

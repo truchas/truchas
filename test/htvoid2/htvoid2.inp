@@ -37,7 +37,7 @@ void will result in heat solutions that are not comparable.
 &PHYSICS
   legacy_flow = .true.
   inviscid   = .true.
-  body_force = 6.0, 0.0, 0.0
+  body_force_density = 6.0, 0.0, 0.0
   heat_transport = .true.
 /
 

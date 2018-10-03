@@ -19,12 +19,12 @@ Fluid should remain at rest, with a linear pressure field.
 
 &PHYSICS
   flow = .true.
+  body_force_density = 0.0, 0.0, -1.0
 /
 
 &FLOW_OPTIONS
   inviscid = .true.
   courant_number = 0.5
-  body_force = 0.0, 0.0, -1.0
 /
 
 &FLOW_CORRECTOR

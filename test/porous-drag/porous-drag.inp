@@ -86,7 +86,7 @@ A = C(1-lambda)^2/lambda^3
 
 &PHYSICS
  
-       Body_Force      = 0.0, 0.0, 0.0,
+       body_force_density = 0.0, 0.0, 0.0,
  
        legacy_flow     = .true.,
        inviscid        = .true.,

@@ -76,10 +76,10 @@ contains
   subroutine physics_input(lun)
 
     use physics_module
-    use body_data_module,       only: Body_Force
+    use body_data_module,       only: body_force
     use EM_data_proxy,          only: SET_EM_SIMULATION_ON_OR_OFF
     use fluid_data_module,      only: fluid_flow, void_pressure, applyflow, boussinesq_approximation
-    use input_utilities,        only: seek_to_namelist
+    use input_utilities,        only: seek_to_namelist, NULL_R
     use porous_drag_data,       only: porous_flow
     use surface_tension_module, only: surface_tension
     use viscous_data_module,    only: inviscid, stokes
@@ -96,7 +96,7 @@ contains
 
     namelist /physics/ heat_transport, species_transport,  number_of_species, flow, &
                        legacy_flow, inviscid, stokes, surface_tension, porous_flow, &
-                       Body_Force, prescribed_flow, applyflow, void_pressure, &
+                       body_force_density, prescribed_flow, applyflow, void_pressure, &
                        electromagnetics, solid_mechanics, solid_mechanics_body_force
 
     call TLS_info ('')
@@ -121,7 +121,7 @@ contains
       electromagnetics = .false.
       solid_mechanics = .false.
       solid_mechanics_body_force = .false.
-      body_force = 0.0_r8
+      body_force_density = 0.0_r8
       legacy_flow = .false.
       inviscid = .true.
       stokes = .false.
@@ -139,7 +139,7 @@ contains
     !! Broadcast all the namelist variables
     call broadcast(flow)
     call broadcast(void_pressure)
-    call broadcast(Body_Force)
+    call broadcast(body_force_density)
     call broadcast(legacy_flow)
     call broadcast(applyflow)
     call broadcast(heat_transport)
@@ -163,6 +163,7 @@ contains
 
     ! Configure the legacy flow solver
     fluid_flow = legacy_flow
+    if (legacy_flow) body_force = body_force_density
 
     !NNC: temporary test code
     if (prescribed_flow .and. (fluid_flow .or. heat_transport .or. species_transport &

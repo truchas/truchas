@@ -22,7 +22,7 @@ A kludge to force hitting the final time exactly
 &PHYSICS
   legacy_flow = .true.
   inviscid   = .true.
-  body_force = 0.0, -1.0, 0.0
+  body_force_density = 0.0, -1.0, 0.0
   heat_transport = .true.
 /
 

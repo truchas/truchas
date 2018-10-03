@@ -18,6 +18,7 @@
 
 module physics_module
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
@@ -27,5 +28,6 @@ module physics_module
   logical, public, save :: legacy_flow = .false.
   logical, public, save :: flow = .false.
   logical, public, save :: prescribed_flow = .false.
+  real(r8), public,save :: body_force_density(3)
 
 end module physics_module

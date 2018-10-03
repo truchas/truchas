@@ -701,7 +701,7 @@ Contains
     use viscoplasticity,             only: MATERIAL_STRESSES
     use solid_mech_constraints,      only: RHS_DISPLACEMENT_CONSTRAINTS
     use solid_mechanics_mesh,        only: ndim, nvc, ncomps, nvf
-    use body_data_module,            only: Body_Force
+    use physics_module,              only: body_force_density
 
     ! Local variables
     type (BC_Operator), POINTER :: Operator
@@ -850,7 +850,7 @@ Contains
        Rho_Node = Rho_Node/Nvol
 
        do idim = 1, ndim
-          SM_Body_Force = Rho_Node * Nodal_Volume * Body_Force(idim)
+          SM_Body_Force = Rho_Node * Nodal_Volume * body_force_density(idim)
           RHS(idim:ndim*(nnodes - 1) + idim:ndim) = RHS(idim:ndim*(nnodes-1) + idim:ndim) - &
                SM_Body_Force
        end do

@@ -12,12 +12,7 @@
 
 /
 
-&flow_driver
-	new_driver = t
-/
-
 &flow_options
-	active = t
 	viscous_implicitness = 0.5
         inviscid = f
 	viscous_number = 0.5
@@ -77,8 +72,7 @@
 
 &PHYSICS
 
-    Body_Force             = 0.0, 0.0, 0.0
-    fluid_flow             = .false.
+    flow                   = .false.
     inviscid               = .false.
     stokes                 = .false.
     surface_tension        = .false.

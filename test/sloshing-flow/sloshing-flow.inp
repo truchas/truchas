@@ -11,7 +11,7 @@
 &PHYSICS
   legacy_flow = .true.
   inviscid   = .false.
-  body_force = 4.9, -8.5, 0.0
+  body_force_density = 4.9, -8.5, 0.0
   heat_transport = .true.
 /
 
