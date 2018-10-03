@@ -95,7 +95,7 @@ contains
 
     use parameter_module, only: mat_slot
     use legacy_mesh_api, only: ncells
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use property_module, only: density_material
     use matl_module, only: Matl
 

@@ -40,4 +40,7 @@ MODULE PROPERTY_DATA_MODULE
   ! Interface-tracking advection priority control parameters
   integer, dimension(0:maxmat), save :: Matpri
 
+  ! Is the material not a fluid
+  logical, save :: isImmobile(maxmat)
+
 END MODULE PROPERTY_DATA_MODULE

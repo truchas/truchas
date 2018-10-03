@@ -160,11 +160,12 @@ CONTAINS
     !   Update the volume fractions.
     !
     !=======================================================================
-    use fluid_data_module,      only: fluidVof, fluidVof_n, fluidRho, fluidRho_n, isImmobile, &
+    use fluid_data_module,      only: fluidVof, fluidVof_n, fluidRho, fluidRho_n, &
                                       Cell_isnt_Void, Ngbr_isnt_Void
     use legacy_mesh_api,        only: ncells, nfc, EE_GATHER
     use parameter_module,       only: nmat
     use property_module,        only: DENSITY_MATERIAL
+    use property_data_module,   only: isImmobile
     use zone_module,            only: Zone
 
     ! Arguments

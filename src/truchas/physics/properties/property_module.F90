@@ -88,7 +88,7 @@ contains
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
     use matl_module, only: gather_vof
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use scalar_func_class
     use scalar_func_tools, only: is_const
 
@@ -135,7 +135,8 @@ contains
   
     use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
-    use fluid_data_module, only: IsImmobile, FluidRho
+    use property_data_module, only: isImmobile
+    use fluid_data_module, only: FluidRho
     use matl_module, only: gather_vof
     use turbulence_module, only: turbulence_model, Nu_Turb
     use zone_module, only: Zone
@@ -225,10 +226,11 @@ contains
     use bc_module,              only: BC_Mat, bndry_vel !BC_Vel
     use input_utilities,        only: NULL_I
     use cutoffs_module,         only: cutvof
+    use property_data_module,   only: isImmobile
     use fluid_data_module,      only: fluid_flow,                             &
                                       fluidRho, fluidVof, fluidDeltaRho,      &
                                       RealFluidVof, cutRho, fluid_cutoff,     &
-                                      Solid_Face, isPureImmobile, isImmobile, &
+                                      Solid_Face, isPureImmobile,             &
                                       boussinesq_approximation,               &
                                       Cell_isnt_Void, Ngbr_isnt_Void,         &
                                       Fluxing_Velocity,MinFluidRho
@@ -508,7 +510,7 @@ contains
     use kinds, only: r8
     use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
     use scalar_func_class
@@ -572,7 +574,7 @@ contains
 
     use phase_property_table
     use parameter_module, only: nmat
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use material_interop, only: void_material_index, material_to_phase
     use scalar_func_factories
 

@@ -39,9 +39,6 @@ MODULE FLUID_DATA_MODULE
   ! Flag for applying a prescribed velocity field.
   logical, public, save :: applyflow
 
-  ! Flag that defines whether a material flows.
-  logical, public, save, dimension(maxmat) :: isImmobile
-
   ! Flag that defines the existance of a void material in this calculation and its index
   logical, public, save :: Void_Material_Exists
   integer, public, save, dimension(maxmat) :: Void_Material_Index

@@ -210,7 +210,7 @@ Contains
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
-    use fluid_data_module,    only: isImmobile
+    use property_data_module, only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
     use solid_mechanics_input,  only: solid_mechanics
@@ -444,7 +444,7 @@ Contains
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
                                     VISCOPLASTIC_STRAIN_RATE, PLASTIC_STRAIN_INCREMENT,&
                                     DEVIATORIC_STRESS
-    use fluid_data_module,    only: isImmobile
+    use property_data_module, only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_UPDATE
     use solid_mechanics_input, only: solid_mechanics
@@ -1801,7 +1801,7 @@ Contains
   
     use parameter_module, only: nmat
     use material_interop, only: void_material_index, material_to_phase
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use phase_property_table
     use scalar_func_class
     use scalar_func_tools, only: is_const
@@ -1886,7 +1886,7 @@ Contains
   
     use parameter_module, only: nmat
     use legacy_mesh_api,  only: ncells
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
     use matl_module, only: gather_vof

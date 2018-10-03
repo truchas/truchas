@@ -308,7 +308,7 @@ contains
     use material_table, only: mt_material_id, mt_get_material
     use material_system, only: mat_system, ms_get_phase_id
     use material_interop, only: phase_to_material
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
 
     real(r8), intent(in) :: t
 

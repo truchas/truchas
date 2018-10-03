@@ -434,7 +434,7 @@ Contains
 
     use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use material_interop, only: void_material_index
     use matl_module, only: gather_vof
     use time_step_module, only: dt
