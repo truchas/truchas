@@ -30,7 +30,6 @@ four quadrants of the domain are
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &DIFFUSION_SOLVER

@@ -19,7 +19,7 @@ Variations use rotated meshes (and rotated g)
 /
 
 &PHYSICS
-  fluid_flow = .true.
+  legacy_flow = .true.
   inviscid   = .true.
   body_force = 0.707106781186547, -0.707106781186547, 0.0
 /

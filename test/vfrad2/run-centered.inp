@@ -19,7 +19,6 @@ with the off-center ball that actually matches the view factors.
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &PHYSICAL_CONSTANTS

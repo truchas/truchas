@@ -9,7 +9,7 @@
 /
 
 &PHYSICS
-  fluid_flow = .true.
+  legacy_flow = .true.
   inviscid   = .false.
   body_force = 4.9, -8.5, 0.0
   heat_transport = .true.

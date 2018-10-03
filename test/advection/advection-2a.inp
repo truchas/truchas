@@ -20,18 +20,14 @@ A kludge to force hitting the final time exactly
 /
  
 &PHYSICS
-  fluid_flow = .false. ! use new flow
-  vof_advection  = .true.
+  prescribed_flow = .true.
 /
 
 &ADVECTION_VELOCITY
   velocity_constant = 6.0, 0.0, 0.0
 /
 
-&FLOW_DRIVER new_driver = .true. /
-
 &FLOW_OPTIONS
-  active = .true.
   !inviscid = .true.
   courant_number = 0.5
 /

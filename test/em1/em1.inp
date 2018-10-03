@@ -19,7 +19,6 @@ subdivision of the hex cells.
 /
 
 &PHYSICS
-  fluid_flow = .false.
   heat_transport = .true.
   electromagnetics = .true.
 /

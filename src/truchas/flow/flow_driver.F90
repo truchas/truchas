@@ -77,7 +77,7 @@ module flow_driver
   implicit none
   private
 
-  public :: read_flow_namelist, read_flow_params, flow_timestep
+  public :: read_flow_namelist, flow_timestep
   public :: flow_driver_init, flow_step, flow_final, flow_enabled, flow_accept
   public :: flow_vel_fn_view, flow_vel_cc_view, flow_P_cc_view
 
@@ -119,15 +119,8 @@ contains
 
   subroutine flow_timestep(dtc, dtv)
     real(r8), intent(out) :: dtc, dtv
-
     ASSERT(flow_enabled())
-    if (this%active) then
-      call this%flow%timestep(this%props, dtc, dtv)
-    else
-      dtc = huge(1.0_r8)
-      dtv = huge(1.0_r8)
-    end if
-
+    call this%flow%timestep(this%props, dtc, dtv)
   end subroutine flow_timestep
 
   logical function flow_enabled()
@@ -136,24 +129,6 @@ contains
 
   subroutine read_flow_params(p)
     type(parameter_list), pointer, intent(in) :: p
-    type(parameter_list), pointer :: pp
-    logical :: new_driver
-
-    ! for consistency, 'new driver' defaults to false as it does with
-    ! namelist input
-    call p%get("new driver", new_driver, .false.)
-
-    if (.not.new_driver) then
-      if (allocated(this)) deallocate(this) ! I don't think this can actually happen
-      return
-    end if
-    if (.not.allocated(this)) allocate(this)
-
-
-    pp => p%sublist("options")
-    call pp%get("active", this%active, .true.)
-    if (.not.this%active) return
-
     call this%props%read_params(p)
     call this%flow%read_params(p)
   end subroutine read_flow_params
@@ -170,16 +145,15 @@ contains
     logical :: found
     character(128) :: iom
     ! flow_options namelist
-    logical :: active, inviscid, stokes
+    logical :: inviscid, stokes
     real(r8) :: viscous_implicitness, solidify_implicitness, body_force(3)
     real(r8) :: viscous_number, courant_number
 
-    namelist /flow_options/ active, body_force, inviscid, stokes, &
+    namelist /flow_options/ body_force, inviscid, stokes, &
         viscous_implicitness, solidify_implicitness, viscous_number, &
         courant_number
 
     pp => p%sublist("options")
-    active = .true.
     inviscid = .false.
     stokes = .false.
     body_force = null_r
@@ -206,10 +180,9 @@ contains
       call broadcast(ios)
       if (ios /= 0) call TLS_fatal('error reading FLOW_OPTIONS namelist: ' // trim(iom))
 
-      if (active .and. inviscid .and. stokes) &
+      if (inviscid .and. stokes) &
           call TLS_fatal("inviscid Stokes flow not supported")
 
-      call broadcast(active)
       call broadcast(inviscid)
       call broadcast(stokes)
       call broadcast(viscous_implicitness)
@@ -226,8 +199,6 @@ contains
       call plist_set_if(pp, 'body force', body_force)
     end if
 
-    this%active = active
-    call pp%set('active', active)
     call pp%set('inviscid', inviscid)
     call pp%set('stokes', stokes)
 
@@ -235,7 +206,6 @@ contains
 
   subroutine read_flow_namelist(lun)
     use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
     use flow_input_utils
 
     integer, intent(in) :: lun
@@ -243,42 +213,12 @@ contains
     logical :: found
     character(128) :: iom
     type(parameter_list), pointer :: p
-    logical :: new_driver
-
-    namelist /flow_driver/ new_driver
-
-    new_driver = .false. ! defaults to old driver
-
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist(lun, 'FLOW_DRIVER', found, iostat=ios)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
-
-    call broadcast(found)
-    if (found) then
-      call TLS_info('')
-      call TLS_info('Reading FLOW_DRIVER namelist ...')
-      !! Read the namelist.
-      if (is_IOP) then
-        read(lun,nml=flow_driver,iostat=ios,iomsg=iom)
-      end if
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading FLOW_DRIVER namelist: ' // trim(iom))
-
-      call broadcast(new_driver)
-    end if
-
-    if (.not.new_driver) return
 
     if (.not.allocated(this)) allocate(this)
 
     allocate(p)
-    call p%set("new driver", .true.)
 
     call read_flow_options_namelist(lun, p)
-    if (.not.this%active) return ! flow has been shut off by the user
 
     ! This needs a better name... right now flow_props keeps track of
     ! all the cutoff values since they are used to compute rho/mu
@@ -295,7 +235,7 @@ contains
   subroutine flow_driver_init(mesh)
     use zone_module, only: zone
     use material_interop, only: void_material_index
-    use physics_module, only: vof_advection
+    use physics_module, only: prescribed_flow
     use scalar_func_factories, only: alloc_const_scalar_func
 
     type(unstr_mesh), pointer, intent(in) :: mesh
@@ -382,13 +322,13 @@ contains
     do i = 1,this%mesh%mesh%ncell_onP
       velocity_cc(:,i) = zone(i)%vc
     end do
-    call this%flow%init(this%mesh, vof_advection, velocity_cc)
+    call this%flow%init(this%mesh, prescribed_flow, velocity_cc)
 
   end subroutine flow_driver_init
 
   subroutine flow_step(t, dt, vof, flux_vol, initial)
     use zone_module, only: Zone
-    use physics_module, only: vof_advection
+    use physics_module, only: prescribed_flow
     use advection_velocity_namelist, only: adv_vel
     use truchas_timers
     real(r8), intent(in) :: t, dt
@@ -396,7 +336,7 @@ contains
     logical, optional, intent(in) :: initial
 
     call start_timer('Flow')
-    if (vof_advection) then
+    if (prescribed_flow) then
       block
         integer :: j
         real(r8) :: args(0:3)

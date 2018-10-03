@@ -54,7 +54,7 @@ cells at each long_edit interval.
 /
  
 &PHYSICS
-  fluid_flow                = .true.
+  legacy_flow               = .true.
   inviscid                  = .false.
   stokes                    = .false.
   heat_transport            = .true.

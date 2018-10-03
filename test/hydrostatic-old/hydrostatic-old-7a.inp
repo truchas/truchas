@@ -20,7 +20,7 @@ pressure field.
 /
 
 &PHYSICS
-  fluid_flow = .true.
+  legacy_flow = .true.
   inviscid   = .true.
   body_force = 0.0, 0.0, -1.0
 /

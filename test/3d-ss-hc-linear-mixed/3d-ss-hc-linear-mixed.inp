@@ -18,7 +18,6 @@ abc, and not so much with the transient approach to steady state.
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &DIFFUSION_SOLVER

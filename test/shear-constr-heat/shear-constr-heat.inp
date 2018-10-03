@@ -245,7 +245,6 @@ solid mechanics only
 
 &PHYSICS
 
-    fluid_flow       = .false. 
     heat_transport   = .false. 
     solid_mechanics  = .true.
 

@@ -46,7 +46,7 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 
 &PHYSICS
     Body_Force             = 0.0, 0.0, -9.81
-    fluid_flow             = .true.
+    legacy_flow             = .true.
     inviscid               = .true.
     stokes                 = .false.
     surface_tension        = .false.

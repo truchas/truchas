@@ -44,7 +44,7 @@ test exercises the implementation in the normal 'HTSD' solver.
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .true.
+  legacy_flow = .true.
 /
 
 &PHYSICAL_CONSTANTS

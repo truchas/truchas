@@ -21,13 +21,9 @@ Variations use rotated meshes (and rotated g)
 /
 
 &PHYSICS
-  fluid_flow = .false.  ! use new flow
+  flow = .true.
 /
-
-&FLOW_DRIVER new_driver = .true. /
-
 &FLOW_OPTIONS
-  active = .true.
   inviscid = .true.
   courant_number = 0.5
   body_force = 0.0, -1.0, 0.0

@@ -59,7 +59,7 @@ contains
     use phase_namelist,            only: read_phase_namelists
     use material_system_namelist,  only: read_material_system_namelists
     use surface_tension_module,    only: surface_tension, read_surface_tension_namelist
-    use fluid_data_module,         only: fluid_flow, applyflow
+    use fluid_data_module,         only: applyflow
     use viscous_data_module,       only: inviscid
     use turbulence_module,         only: read_turbulence_namelist
     use solid_mechanics_input,     only: solid_mechanics
@@ -67,7 +67,7 @@ contains
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
-    use physics_module,            only: heat_transport, vof_advection
+    use physics_module,            only: heat_transport, prescribed_flow, flow, legacy_flow
     use advection_velocity_namelist, only: read_advection_velocity_namelist
     use truchas_logging_services
     use truchas_timers
@@ -124,15 +124,17 @@ contains
     call material_input (lun)
     call material_sizes ()
 
-    call read_flow_namelist(lun)
-    call read_volumetracking_namelist(lun)
-    ! read namelists for flow options XXX THESE SHOULD BE MOVED INTO NEW FLOW
-    if (fluid_flow) then
-      if (.not.inviscid)   call read_turbulence_namelist (lun)
-      if (surface_tension) call read_surface_tension_namelist (lun)
+    if (flow) then
+      call read_flow_namelist(lun)
+      call read_volumetracking_namelist(lun)
+      if (prescribed_flow) call read_advection_velocity_namelist(lun)
     end if
 
-    if (vof_advection .or. applyflow) call read_advection_velocity_namelist(lun)
+    if (legacy_flow) then
+      if (.not.inviscid)   call read_turbulence_namelist (lun)
+      if (surface_tension) call read_surface_tension_namelist (lun)
+      if (applyflow) call read_advection_velocity_namelist(lun)
+    end if
 
     ! read namelists for solid mechanics options
     if (solid_mechanics) then

@@ -24,7 +24,6 @@ Should give the same results
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &PHYSICAL_CONSTANTS

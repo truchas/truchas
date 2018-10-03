@@ -64,7 +64,7 @@ A kludge to force hitting the final time exactly
 /
 
 &PHYSICS
-  fluid_flow = .false.  ! use new flow solver
+  flow = .true.
 /
 
 &NUMERICS
@@ -75,12 +75,7 @@ A kludge to force hitting the final time exactly
   cycle_max = 2000
 /
 
-&FLOW_DRIVER
-  new_driver = t
-/
-
 &FLOW_OPTIONS
-  active = t
   inviscid = t
   courant_number = 0.4
   body_force = 0.0, -9.81, 0.0

@@ -88,7 +88,7 @@ A = C(1-lambda)^2/lambda^3
  
        Body_Force      = 0.0, 0.0, 0.0,
  
-       fluid_flow      = .true.,
+       legacy_flow     = .true.,
        inviscid        = .true.,
        stokes          = .false.,
        porous_flow     = .true.,

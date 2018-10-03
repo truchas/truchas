@@ -45,7 +45,7 @@ magnitude was 0.023, and after it was less than 3e-12.
  
 &PHYSICS
   body_force = 6.0, 0.0, -8.0
-  fluid_flow = .true.
+  legacy_flow = .true.
   inviscid   = .true.
 /
  

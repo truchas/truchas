@@ -14,7 +14,7 @@
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .true.
+  legacy_flow = .true.
   inviscid = .false.
   stokes = .false.
   surface_tension = .true.

@@ -270,7 +270,6 @@ solid mechanics and heat transfer
 
 &PHYSICS
 
-    fluid_flow       = .false., 
     heat_transport  = .true., 
     solid_mechanics  = .true., 
 

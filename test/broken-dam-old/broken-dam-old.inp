@@ -83,7 +83,7 @@ data by Martin & Moyce for this regression test.
 
 &PHYSICS
   Body_Force = 0.0, -9.81, 0.0
-  fluid_flow = .true.
+  legacy_flow = .true.
   inviscid   = .true.
 /
 

@@ -24,6 +24,8 @@ module physics_module
   logical, public, save :: heat_transport = .false.
   logical, public, save :: species_transport = .false.
   integer, public, save :: number_of_species = 0
-  logical, public, save :: vof_advection = .false.
+  logical, public, save :: legacy_flow = .false.
+  logical, public, save :: flow = .false.
+  logical, public, save :: prescribed_flow = .false.
 
 end module physics_module

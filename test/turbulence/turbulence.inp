@@ -74,7 +74,7 @@ velocity, but there is no satisfactory way to check the velocity profile.
 &PHYSICS
 
     Body_Force             = 0.0, 0.0, 0.0
-    fluid_flow             = .true.
+    legacy_flow            = .true.
     inviscid               = .false.
     stokes                 = .false.
 

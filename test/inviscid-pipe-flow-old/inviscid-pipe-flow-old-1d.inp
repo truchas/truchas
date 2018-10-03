@@ -22,7 +22,7 @@ Hack to hit the final time exactly
 /
 
 &PHYSICS
-  fluid_flow = .true.
+  legacy_flow = .true.
   inviscid = .true.
 /
 

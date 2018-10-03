@@ -47,7 +47,7 @@
  
        Body_Force      = 0.0, 0.0, 0.0,
  
-       fluid_flow      = .true.,
+       legacy_flow     = .true.,
        inviscid        = .true.,
        stokes          = .false.,
        surface_tension = .false.

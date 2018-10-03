@@ -22,13 +22,10 @@ Hack to hit the final time exactly
 /
 
 &PHYSICS
-  fluid_flow = .false. ! use new flow
+  flow = .true.
 /
 
-&FLOW_DRIVER new_driver = .true. /
-
 &FLOW_OPTIONS
-  active = .true.
   inviscid = .true.
   courant_number = 0.3
 /

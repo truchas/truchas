@@ -92,7 +92,7 @@ resolution, in part due to the first order momentum advection.
 &PHYSICS
 
     Body_Force             = 0., 0., 0.
-    fluid_flow             = .true.
+    legacy_flow             = .true.
     inviscid               = .true.
     stokes                 = .false.
 

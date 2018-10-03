@@ -54,7 +54,7 @@ MODULE FLUID_DATA_MODULE
   logical, public, save :: boussinesq_approximation
 
   ! Total volume flowing into and out of the domain.
-  real(r8), public, save :: qin, qout
+  real(r8), public, save :: qin = 0.0_r8, qout = 0.0_r8
 
   ! Volume Fraction Cutoff Value  (no flow solution if Vof < fluid_cutoff)
   real(r8), public, parameter :: fluid_cutoff = 0.01
