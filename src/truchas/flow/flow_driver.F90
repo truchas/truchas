@@ -296,6 +296,7 @@ contains
     use zone_module, only: zone
     use material_interop, only: void_material_index
     use physics_module, only: vof_advection
+    use scalar_func_factories, only: alloc_const_scalar_func
 
     type(unstr_mesh), pointer, intent(in) :: mesh
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
@@ -324,7 +325,6 @@ contains
       return
     end if
     rho_id = ppt_property_id("density")
-    rho_delta_id = ppt_property_id("density deviation")
 
     state(1) = 0.0_r8
     call ppt_get_phase_ids(phases)
@@ -344,8 +344,8 @@ contains
       end if
     end do
 
+    ! get density & viscosity
     allocate(density(size(fluids)))
-    allocate(density_delta(size(fluids)))
     allocate(viscosity(size(fluids)))
 
     do i = 1, size(fluids)
@@ -353,9 +353,26 @@ contains
       density(i) = f%eval(state)
       call ppt_get_phase_property(fluids(i), mu_id, f)
       call move_alloc(f, viscosity(i)%f)
-      call ppt_get_phase_property(fluids(i), rho_delta_id, f)
-      call move_alloc(f, density_delta(i)%f)
     end do
+
+    ! get density deviations
+    ! if not given, assume 0-valued density deviation
+    allocate(density_delta(size(fluids)))
+    if (ppt_has_property("density deviation")) then
+      rho_delta_id = ppt_property_id("density deviation")
+      do i = 1, size(density_delta)
+        if (ppt_has_phase_property(fluids(i), rho_delta_id)) then
+          call ppt_get_phase_property(fluids(i), rho_delta_id, f)
+          call move_alloc(f, density_delta(i)%f)
+        else
+          call alloc_const_scalar_func(density_delta(i)%f, 0.0_r8)
+        end if
+      end do
+    else
+      do i = 1, size(density_delta)
+        call alloc_const_scalar_func(density_delta(i)%f, 0.0_r8)
+      end do
+    end if
 
     call flow_operators_init(this%mesh)
     call this%props%init(this%mesh, density, density_delta, viscosity)
