@@ -190,13 +190,12 @@ contains
 
   subroutine vtrack_driver_init(mesh)
 
-    use material_interop, only: phase_to_material, material_to_phase, void_material_index
-    use phase_property_table
+    use material_interop, only: void_material_index
+    use property_data_module, only: isImmobile
     use parameter_module, only: nmat
 
     type(unstr_mesh), pointer, intent(in) :: mesh
-    integer :: i,j,v,k
-    real(r8) :: cent(3)
+    integer :: i,j,k
 
     if (.not.allocated(this)) return
 
@@ -206,21 +205,13 @@ contains
     this%mesh => mesh
     INSIST(associated(this%mesh))
 
-    this%fluids = 0
-    this%void = 0
-    if (void_material_index > 0) this%void = 1
+    this%void = merge(1, 0, void_material_index > 0)
+    this%fluids = count(.not.isImmobile(:nmat)) - this%void
 
-    if (ppt_has_property("viscosity")) then
-      v = ppt_property_id("viscosity")
-    else
-      print *, "no viscosity found in table"
+    if (this%fluids == 0) then
+      print *, 'no non-void fluids'
       return ! hmmm
     end if
-
-    do i = 1, nmat
-      if (i == void_material_index) cycle
-      if (ppt_has_phase_property(material_to_phase(i), v)) this%fluids = this%fluids + 1
-    end do
 
     allocate(this%liq_matid(this%fluids+this%void))
     allocate(this%sol_matid(nmat-(this%fluids+this%void)))
@@ -238,7 +229,7 @@ contains
       if (i == void_material_index) then
         this%liq_matid(this%fluids+1) = i
         this%liq_pri(this%fluids+1) = 0
-      else if (ppt_has_phase_property(material_to_phase(i), v)) then
+      else if (.not.isImmobile(i)) then
         this%liq_matid(j) = i
         j = j + 1
       else

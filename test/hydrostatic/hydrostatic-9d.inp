@@ -87,6 +87,7 @@ upper half
   material_name    = 'solid'
   material_number  = 2
   density          = 1.0  ! not void
+  immobile         = .true.
 /
 
 &PHASE

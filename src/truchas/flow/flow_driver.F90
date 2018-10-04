@@ -233,16 +233,18 @@ contains
 
   subroutine flow_driver_init(mesh)
     use zone_module, only: zone
-    use material_interop, only: void_material_index
+    use material_interop, only: void_material_index, material_to_phase
     use physics_module, only: prescribed_flow
     use scalar_func_factories, only: alloc_const_scalar_func
+    use property_data_module, only: isImmobile
+    use parameter_module, only: nmat
 
     type(unstr_mesh), pointer, intent(in) :: mesh
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
-    integer :: mu_id, rho_id, rho_delta_id, i
-    integer, pointer :: phases(:)
+    integer :: i, property_id
     integer, allocatable :: fluids(:)
+    logical, allocatable :: is_real_fluid(:)
     real(r8), allocatable :: density(:), velocity_cc(:,:)
     real(r8) :: state(1)
     class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
@@ -255,60 +257,63 @@ contains
 
     allocate(this%temperature_cc(mesh%ncell))
 
-    ! lots of duplication here from vtrack_driver.  This should all be subsumed and handled
+    ! Some duplication here from vtrack_driver.  This should all be subsumed and handled
     ! properly by a sufficiently intelligent physics driver at some point
-    if (ppt_has_property("viscosity")) then
-      mu_id = ppt_property_id("viscosity")
-    else ! no fluids
+    if (all(isImmobile(:nmat))) then ! no fluids
       deallocate(this)
       return
     end if
-    rho_id = ppt_property_id("density")
 
+    ! identify non-void fluids
+    is_real_fluid = .not.isImmobile(:nmat)
+    if (void_material_index > 0) is_real_fluid(void_material_index) = .false.
+    fluids = pack(material_to_phase, is_real_fluid)
+
+    ! get density
     state(1) = 0.0_r8
-    call ppt_get_phase_ids(phases)
-    do i = 1, size(phases)
-      ! all fluids have a viscosity and density
-      if (ppt_has_phase_property(phases(i), mu_id) .and. &
-          ppt_has_phase_property(phases(i), rho_id)) then
-
-        call ppt_get_phase_property(phases(i), rho_id, f)
-        ASSERT(allocated(f))
-        ASSERT(is_const(f))
-        if (allocated(fluids)) then
-          fluids = [fluids, phases(i)]
-        else
-          fluids = [phases(i)]
-        end if
-      end if
-    end do
-
-    ! get density & viscosity
+    property_id = ppt_property_id("density")
     allocate(density(size(fluids)))
-    allocate(viscosity(size(fluids)))
-
     do i = 1, size(fluids)
-      call ppt_get_phase_property(fluids(i), rho_id, f)
+      call ppt_get_phase_property(fluids(i), property_id, f)
+      ASSERT(allocated(f))
+      ASSERT(is_const(f))
       density(i) = f%eval(state)
-      call ppt_get_phase_property(fluids(i), mu_id, f)
-      call move_alloc(f, viscosity(i)%f)
     end do
+
+    ! get viscosity
+    ! if not given, assume 0-valued viscosity
+    allocate(viscosity(size(fluids)))
+    if (ppt_has_property("viscosity")) then
+      property_id = ppt_property_id("viscosity")
+      do i = 1, size(fluids)
+        if (ppt_has_phase_property(fluids(i), property_id)) then
+          call ppt_get_phase_property(fluids(i), property_id, f)
+          call move_alloc(f, viscosity(i)%f)
+        else
+          call alloc_const_scalar_func(viscosity(i)%f, 0.0_r8)
+        end if
+      end do
+    else
+      do i = 1, size(fluids)
+        call alloc_const_scalar_func(viscosity(i)%f, 0.0_r8)
+      end do
+    end if
 
     ! get density deviations
     ! if not given, assume 0-valued density deviation
     allocate(density_delta(size(fluids)))
     if (ppt_has_property("density deviation")) then
-      rho_delta_id = ppt_property_id("density deviation")
-      do i = 1, size(density_delta)
-        if (ppt_has_phase_property(fluids(i), rho_delta_id)) then
-          call ppt_get_phase_property(fluids(i), rho_delta_id, f)
+      property_id = ppt_property_id("density deviation")
+      do i = 1, size(fluids)
+        if (ppt_has_phase_property(fluids(i), property_id)) then
+          call ppt_get_phase_property(fluids(i), property_id, f)
           call move_alloc(f, density_delta(i)%f)
         else
           call alloc_const_scalar_func(density_delta(i)%f, 0.0_r8)
         end if
       end do
     else
-      do i = 1, size(density_delta)
+      do i = 1, size(fluids)
         call alloc_const_scalar_func(density_delta(i)%f, 0.0_r8)
       end do
     end if
