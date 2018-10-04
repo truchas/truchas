@@ -294,7 +294,7 @@ contains
     end do ! interface loop
 
     ! get the id of the last material
-    nlast = last_true_loc (vof > 0.0_r8)
+    nlast = last_true_loc (vof >= cutoff)
 
     !call start_timer ("last_loop")
     ! Compute the advection volume for the last material.

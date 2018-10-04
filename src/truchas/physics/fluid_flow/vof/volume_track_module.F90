@@ -292,8 +292,14 @@ CONTAINS
     if (interfaces == 0) Flux_Vol_Sum = 0.0_r8
 
     ! Compute the advection volume for the last material.
-    last = Mat
- 
+    do n = 1,ncells
+      do m = 1,materials
+        if (pri_ptr(m,n) == 0) exit
+        if (vof(pri_ptr(m,n),n) >= cutvof) &
+            last(n) = m
+      end do
+    end do
+
     ! Fetch the volume fraction of the donor cell's last material.
     do n = 1,ncells
        Vofm(n) = Vof(Pri_Ptr(last(n),n),n)
