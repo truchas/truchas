@@ -59,7 +59,6 @@ module vtrack_driver
   implicit none
   private
 
-  public :: read_volumetracking_namelist
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
   public :: vtrack_vof_view, vtrack_flux_vol_view
@@ -83,9 +82,6 @@ module vtrack_driver
   end type vtrack_driver_data
   type(vtrack_driver_data), allocatable, target :: this
 
-  !! Input data cached in a private parameter list.
-  type(parameter_list), save :: params
-
 contains
 
   subroutine vtrack_driver_final
@@ -108,101 +104,26 @@ contains
     p => this%flux_vol
   end function vtrack_flux_vol_view
 
-  !! Current Truchas design requires that parameter input and object
-  !! initialization be separated and occur at distinct execution stages.
-  !! The following procedure reads the VOLUMETRACKING namelist and stores
-  !! the data in private module data.  The data pertaining to VOF initialization
-  !! is still read in using the interfaces/body namelists.
 
-  subroutine read_volumetracking_namelist(lun)
+  subroutine vtrack_driver_init(params)
 
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use input_utilities, only: seek_to_namelist
-    use phase_property_table, only: ppt_num_phase
-
-    integer, intent(in) :: lun
-
-    integer :: ios, location_iter_max, subcycles
-    real(r8) :: location_tol, cutoff
-    logical :: found, use_brents_method, nested_dissection, active
-    character(128) :: iom
-
-    namelist /volumetracking/ use_brents_method, location_iter_max, subcycles, location_tol, &
-        cutoff, nested_dissection, active
-
-    !! Locate the MICROSTRUCTURE namelist (first occurrence)
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist(lun, 'VOLUMETRACKING', found, iostat=ios)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
-
-    call broadcast(found)
-
-    !! Set defaults
-    if (is_IOP) then
-      ! default is active when more than one phase, and inactive with only one phase
-      active = ppt_num_phase() > 1
-      nested_dissection = .true.
-      use_brents_method = .true.
-      location_iter_max = 20
-      location_tol = 1.0e-8_r8
-      subcycles = 2
-      cutoff = 1.0e-8_r8
-    end if
-
-    !! Read the namelist (optional).
-    if (found) then
-      call TLS_info('')
-      call TLS_info('Reading VOLUMETRACKING namelist ...')
-
-      if (is_IOP) &
-          read(lun,nml=volumetracking,iostat=ios,iomsg=iom)
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading VOLUMETRACKING namelist: ' // trim(iom))
-    end if
-
-    !! Broadcast the namelist variables
-    call broadcast(active)
-    call broadcast(use_brents_method)
-    call broadcast(location_tol)
-    call broadcast(location_iter_max)
-    call broadcast(subcycles)
-    call broadcast(cutoff)
-    call broadcast(nested_dissection)
-
-    call params%set('use_brents_method', use_brents_method)
-    call params%set('location_tol', location_tol)
-    call params%set('location_iter_max', location_iter_max)
-    call params%set('subcycles', subcycles)
-    call params%set('cutoff', cutoff)
-    call params%set('nested_dissection', nested_dissection)
-
-    allocate(this)
-    this%active = active
-
-    if (this%active) call this%vt%read_params(params)
-
-  end subroutine read_volumetracking_namelist
-
-
-  subroutine vtrack_driver_init(mesh)
-
+    use mesh_manager, only: unstr_mesh_ptr
     use material_interop, only: void_material_index
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
 
-    type(unstr_mesh), pointer, intent(in) :: mesh
+    type(parameter_list), intent(inout) :: params
+
     integer :: i,j,k
 
-    if (.not.allocated(this)) return
+    allocate(this)
+
+    call params%get('track_interfaces', this%active)
 
     call TLS_info('')
     call TLS_info('Configuring volume tracking ...')
 
-    this%mesh => mesh
+    this%mesh => unstr_mesh_ptr('MAIN')
     INSIST(associated(this%mesh))
 
     this%void = merge(1, 0, void_material_index > 0)
@@ -216,12 +137,12 @@ contains
     allocate(this%liq_matid(this%fluids+this%void))
     allocate(this%sol_matid(nmat-(this%fluids+this%void)))
     allocate(this%liq_pri(this%fluids+this%void))
-    allocate(this%fvof_i(this%fluids+this%void, mesh%ncell))
-    allocate(this%fvof_o(this%fluids+this%void, mesh%ncell))
-    allocate(this%flux_vol(this%fluids,size(mesh%cface)))
-    allocate(this%flux_vel(size(mesh%cface)))
-    allocate(this%vof(nmat, mesh%ncell_onP))
-    allocate(this%svof(mesh%ncell))
+    allocate(this%fvof_i(this%fluids+this%void, this%mesh%ncell))
+    allocate(this%fvof_o(this%fluids+this%void, this%mesh%ncell))
+    allocate(this%flux_vol(this%fluids,size(this%mesh%cface)))
+    allocate(this%flux_vel(size(this%mesh%cface)))
+    allocate(this%vof(nmat, this%mesh%ncell_onP))
+    allocate(this%svof(this%mesh%ncell))
 
     j = 1
     k = 1
@@ -241,7 +162,7 @@ contains
     call start_timer('Vof Initialization')
     call get_vof_from_matl()
     this%fvof_o(:,:) = this%fvof_i(:,:)
-    call this%vt%init(mesh, this%fluids+this%void)
+    call this%vt%init(this%mesh, this%fluids+this%void, params)
     call stop_timer('Vof Initialization')
 
   end subroutine vtrack_driver_init

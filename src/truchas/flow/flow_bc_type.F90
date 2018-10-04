@@ -21,9 +21,7 @@ module flow_bc_type
     logical :: pressure_d
     logical :: fix_neumann
     logical :: is_p_neumann_fix_PE
-    type(parameter_list), pointer :: plist => null()
   contains
-    procedure :: read_params
     procedure :: init
     procedure :: compute
   end type flow_bc
@@ -36,7 +34,7 @@ contains
     use flow_input_utils
 
     integer, intent(in) :: lun
-    type(parameter_list), pointer, intent(inout) :: p
+    type(parameter_list), intent(inout) :: p
     type(parameter_list), pointer :: pp, bc
     integer :: ios
     logical :: found
@@ -94,21 +92,18 @@ contains
 
   end subroutine read_flow_bc_namelist
 
-  subroutine read_params(this, p)
-    class(flow_bc), intent(inout) :: this
-    type(parameter_list), pointer, intent(in) :: p
 
-    this%plist => p%sublist("bc")
-#ifndef NDEBUG
-    print *, "size of bc plist", this%plist%count()
-#endif
-  end subroutine read_params
+  subroutine init(this, mesh, params)
 
-  subroutine init(this, mesh)
-    class(flow_bc), intent(inout) :: this
-    type(flow_mesh), pointer, intent(in) :: mesh
+    use parameter_list_type
+
+    class(flow_bc), intent(out) :: this
+    type(flow_mesh), intent(in), target :: mesh
+    type(parameter_list), intent(inout) :: params
+
     type(flow_bc_factory) :: f
     integer :: nc, flag, has_p_neumann(nPE)
+    type(parameter_list), pointer :: plist
 
     ! need to generalize this to allow user input:
     ! - no slip walls (=> velocity-dirichlet + pressure_neumann)
@@ -116,11 +111,10 @@ contains
     ! - pressure inlet/outlet (=> pressure_dirichlet + v_neumann)
     ! - velocity inlet (=> v_dirichlet + pressure_neumann)
 
-    ASSERT(associated(this%plist))
-
     this%fix_neumann = .false.
 
-    call f%init(mesh, this%plist)
+    plist => params%sublist('bc')
+    call f%init(mesh, plist)
     call f%alloc_vector_bc( &
         [character(len=32) :: "velocity dirichlet", "no slip"], &
         this%v_dirichlet, &

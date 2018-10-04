@@ -11,17 +11,16 @@ module volume_tracker_type
   public :: volume_tracker
 
   type :: volume_tracker
+    type(unstr_mesh), pointer :: mesh ! unowned reference
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
     logical :: use_brents_method, nested_dissection
     real(r8) :: location_tol ! tolerance of plic fit
     real(r8) :: cutoff ! allow volume fraction {0,(cutoff,1]}
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
-    type(unstr_mesh), pointer :: mesh ! unowned reference
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:), w_face(:,:)
   contains
-    procedure :: read_params
     procedure :: init
     procedure :: flux_volumes
     procedure :: normals
@@ -34,32 +33,30 @@ module volume_tracker_type
     procedure :: enforce_bounded_vof
   end type volume_tracker
 
-
 contains
 
-  subroutine read_params(this, p)
+  subroutine init(this, mesh, fluids_and_void, params)
+
     use parameter_list_type
-    class(volume_tracker), intent(inout) :: this
-    type(parameter_list), intent(inout) :: p
-    call p%get('location_iter_max', this%location_iter_max)
-    call p%get('location_tol', this%location_tol)
-    call p%get('cutoff', this%cutoff)
-    call p%get('subcycles', this%subcycles)
-    call p%get('use_brents_method', this%use_brents_method)
-    call p%get('nested_dissection', this%nested_dissection)
-  end subroutine read_params
 
-  subroutine init(this, m, fluids_and_void)
-    class(volume_tracker), intent(inout) :: this
-    type(unstr_mesh), pointer, intent(in) :: m
+    class(volume_tracker), intent(out) :: this
+    type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: fluids_and_void
+    type(parameter_list), intent(inout) :: params
 
-    this%mesh => m
-    allocate(this%flux_vol_sub(fluids_and_void,size(m%cface)))
-    allocate(this%normal(3,fluids_and_void,m%ncell))
-    ! workspace
-    allocate(this%w_node(2,m%nnode))
-    allocate(this%w_face(fluids_and_void,m%nface))
+    this%mesh => mesh
+
+    call params%get('location_iter_max', this%location_iter_max, default=20)
+    call params%get('location_tol', this%location_tol, default=1.0e-8_r8)
+    call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
+    call params%get('subcycles', this%subcycles, default=2)
+    call params%get('use_brents_method', this%use_brents_method, default=.true.)
+    call params%get('nested_dissection', this%nested_dissection, default=.true.)
+
+    allocate(this%flux_vol_sub(fluids_and_void,size(mesh%cface)))
+    allocate(this%normal(3,fluids_and_void,mesh%ncell))
+    allocate(this%w_node(2,mesh%nnode))
+    allocate(this%w_face(fluids_and_void,mesh%nface))
 
   end subroutine init
 

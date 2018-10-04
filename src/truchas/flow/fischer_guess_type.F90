@@ -58,7 +58,6 @@ module fischer_guess_type
     integer :: size, max_size
     integer :: lri ! least-recently-inserted
   contains
-    procedure :: read_params
     procedure :: init
     procedure :: guess
     procedure :: update
@@ -66,20 +65,17 @@ module fischer_guess_type
 
 contains
 
-  subroutine read_params(this, p)
-    class(fischer_guess), intent(inout) :: this
-    type(parameter_list), pointer, intent(in) :: p
+  subroutine init(this, mesh, params)
 
-    call p%get('history', this%max_size, 6)
+    use parameter_list_type
 
-  end subroutine read_params
+    class(fischer_guess), intent(out) :: this
+    type(flow_mesh), intent(in), target :: mesh
+    type(parameter_list), intent(inout) :: params
 
-
-  subroutine init (this, mesh)
-    class(fischer_guess), intent(inout) :: this
-    type(flow_mesh), pointer, intent(in)  :: mesh
-    !-
     integer :: n
+
+    call params%get('history', this%max_size, default=6)
 
     if (this%max_size < 1) return
 

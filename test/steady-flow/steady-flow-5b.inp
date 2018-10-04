@@ -32,9 +32,11 @@ A kludge to force hitting the final time exactly
   flow = .true.
 /
 
-&FLOW_OPTIONS
+&FLOW
   inviscid = .true.
   courant_number = 0.5
+  nested_dissection = f
+  subcycles = 2
 /
 
 &FLOW_CORRECTOR
@@ -43,12 +45,6 @@ A kludge to force hitting the final time exactly
   max_ds_iter = 10
   max_amg_iter = 20
   krylov_method = 'cg'
-/
-
-&VOLUMETRACKING
-  active = t
-  nested_dissection = f
-  subcycles = 2
 /
 
 &NUMERICS

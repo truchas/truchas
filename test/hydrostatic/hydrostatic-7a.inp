@@ -24,7 +24,7 @@ pressure field.
   body_force_density = 0.0, 0.0, -1.0
 /
 
-&FLOW_OPTIONS
+&FLOW
   inviscid = .true.
   courant_number = 0.5
 /
@@ -36,8 +36,6 @@ pressure field.
   max_amg_iter = 50
   krylov_method = 'cg'
 /
-
-&VOLUMETRACKING active = t /
 
 &NUMERICS
   dt_constant = 0.125

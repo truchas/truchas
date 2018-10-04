@@ -35,7 +35,6 @@ module flow_type
     real(r8) :: viscous_number
     real(r8) :: courant_number
   contains
-    procedure :: read_params
     procedure :: init
     procedure :: step
     procedure :: accept
@@ -98,48 +97,32 @@ contains
 
   end subroutine timestep
 
-  subroutine read_params(this, p)
+  subroutine init(this, mesh, prescribed, vel_cc, P_cc, params)
+
     use parameter_list_type
-    class(flow), intent(inout) :: this
-    type(parameter_list), pointer, intent(in) :: p
-    type(parameter_list), pointer :: pp
-    real(r8), allocatable :: body_force(:)
-    integer :: stat
-    !
 
-    pp => p%sublist("options")
-
-    call pp%get('inviscid', this%inviscid, .false.)
-    call pp%get('stokes', this%stokes, .false.)
-    call pp%get('viscous number', this%viscous_number, 0.1_r8)
-    call pp%get('courant number', this%courant_number, 0.5_r8)
-    call pp%get('body force', body_force, stat=stat)
-    if (stat == 0) then
-      this%body_force = body_force
-    else
-      this%body_force = 0.0_r8
-    end if
-
-    allocate(this%bc)
-    call this%bc%read_params(p)
-    call this%proj%read_params(p)
-    call this%pred%read_params(p)
-
-  end subroutine read_params
-
-
-  subroutine init(this, m, prescribed, vel_cc, P_cc)
-    class(flow), intent(inout) :: this
-    type(flow_mesh), pointer, intent(in) :: m
+    class(flow), intent(out) :: this
+    type(flow_mesh), intent(in), target :: mesh
     logical, optional, intent(in) :: prescribed
     real(r8), optional, intent(in) :: vel_cc(:,:), P_cc
-    !-
+    type(parameter_list), intent(inout) :: params
+
     integer :: i
     real(r8) :: xc, yc, sigma, x, y, r2, theta, w, vel(3)
+    type(parameter_list), pointer :: plist
+    real(r8), allocatable :: array(:)
 
-    this%mesh => m
+    this%mesh => mesh
 
-    associate (nc => m%mesh%ncell, nf => m%mesh%nface)
+    plist => params%sublist('options')
+    call plist%get('inviscid', this%inviscid, default=.false.)
+    call plist%get('stokes', this%stokes, default=.false.)
+    call plist%get('viscous number', this%viscous_number, default=0.1_r8)
+    call plist%get('courant number', this%courant_number, default=0.5_r8)
+    call plist%get('body force', array, default=[0.0_r8, 0.0_r8, 0.0_r8])
+    this%body_force = array
+
+    associate (nc => mesh%mesh%ncell, nf => mesh%mesh%nface)
       allocate(this%vel_cc(3, nc))
       allocate(this%vel_cc_n(3, nc))
       allocate(this%P_cc(nc))
@@ -155,9 +138,9 @@ contains
 #if ASDF
       print* , ">>>> HIGHJACKING FLOW INTIAL CONDITIONS <<<<"
 
-      do i = 1, m%mesh%ncell
-        x = m%cell_centroid(1,i) - xc
-        y = m%cell_centroid(2,i) - yc
+      do i = 1, mesh%mesh%ncell
+        x = mesh%cell_centroid(1,i) - xc
+        y = mesh%cell_centroid(2,i) - yc
         !print*, y, x
         theta = atan2(y, x)
         r2 = (sqrt(x**2+y**2) - 0.25_r8)**2
@@ -166,24 +149,24 @@ contains
         this%vel_cc(:,i) = [-w*sin(theta), w*cos(theta), 0.0_r8]
       end do
 #else
-      do i = 1, m%mesh%ncell_onP
+      do i = 1, mesh%mesh%ncell_onP
         this%vel_cc(:,i) = vel_cc(:,i)
       end do
-      call gather_boundary(m%mesh%cell_ip, this%vel_cc)
+      call gather_boundary(mesh%mesh%cell_ip, this%vel_cc)
 #endif
       ! set the face velocities
       ! WARN: This will only give reasonable results when the initial velocity
       !       is uniform. A real solution should get velocities from an input
       !       function and ensure the face velocities are discretely solenoidal.
-      do i = 1, m%mesh%nface_onP
-        vel = this%vel_cc(:,m%fcell(2,i))
-        if (m%fcell(1,i) /= 0) then
-          vel = vel + this%vel_cc(:,m%fcell(1,i))
+      do i = 1, mesh%mesh%nface_onP
+        vel = this%vel_cc(:,mesh%fcell(2,i))
+        if (mesh%fcell(1,i) /= 0) then
+          vel = vel + this%vel_cc(:,mesh%fcell(1,i))
           vel = vel / 2
         end if
-        this%vel_fn(i) = dot_product(m%mesh%normal(:,i), vel)
+        this%vel_fn(i) = dot_product(mesh%mesh%normal(:,i), vel)
       end do
-      call gather_boundary(m%mesh%face_ip, this%vel_fn)
+      call gather_boundary(mesh%mesh%face_ip, this%vel_fn)
     else
       this%vel_cc = 0.0_r8
       this%vel_fn = 0.0_r8
@@ -206,9 +189,10 @@ contains
     end if
     if (this%prescribed) return
 
-    call this%bc%init(m)
-    call this%pred%init(m, this%bc, this%inviscid, this%stokes)
-    call this%proj%init(m, this%bc)
+    allocate(this%bc)
+    call this%bc%init(mesh, params)
+    call this%pred%init(mesh, this%bc, this%inviscid, this%stokes, params)
+    call this%proj%init(mesh, this%bc, params)
 
   end subroutine init
 

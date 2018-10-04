@@ -26,69 +26,11 @@ module turbulence_models
   implicit none
   private
 
-  public :: turbulence_model, turbulence_models_read_params, &
-      read_flow_turbulence_model_namelist
+  public :: turbulence_model, alloc_turbulence_model
 
 contains
 
-  subroutine read_flow_turbulence_model_namelist(lun, p)
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use flow_input_utils
-
-    integer, intent(in) :: lun
-    type(parameter_list), pointer, intent(inout) :: p
-    type(parameter_list), pointer :: pp
-    integer :: ios
-    logical :: found
-    character(128) :: iom
-    character(128) :: type
-    real(r8) :: length, cmu, ke_fraction
-
-    namelist /flow_turbulence_model/ type, length, cmu, ke_fraction
-
-    type = null_c
-    length = null_r
-    cmu = null_r
-    ke_fraction = null_r
-
-    pp => p%sublist("turbulence model")
-
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist(lun, 'FLOW_TURBULENCE_MODEL', found, iostat=ios)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
-
-    call broadcast(found)
-    if (found) then
-      call TLS_info('')
-      call TLS_info('Reading FLOW_TURBULENCE_MODEL namelist ...')
-      !! Read the namelist.
-      if (is_IOP) then
-        read(lun,nml=flow_turbulence_model,iostat=ios,iomsg=iom)
-      end if
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading FLOW_TURBULENCE_MODEL namelist: ' // trim(iom))
-
-      call broadcast(type)
-
-      if (type /= null_c) then
-        call broadcast(length)
-        call broadcast(cmu)
-        call broadcast(ke_fraction)
-
-        call pp%set("type", trim(type))
-        pp => pp%sublist("params")
-        call plist_set_if(pp, "length", length)
-        call plist_set_if(pp, "cmu", cmu)
-        call plist_set_if(pp, "ke fraction", ke_fraction)
-      end if
-    end if
-  end subroutine read_flow_turbulence_model_namelist
-
-  subroutine turbulence_models_read_params(turb, params, off)
+  subroutine alloc_turbulence_model(turb, params, off)
     class(turbulence_model), allocatable, intent(out) :: turb
     type(parameter_list), pointer, intent(in) :: params
     logical, optional, intent(in) :: off
@@ -121,7 +63,6 @@ contains
 
     pp => pp%sublist("params")
     call turb%read_params(pp)
-  end subroutine turbulence_models_read_params
-
+  end subroutine alloc_turbulence_model
 
 end module turbulence_models

@@ -76,9 +76,12 @@ A kludge to force hitting the final time exactly
   cycle_max = 2000
 /
 
-&FLOW_OPTIONS
+&FLOW
   inviscid = t
   courant_number = 0.4
+  subcycles = 2
+  nested_dissection = f
+  location_tol = 1.0e-12
 /
 
 ! TODO: Remove this unnecessary namelist
@@ -97,13 +100,6 @@ A kludge to force hitting the final time exactly
   max_amg_iter = 50
   krylov_method = "cg"
   !gmres_krylov_dim = 5
-/
-
-&VOLUMETRACKING
-  active = t
-  subcycles = 2
-  nested_dissection = f
-  location_tol = 1.0e-12
 /
 
 Right side

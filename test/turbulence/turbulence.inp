@@ -82,7 +82,7 @@ velocity, but there is no satisfactory way to check the velocity profile.
 
 &TURBULENCE
 
-    turbulence_length      = 0.1
+    length      = 0.1
 
 /
 

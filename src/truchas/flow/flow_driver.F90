@@ -70,14 +70,10 @@ module flow_driver
   use scalar_func_tools
   use scalar_func_containers
   use flow_operators, only: flow_operators_init
-  use flow_bc_type, only: read_flow_bc_namelist
-  use turbulence_models, only: read_flow_turbulence_model_namelist
-  use flow_prediction_type, only: read_flow_predictor_namelist
-  use flow_projection_type, only: read_flow_corrector_namelist
   implicit none
   private
 
-  public :: read_flow_namelist, flow_timestep
+  public :: read_flow_namelists, flow_timestep
   public :: flow_driver_init, flow_step, flow_final, flow_enabled, flow_accept
   public :: flow_vel_fn_view, flow_vel_cc_view, flow_P_cc_view
 
@@ -127,119 +123,54 @@ contains
     flow_enabled = allocated(this)
   end function flow_enabled
 
-  subroutine read_flow_params(p)
-    type(parameter_list), pointer, intent(in) :: p
-    call this%props%read_params(p)
-    call this%flow%read_params(p)
-  end subroutine read_flow_params
+  subroutine read_flow_namelists(lun)
 
-  subroutine read_flow_options_namelist(lun, p)
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use flow_input_utils
-    use physics_module, only: body_force_density
-
-    integer, intent(in) :: lun
-    type(parameter_list), pointer, intent(inout) :: p
-    type(parameter_list), pointer :: pp
-    integer :: ios
-    logical :: found
-    character(128) :: iom
-    ! flow_options namelist
-    logical :: inviscid, stokes
-    real(r8) :: viscous_implicitness, solidify_implicitness
-    real(r8) :: viscous_number, courant_number
-
-    namelist /flow_options/ inviscid, stokes, &
-        viscous_implicitness, solidify_implicitness, viscous_number, &
-        courant_number
-
-    pp => p%sublist("options")
-    inviscid = .false.
-    stokes = .false.
-    viscous_implicitness = null_r
-    solidify_implicitness = null_r
-    viscous_number = null_r
-    courant_number = null_r
-
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist(lun, 'FLOW_OPTIONS', found, iostat=ios)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
-
-    call broadcast(found)
-    if (found) then
-      call TLS_info('')
-      call TLS_info('Reading FLOW_OPTIONS namelist ...')
-      !! Read the namelist.
-      if (is_IOP) then
-        read(lun,nml=flow_options,iostat=ios,iomsg=iom)
-      end if
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading FLOW_OPTIONS namelist: ' // trim(iom))
-
-      if (inviscid .and. stokes) &
-          call TLS_fatal("inviscid Stokes flow not supported")
-
-      call broadcast(inviscid)
-      call broadcast(stokes)
-      call broadcast(viscous_implicitness)
-      call broadcast(solidify_implicitness)
-      call broadcast(viscous_number)
-      call broadcast(courant_number)
-
-      ! active is an option for the driver so don't put it in a plist
-      call plist_set_if(pp, 'viscous implicitness', viscous_implicitness)
-      call plist_set_if(pp, 'solidify implicitness', solidify_implicitness)
-      call plist_set_if(pp, 'courant number', courant_number)
-      call plist_set_if(pp, 'viscous number', viscous_number)
-      call plist_set_if(pp, 'body force', body_force_density)
-    end if
-
-    call pp%set('inviscid', inviscid)
-    call pp%set('stokes', stokes)
-
-  end subroutine read_flow_options_namelist
-
-  subroutine read_flow_namelist(lun)
-    use string_utilities, only: i_to_c
-    use flow_input_utils
+    use flow_namelist
+    use flow_predictor_namelist
+    use flow_corrector_namelist
+    use flow_bc_type, only: read_flow_bc_namelist
+    use turbulence_namelist, only: read_turbulence_namelist
+    use physics_module, only: body_force_density, prescribed_flow
+    use advection_velocity_namelist
 
     integer, intent(in) :: lun
     integer :: ios
     logical :: found
     character(128) :: iom
-    type(parameter_list), pointer :: p
+    type(parameter_list), pointer :: plist
 
     if (.not.allocated(this)) allocate(this)
 
-    allocate(p)
+    call read_flow_namelist(lun)
 
-    call read_flow_options_namelist(lun, p)
+    ! Insert body_force_density from the PHYSICS namelist
+    plist => params%sublist('options')
+    call plist%set('body force', body_force_density)
 
-    ! This needs a better name... right now flow_props keeps track of
-    ! all the cutoff values since they are used to compute rho/mu
-    call read_flow_props_namelist(lun, p)
-    call read_flow_bc_namelist(lun, p)
-    call read_flow_turbulence_model_namelist(lun, p)
-    call read_flow_predictor_namelist(lun, p)
-    call read_flow_corrector_namelist(lun, p)
+    ! Add additional sublists from other namelists
+    call read_flow_bc_namelist(lun, params)
+    call read_flow_predictor_namelist(lun, params)
+    call read_flow_corrector_namelist(lun, params)
 
-    call read_flow_params(p)
-  end subroutine read_flow_namelist
+    plist => params%sublist('turbulence model')
+    call read_turbulence_namelist(lun, plist)
+
+    if (prescribed_flow) call read_advection_velocity_namelist(lun)
+
+  end subroutine read_flow_namelists
 
 
-  subroutine flow_driver_init(mesh)
+  subroutine flow_driver_init()
+    use mesh_manager, only: unstr_mesh_ptr
+    use flow_namelist, only: params
     use zone_module, only: zone
     use material_interop, only: void_material_index, material_to_phase
     use physics_module, only: prescribed_flow
     use scalar_func_factories, only: alloc_const_scalar_func
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
+    use vtrack_driver, only: vtrack_driver_init
 
-    type(unstr_mesh), pointer, intent(in) :: mesh
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
     integer :: i, property_id
@@ -249,8 +180,16 @@ contains
     real(r8) :: state(1)
     class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
     class(scalar_func), allocatable :: f
+    type(unstr_mesh), pointer :: mesh
+    type(parameter_list), pointer :: plist
 
-    if (.not.allocated(this)) return
+    INSIST(allocated(this))
+
+    plist => params%sublist('volume-tracker')
+    call vtrack_driver_init(plist)
+
+    mesh => unstr_mesh_ptr('MAIN')
+    INSIST(associated(mesh))
 
     allocate(this%mesh)
     call this%mesh%init(mesh)
@@ -319,14 +258,15 @@ contains
     end if
 
     call flow_operators_init(this%mesh)
-    call this%props%init(this%mesh, density, density_delta, viscosity)
+    call this%props%init(this%mesh, density, density_delta, viscosity, params)
 
     ! the initial velocity is provided from the velocity_init routine
     allocate(velocity_cc(3, this%mesh%mesh%ncell_onP))
     do i = 1,this%mesh%mesh%ncell_onP
       velocity_cc(:,i) = zone(i)%vc
     end do
-    call this%flow%init(this%mesh, prescribed_flow, velocity_cc)
+    !!FIXME? Optional argument P_CC is missing -- is it needed?
+    call this%flow%init(this%mesh, prescribed_flow, velocity_cc, params=params)
 
   end subroutine flow_driver_init
 

@@ -23,7 +23,7 @@ Variations use rotated meshes (and rotated g)
   body_force_density = 0.0, -0.707106781186547, -0.707106781186547
 /
 
-&FLOW_OPTIONS
+&FLOW
   inviscid = .true.
   courant_number = 0.5
 /

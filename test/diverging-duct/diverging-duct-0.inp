@@ -34,7 +34,7 @@ Hack to hit the final time exactly
   flow = .true.
 /
 
-&FLOW_OPTIONS
+&FLOW
   inviscid = .true.
   courant_number = 0.5
 /

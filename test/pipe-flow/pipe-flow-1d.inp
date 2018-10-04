@@ -29,7 +29,7 @@ Hack to hit the final time exactly
   flow = .true.
 /
 
-&FLOW_OPTIONS
+&FLOW
   inviscid = .false.
   courant_number = 0.5
   viscous_number = 0.5

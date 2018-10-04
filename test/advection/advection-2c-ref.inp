@@ -29,14 +29,9 @@ A kludge to force hitting the final time exactly
   velocity_constant = 4.0, 3.0, 0.0
 /
 
-&FLOW_OPTIONS
-  !inviscid = .true.
-  courant_number = 0.5
-/
-
-&VOLUMETRACKING
-  active = t
+&FLOW
   subcycles = 4
+  courant_number = 0.5
 /
 
 &NUMERICS

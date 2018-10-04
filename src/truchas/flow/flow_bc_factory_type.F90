@@ -36,7 +36,7 @@ contains
 
   subroutine init(this, mesh, params)
     class(flow_bc_factory), intent(out) :: this
-    type(flow_mesh), pointer, intent(in) :: mesh
+    type(flow_mesh), intent(in), target :: mesh
     type(parameter_list), intent(in), target :: params
     this%mesh => mesh
     this%params => params

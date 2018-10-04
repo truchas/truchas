@@ -70,7 +70,6 @@ CONTAINS
         OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: nmat
     use legacy_mesh_api,        only: ncells
-    use mesh_manager, only: unstr_mesh_ptr
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use property_module,        only: DENSITY_MATERIAL
@@ -87,7 +86,7 @@ CONTAINS
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
-    use physics_module,         only: heat_transport
+    use physics_module,         only: heat_transport, flow
     use ded_head_driver,        only: ded_head_init
 
     real(r8), intent(in) :: t, dt
@@ -174,21 +173,17 @@ CONTAINS
     ! for the flow restart when a non-ortho operator is used.
     call BC_INIT()
 
-    !! NNC, December 2012.  Flow initialization is really messed up.  It does
-    !! necessary stuff even when flow is inactive.  The work of ensuring the
-    !! relevant properties are defined belongs there but for now it's here so
-    !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
-    !! always because fluid_init uses its results regardless of whether flow is on.
-    print *, 'flow_enabled check: ', flow_enabled()
-    if (flow_enabled()) then
-      INSIST(vtrack_enabled())
-      call vtrack_driver_init(unstr_mesh_ptr('MAIN'))
-      call flow_driver_init(unstr_mesh_ptr('MAIN'))
+    if (flow) then
+      call flow_driver_init()
     else
+      !! NNC, December 2012.  Flow initialization is really messed up.  It does
+      !! necessary stuff even when flow is inactive.  The work of ensuring the
+      !! relevant properties are defined belongs there but for now it's here so
+      !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
+      !! always because fluid_init uses its results regardless of whether flow is on.
       call flow_property_init
       call FLUID_INIT (t)
     end if
-
 
     ! Allow arbitrary overwriting of the Matl, Zone, and BC types.
     call OVERWRITE_MATL ()

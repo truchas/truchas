@@ -85,9 +85,7 @@ module flow_props_type
   implicit none
   private
 
-  public :: flow_props, read_flow_props_namelist
-
-  type :: flow_props
+  type, public :: flow_props
     type(flow_mesh), pointer, private :: mesh => null() ! reference only -- do not own
     real(r8), allocatable :: rho_cc(:), rho_cc_n(:) ! cell centered fluid density
     real(r8), allocatable :: rho_fc(:), rho_fc_n(:) ! face centered fluid density
@@ -108,7 +106,6 @@ module flow_props_type
     real(r8), allocatable :: density(:)
     class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
   contains
-    procedure :: read_params
     procedure :: init
     procedure :: update_cc
     procedure :: update_fc
@@ -117,75 +114,25 @@ module flow_props_type
 
 contains
 
-  subroutine read_flow_props_namelist(lun, params)
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use flow_input_utils
+  subroutine init(this, mesh, density, density_delta, viscosity, params)
 
-    integer, intent(in) :: lun
-    type(parameter_list), pointer, intent(inout) :: params
+    use parameter_list_type
 
-    integer :: ios
-    logical :: found
-    character(128) :: iom
-    type(parameter_list), pointer :: pp
-    real(r8) :: fluid_cutvof, min_face_fraction
-
-    ! magic numbers
-    namelist /flow_cutoffs/ fluid_cutvof, min_face_fraction
-
-    pp => params%sublist("cutoffs")
-
-    ! handle cutoffs
-    fluid_cutvof = null_r
-    min_face_fraction = null_r
-
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist(lun, 'FLOW_CUTOFFS', found, iostat=ios)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
-
-    call broadcast(found)
-    if (found) then
-      call TLS_info('')
-      call TLS_info('Reading FLOW_CUTOFFS namelist ...')
-      !! Read the namelist.
-      if (is_IOP) then
-        read(lun,nml=flow_cutoffs,iostat=ios,iomsg=iom)
-      end if
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading FLOW_CUTOFFS namelist: ' // trim(iom))
-
-      call broadcast(fluid_cutvof)
-      call broadcast(min_face_fraction)
-      call plist_set_if(pp, 'cutvof', fluid_cutvof)
-      call plist_set_if(pp, 'min face fraction', min_face_fraction)
-    end if
-
-  end subroutine read_flow_props_namelist
-
-  subroutine read_params(this, params)
-    class(flow_props), intent(inout) :: this
-    type(parameter_list), pointer, intent(in) :: params
-    type(parameter_list), pointer :: pp
-    !-
-    pp => params%sublist("cutoffs")
-    call pp%get("cutvof", this%cutoff, 0.01_r8)
-    call pp%get("min face fraction", this%min_face_fraction, 0.001_r8)
-  end subroutine read_params
-
-  subroutine init(this, mesh, density, density_delta, viscosity)
-    class(flow_props), intent(inout) :: this
+    class(flow_props), intent(out) :: this
     type(flow_mesh), pointer, intent(in) :: mesh
     real(r8), intent(in) :: density(:)
     class(scalar_func_box), intent(inout) :: density_delta(:), viscosity(:)
-    !-
+    type(parameter_list), intent(inout) :: params
+
     integer :: nc, fc, s
+    type(parameter_list), pointer :: plist
 
     this%mesh => mesh
     this%density = density
+
+    plist => params%sublist("cutoffs")
+    call plist%get("cutvof", this%cutoff, default=0.01_r8)
+    call plist%get("min face fraction", this%min_face_fraction, default=0.001_r8)
 
     ASSERT(size(viscosity) == size(density_delta))
     allocate(this%viscosity(size(viscosity)))

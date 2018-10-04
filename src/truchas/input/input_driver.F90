@@ -51,8 +51,7 @@ contains
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
     use ustruc_driver,             only: read_microstructure_namelist
-    use flow_driver,               only: read_flow_namelist
-    use vtrack_driver,             only: read_volumetracking_namelist
+    use flow_driver,               only: read_flow_namelists
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
@@ -61,13 +60,13 @@ contains
     use surface_tension_module,    only: surface_tension, read_surface_tension_namelist
     use fluid_data_module,         only: applyflow
     use viscous_data_module,       only: inviscid
-    use turbulence_module,         only: read_turbulence_namelist
+    use turbulence_module,         only: read_turbulence_namelist_for_legacy
     use solid_mechanics_input,     only: solid_mechanics
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
-    use physics_module,            only: heat_transport, prescribed_flow, flow, legacy_flow
+    use physics_module,            only: heat_transport, flow, legacy_flow
     use advection_velocity_namelist, only: read_advection_velocity_namelist
     use truchas_logging_services
     use truchas_timers
@@ -124,14 +123,10 @@ contains
     call material_input (lun)
     call material_sizes ()
 
-    if (flow) then
-      call read_flow_namelist(lun)
-      call read_volumetracking_namelist(lun)
-      if (prescribed_flow) call read_advection_velocity_namelist(lun)
-    end if
+    if (flow) call read_flow_namelists(lun)
 
     if (legacy_flow) then
-      if (.not.inviscid)   call read_turbulence_namelist (lun)
+      if (.not.inviscid) call read_turbulence_namelist_for_legacy(lun)
       if (surface_tension) call read_surface_tension_namelist (lun)
       if (applyflow) call read_advection_velocity_namelist(lun)
     end if

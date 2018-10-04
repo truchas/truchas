@@ -64,15 +64,12 @@ module flow_prediction_type
   implicit none
   private
 
-  public :: flow_prediction, read_flow_predictor_namelist
-
-  type :: flow_prediction
+  type, public :: flow_prediction
     type(flow_mesh), pointer :: mesh => null()
     type(flow_bc), pointer :: bc => null()
     class(turbulence_model), allocatable :: turb
     !class(porous_drag_model), allocatable :: drag
     type(hypre_hybrid) :: solver(3)
-    type(parameter_list), pointer :: p => null()
     logical :: inviscid
     logical :: stokes
     real(r8), allocatable :: rhs(:,:), sol(:), rhs1d(:)
@@ -80,7 +77,6 @@ module flow_prediction_type
     real(r8) :: viscous_implicitness
     real(r8) :: solidify_implicitness
   contains
-    procedure :: read_params
     procedure :: init
     procedure :: setup
     procedure :: setup_solver
@@ -103,150 +99,31 @@ module flow_prediction_type
 
 contains
 
-  subroutine read_flow_predictor_namelist(lun, p)
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use flow_input_utils
+  subroutine init(this, mesh, bc, inviscid, stokes, params)
 
-    integer, intent(in) :: lun
-    type(parameter_list), pointer, intent(inout) :: p
-    type(parameter_list), pointer :: pp
-    integer :: ios
-    logical :: found
-    character(128) :: iom
+    use parameter_list_type
 
-    !- hypre related items
-    real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
-    integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
-    integer :: print_level, amg_max_levels, amg_coarsen_type, amg_coarsen_sweeps
-    integer :: amg_smoothing_method, amg_smoothing_sweeps, amg_interp_method
-    character(128) :: krylov_method, amg_coarsen_method
-
-
-    namelist /flow_predictor/ rel_tol, &
-        abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
-        krylov_method, gmres_krylov_dim, cg_use_two_norm, &
-        logging_level, print_level, amg_strong_threshold, &
-        amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
-        amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
-
-    pp => p%sublist("predictor")
-    max_ds_iter = NULL_I
-    max_amg_iter = NULL_I
-    gmres_krylov_dim = NULL_I
-    cg_use_two_norm = NULL_I
-    logging_level = NULL_I
-    print_level = NULL_I
-    amg_max_levels = NULL_I
-    amg_coarsen_type = NULL_I
-    amg_coarsen_sweeps = NULL_I
-    amg_smoothing_method = NULL_I
-    amg_smoothing_sweeps = NULL_I
-    amg_interp_method = NULL_I
-    rel_tol = NULL_R
-    abs_tol = NULL_R
-    conv_rate_tol = NULL_R
-    amg_strong_threshold = NULL_R
-    krylov_method = NULL_C
-    amg_coarsen_method = NULL_C
-
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist(lun, 'FLOW_PREDICTOR', found, iostat=ios)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
-
-    call broadcast(found)
-    if (found) then
-      call TLS_info('')
-      call TLS_info('Reading FLOW_PREDICTOR namelist ...')
-      !! Read the namelist.
-      if (is_IOP) then
-        read(lun,nml=flow_predictor,iostat=ios,iomsg=iom)
-      end if
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading FLOW_PREDICTOR namelist: ' // trim(iom))
-
-      call broadcast(max_ds_iter)
-      call broadcast(max_amg_iter)
-      call broadcast(gmres_krylov_dim)
-      call broadcast(cg_use_two_norm)
-      call broadcast(logging_level)
-      call broadcast(print_level)
-      call broadcast(amg_max_levels)
-      call broadcast(amg_coarsen_type)
-      call broadcast(amg_coarsen_sweeps)
-      call broadcast(amg_smoothing_method)
-      call broadcast(amg_interp_method)
-      call broadcast(rel_tol)
-      call broadcast(abs_tol)
-      call broadcast(conv_rate_tol)
-      call broadcast(amg_strong_threshold)
-      call broadcast(krylov_method)
-      call broadcast(amg_coarsen_method)
-
-      pp => pp%sublist("solver")
-      call plist_set_if(pp, "rel-tol", rel_tol)
-      call plist_set_if(pp, 'abs-tol', abs_tol)
-      call plist_set_if(pp, 'conv-rate-tol', conv_rate_tol)
-      call plist_set_if(pp, 'max-ds-iter', max_ds_iter)
-      call plist_set_if(pp, 'max-amg-iter', max_amg_iter)
-      call plist_set_if(pp, 'krylov-method', krylov_method)
-      call plist_set_if(pp, 'gmres-krylov-dim', gmres_krylov_dim)
-      call plist_set_if(pp, 'cg-use-two-norm', cg_use_two_norm /= 0)
-      call plist_set_if(pp, 'logging-level', logging_level)
-      call plist_set_if(pp, 'print-level', print_level)
-      call plist_set_if(pp, 'amg-strong-threshold', amg_strong_threshold)
-      call plist_set_if(pp, 'amg-max-levels', amg_max_levels)
-      call plist_set_if(pp, 'amg-coarsen-method', amg_coarsen_method)
-      call plist_set_if(pp, 'amg-coarsen-type', amg_coarsen_type)
-      call plist_set_if(pp, 'amg-smoothing-sweeps', amg_smoothing_sweeps)
-      call plist_set_if(pp, 'amg-smoothing-method', amg_smoothing_method)
-      call plist_set_if(pp, 'amg-interp-method', amg_interp_method)
-    end if
-  end subroutine read_flow_predictor_namelist
-
-  subroutine read_params(this, p)
-    class(flow_prediction) :: this
-    type(parameter_list), pointer, intent(in) :: p
-    !-
-    character(:), allocatable :: flow_type
-    integer :: stat
-    type(parameter_list), pointer :: pp
-
-    this%p => p
-
-    pp => p%sublist("options")
-
-    ! default to crank-nicolson
-    call pp%get('viscous implicitness', this%viscous_implicitness, 0.5_r8)
-    ! default to fully implicit
-    call pp%get('solidfy implicitness', this%solidify_implicitness, 1.0_r8)
-
-    call turbulence_models_read_params(this%turb, p, off=this%inviscid)
-
-    !sub => p%sublist("porous-drag-model")
-    !call porous_drag_models_read_params(this%drag, sub, off=this%inviscid)
-  end subroutine read_params
-
-
-  subroutine init(this, mesh, bc, inviscid, stokes)
     class(flow_prediction), intent(inout) :: this
-    type(flow_mesh), pointer, intent(in) :: mesh
+    type(flow_mesh), intent(in), target :: mesh
     type(flow_bc), pointer, intent(in) :: bc
     logical, intent(in) :: inviscid, stokes
-    !-
+    type(parameter_list), intent(inout) :: params
+
     type(graph_container) :: g(size(this%solver))
     type(matrix_container) :: A(size(this%solver))
     type(ip_desc), pointer :: row_ip
-    type(parameter_list), pointer :: sub
+    type(parameter_list), pointer :: plist
     integer :: i, j, k
 
     this%mesh => mesh
     this%bc => bc
     this%inviscid = inviscid
     this%stokes = stokes
+
+    plist => params%sublist("options")
+    call plist%get('viscous implicitness', this%viscous_implicitness, default=0.5_r8)
+    call plist%get('solidfy implicitness', this%solidify_implicitness, default=1.0_r8)
+    call alloc_turbulence_model(this%turb, plist, off=this%inviscid)
 
     associate (m => mesh%mesh)
       allocate(this%rhs(3,m%ncell))
@@ -282,15 +159,14 @@ contains
           call g(k)%g%add_complete()
         end do
 
-        sub => this%p%sublist("predictor")
-        ASSERT(sub%count() > 0)
-        sub => sub%sublist("solver")
-        ASSERT(sub%count() > 0)
-        !sub => this%p%sublist("predictor")%sublist("solver")
+        plist => params%sublist("predictor")
+        ASSERT(plist%count() > 0)
+        plist => plist%sublist("solver")
+        ASSERT(plist%count() > 0)
         do k = 1, size(A)
           allocate(A(k)%A)
           call A(k)%A%init(g(k)%g, take_graph=.true.)
-          call this%solver(k)%init(A(k)%A, sub)
+          call this%solver(k)%init(A(k)%A, plist)
         end do
       end if
     end associate

@@ -27,6 +27,10 @@ set(FLOW_FILES
 	flow/flow_prediction_type.F90
 	flow/flow_props_type.F90
 	flow/flow_type.F90
+        flow/flow_namelist.F90
+        flow/flow_predictor_namelist.F90
+        flow/flow_corrector_namelist.F90
+        flow/turbulence_namelist.F90
 	)
 
 set(FLOW_FPP_FLAGS
