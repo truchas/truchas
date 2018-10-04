@@ -72,9 +72,6 @@ A kludge to force hitting the final time exactly
 &PHASE
   name = 'water'
   property_name(1) = 'density', property_constant(1) = 1.0
-  !TODO: delete the viscosity and density deviation properties
-  property_name(3) = 'viscosity',     property_constant(3) = 1.0
-  property_name(4) = 'density deviation', property_constant(4) = 0.0
 /
 
 &MATERIAL_SYSTEM
@@ -91,9 +88,6 @@ A kludge to force hitting the final time exactly
 &PHASE
   name = 'oil'
   property_name(1) = 'density', property_constant(1) = 2.0
-  !TODO: delete the viscosity and density deviation properties
-  property_name(3) = 'viscosity',     property_constant(3) = 1.0
-  property_name(4) = 'density deviation', property_constant(4) = 0.0
 /
 
 &MATERIAL_SYSTEM

@@ -113,8 +113,6 @@ Walls
 &PHASE
   name = 'water'
   property_name(1) = 'density', property_constant(1) = 1.0
-  !TODO: delete the viscosity property
-  property_name(3) = 'viscosity',     property_constant(3) = 1.0
 /
 
 &MATERIAL_SYSTEM
@@ -131,8 +129,6 @@ Walls
 &PHASE
   name = 'oil'
   property_name(1) = 'density', property_constant(1) = 1.0
-  !TODO: delete the viscosity property
-  property_name(3) = 'viscosity',     property_constant(3) = 1.0
 /
 
 &MATERIAL_SYSTEM
