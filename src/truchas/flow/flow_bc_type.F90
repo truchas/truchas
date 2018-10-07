@@ -13,9 +13,7 @@ module flow_bc_type
   implicit none
   private
 
-  public :: flow_bc, read_flow_bc_namelist
-
-  type :: flow_bc
+  type, public :: flow_bc
     class(bndry_func), allocatable :: p_dirichlet, dp_dirichlet, p_neumann, v_zero_normal
     class(bndry_vfunc), allocatable :: v_dirichlet
     logical :: pressure_d
@@ -27,71 +25,6 @@ module flow_bc_type
   end type flow_bc
 
 contains
-
-  subroutine read_flow_bc_namelist(lun, p)
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use flow_input_utils
-
-    integer, intent(in) :: lun
-    type(parameter_list), intent(inout) :: p
-    type(parameter_list), pointer :: pp, bc
-    integer :: ios
-    logical :: found
-    character(128) :: iom
-    character(128) :: condition
-    character(3) :: bc_label
-    real(r8) :: data(3)
-    integer :: face_sets(10), i
-
-    namelist /flow_bc/ condition, data, face_sets
-
-    bc => p%sublist("bc")
-
-    if (is_IOP) then
-      rewind lun
-    end if
-
-    i = 1
-    do while(.true.)
-      ! advance to next flow bc_namelist or exit
-      if (is_IOP) then
-        call seek_to_namelist(lun, 'flow_bc', found, iostat=ios)
-      end if
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
-      call broadcast(found)
-      if (.not.found) exit
-
-      call TLS_info("")
-      call TLS_info("Reading FLOW_BC namelist...")
-
-      !! Reset defaults and read the namelist.
-      condition = null_c
-      data = null_r
-      face_sets = null_i
-
-      if (is_IOP) then
-        read(lun,nml=flow_bc,iostat=ios,iomsg=iom)
-      end if
-      call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading FLOW_BC namelist: ' // trim(iom))
-
-      call broadcast(condition)
-      call broadcast(face_sets)
-      call broadcast(data)
-
-      write(bc_label,'("bc",i1)') i
-      pp => bc%sublist(bc_label)
-      call plist_set_if(pp, 'condition', condition)
-      call plist_set_if(pp, 'data', data)
-      call plist_set_if(pp, 'face sets', face_sets)
-
-      i = i + 1
-    end do
-
-  end subroutine read_flow_bc_namelist
-
 
   subroutine init(this, mesh, params)
 
@@ -114,7 +47,7 @@ contains
     this%fix_neumann = .false.
 
     plist => params%sublist('bc')
-    call f%init(mesh, plist)
+    call f%init(mesh%mesh, plist)
     call f%alloc_vector_bc( &
         [character(len=32) :: "velocity dirichlet", "no slip"], &
         this%v_dirichlet, &

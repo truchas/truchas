@@ -128,7 +128,7 @@ contains
     use flow_namelist
     use flow_predictor_namelist
     use flow_corrector_namelist
-    use flow_bc_type, only: read_flow_bc_namelist
+    use flow_bc_namelist, only: read_flow_bc_namelists
     use turbulence_namelist, only: read_turbulence_namelist
     use physics_module, only: body_force_density, prescribed_flow
     use advection_velocity_namelist
@@ -148,7 +148,8 @@ contains
     call plist%set('body force', body_force_density)
 
     ! Add additional sublists from other namelists
-    call read_flow_bc_namelist(lun, params)
+    plist => params%sublist('bc')
+    call read_flow_bc_namelists(lun, plist)
     call read_flow_predictor_namelist(lun, params)
     call read_flow_corrector_namelist(lun, params)
 

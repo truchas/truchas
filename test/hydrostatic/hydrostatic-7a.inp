@@ -43,7 +43,8 @@ pressure field.
 
 # FREE SLIP BC ALL AROUND
 &FLOW_BC
-  face_sets = 1
+  name = 'all sides'
+  face_set_ids = 1
   condition = 'slip'
 /
 

@@ -55,29 +55,29 @@ Hack to hit the final time exactly
 TODO: WE WANT A FUNCTION HERE: (u,v,w) = (x,y,0) => radial unit velocity on r = 0.
 Inlet velocity
 &FLOW_BC
-  face_sets = 1
+  name = 'inflow'
+  face_set_ids = 1
   condition = 'velocity dirichlet'
-  data      = 1.0, 0.0, 0.0
+  data_constant = 1.0, 0.0, 0.0
 /
 &FLOW_BC
-  face_sets = 1
+  name = 'inflow-p'
+  face_set_ids = 1
   condition = 'pressure neumann'
 /
 
 Outlet pressure
 &FLOW_BC
-  face_sets = 2
+  name = 'outflow'
+  face_set_ids = 2
   condition = 'pressure dirichlet'
-  data      = 2.0
-/
-&FLOW_BC
-  face_sets = 2
-  condition = 'velocity neumann'
+  data_constant = 2.0
 /
 
 Pipe walls
 &FLOW_BC
-  face_sets = 3
+  name = 'wall'
+  face_set_ids = 3
   condition = 'slip'
 /
 

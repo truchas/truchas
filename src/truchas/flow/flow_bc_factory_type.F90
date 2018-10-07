@@ -1,9 +1,3 @@
-!!
-!! BC_FACTORY_TYPE
-!!
-!! Neil N. Carlson <nnc@lanl.gov>
-!! February 2014
-!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
@@ -16,7 +10,7 @@
 
 module flow_bc_factory_type
 
-  use flow_mesh_type
+  use unstr_mesh_type
   use parameter_list_type
   use truchas_logging_services
   implicit none
@@ -24,7 +18,7 @@ module flow_bc_factory_type
 
   type, public :: flow_bc_factory
     private
-    type(flow_mesh),     pointer :: mesh   => null() ! reference only - do not own
+    type(unstr_mesh),     pointer :: mesh   => null() ! reference only - do not own
     type(parameter_list), pointer :: params => null() ! reference only - do not own
   contains
     procedure :: init
@@ -36,7 +30,7 @@ contains
 
   subroutine init(this, mesh, params)
     class(flow_bc_factory), intent(out) :: this
-    type(flow_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(in), target :: params
     this%mesh => mesh
     this%params => params
@@ -49,7 +43,6 @@ contains
     use bndry_func_class
     use bndry_face_func_type
     use string_utilities, only: raise_case
-    !use parameter_list_type !BUG: not necessary but Intel needs it (should be reported)
 
     class(flow_bc_factory), intent(in) :: this
     character(*), intent(in) :: condition(:)
@@ -66,18 +59,13 @@ contains
     character(:), allocatable :: errmsg
 
     allocate(bff)
-    call bff%init(this%mesh%mesh)
-#ifdef FLOW_DEBUG
-    print *, "allocing scalar bc: ", condition
-#endif
+    call bff%init(this%mesh)
     do i = 1, size(condition)
       piter = parameter_list_iterator(this%params, sublists_only=.true.)
-
       do while (.not.piter%at_end())
         bc_params => piter%sublist()
         call bc_params%get('condition', bc_type)
-
-        if (raise_case(bc_type) == raise_case(trim(condition(i)))) then
+        if (raise_case(bc_type) == raise_case(condition(i))) then
           call bc_params%get('face sets', setids)
           call alloc_sf(bc_params, 'data', f, default)
           call bff%add(f, setids, stat, errmsg)
@@ -117,10 +105,7 @@ contains
     character(:), allocatable :: errmsg
 
     allocate(bff)
-    call bff%init(this%mesh%mesh)
-#ifdef FLOW_DEBUG
-    print *, "allocing vector bc: ", condition
-#endif
+    call bff%init(this%mesh)
     do i = 1, size(condition)
       piter = parameter_list_iterator(this%params, sublists_only=.true.)
 
@@ -159,17 +144,14 @@ contains
     real(r8), optional, intent(in) :: default
 
     integer :: stat
-    real(r8), allocatable :: const(:)
+    real(r8) :: const
     character(:), allocatable :: name
 
-#ifdef FLOW_DEBUG
-    print *, "alloc_sf ", param
-#endif
     if (plist%is_parameter(param)) then
 
       call plist%get(param, const, stat=stat)
       if (stat == 0) then ! it is a real constant
-        call alloc_const_scalar_func(f, const(1))
+        call alloc_const_scalar_func(f, const)
       else  ! it is the name of a function
         call plist%get(param, name)
         call lookup_func(name, f)

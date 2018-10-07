@@ -64,10 +64,10 @@ contains
 
     !! namelist variables
     character(len=31)  :: name, type
-    real(r8) :: tabular_data(10,100)
+    real(r8) :: tabular_data(10,100), axis(3)
     integer  :: tabular_dim
 
-    namelist/vfunction/ name, type, tabular_data, tabular_dim
+    namelist/vfunction/ name, type, tabular_data, tabular_dim, axis
 
     call TLS_info ('')
     call TLS_info ('Reading VFUNCTION namelists ...')
@@ -93,6 +93,7 @@ contains
         type              = NULL_C
         tabular_data      = NULL_R
         tabular_dim       = NULL_I
+        axis              = NULL_R
         read(lun, nml=vfunction, iostat=stat)
       end if
 
@@ -104,6 +105,7 @@ contains
       call broadcast (type)
       call broadcast (tabular_data)
       call broadcast (tabular_dim)
+      call broadcast (axis)
 
       !! Check the user-supplied name.
       if (name == NULL_C .or. name == '') call TLS_fatal ('NAME must be assigned a nonempty value')
@@ -114,6 +116,7 @@ contains
       !! Check the type.
       select case (raise_case(type))
       case ('TABULAR')
+      case ('DIV-RADIAL-CYL-FLOW')
       case default
         call TLS_fatal ('unknown value for TYPE: ' // trim(type))
       end select
@@ -149,6 +152,12 @@ contains
 
         call alloc_tabular_vector_func (f, tabular_data(1,:npts), tabular_data(2:tabular_dim+1,:npts))
         call insert_func (name, f)
+
+      case ('DIV-RADIAL-CYL-FLOW')
+
+        if (any(axis == NULL_R)) call TLS_fatal('AXIS requires a 3-vector value')
+        call alloc_div_radial_cyl_flow_func(f, axis)
+        call insert_func(name, f)
 
       end select
     end do

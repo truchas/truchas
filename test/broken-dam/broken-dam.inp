@@ -104,21 +104,24 @@ A kludge to force hitting the final time exactly
 
 Right side
 &FLOW_BC
+  name = 'right'
   condition = 'pressure dirichlet'
-  face_sets = 2
-  data = 0.0
+  face_set_ids = 2
+  data_constant = 0.0
 /
 
 Top side
 &FLOW_BC
+  name = 'top'
   condition = 'pressure dirichlet'
-  face_sets = 4
-  data = 0.0
+  face_set_ids = 4
+  data_constant = 0.0
 /
 
 &FLOW_BC
+  name = 'rest'
   condition = 'slip'
-  face_sets = 1, 3, 5, 6
+  face_set_ids = 1, 3, 5, 6
 /
 
 &BODY

@@ -31,6 +31,7 @@ set(FUNC_FILES
         functions/vector_func_class.F90
         functions/const_vector_func_type.F90
         functions/tabular_vector_func_type.F90
+        functions/fptr_vector_func_type.F90
         functions/vector_func_factories.F90
         )
 

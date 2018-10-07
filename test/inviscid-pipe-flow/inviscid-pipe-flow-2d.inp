@@ -47,24 +47,18 @@ Hack to hit the final time exactly
 
 Inlet pressure
 &FLOW_BC
-  face_sets = 1
+  name = 'inlet'
+  face_set_ids = 1
   condition = 'pressure dirichlet'
-  data      = 6.0
-/
-&FLOW_BC
-  face_sets = 1
-  condition = 'velocity neumann'
+  data_constant = 6.0
 /
 
 Outlet pressure
 &FLOW_BC
-  face_sets = 2
+  name = 'outlet'
+  face_set_ids = 2
   condition = 'pressure dirichlet'
-  data      = 0.0
-/
-&FLOW_BC
-  face_sets = 2
-  condition = 'velocity neumann'
+  data_constant = 0.0
 /
 
 &BODY

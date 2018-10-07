@@ -60,35 +60,31 @@ Hack to hit the final time exactly
 
 Inlet pressure
 &FLOW_BC
-  face_sets = 1
+  name = 'inlet'
+  face_set_ids = 1
   condition = 'pressure dirichlet'
-  data      = 3.0
-/
-&FLOW_BC
-  face_sets = 1
-  condition = 'velocity neumann'
+  data_constant = 3.0
 /
 
 Outlet pressure
 &FLOW_BC
-  face_sets = 2
+  name = 'outlet'
+  face_set_ids = 2
   condition = 'pressure dirichlet'
-  data      = 0.0
-/
-&FLOW_BC
-  face_sets = 2
-  condition = 'velocity neumann'
+  data_constant = 0.0
 /
 
 Pipe walls
 &FLOW_BC
-  face_sets = 3
+  name = 'wall'
+  face_set_ids = 3
   condition = 'no slip'
 /
 
 Pipe walls
 &FLOW_BC
-  face_sets = 4
+  name = 'symmetry'
+  face_set_ids = 4
   condition = 'slip'
 /
 
