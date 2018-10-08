@@ -6,16 +6,14 @@ outlet (r=2). Free slip BC along the walls. rho = 4. The analytic solution is
 
   (u,v) = (\cos\theta,\sin\theta)*(1/r),  p = 5/2 - 2/r^2
 
-NB: Due to current limitations, the velocity is a constant directed along
-the axis of the flow channel and is not exactly radially directed. This
-certainly has an effect on the solution. In addition, we are using ortho
-operators here, though this ought to be very good for the mesh used. Also
-we would prefer to initialize the velocity with the exact solution, but
-this isn't currently possible, so we have some initial transient we aren't
-really interested in computing.
+NB: We would prefer to initialize the velocity with the exact solution, but
+due to current limitations this isn't possible and instead initialize with
+a constant velocity direct along the axis of the flow channel. Thus we have
+an initial transient we aren't really interested in computing. In addition,
+we are using ortho operators here, though this ought to be very good for the
+mesh used.
 
-
-&MESH mesh_file = 'mesh1-rotz.gen'/
+&MESH mesh_file = 'mesh1.gen'/
 
 &OUTPUTS
   output_t = 0.0, 20.0
@@ -38,27 +36,33 @@ Hack to hit the final time exactly
 /
 
 &FLOW_CORRECTOR
-  rel_tol = 1.0e-10
+  rel_tol = 1.0e-6
   abs_tol = 0.0
-  max_ds_iter = 50
-  max_amg_iter = 5
+  max_ds_iter = 10
+  max_amg_iter = 25
   krylov_method = 'cg'
 /
 
 &NUMERICS
-  dt_init = 0.00001
+  dt_init = 1.0e-2
   dt_grow = 1.05
   dt_min  = 1.0e-6
   dt_max  = 1.0
 /
 
-TODO: WE WANT A FUNCTION HERE: (u,v,w) = (x,y,0) => radial unit velocity on r = 0.
+&VFUNCTION
+  name = 'velocity'
+  type = 'div-radial-cyl-flow'
+  axis = 0, 0, 1
+/
+
 Inlet velocity
 &FLOW_BC
   name = 'inflow'
   face_set_ids = 1
   condition = 'velocity dirichlet'
-  data_constant = 1.0, 0.0, 0.0
+  !data_constant = 1.0, 0.0, 0.0
+  data_function = 'velocity'
 /
 &FLOW_BC
   name = 'inflow-p'
@@ -81,7 +85,7 @@ Pipe walls
   condition = 'slip'
 /
 
-!TODO: WE WANT A FUNCTION HERE: (u,v,w) = (x/(x^2+y^2), y/(x^2+y^2), 0)
+!TODO: WANT TO USE THE "VELOCITY" VFUNCTION HERE
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1

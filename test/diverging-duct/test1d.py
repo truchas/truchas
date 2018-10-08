@@ -12,7 +12,7 @@ import TruchasTest
 
 class DivergingDuct(TruchasTest.GoldenTestCase):
 
-  test_name = 'diverging-duct-old-1'
+  test_name = 'diverging-duct-1d'
   num_procs = 4 # with a parallel executable
 
   # Override the default setUp, omitting the opening of the golden output
@@ -31,7 +31,7 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     cc = self.test_output.get_mesh().centroids()
     p = 2.5 - 2 / (cc[:,0]**2 + cc[:,1]**2)
 
-    tol = 0.16
+    tol = 0.17
     error = max(abs((test-p)/p))
     if error > tol:
       print 'pressure: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
@@ -51,8 +51,8 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     v = cc[:,1] / (cc[:,0]**2 + cc[:,1]**2)
 
     fail = 0
+    tol = 1e-6 # WILL NEED TO BE ADJUSTED (PER COMPONENT)
 
-    tol = 0.015
     error = max(abs(test[:,0] - u)/max(abs(u)))
     if error > tol:
       fail += 1
@@ -60,7 +60,6 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     else:
       print 'x-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
-    tol = 0.18
     error = max(abs(test[:,1] - v)/max(abs(v)))
     if error > tol:
       fail += 1
@@ -68,7 +67,6 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     else:
       print 'y-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
-    tol = 1.0e-11
     error = max(abs(test[:,2]))
     if error > tol:
       fail += 1

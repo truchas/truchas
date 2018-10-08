@@ -324,22 +324,22 @@ add_pytruchas_test(pipe-flow-2b pipe-flow/test2b.py PROCESSORS 4 LABELS FLOW NOT
 #add_pytruchas_test(pipe-flow-2d pipe-flow/test2d.py PROCESSORS 4 LABELS FLOW)
 
 # DIVERGING DUCT TESTS -- OLD FLOW SOLVER
-add_pytruchas_test(diverging-duct-old-0 diverging-duct-old-0/test0.py PROCESSORS 4 LABELS OLD_FLOW)
-add_pytruchas_test(diverging-duct-old-1 diverging-duct-old-1/test1.py PROCESSORS 4 LABELS OLD_FLOW)
-add_pytruchas_test(diverging-duct-old-2 diverging-duct-old-2/test2.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(diverging-duct-old-0 diverging-duct-old/test0.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(diverging-duct-old-1a diverging-duct-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(diverging-duct-old-1b diverging-duct-old/test1b.py PROCESSORS 4 LABELS OLD_FLOW)
 # These should work after the discretization is fixed
 # see https://gitlab.com/truchas/truchas/issues/163
-#add_pytruchas_test(diverging-duct-old-3 diverging-duct-old-3/test3.py PROCESSORS 4 LABELS OLD_FLOW)
-#add_pytruchas_test(diverging-duct-old-4 diverging-duct-old-4/test4.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(diverging-duct-old-1c diverging-duct-old/test1c.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(diverging-duct-old-1d diverging-duct-old/test1d.py PROCESSORS 4 LABELS OLD_FLOW)
 
 # DIVERGING DUCT TESTS -- NEW FLOW SOLVER
-add_pytruchas_test(diverging-duct-0 diverging-duct-0/test0.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(diverging-duct-1 diverging-duct-1/test1.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(diverging-duct-2 diverging-duct-2/test2.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(diverging-duct-0  diverging-duct/test0.py  PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(diverging-duct-1a diverging-duct/test1a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(diverging-duct-1b diverging-duct/test1b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 # These should work after the discretization is fixed
 # see https://gitlab.com/truchas/truchas/issues/163
-#add_pytruchas_test(diverging-duct-3 diverging-duct-3/test3.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-#add_pytruchas_test(diverging-duct-4 diverging-duct-4/test4.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(diverging-duct-1c diverging-duct/test1c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(diverging-duct-1d diverging-duct/test1d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
 # HYDROSTATIC TESTS -- OLD FLOW SOLVER
 add_pytruchas_test(hydrostatic hydrostatic-old/testHydrostatic.py PROCESSORS 4 LABELS OLD_FLOW)

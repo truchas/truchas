@@ -12,7 +12,7 @@ import TruchasTest
 
 class DivergingDuct(TruchasTest.GoldenTestCase):
 
-  test_name = 'diverging-duct-old-3'
+  test_name = 'diverging-duct-1c'
   num_procs = 4 # with a parallel executable
 
   # Override the default setUp, omitting the opening of the golden output
@@ -31,7 +31,7 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     cc = self.test_output.get_mesh().centroids()
     p = 2.5 - 2 / (0.5*(cc[:,0] + cc[:,2])**2 + cc[:,1]**2)
 
-    tol = 0.16
+    tol = 0.17
     error = max(abs((test-p)/p))
     if error > tol:
       print 'pressure: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
