@@ -131,7 +131,7 @@ contains
     real(r8), intent(in) :: x(0:*)
     real(r8), intent(in) :: p(*)
     integer, value :: dim ! had better be 3
-    real(r8) :: fx(3), adota, xdota
+    real(r8) :: fx(dim), adota, xdota
     adota = p(1)*p(1) + p(2)*p(2) + p(3)*p(3)
     xdota = x(1)*p(1) + x(2)*p(2) + x(3)*p(3)
     fx = x(1:3) - (xdota/adota)*p(1:3)
