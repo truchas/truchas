@@ -37,7 +37,7 @@
 
 module porous_drag_model_class
   use kinds, only: r8
-  use flow_mesh_type
+  use unstr_mesh_type
   use parameter_list_type
   implicit none
   private
@@ -45,7 +45,7 @@ module porous_drag_model_class
   public :: porous_drag_model
 
   type, abstract :: porous_drag_model
-    type(flow_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
   contains
     procedure(read_params), deferred :: read_params
     procedure(init), deferred :: init
@@ -64,7 +64,7 @@ module porous_drag_model_class
     subroutine init(this, mesh)
       import
       class(porous_drag_model), intent(inout) :: this
-      type(flow_mesh), pointer, intent(in) :: mesh
+      type(unstr_mesh), intent(in), target :: mesh
     end subroutine init
 
     subroutine setup(this, vel_cc)

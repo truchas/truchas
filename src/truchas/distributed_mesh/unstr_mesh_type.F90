@@ -143,7 +143,10 @@ module unstr_mesh_type
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
     integer, allocatable :: xcnhbr(:), cnhbr(:) ! cell neighbors
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
+    integer, allocatable :: fcell(:,:)  ! face cell neighbors
     real(r8), allocatable :: normal(:,:)
+    real(r8), allocatable :: cell_centroid(:,:)
+    real(r8), allocatable :: face_centroid(:,:)
     !! Mesh interface links.
     integer :: nlink = 0, nlink_onP = 0
     integer, allocatable :: lface(:,:)        ! pointer due to localize_index_array
@@ -162,6 +165,8 @@ module unstr_mesh_type
     procedure :: write_profile
     procedure :: check_bndry_face_set
     procedure :: get_link_set_ids
+    procedure :: init_cell_centroid
+    procedure :: init_face_centroid
   end type unstr_mesh
 
 contains
@@ -186,6 +191,30 @@ contains
       end associate
     end do
   end subroutine compute_geometry
+
+  subroutine init_cell_centroid(this)
+    class(unstr_mesh), intent(inout) :: this
+    integer :: j
+    if (allocated(this%cell_centroid)) return
+    allocate(this%cell_centroid(3,this%ncell))
+    do j = 1, this%ncell
+      associate(cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+        this%cell_centroid(:,j) = sum(this%x(:,cell_nodes),dim=2)/size(cell_nodes)
+      end associate
+    end do
+  end subroutine init_cell_centroid
+
+  subroutine init_face_centroid(this)
+    class(unstr_mesh), intent(inout) :: this
+    integer :: j
+    if (allocated(this%face_centroid)) return
+    allocate(this%face_centroid(3,this%nface))
+    do j = 1, this%nface
+      associate(face_nodes => this%fnode(this%xfnode(j):this%xfnode(j+1)-1))
+        this%face_centroid(:,j) = sum(this%x(:,face_nodes),dim=2)/size(face_nodes)
+      end associate
+    end do
+  end subroutine init_face_centroid
 
   !! Creates the global ragged CNODE array on the IO process, 0-sized on others.
   subroutine get_global_cnode_array (this, xcnode, cnode)

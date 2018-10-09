@@ -52,7 +52,6 @@ module flow_projection_type
   use truchas_logging_services
   use truchas_timers
   use flow_domain_types
-  use flow_mesh_type
   use unstr_mesh_type
   use flow_props_type
   use flow_bc_type
@@ -68,7 +67,7 @@ module flow_projection_type
 
   type, public :: flow_projection
     private
-    type(flow_mesh), pointer :: mesh => null() ! unowned reference
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(flow_bc), pointer :: bc => null() ! unowned reference
     type(fischer_guess) :: fg
     type(hypre_hybrid) :: solver
@@ -101,7 +100,7 @@ contains
     use parameter_list_type
 
     class(flow_projection), intent(out) :: this
-    type(flow_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(flow_bc), pointer, intent(in) :: bc
     type(parameter_list), intent(inout) :: params
 
@@ -109,20 +108,18 @@ contains
     type(pcsr_graph), pointer :: g
     type(pcsr_matrix), pointer :: A
     type(ip_desc), pointer :: row_ip
-    type(unstr_mesh), pointer :: m
     type(parameter_list), pointer :: plist
 
     this%mesh => mesh
     this%bc => bc
 
-    m => mesh%mesh
-    allocate(this%grad_fc(3,m%nface))
-    allocate(this%delta_p_cc(m%ncell))
-    allocate(this%gravity_head(2,m%nface))
-    allocate(this%vel_cc_star(3,m%ncell))
-    allocate(this%weights_cf(2,m%nface))
-    allocate(this%grad_p_rho_cc(3,m%ncell))
-    allocate(this%grad_p_rho_fc(3,m%nface))
+    allocate(this%grad_fc(3,mesh%nface))
+    allocate(this%delta_p_cc(mesh%ncell))
+    allocate(this%gravity_head(2,mesh%nface))
+    allocate(this%vel_cc_star(3,mesh%ncell))
+    allocate(this%weights_cf(2,mesh%nface))
+    allocate(this%grad_p_rho_cc(3,mesh%ncell))
+    allocate(this%grad_p_rho_fc(3,mesh%nface))
 
 
     this%grad_fc = 0.0_r8
@@ -132,27 +129,27 @@ contains
     this%grad_p_rho_cc = 0.0_r8
     this%grad_p_rho_fc = 0.0_r8
 
-    do j = 1, m%nface_onP
+    do j = 1, mesh%nface_onP
       associate (n => mesh%fcell(:,j), fc => mesh%face_centroid(:,j), &
           cc => mesh%cell_centroid, w => this%weights_cf(:,j))
-        if (n(1) > 0) then
-          w(1) = sum((fc(:)-cc(:,n(1)))**2)
-          w(2) = sum((fc(:)-cc(:,n(2)))**2)
+        if (n(2) > 0) then
+          w(1) = sum((fc(:)-cc(:,n(2)))**2)
+          w(2) = sum((fc(:)-cc(:,n(1)))**2)
           w(:) = w(:) / sum(w(:))
         else
           w(:) = [0.0_r8, 1.0_r8]
         end if
       end associate
     end do
-    allocate(this%rhs(m%ncell))
+    allocate(this%rhs(mesh%ncell))
 
     !! Create a CSR matrix graph for the pressure poisson system.
     allocate(g)
-    row_ip => m%cell_ip
+    row_ip => mesh%cell_ip
     call g%init (row_ip)
-    do j = 1, m%ncell_onP
+    do j = 1, mesh%ncell_onP
       call g%add_edge(j,j)
-      associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
+      associate (cn => mesh%cnhbr(mesh%xcnhbr(j):mesh%xcnhbr(j+1)-1))
         do i = 1, size(cn)
           if (cn(i) > 0) call g%add_edge(j, cn(i))
         end do
@@ -218,7 +215,7 @@ contains
 
     ds => flow_gradient_coefficients()
 
-    associate (m => this%mesh%mesh, rho_f => props%rho_fc, &
+    associate (m => this%mesh, rho_f => props%rho_fc, &
         cell_t => props%cell_t, face_t => props%face_t)
       do j = 1, m%ncell_onP
         associate (nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
@@ -252,17 +249,7 @@ contains
     end associate
 
 
-    associate (m => this%mesh%mesh, rhs => this%rhs)
-
-#if ASDF
-      associate( faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-        write(*,'("vel_fn/normal at [",i4,"] y- ",2es20.12)') faces(1), vel(faces(1)), m%normal(2,faces(1))
-        write(*,'("vel_fn/normal at [",i4,"] y+ ",2es20.12)') faces(3), vel(faces(3)), m%normal(2,faces(3))
-        write(*,'("vel_fn/normal at [",i4,"] x- ",2es20.12)') faces(5), vel(faces(5)), m%normal(1,faces(5))
-        write(*,'("vel_fn/normal at [",i4,"] x+ ",2es20.12)') faces(6), vel(faces(6)), m%normal(1,faces(6))
-        write(*,'("faces areas: ",4es20.12)') m%area([faces(1),faces(3),faces(5),faces(6)])
-      end associate
-#endif
+    associate (m => this%mesh, rhs => this%rhs)
 
       do j = 1, m%ncell_onP
         rhs(j) = 0.0_r8
@@ -289,13 +276,13 @@ contains
           rho_f => props%rho_fc)
         do i = 1, size(faces)
           fi = faces(i)
-          if (fi > this%mesh%mesh%nface_onP) cycle
+          if (fi > this%mesh%nface_onP) cycle
           if (props%face_t(fi) /= regular_t) cycle ! no bcs on non-regular faces
 
-          j = this%mesh%fcell(2,fi) ! cell index
-          ASSERT(this%mesh%fcell(1,fi) == 0)
+          j = this%mesh%fcell(1,fi) ! cell index
+          ASSERT(this%mesh%fcell(2,fi) == 0)
 
-          coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
+          coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
           call A%add_to(j, j, coeff)
           this%rhs(j) = this%rhs(j) + coeff*values(i)
 
@@ -308,11 +295,11 @@ contains
         associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
           pressure_fix: do i = 1, size(faces)
             fi = faces(i)
-            j = this%mesh%fcell(2,fi) ! cell index
-            ASSERT(this%mesh%fcell(1,fi) == 0)
+            j = this%mesh%fcell(1,fi) ! cell index
+            ASSERT(this%mesh%fcell(2,fi) == 0)
 
             if (props%face_t(fi) == regular_t) then
-              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/this%mesh%mesh%volume(j)
+              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
               call A%add_to(j, j, coeff)
               pressure_pinned = .true.
               ! no adjust to rhs requires for 0 dirichlet value
@@ -339,14 +326,14 @@ contains
     integer :: j, i, n
     real(r8) :: rho
 
-    associate( fcell => this%mesh%fcell, m => this%mesh%mesh, g => this%gravity_head, &
+    associate (g => this%gravity_head, &
         cc => this%mesh%cell_centroid, fc => this%mesh%face_centroid, p => props)
 
       g = 0.0_r8
 
-      do j = 1, m%nface_onP
+      do j = 1, this%mesh%nface_onP
         do i = 1, 2
-          n = fcell(i,j)
+          n = this%mesh%fcell(i,j)
           if (n == 0) cycle
 
           rho = p%rho_cc(n) + p%rho_delta_cc(n)
@@ -354,8 +341,8 @@ contains
         end do
       end do
 
-      call gather_boundary(m%face_ip, g(1,:))
-      call gather_boundary(m%face_ip, g(2,:))
+      call gather_boundary(this%mesh%face_ip, g(1,:))
+      call gather_boundary(this%mesh%face_ip, g(2,:))
     end associate
     ! Truchas has a gravity_limiter... Do we need this?
   end subroutine setup_gravity
@@ -371,16 +358,15 @@ contains
 
     ! cell -> face interpolation
     vel_fn = 0.0_r8
-    associate (m => this%mesh%mesh, v => this%vel_cc_star, gpn => grad_p_rho_cc_n, &
-        w => this%weights_cf)
-      do i=1, m%ncell_onP
+    associate (v => this%vel_cc_star, gpn => grad_p_rho_cc_n, w => this%weights_cf)
+      do i=1, this%mesh%ncell_onP
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
-      call gather_boundary(m%cell_ip, v)
+      call gather_boundary(this%mesh%cell_ip, v)
       call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%face_t, 0.0_r8)
     end associate
     ! subtract dynamic pressure grad
-    associate (m => this%mesh%mesh, gp_fc => this%grad_p_rho_fc)
+    associate (m => this%mesh, gp_fc => this%grad_p_rho_fc)
       ! enforced in grad_p_rho: this%grad_p_rho_fc == 0 where rho_fc == 0
       do j = 1, m%nface_onP
         vel_fn(j) = vel_fn(j) - dt*dot_product(m%normal(:,j), gp_fc(:,j))/m%area(j)
@@ -396,14 +382,11 @@ contains
       associate (faces => this%bc%v_zero_normal%index)
         do i = 1, size(faces)
           j = faces(i)
-          ASSERT(this%mesh%fcell(1,j) == 0)
+          ASSERT(this%mesh%fcell(2,j) == 0)
           vel_fn(j) = 0
         end do
       end associate
       call gather_boundary(m%face_ip, vel_fn)
-#if ASDF
-      write(*,'("Vel_Fn[",i4,"]: ",6es16.8)') Q, vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-#endif
     end associate
   end subroutine setup_face_velocity
 
@@ -440,7 +423,7 @@ contains
     write(*,'("DP[",i3,"]: ",es15.5)') Q, this%delta_p_cc(Q)
 #endif
     ! not sure if this call is necesary
-    call gather_boundary(this%mesh%mesh%cell_ip, this%delta_p_cc)
+    call gather_boundary(this%mesh%cell_ip, this%delta_p_cc)
 
     ! correct face and cell centered quantities
     call this%velocity_fc_correct(dt, props, vel_fc)
@@ -466,34 +449,32 @@ contains
         this%bc%dp_dirichlet, props%face_t, 0.0_r8)
 
     ! divergence free face velocity
-    associate (m => this%mesh%mesh)
-      do j = 1, m%nface_onP
-        if (props%face_t(j) > regular_t) then
-          vel_fc(j) = 0.0_r8
-        else
-          vel_fc(j) = vel_fc(j) - &
-              dt*dot_product(this%grad_fc(:,j),m%normal(:,j)/m%area(j))/props%rho_fc(j)
-        end if
+    do j = 1, this%mesh%nface_onP
+      if (props%face_t(j) > regular_t) then
+        vel_fc(j) = 0.0_r8
+      else
+        vel_fc(j) = vel_fc(j) - &
+            dt*dot_product(this%grad_fc(:,j),this%mesh%normal(:,j)/this%mesh%area(j))/props%rho_fc(j)
+      end if
+    end do
+
+    associate (index => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
+      do i = 1, size(index)
+        j = index(i)
+        vel_fc(j) = dot_product(value(:,i), this%mesh%normal(:,j))/this%mesh%area(j)
       end do
-
-      associate (index => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
-        do i = 1, size(index)
-          j = index(i)
-          vel_fc(j) = dot_product(value(:,i), m%normal(:,j))/m%area(j)
-        end do
-      end associate
-
-      ! handle zero_normal bcs
-      associate (faces => this%bc%v_zero_normal%index)
-        do i = 1, size(faces)
-          j = faces(i)
-          ASSERT(this%mesh%fcell(1,j) == 0)
-          vel_fc(j) = 0
-        end do
-      end associate
-
-      call gather_boundary(m%face_ip, vel_fc)
     end associate
+
+    ! handle zero_normal bcs
+    associate (faces => this%bc%v_zero_normal%index)
+      do i = 1, size(faces)
+        j = faces(i)
+        ASSERT(this%mesh%fcell(2,j) == 0)
+        vel_fc(j) = 0
+      end do
+    end associate
+
+    call gather_boundary(this%mesh%face_ip, vel_fc)
 
     ! there may be some magic here about setting fluxing velocities on void cells.
     ! not sure if it's applicable when using face based (as opposed to side based) indexing
@@ -508,31 +489,10 @@ contains
     real(r8) :: dp_vof, vof, g_vof, g_dp_vof
     integer :: i
 
-    associate (m => this%mesh%mesh, p => props, dp => this%delta_p_cc)
-      ! remove null space from dp if applicable
-!!$      if (.not.(this%bc%pressure_d .or. p%any_void)) then
-!!$        ! maybe this should use inactive_c... needs to be consistenent with how
-!!$        ! the operator is constructed
-!!$        dp_vof = 0.0_r8
-!!$        vof = 0.0_r8
-!!$        do i = 1, m%ncell_onP
-!!$          vof = vof + p%vof(i)*m%volume(i)
-!!$          dp_vof = dp_vof + p%vof(i)*m%volume(i)*dp(i)
-!!$        end do
-!!$        g_vof = global_sum(vof)
-!!$        g_dp_vof = global_sum(dp_vof)
-!!$#if ASDF
-!!$        print* , "<VOF>: ", g_vof
-!!$        print* , "<DP_VOF>: ", g_dp_vof
-!!$#endif
-!!$        dp(1:m%ncell_onP) = dp(1:m%ncell_onP) - g_dp_vof/g_vof
-!!$      endif
+    associate (p => props, dp => this%delta_p_cc)
       p_cc = p_cc + dp
-      call gather_boundary(m%cell_ip, p_cc)
+      call gather_boundary(this%mesh%cell_ip, p_cc)
     end associate
-#if ASDF
-    write(*,'("Corrected P_CC[",i3,"]: ",es15.5)') Q, p_cc(Q)
-#endif
   end subroutine pressure_cc_correct
 
 
@@ -544,52 +504,21 @@ contains
     !-
     integer :: i, j
 
-    associate (m => this%mesh%mesh, rho => props%rho_fc, &
+    associate (rho => props%rho_fc, &
         gp_cc => this%grad_p_rho_cc, gp_fc => this%grad_p_rho_fc)
-
-#if ASDF
-      associate (faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-        write(*,'("<< face_t at [",i4,"] y- ",i4)') faces(1), props%face_t(faces(1))
-        write(*,'("<< face_t at [",i4,"] y+ ",i4)') faces(3), props%face_t(faces(3))
-        write(*,'("<< face_t at [",i4,"] x- ",i4)') faces(5), props%face_t(faces(5))
-        write(*,'("<< face_t at [",i4,"] x+ ",i4)') faces(6), props%face_t(faces(6))
-      end associate
-#endif
-
 
       call gradient_cf(gp_fc, p_cc, this%bc%p_neumann, &
           this%bc%p_dirichlet, props%face_t, 0.0_r8, this%gravity_head)
 
-#if ASDF
-      associate (faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-        write(*,'("<< grad(p) at [",i4,"] y- ",3es20.12)') faces(1), gp_fc(:,faces(1))
-        write(*,'("<< grad(p) at [",i4,"] y+ ",3es20.12)') faces(3), gp_fc(:,faces(3))
-        write(*,'("<< grad(p) at [",i4,"] x- ",3es20.12)') faces(5), gp_fc(:,faces(5))
-        write(*,'("<< grad(p) at [",i4,"] x+ ",3es20.12)') faces(6), gp_fc(:,faces(6))
-      end associate
-#endif
-
-
-      do j = 1, m%nface_onP
+      do j = 1, this%mesh%nface_onP
         if (props%face_t(j) <= regular_t) then
           gp_fc(:,j) = gp_fc(:,j)/rho(j)
         else
           gp_fc(:,j) = 0.0_r8
         end if
       end do
-#if ASDF
-      associate (faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-        write(*,'("grad(p) at [",i4,"] y- ",3es20.12)') faces(1), gp_fc(:,faces(1))
-        write(*,'("grad(p) at [",i4,"] y+ ",3es20.12)') faces(3), gp_fc(:,faces(3))
-        write(*,'("grad(p) at [",i4,"] x- ",3es20.12)') faces(5), gp_fc(:,faces(5))
-        write(*,'("grad(p) at [",i4,"] x+ ",3es20.12)') faces(6), gp_fc(:,faces(6))
-      end associate
-#endif
-      call gather_boundary(m%face_ip, gp_fc)
+      call gather_boundary(this%mesh%face_ip, gp_fc)
       call interpolate_fc(gp_cc, gp_fc, props%face_t, this%bc%p_neumann%index)
-#if ASDF
-      write(*,'("grad_p_rho_cc[",i4,"] ",3es20.12)') Q, gp_cc(:,Q)
-#endif
     end associate
   end subroutine grad_p_rho
 
@@ -603,26 +532,13 @@ contains
     !-
     integer :: i, j
 
-#if ASDF
-    write(*,*) "<<< VELOCITY_CC_CORRECT"
-    write(*,*) "dt: ", dt
-    write(*,'("vel_cc[",i4,"] ",3es20.12)') Q, vel_cc(:,Q)
-    write(*,'("grad_p_rho_cc_n[",i4,"] ",3es20.12)') Q, grad_p_rho_cc_n(:,Q)
-    write(*,'("grad_p_rho_cc[",i4,"]   ",3es20.12)') Q, this%grad_p_rho_cc(:,Q)
-#endif
-    associate (m => this%mesh%mesh)
-      ! assumes dynamic pressure gradients have already been computed
-      do i = 1, m%ncell_onP
-        ! -dt * grad(dP)/rho
-        vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
-      end do
-      call gather_boundary(m%cell_ip, vel_cc)
-    end associate
-#if ASDF
-    write(*,'("vel_cc[",i4,"] ",3es20.12)') Q, vel_cc(:,Q)
-#endif
+    ! assumes dynamic pressure gradients have already been computed
+    do i = 1, this%mesh%ncell_onP
+      ! -dt * grad(dP)/rho
+      vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
+    end do
+    call gather_boundary(this%mesh%cell_ip, vel_cc)
+
   end subroutine velocity_cc_correct
-
-
 
 end module flow_projection_type

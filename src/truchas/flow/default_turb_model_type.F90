@@ -20,7 +20,7 @@ module default_turb_model_type
   use kinds
   use turbulence_model_class
   use parameter_list_type
-  use flow_mesh_type
+  use unstr_mesh_type
   use flow_props_type
   implicit none
   private
@@ -55,7 +55,7 @@ contains
 
   subroutine init(this, mesh)
     class(default_turb_model), intent(inout) :: this
-    type(flow_mesh), pointer, intent(in) :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
 
     ! nothing
   end subroutine init

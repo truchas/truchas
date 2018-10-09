@@ -10,7 +10,7 @@ program test_pressure_poisson
   use truchas_logging_services
   use parameter_list_type
   use flow_operators
-  use flow_mesh_type
+  use unstr_mesh_type
   use scalar_func_class
   use scalar_func_tools
   use bndry_func_class
@@ -19,7 +19,7 @@ program test_pressure_poisson
   character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(parameter_list), pointer :: p, pp
   !type(flow_bc), pointer :: bc
-  type(flow_mesh), pointer :: mesh
+  type(unstr_mesh), pointer :: mesh
   integer :: i, in
 
   call parallel_init(argv)
@@ -40,11 +40,10 @@ contains
     use mesh_manager
     use unstr_mesh_type
 
-    type(flow_mesh), pointer, intent(out) :: mesh
+    type(unstr_mesh), pointer, intent(out) :: mesh
     character(:), allocatable :: indir
     type(parameter_list) :: pmesh
     type(parameter_list), pointer :: p
-    type(unstr_mesh), pointer :: umesh
 
     call process_command_line(indir)
 
@@ -52,30 +51,30 @@ contains
     call p%set('mesh-file', indir//"/square-32x32.g")
     call init_mesh_manager(pmesh)
 
-    umesh => unstr_mesh_ptr("MESH")
-    allocate(mesh)
-    call mesh%init(umesh)
+    mesh => unstr_mesh_ptr("MESH")
+    call mesh%init_cell_centroid
+    call mesh%init_face_centroid
     print *, "INTIALIZED MESH"
   end subroutine init_mesh
 
 
   subroutine interpolate_fc_test(mesh)
-    type(flow_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     !-
     integer :: j
     real(r8), allocatable :: xf(:,:), xc(:,:)
     real(r8) :: err
 
-    associate(m => mesh%mesh, fc => mesh%face_centroid, cc => mesh%cell_centroid)
-      allocate(xc(3,m%ncell))
-      allocate(xf(3,m%nface))
-      do j = 1, m%nface
+    associate(fc => mesh%face_centroid, cc => mesh%cell_centroid)
+      allocate(xc(3,mesh%ncell))
+      allocate(xf(3,mesh%nface))
+      do j = 1, mesh%nface
         xf(:,j) = fc(:,j)
       end do
 
       call interpolate_fc(xc, xf)
 
-      err = maxval(abs(cc(:,1:m%ncell_onP)-xc(:,1:m%ncell_onP)))
+      err = maxval(abs(cc(:,1:mesh%ncell_onP)-xc(:,1:mesh%ncell_onP)))
       print *, "max error for interpolate_fc: ", err
     end associate
 
@@ -85,7 +84,7 @@ contains
   subroutine gradient_cf_test(id, mesh, init_field, flux_bc, dirichlet_bc, &
       solution_x, solution_y, solution_z)
     integer, intent(in) :: id
-    type(flow_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in) :: mesh
     class(scalar_func), intent(in) :: init_field, solution_x, solution_y, solution_z
     class(bndry_func), intent(inout) :: dirichlet_bc, flux_bc
     !-
@@ -95,10 +94,10 @@ contains
 
     args(0) = 0.0_r8
 
-    associate (m => mesh%mesh, cc => mesh%cell_centroid)
-      allocate(x(m%ncell))
-      allocate(g(3,m%nface))
-      do i = 1, m%ncell
+    associate (cc => mesh%cell_centroid)
+      allocate(x(mesh%ncell))
+      allocate(g(3,mesh%nface))
+      do i = 1, mesh%ncell
         args(1:3) = cc(:,i)
         x(i) = init_field%eval(args)
       end do
@@ -111,8 +110,8 @@ contains
     linf_y = -huge(1.0_r8)
     linf_z = -huge(1.0_r8)
 
-    associate (m => mesh%mesh, fc => mesh%face_centroid)
-      do j = 1, m%nface_onP
+    associate (fc => mesh%face_centroid)
+      do j = 1, mesh%nface_onP
         args(1:3) = fc(:,j)
         linf_x = max(linf_x, abs(g(1,j)-solution_x%eval(args)))
         linf_y = max(linf_y, abs(g(2,j)-solution_y%eval(args)))

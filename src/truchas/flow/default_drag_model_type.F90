@@ -47,7 +47,7 @@ contains
 
   subroutine init(this, mesh)
     class(default_drag_model), intent(inout) :: this
-    type(flow_mesh), pointer, intent(in) :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
 
     ! nothing
   end subroutine init

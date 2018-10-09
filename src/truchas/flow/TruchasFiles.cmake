@@ -17,7 +17,6 @@ set(FLOW_FILES
 	flow/flow_bc_factory_type.F90
 	flow/flow_bc_type.F90
 	flow/flow_driver.F90
-	flow/flow_mesh_type.F90
 	flow/flow_operators.F90
 	flow/turbulence_model_class.F90
 	flow/default_turb_model_type.F90

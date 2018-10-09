@@ -43,7 +43,7 @@
 module fischer_guess_type
 
   use kinds, only: r8
-  use flow_mesh_type
+  use unstr_mesh_type
   use index_partitioning
   use parallel_communication
   use pcsr_matrix_type
@@ -53,7 +53,7 @@ module fischer_guess_type
 
   type, public :: fischer_guess
     private
-    type(flow_mesh), pointer :: mesh ! unowned reference
+    type(unstr_mesh), pointer :: mesh ! unowned reference
     real(r8), allocatable :: b_tilde(:,:), x_tilde(:,:), x_guess(:)
     integer :: size, max_size
     integer :: lri ! least-recently-inserted
@@ -70,7 +70,7 @@ contains
     use parameter_list_type
 
     class(fischer_guess), intent(out) :: this
-    type(flow_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(inout) :: params
 
     integer :: n
@@ -82,7 +82,7 @@ contains
     this%mesh => mesh
     this%size = 0
     this%lri = 1
-    n = mesh%mesh%ncell
+    n = mesh%ncell
 
     allocate(this%b_tilde(n,this%max_size+1), this%x_tilde(n,this%max_size+1), &
         this%x_guess(n))
@@ -107,7 +107,7 @@ contains
     x = 0.0_r8
     if (this%max_size < 1) return
 
-    nop = this%mesh%mesh%ncell_onP
+    nop = this%mesh%ncell_onP
     this%x_guess = 0.0_r8
 
     do i = 1, this%size
@@ -137,11 +137,11 @@ contains
 
     if (this%max_size < 1) return
 
-    nop = this%mesh%mesh%ncell_onP
+    nop = this%mesh%ncell_onP
     idx = this%size+1
 
     this%x_tilde(1:nop,idx) = x_soln(1:nop) - this%x_guess(1:nop)
-    call gather_boundary(this%mesh%mesh%cell_ip, this%x_tilde(:,idx))
+    call gather_boundary(this%mesh%cell_ip, this%x_tilde(:,idx))
 
     do i = 1, nop
       call lhs%get_row_view(i, mval, midx)

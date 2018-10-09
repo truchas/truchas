@@ -326,6 +326,7 @@ contains
 
     !! Initialize the secondary face-node indexing array.
     call init_face_node_data (this)
+    call init_face_cell_data (this)
 
     !! Generate the cell neighbor data for each subdomain.
     call get_cell_neighbor_array (this%xcnode, this%cnode, this%xcnhbr, this%cnhbr, stat)
@@ -1034,6 +1035,32 @@ contains
     ASSERT(minval(this%fnode) > 0)
 
   end subroutine init_face_node_data
+
+  !! This subroutine initializes the face-cell connectivity component %FCELL.
+  !! FCELL(:,j) are the IDs of the two cells containing the oriented face j:
+  !! its normal points out of cell FCELL(1,j) into cell FCELL(2,j). If the
+  !! face is on the subdomain boundary, then one of the two values will be 0.
+  !! However, true domain boundary faces are always on-process and oriented
+  !! such that FCELL(1,j) is non-zero and FCELL(2,j) is 0.
+
+  subroutine init_face_cell_data(this)
+    type(unstr_mesh), intent(inout) :: this
+    integer :: j, k, n
+    allocate(this%fcell(2,this%nface))
+    this%fcell = 0
+    do j = 1, this%ncell
+      associate (cell_faces => this%cface(this%xcface(j):this%xcface(j+1)-1))
+        do k = 1, size(cell_faces)
+          n = cell_faces(k)
+          if (btest(this%cfpar(j),pos=k)) then ! face oriented inward wrto cell
+            this%fcell(2,n) = j
+          else
+            this%fcell(1,n) = j
+          end if
+        end do
+      end associate
+    end do
+  end subroutine init_face_cell_data
 
   !! This subroutine initializes the interface link data.
 

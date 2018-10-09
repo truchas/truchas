@@ -5,7 +5,6 @@ module flow_operators
   use truchas_logging_services
   use unstr_mesh_type
   use flow_domain_types
-  use flow_mesh_type
   use bndry_func_class
   use bndry_vfunc_class
   use index_partitioning
@@ -21,7 +20,7 @@ module flow_operators
 
 
   type :: flow_operator
-    type(flow_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     ! ds = dxyz/||dxyz||^2 -- coefficients for computing face gradients
     ! for a face `f` adjacent to cells `i`,`j` oriented such that the face normal
     ! points into cell `i`, the face gradient is given by ds(:,f)*(P(i)-P(j))
@@ -35,23 +34,21 @@ module flow_operators
 contains
 
   subroutine flow_operators_init(mesh)
-    type(flow_mesh), pointer, intent(in) :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     !
-    type(unstr_mesh), pointer :: m
     integer :: j, c1, c2
 
     if (allocated(this)) return
 
     allocate(this)
     this%mesh => mesh
-    m => mesh%mesh
-    allocate(this%ds(3, m%nface))
-    allocate(this%work(m%nface))
+    allocate(this%ds(3,mesh%nface))
+    allocate(this%work(mesh%nface))
     this%ds = 0.0_r8
 
-    do j = 1, m%nface_onP
-      c1 = mesh%fcell(1,j) ! in
-      c2 = mesh%fcell(2,j) ! out
+    do j = 1, mesh%nface_onP
+      c1 = mesh%fcell(2,j) ! in
+      c2 = mesh%fcell(1,j) ! out
       if (c1 == 0) then
         this%ds(:,j) = mesh%face_centroid(:,j) - mesh%cell_centroid(:,c2)
         this%ds(:,j) = this%ds(:,j)/sum(this%ds(:,j)**2)
@@ -62,7 +59,7 @@ contains
     end do
 
     do j = 1, 3
-      call gather_boundary(m%face_ip, this%ds(j,:))
+      call gather_boundary(mesh%face_ip, this%ds(j,:))
     end do
   end subroutine flow_operators_init
 
@@ -82,13 +79,13 @@ contains
     ! volume tracker so there is a chance of calling things out of sync.
     INSIST(allocated(this))
 
-    associate (m => this%mesh%mesh, w_face => this%work)
+    associate (w_face => this%work)
       ! node average data stored in w_node0 workspace array
       call node_avg(x, w_node0, w_node1)
-      call gather_boundary(m%node_ip, w_node0)
+      call gather_boundary(this%mesh%node_ip, w_node0)
 
-      do i = 1, m%nface
-        associate (fn => m%fnode(m%xfnode(i):m%xfnode(i+1)-1))
+      do i = 1, this%mesh%nface
+        associate (fn => this%mesh%fnode(this%mesh%xfnode(i):this%mesh%xfnode(i+1)-1))
           select case (size(fn))
           case (3,4)
             ! linear interpolation of vertex values to face centroid is arithmetic mean
@@ -100,29 +97,29 @@ contains
         end associate
       end do
 
-      do i = 1, m%ncell_onP
+      do i = 1, this%mesh%ncell_onP
         gx(i) = 0.0_r8
         gy(i) = 0.0_r8
         gz(i) = 0.0_r8
-        associate (fi => m%cface(m%xcface(i):m%xcface(i+1)-1))
+        associate (fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
           do j = 1, size(fi)
             k = fi(j)
-            if (btest(m%cfpar(i),pos=j)) then ! true if normal points inward
+            if (btest(this%mesh%cfpar(i),pos=j)) then ! true if normal points inward
               ! note the thae normal associate with the mesh object has already been scaled
               ! by the face area, so we do not do it again
-              gx(i) = gx(i) - m%normal(1,k)*w_face(k)
-              gy(i) = gy(i) - m%normal(2,k)*w_face(k)
-              gz(i) = gz(i) - m%normal(3,k)*w_face(k)
+              gx(i) = gx(i) - this%mesh%normal(1,k)*w_face(k)
+              gy(i) = gy(i) - this%mesh%normal(2,k)*w_face(k)
+              gz(i) = gz(i) - this%mesh%normal(3,k)*w_face(k)
             else
-              gx(i) = gx(i) + m%normal(1,k)*w_face(k)
-              gy(i) = gy(i) + m%normal(2,k)*w_face(k)
-              gz(i) = gz(i) + m%normal(3,k)*w_face(k)
+              gx(i) = gx(i) + this%mesh%normal(1,k)*w_face(k)
+              gy(i) = gy(i) + this%mesh%normal(2,k)*w_face(k)
+              gz(i) = gz(i) + this%mesh%normal(3,k)*w_face(k)
             end if
           end do
         end associate
-        gx(i) = gx(i)/m%volume(i)
-        gy(i) = gy(i)/m%volume(i)
-        gz(i) = gz(i)/m%volume(i)
+        gx(i) = gx(i)/this%mesh%volume(i)
+        gy(i) = gy(i)/this%mesh%volume(i)
+        gz(i) = gz(i)/this%mesh%volume(i)
       end do
     end associate
   end subroutine gradient_cc
@@ -137,20 +134,19 @@ contains
     x_node = 0.0_r8
     w_node = 0.0_r8
 
-    associate (m => this%mesh%mesh)
-      do i = 1, m%ncell
-        associate (cn => m%cnode(m%xcnode(i):m%xcnode(i+1)-1))
-          do j = 1, size(cn)
-            x_node(cn(j)) = x_node(cn(j)) + m%volume(i)*x_cell(i)
-            w_node(cn(j)) = w_node(cn(j)) + m%volume(i)
-          end do
-        end associate
-      end do
+    do i = 1, this%mesh%ncell
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1))
+        do j = 1, size(cn)
+          x_node(cn(j)) = x_node(cn(j)) + this%mesh%volume(i)*x_cell(i)
+          w_node(cn(j)) = w_node(cn(j)) + this%mesh%volume(i)
+        end do
+      end associate
+    end do
 
-      do i = 1, m%nnode_onP
-        x_node(i) = x_node(i)/w_node(i)
-      end do
-    end associate
+    do i = 1, this%mesh%nnode_onP
+      x_node(i) = x_node(i)/w_node(i)
+    end do
+
   end subroutine node_avg
 
 
@@ -169,58 +165,55 @@ contains
 
     g = 0.0_r8
 
-    associate (m => this%mesh%mesh, f=> this%mesh)
-      if (present(gravity)) then
-        do j = 1, m%nface_onP
-          associate (n => f%fcell(:,j), y => gravity(:,j))
-            if (n(1) > 0) g(:,j) = this%ds(:,j) * (x(n(1))+y(1)-x(n(2))-y(2))
-          end associate
-        end do
-      else
-        do j = 1, m%nface_onP
-          associate (n => f%fcell(:,j))
-            if (n(1) > 0) g(:,j) = this%ds(:,j) * (x(n(1))-x(n(2)))
-          end associate
-        end do
-      end if
+    if (present(gravity)) then
+      do j = 1, this%mesh%nface_onP
+        associate (n => this%mesh%fcell(:,j), y => gravity(:,j))
+          if (n(2) > 0) g(:,j) = this%ds(:,j) * (x(n(2))+y(2)-x(n(1))-y(1))
+        end associate
+      end do
+    else
+      do j = 1, this%mesh%nface_onP
+        associate (n => this%mesh%fcell(:,j))
+          if (n(2) > 0) g(:,j) = this%ds(:,j) * (x(n(2))-x(n(1)))
+        end associate
+      end do
+    end if
 
-      if (present(normal_flux_bc)) then
-        associate (faces => normal_flux_bc%index, value => normal_flux_bc%value)
+    if (present(normal_flux_bc)) then
+      associate (faces => normal_flux_bc%index, value => normal_flux_bc%value)
+        do i = 1, size(faces)
+          j = faces(i)
+          g(:,j) = value(i)*this%mesh%normal(:,j)/this%mesh%area(j)
+        end do
+      end associate
+    end if
+
+    if (present(dirichlet_bc)) then
+      associate (faces => dirichlet_bc%index, value => dirichlet_bc%value)
+        if (present(gravity)) then
           do i = 1, size(faces)
             j = faces(i)
-            g(:,j) = value(i)*m%normal(:,j)/m%area(j)
+            associate(n => this%mesh%fcell(1,j), y => gravity(1,j))
+              g(:,j) = this%ds(:,j)*(value(i)-x(n)-y)
+            end associate
           end do
-        end associate
-      end if
-
-      if (present(dirichlet_bc)) then
-        associate (faces => dirichlet_bc%index, value => dirichlet_bc%value)
-          if (present(gravity)) then
-            do i = 1, size(faces)
-              j = faces(i)
-              associate(n => f%fcell(2,j), y => gravity(2,j))
-                g(:,j) = this%ds(:,j)*(value(i)-x(n)-y)
-              end associate
-            end do
-          else
-            do i = 1, size(faces)
-              j = faces(i)
-              associate(n => f%fcell(2,j))
-                g(:,j) = this%ds(:,j)*(value(i)-x(n))
-              end associate
-            end do
-          end if
-        end associate
-      end if
+        else
+          do i = 1, size(faces)
+            j = faces(i)
+            associate(n => this%mesh%fcell(1,j))
+              g(:,j) = this%ds(:,j)*(value(i)-x(n))
+            end associate
+          end do
+        end if
+      end associate
+    end if
 
 
-      if (present(face_t) .and. present(non_regular_default)) then
-        do j = 1, m%nface_onP
-          if (face_t(j) > regular_t) g(:,j) = non_regular_default
-        end do
-      end if
-
-    end associate
+    if (present(face_t) .and. present(non_regular_default)) then
+      do j = 1, this%mesh%nface_onP
+        if (face_t(j) > regular_t) g(:,j) = non_regular_default
+      end do
+    end if
 
   end subroutine gradient_cf_scalar
 
@@ -242,56 +235,52 @@ contains
 
     g = 0.0_r8
 
-    associate (m => this%mesh%mesh, f => this%mesh, ndim => size(x,dim=1))
+    do j = 1, this%mesh%nface_onP
+      associate (n => this%mesh%fcell(:,j))
+        if (n(2) > 0) then
+          do d = 1, size(x,dim=1)
+            g(:,d,j) = this%ds(:,j) * (x(d,n(2))-x(d,n(1)))
+          end do
+        end if
+      end associate
+    end do
 
-      do j = 1, m%nface_onP
-        associate (n => f%fcell(:,j))
-          if (n(1) > 0) then
-            do d = 1, ndim
-              g(:,d,j) = this%ds(:,j) * (x(d,n(1))-x(d,n(2)))
+
+    if (present(zero_normal_bc)) then
+      associate (faces => zero_normal_bc%index)
+        do i = 1, size(faces)
+          j = faces(i)
+          associate(n => this%mesh%fcell(1,j))
+            ! double check the signs of variables here
+            v_normal = dot_product(x(:,n), this%mesh%normal(:,n))/this%mesh%area(j)
+            v = x(:,d) - v_normal*this%mesh%normal(:,n)/this%mesh%area(j)
+            do d = 1, size(x,dim=1)
+              g(:,d,j) = this%ds(:,j)*(v(d)-x(d,n))
             end do
-          end if
-        end associate
-      end do
-
-
-      if (present(zero_normal_bc)) then
-        associate (faces => zero_normal_bc%index)
-          do i = 1, size(faces)
-            j = faces(i)
-            associate(n => f%fcell(2,j))
-              ! double check the signs of variables here
-              v_normal = dot_product(x(:,n), m%normal(:,n))/m%area(j)
-              v = x(:,d) - v_normal*m%normal(:,n)/m%area(j)
-              do d = 1, ndim
-                g(:,d,j) = this%ds(:,j)*(v(d)-x(d,n))
-              end do
-            end associate
-          end do
-        end associate
-      end if
-
-      if (present(dirichlet_bc)) then
-        associate (faces => dirichlet_bc%index, value => dirichlet_bc%value)
-          do i = 1, size(faces)
-            j = faces(i)
-            associate(n => f%fcell(2,j))
-              do d = 1, ndim
-                g(:,d,j) = this%ds(:,j)*(value(d,i)-x(d,n))
-              end do
-            end associate
-          end do
-        end associate
-      end if
-
-
-      if (present(face_t) .and. present(non_regular_default)) then
-        do j = 1, m%nface_onP
-          if (face_t(j) > regular_t) g(:,:,j) = non_regular_default
+          end associate
         end do
-      end if
+      end associate
+    end if
 
-    end associate
+    if (present(dirichlet_bc)) then
+      associate (faces => dirichlet_bc%index, value => dirichlet_bc%value)
+        do i = 1, size(faces)
+          j = faces(i)
+          associate(n => this%mesh%fcell(1,j))
+            do d = 1, size(x,dim=1)
+              g(:,d,j) = this%ds(:,j)*(value(d,i)-x(d,n))
+            end do
+          end associate
+        end do
+      end associate
+    end if
+
+
+    if (present(face_t) .and. present(non_regular_default)) then
+      do j = 1, this%mesh%nface_onP
+        if (face_t(j) > regular_t) g(:,:,j) = non_regular_default
+      end do
+    end if
 
   end subroutine gradient_cf_vector
 
@@ -310,7 +299,7 @@ contains
 
     this%work = 1.0_r8
     if (present(face_t)) then
-      do i = 1, this%mesh%mesh%nface_onP
+      do i = 1, this%mesh%nface_onP
         if (face_t(i) > regular_t) this%work(i) = 0.0_r8
       end do
     end if
@@ -318,24 +307,23 @@ contains
       this%work(extra_ignore_faces) = 0.0_r8
     end if
 
-    associate (m => this%mesh%mesh, f=> this%mesh)
-      do i = 1, m%ncell_onP
-        associate (fn => m%cface(m%xcface(i):m%xcface(i+1)-1))
-          if (sum(this%work(fn)) >= 1.0_r8) then
-            do dim = 1, size(ic,dim=1)
-              tmp = sum(this%work(fn)*abs(m%normal(dim,fn)))
-              if (tmp /= 0.0_r8) then
-                ic(dim,i) = dot_product(this%work(fn)*abs(m%normal(dim,fn)), xf(dim,fn)) / tmp
-              else
-                ic(dim,i) = 0.0_r8
-              end if
-            end do
-          else
-            ic(:,i) = 0.0_r8
-          end if
-        end associate
-      end do
-    end associate
+    do i = 1, this%mesh%ncell_onP
+      associate (fn => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
+        if (sum(this%work(fn)) >= 1.0_r8) then
+          do dim = 1, size(ic,dim=1)
+            tmp = sum(this%work(fn)*abs(this%mesh%normal(dim,fn)))
+            if (tmp /= 0.0_r8) then
+              ic(dim,i) = dot_product(this%work(fn)*abs(this%mesh%normal(dim,fn)), xf(dim,fn)) / tmp
+            else
+              ic(dim,i) = 0.0_r8
+            end if
+          end do
+        else
+          ic(:,i) = 0.0_r8
+        end if
+      end associate
+    end do
+
   end subroutine interpolate_fc
 
 
@@ -353,33 +341,32 @@ contains
 
     integer :: j,i
 
-    associate (m => this%mesh%mesh, f=> this%mesh)
-      do j = 1, m%nface_onP
-        associate (n => f%fcell(:,j))
-          if (n(1) > 0) then
-            xf(j) = (w(1,j)*dot_product(m%normal(:,j),x(:,n(1))) + &
-                w(2,j)*dot_product(m%normal(:,j),x(:,n(2)))) / m%area(j)
-          else
-            xf(j) = dot_product(m%normal(:,j),x(:,n(2)))/m%area(j)
-          end if
-        end associate
-      end do
+    do j = 1, this%mesh%nface_onP
+      associate (n => this%mesh%fcell(:,j))
+        if (n(2) > 0) then
+          xf(j) = (w(1,j)*dot_product(this%mesh%normal(:,j),x(:,n(2))) + &
+              w(2,j)*dot_product(this%mesh%normal(:,j),x(:,n(1)))) / this%mesh%area(j)
+        else
+          xf(j) = dot_product(this%mesh%normal(:,j),x(:,n(1)))/this%mesh%area(j)
+        end if
+      end associate
+    end do
 
-      if (present(bc)) then
-        associate (faces => bc%index, value => bc%value)
-          do i = 1, size(faces)
-            j = faces(i)
-            xf(j) = dot_product(m%normal(:,j),value(:,i))/m%area(j)
-          end do
-        end associate
-      end if
-
-      if (present(face_t) .and. present(non_regular_default)) then
-        do j = 1, m%nface_onP
-          if (face_t(j) > regular_t) xf(j) = non_regular_default
+    if (present(bc)) then
+      associate (faces => bc%index, value => bc%value)
+        do i = 1, size(faces)
+          j = faces(i)
+          xf(j) = dot_product(this%mesh%normal(:,j),value(:,i))/this%mesh%area(j)
         end do
-      end if
-    end associate
+      end associate
+    end if
+
+    if (present(face_t) .and. present(non_regular_default)) then
+      do j = 1, this%mesh%nface_onP
+        if (face_t(j) > regular_t) xf(j) = non_regular_default
+      end do
+    end if
+
   end subroutine interpolate_cf
 
 end module flow_operators

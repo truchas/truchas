@@ -35,7 +35,7 @@ module algebraic_turb_model_type
   use turbulence_model_class
   use parameter_list_type
   use truchas_logging_services
-  use flow_mesh_type
+  use unstr_mesh_type
   use flow_props_type
     implicit none
   private
@@ -83,10 +83,10 @@ contains
 
   subroutine init(this, mesh)
     class(algebraic_turb_model), intent(inout) :: this
-    type(flow_mesh), pointer, intent(in) :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
 
     this%mesh => mesh
-    allocate(this%nu_turb(this%mesh%mesh%ncell))
+    allocate(this%nu_turb(this%mesh%ncell))
   end subroutine init
 
   subroutine setup(this, vel_cc)
@@ -96,7 +96,7 @@ contains
     integer :: i
 
     associate(cmu => this%cmu, l => this%length, f => this%ke_fraction)
-      do i = 1, this%mesh%mesh%ncell
+      do i = 1, this%mesh%ncell
         this%nu_turb(i) = cmu*l*sqrt(0.5_r8*f*sum(vel_cc(:,i)**2))
       end do
     end associate
@@ -109,8 +109,8 @@ contains
     !-
     integer :: i
 
-    associate (m => this%mesh%mesh, rho => props%rho_cc, mu => props%mu_cc)
-      do i = 1, m%ncell
+    associate (rho => props%rho_cc, mu => props%mu_cc)
+      do i = 1, this%mesh%ncell
         mu(i) = mu(i) + rho(i)*this%nu_turb(i)
       end do
     end associate

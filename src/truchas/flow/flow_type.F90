@@ -1,5 +1,5 @@
-#define ASDF 0
-#define Q 717
+#include "f90_assert.fpp"
+
 module flow_type
 
   use kinds, only: r8
@@ -7,7 +7,6 @@ module flow_type
   use constants_module
   use truchas_logging_services
   use truchas_timers
-  use flow_mesh_type
   use flow_projection_type
   use flow_prediction_type
   use flow_props_type
@@ -21,7 +20,7 @@ module flow_type
   public :: flow
 
   type :: flow
-    type(flow_mesh), pointer :: mesh => null() ! unowned reference
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     real(r8), allocatable :: vel_cc(:,:) ! cell-centered velocity (dims, ncell)
     real(r8), allocatable :: vel_cc_n(:,:) ! cell-centered velocity (dims, ncell)
     real(r8), allocatable :: vel_fn(:) ! outward oriented face-normal velocity
@@ -79,12 +78,10 @@ contains
     dtv = huge(1.0_r8)
 
     ! try something different (simpler) compared to truchas
-    associate( m => this%mesh%mesh, vof => props%vof, &
-        rho => props%rho_cc, mu => props%mu_cc)
-
-      do j = 1, m%ncell_onP
+    associate (vof => props%vof, rho => props%rho_cc, mu => props%mu_cc)
+      do j = 1, this%mesh%ncell_onP
         if (vof(j) > 0.0_r8) then
-          v = (m%volume(j)*vof(j))**(1.0_r8/3.0_r8)
+          v = (this%mesh%volume(j)*vof(j))**(1.0_r8/3.0_r8)
           dtc = min(dtc, v/(epsilon(1.0_r8)+norm2(this%vel_cc(:,j))))
           if (.not.this%inviscid .and. mu(j) > 0.0_r8) &
               dtv = min(dtv, v**2*rho(j)/mu(j))
@@ -102,7 +99,7 @@ contains
     use parameter_list_type
 
     class(flow), intent(out) :: this
-    type(flow_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     logical, optional, intent(in) :: prescribed
     real(r8), optional, intent(in) :: vel_cc(:,:), P_cc
     type(parameter_list), intent(inout) :: params
@@ -122,7 +119,7 @@ contains
     call plist%get('body force', array, default=[0.0_r8, 0.0_r8, 0.0_r8])
     this%body_force = array
 
-    associate (nc => mesh%mesh%ncell, nf => mesh%mesh%nface)
+    associate (nc => mesh%ncell, nf => mesh%nface)
       allocate(this%vel_cc(3, nc))
       allocate(this%vel_cc_n(3, nc))
       allocate(this%P_cc(nc))
@@ -135,38 +132,23 @@ contains
       xc = 0.5_r8
       yc = 0.5_r8
       sigma = 0.1_r8
-#if ASDF
-      print* , ">>>> HIGHJACKING FLOW INTIAL CONDITIONS <<<<"
-
-      do i = 1, mesh%mesh%ncell
-        x = mesh%cell_centroid(1,i) - xc
-        y = mesh%cell_centroid(2,i) - yc
-        !print*, y, x
-        theta = atan2(y, x)
-        r2 = (sqrt(x**2+y**2) - 0.25_r8)**2
-        ! gaussian
-        w = exp(-r2/(2.0_r8*sigma**2))/sqrt(2.0_r8*pi*sigma)
-        this%vel_cc(:,i) = [-w*sin(theta), w*cos(theta), 0.0_r8]
-      end do
-#else
-      do i = 1, mesh%mesh%ncell_onP
+      do i = 1, mesh%ncell_onP
         this%vel_cc(:,i) = vel_cc(:,i)
       end do
-      call gather_boundary(mesh%mesh%cell_ip, this%vel_cc)
-#endif
+      call gather_boundary(mesh%cell_ip, this%vel_cc)
       ! set the face velocities
       ! WARN: This will only give reasonable results when the initial velocity
       !       is uniform. A real solution should get velocities from an input
       !       function and ensure the face velocities are discretely solenoidal.
-      do i = 1, mesh%mesh%nface_onP
-        vel = this%vel_cc(:,mesh%fcell(2,i))
-        if (mesh%fcell(1,i) /= 0) then
-          vel = vel + this%vel_cc(:,mesh%fcell(1,i))
+      do i = 1, mesh%nface_onP
+        vel = this%vel_cc(:,mesh%fcell(1,i))
+        if (mesh%fcell(2,i) /= 0) then
+          vel = vel + this%vel_cc(:,mesh%fcell(2,i))
           vel = vel / 2
         end if
-        this%vel_fn(i) = dot_product(mesh%mesh%normal(:,i), vel)
+        this%vel_fn(i) = dot_product(mesh%normal(:,i), vel)
       end do
-      call gather_boundary(mesh%mesh%face_ip, this%vel_fn)
+      call gather_boundary(mesh%face_ip, this%vel_fn)
     else
       this%vel_cc = 0.0_r8
       this%vel_fn = 0.0_r8
@@ -202,15 +184,15 @@ contains
     !-
     integer :: i
 
-    associate (m => this%mesh%mesh, cell_t => props%cell_t, face_t => props%face_t)
-      do i = 1, m%ncell
+    associate (cell_t => props%cell_t, face_t => props%face_t)
+      do i = 1, this%mesh%ncell
         if (cell_t(i) /= regular_t) then
           this%vel_cc(:,i) = 0.0_r8
           this%P_cc(i) = 0.0_r8
         end if
       end do
 
-      do i = 1, m%nface_onP
+      do i = 1, this%mesh%nface_onP
         if (face_t(i) > regular_t) then
           this%vel_fn(i) = 0.0_r8
         end if
@@ -260,31 +242,15 @@ contains
 
     call this%bc%compute(t, dt, initial=initial)
 
-#if ASDF
-    write(*, '("Pre-Predictor u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
-    write(*, '("Pre-Predictor P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
-#endif
     call start_timer("prediction")
     call this%pred%setup(dt, props, this%vel_cc, initial=initial)
     call this%pred%solve(dt, props, this%grad_p_rho_cc_n, flux_volumes, this%vel_fn, this%vel_cc, initial=initial)
     call stop_timer("prediction")
-#if ASDF
-    write(*, '("Post-Predictor u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
-    write(*, '("Post-Predictor P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
-#endif
 
     call start_timer("projection")
     call this%proj%setup(dt, props, this%grad_p_rho_cc_n, this%body_force, this%vel_cc, this%P_cc, this%vel_fn, initial=initial)
     call this%proj%solve(dt, props, this%grad_p_rho_cc_n, this%vel_cc, this%P_cc, this%vel_fn, initial=initial)
     call stop_timer("projection")
-#if ASDF
-    write(*, '("Post-Projection u[",i4,"]: ", 3es20.12)') Q, this%vel_cc(:,Q)
-    write(*, '("Post-Projection P[",i4,"]: ", es20.12)') Q, this%P_cc(Q)
-
-    associate (m=>this%mesh%mesh)
-      write(*, '("Post-Projection vel_fn[",i4,"]: ", 6es20.12)') Q, this%vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-    end associate
-#endif
 
     call this%correct_non_regular_cells(props)
     !p_min = global_minval(this%p_cc)

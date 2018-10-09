@@ -7,7 +7,7 @@ module flow_bc_type
   use parameter_list_type
   use bndry_func_class
   use bndry_vfunc_class
-  use flow_mesh_type
+  use unstr_mesh_type
   use flow_bc_factory_type
   use parallel_communication
   implicit none
@@ -31,7 +31,7 @@ contains
     use parameter_list_type
 
     class(flow_bc), intent(out) :: this
-    type(flow_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(inout) :: params
 
     type(flow_bc_factory) :: f
@@ -47,7 +47,7 @@ contains
     this%fix_neumann = .false.
 
     plist => params%sublist('bc')
-    call f%init(mesh%mesh, plist)
+    call f%init(mesh, plist)
     call f%alloc_vector_bc( &
         [character(len=32) :: "velocity dirichlet", "no slip"], &
         this%v_dirichlet, &

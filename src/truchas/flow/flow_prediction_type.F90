@@ -1,6 +1,5 @@
 #include "f90_assert.fpp"
-#define ASDF 0
-#define Q 771
+
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -54,7 +53,7 @@ module flow_prediction_type
   use index_partitioning
   use flow_domain_types
   use flow_operators
-  use flow_mesh_type
+  use unstr_mesh_type
   use flow_props_type
   use flow_bc_type
   use turbulence_models
@@ -65,7 +64,7 @@ module flow_prediction_type
   private
 
   type, public :: flow_prediction
-    type(flow_mesh), pointer :: mesh => null()
+    type(unstr_mesh), pointer :: mesh => null()
     type(flow_bc), pointer :: bc => null()
     class(turbulence_model), allocatable :: turb
     !class(porous_drag_model), allocatable :: drag
@@ -104,7 +103,7 @@ contains
     use parameter_list_type
 
     class(flow_prediction), intent(inout) :: this
-    type(flow_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(flow_bc), pointer, intent(in) :: bc
     logical, intent(in) :: inviscid, stokes
     type(parameter_list), intent(inout) :: params
@@ -125,51 +124,50 @@ contains
     call plist%get('solidfy implicitness', this%solidify_implicitness, default=1.0_r8)
     call alloc_turbulence_model(this%turb, plist, off=this%inviscid)
 
-    associate (m => mesh%mesh)
-      allocate(this%rhs(3,m%ncell))
-      allocate(this%grad_fc_vector(3,3,m%nface))
-      allocate(this%sol(m%ncell))
-      allocate(this%rhs1d(m%ncell))
+    allocate(this%rhs(3,mesh%ncell))
+    allocate(this%grad_fc_vector(3,3,mesh%nface))
+    allocate(this%sol(mesh%ncell))
+    allocate(this%rhs1d(mesh%ncell))
 
-      if (this%viscous_implicitness > 0.0_r8 .and. .not.this%inviscid) then
-        ! build csr matrix graph for momentum solve, all components can reuse
-        ! the same graph/matrix.
-        row_ip => m%cell_ip
+    if (this%viscous_implicitness > 0.0_r8 .and. .not.this%inviscid) then
+      ! build csr matrix graph for momentum solve, all components can reuse
+      ! the same graph/matrix.
+      row_ip => mesh%cell_ip
+      do k = 1, size(g)
+        allocate(g(k)%g)
+        call g(k)%g%init(row_ip)
+      end do
+
+      do j = 1, mesh%ncell_onP
         do k = 1, size(g)
-          allocate(g(k)%g)
-          call g(k)%g%init(row_ip)
+          call g(k)%g%add_edge(j,j)
         end do
 
-        do j = 1, m%ncell_onP
-          do k = 1, size(g)
-            call g(k)%g%add_edge(j,j)
+        associate (cn => mesh%cnhbr(mesh%xcnhbr(j):mesh%xcnhbr(j+1)-1))
+          do i = 1, size(cn)
+            if (cn(i) > 0) then
+              do k = 1, size(g)
+                call g(k)%g%add_edge(j, cn(i))
+              end do
+            end if
           end do
+        end associate
+      end do
+      do k = 1, size(g)
+        call g(k)%g%add_complete()
+      end do
 
-          associate (cn => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
-            do i = 1, size(cn)
-              if (cn(i) > 0) then
-                do k = 1, size(g)
-                  call g(k)%g%add_edge(j, cn(i))
-                end do
-              end if
-            end do
-          end associate
-        end do
-        do k = 1, size(g)
-          call g(k)%g%add_complete()
-        end do
+      plist => params%sublist("predictor")
+      ASSERT(plist%count() > 0)
+      plist => plist%sublist("solver")
+      ASSERT(plist%count() > 0)
+      do k = 1, size(A)
+        allocate(A(k)%A)
+        call A(k)%A%init(g(k)%g, take_graph=.true.)
+        call this%solver(k)%init(A(k)%A, plist)
+      end do
+    end if
 
-        plist => params%sublist("predictor")
-        ASSERT(plist%count() > 0)
-        plist => plist%sublist("solver")
-        ASSERT(plist%count() > 0)
-        do k = 1, size(A)
-          allocate(A(k)%A)
-          call A(k)%A%init(g(k)%g, take_graph=.true.)
-          call this%solver(k)%init(A(k)%A, plist)
-        end do
-      end if
-    end associate
   end subroutine init
 
   subroutine setup(this, dt, props, vel_cc, initial)
@@ -177,10 +175,6 @@ contains
     real(r8), intent(in) :: dt, vel_cc(:,:)
     type(flow_props), intent(inout) :: props
     logical, optional, intent(in) :: initial
-
-!!$    if (present(initial)) then
-!!$      if (initial) return
-!!$    end if
 
     call start_timer("setup")
 
@@ -223,12 +217,12 @@ contains
     ds => flow_gradient_coefficients()
     dtv = dt*this%viscous_implicitness
 
-    associate (m => this%mesh%mesh, mu_f => props%mu_fc, rho => props%rho_cc, &
+    associate (mu_f => props%mu_fc, rho => props%rho_cc, &
         vof => props%vof, cell_t => props%cell_t, face_t => props%face_t)
 
-      do j = 1, m%ncell_onP
-        associate (nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
-            face => m%cface(m%xcface(j):m%xcface(j+1)-1))
+      do j = 1, this%mesh%ncell_onP
+        associate (nhbr => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1), &
+            face => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
 
           if (cell_t(j) /= regular_t) then
             ! solve dummy equations on solid/void
@@ -252,7 +246,7 @@ contains
               ! ni == 0 implies a domain boundary cell, handle these separately
               if (ni > 0) then
                 ! note that normal is already weighted by face area
-                coeff = dtv*dot_product(ds(:,fi), m%normal(:,fi))*mu_f(fi)/m%volume(j)
+                coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)/this%mesh%volume(j)
                 if (face_t(fi) == regular_t) then
                   do k = 1, size(A)
                     call A(k)%A%add_to(j, j, coeff)
@@ -287,13 +281,13 @@ contains
       associate (faces => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
         do i = 1, size(faces)
           fi = faces(i)
-          j = this%mesh%fcell(2,fi) ! cell index
-          if (j > m%ncell_onP) cycle ! this cell will be properly handled by a different pe
+          j = this%mesh%fcell(1,fi) ! cell index
+          if (j > this%mesh%ncell_onP) cycle ! this cell will be properly handled by a different pe
           if (face_t(fi) /= regular_t) cycle ! no bcs on non-regular faces
 
-          ASSERT(this%mesh%fcell(1,fi) == 0)
+          ASSERT(this%mesh%fcell(2,fi) == 0)
 
-          coeff = dtv*dot_product(ds(:,fi), m%normal(:,fi))*mu_f(fi)/m%volume(j)
+          coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)/this%mesh%volume(j)
           do k = 1, size(A)
             call A(k)%A%add_to(j, j, coeff)
           end do
@@ -305,15 +299,15 @@ contains
       associate (faces => this%bc%v_zero_normal%index)
         do i = 1, size(faces)
           fi = faces(i)
-          j = this%mesh%fcell(2,fi) ! cell index
-          if (j > m%ncell_onP) cycle ! this cell will be properly handled by a different pe
+          j = this%mesh%fcell(1,fi) ! cell index
+          if (j > this%mesh%ncell_onP) cycle ! this cell will be properly handled by a different pe
           if (face_t(fi) /= regular_t) cycle ! no bcs on non-regular faces
 
-          ASSERT(this%mesh%fcell(1,fi) == 0)
+          ASSERT(this%mesh%fcell(2,fi) == 0)
 
-          coeff = dtv*dot_product(ds(:,fi), m%normal(:,fi))*mu_f(fi)/m%volume(j)
+          coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)/this%mesh%volume(j)
           do k = 1, size(A)
-            call A(k)%A%add_to(j, j, coeff*(m%normal(k,fi)/m%area(fi))**2)
+            call A(k)%A%add_to(j, j, coeff*(this%mesh%normal(k,fi)/this%mesh%area(fi))**2)
           end do
         end do
       end associate
@@ -337,11 +331,9 @@ contains
     type(flow_props), intent(in) :: props
     integer :: j
 
-    associate (m => this%mesh%mesh)
-      do j = 1, m%ncell_onP
-        this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc_n(j)
-      end do
-    end associate
+    do j = 1, this%mesh%ncell_onP
+      this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc_n(j)
+    end do
 
   end subroutine accumulate_rhs_pressure
 
@@ -360,37 +352,27 @@ contains
 
     dtv = dt*(1.0_r8 - this%viscous_implicitness)
 
-    associate (m => this%mesh%mesh, g => this%grad_fc_vector, mu => props%mu_fc)
-      !write(*,'("Mu_face(:,33):", 6es15.5)') mu(m%cface(m%xcface(1089):m%xcface(1090)-1))
+    associate (g => this%grad_fc_vector, mu => props%mu_fc)
 
       ! velocity gradient tensor at faces such that
       ! g(:,1,j) = grad_at_face_j(u_1)
       ! g(:,2,j) = grad_at_face_j(u_2)
       ! g(:,3,j) = grad_at_face_j(u_3)
       call gradient_cf(g, vel_cc, this%bc%v_zero_normal, this%bc%v_dirichlet)
-      call gather_boundary(m%face_ip, g)
+      call gather_boundary(this%mesh%face_ip, g)
 
-#if ASDF
-      associate( faces => m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-        write(*,'("grad(u) at [",i4,"] y- ",3es20.12)') faces(1), g(:,1,faces(1))
-        write(*,'("grad(u) at [",i4,"] y+ ",3es20.12)') faces(3), g(:,1,faces(3))
-        write(*,'("grad(u) at [",i4,"] x- ",3es20.12)') faces(5), g(:,1,faces(5))
-        write(*,'("grad(u) at [",i4,"] x+ ",3es20.12)') faces(6), g(:,1,faces(6))
-        !write(*,'(a,3es20.12)') 'dx at y+: ', this%mesh%face_centroid(:,faces(3)) - this%mesh%cell_centroid(:,33)
-      end associate
-#endif
-      do j = 1, m%nface
+      do j = 1, this%mesh%nface
         associate (n1 => this%mesh%fcell(1,j), n2 => this%mesh%fcell(2,j), rhs => this%rhs)
-          if (n1 > 0) then ! inward oriented normal
+          if (n2 > 0) then ! inward oriented normal
             do i = 1, 3
-              rhs(i,n1) = rhs(i,n1) - &
-                  dtv*mu(j)*dot_product(m%normal(:,j),g(:,i,j))/m%volume(n1)
+              rhs(i,n2) = rhs(i,n2) - &
+                  dtv*mu(j)*dot_product(this%mesh%normal(:,j),g(:,i,j))/this%mesh%volume(n2)
             end do
           end if
-          if (n2 > 0) then ! outward oriented normal
+          if (n1 > 0) then ! outward oriented normal
             do i = 1, 3
-              rhs(i,n2) = rhs(i,n2) + &
-                  dtv*mu(j)*dot_product(m%normal(:,j),g(:,i,j))/m%volume(n2)
+              rhs(i,n1) = rhs(i,n1) + &
+                  dtv*mu(j)*dot_product(this%mesh%normal(:,j),g(:,i,j))/this%mesh%volume(n1)
             end do
           end if
         end associate
@@ -410,73 +392,37 @@ contains
     !
     integer :: i, j, f0, f1, nhbr, cn, k
     real(r8) :: v
-#if ASDF
-    real(r8) momentum_delta(3)
-    momentum_delta = this%rhs(:,Q)
-#endif
 
     ! we're going to assume here that the boundary conditions on flux_volumes
     ! and flux_vel have already been set..
-    associate (m => this%mesh%mesh, rhs => this%rhs)
-#if ASDF
-      write(*, "('vel_fn[',i3,']: ',6es15.5): ") Q, vel_fn(m%cface(m%xcface(Q):m%xcface(Q+1)-1))
-      write(*, "('flux_volumes[',i3,']: ',6es15.5): ") Q, flux_volumes(1,m%xcface(Q):m%xcface(Q+1)-1)
-#endif
-      do i = 1, m%ncell_onP
-        f0 = m%xcface(i)
-        f1 = m%xcface(i+1)-1
-        nhbr = m%xcnhbr(i)
+    do i = 1, this%mesh%ncell_onP
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      nhbr = this%mesh%xcnhbr(i)
 
-        do j = f0, f1
+      do j = f0, f1
 
-          k = m%cface(j)
-          v = m%volume(i)
+        k = this%mesh%cface(j)
+        v = this%mesh%volume(i)
 
-          ! donor cell upwinding
-          if (any(flux_volumes(:,j) > 0.0_r8)) then
-            rhs(:,i) = rhs(:,i) - vel_cc(:,i)*dot_product(flux_volumes(:,j),props%density(:))/v
-#if ASDF
-            if (i == Q) then
-              write(*, "('face offset: ',i4)") j-f0+1
-!!$              write(*,"('u_cc[',i4,']: ',es15.5, ' deltaX  : ', 2es15.5)") i, vel_cc(1,i), &
-!!$                  -abs(vel_cc(1,i))*dot_product(flux_volumes(:,j),props%density(:))/v
-
-!!$              write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', 2es15.5)") i, vel_cc(2,i), &
-!!$                  -abs(vel_cc(2,i))*dot_product(flux_volumes(:,j),props%density(:))/v
-              write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', 2es15.5)") i, vel_cc(2,i), &
-                  -vel_cc(2,i)*dot_product(flux_volumes(:,j),props%density(:))/v
-            end if
-#endif
+        ! donor cell upwinding
+        if (any(flux_volumes(:,j) > 0.0_r8)) then
+          this%rhs(:,i) = this%rhs(:,i) - vel_cc(:,i)*dot_product(flux_volumes(:,j),props%density(:))/v
+        else
+          ! neighbor index
+          cn = this%mesh%cnhbr(nhbr+(j-f0))
+          if (cn > 0) then
+            this%rhs(:,i) = this%rhs(:,i)-vel_cc(:,cn)*dot_product(flux_volumes(:,j),props%density(:))/v
           else
-            ! neighbor index
-            cn = m%cnhbr(nhbr+(j-f0))
-            if (cn > 0) then
-              rhs(:,i) = rhs(:,i)-vel_cc(:,cn)*dot_product(flux_volumes(:,j),props%density(:))/v
-#if ASDF
-              if (i == Q) then
-!!$                write(*,"('u_cc[',i4,']: ',es15.5, ' deltaX  : ', es15.5)") cn, vel_cc(1,cn), &
-!!$                    -abs(vel_cc(1,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
-                write(*, "('face offset: ',i4)") j-f0+1
-!!$                write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', es15.5)") cn, vel_cc(2,cn), &
-!!$                    -abs(vel_cc(2,cn))*dot_product(flux_volumes(:,j),props%density(:))/v
-                write(*,"('v_cc[',i4,']: ',es15.5, ' deltaY  : ', es15.5)") cn, vel_cc(2,cn), &
-                    -vel_cc(2,cn)*dot_product(flux_volumes(:,j),props%density(:))/v
-              end if
-#endif
-            else
-              ! this must be an inflow boundary so use face velocity.  This seems overly
-              ! restrictive and does not account for 'angled' inflow
-              rhs(:,i) = rhs(:,i) - vel_fn(k)*m%normal(:,k)/m%area(k) * &
-                    dot_product(flux_volumes(:,j),props%density(:))/v
-            end if
+            ! this must be an inflow boundary so use face velocity.  This seems overly
+            ! restrictive and does not account for 'angled' inflow
+            this%rhs(:,i) = this%rhs(:,i) - vel_fn(k)*this%mesh%normal(:,k)/this%mesh%area(k) * &
+                  dot_product(flux_volumes(:,j),props%density(:))/v
           end if
-        end do
+        end if
       end do
-#if ASDF
-      momentum_delta = this%rhs(:,Q)-momentum_delta
-      write(*,'("Momentum_Delta(",i4,"):",3es15.5)') Q, Momentum_Delta(:)
-#endif
-    end associate
+    end do
+
   end subroutine accumulate_rhs_momentum
 
 
@@ -492,8 +438,8 @@ contains
 
     if (this%solidify_implicitness < 1.0_r8) then
 
-      associate (m => this%mesh%mesh, rho => props%solidified_rho, rhs => this%rhs)
-        do j = 1, m%ncell_onP
+      associate (rho => props%solidified_rho, rhs => this%rhs)
+        do j = 1, this%mesh%ncell_onP
           rhs(:,j) = rhs(:,j) - w*rho(j)*vel_cc(:,j)
         end do
       end associate
@@ -512,10 +458,6 @@ contains
 
     character(18), parameter :: slabel(3) = 'predictor' // ['1', '2', '3'] // ' solve: '
 
-!!$    if (present(initial)) then
-!!$      if (initial) return
-!!$    end if
-
     call start_timer("solve")
     ! The accumulate routines may add contributions to non-regular cells.  These
     ! contributions are ignored by the solver
@@ -525,40 +467,29 @@ contains
     ! These forces are computed first and scaled by vof as a crude approximation.
     ! Once a better solid/fluid model is used, change this numerical hackjob.
     call this%accumulate_rhs_pressure(dt, props, grad_p_rho_cc)
-#if ASDF
-    write(*,"('post accumulate_rhs_pressure rhs[',i4,']:',3es20.12)") Q, this%rhs(:,Q)
-#endif
     call this%accumulate_rhs_viscous_stress(dt, props, vel_cc)
-#if ASDF
-    write(*,"('post accumulate_rhs_viscous  rhs[',i4,']:',3es20.12)") Q, this%rhs(:,Q)
-#endif
-    associate (m => this%mesh%mesh, rhs => this%rhs)
-      do j = 1, m%ncell_onP
-        rhs(:,j) = rhs(:,j)*props%vof(j)
-      end do
-    end associate
+    do j = 1, this%mesh%ncell_onP
+      this%rhs(:,j) = this%rhs(:,j)*props%vof(j)
+    end do
 
     call this%accumulate_rhs_momentum(props, vel_cc, vel_fn, flux_volumes)
-#if ASDF
-    write(*,"('post accumulate_rhs_momentum rhs[',i4,']:',3es20.12)") Q, this%rhs(:,Q)
-#endif
     call this%accumulate_rhs_solidified_rho(props, vel_cc)
 
     ! handle surface tension
     ! handle porous drag
 
-    associate (m => this%mesh%mesh, rho => props%rho_cc_n, vof => props%vof_n, rhs => this%rhs)
-      do j = 1, m%ncell_onP
+    associate (rho => props%rho_cc_n, vof => props%vof_n, rhs => this%rhs)
+      do j = 1, this%mesh%ncell_onP
         rhs(:,j) = rhs(:,j) + rho(j)*vof(j)*vel_cc(:,j)
       end do
     end associate
 
     ! skip all the wild limiter hackery for now
-    associate (m => this%mesh%mesh, rhs1d => this%rhs1d, rhs => this%rhs, &
+    associate (rhs1d => this%rhs1d, rhs => this%rhs, &
         sol => this%sol, cell_t => props%cell_t)
       do i = 1, 3
         ! per-component solve for predictor velocity
-        do j = 1, m%ncell_onP
+        do j = 1, this%mesh%ncell_onP
           sol(j) = vel_cc(i,j)
           if (cell_t(j) /= regular_t) then
             rhs1d(j) = 0.0_r8
@@ -573,15 +504,15 @@ contains
           call stop_timer("hypre solve")
           call tls_info(slabel(i) // this%solver(i)%metrics_string())
           if (ierr /= 0) call tls_error("prediction solve unsuccessful")
-          call gather_boundary(m%cell_ip, sol)
-          do j = 1, m%ncell
+          call gather_boundary(this%mesh%cell_ip, sol)
+          do j = 1, this%mesh%ncell
             vel_cc(i,j) = sol(j)
           end do
         else
           ! WARN: Need to replace this with a mass matrix LHS to handle implicit
           !       terms for solidification and porosity.
-          call gather_boundary(m%cell_ip, rhs1d)
-          do j = 1, m%ncell
+          call gather_boundary(this%mesh%cell_ip, rhs1d)
+          do j = 1, this%mesh%ncell
             if (cell_t(j) /= regular_t) then
               vel_cc(i,j) = rhs1d(j)
             else
@@ -593,9 +524,6 @@ contains
       end do
 
     end associate
-#if ASDF
-    write(*,"('after prediction u[',i4,']:',3es20.12)") Q, vel_cc(:, Q)
-#endif
 
     call stop_timer("solve")
 

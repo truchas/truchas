@@ -74,7 +74,6 @@ module flow_props_type
   use kinds, only: r8
   use flow_domain_types
   use unstr_mesh_type
-  use flow_mesh_type
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
@@ -86,7 +85,7 @@ module flow_props_type
   private
 
   type, public :: flow_props
-    type(flow_mesh), pointer, private :: mesh => null() ! reference only -- do not own
+    type(unstr_mesh), pointer, private :: mesh => null() ! reference only -- do not own
     real(r8), allocatable :: rho_cc(:), rho_cc_n(:) ! cell centered fluid density
     real(r8), allocatable :: rho_fc(:), rho_fc_n(:) ! face centered fluid density
     real(r8), allocatable :: mu_cc(:), mu_cc_n(:) ! cell centered fluid viscosity
@@ -119,7 +118,7 @@ contains
     use parameter_list_type
 
     class(flow_props), intent(out) :: this
-    type(flow_mesh), pointer, intent(in) :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: density(:)
     class(scalar_func_box), intent(inout) :: density_delta(:), viscosity(:)
     type(parameter_list), intent(inout) :: params
@@ -143,8 +142,8 @@ contains
       call move_alloc(density_delta(s)%f, this%density_delta(s)%f)
     end do
 
-    nc = this%mesh%mesh%ncell
-    fc = this%mesh%mesh%nface
+    nc = this%mesh%ncell
+    fc = this%mesh%nface
 
     allocate(this%rho_cc(nc), this%rho_cc_n(nc), &
         this%rho_fc(fc), this%rho_fc_n(fc), &
@@ -182,54 +181,40 @@ contains
     ! Fix this when VOF is coupled in
     this%solidified_rho(:) = 0.0_r8
 
-    associate (mesh => this%mesh%mesh)
-      do i = 1, mesh%ncell
-        this%rho_cc(i) = 0.0_r8
-        this%mu_cc(i) = 0.0_r8
-        this%rho_delta_cc(i) = 0.0_r8
-        state(1) = temperature_cc(i)
-        do m = 1, size(this%density)
-          this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
-          this%mu_cc(i) = this%mu_cc(i) + &
-              vof(m,i)*this%viscosity(m)%f%eval(state)
-          this%rho_delta_cc(i) = this%rho_delta_cc(i) + &
-              vof(m,i)*this%density_delta(m)%f%eval(state)
-        end do
-
-        this%vof(i) = sum(vof(:,i))
-        ! last element of input vof array is void
-        this%vof_novoid(i) = sum(vof(:size(this%density),i))
-
-        if (this%vof(i) > 0.0_r8) then
-          this%rho_cc(i) = this%rho_cc(i) / this%vof(i)
-          this%rho_delta_cc(i) = this%rho_delta_cc(i) / this%vof(i)
-        end if
-
-        if (this%vof(i) < this%cutoff) then ! criteria for solid
-          this%cell_t(i) = solid_t
-        elseif (this%vof_novoid(i) < this%cutoff) then ! criteria for void
-          this%cell_t(i) = void_t
-        else ! regular
-          this%cell_t(i) = regular_t
-        end if
-
-        if (this%vof_novoid(i) > 0.0_r8) then
-          minrho = min(minrho, this%rho_cc(i)*this%vof(i) / this%vof_novoid(i))
-        end if
+    do i = 1, this%mesh%ncell
+      this%rho_cc(i) = 0.0_r8
+      this%mu_cc(i) = 0.0_r8
+      this%rho_delta_cc(i) = 0.0_r8
+      state(1) = temperature_cc(i)
+      do m = 1, size(this%density)
+        this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
+        this%mu_cc(i) = this%mu_cc(i) + &
+            vof(m,i)*this%viscosity(m)%f%eval(state)
+        this%rho_delta_cc(i) = this%rho_delta_cc(i) + &
+            vof(m,i)*this%density_delta(m)%f%eval(state)
       end do
 
-#if ASDF
-    associate (cn => mesh%cnhbr(mesh%xcnhbr(Q):mesh%xcnhbr(Q+1)-1))
-      write(*,'("Cell_t[",i4,"]: ",i4)') Q, this%cell_t(Q)
-      write(*,'("<< cell_t at [",i4,"] y- ",i4)') cn(1), this%cell_t(cn(1))
-      write(*,'("<< cell_t at [",i4,"] y+ ",i4)') cn(3), this%cell_t(cn(3))
-      write(*,'("<< cell_t at [",i4,"] x- ",i4)') cn(5), this%cell_t(cn(5))
-      write(*,'("<< cell_t at [",i4,"] x+ ",i4)') cn(6), this%cell_t(cn(6))
-    end associate
-#endif
+      this%vof(i) = sum(vof(:,i))
+      ! last element of input vof array is void
+      this%vof_novoid(i) = sum(vof(:size(this%density),i))
 
-    end associate
+      if (this%vof(i) > 0.0_r8) then
+        this%rho_cc(i) = this%rho_cc(i) / this%vof(i)
+        this%rho_delta_cc(i) = this%rho_delta_cc(i) / this%vof(i)
+      end if
 
+      if (this%vof(i) < this%cutoff) then ! criteria for solid
+        this%cell_t(i) = solid_t
+      elseif (this%vof_novoid(i) < this%cutoff) then ! criteria for void
+        this%cell_t(i) = void_t
+      else ! regular
+        this%cell_t(i) = regular_t
+      end if
+
+      if (this%vof_novoid(i) > 0.0_r8) then
+        minrho = min(minrho, this%rho_cc(i)*this%vof(i) / this%vof_novoid(i))
+      end if
+    end do
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
@@ -251,71 +236,67 @@ contains
 
     min_face_rho = this%minrho*this%min_face_fraction
 
-
-    associate (mesh => this%mesh%mesh)
-      ! compute face types
-      do j = 1, mesh%nface_onP
-        associate(cn => this%mesh%fcell(:,j))
-          if (cn(1) > 0) then
-            if (any(this%cell_t(cn) == void_t) .and. any(this%cell_t(cn) == regular_t)) then
-              this%face_t(j) = regular_void_t
-            else
-              this%face_t(j) = maxval(this%cell_t(cn))
-            end if
+    ! compute face types
+    do j = 1, this%mesh%nface_onP
+      associate(cn => this%mesh%fcell(:,j))
+        if (cn(2) > 0) then
+          if (any(this%cell_t(cn) == void_t) .and. any(this%cell_t(cn) == regular_t)) then
+            this%face_t(j) = regular_void_t
           else
-            this%face_t(j) = this%cell_t(cn(2))
+            this%face_t(j) = maxval(this%cell_t(cn))
           end if
-        end associate
-      end do
-      call gather_boundary(mesh%face_ip, this%face_t)
+        else
+          this%face_t(j) = this%cell_t(cn(1))
+        end if
+      end associate
+    end do
+    call gather_boundary(this%mesh%face_ip, this%face_t)
 
 
-      ! linear averaged face-centered density
-      ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
-      ! - the face density is simply the cell density
-      ! 2) If the face has shared by a solid cell (where rho_cc == 0) and a fluid cell
-      ! - the face density is the fluid cell density
-      ! 3) If the face is shared by two void/solid cells
-      ! - the face density is 0
-      ! 4) any non-zero face density is forced to be at least min_face_rho
-      this%rho_fc = 0.0_r8
-      do j = 1, mesh%nface_onP
-        associate(cn => this%mesh%fcell(:,j))
-          if (cn(1) == 0) then
-            this%rho_fc(j) = this%rho_cc(cn(2))
-          else if (any(this%cell_t(cn) == regular_t)) then
-            w = mesh%volume(cn)*this%vof(cn)
-            this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
-          end if
-        end associate
-      end do
-      call gather_boundary(mesh%face_ip, this%rho_fc)
+    ! linear averaged face-centered density
+    ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
+    ! - the face density is simply the cell density
+    ! 2) If the face has shared by a solid cell (where rho_cc == 0) and a fluid cell
+    ! - the face density is the fluid cell density
+    ! 3) If the face is shared by two void/solid cells
+    ! - the face density is 0
+    ! 4) any non-zero face density is forced to be at least min_face_rho
+    this%rho_fc = 0.0_r8
+    do j = 1, this%mesh%nface_onP
+      associate(cn => this%mesh%fcell(:,j))
+        if (cn(2) == 0) then
+          this%rho_fc(j) = this%rho_cc(cn(1))
+        else if (any(this%cell_t(cn) == regular_t)) then
+          w = this%mesh%volume(cn)*this%vof(cn)
+          this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
+        end if
+      end associate
+    end do
+    call gather_boundary(this%mesh%face_ip, this%rho_fc)
 
-      ! harmonic averaged face viscosity
-      ! special cases:
-      ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
-      ! - the face viscosity is the cell viscosity
-      ! 2) If the face is shared by a solid cell (where mu_cc == 0) and a fluid cell
-      ! - the face viscosity is the fluid cell viscosity
-      ! 3) If the face is shared by a void cell (where mu_cc == 0) and a fluid cell
-      ! - the face viscosity is the void cell viscosity (i.e. 0)
-      ! 4) If the face is shared by two void/solid cells
-      ! - the face viscosity is 0
-      this%mu_fc = 0.0_r8
-      do j = 1, mesh%nface_onP
-        associate(cn => this%mesh%fcell(:,j))
-          if (cn(1) == 0) then
-            this%mu_fc(j) = this%mu_cc(cn(2)) ! boundary
-          else if (this%face_t(j) == solid_t) then
-            this%mu_fc(j) = maxval(this%mu_cc(cn))
-          else if (product(this%mu_cc(cn))  > epsilon(1.0_r8)) then
-            this%mu_fc(j) = 2.0_r8*product(this%mu_cc(cn))/sum(this%mu_cc(cn))
-          end if
-        end associate
-      end do
-      call gather_boundary(mesh%face_ip, this%mu_fc)
-    end associate
-
+    ! harmonic averaged face viscosity
+    ! special cases:
+    ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
+    ! - the face viscosity is the cell viscosity
+    ! 2) If the face is shared by a solid cell (where mu_cc == 0) and a fluid cell
+    ! - the face viscosity is the fluid cell viscosity
+    ! 3) If the face is shared by a void cell (where mu_cc == 0) and a fluid cell
+    ! - the face viscosity is the void cell viscosity (i.e. 0)
+    ! 4) If the face is shared by two void/solid cells
+    ! - the face viscosity is 0
+    this%mu_fc = 0.0_r8
+    do j = 1, this%mesh%nface_onP
+      associate(cn => this%mesh%fcell(:,j))
+        if (cn(2) == 0) then
+          this%mu_fc(j) = this%mu_cc(cn(1)) ! boundary
+        else if (this%face_t(j) == solid_t) then
+          this%mu_fc(j) = maxval(this%mu_cc(cn))
+        else if (product(this%mu_cc(cn))  > epsilon(1.0_r8)) then
+          this%mu_fc(j) = 2.0_r8*product(this%mu_cc(cn))/sum(this%mu_cc(cn))
+        end if
+      end associate
+    end do
+    call gather_boundary(this%mesh%face_ip, this%mu_fc)
 
   end subroutine update_fc
 
