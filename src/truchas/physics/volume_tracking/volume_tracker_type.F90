@@ -1,3 +1,5 @@
+#include "f90_assert.fpp"
+
 module volume_tracker_type
 
   use kinds, only: r8
@@ -20,6 +22,8 @@ module volume_tracker_type
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:), w_face(:,:)
+    integer, allocatable :: priority(:)
+    integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
   contains
     procedure :: init
     procedure :: flux_volumes
@@ -35,16 +39,22 @@ module volume_tracker_type
 
 contains
 
-  subroutine init(this, mesh, fluids_and_void, params)
+  subroutine init(this, mesh, nrealfluid, nfluid, nmat, liq_matid, params)
 
     use parameter_list_type
+    use property_module, only: get_truchas_material_id
+    use f08_intrinsics, only: findloc
 
     class(volume_tracker), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
-    integer, intent(in) :: fluids_and_void
+    integer, intent(in) :: nrealfluid, nfluid, nmat, liq_matid(:)
     type(parameter_list), intent(inout) :: params
+    integer :: i
 
     this%mesh => mesh
+    this%nrealfluid = nrealfluid
+    this%nfluid = nfluid
+    this%nmat = nmat
 
     call params%get('location_iter_max', this%location_iter_max, default=20)
     call params%get('location_tol', this%location_tol, default=1.0e-8_r8)
@@ -53,18 +63,43 @@ contains
     call params%get('use_brents_method', this%use_brents_method, default=.true.)
     call params%get('nested_dissection', this%nested_dissection, default=.true.)
 
-    allocate(this%flux_vol_sub(fluids_and_void,size(mesh%cface)))
-    allocate(this%normal(3,fluids_and_void,mesh%ncell))
+    ! convert user material ids to array index
+    if (params%is_vector('material_priority')) then
+      call params%get('material_priority', this%priority)
+      do i = 1,size(this%priority)
+        if (this%priority(i) < 1) cycle ! solid (-1) is handled later
+        this%priority(i) = findloc(liq_matid, get_truchas_material_id(this%priority(i)))
+
+        ! make sure we found a liquid material
+        ! TODO: need better error handling here
+        INSIST(this%priority(i) > 0)
+      end do
+
+      ! The current expectation is that a user will
+      ! use a material number of -1 to indicate solid.
+      ! Internally, if solid is present it is the last material
+      if (this%nmat > this%nfluid) then
+        where (this%priority == -1) this%priority = this%nmat
+      end if
+    else
+      this%priority = [(i, i=1,this%nmat)]
+    end if
+    ASSERT(size(this%priority) == this%nmat)
+    ASSERT(all(this%priority > 0) .and. all(this%priority <= this%nmat))
+    ! TODO: assert that each material appears exactly once
+
+    allocate(this%flux_vol_sub(this%nfluid,size(mesh%cface)))
+    allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(2,mesh%nnode))
-    allocate(this%w_face(fluids_and_void,mesh%nface))
+    allocate(this%w_face(this%nfluid,mesh%nface))
 
   end subroutine init
 
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
-  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt, svof)
+  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
     class(volume_tracker), intent(inout) :: this
-    real(r8), intent(in) :: vel(:), vof_n(:,:), dt, svof(:)
+    real(r8), intent(in) :: vel(:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
@@ -93,7 +128,7 @@ contains
 
       call this%accumulate_volume(vof, flux_vol)
 
-      call this%enforce_bounded_vof(vof, flux_vol, fluids, void, svof)
+      call this%enforce_bounded_vof(vof, flux_vol, fluids, void)
     end do
 
   end subroutine flux_volumes
@@ -109,13 +144,11 @@ contains
     real(r8), intent(in)  :: vof(:,:)
 
     real(r8) :: mag
-    integer :: i,j,k,c,nmat
+    integer :: i,j,k,c
     logical :: hasvof(size(vof,dim=1))
 
-    nmat = size(vof,dim=1)
-
     call start_timer('normals')
-    do i = 1 , nmat
+    do i = 1, this%nmat
       call gradient_cc(this%normal(1,i,:), this%normal(2,i,:), this%normal(3,i,:), &
           vof(i,:), this%w_node(1,:), this%w_node(2,:))
     end do
@@ -136,8 +169,17 @@ contains
         this%normal(:,k,i) = -this%normal(:,j,i)
       endif
 
+      ! perform onion skin if requested
+      ! normal vectors (gradients) include previous materials in the priority ordering
+      if (.not.this%nested_dissection .and. c > 2) then
+        do j = 2, this%nmat
+          k = this%priority(j)
+          this%normal(:,k,i) = this%normal(:,k,i) + this%normal(:,this%priority(j-1),i)
+        end do
+      end if
+
       ! normalize and remove smallish components due to robustness issues in nested disection
-      do j = 1 , nmat
+      do j = 1 , this%nmat
         !if (vof(j,i) <= this%cutoff) cycle ! should this be 0 or cutoff?
         ! remove small values
         do k = 1, 3
@@ -233,7 +275,8 @@ contains
 
         this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
             cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
-            vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff)
+            vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff, &
+            this%priority, this%nfluid, this%nmat)
 !!$        if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
       end associate
     end do
@@ -243,16 +286,16 @@ contains
   end subroutine donor_fluxes_os
 
     ! get the volume flux for every material in the given cell
-  function cell_volume_flux (dt, cell, vof, int_norm, vel, cutoff)
+  function cell_volume_flux (dt, cell, vof, int_norm, vel, cutoff, priority, nfluid, nmat)
     use hex_types,           only: cell_data
     use locate_plane_modulez, only: locate_plane_hex
     use flux_volume_modulez,  only: flux_vol_quantity
     use array_utils,         only: last_true_loc
 
     real(r8), intent(in) :: dt, int_norm(:,:), vof(:), vel(:), cutoff
+    integer, intent(in) :: priority(:), nfluid, nmat
     type(cell_data), intent(in) :: cell
-    integer :: nmat
-    real(r8) :: cell_volume_flux(size(vof),6)
+    real(r8) :: cell_volume_flux(nfluid,6)
 
     real(r8) :: Vofint, vp, dvol
     real(r8) :: flux_vol_sum(6)
@@ -265,7 +308,6 @@ contains
 
     cell_volume_flux = 0.0_r8
     flux_vol_sum = 0.0_r8
-    nmat = size(vof)
     nmat_in_cell = count(vof > 0.0_r8)
     !nint = count(vof > 0.0_r8)
     ! Here, I am not certain the conversion from pri_ptr to direct material indices worked properly.
@@ -276,22 +318,22 @@ contains
       ! check if this is a mixed material cell
       ! First accumulate the volume fraction of this material and materials with lower priorities.
       ! Force 0.0 <= Vofint <= 1.0
-      Vofint = min(max(sum(vof(1:ni)), 0.0_r8), 1.0_r8)
+      Vofint = min(max(sum(vof(priority(:ni))), 0.0_r8), 1.0_r8)
       is_mixed_donor_cell = cutoff < Vofint .and. Vofint < (1.0_r8 - cutoff)
 
       ! locate each interface plane by computing the plane constant
       if (is_mixed_donor_cell) then
-        call plane_cell%init (int_norm(:,ni), vofint, cell%volume, cell%node)
+        call plane_cell%init (int_norm(:,priority(ni)), vofint, cell%volume, cell%node)
         call plane_cell%locate_plane (locate_plane_niters)
       end if
 
       ! calculate delta advection volumes for this material at each donor face and accumulate the sum
-      cell_volume_flux(ni,:) =  material_volume_flux (flux_vol_sum, plane_cell, cell, &
-           is_mixed_donor_cell, vel, dt, vof(ni), cutoff)
+      cell_volume_flux(priority(ni),:) =  material_volume_flux (flux_vol_sum, plane_cell, cell, &
+           is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff)
     end do ! interface loop
 
     ! get the id of the last material
-    nlast = last_true_loc (vof >= cutoff)
+    nlast = priority(last_true_loc(vof(priority) >= cutoff))
 
     !call start_timer ("last_loop")
     ! Compute the advection volume for the last material.
@@ -454,12 +496,12 @@ contains
 
         if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
 
-        call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%location_tol, &
-            this%location_iter_max)
+        call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
+            this%location_tol, this%location_iter_max)
 
         this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
             cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
-                                 this%mesh%area(fi), this%cutoff, ierr)
+                                 this%mesh%area(fi), this%cutoff, this%nfluid, ierr)
         if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
       end associate
     end do
@@ -496,7 +538,7 @@ contains
     real(r8) :: mat_flux_cur, mat_flux_acc, mat_avail
     real(r8) :: face_flux_fixed, face_flux_adjustable, face_flux
 
-    nmat = size(flux_vol,dim=1)
+    nmat = this%nrealfluid
 
     do i = 1, this%mesh%ncell
       avail = .true.
@@ -574,7 +616,7 @@ contains
 
     integer :: m,j,i,f0,f1,nmat
 
-    nmat = size(this%flux_vol_sub,dim=1)
+    nmat = this%nfluid
     this%w_face(1:nmat,:) = 0.0_r8
 
     do i = 1, this%mesh%ncell
@@ -607,30 +649,28 @@ contains
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: flux_vol(:,:), vof(:,:)
 
-    integer :: i,fluids,j,f0,f1,m
-
-    fluids = size(flux_vol,dim=1)
+    integer :: i,j,f0,f1,m
 
     do i = 1, this%mesh%ncell_onP
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
 
       do j = f0, f1
-        do m = 1, fluids
+        do m = 1, this%nrealfluid
           flux_vol(m,j) = flux_vol(m,j) + this%flux_vol_sub(m,j)
           vof(m,i) = vof(m,i) - this%flux_vol_sub(m,j)/this%mesh%volume(i)
         end do
       end do
     end do
+
   end subroutine accumulate_volume
 
 
   ! Enforce boundedness by allowing _inconsistent_ material flux volumes at faces
-  subroutine enforce_bounded_vof(this, vof, flux_vol, fluids, void, svof)
+  subroutine enforce_bounded_vof(this, vof, flux_vol, fluids, void)
 
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: vof(:,:), flux_vol(:,:)
-    real(r8), intent(in) :: svof(:)
     integer, intent(in) :: fluids, void
 
     integer :: i,m,f0,f1
@@ -660,7 +700,7 @@ contains
         end if
       end do
 
-      v = sum(vof(:,i)) + svof(i)
+      v = sum(vof(:,i))
       excess = v - 1.0_r8
       if (excess == 0.0_r8) cycle
 

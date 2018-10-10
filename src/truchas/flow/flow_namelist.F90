@@ -21,13 +21,13 @@ contains
 
     integer, intent(in) :: lun
 
-    integer :: ios
+    integer :: ios, n
     logical :: found
     character(80) :: iom
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer  :: subcycles, location_iter_max
+    integer  :: subcycles, location_iter_max, material_priority(16)
     logical  :: inviscid, stokes, track_interfaces, nested_dissection, use_brents_method
     real(r8) :: viscous_implicitness, solidify_implicitness, viscous_number, courant_number
     real(r8) :: fluid_cutvof, min_face_fraction,location_tol, cutoff
@@ -35,7 +35,7 @@ contains
         viscous_implicitness, solidify_implicitness, viscous_number, courant_number, &
         fluid_cutvof, min_face_fraction, &
         track_interfaces, nested_dissection, use_brents_method, subcycles, &
-        location_tol, location_iter_max, cutoff
+        location_tol, location_iter_max, cutoff, material_priority
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -58,6 +58,7 @@ contains
     location_tol = NULL_R
     location_iter_max = NULL_I
     cutoff = NULL_R
+    material_priority = NULL_I
 
     inviscid = .false.
     stokes = .false.
@@ -82,6 +83,7 @@ contains
     call broadcast(location_tol)
     call broadcast(location_iter_max)
     call broadcast(cutoff)
+    call broadcast(material_priority)
 
     call broadcast(inviscid)
     call broadcast(stokes)
@@ -108,6 +110,11 @@ contains
     if (location_iter_max /= NULL_I) then
       if(location_iter_max < 1) call TLS_fatal('LOCATION_ITER_MAX must be > 0')
       call plist%set('location_iter_max', location_iter_max)
+    end if
+
+    n = count(material_priority /= NULL_I)
+    if (n > 0) then
+      call plist%set('material_priority', material_priority(:n))
     end if
 
     if (subcycles /= NULL_I) then

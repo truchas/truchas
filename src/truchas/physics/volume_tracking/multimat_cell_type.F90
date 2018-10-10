@@ -9,6 +9,8 @@
 !! March 2017
 !!
 
+#include "f90_assert.fpp"
+
 module multimat_cell_type
 
   use kinds, only: r8
@@ -35,7 +37,7 @@ contains
 
   ! given a set of VoFs, normals, and an order,
   ! create child polyhedra for each material
-  subroutine partition (this, vof, norm, cutvof, cut_precision, max_iterations)
+  subroutine partition (this, vof, norm, cutvof, priority, cut_precision, max_iterations)
 
     use near_zero_function
     use plane_type
@@ -43,12 +45,13 @@ contains
 
     class(multimat_cell), intent(inout) :: this
     real(r8),             intent(in)    :: vof(:), norm(:,:), cutvof
+    integer, intent(in) :: priority(:)
     real(r8), intent(in), optional :: cut_precision
     integer, intent(in), optional :: max_iterations
 
     type(plane)      :: interface_plane
     type(polyhedron) :: tmp(2),remainder
-    integer          :: m,nm,ierr
+    integer          :: m,p,nm,ierr
 
     ierr = 0
     if (allocated(this%mat_poly)) deallocate(this%mat_poly)
@@ -61,7 +64,8 @@ contains
     this%nmat = count(vof > cutvof)
     nm = 0
 
-    do m = 1,size(vof)
+    do p = 1,size(vof)
+      m = priority(p)
       if (vof(m) < cutvof) cycle
       nm = nm+1 ! update the counter of how many materials we've seen thus far
 
@@ -154,19 +158,25 @@ contains
 
   ! given a plane, find the volumes of each
   ! material behind that plane (flux volumes)
-  function volumes_behind_plane (this, P, ierr) result(vol)
+  !
+  ! note: this will loop through the number of elements
+  !       in the input 'vol' array, so that some last-priority
+  !       materials may be skipped (such as solid).
+  subroutine volumes_behind_plane (this, P, vol, ierr)
 
     use plane_type
 
     class(multimat_cell), intent(in) :: this
     class(plane),         intent(in) :: P
     integer,              intent(out) :: ierr
-    real(r8)                         :: vol(size(this%mat_poly))
+    real(r8), intent(out) :: vol(:)
 
     integer                          :: m
 
+    ASSERT(size(vol) <= size(this%mat_poly))
+
     ierr = 0
-    do m = 1,size(this%mat_poly)
+    do m = 1,size(vol)
       vol(m) = this%mat_poly(m)%volume_behind_plane (P,ierr)
       if (ierr /= 0) then
         write(*,*) 'volumes_behind_plane failed on material ',m
@@ -174,16 +184,17 @@ contains
       end if
     end do
 
-  end function volumes_behind_plane
+  end subroutine volumes_behind_plane
 
-  function outward_volflux (this, adv_dt, fluxing_velocity, face_area, cutvof, ierr)
+  function outward_volflux (this, adv_dt, fluxing_velocity, face_area, cutvof, nfluid, ierr)
 
     use plane_type
 
     class(multimat_cell), intent(inout) :: this !inout because of call to volume
     real(r8),             intent(in)    :: adv_dt, fluxing_velocity(:), face_area(:), cutvof
+    integer, intent(in) :: nfluid
     integer, intent(out) :: ierr
-    real(r8)                            :: outward_volflux(size(this%mat_poly),size(face_area))
+    real(r8)                            :: outward_volflux(nfluid,size(face_area))
 
     type(plane) :: flux_plane
     real(r8)    :: xf(3)
@@ -210,7 +221,11 @@ contains
           outward_volflux(:,f) = 0.0_r8
           outward_volflux(this%m,f) = adv_dt * fluxing_velocity(f) * face_area(f)
         else
-          outward_volflux(:,f) = this%volumes_behind_plane (flux_plane,ierr)
+          ! calculate the volumes of materials behind the flux plane,
+          ! considering only the first nfluid materials (indicated by
+          ! the size of the first dim of outward_volflux). Any material
+          ! after index nfluid is solid, by convention.
+          call this%volumes_behind_plane (flux_plane, outward_volflux(:,f), ierr)
           if (ierr /= 0) then
             write(*,*) 'outward_volflux failed on face ',f
             return

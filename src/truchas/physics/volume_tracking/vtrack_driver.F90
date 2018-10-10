@@ -68,16 +68,15 @@ module vtrack_driver
   type :: vtrack_driver_data
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     integer, allocatable :: liq_matid(:), sol_matid(:)
-    integer, allocatable :: liq_pri(:)
     type(volume_tracker) :: vt
     real(r8), allocatable  :: vof(:,:) ! volume fractions for all materials
-    real(r8), allocatable :: svof(:) ! sum of solid volume fractions
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
     real(r8), allocatable :: flux_vol(:,:) ! flux volumes
     real(r8), allocatable :: flux_vel(:) ! fluxing velocity - ragged form
     integer :: fluids ! number of fluids (not including void) to advance
     integer :: void ! 1 if simulation includes void else 0
+    integer :: solid ! 1 if simulation includes solid else 0
     logical :: active
   end type vtrack_driver_data
   type(vtrack_driver_data), allocatable, target :: this
@@ -95,7 +94,7 @@ contains
   function vtrack_vof_view() result(p)
     real(r8), pointer :: p(:,:)
     ASSERT(vtrack_enabled())
-    p => this%fvof_o
+    p => this%fvof_o(:this%fluids+this%void,:)
   end function vtrack_vof_view
 
   function vtrack_flux_vol_view() result(p)
@@ -126,6 +125,7 @@ contains
     this%mesh => unstr_mesh_ptr('MAIN')
     INSIST(associated(this%mesh))
 
+    this%solid = merge(1, 0, any(isImmobile(:nmat)))
     this%void = merge(1, 0, void_material_index > 0)
     this%fluids = count(.not.isImmobile(:nmat)) - this%void
 
@@ -136,20 +136,17 @@ contains
 
     allocate(this%liq_matid(this%fluids+this%void))
     allocate(this%sol_matid(nmat-(this%fluids+this%void)))
-    allocate(this%liq_pri(this%fluids+this%void))
-    allocate(this%fvof_i(this%fluids+this%void, this%mesh%ncell))
-    allocate(this%fvof_o(this%fluids+this%void, this%mesh%ncell))
+    allocate(this%fvof_i(this%fluids+this%void+this%solid, this%mesh%ncell))
+    allocate(this%fvof_o(this%fluids+this%void+this%solid, this%mesh%ncell))
     allocate(this%flux_vol(this%fluids,size(this%mesh%cface)))
     allocate(this%flux_vel(size(this%mesh%cface)))
     allocate(this%vof(nmat, this%mesh%ncell_onP))
-    allocate(this%svof(this%mesh%ncell))
 
     j = 1
     k = 1
     do i = 1, nmat
       if (i == void_material_index) then
         this%liq_matid(this%fluids+1) = i
-        this%liq_pri(this%fluids+1) = 0
       else if (.not.isImmobile(i)) then
         this%liq_matid(j) = i
         j = j + 1
@@ -161,8 +158,9 @@ contains
 
     call start_timer('Vof Initialization')
     call get_vof_from_matl()
-    this%fvof_o(:,:) = this%fvof_i(:,:)
-    call this%vt%init(this%mesh, this%fluids+this%void, params)
+    this%fvof_o = this%fvof_i
+    call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
+        this%fluids+this%void+this%solid, this%liq_matid, params)
     call stop_timer('Vof Initialization')
 
   end subroutine vtrack_driver_init
@@ -180,10 +178,11 @@ contains
     end do
     call gather_boundary(this%mesh%cell_ip, this%fvof_i)
 
-    this%svof = 0.0_r8
-    do i = 1, size(this%sol_matid)
-      this%svof(:n) = this%svof(:n) + this%vof(this%sol_matid(i),:)
-    end do
+    if (this%solid > 0) then
+      do i = 1, n
+        this%fvof_i(this%fluids+this%void+this%solid,i) = sum(this%vof(this%sol_matid,i))
+      end do
+    end if
     ! don't need to communicate svof
 
   end subroutine get_vof_from_matl
@@ -251,7 +250,7 @@ contains
     call get_vof_from_matl()
 
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
-        this%fluids, this%void, dt, this%svof)
+        this%fluids, this%void, dt)
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then

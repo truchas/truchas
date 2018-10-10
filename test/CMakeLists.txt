@@ -281,7 +281,7 @@ add_pytruchas_test(advection-1c advection/test1c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-1d advection/test1d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-2a advection/test2a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(advection-2b advection/test2b.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(advection-2c advection/test2c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(advection-2c advection/test2c.py PROCESSORS 4 LABELS FLOW)
 
 # INVISCID PIPE FLOW TESTS -- OLD FLOW SOLVER
 # Commented-out tests will fail, but shouldn't, due to known solver issues
@@ -452,4 +452,4 @@ add_pytruchas_test(steady-flow-5b steady-flow/test5b.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(steady-flow-5c steady-flow/test5c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-5d steady-flow/test5d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-6a steady-flow/test6a.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(steady-flow-6b steady-flow/test6b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(steady-flow-6b steady-flow/test6b.py PROCESSORS 4 LABELS FLOW)

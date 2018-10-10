@@ -35,6 +35,7 @@ A kludge to force hitting the final time exactly
   courant_number = 0.5
   nested_dissection = f
   subcycles = 4
+  material_priority = 3, 2, 1
 /
 
 &FLOW_CORRECTOR
