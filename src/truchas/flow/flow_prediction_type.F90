@@ -332,7 +332,7 @@ contains
     integer :: j
 
     do j = 1, this%mesh%ncell_onP
-      this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc_n(j)
+      this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc(j)
     end do
 
   end subroutine accumulate_rhs_pressure
