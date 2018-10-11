@@ -54,6 +54,7 @@ contains
     mesh => unstr_mesh_ptr("MESH")
     call mesh%init_cell_centroid
     call mesh%init_face_centroid
+    call mesh%init_face_normal_dist
     print *, "INTIALIZED MESH"
   end subroutine init_mesh
 

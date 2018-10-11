@@ -78,15 +78,19 @@ contains
     dtv = huge(1.0_r8)
 
     ! try something different (simpler) compared to truchas
-    associate (vof => props%vof, rho => props%rho_cc, mu => props%mu_cc)
-      do j = 1, this%mesh%ncell_onP
-        if (vof(j) > 0.0_r8) then
-          v = (this%mesh%volume(j)*vof(j))**(1.0_r8/3.0_r8)
-          dtc = min(dtc, v/(epsilon(1.0_r8)+norm2(this%vel_cc(:,j))))
-          if (.not.this%inviscid .and. mu(j) > 0.0_r8) &
-              dtv = min(dtv, v**2*rho(j)/mu(j))
-        end if
+    associate (vof => props%vof, rho => props%rho_cc, mu => props%mu_cc, m => this%mesh)
+      do j = 1, m%nface_onP
+        dtc = min(dtc, m%face_normal_dist(j)/(epsilon(1.0_r8)+abs(this%vel_fn(j))))
       end do
+
+      if (.not.this%inviscid) then
+        do j = 1, m%ncell_onP
+          if (props%cell_t(j) == regular_t .and. mu(j) > 0.0_r8) then
+            v = (m%volume(j)*vof(j))**(1.0_r8/3.0_r8)
+            dtv = min(dtv, v**2*rho(j)/mu(j))
+          end if
+        end do
+      end if
     end associate
 
     dtc = this%courant_number * global_minval(dtc)

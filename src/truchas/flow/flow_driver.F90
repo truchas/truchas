@@ -191,6 +191,7 @@ contains
     INSIST(associated(this%mesh))
     call this%mesh%init_cell_centroid
     call this%mesh%init_face_centroid
+    call this%mesh%init_face_normal_dist
 
     allocate(this%temperature_cc(this%mesh%ncell))
 
