@@ -51,15 +51,13 @@ data by Martin & Moyce for this regression test.
 /
 
 &OUTPUTS
-!  output_t  = 0.0, 0.075
-!  output_dt = 0.075
-  output_t  = 0.0, 0.050  ! set the phase_start_time to the same final value!
-  output_dt = 0.005
+  output_t  = 0.0, 0.075
+  output_dt = 0.075
 /
 
 A kludge to force hitting the final time exactly
 &SIMULATION_CONTROL
-  phase_start_times = 0.050
+  phase_start_times = 0.075
   phase_init_dt_factor = 1.0
 /
 
@@ -82,15 +80,6 @@ A kludge to force hitting the final time exactly
   subcycles = 2
   nested_dissection = f
   location_tol = 1.0e-12
-/
-
-! TODO: Remove this unnecessary namelist
-&FLOW_PREDICTOR
-  rel_tol = 1.0e-10
-  abs_tol = 0
-  max_ds_iter = 50
-  max_amg_iter = 5
-  krylov_method = "cg"
 /
 
 &FLOW_CORRECTOR

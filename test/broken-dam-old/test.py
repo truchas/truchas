@@ -21,21 +21,31 @@ class BrokenDam(TruchasTest.GoldenTestCase):
 
   def test_final_fluid_frac(self):
     '''BROKEN DAM: verifying the fluid volume fraction at final time'''
-    tol = 1.0e-9
+    time = self.test_output.get_simulation().find_series(id=2).time
     test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('VOF')
     error = max(abs(test[:,0]-gold[:,0])) # comp 0 is fluid
-    self.assertTrue(error <= tol)
+    tol = 1.0e-9
+    if error > tol:
+      print 'vof at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
+      self.assertTrue(False)
+    else:
+      print 'vof at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
 
   def test_final_velocity(self):
     '''BROKEN DAM: verifying the velocity field at final time'''
-    tol = 1.0e-9
+    time = self.test_output.get_simulation().find_series(id=2).time
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_VC')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_VC')
     uerror = max(abs(test[:,0]-gold[:,0]))
     verror = max(abs(test[:,1]-gold[:,1]))
     error = max(uerror,verror)
-    self.assertTrue(error <= tol)
+    tol = 1.0e-9
+    if error > tol:
+      print 'velocity at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
+      self.assertTrue(False)
+    else:
+      print 'velocity at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
 
 if __name__ == '__main__':
   import unittest
