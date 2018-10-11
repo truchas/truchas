@@ -10,7 +10,7 @@ by the divergence free condition
 
     V = 1/(1 + 0.025*x)
 
-and expected pressure is given by Bernoulli's principle 
+and expected pressure is given by Bernoulli's principle
 
     P/rho + V**2/2 = const ==> P = 1 - 0.5 / (1 + 0.025*x)**2
 
@@ -21,7 +21,7 @@ and expected pressure is given by Bernoulli's principle
 
 &OUTPUTS
   output_t = 0.0, 20.0
-  output_dt = 1.0
+  output_dt = 20.0
 /
 
 Hack to hit the final time exactly

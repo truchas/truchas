@@ -19,17 +19,16 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
       self.setUpClass()
     self.test_output=Truchas.TruchasOutput(self.get_output_file())
 
-  def get_test_field(self,field,cycle,serialize=True,region=None):
-    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,serialize,region=region)
+  def get_test_field(self,field,id,serialize=True,region=None):
+    return self.test_output.get_simulation().find_series(id=id).get_data(field,serialize,region=region)
 
   def test_pressure(self):
     '''Verify pressure field against expected analytic value'''
-    
-    n = 203
+
     tol = 5.0e-3
     # The centroids function does not serialize, so we don't want to here either.
-    test = self.get_test_field('Z_P',cycle=n,serialize=False)
-    
+    test = self.get_test_field('Z_P',id=2,serialize=False)
+
     xc = self.test_output.get_mesh().centroids()
     gold = 1.0 - 0.5/(1.0 + 0.025*xc[:,0])**2
     print max(gold), min(gold)
@@ -42,12 +41,11 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
 
   def test_velocity(self):
     '''Verify velocity field against expected analytic value'''
-    
-    n = 203
+
     tol = 5.0e-3
     # The centroids function does not serialize, so we don't want to here either.
-    test = self.get_test_field('Z_VC',cycle=n,serialize=False)
-    
+    test = self.get_test_field('Z_VC',id=2,serialize=False)
+
     xc = self.test_output.get_mesh().centroids()
     gold = 1.0/(1.0 + 0.025*xc[:,0])
     print max(gold), min(gold)
