@@ -130,7 +130,7 @@ contains
     call params%set ('conv-rate-tol', 0.6_r8)
     call params%set ('max-ds-iter', 50)
     call params%set ('max-amg-iter', 10)
-    call params%set ('cg-use-two-norm', .true.)
+    !call params%set ('cg-use-two-norm', .true.)
     call params%set ('logging-level', 1)
     call params%set ('print-level', 0)
 
@@ -164,8 +164,8 @@ contains
       status = 1
     end if
 
-    if (num_pcg_itr /= 4) then
-      if (is_IOP) write(*,'(a,i0)') 'error: expected 4 AMG preconditioned CG iterations; got ', num_pcg_itr
+    if (num_pcg_itr > 5) then
+      if (is_IOP) write(*,'(a,i0)') 'error: expected no more than 5 AMG preconditioned CG iterations; got ', num_pcg_itr
       status = 1
     end if
 
@@ -300,8 +300,8 @@ contains
       status = 1
     end if
 
-    if (num_pcg_itr /= 6) then
-      if (is_IOP) write(*,'(a,i0)') 'error: expected 6 AMG preconditioned GMRES iterations; got ', num_pcg_itr
+    if (num_pcg_itr > 7) then
+      if (is_IOP) write(*,'(a,i0)') 'error: expected no more than 7 AMG preconditioned GMRES iterations; got ', num_pcg_itr
       status = 1
     end if
 
