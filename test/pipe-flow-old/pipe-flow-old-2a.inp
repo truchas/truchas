@@ -14,7 +14,7 @@ width of the pipe, with U'' = (p2-p1)/(2*mu*L).
 If width of the pipe is 2, -1 <= y <= 1, p1 = 3, p2 = 0, mu = 3, L = 1, then
 U(y) = (1 - y^2)/2, and maximum axial velocity along axis is 1/2.
 
-&MESH mesh_file = 'mesh2a-roty.gen'/
+&MESH mesh_file = 'mesh2a.gen'/
 
 &OUTPUTS
   output_t = 0.0, 1.5
@@ -28,30 +28,8 @@ Hack to hit the final time exactly
 /
 
 &PHYSICS
-  flow = .true.
-/
-
-&FLOW
+  legacy_flow = .true.
   inviscid = .false.
-  courant_number = 0.5
-  viscous_number = 0.5
-/
-
-&FLOW_PREDICTOR
-  rel_tol = 1.0e-10
-  abs_tol = 0.0
-  max_ds_iter = 50
-  max_amg_iter = 10
-  krylov_method = 'cg'
-/ 
-
-&FLOW_CORRECTOR
-  rel_tol = 0.0
-  abs_tol = 1.0e-10
-  conv_rate_tol = 0.6
-  max_ds_iter = 50
-  max_amg_iter = 10
-  krylov_method = 'cg'
 /
 
 &NUMERICS
@@ -59,31 +37,47 @@ Hack to hit the final time exactly
   dt_grow = 1.1
   dt_min  = 1.0e-5
   dt_max  = 1.0
+  courant_number = 0.5
+  projection_linear_solution  = 'projection'
+  viscous_linear_solution = 'viscous'
+  viscous_number = 0.5
+  viscous_implicitness = 0.5
+/
+
+&LINEAR_SOLVER
+  name                   = 'projection'
+  method                 = 'fgmres'
+  preconditioning_method = 'ssor'
+  preconditioning_steps  = 2
+  relaxation_parameter   = 1.4
+  convergence_criterion  = 1.0e-10
+/
+
+&LINEAR_SOLVER
+  name                   = 'viscous'
+  method                 = 'fgmres'
+  convergence_criterion  = 1.0e-10
+  preconditioning_method = 'diagonal'
+  stopping_criterion     = '||r||/||b||'
 /
 
 Inlet pressure
-&FLOW_BC
-  name = 'inlet'
-  face_set_ids = 1
-  condition = 'pressure dirichlet'
-  data_constant = 3.0
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 3.0
 /
 
 Outlet pressure
-&FLOW_BC
-  name = 'outlet'
-  face_set_ids = 2
-  condition = 'pressure dirichlet'
-  data_constant = 0.0
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
 /
-
-TEMPORARILY OMITTED SO THAT THE TEST WORKS; SEE ISSUE 181
-Symmetry planes
-!&FLOW_BC
-!  name = 'symmetry'
-!  face_set_ids = 4
-!  condition = 'slip'
-!/
 
 &BODY
   surface_name = 'from mesh file'
