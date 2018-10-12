@@ -57,23 +57,23 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
     error = max(abs(test[:,0] - u)/max(abs(u)))
     if error > tol:
       fail += 1
-      print 'x-velocity: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      print 'x-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
     else:
-      print 'x-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+      print 'x-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
     error = max(abs(test[:,1] - v)/max(abs(v)))
     if error > tol:
       fail += 1
-      print 'y-velocity: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      print 'y-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
     else:
-      print 'y-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+      print 'y-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
     error = max(abs(test[:,2] - w)/max(abs(w)))
     if error > tol:
       fail += 1
-      print 'z-velocity: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      print 'z-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
     else:
-      print 'z-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+      print 'z-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
     self.assertTrue(fail == 0)
 

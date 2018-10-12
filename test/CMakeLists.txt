@@ -334,8 +334,8 @@ add_pytruchas_test(diverging-duct-old-1b diverging-duct-old/test1b.py PROCESSORS
 
 # DIVERGING DUCT TESTS -- NEW FLOW SOLVER
 add_pytruchas_test(diverging-duct-0  diverging-duct/test0.py  PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(diverging-duct-1a diverging-duct/test1a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(diverging-duct-1b diverging-duct/test1b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(diverging-duct-1a diverging-duct/test1a.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(diverging-duct-1b diverging-duct/test1b.py PROCESSORS 4 LABELS FLOW)
 # These should work after the discretization is fixed
 # see https://gitlab.com/truchas/truchas/issues/163
 #add_pytruchas_test(diverging-duct-1c diverging-duct/test1c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)

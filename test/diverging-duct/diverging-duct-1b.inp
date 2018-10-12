@@ -13,7 +13,7 @@ an initial transient we aren't really interested in computing. In addition,
 we are using ortho operators here, though this ought to be very good for the
 mesh used.
 
-&MESH mesh_file = 'mesh1-rotx.gen'/
+&MESH mesh_file = 'mesh2-rotx.gen'/
 
 &OUTPUTS
   output_t = 0.0, 20.0

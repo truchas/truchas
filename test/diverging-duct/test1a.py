@@ -52,21 +52,21 @@ class DivergingDuct(TruchasTest.GoldenTestCase):
 
     fail = 0
 
-    tol = 0.017
+    tol = 0.02
     error = max(abs(test[:,0] - u)/max(abs(u)))
     if error > tol:
       fail += 1
-      print 'x-velocity: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      print 'x-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
     else:
-      print 'x-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+      print 'x-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
-    tol = 0.016
+    tol = 0.03
     error = max(abs(test[:,1] - v)/max(abs(v)))
     if error > tol:
       fail += 1
-      print 'y-velocity: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
+      print 'y-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
     else:
-      print 'y-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+      print 'y-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
     tol = 2.0e-10
     error = max(abs(test[:,2]))
