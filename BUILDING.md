@@ -10,6 +10,7 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
     - Intel Fortran and C/C++:
         - version 17.0.7 (anything 17.0.1 or later should be okay)
         - version 18.0.5 (anything 18.0.2 or later should be okay)
+        - version 19 is **not supported** (known issues)
     - NAG Fortran (with GNU C/C++):
         - version 6.0, builds 1067 or 1071
         - version 6.1, build 6149 or later (preferred version)
