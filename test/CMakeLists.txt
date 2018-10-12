@@ -288,8 +288,12 @@ add_pytruchas_test(advection-2c advection/test2c.py PROCESSORS 4 LABELS FLOW)
 # see https://gitlab.com/truchas/truchas/issues/163
 add_pytruchas_test(inviscid-pipe-flow-old-1a inviscid-pipe-flow-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
 add_pytruchas_test(inviscid-pipe-flow-old-1b inviscid-pipe-flow-old/test1b.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(inviscid-pipe-flow-old-2a inviscid-pipe-flow-old/test2a.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(inviscid-pipe-flow-old-2b inviscid-pipe-flow-old/test2b.py PROCESSORS 4 LABELS OLD_FLOW)
 #add_pytruchas_test(inviscid-pipe-flow-old-1c inviscid-pipe-flow-old/test1c.py PROCESSORS 4 LABELS OLD_FLOW)
 #add_pytruchas_test(inviscid-pipe-flow-old-1d inviscid-pipe-flow-old/test1d.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(inviscid-pipe-flow-old-2c inviscid-pipe-flow-old/test2c.py PROCESSORS 4 LABELS OLD_FLOW)
+#add_pytruchas_test(inviscid-pipe-flow-old-2d inviscid-pipe-flow-old/test2d.py PROCESSORS 4 LABELS OLD_FLOW)
 
 # PIPE FLOW TESTS -- OLD FLOW SOLVER
 # Commented-out tests will fail, but shouldn't, due to known solver issues
