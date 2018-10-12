@@ -83,7 +83,7 @@ find_package(BLAS)
 set(CMAKE_PREFIX_PATH ${TRUCHAS_TPL_DIR})
 
 # HYPRE library
-find_package(HYPRE 2.11)
+find_package(HYPRE 2.15)
 if(HYPRE_FOUND)
   if(NOT HYPRE_IS_PARALLEL)
     set(HYPRE_FOUND False)
