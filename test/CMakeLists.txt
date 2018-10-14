@@ -236,7 +236,7 @@ add_pytruchas_test(shear-constr-heat
 add_pytruchas_test(simple-gap
                    simple-gap/testSimpleGap.py
 		   PROCESSORS 4
-		   LABELS OLD_FLOW)
+		   LABELS OLD_FLOW SOLID_MECHANICS)
 
 add_pytruchas_test(tm-pc
                    tm-pc/testTMPC.py

@@ -254,6 +254,10 @@ Bogus phase change material
   nlk_preconditioner = 'hypre_amg'
 /
 
+&SOLID_MECHANICS
+  displacement_nonlinear_solution  = 'displacement solve'
+/
+
 &LINEAR_SOLVER
 
     name                    = 'displacement precon', 
@@ -283,7 +287,6 @@ loose solver tolerance
     dt_init                          = 1.00e-2,
     dt_max                           = 5.0e0,
     dt_grow                          = 100,
-    displacement_nonlinear_solution  = 'displacement solve', 
 /
 
 Run for 100 sec

@@ -73,12 +73,6 @@ CONTAINS
                                       volume_track_interfaces,    &
                                       interface_geometry,         &
                                       interface_area
-    use solid_mechanics_input,  only: displacement_linear_solution,    &
-                                      displacement_nonlinear_solution, &
-                                      contact_distance,                &
-                                      contact_norm_trac,               &
-                                      contact_penalty, strain_limit,   &
-                                      stress_reduced_integration
     use advection_data,         only: limiter_type,               &
                                       advection_order_vol,        &  
                                       advection_order_energy,     &
@@ -108,7 +102,6 @@ CONTAINS
          viscous_implicitness,                                   & 
          mass_limiter,                                           &
          mass_limiter_cutoff,                                    &
-         strain_limit,                           &
          surften_number,                                         &
 
          t, dt_constant,                                         &
@@ -119,8 +112,6 @@ CONTAINS
          interface_topology_model,                               &
 
          projection_linear_solution,                             &
-         displacement_linear_solution,                           &
-         displacement_nonlinear_solution,                        &
 
          ! JSED
          viscous_linear_solution,                                &
@@ -134,11 +125,6 @@ CONTAINS
          discrete_ops_type,                                      &
 
          ff_discrete_ops_type,                                   &
-
-         stress_reduced_integration,                             &
-         contact_distance,                                       &
-         contact_norm_trac,                                         &
-         contact_penalty,                                        &
 
          limiter_type,                                           &
          advection_order_vol,                                    &
@@ -214,15 +200,10 @@ CONTAINS
                                         interface_model_default
     use linear_solution,          only: UBIK_PRESSURE_DEFAULT,                &
                                         ubik_viscous_default,                 &
-                                        UBIK_NK_DEFAULT,                      &
                                         linear_solutions, Ubik_user,          &
                                         DEFAULT_UBIK_CONTROLS,                &
-                                        UBIK_DISPLACEMENT_DEFAULT,            &
                                         PRECOND_NONE,                         &
                                         PRECOND_DIAGONAL
-    use nonlinear_solution,       only: NK_DEFAULT, NKuser,                   &
-                                        nonlinear_solutions,                  &
-                                        DEFAULT_NK_CONTROLS
     use parameter_module,         only: nmat, string_len, max_topology_models
     use legacy_mesh_api,          only: ndim
     use porous_drag_data,         only: porous_implicitness
@@ -245,11 +226,6 @@ CONTAINS
                                         volume_track_subcycles,               &
                                         volume_track_iter_tol,                &
                                         volume_track_iter_max
-    use solid_mechanics_input,    only: solid_mechanics,                  &
-                                        UBIK_DISPLACEMENT,                &
-                                        displacement_linear_solution,     &
-                                        displacement_nonlinear_solution,  &
-                                        NK_DISPLACEMENT, strain_limit
     use advection_data,         only: limiter_type,               &
                                       advection_order_energy,     &
                                       advection_order_momentum,   &
@@ -463,14 +439,6 @@ CONTAINS
     if (viscous_number < 0) then
        write (message, 50) viscous_number
 50     format ('Invalid viscous_number = ',1pe13.5)
-       call TLS_error (message)
-       fatal = .true.
-    end if
-
-    ! Check Strain Limit
-    if (strain_limit < 0) then
-       write (message, 55) strain_limit
-55     format ('Invalid strain_limit = ',1pe13.5)
        call TLS_error (message)
        fatal = .true.
     end if
@@ -742,93 +710,6 @@ CONTAINS
        end if
     end if
 
-    ! Displacement linear solution.
-    DISPLACEMENT_LS_CHECK: do i = 1, linear_solutions
-       j = i + DEFAULT_UBIK_CONTROLS
-       string = Ubik_user(j)%name
-       this_string_matches = .false.
-       call STRING_COMPARE (TRIM(displacement_linear_solution), string, this_string_matches)
-       if (this_string_matches) then
-          UBIK_DISPLACEMENT = j
-          if (solid_mechanics) then
-             write (message, 91) TRIM(displacement_linear_solution)
-91           format ('"',a,'" is deprecated and has no effect on the solution!', &
-                      'Please remove it from the namelist')
-             call TLS_warn (message)
-          end if
-          exit DISPLACEMENT_LS_CHECK
-       end if
-    end do DISPLACEMENT_LS_CHECK
-
-    if (UBIK_DISPLACEMENT == UBIK_DISPLACEMENT_DEFAULT .and. solid_mechanics) then
-       if (displacement_linear_solution == 'default') then
-          write (message, 92) 
-92        format ('Using default linear solver parameters for displacement linear solution.')
-          call TLS_info (message)
-       else
-          write (message, 93) TRIM(displacement_linear_solution)
-93        format ('Linear solver "',a,'" for displacement linear solution not found!', &
-                  ' Reverting to default linear solver parameters.')
-          call TLS_warn (message)
-       end if
-    end if
-
-    DISPLACEMENT_NLS_CHECK: do i = 1, nonlinear_solutions
-       j = i + DEFAULT_NK_CONTROLS
-       string = NKuser(j)%name
-       this_string_matches = .false.
-       call STRING_COMPARE (TRIM(displacement_nonlinear_solution), string, this_string_matches)
-       if (this_string_matches) then
-          NK_DISPLACEMENT = j
-          if (solid_mechanics) then
-             write (message, 81) TRIM(displacement_nonlinear_solution)
-81           format ('Using nonlinear solver "',a,'" for displacement nonlinear solution.')
-             call TLS_info (message)
-          end if
-          exit DISPLACEMENT_NLS_CHECK
-       end if
-    end do DISPLACEMENT_NLS_CHECK
-
-    if (NK_DISPLACEMENT == NK_DEFAULT .and. solid_mechanics) then
-       if (displacement_nonlinear_solution == 'default') then
-          write (message, 82) 
-82        format ('Using default nonlinear solver parameters for displacement nonlinear solution.')
-          call TLS_info (message)
-       else
-          write (message, 83) TRIM(displacement_nonlinear_solution)
-83        format ('Nonlinear solver "',a,'" for displacement nonlinear solution not found!', &
-                  ' Reverting to default nonlinear solver parameters.')
-          call TLS_warn (message)
-       end if
-    end if
-
-    ! Find the correct linear solver for each input nonlinear solver.
-    NLSLS_MATCH: do i = 1, nonlinear_solutions
-
-       j = i + DEFAULT_NK_CONTROLS
-       string = NKuser(j)%linear_solver_name
-       this_string_matches = .false.
-       LS_NAME: do l = 1,linear_solutions
-
-          k = l + DEFAULT_UBIK_CONTROLS
-          call STRING_COMPARE (TRIM(Ubik_user(k)%name), string, this_string_matches)
-          if (this_string_matches) then
-             NKuser(j)%linear_solver_index = k
-             write (message, 58) TRIM(Ubik_user(k)%name), TRIM(NKuser(j)%name)
-58           format ('Using linear solver "',a,'" for nonlinear solver "',a,'".')
-             call TLS_info (message)
-             exit LS_NAME
-          end if
-
-          if (NKuser(j)%linear_solver_index == UBIK_NK_DEFAULT) then
-             write (message, 61) TRIM(Ubik_user(k)%name), TRIM(NKuser(j)%name)
-61           format ('Using default linear solver "',a,'" for nonlinear solver "',a,'".')
-             call TLS_info (message)
-          end if
-          
-       end do LS_NAME
-    end do NLSLS_MATCH
-
     ! various checks on flags for advection schemes...
 
     if (volume_track_interfaces) then
@@ -879,8 +760,7 @@ CONTAINS
                                       mass_limiter, mass_limiter_cutoff
     use flux_volume_module,     only: flux_vol_iter_max
     use interface_module,       only: interface_topology_model
-    use linear_solution,        only: UBIK_PRESSURE_DEFAULT, UBIK_DISPLACEMENT_DEFAULT, ubik_viscous_default
-    use nonlinear_solution,     only: NK_DEFAULT
+    use linear_solution,        only: UBIK_PRESSURE_DEFAULT, ubik_viscous_default
     use parameter_module,       only: nmat
     use porous_drag_data,       only: porous_implicitness
     use projection_data_module, only: mac_projection_iterations,           &
@@ -911,10 +791,6 @@ CONTAINS
                                       volume_track_interfaces,    &
                                       interface_geometry,         &
                                       interface_area
-    use solid_mechanics_input,  only: UBIK_DISPLACEMENT, displacement_linear_solution, &
-                                      NK_DISPLACEMENT, displacement_nonlinear_solution, &
-                                      contact_distance, contact_norm_trac, contact_penalty, &
-                                      strain_limit, stress_reduced_integration
     use advection_data,         only: limiter_type,               &
                                       advection_order_vol,        &  
                                       advection_order_energy,     &
@@ -964,12 +840,7 @@ CONTAINS
     ! might be better for stability reason see above comment
     body_force_face_method         = .true. 
 
-    strain_limit            = 1.0e-10   ! minimum plastic strain increment
     surften_number          = 1       ! surface tension number
-
-    ! Displacement linear solution parameters.
-    displacement_linear_solution = 'default'       ! linear solver to use
-    UBIK_DISPLACEMENT = UBIK_DISPLACEMENT_DEFAULT  ! linear solver control parameters
 
     ! Projection linear solution parameters.
     projection_linear_solution = 'default'   ! linear solver to use
@@ -979,10 +850,6 @@ CONTAINS
     ! viscous linear solution parameters
     viscous_linear_solution = 'default'    ! linear solver to use
     ubik_viscous = ubik_viscous_default    ! linear solver control parameters
-
-    ! NK solution parameters.
-    displacement_nonlinear_solution = 'default'    ! displacement NK nonlinear solver to use
-    NK_DISPLACEMENT = NK_DEFAULT
 
     ! Cutoff parameters.
     cutvof  = 1.0d-8 ! volume fraction cutoff
@@ -1037,14 +904,6 @@ CONTAINS
     discrete_ops_type             = 'default'
     ff_discrete_ops_type          = 'default'
 
-    ! Node based operator
-    stress_reduced_integration    = .false.
-
-    ! Contact parameters
-    contact_distance              = 1.0e-7
-    contact_norm_trac             = 1.0e4
-    contact_penalty               = 1.0e3
-
     ! Projection parameters
     MinFaceFraction               = 1.0e-3
 
@@ -1086,13 +945,6 @@ CONTAINS
                                       volume_track_interfaces,    &
                                       interface_geometry,         &
                                       interface_area
-    use solid_mechanics_input,  only: displacement_linear_solution,    &
-                                      displacement_nonlinear_solution, &
-                                      contact_distance,                & 
-                                      contact_norm_trac,               &
-                                      contact_penalty,                 &
-                                      strain_limit,                    &
-                                      stress_reduced_integration
     use advection_data,         only: limiter_type,               &
                                       advection_order_vol,        &  
                                       advection_order_energy,     &
@@ -1117,7 +969,6 @@ CONTAINS
        call PGSLIB_BCAST (viscous_implicitness)
        call PGSLIB_BCAST (mass_limiter)
        call PGSLIB_BCAST (mass_limiter_cutoff)
-       call PGSLIB_BCAST (strain_limit)
        call PGSLIB_BCAST (surften_number)
        call PGSLIB_BCAST (MinFaceFraction)
        call PGSLIB_BCAST (t)
@@ -1142,8 +993,6 @@ CONTAINS
 
        call PGSLIB_BCAST (projection_linear_solution)
        call PGSLIB_BCAST (viscous_linear_solution)
-       call PGSLIB_BCAST (displacement_linear_solution)
-       call PGSLIB_BCAST (displacement_nonlinear_solution)
 
        call PGSLIB_BCAST (discrete_ops_type)
        call PGSLIB_BCAST (ff_discrete_ops_type)
@@ -1156,12 +1005,6 @@ CONTAINS
        call PGSLIB_BCAST (volume_track_interfaces)
        call PGSLIB_BCAST (interface_geometry)
        call PGSLIB_BCAST (interface_area)
-
-       call PGSLIB_BCAST (stress_reduced_integration)
-
-       call PGSLIB_BCAST (contact_distance)
-       call PGSLIB_BCAST (contact_norm_trac)
-       call PGSLIB_BCAST (contact_penalty)
 
        ! Non-namelist variables.
        call PGSLIB_BCAST (constant_dt)

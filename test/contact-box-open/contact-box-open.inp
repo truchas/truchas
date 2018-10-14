@@ -29,15 +29,18 @@
   verbose_stepping = .true.
 /
 
+&SOLID_MECHANICS
+  displacement_nonlinear_solution  = 'displacement solve'
+  contact_distance = 1.0e-7
+  contact_norm_trac = 1.0e4
+  contact_penalty = 1.0e3
+/
+
 &NUMERICS
   dt_init = 1.0
   dt_grow = 5.0
   dt_max = 5.0
   dt_min = 1.0e-3
-  displacement_nonlinear_solution = 'displacement solve'
-  contact_distance = 1.0e-7
-  contact_norm_trac = 1.0e4
-  contact_penalty = 1.0e3
 /
 
 &LINEAR_SOLVER

@@ -259,6 +259,10 @@ solid mechanics only
   nlk_preconditioner = 'hypre_amg'
 /
 
+&SOLID_MECHANICS
+  displacement_nonlinear_solution  = 'displacement solve'
+/
+
 &LINEAR_SOLVER
 
     name                    = 'displacement nk', 
@@ -288,8 +292,7 @@ solid mechanics only
 constant time increment
 
 &NUMERICS
-    dt_constant                           = 1.0e-1, 
-    displacement_nonlinear_solution  = 'displacement solve', 
+    dt_constant = 1.0e-1
 /
 
 Run for 100 sec

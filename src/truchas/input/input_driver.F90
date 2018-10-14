@@ -62,6 +62,7 @@ contains
     use viscous_data_module,       only: inviscid
     use turbulence_module,         only: read_turbulence_namelist_for_legacy
     use solid_mechanics_input,     only: solid_mechanics
+    use solid_mechanics_namelist,  only: read_solid_mechanics_namelist
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_namelist,         only: read_toolpath_namelists
@@ -123,6 +124,9 @@ contains
     call material_input (lun)
     call material_sizes ()
 
+    call linear_solver_input (lun)
+    call nonlinear_solver_input (lun)
+
     if (flow) call read_flow_namelists(lun)
 
     if (legacy_flow) then
@@ -133,17 +137,12 @@ contains
 
     ! read namelists for solid mechanics options
     if (solid_mechanics) then
+      call read_solid_mechanics_namelist (lun)
       call read_viscoplastic_model_namelists (lun)
     end if
 
     ! read volume fraction data
     call interfaces_input (lun)
-
-    ! read linear solution input
-    call linear_solver_input (lun)
-
-    ! read nonlinear solution input
-    call nonlinear_solver_input (lun)
 
     ! read numerical options data
     call numerics_input (lun)
