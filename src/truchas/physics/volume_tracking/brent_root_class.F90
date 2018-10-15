@@ -18,7 +18,7 @@ module brent_root_class
   private
 
   type, abstract, public :: brent_root
-    real(r8) :: eps
+    real(r8) :: eps = 0, feps = 0
     integer  :: maxitr, numitr = 0
   contains
     procedure, non_overridable :: find_root
@@ -43,7 +43,7 @@ contains
     real(r8), intent(out) :: root
     integer, intent(out) :: stat
 
-    real(r8) :: a,b,c,d,e,fa,fb,fc,p,q,r,s,tol1,xm
+    real(r8) :: a,b,c,d,e,fa,fb,fc,p,q,r,s,tol1,tol2,xm
     integer :: i
 
     a = xmin
@@ -74,9 +74,10 @@ contains
       end if
 
       tol1 = 2.0_r8*epsilon(1.0_r8)*abs(b) + 0.5_r8*this%eps
+      tol2 = 2.0_r8*epsilon(1.0_r8)*abs(fb) + 0.5_r8*this%feps
       xm = 0.5_r8*(c-b)
 
-      if (abs(xm) <= tol1 .or. fb==0.0_r8) then
+      if (abs(xm) <= tol1 .or. abs(fb) <= tol2) then
         root=b
         return
       end if

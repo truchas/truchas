@@ -56,7 +56,7 @@ contains
     this%nfluid = nfluid
     this%nmat = nmat
 
-    call params%get('location_iter_max', this%location_iter_max, default=20)
+    call params%get('location_iter_max', this%location_iter_max, default=30)
     call params%get('location_tol', this%location_tol, default=1.0e-8_r8)
     call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
     call params%get('subcycles', this%subcycles, default=2)
@@ -213,15 +213,14 @@ contains
 
   subroutine donor_fluxes_os(this, vel, vof, dt)
 
-    use cell_topology
-    use hex_types, only: cell_data
+    use cell_geom_type
 
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
     real(r8) :: face_normal(3,6), flux_vols(size(vof,dim=1),6)
     integer :: i,j,k,ierr, face_vid(4,6)
-    type(cell_data) :: cell
+    type(cell_geom) :: cell
 
         ! calculate the flux volumes for each face
     call start_timer('reconstruct/advect')
@@ -267,7 +266,7 @@ contains
               face_normal(:,1:size(fi)))
 
         case default
-          call TLS_fatal('unaccounted topology in donor_fluxes_nd')
+          call TLS_fatal('unaccounted topology in donor_fluxes_os')
         end select
 
 !!$        if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
@@ -278,7 +277,7 @@ contains
         this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
             cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
             vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff, &
-            this%priority, this%nfluid, this%nmat)
+            this%priority, this%nfluid, this%nmat, this%location_iter_max)
 !!$        if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
       end associate
     end do
@@ -288,25 +287,23 @@ contains
   end subroutine donor_fluxes_os
 
     ! get the volume flux for every material in the given cell
-  function cell_volume_flux (dt, cell, vof, int_norm, vel, cutoff, priority, nfluid, nmat)
-    use hex_types,           only: cell_data
-    use locate_plane_modulez, only: locate_plane_hex
-    use flux_volume_modulez,  only: flux_vol_quantity
-    use array_utils,         only: last_true_loc
+  function cell_volume_flux (dt, cell, vof, int_norm, vel, cutoff, priority, nfluid, nmat, maxiter)
+
+    use f08_intrinsics, only: findloc
+    use locate_plane_os_function
+    use plane_type
+    use cell_geom_type
 
     real(r8), intent(in) :: dt, int_norm(:,:), vof(:), vel(:), cutoff
-    integer, intent(in) :: priority(:), nfluid, nmat
-    type(cell_data), intent(in) :: cell
+    integer, intent(in) :: priority(:), nfluid, nmat, maxiter
+    type(cell_geom), intent(in) :: cell
     real(r8) :: cell_volume_flux(nfluid,6)
 
-    real(r8) :: Vofint, vp, dvol
-    real(r8) :: flux_vol_sum(6)
-    integer :: ni,f,locate_plane_niters,nlast, nint, ierr,nmat_in_cell
+    real(r8) :: Vofint, dvol
+    real(r8) :: flux_vol_sum(6), flux_vol
+    integer :: ni,f,nlast, nint, ierr,nmat_in_cell
     logical :: is_mixed_donor_cell
-    type(locate_plane_hex) :: plane_cell
-    type(flux_vol_quantity) :: Flux_Vol
-
-    !call start_timer ("ra_cell")
+    type(plane) :: P
 
     cell_volume_flux = 0.0_r8
     flux_vol_sum = 0.0_r8
@@ -321,103 +318,84 @@ contains
       ! First accumulate the volume fraction of this material and materials with lower priorities.
       ! Force 0.0 <= Vofint <= 1.0
       Vofint = min(max(sum(vof(priority(:ni))), 0.0_r8), 1.0_r8)
-      is_mixed_donor_cell = cutoff < Vofint .and. Vofint < (1.0_r8 - cutoff)
+      is_mixed_donor_cell = cutoff < Vofint .and. Vofint < 1 - cutoff
 
       ! locate each interface plane by computing the plane constant
-      if (is_mixed_donor_cell) then
-        call plane_cell%init (int_norm(:,priority(ni)), vofint, cell%volume, cell%node)
-        call plane_cell%locate_plane (locate_plane_niters)
-      end if
+      if (is_mixed_donor_cell) &
+          P = locate_plane_os(int_norm(:,priority(ni)), vofint, cell%volume, cell%node, &
+          cutoff, maxiter)
 
       ! calculate delta advection volumes for this material at each donor face and accumulate the sum
-      cell_volume_flux(priority(ni),:) =  material_volume_flux (flux_vol_sum, plane_cell, cell, &
-           is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff)
-    end do ! interface loop
+      call compute_material_volume_flux(cell_volume_flux(priority(ni),:), flux_vol_sum, P, cell, &
+          is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff)
+    end do
 
-    ! get the id of the last material
-    nlast = priority(last_true_loc(vof(priority) >= cutoff))
-
-    !call start_timer ("last_loop")
     ! Compute the advection volume for the last material.
+    nlast = priority(findloc(vof(priority) >= cutoff, .true., back=.true.))
     do f = 1,6
       ! Recalculate the total flux volume for this face.
-      Flux_Vol%Vol = dt*vel(f)*cell%face_area(f)
-      if (abs(flux_vol%vol) > 0.5_r8 * cell%volume) then
-        write(*,*) dt,flux_vol%vol,cell%volume,flux_vol%vol/cell%volume
+      flux_vol = dt*vel(f)*cell%face_area(f)
+      if (abs(flux_vol) > 0.5_r8 * cell%volume) then
+        write(*,*) dt,flux_vol,cell%volume,flux_vol/cell%volume
         call TLS_fatal('advection timestep too large')
       end if
-      if (Flux_Vol%Vol <= cutoff*cell%volume) cycle
+      if (flux_vol <= cutoff*cell%volume) cycle
 
       ! For donor cells containing only one material, assign the total flux.
       if (nmat_in_cell==1) then
-        cell_volume_flux(nlast,f) = Flux_Vol%Vol
+        cell_volume_flux(nlast,f) = flux_vol
       else
         ! The volume flux of the last material shouldn't be less than
         ! zero nor greater than the volume of this material in the donor cell.
-        dvol = min(max(abs(Flux_Vol%Vol - Flux_Vol_Sum(f)), 0.0_r8), Vof(nlast)*cell%volume)
+        dvol = min(max(abs(flux_vol - Flux_Vol_Sum(f)), 0.0_r8), Vof(nlast)*cell%volume)
 
         ! Store the last material's volume flux.
         if (dvol > cutoff*cell%volume) cell_volume_flux(nlast,f) = dvol
       end if
-    end do ! face loop
-    !call stop_timer ("last_loop")
-
-    !call stop_timer ("ra_cell")
+    end do
 
   end function cell_volume_flux
 
   ! calculate the flux of one material in a cell
-  function material_volume_flux (flux_vol_sum, plane_cell, cell, is_mixed_donor_cell, vel, dt, vof, cutoff)
-    use hex_types,              only: cell_data
-    use truncate_volume_modulez, only: truncate_volume, face_param, truncvol_data
-    use flux_volume_modulez,     only: flux_vol_quantity, flux_vol_vertices
-    use locate_plane_modulez, only: locate_plane_hex
+  subroutine compute_material_volume_flux(material_volume_flux, flux_vol_sum, P, cell, &
+      is_mixed_donor_cell, vel, dt, vof, cutoff)
 
-    real(r8),               intent(inout) :: flux_vol_sum(:)
-    real(r8),               intent(in)    :: vel(:), dt, vof, cutoff
-    type(locate_plane_hex), intent(in)    :: plane_cell
-    type(cell_data),        intent(in)    :: cell
-    logical,                intent(in)    :: is_mixed_donor_cell
-    real(r8)                              :: material_volume_flux(6)
+    use cell_geom_type
+    use truncation_volume_type
+    use plane_type
 
-    integer                 :: f,ff, idbg
-    real(r8)                :: vp, dvol
-    type(truncvol_data)     :: trunc_vol(6)
-    type(flux_vol_quantity) :: Flux_Vol
+    real(r8), intent(out) :: material_volume_flux(:)
+    real(r8), intent(inout) :: flux_vol_sum(:)
+    type(plane), intent(in) :: P
+    type(cell_geom), intent(in) :: cell
+    logical, intent(in) :: is_mixed_donor_cell
+    real(r8), intent(in) :: vel(:), dt, vof, cutoff
 
-    !call start_timer ("material_flux_vol")
+    integer :: f
+    real(r8) :: vp, flux_vol, flux_vol_node(3,8)
+    type(truncation_volume) :: trunc_vol
 
-    material_volume_flux = 0.0_r8
-
+    material_volume_flux = 0
     do f = 1,6
       ! Flux volumes
-      Flux_Vol%Fc  = f
-      Flux_Vol%Vol = dt*vel(f)*cell%face_area(f)
-      if (Flux_Vol%Vol <= cutoff*cell%volume) cycle
-
-      ! calculate the vertices describing the volume being truncated through the face
-      call flux_vol_vertices (f, cell, is_mixed_donor_cell, vel(f)*dt, Flux_Vol, cutoff)
+      flux_vol = dt*vel(f)*cell%face_area(f)
+      if (flux_vol <= cutoff*cell%volume) cycle
 
       if (is_mixed_donor_cell) then
-        ! Now compute the volume truncated by interface planes in each flux volumes.
-        do ff = 1,6
-          trunc_vol(ff) = face_param (plane_cell, 'flux_cell', ff, flux_vol%xv)
-        end do
+        ! calculate the vertices describing the volume being truncated through the face
+        flux_vol_node = flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff)
 
-        ! For mixed donor cells, the face flux is in Int_Flux%Advection_Volume.
-        Vp = truncate_volume(plane_cell, trunc_vol)
+        ! compute the volume truncated by interface planes in each flux volumes
+        call trunc_vol%init(flux_vol_node, P%normal)
+        Vp = trunc_vol%volume(P%rho)
       else
         ! For clean donor cells, the entire Flux volume goes to the single donor material.
-        if (vof >= (1.0_r8-cutoff)) then
-          Vp = abs(flux_vol%vol)
-        else
-          Vp = 0.0_r8
-        end if
+        Vp = merge(abs(flux_vol), 0.0_r8, vof >= 1-cutoff)
       end if
 
       ! If Vp is close to 0 set it to 0.  If it is close
       ! to 1 set it to 1. This will avoid numerical round-off.
-      if (Vp > (1.0_r8-cutoff)*abs(Flux_Vol%Vol)) Vp = abs(Flux_Vol%Vol)
+      if (Vp > (1-cutoff)*abs(flux_vol)) Vp = abs(flux_vol)
 
       ! Make sure that the current material-integrated advection
       ! volume hasn't decreased from its previous value.  (This
@@ -425,17 +403,97 @@ contains
       ! orientation and now crosses previous interfaces.)  Also
       ! limit Volume_Flux_Sub to take no more than the material
       ! occupied volume in the donor cell.
-      dvol = min(max(Vp - Flux_Vol_Sum(f), 0.0_r8), Vof*cell%volume)
+      material_volume_flux(f) = min(max(Vp - flux_vol_sum(f), 0.0_r8), Vof*cell%volume)
+      flux_vol_sum(f) = flux_vol_sum(f) + material_volume_flux(f)
+    end do
 
-      ! Now gather advected volume information into Volume_Flux_Sub
-      material_volume_flux(f) = dvol
-      Flux_Vol_Sum(f) = Flux_Vol_Sum(f) + dvol
-    end do ! face loop
+  end subroutine compute_material_volume_flux
 
-    !call stop_timer ("material_flux_vol")
+  ! Given the value of Flux_Vol (the volume of material that moves
+  ! through the current advection cell face), find the vertices which
+  ! describe this volume.  Four of these vertices will be the ones that
+  ! describe the advection cell face. The other four vertices will lie
+  ! approximately "DIST" away from the advection cell face. These are
+  ! only approximately "DIST" away because the cell cross-sectional area
+  ! may increase or decrease as one moves away from the advection cell
+  ! face.  The value used is varied from "DIST" such that the vertices
+  ! describe a hexagonal volume that matches the value of Flux_Vol.
+  function flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof)
 
-  end function material_volume_flux
+    use cell_geometry, only: hex_volume
+    use cell_geom_type
 
+    integer, intent(in) :: face
+    type(cell_geom), intent(in) :: cell
+    real(r8), intent(in) :: dist, cutvof, flux_vol
+    real(r8) :: flux_vol_nodes(3,8)
+
+    integer, parameter :: flux_vol_iter_max = 10
+    integer, parameter :: &
+        Edge_ends(2,4,6) = reshape([ &
+        1,4,  2,3,  6,7,  5,8,   & ! face 1 edges
+        2,1,  3,4,  7,8,  6,5,   & ! face 2 edges
+        3,2,  4,1,  8,5,  7,6,   & ! face 3 edges
+        1,2,  5,6,  8,7,  4,3,   & ! face 4 edges
+        1,5,  4,8,  3,7,  2,6,   & ! face 5 edges
+        5,1,  6,2,  7,3,  8,4] , & ! face 6 edges
+        [2,4,6])
+
+    integer :: ia, ib, e, iter
+    real(r8) :: percnt(4), Uedge(3,4), volume, mult, ndotuedge
+    character(256) :: errmsg
+
+    ! compute the edge unit vectors
+    flux_vol_nodes = cell%node
+    do e = 1, 4
+      ia  = Edge_ends(1,e,face) ! front node
+      ib  = Edge_ends(2,e,face) ! back node
+      Uedge(:,e) = flux_vol_nodes(:,ib) - flux_vol_nodes(:,ia)
+
+      ndotuedge = dot_product(cell%face_normal(:,face), Uedge(:,e))
+      Percnt(e) = -Dist/(ndotuedge+epsilon(1.0_r8))
+    end do
+
+    if (any(Percnt < 0.0_r8) .or. any(Percnt > 1.0_r8)) then
+      do e = 1,8
+        print '(a,3es15.4)', 'flux nodes:', flux_vol_nodes(:,e)
+      end do
+      print *, dist
+      do e = 1,4
+        ndotuedge = dot_product(cell%face_normal(:,face), Uedge(:,e))
+        print '(a,3es15.4)', 'ndotuedge: ',ndotuedge, -dist/(ndotuedge+epsilon(1.0_r8)),percnt(e)
+      end do
+      write(errmsg,'(a,3es13.6)') &
+          'FLUX_VOL_NODES: invalid flux volume or inverted element; cell centroid =', &
+          sum(cell%node, dim=2) / 8
+      call TLS_fatal (errmsg)
+    end if
+
+    ! iterate to find the four vertices at the back end of the flux volume
+    mult = 1
+    do iter = 1, flux_vol_iter_max
+      ! loop over edges to adjust the vertices
+      do e = 1,4
+        ia = Edge_ends(1,e,face)
+        ib = Edge_ends(2,e,face)
+        flux_vol_nodes(:,ib) = flux_vol_nodes(:,ia) + Mult*Percnt(e)*Uedge(:,e)
+      end do
+
+      ! compute the new flux volume and increment multiplier for next iteration
+      volume = hex_volume(flux_vol_nodes)
+      Mult = Mult * flux_vol/volume
+      if (abs(flux_vol - volume) < cutvof*cell%volume) exit
+    end do
+
+    if (iter > flux_vol_iter_max) then
+      write(errmsg,'(a,i0,a,es12.5,a,i0)') &
+          'Flux volume vertex iteration did not converge in ', flux_vol_iter_max,&
+          '. Maximum flux volume difference is ', abs(flux_vol-Volume) !,&
+      !' in cell '!, cell_index
+      call TLS_warn (errmsg)
+    end if
+
+  end function flux_vol_nodes
 
   subroutine donor_fluxes_nd(this, vel, vof, dt)
 
@@ -445,7 +503,7 @@ contains
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
-    real(r8) :: face_normal(3,6), flux_vols(size(vof,dim=1),6)
+    real(r8) :: face_normal(3,6)
     integer :: i,j,k,ierr, face_vid(4,6)
     type(multimat_cell) :: cell
 
@@ -499,7 +557,7 @@ contains
         if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
 
         call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
-            this%location_tol, this%location_iter_max)
+            this%location_iter_max)
 
         this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
             cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&

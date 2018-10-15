@@ -6,12 +6,12 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2018-10-16 14:27:04
+   build date/time:     2018-10-23 17:40:16
    build flags:         -u -C -C=dangling -gline -nan
-   build host:          arriba.lanl.gov
-   run architecture:    Linux arriba.lanl.gov 4.13.16-10
-   run host:            arriba.lanl.gov1 SMP Mon Nov 27
-   run date/time:       18 Oct 18 15:26:33
+   build host:          petaca1.lanl.gov
+   run architecture:    Linux petaca1.lanl.gov 4.13.16-1
+   run host:            petaca1.lanl.gov1 SMP Mon Nov 27
+   run date/time:       23 Oct 18 17:41:29
    processors:          1
 
 ================================================================================
@@ -327,7 +327,7 @@ projection solve:   17 (DS),   10 (AMG), 0.0000E+00 (|r|/|b|)
             Min Velocity: (-6.2493E-02, -2.9730E-01,  0.0000E+00)
             Max Velocity: ( 7.2992E-01,  1.5038E-01,  0.0000E+00)
 
-         21: t =   3.02462E-02, dt(courant) =   1.51759E-03
+         21: t =   3.02462E-02, dt(courant) =   1.51759E-03 (cell        0)
 projection solve:   18 (DS),   10 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: (-6.4616E-02, -3.1229E-01,  0.0000E+00)
@@ -339,7 +339,7 @@ projection solve:   26 (DS),   10 (AMG), 0.0000E+00 (|r|/|b|)
             Min Velocity: (-7.1550E-02, -3.2661E-01,  0.0000E+00)
             Max Velocity: ( 7.7855E-01,  1.5224E-01,  0.0000E+00)
 
-         23: t =   3.32327E-02, dt(courant) =   1.42585E-03
+         23: t =   3.32327E-02, dt(courant) =   1.42585E-03 (cell        0)
 projection solve:   24 (DS),   10 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: (-7.7978E-02, -3.4023E-01,  0.0000E+00)
@@ -511,7 +511,7 @@ projection solve:   36 (DS),    9 (AMG), 0.0000E+00 (|r|/|b|)
 projection solve:   38 (DS),    9 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: (-1.5795E-01, -6.3347E-01,  0.0000E+00)
-            Max Velocity: ( 1.1930E+00,  1.5370E-01,  0.0000E+00)
+            Max Velocity: ( 1.1930E+00,  1.5369E-01,  0.0000E+00)
 
          52: t =   6.59137E-02, dt(courant) =   9.42269E-04
 projection solve:   37 (DS),    9 (AMG), 0.0000E+00 (|r|/|b|)
@@ -582,27 +582,27 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  9.041E+00 --- Total
-    1.100E-02 --- Input
-    4.454E+00 --- Initialization
-      5.020E-04 --- Vof Initialization
-    4.568E+00 --- Main Cycle
-      1.745E+00 --- Flow
-        4.299E-02 --- update properties
-        2.324E-01 --- prediction
-          1.427E-01 --- setup
-          8.958E-02 --- solve
-        1.382E+00 --- projection
-          5.871E-01 --- setup
-          7.938E-01 --- solve
-            3.017E-01 --- hypre solve
-      1.034E-02 --- Output
-      9.193E-03 --- Time Step
-      2.786E+00 --- Volumetracking
-        6.705E-01 --- normals
-        1.794E+00 --- reconstruct/advect
+  8.490E+00 --- Total
+    9.374E-03 --- Input
+    3.871E+00 --- Initialization
+      6.760E-04 --- Vof Initialization
+    4.573E+00 --- Main Cycle
+      1.774E+00 --- Flow
+        4.644E-02 --- update properties
+        2.301E-01 --- prediction
+          1.359E-01 --- setup
+          9.412E-02 --- solve
+        1.408E+00 --- projection
+          5.921E-01 --- setup
+          8.143E-01 --- solve
+            3.266E-01 --- hypre solve
+      5.432E-01 --- Output
+      1.072E-02 --- Time Step
+      2.222E+00 --- Volumetracking
+        7.221E-01 --- normals
+        1.066E+00 --- reconstruct/advect
 
-                  Process virtual memory used: 4.50E+02 mB
-                                   words/cell: 28074
+                  Process virtual memory used: 4.43E+02 mB
+                                   words/cell: 27672
 
-truchas terminated normally on 18 Oct 18 at 15:26:42
+truchas terminated normally on 23 Oct 18 at 17:41:40

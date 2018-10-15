@@ -90,9 +90,8 @@ class mytest(TruchasTest.GoldenTestCase):
 
   def test_final_pressure(self):
     '''Verify final pressure'''
-    self.pressure_test(3,1e-10)
+    self.pressure_test(3,2e-10)
 
 if __name__ == '__main__':
   import unittest
   unittest.main()
-

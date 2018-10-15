@@ -37,7 +37,7 @@ contains
 
   ! given a set of VoFs, normals, and an order,
   ! create child polyhedra for each material
-  subroutine partition (this, vof, norm, cutvof, priority, cut_precision, max_iterations)
+  subroutine partition (this, vof, norm, cutvof, priority, max_reconstruction_iterations)
 
     use near_zero_function
     use plane_type
@@ -46,8 +46,7 @@ contains
     class(multimat_cell), intent(inout) :: this
     real(r8),             intent(in)    :: vof(:), norm(:,:), cutvof
     integer, intent(in) :: priority(:)
-    real(r8), intent(in), optional :: cut_precision
-    integer, intent(in), optional :: max_iterations
+    integer, intent(in) :: max_reconstruction_iterations
 
     type(plane)      :: interface_plane
     type(polyhedron) :: tmp(2),remainder
@@ -83,7 +82,7 @@ contains
       else
         ! if this is not the final material in the cell, split the cell
         interface_plane = locate_plane_nd (remainder, norm(:,m), vof(m)*this%volume(), &
-            this%volume(), cutvof, cut_precision, max_iterations)
+            this%volume(), cutvof, max_reconstruction_iterations)
         !tmp = remainder%split (interface_plane)
         call remainder%split (interface_plane,tmp,ierr)
 

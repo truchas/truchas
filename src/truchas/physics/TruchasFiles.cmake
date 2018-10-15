@@ -102,11 +102,9 @@ list(APPEND PHYSICS_FILES
 	  physics/volume_tracking/volume_initialization.F90
 	  physics/volume_tracking/volume_tracker_type.F90
 	  physics/volume_tracking/vtrack_driver.F90
-	  physics/volume_tracking/array_utils.F90
-	  physics/volume_tracking/flux_volume_modulez.F90
-	  physics/volume_tracking/hex_types.F90
-	  physics/volume_tracking/locate_plane_modulez.F90
-	  physics/volume_tracking/truncate_volume_modulez.F90)
+	  physics/volume_tracking/cell_geometry_type.F90
+	  physics/volume_tracking/locate_plane_os_function.F90
+	  physics/volume_tracking/truncation_volume_type.F90)
 
 # - heat_species_transport
 list(APPEND PHYSICS_FILES

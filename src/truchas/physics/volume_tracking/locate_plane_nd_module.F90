@@ -40,16 +40,14 @@ contains
   ! and return a plane type
   ! Alternatively, should we return the two polyhedra? If they are already
   ! calculated, it would save resplitting the input polyhedron.
-  type(plane) function locate_plane_nd (poly, norm, vol, cell_volume, cutvof, &
-      precision, max_iterations)
+  type(plane) function locate_plane_nd (poly, norm, vol, cell_volume, cutvof, max_iterations)
 
     use polyhedron_type
     use plane_type
 
     type(polyhedron), intent(in) :: poly
     real(r8), intent(in) :: norm(:), vol, cell_volume, cutvof
-    real(r8), intent(in), optional :: precision
-    integer, intent(in), optional :: max_iterations
+    integer, intent(in) :: max_iterations
 
     real(r8)             :: rho_min,rho_mid,rho_max
     integer              :: ierr
@@ -65,9 +63,7 @@ contains
 
     ! start Brent's method
     locate_plane_nd%normal = norm
-    vof_error%eps = 0.5_r8*cutvof; vof_error%maxitr = 30
-    if (present(max_iterations)) vof_error%maxitr = max_iterations
-    if (present(precision)) vof_error%eps = precision
+    vof_error%feps = 0.5_r8*cutvof; vof_error%maxitr = max_iterations
     call vof_error%find_root (rho_min, rho_max, locate_plane_nd%rho, ierr)
     !call vof_error%find_minimum (rho_min, rho_mid, rho_max, locate_plane_nd%rho, ierr)
     !locate_plane_nd%rho = brent (vof_error, rho_min, rho_mid, rho_max, cutvof/2.0_r8, 30)
@@ -186,7 +182,7 @@ contains
     integer :: ierr
 
     P%rho = x; P%normal = this%norm
-    func_signed_eval = (this%poly%volume_behind_plane (P,ierr) - this%tvol) / this%parvol
+    func_signed_eval = (this%poly%volume_behind_plane (P,ierr) - this%tvol) / this%tvol
 
     if (ierr /= 0) call TLS_fatal ("func_signed_eval failed")
 
