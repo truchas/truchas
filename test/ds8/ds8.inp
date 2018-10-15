@@ -21,7 +21,6 @@ A kludge to force hitting the final time exactly
 
 &PHYSICS
   legacy_flow = .true.
-  inviscid   = .true.
   body_force_density = 0.0, -1.0, 0.0
   heat_transport = .true.
 /
@@ -41,6 +40,10 @@ A kludge to force hitting the final time exactly
   dt_grow = 5.0
   dt_min  = 1.0e-5
   dt_max  = 1000.0
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
   courant_number = 0.5
   projection_linear_solution = 'projection'
 /

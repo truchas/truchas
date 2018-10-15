@@ -31,15 +31,18 @@ A kludge to force hitting the final time exactly
 
 &PHYSICS
   legacy_flow = .true.
-  inviscid = .true.
 /
 
 &NUMERICS
   dt_constant = 0.0625
+  discrete_ops_type = 'ortho'
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
   courant_number = 0.5
   projection_linear_solution  = 'projection'
   volume_track_subcycles = 2
-  discrete_ops_type = 'ortho'
 /
 
 &LINEAR_SOLVER

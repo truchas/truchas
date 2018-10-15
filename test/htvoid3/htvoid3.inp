@@ -35,7 +35,6 @@ will result in heat solutions that are not comparable.
 
 &PHYSICS
   legacy_flow = .true.
-  inviscid   = .true.
   body_force_density = 1.0, 0.0, 0.0
   heat_transport = .true.
 /
@@ -53,15 +52,19 @@ will result in heat solutions that are not comparable.
 &NUMERICS
   dt_init = 0.02
   dt_grow = 1.05
+  cutvof                     = 1.0e-8
+  discrete_ops_type          = 'ortho' 
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
   projection_linear_solution = 'projection'
   body_force_face_method = .true.
   volume_track_interfaces    = .true.
   volume_track_Brents_Method = .true.
   volume_track_subcycles     = 4
   volume_track_iter_Tol      = 1.0e-12
-  cutvof                     = 1.0e-8
   courant_number             = 0.4
-  discrete_ops_type          = 'ortho' 
 /
 
 &LINEAR_SOLVER

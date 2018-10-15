@@ -28,12 +28,15 @@ A kludge to force hitting the final time exactly
 
 &PHYSICS
   legacy_flow = .true.
-  inviscid = .true.
 /
 
 &NUMERICS
   cycle_max = 1
   dt_constant = 0.03125
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
   courant_number = 0.5
   projection_linear_solution  = 'projection'
   volume_track_subcycles = 4

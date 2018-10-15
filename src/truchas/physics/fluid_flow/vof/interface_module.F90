@@ -27,7 +27,6 @@ MODULE INTERFACE_MODULE
   !
   !=======================================================================
   use kinds, only: r8
-  use parameter_module, only: max_topology_models
   use legacy_mesh_api, only: ncells, ndim, nvc
   implicit none
   private
@@ -35,15 +34,13 @@ MODULE INTERFACE_MODULE
   ! Public Procedures and Types
   public :: INTERFACE_DATA,           &
             INTERFACE_FLUX_DATA,      &
-            INTERFACE_MODEL_DEFAULT,  &
             SETUP_INTERFACE_GEOM,     &
             SETUP_INTERFACE_FLUX
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! character string in NUMERICS namelist
-  character(LEN = 80),                                 public, save :: interface_topology_model
-  character(LEN = 80), dimension(max_topology_models), public, save :: interface_model_forms
+  character(LEN = 80), public, save :: interface_topology_model
 
   type INTERFACE_DATA
  
@@ -94,20 +91,6 @@ MODULE INTERFACE_MODULE
 
 
 CONTAINS
-
-  SUBROUTINE INTERFACE_MODEL_DEFAULT()
-    !=======================================================================
-    ! Purpose:
-    !   Fill allowable interface topology model array (interface_model_forms)
-    !
-    !=======================================================================
-
-    ! Valid character strings for interface topology models
-    interface_model_forms = ''
-    interface_model_forms(1) = 'least squares model'  
-    interface_model_forms(2) = 'convolution model'
-
-  END SUBROUTINE INTERFACE_MODEL_DEFAULT
 
   SUBROUTINE SETUP_INTERFACE_GEOM (Mask, G1, G2, G3, Vof)
     !=======================================================================

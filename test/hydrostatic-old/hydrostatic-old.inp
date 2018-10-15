@@ -28,28 +28,29 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 
 /
 
-&NUMERICS
+&LEGACY_FLOW
+    inviscid = .true.
     volume_track_interfaces     = .true.
     volume_track_brents_method  = .true.
     volume_track_iter_tol       = 1.0e-12
     projection_linear_solution  = 'projection'
-    discrete_ops_type           = 'ortho'
     body_force_face_method      = .true.
     courant_number              = 0.5
+/
+
+&NUMERICS
     dt_init                     = 0.0005
     dt_grow                     = 1.
     dt_min                      = 1.0e-05
     dt_max                      = 1.0
     cycle_max                   = 20
+    discrete_ops_type           = 'ortho'
 
 /
 
 &PHYSICS
     body_force_density     = 0.0, 0.0, -9.81
     legacy_flow            = .true.
-    inviscid               = .true.
-    stokes                 = .false.
-    surface_tension        = .false.
 /
 
 &INTERFACES

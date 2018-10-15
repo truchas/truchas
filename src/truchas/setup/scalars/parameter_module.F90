@@ -50,9 +50,6 @@ MODULE PARAMETER_MODULE
   ! Number of material relation character strings allowed
   integer, parameter :: max_relation_forms = 15
 
-  ! Number of interface topology character strings allowed
-  integer, parameter :: max_topology_models = 5
-
   ! Current number of BC types and variables
   integer, parameter :: nbcs = 32, nvar = 10
 

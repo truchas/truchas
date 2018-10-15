@@ -55,8 +55,6 @@ cells at each long_edit interval.
  
 &PHYSICS
   legacy_flow               = .true.
-  inviscid                  = .false.
-  stokes                    = .false.
   heat_transport            = .true.
   body_force_density                = 0.0, 0.0, -9.34142216E-5
 /
@@ -75,6 +73,10 @@ cells at each long_edit interval.
   dt_grow                     = 1.05
   dt_min                      = 1.0e-05
   dt_max                      = 1000.0
+/
+
+&LEGACY_FLOW
+  inviscid = .false.
   viscous_implicitness        = 1.0
   viscous_number              = 0.3
   courant_number              = 0.5

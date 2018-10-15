@@ -22,44 +22,10 @@ contains
   subroutine physics_check
 
     use physics_module
-    use fluid_data_module,      only: applyflow
-    use porous_drag_data,       only: porous_flow
-    use surface_tension_module, only: surface_tension
-    use viscous_data_module,    only: inviscid, stokes
 
     logical :: fatal
 
     fatal = .false.
-
-    if (surface_tension .and. .not. legacy_flow) then
-      call TLS_error ('Cannot enable SURFACE_TENSION without also enabling LEGACY_FLOW.')
-      fatal = .true.
-    end if
-
-    ! Check viscous and fluid flow flags.
-    FLUID_FLOW_CHECK: if (stokes) then
-       if (inviscid) then
-          inviscid = .false.
-          call TLS_warn ('inviscid assigned .false.')
-       end if
-       if (.not. legacy_flow) then
-          legacy_flow = .true.
-          call TLS_warn ('legacy_flow assigned .true.')
-       end if
-    end if FLUID_FLOW_CHECK
-
-    if (applyflow) then
-       legacy_flow = .true.
-       call TLS_warn ('applyflow is .true. so legacy_flow assigned .true.')
-    end if
-
-    ! Porous flow checks
-    POROUS_FLOW_CHECK: if (porous_flow) then
-       if (.not. legacy_flow) then
-          call TLS_error ('legacy_flow must be true with the porous flow model on')
-          fatal = .true.
-       end if
-    end if POROUS_FLOW_CHECK
 
     ! Check the number_of_species value.
     if (species_transport) then
@@ -78,12 +44,9 @@ contains
     use physics_module
     use body_data_module,       only: body_force
     use EM_data_proxy,          only: SET_EM_SIMULATION_ON_OR_OFF
-    use fluid_data_module,      only: fluid_flow, void_pressure, applyflow, boussinesq_approximation
-    use input_utilities,        only: seek_to_namelist, NULL_R
-    use porous_drag_data,       only: porous_flow
-    use surface_tension_module, only: surface_tension
-    use viscous_data_module,    only: inviscid, stokes
-    use solid_mechanics_input,  only: solid_mechanics, solid_mechanics_body_force
+    use fluid_data_module,      only: fluid_flow
+    use input_utilities,        only: seek_to_namelist
+    use solid_mechanics_input,  only: solid_mechanics
     use diffusion_solver_data,  only: ds_enabled, system_type, num_species
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities, only: i_to_c
@@ -94,10 +57,9 @@ contains
     integer :: ios
     character(80) :: iom
 
-    namelist /physics/ heat_transport, species_transport,  number_of_species, flow, &
-                       legacy_flow, inviscid, stokes, surface_tension, porous_flow, &
-                       body_force_density, prescribed_flow, applyflow, void_pressure, &
-                       electromagnetics, solid_mechanics, solid_mechanics_body_force
+    namelist /physics/ heat_transport, species_transport, number_of_species, flow, &
+                       legacy_flow, body_force_density, prescribed_flow, &
+                       electromagnetics, solid_mechanics
 
     call TLS_info ('')
     call TLS_info ('Reading PHYSICS namelist ...')
@@ -120,17 +82,9 @@ contains
       number_of_species = 0
       electromagnetics = .false.
       solid_mechanics = .false.
-      solid_mechanics_body_force = .false.
       body_force_density = 0.0_r8
       legacy_flow = .false.
-      inviscid = .true.
-      stokes = .false.
-      boussinesq_approximation = .true.
-      porous_flow = .false.
-      surface_tension = .false.
-      void_pressure = 0
       prescribed_flow = .false.
-      applyflow = .false.
       read(lun,nml=physics,iostat=ios,iomsg=iom)
     end if
     call broadcast(ios)
@@ -138,20 +92,12 @@ contains
 
     !! Broadcast all the namelist variables
     call broadcast(flow)
-    call broadcast(void_pressure)
     call broadcast(body_force_density)
     call broadcast(legacy_flow)
-    call broadcast(applyflow)
     call broadcast(heat_transport)
     call broadcast(species_transport)
     call broadcast(number_of_species)
-    call broadcast(inviscid)
-    call broadcast(boussinesq_approximation)
-    call broadcast(porous_flow)
-    call broadcast(stokes)
-    call broadcast(surface_tension)
     call broadcast(solid_mechanics)
-    call broadcast(solid_mechanics_body_force)
     call broadcast(electromagnetics)
     call broadcast(prescribed_flow)
 

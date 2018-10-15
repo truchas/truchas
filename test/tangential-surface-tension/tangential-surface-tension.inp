@@ -15,9 +15,6 @@
 &PHYSICS
   heat_transport = .true.
   legacy_flow = .true.
-  inviscid = .false.
-  stokes = .false.
-  surface_tension = .true.
 /
 
 &DIFFUSION_SOLVER
@@ -47,10 +44,15 @@
   dt_min  = 1.0d-10
   dt_grow = 1.5
   dt_max  = 1.0
+  discrete_ops_type = 'ortho'
+/
+
+&LEGACY_FLOW
+  inviscid = .false.
+  surface_tension = .true.
   projection_linear_solution = 'projection'
   viscous_implicitness       = 0.5
   courant_number             = 0.5
-  discrete_ops_type          = 'ortho'
 /
 
 ##### BOUNDARY CONDITIONS ######################################################

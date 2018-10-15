@@ -28,6 +28,7 @@ set(INPUT_FILES
          input/region_data.F90
          input/region_input_module.F90
          input/solid_mechanics_namelist.F90
+         input/legacy_flow_namelist.F90
 )
 
 set(INPUT_FPP_FLAGS 

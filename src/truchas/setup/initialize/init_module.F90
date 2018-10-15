@@ -86,7 +86,7 @@ CONTAINS
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
-    use physics_module,         only: heat_transport, flow
+    use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
 
     real(r8), intent(in) :: t, dt
@@ -175,7 +175,7 @@ CONTAINS
 
     if (flow) then
       call flow_driver_init()
-    else
+    else if (legacy_flow) then
       !! NNC, December 2012.  Flow initialization is really messed up.  It does
       !! necessary stuff even when flow is inactive.  The work of ensuring the
       !! relevant properties are defined belongs there but for now it's here so

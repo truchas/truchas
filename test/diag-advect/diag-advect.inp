@@ -15,7 +15,6 @@ A kludge to force hitting the final time exactly
  
 &PHYSICS
   legacy_flow = .true.
-  applyflow  = .true.
 /
 
 &ADVECTION_VELOCITY
@@ -28,6 +27,10 @@ A kludge to force hitting the final time exactly
   dt_grow = 1.05
   dt_min  = 0.01
   dt_max  = 0.1
+/
+
+&LEGACY_FLOW
+  applyflow  = .true.
   courant_number = 0.5
   volume_track_subcycles = 4
 /

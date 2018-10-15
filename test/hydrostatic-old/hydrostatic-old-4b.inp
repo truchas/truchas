@@ -19,14 +19,17 @@ Variations use rotated meshes (and rotated g)
 
 &PHYSICS
   legacy_flow = .true.
-  inviscid   = .true.
   body_force_density = 0.0, -0.707106781, -0.707106781
 /
 
 &NUMERICS
   dt_constant = 0.125
-  projection_linear_solution  = 'projection'
   discrete_ops_type           = 'ortho'
+/
+
+&LEGACY_FLOW
+  inviscid   = .true.
+  projection_linear_solution  = 'projection'
   body_force_face_method      = .true.
   courant_number              = 0.5
 /

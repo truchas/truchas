@@ -23,7 +23,6 @@ Hack to hit the final time exactly
 
 &PHYSICS
   legacy_flow = .true.
-  inviscid = .true.
 /
 
 &NUMERICS
@@ -31,6 +30,10 @@ Hack to hit the final time exactly
   dt_grow = 1.25
   dt_min  = 1.0e-5
   dt_max  = 1.0
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
   courant_number = 0.3
   projection_linear_solution  = 'projection'
   viscous_linear_solution = 'viscous'

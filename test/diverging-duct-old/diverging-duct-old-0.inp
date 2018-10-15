@@ -73,28 +73,31 @@ resolution, in part due to the first order momentum advection.
 
 /
 
-&NUMERICS
+&LEGACY_FLOW
 
+    inviscid = .true.
     projection_linear_solution  = 'projection'
     volume_track_interfaces     = .false.
     volume_track_brents_method  = .true.
     volume_track_iter_tol       = 1.0e-12
-    cutvof                      = 1.0e-08
-    discrete_ops_type           = 'ortho'
     courant_number              = 0.5
+/
+
+&NUMERICS
+
     dt_init                     = 1.e-03
     dt_grow                     = 1.05
     dt_min                      = 1.e-03
     dt_max                      = 1.
+    cutvof                      = 1.0e-08
+    discrete_ops_type           = 'ortho'
 
 /
 
 &PHYSICS
 
     body_force_density = 0., 0., 0.
-    legacy_flow             = .true.
-    inviscid               = .true.
-    stokes                 = .false.
+    legacy_flow = .true.
 
 /
 

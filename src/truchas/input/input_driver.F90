@@ -68,6 +68,7 @@ contains
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
     use physics_module,            only: heat_transport, flow, legacy_flow
+    use legacy_flow_namelist,      only: read_legacy_flow_namelist
     use advection_velocity_namelist, only: read_advection_velocity_namelist
     use truchas_logging_services
     use truchas_timers
@@ -127,9 +128,16 @@ contains
     call linear_solver_input (lun)
     call nonlinear_solver_input (lun)
 
+    ! read volume fraction data
+    call interfaces_input (lun)
+
+    ! read numerical options data
+    call numerics_input (lun)
+
     if (flow) call read_flow_namelists(lun)
 
     if (legacy_flow) then
+      call read_legacy_flow_namelist(lun)
       if (.not.inviscid) call read_turbulence_namelist_for_legacy(lun)
       if (surface_tension) call read_surface_tension_namelist (lun)
       if (applyflow) call read_advection_velocity_namelist(lun)
@@ -140,12 +148,6 @@ contains
       call read_solid_mechanics_namelist (lun)
       call read_viscoplastic_model_namelists (lun)
     end if
-
-    ! read volume fraction data
-    call interfaces_input (lun)
-
-    ! read numerical options data
-    call numerics_input (lun)
 
     ! read bc specifications
     call bc_input (lun)

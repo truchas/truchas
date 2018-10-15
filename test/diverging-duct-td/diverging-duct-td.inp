@@ -65,14 +65,17 @@ resolution, in part due to the first order momentum advection.
   preconditioning_steps   = 1
 /
 
-&NUMERICS
+&LEGACY_FLOW
   projection_linear_solution  = 'projection'
-  discrete_ops_type = 'ortho'
   courant_number = 0.25
+/
+
+&NUMERICS
   dt_init = 1.e-03
   dt_grow = 1.05
   dt_min  = 1.e-03
   dt_max  = 1.0
+  discrete_ops_type = 'ortho'
 /
 
 &PHYSICS
