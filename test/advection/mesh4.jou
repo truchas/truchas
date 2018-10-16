@@ -1,0 +1,61 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 10/16/2018 03:17:56 PM
+## Command Options:
+brick x 6 y 6 z 6
+webcut volume 1 with plane xplane offset 0 rotate 5 about 1 1 1 noimprint nomerge
+webcut volume all with plane zplane offset 0 rotate 5 about 1 1 1 noimprint nomerge
+webcut volume all with plane yplane offset 0 rotate 5 about 1 1 1 noimprint nomerge
+imprint volume all
+merge volume all
+
+volume all size 1
+surface 35 scheme trimesh geometry approximation angle 15
+trimesher surface gradation 1.3
+mesh surface 35
+surface 65 scheme trimesh geometry approximation angle 15
+trimesher surface gradation 1.3
+mesh surface 65
+surface 55 scheme trimesh geometry approximation angle 15
+trimesher surface gradation 1.3
+mesh surface 55
+volume 4 redistribute nodes off
+volume 4 scheme sweep sweep transform least squares
+volume 4 autosmooth target on fixed imprints off smart smooth on tolerance 0.2 nlayers 5
+mesh volume 4
+volume 6 redistribute nodes off
+volume 6 scheme sweep sweep transform least squares
+volume 6 autosmooth target on fixed imprints off smart smooth on tolerance 0.2 nlayers 5
+mesh volume 6
+volume 7 redistribute nodes off
+volume 7 scheme sweep sweep transform least squares
+volume 7 autosmooth target on fixed imprints off smart smooth on tolerance 0.2 nlayers 5
+mesh volume 7
+volume 1 scheme auto
+mesh volume 1
+volume 2 5 3 8 scheme tetmesh proximity layers off geometry approximation angle 15
+volume 2 5 3 8 tetmesh growth_factor 1
+trimesher surface gradation 1.3
+trimesher volume gradation 1.3
+mesh volume 2 5 3 8
+
+block 1 add volume all
+sideset 1 add surface 55 49 71 73
+sideset 1 name "left"
+sideset 2 add surface 43 66 59 41
+sideset 2 name "right"
+sideset 3 add surface 29 21 23 35
+sideset 3 name "front"
+sideset 4 add surface 19 31 33 25
+sideset 4 name "back"
+sideset 5 add surface 58 65 76 68
+sideset 5 name "bottom"
+sideset 6 add surface 48 56 46 38
+sideset 6 name "top"
+
+set exodus netcdf4 off
+set large exodus file on
+
+export genesis "mesh4.gen" overwrite
