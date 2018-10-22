@@ -218,8 +218,8 @@ contains
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
-    real(r8) :: face_normal(3,6), flux_vols(size(vof,dim=1),6)
-    integer :: i,j,k,ierr, face_vid(4,6)
+    real(r8) :: face_normal(3,6)
+    integer :: i,j,k,ierr
     type(cell_geom) :: cell
 
         ! calculate the flux volumes for each face
@@ -238,47 +238,13 @@ contains
           end if
         end do
 
-        select case (size(cn))
-!!$        case (4)
-!!$          call cell%init(this%mesh%x(:,cn), reshape(source=TET4_FACES,shape=[3,4]), &
-!!$              TET4_EDGES, this%mesh%volume(i), face_normal(:,1:size(fi)))
-!!$
-!!$        case (5)
-!!$          ! zero treated as sentinel value in multimat_cell procedures
-!!$          face_vid = 0
-!!$          do j = 1, size(fi)
-!!$            face_vid(1:PYR5_FSIZE(j),j) = PYR5_FACES(PYR5_XFACE(j):PYR5_XFACE(j+1)-1)
-!!$          end do
-!!$          call cell%init(this%mesh%x(:,cn), face_vid, &
-!!$              PYR5_EDGES, this%mesh%volume(i), face_normal(:,1:size(fi)))
-!!$
-!!$        case (6)
-!!$          ! zero treated as sentinel value in multimat_cell procedures
-!!$          face_vid = 0
-!!$          do j = 1, size(fi)
-!!$            face_vid(1:WED6_FSIZE(j),j) = WED6_FACES(WED6_XFACE(j):WED6_XFACE(j+1)-1)
-!!$          end do
-!!$          call cell%init(this%mesh%x(:,cn), face_vid, &
-!!$              WED6_EDGES, this%mesh%volume(i), face_normal(:,1:size(fi)))
+        call cell%init(this%mesh%x(:,cn), this%mesh%volume(i), this%mesh%area(fi), &
+            face_normal(:,1:size(fi)))
 
-        case (8)
-          call cell%init(this%mesh%x(:,cn), this%mesh%volume(i), this%mesh%area(fi), &
-              face_normal(:,1:size(fi)))
-
-        case default
-          call TLS_fatal('unaccounted topology in donor_fluxes_os')
-        end select
-
-!!$        if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
-
-!!$        call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%location_tol, &
-!!$            this%location_iter_max)
-
-        this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
-            cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
+        call cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
             vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff, &
-            this%priority, this%nfluid, this%nmat, this%location_iter_max)
-!!$        if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
+            this%priority, this%nmat, this%location_iter_max, &
+            this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
       end associate
     end do
 
@@ -286,8 +252,9 @@ contains
 
   end subroutine donor_fluxes_os
 
-    ! get the volume flux for every material in the given cell
-  function cell_volume_flux (dt, cell, vof, int_norm, vel, cutoff, priority, nfluid, nmat, maxiter)
+  ! get the volume flux for every material in the given cell
+  subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
+      flux_volume)
 
     use f08_intrinsics, only: findloc
     use locate_plane_os_function
@@ -295,17 +262,17 @@ contains
     use cell_geom_type
 
     real(r8), intent(in) :: dt, int_norm(:,:), vof(:), vel(:), cutoff
-    integer, intent(in) :: priority(:), nfluid, nmat, maxiter
+    integer, intent(in) :: priority(:), nmat, maxiter
     type(cell_geom), intent(in) :: cell
-    real(r8) :: cell_volume_flux(nfluid,6)
+    real(r8), intent(out) :: flux_volume(:,:)
 
     real(r8) :: Vofint, dvol
-    real(r8) :: flux_vol_sum(6), flux_vol
+    real(r8) :: flux_vol_sum(cell%nfc), flux_vol
     integer :: ni,f,nlast, nint, ierr,nmat_in_cell
     logical :: is_mixed_donor_cell
     type(plane) :: P
 
-    cell_volume_flux = 0.0_r8
+    flux_volume = 0.0_r8
     flux_vol_sum = 0.0_r8
     nmat_in_cell = count(vof > 0.0_r8)
     !nint = count(vof > 0.0_r8)
@@ -326,13 +293,13 @@ contains
           cutoff, maxiter)
 
       ! calculate delta advection volumes for this material at each donor face and accumulate the sum
-      call compute_material_volume_flux(cell_volume_flux(priority(ni),:), flux_vol_sum, P, cell, &
+      call compute_material_volume_flux(flux_volume(priority(ni),:), flux_vol_sum, P, cell, &
           is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff)
     end do
 
     ! Compute the advection volume for the last material.
     nlast = priority(findloc(vof(priority) >= cutoff, .true., back=.true.))
-    do f = 1,6
+    do f = 1,cell%nfc
       ! Recalculate the total flux volume for this face.
       flux_vol = dt*vel(f)*cell%face_area(f)
       if (abs(flux_vol) > 0.5_r8 * cell%volume) then
@@ -343,18 +310,18 @@ contains
 
       ! For donor cells containing only one material, assign the total flux.
       if (nmat_in_cell==1) then
-        cell_volume_flux(nlast,f) = flux_vol
+        flux_volume(nlast,f) = flux_vol
       else
         ! The volume flux of the last material shouldn't be less than
         ! zero nor greater than the volume of this material in the donor cell.
         dvol = min(max(abs(flux_vol - Flux_Vol_Sum(f)), 0.0_r8), Vof(nlast)*cell%volume)
 
         ! Store the last material's volume flux.
-        if (dvol > cutoff*cell%volume) cell_volume_flux(nlast,f) = dvol
+        if (dvol > cutoff*cell%volume) flux_volume(nlast,f) = dvol
       end if
     end do
 
-  end function cell_volume_flux
+  end subroutine cell_volume_flux
 
   ! calculate the flux of one material in a cell
   subroutine compute_material_volume_flux(material_volume_flux, flux_vol_sum, P, cell, &
@@ -376,14 +343,14 @@ contains
     type(truncation_volume) :: trunc_vol
 
     material_volume_flux = 0
-    do f = 1,6
+    do f = 1,cell%nfc
       ! Flux volumes
       flux_vol = dt*vel(f)*cell%face_area(f)
       if (flux_vol <= cutoff*cell%volume) cycle
 
       if (is_mixed_donor_cell) then
         ! calculate the vertices describing the volume being truncated through the face
-        flux_vol_node = flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff)
+        call flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff, flux_vol_node)
 
         ! compute the volume truncated by interface planes in each flux volumes
         call trunc_vol%init(flux_vol_node, P%normal)
@@ -418,82 +385,169 @@ contains
   ! may increase or decrease as one moves away from the advection cell
   ! face.  The value used is varied from "DIST" such that the vertices
   ! describe a hexagonal volume that matches the value of Flux_Vol.
-  function flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof)
+  subroutine flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof, flux_vol_node)
 
-    use cell_geometry, only: hex_volume
+    use cell_geometry, only: hex_volume, wedge_volume
+    use cell_topology
     use cell_geom_type
 
     integer, intent(in) :: face
     type(cell_geom), intent(in) :: cell
     real(r8), intent(in) :: dist, cutvof, flux_vol
-    real(r8) :: flux_vol_nodes(3,8)
+    real(r8), intent(out) :: flux_vol_node(:,:)
 
     integer, parameter :: flux_vol_iter_max = 10
-    integer, parameter :: &
-        Edge_ends(2,4,6) = reshape([ &
-        1,4,  2,3,  6,7,  5,8,   & ! face 1 edges
-        2,1,  3,4,  7,8,  6,5,   & ! face 2 edges
-        3,2,  4,1,  8,5,  7,6,   & ! face 3 edges
-        1,2,  5,6,  8,7,  4,3,   & ! face 4 edges
-        1,5,  4,8,  3,7,  2,6,   & ! face 5 edges
-        5,1,  6,2,  7,3,  8,4] , & ! face 6 edges
-        [2,4,6])
 
-    integer :: ia, ib, e, iter
+    ! this array maps the nodes on a given cell's face
+    ! to the nodes of a flux volume. The flux volume
+    ! will either be a hex or a wedge, depending on
+    ! if we are fluxing through a triangular or
+    ! quadrilateral face. Example:
+    !
+    ! edge_ends_type(i,j,k,l) refers to a flux volume's
+    ! node ID corresponding to the jth node of the kth
+    ! face of a given cell of type l. i=1 refers to the
+    ! node coinciding with the given node, and i=2
+    ! refers to a node on the opposite end of the flux
+    ! volume.
+    integer, parameter :: &
+        back_nodes(4,6,4) = reshape([&
+        ! tet
+        3, 3, 3, 0, &
+        1, 1, 1, 0, &
+        2, 2, 2, 0, &
+        4, 4, 4, 0, &
+        0, 0, 0, 0, &
+        0, 0, 0, 0, &
+
+        ! pyramid
+        4, 3, 3, 4, &
+        1, 4, 4, 1, &
+        2, 1, 1, 2, &
+        2, 2, 3, 3, &
+        5, 5, 5, 5, &
+        0, 0, 0, 0, &
+
+        ! wedge
+        3, 3, 6, 6, &
+        1, 1, 4, 4, &
+        2, 5, 5, 2, &
+        4, 6, 5, 0, &
+        1, 2, 3, 0, &
+        0, 0, 0, 0, &
+
+        ! hex
+        4, 3, 7, 8, &
+        1, 4, 8, 5, &
+        2, 1, 5, 6, &
+        2, 6, 7, 3, &
+        5, 8, 7, 6, &
+        1, 2, 3, 4],&
+        [4,6,4])
+
+    ! this is identical to the <shape>_faces arrays in cell_topology,
+    ! except that pyramid faces are treated like a degenerate quadrilaterals
+    integer, parameter :: &
+        front_nodes(4,6,4) = reshape([&
+        ! tet
+        1,2,4,0, &
+        2,3,4,0, &
+        1,4,3,0, &
+        1,3,2,0, &
+        0,0,0,0, &
+        0,0,0,0, &
+
+        ! pyramid
+        1,2,5,5, &
+        2,3,5,5, &
+        3,4,5,5, &
+        1,5,5,4, &
+        1,4,3,2, &
+        0,0,0,0, &
+
+        ! wedge
+        1,2,5,4, &
+        2,3,6,5, &
+        1,4,6,3, &
+        1,3,2,0, &
+        4,5,6,0, &
+        0,0,0,0, &
+
+        ! hex
+        1,2,6,5, &
+        2,3,7,6, &
+        3,4,8,7, &
+        1,5,8,4, &
+        1,4,3,2, &
+        5,6,7,8],&
+        [4,6,4])
+
+    integer :: ia, ib, e, iter, nedge, edge_ends(2,4)
     real(r8) :: percnt(4), Uedge(3,4), volume, mult, ndotuedge
-    character(256) :: errmsg
+
+    ASSERT(cell%cell_type > 0 .and. cell%cell_type <= 4)
+
+    select case (cell%cell_type)
+    case (CELL_TET4)
+      nedge = 3
+    case (CELL_WED6)
+      nedge = WED6_FSIZE(face)
+    case (CELL_HEX8, CELL_PYR5)
+      nedge = 4
+    end select
+    !edge_ends = edge_ends_type(:,:,face,cell%cell_type)
+
+    if (nedge == 3) then
+      edge_ends(:,:3) = reshape([1,4,  3,6,  2,5], [2,3])
+      edge_ends(:,4) = 0
+    else ! nedge == 4
+      edge_ends = reshape([1,5,  4,8,  3,7, 2,6], [2,4])
+    end if
+
+    ! initialize flux volume as entire given cell
+    flux_vol_node = 0
+    flux_vol_node(:,edge_ends(1,:nedge)) = cell%node(:,front_nodes(:nedge,face,cell%cell_type))
+    flux_vol_node(:,edge_ends(2,:nedge)) = cell%node(:,back_nodes(:nedge,face,cell%cell_type))
 
     ! compute the edge unit vectors
-    flux_vol_nodes = cell%node
-    do e = 1, 4
-      ia  = Edge_ends(1,e,face) ! front node
-      ib  = Edge_ends(2,e,face) ! back node
-      Uedge(:,e) = flux_vol_nodes(:,ib) - flux_vol_nodes(:,ia)
+    percnt = 0
+    do e = 1, nedge
+      ia  = edge_ends(1,e) ! front node
+      ib  = edge_ends(2,e) ! back node
+      Uedge(:,e) = flux_vol_node(:,ib) - flux_vol_node(:,ia)
 
       ndotuedge = dot_product(cell%face_normal(:,face), Uedge(:,e))
       Percnt(e) = -Dist/(ndotuedge+epsilon(1.0_r8))
     end do
 
-    if (any(Percnt < 0.0_r8) .or. any(Percnt > 1.0_r8)) then
-      do e = 1,8
-        print '(a,3es15.4)', 'flux nodes:', flux_vol_nodes(:,e)
-      end do
-      print *, dist
-      do e = 1,4
-        ndotuedge = dot_product(cell%face_normal(:,face), Uedge(:,e))
-        print '(a,3es15.4)', 'ndotuedge: ',ndotuedge, -dist/(ndotuedge+epsilon(1.0_r8)),percnt(e)
-      end do
-      write(errmsg,'(a,3es13.6)') &
-          'FLUX_VOL_NODES: invalid flux volume or inverted element; cell centroid =', &
-          sum(cell%node, dim=2) / 8
-      call TLS_fatal (errmsg)
-    end if
+    if (any(percnt < 0) .or. any(percnt > 1)) &
+        call TLS_fatal('FLUX_VOL_NODE: invalid flux volume or inverted element')
 
     ! iterate to find the four vertices at the back end of the flux volume
     mult = 1
     do iter = 1, flux_vol_iter_max
-      ! loop over edges to adjust the vertices
-      do e = 1,4
-        ia = Edge_ends(1,e,face)
-        ib = Edge_ends(2,e,face)
-        flux_vol_nodes(:,ib) = flux_vol_nodes(:,ia) + Mult*Percnt(e)*Uedge(:,e)
+      ! adjust the back nodes
+      do e = 1, nedge
+        ia = edge_ends(1,e)
+        ib = edge_ends(2,e)
+        flux_vol_node(:,ib) = flux_vol_node(:,ia) + Mult*Percnt(e)*Uedge(:,e)
       end do
 
       ! compute the new flux volume and increment multiplier for next iteration
-      volume = hex_volume(flux_vol_nodes)
+      if (nedge == 4) then
+        volume = hex_volume(flux_vol_node)
+      else ! nedge == 3
+        volume = wedge_volume(flux_vol_node(:,:6))
+      end if
       Mult = Mult * flux_vol/volume
+
       if (abs(flux_vol - volume) < cutvof*cell%volume) exit
     end do
 
-    if (iter > flux_vol_iter_max) then
-      write(errmsg,'(a,i0,a,es12.5,a,i0)') &
-          'Flux volume vertex iteration did not converge in ', flux_vol_iter_max,&
-          '. Maximum flux volume difference is ', abs(flux_vol-Volume) !,&
-      !' in cell '!, cell_index
-      call TLS_warn (errmsg)
-    end if
+    if (iter > flux_vol_iter_max) &
+        call TLS_fatal('Flux volume vertex iteration did not converge')
 
-  end function flux_vol_nodes
+  end subroutine flux_vol_nodes
 
   subroutine donor_fluxes_nd(this, vel, vof, dt)
 

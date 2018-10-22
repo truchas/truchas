@@ -5,8 +5,8 @@ module truncation_volume_type
   implicit none
   private
 
-  integer, parameter :: nvf=4, nfc=6
-  real(r8), parameter :: alittle=epsilon(1.0_r8)
+  integer, parameter :: nvf = 4
+  real(r8), parameter :: alittle = epsilon(1.0_r8)
   real(r8), parameter :: eps(4) = [1.0_r8, -1.0_r8, 1.0_r8, -1.0_r8]
 
   type :: truncation_volume_face
@@ -33,14 +33,47 @@ contains
 
   subroutine init_truncation_volume(this, nodex, plane_normal)
 
+    use cell_topology
+
     class(truncation_volume), intent(out) :: this
     real(r8), intent(in) :: nodex(:,:), plane_normal(:)
 
-    integer :: f
+    integer :: f, nfc
+    real(r8) :: fnodex(3,4)
+
+    ! get the number of faces for this cell type
+    select case (size(nodex, dim=2))
+    case (4) ! tet
+      nfc = 4
+    case (5,6) ! pyramid, wedge
+      nfc = 5
+    case (8) ! hex
+      nfc = 6
+    case default
+      call TLS_fatal('unaccounted topology in truncation_volume_type')
+    end select
 
     allocate(this%face_params(nfc))
-    do f = 1,nfc
-      call this%face_params(f)%init(nodex, plane_normal, f)
+    do f = 1, size(this%face_params)
+      ! Store face vertices in an order that is counterclockwise
+      ! relative to a direction that looks from outside the face
+      ! into the cell. Treat triangle faces as quadrilaterals
+      ! with two nodes in the same location.
+      select case (size(nodex, dim=2))
+      case (4) ! tet
+        fnodex(:,:3) = nodex(:,TET4_FACES(TET4_XFACE(f):TET4_XFACE(f+1)-1))
+        fnodex(:,4) = fnodex(:,3)
+      case (5) ! pyramid
+        fnodex(:,:PYR5_FSIZE(f)) = nodex(:,PYR5_FACES(PYR5_XFACE(f):PYR5_XFACE(f+1)-1))
+        if (PYR5_FSIZE(f) < 4) fnodex(:,4) = fnodex(:,3)
+      case (6) ! wedge
+        fnodex(:,:WED6_FSIZE(f)) = nodex(:,WED6_FACES(WED6_XFACE(f):WED6_XFACE(f+1)-1))
+        if (WED6_FSIZE(f) < 4) fnodex(:,4) = fnodex(:,3)
+      case (8) ! hex
+        fnodex = nodex(:,HEX8_FACES(HEX8_XFACE(f):HEX8_XFACE(f+1)-1))
+      end select
+
+      call this%face_params(f)%init(fnodex, plane_normal)
     end do
 
   end subroutine init_truncation_volume
@@ -53,34 +86,25 @@ contains
 
     integer :: f
 
-    ! initialize relevant quantities
-    !if (count_cases) Cases = 0
-
-    ! loop over faces, accumulating the truncated volume
     volume = 0
-    do f = 1,nfc
+    do f = 1,size(this%face_params)
       volume = volume + this%face_params(f)%truncate_face(plane_rho)
     end do
 
   end function volume
 
-  subroutine init_truncation_volume_face(this, nodex, plane_normal, face)
+  subroutine init_truncation_volume_face(this, nodex, plane_normal)
 
-    use cell_topology
     use cell_geometry, only: cross_product
 
     class(truncation_volume_face), intent(out) :: this
     real(r8), intent(in) :: nodex(:,:), plane_normal(:)
-    integer, intent(in) :: face
 
     integer  :: j
     real(r8) :: tmp1(3)
 
     this%plane_normal = plane_normal
-
-    ! Store face vertices in an order that is counterclockwise relative to a direction
-    ! that looks from outside the face into the cell.
-    this%X = nodex(:,HEX8_FACES(HEX8_XFACE(face):HEX8_XFACE(face+1)-1))
+    this%X = nodex
 
     ! Compute K (the Area Vector of the ruled surface)
     this%k = cross_product(this%X(:,3)-this%X(:,1), this%X(:,4)-this%X(:,2))
