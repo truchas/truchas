@@ -139,7 +139,11 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/mfd_disc_type.F90
            physics/heat_species_transport/property_mesh_function.F90
            physics/heat_species_transport/source_mesh_function.F90
-           physics/heat_species_transport/upper_packed_matrix.F90)
+           physics/heat_species_transport/upper_packed_matrix.F90
+           physics/heat_species_transport/enthalpy_advector_class.F90
+           physics/heat_species_transport/enthalpy_advector1_type.F90
+           physics/heat_species_transport/enthalpy_advector2_type.F90
+)
 
 # - induction_heating
 list(APPEND PHYSICS_FILES

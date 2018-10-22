@@ -153,10 +153,9 @@ add_pytruchas_test(static-wall
 		   PROCESSORS 4
 		   LABELS OLD_FLOW)
 
-add_pytruchas_test(natural-convection
-                   natural-convection/testNaturalConvection.py
-		   PROCESSORS 4
-		   LABELS OLD_FLOW CONDUCTION HEX)
+add_pytruchas_test(nat-conv-old nat-conv-old/test.py PROCESSORS 4 LABELS OLD_FLOW CONDUCTION HEX)
+
+add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW CONDUCTION HEX NOT_WORKING)
 
 add_pytruchas_test(natural-conv-tet
                    natural-conv-tet/test.py
@@ -168,10 +167,9 @@ add_pytruchas_test(porous-drag
 		   PROCESSORS 4
 		   LABELS OLD_FLOW)
 
-add_pytruchas_test(sloshing-flow
-                   sloshing-flow/testSloshingFlow.py
-		   PROCESSORS 4
-		   LABELS OLD_FLOW)
+add_pytruchas_test(sloshing-flow-old sloshing-flow-old/test.py PROCESSORS 4 LABELS OLD_FLOW)
+
+add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
 add_pytruchas_test(void-collapse
                    void-collapse/testVoidCollapse.py

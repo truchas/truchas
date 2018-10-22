@@ -61,7 +61,7 @@ module vtrack_driver
 
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
-  public :: vtrack_vof_view, vtrack_flux_vol_view
+  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -102,6 +102,12 @@ contains
     ASSERT(vtrack_enabled())
     p => this%flux_vol
   end function vtrack_flux_vol_view
+
+  ! material ids corresponding to flux_vol columns
+  function vtrack_liq_matid_view() result(p)
+    integer, pointer :: p(:)
+    p => this%liq_matid(:this%fluids)
+  end function
 
 
   subroutine vtrack_driver_init(params)

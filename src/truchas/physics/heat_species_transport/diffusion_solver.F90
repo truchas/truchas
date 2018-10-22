@@ -33,6 +33,7 @@ module diffusion_solver
   use truchas_timers
   use truchas_logging_services
   use unstr_mesh_type
+  use enthalpy_advector_class
   implicit none
   private
 
@@ -71,6 +72,7 @@ module diffusion_solver
     !! The special model and solver that works with transient void.
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
+    class(enthalpy_advector), allocatable :: hadv
   end type ds_driver
   type(ds_driver), save :: this
   
@@ -206,11 +208,10 @@ contains
     subroutine update_adv_heat
 
       use legacy_mesh_api, only: ncells
-      use advection_module,   only: compute_advected_enthalpy
       use EM_data_proxy,      only: joule_power_density
       use index_partitioning, only: gather_boundary
 
-      real(r8), allocatable :: q_t(:), q_ds(:), dQ_t(:), dQ_ds(:), T_t(:)
+      real(r8), allocatable :: q_t(:), q_ds(:)
       
       if (this%have_joule_heat .or. (this%have_fluid_flow .and. this%solver_type /= SOLVER2)) then
         allocate(q_ds(this%mesh%ncell))
@@ -226,15 +227,13 @@ contains
         end if
         !! Advected heat source.
         if (this%have_fluid_flow .and. this%solver_type /= SOLVER2) then
-          allocate(T_t(ncells), dQ_t(ncells))
-          call ds_get_temp (T_t)
-          call compute_advected_enthalpy (T_t, dQ_t)
-          deallocate(T_t)
-          allocate(dQ_ds(this%mesh%ncell))
-          dQ_ds(:this%mesh%ncell_onP) = dQ_t(:this%mesh%ncell_onP)
-          call gather_boundary (this%mesh%cell_ip, dQ_ds)
-          q_ds = q_ds + (dQ_ds / (h * this%mesh%volume))
-          deallocate(dQ_ds, dQ_t)
+          block
+            real(r8) :: tcell(this%mesh%ncell_onP), dQ(this%mesh%ncell)
+            call ds_get_temp(tcell) !TODO: can be a view rather than a copy
+            call this%hadv%get_advected_enthalpy(tcell, dQ(:this%mesh%ncell_onP))
+            call gather_boundary(this%mesh%cell_ip, dQ)
+            q_ds = q_ds + (dQ / (h * this%mesh%volume))
+          end block
         end if
         call smf_set_extra_source (this%ht_source, q_ds)
         deallocate(q_ds)
@@ -371,9 +370,13 @@ contains
     use FHT_solver_factory
     use HTSD_model_factory
     use HTSD_solver_factory
+    use physics_module, only: flow, legacy_flow
+    use enthalpy_advector1_type
+    use enthalpy_advector2_type
 
     integer :: stat
     character(len=200) :: errmsg
+    type(enthalpy_advector1), allocatable :: hadv1
 
     call TLS_info ('')
     call TLS_info ('Initializing diffusion solver ...')
@@ -399,6 +402,16 @@ contains
     this%have_fluid_flow = fluid_flow
     this%have_phase_change = multiphase_problem(this%mmf)
     this%have_void = void_is_present()
+
+    if (legacy_flow) then
+      this%have_fluid_flow = .true.
+      allocate(enthalpy_advector2 :: this%hadv)
+    else if (flow) then
+      this%have_fluid_flow = .true.
+      allocate(hadv1)
+      call hadv1%init(this%mesh)
+      call move_alloc(hadv1, this%hadv)
+    end if
     
     !! Figure out which diffusion solver we should be running, and ensure
     !! that the user has selected a compatible integration method.
@@ -434,6 +447,7 @@ contains
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
       this%sol2 => create_FHT_solver(this%mmf, this%mod2, stat, errmsg)
+      call move_alloc(this%hadv, this%sol2%hadv)
       
     case default
       INSIST(.false.)

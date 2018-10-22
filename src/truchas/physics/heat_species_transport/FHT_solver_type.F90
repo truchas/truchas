@@ -39,6 +39,7 @@ module FHT_solver_type
   use unstr_mesh_type
   use parallel_communication
   use index_partitioning
+  use enthalpy_advector_class
   implicit none
   private
 
@@ -49,6 +50,7 @@ module FHT_solver_type
     type(FHT_precon) :: precon
     type(FHT_norm) :: norm
     type(TofH) :: T_of_H
+    class(enthalpy_advector), allocatable :: hadv
     
     real(r8) :: epsilon
     integer  :: seq = 0
@@ -233,7 +235,7 @@ contains
     ulast => most_recent_solution(this%uhist)
     call FHT_model_get_cell_temp_view (this%model, ulast, Tcell)
     allocate(dQ(size(Tcell)), Tmin(size(Tcell)), Tmax(size(Tcell)))
-    call compute_advected_heat (this, Tcell, dQ, Tmin, Tmax)
+    call this%hadv%get_advected_enthalpy(Tcell, dQ, Tmin, Tmax)
     do j = 1, this%mesh%ncell_onP
       if (this%tot_void_cell(j)) then
         this%H(j) = this%Hlast(j)

@@ -11,7 +11,7 @@ import TruchasTest
 
 class NaturalConvection(TruchasTest.GoldenTestCase):
 
-  test_name = 'natural-convection'
+  test_name = 'nat-conv'
   num_procs = 4 # with a parallel executable
   restart_file = 'restart.bin'
 
