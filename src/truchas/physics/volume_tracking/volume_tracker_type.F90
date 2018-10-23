@@ -733,7 +733,7 @@ contains
     do i = 1, this%mesh%ncell_onP
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
-      do m = 1, fluids+void
+      do m = 1, fluids
         this%w_cell(1:f1-f0+1,m,i) = flux_vol(m,f0:f1)
       end do
     end do
@@ -741,7 +741,7 @@ contains
     do i = this%mesh%ncell_onP+1, this%mesh%ncell
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
-      do m = 1, fluids+void
+      do m = 1, fluids
         flux_vol(m,f0:f1) = this%w_cell(1:f1-f0+1,m,i)
       end do
     end do
