@@ -579,8 +579,7 @@ contains
 
         select case (size(cn))
         case (4)
-          call cell%init(ierr, this%mesh%x(:,cn), reshape(source=TET4_FACES,shape=[3,4]), &
-              TET4_EDGES, this%mesh%volume(i), face_normal(:,1:size(fi)))
+          call cell%init(ierr, this%mesh%x(:,cn), face_normal(:,1:size(fi)), this%mesh%volume(i))
 
         case (5)
           ! zero treated as sentinel value in multimat_cell procedures
@@ -588,8 +587,8 @@ contains
           do j = 1, size(fi)
             face_vid(1:PYR5_FSIZE(j),j) = PYR5_FACES(PYR5_XFACE(j):PYR5_XFACE(j+1)-1)
           end do
-          call cell%init(ierr, this%mesh%x(:,cn), face_vid, &
-              PYR5_EDGES, this%mesh%volume(i), face_normal(:,1:size(fi)))
+          call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
+              PYR5_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
 
         case (6)
           ! zero treated as sentinel value in multimat_cell procedures
@@ -597,12 +596,12 @@ contains
           do j = 1, size(fi)
             face_vid(1:WED6_FSIZE(j),j) = WED6_FACES(WED6_XFACE(j):WED6_XFACE(j+1)-1)
           end do
-          call cell%init(ierr, this%mesh%x(:,cn), face_vid, &
-              WED6_EDGES, this%mesh%volume(i), face_normal(:,1:size(fi)))
+          call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
+              WED6_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
 
         case (8)
           call cell%init(ierr, this%mesh%x(:,cn), reshape(source=HEX8_FACES,shape=[4,6]), &
-              HEX8_EDGES, this%mesh%volume(i), face_normal(:,1:size(fi)))
+              HEX8_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
 
         case default
           call TLS_fatal('unaccounted topology in donor_fluxes_nd')
@@ -647,12 +646,13 @@ contains
     class(volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), flux_vol(:,:), dt
 
-    integer :: i,j,o,m,f0,f1,navail,nmat
+    integer :: i,j,o,m,f0,f1,navail,nmat, ierr
     logical  :: adjust_fluxes, avail(size(vof_n,dim=1))
     real(r8) :: mat_flux_cur, mat_flux_acc, mat_avail
     real(r8) :: face_flux_fixed, face_flux_adjustable, face_flux
 
     nmat = this%nrealfluid
+    ierr = 0
 
     do i = 1, this%mesh%ncell
       avail = .true.
@@ -705,7 +705,8 @@ contains
             else
               navail = count(avail)
               if (navail == 0) then
-                call TLS_fatal ('FLUX_RENORM: cannot reassign face flux to any other material')
+                ierr = 1
+                exit
               end if
 
               ! arbitrarily add volume flux to potentially non-existent material in cell to balance
@@ -718,6 +719,8 @@ contains
         end do
       end do
     end do
+
+    call TLS_fatal_if_any (ierr /= 0, 'FLUX_RENORM: cannot reassign face flux to any other material')
 
   end subroutine flux_renorm
 

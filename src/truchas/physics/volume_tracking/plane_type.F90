@@ -66,15 +66,16 @@ contains
   end function intersects
 
   ! return the point where the line between x1 & x2 intersects with the given plane
-  function intersection_point (this,x)
+  subroutine intersection_point (this, intx, on_point, x)
 
     use near_zero_function
 
     class(plane), intent(in) :: this
-    real(r8),     intent(in) :: x(:,:)
-    real(r8)                 :: intersection_point(3)
+    real(r8), intent(out) :: intx(:)
+    integer, intent(out) :: on_point
+    real(r8), intent(in) :: x(:,:)
 
-    real(r8)                 :: dx(3),d1,d2
+    real(r8) :: dx(3),d1,d2
 
     ASSERT(all(shape(x)==[3,2]))
 
@@ -83,16 +84,19 @@ contains
     d1 = this%signed_distance(x(:,1))
     d2 = this%signed_distance(x(:,2))
 
-    if (near_zero (d1,alpha)) then
-      intersection_point = x(:,1)
-    else if (near_zero (d2,alpha)) then
-      intersection_point = x(:,2)
+    if (near_zero(d1,alpha)) then
+      intx = x(:,1)
+      on_point = 1
+    else if (near_zero(d2,alpha)) then
+      intx = x(:,2)
+      on_point = 2
     else
       dx = x(:,2)-x(:,1)
-      intersection_point = x(:,1) - (d1/sum(dx*this%normal)) * dx
+      intx = x(:,1) - (d1/sum(dx*this%normal)) * dx
+      on_point = 0
     end if
 
-  end function intersection_point
+  end subroutine intersection_point
 
   subroutine print_data (this)
     class(plane), intent(in) :: this

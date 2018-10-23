@@ -58,7 +58,7 @@ contains
   end subroutine init
 
   real(r8) function signed_eval(this, x)
-    class(vof_error_func), intent(in) :: this
+    class(vof_error_func), intent(inout) :: this
     real(r8), intent(in) :: x
     signed_eval = (this%trunc_vol%volume(x) - this%target_volume) / this%cell_volume
   end function signed_eval
@@ -70,7 +70,7 @@ contains
 
     real(r8), intent(out) :: rho_min, rho_max
     real(r8), intent(in) :: norm(:), node(:,:)
-    type(vof_error_func), intent(in) :: vof_error
+    type(vof_error_func), intent(inout) :: vof_error
 
     real(r8) :: rho, err, err_min, err_max
     integer :: i
