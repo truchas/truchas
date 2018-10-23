@@ -21,7 +21,7 @@ module volume_tracker_type
     real(r8) :: cutoff ! allow volume fraction {0,(cutoff,1]}
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
-    real(r8), allocatable :: w_node(:,:), w_face(:,:)
+    real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:,:)
     integer, allocatable :: priority(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
   contains
@@ -92,6 +92,8 @@ contains
     allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(2,mesh%nnode))
     allocate(this%w_face(this%nfluid,mesh%nface))
+    ! need this array so we can violate conservation in parallel
+    allocate(this%w_cell(8,this%nfluid,mesh%ncell))
 
   end subroutine init
 
@@ -726,6 +728,23 @@ contains
     end do
 
     call gather_boundary(this%mesh%cell_ip, vof)
+
+    ! Is there really not a better way?
+    do i = 1, this%mesh%ncell_onP
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      do m = 1, fluids+void
+        this%w_cell(1:f1-f0+1,m,i) = flux_vol(m,f0:f1)
+      end do
+    end do
+    call gather_boundary(this%mesh%cell_ip, this%w_cell)
+    do i = this%mesh%ncell_onP+1, this%mesh%ncell
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      do m = 1, fluids+void
+        flux_vol(m,f0:f1) = this%w_cell(1:f1-f0+1,m,i)
+      end do
+    end do
 
   end subroutine enforce_bounded_vof
 
