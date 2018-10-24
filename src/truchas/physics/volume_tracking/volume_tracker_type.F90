@@ -28,13 +28,14 @@ module volume_tracker_type
     procedure :: init
     procedure :: flux_volumes
     procedure :: normals
-    procedure :: donor_fluxes_nd
-    procedure :: donor_fluxes_os
-    procedure :: flux_renorm
-    procedure :: flux_acceptor
+    procedure, private :: donor_fluxes
+    procedure, private :: donor_fluxes_nd_cell
+    procedure, private :: donor_fluxes_os_cell
+    procedure, private :: flux_renorm
+    procedure, private :: flux_acceptor
     !procedure :: flux_bc
-    procedure :: accumulate_volume
-    procedure :: enforce_bounded_vof
+    procedure, private :: accumulate_volume
+    procedure, private :: enforce_bounded_vof
   end type volume_tracker
 
 contains
@@ -115,12 +116,7 @@ contains
     do i = 1, this%subcycles
       call this%normals(vof)
 
-      if (this%nested_dissection) then
-        call this%donor_fluxes_nd(vel, vof, sub_dt)
-      else
-        call this%donor_fluxes_os(vel, vof, sub_dt)
-      end if
-
+      call this%donor_fluxes(vel, vof, sub_dt)
 
       call this%flux_renorm(vel, vof_n, flux_vol, sub_dt)
 
@@ -210,47 +206,40 @@ contains
 
   end subroutine normals
 
-
-  subroutine donor_fluxes_os(this, vel, vof, dt)
+  subroutine donor_fluxes_os_cell(this, i, vel, vof, dt)
 
     use cell_geom_type
 
     class(volume_tracker), intent(inout) :: this
+    integer, intent(in) :: i
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
     real(r8) :: face_normal(3,6)
-    integer :: i,j,k,ierr
+    integer :: j,k,ierr
     type(cell_geom) :: cell
 
-        ! calculate the flux volumes for each face
-    call start_timer('reconstruct/advect')
+    associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
+        fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
 
-    do i = 1, this%mesh%ncell
-      associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
-          fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
+      do j = 1, size(fi)
+        k = fi(j)
+        if (btest(this%mesh%cfpar(i),pos=j)) then
+          face_normal(:,j) = -this%mesh%normal(:,k)/this%mesh%area(k)
+        else
+          face_normal(:,j) = this%mesh%normal(:,k)/this%mesh%area(k)
+        end if
+      end do
 
-        do j = 1, size(fi)
-          k = fi(j)
-          if (btest(this%mesh%cfpar(i),pos=j)) then
-            face_normal(:,j) = -this%mesh%normal(:,k)/this%mesh%area(k)
-          else
-            face_normal(:,j) = this%mesh%normal(:,k)/this%mesh%area(k)
-          end if
-        end do
+      call cell%init(this%mesh%x(:,cn), this%mesh%volume(i), this%mesh%area(fi), &
+          face_normal(:,1:size(fi)))
 
-        call cell%init(this%mesh%x(:,cn), this%mesh%volume(i), this%mesh%area(fi), &
-            face_normal(:,1:size(fi)))
+      call cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
+          vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff, &
+          this%priority, this%nmat, this%location_iter_max, &
+          this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
+    end associate
 
-        call cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
-            vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff, &
-            this%priority, this%nmat, this%location_iter_max, &
-            this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
-      end associate
-    end do
-
-    call stop_timer('reconstruct/advect')
-
-  end subroutine donor_fluxes_os
+  end subroutine donor_fluxes_os_cell
 
   ! get the volume flux for every material in the given cell
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
@@ -549,79 +538,97 @@ contains
 
   end subroutine flux_vol_nodes
 
-  subroutine donor_fluxes_nd(this, vel, vof, dt)
+  subroutine donor_fluxes_nd_cell(this, i, vel, vof, dt)
 
     use cell_topology
     use multimat_cell_type
 
     class(volume_tracker), intent(inout) :: this
+    integer, intent(in) :: i
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
     real(r8) :: face_normal(3,6)
-    integer :: i,j,k,ierr, face_vid(4,6)
+    integer :: j,k,ierr, face_vid(4,6)
     type(multimat_cell) :: cell
+
+    associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
+        fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
+
+      do j = 1, size(fi)
+        k = fi(j)
+        if (btest(this%mesh%cfpar(i),pos=j)) then
+          face_normal(:,j) = -this%mesh%normal(:,k)/this%mesh%area(k)
+        else
+          face_normal(:,j) = this%mesh%normal(:,k)/this%mesh%area(k)
+        end if
+      end do
+
+      select case (size(cn))
+      case (4)
+        call cell%init(ierr, this%mesh%x(:,cn), face_normal(:,1:size(fi)), this%mesh%volume(i))
+
+      case (5)
+        ! zero treated as sentinel value in multimat_cell procedures
+        face_vid = 0
+        do j = 1, size(fi)
+          face_vid(1:PYR5_FSIZE(j),j) = PYR5_FACES(PYR5_XFACE(j):PYR5_XFACE(j+1)-1)
+        end do
+        call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
+            PYR5_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
+
+      case (6)
+        ! zero treated as sentinel value in multimat_cell procedures
+        face_vid = 0
+        do j = 1, size(fi)
+          face_vid(1:WED6_FSIZE(j),j) = WED6_FACES(WED6_XFACE(j):WED6_XFACE(j+1)-1)
+        end do
+        call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
+            WED6_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
+
+      case (8)
+        call cell%init(ierr, this%mesh%x(:,cn), reshape(source=HEX8_FACES,shape=[4,6]), &
+            HEX8_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
+
+      case default
+        call TLS_fatal('unaccounted topology in donor_fluxes_nd')
+      end select
+
+      if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
+
+      call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
+          this%location_iter_max)
+
+      this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
+          cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
+          this%mesh%area(fi), this%cutoff, this%nfluid, ierr)
+      if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
+    end associate
+
+  end subroutine donor_fluxes_nd_cell
+
+  subroutine donor_fluxes(this, vel, vof, dt)
+
+    class(volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: dt, vof(:,:), vel(:)
+
+    integer :: i, nmat
 
     ! calculate the flux volumes for each face
     call start_timer('reconstruct/advect')
 
     do i = 1, this%mesh%ncell
-      associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
-          fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
+      nmat = count(vof(:,i) > this%cutoff)
 
-        do j = 1, size(fi)
-          k = fi(j)
-          if (btest(this%mesh%cfpar(i),pos=j)) then
-            face_normal(:,j) = -this%mesh%normal(:,k)/this%mesh%area(k)
-          else
-            face_normal(:,j) = this%mesh%normal(:,k)/this%mesh%area(k)
-          end if
-        end do
-
-        select case (size(cn))
-        case (4)
-          call cell%init(ierr, this%mesh%x(:,cn), face_normal(:,1:size(fi)), this%mesh%volume(i))
-
-        case (5)
-          ! zero treated as sentinel value in multimat_cell procedures
-          face_vid = 0
-          do j = 1, size(fi)
-            face_vid(1:PYR5_FSIZE(j),j) = PYR5_FACES(PYR5_XFACE(j):PYR5_XFACE(j+1)-1)
-          end do
-          call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
-              PYR5_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
-
-        case (6)
-          ! zero treated as sentinel value in multimat_cell procedures
-          face_vid = 0
-          do j = 1, size(fi)
-            face_vid(1:WED6_FSIZE(j),j) = WED6_FACES(WED6_XFACE(j):WED6_XFACE(j+1)-1)
-          end do
-          call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
-              WED6_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
-
-        case (8)
-          call cell%init(ierr, this%mesh%x(:,cn), reshape(source=HEX8_FACES,shape=[4,6]), &
-              HEX8_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
-
-        case default
-          call TLS_fatal('unaccounted topology in donor_fluxes_nd')
-        end select
-
-        if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
-
-        call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
-            this%location_iter_max)
-
-        this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
-            cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
-                                 this%mesh%area(fi), this%cutoff, this%nfluid, ierr)
-        if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
-      end associate
+      if (nmat > 2 .and. this%nested_dissection) then
+        call this%donor_fluxes_nd_cell(i, vel, vof, dt)
+      else
+        call this%donor_fluxes_os_cell(i, vel, vof, dt)
+      end if
     end do
 
     call stop_timer('reconstruct/advect')
 
-  end subroutine donor_fluxes_nd
+  end subroutine donor_fluxes
 
 
   ! Scan all faces with an outward flux and determine if any material is over-exhausted from this
