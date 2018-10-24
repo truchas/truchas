@@ -376,8 +376,7 @@ contains
   ! describe a hexagonal volume that matches the value of Flux_Vol.
   subroutine flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof, flux_vol_node)
 
-    use cell_geometry, only: hex_volume, wedge_volume
-    use cell_topology
+    use cell_geometry, only: hex_volume
     use cell_geom_type
 
     integer, intent(in) :: face
@@ -402,10 +401,10 @@ contains
     integer, parameter :: &
         back_nodes(4,6,4) = reshape([&
         ! tet
-        3, 3, 3, 0, &
-        1, 1, 1, 0, &
-        2, 2, 2, 0, &
-        4, 4, 4, 0, &
+        3, 3, 3, 3, &
+        1, 1, 1, 1, &
+        2, 2, 2, 2, &
+        4, 4, 4, 4, &
         0, 0, 0, 0, &
         0, 0, 0, 0, &
 
@@ -421,8 +420,8 @@ contains
         3, 3, 6, 6, &
         1, 1, 4, 4, &
         2, 5, 5, 2, &
-        4, 6, 5, 0, &
-        1, 2, 3, 0, &
+        4, 6, 5, 5, &
+        1, 2, 3, 3, &
         0, 0, 0, 0, &
 
         ! hex
@@ -435,14 +434,14 @@ contains
         [4,6,4])
 
     ! this is identical to the <shape>_faces arrays in cell_topology,
-    ! except that pyramid faces are treated like a degenerate quadrilaterals
+    ! except that triangular faces are treated like a degenerate quadrilaterals
     integer, parameter :: &
         front_nodes(4,6,4) = reshape([&
         ! tet
-        1,2,4,0, &
-        2,3,4,0, &
-        1,4,3,0, &
-        1,3,2,0, &
+        1,2,4,4, &
+        2,3,4,4, &
+        1,4,3,3, &
+        1,3,2,2, &
         0,0,0,0, &
         0,0,0,0, &
 
@@ -458,8 +457,8 @@ contains
         1,2,5,4, &
         2,3,6,5, &
         1,4,6,3, &
-        1,3,2,0, &
-        4,5,6,0, &
+        1,3,2,2, &
+        4,5,6,6, &
         0,0,0,0, &
 
         ! hex
@@ -471,32 +470,17 @@ contains
         5,6,7,8],&
         [4,6,4])
 
-    integer :: ia, ib, e, iter, nedge, edge_ends(2,4)
+    integer, parameter :: nedge = 4, edge_ends(2,4) = reshape([1,5,  4,8,  3,7, 2,6], [2,4])
+
+    integer :: ia, ib, e, iter
     real(r8) :: percnt(4), Uedge(3,4), volume, mult, ndotuedge
 
     ASSERT(cell%cell_type > 0 .and. cell%cell_type <= 4)
 
-    select case (cell%cell_type)
-    case (CELL_TET4)
-      nedge = 3
-    case (CELL_WED6)
-      nedge = WED6_FSIZE(face)
-    case (CELL_HEX8, CELL_PYR5)
-      nedge = 4
-    end select
-    !edge_ends = edge_ends_type(:,:,face,cell%cell_type)
-
-    if (nedge == 3) then
-      edge_ends(:,:3) = reshape([1,4,  3,6,  2,5], [2,3])
-      edge_ends(:,4) = 0
-    else ! nedge == 4
-      edge_ends = reshape([1,5,  4,8,  3,7, 2,6], [2,4])
-    end if
-
     ! initialize flux volume as entire given cell
     flux_vol_node = 0
-    flux_vol_node(:,edge_ends(1,:nedge)) = cell%node(:,front_nodes(:nedge,face,cell%cell_type))
-    flux_vol_node(:,edge_ends(2,:nedge)) = cell%node(:,back_nodes(:nedge,face,cell%cell_type))
+    flux_vol_node(:,edge_ends(1,:)) = cell%node(:,front_nodes(:,face,cell%cell_type))
+    flux_vol_node(:,edge_ends(2,:)) = cell%node(:,back_nodes(:,face,cell%cell_type))
 
     ! compute the edge unit vectors
     percnt = 0
@@ -523,11 +507,7 @@ contains
       end do
 
       ! compute the new flux volume and increment multiplier for next iteration
-      if (nedge == 4) then
-        volume = hex_volume(flux_vol_node)
-      else ! nedge == 3
-        volume = wedge_volume(flux_vol_node(:,:6))
-      end if
+      volume = hex_volume(flux_vol_node)
       Mult = Mult * flux_vol/volume
 
       if (abs(flux_vol - volume) < cutvof*cell%volume) exit
