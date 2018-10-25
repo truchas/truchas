@@ -378,6 +378,8 @@ add_pytruchas_test(hydrostatic-old-6d hydrostatic-old/test6d.py PROCESSORS 4 LAB
 add_pytruchas_test(hydrostatic-old-7a hydrostatic-old/test7a.py PROCESSORS 4 LABELS OLD_FLOW)
 add_pytruchas_test(hydrostatic-old-7b hydrostatic-old/test7b.py PROCESSORS 4 LABELS OLD_FLOW)
 
+add_pytruchas_test(hydrostatic-old-10 hydrostatic-old/test10.py PROCESSORS 4 LABELS OLD_FLOW)
+
 # HYDROSTATIC TESTS -- NEW FLOW SOLVER
 add_pytruchas_test(hydrostatic-1a hydrostatic/test1a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-1b hydrostatic/test1b.py PROCESSORS 4 LABELS FLOW)
@@ -414,6 +416,7 @@ add_pytruchas_test(hydrostatic-9b hydrostatic/test9b.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(hydrostatic-9c hydrostatic/test9c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-9d hydrostatic/test9d.py PROCESSORS 4 LABELS FLOW)
 
+add_pytruchas_test(hydrostatic-10 hydrostatic/test10.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
 add_pytruchas_test(steady-flow-old-1a steady-flow-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)
 add_pytruchas_test(steady-flow-old-1b steady-flow-old/test1b.py PROCESSORS 4 LABELS OLD_FLOW)

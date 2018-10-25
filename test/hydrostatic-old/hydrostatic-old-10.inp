@@ -1,0 +1,139 @@
+SINGLE-FLUID 2D HYDROSTATIC BUOYANCY TEST
+-----------------------------------------
+Single inviscid fluid at rest in a [-5,5]^2 domain subject to gravity.
+Linear temperature field from T=1 at the bottom to T=2 at the top, with a
+temperature-dependent density. This is a stable configuration with lighter
+fluid at the top. Solving for both fluid flow and heat conduction with steady
+state initial conditions, so fluid should remain at rest and temperature
+remain linear.
+
+With rho=2*(1-a(T-1.5)), g=(0,-1,0), p = const - 2y + (a/10) y^2.
+Note the density deviation is drho(T) = -a(T-1.5). Here we use a=0.5
+
+Note: Should obtain the same results if heat_transport is disabled.
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+&MESH
+  mesh_file = 'mesh2.gen'
+/
+
+&PHYSICS
+  legacy_flow = .true.
+  !heat_transport = .true.
+  body_force_density = 0.0, -1.0, 0.0
+/
+
+&NUMERICS
+  dt_constant = 0.125
+  discrete_ops_type           = 'ortho'
+/
+
+&LEGACY_FLOW
+  inviscid   = .true.
+  projection_linear_solution  = 'projection'
+  body_force_face_method      = .true.
+  courant_number              = 0.5
+/
+
+&LINEAR_SOLVER
+  name = 'projection'
+  method = 'fgmres'
+  preconditioning_method = 'ssor'
+  convergence_criterion = 1.0e-12
+  relaxation_parameter = 1.4
+  preconditioning_steps = 2
+  maximum_iterations = 200
+/
+
+# FREE SLIP BC ALL AROUND
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 0.05
+  nlk_preconditioner = 'hypre_amg'
+/
+
+&DS_BOUNDARY_CONDITION
+ name = 'top'
+ variable = 'temperature'
+ condition = 'dirichlet'
+ face_set_ids = 4
+ data_constant = 2.0
+/
+
+&DS_BOUNDARY_CONDITION
+ name = 'bottom'
+ variable = 'temperature'
+ condition = 'dirichlet'
+ face_set_ids = 3
+ data_constant = 1.0
+/
+
+&DS_BOUNDARY_CONDITION
+ name = 'sides'
+ variable = 'temperature'
+ condition = 'flux'
+ face_set_ids = 1, 2, 5
+ data_constant = 0.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
+  temperature_function = 'init-temp'
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  velocity = 3*0.0
+  temperature_function = 'init-temp'
+/
+
+T = 1.5 + y/10; T(y=-5) = 1, T(y=5) = 2
+
+&FUNCTION
+ name = 'init-temp'
+ type = 'polynomial'
+ poly_coefficients = 1.5, 0.1
+ poly_exponents(:,1) = 0, 0, 0
+ poly_exponents(:,2) = 0, 1, 0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 2.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 1.0
+  property_name(4) = 'density deviation', property_function(4) = 'rel-drho'
+/
+
+&FUNCTION
+  name = 'rel-drho'
+  type = 'polynomial'
+  poly_coefficients = -0.5
+  poly_exponents(1,:) = 1
+  poly_refvars = 1.5
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
