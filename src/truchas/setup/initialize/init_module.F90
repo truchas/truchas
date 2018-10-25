@@ -98,7 +98,7 @@ CONTAINS
 
     real(r8), dimension(nbody,ncells) :: Hits_Vol
     real(r8), dimension(nbody,ncells) :: volume_fractions
-    real(r8), allocatable :: phi(:,:)
+    real(r8), allocatable :: phi(:,:), vel_fn(:)
     character(200) :: errmsg
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -146,7 +146,11 @@ CONTAINS
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then
 
-      call restart_matlzone ()
+      if (flow) then
+        call restart_matlzone (vel_fn)
+      else
+        call restart_matlzone ()
+      end if
       call restart_solid_mechanics ()
 
     else
@@ -174,7 +178,11 @@ CONTAINS
     call BC_INIT()
 
     if (flow) then
-      call flow_driver_init()
+      if (allocated(vel_fn)) then
+        call flow_driver_init(vel_fn)
+      else
+        call flow_driver_init
+      end if
     else if (legacy_flow) then
       !! NNC, December 2012.  Flow initialization is really messed up.  It does
       !! necessary stuff even when flow is inactive.  The work of ensuring the

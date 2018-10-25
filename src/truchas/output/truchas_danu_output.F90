@@ -275,10 +275,11 @@ contains
     end subroutine write_fluid_flow_data
 
     subroutine write_new_flow_data
-      use legacy_mesh_api, only: ndim, ncells
+      use legacy_mesh_api, only: ndim, ncells, nfc
       use flow_driver
 
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
+      real(r8) :: fluxing_velocity(nfc,ncells)
 
       vec_cc => flow_vel_cc_view()
       call write_seq_cell_field(seq, vec_cc(:,1:ncells), 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
@@ -286,9 +287,9 @@ contains
       scalar_cc => flow_P_cc_view()
       call write_seq_cell_field (seq, scalar_cc(1:ncells), 'Z_P', for_viz=.true., viz_name='P')
 
-!!$
-!!$      !! Face fluxing velocities.
-!!$      call write_seq_cell_field (seq, fluxing_velocity, 'Face_Vel', for_viz=.false.)
+      call get_legacy_flux_vel(fluxing_velocity)
+      call write_seq_cell_field(seq, fluxing_velocity, 'Face_Vel', for_viz=.false.)
+
 !!$
 !!$      !! Cell-centered fluid Courant number.
 !!$      call write_seq_cell_field (seq, courant, 'COURANT', for_viz=.true.)

@@ -87,7 +87,7 @@ module flow_projection_type
     procedure, private :: setup_face_velocity
     procedure, private :: setup_gravity
     procedure, private :: setup_solver
-    procedure, private :: grad_p_rho
+    procedure :: grad_p_rho
     procedure, private :: velocity_fc_correct
     procedure, private :: pressure_cc_correct
     procedure, private :: velocity_cc_correct

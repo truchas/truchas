@@ -75,6 +75,7 @@ module flow_driver
   public :: read_flow_namelists, flow_timestep
   public :: flow_driver_init, flow_step, flow_final, flow_enabled, flow_accept
   public :: flow_vel_fn_view, flow_vel_cc_view, flow_P_cc_view
+  public :: read_fluxing_velocity, get_legacy_flux_vel
 
   type :: flow_driver_data
     type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
@@ -115,7 +116,7 @@ contains
   subroutine flow_timestep(dtc, dtv)
     real(r8), intent(out) :: dtc, dtv
     ASSERT(flow_enabled())
-    call this%flow%timestep(this%props, dtc, dtv)
+    call this%flow%timestep(dtc, dtv)
   end subroutine flow_timestep
 
   logical function flow_enabled()
@@ -160,7 +161,7 @@ contains
   end subroutine read_flow_namelists
 
 
-  subroutine flow_driver_init()
+  subroutine flow_driver_init(vel_fn)
     use mesh_manager, only: unstr_mesh_ptr
     use flow_namelist, only: params
     use zone_module, only: zone
@@ -170,6 +171,8 @@ contains
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
     use vtrack_driver, only: vtrack_driver_init
+
+    real(r8), intent(in), optional :: vel_fn(:)
 
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
@@ -265,7 +268,7 @@ contains
       velocity_cc(:,i) = zone(i)%vc
     end do
     !!FIXME? Optional argument P_CC is missing -- is it needed?
-    call this%flow%init(this%mesh, prescribed_flow, velocity_cc, params=params)
+    call this%flow%init(this%mesh, this%props, prescribed_flow, velocity_cc, zone%p, vel_fn, params=params)
 
   end subroutine flow_driver_init
 
@@ -310,7 +313,7 @@ contains
     call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
 
     call this%props%update_cc(vof, this%temperature_cc, initial=initial)
-    call this%flow%step(t, dt, this%props, flux_vol, initial=initial)
+    call this%flow%step(t, dt, flux_vol, initial=initial)
     call stop_timer('Flow')
 
   end subroutine flow_step
@@ -319,5 +322,149 @@ contains
     call this%props%accept()
     call this%flow%accept()
   end subroutine flow_accept
+
+  !! This procedure is the counterpart to fluid_data_module::read_flow_data,
+  !! which reads the fluxing velocity record from the restart file. The
+  !! challenge here is that the HDF5 output and restart file use the legacy
+  !! degenerate hex format, and for the fluxing velocities, holds the data as
+  !! the outward normal side velocities for each cell. So we need to both map
+  !! legacy mesh sides to new mesh sides, and then to faces. The data is
+  !! essentially duplicated for interior faces (if it is consistent). We use
+  !! data from the side whose outward orientation is the same as that for the
+  !! face.
+
+  subroutine read_fluxing_velocity(unit, version, vel_fn)
+
+    use legacy_mesh_api, only: ncells, nfc, pcell => unpermute_mesh_vector
+    use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
+    use restart_utilities, only: read_dist_array
+    use index_partitioning, only: gather_boundary
+
+    integer, intent(in) :: unit, version
+    real(r8), allocatable, intent(out) :: vel_fn(:)
+
+    integer :: j, k, n
+    real(r8) :: old_flux_vel(nfc,this%mesh%ncell)
+
+    INSIST(this%mesh%ncell_onP == ncells) ! may fail if gap elements are present
+
+    call read_dist_array(unit, old_flux_vel(:,:ncells), pcell, 'READ_FLUXING_VELOCITY: error reading Fluxing_Velocity records')
+    call gather_boundary(this%mesh%cell_ip, old_flux_vel)
+
+    allocate(vel_fn(this%mesh%nface_onP))
+    vel_fn = 0
+
+!    do j = 1, this%mesh%ncell
+!      associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+!        select case (this%mesh%xcnode(j+1)-this%mesh%xcnode(j)) ! number of nodes for cell
+!        case (4)  ! tet cell
+!          do k = 1, size(cface)
+!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            vel_fn(cface(k)) = old_flux_vel(NEW_TET_SIDE_MAP(k),j)
+!          end do
+!        case (5)  ! pyramid cell
+!          do k = 1, size(cface)
+!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            vel_fn(cface(k)) = old_flux_vel(NEW_PYR_SIDE_MAP(k),j)
+!          end do
+!        case (6)  ! prism cell
+!          do k = 1, size(cface)
+!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            vel_fn(cface(k)) = old_flux_vel(NEW_PRI_SIDE_MAP(k),j)
+!          end do
+!        case (8)  ! hex cell
+!          do k = 1, size(cface)
+!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            vel_fn(cface(k)) = old_flux_vel(NEW_HEX_SIDE_MAP(k),j)
+!          end do
+!        case default
+!          INSIST(.false.)
+!        end select
+!      end associate
+!    end do
+!    call gather_boundary(this%mesh%face_ip, vel_fn)
+
+    do j = 1, this%mesh%nface_onP
+      n = this%mesh%fcell(1,j)
+      associate (cface => this%mesh%cface(this%mesh%xcface(n):this%mesh%xcface(n+1)-1))
+        do k = 1, size(cface)
+          if (cface(k) == j) exit
+        end do
+        ASSERT(k <= size(cface))
+        select case (this%mesh%xcnode(n+1)-this%mesh%xcnode(n)) ! number of nodes for cell
+        case (4)  ! tet cell
+          k = NEW_TET_SIDE_MAP(k)
+        case (5)  ! pyramid cell
+          k = NEW_PYR_SIDE_MAP(k)
+        case (6)  ! prism cell
+          k = NEW_PRI_SIDE_MAP(k)
+        case (8)  ! hex cell
+          k = NEW_HEX_SIDE_MAP(k)
+        case default
+          INSIST(.false.)
+        end select
+        vel_fn(j) = old_flux_vel(k,j)
+      end associate
+    end do
+
+  end subroutine read_fluxing_velocity
+
+  !! This is the companion of read_fluxing_velocity. The HDF5 output still uses
+  !! the legacy degenerate hex mesh format and cell-based outward fluxing
+  !! velocities used by the legacy flow solver. This routine returns the new
+  !! flow solvers face normal velocities in that format to be used in output.
+
+  subroutine get_legacy_flux_vel(fluxing_velocity)
+
+    use legacy_mesh_api, only: ncells, nfc
+    use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
+
+    real(r8), intent(out) :: fluxing_velocity(:,:)
+
+    real(r8), pointer :: vel_fn(:)
+    real(r8) :: tmp
+    integer :: j, k
+
+    ASSERT(size(fluxing_velocity,dim=1) == nfc)
+    ASSERT(size(fluxing_velocity,dim=2) == ncells)
+    INSIST(ncells == this%mesh%ncell_onP) ! may fail if gap elements are present
+
+    vel_fn => flow_vel_fn_view()
+    ASSERT(size(vel_fn) == this%mesh%nface)  ! we assume off-process are up-to-date
+    fluxing_velocity = 0.0_r8
+    do j = 1, ncells
+      associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        select case (this%mesh%xcnode(j+1)-this%mesh%xcnode(j)) ! number of nodes for cell
+        case (4)  ! tet cell
+          do k = 1, size(cface)
+            tmp = vel_fn(cface(k))
+            if (btest(this%mesh%cfpar(j),pos=k)) tmp = -tmp
+            fluxing_velocity(NEW_TET_SIDE_MAP(k),j) = tmp
+          end do
+        case (5)  ! pyramid cell
+          do k = 1, size(cface)
+            tmp = vel_fn(cface(k))
+            if (btest(this%mesh%cfpar(j),pos=k)) tmp = -tmp
+            fluxing_velocity(NEW_PYR_SIDE_MAP(k),j) = tmp
+          end do
+        case (6)  ! prism cell
+          do k = 1, size(cface)
+            tmp = vel_fn(cface(k))
+            if (btest(this%mesh%cfpar(j),pos=k)) tmp = -tmp
+            fluxing_velocity(NEW_PRI_SIDE_MAP(k),j) = tmp
+          end do
+        case (8)  ! hex cell
+          do k = 1, size(cface)
+            tmp = vel_fn(cface(k))
+            if (btest(this%mesh%cfpar(j),pos=k)) tmp = -tmp
+            fluxing_velocity(NEW_HEX_SIDE_MAP(k),j) = tmp
+          end do
+        case default
+          INSIST(.false.)
+        end select
+      end associate
+    end do
+
+  end subroutine get_legacy_flux_vel
 
 end module flow_driver
