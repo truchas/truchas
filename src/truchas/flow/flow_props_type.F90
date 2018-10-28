@@ -106,6 +106,7 @@ module flow_props_type
     class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
   contains
     procedure :: init
+    procedure :: set_initial_state
     procedure :: update_cc
     procedure :: update_fc
     procedure :: accept
@@ -159,22 +160,23 @@ contains
 
   end subroutine init
 
-  subroutine update_cc(this, vof, temperature_cc, initial)
+  subroutine set_initial_state(this, vof, temperature_cc)
     class(flow_props), intent(inout) :: this
     real(r8), intent(in) :: vof(:,:), temperature_cc(:)
-    logical, optional, intent(in) :: initial
-    !-
-    logical :: ini
+    call update_cc(this, vof, temperature_cc)
+    call update_fc(this)
+    call accept(this)
+  end subroutine set_initial_state
+
+  subroutine update_cc(this, vof, temperature_cc)
+
+    class(flow_props), intent(inout) :: this
+    real(r8), intent(in) :: vof(:,:), temperature_cc(:)
+
     integer :: m, i, j
     real(r8) :: minrho, w(2), min_face_rho, state(1)
 
     call start_timer("update properties")
-
-    if (present(initial)) then
-      ini = initial
-    else
-      ini = .false.
-    end if
 
     minrho = huge(1.0_r8)
 
@@ -218,11 +220,6 @@ contains
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
-
-    if (ini) then
-      call this%update_fc()
-      call this%accept()
-    end if
 
     call stop_timer("update properties")
 

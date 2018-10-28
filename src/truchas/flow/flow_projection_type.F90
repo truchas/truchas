@@ -167,28 +167,16 @@ contains
     call this%fg%init(mesh, params)
   end subroutine init
 
-  subroutine setup(this, dt, props, grad_p_rho_cc_n, body_force, vel_cc, P_cc, vel_fn, initial)
+  subroutine setup(this, dt, props, grad_p_rho_cc_n, body_force, vel_cc, P_cc, vel_fn)
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: vel_cc(:,:), dt, P_cc(:), body_force(:), grad_p_rho_cc_n(:,:)
     real(r8), intent(out) :: vel_fn(:)
-    logical, optional, intent(in) :: initial
-    logical :: init
-
-    init = .false.
-    if (present(initial)) init = initial
-
     call start_timer("setup")
     call this%setup_gravity(props, body_force)
     call this%grad_p_rho(props, P_cc)
     call this%setup_face_velocity(dt, props, grad_p_rho_cc_n, vel_cc, vel_fn)
-    ! we pass in dt == 0 to setup initial pass, this causes division by zero
-    ! in rhs, so pass in 1.
-!!$    if (init) then
-!!$      call this%setup_solver(1.0_r8, props, vel_fn)
-!!$    else
-      call this%setup_solver(dt, props, vel_fn)
-    !end if
+    call this%setup_solver(dt, props, vel_fn)
     call stop_timer("setup")
   end subroutine setup
 
@@ -390,19 +378,13 @@ contains
     end associate
   end subroutine setup_face_velocity
 
-  subroutine solve(this, dt, props, grad_p_rho_cc_n, vel_cc, p_cc, vel_fc, initial)
+  subroutine solve(this, dt, props, grad_p_rho_cc_n, vel_cc, p_cc, vel_fc)
     class(flow_projection), intent(inout) :: this
     real(r8), intent(in) :: dt, grad_p_rho_cc_n(:,:)
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: p_cc(:), vel_cc(:,:), vel_fc(:)
-    logical, optional, intent(in) :: initial
-    !-
-    integer :: ierr, i, in
 
-    ! walk through solve with initial dt = 0 to get divergence free pressure field
-!!$    if (present(initial)) then
-!!$      if (initial) return
-!!$    end if
+    integer :: ierr, i, in
 
     call start_timer("solve")
 
@@ -410,18 +392,13 @@ contains
     this%delta_p_cc = 0.0_r8
     call this%fg%guess(this%rhs, this%delta_p_cc)
 
-#if ASDF
-    write(*,'("PRESSURE RHS[", i3, "]: ",es15.5)') Q, this%rhs(Q)
-#endif
     call start_timer("hypre solve")
     call this%solver%solve(this%rhs, this%delta_p_cc, ierr)
     call stop_timer("hypre solve")
     call tls_info('projection solve: ' // this%solver%metrics_string())
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
-#if ASDF
-    write(*,'("DP[",i3,"]: ",es15.5)') Q, this%delta_p_cc(Q)
-#endif
+
     ! not sure if this call is necesary
     call gather_boundary(this%mesh%cell_ip, this%delta_p_cc)
 

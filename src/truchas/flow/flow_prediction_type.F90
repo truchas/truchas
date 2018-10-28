@@ -170,11 +170,10 @@ contains
 
   end subroutine init
 
-  subroutine setup(this, dt, props, vel_cc, initial)
+  subroutine setup(this, dt, props, vel_cc)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, vel_cc(:,:)
     type(flow_props), intent(inout) :: props
-    logical, optional, intent(in) :: initial
 
     call start_timer("setup")
 
@@ -447,12 +446,11 @@ contains
   end subroutine accumulate_rhs_solidified_rho
 
 
-  subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, vel_fn, vel_cc, initial)
+  subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, vel_fn, vel_cc)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, flux_volumes(:,:), grad_p_rho_cc(:,:), vel_fn(:)
     real(r8), intent(inout) :: vel_cc(:,:)
     type(flow_props), intent(in) :: props
-    logical, optional, intent(in) :: initial
     !
     integer :: i, j, ierr
 

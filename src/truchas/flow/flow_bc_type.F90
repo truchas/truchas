@@ -22,6 +22,7 @@ module flow_bc_type
   contains
     procedure :: init
     procedure :: compute
+    procedure :: compute_initial
   end type flow_bc
 
 contains
@@ -83,46 +84,28 @@ contains
 #endif
   end subroutine init
 
-  ! note 1: The bndry_func_class checks if values were already computed for the given time,
-  !         and skips if so. Since dp_dirichlet values get modified after calling compute,
-  !         and the flow solver is run for initialization, this presents a problem for the
-  !         first timestep, where the boundary condition values are registered as already
-  !         calculated and therefore compute is skipped, but then they are still modified.
-  !         Right now we have a hack to initialize the dp_dirichlet BCs, then never update
-  !         them, assuming them to be constant.
-  subroutine compute(this, t, dt, initial)
+  subroutine compute(this, t, dt)
     class(flow_bc), intent(inout) :: this
     real(r8), intent(in) :: t, dt
-    logical, optional, intent(in) :: initial
-    !-
-    logical :: init
-    integer :: i
-
-    if (present(initial)) then
-      init = initial
-    else
-      init = .false.
-    end if
-
     call this%p_dirichlet%compute(t)
     call this%p_neumann%compute(t)
     call this%v_dirichlet%compute(t)
-
-
-    ! dp_dirichlet doesn't need special treatment for initialization,
-    ! since the poisson equation has boundary information encoded
-    ! in the right hand side if the predictor is called first.
-
-    ! WARN: see note 1
-    if (init) then
-      call this%dp_dirichlet%compute(t+dt)
-      this%dp_dirichlet%value(:) = this%dp_dirichlet%value(:) - this%p_dirichlet%value(:)
-    end if
-
-    ! skip compute call for v_zero_normal for now.  perhaps there is a better abstraction
-    ! for this, some sort of cell_face_boundary_condition which takes the current value
-    ! at a cell and returns the appropriate value at a face...
+    call this%dp_dirichlet%compute(t+dt)
+    this%dp_dirichlet%value = this%dp_dirichlet%value - this%p_dirichlet%value
   end subroutine compute
 
+  !! Compute BC data for calculating the initial flow state. Only the Dirichlet
+  !! data for dp is different. Normally the data is the difference in pressure
+  !! data over the time step, but in this case we are not taking an actual time
+  !! step, so dp is 0 on pressure Dirichlet boundaries.
+
+  subroutine compute_initial(this, t)
+    class(flow_bc), intent(inout) :: this
+    real(r8), intent(in) :: t
+    call this%p_dirichlet%compute(t)
+    call this%p_neumann%compute(t)
+    call this%v_dirichlet%compute(t)
+    this%dp_dirichlet%value = 0.0_r8
+  end subroutine compute_initial
 
 end module flow_bc_type

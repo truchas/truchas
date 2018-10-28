@@ -76,6 +76,7 @@ module flow_driver
   public :: flow_driver_init, flow_step, flow_final, flow_enabled, flow_accept
   public :: flow_vel_fn_view, flow_vel_cc_view, flow_P_cc_view
   public :: read_fluxing_velocity, get_legacy_flux_vel
+  public :: flow_driver_set_initial_state
 
   type :: flow_driver_data
     type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
@@ -164,7 +165,6 @@ contains
   subroutine flow_driver_init(vel_fn)
     use mesh_manager, only: unstr_mesh_ptr
     use flow_namelist, only: params
-    use zone_module, only: zone
     use material_interop, only: void_material_index, material_to_phase
     use physics_module, only: prescribed_flow
     use scalar_func_factories, only: alloc_const_scalar_func
@@ -262,26 +262,74 @@ contains
     call flow_operators_init(this%mesh)
     call this%props%init(this%mesh, density, density_delta, viscosity, params)
 
-    ! the initial velocity is provided from the velocity_init routine
-    allocate(velocity_cc(3, this%mesh%ncell_onP))
-    do i = 1,this%mesh%ncell_onP
-      velocity_cc(:,i) = zone(i)%vc
-    end do
-    !!FIXME? Optional argument P_CC is missing -- is it needed?
-    call this%flow%init(this%mesh, this%props, prescribed_flow, velocity_cc, zone%p, vel_fn, params=params)
+    call this%flow%init(this%mesh, this%props, prescribed_flow, params=params)
 
   end subroutine flow_driver_init
 
-  subroutine flow_step(t, dt, vof, flux_vol, initial)
+  subroutine flow_driver_set_initial_state(t, dt)
+
+    use zone_module, only: zone
+    use vtrack_driver, only: vtrack_vof_view
+    use physics_module, only: prescribed_flow
+    use advection_velocity_namelist, only: adv_vel
+
+    real(r8), intent(in) :: t, dt
+
+    integer :: j
+    real(r8) :: vcell(3,this%mesh%ncell_onP)
+    real(r8), pointer :: vof(:,:)
+
+    call start_timer('Flow')
+
+    if (prescribed_flow) then
+      block
+        integer :: j
+        real(r8) :: args(0:3)
+        args(0) = t
+        do j = 1, this%mesh%ncell
+          args(1:3) = this%mesh%cell_centroid(:,j)
+          this%flow%vel_cc(:,j) = adv_vel%eval(args)
+        end do
+        do j = 1, this%mesh%nface
+          args(1:3) = this%mesh%face_centroid(:,j)
+          this%flow%vel_fn(j) = dot_product(adv_vel%eval(args), &
+              this%mesh%normal(:,j))/this%mesh%area(j)
+        end do
+      end block
+      ! This will be needed by timestep
+      this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
+      vof => vtrack_vof_view()
+      call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+      call this%props%set_initial_state(vof, this%temperature_cc)
+      call stop_timer('Flow')
+      return
+    end if
+
+    do j = 1, this%mesh%ncell_onP
+      vcell(:,j) = zone(j)%vc
+    end do
+
+    this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
+    call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+
+    vof => vtrack_vof_view()
+    call this%flow%set_initial_state(t, dt, vof, vcell, this%temperature_cc)
+
+    call stop_timer('Flow')
+
+  end subroutine flow_driver_set_initial_state
+
+  subroutine flow_step(t, dt, vof, flux_vol)
+
     use zone_module, only: Zone
     use physics_module, only: prescribed_flow
     use advection_velocity_namelist, only: adv_vel
-    use truchas_timers
+
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
-    logical, optional, intent(in) :: initial
 
     call start_timer('Flow')
+
     if (prescribed_flow) then
       block
         integer :: j
@@ -300,20 +348,15 @@ contains
       ! This will be needed by timestep
       this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
       call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
-      call this%props%update_cc(vof, this%temperature_cc, initial=initial)
+      call this%props%update_cc(vof, this%temperature_cc)
       call stop_timer('Flow')
       return
     end if
-#if ASDF
-    associate (m => this%mesh)
-      write(*, "('TOP LEVEL flux_vol[',i3,']: ',6es15.5): ") 771, flux_vol(1,m%xcface(771):m%xcface(772)-1)
-    end associate
-#endif
+
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
     call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+    call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
 
-    call this%props%update_cc(vof, this%temperature_cc, initial=initial)
-    call this%flow%step(t, dt, flux_vol, initial=initial)
     call stop_timer('Flow')
 
   end subroutine flow_step

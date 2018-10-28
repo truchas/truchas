@@ -84,7 +84,7 @@ CONTAINS
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
-    use flow_driver, only: flow_driver_init, flow_enabled
+    use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
@@ -182,6 +182,7 @@ CONTAINS
         call flow_driver_init(vel_fn)
       else
         call flow_driver_init
+        call flow_driver_set_initial_state(t, dt)
       end if
     else if (legacy_flow) then
       !! NNC, December 2012.  Flow initialization is really messed up.  It does
