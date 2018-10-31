@@ -133,7 +133,7 @@ contains
     call plist%set('stokes', stokes)
 
     if (viscous_implicitness /= NULL_R) then
-      if (viscous_implicitness <= 0 .or. viscous_implicitness > 1) &
+      if (viscous_implicitness < 0 .or. viscous_implicitness > 1) &
           call TLS_fatal('VISCOUS_IMPLICITNESS must be in [0,1]')
       call plist%set('viscous implicitness', viscous_implicitness)
     end if
