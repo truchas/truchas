@@ -84,10 +84,11 @@ module flow_projection_type
     procedure :: setup
     procedure :: solve
     procedure :: accept
+    procedure :: get_dyn_press_grad
     procedure, private :: setup_face_velocity
     procedure, private :: setup_gravity
     procedure, private :: setup_solver
-    procedure :: grad_p_rho
+    procedure, private :: grad_p_rho
     procedure, private :: velocity_fc_correct
     procedure, private :: pressure_cc_correct
     procedure, private :: velocity_cc_correct
@@ -499,6 +500,19 @@ contains
     end associate
   end subroutine grad_p_rho
 
+  !! Calculate the cell-centered dynamic pressure gradient
+  !! NB: This may alter the %gravity_head, %grad_p_rho_cc, and %grad_p_rho_fc
+  !!     components which may have undesired consequences.
+
+  subroutine get_dyn_press_grad(this, props, p_cc, body_force, grad_pd)
+    class(flow_projection), intent(inout) :: this
+    type(flow_props), intent(in) :: props
+    real(r8), intent(in) :: p_cc(:), body_force(:)
+    real(r8), intent(out) :: grad_pd(:,:)
+    call setup_gravity(this, props, body_force)  ! defines this%gravity_head
+    call grad_p_rho(this, props, p_cc)  ! defines this%grad_p_rho_cc
+    grad_pd = this%grad_p_rho_cc
+  end subroutine get_dyn_press_grad
 
   subroutine velocity_cc_correct(this, dt, props, grad_p_rho_cc_n, vel_cc)
     class(flow_projection), intent(inout) :: this

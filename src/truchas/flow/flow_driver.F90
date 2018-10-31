@@ -77,6 +77,7 @@ module flow_driver
   public :: flow_vel_fn_view, flow_vel_cc_view, flow_P_cc_view
   public :: read_fluxing_velocity, get_legacy_flux_vel
   public :: flow_driver_set_initial_state
+  public :: flow_driver_dump_state
 
   type :: flow_driver_data
     type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
@@ -162,7 +163,7 @@ contains
   end subroutine read_flow_namelists
 
 
-  subroutine flow_driver_init(vel_fn)
+  subroutine flow_driver_init
     use mesh_manager, only: unstr_mesh_ptr
     use flow_namelist, only: params
     use material_interop, only: void_material_index, material_to_phase
@@ -171,8 +172,6 @@ contains
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
     use vtrack_driver, only: vtrack_driver_init
-
-    real(r8), intent(in), optional :: vel_fn(:)
 
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
@@ -266,7 +265,7 @@ contains
 
   end subroutine flow_driver_init
 
-  subroutine flow_driver_set_initial_state(t, dt)
+  subroutine flow_driver_set_initial_state(t, dt, vel_fn)
 
     use zone_module, only: zone
     use vtrack_driver, only: vtrack_vof_view
@@ -274,6 +273,7 @@ contains
     use advection_velocity_namelist, only: adv_vel
 
     real(r8), intent(in) :: t, dt
+    real(r8), intent(in), optional :: vel_fn(:)
 
     integer :: j
     real(r8) :: vcell(3,this%mesh%ncell_onP)
@@ -313,7 +313,12 @@ contains
     call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
 
     vof => vtrack_vof_view()
-    call this%flow%set_initial_state(t, dt, vof, vcell, this%temperature_cc)
+
+    if (present(vel_fn)) then ! RESTART
+      call this%flow%set_initial_state(t, zone%p, vcell, vel_fn, vof, this%temperature_cc)
+    else
+      call this%flow%set_initial_state(t, dt, vcell, vof, this%temperature_cc)
+    end if
 
     call stop_timer('Flow')
 
@@ -382,42 +387,48 @@ contains
     use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
     use restart_utilities, only: read_dist_array
     use index_partitioning, only: gather_boundary
+    use mesh_manager, only: unstr_mesh_ptr
 
     integer, intent(in) :: unit, version
     real(r8), allocatable, intent(out) :: vel_fn(:)
 
     integer :: j, k, n
-    real(r8) :: old_flux_vel(nfc,this%mesh%ncell)
+    real(r8), allocatable :: old_flux_vel(:,:)
+    type(unstr_mesh), pointer :: mesh
 
-    INSIST(this%mesh%ncell_onP == ncells) ! may fail if gap elements are present
+    mesh => unstr_mesh_ptr('MAIN')
+    INSIST(associated(mesh))
 
+    INSIST(mesh%ncell_onP == ncells) ! may fail if gap elements are present
+
+    allocate(old_flux_vel(nfc,mesh%ncell))
     call read_dist_array(unit, old_flux_vel(:,:ncells), pcell, 'READ_FLUXING_VELOCITY: error reading Fluxing_Velocity records')
-    call gather_boundary(this%mesh%cell_ip, old_flux_vel)
+    call gather_boundary(mesh%cell_ip, old_flux_vel)
 
-    allocate(vel_fn(this%mesh%nface_onP))
+    allocate(vel_fn(mesh%nface_onP))
     vel_fn = 0
 
-!    do j = 1, this%mesh%ncell
-!      associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
-!        select case (this%mesh%xcnode(j+1)-this%mesh%xcnode(j)) ! number of nodes for cell
+!    do j = 1, mesh%ncell
+!      associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+!        select case (mesh%xcnode(j+1)-mesh%xcnode(j)) ! number of nodes for cell
 !        case (4)  ! tet cell
 !          do k = 1, size(cface)
-!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
 !            vel_fn(cface(k)) = old_flux_vel(NEW_TET_SIDE_MAP(k),j)
 !          end do
 !        case (5)  ! pyramid cell
 !          do k = 1, size(cface)
-!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
 !            vel_fn(cface(k)) = old_flux_vel(NEW_PYR_SIDE_MAP(k),j)
 !          end do
 !        case (6)  ! prism cell
 !          do k = 1, size(cface)
-!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
 !            vel_fn(cface(k)) = old_flux_vel(NEW_PRI_SIDE_MAP(k),j)
 !          end do
 !        case (8)  ! hex cell
 !          do k = 1, size(cface)
-!            if (btest(this%mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
+!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
 !            vel_fn(cface(k)) = old_flux_vel(NEW_HEX_SIDE_MAP(k),j)
 !          end do
 !        case default
@@ -425,16 +436,16 @@ contains
 !        end select
 !      end associate
 !    end do
-!    call gather_boundary(this%mesh%face_ip, vel_fn)
+!    call gather_boundary(mesh%face_ip, vel_fn)
 
-    do j = 1, this%mesh%nface_onP
-      n = this%mesh%fcell(1,j)
-      associate (cface => this%mesh%cface(this%mesh%xcface(n):this%mesh%xcface(n+1)-1))
+    do j = 1, mesh%nface_onP
+      n = mesh%fcell(1,j)
+      associate (cface => mesh%cface(mesh%xcface(n):mesh%xcface(n+1)-1))
         do k = 1, size(cface)
           if (cface(k) == j) exit
         end do
         ASSERT(k <= size(cface))
-        select case (this%mesh%xcnode(n+1)-this%mesh%xcnode(n)) ! number of nodes for cell
+        select case (mesh%xcnode(n+1)-mesh%xcnode(n)) ! number of nodes for cell
         case (4)  ! tet cell
           k = NEW_TET_SIDE_MAP(k)
         case (5)  ! pyramid cell
@@ -446,7 +457,7 @@ contains
         case default
           INSIST(.false.)
         end select
-        vel_fn(j) = old_flux_vel(k,j)
+        vel_fn(j) = old_flux_vel(k,n)
       end associate
     end do
 
@@ -509,5 +520,9 @@ contains
     end do
 
   end subroutine get_legacy_flux_vel
+
+  subroutine flow_driver_dump_state
+    call this%flow%dump_state
+  end subroutine flow_driver_dump_state
 
 end module flow_driver

@@ -37,7 +37,8 @@ module flow_type
     real(r8) :: courant_number
   contains
     procedure :: init
-    procedure :: set_initial_state
+    procedure, private :: set_initial_state_start, set_initial_state_restart
+    generic   :: set_initial_state => set_initial_state_start, set_initial_state_restart
     procedure :: step
     procedure :: accept
     procedure :: correct_non_regular_cells
@@ -46,6 +47,7 @@ module flow_type
     procedure :: vel_cc_view
     procedure :: vel_fn_view
     procedure :: P_cc_view
+    procedure :: dump_state
   end type flow
 
 contains
@@ -153,14 +155,18 @@ contains
 
   end subroutine init
 
-  subroutine set_initial_state(this, t, dt, vof, vcell, tcell)
+  !! This assigns initial values to all the state variables in the case only
+  !! external state variables are supplied. The remaining state variables are
+  !! computed/derived from them. This is indicated for starting a simulation.
+
+  subroutine set_initial_state_start(this, t, dt, vcell, vof, tcell)
 
     use index_partitioning, only: gather_boundary
 
     class(flow), intent(inout) :: this
 
     real(r8), intent(in) :: t, dt
-    real(r8), intent(in) :: vof(:,:), vcell(:,:), tcell(:)
+    real(r8), intent(in) :: vcell(:,:), vof(:,:), tcell(:)
 
     integer :: j
     real(r8) :: vel(3)
@@ -190,7 +196,43 @@ contains
 
     call compute_initial_pressure(this, t, dt)
 
-  end subroutine set_initial_state
+  end subroutine set_initial_state_start
+
+  !! This assigns initial values to all the state variables in the case they
+  !! are all supplied. This is indicated for restarting a simulation from saved
+  !! state data. NB: The current restart file format does not contain data for
+  !! the cell-centered dynamic pressure gradient, so it is computed.
+
+  subroutine set_initial_state_restart(this, t, pcell, vcell, vface, vof, tcell)
+
+    use index_partitioning, only: gather_boundary
+
+    class(flow), intent(inout) :: this
+    real(r8), intent(in) :: t, pcell(:), vcell(:,:), vface(:), tcell(:), vof(:,:)
+
+    ASSERT(size(vcell,dim=1)==3)
+    ASSERT(size(vcell,dim=2)>=this%mesh%ncell_onP)
+    ASSERT(size(vface)>=this%mesh%nface_onP)
+
+    this%p_cc(:this%mesh%ncell_onP) = pcell(:this%mesh%ncell_onP)
+    call gather_boundary(this%mesh%cell_ip, this%p_cc)
+
+    this%vel_cc(:,:this%mesh%ncell_onP) = vcell(:,:this%mesh%ncell_onP)
+    call gather_boundary(this%mesh%cell_ip, this%vel_cc)
+    this%vel_cc_n = this%vel_cc
+
+    this%vel_fn(:this%mesh%nface_onP) = vface(:this%mesh%nface_onP)
+    call gather_boundary(this%mesh%face_ip, this%vel_fn)
+    !FIXME? Impose Dirichlet velocity conditions on vel_fn?
+    this%vel_fn_n = this%vel_fn
+
+    call this%bc%compute_initial(t)
+    call this%props%set_initial_state(vof, tcell)
+    call this%proj%get_dyn_press_grad(this%props, this%p_cc, this%body_force, this%grad_p_rho_cc_n)
+
+    !call this%dump_state
+
+  end subroutine set_initial_state_restart
 
   !! This computes the initial cell-centered pressure field and gradient given
   !! pressure BC and the initial velocity field (both cell and face-centered).
@@ -294,5 +336,20 @@ contains
     call this%proj%accept(this%grad_p_rho_cc_n) ! just this%grad_p_rho_cc_n = this%proj%grad_p_rho_cc
 
   end subroutine accept
+
+  subroutine dump_state(this)
+    use truchas_logging_services
+    class(flow), intent(in) :: this
+    integer :: lun
+    lun = TLS_debug_unit()
+    write(lun,'(/,a)') 'VEL_CC_N'
+    write(lun,'(3es20.12)') this%vel_cc_n(:,:this%mesh%ncell_onP)
+    write(lun,'(/,a)') 'VEL_FN_N'
+    write(lun,'(4es20.12)') this%vel_fn_n(:this%mesh%nface_onP)
+    write(lun,'(/,a)') 'P_CC'
+    write(lun,'(4es20.12)') this%p_cc(:this%mesh%ncell_onP)
+    write(lun,'(/,a)') 'GRAD_P_RHO_CC_N'
+    write(lun,'(3es20.12)') this%grad_p_rho_cc_n(:,:this%mesh%ncell_onP)
+  end subroutine dump_state
 
 end module flow_type

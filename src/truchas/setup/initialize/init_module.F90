@@ -178,8 +178,9 @@ CONTAINS
     call BC_INIT()
 
     if (flow) then
-      if (allocated(vel_fn)) then
-        call flow_driver_init(vel_fn)
+      if (allocated(vel_fn)) then ! RESTART
+        call flow_driver_init
+        call flow_driver_set_initial_state(t, dt, vel_fn)
       else
         call flow_driver_init
         call flow_driver_set_initial_state(t, dt)

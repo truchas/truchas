@@ -290,6 +290,8 @@ contains
       call get_legacy_flux_vel(fluxing_velocity)
       call write_seq_cell_field(seq, fluxing_velocity, 'Face_Vel', for_viz=.false.)
 
+      !call flow_driver_dump_state
+
 !!$
 !!$      !! Cell-centered fluid Courant number.
 !!$      call write_seq_cell_field (seq, courant, 'COURANT', for_viz=.true.)
