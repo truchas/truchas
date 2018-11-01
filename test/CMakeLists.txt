@@ -155,7 +155,7 @@ add_pytruchas_test(static-wall
 
 add_pytruchas_test(nat-conv-old nat-conv-old/test.py PROCESSORS 4 LABELS OLD_FLOW CONDUCTION HEX)
 
-add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW CONDUCTION HEX NOT_WORKING)
+add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW CONDUCTION HEX)
 
 add_pytruchas_test(natural-conv-tet
                    natural-conv-tet/test.py

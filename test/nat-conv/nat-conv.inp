@@ -32,7 +32,7 @@ cells at each long_edit interval.
 
 &OUTPUTS
   Output_T                      = 0.0, 60000.0,60500.0
-  Output_Dt                     = 600.0, 500.0
+  Output_Dt                     = 60000.0, 500.0
   Short_Output_Dt_Multiplier    = 1, 1
   output_dt_Multiplier      = 1, 1
 /
@@ -86,7 +86,7 @@ cells at each long_edit interval.
   rel_tol = 1.0e-8
   abs_tol = 0.0
   max_ds_iter = 50
-  max_amg_iter = 5
+  max_amg_iter = 25
   krylov_method = 'cg'
   logging_level = 1
 / 
@@ -95,9 +95,10 @@ cells at each long_edit interval.
   rel_tol = 0.0
   abs_tol = 1.0e-12
   max_ds_iter = 50
-  max_amg_iter = 5
+  max_amg_iter = 25
   krylov_method = 'cg'
   logging_level = 1
+  !fischer_history = 0
 /
 
 &DS_BOUNDARY_CONDITION
