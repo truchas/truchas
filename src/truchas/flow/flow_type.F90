@@ -186,7 +186,7 @@ contains
     do j = 1, this%mesh%nface_onP
       vel = this%vel_cc(:,this%mesh%fcell(1,j))
       if (this%mesh%fcell(2,j) /= 0) vel = (vel + this%vel_cc(:,this%mesh%fcell(2,j))) / 2
-      this%vel_fn(j) = dot_product(this%mesh%normal(:,j), vel) !FIXME? area-weighted normal?
+      this%vel_fn(j) = dot_product(this%mesh%normal(:,j), vel) / this%mesh%area(j)
     end do
     call gather_boundary(this%mesh%face_ip, this%vel_fn)
     this%vel_fn_n = this%vel_fn
