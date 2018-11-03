@@ -1,0 +1,54 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 11/02/2018 03:56:51 PM
+## Command Options:
+#{L=8.0} length of the pipe
+#{WL=1.0} pipe width at the left end
+#{WR=0.8} pipe width at the right end
+#{D=1.4}  half the transition length
+#{H=0.2} cell size (left end)
+
+brick x {L} y {H} z {WL}
+webcut volume 1 with plane xplane offset {-D} noimprint nomerge
+webcut volume 1 with plane xplane offset 0 noimprint nomerge
+webcut volume 1 with plane xplane offset {D} noimprint nomerge
+
+webcut volume 1 with plane zplane offset {-WR/2} noimprint nomerge
+webcut volume 1 with plane zplane offset {WR/2} noimprint nomerge
+
+#{A=(WL-WR)/4}
+#{R=(D*D + A*A)/(2*A)}
+#{Y=R+(WR/2)}
+webcut volume 4 with cylinder radius {R} axis y center {D} 0 {Y}
+webcut volume 4 with cylinder radius {R} axis y center {D} 0 {-Y}
+#{Y=(WL/2)-R}
+webcut volume 3 with cylinder radius {R} axis y center {-D} 0 {Y}
+webcut volume 9 with cylinder radius {R} axis y center {-D} 0 {-Y}
+delete volume 1 3 5 7 8 9
+imprint volume all
+merge volume all
+
+compress all
+
+volume all size {H}
+mesh volume 1
+mesh volume 4
+mesh volume 2
+mesh volume 3
+
+unite volume all include_mesh
+
+block 1 volume 1
+
+sideset 1 surface 1
+sideset 1 name "left"
+sideset 2 surface 10
+sideset 2 name "right"
+sideset 3 surface 15 17 5 18 13 8 4 19 14 7
+sideset 3 name "sides"
+
+set exodus netcdf4 off
+set large exodus file on
+export genesis "mesh3.g" overwrite
