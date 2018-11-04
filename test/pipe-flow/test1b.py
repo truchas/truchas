@@ -38,7 +38,7 @@ class mytest(TruchasTest.GoldenTestCase):
     else:
       print 'x-velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
 
-    tol = 5.0e-12
+    tol = 5.0e-11
     error = max(abs(data[:,1]))
     if (error > tol):
       fail += 1

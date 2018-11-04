@@ -90,7 +90,12 @@ contains
       if (.not.this%inviscid) then
         do j = 1, m%ncell_onP
           if (this%props%cell_t(j) == regular_t .and. mu(j) > 0.0_r8) then
-            v = (m%volume(j)*vof(j))**(1.0_r8/3.0_r8)
+            ! Original simple version
+            !v = (m%volume(j)*vof(j))**(1.0_r8/3.0_r8)
+            ! Something closer to what Truchas originally had
+            associate (cface => m%cface(m%xcface(j):m%xcface(j+1)-1))
+              v = minval(m%face_normal_dist(cface))
+            end associate
             dtv = min(dtv, v**2*rho(j)/mu(j))
           end if
         end do
