@@ -252,8 +252,8 @@ contains
           j = faces(i)
           associate(n => this%mesh%fcell(1,j))
             ! double check the signs of variables here
-            v_normal = dot_product(x(:,n), this%mesh%normal(:,n))/this%mesh%area(j)
-            v = x(:,d) - v_normal*this%mesh%normal(:,n)/this%mesh%area(j)
+            v_normal = dot_product(x(:,n), this%mesh%normal(:,j))/this%mesh%area(j)
+            v = x(:,n) - v_normal*this%mesh%normal(:,j)/this%mesh%area(j)
             do d = 1, size(x,dim=1)
               g(:,d,j) = this%ds(:,j)*(v(d)-x(d,n))
             end do
