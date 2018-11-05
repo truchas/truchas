@@ -80,7 +80,7 @@ CONTAINS
     use volume_initialization, only: compute_initial_volumes
     use diffusion_solver_data,  only: ds_enabled, num_species, &
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
-    use diffusion_solver,       only: ds_init, ds_set_initial_state
+    use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
@@ -99,6 +99,7 @@ CONTAINS
     real(r8), dimension(nbody,ncells) :: Hits_Vol
     real(r8), dimension(nbody,ncells) :: volume_fractions
     real(r8), allocatable :: phi(:,:), vel_fn(:)
+    real(r8), pointer :: temperature_fc(:) => null()
     character(200) :: errmsg
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -178,13 +179,7 @@ CONTAINS
     call BC_INIT()
 
     if (flow) then
-      if (allocated(vel_fn)) then ! RESTART
-        call flow_driver_init
-        call flow_driver_set_initial_state(t, dt, vel_fn)
-      else
-        call flow_driver_init
-        call flow_driver_set_initial_state(t, dt)
-      end if
+      call flow_driver_init
     else if (legacy_flow) then
       !! NNC, December 2012.  Flow initialization is really messed up.  It does
       !! necessary stuff even when flow is inactive.  The work of ensuring the
@@ -232,6 +227,16 @@ CONTAINS
         call ds_set_initial_state (t, dt, temp=zone%temp, conc=phi)
         deallocate(phi)
       end select
+    end if
+
+    ! Initialize the flow solver.
+    if (flow) then
+      if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
+      if (allocated(vel_fn)) then
+        call flow_driver_set_initial_state(t, dt, temperature_fc, vel_fn)
+      else
+        call flow_driver_set_initial_state(t, dt, temperature_fc)
+      end if
     end if
 
     ! Initialize the microstructure modeling driver (if enabled).

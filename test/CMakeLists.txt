@@ -241,10 +241,15 @@ add_pytruchas_test(tm-pc
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
+add_pytruchas_test(tangential-surface-tension-old
+                   tangential-surface-tension/test_tst_old.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION OLD_FLOW)
+
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION OLD_FLOW)
+		   LABELS DIFFUSION NOT_WORKING)
 
 add_pytruchas_test(ustruc1
                    ustruc1/test.py

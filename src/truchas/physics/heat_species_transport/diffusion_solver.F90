@@ -48,6 +48,7 @@ module diffusion_solver
 
   !! These return results relative to the new distributed mesh.
   public :: ds_get_cell_temp, ds_get_face_temp
+  public :: ds_get_face_temp_view
 
   type :: ds_driver
     !! Problem characteristics.
@@ -357,7 +358,21 @@ contains
       INSIST(.false.)
     end select
   end subroutine ds_get_face_temp
-  
+
+  !! Get reference to the current face temperatures on the new distributed mesh.
+  subroutine ds_get_face_temp_view (view)
+    real(r8), pointer :: view(:)
+    ASSERT(this%have_heat_transfer)
+    select case (this%solver_type)
+    case (SOLVER1)
+      call HTSD_solver_get_face_temp_view (this%sol1, view)
+    case (SOLVER2)
+      call FHT_solver_get_face_temp_view (this%sol2, view)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! DS_INIT

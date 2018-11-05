@@ -198,7 +198,7 @@ call hijack_truchas ()
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
         TIME_STEP
-    use diffusion_solver,         only: ds_step, ds_restart
+    use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
     use flow_driver,            only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view
@@ -220,8 +220,7 @@ call hijack_truchas ()
     Integer :: c
     type(sim_event), pointer :: event
     type(time_step_sync) :: ts_sync
-    real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:)
-
+    real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
     !---------------------------------------------------------------------------
 
     if (mem_on) call mem_diag_open
@@ -332,7 +331,8 @@ call hijack_truchas ()
       ! calculate new velocity field
       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
       if (flow_enabled()) then
-        call flow_step(t,dt,vof,flux_vol)
+        if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
+        call flow_step(t,dt,vof,flux_vol,temperature_fc)
         ! since this driver doesn't know any better, always accept
         call flow_accept()
       else

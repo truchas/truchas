@@ -93,6 +93,8 @@ contains
         data_size = 0
       case ('no slip')
         data_size = 0
+      case ('surface tension')
+        data_size = 1
       case default
         call TLS_fatal(label // ': unknown CONDITION: "' // trim(condition) // '"')
       end select

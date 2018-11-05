@@ -86,6 +86,7 @@ contains
       do j = 1, m%nface_onP
         dtc = min(dtc, m%face_normal_dist(j)/(epsilon(1.0_r8)+abs(this%vel_fn(j))))
       end do
+      dtc = this%courant_number * global_minval(dtc)
 
       if (.not.this%inviscid) then
         do j = 1, m%ncell_onP
@@ -99,21 +100,20 @@ contains
             dtv = min(dtv, v**2*rho(j)/mu(j))
           end if
         end do
+        dtv = this%viscous_number * global_minval(dtv)
       end if
     end associate
 
-    dtc = this%courant_number * global_minval(dtc)
-    dtv = this%viscous_number * global_minval(dtv)
-
   end subroutine timestep
 
-  subroutine init(this, mesh, props, prescribed, params)
+  subroutine init(this, mesh, props, flowbc, prescribed, params)
 
     use parameter_list_type
 
     class(flow), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
     type(flow_props), intent(in), target :: props
+    type(flow_bc), intent(inout), target :: flowbc
     logical, optional, intent(in) :: prescribed
     type(parameter_list), intent(inout) :: params
 
@@ -124,6 +124,7 @@ contains
 
     this%mesh => mesh
     this%props => props
+    this%bc => flowbc
 
     plist => params%sublist('options')
     call plist%get('inviscid', this%inviscid, default=.false.)
@@ -151,8 +152,6 @@ contains
     end if
     if (this%prescribed) return
 
-    allocate(this%bc)
-    call this%bc%init(mesh, params)
     call this%pred%init(mesh, this%bc, this%inviscid, this%stokes, params)
     call this%proj%init(mesh, this%bc, params)
 

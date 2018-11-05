@@ -86,6 +86,10 @@ module flow_driver
     ! The flow driver shouldn't logically need this but temperature is currently
     ! stored in Zone%Temp so we need to keep a version on the new mesh as well
     real(r8), allocatable :: temperature_cc(:)
+
+    ! a copy of the diffusion solver's variable for surface tension to hold as a reference
+    real(r8), allocatable :: temperature_fc(:)
+
     logical :: active
   end type flow_driver_data
 
@@ -172,6 +176,7 @@ contains
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
     use vtrack_driver, only: vtrack_driver_init
+    use flow_bc_type
 
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
@@ -183,6 +188,7 @@ contains
     class(scalar_func_box), allocatable :: density_delta(:), viscosity(:)
     class(scalar_func), allocatable :: f
     type(parameter_list), pointer :: plist
+    type(flow_bc), pointer :: flowbc
 
     INSIST(allocated(this))
 
@@ -195,7 +201,7 @@ contains
     call this%mesh%init_face_centroid
     call this%mesh%init_face_normal_dist
 
-    allocate(this%temperature_cc(this%mesh%ncell))
+    allocate(this%temperature_cc(this%mesh%ncell), this%temperature_fc(this%mesh%nface))
 
     ! Some duplication here from vtrack_driver.  This should all be subsumed and handled
     ! properly by a sufficiently intelligent physics driver at some point
@@ -261,11 +267,15 @@ contains
     call flow_operators_init(this%mesh)
     call this%props%init(this%mesh, density, density_delta, viscosity, params)
 
-    call this%flow%init(this%mesh, this%props, prescribed_flow, params=params)
+    allocate(flowbc)
+    if (.not.prescribed_flow) &
+        call flowbc%init(this%mesh, params, this%props%vof, this%temperature_fc)
+
+    call this%flow%init(this%mesh, this%props, flowbc, prescribed_flow, params=params)
 
   end subroutine flow_driver_init
 
-  subroutine flow_driver_set_initial_state(t, dt, vel_fn)
+  subroutine flow_driver_set_initial_state(t, dt, temperature_fc, vel_fn)
 
     use zone_module, only: zone
     use vtrack_driver, only: vtrack_vof_view
@@ -273,6 +283,7 @@ contains
     use advection_velocity_namelist, only: adv_vel
 
     real(r8), intent(in) :: t, dt
+    real(r8), intent(in), pointer :: temperature_fc(:)
     real(r8), intent(in), optional :: vel_fn(:)
 
     integer :: j
@@ -312,6 +323,11 @@ contains
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
     call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
 
+    if (associated(temperature_fc)) then
+      this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
+      call gather_boundary(this%mesh%face_ip, this%temperature_fc)
+    end if
+
     vof => vtrack_vof_view()
 
     if (present(vel_fn)) then ! RESTART
@@ -324,18 +340,22 @@ contains
 
   end subroutine flow_driver_set_initial_state
 
-  subroutine flow_step(t, dt, vof, flux_vol)
-
+  subroutine flow_step(t, dt, vof, flux_vol, temperature_fc)
     use zone_module, only: Zone
     use physics_module, only: prescribed_flow
     use advection_velocity_namelist, only: adv_vel
 
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
+    real(r8), intent(in), pointer :: temperature_fc(:)
 
     call start_timer('Flow')
 
+    this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
+    call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+
     if (prescribed_flow) then
+      call this%props%update_cc(vof, this%temperature_cc)
       block
         integer :: j
         real(r8) :: args(0:3)
@@ -350,17 +370,13 @@ contains
               this%mesh%normal(:,j))/this%mesh%area(j)
         end do
       end block
-      ! This will be needed by timestep
-      this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-      call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
-      call this%props%update_cc(vof, this%temperature_cc)
-      call stop_timer('Flow')
-      return
+    else
+      if (associated(temperature_fc)) then
+        this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
+        call gather_boundary(this%mesh%face_ip, this%temperature_fc)
+      end if
+      call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
     end if
-
-    this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
-    call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
 
     call stop_timer('Flow')
 

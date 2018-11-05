@@ -104,7 +104,7 @@ contains
 
     class(flow_prediction), intent(inout) :: this
     type(unstr_mesh), intent(in), target :: mesh
-    type(flow_bc), pointer, intent(in) :: bc
+    type(flow_bc), intent(in), target :: bc
     logical, intent(in) :: inviscid, stokes
     type(parameter_list), intent(inout) :: params
 
@@ -313,7 +313,6 @@ contains
       ! zero gradient of neumann bcs already handled
     end associate
 
-
     ! copies data to hypre -> call this last!!!!!
     do k = 1, size(this%solver)
       call this%solver(k)%setup()
@@ -474,6 +473,16 @@ contains
     call this%accumulate_rhs_solidified_rho(props, vel_cc)
 
     ! handle surface tension
+
+    ! handle tangential surface tension BC
+    associate (faces => this%bc%surface_tension%index, value => this%bc%surface_tension%value)
+      do i = 1, size(faces)
+        j = this%mesh%fcell(1,faces(i))
+        if (j > this%mesh%ncell_onP) cycle
+        this%rhs(:,j) = this%rhs(:,j) + dt * value(:,i)
+      end do
+    end associate
+
     ! handle porous drag
 
     associate (rho => props%rho_cc_n, vof => props%vof_n, rhs => this%rhs)

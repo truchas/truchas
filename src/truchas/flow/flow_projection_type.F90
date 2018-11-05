@@ -102,7 +102,7 @@ contains
 
     class(flow_projection), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
-    type(flow_bc), pointer, intent(in) :: bc
+    type(flow_bc), intent(in), target :: bc
     type(parameter_list), intent(inout) :: params
 
     integer :: j, i

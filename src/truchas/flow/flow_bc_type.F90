@@ -7,6 +7,7 @@ module flow_bc_type
   use parameter_list_type
   use bndry_func_class
   use bndry_vfunc_class
+  use flow_surface_tension_bc_type
   use unstr_mesh_type
   use flow_bc_factory_type
   use parallel_communication
@@ -16,6 +17,7 @@ module flow_bc_type
   type, public :: flow_bc
     class(bndry_func), allocatable :: p_dirichlet, dp_dirichlet, p_neumann, v_zero_normal
     class(bndry_vfunc), allocatable :: v_dirichlet
+    type(surface_tension_bc) :: surface_tension
     logical :: pressure_d
     logical :: fix_neumann
     logical :: is_p_neumann_fix_PE
@@ -27,13 +29,15 @@ module flow_bc_type
 
 contains
 
-  subroutine init(this, mesh, params)
+  subroutine init(this, mesh, params, vof, temperature_fc)
 
     use parameter_list_type
+    use flow_props_type
 
     class(flow_bc), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(inout) :: params
+    real(r8), intent(in), target :: vof(:), temperature_fc(:)
 
     type(flow_bc_factory) :: f
     integer :: nc, flag, has_p_neumann(nPE)
@@ -58,8 +62,12 @@ contains
     ! need to have a p_neumann here... to complement velocity-dirichlet
 
     call f%alloc_scalar_bc(&
-        [character(len=32) :: "pressure neumann", "no slip", "slip"], this%p_neumann, default=0.0_r8)
-    call f%alloc_scalar_bc(["slip"], this%v_zero_normal, default=0.0_r8)
+        [character(len=32) :: "pressure neumann", "no slip", "slip", "surface tension"], &
+        this%p_neumann, default=0.0_r8)
+    call f%alloc_scalar_bc([character(len=32) :: "slip", "surface tension"], &
+        this%v_zero_normal, default=0.0_r8)
+
+    call this%surface_tension%init(plist, mesh, vof, temperature_fc)
 
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0
 
@@ -81,6 +89,7 @@ contains
     print *, "size of p dirichlet: ", size(this%p_dirichlet%index)
     print *, "size of p neumann: ", size(this%p_neumann%index)
     print *, "size of v dirichlet: ", size(this%v_dirichlet%index)
+    print *, "size of surface tension: ", size(this%surface_tension%index)
 #endif
   end subroutine init
 
@@ -90,6 +99,7 @@ contains
     call this%p_dirichlet%compute(t)
     call this%p_neumann%compute(t)
     call this%v_dirichlet%compute(t)
+    call this%surface_tension%compute(t)
     call this%dp_dirichlet%compute(t+dt)
     this%dp_dirichlet%value = this%dp_dirichlet%value - this%p_dirichlet%value
   end subroutine compute
@@ -105,6 +115,7 @@ contains
     call this%p_dirichlet%compute(t)
     call this%p_neumann%compute(t)
     call this%v_dirichlet%compute(t)
+    call this%surface_tension%compute(t)
     this%dp_dirichlet%value = 0.0_r8
   end subroutine compute_initial
 
