@@ -249,7 +249,12 @@ add_pytruchas_test(tangential-surface-tension-old
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION)
+		   LABELS DIFFUSION FLOW)
+
+add_pytruchas_test(tangential-surface-tension-couette
+                   tangential-surface-tension/test_tst_couette.py
+		   PROCESSORS 4
+		   LABELS DIFFUSION FLOW)
 
 add_pytruchas_test(ustruc1
                    ustruc1/test.py
