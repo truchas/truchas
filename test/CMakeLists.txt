@@ -249,7 +249,7 @@ add_pytruchas_test(tangential-surface-tension-old
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION NOT_WORKING)
+		   LABELS DIFFUSION)
 
 add_pytruchas_test(ustruc1
                    ustruc1/test.py
