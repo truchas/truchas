@@ -36,9 +36,8 @@ Note: Should obtain the same results if heat_transport is disabled.
   rel_tol = 0.0
   abs_tol = 1.0e-12
   max_ds_iter = 50
-  max_amg_iter = 50
+  max_amg_iter = 25
   krylov_method = 'cg'
-  logging_level = 1
 /
 
 &NUMERICS

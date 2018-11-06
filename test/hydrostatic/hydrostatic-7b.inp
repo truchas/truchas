@@ -28,10 +28,10 @@ Fluid should remain at rest, with a linear pressure field.
 /
 
 &FLOW_CORRECTOR
-  rel_tol = 1.0e-12
-  abs_tol = 0.0
-  max_ds_iter = 200
-  max_amg_iter = 50
+  rel_tol = 0.0
+  abs_tol = 1.0e-12
+  max_ds_iter = 50
+  max_amg_iter = 25
   krylov_method = 'cg'
 /
 

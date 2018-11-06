@@ -46,7 +46,7 @@ contains
     max_amg_iter = NULL_I
     gmres_krylov_dim = NULL_I
     cg_use_two_norm = NULL_I
-    logging_level = NULL_I
+    logging_level = 1
     print_level = NULL_I
     amg_max_levels = NULL_I
     amg_coarsen_type = NULL_I
