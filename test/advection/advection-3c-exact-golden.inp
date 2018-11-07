@@ -6,8 +6,8 @@ axis. Domain is 15x15x1 with unit cells subdivided into 6 tets each.
 Volume fractions should be advected exactly.
 
 &OUTPUTS
-  output_t  = 0.0, 3.0
-  output_dt = 3.0
+  output_t  = 0.0, 0.01
+  output_dt = 0.2
 /
 
 A kludge to force hitting the final time exactly
@@ -17,7 +17,7 @@ A kludge to force hitting the final time exactly
 /
 
 &MESH
-  mesh_file = 'mesh4.gen'
+  mesh_file = 'mesh5.gen'
 /
  
 &PHYSICS
@@ -25,7 +25,7 @@ A kludge to force hitting the final time exactly
 /
 
 &ADVECTION_VELOCITY
-  velocity_constant = 1.0, 0.0, 0.0
+  velocity_constant = 0.0, 0.0, 0.0
 /
 
 &FLOW
@@ -41,7 +41,7 @@ A kludge to force hitting the final time exactly
 &BODY
   surface_name = 'plane'
   axis = 'x'
-  translation_pt = -1.5, 0.0, 0.0
+  translation_pt = 1.5, 0.0, 0.0
   material_number = 2
   temperature = 0.0
 /

@@ -1,0 +1,245 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas
+   version:             3.1.0-alpha
+   build architecture:  x86_64
+   build date/time:     2018-11-07 13:10:32
+   build flags:         -u -C -C=dangling -gline -nan
+   build host:          petaca1.lanl.gov
+   run architecture:    Linux petaca1.lanl.gov 4.13.16-1
+   run host:            petaca1.lanl.gov1 SMP Mon Nov 27
+   run date/time:       07 Nov 18 13:22:29
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
+   All rights reserved.
+
+   This software was produced under U.S. Government contract DE-AC52-06NA25396
+   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+   National Security, LLC for the U.S. Department of Energy. The U.S. Government
+   has rights to use, reproduce, and distribute this software.  NEITHER THE
+   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+   is modified to produce derivative works, such modified software should be
+   clearly marked, so as not to confuse it with the version available from LANL.
+
+   Additionally, redistribution and use in source and binary forms, with or
+   without modification, are permitted provided that the following conditions
+   are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
+      Laboratory, LANL, the U.S. Government, nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
+   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
+   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
+
+================================================================================
+
+INPUT
+
+Opening input file advection-3a-golden.inp ...
+
+Reading FUNCTION namelists ...
+
+Reading VFUNCTION namelists ...
+
+Reading TOOLPATH namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+  Reading PHASE namelist #2
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+  Reading MATERIAL_SYSTEM namelist #2
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+Reading PHYSICS namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading SIMULATION_CONTROL namelist ...
+
+Reading MESH Namelist ...
+
+ Reading MATERIAL Namelist # 1 ...
+
+ Reading MATERIAL Namelist # 2 ...
+This is the last MATERIAL Namelist.
+Identified 2 material(s)
+Warning: Material  1 priority not initialized; set to  1
+Warning: Material  2 priority not initialized; set to  2
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1        water        1
+             2          oil        2
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+Warning: LINEAR_SOLVER namelist not found! Using defaults.
+
+Reading NONLINEAR_SOLVER Namelists ...
+  NONLINEAR_SOLVER namelist not found; using defaults.
+
+Reading INTERFACES namelist ...
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       2    plane      6.000E+00   0.000E+00    0.0    1.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       1    background
+         BODY Namelist number  2 will be used for background material ( 1)
+
+Reading NUMERICS namelist ...
+
+Reading FLOW namelist ...
+
+Reading FLOW_BC namelists ...
+
+Reading ADVECTION_VELOCITY namelist ...
+
+ Reading BC Namelists ...
+BC namelists not found; using defaults.
+
+ Reading PROBE namelists ...
+         This is the last PROBE Namelist.
+
+         Identified 0 probe(s)
+
+Input file advection-3a-golden.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+
+Initializing mesh "MAIN" ...
+  reading ExodusII mesh file "./mesh3.gen"
+  finding cell neighbors
+  partitioning the mesh cells
+  partitioning the mesh nodes
+  numbering the mesh faces
+  partitioning the mesh faces
+  identifying off-process ghost cells
+  generating parallel mesh structure
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|      512     3210     1350
+  Mesh Communication Profile:
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|      0      512      0     3210      0     1350
+  Mesh "MAIN" initialized
+
+Allocating base derived types A ...done.
+
+Computing initial volume fractions ...
+ERROR: material 1 volume fraction > 1 in cells: 11 12 23 24 27 [479 more items omitted]
+       maximum volume fraction less 1:  3.10862E-14
+ERROR: material 2 volume fraction > 1 in cells: 1270 1278 1279 1285 1290 [18 more items omitted]
+       maximum volume fraction less 1:  1.62093E-14
+  Computed volume fractions are invalid; attempting to normalize.
+  Normalization was successful.
+  Initial volume fractions computed.
+  Using default value "specific heat" = 0.000E+00 for phase "water"
+  Using default value "specific heat" = 0.000E+00 for phase "oil"
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 1020 boundary points
+   EXTERIOR: 1020 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 1020 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+
+Configuring volume tracking ...
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.5625E-02 after     1 steps
+
+
+TIMING SUMMARY
+--------------
+  1.378E+00 --- Total
+    8.202E-03 --- Input
+    7.312E-01 --- Initialization
+      3.480E-04 --- Vof Initialization
+      2.356E-03 --- Flow
+        4.630E-04 --- update properties
+    6.278E-01 --- Main Cycle
+      5.833E-01 --- Output
+      2.390E-04 --- Time Step
+      4.271E-02 --- Volumetracking
+        1.313E-02 --- normals
+        2.407E-02 --- reconstruct/advect
+      1.214E-03 --- Flow
+        4.680E-04 --- update properties
+
+                  Process virtual memory used: 4.33E+02 mB
+                                   words/cell: 41998
+
+truchas terminated normally on 07 Nov 18 at 13:22:33
