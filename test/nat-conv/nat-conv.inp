@@ -84,11 +84,11 @@ cells at each long_edit interval.
 
 &FLOW_PREDICTOR
   rel_tol = 1.0e-8
-  abs_tol = 0.0
+  abs_tol = 1.0e-10
   max_ds_iter = 50
   max_amg_iter = 25
-  krylov_method = 'cg'
-  logging_level = 1
+  krylov_method = 'gmres'
+  gmres_krylov_dim = 10
 / 
 
 &FLOW_CORRECTOR
@@ -96,9 +96,8 @@ cells at each long_edit interval.
   abs_tol = 1.0e-12
   max_ds_iter = 50
   max_amg_iter = 25
-  krylov_method = 'cg'
-  logging_level = 1
-  !fischer_history = 0
+  krylov_method = 'gmres'
+  gmres_krylov_dim = 10
 /
 
 &DS_BOUNDARY_CONDITION
