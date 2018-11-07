@@ -21,7 +21,7 @@ mesh used.
 /
 
 Hack to hit the final time exactly
-&SIMULATION_CONTROL
+x&SIMULATION_CONTROL
   phase_start_times = 20.0
   phase_init_dt_factor = 1.0
 /
@@ -36,11 +36,12 @@ Hack to hit the final time exactly
 /
 
 &FLOW_CORRECTOR
-  rel_tol = 1.0e-6
-  abs_tol = 0.0
-  max_ds_iter = 10
+  rel_tol = 0.0
+  abs_tol = 1.0e-10
+  max_ds_iter = 50
   max_amg_iter = 25
-  krylov_method = 'cg'
+  krylov_method = 'gmres'
+  gmres_krylov_dim = 10
 /
 
 &NUMERICS
