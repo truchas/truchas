@@ -32,7 +32,7 @@ x&SIMULATION_CONTROL
 
 &FLOW
   inviscid = .true.
-  courant_number = 0.5
+  courant_number = 0.3
 /
 
 &FLOW_CORRECTOR
