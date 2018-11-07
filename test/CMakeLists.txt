@@ -153,14 +153,10 @@ add_pytruchas_test(static-wall
 		   PROCESSORS 4
 		   LABELS OLD_FLOW)
 
-add_pytruchas_test(nat-conv-old nat-conv-old/test.py PROCESSORS 4 LABELS OLD_FLOW CONDUCTION HEX)
+add_pytruchas_test(nat-conv-old nat-conv-old/test1.py PROCESSORS 4 LABELS OLD_FLOW CONDUCTION HEX)
+add_pytruchas_test(nat-conv-tet-old nat-conv-old/test2.py PROCESSORS 4 LABELS OLD_FLOW CONDUCTION TET)
 
 add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW CONDUCTION HEX)
-
-add_pytruchas_test(natural-conv-tet
-                   natural-conv-tet/test.py
-		   PROCESSORS 4
-		   LABELS OLD_FLOW CONDUCTION TET)
 
 add_pytruchas_test(porous-drag
                    porous-drag/testPorousDrag.py

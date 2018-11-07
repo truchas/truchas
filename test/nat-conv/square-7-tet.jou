@@ -13,4 +13,4 @@ sideset 3 surface 2 # bottom size
 sideset 4 surface 1 # top size
 sideset 5 surface 3 5 # y=const symmetry sides
 
-export genesis "square-7-tet.exo" overwrite
+export genesis "square-7-tet.g" overwrite

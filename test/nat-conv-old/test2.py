@@ -11,9 +11,9 @@ import TruchasTest
 
 class NaturalConvTet(TruchasTest.GoldenTestCase):
 
-  test_name = 'natural-conv-tet'
+  test_name = 'nat-conv-tet-old'
   num_procs = 4 # with a parallel executable
-  restart_file = 'restart.bin'
+  restart_file = 'restart-tet.bin'
 
   def test_final_velocity(self):
     '''NaturalConvTet: verifying the final velocity field'''

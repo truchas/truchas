@@ -31,10 +31,10 @@ cells at each long_edit interval.
 
 
 &OUTPUTS
-  Output_T                      = 0.0, 60000.0, 70000.0
-  Output_Dt                     = 60000.0, 10000.0
-  Short_Output_Dt_Multiplier    = 1, 1
-  output_dt_Multiplier      = 1, 1
+  output_t = 0.0, 60000.0, 70000.0
+  output_dt = 60000.0, 10000.0
+  short_output_dt_multiplier = 1, 1
+  output_dt_multiplier = 1, 1
 /
 
 &PROBE
@@ -49,12 +49,14 @@ cells at each long_edit interval.
   Probe_Coords      = 0.178, 0.0, 0.5,
 /
 
-&MESH mesh_file = 'square-7-tet.exo' /
+&MESH
+  mesh_file = 'square-7-tet.g'
+/
  
 &PHYSICS
-  legacy_flow               = .true.
-  heat_transport            = .true.
-  body_force_density                = 0.0, 0.0, -9.34142216E-5
+  flow = .true.
+  heat_transport = .true.
+  body_force_density = 0.0, 0.0, -9.34142216E-5
 /
 
 &DIFFUSION_SOLVER
@@ -64,44 +66,39 @@ cells at each long_edit interval.
   rel_enthalpy_tol   = 1.0e-4
   nlk_tol            = 0.05
   nlk_preconditioner = 'hypre_amg'
-  use_new_mfd = .false.
 /
 
 &NUMERICS
-  dt_init                     = 1.0e-2
-  dt_grow                     = 1.05
-  dt_min                      = 1.0e-05
-  dt_max                      = 100.0
-  !discrete_ops_type           = 'ortho'
+  dt_init = 1.0e-2
+  dt_grow = 1.05
+  dt_min  = 1.0e-05
+  dt_max  = 1000.0
 /
 
-&LEGACY_FLOW
+&FLOW
   inviscid = .false.
-  volume_track_subcycles      = 8
-  projection_linear_solution  = 'projection'
-  viscous_linear_solution     = 'viscous' 
-  viscous_implicitness        = 0.5
-  viscous_number              = 0
-  courant_number              = 0.25
+  subcycles = 8
+  courant_number = 0.25
+  viscous_number = 0.1
+  viscous_implicitness = 0.5
 /
 
-&LINEAR_SOLVER
-  name                    = 'projection'
-  method                  = 'fgmres'
-  preconditioning_method  = 'ssor'
-  preconditioning_steps   = 2
-  relaxation_parameter    = 1.4
-  stopping_criterion      = '||r||'
-  convergence_criterion   = 1.0e-10
-/
+&FLOW_PREDICTOR
+  rel_tol = 1.0e-8
+  abs_tol = 1.0e-10
+  max_ds_iter = 50
+  max_amg_iter = 25
+  krylov_method = 'gmres'
+  gmres_krylov_dim = 10
+/ 
 
-&LINEAR_SOLVER
-  name                    = 'viscous'
-  method                  = 'fgmres'
-  preconditioning_method  = 'diagonal'
-  preconditioning_steps   = 5
-  stopping_criterion      = '||r||/||b||'
-  convergence_criterion   = 1.0e-6
+&FLOW_CORRECTOR
+  rel_tol = 0.0
+  abs_tol = 1.0e-12
+  max_ds_iter = 50
+  max_amg_iter = 25
+  krylov_method = 'gmres'
+  gmres_krylov_dim = 10
 /
 
 &DS_BOUNDARY_CONDITION
@@ -128,36 +125,16 @@ cells at each long_edit interval.
   data_constant = 0.0
 /
 
-LEFT SIDE
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 1
-  bc_variable  = 'velocity'
-  bc_type      = 'no-slip'
+&FLOW_BC
+  name = 'walls'
+  face_set_ids = 1, 2, 3, 4
+  condition = 'no slip'
 /
 
-RIGHT SIDE
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 2
-  bc_variable  = 'velocity'
-  bc_type      = 'no-slip'
-/
-
-BOTTOM SIDE
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 3
-  bc_variable  = 'velocity'
-  bc_type      = 'no-slip'
-/
-
-TOP SIDE
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 4
-  bc_variable  = 'velocity'
-  bc_type      = 'no-slip'
+&FLOW_BC
+  name = 'symmetry'
+  face_set_ids = 5
+  condition = 'slip'
 /
 
 &BODY
