@@ -18,11 +18,6 @@ Variations use rotated meshes (and rotated velocity)
   output_t  = 0.0, .0625, 2.0
   output_dt = 0.0625, 2.0
 /
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 2.0
-  phase_init_dt_factor = 1.0
-/
 
 &MESH
   mesh_file = 'mesh2a.gen'
@@ -40,10 +35,10 @@ A kludge to force hitting the final time exactly
 /
 
 &FLOW_CORRECTOR
-  rel_tol = 1.0e-10
-  abs_tol = 0.0
-  max_ds_iter = 200
-  max_amg_iter = 50
+  rel_tol = 0.0
+  abs_tol = 1.0e-10
+  max_ds_iter = 10
+  max_amg_iter = 5
   krylov_method = 'cg'
 /
 
