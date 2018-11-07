@@ -70,12 +70,14 @@ contains
     p => this%vel_fn
   end function vel_fn_view
 
-  subroutine timestep(this, dtc, dtv)
+  subroutine timestep(this, dt, dt_tag)
     use parallel_communication
 
     class(flow), intent(in) :: this
-    real(r8), intent(out) :: dtc, dtv
-    real(r8) :: v
+    real(r8), intent(out) :: dt
+    character(:), allocatable, intent(inout) :: dt_tag
+
+    real(r8) :: v, dtc, dtv
     integer :: i, j
 
     dtc = huge(1.0_r8)
@@ -103,6 +105,13 @@ contains
         dtv = this%viscous_number * global_minval(dtv)
       end if
     end associate
+
+    dt = min(dtc, dtv)
+    if (dt == dtc) then
+      dt_tag = 'courant'
+    else
+      dt_tag = 'viscous'
+    end if
 
   end subroutine timestep
 

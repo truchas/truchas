@@ -46,20 +46,14 @@ CONTAINS
     !   write cycle information that is known before the cycle begins
     !   (time step, cycle number) to stdout and various output files
     !=======================================================================
-    use time_step_module, only: cycle_number, dt, dt_courant, dt_constraint, &
-                                min_dt_overall_cell, t
+    use time_step_module, only: cycle_number, dt, dt_constraint, t
 
     integer :: iStatus
     character(128) :: string
 
     !! Log the time step and cycle number.
-    if (dt == dt_courant) then
-      write(string,10) cycle_number, t, trim(dt_constraint), dt, min_dt_overall_cell
-      10 format(1x,i10,': t = ',1pe13.5,', dt(',a,') = ',1pe13.5,' (cell ',i8,')')
-    else
-      write(string,20) cycle_number, t, trim(dt_constraint), dt
-      20 format (1x,i10,': t = ',1pe13.5,', dt(',a,') = ',1pe13.5)
-    end if
+    write(string,20) cycle_number, t, trim(dt_constraint), dt
+    20 format (1x,i10,': t = ',1pe13.5,', dt(',a,') = ',1pe13.5)
     call TLS_info ('')
     call TLS_info (string)
 

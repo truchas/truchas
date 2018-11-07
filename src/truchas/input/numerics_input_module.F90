@@ -118,7 +118,7 @@ contains
     use cutoffs_module, only: cutvof
     use discrete_ops_data, only: discrete_ops_type
     use time_step_module, only: t, constant_dt, dt_constant, dt_grow, dt_init, dt_max, dt_min, &
-        cycle_max, cycle_number, cycle_number_restart, dt_courant, dt_viscous, dt_surften
+        cycle_max, cycle_number, cycle_number_restart
 
     t = 0
     cycle_number = 0
@@ -133,10 +133,6 @@ contains
     dt_constant = NULL_R
     constant_dt = .false.
     cutvof  = 1.0d-8 ! volume fraction cutoff
-
-    dt_courant    = 1.0d10    ! courant time step
-    dt_viscous    = 1.0d10    ! viscous time step
-    dt_surften    = 1.0d10    ! surface tension time step
 
     discrete_ops_type = 'default'
 

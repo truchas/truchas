@@ -119,10 +119,11 @@ contains
     if (allocated(this)) deallocate(this)
   end subroutine flow_final
 
-  subroutine flow_timestep(dtc, dtv)
-    real(r8), intent(out) :: dtc, dtv
+  subroutine flow_timestep(dt, dt_tag)
+    real(r8), intent(out) :: dt
+    character(:), allocatable, intent(inout) :: dt_tag
     ASSERT(flow_enabled())
-    call this%flow%timestep(dtc, dtv)
+    call this%flow%timestep(dt, dt_tag)
   end subroutine flow_timestep
 
   logical function flow_enabled()

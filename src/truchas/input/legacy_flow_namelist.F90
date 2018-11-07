@@ -39,7 +39,7 @@ contains
     use porous_drag_data,       only: porous_flow, porous_implicitness
     use projection_data_module, only: projection_linear_solution
     use mollify,                only: interface_smoothing_length
-    use time_step_module,       only: courant_number, viscous_number, surften_number
+    use flow_time_step_module,  only: courant_number, viscous_number, surften_number
     use viscous_data_module,    only: inviscid, stokes, viscous_linear_solution, viscous_implicitness
 
     use vof_data_module,        only: volume_track_brents_method, &
@@ -141,7 +141,7 @@ contains
     use viscous_data_module,      only: inviscid, stokes
     use porous_drag_data,         only: porous_implicitness
     use projection_data_module,   only: projection_linear_solution, UBIK_PRESSURE
-    use time_step_module,         only: courant_number, viscous_number, surften_number
+    use flow_time_step_module,    only: courant_number, viscous_number, surften_number
     use string_utilities,         only: lower_case
 
     ! JSED
@@ -363,7 +363,7 @@ contains
                                       projection_linear_solution,          &
                                       UBIK_PRESSURE
     use mollify,                only: interface_smoothing_length
-    use time_step_module,       only: courant_number, viscous_number, surften_number
+    use flow_time_step_module,  only: courant_number, viscous_number, surften_number
 
     use viscous_data_module,    only: viscous_linear_solution,    &
                                       ubik_viscous,               &
@@ -485,7 +485,7 @@ contains
     use porous_drag_data,       only: porous_implicitness
     use projection_data_module, only: projection_linear_solution
     use mollify,                      only: interface_smoothing_length
-    use time_step_module,       only: courant_number, viscous_number, surften_number
+    use flow_time_step_module,  only: courant_number, viscous_number, surften_number
     use viscous_data_module,    only: viscous_implicitness, viscous_linear_solution
     use vof_data_module,        only: volume_track_brents_method, &
                                       volume_track_subcycles,     &
