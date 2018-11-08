@@ -760,7 +760,7 @@ contains
       f1 = this%mesh%xcface(i+1)-1
 
       do j = f0, f1
-        do m = 1, this%nrealfluid
+        do m = 1, this%nfluid
           flux_vol(m,j) = flux_vol(m,j) + this%flux_vol_sub(m,j)
           vof(m,i) = vof(m,i) - this%flux_vol_sub(m,j)/this%mesh%volume(i)
         end do

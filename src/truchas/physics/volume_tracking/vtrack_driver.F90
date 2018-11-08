@@ -144,7 +144,7 @@ contains
     allocate(this%sol_matid(nmat-(this%fluids+this%void)))
     allocate(this%fvof_i(this%fluids+this%void+this%solid, this%mesh%ncell))
     allocate(this%fvof_o(this%fluids+this%void+this%solid, this%mesh%ncell))
-    allocate(this%flux_vol(this%fluids,size(this%mesh%cface)))
+    allocate(this%flux_vol(this%fluids+this%void,size(this%mesh%cface)))
     allocate(this%flux_vel(size(this%mesh%cface)))
     allocate(this%vof(nmat, this%mesh%ncell_onP))
 

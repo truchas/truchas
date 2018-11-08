@@ -388,8 +388,12 @@ contains
     real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fn(:)
     type(flow_props), intent(in) :: props
     !
-    integer :: i, j, f0, f1, nhbr, cn, k
+    integer :: i, j, f0, f1, nhbr, cn, k, nfluid
     real(r8) :: v
+
+    ! This is the number of real (non-void) fluids in our system.
+    ! Void does not contribute to momentum transport.
+    nfluid = size(props%density)
 
     ! we're going to assume here that the boundary conditions on flux_volumes
     ! and flux_vel have already been set..
@@ -405,17 +409,19 @@ contains
 
         ! donor cell upwinding
         if (any(flux_volumes(:,j) > 0.0_r8)) then
-          this%rhs(:,i) = this%rhs(:,i) - vel_cc(:,i)*dot_product(flux_volumes(:,j),props%density(:))/v
+          this%rhs(:,i) = this%rhs(:,i) - &
+              vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density(:))/v
         else
           ! neighbor index
           cn = this%mesh%cnhbr(nhbr+(j-f0))
           if (cn > 0) then
-            this%rhs(:,i) = this%rhs(:,i)-vel_cc(:,cn)*dot_product(flux_volumes(:,j),props%density(:))/v
+            this%rhs(:,i) = this%rhs(:,i) - &
+                vel_cc(:,cn)*dot_product(flux_volumes(:nfluid,j),props%density(:))/v
           else
             ! this must be an inflow boundary so use face velocity.  This seems overly
             ! restrictive and does not account for 'angled' inflow
             this%rhs(:,i) = this%rhs(:,i) - vel_fn(k)*this%mesh%normal(:,k)/this%mesh%area(k) * &
-                  dot_product(flux_volumes(:,j),props%density(:))/v
+                  dot_product(flux_volumes(:nfluid,j),props%density(:))/v
           end if
         end if
       end do
