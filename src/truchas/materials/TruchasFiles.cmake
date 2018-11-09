@@ -25,6 +25,7 @@ set(MAT_FILES
        materials/legacy_matl_adapter_class.F90
        materials/legacy_matl_adapter0_type.F90
        materials/legacy_matl_adapter1_type.F90
+       materials/legacy_matl_adapter2_type.F90
 )
 
 set(MAT_FPP_FLAGS 

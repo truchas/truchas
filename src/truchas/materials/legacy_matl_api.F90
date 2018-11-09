@@ -6,6 +6,7 @@ module legacy_matl_api
   use matl_module, only: nmat ! NEEDS TO BE MOVED ELSEWHERE
   use legacy_matl_adapter0_type
   use legacy_matl_adapter1_type
+  use legacy_matl_adapter2_type
   implicit none
   private
 
@@ -16,7 +17,8 @@ module legacy_matl_api
 
   ! Different implementations of "matl"
   !type(legacy_matl_adapter0) :: this
-  type(legacy_matl_adapter1) :: this
+  !type(legacy_matl_adapter1) :: this
+  type(legacy_matl_adapter2) :: this
 
 contains
 
