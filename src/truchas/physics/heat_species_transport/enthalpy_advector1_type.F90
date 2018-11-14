@@ -27,7 +27,7 @@ contains
     this%mesh => mesh
     this%flux_vol => vtrack_flux_vol_view()
     this%matid => vtrack_liq_matid_view()
-    ASSERT(size(this%flux_vol,dim=1) == size(this%matid))
+    ASSERT(size(this%flux_vol,dim=1) >= size(this%matid))
     ASSERT(size(this%flux_vol,dim=2) == size(mesh%cface))
   end subroutine init
 
@@ -69,7 +69,7 @@ contains
             state(1) = tcellx(j) !FIXME: Want an inflow temperature here
           end if
         end if
-        do m = 1, size(this%flux_vol,dim=1)
+        do m = 1, size(this%matid)
           if (this%flux_vol(m,i) /= 0) &
               sum = sum + this%flux_vol(m,i)*ds_enthalpy_density(this%matid(m),state)
         end do
@@ -137,7 +137,7 @@ contains
             state(1) = tcellx(j) !FIXME: Want an inflow temperature here
           end if
         end if
-        do m = 1, size(this%flux_vol,dim=1)
+        do m = 1, size(this%matid)
           if (this%flux_vol(m,i) /= 0) &
               sum = sum + this%flux_vol(m,i)*ds_enthalpy_density(this%matid(m),state)
         end do
