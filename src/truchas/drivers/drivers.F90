@@ -201,8 +201,10 @@ call hijack_truchas ()
     use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
-    use flow_driver,            only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view
-    use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view
+    use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, &
+        flow_set_pre_solidification_density
+    use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view, &
+        get_vof_from_matl
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -311,6 +313,7 @@ call hijack_truchas ()
         call vtrack_update(t, dt, vel_fn)
         vof => vtrack_vof_view()
         flux_vol => vtrack_flux_vol_view()
+        call flow_set_pre_solidification_density(vof)
       else
         call ADVECT_MASS ()
       end if
@@ -332,6 +335,11 @@ call hijack_truchas ()
       call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
       if (flow_enabled()) then
         if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
+
+        ! This updates the volume tracker's internal variable for the vof, so
+        ! we can give the flow the current post-heat-transfer volume fractions.
+        if (vtrack_enabled() .and. ds_enabled) call get_vof_from_matl(vof)
+
         call flow_step(t,dt,vof,flux_vol,temperature_fc)
         ! since this driver doesn't know any better, always accept
         call flow_accept()

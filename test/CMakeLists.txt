@@ -267,6 +267,11 @@ add_pytruchas_test(diag-advect
 		   PROCESSORS 4
 		   LABELS ADVECTION)
 
+# FREEZING FLOW TESTS -- NEW FLOW SOLVER
+add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 1 LABELS DIFFUSION FLOW)
+add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(freezing-flow-3 freezing-flow/test3.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+
 # PURE ADVECTION TESTS -- OLD FLOW SOLVER
 add_pytruchas_test(advection-old-0  advection-old/test0.py  PROCESSORS 4 LABELS OLD_FLOW)
 add_pytruchas_test(advection-old-1a advection-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)

@@ -62,6 +62,7 @@ module vtrack_driver
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
   public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view
+  public :: get_vof_from_matl
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -94,7 +95,7 @@ contains
   function vtrack_vof_view() result(p)
     real(r8), pointer :: p(:,:)
     ASSERT(vtrack_enabled())
-    p => this%fvof_o(:this%fluids+this%void,:)
+    p => this%fvof_o
   end function vtrack_vof_view
 
   function vtrack_flux_vol_view() result(p)
@@ -163,7 +164,7 @@ contains
     end do
 
     call start_timer('Vof Initialization')
-    call get_vof_from_matl()
+    call get_vof_from_matl(this%fvof_i)
     this%fvof_o = this%fvof_i
     call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
         this%fluids+this%void+this%solid, this%liq_matid, params)
@@ -171,25 +172,27 @@ contains
 
   end subroutine vtrack_driver_init
 
-  subroutine get_vof_from_matl()
+  subroutine get_vof_from_matl(vof)
 
     use matl_utilities, only: matl_get_vof
+
+    real(r8), intent(out) :: vof(:,:)
 
     integer :: i, n
 
     n = this%mesh%ncell_onP
     call matl_get_vof(this%vof)
     do i = 1, size(this%liq_matid)
-      this%fvof_i(i,:n) = this%vof(this%liq_matid(i),:)
+      vof(i,:n) = this%vof(this%liq_matid(i),:)
     end do
-    call gather_boundary(this%mesh%cell_ip, this%fvof_i)
 
     if (this%solid > 0) then
       do i = 1, n
-        this%fvof_i(this%fluids+this%void+this%solid,i) = sum(this%vof(this%sol_matid,i))
+        vof(this%fluids+this%void+this%solid,i) = sum(this%vof(this%sol_matid,i))
       end do
     end if
-    ! don't need to communicate svof
+
+    call gather_boundary(this%mesh%cell_ip, vof)
 
   end subroutine get_vof_from_matl
 
@@ -253,7 +256,7 @@ contains
       end do
     end do
 
-    call get_vof_from_matl()
+    call get_vof_from_matl(this%fvof_i)
 
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
         this%fluids, this%void, dt)

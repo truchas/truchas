@@ -319,6 +319,12 @@ contains
 
     call this%props%update_cc(vof, tcell)
 
+    if (.not.this%props%any_real_fluid) then
+      this%vel_cc = 0
+      this%vel_fn = 0
+      return
+    end if
+
     call this%bc%compute(t, dt)
 
     call start_timer("prediction")

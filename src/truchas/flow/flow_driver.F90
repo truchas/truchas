@@ -78,6 +78,7 @@ module flow_driver
   public :: read_fluxing_velocity, get_legacy_flux_vel
   public :: flow_driver_set_initial_state
   public :: flow_driver_dump_state
+  public :: flow_set_pre_solidification_density
 
   type :: flow_driver_data
     type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
@@ -266,7 +267,8 @@ contains
     end if
 
     call flow_operators_init(this%mesh)
-    call this%props%init(this%mesh, density, density_delta, viscosity, params)
+    i = size(fluids) + merge(1, 0, void_material_index > 0) ! get number of fluids
+    call this%props%init(this%mesh, i, density, density_delta, viscosity, params)
 
     allocate(flowbc)
     if (.not.prescribed_flow) &
@@ -541,5 +543,10 @@ contains
   subroutine flow_driver_dump_state
     call this%flow%dump_state
   end subroutine flow_driver_dump_state
+
+  subroutine flow_set_pre_solidification_density(vof)
+    real(r8), intent(in) :: vof(:,:)
+    call this%props%set_pre_solidification_density(vof)
+  end subroutine flow_set_pre_solidification_density
 
 end module flow_driver

@@ -384,11 +384,14 @@ contains
   ! The flux volume for a given material is dt*A*vel_fn.  A positive value indicates outward flux
   ! Momentum is transported via flux-volumes using a first order upwind scheme
   subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fn, flux_volumes)
+
+    use f08_intrinsics, only: findloc
+
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fn(:)
     type(flow_props), intent(in) :: props
-    !
-    integer :: i, j, f0, f1, nhbr, cn, k, nfluid
+
+    integer :: i, j, k, f, f0, f1, nhbr, cn, nfluid
     real(r8) :: v
 
     ! This is the number of real (non-void) fluids in our system.
@@ -401,53 +404,89 @@ contains
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
       nhbr = this%mesh%xcnhbr(i)
+      v = this%mesh%volume(i)
 
       do j = f0, f1
-
         k = this%mesh%cface(j)
-        v = this%mesh%volume(i)
 
         ! donor cell upwinding
         if (any(flux_volumes(:,j) > 0.0_r8)) then
           this%rhs(:,i) = this%rhs(:,i) - &
               vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density(:))/v
         else
-          ! neighbor index
-          cn = this%mesh%cnhbr(nhbr+(j-f0))
-          if (cn > 0) then
+          cn = this%mesh%cnhbr(nhbr+(j-f0)) ! neighbor index
+          if (cn > 0) &
             this%rhs(:,i) = this%rhs(:,i) - &
                 vel_cc(:,cn)*dot_product(flux_volumes(:nfluid,j),props%density(:))/v
-          else
-            ! this must be an inflow boundary so use face velocity.  This seems overly
-            ! restrictive and does not account for 'angled' inflow
-            this%rhs(:,i) = this%rhs(:,i) - vel_fn(k)*this%mesh%normal(:,k)/this%mesh%area(k) * &
-                  dot_product(flux_volumes(:nfluid,j),props%density(:))/v
-          end if
+          ! inflow boundaries handled in subsequent loops
         end if
       end do
     end do
 
+    ! On dirichlet velocity boundaries, use the boundary condition velocity
+    associate (faces => this%bc%v_dirichlet%index, value => this%bc%v_dirichlet%value)
+      do k = 1, size(faces)
+        f = faces(k)
+        i = this%mesh%fcell(1,f) ! cell index
+        if (i > this%mesh%ncell_onP) cycle ! this cell will be properly handled by a different pe
+        ASSERT(this%mesh%fcell(2,f) == 0)
+
+        ! get the local face id on this cell
+        j = this%mesh%xcface(i) - 1 + &
+            findloc(this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), f)
+
+        ! outflow handled in above loop
+        if (.not.any(flux_volumes(:,j) < 0)) cycle
+
+        this%rhs(:,i) = this%rhs(:,i) - &
+            value(:,k)*dot_product(flux_volumes(:nfluid,j),props%density) / this%mesh%volume(i)
+      end do
+    end associate
+
+    ! On pressure dirichlet boundaries we have an implied velocity
+    ! neumann condition. The following loop relies on this fact.
+    ! On velocity neumann boundaries, assume the upwind velocity is
+    ! the same as the local cell velocity. We need tangential components
+    ! of the velocity, so the face-based scalar array is insufficient.
+    associate (faces => this%bc%p_dirichlet%index)
+      do k = 1, size(faces)
+        f = faces(k)
+        i = this%mesh%fcell(1,f) ! cell index
+        if (i > this%mesh%ncell_onP) cycle ! this cell will be properly handled by a different pe
+        ASSERT(this%mesh%fcell(2,f) == 0)
+
+        ! get the local face id on this cell
+        j = this%mesh%xcface(i) - 1 + &
+            findloc(this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), f)
+
+        ! outflow handled in above loop
+        if (.not.any(flux_volumes(:,j) < 0)) cycle
+
+        this%rhs(:,i) = this%rhs(:,i) - &
+            vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density) / this%mesh%volume(i)
+      end do
+    end associate
+
+    ! On slip boundaries, the flux volumes are zero, so no momentum flux.
+
   end subroutine accumulate_rhs_momentum
 
 
-  subroutine accumulate_rhs_solidified_rho(this, props, vel_cc)
+  subroutine accumulate_rhs_solidified_rho(this, solidified_rho, vel_cc)
+
     class(flow_prediction), intent(inout) :: this
-    real(r8), intent(in) :: vel_cc(:,:)
-    type(flow_props), intent(in) :: props
-    !
+    real(r8), intent(in) :: solidified_rho(:), vel_cc(:,:)
+
     integer :: j
     real(r8) :: w
 
-    w = 1.0_r8-this%solidify_implicitness
+    if (this%solidify_implicitness == 1) return
 
-    if (this%solidify_implicitness < 1.0_r8) then
+    w = 1 - this%solidify_implicitness
+    do j = 1, this%mesh%ncell_onP
+      this%rhs(:,j) = this%rhs(:,j) - w * solidified_rho(j) * vel_cc(:,j)
+    end do
 
-      associate (rho => props%solidified_rho, rhs => this%rhs)
-        do j = 1, this%mesh%ncell_onP
-          rhs(:,j) = rhs(:,j) - w*rho(j)*vel_cc(:,j)
-        end do
-      end associate
-    end if
   end subroutine accumulate_rhs_solidified_rho
 
 
@@ -458,13 +497,12 @@ contains
     type(flow_props), intent(in) :: props
     !
     integer :: i, j, ierr
-
+    real(r8) :: coeff
     character(18), parameter :: slabel(3) = 'predictor' // ['1', '2', '3'] // ' solve: '
 
     call start_timer("solve")
     ! The accumulate routines may add contributions to non-regular cells.  These
     ! contributions are ignored by the solver
-
 
     ! Pressure and viscous forces are unaware of solid/fluid boundaries.
     ! These forces are computed first and scaled by vof as a crude approximation.
@@ -476,7 +514,7 @@ contains
     end do
 
     call this%accumulate_rhs_momentum(props, vel_cc, vel_fn, flux_volumes)
-    call this%accumulate_rhs_solidified_rho(props, vel_cc)
+    call this%accumulate_rhs_solidified_rho(props%solidified_rho, vel_cc)
 
     ! handle surface tension
 
@@ -522,14 +560,20 @@ contains
             vel_cc(i,j) = sol(j)
           end do
         else
-          ! WARN: Need to replace this with a mass matrix LHS to handle implicit
-          !       terms for solidification and porosity.
           call gather_boundary(this%mesh%cell_ip, rhs1d)
           do j = 1, this%mesh%ncell
             if (cell_t(j) /= regular_t) then
               vel_cc(i,j) = rhs1d(j)
             else
-              vel_cc(i,j) = rhs1d(j) / props%rho_cc(j)
+              coeff = props%rho_cc(j)
+              if (props%vof(j) > 0) &
+                  coeff = coeff + &
+                  this%solidify_implicitness * props%solidified_rho(j) / props%vof(j)
+              if (coeff /= 0) then
+                vel_cc(i,j) = rhs1d(j) / coeff
+              else
+                vel_cc(i,j) = 0
+              end if
             end if
           end do
         end if

@@ -23,12 +23,12 @@ the flow solver.
 
 &OUTPUTS
   Output_T = 0.0, 0.25, 5.0
-  Output_Dt = 0.01, 0.25
+  Output_Dt = 0.25, 5.0
 /
 
 A kludge to force hitting the final time exactly
-x&SIMULATION_CONTROL
-  phase_start_times = 0.1
+&SIMULATION_CONTROL
+  phase_start_times = 0.25, 5.0
   phase_init_dt_factor = 1.0
 /
 
@@ -82,9 +82,9 @@ x&SIMULATION_CONTROL
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 1.0e-4
+  rel_temp_tol       = 1.0e-5
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 1.0e-4
+  rel_enthalpy_tol   = 1.0e-5
   max_nlk_itr        = 10
   nlk_tol            = 0.001
   nlk_preconditioner = 'hypre_amg'

@@ -94,9 +94,12 @@ module flow_props_type
     real(r8), allocatable :: vof_novoid(:), vof_novoid_n(:) ! non-void fluid volume fraction
     real(r8), allocatable :: rho_delta_cc(:) ! temperature dependent density deviation
     real(r8), allocatable :: solidified_rho(:) ! change in fluid density due to solidification
+    real(r8), allocatable :: rho_pre_sol(:) ! volume fraction prior to solidification
     integer, allocatable :: cell_t(:), face_t(:) ! cell and face types (fluid, void or solid)
 
+    integer :: nfluid ! number of mobile materials
     logical :: any_void ! true if there is void in the current timestep
+    logical :: any_real_fluid ! true if there is any non-void fluid in the current timestep
     real(r8) :: cutoff ! fluid volume fractions below this are considered solid
     real(r8) :: min_face_fraction
     ! real(r8) :: cutrho not entirely sure what to do with this
@@ -110,16 +113,18 @@ module flow_props_type
     procedure :: update_cc
     procedure :: update_fc
     procedure :: accept
+    procedure :: set_pre_solidification_density
   end type flow_props
 
 contains
 
-  subroutine init(this, mesh, density, density_delta, viscosity, params)
+  subroutine init(this, mesh, nfluid, density, density_delta, viscosity, params)
 
     use parameter_list_type
 
     class(flow_props), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
+    integer, intent(in) :: nfluid
     real(r8), intent(in) :: density(:)
     class(scalar_func_box), intent(inout) :: density_delta(:), viscosity(:)
     type(parameter_list), intent(inout) :: params
@@ -128,6 +133,7 @@ contains
     type(parameter_list), pointer :: plist
 
     this%mesh => mesh
+    this%nfluid = nfluid
     this%density = density
 
     plist => params%sublist("cutoffs")
@@ -154,9 +160,12 @@ contains
         this%vof_novoid(nc), this%vof_novoid_n(nc), &
         this%rho_delta_cc(nc), &
         this%solidified_rho(nc), &
+        this%rho_pre_sol(nc), &
         this%cell_t(nc), this%face_t(fc), &
         stat=s)
     if (s /= 0) call TLS_Fatal("allocation of flow_props failed")
+
+    this%rho_pre_sol = -huge(1.0_r8) ! this forces the initial solidified rho to be 0
 
   end subroutine init
 
@@ -179,9 +188,7 @@ contains
     call start_timer("update properties")
 
     minrho = huge(1.0_r8)
-
-    ! Fix this when VOF is coupled in
-    this%solidified_rho(:) = 0.0_r8
+    this%any_real_fluid = .false.
 
     do i = 1, this%mesh%ncell
       this%rho_cc(i) = 0.0_r8
@@ -196,9 +203,10 @@ contains
             vof(m,i)*this%density(m)*this%density_delta(m)%f%eval(state)
       end do
 
-      this%vof(i) = sum(vof(:,i))
+      this%vof(i) = sum(vof(:this%nfluid,i))
       ! last element of input vof array is void
       this%vof_novoid(i) = sum(vof(:size(this%density),i))
+      this%solidified_rho(i) = max(this%rho_pre_sol(i) - this%rho_cc(i), 0.0_r8)
 
       if (this%vof(i) > 0.0_r8) then
         this%rho_cc(i) = this%rho_cc(i) / this%vof(i)
@@ -220,10 +228,25 @@ contains
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
+    this%any_real_fluid = global_any(this%cell_t == regular_t)
 
     call stop_timer("update properties")
 
   end subroutine update_cc
+
+  subroutine set_pre_solidification_density(this, vof)
+
+    class(flow_props), intent(inout) :: this
+    real(r8), intent(in) :: vof(:,:)
+
+    integer :: i, nfluid
+
+    nfluid = size(this%density)
+    do i = 1, this%mesh%ncell_onP
+      this%rho_pre_sol(i) = sum(this%density*vof(:nfluid,i))
+    end do
+
+  end subroutine set_pre_solidification_density
 
   subroutine update_fc(this)
     class(flow_props), intent(inout) :: this

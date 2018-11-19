@@ -22,7 +22,7 @@ module volume_tracker_type
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:,:)
-    integer, allocatable :: priority(:)
+    integer, allocatable :: priority(:), bc_index(:), local_face(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
   contains
     procedure :: init
@@ -33,7 +33,7 @@ module volume_tracker_type
     procedure, private :: donor_fluxes_os_cell
     procedure, private :: flux_renorm
     procedure, private :: flux_acceptor
-    !procedure :: flux_bc
+    procedure, private :: flux_bc
     procedure, private :: accumulate_volume
     procedure, private :: enforce_bounded_vof
   end type volume_tracker
@@ -50,7 +50,7 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat, liq_matid(:)
     type(parameter_list), intent(inout) :: params
-    integer :: i
+    integer :: i, j, k
 
     this%mesh => mesh
     this%nrealfluid = nrealfluid
@@ -89,12 +89,26 @@ contains
     ASSERT(all(this%priority > 0) .and. all(this%priority <= this%nmat))
     ! TODO: assert that each material appears exactly once
 
-    allocate(this%flux_vol_sub(this%nfluid,size(mesh%cface)))
+    allocate(this%flux_vol_sub(this%nmat,size(mesh%cface)))
     allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(2,mesh%nnode))
-    allocate(this%w_face(this%nfluid,mesh%nface))
+    allocate(this%w_face(this%nmat,mesh%nface))
     ! need this array so we can violate conservation in parallel
     allocate(this%w_cell(8,this%nfluid,mesh%ncell))
+
+    ! list of boundary face ids
+    j = count(this%mesh%fcell(2,:this%mesh%nface_onP) == 0)
+    allocate(this%bc_index(j), this%local_face(j))
+    j = 1
+    do i = 1, this%mesh%nface_onP
+      if (this%mesh%fcell(2,i) == 0) then
+        this%bc_index(j) = i
+        k = this%mesh%fcell(1,i)
+        this%local_face(j) = this%mesh%xcface(k) - 1 + &
+            findloc(this%mesh%cface(this%mesh%xcface(k):this%mesh%xcface(k+1)-1), i)
+        j = j + 1
+      end if
+    end do
 
   end subroutine init
 
@@ -106,8 +120,8 @@ contains
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
-    integer :: i,ii,j,k,f0,f1,kk
-    real(r8) :: sub_dt, disp(3), cent(3)
+    integer :: i
+    real(r8) :: sub_dt
 
     flux_vol = 0.0_r8
     sub_dt = dt/real(this%subcycles, r8)
@@ -122,7 +136,7 @@ contains
 
       call this%flux_acceptor()
 
-      !call this%flux_bc(fluxing_velocity, vof_n, volume_flux_sub)
+      call this%flux_bc(vel, vof_n, sub_dt)
 
       call this%accumulate_volume(vof, flux_vol)
 
@@ -130,6 +144,30 @@ contains
     end do
 
   end subroutine flux_volumes
+
+  subroutine flux_bc(this, vel, vof_n, dt)
+
+    class(volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: vel(:), vof_n(:,:), dt
+
+    integer :: i, f, j, fl
+
+    do i = 1, size(this%bc_index)
+      f = this%bc_index(i)
+      fl = this%local_face(i)
+      j = this%mesh%fcell(1,f)
+      if (j > this%mesh%ncell_onP) cycle
+
+      ! If inflow boundary face, assume that what comes into
+      ! the cell has the same fraction of materials as what
+      ! was in the cell at the beginning of this time step.
+      !
+      ! TODO: We need to add the ability to specify an inflow material.
+      if (vel(fl) < 0) &
+          this%flux_vol_sub(:,fl) = vof_n(:,j) * vel(fl) * dt * this%mesh%area(f)
+    end do
+
+  end subroutine flux_bc
 
 
   subroutine normals(this, vof)
@@ -282,12 +320,14 @@ contains
           cutoff, maxiter)
 
       ! calculate delta advection volumes for this material at each donor face and accumulate the sum
+      ASSERT(priority(ni) <= size(flux_volume, dim=1))
       call compute_material_volume_flux(flux_volume(priority(ni),:), flux_vol_sum, P, cell, &
           is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff)
     end do
 
     ! Compute the advection volume for the last material.
     nlast = priority(findloc(vof(priority) >= cutoff, .true., back=.true.))
+    ASSERT(nlast <= size(flux_volume, dim=1))
     do f = 1,cell%nfc
       ! Recalculate the total flux volume for this face.
       flux_vol = dt*vel(f)*cell%face_area(f)
@@ -720,8 +760,8 @@ contains
 
     integer :: m,j,i,f0,f1,nmat
 
-    nmat = this%nfluid
-    this%w_face(1:nmat,:) = 0.0_r8
+    nmat = size(this%flux_vol_sub, dim=1)
+    this%w_face = 0
 
     do i = 1, this%mesh%ncell
       f0 = this%mesh%xcface(i)

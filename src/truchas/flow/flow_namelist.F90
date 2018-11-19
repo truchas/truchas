@@ -139,7 +139,7 @@ contains
     end if
 
     if (solidify_implicitness /= NULL_R) then
-      if (solidify_implicitness <= 0 .or. solidify_implicitness > 1) &
+      if (solidify_implicitness < 0 .or. solidify_implicitness > 1) &
           call TLS_fatal('SOLIDIFY_IMPLICITNESS must be in [0,1]')
       call plist%set('solidify implicitness', solidify_implicitness)
     end if
