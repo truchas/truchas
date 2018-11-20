@@ -77,13 +77,12 @@ Outlet pressure
   data_constant = 0.0
 /
 
-TEMPORARILY OMITTED SO THAT THE TEST WORKS; SEE ISSUE 181
 Symmetry planes
-!&FLOW_BC
-!  name = 'symmetry'
-!  face_set_ids = 4
-!  condition = 'slip'
-!/
+&FLOW_BC
+  name = 'symmetry'
+  face_set_ids = 4
+  condition = 'slip'
+/
 
 &BODY
   surface_name = 'from mesh file'

@@ -32,23 +32,26 @@ Hack to hit the final time exactly
 &FLOW
   inviscid = .false.
   courant_number = 0.5
-  viscous_number = 0.5
+  viscous_number = 0.3333333
+  viscous_implicitness = 0.5
 /
 
 &FLOW_PREDICTOR
   rel_tol = 1.0e-10
-  abs_tol = 0.0
+  abs_tol = 1.0e-10
   max_ds_iter = 50
   max_amg_iter = 5
   krylov_method = 'cg'
+  logging_level = 1
 / 
 
 &FLOW_CORRECTOR
-  rel_tol = 1.0e-10
-  abs_tol = 0.0
+  rel_tol = 0.0
+  abs_tol = 1.0e-10
   max_ds_iter = 50
-  max_amg_iter = 5
+  max_amg_iter = 25
   krylov_method = 'cg'
+  logging_level = 1
 /
 
 &NUMERICS
