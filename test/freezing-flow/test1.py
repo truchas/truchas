@@ -17,13 +17,13 @@ class FreezingFlowTest(TruchasTest.GoldenTestCase):
     success = True
 
     # first output dump
-    success &= self.temp_test(2, 1e-10)
+    success &= self.temp_test(2, 1e-7)
     success &= self.pressure_test(2, 1e-10)
     success &= self.velocity_test(2, 1e-10)
-    success &= self.vof_test(2, 1e-10)
+    success &= self.vof_test(2, 1e-7)
 
     # final time
-    success &= self.temp_test(3, 1e-10)
+    success &= self.temp_test(3, 2e-6)
     success &= self.pressure_test(3, 1e-10)
     success &= self.velocity_test(3, 1e-10)
     success &= self.vof_test(3, 1e-10)

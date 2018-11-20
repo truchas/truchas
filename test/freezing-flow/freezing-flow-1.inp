@@ -50,20 +50,20 @@ A kludge to force hitting the final time exactly
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 1.0e-4
+  rel_temp_tol       = 1.0e-5
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 1.0e-4
-  max_nlk_itr        = 10
-  nlk_tol            = 0.001
+  rel_enthalpy_tol   = 1.0e-5
+  max_nlk_itr        = 5
+  nlk_tol            = 0.05
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /
 
 &NUMERICS
-  dt_init = 1.0d-3
+  dt_init = 1.0d-4
   dt_min  = 1.0d-9
   dt_max  = 2.0d-2
-  dt_grow = 1.03
+  dt_grow = 5.0
 /
 
 &DS_BOUNDARY_CONDITION
