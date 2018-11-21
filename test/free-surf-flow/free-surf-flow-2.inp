@@ -1,10 +1,21 @@
+INVISCID FLUID DRAINING FROM A PIPE WITH VOID
+---------------------------------------------
+This is simple 1D inviscid fluid/void flow problem. The 2D 5x1 pipe domain is
+filled with fluid except for a bit of void at the right end. There is a velocity
+BC of -1 at the left outlet boundary, and a compatible initial fluid velocity
+of -1. Fluid gradually drains from the pipe with the fluid/void interface moving
+with speed -1. The simulation ends before the pipe is completely drained of fluid.
+ 
+We should recover the exact solution: P=0, V=(-1,0,0) on cells with
+fluid, with the fluid/void interface moving at speed 1 to the left.
+
 &MESH
   mesh_file = 'mesh2.g'
 /
 
 &OUTPUTS
   output_t  = 0.0, 4.0
-  output_dt = 0.5
+  output_dt = 2.0
 /
 
 A kludge to force hitting the final time exactly
@@ -76,6 +87,11 @@ Fluid to the left
   material_number = 1
   velocity = -1.0, 0.0, 0.0
   temperature = 0.0
+/
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
 /
 
 &MATERIAL

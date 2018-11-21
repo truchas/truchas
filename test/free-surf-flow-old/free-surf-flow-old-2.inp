@@ -1,21 +1,31 @@
+INVISCID FLUID DRAINING FROM A PIPE WITH VOID
+---------------------------------------------
+This is simple 1D inviscid fluid/void flow problem. The 2D 5x1 pipe domain is
+filled with fluid except for a bit of void at the right end. There is a velocity
+BC of -1 at the left outlet boundary, and a compatible initial fluid velocity
+of -1. Fluid gradually drains from the pipe with the fluid/void interface moving
+with speed -1. The simulation ends before the pipe is completely drained of fluid.
+ 
+We should recover the exact solution: P=0, V=(-1,0,0) on cells with
+fluid, with the fluid/void interface moving at speed 1 to the left.
+
 &MESH
-  mesh_file = 'mesh3.g'
+  mesh_file = 'mesh2.g'
 /
 
 &OUTPUTS
-  output_t  = 0.0, 4.8
-  output_dt = 0.4
+  output_t  = 0.0, 4.0
+  output_dt = 2.0
 /
 
 A kludge to force hitting the final time exactly
 &SIMULATION_CONTROL
-  phase_start_times = 4.8
+  phase_start_times = 4.0
   phase_init_dt_factor = 1.0
 /
 
 &PHYSICS
   legacy_flow = .true.
-  body_force_density = 0.0, -1.0, 0.0
 /
 
 &NUMERICS
@@ -40,23 +50,20 @@ A kludge to force hitting the final time exactly
   name = 'projection'
   method = 'fgmres'
   preconditioning_method = 'ssor'
-  convergence_criterion  = 1.0e-10
+  convergence_criterion  = 1.0e-12
   relaxation_parameter   = 1.4
   preconditioning_steps  = 2
   maximum_iterations     = 200
 /
 
-INFLOW
+OUTFLOW
 &BC
   surface_name = 'from mesh file'
   mesh_surface = 1
-  !bc_variable  = 'velocity'
-  !bc_type      = 'dirichlet'
-  !bc_value     = 1.0, 0.0, 0.0
-  !inflow_material = 1
-  bc_variable  = 'pressure'
+  bc_variable  = 'velocity'
   bc_type      = 'dirichlet'
-  bc_value     = 0.0
+  bc_value     = -1.0, 0.0, 0.0
+  inflow_material = 1
 /
 
 OUTFLOW
@@ -68,23 +75,28 @@ OUTFLOW
   bc_value     = 0.0
 /
  
-Fluid plug
+Void to the right
 &BODY
-  surface_name = 'box'
-  length = 1.0, 1.0, 1.0
-  translation_pt = -2.4, 0.0, 0.0
-  material_number = 1
-  velocity = 1.0, 0.0, 0.0
+  surface_name = 'plane'
+  axis = 'x'
+  translation_pt = 2.0, 0.0, 0.0
+  material_number = 2
+  velocity = -1.0, 0.0, 0.0
   temperature = 0.0
 /
 
-Surrounding void
+Fluid to the left
 &BODY
   surface_name = 'background'
-  mesh_material_number = 2
-  material_number = 2
-  velocity = 1.0, 0.0, 0.0
+  mesh_material_number = 1
+  material_number = 1
+  velocity = -1.0, 0.0, 0.0
   temperature = 0.0
+/
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
 /
 
 &MATERIAL

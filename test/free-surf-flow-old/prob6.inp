@@ -1,15 +1,15 @@
 &MESH
-  mesh_file = 'mesh2.g'
+  mesh_file = 'mesh3.g'
 /
 
 &OUTPUTS
-  output_t  = 0.0, 3.0
-  output_dt = 0.5
+  output_t  = 0.0, 4.8
+  output_dt = 0.4
 /
 
 A kludge to force hitting the final time exactly
 &SIMULATION_CONTROL
-  phase_start_times = 3.0
+  phase_start_times = 4.8
   phase_init_dt_factor = 1.0
 /
 
@@ -71,7 +71,7 @@ Fluid plug
 &BODY
   surface_name = 'box'
   length = 1.0, 1.0, 1.0
-  translation_pt = -1.5, 0.0, 0.0
+  translation_pt = -2.4, 0.0, 0.0
   material_number = 1
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
@@ -84,6 +84,11 @@ Surrounding void
   material_number = 2
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
+/
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
 /
 
 &MATERIAL

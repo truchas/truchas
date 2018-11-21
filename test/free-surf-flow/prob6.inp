@@ -77,7 +77,12 @@ Surrounding void
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
 /
- 
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
+/
+
 &MATERIAL
   material_name = 'water'
   material_number = 1

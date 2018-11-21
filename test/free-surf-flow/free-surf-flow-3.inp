@@ -1,15 +1,25 @@
+INVISCID FLUID PLUG TRAVELLING DOWN PIPE WITH VOID
+--------------------------------------------------
+This is a simple 1D inviscid fluid/void flow problem. The 2d 5x1 pipe domain is
+void except for a plug of fluid near the left end but bordered by void on either
+side. The fluid has an initial velocity of 1. The fluid plug should move down
+the pipe with speed 1. The simulation ends before the plug reaches the right end.
+
+We should recover the exact solution: P=0, V=(1,0,0) on cells with fluid, with
+the fluid/void interfaces moving at speed 1 to the right.
+ 
 &MESH
   mesh_file = 'mesh2.g'
 /
 
 &OUTPUTS
-  output_t  = 0.0, 4.0
-  output_dt = 0.5
+  output_t  = 0.0, 3.0
+  output_dt = 1.5
 /
 
 A kludge to force hitting the final time exactly
 &SIMULATION_CONTROL
-  phase_start_times = 4.0
+  phase_start_times = 3.0
   phase_init_dt_factor = 1.0
 /
 
@@ -40,14 +50,14 @@ A kludge to force hitting the final time exactly
 /
 
 &FLOW_BC
-  name = 'inlet'
-  condition = 'velocity dirichlet'
+  name = 'left'
+  condition = 'pressure dirichlet'
   face_set_ids = 1
-  data_constant = 1.0, 0.0, 0.0
+  data_constant = 0.0
 /
 
 &FLOW_BC
-  name = 'outlet'
+  name = 'right'
   condition = 'pressure dirichlet'
   face_set_ids = 2
   data_constant = 0.0
@@ -59,25 +69,30 @@ A kludge to force hitting the final time exactly
   face_set_ids = 3
 /
  
-Void to the right
+Fluid plug
 &BODY
-  surface_name = 'plane'
-  axis = 'x'
-  translation_pt = -2.0, 0.0, 0.0
-  material_number = 2
-  velocity = 1.0, 0.0, 0.0
-  temperature = 0.0
-/
-
-Fluid to the left
-&BODY
-  surface_name = 'background'
-  mesh_material_number = 1
+  surface_name = 'box'
+  length = 1.0, 1.0, 1.0
+  translation_pt = -1.5, 0.0, 0.0
   material_number = 1
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
 /
 
+Surrounding void
+&BODY
+  surface_name = 'background'
+  mesh_material_number = 2
+  material_number = 2
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
+/
+ 
 &MATERIAL
   material_name = 'water'
   material_number = 1

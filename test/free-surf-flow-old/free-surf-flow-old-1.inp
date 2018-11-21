@@ -1,10 +1,21 @@
+INVISCID FLUID FILLING A PIPE WITH VOID
+---------------------------------------
+This is simple 1D inviscid fluid/void flow problem. The 2D 5x1 pipe domain is
+void except for a bit of fluid at the left end. There is a velocity BC of 1 at
+the left inlet boundary, and a compatible initial fluid velocity of 1. Fluid
+gradually fills the pipe with the fluid/void interface moving with speed 1.
+The simulation ends before the pipe is completely filled with fluid.
+ 
+We should recover the exact solution: P=0, V=(1,0,0) on cells with
+fluid, with the fluid/void interface moving at speed 1 to the right.
+
 &MESH
   mesh_file = 'mesh2.g'
 /
 
 &OUTPUTS
   output_t  = 0.0, 4.0
-  output_dt = 0.5
+  output_dt = 2.0
 /
 
 A kludge to force hitting the final time exactly
@@ -39,7 +50,7 @@ A kludge to force hitting the final time exactly
   name = 'projection'
   method = 'fgmres'
   preconditioning_method = 'ssor'
-  convergence_criterion  = 1.0e-10
+  convergence_criterion  = 1.0e-12
   relaxation_parameter   = 1.4
   preconditioning_steps  = 2
   maximum_iterations     = 200
@@ -81,6 +92,11 @@ Fluid to the left
   material_number = 1
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
+/
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
 /
 
 &MATERIAL

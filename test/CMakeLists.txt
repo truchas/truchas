@@ -272,6 +272,18 @@ add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 1 LABELS DI
 add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(freezing-flow-3 freezing-flow/test3.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 
+# FREE-SURFACE FLOW TESTS -- OLD FLOW SOLVER
+add_pytruchas_test(free-surf-flow-old-1 free-surf-flow-old/test1.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(free-surf-flow-old-2 free-surf-flow-old/test2.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(free-surf-flow-old-3 free-surf-flow-old/test3.py PROCESSORS 4 LABELS OLD_FLOW)
+add_pytruchas_test(free-surf-flow-old-4 free-surf-flow-old/test4.py PROCESSORS 4 LABELS OLD_FLOW)
+
+# FREE-SURFACE FLOW TESTS
+add_pytruchas_test(free-surf-flow-1 free-surf-flow/test1.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(free-surf-flow-2 free-surf-flow/test2.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(free-surf-flow-3 free-surf-flow/test3.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(free-surf-flow-4 free-surf-flow/test4.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+
 # PURE ADVECTION TESTS -- OLD FLOW SOLVER
 add_pytruchas_test(advection-old-0  advection-old/test0.py  PROCESSORS 4 LABELS OLD_FLOW)
 add_pytruchas_test(advection-old-1a advection-old/test1a.py PROCESSORS 4 LABELS OLD_FLOW)

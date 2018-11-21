@@ -1,15 +1,20 @@
+INVISCID FLUID / VOID BROKEN DAM PROBLEM
+----------------------------------------
+2D broken dam problem in a box (no inflow/outflow) with inviscid fluid and void.
+
 &MESH
-  mesh_file = 'mesh2.g'
+  mesh_file = 'mesh1.g'
 /
 
 &OUTPUTS
-  output_t  = 0.0, 4.0
-  output_dt = 0.5
+  output_t  = 0.0, 1.0
+  output_dt = 1.0
+  !output_dt = 0.1
 /
 
 A kludge to force hitting the final time exactly
 &SIMULATION_CONTROL
-  phase_start_times = 4.0
+  phase_start_times = 1.0
   phase_init_dt_factor = 1.0
 /
 
@@ -40,47 +45,25 @@ A kludge to force hitting the final time exactly
   name = 'projection'
   method = 'fgmres'
   preconditioning_method = 'ssor'
-  convergence_criterion  = 1.0e-10
+  convergence_criterion  = 1.0e-12
   relaxation_parameter   = 1.4
   preconditioning_steps  = 2
   maximum_iterations     = 200
 /
 
-OUTFLOW
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 1
-  bc_variable  = 'velocity'
-  bc_type      = 'dirichlet'
-  bc_value     = -1.0, 0.0, 0.0
-  inflow_material = 1
-/
-
-OUTFLOW
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 2
-  bc_variable  = 'pressure'
-  bc_type      = 'dirichlet'
-  bc_value     = 0.0
-/
- 
-Void to the right
 &BODY
-  surface_name = 'plane'
-  axis = 'x'
-  translation_pt = 2.0, 0.0, 0.0
-  material_number = 2
-  velocity = -1.0, 0.0, 0.0
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
   temperature = 0.0
 /
 
-Fluid to the left
 &BODY
-  surface_name = 'background'
-  mesh_material_number = 1
-  material_number = 1
-  velocity = -1.0, 0.0, 0.0
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 2
+  velocity = 3*0.0
   temperature = 0.0
 /
 
