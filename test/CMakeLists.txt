@@ -99,9 +99,8 @@ add_pytruchas_test(ds7 ds7/testDS7.py
                    PROCESSORS 4
 		   LABELS DIFFUSION)
 
-add_pytruchas_test(ds8 ds8/testDS8.py
-                   PROCESSORS 4
-		   LABELS DIFFUSION)
+add_pytruchas_test(ds8-old ds8/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
+#add_pytruchas_test(ds8 ds8/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 
 add_pytruchas_test(ds9 ds9/testDS9.py
                    PROCESSORS 4

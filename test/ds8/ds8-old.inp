@@ -20,7 +20,7 @@ A kludge to force hitting the final time exactly
 /
 
 &PHYSICS
-  flow = .true.
+  legacy_flow = .true.
   body_force_density = 0.0, -1.0, 0.0
   heat_transport = .true.
 /
@@ -36,25 +36,16 @@ A kludge to force hitting the final time exactly
 /
 
 &NUMERICS
-  dt_init = 1.0e-4
+  dt_init = 1.0e-3
   dt_grow = 5.0
   dt_min  = 1.0e-5
   dt_max  = 1000.0
 /
 
-&FLOW
+&LEGACY_FLOW
   inviscid = .true.
   courant_number = 0.5
-/
-
-&FLOW_CORRECTOR
-  rel_tol = 0.0
-  abs_tol = 1.0e-12
-  max_ds_iter = 50
-  max_amg_iter = 500
-  krylov_method = 'gmres'
-  gmres_krylov_dim = 20
-  !krylov_method = 'cg' ! DOES NOT WORK -- MATRIX NOT SYMMETRIC
+  projection_linear_solution = 'projection'
 /
 
 &DS_BOUNDARY_CONDITION
@@ -81,10 +72,32 @@ A kludge to force hitting the final time exactly
   face_set_ids = 3, 4
 /
 
-&FLOW_BC
-  name = 'walls'    
-  face_set_ids = 1, 2, 3, 4               
-  condition = 'slip'         
+&BC
+  surface_name = 'from mesh file'    
+  mesh_surface = 1                   
+  bc_variable  = 'velocity'          
+  bc_type      = 'free-slip'         
+/
+
+&BC
+  surface_name = 'from mesh file'    
+  mesh_surface = 2                   
+  bc_variable  = 'velocity'          
+  bc_type      = 'free-slip'         
+/
+
+&BC
+  surface_name = 'from mesh file'    
+  mesh_surface = 3                   
+  bc_variable  = 'velocity'          
+  bc_type      = 'free-slip'         
+/
+
+&BC
+  surface_name = 'from mesh file'    
+  mesh_surface = 4                   
+  bc_variable  = 'velocity'          
+  bc_type      = 'free-slip'         
 /
 
 &BODY
@@ -121,4 +134,13 @@ A kludge to force hitting the final time exactly
 &MATERIAL_SYSTEM
   name = 'liquid'
   phases = 'liquid'
+/
+
+&LINEAR_SOLVER
+  name                    = 'projection'
+  method                  = 'fgmres'
+  preconditioning_method  = 'ssor'
+  preconditioning_steps   = 2
+  relaxation_parameter    = 1.4
+  convergence_criterion   = 1.0e-12
 /
