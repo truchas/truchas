@@ -181,10 +181,8 @@ add_pytruchas_test(gap-rad
 		   PROCESSORS 4
 		   LABELS DIFFUSION)
 
-add_pytruchas_test(gap-rad-flow
-                   gap-rad-flow/testGapRadFlow.py
-		   PROCESSORS 4
-                   LABELS DIFFUSION OLD_FLOW)
+add_pytruchas_test(gap-rad-flow gap-rad-flow/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(gap-rad-flow-old gap-rad-flow/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
 
 add_pytruchas_test(vfrad1
                    vfrad1/testVFRad1.py

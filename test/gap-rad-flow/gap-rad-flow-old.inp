@@ -44,7 +44,7 @@ test exercises the implementation in the normal 'HTSD' solver.
 
 &PHYSICS
   heat_transport = .true.
-  flow = .true.
+  legacy_flow = .true.
 /
 
 &PHYSICAL_CONSTANTS
@@ -66,18 +66,20 @@ test exercises the implementation in the normal 'HTSD' solver.
   discrete_ops_type = 'ortho' 
 /
 
-&FLOW
-  inviscid = .true.
-  courant_number = 0.5
-  !track_interfaces = .false.  ! none to track
+&LEGACY_FLOW
+  projection_linear_solution = 'projection'
+  volume_track_interfaces = .false.
 /
 
-&FLOW_CORRECTOR
-  rel_tol = 0.0
-  abs_tol = 1.0e-12
-  max_ds_iter = 50
-  max_amg_iter = 10
-  krylov_method = 'cg'
+&LINEAR_SOLVER
+  name                   = 'projection'
+  method                 = 'gmres'
+  convergence_criterion  = 1.0e-12
+  preconditioning_method = 'ssor'
+  relaxation_parameter   = 1.4
+  preconditioning_steps  = 4
+  maximum_iterations     = 500
+  output_mode            = 'summary'
 /
 
 &DS_BOUNDARY_CONDITION
@@ -105,19 +107,21 @@ test exercises the implementation in the normal 'HTSD' solver.
 /
 
 Inflow at left end of channel
-&FLOW_BC
-  name = 'inlet'
-  face_set_ids = 4
-  condition = 'velocity dirichlet'
-  data_constant = 16.0, 0.0, 0.0
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 4
+  bc_variable  = 'velocity'
+  bc_type      = 'dirichlet'
+  bc_value     = 16.0, 0.0, 0.0
 /
 
 Outflow at right end of channel
-&FLOW_BC
-  name = 'outlet'
-  face_set_ids = 5
-  condition = 'pressure dirichlet'
-  data_constant = 0.0
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 5
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
 /
 
 Left block (x<0):
