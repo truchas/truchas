@@ -1,0 +1,29 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 11/02/2018 01:22:53 PM
+## Command Options:
+brick x 5 y 0.6 z 0.6
+volume 1 size 0.2
+mesh volume 1
+
+set developer commands on
+surface 2 3 4 5 smooth scheme randomize 0.05
+smooth surface 2 3 4 5
+curve 2 4 6 8 smooth scheme randomize 0.05
+smooth curve 2 4 6 8
+volume 1 smooth scheme randomize 0.05
+smooth volume 1
+
+block 1 add volume 1
+sideset 1 add surface 4
+sideset 1 name "left"
+sideset 2 add surface 6
+sideset 2 name "right"
+sideset 3 add surface 3 1 5 2
+sideset 3 name "sides"
+
+set exodus netcdf4 off
+set large exodus file on
+export genesis "mesh4.g" overwrite
