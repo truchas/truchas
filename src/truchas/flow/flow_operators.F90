@@ -49,7 +49,6 @@ contains
     allocate(this)
     this%mesh => mesh
     allocate(this%ds(3,mesh%nface))
-    allocate(this%work(mesh%nface))
     this%ds = 0.0_r8
 
     do j = 1, mesh%nface_onP
@@ -67,6 +66,15 @@ contains
     do j = 1, 3
       call gather_boundary(mesh%face_ip, this%ds(j,:))
     end do
+
+    ! get lapack work size
+    allocate(this%work(1))
+    call dgels('T', 3, 6, 1, this%work, 6, this%work, 6, this%work, -1, c1)
+    INSIST(c1 == 0)
+    j = this%work(1)
+    deallocate(this%work)
+    allocate(this%work(max(mesh%nface, j)))
+
   end subroutine flow_operators_init
 
   function flow_gradient_coefficients() result(p)
@@ -191,7 +199,12 @@ contains
       associate (faces => normal_flux_bc%index, value => normal_flux_bc%value)
         do i = 1, size(faces)
           j = faces(i)
-          g(:,j) = value(i)*this%mesh%normal(:,j)/this%mesh%area(j)
+          ! Currently only allow the neumann condition to be a
+          ! 0-gradient. This is mostly relevant in a condition
+          ! like the surface tension BC, where the data parameter
+          ! (value) is used for surface tension, but ends up also
+          ! passed to the p_neumann object.
+          g(:,j) = 0 !value(i)*this%mesh%normal(:,j)/this%mesh%area(j)
         end do
       end associate
     end if
@@ -294,42 +307,29 @@ contains
 
   ! interpolation of vector quantitiy xf to faces
   ! result only valid on ncell_onP
-  ! inactive_faces and extra_ignore_faces do not participate in averaging
 
-  subroutine interpolate_fc(ic, xf, face_t, extra_ignore_faces)
+  subroutine interpolate_fc(ic, xf)
+
+    external dgels ! lapack least-squares routine
 
     real(r8), intent(out) :: ic(:,:)
     real(r8), intent(in) :: xf(:,:)
-    integer, intent(in) , optional :: face_t(:)
-    integer, intent(in) , optional :: extra_ignore_faces(:)
 
-    integer :: i, dim
-    real(r8) :: tmp
+    integer :: i, f, ierr
+    real(r8) :: A(3,6), b(6)
 
-    this%work = 1.0_r8
-    if (present(face_t)) then
-      do i = 1, this%mesh%nface
-        if (face_t(i) > regular_t) this%work(i) = 0.0_r8
-      end do
-    end if
-    if (present(extra_ignore_faces)) then
-      this%work(extra_ignore_faces) = 0.0_r8
-    end if
-
+    ! interpolate to cell-center from face-centers via least-squares
+    ! find i_c to minimize for all faces:  n_f . (i_c - x_f)
     do i = 1, this%mesh%ncell_onP
       associate (fn => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
-        if (sum(this%work(fn)) >= 1.0_r8) then
-          do dim = 1, size(ic,dim=1)
-            tmp = sum(this%work(fn)*abs(this%mesh%normal(dim,fn)))
-            if (tmp /= 0.0_r8) then
-              ic(dim,i) = dot_product(this%work(fn)*abs(this%mesh%normal(dim,fn)), xf(dim,fn)) / tmp
-            else
-              ic(dim,i) = 0.0_r8
-            end if
-          end do
-        else
-          ic(:,i) = 0.0_r8
-        end if
+        do f = 1, size(fn)
+          A(:,f) = this%mesh%normal(:,fn(f)) / this%mesh%area(fn(f))
+          b(f) = dot_product(A(:,f), xf(:,fn(f)))
+        end do
+
+        call dgels('T', 3, size(fn), 1, A, 3, b, 6, this%work, size(this%work), ierr)
+        INSIST(ierr == 0)
+        ic(:,i) = b(:3)
       end associate
     end do
 

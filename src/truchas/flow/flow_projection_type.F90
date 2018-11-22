@@ -538,7 +538,7 @@ contains
         end if
       end do
       call gather_boundary(this%mesh%face_ip, gp_fc)
-      call interpolate_fc(gp_cc, gp_fc, props%face_t, this%bc%p_neumann%index)
+      call interpolate_fc(gp_cc, gp_fc)
 
       ! zero pressure gradient on void cells
       do j = 1, this%mesh%ncell_onP
