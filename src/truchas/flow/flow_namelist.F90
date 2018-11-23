@@ -27,7 +27,7 @@ contains
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer  :: subcycles, location_iter_max, material_priority(16)
+    integer  :: subcycles, location_iter_max, material_priority(16), fischer_dim
     logical  :: inviscid, stokes, track_interfaces, nested_dissection, use_brents_method
     real(r8) :: viscous_implicitness, solidify_implicitness, viscous_number, courant_number
     real(r8) :: fluid_cutvof, min_face_fraction,location_tol, cutoff
@@ -35,7 +35,7 @@ contains
         viscous_implicitness, solidify_implicitness, viscous_number, courant_number, &
         fluid_cutvof, min_face_fraction, &
         track_interfaces, nested_dissection, use_brents_method, subcycles, &
-        location_tol, location_iter_max, cutoff, material_priority
+        location_tol, location_iter_max, cutoff, material_priority, fischer_dim
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -69,6 +69,7 @@ contains
 
     fluid_cutvof = NULL_R
     min_face_fraction = NULL_R
+    fischer_dim = NULL_I
 
     !! Read the FLOW namelist
     if (is_IOP) read(lun,nml=flow,iostat=ios,iomsg=iom)
@@ -94,6 +95,7 @@ contains
 
     call broadcast(fluid_cutvof)
     call broadcast(min_face_fraction)
+    call broadcast(fischer_dim)
 
     !! Check values and stuff into a parameter list for later use.
 
@@ -153,6 +155,11 @@ contains
       if (courant_number <= 0 .or. courant_number > 1) &
           call TLS_fatal('COURANT_NUMBER must be in (0,1]')
       call plist%set('courant number', courant_number)
+    end if
+
+    if (fischer_dim /= NULL_I) then
+      if (fischer_dim < 0) call TLS_fatal('FISCHER_DIM must be >= 0')
+      call plist%set('fischer-dim', fischer_dim)
     end if
 
     plist => params%sublist('cutoffs')

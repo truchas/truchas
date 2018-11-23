@@ -165,7 +165,8 @@ contains
     plist => plist%sublist("solver")
     ASSERT(plist%count() > 0)
     call this%solver%init(A, plist)
-    call this%fg%init(mesh, params)
+    plist => params%sublist("options")
+    call this%fg%init(mesh, plist)
   end subroutine init
 
   subroutine setup(this, dt, props, grad_p_rho_cc_n, body_force, vel_cc, P_cc, vel_fn)

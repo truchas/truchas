@@ -17,27 +17,17 @@ contains
 
   subroutine read_pressure_solver_namelist(lun, plist)
 
-    use input_utilities, only: NULL_I
-    use parallel_communication, only: broadcast
-
     integer, intent(in) :: lun
     type(parameter_list), intent(inout) :: plist
 
-    integer :: fischer_history
-
-    namelist /flow_corrector/ fischer_history, rel_tol, &
+    namelist /flow_corrector/ rel_tol, &
         abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
         krylov_method, gmres_krylov_dim, cg_use_two_norm, &
         logging_level, print_level, amg_strong_threshold, &
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
 
-    fischer_history = NULL_I
-
     call read_hypre_namelist(lun, 'FLOW_CORRECTOR', read_nml, plist)
-
-    call broadcast(fischer_history)
-    if (fischer_history /= NULL_I) call plist%set('history', fischer_history)
 
   contains
 

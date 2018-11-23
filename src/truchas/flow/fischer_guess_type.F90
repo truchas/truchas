@@ -75,7 +75,7 @@ contains
 
     integer :: n
 
-    call params%get('history', this%max_size, default=6)
+    call params%get('fischer-dim', this%max_size, default=6)
 
     if (this%max_size < 1) return
 
