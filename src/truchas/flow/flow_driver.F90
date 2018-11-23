@@ -134,8 +134,7 @@ contains
   subroutine read_flow_namelists(lun)
 
     use flow_namelist
-    use flow_predictor_namelist
-    use flow_corrector_namelist
+    use flow_solver_namelists
     use flow_bc_namelist, only: read_flow_bc_namelists
     use turbulence_namelist, only: read_turbulence_namelist
     use physics_module, only: body_force_density, prescribed_flow
@@ -158,8 +157,10 @@ contains
     ! Add additional sublists from other namelists
     plist => params%sublist('bc')
     call read_flow_bc_namelists(lun, plist)
-    call read_flow_predictor_namelist(lun, params)
-    call read_flow_corrector_namelist(lun, params)
+    plist => params%sublist("predictor")
+    call read_viscous_solver_namelist(lun, plist)
+    plist => params%sublist('corrector')
+    call read_pressure_solver_namelist(lun, plist)
 
     plist => params%sublist('turbulence model')
     call read_turbulence_namelist(lun, plist)

@@ -1,36 +1,29 @@
-module flow_corrector_namelist
+module flow_solver_namelists
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
   implicit none
   private
-  
-  public :: read_flow_corrector_namelist
+
+  public :: read_pressure_solver_namelist, read_viscous_solver_namelist
+
+  real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
+  integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
+  integer :: print_level, amg_max_levels, amg_coarsen_type, amg_coarsen_sweeps
+  integer :: amg_smoothing_method, amg_smoothing_sweeps, amg_interp_method
+  character(128) :: krylov_method, amg_coarsen_method
 
 contains
 
-  subroutine read_flow_corrector_namelist(lun, p)
+  subroutine read_pressure_solver_namelist(lun, plist)
 
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use flow_input_utils
-    use truchas_logging_services
+    use input_utilities, only: NULL_I
+    use parallel_communication, only: broadcast
 
     integer, intent(in) :: lun
-    type(parameter_list), intent(inout) :: p
-    type(parameter_list), pointer :: pp
-    integer :: ios
-    logical :: found
-    character(128) :: iom
+    type(parameter_list), intent(inout) :: plist
 
     integer :: fischer_history
-    !- hypre related items
-    real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
-    integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
-    integer :: print_level, amg_max_levels, amg_coarsen_type, amg_coarsen_sweeps
-    integer :: amg_smoothing_method, amg_smoothing_sweeps, amg_interp_method
-    character(128) :: krylov_method, amg_coarsen_method
-
 
     namelist /flow_corrector/ fischer_history, rel_tol, &
         abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
@@ -39,9 +32,73 @@ contains
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
 
-    pp => p%sublist("corrector")
-
     fischer_history = NULL_I
+
+    call read_hypre_namelist(lun, 'FLOW_CORRECTOR', read_nml, plist)
+
+    call broadcast(fischer_history)
+    if (fischer_history /= NULL_I) call plist%set('history', fischer_history)
+
+  contains
+
+    subroutine read_nml(lun, ios, iom)
+      integer, intent(in) :: lun
+      integer, intent(out) :: ios
+      character(*), intent(inout) :: iom
+      read(lun,nml=flow_corrector,iostat=ios,iomsg=iom)
+    end subroutine
+
+  end subroutine read_pressure_solver_namelist
+
+
+  subroutine read_viscous_solver_namelist(lun, plist)
+
+    integer, intent(in) :: lun
+    type(parameter_list), intent(inout) :: plist
+
+    namelist /flow_predictor/ rel_tol, &
+        abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
+        krylov_method, gmres_krylov_dim, cg_use_two_norm, &
+        logging_level, print_level, amg_strong_threshold, &
+        amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
+        amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
+
+    call read_hypre_namelist(lun, 'FLOW_PREDICTOR', read_nml, plist)
+
+  contains
+
+    subroutine read_nml(lun, ios, iom)
+      integer, intent(in) :: lun
+      integer, intent(out) :: ios
+      character(*), intent(inout) :: iom
+      read(lun,nml=flow_predictor,iostat=ios,iomsg=iom)
+    end subroutine
+
+  end subroutine read_viscous_solver_namelist
+
+  subroutine read_hypre_namelist(lun, name, read_nml, p)
+
+    use string_utilities, only: i_to_c
+    use parallel_communication, only: is_IOP, broadcast
+    use flow_input_utils
+    use truchas_logging_services
+
+    integer, intent(in) :: lun
+    character(*), intent(in) :: name
+    type(parameter_list), intent(inout) :: p
+    type(parameter_list), pointer :: pp
+    integer :: ios
+    logical :: found
+    character(128) :: iom
+
+    interface
+      subroutine read_nml(lun, ios, iom)
+        integer, intent(in) :: lun
+        integer, intent(out) :: ios
+        character(*), intent(inout) :: iom
+      end subroutine
+    end interface
+
     max_ds_iter = NULL_I
     max_amg_iter = NULL_I
     gmres_krylov_dim = NULL_I
@@ -63,7 +120,7 @@ contains
 
     if (is_IOP) then
       rewind lun
-      call seek_to_namelist(lun, 'FLOW_CORRECTOR', found, iostat=ios)
+      call seek_to_namelist(lun, name, found, iostat=ios)
     end if
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
@@ -71,15 +128,14 @@ contains
     call broadcast(found)
     if (found) then
       call TLS_info('')
-      call TLS_info('Reading FLOW_CORRECTOR namelist ...')
+      call TLS_info('Reading ' // name // ' namelist ...')
       !! Read the namelist.
       if (is_IOP) then
-        read(lun,nml=flow_corrector,iostat=ios,iomsg=iom)
+        call read_nml(lun, ios, iom)
       end if
       call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading FLOW_CORRECTOR namelist: ' // trim(iom))
+      if (ios /= 0) call TLS_fatal('error reading ' // name // ' namelist: ' // trim(iom))
 
-      call broadcast(fischer_history)
       call broadcast(max_ds_iter)
       call broadcast(max_amg_iter)
       call broadcast(gmres_krylov_dim)
@@ -98,9 +154,7 @@ contains
       call broadcast(krylov_method)
       call broadcast(amg_coarsen_method)
 
-
-      call plist_set_if(pp, 'history', fischer_history)
-      pp => pp%sublist("solver")
+      pp => p%sublist("solver")
       call plist_set_if(pp, "rel-tol", rel_tol)
       call plist_set_if(pp, 'abs-tol', abs_tol)
       call plist_set_if(pp, 'conv-rate-tol', conv_rate_tol)
@@ -119,6 +173,6 @@ contains
       call plist_set_if(pp, 'amg-smoothing-method', amg_smoothing_method)
       call plist_set_if(pp, 'amg-interp-method', amg_interp_method)
     end if
-  end subroutine read_flow_corrector_namelist
+  end subroutine read_hypre_namelist
 
-end module flow_corrector_namelist
+end module flow_solver_namelists
