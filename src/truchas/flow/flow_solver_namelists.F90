@@ -8,7 +8,7 @@ module flow_solver_namelists
   public :: read_flow_pressure_solver_namelist, read_flow_viscous_solver_namelist
 
   real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
-  integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
+  integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm
   integer :: print_level, amg_max_levels, amg_coarsen_type, amg_coarsen_sweeps
   integer :: amg_smoothing_method, amg_smoothing_sweeps, amg_interp_method
   character(128) :: krylov_method, amg_coarsen_method
@@ -23,7 +23,7 @@ contains
     namelist /flow_pressure_solver/ rel_tol, &
         abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
         krylov_method, gmres_krylov_dim, cg_use_two_norm, &
-        logging_level, print_level, amg_strong_threshold, &
+        print_level, amg_strong_threshold, &
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
 
@@ -49,7 +49,7 @@ contains
     namelist /flow_viscous_solver/ rel_tol, &
         abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
         krylov_method, gmres_krylov_dim, cg_use_two_norm, &
-        logging_level, print_level, amg_strong_threshold, &
+        print_level, amg_strong_threshold, &
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
 
@@ -93,7 +93,6 @@ contains
     max_amg_iter = NULL_I
     gmres_krylov_dim = NULL_I
     cg_use_two_norm = NULL_I
-    logging_level = 1
     print_level = NULL_I
     amg_max_levels = NULL_I
     amg_coarsen_type = NULL_I
@@ -130,7 +129,6 @@ contains
       call broadcast(max_amg_iter)
       call broadcast(gmres_krylov_dim)
       call broadcast(cg_use_two_norm)
-      call broadcast(logging_level)
       call broadcast(print_level)
       call broadcast(amg_max_levels)
       call broadcast(amg_coarsen_type)
@@ -153,7 +151,6 @@ contains
       call plist_set_if(pp, 'krylov-method', krylov_method)
       call plist_set_if(pp, 'gmres-krylov-dim', gmres_krylov_dim)
       call plist_set_if(pp, 'cg-use-two-norm', cg_use_two_norm /= 0)
-      call plist_set_if(pp, 'logging-level', logging_level)
       call plist_set_if(pp, 'print-level', print_level)
       call plist_set_if(pp, 'amg-strong-threshold', amg_strong_threshold)
       call plist_set_if(pp, 'amg-max-levels', amg_max_levels)

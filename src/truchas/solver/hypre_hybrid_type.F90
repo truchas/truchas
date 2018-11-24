@@ -215,7 +215,7 @@ contains
     end if
 
     !! Logging level (optional, default is none)
-    call this%params%get ('logging-level', ipar, default=0)
+    call this%params%get ('logging-level', ipar, default=1)
     INSIST(ipar >= 0) !TODO: replace with proper error handling
     call fHYPRE_ParCSRHybridSetLogging (this%solver, ipar, ierr)
     INSIST(ierr == 0)

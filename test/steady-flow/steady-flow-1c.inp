@@ -39,7 +39,6 @@ Variations use rotated meshes (and rotated velocity)
   max_ds_iter = 50
   max_amg_iter = 10
   krylov_method = 'cg'
-  logging_level = 1
 /
 
 &NUMERICS

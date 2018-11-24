@@ -42,7 +42,6 @@ Hack to hit the final time exactly
   max_ds_iter = 50
   max_amg_iter = 5
   krylov_method = 'cg'
-  logging_level = 1
 / 
 
 &FLOW_PRESSURE_SOLVER
@@ -51,7 +50,6 @@ Hack to hit the final time exactly
   max_ds_iter = 50
   max_amg_iter = 25
   krylov_method = 'cg'
-  logging_level = 1
 /
 
 &NUMERICS

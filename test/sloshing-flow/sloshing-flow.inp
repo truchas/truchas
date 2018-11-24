@@ -57,7 +57,6 @@
   max_ds_iter = 50
   max_amg_iter = 5
   krylov_method = 'cg'
-  logging_level = 1
 / 
 
 &FLOW_PRESSURE_SOLVER
@@ -66,7 +65,6 @@
   max_ds_iter = 50
   max_amg_iter = 5
   krylov_method = 'cg'
-  logging_level = 1
 /
 
 Fluid-filled region in the lower part of the domain
