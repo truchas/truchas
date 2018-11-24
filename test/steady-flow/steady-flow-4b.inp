@@ -34,7 +34,7 @@ Variations use rotated meshes (and rotated velocity)
   subcycles = 2
 /
 
-&FLOW_CORRECTOR
+&FLOW_PRESSURE_SOLVER
   rel_tol = 1.0e-12
   abs_tol = 0.0
   max_ds_iter = 10

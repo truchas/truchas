@@ -72,7 +72,7 @@ test exercises the implementation in the normal 'HTSD' solver.
   !track_interfaces = .false.  ! none to track
 /
 
-&FLOW_CORRECTOR
+&FLOW_PRESSURE_SOLVER
   rel_tol = 0.0
   abs_tol = 1.0e-12
   max_ds_iter = 50

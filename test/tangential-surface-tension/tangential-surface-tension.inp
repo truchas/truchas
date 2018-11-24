@@ -37,7 +37,7 @@
   viscous_implicitness = 0.5
 /
 
-&FLOW_PREDICTOR
+&FLOW_VISCOUS_SOLVER
   rel_tol = 1.0e-10
   abs_tol = 1.0e-10
   max_ds_iter = 50
@@ -46,7 +46,7 @@
   logging_level = 1
 / 
 
-&FLOW_CORRECTOR
+&FLOW_PRESSURE_SOLVER
   rel_tol = 1.0e-10
   abs_tol = 1.0e-10
   max_ds_iter = 100

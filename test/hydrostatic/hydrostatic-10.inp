@@ -32,7 +32,7 @@ Note: Should obtain the same results if heat_transport is disabled.
   courant_number = 0.5
 /
 
-&FLOW_CORRECTOR
+&FLOW_PRESSURE_SOLVER
   rel_tol = 0.0
   abs_tol = 1.0e-12
   max_ds_iter = 50

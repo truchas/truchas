@@ -5,7 +5,7 @@ module flow_solver_namelists
   implicit none
   private
 
-  public :: read_pressure_solver_namelist, read_viscous_solver_namelist
+  public :: read_flow_pressure_solver_namelist, read_flow_viscous_solver_namelist
 
   real(r8) :: rel_tol, abs_tol, conv_rate_tol, amg_strong_threshold
   integer :: max_ds_iter, max_amg_iter, gmres_krylov_dim, cg_use_two_norm, logging_level
@@ -15,19 +15,19 @@ module flow_solver_namelists
 
 contains
 
-  subroutine read_pressure_solver_namelist(lun, plist)
+  subroutine read_flow_pressure_solver_namelist(lun, plist)
 
     integer, intent(in) :: lun
     type(parameter_list), intent(inout) :: plist
 
-    namelist /flow_corrector/ rel_tol, &
+    namelist /flow_pressure_solver/ rel_tol, &
         abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
         krylov_method, gmres_krylov_dim, cg_use_two_norm, &
         logging_level, print_level, amg_strong_threshold, &
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
 
-    call read_hypre_namelist(lun, 'FLOW_CORRECTOR', read_nml, plist)
+    call read_hypre_namelist(lun, 'FLOW_PRESSURE_SOLVER', read_nml, plist)
 
   contains
 
@@ -35,25 +35,25 @@ contains
       integer, intent(in) :: lun
       integer, intent(out) :: ios
       character(*), intent(inout) :: iom
-      read(lun,nml=flow_corrector,iostat=ios,iomsg=iom)
+      read(lun,nml=flow_pressure_solver,iostat=ios,iomsg=iom)
     end subroutine
 
-  end subroutine read_pressure_solver_namelist
+  end subroutine read_flow_pressure_solver_namelist
 
 
-  subroutine read_viscous_solver_namelist(lun, plist)
+  subroutine read_flow_viscous_solver_namelist(lun, plist)
 
     integer, intent(in) :: lun
     type(parameter_list), intent(inout) :: plist
 
-    namelist /flow_predictor/ rel_tol, &
+    namelist /flow_viscous_solver/ rel_tol, &
         abs_tol, conv_rate_tol, max_ds_iter, max_amg_iter, &
         krylov_method, gmres_krylov_dim, cg_use_two_norm, &
         logging_level, print_level, amg_strong_threshold, &
         amg_max_levels, amg_coarsen_method, amg_coarsen_type, &
         amg_smoothing_sweeps, amg_smoothing_method, amg_interp_method
 
-    call read_hypre_namelist(lun, 'FLOW_PREDICTOR', read_nml, plist)
+    call read_hypre_namelist(lun, 'FLOW_VISCOUS_SOLVER', read_nml, plist)
 
   contains
 
@@ -61,10 +61,10 @@ contains
       integer, intent(in) :: lun
       integer, intent(out) :: ios
       character(*), intent(inout) :: iom
-      read(lun,nml=flow_predictor,iostat=ios,iomsg=iom)
+      read(lun,nml=flow_viscous_solver,iostat=ios,iomsg=iom)
     end subroutine
 
-  end subroutine read_viscous_solver_namelist
+  end subroutine read_flow_viscous_solver_namelist
 
   subroutine read_hypre_namelist(lun, name, read_nml, p)
 

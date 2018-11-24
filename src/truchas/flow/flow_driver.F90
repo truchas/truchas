@@ -158,9 +158,9 @@ contains
     plist => params%sublist('bc')
     call read_flow_bc_namelists(lun, plist)
     plist => params%sublist("predictor")
-    call read_viscous_solver_namelist(lun, plist)
+    call read_flow_viscous_solver_namelist(lun, plist)
     plist => params%sublist('corrector')
-    call read_pressure_solver_namelist(lun, plist)
+    call read_flow_pressure_solver_namelist(lun, plist)
 
     plist => params%sublist('turbulence model')
     call read_turbulence_namelist(lun, plist)

@@ -82,7 +82,7 @@ cells at each long_edit interval.
   viscous_implicitness = 1.0
 /
 
-&FLOW_PREDICTOR
+&FLOW_VISCOUS_SOLVER
   rel_tol = 1.0e-8
   abs_tol = 1.0e-10
   max_ds_iter = 50
@@ -91,7 +91,7 @@ cells at each long_edit interval.
   gmres_krylov_dim = 10
 / 
 
-&FLOW_CORRECTOR
+&FLOW_PRESSURE_SOLVER
   rel_tol = 0.0
   abs_tol = 1.0e-12
   max_ds_iter = 50

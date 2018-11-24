@@ -51,7 +51,7 @@
   courant_number = 0.2
 /
 
-&FLOW_PREDICTOR
+&FLOW_VISCOUS_SOLVER
   rel_tol = 1.0e-8
   abs_tol = 0.0
   max_ds_iter = 50
@@ -60,7 +60,7 @@
   logging_level = 1
 / 
 
-&FLOW_CORRECTOR
+&FLOW_PRESSURE_SOLVER
   rel_tol = 0.0
   abs_tol = 1.0e-12
   max_ds_iter = 50
