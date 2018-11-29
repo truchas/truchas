@@ -28,10 +28,10 @@ contains
 
     !! Namelist variables
     integer  :: subcycles, location_iter_max, material_priority(16), fischer_dim
-    logical  :: inviscid, stokes, track_interfaces, nested_dissection, use_brents_method
+    logical  :: inviscid, track_interfaces, nested_dissection, use_brents_method
     real(r8) :: viscous_implicitness, solidify_implicitness, viscous_number, courant_number
     real(r8) :: fluid_cutvof, min_face_fraction,location_tol, cutoff
-    namelist /flow/ inviscid, stokes, &
+    namelist /flow/ inviscid, &
         viscous_implicitness, solidify_implicitness, viscous_number, courant_number, &
         fluid_cutvof, min_face_fraction, &
         track_interfaces, nested_dissection, use_brents_method, subcycles, &
@@ -61,7 +61,6 @@ contains
     material_priority = NULL_I
 
     inviscid = .false.
-    stokes = .false.
     viscous_implicitness = NULL_R
     solidify_implicitness = NULL_R
     viscous_number = NULL_R
@@ -87,7 +86,6 @@ contains
     call broadcast(material_priority)
 
     call broadcast(inviscid)
-    call broadcast(stokes)
     call broadcast(viscous_implicitness)
     call broadcast(solidify_implicitness)
     call broadcast(viscous_number)
@@ -130,9 +128,7 @@ contains
     end if
 
     plist => params%sublist('options')
-    if (inviscid .and. stokes) call TLS_fatal('INVISCID and STOKES are incompatible')
     call plist%set('inviscid', inviscid)
-    call plist%set('stokes', stokes)
 
     if (viscous_implicitness /= NULL_R) then
       if (viscous_implicitness < 0 .or. viscous_implicitness > 1) &

@@ -32,7 +32,7 @@ module flow_type
     type(flow_projection) :: proj
     type(flow_prediction) :: pred
     type(flow_bc), pointer :: bc
-    logical :: inviscid, stokes, prescribed
+    logical :: inviscid, prescribed
     real(r8) :: viscous_number
     real(r8) :: courant_number
   contains
@@ -137,7 +137,6 @@ contains
 
     plist => params%sublist('options')
     call plist%get('inviscid', this%inviscid, default=.false.)
-    call plist%get('stokes', this%stokes, default=.false.)
     call plist%get('viscous number', this%viscous_number, default=0.1_r8)
     call plist%get('courant number', this%courant_number, default=0.5_r8)
     call plist%get('body force', array, default=[0.0_r8, 0.0_r8, 0.0_r8])
@@ -161,7 +160,7 @@ contains
     end if
     if (this%prescribed) return
 
-    call this%pred%init(mesh, this%bc, this%inviscid, this%stokes, params)
+    call this%pred%init(mesh, this%bc, this%inviscid, params)
     call this%proj%init(mesh, this%bc, params)
 
     !call this%proj%grad_p_rho

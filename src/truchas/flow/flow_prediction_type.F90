@@ -70,7 +70,6 @@ module flow_prediction_type
     !class(porous_drag_model), allocatable :: drag
     type(hypre_hybrid) :: solver(3)
     logical :: inviscid
-    logical :: stokes
     real(r8), allocatable :: rhs(:,:), sol(:), rhs1d(:)
     real(r8), allocatable :: grad_fc_vector(:,:,:)
     real(r8) :: viscous_implicitness
@@ -98,14 +97,14 @@ module flow_prediction_type
 
 contains
 
-  subroutine init(this, mesh, bc, inviscid, stokes, params)
+  subroutine init(this, mesh, bc, inviscid, params)
 
     use parameter_list_type
 
     class(flow_prediction), intent(inout) :: this
     type(unstr_mesh), intent(in), target :: mesh
     type(flow_bc), intent(in), target :: bc
-    logical, intent(in) :: inviscid, stokes
+    logical, intent(in) :: inviscid
     type(parameter_list), intent(inout) :: params
 
     type(graph_container) :: g(size(this%solver))
@@ -117,7 +116,6 @@ contains
     this%mesh => mesh
     this%bc => bc
     this%inviscid = inviscid
-    this%stokes = stokes
 
     plist => params%sublist("options")
     call plist%get('viscous implicitness', this%viscous_implicitness, default=0.5_r8)
