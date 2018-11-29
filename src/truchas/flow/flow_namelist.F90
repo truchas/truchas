@@ -29,10 +29,10 @@ contains
     !! Namelist variables
     integer  :: subcycles, location_iter_max, material_priority(16), fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection
-    real(r8) :: viscous_implicitness, solidify_implicitness, viscous_number, courant_number
+    real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_cutvof, min_face_fraction,location_tol, cutoff
     namelist /flow/ inviscid, &
-        viscous_implicitness, solidify_implicitness, viscous_number, courant_number, &
+        viscous_implicitness, viscous_number, courant_number, &
         fluid_cutvof, min_face_fraction, &
         track_interfaces, nested_dissection, subcycles, &
         location_tol, location_iter_max, cutoff, material_priority, fischer_dim
@@ -61,7 +61,6 @@ contains
 
     inviscid = .false.
     viscous_implicitness = NULL_R
-    solidify_implicitness = NULL_R
     viscous_number = NULL_R
     courant_number = NULL_R
 
@@ -85,7 +84,6 @@ contains
 
     call broadcast(inviscid)
     call broadcast(viscous_implicitness)
-    call broadcast(solidify_implicitness)
     call broadcast(viscous_number)
     call broadcast(courant_number)
 
@@ -131,12 +129,6 @@ contains
       if (viscous_implicitness < 0 .or. viscous_implicitness > 1) &
           call TLS_fatal('VISCOUS_IMPLICITNESS must be in [0,1]')
       call plist%set('viscous implicitness', viscous_implicitness)
-    end if
-
-    if (solidify_implicitness /= NULL_R) then
-      if (solidify_implicitness < 0 .or. solidify_implicitness > 1) &
-          call TLS_fatal('SOLIDIFY_IMPLICITNESS must be in [0,1]')
-      call plist%set('solidify implicitness', solidify_implicitness)
     end if
 
     if (viscous_number /= NULL_R) then
