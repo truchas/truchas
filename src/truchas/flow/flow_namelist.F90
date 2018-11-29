@@ -28,13 +28,13 @@ contains
 
     !! Namelist variables
     integer  :: subcycles, location_iter_max, material_priority(16), fischer_dim
-    logical  :: inviscid, track_interfaces, nested_dissection, use_brents_method
+    logical  :: inviscid, track_interfaces, nested_dissection
     real(r8) :: viscous_implicitness, solidify_implicitness, viscous_number, courant_number
     real(r8) :: fluid_cutvof, min_face_fraction,location_tol, cutoff
     namelist /flow/ inviscid, &
         viscous_implicitness, solidify_implicitness, viscous_number, courant_number, &
         fluid_cutvof, min_face_fraction, &
-        track_interfaces, nested_dissection, use_brents_method, subcycles, &
+        track_interfaces, nested_dissection, subcycles, &
         location_tol, location_iter_max, cutoff, material_priority, fischer_dim
 
     call TLS_info('')
@@ -53,7 +53,6 @@ contains
     !! Default values
     track_interfaces = (nmat > 1)
     nested_dissection = .true.
-    use_brents_method = .true.
     subcycles = NULL_I
     location_tol = NULL_R
     location_iter_max = NULL_I
@@ -78,7 +77,6 @@ contains
     !! Broadcast the namelist variables
     call broadcast(track_interfaces)
     call broadcast(nested_dissection)
-    call broadcast(use_brents_method)
     call broadcast(subcycles)
     call broadcast(location_tol)
     call broadcast(location_iter_max)
@@ -99,7 +97,6 @@ contains
 
     plist => params%sublist('volume-tracker')
     call plist%set('track_interfaces', track_interfaces)
-    call plist%set('use_brents_method', use_brents_method)
     call plist%set('nested_dissection', nested_dissection)
 
     if (location_tol /= NULL_R) then
