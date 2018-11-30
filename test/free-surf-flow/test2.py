@@ -24,17 +24,17 @@ class mytest(TruchasTest.GoldenTestCase):
 
     # Target tolerances -- old flow passes with these
     # Initial conditions
-    success &= self.vof_test(1, 1e-8)
+    success &= self.vof_test(1, 5e-9)
     success &= self.pressure_test(1, 2e-10)
     success &= self.velocity_test(1, 1e-13)
 
     # Intermediate time
-    success &= self.vof_test(2, 1e-8)
+    success &= self.vof_test(2, 5e-9)
     success &= self.pressure_test(2, 1e-14)
     success &= self.velocity_test(2, 1e-14)
 
     # Final time
-    success &= self.vof_test(3, 1e-8)
+    success &= self.vof_test(3, 5e-9)
     success &= self.pressure_test(3, 1e-14)
     success &= self.velocity_test(3, 1e-14)
 

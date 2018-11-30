@@ -4,7 +4,8 @@
 ## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
 ## Running 11/02/2018 01:22:53 PM
 ## Command Options:
-brick x 5 y 0.6 z 0.6
+#brick x 5 y 0.6 z 0.6
+brick x 5 y 0.2 z 1.0
 volume 1 size 0.2
 mesh volume 1
 

@@ -43,6 +43,7 @@ A kludge to force hitting the final time exactly
   projection_linear_solution = 'projection'
   body_force_face_method = .true.
   courant_number = 0.25
+  ff_discrete_ops_type = "ortho"
 /
 
 &LINEAR_SOLVER

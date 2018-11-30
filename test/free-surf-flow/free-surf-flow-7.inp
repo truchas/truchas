@@ -22,7 +22,7 @@ here to reduce the error.
 
 &OUTPUTS
   output_t  = 0.0, 3.0
-  output_dt = 0.1
+  output_dt = 0.2
 /
 
 A kludge to force hitting the final time exactly
