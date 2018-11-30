@@ -1,6 +1,4 @@
 #include "f90_assert.fpp"
-#define ASDF 0
-#define Q 42
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -299,8 +297,8 @@ contains
         end associate
         if (.not.pressure_pinned) call TLS_fatal("Cannot pin pressure.  Please fix algorithm.")
       end if
-    end associate
 
+    end associate
 
     call this%solver%setup()
 
@@ -348,13 +346,31 @@ contains
 
     ! cell -> face interpolation
     vel_fn = 0.0_r8
-    associate (v => this%vel_cc_star, gpn => grad_p_rho_cc_n, w => this%weights_cf)
-      do i=1, this%mesh%ncell_onP
+    associate (v => this%vel_cc_star, gpn => grad_p_rho_cc_n, w => this%weights_cf, m => this%mesh)
+
+      do i = 1, m%ncell_onP
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
-      call gather_boundary(this%mesh%cell_ip, v)
+      call gather_boundary(m%cell_ip, v)
       call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%face_t, 0.0_r8)
+
+      ! regular_void faces use only the regular cell velocity.  We could directly enforce this
+      ! using this%weights_cf.  That would be cleaner but does require touching a lot more data
+
+      do j = 1, m%nface_onP
+        associate (cn => m%fcell(:,j))
+          if (props%face_t(j) == regular_void_t .and. all(cn > 0)) then
+            do i = 1, 2
+              if (props%cell_t(cn(i)) == regular_t) then
+                vel_fn(j) = dot_product(m%normal(:,j),v(:,cn(i))) / m%area(j)
+              end if
+            end do
+          end if
+        end associate
+      end do
+
     end associate
+
     ! subtract dynamic pressure grad
     associate (m => this%mesh, gp_fc => this%grad_p_rho_fc)
       ! enforced in grad_p_rho: this%grad_p_rho_fc == 0 where rho_fc == 0

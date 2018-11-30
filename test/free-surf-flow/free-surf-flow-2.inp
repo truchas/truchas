@@ -5,7 +5,7 @@ filled with fluid except for a bit of void at the right end. There is a velocity
 BC of -1 at the left outlet boundary, and a compatible initial fluid velocity
 of -1. Fluid gradually drains from the pipe with the fluid/void interface moving
 with speed -1. The simulation ends before the pipe is completely drained of fluid.
- 
+
 We should recover the exact solution: P=0, V=(-1,0,0) on cells with
 fluid, with the fluid/void interface moving at speed 1 to the left.
 
@@ -44,8 +44,8 @@ A kludge to force hitting the final time exactly
 
 &FLOW_PRESSURE_SOLVER
   rel_tol = 0.0
-  abs_tol = 1.0e-10
-  max_ds_iter = 50
+  abs_tol = 1.0e-14
+  max_ds_iter = 200
   max_amg_iter = 50
   krylov_method = "cg"
 /
@@ -69,7 +69,7 @@ A kludge to force hitting the final time exactly
   condition = 'slip'
   face_set_ids = 3
 /
- 
+
 Void to the right
 &BODY
   surface_name = 'plane'

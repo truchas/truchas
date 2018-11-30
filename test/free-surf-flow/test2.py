@@ -21,23 +21,23 @@ class mytest(TruchasTest.GoldenTestCase):
 
   def test_fields(self):
     success = True
-    
+
     # Target tolerances -- old flow passes with these
     # Initial conditions
     success &= self.vof_test(1, 1e-8)
-    success &= self.pressure_test(1, 1e-14)
-    success &= self.velocity_test(1, 1e-14)
-    
+    success &= self.pressure_test(1, 2e-10)
+    success &= self.velocity_test(1, 1e-13)
+
     # Intermediate time
     success &= self.vof_test(2, 1e-8)
     success &= self.pressure_test(2, 1e-14)
     success &= self.velocity_test(2, 1e-14)
-    
+
     # Final time
     success &= self.vof_test(3, 1e-8)
     success &= self.pressure_test(3, 1e-14)
     success &= self.velocity_test(3, 1e-14)
-    
+
     self.assertTrue(success)
 
   def vof_test(self, id, tol):
@@ -58,7 +58,7 @@ class mytest(TruchasTest.GoldenTestCase):
         vof[j] = 0
       else:
         vof[j] = 5*(p-(x-0.1))
-    
+
     error = numpy.amax(abs(test[:,0]-vof))
     return self.report('vof', time, error, tol)
 
@@ -67,7 +67,7 @@ class mytest(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id).get_data('Z_P')
     error = numpy.amax(abs(test))
     return self.report('pressure', time, error, tol)
-  
+
   def velocity_test(self, id, tol):
     time = self.test_output.get_simulation().find_series(id).time
     test = self.test_output.get_simulation().find_series(id).get_data('Z_VC')
@@ -92,4 +92,3 @@ class mytest(TruchasTest.GoldenTestCase):
 if __name__ == '__main__':
   import unittest
   unittest.main()
-
