@@ -495,7 +495,7 @@ contains
     type(flow_props), intent(in) :: props
     !
     integer :: i, j, ierr
-    real(r8) :: coeff
+    real(r8) :: coeff, mass
     character(18), parameter :: slabel(3) = 'predictor' // ['1', '2', '3'] // ' solve: '
 
     call start_timer("solve")
@@ -540,13 +540,13 @@ contains
         ! per-component solve for predictor velocity
         do j = 1, this%mesh%ncell_onP
           sol(j) = vel_cc(i,j)
-          if (cell_t(j) /= regular_t) then
-            rhs1d(j) = 0.0_r8
-          else
+          ! we can't zero out based on regular_t... I'm not sure why
+          if (props%vof(j) > 0.0_r8) then
             rhs1d(j) = rhs(i,j) / props%vof(j)
+          else
+            rhs1d(j) = 0.0_r8
           end if
         end do
-
         if (associated(this%solver(i)%matrix())) then
           call start_timer("hypre solve")
           call this%solver(i)%solve(rhs1d, sol, ierr)
@@ -560,19 +560,19 @@ contains
         else
           call gather_boundary(this%mesh%cell_ip, rhs1d)
           do j = 1, this%mesh%ncell
-            if (cell_t(j) /= regular_t) then
-              vel_cc(i,j) = rhs1d(j)
+!!$            if (cell_t(j) /= regular_t) then
+!!$              vel_cc(i,j) = rhs1d(j)
+!!$            else
+            coeff = props%rho_cc(j)
+            if (props%vof(j) > 0) &
+                coeff = coeff + &
+                this%solidify_implicitness * props%solidified_rho(j) / props%vof(j)
+            if (coeff /= 0) then
+              vel_cc(i,j) = rhs1d(j) / coeff
             else
-              coeff = props%rho_cc(j)
-              if (props%vof(j) > 0) &
-                  coeff = coeff + &
-                  this%solidify_implicitness * props%solidified_rho(j) / props%vof(j)
-              if (coeff /= 0) then
-                vel_cc(i,j) = rhs1d(j) / coeff
-              else
-                vel_cc(i,j) = 0
-              end if
+              vel_cc(i,j) = 0
             end if
+!!$            end if
           end do
         end if
 

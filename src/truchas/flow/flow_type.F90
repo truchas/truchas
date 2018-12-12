@@ -292,9 +292,16 @@ contains
     !-
     integer :: i
 
-    associate (cell_t => this%props%cell_t, face_t => this%props%face_t)
+    associate (cell_t => this%props%cell_t, face_t => this%props%face_t, vof => this%props%vof)
       do i = 1, this%mesh%ncell
-        if (cell_t(i) /= regular_t) then
+!!$        if (cell_t(i) /= regular_t) then
+!!$          if (i >= 40 .and. i <= 45) then
+!!$            write(*,'("CORRECTING V[",i4,"]: ",es15.5," -> ",es15.5)') i, this%vel_cc(1,i), 0.0_r8
+!!$          endif
+!!$          this%vel_cc(:,i) = 0.0_r8
+!!$          this%P_cc(i) = 0.0_r8
+!!$        end if
+        if (vof(i) == 0.0_r8) then
           this%vel_cc(:,i) = 0.0_r8
           this%P_cc(i) = 0.0_r8
         end if
