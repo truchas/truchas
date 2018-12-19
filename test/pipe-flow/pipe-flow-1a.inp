@@ -82,12 +82,13 @@ Pipe walls
   condition = 'no slip'
 /
 
-Symmetry planes
-&FLOW_BC
-  name = 'symmetry'
-  face_set_ids = 4
-  condition = 'slip'
-/
+Using default slip BC
+! Symmetry planes
+! &FLOW_BC
+!   name = 'symmetry'
+!   face_set_ids = 4
+!   condition = 'slip'
+! /
 
 &BODY
   surface_name = 'from mesh file'

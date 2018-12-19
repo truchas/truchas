@@ -58,6 +58,12 @@ A kludge to force hitting the final time exactly
 /
 
 &FLOW_BC
+  name = 'outlet_p'
+  condition = 'pressure neumann'
+  face_set_ids = 1
+/
+
+&FLOW_BC
   name = 'inlet'
   condition = 'pressure dirichlet'
   face_set_ids = 2

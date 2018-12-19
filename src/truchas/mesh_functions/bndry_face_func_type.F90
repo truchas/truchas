@@ -82,6 +82,7 @@ module bndry_face_func_type
     procedure :: init
     procedure :: add
     procedure :: add_complete
+    procedure :: add_face_list
     procedure :: compute
   end type bndry_face_func
 
@@ -134,6 +135,56 @@ contains
       end select
     end do
   end subroutine add_complete
+
+  !! Optionally called after init, add, and add_complete
+  !! to append a list of faces to the object.
+  subroutine add_face_list(this, f, faceids)
+
+    class(bndry_face_func), intent(inout) :: this
+    class(scalar_func), allocatable, intent(in) :: f
+    integer, intent(in) :: faceids(:)
+
+    integer, allocatable :: tmp(:)
+    type(scalar_func_box), allocatable :: ftmp(:)
+
+    ASSERT(allocated(this%value) .and. allocated(this%index))
+    ASSERT(.not.allocated(this%builder))
+
+    !! Update the index array
+    tmp = this%index
+    call move_alloc(this%index, tmp)
+    allocate(this%index(size(tmp) + size(faceids)))
+    this%index(:size(tmp)) = tmp
+    this%index(size(tmp)+1:) = faceids
+    deallocate(tmp)
+
+    !! Update the value array
+    deallocate(this%value)
+    allocate(this%value(size(this%index)))
+
+    !! Update the hint array
+    call move_alloc(this%hint, tmp)
+    allocate(this%hint(size(tmp)+1))
+    this%hint(:size(tmp)) = tmp
+    this%hint(size(tmp)+1) = DATA_HINT_NONE
+    deallocate(tmp)
+
+    !! Update the group array
+    this%ngroup = this%ngroup + 1
+    call move_alloc(this%xgroup, tmp)
+    allocate(this%xgroup(size(tmp)+1))
+    this%xgroup(:size(tmp)) = tmp
+    this%xgroup(size(tmp)+1) = size(this%index) + 1
+    deallocate(tmp)
+
+    !! Update the function list
+    call move_alloc(this%farray, ftmp)
+    allocate(this%farray(size(ftmp)+1))
+    this%farray(:size(ftmp)) = ftmp
+    this%farray(size(ftmp)+1)%f = f
+    deallocate(ftmp)
+
+  end subroutine add_face_list
 
 
   subroutine compute(this, t)

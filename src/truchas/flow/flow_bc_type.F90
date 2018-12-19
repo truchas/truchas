@@ -25,6 +25,7 @@ module flow_bc_type
     procedure :: init
     procedure :: compute
     procedure :: compute_initial
+    procedure, private :: apply_default
   end type flow_bc
 
 contains
@@ -69,6 +70,9 @@ contains
 
     call this%surface_tension%init(plist, mesh, vof, temperature_fc)
 
+    ! apply the default boundary condition on faces with no user-specified BC
+    call this%apply_default(mesh)
+
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0
 
     if (.not.this%pressure_d) then
@@ -92,6 +96,61 @@ contains
     print *, "size of surface tension: ", size(this%surface_tension%index)
 #endif
   end subroutine init
+
+  ! apply the default boundary condition (slip) to
+  ! boundary faces with unspecified conditions
+  subroutine apply_default(this, mesh)
+
+    use bndry_face_func_type
+    use scalar_func_class
+    use scalar_func_factories, only: alloc_const_scalar_func
+
+    class(flow_bc), intent(inout) :: this
+    type(unstr_mesh), intent(in) :: mesh
+
+    integer :: f, nf
+    integer, allocatable :: faces(:)
+    class(scalar_func), allocatable :: func
+
+    ! get list of boundary faces with no user-applied BC
+    allocate(faces(mesh%nface))
+
+    nf = 0
+    do f = 1, mesh%nface_onP
+      if (mesh%fcell(2,f) /= 0) cycle ! skip internal faces
+
+      ! skip faces with user-given BC
+      if (any(this%p_dirichlet%index == f)) cycle
+      if (any(this%p_neumann%index == f)) cycle ! catches v_dirichlet & surface_tension
+
+      nf = nf + 1
+      faces(nf) = f
+    end do
+
+    if (nf == 0) return
+
+#ifndef NDEBUG
+    print '(a,i8,a)', "applying default BC to ", nf, " faces"
+#endif
+
+    ! apply slip bc (p_neumann + v_zero_normal) to faces in faces(:nf)
+    call alloc_const_scalar_func(func, 0.0_r8)
+
+    select type (bc => this%p_neumann)
+    type is (bndry_face_func)
+      call bc%add_face_list(func, faces(:nf))
+    class default
+      ASSERT(.false.)
+    end select
+
+    select type (bc => this%v_zero_normal)
+    type is (bndry_face_func)
+      call bc%add_face_list(func, faces(:nf))
+    class default
+      ASSERT(.false.)
+    end select
+
+  end subroutine apply_default
 
   subroutine compute(this, t, dt)
     class(flow_bc), intent(inout) :: this
