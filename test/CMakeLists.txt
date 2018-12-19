@@ -250,7 +250,7 @@ add_pytruchas_test(diag-advect
 		   LABELS ADVECTION)
 
 # FREEZING FLOW TESTS -- NEW FLOW SOLVER
-add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 1 LABELS DIFFUSION FLOW)
+add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(freezing-flow-3 freezing-flow/test3.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 

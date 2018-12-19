@@ -278,24 +278,26 @@ contains
       end associate
 
       ! set the pressure at an arbitrary boundary point to 0 if all neumann
-      if (.not.(this%bc%pressure_d .or. props%any_void) .and. this%bc%is_p_neumann_fix_PE) then
-        pressure_pinned = .false.
-        associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
-          pressure_fix: do i = 1, size(faces)
-            fi = faces(i)
-            j = this%mesh%fcell(1,fi) ! cell index
-            ASSERT(this%mesh%fcell(2,fi) == 0)
+      if (.not.(this%bc%pressure_d .or. props%any_void)) then
+        if (this%bc%is_p_neumann_fix_pe(props%any_real_fluid_onP)) then
+          pressure_pinned = .false.
+          associate (faces => this%bc%p_neumann%index, rho_f => props%rho_fc)
+            pressure_fix: do i = 1, size(faces)
+              fi = faces(i)
+              j = this%mesh%fcell(1,fi) ! cell index
+              ASSERT(this%mesh%fcell(2,fi) == 0)
 
-            if (props%face_t(fi) == regular_t) then
-              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
-              call A%add_to(j, j, coeff)
-              pressure_pinned = .true.
-              ! no adjust to rhs requires for 0 dirichlet value
-              exit pressure_fix
-            end if
-          end do pressure_fix
-        end associate
-        if (.not.pressure_pinned) call TLS_fatal("Cannot pin pressure.  Please fix algorithm.")
+              if (props%face_t(fi) == regular_t) then
+                coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
+                call A%add_to(j, j, coeff)
+                pressure_pinned = .true.
+                ! no adjust to rhs requires for 0 dirichlet value
+                exit pressure_fix
+              end if
+            end do pressure_fix
+          end associate
+          if (.not.pressure_pinned) call TLS_fatal("Cannot pin pressure.  Please fix algorithm.")
+        end if
       end if
 
     end associate

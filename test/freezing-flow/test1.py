@@ -11,19 +11,19 @@ import TruchasTest
 class FreezingFlowTest(TruchasTest.GoldenTestCase):
 
   test_name = 'freezing-flow-1'
-  num_procs = 1 # with a parallel executable
+  num_procs = 4 # with a parallel executable
 
   def test_fields(self):
     success = True
 
     # first output dump
-    success &= self.temp_test(2, 1e-7)
+    success &= self.temp_test(2, 5e-7)
     success &= self.pressure_test(2, 1e-10)
     success &= self.velocity_test(2, 1e-10)
-    success &= self.vof_test(2, 1e-7)
+    success &= self.vof_test(2, 5e-7)
 
     # final time
-    success &= self.temp_test(3, 2e-6)
+    success &= self.temp_test(3, 5e-6)
     success &= self.pressure_test(3, 1e-10)
     success &= self.velocity_test(3, 1e-10)
     success &= self.vof_test(3, 1e-10)

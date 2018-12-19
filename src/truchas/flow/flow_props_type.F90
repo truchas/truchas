@@ -100,6 +100,7 @@ module flow_props_type
     integer :: nfluid ! number of mobile materials
     logical :: any_void ! true if there is void in the current timestep
     logical :: any_real_fluid ! true if there is any non-void fluid in the current timestep
+    logical :: any_real_fluid_onP ! same as above, but local to this PE
     real(r8) :: cutoff ! fluid volume fractions below this are considered solid
     real(r8) :: min_face_fraction
     ! real(r8) :: cutrho not entirely sure what to do with this
@@ -228,7 +229,8 @@ contains
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
-    this%any_real_fluid = global_any(this%cell_t == regular_t)
+    this%any_real_fluid_onP = any(this%cell_t(:this%mesh%ncell_onP) == regular_t)
+    this%any_real_fluid = global_any(this%any_real_fluid_onP) !global_any(this%cell_t == regular_t)
 
     call stop_timer("update properties")
 

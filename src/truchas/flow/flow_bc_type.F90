@@ -10,7 +10,6 @@ module flow_bc_type
   use flow_surface_tension_bc_type
   use unstr_mesh_type
   use flow_bc_factory_type
-  use parallel_communication
   implicit none
   private
 
@@ -19,12 +18,11 @@ module flow_bc_type
     class(bndry_vfunc), allocatable :: v_dirichlet
     type(surface_tension_bc) :: surface_tension
     logical :: pressure_d
-    logical :: fix_neumann
-    logical :: is_p_neumann_fix_PE
   contains
     procedure :: init
     procedure :: compute
     procedure :: compute_initial
+    procedure :: is_p_neumann_fix_pe
     procedure, private :: apply_default
   end type flow_bc
 
@@ -34,6 +32,7 @@ contains
 
     use parameter_list_type
     use flow_props_type
+    use parallel_communication, only: global_sum
 
     class(flow_bc), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -41,7 +40,6 @@ contains
     real(r8), intent(in), target :: vof(:), temperature_fc(:)
 
     type(flow_bc_factory) :: f
-    integer :: nc, flag, has_p_neumann(nPE)
     type(parameter_list), pointer :: plist
 
     ! need to generalize this to allow user input:
@@ -49,8 +47,6 @@ contains
     ! - free slip walls (=> v_zero_normal + pressure_neumann)
     ! - pressure inlet/outlet (=> pressure_dirichlet + v_neumann)
     ! - velocity inlet (=> v_dirichlet + pressure_neumann)
-
-    this%fix_neumann = .false.
 
     plist => params%sublist('bc')
     call f%init(mesh, plist)
@@ -75,20 +71,6 @@ contains
 
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0
 
-    if (.not.this%pressure_d) then
-      ! find the lowest PE with a pressure neumann boundary
-      flag = merge(1, 0, size(this%p_neumann%index) > 0)
-      call collate(has_p_neumann, flag)
-      if (is_IOP) then
-        ! note: can replace this with Fortran 2008's findloc intrinsic once compilers support it
-        do flag = 1,nPE
-          if (has_p_neumann(flag) == 1) exit
-        end do
-        INSIST(flag <= nPE)
-      end if
-      call broadcast(flag)
-      this%is_p_neumann_fix_PE = (flag == this_PE)
-    end if
 #ifndef NDEBUG
     print *, "size of p dirichlet: ", size(this%p_dirichlet%index)
     print *, "size of p neumann: ", size(this%p_neumann%index)
@@ -96,6 +78,36 @@ contains
     print *, "size of surface tension: ", size(this%surface_tension%index)
 #endif
   end subroutine init
+
+  ! Assigns an MPI rank to do the pressure-neumann null space fixup.
+  ! The rank must have fluid in the current time step, and otherwise
+  ! neumann pressure boundaries.
+  logical function is_p_neumann_fix_pe(this, any_real_fluid_onP)
+
+    use parallel_communication
+    use f08_intrinsics, only: findloc
+
+    class(flow_bc), intent(inout) :: this
+    logical, intent(in) :: any_real_fluid_onP
+
+    integer :: fix_pe
+    logical :: is_valid_pe, has_p_neumann(nPE)
+
+    is_p_neumann_fix_PE = .false.
+
+    if (.not.this%pressure_d) then
+      ! find the lowest PE with a pressure neumann boundary
+      is_valid_pe = size(this%p_neumann%index) > 0 .and. any_real_fluid_onP
+      call collate(has_p_neumann, is_valid_pe)
+      if (is_IOP) then
+        fix_pe = findloc(has_p_neumann, .true.)
+        INSIST(fix_pe > 0 .and. fix_pe <= nPE)
+      end if
+      call broadcast(is_valid_pe)
+      is_p_neumann_fix_PE = (fix_pe == this_PE)
+    end if
+
+  end function is_p_neumann_fix_pe
 
   ! apply the default boundary condition (slip) to
   ! boundary faces with unspecified conditions
