@@ -212,30 +212,9 @@ contains
     real(r8), intent(in) :: vel_fn(:)
     logical, intent(in), optional :: initial
 
-    real(r8) :: args(0:3), vel(3)
-    integer :: i, j, k, f0, f1, fi
+    integer :: i, j, k, f0, f1
 
     if (.not.allocated(this)) return
-    if (.not.this%active) then
-      ! compute flux volumes for transport
-      associate (m => this%mesh)
-        do i = 1, m%ncell
-          f0 = m%xcface(i)
-          f1 = m%xcface(i+1)-1
-          do j = f0, f1
-            k = m%cface(j)
-            if (btest(m%cfpar(i),pos=1+j-f0)) then ! normal points inward
-              this%flux_vel(j) = -vel_fn(k)
-            else
-              this%flux_vel(j) = vel_fn(k)
-            end if
-            this%flux_vol(1,j) = this%flux_vel(j)*m%area(k)*dt
-          end do
-        end do
-      end associate
-      return
-    end if
-
     if (this%fluids == 0) return
 
     call start_timer('Volumetracking')
@@ -246,20 +225,46 @@ contains
       f1 = this%mesh%xcface(i+1)-1
       do j = f0, f1
         k = this%mesh%cface(j)
-
         if (btest(this%mesh%cfpar(i),pos=1+j-f0)) then ! normal points inward
           this%flux_vel(j) = -vel_fn(k)
         else
           this%flux_vel(j) = vel_fn(k)
         end if
-
       end do
     end do
 
     call get_vof_from_matl(this%fvof_i)
 
-    call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
-        this%fluids, this%void, dt)
+    if (.not.this%active) then
+      associate (m => this%mesh)
+        ! compute upwind flux volumes for transport
+        do i = 1, m%ncell
+          f0 = m%xcface(i)
+          f1 = m%xcface(i+1)-1
+          do j = f0, f1
+            k = m%cface(j)
+            if (this%flux_vel(j) > 0 .or. m%fcell(2,k) == 0) then
+              ! if the donator cell is off-process and not a ghost cell, this flux is irrelevant.
+              if (m%fcell(1,k) > m%ncell .or. m%fcell(1,k) == 0) cycle
+              this%flux_vol(:,j) = this%flux_vel(j)*m%area(k)*dt * this%fvof_i(:,m%fcell(1,k))
+            else
+              if (m%fcell(2,k) > m%ncell) cycle
+              this%flux_vol(:,j) = this%flux_vel(j)*m%area(k)*dt * this%fvof_i(:,m%fcell(2,k))
+            end if
+          end do
+        end do
+
+        ! update volume fractions
+        do i = 1, m%ncell_onP
+          f0 = m%xcface(i)
+          f1 = m%xcface(i+1)-1
+          this%fvof_o(:,i) = this%fvof_i(:,i) + sum(this%flux_vol(:,f0:f1), dim=2)
+        end do
+      end associate
+    else
+      call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
+          this%fluids, this%void, dt)
+    end if
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then
@@ -270,6 +275,7 @@ contains
     end if
 
     call stop_timer('Volumetracking')
+
   end subroutine vtrack_update
 
 end module vtrack_driver
