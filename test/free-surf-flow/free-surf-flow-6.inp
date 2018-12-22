@@ -21,7 +21,7 @@ here to reduce the error.
 
 &OUTPUTS
   output_t  = 0.0, 3.0
-  output_dt = 0.2
+  output_dt = 1.5
 /
 
 A kludge to force hitting the final time exactly
@@ -97,7 +97,7 @@ Surrounding void
   surface_name = 'background'
   mesh_material_number = 2
   material_number = 2
-  velocity = 1.0, 0.0, 0.0
+  velocity = 0.0, 0.0, 0.0
   temperature = 0.0
 /
 

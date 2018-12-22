@@ -22,7 +22,7 @@ here to reduce the error.
 
 &OUTPUTS
   output_t  = 0.0, 3.0
-  output_dt = 0.1
+  output_dt = 3.0
 /
 
 A kludge to force hitting the final time exactly
@@ -39,8 +39,9 @@ A kludge to force hitting the final time exactly
 &NUMERICS
   dt_init = 0.01
   dt_grow = 1.05
-  dt_min  = 1.0e-05
+  dt_min  = 1.0e-06
   dt_max  = 1.0
+  discrete_ops_type = 'ortho'
 /
 
 &LEGACY_FLOW
@@ -52,14 +53,13 @@ A kludge to force hitting the final time exactly
   projection_linear_solution = 'projection'
   body_force_face_method = .true.
   courant_number = 0.05
-  ff_discrete_ops_type = 'ortho'
 /
 
 &LINEAR_SOLVER
   name = 'projection'
   method = 'fgmres'
   preconditioning_method = 'ssor'
-  convergence_criterion  = 1.0e-10
+  convergence_criterion  = 1.0e-12
   relaxation_parameter   = 1.4
   preconditioning_steps  = 2
   maximum_iterations     = 200

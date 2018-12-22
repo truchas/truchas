@@ -32,6 +32,7 @@ A kludge to force hitting the final time exactly
   dt_grow = 1.05
   dt_min  = 1.0e-05
   dt_max  = 1.0
+  discrete_ops_type = 'ortho'
 /
 
 &LEGACY_FLOW
@@ -43,7 +44,6 @@ A kludge to force hitting the final time exactly
   projection_linear_solution = 'projection'
   body_force_face_method = .true.
   courant_number = 0.25
-  ff_discrete_ops_type = "ortho"
 /
 
 &LINEAR_SOLVER

@@ -1,6 +1,6 @@
 INVISCID FLUID PLUG ACCELERATING DOWN PIPE WITH VOID
 ----------------------------------------------------
-This is a simple 1D inviscid fluid/void flow problem. The 3d 5x1 pipe domain is
+This is a simple 1D inviscid fluid/void flow problem. The 3d 5x1x1 pipe domain is
 void except for a plug of fluid near the left end but bordered by void on either
 side. The fluid is subject to a gravity force directed down the pipe. It begins
 with an initial velocity of 0 and accelerates to the right. At the final time
@@ -15,7 +15,7 @@ V=(1,0,0)*(2*t/3) on cells with fluid. The exact position of the fluid/void
 interface should be x = -1 + t**2 / 3. We don't recover this exactly because
 of the explicit advection scheme, but we use an unusually small courant number
 here to reduce the error.
- 
+
 &MESH
   mesh_file = 'mesh4.g'
 /
@@ -32,7 +32,7 @@ A kludge to force hitting the final time exactly
 /
 
 &PHYSICS
-  flow = .true.
+  legacy_flow = .true.
   body_force_density = 0.6666666666666667, 0.0, 0.0
 /
 
@@ -41,53 +41,58 @@ A kludge to force hitting the final time exactly
   dt_grow = 1.05
   dt_min  = 1.0e-05
   dt_max  = 1.0
+  cycle_max = 1
+  discrete_ops_type = 'ortho'
 /
 
-Using unusually small courant_number here so as to improve the
-accuracy of the position of liquid/void interface, which is
-quadratic in time. The velocity is linear in time and we
-recover that exactly regardless of step size.
-
-&FLOW
-  inviscid = t
+&LEGACY_FLOW
+  inviscid = .true.
+  volume_track_interfaces = .true.
+  volume_track_brents_method  = .true.
+  volume_track_iter_tol = 1.0e-12
+  volume_track_subcycles = 1
+  projection_linear_solution = 'projection'
+  body_force_face_method = .true.
   courant_number = 0.05
-  subcycles = 1
-  nested_dissection = f
 /
 
-&FLOW_PRESSURE_SOLVER
-  rel_tol = 0.0
-  abs_tol = 1.0e-10
-  max_ds_iter = 50
-  max_amg_iter = 50
-  krylov_method = "cg"
+&LINEAR_SOLVER
+  name = 'projection'
+  method = 'fgmres'
+  preconditioning_method = 'ssor'
+  convergence_criterion  = 1.0e-10
+  relaxation_parameter   = 1.4
+  preconditioning_steps  = 2
+  maximum_iterations     = 200
 /
 
-&FLOW_BC
-  name = 'left'
-  condition = 'pressure dirichlet'
-  face_set_ids = 1
-  data_constant = 0.0
+INFLOW
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  !bc_variable  = 'velocity'
+  !bc_type      = 'dirichlet'
+  !bc_value     = 1.0, 0.0, 0.0
+  !inflow_material = 1
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
 /
 
-&FLOW_BC
-  name = 'right'
-  condition = 'pressure dirichlet'
-  face_set_ids = 2
-  data_constant = 0.0
-/
-
-&FLOW_BC
-  name = 'symmetry'
-  condition = 'slip'
-  face_set_ids = 3
+OUTFLOW
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
 /
  
 Fluid plug
 &BODY
   surface_name = 'box'
   length = 1.0, 1.0, 1.0
-  translation_pt = -1.5, 0.0, 0.0
+  translation_pt = 1.5, 0.0, 0.0
   material_number = 1
   velocity = 0.0, 0.0, 0.0
   temperature = 0.0

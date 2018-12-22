@@ -17,9 +17,9 @@ class mytest(TruchasTest.GoldenTestCase):
     success = True
     
     # Final time
-    success &= self.vof_test(2, 3e-2)
-    success &= self.pressure_test(2, 2e-9)
-    success &= self.velocity_test(2, 2e-9)
+    success &= self.vof_test(2, 4e-2)
+    success &= self.pressure_test(2, 1e-10)
+    success &= self.velocity_test(2, 1e-11)
     
     self.assertTrue(success)
 

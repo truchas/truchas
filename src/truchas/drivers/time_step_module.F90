@@ -171,7 +171,7 @@ CONTAINS
 
     ! Minimum Time Step
     if (dt < dt_min) then
-      write(message,'(2a,es13.5,a)') 'Time step too small: dt(', trim(dt_constraint), &
+      write(message,'(3a,es13.5,a)') 'Time step too small: dt(', trim(dt_constraint), &
                                      ') = ', dt, ' < dt_min'
       call TLS_fatal(message)
     end if

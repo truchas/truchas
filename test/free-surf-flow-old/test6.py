@@ -10,8 +10,8 @@ import TruchasTest
 
 class mytest(TruchasTest.GoldenTestCase):
 
-  test_name = 'free-surf-flow-old-2'
-  num_procs = 4 # with a parallel executable
+  test_name = 'free-surf-flow-old-6'
+  num_procs = 1 # with a parallel executable
 
   # Override the default setUp, omitting the opening of the golden output
   def setUp(self):
@@ -22,20 +22,21 @@ class mytest(TruchasTest.GoldenTestCase):
   def test_fields(self):
     success = True
     
+    # Target tolerances -- old flow passes with these
     # Initial conditions
     success &= self.vof_test(1, 1e-8)
-    success &= self.pressure_test(1, 1e-10)
-    success &= self.velocity_test(1, 1e-13)
+    success &= self.pressure_test(1, 1e-15)
+    success &= self.velocity_test(1, 0.0)
     
     # Intermediate time
-    success &= self.vof_test(2, 1e-8)
-    success &= self.pressure_test(2, 1e-10)
-    success &= self.velocity_test(2, 1e-11)
+    success &= self.vof_test(2, 5e-2)
+    success &= self.pressure_test(2, 1e-14)
+    success &= self.velocity_test(2, 1e-14)
     
     # Final time
-    success &= self.vof_test(3, 1e-8)
-    success &= self.pressure_test(3, 1e-12)
-    success &= self.velocity_test(3, 1e-12)
+    success &= self.vof_test(3, 7e-2)
+    success &= self.pressure_test(3, 2e-14)
+    success &= self.velocity_test(3, 1e-14)
     
     self.assertTrue(success)
 
@@ -47,16 +48,19 @@ class mytest(TruchasTest.GoldenTestCase):
 
     # Analytic vof solution at cell centroids
     cc = self.test_output.get_mesh().centroids()
-    p = 2 - time
+    pl = -2 + (time**2/3.0)
+    pr = -1 + (time**2/3.0)
     vof = numpy.empty_like(test[:,0])
     for j in range(vof.size):
       x = cc[j,0]
-      if x < p-0.1:
-        vof[j] = 1
-      elif x > p+0.1:
+      if x <= pl-0.1 or x >= pr+0.1:
         vof[j] = 0
-      else:
-        vof[j] = 5*(p-(x-0.1))
+      elif x >= pl+0.1 and x <= pr-0.1:
+        vof[j] = 1
+      elif x < pl+0.1:
+        vof[j] = 5*(x-pl+0.1)
+      elif x > pr-0.1:
+        vof[j] = 5*(pr-x+0.1)
     
     error = numpy.amax(abs(test[:,0]-vof))
     return self.report('vof', time, error, tol)
@@ -72,8 +76,8 @@ class mytest(TruchasTest.GoldenTestCase):
     test = self.test_output.get_simulation().find_series(id).get_data('Z_VC')
     vof = self.test_output.get_simulation().find_series(id).get_data('VOF')[:,0]
 
-    # the x-velocity is -1 in cells containing fluid
-    uerror = max(abs(u + 1.) if vf > 0.0 else abs(u) for u,vf in zip(test[:,0],vof))
+    # the x-velocity is 1 in cells containing fluid
+    uerror = max(abs(u - (2.0*time/3.0)) if vf > 0.0 else abs(u) for u,vf in zip(test[:,0],vof))
     verror = max(abs(test[:,1]))
     werror = max(abs(test[:,2]))
 

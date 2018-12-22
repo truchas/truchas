@@ -33,6 +33,7 @@ A kludge to force hitting the final time exactly
   dt_min  = 1.0e-05
   dt_max  = 1.0
   cycle_max = 1
+  discrete_ops_type = 'ortho'
 /
 
 &LEGACY_FLOW
