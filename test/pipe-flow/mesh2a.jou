@@ -23,8 +23,12 @@ sideset 1 add surface 9
 sideset 1 name "inlet"
 sideset 2 add surface 11
 sideset 2 name "outlet"
+sideset 3 add surface 7
+sideset 3 name "wall" # interior surface
 sideset 4 add surface 3 8 10
 sideset 4 name "symmetry"
+sideset 5 add surface 7 wrt volume 1
+sideset 5 name "flow wall" # interior surface rel to flow vol
 
 set exodus netcdf4 off
 set large exodus file on

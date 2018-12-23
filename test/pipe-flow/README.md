@@ -19,6 +19,16 @@ the wall side, which replaces the explicit no-slip BC on the side. (mesh2a)
 * test2c/pipe-flow-2c. Rotated 45 degrees about y
 * test2d/pipe-flow-2d. rotated 45 degrees about z
 
+These are variations of the coordinate-aligned problem test2a that use differing
+methods for specifying the no-slip BC along the solid wall.
+* pipe-flow-3a. No explicit BC; just what happens at a mesh-conforming
+  solid/liquid interface. This is pipe-flow-2a with modified solver parameters.
+* pipe-flow-3b. No-slip BC on internal side set.
+* pipe-flow-3c. Internal interface created on solid/liquid side set and no-slip
+  BC specified on both sides.
+* pipe-flow-3d. Internal interface created on solid/liquid side set and no-slip
+  BC specified on fluid side of interface
+
 Meshes
 ------
 
@@ -40,7 +50,9 @@ mesh1a-rotz.gen: mesh1a.gen rotated 45 degrees about the z axis
 * Block 2 is solid: [-0.5,0.5] x [1,1.2] x [-0.3,0.3]
 * Side set 1: x = -.0.5 (pipe inlet)
 * Side set 2: x = 0.5 (pipe outlet)
+* Side set 3: y = 1 (pipe wall, INTERNAL TO THE MESH)
 * Side set 4: z = constant, y = 0 sides (symmetry)
+* Side set 5: y = 1, relative to the fluid body
 
 mesh2a.gen: Cartesian 5x12x3 hex mesh aligned with coordinate axes
 mesh2a-rotx.gen: mesh2a.gen rotated 45 degrees about the x axis
