@@ -59,7 +59,7 @@ contains
     character(:), allocatable :: errmsg
 
     allocate(bff)
-    call bff%init(this%mesh)
+    call bff%init(this%mesh, bndry_only=.false.)
     do i = 1, size(condition)
       piter = parameter_list_iterator(this%params, sublists_only=.true.)
       do while (.not.piter%at_end())
@@ -105,7 +105,7 @@ contains
     character(:), allocatable :: errmsg
 
     allocate(bff)
-    call bff%init(this%mesh)
+    call bff%init(this%mesh, bndry_only=.false.)
     do i = 1, size(condition)
       piter = parameter_list_iterator(this%params, sublists_only=.true.)
 

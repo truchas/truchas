@@ -29,9 +29,11 @@
 !! A BNDRY_FACE_FUNC object is defined incrementally using the following type
 !! bound subroutines:
 !!
-!!  INIT(MESH) initializes the object to begin receiving the specification of
-!!    the boundary face data.  MESH is the UNSTR_MESH object on which the data
-!!    is defined. The object maintains an internal read-only reference to MESH.
+!!  INIT(MESH [,BNDRY_ONLY]) initializes the object to begin receiving the
+!!    specification of the boundary face data. MESH is the UNSTR_MESH object
+!!    on which the data s defined. The object maintains an internal read-only
+!!    reference to MESH. Faces will be required to be boundary faces unless
+!!    the option BNDRY_ONLY is present with value .false.
 !!
 !!  ADD(F, SETIDS, STAT, ERRMSG) specifies that the SCALAR_FUNC class object F
 !!    should be used to compute the data for the mesh faces belonging to the
@@ -41,10 +43,11 @@
 !!    F is an allocatable variable and its allocation is moved into the object
 !!    and returned unallocated. It is an error to reference an unknown face set
 !!    ID, associate a face with more than one function, or specify a face that
-!!    is not a boundary face.  A nonzero value is assigned to the integer STAT
-!!    if an error occurs, and an explanatory message assigned to the deferred
-!!    length allocatable character argument ERRMSG.  The returned STAT and
-!!    ERRMSG values are collective across all processes.
+!!    is not a boundary face unless BNDRY_ONLY was specified with value .false.
+!!    A nonzero value is assigned to the integer STAT if an error occurs, and
+!!    an explanatory message assigned to the deferred length allocatable
+!!    character argument ERRMSG.  The returned STAT and ERRMSG values are
+!!    collective across all processes.
 !!
 !!  ADD_COMPLETE() performs the final configuration of the object after all the
 !!    desired calls to ADD have been made (if any).
@@ -94,12 +97,13 @@ module bndry_face_func_type
 
 contains
 
-  subroutine init(this, mesh)
+  subroutine init(this, mesh, bndry_only)
     class(bndry_face_func), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
+    logical, intent(in), optional :: bndry_only
     this%mesh => mesh
     allocate(this%builder)
-    call this%builder%init(mesh)
+    call this%builder%init(mesh, bndry_only)
   end subroutine init
 
   subroutine add(this, f, setids, stat, errmsg)

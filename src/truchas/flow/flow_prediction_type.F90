@@ -427,7 +427,7 @@ contains
         f = faces(k)
         i = this%mesh%fcell(1,f) ! cell index
         if (i > this%mesh%ncell_onP) cycle ! this cell will be properly handled by a different pe
-        ASSERT(this%mesh%fcell(2,f) == 0)
+        if (this%mesh%fcell(2,f) /= 0) cycle ! internal boundary; no flux
 
         ! get the local face id on this cell
         j = this%mesh%xcface(i) - 1 + &
