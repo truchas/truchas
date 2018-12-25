@@ -49,8 +49,12 @@
 !!    character argument ERRMSG.  The returned STAT and ERRMSG values are
 !!    collective across all processes.
 !!
-!!  ADD_COMPLETE() performs the final configuration of the object after all the
-!!    desired calls to ADD have been made (if any).
+!!  ADD_COMPLETE([OMIT_OFFP]) performs the final configuration of the object
+!!    after all the desired calls to ADD have been made (if any). If the option
+!!    OMIT_OFFP is specified with value .true. then any off-process faces that
+!!    have been specified will not be included in the final object; the default
+!!    is to include all specified faces irrespective of whether they are on or
+!!    off-process.
 !!
 !! Once defined, the %VALUE component of the object is computed at time T by
 !! calling the COMPUTE(T) type bound subroutine.
@@ -117,12 +121,13 @@ contains
     call this%flist%append(f)
   end subroutine add
 
-  subroutine add_complete(this)
+  subroutine add_complete(this, omit_offp)
     use const_scalar_func_type
     class(bndry_face_func), intent(inout) :: this
+    logical, intent(in), optional :: omit_offp
     integer :: n
     ASSERT(allocated(this%builder))
-    call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index)
+    call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index, omit_offp)
     deallocate(this%builder)
     allocate(this%value(size(this%index)))
     call scalar_func_list_to_box_array(this%flist, this%farray)

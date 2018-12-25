@@ -30,13 +30,16 @@
 !!    and 2 in the latter, otherwise STAT returns 0. A message is returned in
 !!    the deferred-length allocatable character ERRMSG if an error occurs.
 !!
-!!  GET_FACE_GROUPS(NGROUP, XGROUP, INDEX) returns the face groups defined by
-!!    the previous calls to ADD_FACE_GROUP.  The array INDEX returns the list
-!!    of face indices. INDEX(XGROUP(n):XGROUP(n)-1) are the face indices that
-!!    belong to group n. The groups are sequentially numbered from 1 in the
-!!    order of the calls to ADD_FACE_GROUP.  NGROUP is the number of groups.
-!!    Both XGROUP and INDEX are allocatable arrays and are allocated by this
-!!    procedure.
+!!  GET_FACE_GROUPS(NGROUP, XGROUP, INDEX [,OMIT_OFFP]) returns the face groups
+!!    defined by the previous calls to ADD_FACE_GROUP.  The array INDEX returns
+!!    the list of face indices: INDEX(XGROUP(n):XGROUP(n)-1) are the face
+!!    indices that belong to group n. The groups are sequentially numbered
+!!    from 1 in the order of the calls to ADD_FACE_GROUP.  NGROUP is the number
+!!    of groups. Both XGROUP and INDEX are allocatable arrays and are allocated
+!!    by this procedure. If the option OMIT_OFFP is specified with value .true.
+!!    then the face groups will only include on-process faces; otherwise, all
+!!    specified faces are included irrespective of whether they are on or off-
+!!    process, which is the default.
 !!
 
 module bndry_face_group_builder_type
@@ -114,26 +117,32 @@ contains
 
   end subroutine add_face_group
 
-  subroutine get_face_groups(this, ngroup, xgroup, index)
+  subroutine get_face_groups(this, ngroup, xgroup, index, omit_offp)
 
     class(bndry_face_group_builder), intent(in) :: this
     integer, intent(out) :: ngroup
     integer, allocatable, intent(out) :: xgroup(:), index(:)
+    logical, intent(in), optional :: omit_offp
 
-    integer :: n, j
+    integer :: n, j, nface
+
+    nface = size(this%tag)
+    if (present(omit_offp)) then
+      if (omit_offp) nface = this%mesh%nface_onP
+    end if
 
     ngroup = this%ngroup
-    n = count(this%tag > 0)
+    n = count(this%tag(:nface) > 0)
     allocate(index(n), xgroup(ngroup+1))
 
     !! Prepare XGROUP: indices in group N will be INDEX(XGROUP(N):XGROUP(N+1)-1).
     xgroup(1) = 1
     do n = 1, ngroup
-      xgroup(n+1) = xgroup(n) + count(this%tag == n)
+      xgroup(n+1) = xgroup(n) + count(this%tag(:nface) == n)
     end do
 
     !! Fill the INDEX array; XGROUP(N) stores the next free location for group N.
-    do j = 1, size(this%tag)
+    do j = 1, nface
       n = this%tag(j)
       if (n == 0) cycle
       index(xgroup(n)) = j
