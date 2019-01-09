@@ -166,12 +166,6 @@ contains
 
   end subroutine test_elemental
 
-#ifdef INTEL_INTEGER_SET_ICE
-#define ADD_SET_ add_set
-#else
-#define ADD_SET_ add
-#endif
-
   subroutine test_add_set
 
     type(integer_set) :: a, b, c, d, e
@@ -179,7 +173,7 @@ contains
 
     call b%add (2)
     call b%add (4)
-    call a%ADD_SET_ (b)
+    call a%add (b)
     if (a%size() /= 2) then
       call write_fail ('test_set_add_set: empty, wrong size')
     else
@@ -189,7 +183,7 @@ contains
 
     call c%add (1)
     call c%add (2)
-    call a%ADD_SET_ (c)
+    call a%add (c)
     if (a%size() /= 3) then
       call write_fail ('test_set_add_set: before, dupl, wrong size')
     else
@@ -200,7 +194,7 @@ contains
     call d%add (3)
     call d%add (4)
     call d%add (5)
-    call a%ADD_SET_ (d)
+    call a%add (d)
     if (a%size() /= 5) then
       call write_fail ('test_set_add_set: after, dupl, wrong size')
     else
@@ -208,7 +202,7 @@ contains
       if (any(array /= [1,2,3,4,5])) call write_fail ('test_set_add_set: after, dupl, wrong values')
     end if
 
-    call a%ADD_SET_(b)
+    call a%add(b)
     if (a%size() /= 5) then
       call write_fail ('test_set_add_set: all dupl, wrong size')
     else
@@ -216,7 +210,7 @@ contains
       if (any(array /= [1,2,3,4,5])) call write_fail ('test_set_add_set: all dupl, wrong values')
     end if
 
-    call a%ADD_SET_(e)
+    call a%add(e)
     if (a%size() /= 5) then
       call write_fail ('test_set_add_set: add empty, wrong size')
     else

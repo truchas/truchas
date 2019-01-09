@@ -64,15 +64,10 @@ module integer_set_type
   contains
     procedure :: is_empty => set_is_empty
     procedure :: size => set_size
-#ifdef INTEL_INTEGER_SET_ICE
-    procedure :: add => set_add
-    procedure :: add_set => set_add_set
-#else
     procedure, private :: set_add
     procedure, private :: set_add_set
     procedure, private :: set_add_array
     generic   :: add => set_add, set_add_set, set_add_array
-#endif
     procedure :: remove => set_remove
     procedure :: copy_to_array
     procedure, private, pass(rhs) :: set_to_array

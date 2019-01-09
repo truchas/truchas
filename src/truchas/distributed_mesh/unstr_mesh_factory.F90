@@ -688,14 +688,7 @@ contains
       !call overlapping_cells (xcface, cface, cell_psize, face_psize, ghosts)
       call overlapping_cells2 (lnhbr, cell_psize, ghosts)
       !! Copy the sets into packed array storage
-#ifdef INTEL_DPD200362026
-      allocate(offP_size(nPE))
-      do n = 1, nPE
-        offP_size(n) = ghosts(n)%size()
-      end do
-#else
       offP_size = ghosts%size()
-#endif
       n = sum(offP_size)
       allocate(offP_index(n))
       offset = 0
