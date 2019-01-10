@@ -119,7 +119,11 @@ contains
   end function set_size
 
   !! Adds a value to the set; no duplicates.
+#ifdef GNU_PR69563
+  subroutine set_add (this, value)
+#else
   elemental subroutine set_add (this, value)
+#endif
     class(integer_set), intent(inout) :: this
     integer, intent(in) :: value
     type(set_item), pointer :: item, p, t
