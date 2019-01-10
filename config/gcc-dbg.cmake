@@ -1,6 +1,6 @@
 # Generic Linux with GNU Fortran and GNU C
 
-set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type")
 
 set(CMAKE_C_COMPILER gcc CACHE STRING "C Compiler")
 set(CMAKE_Fortran_COMPILER gfortran CACHE STRING "Fortran Compiler")
