@@ -47,7 +47,7 @@ Hack to hit the final time exactly
 
 &FLOW_VISCOUS_SOLVER
   rel_tol = 1.0e-12
-  abs_tol = 1.0e-12
+  abs_tol = 1.0e-14
   max_ds_iter = 50
   max_amg_iter = 10
   krylov_method = 'cg'
@@ -55,7 +55,7 @@ Hack to hit the final time exactly
 
 &FLOW_PRESSURE_SOLVER
   rel_tol = 0.0
-  abs_tol = 1.0e-12
+  abs_tol = 1.0e-13
   max_ds_iter = 50
   max_amg_iter = 10
   krylov_method = 'cg'

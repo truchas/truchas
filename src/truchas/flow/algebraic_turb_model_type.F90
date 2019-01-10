@@ -111,7 +111,7 @@ contains
 
     associate (rho => props%rho_cc, mu => props%mu_cc)
       do i = 1, this%mesh%ncell
-        mu(i) = mu(i) + rho(i)*this%nu_turb(i)
+        mu(i) = mu(i) + rho(i)*this%nu_turb(i)*this%mesh%volume(i)
       end do
     end associate
   end subroutine apply

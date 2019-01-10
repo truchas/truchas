@@ -222,7 +222,7 @@ contains
             ! ni == 0 implies a domain boundary cell, handle these separately
             if (ni > 0) then
               ! note that normal is already weighted by face area
-              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
+              coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)
               if (face_t(fi) == regular_t) then
                 call A%add_to(j, j, coeff)
                 call A%add_to(j, ni, -coeff)
@@ -249,13 +249,13 @@ contains
             ! Boundary conditions have already been
             ! applied in computing `vel` so we shouldn't need to use them here again
             if (btest(m%cfpar(j),pos=i)) then ! inward face
-              this%rhs(j) = this%rhs(j) + vel(fn(i))*m%area(fn(i))!/m%volume(j)
+              this%rhs(j) = this%rhs(j) + vel(fn(i))*m%area(fn(i))
             else ! outward face
-              this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))!/m%volume(j)
+              this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
             end if
           end do
         end associate
-        this%rhs(j) = this%rhs(j) / (dt*m%volume(j))
+        this%rhs(j) = this%rhs(j) / dt
       end do
 
       ! handle dirichlet bcs
@@ -270,7 +270,7 @@ contains
           j = this%mesh%fcell(1,fi) ! cell index
           ASSERT(this%mesh%fcell(2,fi) == 0)
 
-          coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
+          coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)
           call A%add_to(j, j, coeff)
           this%rhs(j) = this%rhs(j) + coeff*values(i)
 
@@ -288,7 +288,7 @@ contains
               ASSERT(this%mesh%fcell(2,fi) == 0)
 
               if (props%face_t(fi) == regular_t) then
-                coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)/m%volume(j)
+                coeff = dot_product(ds(:,fi), m%normal(:,fi))/rho_f(fi)
                 call A%add_to(j, j, coeff)
                 pressure_pinned = .true.
                 ! no adjust to rhs requires for 0 dirichlet value

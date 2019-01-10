@@ -231,7 +231,7 @@ contains
 
           ! inertial terms
           do k = 1, size(A)
-            call A(k)%A%add_to(j,j,rho(j))
+            call A(k)%A%add_to(j,j,rho(j)*this%mesh%volume(j))
           end do
 
           ! viscous terms
@@ -243,7 +243,7 @@ contains
               ! ni == 0 implies a domain boundary cell, handle these separately
               if (ni > 0) then
                 ! note that normal is already weighted by face area
-                coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)/this%mesh%volume(j)
+                coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)
                 if (face_t(fi) == regular_t) then
                   do k = 1, size(A)
                     call A(k)%A%add_to(j, j, coeff)
@@ -266,7 +266,7 @@ contains
 
           ! solidification
           if (vof(j) > 0.0_r8) then
-            coeff = this%solidify_implicitness*props%solidified_rho(j)/vof(j)
+            coeff = this%solidify_implicitness*props%solidified_rho(j)/vof(j) * this%mesh%volume(j)
             do k = 1, size(A)
               call A(k)%A%add_to(j, j, coeff)
             end do
@@ -284,7 +284,7 @@ contains
 
           ASSERT(this%mesh%fcell(2,fi) == 0)
 
-          coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)/this%mesh%volume(j)
+          coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)
           do k = 1, size(A)
             call A(k)%A%add_to(j, j, coeff)
           end do
@@ -302,7 +302,7 @@ contains
 
           ASSERT(this%mesh%fcell(2,fi) == 0)
 
-          coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)/this%mesh%volume(j)
+          coeff = dtv*dot_product(ds(:,fi), this%mesh%normal(:,fi))*mu_f(fi)
           do k = 1, size(A)
             call A(k)%A%add_to(j, j, coeff*(this%mesh%normal(k,fi)/this%mesh%area(fi))**2)
           end do
@@ -328,7 +328,7 @@ contains
     integer :: j
 
     do j = 1, this%mesh%ncell_onP
-      this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc(j)
+      this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc(j)*this%mesh%volume(j)
     end do
 
   end subroutine accumulate_rhs_pressure
@@ -361,14 +361,12 @@ contains
         associate (n1 => this%mesh%fcell(1,j), n2 => this%mesh%fcell(2,j), rhs => this%rhs)
           if (n2 > 0) then ! inward oriented normal
             do i = 1, 3
-              rhs(i,n2) = rhs(i,n2) - &
-                  dtv*mu(j)*dot_product(this%mesh%normal(:,j),g(:,i,j))/this%mesh%volume(n2)
+              rhs(i,n2) = rhs(i,n2) - dtv*mu(j)*dot_product(this%mesh%normal(:,j),g(:,i,j))
             end do
           end if
           if (n1 > 0) then ! outward oriented normal
             do i = 1, 3
-              rhs(i,n1) = rhs(i,n1) + &
-                  dtv*mu(j)*dot_product(this%mesh%normal(:,j),g(:,i,j))/this%mesh%volume(n1)
+              rhs(i,n1) = rhs(i,n1) + dtv*mu(j)*dot_product(this%mesh%normal(:,j),g(:,i,j))
             end do
           end if
         end associate
@@ -390,7 +388,6 @@ contains
     type(flow_props), intent(in) :: props
 
     integer :: i, j, k, f, f0, f1, nhbr, cn, nfluid
-    real(r8) :: v
 
     ! This is the number of real (non-void) fluids in our system.
     ! Void does not contribute to momentum transport.
@@ -402,7 +399,6 @@ contains
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
       nhbr = this%mesh%xcnhbr(i)
-      v = this%mesh%volume(i)
 
       do j = f0, f1
         k = this%mesh%cface(j)
@@ -410,12 +406,12 @@ contains
         ! donor cell upwinding
         if (any(flux_volumes(:,j) > 0.0_r8)) then
           this%rhs(:,i) = this%rhs(:,i) - &
-              vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density(:))/v
+              vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density(:))
         else
           cn = this%mesh%cnhbr(nhbr+(j-f0)) ! neighbor index
           if (cn > 0) &
             this%rhs(:,i) = this%rhs(:,i) - &
-                vel_cc(:,cn)*dot_product(flux_volumes(:nfluid,j),props%density(:))/v
+                vel_cc(:,cn)*dot_product(flux_volumes(:nfluid,j),props%density(:))
           ! inflow boundaries handled in subsequent loops
         end if
       end do
@@ -436,8 +432,7 @@ contains
         ! outflow handled in above loop
         if (.not.any(flux_volumes(:,j) < 0)) cycle
 
-        this%rhs(:,i) = this%rhs(:,i) - &
-            value(:,k)*dot_product(flux_volumes(:nfluid,j),props%density) / this%mesh%volume(i)
+        this%rhs(:,i) = this%rhs(:,i) - value(:,k)*dot_product(flux_volumes(:nfluid,j),props%density)
       end do
     end associate
 
@@ -461,7 +456,7 @@ contains
         if (.not.any(flux_volumes(:,j) < 0)) cycle
 
         this%rhs(:,i) = this%rhs(:,i) - &
-            vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density) / this%mesh%volume(i)
+            vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density)
       end do
     end associate
 
@@ -482,7 +477,7 @@ contains
 
     w = 1 - this%solidify_implicitness
     do j = 1, this%mesh%ncell_onP
-      this%rhs(:,j) = this%rhs(:,j) - w * solidified_rho(j) * vel_cc(:,j)
+      this%rhs(:,j) = this%rhs(:,j) - w * solidified_rho(j) * vel_cc(:,j) * this%mesh%volume(j)
     end do
 
   end subroutine accumulate_rhs_solidified_rho
@@ -529,7 +524,7 @@ contains
 
     associate (rho => props%rho_cc_n, vof => props%vof_n, rhs => this%rhs)
       do j = 1, this%mesh%ncell_onP
-        rhs(:,j) = rhs(:,j) + rho(j)*vof(j)*vel_cc(:,j)
+        rhs(:,j) = rhs(:,j) + rho(j)*vof(j)*vel_cc(:,j) * this%mesh%volume(j)
       end do
     end associate
 
@@ -567,6 +562,7 @@ contains
             if (props%vof(j) > 0) &
                 coeff = coeff + &
                 this%solidify_implicitness * props%solidified_rho(j) / props%vof(j)
+            coeff = coeff * this%mesh%volume(j)
             if (coeff /= 0) then
               vel_cc(i,j) = rhs1d(j) / coeff
             else

@@ -40,8 +40,7 @@ x&SIMULATION_CONTROL
   abs_tol = 1.0e-10
   max_ds_iter = 50
   max_amg_iter = 25
-  krylov_method = 'gmres'
-  gmres_krylov_dim = 10
+  krylov_method = 'cg'
 /
 
 &NUMERICS

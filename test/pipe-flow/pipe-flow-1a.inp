@@ -38,7 +38,7 @@ Hack to hit the final time exactly
 
 &FLOW_VISCOUS_SOLVER
   rel_tol = 1.0e-10
-  abs_tol = 1.0e-10
+  abs_tol = 1.0e-11
   max_ds_iter = 50
   max_amg_iter = 5
   krylov_method = 'cg'

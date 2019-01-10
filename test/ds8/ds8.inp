@@ -52,9 +52,9 @@ A kludge to force hitting the final time exactly
   abs_tol = 1.0e-12
   max_ds_iter = 50
   max_amg_iter = 500
-  krylov_method = 'gmres'
-  gmres_krylov_dim = 20
-  !krylov_method = 'cg' ! DOES NOT WORK -- MATRIX NOT SYMMETRIC
+  ! krylov_method = 'gmres'
+  ! gmres_krylov_dim = 20
+  krylov_method = 'cg'
 /
 
 &DS_BOUNDARY_CONDITION

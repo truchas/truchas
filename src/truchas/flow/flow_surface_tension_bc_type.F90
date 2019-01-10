@@ -108,7 +108,7 @@ contains
           ! the surface tension term here is a volume-averaged integral over the
           ! computational cell, but the term is only active on the boundary face,
           ! giving a face_area / volume component.
-          value(:,i) = this%vof(j) * this%dsig_dT * gradT * this%mesh%area(fi) / this%mesh%volume(j)
+          value(:,i) = this%vof(j) * this%dsig_dT * gradT * this%mesh%area(fi)
         end associate
       end do
     end associate
