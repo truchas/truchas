@@ -2,6 +2,9 @@ INVISCID FLUID / VOID BROKEN DAM PROBLEM
 ----------------------------------------
 2D broken dam problem in a box (no inflow/outflow) with inviscid fluid and void.
 
+This serves as a regression test for issue #266 fixed by commit b1c56d47, when
+comparing serial and parallel output.
+
 &MESH
   mesh_file = 'mesh1.g'
 /
