@@ -299,7 +299,7 @@ contains
 
     this%work = 1.0_r8
     if (present(face_t)) then
-      do i = 1, this%mesh%nface_onP
+      do i = 1, this%mesh%nface
         if (face_t(i) > regular_t) this%work(i) = 0.0_r8
       end do
     end if
