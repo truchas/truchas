@@ -239,7 +239,7 @@ contains
     integer, intent(in), optional :: face_t(:)
     real(r8), intent(in), optional :: non_regular_default
 
-    real(r8) :: v_normal, v(3)
+    real(r8) :: v_normal, v(3), dsl(3)
     integer :: j,i,d
 
     g = 0.0_r8
@@ -248,7 +248,14 @@ contains
       associate (n => this%mesh%fcell(:,j))
         if (n(2) > 0) then
           do d = 1, size(x,dim=1)
-            g(:,d,j) = this%ds(:,j) * (x(d,n(2))-x(d,n(1)))
+            if (face_t(j) == solid_t) then
+              i = merge(n(1), n(2), x(d,n(1)) /= 0)
+              dsl = this%mesh%face_centroid(:,j) - this%mesh%cell_centroid(:,i)
+              dsl = dsl / sum(dsl**2)
+              g(:,d,j) = dsl * (x(d,n(2))-x(d,n(1)))
+            else
+              g(:,d,j) = this%ds(:,j) * (x(d,n(2))-x(d,n(1)))
+            end if
           end do
         end if
       end associate

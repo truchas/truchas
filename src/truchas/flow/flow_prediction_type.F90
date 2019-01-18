@@ -198,7 +198,7 @@ contains
 
     real(r8), pointer :: ds(:,:)
     integer :: i, j, fi, ni, k
-    real(r8) :: coeff, dtv
+    real(r8) :: coeff, dtv, ds_local(3)
     type(matrix_container) :: A(size(this%solver))
 
     ! this should be changed to check all other terms which may be treated implicitly
@@ -248,6 +248,9 @@ contains
                     call A(k)%A%add_to(j, ni, -coeff)
                   end do
                 else if (face_t(fi) == solid_t) then
+                  ds_local = this%mesh%face_centroid(:,fi) - this%mesh%cell_centroid(:,j)
+                  ds_local = ds_local / sum(ds_local**2)
+                  coeff = dtv*dot_product(ds_local, this%mesh%normal(:,fi))*mu_f(fi)
                   do k = 1, size(A)
                     call A(k)%A%add_to(j, j, coeff)
                   end do
@@ -353,7 +356,7 @@ contains
       ! g(:,1,j) = grad_at_face_j(u_1)
       ! g(:,2,j) = grad_at_face_j(u_2)
       ! g(:,3,j) = grad_at_face_j(u_3)
-      call gradient_cf(g, vel_cc, this%bc%v_zero_normal, this%bc%v_dirichlet)
+      call gradient_cf(g, vel_cc, this%bc%v_zero_normal, this%bc%v_dirichlet, props%face_t)
       call gather_boundary(this%mesh%face_ip, g)
 
       do j = 1, this%mesh%nface
