@@ -18,12 +18,12 @@ class mytest(TruchasTest.GoldenTestCase):
     
     # Initial conditions
     success &= self.vof_test(1, 0.0)
-    success &= self.pressure_test(1, 1e-14)
+    success &= self.pressure_test(1, 1e-13)
     
     # Final time
     success &= self.vof_test(2, 1e-13)
-    success &= self.pressure_test(2, 1e-14)
-    success &= self.velocity_test(2, 1e-14)
+    success &= self.pressure_test(2, 1e-13)
+    success &= self.velocity_test(2, 1e-13)
     
     self.assertTrue(success)
 
