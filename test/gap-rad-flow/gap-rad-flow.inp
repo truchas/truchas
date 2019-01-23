@@ -69,7 +69,7 @@ test exercises the implementation in the normal 'HTSD' solver.
 &FLOW
   inviscid = .true.
   courant_number = 0.5
-  !track_interfaces = .false.  ! none to track
+  track_interfaces = .false.  ! none to track
 /
 
 &FLOW_PRESSURE_SOLVER
