@@ -147,7 +147,7 @@ contains
     real(r8) :: const
     character(:), allocatable :: name
 
-    if (plist%is_parameter(param)) then
+    if (plist%is_scalar(param)) then
 
       call plist%get(param, const, stat=stat)
       if (stat == 0) then ! it is a real constant

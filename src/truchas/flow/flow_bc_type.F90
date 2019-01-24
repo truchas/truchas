@@ -45,21 +45,21 @@ contains
     ! need to generalize this to allow user input:
     ! - no slip walls (=> velocity-dirichlet + pressure_neumann)
     ! - free slip walls (=> v_zero_normal + pressure_neumann)
-    ! - pressure inlet/outlet (=> pressure_dirichlet + v_neumann)
-    ! - velocity inlet (=> v_dirichlet + pressure_neumann)
+    ! - pressure (=> pressure_dirichlet + v_neumann)
+    ! - velocity (=> v_dirichlet + pressure_neumann)
 
     plist => params%sublist('bc')
     call f%init(mesh, plist)
     call f%alloc_vector_bc( &
-        [character(len=32) :: "velocity dirichlet", "no slip"], &
+        [character(len=32) :: "velocity dirichlet", "velocity", "no slip"], &
         this%v_dirichlet, &
         default=0.0_r8)
-    call f%alloc_scalar_bc(["pressure dirichlet"], this%p_dirichlet)
-    call f%alloc_scalar_bc(["pressure dirichlet"], this%dp_dirichlet)
+    call f%alloc_scalar_bc([character(len=32) :: "pressure dirichlet", "pressure"], this%p_dirichlet)
+    call f%alloc_scalar_bc([character(len=32) :: "pressure dirichlet", "pressure"], this%dp_dirichlet)
     ! need to have a p_neumann here... to complement velocity-dirichlet
 
     call f%alloc_scalar_bc(&
-        [character(len=32) :: "pressure neumann", "no slip", "slip", "surface tension"], &
+        [character(len=32) :: "pressure neumann", "velocity", "no slip", "slip", "surface tension"], &
         this%p_neumann, default=0.0_r8)
     call f%alloc_scalar_bc([character(len=32) :: "slip", "surface tension"], &
         this%v_zero_normal, default=0.0_r8)
