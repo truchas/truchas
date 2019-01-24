@@ -108,6 +108,7 @@ contains
     type(pcsr_matrix), pointer :: A
     type(ip_desc), pointer :: row_ip
     type(parameter_list), pointer :: plist
+    real(r8) :: q
 
     this%mesh => mesh
     this%bc => bc
@@ -132,11 +133,12 @@ contains
       associate (n => mesh%fcell(:,j), fc => mesh%face_centroid(:,j), &
           cc => mesh%cell_centroid, w => this%weights_cf(:,j))
         if (n(2) > 0) then
-          w(1) = sum((fc(:)-cc(:,n(2)))**2)
-          w(2) = sum((fc(:)-cc(:,n(1)))**2)
-          w(:) = w(:) / sum(w(:))
+          q = dot_product(fc-cc(:,n(1)), cc(:,n(2))-cc(:,n(1)))/sum((cc(:,n(1))-cc(:,n(2)))**2)
+          w(1) = 1-q !sum((fc(:)-cc(:,n(1)))**2)
+          w(2) = q !sum((fc(:)-cc(:,n(2)))**2)
+          !w(:) = w(:) / sum(w(:))
         else
-          w(:) = [0.0_r8, 1.0_r8]
+          w(:) = [1.0_r8, 0.0_r8]
         end if
       end associate
     end do
@@ -205,6 +207,7 @@ contains
 
     associate (m => this%mesh, rho_f => props%rho_fc, &
         cell_t => props%cell_t, face_t => props%face_t)
+
       do j = 1, m%ncell_onP
         associate (nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
             face => m%cface(m%xcface(j):m%xcface(j+1)-1))
@@ -354,11 +357,10 @@ contains
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
       call gather_boundary(m%cell_ip, v)
-      call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, props%face_t, 0.0_r8)
+      call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, this%bc%v_zero_normal, props%face_t, 0.0_r8)
 
       ! regular_void faces use only the regular cell velocity.  We could directly enforce this
       ! using this%weights_cf.  That would be cleaner but does require touching a lot more data
-
       do j = 1, m%nface_onP
         associate (cn => m%fcell(:,j))
           if (props%face_t(j) == regular_void_t .and. all(cn > 0)) then
@@ -427,6 +429,7 @@ contains
     call this%pressure_cc_correct(props, p_cc)
     call this%grad_p_rho(props, p_cc)
     call this%velocity_cc_correct(dt, props, grad_p_rho_cc_n, vel_cc)
+
 
     call stop_timer("solve")
 

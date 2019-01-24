@@ -332,20 +332,27 @@ contains
   ! boundary conditions on faces may be supplied as well a list of
   ! inactive faces and a default value for xf at inactive faces.
   ! result only valid on nface_onP
-  subroutine interpolate_cf(xf, x, w, bc, face_t, non_regular_default)
+  subroutine interpolate_cf(xf, x, w, bc, bc_zn, face_t, non_regular_default)
     real(r8), intent(out) :: xf(:)
     real(r8), intent(in) :: x(:,:), w(:,:)
-    class(bndry_vfunc), optional, intent(inout) :: bc
+    class(bndry_vfunc), optional, intent(in) :: bc
+    class(bndry_func), optional, intent(in) :: bc_zn
     integer, intent(in), optional :: face_t(:)
     real(r8), intent(in), optional :: non_regular_default
 
     integer :: j,i
 
+!!$    associate (n => this%mesh%fcell(:,3))
+!!$      write(*,"('CELL IDX @ Y+: ',2i5)") n
+!!$      write(*,"('U1/U2', 2(/,3es20.12))") x(:,n)
+!!$      write(*,"('W1/W2', 2(/,es20.12))") w(:,3)
+!!$    end associate
+
     do j = 1, this%mesh%nface_onP
       associate (n => this%mesh%fcell(:,j))
         if (n(2) > 0) then
-          xf(j) = (w(1,j)*dot_product(this%mesh%normal(:,j),x(:,n(2))) + &
-              w(2,j)*dot_product(this%mesh%normal(:,j),x(:,n(1)))) / this%mesh%area(j)
+          xf(j) = (w(1,j)*dot_product(this%mesh%normal(:,j),x(:,n(1))) + &
+              w(2,j)*dot_product(this%mesh%normal(:,j),x(:,n(2)))) / this%mesh%area(j)
         else
           xf(j) = dot_product(this%mesh%normal(:,j),x(:,n(1)))/this%mesh%area(j)
         end if
@@ -357,6 +364,15 @@ contains
         do i = 1, size(faces)
           j = faces(i)
           xf(j) = dot_product(this%mesh%normal(:,j),value(:,i))/this%mesh%area(j)
+        end do
+      end associate
+    end if
+
+    if (present(bc_zn)) then
+      associate (faces => bc_zn%index)
+        do i = 1, size(faces)
+          j = faces(i)
+          xf(j) = 0.0_r8
         end do
       end associate
     end if
