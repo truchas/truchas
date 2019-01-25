@@ -47,7 +47,7 @@ Inlet pressure
 &FLOW_BC
   name = 'inlet'
   face_set_ids = 1
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   data_constant = 6.0
 /
 
@@ -55,7 +55,7 @@ Outlet pressure
 &FLOW_BC
   name = 'outflow'
   face_set_ids = 2
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   data_constant = 0.0
 /
 

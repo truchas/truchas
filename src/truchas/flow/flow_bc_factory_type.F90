@@ -36,7 +36,7 @@ contains
     this%params => params
   end subroutine init
 
-  subroutine alloc_scalar_bc(this, condition, bf, default)
+  subroutine alloc_scalar_bc(this, condition, bf, default, ignore_data)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use scalar_func_class
@@ -48,6 +48,7 @@ contains
     character(*), intent(in) :: condition(:)
     class(bndry_func), allocatable, intent(out) :: bf
     real(r8), optional, intent(in) :: default
+    logical, optional, intent(in) :: ignore_data
 
     type(bndry_face_func), allocatable :: bff
     type(parameter_list_iterator) :: piter
@@ -67,7 +68,7 @@ contains
         call bc_params%get('condition', bc_type)
         if (raise_case(bc_type) == raise_case(condition(i))) then
           call bc_params%get('face sets', setids)
-          call alloc_sf(bc_params, 'data', f, default)
+          call alloc_sf(bc_params, 'data', f, default, ignore_data)
           call bff%add(f, setids, stat, errmsg)
           if (stat /= 0) call TLS_fatal('error generating boundary condition: ' // errmsg)
         end if
@@ -132,7 +133,7 @@ contains
   !! Return the SCALAR_FUNC class function F specified by PARAM, which is either
   !! a real scalar or the name of a function stored in the table of functions.
 
-  subroutine alloc_sf(plist, param, f, default)
+  subroutine alloc_sf(plist, param, f, default, ignore_data)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use scalar_func_factories
@@ -142,12 +143,17 @@ contains
     character(*), intent(in) :: param
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), optional, intent(in) :: default
+    logical, optional, intent(in) :: ignore_data
 
     integer :: stat
     real(r8) :: const
     character(:), allocatable :: name
+    logical :: ignore_datah
 
-    if (plist%is_scalar(param)) then
+    ignore_datah = .false.
+    if (present(ignore_data)) ignore_datah = ignore_data
+
+    if (plist%is_scalar(param) .and. .not.ignore_datah) then
 
       call plist%get(param, const, stat=stat)
       if (stat == 0) then ! it is a real constant

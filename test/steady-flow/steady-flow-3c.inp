@@ -49,20 +49,15 @@ Inlet velocity
 &FLOW_BC
   name = 'inflow'
   face_set_ids = 1
-  condition = 'velocity dirichlet'
+  condition = 'velocity'
   data_constant = 2.82842712474619, 0.0, 2.82842712474619  ! 4/sqrt(2)
-/
-&FLOW_BC
-  name = 'inflow-p'
-  face_set_ids = 1
-  condition = 'pressure neumann'
 /
 
 Outlet pressure
 &FLOW_BC
   name = 'outflow'
   face_set_ids = 2
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   data_constant = 0.0
 /
 

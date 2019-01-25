@@ -87,13 +87,7 @@
 
 &flow_bc
 	! y+
-	condition = 'pressure neumann'
-	face_sets = 4
-/
-
-&flow_bc
-	! y+
-	condition = 'velocity dirichlet'
+	condition = 'velocity'
 	face_sets = 4
 	data = 1.0, 0.0, 0.0
 /

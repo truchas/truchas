@@ -48,20 +48,15 @@ Inflow velocity at left and bottom
 &FLOW_BC
   name = 'inflow'
   face_set_ids = 1, 3
-  condition = 'velocity dirichlet'
+  condition = 'velocity'
   data_constant = 4.0, 3.0, 0.0
-/
-&FLOW_BC
-  name = 'inflow-p'
-  face_set_ids = 1, 3
-  condition = 'pressure neumann'
 /
 
 Pressure at top and right outflow
 &FLOW_BC
   name = 'outflow'
   face_set_ids = 2, 4
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   data_constant = 0.0
 /
 

@@ -52,20 +52,14 @@ A kludge to force hitting the final time exactly
 
 &FLOW_BC
   name = 'inlet'
-  condition = 'velocity dirichlet'
+  condition = 'velocity'
   face_set_ids = 1
   data_constant = 1.0, 0.0, 0.0
 /
 
 &FLOW_BC
-  name = 'inlet_p'
-  condition = 'pressure neumann'
-  face_set_ids = 1
-/
-
-&FLOW_BC
   name = 'outlet'
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   face_set_ids = 2
   data_constant = 0.0
 /

@@ -94,7 +94,7 @@ A kludge to force hitting the final time exactly
 Right side
 &FLOW_BC
   name = 'right'
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   face_set_ids = 2
   data_constant = 0.0
 /
@@ -102,7 +102,7 @@ Right side
 Top side
 &FLOW_BC
   name = 'top'
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   face_set_ids = 4
   data_constant = 0.0
 /

@@ -83,12 +83,10 @@ contains
       select case (lower_case(condition))
       case (NULL_C)
         call TLS_fatal(label // ': CONDITION not specified')
-      case ('velocity dirichlet', 'velocity')
+      case ('velocity')
         data_size = 2
-      case ('pressure dirichlet', 'pressure')
+      case ('pressure')
         data_size = 1
-      case ('pressure neumann')
-        data_size = 0
       case ('slip')
         data_size = 0
       case ('no slip')

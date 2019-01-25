@@ -101,7 +101,7 @@ u = dsig/dx / mu * (y - ymin)
 
 &FLOW_BC
   name = 'inlet'
-  condition = 'pressure dirichlet'
+  condition = 'pressure'
   face_set_ids = 1, 2
   data_constant = 0.0
 /
