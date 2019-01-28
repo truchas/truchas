@@ -1,8 +1,9 @@
 #include "f90_assert.fpp"
 
-module volume_tracker_type
+module geometric_volume_tracker_type
 
   use kinds, only: r8
+  use volume_tracker_class
   use truchas_logging_services
   use truchas_timers
   use unstr_mesh_type
@@ -10,9 +11,8 @@ module volume_tracker_type
   implicit none
   private
 
-  public :: volume_tracker
-
-  type :: volume_tracker
+  type, extends(volume_tracker), public :: geometric_volume_tracker
+    private
     type(unstr_mesh), pointer :: mesh ! unowned reference
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
@@ -27,7 +27,7 @@ module volume_tracker_type
   contains
     procedure :: init
     procedure :: flux_volumes
-    procedure :: normals
+    procedure, private :: normals
     procedure, private :: donor_fluxes
     procedure, private :: donor_fluxes_nd_cell
     procedure, private :: donor_fluxes_os_cell
@@ -36,7 +36,7 @@ module volume_tracker_type
     procedure, private :: flux_bc
     procedure, private :: accumulate_volume
     procedure, private :: enforce_bounded_vof
-  end type volume_tracker
+  end type geometric_volume_tracker
 
 contains
 
@@ -46,7 +46,7 @@ contains
     use property_module, only: get_truchas_material_id
     use f08_intrinsics, only: findloc
 
-    class(volume_tracker), intent(out) :: this
+    class(geometric_volume_tracker), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat, liq_matid(:)
     type(parameter_list), intent(inout) :: params
@@ -114,7 +114,7 @@ contains
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
   subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
@@ -146,7 +146,7 @@ contains
 
   subroutine flux_bc(this, vel, vof_n, dt)
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
 
     integer :: i, f, j, fl
@@ -175,7 +175,7 @@ contains
     use f08_intrinsics, only: findloc
     intrinsic :: norm2
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: vof(:,:)
 
     real(r8) :: mag
@@ -247,7 +247,7 @@ contains
 
     use cell_geom_type
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
@@ -562,7 +562,7 @@ contains
     use cell_topology
     use multimat_cell_type
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
@@ -627,7 +627,7 @@ contains
 
   subroutine donor_fluxes(this, vel, vof, dt)
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
 
     integer :: i, nmat
@@ -669,7 +669,7 @@ contains
 
     use near_zero_function
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), flux_vol(:,:), dt
 
     integer :: i,j,o,m,f0,f1,navail,nmat, ierr
@@ -755,7 +755,7 @@ contains
   ! this%flux_vol_sub is made consistent with appropriate negative entries
   subroutine flux_acceptor(this)
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
 
     integer :: m,j,i,f0,f1,nmat
 
@@ -789,7 +789,7 @@ contains
 
   subroutine accumulate_volume(this, vof, flux_vol)
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: flux_vol(:,:), vof(:,:)
 
     integer :: i,j,f0,f1,m
@@ -812,7 +812,7 @@ contains
   ! Enforce boundedness by allowing _inconsistent_ material flux volumes at faces
   subroutine enforce_bounded_vof(this, vof, flux_vol, fluids, void)
 
-    class(volume_tracker), intent(inout) :: this
+    class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: vof(:,:), flux_vol(:,:)
     integer, intent(in) :: fluids, void
 
@@ -974,4 +974,4 @@ contains
 
   end subroutine adjust_flux_all
 
-end module volume_tracker_type
+end module geometric_volume_tracker_type

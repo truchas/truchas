@@ -51,7 +51,7 @@ module vtrack_driver
 
   use kinds, only: r8
   use unstr_mesh_type
-  use volume_tracker_type
+  use volume_tracker_class
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
@@ -69,7 +69,7 @@ module vtrack_driver
   type :: vtrack_driver_data
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     integer, allocatable :: liq_matid(:), sol_matid(:)
-    type(volume_tracker) :: vt
+    class(volume_tracker), allocatable :: vt
     real(r8), allocatable  :: vof(:,:) ! volume fractions for all materials
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
@@ -78,7 +78,6 @@ module vtrack_driver
     integer :: fluids ! number of fluids (not including void) to advance
     integer :: void ! 1 if simulation includes void else 0
     integer :: solid ! 1 if simulation includes solid else 0
-    logical :: active
   end type vtrack_driver_data
   type(vtrack_driver_data), allocatable, target :: this
 
@@ -117,14 +116,15 @@ contains
     use material_interop, only: void_material_index
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
+    use geometric_volume_tracker_type
+    use simple_volume_tracker_type
 
     type(parameter_list), intent(inout) :: params
 
     integer :: i,j,k
+    logical :: track_interfaces
 
     allocate(this)
-
-    call params%get('track_interfaces', this%active)
 
     call TLS_info('')
     call TLS_info('Configuring volume tracking ...')
@@ -162,6 +162,13 @@ contains
         k = k + 1
       end if
     end do
+
+    call params%get('track_interfaces', track_interfaces)
+    if (track_interfaces) then
+      allocate(geometric_volume_tracker :: this%vt)
+    else
+      allocate(simple_volume_tracker :: this%vt)
+    end if
 
     call start_timer('Vof Initialization')
     call get_vof_from_matl(this%fvof_i)
@@ -235,39 +242,8 @@ contains
 
     call get_vof_from_matl(this%fvof_i)
 
-    if (.not.this%active) then
-      associate (m => this%mesh)
-        ! compute upwind flux volumes for transport
-        do i = 1, m%ncell
-          f0 = m%xcface(i)
-          f1 = m%xcface(i+1)-1
-          do j = f0, f1
-            k = m%cface(j)
-            if (this%flux_vel(j) > 0 .or. m%fcell(2,k) == 0) then
-              ! if the donator cell is off-process and not a ghost cell, this flux is irrelevant.
-              if (m%fcell(1,k) > m%ncell .or. m%fcell(1,k) == 0) cycle
-              this%flux_vol(:,j) = this%flux_vel(j)*m%area(k)*dt &
-                  * this%fvof_i(:this%fluids+this%void,m%fcell(1,k))
-            else
-              if (m%fcell(2,k) > m%ncell) cycle
-              this%flux_vol(:,j) = this%flux_vel(j)*m%area(k)*dt &
-                  * this%fvof_i(:this%fluids+this%void,m%fcell(2,k))
-            end if
-          end do
-        end do
-
-        ! update volume fractions
-        do i = 1, m%ncell_onP
-          f0 = m%xcface(i)
-          f1 = m%xcface(i+1)-1
-          this%fvof_o(:this%fluids+this%void,i) = &
-              this%fvof_i(:this%fluids+this%void,i) + sum(this%flux_vol(:,f0:f1), dim=2)
-        end do
-      end associate
-    else
-      call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
-          this%fluids, this%void, dt)
-    end if
+    call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
+        this%fluids, this%void, dt)
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then
