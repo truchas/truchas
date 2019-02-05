@@ -585,11 +585,7 @@ contains
     do j = 1, mesh%ncell_onP
       associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))
         do k = 1, size(cnode)
-#ifdef INTEL_INTEGER_SET_ICE
-          call csets(j)%add_set(nsets(cnode(k)))
-#else
           call csets(j)%add(nsets(cnode(k)))
-#endif
         end do
       end associate
     end do

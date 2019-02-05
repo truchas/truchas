@@ -1,0 +1,16 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 08/03/2018 11:22:11 AM
+## Command Options:
+brick x 1 y 1 z 2
+volume 1 size 0.2
+volume 1 size 0.2
+mesh volume 1
+set duplicate block elements off
+block 1 add volume 1
+sideset 1 add surface 1
+sideset 2 add surface 3 6 5 4 2
+set exodus netcdf4 on
+export genesis "mesh.g" overwrite

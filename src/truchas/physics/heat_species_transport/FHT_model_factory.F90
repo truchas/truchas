@@ -32,7 +32,7 @@ module FHT_model_factory
   use FHT_model_type
   use unstr_mesh_type
   use mfd_disc_type
-  use material_mesh_function
+  use matl_mesh_func_type
   use rad_problem_type
   implicit none
   private
@@ -44,7 +44,7 @@ contains
   function create_FHT_model (disc, mmf, stat, errmsg) result (model)
   
     type(mfd_disc), intent(in), target :: disc
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     type(FHT_model), pointer :: model
@@ -129,21 +129,21 @@ contains
 
     use phase_property_table
     use material_utilities
-    use material_mesh_function
+    use matl_mesh_func_type
     use property_mesh_function
     use ds_source_input, only: define_external_source
     use parallel_communication, only: global_any
 
     type(unstr_mesh), intent(in), target :: mesh
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 
-    integer, pointer :: matid(:)
+    integer, allocatable :: matid(:)
 
     !! Retrieve a list of all the material IDs that may be encountered.
-    call mmf_get_all_matid (mmf, matid, drop_void=.true.)
+    call mmf%get_all_matl(matid, drop_void=.true.)
 
     !! Enthalpy density.
     allocate(model%H_of_T)
@@ -171,8 +171,6 @@ contains
     !! External heat source.
     allocate(model%q)
     call define_external_source (mesh, 'temperature', model%q)
-
-    deallocate(matid)
 
     stat = 0
     errmsg = ''

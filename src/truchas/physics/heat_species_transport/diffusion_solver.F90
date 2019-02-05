@@ -22,7 +22,7 @@ module diffusion_solver
   use parallel_communication
   use truchas_logging_services
   use mfd_disc_type
-  use material_mesh_function
+  use matl_mesh_func_type
   use string_utilities, only: i_to_c
   use source_mesh_function
   use mesh_interop
@@ -61,7 +61,7 @@ module diffusion_solver
     !! The mesh, discretization, and material mesh function.
     type(unstr_mesh), pointer :: mesh => null()
     type(mfd_disc), pointer :: disc => null()
-    type(mat_mf), pointer :: mmf => null()
+    type(matl_mesh_func), pointer :: mmf => null()
     !! Saved references to the model sources.
     type(source_mf), pointer :: ht_source => null()
     type(source_mf), pointer :: sd_source(:) => null()
@@ -392,6 +392,7 @@ contains
     integer :: stat
     character(len=200) :: errmsg
     type(enthalpy_advector1), allocatable :: hadv1
+    character(:), allocatable :: errmsg2
 
     call TLS_info ('')
     call TLS_info ('Initializing diffusion solver ...')
@@ -404,8 +405,8 @@ contains
     call this%disc%init (this%mesh, use_new_mfd)
     
     allocate(this%mmf)
-    call mmf_init (this%mesh, this%mmf, stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
+    call mmf_init (this%mesh, this%mmf, stat, errmsg2)
+    if (stat /= 0) call TLS_fatal ('DS_INIT: ' // errmsg2)
     
     call verify_material_compatibility (this%mmf, stat, errmsg)
     if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
@@ -475,17 +476,16 @@ contains
     logical function multiphase_problem (mmf)
       use material_system
       use material_table
-      type(mat_mf), intent(in) :: mmf
-      integer, pointer :: list(:)
+      type(matl_mesh_func), intent(in) :: mmf
+      integer, allocatable :: list(:)
       type(mat_system), pointer :: ms
       integer :: i
-      call mmf_get_all_matID (mmf, list, drop_void=.true.)
+      call mmf%get_all_matl(list, drop_void=.true.)
       do i = size(list), 1, -1
         ms => mt_get_material(list(i))
         ASSERT(associated(ms))
         if (ms_num_phase(ms) > 1) exit
       end do
-      deallocate(list)
       multiphase_problem = (i /= 0)
     end function multiphase_problem
 
@@ -510,10 +510,7 @@ contains
       call FHT_model_delete (this%mod2)
       deallocate(this%mod2)
     end if
-    if (associated(this%mmf)) then
-      call mmf_destroy (this%mmf)
-      deallocate(this%mmf)
-    end if
+    if (associated(this%mmf)) deallocate(this%mmf)
     if (associated(this%disc)) deallocate(this%disc)
     this%mesh => null()
   end subroutine ds_delete
@@ -605,16 +602,16 @@ contains
     use material_system
     use material_table
 
-    type(mat_mf), intent(in) :: mmf
+    type(matl_mesh_func), intent(in) :: mmf
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 
     integer :: i
-    integer, pointer :: matid(:)
+    integer, allocatable :: matid(:)
     type(mat_system), pointer :: ms
 
     !! Retrieve a list of all the material IDs that may be encountered.
-    call mmf_get_all_matid (mmf, matid, drop_void=.true.)
+    call mmf%get_all_matl(matid, drop_void=.true.)
 
     !! Verify that the material system attributes are compatible
     !! with the constraints imposed by the type of diffusion system.
@@ -670,8 +667,6 @@ contains
       INSIST(.false.)
     end select
 
-    deallocate(matid)
-
     stat = 0
     errmsg = ''
 
@@ -691,7 +686,7 @@ contains
 
   subroutine cull_material_fragments (mmf, threshold, culled)
   
-    type(mat_mf), intent(inout) :: mmf
+    type(matl_mesh_func), intent(inout) :: mmf
     real(r8), intent(in) :: threshold
     logical, intent(out), optional :: culled
     
@@ -701,10 +696,10 @@ contains
     integer :: cell_count
     
     cell_count = 0
-    do n = 1, mmf_num_reg(mmf)
-      matID => mmf_reg_matID(mmf, n)
+    do n = 1, mmf%num_reg()
+      matID => mmf%reg_matl(n)
       if (matID(1) /= 0) cycle  ! no void in this region
-      vfrac => mmf_reg_vol_frac (mmf, n)
+      vfrac => mmf%reg_vol_frac(n)
       if (associated(vfrac)) then ! multi-material region
         do j = 1, size(vfrac,dim=1)
           if (vfrac(j,1) == 1.0_r8) then  ! ensure all other volume fractions are 0

@@ -144,7 +144,8 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/enthalpy_advector_class.F90
            physics/heat_species_transport/enthalpy_advector1_type.F90
            physics/heat_species_transport/enthalpy_advector2_type.F90
-)
+           physics/heat_species_transport/evap_heat_flux_type.F90
+           physics/heat_species_transport/evaporation_namelist.F90)
 
 # - induction_heating
 list(APPEND PHYSICS_FILES

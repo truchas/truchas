@@ -18,7 +18,7 @@
 !!
 !!  CALL PMF_CREATE (THIS, MMF, PROPERTY_ID, STAT, ERRMSG) configures the
 !!    PROP_MF object THIS to describe property PROPERTY_ID on the mesh given
-!!    the mesh-wide distribution of materials specified by the MAT_MF object
+!!    the mesh-wide distribution of materials specified by the MATL_MESH_FUNC object
 !!    MMF.  The integer STAT returns a nonzero value if an error condition
 !!    occurred, and an explanatory message is returned in the character string
 !!    ERRMSG.  The structure THIS maintains a pointer to the MMF argument and
@@ -53,7 +53,7 @@
 module property_mesh_function
 
   use kinds, only: r8
-  use material_mesh_function
+  use matl_mesh_func_type
   use material_property
   implicit none
   private
@@ -63,7 +63,7 @@ module property_mesh_function
   
   type, public :: prop_mf
     private
-    type(mat_mf), pointer :: mmf => null()
+    type(matl_mesh_func), pointer :: mmf => null()
     type(region), pointer :: reg(:) => null()
     logical :: harmonic_average = .false.
     !! Data facilitating random access evaluation.
@@ -97,7 +97,7 @@ contains
   subroutine pmf_create (this, mmf, property_id, stat, errmsg)
   
     type(prop_mf), intent(out) :: this
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     integer, intent(in) :: property_id
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -107,10 +107,10 @@ contains
     
     this%mmf => mmf
     
-    allocate(this%reg(mmf_num_reg(mmf)))
+    allocate(this%reg(mmf%num_reg()))
     
-    do i = 1, mmf_num_reg(mmf)
-      material_id => mmf_reg_matID(mmf, i)
+    do i = 1, mmf%num_reg()
+      material_id => mmf%reg_matl(i)
       allocate(this%reg(i)%mp(size(material_id)))
       if (material_id(1) == 0) this%reg(i)%mfirst = 2  ! initial void material -- skip it
       do m = this%reg(i)%mfirst, size(material_id)
@@ -138,11 +138,11 @@ contains
     type(mat_prop), pointer :: mprop(:)
     integer, pointer :: cell(:)
     real(r8), pointer :: vfrac(:,:)
-    mesh => mmf_mesh(this%mmf)
+    mesh => this%mmf%mesh_ptr()
     allocate(this%cprop(mesh%ncell))
-    do i = 1, mmf_num_reg(this%mmf)
-      cell  => mmf_reg_cell(this%mmf, i)
-      vfrac => mmf_reg_vol_frac(this%mmf, i)
+    do i = 1, this%mmf%num_reg()
+      cell  => this%mmf%reg_cell(i)
+      vfrac => this%mmf%reg_vol_frac(i)
       !! The non-void material properties for this region
       mprop => this%reg(i)%mp(this%reg(i)%mfirst:)
       do j = 1, size(cell)
@@ -173,10 +173,10 @@ contains
     
     value = 0.0_r8
     
-    do i = 1, mmf_num_reg(this%mmf)
+    do i = 1, this%mmf%num_reg()
     
-      vfrac => mmf_reg_vol_frac(this%mmf, i)
-      cell  => mmf_reg_cell(this%mmf, i)
+      vfrac => this%mmf%reg_vol_frac(i)
+      cell  => this%mmf%reg_cell(i)
       
       if (size(cell) == 0) cycle  ! nothing to do here
       
@@ -264,10 +264,10 @@ contains
     
     value = 0.0_r8
     
-    do i = 1, mmf_num_reg(this%mmf)
+    do i = 1, this%mmf%num_reg()
     
-      vfrac => mmf_reg_vol_frac(this%mmf, i)
-      cell  => mmf_reg_cell(this%mmf, i)
+      vfrac => this%mmf%reg_vol_frac(i)
+      cell  => this%mmf%reg_cell(i)
       
       if (size(cell) == 0) cycle  ! nothing to do here
       
@@ -349,7 +349,7 @@ contains
     type(prop_mf), intent(inout) :: this
     integer :: j
     type(prop_mf) :: default
-    !! N.B.  The PROP_MF object does not own the target of the MAT_MF pointer
+    !! N.B.  The PROP_MF object does not own the target of the MATL_MESH_FUNC pointer
     !! component and so this routine must not deallocate/destroy it.
     if (associated(this%reg)) then
       do j = 1, size(this%reg)

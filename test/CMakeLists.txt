@@ -122,6 +122,11 @@ add_pytruchas_test(htvoid4-old htvoid4/test-old.py PROCESSORS 4 LABELS DIFFUSION
 add_pytruchas_test(broken-dam-old broken-dam-old/test.py PROCESSORS 4 LABELS OLD_FLOW)
 add_pytruchas_test(broken-dam broken-dam/test.py PROCESSORS 4 LABELS FLOW)
 
+add_pytruchas_test(evap
+                   evap/test.py
+		   PROCESSORS 4
+		   LABELS CONDUCTION)
+
 add_pytruchas_test(channel-flow
                    channel-flow/testChannelFlow.py
 		   PROCESSORS 4

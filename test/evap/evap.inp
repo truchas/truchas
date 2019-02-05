@@ -1,0 +1,96 @@
+EVAPORATION BC TEST
+
+Simple 1D heat conduction in a rectangular domain with flux BC on top and
+adiabatic conditions on remaining sides. Flux on top is the superposition
+of a unit heat flux into the domain and a heat flux out of the domain given
+by the evaporation BC model (arrhenius type function).  The parameters of
+the evaporation model conspire to give a unit flux out of the domain at a
+temperature of 3, exactly counterbalancing the imposed input heat flux.
+Thus the temperature in the domain should rise from an initial uniform
+value of 1 to a uniform value of 3 at infinite times.
+
+&MESH
+  mesh_file = 'mesh.g'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 15.0
+  Output_Dt = 5.0
+/
+
+A kludge to force hitting the outptut times exactly
+&SIMULATION_CONTROL
+  phase_start_times = 5.0, 10.0 15.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  fluid_flow = .false.
+/
+
+Parameters conspire to yield a flux of 1.0 at temperature 3.0
+&EVAPORATION
+  face_set_ids = 1
+  prefactor = 0.302031314
+  temp_exponent = 2
+  activation_energy = 24.94337694 ! 3*R
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 0.01
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_init = 1.0d-5
+  dt_min  = 1.0d-9
+  dt_grow = 10.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'top'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 1
+  data_constant = -1.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'adiabatic'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 2
+  data_constant = 0.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 1.0
+/
+
+&MATERIAL
+  material_number = 1
+  material_name = 'stuff'
+  density = 1.0 ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'stuff'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'stuff'
+  phases = 'stuff'
+/

@@ -14,7 +14,7 @@ module HTSD_solver_type
   use HTSD_model_type
   use HTSD_precon_type
   use HTSD_norm_type
-  use material_mesh_function
+  use matl_mesh_func_type
   use unstr_mesh_type
   use index_partitioning
   use bdf2_dae
@@ -23,7 +23,7 @@ module HTSD_solver_type
   private
   
   type, public :: HTSD_solver
-    type(mat_mf),     pointer :: mmf => null()
+    type(matl_mesh_func), pointer :: mmf => null()
     type(unstr_mesh), pointer :: mesh => null()
     type(state) :: bdf2_state
     logical :: state_is_pending = .false.
@@ -74,7 +74,7 @@ contains
 
   subroutine HTSD_solver_init (this, mmf, model, params)
     type(HTSD_solver), intent(out) :: this
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     type(HTSD_model), intent(in), target :: model
     type(HTSD_solver_params), intent(in) :: params
     integer :: n
@@ -303,7 +303,7 @@ contains
     !! Establish the void cell and face masks in the model.
     !! N.B. We assume no one else allocates and defines these arrays.
     allocate(void_vol_frac(this%mesh%ncell), this%model%void_cell(this%mesh%ncell))
-    call mmf_get_void_vol_frac (this%mmf, void_vol_frac)
+    call this%mmf%get_void_vol_frac(void_vol_frac)
     this%model%void_cell = (void_vol_frac > 1.0_r8 - 2*epsilon(1.0_r8))
     deallocate(void_vol_frac)
     if (global_count(this%model%void_cell) > 0) then

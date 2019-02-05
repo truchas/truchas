@@ -32,7 +32,7 @@ module FHT_solver_type
   use FHT_norm_type
   use FHT_precon_type
   use TofH_type
-  use material_mesh_function
+  use matl_mesh_func_type
   use property_mesh_function
   use solution_history
   use nka_type
@@ -44,7 +44,7 @@ module FHT_solver_type
   private
 
   type, public :: FHT_solver
-    type(mat_mf),     pointer :: mmf => null()
+    type(matl_mesh_func), pointer :: mmf => null()
     type(FHT_model),  pointer :: model => null()
     type(unstr_mesh), pointer :: mesh => null()
     type(FHT_precon) :: precon
@@ -121,7 +121,7 @@ contains
   subroutine FHT_solver_init (this, mmf, model, params)
   
     type(FHT_solver), intent(out) :: this
-    type(mat_mf), intent(in), target :: mmf
+    type(matl_mesh_func), intent(in), target :: mmf
     type(FHT_model), intent(in), target :: model
     type(FHT_solver_params), intent(inout) :: params
     
@@ -224,7 +224,7 @@ contains
     integer, allocatable :: fnbr(:,:)
 
     !! Update the void and totally-void domain masks.
-    call mmf_get_void_vol_frac (this%mmf, void_vol_frac)
+    call this%mmf%get_void_vol_frac(void_vol_frac)
     this%void_cell = (void_vol_frac > 1.0_r8 - this%epsilon)
     this%tot_void_cell = (void_vol_frac == 1.0_r8)
     
@@ -558,7 +558,7 @@ contains
     ASSERT(size(temp) == this%mesh%ncell_onP)
     
     allocate(void_vol_frac(this%mesh%ncell))
-    call mmf_get_void_vol_frac (this%mmf, void_vol_frac)
+    call this%mmf%get_void_vol_frac(void_vol_frac)
     this%void_cell = (void_vol_frac > 1.0_r8 - this%epsilon)
     this%tot_void_cell = (void_vol_frac == 1.0_r8)
     deallocate(void_vol_frac)
