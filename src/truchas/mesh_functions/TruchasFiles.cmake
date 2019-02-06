@@ -33,7 +33,7 @@ fortran_preprocess_files(MESH_FUNC_SOURCE_FILES
 
 # Define compile flags
 include(BuildWhitespaceString)
-set(mesh_func_source_flags -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR} -I${PETACA_MODULE_DIR})
+set(mesh_func_source_flags -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND mesh_func_source_flags "-standard-semantics -assume nostd_mod_proc_name")
 endif()

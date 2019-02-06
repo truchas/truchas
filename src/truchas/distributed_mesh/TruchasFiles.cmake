@@ -49,7 +49,7 @@ fortran_preprocess_files(DISMESH_SOURCE_FILES
 			 PROCESS_TARGET ${DISMESH_TARGET_NAME})
 
 # Define compile flags
-set(DISMESH_COMPILE_FLAGS -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR})
+set(DISMESH_COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND DISMESH_COMPILE_FLAGS "-assume realloc_lhs")
 endif()

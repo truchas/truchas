@@ -1,60 +1,29 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import unittest
-import numpy
-import math
+import truchas
 
-import Truchas
-import TruchasTest
 
-class mytest(TruchasTest.GoldenTestCase):
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "advection-old-1a.inp")
 
-  test_name = 'advection-old-1a'
-  num_procs = 4 # with a parallel executable
+    xc = output.centroids()
 
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())
+    for sid in (1,2):
+        vof = output.field(sid, "VOF")[:,0]
+        time = output.time(sid)
 
-  def vof_test(self, id, tol):
+        p = -6 + 6*time
+        vofex = sp.array([1 if x < p-0.5 else 0 if x > p+0.5 else 0.5 for x in xc[:,0]])
+        nfail += truchas.compare_max(vof, vofex, 1e-10, "vof", time)
 
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.test_output.get_simulation().find_series(id).get_data('VOF',serialize=False)
-    time = self.test_output.get_simulation().find_series(id).time
+    truchas.report_summary(nfail)
+    return nfail
 
-    # Analytic vof solution at cell centrioids
-    cc = self.test_output.get_mesh().centroids()
-    p = -6 + 6*time
-    vof = numpy.empty_like(test[:,0])
-    for j in range(cc.shape[0]):
-      x = cc[j,0]
-      if x < p-0.5:
-        vof[j] = 1
-      elif x > p+0.5:
-        vof[j] = 0
-      else:
-        vof[j] = 0.5
-    
-    error = max(abs(test[:,0]-vof))
-    if error > tol:
-      print 'vof at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
-      self.assertTrue(False)
-    else:
-      print 'vof at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
 
-  def test_vof1(self):
-    '''Verify initial vof field'''
-    self.vof_test(1, 1.0e-10)
-
-  def test_vof2(self):
-    '''Verify final vof field'''
-    self.vof_test(2, 1.0e-10)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__ == "__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

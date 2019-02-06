@@ -1,40 +1,30 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
 
-import Truchas
-import TruchasTest
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "3d-ss-hc-linear-hex.inp")
 
-class test(TruchasTest.GoldenTestCase):
+    xc = output.centroids()
+    sid = output.num_series()
+    time = output.time(sid)
+    Tref = 1 + xc[:,0] + 2*xc[:,1] + 3*xc[:,2]
 
-  test_name = '3d-ss-hc-linear-hex'
-  num_procs = 4 # with a parallel executable
-  
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass() # This runs Truchas
-    self.test_output = Truchas.TruchasOutput(self.get_output_file())
+    T = output.field(sid, "Z_TEMP")
+    err = abs((T - Tref) / Tref)
+    nfail += truchas.compare_max(err, 0, 1e-6, "temperature", time)
 
-  def test_final_fields(self):
-    '''verifying the final T and H fields'''
-    tol = 1.0e-6
-    mesh=self.test_output.get_mesh()
-    centroids=mesh.centroids()
-    Tref = 1.0 + centroids[:,0] + 2*centroids[:,1] + 3*centroids[:,2]
-    T = self.test_output.get_simulation().get_last_series().get_data('Z_TEMP',serialize=False)
-    error = max(abs(T -Tref)/Tref)
-    print 'T error=%1.9e tol=%1.9e\n' %(error,tol)
-    self.assertTrue( error <= tol )
-    H = self.test_output.get_simulation().get_last_series().get_data('Z_ENTHALPY',serialize=False)
-    error = max(abs(0.5*H -Tref)/Tref)
-    print 'H error=%1.9e tol=%1.9e\n' %(error,tol)
-    self.assertTrue( error <= tol )
+    H = output.field(sid, "Z_ENTHALPY")
+    err = abs((H/2 - Tref) / Tref)
+    nfail += truchas.compare_max(err, 0, 1e-6, "enthalpy", time)
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+    truchas.report_summary(nfail)
+    return nfail
 
+
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

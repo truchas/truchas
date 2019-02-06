@@ -1,32 +1,24 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import numpy
+import truchas
 
-import Truchas
-import TruchasTest
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "advection-3b.inp")
+    gold = tenv.output("advection-3b_pgolden/advection-3b.h5")
+    vof_gold = gold.field(2, "VOF")
 
-class mytest(TruchasTest.GoldenTestCase):
+    # verify volume fractions at final time
+    time = output.time(2)
+    vof = output.field(2, "VOF")
+    nfail += truchas.compare_max(vof, vof_gold, 5e-9, "vof", time)
 
-  test_name = 'advection-3b'
-  num_procs = 4 # with a parallel executable
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_final_vof(self):
-    '''verifying volume fractions at final time'''
-    tol = 5e-9
-
-    time = self.test_output.get_simulation().find_series(id=2).time
-    test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')[:,0]
-    gold = self.gold_output.get_simulation().find_series(id=2).get_data('VOF')[:,0]
-
-    error = max(abs(test-gold))
-    passfail = 'PASS' if error <= tol else 'FAIL'
-    print 'vof at t=%8.2e: max error = %8.2e: %s (tol=%8.2e)' % (time, error, passfail, tol)
-
-    self.assertTrue(error <= tol)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__ == "__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

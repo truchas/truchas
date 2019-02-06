@@ -1,67 +1,53 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "tangential-surface-tension-old.inp")
+    golden = tenv.output("tangential-surface-tension-old_pgolden/tangential-surface-tension-old.h5")
 
-import Truchas
-import TruchasTest
+    # cycle numbers
+    for sid in (1, 2, 3):
+        cycle = output.cycle(sid)
+        cycleg = golden.cycle(sid)
+        status = "PASS" if cycle == cycleg else "FAIL"
+        print("{:s}: matching cycle numbers {:d}".format(status, cycle))
+        if cycle != cycleg: nfail += 1
 
-class TangentialSurfaceTension(TruchasTest.GoldenTestCase):
+    # verify early fields
+    sid = 1
+    time = output.time(sid)
 
-  test_name = 'tangential-surface-tension-old'
-  num_procs = 4 # with a parallel executable
+    # temperature
+    test = output.field(sid, "Z_TEMP")
+    gold = golden.field(sid, "Z_TEMP")
+    nfail += truchas.compare_max(test, gold, 1e-10, "temp", time)
 
-  def test_cycle_numbers(self):
-    '''tangential-surface-tension: checking the cycle numbers'''
-    for n in [1,2,3]:
-      test_series = self.test_output.get_simulation().find_series(id=n)
-      gold_series = self.gold_output.get_simulation().find_series(id=n)
-      self.assertTrue(test_series.cycle == gold_series.cycle)
+    # velocity
+    test = output.field(sid, "Z_VC")
+    gold = golden.field(sid, "Z_VC")
+    nfail += truchas.compare_max(test, gold, 1e-10, "velocity", time)
 
-  def test_early_temp(self):
-    '''tangential-surface-tension: verifying the temperature field at early time'''
-    tol = 1.0e-10
-    test = self.test_output.get_simulation().find_series(id=1).get_data('Z_TEMP')
-    gold = self.gold_output.get_simulation().find_series(id=1).get_data('Z_TEMP')
-    error = max(abs(test-gold)/gold)
-    print 'early temp max rel error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    # verify final fields
+    sid = 3
+    time = output.time(sid)
 
-  def test_early_velocity(self):
-    '''tangential-surface-tension: verifying the velocity field at early time'''
-    tol = 1.0e-10
-    test = self.test_output.get_simulation().find_series(id=1).get_data('Z_VC')
-    gold = self.gold_output.get_simulation().find_series(id=1).get_data('Z_VC')
-    uerror = max(abs(test[:,0]-gold[:,0]))
-    verror = max(abs(test[:,1]-gold[:,1]))
-    werror = max(abs(test[:,2]-gold[:,2]))
-    error = max(uerror,verror)
-    print 'early vel max error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    # temperature
+    test = output.field(sid, "Z_TEMP")
+    gold = golden.field(sid, "Z_TEMP")
+    nfail += truchas.compare_max(test, gold, 1e-7, "temp", time)
 
-  def test_final_temp(self):
-    '''tangential-surface-tension: verifying the temperature field at final time'''
-    tol = 1.0e-7
-    test = self.test_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
-    gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
-    error = max(abs(test-gold)/gold)
-    print 'final temp max rel error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    # velocity
+    test = output.field(sid, "Z_VC")
+    gold = golden.field(sid, "Z_VC")
+    nfail += truchas.compare_max(test, gold, 1e-6, "velocity", time)
 
-  def test_final_velocity(self):
-    '''tangential-surface-tension: verifying the velocity field at final time'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=3).get_data('Z_VC')
-    gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_VC')
-    uerror = max(abs(test[:,0]-gold[:,0]))
-    verror = max(abs(test[:,1]-gold[:,1]))
-    werror = max(abs(test[:,2]-gold[:,2]))
-    error = max(uerror,verror)
-    print 'final vel max error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    truchas.report_summary(nfail)
+    return nfail
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

@@ -1,78 +1,48 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "freezing-flow-3.inp")
+    golden = tenv.output("freezing-flow-3_pgolden/freezing-flow-3.h5")
 
-import Truchas
-import TruchasTest
-
-class FreezingFlowTest(TruchasTest.GoldenTestCase):
-
-  test_name = 'freezing-flow-3'
-  num_procs = 4 # with a parallel executable
-
-  def test_fields(self):
-    success = True
-
-    # first output dump
-    success &= self.temp_test(2, 1e-7)
-    success &= self.pressure_test(2, 1e-10)
-    success &= self.velocity_test(2, 1e-10)
-    success &= self.vof_test(2, 5e-9)
+    # early time
+    time = output.time(2)
+    vof = output.field(2, "VOF")[:,0]
+    nfail += truchas.compare_max(output.field(2, "Z_TEMP"), golden.field(2, "Z_TEMP"),
+                                 1e-7, "temp", time)
+    nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-10, "temp", time)
+    nfail += compare_velocity(output.field(2, "Z_VC"), vof, 1e-10, time)
+    nfail += truchas.compare_max(vof, golden.field(2, "VOF")[:,0], 5e-9, "vof", time)
 
     # final time
-    success &= self.temp_test(3, 1e-5)
-    success &= self.pressure_test(3, 1e-10)
-    success &= self.velocity_test(3, 1e-10)
-    success &= self.vof_test(3, 5e-6)
+    time = output.time(3)
+    vof = output.field(3, "VOF")[:,0]
+    nfail += truchas.compare_max(output.field(3, "Z_TEMP"), golden.field(3, "Z_TEMP"),
+                                 1e-5, "temp", time)
+    nfail += truchas.compare_max(output.field(3, "Z_P"), 0, 1e-10, "temp", time)
+    nfail += compare_velocity(output.field(3, "Z_VC"), vof, 1e-10, time)
+    nfail += truchas.compare_max(vof, golden.field(3, "VOF")[:,0], 5e-6, "vof", time)
 
-    self.assertTrue(success)
+    truchas.report_summary(nfail)
+    return nfail
 
-  def temp_test(self, timeid, tol):
-    time = self.test_output.get_simulation().find_series(id=timeid).time
-    test = self.test_output.get_simulation().find_series(id=timeid).get_data('Z_TEMP')
-    gold = self.gold_output.get_simulation().find_series(id=timeid).get_data('Z_TEMP')
-    error = max(abs(test - gold))
-    self.report('temperature', time, error, tol)
-    return error <= tol
 
-  def vof_test(self, timeid, tol):
-    time = self.test_output.get_simulation().find_series(id=timeid).time
-    test = self.test_output.get_simulation().find_series(id=timeid).get_data('VOF')[:,0]
-    gold = self.gold_output.get_simulation().find_series(id=timeid).get_data('VOF')[:,0]
-    error = max(abs(test - gold))
-    self.report('VOF', time, error, tol)
-    return error <= tol
-
-  def pressure_test(self, timeid, tol):
-    time = self.test_output.get_simulation().find_series(id=timeid).time
-    test = self.test_output.get_simulation().find_series(id=timeid).get_data('Z_P')
-    error = max(abs(test))
-    self.report('pressure', time, error, tol)
-    return error <= tol
-
-  def velocity_test(self, timeid, tol):
-    time = self.test_output.get_simulation().find_series(id=timeid).time
-    test = self.test_output.get_simulation().find_series(id=timeid).get_data('Z_VC')
-    vof = self.test_output.get_simulation().find_series(id=timeid).get_data('VOF')[:,0]
-
+def compare_velocity(vel, vof, tol, time):
     # the x-direction velocity is 1 in cells which aren't solidified
-    uerror = max(abs(u - 1.) for u,vf in zip(test[:,0],vof) if vf < 1.)
-    verror = max(abs(test[:,1]))
-    werror = max(abs(test[:,2]))
+    uerror = max(abs(u - 1.) if vf < 1. else abs(u) for u,vf in zip(vel[:,0],vof))
+    verror = max(abs(vel[:,1]))
+    werror = max(abs(vel[:,2]))
 
-    self.report('uvel', time, uerror, tol)
-    self.report('vvel', time, verror, tol)
-    self.report('wvel', time, werror, tol)
+    nfail = 0
+    nfail += truchas.compare_max(uerror, 0, tol, "x-velocity", time)
+    nfail += truchas.compare_max(verror, 0, tol, "y-velocity", time)
+    nfail += truchas.compare_max(werror, 0, tol, "z-velocity", time)
+    return nfail
 
-    return uerror <= tol and verror <= tol and werror <= tol
 
-  def report(self, var, time, err, tol):
-    status = 'PASS' if err <= tol else 'FAIL'
-    print '%s: %s at t=%8.2e max error=%8.2e (tol=%8.2e)' % (status, var, time, err, tol)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

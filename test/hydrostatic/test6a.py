@@ -1,65 +1,31 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
+import scipy.linalg as spla
 
-import unittest
-import numpy
-import math
+import truchas
 
-import Truchas
-import TruchasTest
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "hydrostatic-6a.inp")
 
-class mytest(TruchasTest.GoldenTestCase):
+    xc = output.centroids()
 
-  test_name = 'hydrostatic-6a'
-  num_procs = 4 # with a parallel executable
+    # pressure
+    pex = sp.array([-2*y + 1 if y < 0.5 else 0 for y in xc[:,1]])
+    for sid in (1, 2):
+        pressure = output.field(sid, "Z_P")
+        error = spla.norm(pressure - pex) / pex.size
+        nfail += truchas.compare_l2(error, 0, 1e-2, "pressure", output.time(sid))
 
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())
+    # velocity zero everywhere
+    nfail += truchas.compare_max(output.field(2, "Z_VC"), 0, 1e-13, "velocity", output.time(2))
 
-  def pressure_test(self, id, tol):
+    truchas.report_summary(nfail)
+    return nfail
 
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.test_output.get_simulation().find_series(id).get_data('Z_P',serialize=False)
-    time = self.test_output.get_simulation().find_series(id).time
 
-    # Analytic pressure solution at cell centrioids
-    cc = self.test_output.get_mesh().centroids()
-    p = numpy.array([-2*y + 1 if y < 0.5 else 0.0 for y in cc[:,1]])
-    
-    # Error
-    error = numpy.linalg.norm(test-p)/p.size
-    if error > tol:
-      print 'pressure at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
-      self.assertTrue(False)
-    else:
-      print 'pressure at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
-
-  def test_pressure1(self):
-    '''Verify initial pressure field'''
-    self.pressure_test(1, 1e-2)
-
-  def test_pressure2(self):
-    '''Verify final pressure field'''
-    self.pressure_test(2, 1e-2)
-
-  def test_final_velocity(self):
-    '''Verify final velocity field'''
-
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_VC',serialize=False)
-
-    tol = 1.0e-13
-    error = max(numpy.sqrt(test[:,0]**2 + test[:,1]**2 + test[:,2]**2))
-    if error > tol:
-      print 'max velocity = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'max velocity = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

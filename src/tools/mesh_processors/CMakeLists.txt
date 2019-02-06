@@ -14,21 +14,17 @@ set(CMAKE_INCLUDE_CURRENT_DIR True)
 # Truchas module directory
 include_directories(${Truchas_MODULE_DIR})
 
-# Add the Danu module directory
-include_directories(${Danu_Fortran_MODULE_DIR})
-
 # --- Preprocessing flags
-set(fpp_flags_list 
+set(fpp_flags_list
     ${Truchas_FPP_FLAGS} -I${TruchasToolsMesh_SOURCE_DIR})
-list(APPEND fpp_flags_list -I${Danu_Fortran_MODULE_DIR})
 build_whitespace_string(fpp_flags ${fpp_flags_list})
 
-# --- Add subdirectories 
+# --- Add subdirectories
 
-# addgaps 
+# addgaps
 add_subdirectory(addgaps)
 
-# scramble 
+# scramble
 add_subdirectory(scramble)
 
-# --- Install rules 		    
+# --- Install rules

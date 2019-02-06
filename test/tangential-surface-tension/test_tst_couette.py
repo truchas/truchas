@@ -1,71 +1,42 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "tangential-surface-tension-couette.inp")
 
-import Truchas
-import TruchasTest
+    xc = output.centroids()
 
-class TangentialSurfaceTension(TruchasTest.GoldenTestCase):
+    # verify final fields
+    sid = 2
+    time = output.time(sid)
 
-  test_name = 'tangential-surface-tension-couette'
-  num_procs = 4 # with a parallel executable
+    # temperature
+    test = output.field(sid, "Z_TEMP")
+    minx = min(xc[:,0]) - 0.5
+    Tref = 1 + (xc[:,0] - minx)
+    nfail += truchas.compare_max(test, Tref, 1e-8, "temp", time)
 
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())
+    # pressure
+    test = output.field(sid, "Z_P")
+    nfail += truchas.compare_max(test, 0, 1e-8, "pressure", time)
 
-  def test_final_temp(self):
-    '''tangential-surface-tension: verifying the temperature field at early time'''
-    tol = 1e-8
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP', serialize=False)
-    cc = self.test_output.get_mesh().centroids()
-    minx = min(cc[:,0]) - 0.5
-    tex = 1 + (cc[:,0] - minx)
-    error = max(abs(test - tex))
-    self.report('final temperature', error, tol)
-    self.assertTrue(error <= tol)
+    # velocity
+    test = output.field(sid, "Z_VC")
+    dsig_dx = -1
+    viscosity = 20
+    minz = min(xc[:,2]) - 0.5
+    nfail += truchas.compare_max(test[:,0], dsig_dx / viscosity * (xc[:,2] - minz),
+                                 1e-7, "x-velocity", time)
+    nfail += truchas.compare_max(test[:,1], 0, 1e-10, "y-velocity", time)
+    nfail += truchas.compare_max(test[:,2], 0, 1e-10, "z-velocity", time)
 
-  def test_final_pressure(self):
-    '''tangential-surface-tension: verifying the temperature field at early time'''
-    tol = 1e-8
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_P')
-    error = max(abs(test))
-    self.report('final pressure', error, tol)
-    self.assertTrue(error <= tol)
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_final_velocity(self):
-    '''tangential-surface-tension: verifying the velocity field at final time'''
-    tol = 1e-7
-    tolt = 1e-10
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_VC', serialize=False)
 
-    dsig_dx = -1.0
-    viscosity = 20.0
-    zc = self.test_output.get_mesh().centroids()[:,2]
-    minz = min(zc) - 0.5
-
-    uerror = max(abs(test[:,0] - dsig_dx / viscosity * (zc - minz)))
-    verror = max(abs(test[:,1]))
-    werror = max(abs(test[:,2]))
-
-    self.report('final uvel', uerror, tol)
-    self.report('final vvel', verror, tolt)
-    self.report('final wvel', werror, tolt)
-
-    self.assertTrue(uerror <= tol)
-    self.assertTrue(verror <= tolt)
-    self.assertTrue(werror <= tolt)
-
-  def report(self, var, err, tol):
-    status = 'PASS' if err <= tol else 'FAIL'
-    print '%s max error=%8.2e: %s (tol=%8.2e)' % (var, err, status, tol)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

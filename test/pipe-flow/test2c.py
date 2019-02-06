@@ -1,85 +1,33 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
-import math
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "pipe-flow-2c.inp")
 
-import Truchas
-import TruchasTest
+    flow_region = output.region(1)
+    xc = output.centroids()[flow_region]
 
-class mytest(TruchasTest.GoldenTestCase):
+    # pressure
+    pex = 3*(0.5 - (xc[:,0]+xc[:,2])/sp.sqrt(2))
+    nfail += truchas.compare_max(output.field(1, "Z_P")[flow_region], pex, 1e-13, "pressure", output.time(1))
+    nfail += truchas.compare_max(output.field(2, "Z_P")[flow_region], pex, 1e-13, "pressure", output.time(2))
 
-  test_name = 'pipe-flow-2c'
-  num_procs = 4 # with a parallel executable
+    # velocity
+    test = output.field(2, "Z_VC")[flow_region]
+    uex = (1 - xc[:,1]**2) / (2*sp.sqrt(2))
 
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass() # This runs Truchas
-    self.test_output = Truchas.TruchasOutput(self.get_output_file())
-    self.test_sim = self.test_output.get_simulation()
-    self.flow_region = Truchas.TruchasRegion(self.test_sim,[1])
+    time = output.time(2)
+    nfail += truchas.compare_max(test[:,0], uex, 1.3e-3, "x-velocity", time)
+    nfail += truchas.compare_max(test[:,1], 0, 1e-11, "y-velocity", time)
+    nfail += truchas.compare_max(test[:,2], uex, 1.3e-3, "z-velocity", time)
 
-  def velocity_test(self, id, tol1, tol2):
-    time = self.test_sim.find_series(id).time
-    data = self.test_sim.find_series(id).get_data('Z_VC',serialize=False,region=self.flow_region)
+    truchas.report_summary(nfail)
+    return nfail
 
-    centroids = self.test_output.get_mesh().centroids(region=self.flow_region)
-    u = (1 - centroids[:,1]**2)/2/math.sqrt(2)
-    w = u
 
-    fail = 0
-
-    error = max(abs(data[:,0] - u))
-    if (error > tol1):
-      fail += 1
-      print 'x-velocity at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol1)
-    else:
-      print 'x-velocity at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol1)
-
-    error = max(abs(data[:,1]))
-    if (error > tol2):
-      fail += 1
-      print 'y-velocity at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol2)
-    else:
-      print 'y-velocity at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol2)
-
-    error = max(abs(data[:,2] - 2))
-    if (error > tol1):
-      fail += 1
-      print 'z-velocity at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol1)
-    else:
-      print 'z-velocity at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol1)
-
-    self.assertTrue(fail == 0)
-    
-  def test_velocity2(self):
-    '''verify early velocity'''
-    self.velocity_test(2,1.3e-3,1e-11)
-
-  def pressure_test(self, id, tol):
-    data = self.test_sim.find_series(id).get_data('Z_P',serialize=False,region=self.flow_region)
-    time = self.test_sim.find_series(id).time
-    cc = self.test_output.get_mesh().centroids(region=self.flow_region)
-    p = 3*(0.5 - (cc[:,0]+cc[:,2])/math.sqrt(2))
-    error = numpy.amax(abs(data-p))
-    if error > tol:
-      print 'pressure at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
-      self.assertTrue(False)
-    else:
-      print 'pressure at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
-
-  def test_pressure1(self):
-    '''verify initial pressure'''
-    self.pressure_test(1,1e-13)
-
-  def test_pressure2(self):
-    '''verify final pressure'''
-    self.pressure_test(2,1e-13)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

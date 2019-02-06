@@ -1,84 +1,34 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import unittest
-import numpy
-import math
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "diverging-duct-1b.inp")
+    xc = output.centroids()
+    time = output.time(2)
 
-import Truchas
-import TruchasTest
+    # pressure
+    pressure = output.field(2, "Z_P")
+    pex = 2.5 - 2 / (xc[:,0]**2 + 0.5*(xc[:,1]+xc[:,2])**2)
+    nfail += truchas.compare_max_rel(pressure, pex, 0.17, "pressure", time)
 
-class DivergingDuct(TruchasTest.GoldenTestCase):
+    # velocity
+    velocity = output.field(2, "Z_VC")
+    uex = xc[:,0] / (xc[:,0]**2 + 0.5*(xc[:,1]+xc[:,2])**2)
+    vex = 0.5*(xc[:,1]+xc[:,2]) / (xc[:,0]**2 + 0.5*(xc[:,1]+xc[:,2])**2)
+    uerr = (velocity[:,0] - uex) / max(abs(uex))
+    verr = (velocity[:,1] - vex) / max(abs(vex))
+    werr = (velocity[:,2] - vex) / max(abs(vex))
+    nfail += truchas.compare_max(uerr, 0, 0.02, "x-velocity", time)
+    nfail += truchas.compare_max(verr, 0, 0.1, "y-velocity", time)
+    nfail += truchas.compare_max(werr, 0, 0.1, "z-velocity", time)
 
-  test_name = 'diverging-duct-1b'
-  num_procs = 4 # with a parallel executable
+    truchas.report_summary(nfail)
+    return nfail
 
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())
 
-  def test_pressure(self):
-    '''Verify pressure field against expected analytic value'''
-
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_P',serialize=False)
-
-    # Analytic pressure solution at cell centrioids
-    cc = self.test_output.get_mesh().centroids()
-    p = 2.5 - 2 / (cc[:,0]**2 + 0.5*(cc[:,1] + cc[:,2])**2)
-
-    tol = 0.17
-    error = max(abs((test-p)/p))
-    if error > tol:
-      print 'pressure: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'pressure: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-  def test_velocity(self):
-    '''Verify velocity field against expected analytic value'''
-
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_VC',serialize=False)
-
-    # Analytic velocity solution at cell centroids
-    cc = self.test_output.get_mesh().centroids()
-    u = cc[:,0] / (cc[:,0]**2 + 0.5*(cc[:,1] + cc[:,2])**2)
-    v = 0.5 * (cc[:,1] + cc[:,2]) / (cc[:,0]**2 + 0.5*(cc[:,1] + cc[:,2])**2)
-    w = v
-
-    fail = 0
-
-    tol = 0.02
-    error = max(abs(test[:,0] - u)/max(abs(u)))
-    if error > tol:
-      fail += 1
-      print 'x-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'x-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    tol = 0.1
-    error = max(abs(test[:,1] - v)/max(abs(v)))
-    if error > tol:
-      fail += 1
-      print 'y-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'y-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    tol = 0.1
-    error = max(abs(test[:,2] - w)/max(abs(w)))
-    if error > tol:
-      fail += 1
-      print 'z-velocity: max scaled error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'z-velocity: max scaled error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    self.assertTrue(fail == 0)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

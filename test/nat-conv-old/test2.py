@@ -1,43 +1,26 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import unittest
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "nat-conv-tet-old.inp", restart_file="restart-tet.bin")
+    golden = tenv.output("nat-conv-tet-old_pgolden/nat-conv-tet-old.h5")
 
-import Truchas
-import TruchasTest
+    test = output.field(2, "Z_VC")
+    gold = golden.field(3, "Z_VC")
 
-class NaturalConvTet(TruchasTest.GoldenTestCase):
+    uerror = (test[:,0] - gold[:,0]) / max(abs(gold[:,0]))
+    werror = (test[:,2] - gold[:,2]) / max(abs(gold[:,2]))
 
-  test_name = 'nat-conv-tet-old'
-  num_procs = 4 # with a parallel executable
-  restart_file = 'restart-tet.bin'
+    nfail += truchas.compare_max(uerror, 0, 8e-5, "x-velocity", output.time(2))
+    nfail += truchas.compare_max(werror, 0, 8e-5, "x-velocity", output.time(2))
 
-  def test_final_velocity(self):
-    '''NaturalConvTet: verifying the final velocity field'''
-    tol = 8.0e-5  # seeing an error of approx 3.7e-5
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_VC')
-    gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_VC')
-    error = max(abs((test[:,0]-gold[:,0]))) / max(abs(gold[:,0]))
-    # Z velocity error
-    fail = 0
-    if error > tol:
-      print 'max(|u - u_ref|) / max(u_ref) = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      fail = 1
-    else:
-      print 'max(|u - u_ref|) / max(u_ref) = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-    # Z velocity error
-    error = max(abs((test[:,2]-gold[:,2]))) / max(abs(gold[:,2]))
-    if error > tol:
-      print 'max(|w - w_ref|) / max(w_ref) = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      fail = 1
-    else:
-      print 'max(|w - w_ref|) / max(w_ref) = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-    if fail:
-      self.assertTrue(False)
-    
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+    truchas.report_summary(nfail)
+    return nfail
+
+
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

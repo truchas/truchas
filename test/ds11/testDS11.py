@@ -1,74 +1,40 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "ds11.inp")
+    golden = tenv.output("ds11_pgolden/ds11.h5")
 
-import Truchas
-import TruchasTest
+    test_region = output.region(1, 2)
+    gold_region = golden.region(1, 2)
 
-class DS11(TruchasTest.GoldenTestCase):
+    # cycle number
+    for sid in (2, 4):
+        cycle = output.cycle(sid)
+        cycleg = golden.cycle(sid)
+        status = "PASS" if cycle == cycleg else "FAIL"
+        print("{:s}: matching cycle numbers {:d}".format(status, cycle))
+        if cycle != cycleg: nfail += 1
 
-  test_name='ds11'
-  num_procs=4
+    # fields
+    for sid in (3, 4):
+        time = output.time(sid)
 
-  gap_block_ids = [10]
-  other_block_ids = [1, 2]
+        test = output.field(sid, "Z_TEMP")[test_region]
+        gold = golden.field(sid, "Z_TEMP")[gold_region]
+        nfail += truchas.compare_max_rel(test, gold, 1e-6, "temp", time)
 
-  true_cells = None
-  gap_cells = None
+        test = output.field(sid, "VOF")[:,2] # comp 2 is fluid
+        gold = golden.field(sid, "VOF")[:,2]
+        nfail += truchas.compare_max(test, gold, 1e-7, "vof", time)
 
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())
-    self.gold_output=Truchas.TruchasOutput(self.get_golden_output_file())
-    self.test_sim = self.test_output.get_simulation()
-    self.gold_sim = self.gold_output.get_simulation()
-    self.test_reg = Truchas.TruchasRegion(self.test_sim,self.other_block_ids)
-    self.gold_reg = Truchas.TruchasRegion(self.gold_sim,self.other_block_ids)
-  
-  def test_cycle_numbers(self):
-    '''DS8: checking the cycle numbers'''
-    for n in [2,4]:
-      test_series = self.test_output.get_simulation().find_series(id=n)
-      gold_series = self.gold_output.get_simulation().find_series(id=n)
-      self.assertTrue(test_series.cycle == gold_series.cycle)
-
-  def test_temperature(self):
-    '''Verifying the temperature field'''
-    tol = 1.0e-6
-    fail = 0
-    for n in [3,4]:
-      gold=self.gold_output.get_simulation().find_series(id=n).get_data('Z_TEMP',region=self.gold_reg)
-      test=self.test_output.get_simulation().find_series(id=n).get_data('Z_TEMP',region=self.test_reg)
-      error=max(abs((test-gold)/gold))
-      if (error > tol):
-        fail += 1
-        print 'Output %3d: max temp rel error = %8.2e: FAIL (tol=%8.2e)'%(n,error,tol)
-      else:
-        print 'Output %3d: max temp rel error = %8.2e: PASS (tol=%8.2e)'%(n,error,tol)
-    self.assertTrue(fail == 0)
+    truchas.report_summary(nfail)
+    return nfail
 
 
-  def test_fluid_fraction(self):
-    '''Verifying the fluid volume fraction field'''
-    tol = 1.0e-7
-    fail = 0
-    for n in [3,4]:
-      gold=self.gold_output.get_simulation().find_series(id=n).get_data('VOF')
-      test=self.test_output.get_simulation().find_series(id=n).get_data('VOF')
-      error=max(abs((test[:,2]-gold[:,2])))  # comp 2 is fluid
-      if (error > tol):
-        fail += 1
-        print 'Output %3d: max vof error = %8.2e: FAIL (tol=%8.2e)'%(n,error,tol)
-      else:
-        print 'Output %3d: max vof error = %8.2e: PASS (tol=%8.2e)'%(n,error,tol)
-    self.assertTrue(fail == 0)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

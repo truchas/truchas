@@ -1,43 +1,34 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "ds4.inp")
+    golden = tenv.output("ds4_pgolden/ds4.h5")
 
-import Truchas
-import TruchasTest
+    # test final cycle number
+    cycle = output.cycle(2)
+    cycleg = golden.cycle(2)
+    status = "PASS" if cycle == cycleg else "FAIL"
+    print("{:s}: matching final cycle numbers".format(status))
+    if cycle != cycleg: nfail += 1
 
-class DS4(TruchasTest.GoldenTestCase):
+    # test final temperature
+    test = output.field(2, "Z_TEMP")
+    gold = golden.field(2, "Z_TEMP")
+    nfail += truchas.compare_max_rel(test, gold, 1e-6, "temp", output.time(2))
 
-  test_name = 'ds4'
-  num_procs = 4 # with a parallel executable
-  
-  def test_final_cycle_number(self):
-    '''DS4: checking the final cycle number'''
-    test_series = self.test_output.get_simulation().find_series(id=2)
-    gold_series = self.gold_output.get_simulation().find_series(id=2)
-    self.assertTrue(test_series.cycle == gold_series.cycle)
+    # test final temperature
+    test = output.field(2, "VOF")[:,2]
+    gold = golden.field(2, "VOF")[:,2]
+    nfail += truchas.compare_max(test, gold, 1e-6, "vof", output.time(2))
 
-  def test_final_temperature(self):
-    '''DS4: verifying the final temperature field'''
-    tol = 1.0e-6
-    T    = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    Tref = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    error = max(abs(T-Tref)/Tref)
-    print 'final temp max rel error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_final_vof(self):
-    '''DS4: verifying the final fluid volume fraction field'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')
-    gold = self.gold_output.get_simulation().find_series(id=2).get_data('VOF')
-    error = max(abs(test[:,2]-gold[:,2]))
-    print 'final vof max error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

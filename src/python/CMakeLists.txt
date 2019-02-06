@@ -1,106 +1,44 @@
 project(TruchasPython NONE)
 
-# --- Python defintions and usefule macros
-include(UsePython)
+set(PYTHON_FILES
+  setup.py
+  truchas/__init__.py
+  truchas/TruchasData.py
+  truchas/TruchasEnvironment.py
+  truchas/TruchasTest.py
+  fortran_write/__init__.py
+  fortran_write/fortran_write.py
+  bin/write-xdmf.py
+  bin/write-gmv.py
+  bin/write-restart.py
+  bin/write-probe.py
+  )
 
-# --- Install
+set(PYTHON_CONFIG_FILE truchas/TruchasConfig.py)
 
-# Location 
-if (NOT TruchasPython_INSTALL_PREFIX)
-  set(version_short python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
-  set(TruchasPython_INSTALL_PREFIX lib/${version_short}/site-packages)
-endif()
-
-# Variable (list) that holds files to install
-set(TruchasPython_INSTALL_FILES)
-
-# --- Define scripts
-set(TruchasPython_COMPILE_SCRIPT ${Truchas_SOURCE_DIR}/scripts/PythonCompile.py)
-set(TruchasPython_CONFIGURE_FILES ${TruchasPython_SOURCE_DIR}/cmake/configure-files.cmake)
-set(TruchasPython_CONFIGURE_INCLUDE ${TruchasPython_SOURCE_DIR}/cmake/configure-include.cmake.in)
-
-# --- Configure the include file
-
-# Executable
+# preprocess the configuration file
 get_target_property(Truchas_EXECUTABLE truchas_exe OUTPUT_NAME)
+configure_file(${PYTHON_CONFIG_FILE}.in ${PYTHON_CONFIG_FILE} @ONLY)
 
-# Full Python install path
-if (IS_ABSOLUTE "${TruchasPython_INSTALL_PREFIX}")
-  set(Python_INSTALL_PREFIX ${TruchasPython_INSTALL_PREFIX})
-else()
-  set(Python_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${TruchasPython_INSTALL_PREFIX})
-endif()
+# build & install rules
+# copy .py files to the build directory
+set(TruchasPython_BINARY_DIR ${CMAKE_CURRENT_BUILD_DIR})
+foreach(f ${PYTHON_FILES})
+  add_custom_command(OUTPUT ${f}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${f} ${f}
+    DEPENDS ${f}
+    )
+endforeach(f)
+add_custom_target(TruchasPython ALL DEPENDS ${PYTHON_FILES})
 
-# Need the test directory, may not be added to the build yet.
-if ( NOT TruchasTest_SOURCE_DIR)
-  set(TruchasTest_SOURCE_DIR ${Truchas_SOURCE_DIR}/test)
-endif()
+set(TruchasPython_INSTALL_PREFIX
+  lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
+install(FILES ${PYTHON_FILES} ${PYTHON_CONFIG_FILE}
+  DESTINATION ${TruchasPython_INSTALL_PREFIX})
 
-if ( NOT TruchasTest_BINARY_DIR)
-  set(TruchasTest_BINARY_DIR ${Truchas_BINARY_DIR}/test)
-endif()
-
-
-# configure
-configure_file(${TruchasPython_CONFIGURE_INCLUDE}
-               ${TruchasPython_BINARY_DIR}/configure-include.cmake
-	       @ONLY)
-
-# --- Add the directories
-add_subdirectory(Truchas)
-
-# --- Python module files
-set(TruchasPython_FILES
-                 FileFilter
-		 TruchasTest)
-
-# Each target is <file> with out the extension
-foreach(f ${TruchasPython_FILES})
-  set(mod_target ${f})
-  set(in_file ${TruchasPython_SOURCE_DIR}/${f}.py.in)
-  set(py_file ${TruchasPython_BINARY_DIR}/${f}.py)
-  set(pyc_file ${py_file}c)
-  set(config_args -DINFILE:STRING=${in_file} -DOUTFILE:STRING=${py_file})
-  add_custom_command(OUTPUT ${py_file} ${pyc_file}
-                     DEPENDS ${in_file}
-                     COMMAND
-		     ${CMAKE_COMMAND} ${config_args} -P ${TruchasPython_CONFIGURE_FILES}
-		     COMMAND
-		     ${PYTHON_EXECUTABLE} ${TruchasPython_COMPILE_SCRIPT} ${py_file}
-		     COMMENT "Processing ${f}")
-  add_custom_target(${mod_target} ALL DEPENDS ${py_file} ${pyc_file})	
-  list(APPEND TruchasPython_INSTALL_FILES ${py_file} ${pyc_file})
-endforeach()		  
-
-# --- Python script files
-set(TruchasPython_SCRIPT_FILES
-                  sample-truchas
-		  truchas)
-#set(TruchasPython_SCRIPT_FILES
-#                  sample-truchas
-#		  xdmf-writer)
-
-		# Each target is <file> with out the extension
-foreach(f ${TruchasPython_SCRIPT_FILES})
-  set(mod_target ${f}.py)
-  set(in_file ${TruchasPython_SOURCE_DIR}/${f}.py.in)
-  set(py_file ${TruchasPython_BINARY_DIR}/${f}.py)
-  set(pyc_file ${py_file}c)
-  set(config_args -DINFILE:STRING=${in_file} -DOUTFILE:STRING=${py_file})
-  add_custom_command(OUTPUT ${py_file} ${pyc_file}
-                     DEPENDS ${in_file}
-                     COMMAND
-		     ${CMAKE_COMMAND} ${config_args} -P ${TruchasPython_CONFIGURE_FILES}
-		     COMMAND
-		     ${PYTHON_EXECUTABLE} ${TruchasPython_COMPILE_SCRIPT} ${py_file}
-		     COMMENT "Processing ${f}")
-  add_custom_target(${mod_target} ALL DEPENDS ${py_file} ${pyc_file})	
-  list(APPEND TruchasPython_INSTALL_SCRIPT_FILES ${py_file} ${pyc_file})
-endforeach()
-
-# --- Define the install locations
-install(PROGRAMS ${TruchasPython_INSTALL_FILES}
-        DESTINATION ${TruchasPython_INSTALL_PREFIX})
-
-install(PROGRAMS ${TruchasPython_INSTALL_SCRIPT_FILES}
-        DESTINATION bin)
+# build fortran write library
+add_library(fwrite fortran_write/fortran_write.f90)
+install(TARGETS fwrite
+        RUNTIME DESTINATION ${Truchas_BIN_INSTALL_DIR}
+        LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
+        ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})

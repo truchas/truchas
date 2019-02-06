@@ -9,14 +9,14 @@
 # Add a TruchasTest script to the CTest suite. Test will be named <name> and
 # <test_script> will be executed for the test. Other options are:
 #
-# CONFIGURATION [Debug|Release|...]       Only run this test under these 
+# CONFIGURATION [Debug|Release|...]       Only run this test under these
 #                                         configurations
-# 
+#
 # DEPENDS test1 test2 ...                 Run test after test1, tes2,... complete.
 #
 # LABELS lab1 lab2 ...                    Labels associated with the test.
 #
-# ENVIRONMENT MYVAR1=VAL1 MYVAR2=VAL2 ... Set environment variables MYVAR1, 
+# ENVIRONMENT MYVAR1=VAL1 MYVAR2=VAL2 ... Set environment variables MYVAR1,
 #                                         MYVAR2 to VAL1, VAL2, ... during the
 #                                         test. The PYTHONPATHS environment variable
 #                                         is set in this macro to include the Truchas
@@ -43,17 +43,12 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
   set(multiValueArgs CONFIGURATION DEPENDS LABELS ENVIRONMENT)
   cmake_parse_arguments(MY_ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  # Exit now if PYTHON_EXECUTABLE has not been defined
-  if ( NOT PYTHON_EXECUTABLE )
-    message(FATAL_ERROR "Must define PYTHON_EXECUTABLE before calling ADD_PYTRUCHAS_TEST")
-  endif()
-
   # Now add the test
   if (IS_ABSOLUTE ${test_script})
-    set(py_command ${PYTHON_EXECUTABLE} ${test_script} -v)
+    set(py_command ${test_script} -v)
   else()
-    set(py_command ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/${test_script} -v)
-  endif()  
+    set(py_command ${CMAKE_CURRENT_SOURCE_DIR}/${test_script} -v)
+  endif()
   add_test(${test_name} ${py_command})
 
   # Set flag and one value properties
@@ -75,7 +70,7 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
     set_tests_properties(${test_name} PROPERTIES ${test_properties})
   endif()
 
-  # Set the list properties, set_tests_properties does not work correctly 
+  # Set the list properties, set_tests_properties does not work correctly
   if ( MY_ARG_DEPENDS )
     set_property(TEST ${test_name} PROPERTY DEPENDS ${MY_ARG_DEPENDS})
   endif()
@@ -86,11 +81,11 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
 
   # Handle the PYTHONPATH environment variable
 
-  # Treat this as a list then convert to a ':' string 
+  # Treat this as a list then convert to a ':' string
   set(py_paths)
 
   # Add Truchas Python and Danu Python build directories
-  list(APPEND py_paths ${TruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR})
+  list(APPEND py_paths ${TruchasPython_BINARY_DIR} ${LegacyTruchasPython_BINARY_DIR} ${PyDanu_BINARY_DIR})
 
 
   # Preserve the user's PYTHONPATH
@@ -114,7 +109,7 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
     endforeach()
     foreach(i ${rm_idx})
       list(REMOVE_AT MY_ARG_ENVIRONMENT ${i})
-    endforeach()  
+    endforeach()
   endif()
 
   # Convert the list to a ":"
@@ -131,10 +126,9 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
     list(APPEND MY_ARG_ENVIRONMENT "PYTHONPATH=${env_pypaths}")
   else()
     set(MY_ARG_ENVIRONMENT "PYTHONPATH=${env_pypaths}")
-  endif()  
+  endif()
   set_property(TEST ${test_name} PROPERTY ENVIRONMENT ${MY_ARG_ENVIRONMENT})
 
   get_test_property(${test_name} ENVIRONMENT testme)
 
 ENDFUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
-

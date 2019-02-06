@@ -1,34 +1,29 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "ds1.inp")
+    golden = tenv.output("ds1_pgolden/ds1.h5")
 
-import Truchas
-import TruchasTest
+    # test final cycle number
+    cycle = output.cycle(2)
+    cycleg = golden.cycle(2)
+    status = "PASS" if cycle == cycleg else "FAIL"
+    print("{:s}: matching final cycle numbers".format(status))
+    if cycle != cycleg: nfail += 1
 
-class DS1(TruchasTest.GoldenTestCase):
+    # test final concentration
+    cnctr = output.field(2, "phi1")
+    exact = golden.field(2, "phi1")
+    nfail += truchas.compare_max_rel(cnctr, exact, 1e-10, "conc", output.time(2))
 
-  test_name = 'ds1'
-  num_procs = 4 # with a parallel executable
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_final_cycle_number(self):
-    '''DS1: checking the final cycle number'''
-    test_series = self.test_output.get_simulation().find_series(id=2)
-    gold_series = self.gold_output.get_simulation().find_series(id=2)
-    self.assertTrue(test_series.cycle == gold_series.cycle)
 
-  def test_final_concentration(self):
-    '''DS1: verifying the final concentration field'''
-    tol = 1.0e-10
-    C    = self.test_output.get_simulation().find_series(id=2).get_data('phi1')
-    Cref = self.gold_output.get_simulation().find_series(id=2).get_data('phi1')
-    error = max(abs(C-Cref)/Cref)
-    print 'final conc max rel error=', error, ' (tol=', tol, ')'
-    self.assertTrue(error <= tol)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

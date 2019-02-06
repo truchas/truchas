@@ -22,8 +22,7 @@ fortran_preprocess_files(COMM_SOURCE_FILES
 			 FPP_FLAGS ${COMM_FPP_FLAGS}
 			 PROCESS_TARGET ProcessTruchasCommFiles)
 set_source_files_properties(${COMM_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}")
+                            COMPILE_FLAGS "-I${PGSLib_MODULE_DIR}")
 
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${COMM_SOURCE_FILES})		       
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${COMM_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasCommFiles)
-

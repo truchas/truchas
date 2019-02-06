@@ -36,7 +36,7 @@ fortran_preprocess_files(LEGACYMESH_SOURCE_FILES
     PROCESS_TARGET ${LEGACYMESH_TARGET_NAME})
 
 # Define compile flags
-set(LEGACYMESH_COMPILE_FLAGS -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR})
+set(LEGACYMESH_COMPILE_FLAGS -I${PGSLib_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
     list(APPEND LEGACYMESH_COMPILE_FLAGS "-assume realloc_lhs")
 endif()

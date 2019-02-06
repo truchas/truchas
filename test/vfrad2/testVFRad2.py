@@ -1,53 +1,24 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import unittest
+def run_test(tenv):
+    nfail = 0
 
-import Truchas
-import TruchasTest
+    # run with centered and shifted and compare
+    stdout, output_c = tenv.truchas(4, "run-centered.inp")
+    stdout, output_s = tenv.truchas(4, "run-shifted.inp")
 
-class VFRad2(TruchasTest.BaseTestCase):
-  
-  test_name = 'vfrad2'
-  num_procs = 4 # with a parallel executable
+    # temperature
+    Tcent = output_c.field(6, "Z_TEMP")
+    Tshft = output_s.field(6, "Z_TEMP")
+    nfail += truchas.compare_max(Tcent, Tshft, 1e-13, "temp", output_c.time(6))
 
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    if self.truchas_is_parallel:
-      self.truchas.nprocs=self.num_procs
-
-  def runTest(self):
-    '''Verifying invariant final temperature field with centered and shifted enclosures'''
-    
-    # First run with centered enclosure.
-    infile = 'run-centered'
-    self.truchas.input = os.path.join(self.get_input_rootdir(self.test_name),infile+'.inp')
-    self.truchas.outdir = self.build_output_directory(self.test_name,infile+'_output')
-    self.truchas.h5file = os.path.join(self.truchas.outdir,infile+'.h5')   
-    self.truchas.run()
-    
-    centered_output = Truchas.TruchasOutput(self.truchas.h5file)
-    
-    # Second run with shifted enclosure.
-    infile = 'run-shifted'
-    self.truchas.input = os.path.join(self.get_input_rootdir(self.test_name),infile+'.inp')
-    self.truchas.outdir = self.build_output_directory(self.test_name,infile+'_output')
-    self.truchas.h5file = os.path.join(self.truchas.outdir,infile+'.h5')   
-    self.truchas.run()
-    
-    shifted_output = Truchas.TruchasOutput(self.truchas.h5file)
-    
-    # Compare the final temperature fields -- should be identical
-    Tcent = centered_output.get_simulation().find_series(id=6).get_data('Z_TEMP')
-    Tshft =  shifted_output.get_simulation().find_series(id=6).get_data('Z_TEMP')
-    error = max(abs(Tcent-Tshft))
-    self.assertTrue(error <= 1.0e-13)
+    truchas.report_summary(nfail)
+    return nfail
 
 
-if __name__ == '__main__':
-  unittest.main()
- 
-  
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0
