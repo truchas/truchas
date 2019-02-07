@@ -180,7 +180,7 @@ contains
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vcell(:,:), vof(:,:), tcell(:)
 
-    integer :: j
+    integer :: i, j
     real(r8) :: vel(3)
 
     ASSERT(size(vcell,dim=1)==3)
@@ -201,8 +201,16 @@ contains
       this%vel_fn(j) = dot_product(this%mesh%normal(:,j), vel) / this%mesh%area(j)
     end do
     call gather_boundary(this%mesh%face_ip, this%vel_fn)
+
+    call this%bc%compute_initial(t)
+    associate (faces => this%bc%v_dirichlet%index, vel => this%bc%v_dirichlet%value)
+      do i = 1, size(faces)
+        j = faces(i)
+        this%vel_fn(j) = dot_product(this%mesh%normal(:,j), vel(:,i)) / this%mesh%area(j)
+      end do
+    end associate
+
     this%vel_fn_n = this%vel_fn
-    !FIXME? Impose Dirichlet velocity conditions on vel_fn_n?
 
     this%vel_cc_n = this%vel_cc !TODO: put directly into vel_cc_n and by-pass vel_cc?
 

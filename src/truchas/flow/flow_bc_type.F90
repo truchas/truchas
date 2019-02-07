@@ -18,6 +18,7 @@ module flow_bc_type
     class(bndry_vfunc), allocatable :: v_dirichlet
     type(surface_tension_bc) :: surface_tension
     logical :: pressure_d
+    type(parameter_list), pointer :: inflow_plist ! OWNED
   contains
     procedure :: init
     procedure :: compute
@@ -67,6 +68,9 @@ contains
     call this%apply_default(mesh)
 
     this%pressure_d = global_sum(size(this%p_dirichlet%index)) > 0
+
+    allocate(this%inflow_plist)
+    call make_inflow_plist(plist, this%inflow_plist)
 
 #ifndef NDEBUG
     print *, "size of p dirichlet: ", size(this%p_dirichlet%index)
@@ -186,5 +190,64 @@ contains
     call this%surface_tension%compute(t)
     this%dp_dirichlet%value = 0.0_r8
   end subroutine compute_initial
+
+  !! This auxiliary subroutine filters the BC parameter list, extracting extra
+  !! data associated with material inflow boundaries into a new parameter list.
+  !! The input parameter list is a list of BC sublists. Those prescribing
+  !! conditions where material inflow may occur are examined for the presence
+  !! of parameters with names beginning with 'inflow'. If any are found, a
+  !! sublist in the output parameter list is created with the same name, and
+  !! the 'face sets' and all 'inflow*' parameters copied to the sublist. Only
+  !! scalar integer and 8-byte real valued inflow parameters are handled.
+
+  subroutine make_inflow_plist(bc_params, inflow_params)
+
+    use string_utilities, only: lower_case
+
+    type(parameter_list), intent(inout) :: bc_params, inflow_params
+
+    type(parameter_list_iterator) :: piter, ibc_piter
+    type(parameter_list), pointer :: ibc, obc
+    character(:), allocatable :: bc_type, pname
+    logical :: found_inflow
+    integer, allocatable :: setids(:)
+
+    piter = parameter_list_iterator(bc_params, sublists_only=.true.)
+    do while (.not.piter%at_end())
+      ibc => piter%sublist()
+      call ibc%get('condition', bc_type)
+      select case (lower_case(bc_type))
+      case ('velocity', 'pressure')
+        found_inflow = .false.
+        ibc_piter = parameter_list_iterator(ibc)
+        do while (.not.ibc_piter%at_end())
+          pname = ibc_piter%name()
+          if (pname(:min(6,len(pname))) == 'inflow') then
+            if (.not.found_inflow) then
+              found_inflow = .true.
+              obc => inflow_params%sublist(piter%name())
+              call ibc%get('face sets', setids)
+              call obc%set('face-set-ids', setids)
+            end if
+            if (ibc_piter%is_scalar()) then
+              select type (pval => ibc_piter%scalar())
+              type is (integer)
+                call obc%set(pname, pval)
+              type is (real(r8))
+                call obc%set(pname, pval)
+              class default
+                INSIST(.false.)
+              end select
+            else
+              INSIST(.false.)
+            end if
+          end if
+          call ibc_piter%next
+        end do
+      end select
+      call piter%next()
+    end do
+
+  end subroutine make_inflow_plist
 
 end module flow_bc_type

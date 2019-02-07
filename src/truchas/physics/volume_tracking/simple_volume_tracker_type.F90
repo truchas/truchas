@@ -21,6 +21,7 @@ module simple_volume_tracker_type
   contains
     procedure :: init
     procedure :: flux_volumes
+    procedure :: set_inflow_material
   end type simple_volume_tracker
 
 contains
@@ -79,5 +80,25 @@ contains
     call gather_boundary(this%mesh%cell_ip, vof)
 
   end subroutine flux_volumes
+
+  !! Set the inflow material for the given boundary faces. A material index
+  !! of 0 will result in materials being fluxed in proportion to the material
+  !! fractions present in the cell. This is the preset default. The BC_INDEX
+  !! array component is ordered, so we use a binary search to locate the faces
+  !! in the the array, so we can set the corresponding inflow material index.
+  !! TODO: If FACES is also ordered (likely) the search can be improved further.
+
+  subroutine set_inflow_material(this, mat, faces)
+    use truchas_logging_services
+    class(simple_volume_tracker), intent(inout) :: this
+    integer, intent(in) :: mat  ! material index
+    integer, intent(in) :: faces(:) ! face indices
+    call TLS_warn('****************************************************')
+    call TLS_warn('INFLOW BC NOT IMPLEMENTED FOR SIMPLE VOLUME TRACKING')
+    call TLS_warn('****************************************************')
+    ! Note that some of the code and data for this would be identical to
+    ! what is in geometric_volume_tracker and could probably be pushed
+    ! up into the base class.
+  end subroutine set_inflow_material
 
 end module simple_volume_tracker_type

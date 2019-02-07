@@ -22,11 +22,12 @@ module geometric_volume_tracker_type
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:,:)
-    integer, allocatable :: priority(:), bc_index(:), local_face(:)
+    integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
   contains
     procedure :: init
     procedure :: flux_volumes
+    procedure :: set_inflow_material
     procedure, private :: normals
     procedure, private :: donor_fluxes
     procedure, private :: donor_fluxes_nd_cell
@@ -97,7 +98,7 @@ contains
 
     ! list of boundary face ids
     j = count(this%mesh%fcell(2,:this%mesh%nface_onP) == 0)
-    allocate(this%bc_index(j), this%local_face(j))
+    allocate(this%bc_index(j), this%local_face(j), this%inflow_mat(j))
     j = 1
     do i = 1, this%mesh%nface_onP
       if (this%mesh%fcell(2,i) == 0) then
@@ -108,6 +109,7 @@ contains
         j = j + 1
       end if
     end do
+    this%inflow_mat = 0
 
   end subroutine init
 
@@ -144,26 +146,57 @@ contains
 
   end subroutine flux_volumes
 
+  !! Set the inflow material for the given boundary faces. A material index
+  !! of 0 will result in materials being fluxed in proportion to the material
+  !! fractions present in the cell. This is the preset default. The BC_INDEX
+  !! array component is ordered, so we use a binary search to locate the faces
+  !! in the the array, so we can set the corresponding inflow material index.
+  !! TODO: If FACES is also ordered (likely) the search can be improved further.
+
+  subroutine set_inflow_material(this, mat, faces)
+    class(geometric_volume_tracker), intent(inout) :: this
+    integer, intent(in) :: mat  ! material index
+    integer, intent(in) :: faces(:) ! face indices
+    integer :: i
+    ASSERT(mat >= 0)
+    do i = 1, size(faces)
+      block
+        integer :: k, k1, k2
+        k1 = 1; k2 = size(this%bc_index)
+        do while (k1 < k2)
+          k = (k1 + k2)/2
+          if (this%bc_index(k) < faces(i)) then
+            k1 = k + 1
+          else
+            k2 = k
+          end if
+        end do
+        ASSERT(k1 == k2)
+        ASSERT(this%bc_index(k1) == faces(i))
+        this%inflow_mat(k1) = mat
+      end block
+    end do
+  end subroutine set_inflow_material
+
   subroutine flux_bc(this, vel, vof_n, dt)
 
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
 
-    integer :: i, f, j, fl
+    integer :: i, f, j, fl, m
 
     do i = 1, size(this%bc_index)
       f = this%bc_index(i)
       fl = this%local_face(i)
       j = this%mesh%fcell(1,f)
       if (j > this%mesh%ncell_onP) cycle
-
-      ! If inflow boundary face, assume that what comes into
-      ! the cell has the same fraction of materials as what
-      ! was in the cell at the beginning of this time step.
-      !
-      ! TODO: We need to add the ability to specify an inflow material.
-      if (vel(fl) < 0) &
+      if (vel(fl) < 0) then
+        if (this%inflow_mat(i) > 0) then
+          this%flux_vol_sub(this%inflow_mat(i),fl) = vel(fl) * dt * this%mesh%area(f)
+        else ! flux material in proportion to starting fractions in cell
           this%flux_vol_sub(:,fl) = vof_n(:,j) * vel(fl) * dt * this%mesh%area(f)
+        end if
+      end if
     end do
 
   end subroutine flux_bc

@@ -63,6 +63,7 @@ module vtrack_driver
   public :: vtrack_enabled
   public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view
   public :: get_vof_from_matl
+  public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -256,5 +257,79 @@ contains
     call stop_timer('Volumetracking')
 
   end subroutine vtrack_update
+
+  !! Sets the inflow material for the given list of boundary faces. MATID is
+  !! the Truchas material number which must be a fluid. MATID can also be the
+  !! special value 0 which indicates that materials should be fluxed into the
+  !! adjacent cell in proportion to the material fractions currently present
+  !! in the cell. The initial default for all boundary faces is the latter.
+
+  subroutine vtrack_set_inflow_material(matid, faces)
+
+    integer, intent(in) :: matid, faces(:)
+    integer :: n
+
+    if (matid == 0) then
+      n = 0
+    else
+      do n = 1, size(this%liq_matid)
+        if (this%liq_matid(n) == matid) exit
+      end do
+      ASSERT(n <= size(this%liq_matid))
+    end if
+
+    call this%vt%set_inflow_material(n, faces)
+
+  end subroutine vtrack_set_inflow_material
+
+  !! Sets the inflow material boundary conditions specified by the given
+  !! parameter list. The structure of the list is a list of sublists. Only
+  !! those that define an "inflow-material" parameter are significant. Its
+  !! value and the corresponding value of the required "face-set-ids"
+  !! parameter are used to set the inflow material on a portion of the
+  !! boundary. Other sublists are ignored.
+
+  subroutine vtrack_set_inflow_bc(params, stat, errmsg)
+
+    use bndry_face_group_builder_type
+
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: plist
+    type(bndry_face_group_builder) :: builder
+    integer, allocatable :: setids(:), mlist(:), xgroup(:), index(:)
+    integer :: j, n, matid, ngroup
+
+    call builder%init(this%mesh)
+
+    piter = parameter_list_iterator(params, sublists_only=.true.)
+    n = piter%count()
+    allocate(mlist(n))
+    n = 0
+    do while (.not.piter%at_end())
+      plist => piter%sublist()
+      if (plist%is_parameter('inflow-material')) then
+        call plist%get('inflow-material', matid, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        call builder%add_face_group(setids, stat, errmsg)
+        if (stat /= 0) return
+        n = n + 1
+        mlist(n) = matid
+      end if
+      call piter%next
+    end do
+
+    call builder%get_face_groups(n, xgroup, index)
+
+    do j = 1, n
+      call vtrack_set_inflow_material(mlist(j), index(xgroup(j):xgroup(j+1)-1))
+    end do
+
+  end subroutine vtrack_set_inflow_bc
 
 end module vtrack_driver

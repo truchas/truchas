@@ -10,6 +10,7 @@ module volume_tracker_class
   contains
     procedure(vt_init), deferred :: init
     procedure(vt_flux_volumes), deferred :: flux_volumes
+    procedure(vt_set_inflow_material), deferred :: set_inflow_material
   end type volume_tracker
 
   abstract interface
@@ -28,6 +29,12 @@ module volume_tracker_class
       real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
       integer, intent(in) :: fluids, void
     end subroutine vt_flux_volumes
+
+    subroutine vt_set_inflow_material(this, mat, faces)
+      import :: volume_tracker
+      class(volume_tracker), intent(inout) :: this
+      integer, intent(in) :: mat, faces(:)
+    end subroutine
   end interface
 
 end module volume_tracker_class

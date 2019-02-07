@@ -178,12 +178,12 @@ contains
     use scalar_func_factories, only: alloc_const_scalar_func
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
-    use vtrack_driver, only: vtrack_driver_init
+    use vtrack_driver, only: vtrack_driver_init, vtrack_set_inflow_bc
     use flow_bc_type
 
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
-    integer :: i, property_id
+    integer :: i, property_id, stat
     integer, allocatable :: fluids(:)
     logical, allocatable :: is_real_fluid(:)
     real(r8), allocatable :: density(:), velocity_cc(:,:)
@@ -192,6 +192,7 @@ contains
     class(scalar_func), allocatable :: f
     type(parameter_list), pointer :: plist
     type(flow_bc), pointer :: flowbc
+    character(:), allocatable :: errmsg
 
     INSIST(allocated(this))
 
@@ -272,8 +273,10 @@ contains
     call this%props%init(this%mesh, i, density, density_delta, viscosity, params)
 
     allocate(flowbc)
-    if (.not.prescribed_flow) &
-        call flowbc%init(this%mesh, params, this%props%vof, this%temperature_fc)
+    if (.not.prescribed_flow) then
+      call flowbc%init(this%mesh, params, this%props%vof, this%temperature_fc)
+      call vtrack_set_inflow_bc(flowbc%inflow_plist, stat, errmsg)
+    end if
 
     call this%flow%init(this%mesh, this%props, flowbc, prescribed_flow, params=params)
 
