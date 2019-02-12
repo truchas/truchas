@@ -493,3 +493,5 @@ add_pytruchas_test(steady-flow-5c steady-flow/test5c.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(steady-flow-5d steady-flow/test5d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-6a steady-flow/test6a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(steady-flow-6b steady-flow/test6b.py PROCESSORS 4 LABELS FLOW)
+
+add_pytruchas_test(inflow-bc-1 inflow-bc/test1.py PROCESSORS 4 LABELS FLOW)

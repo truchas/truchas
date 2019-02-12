@@ -1,0 +1,92 @@
+INFLOW INTO A VOID-FILLED PIPE
+------------------------------
+A simple 1D inviscid pipe flow problem. Here the pipe is entirely void
+initially and fluid is introduced at the left end starting at t=0. The
+sole purpose of this test is to verify that we can specify an inflow
+material. The domain is [-0.375,0.375] x [-0.5,0.5] x [-0.5,0.5] with
+regular cells of size 0.25. The inlet velocity is 0.25 and we run until
+t=1.5 which should put the fluid/void interface at x=0 at the midpoint
+of the middle layer of cells. NB: if the problem is evolved longer,
+the solution will go south when the interface passes into the final layer
+of cells on the right as the algorithm is currently unable to collapse
+void there.
+
+&MESH
+  mesh_file = 'mesh1.g'
+/
+
+&OUTPUTS
+  output_t  = 0.0, 1.5
+  output_dt = 1.5
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 1.5
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+/
+
+&NUMERICS
+  dt_init = 0.1
+  dt_grow = 1.05
+  dt_min  = 1.0e-3
+  dt_max  = 1.0
+/
+
+&FLOW
+  inviscid = t
+  courant_number = 0.25
+  subcycles = 2
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 50
+  krylov_method = "cg"
+/
+
+&FLOW_BC
+  name = 'inlet'
+  condition = 'velocity'
+  face_set_ids = 1
+  data_constant = 0.25, 0.0, 0.0
+  inflow_material = 1
+/
+
+Entirely void initially
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 2
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name = 'void'
+  material_number = 2
+  density = 0.0
+  material_feature = 'background'
+/
