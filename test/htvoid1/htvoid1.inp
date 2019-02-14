@@ -1,0 +1,141 @@
+HTVOID1 -- Heat transfer in flow with void, Test 1
+
+This exercises the treatment of void within the diffusion solver's
+heat transfer model.  The focus here is on the dynamic domain for
+the heat equation and on the advected heat source.  The domain is
+a 1D flow channel with a 3x3 cell cross section.  There is a plug
+of fluid near the left end, with void on both sides of the plug.
+The plug is initially at rest but accelerates down the channel
+due to the gravity which is directed to the right.  The simulation
+terminates before the fluid has reached the right end.  The mesh
+nodes are randomly perturbed (10% of the edge length).  There is
+an initial temperature gradient in the fluid, and no-heat-flux BC
+imposed everywhere.  With a small conductivity, the initial temperature
+profile should be carried down the channel with the fluid without
+large changes.
+
+The flow itself is extremely sensitive to the various flow parameters
+(but completely independent of the heat transfer).  Small changes to
+things -- initial step size, for example -- will lead to different
+flow solutions with bits of fluid left behind or not.  The flow
+solution is largely correct, but the differences in which cells are
+void will result in heat solutions that are not comparable.
+
+&MESH
+  mesh_file = 'channel-3.gen'
+/
+
+&OUTPUTS
+  Output_T  = 0.0, 1.0
+  Output_Dt = 1.0 !.05
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 1.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+  body_force_density = 6.0, 0.0, 0.0
+  heat_transport = .true.
+/
+
+&DIFFUSION_SOLVER
+  stepping_method    = 'Non-adaptive BDF1'
+  residual_atol      = 0.0
+  residual_rtol      = 1.0e-6
+  max_nlk_itr        = 10
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_init = 0.01
+  dt_grow = 1.05
+/
+
+&FLOW
+  inviscid = .true.
+  courant_number = 0.4
+  subcycles = 2
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 10
+  krylov_method = "cg"
+/
+
+ Fails in parallel; see artf19997.
+&INTERFACES
+  vof_method = 'divide'
+/
+
+Fluid plug at left end of the channel
+&BODY
+  surface_name = 'box'
+  length = 3.0, 2.0, 2.0
+  translation_pt = -1.5, 0.0, 0.0
+  material_number = 1
+  velocity = 0.0, 0.0, 0.0
+  temperature_function = 'init-temp'
+/
+
+T = 6 + (x + y + z)/sqrt(3)
+&FUNCTION
+  name = 'init-temp'
+  type = 'polynomial'
+  poly_coefficients = 6, 3*0.577350269
+  poly_exponents(:,1) = 0, 0, 0
+  poly_exponents(:,2) = 1, 0, 0
+  poly_exponents(:,3) = 0, 1, 0
+  poly_exponents(:,4) = 0, 0, 1
+/
+
+Remainder of the channel is void
+&BODY
+  surface_name    = 'background'
+  mesh_material_number = 1
+  material_number = 2
+  temperature     = 1.0
+  velocity = 3*0.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'whole boundary'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 1, 2, 3, 4, 5, 6
+  data_constant = 0.0
+/
+
+&MATERIAL
+  Material_Name   = 'fluid'
+  Material_Number = 1
+  priority        = 1
+  Density         = 1.0
+/
+
+&PHASE
+  name = 'fluid'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 1.0e-3
+/
+
+&MATERIAL_SYSTEM
+  name = 'fluid'
+  phases = 'fluid'
+/
+
+&MATERIAL
+  Material_Name = 'void'
+  Material_Number = 2
+  Material_Feature = 'background'
+  priority = 2
+  Density = 0.0
+/
