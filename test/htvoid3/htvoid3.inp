@@ -1,0 +1,189 @@
+HTVOID3 -- Solidifying flow with void
+
+This test exercises phase change within the free surface flow-coupled
+heat tranfer solver.  The focus here is on the coupling of phase change
+to flow.  The domain is a 1D flow channel thermally coupled to a colder,
+high heat capacity wall body (1 cell thick) on the bottom of the channel.
+The simulation begins with the channel filled with a hot fluid flowing to
+the right.  Void enters at the left end and the fluid exits the right end
+with a fixed unit velocity.  A right-directed gravity is included to help
+maintain a flat fluid/void interface.  The interface between the fluid and
+lower wall body is modeled with an internal HTC condition.  The fluid cools
+and solidifies along the wall as the flow develops, and the simulation ends
+before all the fluid has exited the domain.
+
+NOTE: The flow itself is very sensitive to the various flow parameters.
+Small changes to things -- initial step size, for example -- will lead to
+different flow solutions with bits of fluid left behind or not.  The flow
+solution is largely correct, but the differences in which cells are void
+will result in heat solutions that are not comparable.
+
+&MESH
+  mesh_file = 'htvoid3.gen'
+  interface_side_sets = 10
+/
+
+&OUTPUTS
+  Output_T  = 0.0, 5.0
+  Output_Dt = 5.0 !0.2
+/
+
+&SIMULATION_CONTROL
+  phase_start_times = 5.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+  body_force_density = 1.0, 0.0, 0.0
+  heat_transport = .true.
+/
+
+&DIFFUSION_SOLVER
+  stepping_method    = 'Non-adaptive BDF1'
+  cond_vfrac_threshold = 1.0e-4
+  residual_rtol      = 1.0e-6
+  residual_atol      = 1.0e-9
+  max_nlk_itr        = 50
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_init = 0.02
+  dt_grow = 1.05
+/
+
+&FLOW
+  inviscid = .true.
+  courant_number = 0.4
+  subcycles = 4
+  material_priority = -1, 3, 4
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 10
+  krylov_method = "cg"
+/
+
+FLUID CHANNEL
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 3
+  velocity = 0.0, 0.0, 0.0
+  temperature = 5.0
+/
+
+LOWER WALL
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  temperature = 1.0
+/
+
+INFLOW OF VOID AT LEFT END
+&FLOW_BC
+  name = 'inlet'
+  face_set_ids = 1
+  condition = 'velocity'
+  data_constant = 1.0, 0.0, 0.0
+  inflow_material = 4
+/
+
+OUTFLOW of FLUID AT RIGHT END
+&FLOW_BC
+  name = 'outlet'
+  condition = 'velocity'
+  face_set_ids = 2
+  data_constant = 1.0, 0.0, 0.0
+/
+
+NO HEAT FLUX THROUGH ALL EXTERNAL BOUNDARIES
+&DS_BOUNDARY_CONDITION
+  name = 'external boundaries'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 1, 2, 5
+  data_constant = 0.0
+/
+
+HTC CONDITION ALONG CHANNEL/WALL INTERFACE.
+&DS_INTERFACE_CONDITION
+  name = 'lower channel-wall interface'
+  variable = 'temperature'
+  condition = 'HTC'
+  face_set_ids = 10
+  data_constant = 5.0
+/
+
+&MATERIAL
+  Material_Name   = 'wall'
+  Material_Number = 1
+  priority        = 1
+  immobile        = .true.
+  Material_Feature = 'background'
+  Density         = 10.0
+/
+
+&PHASE
+  name = 'wall'
+  property_name(1) = 'density',       property_constant(1) = 10.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'wall'
+  phases = 'wall'
+/
+
+&MATERIAL
+  Material_Name   = 'solid-foo'
+  Material_Number = 2
+  priority        = 2
+  immobile        = .true.
+  Density         = 1.0
+/
+
+&PHASE
+  name = 'solid-foo'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 0.02
+/
+
+&MATERIAL
+  Material_Name   = 'liquid-foo'
+  Material_Number = 3
+  priority        = 3
+  Density         = 1.0
+/
+
+&PHASE
+  name = 'liquid-foo'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 0.02
+/
+
+&MATERIAL_SYSTEM
+  name = 'foo'
+  phases = 'solid-foo', 'liquid-foo'
+  transition_temps_low  = 4.0
+  transition_temps_high = 4.2
+  latent_heat = 5.0
+  reference_temp = 0.0
+  reference_enthalpy = 0.0
+/
+
+&MATERIAL
+  Material_Name = 'void'
+  Material_Number = 4
+  priority = 4
+  Density = 0.0
+/
