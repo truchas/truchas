@@ -27,10 +27,10 @@ contains
 
     !! Namelist variables
     integer :: face_set_ids(32), inflow_material
-    real(r8) :: data_constant(3)
+    real(r8) :: data_constant(3), inflow_temperature
     character(31) :: name, condition, data_function
     namelist /flow_bc/ name, face_set_ids, condition, data_constant, data_function, &
-        inflow_material
+        inflow_material, inflow_temperature
 
     call TLS_info('')
     call TLS_info('Reading FLOW_BC namelists ...')
@@ -54,6 +54,7 @@ contains
       data_constant = NULL_R
       data_function = NULL_C
       inflow_material = NULL_I
+      inflow_temperature = NULL_R
 
       if (is_IOP) read(lun,nml=flow_bc,iostat=ios,iomsg=iom)
       call broadcast(ios)
@@ -65,6 +66,7 @@ contains
       call broadcast(data_constant)
       call broadcast(data_function)
       call broadcast(inflow_material)
+      call broadcast(inflow_temperature)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
@@ -72,7 +74,7 @@ contains
       else if (params%is_sublist(name)) then
         call TLS_fatal(label // ': another FLOW_BC namelist has this NAME: ' // trim(name))
       else
-        plist => params%sublist(name)
+        plist => params%sublist(trim(name))
       end if
 
       !! FACE_SET_IDS is required.
@@ -136,6 +138,7 @@ contains
       select case (lower_case(condition))
       case ('velocity', 'pressure')
         if (inflow_material /= NULL_I) call plist%set('inflow-material', inflow_material)
+        if (inflow_temperature /= NULL_R) call plist%set('inflow-temperature', inflow_temperature)
       end select
 
     end do

@@ -1,0 +1,128 @@
+INVISCID PIPE FLOW WITH DIFFERENT TEMPERATURE FOR INFLOW MATERIAL
+-----------------------------------------------------------------
+Steady inviscid flow through a pipe with heat transfer. The initial fluid
+temperature is 1 but the temperature of the inflowing material is 2. The
+sole purpose of this test is to verify that the inflowing material has the
+prescribed temperature, and not the temperature of the receiving cell, which
+is the default behavior. This problem runs out to a long time, so that the
+initial material has been flushed out many times, and the temperature should
+be very nearly uniform at the inflow temperature.
+
+This test uses the HTSD solver for heat transport
+
+&MESH
+  mesh_file = 'mesh1.g'
+/
+
+&OUTPUTS
+  output_t  = 0.0, 20.0
+  output_dt = 20.0
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 20.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+  heat_transport = .true.
+/
+
+&NUMERICS
+  dt_init = 0.1
+  dt_grow = 1.05
+  dt_min  = 1.0e-3
+  dt_max  = 1.0
+/
+
+&FLOW
+  inviscid = t
+  courant_number = 0.25
+  subcycles = 2
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 50
+  krylov_method = "cg"
+/
+
+&FLOW_BC
+  name = 'inlet'
+  condition = 'velocity'
+  face_set_ids = 1
+  data_constant = 0.25, 0.0, 0.0
+  inflow_temperature = 2.0
+/
+
+&FLOW_BC
+  name = 'outlet'
+  condition = 'pressure'
+  face_set_ids = 2
+  data_constant = 0.0
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0.0
+  rel_temp_tol = 1.0e-4
+  abs_enthalpy_tol = 0.0
+  rel_enthalpy_tol = 1.0e-4
+  nlk_tol = 5e-3
+  nlk_preconditioner = 'ssor'
+  verbose_stepping = .true.
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'inlet'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 1
+  data_constant = 0.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'outlet'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 2
+  data_constant = 0.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'sides'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 3
+  data_constant = 0.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 0.25, 0.0, 0.0
+  temperature = 1.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity', property_constant(3) = 1e-2
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

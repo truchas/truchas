@@ -425,7 +425,8 @@ contains
     else if (flow) then
       this%have_fluid_flow = .true.
       allocate(hadv1)
-      call hadv1%init(this%mesh)
+      call hadv1%init(this%mesh, stat, errmsg2)
+      if (stat /= 0) call TLS_fatal('DS_INIT: error initializing enthalpy advection: ' // errmsg2)
       call move_alloc(hadv1, this%hadv)
     end if
     

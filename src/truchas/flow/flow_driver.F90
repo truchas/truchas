@@ -79,6 +79,7 @@ module flow_driver
   public :: flow_driver_set_initial_state
   public :: flow_driver_dump_state
   public :: flow_set_pre_solidification_density
+  public :: inflow_plist
 
   type :: flow_driver_data
     type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
@@ -130,6 +131,11 @@ contains
   logical function flow_enabled()
     flow_enabled = allocated(this)
   end function flow_enabled
+
+  function inflow_plist()
+    type(parameter_list), pointer :: inflow_plist
+    inflow_plist => this%flow%bc%inflow_plist
+  end function inflow_plist
 
   subroutine read_flow_namelists(lun)
 

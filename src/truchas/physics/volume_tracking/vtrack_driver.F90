@@ -324,7 +324,7 @@ contains
       call piter%next
     end do
 
-    call builder%get_face_groups(n, xgroup, index)
+    call builder%get_face_groups(n, xgroup, index, omit_offp=.true.)
 
     do j = 1, n
       call vtrack_set_inflow_material(mlist(j), index(xgroup(j):xgroup(j+1)-1))
