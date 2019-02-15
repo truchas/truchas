@@ -650,7 +650,7 @@ contains
       call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
           this%location_iter_max)
 
-      this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
+      this%flux_vol_sub(:this%nfluid,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
           cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
           this%mesh%area(fi), this%cutoff, this%nfluid, ierr)
       if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
