@@ -125,13 +125,13 @@ cells at each long_edit interval.
 &FLOW_BC
   name = 'walls'
   face_set_ids = 1, 2, 3, 4
-  condition = 'no slip'
+  type = 'no-slip'
 /
 
 &FLOW_BC
   name = 'symmetry'
   face_set_ids = 5
-  condition = 'slip'
+  type = 'free-slip'
 /
 
 &BODY

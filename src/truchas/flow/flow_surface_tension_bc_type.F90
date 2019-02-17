@@ -52,13 +52,13 @@ contains
     piter = parameter_list_iterator(params, sublists_only=.true.)
     do while (.not.piter%at_end())
       bc_params => piter%sublist()
-      call bc_params%get('condition', bc_type)
-      if (raise_case(bc_type) == raise_case('surface tension')) then
+      call bc_params%get('type', bc_type)
+      if (raise_case(bc_type) == raise_case('marangoni')) then
         if (found) &
-            call TLS_fatal('error: Found more than one surface tension BC namelist. ' // &
+            call TLS_fatal('error: Found more than one "marangoni" BC namelist. ' // &
             'Currently only one supported.')
-        call bc_params%get('data', this%dsig_dT)
-        call bc_params%get('face sets', setids)
+        call bc_params%get('dsigma', this%dsig_dT)
+        call bc_params%get('face-set-ids', setids)
         call builder%add_face_group(setids, stat, errmsg)
         if (stat /= 0) call TLS_fatal('error generating boundary condition: ' // errmsg)
         found = .true.

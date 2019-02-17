@@ -186,6 +186,7 @@ contains
     use parameter_module, only: nmat
     use vtrack_driver, only: vtrack_driver_init, vtrack_set_inflow_bc
     use flow_bc_type
+    use truchas_logging_services
 
     !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
     !-
@@ -280,7 +281,8 @@ contains
 
     allocate(flowbc)
     if (.not.prescribed_flow) then
-      call flowbc%init(this%mesh, params, this%props%vof, this%temperature_fc)
+      call flowbc%init(this%mesh, params, this%props%vof, this%temperature_fc, stat, errmsg)
+      if (stat /= 0) call TLS_fatal('FLOW initialization error: ' // errmsg)
       call vtrack_set_inflow_bc(flowbc%inflow_plist, stat, errmsg)
     end if
 

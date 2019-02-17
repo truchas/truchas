@@ -29,7 +29,7 @@ module flow_bc_type
 
 contains
 
-  subroutine init(this, mesh, params, vof, temperature_fc)
+  subroutine init(this, mesh, params, vof, temperature_fc, stat, errmsg)
 
     use parameter_list_type
     use flow_props_type
@@ -39,29 +39,26 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(inout) :: params
     real(r8), intent(in), target :: vof(:), temperature_fc(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(flow_bc_factory) :: f
     type(parameter_list), pointer :: plist
 
-    ! need to generalize this to allow user input:
-    ! - no slip walls (=> velocity-dirichlet + pressure_neumann)
-    ! - free slip walls (=> v_zero_normal + pressure_neumann)
-    ! - pressure (=> pressure_dirichlet + v_neumann)
-    ! - velocity (=> v_dirichlet + pressure_neumann)
-
     plist => params%sublist('bc')
     call f%init(mesh, plist)
-    call f%alloc_vector_bc([character(len=32) :: "velocity", "no slip"], &
-        this%v_dirichlet, default=0.0_r8)
-    call f%alloc_scalar_bc(["pressure"], this%p_dirichlet)
-    call f%alloc_scalar_bc(["pressure"], this%dp_dirichlet)
-    ! need to have a p_neumann here... to complement velocity-dirichlet
+    call f%alloc_dir_vel_bc(this%v_dirichlet, stat, errmsg)
+    if (stat /= 0) return
+    call f%alloc_dir_prs_bc(this%p_dirichlet, stat, errmsg)
+    if (stat /= 0) return
+    call f%alloc_dir_prs_bc(this%dp_dirichlet, stat, errmsg)
+    if (stat /= 0) return
+    call f%alloc_neu_prs_bc(this%p_neumann, stat, errmsg)
+    if (stat /= 0) return
+    call f%alloc_zero_vn_bc(this%v_zero_normal, stat, errmsg)
+    if (stat /= 0) return
 
-    call f%alloc_scalar_bc([character(len=32) :: "velocity", "no slip", "slip", "surface tension"], &
-        this%p_neumann, default=0.0_r8, ignore_data=.true.)
-    call f%alloc_scalar_bc([character(len=32) :: "slip", "surface tension"], &
-        this%v_zero_normal, default=0.0_r8)
-
+    !TODO: incorporate this into the bc factory
     call this%surface_tension%init(plist, mesh, vof, temperature_fc)
 
     ! apply the default boundary condition on faces with no user-specified BC
@@ -72,12 +69,6 @@ contains
     allocate(this%inflow_plist)
     call make_inflow_plist(plist, this%inflow_plist)
 
-#ifndef NDEBUG
-    print *, "size of p dirichlet: ", size(this%p_dirichlet%index)
-    print *, "size of p neumann: ", size(this%p_neumann%index)
-    print *, "size of v dirichlet: ", size(this%v_dirichlet%index)
-    print *, "size of surface tension: ", size(this%surface_tension%index)
-#endif
   end subroutine init
 
   ! Assigns an MPI rank to do the pressure-neumann null space fixup.
@@ -215,7 +206,7 @@ contains
     piter = parameter_list_iterator(bc_params, sublists_only=.true.)
     do while (.not.piter%at_end())
       ibc => piter%sublist()
-      call ibc%get('condition', bc_type)
+      call ibc%get('type', bc_type)
       select case (lower_case(bc_type))
       case ('velocity', 'pressure')
         found_inflow = .false.
@@ -226,7 +217,7 @@ contains
             if (.not.found_inflow) then
               found_inflow = .true.
               obc => inflow_params%sublist(piter%name())
-              call ibc%get('face sets', setids)
+              call ibc%get('face-set-ids', setids)
               call obc%set('face-set-ids', setids)
             end if
             if (ibc_piter%is_scalar()) then

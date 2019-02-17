@@ -17,7 +17,6 @@ module geometric_volume_tracker_type
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
     logical :: nested_dissection
-    real(r8) :: location_tol ! tolerance of plic fit
     real(r8) :: cutoff ! allow volume fraction {0,(cutoff,1]}
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
@@ -59,7 +58,6 @@ contains
     this%nmat = nmat
 
     call params%get('location_iter_max', this%location_iter_max, default=30)
-    call params%get('location_tol', this%location_tol, default=1.0e-8_r8)
     call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
     call params%get('subcycles', this%subcycles, default=2)
     call params%get('nested_dissection', this%nested_dissection, default=.true.)

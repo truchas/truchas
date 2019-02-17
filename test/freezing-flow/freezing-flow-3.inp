@@ -63,20 +63,20 @@ A kludge to force hitting the final time exactly
 &FLOW_BC
   name = 'inlet'
   face_set_ids = 1
-  condition = 'velocity'
-  data_constant = 1.0, 0.0, 0.0
+  type = 'velocity'
+  velocity = 1.0, 0.0, 0.0
 /
 
 &FLOW_BC
   name = 'outlet'
   face_set_ids = 2
-  condition = 'pressure'
-  data_constant = 0.0
+  type = 'pressure'
+  pressure = 0.0
 /
 
 &FLOW_BC
   name = 'sides'
-  condition = 'slip'
+  type = 'free-slip'
   face_set_ids = 3, 4
 /
 

@@ -48,7 +48,7 @@ Note: Should obtain the same results if heat_transport is disabled.
 &FLOW_BC
   name = 'all sides'
   face_set_ids = 1, 2, 3, 4, 5
-  condition = 'slip'
+  type = 'free-slip'
 /
 
 &DIFFUSION_SOLVER

@@ -48,23 +48,23 @@ Inflow velocity at left and bottom
 &FLOW_BC
   name = 'inflow'
   face_set_ids = 1, 3
-  condition = 'velocity'
-  data_constant = 4.0, 3.0, 0.0
+  type = 'velocity'
+  velocity = 4.0, 3.0, 0.0
 /
 
 Pressure at top and right outflow
 &FLOW_BC
   name = 'outflow'
   face_set_ids = 2, 4
-  condition = 'pressure'
-  data_constant = 0.0
+  type = 'pressure'
+  pressure = 0.0
 /
 
 Symmetry planes (z = const)
 &FLOW_BC
   name = 'symmetry'
   face_set_ids = 5
-  condition = 'slip'
+  type = 'free-slip'
 /
 
 &BODY

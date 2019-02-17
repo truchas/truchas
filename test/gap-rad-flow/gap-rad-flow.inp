@@ -108,16 +108,16 @@ Inflow at left end of channel
 &FLOW_BC
   name = 'inlet'
   face_set_ids = 4
-  condition = 'velocity'
-  data_constant = 16.0, 0.0, 0.0
+  type = 'velocity'
+  velocity = 16.0, 0.0, 0.0
 /
 
 Outflow at right end of channel
 &FLOW_BC
   name = 'outlet'
   face_set_ids = 5
-  condition = 'pressure'
-  data_constant = 0.0
+  type = 'pressure'
+  pressure = 0.0
 /
 
 Left block (x<0):

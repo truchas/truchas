@@ -111,17 +111,17 @@ INFLOW OF VOID AT LEFT END OF CHANNEL
 &FLOW_BC
   name = 'inlet'
   face_set_ids = 5
-  condition = 'velocity'
-  data_constant = 1.0, 0.0, 0.0
+  type = 'velocity'
+  velocity = 1.0, 0.0, 0.0
   inflow_material = 3
 /
 
 OUTFLOW OF FLUID AT RIGHT END OF CHANNEL
 &FLOW_BC
   name = 'outlet'
-  condition = 'velocity'
+  type = 'velocity'
   face_set_ids = 6
-  data_constant = 1.0, 0.0, 0.0
+  velocity = 1.0, 0.0, 0.0
 /
 
 NO HEAT FLUX THROUGH ALL EXTERNAL BOUNDARIES, SYMMETRY PLANES

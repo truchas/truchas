@@ -89,14 +89,14 @@
 
 &FLOW_BC
   name = 'surface tension'
-  condition = 'surface tension'
+  type = 'marangoni'
   face_set_ids = 3
-  data_constant = -1.0
+  dsigma = -1.0
 /
 
 &FLOW_BC
   name = 'walls'
-  condition = 'slip'
+  type = 'free-slip'
   face_set_ids = 1, 2, 4, 5, 6
 /
 

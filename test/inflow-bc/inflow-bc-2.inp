@@ -52,9 +52,9 @@ A kludge to force hitting the final time exactly
 
 &FLOW_BC
   name = 'inlet'
-  condition = 'velocity'
   face_set_ids = 1
-  data_constant = 0.25, 0.0, 0.0
+  type = 'velocity'
+  velocity = 0.25, 0.0, 0.0
   inflow_material = 1
   inflow_temperature = 2.0
 /

@@ -53,17 +53,17 @@ A kludge to force hitting the final time exactly
 
 &FLOW_BC
   name = 'inlet'
-  condition = 'velocity'
   face_set_ids = 1
-  data_constant = 0.25, 0.0, 0.0
+  type = 'velocity'
+  velocity = 0.25, 0.0, 0.0
   inflow_temperature = 2.0
 /
 
 &FLOW_BC
   name = 'outlet'
-  condition = 'pressure'
   face_set_ids = 2
-  data_constant = 0.0
+  type = 'pressure'
+  pressure = 0.0
 /
 
 &DIFFUSION_SOLVER

@@ -64,21 +64,21 @@ recover that exactly regardless of step size.
 
 &FLOW_BC
   name = 'left'
-  condition = 'pressure'
+  type = 'pressure'
   face_set_ids = 1
-  data_constant = 0.0
+  pressure = 0.0
 /
 
 &FLOW_BC
   name = 'right'
-  condition = 'pressure'
+  type = 'pressure'
   face_set_ids = 2
-  data_constant = 0.0
+  pressure = 0.0
 /
 
 &FLOW_BC
   name = 'symmetry'
-  condition = 'slip'
+  type = 'free-slip'
   face_set_ids = 3
 /
  

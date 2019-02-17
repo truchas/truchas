@@ -63,8 +63,9 @@
   rel_tol = 0.0
   abs_tol = 1.0e-12
   max_ds_iter = 50
-  max_amg_iter = 5
-  krylov_method = 'cg'
+  max_amg_iter = 50
+  krylov_method = 'gmres'
+  gmres_krylov_dim = 5
 /
 
 Fluid-filled region in the lower part of the domain
@@ -108,7 +109,7 @@ Surrounding mold region
   data_constant = 0.0
 /
 
-x&FLOW_BC
+&FLOW_BC
   name = 'walls'
   face_set_ids = 12
   condition = 'no slip'

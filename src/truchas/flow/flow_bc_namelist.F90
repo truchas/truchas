@@ -27,10 +27,10 @@ contains
 
     !! Namelist variables
     integer :: face_set_ids(32), inflow_material
-    real(r8) :: data_constant(3), inflow_temperature
-    character(31) :: name, condition, data_function
-    namelist /flow_bc/ name, face_set_ids, condition, data_constant, data_function, &
-        inflow_material, inflow_temperature
+    real(r8) :: pressure, velocity(3), dsigma, inflow_temperature
+    character(31) :: name, type, pressure_func, velocity_func
+    namelist /flow_bc/ name, face_set_ids, type, pressure, pressure_func, velocity, &
+        velocity_func, dsigma, inflow_material, inflow_temperature
 
     call TLS_info('')
     call TLS_info('Reading FLOW_BC namelists ...')
@@ -50,9 +50,12 @@ contains
 
       name = NULL_C
       face_set_ids = NULL_I
-      condition = NULL_C
-      data_constant = NULL_R
-      data_function = NULL_C
+      type = NULL_C
+      pressure = NULL_R
+      velocity = NULL_R
+      dsigma = NULL_R
+      pressure_func = NULL_C
+      velocity_func = NULL_C
       inflow_material = NULL_I
       inflow_temperature = NULL_R
 
@@ -62,9 +65,12 @@ contains
 
       call broadcast(name)
       call broadcast(face_set_ids)
-      call broadcast(condition)
-      call broadcast(data_constant)
-      call broadcast(data_function)
+      call broadcast(type)
+      call broadcast(pressure)
+      call broadcast(velocity)
+      call broadcast(dsigma)
+      call broadcast(pressure_func)
+      call broadcast(velocity_func)
       call broadcast(inflow_material)
       call broadcast(inflow_temperature)
 
@@ -81,61 +87,51 @@ contains
       if (count(face_set_ids /= NULL_I) == 0) then
         call TLS_fatal(label // ': FACE_SET_IDS not specified')
       else
-        call plist%set('face sets', pack(face_set_ids, mask=(face_set_ids/=NULL_I)))
+        call plist%set('face-set-ids', pack(face_set_ids, mask=(face_set_ids/=NULL_I)))
       end if
 
-      !! Check the CONDITION value (required)
-      select case (lower_case(condition))
+      !! Check the TYPE value (required)
+      select case (lower_case(type))
       case (NULL_C)
-        call TLS_fatal(label // ': CONDITION not specified')
+        call TLS_fatal(label // ': TYPE not specified')
       case ('velocity')
-        data_size = 2
-      case ('pressure')
-        data_size = 1
-      case ('slip')
-        data_size = 0
-      case ('no slip')
-        data_size = 0
-      case ('surface tension')
-        data_size = 1
-      case default
-        call TLS_fatal(label // ': unknown CONDITION: "' // trim(condition) // '"')
-      end select
-      call plist%set('condition', trim(condition))
-
-      !! Check the DATA_CONSTANT or DATA_FUNCTION values
-      if (any(data_constant /= NULL_R) .and. data_function /= NULL_C) then
-        call TLS_fatal(label // ': cannot specify both DATA_CONSTANT and DATA_FUNCTION')
-      else if (any(data_constant /= NULL_R)) then
-        select case (data_size)
-        case (0) ! no data needed
-          call TLS_warn(label // ': specified DATA_CONSTANT value will be ignored')
-        case (1) ! scalar data needed
-          if (any(data_constant(2:) /= NULL_R) .or. data_constant(1) == NULL_R) &
-              call TLS_fatal(label // ': require scalar value for DATA_CONSTANT')
-          call plist%set('data', data_constant(1))
-        case (2) ! 3-vector data needed
-          if (any(data_constant == NULL_R)) call TLS_fatal('require 3-vector for DATA_CONSTANT')
-          call plist%set('data', data_constant)
-        end select
-      else if (data_function /= NULL_C) then
-        !call TLS_fatal(label // ': DATA_FUNCTION not yet implemented')
-        select case (data_size)
-        case (0) ! no data needed
-          call TLS_warn(label // ': specified DATA_FUNCTION value will be ignored')
-        case (1) ! scalar data needed
-          !TODO: verify a scalar function with this name exists
-          call plist%set('data', trim(data_function))
-        case (2) ! 3-vector data needed
+        if (any(velocity /= NULL_R) .and. velocity_func /= NULL_C) then
+          call TLS_fatal(label // ': cannot specify both VELOCITY and VELOCITY_FUNC')
+        else if (any(velocity /= NULL_R)) then
+          if (any(velocity == NULL_R)) call TLS_fatal(label // ': 3-vector required for VELOCITY')
+          call plist%set('velocity', velocity)
+        else if (velocity_func /= NULL_C) then
           !TODO: verify a vector function with this name exists
-          call plist%set('data', trim(data_function))
-        end select
-      else if (data_size > 0) then
-        call TLS_fatal(label // ': either DATA_CONSTANT or DATA_FUNCTION is required')
-      end if
+          call plist%set('velocity', trim(velocity_func))
+        else
+          call TLS_fatal(label // ': either VELOCITY or VELOCITY_FUNC is required')
+        end if
+      case ('pressure')
+        if (pressure /= NULL_R .and. pressure_func /= NULL_C) then
+          call TLS_fatal(label // ': cannot specify both PRESSURE and PRESSURE_FUNC')
+        else if (pressure /= NULL_R) then
+          call plist%set('pressure', pressure)
+        else if (pressure_func /= NULL_C) then
+          !TODO: verify a scalar function with this name exists
+          call plist%set('pressure', trim(pressure_func))
+        else
+          call TLS_fatal(label // ': either PRESSURE or PRESSURE_FUNC is required')
+        end if
+      case ('free-slip')
+      case ('no-slip')
+      case ('marangoni')
+        if (dsigma /= NULL_R) then
+          call plist%set('dsigma', dsigma)
+        else
+          call TLS_fatal(label // ': DSIGMA is required')
+        end if
+      case default
+        call TLS_fatal(label // ': unknown TYPE: "' // trim(type) // '"')
+      end select
+      call plist%set('type', trim(type))
 
       !! Additional inflow data
-      select case (lower_case(condition))
+      select case (lower_case(type))
       case ('velocity', 'pressure')
         if (inflow_material /= NULL_I) call plist%set('inflow-material', inflow_material)
         if (inflow_temperature /= NULL_R) call plist%set('inflow-temperature', inflow_temperature)

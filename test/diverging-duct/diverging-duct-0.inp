@@ -58,23 +58,23 @@ Inlet velocity
 &FLOW_BC
   name = 'inflow'
   face_set_ids = 1
-  condition = 'velocity'
-  data_constant = 1.0, 0.0, 0.0
+  type = 'velocity'
+  velocity = 1.0, 0.0, 0.0
 /
 
 Outlet pressure
 &FLOW_BC
   name = 'outflow'
   face_set_ids = 2
-  condition = 'pressure'
-  data_constant = 0.68
+  type = 'pressure'
+  pressure = 0.68
 /
 
 Pipe walls
 &FLOW_BC
   name = 'wall'
   face_set_ids = 3
-  condition = 'slip'
+  type = 'free-slip'
 /
 
 &BODY

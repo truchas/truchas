@@ -72,16 +72,16 @@ Inlet pressure
 &FLOW_BC
   name = 'inlet'
   face_set_ids = 1
-  condition = 'pressure'
-  data_constant = 3.0
+  type = 'pressure'
+  pressure = 3.0
 /
 
 Outlet pressure
 &FLOW_BC
   name = 'outlet'
   face_set_ids = 2
-  condition = 'pressure'
-  data_constant = 0.0
+  type = 'pressure'
+  pressure = 0.0
 /
 
 Wall -- Interface created along side set 3. Side set 5 is one-sided
@@ -89,7 +89,7 @@ relative to the flow volume (element block 1)
 &FLOW_BC
   name = 'wall'
   face_set_ids = 5
-  condition = 'no slip'
+  type = 'no-slip'
 /
 
 &BODY

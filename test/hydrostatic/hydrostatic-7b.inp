@@ -43,7 +43,7 @@ Fluid should remain at rest, with a linear pressure field.
 &FLOW_BC
   name = 'all sides'
   face_set_ids = 1
-  condition = 'slip'
+  type = 'free-slip'
 /
 
 Lower half

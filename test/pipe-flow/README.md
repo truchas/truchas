@@ -21,6 +21,7 @@ the wall side, which replaces the explicit no-slip BC on the side. (mesh2a)
 
 These are variations of the coordinate-aligned problem test2a that use differing
 methods for specifying the no-slip BC along the solid wall.
+
 * pipe-flow-3a. No explicit BC; just what happens at a mesh-conforming
   solid/liquid interface. This is pipe-flow-2a with modified solver parameters.
 * pipe-flow-3b. No-slip BC on internal side set.

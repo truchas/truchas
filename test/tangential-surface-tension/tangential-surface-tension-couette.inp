@@ -101,27 +101,27 @@ u = dsig/dx / mu * (y - ymin)
 
 &FLOW_BC
   name = 'inlet'
-  condition = 'pressure'
+  type = 'pressure'
   face_set_ids = 1, 2
-  data_constant = 0.0
+  pressure = 0.0
 /
 
 &FLOW_BC
   name = 'symmetry'
-  condition = 'slip'
+  type = 'free-slip'
   face_set_ids = 5, 6
 /
 
 &FLOW_BC
   name = 'surface tension'
-  condition = 'surface tension'
+  type = 'marangoni'
   face_set_ids = 3
-  data_constant = -1.0
+  dsigma = -1.0
 /
 
 &FLOW_BC
   name = 'wall'
-  condition = 'no slip'
+  type = 'no-slip'
   face_set_ids = 4
 /
 

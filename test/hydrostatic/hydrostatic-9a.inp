@@ -43,7 +43,7 @@ Variations use rotated meshes (and rotated g)
 &FLOW_BC
   name = 'all sides'
   face_set_ids = 1, 2, 3, 4, 5
-  condition = 'slip'
+  type = 'free-slip'
 /
 
 Lower half
