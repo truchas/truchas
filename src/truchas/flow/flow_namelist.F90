@@ -30,12 +30,12 @@ contains
     integer  :: subcycles, location_iter_max, material_priority(16), fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection
     real(r8) :: viscous_implicitness, viscous_number, courant_number
-    real(r8) :: fluid_cutvof, min_face_fraction,location_tol, cutoff
+    real(r8) :: fluid_cutvof, min_face_fraction, cutoff
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
         fluid_cutvof, min_face_fraction, &
         track_interfaces, nested_dissection, subcycles, &
-        location_tol, location_iter_max, cutoff, material_priority, fischer_dim
+        location_iter_max, cutoff, material_priority, fischer_dim
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -54,7 +54,6 @@ contains
     track_interfaces = (nmat > 1)
     nested_dissection = .true.
     subcycles = NULL_I
-    location_tol = NULL_R
     location_iter_max = NULL_I
     cutoff = NULL_R
     material_priority = NULL_I
@@ -77,7 +76,6 @@ contains
     call broadcast(track_interfaces)
     call broadcast(nested_dissection)
     call broadcast(subcycles)
-    call broadcast(location_tol)
     call broadcast(location_iter_max)
     call broadcast(cutoff)
     call broadcast(material_priority)
@@ -96,11 +94,6 @@ contains
     plist => params%sublist('volume-tracker')
     call plist%set('track_interfaces', track_interfaces)
     call plist%set('nested_dissection', nested_dissection)
-
-    if (location_tol /= NULL_R) then
-      if (location_tol <= 0.0_r8) call TLS_fatal('LOCATION_ERROR must be > 0.0')
-      call plist%set('location_tol', location_tol)
-    end if
 
     if (location_iter_max /= NULL_I) then
       if(location_iter_max < 1) call TLS_fatal('LOCATION_ITER_MAX must be > 0')
@@ -128,12 +121,12 @@ contains
     if (viscous_implicitness /= NULL_R) then
       if (viscous_implicitness < 0 .or. viscous_implicitness > 1) &
           call TLS_fatal('VISCOUS_IMPLICITNESS must be in [0,1]')
-      call plist%set('viscous implicitness', viscous_implicitness)
+      call plist%set('viscous-implicitness', viscous_implicitness)
     end if
 
     if (viscous_number /= NULL_R) then
       if (viscous_number < 0.0_r8) call TLS_fatal('VISCOUS_NUMBER must be >= 0.0')
-      call plist%set('viscous number', viscous_number)
+      call plist%set('viscous-number', viscous_number)
     end if
 
     if (courant_number /= NULL_R) then

@@ -90,7 +90,7 @@ contains
       end do
       dtc = this%courant_number * global_minval(dtc)
 
-      if (.not.this%inviscid) then
+      if (.not.this%inviscid .and. this%viscous_number > 0.0_r8) then
         do j = 1, m%ncell_onP
           if (this%props%cell_t(j) == regular_t .and. mu(j) > 0.0_r8) then
             ! Original simple version
@@ -137,7 +137,8 @@ contains
 
     plist => params%sublist('options')
     call plist%get('inviscid', this%inviscid, default=.false.)
-    call plist%get('viscous number', this%viscous_number, default=0.1_r8)
+    if (.not.this%inviscid) &
+        call plist%get('viscous-number', this%viscous_number, default=0.0_r8)
     call plist%get('courant number', this%courant_number, default=0.5_r8)
     call plist%get('body force', array, default=[0.0_r8, 0.0_r8, 0.0_r8])
     this%body_force = array

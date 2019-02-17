@@ -79,7 +79,6 @@ A kludge to force hitting the final time exactly
   courant_number = 0.4
   subcycles = 2
   nested_dissection = f
-  location_tol = 1.0e-12
 /
 
 &FLOW_PRESSURE_SOLVER

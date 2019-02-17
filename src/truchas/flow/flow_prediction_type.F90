@@ -73,7 +73,7 @@ module flow_prediction_type
     real(r8), allocatable :: rhs(:,:), sol(:), rhs1d(:)
     real(r8), allocatable :: grad_fc_vector(:,:,:)
     real(r8) :: viscous_implicitness
-    real(r8) :: solidify_implicitness
+    real(r8) :: solidify_implicitness = 1.0_r8
   contains
     procedure :: init
     procedure :: setup
@@ -118,8 +118,7 @@ contains
     this%inviscid = inviscid
 
     plist => params%sublist("options")
-    call plist%get('viscous implicitness', this%viscous_implicitness, default=0.5_r8)
-    call plist%get('solidfy implicitness', this%solidify_implicitness, default=1.0_r8)
+    call plist%get('viscous-implicitness', this%viscous_implicitness, default=1.0_r8)
     call alloc_turbulence_model(this%turb, plist, off=this%inviscid)
 
     allocate(this%rhs(3,mesh%ncell))
