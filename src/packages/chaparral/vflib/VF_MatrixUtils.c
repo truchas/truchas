@@ -467,7 +467,8 @@ void VF_FillUpperDiagonal(void)
 
 void VF_ReciprocityStats(double *mean, double *sdev)
 {
-  int    i, j, icnt, ncnt;
+  int    i, j, icnt;
+  uint64_t ncnt;
   int    master, nrows_g, nrows_l;
   float  *rowVF, *colVF;
   double err, std, cnt, tmp, *areas;
@@ -503,7 +504,7 @@ void VF_ReciprocityStats(double *mean, double *sdev)
       row++;
     }
   }
-  VF_GlobalSumInt   (&ncnt);
+  VF_GlobalSumUInt64(&ncnt);
   VF_GlobalSumDouble(&err);
   VF_GlobalSumDouble(&std);
   cnt   = (double)ncnt;
