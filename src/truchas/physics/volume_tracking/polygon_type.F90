@@ -7,6 +7,12 @@
 !! Zechariah J. Jibben <zjibben@lanl.gov>
 !! October 2015
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! References:
 !!     1. Mirtich. Fast and Accurate Computation of Polehedral Mass Properties.
 !!        Journal of Graphics Tools, 1996.

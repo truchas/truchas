@@ -1,3 +1,9 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
 !! In general, the flow mesh involves cells where the velocities and
 !! pressure will be updated (termed `regular` cells) and cells where
 !! these quantities will not be updated (either `void` or `solid` cells).
@@ -23,6 +29,7 @@
 !! loops checking for face types can assume that
 !! face_t > regular_t -> can be corrected
 !! face_t <= regular_t -> play a role in the solution
+
 module flow_domain_types
   ! cell/face types for flow algorithm
   integer, parameter :: regular_void_t = -1

@@ -6,6 +6,12 @@
 !! without doing a geometric reconstruction. Most useful
 !! when only one material is present, or when fluids aren't
 !! expected to interact, or when fluid diffusion is acceptable.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module simple_volume_tracker_type
 
