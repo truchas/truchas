@@ -1,8 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! Copyright (c) Los Alamos National Security, LLC.  This file is part of the
-!! Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
-!! in the LICENSE file found in the top-level directory of this distribution.
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -33,52 +31,16 @@ MODULE DRIVERS
   ! Public Procedures
   public :: CODE
 
-  ! Disclaimer Notice
-  character (LEN=string_len), dimension(2), target :: disclaimer = (/       &
-     '   This Truchas release is registered with the Los Alamos National ', &
-     '   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.     ' /)
-
   ! Copyright Notice
-  character (LEN=string_len), dimension(39),target :: copyright = [                       &
-     '   Copyright (c) 2007-2015. Los Alamos National Security, LLC.                   ', &
-     '   All rights reserved.                                                          ', &
+  character (LEN=string_len), dimension(8),target :: copyright = [                       &
+     '   Copyright 2007-2019.  Triad National Security, LLC.  All rights reserved.     ', &
      '                                                                                 ', &
-     '   This software was produced under U.S. Government contract DE-AC52-06NA25396   ', &
-     '   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos    ', &
-     '   National Security, LLC for the U.S. Department of Energy. The U.S. Government ', &
-     '   has rights to use, reproduce, and distribute this software.  NEITHER THE      ', &
-     '   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS  ', &
-     '   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software', &
-     '   is modified to produce derivative works, such modified software should be     ', &
-     '   clearly marked, so as not to confuse it with the version available from LANL. ', &
+     '   This program was produced under U.S. Government contract 89233218CNA000001    ', &
+     '   for Los Alamos National Laboratory (LANL), which is operated by Triad         ', &
+     '   National Security, LLC for the U.S. Department of Energy/National Nuclear     ', &
+     '   Security Administration.                                                      ', &
      '                                                                                 ', &
-     '   Additionally, redistribution and use in source and binary forms, with or      ', &
-     '   without modification, are permitted provided that the following conditions    ', &
-     '   are met:                                                                      ', &
-     '                                                                                 ', &
-     '   1. Redistributions of source code must retain the above copyright notice,     ', &
-     '      this list of conditions and the following disclaimer.                      ', &
-     '                                                                                 ', &
-     '   2. Redistributions in binary form must reproduce the above copyright notice,  ', &
-     '      this list of conditions and the following disclaimer in the documentation  ', &
-     '      and/or other materials provided with the distribution.                     ', &
-     '                                                                                 ', &
-     '   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National ', &
-     '      Laboratory, LANL, the U.S. Government, nor the names of its contributors   ', &
-     '      may be used to endorse or promote products derived from this software      ', &
-     '      without specific prior written permission.                                 ', &
-     '                                                                                 ', &
-     '   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND            ', &
-     '   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,        ', &
-     '   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS     ', &
-     '   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS         ', &
-     '   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,    ', &
-     '   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT      ', &
-     '   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,     ', &
-     '   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY         ', &
-     '   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT           ', &
-     '   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF      ', &
-     '   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             ']
+     '   Truchas is open source software distributed under the 3-Clause BSD License.   ']
 
   logical :: mem_on = .false.
 
@@ -135,9 +97,6 @@ CONTAINS
 
     call ANNOUNCE ('COPYRIGHT')
     call TLS_info (copyright)
-
-    call ANNOUNCE ('DISCLAIMER')
-    call TLS_info (disclaimer)
 
     ! open the danu output file
     call TDO_open
