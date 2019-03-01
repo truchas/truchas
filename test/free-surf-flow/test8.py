@@ -10,23 +10,23 @@ import TruchasTest
 
 class mytest(TruchasTest.GoldenTestCase):
 
-  test_name = 'free-surf-flow-5'
+  test_name = 'free-surf-flow-8'
   num_procs = 4 # with a parallel executable
 
   def test_fields(self):
     success = True
 
-    # Final time
-    success &= self.vof_test(2, 4e-2)
-    success &= self.pressure_test(2, 1e-10)
-    success &= self.velocity_test(2, 1e-11)
+    for i in range(1,3):
+      success &= self.vof_test(i, 1e-13)
+      success &= self.pressure_test(i, 1e-12)
+      success &= self.velocity_test(i, 1e-12)
 
     self.assertTrue(success)
 
   def vof_test(self, id, tol):
     time = self.test_output.get_simulation().find_series(id).time
     test = self.test_output.get_simulation().find_series(id).get_data('VOF')[:,0]
-    gold = self.gold_output.get_simulation().find_series(1).get_data('VOF')[:,0]
+    gold = self.gold_output.get_simulation().find_series(id).get_data('VOF')[:,0]
     error = numpy.amax(abs(test-gold))
     return self.report('vof', time, error, tol)
 
@@ -34,28 +34,42 @@ class mytest(TruchasTest.GoldenTestCase):
     time = self.test_output.get_simulation().find_series(id).time
     test = self.test_output.get_simulation().find_series(id).get_data('Z_P')
     gold = self.gold_output.get_simulation().find_series(id).get_data('Z_P')
-    error = numpy.amax(abs(test))
-    return self.report('pressure', time, error, tol)
+
+    error = numpy.amax(abs(test-gold))
+    success = self.report('pressure', time, error, tol)
+
+    # ensure pressure is zero in the void
+    vof = self.test_output.get_simulation().find_series(id).get_data('VOF')[:,0]
+    void_error = max(abs(p) for p,vf in zip(test,vof) if vf == 0)
+    success &= self.report('void-pressure', time, void_error, tol)
+
+    return success
 
   def velocity_test(self, id, tol):
     time = self.test_output.get_simulation().find_series(id).time
     test = self.test_output.get_simulation().find_series(id).get_data('Z_VC')
+    gold = self.gold_output.get_simulation().find_series(id).get_data('Z_VC')
     vof = self.test_output.get_simulation().find_series(id).get_data('VOF')[:,0]
 
-    # the x-velocity is 1 in cells containing fluid
-    uerror = max(abs(u - 1.) if vf > 0.0 else abs(u) for u,vf in zip(test[:,0],vof))
-    verror = max(abs(test[:,1]))
-    werror = max(abs(test[:,2]))
+    # compare with golden output
+    uerror = max(abs(test[:,0] - gold[:,0]))
+    verror = max(abs(test[:,1] - gold[:,1]))
+    werror = max(abs(test[:,2] - gold[:,2]))
 
     success = self.report('x-velocity', time, uerror, tol)
     success &= self.report('y-velocity', time, verror, tol)
     success &= self.report('z-velocity', time, werror, tol)
+
+    # the velocity is 0 in purely void cells
+    error = max(max(abs(u)) for u,vf in zip(test,vof) if vf == 0)
+    success &= self.report('void-velocity', time, error, tol)
+
     return success
 
   def report(self, var, time, error, tol):
     success = error <= tol
     status = 'PASS' if success else 'FAIL'
-    print '%s: %s at t=%8.2e: max error=%8.2e (tol=%8.2e)'%(status,var,time,error,tol)
+    print '%s: %s at t=%8.2e: max error=%8.2e (tol=%8.2e)' % (status,var,time,error,tol)
     return success
 
 if __name__ == '__main__':

@@ -221,7 +221,7 @@ contains
 
       if (this%vof(i) < this%cutoff) then ! criteria for solid
         this%cell_t(i) = solid_t
-      elseif (this%vof_novoid(i) < this%cutoff) then ! criteria for void
+      elseif (this%vof_novoid(i) == 0) then ! criteria for void
         this%cell_t(i) = void_t
       else ! regular
         this%cell_t(i) = regular_t
@@ -234,8 +234,8 @@ contains
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
-    this%any_real_fluid_onP = any(this%cell_t(:this%mesh%ncell_onP) == regular_t)
-    this%any_real_fluid = global_any(this%any_real_fluid_onP) !global_any(this%cell_t == regular_t)
+    this%any_real_fluid_onP = any(this%vof_novoid(:this%mesh%ncell_onP) > this%cutoff)
+    this%any_real_fluid = global_any(this%any_real_fluid_onP)
 
     call stop_timer("update properties")
 

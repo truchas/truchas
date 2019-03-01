@@ -176,7 +176,7 @@ contains
     call this%setup_gravity(props, body_force)
     call this%grad_p_rho(props, P_cc)
     call this%setup_face_velocity(dt, props, grad_p_rho_cc_n, vel_cc, vel_fn)
-    call this%setup_solver(dt, props, vel_fn)
+    call this%setup_solver(dt, props, vel_fn, P_cc)
     call stop_timer("setup")
   end subroutine setup
 
@@ -186,10 +186,10 @@ contains
     grad_p_rho_cc_n = this%grad_p_rho_cc
   end subroutine accept
 
-  subroutine setup_solver(this, dt, props, vel)
+  subroutine setup_solver(this, dt, props, vel, p_cc)
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
-    real(r8), intent(in) :: vel(:), dt
+    real(r8), intent(in) :: vel(:), p_cc(:), dt
     !-
     type(pcsr_matrix), pointer :: A
     real(r8), pointer :: ds(:,:), row_val(:)
@@ -241,10 +241,16 @@ contains
     associate (m => this%mesh, rhs => this%rhs)
 
       do j = 1, m%ncell_onP
-        rhs(j) = 0.0_r8
-        if (props%cell_t(j) /= regular_t) cycle
+        if (props%cell_t(j) /= regular_t) then
+          ! pressure set to zero in void cells. dp cancels current pressure.
+          this%rhs(j) = -p_cc(j)
+          cycle
+        else
+          rhs(j) = 0.0_r8
+        end if
 
-        associate( fn => m%cface(m%xcface(j):m%xcface(j+1)-1))
+        associate(fn => m%cface(m%xcface(j):m%xcface(j+1)-1), &
+            nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1))
           do i = 1, size(fn)
             ! face velocity follows the convention of being positive in the face normal
             ! Boundary conditions have already been
@@ -255,12 +261,24 @@ contains
               this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
             end if
           end do
+          this%rhs(j) = this%rhs(j) / dt
+
+          ! void acts as 0 dirichlet pressure. on dp, dirichlet -p condition
+          do i = 1, size(fn)
+            fi = fn(i)
+            ni = nhbr(i)
+
+            if (props%face_t(fi) == regular_void_t .and. ni > 0) then
+              coeff = dot_product(ds(:,fi), m%normal(:,fi)) / props%rho_fc(fi)
+              this%rhs(j) = this%rhs(j) - coeff * p_cc(ni)
+            end if
+          end do
         end associate
-        this%rhs(j) = this%rhs(j) / dt
+
+
       end do
 
       ! handle dirichlet bcs
-      ! print *, "DEBUGGING PRESSURE BOUNDARY CONDITIONS"
       associate (faces => this%bc%dp_dirichlet%index, values => this%bc%dp_dirichlet%value, &
           rho_f => props%rho_fc)
         do i = 1, size(faces)
@@ -396,6 +414,7 @@ contains
       end associate
       call gather_boundary(m%face_ip, vel_fn)
     end associate
+
   end subroutine setup_face_velocity
 
   subroutine solve(this, dt, props, grad_p_rho_cc_n, vel_cc, p_cc, vel_fc)
@@ -517,6 +536,11 @@ contains
       end do
       call gather_boundary(this%mesh%face_ip, gp_fc)
       call interpolate_fc(gp_cc, gp_fc, props%face_t, this%bc%p_neumann%index)
+
+      ! zero pressure gradient on void cells
+      do j = 1, this%mesh%ncell_onP
+        if (props%cell_t(j) /= regular_t) gp_cc(:,j) = 0
+      end do
     end associate
   end subroutine grad_p_rho
 
@@ -546,7 +570,11 @@ contains
     ! assumes dynamic pressure gradients have already been computed
     do i = 1, this%mesh%ncell_onP
       ! -dt * grad(dP)/rho
-      vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
+      if (props%cell_t(i) == void_t .or. props%cell_t(i) == solid_t) then
+        vel_cc(:,i) = 0
+      else
+        vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
+      end if
     end do
     call gather_boundary(this%mesh%cell_ip, vel_cc)
 

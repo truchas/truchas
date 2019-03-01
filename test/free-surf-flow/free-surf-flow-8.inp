@@ -1,0 +1,108 @@
+INVISCID FLUID FILLING A PIPE WITH VOID
+---------------------------------------
+This is simple 1D inviscid fluid/void flow problem. The 2D 5x1 pipe domain is
+void on the right and fluid on the left.. There is a pressure BC of -10 at the
+left boundary, and an initial fluid velocity of 0.5. Fluid initially moves to
+the right, then is sucked out the left boundary.
+
+This test is made to ensure no velocity or pressure is introduced in void cells,
+particularly as a result of the pressure gradient at the fluid/void interface.
+
+&MESH
+  mesh_file = 'mesh2.g'
+/
+
+&OUTPUTS
+  output_t  = 0.0, 0.52
+  output_dt = 0.52
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 4.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+  body_force_density = 0.0, 0.0, 0.0
+/
+
+&NUMERICS
+  dt_constant = 2e-2
+/
+
+&FLOW
+  inviscid = t
+  courant_number = 0.25
+  subcycles = 2
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 50
+  krylov_method = "cg"
+/
+
+&FLOW_BC
+  name = 'inlet'
+  type = 'pressure'
+  face_set_ids = 1
+  pressure = -10.0
+/
+
+&FLOW_BC
+  name = 'outlet'
+  type = 'pressure'
+  face_set_ids = 2
+  pressure = 0.0
+/
+
+Void to the right
+&BODY
+  surface_name = 'plane'
+  axis = 'x'
+  translation_pt = 1.0, 0.0, 0.0
+  material_number = 2
+  velocity = 0.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+Fluid to the left
+&BODY
+  surface_name = 'background'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 0.5, 0.0, 0.0
+  temperature = 0.0
+/
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name = 'void'
+  material_number = 2
+  density = 0.0
+  material_feature = 'background'
+/

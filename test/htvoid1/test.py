@@ -18,10 +18,10 @@ class HTVoid1(TruchasTest.GoldenTestCase):
     test_series = self.test_output.get_simulation().find_series(id=2)
     gold_series = self.gold_output.get_simulation().find_series(id=2)
     self.assertTrue(test_series.cycle == gold_series.cycle)
-  
+
   def test_final_temp(self):
     '''HTVOID1: verifying the temperature field at final time'''
-    tol = 1.0e-10
+    tol = 1.0e-9
     test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
     error = max(abs(test-gold))
@@ -31,4 +31,3 @@ class HTVoid1(TruchasTest.GoldenTestCase):
 if __name__ == '__main__':
   import unittest
   unittest.main()
-

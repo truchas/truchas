@@ -281,6 +281,7 @@ add_pytruchas_test(free-surf-flow-4 free-surf-flow/test4.py PROCESSORS 4 LABELS 
 add_pytruchas_test(free-surf-flow-5 free-surf-flow/test5.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(free-surf-flow-6 free-surf-flow/test6.py PROCESSORS 4 LABELS FLOW)
 #add_pytruchas_test(free-surf-flow-7 free-surf-flow/test7.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(free-surf-flow-8 free-surf-flow/test8.py PROCESSORS 4 LABELS FLOW)
 
 # PURE ADVECTION TESTS -- OLD FLOW SOLVER
 add_pytruchas_test(advection-old-0  advection-old/test0.py  PROCESSORS 4 LABELS OLD_FLOW)
