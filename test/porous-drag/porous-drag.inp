@@ -74,24 +74,27 @@ A = C(1-lambda)^2/lambda^3
 /
 
 
-&NUMERICS
+&LEGACY_FLOW
  
-       projection_linear_solution = 'projection',
+       inviscid = .true.
+       porous_flow = .true.
+       projection_linear_solution = 'projection'
+       courant_number       = 0.4
+       porous_implicitness  = 0.5
 
-       courant_number       = 0.4,
+/
+
+&NUMERICS
+
        dt_init              = 0.0001
        discrete_ops_type    = 'ortho' 
-       porous_implicitness  = 0.5
+
 /
 
 &PHYSICS
  
-       Body_Force      = 0.0, 0.0, 0.0,
- 
-       fluid_flow      = .true.,
-       inviscid        = .true.,
-       stokes          = .false.,
-       porous_flow     = .true.,
+       legacy_flow = .true.
+       body_force_density = 0.0, 0.0, 0.0,
 
 /
 

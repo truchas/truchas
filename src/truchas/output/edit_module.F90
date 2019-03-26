@@ -51,7 +51,7 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,         only: alittle
-    use fluid_data_module,      only: fluid_flow, qin, qout, isImmobile
+    use fluid_data_module,      only: fluid_flow, qin, qout
     use fluid_type_module,      only: Div_c
     use matl_module,            only: GATHER_VOF
     use legacy_mesh_api,        only: ncells, ndim, Cell
@@ -66,7 +66,7 @@ CONTAINS
                                       projection_precond_iterations, &
                                       projection_iterations
     use property_module,        only: Get_User_Material_ID
-    use property_data_module,   only: Material_Name
+    use property_data_module,   only: Material_Name, isImmobile
     use property_module,        only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
     use time_step_module,       only: cycle_number, t
     use viscous_data_module,    only: viscous_iterations

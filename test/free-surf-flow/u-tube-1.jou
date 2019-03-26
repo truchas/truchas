@@ -1,0 +1,40 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 11/02/2018 09:14:50 AM
+## Command Options:
+
+create cylinder height 0.05 radius 1
+webcut volume 1 with plane yplane offset 0 noimprint nomerge
+webcut volume 1 with cylinder radius 0.95 axis z
+delete volume 2 3
+volume 1 move y -0.5
+
+brick x 0.05 y 1.0 z 0.05
+align volume 4 surface 23 with surface 15
+brick x 0.05 y 1.0 z 0.05
+align volume 5 surface 29 with surface 14
+webcut volume 4 with plane yplane offset 0.4 noimprint nomerge
+webcut volume 5 with plane yplane offset -0.4 noimprint nomerge
+imprint volume all
+merge volume all
+
+volume all size 0.05
+mesh volume all
+
+block 1 volume 1 4 5
+block 1 name "fluid"
+block 2 volume 6 7
+block 2 name "void"
+
+sideset 1 surface 25 31 # ends
+sideset 1 surface 41 34 13 44 51 # front
+sideset 1 surface 40 36 16 46 50 # back
+sideset 1 surface 42 35 12 47 49 # inside
+sideset 1 surface 39 37  6 45 52 # outside
+sideset 1 name "boundary"
+
+set exodus netcdf4 off
+set large exodus file on
+export genesis "u-tube-1.g" overwrite

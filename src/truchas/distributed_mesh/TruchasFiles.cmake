@@ -36,7 +36,7 @@ set(DISMESH_FILES
            distributed_mesh/simpl_mesh_gmv.F90
            )
 
-set(DISMESH_FPP_FLAGS 
+set(DISMESH_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/distributed_mesh
 	-I${TruchasExe_SOURCE_DIR}/utilities
 	${Truchas_FPP_FLAGS})
@@ -58,7 +58,5 @@ build_whitespace_string(DISMESH_COMPILE_FLAGS_STR ${DISMESH_COMPILE_FLAGS})
 set_source_files_properties(${DISMESH_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${DISMESH_COMPILE_FLAGS_STR})
 
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DISMESH_SOURCE_FILES})		       
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${DISMESH_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ${DISMESH_TARGET_NAME})
-	 
-

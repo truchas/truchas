@@ -688,7 +688,7 @@ contains
     use scalar_func_factories, only: alloc_const_scalar_func
     use scalar_func_table, only: lookup_func
     use property_module, only: get_truchas_material_id
-    use fluid_data_module, only: IsImmobile
+    use property_data_module, only: isImmobile
 
     integer, intent(in) :: lun
 

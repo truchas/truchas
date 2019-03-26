@@ -31,7 +31,8 @@ set(UTIL_FILES
          utilities/truchas_timers.F90
          utilities/utilities_module.F90
          utilities/var_vector_module.F90
-         utilities/gmv/gmvwrite_c_binding.F90)
+         utilities/gmv/gmvwrite_c_binding.F90
+	 utilities/f08_intrinsics.F90)
 
 set(UTIL_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/utilities
@@ -55,9 +56,8 @@ list(APPEND UTIL_SOURCE_FILES
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
   set_source_files_properties(utilities/get_process_size.c PROPERTIES
                               COMPILE_DEFINITIONS LINUX)
-endif()			
+endif()
 
-# Update the Truchas library file list and targets		
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${UTIL_SOURCE_FILES})		
+# Update the Truchas library file list and targets
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${UTIL_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasUtilFiles)
-

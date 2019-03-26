@@ -1,0 +1,880 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas
+   version:             3.1.0-alpha
+   build architecture:  x86_64
+   build date/time:     2018-11-07 13:24:30
+   build flags:         -u -C -C=dangling -gline -nan
+   build host:          petaca1.lanl.gov
+   run architecture:    Linux petaca1.lanl.gov 4.13.16-1
+   run host:            petaca1.lanl.gov1 SMP Mon Nov 27
+   run date/time:       07 Nov 18 13:27:41
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
+   All rights reserved.
+
+   This software was produced under U.S. Government contract DE-AC52-06NA25396
+   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+   National Security, LLC for the U.S. Department of Energy. The U.S. Government
+   has rights to use, reproduce, and distribute this software.  NEITHER THE
+   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+   is modified to produce derivative works, such modified software should be
+   clearly marked, so as not to confuse it with the version available from LANL.
+
+   Additionally, redistribution and use in source and binary forms, with or
+   without modification, are permitted provided that the following conditions
+   are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
+      Laboratory, LANL, the U.S. Government, nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
+   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
+   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
+
+================================================================================
+
+INPUT
+
+Opening input file advection-3a.inp ...
+
+Reading FUNCTION namelists ...
+
+Reading VFUNCTION namelists ...
+
+Reading TOOLPATH namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+  Reading PHASE namelist #2
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+  Reading MATERIAL_SYSTEM namelist #2
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+Reading PHYSICS namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading SIMULATION_CONTROL namelist ...
+
+Reading MESH Namelist ...
+
+ Reading MATERIAL Namelist # 1 ...
+
+ Reading MATERIAL Namelist # 2 ...
+This is the last MATERIAL Namelist.
+Identified 2 material(s)
+Warning: Material  1 priority not initialized; set to  1
+Warning: Material  2 priority not initialized; set to  2
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1        water        1
+             2          oil        2
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+Warning: LINEAR_SOLVER namelist not found! Using defaults.
+
+Reading NONLINEAR_SOLVER Namelists ...
+  NONLINEAR_SOLVER namelist not found; using defaults.
+
+Reading INTERFACES namelist ...
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       2    plane     -6.000E+00   0.000E+00    0.0    1.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       1    background
+         BODY Namelist number  2 will be used for background material ( 1)
+
+Reading NUMERICS namelist ...
+
+Reading FLOW namelist ...
+
+Reading FLOW_BC namelists ...
+
+Reading ADVECTION_VELOCITY namelist ...
+
+ Reading BC Namelists ...
+BC namelists not found; using defaults.
+
+ Reading PROBE namelists ...
+         This is the last PROBE Namelist.
+
+         Identified 0 probe(s)
+
+Input file advection-3a.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+
+Initializing mesh "MAIN" ...
+  reading ExodusII mesh file "./mesh3.gen"
+  finding cell neighbors
+  partitioning the mesh cells
+  partitioning the mesh nodes
+  numbering the mesh faces
+  partitioning the mesh faces
+  identifying off-process ghost cells
+  generating parallel mesh structure
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|      512     3210     1350
+  Mesh Communication Profile:
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|      0      512      0     3210      0     1350
+  Mesh "MAIN" initialized
+
+Allocating base derived types A ...done.
+
+Computing initial volume fractions ...
+ERROR: material 1 volume fraction > 1 in cells: 11 12 23 24 27 [21 more items omitted]
+       maximum volume fraction less 1:  2.06501E-14
+ERROR: material 2 volume fraction > 1 in cells: 186 187 189 190 192 [491 more items omitted]
+       maximum volume fraction less 1:  3.10862E-14
+  Computed volume fractions are invalid; attempting to normalize.
+  Normalization was successful.
+  Initial volume fractions computed.
+  Using default value "specific heat" = 0.000E+00 for phase "water"
+  Using default value "specific heat" = 0.000E+00 for phase "oil"
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 1020 boundary points
+   EXTERIOR: 1020 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 1020 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+
+Configuring volume tracking ...
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          2: t =   1.56250E-02, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          3: t =   3.12500E-02, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          4: t =   4.68750E-02, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          5: t =   6.25000E-02, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          6: t =   7.81250E-02, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          7: t =   9.37500E-02, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          8: t =   1.09375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+          9: t =   1.25000E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         10: t =   1.40625E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         11: t =   1.56250E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         12: t =   1.71875E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         13: t =   1.87500E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         14: t =   2.03125E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         15: t =   2.18750E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         16: t =   2.34375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         17: t =   2.50000E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         18: t =   2.65625E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         19: t =   2.81250E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         20: t =   2.96875E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         21: t =   3.12500E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         22: t =   3.28125E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         23: t =   3.43750E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         24: t =   3.59375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         25: t =   3.75000E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         26: t =   3.90625E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         27: t =   4.06250E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         28: t =   4.21875E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         29: t =   4.37500E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         30: t =   4.53125E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         31: t =   4.68750E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         32: t =   4.84375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         33: t =   5.00000E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         34: t =   5.15625E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         35: t =   5.31250E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         36: t =   5.46875E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         37: t =   5.62500E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         38: t =   5.78125E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         39: t =   5.93750E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         40: t =   6.09375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         41: t =   6.25000E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         42: t =   6.40625E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         43: t =   6.56250E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         44: t =   6.71875E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         45: t =   6.87500E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         46: t =   7.03125E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         47: t =   7.18750E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         48: t =   7.34375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         49: t =   7.50000E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         50: t =   7.65625E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         51: t =   7.81250E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         52: t =   7.96875E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         53: t =   8.12500E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         54: t =   8.28125E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         55: t =   8.43750E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         56: t =   8.59375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         57: t =   8.75000E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         58: t =   8.90625E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         59: t =   9.06250E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         60: t =   9.21875E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         61: t =   9.37500E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         62: t =   9.53125E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         63: t =   9.68750E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         64: t =   9.84375E-01, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         65: t =   1.00000E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         66: t =   1.01562E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         67: t =   1.03125E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         68: t =   1.04688E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         69: t =   1.06250E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         70: t =   1.07812E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         71: t =   1.09375E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         72: t =   1.10938E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         73: t =   1.12500E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         74: t =   1.14062E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         75: t =   1.15625E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         76: t =   1.17188E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         77: t =   1.18750E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         78: t =   1.20312E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         79: t =   1.21875E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         80: t =   1.23438E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         81: t =   1.25000E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         82: t =   1.26562E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         83: t =   1.28125E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         84: t =   1.29688E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         85: t =   1.31250E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         86: t =   1.32812E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         87: t =   1.34375E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         88: t =   1.35938E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         89: t =   1.37500E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         90: t =   1.39062E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         91: t =   1.40625E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         92: t =   1.42188E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         93: t =   1.43750E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         94: t =   1.45312E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         95: t =   1.46875E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         96: t =   1.48438E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         97: t =   1.50000E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         98: t =   1.51562E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+         99: t =   1.53125E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        100: t =   1.54688E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        101: t =   1.56250E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        102: t =   1.57812E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        103: t =   1.59375E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        104: t =   1.60938E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        105: t =   1.62500E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        106: t =   1.64062E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        107: t =   1.65625E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        108: t =   1.67188E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        109: t =   1.68750E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        110: t =   1.70312E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        111: t =   1.71875E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        112: t =   1.73438E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        113: t =   1.75000E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        114: t =   1.76562E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        115: t =   1.78125E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        116: t =   1.79688E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        117: t =   1.81250E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        118: t =   1.82812E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        119: t =   1.84375E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        120: t =   1.85938E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        121: t =   1.87500E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        122: t =   1.89062E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        123: t =   1.90625E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        124: t =   1.92188E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        125: t =   1.93750E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        126: t =   1.95312E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        127: t =   1.96875E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+        128: t =   1.98438E+00, dt(constant) =   1.56250E-02
+
+            Min Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+            Max Velocity: ( 6.0000E+00,  0.0000E+00,  0.0000E+00)
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  2.0000E+00 after   128 steps
+
+
+TIMING SUMMARY
+--------------
+  8.760E+00 --- Total
+    1.047E-02 --- Input
+    7.575E-01 --- Initialization
+      3.530E-04 --- Vof Initialization
+      2.481E-03 --- Flow
+        4.750E-04 --- update properties
+    7.944E+00 --- Main Cycle
+      8.023E-01 --- Output
+      1.215E-02 --- Time Step
+      6.950E+00 --- Volumetracking
+        1.299E+00 --- normals
+        4.985E+00 --- reconstruct/advect
+      1.520E-01 --- Flow
+        5.861E-02 --- update properties
+
+                  Process virtual memory used: 4.33E+02 mB
+                                   words/cell: 41991
+
+truchas terminated normally on 07 Nov 18 at 13:27:53

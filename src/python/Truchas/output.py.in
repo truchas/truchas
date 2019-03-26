@@ -38,14 +38,11 @@ def remap_data(data,map):
 # --- Eliminate masked data
 def mask_data(data,mask):
   if data.ndim > 1:
-    (n,dim)=data.shape
-    # Numpy 1.6 is required to use the count_nonzero function.
-    #n = mask.size - numpy.count_nonzero(mask)
-    # This version works with numpy 1.4
-    n = mask.size - (mask != 0).sum()
-    mdata=numpy.empty((n,dim),data.dtype)
+    (n,dim) = data.shape
+    n = numpy.count_nonzero(mask==0)
+    mdata = numpy.empty((n,dim),data.dtype)
     j = 0
-    for i in range(n):
+    for i in range(mask.size):
       if mask[i] == 0:
         mdata[j,:] = data[i,:]
         j += 1
@@ -590,7 +587,7 @@ class TruchasMesh(object):
   def connectivity(self):
     return self.danu_mesh.read_connectivity()
 
-  def centroids(self):
+  def centroids(self, region=None):
     # Want a NumPy 2D array not a list
     coordinates=numpy.empty((self.nnodes,self.dim))
     d=0
@@ -615,6 +612,8 @@ class TruchasMesh(object):
         xc = xc + coordinates[i-1,:]
       center[nc,:] = xc / list.size
       nc=nc+1	
+    if region is not None:
+      center = mask_data(center,region.cellmask)
     return center
 
 class TruchasOutput(object):

@@ -33,7 +33,6 @@ A kludge to force hitting the final time exactly
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &DIFFUSION_SOLVER

@@ -1,0 +1,112 @@
+INVISCID PIPE FLOW
+------------------
+Simple inviscid flow through a pipe of length L. Constant pressure p1 at
+one end, p2 at the other. Free slip BC along the walls of the pipe. Fluid
+accelerates from rest with uniform speed U(t) = [(p2-p1)/(rho*L)]*t
+
+p1 = 6, p2 = 0, rho = 3, L = 1 => U(t) = 2*t
+
+&MESH
+  mesh_file = 'mesh1a-rotx.gen'
+/
+
+&OUTPUTS
+  output_t = 0.0, 0.05, 1.0
+  output_dt = 1.0, 1.0
+/
+
+Hack to hit the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 1.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  legacy_flow = .true.
+/
+
+&NUMERICS
+  dt_init = 0.03125
+  dt_grow = 1.25
+  dt_min  = 1.0e-5
+  dt_max  = 1.0
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
+  courant_number = 0.3
+  projection_linear_solution  = 'projection'
+  viscous_linear_solution = 'viscous'
+  viscous_number = 0.3
+  viscous_implicitness = 0.5
+/
+
+&LINEAR_SOLVER
+  name                   = 'projection'
+  method                 = 'fgmres'
+  preconditioning_method = 'ssor'
+  preconditioning_steps  = 2
+  relaxation_parameter   = 1.4
+  convergence_criterion  = 1.0e-10
+/
+
+&LINEAR_SOLVER
+  name                   = 'viscous'
+  method                 = 'fgmres'
+  convergence_criterion  = 1.0e-8
+  preconditioning_method = 'diagonal'
+  stopping_criterion     = '||r||/||b||'
+/
+
+Inlet pressure
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 6.0
+/
+
+Outlet pressure
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
+/
+
+Pipe walls
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 3
+  bc_variable  = 'velocity'
+  bc_type      = 'no-slip'
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 3.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'viscosity',     property_constant(3) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

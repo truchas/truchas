@@ -20,17 +20,21 @@ magnitude was 0.023, and after it was less than 3e-12.
   output_dt = 0.01
 /
  
-&NUMERICS
+&LEGACY_FLOW
+  inviscid = .true.
   body_force_face_method = .true.
-  cutvof = 1.0e-10
   projection_linear_solution = 'projection'
-  discrete_ops_type = 'ortho'
   courant_number = 0.5
+/
+
+&NUMERICS
   dt_init   = 1.0e-02
   dt_grow   = 1.0
   dt_min    = 1.0e-05
   dt_max    = 1.0
   cycle_max = 1
+  discrete_ops_type = 'ortho'
+  cutvof = 1.0e-10
 /
 
 &LINEAR_SOLVER
@@ -44,9 +48,8 @@ magnitude was 0.023, and after it was less than 3e-12.
 /
  
 &PHYSICS
-  body_force = 6.0, 0.0, -8.0
-  fluid_flow = .true.
-  inviscid   = .true.
+  body_force_density = 6.0, 0.0, -8.0
+  legacy_flow = .true.
 /
  
 &INTERFACES

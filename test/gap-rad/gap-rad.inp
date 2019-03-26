@@ -40,7 +40,6 @@ associated gap-rad-flow test exercises the implementation in the 'FHT' solver.
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &PHYSICAL_CONSTANTS

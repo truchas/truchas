@@ -208,7 +208,7 @@ Contains
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
-    use fluid_data_module,    only: isImmobile
+    use property_data_module, only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
     use solid_mechanics_input,  only: solid_mechanics
@@ -442,7 +442,7 @@ Contains
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
                                     VISCOPLASTIC_STRAIN_RATE, PLASTIC_STRAIN_INCREMENT,&
                                     DEVIATORIC_STRESS
-    use fluid_data_module,    only: isImmobile
+    use property_data_module, only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_UPDATE
     use solid_mechanics_input, only: solid_mechanics
@@ -699,7 +699,7 @@ Contains
     use viscoplasticity,             only: MATERIAL_STRESSES
     use solid_mech_constraints,      only: RHS_DISPLACEMENT_CONSTRAINTS
     use solid_mechanics_mesh,        only: ndim, nvc, ncomps, nvf
-    use body_data_module,            only: Body_Force
+    use physics_module,              only: body_force_density
 
     ! Local variables
     type (BC_Operator), POINTER :: Operator
@@ -848,7 +848,7 @@ Contains
        Rho_Node = Rho_Node/Nvol
 
        do idim = 1, ndim
-          SM_Body_Force = Rho_Node * Nodal_Volume * Body_Force(idim)
+          SM_Body_Force = Rho_Node * Nodal_Volume * body_force_density(idim)
           RHS(idim:ndim*(nnodes - 1) + idim:ndim) = RHS(idim:ndim*(nnodes-1) + idim:ndim) - &
                SM_Body_Force
        end do
@@ -1799,7 +1799,7 @@ Contains
   
     use parameter_module, only: nmat
     use material_interop, only: void_material_index, material_to_phase
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use phase_property_table
     use scalar_func_class
     use scalar_func_tools, only: is_const
@@ -1884,7 +1884,7 @@ Contains
   
     use parameter_module, only: nmat
     use legacy_mesh_api,  only: ncells
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use phase_property_table
     use material_interop, only: void_material_index, material_to_phase
     use matl_module, only: gather_vof

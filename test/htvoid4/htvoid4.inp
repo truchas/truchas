@@ -9,15 +9,7 @@ the flow.  The walls are split in half length-wise with a 0-HTC condition
 that makes radiation the only means of heat transfer between the two
 pieces.  The simulation begins with the channel filled with fluid moving
 to the right, and a vertical thermal gradient.  Void enters at the left
-end and the fluid exits the right end with a fixed unit velocity.  A right-
-directed gravity is included to help maintain a flat fluid/void interface.
-The simulation ends before all the fluid has exited the domain.
-
-NOTE: The flow itself is very sensitive to the various flow parameters.
-Small changes to things -- initial step size, for example -- will lead to
-different flow solutions with bits of fluid left behind or not.  The flow
-solution is largely correct, but the differences in which cells are void
-will result in heat solutions that are not comparable.
+end and the fluid exits the right end with a fixed unit velocity.
 
 &MESH
   mesh_file = 'htvoid4.gen'
@@ -25,14 +17,17 @@ will result in heat solutions that are not comparable.
 /
 
 &OUTPUTS
-  Output_T  = 0.0, 5.0
-  Output_Dt = 5.0 !0.2
+  Output_T  = 0.0, 5.125
+  Output_Dt = 5.125
+/
+
+&SIMULATION_CONTROL
+  phase_start_times = 5.125
+  phase_init_dt_factor = 1.0
 /
 
 &PHYSICS
-  fluid_flow = .true.
-  inviscid   = .true.
-  body_force = 1.0, 0.0, 0.0
+  flow = .true.
   heat_transport = .true.
 /
 
@@ -53,34 +48,29 @@ will result in heat solutions that are not comparable.
 
 &NUMERICS
   dt_constant = 0.0625
-  projection_linear_solution = 'projection'
-  body_force_face_method = .true.
-  volume_track_interfaces    = .true.
-  volume_track_Brents_Method = .true.
-  volume_track_subcycles     = 2
-  volume_track_iter_Tol      = 1.0e-12
-  cutvof                     = 1.0e-8
-  courant_number             = 0.4
-  discrete_ops_type          = 'ortho' 
 /
 
-&LINEAR_SOLVER
-  name                   = 'projection'
-  method                 = 'gmres'
-  convergence_criterion  = 1.0e-12
-  preconditioning_method = 'ssor'
-  relaxation_parameter   = 1.4
-  preconditioning_steps  = 4
-  maximum_iterations     = 500
-  output_mode            = 'summary'
+&FLOW
+  inviscid = .true.
+  courant_number = 0.4
+  subcycles = 2
+  material_priority = 2, 3, -1
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 10
+  krylov_method = "cg"
 /
 
 FLUID CHANNEL
 &BODY
-  surface_name    = 'from mesh file'
+  surface_name = 'from mesh file'
   mesh_material_number = 1
   material_number = 2
-  velocity        = 1.0, 0.0, 0.0
+  velocity = 1.0, 0.0, 0.0
   temperature_function = 'init-temp'
 /
 
@@ -118,23 +108,20 @@ VOID IN LOWER WALL CAVITY; UPPER CAVITY IS NOT MESHED
 /
 
 INFLOW OF VOID AT LEFT END OF CHANNEL
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 5
-  bc_variable = 'velocity'
-  bc_type = 'Dirichlet'
-  bc_value = 1.0, 0.0, 0.0
+&FLOW_BC
+  name = 'inlet'
+  face_set_ids = 5
+  type = 'velocity'
+  velocity = 1.0, 0.0, 0.0
   inflow_material = 3
-  inflow_temperature = 0.0
 /
 
 OUTFLOW OF FLUID AT RIGHT END OF CHANNEL
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 6
-  bc_variable = 'velocity'
-  bc_type = 'Dirichlet'
-  bc_value = 1.0, 0.0, 0.0
+&FLOW_BC
+  name = 'outlet'
+  type = 'velocity'
+  face_set_ids = 6
+  velocity = 1.0, 0.0, 0.0
 /
 
 NO HEAT FLUX THROUGH ALL EXTERNAL BOUNDARIES, SYMMETRY PLANES
@@ -195,7 +182,7 @@ RADIATION IN THE LOWER CAVITY.
 &MATERIAL
   Material_Name   = 'wall'
   Material_Number = 1
-  priority        = 3
+  priority        = 3  ! only significant to legacy_flow
   immobile        = .true.
   Density         = 2.0
 /
@@ -215,7 +202,7 @@ RADIATION IN THE LOWER CAVITY.
 &MATERIAL
   Material_Name   = 'fluid'
   Material_Number = 2
-  priority        = 1
+  priority        = 1  ! only significant to legacy_flow
   Density         = 1.0
 /
 
@@ -235,6 +222,6 @@ RADIATION IN THE LOWER CAVITY.
   Material_Name = 'void'
   Material_Number = 3
   Material_Feature = 'background'
-  priority = 2
+  priority = 2  ! only significant to legacy_flow
   Density = 0.0
 /

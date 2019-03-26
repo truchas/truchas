@@ -270,7 +270,6 @@ solid mechanics and heat transfer
 
 &PHYSICS
 
-    fluid_flow       = .false., 
     heat_transport  = .true., 
     solid_mechanics  = .true., 
 
@@ -286,6 +285,11 @@ solid mechanics and heat transfer
     nlk_preconditioner = 'hypre_amg'
     verbose_stepping   = .true.
 
+/
+
+&SOLID_MECHANICS
+  displacement_nonlinear_solution  = 'displacement nonlin'
+  strain_limit = 1.0e-10
 /
 
 &LINEAR_SOLVER
@@ -316,9 +320,7 @@ Transient heat transfer and elastic_viscoplasticity
     dt_max                           = 1.0e0, 
     dt_grow                          = 5.0,
     dt_init                          = 1.0e-1, 
-    dt_min                           = 1.0e-8, 
-    strain_limit                     = 1.0e-10, 
-    displacement_nonlinear_solution  = 'displacement nonlin', 
+    dt_min                           = 1.0e-8
 
 /
 

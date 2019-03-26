@@ -1,0 +1,33 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 11/02/2018 06:47:45 AM
+## Command Options:
+brick x 1 y 1 z 0.05
+webcut volume 1 with plane xplane offset 0 noimprint nomerge
+webcut volume 1 with plane yplane offset -0.15 noimprint nomerge
+webcut volume 2 with plane yplane offset 0.15 noimprint nomerge
+imprint volume all
+merge volume all
+
+volume all size 0.05
+mesh volume all
+
+block 1 add volume 1 2
+block 2 add volume 3 4
+
+sideset 1 add surface 33 25 19 31 35 23 21 29
+sideset 1 name "symmetry"
+sideset 2 add surface 36 28
+sideset 2 name "left"
+sideset 3 add surface 26 18
+sideset 3 name "right"
+sideset 4 add surface 16 9
+sideset 4 name "bottom"
+sideset 5 add surface 11 13
+sideset 5 name "top"
+
+set exodus netcdf4 off
+set large exodus file on
+export genesis "mesh1.g" overwrite

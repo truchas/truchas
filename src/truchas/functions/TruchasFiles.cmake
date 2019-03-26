@@ -13,7 +13,9 @@ set(FUNC_TARGET_NAME ProcessTruchasFunctionFiles)
 
 set(FUNC_FILES
         functions/scalar_func_table.F90
+	functions/vector_func_table.F90
         functions/function_namelist.F90
+	functions/vfunction_namelist.F90
         functions/scalar_func_class.F90
         functions/const_scalar_func_type.F90
         functions/poly_scalar_func_type.F90
@@ -22,11 +24,14 @@ set(FUNC_FILES
         functions/fptr_scalar_func_type.F90
         functions/scalar_func_factories.F90
         functions/scalar_func_containers.F90
+	functions/vector_func_containers.F90
         functions/scalar_func_tools.F90
         functions/scalar_func_map_type.F90
+	functions/vector_func_map_type.F90
         functions/vector_func_class.F90
         functions/const_vector_func_type.F90
         functions/tabular_vector_func_type.F90
+        functions/fptr_vector_func_type.F90
         functions/vector_func_factories.F90
         )
 
@@ -34,7 +39,7 @@ if(ENABLE_DYNAMIC_LOADING)
   list(APPEND FUNC_FILES functions/dl_scalar_func_type.F90)
 endif()
 
-set(FUNC_FPP_FLAGS 
+set(FUNC_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/utilities
         ${Truchas_FPP_FLAGS})
 
@@ -58,5 +63,3 @@ set_source_files_properties(${FUNC_SOURCE_FILES} PROPERTIES
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${FUNC_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS      ${FUNC_TARGET_NAME})
-
-

@@ -26,7 +26,6 @@ A kludge to force hitting the outptut times exactly
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 Parameters conspire to yield a flux of 1.0 at temperature 3.0

@@ -34,10 +34,15 @@ void will result in heat solutions that are not comparable.
   Output_Dt = 1.0 !.05
 /
 
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 1.0
+  phase_init_dt_factor = 1.0
+/
+
 &PHYSICS
-  fluid_flow = .true.
-  inviscid   = .true.
-  body_force = 6.0, 0.0, 0.0
+  flow = .true.
+  body_force_density = 6.0, 0.0, 0.0
   heat_transport = .true.
 /
 
@@ -53,27 +58,20 @@ void will result in heat solutions that are not comparable.
 &NUMERICS
   dt_init = 0.01
   dt_grow = 1.05
-  !cycle_max = 1
-  projection_linear_solution = 'projection'
-  body_force_face_method = .true.
-  volume_track_interfaces    = .true.
-  volume_track_Brents_Method = .true.
-  volume_track_subcycles     = 2
-  volume_track_iter_Tol      = 1.0e-12
-  cutvof                     = 1.0e-8
-  courant_number             = 0.4
-  discrete_ops_type          = 'ortho' 
 /
 
-&LINEAR_SOLVER
-  name                   = 'projection'
-  method                 = 'gmres'
-  convergence_criterion  = 1.0e-12
-  preconditioning_method = 'ssor'
-  relaxation_parameter   = 1.4
-  preconditioning_steps  = 4
-  maximum_iterations     = 500
-  output_mode            = 'summary'
+&FLOW
+  inviscid = .true.
+  courant_number = 0.4
+  subcycles = 2
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 10
+  krylov_method = "cg"
 /
 
 FLUID PLUG

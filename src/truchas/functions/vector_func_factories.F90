@@ -44,6 +44,8 @@ module vector_func_factories
   !! These subroutines allocate an allocatable CLASS(VECTOR_FUNC) argument
   public :: alloc_const_vector_func
   public :: alloc_tabular_vector_func
+  public :: alloc_fptr_vector_func
+  public :: alloc_div_radial_cyl_flow_func
 
 contains
 
@@ -60,6 +62,22 @@ contains
     real(r8), intent(in) :: x(:), y(:,:)
     allocate(f, source=tabular_vector_func(x, y))
   end subroutine alloc_tabular_vector_func
+
+  subroutine alloc_fptr_vector_func (f, dim, fptr, p)
+    use fptr_vector_func_type
+    class(vector_func), allocatable, intent(out) :: f
+    integer, intent(in) :: dim
+    procedure(fptr_func) :: fptr
+    real(r8), intent(in), optional :: p(:)
+    allocate(f, source=fptr_vector_func(dim, fptr, p))
+  end subroutine alloc_fptr_vector_func
+
+  ! needed in lieu of parameter-based allocation
+  subroutine alloc_div_radial_cyl_flow_func (f, axis)
+    class(vector_func), allocatable, intent(out) :: f
+    real(r8), intent(in) :: axis(3)
+    call alloc_fptr_vector_func (f, 3, div_radial_cyl_flow, axis)
+  end subroutine alloc_div_radial_cyl_flow_func
 
   function new_const_vector_func (const) result (f)
     use const_vector_func_type
@@ -83,7 +101,7 @@ contains
     class(vector_func), allocatable, intent(out) :: f
     type(parameter_list) :: params
 
-    real(r8), allocatable :: v0(:), x(:), y(:,:)
+    real(r8), allocatable :: v0(:), x(:), y(:,:), axis(:)
     character(:), allocatable :: ftype
 
     call params%get ('type', ftype)
@@ -96,11 +114,26 @@ contains
       call params%get ('tabular-y', y)
       INSIST(size(x) == size(y,dim=2))  !TODO: need proper error handling
       call alloc_tabular_vector_func (f, x, y)
+    case ('div-radial-cyl-flow')
+      call params%get ('axis', axis)
+      INSIST(size(axis) == 3) !TODO: need proper error handling
+      call alloc_fptr_vector_func(f, 3, div_radial_cyl_flow, axis)
     case default
       INSIST(.false.) !TODO: need proper error handling
     end select
     ASSERT(allocated(f))
 
   end subroutine alloc_vector_func
+
+  function div_radial_cyl_flow(x, p, dim) result(fx)
+    real(r8), intent(in) :: x(0:*)
+    real(r8), intent(in) :: p(*)
+    integer, value :: dim ! had better be 3
+    real(r8) :: fx(dim), adota, xdota
+    adota = p(1)*p(1) + p(2)*p(2) + p(3)*p(3)
+    xdota = x(1)*p(1) + x(2)*p(2) + x(3)*p(3)
+    fx = x(1:3) - (xdota/adota)*p(1:3)
+    fx = fx * (sqrt(adota)/(fx(1)*fx(1) + fx(2)*fx(2) + fx(3)*fx(3)))
+  end function div_radial_cyl_flow
 
 end module vector_func_factories

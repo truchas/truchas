@@ -22,7 +22,6 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &DIFFUSION_SOLVER

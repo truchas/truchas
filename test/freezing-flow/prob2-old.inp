@@ -1,0 +1,150 @@
+SOLIDIFYING FLOW
+----------------
+2D, 1 x 0.5 domain with uniform 0.1 resolution hex mesh.
+
+1D heat conduction/phase change problem, top to bottom. Uniform hot initial
+temperature (above liquidus), with a cold top boundary temperature (below
+solidus), and adiabatic BC everywhere else.  Liquid/solid interface propogates
+down from the top, cell-by-cell. Not until the very end is more than one cell
+in the mushy zone.
+
+1D steady inviscid flow from left to right. Unit inflow velocity on the left
+and 0 pressure BC on the right. Free slip everywhere else.
+
+Handling of inflow enthalpy advection should conspire to give the solution
+on an infinitely long (in x) domain.
+
+This is intended to test how the momentum of solidified fluid is handled in
+the flow solver.
+
+&MESH
+  mesh_file = 'mesh2.g'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 0.25, 5.0
+  Output_Dt = 0.01, 0.25
+/
+
+A kludge to force hitting the final time exactly
+x&SIMULATION_CONTROL
+  phase_start_times = 0.1
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  legacy_flow = .true.
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
+  courant_number = 0.25
+  projection_linear_solution = 'projection'
+  volume_track_subcycles = 2
+/
+
+&LINEAR_SOLVER
+  name = 'projection'
+  method = 'fgmres'
+  preconditioning_method = 'ssor'
+  preconditioning_steps  = 2
+  relaxation_parameter   = 1.4
+  convergence_criterion  = 1.0e-10
+/
+
+Inlet velocity
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable  = 'velocity'
+  bc_type      = 'dirichlet'
+  bc_value     = 1.0, 0.0, 0.0
+/
+
+Outlet pressure
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  max_nlk_itr        = 10
+  nlk_tol            = 0.001
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_init = 1.0d-4
+  dt_min  = 1.0d-9
+  dt_max  = 2.0d-2
+  dt_grow = 1.05
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'adiabatic'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 1, 2, 3
+  data_constant = 0.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'wall'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 4
+  data_constant = 1.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 2
+  temperature = 15.0
+  velocity = 1.0, 0.0, 0.0
+/
+
+&MATERIAL
+  material_number = 1
+  material_name = 'solid'
+  immobile = .true.
+  density = 1.0 ! not void
+/
+
+&PHASE
+  name = 'solid'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 0.02
+/
+
+&MATERIAL
+  material_number = 2
+  material_name = 'liquid'
+  density = 1.0 ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'liquid'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 0.02
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'solid', 'liquid'
+  transition_temps_low = 9.95
+  transition_temps_high = 10.05
+  smoothing_radius = 0.049999
+  latent_heat = 10.0
+/

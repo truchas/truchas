@@ -4,6 +4,8 @@
 
 &OUTPUTS
   Output_T = 0.0, 10.0
+  !Output_T = 0.0, 2e-3
+  !Output_T = 0.0, 1.0
   Output_Dt = 5.0 !1.0
 /
 
@@ -14,10 +16,7 @@
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .true.
-  inviscid = .false.
-  stokes = .false.
-  surface_tension = .true.
+  flow = .true.
 /
 
 &DIFFUSION_SOLVER
@@ -31,15 +30,27 @@
   verbose_stepping   = .true.
 /
 
-&LINEAR_SOLVER
-  name                            = 'projection'
-  method                          = 'fgmres'
-  preconditioning_method          = 'ssor'
-  convergence_criterion           = 1.0e-10
-  relaxation_parameter            = 1.4
-  preconditioning_steps           = 2
-  stopping_criterion              = '||r||', 
-  maximum_iterations              = 1000, 
+&FLOW
+  inviscid = f
+  courant_number = 0.5
+  viscous_number = 10.0
+  viscous_implicitness = 0.5
+/
+
+&FLOW_VISCOUS_SOLVER
+  rel_tol = 1.0e-10
+  abs_tol = 1.0e-10
+  max_ds_iter = 50
+  max_amg_iter = 10
+  krylov_method = 'cg'
+/ 
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 1.0e-10
+  abs_tol = 1.0e-10
+  max_ds_iter = 100
+  max_amg_iter = 10
+  krylov_method = 'cg'
 /
 
 &NUMERICS
@@ -47,10 +58,7 @@
   dt_min  = 1.0d-10
   dt_grow = 1.5
   dt_max  = 1.0
-  projection_linear_solution = 'projection'
-  viscous_implicitness       = 0.5
-  courant_number             = 0.5
-  discrete_ops_type          = 'ortho'
+  discrete_ops_type = 'ortho'
 /
 
 ##### BOUNDARY CONDITIONS ######################################################
@@ -79,11 +87,17 @@
   data_constant = 0.0
 /
 
-&SURFACE_TENSION
-  csf_boundary = .true.
-  sigma_constant =  1.0 ! unused with csf, but avoids false error detection
-  dsig_dT =  -1.0
-  bndry_face_set_ids = 3
+&FLOW_BC
+  name = 'surface tension'
+  type = 'marangoni'
+  face_set_ids = 3
+  dsigma = -1.0
+/
+
+&FLOW_BC
+  name = 'walls'
+  type = 'free-slip'
+  face_set_ids = 1, 2, 4, 5, 6
 /
 
 &BODY

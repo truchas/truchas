@@ -43,7 +43,7 @@ class TangentialSurfaceTension(TruchasTest.GoldenTestCase):
 
   def test_final_temp(self):
     '''tangential-surface-tension: verifying the temperature field at final time'''
-    tol = 1.0e-7
+    tol = 1.0e-6
     test = self.test_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
     error = max(abs(test-gold)/gold)
@@ -65,4 +65,3 @@ class TangentialSurfaceTension(TruchasTest.GoldenTestCase):
 if __name__ == '__main__':
   import unittest
   unittest.main()
-

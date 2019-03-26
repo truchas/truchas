@@ -37,9 +37,6 @@ MODULE FLUID_DATA_MODULE
   ! Flag for applying a prescribed velocity field.
   logical, public, save :: applyflow
 
-  ! Flag that defines whether a material flows.
-  logical, public, save, dimension(maxmat) :: isImmobile
-
   ! Flag that defines the existance of a void material in this calculation and its index
   logical, public, save :: Void_Material_Exists
   integer, public, save, dimension(maxmat) :: Void_Material_Index
@@ -52,7 +49,7 @@ MODULE FLUID_DATA_MODULE
   logical, public, save :: boussinesq_approximation
 
   ! Total volume flowing into and out of the domain.
-  real(r8), public, save :: qin, qout
+  real(r8), public, save :: qin = 0.0_r8, qout = 0.0_r8
 
   ! Volume Fraction Cutoff Value  (no flow solution if Vof < fluid_cutoff)
   real(r8), public, parameter :: fluid_cutoff = 0.01
@@ -61,30 +58,30 @@ MODULE FLUID_DATA_MODULE
   real(r8), public, save :: momentum_solidify_implicitness
 
   ! Flow arrays.
-  real(r8), pointer, public, save, dimension(:,:) :: Fluxing_Velocity
-  real(r8), pointer, public, save, dimension(:,:) :: Face_Interpolation_Factor
-  real(r8), pointer, public, save, dimension(:,:) :: Momentum_by_Volume
-  real(r8), pointer, public, save, dimension(:)   :: fluidVof, fluidVof_n
-  real(r8), pointer, public, save, dimension(:)   :: fluidRho
-  real(r8), pointer, public, save, dimension(:)   :: fluidRho_n
-  real(r8), pointer, public, save, dimension(:)   :: fluidDeltaRho
-  real(r8), pointer, public, save, dimension(:)   :: realfluidVof
-  real(r8), pointer, public, save, dimension(:)   :: cutRho
+  real(r8), pointer, public, save, dimension(:,:) :: Fluxing_Velocity => null()
+  real(r8), pointer, public, save, dimension(:,:) :: Face_Interpolation_Factor => null()
+  real(r8), pointer, public, save, dimension(:,:) :: Momentum_by_Volume => null()
+  real(r8), pointer, public, save, dimension(:)   :: fluidVof => null(), fluidVof_n => null()
+  real(r8), pointer, public, save, dimension(:)   :: fluidRho => null()
+  real(r8), pointer, public, save, dimension(:)   :: fluidRho_n => null()
+  real(r8), pointer, public, save, dimension(:)   :: fluidDeltaRho => null()
+  real(r8), pointer, public, save, dimension(:)   :: realfluidVof => null()
+  real(r8), pointer, public, save, dimension(:)   :: cutRho => null()
 
 ! Volume-fraction averaged density at n, n+1 for body force terms
-  real(r8), pointer, public, save, dimension(:) :: avgRho
-  real(r8), pointer, public, save, dimension(:) :: avgRho_n
+  real(r8), pointer, public, save, dimension(:) :: avgRho => null()
+  real(r8), pointer, public, save, dimension(:) :: avgRho_n => null()
 
   real(r8), allocatable, public, save, dimension(:,:) :: Drag_Coefficient
-  real(r8), pointer, public, save, dimension(:)       :: courant
+  real(r8), pointer, public, save, dimension(:)       :: courant => null()
 
   ! Arrays related to partially/totally solidified cells.
-  logical, pointer, public, save, dimension(:)   :: isPureImmobile
-  logical, pointer, public, save, dimension(:,:) :: Solid_Face
+  logical, pointer, public, save, dimension(:)   :: isPureImmobile => null()
+  logical, pointer, public, save, dimension(:,:) :: Solid_Face => null()
  
   ! Non-Void Cell list
-  logical, pointer, public, save, dimension(:)   :: Cell_isnt_Void
-  logical, pointer, public, save, dimension(:,:) :: Ngbr_isnt_Void
+  logical, pointer, public, save, dimension(:)   :: Cell_isnt_Void => null()
+  logical, pointer, public, save, dimension(:,:) :: Ngbr_isnt_Void => null()
 
   ! Projection / Predictor Communication Arrays
   real(r8), public, allocatable, save, dimension(:,:) :: Centered_GradP_Dynamic

@@ -1,0 +1,113 @@
+INVISCID PIPE FLOW WITH SOLID WALLS
+-----------------------------------
+Simple inviscid flow through a pipe of length L. Constant pressure p1 at
+one end, p2 at the other. Free slip BC along the walls of the pipe. Fluid
+accelerates from rest with uniform speed U(t) = [(p2-p1)/(rho*L)]*t.
+Domain includes solid material which form the walls (all cells are single
+material), and which should not participate in the simulation. 
+
+p1 = 6, p2 = 0, rho = 3, L = 1 => U(t) = 2*t
+
+&MESH mesh_file = 'mesh2a-roty.gen'/
+
+&OUTPUTS
+  output_t = 0.0, 0.05, 1.0
+  output_dt = 1.0, 1.0
+/
+
+Hack to hit the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 1.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+/
+
+&FLOW
+  inviscid = .true.
+  courant_number = 0.3
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1.0e-10
+  max_ds_iter = 50
+  max_amg_iter = 25
+  krylov_method = 'cg'
+/
+
+&NUMERICS
+  dt_init = 0.03125
+  dt_grow = 1.25
+  dt_min  = 1.0e-5
+  dt_max  = 1.0
+/
+
+Inlet pressure
+&FLOW_BC
+  name = 'inlet'
+  face_set_ids = 1
+  type = 'pressure'
+  pressure = 6.0
+/
+
+Outlet pressure
+&FLOW_BC
+  name = 'outflow'
+  face_set_ids = 2
+  type = 'pressure'
+  pressure = 0.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 2
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 3.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name    = 'wall'
+  material_number  = 2
+  density          = 1.0  ! not void
+  immobile         = .true.
+/
+
+&PHASE
+  name = 'wall'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'wall'
+  phases = 'wall'
+/

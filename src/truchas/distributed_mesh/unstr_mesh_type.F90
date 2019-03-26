@@ -132,6 +132,8 @@ module unstr_mesh_type
   use index_partitioning
   use parallel_communication
   use bitfield_type
+  use cell_topology
+  use f08_intrinsics
   implicit none
   private
 
@@ -141,7 +143,11 @@ module unstr_mesh_type
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
     integer, allocatable :: xcnhbr(:), cnhbr(:) ! cell neighbors
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
+    integer, allocatable :: fcell(:,:)  ! face cell neighbors
     real(r8), allocatable :: normal(:,:)
+    real(r8), allocatable :: cell_centroid(:,:)
+    real(r8), allocatable :: face_centroid(:,:)
+    real(r8), allocatable :: face_normal_dist(:)  ! minimum distance from face along edges
     !! Mesh interface links.
     integer :: nlink = 0, nlink_onP = 0
     integer, allocatable :: lface(:,:)        ! pointer due to localize_index_array
@@ -160,6 +166,9 @@ module unstr_mesh_type
     procedure :: write_profile
     procedure :: check_bndry_face_set
     procedure :: get_link_set_ids
+    procedure :: init_cell_centroid
+    procedure :: init_face_centroid
+    procedure :: init_face_normal_dist
   end type unstr_mesh
 
 contains
@@ -184,6 +193,91 @@ contains
       end associate
     end do
   end subroutine compute_geometry
+
+  subroutine init_cell_centroid(this)
+    class(unstr_mesh), intent(inout) :: this
+    integer :: j
+    if (allocated(this%cell_centroid)) return
+    allocate(this%cell_centroid(3,this%ncell))
+    do j = 1, this%ncell
+      associate(cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+        this%cell_centroid(:,j) = sum(this%x(:,cell_nodes),dim=2)/size(cell_nodes)
+      end associate
+    end do
+  end subroutine init_cell_centroid
+
+  subroutine init_face_centroid(this)
+    class(unstr_mesh), intent(inout) :: this
+    integer :: j
+    if (allocated(this%face_centroid)) return
+    allocate(this%face_centroid(3,this%nface))
+    do j = 1, this%nface
+      associate(face_nodes => this%fnode(this%xfnode(j):this%xfnode(j+1)-1))
+        this%face_centroid(:,j) = sum(this%x(:,face_nodes),dim=2)/size(face_nodes)
+      end associate
+    end do
+  end subroutine init_face_centroid
+
+  subroutine init_face_normal_dist(this)
+    class(unstr_mesh), intent(inout) :: this
+    integer :: i,j,k
+
+    if (allocated(this%face_normal_dist)) return
+    allocate(this%face_normal_dist(this%nface))
+
+    this%face_normal_dist(:) = huge(1.0_r8)
+    do i = 1, this%ncell
+      associate(faces => this%cface(this%xcface(i):this%xcface(i+1)-1), &
+          cell_nodes => this%cnode(this%xcnode(i):this%xcnode(i+1)-1))
+
+        do k = 1, size(faces)
+
+          select case(size(cell_nodes))
+          case (4)
+            associate (face_list => TET4_FACES(TET4_XFACE(k):TET4_XFACE(k+1)-1))
+              do j = 1, size(cell_nodes)
+                if (findloc(face_list, j) == 0) then
+                  this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
+                      abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
+                      this%normal(:,faces(k))/this%area(faces(k)))))
+                end if
+              end do
+            end associate
+          case (5)
+            associate (face_list => PYR5_FACES(PYR5_XFACE(k):PYR5_XFACE(k+1)-1))
+              do j = 1, size(cell_nodes)
+                if (findloc(face_list, j) == 0) then
+                  this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
+                      abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
+                      this%normal(:,faces(k))/this%area(faces(k)))))
+                end if
+              end do
+            end associate
+          case (6)
+            associate (face_list => WED6_FACES(WED6_XFACE(k):WED6_XFACE(k+1)-1))
+              do j = 1, size(cell_nodes)
+                if (findloc(face_list, j) == 0) then
+                  this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
+                      abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
+                      this%normal(:,faces(k))/this%area(faces(k)))))
+                end if
+              end do
+            end associate
+          case (8)
+            associate (face_list => HEX8_FACES(HEX8_XFACE(k):HEX8_XFACE(k+1)-1))
+              do j = 1, size(cell_nodes)
+                if (findloc(face_list, j) == 0) then
+                  this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
+                      abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
+                      this%normal(:,faces(k))/this%area(faces(k)))))
+                end if
+              end do
+            end associate
+          end select
+        end do
+      end associate
+    end do
+  end subroutine init_face_normal_dist
 
   !! Creates the global ragged CNODE array on the IO process, 0-sized on others.
   subroutine get_global_cnode_array (this, xcnode, cnode)

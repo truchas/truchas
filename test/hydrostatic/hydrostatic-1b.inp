@@ -1,0 +1,81 @@
+SINGLE-FLUID 2D HYDROSTATIC TEST
+--------------------------------
+
+Single inviscid fluid at rest in a [-5,5]^2 domain subject to gravity.
+Fluid should remain at rest, with a linear pressure field.
+
+With rho=2, g=(0,-1,0), p = const - 2*y.
+
+Variations use rotated meshes (and rotated g)
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+&MESH
+  mesh_file = 'mesh1-rotx.gen'
+/
+
+&PHYSICS
+  flow = .true.
+  body_force_density = 0.0, -0.707106781, -0.707106781
+/
+
+&FLOW
+  inviscid = .true.
+  courant_number = 0.5
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1.0e-12
+  max_ds_iter = 50
+  max_amg_iter = 25
+  krylov_method = 'cg'
+/
+
+&NUMERICS
+  dt_constant = 0.125
+/
+
+# FREE SLIP BC ALL AROUND
+&FLOW_BC
+  name = 'all sides'
+  face_set_ids = 1, 2, 3, 4, 5
+  type = 'free-slip'
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 2.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

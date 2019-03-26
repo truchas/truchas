@@ -1,0 +1,21 @@
+## /opt/cubit/15.3-409133/bin/clarox
+## Cubit Version 15.3
+## Cubit Build 409133
+## Revised 2017-07-03 15:45:45 -0600 (Mon, 03 Jul 2017)
+## Running 11/02/2018 01:22:53 PM
+## Command Options:
+brick x .75 y 1 z 1
+volume 1 size 0.25
+mesh volume 1
+
+block 1 add volume 1
+sideset 1 add surface 4
+sideset 1 name "left"
+sideset 2 add surface 6
+sideset 2 name "right"
+sideset 3 add surface 3 1 5 2
+sideset 3 name "sides"
+
+set exodus netcdf4 off
+set large exodus file on
+export genesis "mesh1.g" overwrite

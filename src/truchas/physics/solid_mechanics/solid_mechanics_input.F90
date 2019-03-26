@@ -91,9 +91,6 @@ module solid_mechanics_input
   !! Maximum plsatic strain increment
   real(r8) :: strain_limit
 
-  !! Ubik_user element number to use for energy linear solve
-  integer :: Ubik_DISPLACEMENT
-
   !! NKuser element number to use for energy solution
   integer :: NK_DISPLACEMENT
 

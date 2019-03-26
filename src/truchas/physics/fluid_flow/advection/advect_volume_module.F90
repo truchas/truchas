@@ -182,7 +182,8 @@ CONTAINS
     !
     !       Jim Sicilian (CCS-2)   October 2003
     !=======================================================================
-    use fluid_data_module,      only: fluidVof, isImmobile
+    use fluid_data_module,      only: fluidVof
+    use property_data_module,   only: isImmobile
     use legacy_mesh_api,        only: ncells, nfc, Cell
     use parameter_module,       only: nmat
     use vof_data_module,        only: adv_dt
@@ -226,7 +227,7 @@ CONTAINS
     !   Update the Vof array.
     !
     !=======================================================================
-    use fluid_data_module,    only: isImmobile
+    use property_data_module, only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
     implicit none
@@ -285,7 +286,7 @@ CONTAINS
     !=======================================================================
     use bc_module,         only: BC_Mat, IN_FLOW
     use input_utilities,   only: NULL_I
-    use fluid_data_module, only: isImmobile
+    use property_data_module, only: isImmobile
     use legacy_mesh_api,   only: ncells, nfc, Cell
     use parameter_module,  only: nmat
     use pgslib_module,     only: PGSLIB_GLOBAL_ANY
@@ -362,7 +363,7 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,       only: cutvof
-    use fluid_data_module,    only: isImmobile
+    use property_data_module, only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
     use vof_data_module,      only: adv_dt
@@ -511,7 +512,7 @@ CONTAINS
     !   Add the subcycle fluxes to the total, and update the Vof array.
     !
     !=======================================================================
-    use fluid_data_module,    only: isImmobile
+    use property_data_module, only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
 
@@ -546,7 +547,8 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,     only: cutvof
     use fluid_data_module,  only: Void_Material_Exists, Void_Material_Index, &
-                                  Void_Material_Count, isImmobile
+                                  Void_Material_Count
+    use property_data_module, only: isImmobile
     use legacy_mesh_api,    only: ncells, nfc
     use parameter_module,   only: nmat
 

@@ -9,9 +9,8 @@
 /
 
 &PHYSICS
-  fluid_flow = .true.
-  inviscid   = .false.
-  body_force = 4.9, -8.5, 0.0
+  flow = .true.
+  body_force_density = 4.9, -8.5, 0.0
   heat_transport = .true.
 /
 
@@ -40,37 +39,33 @@
   dt_init = 1.0e-3
   dt_grow = 1.05
   dt_min  = 1.0e-6
-  projection_linear_solution = 'projection'
-  viscous_linear_solution = 'viscous'
-  viscous_implicitness    = 1.0
-  viscous_number          = 0.0 ! turns off viscous dt limiting
-  body_force_face_method = .true.
-  volume_track_interfaces    = .true.
-  volume_track_Brents_Method = .true.
-  volume_track_subcycles     = 1
-  volume_track_iter_Tol      = 1.0e-12
   cutvof                     = 1.0e-8
-  courant_number             = 0.2
   discrete_ops_type          = 'ortho' 
 /
 
-&LINEAR_SOLVER
-  name                   = 'projection'
-  method                 = 'gmres'
-  convergence_criterion  = 1.0e-12
-  preconditioning_method = 'ssor'
-  relaxation_parameter   = 1.4
-  preconditioning_steps  = 4
-  maximum_iterations     = 500
-  output_mode            = 'summary'
+&FLOW
+  inviscid = .false.
+  viscous_implicitness = 1.0
+  viscous_number = 100.0
+  subcycles = 1
+  courant_number = 0.2
 /
 
-&LINEAR_SOLVER
-  name                   = 'viscous'
-  method                 = 'fgmres'
-  convergence_criterion  = 1.0e-8
-  preconditioning_method = 'diagonal'
-  stopping_criterion     = '||r||/||b||'
+&FLOW_VISCOUS_SOLVER
+  rel_tol = 1.0e-8
+  abs_tol = 0.0
+  max_ds_iter = 50
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/ 
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1.0e-12
+  max_ds_iter = 50
+  max_amg_iter = 50
+  krylov_method = 'gmres'
+  gmres_krylov_dim = 5
 /
 
 Fluid-filled region in the lower part of the domain
@@ -114,11 +109,10 @@ Surrounding mold region
   data_constant = 0.0
 /
 
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 12
-  bc_variable  = 'velocity'
-  bc_type      = 'no-slip'
+&FLOW_BC
+  name = 'walls'
+  face_set_ids = 12
+  condition = 'no slip'
 /
 
 &MATERIAL

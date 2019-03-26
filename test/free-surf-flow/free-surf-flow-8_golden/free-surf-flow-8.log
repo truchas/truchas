@@ -1,0 +1,546 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas
+   version:             3.1.0-alpha
+   build architecture:  x86_64
+   build date/time:     2019-02-26 08:56:03
+   build flags:         -u -C -C=dangling -gline -nan
+   build host:          petaca1.lanl.gov
+   run architecture:    Linux petaca1.lanl.gov 4.13.16-1
+   run host:            petaca1.lanl.gov1 SMP Mon Nov 27
+   run date/time:       26 Feb 19 13:32:16
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
+   All rights reserved.
+
+   This software was produced under U.S. Government contract DE-AC52-06NA25396
+   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+   National Security, LLC for the U.S. Department of Energy. The U.S. Government
+   has rights to use, reproduce, and distribute this software.  NEITHER THE
+   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+   is modified to produce derivative works, such modified software should be
+   clearly marked, so as not to confuse it with the version available from LANL.
+
+   Additionally, redistribution and use in source and binary forms, with or
+   without modification, are permitted provided that the following conditions
+   are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
+      Laboratory, LANL, the U.S. Government, nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
+   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
+   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+
+DISCLAIMER
+
+   This Truchas release is registered with the Los Alamos National
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
+
+================================================================================
+
+INPUT
+
+Opening input file free-surf-flow-8.inp ...
+
+Reading FUNCTION namelists ...
+
+Reading VFUNCTION namelists ...
+
+Reading TOOLPATH namelists ...
+
+Reading PHASE namelists ...
+  Reading PHASE namelist #1
+
+Reading MATERIAL_SYSTEM namelists ...
+  Reading MATERIAL_SYSTEM namelist #1
+    using default REFERENCE_TEMP =  0.000E+00
+    using default REFERENCE_ENTHALPY =  0.000E+00
+
+Reading PHYSICS namelist ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading SIMULATION_CONTROL namelist ...
+
+Reading MESH Namelist ...
+
+ Reading MATERIAL Namelist # 1 ...
+
+ Reading MATERIAL Namelist # 2 ...
+This is the last MATERIAL Namelist.
+Identified 2 material(s)
+Warning: Material  1 priority not initialized; set to  1
+Warning: Material  2 priority not initialized; set to  2
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1        water        1
+             2         void        2
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+Warning: LINEAR_SOLVER namelist not found! Using defaults.
+
+Reading NONLINEAR_SOLVER Namelists ...
+  NONLINEAR_SOLVER namelist not found; using defaults.
+
+Reading INTERFACES namelist ...
+
+ Reading BODY Namelist # 1 ...
+
+                                   Geometry Data
+
+          Body  Material  Surface  Translation  Rotation  Rotation  Surface
+                 Number     Type      Point       Point     Angle  Parameters
+          ----  --------  -------  -----------  --------  -------- ----------
+            1       2    plane      1.000E+00   0.000E+00    0.0    1.000E+00
+                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
+                                    0.000E+00   0.000E+00    0.0    0.000E+00
+
+ Reading BODY Namelist # 2 ...
+            2       1    background
+         BODY Namelist number  1 will be used for background material ( 2)
+
+Reading NUMERICS namelist ...
+
+Reading FLOW namelist ...
+
+Reading FLOW_BC namelists ...
+
+Reading FLOW_PRESSURE_SOLVER namelist ...
+
+ Reading BC Namelists ...
+BC namelists not found; using defaults.
+
+ Reading PROBE namelists ...
+         This is the last PROBE Namelist.
+
+         Identified 0 probe(s)
+
+Input file free-surf-flow-8.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+
+Initializing mesh "MAIN" ...
+  reading ExodusII mesh file "./mesh2.g"
+  finding cell neighbors
+  partitioning the mesh cells
+  partitioning the mesh nodes
+  numbering the mesh faces
+  partitioning the mesh faces
+  identifying off-process ghost cells
+  generating parallel mesh structure
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|      312      530      125
+  Mesh Communication Profile:
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|      0      312      0      530      0      125
+  Mesh "MAIN" initialized
+
+Allocating base derived types A ...done.
+
+Computing initial volume fractions ...
+ERROR: material 1 volume fraction > 1 in cells: 3 7 9 11 13 [29 more items omitted]
+       maximum volume fraction less 1:  1.99840E-15
+ERROR: material 2 volume fraction > 1 in cells: 94 96 97 98 100 [12 more items omitted]
+       maximum volume fraction less 1:  1.99840E-15
+  Computed volume fractions are invalid; attempting to normalize.
+  Normalization was successful.
+  Initial volume fractions computed.
+  Using default value "specific heat" = 0.000E+00 for phase "water"
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 310 boundary points
+   EXTERIOR: 310 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 310 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+
+Configuring volume tracking ...
+projection solve:   44 (DS),    0 (AMG), 7.7560E-14 (|r|/|b|)
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(constant) =   2.00000E-02
+projection solve:   39 (DS),    0 (AMG), 1.9742E-11 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -9.3836E-13)
+            Max Velocity: ( 4.4302E-01,  0.0000E+00,  8.9663E-13)
+
+          2: t =   2.00000E-02, dt(constant) =   2.00000E-02
+projection solve:   37 (DS),    0 (AMG), 3.3034E-11 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -1.7376E-12)
+            Max Velocity: ( 3.8618E-01,  0.0000E+00,  1.5098E-12)
+
+          3: t =   4.00000E-02, dt(constant) =   2.00000E-02
+projection solve:   34 (DS),    0 (AMG), 7.1561E-11 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -2.4235E-12)
+            Max Velocity: ( 3.2947E-01,  0.0000E+00,  1.9870E-12)
+
+          4: t =   6.00000E-02, dt(constant) =   2.00000E-02
+projection solve:   35 (DS),    0 (AMG), 6.9898E-11 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -3.0711E-12)
+            Max Velocity: ( 2.7286E-01,  0.0000E+00,  2.5158E-12)
+
+          5: t =   8.00000E-02, dt(constant) =   2.00000E-02
+projection solve:   35 (DS),    0 (AMG), 1.1293E-10 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -3.7411E-12)
+            Max Velocity: ( 2.1635E-01,  0.0000E+00,  3.0486E-12)
+
+          6: t =   1.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   37 (DS),    0 (AMG), 4.0715E-11 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -4.5168E-12)
+            Max Velocity: ( 1.5990E-01,  0.0000E+00,  3.6956E-12)
+
+          7: t =   1.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   37 (DS),    0 (AMG), 2.2896E-10 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -5.3264E-12)
+            Max Velocity: ( 1.0350E-01,  0.0000E+00,  4.3745E-12)
+
+          8: t =   1.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   37 (DS),    0 (AMG), 3.2824E-10 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00,  0.0000E+00, -6.2260E-12)
+            Max Velocity: ( 4.7131E-02,  0.0000E+00,  5.1409E-12)
+
+          9: t =   1.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   36 (DS),    0 (AMG), 3.9491E-10 (|r|/|b|)
+
+            Min Velocity: (-9.2207E-03,  0.0000E+00, -7.0942E-12)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  5.8723E-12)
+
+         10: t =   1.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   34 (DS),    0 (AMG), 2.4041E-09 (|r|/|b|)
+
+            Min Velocity: (-6.5575E-02,  0.0000E+00, -8.0659E-12)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  6.7030E-12)
+
+         11: t =   2.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   36 (DS),    0 (AMG), 5.0023E-10 (|r|/|b|)
+
+            Min Velocity: (-1.2195E-01,  0.0000E+00, -9.0436E-12)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  7.5382E-12)
+
+         12: t =   2.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   36 (DS),    0 (AMG), 3.0094E-10 (|r|/|b|)
+
+            Min Velocity: (-1.7836E-01,  0.0000E+00, -1.0032E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  8.3821E-12)
+
+         13: t =   2.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   37 (DS),    0 (AMG), 5.9211E-11 (|r|/|b|)
+
+            Min Velocity: (-2.3483E-01,  0.0000E+00, -1.0989E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  9.1936E-12)
+
+         14: t =   2.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   37 (DS),    0 (AMG), 9.2247E-11 (|r|/|b|)
+
+            Min Velocity: (-2.9138E-01,  0.0000E+00, -1.2021E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.0080E-11)
+
+         15: t =   2.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   38 (DS),    0 (AMG), 7.9463E-11 (|r|/|b|)
+
+            Min Velocity: (-3.4802E-01,  0.0000E+00, -1.3030E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.0939E-11)
+
+         16: t =   3.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   37 (DS),    0 (AMG), 5.2560E-11 (|r|/|b|)
+
+            Min Velocity: (-4.0477E-01,  0.0000E+00, -1.4146E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.1904E-11)
+
+         17: t =   3.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   36 (DS),    0 (AMG), 6.7395E-11 (|r|/|b|)
+
+            Min Velocity: (-4.6165E-01,  0.0000E+00, -1.5292E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.2895E-11)
+
+         18: t =   3.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   38 (DS),    0 (AMG), 2.8766E-11 (|r|/|b|)
+
+            Min Velocity: (-5.1868E-01,  0.0000E+00, -1.6474E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.3918E-11)
+
+         19: t =   3.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   39 (DS),    0 (AMG), 2.9685E-11 (|r|/|b|)
+
+            Min Velocity: (-5.7588E-01,  0.0000E+00, -1.7720E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.4999E-11)
+
+         20: t =   3.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   39 (DS),    0 (AMG), 2.2830E-11 (|r|/|b|)
+
+            Min Velocity: (-6.3327E-01,  0.0000E+00, -1.9095E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.6202E-11)
+
+         21: t =   4.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   40 (DS),    0 (AMG), 1.0249E-11 (|r|/|b|)
+
+            Min Velocity: (-6.9087E-01,  0.0000E+00, -2.0625E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.7548E-11)
+
+         22: t =   4.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   41 (DS),    0 (AMG), 1.2139E-11 (|r|/|b|)
+
+            Min Velocity: (-7.4870E-01,  0.0000E+00, -2.2376E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.9102E-11)
+
+         23: t =   4.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   41 (DS),    0 (AMG), 1.0388E-11 (|r|/|b|)
+
+            Min Velocity: (-8.0678E-01,  0.0000E+00, -2.5831E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.1772E-11)
+
+         24: t =   4.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   42 (DS),    0 (AMG), 6.4377E-12 (|r|/|b|)
+
+            Min Velocity: (-8.6513E-01,  0.0000E+00, -3.3851E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.8803E-11)
+
+         25: t =   4.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   44 (DS),    0 (AMG), 5.9526E-13 (|r|/|b|)
+
+            Min Velocity: (-9.2378E-01,  0.0000E+00, -6.0528E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  5.2659E-11)
+
+         26: t =   5.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 3.6557E-12 (|r|/|b|)
+
+            Min Velocity: (-9.8267E-01,  0.0000E+00, -3.0626E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.5947E-11)
+
+         27: t =   5.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 1.2647E-11 (|r|/|b|)
+
+            Min Velocity: (-1.0419E+00,  0.0000E+00, -3.0266E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.5159E-11)
+
+         28: t =   5.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 1.8650E-12 (|r|/|b|)
+
+            Min Velocity: (-1.1015E+00,  0.0000E+00, -3.0707E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.5173E-11)
+
+         29: t =   5.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    1 (AMG), 1.0044E-11 (|r|/|b|)
+
+            Min Velocity: (-1.1615E+00,  0.0000E+00, -3.1869E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.5871E-11)
+
+         30: t =   5.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    1 (AMG), 9.2965E-12 (|r|/|b|)
+
+            Min Velocity: (-1.2219E+00,  0.0000E+00, -3.3945E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.7383E-11)
+
+         31: t =   6.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 3.5011E-12 (|r|/|b|)
+
+            Min Velocity: (-1.2827E+00,  0.0000E+00, -3.7503E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  3.0183E-11)
+
+         32: t =   6.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 6.3176E-13 (|r|/|b|)
+
+            Min Velocity: (-1.3441E+00,  0.0000E+00, -4.4147E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  3.5633E-11)
+
+         33: t =   6.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 4.3391E-12 (|r|/|b|)
+
+            Min Velocity: (-1.4059E+00,  0.0000E+00, -6.0698E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  4.9622E-11)
+
+         34: t =   6.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 6.8900E-12 (|r|/|b|)
+
+            Min Velocity: (-1.4681E+00,  0.0000E+00, -4.5437E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  3.7120E-11)
+
+         35: t =   6.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 6.1368E-12 (|r|/|b|)
+
+            Min Velocity: (-1.5320E+00,  0.0000E+00, -8.7061E-11)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  7.1654E-11)
+
+         36: t =   7.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 7.5948E-12 (|r|/|b|)
+
+            Min Velocity: (-1.5946E+00,  0.0000E+00, -1.0340E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  8.7323E-11)
+
+         37: t =   7.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 7.2549E-12 (|r|/|b|)
+
+            Min Velocity: (-1.6581E+00,  0.0000E+00, -1.1207E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  9.5619E-11)
+
+         38: t =   7.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    3 (AMG), 1.0950E-12 (|r|/|b|)
+
+            Min Velocity: (-1.7225E+00,  0.0000E+00, -1.1885E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.0174E-10)
+
+         39: t =   7.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 1.2484E-12 (|r|/|b|)
+
+            Min Velocity: (-1.7878E+00,  0.0000E+00, -1.3099E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.0862E-10)
+
+         40: t =   7.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    4 (AMG), 8.3804E-14 (|r|/|b|)
+
+            Min Velocity: (-1.8539E+00,  0.0000E+00, -3.3587E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.8790E-10)
+
+         41: t =   8.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 1.0735E-11 (|r|/|b|)
+
+            Min Velocity: (-1.9207E+00,  0.0000E+00, -1.3459E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.1238E-10)
+
+         42: t =   8.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    3 (AMG), 2.2731E-12 (|r|/|b|)
+
+            Min Velocity: (-1.9885E+00,  0.0000E+00, -1.3240E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.0830E-10)
+
+         43: t =   8.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    3 (AMG), 2.7020E-12 (|r|/|b|)
+
+            Min Velocity: (-2.0572E+00,  0.0000E+00, -1.3735E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.1077E-10)
+
+         44: t =   8.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    3 (AMG), 9.8622E-13 (|r|/|b|)
+
+            Min Velocity: (-2.1269E+00,  0.0000E+00, -1.6014E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.2888E-10)
+
+         45: t =   8.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    4 (AMG), 4.7866E-14 (|r|/|b|)
+
+            Min Velocity: (-2.1977E+00,  0.0000E+00, -4.5724E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  3.8932E-10)
+
+         46: t =   9.00000E-01, dt(constant) =   2.00000E-02
+projection solve:   47 (DS),    0 (AMG), 1.5636E-11 (|r|/|b|)
+
+            Min Velocity: (-2.2695E+00,  0.0000E+00, -1.6195E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.3142E-10)
+
+         47: t =   9.20000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    2 (AMG), 1.0375E-11 (|r|/|b|)
+
+            Min Velocity: (-2.3425E+00,  0.0000E+00, -1.6452E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.3106E-10)
+
+         48: t =   9.40000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    3 (AMG), 1.0659E-12 (|r|/|b|)
+
+            Min Velocity: (-2.4168E+00,  0.0000E+00, -1.8387E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.4533E-10)
+
+         49: t =   9.60000E-01, dt(constant) =   2.00000E-02
+projection solve:   50 (DS),    4 (AMG), 7.7378E-14 (|r|/|b|)
+
+            Min Velocity: (-2.4925E+00,  0.0000E+00, -2.9882E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  2.4182E-10)
+
+         50: t =   9.80000E-01, dt(constant) =   2.00000E-02
+projection solve:   48 (DS),    0 (AMG), 9.7292E-12 (|r|/|b|)
+
+            Min Velocity: (-2.5693E+00,  0.0000E+00, -1.9290E-10)
+            Max Velocity: ( 0.0000E+00,  0.0000E+00,  1.5256E-10)
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0000E+00 after    50 steps
+
+
+TIMING SUMMARY
+--------------
+  2.343E+00 --- Total
+    1.122E-02 --- Input
+    4.323E-01 --- Initialization
+      1.320E-04 --- Vof Initialization
+      2.448E-03 --- Flow
+        4.600E-05 --- update properties
+        1.030E-03 --- setup
+        9.130E-04 --- solve
+          1.950E-04 --- hypre solve
+    1.837E+00 --- Main Cycle
+      1.557E+00 --- Output
+      8.950E-04 --- Time Step
+      1.596E-01 --- Volumetracking
+        5.560E-02 --- normals
+        7.685E-02 --- reconstruct/advect
+      1.137E-01 --- Flow
+        2.313E-03 --- update properties
+        1.611E-02 --- prediction
+          9.708E-03 --- setup
+          6.112E-03 --- solve
+        8.761E-02 --- projection
+          3.896E-02 --- setup
+          4.838E-02 --- solve
+            1.353E-02 --- hypre solve
+
+                  Process virtual memory used: 4.19E+02 mB
+                                   words/cell: 439795
+
+truchas terminated normally on 26 Feb 19 at 13:32:24

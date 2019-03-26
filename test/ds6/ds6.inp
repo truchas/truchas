@@ -41,7 +41,6 @@ A kludge to force hitting the final time exactly
   heat_transport = .true.
   species_transport = .true.
   number_of_species = 2
-  fluid_flow = .false.
 /
 
 &DIFFUSION_SOLVER

@@ -28,7 +28,6 @@ A kludge to force hitting the final time exactly
 /
 
 &PHYSICS
-  fluid_flow = .false.
   heat_transport = .true.
 /
 

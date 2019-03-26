@@ -198,12 +198,19 @@ contains
   !! MATL defined in ZONE_MODULE and MATL_MODULE, respectively.
   !!
 
-  subroutine restart_matlzone ()
+  subroutine restart_matlzone (vel_fn)
+    use kinds, only: r8
     use zone_module, only: read_zone_data
     use matl_utilities, only: read_matl_data
     use fluid_data_module, only: read_flow_data
+    use flow_driver, only: read_fluxing_velocity
+    real(r8), allocatable, intent(out), optional :: vel_fn(:)
     call read_zone_data (unit, version)
-    call read_flow_data (unit, version)
+    if (present(vel_fn)) then
+      call read_fluxing_velocity(unit, version, vel_fn)
+    else  ! legacy flow
+      call read_flow_data (unit, version)
+    end if
     call read_matl_data (unit, version)
   end subroutine restart_matlzone
 

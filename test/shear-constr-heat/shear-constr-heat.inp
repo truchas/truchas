@@ -245,7 +245,6 @@ solid mechanics only
 
 &PHYSICS
 
-    fluid_flow       = .false. 
     heat_transport   = .false. 
     solid_mechanics  = .true.
 
@@ -258,6 +257,10 @@ solid mechanics only
   rel_enthalpy_tol   = 1.0e-5
   nlk_tol            = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
+/
+
+&SOLID_MECHANICS
+  displacement_nonlinear_solution  = 'displacement solve'
 /
 
 &LINEAR_SOLVER
@@ -289,8 +292,7 @@ solid mechanics only
 constant time increment
 
 &NUMERICS
-    dt_constant                           = 1.0e-1, 
-    displacement_nonlinear_solution  = 'displacement solve', 
+    dt_constant = 1.0e-1
 /
 
 Run for 100 sec

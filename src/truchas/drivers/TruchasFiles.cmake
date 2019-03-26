@@ -14,6 +14,7 @@ set(DRIVERS_FILES
            drivers/drivers.F90
            drivers/physics_module.F90
            drivers/time_step_module.F90
+           drivers/flow_time_step_module.F90
            drivers/time_step_sync_type.F90
            drivers/simulation_event_queue.F90
            drivers/hijack_truchas.F90)

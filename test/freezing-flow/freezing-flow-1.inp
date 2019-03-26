@@ -1,0 +1,140 @@
+FREEZING STATIONARY FLUID
+-------------------------
+A column of fluid that freezes from the bottom up.
+Flow is enabled, but the fluid should remain stationary. This is a
+basic sanity check for coupling flow to phase change.
+
+Problem starts with fluid, then solid/fluid, and finally
+solid with no fluid present.
+
+&MESH
+  mesh_file = 'mesh1.g'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 0.2, 2.5
+  Output_Dt = 0.2, 2.5
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 0.2, 2.5
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  flow = .true.
+/
+
+&FLOW
+  inviscid = .true.
+  courant_number = 0.25
+  subcycles = 2
+  nested_dissection = .false.
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1.0e-12
+  max_ds_iter = 50
+  max_amg_iter = 25
+  krylov_method = 'cg'
+/
+
+&FLOW_BC
+  name = 'all'
+  type = 'free-slip'
+  face_set_ids = 1, 2, 3
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-5
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-5
+  max_nlk_itr        = 5
+  nlk_tol            = 0.05
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_init = 1.0d-4
+  dt_min  = 1.0d-9
+  dt_max  = 2.0d-2
+  dt_grow = 5.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'left end'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 1
+  data_function = 'end-temp'
+/
+
+&FUNCTION
+ name = 'end-temp'
+ type = 'tabular'
+ tabular_data(1,:) = 0.0, 0.2, 0.3, 0.4
+ tabular_data(2,:) = 7.0, 1.0, 1.0, 1.0
+ tabular_interp = 'akima'
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'adiabatic'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 2, 3
+  data_constant = 0.0
+/
+
+Liquid everywhere
+&BODY
+  surface_name = 'background'
+  material_number = 2
+  temperature = 7.0
+  velocity = 3*0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+/
+
+&MATERIAL
+  material_number = 1
+  material_name = 'solid'
+  immobile = .true.
+  density = 1.0 ! not void
+/
+
+&PHASE
+  name = 'solid'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 5.0
+/
+
+&MATERIAL
+  material_number = 2
+  material_name = 'liquid'
+  density = 1.0 ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'liquid'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 0.25
+  property_name(3) = 'conductivity',  property_constant(3) = 5.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'solid', 'liquid'
+  transition_temps_low = 5.0
+  transition_temps_high = 6.0
+  latent_heat = 2.0
+  smoothing_radius = 0.5
+/

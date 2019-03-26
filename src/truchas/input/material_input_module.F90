@@ -227,8 +227,7 @@ CONTAINS
     use property_data_module, only: background_material,                          &
                                     density, material_name, matpri,               &
                                     Permeability_Constant, Material_Feature,      &
-                                    Sound_Speed, Void_Temperature
-    use fluid_data_module,    only: isImmobile
+                                    Sound_Speed, Void_Temperature, isImmobile
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -274,8 +273,7 @@ CONTAINS
     use property_data_module,   only: density, material_name, priority,               &
                                       Permeability_Constant,                          &
                                       Material_Feature,                               &
-                                      Sound_Speed, Void_Temperature
-    use fluid_data_module,      only: isImmobile
+                                      Sound_Speed, Void_Temperature, isImmobile
   
     integer, intent(in) :: lun
 

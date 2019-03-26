@@ -85,7 +85,7 @@ CONTAINS
     !   velocities computed in VELOCITY_INIT
     !   velocity fields for testing the behavior of nonsoleniodal velocities
     !   and divergence free velocity fields have been added, also a velocity
-    !   field for a 3D vortex can be used for rotating rigid bodies 
+    !   field for a 3D vortex can be used for rotating rigid bodies
     !   (with modifications to other modules)
     !   These velocity fields are currently commented out.
     !
@@ -102,7 +102,7 @@ CONTAINS
     ! Local Variables
 !    integer :: n, tes
 !    real(r8), dimension(ncells)  :: D
-    
+
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Initialize XY-Plane Vortex .............................
@@ -179,7 +179,7 @@ CONTAINS
 !      Zone(n)%Vc(2) =  Zone(n)%Vc(2)  +  &
 !             0.5*(-1)**(n+1)*Sin(8*pi*Cell(n)%Centroid(2))
 !      Zone(n)%Vc(3) =  Zone(n)%Vc(3) +  &
-!             0.0 
+!             0.0
 !       enddo
 
 ! ... Add linear velocity field for debugging and translating
@@ -203,7 +203,7 @@ CONTAINS
     !   quantities computed in ZONE_INIT.
     !
     !=======================================================================
-    
+
 !!$    use error_module,         only: ERROR_CHECK
 !!$    use matl_module,          only: GATHER_VOF
 !!$    use legacy_mesh_api,      only: Mesh, Cell, Vertex
@@ -238,7 +238,7 @@ CONTAINS
 !!$
 !!$    call GATHER_VOF (metal_material_id, metal_vof)
 !!$
-!!$    where (metal_vof < 0.5) 
+!!$    where (metal_vof < 0.5)
 !!$       slope = (temperature_top - temperature_bottom) / (y_top - y_bottom)
 !!$       Zone%Temp = temperature_bottom + slope * (Cell%Centroid(2) - y_bottom)
 !!$    end where
@@ -267,7 +267,7 @@ CONTAINS
      ! Find all faces that have a cell made of material_1 on one side
      ! and material_2 on the other side.
      !
-     ! mask should be declared logical, (nfc,ncells) in the caller. 
+     ! mask should be declared logical, (nfc,ncells) in the caller.
      ! It is set to true for the boundary faces.
      !
      ! THRESHOLD is in case a cell isn't completely made of
@@ -357,7 +357,7 @@ CONTAINS
      !--------------------------------------------------------------------------
      ! Find all external faces that don't have thermal boundary conditions.
      !
-     ! mask should be declared logical, (nfc,ncells) in the caller. 
+     ! mask should be declared logical, (nfc,ncells) in the caller.
      ! It is set to true for the uncovered boundary faces.
      !--------------------------------------------------------------------------
 
@@ -488,7 +488,7 @@ CONTAINS
 
   END SUBROUTINE CREATE_PLUME
 
-  SUBROUTINE PRESCRIBE_VELOCITY (type)
+  subroutine PRESCRIBE_VELOCITY (type, t)
     !=======================================================================
     ! Purpose(s):
     !
@@ -496,7 +496,7 @@ CONTAINS
     !   velocities computed in VELOCITY_INIT
     !   velocity fields for testing the behavior of nonsoleniodal velocities
     !   and divergence free velocity fields have been added, also a velocity
-    !   field for a 3D vortex can be used for rotating rigid bodies 
+    !   field for a 3D vortex can be used for rotating rigid bodies
     !   (with modifications to other modules)
     !   These velocity fields are currently commented out.
     !
@@ -509,11 +509,12 @@ CONTAINS
     ! Arguments
 
     character(*), intent(IN) :: type
+    real(r8), intent(in) :: t
 
     ! Local Variables
     integer  :: n, f,i,j,k
-    real(r8) :: Vfx, Vfy, Vfz
-    
+    real(r8) :: Vfx, Vfy, Vfz, x, y, z
+
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     select case(type)
@@ -532,7 +533,7 @@ CONTAINS
              Vfz = 0.0d0
              Fluxing_Velocity(f,n) = Vfx*Cell(n)%Face_Normal(1,f) + &
                                      Vfy*Cell(n)%Face_Normal(2,f) + &
-                                     Vfz*Cell(n)%Face_Normal(3,f) 
+                                     Vfz*Cell(n)%Face_Normal(3,f)
           end do
        enddo
 
@@ -550,7 +551,7 @@ CONTAINS
              Vfz = 1.0d0
              Fluxing_Velocity(f,n) = Vfx*Cell(n)%Face_Normal(1,f) + &
                                      Vfy*Cell(n)%Face_Normal(2,f) + &
-                                     Vfz*Cell(n)%Face_Normal(3,f) 
+                                     Vfz*Cell(n)%Face_Normal(3,f)
           end do
        enddo
 
@@ -568,7 +569,7 @@ CONTAINS
              Vfz = 1.0d0
              Fluxing_Velocity(f,n) = Vfx*Cell(n)%Face_Normal(1,f) + &
                                      Vfy*Cell(n)%Face_Normal(2,f) + &
-                                     Vfz*Cell(n)%Face_Normal(3,f) 
+                                     Vfz*Cell(n)%Face_Normal(3,f)
           end do
        enddo
 
@@ -614,7 +615,7 @@ CONTAINS
              end do
              Fluxing_Velocity(j,i) = Vfx*Cell(i)%Face_Normal(1,j) + &
                                      Vfy*Cell(i)%Face_Normal(2,j) + &
-                                     Vfz*Cell(i)%Face_Normal(3,j) 
+                                     Vfz*Cell(i)%Face_Normal(3,j)
           end do
        end do
 
@@ -660,7 +661,7 @@ CONTAINS
              end do
              Fluxing_Velocity(j,i) = Vfx*Cell(i)%Face_Normal(1,j) + &
                                      Vfy*Cell(i)%Face_Normal(2,j) + &
-                                     Vfz*Cell(i)%Face_Normal(3,j) 
+                                     Vfz*Cell(i)%Face_Normal(3,j)
           end do
        end do
 
@@ -702,11 +703,11 @@ CONTAINS
                                *SIN(pi*(Cell(i)%Face_Centroid(3,j) ))   &
                                *SIN(pi*(Cell(i)%Face_Centroid(2,j) ))   &
                                *COS(pi*(Cell(i)%Face_Centroid(2,j) ))
-                end select 
+                end select
              end do
              Fluxing_Velocity(j,i) = Vfx*Cell(i)%Face_Normal(1,j) + &
                                      Vfy*Cell(i)%Face_Normal(2,j) + &
-                                     Vfz*Cell(i)%Face_Normal(3,j) 
+                                     Vfz*Cell(i)%Face_Normal(3,j)
           end do
        end do
 
@@ -738,7 +739,7 @@ CONTAINS
              end do
              Fluxing_Velocity(j,i) = Vfx*Cell(i)%Face_Normal(1,j) + &
                                      Vfy*Cell(i)%Face_Normal(2,j) + &
-                                     Vfz*Cell(i)%Face_Normal(3,j) 
+                                     Vfz*Cell(i)%Face_Normal(3,j)
           end do
        end do
 
@@ -770,7 +771,7 @@ CONTAINS
              end do
              Fluxing_Velocity(j,i) = Vfx*Cell(i)%Face_Normal(1,j) + &
                                      Vfy*Cell(i)%Face_Normal(2,j) + &
-                                     Vfz*Cell(i)%Face_Normal(3,j) 
+                                     Vfz*Cell(i)%Face_Normal(3,j)
           end do
        end do
 
@@ -802,9 +803,36 @@ CONTAINS
              end do
              Fluxing_Velocity(j,i) = Vfx*Cell(i)%Face_Normal(1,j) + &
                                      Vfy*Cell(i)%Face_Normal(2,j) + &
-                                     Vfz*Cell(i)%Face_Normal(3,j) 
+                                     Vfz*Cell(i)%Face_Normal(3,j)
           end do
        end do
+
+       case('deforming_sphere')
+
+       do i = 1, ncells
+         x = Cell(i)%Centroid(1)
+         y = Cell(i)%Centroid(2)
+         z = Cell(i)%Centroid(3)
+
+         Zone(i)%Vc(1) = 2.0_r8*sin(pi*x)**2*sin(2.0_r8*pi*y)*sin(2.0_r8*pi*z)*cos(pi*t/3.0_r8)
+         Zone(i)%Vc(2) = -sin(2.0_r8*pi*x)*sin(pi*y)**2*sin(2.0_r8*pi*z)*cos(pi*t/3.0_r8)
+         Zone(i)%Vc(3) = -sin(2.0_r8*pi*x)*sin(2.0_r8*pi*y)*sin(pi*z)**2*cos(pi*t/3.0_r8)
+
+         ! now for faces...
+         do j=1,nfc
+           x = Cell(i)%Face_Centroid(1,j)
+           y = Cell(i)%Face_Centroid(2,j)
+           z = Cell(i)%Face_Centroid(3,j)
+
+           Vfx = 2.0_r8*sin(pi*x)**2*sin(2.0_r8*pi*y)*sin(2.0_r8*pi*z)*cos(pi*t/3.0_r8)
+           Vfy = -sin(2.0_r8*pi*x)*sin(pi*y)**2*sin(2.0_r8*pi*z)*cos(pi*t/3.0_r8)
+           Vfz = -sin(2.0_r8*pi*x)*sin(2.0_r8*pi*y)*sin(pi*z)**2*cos(pi*t/3.0_r8)
+           Fluxing_Velocity(j,i) = Vfx*Cell(i)%Face_Normal(1,j) + &
+               Vfy*Cell(i)%Face_Normal(2,j) + &
+               Vfz*Cell(i)%Face_Normal(3,j)
+         end do
+       end do
+
 
     end select
 

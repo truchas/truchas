@@ -1,0 +1,68 @@
+SINGLE FLUID 2D ADVECTION
+-------------------------
+An utterly trivial problem of advection in a single fluid domain using a
+constant uniform velocity. Domain is 31x31x3 with unit cells. Velocity
+is directed diagonally across the mesh.
+
+There's not much we can check here other than the run completes without
+error, the velocity on cells is what was specified, and that the material
+fraction is 1.
+
+Variations use rotated meshes (and rotated velocity)
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 2.0
+  phase_init_dt_factor = 1.0
+/
+
+&MESH
+  mesh_file = 'mesh1a.gen'
+/
+ 
+&PHYSICS
+  legacy_flow = .true.
+/
+
+&ADVECTION_VELOCITY
+  velocity_constant = 4.0, 3.0, 0.0
+/
+
+&NUMERICS
+  dt_constant = 0.0625
+  !dt_grow = 1.1
+/
+
+&LEGACY_FLOW
+  applyflow  = .true.
+  courant_number = 0.5
+  volume_track_subcycles = 4
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 1
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+  material_feature = 'background'
+ /
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

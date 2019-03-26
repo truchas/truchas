@@ -17,7 +17,6 @@ other simulation where the ball is centered, but uses the same view factors.
 
 &PHYSICS
   heat_transport = .true.
-  fluid_flow = .false.
 /
 
 &PHYSICAL_CONSTANTS

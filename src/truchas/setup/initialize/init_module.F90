@@ -50,7 +50,7 @@ CONTAINS
 
   ! <><><><><><><><><><><><> PUBLIC ROUTINES <><><><><><><><><><><><><><><>
 
-  SUBROUTINE INITIAL (t, dt)
+  subroutine INITIAL (t, dt)
     !=======================================================================
     ! Purpose(s):
     !
@@ -60,12 +60,12 @@ CONTAINS
     !
     !=======================================================================
     use fluid_data_module,      only: Void_Material_Exists,     &
-                                      Void_Material_Index,      &
-                                      Void_Material_Count, fluid_flow
+        Void_Material_Index,      &
+        Void_Material_Count, fluid_flow
     use fluid_utilities_module, only: FLUID_INIT
     use interfaces_module,      only: nbody
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
-                                      OVERWRITE_VEL, OVERWRITE_ZONE
+        OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: nmat
     use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
@@ -75,13 +75,16 @@ CONTAINS
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use vof_init,               only: VOF_INITIALIZE
+    use volume_initialization, only: compute_initial_volumes
     use diffusion_solver_data,  only: ds_enabled, num_species, &
-                                      ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
-    use diffusion_solver,       only: ds_init, ds_set_initial_state
+        ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
+    use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view
     use material_interop,       only: generate_material_mappings
     use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
-    use physics_module,         only: heat_transport
+    use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
+    use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
+    use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
 
     real(r8), intent(in) :: t, dt
@@ -93,7 +96,8 @@ CONTAINS
 
     real(r8), dimension(nbody,ncells) :: Hits_Vol
     real(r8), dimension(nbody,ncells) :: volume_fractions
-    real(r8), allocatable :: phi(:,:)
+    real(r8), allocatable :: phi(:,:), vel_fn(:)
+    real(r8), pointer :: temperature_fc(:) => null()
     character(200) :: errmsg
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -109,12 +113,12 @@ CONTAINS
     Void_Material_Index  = 0
     Void_Material_Count  = 0
     MATERIALS: do m = 1,nmat
-       density = DENSITY_MATERIAL(m)
-       if (density == 0.0_r8) then
-          Void_Material_Exists = .true.
-          Void_Material_Count = Void_Material_Count + 1
-          Void_Material_Index(Void_Material_Count) = m
-       end if
+      density = DENSITY_MATERIAL(m)
+      if (density == 0.0_r8) then
+        Void_Material_Exists = .true.
+        Void_Material_Count = Void_Material_Count + 1
+        Void_Material_Index(Void_Material_Count) = m
+      end if
     end do MATERIALS
 
 
@@ -129,21 +133,31 @@ CONTAINS
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
 
+    ! New marching tets procedure has same limitations as the old 'divide' method.
+    ! Disable until feature set matches the old 'points' method.
+!!$    if (vtrack_enabled()) then
+!!$      call compute_initial_volumes(unstr_mesh_ptr('MAIN'), volume_fractions)
+!!$    else
     volume_fractions = vof_initialize()
+!!$    end if
     hits_vol = volume_fractions   ! temporary compatibility
 
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then
 
-       call restart_matlzone ()
-       call restart_solid_mechanics ()
+      if (flow) then
+        call restart_matlzone (vel_fn)
+      else
+        call restart_matlzone ()
+      end if
+      call restart_solid_mechanics ()
 
     else
 
-       ! Initialize Matl%Cell and Zone%Vc.
-       call MATL_INIT (Hits_Vol)
+      ! Initialize Matl%Cell and Zone%Vc.
+      call MATL_INIT (Hits_Vol)
 
-       call TLS_info ('  Initial volume fractions computed.')
+      call TLS_info ('  Initial volume fractions computed.')
 
     end if
 
@@ -162,13 +176,17 @@ CONTAINS
     ! for the flow restart when a non-ortho operator is used.
     call BC_INIT()
 
-    !! NNC, December 2012.  Flow initialization is really messed up.  It does
-    !! necessary stuff even when flow is inactive.  The work of ensuring the
-    !! relevant properties are defined belongs there but for now it's here so
-    !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
-    !! always because fluid_init uses its results regardless of whether flow is on.
-    call flow_property_init
-    call FLUID_INIT (t)
+    if (flow) then
+      call flow_driver_init
+    else if (legacy_flow) then
+      !! NNC, December 2012.  Flow initialization is really messed up.  It does
+      !! necessary stuff even when flow is inactive.  The work of ensuring the
+      !! relevant properties are defined belongs there but for now it's here so
+      !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
+      !! always because fluid_init uses its results regardless of whether flow is on.
+      call flow_property_init
+      call FLUID_INIT (t)
+    end if
 
     ! Allow arbitrary overwriting of the Matl, Zone, and BC types.
     call OVERWRITE_MATL ()
@@ -208,7 +226,17 @@ CONTAINS
         deallocate(phi)
       end select
     end if
-    
+
+    ! Initialize the flow solver.
+    if (flow) then
+      if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
+      if (allocated(vel_fn)) then
+        call flow_driver_set_initial_state(t, dt, temperature_fc, vel_fn)
+      else
+        call flow_driver_set_initial_state(t, dt, temperature_fc)
+      end if
+    end if
+
     ! Initialize the microstructure modeling driver (if enabled).
     call ustruc_driver_init (t)
     call restart_ustruc
@@ -1440,6 +1468,8 @@ CONTAINS
        elsewhere
           Zone%Vc(n) = Massc/(Mass + alittle)
        end where
+
+       Zone%Vc_old(n) = Zone%Vc(n)
 
     end do
 

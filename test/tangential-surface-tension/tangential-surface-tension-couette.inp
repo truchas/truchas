@@ -1,0 +1,157 @@
+COUETTE-LIKE TANGENTIAL SURFACE TENSION
+---------------------------------------
+This problem is similar to Couette flow, except instead of
+a dirichlet velocity boundary condition at the z+ boundary,
+constant tangential surface tension is applied via a
+constant temperature field. In this case, the temperature
+field is set using the heat solver, boundary conditions,
+high conduction, and the fact that all fluid flow will
+be along temperature contours. This runs to steady state,
+where the exact solution is:
+
+u = dsig/dx / mu * (y - ymin)
+
+&MESH
+  mesh_file = 'tangential-surface-tension.gen'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 20.0
+  Output_Dt = 20.0
+/
+
+&SIMULATION_CONTROL
+  phase_start_times = 10.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  heat_transport = .true.
+  flow = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 0.01
+  nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles      = 2
+  verbose_stepping   = .true.
+/
+
+&FLOW
+  inviscid = f
+  courant_number = 0.5
+  viscous_number = 100.0
+  viscous_implicitness = 0.5
+/
+
+&FLOW_VISCOUS_SOLVER
+  rel_tol = 1.0e-10
+  abs_tol = 1.0e-10
+  max_ds_iter = 50
+  max_amg_iter = 10
+  krylov_method = 'cg'
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 1.0e-10
+  abs_tol = 1.0e-10
+  max_ds_iter = 100
+  max_amg_iter = 10
+  krylov_method = 'cg'
+/
+
+&NUMERICS
+  dt_init = 1.0d-03
+  dt_min  = 1.0d-10
+  dt_grow = 1.5
+  dt_max  = 1.0
+  discrete_ops_type = 'ortho'
+/
+
+##### BOUNDARY CONDITIONS ######################################################
+
+&DS_BOUNDARY_CONDITION
+  name = 'cold'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 1
+  data_constant = 1.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'hot'
+  variable = 'temperature'
+  condition = 'dirichlet'
+  face_set_ids = 2
+  data_constant = 13.0
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'walls'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 3, 4, 5, 6
+  data_constant = 0.0
+/
+
+
+&FLOW_BC
+  name = 'inlet'
+  type = 'pressure'
+  face_set_ids = 1, 2
+  pressure = 0.0
+/
+
+&FLOW_BC
+  name = 'symmetry'
+  type = 'free-slip'
+  face_set_ids = 5, 6
+/
+
+&FLOW_BC
+  name = 'surface tension'
+  type = 'marangoni'
+  face_set_ids = 3
+  dsigma = -1.0
+/
+
+&FLOW_BC
+  name = 'wall'
+  type = 'no-slip'
+  face_set_ids = 4
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  temperature = 1
+/
+
+##### MATERIALS ################################################################
+
+&MATERIAL
+  material_name = 'liquid'
+  material_number = 1
+  material_feature = 'background'
+  immobile= .false.
+  priority = 1
+  density = 1.0 ! not void
+/
+
+&PHASE
+ name = 'liquid'
+ property_name(1) = 'density',       property_constant(1) = 1.0
+ property_name(2) = 'specific heat', property_constant(2) = 1.0
+ property_name(3) = 'conductivity',  property_constant(3) = 1.0e9
+ property_name(4) = 'viscosity',     property_constant(4) = 20.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'single'
+  phases = 'liquid'
+/

@@ -1,0 +1,126 @@
+INVISCID FLUID PLUG TRAVELLING DOWN PIPE WITH VOID
+--------------------------------------------------
+This is a simple 1D inviscid fluid/void flow problem. The 2d 5x1 pipe domain is
+void except for a plug of fluid near the left end but bordered by void on either
+side. The fluid has an initial velocity of 1. The fluid plug should move down
+the pipe with speed 1. The simulation ends before the plug reaches the right end.
+
+We should recover the exact solution: P=0, V=(1,0,0) on cells with fluid, with
+the fluid/void interfaces moving at speed 1 to the right.
+ 
+&MESH
+  mesh_file = 'mesh4.g'
+/
+
+&OUTPUTS
+  output_t  = 0.0, 3.0
+  output_dt = 3.0
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 3.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  legacy_flow = .true.
+/
+
+&NUMERICS
+  dt_init = 0.001
+  dt_grow = 1.05
+  dt_min  = 1.0e-05
+  dt_max  = 1.0
+  discrete_ops_type = 'ortho'
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
+  volume_track_interfaces = .true.
+  volume_track_brents_method  = .true.
+  volume_track_iter_tol = 1.0e-12
+  volume_track_subcycles = 2
+  projection_linear_solution = 'projection'
+  body_force_face_method = .true.
+  courant_number = 0.25
+/
+
+&LINEAR_SOLVER
+  name = 'projection'
+  method = 'fgmres'
+  preconditioning_method = 'ssor'
+  convergence_criterion  = 1.0e-10
+  relaxation_parameter   = 1.4
+  preconditioning_steps  = 2
+  maximum_iterations     = 200
+/
+
+INFLOW
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  !bc_variable  = 'velocity'
+  !bc_type      = 'dirichlet'
+  !bc_value     = 1.0, 0.0, 0.0
+  !inflow_material = 1
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
+/
+
+OUTFLOW
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
+/
+ 
+Fluid plug
+&BODY
+  surface_name = 'box'
+  length = 1.0, 1.0, 1.0
+  translation_pt = -1.5, 0.0, 0.0
+  material_number = 1
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+Surrounding void
+&BODY
+  surface_name = 'background'
+  mesh_material_number = 2
+  material_number = 2
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&INTERFACES
+ vof_method = 'divide'
+ vof_tolerance = 1.0e-3
+/
+ 
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name = 'void'
+  material_number = 2
+  density = 0.0
+  material_feature = 'background'
+/

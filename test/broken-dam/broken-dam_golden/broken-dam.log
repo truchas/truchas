@@ -3,25 +3,25 @@
 
 PROGRAM INFORMATION
 
-   code:                DUMMY
-   version:             2.9.dev
-   libraries:           UbikSolve, PGSLib, Chaco
+   code:                Truchas
+   version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:      6 Oct 2015 01:51:34
-   build flags:         -u -C -gline -nan -maxcontin=99 -PIC
-   build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 3.19.8-100.fc20.x86_64 #1 SMP Tue May 12 17:08:50 UTC 2015 x86_64
-   run host:            noether.lanl.gov
-   run date/time:       05 Oct 15 21:48:40
+   build date/time:     2018-11-16 16:26:10
+   build flags:         -u -C -C=dangling -gline -nan
+   build host:          petaca1.lanl.gov
+   run architecture:    Linux petaca1.lanl.gov 4.13.16-1
+   run host:            petaca1.lanl.gov1 SMP Mon Nov 27
+   run date/time:       19 Nov 18 10:04:26
    processors:          1
 
 ================================================================================
 
 COPYRIGHT
 
-   Copyright 2007-2013. Los Alamos National Security, LLC.
+   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
+   All rights reserved.
 
-   This material was produced under U.S. Government contract DE-AC52-06NA25396
+   This software was produced under U.S. Government contract DE-AC52-06NA25396
    for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
    National Security, LLC for the U.S. Department of Energy. The U.S. Government
    has rights to use, reproduce, and distribute this software.  NEITHER THE
@@ -30,31 +30,52 @@ COPYRIGHT
    is modified to produce derivative works, such modified software should be
    clearly marked, so as not to confuse it with the version available from LANL.
 
-   Additionally, this program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or (at your
-   option) any later version. Accordingly, this program is distributed in the
-   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-   See the GNU General Public License for more details.
+   Additionally, redistribution and use in source and binary forms, with or
+   without modification, are permitted provided that the following conditions
+   are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
+      Laboratory, LANL, the U.S. Government, nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
+   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
+   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
 
 DISCLAIMER
 
    This Truchas release is registered with the Los Alamos National
-   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
-DANU: Opening h5 output file
+   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
 
 ================================================================================
 
 INPUT
 
 Opening input file broken-dam.inp ...
- Reading PARALLEL_PARAMETERS Namelist ...
-PARALLEL_PARAMETERS namelist not found; using defaults.
 
 Reading FUNCTION namelists ...
+
+Reading VFUNCTION namelists ...
+
+Reading TOOLPATH namelists ...
 
 Reading PHASE namelists ...
   Reading PHASE namelist #1
@@ -72,9 +93,9 @@ Reading PHYSICS namelist ...
 
  Reading OUTPUTS Namelist ...
 
+Reading SIMULATION_CONTROL namelist ...
+
 Reading MESH Namelist ...
-         Opened mesh file ./mesh.exo
-           containing 4386 nodes and 2100 cells
 
  Reading MATERIAL Namelist # 1 ...
 
@@ -88,6 +109,12 @@ Identified 2 material(s)
          --------     ----     --------
              1        water        1
              2          air        2
+
+ Reading LINEAR_SOLVER Namelist(s) ...
+Warning: LINEAR_SOLVER namelist not found! Using defaults.
+
+Reading NONLINEAR_SOLVER Namelists ...
+  NONLINEAR_SOLVER namelist not found; using defaults.
 
 Reading INTERFACES namelist ...
 
@@ -106,22 +133,16 @@ Reading INTERFACES namelist ...
             2       2    background
          BODY Namelist number  2 will be used for background material ( 2)
 
- Reading LINEAR_SOLVER Namelist(s) ...
+Reading NUMERICS namelist ...
 
-         Reading LINEAR_SOLVER Namelist # 1 ...
+Reading FLOW namelist ...
 
-Reading NONLINEAR_SOLVER Namelists ...
-  NONLINEAR_SOLVER namelist not found; using defaults.
+Reading FLOW_BC namelists ...
 
- Reading NUMERICS Namelist ...
-Using linear solver "projection" for projection linear solution.
-Warning: Linear solver "default" for viscous linear solution not found!Reverting to default linear solver parameters.
+Reading FLOW_CORRECTOR namelist ...
 
  Reading BC Namelists ...
-
-         Reading BC namelist #  1: Unnamed
-
-         Reading BC namelist #  2: Unnamed
+BC namelists not found; using defaults.
 
  Reading PROBE namelists ...
          This is the last PROBE Namelist.
@@ -134,70 +155,16 @@ Input file broken-dam.inp closed.
 
 INITIALIZATION
 
-Allocating mesh derived types ... done.
- Automatic partitioner selection: None
-
-Reading ExodusII mesh file ./mesh.exo ...
- Closed ExodusII mesh file ./mesh.exo
-
- Determining mesh partitions and permutation vectors.
-
- Permuting mesh ... done.
- Permuting vertices ... done.
- Renumbering vertices ... done.
-
- Establishing mesh connectivity for     12600 faces ...
-
-   Sorting face vertex 1 ...
-   Sorting face vertex 2 ...
-   Sorting face vertex 3 ...
-   Sorting face vertex 4 ...
-   There are       4384 external boundary faces.
- Mesh connectivity established.
-
- Finding all cell neighbors ... done.
-
-Allocating base derived types ...done.
-
-                               Mesh Diagnostics
-                               ----------------
-
-                   Element Type   Number     Face Type   Number
-                   ------------   ------     ---------   ------
-                      Hex          2100       Point           0
-                      Prism           0       Line            0
-                      Pyramid         0       Triangle        0
-                      Tet             0       Quad        12600
-
-                            Nodes               Cells
-                            -----               -----
-                                8 are shared by   1
-                              360 are shared by   2
-                             4018 are shared by   4
-
-Computing cell geometry ... 
-                    Min        Cell       Max        Cell       Total
-                    ---        ----       ---        ----       -----
-       Volumes   4.6665E-08      1931   4.6665E-08      1885    9.7996E-05
-
-    Entire mesh is orthogonal
-
-    use_ortho_face_gradient = T
-
-    Using full pivoting for LSLR_ operators
-
-done.
-
-                    Min Coord        Max Coord
-                    ---------        ---------
-                   0.0000E+00       1.4288E-01
-                   0.0000E+00       1.2001E-01
-                   0.0000E+00       5.7150E-03
-
- Finding face neighbors ... done.
 
 Initializing mesh "MAIN" ...
-  Reading ExodusII mesh file "./mesh.exo"
+  reading ExodusII mesh file "./mesh.exo"
+  finding cell neighbors
+  partitioning the mesh cells
+  partitioning the mesh nodes
+  numbering the mesh faces
+  partitioning the mesh faces
+  identifying off-process ghost cells
+  generating parallel mesh structure
   UNSTR_MESH Profile:
      PE|    nnode    nface    ncell
     ---+---------------------------
@@ -208,42 +175,12 @@ Initializing mesh "MAIN" ...
     ---+------------------------------------------------
       1|      0     4386      0     8492      0     2100
   Mesh "MAIN" initialized
-DANU: adding default mesh entry
-DANU: writing mesh node coordinates
-DANU: adding main simulation entry
+
+Allocating base derived types A ...done.
 
 Computing initial volume fractions ...
-
-    Interface cells will be identified from       2100 total cells with   5**3 particles/cell
-
-    Tallying        5**3 =    125 interface particles
-
-    Tallied   1 x   5**2 =     25 interface particles
-    Tallied   2 x   5**2 =     50 interface particles
-    Tallied   3 x   5**2 =     75 interface particles
-    Tallied   4 x   5**2 =    100 interface particles
-    Tallied   5 x   5**2 =    125 interface particles
-
-    Body # 2 was clipped in    800 cells because of previously defined bodies
-
-  Computing volume fractions in   2100 interface cells with  10**3 particles/cell
-
-    Tallying       10**3 =   1000 VOF particles
-
-    Tallied   1 x  10**2 =    100 VOF particles
-    Tallied   2 x  10**2 =    200 VOF particles
-    Tallied   3 x  10**2 =    300 VOF particles
-    Tallied   4 x  10**2 =    400 VOF particles
-    Tallied   5 x  10**2 =    500 VOF particles
-    Tallied   6 x  10**2 =    600 VOF particles
-    Tallied   7 x  10**2 =    700 VOF particles
-    Tallied   8 x  10**2 =    800 VOF particles
-    Tallied   9 x  10**2 =    900 VOF particles
-    Tallied  10 x  10**2 =   1000 VOF particles
-
-    Body # 2 was clipped in    800 cells because of previously defined bodies
-ERROR: volume fraction sum < 1 in cells: 1 2 3 8 10 [370 more items omitted]
-       minimum volume fraction sum less 1: -6.35569E-12
+ERROR: material 2 volume fraction > 1 in cells: 42 83 126 209 210 [544 more items omitted]
+       maximum volume fraction less 1:  6.10845E-13
   Computed volume fractions are invalid; attempting to normalize.
   Normalization was successful.
   Initial volume fractions computed.
@@ -252,20 +189,18 @@ ERROR: volume fraction sum < 1 in cells: 1 2 3 8 10 [370 more items omitted]
  Initializing Displacement Boundary Conditions
 
  Locating cell faces for which BCs are to be applied ...
-
-    Boundary conditions in BC namelist  1 will be applied on an area of   6.85886E-04 (    42 faces)
-    Boundary conditions in BC namelist  2 will be applied on an area of   8.16531E-04 (    50 faces)
  Initializing Pressure Boundary Conditions
-   DIRICHLET: 92 boundary points
+   DIRICHLET: 0 boundary points
    REFLECTIVE: 4384 boundary points
    EXTERIOR: 4384 boundary points
    NEUMANN: 0 boundary points
-   HNEUMANN: 4292 boundary points
+   HNEUMANN: 4384 boundary points
  Pressure BCs initialized.
 
  Finished BC initialization.
-  Using default value "density deviation" = 0.000E+00 for phase "water"
-  Using default value "density deviation" = 0.000E+00 for phase "air"
+
+Configuring volume tracking ...
+projection solve:    2 (DS),   10 (AMG), 4.3188E-11 (|r|/|b|)
 
 ================================================================================
 
@@ -273,546 +208,406 @@ EXECUTION
 
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E-03
-Warning: excessive volume adjustment: cell=1, matid=1, adjustment fraction= -6.569E-09
-Warning: excessive volume adjustment: cell=2, matid=1, adjustment fraction=  4.692E-09
-Warning: excessive volume adjustment: cell=3, matid=1, adjustment fraction= -1.157E-09
-Warning: excessive volume adjustment: cell=4, matid=1, adjustment fraction=  1.468E-09
-Warning: excessive volume adjustment: cell=5, matid=1, adjustment fraction= -3.507E-10
-Warning: excessive volume adjustment: cell=6, matid=1, adjustment fraction=  3.201E-10
-Warning: excessive volume adjustment: cell=7, matid=1, adjustment fraction=  4.485E-10
-Warning: excessive volume adjustment: cell=8, matid=1, adjustment fraction= -1.702E-11
-Warning: excessive volume adjustment: cell=9, matid=1, adjustment fraction=  1.030E-10
-Warning: excessive volume adjustment: cell=10, matid=1, adjustment fraction=  3.223E-10
-Warning: excessive volume adjustment: cell=11, matid=1, adjustment fraction=  2.836E-11
-Warning: excessive volume adjustment: cell=40, adjustment fraction=  4.921E-11
-Warning: excessive volume adjustment: cell=82, adjustment fraction= -1.708E-11
-Warning: excessive volume adjustment: cell=124, adjustment fraction= -4.576E-11
-Warning: excessive volume adjustment: cell=166, adjustment fraction= -3.581E-11
-Warning: excessive volume adjustment: cell=208, adjustment fraction= -2.076E-11
-Warning: excessive volume adjustment: cell=250, adjustment fraction= -2.061E-11
-Warning: excessive volume adjustment: cell=292, adjustment fraction= -2.923E-11
-Warning: excessive volume adjustment: cell=334, adjustment fraction= -3.157E-11
-Warning: excessive volume adjustment: cell=376, adjustment fraction= -2.396E-11
-Warning: excessive volume adjustment: cell=418, adjustment fraction= -1.629E-11
-Warning: excessive volume adjustment: cell=460, adjustment fraction= -1.646E-11
-Warning: excessive volume adjustment: cell=841, adjustment fraction= -6.319E-11
-Warning: excessive volume adjustment: cell=842, adjustment fraction= -4.778E-10
-Warning: excessive volume adjustment: cell=843, adjustment fraction= -3.374E-10
-Warning: excessive volume adjustment: cell=844, adjustment fraction= -1.823E-11
-Warning: excessive volume adjustment: cell=845, adjustment fraction= -1.624E-10
-Warning: excessive volume adjustment: cell=846, adjustment fraction= -1.307E-10
-Warning: excessive volume adjustment: cell=847, adjustment fraction=  4.870E-11
-Warning: excessive volume adjustment: cell=848, adjustment fraction=  2.324E-11
-Warning: excessive volume adjustment: cell=849, adjustment fraction= -1.706E-10
-Warning: excessive volume adjustment: cell=850, adjustment fraction= -6.519E-11
-Warning: excessive volume adjustment: cell=851, adjustment fraction=  9.172E-11
-Warning: excessive volume adjustment: cell=852, adjustment fraction= -1.325E-12
-Warning: excessive volume adjustment: cell=40, adjustment fraction= -1.452E-07
-Warning: excessive volume adjustment: cell=82, adjustment fraction= -1.446E-07
-Warning: excessive volume adjustment: cell=124, adjustment fraction= -1.433E-07
-Warning: excessive volume adjustment: cell=166, adjustment fraction= -1.413E-07
-Warning: excessive volume adjustment: cell=208, adjustment fraction= -1.386E-07
-Warning: excessive volume adjustment: cell=250, adjustment fraction= -1.354E-07
-Warning: excessive volume adjustment: cell=292, adjustment fraction= -1.314E-07
-Warning: excessive volume adjustment: cell=334, adjustment fraction= -1.267E-07
-Warning: excessive volume adjustment: cell=376, adjustment fraction= -1.214E-07
-Warning: excessive volume adjustment: cell=418, adjustment fraction= -1.153E-07
-Warning: excessive volume adjustment: cell=460, adjustment fraction= -1.085E-07
-Warning: excessive volume adjustment: cell=544, adjustment fraction=  1.492E-06
-Warning: excessive volume adjustment: cell=586, adjustment fraction= -1.275E-11
-Warning: excessive volume adjustment: cell=628, adjustment fraction= -9.364E-12
-Warning: excessive volume adjustment: cell=670, adjustment fraction= -4.592E-12
-Warning: excessive volume adjustment: cell=712, adjustment fraction=  3.656E-13
-Warning: excessive volume adjustment: cell=754, adjustment fraction=  4.580E-12
-Warning: excessive volume adjustment: cell=796, adjustment fraction=  7.123E-12
-Warning: excessive volume adjustment: cell=838, adjustment fraction=  5.007E-12
-Warning: excessive volume adjustment: cell=841, adjustment fraction= -3.161E-11
-Warning: excessive volume adjustment: cell=842, adjustment fraction= -2.389E-10
-Warning: excessive volume adjustment: cell=843, adjustment fraction= -1.687E-10
-           37 Preliminary projection iterations (linear)
-           34 Projection iterations (linear)
+projection solve:   26 (DS),    9 (AMG), 3.3979E-11 (|r|/|b|)
 
-            Min Velocity: (-2.5323E-03, -9.7579E-03,  0.0000E+00)
-            Max Velocity: ( 2.9587E-02,  7.6966E-03,  0.0000E+00)
+            Min Velocity: (-2.6366E-03, -9.7577E-03,  0.0000E+00)
+            Max Velocity: ( 2.9449E-02,  6.9877E-03,  0.0000E+00)
 
           2: t =   1.00000E-03, dt(growth) =   1.05000E-03
-Warning: excessive volume adjustment: cell=250, adjustment fraction=  2.829E-06
-Warning: excessive volume adjustment: cell=292, adjustment fraction= -3.336E-12
-Warning: excessive volume adjustment: cell=334, adjustment fraction= -3.183E-12
-Warning: excessive volume adjustment: cell=376, adjustment fraction= -4.443E-12
-Warning: excessive volume adjustment: cell=418, adjustment fraction= -2.809E-12
-Warning: excessive volume adjustment: cell=460, adjustment fraction=  1.661E-12
-Warning: excessive volume adjustment: cell=502, adjustment fraction=  5.111E-12
-Warning: excessive volume adjustment: cell=544, adjustment fraction=  6.479E-12
-Warning: excessive volume adjustment: cell=586, adjustment fraction=  6.590E-12
-Warning: excessive volume adjustment: cell=628, adjustment fraction=  5.377E-12
-Warning: excessive volume adjustment: cell=670, adjustment fraction=  4.533E-12
-           31 Projection iterations (linear)
+projection solve:    3 (DS),   10 (AMG), 5.8123E-11 (|r|/|b|)
 
-            Min Velocity: (-5.0402E-03, -2.0042E-02,  0.0000E+00)
-            Max Velocity: ( 6.1741E-02,  1.6432E-02,  0.0000E+00)
+            Min Velocity: (-5.1671E-03, -2.0051E-02,  0.0000E+00)
+            Max Velocity: ( 6.1655E-02,  1.5966E-02,  0.0000E+00)
 
           3: t =   2.05000E-03, dt(growth) =   1.10250E-03
-           33 Projection iterations (linear)
+projection solve:    3 (DS),   10 (AMG), 3.2188E-11 (|r|/|b|)
 
-            Min Velocity: (-7.4515E-03, -3.0851E-02,  0.0000E+00)
-            Max Velocity: ( 9.5739E-02,  2.5525E-02,  0.0000E+00)
+            Min Velocity: (-7.5721E-03, -3.0873E-02,  0.0000E+00)
+            Max Velocity: ( 9.5698E-02,  2.5700E-02,  0.0000E+00)
 
           4: t =   3.15250E-03, dt(growth) =   1.15763E-03
-           31 Projection iterations (linear)
+projection solve:   28 (DS),    9 (AMG), 1.0982E-11 (|r|/|b|)
 
-            Min Velocity: (-9.7675E-03, -4.2172E-02,  0.0000E+00)
-            Max Velocity: ( 1.3129E-01,  3.4212E-02,  0.0000E+00)
+            Min Velocity: (-9.8757E-03, -4.2206E-02,  0.0000E+00)
+            Max Velocity: ( 1.3127E-01,  3.4554E-02,  0.0000E+00)
 
           5: t =   4.31013E-03, dt(growth) =   1.21551E-03
-           31 Projection iterations (linear)
+projection solve:   29 (DS),    9 (AMG), 8.7518E-12 (|r|/|b|)
 
-            Min Velocity: (-1.2184E-02, -5.4003E-02,  0.0000E+00)
-            Max Velocity: ( 1.6818E-01,  4.2067E-02,  0.0000E+00)
+            Min Velocity: (-1.2214E-02, -5.4046E-02,  0.0000E+00)
+            Max Velocity: ( 1.6817E-01,  4.2452E-02,  0.0000E+00)
 
           6: t =   5.52563E-03, dt(growth) =   1.27628E-03
-           31 Projection iterations (linear)
+projection solve:   34 (DS),    8 (AMG), 5.4890E-11 (|r|/|b|)
 
-            Min Velocity: (-1.4731E-02, -6.6434E-02,  0.0000E+00)
-            Max Velocity: ( 2.0623E-01,  4.9011E-02,  0.0000E+00)
+            Min Velocity: (-1.4752E-02, -6.6426E-02,  0.0000E+00)
+            Max Velocity: ( 2.0623E-01,  4.9309E-02,  0.0000E+00)
 
           7: t =   6.80191E-03, dt(growth) =   1.34010E-03
-           31 Projection iterations (linear)
+projection solve:    4 (DS),   10 (AMG), 2.1278E-11 (|r|/|b|)
 
-            Min Velocity: (-1.7335E-02, -7.9580E-02,  0.0000E+00)
-            Max Velocity: ( 2.4524E-01,  5.4666E-02,  0.0000E+00)
+            Min Velocity: (-1.7349E-02, -7.9571E-02,  0.0000E+00)
+            Max Velocity: ( 2.4524E-01,  5.4961E-02,  0.0000E+00)
 
           8: t =   8.14201E-03, dt(growth) =   1.40710E-03
-           32 Projection iterations (linear)
+projection solve:   12 (DS),    9 (AMG), 6.0811E-11 (|r|/|b|)
 
-            Min Velocity: (-1.9987E-02, -9.3421E-02,  0.0000E+00)
-            Max Velocity: ( 2.8501E-01,  5.9208E-02,  0.0000E+00)
+            Min Velocity: (-1.9999E-02, -9.3408E-02,  0.0000E+00)
+            Max Velocity: ( 2.8501E-01,  5.9335E-02,  0.0000E+00)
 
           9: t =   9.54911E-03, dt(growth) =   1.47746E-03
-           31 Projection iterations (linear)
+projection solve:    7 (DS),   10 (AMG), 8.3664E-12 (|r|/|b|)
 
-            Min Velocity: (-2.2679E-02, -1.0801E-01,  0.0000E+00)
-            Max Velocity: ( 3.2532E-01,  6.7519E-02,  0.0000E+00)
+            Min Velocity: (-2.2688E-02, -1.0800E-01,  0.0000E+00)
+            Max Velocity: ( 3.2533E-01,  6.7673E-02,  0.0000E+00)
 
          10: t =   1.10266E-02, dt(growth) =   1.55133E-03
-           30 Projection iterations (linear)
+projection solve:    4 (DS),   10 (AMG), 1.6113E-11 (|r|/|b|)
 
-            Min Velocity: (-2.5398E-02, -1.2336E-01,  0.0000E+00)
-            Max Velocity: ( 3.6599E-01,  7.5411E-02,  0.0000E+00)
+            Min Velocity: (-2.5406E-02, -1.2335E-01,  0.0000E+00)
+            Max Velocity: ( 3.6600E-01,  7.5590E-02,  0.0000E+00)
 
          11: t =   1.25779E-02, dt(growth) =   1.62889E-03
-           32 Projection iterations (linear)
+projection solve:   15 (DS),    9 (AMG), 6.7511E-11 (|r|/|b|)
 
-            Min Velocity: (-2.8126E-02, -1.3950E-01,  0.0000E+00)
-            Max Velocity: ( 4.0685E-01,  8.2695E-02,  0.0000E+00)
+            Min Velocity: (-2.8134E-02, -1.3949E-01,  0.0000E+00)
+            Max Velocity: ( 4.0686E-01,  8.2847E-02,  0.0000E+00)
 
          12: t =   1.42068E-02, dt(growth) =   1.71034E-03
-           34 Projection iterations (linear)
+projection solve:    4 (DS),   10 (AMG), 9.6482E-12 (|r|/|b|)
 
-            Min Velocity: (-3.0839E-02, -1.5644E-01,  0.0000E+00)
-            Max Velocity: ( 4.4775E-01,  8.8721E-02,  0.0000E+00)
+            Min Velocity: (-3.0848E-02, -1.5644E-01,  0.0000E+00)
+            Max Velocity: ( 4.4776E-01,  8.8903E-02,  0.0000E+00)
 
          13: t =   1.59171E-02, dt(growth) =   1.79586E-03
-           34 Projection iterations (linear)
+projection solve:    7 (DS),   10 (AMG), 1.3897E-11 (|r|/|b|)
 
-            Min Velocity: (-3.3511E-02, -1.7421E-01,  0.0000E+00)
-            Max Velocity: ( 4.8862E-01,  9.2537E-02,  0.0000E+00)
+            Min Velocity: (-3.3520E-02, -1.7421E-01,  0.0000E+00)
+            Max Velocity: ( 4.8863E-01,  9.2874E-02,  0.0000E+00)
 
          14: t =   1.77130E-02, dt(growth) =   1.88565E-03
-           35 Projection iterations (linear)
+projection solve:   21 (DS),    9 (AMG), 5.6799E-11 (|r|/|b|)
 
-            Min Velocity: (-3.8649E-02, -1.9280E-01,  0.0000E+00)
-            Max Velocity: ( 5.2942E-01,  9.6308E-02,  0.0000E+00)
+            Min Velocity: (-3.8687E-02, -1.9280E-01,  0.0000E+00)
+            Max Velocity: ( 5.2942E-01,  9.5673E-02,  0.0000E+00)
 
          15: t =   1.95986E-02, dt(growth) =   1.97993E-03
-           35 Projection iterations (linear)
-
-            Min Velocity: (-4.4037E-02, -2.1220E-01,  0.0000E+00)
-            Max Velocity: ( 5.7016E-01,  1.1460E-01,  0.0000E+00)
-
-         16: t =   2.15786E-02, dt(courant) =   1.92923E-03 (cell     2059)
-           35 Projection iterations (linear)
-
-            Min Velocity: (-4.9234E-02, -2.3098E-01,  0.0000E+00)
-            Max Velocity: ( 6.0831E-01,  1.3158E-01,  0.0000E+00)
-
-         17: t =   2.35078E-02, dt(courant) =   1.81018E-03 (cell     2059)
-           35 Projection iterations (linear)
-
-            Min Velocity: (-5.4038E-02, -2.4870E-01,  0.0000E+00)
-            Max Velocity: ( 6.4278E-01,  1.3964E-01,  0.0000E+00)
-
-         18: t =   2.53180E-02, dt(courant) =   1.71596E-03 (cell     2059)
-Warning: excessive volume adjustment: cell=883, matid=2, adjustment fraction= -7.976E-09
-Warning: excessive volume adjustment: cell=890, matid=2, adjustment fraction= -1.720E-12
-Warning: excessive volume adjustment: cell=891, matid=2, adjustment fraction= -2.966E-12
-Warning: excessive volume adjustment: cell=892, matid=2, adjustment fraction=  1.086E-12
-Warning: excessive volume adjustment: cell=893, matid=2, adjustment fraction=  1.911E-12
-Warning: excessive volume adjustment: cell=894, matid=2, adjustment fraction=  3.873E-13
-Warning: excessive volume adjustment: cell=895, matid=2, adjustment fraction= -2.085E-12
-Warning: excessive volume adjustment: cell=896, matid=2, adjustment fraction= -1.677E-12
-Warning: excessive volume adjustment: cell=897, matid=2, adjustment fraction=  1.958E-13
-Warning: excessive volume adjustment: cell=898, matid=2, adjustment fraction= -2.948E-13
-Warning: excessive volume adjustment: cell=899, matid=2, adjustment fraction= -1.578E-12
-           35 Projection iterations (linear)
-
-            Min Velocity: (-5.8357E-02, -2.6550E-01,  0.0000E+00)
-            Max Velocity: ( 6.7414E-01,  1.3969E-01,  0.0000E+00)
-
-         19: t =   2.70339E-02, dt(courant) =   1.63875E-03 (cell     2059)
-Warning: excessive volume adjustment: cell=846, matid=2, adjustment fraction= -1.783E-08
-Warning: excessive volume adjustment: cell=879, matid=2, adjustment fraction= -3.943E-12
-Warning: excessive volume adjustment: cell=880, matid=2, adjustment fraction=  1.125E-11
-Warning: excessive volume adjustment: cell=881, matid=2, adjustment fraction=  6.382E-12
-Warning: excessive volume adjustment: cell=882, matid=2, adjustment fraction= -2.991E-13
-Warning: excessive volume adjustment: cell=883, matid=1, adjustment fraction= -8.036E-14
-Warning: excessive volume adjustment: cell=891, matid=2, adjustment fraction=  3.780E-12
-Warning: excessive volume adjustment: cell=892, matid=2, adjustment fraction=  3.480E-12
-Warning: excessive volume adjustment: cell=893, matid=2, adjustment fraction=  2.259E-12
-Warning: excessive volume adjustment: cell=894, matid=2, adjustment fraction= -8.086E-13
-Warning: excessive volume adjustment: cell=895, matid=2, adjustment fraction= -2.554E-12
-           35 Projection iterations (linear)
-
-            Min Velocity: (-6.0955E-02, -2.8169E-01,  0.0000E+00)
-            Max Velocity: ( 7.0308E-01,  1.4350E-01,  0.0000E+00)
-
-         20: t =   2.86727E-02, dt(courant) =   1.57355E-03 (cell     2059)
-           33 Projection iterations (linear)
-
-            Min Velocity: (-6.2102E-02, -2.9731E-01,  0.0000E+00)
-            Max Velocity: ( 7.2992E-01,  1.5009E-01,  0.0000E+00)
-
-         21: t =   3.02462E-02, dt(courant) =   1.51759E-03 (cell     2059)
-           35 Projection iterations (linear)
-
-            Min Velocity: (-6.4690E-02, -3.1229E-01,  0.0000E+00)
-            Max Velocity: ( 7.5495E-01,  1.4807E-01,  0.0000E+00)
-
-         22: t =   3.17638E-02, dt(courant) =   1.46893E-03 (cell     2059)
-           35 Projection iterations (linear)
-
-            Min Velocity: (-7.1566E-02, -3.2660E-01,  0.0000E+00)
-            Max Velocity: ( 7.7855E-01,  1.5216E-01,  0.0000E+00)
-
-         23: t =   3.32328E-02, dt(courant) =   1.42585E-03 (cell     2059)
-           35 Projection iterations (linear)
-
-            Min Velocity: (-7.7937E-02, -3.4022E-01,  0.0000E+00)
-            Max Velocity: ( 8.0090E-01,  1.6117E-01,  0.0000E+00)
-
-         24: t =   3.46586E-02, dt(courant) =   1.38733E-03 (cell     2059)
-Warning: excessive volume adjustment: cell=926, matid=2, adjustment fraction= -2.114E-08
-Warning: excessive volume adjustment: cell=931, matid=2, adjustment fraction=  2.045E-13
-Warning: excessive volume adjustment: cell=932, matid=2, adjustment fraction=  4.593E-12
-Warning: excessive volume adjustment: cell=933, matid=2, adjustment fraction= -3.659E-12
-Warning: excessive volume adjustment: cell=934, matid=2, adjustment fraction= -2.254E-12
-Warning: excessive volume adjustment: cell=935, matid=2, adjustment fraction=  4.838E-12
-Warning: excessive volume adjustment: cell=936, matid=2, adjustment fraction=  4.596E-12
-Warning: excessive volume adjustment: cell=937, matid=2, adjustment fraction=  9.084E-12
-Warning: excessive volume adjustment: cell=938, matid=2, adjustment fraction=  8.754E-13
-Warning: excessive volume adjustment: cell=939, matid=2, adjustment fraction= -3.722E-12
-Warning: excessive volume adjustment: cell=940, matid=2, adjustment fraction= -8.071E-12
-           35 Projection iterations (linear)
-
-            Min Velocity: (-8.4005E-02, -3.5311E-01,  0.0000E+00)
-            Max Velocity: ( 8.2206E-01,  1.6240E-01,  0.0000E+00)
-
-         25: t =   3.60460E-02, dt(courant) =   1.35275E-03 (cell     2059)
-Warning: excessive volume adjustment: cell=627, matid=1, adjustment fraction= -1.978E-07
-Warning: excessive volume adjustment: cell=627, matid=2, adjustment fraction=  1.792E-10
-Warning: excessive volume adjustment: cell=628, matid=2, adjustment fraction= -2.100E-11
-Warning: excessive volume adjustment: cell=629, matid=2, adjustment fraction=  6.803E-12
-Warning: excessive volume adjustment: cell=630, matid=2, adjustment fraction=  4.338E-12
-Warning: excessive volume adjustment: cell=631, matid=1, adjustment fraction= -3.169E-12
-Warning: excessive volume adjustment: cell=632, matid=1, adjustment fraction= -2.986E-12
-Warning: excessive volume adjustment: cell=633, matid=1, adjustment fraction=  4.496E-13
-Warning: excessive volume adjustment: cell=634, matid=1, adjustment fraction=  5.979E-13
-Warning: excessive volume adjustment: cell=635, matid=1, adjustment fraction= -4.206E-13
-Warning: excessive volume adjustment: cell=636, matid=1, adjustment fraction= -2.231E-12
-Warning: excessive volume adjustment: cell=669, matid=1, adjustment fraction= -2.052E-07
-Warning: excessive volume adjustment: cell=669, matid=2, adjustment fraction=  1.591E-10
-Warning: excessive volume adjustment: cell=670, matid=2, adjustment fraction= -2.083E-12
-Warning: excessive volume adjustment: cell=671, matid=2, adjustment fraction= -1.641E-11
-Warning: excessive volume adjustment: cell=672, matid=2, adjustment fraction=  1.232E-12
-Warning: excessive volume adjustment: cell=673, matid=1, adjustment fraction= -2.154E-12
-Warning: excessive volume adjustment: cell=674, matid=1, adjustment fraction=  7.182E-13
-Warning: excessive volume adjustment: cell=675, matid=1, adjustment fraction=  9.168E-13
-Warning: excessive volume adjustment: cell=676, matid=1, adjustment fraction= -4.936E-13
-Warning: excessive volume adjustment: cell=677, matid=1, adjustment fraction= -1.340E-12
-Warning: excessive volume adjustment: cell=678, matid=1, adjustment fraction= -2.005E-12
-Warning: excessive volume adjustment: cell=711, matid=1, adjustment fraction= -2.594E-07
-Warning: excessive volume adjustment: cell=711, matid=2, adjustment fraction=  1.648E-10
-Warning: excessive volume adjustment: cell=712, matid=2, adjustment fraction= -2.118E-12
-Warning: excessive volume adjustment: cell=713, matid=2, adjustment fraction=  8.156E-12
-Warning: excessive volume adjustment: cell=714, matid=2, adjustment fraction= -4.888E-12
-Warning: excessive volume adjustment: cell=715, matid=1, adjustment fraction= -1.487E-13
-Warning: excessive volume adjustment: cell=716, matid=1, adjustment fraction=  1.587E-12
-Warning: excessive volume adjustment: cell=717, matid=1, adjustment fraction= -2.075E-13
-Warning: excessive volume adjustment: cell=718, matid=1, adjustment fraction= -1.150E-12
-Warning: excessive volume adjustment: cell=719, matid=1, adjustment fraction= -8.846E-13
-Warning: excessive volume adjustment: cell=720, matid=1, adjustment fraction= -1.349E-12
-           34 Projection iterations (linear)
+projection solve:   13 (DS),   10 (AMG), 6.1781E-12 (|r|/|b|)
 
-            Min Velocity: (-9.0555E-02, -3.6558E-01,  0.0000E+00)
-            Max Velocity: ( 8.4219E-01,  1.6323E-01,  0.0000E+00)
+            Min Velocity: (-4.4097E-02, -2.1221E-01,  0.0000E+00)
+            Max Velocity: ( 5.7016E-01,  1.1404E-01,  0.0000E+00)
 
-         26: t =   3.73987E-02, dt(courant) =   1.32142E-03 (cell     2059)
-           35 Projection iterations (linear)
+         16: t =   2.15786E-02, dt(courant) =   1.92921E-03
+projection solve:    7 (DS),   10 (AMG), 1.4994E-11 (|r|/|b|)
 
-            Min Velocity: (-9.5870E-02, -3.7810E-01,  0.0000E+00)
-            Max Velocity: ( 8.6149E-01,  1.6662E-01,  0.0000E+00)
+            Min Velocity: (-4.9316E-02, -2.3100E-01,  0.0000E+00)
+            Max Velocity: ( 6.0832E-01,  1.3127E-01,  0.0000E+00)
 
-         27: t =   3.87201E-02, dt(courant) =   1.29273E-03 (cell     2059)
-           35 Projection iterations (linear)
+         17: t =   2.35078E-02, dt(courant) =   1.81016E-03
+projection solve:   21 (DS),    9 (AMG), 7.2708E-11 (|r|/|b|)
 
-            Min Velocity: (-9.9155E-02, -3.9015E-01,  0.0000E+00)
-            Max Velocity: ( 8.8005E-01,  1.6938E-01,  0.0000E+00)
+            Min Velocity: (-5.4146E-02, -2.4869E-01,  0.0000E+00)
+            Max Velocity: ( 6.4279E-01,  1.3989E-01,  0.0000E+00)
 
-         28: t =   4.00128E-02, dt(courant) =   1.26630E-03 (cell     2059)
-           34 Projection iterations (linear)
+         18: t =   2.53179E-02, dt(courant) =   1.71594E-03
+projection solve:   17 (DS),   10 (AMG), 7.4135E-12 (|r|/|b|)
 
-            Min Velocity: (-1.0153E-01, -4.0193E-01,  0.0000E+00)
-            Max Velocity: ( 8.9777E-01,  1.6778E-01,  0.0000E+00)
+            Min Velocity: (-5.8484E-02, -2.6549E-01,  0.0000E+00)
+            Max Velocity: ( 6.7414E-01,  1.4004E-01,  0.0000E+00)
 
-         29: t =   4.12791E-02, dt(courant) =   1.24206E-03 (cell     2059)
-           35 Projection iterations (linear)
+         19: t =   2.70339E-02, dt(courant) =   1.63874E-03
+projection solve:   19 (DS),   10 (AMG), 4.9899E-11 (|r|/|b|)
 
-            Min Velocity: (-1.0189E-01, -4.1385E-01,  0.0000E+00)
-            Max Velocity: ( 9.1491E-01,  1.7051E-01,  0.0000E+00)
+            Min Velocity: (-6.1165E-02, -2.8168E-01,  0.0000E+00)
+            Max Velocity: ( 7.0308E-01,  1.4374E-01,  0.0000E+00)
 
-         30: t =   4.25212E-02, dt(courant) =   1.21948E-03 (cell     2059)
-           35 Projection iterations (linear)
+         20: t =   2.86726E-02, dt(courant) =   1.57355E-03
+projection solve:   17 (DS),   10 (AMG), 3.9576E-11 (|r|/|b|)
 
-            Min Velocity: (-1.0164E-01, -4.2570E-01,  0.0000E+00)
-            Max Velocity: ( 9.3143E-01,  1.7362E-01,  0.0000E+00)
+            Min Velocity: (-6.2305E-02, -2.9730E-01,  0.0000E+00)
+            Max Velocity: ( 7.2993E-01,  1.5038E-01,  0.0000E+00)
 
-         31: t =   4.37407E-02, dt(courant) =   1.19849E-03 (cell     2059)
-           34 Projection iterations (linear)
+         21: t =   3.02462E-02, dt(courant) =   1.51758E-03
+projection solve:   18 (DS),   10 (AMG), 1.3762E-11 (|r|/|b|)
 
-            Min Velocity: (-1.0263E-01, -4.3688E-01,  0.0000E+00)
-            Max Velocity: ( 9.4741E-01,  1.7470E-01,  0.0000E+00)
+            Min Velocity: (-6.4478E-02, -3.1229E-01,  0.0000E+00)
+            Max Velocity: ( 7.5496E-01,  1.4842E-01,  0.0000E+00)
 
-         32: t =   4.49392E-02, dt(courant) =   1.17887E-03 (cell     2059)
-           34 Projection iterations (linear)
+         22: t =   3.17637E-02, dt(courant) =   1.46892E-03
+projection solve:   26 (DS),   10 (AMG), 8.7586E-12 (|r|/|b|)
 
-            Min Velocity: (-1.0641E-01, -4.4772E-01,  0.0000E+00)
-            Max Velocity: ( 9.6280E-01,  1.7480E-01,  0.0000E+00)
+            Min Velocity: (-7.1383E-02, -3.2660E-01,  0.0000E+00)
+            Max Velocity: ( 7.7855E-01,  1.5224E-01,  0.0000E+00)
 
-         33: t =   4.61181E-02, dt(courant) =   1.16058E-03 (cell     2059)
-           35 Projection iterations (linear)
+         23: t =   3.32327E-02, dt(courant) =   1.42584E-03
+projection solve:   24 (DS),   10 (AMG), 1.0807E-11 (|r|/|b|)
 
-            Min Velocity: (-1.1409E-01, -4.5853E-01,  0.0000E+00)
-            Max Velocity: ( 9.7785E-01,  1.7517E-01,  0.0000E+00)
+            Min Velocity: (-7.7783E-02, -3.4023E-01,  0.0000E+00)
+            Max Velocity: ( 8.0090E-01,  1.6144E-01,  0.0000E+00)
 
-         34: t =   4.72786E-02, dt(courant) =   1.14323E-03 (cell     2059)
-           34 Projection iterations (linear)
+         24: t =   3.46585E-02, dt(courant) =   1.38732E-03
+projection solve:   33 (DS),    9 (AMG), 1.3266E-11 (|r|/|b|)
 
-            Min Velocity: (-1.2049E-01, -4.6909E-01,  0.0000E+00)
-            Max Velocity: ( 9.9237E-01,  1.7588E-01,  0.0000E+00)
+            Min Velocity: (-8.3871E-02, -3.5312E-01,  0.0000E+00)
+            Max Velocity: ( 8.2206E-01,  1.6274E-01,  0.0000E+00)
 
-         35: t =   4.84219E-02, dt(courant) =   1.12699E-03 (cell     2059)
-           35 Projection iterations (linear)
+         25: t =   3.60458E-02, dt(courant) =   1.35275E-03
+projection solve:   32 (DS),    9 (AMG), 3.3143E-11 (|r|/|b|)
 
-            Min Velocity: (-1.2596E-01, -4.7952E-01,  0.0000E+00)
-            Max Velocity: ( 1.0065E+00,  1.7354E-01,  0.0000E+00)
+            Min Velocity: (-9.0459E-02, -3.6559E-01,  0.0000E+00)
+            Max Velocity: ( 8.4219E-01,  1.6350E-01,  0.0000E+00)
 
-         36: t =   4.95489E-02, dt(courant) =   1.11166E-03 (cell     2059)
-           35 Projection iterations (linear)
+         26: t =   3.73986E-02, dt(courant) =   1.32143E-03
+projection solve:   23 (DS),    9 (AMG), 5.8524E-11 (|r|/|b|)
 
-            Min Velocity: (-1.3164E-01, -4.9083E-01,  0.0000E+00)
-            Max Velocity: ( 1.0203E+00,  1.7570E-01,  0.0000E+00)
+            Min Velocity: (-9.5819E-02, -3.7810E-01,  0.0000E+00)
+            Max Velocity: ( 8.6149E-01,  1.6658E-01,  0.0000E+00)
 
-         37: t =   5.06605E-02, dt(courant) =   1.09697E-03 (cell     2059)
-           35 Projection iterations (linear)
+         27: t =   3.87200E-02, dt(courant) =   1.29273E-03
+projection solve:   25 (DS),   10 (AMG), 7.9621E-12 (|r|/|b|)
 
-            Min Velocity: (-1.3527E-01, -5.0217E-01,  0.0000E+00)
-            Max Velocity: ( 1.0337E+00,  1.7505E-01,  0.0000E+00)
+            Min Velocity: (-9.9168E-02, -3.9016E-01,  0.0000E+00)
+            Max Velocity: ( 8.8005E-01,  1.6950E-01,  0.0000E+00)
 
-         38: t =   5.17575E-02, dt(courant) =   1.08320E-03 (cell     2059)
-           34 Projection iterations (linear)
+         28: t =   4.00127E-02, dt(courant) =   1.26630E-03
+projection solve:   21 (DS),   10 (AMG), 7.8168E-12 (|r|/|b|)
 
-            Min Velocity: (-1.3633E-01, -5.1207E-01,  0.0000E+00)
-            Max Velocity: ( 1.0467E+00,  1.7240E-01,  0.0000E+00)
+            Min Velocity: (-1.0156E-01, -4.0194E-01,  0.0000E+00)
+            Max Velocity: ( 8.9777E-01,  1.6761E-01,  0.0000E+00)
 
-         39: t =   5.28407E-02, dt(courant) =   1.07012E-03 (cell     2059)
-           34 Projection iterations (linear)
+         29: t =   4.12790E-02, dt(courant) =   1.24206E-03
+projection solve:   22 (DS),    9 (AMG), 4.8830E-11 (|r|/|b|)
 
-            Min Velocity: (-1.3685E-01, -5.2138E-01,  0.0000E+00)
-            Max Velocity: ( 1.0595E+00,  1.7260E-01,  0.0000E+00)
+            Min Velocity: (-1.0199E-01, -4.1385E-01,  0.0000E+00)
+            Max Velocity: ( 9.1491E-01,  1.7046E-01,  0.0000E+00)
 
-         40: t =   5.39108E-02, dt(courant) =   1.05755E-03 (cell     2059)
-           35 Projection iterations (linear)
+         30: t =   4.25211E-02, dt(courant) =   1.21949E-03
+projection solve:   27 (DS),    9 (AMG), 5.1589E-11 (|r|/|b|)
 
-            Min Velocity: (-1.3687E-01, -5.3160E-01,  0.0000E+00)
-            Max Velocity: ( 1.0720E+00,  1.7367E-01,  0.0000E+00)
+            Min Velocity: (-1.0172E-01, -4.2570E-01,  0.0000E+00)
+            Max Velocity: ( 9.3142E-01,  1.7367E-01,  0.0000E+00)
 
-         41: t =   5.49684E-02, dt(courant) =   1.04560E-03 (cell     2059)
-           34 Projection iterations (linear)
+         31: t =   4.37406E-02, dt(courant) =   1.19850E-03
+projection solve:   31 (DS),    9 (AMG), 5.2062E-11 (|r|/|b|)
 
-            Min Velocity: (-1.3639E-01, -5.4197E-01,  0.0000E+00)
-            Max Velocity: ( 1.0842E+00,  1.6925E-01,  0.0000E+00)
+            Min Velocity: (-1.0271E-01, -4.3689E-01,  0.0000E+00)
+            Max Velocity: ( 9.4742E-01,  1.7481E-01,  0.0000E+00)
 
-         42: t =   5.60140E-02, dt(courant) =   1.03413E-03 (cell     2059)
-           35 Projection iterations (linear)
+         32: t =   4.49391E-02, dt(courant) =   1.17887E-03
+projection solve:   33 (DS),    9 (AMG), 3.0146E-11 (|r|/|b|)
 
-            Min Velocity: (-1.4238E-01, -5.5283E-01,  0.0000E+00)
-            Max Velocity: ( 1.0959E+00,  1.6934E-01,  0.0000E+00)
+            Min Velocity: (-1.0622E-01, -4.4772E-01,  0.0000E+00)
+            Max Velocity: ( 9.6280E-01,  1.7475E-01,  0.0000E+00)
 
-         43: t =   5.70481E-02, dt(courant) =   1.02334E-03 (cell     2059)
-           34 Projection iterations (linear)
+         33: t =   4.61180E-02, dt(courant) =   1.16058E-03
+projection solve:   28 (DS),   10 (AMG), 3.2911E-11 (|r|/|b|)
 
-            Min Velocity: (-1.4784E-01, -5.6316E-01,  0.0000E+00)
-            Max Velocity: ( 1.1076E+00,  1.6968E-01,  0.0000E+00)
+            Min Velocity: (-1.1394E-01, -4.5854E-01,  0.0000E+00)
+            Max Velocity: ( 9.7785E-01,  1.7524E-01,  0.0000E+00)
 
-         44: t =   5.80714E-02, dt(courant) =   1.01287E-03 (cell     2059)
-           34 Projection iterations (linear)
+         34: t =   4.72785E-02, dt(courant) =   1.14323E-03
+projection solve:   30 (DS),   10 (AMG), 8.8331E-12 (|r|/|b|)
 
-            Min Velocity: (-1.5034E-01, -5.7184E-01,  0.0000E+00)
-            Max Velocity: ( 1.1192E+00,  1.6806E-01,  0.0000E+00)
+            Min Velocity: (-1.2036E-01, -4.6910E-01,  0.0000E+00)
+            Max Velocity: ( 9.9237E-01,  1.7603E-01,  0.0000E+00)
 
-         45: t =   5.90843E-02, dt(courant) =   1.00270E-03 (cell     2059)
-           34 Projection iterations (linear)
+         35: t =   4.84218E-02, dt(courant) =   1.12699E-03
+projection solve:   28 (DS),    9 (AMG), 6.5662E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5204E-01, -5.7986E-01,  0.0000E+00)
-            Max Velocity: ( 1.1302E+00,  1.6490E-01,  0.0000E+00)
+            Min Velocity: (-1.2586E-01, -4.7953E-01,  0.0000E+00)
+            Max Velocity: ( 1.0065E+00,  1.7341E-01,  0.0000E+00)
 
-         46: t =   6.00870E-02, dt(courant) =   9.93176E-04 (cell     2059)
-           34 Projection iterations (linear)
+         36: t =   4.95488E-02, dt(courant) =   1.11166E-03
+projection solve:   35 (DS),    9 (AMG), 1.4852E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5277E-01, -5.8934E-01,  0.0000E+00)
-            Max Velocity: ( 1.1411E+00,  1.6384E-01,  0.0000E+00)
+            Min Velocity: (-1.3158E-01, -4.9083E-01,  0.0000E+00)
+            Max Velocity: ( 1.0203E+00,  1.7559E-01,  0.0000E+00)
 
-         47: t =   6.10802E-02, dt(courant) =   9.83976E-04 (cell     2059)
-           34 Projection iterations (linear)
+         37: t =   5.06604E-02, dt(courant) =   1.09697E-03
+projection solve:   30 (DS),    9 (AMG), 2.9131E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5248E-01, -5.9946E-01,  0.0000E+00)
-            Max Velocity: ( 1.1520E+00,  1.6304E-01,  0.0000E+00)
+            Min Velocity: (-1.3526E-01, -5.0219E-01,  0.0000E+00)
+            Max Velocity: ( 1.0337E+00,  1.7506E-01,  0.0000E+00)
 
-         48: t =   6.20641E-02, dt(courant) =   9.74847E-04 (cell     2059)
-           35 Projection iterations (linear)
+         38: t =   5.17574E-02, dt(courant) =   1.08320E-03
+projection solve:   33 (DS),    9 (AMG), 2.6174E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5138E-01, -6.0944E-01,  0.0000E+00)
-            Max Velocity: ( 1.1626E+00,  1.6050E-01,  0.0000E+00)
+            Min Velocity: (-1.3634E-01, -5.1209E-01,  0.0000E+00)
+            Max Velocity: ( 1.0467E+00,  1.7228E-01,  0.0000E+00)
 
-         49: t =   6.30390E-02, dt(courant) =   9.66268E-04 (cell     2059)
-           34 Projection iterations (linear)
+         39: t =   5.28406E-02, dt(courant) =   1.07012E-03
+projection solve:   28 (DS),    9 (AMG), 3.3226E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5098E-01, -6.1830E-01,  0.0000E+00)
-            Max Velocity: ( 1.1728E+00,  1.5904E-01,  0.0000E+00)
+            Min Velocity: (-1.3686E-01, -5.2139E-01,  0.0000E+00)
+            Max Velocity: ( 1.0595E+00,  1.7257E-01,  0.0000E+00)
 
-         50: t =   6.40053E-02, dt(courant) =   9.58109E-04 (cell     2059)
-           34 Projection iterations (linear)
+         40: t =   5.39107E-02, dt(courant) =   1.05755E-03
+projection solve:   30 (DS),    9 (AMG), 2.5621E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5476E-01, -6.2545E-01,  0.0000E+00)
-            Max Velocity: ( 1.1830E+00,  1.5634E-01,  0.0000E+00)
+            Min Velocity: (-1.3689E-01, -5.3160E-01,  0.0000E+00)
+            Max Velocity: ( 1.0720E+00,  1.7370E-01,  0.0000E+00)
 
-         51: t =   6.49634E-02, dt(courant) =   9.50017E-04 (cell     2059)
-           34 Projection iterations (linear)
+         41: t =   5.49683E-02, dt(courant) =   1.04559E-03
+projection solve:   32 (DS),    9 (AMG), 1.5895E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5734E-01, -6.3348E-01,  0.0000E+00)
-            Max Velocity: ( 1.1931E+00,  1.5361E-01,  0.0000E+00)
+            Min Velocity: (-1.3644E-01, -5.4194E-01,  0.0000E+00)
+            Max Velocity: ( 1.0842E+00,  1.6933E-01,  0.0000E+00)
 
-         52: t =   6.59134E-02, dt(courant) =   9.42252E-04 (cell     2059)
-           34 Projection iterations (linear)
+         42: t =   5.60138E-02, dt(courant) =   1.03413E-03
+projection solve:   29 (DS),    9 (AMG), 1.7027E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5863E-01, -6.4286E-01,  0.0000E+00)
-            Max Velocity: ( 1.2029E+00,  1.5325E-01,  0.0000E+00)
+            Min Velocity: (-1.4225E-01, -5.5279E-01,  0.0000E+00)
+            Max Velocity: ( 1.0959E+00,  1.6935E-01,  0.0000E+00)
 
-         53: t =   6.68556E-02, dt(courant) =   9.34757E-04 (cell     2059)
-           34 Projection iterations (linear)
+         43: t =   5.70480E-02, dt(courant) =   1.02334E-03
+projection solve:   35 (DS),    9 (AMG), 2.1935E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5879E-01, -6.5226E-01,  0.0000E+00)
-            Max Velocity: ( 1.2128E+00,  1.5130E-01,  0.0000E+00)
+            Min Velocity: (-1.4776E-01, -5.6314E-01,  0.0000E+00)
+            Max Velocity: ( 1.1076E+00,  1.6967E-01,  0.0000E+00)
 
-         54: t =   6.77904E-02, dt(courant) =   9.27322E-04 (cell     2059)
-           34 Projection iterations (linear)
+         44: t =   5.80713E-02, dt(courant) =   1.01286E-03
+projection solve:   34 (DS),    9 (AMG), 3.3442E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5764E-01, -6.6073E-01,  0.0000E+00)
-            Max Velocity: ( 1.2223E+00,  1.4745E-01,  0.0000E+00)
+            Min Velocity: (-1.5029E-01, -5.7184E-01,  0.0000E+00)
+            Max Velocity: ( 1.1192E+00,  1.6815E-01,  0.0000E+00)
 
-         55: t =   6.87177E-02, dt(courant) =   9.20319E-04 (cell     2059)
-           34 Projection iterations (linear)
+         45: t =   5.90842E-02, dt(courant) =   1.00269E-03
+projection solve:   35 (DS),    9 (AMG), 4.0840E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5532E-01, -6.6726E-01,  0.0000E+00)
-            Max Velocity: ( 1.2316E+00,  1.4375E-01,  0.0000E+00)
+            Min Velocity: (-1.5200E-01, -5.7987E-01,  0.0000E+00)
+            Max Velocity: ( 1.1302E+00,  1.6497E-01,  0.0000E+00)
 
-         56: t =   6.96380E-02, dt(courant) =   9.13597E-04 (cell     2059)
-           34 Projection iterations (linear)
+         46: t =   6.00869E-02, dt(courant) =   9.93172E-04
+projection solve:   35 (DS),   10 (AMG), 8.7299E-12 (|r|/|b|)
 
-            Min Velocity: (-1.5526E-01, -6.7460E-01,  0.0000E+00)
-            Max Velocity: ( 1.2411E+00,  1.4375E-01,  0.0000E+00)
+            Min Velocity: (-1.5275E-01, -5.8933E-01,  0.0000E+00)
+            Max Velocity: ( 1.1411E+00,  1.6389E-01,  0.0000E+00)
 
-         57: t =   7.05516E-02, dt(courant) =   9.06803E-04 (cell     2059)
-           34 Projection iterations (linear)
+         47: t =   6.10800E-02, dt(courant) =   9.83980E-04
+projection solve:   32 (DS),    9 (AMG), 9.6543E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5775E-01, -6.8318E-01,  0.0000E+00)
-            Max Velocity: ( 1.2503E+00,  1.4132E-01,  0.0000E+00)
+            Min Velocity: (-1.5248E-01, -5.9945E-01,  0.0000E+00)
+            Max Velocity: ( 1.1520E+00,  1.6296E-01,  0.0000E+00)
 
-         58: t =   7.14584E-02, dt(courant) =   9.00330E-04 (cell     2059)
-           34 Projection iterations (linear)
+         48: t =   6.20640E-02, dt(courant) =   9.74852E-04
+projection solve:   33 (DS),    9 (AMG), 4.6398E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5922E-01, -6.9185E-01,  0.0000E+00)
-            Max Velocity: ( 1.2593E+00,  1.3845E-01,  0.0000E+00)
+            Min Velocity: (-1.5140E-01, -6.0944E-01,  0.0000E+00)
+            Max Velocity: ( 1.1626E+00,  1.6049E-01,  0.0000E+00)
 
-         59: t =   7.23588E-02, dt(courant) =   8.94095E-04 (cell     2059)
-           34 Projection iterations (linear)
+         49: t =   6.30389E-02, dt(courant) =   9.66267E-04
+projection solve:   40 (DS),    9 (AMG), 2.6615E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5903E-01, -6.9948E-01,  0.0000E+00)
-            Max Velocity: ( 1.2681E+00,  1.3303E-01,  0.0000E+00)
+            Min Velocity: (-1.5090E-01, -6.1832E-01,  0.0000E+00)
+            Max Velocity: ( 1.1728E+00,  1.5907E-01,  0.0000E+00)
 
-         60: t =   7.32529E-02, dt(courant) =   8.88060E-04 (cell     2059)
-           35 Projection iterations (linear)
+         50: t =   6.40051E-02, dt(courant) =   9.58108E-04
+projection solve:   36 (DS),    9 (AMG), 1.6712E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5755E-01, -7.0593E-01,  0.0000E+00)
-            Max Velocity: ( 1.2769E+00,  1.3237E-01,  0.0000E+00)
+            Min Velocity: (-1.5469E-01, -6.2549E-01,  0.0000E+00)
+            Max Velocity: ( 1.1830E+00,  1.5639E-01,  0.0000E+00)
 
-         61: t =   7.41409E-02, dt(courant) =   8.82093E-04 (cell     2059)
-           34 Projection iterations (linear)
+         51: t =   6.49633E-02, dt(courant) =   9.50013E-04
+projection solve:   38 (DS),    9 (AMG), 2.0111E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5548E-01, -7.1410E-01,  0.0000E+00)
-            Max Velocity: ( 1.2857E+00,  1.3013E-01,  0.0000E+00)
+            Min Velocity: (-1.5731E-01, -6.3347E-01,  0.0000E+00)
+            Max Velocity: ( 1.1931E+00,  1.5368E-01,  0.0000E+00)
+
+         52: t =   6.59133E-02, dt(courant) =   9.42247E-04
+projection solve:   37 (DS),    9 (AMG), 3.6627E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5861E-01, -6.4285E-01,  0.0000E+00)
+            Max Velocity: ( 1.2029E+00,  1.5330E-01,  0.0000E+00)
+
+         53: t =   6.68555E-02, dt(courant) =   9.34754E-04
+projection solve:   37 (DS),    9 (AMG), 4.4870E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5879E-01, -6.5224E-01,  0.0000E+00)
+            Max Velocity: ( 1.2128E+00,  1.5137E-01,  0.0000E+00)
+
+         54: t =   6.77903E-02, dt(courant) =   9.27319E-04
+projection solve:   35 (DS),    9 (AMG), 7.1235E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5766E-01, -6.6074E-01,  0.0000E+00)
+            Max Velocity: ( 1.2223E+00,  1.4756E-01,  0.0000E+00)
+
+         55: t =   6.87176E-02, dt(courant) =   9.20312E-04
+projection solve:   38 (DS),    9 (AMG), 3.0750E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5535E-01, -6.6729E-01,  0.0000E+00)
+            Max Velocity: ( 1.2316E+00,  1.4388E-01,  0.0000E+00)
+
+         56: t =   6.96379E-02, dt(courant) =   9.13590E-04
+projection solve:   38 (DS),    9 (AMG), 1.8777E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5521E-01, -6.7462E-01,  0.0000E+00)
+            Max Velocity: ( 1.2411E+00,  1.4383E-01,  0.0000E+00)
+
+         57: t =   7.05515E-02, dt(courant) =   9.05534E-04
+projection solve:   39 (DS),    9 (AMG), 1.4070E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5771E-01, -6.8318E-01,  0.0000E+00)
+            Max Velocity: ( 1.2503E+00,  1.4142E-01,  0.0000E+00)
+
+         58: t =   7.14570E-02, dt(courant) =   8.97548E-04
+projection solve:   39 (DS),    9 (AMG), 3.3457E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5920E-01, -6.9183E-01,  0.0000E+00)
+            Max Velocity: ( 1.2593E+00,  1.3858E-01,  0.0000E+00)
+
+         59: t =   7.23546E-02, dt(courant) =   8.89632E-04
+projection solve:   34 (DS),    9 (AMG), 5.0360E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5905E-01, -6.9946E-01,  0.0000E+00)
+            Max Velocity: ( 1.2680E+00,  1.3310E-01,  0.0000E+00)
+
+         60: t =   7.32442E-02, dt(courant) =   8.81787E-04
+projection solve:   36 (DS),    9 (AMG), 3.5664E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5762E-01, -7.0579E-01,  0.0000E+00)
+            Max Velocity: ( 1.2768E+00,  1.3244E-01,  0.0000E+00)
+
+         61: t =   7.41260E-02, dt(courant) =   8.74010E-04
+projection solve:   44 (DS),    9 (AMG), 1.1409E-11 (|r|/|b|)
+
+            Min Velocity: (-1.5557E-01, -7.1389E-01,  0.0000E+00)
+            Max Velocity: ( 1.2855E+00,  1.3022E-01,  0.0000E+00)
 
 ================================================================================
 
 TERMINATION
 
-DANU: Closing h5 output file
-Warning: DANU: Danu fid is still associated
-                 Final Time:  7.5023E-02 after    61 steps
+                 Final Time:  7.5000E-02 after    61 steps
 
 
-  TIMING SUMMARY                       AVERAGE        MIN          MAX
-  --------------                      ---------    ---------    ---------
-  Total                               1.706E+01    1.706E+01    1.706E+01
-    Input                               1.129E-02    1.129E-02    1.129E-02
-    Initialization                      4.444E+00    4.444E+00    4.444E+00
-    Main Cycle                          1.260E+01    1.260E+01    1.260E+01
-      Predictor                           3.048E-02    3.048E-02    3.048E-02
-      timer_projection                    8.284E+00    8.284E+00    8.284E+00
-        timer_projection_mac                7.185E+00    7.185E+00    7.185E+00
-          timer_projection_solver             6.658E+00    6.658E+00    6.658E+00
-            ppe-matvec                          3.640E+00    3.640E+00    3.640E+00
-              ppe-matvec-face-grad                1.667E+00    1.667E+00    1.667E+00
-              ppe-matvec-bc                       1.602E-01    1.602E-01    1.602E-01
-              ppe-matvec-flux                     1.182E+00    1.182E+00    1.182E+00
-              ppe-matvec-div                      6.125E-01    6.125E-01    6.125E-01
-            Solver TMP1                         2.087E+00    2.087E+00    2.087E+00
-          ppe-matvec                          1.165E-01    1.165E-01    1.165E-01
-            ppe-matvec-face-grad                5.179E-02    5.179E-02    5.179E-02
-            ppe-matvec-bc                       4.370E-03    4.370E-03    4.370E-03
-            ppe-matvec-flux                     4.033E-02    4.033E-02    4.033E-02
-            ppe-matvec-div                      1.920E-02    1.920E-02    1.920E-02
-        timer_projection_corrector          2.951E-01    2.951E-01    2.951E-01
-          timer_projection_corrector          2.793E-01    2.793E-01    2.793E-01
-      Output                              6.344E-03    6.344E-03    6.344E-03
-      Time Step                           9.706E-02    9.706E-02    9.706E-02
-      Mass Advection                      4.094E+00    4.094E+00    4.094E+00
-        Volume Tracking                     3.731E+00    3.731E+00    3.731E+00
-          Reconstruct/Advect                  3.406E+00    3.406E+00    3.406E+00
-            Locate Plane                        1.025E+00    1.025E+00    1.025E+00
-        Momentum Advection                  2.584E-01    2.584E-01    2.584E-01
+TIMING SUMMARY
+--------------
+  8.849E+00 --- Total
+    1.169E-02 --- Input
+    3.966E+00 --- Initialization
+      1.202E-03 --- Vof Initialization
+      3.529E-02 --- Flow
+        7.840E-04 --- update properties
+        1.238E-02 --- setup
+        1.370E-02 --- solve
+          4.923E-03 --- hypre solve
+    4.834E+00 --- Main Cycle
+      8.117E-01 --- Output
+      9.740E-03 --- Time Step
+      2.243E+00 --- Volumetracking
+        7.062E-01 --- normals
+        1.110E+00 --- reconstruct/advect
+      1.745E+00 --- Flow
+        4.640E-02 --- update properties
+        2.184E-01 --- prediction
+          1.351E-01 --- setup
+          8.098E-02 --- solve
+        1.395E+00 --- projection
+          5.842E-01 --- setup
+          8.091E-01 --- solve
+            3.179E-01 --- hypre solve
 
-                  Process virtual memory used: 8.96E+01 mB
-                                   words/cell: 5589
+                  Process virtual memory used: 4.43E+02 mB
+                                   words/cell: 27676
 
-truchas terminated normally on 05 Oct 15 at 21:48:57
+truchas terminated normally on 19 Nov 18 at 10:04:38

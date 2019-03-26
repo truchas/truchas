@@ -33,7 +33,7 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/fluid_type_module.F90
            physics/fluid_flow/fluid_utilities_module.F90)
 
-# - fluid_flow/advection	 
+# - fluid_flow/advection
 list(APPEND PHYSICS_FILES
            physics/fluid_flow/advection/advect_volume_module.F90
            physics/fluid_flow/advection/advection_data.F90
@@ -44,7 +44,7 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/advection/limiter_module.F90
            physics/fluid_flow/advection/riemann_module.F90)
 
-# - fluid_flow/body_force	 
+# - fluid_flow/body_force
 list(APPEND PHYSICS_FILES
            physics/fluid_flow/body_force/body_data_module.F90
            physics/fluid_flow/body_force/body_force_module.F90)
@@ -59,7 +59,7 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/predictor/predictor_module.F90
            physics/fluid_flow/predictor/y_eq_Ax_vel.F90)
 
-# - fluid_flow/projection	 
+# - fluid_flow/projection
 list(APPEND PHYSICS_FILES
            physics/fluid_flow/projection/coordinates_module.F90
            physics/fluid_flow/projection/fischer_module.F90
@@ -88,6 +88,26 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/vof/truncate_volume_module.F90
            physics/fluid_flow/vof/vof_data_module.F90
            physics/fluid_flow/vof/volume_track_module.F90)
+
+# - volume_tracking
+list(APPEND PHYSICS_FILES
+          physics/volume_tracking/advection_velocity_namelist.F90
+	  physics/volume_tracking/brent_root_class.F90
+	  physics/volume_tracking/locate_plane_nd_module.F90
+	  physics/volume_tracking/multimat_cell_type.F90
+	  physics/volume_tracking/near_zero_function.F90
+	  physics/volume_tracking/plane_type.F90
+	  physics/volume_tracking/polygon_type.F90
+	  physics/volume_tracking/polyhedron_type.F90
+	  physics/volume_tracking/pure_polyhedron_type.F90
+	  physics/volume_tracking/volume_initialization.F90
+	  physics/volume_tracking/volume_tracker_class.F90
+          physics/volume_tracking/geometric_volume_tracker_type.F90
+          physics/volume_tracking/simple_volume_tracker_type.F90
+	  physics/volume_tracking/vtrack_driver.F90
+	  physics/volume_tracking/cell_geometry_type.F90
+	  physics/volume_tracking/locate_plane_os_function.F90
+	  physics/volume_tracking/truncation_volume_type.F90)
 
 # - heat_species_transport
 list(APPEND PHYSICS_FILES
@@ -121,6 +141,9 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/property_mesh_function.F90
            physics/heat_species_transport/source_mesh_function.F90
            physics/heat_species_transport/upper_packed_matrix.F90
+           physics/heat_species_transport/enthalpy_advector_class.F90
+           physics/heat_species_transport/enthalpy_advector1_type.F90
+           physics/heat_species_transport/enthalpy_advector2_type.F90
            physics/heat_species_transport/evap_heat_flux_type.F90
            physics/heat_species_transport/evaporation_namelist.F90)
 
@@ -144,13 +167,13 @@ list(APPEND PHYSICS_FILES
            physics/induction_heating/solenoid_fields.F90
            physics/induction_heating/sparse_matrix.F90)
 
-# - properties	 
+# - properties
 list(APPEND PHYSICS_FILES
            physics/properties/physical_constants.F90
            physics/properties/property_data_module.F90
            physics/properties/property_module.F90)
 
-# - solid_mechanics 	 
+# - solid_mechanics
 list(APPEND PHYSICS_FILES
            physics/solid_mechanics/mech_bc_data_module.F90
            physics/solid_mechanics/node_op_setup_module.F90
@@ -178,7 +201,7 @@ list(APPEND PHYSICS_FILES
            physics/additive_manufacturing/beam_laser_irrad_type.F90
            physics/additive_manufacturing/gauss_laser_irrad_type.F90)
 
-# Preprocess flags	 
+# Preprocess flags
 set(PHYSICS_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/utilities
         -I${TruchasExe_SOURCE_DIR}/solver
@@ -211,13 +234,5 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
                               COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS} -assume realloc_lhs")
 endif()
 
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${PHYSICS_SOURCE_FILES})		       
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${PHYSICS_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasPhysicsFiles)
-
-
-
-
-
-            
-
-

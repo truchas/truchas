@@ -1,0 +1,125 @@
+STEADY INVISCID 2-MATERIAL FLOW
+-------------------------------
+2D rectangular domain (1 cell thick in z) with steady uniform flow directed
+along the x-axis. Prescribed inflow velocity on the left and dirichlet pressure
+on the right. Two fluids with planar interface oblique to the x-axis. Fluid
+density ratio of 1000 with denser fluid trailing. Constant initial velocity
+field consistent with the BC. Velocity should remain constant. Interface will
+not be exactly advected due to approximation errors from Young's method for
+computing the interface normal adjacent to the boundary.
+
+This problem is analogous to a pure advection problem, except that instead
+of a prescribed constant velocity, we solve for the velocity, expecting to
+recovery that constant velocity.
+
+Variations use rotated meshes (and rotated velocity)
+
+&OUTPUTS
+  output_t  = 0.0, .0625, 2.0
+  output_dt = 0.0625, 2.0
+/
+
+&MESH
+  mesh_file = 'mesh2a.gen'
+/
+
+&PHYSICS
+  flow = .true.
+/
+
+&FLOW
+  inviscid = .true.
+  courant_number = 0.5
+  nested_dissection = f
+  subcycles = 2
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1.0e-10
+  max_ds_iter = 10
+  max_amg_iter = 5
+  krylov_method = 'cg'
+/
+
+&NUMERICS
+  dt_constant = 0.0625
+/
+
+Inlet velocity
+&FLOW_BC
+  name = 'inflow'
+  face_set_ids = 1
+  type = 'velocity'
+  velocity = 4.0, 0.0, 0.0
+/
+
+Outlet pressure
+&FLOW_BC
+  name = 'outflow'
+  face_set_ids = 2
+  type = 'pressure'
+  pressure = 0.0
+/
+
+Walls
+&FLOW_BC
+  name = 'wall'
+  face_set_ids = 3, 4, 5
+  type = 'free-slip'
+/
+
+&BODY
+  surface_name = 'plane'
+  axis = 'x'
+  rotation_angle = 0, 0, 26.5650511770780 ! 2:1 slope
+  translation_pt = -4.0, 0.0, 0.0
+  material_number = 2
+  velocity = 4.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+  vof_tolerance = 1.0e-2
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 1
+  velocity = 4.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+  material_feature = 'background'
+ /
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1000.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name = 'oil'
+  material_number = 2
+  density = 1.0 ! not void
+ /
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/

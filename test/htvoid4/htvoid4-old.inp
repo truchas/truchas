@@ -1,0 +1,244 @@
+HTVOID4 -- Flow with void and view factor radiation
+
+Another off-the-wall test that exercises the free surface flow-coupled
+heat tranfer solver.  The focus here is on the coupling to view factor
+radiation.  The domain is a 1D flow channel thermally coupled to wall
+bodies above and below the channel.  In this case the walls are thick
+and each contain a radiation cavity, which are totally separate from
+the flow.  The walls are split in half length-wise with a 0-HTC condition
+that makes radiation the only means of heat transfer between the two
+pieces.  The simulation begins with the channel filled with fluid moving
+to the right, and a vertical thermal gradient.  Void enters at the left
+end and the fluid exits the right end with a fixed unit velocity.  A right-
+directed gravity is included to help maintain a flat fluid/void interface.
+The simulation ends before all the fluid has exited the domain.
+
+NOTE: The flow itself is very sensitive to the various flow parameters.
+Small changes to things -- initial step size, for example -- will lead to
+different flow solutions with bits of fluid left behind or not.  The flow
+solution is largely correct, but the differences in which cells are void
+will result in heat solutions that are not comparable.
+
+&MESH
+  mesh_file = 'htvoid4.gen'
+  interface_side_sets = 8 20 21
+/
+
+&OUTPUTS
+  Output_T  = 0.0, 5.0
+  Output_Dt = 5.0 !0.2
+/
+
+&PHYSICS
+  legacy_flow = .true.
+  body_force_density = 1.0, 0.0, 0.0
+  heat_transport = .true.
+/
+
+&PHYSICAL_CONSTANTS
+  stefan_boltzmann = 0.001
+  absolute_zero = 0.0
+/
+
+&DIFFUSION_SOLVER
+  cond_vfrac_threshold = 1.0e-4
+  stepping_method    = 'Non-adaptive BDF1'
+  residual_atol      = 1.0e-9
+  residual_rtol      = 1.0e-5
+  max_nlk_itr        = 50
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_constant = 0.0625
+  cutvof                     = 1.0e-8
+  discrete_ops_type          = 'ortho' 
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
+  projection_linear_solution = 'projection'
+  body_force_face_method = .true.
+  volume_track_interfaces    = .true.
+  volume_track_Brents_Method = .true.
+  volume_track_subcycles     = 2
+  volume_track_iter_Tol      = 1.0e-12
+  courant_number             = 0.4
+/
+
+&LINEAR_SOLVER
+  name                   = 'projection'
+  method                 = 'gmres'
+  convergence_criterion  = 1.0e-12
+  preconditioning_method = 'ssor'
+  relaxation_parameter   = 1.4
+  preconditioning_steps  = 4
+  maximum_iterations     = 500
+  output_mode            = 'summary'
+/
+
+FLUID CHANNEL
+&BODY
+  surface_name    = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 2
+  !velocity        = 1.0, 0.0, 0.0 ! Truchas originally overwrote this with zero
+  velocity        = 0.0, 0.0, 0.0
+  temperature_function = 'init-temp'
+/
+
+UPPER WALL
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_number = 1
+  temperature_function = 'init-temp'
+/
+
+LOWER WALL
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 3
+  material_number = 1
+  temperature_function = 'init-temp'
+/
+
+T = 5 + 0.5*z
+&FUNCTION
+  name = 'init-temp'
+  type = 'polynomial'
+  poly_coefficients =  5.0, 0.5
+  poly_exponents(:,1) = 0, 0, 0
+  poly_exponents(:,2) = 0, 0, 1
+/
+
+VOID IN LOWER WALL CAVITY; UPPER CAVITY IS NOT MESHED
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 4
+  material_number = 3
+  temperature = 0.0
+/
+
+INFLOW OF VOID AT LEFT END OF CHANNEL
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 5
+  bc_variable = 'velocity'
+  bc_type = 'Dirichlet'
+  bc_value = 1.0, 0.0, 0.0
+  inflow_material = 3
+  inflow_temperature = 0.0
+/
+
+OUTFLOW OF FLUID AT RIGHT END OF CHANNEL
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 6
+  bc_variable = 'velocity'
+  bc_type = 'Dirichlet'
+  bc_value = 1.0, 0.0, 0.0
+/
+
+NO HEAT FLUX THROUGH ALL EXTERNAL BOUNDARIES, SYMMETRY PLANES
+&DS_BOUNDARY_CONDITION
+  name = 'external boundaries'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 1, 2, 3, 4, 5, 6
+  data_constant = 0.0
+/
+
+ZERO HTC CONDITION BETWEEN HALVES OF THE WALLS
+&DS_INTERFACE_CONDITION
+  name = 'upper/lower wall body joins'
+  variable = 'temperature'
+  condition = 'HTC'
+  face_set_ids = 20 21
+  data_constant = 0.0
+/
+
+ZERO HTC CONDITION TO MESHED VOID IN LOWER WALL CAVITY
+&DS_INTERFACE_CONDITION
+  name = 'lower meshed cavity interface'
+  variable = 'temperature'
+  condition = 'HTC'
+  face_set_ids = 8
+  data_constant = 0.0
+/
+
+RADIATION IN THE UPPER CAVITY.
+&ENCLOSURE_RADIATION
+  name = 'upper wall cavity'
+  enclosure_file = 'uppervf.nc'
+  ambient_constant = 0  ! ignored in this case
+  error_tolerance = 1.0e-6
+/
+&ENCLOSURE_SURFACE
+  name = 'upper wall cavity'
+  enclosure_name = 'upper wall cavity'
+  face_block_ids = 7    ! references face blocks in 'uppervf.nc'
+  emissivity_constant = 0.5
+/
+
+RADIATION IN THE LOWER CAVITY.
+&ENCLOSURE_RADIATION
+  name = 'lower wall cavity'
+  enclosure_file = 'lowervf.nc'
+  ambient_constant = 0  ! ignored in this case
+  error_tolerance = 1.0e-6
+/
+&ENCLOSURE_SURFACE
+  name = 'lower wall cavity'
+  enclosure_name = 'lower wall cavity'
+  face_block_ids = 8    ! references face blocks in 'lowervf.nc'
+  emissivity_constant = 0.5
+/
+
+&MATERIAL
+  Material_Name   = 'wall'
+  Material_Number = 1
+  priority        = 3
+  immobile        = .true.
+  Density         = 2.0
+/
+
+&PHASE
+  name = 'wall'
+  property_name(1) = 'density',       property_constant(1) = 2.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 0.1
+/
+
+&MATERIAL_SYSTEM
+  name = 'wall'
+  phases = 'wall'
+/
+
+&MATERIAL
+  Material_Name   = 'fluid'
+  Material_Number = 2
+  priority        = 1
+  Density         = 1.0
+/
+
+&PHASE
+  name = 'fluid'
+  property_name(1) = 'density',       property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity',  property_constant(3) = 0.1
+/
+
+&MATERIAL_SYSTEM
+  name = 'fluid'
+  phases = 'fluid'
+/
+
+&MATERIAL
+  Material_Name = 'void'
+  Material_Number = 3
+  Material_Feature = 'background'
+  priority = 2
+  Density = 0.0
+/

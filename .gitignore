@@ -271,6 +271,8 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# emacs
+.projectile
 
 ### Windows ###
 # Windows image file caches
@@ -291,3 +293,5 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+install

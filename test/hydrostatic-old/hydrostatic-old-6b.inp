@@ -1,0 +1,97 @@
+FLUID/VOID 2D HYDROSTATIC TEST WITH MIXED CELLS
+-----------------------------------------------
+Inviscid fluid at rest in lower half of a [-5,5]^2 domain with void above,
+subject to gravity. Fluid should remain at rest, with a linear pressure field.
+
+With g=(0,-1,0): rho = 2, p = -2*y + 1, in y < 1/2; p = 0 in y > 1/2.
+
+Fluid interface placed at cell midpoint.
+
+Variations use rotated meshes (and rotated g)
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+&MESH
+  mesh_file = 'mesh2-rotx.gen'
+/
+
+&PHYSICS
+  legacy_flow = .true.
+  body_force_density = 0.0, -0.707106781186547, -0.707106781186547
+/
+
+&NUMERICS
+  dt_constant = 0.125
+  discrete_ops_type           = 'ortho'
+/
+
+&LEGACY_FLOW
+  inviscid   = .true.
+  projection_linear_solution  = 'projection'
+  body_force_face_method      = .true.
+  courant_number              = 0.5
+/
+
+&LINEAR_SOLVER
+  name = 'projection'
+  method = 'fgmres'
+  preconditioning_method = 'ssor'
+  convergence_criterion = 1.0e-12
+  relaxation_parameter = 1.4
+  preconditioning_steps = 2
+  maximum_iterations = 200
+/
+
+# FREE SLIP BC ALL AROUND
+
+Lower half
+&BODY
+  surface_name = 'plane'
+  axis = 'y'
+  fill = 'outside'
+  rotation_angle = 45, 0, 0
+  translation_pt = 0.0, 0.353553390593274, 0.3535533905932747 ! 1/(2*sqrt(2))
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+/
+
+upper half
+&BODY
+  surface_name = 'background'
+  material_number = 2
+  velocity = 3*0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 2.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name    = 'void'
+  material_number  = 2
+  density          = 0.0
+/

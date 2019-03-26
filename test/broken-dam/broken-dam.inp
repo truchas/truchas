@@ -51,89 +51,93 @@ data by Martin & Moyce for this regression test.
 /
 
 &OUTPUTS
-  Output_T  = 0.0, 0.075
-  Output_Dt = 0.075
+  output_t  = 0.0, 0.075
+  output_dt = 0.075
 /
 
-&LINEAR_SOLVER
-  name                   = 'projection'
-  method                 = 'fgmres'
-  preconditioning_method = 'ssor'
-  convergence_criterion  = 1.0e-10
-  relaxation_parameter   = 1.4
-  preconditioning_steps  = 2
-  maximum_iterations     = 200
-/
-
-&NUMERICS
-  volume_track_interfaces     = .true.
-  volume_track_brents_method  = .true.
-  volume_track_iter_tol       = 1.0e-12
-  volume_track_subcycles      = 2
-  projection_linear_solution  = 'projection'
-  discrete_ops_type           = 'ortho'
-  body_force_face_method      = .true.
-  courant_number              = 0.4
-  dt_init                     = 0.001
-  dt_grow                     = 1.05
-  dt_min                      = 1.0e-05
-  dt_max                      = 1.0
-  cycle_max                   = 2000
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 0.075
+  phase_init_dt_factor = 1.0
 /
 
 &PHYSICS
-  Body_Force = 0.0, -9.81, 0.0
-  fluid_flow = .true.
-  inviscid   = .true.
+  flow = .true.
+  body_force_density = 0.0, -9.81, 0.0
+/
+
+&NUMERICS
+  dt_init   = 0.001
+  dt_grow   = 1.05
+  dt_min    = 1.0e-05
+  dt_max    = 1.0
+  cycle_max = 2000
+/
+
+&FLOW
+  inviscid = t
+  courant_number = 0.4
+  subcycles = 2
+  nested_dissection = f
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 1.0e-10
+  abs_tol = 0
+  max_ds_iter = 50
+  max_amg_iter = 50
+  krylov_method = "cg"
+  !gmres_krylov_dim = 5
+/
+
+Right side
+&FLOW_BC
+  name = 'right'
+  type = 'pressure'
+  face_set_ids = 2
+  pressure = 0.0
+/
+
+Top side
+&FLOW_BC
+  name = 'top'
+  type = 'pressure'
+  face_set_ids = 4
+  pressure = 0.0
+/
+
+&FLOW_BC
+  name = 'rest'
+  type = 'free-slip'
+  face_set_ids = 1, 3, 5, 6
+/
+
+&BODY
+  material_number  = 1
+  surface_name     = 'box'
+  fill             = 'inside'
+  length           = 0.05715, 0.1143, 0.005715
+  translation_pt   = 0.028575, 0.05715, 0.0028575
+  velocity         = 0.0, 0.0, 0.0
+  temperature      = 273.0
 /
 
 &INTERFACES
-  int_particles  = 5
-  vof_particles  = 10
-/
-
-&BC
-  Surface_Name     = 'conic'
-  Conic_X          = 1.0
-  Conic_Constant   = -0.142875
-  Conic_Tolerance  = 1.0e-6
-  BC_Variable      = 'pressure'
-  BC_Type          = 'dirichlet'
-  BC_Value         = 0.0
-/
-
-&BC
-  Surface_Name     = 'conic'
-  Conic_Y          = 1.0
-  Conic_Constant   = -0.120015
-  Conic_Tolerance  = 1.0e-6
-  BC_Variable      = 'pressure'
-  BC_Type          = 'dirichlet'
-  BC_Value         = 0.0
-/
- 
-&BODY
-  Material_number  = 1
-  Surface_Name     = 'box'
-  Fill             = 'inside'
-  Length           = 0.05715, 0.1143, 0.005715
-  Translation_Pt   = 0.028575, 0.05715, 0.0028575
-  Velocity         = 0.0, 0.0, 0.0
-  Temperature      = 273.0
+  vof_method = 'divide'
 /
 
 &BODY
-  Material_number  = 2
-  Surface_Name     = 'background'
-  Velocity         = 0.0, 0.0, 0.0
-  Temperature      = 273.0
+  material_number  = 2
+  surface_name     = 'background'
+  velocity         = 0.0, 0.0, 0.0
+  temperature      = 273.0
 /
 
 &MATERIAL
-  Material_Name   = 'water'
-  Material_Number = 1
+  material_name   = 'water'
+  material_number = 1
   priority        = 1
-  Density         = 1000.0
+  density = 1.0 ! not void
 /
 
 &PHASE
@@ -147,11 +151,11 @@ data by Martin & Moyce for this regression test.
 /
 
 &MATERIAL
-  Material_Name    = 'air'
-  Material_Number  = 2
-  Material_Feature = 'background'
+  material_name    = 'air'
+  material_number  = 2
   priority         = 2
-  Density          = 1.2
+  density = 1.0 ! not void
+  material_feature = 'background'
 /
 
 &PHASE

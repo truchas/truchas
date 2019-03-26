@@ -212,9 +212,14 @@ define the material properties
 
 
 &PHYSICS
-	fluid_flow        = .false.,
 	heat_transport	  = .false.,
 	solid_mechanics   = .true.
+/
+
+&SOLID_MECHANICS
+  displacement_nonlinear_solution  = 'displacement solve'
+  contact_penalty  = 1.0e3
+  contact_distance = 1.0e-6
 /
 
 &LINEAR_SOLVER
@@ -245,11 +250,7 @@ constant time increment
 loose solver tolerance
 
 &NUMERICS
-	dt_constant             =  2.0e+0,
-        displacement_linear_solution  = 'displacement linear',
-        displacement_nonlinear_solution  = 'displacement solve',
-        contact_penalty                 = 1.0e3
-	contact_distance                = 1.0e-6
+  dt_constant =  2.0e+0
 /
 
 Run for 100 sec

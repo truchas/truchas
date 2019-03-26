@@ -225,7 +225,7 @@ CONTAINS
     use bc_module,              only: bndry_vel !BC_Vel
     use fluid_data_module,      only: fluidRho, Solid_Face, &
                                       void_pressure, IsPureImmobile,  &
-                                      Rho_Face, IsImmobile
+                                      Rho_Face
     use matl_module,            only: Matl
     use linear_solution,        only: Ubik_user
     use legacy_mesh_api,        only: ncells, ndim, nfc, ncells_tot, Cell
@@ -237,7 +237,7 @@ CONTAINS
                                       Face_Density,                 &
                                       dirichlet_pressure,           &
                                       Vol_over_RhoCsqDt
-    use property_data_module,   only: Sound_Speed
+    use property_data_module,   only: Sound_Speed, IsImmobile
     use time_step_module,       only: t, dt
     use zone_module,            only: Zone
     use UbikSolve_module

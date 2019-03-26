@@ -1,0 +1,92 @@
+TWO-FLUID 2D ADVECTION
+----------------------
+Advection in a two-fluid 2D domain with uniform and constant velocity directed
+diagonally across the the mesh. One fluid occupies a disk, and the other the
+remainder of the domain. Domain is 31x31x1 with unit cells.
+
+&OUTPUTS
+  output_t  = 0.0, 2.0
+  output_dt = 2.0
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 2.0
+  phase_init_dt_factor = 1.0
+/
+
+&MESH
+  mesh_file = 'mesh2a.gen'
+/
+ 
+&PHYSICS
+  prescribed_flow = .true.
+/
+
+&ADVECTION_VELOCITY
+  velocity_constant = 4.0, 3.0, 0.0
+/
+
+&FLOW
+  subcycles = 4
+  courant_number = 0.5
+/
+
+&NUMERICS
+  dt_constant = 0.03125
+  cycle_max = 1
+/
+
+&BODY
+  surface_name = 'cylinder'
+  axis = 'z'
+  height = 5
+  radius = 6
+  translation_pt = 4.0, 3.0, -2.5
+  material_number = 2
+  temperature = 0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+  vof_tolerance = 1.0e-2
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 1
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+  material_feature = 'background'
+ /
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name = 'oil'
+  material_number = 2
+  density = 1.0 ! not void
+ /
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density', property_constant(1) = 2.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/

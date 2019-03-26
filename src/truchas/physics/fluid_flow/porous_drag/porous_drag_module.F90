@@ -46,12 +46,12 @@ CONTAINS
     !  orientation.
     !
     !======================================================================= 
-    use fluid_data_module,    only: fluidVof, isImmobile, Drag_Coefficient
+    use fluid_data_module,    only: fluidVof, Drag_Coefficient
     use matl_module,          only: GATHER_VOF
     use parameter_module,     only: nmat
     use legacy_mesh_api,      only: ncells, ndim
     use porous_drag_data,     only: porous_implicitness
-    use property_data_module, only: Permeability_Constant
+    use property_data_module, only: Permeability_Constant, isImmobile
     use zone_module,          only: Zone
 
     ! Argument List

@@ -12,13 +12,15 @@ set(MESH_FUNC_TARGET_NAME ProcessTruchasMeshFunctionFiles)
 
 set(MESH_FUNC_FILES
     mesh_functions/bndry_func_class.F90
+    mesh_functions/bndry_vfunc_class.F90
     mesh_functions/bndry_func2_class.F90
     mesh_functions/bndry_face_func_type.F90
+    mesh_functions/bndry_face_vfunc_type.F90
     mesh_functions/bndry_face_group_builder_type.F90
     mesh_functions/cell_group_builder_type.F90
 )
 
-set(MESH_FUNC_FPP_FLAGS 
+set(MESH_FUNC_FPP_FLAGS
         -I${TruchasExe_SOURCE_DIR}/utilities
         ${Truchas_FPP_FLAGS})
 
@@ -42,5 +44,3 @@ set_source_files_properties(${MESH_FUNC_SOURCE_FILES} PROPERTIES
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${MESH_FUNC_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS      ${MESH_FUNC_TARGET_NAME})
-
-

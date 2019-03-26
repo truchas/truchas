@@ -1,0 +1,33 @@
+## /opt/cubit/13.2-48137/bin/clarox
+## Cubit Version 13.2
+## Cubit Build 48137
+## Revised 2012-05-31 10:27:28 -0600 (Thu, 31 May 2012)
+## Running 12/12/2012 02:19:10 PM
+## Command Options:
+## -warning = On
+## -information = On
+create vertex 0 -0.5 0
+create vertex 0 0.5 0
+create vertex 10 0.625 0
+create vertex 10 -0.625 0
+create surface vertex 1 to 4
+sweep surface 1 perpendicular distance 0.2
+curve 2 4 5 10 interval 50
+curve 2 4 5 10 scheme equal
+curve 6 9 interval 1
+curve 3 8 interval 1
+curve 6 3 9 8 scheme equal
+volume 1 scheme auto
+mesh volume 1
+
+block 1 volume 1
+sideset 1 surface 5
+sideset 1 name "inlet"
+sideset 2 surface 3
+sideset 2 name "outlet"
+sideset 3 surface 6 2 1 4
+sideset 3 name "walls"
+
+set large exodus file off
+export genesis "mesh0.gen" overwrite
+

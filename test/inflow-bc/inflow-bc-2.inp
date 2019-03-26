@@ -1,0 +1,111 @@
+INFLOW INTO A VOID-FILLED PIPE WITH HEAT TRANSPORT
+--------------------------------------------------
+This is an extension of the inflow-bc-1 test that adds heat transport.
+The sole purpose of this test is to verify that we can specify the temperature
+of the inflow material. The default treatment of the material inflowing through
+the boundary is to assume its temperature is that of the receiving cell. Here
+the domain is entirely void with no temperature (or 0), so we must specify the
+temperature of the inflow material explicitly.
+
+This test uses the FHT solver for heat transport
+
+&MESH
+  mesh_file = 'mesh1.g'
+/
+
+&OUTPUTS
+  output_t  = 0.0, 1.5
+  output_dt = 1.5
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 1.5
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+  heat_transport = .true.
+/
+
+&NUMERICS
+  dt_init = 0.1
+  dt_grow = 1.05
+  dt_min  = 1.0e-3
+  dt_max  = 1.0
+/
+
+&FLOW
+  inviscid = t
+  courant_number = 0.25
+  subcycles = 2
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-12
+  max_ds_iter = 50
+  max_amg_iter = 50
+  krylov_method = "cg"
+/
+
+&FLOW_BC
+  name = 'inlet'
+  face_set_ids = 1
+  type = 'velocity'
+  velocity = 0.25, 0.0, 0.0
+  inflow_material = 1
+  inflow_temperature = 2.0
+/
+
+&DIFFUSION_SOLVER
+  stepping_method = 'Non-adaptive BDF1'
+  residual_atol = 1.0e-15
+  residual_rtol = 1.0e-6
+  max_nlk_itr = 10
+  nlk_preconditioner = 'ssor'
+  verbose_stepping = .true.
+/
+
+&DS_BOUNDARY_CONDITION
+  name = 'all'
+  variable = 'temperature'
+  condition = 'flux'
+  face_set_ids = 1, 2, 3
+  data_constant = 0.0
+/
+
+Entirely void initially
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 2
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+  property_name(3) = 'conductivity', property_constant(3) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name = 'void'
+  material_number = 2
+  density = 0.0
+  material_feature = 'background'
+/

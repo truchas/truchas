@@ -26,7 +26,6 @@ A kludge to force hitting the final time exactly
 &PHYSICS
   species_transport = .true.
   number_of_species = 1
-  fluid_flow = .false.
 /
 
 &DIFFUSION_SOLVER

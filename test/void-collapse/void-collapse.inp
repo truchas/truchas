@@ -30,27 +30,27 @@
 /
 
 
-&NUMERICS
-       cycle_max                  = 30,
-       projection_linear_solution = 'projection',
+&LEGACY_FLOW
+       inviscid = .true.
+       projection_linear_solution = 'projection'
        volume_track_interfaces    = .true.
        volume_track_Brents_Method = .true.
        volume_track_subcycles     = 1,
-       volume_track_iter_Tol      = 1.0e-9,
-       cutvof                     = 1.0e-8, 
-       courant_number             = 0.4,
+       volume_track_iter_Tol      = 1.0e-9
+       courant_number             = 0.4
+/
+
+&NUMERICS
+       cycle_max                  = 30
        dt_constant                = 0.01
-       discrete_ops_type          = 'ortho' 
+       discrete_ops_type          = 'ortho'
+       cutvof                     = 1.0e-8,
 /
 
 &PHYSICS
  
-       Body_Force      = 0.0, 0.0, 0.0,
- 
-       fluid_flow      = .true.,
-       inviscid        = .true.,
-       stokes          = .false.,
-       surface_tension = .false.
+       body_force_density = 0.0, 0.0, 0.0,
+       legacy_flow = .true.,
 
 /
 
@@ -74,7 +74,8 @@ BC #1. Velocity BC: Inlet
  
        Material_number = 1,
        Surface_Name    = 'background',
-       Velocity        = 1.0, 0.0, 0.0,
+       !Velocity        = 1.0, 0.0, 0.0, ! Truchas original overwrote this with zero
+       Velocity        = 0.0, 0.0, 0.0,
        Temperature     = 273.0
 
 

@@ -27,7 +27,7 @@ MODULE TURBULENCE_MODULE
   implicit none
   private
 
-  public :: TURBULENCE, TURBULENCE_ALLOCATE, read_turbulence_namelist
+  public :: TURBULENCE, TURBULENCE_ALLOCATE, read_turbulence_namelist_for_legacy
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -151,86 +151,19 @@ CONTAINS
 
   end subroutine turbulence_allocate
 
-  !!
-  !! NNC, Jan 2012.  Moved turbulence model parameter input out of the PHYSICS
-  !! namelist into its own namelist.  I've tried to maintained the original
-  !! behavior, though I think some of it needs to be reconsidered. This routine
-  !! should be called to read the TURBULENCE namelist only when viscous flow is
-  !! enabled.  If the namelist is found, the algebraic turbulence model is used;
-  !! otherwise it is not.
-  !! 
+  !! NNC, Oct 2018. Extracted out the namelist read to an independent module
+  !! for use by the new flow implementation, and we piggyback on it here.
 
-  subroutine read_turbulence_namelist (lun)
-  
-    use kinds, only: r8
-    use input_utilities
-    use string_utilities, only: i_to_c
-    use parallel_communication, only: is_IOP, broadcast
-    use truchas_logging_services
-    
+  subroutine read_turbulence_namelist_for_legacy(lun)
+    use turbulence_namelist
     integer, intent(in) :: lun
-    
-    integer :: ios
-    logical :: found
-    character(128) :: string
-    
-    namelist /turbulence/ turbulence_length, turbulence_cmu, turbulence_ke_fraction
-    
-    !! Locate the TURBULENCE namelist (first occurence).
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist (lun, 'TURBULENCE', found, iostat=ios)
+    call read_turbulence_namelist(lun)
+    if (associated(params)) then
+      turbulence_model = 'alg'
+      call params%get('length', turbulence_length)
+      call params%get('cmu', turbulence_cmu, default=0.05_r8)
+      call params%get('ke fraction', turbulence_ke_fraction, default=0.1_r8)
     end if
-
-    call broadcast (ios)
-    if (ios /= 0) call TLS_fatal ('Error reading input file: iostat=' // i_to_c(ios))
-
-    call broadcast (found)
-
-    if (.not.found) return  ! the namelist is optional
-
-    call TLS_info ('')
-    call TLS_info ('Reading TURBULENCE namelist ...')
-
-    !! Read the namelist.
-    if (is_IOP) then
-      turbulence_length = NULL_R
-      turbulence_cmu = NULL_R
-      turbulence_ke_fraction = NULL_R
-      read(lun,nml=turbulence,iostat=ios)
-    end if
-
-    call broadcast (ios)
-    if (ios /= 0) call TLS_fatal ('Error reading TURBULENCE namelist.')
-
-    !! Broadcast the namelist variables.
-    call broadcast (turbulence_length)
-    call broadcast (turbulence_cmu)
-    call broadcast (turbulence_ke_fraction)
-
-    turbulence_model = 'alg'
-
-    if (turbulence_length == NULL_R) then
-      call TLS_fatal ('TURBULENCE_LENGTH must be assigned a value.')
-    else if (turbulence_length <= 0.0_r8) then
-      call TLS_fatal ('TURBULENCE_LENGTH must be > 0')
-    end if
-
-    if (turbulence_cmu == NULL_R) then
-      turbulence_cmu = 0.05_r8
-      write(string, '(a,es12.5)') '  using default TURBULENCE_CMU value: ', turbulence_cmu
-      call TLS_info (string)
-    else if (turbulence_cmu <= 0.0_r8) then
-      call TLS_fatal ('TURBULENCE_CMU must be > 0')
-    end if
-
-    if (turbulence_ke_fraction == NULL_R) then
-      turbulence_ke_fraction = 0.1_r8
-      write(string, '(a,es12.5)') '  using default TURBULENCE_KE_FRACTION value: ', turbulence_ke_fraction
-    else if (turbulence_ke_fraction <= 0.0_r8 .or. turbulence_ke_fraction >= 1.0_r8) then
-      call TLS_fatal ('TURBULENCE_KE_FRACTION must be in (0,1)')
-    end if
-
-  end subroutine read_turbulence_namelist
+  end subroutine read_turbulence_namelist_for_legacy
 
 END MODULE TURBULENCE_MODULE

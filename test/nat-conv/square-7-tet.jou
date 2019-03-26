@@ -1,0 +1,16 @@
+brick x 1 y 0.142857 z 1
+move volume 1 x 0.5 y 0 z 0.5 include_merged
+volume 1 size 0.142857
+volume 1 scheme auto
+mesh volume 1
+
+htet volume 1 structured
+
+block 1 volume 1
+sideset 1 surface 4 # left side
+sideset 2 surface 6 # right side
+sideset 3 surface 2 # bottom size
+sideset 4 surface 1 # top size
+sideset 5 surface 3 5 # y=const symmetry sides
+
+export genesis "square-7-tet.g" overwrite

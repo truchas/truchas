@@ -27,9 +27,11 @@
 !! A BNDRY_FACE_FUNC object is defined incrementally using the following type
 !! bound subroutines:
 !!
-!!  INIT(MESH) initializes the object to begin receiving the specification of
-!!    the boundary face data.  MESH is the UNSTR_MESH object on which the data
-!!    is defined. The object maintains an internal read-only reference to MESH.
+!!  INIT(MESH [,BNDRY_ONLY]) initializes the object to begin receiving the
+!!    specification of the boundary face data. MESH is the UNSTR_MESH object
+!!    on which the data s defined. The object maintains an internal read-only
+!!    reference to MESH. Faces will be required to be boundary faces unless
+!!    the option BNDRY_ONLY is present with value .false.
 !!
 !!  ADD(F, SETIDS, STAT, ERRMSG) specifies that the SCALAR_FUNC class object F
 !!    should be used to compute the data for the mesh faces belonging to the
@@ -39,13 +41,18 @@
 !!    F is an allocatable variable and its allocation is moved into the object
 !!    and returned unallocated. It is an error to reference an unknown face set
 !!    ID, associate a face with more than one function, or specify a face that
-!!    is not a boundary face.  A nonzero value is assigned to the integer STAT
-!!    if an error occurs, and an explanatory message assigned to the deferred
-!!    length allocatable character argument ERRMSG.  The returned STAT and
-!!    ERRMSG values are collective across all processes.
+!!    is not a boundary face unless BNDRY_ONLY was specified with value .false.
+!!    A nonzero value is assigned to the integer STAT if an error occurs, and
+!!    an explanatory message assigned to the deferred length allocatable
+!!    character argument ERRMSG.  The returned STAT and ERRMSG values are
+!!    collective across all processes.
 !!
-!!  ADD_COMPLETE() performs the final configuration of the object after all the
-!!    desired calls to ADD have been made (if any).
+!!  ADD_COMPLETE([OMIT_OFFP]) performs the final configuration of the object
+!!    after all the desired calls to ADD have been made (if any). If the option
+!!    OMIT_OFFP is specified with value .true. then any off-process faces that
+!!    have been specified will not be included in the final object; the default
+!!    is to include all specified faces irrespective of whether they are on or
+!!    off-process.
 !!
 !! Once defined, the %VALUE component of the object is computed at time T by
 !! calling the COMPUTE(T) type bound subroutine.
@@ -80,6 +87,7 @@ module bndry_face_func_type
     procedure :: init
     procedure :: add
     procedure :: add_complete
+    procedure :: add_face_list
     procedure :: compute
   end type bndry_face_func
 
@@ -91,12 +99,13 @@ module bndry_face_func_type
 
 contains
 
-  subroutine init(this, mesh)
+  subroutine init(this, mesh, bndry_only)
     class(bndry_face_func), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
+    logical, intent(in), optional :: bndry_only
     this%mesh => mesh
     allocate(this%builder)
-    call this%builder%init(mesh)
+    call this%builder%init(mesh, bndry_only)
   end subroutine init
 
   subroutine add(this, f, setids, stat, errmsg)
@@ -110,12 +119,13 @@ contains
     call this%flist%append(f)
   end subroutine add
 
-  subroutine add_complete(this)
+  subroutine add_complete(this, omit_offp)
     use const_scalar_func_type
     class(bndry_face_func), intent(inout) :: this
+    logical, intent(in), optional :: omit_offp
     integer :: n
     ASSERT(allocated(this%builder))
-    call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index)
+    call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index, omit_offp)
     deallocate(this%builder)
     allocate(this%value(size(this%index)))
     call scalar_func_list_to_box_array(this%flist, this%farray)
@@ -124,13 +134,64 @@ contains
     allocate(this%hint(this%ngroup))
     do n = 1, this%ngroup
       select type (f => this%farray(n)%f)
-      type is (const_scalar_func)
-        this%hint(n) = DATA_HINT_CONST
+        ! these hints don't play well with the dp pressure boundary conditions
+!!$     type is (const_scalar_func)
+!!$        this%hint(n) = DATA_HINT_CONST
       class default
         this%hint(n) = DATA_HINT_NONE
       end select
     end do
   end subroutine add_complete
+
+  !! Optionally called after init, add, and add_complete
+  !! to append a list of faces to the object.
+  subroutine add_face_list(this, f, faceids)
+
+    class(bndry_face_func), intent(inout) :: this
+    class(scalar_func), allocatable, intent(in) :: f
+    integer, intent(in) :: faceids(:)
+
+    integer, allocatable :: tmp(:)
+    type(scalar_func_box), allocatable :: ftmp(:)
+
+    ASSERT(allocated(this%value) .and. allocated(this%index))
+    ASSERT(.not.allocated(this%builder))
+
+    !! Update the index array
+    tmp = this%index
+    call move_alloc(this%index, tmp)
+    allocate(this%index(size(tmp) + size(faceids)))
+    this%index(:size(tmp)) = tmp
+    this%index(size(tmp)+1:) = faceids
+    deallocate(tmp)
+
+    !! Update the value array
+    deallocate(this%value)
+    allocate(this%value(size(this%index)))
+
+    !! Update the hint array
+    call move_alloc(this%hint, tmp)
+    allocate(this%hint(size(tmp)+1))
+    this%hint(:size(tmp)) = tmp
+    this%hint(size(tmp)+1) = DATA_HINT_NONE
+    deallocate(tmp)
+
+    !! Update the group array
+    this%ngroup = this%ngroup + 1
+    call move_alloc(this%xgroup, tmp)
+    allocate(this%xgroup(size(tmp)+1))
+    this%xgroup(:size(tmp)) = tmp
+    this%xgroup(size(tmp)+1) = size(this%index) + 1
+    deallocate(tmp)
+
+    !! Update the function list
+    call move_alloc(this%farray, ftmp)
+    allocate(this%farray(size(ftmp)+1))
+    this%farray(:size(ftmp)) = ftmp
+    this%farray(size(ftmp)+1)%f = f
+    deallocate(ftmp)
+
+  end subroutine add_face_list
 
 
   subroutine compute(this, t)

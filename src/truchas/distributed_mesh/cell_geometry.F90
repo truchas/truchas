@@ -49,7 +49,7 @@ module cell_geometry
   public :: cell_face_centers
 
   !! Algebraic primitives
-  public :: cross_product, triple_product, vector_length, tri_area
+  public :: cross_product, triple_product, vector_length, tri_area, normalized
 
   interface tri_area
     procedure tri_area_length, tri_area_coord
@@ -540,5 +540,21 @@ contains
     end if
 
   end function tri_area_length
+
+  pure function normalized (v)
+
+    real(r8), intent(in) :: v(:)
+    real(r8) :: normalized(size(v))
+    real(r8) :: mag
+
+    mag = norm2(v)
+    if (mag > 0) then
+      normalized = v / mag
+    else
+      normalized = 0
+    end if
+
+  end function normalized
+
 
 end module cell_geometry

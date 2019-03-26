@@ -1,0 +1,108 @@
+INVISCID FLOW IN 2D DIVERGING DUCT
+----------------------------------
+Radial inviscid flow across a narrow sector of an annulus with inner radius 1
+and outer radius 2. Unit radial velocity at inlet (r=1) and pressure 2 at the
+outlet (r=2). Free slip BC along the walls. rho = 4. The analytic solution is
+
+  (u,v) = (\cos\theta,\sin\theta)*(1/r),  p = 5/2 - 2/r^2
+
+NB: We would prefer to initialize the velocity with the exact solution, but
+due to current limitations this isn't possible and instead initialize with
+a constant velocity direct along the axis of the flow channel. Thus we have
+an initial transient we aren't really interested in computing. In addition,
+we are using ortho operators here, though this ought to be very good for the
+mesh used.
+
+&MESH mesh_file = 'mesh2.gen'/
+
+&OUTPUTS
+  output_t = 0.0, 20.0
+  output_dt = 20.0
+/
+
+Hack to hit the final time exactly
+x&SIMULATION_CONTROL
+  phase_start_times = 20.0
+  phase_init_dt_factor = 1.0
+/
+
+&PHYSICS
+  flow = .true.
+/
+
+&FLOW
+  inviscid = .true.
+  courant_number = 0.3
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1.0e-10
+  max_ds_iter = 50
+  max_amg_iter = 25
+  krylov_method = 'cg'
+/
+
+&NUMERICS
+  dt_init = 1.0e-2
+  dt_grow = 1.05
+  dt_min  = 1.0e-6
+  dt_max  = 1.0
+/
+
+&VFUNCTION
+  name = 'velocity'
+  type = 'div-radial-cyl-flow'
+  axis = 0, 0, 1
+/
+
+Inlet velocity
+&FLOW_BC
+  name = 'inflow'
+  face_set_ids = 1
+  type = 'velocity'
+  !velocity = 1.0, 0.0, 0.0
+  velocity_func = 'velocity'
+/
+
+Outlet pressure
+&FLOW_BC
+  name = 'outflow'
+  face_set_ids = 2
+  type = 'pressure'
+  pressure = 2.0
+/
+
+Pipe walls
+&FLOW_BC
+  name = 'wall'
+  face_set_ids = 3
+  type = 'free-slip'
+/
+
+!TODO: WANT TO USE THE "VELOCITY" VFUNCTION HERE
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_number = 1
+  velocity = 1.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name    = 'water'
+  material_number  = 1
+  density          = 1.0  ! not void
+  material_feature = 'background'
+/
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density',       property_constant(1) = 4.0
+  property_name(2) = 'specific heat', property_constant(2) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/

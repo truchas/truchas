@@ -1,0 +1,129 @@
+STEADY INVISCID 2-MATERIAL FLOW
+-------------------------------
+2D rectangular domain (1 cell thick in z) with steady uniform flow directed
+along the x-axis. Prescribed inflow velocity on the left and dirichlet pressure
+on the right. Two fluids with planar interface oblique to the x-axis. Fluid
+density ratio of 1000 with denser fluid trailing. Constant initial velocity
+field consistent with the BC. Velocity should remain constant. Interface will
+not be exactly advected due to approximation errors from Young's method for
+computing the interface normal adjacent to the boundary.
+
+This problem is analogous to a pure advection problem, except that instead
+of a prescribed constant velocity, we solve for the velocity, expecting to
+recovery that constant velocity.
+
+Variations use rotated meshes (and rotated velocity)
+
+&OUTPUTS
+  output_t  = 0.0, .0625, 2.0
+  output_dt = 0.0625, 2.0
+/
+
+A kludge to force hitting the final time exactly
+&SIMULATION_CONTROL
+  phase_start_times = 2.0
+  phase_init_dt_factor = 1.0
+/
+
+&MESH
+  mesh_file = 'mesh2a-rotz.gen'
+/
+
+&PHYSICS
+  legacy_flow = .true.
+/
+
+&NUMERICS
+  dt_constant = 0.0625
+  discrete_ops_type = 'ortho'
+/
+
+&LEGACY_FLOW
+  inviscid = .true.
+  courant_number = 0.5
+  projection_linear_solution  = 'projection'
+  volume_track_subcycles = 2
+/
+
+&LINEAR_SOLVER
+  name                   = 'projection'
+  method                 = 'fgmres'
+  preconditioning_method = 'ssor'
+  preconditioning_steps  = 2
+  relaxation_parameter   = 1.4
+  convergence_criterion  = 1.0e-10
+  maximum_iterations     = 50
+/
+
+Inlet velocity
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable  = 'velocity'
+  bc_type      = 'dirichlet'
+  bc_value     = 2.82842712474619, 2.82842712474619, 0.0  ! 4/sqrt(2)
+/
+
+Outlet pressure
+&BC
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable  = 'pressure'
+  bc_type      = 'dirichlet'
+  bc_value     = 0.0
+/
+
+&BODY
+  surface_name = 'plane'
+  axis = 'x'
+  rotation_angle = 0, 0, 71.5650511770780
+  translation_pt = -2.82842712474619, -2.82842712474619, 0.0  ! 4/sqrt(2)
+  material_number = 2
+  velocity = 2.82842712474619, 2.82842712474619, 0.0  ! 4/sqrt(2)
+  temperature = 0.0
+/
+
+&INTERFACES
+  vof_method = 'divide'
+  vof_tolerance = 1.0e-2
+/
+
+&BODY
+  surface_name = 'background'
+  material_number = 1
+  velocity = 2.82842712474619, 2.82842712474619, 0.0  ! 4/sqrt(2)
+  temperature = 0.0
+/
+
+&MATERIAL
+  material_name = 'water'
+  material_number = 1
+  density = 1.0 ! not void
+  material_feature = 'background'
+ /
+
+&PHASE
+  name = 'water'
+  property_name(1) = 'density', property_constant(1) = 1000.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'water'
+  phases = 'water'
+/
+
+&MATERIAL
+  material_name = 'oil'
+  material_number = 2
+  density = 1.0 ! not void
+ /
+
+&PHASE
+  name = 'oil'
+  property_name(1) = 'density', property_constant(1) = 1.0
+/
+
+&MATERIAL_SYSTEM
+  name = 'oil'
+  phases = 'oil'
+/

@@ -66,28 +66,30 @@ cells along the direction of flow should then be 750 and 250.
 
 /
 
-&NUMERICS
+&LEGACY_FLOW
 
+    inviscid = .false.
     volume_track_interfaces     = .false.
     volume_track_brents_method  = .true.
     volume_track_iter_tol       = 1.0e-12
     projection_linear_solution  = 'projection'
-    discrete_ops_type           = 'ortho'
     courant_number              = 0.5
+/
+
+&NUMERICS
+
     dt_init                     = 1.0e-03
     dt_grow                     = 1.1
     dt_min                      = 1.0e-05
     dt_max                      = 1.0
+    discrete_ops_type           = 'ortho'
 
 /
 
 &PHYSICS
 
-    Body_Force             = 0.0, 0.0, 0.0
-    fluid_flow             = .true.
-    inviscid               = .false.
-    stokes                 = .false.
-    surface_tension        = .false.
+    body_force_density = 0.0, 0.0, 0.0
+    legacy_flow            = .true.
 
 /
 

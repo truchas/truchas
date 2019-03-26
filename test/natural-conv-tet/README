@@ -1,6 +1,0 @@
-This is a very coarse version of the deVahl-Davis benchmark problem of natural
-convection in a 2D square cavity.  This version uses a tet mesh.  See the hex
-version for more documentation about the benchmark problem.  For the purposes
-of regression testing we do not compare with the highly-resolved reference
-data (necessarily using a loose tolerance), but with archived golden data for
-the coarse problem using a very tight tolerance.

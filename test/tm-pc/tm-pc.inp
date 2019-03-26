@@ -240,7 +240,6 @@ Bogus phase change material
 
 &PHYSICS
 
-    fluid_flow                    = .false., 
     heat_transport                = .true., 
     solid_mechanics               = .true.
 
@@ -253,6 +252,10 @@ Bogus phase change material
   rel_enthalpy_tol   = 1.0e-5
   nlk_tol            = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
+/
+
+&SOLID_MECHANICS
+  displacement_nonlinear_solution  = 'displacement solve'
 /
 
 &LINEAR_SOLVER
@@ -284,7 +287,6 @@ loose solver tolerance
     dt_init                          = 1.00e-2,
     dt_max                           = 5.0e0,
     dt_grow                          = 100,
-    displacement_nonlinear_solution  = 'displacement solve', 
 /
 
 Run for 100 sec
