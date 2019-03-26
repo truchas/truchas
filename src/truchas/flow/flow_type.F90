@@ -8,7 +8,7 @@
 
 module flow_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use flow_domain_types
   use constants_module
   use truchas_logging_services
@@ -23,9 +23,7 @@ module flow_type
   implicit none
   private
 
-  public :: flow
-
-  type :: flow
+  type, public :: flow
     type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(flow_props), pointer :: props => null() ! unowned reference
     real(r8), allocatable :: vel_cc(:,:) ! cell-centered velocity (dims, ncell)
@@ -77,6 +75,7 @@ contains
   end function vel_fn_view
 
   subroutine timestep(this, dt, dt_tag)
+
     use parallel_communication
 
     class(flow), intent(in) :: this
@@ -302,20 +301,15 @@ contains
 
   end subroutine compute_initial_pressure
 
+
   subroutine correct_non_regular_cells(this)
+
     class(flow), intent(inout) :: this
-    !-
+
     integer :: i
 
     associate (cell_t => this%props%cell_t, face_t => this%props%face_t, vof => this%props%vof)
       do i = 1, this%mesh%ncell
-!!$        if (cell_t(i) /= regular_t) then
-!!$          if (i >= 40 .and. i <= 45) then
-!!$            write(*,'("CORRECTING V[",i4,"]: ",es15.5," -> ",es15.5)') i, this%vel_cc(1,i), 0.0_r8
-!!$          endif
-!!$          this%vel_cc(:,i) = 0.0_r8
-!!$          this%P_cc(i) = 0.0_r8
-!!$        end if
         if (vof(i) == 0.0_r8) then
           this%vel_cc(:,i) = 0.0_r8
           this%P_cc(i) = 0.0_r8
@@ -328,7 +322,9 @@ contains
         end if
       end do
     end associate
+
   end subroutine correct_non_regular_cells
+
 
   subroutine step(this, t, dt, vof, flux_volumes, tcell)
 
@@ -363,7 +359,9 @@ contains
 
   end subroutine step
 
+
   subroutine accept(this)
+
     class(flow), intent(inout) :: this
 
     this%vel_cc_n = this%vel_cc

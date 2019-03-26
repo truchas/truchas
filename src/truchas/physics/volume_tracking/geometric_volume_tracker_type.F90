@@ -8,7 +8,7 @@
 
 module geometric_volume_tracker_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use volume_tracker_class
   use truchas_logging_services
   use truchas_timers
@@ -116,7 +116,6 @@ contains
     this%inflow_mat = 0
 
   end subroutine init
-
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
   subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
@@ -228,10 +227,6 @@ contains
     do i = 1, this%mesh%ncell_onP
       hasvof = vof(:,i) > 0.0_r8
       c = count(hasvof)
-!!$      if (c < 2) then
-!!$        this%normal(:,:,i) = 1.0_r8
-!!$        cycle
-!!$      end if
 
       this%normal(:,:,i) = -this%normal(:,:,i)
       ! enforce consistency for two materials
@@ -450,6 +445,7 @@ contains
   ! may increase or decrease as one moves away from the advection cell
   ! face.  The value used is varied from "DIST" such that the vertices
   ! describe a hexagonal volume that matches the value of Flux_Vol.
+
   subroutine flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof, flux_vol_node)
 
     use cell_geometry, only: hex_volume
@@ -702,6 +698,7 @@ contains
   ! true for partially solid/void cells.  In these cases, the fluxes will be balanced upwards
   ! towards a ficticiously large flux volume.  This routine also permits the creation of volume
   ! fluxes for materials which may not be present in the cell.
+
   subroutine flux_renorm(this, vel, vof_n, flux_vol, dt)
 
     use near_zero_function
@@ -787,9 +784,9 @@ contains
 
   end subroutine flux_renorm
 
-
   ! On entrance, this%flux_vol_sub only contains outward (i.e. positive) flux volumes.  On exit,
   ! this%flux_vol_sub is made consistent with appropriate negative entries
+
   subroutine flux_acceptor(this)
 
     class(geometric_volume_tracker), intent(inout) :: this
@@ -844,7 +841,6 @@ contains
     end do
 
   end subroutine accumulate_volume
-
 
   ! Enforce boundedness by allowing _inconsistent_ material flux volumes at faces
   subroutine enforce_bounded_vof(this, vof, flux_vol, fluids, void)
@@ -926,11 +922,11 @@ contains
 
   end subroutine enforce_bounded_vof
 
-
   ! Adjust the material volume fluxes on the faces of a single cell to match the evaluated material
   ! volume to a target value. vof_delta is desired_vof-actual_vof
   ! IGNORES BC's FOR NOW
   ! The result of this process is an _inconsitent_ view of material flux volumes
+
   subroutine adjust_flux_matl(flux_vol, vol_delta)
 
     real(r8), intent(inout) :: flux_vol(:)
@@ -978,6 +974,7 @@ contains
   ! material volume to a target value. vof_delta is desired_vof-actual_vof
   ! IGNORES BC's FOR NOW The
   ! result of this process is an _inconsitent_ view of material flux volumes
+
   subroutine adjust_flux_all(flux_vol, vof, vof_delta, vol, fluids)
 
     real(r8), intent(inout) :: flux_vol(:,:), vof(:)

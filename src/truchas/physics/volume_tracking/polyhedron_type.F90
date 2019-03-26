@@ -21,7 +21,7 @@
 
 module polyhedron_type
 
-  use kinds,  only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use polygon_type
   use pure_polyhedron_type

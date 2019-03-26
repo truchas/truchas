@@ -8,7 +8,7 @@
 
 module flow_operators
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use unstr_mesh_type
   use flow_domain_types
@@ -24,7 +24,6 @@ module flow_operators
   interface gradient_cf
     module procedure gradient_cf_scalar, gradient_cf_vector
   end interface gradient_cf
-
 
   type :: flow_operator
     type(unstr_mesh), pointer :: mesh => null()
@@ -133,6 +132,7 @@ contains
 
 
   subroutine node_avg(x_cell, x_node, w_node)
+
     real(r8), intent(in) :: x_cell(:)
     real(r8), intent(out) :: x_node(:), w_node(:)
 
@@ -156,11 +156,12 @@ contains
 
   end subroutine node_avg
 
-
   ! gradient of cell-centered scalar `x` evaluated at face centers
   ! result only valid on nface_onP
+
   subroutine gradient_cf_scalar(g, x, normal_flux_bc, dirichlet_bc, &
       face_t, non_regular_default, gravity)
+
     real(r8), intent(out) :: g(:,:)
     real(r8), intent(in) :: x(:)
     class(bndry_func), optional, intent(inout) :: normal_flux_bc, dirichlet_bc
@@ -224,12 +225,13 @@ contains
 
   end subroutine gradient_cf_scalar
 
-
   ! gradient of cell-centered vector `x` evaluated at face centers
   ! result only valid on nface_onP.  This routine assumes that all
   ! components of the gradient are zero on neumann walls
+
   subroutine gradient_cf_vector(g, x, zero_normal_bc, dirichlet_bc, &
       face_t, non_regular_default)
+
     real(r8), intent(out) :: g(:,:,:)
     real(r8), intent(in) :: x(:,:)
     class(bndry_func), optional, intent(in) :: zero_normal_bc
@@ -251,7 +253,6 @@ contains
         end if
       end associate
     end do
-
 
     if (present(zero_normal_bc)) then
       associate (faces => zero_normal_bc%index)
@@ -291,11 +292,12 @@ contains
 
   end subroutine gradient_cf_vector
 
-
   ! interpolation of vector quantitiy xf to faces
   ! result only valid on ncell_onP
   ! inactive_faces and extra_ignore_faces do not participate in averaging
+
   subroutine interpolate_fc(ic, xf, face_t, extra_ignore_faces)
+
     real(r8), intent(out) :: ic(:,:)
     real(r8), intent(in) :: xf(:,:)
     integer, intent(in) , optional :: face_t(:)
@@ -333,13 +335,14 @@ contains
 
   end subroutine interpolate_fc
 
-
   ! normal component of interpolation of vector cell centered vector
   ! quantity 'x' to face centers, using weights 'w'.  Dirichlet
   ! boundary conditions on faces may be supplied as well a list of
   ! inactive faces and a default value for xf at inactive faces.
   ! result only valid on nface_onP
+
   subroutine interpolate_cf(xf, x, w, bc, bc_zn, face_t, non_regular_default)
+
     real(r8), intent(out) :: xf(:)
     real(r8), intent(in) :: x(:,:), w(:,:)
     class(bndry_vfunc), optional, intent(in) :: bc
@@ -348,12 +351,6 @@ contains
     real(r8), intent(in), optional :: non_regular_default
 
     integer :: j,i
-
-!!$    associate (n => this%mesh%fcell(:,3))
-!!$      write(*,"('CELL IDX @ Y+: ',2i5)") n
-!!$      write(*,"('U1/U2', 2(/,3es20.12))") x(:,n)
-!!$      write(*,"('W1/W2', 2(/,es20.12))") w(:,3)
-!!$    end associate
 
     do j = 1, this%mesh%nface_onP
       associate (n => this%mesh%fcell(:,j))

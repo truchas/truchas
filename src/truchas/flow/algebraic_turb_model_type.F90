@@ -27,20 +27,21 @@
 !!   In the case of momentum transport, the diffusivity is also called
 !!   kinematic viscosity (nu), which is given by mu / rho.
 !!
+
 module algebraic_turb_model_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use turbulence_model_class
   use parameter_list_type
   use truchas_logging_services
   use unstr_mesh_type
   use flow_props_type
-    implicit none
+  implicit none
   private
 
-  public :: algebraic_turb_model, alloc_algebraic_turb_model
+  public :: alloc_algebraic_turb_model
 
-  type, extends(turbulence_model) :: algebraic_turb_model
+  type, extends(turbulence_model), public :: algebraic_turb_model
     real(r8) :: length
     real(r8) :: cmu
     real(r8) :: ke_fraction
@@ -58,13 +59,12 @@ contains
   subroutine alloc_algebraic_turb_model(t)
     class(turbulence_model), allocatable, intent(out) :: t
     type(algebraic_turb_model), allocatable :: m
-
     allocate(m)
     call move_alloc(m, t)
   end subroutine alloc_algebraic_turb_model
 
-
   subroutine read_params(this, params)
+
     class(algebraic_turb_model), intent(inout) :: this
     type(parameter_list), pointer, intent(in) :: params
 
@@ -82,7 +82,6 @@ contains
   subroutine init(this, mesh)
     class(algebraic_turb_model), intent(inout) :: this
     type(unstr_mesh), intent(in), target :: mesh
-
     this%mesh => mesh
     allocate(this%nu_turb(this%mesh%ncell))
   end subroutine init
@@ -90,9 +89,7 @@ contains
   subroutine setup(this, vel_cc)
     class(algebraic_turb_model), intent(inout) :: this
     real(r8), intent(in) :: vel_cc(:,:)
-    !-
     integer :: i
-
     associate(cmu => this%cmu, l => this%length, f => this%ke_fraction)
       do i = 1, this%mesh%ncell
         this%nu_turb(i) = cmu*l*sqrt(0.5_r8*f*sum(vel_cc(:,i)**2))
@@ -104,9 +101,7 @@ contains
   subroutine apply(this, props)
     class(algebraic_turb_model), intent(inout) :: this
     type(flow_props), intent(inout) :: props
-    !-
     integer :: i
-
     associate (rho => props%rho_cc, mu => props%mu_cc)
       do i = 1, this%mesh%ncell
         mu(i) = mu(i) + rho(i)*this%nu_turb(i)*this%mesh%volume(i)
@@ -116,7 +111,6 @@ contains
 
   subroutine accept(this)
     class(algebraic_turb_model), intent(inout) :: this
-    ! nothing
   end subroutine accept
 
 end module algebraic_turb_model_type

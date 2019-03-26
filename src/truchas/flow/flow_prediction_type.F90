@@ -1,5 +1,3 @@
-#include "f90_assert.fpp"
-
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -42,9 +40,11 @@
 !!  ACCEPT()
 !!    Copies new state to the `n` level for use in next time step
 
+#include "f90_assert.fpp"
+
 module flow_prediction_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use truchas_timers
   use parameter_list_type
@@ -57,7 +57,6 @@ module flow_prediction_type
   use turbulence_models
   use hypre_hybrid_type
   use pcsr_matrix_type
-  !use pgslib_module ! barriers for debugging
   implicit none
   private
 
@@ -91,7 +90,6 @@ module flow_prediction_type
   type matrix_container
     type(pcsr_matrix), pointer :: A
   end type matrix_container
-
 
 contains
 
@@ -165,7 +163,9 @@ contains
 
   end subroutine init
 
+
   subroutine setup(this, dt, props, vel_cc)
+
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, vel_cc(:,:)
     type(flow_props), intent(inout) :: props
@@ -189,11 +189,13 @@ contains
 
   ! solver matrix => lhs of predictor step
   !  (rho - dt*theta_mu*stress_grad)(u*) = rhs
+
   subroutine setup_solver(this, dt, props)
+
     class(flow_prediction), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: dt
-    !-
+
     real(r8), pointer :: ds(:,:)
     integer :: i, j, fi, ni, k
     real(r8) :: coeff, dtv
@@ -206,7 +208,6 @@ contains
       A(k)%A => this%solver(k)%matrix()
       call A(k)%A%set_all(0.0_r8)
     end do
-
 
     ds => flow_gradient_coefficients()
     dtv = dt*this%viscous_implicitness
@@ -318,26 +319,27 @@ contains
   ! accumulate [-dt * grad(P)^n]
   ! the full contribution to the velocity update is [-dt * grad(P)^n]/rho^n+1
   ! The divisor is handled in the solve routine
+
   subroutine accumulate_rhs_pressure(this, dt, props, grad_p_rho_cc)
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, grad_p_rho_cc(:,:)
     type(flow_props), intent(in) :: props
     integer :: j
-
     do j = 1, this%mesh%ncell_onP
       this%rhs(:,j) = this%rhs(:,j) - dt*grad_p_rho_cc(:,j)*props%rho_cc(j)*this%mesh%volume(j)
     end do
-
   end subroutine accumulate_rhs_pressure
 
   ! accumulate (1-theta_mu)[ dt * div(mu_f*grad(u_i))^n]
   ! the full contribution to the velocity update is (1-theta_mu)[dt * div(mu_f*grad(u_i))^n]/rho^n+1
   ! The divisor is handled in the solve routine
+
   subroutine accumulate_rhs_viscous_stress(this, dt, props, vel_cc)
+
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, vel_cc(:,:)
     type(flow_props), intent(in) :: props
-    !
+
     integer :: i, j
     real(r8) :: dtv
 
@@ -369,6 +371,7 @@ contains
         end associate
       end do
     end associate
+
   end subroutine accumulate_rhs_viscous_stress
 
   ! accumulate [-dt*div(rho*u*u)]
@@ -376,6 +379,7 @@ contains
   ! for a given cell face
   ! The flux volume for a given material is dt*A*vel_fn.  A positive value indicates outward flux
   ! Momentum is transported via flux-volumes using a first order upwind scheme
+
   subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fn, flux_volumes)
 
     use f08_intrinsics, only: findloc
@@ -481,11 +485,12 @@ contains
 
 
   subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, vel_fn, vel_cc)
+
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: dt, flux_volumes(:,:), grad_p_rho_cc(:,:), vel_fn(:)
     real(r8), intent(inout) :: vel_cc(:,:)
     type(flow_props), intent(in) :: props
-    !
+
     integer :: i, j, ierr
     real(r8) :: coeff, mass
     character(18), parameter :: slabel(3) = 'predictor' // ['1', '2', '3'] // ' solve: '
@@ -552,9 +557,6 @@ contains
         else
           call gather_boundary(this%mesh%cell_ip, rhs1d)
           do j = 1, this%mesh%ncell
-!!$            if (cell_t(j) /= regular_t) then
-!!$              vel_cc(i,j) = rhs1d(j)
-!!$            else
             coeff = props%rho_cc(j)
             if (props%vof(j) > 0) &
                 coeff = coeff + &
@@ -565,7 +567,6 @@ contains
             else
               vel_cc(i,j) = 0
             end if
-!!$            end if
           end do
         end if
 
@@ -581,4 +582,5 @@ contains
     class(flow_prediction), intent(inout) :: this
     call this%turb%accept()
   end subroutine accept
+
 end module flow_prediction_type

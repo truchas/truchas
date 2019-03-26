@@ -71,12 +71,12 @@
 !!    Called if the timestep taken by the flow driver is acceptable.
 !!    Copies all data to their `_n` counterparts
 !!
+
 #include "f90_assert.fpp"
-#define ASDF 0
-#define Q 42
+
 module flow_props_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use flow_domain_types
   use unstr_mesh_type
   use parameter_list_type
@@ -255,9 +255,11 @@ contains
 
   end subroutine set_pre_solidification_density
 
+
   subroutine update_fc(this)
+
     class(flow_props), intent(inout) :: this
-    !-
+
     integer :: m, i, j
     real(r8) :: minrho, w(2), min_face_rho
 
@@ -278,7 +280,6 @@ contains
       end associate
     end do
     call gather_boundary(this%mesh%face_ip, this%face_t)
-
 
     ! linear averaged face-centered density
     ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
@@ -329,7 +330,6 @@ contains
 
   subroutine accept(this)
     class(flow_props), intent(inout) :: this
-
     this%rho_cc_n(:) = this%rho_cc(:)
     this%rho_fc_n(:) = this%rho_fc(:)
     this%mu_cc_n(:) = this%mu_cc(:)
@@ -337,4 +337,5 @@ contains
     this%vof_n(:) = this%vof(:)
     this%vof_novoid_n(:) = this%vof_novoid(:)
   end subroutine accept
+
 end module flow_props_type

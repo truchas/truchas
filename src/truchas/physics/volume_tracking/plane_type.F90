@@ -17,7 +17,7 @@
 
 module plane_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   implicit none
   private

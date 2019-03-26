@@ -40,7 +40,7 @@
 
 module fischer_guess_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use index_partitioning
   use parallel_communication
@@ -91,9 +91,9 @@ contains
 
   end subroutine init
 
-
   ! Given the new right hand side b, this computes a new guess for
   ! the solution x based on previous stored solution values
+
   subroutine guess (this, b, x)
     class(fischer_guess), intent(inout) :: this
     real(r8),       intent(out)   :: x(:)
@@ -123,6 +123,7 @@ contains
 
   ! After a PPE solution, the set of projection vectors
   ! (i.e. previous solutions and right hand sides) is updated.
+
   subroutine update (this, b, x_soln, lhs)
     class(fischer_guess), intent(inout) :: this
     real(r8), intent(in) :: x_soln(:), b(:)

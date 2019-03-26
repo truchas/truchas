@@ -17,7 +17,7 @@
 
 module locate_plane_nd_module
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use plane_type
   use polyhedron_type
   use brent_root_class
@@ -45,6 +45,7 @@ contains
   ! and return a plane type
   ! Alternatively, should we return the two polyhedra? If they are already
   ! calculated, it would save resplitting the input polyhedron.
+
   type(plane) function locate_plane_nd (poly, norm, vol, cell_volume, cutvof, max_iterations)
 
     use polyhedron_type
@@ -77,6 +78,7 @@ contains
   ! loop through all the polyhedron vertices, checking if a plane
   ! intersecting each one is above or below the target volume,
   ! thereby bracketing the allowed range of plane constants
+
   subroutine rho_bracket(rho_min, rho_max, norm, poly, volume_error)
 
     use near_zero_function

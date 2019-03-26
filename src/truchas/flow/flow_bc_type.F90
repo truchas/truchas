@@ -8,7 +8,7 @@
 
 module flow_bc_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use truchas_timers
   use parameter_list_type
@@ -81,6 +81,7 @@ contains
   ! Assigns an MPI rank to do the pressure-neumann null space fixup.
   ! The rank must have fluid in the current time step, and otherwise
   ! neumann pressure boundaries.
+
   logical function is_p_neumann_fix_pe(this, any_real_fluid_onP)
 
     use parallel_communication
@@ -108,6 +109,7 @@ contains
 
   ! apply the default boundary condition (slip) to
   ! boundary faces with unspecified conditions
+
   subroutine apply_default(this, mesh)
 
     use bndry_face_func_type
@@ -137,10 +139,6 @@ contains
     end do
 
     if (nf == 0) return
-
-#ifndef NDEBUG
-    print '(a,i8,a)', "applying default BC to ", nf, " faces"
-#endif
 
     ! apply slip bc (p_neumann + v_zero_normal) to faces in faces(:nf)
     call alloc_const_scalar_func(func, 0.0_r8)

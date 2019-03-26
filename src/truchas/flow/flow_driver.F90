@@ -56,12 +56,12 @@
 !! READ_FLOW_NAMELIST if the flow namelist is present in the input
 !! file.
 !!
+
 #include "f90_assert.fpp"
-#define ASDF 0
 
 module flow_driver
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use flow_type
   use flow_props_type
@@ -182,6 +182,7 @@ contains
 
 
   subroutine flow_driver_init
+
     use mesh_manager, only: unstr_mesh_ptr
     use flow_namelist, only: params
     use material_interop, only: void_material_index, material_to_phase
@@ -193,8 +194,6 @@ contains
     use flow_bc_type
     use truchas_logging_services
 
-    !real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
-    !-
     integer :: i, property_id, stat
     integer, allocatable :: fluids(:)
     logical, allocatable :: is_real_fluid(:)
@@ -360,7 +359,9 @@ contains
 
   end subroutine flow_driver_set_initial_state
 
+
   subroutine flow_step(t, dt, vof, flux_vol, temperature_fc)
+
     use zone_module, only: Zone
     use physics_module, only: prescribed_flow
     use advection_velocity_namelist, only: adv_vel
@@ -443,36 +444,6 @@ contains
 
     allocate(vel_fn(mesh%nface_onP))
     vel_fn = 0
-
-!    do j = 1, mesh%ncell
-!      associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
-!        select case (mesh%xcnode(j+1)-mesh%xcnode(j)) ! number of nodes for cell
-!        case (4)  ! tet cell
-!          do k = 1, size(cface)
-!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
-!            vel_fn(cface(k)) = old_flux_vel(NEW_TET_SIDE_MAP(k),j)
-!          end do
-!        case (5)  ! pyramid cell
-!          do k = 1, size(cface)
-!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
-!            vel_fn(cface(k)) = old_flux_vel(NEW_PYR_SIDE_MAP(k),j)
-!          end do
-!        case (6)  ! prism cell
-!          do k = 1, size(cface)
-!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
-!            vel_fn(cface(k)) = old_flux_vel(NEW_PRI_SIDE_MAP(k),j)
-!          end do
-!        case (8)  ! hex cell
-!          do k = 1, size(cface)
-!            if (btest(mesh%cfpar(j),pos=k)) cycle  ! opposite orientation
-!            vel_fn(cface(k)) = old_flux_vel(NEW_HEX_SIDE_MAP(k),j)
-!          end do
-!        case default
-!          INSIST(.false.)
-!        end select
-!      end associate
-!    end do
-!    call gather_boundary(mesh%face_ip, vel_fn)
 
     do j = 1, mesh%nface_onP
       n = mesh%fcell(1,j)

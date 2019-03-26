@@ -15,7 +15,7 @@
 
 module simple_volume_tracker_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use volume_tracker_class
   use unstr_mesh_type
   implicit none

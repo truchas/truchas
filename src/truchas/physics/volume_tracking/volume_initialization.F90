@@ -6,7 +6,7 @@
 
 module volume_initialization
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use cell_topology
   use cell_geometry

@@ -22,7 +22,7 @@
 
 module polygon_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   implicit none
   private
@@ -104,6 +104,7 @@ contains
   ! this is done by calculating the vector between each vertex and the polygon centroid,
   ! then the angle of that vector with respect to the x-axis in that space.
   ! this angle is used to sort the vertices
+
   subroutine order (this,array)
 
     use cell_geometry, only: normalized

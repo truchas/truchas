@@ -82,6 +82,7 @@ contains
     integer, intent(in) :: lun
     character(*), intent(in) :: name
     type(parameter_list), intent(inout) :: p
+
     type(parameter_list), pointer :: pp
     integer :: ios
     logical :: found
@@ -166,6 +167,7 @@ contains
       call plist_set_if(pp, 'amg-smoothing-method', amg_smoothing_method)
       call plist_set_if(pp, 'amg-interp-method', amg_interp_method)
     end if
+
   end subroutine read_hypre_namelist
 
 end module flow_solver_namelists

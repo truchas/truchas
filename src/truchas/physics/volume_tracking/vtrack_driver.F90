@@ -54,7 +54,7 @@
 
 module vtrack_driver
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use volume_tracker_class
   use parameter_list_type

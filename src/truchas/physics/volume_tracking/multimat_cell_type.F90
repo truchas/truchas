@@ -18,7 +18,7 @@
 
 module multimat_cell_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use polygon_type
   use polyhedron_type
   use truchas_logging_services
@@ -69,6 +69,7 @@ contains
 
   ! given a set of VoFs, normals, and an order,
   ! create child polyhedra for each material
+
   subroutine partition (this, vof, norm, cutvof, priority, max_reconstruction_iterations)
 
     use near_zero_function
@@ -191,6 +192,7 @@ contains
   ! note: this will loop through the number of elements
   !       in the input 'vol' array, so that some last-priority
   !       materials may be skipped (such as solid).
+
   subroutine volumes_behind_plane (this, P, vol, ierr)
 
     use plane_type

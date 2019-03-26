@@ -14,7 +14,7 @@
 
 module locate_plane_os_function
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use plane_type
   use truncation_volume_type
   use brent_root_class
@@ -71,6 +71,7 @@ contains
   ! loop through all the cell nodes, checking if a plane
   ! intersecting each one is above or below the target volume,
   ! bracketing the allowed range of plane constants
+
   subroutine rho_bracket(rho_min, rho_max, norm, node, vof_error)
 
     real(r8), intent(out) :: rho_min, rho_max

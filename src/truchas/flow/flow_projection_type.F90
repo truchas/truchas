@@ -1,4 +1,3 @@
-#include "f90_assert.fpp"
 !!
 !! FLOW_PROJECTION_TYPE
 !!
@@ -41,10 +40,11 @@
 !!  ACCEPT()
 !!    Copies new state to the `n` level for use in next time step
 
+#include "f90_assert.fpp"
 
 module flow_projection_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use truchas_timers
   use flow_domain_types
@@ -165,7 +165,9 @@ contains
     call this%solver%init(A, plist)
     plist => params%sublist("options")
     call this%fg%init(mesh, plist)
+
   end subroutine init
+
 
   subroutine setup(this, dt, props, grad_p_rho_cc_n, body_force, vel_cc, P_cc, vel_fn)
     class(flow_projection), intent(inout) :: this
@@ -186,11 +188,13 @@ contains
     grad_p_rho_cc_n = this%grad_p_rho_cc
   end subroutine accept
 
+
   subroutine setup_solver(this, dt, props, vel, p_cc)
+
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: vel(:), p_cc(:), dt
-    !-
+
     type(pcsr_matrix), pointer :: A
     real(r8), pointer :: ds(:,:), row_val(:)
     integer, pointer :: row_idx(:)
@@ -236,7 +240,6 @@ contains
         end associate
       end do
     end associate
-
 
     associate (m => this%mesh, rhs => this%rhs)
 
@@ -327,10 +330,10 @@ contains
 
 
   subroutine setup_gravity(this, props, body_force)
+
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: body_force(:)
-    !-
 
     integer :: j, i, n
     real(r8) :: rho
@@ -354,15 +357,18 @@ contains
       call gather_boundary(this%mesh%face_ip, g(2,:))
     end associate
     ! Truchas has a gravity_limiter... Do we need this?
+
   end subroutine setup_gravity
 
+
   subroutine setup_face_velocity(this, dt, props, grad_p_rho_cc_n, vel_cc, vel_fn)
+
     class(flow_projection), intent(inout) :: this
     real(r8), intent(in) :: dt
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: vel_cc(:,:), grad_p_rho_cc_n(:,:)
     real(r8), intent(out) :: vel_fn(:)
-    !-
+
     integer :: i, j
 
     ! cell -> face interpolation
@@ -417,7 +423,9 @@ contains
 
   end subroutine setup_face_velocity
 
+
   subroutine solve(this, dt, props, grad_p_rho_cc_n, vel_cc, p_cc, vel_fc)
+
     class(flow_projection), intent(inout) :: this
     real(r8), intent(in) :: dt, grad_p_rho_cc_n(:,:)
     type(flow_props), intent(in) :: props
@@ -447,18 +455,18 @@ contains
     call this%grad_p_rho(props, p_cc)
     call this%velocity_cc_correct(dt, props, grad_p_rho_cc_n, vel_cc)
 
-
     call stop_timer("solve")
 
   end subroutine solve
 
 
   subroutine velocity_fc_correct(this, dt, props, vel_fc)
+
     class(flow_projection), intent(inout) :: this
     real(r8), intent(in) :: dt
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: vel_fc(:)
-    !-
+
     integer :: j, i
 
     ! face gradient of solution
@@ -502,25 +510,20 @@ contains
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: p_cc(:)
-    !-
     real(r8) :: dp_vof, vof, g_vof, g_dp_vof
     integer :: i
-
     associate (p => props, dp => this%delta_p_cc)
       p_cc = p_cc + dp
       call gather_boundary(this%mesh%cell_ip, p_cc)
     end associate
   end subroutine pressure_cc_correct
 
-
   ! compute face and cell centered dynamic_pressure_gradient/rho
   subroutine grad_p_rho(this, props, p_cc)
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: p_cc(:)
-    !-
     integer :: i, j
-
     associate (rho => props%rho_fc, &
         gp_cc => this%grad_p_rho_cc, gp_fc => this%grad_p_rho_fc)
 
@@ -564,9 +567,7 @@ contains
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: grad_p_rho_cc_n(:,:)
     real(r8), intent(inout) :: vel_cc(:,:)
-    !-
     integer :: i, j
-
     ! assumes dynamic pressure gradients have already been computed
     do i = 1, this%mesh%ncell_onP
       ! -dt * grad(dP)/rho
@@ -577,7 +578,6 @@ contains
       end if
     end do
     call gather_boundary(this%mesh%cell_ip, vel_cc)
-
   end subroutine velocity_cc_correct
 
 end module flow_projection_type

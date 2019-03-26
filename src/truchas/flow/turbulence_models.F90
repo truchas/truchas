@@ -21,7 +21,8 @@
 !!
 
 module turbulence_models
-  use kinds
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use turbulence_model_class
   use algebraic_turb_model_type
@@ -35,10 +36,11 @@ module turbulence_models
 contains
 
   subroutine alloc_turbulence_model(turb, params, off)
+
     class(turbulence_model), allocatable, intent(out) :: turb
     type(parameter_list), pointer, intent(in) :: params
     logical, optional, intent(in) :: off
-    !-
+
     integer :: stat
     character(:), allocatable :: model
     type(parameter_list), pointer :: pp
@@ -67,6 +69,7 @@ contains
 
     pp => pp%sublist("params")
     call turb%read_params(pp)
+
   end subroutine alloc_turbulence_model
 
 end module turbulence_models

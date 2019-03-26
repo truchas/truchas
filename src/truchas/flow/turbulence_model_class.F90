@@ -32,18 +32,16 @@
 !!  ACCEPT()
 !!    updates any internal state after timestep is accepted
 
-
 module turbulence_model_class
-  use kinds, only: r8
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use flow_props_type
   use parameter_list_type
   implicit none
   private
 
-  public :: turbulence_model
-
-  type, abstract :: turbulence_model
+  type, abstract, public :: turbulence_model
     type(unstr_mesh), pointer :: mesh => null()
   contains
     procedure(read_params), deferred :: read_params
@@ -83,4 +81,5 @@ module turbulence_model_class
       class(turbulence_model), intent(inout) :: this
     end subroutine accept
   end interface
+
 end module turbulence_model_class

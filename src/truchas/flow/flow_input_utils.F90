@@ -5,7 +5,8 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module flow_input_utils
-  use kinds, only: r8
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use input_utilities
   use parameter_list_type
   implicit none
@@ -91,6 +92,5 @@ contains
     logical, intent(in) :: v
     if (v) call p%set(name, v)
   end subroutine set_l
-
 
 end module flow_input_utils

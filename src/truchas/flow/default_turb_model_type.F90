@@ -15,7 +15,8 @@
 !! Does nothing
 
 module default_turb_model_type
-  use kinds
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use turbulence_model_class
   use parameter_list_type
   use unstr_mesh_type
@@ -23,9 +24,9 @@ module default_turb_model_type
   implicit none
   private
 
-  public :: default_turb_model, alloc_default_turb_model
+  public :: alloc_default_turb_model
 
-  type, extends(turbulence_model) :: default_turb_model
+  type, extends(turbulence_model), public :: default_turb_model
   contains
     procedure :: read_params
     procedure :: init
@@ -39,7 +40,6 @@ contains
   subroutine alloc_default_turb_model(t)
     class(turbulence_model), allocatable, intent(out) :: t
     type(default_turb_model), allocatable :: m
-
     allocate(m)
     call move_alloc(m, t)
   end subroutine alloc_default_turb_model
@@ -47,35 +47,25 @@ contains
   subroutine read_params(this, params)
     class(default_turb_model), intent(inout) :: this
     type(parameter_list), pointer, intent(in) :: params
-
-    ! nothing
   end subroutine read_params
 
   subroutine init(this, mesh)
     class(default_turb_model), intent(inout) :: this
     type(unstr_mesh), intent(in), target :: mesh
-
-    ! nothing
   end subroutine init
 
   subroutine setup(this, vel_cc)
     class(default_turb_model), intent(inout) :: this
     real(r8), intent(in) :: vel_cc(:,:)
-
-    ! nothing
   end subroutine setup
 
   subroutine apply(this, props)
     class(default_turb_model), intent(inout) :: this
     type(flow_props), intent(inout) :: props
-
-    !nothing
   end subroutine apply
 
   subroutine accept(this)
     class(default_turb_model), intent(inout) :: this
-
-    !nothing
   end subroutine accept
 
 end module default_turb_model_type

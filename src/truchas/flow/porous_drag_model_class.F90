@@ -32,17 +32,15 @@
 !!  ACCEPT()
 !!    updates any internal state after timestep is accepted
 
-
 module porous_drag_model_class
-  use kinds, only: r8
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use parameter_list_type
   implicit none
   private
 
-  public :: porous_drag_model
-
-  type, abstract :: porous_drag_model
+  type, abstract, public :: porous_drag_model
     type(unstr_mesh), pointer :: mesh => null()
   contains
     procedure(read_params), deferred :: read_params
@@ -82,4 +80,5 @@ module porous_drag_model_class
       class(porous_drag_model), intent(inout) :: this
     end subroutine accept
   end interface
+
 end module porous_drag_model_class
