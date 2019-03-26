@@ -98,11 +98,9 @@ contains
       ! find the lowest PE with a pressure neumann boundary
       is_valid_pe = size(this%p_neumann%index) > 0 .and. any_real_fluid_onP
       call collate(has_p_neumann, is_valid_pe)
-      if (is_IOP) then
-        fix_pe = findloc(has_p_neumann, .true.)
-        INSIST(fix_pe > 0 .and. fix_pe <= nPE)
-      end if
-      call broadcast(is_valid_pe)
+      if (is_IOP) fix_pe = findloc(has_p_neumann, .true.)
+      call broadcast(fix_pe)
+      INSIST(fix_pe > 0 .and. fix_pe <= nPE)
       is_p_neumann_fix_PE = (fix_pe == this_PE)
     end if
 
