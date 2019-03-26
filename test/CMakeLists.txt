@@ -159,7 +159,7 @@ add_pytruchas_test(porous-drag
 
 add_pytruchas_test(sloshing-flow-old sloshing-flow-old/test.py PROCESSORS 4 LABELS OLD_FLOW)
 
-add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 
 add_pytruchas_test(void-collapse
                    void-collapse/testVoidCollapse.py
@@ -361,8 +361,8 @@ add_pytruchas_test(pipe-flow-1b pipe-flow/test1b.py PROCESSORS 4 LABELS FLOW)
 #add_pytruchas_test(pipe-flow-1d pipe-flow/test1d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 #add_pytruchas_test(pipe-flow-2c pipe-flow/test2c.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 #add_pytruchas_test(pipe-flow-2d pipe-flow/test2d.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(pipe-flow-3a pipe-flow/test3a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
-add_pytruchas_test(pipe-flow-3b pipe-flow/test3b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(pipe-flow-3a pipe-flow/test3a.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+#add_pytruchas_test(pipe-flow-3b pipe-flow/test3b.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(pipe-flow-3c pipe-flow/test3c.py PROCESSORS 4 LABELS)
 add_pytruchas_test(pipe-flow-3d pipe-flow/test3d.py PROCESSORS 4 LABELS)
 
