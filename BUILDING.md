@@ -10,7 +10,7 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
     - Intel Fortran and C/C++:
         - version 17.0.7 (anything 17.0.1 or later should be okay)
         - version 18.0.5 (anything 18.0.2 or later should be okay)
-        - version 19 is **not supported** (known issues)
+        - version 19 is **not supported** (known compiler problems)
     - NAG Fortran (with GNU C/C++):
         - version 6.0, builds 1067 or 1071
         - version 6.1, build 6149 or later (preferred version)
@@ -36,8 +36,8 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v6" bundle of TPLs;
-do a `git checkout v6` after cloning the TPL repository. See its README file
+on GitLab. This version of Truchas is tested against the "v7" bundle of TPLs;
+do a `git checkout v7` after cloning the TPL repository. See its README file
 for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
