@@ -2,7 +2,7 @@
 
 Important changes since the 3.0 release.
 
-## 2019-03-26 (ba9b8b61)
+## 2019-03-26 (2f097cf5)
 
 The inputs for flow and solid mechanics have been reorganized. **This change
 will require the updating of all input files,** including those not using
