@@ -39,6 +39,10 @@ Resources
 [2]: https://gitlab.com/groups/truchas
 [3]: https://gitlab.com/groups/truchas/issues
 
+News
+------------------------------------------------------------------------------
+See [NEWS.md](NEWS.md) for important changes since the last release.
+
 Building Truchas
 ------------------------------------------------------------------------------
 See [BUILDING.md](BUILDING.md) for instructions on compiling and testing
