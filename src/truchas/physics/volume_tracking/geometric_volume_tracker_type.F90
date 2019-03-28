@@ -63,7 +63,7 @@ contains
     this%nfluid = nfluid
     this%nmat = nmat
 
-    call params%get('location_iter_max', this%location_iter_max, default=30)
+    call params%get('location_iter_max', this%location_iter_max, default=40)
     call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
     call params%get('subcycles', this%subcycles, default=2)
     call params%get('nested_dissection', this%nested_dissection, default=.true.)

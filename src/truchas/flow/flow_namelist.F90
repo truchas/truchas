@@ -33,7 +33,7 @@ contains
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer  :: subcycles, location_iter_max, material_priority(16), fischer_dim
+    integer  :: subcycles, material_priority(16), fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection
     real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_cutvof, min_face_fraction, cutoff
@@ -41,7 +41,7 @@ contains
         viscous_implicitness, viscous_number, courant_number, &
         fluid_cutvof, min_face_fraction, &
         track_interfaces, nested_dissection, subcycles, &
-        location_iter_max, cutoff, material_priority, fischer_dim
+        cutoff, material_priority, fischer_dim
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -60,7 +60,6 @@ contains
     track_interfaces = (nmat > 1)
     nested_dissection = .true.
     subcycles = NULL_I
-    location_iter_max = NULL_I
     cutoff = NULL_R
     material_priority = NULL_I
 
@@ -82,7 +81,6 @@ contains
     call broadcast(track_interfaces)
     call broadcast(nested_dissection)
     call broadcast(subcycles)
-    call broadcast(location_iter_max)
     call broadcast(cutoff)
     call broadcast(material_priority)
 
@@ -100,11 +98,6 @@ contains
     plist => params%sublist('volume-tracker')
     call plist%set('track_interfaces', track_interfaces)
     call plist%set('nested_dissection', nested_dissection)
-
-    if (location_iter_max /= NULL_I) then
-      if(location_iter_max < 1) call TLS_fatal('LOCATION_ITER_MAX must be > 0')
-      call plist%set('location_iter_max', location_iter_max)
-    end if
 
     n = count(material_priority /= NULL_I)
     if (n > 0) then
