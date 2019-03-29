@@ -56,23 +56,21 @@ else()
   set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 
-# Strip RPATH from installed binaries/libraries 
+# Strip RPATH from installed binaries/libraries
 option(ENABLE_INSTALL_RPATH "Use RPATH in installed binaries and libraries" True)
 
 # ---------------------------------------------------------------------------- #
-# External Dependencies 
+# External Dependencies
 # ---------------------------------------------------------------------------- #
 
 # MPI
 find_package(MPI REQUIRED)
 
-# Python and NumPy
-find_package(PythonInterp REQUIRED)
-set(_tmp "${CMAKE_FIND_LIBRARY_SUFFIXES}")
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
-find_package(PythonLibs REQUIRED)
-set(CMAKE_FIND_LIBRARY_SUFFIXES "${_tmp}")
-find_package(NumPy)
+# Python and packages
+include(FindPythonPackage)
+find_package(PythonInterp 3.5 REQUIRED)
+find_python_package(scipy)
+find_python_package(h5py)
 
 # BLAS and LAPACK -- these are not required
 find_package(LAPACK)

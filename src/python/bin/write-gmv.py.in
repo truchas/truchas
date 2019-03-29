@@ -13,7 +13,13 @@ import argparse
 
 import scipy as sp
 
-import truchas
+# Try to import through PYTHONPATH, and if not found, look in the truchas
+# install directory.
+try:
+    import truchas
+except ImportError:
+    sys.path.append("@TruchasPython_INSTALL_PREFIX@")
+    import truchas
 
 def write_gmv(args, truchas_data):
     filename_base = args.base if args.base else args.simulation

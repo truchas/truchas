@@ -10,7 +10,13 @@
 
 import argparse
 
-import truchas
+# Try to import through PYTHONPATH, and if not found, look in the truchas
+# install directory.
+try:
+    import truchas
+except ImportError:
+    sys.path.append("@TruchasPython_INSTALL_PREFIX@")
+    import truchas
 
 def print_probe_data(truchas_data, probe):
     pv = truchas_data.probe_view(probe)

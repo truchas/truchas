@@ -10,11 +10,20 @@
 
 import argparse
 import os
+import sys
 
 import scipy as sp
 
-import fortran_write
-import truchas
+# Try to import through PYTHONPATH, and if not found, look in the truchas
+# install directory.
+try:
+    import fortran_write
+    import truchas
+except ImportError:
+    sys.path.append("@TruchasPython_INSTALL_PREFIX@")
+    import fortran_write
+    import truchas
+
 
 def write_restart(outfile, truchas_data, series_id, scale_factor):
     fw = fortran_write.FortranWrite(outfile)
@@ -271,8 +280,9 @@ if __name__ == "__main__":
             cycle = args.n
             series_id = cycles.index(cycle) + 1
 
-        outfile = os.path.abspath(args.o) if args.o \
+        outfile = args.o if args.o \
             else os.path.splitext(args.h5file)[0] + ".restart." + str(cycle)
+        outfile = os.path.abspath(outfile)
 
         # If the parent output directory doesn't exist, create it
         outdir = os.path.dirname(outfile)
