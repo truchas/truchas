@@ -53,7 +53,7 @@ end and the fluid exits the right end with a fixed unit velocity.
 &FLOW
   inviscid = .true.
   courant_number = 0.4
-  subcycles = 2
+  vol_track_subcycles = 2
   material_priority = 2, 3, -1
 /
 

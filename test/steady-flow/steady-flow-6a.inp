@@ -28,7 +28,7 @@ recovery that constant velocity.
   inviscid = .true.
   courant_number = 0.5
   nested_dissection = f
-  subcycles = 4
+  vol_track_subcycles = 4
 /
 
 &FLOW_PRESSURE_SOLVER

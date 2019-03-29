@@ -30,7 +30,7 @@ A kludge to force hitting the final time exactly
 &FLOW
   inviscid = .true.
   courant_number = 0.25
-  subcycles = 2
+  vol_track_subcycles = 2
   nested_dissection = .false.
 /
 

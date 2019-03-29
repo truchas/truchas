@@ -31,7 +31,7 @@ A kludge to force hitting the final time exactly
 /
 
 &FLOW
-  subcycles = 4
+  vol_track_subcycles = 4
   courant_number = 0.5
 /
 

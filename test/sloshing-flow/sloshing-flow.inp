@@ -47,7 +47,7 @@
   inviscid = .false.
   viscous_implicitness = 1.0
   viscous_number = 100.0
-  subcycles = 1
+  vol_track_subcycles = 1
   courant_number = 0.2
 /
 

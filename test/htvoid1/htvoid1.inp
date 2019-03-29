@@ -59,7 +59,7 @@ A kludge to force hitting the final time exactly
 &FLOW
   inviscid = .true.
   courant_number = 0.4
-  subcycles = 2
+  vol_track_subcycles = 2
 /
 
 &FLOW_PRESSURE_SOLVER

@@ -30,7 +30,7 @@ Variations use rotated meshes (and rotated velocity)
   inviscid = .true.
   courant_number = 0.5
   nested_dissection = f
-  subcycles = 2
+  vol_track_subcycles = 2
 /
 
 &FLOW_PRESSURE_SOLVER

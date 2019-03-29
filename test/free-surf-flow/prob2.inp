@@ -28,7 +28,7 @@ x&SIMULATION_CONTROL
 &FLOW
   inviscid = t
   courant_number = 0.25
-  subcycles = 2
+  vol_track_subcycles = 2
   nested_dissection = f
 /
 

@@ -33,15 +33,15 @@ contains
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer  :: subcycles, material_priority(16), fischer_dim
+    integer  :: vol_track_subcycles, material_priority(16), fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection
     real(r8) :: viscous_implicitness, viscous_number, courant_number
-    real(r8) :: fluid_cutvof, min_face_fraction, cutoff
+    real(r8) :: fluid_frac_threshold, min_face_fraction, vol_frac_cutoff
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
-        fluid_cutvof, min_face_fraction, &
-        track_interfaces, nested_dissection, subcycles, &
-        cutoff, material_priority, fischer_dim
+        fluid_frac_threshold, min_face_fraction, &
+        track_interfaces, nested_dissection, vol_track_subcycles, &
+        vol_frac_cutoff, material_priority, fischer_dim
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -59,8 +59,8 @@ contains
     !! Default values
     track_interfaces = (nmat > 1)
     nested_dissection = .true.
-    subcycles = NULL_I
-    cutoff = NULL_R
+    vol_track_subcycles = NULL_I
+    vol_frac_cutoff = NULL_R
     material_priority = NULL_I
 
     inviscid = .false.
@@ -68,7 +68,7 @@ contains
     viscous_number = NULL_R
     courant_number = NULL_R
 
-    fluid_cutvof = NULL_R
+    fluid_frac_threshold = NULL_R
     min_face_fraction = NULL_R
     fischer_dim = NULL_I
 
@@ -80,8 +80,8 @@ contains
     !! Broadcast the namelist variables
     call broadcast(track_interfaces)
     call broadcast(nested_dissection)
-    call broadcast(subcycles)
-    call broadcast(cutoff)
+    call broadcast(vol_track_subcycles)
+    call broadcast(vol_frac_cutoff)
     call broadcast(material_priority)
 
     call broadcast(inviscid)
@@ -89,7 +89,7 @@ contains
     call broadcast(viscous_number)
     call broadcast(courant_number)
 
-    call broadcast(fluid_cutvof)
+    call broadcast(fluid_frac_threshold)
     call broadcast(min_face_fraction)
     call broadcast(fischer_dim)
 
@@ -104,14 +104,14 @@ contains
       call plist%set('material_priority', material_priority(:n))
     end if
 
-    if (subcycles /= NULL_I) then
-      if (subcycles < 1) call TLS_fatal('SUBCYCLES must be > 0')
-      call plist%set('subcycles', subcycles)
+    if (vol_track_subcycles /= NULL_I) then
+      if (vol_track_subcycles < 1) call TLS_fatal('SUBCYCLES must be > 0')
+      call plist%set('subcycles', vol_track_subcycles)
     end if
 
-    if (cutoff /= NULL_R) then
-      if (cutoff <= 0.0_r8) call TLS_fatal('CUTOFF must be > 0.0')
-      call plist%set('cutoff', cutoff)
+    if (vol_frac_cutoff /= NULL_R) then
+      if (vol_frac_cutoff <= 0.0_r8) call TLS_fatal('VOL_FRAC_CUTOFF must be > 0.0')
+      call plist%set('cutoff', vol_frac_cutoff)
     end if
 
     plist => params%sublist('options')
@@ -140,9 +140,9 @@ contains
     end if
 
     plist => params%sublist('cutoffs')
-    if (fluid_cutvof /= NULL_R) then
-      if (fluid_cutvof <= 0.0_r8) call TLS_fatal('FLUID_CUTVOF must be > 0.0')
-      call plist%set('cutvof', fluid_cutvof)
+    if (fluid_frac_threshold /= NULL_R) then
+      if (fluid_frac_threshold <= 0.0_r8) call TLS_fatal('FLUID_FRAC_THRESHOLD must be > 0.0')
+      call plist%set('cutvof', fluid_frac_threshold)
     end if
 
     if (min_face_fraction /= NULL_R) then

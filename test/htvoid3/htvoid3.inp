@@ -57,7 +57,7 @@ will result in heat solutions that are not comparable.
 &FLOW
   inviscid = .true.
   courant_number = 0.4
-  subcycles = 4
+  vol_track_subcycles = 4
   material_priority = -1, 3, 4
 /
 

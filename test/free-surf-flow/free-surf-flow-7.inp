@@ -51,7 +51,7 @@ recover that exactly regardless of step size.
 &FLOW
   inviscid = t
   courant_number = 0.05
-  subcycles = 1
+  vol_track_subcycles = 1
   nested_dissection = f
 /
 

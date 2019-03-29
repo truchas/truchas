@@ -77,7 +77,7 @@ cells at each long_edit interval.
 
 &FLOW
   inviscid = .false.
-  subcycles = 8
+  vol_track_subcycles = 8
   courant_number = 0.25
   viscous_number = 0.1
   viscous_implicitness = 0.5
