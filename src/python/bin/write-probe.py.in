@@ -9,6 +9,7 @@
 #===============================================================================
 
 import argparse
+import sys
 
 # Try to import through PYTHONPATH, and if not found, look in the truchas
 # install directory.
