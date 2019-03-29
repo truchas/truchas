@@ -39,9 +39,6 @@ message("  MPIEXEC=${MPIEXEC}")
 message("  MPIEXEC_NUMPROC_FLAG=${MPIEXEC_NUMPROC_FLAG}")
 message("")
 
-message("SWIG (version ${SWIG_VERSION}): ${SWIG_EXECUTABLE}")
-message("")
-
 message("Python (version ${PYTHON_VERSION_STRING}): ${PYTHON_EXECUTABLE}")
 message("  PYTHON_LIBRARIES=${PYTHON_LIBRARIES}")
 message("  PYTHON_INCLUDE_DIRS=${PYTHON_INCLUDE_DIRS}")

@@ -136,18 +136,6 @@ if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
 endif()
 
-# SWIG program
-find_package(SWIG)
-if(SWIG_FOUND)
-  if(SWIG_VERSION VERSION_LESS "2" OR NOT (SWIG_VERSION VERSION_LESS "3"))
-    set(SWIG_FOUND FALSE)
-    message(STATUS "Could NOT find a suitable SWIG: version 2 is required")
-  endif()
-endif()
-if(NOT SWIG_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable swig executable")
-endif()
-
 # Test - need a swith here to enable testing
 enable_testing()
 
