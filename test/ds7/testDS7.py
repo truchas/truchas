@@ -1,49 +1,32 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "ds7.inp")
+    golden = tenv.output("ds7_pgolden/ds7.h5")
 
-import Truchas
-import TruchasTest
+    for sid in (2, 3):
+        time = output.time(sid)
 
-class DS7(TruchasTest.GoldenTestCase):
+        # cycle number
+        cycle = output.cycle(sid)
+        cycleg = golden.cycle(sid)
+        status = "PASS" if cycle == cycleg else "FAIL"
+        print("{:s}: matching cycle numbers {:d}".format(status, cycle))
+        if cycle != cycleg: nfail += 1
 
-  test_name = 'ds7'
-  num_procs = 4 # with a parallel executable
-  
-  def test_early_cycle_number(self):
-    '''DS7: checking the final cycle number'''
-    test_series = self.test_output.get_simulation().find_series(id=2)
-    gold_series = self.gold_output.get_simulation().find_series(id=2)
-    self.assertTrue(test_series.cycle == gold_series.cycle)
-  
-  def test_final_cycle_number(self):
-    '''DS7: checking the final cycle number'''
-    test_series = self.test_output.get_simulation().find_series(id=3)
-    gold_series = self.gold_output.get_simulation().find_series(id=3)
-    self.assertTrue(test_series.cycle == gold_series.cycle)
+        # temperature
+        test = output.field(sid, "Z_TEMP")
+        gold = golden.field(sid, "Z_TEMP")
+        nfail += truchas.compare_max_rel(test, gold, 1e-10, "temp", time)
 
-  def test_early_temperature(self):
-    '''DS7: verifying the early temperature field'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    error = max(abs(test-gold)/gold)
-    print 'early temp max rel error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_final_temperature(self):
-    '''DS7: verifying the final temperature field'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
-    gold = self.gold_output.get_simulation().find_series(id=3).get_data('Z_TEMP')
-    error = max(abs(test-gold)/gold)
-    print 'final temp max rel error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

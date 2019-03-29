@@ -1,70 +1,29 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import numpy
+import truchas
 
-import Truchas
-import TruchasTest
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "inflow-bc-3.inp")
 
-class mytest(TruchasTest.GoldenTestCase):
+    xc = output.centroids()
+    time = output.time(2)
 
-  test_name = 'inflow-bc-3'
-  num_procs = 4 # with a parallel executable
+    nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-15, "pressure", time)
+    nfail += truchas.compare_max(output.field(2, "Z_TEMP"), 2, 1e-6, "temperature", time)
 
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass() # This runs Truchas
-    self.test_output = Truchas.TruchasOutput(self.get_output_file())
+    vel = output.field(2, "Z_VC")
+    nfail += truchas.compare_max(vel[:,0], 0.25, 1e-15, "x-velocity", time)
+    nfail += truchas.compare_max(vel[:,1], 0, 1e-15, "y-velocity", time)
+    nfail += truchas.compare_max(vel[:,2], 0, 1e-15, "z-velocity", time)
 
-  def test_fields(self):
-    success = True
+    truchas.report_summary(nfail)
+    return nfail
 
-    # Final time
-    success &= self.pressure_test(2, 1e-15)
-    success &= self.velocity_test(2, 1e-15)
-    success &= self.temperature_test(2, 1e-6)
 
-    self.assertTrue(success)
-
-  def pressure_test(self, id, tol):
-    time = self.test_output.get_simulation().find_series(id).time
-    test = self.test_output.get_simulation().find_series(id).get_data('Z_P')
-    error = numpy.amax(abs(test))
-    return self.report('pressure', time, error, tol)
-
-  def velocity_test(self, id, tol):
-    time = self.test_output.get_simulation().find_series(id).time
-    test = self.test_output.get_simulation().find_series(id).get_data('Z_VC')
-
-    # the x-velocity is 0.25
-    uerror = max(abs(test[:,0] - 0.25))
-    verror = max(abs(test[:,1]))
-    werror = max(abs(test[:,2]))
-
-    success = self.report('x-velocity', time, uerror, tol)
-    success &= self.report('y-velocity', time, verror, tol)
-    success &= self.report('z-velocity', time, werror, tol)
-    return success
-
-  def temperature_test(self, id, tol):
-    time = self.test_output.get_simulation().find_series(id).time
-    test = self.test_output.get_simulation().find_series(id).get_data('Z_TEMP')
-
-    # the temperature is 2 in cells containing fluid
-    error = max(abs(test - 2.0))
-
-    success = self.report('temperature', time, error, tol)
-    return success
-
-  def report(self, var, time, error, tol):
-    success = error <= tol
-    status = 'PASS' if success else 'FAIL'
-    print '%s: %s at t=%8.2e: max error=%8.2e (tol=%8.2e)'%(status,var,time,error,tol)
-    return success
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

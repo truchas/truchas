@@ -7,7 +7,6 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 
 include_directories(${Truchas_MODULE_DIR})
 include_directories(${PGSLib_MODULE_DIR})
-include_directories(${Danu_Fortran_MODULE_DIR})
 
 add_executable(test_mfd_polygon_matrix_inv test_mfd_polygon_matrix_inv.F90)
 target_link_libraries(test_mfd_polygon_matrix_inv truchas ${Truchas_LINK_LIBS})

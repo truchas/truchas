@@ -1,41 +1,30 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import numpy
+import truchas
 
-import Truchas
-import TruchasTest
-
-class mytest(TruchasTest.GoldenTestCase):
-
-  test_name = 'advection-3a-exact'
-  num_procs = 4 # with a parallel executable
-
-  def test_final_vof(self):
-    '''verifying volume fractions at final time'''
-    tol_max = 0.2; tol_l2 = 0.02
-
-    time = self.test_output.get_simulation().find_series(id=2).time
-    test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')[:,0]
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "advection-3a-exact.inp")
 
     # From a special run to compute vof for final exact configuration
-    gold = self.gold_output.get_simulation().find_series(id=1).get_data('VOF')[:,0]
+    gold = tenv.output("advection-3a-exact_pgolden/advection-3a-exact.h5")
+    vof_gold = gold.field(1, "VOF")[:,0]
 
-    error_max = max(abs(test-gold))
-    error_l2 = numpy.linalg.norm(test-gold) / numpy.sqrt(len(test))
+    # verify volume fractions at final time
+    time = output.time(2)
+    vof = output.field(2, "VOF")[:,0]
 
     # max <= l2 <= sqrt(ncell)*max = sqrt(3)*31*max
-    passfail = 'PASS' if error_max <= tol_max else 'FAIL'
-    print 'vof at t=%8.2e: max error = %8.2e: %s (tol=%8.2e)' % (time, error_max, passfail, tol_max)
+    err = abs(vof - vof_gold)
+    nfail += truchas.compare_max(err, 0, 0.2, "vof", time)
+    nfail += truchas.compare_l2(err / sp.sqrt(len(err)), 0, 0.02, "vof", time)
 
-    passfail = 'PASS' if error_l2 <= tol_l2 else 'FAIL'
-    print 'vof at t=%8.2e: l2 error = %8.2e: %s (tol=%8.2e)' % (time, error_l2, passfail, tol_l2)
+    truchas.report_summary(nfail)
+    return nfail
 
-    self.assertTrue(error_max <= tol_max)
-    self.assertTrue(error_l2 <= tol_l2)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__ == "__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

@@ -1,141 +1,62 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import unittest
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "diverging-duct-td.inp")
+    xc = output.centroids()
 
-import Truchas
-import TruchasTest
+    # time 0
+    sid = output.series_id(207) #141 #115
+    time = output.time(sid)
 
-class DivergingDuctTD(TruchasTest.GoldenTestCase):
+    # pressure
+    pressure = output.field(sid, "Z_P")
+    pex = exact_pressure(xc[:,0], time)
+    nfail += truchas.compare_max_rel(pressure, pex, 3e-3, "pressure", time)
 
-  test_name = 'diverging-duct-td'
-  num_procs = 4 # with a parallel executable
+    # velocity
+    velx = output.field(sid, "Z_VC")[:,0]
+    velxex = exact_velocity(xc[:,0], time)
+    nfail += truchas.compare_max_rel(velx, velxex, 1e-3, "x-velocity", time)
 
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())
+    # time 1
+    sid = output.series_id(422) #248 #169
+    time = output.time(sid)
 
-  def get_test_field(self,field,cycle,serialize=True,region=None):
-    return self.test_output.get_simulation().find_series(cycle=cycle).get_data(field,serialize,region=region)
+    # velocity
+    velx = output.field(sid, "Z_VC")[:,0]
+    velxex = exact_velocity(xc[:,0], time)
+    nfail += truchas.compare_max_rel(velx, velxex, 3e-3, "x-velocity", time)
 
-  def get_test_time(self,cycle):
-    return self.test_output.get_simulation().find_series(cycle=cycle).time
+    # time 2
+    sid = output.series_id(647) #364 #225
+    time = output.time(sid)
 
-  def vin(self,t):
-    if t <= 5.0:
-      return 1.0
-    elif t >= 15.0:
-      return 0.5
-    else:
-      return 1.0 - 0.05*(t - 5.0)
+    # pressure
+    pressure = output.field(sid, "Z_P")
+    pex = exact_pressure(xc[:,0], time)
+    nfail += truchas.compare_max_rel(pressure, pex, 1e-3, "pressure", time)
 
-  def velocity(self,x,t):
-    return self.vin(t)/(1.0 + x/40.0)
+    # velocity
+    velx = output.field(sid, "Z_VC")[:,0]
+    velxex = exact_velocity(xc[:,0], time)
+    nfail += truchas.compare_max_rel(velx, velxex, 1e-3, "x-velocity", time)
 
-  def pressure(self,x,t):
-    return 0.68 + 0.5*self.vin(t)**2 * (0.64 - 1.0/(1.0 + x/40.0)**2)
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_pressure_0(self):
-    '''Verify initial pressure field against expected analytic value'''
-    
-    n = 207 #141 #115
-    tol = 3.0e-3
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.get_test_field('Z_P',cycle=n,serialize=False)
-    time = self.get_test_time(cycle=n)
-    
-    xc = self.test_output.get_mesh().centroids()
-    gold = self.pressure(xc[:,0],time)
-    print max(gold), min(gold)
-    error = max(abs((test-gold)/gold))
-    if error > tol:
-      print 'pressure: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'pressure: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+def vin(t):
+    return 1 if t <= 5 else 0.5 if t >= 15 else 1 - 0.05*(t-5)
 
-  def test_pressure_1(self):
-    '''Verify final pressure field against expected analytic value'''
-    
-    n = 647 #361 #225
-    tol = 1.0e-3
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.get_test_field('Z_P',cycle=n,serialize=False)
-    time = self.get_test_time(cycle=n)
-    
-    xc = self.test_output.get_mesh().centroids()
-    gold = self.pressure(xc[:,0],time)
-    print max(gold), min(gold)
-    error = max(abs((test-gold)/gold))
-    if error > tol:
-      print 'pressure: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'pressure: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+def exact_velocity(x, t):
+    return vin(t) / (1 + x/40)
 
-  def test_velocity_0(self):
-    '''Verify initial velocity field against expected analytic value'''
-    
-    n = 207 #141 #115
-    tol = 1.0e-3
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.get_test_field('Z_VC',cycle=n,serialize=False)
-    time = self.get_test_time(cycle=n)
-    
-    xc = self.test_output.get_mesh().centroids()
-    gold = self.velocity(xc[:,0],time)
-    print max(gold), min(gold)
-    error = max(abs((test[:,0]-gold)/gold))
-    if error > tol:
-      print 'velocity: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'velocity: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+def exact_pressure(x, t):
+    return 0.68 + 0.5*vin(t)**2 * (0.64 - 1 / (1 + x/40)**2)
 
-  def test_velocity_1(self):
-    '''Verify intermediate velocity field against expected analytic value'''
-    
-    n = 422 #248 #169
-    tol = 3.0e-3
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.get_test_field('Z_VC',cycle=n,serialize=False)
-    time = self.get_test_time(cycle=n)
-    print time
-    
-    xc = self.test_output.get_mesh().centroids()
-    gold = self.velocity(xc[:,0],time)
-    print max(gold), min(gold)
-    error = max(abs((test[:,0]-gold)/gold))
-    if error > tol:
-      print 'velocity: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'velocity: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-  def test_velocity_2(self):
-    '''Verify final velocity field against expected analytic value'''
-    
-    n = 647 #361 #225
-    tol = 1.0e-3
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.get_test_field('Z_VC',cycle=n,serialize=False)
-    time = self.get_test_time(cycle=n)
-    
-    xc = self.test_output.get_mesh().centroids()
-    gold = self.velocity(xc[:,0],time)
-    print max(gold), min(gold)
-    error = max(abs((test[:,0]-gold)/gold))
-    if error > tol:
-      print 'velocity: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'velocity: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

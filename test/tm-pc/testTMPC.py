@@ -1,226 +1,75 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import numpy
+import truchas
 
-import Truchas
-import TruchasTest
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "tm-pc.inp")
+    golden = tenv.output("tm-pc_pgolden/tm-pc.h5")
 
-class TMPC(TruchasTest.GoldenTestCase):
+    # test final fields
+    sid = 2
+    time = output.time(sid)
 
-  test_name = 'tm-pc'
-  num_procs = 4 # with a parallel executable
+    # temperature
+    temp = output.field(sid, "Z_TEMP")
+    gold = golden.field(sid, "Z_TEMP")
+    nfail += truchas.compare_max_rel(temp, gold, 2e-4, "temperature", time)
 
-  def get_test_field(self,field,id,region=None):
-    return self.test_output.get_simulation().find_series(id=id).get_data(field,region=region)
+    # thermal strain against value calculated from temperature
+    #   Here we compare with a calculated solution where the material has not seen
+    #   any non-isothermal phase change, and a golden solution where it has.
+    #   The non-isothermal thermal strain is a simple explicit integration of
+    #   a nonlinear equation.
+    ncell = 18
+    cte = [2.2e-5, 2.1e-5, 2.0e-5]
+    T0 = 500
+    Ti = 400
+    Th = 375
+    Tl = 350
+    pcstrain = [1.15013007E-03, -1.57897042E-03]
 
-  def get_gold_field(self,field,id,region=None):
-    return self.gold_output.get_simulation().find_series(id=id).get_data(field,region=region)
+    epstherm = output.field(sid, "epstherm")[:,0]
+    gold = golden.field(sid, "epstherm")[:,0]
 
-  def test_final_temperature(self):
-    '''Verify final temperature'''
-    n = 2
-    tol = 2.0e-4
-    gold = self.get_gold_field('Z_TEMP',id=n)
-    test = self.get_test_field('Z_TEMP',id=n)
-    error = max(abs((test-gold)/gold))
-    if error > tol:
-      print 'temperature: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'temperature: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-      
-  def test_final_thermal_strain(self):
-    '''Verify final thermal strain with value calculated from temperature'''
+    epsref = sp.array([     (T-T0)*cte[0]               if T >= Ti
+                       else pcstrain[0] + (T-Ti)*cte[1] if T >= Th
+                       else epsgold                     if T >= Tl
+                       else pcstrain[1] + (T-Tl)*cte[2]
+                       for T,epsgold in zip(temp, gold)])
+    nfail += truchas.compare_max_rel(epstherm, epsref, 1e-8, "thermal strain", time)
 
-    n = 2
-    ncells = 18
-    cte1 = 2.2e-5
-    cte2 = 2.1e-5
-    cte3 = 2.0e-5
-    T0 = 500.0
-    Ti = 400.0
-    Th = 375.0
-    Tl = 350.0
-    error = 0.0
-    pcstrain1 = 1.15013007E-03
-    pcstrain2 = -1.57897042E-03
-    
-    T_test = self.get_test_field('Z_TEMP',id=n)
-    test = self.get_test_field('epstherm',id=n)
-    gold = self.get_gold_field('epstherm',id=n)
-
-#   Here we compare with a calculated solution where the material has not seen
-#   any non-isothermal phase change, and a golden solution where it has.
-#   The non-isothermal thermal strain is a simple explicit integration of
-#   a nonlinear equation.
-
-    print "   T, Calc, reference, error"
-    for j in range(ncells):
-      T = T_test[j]
-      if T >= Ti:
-          epsref = (T-T0) * cte1
-          diff = abs((test[j,0] - epsref) / epsref)
-          print "  > Ti"
-      elif T >= Th:
-          epsref = pcstrain1 + (T - Ti) * cte2
-          diff = abs((test[j,0] - epsref) / epsref)
-          print "  > Th"
-      elif T >= Tl:
-          epsref = gold[j,0]
-          diff = abs((test[j,0] - epsref) / epsref)
-          print "  > Tl"
-      elif T < Tl:
-          epsref = pcstrain2 + (T - Tl) * cte3
-          diff = abs((test[j,0] - epsref) / epsref)
-          print "  < Tl"
-
-      print "  %13.7e %13.7e %13.7e %13.7e"%(T, test[j,0], epsref, diff)
-      if diff > error: error = diff
-
-    print "  Cycle %2d: maximum relative thermal strain error = %10.4e"%(n,error)
-
-    self.assertTrue(error <= 1.0e-8)
- 
-  
-
-  def test_final_stress(self):
-    '''Verify the final stress field'''
-    
-    n = 2 # final cycle number
-    abs_tol = 2.0e0
-    rel_tol = 1.0e-8
-    fail = 0
-
-    epstherm = self.get_test_field('epstherm',id=n)
+    # stress
+    test = output.field(sid, "sigma")
     l1 = 5.20e+10
     l2 = 2.60e+10
+    XXref = -epstherm * (2*l1 + 2*l2 - 2*l1**2 / (l1 + 2*l2))
 
-    XXref = -epstherm[:,0] * (2.0*l1 + 2.0*l2 - 2.0*l1**2/(l1 + 2.0*l2))
-    YYref = XXref
+    nfail += truchas.compare_max_rel(test[:,0], XXref, 1e-8, "sigma_xx", time)
+    nfail += truchas.compare_max_rel(test[:,1], XXref, 1e-8, "sigma_yy", time)
+    nfail += truchas.compare_max(test[:,2], 0, 2, "sigma_zz", time)
+    nfail += truchas.compare_max(test[:,3], 0, 2, "sigma_xy", time)
+    nfail += truchas.compare_max(test[:,4], 0, 2, "sigma_xz", time)
+    nfail += truchas.compare_max(test[:,5], 0, 2, "sigma_xx", time)
 
-    test = self.get_test_field('sigma',id=n)
+    # strain
+    test = output.field(sid, "epsilon")
+    ZZref = epstherm * (1 + 2 * l1/(l1 + 2*l2))
 
-    error = max(abs((test[:,0]-XXref)/XXref))
-    tol = rel_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xx: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xx: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+    nfail += truchas.compare_max(test[:,0], 0, 1e-10, "epsilon_xx", time)
+    nfail += truchas.compare_max(test[:,1], 0, 1e-10, "epsilon_yy", time)
+    nfail += truchas.compare_max_rel(test[:,2], ZZref, 1e-8, "epsilon_zz", time)
+    nfail += truchas.compare_max(test[:,3], 0, 1e-10, "epsilon_xy", time)
+    nfail += truchas.compare_max(test[:,4], 0, 1e-10, "epsilon_xz", time)
+    nfail += truchas.compare_max(test[:,5], 0, 1e-10, "epsilon_xx", time)
 
-    error = max(abs((test[:,1]-YYref)/YYref))
-    tol = rel_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_yy: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_yy: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,2]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_zz: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_zz: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,3]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xy: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xy: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,4]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xz: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xz: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,5]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xx: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xx: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    self.assertTrue(fail == 0)
-  
-
-  def test_final_strain(self):
-    '''Verify the final strain field'''
-    
-    n = 2 # final cycle number
-    abs_tol = 1.0e-10
-    rel_tol = 1.0e-8
-    fail = 0
-
-    epstherm = self.get_test_field('epstherm',id=n)
-    l1 = 5.20e+10
-    l2 = 2.60e+10
-    ZZref = epstherm[:,0] * (1.0 + 2.0*l1/(l1 + 2.0*l2))
-
-    test = self.get_test_field('epsilon',id=n)
-
-    error = max(abs(test[:,0]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xx: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xx: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,1]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_yy: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_yy: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs((test[:,2]-ZZref)/ZZref))
-    tol = rel_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_zz: max rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_zz: max rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,3]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xy: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xy: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,4]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xz: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xz: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    error = max(abs(test[:,5]))
-    tol = abs_tol
-    if error > tol:
-      fail += 1
-      print 'sigma_xx: max abs error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'sigma_xx: max abs error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-
-    self.assertTrue(fail == 0)
+    truchas.report_summary(nfail)
+    return nfail
 
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

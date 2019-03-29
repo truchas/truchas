@@ -52,7 +52,7 @@ add_pytruchas_test(3d-ss-hc-linear-mixed
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py
                    PROCESSORS 4)
 
-add_pytruchas_test(remap remap/testRemap.py PROCESSORS 4)
+add_pytruchas_test(remap restart/testRemap.py PROCESSORS 4)
 
 #add_pytruchas_test(em1 em1/testEM1.py
 #                   DEPENDS RestartSuite remap # Just a demo of how this works

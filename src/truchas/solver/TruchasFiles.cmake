@@ -41,13 +41,11 @@ fortran_preprocess_files(SOLVER_SOURCE_FILES
 set(fc_flags -I${PGSLib_MODULE_DIR})
 list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(SOLVER_COMPILE_FLAGS ${fc_flags})
-set(SOLVER_COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}")		       
+set(SOLVER_COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR}")
 set_source_files_properties(${SOLVER_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${SOLVER_COMPILE_FLAGS})
 
 list(APPEND SOLVER_SOURCE_FILES solver/hypre_ext.c)
 
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${SOLVER_SOURCE_FILES})		       
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${SOLVER_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ${SOLVER_TARGET_NAME})
-
-

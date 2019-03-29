@@ -1,193 +1,63 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import unittest
+def test_read_restart(tenv):
+    """Test creating and reading a restart file"""
+    # run truchas & write restart
+    stdout, output = tenv.truchas(4, "ds11.inp", output_dir="read_test")
+    restart_filename = tenv._working_dir + "/read_test_restart/restart.75"
+    tenv.write_restart(output.filename, 75, restart_filename)
 
-import Truchas
-import TruchasTest
+    # run from restart
+    stdout, output = tenv.truchas(4, "ds11.inp", restart_file=restart_filename, \
+                                  output_dir="read_test_restart")
 
-class RestartTest(TruchasTest.BaseTestCase):
-
-
-  
-  '''
-  Runs before each test_* need to call the setUpClass
-  to initialize the truchas instance correctly.
-  '''
-  def setUp(self):
-    # Call the class setup function setUpClass
-    if self._is_initialized is False:
-      self.setUpClass()
-    # Input file used in all tests  
-    self.truchas.input = self.get_input_rootdir('restart') + \
-	                 os.path.sep + 'ds11.inp'
-    # Default number of procs is 4			 
-    if self.truchas_is_parallel:
-      self.num_procs = 4
-      self.truchas.nprocs=self.num_procs
-    self.test_name='restart'  
-
-  def test_read_restart(self):
-    '''Test creating and reading a restart file'''
-    
-    # Output location
-    outdir='read_test'
-    full_outdir=self.build_output_directory(self.test_name,outdir)
-    self.clean_output_directory(self.test_name,outdir)
-
-    # Define the outfiles
-    self.truchas.outdir = full_outdir
-    self.truchas.h5file = self.build_output_filename(self.test_name,outdir,'ds11.h5')
-    self.truchas.stdout = self.build_output_filename(self.test_name,outdir,'ds11-first.tty')
-    self.truchas.stderr = self.build_output_filename(self.test_name,outdir,'ds11-first.err')
-
-    # First run 
-    # Depending on the order of the tests restart != None
-    # which will cause a fail. 
-    self.truchas.restart=None 
-    self.truchas.run()
-
-    # Output location
-    outdir='read_test_restart'
-    full_outdir=self.build_output_directory(self.test_name,outdir)
-    self.clean_output_directory(self.test_name,outdir)
-
-    # Write a restart file
-    restart_cycle=39
-    restart_file=self.build_output_filename(self.test_name,outdir,'restart.%i'%restart_cycle)
-    self.truchas.write_restart(restart_cycle,output=restart_file)
-
-    # Define new outfiles in the restart directory
-    self.truchas.outdir = full_outdir
-    self.truchas.h5file = self.build_output_filename(self.test_name,outdir,'ds11-next.h5')
-    self.truchas.stdout = self.build_output_filename(self.test_name,outdir,'ds11-next.tty')
-    self.truchas.stderr = self.build_output_filename(self.test_name,outdir,'ds11-next.err')
-
-    # Now run with the restart file
-    self.truchas.run()
-
-  def test_fields(self):
-    '''Test comparing final field datasets when restarting'''
-
-    # First run
-    outdir1='out1'
-    full_outdir1=self.build_output_directory(self.test_name,outdir1)
-    self.clean_output_directory(self.test_name,outdir1)
-
-    # Define the output files
-    self.truchas.outdir=full_outdir1
-    h5file1=self.build_output_filename(self.test_name,outdir1,'ds11.h5')
-    self.truchas.h5file = h5file1
-    self.truchas.stdout = self.build_output_filename(self.test_name,outdir1,'ds11.tty')
-    self.truchas.stderr = self.build_output_filename(self.test_name,outdir1,'ds11.err')
-
-    # First run
-    # No restart
-    self.truchas.restart=None
-    self.truchas.run()
-
-    # Second run, direct output to another directory 
-    outdir2='out2'
-    full_outdir=self.build_output_directory(self.test_name,outdir2)
-    self.clean_output_directory(self.test_name,outdir2)
-
-    # Write a restart file
-    restart_cycle=39
-    restart_file=self.build_output_filename(self.test_name,outdir2,'restart.%i'%restart_cycle)
-    try:
-      self.truchas.write_restart(restart_cycle,output=restart_file)
-    except:
-      raise TruchasError('Failed to create a restart file')
-
-    # Define the output files
-    self.truchas.outdir=full_outdir
-    h5file2=self.build_output_filename(self.test_name,outdir2,'ds11.h5')
-    self.truchas.h5file = h5file2
-    self.truchas.stdout = self.build_output_filename(self.test_name,outdir2,'ds11.tty')
-    self.truchas.stderr = self.build_output_filename(self.test_name,outdir2,'ds11.err')
-
-    # Second run
-    self.truchas.run()
-
-    # Compare the final output 
-    h51 = Truchas.TruchasOutput(h5file1)
-    sim1 = h51.get_simulation()
-    h52 = Truchas.TruchasOutput(h5file2)
-    sim2 = h52.get_simulation()
-
-    num_series1 = len(sim1.series_names)
-    num_series2 = len(sim2.series_names)
-
-    series_last1 = sim1.get_series(id=num_series1)
-    series_last2 = sim2.get_series(id=num_series2)
-
-    # Check all the dataset fields
-    for ds in series_last1.datasets:
-      if ds not in series_last2.datasets:
-	self.fail('Missing dataset')
-      d1 = series_last1.get_data(ds)
-      d2 = series_last2.get_data(ds)
-      if d1.all() != d2.all():
-	self.fail('Mismatched dataset values')
-    
-
-  def test_repartition(self):
-    '''Test restarting on a different number of processors'''
-
-    # Use half the numprocs defined in other tests
-    try:
-      np1 = max(self.num_procs/2,1)
-    except:
-      np1 = 1
-    self.truchas.nprocs=np1
-    
-    # Output location
-    outdir='repartition_np%i'%np1
-    full_outdir=self.build_output_directory(self.test_name,outdir)
-    self.clean_output_directory(self.test_name,outdir)
-
-    # Define the outfiles
-    self.truchas.outdir = full_outdir
-    self.truchas.h5file = self.build_output_filename(self.test_name,outdir,'ds11.h5')
-    self.truchas.stdout = self.build_output_filename(self.test_name,outdir,'ds11.tty')
-    self.truchas.stderr = self.build_output_filename(self.test_name,outdir,'ds11.err')
-
-    # First run 
-    # Depending on the order of the tests restart != None
-    # which will cause a fail. 
-    self.truchas.restart=None 
-    self.truchas.run()
-
-    # Use half the numprocs defined in other tests
-    try:
-      np2 = self.num_procs
-    except:
-      np2 = 1
-    self.truchas.nprocs=np2
-
-    # Output location
-    outdir='repartition_restart_np%i'%np2
-    full_outdir=self.build_output_directory(self.test_name,outdir)
-    self.clean_output_directory(self.test_name,outdir)
-
-    # Write a restart file
-    restart_cycle=39
-    restart_file=self.build_output_filename(self.test_name,outdir,'restart.%i'%restart_cycle)
-    self.truchas.write_restart(restart_cycle,output=restart_file)
-
-    # Define new outfiles in the restart directory
-    self.truchas.outdir = full_outdir
-    self.truchas.h5file = self.build_output_filename(self.test_name,outdir,'ds11.h5')
-    self.truchas.stdout = self.build_output_filename(self.test_name,outdir,'ds11.tty')
-    self.truchas.stderr = self.build_output_filename(self.test_name,outdir,'ds11.err')
-
-    # Now run with the restart file
-    self.truchas.run()
+    print("PASS: creating and reading a restart file")
+    return 0
 
 
-if __name__ == '__main__':
-  unittest.main()
- 
-  
+def test_fields(tenv):
+    """Test comparing final field datasets when restarting"""
+    out1 = tenv.open_data("read_test/ds11.h5")
+    out2 = tenv.open_data("read_test_restart/ds11.h5")
+
+    # check that the data in the last series is identical
+    series_id1 = out1.num_series()
+    series_id2 = out2.num_series()
+
+    nfail = 0
+    for field_name in ("VOF", "Z_ENTHALPY", "Z_TEMP"):
+        f1 = out1.field(series_id1, field_name)
+        f2 = out2.field(series_id2, field_name)
+        err = abs(f1 - f2).max()
+        if err > 1e-3:
+            print(field_name, " err: ", err)
+            nfail = 1
+
+    status = "PASS" if nfail == 0 else "FAIL"
+    print("{:s}: comparing final field datasets when restarting".format(status))
+    return nfail
+
+
+def test_repartition(tenv):
+    """Test restarting on a different number of processors"""
+    # run with 2 processors & write restart
+    stdout, output = tenv.truchas(2, "ds11.inp", output_dir="repartition_np2")
+    restart_filename = tenv._working_dir + "/repartition_np2/restart.75"
+    tenv.write_restart(output.filename, 75, restart_filename)
+
+    # run from restart with 4 processors
+    stdout, output = tenv.truchas(4, "ds11.inp", restart_file=restart_filename, \
+                                  output_dir="repartition_restart_np4")
+    print("PASS: restarting on a different number of processors")
+    return 0
+
+
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = 0
+    nfail += test_read_restart(tenv)
+    nfail += test_fields(tenv)
+    nfail += test_repartition(tenv)
+    assert nfail == 0

@@ -36,7 +36,7 @@ fortran_preprocess_files(DISOP_SOURCE_FILES
 			 PROCESS_TARGET ${DISOP_TARGET_NAME})
 # Define compile flags
 include(BuildWhitespaceString)
-set(DISOP_COMPILE_FLAGS -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR}
+set(DISOP_COMPILE_FLAGS -I${PGSLib_MODULE_DIR}
                         -I${UbikSolve_MODULE_DIR} -I${PETACA_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND DISOP_COMPILE_FLAGS "-assume realloc_lhs") # for cell_grad_type.F90

@@ -33,15 +33,13 @@ fortran_preprocess_files(MAT_SOURCE_FILES
                          FPP_FLAGS ${MAT_FPP_FLAGS}
                          PROCESS_TARGET ${MAT_TARGET_NAME})
 
-                       
-# Define compile flags                       
+
+# Define compile flags
 include(BuildWhitespaceString)
-build_whitespace_string(mat_source_flags_string 
-                        -I${PGSLib_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR} -I${PETACA_MODULE_DIR})
+build_whitespace_string(mat_source_flags_string
+                        -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR})
 set_source_files_properties(${MAT_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${mat_source_flags_string})
 
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${MAT_SOURCE_FILES})       
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${MAT_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ${MAT_TARGET_NAME})
-
-

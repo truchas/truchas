@@ -9,7 +9,7 @@ set(SRC
     )
 
 add_library(truchas_io ${SRC})
-target_link_libraries(truchas_io PUBLIC truchas::danu truchas::pgslib_fe
+target_link_libraries(truchas_io PUBLIC truchas::pgslib_fe
   truchas::pgslib_mpi truchas::scorpio)
 
 add_library(truchas::io ALIAS truchas_io)

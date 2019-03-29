@@ -1,43 +1,37 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "sloshing-flow.inp")
+    golden = tenv.output("sloshing-flow_pgolden/sloshing-flow.h5")
 
-import Truchas
-import TruchasTest
+    sid = 2
+    time = output.time(sid)
 
-class SloshingFlow(TruchasTest.GoldenTestCase):
+    # cycle number
+    cycle = output.cycle(sid)
+    cycleg = golden.cycle(sid)
+    status = "PASS" if cycle == cycleg else "FAIL"
+    print("{:s}: matching cycle numbers {:d}".format(status, cycle))
+    if cycle != cycleg: nfail += 1
 
-  test_name = 'sloshing-flow'
-  num_procs = 4 # with a parallel executable
+    # temperature
+    test = output.field(sid, "Z_TEMP")
+    gold = golden.field(sid, "Z_TEMP")
+    nfail += truchas.compare_max(test, gold, 1e-6, "temp", time)
 
-  def test_final_cycle_number(self):
-    '''SLOSHING FLOW: checking the final cycle number'''
-    test_series = self.test_output.get_simulation().find_series(id=2)
-    gold_series = self.gold_output.get_simulation().find_series(id=2)
-    self.assertTrue(test_series.cycle == gold_series.cycle)
-  
-  def test_final_temp(self):
-    '''SLOSHING FLOW: verifying the temperature field at final time'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    error = max(abs(test-gold))
-    print 'final temp max error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    # fluid volume fraction
+    test = output.field(sid, "VOF")[:,0]
+    gold = golden.field(sid, "VOF")[:,0]
+    nfail += truchas.compare_max(test, gold, 1e-6, "vof", time)
 
-  def test_final_fluid_frac(self):
-    '''SLOSHING FLOW: verifying the solid volume fraction at final time'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')
-    gold = self.gold_output.get_simulation().find_series(id=2).get_data('VOF')
-    error = max(abs(test[:,0]-gold[:,0])) # comp 0 is fluid
-    print 'final vof max error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    truchas.report_summary(nfail)
+    return nfail
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
 
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

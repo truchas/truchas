@@ -41,15 +41,12 @@ fortran_preprocess_files(INPUT_SOURCE_FILES
 			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
 			 FPP_FLAGS ${INPUT_FPP_FLAGS}
 			 PROCESS_TARGET ${INPUT_TARGET_NAME})
-set(fc_flags -I${Danu_Fortran_MODULE_DIR})
-list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+set(fc_flags -I${UbikSolve_MODULE_DIR})
 list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
 build_whitespace_string(INPUT_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${INPUT_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${INPUT_COMPILE_FLAGS})
 
 
-list(APPEND Truchas_LIBRARY_SOURCE_FILES ${INPUT_SOURCE_FILES})		       
+list(APPEND Truchas_LIBRARY_SOURCE_FILES ${INPUT_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ${INPUT_TARGET_NAME})
-
-

@@ -1,54 +1,34 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import unittest
-import numpy
 
-import Truchas
-import TruchasTest
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "nat-conv.inp", restart_file="restart.bin")
 
-class NaturalConvection(TruchasTest.GoldenTestCase):
-
-  test_name = 'nat-conv'
-  num_procs = 4 # with a parallel executable
-  restart_file = 'restart.bin'
-
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())
-
-  def runTest(self):
-    '''Verify velocity at probes'''
-    
     tol = 0.015
-    fail = 0
-    
-    data = self.test_output.get_simulation().get_probe('VhMax','VC').get_data()
-    test = data[-1,2] # final horizontal velocity: order is (cycle#,time,vx,vy,vz)
-    gold = 7.585e-5
-    error = abs((test - gold)/gold)
-    if (error > tol):
-      fail += 1
-      print 'max horizontal velocity rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'max horizontal velocity rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-    
-    data = self.test_output.get_simulation().get_probe('VvMax','VC').get_data()
-    test = data[-1,4] # final vertical velocity: order is (cycle#,time,vx,vy,vz)
-    gold = 7.685e-5
-    error = abs((test - gold)/gold)
-    if (error > tol):
-      fail += 1
-      print 'max vertical velocity rel error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-    else:
-      print 'max vertical velocity rel error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
-    
-    self.assertTrue(fail==0)
-    
+    report = "{:s}: max {:s} velocity rel error = {:8.2e} (tol={:8.2e})"
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+    # horizontal velocity
+    vel = output.probe("VhMax", "VC")[-1,2]
+    gold = 7.585e-5
+    error = abs((vel - gold) / gold)
+    print(report.format("FAIL" if error > tol else "PASS", "horizontal", error, tol))
+    if error > tol: nfail += 1
+
+    # vertical velocity
+    vel = output.probe("VvMax", "VC")[-1,4]
+    gold = 7.685e-5
+    error = abs((vel - gold) / gold)
+    print(report.format("FAIL" if error > tol else "PASS", "vertical", error, tol))
+    if error > tol: nfail += 1
+
+    truchas.report_summary(nfail)
+    return nfail
+
+
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

@@ -1,68 +1,43 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "free-surf-flow-old-4.inp")
+    golden = tenv.output("free-surf-flow-old-4_golden/free-surf-flow-old-4.h5")
 
-import Truchas
-import TruchasTest
+    # initial
+    time = output.time(1)
 
-class mytest(TruchasTest.GoldenTestCase):
+    test = output.field(1, "VOF")[:,0]
+    gold = golden.field(1, "VOF")[:,0]
+    nfail += truchas.compare_max(test, gold, 0, "vof", time)
 
-  test_name = 'free-surf-flow-old-4'
-  num_procs = 4 # with a parallel executable
+    test = output.field(1, "Z_P")
+    gold = golden.field(1, "Z_P")
+    nfail += truchas.compare_max(test, gold, 1e-8, "pressure", time)
 
-  def test_fields(self):
-    success = True
-    
-    # Initial conditions
-    success &= self.vof_test(1, 0.0)
-    success &= self.pressure_test(1, 1e-8)
-    
-    # Final time
-    success &= self.vof_test(2, 1e-10)
-    success &= self.pressure_test(2, 1e-10)
-    success &= self.velocity_test(2, 1e-10)
-    
-    self.assertTrue(success)
+    # final time
+    time = output.time(2)
 
-  def vof_test(self, id, tol):
-    time = self.test_output.get_simulation().find_series(id).time
-    test = self.test_output.get_simulation().find_series(id).get_data('VOF')[:,0]
-    gold = self.gold_output.get_simulation().find_series(id).get_data('VOF')[:,0]
-    error = numpy.amax(abs(test-gold))
-    return self.report('vof', time, error, tol)
+    test = output.field(2, "VOF")[:,0]
+    gold = golden.field(2, "VOF")[:,0]
+    nfail += truchas.compare_max(test, gold, 1e-10, "vof", time)
 
-  def pressure_test(self, id, tol):
-    time = self.test_output.get_simulation().find_series(id).time
-    test = self.test_output.get_simulation().find_series(id).get_data('Z_P')
-    gold = self.gold_output.get_simulation().find_series(id).get_data('Z_P')
-    error = numpy.amax(abs(test-gold))
-    return self.report('pressure', time, error, tol)
-  
-  def velocity_test(self, id, tol):
-    time = self.test_output.get_simulation().find_series(id).time
-    test = self.test_output.get_simulation().find_series(id).get_data('Z_VC')
-    gold = self.gold_output.get_simulation().find_series(id).get_data('Z_VC')
+    test = output.field(2, "Z_P")
+    gold = golden.field(2, "Z_P")
+    nfail += truchas.compare_max(test, gold, 1e-10, "pressure", time)
 
-    # the x-velocity is 1 in cells containing fluid
-    uerror = max(abs(test[:,0]-gold[:,0]))
-    verror = max(abs(test[:,1]-gold[:,1]))
-    werror = max(abs(test[:,2]-gold[:,2]))
+    test = output.field(2, "Z_VC")
+    gold = golden.field(2, "Z_VC")
+    nfail += truchas.compare_max(test, gold, 1e-10, "velocity", time)
 
-    success = self.report('x-velocity', time, uerror, tol)
-    success &= self.report('y-velocity', time, verror, tol)
-    success &= self.report('z-velocity', time, werror, tol)
-    return success
+    truchas.report_summary(nfail)
+    return nfail
 
-  def report(self, var, time, error, tol):
-    success = error <= tol
-    status = 'PASS' if success else 'FAIL'
-    print '%s: %s at t=%8.2e: max error=%8.2e (tol=%8.2e)'%(status,var,time,error,tol)
-    return success
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

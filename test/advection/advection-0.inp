@@ -39,8 +39,9 @@ A kludge to force hitting the final time exactly
   dt_constant = 0.0625
 /
 &FLOW_BC
-  face_sets = 1, 2, 3, 4, 5
-  condition = 'slip'
+  name = 'slip'
+  face_set_ids = 1, 2, 3, 4, 5
+  type = 'free-slip'
 /
 
 &BODY

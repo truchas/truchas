@@ -1,40 +1,26 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import numpy
+import truchas
 
-import Truchas
-import TruchasTest
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "ds9.inp")
 
-class DS9(TruchasTest.GoldenTestCase):
+    xc = output.centroids()
 
-  test_name = 'ds9'
-  num_procs = 4 # with a parallel executable
-  
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass() # This runs Truchas
-    self.test_output = Truchas.TruchasOutput(self.get_output_file())
+    # test final temp
+    nseries = output.num_series()
+    T = output.field(nseries, "Z_TEMP")
+    Tref = 9 + 6*xc[:,0]*xc[:,1] - xc[:,0]**2 - xc[:,1]**2
+    nfail += truchas.compare_max_rel(T, Tref, 2e-3, "temperature", output.time(nseries))
 
-  def test_final_temp(self):
-    '''DS9: verifying the final temperature field'''
-    #FAILtol = 1.0e-10
-    tol = 2.0e-3
-    mesh=self.test_output.get_mesh()
-    centroids=mesh.centroids()
-    x=centroids[:,0]
-    y=centroids[:,1]
-    z=centroids[:,2]
-    Tref = 9.0 + 6*x*y -x*x - y*y
-    T = self.test_output.get_simulation().get_last_series().get_data('Z_TEMP',serialize=False)
-    error = max(abs(T -Tref)/Tref)
-    print 'error=%1.9e tol=%1.9e\n' %(error,tol)
-    self.assertTrue( error <= tol )
+    truchas.report_summary(nfail)
+    return nfail
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
 
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

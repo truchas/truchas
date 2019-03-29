@@ -1,34 +1,30 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "diag-advect.inp")
+    golden = tenv.output("diag-advect_pgolden/diag-advect.h5")
 
-import Truchas
-import TruchasTest
+    # Test final cycle number
+    nseries = output.num_series()
+    cycle = output.cycle(nseries)
+    cycleg = golden.cycle(nseries)
+    status = "PASS" if cycle == cycleg else "FAIL"
+    print("{:s} : matching final cycle numbers".format(status))
+    if cycle != cycleg: nfail += 1
 
-class DiagAdvect(TruchasTest.GoldenTestCase):
+    # Test final fluid volume fraction
+    vof = output.field(2, "VOF")[:,0] # comp 0 is circle
+    vofex = golden.field(2, "VOF")[:,0]
+    nfail += truchas.compare_max(vof, vofex, 1e-6, "vof", output.time(nseries))
 
-  test_name = 'diag-advect'
-  num_procs = 4 # with a parallel executable
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_final_cycle_number(self):
-    '''DIAG-ADVECT: checking the final cycle number'''
-    test_series = self.test_output.get_simulation().find_series(id=6)
-    gold_series = self.gold_output.get_simulation().find_series(id=6)
-    self.assertTrue(test_series.cycle == gold_series.cycle)
-  
-  def test_final_fluid_frac(self):
-    '''DIAG-ADVECT: verifying volume fractions at final time'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=6).get_data('VOF')
-    gold = self.gold_output.get_simulation().find_series(id=6).get_data('VOF')
-    error = max(abs(test[:,0]-gold[:,0])) # comp 0 is circle
-    print 'final vof max error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

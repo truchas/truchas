@@ -30,16 +30,14 @@ fortran_preprocess_files(DRIVERS_SOURCE_FILES
 			 FPP_FLAGS ${DRIVERS_FPP_FLAGS}
 			 PROCESS_TARGET ${DRIVERS_TARGET_NAME})
 
-# Set compile flags		       
+# Set compile flags
 include(BuildWhitespaceString)
-set(fc_flags -I${Danu_Fortran_MODULE_DIR})
-list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+set(fc_flags -I${PGSLib_MODULE_DIR})
 build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${DRIVERS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
 
 # drivers.F90 requires extra flags
-list(APPEND fc_flags -I${Danu_Fortran_MODULE_DIR})
 list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${TruchasExe_BINARY_DIR}/drivers.f90

@@ -1,74 +1,36 @@
-################################################################################
+#!/usr/bin/env python3
 
-# --- Python NumPy module
-import numpy
-
-# --- Truchas 
-import Truchas
-import TruchasTest
+import truchas
 
 
-class GapRadFlowTest(TruchasTest.GoldenTestCase):
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "gap-rad-flow-old.inp")
 
-  test_name='gap-rad-flow-old'
+    probe_names = ["left end", "right end", "gap left", "gap right"]
+    probe_golden = {"left end":  [1.499998474,  1.371828885],
+                    "right end": [0.500001526,  0.628171115],
+                    "gap left":  [1.498533630,  1.370837833],
+                    "gap right": [0.5014663700, 0.629162167]}
 
-  num_procs=4
+    # verify initial probe data
+    time = output.probe(probe_names[0], "TEMP")[0, 1] # 0 is first cycle, 1 is time index
+    for pname in probe_names:
+        probe_data = output.probe(pname, "TEMP")[0,-1] # 0 for first cycle, -1 for temp data
+        nfail += truchas.compare_max(probe_data, probe_golden[pname][0], 1e-9, pname, time)
 
+    # verify final probe data
+    # get the last cycle
+    time = output.probe(probe_names[0], "TEMP")[-1, 1] # -1 is last cycle, 1 is time index
+    for pname in probe_names:
+        probe_data = output.probe(pname, "TEMP")[-1,-1] # -1 for last cycle, -1 for temp data
+        nfail += truchas.compare_max(probe_data, probe_golden[pname][1], 5e-5, pname, time)
 
-  probe_field='TEMP'
-  probe_names=['left end', 'right end', 'gap left', 'gap right']
-  probe={}
-  probe['left end']   = [1.499998474,  1.371828885]
-  probe['right end']  = [0.500001526,  0.628171115]
-  probe['gap left']   = [1.498533630,  1.370837833]
-  probe['gap right']  = [0.5014663700, 0.629162167]
-
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass()
-    self.test_output=Truchas.TruchasOutput(self.get_output_file())  
-
-  def runTest(self):
-    '''Test probe temperatures at left,right ends and gap'''
-
-    fails=0
-
-    # Find the last cycle
-    probe=self.test_output.get_simulation().get_probe(self.probe_names[0],field=self.probe_field)
-    data=probe.get_data()
-    (n,d)=data.shape
-    last_cyc=data[n-1,probe.CYCLE_INDEX]
-    del data
-    
-
-    # Grab the initial probe data and compare
-    tol=1.0e-9
-    cyc=0
-    for pname in self.probe_names:
-      probe=self.test_output.get_simulation().get_probe(name=pname,field=self.probe_field)
-      probe_data=probe.find_cycle_data(cycle=cyc)[0] # Returns an array slice, need a number to compare
-      error=abs(self.probe[pname][0]-probe_data)
-      if error > tol:
-	print '(test) probe=%1.9e'%(self.probe[pname][0])
-	print '(output) probe_data=%1.9e'%(probe_data)
-	print 'Error exceeds tolerance %s cyc=%d %e %e\n'%(pname,cyc,error,tol) 
-	fails+=1
-
-    # Grab the final time
-    tol=5.0e-5
-    for pname in self.probe_names:
-      probe=self.test_output.get_simulation().get_probe(name=pname,field=self.probe_field)
-      probe_data=probe.find_cycle_data(cycle=last_cyc)[0] # Returns an array slice
-      error=abs(self.probe[pname][1]-probe_data)
-      if error > tol:
-	print '(test) probe=%1.9e'%(self.probe[pname][1])
-	print '(output) probe_data=%1.9e'%(probe_data)
-	print 'Error exceeds tolerance %s cyc=%d %e %e\n'%(pname,cyc,error,tol) 
-	fails+=1
-
-    self.assertTrue(fails == 0)
+    truchas.report_summary(nfail)
+    return nfail
 
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

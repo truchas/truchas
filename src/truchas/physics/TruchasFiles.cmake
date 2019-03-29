@@ -216,8 +216,7 @@ fortran_preprocess_files(PHYSICS_SOURCE_FILES
 
 # Set compile flags
 include(BuildWhitespaceString)
-set(fc_flags -I${Danu_Fortran_MODULE_DIR})
-list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+set(fc_flags -I${PGSLib_MODULE_DIR})
 list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${PHYSICS_SOURCE_FILES} PROPERTIES

@@ -1,34 +1,33 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import truchas
 
-import numpy
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "htvoid1-old.inp")
+    golden = tenv.output("htvoid1-old_pgolden/htvoid1-old.h5")
 
-import Truchas
-import TruchasTest
+    # checking final values
+    sid = output.num_series()
+    time = output.time(sid)
 
-class HTVoid1(TruchasTest.GoldenTestCase):
+    # cycle number
+    cycle = output.cycle(sid)
+    cycleg = golden.cycle(sid)
+    status = "PASS" if cycle == cycleg else "FAIL"
+    print("{:s}: matching cycle numbers {:d}".format(status, cycle))
+    if cycle != cycleg: nfail += 1
 
-  test_name = 'htvoid1-old'
-  num_procs = 4 # with a parallel executable
+    # temperature
+    test = output.field(sid, "Z_TEMP")
+    gold = golden.field(sid, "Z_TEMP")
+    nfail += truchas.compare_max(test, gold, 1e-9, "temp", time)
 
-  def test_final_cycle_number(self):
-    '''HTVOID1: checking the final cycle number'''
-    test_series = self.test_output.get_simulation().find_series(id=2)
-    gold_series = self.gold_output.get_simulation().find_series(id=2)
-    self.assertTrue(test_series.cycle == gold_series.cycle)
-  
-  def test_final_temp(self):
-    '''HTVOID1: verifying the temperature field at final time'''
-    tol = 1.0e-6
-    test = self.test_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    gold = self.gold_output.get_simulation().find_series(id=2).get_data('Z_TEMP')
-    error = max(abs(test-gold))
-    print 'final temp max error=', error, '(tol=', tol, ')'
-    self.assertTrue(error <= tol)
+    truchas.report_summary(nfail)
+    return nfail
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
 
+if __name__=="__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

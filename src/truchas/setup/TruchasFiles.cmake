@@ -83,8 +83,7 @@ fortran_preprocess_files(SETUP_SOURCE_FILES
 			 PROCESS_TARGET ${SETUP_TARGET_NAME})
 
 include(BuildWhitespaceString)
-set(fc_flags -I${Danu_Fortran_MODULE_DIR})
-list(APPEND fc_flags -I${PGSLib_MODULE_DIR})
+set(fc_flags -I${PGSLib_MODULE_DIR})
 list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(SETUP_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${SETUP_SOURCE_FILES} PROPERTIES

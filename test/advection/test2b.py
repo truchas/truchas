@@ -1,48 +1,30 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import numpy
+import truchas
 
-import Truchas
-import TruchasTest
-
-class mytest(TruchasTest.GoldenTestCase):
-
-  test_name = 'advection-2b'
-  num_procs = 4 # with a parallel executable
-
-  def test_final_vof(self):
-    '''verifying volume fractions at final time'''
-
-    time = self.test_output.get_simulation().find_series(id=2).time
-    test = self.test_output.get_simulation().find_series(id=2).get_data('VOF')
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "advection-2b.inp")
 
     # From a special run to compute vof for final exact configuration
-    gold = self.gold_output.get_simulation().find_series(id=1).get_data('VOF')
+    gold = tenv.output("advection-2b_golden/advection-2b.h5")
+    vof_gold = gold.field(1, "VOF")[:,0]
 
-    fail = 0
-    max_tol = 0.09
-    max_error = max(abs(test[:,0]-gold[:,0]))
-    if max_error > max_tol:
-      fail += 1
-      print 'vof at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,max_error,max_tol)
-    else:
-      print 'vof at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,max_error,max_tol)
+    # verify volume fractions at final time
+    sid = output.num_series()
+    time = output.time(sid)
+    vof = output.field(sid, "VOF")[:,0]
 
     # max <= l2 <= sqrt(ncell)*max = 31*max
-    l2_tol = 4*max_tol
-    l2_error = numpy.linalg.norm(test[:,0]-gold[:,0])
-    if l2_error > l2_tol:
-      fail += 1
-      print 'vof at t=%8.2e: l2 error = %8.2e: FAIL (tol=%8.2e)'%(time,l2_error,l2_tol)
-    else:
-      print 'vof at t=%8.2e: l2 error = %8.2e: PASS (tol=%8.2e)'%(time,l2_error,l2_tol)
+    nfail += truchas.compare_max(vof, vof_gold, 0.09, "vof", time)
+    nfail += truchas.compare_l2(vof, vof_gold, 4*0.09, "vof", time)
 
-    self.assertTrue(fail==0)
+    truchas.report_summary(nfail)
+    return nfail
 
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__ == "__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0

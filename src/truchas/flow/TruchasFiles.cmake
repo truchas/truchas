@@ -46,7 +46,7 @@ fortran_preprocess_files(FLOW_SOURCE_FILES
 
 # Define compile flags
 include(BuildWhitespaceString)
-set(flow_source_flags -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR} -I${Danu_Fortran_MODULE_DIR})
+set(flow_source_flags -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND flow_source_flags "-assume realloc_lhs")
 endif()

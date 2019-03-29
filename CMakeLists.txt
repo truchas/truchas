@@ -56,23 +56,21 @@ else()
   set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 
-# Strip RPATH from installed binaries/libraries 
+# Strip RPATH from installed binaries/libraries
 option(ENABLE_INSTALL_RPATH "Use RPATH in installed binaries and libraries" True)
 
 # ---------------------------------------------------------------------------- #
-# External Dependencies 
+# External Dependencies
 # ---------------------------------------------------------------------------- #
 
 # MPI
 find_package(MPI REQUIRED)
 
-# Python and NumPy
-find_package(PythonInterp REQUIRED)
-set(_tmp "${CMAKE_FIND_LIBRARY_SUFFIXES}")
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
-find_package(PythonLibs REQUIRED)
-set(CMAKE_FIND_LIBRARY_SUFFIXES "${_tmp}")
-find_package(NumPy)
+# Python and packages
+include(FindPythonPackage)
+find_package(PythonInterp 3.5 REQUIRED)
+find_python_package(scipy)
+find_python_package(h5py)
 
 # BLAS and LAPACK -- these are not required
 find_package(LAPACK)
@@ -134,18 +132,6 @@ endif()
 find_package(PETACA)
 if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
-endif()
-
-# SWIG program
-find_package(SWIG)
-if(SWIG_FOUND)
-  if(SWIG_VERSION VERSION_LESS "2" OR NOT (SWIG_VERSION VERSION_LESS "3"))
-    set(SWIG_FOUND FALSE)
-    message(STATUS "Could NOT find a suitable SWIG: version 2 is required")
-  endif()
-endif()
-if(NOT SWIG_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable swig executable")
 endif()
 
 # Test - need a swith here to enable testing

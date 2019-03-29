@@ -1,89 +1,44 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-import os
+import scipy as sp
 
-import numpy
+import truchas
 
-import Truchas
-import TruchasTest
 
-class mytest(TruchasTest.GoldenTestCase):
+def run_test(tenv):
+    nfail = 0
+    stdout, output = tenv.truchas(4, "steady-flow-old-2a.inp")
 
-  test_name = 'steady-flow-old-2a'
-  num_procs = 4 # with a parallel executable
+    # Test VOFs against exact
+    xc = output.centroids()
 
-  # Override the default setUp, omitting the opening of the golden output
-  def setUp(self):
-    if self._is_initialized is False:
-      self.setUpClass() # This runs Truchas
-    self.test_output = Truchas.TruchasOutput(self.get_output_file())
+    t = output.time(2)
+    vof = output.field(2, "VOF")[:,0]
+    nfail += truchas.compare_max(vof, vof_ex(xc, t), 2e-13, "VOF", t)
 
-  def vof_test(self, id, tol):
+    t = output.time(3)
+    vof = output.field(3, "VOF")[:,0]
+    nfail += truchas.compare_max(vof, vof_ex(xc, t), 2e-13, "VOF", t)
 
-    # The centroids function does not serialize, so we don't want to here either.
-    test = self.test_output.get_simulation().find_series(id).get_data('VOF',serialize=False)
-    time = self.test_output.get_simulation().find_series(id).time
+    # Test final velocity against exact
+    velocity = output.field(3, "Z_VC")
+    velocity[:,0] -= 4
+    nfail += truchas.compare_max(velocity, 0, 1e-13, "velocity", output.time(3))
 
-    # Analytic vof solution at cell centrioids
-    cc = self.test_output.get_mesh().centroids()
-    p = -4 + 4*time
-    vof = numpy.empty_like(test[:,0])
-    for j in range(vof.size):
-      x = cc[j,0]
-      if x < p-0.5:
-        vof[j] = 1
-      elif x > p+0.5:
-        vof[j] = 0
-      else:
-        vof[j] = p-(x-0.5)
-    
-    error = numpy.amax(abs(test[:,0]-vof))
-    if error > tol:
-      print 'vof at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
-      self.assertTrue(False)
-    else:
-      print 'vof at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
+    # Test pressure against exact
+    nfail += truchas.compare_max(output.field(1, "Z_P"), 0, 1e-10, "pressure", output.time(1))
+    nfail += truchas.compare_max(output.field(3, "Z_P"), 0, 1e-10, "pressure", output.time(3))
 
-  def test_vof_step(self):
-    '''Verify vof after first step'''
-    self.vof_test(2, 2e-13)
+    truchas.report_summary(nfail)
+    return nfail
 
-  def test_final_vof(self):
-    '''Verify final vof'''
-    self.vof_test(3, 2e-13)
 
-  def test_final_velocity(self):
-    '''Verify final velocity'''
-    data = self.test_output.get_simulation().find_series(id=3).get_data('Z_VC')
-    data[:,0] -= 4
-    error = numpy.amax(abs(data))
-    tol = 1.0e-13
-    if error > tol:
-      print 'velocity: max error = %8.2e: FAIL (tol=%8.2e)'%(error,tol)
-      self.assertTrue(False)
-    else:
-      print 'velocity: max error = %8.2e: PASS (tol=%8.2e)'%(error,tol)
+def vof_ex(xc, t):
+    p = -4 + 4*t
+    return sp.array([1 if x < p-0.5 else 0 if x > p+0.5 else p-(x-0.5) for x in xc[:,0]])
 
-  def pressure_test(self, id, tol):
-    data = self.test_output.get_simulation().find_series(id).get_data('Z_P')
-    time = self.test_output.get_simulation().find_series(id).time
-    error = numpy.amax(abs(data))
-    if error > tol:
-      print 'pressure at t=%8.2e: max error = %8.2e: FAIL (tol=%8.2e)'%(time,error,tol)
-      self.assertTrue(False)
-    else:
-      print 'pressure at t=%8.2e: max error = %8.2e: PASS (tol=%8.2e)'%(time,error,tol)
 
-  def test_initial_pressure(self):
-    '''Verify initial pressure'''
-    self.pressure_test(1,1e-10)
-
-  def test_final_pressure(self):
-    '''Verify final pressure'''
-    self.pressure_test(3,1e-10)
-
-if __name__ == '__main__':
-  import unittest
-  unittest.main()
-
+if __name__ == "__main__":
+    tenv = truchas.TruchasEnvironment.default()
+    nfail = run_test(tenv)
+    assert nfail == 0
