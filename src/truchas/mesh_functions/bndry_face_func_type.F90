@@ -188,7 +188,11 @@ contains
     call move_alloc(this%farray, ftmp)
     allocate(this%farray(size(ftmp)+1))
     this%farray(:size(ftmp)) = ftmp
+#ifdef NO_2008_LHS_POLY_REALLOC
+    allocate(this%farray(size(ftmp)+1)%f, source=f)
+#else
     this%farray(size(ftmp)+1)%f = f
+#endif
     deallocate(ftmp)
 
   end subroutine add_face_list
