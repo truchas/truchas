@@ -303,7 +303,6 @@ call hijack_truchas ()
         ! since this driver doesn't know any better, always accept
         call flow_accept()
       else
-        print *, "calling old fluid flow driver"
         call FLUID_FLOW_DRIVER (t)
       end if
 
