@@ -30,7 +30,7 @@
 
 module vector_func_factories
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use vector_func_class
   implicit none
   private
@@ -56,11 +56,12 @@ contains
     allocate(f, source=const_vector_func(const))
   end subroutine alloc_const_vector_func
 
-  subroutine alloc_tabular_vector_func (f, x, y)
+  subroutine alloc_tabular_vector_func (f, x, y, arg)
     use tabular_vector_func_type
     class(vector_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: x(:), y(:,:)
-    allocate(f, source=tabular_vector_func(x, y))
+    integer, intent(in), optional :: arg
+    allocate(f, source=tabular_vector_func(x,y,arg))
   end subroutine alloc_tabular_vector_func
 
   subroutine alloc_fptr_vector_func (f, dim, fptr, p)
@@ -86,11 +87,12 @@ contains
     allocate(f, source=const_vector_func(const))
   end function new_const_vector_func
 
-  function new_tabular_vector_func (x, y) result (f)
+  function new_tabular_vector_func (x, y, arg) result (f)
     use tabular_vector_func_type
     real(r8), intent(in) :: x(:), y(:,:)
+    integer, intent(in), optional :: arg
     class(vector_func), pointer :: f
-    allocate(f, source=tabular_vector_func(x,y))
+    allocate(f, source=tabular_vector_func(x,y,arg))
   end function new_tabular_vector_func
 
 

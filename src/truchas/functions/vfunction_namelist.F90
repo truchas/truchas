@@ -29,7 +29,7 @@
 
 module vfunction_namelist
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use string_utilities, only: lower_case, raise_case, i_to_c
   use input_utilities, only: seek_to_namelist
@@ -57,99 +57,96 @@ contains
 
     !! local variables
     logical :: found, tabular_smooth
-    integer :: n, stat, ncoef, nvar, npar, npts
+    integer :: n, ios, ncoef, nvar, npar, npts, rank
     class(vector_func), allocatable :: f
+    character(80) :: iom
 
     !! namelist variables
     character(len=31)  :: name, type
     real(r8) :: tabular_data(10,100), axis(3)
     integer  :: tabular_dim
 
-    namelist/vfunction/ name, type, tabular_data, tabular_dim, axis
+    namelist /vfunction/ name, type, tabular_data, tabular_dim, axis
 
-    call TLS_info ('')
-    call TLS_info ('Reading VFUNCTION namelists ...')
+    call TLS_info('')
+    call TLS_info('Reading VFUNCTION namelists ...')
 
     if (is_IOP) rewind(lun)
     n = 0
 
     do  ! until all VFUNCTION namelists have been read or an error occurs
 
-      if (is_IOP) call seek_to_namelist(lun, 'VFUNCTION', found, iostat=stat)
-      call broadcast(stat)
-      if (stat /= 0) call TLS_fatal ('error reading input file')
+      if (is_IOP) call seek_to_namelist(lun, 'VFUNCTION', found, iostat=ios)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
 
-      call broadcast (found)
+      call broadcast(found)
       if (.not.found) return  ! no further VFUNCTION namelists found
 
       n = n + 1
-      call TLS_info ('  Reading VFUNCTION namelist #' // i_to_c(n))
+      call TLS_info('Reading VFUNCTION namelist #' // i_to_c(n))
 
-      !! Read the namelist variables, assigning default values first.
-      if (is_IOP) then
-        name              = NULL_C
-        type              = NULL_C
-        tabular_data      = NULL_R
-        tabular_dim       = NULL_I
-        axis              = NULL_R
-        read(lun, nml=vfunction, iostat=stat)
-      end if
+      !! Default values
+      name = NULL_C
+      type = NULL_C
+      tabular_data = NULL_R
+      tabular_dim = NULL_I
+      axis = NULL_R
 
-      call broadcast(stat)
-      if (stat /= 0) call TLS_fatal ('error reading VFUNCTION namelist')
+      !! Read the VFUNCTION namelist
+      if (is_IOP) read(lun,nml=vfunction,iostat=ios,iomsg=iom)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading VFUNCTION namelist: ' // trim(iom))
 
-      !! Broadcast the namelist variables.
-      call broadcast (name)
-      call broadcast (type)
-      call broadcast (tabular_data)
-      call broadcast (tabular_dim)
-      call broadcast (axis)
+      !! Broadcast the namelist variables
+      call broadcast(name)
+      call broadcast(type)
+      call broadcast(tabular_data)
+      call broadcast(tabular_dim)
+      call broadcast(axis)
 
       !! Check the user-supplied name.
-      if (name == NULL_C .or. name == '') call TLS_fatal ('NAME must be assigned a nonempty value')
+      if (name == NULL_C .or. name == '') call TLS_fatal('NAME must be assigned a nonempty value')
       if (known_func(name)) then
-        call TLS_fatal ('already read a VFUNCTION namelist with this name: ' // trim(name))
+        call TLS_fatal('already read a VFUNCTION namelist with this NAME: ' // trim(name))
       end if
 
-      !! Check the type.
+      !! Check the type
       select case (raise_case(type))
       case ('TABULAR')
       case ('DIV-RADIAL-CYL-FLOW')
       case default
-        call TLS_fatal ('unknown value for TYPE: ' // trim(type))
+        call TLS_fatal('unknown value for TYPE: ' // trim(type))
       end select
 
       !! Create the specified vfunction and add it to the vfunction table.
 
       select case (raise_case(type))
-
       case ('TABULAR')
 
         !! Identify and check the user-specified table.
         do npts = size(tabular_data,dim=2), 1, -1
           if (any(tabular_data(:,npts) /= NULL_R)) exit
         end do
-        if (npts == 0) then
-          call TLS_fatal ('no values assigned to TABULAR_DATA')
-        end if
-        if (any(tabular_data(:,:npts) == NULL_R)) then
-          call TLS_fatal ('values assigned to TABULAR_DATA are not packed')
-        end if
-        if (npts < 2) then
-          call TLS_fatal ('at least two data points are required for TABULAR_DATA')
-        end if
+        if (npts == 0) call TLS_fatal('TABULAR_DATA not specified')
+        if (npts < 2) call TLS_fatal('TABULAR_DATA requires at least two data points')
+        do rank = size(tabular_data,dim=1), 1, -1
+          if (any(tabular_data(:,npts) /= NULL_R)) exit
+        end do
+        if (rank < 2) call TLS_fatal('TABULAR_DATA is incomplete')
+        if (any(tabular_data(:rank,:npts) == NULL_R)) call TLS_fatal('TABULAR_DATA is incomplete')
         associate (xleft => tabular_data(1,1:npts-1), xright => tabular_data(1,2:npts))
-          if (any(xleft >= xright)) call TLS_fatal ('TABULAR_DATA is not ordered')
+          if (any(xleft >= xright)) call TLS_fatal('TABULAR_DATA is not ordered')
         end associate
 
         if (tabular_dim == NULL_I) then
-          tabular_dim = 3
+          tabular_dim = 1
         else if (tabular_dim <= 0) then
-          call TLS_fatal ('TABULAR_DIM must be >0')
+          call TLS_fatal('TABULAR_DIM must be >0')
         end if
 
-        call alloc_tabular_vector_func (f, tabular_data(1,:npts), tabular_data(2:tabular_dim+1,:npts))
-        call insert_func (name, f)
+        call alloc_tabular_vector_func(f, tabular_data(1,:npts), tabular_data(2:rank,:npts), tabular_dim)
+        call insert_func(name, f)
 
       case ('DIV-RADIAL-CYL-FLOW')
 
