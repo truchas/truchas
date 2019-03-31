@@ -12,7 +12,7 @@ module flow_bc_type
   use truchas_logging_services
   use truchas_timers
   use parameter_list_type
-  use bndry_func_class
+  use bndry_func1_class
   use bndry_vfunc_class
   use flow_surface_tension_bc_type
   use unstr_mesh_type
@@ -21,7 +21,7 @@ module flow_bc_type
   private
 
   type, public :: flow_bc
-    class(bndry_func), allocatable :: p_dirichlet, dp_dirichlet, p_neumann, v_zero_normal
+    class(bndry_func1), allocatable :: p_dirichlet, dp_dirichlet, p_neumann, v_zero_normal
     class(bndry_vfunc), allocatable :: v_dirichlet
     type(surface_tension_bc) :: surface_tension
     logical :: pressure_d

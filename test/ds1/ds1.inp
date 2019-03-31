@@ -37,28 +37,25 @@ See diffusion solver tests 2, 3 and 4 for variations.
   dt_grow = 10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'left end'
-  variable = 'concentration1'
-  condition = 'flux'
-  Face_Set_IDs = 1
-  data_constant = -10.0
+  face_set_ids = 1
+  type = 'flux'
+  flux = -10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'right end'
-  variable = 'concentration1'
-  condition = 'dirichlet'
-  Face_Set_IDs = 2
-  data_constant = 0.0
+  face_set_ids = 2
+  type = 'concentration'
+  conc = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'other sides'
-  variable = 'concentration1'
-  condition = 'flux'
-  Face_Set_IDs = 3
-  data_constant = 0.0
+  face_set_ids = 3
+  type = 'flux'
+  flux = 0.0
 /
 
 &BODY

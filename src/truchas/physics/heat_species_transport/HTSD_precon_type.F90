@@ -16,12 +16,10 @@ module HTSD_precon_type
   use diffusion_matrix
   use index_partitioning
   use property_mesh_function
-  use boundary_data
-  use interface_data
   use truchas_timers
   implicit none
   private
-  
+
   type, public :: HTSD_precon
     type(HTSD_model), pointer :: model => null()
     type(unstr_mesh), pointer :: mesh  => null()
@@ -34,12 +32,12 @@ module HTSD_precon_type
     type(diff_precon), pointer :: sdprecon(:) => null()
     logical :: have_soret_coupling = .false.
   end type HTSD_precon
-  
+
   public :: HTSD_precon_init
   public :: HTSD_precon_delete
   public :: HTSD_precon_compute
   public :: HTSD_precon_apply
-  
+
   type, public :: HT_precon_params
     type(diff_precon_params) :: hcprecon_params
     character(len=16), pointer :: vfr_precon_coupling(:) => null()
@@ -52,27 +50,27 @@ module HTSD_precon_type
     type(SD_precon_params) :: sdprecon_params
   end type HTSD_precon_params
   public :: diff_precon_params, ssor_precon_params, boomer_amg_precon_params
-  
+
   !! Methods of coupling heat conduction and radiosity preconditioning.
   integer, parameter :: VFR_JAC = 1 ! Jacobi (radiosity and conduction decoupled)
   integer, parameter :: VFR_FGS = 2 ! Forward Gauss-Seidel (radiosity, then conduction)
   integer, parameter :: VFR_BGS = 3 ! Backward Gauss-Seidel (conduction, then radiosity)
   integer, parameter :: VFR_FAC = 4 ! Factorization (radiosity, conduction, radiosity)
-  
+
 contains
 
   subroutine HTSD_precon_init (this, model, params)
-  
+
     type(HTSD_precon), intent(out) :: this
     type(HTSD_model), intent(in), target :: model
     type(HTSD_precon_params), intent(in) :: params
-    
+
     integer :: n, j
     type(dist_diff_matrix), pointer :: matrix, mold_matrix => null()
-    
+
     this%model => model
     this%mesh  => model%mesh
-    
+
     if (associated(model%ht)) then
       !! Heat density/temperature relation derivative.
       allocate(this%dHdT(this%mesh%ncell))
@@ -108,7 +106,7 @@ contains
         end do
       end if
     end if
-    
+
     if (associated(model%sd)) then
       allocate(this%sdprecon(model%num_comp))
       do n = 1, this%model%num_comp
@@ -124,15 +122,15 @@ contains
       end do
       this%have_soret_coupling = (associated(model%ht) .and. this%have_soret_coupling)
     end if
-    
+
   end subroutine HTSD_precon_init
-  
+
   subroutine HTSD_precon_delete (this)
-  
+
     type(HTSD_precon), intent(inout) :: this
-    
+
     integer :: n
-    
+
     if (associated(this%dHdT)) deallocate(this%dHdT)
     if (associated(this%vfr_precon_coupling)) deallocate(this%vfr_precon_coupling)
     if (associated(this%hcprecon)) then
@@ -145,23 +143,23 @@ contains
       end do
       deallocate(this%sdprecon)
     end if
-    
+
   end subroutine HTSD_precon_delete
 
   subroutine HTSD_precon_compute (this, t, u, dt, errc)
-  
+
     type(HTSD_precon), intent(inout) :: this
     real(r8), intent(in) :: t, u(:), dt
     integer, intent(out) :: errc
     target :: u
-    
+
     integer :: n, j
     real(r8), pointer :: state(:,:) => null()
     integer, allocatable :: more_dir_faces(:)
 
     ASSERT(size(u) == HTSD_model_size(this%model))
     ASSERT(dt > 0.0_r8)
-      
+
     call start_timer ('HTSD precon compute')
 
     !! Generate list of void faces; these are treated like Dirichlet BC.
@@ -178,23 +176,23 @@ contains
     else
       allocate(more_dir_faces(0))
     end if
-    
+
     state => HTSD_model_new_state_array(this%model, u)
 
     !! Compute the HT preconditioner.
     if (associated(this%model%ht)) call HT_precon_compute
-    
+
     !! Compute the SD preconditioner.
     if (associated(this%model%sd)) then
       do n = 1, size(this%sdprecon)
         call SD_precon_compute (n)
       end do
     end if
-    
+
     deallocate(state)
-    
+
     errc = 0
-      
+
     call stop_timer ('HTSD precon compute')
 
   contains
@@ -234,24 +232,28 @@ contains
       call dm%incr_cell_diag (A)
 
       !! Dirichlet boundary condition fixups.
-      call bd_data_eval (this%model%ht%bc_dir, t)
-      call dm%set_dir_faces (this%model%ht%bc_dir%faces)
+      if (allocated(this%model%ht%bc_dir)) then
+        call this%model%ht%bc_dir%compute(t)
+        call dm%set_dir_faces(this%model%ht%bc_dir%index)
+      end if
 
       !! External HTC boundary condition contribution.
-      call bd_data_eval (this%model%ht%bc_htc, t)
-      allocate(values(size(this%model%ht%bc_htc%faces)))
-      values = this%mesh%area(this%model%ht%bc_htc%faces) * this%model%ht%bc_htc%values(1,:)
-      call dm%incr_face_diag (this%model%ht%bc_htc%faces, values)
-      deallocate(values)
+      if (allocated(this%model%ht%bc_htc)) then
+        call this%model%ht%bc_htc%compute_deriv(t, Tface)
+        associate (index => this%model%ht%bc_htc%index, &
+                   deriv => this%model%ht%bc_htc%deriv)
+          call dm%incr_face_diag(index, deriv)
+        end associate
+      end if
 
       !! Simple radiation boundary condition contribution.
-      call bd_data_eval (this%model%ht%bc_rad, t)
-      faces => this%model%ht%bc_rad%faces
-      allocate(values(size(faces)))
-      values = 4 * this%model%ht%sbconst * this%mesh%area(faces) * this%model%ht%bc_rad%values(1,:) * &
-          (Tface(faces) - this%model%ht%abszero)**3
-      call dm%incr_face_diag (faces, values)
-      deallocate(values)
+      if (allocated(this%model%ht%bc_rad)) then
+        call this%model%ht%bc_rad%compute(t, Tface)
+        associate (index => this%model%ht%bc_rad%index, &
+                   deriv => this%model%ht%bc_rad%deriv)
+          call dm%incr_face_diag(index, deriv)
+        end associate
+      end if
 
       !! Experimental evaporation heat flux contribution.
       if (allocated(this%model%ht%evap_flux)) then
@@ -263,34 +265,32 @@ contains
       endif
 
       !! Internal HTC interface condition contribution.
-      call if_data_eval (this%model%ht%ic_htc, t)
-      allocate(values(size(this%model%ht%ic_htc%faces,dim=2)))
-      values = this%mesh%area(this%model%ht%ic_htc%faces(1,:)) * this%model%ht%ic_htc%values(1,:)
-      if (associated(this%model%void_face)) then
-        do j = 1, size(values)
-          if (any(this%model%void_face(this%model%ht%ic_htc%faces(:,j)))) values(j) = 0.0_r8
-        end do
+      if (allocated(this%model%ht%ic_htc)) then
+        call this%model%ht%ic_htc%compute(t, Tface)
+        associate (index => this%model%ht%ic_htc%index, &
+                   deriv => this%model%ht%ic_htc%deriv)
+          if (associated(this%model%void_face)) then
+            do j = 1, size(index,2) !FIXME? Bad form to modify deriv?
+              if (any(this%model%void_face(index(:,j)))) deriv(:,j) = 0.0_r8
+            end do
+          end if
+          call dm%incr_interface_flux3(index, deriv) !TODO: rename these methods
+        end associate
       end if
-      call dm%incr_interface_flux (this%model%ht%ic_htc%faces, values)
-      deallocate(values)
 
       !! Internal gap radiation condition contribution.
-      call if_data_eval (this%model%ht%ic_rad, t)
-      allocate(values2(2,size(this%model%ht%ic_rad%faces,dim=2)))
-      do j = 1, size(values2,2)
-        n1 = this%model%ht%ic_rad%faces(1,j)
-        n2 = this%model%ht%ic_rad%faces(2,j)
-        term = 4 * this%model%ht%sbconst * this%mesh%area(n1) * this%model%ht%ic_rad%values(1,j)
-        values2(1,j) = term * (Tface(n1) - this%model%ht%abszero)**3
-        values2(2,j) = term * (Tface(n2) - this%model%ht%abszero)**3
-      end do
-      if (associated(this%model%void_face)) then
-        do j = 1, size(values2,2)
-          if (any(this%model%void_face(this%model%ht%ic_rad%faces(:,j)))) values2(:,j) = 0.0_r8
-        end do
+      if (allocated(this%model%ht%ic_rad)) then
+        call this%model%ht%ic_rad%compute(t, Tface)
+        associate (index => this%model%ht%ic_rad%index, &
+                   deriv => this%model%ht%ic_rad%deriv)
+          if (associated(this%model%void_face)) then
+            do j = 1, size(index,2) !FIXME? Bad form to modify deriv?
+              if (any(this%model%void_face(index(:,j)))) deriv(:,j) = 0.0_r8
+            end do
+          end if
+          call dm%incr_interface_flux3(index, deriv) !TODO: rename these methods
+        end associate
       end if
-      call dm%incr_interface_flux2 (this%model%ht%ic_rad%faces, values2)
-      deallocate(values2)
 
       !! Dirichlet fix-ups for void faces.
       call dm%set_dir_faces (more_dir_faces)
@@ -313,7 +313,7 @@ contains
     end subroutine HT_precon_compute
 
     subroutine SD_precon_compute (index)
-    
+
       integer, intent(in) :: index
 
       real(r8) :: values(this%mesh%ncell)
@@ -329,8 +329,10 @@ contains
       if (associated(this%model%void_cell)) where (this%model%void_cell) values = 1.0_r8
       call matrix%incr_cell_diag (values)
       !! Dirichlet BC fixups.
-      call bd_data_eval (this%model%sd(index)%bc_dir, t)
-      call matrix%set_dir_faces (this%model%sd(index)%bc_dir%faces)
+      if (allocated(this%model%sd(index)%bc_dir)) then
+        call this%model%sd(index)%bc_dir%compute(t)
+        call matrix%set_dir_faces(this%model%sd(index)%bc_dir%index)
+      end if
       call matrix%set_dir_faces (more_dir_faces)
       !! The matrix is now complete; re-compute the preconditioner.
       call diff_precon_compute (this%sdprecon(index))
@@ -338,9 +340,9 @@ contains
     end subroutine SD_precon_compute
 
   end subroutine HTSD_precon_compute
-  
+
   subroutine HTSD_precon_apply (this, t, u, f)
-  
+
     use mfd_disc_type
 
 #ifdef G95_COMPILER_WORKAROUND
@@ -351,24 +353,24 @@ contains
     real(r8), intent(in) :: t, u(:)
     real(r8), intent(inout) :: f(:)
     target :: u, f
-    
+
     integer :: index
     real(r8), allocatable :: FTcell(:), FTface(:)
     real(r8), pointer :: state(:,:) => null()
-    
+
     call start_timer ('HTSD precon apply')
-    
+
     !! Precondition the HT component.
     if (associated(this%model%ht)) then
       call start_timer ('HT precon apply')
       call HT_precon_apply
       call stop_timer ('HT precon apply')
     end if
-    
+
     !! Precondition the SD components.
     if (associated(this%model%sd)) then
       call start_timer ('SD precon apply')
-      !! Initialize extra data needed to handle Soret coupling.  
+      !! Initialize extra data needed to handle Soret coupling.
       if (this%have_soret_coupling) then
         state => HTSD_model_new_state_array(this%model, u)
         !! Off-process-extended copies of the preconditioned HT components.
@@ -377,7 +379,9 @@ contains
         call gather_boundary (this%mesh%cell_ip, FTcell)
         call HTSD_model_get_face_temp_copy (this%model, f, FTface)
         call gather_boundary (this%mesh%face_ip, FTface)
-        FTface(this%model%ht%bc_dir%faces) = 0.0_r8 ! temperature Dirichlet projection
+        if (allocated(this%model%ht%bc_dir)) then
+          FTface(this%model%ht%bc_dir%index) = 0.0_r8 ! temperature Dirichlet projection
+        end if
         !TODO! void face dirichlet projection?
       end if
       do index = 1, this%model%num_comp
@@ -386,11 +390,11 @@ contains
       if (associated(state)) deallocate(state)
       call stop_timer ('SD precon apply')
     end if
-    
+
     call stop_timer ('HTSD precon apply')
 
   contains
-      
+
     subroutine HT_precon_apply ()
 
       integer :: index, j, n
@@ -484,7 +488,7 @@ contains
     end subroutine HT_precon_apply
 
     subroutine SD_precon_apply (index)
-    
+
       integer, intent(in) :: index
 
       real(r8) :: Fcell(this%mesh%ncell), Fface(this%mesh%nface)
@@ -499,7 +503,9 @@ contains
         call pmf_eval (this%model%sd(index)%diffusivity, state, Fcell) ! Fcell used as temporary
         value = value * Fcell
         call this%model%disc%apply_diff (value, FTcell, FTface, Fcell, Fface)
-        Fface(this%model%sd(index)%bc_dir%faces) = 0.0_r8 ! concentration Dirichlet projection
+        if (allocated(this%model%sd(index)%bc_dir)) then
+          Fface(this%model%sd(index)%bc_dir%index) = 0.0_r8 ! concentration Dirichlet projection
+        end if
         !TODO! void face dirichlet projection?
         !! Apply the update.
         call HTSD_model_get_cell_conc_view (this%model, index, f, fview)
@@ -521,7 +527,7 @@ contains
       call HTSD_model_set_face_conc (this%model, index, Fface, f)
 
     end subroutine SD_precon_apply
-  
+
   end subroutine HTSD_precon_apply
 
 end module HTSD_precon_type

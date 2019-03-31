@@ -1,5 +1,5 @@
 !!
-!! BNDRY_FUNC_CLASS
+!! BNDRY_FUNC1_CLASS
 !!
 !! An abstract base class that defines an interface used by physics kernels
 !! to access transient mesh-based data associated with boundary conditions.
@@ -26,25 +26,25 @@
 !!  VALUE array with the data values corresponding to the time T.
 !!
 
-module bndry_func_class
+module bndry_func1_class
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
-  type, abstract, public :: bndry_func
+  type, abstract, public :: bndry_func1
     integer,  allocatable, public :: index(:)
     real(r8), allocatable, public :: value(:)
   contains
     procedure(compute), deferred :: compute
-  end type bndry_func
+  end type bndry_func1
 
   abstract interface
     subroutine compute(this, t)
-      import r8, bndry_func
-      class(bndry_func), intent(inout) :: this
+      import r8, bndry_func1
+      class(bndry_func1), intent(inout) :: this
       real(r8), intent(in) :: t
     end subroutine
   end interface
 
-end module bndry_func_class
+end module bndry_func1_class

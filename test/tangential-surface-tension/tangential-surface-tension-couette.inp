@@ -69,30 +69,26 @@ u = dsig/dx / mu * (y - ymin)
 
 ##### BOUNDARY CONDITIONS ######################################################
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'cold'
-  variable = 'temperature'
-  condition = 'dirichlet'
   face_set_ids = 1
-  data_constant = 1.0
+  type = 'temperature'
+  temp = 1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'hot'
-  variable = 'temperature'
-  condition = 'dirichlet'
   face_set_ids = 2
-  data_constant = 13.0
+  type = 'temperature'
+  temp = 13.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'walls'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 3, 4, 5, 6
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
-
 
 &FLOW_BC
   name = 'inlet'

@@ -52,28 +52,25 @@
 
 ##### BOUNDARY CONDITIONS ######################################################
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'cold surface'
-  variable = 'temperature'
-  condition = 'dirichlet'
+  type = 'temperature'
   face_set_ids = 1, 2, 4
-  data_constant = 1.0
+  temp = 1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'hot top'
-  variable = 'temperature'
-  condition = 'dirichlet'
+  type = 'temperature'
   face_set_ids = 3
-  data_constant = 2.0
+  temp = 2.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'x-z symmetry'
-  variable = 'temperature'
-  condition = 'flux'
+  type = 'flux'
   face_set_ids = 5, 6
-  data_constant = 0.0
+  flux = 0.0
 /
 
 &SURFACE_TENSION

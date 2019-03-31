@@ -55,12 +55,11 @@ other simulation where the ball is centered, but uses the same view factors.
   emissivity_constant = 0.8
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
+  type = 'flux'
   face_set_ids = 1, 4
+  flux = 0.0
 /
 
 &BODY

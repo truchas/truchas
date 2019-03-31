@@ -101,20 +101,18 @@ Surrounding mold region
   temperature     = 300.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 1
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'cirumference'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 2
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
 &BC

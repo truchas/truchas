@@ -111,6 +111,12 @@ list(APPEND PHYSICS_FILES
 
 # - heat_species_transport
 list(APPEND PHYSICS_FILES
+           physics/heat_species_transport/thermal_bc_namelist.F90
+           physics/heat_species_transport/thermal_bc_factory_class.F90
+           physics/heat_species_transport/thermal_bc_factory1_type.F90
+           physics/heat_species_transport/species_bc_namelist.F90
+           physics/heat_species_transport/species_bc_factory_class.F90
+           physics/heat_species_transport/species_bc_factory1_type.F90
            physics/heat_species_transport/FHT_model_factory.F90
            physics/heat_species_transport/FHT_model_type.F90
            physics/heat_species_transport/FHT_norm_type.F90
@@ -126,16 +132,12 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/HTSD_solver_type.F90
            physics/heat_species_transport/HTSD_init_cond_type.F90
            physics/heat_species_transport/TofH_type.F90
-           physics/heat_species_transport/boundary_data.F90
            physics/heat_species_transport/data_layout_type.F90
            physics/heat_species_transport/diff_precon_type.F90
            physics/heat_species_transport/diffusion_matrix.F90
            physics/heat_species_transport/diffusion_solver.F90
            physics/heat_species_transport/diffusion_solver_data.F90
-           physics/heat_species_transport/ds_boundary_condition_input.F90
-           physics/heat_species_transport/ds_interface_condition_input.F90
            physics/heat_species_transport/ds_source_input.F90
-           physics/heat_species_transport/interface_data.F90
            physics/heat_species_transport/mesh_interop.F90
            physics/heat_species_transport/mfd_disc_type.F90
            physics/heat_species_transport/property_mesh_function.F90

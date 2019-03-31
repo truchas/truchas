@@ -26,12 +26,12 @@
 
 module FHT_model_factory
 
-  use kinds, only: r8
   use FHT_model_type
   use unstr_mesh_type
   use mfd_disc_type
   use matl_mesh_func_type
   use rad_problem_type
+  use thermal_bc_factory_class
   implicit none
   private
   
@@ -39,12 +39,14 @@ module FHT_model_factory
 
 contains
 
-  function create_FHT_model (disc, mmf, stat, errmsg) result (model)
+  function create_FHT_model (disc, mmf, tbc_fac, stat, errmsg) result (model)
   
     type(mfd_disc), intent(in), target :: disc
     type(matl_mesh_func), intent(in), target :: mmf
+    class(thermal_bc_factory), intent(inout) :: tbc_fac
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
+    character(:), allocatable :: errmsg2
     type(FHT_model), pointer :: model
     
     type(unstr_mesh), pointer :: mesh
@@ -62,8 +64,11 @@ contains
     if (stat /= 0) return
     
     !! Defines the boundary condition components of MODEL.
-    call define_system_bc (mesh, model, stat, errmsg)
-    if (stat /= 0) return
+    call define_system_bc (mesh, tbc_fac, model, stat, errmsg2)
+    if (stat /= 0) then
+      errmsg = errmsg2
+      return
+    end if
     
     !! Perform the final initialization of MODEL.
     call FHT_model_init (model, disc)
@@ -175,25 +180,23 @@ contains
 
   end subroutine define_system_parameters
 
-  subroutine define_system_bc (mesh, model, stat, errmsg)
+  subroutine define_system_bc(mesh, bc_fac, model, stat, errmsg)
 
-    use ds_boundary_condition_input, only: get_boundary_data
-    use ds_interface_condition_input, only: get_interface_data
     use index_partitioning, only: gather_boundary
     use bitfield_type
-    use physical_constants, only: stefan_boltzmann, absolute_zero
     use parallel_communication, only: global_any, global_count
     use string_utilities, only: i_to_c
 
     type(unstr_mesh), intent(in), target :: mesh
+    class(thermal_bc_factory), intent(inout) :: bc_fac
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: j, n
     logical, allocatable :: mask(:), rmask(:), fmask(:)
     integer, allocatable :: setids(:)
-    character(len(errmsg)) :: string1, string2
+    character(160) :: string1, string2
     type(bitfield) :: bitmask
 
     allocate(mask(mesh%nface))
@@ -201,43 +204,51 @@ contains
     mask = .false.
 
     !! Define the internal HTC interface conditions.
-    allocate(model%ic_htc)
-    call get_interface_data (mesh, 'temperature', 'HTC', 1, model%ic_htc)
-    mask(model%ic_htc%faces(1,:)) = .true.
-    mask(model%ic_htc%faces(2,:)) = .true.
-    call gather_boundary (mesh%face_ip, mask)
+    call bc_fac%alloc_htc_ic(model%ic_htc, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(model%ic_htc)) then
+      mask(model%ic_htc%index(1,:)) = .true.
+      mask(model%ic_htc%index(2,:)) = .true.
+      call gather_boundary(mesh%face_ip, mask)
+    end if
 
     !! Define the gap radiation interface conditions;
     !! may be superimposed with HTC conditions.
-    allocate(model%ic_rad)
-    call get_interface_data (mesh, 'temperature', 'radiation', 1, model%ic_rad)
-    mask(model%ic_rad%faces(1,:)) = .true.
-    mask(model%ic_rad%faces(2,:)) = .true.
-    call gather_boundary (mesh%face_ip, mask)
+    call bc_fac%alloc_rad_ic(model%ic_rad, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(model%ic_rad)) then
+      mask(model%ic_rad%index(1,:)) = .true.
+      mask(model%ic_rad%index(2,:)) = .true.
+      call gather_boundary(mesh%face_ip, mask)
+    end if
 
     !! Flux type boundary conditions can be superimposed.
     allocate(fmask(mesh%nface))
     fmask = .false.
 
     !! Define the simple flux boundary conditions.
-    allocate(model%bc_flux)
-    call get_boundary_data (mesh, 'temperature', 'flux', 1, model%bc_flux)
-    if (global_any(mask(model%bc_flux%faces))) then
-      stat = -1
-      errmsg = 'temperature flux boundary condition overlaps with interface conditions'
-      return
+    call bc_fac%alloc_flux_bc(model%bc_flux, stat, errmsg)
+    if (stat /= 0) return
+      if (allocated(model%bc_flux)) then
+      if (global_any(mask(model%bc_flux%index))) then
+        stat = -1
+        errmsg = 'temperature flux boundary condition overlaps with interface conditions'
+        return
+      end if
+      fmask(model%bc_flux%index) = .true. ! mark the simple flux faces
     end if
-    fmask(model%bc_flux%faces) = .true. ! mark the simple flux faces
 
     !! Define the external HTC boundary conditions.
-    allocate(model%bc_htc)
-    call get_boundary_data (mesh, 'temperature', 'HTC', 2, model%bc_htc)
-    if (global_any(mask(model%bc_htc%faces))) then
-      stat = -1
-      errmsg = 'temperature HTC boundary condition overlaps with interface conditions'
-      return
+    call bc_fac%alloc_htc_bc(model%bc_htc, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(model%bc_htc)) then
+      if (global_any(mask(model%bc_htc%index))) then
+        stat = -1
+        errmsg = 'temperature HTC boundary condition overlaps with interface conditions'
+        return
+      end if
+      fmask(model%bc_htc%index) = .true. ! mark the HTC faces
     end if
-    fmask(model%bc_htc%faces) = .true. ! mark the HTC faces
 
     !! Tag all the enclosure radation (view factor) faces.  They were already
     !! verified to be boundary faces and non-overlapping with each other.
@@ -253,36 +264,40 @@ contains
     end if
 
     !! Define the (simple) radiation boundary conditions.
-    allocate(model%bc_rad)
-    call get_boundary_data (mesh, 'temperature', 'radiation', 2, model%bc_rad)
-    if (global_any(rmask(model%bc_rad%faces))) then
-      stat = -1
-      errmsg = 'temperature radiation boundary condition overlaps with enclosure radiation'
-      return
+    call bc_fac%alloc_rad_bc(model%bc_rad, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(model%bc_rad)) then
+      if (global_any(rmask(model%bc_rad%index))) then
+        stat = -1
+        errmsg = 'temperature radiation boundary condition overlaps with enclosure radiation'
+        return
+      end if
     end if
     deallocate(rmask)
-    if (global_any(mask(model%bc_rad%faces))) then
-      stat = -1
-      errmsg = 'temperature radiation boundary condition overlaps with interface conditions'
-      return
+    if (allocated(model%bc_rad)) then
+      if (global_any(mask(model%bc_rad%index))) then
+        stat = -1
+        errmsg = 'temperature radiation boundary condition overlaps with interface conditions'
+        return
+      end if
+      fmask(model%bc_rad%index) = .true. ! mark the radiation faces
     end if
-    fmask(model%bc_rad%faces) = .true. ! mark the radiation faces
-    model%sbconst = stefan_boltzmann
-    model%abszero = absolute_zero
 
     !! Merge the flux mask into the main mask.
     mask = mask .or. fmask
     deallocate(fmask)
 
     !! Define the Dirichlet boundary conditions.
-    allocate(model%bc_dir)
-    call get_boundary_data (mesh, 'temperature', 'dirichlet', 1, model%bc_dir)
-    if (global_any(mask(model%bc_dir%faces))) then
-      stat = -1
-      errmsg = 'temperature dirichlet boundary condition overlaps with other conditions'
-      return
+    call bc_fac%alloc_dir_bc(model%bc_dir, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(model%bc_dir)) then
+      if (global_any(mask(model%bc_dir%index))) then
+        stat = -1
+        errmsg = 'temperature dirichlet boundary condition overlaps with other conditions'
+        return
+      end if
+      mask(model%bc_dir%index) = .true. ! mark the dirichlet faces
     end if
-    mask(model%bc_dir%faces) = .true. ! mark the dirichlet faces
 
     !! Finally verify that a condition has been applied to every boundary face.
     mask = mask .neqv. btest(mesh%face_set_mask,0)

@@ -47,39 +47,36 @@ Should give the same results
 /
 
 No flux on symmetry planes
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
+  type = 'flux'
   face_set_ids = 1
+  flux = 0.0
 /
 
 No flux on inner surface
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'inner surface'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
+  type = 'flux'
   face_set_ids = 2
+  flux = 0.0
 /
 
 Radiation from outer surface
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'outer surface'
-  variable = 'temperature'
-  condition = 'radiation'
-  data_constant = 0.8, 1.0
+  type = 'radiation'
   face_set_ids = 3
+  emissivity = 0.8
+  ambient_temp = 1.0
 /
 
 HTC across interface between mold and metal
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'mold/metal interface'
-  variable = 'temperature'
-  condition = 'htc'
-  data_constant = 5.0
+  type = 'interface-htc'
   face_set_ids = 10
+  htc = 5.0
 /
 
 &BODY

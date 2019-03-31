@@ -16,7 +16,7 @@
 !!
 !! The BNDRY_FACE_GROUP_BUILDER type has the following type bound procedures.
 !!
-!!  INIT(MESH [,BNDRY_ONLY]) initializes the object. MESH is of type UNSTR_MESH.
+!!  INIT(MESH [,BNDRY_ONLY]) initializes the object. MESH is of type BASE_MESH.
 !!    Faces will be required to be boundary faces unless the option BNDRY_ONLY
 !!    is present with value .false.
 !!

@@ -45,28 +45,25 @@ for HT/PC.
   dt_grow = 10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'left end'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = -10.0
-  Face_Set_IDs = 1
+  type = 'flux'
+  face_set_ids = 1
+  flux = -10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'right end'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 2
+  type = 'flux'
+  face_set_ids = 2
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  type = 'flux'
+  face_set_ids = 3
+  flux = 0.0
 /
 
 &BODY

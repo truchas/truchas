@@ -100,28 +100,25 @@ cells at each long_edit interval.
   krylov_method = 'cg'
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'left side'
-  variable = 'temperature'
-  condition = 'dirichlet'
   face_set_ids = 1
-  data_constant = 2.0
+  type = 'temperature'
+  temp = 2.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'right side'
-  variable = 'temperature'
-  condition = 'dirichlet'
   face_set_ids = 2
-  data_constant = 1.0
+  type = 'temperature'
+  temp = 1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'top/bottom/symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 3, 4, 5
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
 &FLOW_BC

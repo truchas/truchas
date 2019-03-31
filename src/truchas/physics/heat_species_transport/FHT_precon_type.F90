@@ -16,8 +16,6 @@ module FHT_precon_type
   use diff_precon_type
   use data_layout_type
   use rad_problem_type
-  use boundary_data
-  use interface_data
   use property_mesh_function
   use truchas_timers
   implicit none
@@ -238,54 +236,50 @@ contains
     call dm%incr_cell_diag (A)
     
     !! Dirichlet boundary condition fixups.
-    call bd_data_eval (this%model%bc_dir, t)
-    call dm%set_dir_faces (this%model%bc_dir%faces)
+    if (allocated(this%model%bc_dir)) then
+      call this%model%bc_dir%compute(t)
+      call dm%set_dir_faces(this%model%bc_dir%index)
+    end if
     
     !! External HTC boundary condition contribution.
-    call bd_data_eval (this%model%bc_htc, t)
-    allocate(values(size(this%model%bc_htc%faces)))
-    values = this%mesh%area(this%model%bc_htc%faces) * this%model%bc_htc%values(1,:)
-    call dm%incr_face_diag (this%model%bc_htc%faces, values)
-    deallocate(values)
+    if (allocated(this%model%bc_htc)) then
+      call this%model%bc_htc%compute_deriv(t, Tface)
+      call dm%incr_face_diag(this%model%bc_htc%index, this%model%bc_htc%deriv)
+    end if
 
     !! Simple radiation boundary condition contribution.
-    call bd_data_eval (this%model%bc_rad, t)
-    faces => this%model%bc_rad%faces
-    allocate(values(size(faces)))
-    values = 4 * this%model%sbconst * this%mesh%area(faces) * this%model%bc_rad%values(1,:) * &
-        (Tface(faces) - this%model%abszero)**3
-    call dm%incr_face_diag (faces, values)
-    deallocate(values)
+    if (allocated(this%model%bc_rad)) then
+      call this%model%bc_rad%compute_deriv(t, Tface)
+      call dm%incr_face_diag(this%model%bc_rad%index, this%model%bc_rad%deriv)
+    end if
 
     !! Internal HTC interface condition contribution.
-    call if_data_eval (this%model%ic_htc, t)
-    allocate(values(size(this%model%ic_htc%faces,dim=2)))
-    values = this%mesh%area(this%model%ic_htc%faces(1,:)) * this%model%ic_htc%values(1,:)
-    if (associated(this%model%void_face)) then
-      do j = 1, size(values)
-        if (any(this%model%void_face(this%model%ic_htc%faces(:,j)))) values(j) = 0.0_r8
-      end do
+    if (allocated(this%model%ic_htc)) then
+      call this%model%ic_htc%compute_deriv(t, Tface)
+      associate (index => this%model%ic_htc%index, &
+                 deriv => this%model%ic_htc%deriv)
+        if (associated(this%model%void_face)) then
+          do j = 1, size(index,2) !FIXME? possibly bad form to modify %deriv
+            if (any(this%model%void_face(index(:,j)))) deriv(:,j) = 0.0_r8
+          end do
+        end if
+        call dm%incr_interface_flux3(index, deriv)
+      end associate
     end if
-    call dm%incr_interface_flux (this%model%ic_htc%faces, values)
-    deallocate(values)
 
     !! Internal gap radiation condition contribution.
-    call if_data_eval (this%model%ic_rad, t)
-    allocate(values2(2,size(this%model%ic_rad%faces,dim=2)))
-    do j = 1, size(values2,2)
-      n1 = this%model%ic_rad%faces(1,j)
-      n2 = this%model%ic_rad%faces(2,j)
-      term = 4 * this%model%sbconst * this%mesh%area(n1) * this%model%ic_rad%values(1,j)
-      values2(1,j) = term * (Tface(n1) - this%model%abszero)**3
-      values2(2,j) = term * (Tface(n2) - this%model%abszero)**3
-    end do
-    if (associated(this%model%void_face)) then
-      do j = 1, size(values2,2)
-        if (any(this%model%void_face(this%model%ic_rad%faces(:,j)))) values2(:,j) = 0.0_r8
-      end do
+    if (allocated(this%model%ic_rad)) then
+      call this%model%ic_rad%compute_deriv(t, Tface)
+      associate (index => this%model%ic_rad%index, &
+                 deriv => this%model%ic_rad%deriv)
+        if (associated(this%model%void_face)) then
+          do j = 1, size(index,2) !FIXME? possibly bad form to modify %deriv
+            if (any(this%model%void_face(index(:,j)))) deriv(:,j) = 0.0_r8
+          end do
+        end if
+        call dm%incr_interface_flux3(index, deriv)
+      end associate
     end if
-    call dm%incr_interface_flux2 (this%model%ic_rad%faces, values2)
-    deallocate(values2)
 
     if (associated(this%model%void_face)) then
       n = count(this%model%void_face)

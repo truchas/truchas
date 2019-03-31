@@ -99,21 +99,19 @@ OUTFLOW of FLUID AT RIGHT END
 /
 
 NO HEAT FLUX THROUGH ALL EXTERNAL BOUNDARIES
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'external boundaries'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 1, 2, 5
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
 HTC CONDITION ALONG CHANNEL/WALL INTERFACE.
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'lower channel-wall interface'
-  variable = 'temperature'
-  condition = 'HTC'
   face_set_ids = 10
-  data_constant = 5.0
+  type = 'interface-htc'
+  htc = 5.0
 /
 
 &MATERIAL

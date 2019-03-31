@@ -37,7 +37,7 @@
 
 module tabular_scalar_func_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
@@ -75,7 +75,7 @@ module tabular_scalar_func_type
 contains
 
   !! Constructor for TABULAR_SCALAR_FUNC objects
-  function tabular_scalar_func_value (x, y, dim, smooth, extrap) result (f)
+  function tabular_scalar_func_value(x, y, dim, smooth, extrap) result(f)
 
     real(r8), intent(in) :: x(:), y(:)
     integer, intent(in), optional :: dim
@@ -150,7 +150,7 @@ contains
 
   end function tabular_scalar_func_value
 
-  function eval (this, x) result (fx)
+  function eval(this, x) result(fx)
     class(tabular_scalar_func), intent(in) :: this
     real(r8), intent(in) :: x(:)  ! only x(this%dim) is used
     real(r8) :: fx, xdim, t
@@ -203,7 +203,7 @@ contains
   end function eval
 
   !! Constructor for TABULAR_AD_SCALAR_FUNC objects
-  function tabular_ad_scalar_func_deriv (f, x0, y0) result (adf)
+  function tabular_ad_scalar_func_deriv(f, x0, y0) result(adf)
     type(tabular_scalar_func), intent(in) :: f
     real(r8), intent(in) :: x0, y0
     type(tabular_ad_scalar_func) :: adf
@@ -224,7 +224,7 @@ contains
     adf%dim = f%dim
   end function tabular_ad_scalar_func_deriv
 
-  function eval_ad (this, x) result (fx)
+  function eval_ad(this, x) result(fx)
     class(tabular_ad_scalar_func), intent(in) :: this
     real(r8), intent(in) :: x(:)  ! only x(this%dim) is used
     real(r8) :: fx, xdim, a1, a2

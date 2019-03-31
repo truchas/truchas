@@ -60,28 +60,25 @@ Note: Should obtain the same results if heat_transport is disabled.
   nlk_preconditioner = 'hypre_amg'
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
  name = 'top'
- variable = 'temperature'
- condition = 'dirichlet'
  face_set_ids = 4
- data_constant = 2.0
+ type = 'temperature'
+ temp = 2.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
  name = 'bottom'
- variable = 'temperature'
- condition = 'dirichlet'
  face_set_ids = 3
- data_constant = 1.0
+ type = 'temperature'
+ temp = 1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
  name = 'sides'
- variable = 'temperature'
- condition = 'flux'
  face_set_ids = 1, 2, 5
- data_constant = 0.0
+ type = 'flux'
+ flux = 0.0
 /
 
 &BODY

@@ -82,28 +82,25 @@ test exercises the implementation in the normal 'HTSD' solver.
   output_mode            = 'summary'
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'all external sides'
-  variable = 'temperature'
-  condition = 'flux'
-  Face_Set_IDs = 1
-  data_constant = 0.0
+  face_set_ids = 1
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'gap'
-  variable = 'temperature'
-  condition = 'radiation'
-  Face_Set_IDs = 2
-  data_constant = 0.5
+  face_set_ids = 2
+  type = 'gap-radiation'
+  emissivity = 0.5
 /
 
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'fluid/solid'
-  variable = 'temperature'
-  condition = 'HTC'
-  Face_Set_IDs = 3
-  data_constant = 0.0 ! adiabatic interface
+  face_set_ids = 3
+  type = 'interface-htc'
+  htc = 0.0
 /
 
 Inflow at left end of channel

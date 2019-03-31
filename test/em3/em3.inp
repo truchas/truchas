@@ -69,21 +69,20 @@ The conducting ball.
 /
 
 Symmetry planes
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
+  type = 'flux'
   face_set_ids = 1
+  flux = 0.0
 /
 
 Surface of the ball
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'ball surface'
-  variable = 'temperature'
-  condition = 'radiation'
-  data_constant = 0.2, 300.0
+  type = 'radiation'
   face_set_ids = 2
+  emissivity = 0.2
+  ambient_temp = 300.0
 /
 
 &MATERIAL

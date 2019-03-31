@@ -48,28 +48,26 @@ so ortho operators are used for HT/PC.
   dt_grow = 10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'inner'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 1
+  type = 'flux'
+  face_set_ids = 1
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'outer'
-  variable = 'temperature'
-  condition = 'radiation'
-  data_constant = 0.5, 1.0
-  Face_Set_IDs = 2
+  type = 'radiation'
+  face_set_ids = 2
+  emissivity = 0.5
+  ambient_temp = 1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry sides'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  type = 'flux'
+  face_set_ids = 3
+  flux = 0.0
 /
 
 &DS_SOURCE

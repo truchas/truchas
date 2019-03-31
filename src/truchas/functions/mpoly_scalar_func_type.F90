@@ -18,7 +18,7 @@
 
 module mpoly_scalar_func_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
@@ -40,7 +40,7 @@ module mpoly_scalar_func_type
 contains
 
   !! Constructor for MPOLY_SCALAR_FUNC objects.
-  function mpoly_scalar_func_value (c, e, x0) result (f)
+  function mpoly_scalar_func_value(c, e, x0) result(f)
 
     real(r8), intent(in) :: c(:)
     integer,  intent(in) :: e(:,:)
@@ -63,7 +63,7 @@ contains
 
   end function mpoly_scalar_func_value
 
-  function eval (this, x) result(fx)
+  function eval(this, x) result(fx)
 
     class(mpoly_scalar_func), intent(in) :: this
     real(r8), intent(in) :: x(:)

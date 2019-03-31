@@ -69,12 +69,11 @@ Outer layer of the conducting cylinder
   Temperature = 301.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'whole boundary insulated'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
+  type = 'flux'
   face_set_ids = 1, 2
+  flux = 0.0
 /
 
 &MATERIAL

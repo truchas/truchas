@@ -209,8 +209,6 @@ contains
  
   subroutine FHT_solver_advance_state (this, t, stat)
   
-    use boundary_data
-  
     type(FHT_solver), intent(inout) :: this
     real(r8), intent(in) :: t
     integer, intent(out) :: stat
@@ -299,11 +297,13 @@ contains
     deallocate(Tcell, fnbr)
     
     !! Correct predicted face temperatures with Dirichlet boundary data.
-    call bd_data_eval (this%model%bc_dir, t)
-    do j = 1, size(this%model%bc_dir%faces)
-      n = this%model%bc_dir%faces(j)
-      if (n <= this%mesh%nface_onP) Tface(n) = this%model%bc_dir%values(1,j)
-    end do
+    if (allocated(this%model%bc_dir)) then
+    call this%model%bc_dir%compute(t)
+      do j = 1, size(this%model%bc_dir%index)
+        n = this%model%bc_dir%index(j)
+        if (n <= this%mesh%nface_onP) Tface(n) = this%model%bc_dir%value(j)
+      end do
+    end if
     
     !! Set the current void context for the heat transfer model.
     this%model%void_cell => this%void_cell

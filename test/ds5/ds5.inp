@@ -44,76 +44,76 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
   dt_grow = 10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C1-inner'
-  variable = 'concentration1'
-  condition = 'dirichlet'
-  data_constant = 1.0
-  Face_Set_IDs = 1
+  face_set_ids = 1
+  comp = 1
+  type = 'concentration'
+  conc = 1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C1-outer'
-  variable = 'concentration1'
-  condition = 'flux'
-  data_constant = 0.4444444444444444
-  Face_Set_IDs = 2
+  face_set_ids = 2
+  comp = 1
+  type = 'flux'
+  flux = 0.4444444444444444
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C1-symmetry sides'
-  variable = 'concentration1'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  face_set_ids = 3
+  comp = 1
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C2-inner'
-  variable = 'concentration2'
-  condition = 'dirichlet'
-  data_constant = 1.5
-  Face_Set_IDs = 1
+  face_set_ids = 1
+  comp = 2
+  type = 'concentration'
+  conc = 1.5
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C2-outer'
-  variable = 'concentration2'
-  condition = 'flux'
-  data_constant = 0.6666666666666666
-  Face_Set_IDs = 2
+  face_set_ids = 2
+  comp = 2
+  type = 'flux'
+  flux = 0.6666666666666666
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C2-symmetry sides'
-  variable = 'concentration2'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  face_set_ids = 3
+  comp = 2
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C3-inner'
-  variable = 'concentration3'
-  condition = 'dirichlet'
-  data_constant = 2.0
-  Face_Set_IDs = 1
+  face_set_ids = 1
+  comp = 3
+  type = 'concentration'
+  conc = 2.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C3-outer'
-  variable = 'concentration3'
-  condition = 'flux'
-  data_constant = 0.8888888888888888
-  Face_Set_IDs = 2
+  face_set_ids = 2
+  comp = 3
+  type = 'flux'
+  flux = 0.8888888888888888
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C3-symmetry sides'
-  variable = 'concentration3'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  face_set_ids = 3
+  comp = 3
+  type = 'flux'
+  flux = 0.0
 /
 
 &BODY

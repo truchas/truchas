@@ -44,7 +44,7 @@
 
 module scalar_func_tools
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
@@ -54,7 +54,7 @@ module scalar_func_tools
 
 contains
 
-  logical function is_const (f)
+  logical function is_const(f)
     use const_scalar_func_type
     class(scalar_func), intent(in) :: f
     select type (f)
@@ -65,7 +65,7 @@ contains
     end select
   end function is_const
 
-  subroutine alloc_scalar_func_antideriv (f, x0, g0, g, stat, errmsg)
+  subroutine alloc_scalar_func_antideriv(f, x0, g0, g, stat, errmsg)
 
     use const_scalar_func_type
     use poly_scalar_func_type
@@ -85,7 +85,7 @@ contains
     select type (f)
     type is (const_scalar_func)
 
-      call alloc_poly_scalar_func (g, c=[g0,f%const], e=[0,1], x0=x0)
+      call alloc_poly_scalar_func(g, c=[g0,f%const], e=[0,1], x0=x0)
 
     type is (tabular_scalar_func)
 
@@ -94,7 +94,7 @@ contains
         errmsg = 'unable to create antiderivative for a smoothed tabular function'
         return
       end if
-      call alloc_tabular_ad_scalar_func (g, f, x0, g0)
+      call alloc_tabular_ad_scalar_func(g, f, x0, g0)
 
     type is (poly_scalar_func)
 
@@ -121,7 +121,7 @@ contains
         c(n) = g0
         e(n) = 0
       end if
-      call alloc_poly_scalar_func (g, c, e, f%x0)
+      call alloc_poly_scalar_func(g, c, e, f%x0)
       deallocate(c, e)
 
     class default
@@ -136,7 +136,7 @@ contains
 
   end subroutine alloc_scalar_func_antideriv
 
-  subroutine alloc_scalar_func_product (f, g, fg, stat, errmsg)
+  subroutine alloc_scalar_func_product(f, g, fg, stat, errmsg)
 
     use const_scalar_func_type
     use poly_scalar_func_type

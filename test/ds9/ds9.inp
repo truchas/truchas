@@ -57,12 +57,11 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
   poly_coefficients(1) =  1.0, poly_exponents(:,1) = 0 0 0 0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'top/bottom'
-  variable = 'temperature'
-  condition = 'dirichlet'
-  data_function = 'steady solution'
+  type = 'temperature'
   face_set_ids = 1, 3
+  temp_func = 'steady solution'
 /
 
 &FUNCTION
@@ -74,12 +73,11 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
   poly_coefficients(4) = -1.0, poly_exponents(:,4) = 0 0 2 0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'right'
-  variable = 'temperature'
-  condition = 'flux'
-  data_function = 'steady right flux'
+  type = 'flux'
   face_set_ids = 2
+  flux_func = 'steady right flux'
 /
 
 !&FUNCTION
@@ -97,13 +95,12 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
   tabular_dim  = 3  ! y-coord
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'left'
-  variable = 'temperature'
-  condition = 'htc'
-  data_constant(1) = 0.5
-  data_function(2) = 'left ambient'
+  type = 'htc'
   face_set_ids = 4
+  htc = 0.5
+  ambient_temp_func = 'left ambient'
 /
 
 &FUNCTION
@@ -114,12 +111,11 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
   poly_coefficients(3) = -1.0, poly_exponents(:,3) = 0 0 2
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'z-planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 5
+  type = 'flux'
+  face_set_ids = 5
+  flux = 0.0
 /
 
 &BODY

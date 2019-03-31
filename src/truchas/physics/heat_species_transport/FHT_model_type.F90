@@ -14,8 +14,9 @@ module FHT_model_type
   use data_layout_type
   use property_mesh_function
   use source_mesh_function
-  use boundary_data
-  use interface_data
+  use bndry_func1_class
+  use bndry_func2_class
+  use intfc_func2_class
   use rad_problem_type
   use index_partitioning
   use truchas_timers
@@ -36,13 +37,12 @@ module FHT_model_type
     type(prop_mf), pointer :: H_of_T => null()          ! enthalpy as a function of temperature
     type(source_mf), pointer :: q => null()    ! external heat source
     !! Boundary condition data
-    type(bd_data), pointer :: bc_dir => null()  ! Dirichlet
-    type(bd_data), pointer :: bc_flux => null() ! simple flux
-    type(bd_data), pointer :: bc_htc => null()  ! external HTC (coef, ref temp)
-    type(bd_data), pointer :: bc_rad => null()  ! simple radiation (eps, amb temp)
-    type(if_data), pointer :: ic_htc => null()  ! internal HTC
-    type(if_data), pointer :: ic_rad => null()  ! internal gap radiation
-    real(r8) :: sbconst, abszero ! Stefan-Boltzmann constant and absolute zero for radiation BC
+    class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
+    class(bndry_func1), allocatable :: bc_flux ! simple flux
+    class(bndry_func2), allocatable :: bc_htc  ! external HTC (coef, ref temp)
+    class(bndry_func2), allocatable :: bc_rad  ! simple radiation (eps, amb temp)
+    class(intfc_func2), allocatable :: ic_htc  ! internal HTC
+    class(intfc_func2), allocatable :: ic_rad  ! internal gap radiation
     !! Enclosure radiation problems
     type(rad_problem), pointer :: vf_rad_prob(:) => null()
   end type FHT_model
@@ -115,30 +115,6 @@ contains
       call smf_destroy (this%q)
       deallocate(this%q)
     end if
-    if (associated(this%bc_dir)) then
-      call bd_data_destroy (this%bc_dir)
-      deallocate(this%bc_dir)
-    end if
-    if (associated(this%bc_flux)) then
-      call bd_data_destroy (this%bc_flux)
-      deallocate(this%bc_flux)
-    end if
-    if (associated(this%bc_htc)) then
-      call bd_data_destroy (this%bc_htc)
-      deallocate(this%bc_htc)
-    end if
-    if (associated(this%bc_rad)) then
-      call bd_data_destroy (this%bc_rad)
-      deallocate(this%bc_rad)
-    end if
-    if (associated(this%ic_htc)) then
-      call if_data_destroy (this%ic_htc)
-      deallocate(this%ic_htc)
-    end if
-    if (associated(this%ic_rad)) then
-      call if_data_destroy (this%ic_rad)
-      deallocate(this%ic_rad)
-    end if
     if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine FHT_model_delete
 
@@ -174,12 +150,14 @@ contains
 
     !! Pre-compute the Dirichlet condition residual and
     !! impose the Dirichlet data on the face temperature.
-    call bd_data_eval (this%bc_dir, t)
-    allocate(Fdir(size(this%bc_dir%faces)))
-    do j = 1, size(this%bc_dir%faces)
-      Fdir(j) = Tface(this%bc_dir%faces(j)) - this%bc_dir%values(1,j)
-      Tface(this%bc_dir%faces(j)) = this%bc_dir%values(1,j)
-    end do
+    if (allocated(this%bc_dir)) then
+      call this%bc_dir%compute(t)
+      allocate(Fdir(size(this%bc_dir%index)))
+      do j = 1, size(this%bc_dir%index)
+        Fdir(j) = Tface(this%bc_dir%index(j)) - this%bc_dir%value(j)
+        Tface(this%bc_dir%index(j)) = this%bc_dir%value(j)
+      end do
+    end if
 
     !! Compute the generic heat equation residual.
     call pmf_eval (this%conductivity, state, value)
@@ -196,68 +174,74 @@ contains
     !call gather_boundary (this%mesh%cell_ip, Fcell) ! off-process not used below
 
     !! Dirichlet condition residuals.
-    do j = 1, size(this%bc_dir%faces)
-      n = this%bc_dir%faces(j)
-      Fface(n) = Fdir(j)  !! overwrite with pre-computed values
-    end do
-    deallocate(Fdir)
+    if (allocated(this%bc_dir)) then
+      do j = 1, size(this%bc_dir%index)
+        n = this%bc_dir%index(j)
+        Fface(n) = Fdir(j)  !! overwrite with pre-computed values
+      end do
+      deallocate(Fdir)
+    end if
 
     !! Simple flux BC contribution.
-    call bd_data_eval (this%bc_flux, t)
-    do j = 1, size(this%bc_flux%faces)
-      n = this%bc_flux%faces(j)
-      Fface(n) = Fface(n) + this%mesh%area(n) * this%bc_flux%values(1,j)
-    end do
+    if (allocated(this%bc_flux)) then
+      call this%bc_flux%compute(t)
+      do j = 1, size(this%bc_flux%index)
+        n = this%bc_flux%index(j)
+        Fface(n) = Fface(n) + this%mesh%area(n) * this%bc_flux%value(j)
+      end do
+    end if
 
     !! External HTC flux contribution.
-    call bd_data_eval (this%bc_htc, t)
-    do j = 1, size(this%bc_htc%faces)
-      n = this%bc_htc%faces(j)
-      Fface(n) = Fface(n) + this%mesh%area(n) * this%bc_htc%values(1,j) * &
-                                (Tface(n) - this%bc_htc%values(2,j))
-    end do
+    if (allocated(this%bc_htc)) then
+    call this%bc_htc%compute(t, Tface)
+      do j = 1, size(this%bc_htc%index)
+        n = this%bc_htc%index(j)
+        Fface(n) = Fface(n) + this%bc_htc%value(j)
+      end do
+    end if
 
     !! Internal HTC flux contribution.
-    call if_data_eval (this%ic_htc, t)
-    allocate(void_link(size(this%ic_htc%faces,2)))
-    do j = 1, size(void_link)
-      void_link(j) = any(this%void_face(this%ic_htc%faces(:,j)))
-    end do
-    do j = 1, size(this%ic_htc%faces,2)
-      if (void_link(j)) cycle
-      n1 = this%ic_htc%faces(1,j)
-      n2 = this%ic_htc%faces(2,j)
-      term = this%mesh%area(n1) * this%ic_htc%values(1,j) * (Tface(n1) - Tface(n2))
-      Fface(n1) = Fface(n1) + term
-      Fface(n2) = Fface(n2) - term
-    end do
-    deallocate(void_link)
+    if (allocated(this%ic_htc)) then
+      call this%ic_htc%compute(t, Tface)
+      allocate(void_link(size(this%ic_htc%index,2)))
+      do j = 1, size(void_link)
+        void_link(j) = any(this%void_face(this%ic_htc%index(:,j)))
+      end do
+      do j = 1, size(this%ic_htc%index,2)
+        if (void_link(j)) cycle
+        n1 = this%ic_htc%index(1,j)
+        n2 = this%ic_htc%index(2,j)
+        Fface(n1) = Fface(n1) + this%ic_htc%value(j)
+        Fface(n2) = Fface(n2) - this%ic_htc%value(j)
+      end do
+      deallocate(void_link)
+    end if
       
     !! Internal gap radiation contribution.
-    call if_data_eval (this%ic_rad, t)
-    allocate(void_link(size(this%ic_rad%faces,2)))
-    do j = 1, size(void_link)
-      void_link(j) = any(this%void_face(this%ic_rad%faces(:,j)))
-    end do
-    do j = 1, size(this%ic_rad%faces,2)
-      if (void_link(j)) cycle
-      n1 = this%ic_rad%faces(1,j)
-      n2 = this%ic_rad%faces(2,j)
-      term = this%mesh%area(n1) * this%ic_rad%values(1,j) * this%sbconst * &
-             ((Tface(n1)-this%abszero)**4 - (Tface(n2)-this%abszero)**4)
-      Fface(n1) = Fface(n1) + term
-      Fface(n2) = Fface(n2) - term
-    end do
-    deallocate(void_link)
+    if (allocated(this%ic_rad)) then
+      call this%ic_rad%compute(t, Tface)
+      allocate(void_link(size(this%ic_rad%index,2)))
+      do j = 1, size(void_link)
+        void_link(j) = any(this%void_face(this%ic_rad%index(:,j)))
+      end do
+      do j = 1, size(this%ic_rad%index,2)
+        if (void_link(j)) cycle
+        n1 = this%ic_rad%index(1,j)
+        n2 = this%ic_rad%index(2,j)
+        Fface(n1) = Fface(n1) + this%ic_rad%value(j)
+        Fface(n2) = Fface(n2) - this%ic_rad%value(j)
+      end do
+      deallocate(void_link)
+    end if
 
     !! Ambient radiation BC flux contribution.
-    call bd_data_eval (this%bc_rad, t)
-    do j = 1, size(this%bc_rad%faces)
-      n = this%bc_rad%faces(j)
-      Fface(n) = Fface(n) + this%mesh%area(n) * this%bc_rad%values(1,j) * &
-                              this%sbconst * ((Tface(n) - this%abszero)**4 - &
-                                         (this%bc_rad%values(2,j)-this%abszero)**4)
-    end do
+    if (allocated(this%bc_rad)) then
+      call this%bc_rad%compute(t, Tface)
+      do j = 1, size(this%bc_rad%index)
+        n = this%bc_rad%index(j)
+        Fface(n) = Fface(n) + this%bc_rad%value(j)
+      end do
+    end if
 
     !! Overwrite function value on void cells and faces with dummy equation T=0.
     where (this%void_cell) Fcell = Tcell

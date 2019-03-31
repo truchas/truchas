@@ -37,9 +37,10 @@ module diffusion_matrix
     procedure :: incr_face_diag
     procedure :: incr_interface_flux
     procedure :: incr_interface_flux2
+    procedure :: incr_interface_flux3
     procedure :: compute_face_schur_matrix
   end type dist_diff_matrix
-  
+
 contains
 
   subroutine init_disc (this, disc)
@@ -53,7 +54,7 @@ contains
 
     this%disc => disc
     this%mesh => disc%mesh
-    
+
     allocate(this%a11(this%mesh%ncell))
     allocate(this%a12_val(size(this%mesh%cface)))
 
@@ -75,37 +76,37 @@ contains
     call this%a22%init (g, take_graph=.true.)
 
   end subroutine init_disc
-  
+
   subroutine init_mold (this, mold)
-  
+
     class(dist_diff_matrix), intent(out) :: this
     class(dist_diff_matrix), intent(in)  :: mold
-    
+
     type(pcsr_graph), pointer :: g
-    
+
     this%disc => mold%disc
     this%mesh => mold%mesh
     allocate(this%a11(size(mold%a11)))
     allocate(this%a12_val(size(mold%a12_val)))
     g => mold%a22%graph_ptr()
     call this%a22%init (g, take_graph=.false.)
-    
+
   end subroutine init_mold
 
   subroutine compute (this, d)
 
     use upper_packed_matrix, only: upm_col_sum
-  
+
     class(dist_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: d(:)
-    
+
     integer :: j, l, ir, ic
     real(r8), allocatable :: w(:), minv(:)
 
     ASSERT(size(d) == this%mesh%ncell)
-    
+
     call this%a22%set_all (0.0_r8)
-    
+
     do j = 1, this%mesh%ncell
       associate(a12 => this%a12_val(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
         if (d(j) == 0.0_r8) then
@@ -135,7 +136,7 @@ contains
         end do
       end associate
     end do
-    
+
     if (allocated(this%dir_faces)) deallocate(this%dir_faces)
 
   end subroutine compute
@@ -165,7 +166,7 @@ contains
 
     integer :: j, n
     integer, allocatable :: tmp(:)
-    
+
     ASSERT(minval(dir_faces) >= 1)
     ASSERT(maxval(dir_faces) <= this%mesh%nface)
 
@@ -191,12 +192,12 @@ contains
     end do
 
   end subroutine set_dir_faces
-  
+
   !! This subroutine increments the (entire) diagonal cell-cell diffusion
   !! submatrix with the specified values.  The intended use is to modify
   !! the base diffusion matrix to account for the discretization of a time
   !! derivative term.
-  
+
   subroutine incr_cell_diag (this, values)
     class(dist_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: values(:)
@@ -232,7 +233,7 @@ contains
     end do
 
   end subroutine incr_face_diag
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! DM_INCR_INTERFACE_FLUX
@@ -245,18 +246,18 @@ contains
  !!
 
   subroutine incr_interface_flux (this, faces, values)
-  
+
     class(dist_diff_matrix), intent(inout) :: this
     integer,  intent(in) :: faces(:,:)
     real(r8), intent(in) :: values(:)
-    
+
     integer :: j, n1, n2
-    
+
     ASSERT(size(faces,1) == 2)
     ASSERT(size(faces,2) == size(values))
     ASSERT(minval(faces) >= 1)
     ASSERT(maxval(faces) <= this%mesh%nface)
-  
+
     do j = 1, size(faces,2)
       n1 = faces(1,j)
       n2 = faces(2,j)
@@ -265,9 +266,9 @@ contains
       call this%a22%add_to (n2, n1, -values(j))
       call this%a22%add_to (n2, n2,  values(j))
     end do
-  
+
   end subroutine incr_interface_flux
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! DM_INCR_INTERFACE_FLUX2
@@ -280,19 +281,19 @@ contains
  !!
 
   subroutine incr_interface_flux2 (this, faces, values)
-  
+
     class(dist_diff_matrix), intent(inout) :: this
     integer,  intent(in) :: faces(:,:)
     real(r8), intent(in) :: values(:,:)
-    
+
     integer :: j, n1, n2
-    
+
     ASSERT(size(faces,1) == 2)
     ASSERT(size(values,1) == 2)
     ASSERT(size(faces,2) == size(values,2))
     ASSERT(minval(faces) >= 1)
     ASSERT(maxval(faces) <= this%mesh%nface)
-  
+
     do j = 1, size(faces,2)
       n1 = faces(1,j)
       n2 = faces(2,j)
@@ -301,20 +302,45 @@ contains
       call this%a22%add_to (n2, n1, -values(1,j))
       call this%a22%add_to (n2, n2,  values(2,j))
     end do
-  
+
   end subroutine incr_interface_flux2
-  
+
+  subroutine incr_interface_flux3(this, faces, values)
+
+    class(dist_diff_matrix), intent(inout) :: this
+    integer,  intent(in) :: faces(:,:)
+    real(r8), intent(in) :: values(:,:)
+
+    integer :: j, n1, n2
+
+    ASSERT(size(faces,1) == 2)
+    ASSERT(size(values,1) == 2)
+    ASSERT(size(faces,2) == size(values,2))
+    ASSERT(minval(faces) >= 1)
+    ASSERT(maxval(faces) <= this%mesh%nface)
+
+    do j = 1, size(faces,2)
+      n1 = faces(1,j)
+      n2 = faces(2,j)
+      call this%a22%add_to (n1, n1,  values(1,j))
+      call this%a22%add_to (n1, n2,  values(2,j))
+      call this%a22%add_to (n2, n1, -values(1,j))
+      call this%a22%add_to (n2, n2, -values(2,j))
+    end do
+
+  end subroutine incr_interface_flux3
+
   subroutine compute_face_schur_matrix (this, Sff)
-  
+
     class(dist_diff_matrix), intent(in) :: this
     type(pcsr_matrix), intent(inout) :: Sff
-    
+
     integer :: j, n, ir, ic
     integer, pointer :: indices(:)
     real(r8) :: value
-    
+
     ASSERT(associated(this%a22%graph, Sff%graph))
-    
+
     Sff%values = this%a22%values
     do j = 1, this%mesh%ncell
       associate (indices => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
@@ -327,13 +353,15 @@ contains
         end do
       end associate
     end do
-    
+
     !! Apply the Dirichlet projections.
-    do j = 1, size(this%dir_faces)
-      n = this%dir_faces(j)
-      call Sff%project_out (n)
-      call Sff%set (n, n, 1.0_r8)
-    end do
+    if (allocated(this%dir_faces)) then
+      do j = 1, size(this%dir_faces)
+        n = this%dir_faces(j)
+        call Sff%project_out (n)
+        call Sff%set (n, n, 1.0_r8)
+      end do
+    end if
 
   end subroutine compute_face_schur_matrix
 
