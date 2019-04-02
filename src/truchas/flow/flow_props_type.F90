@@ -217,6 +217,7 @@ contains
       if (this%vof(i) > 0.0_r8) then
         this%rho_cc(i) = this%rho_cc(i) / this%vof(i)
         this%rho_delta_cc(i) = this%rho_delta_cc(i) / this%vof(i)
+        this%mu_cc(i) = this%mu_cc(i) / this%vof(i)
       end if
 
       if (this%vof(i) < this%cutoff) then ! criteria for solid
