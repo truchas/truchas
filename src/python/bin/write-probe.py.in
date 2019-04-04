@@ -71,7 +71,9 @@ if __name__ == "__main__":
     truchas_data = truchas.TruchasData(args.h5file)
     probes = truchas_data.probes()
 
-    if args.l:
+    if len(probes) == 0:
+        print("No probe data in \"{:s}\".".format(args.h5file))
+    elif args.l:
         print_probes(truchas_data, probes)
     else:
         assert args.n > 0 and args.n <= len(probes)
