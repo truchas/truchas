@@ -8,315 +8,315 @@ HEAT TRANSFER FUNCTION NORMS
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 5.482E-04 (initial)
   HC error: ||F||_2 = 1.087E-08, scaled = 1.983E+01
-    1: error= 1.98314E+01
-  HC error: ||F||_2 = 3.625E-12, scaled = 6.611E-03
-    2: error= 6.61148E-03
-  NLK BCE solve succeeded:   2 iterations, error= 6.61148E-03
+    1: error= 1.98322E+01
+  HC error: ||F||_2 = 3.625E-12, scaled = 6.612E-03
+    2: error= 6.61175E-03
+  NLK BCE solve succeeded:   2 iterations, error= 6.61175E-03
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 5.325E-04 (initial)
-  HC error: ||F||_2 = 5.715E-11, scaled = 1.073E-01
-    1: error= 1.07331E-01
-  HC error: ||F||_2 = 1.789E-14, scaled = 3.360E-05
-    2: error= 3.35966E-05
-  NLK BCE solve succeeded:   2 iterations, error= 3.35966E-05
+  HC error: ||F||_2 = 5.326E-04 (initial)
+  HC error: ||F||_2 = 5.718E-11, scaled = 1.073E-01
+    1: error= 1.07350E-01
+  HC error: ||F||_2 = 1.789E-14, scaled = 3.359E-05
+    2: error= 3.35895E-05
+  NLK BCE solve succeeded:   2 iterations, error= 3.35895E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 5.578E-04 (initial)
-  HC error: ||F||_2 = 6.294E-11, scaled = 1.128E-01
-    1: error= 1.12833E-01
-  HC error: ||F||_2 = 2.112E-14, scaled = 3.787E-05
-    2: error= 3.78681E-05
-  NLK BCE solve succeeded:   2 iterations, error= 3.78681E-05
+  HC error: ||F||_2 = 5.575E-04 (initial)
+  HC error: ||F||_2 = 6.290E-11, scaled = 1.128E-01
+    1: error= 1.12816E-01
+  HC error: ||F||_2 = 2.107E-14, scaled = 3.779E-05
+    2: error= 3.77874E-05
+  NLK BCE solve succeeded:   2 iterations, error= 3.77874E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 5.815E-04 (initial)
-  HC error: ||F||_2 = 8.889E-11, scaled = 1.529E-01
-    1: error= 1.52867E-01
-  HC error: ||F||_2 = 2.500E-14, scaled = 4.300E-05
-    2: error= 4.29963E-05
-  NLK BCE solve succeeded:   2 iterations, error= 4.29963E-05
+  HC error: ||F||_2 = 5.805E-04 (initial)
+  HC error: ||F||_2 = 8.868E-11, scaled = 1.528E-01
+    1: error= 1.52776E-01
+  HC error: ||F||_2 = 2.500E-14, scaled = 4.308E-05
+    2: error= 4.30776E-05
+  NLK BCE solve succeeded:   2 iterations, error= 4.30776E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 6.037E-04 (initial)
-  HC error: ||F||_2 = 9.794E-11, scaled = 1.622E-01
-    1: error= 1.62234E-01
-  HC error: ||F||_2 = 2.839E-14, scaled = 4.702E-05
-    2: error= 4.70184E-05
-  NLK BCE solve succeeded:   2 iterations, error= 4.70184E-05
+  HC error: ||F||_2 = 6.052E-04 (initial)
+  HC error: ||F||_2 = 9.812E-11, scaled = 1.621E-01
+    1: error= 1.62117E-01
+  HC error: ||F||_2 = 2.844E-14, scaled = 4.699E-05
+    2: error= 4.69947E-05
+  NLK BCE solve succeeded:   2 iterations, error= 4.69947E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 6.378E-04 (initial)
-  HC error: ||F||_2 = 8.964E-11, scaled = 1.405E-01
-    1: error= 1.40535E-01
-  HC error: ||F||_2 = 3.162E-14, scaled = 4.957E-05
-    2: error= 4.95740E-05
-  NLK BCE solve succeeded:   2 iterations, error= 4.95740E-05
+  HC error: ||F||_2 = 6.385E-04 (initial)
+  HC error: ||F||_2 = 8.951E-11, scaled = 1.402E-01
+    1: error= 1.40203E-01
+  HC error: ||F||_2 = 3.164E-14, scaled = 4.956E-05
+    2: error= 4.95620E-05
+  NLK BCE solve succeeded:   2 iterations, error= 4.95620E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 7.077E-04 (initial)
-  HC error: ||F||_2 = 9.389E-11, scaled = 1.327E-01
-    1: error= 1.32668E-01
-  HC error: ||F||_2 = 2.656E-14, scaled = 3.754E-05
-    2: error= 3.75352E-05
-  NLK BCE solve succeeded:   2 iterations, error= 3.75352E-05
+  HC error: ||F||_2 = 7.055E-04 (initial)
+  HC error: ||F||_2 = 9.436E-11, scaled = 1.337E-01
+    1: error= 1.33739E-01
+  HC error: ||F||_2 = 2.649E-14, scaled = 3.754E-05
+    2: error= 3.75387E-05
+  NLK BCE solve succeeded:   2 iterations, error= 3.75387E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 7.254E-04 (initial)
-  HC error: ||F||_2 = 9.913E-11, scaled = 1.367E-01
-    1: error= 1.36657E-01
-  HC error: ||F||_2 = 3.339E-14, scaled = 4.603E-05
-    2: error= 4.60287E-05
-  NLK BCE solve succeeded:   2 iterations, error= 4.60287E-05
+  HC error: ||F||_2 = 7.253E-04 (initial)
+  HC error: ||F||_2 = 9.897E-11, scaled = 1.365E-01
+    1: error= 1.36464E-01
+  HC error: ||F||_2 = 3.313E-14, scaled = 4.568E-05
+    2: error= 4.56850E-05
+  NLK BCE solve succeeded:   2 iterations, error= 4.56850E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 7.533E-04 (initial)
-  HC error: ||F||_2 = 1.358E-10, scaled = 1.803E-01
-    1: error= 1.80326E-01
-  HC error: ||F||_2 = 5.636E-14, scaled = 7.481E-05
-    2: error= 7.48134E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.48134E-05
+  HC error: ||F||_2 = 7.524E-04 (initial)
+  HC error: ||F||_2 = 1.354E-10, scaled = 1.799E-01
+    1: error= 1.79919E-01
+  HC error: ||F||_2 = 5.598E-14, scaled = 7.441E-05
+    2: error= 7.44098E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.44098E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 7.541E-04 (initial)
-  HC error: ||F||_2 = 1.388E-10, scaled = 1.840E-01
-    1: error= 1.84009E-01
-  HC error: ||F||_2 = 4.895E-14, scaled = 6.491E-05
-    2: error= 6.49081E-05
-  NLK BCE solve succeeded:   2 iterations, error= 6.49081E-05
+  HC error: ||F||_2 = 7.540E-04 (initial)
+  HC error: ||F||_2 = 1.387E-10, scaled = 1.839E-01
+    1: error= 1.83902E-01
+  HC error: ||F||_2 = 4.893E-14, scaled = 6.490E-05
+    2: error= 6.48955E-05
+  NLK BCE solve succeeded:   2 iterations, error= 6.48955E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 7.712E-04 (initial)
-  HC error: ||F||_2 = 1.504E-10, scaled = 1.950E-01
-    1: error= 1.95044E-01
-  HC error: ||F||_2 = 4.944E-14, scaled = 6.410E-05
-    2: error= 6.40976E-05
-  NLK BCE solve succeeded:   2 iterations, error= 6.40976E-05
+  HC error: ||F||_2 = 7.740E-04 (initial)
+  HC error: ||F||_2 = 1.510E-10, scaled = 1.951E-01
+    1: error= 1.95123E-01
+  HC error: ||F||_2 = 4.959E-14, scaled = 6.407E-05
+    2: error= 6.40740E-05
+  NLK BCE solve succeeded:   2 iterations, error= 6.40740E-05
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 7.996E-04 (initial)
   HC error: ||F||_2 = 1.637E-10, scaled = 2.047E-01
-    1: error= 2.04701E-01
-  HC error: ||F||_2 = 5.130E-14, scaled = 6.416E-05
-    2: error= 6.41573E-05
-  NLK BCE solve succeeded:   2 iterations, error= 6.41573E-05
+    1: error= 2.04717E-01
+  HC error: ||F||_2 = 5.131E-14, scaled = 6.418E-05
+    2: error= 6.41768E-05
+  NLK BCE solve succeeded:   2 iterations, error= 6.41768E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 8.289E-04 (initial)
-  HC error: ||F||_2 = 1.783E-10, scaled = 2.151E-01
-    1: error= 2.15093E-01
-  HC error: ||F||_2 = 5.398E-14, scaled = 6.513E-05
-    2: error= 6.51282E-05
-  NLK BCE solve succeeded:   2 iterations, error= 6.51282E-05
+  HC error: ||F||_2 = 8.296E-04 (initial)
+  HC error: ||F||_2 = 1.784E-10, scaled = 2.151E-01
+    1: error= 2.15095E-01
+  HC error: ||F||_2 = 5.402E-14, scaled = 6.512E-05
+    2: error= 6.51230E-05
+  NLK BCE solve succeeded:   2 iterations, error= 6.51230E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 8.589E-04 (initial)
+  HC error: ||F||_2 = 8.588E-04 (initial)
   HC error: ||F||_2 = 1.945E-10, scaled = 2.264E-01
-    1: error= 2.26421E-01
-  HC error: ||F||_2 = 5.735E-14, scaled = 6.677E-05
-    2: error= 6.67724E-05
-  NLK BCE solve succeeded:   2 iterations, error= 6.67724E-05
+    1: error= 2.26427E-01
+  HC error: ||F||_2 = 5.735E-14, scaled = 6.678E-05
+    2: error= 6.67784E-05
+  NLK BCE solve succeeded:   2 iterations, error= 6.67784E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 8.897E-04 (initial)
+  HC error: ||F||_2 = 8.896E-04 (initial)
   HC error: ||F||_2 = 2.123E-10, scaled = 2.386E-01
-    1: error= 2.38643E-01
-  HC error: ||F||_2 = 6.143E-14, scaled = 6.905E-05
-    2: error= 6.90531E-05
-  NLK BCE solve succeeded:   2 iterations, error= 6.90531E-05
+    1: error= 2.38649E-01
+  HC error: ||F||_2 = 6.143E-14, scaled = 6.906E-05
+    2: error= 6.90572E-05
+  NLK BCE solve succeeded:   2 iterations, error= 6.90572E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 9.214E-04 (initial)
+  HC error: ||F||_2 = 9.213E-04 (initial)
   HC error: ||F||_2 = 2.319E-10, scaled = 2.517E-01
-    1: error= 2.51683E-01
-  HC error: ||F||_2 = 6.631E-14, scaled = 7.197E-05
-    2: error= 7.19739E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.19739E-05
+    1: error= 2.51695E-01
+  HC error: ||F||_2 = 6.632E-14, scaled = 7.198E-05
+    2: error= 7.19771E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.19771E-05
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 9.540E-04 (initial)
   HC error: ||F||_2 = 2.532E-10, scaled = 2.654E-01
-    1: error= 2.65389E-01
+    1: error= 2.65395E-01
   HC error: ||F||_2 = 7.206E-14, scaled = 7.554E-05
-    2: error= 7.55363E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.55363E-05
+    2: error= 7.55384E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.55384E-05
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 9.878E-04 (initial)
   HC error: ||F||_2 = 2.761E-10, scaled = 2.795E-01
-    1: error= 2.79495E-01
-  HC error: ||F||_2 = 7.887E-14, scaled = 7.985E-05
-    2: error= 7.98461E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.98461E-05
+    1: error= 2.79484E-01
+  HC error: ||F||_2 = 7.888E-14, scaled = 7.985E-05
+    2: error= 7.98499E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.98499E-05
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 1.023E-03 (initial)
   HC error: ||F||_2 = 3.002E-10, scaled = 2.934E-01
-    1: error= 2.93436E-01
-  HC error: ||F||_2 = 8.792E-14, scaled = 8.593E-05
-    2: error= 8.59314E-05
-  NLK BCE solve succeeded:   2 iterations, error= 8.59314E-05
+    1: error= 2.93444E-01
+  HC error: ||F||_2 = 8.795E-14, scaled = 8.595E-05
+    2: error= 8.59547E-05
+  NLK BCE solve succeeded:   2 iterations, error= 8.59547E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 1.219E-03 (initial)
-  HC error: ||F||_2 = 2.932E-10, scaled = 2.405E-01
-    1: error= 2.40529E-01
-  HC error: ||F||_2 = 8.725E-14, scaled = 7.156E-05
-    2: error= 7.15638E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.15638E-05
+  HC error: ||F||_2 = 1.222E-03 (initial)
+  HC error: ||F||_2 = 2.934E-10, scaled = 2.401E-01
+    1: error= 2.40051E-01
+  HC error: ||F||_2 = 8.729E-14, scaled = 7.142E-05
+    2: error= 7.14229E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.14229E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.024E-03 (initial)
-  HC error: ||F||_2 = 5.225E-10, scaled = 2.582E-01
-    1: error= 2.58164E-01
-  HC error: ||F||_2 = 2.176E-13, scaled = 1.075E-04
-    2: error= 1.07529E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.07529E-04
+  HC error: ||F||_2 = 2.027E-03 (initial)
+  HC error: ||F||_2 = 5.227E-10, scaled = 2.579E-01
+    1: error= 2.57908E-01
+  HC error: ||F||_2 = 2.176E-13, scaled = 1.074E-04
+    2: error= 1.07351E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.07351E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 1.414E-03 (initial)
-  HC error: ||F||_2 = 6.533E-10, scaled = 4.620E-01
-    1: error= 4.61994E-01
-  HC error: ||F||_2 = 3.301E-13, scaled = 2.335E-04
-    2: error= 2.33462E-04
-  NLK BCE solve succeeded:   2 iterations, error= 2.33462E-04
+  HC error: ||F||_2 = 1.412E-03 (initial)
+  HC error: ||F||_2 = 6.523E-10, scaled = 4.620E-01
+    1: error= 4.62002E-01
+  HC error: ||F||_2 = 3.299E-13, scaled = 2.337E-04
+    2: error= 2.33651E-04
+  NLK BCE solve succeeded:   2 iterations, error= 2.33651E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 1.470E-03 (initial)
-  HC error: ||F||_2 = 5.524E-10, scaled = 3.757E-01
-    1: error= 3.75746E-01
-  HC error: ||F||_2 = 2.155E-13, scaled = 1.466E-04
-    2: error= 1.46560E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.46560E-04
+  HC error: ||F||_2 = 1.471E-03 (initial)
+  HC error: ||F||_2 = 5.533E-10, scaled = 3.760E-01
+    1: error= 3.76018E-01
+  HC error: ||F||_2 = 2.156E-13, scaled = 1.465E-04
+    2: error= 1.46503E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.46503E-04
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 1.534E-03 (initial)
-  HC error: ||F||_2 = 5.955E-10, scaled = 3.881E-01
-    1: error= 3.88111E-01
-  HC error: ||F||_2 = 2.405E-13, scaled = 1.568E-04
-    2: error= 1.56761E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.56761E-04
+  HC error: ||F||_2 = 5.951E-10, scaled = 3.878E-01
+    1: error= 3.87808E-01
+  HC error: ||F||_2 = 2.403E-13, scaled = 1.566E-04
+    2: error= 1.56599E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.56599E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 1.825E-03 (initial)
-  HC error: ||F||_2 = 5.642E-10, scaled = 3.091E-01
-    1: error= 3.09085E-01
-  HC error: ||F||_2 = 1.404E-13, scaled = 7.692E-05
-    2: error= 7.69153E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.69153E-05
+  HC error: ||F||_2 = 1.826E-03 (initial)
+  HC error: ||F||_2 = 5.644E-10, scaled = 3.091E-01
+    1: error= 3.09068E-01
+  HC error: ||F||_2 = 1.403E-13, scaled = 7.686E-05
+    2: error= 7.68584E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.68584E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.551E-03 (initial)
-  HC error: ||F||_2 = 8.233E-10, scaled = 3.227E-01
-    1: error= 3.22701E-01
-  HC error: ||F||_2 = 3.627E-13, scaled = 1.422E-04
-    2: error= 1.42175E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.42175E-04
+  HC error: ||F||_2 = 2.545E-03 (initial)
+  HC error: ||F||_2 = 8.235E-10, scaled = 3.236E-01
+    1: error= 3.23614E-01
+  HC error: ||F||_2 = 3.634E-13, scaled = 1.428E-04
+    2: error= 1.42798E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.42798E-04
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 2.331E-03 (initial)
-  HC error: ||F||_2 = 7.810E-10, scaled = 3.350E-01
-    1: error= 3.34979E-01
-  HC error: ||F||_2 = 3.456E-13, scaled = 1.483E-04
-    2: error= 1.48256E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.48256E-04
+  HC error: ||F||_2 = 7.827E-10, scaled = 3.358E-01
+    1: error= 3.35843E-01
+  HC error: ||F||_2 = 3.473E-13, scaled = 1.490E-04
+    2: error= 1.49001E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.49001E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.453E-03 (initial)
-  HC error: ||F||_2 = 7.525E-10, scaled = 3.068E-01
-    1: error= 3.06764E-01
-  HC error: ||F||_2 = 2.193E-13, scaled = 8.941E-05
-    2: error= 8.94084E-05
-  NLK BCE solve succeeded:   2 iterations, error= 8.94084E-05
+  HC error: ||F||_2 = 2.450E-03 (initial)
+  HC error: ||F||_2 = 7.527E-10, scaled = 3.072E-01
+    1: error= 3.07176E-01
+  HC error: ||F||_2 = 2.198E-13, scaled = 8.968E-05
+    2: error= 8.96775E-05
+  NLK BCE solve succeeded:   2 iterations, error= 8.96775E-05
 HEAT TRANSFER FUNCTION NORMS
   HC error: ||F||_2 = 3.001E-03 (initial)
-  HC error: ||F||_2 = 9.895E-10, scaled = 3.297E-01
-    1: error= 3.29665E-01
-  HC error: ||F||_2 = 4.507E-13, scaled = 1.502E-04
-    2: error= 1.50177E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.50177E-04
+  HC error: ||F||_2 = 9.892E-10, scaled = 3.296E-01
+    1: error= 3.29629E-01
+  HC error: ||F||_2 = 4.506E-13, scaled = 1.502E-04
+    2: error= 1.50154E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.50154E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.626E-03 (initial)
-  HC error: ||F||_2 = 8.077E-10, scaled = 3.075E-01
-    1: error= 3.07543E-01
-  HC error: ||F||_2 = 4.222E-13, scaled = 1.608E-04
-    2: error= 1.60764E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.60764E-04
+  HC error: ||F||_2 = 2.620E-03 (initial)
+  HC error: ||F||_2 = 8.073E-10, scaled = 3.081E-01
+    1: error= 3.08070E-01
+  HC error: ||F||_2 = 4.231E-13, scaled = 1.615E-04
+    2: error= 1.61468E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.61468E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.573E-03 (initial)
-  HC error: ||F||_2 = 6.181E-10, scaled = 2.402E-01
-    1: error= 2.40165E-01
-  HC error: ||F||_2 = 1.990E-13, scaled = 7.734E-05
-    2: error= 7.73366E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.73366E-05
+  HC error: ||F||_2 = 2.575E-03 (initial)
+  HC error: ||F||_2 = 7.642E-10, scaled = 2.967E-01
+    1: error= 2.96728E-01
+  HC error: ||F||_2 = 3.443E-13, scaled = 1.337E-04
+    2: error= 1.33683E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.33683E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 3.536E-03 (initial)
-  HC error: ||F||_2 = 9.201E-10, scaled = 2.602E-01
-    1: error= 2.60238E-01
-  HC error: ||F||_2 = 4.203E-13, scaled = 1.189E-04
-    2: error= 1.18882E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.18882E-04
+  HC error: ||F||_2 = 3.511E-03 (initial)
+  HC error: ||F||_2 = 9.343E-10, scaled = 2.661E-01
+    1: error= 2.66087E-01
+  HC error: ||F||_2 = 4.375E-13, scaled = 1.246E-04
+    2: error= 1.24604E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.24604E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.959E-03 (initial)
-  HC error: ||F||_2 = 8.919E-10, scaled = 3.014E-01
-    1: error= 3.01410E-01
-  HC error: ||F||_2 = 4.596E-13, scaled = 1.553E-04
-    2: error= 1.55297E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.55297E-04
+  HC error: ||F||_2 = 2.958E-03 (initial)
+  HC error: ||F||_2 = 8.968E-10, scaled = 3.032E-01
+    1: error= 3.03160E-01
+  HC error: ||F||_2 = 4.663E-13, scaled = 1.576E-04
+    2: error= 1.57624E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.57624E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.975E-03 (initial)
-  HC error: ||F||_2 = 5.223E-10, scaled = 1.756E-01
-    1: error= 1.75568E-01
-  HC error: ||F||_2 = 1.506E-13, scaled = 5.061E-05
-    2: error= 5.06108E-05
-  NLK BCE solve succeeded:   2 iterations, error= 5.06108E-05
+  HC error: ||F||_2 = 2.966E-03 (initial)
+  HC error: ||F||_2 = 5.218E-10, scaled = 1.759E-01
+    1: error= 1.75940E-01
+  HC error: ||F||_2 = 1.502E-13, scaled = 5.063E-05
+    2: error= 5.06331E-05
+  NLK BCE solve succeeded:   2 iterations, error= 5.06331E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 3.328E-03 (initial)
-  HC error: ||F||_2 = 8.072E-10, scaled = 2.425E-01
-    1: error= 2.42509E-01
-  HC error: ||F||_2 = 3.565E-13, scaled = 1.071E-04
-    2: error= 1.07110E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.07110E-04
+  HC error: ||F||_2 = 3.318E-03 (initial)
+  HC error: ||F||_2 = 8.033E-10, scaled = 2.421E-01
+    1: error= 2.42057E-01
+  HC error: ||F||_2 = 3.552E-13, scaled = 1.070E-04
+    2: error= 1.07023E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.07023E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.717E-03 (initial)
-  HC error: ||F||_2 = 8.069E-10, scaled = 2.970E-01
-    1: error= 2.96971E-01
-  HC error: ||F||_2 = 4.199E-13, scaled = 1.545E-04
-    2: error= 1.54541E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.54541E-04
+  HC error: ||F||_2 = 2.712E-03 (initial)
+  HC error: ||F||_2 = 8.053E-10, scaled = 2.969E-01
+    1: error= 2.96898E-01
+  HC error: ||F||_2 = 4.190E-13, scaled = 1.545E-04
+    2: error= 1.54464E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.54464E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.481E-03 (initial)
-  HC error: ||F||_2 = 4.885E-10, scaled = 1.969E-01
-    1: error= 1.96895E-01
-  HC error: ||F||_2 = 1.866E-13, scaled = 7.520E-05
-    2: error= 7.51975E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.51975E-05
+  HC error: ||F||_2 = 2.475E-03 (initial)
+  HC error: ||F||_2 = 4.875E-10, scaled = 1.970E-01
+    1: error= 1.96986E-01
+  HC error: ||F||_2 = 1.868E-13, scaled = 7.547E-05
+    2: error= 7.54700E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.54700E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 3.072E-03 (initial)
-  HC error: ||F||_2 = 6.361E-10, scaled = 2.071E-01
-    1: error= 2.07105E-01
-  HC error: ||F||_2 = 3.334E-13, scaled = 1.086E-04
-    2: error= 1.08554E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.08554E-04
+  HC error: ||F||_2 = 3.074E-03 (initial)
+  HC error: ||F||_2 = 6.345E-10, scaled = 2.064E-01
+    1: error= 2.06416E-01
+  HC error: ||F||_2 = 3.331E-13, scaled = 1.084E-04
+    2: error= 1.08357E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.08357E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 3.120E-03 (initial)
-  HC error: ||F||_2 = 6.319E-10, scaled = 2.026E-01
-    1: error= 2.02563E-01
-  HC error: ||F||_2 = 3.466E-13, scaled = 1.111E-04
-    2: error= 1.11116E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.11116E-04
+  HC error: ||F||_2 = 3.103E-03 (initial)
+  HC error: ||F||_2 = 6.316E-10, scaled = 2.035E-01
+    1: error= 2.03511E-01
+  HC error: ||F||_2 = 3.466E-13, scaled = 1.117E-04
+    2: error= 1.11690E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.11690E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.735E-03 (initial)
-  HC error: ||F||_2 = 4.706E-10, scaled = 1.721E-01
-    1: error= 1.72085E-01
-  HC error: ||F||_2 = 1.614E-13, scaled = 5.901E-05
-    2: error= 5.90148E-05
-  NLK BCE solve succeeded:   2 iterations, error= 5.90148E-05
+  HC error: ||F||_2 = 2.730E-03 (initial)
+  HC error: ||F||_2 = 4.722E-10, scaled = 1.730E-01
+    1: error= 1.72992E-01
+  HC error: ||F||_2 = 1.620E-13, scaled = 5.934E-05
+    2: error= 5.93414E-05
+  NLK BCE solve succeeded:   2 iterations, error= 5.93414E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 3.202E-03 (initial)
-  HC error: ||F||_2 = 5.800E-10, scaled = 1.811E-01
-    1: error= 1.81099E-01
-  HC error: ||F||_2 = 3.134E-13, scaled = 9.786E-05
-    2: error= 9.78595E-05
-  NLK BCE solve succeeded:   2 iterations, error= 9.78595E-05
+  HC error: ||F||_2 = 3.210E-03 (initial)
+  HC error: ||F||_2 = 5.811E-10, scaled = 1.810E-01
+    1: error= 1.81042E-01
+  HC error: ||F||_2 = 3.118E-13, scaled = 9.714E-05
+    2: error= 9.71390E-05
+  NLK BCE solve succeeded:   2 iterations, error= 9.71390E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.998E-03 (initial)
-  HC error: ||F||_2 = 6.169E-10, scaled = 2.058E-01
-    1: error= 2.05782E-01
-  HC error: ||F||_2 = 3.511E-13, scaled = 1.171E-04
-    2: error= 1.17126E-04
-  NLK BCE solve succeeded:   2 iterations, error= 1.17126E-04
+  HC error: ||F||_2 = 2.984E-03 (initial)
+  HC error: ||F||_2 = 6.171E-10, scaled = 2.068E-01
+    1: error= 2.06811E-01
+  HC error: ||F||_2 = 3.504E-13, scaled = 1.174E-04
+    2: error= 1.17443E-04
+  NLK BCE solve succeeded:   2 iterations, error= 1.17443E-04
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.530E-03 (initial)
-  HC error: ||F||_2 = 4.064E-10, scaled = 1.606E-01
-    1: error= 1.60620E-01
-  HC error: ||F||_2 = 1.902E-13, scaled = 7.515E-05
-    2: error= 7.51524E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.51524E-05
+  HC error: ||F||_2 = 2.531E-03 (initial)
+  HC error: ||F||_2 = 4.060E-10, scaled = 1.604E-01
+    1: error= 1.60419E-01
+  HC error: ||F||_2 = 1.902E-13, scaled = 7.514E-05
+    2: error= 7.51380E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.51380E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.261E-03 (initial)
-  HC error: ||F||_2 = 2.727E-10, scaled = 1.206E-01
-    1: error= 1.20584E-01
-  HC error: ||F||_2 = 9.633E-14, scaled = 4.260E-05
-    2: error= 4.26004E-05
-  NLK BCE solve succeeded:   2 iterations, error= 4.26004E-05
+  HC error: ||F||_2 = 2.257E-03 (initial)
+  HC error: ||F||_2 = 2.716E-10, scaled = 1.204E-01
+    1: error= 1.20359E-01
+  HC error: ||F||_2 = 9.593E-14, scaled = 4.251E-05
+    2: error= 4.25106E-05
+  NLK BCE solve succeeded:   2 iterations, error= 4.25106E-05
 HEAT TRANSFER FUNCTION NORMS
-  HC error: ||F||_2 = 2.634E-03 (initial)
-  HC error: ||F||_2 = 4.771E-10, scaled = 1.811E-01
-    1: error= 1.81123E-01
-  HC error: ||F||_2 = 1.922E-13, scaled = 7.294E-05
-    2: error= 7.29436E-05
-  NLK BCE solve succeeded:   2 iterations, error= 7.29436E-05
+  HC error: ||F||_2 = 2.628E-03 (initial)
+  HC error: ||F||_2 = 4.731E-10, scaled = 1.801E-01
+    1: error= 1.80054E-01
+  HC error: ||F||_2 = 1.908E-13, scaled = 7.262E-05
+    2: error= 7.26157E-05
+  NLK BCE solve succeeded:   2 iterations, error= 7.26157E-05

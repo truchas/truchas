@@ -308,9 +308,9 @@ contains
 
     integer :: i
 
-    associate (cell_t => this%props%cell_t, face_t => this%props%face_t, vof => this%props%vof)
+    associate (cell_t => this%props%cell_t, face_t => this%props%face_t, vof_novoid => this%props%vof_novoid)
       do i = 1, this%mesh%ncell
-        if (vof(i) == 0.0_r8) then
+        if (vof_novoid(i) == 0.0_r8) then
           this%vel_cc(:,i) = 0.0_r8
           this%P_cc(i) = 0.0_r8
         end if
