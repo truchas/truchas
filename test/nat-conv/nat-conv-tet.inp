@@ -66,20 +66,21 @@ cells at each long_edit interval.
   rel_enthalpy_tol   = 1.0e-4
   nlk_tol            = 0.05
   nlk_preconditioner = 'hypre_amg'
+  use_new_mfd = .false.
 /
 
 &NUMERICS
   dt_init = 1.0e-2
   dt_grow = 1.05
   dt_min  = 1.0e-05
-  dt_max  = 1000.0
+  dt_max  = 100.0
 /
 
 &FLOW
   inviscid = .false.
   vol_track_subcycles = 8
   courant_number = 0.25
-  viscous_number = 0.1
+  viscous_number = 0
   viscous_implicitness = 0.5
 /
 
@@ -126,13 +127,13 @@ cells at each long_edit interval.
 &FLOW_BC
   name = 'walls'
   face_set_ids = 1, 2, 3, 4
-  condition = 'no slip'
+  type = 'no-slip'
 /
 
 &FLOW_BC
   name = 'symmetry'
   face_set_ids = 5
-  condition = 'slip'
+  type = 'free-slip'
 /
 
 &BODY
@@ -140,7 +141,16 @@ cells at each long_edit interval.
   mesh_material_number = 1
   material_number  = 1
   velocity         = 3*0.0
-  temperature      = 1.0
+  !temperature      = 1.0
+  temperature_function = 'init-temp'
+/
+
+&FUNCTION
+  name = 'init-temp'
+  type = 'polynomial'
+  poly_coefficients = 2.0, -1.0
+  poly_exponents(:,1) = 0, 0, 0
+  poly_exponents(:,2) = 1, 0, 0
 /
 
 &MATERIAL

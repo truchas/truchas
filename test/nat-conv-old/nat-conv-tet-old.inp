@@ -165,7 +165,16 @@ TOP SIDE
   mesh_material_number = 1
   material_number  = 1
   velocity         = 3*0.0
-  temperature      = 1.0
+  !temperature      = 1.0
+  temperature_function = 'init-temp'
+/
+
+&FUNCTION
+  name = 'init-temp'
+  type = 'polynomial'
+  poly_coefficients = 2.0, -1.0
+  poly_exponents(:,1) = 0, 0, 0
+  poly_exponents(:,2) = 1, 0, 0
 /
 
 &MATERIAL
