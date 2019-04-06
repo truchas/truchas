@@ -1,6 +1,3 @@
-# Currently the .mod files are going here, and not the build directory.
-include_directories(${CMAKE_Fortran_MODULE_DIRECTORY})
-
 set(SRC
     scorpio_c_binding.F90
     scorpio_file_type.F90
@@ -13,12 +10,11 @@ target_link_libraries(truchas_io PUBLIC truchas::pgslib_fe
   truchas::pgslib_mpi truchas::scorpio)
 
 add_library(truchas::io ALIAS truchas_io)
-set_property(TARGET truchas_io APPEND PROPERTY INCLUDE_DIRECTORIES
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+target_include_directories(truchas_io PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>
 )
 
 install(TARGETS truchas_io
         EXPORT  truchas_io
 	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-
