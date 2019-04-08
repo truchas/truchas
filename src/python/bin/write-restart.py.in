@@ -281,7 +281,8 @@ if __name__ == "__main__":
             series_id = cycles.index(cycle) + 1
 
         outfile = args.o if args.o \
-            else os.path.splitext(args.h5file)[0] + ".restart." + str(cycle)
+            else os.path.splitext(os.path.basename(args.h5file))[0] \
+                 + ".restart." + str(cycle)
         outfile = os.path.abspath(outfile)
 
         # If the parent output directory doesn't exist, create it
