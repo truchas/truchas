@@ -1,0 +1,13 @@
+# This file is processed by CMake at configure-time.
+
+import os
+
+class TruchasConfig:
+    mpiexec = "@MPIEXEC@"
+
+    bin_dir = "@Truchas_BIN_INSTALL_DIR@"
+    lib_dir = "@Truchas_LIBRARY_INSTALL_DIR@"
+
+    truchas_executable = os.path.join(bin_dir, "@Truchas_EXECUTABLE@")
+    write_restart_executable = os.path.join(bin_dir, "write-restart.py")
+    libfwrite = os.path.join(lib_dir, "libfwrite.so")

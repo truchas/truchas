@@ -13,7 +13,10 @@ import json
 import subprocess
 
 from .TruchasData import TruchasData
-from .TruchasConfig import TruchasConfig
+try:
+    from .TruchasConfigBuild import TruchasConfig
+except ImportError:
+    from .TruchasConfigInstall import TruchasConfig
 
 
 class TruchasEnvironment:
@@ -46,9 +49,14 @@ class TruchasEnvironment:
             # The input file is expected to be in the same folder as the test python script.
             input_dir = os.path.dirname(sys.argv[0])
 
-        # working directory is in the build path
-        test_dir = os.path.relpath(input_dir, start=TruchasConfig.test_source_dir)
-        working_dir = os.path.join(TruchasConfig.test_build_dir, test_dir)
+        # Working directory is in the build path if the script is in the build path.
+        # This is used for testing. Otherwise, the working directory is the current
+        # directory.
+        try:
+            test_dir = os.path.relpath(input_dir, start=TruchasConfig.test_source_dir)
+            working_dir = os.path.join(TruchasConfig.test_build_dir, test_dir)
+        except AttributeError:
+            working_dir = "."
 
         return cls(TruchasConfig.mpiexec, TruchasConfig.truchas_executable, input_dir, \
                    TruchasConfig.write_restart_executable, working_dir)

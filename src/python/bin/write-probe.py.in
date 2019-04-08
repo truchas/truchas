@@ -12,7 +12,7 @@ import argparse
 import sys
 
 # Try to import through PYTHONPATH, and if not found, look in the truchas
-# install directory.
+# install directory, set by CMake at configure-time.
 try:
     import truchas
 except ImportError:

@@ -20,8 +20,6 @@ set(PYTHON_SCRIPT_FILES
   truchas/TruchasData.py
   truchas/TruchasEnvironment.py
   truchas/TruchasTest.py
-  fortran_write/__init__.py
-  fortran_write/fortran_write.py
   )
 
 set(PYTHON_BIN_FILES
@@ -31,20 +29,25 @@ set(PYTHON_BIN_FILES
   bin/write-probe.py
   )
 
-set(PYTHON_CONFIG_FILE truchas/TruchasConfig.py)
+# Both Build and Install config files get configured
+# and placed in the build tree, but only the Install
+# config file is moved to the install directory.
+set(PYTHON_CONFIG_FILES
+  truchas/TruchasConfigBuild.py
+  truchas/TruchasConfigInstall.py
+  )
 
 set(TruchasPython_BINARY_DIR ${CMAKE_CURRENT_BUILD_DIR})
 set(TruchasPython_INSTALL_PREFIX
   ${Truchas_LIBRARY_INSTALL_DIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
 
-# preprocess the configuration file
+# preprocess the bin and configuration files
 get_target_property(Truchas_EXECUTABLE truchas_exe OUTPUT_NAME)
-foreach(f ${PYTHON_BIN_FILES} ${PYTHON_CONFIG_FILE})
+foreach(f ${PYTHON_BIN_FILES} ${PYTHON_CONFIG_FILES})
   configure_file(${f}.in ${f} @ONLY)
 endforeach(f)
 
-# build & install rules
-# copy .py files to the build directory
+# build rules: copy .py files to the build directory
 foreach(f ${PYTHON_SCRIPT_FILES})
   add_custom_command(OUTPUT ${f}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${f} ${f}
@@ -53,17 +56,15 @@ foreach(f ${PYTHON_SCRIPT_FILES})
 endforeach(f)
 add_custom_target(TruchasPython ALL DEPENDS ${PYTHON_SCRIPT_FILES})
 
-install(DIRECTORY ${TruchasPython_BINARY_DIR}/truchas
-  ${TruchasPython_BINARY_DIR}/fortran_write
-  DESTINATION ${TruchasPython_INSTALL_PREFIX})
+foreach(f ${PYTHON_SCRIPT_FILES} truchas/TruchasConfigInstall.py)
+  install(FILES ${TruchasPython_BINARY_DIR}/${f}
+    DESTINATION ${TruchasPython_INSTALL_PREFIX}/truchas)
+endforeach(f)
+
 foreach(f ${PYTHON_BIN_FILES})
   install(PROGRAMS ${TruchasPython_BINARY_DIR}/${f}
     DESTINATION bin)
 endforeach(f)
 
-# build fortran write library
-add_library(fwrite fortran_write/fortran_write.f90)
-install(TARGETS fwrite
-        RUNTIME DESTINATION ${Truchas_BIN_INSTALL_DIR}
-        LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
-        ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
+
+add_subdirectory(fortran_write)
