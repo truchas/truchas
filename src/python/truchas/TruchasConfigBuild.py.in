@@ -16,4 +16,4 @@ class TruchasConfig:
     truchas_executable = os.path.join(exe_dir, "@Truchas_EXECUTABLE@")
     write_restart_executable = os.path.join(build_dir,
                                             "src/python/bin/write-restart.py")
-    libfwrite = os.path.join(build_dir, "src/python/libfwrite.so")
+    libfwrite = os.path.join(build_dir, "src/python/fortran_write/libfwrite.so")
