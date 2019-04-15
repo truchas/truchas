@@ -179,7 +179,7 @@ call hijack_truchas ()
     Logical :: quit = .False., sig_rcvd
     integer :: errc
     Integer :: c
-    type(sim_event), pointer :: event
+    type(sim_event), allocatable :: event
     type(time_step_sync) :: ts_sync
     real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
     !---------------------------------------------------------------------------
@@ -187,7 +187,7 @@ call hijack_truchas ()
     if (mem_on) call mem_diag_open
 
     ts_sync = time_step_sync(5)
-    event => next_event(t)
+    call next_event(event, t)
 
     call PROBE_INIT_DANU  ! for Tbrook output this was done in TBU_writebasicdata
 
@@ -232,11 +232,11 @@ call hijack_truchas ()
       call TIME_STEP ()
 
       ! simulation phases (optional)
-      if (associated(event)) then
+      if (allocated(event)) then
         if (t1 == event%time()) then ! at start of the next phase
           dt = event%init_dt(dt_old, dt)
-          event => next_event()
-          if (associated(event)) then
+          call next_event(event)
+          if (allocated(event)) then
             t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
           else
             t2 = t1 + dt

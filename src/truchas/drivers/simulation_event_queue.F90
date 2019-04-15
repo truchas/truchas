@@ -59,7 +59,8 @@
 
 module simulation_event_queue
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use sim_event_queue_type
   use parameter_list_type
   implicit none
   private
@@ -71,7 +72,7 @@ module simulation_event_queue
   integer, parameter, public :: DT_POLICY_FACTOR = 2
   integer, parameter, public :: DT_POLICY_VALUE  = 3
 
-  type, public :: sim_event
+  type, extends(event_action), public :: sim_event
     private
     real(r8) :: t
     integer  :: dt_policy = DT_POLICY_NONE
@@ -85,19 +86,6 @@ module simulation_event_queue
   interface sim_event
     module procedure sim_event_values
   end interface
-
-  type :: sim_event_queue
-    type(queue_item), pointer :: top => null()
-  contains
-    procedure :: add
-    procedure :: pop
-    procedure :: is_empty
-  end type sim_event_queue
-
-  type :: queue_item
-    type(sim_event) :: event
-    type(queue_item), pointer :: next => null()
-  end type queue_item
 
   type(sim_event_queue) :: event_queue
 
@@ -113,76 +101,13 @@ contains
     if (present(c)) this%c = c
   end function sim_event_values
 
-  subroutine add(this, event)
-    use truchas_logging_services
-    class(sim_event_queue), intent(inout) :: this
-    type(sim_event), intent(in) :: event
-    type(queue_item), pointer :: item, new_item
-    item => find_queue_item(this, event%t)
-    if (associated(item)) then
-      if (item%event%t == event%t) then ! arbitrate on policy
-        if (item%event%dt_policy == DT_POLICY_NONE) then
-          item%event = event
-        else
-          call TLS_warn('SIMULATION_EVENT_QUEUE: conflicting DT policy')
-        end if
-      else ! insert after item
-        allocate(new_item)
-        new_item%event = event
-        new_item%next => item%next
-        item%next => new_item
-      end if
-    else ! insert at the front of the list
-      allocate(new_item)
-      new_item%event = event
-      new_item%next => this%top
-      this%top => new_item
-    end if
-  end subroutine add
-
-  function pop(this) result(event)
-    class(sim_event_queue), intent(inout) :: this
-    type(sim_event) :: event
-    type(queue_item), pointer :: item
-    INSIST(associated(this%top))
-    event = this%top%event
-    item => this%top
-    this%top => item%next
-    deallocate(item)
-  end function pop
-
-  logical function is_empty(this)
-    class(sim_event_queue), intent(in) :: this
-    is_empty = .not.associated(this%top)
-  end function is_empty
-
-  !! Returns a pointer to the QUEUE_ITEM in the ordered list positioned at the
-  !! given time.  This is the insertion point of an event with this time, but
-  !! note that the event time of the item may equal the given time.  A null
-  !! pointer is returned if the insertion point is at the head of the list.
-  function find_queue_item(this, t) result(item)
-    class(sim_event_queue), intent(in) :: this
-    real(r8), intent(in) :: t
-    type(queue_item), pointer :: item
-    item => this%top
-    if (.not.associated(item)) return
-    if (t < item%event%t) then
-      item => null()
-      return
-    end if
-    do while (associated(item%next))
-      if (t < item%next%event%t) return
-      item => item%next
-    end do
-  end function find_queue_item
-
-  pure function sim_event_time (this) result (t)
+  pure function sim_event_time(this) result(t)
     class(sim_event), intent(in) :: this
     real(r8) :: t
     t = this%t
   end function sim_event_time
 
-  pure function sim_event_init_dt (this, dt_last, dt_next) result (dt)
+  pure function sim_event_init_dt(this, dt_last, dt_next) result(dt)
     class(sim_event), intent(in) :: this
     real(r8), intent(in) :: dt_last, dt_next
     real(r8) :: dt
@@ -198,28 +123,28 @@ contains
     end select
   end function sim_event_init_dt
 
-  subroutine add_event (event)
+  subroutine add_event(event)
     type(sim_event), intent(in) :: event
-    call event_queue%add(event)
+    call event_queue%add_event(event%t, event)
   end subroutine add_event
 
-  function next_event (t) result (event)
+  subroutine next_event(event, t)
+    type(sim_event), allocatable, intent(out) :: event
     real(r8), intent(in), optional :: t
-    type(sim_event), pointer :: event
-    event => null()
-    if (event_queue%is_empty()) return
-    allocate(event)
-    event = event_queue%pop()
-    if (present(t)) then
-      do while (event%time() <= t)
-        if (event_queue%is_empty()) then
-          deallocate(event)
-          return
-        end if
-        event = event_queue%pop()
-      end do
+    type(action_list), allocatable :: actions
+    class(event_action), allocatable :: action
+    if (present(t)) call event_queue%fast_forward(t)
+    call event_queue%pop_actions(actions)
+    if (allocated(actions)) then
+      call actions%get_next_action(action)
+      if (allocated(action)) then
+        select type (action)
+        type is (sim_event)
+          event = action
+        end select
+      end if
     end if
-  end function next_event
+  end subroutine next_event
 
   subroutine read_simulation_control_namelist (lun)
 
@@ -297,9 +222,9 @@ contains
     do j = size(array), 1, -1
 #ifdef INTEL_COMPILER_WORKAROUND
       event = sim_event(array(j), dt_policy, c)
-      call event_queue%add(event)
+      call add_event(event)
 #else
-      call event_queue%add(sim_event(array(j), dt_policy, c))
+      call add_event(sim_event(array(j), dt_policy, c))
 #endif
     end do
 
