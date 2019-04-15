@@ -344,7 +344,6 @@ contains
       ! Force 0.0 <= Vofint <= 1.0
       Vofint = min(max(sum(vof(priority(:ni))), 0.0_r8), 1.0_r8)
       is_mixed_donor_cell = cutoff < Vofint .and. Vofint < 1 - cutoff
-
       ! locate each interface plane by computing the plane constant
       if (is_mixed_donor_cell) &
           P = locate_plane_os(int_norm(:,priority(ni)), vofint, cell%volume, cell%node, &
@@ -701,8 +700,6 @@ contains
 
   subroutine flux_renorm(this, vel, vof_n, flux_vol, dt)
 
-    use near_zero_function
-
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), flux_vol(:,:), dt
 
@@ -711,7 +708,7 @@ contains
     real(r8) :: mat_flux_cur, mat_flux_acc, mat_avail
     real(r8) :: face_flux_fixed, face_flux_adjustable, face_flux
 
-    nmat = this%nrealfluid
+    nmat = this%nfluid
     ierr = 0
 
     do i = 1, this%mesh%ncell
@@ -724,7 +721,7 @@ contains
 
         do m = 1, nmat
           mat_flux_cur = sum(this%flux_vol_sub(m,f0:f1))
-          if (near_zero(mat_flux_cur)) cycle
+          if (mat_flux_cur == 0.0_r8) cycle
 
           mat_flux_acc = 0.0_r8
           do j = f0, f1
