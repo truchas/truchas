@@ -6,3 +6,5 @@ try:
     from .TruchasConfigBuild import *
 except ImportError:
     from .TruchasConfigInstall import *
+
+from .TruchasMappedData import *

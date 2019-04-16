@@ -11,3 +11,4 @@ class TruchasConfig:
     truchas_executable = os.path.join(bin_dir, "@Truchas_EXECUTABLE@")
     write_restart_executable = os.path.join(bin_dir, "write-restart.py")
     libfwrite = os.path.join(lib_dir, "libfwrite.so")
+    libgridmap = os.path.join(lib_dir, "libgridmap.so")

@@ -1,0 +1,93 @@
+#===============================================================================
+#
+# This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+#
+#===============================================================================
+
+import scipy as sp
+
+from .TruchasData import TruchasData
+
+# Try to import through PYTHONPATH, and if not found, look in the truchas
+# install directory, set by CMake at configure-time.
+try:
+    import grid_mapping
+except ImportError:
+    sys.path.append("@TruchasPython_INSTALL_PREFIX@")
+    import grid_mapping
+
+
+class TruchasMappedData:
+    """
+    Wrapper for mapping Truchas Data to new exodus mesh.
+    """
+
+    def __init__(self, truchas_data, exodus_filename, scale_factor=1):
+        self._truchas_data = truchas_data
+        self.mapped = True
+
+        map_data = grid_mapping.mesh_map(self._truchas_data.nnode,
+                                         self._truchas_data.ncell,
+                                         self._truchas_data.cell_node_map(),
+                                         self._truchas_data.blockid(),
+                                         self._truchas_data.node_coordinates(),
+                                         exodus_filename, scale_factor)
+
+        # get destination mesh data and map data
+        self.ncell = map_data.ncell
+        self.nnode = map_data.nnode
+        self._node_coordinates = map_data.node_coordinates
+        self._cnode = map_data.cnode
+        self._blockid = map_data.blockid
+        self._mesh_map = map_data.mesh_map
+
+
+    def field(self, series_id, field_name):
+        """Return the requested field of the requested series as a ndarray.
+        This will read the entire field from disk."""
+
+        # Currently scalar fields are supported, and VOF.
+        # Other vector fields not yet supported.
+        shape = self._truchas_data._series(series_id)[field_name].shape
+
+        field = self._truchas_data.field(series_id, field_name)
+        if len(shape) == 1:
+            mapped_field = grid_mapping.map_cell_field(field, self._mesh_map)
+        elif len(shape) == 2 and field_name == "VOF":
+            # VOF components are all mapped independently
+            mapped_field = \
+                sp.array([grid_mapping.map_cell_field(f, self._mesh_map)
+                          for f in field.transpose()]).transpose()
+        else:
+            raise NotImplementedError(("Multidimensional fields other than VOF "
+                                       "are not yet supported for mesh mapping."))
+
+        return mapped_field
+
+
+    def time(self, series_id):
+        return self._truchas_data.time(series_id)
+
+    def time_step(self, series_id):
+        return self._truchas_data.time_step(series_id)
+
+    def cycle(self, series_id):
+        return self._truchas_data.cycle(series_id)
+
+    def num_series(self):
+        return self._truchas_data.num_series()
+
+    def num_species(self):
+        return self._truchas_data.num_species()
+
+    def field_names(self, series_id=1):
+        return self._truchas_data.field_names(series_id)
+
+    def blockid(self):
+        return self._blockid
+
+    def node_coordinates(self):
+        return self._node_coordinates
+
+    def cell_node_map(self):
+        return self._cnode
