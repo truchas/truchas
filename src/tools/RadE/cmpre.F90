@@ -50,8 +50,6 @@ program cmpre
   call vf_diff_max (vf2, error0, rloc, cloc)
   if (is_IOP) write(*,'(a,es10.3,a)') 'max difference =', error0, &
       ' at row ' // i_to_c(rloc) // ', col ' // i_to_c(cloc)
-  call destroy (vf1)
-  call destroy (vf2)
   
   call scl_finalize()
 

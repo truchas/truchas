@@ -35,15 +35,16 @@ build_whitespace_string(fpp_flags ${fpp_flags_list})
 
 # --- Library libre
 set(LIBRE_FORTRAN_FILES
-          scl.F90
-	  f90_assert.F90
-	  chaparral_c_binding.F90
-	  re_utilities.F90
-	  re_encl_type.F90
-	  re_dist_vf_type.F90 
-          re_exodus_encl.F90
-	  re_chaparral_vf.F90
-	  re_graphics_gmv.F90)
+    scl.F90
+    f90_assert.F90
+    chaparral_c_binding.F90
+    re_utilities.F90
+    re_encl_type.F90
+    re_dist_vf_type.F90
+    re_exodus_encl.F90
+    re_chaparral_vf.F90
+    re_graphics_gmv.F90
+    patching/re_patch_type.F90)
 
 fortran_preprocess_files(LIBRARY_RADE_FILES
                          FILES ${LIBRE_FORTRAN_FILES}

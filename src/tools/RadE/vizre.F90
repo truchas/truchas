@@ -20,7 +20,7 @@ program vizre
   character(len=512) :: enclosure_file, gmv_file
   type(encl) :: e
   type(dist_vf) :: dvf
-  real, pointer :: var(:) => null()
+  real, allocatable :: var(:)
 
   call scl_init ()
   is_IOP = (scl_rank()==1)
@@ -38,10 +38,10 @@ program vizre
     call read_dist_vf (dvf, trim(enclosure_file))
 
     if (is_IOP) call gmv_begin_variables ()
-    var => get_ambient_vf(dvf)
+    var = get_ambient_vf(dvf)
     if (is_IOP) call gmv_write_face_var (e, var, 'ambient', sym)
     deallocate(var)
-    var => dvf_row_sum(dvf)
+    var = dvf_row_sum(dvf)
     if (is_IOP) call gmv_write_face_var (e, var, 'row sum', sym)
     deallocate(var)
     nvar = 2
@@ -49,7 +49,7 @@ program vizre
       do n = 1, size(col)
         if (col(n) >= 1 .and. col(n) <= e%nface) then
           if (exceeded_variable_limit(nvar)) goto 99
-          var => unpack_dvf_col(dvf, col(n))
+          var = unpack_dvf_col(dvf, col(n))
           if (is_IOP) call gmv_write_face_var (e, var, 'col'//i_to_c(col(n)), sym)
           deallocate(var)
         else
@@ -62,7 +62,7 @@ program vizre
       do n = 1, size(row)
         if (row(n) >= 1 .and. row(n) <= e%nface) then
           if (exceeded_variable_limit(nvar)) goto 99
-          var => unpack_dvf_row(dvf, row(n))
+          var = unpack_dvf_row(dvf, row(n))
           if (is_IOP) call gmv_write_face_var (e, var, 'row'//i_to_c(row(n)), sym)
           deallocate(var)
         else
@@ -77,8 +77,6 @@ program vizre
   end if
 
   if (is_IOP) call gmv_close ()
-
-  call destroy (dvf)
 
   call scl_finalize()
 
