@@ -33,8 +33,8 @@ set(PYTHON_BIN_FILES
 # and placed in the build tree, but only the Install
 # config file is moved to the install directory.
 set(PYTHON_CONFIG_FILES
-  truchas/TruchasConfigBuild.py
   truchas/TruchasConfigInstall.py
+  truchas/TruchasMappedData.py
   )
 
 set(TruchasPython_BINARY_DIR ${CMAKE_CURRENT_BUILD_DIR})
@@ -43,7 +43,7 @@ set(TruchasPython_INSTALL_PREFIX
 
 # preprocess the bin and configuration files
 get_target_property(Truchas_EXECUTABLE truchas_exe OUTPUT_NAME)
-foreach(f ${PYTHON_BIN_FILES} ${PYTHON_CONFIG_FILES})
+foreach(f ${PYTHON_BIN_FILES} ${PYTHON_CONFIG_FILES} truchas/TruchasConfigBuild.py)
   configure_file(${f}.in ${f} @ONLY)
 endforeach(f)
 
@@ -56,7 +56,7 @@ foreach(f ${PYTHON_SCRIPT_FILES})
 endforeach(f)
 add_custom_target(TruchasPython ALL DEPENDS ${PYTHON_SCRIPT_FILES})
 
-foreach(f ${PYTHON_SCRIPT_FILES} truchas/TruchasConfigInstall.py)
+foreach(f ${PYTHON_SCRIPT_FILES} ${PYTHON_CONFIG_FILES})
   install(FILES ${TruchasPython_BINARY_DIR}/${f}
     DESTINATION ${TruchasPython_INSTALL_PREFIX}/truchas)
 endforeach(f)
@@ -68,3 +68,4 @@ endforeach(f)
 
 
 add_subdirectory(fortran_write)
+add_subdirectory(grid_mapping)

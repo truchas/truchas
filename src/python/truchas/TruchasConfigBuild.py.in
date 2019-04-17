@@ -17,3 +17,4 @@ class TruchasConfig:
     write_restart_executable = os.path.join(build_dir,
                                             "src/python/bin/write-restart.py")
     libfwrite = os.path.join(build_dir, "src/python/fortran_write/libfwrite.so")
+    libgridmap = os.path.join(build_dir, "src/python/grid_mapping/libgridmap.so")
