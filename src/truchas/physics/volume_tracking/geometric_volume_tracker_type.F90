@@ -711,7 +711,7 @@ contains
     nmat = this%nfluid
     ierr = 0
 
-    do i = 1, this%mesh%ncell
+    do i = 1, this%mesh%ncell_onP
       avail = .true.
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
@@ -777,7 +777,26 @@ contains
       end do
     end do
 
+
     call TLS_fatal_if_any (ierr /= 0, 'FLUX_RENORM: cannot reassign face flux to any other material')
+
+    ! Is there really not a better way?
+    do i = 1, this%mesh%ncell_onP
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      do m = 1, nmat
+        this%w_cell(1:f1-f0+1,m,i) = this%flux_vol_sub(m,f0:f1)
+      end do
+    end do
+    call gather_boundary(this%mesh%cell_ip, this%w_cell)
+    do i = this%mesh%ncell_onP+1, this%mesh%ncell
+      f0 = this%mesh%xcface(i)
+      f1 = this%mesh%xcface(i+1)-1
+      do m = 1, nmat
+        this%flux_vol_sub(m,f0:f1) = this%w_cell(1:f1-f0+1,m,i)
+      end do
+    end do
+
 
   end subroutine flux_renorm
 
