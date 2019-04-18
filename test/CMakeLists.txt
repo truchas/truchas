@@ -119,7 +119,7 @@ add_pytruchas_test(htvoid2-old htvoid2/test-old.py PROCESSORS 4 LABELS DIFFUSION
 add_pytruchas_test(htvoid3-old htvoid3/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
 add_pytruchas_test(htvoid4-old htvoid4/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
 
-add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS DIFFUSION FLOW NOT_WORKING)
 add_pytruchas_test(htvoid2 htvoid2/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 #add_pytruchas_test(htvoid3 htvoid3/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(htvoid4 htvoid4/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
@@ -277,7 +277,7 @@ add_pytruchas_test(free-surf-flow-old-6 free-surf-flow-old/test6.py PROCESSORS 4
 add_pytruchas_test(free-surf-flow-1 free-surf-flow/test1.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(free-surf-flow-2 free-surf-flow/test2.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(free-surf-flow-3 free-surf-flow/test3.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(free-surf-flow-4 free-surf-flow/test4.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(free-surf-flow-4 free-surf-flow/test4.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
 add_pytruchas_test(free-surf-flow-5 free-surf-flow/test5.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(free-surf-flow-6 free-surf-flow/test6.py PROCESSORS 4 LABELS FLOW)
 #add_pytruchas_test(free-surf-flow-7 free-surf-flow/test7.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
