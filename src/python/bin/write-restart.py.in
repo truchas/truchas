@@ -2,7 +2,9 @@
 
 #===============================================================================
 #
-# This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+#  Copyright (c) Los Alamos National Security, LLC.  This file is part of the
+#  Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
+#  in the LICENSE file found in the top-level directory of this distribution.
 #
 #===============================================================================
 
@@ -23,7 +25,7 @@ except ImportError:
     import truchas
 
 
-def write_restart(outfile, truchas_data, series_id):
+def write_restart(outfile, truchas_data, series_id, scale_factor):
     fw = fortran_write.FortranWrite(outfile)
     fields = truchas_data.field_names(series_id)
 
@@ -48,11 +50,12 @@ def write_restart(outfile, truchas_data, series_id):
     fw.write_i4x0(truchas_data.nnode)
 
     # MESH SEGMENT
-    for cn in truchas_data.cell_node_map().transpose():
+    for cn in cell_node_map(truchas_data).transpose():
         fw.write_i4x1(cn)
 
-    bid = truchas_data.blockid()
-    if len(bid) > 0:
+    if "BLOCKID" in truchas_data._root["Simulations/MAIN/Non-series Data/"]:
+        bid = truchas_data._root["Simulations/MAIN/Non-series Data/BLOCKID"][:]
+        bid = bid[truchas_data._cellmap]
         fw.write_i4x0(1)
         fw.write_i4x1(bid)
     else:
@@ -111,7 +114,7 @@ def write_restart(outfile, truchas_data, series_id):
 
         fw.write_r8x1(truchas_data.field(series_id, "epsdot"))
 
-        for t in truchas_data.field(series_id, "RHS").transpose():
+        for t in truchas_data.field_node(series_id, "RHS").transpose():
             fw.write_r8x1(t)
 
         for t in truchas_data.field(series_id, "epstherm").transpose():
@@ -120,12 +123,12 @@ def write_restart(outfile, truchas_data, series_id):
         for t in truchas_data.field(series_id, "epspc").transpose():
             fw.write_r8x1(t)
 
-        for t in truchas_data.field(series_id, "Displacement").transpose():
+        for t in truchas_data.field_node(series_id, "Displacement").transpose():
             fw.write_r8x1(t)
 
     # SPECIES SEGMENT
     if "species" in features:
-        nspecies = truchas_data.num_species()
+        nspecies = truchas_data._root["Simulations/MAIN"].attrs["NUM_SPECIES"]
         assert nspecies > 0
         fw.write_i4x0(nspecies)
 
@@ -200,14 +203,23 @@ def write_restart(outfile, truchas_data, series_id):
 
 def feature_list(truchas_data, fields):
     """Returns a list of features present based on fields in the output."""
-    # Only species is supported for mapped restarts.
     features = []
-    if "Z_VC" in fields and not truchas_data.mapped: features.append("fluid_flow")
-    if "epsilon" in fields and not truchas_data.mapped: features.append("solid_mechanics")
+    if "Z_VC" in fields: features.append("fluid_flow")
+    if "epsilon" in fields: features.append("solid_mechanics")
     if "phi1" in fields: features.append("species")
-    if "Joule_P" in fields and not truchas_data.mapped: features.append("joule_heat")
-    if "CP-USTRUC-MAP" in fields and not truchas_data.mapped: features.append("microstructure")
+    if "Joule_P" in fields: features.append("joule_heat")
+    if "CP-USTRUC-MAP" in fields: features.append("microstructure")
     return features
+
+
+def cell_node_map(truchas_data):
+    # Load the cnode map, convert to 0-based indexing,
+    # reorder for cell and node ordering, then convert
+    # back to 1-based indexing.
+    cnode = truchas_data._root["Meshes/DEFAULT/Element Connectivity"][:] - 1
+    nm = truchas_data._root["Simulations/MAIN/Non-series Data/NODEMAP"][:] - 1
+    cnode = nm[cnode[truchas_data._cellmap,:]] + 1
+    return cnode
 
 
 def print_cycles(truchas_data):
@@ -241,7 +253,7 @@ def parse_argv():
                               "FILE is taken to be the H5FILE name with the "
                               ".h5 suffix replaced by .restart.N, where N is "
                               "the cycle number."))
-    parser.add_argument("-m", type=str, metavar="FILE",
+    parser.add_argument("-m", type=argparse.FileType('r'), metavar="FILE",
                         help=("Create a mapped restart file using the specified "
                               "ExodusII mesh FILE as the target mesh."))
     parser.add_argument("-s", type=float, default=1, metavar="FLOAT",
@@ -279,13 +291,4 @@ if __name__ == "__main__":
             os.mkdir(outdir)
 
         print("Using cycle {:d} and writing to {:s}".format(cycle, outfile))
-
-        if args.m is not None:
-            assert args.s > 0
-            exofile = os.path.abspath(args.m)
-            assert os.path.isfile(exofile)
-            print("Mapping to mesh at {:s}".format(exofile))
-            mapped_data = truchas.TruchasMappedData(truchas_data, exofile, args.s)
-            write_restart(outfile, mapped_data, series_id)
-        else:
-            write_restart(outfile, truchas_data, series_id)
+        write_restart(outfile, truchas_data, series_id, args.s)

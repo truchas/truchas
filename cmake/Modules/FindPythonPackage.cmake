@@ -1,7 +1,7 @@
-# Check if a python package is available, send fatal error if it isn't,
-# or if the found version is less than a given minimum.
+# Check if a python package is available, send fatal error if it isn't.
+# Should add handling for minimum versions and REQUIRED flag.
 
-function(find_python_package PACKAGE MIN_VERSION)
+function(find_python_package PACKAGE)
   if(NOT DEFINED PYTHON_EXECUTABLE)
     message(STATUS "${PYTHON_EXECUTABLE}")
     message(FATAL_ERROR "Python executable not defined. Could not search for ${PACKAGE}")
@@ -16,9 +16,6 @@ function(find_python_package PACKAGE MIN_VERSION)
 
   if(exit_code)
     message(FATAL_ERROR "Python module ${PACKAGE} not found")
-  elseif(found_package_version VERSION_LESS MIN_VERSION)
-    message(FATAL_ERROR "Could NOT find Python module ${PACKAGE}: Found \
-unsuitable version \"${found_package_version}\", but required is at least \"${MIN_VERSION}\"")
   else()
     message(STATUS "Found Python module ${PACKAGE} (found version ${found_package_version})")
   endif()

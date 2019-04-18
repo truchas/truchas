@@ -1,10 +1,5 @@
-#===============================================================================
-#
-# This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
-#
-#===============================================================================
-
 import ctypes
+import ctypes.util
 import os
 
 import scipy as sp

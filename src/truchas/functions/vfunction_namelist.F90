@@ -131,7 +131,7 @@ contains
         if (npts == 0) call TLS_fatal('TABULAR_DATA not specified')
         if (npts < 2) call TLS_fatal('TABULAR_DATA requires at least two data points')
         do rank = size(tabular_data,dim=1), 1, -1
-          if (any(tabular_data(rank,:) /= NULL_R)) exit
+          if (any(tabular_data(:,npts) /= NULL_R)) exit
         end do
         if (rank < 2) call TLS_fatal('TABULAR_DATA is incomplete')
         if (any(tabular_data(:rank,:npts) == NULL_R)) call TLS_fatal('TABULAR_DATA is incomplete')
