@@ -6,64 +6,26 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2018-11-16 16:26:10
+   build date/time:     2019-04-18 07:51:39
    build flags:         -u -C -C=dangling -gline -nan
-   build host:          petaca1.lanl.gov
-   run architecture:    Linux petaca1.lanl.gov 4.13.16-1
-   run host:            petaca1.lanl.gov1 SMP Mon Nov 27
-   run date/time:       19 Nov 18 10:04:26
+   build host:          arriba.lanl.gov
+   run architecture:    Linux arriba.lanl.gov 4.13.16-10
+   run host:            arriba.lanl.gov1 SMP Mon Nov 27
+   run date/time:       18 Apr 19 09:07:33
    processors:          1
 
 ================================================================================
 
 COPYRIGHT
 
-   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
-   All rights reserved.
+   Copyright 2007-2019.  Triad National Security, LLC.  All rights reserved.
 
-   This software was produced under U.S. Government contract DE-AC52-06NA25396
-   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-   National Security, LLC for the U.S. Department of Energy. The U.S. Government
-   has rights to use, reproduce, and distribute this software.  NEITHER THE
-   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-   is modified to produce derivative works, such modified software should be
-   clearly marked, so as not to confuse it with the version available from LANL.
+   This program was produced under U.S. Government contract 89233218CNA000001
+   for Los Alamos National Laboratory (LANL), which is operated by Triad
+   National Security, LLC for the U.S. Department of Energy/National Nuclear
+   Security Administration.
 
-   Additionally, redistribution and use in source and binary forms, with or
-   without modification, are permitted provided that the following conditions
-   are met:
-
-   1. Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-
-   2. Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-
-   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
-      Laboratory, LANL, the U.S. Government, nor the names of its contributors
-      may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
-   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
-   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-================================================================================
-
-DISCLAIMER
-
-   This Truchas release is registered with the Los Alamos National
-   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
+   Truchas is open source software distributed under the 3-Clause BSD License.
 
 ================================================================================
 
@@ -139,7 +101,7 @@ Reading FLOW namelist ...
 
 Reading FLOW_BC namelists ...
 
-Reading FLOW_CORRECTOR namelist ...
+Reading FLOW_PRESSURE_SOLVER namelist ...
 
  Reading BC Namelists ...
 BC namelists not found; using defaults.
@@ -200,7 +162,23 @@ ERROR: material 2 volume fraction > 1 in cells: 42 83 126 209 210 [544 more item
  Finished BC initialization.
 
 Configuring volume tracking ...
-projection solve:    2 (DS),   10 (AMG), 4.3188E-11 (|r|/|b|)
+Generating velocity boundary condition for "velocity" type
+Generating velocity boundary condition for "no-slip" type
+Generating pressure boundary condition for "pressure" type
+  using FLOW_BC[right]
+  using FLOW_BC[top]
+Generating pressure boundary condition for "pressure" type
+  using FLOW_BC[right]
+  using FLOW_BC[top]
+Generating pressure boundary condition for "velocity" type
+Generating pressure boundary condition for "no-slip" type
+Generating pressure boundary condition for "free-slip" type
+  using FLOW_BC[rest]
+Generating pressure boundary condition for "marangoni" type
+Generating velocity boundary condition for "free-slip" type
+  using FLOW_BC[rest]
+Generating velocity boundary condition for "marangoni" type
+projection solve:    2 (DS),   10 (AMG), 7.1093E-11 (|r|/|b|)
 
 ================================================================================
 
@@ -208,369 +186,369 @@ EXECUTION
 
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E-03
-projection solve:   26 (DS),    9 (AMG), 3.3979E-11 (|r|/|b|)
+projection solve:   29 (DS),    9 (AMG), 2.4103E-11 (|r|/|b|)
 
             Min Velocity: (-2.6366E-03, -9.7577E-03,  0.0000E+00)
             Max Velocity: ( 2.9449E-02,  6.9877E-03,  0.0000E+00)
 
           2: t =   1.00000E-03, dt(growth) =   1.05000E-03
-projection solve:    3 (DS),   10 (AMG), 5.8123E-11 (|r|/|b|)
+projection solve:    3 (DS),   10 (AMG), 6.2008E-11 (|r|/|b|)
 
-            Min Velocity: (-5.1671E-03, -2.0051E-02,  0.0000E+00)
+            Min Velocity: (-5.1667E-03, -2.0051E-02,  0.0000E+00)
             Max Velocity: ( 6.1655E-02,  1.5966E-02,  0.0000E+00)
 
           3: t =   2.05000E-03, dt(growth) =   1.10250E-03
-projection solve:    3 (DS),   10 (AMG), 3.2188E-11 (|r|/|b|)
+projection solve:    3 (DS),   10 (AMG), 2.8518E-11 (|r|/|b|)
 
-            Min Velocity: (-7.5721E-03, -3.0873E-02,  0.0000E+00)
+            Min Velocity: (-7.5715E-03, -3.0873E-02,  0.0000E+00)
             Max Velocity: ( 9.5698E-02,  2.5700E-02,  0.0000E+00)
 
           4: t =   3.15250E-03, dt(growth) =   1.15763E-03
-projection solve:   28 (DS),    9 (AMG), 1.0982E-11 (|r|/|b|)
+projection solve:   28 (DS),    9 (AMG), 1.1075E-11 (|r|/|b|)
 
-            Min Velocity: (-9.8757E-03, -4.2206E-02,  0.0000E+00)
+            Min Velocity: (-9.8751E-03, -4.2206E-02,  0.0000E+00)
             Max Velocity: ( 1.3127E-01,  3.4554E-02,  0.0000E+00)
 
           5: t =   4.31013E-03, dt(growth) =   1.21551E-03
-projection solve:   29 (DS),    9 (AMG), 8.7518E-12 (|r|/|b|)
+projection solve:   29 (DS),    9 (AMG), 1.3464E-11 (|r|/|b|)
 
             Min Velocity: (-1.2214E-02, -5.4046E-02,  0.0000E+00)
             Max Velocity: ( 1.6817E-01,  4.2452E-02,  0.0000E+00)
 
           6: t =   5.52563E-03, dt(growth) =   1.27628E-03
-projection solve:   34 (DS),    8 (AMG), 5.4890E-11 (|r|/|b|)
+projection solve:   34 (DS),    8 (AMG), 6.5754E-11 (|r|/|b|)
 
             Min Velocity: (-1.4752E-02, -6.6426E-02,  0.0000E+00)
             Max Velocity: ( 2.0623E-01,  4.9309E-02,  0.0000E+00)
 
           7: t =   6.80191E-03, dt(growth) =   1.34010E-03
-projection solve:    4 (DS),   10 (AMG), 2.1278E-11 (|r|/|b|)
+projection solve:    4 (DS),   10 (AMG), 1.9876E-11 (|r|/|b|)
 
-            Min Velocity: (-1.7349E-02, -7.9571E-02,  0.0000E+00)
+            Min Velocity: (-1.7350E-02, -7.9571E-02,  0.0000E+00)
             Max Velocity: ( 2.4524E-01,  5.4961E-02,  0.0000E+00)
 
           8: t =   8.14201E-03, dt(growth) =   1.40710E-03
-projection solve:   12 (DS),    9 (AMG), 6.0811E-11 (|r|/|b|)
+projection solve:    8 (DS),    9 (AMG), 6.6443E-11 (|r|/|b|)
 
             Min Velocity: (-1.9999E-02, -9.3408E-02,  0.0000E+00)
             Max Velocity: ( 2.8501E-01,  5.9335E-02,  0.0000E+00)
 
           9: t =   9.54911E-03, dt(growth) =   1.47746E-03
-projection solve:    7 (DS),   10 (AMG), 8.3664E-12 (|r|/|b|)
+projection solve:    6 (DS),   10 (AMG), 1.0232E-11 (|r|/|b|)
 
             Min Velocity: (-2.2688E-02, -1.0800E-01,  0.0000E+00)
             Max Velocity: ( 3.2533E-01,  6.7673E-02,  0.0000E+00)
 
          10: t =   1.10266E-02, dt(growth) =   1.55133E-03
-projection solve:    4 (DS),   10 (AMG), 1.6113E-11 (|r|/|b|)
+projection solve:    5 (DS),   10 (AMG), 1.3861E-11 (|r|/|b|)
 
-            Min Velocity: (-2.5406E-02, -1.2335E-01,  0.0000E+00)
+            Min Velocity: (-2.5407E-02, -1.2335E-01,  0.0000E+00)
             Max Velocity: ( 3.6600E-01,  7.5590E-02,  0.0000E+00)
 
          11: t =   1.25779E-02, dt(growth) =   1.62889E-03
-projection solve:   15 (DS),    9 (AMG), 6.7511E-11 (|r|/|b|)
+projection solve:   15 (DS),    9 (AMG), 7.4922E-11 (|r|/|b|)
 
             Min Velocity: (-2.8134E-02, -1.3949E-01,  0.0000E+00)
-            Max Velocity: ( 4.0686E-01,  8.2847E-02,  0.0000E+00)
+            Max Velocity: ( 4.0686E-01,  8.2848E-02,  0.0000E+00)
 
          12: t =   1.42068E-02, dt(growth) =   1.71034E-03
-projection solve:    4 (DS),   10 (AMG), 9.6482E-12 (|r|/|b|)
+projection solve:   11 (DS),    9 (AMG), 6.8073E-11 (|r|/|b|)
 
             Min Velocity: (-3.0848E-02, -1.5644E-01,  0.0000E+00)
             Max Velocity: ( 4.4776E-01,  8.8903E-02,  0.0000E+00)
 
          13: t =   1.59171E-02, dt(growth) =   1.79586E-03
-projection solve:    7 (DS),   10 (AMG), 1.3897E-11 (|r|/|b|)
+projection solve:    7 (DS),   10 (AMG), 1.5056E-11 (|r|/|b|)
 
-            Min Velocity: (-3.3520E-02, -1.7421E-01,  0.0000E+00)
+            Min Velocity: (-3.3521E-02, -1.7421E-01,  0.0000E+00)
             Max Velocity: ( 4.8863E-01,  9.2874E-02,  0.0000E+00)
 
          14: t =   1.77130E-02, dt(growth) =   1.88565E-03
-projection solve:   21 (DS),    9 (AMG), 5.6799E-11 (|r|/|b|)
+projection solve:   15 (DS),    9 (AMG), 6.5689E-11 (|r|/|b|)
 
-            Min Velocity: (-3.8687E-02, -1.9280E-01,  0.0000E+00)
+            Min Velocity: (-3.8684E-02, -1.9280E-01,  0.0000E+00)
             Max Velocity: ( 5.2942E-01,  9.5673E-02,  0.0000E+00)
 
          15: t =   1.95986E-02, dt(growth) =   1.97993E-03
-projection solve:   13 (DS),   10 (AMG), 6.1781E-12 (|r|/|b|)
+projection solve:   14 (DS),   10 (AMG), 7.7975E-12 (|r|/|b|)
 
-            Min Velocity: (-4.4097E-02, -2.1221E-01,  0.0000E+00)
+            Min Velocity: (-4.4094E-02, -2.1221E-01,  0.0000E+00)
             Max Velocity: ( 5.7016E-01,  1.1404E-01,  0.0000E+00)
 
          16: t =   2.15786E-02, dt(courant) =   1.92921E-03
-projection solve:    7 (DS),   10 (AMG), 1.4994E-11 (|r|/|b|)
+projection solve:    7 (DS),   10 (AMG), 8.5410E-12 (|r|/|b|)
 
-            Min Velocity: (-4.9316E-02, -2.3100E-01,  0.0000E+00)
+            Min Velocity: (-4.9314E-02, -2.3100E-01,  0.0000E+00)
             Max Velocity: ( 6.0832E-01,  1.3127E-01,  0.0000E+00)
 
          17: t =   2.35078E-02, dt(courant) =   1.81016E-03
-projection solve:   21 (DS),    9 (AMG), 7.2708E-11 (|r|/|b|)
+projection solve:   20 (DS),    9 (AMG), 8.2476E-11 (|r|/|b|)
 
-            Min Velocity: (-5.4146E-02, -2.4869E-01,  0.0000E+00)
+            Min Velocity: (-5.4145E-02, -2.4869E-01,  0.0000E+00)
             Max Velocity: ( 6.4279E-01,  1.3989E-01,  0.0000E+00)
 
          18: t =   2.53179E-02, dt(courant) =   1.71594E-03
-projection solve:   17 (DS),   10 (AMG), 7.4135E-12 (|r|/|b|)
+projection solve:   19 (DS),    9 (AMG), 6.8982E-11 (|r|/|b|)
 
             Min Velocity: (-5.8484E-02, -2.6549E-01,  0.0000E+00)
-            Max Velocity: ( 6.7414E-01,  1.4004E-01,  0.0000E+00)
+            Max Velocity: ( 6.7414E-01,  1.4003E-01,  0.0000E+00)
 
          19: t =   2.70339E-02, dt(courant) =   1.63874E-03
-projection solve:   19 (DS),   10 (AMG), 4.9899E-11 (|r|/|b|)
+projection solve:   19 (DS),   10 (AMG), 4.0046E-11 (|r|/|b|)
 
-            Min Velocity: (-6.1165E-02, -2.8168E-01,  0.0000E+00)
+            Min Velocity: (-6.1166E-02, -2.8167E-01,  0.0000E+00)
             Max Velocity: ( 7.0308E-01,  1.4374E-01,  0.0000E+00)
 
          20: t =   2.86726E-02, dt(courant) =   1.57355E-03
-projection solve:   17 (DS),   10 (AMG), 3.9576E-11 (|r|/|b|)
+projection solve:   18 (DS),   10 (AMG), 2.5074E-11 (|r|/|b|)
 
-            Min Velocity: (-6.2305E-02, -2.9730E-01,  0.0000E+00)
+            Min Velocity: (-6.2306E-02, -2.9730E-01,  0.0000E+00)
             Max Velocity: ( 7.2993E-01,  1.5038E-01,  0.0000E+00)
 
          21: t =   3.02462E-02, dt(courant) =   1.51758E-03
-projection solve:   18 (DS),   10 (AMG), 1.3762E-11 (|r|/|b|)
+projection solve:   17 (DS),   10 (AMG), 1.5054E-11 (|r|/|b|)
 
-            Min Velocity: (-6.4478E-02, -3.1229E-01,  0.0000E+00)
+            Min Velocity: (-6.4472E-02, -3.1229E-01,  0.0000E+00)
             Max Velocity: ( 7.5496E-01,  1.4842E-01,  0.0000E+00)
 
          22: t =   3.17637E-02, dt(courant) =   1.46892E-03
-projection solve:   26 (DS),   10 (AMG), 8.7586E-12 (|r|/|b|)
+projection solve:   23 (DS),   10 (AMG), 1.2868E-11 (|r|/|b|)
 
-            Min Velocity: (-7.1383E-02, -3.2660E-01,  0.0000E+00)
+            Min Velocity: (-7.1378E-02, -3.2660E-01,  0.0000E+00)
             Max Velocity: ( 7.7855E-01,  1.5224E-01,  0.0000E+00)
 
          23: t =   3.32327E-02, dt(courant) =   1.42584E-03
-projection solve:   24 (DS),   10 (AMG), 1.0807E-11 (|r|/|b|)
+projection solve:   22 (DS),    9 (AMG), 8.5049E-11 (|r|/|b|)
 
-            Min Velocity: (-7.7783E-02, -3.4023E-01,  0.0000E+00)
+            Min Velocity: (-7.7779E-02, -3.4023E-01,  0.0000E+00)
             Max Velocity: ( 8.0090E-01,  1.6144E-01,  0.0000E+00)
 
          24: t =   3.46585E-02, dt(courant) =   1.38732E-03
-projection solve:   33 (DS),    9 (AMG), 1.3266E-11 (|r|/|b|)
+projection solve:   32 (DS),    9 (AMG), 1.4577E-11 (|r|/|b|)
 
-            Min Velocity: (-8.3871E-02, -3.5312E-01,  0.0000E+00)
+            Min Velocity: (-8.3867E-02, -3.5312E-01,  0.0000E+00)
             Max Velocity: ( 8.2206E-01,  1.6274E-01,  0.0000E+00)
 
          25: t =   3.60458E-02, dt(courant) =   1.35275E-03
-projection solve:   32 (DS),    9 (AMG), 3.3143E-11 (|r|/|b|)
+projection solve:   33 (DS),    9 (AMG), 2.8567E-11 (|r|/|b|)
 
-            Min Velocity: (-9.0459E-02, -3.6559E-01,  0.0000E+00)
+            Min Velocity: (-9.0455E-02, -3.6559E-01,  0.0000E+00)
             Max Velocity: ( 8.4219E-01,  1.6350E-01,  0.0000E+00)
 
          26: t =   3.73986E-02, dt(courant) =   1.32143E-03
-projection solve:   23 (DS),    9 (AMG), 5.8524E-11 (|r|/|b|)
+projection solve:   24 (DS),    9 (AMG), 5.3982E-11 (|r|/|b|)
 
-            Min Velocity: (-9.5819E-02, -3.7810E-01,  0.0000E+00)
+            Min Velocity: (-9.5816E-02, -3.7810E-01,  0.0000E+00)
             Max Velocity: ( 8.6149E-01,  1.6658E-01,  0.0000E+00)
 
          27: t =   3.87200E-02, dt(courant) =   1.29273E-03
-projection solve:   25 (DS),   10 (AMG), 7.9621E-12 (|r|/|b|)
+projection solve:   27 (DS),   10 (AMG), 7.0878E-12 (|r|/|b|)
 
-            Min Velocity: (-9.9168E-02, -3.9016E-01,  0.0000E+00)
+            Min Velocity: (-9.9165E-02, -3.9016E-01,  0.0000E+00)
             Max Velocity: ( 8.8005E-01,  1.6950E-01,  0.0000E+00)
 
          28: t =   4.00127E-02, dt(courant) =   1.26630E-03
-projection solve:   21 (DS),   10 (AMG), 7.8168E-12 (|r|/|b|)
+projection solve:   21 (DS),   10 (AMG), 8.0138E-12 (|r|/|b|)
 
-            Min Velocity: (-1.0156E-01, -4.0194E-01,  0.0000E+00)
+            Min Velocity: (-1.0157E-01, -4.0194E-01,  0.0000E+00)
             Max Velocity: ( 8.9777E-01,  1.6761E-01,  0.0000E+00)
 
          29: t =   4.12790E-02, dt(courant) =   1.24206E-03
-projection solve:   22 (DS),    9 (AMG), 4.8830E-11 (|r|/|b|)
+projection solve:   22 (DS),    9 (AMG), 4.4935E-11 (|r|/|b|)
 
-            Min Velocity: (-1.0199E-01, -4.1385E-01,  0.0000E+00)
+            Min Velocity: (-1.0201E-01, -4.1384E-01,  0.0000E+00)
             Max Velocity: ( 9.1491E-01,  1.7046E-01,  0.0000E+00)
 
          30: t =   4.25211E-02, dt(courant) =   1.21949E-03
-projection solve:   27 (DS),    9 (AMG), 5.1589E-11 (|r|/|b|)
+projection solve:   29 (DS),    9 (AMG), 5.3823E-11 (|r|/|b|)
 
-            Min Velocity: (-1.0172E-01, -4.2570E-01,  0.0000E+00)
+            Min Velocity: (-1.0174E-01, -4.2570E-01,  0.0000E+00)
             Max Velocity: ( 9.3142E-01,  1.7367E-01,  0.0000E+00)
 
          31: t =   4.37406E-02, dt(courant) =   1.19850E-03
-projection solve:   31 (DS),    9 (AMG), 5.2062E-11 (|r|/|b|)
+projection solve:   31 (DS),    9 (AMG), 5.3887E-11 (|r|/|b|)
 
-            Min Velocity: (-1.0271E-01, -4.3689E-01,  0.0000E+00)
+            Min Velocity: (-1.0273E-01, -4.3688E-01,  0.0000E+00)
             Max Velocity: ( 9.4742E-01,  1.7481E-01,  0.0000E+00)
 
          32: t =   4.49391E-02, dt(courant) =   1.17887E-03
-projection solve:   33 (DS),    9 (AMG), 3.0146E-11 (|r|/|b|)
+projection solve:   33 (DS),    9 (AMG), 3.0668E-11 (|r|/|b|)
 
-            Min Velocity: (-1.0622E-01, -4.4772E-01,  0.0000E+00)
+            Min Velocity: (-1.0621E-01, -4.4772E-01,  0.0000E+00)
             Max Velocity: ( 9.6280E-01,  1.7475E-01,  0.0000E+00)
 
          33: t =   4.61180E-02, dt(courant) =   1.16058E-03
-projection solve:   28 (DS),   10 (AMG), 3.2911E-11 (|r|/|b|)
+projection solve:   29 (DS),   10 (AMG), 1.7556E-11 (|r|/|b|)
 
-            Min Velocity: (-1.1394E-01, -4.5854E-01,  0.0000E+00)
+            Min Velocity: (-1.1393E-01, -4.5854E-01,  0.0000E+00)
             Max Velocity: ( 9.7785E-01,  1.7524E-01,  0.0000E+00)
 
          34: t =   4.72785E-02, dt(courant) =   1.14323E-03
-projection solve:   30 (DS),   10 (AMG), 8.8331E-12 (|r|/|b|)
+projection solve:   30 (DS),    9 (AMG), 7.3245E-11 (|r|/|b|)
 
             Min Velocity: (-1.2036E-01, -4.6910E-01,  0.0000E+00)
             Max Velocity: ( 9.9237E-01,  1.7603E-01,  0.0000E+00)
 
          35: t =   4.84218E-02, dt(courant) =   1.12699E-03
-projection solve:   28 (DS),    9 (AMG), 6.5662E-11 (|r|/|b|)
+projection solve:   26 (DS),    9 (AMG), 4.4063E-11 (|r|/|b|)
 
             Min Velocity: (-1.2586E-01, -4.7953E-01,  0.0000E+00)
             Max Velocity: ( 1.0065E+00,  1.7341E-01,  0.0000E+00)
 
-         36: t =   4.95488E-02, dt(courant) =   1.11166E-03
-projection solve:   35 (DS),    9 (AMG), 1.4852E-11 (|r|/|b|)
+         36: t =   4.95487E-02, dt(courant) =   1.11166E-03
+projection solve:   37 (DS),    9 (AMG), 2.6206E-11 (|r|/|b|)
 
             Min Velocity: (-1.3158E-01, -4.9083E-01,  0.0000E+00)
             Max Velocity: ( 1.0203E+00,  1.7559E-01,  0.0000E+00)
 
          37: t =   5.06604E-02, dt(courant) =   1.09697E-03
-projection solve:   30 (DS),    9 (AMG), 2.9131E-11 (|r|/|b|)
+projection solve:   30 (DS),    9 (AMG), 3.0946E-11 (|r|/|b|)
 
             Min Velocity: (-1.3526E-01, -5.0219E-01,  0.0000E+00)
             Max Velocity: ( 1.0337E+00,  1.7506E-01,  0.0000E+00)
 
          38: t =   5.17574E-02, dt(courant) =   1.08320E-03
-projection solve:   33 (DS),    9 (AMG), 2.6174E-11 (|r|/|b|)
+projection solve:   33 (DS),    9 (AMG), 3.8311E-11 (|r|/|b|)
 
             Min Velocity: (-1.3634E-01, -5.1209E-01,  0.0000E+00)
             Max Velocity: ( 1.0467E+00,  1.7228E-01,  0.0000E+00)
 
          39: t =   5.28406E-02, dt(courant) =   1.07012E-03
-projection solve:   28 (DS),    9 (AMG), 3.3226E-11 (|r|/|b|)
+projection solve:   29 (DS),    9 (AMG), 2.9996E-11 (|r|/|b|)
 
-            Min Velocity: (-1.3686E-01, -5.2139E-01,  0.0000E+00)
+            Min Velocity: (-1.3687E-01, -5.2139E-01,  0.0000E+00)
             Max Velocity: ( 1.0595E+00,  1.7257E-01,  0.0000E+00)
 
          40: t =   5.39107E-02, dt(courant) =   1.05755E-03
-projection solve:   30 (DS),    9 (AMG), 2.5621E-11 (|r|/|b|)
+projection solve:   30 (DS),    9 (AMG), 3.9784E-11 (|r|/|b|)
 
-            Min Velocity: (-1.3689E-01, -5.3160E-01,  0.0000E+00)
+            Min Velocity: (-1.3690E-01, -5.3160E-01,  0.0000E+00)
             Max Velocity: ( 1.0720E+00,  1.7370E-01,  0.0000E+00)
 
          41: t =   5.49683E-02, dt(courant) =   1.04559E-03
-projection solve:   32 (DS),    9 (AMG), 1.5895E-11 (|r|/|b|)
+projection solve:   31 (DS),    9 (AMG), 1.5974E-11 (|r|/|b|)
 
-            Min Velocity: (-1.3644E-01, -5.4194E-01,  0.0000E+00)
+            Min Velocity: (-1.3645E-01, -5.4194E-01,  0.0000E+00)
             Max Velocity: ( 1.0842E+00,  1.6933E-01,  0.0000E+00)
 
          42: t =   5.60138E-02, dt(courant) =   1.03413E-03
-projection solve:   29 (DS),    9 (AMG), 1.7027E-11 (|r|/|b|)
+projection solve:   28 (DS),    9 (AMG), 2.6065E-11 (|r|/|b|)
 
-            Min Velocity: (-1.4225E-01, -5.5279E-01,  0.0000E+00)
+            Min Velocity: (-1.4223E-01, -5.5279E-01,  0.0000E+00)
             Max Velocity: ( 1.0959E+00,  1.6935E-01,  0.0000E+00)
 
          43: t =   5.70480E-02, dt(courant) =   1.02334E-03
-projection solve:   35 (DS),    9 (AMG), 2.1935E-11 (|r|/|b|)
+projection solve:   37 (DS),    9 (AMG), 1.9816E-11 (|r|/|b|)
 
-            Min Velocity: (-1.4776E-01, -5.6314E-01,  0.0000E+00)
+            Min Velocity: (-1.4775E-01, -5.6314E-01,  0.0000E+00)
             Max Velocity: ( 1.1076E+00,  1.6967E-01,  0.0000E+00)
 
          44: t =   5.80713E-02, dt(courant) =   1.01286E-03
-projection solve:   34 (DS),    9 (AMG), 3.3442E-11 (|r|/|b|)
+projection solve:   34 (DS),    9 (AMG), 3.1184E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5029E-01, -5.7184E-01,  0.0000E+00)
+            Min Velocity: (-1.5028E-01, -5.7184E-01,  0.0000E+00)
             Max Velocity: ( 1.1192E+00,  1.6815E-01,  0.0000E+00)
 
          45: t =   5.90842E-02, dt(courant) =   1.00269E-03
-projection solve:   35 (DS),    9 (AMG), 4.0840E-11 (|r|/|b|)
+projection solve:   36 (DS),    9 (AMG), 4.0962E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5200E-01, -5.7987E-01,  0.0000E+00)
+            Min Velocity: (-1.5199E-01, -5.7987E-01,  0.0000E+00)
             Max Velocity: ( 1.1302E+00,  1.6497E-01,  0.0000E+00)
 
          46: t =   6.00869E-02, dt(courant) =   9.93172E-04
-projection solve:   35 (DS),   10 (AMG), 8.7299E-12 (|r|/|b|)
+projection solve:   35 (DS),   10 (AMG), 8.8367E-12 (|r|/|b|)
 
             Min Velocity: (-1.5275E-01, -5.8933E-01,  0.0000E+00)
             Max Velocity: ( 1.1411E+00,  1.6389E-01,  0.0000E+00)
 
-         47: t =   6.10800E-02, dt(courant) =   9.83980E-04
-projection solve:   32 (DS),    9 (AMG), 9.6543E-11 (|r|/|b|)
+         47: t =   6.10800E-02, dt(courant) =   9.83981E-04
+projection solve:   33 (DS),    9 (AMG), 5.5764E-11 (|r|/|b|)
 
             Min Velocity: (-1.5248E-01, -5.9945E-01,  0.0000E+00)
             Max Velocity: ( 1.1520E+00,  1.6296E-01,  0.0000E+00)
 
          48: t =   6.20640E-02, dt(courant) =   9.74852E-04
-projection solve:   33 (DS),    9 (AMG), 4.6398E-11 (|r|/|b|)
+projection solve:   32 (DS),    9 (AMG), 4.0496E-11 (|r|/|b|)
 
             Min Velocity: (-1.5140E-01, -6.0944E-01,  0.0000E+00)
             Max Velocity: ( 1.1626E+00,  1.6049E-01,  0.0000E+00)
 
          49: t =   6.30389E-02, dt(courant) =   9.66267E-04
-projection solve:   40 (DS),    9 (AMG), 2.6615E-11 (|r|/|b|)
+projection solve:   38 (DS),    9 (AMG), 3.6038E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5090E-01, -6.1832E-01,  0.0000E+00)
+            Min Velocity: (-1.5089E-01, -6.1832E-01,  0.0000E+00)
             Max Velocity: ( 1.1728E+00,  1.5907E-01,  0.0000E+00)
 
          50: t =   6.40051E-02, dt(courant) =   9.58108E-04
-projection solve:   36 (DS),    9 (AMG), 1.6712E-11 (|r|/|b|)
+projection solve:   37 (DS),    9 (AMG), 1.8098E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5469E-01, -6.2549E-01,  0.0000E+00)
+            Min Velocity: (-1.5468E-01, -6.2549E-01,  0.0000E+00)
             Max Velocity: ( 1.1830E+00,  1.5639E-01,  0.0000E+00)
 
          51: t =   6.49633E-02, dt(courant) =   9.50013E-04
-projection solve:   38 (DS),    9 (AMG), 2.0111E-11 (|r|/|b|)
+projection solve:   37 (DS),    9 (AMG), 2.2481E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5731E-01, -6.3347E-01,  0.0000E+00)
+            Min Velocity: (-1.5730E-01, -6.3347E-01,  0.0000E+00)
             Max Velocity: ( 1.1931E+00,  1.5368E-01,  0.0000E+00)
 
          52: t =   6.59133E-02, dt(courant) =   9.42247E-04
-projection solve:   37 (DS),    9 (AMG), 3.6627E-11 (|r|/|b|)
+projection solve:   37 (DS),    9 (AMG), 4.6534E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5861E-01, -6.4285E-01,  0.0000E+00)
+            Min Velocity: (-1.5860E-01, -6.4284E-01,  0.0000E+00)
             Max Velocity: ( 1.2029E+00,  1.5330E-01,  0.0000E+00)
 
-         53: t =   6.68555E-02, dt(courant) =   9.34754E-04
-projection solve:   37 (DS),    9 (AMG), 4.4870E-11 (|r|/|b|)
+         53: t =   6.68555E-02, dt(courant) =   9.34753E-04
+projection solve:   38 (DS),    9 (AMG), 3.4396E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5879E-01, -6.5224E-01,  0.0000E+00)
+            Min Velocity: (-1.5878E-01, -6.5224E-01,  0.0000E+00)
             Max Velocity: ( 1.2128E+00,  1.5137E-01,  0.0000E+00)
 
          54: t =   6.77903E-02, dt(courant) =   9.27319E-04
-projection solve:   35 (DS),    9 (AMG), 7.1235E-11 (|r|/|b|)
+projection solve:   34 (DS),    9 (AMG), 7.4539E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5766E-01, -6.6074E-01,  0.0000E+00)
+            Min Velocity: (-1.5765E-01, -6.6074E-01,  0.0000E+00)
             Max Velocity: ( 1.2223E+00,  1.4756E-01,  0.0000E+00)
 
          55: t =   6.87176E-02, dt(courant) =   9.20312E-04
-projection solve:   38 (DS),    9 (AMG), 3.0750E-11 (|r|/|b|)
+projection solve:   38 (DS),    9 (AMG), 3.4849E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5535E-01, -6.6729E-01,  0.0000E+00)
-            Max Velocity: ( 1.2316E+00,  1.4388E-01,  0.0000E+00)
+            Min Velocity: (-1.5535E-01, -6.6730E-01,  0.0000E+00)
+            Max Velocity: ( 1.2316E+00,  1.4389E-01,  0.0000E+00)
 
-         56: t =   6.96379E-02, dt(courant) =   9.13590E-04
-projection solve:   38 (DS),    9 (AMG), 1.8777E-11 (|r|/|b|)
+         56: t =   6.96379E-02, dt(courant) =   9.13591E-04
+projection solve:   38 (DS),    9 (AMG), 2.9490E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5521E-01, -6.7462E-01,  0.0000E+00)
+            Min Velocity: (-1.5520E-01, -6.7462E-01,  0.0000E+00)
             Max Velocity: ( 1.2411E+00,  1.4383E-01,  0.0000E+00)
 
          57: t =   7.05515E-02, dt(courant) =   9.05534E-04
-projection solve:   39 (DS),    9 (AMG), 1.4070E-11 (|r|/|b|)
+projection solve:   39 (DS),    9 (AMG), 1.6340E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5771E-01, -6.8318E-01,  0.0000E+00)
+            Min Velocity: (-1.5770E-01, -6.8318E-01,  0.0000E+00)
             Max Velocity: ( 1.2503E+00,  1.4142E-01,  0.0000E+00)
 
          58: t =   7.14570E-02, dt(courant) =   8.97548E-04
-projection solve:   39 (DS),    9 (AMG), 3.3457E-11 (|r|/|b|)
+projection solve:   39 (DS),    9 (AMG), 2.9210E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5920E-01, -6.9183E-01,  0.0000E+00)
+            Min Velocity: (-1.5919E-01, -6.9183E-01,  0.0000E+00)
             Max Velocity: ( 1.2593E+00,  1.3858E-01,  0.0000E+00)
 
          59: t =   7.23546E-02, dt(courant) =   8.89632E-04
-projection solve:   34 (DS),    9 (AMG), 5.0360E-11 (|r|/|b|)
+projection solve:   34 (DS),    9 (AMG), 5.8994E-11 (|r|/|b|)
 
             Min Velocity: (-1.5905E-01, -6.9946E-01,  0.0000E+00)
             Max Velocity: ( 1.2680E+00,  1.3310E-01,  0.0000E+00)
 
          60: t =   7.32442E-02, dt(courant) =   8.81787E-04
-projection solve:   36 (DS),    9 (AMG), 3.5664E-11 (|r|/|b|)
+projection solve:   37 (DS),    9 (AMG), 3.1443E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5762E-01, -7.0579E-01,  0.0000E+00)
+            Min Velocity: (-1.5761E-01, -7.0579E-01,  0.0000E+00)
             Max Velocity: ( 1.2768E+00,  1.3244E-01,  0.0000E+00)
 
-         61: t =   7.41260E-02, dt(courant) =   8.74010E-04
-projection solve:   44 (DS),    9 (AMG), 1.1409E-11 (|r|/|b|)
+         61: t =   7.41260E-02, dt(courant) =   8.74011E-04
+projection solve:   44 (DS),    9 (AMG), 1.2717E-11 (|r|/|b|)
 
-            Min Velocity: (-1.5557E-01, -7.1389E-01,  0.0000E+00)
+            Min Velocity: (-1.5556E-01, -7.1389E-01,  0.0000E+00)
             Max Velocity: ( 1.2855E+00,  1.3022E-01,  0.0000E+00)
 
 ================================================================================
@@ -582,32 +560,32 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  8.849E+00 --- Total
-    1.169E-02 --- Input
-    3.966E+00 --- Initialization
-      1.202E-03 --- Vof Initialization
-      3.529E-02 --- Flow
-        7.840E-04 --- update properties
-        1.238E-02 --- setup
-        1.370E-02 --- solve
-          4.923E-03 --- hypre solve
-    4.834E+00 --- Main Cycle
-      8.117E-01 --- Output
-      9.740E-03 --- Time Step
-      2.243E+00 --- Volumetracking
-        7.062E-01 --- normals
-        1.110E+00 --- reconstruct/advect
-      1.745E+00 --- Flow
-        4.640E-02 --- update properties
-        2.184E-01 --- prediction
-          1.351E-01 --- setup
-          8.098E-02 --- solve
-        1.395E+00 --- projection
-          5.842E-01 --- setup
-          8.091E-01 --- solve
-            3.179E-01 --- hypre solve
+  8.605E+00 --- Total
+    1.103E-02 --- Input
+    4.610E+00 --- Initialization
+      1.153E-03 --- Vof Initialization
+      3.280E-02 --- Flow
+        7.270E-04 --- update properties
+        1.303E-02 --- setup
+        1.378E-02 --- solve
+          4.724E-03 --- hypre solve
+    3.977E+00 --- Main Cycle
+      1.158E-02 --- Output
+      8.628E-03 --- Time Step
+      2.165E+00 --- Volumetracking
+        6.982E-01 --- normals
+        1.131E+00 --- reconstruct/advect
+      1.768E+00 --- Flow
+        4.388E-02 --- update properties
+        2.218E-01 --- prediction
+          1.460E-01 --- setup
+          7.357E-02 --- solve
+        1.408E+00 --- projection
+          6.048E-01 --- setup
+          8.020E-01 --- solve
+            2.986E-01 --- hypre solve
 
-                  Process virtual memory used: 4.43E+02 mB
-                                   words/cell: 27676
+                  Process virtual memory used: 4.46E+02 mB
+                                   words/cell: 27827
 
-truchas terminated normally on 19 Nov 18 at 10:04:38
+truchas terminated normally on 18 Apr 19 at 09:07:42
