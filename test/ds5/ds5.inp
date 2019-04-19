@@ -26,12 +26,6 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
   Output_Dt = 0.5, 5.0
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 5.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   species_transport = .true.
   number_of_species = 3
@@ -39,8 +33,8 @@ A kludge to force hitting the final time exactly
 
 &DIFFUSION_SOLVER
   abs_conc_tol       = 0.0
-  rel_conc_tol       = 1.0e-2
-  nlk_tol            = 0.1
+  rel_conc_tol       = 1.0e-3
+  nlk_tol            = 0.01
   nlk_preconditioner = 'hypre_amg'
 /
 

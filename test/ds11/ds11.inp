@@ -22,12 +22,6 @@ Should give the same results
   Output_Dt = 1.5, 0.5
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 2.5
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
 /

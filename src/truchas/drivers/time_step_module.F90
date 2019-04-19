@@ -156,7 +156,7 @@ CONTAINS
 
     ! Non-Constant Time Step
     else
-       if (cycle_number - 1 == cycle_number_restart .and. .not.restart) then
+       if (cycle_number == cycle_number_restart .and. .not.restart) then
           ! First cycle; use initial time step
           dt = dt_init
           dt_constraint = 'initial'

@@ -38,7 +38,7 @@ def run_test(tenv):
     nfail += truchas.compare_max(test, 0, tol, "normal-traction", time)
 
     # VERIFY JUST BEFORE GAP CLOSING
-    sid = output.series_id(15)
+    sid = 2
     time = output.time(sid)
 
     # stress
@@ -63,7 +63,7 @@ def run_test(tenv):
     nfail += truchas.compare_max(test, 0, tol, "normal-traction", time)
 
     # VERIFY JUST AFTER GAP CLOSING
-    sid = output.series_id(18)
+    sid = 3
     time = output.time(sid)
 
     # displacement magnitude
@@ -83,7 +83,7 @@ def run_test(tenv):
     nfail += truchas.compare_max_rel(test, gold, tol, "temperature", time)
 
     # VERIFY FINAL
-    sid = output.series_id(42)
+    sid = 4
     time = output.time(sid)
 
     # stress

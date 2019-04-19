@@ -9,8 +9,8 @@ def run_test(tenv):
     # Empirically determined velocities :( MAC
     # The pressure values are from the linear pressure profile
     # The min/max velocity values are essentially "golden" values
-    umin_gold =  632.876
-    umax_gold = 2062.680
+    umin_gold =  632.852
+    umax_gold = 2062.587
     pmin_gold = 25000.0
     pmax_gold = 75000.0
 

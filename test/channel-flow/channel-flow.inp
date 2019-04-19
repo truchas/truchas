@@ -48,8 +48,8 @@ cells along the direction of flow should then be 750 and 250.
 &OUTPUTS
 
     Output_T                    = 0.0, 100.1
-    Output_Dt                   = 0.01
-    output_dt_Multiplier    = -1
+    Output_Dt                   = 0.1
+    !output_dt_Multiplier    = -1
 
 /
 

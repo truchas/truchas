@@ -16,12 +16,6 @@ solid with no fluid present.
   Output_Dt = 0.2, 2.5
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 0.2, 2.5
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
   flow = .true.
