@@ -104,7 +104,7 @@ def dtype_extract(d):
 
 def grid_xdmf(data):
     # geometry
-    node_loc = "/Simulations/MAIN/Mesh/Nodal Coordinates"
+    node_loc = "/Meshes/DEFAULT/Nodal Coordinates"
     data_type, precision = dtype_extract(data[node_loc].dtype)
     shape = data[node_loc].shape
     geometry = ET.Element("Geometry", {"GeometryType": "XYZ"})
@@ -117,7 +117,7 @@ def grid_xdmf(data):
     node_coordinates.text = data.filename + ":" + node_loc
 
     # topology
-    element_loc = "/Simulations/MAIN/Mesh/Element Connectivity"
+    element_loc = "/Meshes/DEFAULT/Element Connectivity"
     data_type, precision = dtype_extract(data[element_loc].dtype)
     shape = data[element_loc].shape
     topology = ET.Element("Topology",
