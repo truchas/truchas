@@ -15,12 +15,6 @@ Variations use rotated meshes (and rotated velocity)
   output_dt = 2.0
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 2.0
-  phase_init_dt_factor = 1.0
-/
-
 &MESH
   mesh_file = 'mesh1a.gen'
 /

@@ -55,12 +55,6 @@ data by Martin & Moyce for this regression test.
   Output_Dt = 0.075
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 0.075
-  phase_init_dt_factor = 1.0
-/
-
 &LINEAR_SOLVER
   name                   = 'projection'
   method                 = 'fgmres'

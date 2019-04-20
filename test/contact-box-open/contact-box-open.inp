@@ -12,10 +12,6 @@
   coordinate_scale_factor = 0.01
   gap_element_blocks = 3
 /
-x&SIMULATION_CONTROL
-  phase_start_times = 40.0, 60.0, 150.0
-  phase_init_dt_factor = 1.0
-/
 
 &PHYSICS
   heat_transport = .true.

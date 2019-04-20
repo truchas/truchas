@@ -17,11 +17,6 @@ core.
   Output_Dt = 0.15
 /
 
-&SIMULATION_CONTROL
-  phase_start_times = 0.15
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
 /

@@ -20,11 +20,6 @@ u = dsig/dx / mu * (y - ymin)
   Output_Dt = 20.0
 /
 
-&SIMULATION_CONTROL
-  phase_start_times = 10.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
   flow = .true.

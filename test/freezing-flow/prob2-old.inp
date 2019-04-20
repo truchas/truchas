@@ -26,12 +26,6 @@ the flow solver.
   Output_Dt = 0.01, 0.25
 /
 
-A kludge to force hitting the final time exactly
-x&SIMULATION_CONTROL
-  phase_start_times = 0.1
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
   legacy_flow = .true.

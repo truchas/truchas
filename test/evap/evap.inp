@@ -18,12 +18,6 @@ value of 1 to a uniform value of 3 at infinite times.
   Output_Dt = 5.0
 /
 
-A kludge to force hitting the outptut times exactly
-&SIMULATION_CONTROL
-  phase_start_times = 5.0, 10.0 15.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
 /

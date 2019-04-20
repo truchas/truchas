@@ -18,12 +18,6 @@ This test uses the FHT solver for heat transport
   output_dt = 1.5
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 1.5
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   flow = .true.
   heat_transport = .true.

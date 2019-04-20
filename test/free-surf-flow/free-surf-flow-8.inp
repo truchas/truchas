@@ -17,12 +17,6 @@ particularly as a result of the pressure gradient at the fluid/void interface.
   output_dt = 0.52
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 4.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   flow = .true.
   body_force_density = 0.0, 0.0, 0.0

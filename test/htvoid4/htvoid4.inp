@@ -21,11 +21,6 @@ end and the fluid exits the right end with a fixed unit velocity.
   Output_Dt = 5.125
 /
 
-&SIMULATION_CONTROL
-  phase_start_times = 5.125
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   flow = .true.
   heat_transport = .true.
