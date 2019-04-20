@@ -4,6 +4,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 MODULE DRIVERS
   !-----------------------------------------------------------------------------
   ! Purpose:
@@ -156,7 +158,7 @@ call hijack_truchas ()
     use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
-        TIME_STEP
+        TIME_STEP, constant_dt, dt_constraint
     use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
@@ -168,160 +170,193 @@ call hijack_truchas ()
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
     use probe_output_module, only: probe_init_danu
-    use simulation_event_queue, only: sim_event, next_event
+    use sim_event_queue_type
+    use simulation_event_queue
     use time_step_sync_type
     use truchas_logging_services
     use truchas_timers
     use zone_module, only: Zone
+    use probe_output_module, only: probes_output
     use kinds
 
     ! Local Variables
-    Logical :: quit = .False., sig_rcvd
-    integer :: errc
-    Integer :: c
-    type(sim_event), pointer :: event
+    Logical :: sig_rcvd, restart_ds
+    integer :: c, errc
     type(time_step_sync) :: ts_sync
+    type(action_list), allocatable :: actions
+    class(event_action), allocatable :: action
     real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
+    real(r8) :: tout, t_write
     !---------------------------------------------------------------------------
 
     if (mem_on) call mem_diag_open
 
+    call init_sim_event_queue
     ts_sync = time_step_sync(5)
-    event => next_event(t)
 
     call PROBE_INIT_DANU  ! for Tbrook output this was done in TBU_writebasicdata
 
-    ! start the cycle timer
-    call start_timer ("Main Cycle")
+    call start_timer('Main Cycle')
 
     ! Prepass to initialize a solenoidal velocity field for Advection
     if(.not.restart) call Fluid_Flow_Driver (t) ! a no-op unless legacy flow is active
 
-    call mem_diag_write ('Before main loop:')
+    call mem_diag_write('Before main loop:')
 
-    ! Main computation loop.
-    MAIN_CYCLE: do c = 1, cycle_max+1
+    call TDO_write_timestep
+    t_write = t
+    call probes_output
 
-      ! See if a signal was caught.
-      call read_signal(SIGUSR2, sig_rcvd)
-      if (PGSLib_Global_Any(sig_rcvd)) then
-        call TLS_info ('')
-        call TLS_info ('Received signal USR2; writing time step data and terminating')
-        call TDO_write_timestep
-        exit MAIN_CYCLE
-      end if
+    t1 = t
+    restart_ds = .false.
+    call time_step  ! Does stuff not related to dt
 
-      ! set current time
-      t = t2
+    call event_queue%fast_forward(t)
 
-      ! Reset any time dependent conditions for the present cycle
-      call Cycle_Init()
+    c = 0
+    MAIN_CYCLE: do
+      if (event_queue%is_empty()) exit
 
-      ! perform any necessary cyclic output and check for termination
-      call CYCLE_OUTPUT_DRIVER (quit, c)
+      tout = event_queue%next_time()
 
-      ! check for termination; exit if time to quit
-      if (quit) exit MAIN_CYCLE
+      do ! time step until reaching TOUT
 
-      ! increment time step counter
-      cycle_number = cycle_number + 1
-      ! set beginning cycle time (= previous cycle's end time)
-      t1 = t2
+        c = c + 1
+        cycle_number = cycle_number + 1
 
-      ! get the new time step
-      call TIME_STEP ()
-
-      ! simulation phases (optional)
-      if (associated(event)) then
-        if (t1 == event%time()) then ! at start of the next phase
-          dt = event%init_dt(dt_old, dt)
-          event => next_event()
-          if (associated(event)) then
-            t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
-          else
-            t2 = t1 + dt
-          end if
-          ! required physics kernel restarts
-          call ded_head_start_sim_phase(t1)
-          call ds_restart (t2 - t1)
+        if (constant_dt) then
+          t2 = t1 + dt
         else
-          t2 = ts_sync%next_time(event%time(), t1, dt_old, dt) ! soft landing on event time
+          t2 = ts_sync%next_time(tout, t1, dt_old, dt) ! soft landing on TOUT
+          if (t2 < t1 + dt) dt_constraint = 'time'
+          dt = t2 - t1
         end if
-      else
-        t2 = t1 + dt
+
+        call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': Before output cycle:')
+
+        call cycle_output_pre
+
+        ! Evaluate the Joule heat source for the enthalpy calculation.
+        call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
+        call induction_heating(t1, t2)
+
+        ! move materials and associated quantities
+        call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before advection:')
+
+        if (vtrack_enabled() .and. flow_enabled()) then
+          vel_fn => flow_vel_fn_view()
+          call vtrack_update(t, dt, vel_fn)
+          vof => vtrack_vof_view()
+          flux_vol => vtrack_flux_vol_view()
+          call flow_set_pre_solidification_density(vof)
+        else
+          call ADVECT_MASS
+        end if
+
+        ! solve heat transfer and phase change
+        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')
+
+        ! Diffusion solver: species concentration and/or heat.
+        if (ds_enabled) then
+          if (restart_ds) call ds_restart(t2 - t1)
+          call ds_step(dt, dt_ds, errc)
+          if (errc /= 0) call TLS_fatal('CYCLE_DRIVER: Diffusion Solver step failed')
+          ! The step size may have been reduced.  This assumes all other physics
+          ! is off, and will need to be redone when the diffusion solver is made
+          ! co-operable with the rest of the physics.
+          t2 = t1 + dt
+        end if
+
+        ! calculate new velocity field
+        call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
+        if (flow_enabled()) then
+          if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
+
+          ! This updates the volume tracker's internal variable for the vof, so
+          ! we can give the flow the current post-heat-transfer volume fractions.
+          if (vtrack_enabled() .and. ds_enabled) call get_vof_from_matl(vof)
+
+          call flow_step(t,dt,vof,flux_vol,temperature_fc)
+          ! since this driver doesn't know any better, always accept
+          call flow_accept()
+        else
+          call fluid_flow_driver(t)
+        end if
+
+        call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
+        call thermo_mechanics
+
+        ! output iteration information
+        call cycle_output_post
+
+        ! post-processing modules (no side effects)
+        call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before microstructure:')
+        call ustruc_update(t2) ! microstructure modeling
+
+        t = t2 ! set current time
+        restart_ds = .false.
+
+        call probes_output
+
+        ! set beginning cycle time (= previous cycle's end time)
+        t1 = t2
+
+        call time_step  ! next dt, plus other stuff it should not be doing
+
+        ! See if a signal was caught.
+        call read_signal(SIGUSR2, sig_rcvd)
+        if (PGSLib_Global_Any(sig_rcvd)) then
+          call TLS_info('')
+          call TLS_info('Received signal USR2; writing time step data and terminating')
+          call TDO_write_timestep
+          exit MAIN_CYCLE
+        end if
+
+        if (t >= tout) exit
+        if (c >= cycle_max) exit
+
+      end do
+
+      if (t >= tout) then
+        ! Handle the event actions
+        call event_queue%pop_actions(actions)
+        do
+          call actions%get_next_action(action)
+          if (.not.allocated(action)) exit
+          select type (action)
+          type is (output_event)
+            call TDO_write_timestep
+            t_write = t
+          type is (phase_event)
+            dt = action%init_dt(dt_old, dt)
+            restart_ds = .true.
+          type is (path_event)
+            call ded_head_start_sim_phase(t1)
+          type is (stop_event)
+            exit MAIN_CYCLE
+          class default
+            INSIST(.false.)
+          end select
+        end do
       end if
 
-      dt = t2 - t1
-
-      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': Before output cycle:')
-
-      ! output cycle time step
-      call CYCLE_OUTPUT_PRE ()
-
-      ! call each physics package in turn
-
-      ! Evaluate the Joule heat source for the enthalpy calculation.
-      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
-      call INDUCTION_HEATING (t1, t2)
-
-      ! move materials and associated quantities
-      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before advection:')
-
-      if (vtrack_enabled() .and. flow_enabled()) then
-        vel_fn => flow_vel_fn_view()
-        call vtrack_update(t, dt, vel_fn)
-        vof => vtrack_vof_view()
-        flux_vol => vtrack_flux_vol_view()
-        call flow_set_pre_solidification_density(vof)
-      else
-        call ADVECT_MASS ()
+      if (c >= cycle_max) then
+        call TLS_info('')
+        if (t == t_write) then
+          call TLS_info('Maximum number of cycles completed; terminating')
+        else
+          call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
+          call TDO_write_timestep
+        end if
+        exit
       end if
-
-      ! solve heat transfer and phase change
-      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')
-
-      ! Diffusion solver: species concentration and/or heat.
-      if (ds_enabled) then
-        call ds_step (dt, dt_ds, errc)
-        if (errc /= 0) call TLS_fatal ('CYCLE_DRIVER: Diffusion Solver step failed')
-        ! The step size may have been reduced.  This assumes all other physics
-        ! is off, and will need to be redone when the diffusion solver is made
-        ! co-operable with the rest of the physics.
-        t2 = t1 + dt
-      end if
-
-      ! calculate new velocity field
-      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
-      if (flow_enabled()) then
-        if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
-
-        ! This updates the volume tracker's internal variable for the vof, so
-        ! we can give the flow the current post-heat-transfer volume fractions.
-        if (vtrack_enabled() .and. ds_enabled) call get_vof_from_matl(vof)
-
-        call flow_step(t,dt,vof,flux_vol,temperature_fc)
-        ! since this driver doesn't know any better, always accept
-        call flow_accept()
-      else
-        call FLUID_FLOW_DRIVER (t)
-      end if
-
-      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
-      call THERMO_MECHANICS ()
-
-      ! output iteration information
-      call CYCLE_OUTPUT_POST ()
-
-      ! post-processing modules (no side effects)
-      call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before microstructure:')
-      call ustruc_update (t2) ! microstructure modeling
 
     end do MAIN_CYCLE
 
-    ! stop the main cycle timer
-    call  stop_timer ("Main Cycle")
+    call stop_timer('Main Cycle')
 
   END SUBROUTINE CYCLE_DRIVER
+
 
   SUBROUTINE CLEANUP ()
     !---------------------------------------------------------------------------
@@ -833,26 +868,5 @@ call hijack_truchas ()
     end subroutine TLS_warn
 
   END SUBROUTINE PROCESS_COMMAND_LINE
-
-
-  SUBROUTINE CYCLE_INIT()
-  !----------------------------------------------------------------------------------------
-  !
-  !  Purpose:
-  !   To initialize any time varying conditions for the computational cycle at the
-  !    start of each cycle
-  !
-  !    Jim Sicilian, CCS-2 (sicilian@lanl.gov)
-  !    May 2003
-  !
-  !----------------------------------------------------------------------------------------
-    use Update_BCS,  only: Update_Radiation_BC, Update_Dirichlet_BC, Update_HTC_External_BC
-    use time_step_module, only: t
-
-    call Update_Radiation_BC(t)
-    call Update_Dirichlet_BC(t)
-    call Update_HTC_External_BC(t)
-
-  END SUBROUTINE CYCLE_INIT
 
 END MODULE DRIVERS

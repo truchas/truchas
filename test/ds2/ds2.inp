@@ -25,12 +25,6 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
   Output_Dt = 0.1
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 0.1
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
 /

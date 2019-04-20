@@ -31,7 +31,8 @@ cells at each long_edit interval.
 
 
 &OUTPUTS
-  Output_T                      = 0.0, 60000.0, 70000.0
+  !Output_T                      = 0.0, 60000.0, 70000.0
+  Output_T                      = 0.0, 60000.0, 70037.0
   Output_Dt                     = 60000.0, 10000.0
   Short_Output_Dt_Multiplier    = 1, 1
   output_dt_Multiplier      = 1, 1

@@ -24,12 +24,6 @@ here to reduce the error.
   output_dt = 1.5
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 3.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   legacy_flow = .true.
   body_force_density = 0.6666666666666667, 0.0, 0.0
