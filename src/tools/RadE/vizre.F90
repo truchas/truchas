@@ -4,9 +4,12 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 program vizre
 
   use re_encl_type
+  use re_patch_type
   use re_dist_vf_type
   use re_graphics_gmv
   use vizre_command_line
@@ -14,83 +17,135 @@ program vizre
   use scl
   implicit none
 
+  integer, parameter :: MAX_GMV_VARS = 200  ! GMV says 250 but it segfaults before then...
+
   integer :: n, nvar
   logical :: sym, has_vf, is_IOP
-  integer, pointer :: row(:) => null(), col(:) => null()
+  integer, allocatable :: row(:), col(:)
   character(len=512) :: enclosure_file, gmv_file
   type(encl) :: e
   type(dist_vf) :: dvf
-  real, allocatable :: var(:)
+  type(re_patch) :: ep
+  real, allocatable :: patch_var(:)
+  real, allocatable :: face_var(:)
 
-  call scl_init ()
+  call scl_init()
   is_IOP = (scl_rank()==1)
+  nvar = 0
 
-  call parse_command_line (enclosure_file, gmv_file, row, col, sym)
+  call parse_command_line(enclosure_file, gmv_file, row, col, sym)
 
-  call read_encl (e, trim(enclosure_file), has_vf)
+  call read_encl(e, trim(enclosure_file), has_vf)
+
   if (is_IOP) then
-    call gmv_open (trim(gmv_file))
-    call gmv_write_encl (e, sym)
+    call ep%read_patch_data(trim(enclosure_file))
+
+    call gmv_open(trim(gmv_file))
+    call gmv_write_encl(e, sym)
+
+    !! Initialize GMV if other data will be written
+    if (has_vf .or. ep%has_patches) then
+      allocate(face_var(e%nface))
+      call gmv_begin_variables()
+    end if
   end if
 
-  if (has_vf) then ! we have a view factor matrix
+  !! We have a face-to-patch map
+  if (is_IOP .and. ep%has_patches) then
+    !! Write patch IDs
+    nvar = nvar + 1
+    call gmv_write_face_var(e, REAL(ep%f2p_map), 'pid', sym)
 
-    call read_dist_vf (dvf, trim(enclosure_file))
+    !! Write patch coloring
+    nvar = nvar + 1
+    allocate (patch_var(ep%npatch))
+    call random_seed()
+    call random_number(patch_var)
+    call ep%patch_to_face_array(patch_var, face_var)
+    call gmv_write_face_var (e, face_var, 'patch_rand', sym)
+    deallocate(patch_var)
+  end if
 
-    if (is_IOP) call gmv_begin_variables ()
-    var = get_ambient_vf(dvf)
-    if (is_IOP) call gmv_write_face_var (e, var, 'ambient', sym)
-    deallocate(var)
-    var = dvf_row_sum(dvf)
-    if (is_IOP) call gmv_write_face_var (e, var, 'row sum', sym)
-    deallocate(var)
-    nvar = 2
-    if (associated(col)) then ! we want to write certain vf matrix columns as face variables
+  !! We have a view factor matrix
+  if (has_vf) then
+
+    call read_dist_vf(dvf, trim(enclosure_file))
+
+    !! Write ambient view factors
+    if (dvf%has_ambient) then
+      nvar = nvar + 1
+      patch_var = get_ambient_vf(dvf)
+      if (is_IOP) then
+          call ep%patch_to_face_array(patch_var, face_var)
+          call gmv_write_face_var(e, face_var, 'ambient', sym)
+      end if
+      deallocate(patch_var)
+    end if
+
+    !! Write row sums
+    nvar = nvar + 1
+    patch_var = dvf_row_sum(dvf)
+    if (is_IOP) then
+        call ep%patch_to_face_array(patch_var, face_var)
+        call gmv_write_face_var(e, face_var, 'row sum', sym)
+    end if
+    deallocate(patch_var)
+
+    !! We want to write certain vf matrix columns as face variables
+    if (allocated(col)) then
       do n = 1, size(col)
         if (col(n) >= 1 .and. col(n) <= e%nface) then
-          if (exceeded_variable_limit(nvar)) goto 99
-          var = unpack_dvf_col(dvf, col(n))
-          if (is_IOP) call gmv_write_face_var (e, var, 'col'//i_to_c(col(n)), sym)
-          deallocate(var)
+          nvar = nvar + 1
+          if (nvar > MAX_GMV_VARS) exit
+          patch_var = unpack_dvf_col(dvf, col(n))
+          if (is_IOP) then
+              call ep%patch_to_face_array(patch_var, face_var)
+              call gmv_write_face_var(e, face_var, 'col'//i_to_c(col(n)), sym)
+          end if
+          deallocate(patch_var)
         else
           write(*,fmt='(a)') 'No such view factor matrix col: ' // i_to_c(col(n))
         end if
       end do
       deallocate(col)
     end if
-    if (associated(row)) then ! we want to write certain vf matrix rows as face variables
+
+    !! We want to write certain vf matrix rows as face variables
+    if (allocated(row) .and. nvar <= MAX_GMV_VARS) then
       do n = 1, size(row)
         if (row(n) >= 1 .and. row(n) <= e%nface) then
-          if (exceeded_variable_limit(nvar)) goto 99
-          var = unpack_dvf_row(dvf, row(n))
-          if (is_IOP) call gmv_write_face_var (e, var, 'row'//i_to_c(row(n)), sym)
-          deallocate(var)
+          nvar = nvar + 1
+          if (nvar > MAX_GMV_VARS) exit
+          patch_var = unpack_dvf_row(dvf, row(n))
+          if (is_IOP) then
+              call ep%patch_to_face_array(patch_var, face_var)
+              call gmv_write_face_var(e, face_var, 'row'//i_to_c(row(n)), sym)
+          end if
+          deallocate(patch_var)
         else
           write(*,fmt='(a)') 'No such view factor matrix row: ' // i_to_c(row(n))
         end if
       end do
       deallocate(row)
     end if
-99  if (is_IOP) call gmv_end_variables ()
-  else if (associated(row) .or. associated(col)) then  ! we can't write the vf matrix
+
+    if (is_IOP .and. nvar > MAX_GMV_VARS) then
+      write(*,'(a)') 'Reached the limit of GMV variables (' // &
+        i_to_c(MAX_GMV_VARS) // ').  Skipping all further variable output.'
+    end if
+  else if (allocated(row) .or. allocated(col)) then  ! we can't write the vf matrix
     write(*,'(a)') 'Enclosure contains no view factor data'
   end if
 
-  if (is_IOP) call gmv_close ()
+  !! Finalize GMV
+  if (is_IOP) then
+    if (has_vf .or. ep%has_patches) then
+      deallocate(face_var)
+      call gmv_end_variables()
+    end if
+    call gmv_close()
+  end if
 
   call scl_finalize()
-
-contains
-
-  logical function exceeded_variable_limit (nvar)
-    integer, intent(inout) :: nvar
-    integer, parameter :: MAX_GMV_VARS = 200  ! GMV says 250 but it segfaults before then...
-    nvar = nvar + 1
-    exceeded_variable_limit = (nvar > MAX_GMV_VARS)
-    if (exceeded_variable_limit) then
-      if (is_IOP) write(*,'(a)') 'Reached the limit of GMV variables (' // &
-          i_to_c(MAX_GMV_VARS) // ').  Skipping all further variable output.'
-    end if
-  end function
 
 end program vizre

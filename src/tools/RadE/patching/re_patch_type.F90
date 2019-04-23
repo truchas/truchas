@@ -58,7 +58,6 @@
 !!    will not be a field of the dataset.  This is a serial procedure and must
 !!    only be called by the I/O process.
 !!
-!!
 
 
 #include "f90_assert.fpp"
@@ -96,6 +95,7 @@ module re_patch_type
     procedure, public :: generate_patches
     procedure, public :: read_patch_data
     procedure, public :: write_patch_data
+    procedure, public :: patch_to_face_array
     procedure, private :: no_patches
   end type
 
@@ -269,6 +269,24 @@ contains
     call file%close
 
   end subroutine write_patch_data
+
+
+  !! Expands a patch-length array into a face-length array
+  subroutine patch_to_face_array (this, pvec, fvec)
+
+    class(re_patch), intent(in) :: this
+    real, intent(in)  :: pvec(:)
+    real, intent(out) :: fvec(:)
+
+    ASSERT(size(pvec) == this%npatch)
+
+    if (this%has_patches) then
+      fvec = pvec(this%f2p_map)
+    else
+      fvec = pvec
+    end if
+
+  end subroutine patch_to_face_array
 
 
 end module re_patch_type

@@ -20,15 +20,13 @@ contains
   subroutine parse_command_line (infile, outfile, row, col, sym)
 
     character(len=*), intent(out) :: infile, outfile
-    integer, pointer :: row(:), col(:)
+    integer, allocatable, intent(out) :: row(:), col(:)
     logical, intent(out) :: sym
 
     integer :: i, n, num_arg, ios
     character(len=128) :: arg
 
     !! Default values for the optional arguments.
-    row => null()
-    col => null()
     sym = .false.
 
     call get_command_argument (0, arg)
@@ -61,7 +59,7 @@ contains
         n = n + 1
         if (n > num_arg) call usage_halt ('option requires an argument: ' // trim(arg))
         call get_command_argument (n, arg)
-        if (associated(row)) deallocate(row)
+        if (allocated(row)) deallocate(row)
         call parse_range_list (arg, row, ios)
         if (ios /= 0) call usage_halt ('invalid argument for -r: ' // trim(arg))
 
@@ -70,7 +68,7 @@ contains
         n = n + 1
         if (n > num_arg) call usage_halt ('option requires an argument: ' // trim(arg))
         call get_command_argument (n, arg)
-        if (associated(col)) deallocate(col)
+        if (allocated(col)) deallocate(col)
         call parse_range_list (arg, col, ios)
         if (ios /= 0) call usage_halt ('invalid argument for -c: ' // trim(arg))
 
@@ -139,7 +137,7 @@ contains
   subroutine split_on_char (string, char, substrings)
     character(len=*), intent(in) :: string
     character(len=1), intent(in) :: char
-    character(len=*), pointer :: substrings(:)
+    character(len=*), allocatable :: substrings(:)
     integer :: l, n
     character(len=len(string)) :: tmp
     !! Count the number of substrings; one more than the number of char characters.
@@ -167,11 +165,11 @@ contains
   subroutine parse_range_list (string, list, stat)
 
     character(len=*), intent(in) :: string
-    integer, pointer :: list(:)
+    integer, allocatable, intent(out) :: list(:)
     integer, intent(out) :: stat
 
     integer :: j, k, n, ios
-    character(len=15), pointer :: substring1(:), substring2(:)
+    character(len=15), allocatable :: substring1(:), substring2(:)
     integer, allocatable :: range(:,:)
 
     !! Get the list of range tokens.
@@ -222,7 +220,6 @@ contains
       end do
     else
       deallocate(substring2)
-      list => null()
     end if
 
     deallocate(range)
