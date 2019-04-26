@@ -34,16 +34,10 @@ fortran_preprocess_files(DRIVERS_SOURCE_FILES
 # Set compile flags
 include(BuildWhitespaceString)
 set(fc_flags -I${PGSLib_MODULE_DIR})
+list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${DRIVERS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
-
-# drivers.F90 requires extra flags
-list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
-build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
-set_source_files_properties(${TruchasExe_BINARY_DIR}/drivers.f90
-                            COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
-
 
 # Add the C source files
 set(DRIVERS_C_SOURCE_FILES drivers/runinfo.c)

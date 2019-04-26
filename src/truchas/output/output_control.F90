@@ -27,9 +27,7 @@ module output_control
   real(r8), save, public :: output_dt(mops)
   real(r8), save, public :: output_t(mops+1)
   integer,  save, public :: output_dt_multiplier(mops) = 1
-  integer,  save, public :: nops, next_op
-  logical,  save, public :: precise_output
-  logical,  save, public :: retain_last_step = .false.
+  integer,  save, public :: nops
 
   integer, allocatable, public :: part(:)
   type(toolpath), pointer, public :: part_path => null()

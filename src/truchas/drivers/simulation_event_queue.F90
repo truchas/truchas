@@ -46,6 +46,12 @@ module simulation_event_queue
 #endif
   end type
 
+  type, extends(event_action), public :: short_edit_event
+#ifdef INTEL_BUG20180222
+    integer :: dummy = 1
+#endif
+  end type
+
   type, extends(event_action), public :: stop_event
 #ifdef INTEL_BUG20180222
     integer :: dummy = 1
@@ -62,6 +68,7 @@ contains
   subroutine init_sim_event_queue
 
     use ded_head_driver, only: ded_head_path_events
+    use edit_module, only: short_edit, short_output_dt_multiplier
     use output_control
 
     integer :: j, dt_policy
@@ -97,18 +104,25 @@ contains
 
     !! Add output times
     block
-      use output_control, only: nops, output_t, output_dt
       integer :: i, j, n
       real(r8) :: t
       do j = 1, nops
         n = (output_t(j+1) - output_t(j) + 0.9*output_dt(j)) / output_dt(j)
         do i = 0, max(0, n-1)
           t = output_t(j) + i*output_dt(j)
-          call event_queue%add_event(t, output_event())
+          if (modulo(i,output_dt_multiplier(j)) == 0) then
+            call event_queue%add_event(t, output_event())
+          end if
+          if (short_output_dt_multiplier(j) > 0) then
+            if (modulo(i,short_output_dt_multiplier(j)) == 0) &
+                call event_queue%add_event(t, short_edit_event())
+          end if
         end do
       end do
-      call event_queue%add_event(output_t(nops+1), output_event())
-      call event_queue%add_event(output_t(nops+1), stop_event(), rank=99)
+      t = output_t(nops+1)
+      call event_queue%add_event(t, output_event())
+      if (short_edit) call event_queue%add_event(t, short_edit_event())
+      call event_queue%add_event(t, stop_event(), rank=99)
     end block
 
   end subroutine init_sim_event_queue

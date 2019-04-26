@@ -149,8 +149,8 @@ call hijack_truchas ()
     !   Cycle through each time step
     !---------------------------------------------------------------------------
     use advection_module,         only: ADVECT_MASS
-    use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST, &
-        CYCLE_OUTPUT_DRIVER
+    use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
+    use edit_module,              only: edit_short
     use fluid_flow_module,        only: FLUID_FLOW_DRIVER
     use EM,                       only: INDUCTION_HEATING
     use solid_mechanics_module,   only: THERMO_MECHANICS
@@ -327,6 +327,8 @@ call hijack_truchas ()
           type is (output_event)
             call TDO_write_timestep
             t_write = t
+          type is (short_edit_event)
+            call edit_short
           type is (phase_event)
             dt = action%init_dt(dt_old, dt)
             restart_ds = .true.
