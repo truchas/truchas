@@ -292,6 +292,12 @@ endif()
 add_subdirectory(src)
 add_subdirectory(test)
 
+option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
+if(BUILD_HTML)
+  find_package(Sphinx REQUIRED)
+  add_subdirectory(doc/sphinx)
+endif()
+
 # ---------------------------------------------------------------------------- #
 # Export Definitions 
 # ---------------------------------------------------------------------------- #
