@@ -14,6 +14,7 @@ import posixpath
 import copy
 from xml.etree import ElementTree as ET
 
+import scipy as sp
 import h5py
 
 def series_xdmf(series, grid_pointer):
@@ -25,7 +26,19 @@ def series_xdmf(series, grid_pointer):
         # get field name and type
         if field.ndim == 1:
             attr_type = "Scalar"
-            field_name = field.attrs["FIELDNAME"].decode()
+
+            if "FIELDNAME" in field.attrs.keys():
+                field_name = field.attrs["FIELDNAME"]
+
+                # Some older dumps have in the fieldname attribute an ndarray
+                # of length 1, containing a string. Recent files have a string.
+                if type(field_name) == sp.ndarray:
+                    field_name = field_name[0]
+
+                field_name = field_name.decode()
+            else:
+                field_name = posixpath.basename(field.name)
+
             dims = str(field.shape[0])
         elif field.ndim == 2:
             field_name = posixpath.basename(field.name)
@@ -91,7 +104,7 @@ def dtype_extract(d):
 
 def grid_xdmf(data):
     # geometry
-    node_loc = "/Simulations/MAIN/Mesh/Nodal Coordinates"
+    node_loc = "/Meshes/DEFAULT/Nodal Coordinates"
     data_type, precision = dtype_extract(data[node_loc].dtype)
     shape = data[node_loc].shape
     geometry = ET.Element("Geometry", {"GeometryType": "XYZ"})
@@ -104,7 +117,7 @@ def grid_xdmf(data):
     node_coordinates.text = data.filename + ":" + node_loc
 
     # topology
-    element_loc = "/Simulations/MAIN/Mesh/Element Connectivity"
+    element_loc = "/Meshes/DEFAULT/Element Connectivity"
     data_type, precision = dtype_extract(data[element_loc].dtype)
     shape = data[element_loc].shape
     topology = ET.Element("Topology",

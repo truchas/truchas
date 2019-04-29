@@ -39,7 +39,7 @@ def run_test(tenv):
     nfail += truchas.compare_max_rel(test, gold, tol, "normal-traction", time)
 
     # VERIFY JUST BEFORE GAP OPENING
-    sid = output.series_id(18)
+    sid = 2
     time = output.time(sid)
 
     # stress
@@ -75,7 +75,7 @@ def run_test(tenv):
     nfail += truchas.compare_max_rel(test, gold, tol, "temperature", time)
 
     # VERIFY JUST AFTER GAP OPENING
-    sid = output.series_id(21)
+    sid = 3
     time = output.time(sid)
 
     # stress
@@ -100,7 +100,7 @@ def run_test(tenv):
     nfail += truchas.compare_max(test, 0, tol, "normal-traction", time)
 
     # VERIFY FINAL
-    sid = output.series_id(49)
+    sid = 4
     time = output.time(sid)
 
     # stress

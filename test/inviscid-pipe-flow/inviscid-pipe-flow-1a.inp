@@ -13,12 +13,6 @@ p1 = 6, p2 = 0, rho = 3, L = 1 => U(t) = 2*t
   output_dt = 1.0, 1.0
 /
 
-Hack to hit the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 1.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   flow = .true.
 /

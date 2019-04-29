@@ -25,11 +25,6 @@ and expected pressure is given by Bernoulli's principle
 /
 
 Hack to hit the final time exactly
-x&SIMULATION_CONTROL
-  phase_start_times = 20.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   flow = .true.
 /

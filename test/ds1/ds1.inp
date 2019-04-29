@@ -17,12 +17,6 @@ See diffusion solver tests 2, 3 and 4 for variations.
   Output_Dt = 0.1
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 0.1
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   species_transport = .true.
   number_of_species = 1

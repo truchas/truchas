@@ -173,6 +173,7 @@ list(APPEND Truchas_PREPROCESSOR
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND Truchas_PREPROCESSOR -DNO_2008_LHS_POLY_REALLOC)
   list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200237439)
+  list(APPEND Truchas_PREPROCESSOR -DINTEL_BUG20180222)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "18.0.0")
     # This applies to 18.0.0 because of the version tweak number
     list(APPEND Truchas_PREPROCESSOR -DINTEL18_WORKAROUND)
@@ -298,6 +299,12 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(test)
+
+option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
+if(BUILD_HTML)
+  find_package(Sphinx REQUIRED)
+  add_subdirectory(doc/sphinx)
+endif()
 
 # ---------------------------------------------------------------------------- #
 # Export Definitions 

@@ -7,12 +7,6 @@
   output_dt = 20.
 /
 
-Hack to hit the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 20.0
-  phase_init_dt_factor = 1.0
-/
- 
 &LINEAR_SOLVER
   name                    = 'projection'
   method                  = 'fgmres'

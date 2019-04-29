@@ -16,8 +16,8 @@ def run_test(tenv):
     if cycle != cycleg: nfail += 1
 
     # Test final fluid volume fraction
-    vof = output.field(2, "VOF")[:,0] # comp 0 is circle
-    vofex = golden.field(2, "VOF")[:,0]
+    vof = output.field(nseries, "VOF")[:,0] # comp 0 is circle
+    vofex = golden.field(nseries, "VOF")[:,0]
     nfail += truchas.compare_max(vof, vofex, 1e-6, "vof", output.time(nseries))
 
     truchas.report_summary(nfail)

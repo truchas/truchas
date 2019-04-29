@@ -8,39 +8,36 @@ def run_test(tenv):
     xc = output.centroids()
 
     # time 0
-    sid = output.series_id(207) #141 #115
-    time = output.time(sid)
+    time = output.time(3)
 
     # pressure
-    pressure = output.field(sid, "Z_P")
+    pressure = output.field(3, "Z_P")
     pex = exact_pressure(xc[:,0], time)
     nfail += truchas.compare_max_rel(pressure, pex, 3e-3, "pressure", time)
 
     # velocity
-    velx = output.field(sid, "Z_VC")[:,0]
+    velx = output.field(3, "Z_VC")[:,0]
     velxex = exact_velocity(xc[:,0], time)
     nfail += truchas.compare_max_rel(velx, velxex, 1e-3, "x-velocity", time)
 
     # time 1
-    sid = output.series_id(422) #248 #169
-    time = output.time(sid)
+    time = output.time(6)
 
     # velocity
-    velx = output.field(sid, "Z_VC")[:,0]
+    velx = output.field(6, "Z_VC")[:,0]
     velxex = exact_velocity(xc[:,0], time)
     nfail += truchas.compare_max_rel(velx, velxex, 3e-3, "x-velocity", time)
 
     # time 2
-    sid = output.series_id(647) #364 #225
-    time = output.time(sid)
+    time = output.time(11)
 
     # pressure
-    pressure = output.field(sid, "Z_P")
+    pressure = output.field(11, "Z_P")
     pex = exact_pressure(xc[:,0], time)
     nfail += truchas.compare_max_rel(pressure, pex, 1e-3, "pressure", time)
 
     # velocity
-    velx = output.field(sid, "Z_VC")[:,0]
+    velx = output.field(11, "Z_VC")[:,0]
     velxex = exact_velocity(xc[:,0], time)
     nfail += truchas.compare_max_rel(velx, velxex, 1e-3, "x-velocity", time)
 

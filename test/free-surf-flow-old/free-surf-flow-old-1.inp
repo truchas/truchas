@@ -18,12 +18,6 @@ fluid, with the fluid/void interface moving at speed 1 to the right.
   output_dt = 2.0
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 4.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   legacy_flow = .true.
 /

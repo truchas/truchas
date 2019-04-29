@@ -1,6 +1,6 @@
 &OUTPUTS
-  output_t = 0.0, 100.0, 150.0
-  output_dt = 5.0, 50.0
+  output_t = 0.0, 48.0, 53.0, 150.0
+  output_dt = 100.0, 100.0, 100.0
   output_dt_multiplier = 1
   !short_output_dt_multiplier = 1
   !long_output_dt_multiplier = 5

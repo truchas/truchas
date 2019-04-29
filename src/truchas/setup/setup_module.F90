@@ -44,7 +44,6 @@ CONTAINS
     use kinds, only: r8
     use base_types_A_module,    only: BASE_TYPES_A_ALLOCATE
     use bc_module,              only: ASSIGN_BC_BITS, Conc, Prs, Vel
-    use output_control,         only: next_op
     use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
     use restart_driver,         only: close_restart_file, skip_restart_mesh, skip_restart_side_sets
@@ -62,9 +61,6 @@ CONTAINS
 
     ! Start the initialization timer.
     call start_timer("Initialization")
-
-    ! Initialize I/O quantities.
-    next_op = 1
 
     ! Assign bc bits.
     call ASSIGN_BC_BITS (Prs%Face_bit, Vel%Face_bit, Conc%Face_bit)

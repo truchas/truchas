@@ -6,64 +6,26 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2019-02-14 12:01:33
+   build date/time:     2019-04-18 07:51:39
    build flags:         -u -C -C=dangling -gline -nan
    build host:          arriba.lanl.gov
    run architecture:    Linux arriba.lanl.gov 4.13.16-10
    run host:            arriba.lanl.gov1 SMP Mon Nov 27
-   run date/time:       14 Feb 19 13:35:35
+   run date/time:       18 Apr 19 08:49:19
    processors:          1
 
 ================================================================================
 
 COPYRIGHT
 
-   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
-   All rights reserved.
+   Copyright 2007-2019.  Triad National Security, LLC.  All rights reserved.
 
-   This software was produced under U.S. Government contract DE-AC52-06NA25396
-   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-   National Security, LLC for the U.S. Department of Energy. The U.S. Government
-   has rights to use, reproduce, and distribute this software.  NEITHER THE
-   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-   is modified to produce derivative works, such modified software should be
-   clearly marked, so as not to confuse it with the version available from LANL.
+   This program was produced under U.S. Government contract 89233218CNA000001
+   for Los Alamos National Laboratory (LANL), which is operated by Triad
+   National Security, LLC for the U.S. Department of Energy/National Nuclear
+   Security Administration.
 
-   Additionally, redistribution and use in source and binary forms, with or
-   without modification, are permitted provided that the following conditions
-   are met:
-
-   1. Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-
-   2. Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-
-   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
-      Laboratory, LANL, the U.S. Government, nor the names of its contributors
-      may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
-   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
-   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-================================================================================
-
-DISCLAIMER
-
-   This Truchas release is registered with the Los Alamos National
-   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
+   Truchas is open source software distributed under the 3-Clause BSD License.
 
 ================================================================================
 
@@ -253,6 +215,20 @@ Computing initial volume fractions ...
  Finished BC initialization.
 
 Configuring volume tracking ...
+Generating velocity boundary condition for "velocity" type
+  using FLOW_BC[inlet]
+  using FLOW_BC[outlet]
+Generating velocity boundary condition for "no-slip" type
+Generating pressure boundary condition for "pressure" type
+Generating pressure boundary condition for "pressure" type
+Generating pressure boundary condition for "velocity" type
+  using FLOW_BC[inlet]
+  using FLOW_BC[outlet]
+Generating pressure boundary condition for "no-slip" type
+Generating pressure boundary condition for "free-slip" type
+Generating pressure boundary condition for "marangoni" type
+Generating velocity boundary condition for "free-slip" type
+Generating velocity boundary condition for "marangoni" type
 
 Initializing diffusion solver ...
   Initializing enclosure radiation problem "upper wall cavity" ...
@@ -293,10 +269,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000010:0000001:0000009
-projection solve:    1 (DS),    0 (AMG), 1.1528E+00 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.1541E+00 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -8.0864E-16, -5.8849E-15)
-            Max Velocity: ( 1.0000E+00,  8.5735E-16,  5.4822E-15)
+            Min Velocity: ( 0.0000E+00, -8.0505E-16, -6.0006E-15)
+            Max Velocity: ( 1.0000E+00,  8.5358E-16,  5.5928E-15)
 
           2: t =   6.25000E-02, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 60/0/648
@@ -304,10 +280,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000020:0000002:0000018
-projection solve:    1 (DS),    0 (AMG), 5.2180E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 5.1820E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -1.6054E-15, -6.7756E-15)
-            Max Velocity: ( 1.0000E+00,  9.7579E-16,  6.7883E-15)
+            Min Velocity: ( 0.0000E+00, -1.5749E-15, -6.9199E-15)
+            Max Velocity: ( 1.0000E+00,  9.6483E-16,  6.9405E-15)
 
           3: t =   1.25000E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 60/0/648
@@ -315,10 +291,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000026:0000003:0000023
-projection solve:    1 (DS),    0 (AMG), 3.3515E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 3.3167E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -7.2263E-16, -6.7629E-15)
-            Max Velocity: ( 1.0000E+00,  8.9385E-16,  7.2220E-15)
+            Min Velocity: ( 0.0000E+00, -8.3473E-16, -6.7563E-15)
+            Max Velocity: ( 1.0000E+00,  8.8483E-16,  7.1476E-15)
 
           4: t =   1.87500E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 60/0/648
@@ -326,10 +302,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000032:0000004:0000028
-projection solve:    1 (DS),    0 (AMG), 2.4308E+00 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.1965E+00 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -3.8631E-14, -1.9297E-14)
-            Max Velocity: ( 1.0000E+00,  3.3985E-14,  2.0682E-14)
+            Min Velocity: ( 0.0000E+00, -2.2628E-14, -1.6866E-14)
+            Max Velocity: ( 1.0000E+00,  1.7672E-14,  1.5562E-14)
 
           5: t =   2.50000E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 64/0/644
@@ -337,10 +313,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000040:0000005:0000035
-projection solve:    1 (DS),    0 (AMG), 9.6653E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.0474E+00 (|r|/|b|)
 
-            Min Velocity: (-3.5272E-14, -3.3599E-14, -1.3344E-12)
-            Max Velocity: ( 1.0000E+00,  3.7909E-14,  1.3121E-12)
+            Min Velocity: ( 0.0000E+00, -7.1833E-14, -4.6141E-12)
+            Max Velocity: ( 1.0000E+00,  2.2729E-14,  4.5439E-12)
 
           6: t =   3.12500E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 68/0/640
@@ -348,10 +324,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000048:0000006:0000042
-projection solve:    1 (DS),    0 (AMG), 2.6188E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 2.0922E-01 (|r|/|b|)
 
-            Min Velocity: (-2.8811E-14, -7.3535E-15, -1.3110E-12)
-            Max Velocity: ( 1.0000E+00,  3.2841E-14,  1.3415E-12)
+            Min Velocity: ( 0.0000E+00, -5.6260E-15, -1.2746E-13)
+            Max Velocity: ( 1.0000E+00,  6.3927E-15,  1.2848E-13)
 
           7: t =   3.75000E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 68/0/640
@@ -359,10 +335,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000056:0000007:0000049
-projection solve:    1 (DS),    0 (AMG), 3.3995E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 3.6238E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -2.7203E-15, -5.5660E-14)
-            Max Velocity: ( 1.0000E+00,  1.9203E-15,  5.6095E-14)
+            Min Velocity: ( 0.0000E+00, -2.4101E-15, -8.9420E-14)
+            Max Velocity: ( 1.0000E+00,  2.1374E-15,  8.9185E-14)
 
           8: t =   4.37500E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 68/0/640
@@ -370,46 +346,43 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000064:0000008:0000056
-projection solve:    1 (DS),    0 (AMG), 4.6033E-01 (|r|/|b|)
+projection solve:    6 (DS),    0 (AMG), 1.0965E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -1.9199E-14, -1.6301E-13)
-            Max Velocity: ( 1.0000E+00,  7.3677E-15,  1.5593E-13)
+            Min Velocity: ( 0.0000E+00, -6.6444E-14, -1.2603E-13)
+            Max Velocity: ( 1.0000E+00,  1.7654E-13,  6.5645E-14)
 
           9: t =   5.00000E-01, dt(constant) =   6.25000E-02
-DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 76/0/632
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000072:0000009:0000063
-projection solve:    1 (DS),    0 (AMG), 7.3814E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.0414E-01 (|r|/|b|)
 
-            Min Velocity: (-1.2536E-13, -6.9794E-15, -9.9835E-14)
-            Max Velocity: ( 1.0000E+00,  1.8338E-14,  1.0735E-13)
+            Min Velocity: ( 0.0000E+00, -5.8866E-15, -4.1726E-14)
+            Max Velocity: ( 1.0000E+00,  7.1310E-15,  3.9165E-14)
 
          10: t =   5.62500E-01, dt(constant) =   6.25000E-02
-DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 76/0/632
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000079:0000010:0000069
-projection solve:    1 (DS),    0 (AMG), 7.8783E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 9.4365E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -6.2091E-15, -3.0708E-14)
-            Max Velocity: ( 1.0000E+00,  3.8216E-15,  3.0012E-14)
+            Min Velocity: ( 0.0000E+00, -6.5416E-15, -3.5469E-14)
+            Max Velocity: ( 1.0000E+00,  7.0328E-15,  3.9782E-14)
 
          11: t =   6.25000E-01, dt(constant) =   6.25000E-02
-DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 76/0/632
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000087:0000011:0000076
-projection solve:    1 (DS),    0 (AMG), 5.3200E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.6721E+00 (|r|/|b|)
 
-            Min Velocity: (-2.0260E-14, -2.9872E-15, -3.0953E-14)
-            Max Velocity: ( 1.0000E+00,  2.8890E-15,  3.0745E-14)
+            Min Velocity: ( 0.0000E+00, -4.1778E-14, -5.5801E-14)
+            Max Velocity: ( 1.0000E+00,  5.3990E-14,  4.0854E-14)
 
          12: t =   6.87500E-01, dt(constant) =   6.25000E-02
 DS: culled material fragments from 1 cells.
@@ -418,10 +391,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000095:0000012:0000083
-projection solve:    1 (DS),    0 (AMG), 7.3645E-01 (|r|/|b|)
+projection solve:   10 (DS),    0 (AMG), 3.1652E-02 (|r|/|b|)
 
-            Min Velocity: (-1.1511E-14, -3.2997E-15, -2.1863E-14)
-            Max Velocity: ( 1.0000E+00,  1.7601E-15,  1.8119E-14)
+            Min Velocity: ( 0.0000E+00, -4.3119E-14, -1.9354E-13)
+            Max Velocity: ( 1.0000E+00,  1.9355E-13,  1.3617E-13)
 
          13: t =   7.50000E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 84/0/624
@@ -429,10 +402,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000103:0000013:0000090
-projection solve:    1 (DS),    0 (AMG), 6.7036E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.4568E-01 (|r|/|b|)
 
-            Min Velocity: (-2.7352E-14, -3.0460E-15, -1.9480E-14)
-            Max Velocity: ( 1.0000E+00,  4.9263E-15,  2.1757E-14)
+            Min Velocity: ( 0.0000E+00, -1.5733E-14, -3.7657E-14)
+            Max Velocity: ( 1.0000E+00,  1.7588E-14,  3.5076E-14)
 
          14: t =   8.12500E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 84/0/624
@@ -440,10 +413,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000110:0000014:0000096
-projection solve:    1 (DS),    0 (AMG), 9.7627E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 9.1204E-01 (|r|/|b|)
 
-            Min Velocity: (-2.4396E-15, -2.4323E-15, -1.5142E-14)
-            Max Velocity: ( 1.0000E+00,  1.5434E-15,  1.3972E-14)
+            Min Velocity: ( 0.0000E+00, -2.0430E-14, -3.9751E-14)
+            Max Velocity: ( 1.0000E+00,  2.1791E-14,  3.5098E-14)
 
          15: t =   8.75000E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 84/0/624
@@ -451,10 +424,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000118:0000015:0000103
-projection solve:    1 (DS),    0 (AMG), 5.5342E-01 (|r|/|b|)
+projection solve:    2 (DS),    1 (AMG), 1.3143E-01 (|r|/|b|)
 
-            Min Velocity: (-1.0420E-15, -2.7115E-15, -1.6651E-14)
-            Max Velocity: ( 1.0000E+00,  2.3689E-15,  1.5518E-14)
+            Min Velocity: ( 0.0000E+00, -9.7832E-15, -3.3628E-14)
+            Max Velocity: ( 1.0000E+00,  8.9984E-15,  2.7259E-14)
 
          16: t =   9.37500E-01, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 84/0/624
@@ -462,46 +435,44 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000126:0000016:0000110
-projection solve:    1 (DS),    0 (AMG), 6.5271E-01 (|r|/|b|)
+projection solve:   16 (DS),    0 (AMG), 2.7000E-02 (|r|/|b|)
 
-            Min Velocity: (-1.3825E-15, -5.9334E-15, -3.3110E-14)
-            Max Velocity: ( 1.0000E+00,  3.5648E-15,  3.4819E-14)
+            Min Velocity: ( 0.0000E+00, -1.1005E-13, -5.1376E-14)
+            Max Velocity: ( 1.0000E+00,  4.4161E-14,  7.0153E-14)
 
          17: t =   1.00000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 2 cells.
+DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 92/0/616
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000134:0000017:0000117
-projection solve:    1 (DS),    0 (AMG), 7.5644E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.7193E-01 (|r|/|b|)
 
-            Min Velocity: (-2.9823E-14, -6.0972E-15, -2.1974E-14)
-            Max Velocity: ( 1.0000E+00,  6.0502E-15,  2.2455E-14)
+            Min Velocity: ( 0.0000E+00, -2.3774E-14, -2.9666E-14)
+            Max Velocity: ( 1.0000E+00,  3.5243E-14,  2.7144E-14)
 
          18: t =   1.06250E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 92/0/616
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000141:0000018:0000123
-projection solve:    1 (DS),    0 (AMG), 1.2882E+00 (|r|/|b|)
+projection solve:    2 (DS),    1 (AMG), 3.4412E-01 (|r|/|b|)
 
-            Min Velocity: (-1.0124E-15, -3.2346E-15, -9.7816E-15)
-            Max Velocity: ( 1.0000E+00,  3.0858E-15,  9.9382E-15)
+            Min Velocity: ( 0.0000E+00, -2.0871E-14, -2.2068E-14)
+            Max Velocity: ( 1.0000E+00,  1.5813E-14,  2.0236E-14)
 
          19: t =   1.12500E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 92/0/616
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000149:0000019:0000130
-projection solve:    1 (DS),    0 (AMG), 4.2329E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 2.7845E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -2.1640E-15, -1.2695E-14)
-            Max Velocity: ( 1.0000E+00,  2.4032E-15,  1.3168E-14)
+            Min Velocity: ( 0.0000E+00, -8.0380E-15, -1.9551E-14)
+            Max Velocity: ( 1.0000E+00,  2.4983E-15,  1.7585E-14)
 
          20: t =   1.18750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 92/0/616
@@ -509,10 +480,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000157:0000020:0000137
-projection solve:    1 (DS),    0 (AMG), 6.0765E-01 (|r|/|b|)
+projection solve:   10 (DS),    0 (AMG), 1.5017E-01 (|r|/|b|)
 
-            Min Velocity: (-1.1021E-14, -4.1426E-15, -6.4815E-14)
-            Max Velocity: ( 1.0000E+00,  1.2980E-15,  6.8007E-14)
+            Min Velocity: ( 0.0000E+00, -1.7493E-13, -1.5031E-13)
+            Max Velocity: ( 1.0000E+00,  1.4160E-14,  1.4673E-13)
 
          21: t =   1.25000E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 100/0/608
@@ -520,21 +491,22 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000165:0000021:0000144
-projection solve:    1 (DS),    0 (AMG), 5.8234E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.9095E-01 (|r|/|b|)
 
-            Min Velocity: (-5.2879E-14, -7.7724E-16, -5.4839E-14)
-            Max Velocity: ( 1.0000E+00,  1.9786E-15,  5.2514E-14)
+            Min Velocity: ( 0.0000E+00, -1.8738E-14, -1.9610E-14)
+            Max Velocity: ( 1.0000E+00,  1.5241E-14,  2.2628E-14)
 
          22: t =   1.31250E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 100/0/608
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000172:0000022:0000150
-projection solve:    1 (DS),    0 (AMG), 1.1341E+00 (|r|/|b|)
+projection solve:    2 (DS),    0 (AMG), 7.8712E-01 (|r|/|b|)
 
-            Min Velocity: (-4.1026E-15, -3.3538E-15, -1.2066E-14)
-            Max Velocity: ( 1.0000E+00,  1.6242E-15,  1.1998E-14)
+            Min Velocity: ( 0.0000E+00, -3.0303E-14, -2.9538E-14)
+            Max Velocity: ( 1.0000E+00,  3.2817E-14,  3.5892E-14)
 
          23: t =   1.37500E+00, dt(constant) =   6.25000E-02
 DS: culled material fragments from 1 cells.
@@ -543,10 +515,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000180:0000023:0000157
-projection solve:    1 (DS),    0 (AMG), 4.1554E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 5.8156E-01 (|r|/|b|)
 
-            Min Velocity: (-3.2270E-15, -1.7807E-15, -1.4232E-14)
-            Max Velocity: ( 1.0000E+00,  9.8950E-16,  1.3902E-14)
+            Min Velocity: ( 0.0000E+00, -1.4840E-14, -1.9720E-14)
+            Max Velocity: ( 1.0000E+00,  1.3540E-14,  2.2681E-14)
 
          24: t =   1.43750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 100/0/608
@@ -554,10 +526,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000188:0000024:0000164
-projection solve:    1 (DS),    0 (AMG), 8.8394E-01 (|r|/|b|)
+projection solve:   26 (DS),    0 (AMG), 2.0374E-02 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -6.9916E-15, -6.0892E-14)
-            Max Velocity: ( 1.0000E+00,  1.0236E-15,  5.7536E-14)
+            Min Velocity: ( 0.0000E+00, -1.1626E-14, -6.8580E-14)
+            Max Velocity: ( 1.0000E+00,  1.9993E-13,  1.0046E-13)
 
          25: t =   1.50000E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 108/0/600
@@ -565,10 +537,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000196:0000025:0000171
-projection solve:    1 (DS),    0 (AMG), 8.0661E-01 (|r|/|b|)
+projection solve:    2 (DS),    1 (AMG), 1.0104E+00 (|r|/|b|)
 
-            Min Velocity: (-4.9466E-14, -2.1975E-15, -4.3635E-14)
-            Max Velocity: ( 1.0000E+00,  6.6313E-15,  4.6660E-14)
+            Min Velocity: ( 0.0000E+00, -3.0882E-14, -4.0095E-14)
+            Max Velocity: ( 1.0000E+00,  3.3344E-14,  3.4766E-14)
 
          26: t =   1.56250E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 108/0/600
@@ -576,10 +548,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000203:0000026:0000177
-projection solve:    1 (DS),    0 (AMG), 9.4087E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 5.9640E-01 (|r|/|b|)
 
-            Min Velocity: (-2.2085E-15, -1.3356E-15, -1.3293E-14)
-            Max Velocity: ( 1.0000E+00,  1.1341E-15,  1.4114E-14)
+            Min Velocity: ( 0.0000E+00, -7.1653E-15, -3.0562E-14)
+            Max Velocity: ( 1.0000E+00,  1.7843E-14,  1.9917E-14)
 
          27: t =   1.62500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 108/0/600
@@ -587,10 +559,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000211:0000027:0000184
-projection solve:    1 (DS),    0 (AMG), 5.9050E-01 (|r|/|b|)
+projection solve:    2 (DS),    0 (AMG), 7.1868E-01 (|r|/|b|)
 
-            Min Velocity: (-3.1046E-15, -1.3584E-15, -1.2069E-14)
-            Max Velocity: ( 1.0000E+00,  9.7432E-16,  1.1554E-14)
+            Min Velocity: ( 0.0000E+00, -3.1490E-14, -6.5460E-14)
+            Max Velocity: ( 1.0000E+00,  4.0638E-14,  4.1994E-14)
 
          28: t =   1.68750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 108/0/600
@@ -598,70 +570,65 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000219:0000028:0000191
-projection solve:    1 (DS),    0 (AMG), 1.2793E+00 (|r|/|b|)
+projection solve:   43 (DS),    0 (AMG), 1.1350E-02 (|r|/|b|)
 
-            Min Velocity: (-8.1209E-15, -3.1611E-15, -2.0449E-14)
-            Max Velocity: ( 1.0000E+00,  1.7367E-15,  1.1156E-14)
+            Min Velocity: ( 0.0000E+00, -2.5393E-14, -1.2668E-13)
+            Max Velocity: ( 1.0000E+00,  4.0777E-14,  1.7367E-13)
 
          29: t =   1.75000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 116/0/592
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000227:0000029:0000198
-projection solve:    1 (DS),    0 (AMG), 6.0853E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.1758E+00 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -1.3773E-15, -9.2864E-15)
-            Max Velocity: ( 1.0000E+00,  3.0093E-15,  1.7433E-14)
+            Min Velocity: ( 0.0000E+00, -1.4817E-14, -2.0991E-14)
+            Max Velocity: ( 1.0000E+00,  1.4220E-14,  2.2979E-14)
 
          30: t =   1.81250E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 116/0/592
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000234:0000030:0000204
-projection solve:    1 (DS),    0 (AMG), 1.2348E+00 (|r|/|b|)
+projection solve:    6 (DS),    0 (AMG), 8.8304E-01 (|r|/|b|)
 
-            Min Velocity: (-5.2915E-15, -2.1389E-15, -1.2126E-14)
-            Max Velocity: ( 1.0000E+00,  3.2685E-15,  8.2597E-15)
+            Min Velocity: ( 0.0000E+00, -2.8501E-14, -5.8616E-14)
+            Max Velocity: ( 1.0000E+00,  2.6790E-14,  4.2005E-14)
 
          31: t =   1.87500E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 116/0/592
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000242:0000031:0000211
-projection solve:    1 (DS),    0 (AMG), 3.7911E-01 (|r|/|b|)
+projection solve:    4 (DS),    0 (AMG), 5.6629E-01 (|r|/|b|)
 
-            Min Velocity: (-1.0613E-15, -1.4612E-15, -7.8935E-15)
-            Max Velocity: ( 1.0000E+00,  2.6794E-15,  6.9734E-15)
+            Min Velocity: ( 0.0000E+00, -2.9700E-14, -3.2074E-14)
+            Max Velocity: ( 1.0000E+00,  3.1597E-14,  3.1563E-14)
 
          32: t =   1.93750E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 116/0/592
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000250:0000032:0000218
-projection solve:    1 (DS),    0 (AMG), 5.7443E-01 (|r|/|b|)
+projection solve:   39 (DS),    0 (AMG), 5.4799E-03 (|r|/|b|)
 
-            Min Velocity: (-3.2695E-14, -1.8620E-15, -5.1689E-14)
-            Max Velocity: ( 1.0000E+00,  7.7191E-15,  5.0527E-14)
+            Min Velocity: ( 0.0000E+00, -1.4401E-13, -3.0231E-13)
+            Max Velocity: ( 1.0000E+00,  8.0057E-15,  2.8465E-13)
 
          33: t =   2.00000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 124/0/584
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000258:0000033:0000225
-projection solve:    1 (DS),    0 (AMG), 7.6107E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.7339E-01 (|r|/|b|)
 
-            Min Velocity: (-8.6643E-16, -9.1802E-15, -4.6487E-14)
-            Max Velocity: ( 1.0000E+00,  1.9909E-15,  4.7068E-14)
+            Min Velocity: ( 0.0000E+00, -1.3224E-14, -4.1275E-14)
+            Max Velocity: ( 1.0000E+00,  1.0978E-14,  4.1259E-14)
 
          34: t =   2.06250E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 124/0/584
@@ -669,10 +636,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000265:0000034:0000231
-projection solve:    1 (DS),    0 (AMG), 1.8690E+00 (|r|/|b|)
+projection solve:    3 (DS),    1 (AMG), 4.9103E-01 (|r|/|b|)
 
-            Min Velocity: (-5.9213E-15, -2.4070E-15, -8.4383E-15)
-            Max Velocity: ( 1.0000E+00,  2.8441E-15,  7.4429E-15)
+            Min Velocity: ( 0.0000E+00, -2.2388E-14, -3.6047E-14)
+            Max Velocity: ( 1.0000E+00,  3.1380E-14,  3.9564E-14)
 
          35: t =   2.12500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 124/0/584
@@ -680,10 +647,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000273:0000035:0000238
-projection solve:    1 (DS),    0 (AMG), 2.6381E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 3.6650E-01 (|r|/|b|)
 
-            Min Velocity: (-1.9026E-15, -2.9111E-15, -5.0362E-15)
-            Max Velocity: ( 1.0000E+00,  3.4060E-15,  5.3252E-15)
+            Min Velocity: ( 0.0000E+00, -1.0441E-14, -2.2429E-14)
+            Max Velocity: ( 1.0000E+00,  6.2241E-15,  2.6703E-14)
 
          36: t =   2.18750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 124/0/584
@@ -691,21 +658,22 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000281:0000036:0000245
-projection solve:    1 (DS),    0 (AMG), 2.6915E-01 (|r|/|b|)
+projection solve:   37 (DS),    0 (AMG), 2.0040E-02 (|r|/|b|)
 
-            Min Velocity: (-3.8440E-14, -3.5125E-15, -1.5473E-14)
-            Max Velocity: ( 1.0000E+00,  8.7810E-15,  3.7388E-14)
+            Min Velocity: ( 0.0000E+00, -2.2013E-13, -6.5969E-14)
+            Max Velocity: ( 1.0000E+00,  9.4125E-15,  1.3028E-13)
 
          37: t =   2.25000E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 132/0/576
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000289:0000037:0000252
-projection solve:    1 (DS),    0 (AMG), 8.6149E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 9.2917E-01 (|r|/|b|)
 
-            Min Velocity: (-3.5809E-15, -5.5233E-15, -3.2227E-14)
-            Max Velocity: ( 1.0000E+00,  1.0432E-15,  1.1460E-14)
+            Min Velocity: ( 0.0000E+00, -1.3275E-14, -2.5337E-14)
+            Max Velocity: ( 1.0000E+00,  1.3677E-14,  1.2435E-14)
 
          38: t =   2.31250E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 132/0/576
@@ -713,10 +681,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000296:0000038:0000258
-projection solve:    1 (DS),    0 (AMG), 1.0755E+00 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.4344E-01 (|r|/|b|)
 
-            Min Velocity: (-4.3457E-15, -2.1367E-15, -4.5238E-15)
-            Max Velocity: ( 1.0000E+00,  1.6136E-15,  4.1949E-15)
+            Min Velocity: ( 0.0000E+00, -7.5168E-15, -2.7717E-14)
+            Max Velocity: ( 1.0000E+00,  1.0481E-14,  1.6969E-14)
 
          39: t =   2.37500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 132/0/576
@@ -724,58 +692,55 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000304:0000039:0000265
-projection solve:    1 (DS),    0 (AMG), 5.1374E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.2945E+00 (|r|/|b|)
 
-            Min Velocity: (-4.7811E-15, -8.7587E-16, -3.9806E-15)
-            Max Velocity: ( 1.0000E+00,  1.9925E-15,  5.7702E-15)
+            Min Velocity: ( 0.0000E+00, -1.9507E-14, -3.8702E-14)
+            Max Velocity: ( 1.0000E+00,  1.3303E-14,  3.8408E-14)
 
          40: t =   2.43750E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 132/0/576
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000312:0000040:0000272
-projection solve:    1 (DS),    0 (AMG), 6.1779E-01 (|r|/|b|)
+projection solve:   41 (DS),    0 (AMG), 1.0385E-02 (|r|/|b|)
 
-            Min Velocity: (-2.9615E-14, -1.0626E-15, -2.5876E-14)
-            Max Velocity: ( 1.0000E+00,  8.8293E-16,  2.8549E-14)
+            Min Velocity: ( 0.0000E+00, -1.1953E-14, -1.5147E-13)
+            Max Velocity: ( 1.0000E+00,  2.6723E-13,  1.6159E-13)
 
          41: t =   2.50000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 2 cells.
+DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 140/0/568
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000320:0000041:0000279
-projection solve:    1 (DS),    0 (AMG), 5.4213E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 6.8717E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -3.7156E-16, -2.2779E-14)
-            Max Velocity: ( 1.0000E+00,  1.4214E-15,  2.1895E-14)
+            Min Velocity: ( 0.0000E+00, -2.6721E-14, -3.7097E-14)
+            Max Velocity: ( 1.0000E+00,  1.8213E-14,  1.4858E-14)
 
          42: t =   2.56250E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 140/0/568
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000327:0000042:0000285
-projection solve:    1 (DS),    0 (AMG), 8.8528E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.1966E+00 (|r|/|b|)
 
-            Min Velocity: (-2.5818E-15, -6.8514E-16, -3.0813E-15)
-            Max Velocity: ( 1.0000E+00,  6.5206E-16,  3.4332E-15)
+            Min Velocity: ( 0.0000E+00, -4.8907E-14, -5.5291E-14)
+            Max Velocity: ( 1.0000E+00,  6.0432E-14,  5.1594E-14)
 
          43: t =   2.62500E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 140/0/568
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000335:0000043:0000292
-projection solve:    1 (DS),    0 (AMG), 4.9431E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 6.6600E-01 (|r|/|b|)
 
-            Min Velocity: (-1.5388E-15, -1.5358E-15, -2.8543E-15)
-            Max Velocity: ( 1.0000E+00,  3.2110E-16,  3.5455E-15)
+            Min Velocity: ( 0.0000E+00, -2.9202E-14, -3.2567E-14)
+            Max Velocity: ( 1.0000E+00,  2.6474E-14,  3.0846E-14)
 
          44: t =   2.68750E+00, dt(constant) =   6.25000E-02
 DS: culled material fragments from 1 cells.
@@ -784,21 +749,22 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000343:0000044:0000299
-projection solve:    1 (DS),    0 (AMG), 3.9446E-01 (|r|/|b|)
+projection solve:   38 (DS),    0 (AMG), 1.4641E-02 (|r|/|b|)
 
-            Min Velocity: (-7.3516E-15, -4.3545E-15, -2.8034E-15)
-            Max Velocity: ( 1.0000E+00,  1.9935E-16,  1.3069E-14)
+            Min Velocity: ( 0.0000E+00, -8.5478E-14, -1.5299E-13)
+            Max Velocity: ( 1.0000E+00,  6.4264E-15,  1.5727E-13)
 
          45: t =   2.75000E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 148/0/560
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000351:0000045:0000306
-projection solve:    1 (DS),    0 (AMG), 6.6872E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.8033E-01 (|r|/|b|)
 
-            Min Velocity: (-1.1194E-14, -5.2004E-16, -9.5237E-15)
-            Max Velocity: ( 1.0000E+00,  4.4899E-15,  2.9285E-15)
+            Min Velocity: ( 0.0000E+00, -1.3700E-14, -2.0628E-14)
+            Max Velocity: ( 1.0000E+00,  1.7427E-14,  3.6045E-14)
 
          46: t =   2.81250E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 148/0/560
@@ -806,10 +772,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000358:0000046:0000312
-projection solve:    1 (DS),    0 (AMG), 8.3083E-01 (|r|/|b|)
+projection solve:    5 (DS),    0 (AMG), 7.4602E-01 (|r|/|b|)
 
-            Min Velocity: (-9.6883E-16, -7.7473E-16, -2.9251E-15)
-            Max Velocity: ( 1.0000E+00,  3.9464E-16,  2.7289E-15)
+            Min Velocity: ( 0.0000E+00, -1.8779E-14, -3.2439E-14)
+            Max Velocity: ( 1.0000E+00,  2.3243E-14,  2.7407E-14)
 
          47: t =   2.87500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 148/0/560
@@ -817,10 +783,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000366:0000047:0000319
-projection solve:    1 (DS),    0 (AMG), 7.6388E-01 (|r|/|b|)
+projection solve:    2 (DS),    1 (AMG), 3.6532E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -1.1482E-15, -2.6757E-15)
-            Max Velocity: ( 1.0000E+00,  5.3116E-16,  2.9464E-15)
+            Min Velocity: ( 0.0000E+00, -2.3869E-14, -3.4116E-14)
+            Max Velocity: ( 1.0000E+00,  3.0037E-14,  2.6780E-14)
 
          48: t =   2.93750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 148/0/560
@@ -828,10 +794,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000374:0000048:0000326
-projection solve:    1 (DS),    0 (AMG), 5.7898E-01 (|r|/|b|)
+projection solve:   38 (DS),    0 (AMG), 4.7642E-03 (|r|/|b|)
 
-            Min Velocity: (-4.0949E-15, -1.1482E-15, -1.0390E-14)
-            Max Velocity: ( 1.0000E+00,  2.3749E-15,  1.8946E-14)
+            Min Velocity: ( 0.0000E+00, -4.9959E-14, -6.8115E-14)
+            Max Velocity: ( 1.0000E+00,  1.1474E-14,  2.8497E-14)
 
          49: t =   3.00000E+00, dt(constant) =   6.25000E-02
 DS: culled material fragments from 1 cells.
@@ -840,21 +806,22 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000382:0000049:0000333
-projection solve:    1 (DS),    0 (AMG), 8.2061E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 6.2258E-01 (|r|/|b|)
 
-            Min Velocity: (-1.3024E-14, -2.1766E-15, -1.6054E-14)
-            Max Velocity: ( 1.0000E+00,  5.3486E-16,  1.0727E-14)
+            Min Velocity: ( 0.0000E+00, -8.9236E-15, -4.9744E-15)
+            Max Velocity: ( 1.0000E+00,  5.9206E-15,  1.4754E-14)
 
          50: t =   3.06250E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 156/0/552
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000389:0000050:0000339
-projection solve:    1 (DS),    0 (AMG), 1.5632E+00 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.5533E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -1.7743E-15, -3.1080E-15)
-            Max Velocity: ( 1.0000E+00,  1.1054E-15,  3.2202E-15)
+            Min Velocity: ( 0.0000E+00, -8.7474E-15, -7.0971E-15)
+            Max Velocity: ( 1.0000E+00,  8.6967E-15,  1.5565E-14)
 
          51: t =   3.12500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 156/0/552
@@ -862,10 +829,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000397:0000051:0000346
-projection solve:    1 (DS),    0 (AMG), 5.2555E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.3435E-01 (|r|/|b|)
 
-            Min Velocity: (-2.5607E-15, -1.3486E-15, -3.9248E-15)
-            Max Velocity: ( 1.0000E+00,  2.3135E-15,  3.8822E-15)
+            Min Velocity: ( 0.0000E+00, -2.1942E-14, -1.4804E-14)
+            Max Velocity: ( 1.0000E+00,  1.6653E-14,  1.5594E-14)
 
          52: t =   3.18750E+00, dt(constant) =   6.25000E-02
 DS: culled material fragments from 1 cells.
@@ -874,34 +841,34 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000405:0000052:0000353
-projection solve:    1 (DS),    0 (AMG), 4.7886E-01 (|r|/|b|)
+projection solve:   34 (DS),    0 (AMG), 1.8306E-02 (|r|/|b|)
 
-            Min Velocity: (-1.5461E-14, -1.3486E-15, -1.1910E-14)
-            Max Velocity: ( 1.0000E+00,  5.1464E-15,  1.7844E-14)
+            Min Velocity: ( 0.0000E+00, -6.7619E-15, -1.9053E-14)
+            Max Velocity: ( 1.0000E+00,  1.0746E-13,  2.0289E-14)
 
          53: t =   3.25000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
-DS: totally/essentially/non-void cell counts = 164/0/544
-DS: T(H) iterations:  0.00(avg), 0(max)
-DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
-
-DS: dt=6.250E-02, NFUN:NPC:NPA=0000413:0000053:0000360
-projection solve:    1 (DS),    0 (AMG), 1.1654E+00 (|r|/|b|)
-
-            Min Velocity: (-1.5516E-14, -2.9647E-15, -1.3962E-14)
-            Max Velocity: ( 1.0000E+00,  2.4118E-15,  7.9849E-15)
-
-         54: t =   3.31250E+00, dt(constant) =   6.25000E-02
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 164/0/544
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.250E-02, NFUN:NPC:NPA=0000420:0000054:0000366
-projection solve:    1 (DS),    0 (AMG), 9.4371E-01 (|r|/|b|)
+DS: dt=6.250E-02, NFUN:NPC:NPA=0000413:0000053:0000360
+projection solve:    1 (DS),    0 (AMG), 8.2728E-01 (|r|/|b|)
 
-            Min Velocity: (-3.7607E-15, -3.0293E-15, -3.4893E-15)
-            Max Velocity: ( 1.0000E+00,  1.6951E-15,  4.4097E-15)
+            Min Velocity: ( 0.0000E+00, -5.2670E-15, -1.1689E-14)
+            Max Velocity: ( 1.0000E+00,  5.0343E-15,  2.0756E-14)
+
+         54: t =   3.31250E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 1 cells.
+DS: totally/essentially/non-void cell counts = 164/0/544
+DS: T(H) iterations:  0.00(avg), 0(max)
+DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
+
+DS: dt=6.250E-02, NFUN:NPC:NPA=0000420:0000054:0000366
+projection solve:    1 (DS),    0 (AMG), 1.1293E+00 (|r|/|b|)
+
+            Min Velocity: ( 0.0000E+00, -8.2601E-15, -1.3434E-14)
+            Max Velocity: ( 1.0000E+00,  9.2590E-15,  2.1739E-14)
 
          55: t =   3.37500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 164/0/544
@@ -909,45 +876,44 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000428:0000055:0000373
-projection solve:    1 (DS),    0 (AMG), 6.2316E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.0650E+00 (|r|/|b|)
 
-            Min Velocity: (-1.4297E-14, -3.6819E-15, -3.9923E-15)
-            Max Velocity: ( 1.0000E+00,  2.8420E-15,  1.0980E-14)
+            Min Velocity: ( 0.0000E+00, -2.0015E-14, -3.5673E-14)
+            Max Velocity: ( 1.0000E+00,  2.5221E-14,  6.4568E-14)
 
          56: t =   3.43750E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 164/0/544
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000436:0000056:0000380
-projection solve:    1 (DS),    0 (AMG), 7.6618E-01 (|r|/|b|)
+projection solve:   35 (DS),    0 (AMG), 4.6820E-03 (|r|/|b|)
 
-            Min Velocity: (-8.6391E-15, -1.9985E-14, -3.5635E-14)
-            Max Velocity: ( 1.0000E+00,  1.0946E-15,  5.0170E-14)
+            Min Velocity: ( 0.0000E+00, -8.6669E-14, -1.5003E-13)
+            Max Velocity: ( 1.0000E+00,  1.2041E-14,  1.2282E-13)
 
          57: t =   3.50000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 172/0/536
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000444:0000057:0000387
-projection solve:    1 (DS),    0 (AMG), 9.1417E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 6.4668E-01 (|r|/|b|)
 
-            Min Velocity: (-6.5200E-14, -2.8172E-15, -3.9190E-14)
-            Max Velocity: ( 1.0000E+00,  1.8657E-14,  3.4442E-14)
+            Min Velocity: ( 0.0000E+00, -1.3092E-14, -1.9119E-14)
+            Max Velocity: ( 1.0000E+00,  1.8340E-14,  4.1302E-14)
 
          58: t =   3.56250E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 172/0/536
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000451:0000058:0000393
-projection solve:    1 (DS),    0 (AMG), 1.1737E+00 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.1455E-01 (|r|/|b|)
 
-            Min Velocity: (-1.1079E-14, -4.1323E-15, -7.1778E-15)
-            Max Velocity: ( 1.0000E+00,  2.7838E-15,  7.6954E-15)
+            Min Velocity: ( 0.0000E+00, -1.8517E-14, -1.5077E-14)
+            Max Velocity: ( 1.0000E+00,  1.0411E-14,  4.0458E-14)
 
          59: t =   3.62500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 172/0/536
@@ -955,10 +921,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000459:0000059:0000400
-projection solve:    1 (DS),    0 (AMG), 5.4440E-01 (|r|/|b|)
+projection solve:    2 (DS),    1 (AMG), 5.7102E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -9.5018E-15, -7.7045E-15)
-            Max Velocity: ( 1.0000E+00,  3.3564E-15,  6.0867E-15)
+            Min Velocity: ( 0.0000E+00, -2.2928E-14, -2.8051E-14)
+            Max Velocity: ( 1.0000E+00,  2.1450E-14,  2.2342E-14)
 
          60: t =   3.68750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 172/0/536
@@ -966,33 +932,33 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000467:0000060:0000407
-projection solve:    1 (DS),    0 (AMG), 3.9119E-01 (|r|/|b|)
+projection solve:   31 (DS),    0 (AMG), 2.0744E-02 (|r|/|b|)
 
-            Min Velocity: (-5.7504E-14, -1.6425E-14, -3.2340E-14)
-            Max Velocity: ( 1.0000E+00,  5.1357E-15,  2.7093E-14)
+            Min Velocity: ( 0.0000E+00, -5.1604E-15, -1.1049E-13)
+            Max Velocity: ( 1.0000E+00,  3.6476E-14,  1.3036E-14)
 
          61: t =   3.75000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 180/0/528
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000475:0000061:0000414
-projection solve:    1 (DS),    0 (AMG), 9.6267E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.5081E-01 (|r|/|b|)
 
-            Min Velocity: (-3.4393E-15, -6.9320E-15, -2.1006E-14)
-            Max Velocity: ( 1.0000E+00,  6.9237E-15,  2.4635E-14)
+            Min Velocity: ( 0.0000E+00, -6.7504E-15, -1.5254E-14)
+            Max Velocity: ( 1.0000E+00,  6.4902E-15,  1.4612E-14)
 
          62: t =   3.81250E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 180/0/528
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000482:0000062:0000420
-projection solve:    1 (DS),    0 (AMG), 7.8403E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 9.5438E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -2.7429E-15, -4.0004E-15)
-            Max Velocity: ( 1.0000E+00,  1.4480E-15,  5.9977E-15)
+            Min Velocity: ( 0.0000E+00, -2.1265E-14, -1.9865E-14)
+            Max Velocity: ( 1.0000E+00,  1.1379E-14,  1.5917E-14)
 
          63: t =   3.87500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 180/0/528
@@ -1000,10 +966,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000490:0000063:0000427
-projection solve:    1 (DS),    0 (AMG), 5.7581E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.3886E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -3.5599E-15, -6.2485E-15)
-            Max Velocity: ( 1.0000E+00,  1.8346E-15,  5.2832E-15)
+            Min Velocity: ( 0.0000E+00, -2.9371E-14, -4.4281E-14)
+            Max Velocity: ( 1.0000E+00,  2.9362E-14,  2.9593E-14)
 
          64: t =   3.93750E+00, dt(constant) =   6.25000E-02
 DS: culled material fragments from 1 cells.
@@ -1012,32 +978,34 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000498:0000064:0000434
-projection solve:    1 (DS),    0 (AMG), 4.5206E-01 (|r|/|b|)
+projection solve:   30 (DS),    0 (AMG), 1.2379E-02 (|r|/|b|)
 
-            Min Velocity: (-1.1221E-14, -1.5241E-15, -4.3036E-14)
-            Max Velocity: ( 1.0000E+00,  2.9439E-15,  3.7335E-14)
+            Min Velocity: ( 0.0000E+00, -2.2172E-13, -1.6679E-13)
+            Max Velocity: ( 1.0000E+00,  7.6425E-15,  1.2798E-13)
 
          65: t =   4.00000E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 188/0/520
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000506:0000065:0000441
-projection solve:    1 (DS),    0 (AMG), 8.1486E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.8221E-01 (|r|/|b|)
 
-            Min Velocity: (-1.9299E-14, -3.5839E-15, -3.2052E-14)
-            Max Velocity: ( 1.0000E+00,  1.3516E-15,  3.6787E-14)
+            Min Velocity: ( 0.0000E+00, -2.9540E-14, -1.1041E-14)
+            Max Velocity: ( 1.0000E+00,  1.7128E-14,  6.1972E-14)
 
          66: t =   4.06250E+00, dt(constant) =   6.25000E-02
+DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 188/0/520
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000513:0000066:0000447
-projection solve:    1 (DS),    0 (AMG), 8.8981E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 9.5726E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -2.5878E-15, -5.3307E-15)
-            Max Velocity: ( 1.0000E+00,  1.6924E-15,  6.1191E-15)
+            Min Velocity: ( 0.0000E+00, -3.4983E-14, -2.7358E-14)
+            Max Velocity: ( 1.0000E+00,  4.0713E-14,  5.6649E-14)
 
          67: t =   4.12500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 188/0/520
@@ -1045,10 +1013,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000521:0000067:0000454
-projection solve:    1 (DS),    0 (AMG), 6.3567E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.1163E-01 (|r|/|b|)
 
-            Min Velocity: (-1.9424E-15, -1.2150E-15, -4.6928E-15)
-            Max Velocity: ( 1.0000E+00,  3.5335E-15,  8.5201E-15)
+            Min Velocity: ( 0.0000E+00, -5.5149E-14, -3.9896E-14)
+            Max Velocity: ( 1.0000E+00,  3.9351E-14,  4.0229E-14)
 
          68: t =   4.18750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 188/0/520
@@ -1056,10 +1024,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000529:0000068:0000461
-projection solve:    1 (DS),    0 (AMG), 2.9848E-01 (|r|/|b|)
+projection solve:   32 (DS),    0 (AMG), 3.9914E-03 (|r|/|b|)
 
-            Min Velocity: (-2.3899E-15, -1.1570E-15, -2.0268E-14)
-            Max Velocity: ( 1.0000E+00,  9.2644E-15,  1.5159E-14)
+            Min Velocity: ( 0.0000E+00, -1.5821E-14, -2.7931E-13)
+            Max Velocity: ( 1.0000E+00,  1.0029E-14,  2.6683E-13)
 
          69: t =   4.25000E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 196/0/512
@@ -1067,10 +1035,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000537:0000069:0000468
-projection solve:    1 (DS),    0 (AMG), 1.2819E+00 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 8.3713E-01 (|r|/|b|)
 
-            Min Velocity: (-2.3952E-14, -5.7309E-15, -6.6391E-15)
-            Max Velocity: ( 1.0000E+00,  2.5893E-15,  1.5980E-14)
+            Min Velocity: ( 0.0000E+00, -1.6948E-14, -3.1604E-14)
+            Max Velocity: ( 1.0000E+00,  1.6656E-14,  1.3519E-14)
 
          70: t =   4.31250E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 196/0/512
@@ -1078,10 +1046,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000544:0000070:0000474
-projection solve:    1 (DS),    0 (AMG), 7.1206E-01 (|r|/|b|)
+projection solve:    2 (DS),    1 (AMG), 3.7959E-01 (|r|/|b|)
 
-            Min Velocity: (-4.9641E-15, -1.6164E-15, -6.1814E-15)
-            Max Velocity: ( 1.0000E+00,  4.7286E-15,  5.5418E-15)
+            Min Velocity: ( 0.0000E+00, -4.8188E-14, -5.0396E-14)
+            Max Velocity: ( 1.0000E+00,  9.1338E-15,  2.3331E-14)
 
          71: t =   4.37500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 196/0/512
@@ -1089,10 +1057,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000552:0000071:0000481
-projection solve:    1 (DS),    0 (AMG), 6.9838E-01 (|r|/|b|)
+projection solve:    2 (DS),    0 (AMG), 6.6904E-01 (|r|/|b|)
 
-            Min Velocity: (-6.8973E-15, -1.8560E-15, -9.8720E-15)
-            Max Velocity: ( 1.0000E+00,  7.3912E-15,  7.7984E-15)
+            Min Velocity: ( 0.0000E+00, -3.6726E-14, -3.9198E-14)
+            Max Velocity: ( 1.0000E+00,  3.5097E-14,  2.9045E-14)
 
          72: t =   4.43750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 196/0/512
@@ -1100,22 +1068,21 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000560:0000072:0000488
-projection solve:    1 (DS),    0 (AMG), 4.7286E-01 (|r|/|b|)
+projection solve:   30 (DS),    0 (AMG), 2.0114E-03 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -1.8560E-15, -2.8651E-14)
-            Max Velocity: ( 1.0000E+00,  1.3535E-14,  2.1351E-14)
+            Min Velocity: ( 0.0000E+00, -3.5021E-14, -1.6350E-13)
+            Max Velocity: ( 1.0000E+00,  4.3778E-14,  1.6293E-13)
 
          73: t =   4.50000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 204/0/504
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000568:0000073:0000495
-projection solve:    1 (DS),    0 (AMG), 7.2998E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 1.3685E+00 (|r|/|b|)
 
-            Min Velocity: (-5.5200E-14, -6.1434E-15, -1.9135E-14)
-            Max Velocity: ( 1.0000E+00,  2.5715E-15,  2.5260E-14)
+            Min Velocity: ( 0.0000E+00, -1.9770E-14, -3.8869E-14)
+            Max Velocity: ( 1.0000E+00,  1.8636E-14,  4.7540E-14)
 
          74: t =   4.56250E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 204/0/504
@@ -1123,22 +1090,21 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000575:0000074:0000501
-projection solve:    1 (DS),    0 (AMG), 8.5502E-01 (|r|/|b|)
+projection solve:    2 (DS),    0 (AMG), 7.2622E-01 (|r|/|b|)
 
-            Min Velocity: (-5.6504E-15, -1.9423E-15, -4.0221E-15)
-            Max Velocity: ( 1.0000E+00,  2.2382E-15,  6.9513E-15)
+            Min Velocity: ( 0.0000E+00, -3.2571E-14, -3.4467E-14)
+            Max Velocity: ( 1.0000E+00,  3.2123E-14,  3.9019E-14)
 
          75: t =   4.62500E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 204/0/504
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000583:0000075:0000508
-projection solve:    1 (DS),    0 (AMG), 5.6403E-01 (|r|/|b|)
+projection solve:   22 (DS),    0 (AMG), 3.8219E-01 (|r|/|b|)
 
-            Min Velocity: (-6.6611E-15, -3.8439E-15, -4.5157E-15)
-            Max Velocity: ( 1.0000E+00,  2.6417E-15,  4.8267E-15)
+            Min Velocity: ( 0.0000E+00, -3.4976E-14, -7.6410E-14)
+            Max Velocity: ( 1.0000E+00,  3.0686E-14,  6.0845E-14)
 
          76: t =   4.68750E+00, dt(constant) =   6.25000E-02
 DS: culled material fragments from 1 cells.
@@ -1147,10 +1113,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000591:0000076:0000515
-projection solve:    1 (DS),    0 (AMG), 3.4182E-01 (|r|/|b|)
+projection solve:   25 (DS),    0 (AMG), 6.7586E-03 (|r|/|b|)
 
-            Min Velocity: (-1.5561E-14, -5.2587E-15, -4.1150E-14)
-            Max Velocity: ( 1.0000E+00,  4.4865E-15,  2.4263E-14)
+            Min Velocity: ( 0.0000E+00, -1.4488E-13, -1.3696E-13)
+            Max Velocity: ( 1.0000E+00,  2.3589E-14,  6.6203E-14)
 
          77: t =   4.75000E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 212/0/496
@@ -1158,10 +1124,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000599:0000077:0000522
-projection solve:    1 (DS),    0 (AMG), 1.1712E+00 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.3346E-01 (|r|/|b|)
 
-            Min Velocity: ( 0.0000E+00, -6.8263E-15, -2.2837E-14)
-            Max Velocity: ( 1.0000E+00,  3.5707E-15,  3.7574E-14)
+            Min Velocity: ( 0.0000E+00, -1.9485E-14, -4.5124E-14)
+            Max Velocity: ( 1.0000E+00,  3.5652E-14,  9.1184E-14)
 
          78: t =   4.81250E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 212/0/496
@@ -1169,10 +1135,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000606:0000078:0000528
-projection solve:    1 (DS),    0 (AMG), 8.2754E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 9.2393E-01 (|r|/|b|)
 
-            Min Velocity: (-8.7186E-15, -5.6474E-15, -4.3456E-15)
-            Max Velocity: ( 1.0000E+00,  2.7922E-15,  4.1961E-15)
+            Min Velocity: ( 0.0000E+00, -3.0756E-14, -5.3204E-14)
+            Max Velocity: ( 1.0000E+00,  1.8487E-14,  9.7707E-14)
 
          79: t =   4.87500E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 212/0/496
@@ -1180,10 +1146,10 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000614:0000079:0000535
-projection solve:    1 (DS),    0 (AMG), 6.8234E-01 (|r|/|b|)
+projection solve:    4 (DS),    0 (AMG), 3.3183E-01 (|r|/|b|)
 
-            Min Velocity: (-1.5995E-14, -1.2176E-14, -6.8881E-15)
-            Max Velocity: ( 1.0000E+00,  9.5340E-16,  7.0330E-15)
+            Min Velocity: ( 0.0000E+00, -2.4918E-14, -5.6119E-14)
+            Max Velocity: ( 1.0000E+00,  2.8315E-14,  4.6113E-14)
 
          80: t =   4.93750E+00, dt(constant) =   6.25000E-02
 DS: totally/essentially/non-void cell counts = 212/0/496
@@ -1191,34 +1157,32 @@ DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000622:0000080:0000542
-projection solve:    1 (DS),    0 (AMG), 5.4040E-01 (|r|/|b|)
+projection solve:   24 (DS),    0 (AMG), 6.3688E-03 (|r|/|b|)
 
-            Min Velocity: (-9.4122E-14, -5.0677E-14, -5.6195E-14)
-            Max Velocity: ( 1.0000E+00,  8.5199E-16,  5.3036E-14)
+            Min Velocity: ( 0.0000E+00, -2.0529E-13, -6.2668E-14)
+            Max Velocity: ( 1.0000E+00,  2.3870E-14,  1.0914E-13)
 
          81: t =   5.00000E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 220/0/488
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000630:0000081:0000549
-projection solve:    1 (DS),    0 (AMG), 7.0644E-01 (|r|/|b|)
+projection solve:    3 (DS),    0 (AMG), 6.2750E-01 (|r|/|b|)
 
-            Min Velocity: (-1.2880E-13, -6.5151E-15, -4.6003E-14)
-            Max Velocity: ( 1.0000E+00,  3.8501E-14,  4.9307E-14)
+            Min Velocity: ( 0.0000E+00, -1.8658E-14, -2.4912E-14)
+            Max Velocity: ( 1.0000E+00,  1.7932E-14,  3.4664E-14)
 
          82: t =   5.06250E+00, dt(constant) =   6.25000E-02
-DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 220/0/488
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
 DS: dt=6.250E-02, NFUN:NPC:NPA=0000637:0000082:0000555
-projection solve:    1 (DS),    0 (AMG), 9.3185E-01 (|r|/|b|)
+projection solve:    1 (DS),    0 (AMG), 7.0574E-01 (|r|/|b|)
 
-            Min Velocity: (-3.2267E-15, -5.1910E-15, -5.4154E-15)
-            Max Velocity: ( 1.0000E+00,  2.5007E-15,  7.0961E-15)
+            Min Velocity: ( 0.0000E+00, -2.2523E-14, -3.1255E-14)
+            Max Velocity: ( 1.0000E+00,  1.8697E-14,  2.3831E-14)
 
 ================================================================================
 
@@ -1229,41 +1193,41 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  4.915E+00 --- Total
-    1.387E-02 --- Input
-    6.510E-01 --- Initialization
-      6.750E-04 --- Vof Initialization
-      1.995E-03 --- FHT function
-      1.047E-02 --- Flow
-        2.130E-04 --- update properties
-        4.531E-03 --- setup
-        3.296E-03 --- solve
-          1.430E-04 --- hypre solve
-    4.242E+00 --- Main Cycle
-      5.561E-02 --- Output
-      3.645E-03 --- Time Step
-      1.008E+00 --- Volumetracking
-        4.675E-01 --- normals
-        3.881E-01 --- reconstruct/advect
-      2.654E+00 --- Diffusion Solver
-        8.109E-01 --- FHT precon compute
-          7.778E-02 --- hypre-matrix-copy
-          1.266E-01 --- boomer-setup
-        8.851E-01 --- FHT function
-        4.422E-01 --- FHT precon apply
-          2.636E-02 --- VF rad precon
-          1.990E-01 --- boomer-solve
-      4.969E-01 --- Flow
-        1.335E-02 --- update properties
-        1.030E-01 --- prediction
-          6.899E-02 --- setup
-          3.293E-02 --- solve
-        3.399E-01 --- projection
-          1.740E-01 --- setup
-          1.651E-01 --- solve
-            2.510E-03 --- hypre solve
+  5.476E+00 --- Total
+    1.290E-02 --- Input
+    6.514E-01 --- Initialization
+      6.290E-04 --- Vof Initialization
+      1.949E-03 --- FHT function
+      1.019E-02 --- Flow
+        2.170E-04 --- update properties
+        4.435E-03 --- setup
+        3.237E-03 --- solve
+          1.220E-04 --- hypre solve
+    4.805E+00 --- Main Cycle
+      5.338E-02 --- Output
+      4.451E-03 --- Time Step
+      1.166E+00 --- Volumetracking
+        5.538E-01 --- normals
+        4.332E-01 --- reconstruct/advect
+      2.980E+00 --- Diffusion Solver
+        9.302E-01 --- FHT precon compute
+          9.072E-02 --- hypre-matrix-copy
+          1.451E-01 --- boomer-setup
+        9.752E-01 --- FHT function
+        4.915E-01 --- FHT precon apply
+          3.002E-02 --- VF rad precon
+          2.255E-01 --- boomer-solve
+      5.722E-01 --- Flow
+        1.566E-02 --- update properties
+        1.139E-01 --- prediction
+          7.432E-02 --- setup
+          3.838E-02 --- solve
+        3.974E-01 --- projection
+          1.942E-01 --- setup
+          2.023E-01 --- solve
+            1.162E-02 --- hypre solve
 
-                  Process virtual memory used: 4.41E+02 mB
-                                   words/cell: 81715
+                  Process virtual memory used: 4.36E+02 mB
+                                   words/cell: 80777
 
-truchas terminated normally on 14 Feb 19 at 13:35:40
+truchas terminated normally on 18 Apr 19 at 08:49:25

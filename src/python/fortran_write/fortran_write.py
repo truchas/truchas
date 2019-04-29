@@ -7,12 +7,7 @@ import scipy as sp
 import truchas
 
 # load library
-# libname = ctypes.util.find_library("fwrite")
-# assert libname != None
-libname = os.path.join(truchas.TruchasConfig.build_dir, "src/python/libfwrite.so")
-if not os.path.isfile(libname):
-    libname = os.path.join(truchas.TruchasConfig.install_lib_dir, "libfwrite.so")
-libfwrite = ctypes.cdll.LoadLibrary(libname)
+libfwrite = ctypes.cdll.LoadLibrary(truchas.TruchasConfig.libfwrite)
 
 # fortran interfaces
 libfwrite.fopen.argtypes = [ctypes.c_char_p]

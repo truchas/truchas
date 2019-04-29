@@ -21,12 +21,6 @@ the ball are not conforming.
   Output_Dt = 100.0
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 100.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
   electromagnetics = .true.

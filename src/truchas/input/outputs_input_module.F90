@@ -45,10 +45,10 @@ CONTAINS
     use edit_module,             only: Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist, NULL_I, NULL_C
     use interface_output_module, only: Int_Output_Dt_Multiplier
-    use output_control,          only: Output_Dt, Output_T, precise_output
+    use output_control,          only: Output_Dt, Output_T
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
-    use output_control,          only: Output_Dt_Multiplier, retain_last_step
+    use output_control,          only: Output_Dt_Multiplier
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
     use output_control,          only: part, part_path
     use toolpath_table,          only: toolpath_ptr
@@ -69,8 +69,6 @@ CONTAINS
                        Output_T,                       &
                        Short_Output_Dt_Multiplier,     &
                        Probe_Output_Cycle_Multiplier,  &
-                       precise_output,                 &
-                       retain_last_step, &
                        move_block_ids, move_toolpath_name
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -143,8 +141,8 @@ CONTAINS
     use kinds, only: r8
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump
-    use output_control,          only: Output_Dt, Output_T, precise_output
-    use output_control,          only: Output_Dt_Multiplier, retain_last_step
+    use output_control,          only: Output_Dt, Output_T
+    use output_control,          only: Output_Dt_Multiplier
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -152,9 +150,6 @@ CONTAINS
     ! Output & delta times
     Output_Dt = 0
     Output_T  = 0
-
-    ! do output at exactly the specified time, deprecated
-    precise_output = .false.
 
     ! Edit variables
     short_edit                 = .false.
@@ -165,7 +160,6 @@ CONTAINS
     Int_Output_Dt_Multiplier = 0
 
     ! User output
-    retain_last_step          = .false.
     Output_Dt_Multiplier  = 1
     Probe_Output_Cycle_Multiplier = 1
 
@@ -180,10 +174,10 @@ CONTAINS
     !======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
     use interface_output_module, only: Int_Output_Dt_Multiplier
-    use output_control,          only: Output_Dt, Output_T, precise_output
+    use output_control,          only: Output_Dt, Output_T
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
-    use output_control,          only: Output_Dt_Multiplier, retain_last_step
+    use output_control,          only: Output_Dt_Multiplier
     use probe_output_module,     only: Probe_Output_Cycle_Multiplier  
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -193,9 +187,7 @@ CONTAINS
        call PGSLIB_BCAST (Int_Output_Dt_Multiplier)
        call PGSLIB_BCAST (Output_Dt)
        call PGSLIB_BCAST (Output_T)
-       call PGSLIB_BCAST (precise_output)
        call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
-       call PGSLIB_BCAST (retain_last_step)
        call PGSLIB_BCAST (Output_Dt_Multiplier)
        call PGSLIB_BCAST (Probe_Output_Cycle_Multiplier)
     end if

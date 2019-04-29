@@ -28,11 +28,6 @@ will result in heat solutions that are not comparable.
   Output_Dt = 5.0 !0.2
 /
 
-&SIMULATION_CONTROL
-  phase_start_times = 5.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   legacy_flow = .true.
   body_force_density = 1.0, 0.0, 0.0

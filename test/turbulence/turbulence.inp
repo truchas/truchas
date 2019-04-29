@@ -37,9 +37,7 @@ velocity, but there is no satisfactory way to check the velocity profile.
 &OUTPUTS
 
     Output_T                    = 0.0, 0.25
-    Output_Dt                   = 0.1
-    Int_Output_Dt_Multiplier    = 0
-    Short_Output_Dt_Multiplier  = 1
+    Output_Dt                   = 0.25
 
 /
 

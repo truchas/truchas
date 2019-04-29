@@ -1,4 +1,8 @@
 from .TruchasData import *
 from .TruchasEnvironment import *
 from .TruchasTest import *
-from .TruchasConfig import *
+
+try:
+    from .TruchasConfigBuild import *
+except ImportError:
+    from .TruchasConfigInstall import *

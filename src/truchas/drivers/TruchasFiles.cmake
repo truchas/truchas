@@ -17,6 +17,7 @@ set(DRIVERS_FILES
            drivers/flow_time_step_module.F90
            drivers/time_step_sync_type.F90
            drivers/simulation_event_queue.F90
+           drivers/sim_event_queue_type.F90
            drivers/hijack_truchas.F90)
 
 set(DRIVERS_FPP_FLAGS 
@@ -33,16 +34,10 @@ fortran_preprocess_files(DRIVERS_SOURCE_FILES
 # Set compile flags
 include(BuildWhitespaceString)
 set(fc_flags -I${PGSLib_MODULE_DIR})
+list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${DRIVERS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
-
-# drivers.F90 requires extra flags
-list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
-build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
-set_source_files_properties(${TruchasExe_BINARY_DIR}/drivers.f90
-                            COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})
-
 
 # Add the C source files
 set(DRIVERS_C_SOURCE_FILES drivers/runinfo.c)

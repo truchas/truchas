@@ -7,11 +7,6 @@
   Output_Dt = 5.0 !1.0
 /
 
-&SIMULATION_CONTROL
-  phase_start_times = 10.0
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   heat_transport = .true.
   legacy_flow = .true.

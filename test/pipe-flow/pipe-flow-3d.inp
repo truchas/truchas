@@ -28,12 +28,6 @@ U(y) = (1 - y^2)/2, and maximum axial velocity along axis is 1/2.
   output_dt = 1.5
 /
 
-Hack to hit the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 1.5
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   flow = .true.
 /

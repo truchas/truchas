@@ -55,12 +55,6 @@ data by Martin & Moyce for this regression test.
   output_dt = 0.075
 /
 
-A kludge to force hitting the final time exactly
-&SIMULATION_CONTROL
-  phase_start_times = 0.075
-  phase_init_dt_factor = 1.0
-/
-
 &PHYSICS
   flow = .true.
   body_force_density = 0.0, -9.81, 0.0

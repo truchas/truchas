@@ -143,7 +143,7 @@ contains
   pure function braking_ratio (n, a) result (r)
     integer, intent(in) :: n
     real(r8), intent(in) :: a
-    real(r8) :: r, f, s
+    real(r8) :: r, f, s, rprev
     integer :: k
     select case (n)
     case (1)
@@ -157,12 +157,14 @@ contains
         do k = 2, n
           f = r*(1 + f)
         end do
-        if (abs(f-a) <= 2*spacing(f)) exit
+        if (abs(f-a) <= 2*spacing(a)) exit
         s = n
         do k = n-1, 1, -1
           s = k + r*s
         end do
+        rprev = r
         r = r + (a-f)/s
+        if (abs(r-rprev) <= 2*spacing(r)) exit
       end do
     end select
   end function braking_ratio

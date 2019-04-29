@@ -14,7 +14,7 @@ def run_test(tenv):
     werror = (test[:,2] - gold[:,2]) / max(abs(gold[:,2]))
 
     nfail += truchas.compare_max(uerror, 0, 8e-5, "x-velocity", output.time(2))
-    nfail += truchas.compare_max(werror, 0, 8e-5, "x-velocity", output.time(2))
+    nfail += truchas.compare_max(werror, 0, 8e-5, "z-velocity", output.time(2))
 
     truchas.report_summary(nfail)
     return nfail
