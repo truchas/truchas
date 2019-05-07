@@ -21,7 +21,7 @@ module cell_topology
   implicit none
   private
 
-  public :: get_face_nodes, get_link_face_nodes, link_edges
+  public :: get_face_nodes, get_edge_nodes, get_link_face_nodes, link_edges
   public :: num_cell_faces, cell_face_sizes, cell_face_sig, cell_edges
   public :: normalize_facet, reverse_facet, facet_parity
 
@@ -240,6 +240,27 @@ contains
     end if
 
   end subroutine get_face_nodes
+
+  ! TODO: Document this, remove unnecessary code
+  !! NOTE: The orientation of an edge is defined by the order of its vertices,
+  !!   so the 'normalize' opertaion does not apply
+  pure subroutine get_edge_nodes (fnodes, index, enodes, normalize, reverse)
+
+    integer, intent(in) :: fnodes(:), index
+    integer, allocatable, intent(out) :: enodes(:)
+    logical, intent(in), optional :: normalize, reverse
+
+    if ( index == size(fnodes)) then
+      enodes = fnodes([index, 1])
+    else
+      enodes = fnodes(index:index+1)
+    end if
+
+    if (present(reverse)) then
+      if (reverse) call reverse_facet (enodes)
+    end if
+
+  end subroutine get_edge_nodes
 
   !! This function return a pointer to the list of nodes defining the specified
   !! oriented link face K in {1,2}. The faces are oriented outward with respect
