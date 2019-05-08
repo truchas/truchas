@@ -23,7 +23,8 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
 * Cmake version 3.5 or later; but not 3.6.0 and 3.6.1.
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
-* Python, version 3.5 or later, along with the h5py and scipy packages
+* Python, version 3.5 or later, along with the packages h5py (version 2.6.0 or
+  later) and scipy (version 0.18.0 or later)
 * MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
 
 Truchas requires some additional libraries, but these can be built by the

@@ -1,8 +1,6 @@
 #===============================================================================
 #
-#  Copyright (c) Los Alamos National Security, LLC.  This file is part of the
-#  Truchas code (LA-CC-15-097) and is subject to the revised BSD license terms
-#  in the LICENSE file found in the top-level directory of this distribution.
+# This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 #
 #===============================================================================
 
@@ -13,6 +11,7 @@ import scipy as sp
 
 class TruchasData:
     def __init__(self, filename):
+        self.mapped = False
         self.filename = filename
         self._root = h5py.File(filename, 'r')
         self._centroid = None
@@ -33,8 +32,7 @@ class TruchasData:
 
     def field(self, series_id, field_name):
         """Return the requested field of the requested series as a ndarray.
-        Assumed to be cell-centered. This will read the entire field from
-        disk."""
+        This will read the entire field from disk."""
         length = self._series(series_id)[field_name].shape[0]
         if length == self.ncell:
             field = sp.array(self._series(series_id)[field_name])[self._cellmap]
@@ -134,11 +132,12 @@ class TruchasData:
     def region(self, *region_blockids):
         """Return a list of bools indicating which cells are part of a given
         set of block ids. Input is an arbitrary number of block id integers."""
-        blockid = self._root["Simulations/MAIN/Non-series Data/BLOCKID"][:][self._cellmap]
-        cell_in_region = sp.array([bid in region_blockids for bid in blockid])
+        cell_in_region = sp.array([bid in region_blockids
+                                   for bid in self.blockid()])
         # for c,cn in zip(cell_in_region,cnode):
         #     if c: node_in_region[cn] = True
         return cell_in_region
+
 
     def region_node(self, *region_blockids):
         """Return a list of bools indicating which nodes are part of a given
@@ -154,10 +153,20 @@ class TruchasData:
         return region_node
 
 
+    def blockid(self):
+        blockid = self._root["Simulations/MAIN/Non-series Data/BLOCKID"][:][self._cellmap] \
+            if "BLOCKID" in self._root["Simulations/MAIN/Non-series Data/"] \
+            else []
+        return blockid
+
 
     def field_names(self, series_id=1):
         """Return a list of field names present in the first series."""
         return list(self._series(series_id).keys())
+
+
+    def num_species(self):
+        return self._root["Simulations/MAIN"].attrs["NUM_SPECIES"]
 
 
     def num_series(self):
