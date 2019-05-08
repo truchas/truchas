@@ -81,7 +81,7 @@
 
 module truchas_h5_outfile
 
-  use,intrinsic :: iso_fortran_env, only: int8, int32, real64
+  use,intrinsic :: iso_fortran_env, only: int8, int32, int64, real64
   use pgslib_module, only: broadcast  => PGSLib_BCast
   use scorpio_file_type
   implicit none
@@ -113,7 +113,7 @@ module truchas_h5_outfile
     private
     type(scorpio_file), pointer :: file => null() ! reference only -- do not own
     character(:), allocatable :: path ! simulation group path
-    integer :: groupid = -1 ! simulation group hdf5 id
+    integer(int64) :: groupid = -1 ! simulation group hdf5 id
     integer :: seqno = 0  ! sequence counter
     logical :: is_IOP
   contains
@@ -170,7 +170,7 @@ module truchas_h5_outfile
     private
     type(scorpio_file), pointer :: file => null() ! reference only -- do not own
     character(:), allocatable :: path ! dataset path in the HDF5 file
-    integer :: datasetid  ! HDF5 dataset ID
+    integer(int64) :: datasetid  ! HDF5 dataset ID
   contains
     private
     generic, public :: write_data => probe_write_data_real64_r2
@@ -204,7 +204,7 @@ contains
     class(th5_file), target, intent(in) :: this
     character(*), intent(in) :: name
     class(th5_sim_group), intent(out) :: sim
-    integer :: gid
+    integer(int64) :: gid
     sim%file => this%file
     sim%is_IOP = this%is_IOP
     sim%path = '/Simulations/' // name
@@ -223,7 +223,7 @@ contains
     character(*), intent(in)  :: name
     integer, intent(in) :: elem_order, dim
     class(th5_mesh_group), intent(out) :: mesh
-    integer :: gid
+    integer(int64) :: gid
     mesh%file => this%file
     mesh%path = '/Meshes/' // name
     gid = this%file%create_group(mesh%path)
@@ -352,7 +352,7 @@ contains
     integer, intent(in) :: cyc
     real(real64), intent(in) :: time
     class(th5_seq_group), intent(out) :: seq
-    integer :: gid
+    integer(int64) :: gid
     character(16) :: name
     seq%file => this%file
     this%seqno = this%seqno + 1
