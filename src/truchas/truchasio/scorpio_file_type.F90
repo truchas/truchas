@@ -18,12 +18,12 @@
 
 module scorpio_file_type
 
-  use,intrinsic :: iso_fortran_env, only: int8, int32, real64
+  use,intrinsic :: iso_fortran_env, only: int8, int32, int64, real64
   use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_null_ptr, c_associated, c_null_char
   use scorpio_c_binding
   implicit none
   private
-  
+
   type, public :: scorpio_file
     integer(c_int) :: fhandle = -1
     type(c_ptr) :: myIOgroup = c_null_ptr
@@ -79,7 +79,7 @@ contains
     end if
   end subroutine close_file
 
-  integer function create_group(this, name) result(groupid)
+  integer(int64) function create_group(this, name) result(groupid)
     class(scorpio_file), intent(in) :: this
     character(*), intent(in) :: name
     groupid = scorpio_create_dataset_group(name//c_null_char, this%fhandle, this%myIOgroup)
@@ -87,14 +87,14 @@ contains
 
   subroutine close_group(this, groupid)
     class(scorpio_file), intent(in) :: this
-    integer, intent(in) :: groupid
+    integer(int64), intent(in) :: groupid
     call scorpio_close_dataset_group(groupid, this%fhandle, this%myIOgroup)
   end subroutine close_group
 
   subroutine create_link(this, link_target, link_loc_id, link_name)
     class(scorpio_file), intent(in) :: this
     character(*), intent(in) :: link_target
-    integer, intent(in) :: link_loc_id
+    integer(int64), intent(in) :: link_loc_id
     character(*), intent(in) :: link_name
     call scorpio_create_link(link_target//c_null_char, link_loc_id, link_name//c_null_char, &
                              this%fhandle, this%myIOgroup)
@@ -202,9 +202,9 @@ contains
   end subroutine
 
   !TODO: Eliminate the "simulation" id argument
-  integer function create_probe_real64_r2(this, sid, name, data) result(pid)
+  integer(int64) function create_probe_real64_r2(this, sid, name, data) result(pid)
     class(scorpio_file), intent(in) :: this
-    integer, intent(in) :: sid
+    integer(int64), intent(in) :: sid
     character(*), intent(in) :: name
     real(real64), intent(in) :: data(:,:)
     integer(int32) :: cdims(2)
@@ -215,7 +215,7 @@ contains
 
   subroutine write_probe_real64_r2(this, pid, data)
     class(scorpio_file), intent(in) :: this
-    integer, intent(in) :: pid
+    integer(int64), intent(in) :: pid
     real(real64), intent(in), contiguous :: data(:,:)
     integer(int32) :: cdims(2)
     cdims(1) = size(data,dim=2)

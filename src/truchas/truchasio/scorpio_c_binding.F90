@@ -15,7 +15,7 @@
 
 module scorpio_c_binding
 
-  use,intrinsic :: iso_c_binding, only: c_ptr, c_char, c_double, c_int, c_int8_t
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_char, c_double, c_int, c_int8_t, c_int64_t
   implicit none
   private
 
@@ -37,22 +37,24 @@ module scorpio_c_binding
   !! SCORPIO library functions
   interface
     function scorpio_create_dataset_group(group_name, fhandle, myIOgroup) result(groupid) bind(c)
-      import c_int, c_char, c_ptr
+      import c_int, c_char, c_ptr, c_int64_t
       character(kind=c_char), intent(in) :: group_name(*)
       integer(c_int), value :: fhandle
       type(c_ptr), value :: myIOgroup
-      integer(c_int) :: groupid
+      integer(c_int64_t) :: groupid
     end function
     !NB: really function with a non-collective return code
     subroutine scorpio_close_dataset_group(groupid, fhandle, myIOgroup) bind(c)
-      import c_int, c_ptr
-      integer(c_int), value :: groupid, fhandle
+      import c_int, c_ptr, c_int64_t
+      integer(c_int64_t), value :: groupid
+      integer(c_int), value :: fhandle
       type(c_ptr), value :: myIOgroup
     end subroutine
     subroutine scorpio_create_link(target, link_loc_id, link_name, fhandle, myIOgroup) bind(c)
-      import c_int, c_char, c_ptr
+      import c_int, c_char, c_ptr, c_int64_t
       character(kind=c_char) :: target(*), link_name(*)
-      integer(c_int), value :: link_loc_id, fhandle
+      integer(c_int64_t), value :: link_loc_id
+      integer(c_int), value :: fhandle
       type(c_ptr), value :: myIOgroup
     end subroutine
   end interface
@@ -136,19 +138,19 @@ module scorpio_c_binding
       type(c_ptr), value :: myIOgroup
     end subroutine
     function scorpio_create_probe_double(sid, name, ndims, dims, data, fhandle, myIOgroup) result(pid) bind(c)
-      import c_ptr, c_char, c_int, c_double
+      import c_ptr, c_char, c_int, c_double, c_int64_t
       character(kind=c_char), intent(in) :: name(*)
-      integer(c_int), value :: sid
+      integer(c_int64_t), value :: sid
       integer(c_int), value :: ndims
       integer(c_int), intent(in) :: dims(*)
       real(c_double), intent(in) :: data(*)
       integer(c_int), value :: fhandle
       type(c_ptr), value :: myIOgroup
-      integer(c_int) :: pid
+      integer(c_int64_t) :: pid
     end function
     subroutine scorpio_write_probe_data_double(pid, ndims, dims, data, fhandle, myIOgroup) bind(c)
-      import c_ptr, c_int, c_double
-      integer(c_int), value :: pid
+      import c_ptr, c_int, c_double, c_int64_t
+      integer(c_int64_t), value :: pid
       integer(c_int), value :: ndims
       integer(c_int) :: dims(*)
       real(c_double), intent(in) :: data(*)

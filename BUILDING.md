@@ -23,7 +23,8 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
 * Cmake version 3.5 or later; but not 3.6.0 and 3.6.1.
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
-* Python, version 3.5 or later, along with the h5py and scipy packages
+* Python, version 3.5 or later, along with the packages h5py (version 2.6.0 or
+  later) and scipy (version 0.18.0 or later)
 * MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
 
 Truchas requires some additional libraries, but these can be built by the
@@ -35,10 +36,9 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v7"/"v8" bundle of
-TPLs; do a `git checkout v8` after cloning the TPL repository. See its README
-file for further instructions. (The only difference between v7 and v8 is that
-the latter drops the swig library which is no longer needed.)
+on GitLab. This version of Truchas is tested against the "v9" bundle of TPLs;
+do a `git checkout v9` after cloning the TPL repository. See its README file
+for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
 straightforward. You create a build directory, run cmake from that directory,
@@ -52,6 +52,7 @@ than it must be different than the current directory). Here is an example:
     $ make
     $ make install
 
+* *Don't overlook the final `..` argument on the cmake command line!*
 * The `-C` argument pre-loads the cmake cache with settings from the following
   file. The `config` subdirectory contains some examples. If none of those are
   suitable, create your own, or simply define the various variables directly

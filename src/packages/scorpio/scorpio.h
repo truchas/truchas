@@ -384,7 +384,7 @@ extern "C"
 	 * 
 	 * @return groupid for the new group
 	 */
-	int scorpio_create_dataset_group( char *group_name, int fhandle, iogroup_t *myIOgroup);
+	int64_t scorpio_create_dataset_group( char *group_name, int fhandle, iogroup_t *myIOgroup);
 
 	/** 
 	 * @brief Check if a HDF5 dataset group exists in the given file. 
@@ -417,7 +417,7 @@ extern "C"
 	 * 
 	 * @return error code
 	 */
-	int scorpio_close_dataset_group( int groupid, int fhandle, iogroup_t *myIOgroup);
+	int scorpio_close_dataset_group( int64_t groupid, int fhandle, iogroup_t *myIOgroup);
 
         /**
          * @brief Creates a soft link to an object in the given file
@@ -429,7 +429,7 @@ extern "C"
          *
          * @return error code
          */
-        int scorpio_create_link(char *target, int link_loc_id, char *link_name, int fhandle, iogroup_t *myIOgroup);
+        int scorpio_create_link(char *target, int64_t link_loc_id, char *link_name, int fhandle, iogroup_t *myIOgroup);
 
 #ifdef __cplusplus
 }

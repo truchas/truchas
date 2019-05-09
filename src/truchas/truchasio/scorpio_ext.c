@@ -185,9 +185,9 @@ herr_t scorpio_write_probe_data(hid_t pid, hid_t hdf_type, int rank, int *dims, 
 }
 
 void scorpio_write_probe_data_double(
-    hid_t pid, int ndims, int *dims, double *data, int fhandle, iogroup_t *myIOgroup)
+    int64_t pid, int ndims, int *dims, double *data, int fhandle, iogroup_t *myIOgroup)
 {
-  scorpio_write_probe_data(pid, H5T_NATIVE_DOUBLE, ndims, dims, data, fhandle, myIOgroup);
+  scorpio_write_probe_data((hid_t)pid, H5T_NATIVE_DOUBLE, ndims, dims, data, fhandle, myIOgroup);
 }
 
 hid_t scorpio_create_probe(hid_t sid, char *name, hid_t hdf_type, int rank, int *dims, void *data, int fhandle, iogroup_t *myIOgroup)
@@ -265,8 +265,8 @@ hid_t scorpio_create_probe(hid_t sid, char *name, hid_t hdf_type, int rank, int 
   }
 }
 
-hid_t scorpio_create_probe_double(
-    hid_t sid, char *name, int ndims, int *dims, double *data, int fhandle, iogroup_t *myIOgroup)
+int64_t scorpio_create_probe_double(
+    int64_t sid, char *name, int ndims, int *dims, double *data, int fhandle, iogroup_t *myIOgroup)
 {
-  return scorpio_create_probe(sid, name, H5T_NATIVE_DOUBLE, ndims, dims, data, fhandle, myIOgroup);
+  return (int64_t)scorpio_create_probe((hid_t)sid, name, H5T_NATIVE_DOUBLE, ndims, dims, data, fhandle, myIOgroup);
 }

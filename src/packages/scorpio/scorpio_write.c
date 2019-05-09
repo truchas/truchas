@@ -35,7 +35,7 @@ int scorpio_write_dataset( void *vector, datatype_t mytype, int ndims, int *glob
 	return -1;
 }
 
-int scorpio_close_dataset_group( int groupid, int fhandle, iogroup_t *myIOgroup)
+int scorpio_close_dataset_group( int64_t groupid, int fhandle, iogroup_t *myIOgroup)
 {
 	if ( myIOgroup->localrank == 0)
 	{
@@ -43,13 +43,13 @@ int scorpio_close_dataset_group( int groupid, int fhandle, iogroup_t *myIOgroup)
 		currfile = myIOgroup->file[fhandle];
 
 		currfile->groupid = -1;
-		return H5Gclose(groupid);
+		return H5Gclose((hid_t)groupid);
 	}
 
 	return 0;
 }
 
-int scorpio_create_dataset_group( char *group_name, int fhandle, iogroup_t *myIOgroup)
+int64_t scorpio_create_dataset_group( char *group_name, int fhandle, iogroup_t *myIOgroup)
 {
 	if ( myIOgroup->localrank == 0)
 	{
@@ -86,14 +86,14 @@ int scorpio_create_dataset_group( char *group_name, int fhandle, iogroup_t *myIO
 		
 		H5Eset_auto2(H5E_DEFAULT, (H5E_auto2_t) H5Eprint2, stderr);
 
-		return currfile->groupid;
+		return (int64_t)currfile->groupid;
 
 	}
 
 	return 0;
 }
 
-int scorpio_create_link(char *target, int link_loc_id, char *link_name, int fhandle, iogroup_t *myIOgroup)
+int scorpio_create_link(char *target, int64_t link_loc_id, char *link_name, int fhandle, iogroup_t *myIOgroup)
 {
 	if ( myIOgroup->localrank == 0)
 	{
@@ -102,7 +102,7 @@ int scorpio_create_link(char *target, int link_loc_id, char *link_name, int fhan
 
 		H5Eset_auto2(H5E_DEFAULT, NULL, stderr);
 
-                herr_t ret = H5Lcreate_soft(target, link_loc_id, link_name, H5P_DEFAULT, H5P_DEFAULT);
+                herr_t ret = H5Lcreate_soft(target, (hid_t)link_loc_id, link_name, H5P_DEFAULT, H5P_DEFAULT);
                 assert(ret != FAILURE);
 
 		H5Eset_auto2(H5E_DEFAULT, (H5E_auto2_t) H5Eprint2, stderr);
