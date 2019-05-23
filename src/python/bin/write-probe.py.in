@@ -41,7 +41,7 @@ def print_probe_data(truchas_data, probe):
     print("# time, value(s)")
     probe_data = pv[:]
     for x in probe_data:
-        print("{:.6E}\t{:.6E}".format(x[1], x[2]))
+        print(("{:.6E}" + "\t{:.6E}"*(len(x)-2)).format(*x[1:]))
 
 
 def print_probes(truchas_data, probes):
