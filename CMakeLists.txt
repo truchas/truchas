@@ -134,6 +134,17 @@ if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
 endif()
 
+# IRL Fortran interface
+find_package(IRL)
+if(NOT IRL_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable IRL installation")
+endif()
+if(IRL)
+  add_library(irl INTERFACE)
+  target_link_libraries(truchas ${IRL_LIBRARY})
+  target_include_directories(irl INTERFACE ${IRL_INCLUDE_DIRS})
+endif()
+
 # Test - need a swith here to enable testing
 enable_testing()
 
