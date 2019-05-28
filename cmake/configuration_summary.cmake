@@ -94,3 +94,8 @@ message("Petaca library (version ${PETACA_VERSION}):")
 message("  PETACA_LIBRARIES=${PETACA_LIBRARIES}")
 message("  PETACA_INCLUDE_DIRS=${PETACA_INCLUDE_DIRS}")
 message("")
+
+message("Interface Reconstruction Library (IRL) (version ${IRL_VERSION}):")
+message("  IRL_LIBRARIES=${IRL_LIBRARIES}")
+message("  IRL_INCLUDE_DIRS=${IRL_INCLUDE_DIRS}")
+message("")
