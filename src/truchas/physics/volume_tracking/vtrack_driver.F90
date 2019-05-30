@@ -84,6 +84,7 @@ module vtrack_driver
     integer :: fluids ! number of fluids (not including void) to advance
     integer :: void ! 1 if simulation includes void else 0
     integer :: solid ! 1 if simulation includes solid else 0
+    logical :: unsplit_advection
   end type vtrack_driver_data
   type(vtrack_driver_data), allocatable, target :: this
 
@@ -123,6 +124,7 @@ contains
     use property_data_module, only: isImmobile
     use parameter_module, only: nmat
     use geometric_volume_tracker_type
+    use unsplit_geometric_volume_tracker_type
     use simple_volume_tracker_type
 
     type(parameter_list), intent(inout) :: params
@@ -170,8 +172,13 @@ contains
     end do
 
     call params%get('track_interfaces', track_interfaces)
+    call params%get('unsplit interface advection', this%unsplit_advection, .true.)
     if (track_interfaces) then
-      allocate(geometric_volume_tracker :: this%vt)
+      if(this%unsplit_advection) then
+        allocate(unsplit_geometric_volume_tracker :: this%vt)
+      else
+        allocate(geometric_volume_tracker :: this%vt)
+      end if
     else
       allocate(simple_volume_tracker :: this%vt)
     end if
@@ -232,24 +239,32 @@ contains
 
     call start_timer('Volumetracking')
 
-    ! copy face velocities into cell-oriented array
-    do i = 1,this%mesh%ncell
-      f0 = this%mesh%xcface(i)
-      f1 = this%mesh%xcface(i+1)-1
-      do j = f0, f1
-        k = this%mesh%cface(j)
-        if (btest(this%mesh%cfpar(i),pos=1+j-f0)) then ! normal points inward
-          this%flux_vel(j) = -vel_fn(k)
-        else
-          this%flux_vel(j) = vel_fn(k)
-        end if
-      end do
-    end do
-
     call get_vof_from_matl(this%fvof_i)
 
-    call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
-        this%fluids, this%void, dt)
+    if(this%unsplit_advection) then
+      ! Unsplit advection written to use face velocities, operates on faces.
+      call this%vt%flux_volumes(vel_fn, this%fvof_i, this%fvof_o, this%flux_vol, &
+          this%fluids, this%void, dt)
+    else
+      ! Split advection works on a per-cell level.
+      ! copy face velocities into cell-oriented array
+      do i = 1,this%mesh%ncell
+        f0 = this%mesh%xcface(i)
+        f1 = this%mesh%xcface(i+1)-1
+        do j = f0, f1
+          k = this%mesh%cface(j)
+          if (btest(this%mesh%cfpar(i),pos=1+j-f0)) then ! normal points inward
+            this%flux_vel(j) = -vel_fn(k)
+          else
+            this%flux_vel(j) = vel_fn(k)
+          end if
+        end do
+      end do
+    
+      call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
+          this%fluids, this%void, dt)
+    end if
+
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then

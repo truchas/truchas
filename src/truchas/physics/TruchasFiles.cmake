@@ -103,6 +103,8 @@ list(APPEND PHYSICS_FILES
 	  physics/volume_tracking/volume_initialization.F90
 	  physics/volume_tracking/volume_tracker_class.F90
           physics/volume_tracking/geometric_volume_tracker_type.F90
+          physics/volume_tracking/unsplit_geometric_volume_tracker_type.F90
+ 	  physics/volume_tracking/irl_interface_helper.F90
           physics/volume_tracking/simple_volume_tracker_type.F90
 	  physics/volume_tracking/vtrack_driver.F90
 	  physics/volume_tracking/cell_geometry_type.F90
