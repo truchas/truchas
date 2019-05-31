@@ -151,6 +151,7 @@ CONTAINS
     use probe_module,           only: probes
     use parameter_module,       only: string_len, nmat, nprobes, ncomps
     use legacy_mesh_api,        only: ncells, ndim, nnodes
+    use flow_driver, only: flow_enabled, flow_vel_cc_view, flow_p_cc_view
 
     ! Local variables.
     integer :: i, j, k, n, m, count, theindex, vfieldsize, tfieldsize
@@ -258,7 +259,11 @@ CONTAINS
           tmp3                  = SQRT(tmp_1darray(:))
           scalarfields(5)%field => tmp3 
           scalarfields(6)%field => Zone(:)%Enthalpy
-          scalarfields(7)%field => Zone(:)%P
+          if (flow_enabled()) then ! new flow
+            scalarfields(7)%field => flow_p_cc_view()
+          else
+            scalarfields(7)%field => Zone(:)%P
+          end if
           count = 8
           do j=1,nmat
              call GATHER_VOF(j,vof(j,:))
@@ -294,9 +299,19 @@ CONTAINS
 
           !get all cell-centered vector fields
           count         = 1
-          do j=1,vfieldsize
-             vectorfields(count,j)%field    => Zone(:)%Vc(j)
-          end do
+          if (flow_enabled()) then ! new flow
+            block
+              real(r8), pointer :: vel_cc(:,:)
+              vel_cc => flow_vel_cc_view()
+              do j=1,vfieldsize
+                 vectorfields(count,j)%field => vel_cc(j,:)
+              end do
+            end block
+          else
+            do j=1,vfieldsize
+               vectorfields(count,j)%field    => Zone(:)%Vc(j)
+            end do
+          end if
           count = count + 1     
 
           !get all node-centered vector fields
