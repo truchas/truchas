@@ -175,20 +175,6 @@ contains
           
     call this%update_vof(flux_vol, vof)
     
-   ! do i = 1, this%mesh%ncell
-   !   if(this%mesh%cell_centroid(1,i) < -10.0_r8 .and. vof(1,i) < 1.0_r8-1.0e-12_r8) then
-   !     print*,'Problem cell', i, vof(1,i)
-   !     print*,'Has faces: '
-   !     associate( fn => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
-   !     do j = 1, size(fn)
-   !     print*,fn(j)
-   !     end do
-   !     print*, ' '
-   !     end associate
-   !   end if
-   !   
-   ! end do
-
     call this%clean_vof(vof)
 
   end subroutine flux_volumes
@@ -306,14 +292,6 @@ contains
     call setEdgeConnectivityNull(this%localized_separator_link(this%mesh%ncell+1), 0) ! Don't link back to domain
     call setId(this%localized_separator_link(this%mesh%ncell+1), this%mesh%ncell+1)
     
-    
-    call printToScreen(this%localized_separator_link(968))
-    call printToScreen(this%localized_separator_link(971))
-    call printToScreen(this%localized_separator_link(972))
-    call printToScreen(this%localized_separator_link(982))
-    call printToScreen(this%localized_separator_link(969))
-    
-    
   end subroutine init_irl_mesh
   
   subroutine normals(this, vof)
@@ -387,8 +365,6 @@ contains
     integer :: j
     real(r8) :: distance_guess
     
-    print*,'Reconstructing distance'
-    
     ASSERT(this%nmat == 2) ! Will aleviate after code working with two phases
     do j = 1, this%mesh%ncell
     
@@ -412,9 +388,6 @@ contains
           
     end do
     
-          
-      print*,'Got distance'
-    
   end subroutine set_irl_interfaces
   
   subroutine adjust_planes_match_VOF(this, a_cell, a_vof, a_planar_separator)
@@ -437,7 +410,6 @@ contains
       
       case (5) ! pyramid
         call truchas_pyramid_to_irl(a_cell, this%IRL_pyramid)
-        print*, calculateVolume(this%IRL_pyramid)
         call matchVolumeFraction(this%IRL_pyramid, a_vof(1), a_planar_separator)
       
       case (6) ! Wedge
@@ -508,8 +480,6 @@ contains
     
     call getMoments_setMethod(1)
     
-    print*,'Doing advection'
-    
     do f = 1, this%mesh%nface_onP ! 2278, 2278
     
         number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
@@ -539,39 +509,20 @@ contains
           case(3) ! Triangular Face -> Octahedron Volume
           
             call truchas_octa_to_irl(cell_nodes, this%IRL_octahedron)
-            print*,'Stuck in cutting tri', f
             call getMoments(this%IRL_octahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
                             phase_volume)
             this%face_flux(1,f) = phase_volume
             this%face_flux(2,f) = calculateVolume(this%IRL_octahedron) - phase_volume
-            print*,'Nope, not stuck in tri'
-          
           
           case(4) ! Quad Face -> Dodecahedron Volume
             
             call truchas_dod_to_irl(cell_nodes, this%IRL_dodecahedron)
-            print*,'stuck in cutting quad', f
-            call printToScreen(this%IRL_dodecahedron)
-            print*,'Volume is ', calculateVolume(this%IRL_dodecahedron)
-            call printToScreen(this%localized_separator_link(neighbor_cell_index))
-            print*,'Boundary ID', this%mesh%ncell+1
-            print*, ' '
-            print*, ' '
-            print*, ' '
-            print*, ' '
-            print*, ' '
-            print*, ' '
-            print*, ' '
-            print*, ' '
-            !call sleep(3)
             call getMoments(this%IRL_dodecahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
                             phase_volume)
             this%face_flux(1,f) = phase_volume
             this%face_flux(2,f) = calculateVolume(this%IRL_dodecahedron) - phase_volume
-            !print*,'Nope, not stuck in quad'
-            
             
           case default
             call TLS_fatal('Face with unhandled amount of nodes found.') 
@@ -582,8 +533,6 @@ contains
           
     end do
     
-    print*,'Finished advection'
-
   end subroutine compute_fluxes
 
   pure function project_vertex(this, a_pt, a_node_index, a_dt) result(a_proj_pt)
