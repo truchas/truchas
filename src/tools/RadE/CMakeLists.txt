@@ -50,7 +50,9 @@ set(LIBRE_FORTRAN_FILES
     patching/edge_neighbor_table_type.F90
     patching/vsa_min_heap.F90
     patching/vsa_patch_type.F90
-    patching/vsa_patching_type.F90)
+    patching/vsa_patching_type.F90
+    patching/vac_min_heap.F90
+    patching/vac_patching_type.F90)
 
 fortran_preprocess_files(LIBRARY_RADE_FILES
                          FILES ${LIBRE_FORTRAN_FILES}

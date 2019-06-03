@@ -127,6 +127,7 @@ contains
 
   end subroutine get_fnhbr_aux
 
+
   ! TODO: this is implemented in 'truchas/utilities/graph_type.F90'.
   !! Return the connected components of the enclosure dual graph
   subroutine get_connected_faces(nface, xfnhbr, fnhbr, ncomp, xcomp, comp)
@@ -185,6 +186,126 @@ contains
       end do
     end subroutine
   end subroutine get_connected_faces
+
+
+  !! Finds the connected components of a subset of faces of the enclosure dual graph
+  subroutine get_connected_faces_subset (xfnhbr, fnhbr, faces, tag, ncomp)
+
+    integer, allocatable, intent(in) :: xfnhbr(:), fnhbr(:)
+    integer, intent(in) :: faces(:)
+    integer, allocatable, intent(out) :: tag(:)
+    integer, intent(out) :: ncomp
+
+    integer :: i
+
+    allocate(tag(size(faces)))
+    ncomp = 0
+    tag = 0
+
+    !! Find connected components
+    do i = 1, size(faces)
+      if (tag(i) /= 0) cycle
+      ncomp = ncomp + 1
+      call tag_component(i)
+    end do
+
+  contains
+    !! Tag all the faces connected to ROOT with the current component number
+    recursive subroutine tag_component (root)
+#ifdef NAG_COMPILER
+      use f08_intrinsics, only: findloc
+#endif
+      integer, intent(in) :: root
+      integer :: k, f, n, nid
+      tag(root) = ncomp
+      f = faces(root)
+      do k = xfnhbr(f), xfnhbr(f+1)-1
+        n = fnhbr(k)
+        !! Skip missing neighbors (i.e. f is on the mesh boundary)
+        if ( n <= 0) cycle
+#ifdef NAG_COMPILER
+        nid = findloc(faces, n)
+#else
+        nid = findloc(faces, n, dim=1)
+#endif
+        !! Ignore neighbors not in face list
+        if (nid == 0) cycle
+        if (tag(nid) == 0) call tag_component (nid)
+      end do
+    end subroutine tag_component
+  end subroutine get_connected_faces_subset
+
+
+  !! Finds the faces of a node
+  ! TODO: based on cell_neighboring_vertices in mesh_geom_type.F90
+  function faces_neighboring_vertices (e) result(ret)
+
+    use re_encl_type
+
+    type(encl), intent(in) :: e
+    integer, allocatable :: ret(:,:)
+
+    integer :: f,k,nid,j(e%nnode)
+
+    !! Get maximum number of faces attached to a node
+    j = 0
+    do f = 1, e%nface
+      do k = e%xface(f), e%xface(f+1)-1
+        nid = e%fnode(k)
+        j(nid) = j(nid) + 1
+      end do
+    end do
+
+    allocate(ret(maxval(j),e%nnode))
+    ret = -1
+
+    !! j(nid) is the next unwritten index of ret(:,nid)
+    j = 1
+    do f = 1,e%nface
+      do k = e%xface(f), e%xface(f+1)-1
+        nid = e%fnode(k)
+        ret(j(nid),nid) = f
+
+        j(nid) = j(nid) + 1
+      end do
+    end do
+
+  end function faces_neighboring_vertices
+
+
+  !! TODO: add to general utility module
+  !! Finds the vertices neighboring each vertex
+  subroutine vertex_neighbors (e, xvnhbr, vnhbr)
+
+    use cell_topology, only: get_edge_nodes
+    use re_encl_type
+    use graph_type
+
+    type(encl), intent(in) :: e
+    integer, allocatable, intent(out) :: xvnhbr(:), vnhbr(:)
+
+    type(graph) :: g
+    integer, allocatable :: face_nodes(:), edge(:)
+    integer :: f, k
+
+    !! Initialize graph
+    call g%init(e%nnode)
+
+    !! Add edges to graph
+    do f = 1, e%nface
+      face_nodes = e%fnode(e%xface(f):e%xface(f+1)-1)
+      do k = 1, size(face_nodes)
+        call get_edge_nodes (face_nodes, k, edge)
+
+        call g%add_edge(edge(1), edge(2))
+      end do
+    end do
+
+    !! Extract adjacency information
+    !!   vnhbr(xvnhbr(j):xvnhbr(j+1)-1) are the vertices adjacent to vertex j
+    call g%get_adjacency(xvnhbr, vnhbr)
+
+  end subroutine vertex_neighbors
 
 
 end module patching_tools
