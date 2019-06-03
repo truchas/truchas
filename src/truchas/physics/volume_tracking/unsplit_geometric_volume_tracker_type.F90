@@ -38,6 +38,12 @@ module unsplit_geometric_volume_tracker_type
     type(PlanarLoc_type), allocatable :: planar_localizer(:)
     type(PlanarSep_type), allocatable :: planar_separator(:)
     type(LocSepLink_type), allocatable :: localized_separator_link(:)
+    type(Tet_type) :: IRL_tet
+    type(Pyrmd_type) :: IRL_pyramid
+    type(TriPrism_type) :: IRL_wedge
+    type(Hex_type) :: IRL_hex
+    type(Octa_type) :: IRL_octahedron
+    type(Dod_type) :: IRL_dodecahedron
     ! End IRL objects
   contains
     procedure :: init
@@ -45,6 +51,7 @@ module unsplit_geometric_volume_tracker_type
     procedure :: set_inflow_material
     procedure, private :: init_irl_mesh
     procedure, private :: set_irl_interfaces
+    procedure, private :: adjust_planes_match_VOF
     procedure, private :: compute_node_velocities
     procedure, private :: compute_fluxes
     procedure, private :: project_vertex
@@ -69,6 +76,9 @@ contains
     integer :: i, j, k
 
     this%mesh => mesh
+    call this%mesh%init_cell_centroid
+    call this%mesh%init_face_centroid
+    call this%mesh%init_face_normal_dist
     this%nrealfluid = nrealfluid
     this%nfluid = nfluid
     this%nmat = nmat
@@ -108,7 +118,7 @@ contains
     allocate(this%face_flux(this%nmat, this%mesh%nface))
 
     allocate(this%normal(3,this%nmat,mesh%ncell))
-    allocate(this%w_node(6,mesh%nnode))
+    allocate(this%w_node(4,mesh%nnode))
 
     ! list of boundary face ids
     j = count(this%mesh%fcell(2,:this%mesh%nface_onP) == 0)
@@ -127,13 +137,22 @@ contains
     
     ! Initialize IRL array needed for advection
     call this%init_irl_mesh()
+    
+    ! Initialize IRL cell types we will use
+    call new(this%IRL_tet)
+    call new(this%IRL_pyramid)
+    call new(this%IRL_wedge)
+    call new(this%IRL_hex)
+    call new(this%IRL_octahedron)
+    call new(this%IRL_dodecahedron)
 
   end subroutine init
 
-  ! flux volumes routine assuming vel/flux_vol is a cface-like array
-  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
+  ! flux volumes routine assuming flux_vol is a cface-like array
+  ! flux volumes routine assuming vel is stored on faces, length 1:mesh%nfaces
+  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt)
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
-    real(r8), intent(in) :: vel(:), vof_n(:,:), dt
+    real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
@@ -145,40 +164,11 @@ contains
     
     call this%set_irl_interfaces(vof)
     
-    call this%compute_node_velocities(vel)
+    call this%compute_node_velocities(vel_cc)
     
     call this%compute_fluxes(vel, dt)
     
-    print*,'Before BC'
-    print*,'Cell centroid', this%mesh%cell_centroid(:,11)
-    print*,'FaceN',this%mesh%normal(:,36)/this%mesh%area(36)
-    print*,'Flux',this%face_flux(:,36)
-    print*,'FaceN',this%mesh%normal(:,48)/this%mesh%area(48)
-    print*,'Flux',this%face_flux(:,48)
-    print*,'FaceN',this%mesh%normal(:,49)/this%mesh%area(49)
-    print*,'Flux',this%face_flux(:,49)
-    print*,'FaceN',this%mesh%normal(:,43)/this%mesh%area(43)
-    print*,'Flux',this%face_flux(:,43)
-    print*,'FaceN',this%mesh%normal(:,50)/this%mesh%area(50)
-    print*,'Flux',this%face_flux(:,50)
-    print*,'FaceN',this%mesh%normal(:,51)/this%mesh%area(51)
-    print*,'Flux',this%face_flux(:,51)
-    
     call this%face_flux_bc(vel, vof_n, dt)
-    
-    print*,'After BC'
-    print*,'FaceN',this%mesh%normal(:,36)/this%mesh%area(36)
-    print*,'Flux',this%face_flux(:,36)
-    print*,'FaceN',this%mesh%normal(:,48)/this%mesh%area(48)
-    print*,'Flux',this%face_flux(:,48)
-    print*,'FaceN',this%mesh%normal(:,49)/this%mesh%area(49)
-    print*,'Flux',this%face_flux(:,49)
-    print*,'FaceN',this%mesh%normal(:,43)/this%mesh%area(43)
-    print*,'Flux',this%face_flux(:,43)
-    print*,'FaceN',this%mesh%normal(:,50)/this%mesh%area(50)
-    print*,'Flux',this%face_flux(:,50)
-    print*,'FaceN',this%mesh%normal(:,51)/this%mesh%area(51)
-    print*,'Flux',this%face_flux(:,51)
         
     ! Need to communicate fluxes
     call gather_boundary(this%mesh%face_ip, this%face_flux)
@@ -247,22 +237,24 @@ contains
     integer :: number_of_cell_faces
     real(r8) :: tmp_plane(4)
     
-    call setVFBounds(this%cutoff)
-    call setMinimumVolToTrack(this%cutoff)
+    call setVFBounds(this%cutoff)                                         
     call setVFTolerance_IterativeDistanceFinding(1.0e-12_r8)
     
+    ! Allocate ncell+1, where the ncell+1 object will be used as a marker for
+    ! having left the defined domain. In future, should have one per boundary face..
+    
     ! Allocate block storage to increase locality of objects we will be creating
-    call new(this%object_server_planar_localizer, int(this%mesh%ncell, i8))
-    call new(this%object_server_planar_separator, int(this%mesh%ncell, i8))
-    call new(this%object_server_localized_separator_link, int(this%mesh%ncell, i8))   
+    call new(this%object_server_planar_localizer, int(this%mesh%ncell+1, i8))
+    call new(this%object_server_planar_separator, int(this%mesh%ncell+1, i8))
+    call new(this%object_server_localized_separator_link, int(this%mesh%ncell+1, i8))   
         
     ! Allocate the Fortran memory
-    allocate(this%planar_localizer(this%mesh%ncell))
-    allocate(this%planar_separator(this%mesh%ncell))
-    allocate(this%localized_separator_link(this%mesh%ncell))
+    allocate(this%planar_localizer(this%mesh%ncell+1))
+    allocate(this%planar_separator(this%mesh%ncell+1))
+    allocate(this%localized_separator_link(this%mesh%ncell+1))
     
     ! Now allocate on the IRL side the different planar reconstructions
-    do j = 1, this%mesh%ncell
+    do j = 1, this%mesh%ncell+1
       call new(this%planar_localizer(j), this%object_server_planar_localizer)
       call new(this%planar_separator(j), this%object_server_planar_separator)
       call new(this%localized_separator_link(j), &
@@ -283,8 +275,7 @@ contains
       do f = 1, number_of_cell_faces
         ! Set PlanarLocalizer Plane for this face
         face_index = face_id(f)
-        tmp_plane(1:3) = this%mesh%normal(:,face_index)
-        tmp_plane(1:3) = tmp_plane(1:3) / (sqrt(sum(tmp_plane(1:3)**2)) + tiny(1.0_r8)) ! Normalize to be safe
+        tmp_plane(1:3) = this%mesh%normal(:,face_index) / this%mesh%area(face_index)
         tmp_plane(4) = dot_product(tmp_plane(1:3), this%mesh%x(:,this%mesh%fnode(this%mesh%xfnode(face_index))))
         if(btest(this%mesh%cfpar(j), f)) then 
           ! Want outward oriented normal
@@ -293,20 +284,35 @@ contains
         call setPlane(this%planar_localizer(j), f-1, tmp_plane(1:3), tmp_plane(4))        
         
         ! Link this plane in the LocalizedSeparatorLink
- 
-        ! QUESTION: What is the cell ID of cells in ghost layer? These should still
-        ! be linked to, but won't be if their ID is <= 0 or > ncell
         if(cn(f) /= 0) then
           call setEdgeConnectivity(this%localized_separator_link(j), f-1, &
                                    this%localized_separator_link(cn(f))) 
         else
-          call setEdgeConnectivityNull(this%localized_separator_link(j), f-1)
+          ! Connect to specially "outside" marking localized_separator_link
+          call setEdgeConnectivity(this%localized_separator_link(j), f-1, &
+                                   this%localized_separator_link(this%mesh%ncell+1)) 
         end if
                 
       end do
       end associate
-
+      
     end do   
+    
+    ! Make "outside" localized_separator_link make every phase 1
+    call setNumberOfPlanes(this%planar_separator(this%mesh%ncell+1), 1)
+    call setPlane(this%planar_separator(this%mesh%ncell+1), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
+    call setNumberOfPlanes(this%planar_localizer(this%mesh%ncell+1), 1)
+    call setPlane(this%planar_localizer(this%mesh%ncell+1), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
+    call setEdgeConnectivityNull(this%localized_separator_link(this%mesh%ncell+1), 0) ! Don't link back to domain
+    call setId(this%localized_separator_link(this%mesh%ncell+1), this%mesh%ncell+1)
+    
+    
+    call printToScreen(this%localized_separator_link(968))
+    call printToScreen(this%localized_separator_link(971))
+    call printToScreen(this%localized_separator_link(972))
+    call printToScreen(this%localized_separator_link(982))
+    call printToScreen(this%localized_separator_link(969))
+    
     
   end subroutine init_irl_mesh
   
@@ -340,36 +346,26 @@ contains
         k = findloc(hasvof,.true.,back=.true.)
         this%normal(:,k,i) = -this%normal(:,j,i)
       endif
-
-      ! perform onion skin if requested
-      ! normal vectors (gradients) include previous materials in the priority ordering
-      if (.not.this%nested_dissection .and. c > 2) then
-        do j = 2, this%nmat
-          k = this%priority(j)
-          this%normal(:,k,i) = this%normal(:,k,i) + this%normal(:,this%priority(j-1),i)
-        end do
-      end if
-
+      
       ! normalize and remove smallish components due to robustness issues in nested disection
       do j = 1 , this%nmat
-        !if (vof(j,i) <= this%cutoff) cycle ! should this be 0 or cutoff?
+        if (vof(j,i) < this%cutoff .or. vof(j,i) > 1.0_r8 - this%cutoff) then
+          this%normal(:,j,i) = 0.0_r8
+          cycle
+        end if
         ! remove small values
         do k = 1, 3
-          if (abs(this%normal(k,j,i)) < epsilon(1.0_r8)) this%normal(k,j,i) = 0.0_r8
-        end do
-        ! normalize if possible
-        mag = norm2(this%normal(:,j,i))
-        if (mag > epsilon(1.0_r8)) this%normal(:,j,i) = this%normal(:,j,i)/mag
-        ! remove slightly larger values
-        do k = 1, 3
-          if (abs(this%normal(k,j,i)) < 1.0e-6_r8) this%normal(k,j,i) = 0.0_r8
+          if (abs(this%normal(k,j,i)) < epsilon(1.0_r8)) then
+            this%normal(k,j,i) = 0.0_r8
+          end if
         end do
         ! normalize if possible
         mag = norm2(this%normal(:,j,i))
         if (mag > epsilon(1.0_r8)) then
           this%normal(:,j,i) = this%normal(:,j,i)/mag
         else
-          this%normal(:,j,i) = 1.0_r8
+        ! QUESTION : What is the correct thing to do here? Needs to be valid normal.
+          this%normal(:,j,i) = 1.0_r8 / sqrt(3.0_r8)
         end if
       end do
     end do
@@ -391,6 +387,8 @@ contains
     integer :: j
     real(r8) :: distance_guess
     
+    print*,'Reconstructing distance'
+    
     ASSERT(this%nmat == 2) ! Will aleviate after code working with two phases
     do j = 1, this%mesh%ncell
     
@@ -406,57 +404,49 @@ contains
         
         associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
           
-        call adjust_planes_match_VOF(this%mesh%x(:,cn), vof(:,j), &
-                                     this%planar_separator(j) )        
+        call this%adjust_planes_match_VOF(this%mesh%x(:,cn), vof(:,j), &
+                                          this%planar_separator(j) )        
         end associate               
       
       end if
           
     end do
     
+          
+      print*,'Got distance'
+    
   end subroutine set_irl_interfaces
   
-  subroutine adjust_planes_match_VOF(a_cell, a_vof, a_planar_separator)
+  subroutine adjust_planes_match_VOF(this, a_cell, a_vof, a_planar_separator)
   
     use irl_interface_helper
     use cell_geometry
   
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: a_cell(:,:)
     real(r8), intent(in) :: a_vof(:)
     type(PlanarSep_type), intent(inout) :: a_planar_separator
     
-    integer :: j
-    real(r8) :: tmp_double, hex_verts(3,8)
-    real(r8) :: recreated_vof
-    
-    type(Tet_type) :: IRL_tet
-    !type(Pyrmd_type) :: IRL_pyramid
-    !type(TriPrism_type) :: IRL_wedge
-    type(Hex_type) :: IRL_hex
-    
     ! PlanarSeparator should already be setup with a valid normal and
-    ! guess for the distance (atleast something inside cell so we can calculate
-    ! a gradient in IRL)
-    ASSERT(size(a_cell,dim=2) == 8)
-    
+    ! guess for the distance (atleast somewhere inside cell so we can calculate
+    ! a gradient in IRL for the optimization)    
     select case(size(a_cell,dim=2))
-      case (4) ! tet
-        call new(IRL_tet)
-        call truchas_tet_to_irl(a_cell, IRL_tet)
-        !call matchVolumeFraction(IRL_tet, a_vof(1), a_planar_separator)
+      case (4) ! tet      
+        call truchas_tet_to_irl(a_cell, this%IRL_tet)
+        call matchVolumeFraction(this%IRL_tet, a_vof(1), a_planar_separator)
       
       case (5) ! pyramid
-        !IRL_pyramid = truchas_pyramid_to_irl(a_cell%node)
-        !call matchVolumeFraction(IRL_pyramid, a_vof(1), a_planar_separator)
+        call truchas_pyramid_to_irl(a_cell, this%IRL_pyramid)
+        print*, calculateVolume(this%IRL_pyramid)
+        call matchVolumeFraction(this%IRL_pyramid, a_vof(1), a_planar_separator)
       
       case (6) ! Wedge
-        !IRL_wedge = truchas_wedge_to_irl(a_cell%node)
-        !call matchVolumeFraction(IRL_wedge, a_vof(1), a_planar_separator)
+        call truchas_wedge_to_irl(a_cell, this%IRL_wedge)
+        call matchVolumeFraction(this%IRL_wedge, a_vof(1), a_planar_separator)
     
       case (8) ! Hex
-        call new(IRL_hex)
-        call truchas_hex_to_irl(a_cell, IRL_hex)
-        call matchVolumeFraction(IRL_hex, a_vof(1), a_planar_separator)
+        call truchas_hex_to_irl(a_cell, this%IRL_hex)
+        call matchVolumeFraction(this%IRL_hex, a_vof(1), a_planar_separator)
     
       case default
         call TLS_fatal('Unknown Truchas cell type during plane-distance setting')
@@ -464,34 +454,37 @@ contains
     
   end subroutine adjust_planes_match_VOF
   
-  subroutine compute_node_velocities(this, a_face_vel)
+  subroutine compute_node_velocities(this, a_cell_centered_vel)
   
       class(unsplit_geometric_volume_tracker), intent(inout) :: this
-      real(r8), intent(in) :: a_face_vel(:)
+      real(r8), intent(in) :: a_cell_centered_vel(:,:)
       
-      integer :: f, nodes_on_face, n
-      real(r8) :: weighted_face_velocity(3), face_area_vector(3)
+      integer :: j, nodes_in_cell, n
+      real(r8) :: displacement(3), weight
       
       ! Compute velocity at each node as the surface-area weighted average of 
       ! all connected face velocities.
       this%w_node = 0.0_r8
-      do f = 1, this%mesh%nface      
-        nodes_on_face = this%mesh%xfnode(f+1) - this%mesh%xfnode(f)
-        associate( node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
-      
-        weighted_face_velocity = a_face_vel(f) * this%mesh%normal(:,f)
-        face_area_vector = abs(this%mesh%normal(:,f))
-        do n = 1, nodes_on_face
-          this%w_node(1:3,node_id(n)) = this%w_node(1:3,node_id(n)) + weighted_face_velocity
-          this%w_node(4:6,node_id(n)) = this%w_node(4:6,node_id(n)) + face_area_vector
+      do j = 1, this%mesh%ncell      
+        nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
+        associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+
+        do n = 1, nodes_in_cell
+          displacement = this%mesh%x(:,node_id(n)) - this%mesh%cell_centroid(:,j)
+          ! QUESTION : What would be the correct weighting here? 
+          ! Something based on inverse distance to centroid?
+          weight = this%mesh%volume(j) ! Weighting
+          this%w_node(1:3,node_id(n)) = this%w_node(1:3,node_id(n)) + a_cell_centered_vel(:,j) * weight
+          this%w_node(4  ,node_id(n)) = this%w_node(4  ,node_id(n)) + weight
         end do
         end associate
       
       end do
       
       ! Now normalize node velocities to get average value
-      do n = 1, this%mesh%nnode
-        this%w_node(1:3,n) = this%w_node(1:3,n) / (this%w_node(4:6, n)+ tiny(1.0_r8))
+      ! Question : Will need to sum up globally the this%w_node before averaging
+      do n = 1, this%mesh%nnode_onP
+        this%w_node(1:3,n) = this%w_node(1:3,n) / (this%w_node(4, n)+ tiny(1.0_r8))
       end do
       
       call gather_boundary(this%mesh%node_ip, this%w_node)
@@ -508,19 +501,16 @@ contains
         
     integer :: f, v, i
     integer ::  number_of_nodes, neighbor_cell_index
-    real(r8) :: cell_nodes(3,9), phase_volume
-    
-    type(Dod_type) :: IRL_dodecahedron
-
-    !type(TriPrism_type) :: IRL_wedge
+    real(r8) :: cell_nodes(3,9), phase_volume, cell_volume
     
     ! FOR NOW, ADVECT EVERYWHERE.
     ! IN FUTURE, MAKE BAND AND JUST ADVECT IN THERE
-    call new(IRL_dodecahedron)
     
-    call getMoments_setMethod(0)
+    call getMoments_setMethod(1)
     
-    do f = 1, this%mesh%nface_onP
+    print*,'Doing advection'
+    
+    do f = 1, this%mesh%nface_onP ! 2278, 2278
     
         number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
         ! Grab face nodes we will extrude from
@@ -530,30 +520,59 @@ contains
                                  this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
         cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = &
         this%mesh%x(:,node_index(1:number_of_nodes))
-                                 
-                                 
+        
+        do v = 1, number_of_nodes
+          cell_nodes(:,v) = this%project_vertex(cell_nodes(:,number_of_nodes+v), node_index(v), -a_dt)
+        end do
+                                                                 
         neighbor_cell_index = this%mesh%fcell(1, f)
+        if(this%mesh%fcell(2,f) == 0) then
+          cell_volume = this%mesh%volume(neighbor_cell_index)
+        else
+          cell_volume = 0.5_r8*(this%mesh%volume(neighbor_cell_index) + &
+                                this%mesh%volume(this%mesh%fcell(2,f)))
+        end if
+
+        call setMinimumVolToTrack(cell_volume*1.0e-15_r8)    
         
         select case(number_of_nodes)
-          case(3)
-            call TLS_fatal('Triangular face advection not yet implemented') 
+          case(3) ! Triangular Face -> Octahedron Volume
           
-          case(4)
-            do v = 1, number_of_nodes
-              cell_nodes(:,v) = this%project_vertex(cell_nodes(:,number_of_nodes+v), node_index(v), -a_dt)
-            end do
-            
-            call truchas_dod_to_irl(cell_nodes, IRL_dodecahedron)
-            
-            call getMoments(IRL_dodecahedron, &
+            call truchas_octa_to_irl(cell_nodes, this%IRL_octahedron)
+            print*,'Stuck in cutting tri', f
+            call getMoments(this%IRL_octahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
                             phase_volume)
             this%face_flux(1,f) = phase_volume
-            this%face_flux(2,f) = calculateVolume(IRL_dodecahedron) - phase_volume
-            if(f .eq. 50) then
-               print*,'Flux in 50',calculateVolume(IRL_dodecahedron), phase_volume
-               print*,this%mesh%fcell(:,50)
-            end if
+            this%face_flux(2,f) = calculateVolume(this%IRL_octahedron) - phase_volume
+            print*,'Nope, not stuck in tri'
+          
+          
+          case(4) ! Quad Face -> Dodecahedron Volume
+            
+            call truchas_dod_to_irl(cell_nodes, this%IRL_dodecahedron)
+            print*,'stuck in cutting quad', f
+            call printToScreen(this%IRL_dodecahedron)
+            print*,'Volume is ', calculateVolume(this%IRL_dodecahedron)
+            call printToScreen(this%localized_separator_link(neighbor_cell_index))
+            print*,'Boundary ID', this%mesh%ncell+1
+            print*, ' '
+            print*, ' '
+            print*, ' '
+            print*, ' '
+            print*, ' '
+            print*, ' '
+            print*, ' '
+            print*, ' '
+            !call sleep(3)
+            call getMoments(this%IRL_dodecahedron, &
+                            this%localized_separator_link(neighbor_cell_index), &
+                            phase_volume)
+            this%face_flux(1,f) = phase_volume
+            this%face_flux(2,f) = calculateVolume(this%IRL_dodecahedron) - phase_volume
+            !print*,'Nope, not stuck in quad'
+            
+            
           case default
             call TLS_fatal('Face with unhandled amount of nodes found.') 
          
@@ -562,7 +581,9 @@ contains
           end associate
           
     end do
-        
+    
+    print*,'Finished advection'
+
   end subroutine compute_fluxes
 
   pure function project_vertex(this, a_pt, a_node_index, a_dt) result(a_proj_pt)
@@ -589,17 +610,11 @@ contains
       f = this%bc_index(i)
       fl = this%local_face(i)
       j = this%mesh%fcell(1,f)
-      if(f .eq. 50) then 
-        print*, 'I am Here!!!!',j
-      end if
       if (j > this%mesh%ncell_onP) cycle
       if ((a_vel(f) > 0.0_r8)  == (btest(this%mesh%cfpar(j),fl))) then ! Fluxing into cell
         if (this%inflow_mat(i) > 0) then ! Cell material defined
           this%face_flux(this%inflow_mat(i),f) = abs(a_vel(f)) * a_dt * this%mesh%area(f)
         else ! flux material in proportion to starting fractions in cell
-          if(f .eq. 50) then
-            print*, a_vof_n(:,j)
-          end if
           this%face_flux(:,f) = a_vof_n(:,j) * abs(a_vel(f)) * a_dt * this%mesh%area(f)
         end if
       end if
@@ -657,8 +672,6 @@ contains
     
     integer :: j, k
     logical :: vof_modified
-    
-    
     
     do j = 1, this%mesh%ncell
       vof_modified = .false.
