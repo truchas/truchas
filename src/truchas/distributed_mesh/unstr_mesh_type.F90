@@ -200,6 +200,8 @@ contains
   subroutine init_cell_centroid(this)
     class(unstr_mesh), intent(inout) :: this
     integer :: j
+    ! QUESTION: Is this always true for our cell types?
+    ! In general, this is not the centroid.
     if (allocated(this%cell_centroid)) return
     allocate(this%cell_centroid(3,this%ncell))
     do j = 1, this%ncell
@@ -212,6 +214,8 @@ contains
   subroutine init_face_centroid(this)
     class(unstr_mesh), intent(inout) :: this
     integer :: j
+    ! QUESTION: Is this always true for our cell types?
+    ! In general, this is not the centroid.
     if (allocated(this%face_centroid)) return
     allocate(this%face_centroid(3,this%nface))
     do j = 1, this%nface

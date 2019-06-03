@@ -23,7 +23,16 @@ module irl_interface_helper
   !procedure truchas_hex_to_irl
   
   integer, parameter, private :: &
-    truchas_irl_tet_mapping(4) = [1,2,3,4]
+    truchas_irl_tet_mapping(4) = [2,3,4,1]
+    
+  integer, parameter, private :: &
+    truchas_irl_pyramid_mapping(5) = [4,3,2,1,5] 
+    
+  integer, parameter, private :: &
+    truchas_irl_wedge_mapping(6) = [5,6,4,2,3,1]
+    
+  integer, parameter, private :: &
+    truchas_irl_octa_mapping(6) = [5,6,4,2,3,1]
 
   integer, parameter, private :: &
     truchas_irl_hex_mapping(8) = [6,7,8,5,2,3,4,1]
@@ -38,16 +47,43 @@ contains
     real(r8), intent(in) :: a_truchas_tet(:,:)
     type(Tet_type), intent(inout) :: a_irl_tet
 
-    call construct(a_irl_tet, a_truchas_tet)
+    call construct(a_irl_tet, a_truchas_tet(:,truchas_irl_tet_mapping))
 
   end subroutine truchas_tet_to_irl
+  
+  subroutine truchas_pyramid_to_irl(a_truchas_pyramid, a_irl_pyramid)
+  
+    real(r8), intent(in) :: a_truchas_pyramid(:,:)
+    type(Pyrmd_type), intent(inout) :: a_irl_pyramid
+
+    call construct(a_irl_pyramid, a_truchas_pyramid(:,truchas_irl_pyramid_mapping))
+
+  end subroutine truchas_pyramid_to_irl
+  
+  subroutine truchas_wedge_to_irl(a_truchas_wedge, a_irl_wedge)
+  
+    real(r8), intent(in) :: a_truchas_wedge(:,:)
+    type(TriPrism_type), intent(inout) :: a_irl_wedge
+       
+    call construct(a_irl_wedge, a_truchas_wedge(:,truchas_irl_wedge_mapping))
+    
+  end subroutine truchas_wedge_to_irl
+      
+  subroutine truchas_octa_to_irl(a_truchas_octa, a_irl_octa)
+  
+    real(r8), intent(in) :: a_truchas_octa(:,:)
+    type(Octa_type), intent(inout) :: a_irl_octa
+       
+    call construct(a_irl_octa, a_truchas_octa(:,truchas_irl_octa_mapping))
+    
+  end subroutine truchas_octa_to_irl
   
   subroutine truchas_hex_to_irl(a_truchas_hex, a_irl_hex)
   
     real(r8), intent(in) :: a_truchas_hex(:,:)
     type(Hex_type), intent(inout) :: a_irl_hex
        
-    call construct(a_irl_hex, a_truchas_hex(:,truchas_irl_hex_mapping(:)))
+    call construct(a_irl_hex, a_truchas_hex(:,truchas_irl_hex_mapping))
     
   end subroutine truchas_hex_to_irl
   
@@ -56,7 +92,7 @@ contains
     real(r8), intent(in) :: a_truchas_dod(:,:)
     type(Dod_type), intent(inout) :: a_irl_dod
        
-    call construct(a_irl_dod, a_truchas_dod(:,truchas_irl_dod_mapping(:)))
+    call construct(a_irl_dod, a_truchas_dod(:,truchas_irl_dod_mapping))
     
   end subroutine truchas_dod_to_irl
 

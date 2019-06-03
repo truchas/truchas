@@ -226,10 +226,12 @@ contains
   end subroutine put_vof_into_matl
 
   ! vel_fn is the outward oriented face-normal velocity
-  subroutine vtrack_update(t, dt, vel_fn, initial)
+  ! vel_cc is the cell centered velocity
+  subroutine vtrack_update(t, dt, vel_fn, vel_cc, initial)
     use constants_module
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vel_fn(:)
+    real(r8), intent(in) :: vel_cc(:,:)
     logical, intent(in), optional :: initial
 
     integer :: i, j, k, f0, f1
@@ -243,7 +245,7 @@ contains
 
     if(this%unsplit_advection) then
       ! Unsplit advection written to use face velocities, operates on faces.
-      call this%vt%flux_volumes(vel_fn, this%fvof_i, this%fvof_o, this%flux_vol, &
+      call this%vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
           this%fluids, this%void, dt)
     else
       ! Split advection works on a per-cell level.
@@ -261,7 +263,7 @@ contains
         end do
       end do
     
-      call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
+      call this%vt%flux_volumes(this%flux_vel, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
           this%fluids, this%void, dt)
     end if
 
