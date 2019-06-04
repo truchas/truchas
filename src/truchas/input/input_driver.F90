@@ -33,6 +33,7 @@ contains
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use interfaces_input_module,   only: interfaces_input
+    use overwrite_velocity_module, only: overwrite_velocity_input
     use material_input_module,     only: material_input, material_sizes
     use nonlin_solver_input,       only: nonlinear_solver_input
     use numerics_input_module,     only: numerics_input
@@ -129,6 +130,9 @@ contains
 
     ! read volume fraction data
     call interfaces_input (lun)
+
+    ! Read in request for overwriting velocity
+    call overwrite_velocity_input (lun)
 
     ! read numerical options data
     call numerics_input (lun)

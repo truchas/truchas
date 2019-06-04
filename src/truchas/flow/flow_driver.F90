@@ -297,9 +297,11 @@ contains
   subroutine flow_driver_set_initial_state(t, dt, temperature_fc, vel_fn)
 
     use zone_module, only: zone
-    use vtrack_driver, only: vtrack_vof_view
+    use vtrack_driver, only: vtrack_vof_view, vtrack_velocity_overwrite
     use physics_module, only: prescribed_flow
     use advection_velocity_namelist, only: adv_vel
+    use vof_velocity_overwrite, only : velocity_overwrite_requested
+    
 
     real(r8), intent(in) :: t, dt
     real(r8), intent(in), pointer :: temperature_fc(:)
@@ -311,7 +313,7 @@ contains
 
     call start_timer('Flow')
 
-    if (prescribed_flow) then
+    if (prescribed_flow .and. .not. velocity_overwrite_requested) then
       block
         integer :: j
         real(r8) :: args(0:3)
@@ -333,6 +335,17 @@ contains
       call this%props%set_initial_state(vof, this%temperature_cc)
       call stop_timer('Flow')
       return
+    end if
+
+    if(prescribed_flow .and. velocity_overwrite_requested) then
+      call vtrack_velocity_overwrite(t,this%flow%vel_fn,this%flow%vel_cc)
+      ! This will be needed by timestep
+      this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
+      vof => vtrack_vof_view()
+      call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+      call this%props%set_initial_state(vof, this%temperature_cc)
+      call stop_timer('Flow')
+      return       
     end if
 
     do j = 1, this%mesh%ncell_onP
@@ -365,6 +378,8 @@ contains
     use zone_module, only: Zone
     use physics_module, only: prescribed_flow
     use advection_velocity_namelist, only: adv_vel
+    use vof_velocity_overwrite, only : velocity_overwrite_requested
+    use vtrack_driver, only : vtrack_velocity_overwrite
 
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vof(:,:), flux_vol(:,:)
@@ -376,28 +391,34 @@ contains
     call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
 
     if (prescribed_flow) then
-      call this%props%update_cc(vof, this%temperature_cc)
-      block
-        integer :: j
-        real(r8) :: args(0:3)
-        args(0) = t
-        do j = 1, this%mesh%ncell
-          args(1:3) = this%mesh%cell_centroid(:,j)
-          this%flow%vel_cc(:,j) = adv_vel%eval(args)
-        end do
-        do j = 1, this%mesh%nface
-          args(1:3) = this%mesh%face_centroid(:,j)
-          this%flow%vel_fn(j) = dot_product(adv_vel%eval(args), &
-              this%mesh%normal(:,j))/this%mesh%area(j)
-        end do
-      end block
-    else
-      if (associated(temperature_fc)) then
-        this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
-        call gather_boundary(this%mesh%face_ip, this%temperature_fc)
-      end if
-      call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
-    end if
+      if(.not. velocity_overwrite_requested) then
+        call this%props%update_cc(vof, this%temperature_cc)
+        block
+          integer :: j
+          real(r8) :: args(0:3)
+          args(0) = t
+          do j = 1, this%mesh%ncell
+            args(1:3) = this%mesh%cell_centroid(:,j)
+            this%flow%vel_cc(:,j) = adv_vel%eval(args)
+          end do
+          do j = 1, this%mesh%nface
+            args(1:3) = this%mesh%face_centroid(:,j)
+            this%flow%vel_fn(j) = dot_product(adv_vel%eval(args), &
+                this%mesh%normal(:,j))/this%mesh%area(j)
+          end do
+        end block
+     end if
+     
+     if(velocity_overwrite_requested) then
+       call vtrack_velocity_overwrite(t,this%flow%vel_fn,this%flow%vel_cc) 
+     end if
+   else
+     if (associated(temperature_fc)) then
+       this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
+       call gather_boundary(this%mesh%face_ip, this%temperature_fc)
+     end if
+     call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
+   end if
 
     call stop_timer('Flow')
 
