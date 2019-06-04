@@ -317,9 +317,7 @@ contains
       call setId(this%localized_separator_link(j), j)
     end do
 
-!    call TLS_fatal('IMPLEMENT ORGANIZATION OF BOUNDARY CELL PLANES BEING LAST IN RECONSTRUCTION')
-
-   end subroutine init_irl_mesh
+  end subroutine init_irl_mesh
   
   subroutine normals(this, vof)
 
