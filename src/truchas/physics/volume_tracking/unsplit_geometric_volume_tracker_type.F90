@@ -493,7 +493,7 @@ contains
     integer :: f, v, i, t, k
     integer ::  number_of_nodes, neighbor_cell_index
     real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume
-    type(TagAccVM_SepVM_type) :: tagged_sepvm
+    type(TagAccVM_SepVol_type) :: tagged_sepvol
     integer :: current_tag
     
     ! FOR NOW, ADVECT EVERYWHERE.
@@ -501,7 +501,7 @@ contains
 
     ASSERT(this%nmat == 2)
 
-    call new(tagged_sepvm)
+    call new(tagged_sepvol)
     call getMoments_setMethod(1)
     
     do f = 1, this%mesh%nface_onP
@@ -535,7 +535,7 @@ contains
             call truchas_octa_to_irl(cell_nodes, this%IRL_octahedron)
             call getMoments(this%IRL_octahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvm)
+                            tagged_sepvol)
             
             this%face_flux(:,f) = phase_volume          
           case(4) ! Quad Face -> Dodecahedron Volume
@@ -543,7 +543,7 @@ contains
             call truchas_dod_to_irl(cell_nodes, this%IRL_dodecahedron)
             call getMoments(this%IRL_dodecahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvm)
+                            tagged_sepvol)
             
             this%face_flux(:,f) = phase_volume
             
@@ -555,16 +555,16 @@ contains
 
 
       phase_volume = 0.0_r8
-      do t = 0, getSize(tagged_sepvm)-1
-         current_tag = getTagForIndex(tagged_sepvm, t)
+      do t = 0, getSize(tagged_sepvol)-1
+         current_tag = getTagForIndex(tagged_sepvol, t)
          if(current_tag > this%mesh%ncell) then            
             ! Is a boundary condition, all volume in phase 0
             phase_volume(:) = &
-                 phase_volume(:) + this%getBCMaterialFractions(current_tag, a_vof_n) * getVolumeAtIndex(tagged_sepvm, t, 0)
+                 phase_volume(:) + this%getBCMaterialFractions(current_tag, a_vof_n) * getVolumeAtIndex(tagged_sepvol, t, 0)
          else
             ! Is inside domain, trust actual volumes
-            phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvm, t, 0)
-            phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvm, t, 1)
+            phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
+            phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvol, t, 1)
          end if
       end do    
                      
