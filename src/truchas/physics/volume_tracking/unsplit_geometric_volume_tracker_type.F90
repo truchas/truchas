@@ -46,9 +46,9 @@ module unsplit_geometric_volume_tracker_type
     type(Dod_type) :: IRL_dodecahedron
     ! End IRL objects
   contains
-    procedure :: init
-    procedure :: flux_volumes
-    procedure :: set_inflow_material
+    procedure, public  :: init
+    procedure, public  :: flux_volumes
+    procedure, public  :: set_inflow_material
     procedure, private :: init_irl_mesh
     procedure, private :: set_irl_interfaces
     procedure, private :: adjust_planes_match_VOF
@@ -74,7 +74,7 @@ contains
     integer, intent(in) :: nrealfluid, nfluid, nmat, liq_matid(:)
     type(parameter_list), intent(inout) :: params
     integer :: i, j, k
-
+    
     this%mesh => mesh
     call this%mesh%init_cell_centroid
     call this%mesh%init_face_centroid
@@ -82,7 +82,7 @@ contains
     this%nrealfluid = nrealfluid
     this%nfluid = nfluid
     this%nmat = nmat
-        
+
     call params%get('location_iter_max', this%location_iter_max, default=40)
     call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
     call params%get('subcycles', this%subcycles, default=2)
@@ -480,7 +480,7 @@ contains
     
     call getMoments_setMethod(1)
     
-    do f = 1, this%mesh%nface_onP ! 2278, 2278
+    do f = 1, this%mesh%nface_onP
     
         number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
         ! Grab face nodes we will extrude from

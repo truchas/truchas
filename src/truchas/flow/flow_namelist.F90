@@ -34,13 +34,13 @@ contains
 
     !! Namelist variables
     integer  :: vol_track_subcycles, material_priority(16), fischer_dim
-    logical  :: inviscid, track_interfaces, nested_dissection
+    logical  :: inviscid, track_interfaces, unsplit_interface_advection, nested_dissection
     real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_frac_threshold, min_face_fraction, vol_frac_cutoff
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
         fluid_frac_threshold, min_face_fraction, &
-        track_interfaces, nested_dissection, vol_track_subcycles, &
+        track_interfaces, unsplit_interface_advection, nested_dissection, vol_track_subcycles, &
         vol_frac_cutoff, material_priority, fischer_dim
 
     call TLS_info('')
@@ -58,6 +58,7 @@ contains
 
     !! Default values
     track_interfaces = (nmat > 1)
+    unsplit_interface_advection = track_interfaces
     nested_dissection = .true.
     vol_track_subcycles = NULL_I
     vol_frac_cutoff = NULL_R
@@ -79,6 +80,7 @@ contains
 
     !! Broadcast the namelist variables
     call broadcast(track_interfaces)
+    call broadcast(unsplit_interface_advection)    
     call broadcast(nested_dissection)
     call broadcast(vol_track_subcycles)
     call broadcast(vol_frac_cutoff)
@@ -97,6 +99,7 @@ contains
 
     plist => params%sublist('volume-tracker')
     call plist%set('track_interfaces', track_interfaces)
+    call plist%set('unsplit_interface_advection',unsplit_interface_advection)
     call plist%set('nested_dissection', nested_dissection)
 
     n = count(material_priority /= NULL_I)
