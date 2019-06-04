@@ -164,8 +164,8 @@ call hijack_truchas ()
     use ustruc_driver,            only: ustruc_update
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, flow_vel_cc_view,&
         flow_set_pre_solidification_density
-    use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view, &
-        get_vof_from_matl
+    use vtrack_driver, only: vtrack_update, vtrack_velocity_overwrite, vtrack_enabled, vtrack_vof_view, &
+                             vtrack_flux_vol_view, get_vof_from_matl
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -246,6 +246,7 @@ call hijack_truchas ()
         if (vtrack_enabled() .and. flow_enabled()) then
           vel_fn => flow_vel_fn_view()
           vel_cc => flow_vel_cc_view()
+          
           call vtrack_update(t, dt, vel_fn, vel_cc)
           vof => vtrack_vof_view()
           flux_vol => vtrack_flux_vol_view()

@@ -65,7 +65,8 @@ list(APPEND SETUP_FILES ${SETUP_SCALARS_FILES})
 set(SETUP_VOF_FILES
           setup/vof/interfaces_module.F90
           setup/vof/tally_module.F90
-          setup/vof/vof_init.F90)         
+          setup/vof/vof_init.F90
+	  setup/vof/vof_velocity_overwrite.F90)         
 list(APPEND SETUP_FILES ${SETUP_VOF_FILES})	
 
 

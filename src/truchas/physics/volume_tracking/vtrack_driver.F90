@@ -29,7 +29,7 @@
 !!    is a collective procedure; the file is read on the I/O process and the
 !!    data replicated to all other processes.  If an error occurs (I/O error
 !!    or invalid data) a message is written and execution is halted.  The
-!!    presence of this namelist serves to enable the the volumetracker; it
+!!    presence of this namelist serves to enable the volumetracker; it
 !!    is permissible for there to be no instance of this namelist.
 !!    NB: this should be called ONLY when flow is active.
 !!
@@ -69,6 +69,7 @@ module vtrack_driver
   public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
+  public :: vtrack_velocity_overwrite
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -172,7 +173,7 @@ contains
     end do
 
     call params%get('track_interfaces', track_interfaces)
-    call params%get('unsplit interface advection', this%unsplit_advection, .true.)
+    call params%get('unsplit_interface_advection', this%unsplit_advection, .true.)
     if (track_interfaces) then
       if(this%unsplit_advection) then
         allocate(unsplit_geometric_volume_tracker :: this%vt)
@@ -244,7 +245,8 @@ contains
     call get_vof_from_matl(this%fvof_i)
 
     if(this%unsplit_advection) then
-      ! Unsplit advection written to use face velocities, operates on faces.
+       ! Unsplit advection written to use face velocities, operates on faces.
+       ! Cell centered velocity also needed to form node velocities for projection.
       call this%vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
           this%fluids, this%void, dt)
     else
@@ -353,5 +355,109 @@ contains
     end do
 
   end subroutine vtrack_set_inflow_bc
+
+  subroutine vtrack_velocity_overwrite(a_time, a_face_velocity, a_cell_velocity)
+
+    use vof_velocity_overwrite, only : velocity_overwrite_requested, &
+                                       velocity_overwrite_case
+    use physics_module, only : prescribed_flow
+
+    real(r8), intent(in) :: a_time
+    real(r8), intent(inout) :: a_face_velocity(:)
+    real(r8), intent(inout) :: a_cell_velocity(:,:)
+
+    integer :: j, f
+    real(r8) :: node_location(3), full_face_velocity(3)
+    real(r8), parameter :: MYPI = 4.0_r8*ATAN(1.0_r8)
+
+    if (.not.allocated(this)) return
+    if(.not.velocity_overwrite_requested) return
+    ASSERT(prescribed_flow)
+
+    select case(trim(velocity_overwrite_case))
+    case('Deformation2D')
+
+       do f = 1,this%mesh%nface
+          node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,0.0_r8]
+          full_face_velocity(1) = -2.0_r8*sin(MYPI*node_location(1))**2 &
+                                 * sin(MYPI*node_location(2)) &
+                                 * cos(MYPI*node_location(2)) &
+                                 * cos(MYPI*a_time / 8.0_r8)
+          
+          full_face_velocity(2) = 2.0_r8*sin(MYPI*node_location(2))**2 &
+                                 * sin(MYPI*node_location(1)) &
+                                 * cos(MYPI*node_location(1)) &
+                                 * cos(MYPI*a_time / 8.0_r8)          
+          
+          full_face_velocity(3) = 0.0_r8
+
+          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+
+       end do
+       
+       do j = 1,this%mesh%ncell
+          node_location = this%mesh%cell_centroid(:,j)+[0.5_r8,0.5_r8,0.0_r8]
+          a_cell_velocity(1,j) = -2.0_r8*sin(MYPI*node_location(1))**2 &
+                                 * sin(MYPI*node_location(2)) &
+                                 * cos(MYPI*node_location(2)) &
+                                 * cos(MYPI*a_time / 8.0_r8)
+          
+          a_cell_velocity(2,j) = 2.0_r8*sin(MYPI*node_location(2))**2 &
+                                 * sin(MYPI*node_location(1)) &
+                                 * cos(MYPI*node_location(1)) &
+                                 * cos(MYPI*a_time / 8.0_r8)
+          
+          a_cell_velocity(3,j) = 0.0_r8
+          
+       end do
+
+    case('Deformation3D')
+       
+       do f = 1,this%mesh%nface
+          node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,0.5_r8]
+          full_face_velocity(1) = 2.0_r8*sin(MYPI*node_location(1))**2 &
+                                 * sin(2.0_r8*MYPI*node_location(2)) &
+                                 * sin(2.0_r8*MYPI*node_location(3)) &
+                                 * cos(MYPI*a_time / 3.0_r8)
+          
+          full_face_velocity(2) =  -sin(2.0_r8*MYPI*node_location(1)) &
+                                 * sin(MYPI*node_location(2))**2 &
+                                 * sin(2.0_r8*MYPI*node_location(3)) &
+                                 * cos(MYPI*a_time / 3.0_r8)
+          
+          full_face_velocity(3) =  -sin(2.0_r8*MYPI*node_location(1)) &
+                                 * sin(2.0_r8*MYPI*node_location(2)) &
+                                 * sin(MYPI*node_location(3))**2 &
+                                 * cos(MYPI*a_time / 3.0_r8)        
+
+          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+
+       end do
+       
+       do j = 1,this%mesh%ncell
+          node_location = this%mesh%cell_centroid(:,j)+[0.5_r8,0.5_r8,0.5_r8]
+          a_cell_velocity(1,j) = 2.0_r8*sin(MYPI*node_location(1))**2 &
+                                 * sin(2.0_r8*MYPI*node_location(2)) &
+                                 * sin(2.0_r8*MYPI*node_location(3)) &
+                                 * cos(MYPI*a_time / 3.0_r8)
+          
+          a_cell_velocity(2,j) =  -sin(2.0_r8*MYPI*node_location(1)) &
+                                 * sin(MYPI*node_location(2))**2 &
+                                 * sin(2.0_r8*MYPI*node_location(3)) &
+                                 * cos(MYPI*a_time / 3.0_r8)
+          
+          a_cell_velocity(3,j) =  -sin(2.0_r8*MYPI*node_location(1)) &
+                                 * sin(2.0_r8*MYPI*node_location(2)) &
+                                 * sin(MYPI*node_location(3))**2 &
+                                 * cos(MYPI*a_time / 3.0_r8)        
+          
+       end do
+
+
+    case default
+       call TLS_fatal('Unknown case provided for overwriting velocity to prescribed field')
+    end select   
+
+  end subroutine vtrack_velocity_overwrite
 
 end module vtrack_driver
