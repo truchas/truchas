@@ -31,6 +31,7 @@ module unsplit_geometric_volume_tracker_type
     real(r8), allocatable :: w_node(:,:)
     integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
+    integer, allocatable :: boundary_recon_to_cell(:) ! Mapping of boundary reconstruction ID to neighboring inside cell ID
     ! Start IRL objects
     type(ObjServer_PlanarLoc_type) :: object_server_planar_localizer
     type(ObjServer_PlanarSep_type) :: object_server_planar_separator
@@ -58,7 +59,7 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: update_vof
     procedure, private :: clean_VOF
     procedure, private :: normals
-    procedure, private :: face_flux_bc
+    procedure, private :: getBCMaterialFractions
   end type unsplit_geometric_volume_tracker
 
 contains
@@ -166,10 +167,8 @@ contains
     
     call this%compute_node_velocities(vel_cc)
     
-    call this%compute_fluxes(vel, dt)
+    call this%compute_fluxes(vel, dt, vof_n)
     
-    call this%face_flux_bc(vel, vof_n, dt)
-        
     ! Need to communicate fluxes
     call gather_boundary(this%mesh%face_ip, this%face_flux)
           
@@ -221,26 +220,41 @@ contains
     
     integer :: j, f, face_index, cn
     integer :: number_of_cell_faces
+    integer :: total_recon_needed
     real(r8) :: tmp_plane(4)
+    integer :: face_to_boundary_mapping(this%mesh%nface)
+
+    ! QUESTION : face_to_... would be much better as a
+    ! hash table, as most indices are empty/not used.
     
     call setVFBounds(this%cutoff)                                         
     call setVFTolerance_IterativeDistanceFinding(1.0e-12_r8)
     
-    ! Allocate ncell+1, where the ncell+1 object will be used as a marker for
-    ! having left the defined domain. In future, should have one per boundary face..
+    ! Allocate reconstruction for each cell and one for each boundary face.
+    ! We're going to kind-of fake a ghost cell
+    total_recon_needed = this%mesh%ncell+size(this%bc_index)
+
+    ! Mapping of boundary_id to the corresponding cell that is
+    ! actually inside the domain. Index for the boundary_id
+    ! in the array is boundary_id - this%mesh%ncell
+    allocate(this%boundary_recon_to_cell(size(this%bc_index)))
+    do j = 1, size(this%bc_index)
+       this%boundary_recon_to_cell(j) = this%mesh%fcell(1,this%bc_index(j))
+       face_to_boundary_mapping(this%bc_index(j)) = this%mesh%ncell + j
+    end do
     
     ! Allocate block storage to increase locality of objects we will be creating
-    call new(this%object_server_planar_localizer, int(this%mesh%ncell+1, i8))
-    call new(this%object_server_planar_separator, int(this%mesh%ncell+1, i8))
-    call new(this%object_server_localized_separator_link, int(this%mesh%ncell+1, i8))   
+    call new(this%object_server_planar_localizer, int(total_recon_needed, i8))
+    call new(this%object_server_planar_separator, int(total_recon_needed, i8))
+    call new(this%object_server_localized_separator_link, int(total_recon_needed, i8))   
         
     ! Allocate the Fortran memory
-    allocate(this%planar_localizer(this%mesh%ncell+1))
-    allocate(this%planar_separator(this%mesh%ncell+1))
-    allocate(this%localized_separator_link(this%mesh%ncell+1))
+    allocate(this%planar_localizer(total_recon_needed))
+    allocate(this%planar_separator(total_recon_needed))
+    allocate(this%localized_separator_link(total_recon_needed))
     
     ! Now allocate on the IRL side the different planar reconstructions
-    do j = 1, this%mesh%ncell+1
+    do j = 1, total_recon_needed
       call new(this%planar_localizer(j), this%object_server_planar_localizer)
       call new(this%planar_separator(j), this%object_server_planar_separator)
       call new(this%localized_separator_link(j), &
@@ -248,7 +262,7 @@ contains
                this%planar_localizer(j), &
                this%planar_separator(j) )
     end do
-    
+
     ! Now setup PlanarLocalizers (one per cell) and link together.
     do j = 1, this%mesh%ncell    
       number_of_cell_faces = this%mesh%xcface(j+1)-this%mesh%xcface(j)
@@ -274,25 +288,29 @@ contains
           call setEdgeConnectivity(this%localized_separator_link(j), f-1, &
                                    this%localized_separator_link(cn(f))) 
         else
-          ! Connect to specially "outside" marking localized_separator_link
+          ! Connect to correct "outside" marking localized_separator_link
           call setEdgeConnectivity(this%localized_separator_link(j), f-1, &
-                                   this%localized_separator_link(this%mesh%ncell+1)) 
+                                   this%localized_separator_link(face_to_boundary_mapping(face_index)))
         end if
                 
       end do
       end associate
       
-    end do   
-    
-    ! Make "outside" localized_separator_link make every phase 1
-    call setNumberOfPlanes(this%planar_separator(this%mesh%ncell+1), 1)
-    call setPlane(this%planar_separator(this%mesh%ncell+1), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
-    call setNumberOfPlanes(this%planar_localizer(this%mesh%ncell+1), 1)
-    call setPlane(this%planar_localizer(this%mesh%ncell+1), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
-    call setEdgeConnectivityNull(this%localized_separator_link(this%mesh%ncell+1), 0) ! Don't link back to domain
-    call setId(this%localized_separator_link(this%mesh%ncell+1), this%mesh%ncell+1)
-    
-  end subroutine init_irl_mesh
+    end do
+      
+    ! Make "outside" reconstructions consume all volume given to them.
+    do j = this%mesh%ncell+1,total_recon_needed
+      call setNumberOfPlanes(this%planar_separator(j), 1)
+      call setPlane(this%planar_separator(j), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
+      call setNumberOfPlanes(this%planar_localizer(j), 1)
+      call setPlane(this%planar_localizer(j), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
+      call setEdgeConnectivityNull(this%localized_separator_link(j), 0) ! No link back to domain
+      call setId(this%localized_separator_link(j), j)
+    end do
+
+!    call TLS_fatal('IMPLEMENT ORGANIZATION OF BOUNDARY CELL PLANES BEING LAST IN RECONSTRUCTION')
+
+   end subroutine init_irl_mesh
   
   subroutine normals(this, vof)
 
@@ -463,30 +481,36 @@ contains
       
   end subroutine compute_node_velocities
   
-  subroutine compute_fluxes(this, a_face_vel, a_dt)
+  subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof_n)
   
     use irl_interface_helper
     
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: a_face_vel(:)
     real(r8), intent(in) :: a_dt
+    real(r8), intent(in) :: a_vof_n(:,:)
         
-    integer :: f, v, i
+    integer :: f, v, i, t, k
     integer ::  number_of_nodes, neighbor_cell_index
-    real(r8) :: cell_nodes(3,9), phase_volume, cell_volume
+    real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume
+    type(TagAccVM_SepVM_type) :: tagged_sepvm
+    integer :: current_tag
     
     ! FOR NOW, ADVECT EVERYWHERE.
     ! IN FUTURE, MAKE BAND AND JUST ADVECT IN THERE
-    
+
+    ASSERT(this%nmat == 2)
+
+    call new(tagged_sepvm)
     call getMoments_setMethod(1)
     
     do f = 1, this%mesh%nface_onP
     
-        number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
-        ! Grab face nodes we will extrude from
-        ! Will place face nodes in latter half of cell_nodes so that
-        ! if (dot_product(flux_vel, face_norm) > 0), the volume is > 0
-        associate( node_index => this%mesh%fnode( &
+      number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
+      ! Grab face nodes we will extrude from
+      ! Will place face nodes in latter half of cell_nodes so that
+      ! if (dot_product(flux_vel, face_norm) > 0), the volume is > 0
+      associate( node_index => this%mesh%fnode( &
                                  this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
         cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = &
         this%mesh%x(:,node_index(1:number_of_nodes))
@@ -511,25 +535,40 @@ contains
             call truchas_octa_to_irl(cell_nodes, this%IRL_octahedron)
             call getMoments(this%IRL_octahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
-                            phase_volume)
-            this%face_flux(1,f) = phase_volume
-            this%face_flux(2,f) = calculateVolume(this%IRL_octahedron) - phase_volume
-          
+                            tagged_sepvm)
+            
+            this%face_flux(:,f) = phase_volume          
           case(4) ! Quad Face -> Dodecahedron Volume
             
             call truchas_dod_to_irl(cell_nodes, this%IRL_dodecahedron)
             call getMoments(this%IRL_dodecahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
-                            phase_volume)
-            this%face_flux(1,f) = phase_volume
-            this%face_flux(2,f) = calculateVolume(this%IRL_dodecahedron) - phase_volume
+                            tagged_sepvm)
+            
+            this%face_flux(:,f) = phase_volume
             
           case default
-            call TLS_fatal('Face with unhandled amount of nodes found.') 
-         
-          end select
+            call TLS_fatal('Face with unhandled amount of nodes found.')          
+        end select
           
-          end associate
+      end associate
+
+
+      phase_volume = 0.0_r8
+      do t = 0, getSize(tagged_sepvm)-1
+         current_tag = getTagForIndex(tagged_sepvm, t)
+         if(current_tag > this%mesh%ncell) then            
+            ! Is a boundary condition, all volume in phase 0
+            phase_volume(:) = &
+                 phase_volume(:) + this%getBCMaterialFractions(current_tag, a_vof_n) * getVolumeAtIndex(tagged_sepvm, t, 0)
+         else
+            ! Is inside domain, trust actual volumes
+            phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvm, t, 0)
+            phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvm, t, 1)
+         end if
+      end do    
+                     
+      this%face_flux(:,f) = phase_volume
           
     end do
     
@@ -546,31 +585,24 @@ contains
     a_proj_pt = a_pt + a_dt * this%w_node(1:3,a_node_index)
     return
   end function project_vertex
-  
-  subroutine face_flux_bc(this, a_vel, a_vof_n, a_dt)
 
-    class(unsplit_geometric_volume_tracker), intent(inout) :: this
-    real(r8), intent(in) :: a_vel(:), a_vof_n(:,:), a_dt
+  pure function getBCMaterialFractions(this, a_tag, a_vof_n) result(a_fractions)
 
-    integer :: i, f, j, fl, m
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    integer, intent(in) :: a_tag
+    real(r8), intent(in) :: a_vof_n(:,:)
+    real(r8) :: a_fractions(this%nmat)
 
-    ! Add in boundary condition fluxes
-    do i = 1, size(this%bc_index)
-      f = this%bc_index(i)
-      fl = this%local_face(i)
-      j = this%mesh%fcell(1,f)
-      if (j > this%mesh%ncell_onP) cycle
-      if ((a_vel(f) > 0.0_r8)  == (btest(this%mesh%cfpar(j),fl))) then ! Fluxing into cell
-        if (this%inflow_mat(i) > 0) then ! Cell material defined
-          this%face_flux(this%inflow_mat(i),f) = abs(a_vel(f)) * a_dt * this%mesh%area(f)
-        else ! flux material in proportion to starting fractions in cell
-          this%face_flux(:,f) = a_vof_n(:,j) * abs(a_vel(f)) * a_dt * this%mesh%area(f)
-        end if
-      end if
-    end do
-    
-  end subroutine face_flux_bc
-  
+    a_fractions = 0.0_r8
+    if(this%inflow_mat(a_tag - this%mesh%ncell) > 0) then
+       ! Known material coming in
+       a_fractions(this%inflow_mat(a_tag - this%mesh%ncell)) = 1.0_r8
+    else
+       ! Take as Neumann on neighbor cell inside domain
+       a_fractions(:) = a_vof_n(:,this%boundary_recon_to_cell(a_tag - this%mesh%ncell))
+    end if
+
+  end function getBCMaterialFractions
   
   subroutine update_vof(this, a_flux_vol, a_vof)
   
