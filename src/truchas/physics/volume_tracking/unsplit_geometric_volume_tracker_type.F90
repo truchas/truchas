@@ -223,6 +223,7 @@ contains
     integer :: total_recon_needed
     real(r8) :: tmp_plane(4)
     integer :: face_to_boundary_mapping(this%mesh%nface)
+    integer :: found_internal, found_boundary, total_internal
 
     ! QUESTION : face_to_... would be much better as a
     ! hash table, as most indices are empty/not used.
@@ -271,29 +272,37 @@ contains
       call setId(this%localized_separator_link(j), j)
             
       associate(face_id => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
-                cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))       
-      do f = 1, number_of_cell_faces
-        ! Set PlanarLocalizer Plane for this face
-        face_index = face_id(f)
-        tmp_plane(1:3) = this%mesh%normal(:,face_index) / this%mesh%area(face_index)
-        tmp_plane(4) = dot_product(tmp_plane(1:3), this%mesh%x(:,this%mesh%fnode(this%mesh%xfnode(face_index))))
-        if(btest(this%mesh%cfpar(j), f)) then 
-          ! Want outward oriented normal
-          tmp_plane = -tmp_plane
-        end if        
-        call setPlane(this%planar_localizer(j), f-1, tmp_plane(1:3), tmp_plane(4))        
+                cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
         
-        ! Link this plane in the LocalizedSeparatorLink
-        if(cn(f) /= 0) then
-          call setEdgeConnectivity(this%localized_separator_link(j), f-1, &
-                                   this%localized_separator_link(cn(f))) 
-        else
-          ! Connect to correct "outside" marking localized_separator_link
-          call setEdgeConnectivity(this%localized_separator_link(j), f-1, &
-                                   this%localized_separator_link(face_to_boundary_mapping(face_index)))
-        end if
+        total_internal = count(cn /= 0)
+        found_internal = 0
+        found_boundary = 0        
+        do f = 1, number_of_cell_faces
+          ! Set PlanarLocalizer Plane for this face
+          face_index = face_id(f)
+          tmp_plane(1:3) = this%mesh%normal(:,face_index) / this%mesh%area(face_index)
+          tmp_plane(4) = dot_product(tmp_plane(1:3), this%mesh%x(:,this%mesh%fnode(this%mesh%xfnode(face_index))))
+          if(btest(this%mesh%cfpar(j), f)) then 
+            ! Want outward oriented normal
+            tmp_plane = -tmp_plane
+          end if
+         
+          ! Create and Link this plane in the LocalizedSeparatorLink
+          if(cn(f) /= 0) then
+            found_internal = found_internal + 1 ! IRL is 0-based indexed
+            call setPlane(this%planar_localizer(j), found_internal-1, tmp_plane(1:3), tmp_plane(4))         
+            call setEdgeConnectivity(this%localized_separator_link(j), found_internal-1, &
+                                     this%localized_separator_link(cn(f))) 
+          else
+            ! Connect to correct "outside" marking localized_separator_link
+            ! Making these last in reconstruction should keep all inside domain volume inside the domain
+            found_boundary = found_boundary + 1 ! IRL is 0-based index
+            call setPlane(this%planar_localizer(j), total_internal + found_boundary-1, tmp_plane(1:3), tmp_plane(4))
+            call setEdgeConnectivity(this%localized_separator_link(j), total_internal + found_boundary-1, &
+                                     this%localized_separator_link(face_to_boundary_mapping(face_index)))
+          end if
                 
-      end do
+        end do
       end associate
       
     end do
@@ -499,7 +508,7 @@ contains
     ! FOR NOW, ADVECT EVERYWHERE.
     ! IN FUTURE, MAKE BAND AND JUST ADVECT IN THERE
 
-    ASSERT(this%nmat == 2)
+    ASSERT(this%nmat == 2) ! Will alleviate later
 
     call new(tagged_sepvol)
     call getMoments_setMethod(1)
