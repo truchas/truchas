@@ -18,6 +18,8 @@ module unsplit_geometric_volume_tracker_type
   implicit none
   private
 
+  integer, parameter, private :: advect_band = 3 ! Size of band to do advection
+
   type, extends(volume_tracker), public :: unsplit_geometric_volume_tracker
     private
     type(unstr_mesh), pointer :: mesh ! unowned reference
@@ -151,31 +153,37 @@ contains
 
   ! flux volumes routine assuming flux_vol is a cface-like array
   ! flux volumes routine assuming vel is stored on faces, length 1:mesh%nfaces
-  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt)
+  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_vof_band)
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
+    integer, intent(in) :: a_vof_band(:,:)
 
     integer :: i,j
 
     flux_vol = 0.0_r8
     vof = vof_n
+
+    call start_timer('reconstruction')
     call this%normals(vof)
     
     call this%set_irl_interfaces(vof)
-    
+    call stop_timer('reconstruction')
+
+    call start_timer('advection')
     call this%compute_node_velocities(vel_cc)
     
-    call this%compute_fluxes(vel, dt, vof_n)
+    call this%compute_fluxes(vel, dt, vof_n, a_vof_band)
     
     ! Need to communicate fluxes
     call gather_boundary(this%mesh%face_ip, this%face_flux)
           
-    call this%update_vof(flux_vol, vof)
+    call this%update_vof(a_vof_band, flux_vol, vof)
     
     call this%clean_vof(vof)
-
+    call stop_timer('advection')
+    
   end subroutine flux_volumes
 
   !! Set the inflow material for the given boundary faces. A material index
@@ -332,7 +340,6 @@ contains
     integer :: i,j,k,c
     logical :: hasvof(size(vof,dim=1))
 
-    call start_timer('normals')
     do i = 1, this%nmat
       call gradient_cc(this%normal(1,i,:), this%normal(2,i,:), this%normal(3,i,:), &
           vof(i,:), this%w_node(1,:), this%w_node(2,:))
@@ -374,8 +381,6 @@ contains
     end do
     ! will need normals for vof reconstruction in ghost cells
     call gather_boundary(this%mesh%cell_ip, this%normal)
-
-    call stop_timer('normals')
 
   end subroutine normals
   
@@ -488,7 +493,7 @@ contains
       
   end subroutine compute_node_velocities
   
-  subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof_n)
+  subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof_n, a_vof_band)
   
     use irl_interface_helper
     
@@ -496,12 +501,13 @@ contains
     real(r8), intent(in) :: a_face_vel(:)
     real(r8), intent(in) :: a_dt
     real(r8), intent(in) :: a_vof_n(:,:)
+    integer, intent(in)  :: a_vof_band(:,:)
         
     integer :: f, v, i, t, k
     integer ::  number_of_nodes, neighbor_cell_index
     real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume
     type(TagAccVM_SepVol_type) :: tagged_sepvol
-    integer :: current_tag
+    integer :: current_tag, min_band
     
     ! FOR NOW, ADVECT EVERYWHERE.
     ! IN FUTURE, MAKE BAND AND JUST ADVECT IN THERE
@@ -510,8 +516,23 @@ contains
 
     call new(tagged_sepvol)
     call getMoments_setMethod(1)
-    
+
+    this%face_flux = 0.0_r8
     do f = 1, this%mesh%nface_onP
+
+      neighbor_cell_index = this%mesh%fcell(1, f)
+      if(this%mesh%fcell(2,f) == 0) then
+        cell_volume = this%mesh%volume(neighbor_cell_index)
+        min_band = minval(abs(a_vof_band(:,neighbor_cell_index)))
+      else
+        cell_volume = 0.5_r8*(this%mesh%volume(neighbor_cell_index) + &
+             this%mesh%volume(this%mesh%fcell(2,f)))
+        min_band = min(minval(abs(a_vof_band(:,neighbor_cell_index))),minval(abs(a_vof_band(:,this%mesh%fcell(2,f)))))       
+      end if       
+
+      if(min_band > advect_band) then
+         cycle
+      end if
     
       number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
       ! Grab face nodes we will extrude from
@@ -524,15 +545,7 @@ contains
         
         do v = 1, number_of_nodes
           cell_nodes(:,v) = this%project_vertex(cell_nodes(:,number_of_nodes+v), node_index(v), -a_dt)
-        end do
-                                                                 
-        neighbor_cell_index = this%mesh%fcell(1, f)
-        if(this%mesh%fcell(2,f) == 0) then
-          cell_volume = this%mesh%volume(neighbor_cell_index)
-        else
-          cell_volume = 0.5_r8*(this%mesh%volume(neighbor_cell_index) + &
-                                this%mesh%volume(this%mesh%fcell(2,f)))
-        end if
+        end do                                                                
 
         call setMinimumVolToTrack(cell_volume*1.0e-15_r8)    
         
@@ -611,9 +624,10 @@ contains
 
   end function getBCMaterialFractions
   
-  subroutine update_vof(this, a_flux_vol, a_vof)
+  subroutine update_vof(this, a_vof_band, a_flux_vol, a_vof)
   
     class(unsplit_geometric_volume_tracker), intent(in) :: this
+    integer, intent(in) :: a_vof_band(:,:)
     real(r8), intent(inout) :: a_flux_vol(:,:)
     real(r8), intent(inout) :: a_vof(:,:)
     
@@ -623,7 +637,9 @@ contains
     
     ! Fill the ragged a_flux_vol array
     do j = 1, this%mesh%ncell  
-    
+      if(minval(abs(a_vof_band(:,j))) > advect_band) then
+        cycle
+      end if
       associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1) )
       do f = 1, size(fn)
         if(btest(this%mesh%cfpar(j), f)) then
@@ -639,6 +655,9 @@ contains
     
     ! Use a_flux_vol to update a_vof now
     do j = 1, this%mesh%ncell_onP
+      if(minval(abs(a_vof_band(:,j))) > advect_band) then
+        cycle
+      end if      
       a_vof(:,j) = a_vof(:,j) * abs(this%mesh%volume(j))    
       number_of_faces = this%mesh%xcface(j+1) - this%mesh%xcface(j)
       cell_volume_sum = this%mesh%volume(j)
@@ -649,8 +668,6 @@ contains
       a_vof(:,j) = a_vof(:,j) / cell_volume_sum
     end do
     
-    call gather_boundary(this%mesh%cell_ip, a_vof)
-    
   end subroutine update_vof    
   
   subroutine clean_vof(this, a_vof)
@@ -660,8 +677,8 @@ contains
     
     integer :: j, k
     logical :: vof_modified
-    
-    do j = 1, this%mesh%ncell
+
+    do j = 1, this%mesh%ncell_onP
       vof_modified = .false.
       do k = 1, this%nmat
         if(a_vof(k,j) < this%cutoff) then
@@ -680,7 +697,8 @@ contains
         a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))
       end if
     end do
-    
+
+    call gather_boundary(this%mesh%cell_ip, a_vof)   
     
   end subroutine clean_vof
 
