@@ -499,16 +499,52 @@ contains
 
     integer :: b, j, n, k, c
     integer :: total_phases
+    logical :: has_interface
 
     total_phases = this%fluids + this%void + this%solid
+
+    ! QUESTION : How to incorporate knowledge of BC into band?
+    ! If I have a full gas domain, and am injecting liquid, need to
+    ! recognize that and make the BC internal to domain band(0)
 
     ! Seed the initial 0-band that has interface
     this%xmat_band_map(0,:) = 1
     this%xmat_band_map(1,:) = 1
     do j = 1,this%mesh%ncell
-      do k = 1,total_phases          
-        if(this%fvof_i(k,j) > epsilon(1.0_r8) .and. &
-           this%fvof_i(k,j) < 1.0_r8 - epsilon(1.0_r8)) then
+      do k = 1,total_phases
+        has_interface = (this%fvof_i(k,j) > epsilon(1.0_r8) .and. &
+             this%fvof_i(k,j) < 1.0_r8 - epsilon(1.0_r8))
+        if(.not. has_interface) then
+           ! Need to also check condition where cell is full/empty and neighbor empty/full
+           if(this%fvof_i(k,j) < epsilon(1.0_r8)) then ! Cell is empty
+              ! Check if any neighbors are full
+              associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+                do n = 1, size(cneigh)
+                   if(cneigh(n) /=0 ) then
+                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 - epsilon(1.0_r8)) then
+                         has_interface = .true.
+                         exit
+                      end if                      
+                   end if
+                end do
+
+              end associate              
+           else
+              ! Check if any neighbors are empty
+              associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+                do n = 1, size(cneigh)
+                   if(cneigh(n) /=0 ) then
+                      if(this%fvof_i(k,cneigh(n)) < epsilon(1.0_r8)) then
+                         has_interface = .true.
+                         exit
+                      end if                      
+                   end if
+                end do
+
+              end associate              
+           end if           
+        end if        
+        if(has_interface) then
            this%mat_band(k,j) = 0
            this%mat_band_map(this%xmat_band_map(1,k),k) = j            
            this%xmat_band_map(1,k) = this%xmat_band_map(1,k) + 1
@@ -546,8 +582,8 @@ contains
           end do
         end associate 
       end do 
-    end do
-      
+   end do
+
   end subroutine vtrack_update_mat_band
 
 end module vtrack_driver
