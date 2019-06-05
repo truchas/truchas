@@ -66,10 +66,13 @@ module vtrack_driver
 
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
-  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view
+  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view, vtrack_mat_band_view
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
   public :: vtrack_velocity_overwrite
+  private :: vtrack_update_mat_band
+
+  integer, parameter, private :: band_map_width = 4 ! Size of band_map to create in +/- direction.
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -80,8 +83,12 @@ module vtrack_driver
     real(r8), allocatable  :: vof(:,:) ! volume fractions for all materials
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
+    real(r8), allocatable :: fvol_init(:) ! fluid/void volume fractions at start of simulation
     real(r8), allocatable :: flux_vol(:,:) ! flux volumes
     real(r8), allocatable :: flux_vel(:) ! fluxing velocity - ragged form
+    integer, allocatable :: mat_band(:,:) ! Signed material band for band_number = (material_id, cell_id)
+    integer, allocatable :: mat_band_map(:,:) ! Unstructured mapping of band to material cell_id = (index, material)
+    integer, allocatable :: xmat_band_map(:,:) ! Number of cells in mat_band_map for each band level.
     integer :: fluids ! number of fluids (not including void) to advance
     integer :: void ! 1 if simulation includes void else 0
     integer :: solid ! 1 if simulation includes solid else 0
@@ -115,8 +122,13 @@ contains
   function vtrack_liq_matid_view() result(p)
     integer, pointer :: p(:)
     p => this%liq_matid(:this%fluids)
-  end function
+  end function vtrack_liq_matid_view
 
+  function vtrack_mat_band_view() result(p)
+    integer, pointer :: p(:,:)
+    ASSERT(vtrack_enabled())
+    p => this%mat_band
+  end function vtrack_mat_band_view
 
   subroutine vtrack_driver_init(params)
 
@@ -154,6 +166,7 @@ contains
     allocate(this%sol_matid(nmat-(this%fluids+this%void)))
     allocate(this%fvof_i(this%fluids+this%void+this%solid, this%mesh%ncell))
     allocate(this%fvof_o(this%fluids+this%void+this%solid, this%mesh%ncell))
+    allocate(this%fvol_init(this%fluids+this%void+this%solid))    
     allocate(this%flux_vol(this%fluids+this%void,size(this%mesh%cface)))
     allocate(this%flux_vel(size(this%mesh%cface)))
     allocate(this%vof(nmat, this%mesh%ncell_onP))
@@ -171,6 +184,11 @@ contains
         k = k + 1
       end if
     end do
+
+    ! Allocations for the band_map based on how near phases are
+    allocate(this%mat_band(nmat, this%mesh%ncell))
+    allocate(this%mat_band_map(this%mesh%ncell, nmat))
+    allocate(this%xmat_band_map(band_map_width+1, nmat))
 
     call params%get('track_interfaces', track_interfaces)
     call params%get('unsplit_interface_advection', this%unsplit_advection, .true.)
@@ -190,6 +208,11 @@ contains
     call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
         this%fluids+this%void+this%solid, this%liq_matid, params)
     call stop_timer('Vof Initialization')
+
+    ! QUESTION : Will need to parallel sum this
+    do j = 1, this%mesh%ncell_onP
+      this%fvol_init = this%fvol_init + this%fvof_o(:,j) * this%mesh%volume(j)
+    end do
 
   end subroutine vtrack_driver_init
 
@@ -236,6 +259,7 @@ contains
     logical, intent(in), optional :: initial
 
     integer :: i, j, k, f0, f1
+    real(r8) :: vol_sum(size(this%fvof_i,1))
 
     if (.not.allocated(this)) return
     if (this%fluids == 0) return
@@ -244,11 +268,14 @@ contains
 
     call get_vof_from_matl(this%fvof_i)
 
+    ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
+    call vtrack_update_mat_band()
+
     if(this%unsplit_advection) then
        ! Unsplit advection written to use face velocities, operates on faces.
        ! Cell centered velocity also needed to form node velocities for projection.
       call this%vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
-          this%fluids, this%void, dt)
+          this%fluids, this%void, dt, this%mat_band)
     else
       ! Split advection works on a per-cell level.
       ! copy face velocities into cell-oriented array
@@ -266,9 +293,16 @@ contains
       end do
     
       call this%vt%flux_volumes(this%flux_vel, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
-          this%fluids, this%void, dt)
+          this%fluids, this%void, dt, this%mat_band)
     end if
 
+    vol_sum = 0.0_r8
+    do j = 1, this%mesh%ncell_onP
+       vol_sum = vol_sum + this%fvof_o(:,j)*this%mesh%volume(j)
+    end do
+    ! QUESTION: Will need to paralle sum vof_sum. How?
+    print*,'Phase volumes', vol_sum
+    print*,'Phase volume change: ', vol_sum - this%fvol_init
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then
@@ -459,5 +493,61 @@ contains
     end select   
 
   end subroutine vtrack_velocity_overwrite
+
+
+  subroutine vtrack_update_mat_band()    
+
+    integer :: b, j, n, k, c
+    integer :: total_phases
+
+    total_phases = this%fluids + this%void + this%solid
+
+    ! Seed the initial 0-band that has interface
+    this%xmat_band_map(0,:) = 1
+    this%xmat_band_map(1,:) = 1
+    do j = 1,this%mesh%ncell
+      do k = 1,total_phases          
+        if(this%fvof_i(k,j) > epsilon(1.0_r8) .and. &
+           this%fvof_i(k,j) < 1.0_r8 - epsilon(1.0_r8)) then
+           this%mat_band(k,j) = 0
+           this%mat_band_map(this%xmat_band_map(1,k),k) = j            
+           this%xmat_band_map(1,k) = this%xmat_band_map(1,k) + 1
+        else
+           ! Initialize band positive inside phase, negative outside.
+           this%mat_band(k,j) = int(sign(real(band_map_width+1,r8), this%fvof_i(k,j)-0.5_r8))
+        end if
+      end do
+    end do
+
+    ! Now loop through and fill out band to +/- band_map_width
+    ! To fill in band b, loop though cells in b-1
+    do b = 1, band_map_width
+      do k = 1, total_phases
+        this%xmat_band_map(b+1,k) = this%xmat_band_map(b,k)
+        associate( cell_ind => this%mat_band_map(this%xmat_band_map(b-1,k):this%xmat_band_map(b,k)-1,k))
+          do c = 1,size(cell_ind)
+            j = cell_ind(c)   
+
+             associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+               do n = 1, size(cneigh)
+                 if(cneigh(n) /= 0) then
+                   if(abs(this%mat_band(k,cneigh(n))) .eq. band_map_width+1) then
+                     ! Not yet set
+                     this%mat_band(k,cneigh(n)) = sign(b, this%mat_band(k,cneigh(n)))
+                     this%mat_band_map(this%xmat_band_map(b+1,k),k) = cneigh(n)
+                     this%xmat_band_map(b+1,k) =  this%xmat_band_map(b+1,k) + 1                     
+                   end if
+                 end if
+
+               end do
+
+           end associate          
+
+          end do
+        end associate 
+      end do 
+    end do
+      
+  end subroutine vtrack_update_mat_band
 
 end module vtrack_driver

@@ -186,9 +186,11 @@ contains
       use zone_module, only: zone
       use property_module, only: get_density, get_user_material_id
       use matl_module, only: gather_vof
+      use vtrack_driver, only : vtrack_mat_band_view
 
       integer :: j, m, stat
       real(r8), allocatable :: rho(:), vof(:,:), xc(:,:)
+      real(r8), allocatable :: mat_band(:,:)
       character(8), allocatable :: name(:)
 
       !! Average cell density
@@ -217,6 +219,17 @@ contains
         call write_seq_cell_field (seq, vof, 'VOF', for_viz=.true., viz_name=name)
         deallocate(vof, name)
       end if
+
+      ! Volume fraction bands
+      if (nmat > 1) then
+        allocate(mat_band(nmat,ncells), name(nmat))        
+        mat_band = real(vtrack_mat_band_view(),r8)
+        do m = 1, nmat
+          write(name(m),'(a,i4.4)') 'Band', get_user_material_id(m)
+        end do
+        call write_seq_cell_field (seq, mat_band, 'Band', for_viz=.true., viz_name=name)
+        deallocate(mat_band, name)
+      end if           
 
       !! Cell centroids
       allocate(xc(ndim,ncells))
