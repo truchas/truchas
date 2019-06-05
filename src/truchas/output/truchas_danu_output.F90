@@ -186,11 +186,9 @@ contains
       use zone_module, only: zone
       use property_module, only: get_density, get_user_material_id
       use matl_module, only: gather_vof
-      use vtrack_driver, only : vtrack_mat_band_view
 
       integer :: j, m, stat
       real(r8), allocatable :: rho(:), vof(:,:), xc(:,:)
-      real(r8), allocatable :: mat_band(:,:)
       character(8), allocatable :: name(:)
 
       !! Average cell density
@@ -219,17 +217,6 @@ contains
         call write_seq_cell_field (seq, vof, 'VOF', for_viz=.true., viz_name=name)
         deallocate(vof, name)
       end if
-
-      ! Volume fraction bands
-      if (nmat > 1) then
-        allocate(mat_band(nmat,ncells), name(nmat))        
-        mat_band = real(vtrack_mat_band_view(),r8)
-        do m = 1, nmat
-          write(name(m),'(a,i4.4)') 'Band', get_user_material_id(m)
-        end do
-        call write_seq_cell_field (seq, mat_band, 'Band', for_viz=.true., viz_name=name)
-        deallocate(mat_band, name)
-      end if           
 
       !! Cell centroids
       allocate(xc(ndim,ncells))
@@ -286,11 +273,17 @@ contains
     end subroutine write_fluid_flow_data
 
     subroutine write_new_flow_data
+      use parameter_module, only : nmat
       use legacy_mesh_api, only: ndim, ncells, nfc
       use flow_driver
+      use property_module, only : get_user_material_id
+      use vtrack_driver, only : vtrack_mat_band_view      
 
+      integer :: m
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
       real(r8) :: fluxing_velocity(nfc,ncells)
+      real(r8), allocatable :: mat_band(:,:)
+      character(8), allocatable :: name(:)
 
       vec_cc => flow_vel_cc_view()
       call write_seq_cell_field(seq, vec_cc(:,1:ncells), 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
@@ -300,6 +293,18 @@ contains
 
       call get_legacy_flux_vel(fluxing_velocity)
       call write_seq_cell_field(seq, fluxing_velocity, 'Face_Vel', for_viz=.false.)
+
+      ! Volume fraction bands
+      if (nmat > 1) then
+        allocate(mat_band(nmat,ncells), name(nmat))        
+        mat_band = real(vtrack_mat_band_view(),r8)
+        do m = 1, nmat
+          write(name(m),'(a,i4.4)') 'Band', get_user_material_id(m)
+        end do
+        call write_seq_cell_field (seq, mat_band, 'Band', for_viz=.true., viz_name=name)
+        deallocate(mat_band, name)
+      end if           
+      
 
       !call flow_driver_dump_state
 
