@@ -45,7 +45,7 @@ contains
 
   end subroutine init
 
-  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt)
+  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_vof_band)
 
     use index_partitioning, only: gather_boundary
 
@@ -53,6 +53,7 @@ contains
     real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
+    integer, intent(in) :: a_vof_band(:,:)
 
     integer :: i, j, k, f0, f1
 
