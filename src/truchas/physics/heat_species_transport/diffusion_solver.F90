@@ -32,6 +32,7 @@ module diffusion_solver
   use truchas_logging_services
   use unstr_mesh_type
   use enthalpy_advector_class
+  use parameter_list_type
   implicit none
   private
 
@@ -72,8 +73,9 @@ module diffusion_solver
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
     class(enthalpy_advector), allocatable :: hadv
+    type(parameter_list) :: bc_params, species_bc_params
   end type ds_driver
-  type(ds_driver), save :: this
+  type(ds_driver), save, target :: this
   
   integer, parameter :: SOLVER1 = 1 ! the standard solver
   integer, parameter :: SOLVER2 = 2 ! special solver that works with transient void
@@ -82,16 +84,16 @@ contains
 
   subroutine read_ds_namelists (lun)
   
-    use ds_boundary_condition_input
-    use ds_interface_condition_input
+    use thermal_bc_namelist
+    use species_bc_namelist
     use ds_source_input, only: read_ds_source
     use ER_input
   
     integer, intent(in) :: lun
     
     call read_ds_namelist (lun)
-    call read_ds_boundary_condition (lun)
-    call read_ds_interface_condition (lun)
+    call read_thermal_bc_namelists(lun, this%bc_params)
+    call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
     
     call ERI_read_enclosure_radiation (lun)
@@ -386,6 +388,9 @@ contains
     use physics_module, only: flow, legacy_flow
     use enthalpy_advector1_type
     use enthalpy_advector2_type
+    use thermal_bc_factory1_type
+    use species_bc_factory1_type
+    use physical_constants, only: stefan_boltzmann, absolute_zero
 
     integer :: stat
     character(len=200) :: errmsg
@@ -450,7 +455,13 @@ contains
     
     select case (this%solver_type)
     case (SOLVER1)
-      this%mod1 => create_HTSD_model (this%disc, this%mmf, stat, errmsg)
+      block
+        type(thermal_bc_factory1) :: tbc_fac
+        type(species_bc_factory1) :: sbc_fac
+        call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
+        call sbc_fac%init(this%mesh, this%species_bc_params)
+        this%mod1 => create_HTSD_model(this%disc, this%mmf, tbc_fac, sbc_fac, stat, errmsg)
+      end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
       if (this%have_species_diffusion) this%sd_source => this%mod1%sd%source
@@ -458,7 +469,11 @@ contains
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       
     case (SOLVER2)
-      this%mod2 => create_FHT_model (this%disc, this%mmf, stat, errmsg)
+      block
+        type(thermal_bc_factory1) :: bc_fac
+        call bc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
+        this%mod2 => create_FHT_model (this%disc, this%mmf, bc_fac, stat, errmsg)
+      end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
       this%sol2 => create_FHT_solver(this%mmf, this%mod2, stat, errmsg)

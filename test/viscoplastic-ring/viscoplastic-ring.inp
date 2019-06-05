@@ -66,14 +66,11 @@ define the boundary conditions:
 
 z = 0.0 insulated with zero z displacement (symmetry plane)
 
-&DS_BOUNDARY_CONDITION
-
-    name           = 'bottom surface'
-    variable       = 'temperature'
-    condition      = 'flux'
-    data_constant  = 0.0
-    face_set_ids   = 6
-
+&THERMAL_BC
+  name = 'bottom surface'
+  type = 'flux'
+  face_set_ids = 6
+  flux = 0.0
 /
 
 &BC
@@ -88,22 +85,21 @@ z = 0.0 insulated with zero z displacement (symmetry plane)
 
 z = 0.0127 heat transfer and all traction components zero (default)
 
-&DS_BOUNDARY_CONDITION
-    name          = 'top surface'
-    variable      = 'temperature'
-    condition     = 'HTC'
-    data_constant = 1.0e2, 2.98e+02
-    face_set_ids  = 5
+&THERMAL_BC
+  name = 'top surface'
+  type = 'htc'
+  face_set_ids  = 5
+  htc = 1.0e2
+  ambient_temp = 2.98e+02
 /
 
 x = 0.0 insulated with zero x displacement (symmetry plane)
 
-&DS_BOUNDARY_CONDITION
-    name          = 'x=0 symmetry plane'
-    variable      = 'temperature'
-    condition     = 'flux'
-    data_constant = 0.0
-    face_set_ids  = 3
+&THERMAL_BC
+  name = 'x=0 symmetry plane'
+  type = 'flux'
+  face_set_ids  = 3
+  flux = 0.0
 /
 
 &BC
@@ -118,14 +114,11 @@ x = 0.0 insulated with zero x displacement (symmetry plane)
 
 y = 0.0 insulated with zero y displacement (symmetry plane)
 
-&DS_BOUNDARY_CONDITION
-
-    name = 'y=0 symmetry plane'
-    variable = 'temperature'
-    condition = 'flux'
-    data_constant = 0.0
-    face_set_ids  = 2
-
+&THERMAL_BC
+  name = 'y=0 symmetry plane'
+  type = 'flux'
+  face_set_ids = 2
+  flux = 0.0
 /
 
 &BC
@@ -140,26 +133,21 @@ y = 0.0 insulated with zero y displacement (symmetry plane)
 
 Outer radius = 0.0508 heat transfer and all tractions zero
 
-&DS_BOUNDARY_CONDITION
-
-    name           = 'outer radius'
-    variable       = 'temperature'
-    condition      = 'HTC'
-    data_constant  = 1.0e2, 2.98e+02
-    face_set_ids   = 4
-
+&THERMAL_BC
+  name = 'outer radius'
+  type = 'htc'
+  face_set_ids = 4
+  htc = 1.0e2
+  ambient_temp = 2.98e+02
 /
 
 Interface between plug and ring
 
-&DS_INTERFACE_CONDITION
-
-    name           = 'plug/ring interface'
-    variable       = 'temperature'
-    condition      = 'HTC'
-    data_constant  = 1.0e3
-    face_set_ids   = 3
- 
+&THERMAL_BC
+  name = 'plug/ring interface'
+  type = 'interface-htc'
+  htc = 1.0e3
+  face_set_ids = 3
 /
 
 &BC

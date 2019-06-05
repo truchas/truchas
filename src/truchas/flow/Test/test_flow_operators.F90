@@ -13,7 +13,7 @@ program test_pressure_poisson
   use unstr_mesh_type
   use scalar_func_class
   use scalar_func_tools
-  use bndry_func_class
+  use bndry_func1_class
   implicit none
 
   character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
@@ -87,7 +87,7 @@ contains
     integer, intent(in) :: id
     type(unstr_mesh), intent(in) :: mesh
     class(scalar_func), intent(in) :: init_field, solution_x, solution_y, solution_z
-    class(bndry_func), intent(inout) :: dirichlet_bc, flux_bc
+    class(bndry_func1), intent(inout) :: dirichlet_bc, flux_bc
     !-
     real(r8), allocatable :: x(:), g(:,:)
     real(r8) :: args(0:3), linf_x, linf_y, linf_z

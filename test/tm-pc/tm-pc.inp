@@ -52,22 +52,20 @@ x = 0.0e+00 boundary
 
 /
 
-&DS_BOUNDARY_CONDITION
-  NAME = 'x=0'
-  VARIABLE = 'temperature'
-  CONDITION = 'flux'
-  DATA_CONSTANT = 0.0
-  Face_Set_IDs = 1
+&THERMAL_BC
+  name = 'x=0'
+  type = 'flux'
+  face_set_ids = 1
+  flux = 0.0
 /
 
 x = 2.0e-2 boundary
 
-&DS_BOUNDARY_CONDITION
-  NAME = 'x=2.0e-2'
-  VARIABLE = 'temperature'
-  CONDITION = 'flux'
-  DATA_CONSTANT = 0.0
-  Face_Set_IDs = 2
+&THERMAL_BC
+  name = 'x=2.0e-2'
+  type = 'flux'
+  face_set_ids = 2
+  flux = 0.0
 /
 
 &BC
@@ -92,22 +90,20 @@ y = 0.0e+00 boundary
 
 /
 
-&DS_BOUNDARY_CONDITION
-  NAME = 'y=0'
-  VARIABLE = 'temperature'
-  CONDITION = 'flux'
-  DATA_CONSTANT = 0.0
-  Face_Set_IDs = 3
+&THERMAL_BC
+  name = 'y=0'
+  type = 'flux'
+  face_set_ids = 3
+  flux = 0.0
 /
 
 y = 3.0e-2 boundary
 
-&DS_BOUNDARY_CONDITION
-  NAME = 'y=3.0e-2'
-  VARIABLE = 'temperature'
-  CONDITION = 'flux'
-  DATA_CONSTANT = 0.0
-  Face_Set_IDs = 4
+&THERMAL_BC
+  name = 'y=3.0e-2'
+  type = 'flux'
+  face_set_ids = 4
+  flux = 0.0
 /
 
 &BC
@@ -132,22 +128,20 @@ z = 0.0e+00 boundary
 
 /
 
-&DS_BOUNDARY_CONDITION
-  NAME = 'z=0'
-  VARIABLE = 'temperature'
-  CONDITION = 'dirichlet'
-  DATA_CONSTANT = 300.0
-  Face_Set_IDs = 5
+&THERMAL_BC
+  name = 'z=0'
+  type = 'temperature'
+  face_set_ids = 5
+  temp = 300.0
 /
 
 z = 4.0 boundary
 
-&DS_BOUNDARY_CONDITION
-  NAME = 'z=4'
-  VARIABLE = 'temperature'
-  CONDITION = 'flux'
-  DATA_CONSTANT = 0.0
-  Face_Set_IDs = 6
+&THERMAL_BC
+  name = 'z=4'
+  type = 'flux'
+  face_set_ids = 6
+  flux = 0.0
 /
 
 define the material properties (aluminum, SI units)

@@ -46,20 +46,18 @@ Parameters conspire to yield a flux of 1.0 at temperature 3.0
   dt_grow = 10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'top'
-  variable = 'temperature'
-  condition = 'flux'
+  type = 'flux'
   face_set_ids = 1
-  data_constant = -1.0
+  flux = -1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'adiabatic'
-  variable = 'temperature'
-  condition = 'flux'
+  type = 'flux'
   face_set_ids = 2
-  data_constant = 0.0
+  flux = 0.0
 /
 
 &BODY

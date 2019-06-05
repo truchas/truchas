@@ -117,44 +117,40 @@ T = 1 + 0.125*x
   poly_exponents(1,:) = 0, 1
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'channel ends, front side'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 1, 2, 3
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'back-side external HTC'
-  variable = 'temperature'
-  condition = 'HTC'
   face_set_ids = 4
-  data_constant = 0.2, 0.0
+  type = 'htc'
+  htc = 0.2
+  ambient_temp = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'wall bodies'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 7
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'lower channel-wall interface'
-  variable = 'temperature'
-  condition = 'HTC'
   face_set_ids = 5
-  data_constant = 20.0
+  type = 'interface-htc'
+  htc = 20.0
 /
 
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'upper channel-wall interface'
-  variable = 'temperature'
-  condition = 'HTC'
   face_set_ids = 6
-  data_constant = 0.2
+  type = 'interface-htc'
+  htc = 0.2
 /
 
 &MATERIAL

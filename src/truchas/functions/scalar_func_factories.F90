@@ -64,7 +64,7 @@ module scalar_func_factories
 
 contains
 
-  subroutine alloc_const_scalar_func (f, const)
+  subroutine alloc_const_scalar_func(f, const)
     use const_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: const
@@ -72,7 +72,7 @@ contains
   end subroutine alloc_const_scalar_func
 
 #ifdef ENABLE_DYNAMIC_LOADING
-  subroutine alloc_dl_scalar_func (f, lib, sym, p)
+  subroutine alloc_dl_scalar_func(f, lib, sym, p)
     use dl_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     character(*), intent(in) :: lib, sym
@@ -81,7 +81,7 @@ contains
   end subroutine alloc_dl_scalar_func
 #endif
 
-  subroutine alloc_fptr_scalar_func (f, fptr, p)
+  subroutine alloc_fptr_scalar_func(f, fptr, p)
     use fptr_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     procedure(fptr_func) :: fptr
@@ -89,7 +89,7 @@ contains
     allocate(f, source=fptr_scalar_func(fptr, p))
   end subroutine alloc_fptr_scalar_func
 
-  subroutine alloc_mpoly_scalar_func (f, c, e, x0)
+  subroutine alloc_mpoly_scalar_func(f, c, e, x0)
     use mpoly_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: c(:)
@@ -98,7 +98,7 @@ contains
     allocate(f, source=mpoly_scalar_func(c, e, x0))
   end subroutine alloc_mpoly_scalar_func
 
-  subroutine alloc_poly_scalar_func (f, c, e, x0)
+  subroutine alloc_poly_scalar_func(f, c, e, x0)
     use poly_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: c(:)
@@ -107,7 +107,7 @@ contains
     allocate(f, source=poly_scalar_func(c, e, x0))
   end subroutine alloc_poly_scalar_func
 
-  subroutine alloc_tabular_scalar_func (f, x, y, dim, smooth, extrap)
+  subroutine alloc_tabular_scalar_func(f, x, y, dim, smooth, extrap)
     use tabular_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: x(:), y(:)
@@ -117,7 +117,7 @@ contains
     allocate(f, source=tabular_scalar_func(x, y, dim, smooth, extrap))
   end subroutine alloc_tabular_scalar_func
 
-  subroutine alloc_tabular_ad_scalar_func (f, df, x0, y0)
+  subroutine alloc_tabular_ad_scalar_func(f, df, x0, y0)
     use tabular_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     type(tabular_scalar_func), intent(in) :: df
@@ -126,14 +126,14 @@ contains
   end subroutine alloc_tabular_ad_scalar_func
 
   ! A temporary stand-in (?) until we move to parameter list driven instantiation
-  subroutine alloc_sstep_scalar_func (f, x0, y0, x1, y1)
+  subroutine alloc_sstep_scalar_func(f, x0, y0, x1, y1)
     use fptr_scalar_func_type
     class(scalar_func), allocatable, intent(out) :: f
     real(r8), intent(in) :: x0, y0, x1, y1
-    call alloc_fptr_scalar_func (f, smooth_ramp, [x0, y0, x1, y1])
+    call alloc_fptr_scalar_func(f, smooth_ramp, [x0, y0, x1, y1])
   end subroutine alloc_sstep_scalar_func
 
-  function new_const_scalar_func (const) result (f)
+  function new_const_scalar_func(const) result(f)
     use const_scalar_func_type
     real(r8), intent(in) :: const
     class(scalar_func), pointer :: f
@@ -141,7 +141,7 @@ contains
   end function new_const_scalar_func
 
 #ifdef ENABLE_DYNAMIC_LOADING
-  function new_dl_scalar_func (lib, sym, p) result (f)
+  function new_dl_scalar_func(lib, sym, p) result(f)
     use dl_scalar_func_type
     character(*), intent(in) :: lib, sym
     real(r8), intent(in), optional :: p(:)
@@ -150,7 +150,7 @@ contains
   end function new_dl_scalar_func
 #endif
 
-  function new_fptr_scalar_func (fptr, p) result (f)
+  function new_fptr_scalar_func(fptr, p) result(f)
     use fptr_scalar_func_type
     procedure(fptr_func) :: fptr
     real(r8), intent(in), optional :: p(:)
@@ -158,7 +158,7 @@ contains
     allocate(f, source=fptr_scalar_func(fptr, p))
   end function new_fptr_scalar_func
 
-  function new_mpoly_scalar_func (c, e, x0) result (f)
+  function new_mpoly_scalar_func(c, e, x0) result(f)
     use mpoly_scalar_func_type
     real(r8), intent(in) :: c(:)
     integer,  intent(in) :: e(:,:)
@@ -167,7 +167,7 @@ contains
     allocate(f, source=mpoly_scalar_func(c, e, x0))
   end function new_mpoly_scalar_func
 
-  function new_poly_scalar_func (c, e, x0) result (f)
+  function new_poly_scalar_func(c, e, x0) result(f)
     use poly_scalar_func_type
     real(r8), intent(in) :: c(:)
     integer,  intent(in) :: e(:)
@@ -176,7 +176,7 @@ contains
     allocate(f, source=poly_scalar_func(c, e, x0))
   end function new_poly_scalar_func
 
-  function new_tabular_scalar_func (x, y, dim, smooth, extrap) result (f)
+  function new_tabular_scalar_func(x, y, dim, smooth, extrap) result(f)
     use tabular_scalar_func_type
     real(r8), intent(in) :: x(:), y(:)
     integer, intent(in), optional :: dim
@@ -186,7 +186,7 @@ contains
     allocate(f, source=tabular_scalar_func(x, y, dim, smooth, extrap))
   end function new_tabular_scalar_func
 
-  function new_tabular_ad_scalar_func (df, x0, y0) result (f)
+  function new_tabular_ad_scalar_func(df, x0, y0) result(f)
     use tabular_scalar_func_type
     type(tabular_scalar_func), intent(in) :: df
     real(r8), intent(in) :: x0, y0
@@ -197,7 +197,7 @@ contains
   !! A higher-level constructors that takes a parameter list
   !! that describes the function to be instantiated.
 
-  function new_scalar_func (params) result (f)
+  function new_scalar_func(params) result(f)
 
     use parameter_list_type
     type(parameter_list), intent(inout) :: params
@@ -208,10 +208,10 @@ contains
     real(r8), allocatable :: coef(:), x(:), y(:), x0_def(:), x02(:)
     character(:), allocatable :: ftype
 
-    call params%get ('type', ftype)
+    call params%get('type', ftype)
     select case (ftype)
     case ('constant')
-      call params%get ('value', v0)
+      call params%get('value', v0)
       f => new_const_scalar_func(v0)
     case ('polynomial')
       call params%get ('poly-coef', coef)
@@ -231,15 +231,15 @@ contains
         INSIST(.false.)
       end if
     case ('tabular')
-      call params%get ('tabular x', x)
-      call params%get ('tabular y', y)
+      call params%get('tabular x', x)
+      call params%get('tabular y', y)
       ASSERT(size(x) == size(y))
       f => new_tabular_scalar_func(x, y)
     case ('smooth ramp')
-      call params%get ('begin time', t0)
-      call params%get ('begin value', v0)
-      call params%get ('end time', t1)
-      call params%get ('end value', v1)
+      call params%get('begin time', t0)
+      call params%get('begin value', v0)
+      call params%get('end time', t1)
+      call params%get('end value', v1)
       f => new_fptr_scalar_func(smooth_ramp,[t0,v0,t1,v1])
     case default
       INSIST(.false.)
@@ -249,7 +249,7 @@ contains
   end function new_scalar_func
 
 
-  subroutine alloc_scalar_func (f, params)
+  subroutine alloc_scalar_func(f, params)
 
     use parameter_list_type
     class(scalar_func), allocatable, intent(out) :: f
@@ -260,11 +260,11 @@ contains
     real(r8), allocatable :: coef(:), x(:), y(:), x0_def(:), x02(:)
     character(:), allocatable :: ftype
 
-    call params%get ('type', ftype)
+    call params%get('type', ftype)
     select case (ftype)
     case ('constant')
-      call params%get ('value', v0)
-      call alloc_const_scalar_func (f, v0)
+      call params%get('value', v0)
+      call alloc_const_scalar_func(f, v0)
     case ('polynomial')
       call params%get('poly-coef', coef)
       if (params%is_vector('poly-powers')) then
@@ -283,16 +283,16 @@ contains
         INSIST(.false.)
       end if
     case ('tabular')
-      call params%get ('tabular x', x)
-      call params%get ('tabular y', y)
+      call params%get('tabular x', x)
+      call params%get('tabular y', y)
       ASSERT(size(x) == size(y))
-      call alloc_tabular_scalar_func (f, x, y)
+      call alloc_tabular_scalar_func(f, x, y)
     case ('smooth ramp')
-      call params%get ('begin time', t0)
-      call params%get ('begin value', v0)
-      call params%get ('end time', t1)
-      call params%get ('end value', v1)
-      call alloc_fptr_scalar_func (f, smooth_ramp,[t0,v0,t1,v1])
+      call params%get('begin time', t0)
+      call params%get('begin value', v0)
+      call params%get('end time', t1)
+      call params%get('end value', v1)
+      call alloc_fptr_scalar_func(f, smooth_ramp,[t0,v0,t1,v1])
     case default
       INSIST(.false.)
     end select
@@ -300,7 +300,7 @@ contains
 
   end subroutine alloc_scalar_func
 
-  real(r8) function smooth_ramp (x, p)
+  real(r8) function smooth_ramp(x, p)
     real(r8), intent(in) :: x(*), p(*)
     real(r8) :: s
     associate (t => x(1), t0 => p(1), v0 => p(2), t1 => p(3), v1 => p(4))

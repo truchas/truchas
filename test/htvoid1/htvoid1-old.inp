@@ -110,12 +110,11 @@ Remainder of the channel is void
   velocity = 3*0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'whole boundary'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 1, 2, 3, 4, 5, 6
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
 &MATERIAL

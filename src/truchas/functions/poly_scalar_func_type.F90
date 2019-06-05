@@ -18,7 +18,7 @@
 
 module poly_scalar_func_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
@@ -41,7 +41,7 @@ module poly_scalar_func_type
 contains
 
   !! Constructor for POLY_SCALAR_FUNC objects.
-  function poly_scalar_func_value (c, e, x0) result (f)
+  function poly_scalar_func_value(c, e, x0) result(f)
 
     real(r8), intent(in) :: c(:)
     integer,  intent(in) :: e(:)
@@ -66,7 +66,7 @@ contains
 
   end function poly_scalar_func_value
 
-  function eval (this, x) result (fx)
+  function eval(this, x) result(fx)
 
     class(poly_scalar_func), intent(in) :: this
     real(r8), intent(in) :: x(:)

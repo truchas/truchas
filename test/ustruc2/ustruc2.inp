@@ -73,28 +73,26 @@ Graphite mold with a thermal gradient
   poly_exponents(:,2) = 0, 0, 1
 /
 
-&DS_BOUNDARY_CONDITION
-  name	        = 'symmetry planes'
-  variable      = 'temperature'
-  face_set_ids  = 1
-  condition     = 'flux'
-  data_constant = 0.0
+&THERMAL_BC
+  name = 'symmetry planes'
+  type = 'flux'
+  face_set_ids = 1
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
-  name	        = 'mold surface'
-  variable      = 'temperature'
-  face_set_ids  = 2, 3, 4
-  condition     = 'HTC'
-  data_constant = 100.0, 300.0
+&THERMAL_BC
+  name = 'mold surface'
+  type = 'htc'
+  face_set_ids = 2, 3, 4
+  htc = 100.0
+  ambient_temp = 300.0
 /
 
-&DS_INTERFACE_CONDITION
-  name          = 'metal/mold'
-  variable      = 'temperature'
-  face_set_ids  = 5
-  condition     = 'HTC'
-  data_constant = 1500.0
+&THERMAL_BC
+  name = 'metal/mold'
+  face_set_ids = 5
+  type = 'interface-htc'
+  htc = 1500.0
 /
 
 ################################################################################

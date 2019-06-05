@@ -37,7 +37,7 @@
 !!  list.  The passed F must be allocatable, and the procedure moves the
 !!  allocation from F to an internal list object; F is returned unallocated.
 !!
-!!  The subroutine SCALAR_FUNC_LIST_TO_BOX_ARRAY (LIST, ARRAY) converts the
+!!  The subroutine SCALAR_FUNC_LIST_TO_BOX_ARRAY(LIST, ARRAY) converts the
 !!  SCALAR_FUNC_LIST object LIST into a rank-1 SCALAR_FUNC_BOX array object.
 !!  ARRAY must be allocatable; it is allocated to the correct size by the
 !!  subroutine.  LIST is returned empty, the allocation for its SCALAR_FUNC
@@ -52,7 +52,7 @@
 !!  All vectors V must have the same size; the first vector appended
 !!  establishes that size.
 !!
-!!  The subroutine SCALAR_FUNC_VLIST_TO_BOX_ARRAY (VLIST, ARRAY) converts the
+!!  The subroutine SCALAR_FUNC_VLIST_TO_BOX_ARRAY(VLIST, ARRAY) converts the
 !!  SCALAR_FUNC_VLIST object VLIST into a rank-2 SCALAR_FUNC_BOX array object.
 !!  ARRAY must be allocatable; is is allocated to the correct size by the
 !!  subroutine.  VLIST is returned empty, the allocation for its SCALAR_FUNC
@@ -108,7 +108,7 @@ module scalar_func_containers
 
 contains
 
-  function scalar_func_box_eval (this, x) result (fx)
+  function scalar_func_box_eval(this, x) result(fx)
     use kinds, only: r8
     class(scalar_func_box), intent(in) :: this
     real(r8), intent(in) :: x(:)
@@ -117,7 +117,7 @@ contains
   end function scalar_func_box_eval
 
   !! Final subroutine for SCALAR_FUNC_LIST objects.
-  subroutine scalar_func_list_delete (this)
+  subroutine scalar_func_list_delete(this)
     type(scalar_func_list), intent(inout) :: this
     type(list_func), pointer :: rest
     do while (associated(this%first))
@@ -127,7 +127,7 @@ contains
     end do
   end subroutine
 
-  subroutine scalar_func_list_append (this, f)
+  subroutine scalar_func_list_append(this, f)
     class(scalar_func_list) :: this
     class(scalar_func), allocatable :: f
     type(list_func), pointer :: last
@@ -143,11 +143,11 @@ contains
       allocate(this%first)
       last => this%first
     end if
-    call move_alloc (f, last%f)
+    call move_alloc(f, last%f)
     this%n = this%n + 1
   end subroutine scalar_func_list_append
 
-  subroutine scalar_func_list_to_box_array (list, array)
+  subroutine scalar_func_list_to_box_array(list, array)
     type(scalar_func_list) :: list
     type(scalar_func_box), allocatable, intent(out) :: array(:)
     integer :: j
@@ -155,7 +155,7 @@ contains
     allocate(array(list%n))
     do j = 1, list%n
       ASSERT(associated(list%first))
-      call move_alloc (list%first%f, array(j)%f)
+      call move_alloc(list%first%f, array(j)%f)
       rest => list%first%next
       deallocate(list%first)
       list%first => rest
@@ -165,7 +165,7 @@ contains
   end subroutine scalar_func_list_to_box_array
 
   !! Final subroutine for SCALAR_FUNC_VLIST objects.
-  subroutine scalar_func_vlist_delete (this)
+  subroutine scalar_func_vlist_delete(this)
     type(scalar_func_vlist), intent(inout) :: this
     type(vlist_func), pointer :: rest
     do while (associated(this%first))
@@ -175,7 +175,7 @@ contains
     end do
   end subroutine
 
-  subroutine scalar_func_vlist_append (this, v)
+  subroutine scalar_func_vlist_append(this, v)
     class(scalar_func_vlist) :: this
     type(scalar_func_box), allocatable :: v(:)
     type(vlist_func), pointer :: last
@@ -193,11 +193,11 @@ contains
       allocate(this%first)
       last => this%first
     end if
-    call move_alloc (v, last%v)
+    call move_alloc(v, last%v)
     this%n = this%n + 1
   end subroutine scalar_func_vlist_append
 
-  subroutine scalar_func_vlist_to_box_array (vlist, array)
+  subroutine scalar_func_vlist_to_box_array(vlist, array)
     type(scalar_func_vlist) :: vlist
     type(scalar_func_box), allocatable, intent(out) :: array(:,:)
     integer :: i, j
@@ -206,7 +206,7 @@ contains
     do j = 1, vlist%n
       ASSERT(associated(vlist%first))
       do i = 1, vlist%m
-        call move_alloc (vlist%first%v(i)%f, array(i,j)%f)
+        call move_alloc(vlist%first%v(i)%f, array(i,j)%f)
       end do
       rest => vlist%first%next
       deallocate(vlist%first)

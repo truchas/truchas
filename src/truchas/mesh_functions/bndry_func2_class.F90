@@ -14,6 +14,26 @@
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! PROGRAMMING INTERFACE
+!!
+!!  The base class defines three public array components, INDEX(:), VALUE(:),
+!!  and DERIV(:). INDEX is a list of integer indices and VALUE and DERIV are
+!!  corresponding lists of real values.  While this is a fairly generic way of
+!!  describing a function and its derivative on a finite integer set, the
+!!  expectation is that the indices refer to mesh faces or nodes on the
+!!  boundary of the mesh.  Application code is expected to use polymorphic
+!!  variables of this type, and not work directly with its extensions.  The
+!!  type bound subroutine COMPUTE_VALUE(T, VAR) is expected to fill the VALUE
+!!  array with the function values at time T and state variable value VAR. The
+!!  type bound subroutine COMPUTE_DERIV(T, VAR) is expected to fill the DERIV
+!!  array with the function derivative with respect to the state variable at
+!!  time T and state variable value VAR. The COMPUTE(T, VAR) fills both arrays.
+!!  It is acceptable for implementations of COMPUTE_VALUE and COMPUTE_DERIV to
+!!  simply be renames of COMPUTE; they exist for cases where computation of the
+!!  function value and its derivative are sufficiently different and costly to
+!!  warrant having separate calls when only one array or the other is needed.
+!!
 
 module bndry_func2_class
 

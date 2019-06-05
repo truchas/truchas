@@ -85,20 +85,18 @@ the flow solver.
   verbose_stepping   = .true.
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'adiabatic'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 1, 2, 3
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'wall'
-  variable = 'temperature'
-  condition = 'dirichlet'
   face_set_ids = 4
-  data_constant = 1.0
+  type = 'temperature'
+  temp = 1.0
 /
 
 &BODY

@@ -11,13 +11,20 @@ set(MESH_FUNC_SOURCE_FILES)
 set(MESH_FUNC_TARGET_NAME ProcessTruchasMeshFunctionFiles)
 
 set(MESH_FUNC_FILES
-    mesh_functions/bndry_func_class.F90
     mesh_functions/bndry_vfunc_class.F90
-    mesh_functions/bndry_func2_class.F90
-    mesh_functions/bndry_face_func_type.F90
     mesh_functions/bndry_face_vfunc_type.F90
+    mesh_functions/bndry_func1_class.F90
+    mesh_functions/bndry_func2_class.F90
+    mesh_functions/intfc_func2_class.F90
+    mesh_functions/bndry_face_func_type.F90
+    #mesh_functions/bc_factory_type.F90
     mesh_functions/bndry_face_group_builder_type.F90
+    mesh_functions/intfc_link_group_builder_type.F90
     mesh_functions/cell_group_builder_type.F90
+    mesh_functions/htc_bndry_func_type.F90
+    mesh_functions/rad_bndry_func_type.F90
+    mesh_functions/htc_intfc_func_type.F90
+    mesh_functions/rad_intfc_func_type.F90
 )
 
 set(MESH_FUNC_FPP_FLAGS

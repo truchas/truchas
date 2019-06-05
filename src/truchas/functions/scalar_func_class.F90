@@ -14,7 +14,7 @@
 
 module scalar_func_class
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
@@ -24,7 +24,7 @@ module scalar_func_class
   end type scalar_func
 
   abstract interface
-    function sf_eval (this, x) result (fx)
+    function sf_eval(this, x) result(fx)
       import :: scalar_func, r8
       class(scalar_func), intent(in) :: this
       real(r8), intent(in) :: x(:)

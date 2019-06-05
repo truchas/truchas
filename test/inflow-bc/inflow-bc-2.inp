@@ -62,12 +62,11 @@ This test uses the FHT solver for heat transport
   verbose_stepping = .true.
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'all'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 1, 2, 3
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
 Entirely void initially

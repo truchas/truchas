@@ -90,22 +90,20 @@ an internal HTC condition.
 !! INTERNAL HTC BETWEEN SOLID AND GAS REGIONS.
 !! ADDS TO THE RADIATIVE HEAT FLUX FROM THE SOLID.
 
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'solid/gas interface'
-  variable = 'temperature'
-  condition = 'htc'
-  data_constant = 0.001
+  type = 'interface-htc'
+  htc = 0.001
   face_set_ids = 5        ! references interface_side_sets in MESH
 /
 
 !! NO HEAT FLUX ON SYMMETRY PLANES.
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
+  type = 'flux'
   face_set_ids = 1
+  flux = 0.0
 /
 
 !! SPATIALLY VARYING HEAT SOURCE IN THE SOLID REGION.

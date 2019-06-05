@@ -70,28 +70,25 @@ This test uses the HTSD solver for heat transport
   verbose_stepping = .true.
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'inlet'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 1
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'outlet'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 2
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'sides'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 3
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
 &BODY

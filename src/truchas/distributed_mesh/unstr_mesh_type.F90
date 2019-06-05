@@ -165,6 +165,7 @@ module unstr_mesh_type
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: check_bndry_face_set
+    procedure :: get_link_set_bitmask
     procedure :: get_link_set_ids
     procedure :: init_cell_centroid
     procedure :: init_face_centroid
@@ -488,6 +489,35 @@ contains
     call TLS_info(repeat('*',79))
 
   end subroutine check_bndry_face_set
+
+  !! Returns a scalar bit mask for use in bit operations with the link_set_mask
+  !! array component.  The corresponding bit is set for each link set ID given
+  !! in the array SETIDS.  STAT returns a non-zero value if an unknown link set
+  !! ID is specified, and the optional allocatable deferred-length character
+  !! ERRMSG is assigned an explanatory message if present.
+
+  subroutine get_link_set_bitmask (this, setids, bitmask, stat, errmsg)
+    use string_utilities, only: i_to_c
+    class(unstr_mesh), intent(in) :: this
+    integer, intent(in) :: setids(:)
+    type(bitfield), intent(out) :: bitmask
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    integer :: i, j
+    bitmask = ZERO_BITFIELD
+    do i = 1, size(setids)
+      do j = size(this%link_set_id), 1, -1
+        if (setids(i) == this%link_set_id(j)) exit
+      end do
+      if (j == 0) then
+        stat = 1
+        if (present(errmsg)) errmsg = 'unknown link set ID: ' // i_to_c(setids(i))
+        return
+      end if
+      bitmask = ibset(bitmask, j)
+    end do
+    stat = 0
+  end subroutine get_link_set_bitmask
 
   subroutine get_link_set_ids(this, mask, setids)
 

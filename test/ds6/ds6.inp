@@ -61,60 +61,57 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
   source_constant = 9.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'T-inner'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 1
+  type = 'flux'
+  face_set_ids = 1
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'T-outer'
-  variable = 'temperature'
-  condition = 'dirichlet'
-  data_constant = 2.0
-  Face_Set_IDs = 2
+  type = 'temperature'
+  face_set_ids = 2
+  temp = 2.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'T-symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  type = 'flux'
+  face_set_ids = 3
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C1-inner/outer'
-  variable = 'concentration1'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 1, 2
+  face_set_ids = 1, 2
+  comp = 1
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C1-symmetry planes'
-  variable = 'concentration1'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  face_set_ids = 3
+  comp = 1
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C2-inner/outer'
-  variable = 'concentration2'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 1, 2
+  face_set_ids = 1, 2
+  comp = 2
+  type = 'flux'
+  flux = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&SPECIES_BC
   name = 'C2-symmetry planes'
-  variable = 'concentration2'
-  condition = 'flux'
-  data_constant = 0.0
-  Face_Set_IDs = 3
+  face_set_ids = 3
+  comp = 2
+  type = 'flux'
+  flux = 0.0
 /
 
 &BODY

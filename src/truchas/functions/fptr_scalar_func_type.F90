@@ -17,7 +17,7 @@
 
 module fptr_scalar_func_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
@@ -32,7 +32,7 @@ module fptr_scalar_func_type
   public :: fptr_func
 
   abstract interface
-    function fptr_func (x, p) result (fx)
+    function fptr_func(x, p) result(fx)
       import r8
       real(r8), intent(in) :: x(*), p(*)
       real(r8) :: fx
@@ -47,7 +47,7 @@ module fptr_scalar_func_type
 contains
 
   !! Constructor for FPTR_SCALAR_FUNC objects.
-  function fptr_scalar_func_value (fptr, p) result (f)
+  function fptr_scalar_func_value(fptr, p) result(f)
     procedure(fptr_func) :: fptr
     real(r8), intent(in), optional :: p(:)
     type(fptr_scalar_func) :: f
@@ -59,7 +59,7 @@ contains
     end if
   end function fptr_scalar_func_value
 
-  function eval (this, x) result (fx)
+  function eval(this, x) result(fx)
     class(fptr_scalar_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx

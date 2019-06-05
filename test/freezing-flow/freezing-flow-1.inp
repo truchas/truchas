@@ -60,12 +60,11 @@ solid with no fluid present.
   dt_grow = 5.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'left end'
-  variable = 'temperature'
-  condition = 'dirichlet'
   face_set_ids = 1
-  data_function = 'end-temp'
+  type = 'temperature'
+  temp_func = 'end-temp'
 /
 
 &FUNCTION
@@ -76,12 +75,11 @@ solid with no fluid present.
  tabular_interp = 'akima'
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'adiabatic'
-  variable = 'temperature'
-  condition = 'flux'
   face_set_ids = 2, 3
-  data_constant = 0.0
+  type = 'flux'
+  flux = 0.0
 /
 
 Liquid everywhere

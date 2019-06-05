@@ -49,36 +49,32 @@ ANALYTIC SOLUTION -- USE FOR DIRICHLET BC
   poly_exponents(:,4) = 0 0 0 1
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'right/back/top'
-  variable = 'temperature'
-  condition = 'dirichlet'
+  type = 'temperature'
   face_set_ids = 2, 4, 6
-  data_function = 'T-soln'
+  temp_func = 'T-soln'
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'left'
-  variable = 'temperature'
-  condition = 'flux'
+  type = 'flux'
   face_set_ids = 1
-  data_constant = 1.0
+  flux = 1.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'front'
-  variable = 'temperature'
-  condition = 'flux'
+  type = 'flux'
   face_set_ids = 3
-  data_constant = 2.0
+  flux = 2.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'bottom'
-  variable = 'temperature'
-  condition = 'flux'
+  type = 'flux'
   face_set_ids = 5
-  data_constant = 3.0
+  flux = 3.0
 /
 
 &BODY

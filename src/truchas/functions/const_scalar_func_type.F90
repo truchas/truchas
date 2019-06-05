@@ -17,7 +17,7 @@
 
 module const_scalar_func_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
@@ -37,13 +37,13 @@ module const_scalar_func_type
 contains
 
   !! Constructor for CONST_SCALAR_FUNC objects.
-  function const_scalar_func_value (const) result (f)
+  function const_scalar_func_value(const) result(f)
     real(r8), intent(in) :: const
     type(const_scalar_func) :: f
     f%const = const
   end function const_scalar_func_value
 
-  function eval (this, x) result (fx)
+  function eval(this, x) result(fx)
     class(const_scalar_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx

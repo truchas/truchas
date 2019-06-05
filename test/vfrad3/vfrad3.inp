@@ -61,32 +61,30 @@ core.
 
 !! DUMMY INTERNAL HTC ON SHELL/CASTING, CORE/CASTING INTERFACE
 
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'casting/shell,core'
-  variable = 'temperature'
-  condition = 'htc'
-  data_constant = 0.0
+  type = 'interface-htc'
+  htc = 0.0
   face_set_ids = 3, 4   ! reference IDs from interface_side_sets
 /
 
 !! SIMPLE RADIATION TO AMBIENT FROM EXTERNAL SURFACE
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'external surface'
-  variable = 'temperature'
-  condition = 'radiation'
-  data_constant = 0.5, 2.0
+  type = 'radiation'
   face_set_ids = 2
+  emissivity = 0.5
+  ambient_temp = 2.0
 /
 
 !! NO HEAT FLUX ON SYMMETRY PLANES
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  data_constant = 0.0
+  type = 'flux'
   face_set_ids = 1
+  flux = 0.0
 /
 
 !! THE OUTER SHELL

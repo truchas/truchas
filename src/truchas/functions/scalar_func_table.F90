@@ -53,7 +53,7 @@ contains
   subroutine lookup_func(name, f)
     character(*), intent(in) :: name
     class(scalar_func), allocatable, intent(out) :: f
-    call ftable%lookup (name, f)
+    call ftable%lookup(name, f)
   end subroutine lookup_func
 
   logical function known_func(name)

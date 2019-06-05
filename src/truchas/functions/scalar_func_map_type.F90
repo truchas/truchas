@@ -84,7 +84,7 @@ module scalar_func_map_type
 contains
 
   !! Final procedure for MAP_ANY objects.
-  subroutine scalar_func_map_delete (this)
+  subroutine scalar_func_map_delete(this)
     type(scalar_func_map), intent(inout) :: this
     if (associated(this%first)) deallocate(this%first)
   end subroutine scalar_func_map_delete
@@ -94,7 +94,7 @@ contains
   !! needs to be explicitly deallocated.  When the desire is to deallocate a
   !! single LIST_ITEM object, first nullify the NEXT point to prevent the
   !! recursive finalization from possibly deallocating more than it should.
-  recursive subroutine list_item_delete (this)
+  recursive subroutine list_item_delete(this)
     type(list_item), intent(inout) :: this
     if (associated(this%next)) deallocate(this%next)
   end subroutine list_item_delete
@@ -102,19 +102,19 @@ contains
   !!!! AUXILLARY ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Returns a pointer to a new initialized (but unlinked) LIST_ITEM.
-  function new_list_item (key, value)
+  function new_list_item(key, value)
     character(*), intent(in) :: key
     class(scalar_func), allocatable, intent(inout) :: value
     type(list_item), pointer :: new_list_item
     allocate(new_list_item)
     new_list_item%key = key
-    call move_alloc (value, new_list_item%value)
+    call move_alloc(value, new_list_item%value)
     new_list_item%prev => new_list_item
   end function new_list_item
 
   !! Returns a pointer to the LIST_ITEM having the specified key,
   !! or a null pointer of none was found.
-  function find_list_item (this, key) result (item)
+  function find_list_item(this, key) result(item)
     class(scalar_func_map), intent(in) :: this
     character(*), intent(in) :: key
     type(list_item), pointer :: item
@@ -127,7 +127,7 @@ contains
 
   !! Blindly links the given LIST_ITEM (as made by NEW_LIST_ITEM) to the end
   !! of the list; it does not check that the key is unique (someone else must).
-  subroutine append_list_item (this, item)
+  subroutine append_list_item(this, item)
     class(scalar_func_map), intent(inout) :: this
     type(list_item), pointer, intent(in) :: item
     type(list_item), pointer :: tail
@@ -146,7 +146,7 @@ contains
 
   !! Returns a CLASS(*) pointer to the mapped value for KEY,
   !! or a null pointer if KEY is not mapped.
-  subroutine lookup (this, key, value)
+  subroutine lookup(this, key, value)
     class(scalar_func_map), intent(in) :: this
     character(*), intent(in) :: key
     class(scalar_func), allocatable, intent(out) :: value
@@ -157,14 +157,14 @@ contains
 
   !! Inserts the (KEY, VALUE) pair into the map.  If the mapping already
   !! exists its value is replaced with the specified value.
-  subroutine insert (this, key, value)
+  subroutine insert(this, key, value)
     class(scalar_func_map), intent(inout) :: this
     character(*), intent(in) :: key
     class(scalar_func), allocatable, intent(inout) :: value
     type(list_item), pointer :: item
     item => find_list_item(this, key)
     if (associated(item)) then
-      call move_alloc (value, item%value)
+      call move_alloc(value, item%value)
     else
       call append_list_item(this, new_list_item(key, value))
     end if
@@ -172,7 +172,7 @@ contains
 
   !! Removes KEY from the map and deallocates the mapped value.
   !! If the mapping does not exist the map is unchanged.
-  subroutine remove (this, key)
+  subroutine remove(this, key)
     class(scalar_func_map), intent(inout) :: this
     character(*), intent(in) :: key
     type(list_item), pointer :: item
@@ -196,19 +196,19 @@ contains
   end subroutine remove
 
   !! Removes all elements from the map.
-  subroutine clear (this)
+  subroutine clear(this)
     class(scalar_func_map), intent(inout) :: this
     if (associated(this%first)) deallocate(this%first)
   end subroutine clear
 
   !! Returns true if a mapping for KEY exists; otherwise returns false.
-  logical function mapped (this, key)
+  logical function mapped(this, key)
     class(scalar_func_map), intent(in) :: this
     character(*), intent(in) :: key
     mapped = associated(find_list_item(this, key))
   end function mapped
 
-  subroutine dump (this)
+  subroutine dump(this)
     type(scalar_func_map), intent(in) :: this
     type(list_item), pointer :: item, last, tail
     item => this%first

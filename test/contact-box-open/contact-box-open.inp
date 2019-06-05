@@ -82,12 +82,11 @@
   temperature = 308.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'ends'
-  variable = 'temperature'
-  condition = 'dirichlet'
+  type = 'temperature'
   face_set_ids = 1, 2
-  data_function = 'applied temperature profile'
+  temp_func = 'applied temperature profile'
 /
 
 &FUNCTION
@@ -99,20 +98,18 @@
   smooth_step_y1 = 288.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'lateral sides'
-  variable = 'temperature'
-  condition = 'flux'
+  type = 'flux'
   face_set_ids = 3, 4, 5, 6
-  data_constant = 0.0
+  flux = 0.0
 /
 
-&DS_INTERFACE_CONDITION
+&THERMAL_BC
   name = 'gap interface'
-  variable = 'temperature'
-  condition = 'HTC'
+  type = 'interface-htc'
   face_set_ids = 3
-  data_constant = 1.0e4
+  htc = 1.0e4
 /
 
 &BC

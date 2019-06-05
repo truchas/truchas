@@ -45,28 +45,25 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
   dt_grow = 10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'left end'
-  variable = 'temperature'
-  condition = 'flux'
-  Face_Set_IDs = 1
-  data_constant = -10.0
+  type = 'flux'
+  face_set_ids = 1
+  flux = -10.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'right end'
-  variable = 'temperature'
-  condition = 'dirichlet'
+  type = 'temperature'
   Face_Set_IDs = 2
-  data_constant = 0.0
+  temp = 0.0
 /
 
-&DS_BOUNDARY_CONDITION
+&THERMAL_BC
   name = 'symmetry planes'
-  variable = 'temperature'
-  condition = 'flux'
-  Face_Set_IDs = 3
-  data_constant = 0.0
+  type = 'flux'
+  face_set_ids = 3
+  flux = 0.0
 /
 
 &BODY

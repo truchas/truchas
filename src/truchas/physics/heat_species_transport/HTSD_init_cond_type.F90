@@ -12,7 +12,6 @@ module HTSD_init_cond_type
   use unstr_mesh_type
   use data_layout_type
   use property_mesh_function
-  use boundary_data
   use index_partitioning
   use HTSD_model_type
   use truchas_logging_services
@@ -101,8 +100,10 @@ contains
       allocate(Tface(this%mesh%nface))
       call average_to_faces (this%mesh, state(:,0), Tface, this%model%void_cell)
       !! Overwrite face temperatures with Dirichlet boundary data.
-      call bd_data_eval (this%model%ht%bc_dir, t)
-      Tface(this%model%ht%bc_dir%faces) = this%model%ht%bc_dir%values(1,:)
+      if (allocated(this%model%ht%bc_dir)) then
+        call this%model%ht%bc_dir%compute(t)
+        Tface(this%model%ht%bc_dir%index) = this%model%ht%bc_dir%value
+      end if
       !! Overwrite void face components with dummy value.
       if (associated(this%model%void_face)) where (this%model%void_face) Tface = this%model%void_temp
       call HTSD_model_set_face_temp (this%model, Tface, u)
@@ -121,8 +122,10 @@ contains
         !! Approximate face concs by averaging adjacent cell concs.
         call average_to_faces (this%mesh, state(:,n), Cface, this%model%void_cell)
         !! Overwrite face concentrations with Dirichlet boundary data.
-        call bd_data_eval (this%model%sd(n)%bc_dir, t)
-        Cface(this%model%sd(n)%bc_dir%faces) = this%model%sd(n)%bc_dir%values(1,:)
+        if (allocated(this%model%sd(n)%bc_dir)) then
+          call this%model%sd(n)%bc_dir%compute(t)
+          Cface(this%model%sd(n)%bc_dir%index) = this%model%sd(n)%bc_dir%value
+        end if
         !! Overwrite void face components with dummy value.
         if (associated(this%model%void_face)) where (this%model%void_face) Cface = 0.0_r8
         call HTSD_model_set_face_conc (this%model, n, Cface, u)
@@ -562,9 +565,6 @@ contains
 
     subroutine make_matrix (matrix)
     
-      use boundary_data
-      use interface_data
-    
       type(dist_diff_matrix), intent(inout) :: matrix
       
       integer :: j, n, n1, n2, index
@@ -597,28 +597,31 @@ contains
       call matrix%compute (D)
       
       !! Dirichlet boundary condition fixups.
-      call bd_data_eval (this%ht%bc_dir, t)
-      call matrix%set_dir_faces (this%ht%bc_dir%faces)
-
-      !! External HTC boundary condition contribution.
-      call bd_data_eval (this%ht%bc_htc, t)
-      allocate(values(size(this%ht%bc_htc%faces)))
-      values = this%mesh%area(this%ht%bc_htc%faces) * this%ht%bc_htc%values(1,:)
-      call matrix%incr_face_diag (this%ht%bc_htc%faces, values)
-      deallocate(values)
+      if (allocated(this%ht%bc_dir)) then
+        call this%ht%bc_dir%compute(t)
+        call matrix%set_dir_faces(this%ht%bc_dir%index)
+      end if
 
       call HTSD_model_get_face_temp_copy (this, u, Tface)
       call gather_boundary (this%mesh%face_ip, Tface)
+
+      !! External HTC boundary condition contribution.
+      if (allocated(this%ht%bc_htc)) then
+        call this%ht%bc_htc%compute(t, Tface)
+        associate (index => this%ht%bc_htc%index, &
+                   deriv => this%ht%bc_htc%deriv)
+          call matrix%incr_face_diag(index, deriv)
+        end associate
+      end if
      
       !! Simple radiation boundary condition contribution.
-      call bd_data_eval (this%ht%bc_rad, t)
-      associate (faces => this%ht%bc_rad%faces)
-        allocate(values(size(faces)))
-        values = 4 * this%ht%sbconst * this%mesh%area(faces) * this%ht%bc_rad%values(1,:) * &
-            (Tface(faces) - this%ht%abszero)**3
-        call matrix%incr_face_diag (faces, values)
-        deallocate(values)
-      end associate
+      if (allocated(this%ht%bc_rad)) then
+        call this%ht%bc_rad%compute(t, Tface)
+        associate (index => this%ht%bc_rad%index, &
+                   deriv => this%ht%bc_rad%deriv)
+          call matrix%incr_face_diag(index, deriv)
+        end associate
+      end if
 
       !! Experimental evaporation heat flux contribution.
       if (allocated(this%ht%evap_flux)) then
@@ -630,38 +633,32 @@ contains
       endif
 
       !! Internal HTC interface condition contribution.
-      call if_data_eval (this%ht%ic_htc, t)
-      associate (faces => this%ht%ic_htc%faces)
-        allocate(values(size(faces,dim=2)))
-        values = this%mesh%area(faces(1,:)) * this%ht%ic_htc%values(1,:)
-        if (associated(this%void_face)) then
-          do j = 1, size(values)
-            if (any(this%void_face(faces(:,j)))) values(j) = 0.0_r8
-          end do
-        end if
-        call matrix%incr_interface_flux (faces, values)
-        deallocate(values)
-      end associate
+      if (allocated(this%ht%ic_htc)) then
+        call this%ht%ic_htc%compute(t, Tface)
+        associate (index => this%ht%ic_htc%index, &
+                   deriv => this%ht%ic_htc%deriv)
+          if (associated(this%void_face)) then
+            do j = 1, size(index,2) !FIXME? Bad form to modify deriv?
+              if (any(this%void_face(index(:,j)))) deriv(:,j) = 0.0_r8
+            end do
+          end if
+          call matrix%incr_interface_flux3(index, deriv) !TODO: rename these methods
+        end associate
+      end if
 
       !! Internal gap radiation condition contribution.
-      call if_data_eval (this%ht%ic_rad, t)
-      associate (faces => this%ht%ic_rad%faces)
-        allocate(values2(2,size(faces,dim=2)))
-        do j = 1, size(values2,2)
-          n1 = faces(1,j)
-          n2 = faces(2,j)
-          term = 4 * this%ht%sbconst * this%mesh%area(n1) * this%ht%ic_rad%values(1,j)
-          values2(1,j) = term * (Tface(n1) - this%ht%abszero)**3
-          values2(2,j) = term * (Tface(n2) - this%ht%abszero)**3
-        end do
-        if (associated(this%void_face)) then
-          do j = 1, size(values2,2)
-            if (any(this%void_face(faces(:,j)))) values2(:,j) = 0.0_r8
-          end do
-        end if
-        call matrix%incr_interface_flux2 (faces, values2)
-        deallocate(values2)
-      end associate
+      if (allocated(this%ht%ic_rad)) then
+        call this%ht%ic_rad%compute(t, Tface)
+        associate (index => this%ht%ic_rad%index, &
+                   deriv => this%ht%ic_rad%deriv)
+          if (associated(this%void_face)) then
+            do j = 1, size(index,2) !FIXME? Bad form to modify deriv?
+              if (any(this%void_face(index(:,j)))) deriv(:,j) = 0.0_r8
+            end do
+          end if
+          call matrix%incr_interface_flux3(index, deriv) !TODO: rename these methods
+        end associate
+      end if
 
       !! Dirichlet fix-ups for void faces.
       call matrix%set_dir_faces (more_dir_faces)

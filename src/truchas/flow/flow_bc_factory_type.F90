@@ -110,16 +110,16 @@ contains
 
   end subroutine alloc_dir_vel_bc
 
-  !! Allocate a BNDRY_FUNC object that identifies all faces where zero normal
+  !! Allocate a BNDRY_FUNC1 object that identifies all faces where zero normal
   !! velocity is to be imposed (corresponding data is ignored?)
 
   subroutine alloc_zero_vn_bc(this, bc, stat, errmsg)
 
-    use bndry_func_class
+    use bndry_func1_class
     use bndry_face_func_type
 
     class(flow_bc_factory), intent(in) :: this
-    class(bndry_func), allocatable, intent(out) :: bc
+    class(bndry_func1), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -159,16 +159,16 @@ contains
 
   end subroutine alloc_zero_vn_bc
 
-  !! Allocate a BNDRY_FUNC object that defines all faces where a prescribed
+  !! Allocate a BNDRY_FUNC1 object that defines all faces where a prescribed
   !! pressure is to be imposed, together with the corresponding pressure data.
 
   subroutine alloc_dir_prs_bc(this, bc, stat, errmsg)
 
-    use bndry_func_class
+    use bndry_func1_class
     use bndry_face_func_type
 
     class(flow_bc_factory), intent(in) :: this
-    class(bndry_func), allocatable, intent(out) :: bc
+    class(bndry_func1), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -202,16 +202,16 @@ contains
 
   end subroutine alloc_dir_prs_bc
 
-  !! Allocate a BNDRY_FUNC object that defines all faces where a homogeneous
+  !! Allocate a BNDRY_FUNC1 object that defines all faces where a homogeneous
   !! Neumann pressure condition is to be imposed (data values ignored?)
 
   subroutine alloc_neu_prs_bc(this, bc, stat, errmsg)
 
-    use bndry_func_class
+    use bndry_func1_class
     use bndry_face_func_type
 
     class(flow_bc_factory), intent(in) :: this
-    class(bndry_func), allocatable, intent(out) :: bc
+    class(bndry_func1), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 

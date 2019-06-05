@@ -12,7 +12,7 @@ module flow_operators
   use truchas_logging_services
   use unstr_mesh_type
   use flow_domain_types
-  use bndry_func_class
+  use bndry_func1_class
   use bndry_vfunc_class
   use index_partitioning
   implicit none
@@ -164,7 +164,7 @@ contains
 
     real(r8), intent(out) :: g(:,:)
     real(r8), intent(in) :: x(:)
-    class(bndry_func), optional, intent(inout) :: normal_flux_bc, dirichlet_bc
+    class(bndry_func1), optional, intent(inout) :: normal_flux_bc, dirichlet_bc
     integer, intent(in), optional :: face_t(:)
     real(r8), intent(in), optional :: non_regular_default
     real(r8), intent(in), optional :: gravity(:,:) ! for dynamic pressure grad
@@ -234,7 +234,7 @@ contains
 
     real(r8), intent(out) :: g(:,:,:)
     real(r8), intent(in) :: x(:,:)
-    class(bndry_func), optional, intent(in) :: zero_normal_bc
+    class(bndry_func1), optional, intent(in) :: zero_normal_bc
     class(bndry_vfunc), optional, intent(in) :: dirichlet_bc
     integer, intent(in), optional :: face_t(:)
     real(r8), intent(in), optional :: non_regular_default
@@ -346,7 +346,7 @@ contains
     real(r8), intent(out) :: xf(:)
     real(r8), intent(in) :: x(:,:), w(:,:)
     class(bndry_vfunc), optional, intent(in) :: bc
-    class(bndry_func), optional, intent(in) :: bc_zn
+    class(bndry_func1), optional, intent(in) :: bc_zn
     integer, intent(in), optional :: face_t(:)
     real(r8), intent(in), optional :: non_regular_default
 

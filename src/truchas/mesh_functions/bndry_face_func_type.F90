@@ -1,7 +1,7 @@
 !!
 !! BNDRY_FACE_FUNC_TYPE
 !!
-!! This module defines an implementation of the base class BNDRY_FUNC that
+!! This module defines an implementation of the base class BNDRY_FUNC1 that
 !! describes a time-dependent function on a subset of the boundary faces of
 !! a mesh of type UNSTR_MESH.
 !!
@@ -63,7 +63,7 @@
 module bndry_face_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use bndry_func_class
+  use bndry_func1_class
   use unstr_mesh_type
   use scalar_func_class
   use scalar_func_containers
@@ -71,7 +71,7 @@ module bndry_face_func_type
   implicit none
   private
 
-  type, extends(bndry_func), public :: bndry_face_func
+  type, extends(bndry_func1), public :: bndry_face_func
     private
     type(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
     logical :: evaluated = .false.
