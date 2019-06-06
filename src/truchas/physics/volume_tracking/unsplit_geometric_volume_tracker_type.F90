@@ -1,5 +1,11 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
+!!  unsplit_geometry_volume_tracker_type
+!! 
+!!  Author: Robert Chiodi (robertchiodi@lanl.gov)
+!!  June 2019
+!!
+!!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -48,11 +54,15 @@ module unsplit_geometric_volume_tracker_type
     type(Octa_type) :: IRL_octahedron
     type(Dod_type) :: IRL_dodecahedron
     ! End IRL objects
+    ! Used for IRL advection
+    integer, allocatable :: flux_geometry_class(:)
+    integer, allocatable :: flux_node(:)
   contains
     procedure, public  :: init
     procedure, public  :: flux_volumes
     procedure, public  :: set_inflow_material
     procedure, private :: init_irl_mesh
+    procedure, private :: generate_flux_classes
     procedure, private :: set_irl_interfaces
     procedure, private :: adjust_planes_match_VOF
     procedure, private :: compute_node_velocities
@@ -138,7 +148,7 @@ contains
     end do
     this%inflow_mat = 0
     
-    ! Initialize IRL array needed for advection
+    ! Initialize IRL arrays needed for advection
     call this%init_irl_mesh()
     
     ! Initialize IRL cell types we will use
@@ -148,6 +158,9 @@ contains
     call new(this%IRL_hex)
     call new(this%IRL_octahedron)
     call new(this%IRL_dodecahedron)
+
+    ! Reorganize and generate needed face-flux information
+    call this%generate_flux_classes
 
   end subroutine init
 
@@ -538,7 +551,7 @@ contains
       ! Grab face nodes we will extrude from
       ! Will place face nodes in latter half of cell_nodes so that
       ! if (dot_product(flux_vel, face_norm) > 0), the volume is > 0
-      associate( node_index => this%mesh%fnode( &
+      associate( node_index => this%flux_node( &
                                  this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
         cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = &
         this%mesh%x(:,node_index(1:number_of_nodes))
@@ -557,15 +570,12 @@ contains
                             this%localized_separator_link(neighbor_cell_index), &
                             tagged_sepvol)
             
-            this%face_flux(:,f) = phase_volume          
           case(4) ! Quad Face -> Dodecahedron Volume
             
             call truchas_dod_to_irl(cell_nodes, this%IRL_dodecahedron)
             call getMoments(this%IRL_dodecahedron, &
                             this%localized_separator_link(neighbor_cell_index), &
                             tagged_sepvol)
-            
-            this%face_flux(:,f) = phase_volume
             
           case default
             call TLS_fatal('Face with unhandled amount of nodes found.')          
@@ -701,5 +711,151 @@ contains
     call gather_boundary(this%mesh%cell_ip, a_vof)   
     
   end subroutine clean_vof
+
+  ! Routine to generate consistently approximated flux volumes
+  !
+  ! This routine makes heavy use of lookup tables, which is why it
+  ! is down here hidden from the above prettier code. These
+  ! lookup tables will be used to reorder face node indices and
+  ! classify the necessary flux volume geometry class to use
+  ! from IRL. By doing this, a completely conformal mesh should
+  ! be formed during the back-advection phase, with no gaps
+  ! or overlapping regions.
+  !
+  ! The integer Ids for this%flux_geometry_class correspond to:
+  ! Octa_LLL ( 1)
+  ! Octa_LLT ( 2)
+  ! Octa_LTT ( 3)
+  ! Octa_TTT ( 4)
+  ! Dod_LLLL ( 5)
+  ! Dod_LLLT ( 6)
+  ! Dod_LTLT ( 7)
+  ! Dod_LLTT ( 8)
+  ! Dod_LTTT ( 9)
+  ! Dod_TTTT (10)
+  !
+  ! The lookup tables will encode this information, as well as
+  ! the number of shifts of vertices from the mesh%fnode order
+  ! to the consistent flux_node order, using lookup tables
+  ! based on an ID by accounting for the edge having a leading
+  ! diagonalization (L) as a 0 (unset) bit, and a trailing
+  ! diagonalization(T) as a 1 (set) bit. For example,
+  ! the case of LTLT is 0+2+0+8 = 10.
+  !
+  ! The diagonalization of each edge will be set from the faces
+  ! on a first-come, first-served basis. Each face in
+  ! this%mesh is looped over, and if the diagonalization of the
+  ! edge has not yet been set, will be set to L (arbitrary choice).
+  ! Note, setting L for this edge will make it a T for the opposite
+  ! direction traversal of the edge.
+  
+  subroutine generate_flux_classes(this)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+
+    integer, parameter :: &
+         Octa_geometry_class(8) = &
+         [1, 2, 2, 3, &
+          2, 3, 3, 4]
+
+    integer, parameter :: &
+         Octa_shift(8) = &
+         [0, 2, 1, 1, &
+          0, 2, 0, 0]
+    
+    integer, parameter :: &
+         Dod_geometry_class(16) = &
+         [5, 6, 6, 8, &
+          6, 7, 8, 9, &
+          6, 8, 7, 9, &
+          8, 9, 9, 10]
+
+    integer, parameter :: &
+         Dod_shift(16) = &
+         [0, 1, 2, 2, &
+          1, 1, 3, 1, &
+          0, 3, 0, 2,&
+          0, 3, 0, 0]
+
+    integer, allocatable :: edges(:,:) ! Temporary working array. Would be better as hash_map
+    integer :: f
+    integer :: n, number_of_nodes    
+    integer :: edge_end
+    integer :: lookup_case
+    integer :: shift_amount, r, tmp_node, reordered_vertices(4)
+    
+    allocate(this%flux_geometry_class(this%mesh%nface))
+    allocate(this%flux_node(this%mesh%xfnode(this%mesh%nface+1)-1))
+    allocate(edges(this%mesh%nnode,this%mesh%nnode))
+
+
+    ! Now loop through domain and set the edge orientations
+    ! on first-come, first-served basis
+    edges = -1 ! Sentinel value to mark as not-yet assigned.
+    do f = 1, this%mesh%nface
+      associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
+        number_of_nodes = size(node_id)
+        do n = 1, number_of_nodes
+          edge_end = node_id(mod(n,number_of_nodes)+1)
+          if(edges(node_id(n),edge_end) == -1) then
+            ! Not yet set, so then set it.
+            edges(node_id(n), edge_end) = 0 ! This direction leading
+            edges(edge_end, node_id(n)) = 1 ! Opposite direction trailing
+          end if
+          
+        end do        
+        
+      end associate
+    end do
+
+    ! For each face, now store correct flux class and
+    ! node ordering to be consistent
+    do f = 1, this%mesh%nface
+      associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
+        number_of_nodes = size(node_id)
+        ASSERT(number_of_nodes == 3 .or. number_of_nodes == 4)
+        lookup_case = 1
+        do n = 1, number_of_nodes          
+          edge_end = node_id(mod(n,number_of_nodes)+1)
+          ASSERT(edges(node_id(n),edge_end) == 0 .or. &
+                 edges(node_id(n),edge_end) == 1)
+          lookup_case = lookup_case + edges(node_id(n), edge_end) * 2**(n-1)
+        end do
+
+        select case(number_of_nodes)
+          case(3) ! Triangle -> Octahedron
+            ASSERT(lookup_case > 0 .and. lookup_case <= 8)          
+            this%flux_geometry_class(f) = Octa_geometry_class(lookup_case)
+            shift_amount = Octa_shift(lookup_case)
+
+          case(4) ! Quad -> Dodecahedron
+            ASSERT(lookup_case > 0 .and. lookup_case <= 16)
+            this%flux_geometry_class(f) = Dod_geometry_class(lookup_case)
+            shift_amount = Dod_shift(lookup_case)
+          case default
+            call TLS_fatal('Cannot create flux geometry face with nodes!=[3,4]')
+        end select
+
+        reordered_vertices(1:number_of_nodes) = node_id(1:number_of_nodes)
+        do r = 1, shift_amount
+          tmp_node = reordered_vertices(number_of_nodes)
+          do n = number_of_nodes, 2, -1
+            reordered_vertices(n) = reordered_vertices(n-1)
+          end do
+          reordered_vertices(1) = tmp_node
+        end do
+
+        print*,node_id(1:number_of_nodes)
+        print*,reordered_vertices(1:number_of_nodes)
+        this%flux_node(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1) = reordered_vertices(1:number_of_nodes)
+        
+      end associate
+
+    end do
+    
+    deallocate(edges)
+
+
+  end subroutine generate_flux_classes
 
 end module unsplit_geometric_volume_tracker_type
