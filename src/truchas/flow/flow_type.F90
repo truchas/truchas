@@ -220,7 +220,12 @@ contains
 
     this%vel_cc_n = this%vel_cc !TODO: put directly into vel_cc_n and by-pass vel_cc?
 
-    call compute_initial_pressure(this, t, dt)
+    if (this%props%any_real_fluid) then
+      call compute_initial_pressure(this, t, dt)
+    else
+      this%p_cc = 0
+      this%grad_p_rho_cc_n = 0
+    end if
 
   end subroutine set_initial_state_start
 
