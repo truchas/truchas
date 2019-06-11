@@ -43,6 +43,8 @@ contains
 
     this%mesh => mesh
 
+    call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
+
   end subroutine init
 
   subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_vof_band)

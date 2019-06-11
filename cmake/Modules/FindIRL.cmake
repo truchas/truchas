@@ -32,7 +32,7 @@ if(IRL_LIBRARY)
   get_filename_component(IRL_LIB_DIR ${IRL_LIBRARY} DIRECTORY)
   set(IRL_DIR "${IRL_LIB_DIR}/..")
   set(IRL_LIBRARIES ${IRL_LIB_DIR}/libirl.a ${IRL_LIB_DIR}/libirl_c.a ${IRL_LIBRARY} -lstdc++)
-  set(IRL_INCLUDE_DIRS "${IRL_DIR}/.mod/")
+  set(IRL_INCLUDE_DIRS "${IRL_DIR}/include/")
   if(NOT TARGET irl)
     add_library(irl UNKNOWN IMPORTED)
     set_target_properties(irl PROPERTIES

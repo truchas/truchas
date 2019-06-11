@@ -23,7 +23,6 @@ module geometric_volume_tracker_type
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
     logical :: nested_dissection
-    real(r8) :: cutoff ! allow volume fraction {0,(cutoff,1]}
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:,:)

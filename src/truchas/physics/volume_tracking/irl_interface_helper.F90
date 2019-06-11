@@ -16,29 +16,52 @@ module irl_interface_helper
   use irl_fortran_interface
   implicit none
   
+
+  interface truchas_poly_to_irl
+    module procedure truchas_tet_to_irl
+    module procedure truchas_pyramid_to_irl
+    module procedure truchas_wedge_to_irl
+    module procedure truchas_octa_to_irl
+    module procedure truchas_hex_to_irl
+    module procedure truchas_dod_to_irl
+    module procedure truchas_capdod_LLLL_to_irl
+    module procedure truchas_capdod_LLLT_to_irl
+    module procedure truchas_capdod_LTLT_to_irl
+    module procedure truchas_capdod_LLTT_to_irl
+    module procedure truchas_capdod_LTTT_to_irl
+    module procedure truchas_capdod_TTTT_to_irl
+    module procedure truchas_capocta_LLL_to_irl
+    module procedure truchas_capocta_LLT_to_irl
+    module procedure truchas_capocta_LTT_to_irl
+    module procedure truchas_capocta_TTT_to_irl    
+  end interface truchas_poly_to_irl
+
   
-  !procedure truchas_tet_to_irl
-  !procedure truchas_pyramid_to_irl
-  !procedure truchas_wedge_to_irl
-  !procedure truchas_hex_to_irl
+
   
   integer, parameter, private :: &
-    truchas_irl_tet_mapping(4) = [2,3,4,1]
+       truchas_irl_tet_mapping(4) = [2,3,4,1]
     
   integer, parameter, private :: &
-    truchas_irl_pyramid_mapping(5) = [4,3,2,1,5] 
+       truchas_irl_pyramid_mapping(5) = [4,3,2,1,5] 
     
   integer, parameter, private :: &
-    truchas_irl_wedge_mapping(6) = [5,6,4,2,3,1]
+       truchas_irl_wedge_mapping(6) = [5,6,4,2,3,1]
     
   integer, parameter, private :: &
-    truchas_irl_octa_mapping(6) = [5,6,4,2,3,1]
+       truchas_irl_octa_mapping(6) = [5,6,4,2,3,1]
 
   integer, parameter, private :: &
-    truchas_irl_hex_mapping(8) = [6,7,8,5,2,3,4,1]
+       truchas_irl_hex_mapping(8) = [6,7,8,5,2,3,4,1]
     
   integer, parameter, private :: &
-    truchas_irl_dod_mapping(8) = [6,7,8,5,2,3,4,1]
+       truchas_irl_dod_mapping(8) = [6,7,8,5,2,3,4,1]
+
+  integer, parameter, private :: &
+       truchas_irl_capdod_mapping(9) = [6,7,8,5,2,3,4,1,9]
+
+  integer, parameter, public :: &
+       truchas_irl_capocta_mapping(7) = [5,6,4,2,3,1,7]  
 
 contains
 
@@ -95,5 +118,102 @@ contains
     call construct(a_irl_dod, a_truchas_dod(:,truchas_irl_dod_mapping))
     
   end subroutine truchas_dod_to_irl
+
+  subroutine truchas_capdod_LLLL_to_irl(a_truchas_capdod, a_irl_capdod)
+  
+    real(r8), intent(in) :: a_truchas_capdod(:,:)
+    type(CapDod_LLLL_type), intent(inout) :: a_irl_capdod
+       
+    call construct(a_irl_capdod, a_truchas_capdod(:,truchas_irl_capdod_mapping))
+    
+  end subroutine truchas_capdod_LLLL_to_irl
+
+  subroutine truchas_capdod_LLLT_to_irl(a_truchas_capdod, a_irl_capdod)
+  
+    real(r8), intent(in) :: a_truchas_capdod(:,:)
+    type(CapDod_LLLT_type), intent(inout) :: a_irl_capdod
+       
+    call construct(a_irl_capdod, a_truchas_capdod(:,truchas_irl_capdod_mapping))
+    
+  end subroutine truchas_capdod_LLLT_to_irl
+
+  subroutine truchas_capdod_LTLT_to_irl(a_truchas_capdod, a_irl_capdod)
+  
+    real(r8), intent(in) :: a_truchas_capdod(:,:)
+    type(CapDod_LTLT_type), intent(inout) :: a_irl_capdod
+       
+    call construct(a_irl_capdod, a_truchas_capdod(:,truchas_irl_capdod_mapping))
+    
+  end subroutine truchas_capdod_LTLT_to_irl
+
+
+  subroutine truchas_capdod_LLTT_to_irl(a_truchas_capdod, a_irl_capdod)
+  
+    real(r8), intent(in) :: a_truchas_capdod(:,:)
+    type(CapDod_LLTT_type), intent(inout) :: a_irl_capdod
+       
+    call construct(a_irl_capdod, a_truchas_capdod(:,truchas_irl_capdod_mapping))
+    
+  end subroutine truchas_capdod_LLTT_to_irl
+
+
+  subroutine truchas_capdod_LTTT_to_irl(a_truchas_capdod, a_irl_capdod)
+
+    real(r8), intent(in) :: a_truchas_capdod(:,:)
+    type(CapDod_LTTT_type), intent(inout) :: a_irl_capdod
+       
+    call construct(a_irl_capdod, a_truchas_capdod(:,truchas_irl_capdod_mapping))
+    
+  end subroutine truchas_capdod_LTTT_to_irl
+
+
+  subroutine truchas_capdod_TTTT_to_irl(a_truchas_capdod, a_irl_capdod)
+  
+    real(r8), intent(in) :: a_truchas_capdod(:,:)
+    type(CapDod_TTTT_type), intent(inout) :: a_irl_capdod
+       
+    call construct(a_irl_capdod, a_truchas_capdod(:,truchas_irl_capdod_mapping))
+    
+  end subroutine truchas_capdod_TTTT_to_irl
+
+  
+  subroutine truchas_capocta_LLL_to_irl(a_truchas_capocta, a_irl_capocta)
+  
+    real(r8), intent(in) :: a_truchas_capocta(:,:)
+    type(CapOcta_LLL_type), intent(inout) :: a_irl_capocta
+       
+    call construct(a_irl_capocta, a_truchas_capocta(:,truchas_irl_capocta_mapping))
+    
+  end subroutine truchas_capocta_LLL_to_irl
+
+  
+  subroutine truchas_capocta_LLT_to_irl(a_truchas_capocta, a_irl_capocta)
+  
+    real(r8), intent(in) :: a_truchas_capocta(:,:)
+    type(CapOcta_LLT_type), intent(inout) :: a_irl_capocta
+       
+    call construct(a_irl_capocta, a_truchas_capocta(:,truchas_irl_capocta_mapping))
+    
+  end subroutine truchas_capocta_LLT_to_irl
+
+  subroutine truchas_capocta_LTT_to_irl(a_truchas_capocta, a_irl_capocta)
+  
+    real(r8), intent(in) :: a_truchas_capocta(:,:)
+    type(CapOcta_LTT_type), intent(inout) :: a_irl_capocta
+       
+    call construct(a_irl_capocta, a_truchas_capocta(:,truchas_irl_capocta_mapping))
+    
+  end subroutine truchas_capocta_LTT_to_irl
+
+  
+  subroutine truchas_capocta_TTT_to_irl(a_truchas_capocta, a_irl_capocta)
+  
+    real(r8), intent(in) :: a_truchas_capocta(:,:)
+    type(CapOcta_TTT_type), intent(inout) :: a_irl_capocta
+       
+    call construct(a_irl_capocta, a_truchas_capocta(:,truchas_irl_capocta_mapping))
+    
+  end subroutine truchas_capocta_TTT_to_irl    
+  
 
 end module irl_interface_helper
