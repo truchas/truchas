@@ -13,6 +13,7 @@ module volume_tracker_class
   private
 
   type, abstract, public :: volume_tracker
+    real(r8), public :: cutoff
   contains
     procedure(vt_init), deferred :: init
     procedure(vt_flux_volumes), deferred :: flux_volumes

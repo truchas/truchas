@@ -72,7 +72,7 @@ module vtrack_driver
   public :: vtrack_velocity_overwrite
   private :: vtrack_update_mat_band
 
-  integer, parameter, private :: band_map_width = 4 ! Size of band_map to create in +/- direction.
+  integer, parameter, private :: band_map_width = 6 ! Size of band_map to create in +/- direction.
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -139,6 +139,7 @@ contains
     use geometric_volume_tracker_type
     use unsplit_geometric_volume_tracker_type
     use simple_volume_tracker_type
+    use parallel_communication, only : global_sum
 
     type(parameter_list), intent(inout) :: params
 
@@ -188,7 +189,7 @@ contains
     ! Allocations for the band_map based on how near phases are
     allocate(this%mat_band(nmat, this%mesh%ncell))
     allocate(this%mat_band_map(this%mesh%ncell, nmat))
-    allocate(this%xmat_band_map(band_map_width+1, nmat))
+    allocate(this%xmat_band_map(0:band_map_width+1, nmat))
 
     call params%get('track_interfaces', track_interfaces)
     call params%get('unsplit_interface_advection', this%unsplit_advection, .true.)
@@ -208,10 +209,14 @@ contains
     call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
         this%fluids+this%void+this%solid, this%liq_matid, params)
     call stop_timer('Vof Initialization')
+    call vtrack_update_mat_band()    
 
-    ! QUESTION : Will need to parallel sum this
+    ! Compute sum of volume of each phase in domain
     do j = 1, this%mesh%ncell_onP
       this%fvol_init = this%fvol_init + this%fvof_o(:,j) * this%mesh%volume(j)
+    end do
+    do j = 1, nmat
+      this%fvol_init(j) = global_sum(this%fvol_init(j))
     end do
 
   end subroutine vtrack_driver_init
@@ -252,6 +257,9 @@ contains
   ! vel_fn is the outward oriented face-normal velocity
   ! vel_cc is the cell centered velocity
   subroutine vtrack_update(t, dt, vel_fn, vel_cc, initial)
+
+    use parallel_communication, only : global_sum
+    
     use constants_module
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vel_fn(:)
@@ -295,12 +303,14 @@ contains
       call this%vt%flux_volumes(this%flux_vel, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
           this%fluids, this%void, dt, this%mat_band)
     end if
-
+    
     vol_sum = 0.0_r8
     do j = 1, this%mesh%ncell_onP
        vol_sum = vol_sum + this%fvof_o(:,j)*this%mesh%volume(j)
-    end do
-    ! QUESTION: Will need to paralle sum vof_sum. How?
+     end do
+    do j = 1, size(vol_sum)
+      vol_sum(j) = global_sum(vol_sum(j))
+    end do     
     print*,'Phase volumes', vol_sum
     print*,'Phase volume change: ', vol_sum - this%fvol_init
 
@@ -409,8 +419,56 @@ contains
     ASSERT(prescribed_flow)
 
     select case(trim(velocity_overwrite_case))
-    case('Deformation2D')
+    case('Zalesak')
+       do f = 1,this%mesh%nface
+          node_location = this%mesh%face_centroid(:,f)
+          full_face_velocity(1) = -2.0_r8*MYPI*node_location(2)
+          
+          full_face_velocity(2) = 2.0_r8*MYPI*node_location(1)
+          
+          full_face_velocity(3) = 0.0_r8
 
+          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+
+       end do
+       
+       do j = 1,this%mesh%ncell
+          node_location = this%mesh%cell_centroid(:,j)
+          a_cell_velocity(1,j) = -2.0_r8*MYPI*node_location(2)
+          
+          a_cell_velocity(2,j) = 2.0_r8*MYPI*node_location(1)
+          
+          a_cell_velocity(3,j) = 0.0_r8
+          
+       end do
+
+    case('Unit_rotation')
+      ! Rotation of an object on a mesh that is [-16,16] x [-16x16] x [-1/2 x 1/2]
+      ! Rotates clockwise
+       do f = 1,this%mesh%nface
+          node_location = this%mesh%face_centroid(:,f)
+          full_face_velocity(1) = node_location(2)/16.0_r8
+          
+          full_face_velocity(2) = -node_location(1)/16.0_r8
+          
+          full_face_velocity(3) = 0.0_r8
+
+          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+
+       end do
+       
+       do j = 1,this%mesh%ncell
+          node_location = this%mesh%cell_centroid(:,j)
+          a_cell_velocity(1,j) = node_location(2)/16.0_r8
+          
+          a_cell_velocity(2,j) = -node_location(1)/16.0_r8
+          
+          a_cell_velocity(3,j) = 0.0_r8
+          
+       end do
+       
+    case('Deformation2D')
+       ! Generally on -0.5,0.5 mesh, so add 0.5 to node position
        do f = 1,this%mesh%nface
           node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,0.0_r8]
           full_face_velocity(1) = -2.0_r8*sin(MYPI*node_location(1))**2 &
@@ -446,7 +504,7 @@ contains
        end do
 
     case('Deformation3D')
-       
+       ! Generally on -0.5,0.5 mesh, so add 0.5 to node position       
        do f = 1,this%mesh%nface
           node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,0.5_r8]
           full_face_velocity(1) = 2.0_r8*sin(MYPI*node_location(1))**2 &
@@ -512,16 +570,16 @@ contains
     this%xmat_band_map(1,:) = 1
     do j = 1,this%mesh%ncell
       do k = 1,total_phases
-        has_interface = (this%fvof_i(k,j) > epsilon(1.0_r8) .and. &
-             this%fvof_i(k,j) < 1.0_r8 - epsilon(1.0_r8))
+        has_interface = (this%fvof_i(k,j) >  this%vt%cutoff) .and. &
+             (this%fvof_i(k,j) < 1.0_r8 - this%vt%cutoff)
         if(.not. has_interface) then
            ! Need to also check condition where cell is full/empty and neighbor empty/full
-           if(this%fvof_i(k,j) < epsilon(1.0_r8)) then ! Cell is empty
+           if(this%fvof_i(k,j) < this%vt%cutoff) then ! Cell is empty
               ! Check if any neighbors are full
               associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
                 do n = 1, size(cneigh)
                    if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 - epsilon(1.0_r8)) then
+                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 -  this%vt%cutoff) then
                          has_interface = .true.
                          exit
                       end if                      
@@ -534,7 +592,7 @@ contains
               associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
                 do n = 1, size(cneigh)
                    if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) < epsilon(1.0_r8)) then
+                      if(this%fvof_i(k,cneigh(n)) <  this%vt%cutoff) then
                          has_interface = .true.
                          exit
                       end if                      
@@ -554,7 +612,8 @@ contains
         end if
       end do
     end do
-
+print*,'ADVECTING EVERYWHERE RIGHT NOW - BAND TURNED OFF'
+this%mat_band(:,:) = 0
     ! Now loop through and fill out band to +/- band_map_width
     ! To fill in band b, loop though cells in b-1
     do b = 1, band_map_width
