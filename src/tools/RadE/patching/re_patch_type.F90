@@ -82,13 +82,14 @@ module re_patch_type
   public :: read_patches_namelist
 
   !! Patch algorithms
-  character(32), parameter :: PATCH_ALGORITHMS(3) = ['NONE','VSA ', 'VAC ']
+  character(32), parameter :: PATCH_ALGORITHMS(4) = ['NONE','VSA ','VAC ','PAVE']
   integer, parameter :: PATCH_ALG_NONE = 1
   integer, parameter :: PATCH_ALG_VSA = 2
   integer, parameter :: PATCH_ALG_VAC = 3
+  integer, parameter :: PATCH_ALG_PAVE = 4
 
   !! Parameter defaults
-  integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_VAC
+  integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_PAVE
   integer, parameter :: VERBOSITY_LEVEL_DEFAULT = 1
   real(r8), parameter :: MAX_ANGLE_DEFAULT = 20.0
 
@@ -100,8 +101,10 @@ module re_patch_type
     integer  :: vsa_max_iter   ! Maximum iterations for VSA algorithm
     real(r8) :: vsa_min_delta  ! Minimum change in successive algorithm
     real(r8) :: vsa_avg_fpp    ! Average faces per patch
-    integer  :: vac_split_patch_size  ! Maximum patch size to split
-    integer  :: vac_merge_level       ! Aggressiveness of patch merging
+    integer  :: vac_split_patch_size   ! Maximum patch size to split
+    integer  :: vac_merge_level        ! Aggressiveness of patch merging
+    integer  :: pave_split_patch_size  ! Maximum patch size to split
+    integer  :: pave_merge_level       ! Aggressiveness of patch merging
   end type
 
   type, public :: re_patch
@@ -118,6 +121,7 @@ module re_patch_type
     procedure, private :: no_patches
     procedure, private :: vsa_patches
     procedure, private :: vac_patches
+    procedure, private :: pave_patches
   end type
 
 
@@ -151,9 +155,12 @@ contains
     real(r8) :: vsa_avg_faces_per_patch
     integer  :: vac_merge_level
     integer  :: vac_split_patch_size
+    integer  :: pave_merge_level
+    integer  :: pave_split_patch_size
     namelist /patches/ patch_algorithm, verbosity_level, max_angle, &
       vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch, &
-      vac_merge_level, vac_split_patch_size
+      vac_merge_level, vac_split_patch_size, &
+      pave_merge_level, pave_split_patch_size
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
 
@@ -184,6 +191,8 @@ contains
       vsa_avg_faces_per_patch = NULL_R
       vac_merge_level = NULL_I
       vac_split_patch_size = NULL_I
+      pave_merge_level = NULL_I
+      pave_split_patch_size = NULL_I
       read(lun,nml=patches,iostat=ios)
     end if
     call scl_bcast (ios)
@@ -198,6 +207,8 @@ contains
     call scl_bcast (vsa_avg_faces_per_patch)
     call scl_bcast (vac_merge_level)
     call scl_bcast (vac_split_patch_size)
+    call scl_bcast (pave_merge_level)
+    call scl_bcast (pave_split_patch_size)
 
     !! Check the values
     stat = 0
@@ -215,6 +226,8 @@ contains
         patch_alg = PATCH_ALG_VSA
       case ('VAC')
         patch_alg = PATCH_ALG_VAC
+      case ('PAVE')
+        patch_alg = PATCH_ALG_PAVE
       case default
         call data_err ('Unrecognized PATCH_ALGORITHM: '//trim(patch_algorithm))
     end select
@@ -276,6 +289,22 @@ contains
       end if
     end if
 
+    !! PAVE settings
+    if (patch_alg == PATCH_ALG_PAVE) then
+      if (pave_merge_level == NULL_I) then
+        pave_merge_level = VAC_MERGE_LEVEL_DEFAULT
+        call re_info ('  using default PAVE_MERGE_LEVEL='//i_to_c(pave_merge_level))
+      else if (pave_merge_level < 0) then
+        call data_err ('PAVE_MERGE_LEVEL must be >= 0')
+      end if
+      if (pave_split_patch_size == NULL_I) then
+        pave_split_patch_size = VAC_SPLIT_PATCH_SIZE_DEFAULT
+        call re_info ('  using default PAVE_SPLIT_PATCH_SIZE='//i_to_c(pave_split_patch_size))
+      else if (pave_split_patch_size < 0) then
+        call data_err ('PAVE_SPLIT_PATCH_SIZE must be >= 0')
+      end if
+    end if
+
     if (stat /= 0) call re_halt ('errors found in PATCHES namelist variables')
 
     !! Everything checks out; write values into return data structure
@@ -287,6 +316,8 @@ contains
     ppar%vsa_avg_fpp = vsa_avg_faces_per_patch
     ppar%vac_merge_level = vac_merge_level
     ppar%vac_split_patch_size = vac_split_patch_size
+    ppar%pave_merge_level = pave_merge_level
+    ppar%pave_split_patch_size = pave_split_patch_size
 
   contains
     subroutine data_err (errmsg)
@@ -314,6 +345,9 @@ contains
       case (PATCH_ALG_VAC)
         write (*,'(a)') 'Generating patches using the VAC algorithm'
         call this%vac_patches(e, ppar)
+      case (PATCH_ALG_PAVE)
+        write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
+        call this%pave_patches(e, ppar)
       case default
         !! Programming error, exit immediately.
         INSIST(.false.)
@@ -386,6 +420,29 @@ contains
     call vac%output(this%f2p_map, this%global_ids, this%npatch)
 
   end subroutine vac_patches
+
+
+  !! Generate patches using the VAC PAVE algorithm
+  subroutine pave_patches (this, e, ppar)
+
+    use vac_patching_type
+
+    class(re_patch), intent(out) :: this
+    type(encl), target, intent(in)  :: e
+    type(patch_param), intent(in)  :: ppar
+
+    type(pave_patching) :: pave
+
+    this%has_patches = .true.
+
+    call pave%init(e, ppar%max_angle, ppar%pave_merge_level, &
+      ppar%pave_split_patch_size, ppar%verbosity)
+
+    call pave%run()
+
+    call pave%output(this%f2p_map, this%global_ids, this%npatch)
+
+  end subroutine pave_patches
 
 
   subroutine read_patch_data (this, path)

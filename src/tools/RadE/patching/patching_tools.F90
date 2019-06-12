@@ -273,39 +273,4 @@ contains
   end function faces_neighboring_vertices
 
 
-  !! TODO: add to general utility module
-  !! Finds the vertices neighboring each vertex
-  subroutine vertex_neighbors (e, xvnhbr, vnhbr)
-
-    use cell_topology, only: get_edge_nodes
-    use re_encl_type
-    use graph_type
-
-    type(encl), intent(in) :: e
-    integer, allocatable, intent(out) :: xvnhbr(:), vnhbr(:)
-
-    type(graph) :: g
-    integer, allocatable :: face_nodes(:), edge(:)
-    integer :: f, k
-
-    !! Initialize graph
-    call g%init(e%nnode)
-
-    !! Add edges to graph
-    do f = 1, e%nface
-      face_nodes = e%fnode(e%xface(f):e%xface(f+1)-1)
-      do k = 1, size(face_nodes)
-        call get_edge_nodes (face_nodes, k, edge)
-
-        call g%add_edge(edge(1), edge(2))
-      end do
-    end do
-
-    !! Extract adjacency information
-    !!   vnhbr(xvnhbr(j):xvnhbr(j+1)-1) are the vertices adjacent to vertex j
-    call g%get_adjacency(xvnhbr, vnhbr)
-
-  end subroutine vertex_neighbors
-
-
 end module patching_tools
