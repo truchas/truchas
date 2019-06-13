@@ -93,6 +93,7 @@ contains
     call overwrite_velocity_default  ()
 
     !! Locate the INTERFACES namelist (first occurence).
+    found = .false.
     if (p_info%IOP) then
       rewind lun
       call seek_to_namelist (lun, 'OVERWRITE_VELOCITY', found, iostat=ios)

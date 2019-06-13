@@ -282,8 +282,8 @@ contains
       integer :: m
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
       real(r8) :: fluxing_velocity(nfc,ncells)
-      real(r8), allocatable :: mat_band(:,:)
-      character(8), allocatable :: name(:)
+      real(r8) :: mat_band(nmat,ncells)
+      character(8) :: name(nmat)
 
       vec_cc => flow_vel_cc_view()
       call write_seq_cell_field(seq, vec_cc(:,1:ncells), 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
@@ -296,13 +296,11 @@ contains
 
       ! Volume fraction bands
       if (nmat > 1) then
-        allocate(mat_band(nmat,ncells), name(nmat))        
         mat_band = real(vtrack_mat_band_view(),r8)
         do m = 1, nmat
           write(name(m),'(a,i4.4)') 'Band', get_user_material_id(m)
         end do
         call write_seq_cell_field (seq, mat_band, 'Band', for_viz=.true., viz_name=name)
-        deallocate(mat_band, name)
       end if           
       
 
