@@ -659,7 +659,7 @@ contains
     ASSERT(this%nmat == 2) ! Will alleviate later
 
     call new(tagged_sepvol)
-    call getMoments_setMethod(2)
+    call getMoments_setMethod(1)
       
     this%face_flux = 0.0_r8
     do f = 1, this%mesh%nface_onP
