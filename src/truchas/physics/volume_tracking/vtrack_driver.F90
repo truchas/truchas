@@ -612,8 +612,8 @@ contains
         end if
       end do
     end do
-print*,'ADVECTING EVERYWHERE RIGHT NOW - BAND TURNED OFF'
-this%mat_band(:,:) = 0
+!print*,'ADVECTING EVERYWHERE RIGHT NOW - BAND TURNED OFF'
+!this%mat_band(:,:) = 0
     ! Now loop through and fill out band to +/- band_map_width
     ! To fill in band b, loop though cells in b-1
     do b = 1, band_map_width
