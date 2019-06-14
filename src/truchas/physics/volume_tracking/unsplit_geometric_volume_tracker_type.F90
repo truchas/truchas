@@ -77,6 +77,7 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: adjust_planes_match_VOF
     procedure, private :: reset_volume_moments
     procedure, private :: compute_node_velocities
+    procedure, private :: compute_effective_cfl
     procedure, private :: compute_projected_nodes
     procedure, private :: compute_fluxes
     procedure, private :: update_vof
@@ -196,7 +197,11 @@ contains
     integer, intent(in) :: fluids, void
     integer, intent(in) :: a_vof_band(:,:)
 
-    integer :: i,j
+    integer :: i,j    
+
+    ! DEBUGGING
+    integer :: f
+    real(r8) :: tmp
 
     flux_vol = 0.0_r8
     vof = vof_n
@@ -209,18 +214,39 @@ contains
 
     call start_timer('advection')
     call this%compute_node_velocities(vel_cc)
+    call this%compute_effective_cfl(dt)
 
     call this%compute_projected_nodes(dt)
-    
+
     call this%compute_fluxes(vel, dt, vof, a_vof_band)
-    
+
     ! Need to communicate fluxes
     call gather_boundary(this%mesh%face_ip, this%face_flux)
-          
+
     call this%update_vof(a_vof_band, flux_vol, vof)
-   
+
+    ! DEBUG
+    do j = 1, this%mesh%ncell_onP
+       tmp = 0.0_r8
+       associate(fid => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+         do f = 1, size(fid)
+            if(btest(this%mesh%cfpar(j), f)) then
+              tmp = tmp + vel(fid(f))*dt*this%mesh%area(fid(f))
+            else
+              tmp = tmp - vel(fid(f))*dt*this%mesh%area(fid(f))
+            end if
+         end do
+       end associate
+
+       if(abs(tmp > 1.0e-12)) then
+         print*,'Velocity field has divergence of ', tmp, ' for cell', j
+         print*,'This is ',100.0_r8*tmp/this%mesh%volume(j),' % of the cell volume.'
+       end if       
+    end do
+    ! END DEBUG
+
     call stop_timer('advection')
-    
+
   end subroutine flux_volumes
 
   !! Set the inflow material for the given boundary faces. A material index
@@ -405,7 +431,7 @@ contains
       end associate
     end do
 
-    ! Normalize weightings to have an L2 norm of 1.
+    ! Normalize weightings.
     do j = 1, this%mesh%ncell
       nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
       associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
@@ -627,6 +653,60 @@ contains
       
   end subroutine compute_node_velocities
 
+  subroutine compute_effective_cfl(this, a_dt)
+
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    real(r8), intent(in) :: a_dt
+
+    integer :: f, n
+    integer :: number_of_nodes, edge_end
+    real(r8) :: limiting_cfl
+    real(r8) :: edge_length, vel1, vel2
+    integer :: number_of_crossed_faces
+    real(r8) :: projected_sum
+    real(r8) :: max_vel, min_edge
+    
+    
+    limiting_cfl = -huge(1.0_r8)
+    max_vel = -huge(1.0_r8)
+    min_edge = huge(1.0_r8)
+    number_of_crossed_faces = 0
+    do f = 1, this%mesh%nface_onP
+
+      associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
+        number_of_nodes = size(node_id)
+        do n = 1, number_of_nodes
+          edge_end = node_id(mod(n,number_of_nodes)+1)
+          edge_length = sqrt(dot_product(this%mesh%x(:,node_id(n))-this%mesh%x(:,edge_end), &
+               this%mesh%x(:,node_id(n))-this%mesh%x(:,edge_end)))
+          min_edge = min(min_edge, edge_length)
+          ! Want velocity magnitude in edge direction          
+          vel1 = dot_product(this%w_node(1:3,node_id(n)), (this%mesh%x(:,edge_end)-this%mesh%x(:,node_id(n)))/edge_length)
+          vel2 = dot_product(this%w_node(1:3,edge_end), (this%mesh%x(:,node_id(n))-this%mesh%x(:,edge_end))/edge_length)
+          max_vel = max(max_vel, sqrt(dot_product(this%w_node(1:3,node_id(n)),this%w_node(1:3,node_id(n)))))
+          max_vel = max(max_vel, sqrt(dot_product(this%w_node(1:3,edge_end),this%w_node(1:3,edge_end))))    
+          ! This is a necessary but not sufficient criteria for  detecting
+          ! "hour-glass modes" that will be created during projection          
+          projected_sum =  (max(vel1,0.0_r8)+max(vel2,0.0_r8))*a_dt/edge_length
+          if(projected_sum > 1.0_r8) then
+           number_of_crossed_faces = number_of_crossed_faces + 1
+          end if
+
+          ! This is some measure of CFL based on edge-parallel vertex travel
+          limiting_cfl = max(limiting_cfl, max(abs(vel1), abs(vel2))*a_dt/edge_length)
+        end do
+      end associate
+      
+    end do
+
+    print*,'Effective Unsplit CFL', limiting_cfl
+    print*,'Ivey CFL', max_vel*a_dt/min_edge
+    if(number_of_crossed_faces > 0) then
+      print*,'WARNING: ',number_of_crossed_faces, ' face crossings might exist, could lose discrete conservation.'
+    end if
+      
+  end subroutine compute_effective_cfl
+
   subroutine compute_projected_nodes(this, a_dt)
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
@@ -655,6 +735,9 @@ contains
     real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume
     type(TagAccVM_SepVol_type) :: tagged_sepvol
     integer :: current_tag, min_band
+
+    ! Debug
+    type(SepVol_type) :: sepvol
     
     ASSERT(this%nmat == 2) ! Will alleviate later
 
@@ -702,10 +785,6 @@ contains
           
             call construct(this%IRL_CapOcta_LLL, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_dt*a_face_vel(f)*this%mesh%area(f))
-            if(f == 7659) then
-              print*,'Volume for face', f
-              print*,calculateVolume(this%IRL_CapOcta_LLL)
-            end if            
             call getMoments(this%IRL_CapOcta_LLL, &
                             this%localized_separator_link(neighbor_cell_index), &
                             tagged_sepvol)
@@ -804,7 +883,7 @@ contains
       end do
       this%face_flux(:,f) = phase_volume
 
-      if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-13 .and. &
+      if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-14 .and. &
          abs(a_dt*a_face_vel(f)*this%mesh%area(f)) > epsilon(1.0_r8)  ) then
         print*,'Face failed', f, this%mesh%fcell(:,f)
         print*,'Case: ', this%flux_geometry_class(f)
@@ -881,19 +960,19 @@ contains
         cycle
       end if      
       a_vof(:,j) = a_vof(:,j) * this%mesh%volume(j)
+      cell_volume_sum = this%mesh%volume(j)      
       number_of_faces = this%mesh%xcface(j+1) - this%mesh%xcface(j)
-      cell_volume_sum = this%mesh%volume(j)
       do f = 1, number_of_faces
         a_vof(:,j) = a_vof(:,j) - a_flux_vol(:, this%mesh%xcface(j)+f-1)
         cell_volume_sum = cell_volume_sum - sum(a_flux_vol(:, this%mesh%xcface(j)+f-1))
       end do
 
-      ! DEBUG
-      if(abs(this%mesh%volume(j) - cell_volume_sum) .gt. 1.0e-14*this%mesh%volume(j)) then
-        print*,'Unconservative fluxing in volume!!', j, this%mesh%volume(j), cell_volume_sum
-        print*,a_vof(:,j)
-        print*,sum(abs(a_vof(:,j)))
-      end if
+      ! ! DEBUG
+      ! if(abs(this%mesh%volume(j) - cell_volume_sum) .gt. 1.0e-14) then
+      !   print*,'Unconservative fluxing in volume!!', j, this%mesh%volume(j), cell_volume_sum
+      !   print*,a_vof(:,j)
+      !   print*,sum(abs(a_vof(:,j)))
+      ! end if
       
       a_vof(:,j) = a_vof(:,j) / cell_volume_sum
       vof_modified = .false.
@@ -909,7 +988,7 @@ contains
           if(k==2) then
             call setPlane(this%planar_separator(j),0,[0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
           end if          
-        else if(a_vof(k,j) > 1.0_r8 - this%cutoff .and. abs(a_vof(k,j)) < 1.0_r8 - EPSILON(1.0_r8)) then
+        else if(a_vof(k,j) > 1.0_r8 - this%cutoff .and. abs(1.0_r8 - a_vof(k,j)) >  EPSILON(1.0_r8)) then
           vof_modified = .true.
           summed_removed(k) = summed_removed(k) + (1.0_r8 - a_vof(k,j))
           a_vof(k,j) = 1.0_r8
@@ -1098,7 +1177,7 @@ contains
       end if
 
       if(size(a_node_list) == 4) then
-        a_irl_ordered_list = [a_node_list(2), a_node_list(3), a_node_list(4), a_node_list(1)]        
+         a_irl_ordered_list = [a_node_list(2), a_node_list(3), a_node_list(4), a_node_list(1)]
       end if
       
       return
