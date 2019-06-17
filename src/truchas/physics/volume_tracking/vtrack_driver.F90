@@ -72,7 +72,7 @@ module vtrack_driver
   public :: vtrack_velocity_overwrite
   private :: vtrack_update_mat_band
 
-  integer, parameter, private :: band_map_width = 6 ! Size of band_map to create in +/- direction.
+  integer, parameter, private :: band_map_width = 7 ! Size of band_map to create in +/- direction.
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -259,6 +259,7 @@ contains
   subroutine vtrack_update(t, dt, vel_fn, vel_cc, initial)
 
     use parallel_communication, only : global_sum
+    use parameter_module, only : string_len
     
     use constants_module
     real(r8), intent(in) :: t, dt
@@ -268,6 +269,10 @@ contains
 
     integer :: i, j, k, f0, f1
     real(r8) :: vol_sum(size(this%fvof_i,1))
+
+    real(r8) :: tmp
+    character(string_len) :: message, myformat
+    
 
     if (.not.allocated(this)) return
     if (this%fluids == 0) return
@@ -296,7 +301,7 @@ contains
             this%flux_vel(j) = -vel_fn(k)
           else
             this%flux_vel(j) = vel_fn(k)
-          end if
+          end if          
         end do
       end do
     
@@ -310,10 +315,13 @@ contains
      end do
     do j = 1, size(vol_sum)
       vol_sum(j) = global_sum(vol_sum(j))
-    end do     
-    print*,'Phase volumes', vol_sum
-    print*,'Phase volume change: ', vol_sum - this%fvol_init
-    print*,'Ivey conservation: ', (vol_sum - this%fvol_init)/sum(this%fvol_init)
+    end do
+
+    write(myformat, '(a,i,a)') '(a,',size(vol_sum),'es12.4)'
+    write(message, trim(myformat)) 'Absolute volume change: ', vol_sum - this%fvol_init
+    call TLS_info(message)
+    write(message, trim(myformat)) 'Normalized volume change: ',  (vol_sum - this%fvol_init)/sum(this%fvol_init)
+    call TLS_info(message)
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then
@@ -401,20 +409,19 @@ contains
 
   end subroutine vtrack_set_inflow_bc
 
-  subroutine vtrack_velocity_overwrite(a_tmp_time, a_face_velocity, a_cell_velocity)
+  subroutine vtrack_velocity_overwrite(a_time, a_face_velocity, a_cell_velocity)
 
     use vof_velocity_overwrite, only : velocity_overwrite_requested, &
                                        velocity_overwrite_case
     use physics_module, only : prescribed_flow
     use constants_module, only : pi
 
-    real(r8), intent(in) :: a_tmp_time
+    real(r8), intent(in) :: a_time
     real(r8), intent(inout) :: a_face_velocity(:)
     real(r8), intent(inout) :: a_cell_velocity(:,:)
 
     integer :: j, f
     real(r8) :: node_location(3), full_face_velocity(3)
-    real(r8) :: a_time
 
     if (.not.allocated(this)) return
     if(.not.velocity_overwrite_requested) return
@@ -569,7 +576,7 @@ contains
 
     ! Seed the initial 0-band that has interface
     this%xmat_band_map(0,:) = 1
-    this%xmat_band_map(1,:) = 1
+    this%xmat_band_map(1,:) = this%xmat_band_map(0,:)
     do j = 1,this%mesh%ncell
       do k = 1,total_phases
         has_interface = (this%fvof_i(k,j) >  this%vt%cutoff) .and. &
@@ -614,7 +621,23 @@ contains
         end if
       end do
     end do
-!print*,'ADVECTING EVERYWHERE RIGHT NOW - BAND TURNED OFF'
+
+    ! This sets the cells near the boundary conditions to a band of 0
+    ! Could be written more efficiently
+    ! do c = 1, this%mesh%ncell
+    !   associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(c):this%mesh%xcnhbr(c+1)-1))
+    !     do n = 1, size(cneigh)
+    !       if(cneigh(n) ==0 ) then
+    !          do k = 1, total_phases
+    !            this%mat_band(k,c) = 0
+    !            this%mat_band_map(this%xmat_band_map(1,k),k) = c
+    !            this%xmat_band_map(1,k) = this%xmat_band_map(1,k) + 1
+    !          end do
+    !       end if
+    !     end do
+    !   end associate
+    ! end do
+! print*,'ADVECTING EVERYWHERE RIGHT NOW - BAND TURNED OFF'
 !this%mat_band(:,:) = 0
     ! Now loop through and fill out band to +/- band_map_width
     ! To fill in band b, loop though cells in b-1

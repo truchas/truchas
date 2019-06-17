@@ -67,8 +67,8 @@ contains
                                       velocity_overwrite_case
     use input_utilities,        only: seek_to_namelist
     use parallel_info_module,   only: p_info
+    use parallel_communication, only: is_IOP, broadcast
     use parameter_module,       only: mbody
-    use pgslib_module,          only: PGSLib_GLOBAL_ANY, pgslib_bcast
     use string_utilities,       only: lower_case
     use string_utilities, only: i_to_c
 
@@ -93,24 +93,24 @@ contains
     call overwrite_velocity_default  ()
 
     !! Locate the INTERFACES namelist (first occurence).
-    found = .false.
-    if (p_info%IOP) then
+    if (is_IOP) then
       rewind lun
       call seek_to_namelist (lun, 'OVERWRITE_VELOCITY', found, iostat=ios)
     end if
+    call broadcast (found)   
     if(found) then
        velocity_overwrite_requested = .true.
     else
        return
     end if
     
-    call pgslib_bcast (ios)
+    call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('error reading input file; iostat=' // i_to_c(ios))
 
-    call pgslib_bcast (found)
+    call broadcast (found)
     if (found) then
-      if (p_info%IOP) read(lun, nml=overwrite_velocity, iostat=ios)
-      call pgslib_bcast (ios)
+      if (is_IOP) read(lun, nml=overwrite_velocity, iostat=ios)
+      call broadcast(ios)
       if (ios /= 0) call TLS_fatal ('error reading OVERWRITE_VELOCITY namelist; iostat=' // i_to_c(ios))
     else
       call TLS_info ('  OVERWRITE_VELOCITY  namelist not found; not overwriting velocities')
@@ -135,14 +135,14 @@ contains
     use vof_velocity_overwrite, only: velocity_overwrite_requested, &
                                       velocity_overwrite_case
     use parallel_info_module, only: p_info
-    use pgslib_module,        only: PGSLib_BCAST
+    use parallel_communication, only: broadcast
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Broadcast Data
     if (.not. p_info%UseGlobalServices) then
-       call PGSLib_BCAST (velocity_overwrite_requested)
-       call PGSLib_BCAST (velocity_overwrite_case)
+       call broadcast (velocity_overwrite_requested)
+       call broadcast (velocity_overwrite_case)
     endif
 
   end subroutine overwrite_velocity_input_parallel
