@@ -110,7 +110,7 @@ contains
     call params%get('location_iter_max', this%location_iter_max, default=40)
     call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
     call params%get('subcycles', this%subcycles, default=2)
-    print*,'Subcycling is currently disabled for unsplit transport'
+    call TLS_warn('Subcycling is currently disabled for unsplit transport')
     call params%get('nested_dissection', this%nested_dissection, default=.true.)
 
     ! convert user material ids to array index
@@ -147,7 +147,7 @@ contains
     allocate(this%projected_nodes(3, mesh%nnode))
 
     ! list of boundary face ids
-    j = count(this%mesh%fcell(2,:this%mesh%nface) == 0)
+    j = count(this%mesh%fcell(:,:this%mesh%nface) == 0)
     allocate(this%bc_index(j), this%local_face(j), this%inflow_mat(j))
     j = 1
     do i = 1, this%mesh%nface
@@ -157,7 +157,13 @@ contains
         this%local_face(j) = &
             findloc(this%mesh%cface(this%mesh%xcface(k):this%mesh%xcface(k+1)-1), i)
         j = j + 1
-      end if
+     else if(this%mesh%fcell(1,i) == 0) then
+        this%bc_index(j) = i
+        k = this%mesh%fcell(2,i)
+        this%local_face(j) = &
+            findloc(this%mesh%cface(this%mesh%xcface(k):this%mesh%xcface(k+1)-1), i)
+        j = j + 1        
+     end if
     end do
     this%inflow_mat = 0
     
@@ -225,25 +231,25 @@ contains
 
     call this%update_vof(a_vof_band, flux_vol, vof)
 
-    ! DEBUG
-    do j = 1, this%mesh%ncell_onP
-       tmp = 0.0_r8
-       associate(fid => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
-         do f = 1, size(fid)
-            if(btest(this%mesh%cfpar(j), f)) then
-              tmp = tmp + vel(fid(f))*dt*this%mesh%area(fid(f))
-            else
-              tmp = tmp - vel(fid(f))*dt*this%mesh%area(fid(f))
-            end if
-         end do
-       end associate
+    ! ! DEBUG
+    ! do j = 1, this%mesh%ncell_onP
+    !    tmp = 0.0_r8
+    !    associate(fid => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+    !      do f = 1, size(fid)
+    !         if(btest(this%mesh%cfpar(j), f)) then
+    !           tmp = tmp + vel(fid(f))*dt*this%mesh%area(fid(f))
+    !         else
+    !           tmp = tmp - vel(fid(f))*dt*this%mesh%area(fid(f))
+    !         end if
+    !      end do
+    !    end associate
 
-       if(abs(tmp > 1.0e-12)) then
-         print*,'Velocity field has divergence of ', tmp, ' for cell', j
-         print*,'This is ',100.0_r8*tmp/this%mesh%volume(j),' % of the cell volume.'
-       end if       
-    end do
-    ! END DEBUG
+    !    if(abs(tmp > 1.0e-12)) then
+    !      print*,'Velocity field has divergence of ', tmp, ' for cell', j
+    !      print*,'This is ',100.0_r8*tmp/this%mesh%volume(j),' % of the cell volume.'
+    !    end if       
+    ! end do
+    ! ! END DEBUG
 
     call stop_timer('advection')
 
@@ -311,6 +317,7 @@ contains
     ! in the array is boundary_id - this%mesh%ncell
     allocate(this%boundary_recon_to_cell(size(this%bc_index)))
 
+    face_to_boundary_mapping = -10000
     do j = 1, size(this%bc_index)
        this%boundary_recon_to_cell(j) = this%mesh%fcell(1,this%bc_index(j))
        face_to_boundary_mapping(this%bc_index(j)) = this%mesh%ncell + j
@@ -345,7 +352,6 @@ contains
             
       associate(face_id => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
                 cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
-        
         total_internal = count(cn /= 0)
         found_internal = 0
         found_boundary = 0        
@@ -357,7 +363,7 @@ contains
           if(btest(this%mesh%cfpar(j), f)) then 
             ! Want outward oriented normal
             tmp_plane = -tmp_plane
-          end if
+         end if
          
           ! Create and Link this plane in the LocalizedSeparatorLink
           if(cn(f) /= 0) then
@@ -655,6 +661,9 @@ contains
 
   subroutine compute_effective_cfl(this, a_dt)
 
+    use parallel_communication, only : global_sum
+    use parameter_module, only : string_len
+
     class(unsplit_geometric_volume_tracker), intent(in) :: this
     real(r8), intent(in) :: a_dt
 
@@ -665,6 +674,7 @@ contains
     integer :: number_of_crossed_faces
     real(r8) :: projected_sum
     real(r8) :: max_vel, min_edge
+    character(string_len) :: message    
     
     
     limiting_cfl = -huge(1.0_r8)
@@ -699,10 +709,14 @@ contains
       
     end do
 
-    print*,'Effective Unsplit CFL', limiting_cfl
-    print*,'Ivey CFL', max_vel*a_dt/min_edge
+    write(message, '(a,es12.4)') 'Effective Unsplit CFL', limiting_cfl
+    call TLS_info(message)
+    write(message, '(a,es12.4)') 'Ivey CFL', max_vel*a_dt/min_edge
+    call TLS_info(message)
+    number_of_crossed_faces =  global_sum(number_of_crossed_faces)
     if(number_of_crossed_faces > 0) then
-      print*,'WARNING: ',number_of_crossed_faces, ' face crossings might exist, could lose discrete conservation.'
+       write(message, '(4i,a)') number_of_crossed_faces, 'face crossings might exist, could lost discrete conservation.'
+       call TLS_warn(message)
     end if
       
   end subroutine compute_effective_cfl
@@ -791,7 +805,7 @@ contains
 
           case(2) ! Triangular Face -> Octahedron Volume
           
-            call construct(this%IRL_CapOcta_LLT, cell_nodes)            
+            call construct(this%IRL_CapOcta_LLT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, a_dt*a_face_vel(f)*this%mesh%area(f))
             call getMoments(this%IRL_CapOcta_LLT, &
                             this%localized_separator_link(neighbor_cell_index), &
@@ -841,7 +855,6 @@ contains
             
             call construct(this%IRL_CapDod_LLTT, cell_nodes)            
             call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, a_dt*a_face_vel(f)*this%mesh%area(f))
-
             call getMoments(this%IRL_CapDod_LLTT, &
                             this%localized_separator_link(neighbor_cell_index), &
                             tagged_sepvol)
@@ -873,9 +886,9 @@ contains
          current_tag = getTagForIndex(tagged_sepvol, t)
          if(current_tag > this%mesh%ncell) then
             ! Is a boundary condition, all volume in phase 0
-            phase_volume(:) = &
-                 phase_volume(:) + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(tagged_sepvol, t, 0)
-          else
+            phase_volume = &
+                 phase_volume + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(tagged_sepvol, t, 0)
+         else
             ! Is inside domain, trust actual volumes
             phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
             phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvol, t, 1)
@@ -883,13 +896,19 @@ contains
       end do
       this%face_flux(:,f) = phase_volume
 
-      if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-14 .and. &
-         abs(a_dt*a_face_vel(f)*this%mesh%area(f)) > epsilon(1.0_r8)  ) then
-        print*,'Face failed', f, this%mesh%fcell(:,f)
-        print*,'Case: ', this%flux_geometry_class(f)
-        print*,a_dt*a_face_vel(f)*this%mesh%area(f), sum(phase_volume)
-        print*,phase_volume
-      end if
+      ! if(phase_volume(1)*phase_volume(2) < 0.0_r8) then
+      !    print*,'Face ', f, ' has crossed signs', phase_volume
+      !    print*,'Case: ', this%flux_geometry_class(f)
+      !    print*,'Cell neighbors: ', this%mesh%fcell(:,f)
+      ! end if
+
+       ! if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-14 .and. &
+       !    abs(a_dt*a_face_vel(f)*this%mesh%area(f)) > epsilon(1.0_r8)  ) then
+       !   print*,'Face failed', f, this%mesh%fcell(:,f)
+       !   print*,'Case: ', this%flux_geometry_class(f)
+       !   print*,a_dt*a_face_vel(f)*this%mesh%area(f), sum(phase_volume)
+       !   print*,phase_volume
+       ! end if
       
     end do
     
@@ -911,6 +930,7 @@ contains
        a_fractions(:) = a_vof_n(:,this%boundary_recon_to_cell(a_tag - this%mesh%ncell))
     end if
 
+    return
   end function getBCMaterialFractions
   
   subroutine update_vof(this, a_vof_band, a_flux_vol, a_vof)
@@ -924,17 +944,15 @@ contains
     integer :: number_of_faces
     real(r8) :: cell_volume_sum
     logical :: vof_modified
-
-    real(r8) :: tmp_sum(this%nmat), tmp_sum_prev(this%nmat), summed_removed(this%nmat)
     
     ! Fill the ragged a_flux_vol array
     a_flux_vol = 0.0_r8
-    do j = 1, this%mesh%ncell  
+    do j = 1, this%mesh%ncell_onP
       if(minval(abs(a_vof_band(:,j))) > advect_band) then
         cycle
       end if
-      associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1) )
-      do f = 1, size(fn)
+      associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1) )      
+       do f = 1, size(fn)
         if(btest(this%mesh%cfpar(j), f)) then
           a_flux_vol(:,this%mesh%xcface(j)+f-1) = -this%face_flux(:,fn(f))
         else
@@ -946,19 +964,11 @@ contains
       
     end do
 
-    tmp_sum = 0.0_r8
-    do j = 1, this%mesh%ncell_onP
-      tmp_sum = tmp_sum + a_vof(:,j)*this%mesh%volume(j)
-    end do
-    print*,'Before update', tmp_sum
-    tmp_sum_prev = tmp_sum
-    
     ! Use a_flux_vol to update a_vof now
-    summed_removed = 0.0_r8
     do j = 1, this%mesh%ncell_onP
       if(minval(abs(a_vof_band(:,j))) > advect_band) then
         cycle
-      end if      
+      end if
       a_vof(:,j) = a_vof(:,j) * this%mesh%volume(j)
       cell_volume_sum = this%mesh%volume(j)      
       number_of_faces = this%mesh%xcface(j+1) - this%mesh%xcface(j)
@@ -973,32 +983,16 @@ contains
       !   print*,a_vof(:,j)
       !   print*,sum(abs(a_vof(:,j)))
       ! end if
-      
       a_vof(:,j) = a_vof(:,j) / cell_volume_sum
       vof_modified = .false.
+      ! This will lead to inconsistency with face fluxes
       do k = 1, this%nmat
         if(a_vof(k,j) < this%cutoff .and. abs(a_vof(k,j)) > EPSILON(1.0_r8)) then
           vof_modified = .true.
-          summed_removed(k) = summed_removed(k) - a_vof(k,j)
           a_vof(k,j) = 0.0_r8
-          ! TODO Also update IRL planar_separator plane to reflect this
-          if(k==1) then
-            call setPlane(this%planar_separator(j),0,[0.0_r8, 0.0_r8, 0.0_r8],-1.0_r8)
-          end if
-          if(k==2) then
-            call setPlane(this%planar_separator(j),0,[0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
-          end if          
         else if(a_vof(k,j) > 1.0_r8 - this%cutoff .and. abs(1.0_r8 - a_vof(k,j)) >  EPSILON(1.0_r8)) then
           vof_modified = .true.
-          summed_removed(k) = summed_removed(k) + (1.0_r8 - a_vof(k,j))
           a_vof(k,j) = 1.0_r8
-          ! TODO Also update IRL planar_separator plane to reflect this
-          if(k==1) then
-            call setPlane(this%planar_separator(j),0,[0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
-          end if
-          if(k==2) then
-            call setPlane(this%planar_separator(j),0,[0.0_r8, 0.0_r8, 0.0_r8],-1.0_r8)
-          end if                    
         end if
       end do
     
@@ -1008,15 +1002,7 @@ contains
       end if
     end do
 
-    call gather_boundary(this%mesh%cell_ip, a_vof)       
-
-    tmp_sum = 0.0_r8
-    do j = 1, this%mesh%ncell_onP
-      tmp_sum = tmp_sum + a_vof(:,j)*this%mesh%volume(j)
-    end do
-    print*,'After update', tmp_sum
-    print*,'Change ', tmp_sum - tmp_sum_prev
-    print*,'Clipped ', summed_removed
+    call gather_boundary(this%mesh%cell_ip, a_vof)
 
   end subroutine update_vof    
 

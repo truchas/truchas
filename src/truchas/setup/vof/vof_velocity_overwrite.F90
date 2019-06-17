@@ -26,9 +26,9 @@ module vof_velocity_overwrite
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
   ! Logical telling if this was requested in the name list
-  logical, public, save :: velocity_overwrite_requested
+  logical, public :: velocity_overwrite_requested
 
   ! Case used to identify velocity set in vtrack_driver.f90
-  character(string_len), public, save :: velocity_overwrite_case
+  character(string_len), public :: velocity_overwrite_case
 
 end module vof_velocity_overwrite
