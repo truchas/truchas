@@ -29,13 +29,13 @@ module volume_tracker_class
       type(parameter_list), intent(inout) :: params
     end subroutine vt_init
 
-    subroutine vt_flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_vof_band)
+    subroutine vt_flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_interface_band)
       import :: volume_tracker, r8
       class(volume_tracker), intent(inout) :: this
       real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
       real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
       integer, intent(in) :: fluids, void
-      integer, intent(in) :: a_vof_band(:,:)
+      integer, intent(in) :: a_interface_band(:)
     end subroutine vt_flux_volumes
 
     subroutine vt_set_inflow_material(this, mat, faces)

@@ -277,7 +277,7 @@ contains
       use legacy_mesh_api, only: ndim, ncells, nfc
       use flow_driver
       use property_module, only : get_user_material_id
-      use vtrack_driver, only : vtrack_mat_band_view      
+      use vtrack_driver, only : vtrack_mat_band_view  , vtrack_interface_band_view    
 
       integer :: m
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
@@ -301,8 +301,14 @@ contains
           write(name(m),'(a,i4.4)') 'Band', get_user_material_id(m)
         end do
         call write_seq_cell_field (seq, mat_band, 'Band', for_viz=.true., viz_name=name)
-      end if           
-      
+      end if
+
+      ! Interface band
+      if (nmat > 1) then
+        mat_band(1,:) = real(vtrack_interface_band_view(),r8)
+        name(1) = 'IntBand'
+        call write_seq_cell_field (seq, mat_band(1,:), 'IntBand', for_viz=.true., viz_name=name(1))
+      end if      
 
       !call flow_driver_dump_state
 
