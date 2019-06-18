@@ -66,7 +66,7 @@ module vtrack_driver
 
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
-  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view, vtrack_mat_band_view
+  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view, vtrack_mat_band_view, vtrack_interface_band_view
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
   public :: vtrack_velocity_overwrite
@@ -89,6 +89,9 @@ module vtrack_driver
     integer, allocatable :: mat_band(:,:) ! Signed material band for band_number = (material_id, cell_id)
     integer, allocatable :: mat_band_map(:,:) ! Unstructured mapping of band to material cell_id = (index, material)
     integer, allocatable :: xmat_band_map(:,:) ! Number of cells in mat_band_map for each band level.
+    integer, allocatable :: interface_band(:) ! Signed band indicating if there is interface nearby
+    integer, allocatable :: interface_band_map(:) ! Unstructued mapping of interface band to cell_id = (index)
+    integer, allocatable :: xinterface_band_map(:) ! Number of cells in interface_band_map for each band level.    
     integer :: fluids ! number of fluids (not including void) to advance
     integer :: void ! 1 if simulation includes void else 0
     integer :: solid ! 1 if simulation includes solid else 0
@@ -130,6 +133,13 @@ contains
     p => this%mat_band
   end function vtrack_mat_band_view
 
+
+  function vtrack_interface_band_view() result(p)
+    integer, pointer :: p(:)
+    ASSERT(vtrack_enabled())
+    p => this%interface_band
+  end function vtrack_interface_band_view
+  
   subroutine vtrack_driver_init(params)
 
     use mesh_manager, only: unstr_mesh_ptr
@@ -188,8 +198,11 @@ contains
 
     ! Allocations for the band_map based on how near phases are
     allocate(this%mat_band(nmat, this%mesh%ncell))
-    allocate(this%mat_band_map(this%mesh%ncell, nmat))
+    allocate(this%mat_band_map(this%mesh%ncell_onP, nmat))
     allocate(this%xmat_band_map(0:band_map_width+1, nmat))
+    allocate(this%interface_band(this%mesh%ncell))
+    allocate(this%interface_band_map(this%mesh%ncell_onP))
+    allocate(this%xinterface_band_map(0:band_map_width+1))    
 
     call params%get('track_interfaces', track_interfaces)
     call params%get('unsplit_interface_advection', this%unsplit_advection, .true.)
@@ -212,6 +225,7 @@ contains
     call vtrack_update_mat_band()    
 
     ! Compute sum of volume of each phase in domain
+    this%fvol_init = 0.0_r8
     do j = 1, this%mesh%ncell_onP
       this%fvol_init = this%fvol_init + this%fvof_o(:,j) * this%mesh%volume(j)
     end do
@@ -288,7 +302,7 @@ contains
        ! Unsplit advection written to use face velocities, operates on faces.
        ! Cell centered velocity also needed to form node velocities for projection.
       call this%vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
-          this%fluids, this%void, dt, this%mat_band)
+          this%fluids, this%void, dt, this%interface_band)
     else
       ! Split advection works on a per-cell level.
       ! copy face velocities into cell-oriented array
@@ -306,7 +320,7 @@ contains
       end do
     
       call this%vt%flux_volumes(this%flux_vel, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
-          this%fluids, this%void, dt, this%mat_band)
+          this%fluids, this%void, dt, this%interface_band)
     end if
     
     vol_sum = 0.0_r8
@@ -316,7 +330,6 @@ contains
     do j = 1, size(vol_sum)
       vol_sum(j) = global_sum(vol_sum(j))
     end do
-
     write(myformat, '(a,i,a)') '(a,',size(vol_sum),'es12.4)'
     write(message, trim(myformat)) 'Absolute volume change: ', vol_sum - this%fvol_init
     call TLS_info(message)
@@ -561,12 +574,17 @@ contains
 
   end subroutine vtrack_velocity_overwrite
 
-
+  ! NOTE: There is a lot of parallel communication in this routine.
+  ! It could probably be rewritten to use less. Also, if a
+  ! band is not required on a per-material basis, could save
+  ! a factor of nmat communications by just constructing a
+  ! "is there interface of any kind or not" band.
   subroutine vtrack_update_mat_band()    
 
     integer :: b, j, n, k, c
     integer :: total_phases
     logical :: has_interface
+    integer :: smallest_band
 
     total_phases = this%fluids + this%void + this%solid
 
@@ -577,7 +595,7 @@ contains
     ! Seed the initial 0-band that has interface
     this%xmat_band_map(0,:) = 1
     this%xmat_band_map(1,:) = this%xmat_band_map(0,:)
-    do j = 1,this%mesh%ncell
+    do j = 1,this%mesh%ncell_onP
       do k = 1,total_phases
         has_interface = (this%fvof_i(k,j) >  this%vt%cutoff) .and. &
              (this%fvof_i(k,j) < 1.0_r8 - this%vt%cutoff)
@@ -622,21 +640,8 @@ contains
       end do
     end do
 
-    ! This sets the cells near the boundary conditions to a band of 0
-    ! Could be written more efficiently
-    ! do c = 1, this%mesh%ncell
-    !   associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(c):this%mesh%xcnhbr(c+1)-1))
-    !     do n = 1, size(cneigh)
-    !       if(cneigh(n) ==0 ) then
-    !          do k = 1, total_phases
-    !            this%mat_band(k,c) = 0
-    !            this%mat_band_map(this%xmat_band_map(1,k),k) = c
-    !            this%xmat_band_map(1,k) = this%xmat_band_map(1,k) + 1
-    !          end do
-    !       end if
-    !     end do
-    !   end associate
-    ! end do
+    call gather_boundary(this%mesh%cell_ip, this%mat_band)
+
 ! print*,'ADVECTING EVERYWHERE RIGHT NOW - BAND TURNED OFF'
 !this%mat_band(:,:) = 0
     ! Now loop through and fill out band to +/- band_map_width
@@ -650,24 +655,65 @@ contains
 
              associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
                do n = 1, size(cneigh)
-                 if(cneigh(n) /= 0) then
+                 if(cneigh(n) /= 0 .and. cneigh(n) <= this%mesh%ncell_onP) then
                    if(abs(this%mat_band(k,cneigh(n))) .eq. band_map_width+1) then
                      ! Not yet set
-                     this%mat_band(k,cneigh(n)) = sign(b, this%mat_band(k,cneigh(n)))
+                     this%mat_band(k,cneigh(n)) = sign(b, this%mat_band(k,cneigh(n)))                     
                      this%mat_band_map(this%xmat_band_map(b+1,k),k) = cneigh(n)
                      this%xmat_band_map(b+1,k) =  this%xmat_band_map(b+1,k) + 1                     
                    end if
                  end if
-
                end do
-
            end associate          
 
           end do
-        end associate 
-      end do 
-   end do
+        end associate
 
-  end subroutine vtrack_update_mat_band
+      end do
+
+      call gather_boundary(this%mesh%cell_ip, this%mat_band)
+      ! Also loop over halo to catch band updated on boundary
+      do k = 1, total_phases
+        do j = this%mesh%ncell_onP+1, this%mesh%ncell
+          if(abs(this%mat_band(k,j)) == b-1) then
+             associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+               do n = 1, size(cneigh)
+                 if(cneigh(n) /= 0 .and. cneigh(n) <= this%mesh%ncell_onP) then
+                   if(abs(this%mat_band(k,cneigh(n))) == band_map_width+1) then
+                     ! Not yet set
+                     this%mat_band(k,cneigh(n)) = sign(b, this%mat_band(k,cneigh(n)))
+                     this%mat_band_map(this%xmat_band_map(b+1,k),k) = cneigh(n)
+                     this%xmat_band_map(b+1,k) =  this%xmat_band_map(b+1,k) + 1
+                   end if
+                 end if
+               end do
+             end associate
+           end if
+         end do
+       end do
+      
+     end do
+
+     ! Create interface band map that indicates presence of any interface
+     ! Only has positive (or 0) band entries.
+     this%interface_band = band_map_width+1
+     this%xinterface_band_map(0) = 1
+     do b = 0, band_map_width
+         this%xinterface_band_map(b+1) = this%xinterface_band_map(b)
+       do j = 1, this%mesh%ncell
+         smallest_band = minval(abs(this%mat_band(:,j)))
+         if(smallest_band == b) then
+           ! Add to band
+           this%interface_band(j) = smallest_band
+           if(j <= this%mesh%ncell_onP) then
+             this%interface_band_map(this%xinterface_band_map(b+1)) = j
+             this%xinterface_band_map(b+1) =  this%xinterface_band_map(b+1) + 1
+           end if
+         end if
+       end do
+     end do
+     
+
+ end subroutine vtrack_update_mat_band
 
 end module vtrack_driver

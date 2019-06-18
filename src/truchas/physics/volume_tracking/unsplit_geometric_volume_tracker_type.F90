@@ -196,12 +196,12 @@ contains
 
   ! flux volumes routine assuming flux_vol is a cface-like array
   ! flux volumes routine assuming vel is stored on faces, length 1:mesh%nfaces
-  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_vof_band)
+  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_interface_band)
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
-    integer, intent(in) :: a_vof_band(:,:)
+    integer, intent(in) :: a_interface_band(:)
 
     integer :: i,j    
 
@@ -224,12 +224,9 @@ contains
 
     call this%compute_projected_nodes(dt)
 
-    call this%compute_fluxes(vel, dt, vof, a_vof_band)
+    call this%compute_fluxes(vel, dt, vof, a_interface_band)
 
-    ! Need to communicate fluxes
-    call gather_boundary(this%mesh%face_ip, this%face_flux)
-
-    call this%update_vof(a_vof_band, flux_vol, vof)
+    call this%update_vof(a_interface_band, flux_vol, vof)
 
     ! ! DEBUG
     ! do j = 1, this%mesh%ncell_onP
@@ -423,6 +420,8 @@ contains
 
     ! Now normalize for  average squared distance
     this%w_node(1,:) = this%w_node(1,:) / (this%w_node(2,:) + tiny(1.0_r8))
+
+    call gather_boundary(this%mesh%node_ip, this%w_node(1,:))    
 
     ! Compute weightings using previously stored squared distance and average length scale
     this%w_node(2,:) = 0.0_r8
@@ -655,13 +654,13 @@ contains
       
       end do
       
-      call gather_boundary(this%mesh%node_ip, this%w_node)
+      call gather_boundary(this%mesh%node_ip, this%w_node(1:3,:))
       
   end subroutine compute_node_velocities
 
   subroutine compute_effective_cfl(this, a_dt)
 
-    use parallel_communication, only : global_sum
+    use parallel_communication, only : global_sum, global_maxval
     use parameter_module, only : string_len
 
     class(unsplit_geometric_volume_tracker), intent(in) :: this
@@ -673,13 +672,12 @@ contains
     real(r8) :: edge_length, vel1, vel2
     integer :: number_of_crossed_faces
     real(r8) :: projected_sum
-    real(r8) :: max_vel, min_edge
+    real(r8) :: max_vel,  ivey_cfl
     character(string_len) :: message    
     
     
     limiting_cfl = -huge(1.0_r8)
-    max_vel = -huge(1.0_r8)
-    min_edge = huge(1.0_r8)
+    ivey_cfl = -huge(1.0_r8)
     number_of_crossed_faces = 0
     do f = 1, this%mesh%nface_onP
 
@@ -689,12 +687,12 @@ contains
           edge_end = node_id(mod(n,number_of_nodes)+1)
           edge_length = sqrt(dot_product(this%mesh%x(:,node_id(n))-this%mesh%x(:,edge_end), &
                this%mesh%x(:,node_id(n))-this%mesh%x(:,edge_end)))
-          min_edge = min(min_edge, edge_length)
           ! Want velocity magnitude in edge direction          
           vel1 = dot_product(this%w_node(1:3,node_id(n)), (this%mesh%x(:,edge_end)-this%mesh%x(:,node_id(n)))/edge_length)
           vel2 = dot_product(this%w_node(1:3,edge_end), (this%mesh%x(:,node_id(n))-this%mesh%x(:,edge_end))/edge_length)
-          max_vel = max(max_vel, sqrt(dot_product(this%w_node(1:3,node_id(n)),this%w_node(1:3,node_id(n)))))
-          max_vel = max(max_vel, sqrt(dot_product(this%w_node(1:3,edge_end),this%w_node(1:3,edge_end))))    
+          max_vel = max(sqrt(dot_product(this%w_node(1:3,node_id(n)),this%w_node(1:3,node_id(n)))), &
+               sqrt(dot_product(this%w_node(1:3,edge_end),this%w_node(1:3,edge_end))))
+          ivey_cfl = max(ivey_cfl, max_vel*a_dt/edge_length)
           ! This is a necessary but not sufficient criteria for  detecting
           ! "hour-glass modes" that will be created during projection          
           projected_sum =  (max(vel1,0.0_r8)+max(vel2,0.0_r8))*a_dt/edge_length
@@ -709,13 +707,13 @@ contains
       
     end do
 
-    write(message, '(a,es12.4)') 'Effective Unsplit CFL', limiting_cfl
+    write(message, '(a,es12.4)') 'Effective Unsplit CFL', global_maxval(limiting_cfl)
     call TLS_info(message)
-    write(message, '(a,es12.4)') 'Ivey CFL', max_vel*a_dt/min_edge
+    write(message, '(a,es12.4)') 'Ivey CFL', global_maxval(ivey_cfl)
     call TLS_info(message)
     number_of_crossed_faces =  global_sum(number_of_crossed_faces)
     if(number_of_crossed_faces > 0) then
-       write(message, '(4i,a)') number_of_crossed_faces, 'face crossings might exist, could lost discrete conservation.'
+       write(message, '(i4,a)') number_of_crossed_faces, 'face crossings might exist, could lost discrete conservation.'
        call TLS_warn(message)
     end if
       
@@ -728,13 +726,15 @@ contains
 
     integer :: n
 
-    do n = 1, this%mesh%nnode
+    do n = 1, this%mesh%nnode_onP
       this%projected_nodes(:,n) = this%mesh%x(:,n) + this%w_node(1:3,n)*(-a_dt)
     end do
 
+    call gather_boundary(this%mesh%node_ip, this%projected_nodes)
+
   end subroutine compute_projected_nodes
   
-  subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof, a_vof_band)
+  subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof, a_interface_band)
   
     use irl_interface_helper
     
@@ -742,7 +742,7 @@ contains
     real(r8), intent(in) :: a_face_vel(:)
     real(r8), intent(in) :: a_dt
     real(r8), intent(in) :: a_vof(:,:)
-    integer, intent(in)  :: a_vof_band(:,:)
+    integer, intent(in)  :: a_interface_band(:)
         
     integer :: f, v, i, t, k
     integer ::  number_of_nodes, neighbor_cell_index
@@ -765,10 +765,10 @@ contains
       if(this%mesh%fcell(2,f) /= 0) then
         cell_volume = min(this%mesh%volume(neighbor_cell_index), &
                           this%mesh%volume(this%mesh%fcell(2,f)))
-        min_band = min(minval(abs(a_vof_band(:,neighbor_cell_index))),minval(abs(a_vof_band(:,this%mesh%fcell(2,f)))))       
+        min_band = min(abs(a_interface_band(neighbor_cell_index)),abs(a_interface_band(this%mesh%fcell(2,f))))
       else
         cell_volume = this%mesh%volume(neighbor_cell_index)
-        min_band = minval(abs(a_vof_band(:,neighbor_cell_index)))        
+        min_band = abs(a_interface_band(neighbor_cell_index))
       end if       
 
       if(min_band > advect_band) then
@@ -911,6 +911,9 @@ contains
        ! end if
       
     end do
+
+    ! Need to communicate fluxes
+    call gather_boundary(this%mesh%face_ip, this%face_flux)
     
   end subroutine compute_fluxes
 
@@ -933,10 +936,10 @@ contains
     return
   end function getBCMaterialFractions
   
-  subroutine update_vof(this, a_vof_band, a_flux_vol, a_vof)
+  subroutine update_vof(this, a_interface_band, a_flux_vol, a_vof)
   
     class(unsplit_geometric_volume_tracker), intent(in) :: this
-    integer, intent(in) :: a_vof_band(:,:)
+    integer, intent(in) :: a_interface_band(:)
     real(r8), intent(inout) :: a_flux_vol(:,:)
     real(r8), intent(inout) :: a_vof(:,:)
     
@@ -948,7 +951,7 @@ contains
     ! Fill the ragged a_flux_vol array
     a_flux_vol = 0.0_r8
     do j = 1, this%mesh%ncell_onP
-      if(minval(abs(a_vof_band(:,j))) > advect_band) then
+      if(abs(a_interface_band(j)) > advect_band) then
         cycle
       end if
       associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1) )      
@@ -966,7 +969,7 @@ contains
 
     ! Use a_flux_vol to update a_vof now
     do j = 1, this%mesh%ncell_onP
-      if(minval(abs(a_vof_band(:,j))) > advect_band) then
+      if(abs(a_interface_band(j)) > advect_band) then
         cycle
       end if
       a_vof(:,j) = a_vof(:,j) * this%mesh%volume(j)
@@ -1037,12 +1040,11 @@ contains
   ! the case of LTLT is 0+2+0+8 = 10.
   !
   ! The diagonalization of each edge will be set from the faces
-  ! on a first-come, first-served basis. Each face in
-  ! this%mesh is looped over, and if the diagonalization of the
-  ! edge has not yet been set, will be set to L (arbitrary choice).
-  ! Note, setting L for this edge will make it a T for the opposite
-  ! direction traversal of the edge.
-  
+  ! on a first-come, first-served basis based on the global Node ID
+  ! in order to be globally consistent. Each face in
+  ! this%mesh is looped over, and edges are set to have Leading
+  ! diagonalizations (L) from the node with the lower global
+  ! ID to the higher one.    
   subroutine generate_flux_classes(this)
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
@@ -1084,18 +1086,22 @@ contains
 
 
     ! Now loop through domain and set the edge orientations
-    ! on first-come, first-served basis
-    edges = -1 ! Sentinel value to mark as not-yet assigned.
-    do f = 1, this%mesh%nface
+    ! to have Leading from lower global node ID to higher
+    edges = -1
+    do f = 1, this%mesh%nface_onP
       associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
         irl_ordering = reorder_node_id(node_id)
         number_of_nodes = size(node_id)
         do n = 1, number_of_nodes
           edge_end = irl_ordering(mod(n,number_of_nodes)+1)
-          if(edges(irl_ordering(n),edge_end) == -1) then
-            ! Not yet set, so then set it.
-            edges(irl_ordering(n), edge_end) = 0 ! This direction leading
-            edges(edge_end, irl_ordering(n)) = 1 ! Opposite direction trailing
+          if(this%mesh%xnode(irl_ordering(n)) .lt. this%mesh%xnode(edge_end)) then
+            ! Leading in this direction
+            edges(irl_ordering(n), edge_end) = 0 
+            edges(edge_end, irl_ordering(n)) = 1 
+          else
+            ! Trailing in this direction
+            edges(irl_ordering(n), edge_end) = 1  
+            edges(edge_end, irl_ordering(n)) = 0 
           end if
           
         end do        
@@ -1105,7 +1111,7 @@ contains
 
     ! For each face, now store correct flux class and
     ! node ordering to be consistent
-    do f = 1, this%mesh%nface
+    do f = 1, this%mesh%nface_onP
       associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
         irl_ordering = reorder_node_id(node_id)        
         number_of_nodes = size(node_id)
