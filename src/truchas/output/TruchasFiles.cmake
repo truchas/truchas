@@ -22,7 +22,8 @@ set(OUTPUT_FILES
           output/probe_output_module.F90
           output/truchas_danu_output.F90
           output/truchas_danu_output_data.F90
-          output/truchas_danu_output_tools.F90)
+          output/truchas_danu_output_tools.F90
+	  output/truchas_phase_interface_output.F90)
 
 set(OUTPUT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities
