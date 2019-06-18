@@ -48,6 +48,7 @@ module unsplit_geometric_volume_tracker_type
     type(PlanarLoc_type), allocatable :: planar_localizer(:)
     type(PlanarSep_type), allocatable :: planar_separator(:)
     type(LocSepLink_type), allocatable :: localized_separator_link(:)
+    type(Poly_type), allocatable, public :: interface_polygons(:) ! Need public to write?
     type(Tet_type) :: IRL_tet
     type(Pyrmd_type) :: IRL_pyramid
     type(TriPrism_type) :: IRL_wedge
@@ -70,12 +71,14 @@ module unsplit_geometric_volume_tracker_type
     procedure, public  :: init
     procedure, public  :: flux_volumes
     procedure, public  :: set_inflow_material
+    procedure, public :: write_interface
     procedure, private :: init_irl_mesh
     procedure, private :: generate_flux_classes
     procedure, private :: compute_velocity_weightings
     procedure, private :: set_irl_interfaces
     procedure, private :: adjust_planes_match_VOF
     procedure, private :: reset_volume_moments
+    procedure, private :: construct_interface_polygons
     procedure, private :: compute_node_velocities
     procedure, private :: compute_effective_cfl
     procedure, private :: compute_projected_nodes
@@ -184,7 +187,13 @@ contains
     call new(this%IRL_CapOcta_LLL)
     call new(this%IRL_CapOcta_LLT)
     call new(this%IRL_CapOcta_LTT)
-    call new(this%IRL_CapOcta_TTT)            
+    call new(this%IRL_CapOcta_TTT)
+
+    ! Initialize and allocate polygons   
+    allocate(this%interface_polygons(this%mesh%ncell))
+    do j = 1, this%mesh%ncell
+      call new(this%interface_polygons(j))
+    end do
 
     ! Reorganize and generate needed face-flux information
     call this%generate_flux_classes
@@ -216,6 +225,7 @@ contains
     call this%normals(vof)    
     call this%set_irl_interfaces(vof)    
     call this%reset_volume_moments(vof)
+    call this%construct_interface_polygons(a_interface_band)
     call stop_timer('reconstruction')
 
     call start_timer('advection')
@@ -252,6 +262,16 @@ contains
 
   end subroutine flux_volumes
 
+  subroutine write_interface(this)
+
+    use truchas_phase_interface_output, only : TPIO_write_mesh
+    
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    call TPIO_write_mesh(this%interface_polygons)
+    return
+  end subroutine write_interface
+
+  
   !! Set the inflow material for the given boundary faces. A material index
   !! of 0 will result in materials being fluxed in proportion to the material
   !! fractions present in the cell. This is the preset default. The BC_INDEX
@@ -583,7 +603,6 @@ contains
  subroutine reset_volume_moments(this, a_vof)
   
     use irl_interface_helper
-    use cell_geometry
   
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(out) :: a_vof(:,:)
@@ -627,9 +646,48 @@ contains
 
     end do
     
-  call gather_boundary(this%mesh%cell_ip, a_vof)
+    call gather_boundary(this%mesh%cell_ip, a_vof)
     
   end subroutine reset_volume_moments
+
+  subroutine construct_interface_polygons(this, a_interface_band)
+
+    use irl_interface_helper    
+    
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    integer, intent(in) :: a_interface_band(:)
+
+    integer :: j
+
+    do j = 1, this%mesh%ncell
+      if(a_interface_band(j) /= 0) then
+        call zeroPolygon(this%interface_polygons(j))
+        cycle
+      end if
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+          
+        select case(size(cn))
+        case (4) ! tet
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
+          call getPoly(this%IRL_tet, this%planar_separator(j), 0, this%interface_polygons(j))          
+        case (5) ! pyramid
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)          
+          call TLS_fatal('Not yet implemented')
+        case (6) ! Wedge
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)          
+          call TLS_fatal('Not yet implemented')
+        case (8) ! Hex
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)          
+          call getPoly(this%IRL_Hex, this%planar_separator(j), 0, this%interface_polygons(j))
+        case default
+          call TLS_fatal('Unknown Truchas cell type during polygon construction setting')
+        end select
+
+      end associate
+    end do
+
+
+  end subroutine construct_interface_polygons
     
   subroutine compute_node_velocities(this, a_cell_centered_vel)
   

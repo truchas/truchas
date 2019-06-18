@@ -68,6 +68,7 @@ CONTAINS
     use truchas_danu_output, only: TDO_open, TDO_close
     use truchas_logging_services
     use truchas_timers
+    use vtrack_driver,          only: vtrack_close_interface_file
 
     character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
 
@@ -134,6 +135,9 @@ call hijack_truchas ()
     ! close the danu output file
     call TDO_close
 
+    ! Close interface file (if opened) in vtrack
+    call vtrack_close_interface_file
+
     ! Clean up
     call CLEANUP ()
 
@@ -165,7 +169,7 @@ call hijack_truchas ()
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, flow_vel_cc_view,&
         flow_set_pre_solidification_density
     use vtrack_driver, only: vtrack_update, vtrack_velocity_overwrite, vtrack_enabled, vtrack_vof_view, &
-                             vtrack_flux_vol_view, get_vof_from_matl
+                             vtrack_flux_vol_view, get_vof_from_matl, vtrack_write_interface
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -204,6 +208,7 @@ call hijack_truchas ()
     call mem_diag_write('Before main loop:')
 
     call TDO_write_timestep
+    call vtrack_write_interface ! Does nothing unless unsplit transport.    
     t_write = t
     call probes_output
 
@@ -311,6 +316,7 @@ call hijack_truchas ()
           call TLS_info('')
           call TLS_info('Received signal USR2; writing time step data and terminating')
           call TDO_write_timestep
+          call vtrack_write_interface ! Does nothing unless unsplit transport.              
           exit MAIN_CYCLE
         end if
 
@@ -328,6 +334,7 @@ call hijack_truchas ()
           select type (action)
           type is (output_event)
             call TDO_write_timestep
+            call vtrack_write_interface ! Does nothing unless unsplit transport.                
             t_write = t
           type is (short_edit_event)
             call edit_short
@@ -351,6 +358,7 @@ call hijack_truchas ()
         else
           call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
           call TDO_write_timestep
+          call vtrack_write_interface ! Does nothing unless unsplit transport.              
         end if
         exit
       end if

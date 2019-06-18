@@ -56,7 +56,6 @@ contains
     use legacy_mesh_api, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
     use output_control,  only: part
     use truchas_logging_services
-
     integer :: k
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: cnode(:,:)
@@ -108,6 +107,7 @@ contains
 
   subroutine TDO_start_simulation
 
+    use parameter_module, only: nmat    
     use physics_module, only: species_transport, number_of_species
 
     call outfile%add_sim_group('MAIN', sim)
@@ -123,6 +123,7 @@ contains
 
   subroutine TDO_write_timestep
 
+    use parameter_module, only: nmat    
     use time_step_module, only: t, dt, cycle_number
     use fluid_data_module, only: fluid_flow
     use physics_module, only: heat_transport, species_transport
