@@ -18,6 +18,7 @@ module volume_tracker_class
     procedure(vt_init), deferred :: init
     procedure(vt_flux_volumes), deferred :: flux_volumes
     procedure(vt_set_inflow_material), deferred :: set_inflow_material
+    procedure(vt_write_interface), deferred :: write_interface
   end type volume_tracker
 
   abstract interface
@@ -42,7 +43,12 @@ module volume_tracker_class
       import :: volume_tracker
       class(volume_tracker), intent(inout) :: this
       integer, intent(in) :: mat, faces(:)
-    end subroutine
+    end subroutine vt_set_inflow_material
+
+    subroutine vt_write_interface(this)
+      import volume_tracker, r8
+      class(volume_tracker), intent(in) :: this      
+    end subroutine vt_write_interface
   end interface
 
 end module volume_tracker_class

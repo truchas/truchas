@@ -32,6 +32,7 @@ module geometric_volume_tracker_type
     procedure :: init
     procedure :: flux_volumes
     procedure :: set_inflow_material
+    procedure :: write_interface
     procedure, private :: normals
     procedure, private :: donor_fluxes
     procedure, private :: donor_fluxes_nd_cell
@@ -149,6 +150,11 @@ contains
 
   end subroutine flux_volumes
 
+  subroutine write_interface(this)
+    class(geometric_volume_tracker), intent(in) :: this    
+    return
+  end subroutine write_interface
+  
   !! Set the inflow material for the given boundary faces. A material index
   !! of 0 will result in materials being fluxed in proportion to the material
   !! fractions present in the cell. This is the preset default. The BC_INDEX

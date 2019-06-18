@@ -95,6 +95,7 @@ module truchas_h5_outfile
     procedure :: open  => th5_file_open
     procedure :: close => th5_file_close
     procedure :: add_unstr_mesh_group
+    procedure :: add_interface_mesh_group
     procedure :: add_sim_group
   end type th5_file
 
@@ -106,6 +107,9 @@ module truchas_h5_outfile
   contains
     procedure :: write_coordinates
     procedure :: write_connectivity
+    procedure, private :: mesh_write_attr_real64
+    procedure, private :: mesh_write_attr_int32    
+    generic, public :: write_attr => mesh_write_attr_real64, mesh_write_attr_int32
   end type th5_mesh_group
 
 
@@ -180,7 +184,7 @@ module truchas_h5_outfile
     procedure :: probe_write_attr_int32
     procedure :: probe_write_attr_real64
     procedure :: probe_write_attr_string
-  end type
+   end type th5_probe
 
 contains
 
@@ -235,6 +239,22 @@ contains
     call this%file%write_attr(mesh%path, 'Element Order', 8)
   end subroutine add_unstr_mesh_group
 
+  subroutine add_interface_mesh_group(this, name, elem_order, dim, mesh)
+    class(th5_file), target, intent(in) :: this
+    character(*), intent(in)  :: name
+    integer, intent(in) :: elem_order, dim
+    class(th5_mesh_group), intent(out) :: mesh
+    integer(int64) :: gid
+    mesh%file => this%file
+    mesh%path = '/Meshes/' // name
+    gid = this%file%create_group(mesh%path)
+    call this%file%close_group(gid)
+    !! Mesh group attributes
+    call this%file%write_attr(mesh%path, 'Dimension', dim)
+    call this%file%write_attr(mesh%path, 'Mesh Type', 'UNSTRUCTURED')
+    call this%file%write_attr(mesh%path, 'Element Type', 'POLYGON')
+  end subroutine add_interface_mesh_group
+
 !!!! TH5_MESH_GROUP TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine write_coordinates(this, nnode, x)
@@ -251,11 +271,29 @@ contains
     integer, intent(in) :: connect(:,:)
     character(:), allocatable :: dataset
     dataset = this%path // '/Element Connectivity'
+    print*,dataset
     call this%file%write_dataset(dataset, connect, ncell)
-    call this%file%write_attr(dataset, 'Offset', 1) ! who uses this?
+    if(ncell > 0) then
+      call this%file%write_attr(dataset, 'Offset', 1) ! who uses this?
+    end if 
     call this%file%write_attr(this%path, 'Number of Elements', ncell)
   end subroutine write_connectivity
 
+  subroutine mesh_write_attr_int32(this, name, value)
+    class(th5_mesh_group), intent(in) :: this
+    character(*), intent(in) :: name
+    integer(int32), intent(in) :: value
+    call this%file%write_attr(this%path, name, value)
+  end subroutine mesh_write_attr_int32
+  
+  subroutine mesh_write_attr_real64(this, name, value)
+    class(th5_mesh_group), intent(in) :: this
+    character(*), intent(in) :: name
+    real(real64), intent(in) :: value
+    call this%file%write_attr(this%path, name, value)
+  end subroutine mesh_write_attr_real64
+
+  
   subroutine add_mesh_link(this, mesh_name)
     class(th5_sim_group), intent(in) :: this
     character(*), intent(in) :: mesh_name

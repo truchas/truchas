@@ -53,7 +53,6 @@
 #include "f90_assert.fpp"
 
 module vtrack_driver
-
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use volume_tracker_class
@@ -71,6 +70,7 @@ module vtrack_driver
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
   public :: vtrack_velocity_overwrite
   private :: vtrack_update_mat_band
+  public :: vtrack_open_interface_file, vtrack_close_interface_file, vtrack_write_interface
 
   integer, parameter, private :: band_map_width = 7 ! Size of band_map to create in +/- direction.
 
@@ -139,6 +139,26 @@ contains
     ASSERT(vtrack_enabled())
     p => this%interface_band
   end function vtrack_interface_band_view
+
+  subroutine vtrack_open_interface_file()
+    use truchas_phase_interface_output, only : TPIO_open
+    if(this%unsplit_advection) then
+      call TPIO_open()
+    end if
+  end subroutine vtrack_open_interface_file
+  
+  subroutine vtrack_close_interface_file()
+    use truchas_phase_interface_output, only : TPIO_close    
+    if(this%unsplit_advection) then
+      call TPIO_close()
+    end if
+  end subroutine vtrack_close_interface_file
+
+  subroutine vtrack_write_interface
+
+    call this%vt%write_interface()
+
+  end subroutine vtrack_write_interface
   
   subroutine vtrack_driver_init(params)
 
@@ -233,6 +253,8 @@ contains
       this%fvol_init(j) = global_sum(this%fvol_init(j))
     end do
 
+    call vtrack_open_interface_file()
+    
   end subroutine vtrack_driver_init
 
   subroutine get_vof_from_matl(vof)
