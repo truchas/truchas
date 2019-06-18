@@ -117,12 +117,12 @@ contains
   end subroutine init
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
-  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_vof_band)
+  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_interface_band)
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
-    integer, intent(in) :: a_vof_band(:,:)
+    integer, intent(in) :: a_interface_band(:)
 
     integer :: i
     real(r8) :: sub_dt
