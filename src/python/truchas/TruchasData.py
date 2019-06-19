@@ -77,9 +77,9 @@ class TruchasData:
         # Load the cnode map, convert to 0-based indexing,
         # reorder for cell and node ordering, then convert
         # back to 1-based indexing.
-        cnode = self._root["Meshes/DEFAULT/Element Connectivity"][:] - 1
-        nm = self._root["Simulations/MAIN/Non-series Data/NODEMAP"][:] - 1
-        cnode = nm[cnode[self._cellmap,:]] + 1
+        cnode = self._root["Meshes/DEFAULT/Element Connectivity"][:]
+        nm = self._root["Simulations/MAIN/Non-series Data/NODEMAP"][:]
+        cnode = nm[cnode[self._cellmap,:]]
         return cnode
 
 
@@ -109,7 +109,7 @@ class TruchasData:
         """Return a list of cell centroids"""
         if self._centroid is None:
             node = self._root["Meshes/DEFAULT/Nodal Coordinates"][:]
-            cnode = self._root["Meshes/DEFAULT/Element Connectivity"][:] - 1
+            cnode = self._root["Meshes/DEFAULT/Element Connectivity"][:]
             self._centroid = sp.zeros((cnode.shape[0],3))
             for i, cn in enumerate(cnode):
                 if cn[0] == cn[1]: # TET
