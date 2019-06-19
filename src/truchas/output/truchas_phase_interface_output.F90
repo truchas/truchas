@@ -113,6 +113,10 @@ contains
 
       ! This really should be an ALLGATHER
       ! Does PGSLib have such a thing?
+      ! Also, here I am assuming that the surface
+      ! nodes are written in order of proccessor
+      ! this_PE, with order preserved during
+      ! writing in Scorpio.
       allocate(number_of_verts(nPE))
       number_of_verts = 0
       number_of_verts(this_PE) = total_verts
