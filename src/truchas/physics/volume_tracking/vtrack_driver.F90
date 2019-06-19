@@ -133,7 +133,6 @@ contains
     p => this%mat_band
   end function vtrack_mat_band_view
 
-
   function vtrack_interface_band_view() result(p)
     integer, pointer :: p(:)
     ASSERT(vtrack_enabled())
@@ -142,21 +141,27 @@ contains
 
   subroutine vtrack_open_interface_file()
     use truchas_phase_interface_output, only : TPIO_open
-    if(this%unsplit_advection) then
-      call TPIO_open()
+    if(vtrack_enabled()) then
+      if(this%unsplit_advection) then
+        call TPIO_open()
+      end if
     end if
   end subroutine vtrack_open_interface_file
   
   subroutine vtrack_close_interface_file()
     use truchas_phase_interface_output, only : TPIO_close    
-    if(this%unsplit_advection) then
-      call TPIO_close()
+    if(vtrack_enabled()) then
+      if(this%unsplit_advection) then
+        call TPIO_close()
+      end if
     end if
   end subroutine vtrack_close_interface_file
 
   subroutine vtrack_write_interface
 
-    call this%vt%write_interface()
+    if(vtrack_enabled()) then
+      call this%vt%write_interface()
+    end if
 
   end subroutine vtrack_write_interface
   
