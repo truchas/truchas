@@ -70,24 +70,12 @@ contains
 
     !! Create the mesh entry.
     write(name, '(a,i0.4)') 'MESH', written_times
-    print*,name
-    print*,' '
-    print*,' '
-    print*,' '
-    print*,' '     
     call interface_outfile%add_interface_mesh_group(trim(name), nvc, ndim, out_mesh)
     call out_mesh%write_attr('cycle', cycle_number)    
     call out_mesh%write_attr('sequence_number', written_times)
     call out_mesh%write_attr('time', t)    
     call out_mesh%write_attr('time step', dt)
     
-
-    print*,'Wrote attributes'
-    print*,' '
-    print*,' '
-    print*,' '
-    print*,' '     
-
     total_verts = 0
     npoly = 0    
     do j = 1, ncells      
@@ -101,8 +89,6 @@ contains
     global_totalverts = global_sum(total_verts)
     global_npoly  = global_sum(npoly)
 
-    print*,global_totalverts, global_npoly
-    
     !! Write the node coordinates.
     if(global_npoly >1) then
       allocate(x(3,total_verts))
@@ -119,11 +105,6 @@ contains
       global_totalverts = 3*nPE
     end if
     call out_mesh%write_coordinates(global_totalverts, x)
-    print*,'Wrote mesh'
-    print*,' '
-    print*,' '
-    print*,' '
-    print*,' '      
     deallocate(x)
 
     !! Write the polygon connectivity.
@@ -163,11 +144,6 @@ contains
       cnode(3:5) = [0, 1, 2]
     end if
     call out_mesh%write_connectivity_1DConnect(global_npoly, 2*global_npoly+global_totalverts, cnode)
-    print*,'Wrote connectivity'
-    print*,' '
-    print*,' '
-    print*,' '
-    print*,' '      
     deallocate(cnode)
 
 
