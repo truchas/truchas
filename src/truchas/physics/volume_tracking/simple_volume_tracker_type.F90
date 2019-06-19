@@ -28,10 +28,16 @@ module simple_volume_tracker_type
     procedure :: init
     procedure :: flux_volumes
     procedure :: set_inflow_material
+    procedure :: write_interface
   end type simple_volume_tracker
 
 contains
 
+  subroutine write_interface(this)
+    class(simple_volume_tracker), intent(in) :: this    
+    return
+  end subroutine write_interface
+  
   subroutine init(this, mesh, nrealfluid, nfluid, nmat, liq_matid, params)
 
     use parameter_list_type

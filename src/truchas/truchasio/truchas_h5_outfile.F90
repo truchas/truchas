@@ -95,7 +95,7 @@ module truchas_h5_outfile
     procedure :: open  => th5_file_open
     procedure :: close => th5_file_close
     procedure :: add_unstr_mesh_group
-    procedure :: add_interface_mesh_group
+    procedure :: add_interface_mesh_group    
     procedure :: add_sim_group
   end type th5_file
 
@@ -107,6 +107,7 @@ module truchas_h5_outfile
   contains
     procedure :: write_coordinates
     procedure :: write_connectivity
+    procedure :: write_connectivity_1DConnect    
     procedure, private :: mesh_write_attr_real64
     procedure, private :: mesh_write_attr_int32    
     generic, public :: write_attr => mesh_write_attr_real64, mesh_write_attr_int32
@@ -271,14 +272,21 @@ contains
     integer, intent(in) :: connect(:,:)
     character(:), allocatable :: dataset
     dataset = this%path // '/Element Connectivity'
-    print*,dataset
     call this%file%write_dataset(dataset, connect, ncell)
-    if(ncell > 0) then
-      call this%file%write_attr(dataset, 'Offset', 1) ! who uses this?
-    end if 
     call this%file%write_attr(this%path, 'Number of Elements', ncell)
   end subroutine write_connectivity
 
+  subroutine write_connectivity_1DConnect(this, ncell, glen, connect)
+    class(th5_mesh_group), intent(in) :: this
+    integer, intent(in) :: ncell
+    integer, intent(in) :: glen
+    integer, intent(in) :: connect(:)
+    character(:), allocatable :: dataset
+    dataset = this%path // '/Element Connectivity'
+    call this%file%write_dataset(dataset, connect, glen)
+    call this%file%write_attr(this%path, 'Number of Elements', ncell)
+  end subroutine write_connectivity_1DConnect
+  
   subroutine mesh_write_attr_int32(this, name, value)
     class(th5_mesh_group), intent(in) :: this
     character(*), intent(in) :: name

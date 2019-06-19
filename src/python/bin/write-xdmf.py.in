@@ -88,7 +88,7 @@ def dtype_extract(d):
 
 
 def grid_xdmf(data):
-    # geometry
+    # geometry    
     node_loc = "/Simulations/MAIN/Mesh/Nodal Coordinates"
     data_type, precision = dtype_extract(data[node_loc].dtype)
     shape = data[node_loc].shape
@@ -106,8 +106,7 @@ def grid_xdmf(data):
     data_type, precision = dtype_extract(data[element_loc].dtype)
     shape = data[element_loc].shape
     topology = ET.Element("Topology",
-                          {"BaseOffset": str(data[element_loc].attrs["Offset"]),
-                           "NumberOfElements": str(data[element_loc].shape[0]),
+                          {"NumberOfElements": str(data[element_loc].shape[0]),
                            "TopologyType": "Hexahedron"})
     connectivity = ET.SubElement(topology, "DataItem",
                                  {"DataType": data_type,
@@ -125,6 +124,41 @@ def grid_xdmf(data):
                                 {"Reference": "/Xdmf/Domain/Topology"})
 
     return geometry, topology, gp
+
+def mesh_series_xdmf(mesh):
+    entry = ET.Element("Grid",{"GridType": "Uniform"})
+    entry.append(ET.Element("Time", {"Value": str(mesh.attrs["time"])}))
+    
+    # Geometry
+    node_loc = "Nodal Coordinates"
+    data_type, precision = dtype_extract(mesh[node_loc].dtype)
+    shape = mesh[node_loc].shape
+    geometry = ET.SubElement(entry, "Geometry", {"GeometryType": "XYZ"})    
+    node_coordinates = ET.SubElement(geometry, "DataItem",
+                                     {"DataType": data_type,
+                                      "Precision": precision,
+                                      "Dimensions": "{:d} {:d}".format(*shape),
+                                      "Format": "HDF",
+                                      "Name": "Coordinates"})
+    node_coordinates.text = mesh.file.filename+":"+mesh.name + "/" + node_loc
+
+    # topology
+    element_loc = "Element Connectivity"
+    data_type, precision = dtype_extract(mesh[element_loc].dtype)
+    shape = mesh[element_loc].shape
+    number_of_elements = str(mesh.attrs["Number of Elements"])
+    topology = ET.SubElement(entry, "Topology",
+                          {"NumberOfElements": number_of_elements,
+                           "TopologyType": "Mixed"})
+    connectivity = ET.SubElement(topology, "DataItem",
+                                 {"DataType": data_type,
+                                  "Precision": precision,
+                                  "Dimensions": str(mesh[element_loc].size),
+                                  "Format": "HDF",
+                                  "Name": "Connectivity"})
+    connectivity.text = mesh.file.filename+":"+mesh.name + "/" + element_loc
+
+    return entry
 
 
 def hdf5_to_xdmf(infile, outfile, verbose=False):
@@ -146,14 +180,37 @@ def hdf5_to_xdmf(infile, outfile, verbose=False):
                                    "CollectionType": "Temporal"})
 
     for series in h5in["/Simulations/MAIN/Series Data"].values():
-        xdmf_grid_parent.append(series_xdmf(series, xdmf_grid_pointer))
-
+        xdmf_grid_parent.append(series_xdmf(series, xdmf_grid_pointer))                   
+        
     # write to file
     xmltree = ET.ElementTree(xdmf)
     with open(outfile, 'wb') as f:
         f.write(b'<?xml version="1.0" ?>')
         f.write(b'<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>')
         xmltree.write(f)
+
+    possible_interface_file = os.path.splitext(infile)[0]+".interface.h5"
+    if(os.path.exists(possible_interface_file)):        
+        h5interface = h5py.File(possible_interface_file,"r")
+
+        xdmf_interface = ET.Element("Xdmf", {"Version": "2.0",
+                                             "xmlns:xi": "http://www.w3.org/2001/XInclude"})
+
+        xdmf_interface_domain = ET.SubElement(xdmf_interface, "Domain")
+        
+        xdmf_temporal_grid = ET.SubElement(xdmf_interface_domain,"Grid",
+                                           {"GridType": "Collection",
+                                            "CollectionType": "Temporal"})
+        for mesh in h5interface["/Meshes/"].values():
+            xdmf_temporal_grid.append(mesh_series_xdmf(mesh))
+
+            # write to file
+            interface_outfile = os.path.splitext(outfile)[0]+".interface.xmf"
+            xmltree = ET.ElementTree(xdmf_interface)
+            with open(interface_outfile, 'wb') as f:
+                f.write(b'<?xml version="1.0" ?>')
+                f.write(b'<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>')
+                xmltree.write(f)        
 
 
 if __name__=="__main__":
