@@ -56,13 +56,15 @@ contains
 
     type(Poly_type), intent(in) :: a_polygon_array(:)
     
-    integer :: n,j, curr_vert, curr_poly
-    integer :: total_verts, max_verts, current_verts, npoly
-    integer :: global_totalverts, global_maxverts, global_npoly
+    integer :: n,j, curr_vert, ind
+    integer :: total_verts, current_verts, npoly
+    integer :: global_totalverts, global_npoly
     character(10) :: name
     type(th5_mesh_group) :: out_mesh
     real(r8), allocatable :: x(:,:)
-    integer, allocatable :: cnode(:,:)
+    integer, allocatable :: cnode(:)
+    integer, allocatable :: number_of_verts(:)
+    integer :: conn_offset
 
     written_times = written_times + 1
 
@@ -88,11 +90,9 @@ contains
 
     total_verts = 0
     npoly = 0    
-    max_verts = -100000
     do j = 1, ncells      
       current_verts = getNumberOfVertices(a_polygon_array(j))      
       total_verts = total_verts + current_verts
-      max_verts = max(max_verts, current_verts)
       if(current_verts > 0) then
         npoly = npoly + 1
       end if
@@ -100,19 +100,24 @@ contains
 
     global_totalverts = global_sum(total_verts)
     global_npoly  = global_sum(npoly)
-    global_maxverts = global_maxval(max_verts)    
 
-    print*,global_totalverts, global_npoly, global_maxverts
+    print*,global_totalverts, global_npoly
     
     !! Write the node coordinates.
-    allocate(x(3,total_verts))
-    curr_vert = 0
-    do j = 1, ncells
-      do n = 1, getNumberOfVertices(a_polygon_array(j))
-        curr_vert = curr_vert + 1
-        x(:,curr_vert) = getPt(a_polygon_array(j),n-1)
+    if(global_npoly >1) then
+      allocate(x(3,total_verts))
+      curr_vert = 0
+      do j = 1, ncells
+        do n = 1, getNumberOfVertices(a_polygon_array(j))
+          curr_vert = curr_vert + 1
+          x(:,curr_vert) = getPt(a_polygon_array(j),n-1)
+        end do
       end do
-    end do
+    else
+      allocate(x(3,3))
+      x = 0.0_r8
+      global_totalverts = 3*nPE
+    end if
     call out_mesh%write_coordinates(global_totalverts, x)
     print*,'Wrote mesh'
     print*,' '
@@ -122,21 +127,42 @@ contains
     deallocate(x)
 
     !! Write the polygon connectivity.
-    allocate(cnode(global_maxverts+1, npoly))
-    curr_vert = 0
-    curr_poly = 0
-    do j = 1, ncells
-      if(getNumberOfVertices(a_polygon_array(j)) > 0 ) then
-        curr_poly = curr_poly + 1
-        cnode(1, curr_poly) = global_maxverts
-        do n = 1, getNumberOfVertices(a_polygon_array(j))
-          cnode(n+1, curr_poly) = curr_vert
-          curr_vert = curr_vert + 1                    
-        end do
-        cnode(getNumberOfVertices(a_polygon_array(j))+1:global_maxverts+1, curr_poly) = curr_vert-1
-      end if
-    end do
-    call out_mesh%write_connectivity(global_npoly, cnode)
+    if(global_npoly > 1) then
+      allocate(cnode(2*npoly+total_verts))
+
+      ! This really should be an ALLGATHER
+      ! Does PGSLib have such a thing?
+      allocate(number_of_verts(nPE))
+      number_of_verts = 0
+      number_of_verts(this_PE) = total_verts
+      do j = 1, nPE
+         number_of_verts(j) = global_sum(number_of_verts(j))
+      end do
+      conn_offset = sum(number_of_verts(1:this_PE-1)) 
+      deallocate(number_of_verts)
+      
+      curr_vert = conn_offset
+      ind = 0
+      do j = 1, ncells
+        if(getNumberOfVertices(a_polygon_array(j)) > 0 ) then
+          ind = ind + 1
+          cnode(ind) = 3 ! Polygon type in XDMF
+          ind = ind + 1
+          cnode(ind) = getNumberOfVertices(a_polygon_array(j))
+          do n = 1, getNumberOfVertices(a_polygon_array(j))
+            ind = ind + 1
+            cnode(ind) = curr_vert
+            curr_vert = curr_vert + 1                    
+          end do
+        end if
+      end do
+    else
+      allocate(cnode(5))
+      global_npoly = nPE
+      cnode(1:2) = 3
+      cnode(3:5) = [0, 1, 2]
+    end if
+    call out_mesh%write_connectivity_1DConnect(global_npoly, 2*global_npoly+global_totalverts, cnode)
     print*,'Wrote connectivity'
     print*,' '
     print*,' '
