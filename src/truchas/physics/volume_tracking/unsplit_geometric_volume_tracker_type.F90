@@ -21,6 +21,7 @@ module unsplit_geometric_volume_tracker_type
   use unstr_mesh_type
   use index_partitioning
   use irl_fortran_interface
+  use parameter_module, only : string_len
   implicit none
   private
 
@@ -32,6 +33,7 @@ module unsplit_geometric_volume_tracker_type
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
     logical :: nested_dissection
+    character(string_len) :: interface_reconstruction_name
     real(r8), allocatable :: normal(:,:,:)
     real(r8), allocatable :: face_flux(:,:)
     ! node/face/cell workspace
@@ -79,12 +81,15 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: adjust_planes_match_VOF
     procedure, private :: reset_volume_moments
     procedure, private :: construct_interface_polygons
+    procedure, private :: construct_nonzero_polygon
     procedure, private :: compute_node_velocities
     procedure, private :: compute_effective_cfl
     procedure, private :: compute_projected_nodes
     procedure, private :: compute_fluxes
     procedure, private :: update_vof
-    procedure, private :: normals
+    procedure, private :: interface_reconstruction    
+    procedure, private :: normals_youngs
+    procedure, private :: normals_swartz    
     procedure, private :: getBCMaterialFractions
   end type unsplit_geometric_volume_tracker
 
@@ -100,6 +105,7 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat, liq_matid(:)
     type(parameter_list), intent(inout) :: params
+    character(:), allocatable :: interface_recon
     integer :: i, j, k
     
     this%mesh => mesh
@@ -112,8 +118,10 @@ contains
 
     call params%get('location_iter_max', this%location_iter_max, default=40)
     call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
-    call params%get('subcycles', this%subcycles, default=2)
+    call params%get('subcycles', this%subcycles, default=2)    
     call TLS_warn('Subcycling is currently disabled for unsplit transport')
+    call params%get('interface_reconstruction', interface_recon, default='Youngs')
+    this%interface_reconstruction_name = interface_recon
     call params%get('nested_dissection', this%nested_dissection, default=.true.)
 
     ! convert user material ids to array index
@@ -222,8 +230,7 @@ contains
     vof = vof_n
 
     call start_timer('reconstruction')
-    call this%normals(vof)    
-    call this%set_irl_interfaces(vof)    
+    call this%interface_reconstruction(vof)    
     call this%reset_volume_moments(vof)
     call this%construct_interface_polygons(a_interface_band)
     call stop_timer('reconstruction')
@@ -468,8 +475,35 @@ contains
     end do
     
   end subroutine compute_velocity_weightings
+
+  subroutine interface_reconstruction(this, vof)
+
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in)  :: vof(:,:)
+
+
+    select case(trim(this%interface_reconstruction_name))
+
+      case('Youngs')
+        call normals_youngs(this,vof)
+
+      case('Swartz')
+        call normals_youngs(this, vof)
+        call normals_swartz(this, vof)
+        
+      case default
+        call TLS_fatal('Unknown reconstruction type requested for interface_reconstruction')
+      end select
+
+    ! will need normals for vof reconstruction in ghost cells
+    call gather_boundary(this%mesh%cell_ip, this%normal)
+
+    call this%set_irl_interfaces(vof)            
+    
+  end subroutine interface_reconstruction
   
-  subroutine normals(this, vof)
+  subroutine normals_youngs(this, vof)    
 
     use flow_operators, only: gradient_cc
     use f08_intrinsics, only: findloc
@@ -521,10 +555,141 @@ contains
         end if
       end do
     end do
-    ! will need normals for vof reconstruction in ghost cells
-    call gather_boundary(this%mesh%cell_ip, this%normal)
 
-  end subroutine normals
+  end subroutine normals_youngs
+
+  subroutine normals_swartz(this, a_vof)
+
+    use irl_interface_helper
+    use constants_module, only : pi
+    use cell_geometry, only: cross_product
+    
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in)  :: a_vof(:,:)    
+
+    integer, parameter :: max_iter = 4
+    
+    logical :: done
+    integer :: j, n, outer_iter
+    real(r8), allocatable :: polygon_center(:,:), initial_normal(:,:), old_normal(:,:)
+    real(r8) :: distance_guess
+    real(r8) :: angle_difference, rotation_axis(3), normal_center_line(3)
+    real(r8) :: rotation_quaternion(4), inv_rotation_quaternion(4), rotated_normal(4)
+    real(r8) :: rotation_axis_mag
+    integer :: number_of_active_neighbors
+
+    ASSERT(this%nmat == 2)
+    
+    allocate(polygon_center(3,this%mesh%ncell))
+    allocate(initial_normal(3,this%mesh%ncell))
+    allocate(old_normal(3,this%mesh%ncell))    
+    initial_normal = this%normal(:,1,:)
+    done = .false.
+    outer_iter = 0
+    do while(.not. done)
+      outer_iter = outer_iter + 1
+
+      ! Set current interfaces in IRL (with satisfting volume fractions) and polygons
+      polygon_center = 0.0_r8      
+      do j = 1, this%mesh%ncell_onP
+        if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
+          distance_guess = dot_product(this%normal(:,1,j), this%mesh%cell_centroid(:,j))
+          call setNumberOfPlanes(this%planar_separator(j), 1)
+          call setPlane(this%planar_separator(j), 0, this%normal(:,1,j), distance_guess)
+          
+          associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+            
+            call this%adjust_planes_match_VOF(this%mesh%x(:,cn), a_vof(:,j), &
+                 this%planar_separator(j) )
+
+            call this%construct_nonzero_polygon(this%mesh%x(:,cn), this%planar_separator(j), &
+                 0, this%interface_polygons(j))
+          end associate
+
+          do n = 1, getNumberOfVertices(this%interface_polygons(j))
+            polygon_center(:,j) = polygon_center(:,j) + getPt(this%interface_polygons(j), n-1)
+          end do
+          polygon_center(:,j) = polygon_center(:,j) / real(getNumberOfVertices(this%interface_polygons(j)), r8)         
+        end if
+      end do
+
+      call gather_boundary(this%mesh%cell_ip, polygon_center)
+      call gather_boundary(this%mesh%cell_ip, this%normal(:,1,:))
+
+      ! Now do Jacobi type update on the normal orientation guesses.
+      old_normal = this%normal(:,1,:)
+      this%normal(:,1,:) = 0.0_r8
+      do j = 1, this%mesh%ncell_onP
+        if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
+
+          associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+            number_of_active_neighbors = 0
+            do n = 1, size(cn)
+              if(cn(n) /= 0) then
+                if(a_vof(1,cn(n)) > this%cutoff .and. a_vof(1,cn(n)) < 1.0_r8 - this%cutoff) then
+                  angle_difference = acos(max(-1.0_r8,min(1.0_r8, &
+                       dot_product(old_normal(:,j), old_normal(:,cn(n))))))
+                  if(abs(angle_difference) < pi/6.0_r8) then
+                    ! Use this neighbor
+                    normal_center_line = polygon_center(:,cn(n))-polygon_center(:,j)
+                    normal_center_line = normal_center_line / sqrt(sum(normal_center_line**2))
+                    if(abs(dot_product(normal_center_line, old_normal(:,j))) < 1.0_r8 - 1.0e-4_r8) then 
+                      rotation_axis = cross_product(normal_center_line, old_normal(:,j))
+                      rotation_axis = rotation_axis / sqrt(sum(rotation_axis**2))
+                      rotation_axis = [0.0_r8, 0.0_r8, sign(1.0_r8, rotation_axis(3))]
+                    else                      
+                      cycle
+                    end if
+                    number_of_active_neighbors = number_of_active_neighbors + 1                    
+                    rotation_quaternion(1) = cos(0.5_r8*0.5_r8*pi)
+                    rotation_quaternion(2:4) = rotation_axis * sin(0.5_r8*0.5_r8*pi)
+                    inv_rotation_quaternion(1) = rotation_quaternion(1)
+                    inv_rotation_quaternion(2:4) = -rotation_quaternion(2:4)
+                    ! Product of rotation_quaternion and normal_center_line
+                    rotated_normal(1) = -dot_product(rotation_quaternion(2:4),normal_center_line)
+                    rotated_normal(2:4) = rotation_quaternion(1)*normal_center_line + &
+                         cross_product(rotation_quaternion(2:4),normal_center_line)
+                    ! Product of (rotated_quaternion*normal_center_line) and inv_rotation_quaternion
+                    rotation_quaternion = rotated_normal
+                    rotated_normal(1) = rotation_quaternion(1)*inv_rotation_quaternion(1) &
+                         -dot_product(rotation_quaternion(2:4),inv_rotation_quaternion(2:4))
+                    rotated_normal(2:4) = rotation_quaternion(1)*inv_rotation_quaternion(2:4) &
+                         + inv_rotation_quaternion(1)*rotation_quaternion(2:4) &
+                         + cross_product(rotation_quaternion(2:4),inv_rotation_quaternion(2:4))
+                    rotated_normal(2:4) = rotated_normal(2:4) / sqrt(sum(rotated_normal(2:4)**2))
+                    this%normal(:,1,j) = this%normal(:,1,j) + rotated_normal(2:4)
+                  end if                  
+                end if
+              end if
+
+            end do
+
+          end associate
+
+          if(number_of_active_neighbors > 0) then
+            this%normal(:,1,j) = this%normal(:,1,j) / sqrt(sum(this%normal(:,1,j)**2))
+          else
+            this%normal(:,1,j) = old_normal(:,j)
+          end if
+
+        end if
+
+      end do
+      
+      ! Exit criteria
+      if(outer_iter == max_iter) then
+        done = .true.
+      end if
+      
+    end do
+
+    this%normal(:,2,:) = -this%normal(:,1,:)
+    
+    deallocate(polygon_center)
+    deallocate(initial_normal)
+    deallocate(old_normal)
+    
+  end subroutine normals_swartz
   
   subroutine set_irl_interfaces(this, vof)
     
@@ -553,7 +718,8 @@ contains
         associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
           
         call this%adjust_planes_match_VOF(this%mesh%x(:,cn), vof(:,j), &
-                                          this%planar_separator(j) )        
+             this%planar_separator(j) )
+        
         end associate               
       
       end if
@@ -603,13 +769,20 @@ contains
  subroutine reset_volume_moments(this, a_vof)
   
     use irl_interface_helper
-  
+    use parallel_communication, only : global_sum
+    use parameter_module, only : string_len    
+    
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(out) :: a_vof(:,:)
 
     integer :: j
-    real(r8) :: new_volume
-    
+    real(r8) :: new_volume    
+
+    ! DEBUG/Diagnostics
+    real(r8) :: volume_change(this%nmat)
+    character(string_len) :: message
+
+    volume_change = 0.0_r8
     do j = 1, this%mesh%ncell_onP
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
           
@@ -617,25 +790,33 @@ contains
         case (4) ! tet      
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
           call getNormMoments(this%IRL_tet, this%planar_separator(j), new_volume)
+          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)
           a_vof(1,j) = new_volume / calculateVolume(this%IRL_tet)
+          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)
           a_vof(2,j) = 1.0_r8 - a_vof(1,j)
 
         case (5) ! pyramid
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)
           call getNormMoments(this%IRL_pyramid, this%planar_separator(j), new_volume)
+          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
           a_vof(1,j) = new_volume / calculateVolume(this%IRL_pyramid)
+          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)
           a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
 
         case (6) ! Wedge
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)
           call getNormMoments(this%IRL_wedge, this%planar_separator(j), new_volume)
+          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
           a_vof(1,j) = new_volume / calculateVolume(this%IRL_wedge)
+          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)        
           a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
 
         case (8) ! Hex
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)
           call getNormMoments(this%IRL_hex, this%planar_separator(j), new_volume)
+          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
           a_vof(1,j) = new_volume / calculateVolume(this%IRL_hex)
+          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)        
           a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
 
         case default
@@ -647,6 +828,12 @@ contains
     end do
     
     call gather_boundary(this%mesh%cell_ip, a_vof)
+
+    volume_change(1) = global_sum(volume_change(1))
+    volume_change(2) = global_sum(volume_change(2))
+
+    write(message, '(a,2es12.4)') 'Phase volumes lost during reconstruction', volume_change
+    call TLS_info(message)
     
   end subroutine reset_volume_moments
 
@@ -665,30 +852,46 @@ contains
         cycle
       end if
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-          
-        select case(size(cn))
-        case (4) ! tet
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
-          call getPoly(this%IRL_tet, this%planar_separator(j), 0, this%interface_polygons(j))          
-        case (5) ! pyramid
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)          
-          call TLS_fatal('Not yet implemented')
-        case (6) ! Wedge
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)          
-          call TLS_fatal('Not yet implemented')
-        case (8) ! Hex
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)          
-          call getPoly(this%IRL_Hex, this%planar_separator(j), 0, this%interface_polygons(j))
-        case default
-          call TLS_fatal('Unknown Truchas cell type during polygon construction setting')
-        end select
 
+        call this%construct_nonzero_polygon(this%mesh%x(:,cn), this%planar_separator(j),&
+             0, this%interface_polygons(j))
+        
       end associate
     end do
 
 
   end subroutine construct_interface_polygons
+
+  subroutine construct_nonzero_polygon(this, a_cell, a_planar_separator, a_plane_index, a_polygon)
+
+    use irl_interface_helper    
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: a_cell(:,:)
+    type(PlanarSep_type), intent(in) :: a_planar_separator
+    integer, intent(in) :: a_plane_index
+    type(Poly_type), intent(inout) :: a_polygon
     
+    select case(size(a_cell,2))
+    case (4) ! tet
+      call truchas_poly_to_irl(a_cell, this%IRL_tet)
+      call getPoly(this%IRL_tet, a_planar_separator, a_plane_index, a_polygon)          
+    case (5) ! pyramid
+      call truchas_poly_to_irl(a_cell, this%IRL_pyramid)          
+      call TLS_fatal('Not yet implemented')
+    case (6) ! Wedge
+      call truchas_poly_to_irl(a_cell, this%IRL_wedge)          
+      call TLS_fatal('Not yet implemented')
+    case (8) ! Hex
+      call truchas_poly_to_irl(a_cell, this%IRL_hex)          
+      call getPoly(this%IRL_Hex, a_planar_separator, a_plane_index, a_polygon)
+    case default
+      call TLS_fatal('Unknown Truchas cell type during polygon construction setting')
+    end select
+    
+  end subroutine construct_nonzero_polygon
+      
+  
   subroutine compute_node_velocities(this, a_cell_centered_vel)
   
       class(unsplit_geometric_volume_tracker), intent(inout) :: this
