@@ -106,7 +106,8 @@ def grid_xdmf(data):
     data_type, precision = dtype_extract(data[element_loc].dtype)
     shape = data[element_loc].shape
     topology = ET.Element("Topology",
-                          {"NumberOfElements": str(data[element_loc].shape[0]),
+                          {"BaseOffset": str(data[element_loc].attrs["Offset"]),
+                           "NumberOfElements": str(data[element_loc].shape[0]),
                            "TopologyType": "Hexahedron"})
     connectivity = ET.SubElement(topology, "DataItem",
                                  {"DataType": data_type,

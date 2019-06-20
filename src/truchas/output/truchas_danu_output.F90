@@ -72,7 +72,7 @@ contains
     !! Write the cell connectivity.
     allocate(cnode(nvc,ncells))
     do k = 1, nvc
-      cnode(k,:) = mesh%ngbr_vrtx_orig(k)-1
+      cnode(k,:) = mesh%ngbr_vrtx_orig(k)
     end do
     call out_mesh%write_connectivity(ncells_tot, cnode)
     deallocate(cnode)

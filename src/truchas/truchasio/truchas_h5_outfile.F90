@@ -273,6 +273,7 @@ contains
     character(:), allocatable :: dataset
     dataset = this%path // '/Element Connectivity'
     call this%file%write_dataset(dataset, connect, ncell)
+    call this%file%write_attr(dataset, 'Offset', 1) ! who uses this?
     call this%file%write_attr(this%path, 'Number of Elements', ncell)
   end subroutine write_connectivity
 
@@ -284,6 +285,7 @@ contains
     character(:), allocatable :: dataset
     dataset = this%path // '/Element Connectivity'
     call this%file%write_dataset(dataset, connect, glen)
+    call this%file%write_attr(dataset, 'Offset', 1) ! who uses this?    
     call this%file%write_attr(this%path, 'Number of Elements', ncell)
   end subroutine write_connectivity_1DConnect
   
