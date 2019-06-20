@@ -21,9 +21,7 @@ module truchas_phase_interface_output
   use truchas_danu_output_data, only : io_group_size
   use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
   use parallel_communication
-  use truchas_logging_services
   use truchas_h5_outfile, only: th5_file, th5_mesh_group
-  use kinds, only: r8
   implicit none
   private
 
@@ -48,9 +46,8 @@ contains
 
     use irl_fortran_interface
     use kinds, only: r8
-    use time_step_module, only: t, dt, cycle_number    
-    use legacy_mesh_api, only: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
-    use legacy_mesh_api, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
+    use time_step_module, only: t, dt, cycle_number          
+    use legacy_mesh_api, only: ncells, ncells_tot, ndim, nvc
     use output_control,  only: part
     use truchas_logging_services
 
@@ -66,12 +63,14 @@ contains
     integer, allocatable :: number_of_verts(:)
     integer :: conn_offset
 
+    ! NOTE: This probably won't work for restarts.
+    ! See how Danu output handles it.
     written_times = written_times + 1
 
     !! Create the mesh entry.
     write(name, '(a,i0.4)') 'MESH', written_times
     call interface_outfile%add_interface_mesh_group(trim(name), nvc, ndim, out_mesh)
-    call out_mesh%write_attr('cycle', cycle_number)    
+    call out_mesh%write_attr('cycle', 0)!cycle_number)    
     call out_mesh%write_attr('sequence_number', written_times)
     call out_mesh%write_attr('time', t)    
     call out_mesh%write_attr('time step', dt)

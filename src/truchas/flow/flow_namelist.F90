@@ -20,6 +20,7 @@ contains
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
+    use parameter_module, only : string_len    
     use input_utilities, only: seek_to_namelist, NULL_R, NULL_I
     use string_utilities, only: i_to_c
     use parameter_module, only: nmat
@@ -35,13 +36,14 @@ contains
     !! Namelist variables
     integer  :: vol_track_subcycles, material_priority(16), fischer_dim
     logical  :: inviscid, track_interfaces, unsplit_interface_advection, nested_dissection
+    character(string_len) :: interface_reconstruction
     real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_frac_threshold, min_face_fraction, vol_frac_cutoff
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
         fluid_frac_threshold, min_face_fraction, &
-        track_interfaces, unsplit_interface_advection, nested_dissection, vol_track_subcycles, &
-        vol_frac_cutoff, material_priority, fischer_dim
+        track_interfaces, unsplit_interface_advection, nested_dissection, interface_reconstruction, &
+        vol_track_subcycles, vol_frac_cutoff, material_priority, fischer_dim
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -60,6 +62,7 @@ contains
     track_interfaces = (nmat > 1)
     unsplit_interface_advection = track_interfaces
     nested_dissection = .true.
+    interface_reconstruction = 'Youngs'
     vol_track_subcycles = NULL_I
     vol_frac_cutoff = NULL_R
     material_priority = NULL_I
@@ -82,6 +85,7 @@ contains
     call broadcast(track_interfaces)
     call broadcast(unsplit_interface_advection)    
     call broadcast(nested_dissection)
+    call broadcast(interface_reconstruction)    
     call broadcast(vol_track_subcycles)
     call broadcast(vol_frac_cutoff)
     call broadcast(material_priority)
@@ -99,8 +103,9 @@ contains
 
     plist => params%sublist('volume-tracker')
     call plist%set('track_interfaces', track_interfaces)
-    call plist%set('unsplit_interface_advection',unsplit_interface_advection)
+    call plist%set('unsplit_interface_advection',unsplit_interface_advection)    
     call plist%set('nested_dissection', nested_dissection)
+    call plist%set('interface_reconstruction',interface_reconstruction)    
 
     n = count(material_priority /= NULL_I)
     if (n > 0) then
