@@ -123,21 +123,27 @@ contains
       do j = 1, nPE
          number_of_verts(j) = global_sum(number_of_verts(j))
       end do
-      conn_offset = sum(number_of_verts(1:this_PE-1)) 
+      conn_offset = sum(number_of_verts(1:this_PE-1))        
       deallocate(number_of_verts)
-      
+
+      ! NOTE: It appears mixed polygon topologies with XDMF
+      ! do not respect setting BaseOffset (to 1). So here,
+      ! the connectivity is written out as 0 referenced.
+      ! The write-xdmf utility also ignores the Offset
+      ! attribute written, which then defaults the XDMF
+      ! to 0-based as well.
       curr_vert = conn_offset
       ind = 0
       do j = 1, ncells
         if(getNumberOfVertices(a_polygon_array(j)) > 0 ) then
           ind = ind + 1
-          cnode(ind) = 3 ! Polygon type in XDMF
+          cnode(ind) = 3 ! Polygon type identifier in XDMF
           ind = ind + 1
           cnode(ind) = getNumberOfVertices(a_polygon_array(j))
           do n = 1, getNumberOfVertices(a_polygon_array(j))
             ind = ind + 1
             cnode(ind) = curr_vert
-            curr_vert = curr_vert + 1                    
+            curr_vert = curr_vert + 1            
           end do
         end if
       end do
