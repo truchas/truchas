@@ -636,7 +636,6 @@ contains
                     if(abs(dot_product(normal_center_line, old_normal(:,j))) < 1.0_r8 - 1.0e-4_r8) then 
                       rotation_axis = cross_product(normal_center_line, old_normal(:,j))
                       rotation_axis = rotation_axis / sqrt(sum(rotation_axis**2))
-                      rotation_axis = [0.0_r8, 0.0_r8, sign(1.0_r8, rotation_axis(3))]
                     else                      
                       cycle
                     end if
