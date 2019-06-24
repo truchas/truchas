@@ -33,8 +33,11 @@ module simple_volume_tracker_type
 
 contains
 
-  subroutine write_interface(this)
-    class(simple_volume_tracker), intent(in) :: this    
+  subroutine write_interface(this, t, dt, cycle_number)
+    class(simple_volume_tracker), intent(in) :: this
+    real(r8), intent(in) :: t
+    real(r8), intent(in) :: dt
+    integer, intent(in) :: cycle_number    
     return
   end subroutine write_interface
   

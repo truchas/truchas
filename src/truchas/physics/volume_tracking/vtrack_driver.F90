@@ -157,10 +157,13 @@ contains
     end if
   end subroutine vtrack_close_interface_file
 
-  subroutine vtrack_write_interface
+  subroutine vtrack_write_interface(t, dt, cycle_number)
+    real(r8), intent(in) :: t
+    real(r8), intent(in) :: dt
+    integer, intent(in) :: cycle_number   
 
     if(vtrack_enabled()) then
-      call this%vt%write_interface()
+      call this%vt%write_interface(t,dt,cycle_number)
     end if
 
   end subroutine vtrack_write_interface
