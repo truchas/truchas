@@ -45,9 +45,12 @@ module volume_tracker_class
       integer, intent(in) :: mat, faces(:)
     end subroutine vt_set_inflow_material
 
-    subroutine vt_write_interface(this)
+    subroutine vt_write_interface(this, t, dt, cycle_number)
       import volume_tracker, r8
-      class(volume_tracker), intent(in) :: this      
+      class(volume_tracker), intent(in) :: this
+      real(r8), intent(in) :: t
+      real(r8), intent(in) :: dt
+      integer, intent(in) :: cycle_number
     end subroutine vt_write_interface
   end interface
 
