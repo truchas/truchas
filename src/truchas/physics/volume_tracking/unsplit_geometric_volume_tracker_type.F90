@@ -89,7 +89,11 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: update_vof
     procedure, private :: interface_reconstruction    
     procedure, private :: normals_youngs
-    procedure, private :: normals_swartz    
+    procedure, private :: normals_swartz
+    procedure, private :: normals_lvira
+    procedure, private :: normals_lvira_hex_execute
+    procedure, private :: normals_lvira_tet_execute    
+    procedure, private :: identify_reconstruction_neighborhood
     procedure, private :: getBCMaterialFractions
   end type unsplit_geometric_volume_tracker
 
@@ -269,12 +273,17 @@ contains
 
   end subroutine flux_volumes
 
-  subroutine write_interface(this)
+  subroutine write_interface(this, t, dt, cycle_number)
 
     use truchas_phase_interface_output, only : TPIO_write_mesh
     
     class(unsplit_geometric_volume_tracker), intent(in) :: this
-    call TPIO_write_mesh(this%interface_polygons)
+    real(r8), intent(in) :: t
+    real(r8), intent(in) :: dt
+    integer, intent(in) :: cycle_number
+    
+    call TPIO_write_mesh(this%interface_polygons, t, dt, cycle_number)
+
     return
   end subroutine write_interface
 
@@ -486,18 +495,20 @@ contains
     select case(trim(this%interface_reconstruction_name))
 
       case('Youngs')
-        call normals_youngs(this,vof)
+        call this%normals_youngs(vof)
 
       case('Swartz')
-        call normals_youngs(this, vof)
-        call normals_swartz(this, vof)
+        call this%normals_youngs(vof)
+        call this%normals_swartz(vof)
+
+      case('LVIRA')
+        call this%normals_youngs(vof)
+        call this%set_irl_interfaces(vof)
+        call this%normals_lvira(vof)
         
       case default
         call TLS_fatal('Unknown reconstruction type requested for interface_reconstruction')
       end select
-
-    ! will need normals for vof reconstruction in ghost cells
-    call gather_boundary(this%mesh%cell_ip, this%normal)
 
     call this%set_irl_interfaces(vof)            
     
@@ -521,7 +532,7 @@ contains
           vof(i,:), this%w_node(1,:), this%w_node(2,:))
     end do
 
-    do i = 1, this%mesh%ncell_onP
+    do i = 1, this%mesh%ncell_onP      
       hasvof = vof(:,i) > 0.0_r8
       c = count(hasvof)
 
@@ -556,6 +567,8 @@ contains
       end do
     end do
 
+    call gather_boundary(this%mesh%cell_ip, this%normal)
+    
   end subroutine normals_youngs
 
   subroutine normals_swartz(this, a_vof)
@@ -683,12 +696,209 @@ contains
     end do
 
     this%normal(:,2,:) = -this%normal(:,1,:)
+
+    call gather_boundary(this%mesh%cell_ip, this%normal)
     
     deallocate(polygon_center)
     deallocate(initial_normal)
     deallocate(old_normal)
     
   end subroutine normals_swartz
+
+  subroutine normals_lvira(this, a_vof)
+
+    use traversal_tracker_type, only : traversal_tracker
+    
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: a_vof(:,:)
+
+    integer :: j
+    integer :: cell_types(4), stencil_type_case
+    type(traversal_tracker) :: stencil
+
+    ASSERT(this%nmat == 2)
+
+    do j = 1, this%mesh%ncell_onP
+      if(a_vof(1,j) < this%cutoff .or. a_vof(1,j) > 1.0_r8 - this%cutoff) then
+        cycle
+      end if
+      call this%identify_reconstruction_neighborhood(j, 1.5_r8*(this%mesh%volume(j)**(1.0_r8/3.0_r8)), &
+           cell_types, stencil)
+      ASSERT(sum(cell_types) == stencil%get_number_of_visited_cells())
+      
+      if(sum(cell_types) == maxval(cell_types)) then
+        ! Homogeneous stencil
+        stencil_type_case = maxloc(cell_types,1)
+      end if
+      select case(stencil_type_case)
+        case(1) ! Homogeneous tet mesh
+          call this%normals_lvira_tet_execute(j, stencil, a_vof)          
+          
+        case(2) ! Homogeneous pyramid mesh
+          call TLS_fatal('Not yet implemented')
+          
+        case(3) ! Homogeneous wedge mesh
+          call TLS_fatal('Not yet implemented')
+          
+        case(4) ! Homogeneous hex  mesh
+          call this%normals_lvira_hex_execute(j, stencil, a_vof)
+          
+        case  default ! Heterogeneous mesh
+          call TLS_fatal('Not yet implemented')
+      end select
+      
+    end do
+
+    this%normal(:,2,:) = -this%normal(:,1,:)
+    call gather_boundary(this%mesh%cell_ip, this%normal)
+
+  end subroutine normals_lvira
+
+  subroutine normals_lvira_tet_execute(this, a_center_index, a_stencil, a_vof)
+
+    use irl_interface_helper
+    use traversal_tracker_type, only : traversal_tracker    
+    
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    integer, intent(in) :: a_center_index
+    type(traversal_tracker), intent(in) :: a_stencil
+    real(r8), intent(in) :: a_vof(:,:)
+
+    integer :: n, cell_index
+    type(LVIRANeigh_Tet_type) :: neighborhood
+    type(Tet_type), allocatable :: IRL_tet(:)
+    real(r8) :: tmp_plane(4)
+    
+    ! Create IRL cell geometries
+    allocate(IRL_tet(a_stencil%get_number_of_visited_cells()))   
+
+    ! Build IRL stencil
+    call new(neighborhood)
+    call setSize(neighborhood, a_stencil%get_number_of_visited_cells())
+    do n = 1, a_stencil%get_number_of_visited_cells()      
+      call new(IRL_tet(n))
+      cell_index = a_stencil%get_visited_cell_index(n)
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(cell_index):this%mesh%xcnode(cell_index+1)-1))      
+        call truchas_poly_to_irl(this%mesh%x(:,cn), IRL_tet(n))
+      end associate
+      call setMember(neighborhood, n-1, IRL_tet(n), a_vof(1,cell_index))
+    end do
+    call setCenterOfStencil(neighborhood, 0)
+
+    ! Perform LVIRA
+    call reconstructLVIRA3D(neighborhood, this%planar_separator(a_center_index))   
+
+    ! Move normal to this%normal
+    tmp_plane = getPlane(this%planar_separator(a_center_index),0)
+    this%normal(:,1,a_center_index) = tmp_plane(1:3)
+
+    deallocate(IRL_tet)
+
+  end subroutine normals_lvira_tet_execute
+
+  
+  subroutine normals_lvira_hex_execute(this, a_center_index, a_stencil, a_vof)
+
+    use irl_interface_helper
+    use traversal_tracker_type, only : traversal_tracker    
+    
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    integer, intent(in) :: a_center_index
+    type(traversal_tracker), intent(in) :: a_stencil
+    real(r8), intent(in) :: a_vof(:,:)
+
+    integer :: n, cell_index
+    type(LVIRANeigh_Hex_type) :: neighborhood
+    type(Hex_type), allocatable :: IRL_hex(:)
+    real(r8) :: tmp_plane(4)
+    
+    ! Create IRL cell geometries
+    allocate(IRL_hex(a_stencil%get_number_of_visited_cells()))   
+
+    ! Build IRL stencil
+    call new(neighborhood)
+    call setSize(neighborhood, a_stencil%get_number_of_visited_cells())
+    do n = 1, a_stencil%get_number_of_visited_cells()      
+      call new(IRL_hex(n))
+      cell_index = a_stencil%get_visited_cell_index(n)
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(cell_index):this%mesh%xcnode(cell_index+1)-1))      
+        call truchas_poly_to_irl(this%mesh%x(:,cn), IRL_hex(n))
+      end associate
+      call setMember(neighborhood, n-1, IRL_hex(n), a_vof(1,cell_index))
+    end do
+    call setCenterOfStencil(neighborhood, 0)
+
+    ! Perform LVIRA
+    call reconstructLVIRA3D(neighborhood, this%planar_separator(a_center_index))   
+
+    ! Move normal to this%normal
+    tmp_plane = getPlane(this%planar_separator(a_center_index),0)
+    this%normal(:,1,a_center_index) = tmp_plane(1:3)
+
+    deallocate(IRL_hex)
+
+  end subroutine normals_lvira_hex_execute
+    
+
+  subroutine identify_reconstruction_neighborhood(this, a_starting_index, a_stencil_length, &
+       a_cell_types, a_stencil)
+
+    use traversal_tracker_type, only : traversal_tracker    
+
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    integer, intent(in) :: a_starting_index
+    real(r8), intent(in) :: a_stencil_length
+    integer, intent(out) :: a_cell_types(:)
+    type(traversal_tracker), intent(out) :: a_stencil
+
+    integer :: current_cell, n
+    real(r8) :: distance_to_centroid
+
+    a_cell_types = 0
+    call a_stencil%init([a_starting_index])
+
+    ! Add starting_cell to cell_types
+    select case(this%mesh%xcnode(a_starting_index+1)-this%mesh%xcnode(a_starting_index))
+    case (4) ! tet      
+      a_cell_types(1) = a_cell_types(1) + 1                
+    case (5) ! pyramid
+      a_cell_types(2) = a_cell_types(2) + 1                
+    case (6) ! Wedge
+      a_cell_types(3) = a_cell_types(3) + 1                
+    case (8) ! Hex
+      a_cell_types(4) = a_cell_types(4) + 1
+    case default
+      call TLS_fatal('Unknown Truchas cell type during stencil generation')
+    end select
+
+    do while(a_stencil%still_cells_to_visit())
+      current_cell = a_stencil%get_next_cell()
+      associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(current_cell):this%mesh%xcnhbr(current_cell+1)-1))
+        do n = 1, size(cn)
+          if(cn(n) /= 0) then
+            distance_to_centroid = sqrt(sum((&
+                 this%mesh%cell_centroid(:,cn(n))-this%mesh%cell_centroid(:,a_starting_index))**2))
+            if(distance_to_centroid < a_stencil_length .and. a_stencil%cell_not_encountered(cn(n))) then
+              call a_stencil%add_cell(cn(n))
+              select case(this%mesh%xcnode(cn(n)+1)-this%mesh%xcnode(cn(n)))
+              case (4) ! tet      
+                a_cell_types(1) = a_cell_types(1) + 1                
+              case (5) ! pyramid
+                a_cell_types(2) = a_cell_types(2) + 1                
+              case (6) ! Wedge
+                a_cell_types(3) = a_cell_types(3) + 1                
+              case (8) ! Hex
+                a_cell_types(4) = a_cell_types(4) + 1
+              case default
+                call TLS_fatal('Unknown Truchas cell type during stencil generation')
+              end select
+            end if
+          end if
+        end do
+      end associate
+    end do
+
+  end subroutine identify_reconstruction_neighborhood
   
   subroutine set_irl_interfaces(this, vof)
     

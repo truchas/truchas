@@ -42,16 +42,22 @@ contains
     call interface_outfile%close()
   end subroutine TPIO_close
 
-  subroutine TPIO_write_mesh(a_polygon_array)
+  ! NOTE: Connectivity of the interface mesh is written
+  ! with 0-based indexing. It appears XDMF (or atleast
+  ! the Paraview reader) does not support 1-based indexing
+  ! for Mixed topology Polygon types.
+  subroutine TPIO_write_mesh(a_polygon_array, t, dt, cycle_number)
 
     use irl_fortran_interface
     use kinds, only: r8
-    use time_step_module, only: t, dt, cycle_number          
     use legacy_mesh_api, only: ncells, ncells_tot, ndim, nvc
     use output_control,  only: part
     use truchas_logging_services
 
     type(Poly_type), intent(in) :: a_polygon_array(:)
+    real(r8), intent(in) :: t
+    real(r8), intent(in) :: dt
+    integer, intent(in) :: cycle_number
     
     integer :: n,j, curr_vert, ind
     integer :: total_verts, current_verts, npoly
@@ -70,7 +76,7 @@ contains
     !! Create the mesh entry.
     write(name, '(a,i0.4)') 'MESH', written_times
     call interface_outfile%add_interface_mesh_group(trim(name), nvc, ndim, out_mesh)
-    call out_mesh%write_attr('cycle', 0)!cycle_number)    
+    call out_mesh%write_attr('cycle', cycle_number)    
     call out_mesh%write_attr('sequence_number', written_times)
     call out_mesh%write_attr('time', t)    
     call out_mesh%write_attr('time step', dt)

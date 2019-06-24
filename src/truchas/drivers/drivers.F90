@@ -208,7 +208,7 @@ call hijack_truchas ()
     call mem_diag_write('Before main loop:')
 
     call TDO_write_timestep
-    call vtrack_write_interface ! Does nothing unless unsplit transport.    
+    call vtrack_write_interface(t, dt, cycle_number) ! Does nothing unless unsplit transport.    
     t_write = t
     call probes_output
 
@@ -316,7 +316,7 @@ call hijack_truchas ()
           call TLS_info('')
           call TLS_info('Received signal USR2; writing time step data and terminating')
           call TDO_write_timestep
-          call vtrack_write_interface ! Does nothing unless unsplit transport.              
+          call vtrack_write_interface(t, dt, cycle_number) ! Does nothing unless unsplit transport.  
           exit MAIN_CYCLE
         end if
 
@@ -334,7 +334,7 @@ call hijack_truchas ()
           select type (action)
           type is (output_event)
             call TDO_write_timestep
-            call vtrack_write_interface ! Does nothing unless unsplit transport.                
+            call vtrack_write_interface(t, dt, cycle_number) ! Does nothing unless unsplit transport. 
             t_write = t
           type is (short_edit_event)
             call edit_short
@@ -358,7 +358,7 @@ call hijack_truchas ()
         else
           call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
           call TDO_write_timestep
-          call vtrack_write_interface ! Does nothing unless unsplit transport.              
+          call vtrack_write_interface(t, dt, cycle_number) ! Does nothing unless unsplit transport.
         end if
         exit
       end if
