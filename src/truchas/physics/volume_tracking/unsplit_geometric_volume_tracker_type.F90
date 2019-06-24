@@ -249,26 +249,6 @@ contains
 
     call this%update_vof(a_interface_band, flux_vol, vof)
 
-    ! ! DEBUG
-    ! do j = 1, this%mesh%ncell_onP
-    !    tmp = 0.0_r8
-    !    associate(fid => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
-    !      do f = 1, size(fid)
-    !         if(btest(this%mesh%cfpar(j), f)) then
-    !           tmp = tmp + vel(fid(f))*dt*this%mesh%area(fid(f))
-    !         else
-    !           tmp = tmp - vel(fid(f))*dt*this%mesh%area(fid(f))
-    !         end if
-    !      end do
-    !    end associate
-
-    !    if(abs(tmp > 1.0e-12)) then
-    !      print*,'Velocity field has divergence of ', tmp, ' for cell', j
-    !      print*,'This is ',100.0_r8*tmp/this%mesh%volume(j),' % of the cell volume.'
-    !    end if       
-    ! end do
-    ! ! END DEBUG
-
     call stop_timer('advection')
 
   end subroutine flux_volumes
@@ -402,15 +382,15 @@ contains
           if(cn(f) /= 0) then
             found_internal = found_internal + 1 ! IRL is 0-based indexed
             call setPlane(this%planar_localizer(j), found_internal-1, tmp_plane(1:3), tmp_plane(4))         
-            call setEdgeConnectivity(this%localized_separator_link(j), found_internal-1, &
-                                     this%localized_separator_link(cn(f))) 
+!            call setEdgeConnectivity(this%localized_separator_link(j), found_internal-1, &
+!                                     this%localized_separator_link(cn(f))) 
           else
             ! Connect to correct "outside" marking localized_separator_link
             ! Making these last in reconstruction should keep all inside domain volume inside the domain
             found_boundary = found_boundary + 1 ! IRL is 0-based index
             call setPlane(this%planar_localizer(j), total_internal + found_boundary-1, tmp_plane(1:3), tmp_plane(4))
-            call setEdgeConnectivity(this%localized_separator_link(j), total_internal + found_boundary-1, &
-                                     this%localized_separator_link(face_to_boundary_mapping(face_index)))
+!            call setEdgeConnectivity(this%localized_separator_link(j), total_internal + found_boundary-1, &
+!                                     this%localized_separator_link(face_to_boundary_mapping(face_index)))
           end if
                 
         end do
@@ -1205,8 +1185,10 @@ contains
   end subroutine compute_projected_nodes
   
   subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof, a_interface_band)
-  
+
+    use truchas_getMoments_mod
     use irl_interface_helper
+    use tagged_volumes_type
     
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: a_face_vel(:)
@@ -1217,18 +1199,15 @@ contains
     integer :: f, v, i, t, k
     integer ::  number_of_nodes, neighbor_cell_index
     real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume
-    type(TagAccVM_SepVol_type) :: tagged_sepvol
     integer :: current_tag, min_band
+    type(tagged_volumes) :: flux_volumes
 
-    ! Debug
-    type(SepVol_type) :: sepvol
-    
     ASSERT(this%nmat == 2) ! Will alleviate later
 
-    call new(tagged_sepvol)
-    call getMoments_setMethod(1)
+    call getMoments_setMethod(0)
       
     this%face_flux = 0.0_r8
+    call flux_volumes%init(this%nmat, 100)
     do f = 1, this%mesh%nface_onP
 
       neighbor_cell_index = this%mesh%fcell(1, f)
@@ -1238,7 +1217,7 @@ contains
         min_band = min(abs(a_interface_band(neighbor_cell_index)),abs(a_interface_band(this%mesh%fcell(2,f))))
       else
         cell_volume = this%mesh%volume(neighbor_cell_index)
-        min_band = abs(a_interface_band(neighbor_cell_index))
+        min_band = abs(a_interface_band(neighbor_cell_index))        
       end if       
 
       if(min_band > advect_band) then
@@ -1268,82 +1247,72 @@ contains
           case(1) ! Triangular Face -> Octahedron Volume
           
             call construct(this%IRL_CapOcta_LLL, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_LLL, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_dt*a_face_vel(f)*this%mesh%area(f))            
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapOcta_LLL, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case(2) ! Triangular Face -> Octahedron Volume
           
             call construct(this%IRL_CapOcta_LLT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_LLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapOcta_LLT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
             
           case(3) ! Triangular Face -> Octahedron Volume
           
             call construct(this%IRL_CapOcta_LTT, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_dt*a_face_vel(f)*this%mesh%area(f))       
-            call getMoments(this%IRL_CapOcta_LTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_dt*a_face_vel(f)*this%mesh%area(f))
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapOcta_LTT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case(4) ! Triangular Face -> Octahedron Volume
           
-            call construct(this%IRL_CapOcta_TTT, cell_nodes)            
+            call construct(this%IRL_CapOcta_TTT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_TTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)      
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapOcta_TTT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
             
           case(5) ! Quad Face -> Dodecahedron Volume
             
             call construct(this%IRL_CapDod_LLLL, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapDod_LLLL, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapDod_LLLL, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case(6) ! Quad Face -> Dodecahedron Volume
             
-            call construct(this%IRL_CapDod_LLLT, cell_nodes)            
+            call construct(this%IRL_CapDod_LLLT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LLLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapDod_LLLT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case(7) ! Quad Face -> Dodecahedron Volume
             
-            call construct(this%IRL_CapDod_LTLT, cell_nodes)            
+            call construct(this%IRL_CapDod_LTLT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LTLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapDod_LTLT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case(8) ! Quad Face -> Dodecahedron Volume
             
-            call construct(this%IRL_CapDod_LLTT, cell_nodes)            
+            call construct(this%IRL_CapDod_LLTT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapDod_LLTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapDod_LLTT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case(9) ! Quad Face -> Dodecahedron Volume
             
-            call construct(this%IRL_CapDod_LTTT, cell_nodes)            
+            call construct(this%IRL_CapDod_LTTT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LTTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapDod_LTTT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case(10) ! Quad Face -> Dodecahedron Volume
             
-            call construct(this%IRL_CapDod_TTTT, cell_nodes)            
+            call construct(this%IRL_CapDod_TTTT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_TTTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+            call truchas_getMoments(this%mesh, this%nmat, this%IRL_CapDod_TTTT, this%mesh%fcell(:,f), &
+                                     this%localized_separator_link, flux_volumes)
 
           case default
             call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
@@ -1352,38 +1321,21 @@ contains
       end associate
 
       phase_volume = 0.0_r8
-      do t = 0, getSize(tagged_sepvol)-1
-         current_tag = getTagForIndex(tagged_sepvol, t)
+      do t = 1, flux_volumes%number_of_fluxes()
+         current_tag = flux_volumes%get_flux_id(t)
          if(current_tag > this%mesh%ncell) then
             ! Is a boundary condition, all volume in phase 0
-            phase_volume = &
-                 phase_volume + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(tagged_sepvol, t, 0)
-         else
+            phase_volume(:) = &
+                 phase_volume(:) + this%getBCMaterialFractions(current_tag, a_vof) * sum(flux_volumes%get_flux(t))
+          else
             ! Is inside domain, trust actual volumes
-            phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
-            phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvol, t, 1)
+            phase_volume(:) = phase_volume(:) + flux_volumes%get_flux(t)
          end if
       end do
       this%face_flux(:,f) = phase_volume
-
-      ! if(phase_volume(1)*phase_volume(2) < 0.0_r8) then
-      !    print*,'Face ', f, ' has crossed signs', phase_volume
-      !    print*,'Case: ', this%flux_geometry_class(f)
-      !    print*,'Cell neighbors: ', this%mesh%fcell(:,f)
-      ! end if
-
-       ! if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-14 .and. &
-       !    abs(a_dt*a_face_vel(f)*this%mesh%area(f)) > epsilon(1.0_r8)  ) then
-       !   print*,'Face failed', f, this%mesh%fcell(:,f)
-       !   print*,'Case: ', this%flux_geometry_class(f)
-       !   print*,a_dt*a_face_vel(f)*this%mesh%area(f), sum(phase_volume)
-       !   print*,phase_volume
-       ! end if
-      
     end do
 
-    ! Need to communicate fluxes
-    call gather_boundary(this%mesh%face_ip, this%face_flux)
+  call gather_boundary(this%mesh%face_ip, this%face_flux)
     
   end subroutine compute_fluxes
 
