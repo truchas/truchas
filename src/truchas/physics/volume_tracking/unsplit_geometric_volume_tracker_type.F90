@@ -46,11 +46,12 @@ module unsplit_geometric_volume_tracker_type
     ! Start IRL objects
     type(ObjServer_PlanarLoc_type) :: object_server_planar_localizer
     type(ObjServer_PlanarSep_type) :: object_server_planar_separator
-    type(ObjServer_LocSepLink_type) :: object_server_localized_separator_link
     type(PlanarLoc_type), allocatable :: planar_localizer(:)
-    type(PlanarSep_type), allocatable :: planar_separator(:)
-    type(LocSepLink_type), allocatable :: localized_separator_link(:)
-    type(Poly_type), allocatable, public :: interface_polygons(:) ! Need public to write?
+    type(PlanarSep_type), allocatable :: planar_separator(:,:)
+    type(PlanarSepPath_type) :: planar_separator_path
+    type(PlanarSepPathGroup_type), allocatable :: planar_separator_path_group(:)
+    type(LocSepGroupLink_type), allocatable :: localized_separator_group_link(:)
+    type(Poly_type), allocatable, private :: interface_polygons(:) 
     type(Tet_type) :: IRL_tet
     type(Pyrmd_type) :: IRL_pyramid
     type(TriPrism_type) :: IRL_wedge
@@ -77,6 +78,14 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: init_irl_mesh
     procedure, private :: generate_flux_classes
     procedure, private :: compute_velocity_weightings
+    procedure, private :: set_irl_priority_order
+    procedure, private :: interface_reconstruction    
+    procedure, private :: normals_youngs
+    procedure, private :: normals_swartz
+    procedure, private :: normals_lvira
+    procedure, private :: normals_lvira_hex_execute
+    procedure, private :: normals_lvira_tet_execute    
+    procedure, private :: identify_reconstruction_neighborhood    
     procedure, private :: set_irl_interfaces
     procedure, private :: adjust_planes_match_VOF
     procedure, private :: reset_volume_moments
@@ -87,13 +96,6 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: compute_projected_nodes
     procedure, private :: compute_fluxes
     procedure, private :: update_vof
-    procedure, private :: interface_reconstruction    
-    procedure, private :: normals_youngs
-    procedure, private :: normals_swartz
-    procedure, private :: normals_lvira
-    procedure, private :: normals_lvira_hex_execute
-    procedure, private :: normals_lvira_tet_execute    
-    procedure, private :: identify_reconstruction_neighborhood
     procedure, private :: getBCMaterialFractions
   end type unsplit_geometric_volume_tracker
 
@@ -111,6 +113,7 @@ contains
     type(parameter_list), intent(inout) :: params
     character(:), allocatable :: interface_recon
     integer :: i, j, k
+    integer :: material_present(nmat)
     
     this%mesh => mesh
     call this%mesh%init_cell_centroid
@@ -140,6 +143,7 @@ contains
         INSIST(this%priority(i) > 0)
       end do
 
+      ! QUESTION: Come back and visit solid. Will need to be first.
       ! The current expectation is that a user will
       ! use a material number of -1 to indicate solid.
       ! Internally, if solid is present it is the last material
@@ -151,7 +155,13 @@ contains
     end if
     ASSERT(size(this%priority) == this%nmat)
     ASSERT(all(this%priority > 0) .and. all(this%priority <= this%nmat))
-    ! TODO: assert that each material appears exactly once
+    material_present = 0
+    do i = 1, this%nmat
+      material_present(this%priority(i)) = material_present(this%priority(i)) + 1
+    end do
+    ! Check each material shows up exactly once
+    ASSERT(maxval(material_present) == 1)
+    ASSERT(minval(material_present) == 1)
     
     ! Allocate face fluxes we'll store
     allocate(this%face_flux(this%nmat, this%mesh%nface))
@@ -234,6 +244,7 @@ contains
     vof = vof_n
 
     call start_timer('reconstruction')
+    call this%set_irl_priority_order(vof)
     call this%interface_reconstruction(vof)    
     call this%reset_volume_moments(vof)
     call this%construct_interface_polygons(a_interface_band)
@@ -328,7 +339,7 @@ contains
     
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     
-    integer :: j, f, face_index, cn
+    integer :: j, f, face_index, cn, k
     integer :: number_of_cell_faces
     integer :: total_recon_needed
     real(r8) :: tmp_plane(4)
@@ -358,22 +369,27 @@ contains
     
     ! Allocate block storage to increase locality of objects we will be creating
     call new(this%object_server_planar_localizer, int(total_recon_needed, i8))
-    call new(this%object_server_planar_separator, int(total_recon_needed, i8))
-    call new(this%object_server_localized_separator_link, int(total_recon_needed, i8))   
+    call new(this%object_server_planar_separator, int(this%nmat*total_recon_needed, i8))
         
     ! Allocate the Fortran memory
     allocate(this%planar_localizer(total_recon_needed))
-    allocate(this%planar_separator(total_recon_needed))
-    allocate(this%localized_separator_link(total_recon_needed))
+    allocate(this%planar_separator(this%nmat, total_recon_needed))
+    allocate(this%planar_separator_path_group(total_recon_needed))
+    allocate(this%localized_separator_group_link(total_recon_needed))    
+    call new(this%planar_separator_path)
     
     ! Now allocate on the IRL side the different planar reconstructions
     do j = 1, total_recon_needed
       call new(this%planar_localizer(j), this%object_server_planar_localizer)
-      call new(this%planar_separator(j), this%object_server_planar_separator)
-      call new(this%localized_separator_link(j), &
-               this%object_server_localized_separator_link, &
+      call new(this%planar_separator_path_group(j))      
+      do k = 1, this%nmat
+        call new(this%planar_separator(k, j), this%object_server_planar_separator)
+        call construct(this%planar_separator_path, this%planar_separator(k,j))
+        call addPlanarSeparatorPath(this%planar_separator_path_group(j), this%planar_separator_path, k)
+      end do
+      call new(this%localized_separator_group_link(j), &
                this%planar_localizer(j), &
-               this%planar_separator(j) )
+               this%planar_separator_path_group(j) )           
     end do
 
     ! Now setup PlanarLocalizers (one per cell) and link together.
@@ -381,7 +397,7 @@ contains
       number_of_cell_faces = this%mesh%xcface(j+1)-this%mesh%xcface(j)
                                                                     
       call setNumberOfPlanes(this%planar_localizer(j), number_of_cell_faces)
-      call setId(this%localized_separator_link(j), j)
+      call setId(this%localized_separator_group_link(j), j)      
             
       associate(face_id => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
                 cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
@@ -402,15 +418,15 @@ contains
           if(cn(f) /= 0) then
             found_internal = found_internal + 1 ! IRL is 0-based indexed
             call setPlane(this%planar_localizer(j), found_internal-1, tmp_plane(1:3), tmp_plane(4))         
-            call setEdgeConnectivity(this%localized_separator_link(j), found_internal-1, &
-                                     this%localized_separator_link(cn(f))) 
+            call setEdgeConnectivity(this%localized_separator_group_link(j), found_internal-1, &
+                                     this%localized_separator_group_link(cn(f)))             
           else
             ! Connect to correct "outside" marking localized_separator_link
             ! Making these last in reconstruction should keep all inside domain volume inside the domain
             found_boundary = found_boundary + 1 ! IRL is 0-based index
             call setPlane(this%planar_localizer(j), total_internal + found_boundary-1, tmp_plane(1:3), tmp_plane(4))
-            call setEdgeConnectivity(this%localized_separator_link(j), total_internal + found_boundary-1, &
-                                     this%localized_separator_link(face_to_boundary_mapping(face_index)))
+            call setEdgeConnectivity(this%localized_separator_group_link(j), total_internal + found_boundary-1, &
+                                     this%localized_separator_group_link(face_to_boundary_mapping(face_index)))            
           end if
                 
         end do
@@ -420,12 +436,13 @@ contains
       
     ! Make "outside" reconstructions consume all volume given to them.
     do j = this%mesh%ncell+1,total_recon_needed
-      call setNumberOfPlanes(this%planar_separator(j), 1)
-      call setPlane(this%planar_separator(j), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
+      call setNumberOfPlanes(this%planar_separator(1,j), 1)
+      call setPlane(this%planar_separator(1,j), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
       call setNumberOfPlanes(this%planar_localizer(j), 1)
       call setPlane(this%planar_localizer(j), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
-      call setEdgeConnectivityNull(this%localized_separator_link(j), 0) ! No link back to domain
-      call setId(this%localized_separator_link(j), j)
+      call setEdgeConnectivityNull(this%localized_separator_group_link(j), 0) ! No link back to domain      
+      call setId(this%localized_separator_group_link(j), j)
+      call setPriorityOrder(this%planar_separator_path_group(j), 1, [1])
     end do
 
   end subroutine init_irl_mesh
@@ -482,8 +499,31 @@ contains
         end do
       end associate
     end do
-    
+
   end subroutine compute_velocity_weightings
+
+  subroutine set_irl_priority_order(this, a_vof)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in)  :: a_vof(:,:)
+
+    integer :: j, k, priority_index
+    integer :: irl_priority(this%nmat), valid_size
+
+    do j = 1, this%mesh%ncell
+      valid_size = 0
+      do k = 1, this%nmat
+        priority_index = this%priority(k)
+        if(a_vof(priority_index, j) > this%cutoff) then
+          valid_size = valid_size + 1
+          irl_priority(valid_size) = priority_index
+        end if
+      end do
+      ASSERT(valid_size > 0)
+      call setPriorityOrder(this%planar_separator_path_group(j), valid_size, irl_priority)      
+    end do
+
+  end subroutine set_irl_priority_order
 
   subroutine interface_reconstruction(this, vof)
 
@@ -607,15 +647,15 @@ contains
       do j = 1, this%mesh%ncell_onP
         if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
           distance_guess = dot_product(this%normal(:,1,j), this%mesh%cell_centroid(:,j))
-          call setNumberOfPlanes(this%planar_separator(j), 1)
-          call setPlane(this%planar_separator(j), 0, this%normal(:,1,j), distance_guess)
+          call setNumberOfPlanes(this%planar_separator(1,j), 1)
+          call setPlane(this%planar_separator(1,j), 0, this%normal(:,1,j), distance_guess)
           
           associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
             
-            call this%adjust_planes_match_VOF(this%mesh%x(:,cn), a_vof(:,j), &
-                 this%planar_separator(j) )
+            call this%adjust_planes_match_VOF(this%mesh%x(:,cn), a_vof(1,j), &
+                 this%planar_separator(1,j) )
 
-            call this%construct_nonzero_polygon(this%mesh%x(:,cn), this%planar_separator(j), &
+            call this%construct_nonzero_polygon(this%mesh%x(:,cn), this%planar_separator(1,j), &
                  0, this%interface_polygons(j))
           end associate
 
@@ -786,10 +826,10 @@ contains
     call setCenterOfStencil(neighborhood, 0)
 
     ! Perform LVIRA
-    call reconstructLVIRA3D(neighborhood, this%planar_separator(a_center_index))   
+    call reconstructLVIRA3D(neighborhood, this%planar_separator(1,a_center_index))   
 
     ! Move normal to this%normal
-    tmp_plane = getPlane(this%planar_separator(a_center_index),0)
+    tmp_plane = getPlane(this%planar_separator(1,a_center_index),0)
     this%normal(:,1,a_center_index) = tmp_plane(1:3)
 
     deallocate(IRL_tet)
@@ -829,10 +869,10 @@ contains
     call setCenterOfStencil(neighborhood, 0)
 
     ! Perform LVIRA
-    call reconstructLVIRA3D(neighborhood, this%planar_separator(a_center_index))   
+    call reconstructLVIRA3D(neighborhood, this%planar_separator(1,a_center_index))   
 
     ! Move normal to this%normal
-    tmp_plane = getPlane(this%planar_separator(a_center_index),0)
+    tmp_plane = getPlane(this%planar_separator(1,a_center_index),0)
     this%normal(:,1,a_center_index) = tmp_plane(1:3)
 
     deallocate(IRL_hex)
@@ -908,31 +948,31 @@ contains
     real(r8), intent(in) :: vof(:,:)
     
     
-    integer :: j
+    integer :: j, k, priority_index, priority_size
     real(r8) :: distance_guess
     
     ASSERT(this%nmat == 2) ! Will aleviate after code working with two phases
     do j = 1, this%mesh%ncell
-    
-      call setNumberOfPlanes(this%planar_separator(j), 1)
-      if(vof(1,j) < this%cutoff .or. vof(1,j) > 1.0_r8 - this%cutoff) then
-        ! Full phase cell
-        distance_guess = sign(1.0_r8, vof(1,j)-0.5_r8)
-        call setPlane(this%planar_separator(j),0, [0.0_r8, 0.0_r8, 0.0_r8], distance_guess)
-      else
-        ! Mixed cell
-        distance_guess = dot_product(this%normal(:,1,j), this%mesh%cell_centroid(:,j))
-        call setPlane(this%planar_separator(j), 0, this%normal(:,1,j), distance_guess)
-        
-        associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+      priority_size = getPriorityOrderSize(this%planar_separator_path_group(j))
+      do k = 0, priority_size - 2
+        priority_index = getPriorityOrderTag(this%planar_separator_path_group(j),k)
+        ! Has to be mixed cell if there is more than one index in the priority list
+        call setNumberOfPlanes(this%planar_separator(priority_index,j), 1)
+          ! Mixed cell
+          distance_guess = dot_product(this%normal(:,priority_index,j), this%mesh%cell_centroid(:,j))
+          call setPlane(this%planar_separator(priority_index,j), 0, this%normal(:,priority_index,j), distance_guess)
           
-        call this%adjust_planes_match_VOF(this%mesh%x(:,cn), vof(:,j), &
-             this%planar_separator(j) )
-        
-        end associate               
-      
-      end if
-          
+          associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+            
+          call this%adjust_planes_match_VOF(this%mesh%x(:,cn), vof(priority_index,j), &
+               this%planar_separator(priority_index,j) )
+            
+          end associate
+        end do
+      ! Last priority plane serves as background phase, set it to catch all
+      priority_index = getPriorityOrderTag(this%planar_separator_path_group(j), priority_size-1)
+      call setNumberOfPlanes(this%planar_separator(priority_index,j), 1)
+      call setPlane(this%planar_separator(priority_index,j), 0, [0.0_r8, 0.0_r8, 0.0_r8], 1.0_r8)
     end do
     
   end subroutine set_irl_interfaces
@@ -944,7 +984,7 @@ contains
   
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: a_cell(:,:)
-    real(r8), intent(in) :: a_vof(:)
+    real(r8), intent(in) :: a_vof
     type(PlanarSep_type), intent(inout) :: a_planar_separator
 
     real(r8), parameter :: VOF_tolerance = 1.0e-14_r8
@@ -955,19 +995,19 @@ contains
     select case(size(a_cell,dim=2))
       case (4) ! tet      
         call truchas_poly_to_irl(a_cell, this%IRL_tet)
-        call matchVolumeFraction(this%IRL_tet, a_vof(1), a_planar_separator, VOF_tolerance)
+        call matchVolumeFraction(this%IRL_tet, a_vof, a_planar_separator, VOF_tolerance)
       
       case (5) ! pyramid
         call truchas_poly_to_irl(a_cell, this%IRL_pyramid)
-        call matchVolumeFraction(this%IRL_pyramid, a_vof(1), a_planar_separator, VOF_tolerance)
+        call matchVolumeFraction(this%IRL_pyramid, a_vof, a_planar_separator, VOF_tolerance)
       
       case (6) ! Wedge
         call truchas_poly_to_irl(a_cell, this%IRL_wedge)
-        call matchVolumeFraction(this%IRL_wedge, a_vof(1), a_planar_separator, VOF_tolerance)
+        call matchVolumeFraction(this%IRL_wedge, a_vof, a_planar_separator, VOF_tolerance)
     
       case (8) ! Hex
         call truchas_poly_to_irl(a_cell, this%IRL_hex)
-        call matchVolumeFraction(this%IRL_hex, a_vof(1), a_planar_separator, VOF_tolerance)
+        call matchVolumeFraction(this%IRL_hex, a_vof, a_planar_separator, VOF_tolerance)
     
       case default
         call TLS_fatal('Unknown Truchas cell type during plane-distance setting')
@@ -984,64 +1024,58 @@ contains
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(out) :: a_vof(:,:)
 
-    integer :: j
-    real(r8) :: new_volume    
+    integer :: j, phase, phase_id
+    type(TagAccVM_Vol_type) :: new_volumes
 
     ! DEBUG/Diagnostics
     real(r8) :: volume_change(this%nmat)
-    character(string_len) :: message
+    real(r8) :: tmp_vof    
+    character(string_len) :: message, myformat
 
     volume_change = 0.0_r8
+    call new(new_volumes)
     do j = 1, this%mesh%ncell_onP
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
           
         select case(size(cn))
         case (4) ! tet      
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
-          call getNormMoments(this%IRL_tet, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)
-          a_vof(1,j) = new_volume / calculateVolume(this%IRL_tet)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)
+          call getNormMoments(this%IRL_tet, this%planar_separator_path_group(j), new_volumes)
 
         case (5) ! pyramid
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)
-          call getNormMoments(this%IRL_pyramid, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
-          a_vof(1,j) = new_volume / calculateVolume(this%IRL_pyramid)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
-
+          call getNormMoments(this%IRL_pyramid, this%planar_separator_path_group(j), new_volumes)
+          
         case (6) ! Wedge
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)
-          call getNormMoments(this%IRL_wedge, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
-          a_vof(1,j) = new_volume / calculateVolume(this%IRL_wedge)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)        
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
-
+          call getNormMoments(this%IRL_wedge, this%planar_separator_path_group(j), new_volumes)
+          
         case (8) ! Hex
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)
-          call getNormMoments(this%IRL_hex, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
-          a_vof(1,j) = new_volume / calculateVolume(this%IRL_hex)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)        
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
-
+          call getNormMoments(this%IRL_hex, this%planar_separator_path_group(j), new_volumes)
+          
         case default
           call TLS_fatal('Unknown Truchas cell type during plane-distance setting')
         end select
 
       end associate
 
+      do phase = 0, getSize(new_volumes)-1
+        phase_id = getTagForIndex(new_volumes, phase)
+        tmp_vof = a_vof(phase_id, j)
+        a_vof(phase_id, j) = getVolumeAtIndex(new_volumes, phase) / this%mesh%volume(j)
+        volume_change(phase_id) = volume_change(phase_id) + (a_vof(phase_id, j) - tmp_vof)*this%mesh%volume(j)
+      end do
     end do
     
     call gather_boundary(this%mesh%cell_ip, a_vof)
 
-    volume_change(1) = global_sum(volume_change(1))
-    volume_change(2) = global_sum(volume_change(2))
+    do phase = 1, this%nmat
+      volume_change(phase) = global_sum(volume_change(phase))
+    end do
 
-    write(message, '(a,2es12.4)') 'Phase volumes lost during reconstruction', volume_change
+    write(myformat, '(a,i,a)') '(a,',this%nmat,'es12.4)'
+    write(message, trim(myformat)) 'Phase volumes lost during reconstruction', volume_change
     call TLS_info(message)
     
   end subroutine reset_volume_moments
@@ -1062,7 +1096,7 @@ contains
       end if
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
 
-        call this%construct_nonzero_polygon(this%mesh%x(:,cn), this%planar_separator(j),&
+        call this%construct_nonzero_polygon(this%mesh%x(:,cn), this%planar_separator(1,j),&
              0, this%interface_polygons(j))
         
       end associate
@@ -1215,17 +1249,15 @@ contains
     integer, intent(in)  :: a_interface_band(:)
         
     integer :: f, v, i, t, k
-    integer ::  number_of_nodes, neighbor_cell_index
+    integer ::  number_of_nodes, neighbor_cell_index, phase_id, phase, phase_size
     real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume
-    type(TagAccVM_SepVol_type) :: tagged_sepvol
+    type(TagAccVM2_Vol_type) :: tagged_volumes
+    type(TagAccVM_Vol_type) :: cell_local_volumes
     integer :: current_tag, min_band
-
-    ! Debug
-    type(SepVol_type) :: sepvol
     
     ASSERT(this%nmat == 2) ! Will alleviate later
 
-    call new(tagged_sepvol)
+    call new(tagged_volumes)
     call getMoments_setMethod(1)
       
     this%face_flux = 0.0_r8
@@ -1270,80 +1302,80 @@ contains
             call construct(this%IRL_CapOcta_LLL, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_dt*a_face_vel(f)*this%mesh%area(f))
             call getMoments(this%IRL_CapOcta_LLL, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case(2) ! Triangular Face -> Octahedron Volume
           
             call construct(this%IRL_CapOcta_LLT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, a_dt*a_face_vel(f)*this%mesh%area(f))
             call getMoments(this%IRL_CapOcta_LLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
             
           case(3) ! Triangular Face -> Octahedron Volume
           
             call construct(this%IRL_CapOcta_LTT, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_dt*a_face_vel(f)*this%mesh%area(f))       
             call getMoments(this%IRL_CapOcta_LTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case(4) ! Triangular Face -> Octahedron Volume
           
             call construct(this%IRL_CapOcta_TTT, cell_nodes)            
             call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, a_dt*a_face_vel(f)*this%mesh%area(f))
             call getMoments(this%IRL_CapOcta_TTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)      
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes) 
             
           case(5) ! Quad Face -> Dodecahedron Volume
             
             call construct(this%IRL_CapDod_LLLL, cell_nodes)
             call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, a_dt*a_face_vel(f)*this%mesh%area(f))
             call getMoments(this%IRL_CapDod_LLLL, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case(6) ! Quad Face -> Dodecahedron Volume
             
             call construct(this%IRL_CapDod_LLLT, cell_nodes)            
             call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
             call getMoments(this%IRL_CapDod_LLLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case(7) ! Quad Face -> Dodecahedron Volume
             
             call construct(this%IRL_CapDod_LTLT, cell_nodes)            
             call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
             call getMoments(this%IRL_CapDod_LTLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case(8) ! Quad Face -> Dodecahedron Volume
             
             call construct(this%IRL_CapDod_LLTT, cell_nodes)            
             call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, a_dt*a_face_vel(f)*this%mesh%area(f))
             call getMoments(this%IRL_CapDod_LLTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case(9) ! Quad Face -> Dodecahedron Volume
             
             call construct(this%IRL_CapDod_LTTT, cell_nodes)            
             call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
             call getMoments(this%IRL_CapDod_LTTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case(10) ! Quad Face -> Dodecahedron Volume
             
             call construct(this%IRL_CapDod_TTTT, cell_nodes)            
             call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
             call getMoments(this%IRL_CapDod_TTTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
+                            this%localized_separator_group_link(neighbor_cell_index), &
+                            tagged_volumes)
 
           case default
             call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
@@ -1352,17 +1384,21 @@ contains
       end associate
 
       phase_volume = 0.0_r8
-      do t = 0, getSize(tagged_sepvol)-1
-         current_tag = getTagForIndex(tagged_sepvol, t)
-         if(current_tag > this%mesh%ncell) then
-            ! Is a boundary condition, all volume in phase 0
-            phase_volume = &
-                 phase_volume + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(tagged_sepvol, t, 0)
-         else
-            ! Is inside domain, trust actual volumes
-            phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
-            phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvol, t, 1)
-         end if
+      do t = 0, getSize(tagged_volumes)-1
+        current_tag = getTagForIndex(tagged_volumes, t)
+        call getAtIndex(tagged_volumes, t, cell_local_volumes)
+        if(current_tag > this%mesh%ncell) then
+          ! Is a boundary condition, all volume in phase 0
+          phase_volume = &
+               phase_volume + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(cell_local_volumes, 0)
+        else
+          ! Is inside domain, trust actual volumes
+          phase_size = getSize(cell_local_volumes)
+          do phase = 0, phase_size - 1 
+            phase_id = getTagForIndex(cell_local_volumes, phase)
+            phase_volume(phase_id) = phase_volume(phase_id) + getVolumeAtIndex(cell_local_volumes, phase)
+          end do
+        end if
       end do
       this%face_flux(:,f) = phase_volume
 
@@ -1372,13 +1408,13 @@ contains
       !    print*,'Cell neighbors: ', this%mesh%fcell(:,f)
       ! end if
 
-       ! if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-14 .and. &
-       !    abs(a_dt*a_face_vel(f)*this%mesh%area(f)) > epsilon(1.0_r8)  ) then
-       !   print*,'Face failed', f, this%mesh%fcell(:,f)
-       !   print*,'Case: ', this%flux_geometry_class(f)
-       !   print*,a_dt*a_face_vel(f)*this%mesh%area(f), sum(phase_volume)
-       !   print*,phase_volume
-       ! end if
+        ! if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-15 .and. &
+        !    abs(a_dt*a_face_vel(f)*this%mesh%area(f)) > epsilon(1.0_r8)  ) then
+        !   print*,'Face failed', f, this%mesh%fcell(:,f)
+        !   print*,'Case: ', this%flux_geometry_class(f)
+        !   print*,a_dt*a_face_vel(f)*this%mesh%area(f), sum(phase_volume)
+        !   print*,phase_volume
+        ! end if
       
     end do
 

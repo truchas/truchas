@@ -363,8 +363,10 @@ contains
     write(myformat, '(a,i,a)') '(a,',size(vol_sum),'es12.4)'
     write(message, trim(myformat)) 'Absolute volume change: ', vol_sum - this%fvol_init
     call TLS_info(message)
-    write(message, trim(myformat)) 'Normalized volume change: ',  (vol_sum - this%fvol_init)/sum(this%fvol_init)
+    write(message, trim(myformat)) 'Domain Normalized volume change: ',  (vol_sum - this%fvol_init)/sum(this%fvol_init)
     call TLS_info(message)
+    write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/this%fvol_init
+    call TLS_info(message)    
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then
