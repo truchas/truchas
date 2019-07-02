@@ -993,8 +993,8 @@ contains
 
     volume_change = 0.0_r8
     do j = 1, this%mesh%ncell_onP
-      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-          
+      call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)      
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))          
         select case(size(cn))
         case (4) ! tet      
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
@@ -1450,12 +1450,12 @@ contains
         cell_volume_sum = cell_volume_sum - sum(a_flux_vol(:, this%mesh%xcface(j)+f-1))
       end do
 
-      ! ! DEBUG
-      ! if(abs(this%mesh%volume(j) - cell_volume_sum) .gt. 1.0e-14) then
-      !   print*,'Unconservative fluxing in volume!!', j, this%mesh%volume(j), cell_volume_sum
-      !   print*,a_vof(:,j)
-      !   print*,sum(abs(a_vof(:,j)))
-      ! end if
+       ! DEBUG
+       if(abs(this%mesh%volume(j) - cell_volume_sum) .gt. 1.0e-14) then
+         print*,'Unconservative fluxing in volume!!', j, this%mesh%volume(j), cell_volume_sum
+         print*,a_vof(:,j)
+         print*,sum(abs(a_vof(:,j)))
+       end if
       a_vof(:,j) = a_vof(:,j) / cell_volume_sum
       vof_modified = .false.
       ! This will lead to inconsistency with face fluxes
@@ -1542,7 +1542,7 @@ contains
           1, 1, 3, 1, &
           0, 3, 0, 2,&
           0, 3, 0, 0]
-    integer, allocatable :: edges(:,:) ! Temporary working array. Would be better as hash_map
+    integer :: edge_direction
     integer :: f
     integer :: n, number_of_nodes    
     integer :: edge_end
@@ -1552,33 +1552,8 @@ contains
     
     allocate(this%flux_geometry_class(this%mesh%nface))
     allocate(this%flux_node(this%mesh%xfnode(this%mesh%nface+1)-1))
-    allocate(edges(this%mesh%nnode,this%mesh%nnode))
 
-
-    ! Now loop through domain and set the edge orientations
-    ! to have Leading from lower global node ID to higher
-    edges = -1
-    do f = 1, this%mesh%nface_onP
-      associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
-        irl_ordering = reorder_node_id(node_id)
-        number_of_nodes = size(node_id)
-        do n = 1, number_of_nodes
-          edge_end = irl_ordering(mod(n,number_of_nodes)+1)
-          if(this%mesh%xnode(irl_ordering(n)) .lt. this%mesh%xnode(edge_end)) then
-            ! Leading in this direction
-            edges(irl_ordering(n), edge_end) = 0 
-            edges(edge_end, irl_ordering(n)) = 1 
-          else
-            ! Trailing in this direction
-            edges(irl_ordering(n), edge_end) = 1  
-            edges(edge_end, irl_ordering(n)) = 0 
-          end if
-          
-        end do        
-        
-      end associate
-    end do
-
+    ! Treat edges as being diagonalized from lower global node id to higher
     ! For each face, now store correct flux class and
     ! node ordering to be consistent
     do f = 1, this%mesh%nface_onP
@@ -1589,9 +1564,12 @@ contains
         lookup_case = 1
         do n = 1, number_of_nodes          
           edge_end = irl_ordering(mod(n,number_of_nodes)+1)
-          ASSERT(edges(irl_ordering(n),edge_end) == 0 .or. &
-                 edges(irl_ordering(n),edge_end) == 1)
-          lookup_case = lookup_case + edges(irl_ordering(n), edge_end) * 2**(n-1)
+          if(this%mesh%xnode(irl_ordering(n)) < this%mesh%xnode(edge_end)) then
+             edge_direction = 0
+          else
+             edge_direction = 1
+          end if
+          lookup_case = lookup_case + edge_direction * 2**(n-1)
         end do
 
         select case(number_of_nodes)
@@ -1622,9 +1600,7 @@ contains
         
       end associate
 
-    end do
-    
-    deallocate(edges)
+    end do    
 
   contains
 
