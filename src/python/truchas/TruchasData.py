@@ -5,6 +5,7 @@
 #===============================================================================
 
 import re
+import os
 
 import h5py
 import scipy as sp
@@ -13,6 +14,7 @@ class TruchasData:
     def __init__(self, filename):
         self.mapped = False
         self.filename = filename
+        self.directory = os.path.dirname(filename)
         self._root = h5py.File(filename, 'r')
         self._centroid = None
 
