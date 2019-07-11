@@ -28,7 +28,6 @@ module integer_real8_tuple_vector_type
      type(integer_vector) :: vec_int_m
      type(real8_vector) :: vec_real8_m
    contains
-     procedure :: init => integer_real8_tuple_vector_init
      procedure :: at_int => integer_real8_tuple_vector_at_int
      procedure :: at_r8 => integer_real8_tuple_vector_at_r8
      procedure :: set => integer_real8_tuple_vector_set
@@ -47,15 +46,6 @@ module integer_real8_tuple_vector_type
   end interface
   
 contains
-
-  impure elemental subroutine integer_real8_tuple_vector_init(this)
-
-    class(integer_real8_tuple_vector), intent(inout) :: this
-
-    call this%vec_int_m%init()
-    call this%vec_real8_m%init()    
-
-  end subroutine integer_real8_tuple_vector_init
 
   function integer_real8_tuple_vector_at_int(this, a_index) result(a_value)
 
@@ -162,6 +152,7 @@ contains
   subroutine integer_real8_tuple_vector_copy_assignment(this, a_other)
     type(integer_real8_tuple_vector), intent(inout) :: this
     type(integer_real8_tuple_vector), intent(in) :: a_other
+    
     this%vec_int_m = a_other%vec_int_m
     this%vec_real8_m = a_other%vec_real8_m
     

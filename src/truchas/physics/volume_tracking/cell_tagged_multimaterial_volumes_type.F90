@@ -22,7 +22,7 @@ module cell_tagged_mm_volumes_type
 
   type, public :: cell_tagged_mm_volumes
      type(integer_vector), private :: cell_id_m
-     type(integer_real8_tuple_vector), pointer, private :: phase_moments_m(:) => null()
+     type(integer_real8_tuple_vector), allocatable, private :: phase_moments_m(:)
    contains
      procedure :: get_number_of_cells => cell_tagged_mm_volumes_get_number_of_cells
      procedure :: get_cell_id => cell_tagged_mm_volumes_get_cell_id
@@ -32,7 +32,6 @@ module cell_tagged_mm_volumes_type
      procedure :: clear => cell_tagged_mm_volumes_clear
      procedure :: negate_in_place => cell_tagged_mm_volumes_negate_in_place
      procedure, private :: phase_moments_reserve => cell_tagged_mm_volumes_phase_moments_reserve
-     final :: cell_tagged_mm_volumes_delete
   end type cell_tagged_mm_volumes
 
   public :: assignment(=)
@@ -64,7 +63,7 @@ contains
     integer, intent(in) :: a_cell_id
     type(integer_real8_tuple_vector), intent(in) :: a_cell_fluxes
 
-    ASSERT(associated(this%phase_moments_m))
+    ASSERT(allocated(this%phase_moments_m))
     call this%cell_id_m%push_back(a_cell_id)
     if(this%cell_id_m%capacity() > size(this%phase_moments_m,1)) then
       ! Reallocation was forced during cell_id push_back,
@@ -76,7 +75,7 @@ contains
   end subroutine cell_tagged_mm_volumes_add_cell_fluxes
   
   function cell_tagged_mm_volumes_get_cell_fluxes(this, a_index) result(a_phase_volumes_ptr)
-    class(cell_tagged_mm_volumes), intent(in) :: this
+    class(cell_tagged_mm_volumes), target, intent(in) :: this
     integer, intent(in) :: a_index
     type(integer_real8_tuple_vector), pointer :: a_phase_volumes_ptr
 
@@ -98,20 +97,19 @@ contains
   subroutine cell_tagged_mm_volumes_phase_moments_reserve(this)
     class(cell_tagged_mm_volumes), intent(inout) :: this
 
-    type(integer_real8_tuple_vector), pointer :: tmp_ptr(:)
+    type(integer_real8_tuple_vector), allocatable :: tmp(:)
 
-    if(associated(this%phase_moments_m)) then
+    if(allocated(this%phase_moments_m)) then
       if(size(this%phase_moments_m,1) < this%cell_id_m%capacity()) then
-        tmp_ptr => this%phase_moments_m
-        nullify(this%phase_moments_m)
-        allocate(this%phase_moments_m(this%cell_id_m%capacity()))
-        this%phase_moments_m(1:this%cell_id_m%size()) = tmp_ptr(1:this%cell_id_m%size())
-        deallocate(tmp_ptr)
+        allocate(tmp(this%cell_id_m%capacity()))
+        if(size(this%phase_moments_m,1) > 0) then 
+           tmp(1:size(this%phase_moments_m,1)) = this%phase_moments_m
+        end if
+        call move_alloc(tmp, this%phase_moments_m)
       end if
     else
       allocate(this%phase_moments_m(this%cell_id_m%capacity()))
     end if
-    call this%phase_moments_m%init()       
     
   end subroutine cell_tagged_mm_volumes_phase_moments_reserve
 
@@ -126,27 +124,16 @@ contains
     class(cell_tagged_mm_volumes), intent(inout) :: this
 
     integer :: n, i
-    type(integer_real8_tuple_vector), pointer :: elem
 
     do n = 1, this%cell_id_m%size()
-      elem => this%phase_moments_m(n)
-      do i = 1, elem%size()
-        call elem%set(i, elem%at_int(i), -elem%at_r8(i))
-      end do
+      associate(elem => this%phase_moments_m(n))
+        do i = 1, elem%size()
+          call elem%set(i, elem%at_int(i), -elem%at_r8(i))
+        end do
+      end associate
     end do
 
   end subroutine cell_tagged_mm_volumes_negate_in_place
-  
-  subroutine cell_tagged_mm_volumes_delete(this)
-    type(cell_tagged_mm_volumes), intent(inout) :: this
-
-    if(associated(this%phase_moments_m)) then
-      deallocate(this%phase_moments_m)
-    end if
-    nullify(this%phase_moments_m)
-    this%phase_moments_m => NULL()
-    
-  end subroutine cell_tagged_mm_volumes_delete
 
   subroutine cell_tagged_mm_volumes_copy_assignment(this, a_other)
     type(cell_tagged_mm_volumes), intent(inout) :: this
@@ -159,8 +146,8 @@ contains
     
     this%cell_id_m = a_other%cell_id_m
     call this%phase_moments_reserve() ! Just matches capacity of this%cell_id_m
-    ASSERT(associated(this%phase_moments_m))
-    ASSERT(associated(a_other%phase_moments_m))
+    ASSERT(allocated(this%phase_moments_m))
+    ASSERT(allocated(a_other%phase_moments_m))
     this%phase_moments_m(1:a_other%get_number_of_cells()) = a_other%phase_moments_m(1:a_other%get_number_of_cells())
     
   end subroutine cell_tagged_mm_volumes_copy_assignment

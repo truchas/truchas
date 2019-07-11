@@ -24,10 +24,9 @@ module integer_vector_type
 
   type, public :: integer_vector
      private
-     integer, pointer, private :: data_m(:) => NULL()
+     integer, allocatable, private :: data_m(:)
      integer, private :: size_m = 0
    contains
-     procedure :: init => integer_vector_init
      procedure :: at => integer_vector_at
      procedure :: set => integer_vector_set
      procedure :: size => integer_vector_size
@@ -38,7 +37,6 @@ module integer_vector_type
      procedure :: push_back => integer_vector_push_back
      procedure :: pop_back => integer_vector_pop_back
      procedure, private :: enlarge_allocation => integer_vector_type_enlarge_allocation
-     final ::  integer_vector_delete
   end type integer_vector
 
   public :: assignment(=)
@@ -47,15 +45,6 @@ module integer_vector_type
   end interface
   
 contains
-
-  impure elemental subroutine integer_vector_init(this)
-
-    class(integer_vector), intent(inout) :: this
-
-    this%data_m => NULL()
-    this%size_m = 0
-
-  end subroutine integer_vector_init
 
   function integer_vector_at(this, a_index) result(a_int)
 
@@ -126,7 +115,7 @@ contains
   function integer_vector_capacity(this) result(a_capacity)  
     class(integer_vector), intent(in) :: this
     integer :: a_capacity
-    if(associated(this%data_m)) then      
+    if(allocated(this%data_m)) then      
       a_capacity = size(this%data_m,1)
     else
       a_capacity = 0
@@ -138,22 +127,24 @@ contains
     class(integer_vector), intent(inout) :: this
     integer,intent(in) :: a_new_capacity
 
-    integer, pointer :: tmp_ptr(:)
+    integer, allocatable :: tmp(:)
 
     ASSERT(a_new_capacity >= 0)
 
     if(a_new_capacity > this%capacity()) then
-      ASSERT(a_new_capacity >= this%size())
-      if(associated(this%data_m)) then
-        tmp_ptr => this%data_m
-        nullify(this%data_m)
-        allocate(this%data_m(a_new_capacity))
-        this%data_m(1:this%size()) = tmp_ptr(1:this%size())
-        deallocate(tmp_ptr)
-      else
-        allocate(this%data_m(a_new_capacity))
-      end if
-      ASSERT(associated(this%data_m))
+       ASSERT(a_new_capacity >= this%size())
+       if(allocated(this%data_m)) then
+          allocate(tmp(a_new_capacity))
+          if(this%size() > 0) then
+             tmp(1:this%size()) = this%data_m(this%size())
+          end if
+          call move_alloc(tmp, this%data_m)
+       else
+          if(allocated(this%data_m)) then
+             deallocate(this%data_m)
+          end if
+          allocate(this%data_m(a_new_capacity))
+       end if
     end if
    
   end subroutine integer_vector_reserve
@@ -161,17 +152,16 @@ contains
   subroutine integer_vector_shrink_to_fit(this)    
     class(integer_vector), intent(inout) :: this
 
-    integer, pointer :: tmp_ptr(:)
+    integer, allocatable :: tmp(:)
 
-    if(.not.(associated(this%data_m))) then
+    if(.not.(allocated(this%data_m))) then
       ASSERT(this%size() == 0)
       return
     end if
-    tmp_ptr => this%data_m
-    nullify(this%data_m)
-    allocate(this%data_m(this%size()))
-    this%data_m = tmp_ptr(1:this%size())
-    deallocate(tmp_ptr)
+    allocate(tmp(this%size()))    
+    tmp = this%data_m(1:this%size())
+    call move_alloc(tmp, this%data_m)
+
     
   end subroutine integer_vector_shrink_to_fit
 
@@ -191,19 +181,7 @@ contains
    
     
   end subroutine integer_vector_type_enlarge_allocation
-
-  subroutine integer_vector_delete(this)
-    type(integer_vector), intent(inout) :: this
-
-    if(associated(this%data_m)) then
-       deallocate(this%data_m)
-       nullify(this%data_m)
-    end if
-    ASSERT(.not.associated(this%data_m))
-    this%size_m = 0
-
-  end subroutine integer_vector_delete
-
+  
   subroutine integer_vector_copy_assignment(this, a_other)
     type(integer_vector), intent(inout) :: this
     type(integer_vector), intent(in) :: a_other
@@ -213,9 +191,9 @@ contains
       return
     end if
 
-    ASSERT(associated(a_other%data_m))
+    ASSERT(allocated(a_other%data_m))
     call this%resize(a_other%size())
-    ASSERT(associated(this%data_m))   
+    ASSERT(allocated(this%data_m))   
     this%data_m(1:a_other%size()) = a_other%data_m(1:a_other%size())    
   end subroutine integer_vector_copy_assignment
   
