@@ -248,12 +248,13 @@ contains
     integer(int64) :: gid
     mesh%file => this%file
     mesh%path = '/Meshes/' // name
+    print*,mesh%path
     gid = this%file%create_group(mesh%path)
     call this%file%close_group(gid)
     !! Mesh group attributes
     call this%file%write_attr(mesh%path, 'Dimension', dim)
     call this%file%write_attr(mesh%path, 'Mesh Type', 'UNSTRUCTURED')
-    call this%file%write_attr(mesh%path, 'Element Type', 'POLYGON')
+    call this%file%write_attr(mesh%path, 'Element Type', 'MIXED')
   end subroutine add_interface_mesh_group
 
 !!!! TH5_MESH_GROUP TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

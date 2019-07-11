@@ -407,12 +407,11 @@ contains
                 this%mesh%normal(:,j))/this%mesh%area(j)
           end do
         end block
-     end if
-     
-     if(velocity_overwrite_requested) then
-       call this%props%update_cc(vof, this%temperature_cc)       
-       call vtrack_velocity_overwrite(t,this%flow%vel_fn,this%flow%vel_cc) 
-     end if
+      else
+        call this%props%update_cc(vof, this%temperature_cc)       
+        call vtrack_velocity_overwrite(t,this%flow%vel_fn,this%flow%vel_cc) 
+      end if
+         
    else
      if (associated(temperature_fc)) then
        this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)

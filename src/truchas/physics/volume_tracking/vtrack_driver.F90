@@ -56,16 +56,19 @@ module vtrack_driver
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use volume_tracker_class
+  use unsplit_volume_tracker_class  
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
   use index_partitioning
+  use cell_tagged_mm_volumes_type, only : cell_tagged_mm_volumes
   implicit none
   private
 
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
-  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view, vtrack_mat_band_view, vtrack_interface_band_view
+  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_unsplit_flux_vol_view
+  public :: vtrack_liq_matid_view, vtrack_mat_band_view, vtrack_interface_band_view
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
   public :: vtrack_velocity_overwrite
@@ -80,11 +83,13 @@ module vtrack_driver
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     integer, allocatable :: liq_matid(:), sol_matid(:)
     class(volume_tracker), allocatable :: vt
+    class(unsplit_volume_tracker), allocatable :: unsplit_vt
     real(r8), allocatable  :: vof(:,:) ! volume fractions for all materials
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
     real(r8), allocatable :: fvol_init(:) ! fluid/void volume fractions at start of simulation
     real(r8), allocatable :: flux_vol(:,:) ! flux volumes
+    type(cell_tagged_mm_volumes), allocatable :: unsplit_flux_vol(:) ! Unsplit flux volumes
     real(r8), allocatable :: flux_vel(:) ! fluxing velocity - ragged form
     integer, allocatable :: mat_band(:,:) ! Signed material band for band_number = (material_id, cell_id)
     integer, allocatable :: mat_band_map(:,:) ! Unstructured mapping of band to material cell_id = (index, material)
@@ -97,8 +102,8 @@ module vtrack_driver
     integer :: solid ! 1 if simulation includes solid else 0
     logical :: unsplit_advection
   end type vtrack_driver_data
-  type(vtrack_driver_data), allocatable, target :: this
-
+  type(vtrack_driver_data), allocatable, target, save :: this
+  
 contains
 
   subroutine vtrack_driver_final
@@ -121,6 +126,12 @@ contains
     p => this%flux_vol
   end function vtrack_flux_vol_view
 
+  function vtrack_unsplit_flux_vol_view() result(p)
+    type(cell_tagged_mm_volumes), pointer :: p(:)
+    ASSERT(vtrack_enabled())
+    p => this%unsplit_flux_vol
+  end function vtrack_unsplit_flux_vol_view
+  
   ! material ids corresponding to flux_vol columns
   function vtrack_liq_matid_view() result(p)
     integer, pointer :: p(:)
@@ -163,7 +174,9 @@ contains
     integer, intent(in) :: cycle_number   
 
     if(vtrack_enabled()) then
-      call this%vt%write_interface(t,dt,cycle_number)
+      if(this%unsplit_advection) then
+        call this%unsplit_vt%write_interface(t,dt,cycle_number)
+      end if
     end if
 
   end subroutine vtrack_write_interface
@@ -207,6 +220,7 @@ contains
     allocate(this%fvof_o(this%fluids+this%void+this%solid, this%mesh%ncell))
     allocate(this%fvol_init(this%fluids+this%void+this%solid))    
     allocate(this%flux_vol(this%fluids+this%void,size(this%mesh%cface)))
+    allocate(this%unsplit_flux_vol(size(this%mesh%cface)))    
     allocate(this%flux_vel(size(this%mesh%cface)))
     allocate(this%vof(nmat, this%mesh%ncell_onP))
 
@@ -236,7 +250,7 @@ contains
     call params%get('unsplit_interface_advection', this%unsplit_advection, .true.)
     if (track_interfaces) then
       if(this%unsplit_advection) then
-        allocate(unsplit_geometric_volume_tracker :: this%vt)
+        allocate(unsplit_geometric_volume_tracker :: this%unsplit_vt)
       else
         allocate(geometric_volume_tracker :: this%vt)
       end if
@@ -245,12 +259,30 @@ contains
     end if
 
     call start_timer('Vof Initialization')
+
     call get_vof_from_matl(this%fvof_i)
-    this%fvof_o = this%fvof_i
-    call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
-        this%fluids+this%void+this%solid, this%liq_matid, params)
+    if(this%unsplit_advection) then
+      call this%unsplit_vt%init(this%mesh, this%fluids, this%fluids+this%void, &
+           this%fluids+this%void+this%solid, this%liq_matid, params)      
+      ! Enforce VOF sums to 1
+      do j = 1, this%mesh%ncell
+        do k = 1, nmat
+          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 0.0_r8
+          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 1.0_r8
+          end if
+        end do
+        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+      end do
+      this%fvof_o = this%fvof_i
+      call vtrack_update_mat_band()      
+    else
+      this%fvof_o = this%fvof_i      
+      call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
+           this%fluids+this%void+this%solid, this%liq_matid, params)
+    end if
     call stop_timer('Vof Initialization')
-    call vtrack_update_mat_band()    
 
     ! Compute sum of volume of each phase in domain
     this%fvol_init = 0.0_r8
@@ -261,7 +293,9 @@ contains
       this%fvol_init(j) = global_sum(this%fvol_init(j))
     end do
 
-    call vtrack_open_interface_file()
+    ! Open file for interface
+    call vtrack_open_interface_file
+    
     
   end subroutine vtrack_driver_init
 
@@ -273,6 +307,7 @@ contains
 
     integer :: i, n
 
+    vof = 0.0_r8
     n = this%mesh%ncell_onP
     call matl_get_vof(this%vof)
     do i = 1, size(this%liq_matid)
@@ -325,14 +360,24 @@ contains
 
     call get_vof_from_matl(this%fvof_i)
 
-    ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
-    call vtrack_update_mat_band()
-
     if(this%unsplit_advection) then
-       ! Unsplit advection written to use face velocities, operates on faces.
-       ! Cell centered velocity also needed to form node velocities for projection.
-      call this%vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
-          this%fluids, this%void, dt, this%interface_band)
+      ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
+      ! Enforce VOF sums to 1
+      do j = 1, this%mesh%ncell
+        do k = 1, size(this%fvof_i,1)
+          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 0.0_r8
+          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 1.0_r8
+          end if
+        end do
+        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+      end do 
+      call vtrack_update_mat_band()      
+      ! Unsplit advection written to use face velocities, operates on faces.
+      ! Cell centered velocity also needed to form node velocities for projection.
+      call this%unsplit_vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%unsplit_flux_vol, &
+           this%fluids, this%void, dt, this%interface_band)
     else
       ! Split advection works on a per-cell level.
       ! copy face velocities into cell-oriented array
@@ -352,7 +397,7 @@ contains
       call this%vt%flux_volumes(this%flux_vel, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
           this%fluids, this%void, dt, this%interface_band)
     end if
-    
+   
     vol_sum = 0.0_r8
     do j = 1, this%mesh%ncell_onP
        vol_sum = vol_sum + this%fvof_o(:,j)*this%mesh%volume(j)
@@ -360,7 +405,7 @@ contains
     do j = 1, size(vol_sum)
       vol_sum(j) = global_sum(vol_sum(j))
     end do
-    write(myformat, '(a,i,a)') '(a,',size(vol_sum),'es12.4)'
+    write(myformat, '(a,i1,a)') '(a,',size(vol_sum),'es12.4)'
     write(message, trim(myformat)) 'Absolute volume change: ', vol_sum - this%fvol_init
     call TLS_info(message)
     write(message, trim(myformat)) 'Domain Normalized volume change: ',  (vol_sum - this%fvol_init)/sum(this%fvol_init)
@@ -410,7 +455,6 @@ contains
   !! value and the corresponding value of the required "face-set-ids"
   !! parameter are used to set the inflow material on a portion of the
   !! boundary. Other sublists are ignored.
-
   subroutine vtrack_set_inflow_bc(params, stat, errmsg)
 
     use bndry_face_group_builder_type
@@ -465,60 +509,71 @@ contains
     real(r8), intent(inout) :: a_face_velocity(:)
     real(r8), intent(inout) :: a_cell_velocity(:,:)
 
-    integer :: j, f
-    real(r8) :: node_location(3), full_face_velocity(3)
+    integer :: j, f, n, e
+    real(r8) :: edge(3,2)
+    real(r8) :: node_location(3), full_face_velocity(3), vel(3)
+    real(r8) :: projected_point_x, projected_point_y, rotation
+    real(r8) :: time_multiplier
 
     if (.not.allocated(this)) return
     if(.not.velocity_overwrite_requested) return
     ASSERT(prescribed_flow)
 
     select case(trim(velocity_overwrite_case))
-    case('Zalesak')
+    case('Rotation2D')
        do f = 1,this%mesh%nface
-          node_location = this%mesh%face_centroid(:,f)
-          full_face_velocity(1) = -2.0_r8*pi*node_location(2)
-          
-          full_face_velocity(2) = 2.0_r8*pi*node_location(1)
-          
-          full_face_velocity(3) = 0.0_r8
-
-          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
-
+         node_location = this%mesh%face_centroid(:,f)
+         full_face_velocity(1) = -2.0_r8*pi*node_location(2)
+         
+         full_face_velocity(2) = 2.0_r8*pi*node_location(1)
+         
+         full_face_velocity(3) = 0.0_r8
+         
+         a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+         
        end do
        
        do j = 1,this%mesh%ncell
-          node_location = this%mesh%cell_centroid(:,j)
-          a_cell_velocity(1,j) = -2.0_r8*pi*node_location(2)
-          
-          a_cell_velocity(2,j) = 2.0_r8*pi*node_location(1)
-          
-          a_cell_velocity(3,j) = 0.0_r8
-          
+         node_location = this%mesh%cell_centroid(:,j)
+         a_cell_velocity(1,j) = -2.0_r8*pi*node_location(2)
+         
+         a_cell_velocity(2,j) = 2.0_r8*pi*node_location(1)
+         
+         a_cell_velocity(3,j) = 0.0_r8
+         
        end do
-
-    case('Unit_rotation')
-      ! Rotation of an object on a mesh that is [-16,16] x [-16x16] x [-1/2 x 1/2]
-      ! Rotates clockwise
+              
+    case('Rotation3D')
+       rotation = -0.25_r8*pi
        do f = 1,this%mesh%nface
-          node_location = this%mesh%face_centroid(:,f)
-          full_face_velocity(1) = node_location(2)/16.0_r8
-          
-          full_face_velocity(2) = -node_location(1)/16.0_r8
-          
-          full_face_velocity(3) = 0.0_r8
+         node_location = this%mesh%face_centroid(:,f)
+         projected_point_x = dot_product(node_location, 1.0_r8/sqrt(2.0_r8)*[1.0_r8, 0.0_r8, 1.0_r8])
+         projected_point_y = dot_product(node_location, [0.0_r8, 1.0_r8, 0.0_r8])         
+         vel(1) = -2.0_r8*pi*projected_point_y         
+         vel(2) = 2.0_r8*pi*projected_point_x
+         vel(3) = 0.0_r8
 
-          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
-
+         ! Rotate about y-axis
+         full_face_velocity(1) = dot_product([cos(rotation), 0.0_r8, sin(rotation)], vel)
+         full_face_velocity(2) = dot_product([0.0_r8, 1.0_r8, 0.0_r8], vel)
+         full_face_velocity(3) = dot_product([-sin(rotation), 0.0_r8, cos(rotation)], vel)         
+         a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
        end do
-       
+
        do j = 1,this%mesh%ncell
-          node_location = this%mesh%cell_centroid(:,j)
-          a_cell_velocity(1,j) = node_location(2)/16.0_r8
-          
-          a_cell_velocity(2,j) = -node_location(1)/16.0_r8
-          
-          a_cell_velocity(3,j) = 0.0_r8
-          
+         node_location = this%mesh%cell_centroid(:,j)
+         projected_point_x = dot_product(node_location, 1.0_r8/sqrt(2.0_r8)*[1.0_r8, 0.0_r8, 1.0_r8])
+         projected_point_y = dot_product(node_location, [0.0_r8, 1.0_r8, 0.0_r8])
+
+         vel(1) = -2.0_r8*pi*projected_point_y         
+         vel(2) = 2.0_r8*pi*projected_point_x
+         vel(3) = 0.0_r8
+
+         ! Rotate about y-axis
+         a_cell_velocity(1,j) = dot_product([cos(rotation), 0.0_r8, sin(rotation)], vel)
+         a_cell_velocity(2,j) = dot_product([0.0_r8, 1.0_r8, 0.0_r8], vel)
+         a_cell_velocity(3,j) = dot_product([-sin(rotation), 0.0_r8, cos(rotation)], vel)         
+         
        end do
        
     case('Deformation2D')
@@ -558,25 +613,27 @@ contains
        end do
 
     case('Deformation3D')
-       ! Generally on -0.5,0.5 mesh, so add 0.5 to node position       
+       ! Generally on -0.5,0.5 mesh, but should be on [0.1], so add 0.5 to node position
+       time_multiplier = cos(pi*a_time/3.0_r8)
        do f = 1,this%mesh%nface
-          node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,0.5_r8]
-          full_face_velocity(1) = 2.0_r8*sin(pi*node_location(1))**2 &
-                                 * sin(2.0_r8*pi*node_location(2)) &
-                                 * sin(2.0_r8*pi*node_location(3)) &
-                                 * cos(pi*a_time / 3.0_r8)
-          
-          full_face_velocity(2) =  -sin(2.0_r8*pi*node_location(1)) &
-                                 * sin(pi*node_location(2))**2 &
-                                 * sin(2.0_r8*pi*node_location(3)) &
-                                 * cos(pi*a_time / 3.0_r8)
-          
-          full_face_velocity(3) =  -sin(2.0_r8*pi*node_location(1)) &
-                                 * sin(2.0_r8*pi*node_location(2)) &
-                                 * sin(pi*node_location(3))**2 &
-                                 * cos(pi*a_time / 3.0_r8)        
 
-          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+         a_face_velocity(f) = 0.0_r8
+         associate(nodes => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))           
+           do n = 1, size(nodes) 
+             edge(:,1) = this%mesh%x(:,nodes(n))+[0.5_r8, 0.5_r8, 0.5_r8]
+             edge(:,2) = this%mesh%x(:,nodes(mod(n, size(nodes))+1))+[0.5_r8, 0.5_r8, 0.5_r8]
+             vel = 0.0_r8
+             do e = 1,2
+               vel = vel + [0.25_r8/pi*(2.0_r8*sin(2.0_r8*pi*edge(1,e))*sin(pi*edge(2,e))**2*cos(2.0_r8*pi*edge(3,e)) &
+                    -sin(2.0_r8*pi*edge(1,e))*cos(2.0_r8*pi*edge(2,e))) ,&
+                    sin(pi*edge(1,e))**2*sin(2.0_r8*pi*edge(2,e))*cos(2.0_r8*pi*edge(3,e))/pi ,&
+                    0.0_r8]               
+             end do
+             vel = 0.5_r8*vel
+             a_face_velocity(f) = a_face_velocity(f) + dot_product(vel, edge(:,2)-edge(:,1))
+           end do
+         end associate
+         a_face_velocity(f) = a_face_velocity(f) / this%mesh%area(f) * time_multiplier
 
        end do
        
@@ -629,16 +686,16 @@ contains
     this%xmat_band_map(1,:) = this%xmat_band_map(0,:)
     do j = 1,this%mesh%ncell_onP
       do k = 1,total_phases
-        has_interface = (this%fvof_i(k,j) >  this%vt%cutoff) .and. &
-             (this%fvof_i(k,j) < 1.0_r8 - this%vt%cutoff)
+        has_interface = (this%fvof_i(k,j) >  this%unsplit_vt%cutoff) .and. &
+             (this%fvof_i(k,j) < 1.0_r8 - this%unsplit_vt%cutoff)
         if(.not. has_interface) then
            ! Need to also check condition where cell is full/empty and neighbor empty/full
-           if(this%fvof_i(k,j) < this%vt%cutoff) then ! Cell is empty
+           if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then ! Cell is empty
               ! Check if any neighbors are full
               associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
                 do n = 1, size(cneigh)
                    if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 -  this%vt%cutoff) then
+                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 -  this%unsplit_vt%cutoff) then
                          has_interface = .true.
                          exit
                       end if                      
@@ -651,7 +708,7 @@ contains
               associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
                 do n = 1, size(cneigh)
                    if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) <  this%vt%cutoff) then
+                      if(this%fvof_i(k,cneigh(n)) <  this%unsplit_vt%cutoff) then
                          has_interface = .true.
                          exit
                       end if                      

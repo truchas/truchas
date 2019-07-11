@@ -12,6 +12,9 @@ set(UTIL_FILES
          utilities/f90_assert.F90
          utilities/file_utility.F90
          utilities/graph_type.F90
+	 utilities/integer_vector_type.F90
+	 utilities/real8_vector_type.F90
+	 utilities/integer_real8_tuple_vector_type.F90
          utilities/input_utilities.F90
          utilities/integer_set_type.F90
          utilities/kinds.F90

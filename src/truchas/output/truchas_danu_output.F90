@@ -283,7 +283,7 @@ contains
       integer :: m
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
       real(r8) :: fluxing_velocity(nfc,ncells)
-      real(r8) :: mat_band(nmat,ncells)
+      integer, pointer :: mat_band(:,:), int_band(:)
       character(8) :: name(nmat)
 
       vec_cc => flow_vel_cc_view()
@@ -297,18 +297,18 @@ contains
 
       ! Volume fraction bands
       if (nmat > 1) then
-        mat_band = real(vtrack_mat_band_view(),r8)
+        mat_band => vtrack_mat_band_view()
         do m = 1, nmat
           write(name(m),'(a,i4.4)') 'Band', get_user_material_id(m)
         end do
-        call write_seq_cell_field (seq, mat_band, 'Band', for_viz=.true., viz_name=name)
+        call write_seq_cell_field (seq, real(mat_band(:,1:ncells), r8), 'Band', for_viz=.true., viz_name=name)
       end if
 
       ! Interface band
       if (nmat > 1) then
-        mat_band(1,:) = real(vtrack_interface_band_view(),r8)
+        int_band => vtrack_interface_band_view()
         name(1) = 'IntBand'
-        call write_seq_cell_field (seq, mat_band(1,:), 'IntBand', for_viz=.true., viz_name=name(1))
+        call write_seq_cell_field (seq, real(int_band(1:ncells),r8), 'IntBand', for_viz=.true., viz_name=name(1))
       end if      
 
       !call flow_driver_dump_state

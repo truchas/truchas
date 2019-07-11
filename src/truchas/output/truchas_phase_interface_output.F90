@@ -28,13 +28,14 @@ module truchas_phase_interface_output
   public :: TPIO_open, TPIO_close
   public :: TPIO_write_mesh
 
-  type(th5_file) :: interface_outfile
+  type(th5_file), target :: interface_outfile
   integer, private, save :: written_times = 0
 
 contains
 
   subroutine TPIO_open ()
     use truchas_env, only: output_file_name
+    print*,'OPENING FILEEEEEE', io_group_size
     call interface_outfile%open (output_file_name('interface.h5'), io_group_size, is_IOP)
   end subroutine TPIO_open
 
