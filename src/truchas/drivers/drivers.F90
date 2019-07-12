@@ -282,7 +282,7 @@ call hijack_truchas ()
           ! This updates the volume tracker's internal variable for the vof, so
           ! we can give the flow the current post-heat-transfer volume fractions.
           if (vtrack_enabled() .and. ds_enabled) call get_vof_from_matl(vof)
-! QUESTION: VOF DONE CHANGING HERE. Solidification addressed in ds_get_face_temp_view
+          ! QUESTION: VOF DONE CHANGING HERE. Solidification addressed in ds_get_face_temp_view
           call flow_step(t,dt,vof,flux_vol,temperature_fc)
           ! since this driver doesn't know any better, always accept
           call flow_accept()
