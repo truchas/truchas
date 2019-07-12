@@ -43,6 +43,7 @@ module unsplit_geometric_volume_tracker_type
     integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
     integer, allocatable :: boundary_recon_to_cell(:) ! Mapping of boundary reconstruction ID to neighboring inside cell ID
+    real(r8), allocatable :: cell_bounding_box(:,:,:)
     ! Start IRL objects
     type(ObjServer_PlanarLoc_type) :: object_server_planar_localizer
     type(ObjServer_PlanarSep_type) :: object_server_planar_separator
@@ -50,7 +51,7 @@ module unsplit_geometric_volume_tracker_type
     type(PlanarLoc_type), allocatable :: planar_localizer(:)
     type(PlanarSep_type), allocatable :: planar_separator(:)
     type(LocSepLink_type), allocatable :: localized_separator_link(:)
-    type(Poly_type), allocatable, public :: interface_polygons(:) ! Need public to write?
+    type(Poly_type), allocatable :: interface_polygons(:) 
     type(Tet_type) :: IRL_tet
     type(Pyrmd_type) :: IRL_pyramid
     type(TriPrism_type) :: IRL_wedge
@@ -76,6 +77,7 @@ module unsplit_geometric_volume_tracker_type
     procedure, public :: write_interface
     procedure, private :: init_irl_mesh
     procedure, private :: generate_flux_classes
+    procedure, private :: generate_cell_bounding_boxes
     procedure, private :: compute_velocity_weightings
     procedure, private :: set_irl_interfaces
     procedure, private :: adjust_planes_match_VOF
@@ -86,6 +88,10 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: compute_effective_cfl
     procedure, private :: compute_projected_nodes
     procedure, private :: compute_fluxes
+    procedure, private :: set_irl_volume_geometry
+    procedure, private :: refined_advection_check
+    procedure, private :: moments_from_geometric_cutting
+    procedure, private :: getBCMaterialFractions    
     procedure, private :: update_vof
     procedure, private :: interface_reconstruction    
     procedure, private :: normals_youngs
@@ -94,7 +100,6 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: normals_lvira_hex_execute
     procedure, private :: normals_lvira_tet_execute    
     procedure, private :: identify_reconstruction_neighborhood
-    procedure, private :: getBCMaterialFractions
   end type unsplit_geometric_volume_tracker
 
 contains
@@ -160,6 +165,7 @@ contains
     allocate(this%w_node(3,mesh%nnode))
     allocate(this%velocity_weightings(mesh%xcnode(mesh%ncell+1)-1))
     allocate(this%projected_nodes(3, mesh%nnode))
+    allocate(this%cell_bounding_box(3,2,this%mesh%ncell))
 
     ! list of boundary face ids
     j = count(this%mesh%fcell(:,:this%mesh%nface) == 0)
@@ -209,6 +215,9 @@ contains
 
     ! Reorganize and generate needed face-flux information
     call this%generate_flux_classes
+
+    ! Generate cell bounding boxes
+    call this%generate_cell_bounding_boxes
 
     ! Calculate weightings for interpolation of cell center velocity to node
     call this%compute_velocity_weightings
@@ -876,23 +885,25 @@ contains
       associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(current_cell):this%mesh%xcnhbr(current_cell+1)-1))
         do n = 1, size(cn)
           if(cn(n) /= 0) then
-            distance_to_centroid = sqrt(sum((&
-                 this%mesh%cell_centroid(:,cn(n))-this%mesh%cell_centroid(:,a_starting_index))**2))
-            if(distance_to_centroid < a_stencil_length .and. a_stencil%cell_not_encountered(cn(n))) then
-              call a_stencil%add_cell(cn(n))
-              select case(this%mesh%xcnode(cn(n)+1)-this%mesh%xcnode(cn(n)))
-              case (4) ! tet      
-                a_cell_types(1) = a_cell_types(1) + 1                
-              case (5) ! pyramid
-                a_cell_types(2) = a_cell_types(2) + 1                
-              case (6) ! Wedge
-                a_cell_types(3) = a_cell_types(3) + 1                
-              case (8) ! Hex
-                a_cell_types(4) = a_cell_types(4) + 1
-              case default
-                call TLS_fatal('Unknown Truchas cell type during stencil generation')
-              end select
-            end if
+             if(a_stencil%cell_not_encountered(cn(n))) then
+                distance_to_centroid = sqrt(sum((&
+                     this%mesh%cell_centroid(:,cn(n))-this%mesh%cell_centroid(:,a_starting_index))**2))
+                if(distance_to_centroid < a_stencil_length) then
+                   call a_stencil%add_cell(cn(n))
+                   select case(this%mesh%xcnode(cn(n)+1)-this%mesh%xcnode(cn(n)))
+                   case (4) ! tet      
+                      a_cell_types(1) = a_cell_types(1) + 1                
+                   case (5) ! pyramid
+                      a_cell_types(2) = a_cell_types(2) + 1                
+                   case (6) ! Wedge
+                      a_cell_types(3) = a_cell_types(3) + 1                
+                   case (8) ! Hex
+                      a_cell_types(4) = a_cell_types(4) + 1
+                   case default
+                      call TLS_fatal('Unknown Truchas cell type during stencil generation')
+                   end select
+                end if
+             end if
           end if
         end do
       end associate
@@ -1214,18 +1225,15 @@ contains
     real(r8), intent(in) :: a_vof(:,:)
     integer, intent(in)  :: a_interface_band(:)
         
-    integer :: f, v, i, t, k
+    integer :: f, v, i
     integer ::  number_of_nodes, neighbor_cell_index
-    real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume
-    type(TagAccVM_SepVol_type) :: tagged_sepvol
-    integer :: current_tag, min_band
-
-    ! Debug
-    type(SepVol_type) :: sepvol
+    real(r8) :: cell_nodes(3,9), cell_volume
+    real(r8) :: bounding_box(3,2)
+    logical :: geometric_cutting_needed
+    integer :: min_band
     
     ASSERT(this%nmat == 2) ! Will alleviate later
 
-    call new(tagged_sepvol)
     call getMoments_setMethod(1)
       
     this%face_flux = 0.0_r8
@@ -1264,129 +1272,263 @@ contains
         ! Initial guess for volume conservative cap vertex
         cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2)/real(number_of_nodes,r8)
 
-        select case(this%flux_geometry_class(f))
-          case(1) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_LLL, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_LLL, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case(2) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_LLT, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_LLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-            
-          case(3) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_LTT, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_dt*a_face_vel(f)*this%mesh%area(f))       
-            call getMoments(this%IRL_CapOcta_LTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case(4) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_TTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_TTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)      
-            
-          case(5) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LLLL, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapDod_LLLL, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case(6) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LLLT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LLLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case(7) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LTLT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LTLT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case(8) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LLTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapDod_LLTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case(9) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LTTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LTTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case(10) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_TTTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_TTTT, &
-                            this%localized_separator_link(neighbor_cell_index), &
-                            tagged_sepvol)
-
-          case default
-            call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
-        end select
-          
+        call this%set_irl_volume_geometry(cell_nodes, this%flux_geometry_class(f), &
+             a_dt*a_face_vel(f)*this%mesh%area(f), bounding_box)
+        geometric_cutting_needed = this%refined_advection_check(bounding_box, &
+             this%mesh%fcell(1,f), min_band, a_interface_band)
+        if(geometric_cutting_needed) then
+           call this%moments_from_geometric_cutting(this%flux_geometry_class(f), &
+                neighbor_cell_index, a_vof, this%face_flux(:,f))
+        else
+           this%face_flux(:,f) = a_dt*a_face_vel(f)*this%mesh%area(f)*a_vof(:,neighbor_cell_index)
+        end if
       end associate
-
-      phase_volume = 0.0_r8
-      do t = 0, getSize(tagged_sepvol)-1
-         current_tag = getTagForIndex(tagged_sepvol, t)
-         if(current_tag > this%mesh%ncell) then
-            ! Is a boundary condition, all volume in phase 0
-            phase_volume = &
-                 phase_volume + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(tagged_sepvol, t, 0)
-         else
-            ! Is inside domain, trust actual volumes
-            phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
-            phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvol, t, 1)
-         end if
-      end do
-      this%face_flux(:,f) = phase_volume
-
-      ! if(phase_volume(1)*phase_volume(2) < 0.0_r8) then
-      !    print*,'Face ', f, ' has crossed signs', phase_volume
-      !    print*,'Case: ', this%flux_geometry_class(f)
-      !    print*,'Cell neighbors: ', this%mesh%fcell(:,f)
-      ! end if
-
-       ! if(abs(a_dt*a_face_vel(f)*this%mesh%area(f) - sum(phase_volume)) > 1.0e-14 .and. &
-       !    abs(a_dt*a_face_vel(f)*this%mesh%area(f)) > epsilon(1.0_r8)  ) then
-       !   print*,'Face failed', f, this%mesh%fcell(:,f)
-       !   print*,'Case: ', this%flux_geometry_class(f)
-       !   print*,a_dt*a_face_vel(f)*this%mesh%area(f), sum(phase_volume)
-       !   print*,phase_volume
-       ! end if
-      
     end do
-
+    
     ! Need to communicate fluxes
     call gather_boundary(this%mesh%face_ip, this%face_flux)
     
   end subroutine compute_fluxes
 
+  subroutine set_irl_volume_geometry(this, a_cell, a_geom_class, a_correct_volume, a_bounding_box)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this    
+    real(r8), intent(in) :: a_cell(:,:)
+    integer, intent(in) :: a_geom_class
+    real(r8), intent(in) :: a_correct_volume
+    real(r8), intent(out) :: a_bounding_box(3,2)
+
+    select case(a_geom_class)
+    case(1) ! Triangular Face -> Octahedron Volume
+       
+       call construct(this%IRL_CapOcta_LLL, a_cell)
+       call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_correct_volume)
+       call getBoundingPts(this%IRL_CapOcta_LLL, a_bounding_box(:,1), a_bounding_box(:,2))
+       
+    case(2) ! Triangular Face -> Octahedron Volume
+       
+       call construct(this%IRL_CapOcta_LLT, a_cell)
+       call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapOcta_LLT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(3) ! Triangular Face -> Octahedron Volume
+       
+       call construct(this%IRL_CapOcta_LTT, a_cell)
+       call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapOcta_LTT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(4) ! Triangular Face -> Octahedron Volume
+       
+       call construct(this%IRL_CapOcta_TTT, a_cell)            
+       call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapOcta_TTT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(5) ! Quad Face -> Dodecahedron Volume
+       
+       call construct(this%IRL_CapDod_LLLL, a_cell)
+       call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, a_correct_volume)
+       call getBoundingPts(this%IRL_CapDod_LLLL, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(6) ! Quad Face -> Dodecahedron Volume
+       
+       call construct(this%IRL_CapDod_LLLT, a_cell)            
+       call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapDod_LLLT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(7) ! Quad Face -> Dodecahedron Volume
+       
+       call construct(this%IRL_CapDod_LTLT, a_cell)            
+       call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapDod_LTLT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(8) ! Quad Face -> Dodecahedron Volume
+       
+       call construct(this%IRL_CapDod_LLTT, a_cell)            
+       call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapDod_LLTT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(9) ! Quad Face -> Dodecahedron Volume
+       
+       call construct(this%IRL_CapDod_LTTT, a_cell)            
+       call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapDod_LTTT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(10) ! Quad Face -> Dodecahedron Volume
+      
+       call construct(this%IRL_CapDod_TTTT, a_cell)            
+       call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, a_correct_volume)
+       call getBoundingPts(this%IRL_CapDod_TTTT, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case default
+       call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
+    end select
+
+  end subroutine set_irl_volume_geometry
+
+
+  function refined_advection_check(this, a_bounding_box, a_starting_cell, a_starting_band, a_interface_band) &
+       result(a_geometric_cutting_needed)
+
+    use traversal_tracker_type, only : traversal_tracker        
+
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    real(r8), intent(in) :: a_bounding_box(:,:)
+    integer, intent(in) :: a_starting_cell
+    integer, intent(in) :: a_starting_band
+    integer, intent(in) :: a_interface_band(:)
+    logical :: a_geometric_cutting_needed
+
+    type(traversal_tracker) :: coverage
+    integer :: current_cell, n
+
+    if(a_starting_band == 0) then
+       a_geometric_cutting_needed = .true.
+       return
+    end if
+
+    call coverage%init([a_starting_cell])
+
+    do while(coverage%still_cells_to_visit())
+      current_cell = coverage%get_next_cell()
+
+      associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(current_cell):this%mesh%xcnhbr(current_cell+1)-1))
+        do n = 1, size(cn)
+          if(cn(n) /= 0) then
+             if(coverage%cell_not_encountered(cn(n))) then
+                ! Now check if intersection of axis aligned bounding boxes
+                ! X direction
+                if(this%cell_bounding_box(1,1,cn(n)) > a_bounding_box(1,2) .or. &
+                     this%cell_bounding_box(1,2,cn(n)) < a_bounding_box(1,1)) then
+                   cycle
+                end if
+                if(this%cell_bounding_box(2,1,cn(n)) > a_bounding_box(2,2) .or. &
+                     this%cell_bounding_box(2,2,cn(n)) < a_bounding_box(2,1)) then
+                   cycle
+                end if
+                if(this%cell_bounding_box(3,1,cn(n)) > a_bounding_box(3,2) .or. &
+                     this%cell_bounding_box(3,2,cn(n)) < a_bounding_box(3,1)) then
+                   cycle
+                end if
+
+                ! Made it this far, bounding_box's intersect. See if would require cutting
+                if(a_interface_band(cn(n))*a_starting_band <= 0) then
+                   a_geometric_cutting_needed = .true.
+                   return
+                end if
+                call coverage%add_cell(cn(n))
+             end if
+          end if
+        end do
+      end associate
+    end do
+    
+    a_geometric_cutting_needed = .false.
+    return
+    
+  end function refined_advection_check
+
+  subroutine moments_from_geometric_cutting(this, a_geom_class, a_starting_index, a_vof, a_face_flux)
+
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    integer, intent(in) :: a_geom_class
+    integer, intent(in) :: a_starting_index
+    real(r8), intent(in) :: a_vof(:,:)
+    real(r8), intent(inout) :: a_face_flux(:)
+
+    integer :: t
+    type(TagAccVM_SepVol_type) :: tagged_sepvol
+    real(r8) :: phase_volume(this%nmat)
+    integer :: current_tag    
+
+    ! Note, the correct object type for a_geom_class should already
+    ! be correctly construction in this%
+
+    call new(tagged_sepvol)
+
+    select case(a_geom_class)
+    case(1) ! Triangular Face -> Octahedron Volume
+       
+       call getMoments(this%IRL_CapOcta_LLL, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(2) ! Triangular Face -> Octahedron Volume
+       
+       call getMoments(this%IRL_CapOcta_LLT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(3) ! Triangular Face -> Octahedron Volume
+       
+       call getMoments(this%IRL_CapOcta_LTT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(4) ! Triangular Face -> Octahedron Volume
+       
+       call getMoments(this%IRL_CapOcta_TTT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)      
+       
+    case(5) ! Quad Face -> Dodecahedron Volume
+       
+       call getMoments(this%IRL_CapDod_LLLL, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(6) ! Quad Face -> Dodecahedron Volume
+       
+       call getMoments(this%IRL_CapDod_LLLT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(7) ! Quad Face -> Dodecahedron Volume
+       
+       call getMoments(this%IRL_CapDod_LTLT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(8) ! Quad Face -> Dodecahedron Volume
+       
+       call getMoments(this%IRL_CapDod_LLTT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(9) ! Quad Face -> Dodecahedron Volume
+       
+       call getMoments(this%IRL_CapDod_LTTT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case(10) ! Quad Face -> Dodecahedron Volume
+       
+       call getMoments(this%IRL_CapDod_TTTT, &
+            this%localized_separator_link(a_starting_index), &
+            tagged_sepvol)
+       
+    case default
+       call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
+    end select
+    
+
+    
+    phase_volume = 0.0_r8
+    do t = 0, getSize(tagged_sepvol)-1
+      current_tag = getTagForIndex(tagged_sepvol, t)
+      if(current_tag > this%mesh%ncell) then
+         ! Is a boundary condition, all volume in phase 0
+         phase_volume = &
+              phase_volume + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(tagged_sepvol, t, 0)
+      else
+         ! Is inside domain, trust actual volumes
+         phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
+         phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvol, t, 1)
+      end if
+    end do
+    a_face_flux(:) = phase_volume
+        
+  end subroutine moments_from_geometric_cutting
+  
   pure function getBCMaterialFractions(this, a_tag, a_vof_n) result(a_fractions)
 
     class(unsplit_geometric_volume_tracker), intent(in) :: this
@@ -1622,5 +1764,22 @@ contains
     end function reorder_node_id
 
   end subroutine generate_flux_classes
+
+  subroutine generate_cell_bounding_boxes(this)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+
+    integer :: n, d
+
+    do n = 1, this%mesh%ncell
+      associate(cn => this%mesh%cnode(this%mesh%xcnode(n):this%mesh%xcnode(n+1)-1))
+        do d = 1,3
+          this%cell_bounding_box(d, 1, n) = minval(this%mesh%x(d,cn))
+          this%cell_bounding_box(d, 2, n) = maxval(this%mesh%x(d,cn))        
+        end do
+      end associate
+    end do
+
+  end subroutine generate_cell_bounding_boxes
 
 end module unsplit_geometric_volume_tracker_type
