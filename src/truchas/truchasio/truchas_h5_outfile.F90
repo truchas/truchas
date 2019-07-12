@@ -248,7 +248,6 @@ contains
     integer(int64) :: gid
     mesh%file => this%file
     mesh%path = '/Meshes/' // name
-    print*,mesh%path
     gid = this%file%create_group(mesh%path)
     call this%file%close_group(gid)
     !! Mesh group attributes

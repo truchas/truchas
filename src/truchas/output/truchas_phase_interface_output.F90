@@ -35,7 +35,6 @@ contains
 
   subroutine TPIO_open ()
     use truchas_env, only: output_file_name
-    print*,'OPENING FILEEEEEE', io_group_size
     call interface_outfile%open (output_file_name('interface.h5'), io_group_size, is_IOP)
   end subroutine TPIO_open
 

@@ -1521,7 +1521,9 @@ contains
             end if
           end do          
         end if
-        call this%face_flux(f)%add_cell_fluxes(current_tag, cell_local_volumes)                     
+        if(cell_local_volumes%size() > 0) then
+           call this%face_flux(f)%add_cell_fluxes(current_tag, cell_local_volumes)
+        end if
       end do      
     end do
 
@@ -1536,6 +1538,7 @@ contains
   subroutine communicate_face_fluxes(a_mesh, a_face_flux)
 
     use integer_real8_tuple_vector_type
+    use parallel_communication    
     
     type(unstr_mesh), pointer, intent(in) :: a_mesh
     type(cell_tagged_mm_volumes), intent(inout) :: a_face_flux(:)
@@ -1547,6 +1550,12 @@ contains
     type(integer_real8_tuple_vector), pointer :: tagged_phase_array
     type(integer_real8_tuple_vector) :: tmp_phase_array
 
+
+    ! Need to communicate cell ID using global cell ID and map back to local cell ID.
+    ! The cell ID's stored in the cell_tagged moments is for THAT processor,
+    ! not globally.
+    call TLS_FATAL('Debug')
+    
     ! Calculate needed buffer size
     max_buffer_size = -1    
     do f = 1, a_mesh%nface_onP      
@@ -1555,23 +1564,24 @@ contains
       do c = 1, a_face_flux(f)%get_number_of_cells()
         tagged_phase_array => a_face_flux(f)%get_cell_fluxes(c)
         current_buffer_size = current_buffer_size + 1 ! Number of phase Ids
-        current_buffer_size = current_buffer_size + tagged_phase_array%size() ! Phase Id's
         current_buffer_size = current_buffer_size + 2*tagged_phase_array%size() ! Phase data
       end do
       max_buffer_size = max(max_buffer_size, current_buffer_size)
     end do
 
     ! Allocate the buffer
+    max_buffer_size = global_maxval(max_buffer_size)
     allocate(face_flux_buffer(max_buffer_size, a_mesh%nface))
     
     ! Fill the buffer. Note the ordering, needed for unpacking
     do f = 1, a_mesh%nface_onP
-      ci = 1
+      ci = 0
+      ci = ci + 1      
       face_flux_buffer(ci,f) = real(a_face_flux(f)%get_number_of_cells(), r8) ! Number of cells
       do c = 1, a_face_flux(f)%get_number_of_cells()
-        tagged_phase_array => a_face_flux(f)%get_cell_fluxes(c)
         ci = ci + 1
         face_flux_buffer(ci,f) = real(a_face_flux(f)%get_cell_id(c), r8) ! Cell id
+        tagged_phase_array => a_face_flux(f)%get_cell_fluxes(c)        
         ci = ci + 1        
         face_flux_buffer(ci,f) = real(tagged_phase_array%size(), r8) ! Number of phases
         do p = 1, tagged_phase_array%size()
@@ -1589,17 +1599,22 @@ contains
     ! Unpack the buffer
     do f = a_mesh%nface_onP+1, a_mesh%nface
       call a_face_flux(f)%clear()
-      ci = 1
+      ci = 0
+      ci = ci + 1      
       nfcells = NINT(face_flux_buffer(ci,f))
+      print*,'Number of cells ', f, nfcells
       call a_face_flux(f)%reserve(nfcells)
       do c = 1, nfcells
         ci = ci + 1
         cell_id = NINT(face_flux_buffer(ci,f))
-        ci = ci + 1        
+        print*,'Cell id', cell_id
+        ci = ci + 1
         nphases = NINT(face_flux_buffer(ci,f))
+        print*,'Number of phases', nphases
         call tmp_phase_array%resize(nphases)
         do p = 1, nphases
           ci = ci + 1
+          print*,'phase_id and volume',NINT(face_flux_buffer(ci, f)), face_flux_buffer(ci+1,f)
           call tmp_phase_array%set(p, NINT(face_flux_buffer(ci, f)), face_flux_buffer(ci+1,f))
           ci = ci + 1
         end do
@@ -1643,8 +1658,6 @@ contains
     real(r8) :: vof_flux(this%nmat)
     type(integer_real8_tuple_vector), pointer :: fluxed_phases
     logical :: vof_modified
-
-    print*,'In update VOF'
     
     ! Fill the ragged a_flux_vol array
     do j = 1, this%mesh%ncell
