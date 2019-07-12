@@ -44,6 +44,7 @@ module unsplit_geometric_volume_tracker_type
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
     integer, allocatable :: boundary_recon_to_cell(:) ! Mapping of boundary reconstruction ID to neighboring inside cell ID
     real(r8), allocatable :: cell_bounding_box(:,:,:)
+    real(r8), allocatable :: correction_vertex(:,:)
     ! Start IRL objects
     type(ObjServer_PlanarLoc_type) :: object_server_planar_localizer
     type(ObjServer_PlanarSep_type) :: object_server_planar_separator
@@ -65,7 +66,8 @@ module unsplit_geometric_volume_tracker_type
     type(CapOcta_LLL_type) :: IRL_CapOcta_LLL
     type(CapOcta_LLT_type) :: IRL_CapOcta_LLT
     type(CapOcta_LTT_type) :: IRL_CapOcta_LTT
-    type(CapOcta_TTT_type) :: IRL_CapOcta_TTT            
+    type(CapOcta_TTT_type) :: IRL_CapOcta_TTT
+    
     ! End IRL objects
     ! Used for IRL advection
     integer, allocatable :: flux_geometry_class(:)
@@ -87,6 +89,7 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: compute_node_velocities
     procedure, private :: compute_effective_cfl
     procedure, private :: compute_projected_nodes
+    procedure, private :: compute_correction_vertices
     procedure, private :: compute_fluxes
     procedure, private :: set_irl_volume_geometry
     procedure, private :: refined_advection_check
@@ -166,6 +169,7 @@ contains
     allocate(this%velocity_weightings(mesh%xcnode(mesh%ncell+1)-1))
     allocate(this%projected_nodes(3, mesh%nnode))
     allocate(this%cell_bounding_box(3,2,this%mesh%ncell))
+    allocate(this%correction_vertex(3,this%mesh%nface_onP))
 
     ! list of boundary face ids
     j = count(this%mesh%fcell(:,:this%mesh%nface) == 0)
@@ -253,6 +257,8 @@ contains
     call this%compute_effective_cfl(dt)
 
     call this%compute_projected_nodes(dt)
+
+    call this%compute_correction_vertices(vel, dt, a_interface_band)
 
     call this%compute_fluxes(vel, dt, vof, a_interface_band)
 
@@ -1214,7 +1220,118 @@ contains
     call gather_boundary(this%mesh%node_ip, this%projected_nodes)
 
   end subroutine compute_projected_nodes
-  
+
+  subroutine compute_correction_vertices(this, a_face_vel, a_dt, a_interface_band)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: a_face_vel(:)
+    real(r8), intent(in) :: a_dt
+    integer, intent(in)  :: a_interface_band(:)
+    
+    integer :: f, neighbor_cell_index, min_band
+    integer :: number_of_nodes
+    real(r8) :: correct_volume, cell_nodes(3,9)
+
+    do f = 1, this%mesh%nface_onP
+
+      neighbor_cell_index = this%mesh%fcell(1, f)
+      if(this%mesh%fcell(2,f) /= 0) then
+        min_band = min(abs(a_interface_band(neighbor_cell_index)),abs(a_interface_band(this%mesh%fcell(2,f))))
+      else
+        min_band = abs(a_interface_band(neighbor_cell_index))
+      end if       
+
+      if(min_band > advect_band) then
+         cycle
+      end if
+
+      correct_volume = a_dt*a_face_vel(f)*this%mesh%area(f)
+
+      number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
+      
+      associate( node_index => this%flux_node( &
+           this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
+        ! Face nodes
+        cell_nodes(:,1:number_of_nodes) = &
+             this%mesh%x(:,node_index(1:number_of_nodes))
+        
+        ! Projected nodes
+        cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = this%projected_nodes(:, node_index(1:number_of_nodes))
+        
+        ! Initial guess for volume conservative cap vertex
+        cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2) /real(number_of_nodes,r8)
+        
+        select case(this%flux_geometry_class(f))
+        case(1) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_LLL, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_LLL, 6)
+           
+        case(2) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_LLT, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_LLT, 6)
+           
+        case(3) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_LTT, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_LTT, 6)
+           
+        case(4) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_TTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_TTT, 6)         
+           
+        case(5) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LLLL, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLLL, 8)
+           
+        case(6) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LLLT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLLT, 8)         
+           
+        case(7) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LTLT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LTLT, 8)         
+           
+        case(8) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LLTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLTT, 8)         
+           
+        case(9) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LTTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LTTT, 8)         
+           
+        case(10) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_TTTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_TTTT, 8)         
+           
+        case default
+           call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
+        end select
+        
+      end associate
+      
+    end do
+    
+  end subroutine compute_correction_vertices
+
   subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof, a_interface_band)
   
     use irl_interface_helper
@@ -1270,7 +1387,7 @@ contains
         cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = this%projected_nodes(:, node_index(1:number_of_nodes))
 
         ! Initial guess for volume conservative cap vertex
-        cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2)/real(number_of_nodes,r8)
+        cell_nodes(:,2*number_of_nodes+1) = this%correction_vertex(:,f)
 
         call this%set_irl_volume_geometry(cell_nodes, this%flux_geometry_class(f), &
              a_dt*a_face_vel(f)*this%mesh%area(f), bounding_box)
@@ -1302,61 +1419,51 @@ contains
     case(1) ! Triangular Face -> Octahedron Volume
        
        call construct(this%IRL_CapOcta_LLL, a_cell)
-       call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_correct_volume)
        call getBoundingPts(this%IRL_CapOcta_LLL, a_bounding_box(:,1), a_bounding_box(:,2))
        
     case(2) ! Triangular Face -> Octahedron Volume
        
        call construct(this%IRL_CapOcta_LLT, a_cell)
-       call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, a_correct_volume)
        call getBoundingPts(this%IRL_CapOcta_LLT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(3) ! Triangular Face -> Octahedron Volume
        
        call construct(this%IRL_CapOcta_LTT, a_cell)
-       call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_correct_volume)
        call getBoundingPts(this%IRL_CapOcta_LTT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(4) ! Triangular Face -> Octahedron Volume
        
        call construct(this%IRL_CapOcta_TTT, a_cell)            
-       call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, a_correct_volume)
        call getBoundingPts(this%IRL_CapOcta_TTT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(5) ! Quad Face -> Dodecahedron Volume
        
        call construct(this%IRL_CapDod_LLLL, a_cell)
-       call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, a_correct_volume)
        call getBoundingPts(this%IRL_CapDod_LLLL, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(6) ! Quad Face -> Dodecahedron Volume
        
        call construct(this%IRL_CapDod_LLLT, a_cell)            
-       call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, a_correct_volume)
        call getBoundingPts(this%IRL_CapDod_LLLT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(7) ! Quad Face -> Dodecahedron Volume
        
        call construct(this%IRL_CapDod_LTLT, a_cell)            
-       call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, a_correct_volume)
        call getBoundingPts(this%IRL_CapDod_LTLT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(8) ! Quad Face -> Dodecahedron Volume
        
        call construct(this%IRL_CapDod_LLTT, a_cell)            
-       call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, a_correct_volume)
        call getBoundingPts(this%IRL_CapDod_LLTT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(9) ! Quad Face -> Dodecahedron Volume
        
        call construct(this%IRL_CapDod_LTTT, a_cell)            
-       call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, a_correct_volume)
        call getBoundingPts(this%IRL_CapDod_LTTT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case(10) ! Quad Face -> Dodecahedron Volume
       
        call construct(this%IRL_CapDod_TTTT, a_cell)            
-       call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, a_correct_volume)
        call getBoundingPts(this%IRL_CapDod_TTTT, a_bounding_box(:,1), a_bounding_box(:,2))       
        
     case default
@@ -1508,9 +1615,7 @@ contains
        
     case default
        call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
-    end select
-    
-
+    end select    
     
     phase_volume = 0.0_r8
     do t = 0, getSize(tagged_sepvol)-1
