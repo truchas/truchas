@@ -1430,7 +1430,7 @@ contains
     logical :: a_geometric_cutting_needed
 
     type(traversal_tracker) :: coverage
-    integer :: current_cell, n
+    integer :: current_cell, n, dim
 
     if(a_starting_band == 0) then
        a_geometric_cutting_needed = .true.
@@ -1443,23 +1443,17 @@ contains
       current_cell = coverage%get_next_cell()
 
       associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(current_cell):this%mesh%xcnhbr(current_cell+1)-1))
-        do n = 1, size(cn)
+        neigh_loop : do n = 1, size(cn)
           if(cn(n) /= 0) then
              if(coverage%cell_not_encountered(cn(n))) then
                 ! Now check if intersection of axis aligned bounding boxes
                 ! X direction
-                if(this%cell_bounding_box(1,1,cn(n)) > a_bounding_box(1,2) .or. &
-                     this%cell_bounding_box(1,2,cn(n)) < a_bounding_box(1,1)) then
-                   cycle
-                end if
-                if(this%cell_bounding_box(2,1,cn(n)) > a_bounding_box(2,2) .or. &
-                     this%cell_bounding_box(2,2,cn(n)) < a_bounding_box(2,1)) then
-                   cycle
-                end if
-                if(this%cell_bounding_box(3,1,cn(n)) > a_bounding_box(3,2) .or. &
-                     this%cell_bounding_box(3,2,cn(n)) < a_bounding_box(3,1)) then
-                   cycle
-                end if
+                do dim = 1,3
+                  if(this%cell_bounding_box(dim,1,cn(n)) > a_bounding_box(dim,2) .or. &
+                       this%cell_bounding_box(dim,2,cn(n)) < a_bounding_box(dim,1)) then
+                     cycle neigh_loop
+                  end if
+                end do
 
                 ! Made it this far, bounding_box's intersect. See if would require cutting
                 if(a_interface_band(cn(n))*a_starting_band <= 0) then
@@ -1469,7 +1463,7 @@ contains
                 call coverage%add_cell(cn(n))
              end if
           end if
-        end do
+        end do neigh_loop
       end associate
     end do
     
