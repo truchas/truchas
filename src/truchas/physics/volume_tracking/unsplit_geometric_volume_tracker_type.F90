@@ -1035,6 +1035,7 @@ contains
     volume_change = 0.0_r8
     call new(new_volumes)
     do j = 1, this%mesh%ncell_onP
+      call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)      
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
           
         select case(size(cn))
@@ -1074,7 +1075,7 @@ contains
       volume_change(phase) = global_sum(volume_change(phase))
     end do
 
-    write(myformat, '(a,i,a)') '(a,',this%nmat,'es12.4)'
+    write(myformat, '(a,i1,a)') '(a,',this%nmat,'es12.4)'
     write(message, trim(myformat)) 'Phase volumes lost during reconstruction', volume_change
     call TLS_info(message)
     

@@ -360,12 +360,12 @@ contains
     do j = 1, size(vol_sum)
       vol_sum(j) = global_sum(vol_sum(j))
     end do
-    write(myformat, '(a,i,a)') '(a,',size(vol_sum),'es12.4)'
+    write(myformat, '(a,i1,a)') '(a,',size(vol_sum),'es12.4)'
     write(message, trim(myformat)) 'Absolute volume change: ', vol_sum - this%fvol_init
     call TLS_info(message)
     write(message, trim(myformat)) 'Domain Normalized volume change: ',  (vol_sum - this%fvol_init)/sum(this%fvol_init)
     call TLS_info(message)
-    write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/this%fvol_init
+    write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/(this%fvol_init+tiny(1.0_r8))
     call TLS_info(message)    
 
     ! update the matl structure if this isn't the initial pass
@@ -465,60 +465,71 @@ contains
     real(r8), intent(inout) :: a_face_velocity(:)
     real(r8), intent(inout) :: a_cell_velocity(:,:)
 
-    integer :: j, f
-    real(r8) :: node_location(3), full_face_velocity(3)
+    integer :: j, f, n, e
+    real(r8) :: edge(3,2)
+    real(r8) :: node_location(3), full_face_velocity(3), vel(3)
+    real(r8) :: projected_point_x, projected_point_y, rotation
+    real(r8) :: time_multiplier
 
     if (.not.allocated(this)) return
     if(.not.velocity_overwrite_requested) return
     ASSERT(prescribed_flow)
 
     select case(trim(velocity_overwrite_case))
-    case('Zalesak')
+    case('Rotation2D')
        do f = 1,this%mesh%nface
-          node_location = this%mesh%face_centroid(:,f)
-          full_face_velocity(1) = -2.0_r8*pi*node_location(2)
-          
-          full_face_velocity(2) = 2.0_r8*pi*node_location(1)
-          
-          full_face_velocity(3) = 0.0_r8
-
-          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
-
+         node_location = this%mesh%face_centroid(:,f)
+         full_face_velocity(1) = -2.0_r8*pi*node_location(2)
+         
+         full_face_velocity(2) = 2.0_r8*pi*node_location(1)
+         
+         full_face_velocity(3) = 0.0_r8
+         
+         a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+         
        end do
        
        do j = 1,this%mesh%ncell
-          node_location = this%mesh%cell_centroid(:,j)
-          a_cell_velocity(1,j) = -2.0_r8*pi*node_location(2)
-          
-          a_cell_velocity(2,j) = 2.0_r8*pi*node_location(1)
-          
-          a_cell_velocity(3,j) = 0.0_r8
-          
+         node_location = this%mesh%cell_centroid(:,j)
+         a_cell_velocity(1,j) = -2.0_r8*pi*node_location(2)
+         
+         a_cell_velocity(2,j) = 2.0_r8*pi*node_location(1)
+         
+         a_cell_velocity(3,j) = 0.0_r8
+         
        end do
-
-    case('Unit_rotation')
-      ! Rotation of an object on a mesh that is [-16,16] x [-16x16] x [-1/2 x 1/2]
-      ! Rotates clockwise
+              
+    case('Rotation3D')
+       rotation = -0.25_r8*pi
        do f = 1,this%mesh%nface
-          node_location = this%mesh%face_centroid(:,f)
-          full_face_velocity(1) = node_location(2)/16.0_r8
-          
-          full_face_velocity(2) = -node_location(1)/16.0_r8
-          
-          full_face_velocity(3) = 0.0_r8
+         node_location = this%mesh%face_centroid(:,f)
+         projected_point_x = dot_product(node_location, 1.0_r8/sqrt(2.0_r8)*[1.0_r8, 0.0_r8, 1.0_r8])
+         projected_point_y = dot_product(node_location, [0.0_r8, 1.0_r8, 0.0_r8])         
+         vel(1) = -2.0_r8*pi*projected_point_y         
+         vel(2) = 2.0_r8*pi*projected_point_x
+         vel(3) = 0.0_r8
 
-          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
-
+         ! Rotate about y-axis
+         full_face_velocity(1) = dot_product([cos(rotation), 0.0_r8, sin(rotation)], vel)
+         full_face_velocity(2) = dot_product([0.0_r8, 1.0_r8, 0.0_r8], vel)
+         full_face_velocity(3) = dot_product([-sin(rotation), 0.0_r8, cos(rotation)], vel)         
+         a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
        end do
-       
+
        do j = 1,this%mesh%ncell
-          node_location = this%mesh%cell_centroid(:,j)
-          a_cell_velocity(1,j) = node_location(2)/16.0_r8
-          
-          a_cell_velocity(2,j) = -node_location(1)/16.0_r8
-          
-          a_cell_velocity(3,j) = 0.0_r8
-          
+         node_location = this%mesh%cell_centroid(:,j)
+         projected_point_x = dot_product(node_location, 1.0_r8/sqrt(2.0_r8)*[1.0_r8, 0.0_r8, 1.0_r8])
+         projected_point_y = dot_product(node_location, [0.0_r8, 1.0_r8, 0.0_r8])
+
+         vel(1) = -2.0_r8*pi*projected_point_y         
+         vel(2) = 2.0_r8*pi*projected_point_x
+         vel(3) = 0.0_r8
+
+         ! Rotate about y-axis
+         a_cell_velocity(1,j) = dot_product([cos(rotation), 0.0_r8, sin(rotation)], vel)
+         a_cell_velocity(2,j) = dot_product([0.0_r8, 1.0_r8, 0.0_r8], vel)
+         a_cell_velocity(3,j) = dot_product([-sin(rotation), 0.0_r8, cos(rotation)], vel)         
+         
        end do
        
     case('Deformation2D')
@@ -558,25 +569,27 @@ contains
        end do
 
     case('Deformation3D')
-       ! Generally on -0.5,0.5 mesh, so add 0.5 to node position       
+       ! Generally on -0.5,0.5 mesh, but should be on [0.1], so add 0.5 to node position
+       time_multiplier = cos(pi*a_time/3.0_r8)
        do f = 1,this%mesh%nface
-          node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,0.5_r8]
-          full_face_velocity(1) = 2.0_r8*sin(pi*node_location(1))**2 &
-                                 * sin(2.0_r8*pi*node_location(2)) &
-                                 * sin(2.0_r8*pi*node_location(3)) &
-                                 * cos(pi*a_time / 3.0_r8)
-          
-          full_face_velocity(2) =  -sin(2.0_r8*pi*node_location(1)) &
-                                 * sin(pi*node_location(2))**2 &
-                                 * sin(2.0_r8*pi*node_location(3)) &
-                                 * cos(pi*a_time / 3.0_r8)
-          
-          full_face_velocity(3) =  -sin(2.0_r8*pi*node_location(1)) &
-                                 * sin(2.0_r8*pi*node_location(2)) &
-                                 * sin(pi*node_location(3))**2 &
-                                 * cos(pi*a_time / 3.0_r8)        
 
-          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+         a_face_velocity(f) = 0.0_r8
+         associate(nodes => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))           
+           do n = 1, size(nodes) 
+             edge(:,1) = this%mesh%x(:,nodes(n))+[0.5_r8, 0.5_r8, 0.5_r8]
+             edge(:,2) = this%mesh%x(:,nodes(mod(n, size(nodes))+1))+[0.5_r8, 0.5_r8, 0.5_r8]
+             vel = 0.0_r8
+             do e = 1,2
+               vel = vel + [0.25_r8/pi*(2.0_r8*sin(2.0_r8*pi*edge(1,e))*sin(pi*edge(2,e))**2*cos(2.0_r8*pi*edge(3,e)) &
+                    -sin(2.0_r8*pi*edge(1,e))*cos(2.0_r8*pi*edge(2,e))) ,&
+                    sin(pi*edge(1,e))**2*sin(2.0_r8*pi*edge(2,e))*cos(2.0_r8*pi*edge(3,e))/pi ,&
+                    0.0_r8]               
+             end do
+             vel = 0.5_r8*vel
+             a_face_velocity(f) = a_face_velocity(f) + dot_product(vel, edge(:,2)-edge(:,1))
+           end do
+         end associate
+         a_face_velocity(f) = a_face_velocity(f) / this%mesh%area(f) * time_multiplier
 
        end do
        
@@ -605,6 +618,7 @@ contains
     end select   
 
   end subroutine vtrack_velocity_overwrite
+
 
   ! NOTE: There is a lot of parallel communication in this routine.
   ! It could probably be rewritten to use less. Also, if a
