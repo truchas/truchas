@@ -282,6 +282,7 @@ contains
 
       integer :: m
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
+      integer, pointer :: mat_band_ptr(:,:), int_band_ptr(:)
       real(r8) :: fluxing_velocity(nfc,ncells)
       real(r8) :: mat_band(nmat,ncells)
       character(8) :: name(nmat)
@@ -297,7 +298,8 @@ contains
 
       ! Volume fraction bands
       if (nmat > 1) then
-        mat_band = real(vtrack_mat_band_view(),r8)
+        mat_band_ptr => vtrack_mat_band_view()
+        mat_band = real(mat_band_ptr(:,1:ncells),r8)
         do m = 1, nmat
           write(name(m),'(a,i4.4)') 'Band', get_user_material_id(m)
         end do
@@ -306,7 +308,8 @@ contains
 
       ! Interface band
       if (nmat > 1) then
-        mat_band(1,:) = real(vtrack_interface_band_view(),r8)
+        int_band_ptr => vtrack_interface_band_view()
+        mat_band(1,:) = real(int_band_ptr(1:ncells),r8)
         name(1) = 'IntBand'
         call write_seq_cell_field (seq, mat_band(1,:), 'IntBand', for_viz=.true., viz_name=name(1))
       end if      
