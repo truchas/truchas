@@ -56,16 +56,19 @@ module vtrack_driver
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use volume_tracker_class
+  use unsplit_volume_tracker_class  
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
   use index_partitioning
+  use cell_tagged_mm_volumes_type, only : cell_tagged_mm_volumes
   implicit none
   private
 
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
-  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view, vtrack_mat_band_view, vtrack_interface_band_view
+  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_unsplit_flux_vol_view
+  public :: vtrack_liq_matid_view, vtrack_mat_band_view, vtrack_interface_band_view
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
   public :: vtrack_velocity_overwrite
@@ -80,11 +83,13 @@ module vtrack_driver
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     integer, allocatable :: liq_matid(:), sol_matid(:)
     class(volume_tracker), allocatable :: vt
+    class(unsplit_volume_tracker), allocatable :: unsplit_vt
     real(r8), allocatable  :: vof(:,:) ! volume fractions for all materials
     real(r8), allocatable :: fvof_i(:,:) ! fluid/void volume fractions at start of update
     real(r8), allocatable :: fvof_o(:,:) ! fluid/void volume fractions at end of update
     real(r8), allocatable :: fvol_init(:) ! fluid/void volume fractions at start of simulation
     real(r8), allocatable :: flux_vol(:,:) ! flux volumes
+    type(cell_tagged_mm_volumes), allocatable :: unsplit_flux_vol(:) ! Unsplit flux volumes
     real(r8), allocatable :: flux_vel(:) ! fluxing velocity - ragged form
     integer, allocatable :: mat_band(:,:) ! Signed material band for band_number = (material_id, cell_id)
     integer, allocatable :: mat_band_map(:,:) ! Unstructured mapping of band to material cell_id = (index, material)
@@ -97,8 +102,8 @@ module vtrack_driver
     integer :: solid ! 1 if simulation includes solid else 0
     logical :: unsplit_advection
   end type vtrack_driver_data
-  type(vtrack_driver_data), allocatable, target :: this
-
+  type(vtrack_driver_data), allocatable, target, save :: this
+  
 contains
 
   subroutine vtrack_driver_final
@@ -121,6 +126,12 @@ contains
     p => this%flux_vol
   end function vtrack_flux_vol_view
 
+  function vtrack_unsplit_flux_vol_view() result(p)
+    type(cell_tagged_mm_volumes), pointer :: p(:)
+    ASSERT(vtrack_enabled())
+    p => this%unsplit_flux_vol
+  end function vtrack_unsplit_flux_vol_view
+  
   ! material ids corresponding to flux_vol columns
   function vtrack_liq_matid_view() result(p)
     integer, pointer :: p(:)
@@ -163,7 +174,9 @@ contains
     integer, intent(in) :: cycle_number   
 
     if(vtrack_enabled()) then
-      call this%vt%write_interface(t,dt,cycle_number)
+      if(this%unsplit_advection) then
+        call this%unsplit_vt%write_interface(t,dt,cycle_number)
+      end if
     end if
 
   end subroutine vtrack_write_interface
@@ -207,6 +220,7 @@ contains
     allocate(this%fvof_o(this%fluids+this%void+this%solid, this%mesh%ncell))
     allocate(this%fvol_init(this%fluids+this%void+this%solid))    
     allocate(this%flux_vol(this%fluids+this%void,size(this%mesh%cface)))
+    allocate(this%unsplit_flux_vol(size(this%mesh%cface)))    
     allocate(this%flux_vel(size(this%mesh%cface)))
     allocate(this%vof(nmat, this%mesh%ncell_onP))
 
@@ -236,7 +250,7 @@ contains
     call params%get('unsplit_interface_advection', this%unsplit_advection, .true.)
     if (track_interfaces) then
       if(this%unsplit_advection) then
-        allocate(unsplit_geometric_volume_tracker :: this%vt)
+        allocate(unsplit_geometric_volume_tracker :: this%unsplit_vt)
       else
         allocate(geometric_volume_tracker :: this%vt)
       end if
@@ -245,12 +259,30 @@ contains
     end if
 
     call start_timer('Vof Initialization')
+
     call get_vof_from_matl(this%fvof_i)
-    this%fvof_o = this%fvof_i
-    call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
-        this%fluids+this%void+this%solid, this%liq_matid, params)
+    if(this%unsplit_advection) then
+      call this%unsplit_vt%init(this%mesh, this%fluids, this%fluids+this%void, &
+           this%fluids+this%void+this%solid, this%liq_matid, params)      
+      ! Enforce VOF sums to 1
+      do j = 1, this%mesh%ncell
+        do k = 1, nmat
+          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 0.0_r8
+          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 1.0_r8
+          end if
+        end do
+        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+      end do
+      this%fvof_o = this%fvof_i
+      call vtrack_update_mat_band()      
+    else
+      this%fvof_o = this%fvof_i      
+      call this%vt%init(this%mesh, this%fluids, this%fluids+this%void, &
+           this%fluids+this%void+this%solid, this%liq_matid, params)
+    end if
     call stop_timer('Vof Initialization')
-    call vtrack_update_mat_band()    
 
     ! Compute sum of volume of each phase in domain
     this%fvol_init = 0.0_r8
@@ -261,7 +293,9 @@ contains
       this%fvol_init(j) = global_sum(this%fvol_init(j))
     end do
 
-    call vtrack_open_interface_file()
+    ! Open file for interface
+    call vtrack_open_interface_file
+    
     
   end subroutine vtrack_driver_init
 
@@ -273,6 +307,7 @@ contains
 
     integer :: i, n
 
+    vof = 0.0_r8
     n = this%mesh%ncell_onP
     call matl_get_vof(this%vof)
     do i = 1, size(this%liq_matid)
@@ -325,14 +360,24 @@ contains
 
     call get_vof_from_matl(this%fvof_i)
 
-    ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
-    call vtrack_update_mat_band()
-
     if(this%unsplit_advection) then
-       ! Unsplit advection written to use face velocities, operates on faces.
-       ! Cell centered velocity also needed to form node velocities for projection.
-      call this%vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
-          this%fluids, this%void, dt, this%interface_band)
+      ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
+      ! Enforce VOF sums to 1
+      do j = 1, this%mesh%ncell
+        do k = 1, size(this%fvof_i,1)
+          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 0.0_r8
+          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 1.0_r8
+          end if
+        end do
+        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+      end do 
+      call vtrack_update_mat_band()      
+      ! Unsplit advection written to use face velocities, operates on faces.
+      ! Cell centered velocity also needed to form node velocities for projection.
+      call this%unsplit_vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%unsplit_flux_vol, &
+           this%fluids, this%void, dt, this%interface_band)
     else
       ! Split advection works on a per-cell level.
       ! copy face velocities into cell-oriented array
@@ -352,7 +397,7 @@ contains
       call this%vt%flux_volumes(this%flux_vel, vel_cc, this%fvof_i, this%fvof_o, this%flux_vol, &
           this%fluids, this%void, dt, this%interface_band)
     end if
-    
+   
     vol_sum = 0.0_r8
     do j = 1, this%mesh%ncell_onP
        vol_sum = vol_sum + this%fvof_o(:,j)*this%mesh%volume(j)
@@ -410,7 +455,6 @@ contains
   !! value and the corresponding value of the required "face-set-ids"
   !! parameter are used to set the inflow material on a portion of the
   !! boundary. Other sublists are ignored.
-
   subroutine vtrack_set_inflow_bc(params, stat, errmsg)
 
     use bndry_face_group_builder_type
@@ -643,16 +687,16 @@ contains
     this%xmat_band_map(1,:) = this%xmat_band_map(0,:)
     do j = 1,this%mesh%ncell_onP
       do k = 1,total_phases
-        has_interface = (this%fvof_i(k,j) >  this%vt%cutoff) .and. &
-             (this%fvof_i(k,j) < 1.0_r8 - this%vt%cutoff)
+        has_interface = (this%fvof_i(k,j) >  this%unsplit_vt%cutoff) .and. &
+             (this%fvof_i(k,j) < 1.0_r8 - this%unsplit_vt%cutoff)
         if(.not. has_interface) then
            ! Need to also check condition where cell is full/empty and neighbor empty/full
-           if(this%fvof_i(k,j) < this%vt%cutoff) then ! Cell is empty
+           if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then ! Cell is empty
               ! Check if any neighbors are full
               associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
                 do n = 1, size(cneigh)
                    if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 -  this%vt%cutoff) then
+                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 -  this%unsplit_vt%cutoff) then
                          has_interface = .true.
                          exit
                       end if                      
@@ -665,7 +709,7 @@ contains
               associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
                 do n = 1, size(cneigh)
                    if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) <  this%vt%cutoff) then
+                      if(this%fvof_i(k,cneigh(n)) <  this%unsplit_vt%cutoff) then
                          has_interface = .true.
                          exit
                       end if                      

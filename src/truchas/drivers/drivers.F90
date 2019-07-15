@@ -68,7 +68,7 @@ CONTAINS
     use truchas_danu_output, only: TDO_open, TDO_close
     use truchas_logging_services
     use truchas_timers
-    use vtrack_driver,          only: vtrack_close_interface_file
+    use vtrack_driver,          only: vtrack_open_interface_file, vtrack_close_interface_file
 
     character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
 
@@ -103,6 +103,9 @@ CONTAINS
 
     ! open the danu output file
     call TDO_open
+
+    ! Open interface file (happens if unsplit transport)
+    call vtrack_open_interface_file
 
     ! initialize the random number generator
     call INITIALIZE_RANDOM()
@@ -169,7 +172,8 @@ call hijack_truchas ()
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, flow_vel_cc_view,&
         flow_set_pre_solidification_density
     use vtrack_driver, only: vtrack_update, vtrack_velocity_overwrite, vtrack_enabled, vtrack_vof_view, &
-                             vtrack_flux_vol_view, get_vof_from_matl, vtrack_write_interface
+         vtrack_flux_vol_view, vtrack_unsplit_flux_vol_view, get_vof_from_matl, vtrack_write_interface
+    use cell_tagged_mm_volumes_type, only : cell_tagged_mm_volumes
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -190,6 +194,7 @@ call hijack_truchas ()
     type(action_list), allocatable :: actions
     class(event_action), allocatable :: action
     real(r8), pointer :: vel_fn(:), vel_cc(:,:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
+    type(cell_tagged_mm_volumes), pointer :: unsplit_flux_vol(:)
     real(r8) :: tout, t_write
     !---------------------------------------------------------------------------
 

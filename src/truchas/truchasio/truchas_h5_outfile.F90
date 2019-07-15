@@ -253,7 +253,7 @@ contains
     !! Mesh group attributes
     call this%file%write_attr(mesh%path, 'Dimension', dim)
     call this%file%write_attr(mesh%path, 'Mesh Type', 'UNSTRUCTURED')
-    call this%file%write_attr(mesh%path, 'Element Type', 'POLYGON')
+    call this%file%write_attr(mesh%path, 'Element Type', 'MIXED')
   end subroutine add_interface_mesh_group
 
 !!!! TH5_MESH_GROUP TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

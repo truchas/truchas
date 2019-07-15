@@ -111,7 +111,7 @@ contains
           do j = 1, size(fi)
             k = fi(j)
             if (btest(this%mesh%cfpar(i),pos=j)) then ! true if normal points inward
-              ! note the thae normal associate with the mesh object has already been scaled
+              ! note that the normal associated with the mesh object has already been scaled
               ! by the face area, so we do not do it again
               gx(i) = gx(i) - this%mesh%normal(1,k)*w_face(k)
               gy(i) = gy(i) - this%mesh%normal(2,k)*w_face(k)

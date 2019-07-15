@@ -28,7 +28,7 @@ module truchas_phase_interface_output
   public :: TPIO_open, TPIO_close
   public :: TPIO_write_mesh
 
-  type(th5_file) :: interface_outfile
+  type(th5_file), target :: interface_outfile
   integer, private, save :: written_times = 0
 
 contains
