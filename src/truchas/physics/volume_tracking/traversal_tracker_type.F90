@@ -16,7 +16,7 @@ module traversal_tracker_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64, i8 => int64
 
-  integer, parameter, public :: indiv_cell_capacity = 100
+  integer, parameter, public :: indiv_cell_capacity = 200
 
   type, public :: traversal_tracker
      integer, private :: cells_encountered(indiv_cell_capacity)

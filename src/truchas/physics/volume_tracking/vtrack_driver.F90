@@ -737,25 +737,10 @@ contains
       
      end do
 
-     ! Create interface band map that indicates presence of any interface
-     ! Only has positive (or 0) band entries.
-     this%interface_band = band_map_width+1
-     this%xinterface_band_map(0) = 1
-     do b = 0, band_map_width
-         this%xinterface_band_map(b+1) = this%xinterface_band_map(b)
-       do j = 1, this%mesh%ncell
-         smallest_band = minval(abs(this%mat_band(:,j)))
-         if(smallest_band == b) then
-           ! Add to band
-           this%interface_band(j) = smallest_band
-           if(j <= this%mesh%ncell_onP) then
-             this%interface_band_map(this%xinterface_band_map(b+1)) = j
-             this%xinterface_band_map(b+1) =  this%xinterface_band_map(b+1) + 1
-           end if
-         end if
-       end do
-     end do
-     
+     ASSERT(total_phases == 2)
+     this%interface_band = this%mat_band(1,:)
+     this%xinterface_band_map = this%xmat_band_map(:,1)
+     this%interface_band_map = this%mat_band_map(:,1)
 
  end subroutine vtrack_update_mat_band
 
