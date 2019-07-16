@@ -51,26 +51,22 @@ CONTAINS
     !   Allocate the Cell, Matl, and Zone base types and Fluxing_Velocity
     !
     !=======================================================================
-    use bc_module,           only: BC
-    use matl_module,         only: SLOT_INCREASE, Matl
-    use legacy_mesh_api,     only: nfc, ncells
-    use parameter_module,    only: mat_slot, mat_slot_new, nmat, nprobes
+    use bc_module,              only: BC
+    use matl_module,            only: SLOT_INCREASE, Matl
+    use legacy_mesh_api,        only: nfc, ncells
+    use parameter_module,       only: mat_slot, mat_slot_new, nmat
     use zone_module,            only: Zone
-    use fluid_data_module,       only: Fluxing_Velocity
+    use fluid_data_module,      only: Fluxing_Velocity
     use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
     use solid_mechanics_input,  only: solid_mechanics
     use turbulence_module,      only: TURBULENCE_ALLOCATE
-
-    use probe_module,           only: probes
     use EM_data_proxy,          only: EM_is_on
 
     ! Arguments
 
     ! Local Variables
     integer :: memstat
-    integer :: ems, sms, smv, smt
     integer :: i
-    integer :: nprobevars, nprobescavars, nprobevecvars, nprobetensvars  
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Inform the user of allocation.
@@ -102,43 +98,6 @@ CONTAINS
     ! allocate arrays for the turbulence model
     call TURBULENCE_ALLOCATE ()
 
-    ! allocate any probes structures if the PROBE namelist exists in input file
-
-    if (nprobes > 0) then
-
-       ALLOCATE (probes(nprobes), STAT = memstat)
-       
-       ems  = 0
-       if (EM_is_on()) then
-          ems = 1
-       end if
-       sms   = 0
-       smv   = 0
-       smt   = 0
-       if (solid_mechanics) then
-          sms = 3
-          smv = 1
-          smt = 4
-       end if
-
-       nprobescavars  = 7 + ems + nmat + sms
-       nprobevecvars  = 1 + smv
-       nprobetensvars = smt
-
-       nprobevars     = nprobescavars + nprobevecvars + nprobetensvars
-
-       do i=1,nprobes
-          ALLOCATE(probes(i)%probe(nprobevars), STAT = memstat)
-          ALLOCATE(probes(i)%NameLU(nprobevars), STAT = memstat)
-          ALLOCATE(probes(i)%ScalarVarLU(nprobescavars), STAT = memstat)
-          ALLOCATE(probes(i)%VectorVarLU(nprobevecvars), STAT = memstat)
-          ALLOCATE(probes(i)%TensorVarLU(nprobetensvars), STAT = memstat)
-       end do
-
-       call TLS_fatal_if_any ((memstat /= 0), 'BASE_TYPES_A_ALLOCATE: error allocating probes pointer')
-
-    endif
-
     ! Set the new arrays to their defaults
     call BASE_TYPES_DEFAULT ()
 
@@ -156,8 +115,7 @@ CONTAINS
     !=======================================================================
     use bc_module,         only: BC
     use matl_module,       only: SLOT_DECREASE, Matl
-    use parameter_module,  only: mat_slot, mat_slot_new, nprobes
-    use probe_module,      only: probes
+    use parameter_module,  only: mat_slot, mat_slot_new
     use zone_module,       only: ZONE
     use fluid_data_module, only: Fluxing_Velocity
 
@@ -174,16 +132,6 @@ CONTAINS
 
     ! Deallocate Fluxing_Velocity.
     if (ASSOCIATED(Fluxing_Velocity)) DEALLOCATE (Fluxing_Velocity)
-
-    if (nprobes > 0) then
-       do i=1,nprobes
-          if (ASSOCIATED(probes(i)%NameLU))      DEALLOCATE(probes(i)%NameLU)
-          if (ASSOCIATED(probes(i)%ScalarVarLU)) DEALLOCATE(probes(i)%ScalarVarLU)
-          if (ASSOCIATED(probes(i)%VectorVarLU)) DEALLOCATE(probes(i)%VectorVarLU)
-          if (ASSOCIATED(probes(i)%TensorVarLU)) DEALLOCATE(probes(i)%TensorVarLU)
-       end do
-       DEALLOCATE (probes)
-    end if
 
     ! Deallocate the Matl derived type by decreasing to zero slots.
     mat_slot_new = 0

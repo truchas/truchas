@@ -53,12 +53,6 @@ module scorpio_file_type
     generic :: write_dataset => write_dataset_int8_r1, write_dataset_int8_r2, &
                                 write_dataset_int32_r1, write_dataset_int32_r2, &
                                 write_dataset_real64_r1, write_dataset_real64_r2
-
-    procedure, private :: create_probe_real64_r2
-    procedure, private :: write_probe_real64_r2
-
-    generic :: create_probe => create_probe_real64_r2
-    generic :: write_probe => write_probe_real64_r2
   end type scorpio_file
 
 contains
@@ -199,28 +193,6 @@ contains
     real(real64), intent(in) :: attr_data(:)
     call scorpio_write_attr_double(attr_name//c_null_char, attr_data, 1, shape(attr_data), &
         this%fhandle, obj_name//c_null_char, this%myIOgroup)
-  end subroutine
-
-  !TODO: Eliminate the "simulation" id argument
-  integer(int64) function create_probe_real64_r2(this, sid, name, data) result(pid)
-    class(scorpio_file), intent(in) :: this
-    integer(int64), intent(in) :: sid
-    character(*), intent(in) :: name
-    real(real64), intent(in) :: data(:,:)
-    integer(int32) :: cdims(2)
-    cdims(1) = size(data,dim=2)
-    cdims(2) = size(data,dim=1)
-    pid = scorpio_create_probe_double(sid, name//c_null_char, 2, cdims, data, this%fhandle, this%myIOgroup)
-  end function
-
-  subroutine write_probe_real64_r2(this, pid, data)
-    class(scorpio_file), intent(in) :: this
-    integer(int64), intent(in) :: pid
-    real(real64), intent(in), contiguous :: data(:,:)
-    integer(int32) :: cdims(2)
-    cdims(1) = size(data,dim=2)
-    cdims(2) = size(data,dim=1)
-    call scorpio_write_probe_data_double(pid, 2, cdims, data, this%fhandle, this%myIOgroup)
   end subroutine
 
 end module scorpio_file_type

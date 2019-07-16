@@ -56,7 +56,7 @@ CONTAINS
     !
     !   Initialize the Matl, Zone, and Alloy (if necessary) derived types.
     !   Initialize all BC data structures and information.
-    !   Initialize all probe structures
+    !   Initialize all probe objects.
     !
     !=======================================================================
     use fluid_data_module,      only: Void_Material_Exists,     &
@@ -80,12 +80,12 @@ CONTAINS
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
     use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view
     use material_interop,       only: generate_material_mappings
-    use probe_output_module,    only: probe_init
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
+    use probes_driver
 
     real(r8), intent(in) :: t, dt
 
@@ -166,9 +166,6 @@ CONTAINS
     ! Initialize Zone%Rho and Zone%Temp
     call ZONE_INIT (Hits_Vol)
 
-    ! Initialize probe%name, probe%description, probe%coords
-    call PROBE_INIT ()
-
     ! [sriram] End of original restart if condition
 
     ! Initialize BC quantities.
@@ -240,6 +237,10 @@ CONTAINS
     ! Initialize the microstructure modeling driver (if enabled).
     call ustruc_driver_init (t)
     call restart_ustruc
+
+    ! Initialize probes.
+
+    call probes_init ()
 
   END SUBROUTINE INITIAL
 

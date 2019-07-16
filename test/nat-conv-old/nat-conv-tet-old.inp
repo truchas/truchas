@@ -39,15 +39,17 @@ cells at each long_edit interval.
 /
 
 &PROBE
-  Probe_Description = 'Maximum Horizontal Velocity'
-  Probe_Name        = 'VhMax',
-  Probe_Coords      = 0.5, 0.0, 0.813,
+  Description = 'Maximum Horizontal Velocity'
+  Name        = 'VhMax',
+  Coord       = 0.5, 0.0, 0.813,
+  Data        = 'Velocity'
 /
 
 &PROBE
-  Probe_Description = 'Maximum Vertical Velocity'
-  Probe_Name        = 'VvMax',
-  Probe_Coords      = 0.178, 0.0, 0.5,
+  Description = 'Maximum Vertical Velocity'
+  Name        = 'VvMax',
+  Coord       = 0.178, 0.0, 0.5,
+  Data        = 'Velocity'
 /
 
 &MESH mesh_file = 'square-7-tet.g' /

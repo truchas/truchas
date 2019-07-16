@@ -174,26 +174,36 @@ velocity, but there is no satisfactory way to check the velocity profile.
 
 &PROBE
 
-   probe_name         = 'umin'
-   probe_description  = 'cell at wall'
-   probe_coords       = 1.25, 0.0455, 0.5
-   probe_coords_scale = 1.0
+   Name               = 'umin'
+   Description        = 'cell at wall'
+   Coord              = 1.25, 0.0455, 0.5
+   Coord_Scale_Factor = 1.0
+   Data               = 'Velocity'
 /
 
 &PROBE
 
-   probe_name         = 'umax'
-   probe_description  = 'upstream centerline'
-   probe_coords       = 1.25, 0.5, 0.5
-   probe_coords_scale = 1.0
-
+   Name               = 'umax'
+   Description        = 'upstream centerline velocity'
+   Coord              = 1.25, 0.5, 0.5
+   Coord_Scale_Factor = 1.0
+   Data               = 'Velocity'
 / 
 
 &PROBE
 
-   probe_name         = 'pdown'
-   probe_description  = 'downstream centerline'
-   probe_coords       = 3.75, 0.5, 0.5
-   probe_coords_scale = 1.0
+   Name               = 'umaxp'
+   Description        = 'upstream centerline pressure'
+   Coord              = 1.25, 0.5, 0.5
+   Coord_Scale_Factor = 1.0
+   Data               = 'Pressure'
+/ 
 
+&PROBE
+
+   Name               = 'pdown'
+   Description        = 'downstream centerline'
+   Coord              = 3.75, 0.5, 0.5
+   Coord_Scale_Factor = 1.0
+   Data               = 'Pressure'
 / 

@@ -169,14 +169,13 @@ call hijack_truchas ()
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
-    use probe_output_module, only: probe_init_danu
     use sim_event_queue_type
     use simulation_event_queue
     use time_step_sync_type
     use truchas_logging_services
     use truchas_timers
     use zone_module, only: Zone
-    use probe_output_module, only: probes_output
+    use probes_driver, only: probes_write
     use kinds
 
     ! Local Variables
@@ -194,8 +193,6 @@ call hijack_truchas ()
     call init_sim_event_queue
     ts_sync = time_step_sync(5)
 
-    call PROBE_INIT_DANU  ! for Tbrook output this was done in TBU_writebasicdata
-
     call start_timer('Main Cycle')
 
     ! Prepass to initialize a solenoidal velocity field for Advection
@@ -205,7 +202,7 @@ call hijack_truchas ()
 
     call TDO_write_timestep
     t_write = t
-    call probes_output
+    call probes_write (t)  ! Write initial probe info.
 
     t1 = t
     restart_ds = .false.
@@ -296,7 +293,9 @@ call hijack_truchas ()
         t = t2 ! set current time
         restart_ds = .false.
 
-        call probes_output
+        ! Output probe data.
+
+        call probes_write (t)
 
         ! set beginning cycle time (= previous cycle's end time)
         t1 = t2

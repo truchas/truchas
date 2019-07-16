@@ -49,7 +49,6 @@ CONTAINS
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
     use output_control,          only: Output_Dt_Multiplier
-    use probe_output_module,     only: Probe_Output_Cycle_Multiplier
     use output_control,          only: part, part_path
     use toolpath_table,          only: toolpath_ptr
          
@@ -68,7 +67,6 @@ CONTAINS
                        Output_Dt,                      &
                        Output_T,                       &
                        Short_Output_Dt_Multiplier,     &
-                       Probe_Output_Cycle_Multiplier,  &
                        move_block_ids, move_toolpath_name
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -143,7 +141,6 @@ CONTAINS
     use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump
     use output_control,          only: Output_Dt, Output_T
     use output_control,          only: Output_Dt_Multiplier
-    use probe_output_module,     only: Probe_Output_Cycle_Multiplier
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -161,7 +158,6 @@ CONTAINS
 
     ! User output
     Output_Dt_Multiplier  = 1
-    Probe_Output_Cycle_Multiplier = 1
 
   END SUBROUTINE OUTPUTS_DEFAULT
 
@@ -178,7 +174,6 @@ CONTAINS
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
     use output_control,          only: Output_Dt_Multiplier
-    use probe_output_module,     only: Probe_Output_Cycle_Multiplier  
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -189,7 +184,6 @@ CONTAINS
        call PGSLIB_BCAST (Output_T)
        call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
        call PGSLIB_BCAST (Output_Dt_Multiplier)
-       call PGSLIB_BCAST (Probe_Output_Cycle_Multiplier)
     end if
 
   END SUBROUTINE OUTPUTS_INPUT_PARALLEL
