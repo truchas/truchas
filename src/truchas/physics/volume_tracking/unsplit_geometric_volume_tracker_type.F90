@@ -36,9 +36,12 @@ module unsplit_geometric_volume_tracker_type
     character(string_len) :: interface_reconstruction_name
     real(r8), allocatable :: normal(:,:,:)
     real(r8), allocatable :: cell_flux(:,:)
+    real(r8), allocatable :: phase_centroids(:,:,:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:)
+    real(r8), allocatable :: node_velocity(:,:)
     real(r8), allocatable :: velocity_weightings(:)
+    real(r8), allocatable :: lsq_weightings(:,:)
     real(r8), allocatable :: projected_nodes(:,:)
     integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
@@ -85,14 +88,14 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: generate_flux_classes
     procedure, private :: generate_cell_bounding_boxes
     procedure, private :: compute_velocity_weightings
+    procedure, private :: compute_lsq_weightings
     procedure, private :: set_irl_interfaces
     procedure, private :: adjust_planes_match_VOF
-    procedure, private :: reset_volume_moments
     procedure, private :: construct_interface_polygons
     procedure, private :: construct_nonzero_polygon
-    procedure, private :: compute_node_velocities
-    procedure, private :: compute_effective_cfl
     procedure, private :: compute_projected_nodes
+    procedure, private :: get_velocity_at_point
+    procedure, private :: compute_effective_cfl
     procedure, private :: compute_correction_vertices
     procedure, private :: compute_fluxes
     procedure, private :: set_irl_volume_geometry
@@ -101,7 +104,9 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: getBCMaterialFractions    
     procedure, private :: interface_reconstruction    
     procedure, private :: normals_youngs
+    procedure, private :: normals_newgrad_youngs    
     procedure, private :: normals_swartz
+    procedure, private :: normals_mof    
     procedure, private :: normals_lvira
     procedure, private :: normals_lvira_hex_execute
     procedure, private :: normals_lvira_tet_execute    
@@ -165,11 +170,15 @@ contains
     ! TODO: assert that each material appears exactly once
     
     ! Allocate face fluxes we'll store
+    ASSERT(this%nmat == 2)
     allocate(this%cell_flux(this%nmat, this%mesh%ncell))
+    allocate(this%phase_centroids(3, this%nmat, this%mesh%ncell))
 
     allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(3,mesh%nnode))
+    allocate(this%node_velocity(3,mesh%nnode))    
     allocate(this%velocity_weightings(mesh%xcnode(mesh%ncell+1)-1))
+    allocate(this%lsq_weightings(3,mesh%xcface(mesh%ncell_onP+1)-1))
     allocate(this%projected_nodes(3, mesh%nnode))
     allocate(this%cell_bounding_box(3,2,this%mesh%ncell))
     allocate(this%correction_vertex(3,this%mesh%nface))
@@ -233,6 +242,9 @@ contains
     ! Calculate weightings for interpolation of cell center velocity to node
     call this%compute_velocity_weightings
 
+    ! Calculate weights for a LSQ gradient based on face-neighbors
+    call this%compute_lsq_weightings
+
   end subroutine init
 
   ! flux volumes routine assuming flux_vol is a cface-like array
@@ -255,15 +267,12 @@ contains
 
     call start_timer('reconstruction')
     call this%interface_reconstruction(vof)    
-    call this%reset_volume_moments(vof)
     call this%construct_interface_polygons(a_interface_band)
     call stop_timer('reconstruction')
 
     call start_timer('advection')
-    call this%compute_node_velocities(vel_cc)
+    call this%compute_projected_nodes(vel_cc, dt)    
     call this%compute_effective_cfl(dt)
-
-    call this%compute_projected_nodes(dt)
 
     call this%compute_correction_vertices(vel, dt, a_interface_band)
 
@@ -466,7 +475,8 @@ contains
       associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
         do n = 1, nodes_in_cell
           this%velocity_weightings(this%mesh%xcnode(j)+n-1) = &
-               exp(-this%velocity_weightings(this%mesh%xcnode(j)+n-1)/this%w_node(1,node_id(n)))
+               sqrt(1.0_r8 / (this%velocity_weightings(this%mesh%xcnode(j)+n-1)/this%w_node(1,node_id(n)) + tiny(1.0_r8)))
+               !exp(-this%velocity_weightings(this%mesh%xcnode(j)+n-1)/this%w_node(1,node_id(n)))
           this%w_node(2,node_id(n)) = this%w_node(2,node_id(n)) + this%velocity_weightings(this%mesh%xcnode(j)+n-1)
         end do
       end associate
@@ -485,21 +495,107 @@ contains
     
   end subroutine compute_velocity_weightings
 
+  subroutine compute_lsq_weightings(this)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+
+    integer :: j, n, neighbors, q, r
+    real(r8) :: squared_distance, weight, dx(3)
+    integer, parameter :: max_stencil_size = 6
+    real(r8) :: A(3,3), Ainv(3,3), B(3, max_stencil_size), determinant
+
+    ! Compute average length scale for each node
+    do j = 1, this%mesh%ncell_onP
+      neighbors = this%mesh%xcface(j+1) - this%mesh%xcface(j)
+      associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+
+        A = 0.0_r8
+        B = 0.0_r8
+        do n = 1, neighbors
+          if(cn(n) /= 0) then
+             squared_distance = dot_product(this%mesh%cell_centroid(:,cn(n))-this%mesh%cell_centroid(:,j), &
+                                            this%mesh%cell_centroid(:,cn(n))-this%mesh%cell_centroid(:,j))
+             weight = 1.0_r8 / sqrt(squared_distance)
+             dx = this%mesh%cell_centroid(:,cn(n)) - this%mesh%cell_centroid(:,j)
+             do q = 1, 3
+               do r = 1,3
+                 A(q,r) = A(q,r) + weight * dx(q)*dx(r)
+               end do
+             end do
+             do q = 1, 3
+               B(q,n) = weight*dx(q)
+             end do
+          end if
+        end do     
+        
+        determinant = A(1,1) * (A(3,3) * A(2,2) - A(2,3)**2) &
+             - A(2,1) * (A(3,3) * A(1,2) - A(2,3) * A(1,3)) &
+             + A(1,3) * (A(2,3) * A(1,2) - A(2,2) * A(1,3))
+        ASSERT(determinant > 0.0_r8)
+        Ainv(1,1) = A(3,3) * A(2,2) - A(2,3)**2  
+        Ainv(1,2)  = A(1,3) * A(2,3) - A(3,3) * A(1,2)  
+        Ainv(1,3)  = A(1,2) * A(2,3) - A(1,3) * A(2,2)  
+        
+        Ainv(2,2) = A(3,3) * A(1,1) - A(1,3)**2  
+        Ainv(2,3) =  A(1,2) * A(1,3) - A(1,1) * A(2,3)
+        
+        Ainv(3,3) = A(1,1) * A(2,2) - A(1,2)**2
+      
+        Ainv(2,1) = Ainv(1,2)
+        Ainv(3,1) = Ainv(1,3)
+        Ainv(3,2) = Ainv(2,3)
+        
+        determinant = (A(1,1) * Ainv(1,1)) + (A(1,2) * Ainv(1,2)) + (A(1,3) * Ainv(1,3))
+        ASSERT(determinant > 0.0_r8)
+        Ainv = Ainv / determinant
+        
+        do n = 1, neighbors
+          do q = 1, 3            
+            this%lsq_weightings(q,this%mesh%xcface(j)+n-1) = dot_product(Ainv(q,:),B(:,n))
+          end do
+        end do
+
+      end associate
+
+    end do
+    
+  end subroutine compute_lsq_weightings
+  
   subroutine interface_reconstruction(this, vof)
 
+    use parallel_communication, only : global_sum
+    use parameter_module, only : string_len    
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: vof(:,:)
 
+    integer :: j,nrecon
+    character(string_len) :: message        
 
+    nrecon = 0
+    do j = 1, this%mesh%ncell_onP
+      if(vof(1,j) < this%cutoff .or. vof(1,j) > 1.0_r8 - this%cutoff) then
+         cycle
+      end if
+      nrecon = nrecon + 1
+    end do
+    write(message, '(a,i10)') 'Reconstructions being performed', global_sum(nrecon)
+    call TLS_info(message)
+    
     select case(trim(this%interface_reconstruction_name))
 
       case('Youngs')
-        call this%normals_youngs(vof)
+         call this%normals_youngs(vof)
 
+      case('NewGrad Youngs')
+         call this%normals_newgrad_youngs(vof)
+         
       case('Swartz')
         call this%normals_youngs(vof)
         call this%normals_swartz(vof)
+
+      case('MOF')
+        call this%normals_mof(vof)        
 
       case('LVIRA')
         call this%normals_youngs(vof)
@@ -524,53 +620,96 @@ contains
     real(r8), intent(in)  :: vof(:,:)
 
     real(r8) :: mag
-    integer :: i,j,k,c
+    integer :: i,k,c
     logical :: hasvof(size(vof,dim=1))
 
-    do i = 1, this%nmat
-      call gradient_cc(this%normal(1,i,:), this%normal(2,i,:), this%normal(3,i,:), &
-          vof(i,:), this%w_node(1,:), this%w_node(2,:))
-    end do
 
+   call gradient_cc(this%normal(1,1,:), this%normal(2,1,:), this%normal(3,1,:), &
+       vof(1,:), this%w_node(1,:), this%w_node(2,:))    
+
+    this%normal(:,1,1:this%mesh%ncell_onP) = -this%normal(:,1,1:this%mesh%ncell_onP)
     do i = 1, this%mesh%ncell_onP      
-      hasvof = vof(:,i) > 0.0_r8
-      c = count(hasvof)
-
-      this%normal(:,:,i) = -this%normal(:,:,i)
-      ! enforce consistency for two materials
-      if (c == 2) then
-        j = findloc(hasvof,.true.)
-        k = findloc(hasvof,.true.,back=.true.)
-        this%normal(:,k,i) = -this%normal(:,j,i)
-      endif
       
       ! normalize and remove smallish components due to robustness issues in nested disection
-      do j = 1 , this%nmat
-        if (vof(j,i) < this%cutoff .or. vof(j,i) > 1.0_r8 - this%cutoff) then
-          this%normal(:,j,i) = 0.0_r8
-          cycle
-        end if
-        ! remove small values
-        do k = 1, 3
-          if (abs(this%normal(k,j,i)) < epsilon(1.0_r8)) then
-            this%normal(k,j,i) = 0.0_r8
-          end if
-        end do
-        ! normalize if possible
-        mag = norm2(this%normal(:,j,i))
-        if (mag > epsilon(1.0_r8)) then
-          this%normal(:,j,i) = this%normal(:,j,i)/mag
-        else
-        ! QUESTION : What is the correct thing to do here? Needs to be valid normal.
-          this%normal(:,j,i) = 1.0_r8 / sqrt(3.0_r8)
+      if (vof(1,i) < this%cutoff .or. vof(1,i) > 1.0_r8 - this%cutoff) then
+         this%normal(:,1,i) = 0.0_r8
+         cycle
+      end if
+      ! remove small values
+      do k = 1, 3
+        if (abs(this%normal(k,1,i)) < epsilon(1.0_r8)) then
+           this%normal(k,1,i) = 0.0_r8
         end if
       end do
+      ! normalize if possible
+      mag = norm2(this%normal(:,1,i))
+      if (mag > epsilon(1.0_r8)) then
+         this%normal(:,1,i) = this%normal(:,1,i)/mag
+      else
+         ! QUESTION : What is the correct thing to do here? Needs to be valid normal.
+         this%normal(:,1,i) = 1.0_r8 / sqrt(3.0_r8)
+      end if
     end do
 
+    this%normal(:,2,1:this%mesh%ncell_onP) = -this%normal(:,1,1:this%mesh%ncell_onP)
     call gather_boundary(this%mesh%cell_ip, this%normal)
     
   end subroutine normals_youngs
 
+  subroutine normals_newgrad_youngs(this, vof)    
+
+    use flow_operators, only: gradient_cc
+    use f08_intrinsics, only: findloc
+    intrinsic :: norm2
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in)  :: vof(:,:)
+
+    real(r8) :: mag
+    integer :: i,k,c
+    logical :: hasvof(size(vof,dim=1))
+
+
+    do i = 1, this%mesh%ncell_onP
+      this%normal(:,1,i) = 0.0_r8
+      associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(i):this%mesh%xcnhbr(i+1)-1))      
+        do c = 1, size(cn)
+          if(cn(c) /= 0) then
+             this%normal(:,1,i) = this%normal(:,1,i) + this%lsq_weightings(:,this%mesh%xcface(i)+c-1)*(vof(1,cn(c))-vof(1,i))
+          end if
+        end do
+      end associate
+    end do    
+
+    this%normal(:,1,1:this%mesh%ncell_onP) = -this%normal(:,1,1:this%mesh%ncell_onP)
+    do i = 1, this%mesh%ncell_onP      
+      
+      ! normalize and remove smallish components due to robustness issues in nested disection
+      if (vof(1,i) < this%cutoff .or. vof(1,i) > 1.0_r8 - this%cutoff) then
+         this%normal(:,1,i) = 0.0_r8
+         cycle
+      end if
+      ! remove small values
+      do k = 1, 3
+        if (abs(this%normal(k,1,i)) < epsilon(1.0_r8)) then
+           this%normal(k,1,i) = 0.0_r8
+        end if
+      end do
+      ! normalize if possible
+      mag = norm2(this%normal(:,1,i))
+      if (mag > epsilon(1.0_r8)) then
+         this%normal(:,1,i) = this%normal(:,1,i)/mag
+      else
+         ! QUESTION : What is the correct thing to do here? Needs to be valid normal.
+         this%normal(:,1,i) = 1.0_r8 / sqrt(3.0_r8)
+      end if
+    end do
+
+    this%normal(:,2,1:this%mesh%ncell_onP) = -this%normal(:,1,1:this%mesh%ncell_onP)
+    call gather_boundary(this%mesh%cell_ip, this%normal)
+    
+  end subroutine normals_newgrad_youngs
+  
   subroutine normals_swartz(this, a_vof)
 
     use irl_interface_helper
@@ -705,6 +844,64 @@ contains
     
   end subroutine normals_swartz
 
+  subroutine normals_mof(this, a_vof)
+
+    use irl_interface_helper
+    
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+
+    real(r8), intent(in) :: a_vof(:,:)
+
+    integer :: j
+    type(SepVM_type) :: sepvm
+    real(r8) :: tmp_plane(4)
+
+    call new(sepvm)
+
+    do j = 1, this%mesh%ncell_onP
+      if(a_vof(1,j) < this%cutoff .or. a_vof(1,j) > 1.0_r8 - this%cutoff) then
+        cycle
+      end if
+
+      call construct(sepvm, [this%cell_flux(1,j), this%phase_centroids(1:3,1,j), &
+                             this%cell_flux(2,j), this%phase_centroids(1:3,2,j)])
+      
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))          
+        select case(size(cn))
+        case (4) ! tet      
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
+          call reconstructMOF3D(this%IRL_tet, sepvm, this%planar_separator(j))
+
+        case (5) ! pyramid
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)
+          call TLS_FATAL('Not yet implemented') 
+          !call reconstructMOF3D(this%IRL_pyramid, sepvm, this%planar_separator(j))
+
+        case (6) ! Wedge
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)
+          call TLS_FATAL('Not yet implemented') 
+          !call reconstructMOF3D(this%IRL_wedge, sepvm, this%planar_separator(j))
+          
+        case (8) ! Hex
+          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)
+          call reconstructMOF3D(this%IRL_hex, sepvm, this%planar_separator(j))
+          
+        case default
+          call TLS_fatal('Unknown Truchas cell type during MOF reconstruction.')
+        end select
+
+      end associate
+
+      tmp_plane = getPlane(this%planar_separator(j), 0)
+      this%normal(:,1,j) = tmp_plane(1:3)
+      
+    end do    
+
+    this%normal(:,2,:) = -this%normal(:,1,:)
+    call gather_boundary(this%mesh%cell_ip, this%normal)
+    
+  end subroutine normals_mof
+    
   subroutine normals_lvira(this, a_vof)
 
     use traversal_tracker_type, only : traversal_tracker
@@ -973,81 +1170,10 @@ contains
     
       case default
         call TLS_fatal('Unknown Truchas cell type during plane-distance setting')
-      end select  
+    end select
     
   end subroutine adjust_planes_match_VOF
-
- subroutine reset_volume_moments(this, a_vof)
-  
-    use irl_interface_helper
-    use parallel_communication, only : global_sum
-    use parameter_module, only : string_len    
     
-    class(unsplit_geometric_volume_tracker), intent(inout) :: this
-    real(r8), intent(inout) :: a_vof(:,:)
-
-    integer :: j
-    real(r8) :: new_volume    
-
-    ! DEBUG/Diagnostics
-    real(r8) :: volume_change(this%nmat)
-    character(string_len) :: message
-
-    volume_change = 0.0_r8
-    do j = 1, this%mesh%ncell_onP
-      call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)      
-      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))          
-        select case(size(cn))
-        case (4) ! tet      
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
-          call getNormMoments(this%IRL_tet, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)
-          a_vof(1,j) = new_volume / this%mesh%volume(j)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)
-
-        case (5) ! pyramid
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)
-          call getNormMoments(this%IRL_pyramid, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
-          a_vof(1,j) = new_volume / this%mesh%volume(j)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
-
-        case (6) ! Wedge
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)
-          call getNormMoments(this%IRL_wedge, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
-          a_vof(1,j) = new_volume / this%mesh%volume(j)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)        
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
-
-        case (8) ! Hex
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)
-          call getNormMoments(this%IRL_hex, this%planar_separator(j), new_volume)
-          volume_change(1) = volume_change(1) +  new_volume-a_vof(1,j)*this%mesh%volume(j)          
-          a_vof(1,j) = new_volume / this%mesh%volume(j)
-          volume_change(2) = (this%mesh%volume(j) - new_volume) - a_vof(2,j)*this%mesh%volume(j)        
-          a_vof(2,j) = 1.0_r8 - a_vof(1,j)        
-
-        case default
-          call TLS_fatal('Unknown Truchas cell type during plane-distance setting')
-        end select
-
-      end associate
-
-    end do
-    
-    call gather_boundary(this%mesh%cell_ip, a_vof)
-
-    volume_change(1) = global_sum(volume_change(1))
-    volume_change(2) = global_sum(volume_change(2))
-
-    write(message, '(a,2es12.4)') 'Phase volumes lost during reconstruction', volume_change
-    call TLS_info(message)
-    
-  end subroutine reset_volume_moments
-
   subroutine construct_interface_polygons(this, a_interface_band)
 
     use irl_interface_helper    
@@ -1103,32 +1229,122 @@ contains
   end subroutine construct_nonzero_polygon
       
   
-  subroutine compute_node_velocities(this, a_cell_centered_vel)
+  subroutine compute_projected_nodes(this, a_cell_centered_vel, a_dt)
   
-      class(unsplit_geometric_volume_tracker), intent(inout) :: this
-      real(r8), intent(in) :: a_cell_centered_vel(:,:)
-      
-      integer :: j, nodes_in_cell, n
-      
-      ! Compute velocity at each node as the surface-area weighted average of 
-      ! all connected face velocities.
-      this%w_node = 0.0_r8
-      do j = 1, this%mesh%ncell      
-        nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
-        associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: a_cell_centered_vel(:,:)
+    real(r8), intent(in) :: a_dt
+    
+    integer :: j, nodes_in_cell, n, iter
 
-          ! Weights already normalized, so don't need to do it again
-          do n = 1, nodes_in_cell
-            this%w_node(:,node_id(n)) = this%w_node(:,node_id(n)) + &
-                 a_cell_centered_vel(:,j) * this%velocity_weightings(this%mesh%xcnode(j)+n-1)
-          end do
-        end associate
+    integer :: cell_id
+    integer, parameter :: max_iter = 5
+    real(r8) :: old_dist, current_dist, vel(3), projected_vel(3)
+    real(r8), parameter :: tolerance = 1.0e-4_r8 ! 1% change in distance
+    
+    ! Compute velocity at each node as the surface-area weighted average of 
+    ! all connected face velocities.
+    this%node_velocity = 0.0_r8
+    do j = 1, this%mesh%ncell      
+      nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
+      associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+        
+        ! Weights already normalized, so don't need to do it again
+        do n = 1, nodes_in_cell
+          this%node_velocity(:,node_id(n)) = this%node_velocity(:,node_id(n)) + &
+               a_cell_centered_vel(:,j) * this%velocity_weightings(this%mesh%xcnode(j)+n-1)
+          this%w_node(1,node_id(n)) = real(j ,r8)
+        end do
+      end associate
       
+    end do
+    
+    call gather_boundary(this%mesh%node_ip, this%node_velocity)
+    
+    
+    ! First order explicit Euler
+    this%projected_nodes(:,1:this%mesh%nnode_onP) = this%mesh%x(:,1:this%mesh%nnode_onP) + &
+         this%node_velocity(:,1:this%mesh%nnode_onP)*(-a_dt)
+    this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
+         this%projected_nodes(:,1:this%mesh%nnode_onP)) &
+         / a_dt
+    call gather_boundary(this%mesh%node_ip, this%w_node )         
+    call gather_boundary(this%mesh%node_ip, this%projected_nodes )         
+    
+    ! ! Second Order (Spatila) Simplectic Integration
+    ! do n = 1, this%mesh%nnode_onP
+    !   vel = this%node_velocity(:,n)
+    !   cell_id = NINT(this%w_node(1,n)) ! Probably a better way?
+    !   do iter = 1, max_iter
+    !     this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*vel
+    !     projected_vel = this%get_velocity_at_point(this%projected_nodes(:,n), cell_id)
+    !     if(cell_id > this%mesh%ncell) then ! Outside domain, keep first euler
+    !        this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)             
+    !        exit
+    !     end if
+    !     !print*,iter
+    !     !print*,'P',projected_vel
+    !     !print*,'N', this%node_velocity(:,n)        
+    !     current_dist = sum((this%projected_nodes(:,n) - this%mesh%x(:,n))**2)
+    !     if(iter .ne. 1) then
+    !        if( (current_dist - old_dist)/(old_dist+tiny(1.0_r8)) < tolerance) then
+    !           exit
+    !        end if
+    !     end if
+    !     old_dist = current_dist
+    !     vel = 0.5_r8*(this%node_velocity(:,n)+projected_vel)
+    !   end do
+    ! end do
+
+    ! ! Store in w_node the linear velocity that would create the projected node in 1 step.
+    ! this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
+    !      this%projected_nodes(:,1:this%mesh%nnode_onP)) &
+    !      / a_dt    
+    ! call gather_boundary(this%mesh%node_ip, this%w_node )     
+    ! call gather_boundary(this%mesh%node_ip, this%projected_nodes )     
+      
+  end subroutine compute_projected_nodes
+
+  function get_velocity_at_point(this, a_pt, a_identified_cell) result(a_vel)
+
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    real(r8), intent(in) :: a_pt(3)
+    integer, intent(inout) :: a_identified_cell
+    real(r8) :: a_vel(3)
+
+    integer :: n, nodes_in_cell
+    real(r8) :: characteristic_length, weights(8)
+
+    ! Note, when passed in, a_identified_cell should be guess for which cell the point is in.
+    ! When function returns, it will be the actual cell the point is located in.
+    a_identified_cell =  locatePt(a_pt, this%localized_separator_link(a_identified_cell))
+    if(a_identified_cell > this%mesh%ncell) then ! Projected outside domain
+       a_vel = 0.0_r8
+       return
+    end if
+    
+    nodes_in_cell = this%mesh%xcnode(a_identified_cell+1) - this%mesh%xcnode(a_identified_cell)
+    associate( node_id => this%mesh%cnode(this%mesh%xcnode(a_identified_cell):this%mesh%xcnode(a_identified_cell+1)-1))
+      characteristic_length = 0.0_r8
+      do n = 1, nodes_in_cell
+        weights(n) = sum((a_pt-this%mesh%x(:,node_id(n)))**2)
       end do
-      
-      call gather_boundary(this%mesh%node_ip, this%w_node)
-      
-  end subroutine compute_node_velocities
+      characteristic_length = sum(weights(1:nodes_in_cell)) / real(nodes_in_cell, r8)
+
+      do n = 1, nodes_in_cell
+        weights(n) =  1.0 / (weights(n)/characteristic_length + tiny(1.0_r8))
+      end do
+      weights(1:nodes_in_cell) = weights(1:nodes_in_cell) / sum(weights(1:nodes_in_cell))
+
+      a_vel = 0.0_r8
+      do n = 1, nodes_in_cell
+        a_vel = a_vel + weights(n)*this%node_velocity(:,node_id(n))
+      end do
+
+    end associate
+
+    return
+  end function get_velocity_at_point
 
   subroutine compute_effective_cfl(this, a_dt)
 
@@ -1185,24 +1401,11 @@ contains
     call TLS_info(message)
     number_of_crossed_faces =  global_sum(number_of_crossed_faces)
     if(number_of_crossed_faces > 0) then
-       write(message, '(i4,a)') number_of_crossed_faces, 'face crossings might exist, could lost discrete conservation.'
+       write(message, '(i4,a)') number_of_crossed_faces, 'face crossings might exist, could lose discrete conservation.'
        call TLS_warn(message)
     end if
       
   end subroutine compute_effective_cfl
-
-  subroutine compute_projected_nodes(this, a_dt)
-
-    class(unsplit_geometric_volume_tracker), intent(inout) :: this
-    real(r8), intent(in) :: a_dt
-
-    ! First order explicit Euler
-    this%projected_nodes(:,1:this%mesh%nnode_onP) = this%mesh%x(:,1:this%mesh%nnode_onP) + &
-         this%w_node(:,1:this%mesh%nnode_onP)*(-a_dt)
-
-    call gather_boundary(this%mesh%node_ip, this%projected_nodes)
-
-  end subroutine compute_projected_nodes
 
   subroutine compute_correction_vertices(this, a_face_vel, a_dt, a_interface_band)
 
@@ -1326,10 +1529,11 @@ contains
     real(r8), intent(inout) :: a_new_vof(:,:)    
     integer, intent(in)  :: a_interface_band(:)
         
-    integer :: j, k, f
+    integer :: j, k, f, cell_ind
     integer ::  number_of_nodes, neighbor_cell_index
     real(r8) :: cell_nodes(3,14)
     real(r8) :: bounding_box(3,2)
+    real(r8) :: moment_flux(8)    
     logical :: geometric_cutting_needed
     
     ASSERT(this%nmat == 2) ! Will alleviate later
@@ -1362,23 +1566,49 @@ contains
       end associate
 
       if(geometric_cutting_needed) then
+         ! Perform cutting
          call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)         
          call this%moments_from_geometric_cutting(number_of_nodes, &
-              j, a_old_vof, this%cell_flux(:,j))
+              j, a_old_vof, moment_flux)
+         this%cell_flux(1:2,j) = moment_flux(1:2)
+         this%phase_centroids(:,1,j) = moment_flux(3:5)
+         this%phase_centroids(:,2,j) = moment_flux(6:8)
+
+         ! Update VOF
          ! Only time vof should change is when geometric cutting is needed.
          a_new_vof(:,j) = this%cell_flux(:,j) / sum(this%cell_flux(:,j))         
          if(a_new_vof(1,j) < this%cutoff) then
+            this%cell_flux(1,j) = 0.0_r8
+            this%cell_flux(2,j) = this%mesh%volume(j)
             a_new_vof(1,j) = 0.0_r8
-            a_new_vof(2,j) = 1.0_r8            
+            a_new_vof(2,j) = 1.0_r8
+            this%phase_centroids(:,1,j) = this%mesh%cell_centroid(:,j)
+            this%phase_centroids(:,2,j) = this%mesh%cell_centroid(:,j)            
          else if(a_new_vof(1,j) > 1.0_r8 - this%cutoff) then
+            this%cell_flux(1,j) = this%mesh%volume(j)
+            this%cell_flux(2,j) = 0.0_r8            
             a_new_vof(1,j) = 1.0_r8
             a_new_vof(2,j) = 0.0_r8
+            this%phase_centroids(:,1,j) = this%mesh%cell_centroid(:,j)
+            this%phase_centroids(:,2,j) = this%mesh%cell_centroid(:,j)            
+         else
+            if(trim(this%interface_reconstruction_name) == 'MOF') then
+               cell_ind = j
+               this%phase_centroids(:,1,j) = this%phase_centroids(:,1,j) + &
+                    this%get_velocity_at_point(this%phase_centroids(:,1,j), cell_ind)*a_dt
+               this%phase_centroids(:,2,j) = this%phase_centroids(:,2,j) + &
+                    this%get_velocity_at_point(this%phase_centroids(:,2,j), cell_ind)*a_dt               
+            end if
          end if
       end if
     end do
     
     ! Need to communicate fluxes
     call gather_boundary(this%mesh%cell_ip, a_new_vof)
+
+    ! Don't need to communicate for MoF, but might use for other things later
+    call gather_boundary(this%mesh%cell_ip, this%phase_centroids(:,1,:))
+    call gather_boundary(this%mesh%cell_ip, this%phase_centroids(:,2,:))    
     
   end subroutine compute_fluxes
 
@@ -1415,7 +1645,6 @@ contains
     end select
 
   end subroutine set_irl_volume_geometry
-
 
   function refined_advection_check(this, a_bounding_box, a_starting_cell, a_starting_band, a_interface_band) &
        result(a_geometric_cutting_needed)
@@ -1481,59 +1710,74 @@ contains
     real(r8), intent(inout) :: a_cell_flux(:)
 
     integer :: t
-    type(TagAccVM_SepVol_type) :: tagged_sepvol
-    real(r8) :: phase_volume(this%nmat)
-    integer :: current_tag    
+    type(TagAccVM_SepVM_type) :: tagged_sepvm
+    type(SepVM_type) :: sepvm
+    integer :: current_tag
+    real(r8) :: boundary_vof(this%nmat)
 
     ! Note, the correct object type for a_geom_class should already
     ! be correctly construction in this%
 
-    call new(tagged_sepvol)
+    call new(tagged_sepvm)
       
     select case(a_base_number_of_nodes)
     case(4) ! Projected Tet
 
        call getMoments(this%IRL_sym_tet, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvol)
+            tagged_sepvm)
        
     case(5) ! Projected Pyramid
 
        call getMoments(this%IRL_sym_pyramid, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvol)       
+            tagged_sepvm)       
        
     case(6) ! Projected Wedge
 
        call getMoments(this%IRL_sym_wedge, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvol)       
+            tagged_sepvm)       
        
     case(8) ! Projected Hex
        
        call getMoments(this%IRL_sym_hex, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvol)
+            tagged_sepvm)
        
     case default
        call TLS_fatal('Unknown projected cell type in moments_from_geometric_cutting.')          
     end select
        
-    phase_volume = 0.0_r8
-    do t = 0, getSize(tagged_sepvol)-1
-      current_tag = getTagForIndex(tagged_sepvol, t)
+    a_cell_flux = 0.0_r8
+    do t = 0, getSize(tagged_sepvm)-1
+      current_tag = getTagForIndex(tagged_sepvm, t)
+      call getSepVMAtIndex(tagged_sepvm, t, sepvm)      
       if(current_tag > this%mesh%ncell) then
          ! Is a boundary condition, all volume in phase 0
-         phase_volume = &
-              phase_volume + this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(tagged_sepvol, t, 0)
+          boundary_vof =  this%getBCMaterialFractions(current_tag, a_vof)
+          a_cell_flux(1:2) = &
+               a_cell_flux(1:2) + boundary_vof * getVolume(sepvm, 0)
+          a_cell_flux(3:5) = a_cell_flux(3:5) + boundary_vof(1) * getCentroid(sepvm,0)
+          a_cell_flux(6:8) = a_cell_flux(6:8) + boundary_vof(2) * getCentroid(sepvm,0)           
       else
          ! Is inside domain, trust actual volumes
-         phase_volume(1) = phase_volume(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
-         phase_volume(2) = phase_volume(2) + getVolumeAtIndex(tagged_sepvol, t, 1)
+         a_cell_flux(1) = a_cell_flux(1) + getVolume(sepvm, 0)
+         a_cell_flux(2) = a_cell_flux(2) + getVolume(sepvm, 1)
+         a_cell_flux(3:5) = a_cell_flux(3:5) + getCentroid(sepvm, 0)
+         a_cell_flux(6:8) = a_cell_flux(6:8) + getCentroid(sepvm, 1)         
       end if
     end do
-    a_cell_flux(:) = phase_volume
-        
+    ! Normalize to get centroid location
+    if(abs(a_cell_flux(1)) > tiny(1.0_r8)) then
+       a_cell_flux(3:5) = a_cell_flux(3:5) / a_cell_flux(1)
+    end if
+
+    if(abs(a_cell_flux(2)) > tiny(1.0_r8)) then
+       a_cell_flux(6:8) = a_cell_flux(6:8) / a_cell_flux(2)
+    end if
+
+    return
   end subroutine moments_from_geometric_cutting
   
   pure function getBCMaterialFractions(this, a_tag, a_vof_n) result(a_fractions)
