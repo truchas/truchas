@@ -669,13 +669,14 @@ contains
     integer :: i,k,c
     logical :: hasvof(size(vof,dim=1))
 
-
+    this%cell_flux = vof
+    call filter_vof(this%mesh,this%cell_flux(:,:), 10)
     do i = 1, this%mesh%ncell_onP
       this%normal(:,1,i) = 0.0_r8
       associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(i):this%mesh%xcnhbr(i+1)-1))      
         do c = 1, size(cn)
           if(cn(c) /= 0) then
-             this%normal(:,1,i) = this%normal(:,1,i) + this%lsq_weightings(:,this%mesh%xcface(i)+c-1)*(vof(1,cn(c))-vof(1,i))
+             this%normal(:,1,i) = this%normal(:,1,i) + this%lsq_weightings(:,this%mesh%xcface(i)+c-1)*(this%cell_flux(1,cn(c))-this%cell_flux(1,i))
           end if
         end do
       end associate
@@ -707,6 +708,43 @@ contains
 
     this%normal(:,2,1:this%mesh%ncell_onP) = -this%normal(:,1,1:this%mesh%ncell_onP)
     call gather_boundary(this%mesh%cell_ip, this%normal)
+
+  contains
+
+    subroutine filter_vof(a_mesh, a_vof, a_iter)
+
+      type(unstr_mesh), intent(in) :: a_mesh
+      real(r8), intent(inout) :: a_vof(:,:)
+      integer, intent(in) :: a_iter
+
+      integer :: j, n, next, last, active
+
+      next = 2
+      last = 1
+      do i = 1, a_iter
+        do j = 1, a_mesh%ncell_onP
+          associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+            a_vof(next,j) = 0.0_r8
+            active = 0
+            do n = 1, size(cn)
+              if(cn(n) /= 0) then
+                 active = active + 1
+                 a_vof(next,j) = a_vof(next,j) + a_vof(last, cn(n))
+              end if
+            end do
+            a_vof(next,j) = a_vof(next,j) / real(active,r8)            
+          end associate
+        end do
+        call gather_boundary(a_mesh%cell_ip, a_vof(next,:))          
+        next = 2-(next-1)
+        last = 2-(last-1)
+      end do      
+
+      if(last == 2) then
+         a_vof(1,:) = a_vof(2,:)
+      end if
+      
+    end subroutine filter_vof
     
   end subroutine normals_newgrad_youngs
   
