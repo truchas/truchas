@@ -82,41 +82,58 @@ module face_neighbor_table_type
 
 contains
 
-  subroutine init (this, xcnode, cnode)
+  subroutine init (this, xcnode, cnode, dim)
 
-    use cell_topology, only: get_face_nodes
+    use cell_topology, only: get_face_nodes_3d => get_face_nodes
+    use cell_topology_2d, only: get_face_nodes_2d => get_face_nodes
 
     class(face_neighbor_table), intent(out) :: this
     integer, intent(in) :: xcnode(:), cnode(:)
+    integer, intent(in), optional :: dim
 
-    integer :: i, j, k, n, ncell, offset
+    integer :: i, j, k, n, ncell, offset, mesh_dim
     integer, allocatable :: fcount(:), face(:)
+    procedure(get_face_nodes_2d), pointer :: get_face_nodes
+
+    mesh_dim = 3  ! mesh is 3D by default
+    if (present(dim)) mesh_dim = dim
 
     ncell = size(xcnode) - 1
 
     !! Precompute the number of faces for each cell.
-    !! We infer the cell type from its number of nodes.
-    allocate(fcount(ncell))
-    do j = 1, ncell
-      select case (xcnode(j+1)-xcnode(j))
-      case (4)  ! tet - 4 faces
-        fcount(j) = 4
-      case (5)  ! pyramid - 5 faces
-        fcount(j) = 5
-      case (6)  ! wedge - 5 faces
-        fcount(j) = 5
-      case (8)  ! hex - 6 faces
-        fcount(j) = 6
-      case default
-        INSIST(.false.)
-      end select
-    end do
+    select case (mesh_dim)
+    case (2)
+      fcount = xcnode(2:) - xcnode(:ncell)
+      get_face_nodes => get_face_nodes_2d
+    case (3)
+      !! We infer the cell type from its number of nodes.
+      allocate(fcount(ncell))
+      do j = 1, ncell
+        select case (xcnode(j+1)-xcnode(j))
+        case (4)  ! tet - 4 faces
+          fcount(j) = 4
+        case (5)  ! pyramid - 5 faces
+          fcount(j) = 5
+        case (6)  ! wedge - 5 faces
+          fcount(j) = 5
+        case (8)  ! hex - 6 faces
+          fcount(j) = 6
+        case default
+          INSIST(.false.)
+        end select
+      end do
+      get_face_nodes => get_face_nodes_3d
+    case default
+      INSIST(.false.)
+    end select
 
     !! Set-up the hash function.  It will return an address (or bin number)
     !! in the interval [0, N-1], where N is adjusted upward to a power of 2.
     !! With an ideal hash function, the number of bins is between 1/2 and 1
     !! times the number of faces, but is generally much closer to the
     !! lower bound.  Setting N to the number of faces is generous.
+    !! TODO: DHNA has different hash function that he finds works better for
+    !!       the 2D case (perhaps 3D too). It is currently in the RadE tool.
     n = sum(fcount)
     allocate(this%bin_table(n))
     call this%face_hash%init (n, maxval(cnode))  ! N is modified

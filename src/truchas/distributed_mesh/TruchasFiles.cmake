@@ -34,6 +34,12 @@ set(DISMESH_FILES
            distributed_mesh/simpl_mesh_factory.F90
            distributed_mesh/simpl_mesh_tools.F90
            distributed_mesh/simpl_mesh_gmv.F90
+
+           distributed_mesh/unstr_2d_mesh_type.F90
+           distributed_mesh/unstr_2d_mesh_factory.F90
+           distributed_mesh/unstr_2d_mesh_tools.F90
+           distributed_mesh/cell_topology_2d.F90
+           distributed_mesh/xdmf_file_type.F90
            )
 
 set(DISMESH_FPP_FLAGS
