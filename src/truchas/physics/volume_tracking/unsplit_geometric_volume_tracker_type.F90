@@ -173,12 +173,17 @@ contains
     ASSERT(this%nmat == 2)
     allocate(this%cell_flux(this%nmat, this%mesh%ncell))
     allocate(this%phase_centroids(3, this%nmat, this%mesh%ncell))
+    do j = 1, this%mesh%ncell
+      do i = 1, this%nmat
+        this%phase_centroids(:,i,j) = this%mesh%cell_centroid(:,j)
+      end do
+    end do
 
     allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(3,mesh%nnode))
     allocate(this%node_velocity(3,mesh%nnode))    
     allocate(this%velocity_weightings(mesh%xcnode(mesh%ncell+1)-1))
-    allocate(this%lsq_weightings(3,mesh%xcface(mesh%ncell_onP+1)-1))
+    allocate(this%lsq_weightings(3,mesh%xcnc(mesh%ncell_onP+1)-1))
     allocate(this%projected_nodes(3, mesh%nnode))
     allocate(this%cell_bounding_box(3,2,this%mesh%ncell))
     allocate(this%correction_vertex(3,this%mesh%nface))
@@ -501,13 +506,20 @@ contains
 
     integer :: j, n, neighbors, q, r
     real(r8) :: squared_distance, weight, dx(3)
-    integer, parameter :: max_stencil_size = 6
-    real(r8) :: A(3,3), Ainv(3,3), B(3, max_stencil_size), determinant
+    real(r8) :: A(3,3), Ainv(3,3), determinant
+    integer :: max_stencil_size
+    real(r8), allocatable :: B(:,:)
 
+    max_stencil_size = -1
+    do j = 1, this%mesh%ncell_onP
+      max_stencil_size = max(max_stencil_size, this%mesh%xcnc(j+1)-this%mesh%xcnc(j))
+    end do
+    allocate(B(3,max_stencil_size))
+    
     ! Compute average length scale for each node
     do j = 1, this%mesh%ncell_onP
-      neighbors = this%mesh%xcface(j+1) - this%mesh%xcface(j)
-      associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+      neighbors = this%mesh%xcnc(j+1) - this%mesh%xcnc(j)
+      associate( cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
 
         A = 0.0_r8
         B = 0.0_r8
@@ -551,20 +563,23 @@ contains
         
         do n = 1, neighbors
           do q = 1, 3            
-            this%lsq_weightings(q,this%mesh%xcface(j)+n-1) = dot_product(Ainv(q,:),B(:,n))
+            this%lsq_weightings(q,this%mesh%xcnc(j)+n-1) = dot_product(Ainv(q,:),B(:,n))
           end do
         end do
 
       end associate
 
     end do
+
+    deallocate(B)
     
   end subroutine compute_lsq_weightings
   
   subroutine interface_reconstruction(this, vof)
 
     use parallel_communication, only : global_sum
-    use parameter_module, only : string_len    
+    use parameter_module, only : string_len
+    use time_step_module, only : cycle_number
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: vof(:,:)
@@ -594,8 +609,13 @@ contains
         call this%normals_youngs(vof)
         call this%normals_swartz(vof)
 
-      case('MOF')
-        call this%normals_mof(vof)        
+     case('MOF')
+        ! Don't have valid centroids on first iteration
+        if(cycle_number == 1) then
+           call this%normals_youngs(vof)
+        else
+           call this%normals_mof(vof)
+        end if
 
       case('LVIRA')
         call this%normals_youngs(vof)
@@ -670,13 +690,14 @@ contains
     logical :: hasvof(size(vof,dim=1))
 
     this%cell_flux = vof
-    call filter_vof(this%mesh,this%cell_flux(:,:), 10)
+    !call filter_vof(this%mesh,this%cell_flux(:,:), 1)
     do i = 1, this%mesh%ncell_onP
       this%normal(:,1,i) = 0.0_r8
-      associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(i):this%mesh%xcnhbr(i+1)-1))      
+      associate( cn => this%mesh%cnc(this%mesh%xcnc(i):this%mesh%xcnc(i+1)-1))      
         do c = 1, size(cn)
           if(cn(c) /= 0) then
-             this%normal(:,1,i) = this%normal(:,1,i) + this%lsq_weightings(:,this%mesh%xcface(i)+c-1)*(this%cell_flux(1,cn(c))-this%cell_flux(1,i))
+             this%normal(:,1,i) = this%normal(:,1,i) + this%lsq_weightings(:,this%mesh%xcnc(i)+c-1)&
+                  *(this%cell_flux(1,cn(c))-this%cell_flux(1,i))
           end if
         end do
       end associate

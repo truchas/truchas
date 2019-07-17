@@ -31,6 +31,9 @@ set(UTIL_FILES
          utilities/truchas_timers.F90
          utilities/utilities_module.F90
          utilities/var_vector_module.F90
+	 utilities/integer_vector_type.F90
+	 utilities/real8_vector_type.F90
+	 utilities/integer_real8_tuple_vector_type.F90
          utilities/gmv/gmvwrite_c_binding.F90
 	 utilities/f08_intrinsics.F90)
 
