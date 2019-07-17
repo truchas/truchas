@@ -1,0 +1,7 @@
+100    0.0    1.0    ! number of elements in x-direction, and x-range
+100    0.0    1.0    ! number of elements in y-direction, and y-range
+0.0    0.0           ! random displacement and probability of triangular elements in mesh
+100    1.0d-3        ! number of timesteps and timestep size
+2                    ! number of materials
+2                    ! volume-tracking algorithm: 1: simple (diffused); 2: geometric VOF
+1                    ! 1: testing run; 0: regular calculation
