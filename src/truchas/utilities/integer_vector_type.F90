@@ -74,10 +74,10 @@ contains
     class(integer_vector), intent(inout) :: this
     integer, intent(in) :: a_value
 
-    this%size_m = this%size_m + 1
-    if(this%size() > this%capacity()) then
-      call this%enlarge_allocation(this%size())
+    if(this%size()+1 > this%capacity()) then
+      call this%enlarge_allocation(this%size()+1)
     end if
+    this%size_m = this%size_m + 1   
     this%data_m(this%size_m) = a_value
     
   end subroutine integer_vector_push_back
@@ -136,7 +136,7 @@ contains
        if(allocated(this%data_m)) then
           allocate(tmp(a_new_capacity))
           if(this%size() > 0) then
-             tmp(1:this%size()) = this%data_m(this%size())
+             tmp(1:this%size()) = this%data_m(1:this%size())
           end if
           call move_alloc(tmp, this%data_m)
        else
