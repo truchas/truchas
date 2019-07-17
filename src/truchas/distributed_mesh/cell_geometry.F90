@@ -35,6 +35,7 @@ module cell_geometry
 
   !! Cell centers
   public :: cell_center, cell_centroid
+  public :: cell_centroid_2d
 
   !! Face normals
   public :: tri_face_normal, quad_face_normal
@@ -75,17 +76,27 @@ contains
   pure function cell_volume (x) result (vol)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: vol
-    select case (size(x,dim=2))
-    case (4)  ! tet
-      vol = tet_volume(x)
-    case (5)  ! pyramid
-      vol = pyramid_volume(x)
-    case (6)  ! wedge
-      vol = wedge_volume(x)
-    case (8)  ! hex
-      vol = hex_volume(x)
-    case default
-      vol = 0.0_r8
+    select case (size(x,dim=1))
+    case (2)
+      select case (size(x,dim=2))
+      case (3)  ! tri
+        vol = tri_area(x)
+      case (4)  ! quad
+        vol = quad_area(x)
+      end select
+    case (3)
+      select case (size(x,dim=2))
+      case (4)  ! tet
+        vol = tet_volume(x)
+      case (5)  ! pyramid
+        vol = pyramid_volume(x)
+      case (6)  ! wedge
+        vol = wedge_volume(x)
+      case (8)  ! hex
+        vol = hex_volume(x)
+      case default
+        vol = 0.0_r8
+      end select
     end select
   end function cell_volume
 
@@ -497,6 +508,38 @@ contains
 
   end subroutine hex_centroid
 
+  !! Centroid of a convex polygon in the plane.
+  pure function cell_centroid_2d(x) result(xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: xc(2)
+    select case (size(x,dim=2))
+    case (3)
+      xc = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+    case (4)
+      block
+        real(r8) :: a2, a4, f
+        a2 = tri_area(x(:,1:3))
+        a4 = tri_area(x(:,[1,3,4]))
+        f = a2 / (a2 + a4)
+        xc = (x(:,1) + x(:,3) + f*x(:,2) + (1-f)*x(:,4)) / 3.0_r8
+      end block
+    case (5:)
+      block
+        integer :: j
+        real :: a, aj
+        a = 0; xc = 0
+        do j = 2, size(x,dim=2)-1
+          aj = tri_area(x(:,[1,j,j+1]))
+          a  = a + aj
+          xc = xc + aj * (x(:,1) + x(:,j) + x(:,j+1))
+        end do
+        xc = xc / (3*a)
+      end block
+    case default
+      xc = 0.0_r8
+    end select
+  end function cell_centroid_2d
+
 !!!! ALGEBRAIC PRIMITIVES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Computes A x B
@@ -578,6 +621,13 @@ contains
     l(3) = vector_length(x(:,3)-x(:,1))
     area = tri_area_length(l)
   end function tri_area_coord
+
+  !! Area of a quadrilateral in the plane.
+  pure function quad_area(x) result(area)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: area
+    area = 0.5_r8*( (x(1,3)-x(1,1))*(x(2,4)-x(2,2)) - (x(2,3)-x(2,1))*(x(1,4)-x(1,2)) )
+  end function quad_area
 
   !! Computes the area of a triangle given the lengths of its three sides.
   !! Uses Kahan's algorithm from "Miscalculating area and angles of a needle-
