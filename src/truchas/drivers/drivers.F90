@@ -326,11 +326,12 @@ call hijack_truchas ()
         end if
 
         if (t >= tout) exit
+        if(abs((tout-t)) < 1.0e-8_r8*abs(tout-(t+dt))) exit               
         if (c >= cycle_max) exit
 
       end do
 
-      if (t >= tout) then
+      if (t >= tout .or. abs((tout-t)) < 1.0e-8_r8*abs(tout-(t+dt))) then
         ! Handle the event actions
         call event_queue%pop_actions(actions)
         do

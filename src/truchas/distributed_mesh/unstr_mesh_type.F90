@@ -47,6 +47,18 @@
 !!        defining the oriented face j.  The shape of xfnode is [nface+1] and
 !!        the shape of fnode is [xfnode(nface+1)-1].
 !!
+!!    xcnc, cnc - pair of rank-1 integer arrays storing cell-cell connectivity"
+!!        cnc(xcnc(j):xcnc(j+1)-1) is an unordered list of cell indices that
+!!        share a node with cell j. The shape of xcnc is [ncell+1] and
+!!        the shape of cnc is [xcnc(ncell+1)-1].
+!!        NOTE: Nodes on processor boundaries will be missing cell information
+!!        that would exist on neighboring processors.
+!!
+!!    xndcell, ndcell - pair of rank-1 integer arrays storing the node-cell data:
+!!        ndcell(xndcell(j):xndcell(j+1)-1) is an unordered list of cell indices
+!!        that use node j.  The shape of xndcell is [nnode_onP+1] and
+!!        the shape of ndcell is [xndcell(nnode_onP+1)-1].
+!!
 !!    cfpar - an integer bit mask array storing the relative cell face
 !!        orientations: btest(cfpar(j),k) is true when face k of cell j is
 !!        inward oriented with respect to cell j, and false when it is
@@ -142,8 +154,10 @@ module unstr_mesh_type
     integer, allocatable :: xcface(:), cface(:) ! cell faces
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
     integer, allocatable :: xcnhbr(:), cnhbr(:) ! cell neighbors
-    integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
+    integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)    
     integer, allocatable :: fcell(:,:)  ! face cell neighbors
+    integer, allocatable :: xndcell(:), ndcell(:) ! node to cells
+    integer, allocatable :: xcnc(:), cnc(:) ! cells to cells (that share a node)
     real(r8), allocatable :: normal(:,:)
     real(r8), allocatable :: cell_centroid(:,:)
     real(r8), allocatable :: face_centroid(:,:)
@@ -165,10 +179,13 @@ module unstr_mesh_type
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: check_bndry_face_set
+    procedure :: get_link_set_bitmask
     procedure :: get_link_set_ids
     procedure :: init_cell_centroid
     procedure :: init_face_centroid
     procedure :: init_face_normal_dist
+    procedure :: nearest_node
+    procedure :: nearest_cell
   end type unstr_mesh
 
 contains
@@ -491,6 +508,35 @@ contains
 
   end subroutine check_bndry_face_set
 
+  !! Returns a scalar bit mask for use in bit operations with the link_set_mask
+  !! array component.  The corresponding bit is set for each link set ID given
+  !! in the array SETIDS.  STAT returns a non-zero value if an unknown link set
+  !! ID is specified, and the optional allocatable deferred-length character
+  !! ERRMSG is assigned an explanatory message if present.
+
+  subroutine get_link_set_bitmask (this, setids, bitmask, stat, errmsg)
+    use string_utilities, only: i_to_c
+    class(unstr_mesh), intent(in) :: this
+    integer, intent(in) :: setids(:)
+    type(bitfield), intent(out) :: bitmask
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+    integer :: i, j
+    bitmask = ZERO_BITFIELD
+    do i = 1, size(setids)
+      do j = size(this%link_set_id), 1, -1
+        if (setids(i) == this%link_set_id(j)) exit
+      end do
+      if (j == 0) then
+        stat = 1
+        if (present(errmsg)) errmsg = 'unknown link set ID: ' // i_to_c(setids(i))
+        return
+      end if
+      bitmask = ibset(bitmask, j)
+    end do
+    stat = 0
+  end subroutine get_link_set_bitmask
+
   subroutine get_link_set_ids(this, mask, setids)
 
     class(unstr_mesh), intent(in) :: this
@@ -511,5 +557,80 @@ contains
     setids = pack(this%link_set_id, mask=btest(bitmask, pos=[(j,j=1,size(this%link_set_id))]))
 
   end subroutine get_link_set_ids
+
+  !! This function identifies the global cell that is nearest the given point,
+  !! and returns its local index on the process that owns the cell, and 0 on
+  !! all other processes. Here nearest means the cell whose centroid is nearest
+  !! the given point. Least cell index breaks ties. Note that this means the
+  !! cell may not actually contain the point at all. The immediate purpose is
+  !! in solution probe initialization, and it may not be suitable for anything
+  !! else.
+
+  function nearest_cell(this, point)
+
+    class(unstr_mesh), intent(in) :: this
+    real(r8), intent(in) :: point(:)
+    integer :: nearest_cell
+
+    integer :: j, min_cell, min_PE
+    real(r8) :: min_dist, d, array(nPE), centroid(size(this%x,dim=1))
+
+    ASSERT(size(point) == size(this%x,dim=1))
+
+    !! Compute the minimum distance and cell index for the local mesh subdomain
+    min_dist = huge(min_dist)
+    do j = 1, this%ncell_onP
+      associate(cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+        centroid = sum(this%x(:,cell_nodes),dim=2)/size(cell_nodes)
+      end associate
+      d = norm2(centroid-point)
+      if (d < min_dist) then
+        min_dist = d
+        min_cell = j
+      end if
+    end do
+
+    !! Determine the nearest cell and its owner globally
+    call collate(array, min_dist)
+    if (is_IOP) min_PE = minloc(array,dim=1)
+    call broadcast(min_PE)
+    nearest_cell = merge(min_cell, 0, (this_PE == min_PE))
+
+  end function nearest_cell
+
+  !! This function identifies the global node that is nearest the given point,
+  !! and returns its local index on the process that owns the node, and 0 on
+  !! all other processes. Least node index breaks ties.  The immediate purpose
+  !! is in solution probe initialization, and it may not be suitable for
+  !! anything else.
+
+  function nearest_node(this, point)
+
+    class(unstr_mesh), intent(in) :: this
+    real(r8), intent(in) :: point(:)
+    integer :: nearest_node
+
+    integer :: j, min_node, min_PE
+    real(r8) :: min_dist, d, array(nPE)
+
+    ASSERT(size(point) == size(this%x,dim=1))
+
+    !! Compute the minimum distance and node index for the local mesh subdomain.
+    min_dist = huge(min_dist)
+    do j = 1, this%nnode_onP
+      d = norm2(this%x(:,j)-point)
+      if (d < min_dist) then
+        min_dist = d
+        min_node = j
+      end if
+    end do
+
+    !! Determine the nearest node and its owner globally.
+    call collate(array, min_dist)
+    if (is_IOP) min_PE = minloc(array,dim=1)
+    call broadcast(min_PE)
+    nearest_node = merge(min_node, 0, (this_PE == min_PE))
+
+  end function nearest_node
 
 end module unstr_mesh_type

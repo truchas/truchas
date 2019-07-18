@@ -36,14 +36,17 @@ module unsplit_geometric_volume_tracker_type
     logical :: nested_dissection
     character(string_len) :: interface_reconstruction_name
     real(r8), allocatable :: normal(:,:,:)
-    type(cell_tagged_mm_volumes), allocatable :: face_flux(:)
+    type(cell_tagged_mm_volumes), allocatable :: cell_flux(:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:)
+    real(r8), allocatable :: node_velocity(:,:)    
     real(r8), allocatable :: velocity_weightings(:)
+    real(r8), allocatable :: lsq_weightings(:,:)    
     real(r8), allocatable :: projected_nodes(:,:)
     integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
     integer, allocatable :: boundary_recon_to_cell(:) ! Mapping of boundary reconstruction ID to neighboring inside cell ID
+    real(r8), allocatable :: correction_vertex(:,:)    
     ! Start IRL objects
     type(ObjServer_PlanarLoc_type) :: object_server_planar_localizer
     type(ObjServer_PlanarSep_type) :: object_server_planar_separator
@@ -57,6 +60,10 @@ module unsplit_geometric_volume_tracker_type
     type(Pyrmd_type) :: IRL_pyramid
     type(TriPrism_type) :: IRL_wedge
     type(Hex_type) :: IRL_hex
+    type(SymTet_type) :: IRL_sym_tet
+    type(SymPyrmd_type) :: IRL_sym_pyramid
+    type(SymTriPrism_type) :: IRL_sym_wedge
+    type(SymHex_type) :: IRL_sym_hex        
     type(CapDod_LLLL_type) :: IRL_CapDod_LLLL
     type(CapDod_LLLT_type) :: IRL_CapDod_LLLT
     type(CapDod_LTLT_type) :: IRL_CapDod_LTLT
@@ -79,9 +86,11 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: init_irl_mesh
     procedure, private :: generate_flux_classes
     procedure, private :: compute_velocity_weightings
+    procedure, private :: compute_lsq_weightings
     procedure, private :: set_irl_priority_order
     procedure, private :: interface_reconstruction    
     procedure, private :: normals_youngs
+    procedure, private :: normals_newgrad_youngs    
     procedure, private :: normals_swartz
     procedure, private :: normals_lvira
     procedure, private :: normals_lvira_hex_execute
@@ -93,11 +102,13 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: reset_volume_moments
     procedure, private :: construct_interface_polygons
     procedure, private :: construct_nonzero_polygon
-    procedure, private :: compute_node_velocities
     procedure, private :: compute_effective_cfl
+    procedure, private :: compute_correction_vertices    
     procedure, private :: compute_projected_nodes
     procedure, private :: compute_fluxes
-    procedure, private :: update_vof
+    procedure, private :: set_irl_volume_geometry
+    procedure, private :: moments_from_geometric_cutting
+    !procedure, private :: update_vof
     procedure, private :: getBCMaterialFractions
   end type unsplit_geometric_volume_tracker
 
@@ -166,12 +177,15 @@ contains
     ASSERT(minval(material_present) == 1)
     
     ! Allocate face fluxes we'll store
-    allocate(this%face_flux(this%mesh%nface))
+    allocate(this%cell_flux(this%mesh%nface))
 
     allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(3,mesh%nnode))
+    allocate(this%node_velocity(3,mesh%nnode))        
     allocate(this%velocity_weightings(mesh%xcnode(mesh%ncell+1)-1))
+    allocate(this%lsq_weightings(3,mesh%xcnc(mesh%ncell_onP+1)-1))    
     allocate(this%projected_nodes(3, mesh%nnode))
+    allocate(this%correction_vertex(3,this%mesh%nface))    
 
     ! list of boundary face ids
     j = count(this%mesh%fcell(:,:this%mesh%nface) == 0)
@@ -202,6 +216,10 @@ contains
     call new(this%IRL_pyramid)
     call new(this%IRL_wedge)
     call new(this%IRL_hex)
+    call new(this%IRL_sym_tet)
+    call new(this%IRL_sym_pyramid)
+    call new(this%IRL_sym_wedge)
+    call new(this%IRL_sym_hex)    
     call new(this%IRL_CapDod_LLLL)
     call new(this%IRL_CapDod_LLLT)
     call new(this%IRL_CapDod_LTLT)
@@ -224,6 +242,9 @@ contains
 
     ! Calculate weightings for interpolation of cell center velocity to node
     call this%compute_velocity_weightings
+
+    ! Calculate weights for a LSQ gradient based on face-neighbors
+    call this%compute_lsq_weightings
 
   end subroutine init
 
@@ -248,37 +269,6 @@ contains
     type(integer_real8_tuple_vector) :: cell_local_volumes
     type(integer_real8_tuple_vector), pointer :: cell_local_volumes_ptr    
 
-
-
-    ! ! Doing a simple test on these classes...
-    ! call cell_local_volumes%resize(3)
-    ! call cell_local_volumes%set(1, 3, 6.0_r8)
-    ! call cell_local_volumes%set(2, 5, 10.0_r8)
-    ! call cell_local_volumes%set(3, -2, -4.0_r8)
-    ! call this%face_flux(1)%reserve(2)
-    ! call this%face_flux(1)%add_cell_fluxes(15, cell_local_volumes)
-    ! call cell_local_volumes%resize(0)
-    ! call cell_local_volumes%push_back(15, 30.0_r8)
-    ! call cell_local_volumes%push_back(22, 44.0_r8)
-    ! call this%face_flux(1)%add_cell_fluxes(4096, cell_local_volumes)
-
-
-    ! do f = 1, this%face_flux(1)%get_number_of_cells()
-    !   cell_local_volumes_ptr => this%face_flux(1)%get_cell_fluxes(f)
-    !   print*,'For cell', this%face_flux(1)%get_cell_id(f)
-    !   do k = 1, cell_local_volumes_ptr%size()
-    !     print*, k, cell_local_volumes_ptr%at_int(k), cell_local_volumes_ptr%at_r8(k)
-    !   end do
-    ! end do
-
-
-
-    ! call TLS_fatal('Debug')
-
-    do f = 1, this%mesh%nface
-      call this%face_flux(f)%clear()
-    end do
-
     vof = vof_n
     call start_timer('reconstruction')
     call this%set_irl_priority_order(vof)
@@ -288,40 +278,12 @@ contains
     call stop_timer('reconstruction')
 
     call start_timer('advection')
-    call this%compute_node_velocities(vel_cc)
+    call this%compute_projected_nodes(vel_cc, dt)
     call this%compute_effective_cfl(dt)
-
-    call this%compute_projected_nodes(dt)
-
-    call this%compute_fluxes(vel, dt, vof, a_interface_band)
-
-    call this%update_vof(a_interface_band, flux_vol, vof)
-
-    ! ! DEBUG
-    ! do j = 1, this%mesh%ncell_onP
-    !    tmp = 0.0_r8
-    !    associate(fid => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
-    !      do f = 1, size(fid)
-    !         if(btest(this%mesh%cfpar(j), f)) then
-    !           tmp = tmp + vel(fid(f))*dt*this%mesh%area(fid(f))
-    !         else
-    !           tmp = tmp - vel(fid(f))*dt*this%mesh%area(fid(f))
-    !         end if
-    !      end do
-    !    end associate
-
-    !    if(abs(tmp > 1.0e-12)) then
-    !      print*,'Velocity field has divergence of ', tmp, ' for cell', j
-    !      print*,'This is ',100.0_r8*tmp/this%mesh%volume(j),' % of the cell volume.'
-    !    end if       
-    ! end do
-    ! ! END DEBUG
-
+    call this%compute_correction_vertices(vel, dt, a_interface_band)    
+    call this%compute_fluxes(vel, dt, vof_n, vof, a_interface_band)
+    !call this%update_vof(a_interface_band, flux_vol, vof)
     call stop_timer('advection')
-
-    do f = 1, this%mesh%nface
-      call this%face_flux(f)%clear()
-    end do    
 
   end subroutine flux_volumes
 
@@ -543,6 +505,81 @@ contains
 
   end subroutine compute_velocity_weightings
 
+ subroutine compute_lsq_weightings(this)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+
+    integer :: j, n, neighbors, q, r
+    real(r8) :: squared_distance, weight, dx(3)
+    real(r8) :: A(3,3), Ainv(3,3), determinant
+    integer :: max_stencil_size
+    real(r8), allocatable :: B(:,:)
+
+    max_stencil_size = -1
+    do j = 1, this%mesh%ncell_onP
+      max_stencil_size = max(max_stencil_size, this%mesh%xcnc(j+1)-this%mesh%xcnc(j))
+    end do
+    allocate(B(3,max_stencil_size))
+    
+    ! Compute average length scale for each node
+    do j = 1, this%mesh%ncell_onP
+      neighbors = this%mesh%xcnc(j+1) - this%mesh%xcnc(j)
+      associate( cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
+
+        A = 0.0_r8
+        B = 0.0_r8
+        do n = 1, neighbors
+          if(cn(n) /= 0) then
+             squared_distance = dot_product(this%mesh%cell_centroid(:,cn(n))-this%mesh%cell_centroid(:,j), &
+                                            this%mesh%cell_centroid(:,cn(n))-this%mesh%cell_centroid(:,j))
+             weight = 1.0_r8 / sqrt(squared_distance)
+             dx = this%mesh%cell_centroid(:,cn(n)) - this%mesh%cell_centroid(:,j)
+             do q = 1, 3
+               do r = 1,3
+                 A(q,r) = A(q,r) + weight * dx(q)*dx(r)
+               end do
+             end do
+             do q = 1, 3
+               B(q,n) = weight*dx(q)
+             end do
+          end if
+        end do     
+        
+        determinant = A(1,1) * (A(3,3) * A(2,2) - A(2,3)**2) &
+             - A(2,1) * (A(3,3) * A(1,2) - A(2,3) * A(1,3)) &
+             + A(1,3) * (A(2,3) * A(1,2) - A(2,2) * A(1,3))
+        ASSERT(determinant > 0.0_r8)
+        Ainv(1,1) = A(3,3) * A(2,2) - A(2,3)**2  
+        Ainv(1,2)  = A(1,3) * A(2,3) - A(3,3) * A(1,2)  
+        Ainv(1,3)  = A(1,2) * A(2,3) - A(1,3) * A(2,2)  
+        
+        Ainv(2,2) = A(3,3) * A(1,1) - A(1,3)**2  
+        Ainv(2,3) =  A(1,2) * A(1,3) - A(1,1) * A(2,3)
+        
+        Ainv(3,3) = A(1,1) * A(2,2) - A(1,2)**2
+      
+        Ainv(2,1) = Ainv(1,2)
+        Ainv(3,1) = Ainv(1,3)
+        Ainv(3,2) = Ainv(2,3)
+        
+        determinant = (A(1,1) * Ainv(1,1)) + (A(1,2) * Ainv(1,2)) + (A(1,3) * Ainv(1,3))
+        ASSERT(determinant > 0.0_r8)
+        Ainv = Ainv / determinant
+        
+        do n = 1, neighbors
+          do q = 1, 3            
+            this%lsq_weightings(q,this%mesh%xcnc(j)+n-1) = dot_product(Ainv(q,:),B(:,n))
+          end do
+        end do
+
+      end associate
+
+    end do
+
+    deallocate(B)
+    
+  end subroutine compute_lsq_weightings
+  
   subroutine set_irl_priority_order(this, a_vof)
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
@@ -576,7 +613,10 @@ contains
     select case(trim(this%interface_reconstruction_name))
 
       case('Youngs')
-        call this%normals_youngs(vof)
+         call this%normals_youngs(vof)
+
+      case('NewGrad Youngs')
+         call this%normals_newgrad_youngs(vof)         
 
       case('Swartz')
         call this%normals_youngs(vof)
@@ -652,6 +692,112 @@ contains
     
   end subroutine normals_youngs
 
+  subroutine normals_newgrad_youngs(this, vof)    
+
+    use flow_operators, only: gradient_cc
+    use f08_intrinsics, only: findloc
+    intrinsic :: norm2
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in)  :: vof(:,:)
+
+    real(r8) :: mag
+    integer :: p, i,k,c, j
+    logical :: hasvof(size(vof,dim=1))
+    
+    !call filter_vof(this%mesh, SOMETHING, 1)
+    do p = 1, this%nmat
+      do i = 1, this%mesh%ncell_onP      
+        this%normal(:,p,i) = 0.0_r8
+        if (vof(p,i) >= this%cutoff .and. vof(p,i) <= 1.0_r8 - this%cutoff) then
+           ! Need a normal for reconstruction
+           associate( cn => this%mesh%cnc(this%mesh%xcnc(i):this%mesh%xcnc(i+1)-1))      
+             do c = 1, size(cn)
+               if(cn(c) /= 0) then
+                  this%normal(:,p,i) = this%normal(:,p,i) + this%lsq_weightings(:,this%mesh%xcnc(i)+c-1)&
+                       *(vof(p,cn(c))-vof(p,i))
+               end if
+             end do
+           end associate
+        end if
+      end do
+      
+      this%normal(:,p,1:this%mesh%ncell_onP) = -this%normal(:,p,1:this%mesh%ncell_onP)      
+      do i = 1, this%mesh%ncell_onP      
+        
+        ! Already addressed, set to zero, just cycle
+        if (vof(p,i) < this%cutoff .or. vof(p,i) > 1.0_r8 - this%cutoff) then
+           cycle
+        end if
+        ! remove small values
+        do k = 1, 3
+          if (abs(this%normal(k,p,i)) < epsilon(1.0_r8)) then
+             this%normal(k,p,i) = 0.0_r8
+          end if
+        end do
+        ! normalize if possible
+        mag = norm2(this%normal(:,p,i))
+        if (mag > epsilon(1.0_r8)) then
+           this%normal(:,p,i) = this%normal(:,p,i)/mag
+        else
+           ! QUESTION : What is the correct thing to do here? Needs to be valid normal.
+           this%normal(:,p,i) = 1.0_r8 / sqrt(3.0_r8)
+        end if
+      end do
+    end do
+
+    ! Enforce reflection of plane in 2 phase cells
+    do i = 1, this%mesh%ncell_onP
+      hasvof = vof(:,i) > 0.0_r8
+      c = count(hasvof)
+
+      ! enforce consistency for two materials
+      if (c == 2) then
+        j = findloc(hasvof,.true.)
+        k = findloc(hasvof,.true.,back=.true.)
+        this%normal(:,k,i) = -this%normal(:,j,i)
+      endif
+
+    end do
+    
+    call gather_boundary(this%mesh%cell_ip, this%normal)
+
+  contains
+
+    subroutine filter_vof(a_mesh, a_vof, a_iter)
+
+      type(unstr_mesh), intent(in) :: a_mesh
+      real(r8), intent(inout) :: a_vof(:,:)
+      integer, intent(in) :: a_iter
+
+      integer :: j, n
+      real(r8), allocatable :: a_vof_old(:,:)
+      real(r8) :: vol_sum
+
+      allocate(a_vof_old(size(a_vof,1),a_mesh%ncell))
+      
+      do i = 1, a_iter
+        a_vof_old = a_vof        
+        a_vof = 0.0_r8
+        do j = 1, a_mesh%ncell_onP
+          associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+            vol_sum = 0.0_r8
+            do n = 1, size(cn)
+              if(cn(n) /= 0) then
+                 vol_sum = vol_sum + a_mesh%volume(cn(n))
+                 a_vof(:,j) = a_vof(:,j) + a_vof_old(:, cn(n))*a_mesh%volume(cn(n))
+              end if
+            end do
+            a_vof(:,j) = a_vof(:,j) / (vol_sum + tiny(1.0_r8))            
+          end associate
+        end do
+        call gather_boundary(a_mesh%cell_ip, a_vof)          
+      end do      
+      
+    end subroutine filter_vof
+    
+  end subroutine normals_newgrad_youngs
+  
   subroutine normals_swartz(this, a_vof)
 
     use irl_interface_helper
@@ -1023,6 +1169,7 @@ contains
 
     real(r8), parameter :: VOF_tolerance = 1.0e-14_r8    
 
+    ! Set initial planes that will be corrected to conserve volume
     do phase = 0, a_priority_size-1
       priority_index = getPriorityOrderTag(a_path_group, phase)
       tmp_plane(1:3) = a_normal(:,priority_index)
@@ -1098,7 +1245,7 @@ contains
     
   end subroutine adjust_planes_match_VOF
 
- subroutine reset_volume_moments(this, a_vof)
+  subroutine reset_volume_moments(this, a_vof)
   
     use irl_interface_helper
     use parallel_communication, only : global_sum
@@ -1106,15 +1253,15 @@ contains
     
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: a_vof(:,:)
-
+    
     integer :: j, phase, phase_id
     type(TagAccVM_Vol_type) :: new_volumes
-
+    
     ! DEBUG/Diagnostics
     real(r8) :: volume_change(this%nmat)
     real(r8) :: tmp_vof    
     character(string_len) :: message, myformat
-
+    
     volume_change = 0.0_r8
     call new(new_volumes)
     do j = 1, this%mesh%ncell_onP
@@ -1220,32 +1367,150 @@ contains
   end subroutine construct_nonzero_polygon
       
   
-  subroutine compute_node_velocities(this, a_cell_centered_vel)
+  subroutine compute_projected_nodes(this, a_cell_centered_vel, a_dt)
   
-      class(unsplit_geometric_volume_tracker), intent(inout) :: this
-      real(r8), intent(in) :: a_cell_centered_vel(:,:)
-      
-      integer :: j, nodes_in_cell, n
-      
-      ! Compute velocity at each node as the surface-area weighted average of 
-      ! all connected face velocities.
-      this%w_node = 0.0_r8
-      do j = 1, this%mesh%ncell      
-        nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
-        associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: a_cell_centered_vel(:,:)
+    real(r8), intent(in) :: a_dt
+    
+    integer :: j, n, iter
 
-          ! Weights already normalized, so don't need to do it again
-          do n = 1, nodes_in_cell
-            this%w_node(1:3,node_id(n)) = this%w_node(1:3,node_id(n)) + &
-                 a_cell_centered_vel(:,j) * this%velocity_weightings(this%mesh%xcnode(j)+n-1)
-          end do
-        end associate
+    integer :: cell_id
+    integer, parameter :: max_iter = 5
+    real(r8) :: old_dist, current_dist, vel(3), projected_vel(3), v(3,4)
+    real(r8), parameter :: tolerance = 1.0e-4_r8 ! 1% change in distance
+    
+    ! Compute velocity at each node as the surface-area weighted average of 
+    ! all connected face velocities.
+    this%node_velocity = 0.0_r8
+    do n = 1, this%mesh%nnode_onP
+      associate( cn => this%mesh%ndcell(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1))        
+        ! Weights already normalized, so don't need to do it again
+        do j = 1, size(cn)
+          this%node_velocity(:,n) = this%node_velocity(:,n) + &
+               a_cell_centered_vel(:,cn(j)) * this%velocity_weightings(this%mesh%xndcell(n)+j-1)
+        end do
+      end associate
       
+    end do
+    call gather_boundary(this%mesh%node_ip, this%node_velocity)
+    
+    
+    ! First order explicit Euler
+     this%projected_nodes(:,1:this%mesh%nnode_onP) = this%mesh%x(:,1:this%mesh%nnode_onP) + &
+          this%node_velocity(:,1:this%mesh%nnode_onP)*(-a_dt)
+     this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
+          this%projected_nodes(:,1:this%mesh%nnode_onP)) &
+          / a_dt
+     call gather_boundary(this%mesh%node_ip, this%w_node )         
+     call gather_boundary(this%mesh%node_ip, this%projected_nodes )
+
+     ! TWO METHODS BELOW SEEM TO BE BROKEN IN PARALLEL, lose conservation
+    
+    ! ! Second Order (Spatially) Simplectic Integration
+    ! node_loop : do n = 1, this%mesh%nnode_onP
+    !   this%projected_nodes(:,n) = this%mesh%x(:,n)
+    !   cell_id = this%mesh%ndcell(this%mesh%xndcell(n))
+    !   integrate : do iter = 1, max_iter
+    !     vel = this%get_velocity_at_point(0.5_r8*(this%projected_nodes(:,n)+this%mesh%x(:,n)), cell_id)
+    !     if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !        this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !        cycle node_loop
+    !     end if
+    !     this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*vel
+    !     current_dist = sum((this%projected_nodes(:,n) - this%mesh%x(:,n))**2)
+    !     if(iter .ne. 1) then
+    !        if( (current_dist - old_dist)/(old_dist+tiny(1.0_r8)) < tolerance) then
+    !           cycle node_loop
+    !        end if
+    !     end if
+    !     old_dist = current_dist
+    !   end do integrate
+    ! end do node_loop
+
+    ! ! Store in w_node the linear velocity that would create the projected node in 1 step.
+    ! this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
+    !      this%projected_nodes(:,1:this%mesh%nnode_onP)) &
+    !      / a_dt    
+    ! call gather_boundary(this%mesh%node_ip, this%w_node )
+    ! call gather_boundary(this%mesh%node_ip, this%projected_nodes )
+
+    ! Explicit RK4
+    ! node_loop : do n = 1, this%mesh%nnode_onP
+    !   cell_id = this%mesh%ndcell(this%mesh%xndcell(n))
+    !   v(:,1)=this%get_velocity_at_point(this%mesh%x(:,n), cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   v(:,2)=this%get_velocity_at_point(this%mesh%x(:,n)+0.5_r8*-a_dt*v(:,1),cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   v(:,3)=this%get_velocity_at_point(this%mesh%x(:,n)+0.5_r8*-a_dt*v(:,2),cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   v(:,4)=this%get_velocity_at_point(this%mesh%x(:,n)+       -a_dt*v(:,3),cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   this%projected_nodes(:,n) = this%mesh%x(:,n)-a_dt/6.0_r8*(v(:,1)+2.0_r8*v(:,2)+2.0_r8*v(:,3)+v(:,4))    
+    ! end do node_loop
+
+    ! ! Store in w_node the linear velocity that would create the projected node in 1 step.
+    ! this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
+    !      this%projected_nodes(:,1:this%mesh%nnode_onP)) &
+    !      / a_dt    
+    ! call gather_boundary(this%mesh%node_ip, this%w_node )
+    ! call gather_boundary(this%mesh%node_ip, this%projected_nodes )   
+    
+      
+  end subroutine compute_projected_nodes
+
+  function get_velocity_at_point(this, a_pt, a_identified_cell) result(a_vel)
+
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    real(r8), intent(in) :: a_pt(3)
+    integer, intent(inout) :: a_identified_cell
+    real(r8) :: a_vel(3)
+
+    integer :: n, nodes_in_cell
+    real(r8) :: characteristic_length, weights(8)
+
+    ! Note, when passed in, a_identified_cell should be guess for which cell the point is in.
+    ! When function returns, it will be the actual cell the point is located in.
+    a_identified_cell =  locatePt(a_pt, this%localized_separator_group_link(a_identified_cell))
+    if(a_identified_cell > this%mesh%ncell) then ! Projected outside domain
+       a_vel = 0.0_r8
+       return
+    end if
+    
+    nodes_in_cell = this%mesh%xcnode(a_identified_cell+1) - this%mesh%xcnode(a_identified_cell)
+    associate( node_id => this%mesh%cnode(this%mesh%xcnode(a_identified_cell):this%mesh%xcnode(a_identified_cell+1)-1))
+      characteristic_length = 0.0_r8
+      do n = 1, nodes_in_cell
+        weights(n) = sum((a_pt-this%mesh%x(:,node_id(n)))**2)
       end do
-      
-      call gather_boundary(this%mesh%node_ip, this%w_node(1:3,:))
-      
-  end subroutine compute_node_velocities
+      characteristic_length = sum(weights(1:nodes_in_cell)) / real(nodes_in_cell, r8)
+
+      do n = 1, nodes_in_cell
+        weights(n) =  sqrt(1.0 / (weights(n)/characteristic_length + tiny(1.0_r8)))
+      end do
+      weights(1:nodes_in_cell) = weights(1:nodes_in_cell) / sum(weights(1:nodes_in_cell))
+
+      a_vel = 0.0_r8
+      do n = 1, nodes_in_cell
+        a_vel = a_vel + weights(n)*this%node_velocity(:,node_id(n))
+      end do
+
+    end associate
+
+    return
+  end function get_velocity_at_point
 
   subroutine compute_effective_cfl(this, a_dt)
 
@@ -1308,22 +1573,118 @@ contains
       
   end subroutine compute_effective_cfl
 
-  subroutine compute_projected_nodes(this, a_dt)
+  subroutine compute_correction_vertices(this, a_face_vel, a_dt, a_interface_band)
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
+    real(r8), intent(in) :: a_face_vel(:)
     real(r8), intent(in) :: a_dt
+    integer, intent(in)  :: a_interface_band(:)
+    
+    integer :: f, min_band
+    integer :: number_of_nodes
+    real(r8) :: correct_volume, cell_nodes(3,9)
 
-    integer :: n
+    do f = 1, this%mesh%nface_onP
 
-    do n = 1, this%mesh%nnode_onP
-      this%projected_nodes(:,n) = this%mesh%x(:,n) + this%w_node(1:3,n)*(-a_dt)
+      if(this%mesh%fcell(2,f) /= 0) then
+        min_band = min(abs(a_interface_band(this%mesh%fcell(1,f))),abs(a_interface_band(this%mesh%fcell(2,f))))
+      else
+        min_band = abs(a_interface_band(this%mesh%fcell(1,f)))
+      end if       
+
+      if(min_band > advect_band) then
+         cycle
+      end if
+
+      correct_volume = a_dt*a_face_vel(f)*this%mesh%area(f)
+
+      number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
+      
+      associate( node_index => this%flux_node( &
+           this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
+        ! Face nodes
+        cell_nodes(:,1:number_of_nodes) = this%mesh%x(:,node_index)
+        
+        ! Projected nodes
+        cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = this%projected_nodes(:, node_index)
+        
+        ! Initial guess for volume conservative cap vertex
+        cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2) /real(number_of_nodes,r8)
+        
+        select case(this%flux_geometry_class(f))
+        case(1) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_LLL, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_LLL, 6)
+           
+        case(2) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_LLT, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_LLT, 6)
+           
+        case(3) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_LTT, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_LTT, 6)
+           
+        case(4) ! Triangular Face -> Octahedron Volume
+           
+           call construct(this%IRL_CapOcta_TTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapOcta_TTT, 6)         
+           
+        case(5) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LLLL, cell_nodes)
+           call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLLL, 8)
+           
+        case(6) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LLLT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLLT, 8)         
+           
+        case(7) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LTLT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LTLT, 8)         
+           
+        case(8) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LLTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLTT, 8)         
+           
+        case(9) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_LTTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LTTT, 8)         
+           
+        case(10) ! Quad Face -> Dodecahedron Volume
+           
+           call construct(this%IRL_CapDod_TTTT, cell_nodes)            
+           call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, correct_volume)
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_TTTT, 8)         
+           
+        case default
+           call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
+        end select
+        
+      end associate
+      
     end do
 
-    call gather_boundary(this%mesh%node_ip, this%projected_nodes)
-
-  end subroutine compute_projected_nodes
+    call gather_boundary(this%mesh%face_ip, this%correction_vertex)
+    
+  end subroutine compute_correction_vertices
   
-  subroutine compute_fluxes(this, a_face_vel, a_dt, a_vof, a_interface_band)
+  subroutine compute_fluxes(this, a_face_vel, a_dt, a_old_vof, a_new_vof, a_interface_band)
   
     use irl_interface_helper
     use integer_real8_tuple_vector_type
@@ -1331,299 +1692,192 @@ contains
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: a_face_vel(:)
     real(r8), intent(in) :: a_dt
-    real(r8), intent(in) :: a_vof(:,:)
+    real(r8), intent(in) :: a_old_vof(:,:)    
+    real(r8), intent(inout) :: a_new_vof(:,:)
     integer, intent(in)  :: a_interface_band(:)
         
-    integer :: f, v, i, t, k
+    integer :: j, f, v, i, t, k, n
     integer ::  number_of_nodes, neighbor_cell_index, phase_id, phase, phase_size
-    real(r8) :: cell_nodes(3,9), phase_volume(this%nmat), cell_volume, correct_flux_vol
-    type(TagAccVM2_Vol_type) :: irl_tagged_volumes
-    type(TagAccVM_Vol_type) :: irl_cell_local_volumes
-    type(integer_real8_tuple_vector) :: cell_local_volumes
+    real(r8) :: cell_nodes(3,14), phase_volume(this%nmat), cell_volume, correct_flux_vol
+    real(r8) :: bounding_box(3,2)
     type(integer_real8_tuple_vector), pointer :: cell_local_volumes_ptr    
     integer :: current_tag, min_band
     
-    call new(irl_tagged_volumes)
-    call getMoments_setMethod(1)
-    call cell_local_volumes%reserve(this%nmat)
-      
-    do f = 1, this%mesh%nface_onP
-      call this%face_flux(f)%clear()
+    do j = 1, this%mesh%ncell_onP     
 
-      neighbor_cell_index = this%mesh%fcell(1, f)
-      if(this%mesh%fcell(2,f) /= 0) then
-        cell_volume = min(this%mesh%volume(neighbor_cell_index), &
-                          this%mesh%volume(this%mesh%fcell(2,f)))
-        min_band = min(abs(a_interface_band(neighbor_cell_index)),abs(a_interface_band(this%mesh%fcell(2,f))))
-      else
-        cell_volume = this%mesh%volume(neighbor_cell_index)
-        min_band = abs(a_interface_band(neighbor_cell_index))
-      end if       
-
-      ! Handle case if far from interface, means
-      ! flux is just a single material. This is the
-      ! simplification/model that we can use neighbor-face fluxing
-      ! to calculate the flux values. This is true for
-      ! material VOF advection, but an approximation for
-      ! other quantities based on this (momentum, etc.)
-      if(min_band > advect_band) then
-        ! Single phase flux
-        phase_id = maxloc(a_vof(:,neighbor_cell_index),1)
-        correct_flux_vol = a_dt*a_face_vel(f)*this%mesh%area(f)
-        call this%face_flux(f)%reserve(1)
-        call cell_local_volumes%resize(1)
-        ! Assuming neumann condition here if on boundary (and there's no interface nearby)
-        ! Only prevents influxing of material into domain with that material not with
-        ! advect_band cells
-        call cell_local_volumes%set(1, phase_id, correct_flux_vol)
-        ! Determine which cell from upwinding
-        if(a_face_vel(f) > 0.0_r8) then
-          call this%face_flux(f)%add_cell_fluxes(this%mesh%fcell(1,f), cell_local_volumes)
-        else if(a_face_vel(f) < 0.0_r8) then
-          if(this%mesh%fcell(2,f) /= 0) then
-            call this%face_flux(f)%add_cell_fluxes(this%mesh%fcell(2,f), cell_local_volumes)            
-          else ! Boundary condition
-            ! Handle boundary somehow?
-            ! -1 will be used as a sentinel value to signify it came from the boundary.
-            call this%face_flux(f)%add_cell_fluxes(-1, cell_local_volumes)
-          end if
-        end if
-        
-        cycle
+      if(abs(a_interface_band(j)) > advect_band) then
+         cycle
       end if
       
-      call setMinimumVolToTrack(cell_volume*1.0e-15_r8)
-    
-      number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
-
-      ! Grab face nodes we will extrude from
-      ! Will place face nodes in latter half of cell_nodes so that
-      ! if (dot_product(flux_vel, face_norm) > 0), the volume is > 0
-      associate( node_index => this%flux_node( &
-           this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
-        ! Face nodes
-        cell_nodes(:,1:number_of_nodes) = &
-             this%mesh%x(:,node_index(1:number_of_nodes))
-
-        ! Projected nodes
-        cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = this%projected_nodes(:, node_index(1:number_of_nodes))
-
-        ! Initial guess for volume conservative cap vertex
-        cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2)/real(number_of_nodes,r8)
-
-        select case(this%flux_geometry_class(f))
-          case(1) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_LLL, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LLL, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_LLL, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case(2) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_LLT, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LLT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_LLT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-            
-          case(3) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_LTT, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_dt*a_face_vel(f)*this%mesh%area(f))       
-            call getMoments(this%IRL_CapOcta_LTT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case(4) ! Triangular Face -> Octahedron Volume
-          
-            call construct(this%IRL_CapOcta_TTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapOcta_TTT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapOcta_TTT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes) 
-            
-          case(5) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LLLL, cell_nodes)
-            call adjustCapToMatchVolume(this%IRL_CapDod_LLLL, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapDod_LLLL, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case(6) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LLLT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LLLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LLLT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case(7) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LTLT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LTLT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LTLT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case(8) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LLTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, a_dt*a_face_vel(f)*this%mesh%area(f))
-            call getMoments(this%IRL_CapDod_LLTT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case(9) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_LTTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_LTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_LTTT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case(10) ! Quad Face -> Dodecahedron Volume
-            
-            call construct(this%IRL_CapDod_TTTT, cell_nodes)            
-            call adjustCapToMatchVolume(this%IRL_CapDod_TTTT, a_dt*a_face_vel(f)*this%mesh%area(f))            
-            call getMoments(this%IRL_CapDod_TTTT, &
-                            this%localized_separator_group_link(neighbor_cell_index), &
-                            irl_tagged_volumes)
-
-          case default
-            call TLS_fatal('Unknown face type. How was this not found in this%generate_flux_classes()?')          
-        end select
-          
-      end associate
-
-      call this%face_flux(f)%reserve(getSize(irl_tagged_volumes))
-      do t = 0, getSize(irl_tagged_volumes)-1
-        current_tag = getTagForIndex(irl_tagged_volumes, t)
-        call getAtIndex(irl_tagged_volumes, t, irl_cell_local_volumes)
-        call cell_local_volumes%resize(0)        
-        if(current_tag > this%mesh%ncell) then
-          ! Is a boundary condition, all volume in phase 0          
-          phase_volume = this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(irl_cell_local_volumes, 0)
-          do k = 1, this%nmat
-            if(abs(phase_volume(k)) > tiny(1.0_r8)) then              
-              call cell_local_volumes%push_back(k, phase_volume(k))           
-            end if
+      number_of_nodes = this%mesh%xcnode(j+1)-this%mesh%xcnode(j)
+      
+      associate( node_index => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+        
+        ! Projected cell nodes
+        cell_nodes(:,1:number_of_nodes) = this%projected_nodes(:,node_index)
+        
+        associate(face_index => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+          do f = 1, size(face_index)
+            cell_nodes(:,number_of_nodes+f) = this%correction_vertex(:,face_index(f))
           end do
-        else
-          ! Is inside domain, trust actual volumes
-          phase_size = getSize(irl_cell_local_volumes)
-          do phase = 0, phase_size - 1 
-            phase_id = getTagForIndex(irl_cell_local_volumes, phase)
-            if(abs(getVolumeAtIndex(irl_cell_local_volumes, phase)) > tiny(1.0_r8)) then
-              call cell_local_volumes%push_back(phase_id, getVolumeAtIndex(irl_cell_local_volumes, phase))
-            end if
-          end do          
-        end if
-        if(cell_local_volumes%size() > 0) then
-           call this%face_flux(f)%add_cell_fluxes(current_tag, cell_local_volumes)
-        end if
-      end do      
-    end do
+        end associate
+        
+        call this%set_irl_volume_geometry(cell_nodes, number_of_nodes, bounding_box)
+        ! geometric_cutting_needed = this%refined_advection_check(bounding_box, &
+        !      j, a_interface_band(j), a_interface_band)
+      end associate
+      
+      call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)         
+      call this%moments_from_geometric_cutting(number_of_nodes, &
+           j, a_old_vof, this%cell_flux(j))
 
-    ! Need to communicate fluxes
-    call communicate_face_fluxes(this%mesh, this%face_flux)
+      do n = 1, this%cell_flux(j)%get_number_of_cells()
+        cell_local_volumes_ptr => this%cell_flux(j)%get_cell_fluxes(n)
+        do k = 1, cell_local_volumes_ptr%size()
+          a_new_vof(cell_local_volumes_ptr%at_int(k),j) = a_new_vof(cell_local_volumes_ptr%at_int(k),j) &
+               + cell_local_volumes_ptr%at_r8(k)
+        end do        
+      end do
+        
+      a_new_vof(:,j) = a_new_vof(:,j) / sum(a_new_vof(:,j))
+      do k = 1, this%nmat
+        if(a_new_vof(k,j) < this%cutoff) then
+           a_new_vof(k,j) = 0.0_r8
+        else if(a_new_vof(k,j) > 1.0_r8 - this%cutoff) then
+           a_new_vof(k,j) = 1.0_r8
+        end if
+      end do
+      a_new_vof(:,j) = a_new_vof(:,j) / sum(a_new_vof(:,j))      
+    end do
     
   end subroutine compute_fluxes
 
-  ! This is going to be a brutal and slow communication.
-  ! Could probably be sped up in future with some
-  ! specialization of the data structures.
-  subroutine communicate_face_fluxes(a_mesh, a_face_flux)
+  subroutine set_irl_volume_geometry(this, a_cell, a_base_number_of_nodes, a_bounding_box)
+
+    use irl_interface_helper
+    
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this    
+    real(r8), intent(in) :: a_cell(:,:)
+    integer, intent(in) :: a_base_number_of_nodes
+    real(r8), intent(out) :: a_bounding_box(3,2)
+
+    select case(a_base_number_of_nodes)
+    case(4) ! Projected Tet
+       call truchas_poly_to_irl(a_cell, this%IRL_sym_tet)
+       call getBoundingPts(this%IRL_sym_tet, a_bounding_box(:,1), a_bounding_box(:,2))
+       
+    case(5) ! Projected Pyramid
+       call truchas_poly_to_irl(a_cell, this%IRL_sym_pyramid)
+       call getBoundingPts(this%IRL_sym_pyramid, a_bounding_box(:,1), a_bounding_box(:,2))
+       
+    case(6) ! Projected Wedge
+       call truchas_poly_to_irl(a_cell, this%IRL_sym_wedge)
+       call getBoundingPts(this%IRL_sym_wedge, a_bounding_box(:,1), a_bounding_box(:,2))       
+       
+    case(8) ! Projected Hex
+       call truchas_poly_to_irl(a_cell, this%IRL_sym_hex)
+       call getBoundingPts(this%IRL_sym_hex, a_bounding_box(:,1), a_bounding_box(:,2))
+       
+    case default
+       call TLS_fatal('Unknown projected cell type in set_irl_volume_geometry.')          
+    end select
+
+  end subroutine set_irl_volume_geometry
+
+  subroutine moments_from_geometric_cutting(this, a_base_number_of_nodes, a_starting_index, a_vof, a_cell_flux)
 
     use integer_real8_tuple_vector_type
-    use parallel_communication    
-    
-    type(unstr_mesh), pointer, intent(in) :: a_mesh
-    type(cell_tagged_mm_volumes), intent(inout) :: a_face_flux(:)
 
-    integer :: f, c, p, ci
-    integer :: current_buffer_size, max_buffer_size
-    integer ::nfcells, nphases, cell_id
-    real(r8), allocatable :: face_flux_buffer(:,:)
-    type(integer_real8_tuple_vector), pointer :: tagged_phase_array
-    type(integer_real8_tuple_vector) :: tmp_phase_array
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    integer, intent(in) :: a_base_number_of_nodes
+    integer, intent(in) :: a_starting_index
+    real(r8), intent(in) :: a_vof(:,:)
+    type(cell_tagged_mm_volumes), intent(inout) :: a_cell_flux
 
+    integer :: k, t, phase_size, phase, phase_id
+    type(TagAccVM2_Vol_type) :: irl_tagged_volumes
+    type(TagAccVM_Vol_type) :: irl_cell_local_volumes
+    type(integer_real8_tuple_vector) :: cell_local_volumes
+    type(integer_real8_tuple_vector), pointer :: cell_local_volumes_ptr        
+    integer :: current_tag
+    real(r8) :: boundary_vof(this%nmat)
 
-    ! Need to communicate cell ID using global cell ID and map back to local cell ID.
-    ! The cell ID's stored in the cell_tagged moments is for THAT processor,
-    ! not globally.
-    call TLS_FATAL('Debug')
-    
-    ! Calculate needed buffer size
-    max_buffer_size = -1    
-    do f = 1, a_mesh%nface_onP      
-      current_buffer_size = 1 ! Number of cells
-      current_buffer_size = current_buffer_size +  a_face_flux(f)%get_number_of_cells() ! Cell id's
-      do c = 1, a_face_flux(f)%get_number_of_cells()
-        tagged_phase_array => a_face_flux(f)%get_cell_fluxes(c)
-        current_buffer_size = current_buffer_size + 1 ! Number of phase Ids
-        current_buffer_size = current_buffer_size + 2*tagged_phase_array%size() ! Phase data
-      end do
-      max_buffer_size = max(max_buffer_size, current_buffer_size)
+    integer:: ci, n
+    real(r8) :: tmp(3)
+
+    ! Note, the correct object type for a_geom_class should already
+    ! be correctly construction in this%
+
+    call new(irl_tagged_volumes)
+      
+    select case(a_base_number_of_nodes)
+    case(4) ! Projected Tet
+       
+       call getMoments(this%IRL_sym_tet, &
+            this%localized_separator_group_link(a_starting_index), &
+            irl_tagged_volumes)
+       
+    case(5) ! Projected Pyramid
+       
+       call getMoments(this%IRL_sym_pyramid, &
+            this%localized_separator_group_link(a_starting_index), &
+            irl_tagged_volumes)       
+       
+    case(6) ! Projected Wedge
+
+       call getMoments(this%IRL_sym_wedge, &
+            this%localized_separator_group_link(a_starting_index), &
+            irl_tagged_volumes)       
+       
+    case(8) ! Projected Hex
+       
+       call getMoments(this%IRL_sym_hex, &
+            this%localized_separator_group_link(a_starting_index), &
+            irl_tagged_volumes)
+       do n = 1, 14
+         tmp = getPt(this%IRL_sym_hex,n-1)
+         t = locatePt(tmp, this%localized_separator_group_link(a_starting_index))
+         if(t > size(this%localized_separator_group_link,1) .or. t<= 0) then
+            print*,a_starting_index, t
+         end if
+       end do       
+       
+    case default
+       call TLS_fatal('Unknown projected cell type in moments_from_geometric_cutting.')          
+    end select
+
+    call a_cell_flux%clear()
+    call a_cell_flux%reserve(getSize(irl_tagged_volumes))
+    do t = 0, getSize(irl_tagged_volumes)-1
+      current_tag = getTagForIndex(irl_tagged_volumes, t)
+      call getAtIndex(irl_tagged_volumes, t, irl_cell_local_volumes)
+      call cell_local_volumes%resize(0)        
+      if(current_tag > this%mesh%ncell) then
+         ! Is a boundary condition, all volume in phase 0          
+         boundary_vof = this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(irl_cell_local_volumes, 0)
+         do k = 1, this%nmat
+           if(abs(boundary_vof(k)) > tiny(1.0_r8)) then              
+              call cell_local_volumes%push_back(k, boundary_vof(k))           
+           end if
+         end do
+      else
+         ! Is inside domain, trust actual volumes
+         phase_size = getSize(irl_cell_local_volumes)
+         do phase = 0, phase_size - 1 
+           phase_id = getTagForIndex(irl_cell_local_volumes, phase)
+           if(abs(getVolumeAtIndex(irl_cell_local_volumes, phase)) > tiny(1.0_r8)) then
+              call cell_local_volumes%push_back(phase_id, getVolumeAtIndex(irl_cell_local_volumes, phase))
+           end if
+         end do
+      end if
+      if(cell_local_volumes%size() > 0) then
+         call a_cell_flux%add_cell_fluxes(current_tag, cell_local_volumes)
+      end if
     end do
-
-    ! Allocate the buffer
-    max_buffer_size = global_maxval(max_buffer_size)
-    allocate(face_flux_buffer(max_buffer_size, a_mesh%nface))
     
-    ! Fill the buffer. Note the ordering, needed for unpacking
-    do f = 1, a_mesh%nface_onP
-      ci = 0
-      ci = ci + 1      
-      face_flux_buffer(ci,f) = real(a_face_flux(f)%get_number_of_cells(), r8) ! Number of cells
-      do c = 1, a_face_flux(f)%get_number_of_cells()
-        ci = ci + 1
-        face_flux_buffer(ci,f) = real(a_face_flux(f)%get_cell_id(c), r8) ! Cell id
-        tagged_phase_array => a_face_flux(f)%get_cell_fluxes(c)        
-        ci = ci + 1        
-        face_flux_buffer(ci,f) = real(tagged_phase_array%size(), r8) ! Number of phases
-        do p = 1, tagged_phase_array%size()
-          ci = ci + 1
-          face_flux_buffer(ci,f) = real(tagged_phase_array%at_int(p), r8) ! phase tag
-          ci = ci + 1          
-          face_flux_buffer(ci,f) = tagged_phase_array%at_r8(p) ! phase volume
-        end do
-      end do
-    end do
-
-    ! Communicate buffer
-    call gather_boundary(a_mesh%face_ip, face_flux_buffer)
-
-    ! Unpack the buffer
-    do f = a_mesh%nface_onP+1, a_mesh%nface
-      call a_face_flux(f)%clear()
-      ci = 0
-      ci = ci + 1      
-      nfcells = NINT(face_flux_buffer(ci,f))
-      print*,'Number of cells ', f, nfcells
-      call a_face_flux(f)%reserve(nfcells)
-      do c = 1, nfcells
-        ci = ci + 1
-        cell_id = NINT(face_flux_buffer(ci,f))
-        print*,'Cell id', cell_id
-        ci = ci + 1
-        nphases = NINT(face_flux_buffer(ci,f))
-        print*,'Number of phases', nphases
-        call tmp_phase_array%resize(nphases)
-        do p = 1, nphases
-          ci = ci + 1
-          print*,'phase_id and volume',NINT(face_flux_buffer(ci, f)), face_flux_buffer(ci+1,f)
-          call tmp_phase_array%set(p, NINT(face_flux_buffer(ci, f)), face_flux_buffer(ci+1,f))
-          ci = ci + 1
-        end do
-        call a_face_flux(f)%add_cell_fluxes(cell_id, tmp_phase_array)
-      end do      
-    end do
-
-  end subroutine communicate_face_fluxes
-
+    return
+  end subroutine moments_from_geometric_cutting  
+  
   pure function getBCMaterialFractions(this, a_tag, a_vof_n) result(a_fractions)
 
     class(unsplit_geometric_volume_tracker), intent(in) :: this
@@ -1643,112 +1897,76 @@ contains
     return
   end function getBCMaterialFractions
   
-  subroutine update_vof(this, a_interface_band, a_flux_vol, a_vof)
+!   subroutine update_vof(this, a_interface_band, a_flux_vol, a_vof)
 
-    use integer_real8_tuple_vector_type
+!     use integer_real8_tuple_vector_type
   
-    class(unsplit_geometric_volume_tracker), intent(in) :: this
-    integer, intent(in) :: a_interface_band(:)
-    type(cell_tagged_mm_volumes), intent(out) :: a_flux_vol(:)
-    real(r8), intent(inout) :: a_vof(:,:)
+!     class(unsplit_geometric_volume_tracker), intent(in) :: this
+!     integer, intent(in) :: a_interface_band(:)
+!     type(cell_tagged_mm_volumes), intent(out) :: a_flux_vol(:)
+!     real(r8), intent(inout) :: a_vof(:,:)
     
-    integer :: j, f, c, k
-    integer :: number_of_faces
-    real(r8) :: cell_volume_sum
-    real(r8) :: vof_flux(this%nmat)
-    type(integer_real8_tuple_vector), pointer :: fluxed_phases
-    logical :: vof_modified
+!     integer :: j, f, c, k
+!     integer :: number_of_faces
+!     real(r8) :: cell_volume_sum
+!     real(r8) :: vof_flux(this%nmat)
+!     type(integer_real8_tuple_vector), pointer :: fluxed_phases
+!     logical :: vof_modified
     
-    ! Fill the ragged a_flux_vol array
-    do j = 1, this%mesh%ncell
-      associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1) )        
-        do f = 1, size(fn)
+!     ! Fill the ragged a_flux_vol array
+!     do j = 1, this%mesh%ncell
+!       associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1) )        
+!         do f = 1, size(fn)
+!           a_flux_vol(this%mesh%xcface(j)+f-1) = this%face_flux(fn(f))
+!           if(btest(this%mesh%cfpar(j), f)) then          
+!             call a_flux_vol(this%mesh%xcface(j)+f-1)%negate_in_place()
+!           end if
+!         end do
+!       end associate
+!     end do
 
-          
-       ! do c = 1, this%face_flux(fn(f))%get_number_of_cells()
-       !   fluxed_phases => this%face_flux(fn(f))%get_cell_fluxes(c)        
-       !   do k = 1, fluxed_phases%size()
-       !     if(fluxed_phases%at_int(k) == 0) then
-       !       print*,'HOWWWW', j, fn(f),fluxed_phases%at_int(k)
-       !     end if
-       !   end do
-       ! end do
-
-          if(btest(this%mesh%cfpar(j), f)) then
-            a_flux_vol(this%mesh%xcface(j)+f-1) = this%face_flux(fn(f))
-            call a_flux_vol(this%mesh%xcface(j)+f-1)%negate_in_place()
-
-            
-            ! do c = 1, a_flux_vol(this%mesh%xcface(j)+f-1)%get_number_of_cells()
-            !   fluxed_phases =>  a_flux_vol(this%mesh%xcface(j)+f-1)%get_cell_fluxes(c)
-            !   do k = 1, fluxed_phases%size()
-            !     if(fluxed_phases%at_int(k) == 0) then
-            !       print*,'Top part',j,fn(f),fluxed_phases%at_int(k)
-            !     end if
-            !   end do
-            ! end do
-
-          else
-            a_flux_vol(this%mesh%xcface(j)+f-1) = this%face_flux(fn(f))
-
-            
-            ! do c = 1, a_flux_vol(this%mesh%xcface(j)+f-1)%get_number_of_cells()
-            !   fluxed_phases =>  a_flux_vol(this%mesh%xcface(j)+f-1)%get_cell_fluxes(c)
-            !   do k = 1, fluxed_phases%size()
-            !     if(fluxed_phases%at_int(k) == 0) then
-            !       print*,'Bottom part',j,fn(f),fluxed_phases%at_int(k)
-            !     end if
-            !   end do
-            ! end do
-
-            
-          end if
-        end do
-      end associate
-    end do
-
-    ! Use a_flux_vol to update a_vof now
-    do j = 1, this%mesh%ncell_onP
-      if(abs(a_interface_band(j)) > advect_band) then
-        cycle
-      end if
-      a_vof(:,j) = a_vof(:,j) * this%mesh%volume(j)
-      cell_volume_sum = this%mesh%volume(j)      
-      number_of_faces = this%mesh%xcface(j+1) - this%mesh%xcface(j)
-      do f = 1, number_of_faces
-        vof_flux = 0.0_r8
-        do c = 1, a_flux_vol(this%mesh%xcface(j)+f-1)%get_number_of_cells()
-          fluxed_phases =>  a_flux_vol(this%mesh%xcface(j)+f-1)%get_cell_fluxes(c)          
-          do k = 1, fluxed_phases%size()
-            vof_flux(fluxed_phases%at_int(k)) = vof_flux(fluxed_phases%at_int(k)) + fluxed_phases%at_r8(k)
-          end do
-        end do
-        a_vof(:,j) = a_vof(:,j) - vof_flux
-        cell_volume_sum = cell_volume_sum - sum(vof_flux)
-      end do
-      a_vof(:,j) = a_vof(:,j) / cell_volume_sum
-      vof_modified = .false.
-      ! NOTE: This will lead to slight inconsistency with face fluxes
-      do k = 1, this%nmat
-        if(a_vof(k,j) < this%cutoff .and. abs(a_vof(k,j)) > EPSILON(1.0_r8)) then
-          vof_modified = .true.
-          a_vof(k,j) = 0.0_r8
-        else if(a_vof(k,j) > 1.0_r8 - this%cutoff .and. abs(1.0_r8 - a_vof(k,j)) >  EPSILON(1.0_r8)) then
-          vof_modified = .true.
-          a_vof(k,j) = 1.0_r8
-        end if
-      end do
+!     ! Use a_flux_vol to update a_vof now
+!     do j = 1, this%mesh%ncell_onP
+!       if(abs(a_interface_band(j)) > advect_band) then
+!         cycle
+!       end if
+!       a_vof(:,j) = a_vof(:,j) * this%mesh%volume(j)
+!       cell_volume_sum = this%mesh%volume(j)      
+!       number_of_faces = this%mesh%xcface(j+1) - this%mesh%xcface(j)
+!       do f = 1, number_of_faces
+!         vof_flux = 0.0_r8
+!         do c = 1, a_flux_vol(this%mesh%xcface(j)+f-1)%get_number_of_cells()
+!           fluxed_phases =>  a_flux_vol(this%mesh%xcface(j)+f-1)%get_cell_fluxes(c)          
+!           do k = 1, fluxed_phases%size()
+!             vof_flux(fluxed_phases%at_int(k)) = vof_flux(fluxed_phases%at_int(k)) + fluxed_phases%at_r8(k)
+!           end do
+!         end do
+!         a_vof(:,j) = a_vof(:,j) - vof_flux
+!         cell_volume_sum = cell_volume_sum - sum(vof_flux)
+!       end do
+!       a_vof(:,j) = a_vof(:,j) / cell_volume_sum
+!       vof_modified = .false.
+!       ! NOTE: This will lead to slight inconsistency with face fluxes
+!       do k = 1, this%nmat
+!         if(a_vof(k,j) < this%cutoff .and. abs(a_vof(k,j)) > EPSILON(1.0_r8)) then
+!           vof_modified = .true.
+!           a_vof(k,j) = 0.0_r8
+!         else if(a_vof(k,j) > 1.0_r8 - this%cutoff .and. abs(1.0_r8 - a_vof(k,j)) >  EPSILON(1.0_r8)) then
+!           vof_modified = .true.
+!           a_vof(k,j) = 1.0_r8
+!         end if
+!       end do
     
 
-!      if(vof_modified) then
-        ! Rescale VOF to be valid (sum to 1)
-        a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))
-!      end if
-    end do
+! !      if(vof_modified) then
+!         ! Rescale VOF to be valid (sum to 1)
+!         a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))
+! !      end if
+!     end do
 
-    call gather_boundary(this%mesh%cell_ip, a_vof)
+!     call gather_boundary(this%mesh%cell_ip, a_vof)
 
-  end subroutine update_vof    
+!   end subroutine update_vof    
 
   ! Routine to generate consistently approximated flux volumes
   !
@@ -1827,11 +2045,12 @@ contains
     ! Treat edges as being diagonalized from lower global node id to higher
     ! For each face, now store correct flux class and
     ! node ordering to be consistent
-    do f = 1, this%mesh%nface_onP
+    do f = 1, this%mesh%nface
       associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
-        irl_ordering = reorder_node_id(node_id)        
         number_of_nodes = size(node_id)
-        ASSERT(number_of_nodes == 3 .or. number_of_nodes == 4)
+        ASSERT(number_of_nodes == 3 .or. number_of_nodes == 4)        
+        irl_ordering = reorder_node_id(node_id)
+        irl_ordering = make_smallest_global_ind_first(this%mesh, irl_ordering(1:number_of_nodes))
         lookup_case = 1
         do n = 1, number_of_nodes          
           edge_end = irl_ordering(mod(n,number_of_nodes)+1)
@@ -1875,6 +2094,7 @@ contains
 
   contains
 
+    ! Reordering face to that used by IRL
     function reorder_node_id(a_node_list) result(a_irl_ordered_list)
       integer, intent(in) :: a_node_list(:)
       integer :: a_irl_ordered_list(4)
@@ -1892,6 +2112,33 @@ contains
       return
     end function reorder_node_id
 
+    ! This is needed because it seems subdomains do not agree on face ordering
+    ! of nodes? 
+    function make_smallest_global_ind_first(a_mesh, a_node_list) result(a_new_list)
+      type(unstr_mesh), intent(in) :: a_mesh
+      integer, intent(in) :: a_node_list(:)      
+      integer :: a_new_list(4)
+
+      integer :: n, smallest_gid, sgid_ind, ind
+      
+      ASSERT(size(a_node_list) == 3 .or. size(a_node_list) == 4)
+
+      smallest_gid = maxval(a_mesh%xnode(a_node_list))+1
+      do n = 1, size(a_node_list)
+        if(a_mesh%xnode(a_node_list(n)) < smallest_gid) then
+           smallest_gid = a_mesh%xnode(a_node_list(n))
+           sgid_ind = n
+        end if
+      end do
+
+      do n = 1, size(a_node_list)
+        ind = mod(sgid_ind+n-1,size(a_node_list))+1
+        a_new_list(n) = a_node_list(ind)
+      end do
+      
+      
+    end function make_smallest_global_ind_first
+    
   end subroutine generate_flux_classes
 
 end module unsplit_geometric_volume_tracker_type

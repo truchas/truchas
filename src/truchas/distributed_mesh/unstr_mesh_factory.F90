@@ -73,6 +73,7 @@ contains
     integer :: j, k, n, nnode, nface, ncell, new_id, exodus_block_modulus, pfirst
     integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
     integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), part(:)
+    integer, allocatable :: xndcell(:), ndcell(:)
     integer, allocatable :: xcface(:), cface(:), cfpar(:), lnhbr(:,:), lface(:,:)
     integer, allocatable :: cell_perm(:), node_perm(:), offP_size(:), offP_index(:)
     integer, allocatable :: perm(:), ssid(:), ebid(:)
@@ -346,6 +347,10 @@ contains
     allocate(this%x(3,this%nnode))
     call distribute (this%x(:,:this%nnode_onP), mesh%coord)
     call gather_boundary (this%node_ip, this%x)
+
+    ! Generate node->cell connectivity in staggered array (FOR LOCAL DOMAIN 1:_onP ONLY)
+    call init_node_to_cell_data(this)
+    call init_cell_to_cell_through_node_data(this)
 
     !! Initialize the mesh geometry data components.
     allocate(this%volume(this%ncell), this%normal(3,this%nface), this%area(this%nface))
@@ -1053,6 +1058,112 @@ contains
     end do
   end subroutine init_face_cell_data
 
+  !! This subroutine generates a staggered array that stores
+  !! the cell id of all cells using a particular node. This
+  !! will become invalid near the boundary, where the neighboring cell
+  !! may not exist.
+  !! The cells are not ordered in any particular fashion.
+
+  subroutine init_node_to_cell_data(this)
+
+    type(unstr_mesh), intent(inout) :: this    
+
+
+    integer :: j, n, i
+    integer, allocatable ::nconnect(:)   
+
+    allocate(nconnect(this%nnode))
+    nconnect = 0
+    do j = 1, this%ncell
+      associate (cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+        do n = 1, size(cell_nodes)
+          nconnect(cell_nodes(n)) = nconnect(cell_nodes(n)) + 1
+        end do
+      end associate
+    end do
+
+    allocate(this%xndcell(this%nnode+1))
+
+    this%xndcell(1) = 1
+    do n = 1, this%nnode
+      this%xndcell(n+1) = this%xndcell(n) + nconnect(n)
+    end do
+    deallocate(nconnect)
+    
+    allocate(this%ndcell(this%xndcell(this%nnode+1)-1))    
+    this%ndcell = -1
+    do j = 1, this%ncell
+      associate (cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+        do n = 1, size(cell_nodes)
+          i = this%xndcell(cell_nodes(n))
+          do while(this%ndcell(i) /= -1)
+            i = i + 1
+          end do
+          this%ndcell(i) = j         
+        end do
+      end associate
+    end do
+    
+  end subroutine init_node_to_cell_data
+
+  !! This subroutine generates a staggered array that stores
+  !! the cell id of all cells that share a node with a cell. This
+  !! is only valid for the local mesh (1: mesh%ncell_onP)
+  !! and is not ordered in any particular fashion
+
+  subroutine init_cell_to_cell_through_node_data(this)
+
+    use integer_vector_type
+    
+    type(unstr_mesh), intent(inout) :: this    
+
+
+    integer :: j, n, i, k
+    type(integer_vector), allocatable :: connected_cells(:)
+
+    allocate(connected_cells(this%ncell_onP))
+    do n = 1, this%nnode
+      associate(cn => this%ndcell(this%xndcell(n):this%xndcell(n+1)-1))
+        do j = 1, size(cn)
+          if(cn(j) <= this%ncell_onP) then
+             other_cell:do i = 1, size(cn)
+               ! Don't connect to the cell we are adding to
+               if(cn(i) == cn(j)) cycle
+               
+               ! Add cell if not yet added
+               do k = 1, connected_cells(cn(j))%size()
+                 ! Check if already added
+                    if(connected_cells(cn(j))%at(k) == cn(i)) then
+                    cycle other_cell
+                 end if 
+               end do
+               ! Made it this far, new cell, add
+               call connected_cells(cn(j))%push_back(cn(i))                               
+             end do other_cell
+          end if
+        end do
+
+      end associate
+    end do
+    
+    allocate(this%xcnc(this%ncell_onP+1))
+    this%xcnc(1) = 1
+    do j = 1, this%ncell_onP
+      this%xcnc(j+1) = this%xcnc(j) + connected_cells(j)%size()
+    end do
+
+    allocate(this%cnc(this%xcnc(this%ncell_onP+1)-1))
+    k = 0
+    do j = 1, this%ncell_onP
+      do i = 1, connected_cells(j)%size()
+        k = k + 1
+        this%cnc(k) = connected_cells(j)%at(i)
+      end do
+    end do
+    deallocate(connected_cells)
+    
+  end subroutine init_cell_to_cell_through_node_data
+  
   !! This subroutine initializes the interface link data.
 
   subroutine init_link_data (this, mesh, lnhbr, lface)
