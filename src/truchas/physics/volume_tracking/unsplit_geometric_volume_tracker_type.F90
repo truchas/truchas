@@ -182,7 +182,7 @@ contains
     allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(3,mesh%nnode))
     allocate(this%node_velocity(3,mesh%nnode))    
-    allocate(this%velocity_weightings(mesh%xcnode(mesh%ncell+1)-1))
+    allocate(this%velocity_weightings(mesh%xndcell(mesh%nnode_onP+1)-1))
     allocate(this%lsq_weightings(3,mesh%xcnc(mesh%ncell_onP+1)-1))
     allocate(this%projected_nodes(3, mesh%nnode))
     allocate(this%cell_bounding_box(3,2,this%mesh%ncell))
@@ -448,54 +448,22 @@ contains
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
 
-    integer :: j, n, nodes_in_cell
-    real(r8) :: squared_distance, magnitude
+    integer :: j, n
+    real(r8) :: squared_distance
 
-    ! Compute average length scale for each node
-    this%w_node(1:2,:) = 0.0_r8
-    do j = 1, this%mesh%ncell
-      nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
-      associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-        do n = 1, nodes_in_cell
-          squared_distance = dot_product(this%mesh%x(:,node_id(n))-this%mesh%cell_centroid(:,j), &
-                                         this%mesh%x(:,node_id(n))-this%mesh%cell_centroid(:,j))
-          this%w_node(1,node_id(n)) = this%w_node(1,node_id(n)) + squared_distance
-          this%w_node(2,node_id(n)) = this%w_node(2,node_id(n)) + 1.0_r8
-          this%velocity_weightings(this%mesh%xcnode(j)+n-1) = squared_distance
-        end do
-
-      end associate
-
-    end do
-
-    ! Now normalize for  average squared distance
-    this%w_node(1,:) = this%w_node(1,:) / (this%w_node(2,:) + tiny(1.0_r8))
-
-    call gather_boundary(this%mesh%node_ip, this%w_node(1,:))    
-
-    ! Compute weightings using previously stored squared distance and average length scale
-    this%w_node(2,:) = 0.0_r8
-    do j = 1, this%mesh%ncell
-      nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
-      associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-        do n = 1, nodes_in_cell
-          this%velocity_weightings(this%mesh%xcnode(j)+n-1) = &
-               sqrt(1.0_r8 / (this%velocity_weightings(this%mesh%xcnode(j)+n-1)/this%w_node(1,node_id(n)) + tiny(1.0_r8)))
-               !exp(-this%velocity_weightings(this%mesh%xcnode(j)+n-1)/this%w_node(1,node_id(n)))
-          this%w_node(2,node_id(n)) = this%w_node(2,node_id(n)) + this%velocity_weightings(this%mesh%xcnode(j)+n-1)
+    ! Node weightings
+    this%w_node(1,:) = 0.0_r8
+    do n = 1, this%mesh%nnode_onP
+      associate(cn => this%mesh%ndcell(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1))
+        do j = 1, size(cn)
+          squared_distance = sum((this%mesh%x(:,n)-this%mesh%cell_centroid(:,cn(j)))**2)
+          this%velocity_weightings(this%mesh%xndcell(n)+j-1) = 1.0_r8 / sqrt(squared_distance)
         end do
       end associate
-    end do
-
-    ! Normalize weightings.
-    do j = 1, this%mesh%ncell
-      nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
-      associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-        do n = 1, nodes_in_cell
-          this%velocity_weightings(this%mesh%xcnode(j)+n-1) = &
-               this%velocity_weightings(this%mesh%xcnode(j)+n-1) / (this%w_node(2,node_id(n)) + tiny(1.0_r8))
-        end do
-      end associate
+      ! Normalize weighting
+      this%velocity_weightings(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1) = &
+           this%velocity_weightings(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1) / &
+           sum(this%velocity_weightings(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1))      
     end do
     
   end subroutine compute_velocity_weightings
@@ -691,24 +659,26 @@ contains
 
     this%cell_flux = vof
     !call filter_vof(this%mesh,this%cell_flux(:,:), 1)
-    do i = 1, this%mesh%ncell_onP
+    do i = 1, this%mesh%ncell_onP      
       this%normal(:,1,i) = 0.0_r8
-      associate( cn => this%mesh%cnc(this%mesh%xcnc(i):this%mesh%xcnc(i+1)-1))      
-        do c = 1, size(cn)
-          if(cn(c) /= 0) then
-             this%normal(:,1,i) = this%normal(:,1,i) + this%lsq_weightings(:,this%mesh%xcnc(i)+c-1)&
-                  *(this%cell_flux(1,cn(c))-this%cell_flux(1,i))
-          end if
-        end do
-      end associate
+      if (vof(1,i) >= this%cutoff .and. vof(1,i) <= 1.0_r8 - this%cutoff) then
+         ! Need a normal for reconstruction
+         associate( cn => this%mesh%cnc(this%mesh%xcnc(i):this%mesh%xcnc(i+1)-1))      
+           do c = 1, size(cn)
+             if(cn(c) /= 0) then
+                this%normal(:,1,i) = this%normal(:,1,i) + this%lsq_weightings(:,this%mesh%xcnc(i)+c-1)&
+                     *(this%cell_flux(1,cn(c))-this%cell_flux(1,i))
+             end if
+           end do
+         end associate
+      end if
     end do    
 
-    this%normal(:,1,1:this%mesh%ncell_onP) = -this%normal(:,1,1:this%mesh%ncell_onP)
+    this%normal(:,1,1:this%mesh%ncell_onP) = -this%normal(:,1,1:this%mesh%ncell_onP)      
     do i = 1, this%mesh%ncell_onP      
       
-      ! normalize and remove smallish components due to robustness issues in nested disection
+      ! Already addressed, set to zero, just cycle
       if (vof(1,i) < this%cutoff .or. vof(1,i) > 1.0_r8 - this%cutoff) then
-         this%normal(:,1,i) = 0.0_r8
          cycle
       end if
       ! remove small values
@@ -1294,73 +1264,101 @@ contains
     real(r8), intent(in) :: a_cell_centered_vel(:,:)
     real(r8), intent(in) :: a_dt
     
-    integer :: j, nodes_in_cell, n, iter
+    integer :: j, n, iter
 
     integer :: cell_id
     integer, parameter :: max_iter = 5
-    real(r8) :: old_dist, current_dist, vel(3), projected_vel(3)
+    real(r8) :: old_dist, current_dist, vel(3), projected_vel(3), v(3,4)
     real(r8), parameter :: tolerance = 1.0e-4_r8 ! 1% change in distance
     
     ! Compute velocity at each node as the surface-area weighted average of 
     ! all connected face velocities.
     this%node_velocity = 0.0_r8
-    do j = 1, this%mesh%ncell      
-      nodes_in_cell = this%mesh%xcnode(j+1) - this%mesh%xcnode(j)
-      associate( node_id => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-        
+    do n = 1, this%mesh%nnode_onP
+      associate( cn => this%mesh%ndcell(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1))        
         ! Weights already normalized, so don't need to do it again
-        do n = 1, nodes_in_cell
-          this%node_velocity(:,node_id(n)) = this%node_velocity(:,node_id(n)) + &
-               a_cell_centered_vel(:,j) * this%velocity_weightings(this%mesh%xcnode(j)+n-1)
-          this%w_node(1,node_id(n)) = real(j ,r8)
+        do j = 1, size(cn)
+          this%node_velocity(:,n) = this%node_velocity(:,n) + &
+               a_cell_centered_vel(:,cn(j)) * this%velocity_weightings(this%mesh%xndcell(n)+j-1)
         end do
       end associate
       
     end do
-    
     call gather_boundary(this%mesh%node_ip, this%node_velocity)
     
     
     ! First order explicit Euler
-    this%projected_nodes(:,1:this%mesh%nnode_onP) = this%mesh%x(:,1:this%mesh%nnode_onP) + &
-         this%node_velocity(:,1:this%mesh%nnode_onP)*(-a_dt)
-    this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
-         this%projected_nodes(:,1:this%mesh%nnode_onP)) &
-         / a_dt
-    call gather_boundary(this%mesh%node_ip, this%w_node )         
-    call gather_boundary(this%mesh%node_ip, this%projected_nodes )         
+     this%projected_nodes(:,1:this%mesh%nnode_onP) = this%mesh%x(:,1:this%mesh%nnode_onP) + &
+          this%node_velocity(:,1:this%mesh%nnode_onP)*(-a_dt)
+     this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
+          this%projected_nodes(:,1:this%mesh%nnode_onP)) &
+          / a_dt
+     call gather_boundary(this%mesh%node_ip, this%w_node )         
+     call gather_boundary(this%mesh%node_ip, this%projected_nodes )
+
+     ! TWO METHODS BELOW SEEM TO BE BROKEN IN PARALLEL, lose conservation
     
-    ! ! Second Order (Spatila) Simplectic Integration
-    ! do n = 1, this%mesh%nnode_onP
-    !   vel = this%node_velocity(:,n)
-    !   cell_id = NINT(this%w_node(1,n)) ! Probably a better way?
-    !   do iter = 1, max_iter
-    !     this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*vel
-    !     projected_vel = this%get_velocity_at_point(this%projected_nodes(:,n), cell_id)
-    !     if(cell_id > this%mesh%ncell) then ! Outside domain, keep first euler
-    !        this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)             
-    !        exit
+    ! ! Second Order (Spatially) Simplectic Integration
+    ! node_loop : do n = 1, this%mesh%nnode_onP
+    !   this%projected_nodes(:,n) = this%mesh%x(:,n)
+    !   cell_id = this%mesh%ndcell(this%mesh%xndcell(n))
+    !   integrate : do iter = 1, max_iter
+    !     vel = this%get_velocity_at_point(0.5_r8*(this%projected_nodes(:,n)+this%mesh%x(:,n)), cell_id)
+    !     if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !        this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !        cycle node_loop
     !     end if
-    !     !print*,iter
-    !     !print*,'P',projected_vel
-    !     !print*,'N', this%node_velocity(:,n)        
+    !     this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*vel
     !     current_dist = sum((this%projected_nodes(:,n) - this%mesh%x(:,n))**2)
     !     if(iter .ne. 1) then
     !        if( (current_dist - old_dist)/(old_dist+tiny(1.0_r8)) < tolerance) then
-    !           exit
+    !           cycle node_loop
     !        end if
     !     end if
     !     old_dist = current_dist
-    !     vel = 0.5_r8*(this%node_velocity(:,n)+projected_vel)
-    !   end do
-    ! end do
+    !   end do integrate
+    ! end do node_loop
 
     ! ! Store in w_node the linear velocity that would create the projected node in 1 step.
     ! this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
     !      this%projected_nodes(:,1:this%mesh%nnode_onP)) &
     !      / a_dt    
-    ! call gather_boundary(this%mesh%node_ip, this%w_node )     
-    ! call gather_boundary(this%mesh%node_ip, this%projected_nodes )     
+    ! call gather_boundary(this%mesh%node_ip, this%w_node )
+    ! call gather_boundary(this%mesh%node_ip, this%projected_nodes )
+
+    ! Explicit RK4
+    ! node_loop : do n = 1, this%mesh%nnode_onP
+    !   cell_id = this%mesh%ndcell(this%mesh%xndcell(n))
+    !   v(:,1)=this%get_velocity_at_point(this%mesh%x(:,n), cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   v(:,2)=this%get_velocity_at_point(this%mesh%x(:,n)+0.5_r8*-a_dt*v(:,1),cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   v(:,3)=this%get_velocity_at_point(this%mesh%x(:,n)+0.5_r8*-a_dt*v(:,2),cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   v(:,4)=this%get_velocity_at_point(this%mesh%x(:,n)+       -a_dt*v(:,3),cell_id)
+    !   if(cell_id > this%mesh%ncell) then ! Outside domain, use Forward Euler
+    !      this%projected_nodes(:,n) = this%mesh%x(:,n) - a_dt*this%node_velocity(:,n)
+    !      cycle node_loop
+    !   end if
+    !   this%projected_nodes(:,n) = this%mesh%x(:,n)-a_dt/6.0_r8*(v(:,1)+2.0_r8*v(:,2)+2.0_r8*v(:,3)+v(:,4))    
+    ! end do node_loop
+
+    ! ! Store in w_node the linear velocity that would create the projected node in 1 step.
+    ! this%w_node(:,1:this%mesh%nnode_onP) = (this%mesh%x(:,1:this%mesh%nnode_onP) - &
+    !      this%projected_nodes(:,1:this%mesh%nnode_onP)) &
+    !      / a_dt    
+    ! call gather_boundary(this%mesh%node_ip, this%w_node )
+    ! call gather_boundary(this%mesh%node_ip, this%projected_nodes )   
+    
       
   end subroutine compute_projected_nodes
 
@@ -1391,7 +1389,7 @@ contains
       characteristic_length = sum(weights(1:nodes_in_cell)) / real(nodes_in_cell, r8)
 
       do n = 1, nodes_in_cell
-        weights(n) =  1.0 / (weights(n)/characteristic_length + tiny(1.0_r8))
+        weights(n) =  sqrt(1.0 / (weights(n)/characteristic_length + tiny(1.0_r8)))
       end do
       weights(1:nodes_in_cell) = weights(1:nodes_in_cell) / sum(weights(1:nodes_in_cell))
 
