@@ -1412,8 +1412,6 @@ contains
           / a_dt
      call gather_boundary(this%mesh%node_ip, this%w_node )         
      call gather_boundary(this%mesh%node_ip, this%projected_nodes )
-
-     ! TWO METHODS BELOW SEEM TO BE BROKEN IN PARALLEL, lose conservation
     
     ! ! Second Order (Spatially) Simplectic Integration
     ! node_loop : do n = 1, this%mesh%nnode_onP
