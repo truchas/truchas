@@ -377,7 +377,7 @@ contains
       ! Unsplit advection written to use face velocities, operates on faces.
       ! Cell centered velocity also needed to form node velocities for projection.
       call this%unsplit_vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%unsplit_flux_vol, &
-           this%fluids, this%void, dt, this%interface_band)
+           this%fluids, this%void, dt, this%mat_band, this%interface_band)
     else
       ! Split advection works on a per-cell level.
       ! copy face velocities into cell-oriented array

@@ -31,13 +31,14 @@ module unsplit_volume_tracker_class
       type(parameter_list), intent(inout) :: params
     end subroutine vt_init
 
-    subroutine vt_flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_interface_band)
+    subroutine vt_flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_mat_band, a_interface_band)
       import :: unsplit_volume_tracker, r8, cell_tagged_mm_volumes
       class(unsplit_volume_tracker), intent(inout) :: this
       real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
       type(cell_tagged_mm_volumes), intent(out) :: flux_vol(:)
       real(r8), intent(out) ::  vof(:,:)
       integer, intent(in) :: fluids, void
+      integer, intent(in) :: a_mat_band(:,:)
       integer, intent(in) :: a_interface_band(:)
     end subroutine vt_flux_volumes
 

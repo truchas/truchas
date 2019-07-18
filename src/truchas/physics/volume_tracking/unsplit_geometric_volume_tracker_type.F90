@@ -46,6 +46,7 @@ module unsplit_geometric_volume_tracker_type
     integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
     integer, allocatable :: boundary_recon_to_cell(:) ! Mapping of boundary reconstruction ID to neighboring inside cell ID
+    real(r8), allocatable :: cell_bounding_box(:,:,:)    
     real(r8), allocatable :: correction_vertex(:,:)    
     ! Start IRL objects
     type(ObjServer_PlanarLoc_type) :: object_server_planar_localizer
@@ -85,6 +86,7 @@ module unsplit_geometric_volume_tracker_type
     procedure, public :: write_interface
     procedure, private :: init_irl_mesh
     procedure, private :: generate_flux_classes
+    procedure, private :: generate_cell_bounding_boxes    
     procedure, private :: compute_velocity_weightings
     procedure, private :: compute_lsq_weightings
     procedure, private :: set_irl_priority_order
@@ -107,6 +109,7 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: compute_projected_nodes
     procedure, private :: compute_fluxes
     procedure, private :: set_irl_volume_geometry
+    procedure, private :: refined_advection_check
     procedure, private :: moments_from_geometric_cutting
     !procedure, private :: update_vof
     procedure, private :: getBCMaterialFractions
@@ -185,6 +188,7 @@ contains
     allocate(this%velocity_weightings(mesh%xcnode(mesh%ncell+1)-1))
     allocate(this%lsq_weightings(3,mesh%xcnc(mesh%ncell_onP+1)-1))    
     allocate(this%projected_nodes(3, mesh%nnode))
+    allocate(this%cell_bounding_box(3,2,this%mesh%ncell))    
     allocate(this%correction_vertex(3,this%mesh%nface))    
 
     ! list of boundary face ids
@@ -240,6 +244,9 @@ contains
     ! Reorganize and generate needed face-flux information
     call this%generate_flux_classes
 
+    ! Generate cell bounding boxes
+    call this%generate_cell_bounding_boxes    
+
     ! Calculate weightings for interpolation of cell center velocity to node
     call this%compute_velocity_weightings
 
@@ -250,7 +257,7 @@ contains
 
   ! flux volumes routine assuming flux_vol is a cface-like array
   ! flux volumes routine assuming vel is stored on faces, length 1:mesh%nfaces
-  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_interface_band)
+  subroutine flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_mat_band, a_interface_band)
 
     use integer_real8_tuple_vector_type
     
@@ -259,6 +266,7 @@ contains
     type(cell_tagged_mm_volumes), intent(out) :: flux_vol(:)
     real(r8), intent(out) :: vof(:,:)
     integer, intent(in) :: fluids, void
+    integer, intent(in) :: a_mat_band(:,:)    
     integer, intent(in) :: a_interface_band(:)
 
     integer :: i,j,k
@@ -281,7 +289,7 @@ contains
     call this%compute_projected_nodes(vel_cc, dt)
     call this%compute_effective_cfl(dt)
     call this%compute_correction_vertices(vel, dt, a_interface_band)    
-    call this%compute_fluxes(vel, dt, vof_n, vof, a_interface_band)
+    call this%compute_fluxes(vel, dt, vof_n, vof, a_mat_band, a_interface_band)
     !call this%update_vof(a_interface_band, flux_vol, vof)
     call stop_timer('advection')
 
@@ -1684,7 +1692,7 @@ contains
     
   end subroutine compute_correction_vertices
   
-  subroutine compute_fluxes(this, a_face_vel, a_dt, a_old_vof, a_new_vof, a_interface_band)
+  subroutine compute_fluxes(this, a_face_vel, a_dt, a_old_vof, a_new_vof, a_mat_band, a_interface_band)
   
     use irl_interface_helper
     use integer_real8_tuple_vector_type
@@ -1694,14 +1702,16 @@ contains
     real(r8), intent(in) :: a_dt
     real(r8), intent(in) :: a_old_vof(:,:)    
     real(r8), intent(inout) :: a_new_vof(:,:)
+    integer, intent(in)  :: a_mat_band(:,:)    
     integer, intent(in)  :: a_interface_band(:)
         
     integer :: j, f, v, i, t, k, n
-    integer ::  number_of_nodes, neighbor_cell_index, phase_id, phase, phase_size
-    real(r8) :: cell_nodes(3,14), phase_volume(this%nmat), cell_volume, correct_flux_vol
+    integer ::  number_of_nodes
+    real(r8) :: cell_nodes(3,14)
     real(r8) :: bounding_box(3,2)
-    type(integer_real8_tuple_vector), pointer :: cell_local_volumes_ptr    
-    integer :: current_tag, min_band
+    type(integer_real8_tuple_vector), pointer :: cell_local_volumes_ptr            
+    integer :: single_phase
+    logical :: geometric_cutting_needed
     
     do j = 1, this%mesh%ncell_onP     
 
@@ -1723,31 +1733,40 @@ contains
         end associate
         
         call this%set_irl_volume_geometry(cell_nodes, number_of_nodes, bounding_box)
-        ! geometric_cutting_needed = this%refined_advection_check(bounding_box, &
-        !      j, a_interface_band(j), a_interface_band)
-      end associate
-      
-      call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)         
-      call this%moments_from_geometric_cutting(number_of_nodes, &
-           j, a_old_vof, this%cell_flux(j))
 
-      do n = 1, this%cell_flux(j)%get_number_of_cells()
-        cell_local_volumes_ptr => this%cell_flux(j)%get_cell_fluxes(n)
-        do k = 1, cell_local_volumes_ptr%size()
-          a_new_vof(cell_local_volumes_ptr%at_int(k),j) = a_new_vof(cell_local_volumes_ptr%at_int(k),j) &
-               + cell_local_volumes_ptr%at_r8(k)
-        end do        
-      end do
-        
-      a_new_vof(:,j) = a_new_vof(:,j) / sum(a_new_vof(:,j))
-      do k = 1, this%nmat
-        if(a_new_vof(k,j) < this%cutoff) then
-           a_new_vof(k,j) = 0.0_r8
-        else if(a_new_vof(k,j) > 1.0_r8 - this%cutoff) then
-           a_new_vof(k,j) = 1.0_r8
+        if(a_interface_band(j) == 0) then
+           geometric_cutting_needed = .true.
+        else
+           single_phase = maxloc(a_old_vof(:,j),1)
+           geometric_cutting_needed = this%refined_advection_check(bounding_box, &
+                j, a_mat_band(single_phase, j), a_mat_band(single_phase,:))
         end if
-      end do
-      a_new_vof(:,j) = a_new_vof(:,j) / sum(a_new_vof(:,j))      
+      end associate
+
+      if(geometric_cutting_needed) then
+         call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)         
+         call this%moments_from_geometric_cutting(number_of_nodes, &
+              j, a_old_vof, this%cell_flux(j))
+         
+         do n = 1, this%cell_flux(j)%get_number_of_cells()
+           cell_local_volumes_ptr => this%cell_flux(j)%get_cell_fluxes(n)
+           do k = 1, cell_local_volumes_ptr%size()
+             a_new_vof(cell_local_volumes_ptr%at_int(k),j) = a_new_vof(cell_local_volumes_ptr%at_int(k),j) &
+                  + cell_local_volumes_ptr%at_r8(k)
+           end do
+         end do
+         
+         a_new_vof(:,j) = a_new_vof(:,j) / sum(a_new_vof(:,j))
+         do k = 1, this%nmat
+           if(a_new_vof(k,j) < this%cutoff) then
+              a_new_vof(k,j) = 0.0_r8
+           else if(a_new_vof(k,j) > 1.0_r8 - this%cutoff) then
+              a_new_vof(k,j) = 1.0_r8
+           end if
+         end do
+         a_new_vof(:,j) = a_new_vof(:,j) / sum(a_new_vof(:,j))      
+      end if
+
     end do
     
   end subroutine compute_fluxes
@@ -1784,6 +1803,61 @@ contains
 
   end subroutine set_irl_volume_geometry
 
+  function refined_advection_check(this, a_bounding_box, a_starting_cell, a_starting_band, a_interface_band) &
+       result(a_geometric_cutting_needed)
+
+    use traversal_tracker_type, only : traversal_tracker        
+
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    real(r8), intent(in) :: a_bounding_box(:,:)
+    integer, intent(in) :: a_starting_cell
+    integer, intent(in) :: a_starting_band
+    integer, intent(in) :: a_interface_band(:)
+    logical :: a_geometric_cutting_needed
+
+    type(traversal_tracker) :: coverage
+    integer :: current_cell, n, dim
+
+    if(a_starting_band == 0) then
+       a_geometric_cutting_needed = .true.
+       return
+    end if
+
+    call coverage%init([a_starting_cell])
+
+    do while(coverage%still_cells_to_visit())
+      current_cell = coverage%get_next_cell()
+
+      associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(current_cell):this%mesh%xcnhbr(current_cell+1)-1))
+        neigh_loop : do n = 1, size(cn)
+          if(cn(n) /= 0) then
+             if(coverage%cell_not_encountered(cn(n))) then
+                ! Now check if intersection of axis aligned bounding boxes
+                ! X direction
+                do dim = 1,3
+                  if(this%cell_bounding_box(dim,1,cn(n)) > a_bounding_box(dim,2) .or. &
+                       this%cell_bounding_box(dim,2,cn(n)) < a_bounding_box(dim,1)) then
+                     cycle neigh_loop
+                  end if
+                end do
+
+                ! Made it this far, bounding_box's intersect. See if would require cutting
+                if(a_interface_band(cn(n))*a_starting_band <= 0) then
+                   a_geometric_cutting_needed = .true.
+                   return
+                end if
+                call coverage%add_cell(cn(n))
+             end if
+          end if
+        end do neigh_loop
+      end associate
+    end do
+    
+    a_geometric_cutting_needed = .false.
+    return
+    
+  end function refined_advection_check
+  
   subroutine moments_from_geometric_cutting(this, a_base_number_of_nodes, a_starting_index, a_vof, a_cell_flux)
 
     use integer_real8_tuple_vector_type
@@ -2140,5 +2214,22 @@ contains
     end function make_smallest_global_ind_first
     
   end subroutine generate_flux_classes
+
+  subroutine generate_cell_bounding_boxes(this)
+
+    class(unsplit_geometric_volume_tracker), intent(inout) :: this
+
+    integer :: n, d
+
+    do n = 1, this%mesh%ncell
+      associate(cn => this%mesh%cnode(this%mesh%xcnode(n):this%mesh%xcnode(n+1)-1))
+        do d = 1,3
+          this%cell_bounding_box(d, 1, n) = minval(this%mesh%x(d,cn))
+          this%cell_bounding_box(d, 2, n) = maxval(this%mesh%x(d,cn))        
+        end do
+      end associate
+    end do
+
+  end subroutine generate_cell_bounding_boxes  
 
 end module unsplit_geometric_volume_tracker_type
