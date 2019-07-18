@@ -709,6 +709,7 @@ contains
       integer, intent(in) :: a_iter
 
       integer :: j, n, next, last, active
+      real(r8) :: vol_sum      
 
       next = 2
       last = 1
@@ -716,14 +717,14 @@ contains
         do j = 1, a_mesh%ncell_onP
           associate( cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
             a_vof(next,j) = 0.0_r8
-            active = 0
+            vol_sum = 0.0_r8
             do n = 1, size(cn)
               if(cn(n) /= 0) then
-                 active = active + 1
-                 a_vof(next,j) = a_vof(next,j) + a_vof(last, cn(n))
+                 vol_sum = vol_sum + a_mesh%volume(cn(n))
+                 a_vof(next,j) = a_vof(next,j) + a_vof(last, cn(n))*a_mesh%volume(cn(n))
               end if
             end do
-            a_vof(next,j) = a_vof(next,j) / real(active,r8)            
+            a_vof(next,j) = a_vof(next,j) / (vol_sum + tiny(1.0_r8))
           end associate
         end do
         call gather_boundary(a_mesh%cell_ip, a_vof(next,:))          
@@ -1471,7 +1472,7 @@ contains
     real(r8), intent(in) :: a_dt
     integer, intent(in)  :: a_interface_band(:)
     
-    integer :: f, min_band
+    integer :: f, min_band,n
     integer :: number_of_nodes
     real(r8) :: correct_volume, cell_nodes(3,9)
 
@@ -1500,7 +1501,7 @@ contains
         cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = this%projected_nodes(:, node_index)
         
         ! Initial guess for volume conservative cap vertex
-        cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2) /real(number_of_nodes,r8)
+        cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2)/real(number_of_nodes,r8)
         
         select case(this%flux_geometry_class(f))
         case(1) ! Triangular Face -> Octahedron Volume
@@ -1549,7 +1550,7 @@ contains
            
            call construct(this%IRL_CapDod_LLTT, cell_nodes)            
            call adjustCapToMatchVolume(this%IRL_CapDod_LLTT, correct_volume)
-           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLTT, 8)         
+           this%correction_vertex(:,f) = getPt(this%IRL_CapDod_LLTT, 8)      
            
         case(9) ! Quad Face -> Dodecahedron Volume
            
@@ -1630,7 +1631,6 @@ contains
          this%cell_flux(1:2,j) = moment_flux(1:2)
          this%phase_centroids(:,1,j) = moment_flux(3:5)
          this%phase_centroids(:,2,j) = moment_flux(6:8)
-
          ! Update VOF
          ! Only time vof should change is when geometric cutting is needed.
          a_new_vof(:,j) = this%cell_flux(:,j) / sum(this%cell_flux(:,j))         
@@ -2006,11 +2006,12 @@ contains
     ! Treat edges as being diagonalized from lower global node id to higher
     ! For each face, now store correct flux class and
     ! node ordering to be consistent
-    do f = 1, this%mesh%nface_onP
+    do f = 1, this%mesh%nface
       associate(node_id => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
-        irl_ordering = reorder_node_id(node_id)        
         number_of_nodes = size(node_id)
-        ASSERT(number_of_nodes == 3 .or. number_of_nodes == 4)
+        ASSERT(number_of_nodes == 3 .or. number_of_nodes == 4)        
+        irl_ordering = reorder_node_id(node_id)
+        irl_ordering = make_smallest_global_ind_first(this%mesh, irl_ordering(1:number_of_nodes))
         lookup_case = 1
         do n = 1, number_of_nodes          
           edge_end = irl_ordering(mod(n,number_of_nodes)+1)
@@ -2054,6 +2055,7 @@ contains
 
   contains
 
+    ! Reordering face to that used by IRL
     function reorder_node_id(a_node_list) result(a_irl_ordered_list)
       integer, intent(in) :: a_node_list(:)
       integer :: a_irl_ordered_list(4)
@@ -2071,6 +2073,33 @@ contains
       return
     end function reorder_node_id
 
+    ! This is needed because it seems subdomains do not agree on face ordering
+    ! of nodes? 
+    function make_smallest_global_ind_first(a_mesh, a_node_list) result(a_new_list)
+      type(unstr_mesh), intent(in) :: a_mesh
+      integer, intent(in) :: a_node_list(:)      
+      integer :: a_new_list(4)
+
+      integer :: n, smallest_gid, sgid_ind, ind
+      
+      ASSERT(size(a_node_list) == 3 .or. size(a_node_list) == 4)
+
+      smallest_gid = maxval(a_mesh%xnode(a_node_list))+1
+      do n = 1, size(a_node_list)
+        if(a_mesh%xnode(a_node_list(n)) < smallest_gid) then
+           smallest_gid = a_mesh%xnode(a_node_list(n))
+           sgid_ind = n
+        end if
+      end do
+
+      do n = 1, size(a_node_list)
+        ind = mod(sgid_ind+n-1,size(a_node_list))+1
+        a_new_list(n) = a_node_list(ind)
+      end do
+      
+      
+    end function make_smallest_global_ind_first
+    
   end subroutine generate_flux_classes
 
   subroutine generate_cell_bounding_boxes(this)
