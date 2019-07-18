@@ -547,7 +547,6 @@ contains
 
     use parallel_communication, only : global_sum
     use parameter_module, only : string_len
-    use time_step_module, only : cycle_number
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: vof(:,:)
@@ -579,11 +578,8 @@ contains
 
      case('MOF')
         ! Don't have valid centroids on first iteration
-        if(cycle_number == 1) then
-           call this%normals_youngs(vof)
-        else
-           call this%normals_mof(vof)
-        end if
+        call TLS_Fatal('Need to think of what to do on first iteration when no centroids.')
+        call this%normals_mof(vof)
 
       case('LVIRA')
         call this%normals_youngs(vof)
@@ -1296,8 +1292,6 @@ contains
           / a_dt
      call gather_boundary(this%mesh%node_ip, this%w_node )         
      call gather_boundary(this%mesh%node_ip, this%projected_nodes )
-
-     ! TWO METHODS BELOW SEEM TO BE BROKEN IN PARALLEL, lose conservation
     
     ! ! Second Order (Spatially) Simplectic Integration
     ! node_loop : do n = 1, this%mesh%nnode_onP
