@@ -11,6 +11,7 @@ import os
 import posixpath
 import copy
 from xml.etree import ElementTree as ET
+from xml.dom import minidom
 
 import h5py
 
@@ -153,11 +154,11 @@ def hdf5_to_xdmf(infile, outfile, verbose=False):
         xdmf_grid_parent.append(series_xdmf(series, xdmf_grid_pointer))
 
     # write to file
-    xmltree = ET.ElementTree(xdmf)
-    with open(outfile, 'wb') as f:
-        f.write(b'<?xml version="1.0" ?>')
-        f.write(b'<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>')
-        xmltree.write(f)
+    xdmf_str = '<?xml version="1.0" ?><!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>' \
+        + ET.tostring(xdmf).decode()
+    pretty_str = minidom.parseString(xdmf_str).toprettyxml()
+    with open(outfile, 'w') as f:
+        f.write(pretty_str)
 
 
 if __name__=="__main__":
