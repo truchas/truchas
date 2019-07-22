@@ -271,7 +271,7 @@ contains
     vof = vof_n
 
     call start_timer('reconstruction')
-    call this%interface_reconstruction(vof)    
+    call this%interface_reconstruction(vof_n)    
     call this%construct_interface_polygons(a_interface_band)
     call stop_timer('reconstruction')
 
@@ -749,25 +749,23 @@ contains
     
     logical :: done
     integer :: j, n, outer_iter
-    real(r8), allocatable :: polygon_center(:,:), initial_normal(:,:), old_normal(:,:)
+    real(r8), allocatable :: polygon_center(:,:), old_normal(:,:)
     real(r8) :: distance_guess
     real(r8) :: angle_difference, rotation_axis(3), normal_center_line(3)
     real(r8) :: rotation_quaternion(4), inv_rotation_quaternion(4), rotated_normal(4)
-    real(r8) :: rotation_axis_mag
+    real(r8) :: rotation_axis_mag, normal_mag
     integer :: number_of_active_neighbors
 
     ASSERT(this%nmat == 2)
     
     allocate(polygon_center(3,this%mesh%ncell))
-    allocate(initial_normal(3,this%mesh%ncell))
     allocate(old_normal(3,this%mesh%ncell))    
-    initial_normal = this%normal(:,1,:)
     done = .false.
     outer_iter = 0
     do while(.not. done)
       outer_iter = outer_iter + 1
 
-      ! Set current interfaces in IRL (with satisfting volume fractions) and polygons
+      ! Set current interfaces in IRL (with satisfying volume fractions) and polygons
       polygon_center = 0.0_r8      
       do j = 1, this%mesh%ncell_onP
         if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
@@ -776,7 +774,7 @@ contains
           call setPlane(this%planar_separator(j), 0, this%normal(:,1,j), distance_guess)
           
           associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-            
+
             call this%adjust_planes_match_VOF(this%mesh%x(:,cn), a_vof(:,j), &
                  this%planar_separator(j) )
 
@@ -843,8 +841,9 @@ contains
 
           end associate
 
-          if(number_of_active_neighbors > 0) then
-            this%normal(:,1,j) = this%normal(:,1,j) / sqrt(sum(this%normal(:,1,j)**2))
+          normal_mag = sqrt(sum(this%normal(:,1,j)**2))
+          if(number_of_active_neighbors > 0 .and. normal_mag > epsilon(1.0_r8)) then
+            this%normal(:,1,j) = this%normal(:,1,j) / normal_mag
           else
             this%normal(:,1,j) = old_normal(:,j)
           end if
@@ -865,7 +864,6 @@ contains
     call gather_boundary(this%mesh%cell_ip, this%normal)
     
     deallocate(polygon_center)
-    deallocate(initial_normal)
     deallocate(old_normal)
     
   end subroutine normals_swartz
@@ -1143,7 +1141,7 @@ contains
       if(vof(1,j) < this%cutoff .or. vof(1,j) > 1.0_r8 - this%cutoff) then
         ! Full phase cell
         distance_guess = sign(1.0_r8, vof(1,j)-0.5_r8)
-        call setPlane(this%planar_separator(j),0, [0.0_r8, 0.0_r8, 0.0_r8], distance_guess)
+        call setPlane(this%planar_separator(j), 0, [0.0_r8, 0.0_r8, 0.0_r8], distance_guess)
       else
         ! Mixed cell
         distance_guess = dot_product(this%normal(:,1,j), this%mesh%cell_centroid(:,j))
@@ -1172,7 +1170,7 @@ contains
     real(r8), intent(in) :: a_vof(:)
     type(PlanarSep_type), intent(inout) :: a_planar_separator
 
-    real(r8), parameter :: VOF_tolerance = 1.0e-14_r8
+    real(r8), parameter :: VOF_tolerance = 1.0e-15_r8
     
     ! PlanarSeparator should already be setup with a valid normal and
     ! guess for the distance (atleast somewhere inside cell so we can calculate
