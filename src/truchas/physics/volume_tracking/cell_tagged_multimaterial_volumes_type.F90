@@ -63,13 +63,13 @@ contains
     integer, intent(in) :: a_cell_id
     type(integer_real8_tuple_vector), intent(in) :: a_cell_fluxes
 
-    ASSERT(allocated(this%phase_moments_m))
     call this%cell_id_m%push_back(a_cell_id)
     if(this%cell_id_m%capacity() > size(this%phase_moments_m,1)) then
       ! Reallocation was forced during cell_id push_back,
       ! match this in phase_moments
       call this%phase_moments_reserve()
     end if
+    ASSERT(allocated(this%phase_moments_m))    
     this%phase_moments_m(this%cell_id_m%size()) = a_cell_fluxes
 
   end subroutine cell_tagged_mm_volumes_add_cell_fluxes
