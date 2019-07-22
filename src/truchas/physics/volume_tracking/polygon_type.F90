@@ -230,6 +230,7 @@ contains
   function orthonormalBasis (x)
 
     use truchas_logging_services
+    external dgeqrf, dorgqr ! LAPACK routines
 
     real(r8), intent(in) :: x(:,:)
     real(r8), allocatable :: orthonormalBasis(:,:)
