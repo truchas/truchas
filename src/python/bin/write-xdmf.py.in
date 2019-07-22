@@ -43,7 +43,8 @@ def series_xdmf(series, grid_pointer):
                                             "DataType": "Float",
                                             "Precision": "8",
                                             "Name": field_name})
-        xdmf_data.text = series.file.filename + ":" + field.name
+        xdmf_data.text = os.path.basename(series.file.filename) + ":" \
+            + field.name
 
         if attr_type == "Matrix":
             # Paraview does not read matrices properly.
@@ -99,7 +100,7 @@ def grid_xdmf(data):
                                       "Dimensions": "{:d} {:d}".format(*shape),
                                       "Format": "HDF",
                                       "Name": "Coordinates"})
-    node_coordinates.text = data.filename + ":" + node_loc
+    node_coordinates.text = os.path.basename(data.filename) + ":" + node_loc
 
     # topology
     element_loc = "/Simulations/MAIN/Mesh/Element Connectivity"
@@ -115,7 +116,7 @@ def grid_xdmf(data):
                                   "Dimensions": str(data[element_loc].size),
                                   "Format": "HDF",
                                   "Name": "Connectivity"})
-    connectivity.text = data.filename + ":" + element_loc
+    connectivity.text = os.path.basename(data.filename) + ":" + element_loc
 
     # grid pointer
     gp = ET.Element("Grid", {"GridType": "Uniform"})
@@ -129,7 +130,10 @@ def grid_xdmf(data):
 
 def hdf5_to_xdmf(infile, outfile, verbose=False):
     """Produces an XDMF3 file pointing to data in an HDF5 container."""
-    h5in = h5py.File(infile, "r")
+    try:
+        h5in = h5py.File(infile, "r")
+    except OSError:
+        raise ValueError('"{:s}" is not a valid HDF5 file.'.format(infile))
 
     xdmf = ET.Element("Xdmf", {"Version": "2.0",
                                "xmlns:xi": "http://www.w3.org/2001/XInclude"})
@@ -157,8 +161,15 @@ def hdf5_to_xdmf(infile, outfile, verbose=False):
 
 
 if __name__=="__main__":
-    if len(sys.argv) != 2:
-        raise Exception('Usage: xdmf-writer.py hdf5_file.h5')
-    infile = sys.argv[1]
-    outfile = os.path.splitext(infile)[0] + ".xmf"
-    hdf5_to_xdmf(infile, outfile)
+    try:
+        if len(sys.argv) != 2: raise ValueError
+        infile = sys.argv[1]
+        if infile == '-h' or infile == '--help':
+            raise ValueError
+        elif not os.path.isfile(infile):
+            raise ValueError('"{:s}" is not a valid HDF5 file.'.format(infile))
+        outfile = os.path.splitext(infile)[0] + ".xmf"
+        hdf5_to_xdmf(infile, outfile)
+    except ValueError as e:
+        if str(e): print(e)
+        print('Usage: xdmf-writer.py hdf5_file.h5')
