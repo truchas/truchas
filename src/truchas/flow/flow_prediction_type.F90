@@ -447,20 +447,22 @@ contains
                     boundary_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
                   end if
                 else
-                  ! Must be slip condition
+                  ! Must be slip condition ? 
                   associate(faces => this%bc%v_zero_normal%index)
                     boundary_index = findloc(faces, boundary_face, 1)
                   end associate
-                  ASSERT(boundary_index /= 0)
+                  !ASSERT(boundary_index /= 0)
                   ! Neumann without face-normal component
-                  if(this%mesh%fcell(1,boundary_index) /= 0) then
-                    boundary_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
-                  else
-                    boundary_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
+                  if(boundary_index /= 0) then
+                    if(this%mesh%fcell(1,boundary_index) /= 0) then
+                      boundary_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
+                    else
+                      boundary_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
+                    end if
+                    boundary_vel = boundary_vel - dot_product(boundary_vel, &
+                         this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)) * &
+                         this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)
                   end if
-                  boundary_vel = boundary_vel - dot_product(boundary_vel, &
-                       this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)) * &
-                       this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)
                   end if
               end if
               
