@@ -115,7 +115,7 @@ contains
     if (nproc == 1) then
 
       call file%open_rw(path)
-      call file%init_vf(size(this%val,kind=i8))
+      call file%init_vf(size(this%val,kind=i8), int(this%nface_tot,kind=i8), .true.)
       call file%put_vf_rowcount(this%ia(2:)-this%ia(:size(this%ia)-1))
       call file%put_vf_rows(this%val, this%ja, start=1_i8)
       call file%put_ambient(this%ambient)
@@ -131,7 +131,7 @@ contains
 
       if (my_rank == 1) then
         call file%open_rw(path)
-        call file%init_vf(sum(int(bsize,kind=i8)))
+        call file%init_vf(sum(int(bsize,kind=i8)), int(this%nface_tot,kind=i8), .true.)
         call file%put_vf_rowcount(rowcount)
         call file%put_ambient(ambient)
       end if
@@ -169,7 +169,7 @@ contains
     character(len=*), intent(in) :: path
 
     type(rad_encl_file) :: file
-    integer :: j, n, nproc, my_rank, nface, nface_tot, bsize(scl_size())
+    integer :: j, n, nproc, my_rank, npatch, nface, nface_tot, bsize(scl_size())
     integer, allocatable :: rowcount(:), ibuf(:)
     real, allocatable :: ambient(:), rbuf(:)
     integer(i8) :: nnonz, start
@@ -180,7 +180,7 @@ contains
     if (nproc == 1) then
 
       call file%open_ro(path)
-      call file%get_vf_dims(nface, nnonz)
+      call file%get_vf_dims(nface, npatch, nnonz)
 
       this%nface  = nface
       this%offset = 0
@@ -201,7 +201,7 @@ contains
 
       if (my_rank == 1) then
         call file%open_ro(path)
-        call file%get_vf_dims(nface_tot, nnonz)
+        call file%get_vf_dims(nface_tot, npatch, nnonz)
       end if
 
       call scl_bcast(nface_tot)

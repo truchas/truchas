@@ -61,18 +61,18 @@ contains
     use rad_encl_func_type
     use truchas_logging_services
 
-    class(rad_problem), intent(out) :: this
+    class(rad_problem), target, intent(out) :: this
     type(unstr_mesh),   intent(in)  :: mesh
     character(len=*),   intent(in)  :: name
 
-    integer :: n, stat
+    integer :: stat
     character(:), allocatable :: file
     character(len=127) :: errmsg
     character(len=32)  :: method
-    integer, pointer :: color(:), color_l(:), setids(:)
+    integer, allocatable :: setids(:)
     real(r8) :: csf, tol
     class(scalar_func), allocatable :: tamb
-    type(rad_encl_func), pointer :: eps
+    type(rad_encl_func), allocatable :: eps
 
     call ERI_get_file (name, file)
 
@@ -104,30 +104,11 @@ contains
 
     this%nface_hc = size(this%faces)
 
-    !! PARTITION THE ER FACES.  For now we do something really simple and just
-    !! equidistribute the faces, dividing up the faces like a salami (no face
-    !! reordering).  What we really want to do is partition the faces so that
-    !! nonzeros of the (row) distributed view factor matrix are approximately
-    !! equidistributed (computational cost) balanced against the communication
-    !! cost of moving data between the HC and ER partitions.
-
-    !! Partition block size on each process: NFACE_ER.
-    n = global_sum(this%nface_hc)
-    this%nface_er = n/nPE
-    if (this_PE <= modulo(n,nPE)) this%nface_er = 1 + this%nface_er
-
-    !! Equivalent coloring of the enclosure faces.
-    allocate(color_l(this%nface_er))
-    color_l = this_PE
-    call allocate_collated_array (color, n)
-    call collate (color, color_l)
-    deallocate(color_l)
-
     !! Create the distributed enclosure radiation system.
     call ERI_get_coord_scale_factor (name, csf)
-    call this%sol%init (file, csf, color)
-    deallocate(color)
-    INSIST(this%nface_er == this%sol%nface)
+    call this%sol%init (file, csf)
+    this%nface_er = this%sol%nface
+    ASSERT( this%sol%vf_mat%nface_tot == global_sum(this%nface_hc) )
 
     !! Create the parallel permutations between the HC and ER partitions.
     call create_par_perm (this%ge_faces, this%sol%encl%face_map, this%perm_hc_to_er, this%perm_er_to_hc)
@@ -167,7 +148,7 @@ contains
     !! emissivities change significantly, but this involves computing
     !! eigenvalues of the radiosity system and isn't cheap.
     call this%sol%set_cheby_param (time=0.0_r8)
-    
+
     call ERI_get_error_tolerance (name, tol)
     call this%sol%set_solver_controls (tol, maxitr=500) !TODO! input maxitr value
 
@@ -218,7 +199,7 @@ contains
     integer :: j, n, offset, nface
     integer :: last(nPE), bsize(nPE)
     integer, allocatable :: fcell(:), fcell_l(:), fside(:), fside_l(:), perm(:), perm2(:)
-    integer, pointer :: map(:)
+    integer, allocatable :: map(:)
     type(rad_encl_file) :: file
 
     !! Read the source info from the enclosure file: FCELL and FSIDE.
@@ -232,7 +213,7 @@ contains
     end if
 
     !! Mapping from external cell numbers to internal (global) cell numbers.
-    call allocate_collated_array (map, mesh%cell_ip%global_size())
+    allocate(map(merge(mesh%cell_ip%global_size(), 0, is_IOP)))
     call collate (map, mesh%xcell(:mesh%ncell_onP))
     if (is_IOP) then
       ASSERT(is_perm(map))
@@ -286,7 +267,7 @@ contains
     if (stat /= 0) return
 
     !! Generate the global mapping MAP of enclosure faces to mesh faces.
-    call allocate_collated_array (map, nface)
+    allocate(map(merge(nface, 0, is_IOP)))
     call collate (map, fcell_l)
     if (is_IOP) then  ! undo the partition sort
       call reorder (map, perm, forward=.true.)
@@ -464,7 +445,7 @@ contains
     type(unstr_mesh), intent(in) :: mesh
     integer, intent(in) :: faces(:)
     integer, intent(out) :: stat
-    integer, pointer :: setids(:)
+    integer, allocatable, intent(out) :: setids(:)
 
     integer :: j, n
     type(bitfield) :: bitmask

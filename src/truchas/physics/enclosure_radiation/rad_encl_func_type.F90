@@ -117,7 +117,7 @@ contains
   subroutine prep (this, encl)
 
     class(rad_encl_func), intent(out) :: this
-    type(rad_encl), pointer :: encl
+    type(rad_encl), target, intent(in) :: encl
 
     this%encl => encl
     this%ngroup = 0

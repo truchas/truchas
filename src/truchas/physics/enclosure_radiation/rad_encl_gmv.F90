@@ -106,9 +106,9 @@ contains
 
     type(rad_encl), intent(in) :: this
 
-    integer :: j, dimen, nnode, nface, offset
-    integer, pointer :: map(:), fsize(:), fnode(:), list(:)
-    real(r8), pointer :: x(:), y(:), z(:)
+    integer :: j, n, dimen, nnode, nface, offset
+    integer, allocatable :: map(:), fsize(:), fnode(:)
+    real(r8), allocatable :: x(:), y(:), z(:)
     character(8) :: name
 
     dimen = size(this%coord,dim=1)
@@ -116,9 +116,8 @@ contains
     nface = this%face_ip%global_size()
 
     !! Write the node coordinate data.
-    call allocate_collated_array (x, nnode)
-    call allocate_collated_array (y, nnode)
-    call allocate_collated_array (z, nnode)
+    n = merge(nnode, 0, is_IOP)
+    allocate(x(n), y(n), z(n))
     call collate (x, this%coord(1,:this%nnode_onP))
     call collate (y, this%coord(2,:this%nnode_onP))
     call collate (z, this%coord(3,:this%nnode_onP))
@@ -126,42 +125,43 @@ contains
     deallocate(x, y, z)
 
     !! Write the cell data.
-    call allocate_collated_array (fsize, nface)
+    allocate(fsize(merge(nface, 0, is_IOP)))
     call collate (fsize, this%xface(2:this%nface+1)-this%xface(1:this%nface))
-    call allocate_collated_array (fnode, sum(fsize))
+    allocate(fnode(merge(sum(fsize), 0, is_IOP)))
     call collate (fnode, this%node_ip%global_index(this%fnode))
     if (is_IOP) then
       call gmvwrite_cell_header_f (nface)
       offset = 0
       do j = 1, nface
-        list => fnode(offset+1:offset+fsize(j))
-        select case (fsize(j))
-        case (3)
-          call gmvwrite_cell_type_f ('tri', 3, list)
-        case (4)
-          call gmvwrite_cell_type_f ('quad', 4, list)
-        case default
-          INSIST(.false.)
-        end select
+        associate (list => fnode(offset+1:offset+fsize(j)))
+          select case (fsize(j))
+          case (3)
+            call gmvwrite_cell_type_f ('tri', 3, list)
+          case (4)
+            call gmvwrite_cell_type_f ('quad', 4, list)
+          case default
+            INSIST(.false.)
+          end select
+        end associate
         offset = offset + fsize(j)
       end do
     end if
     deallocate(fsize, fnode)
 
     !! Write the node map as the nodeids -- GMV uses these for display.
-    call allocate_collated_array (map, nnode)
+    allocate(map(merge(nnode, 0, is_IOP)))
     call collate (map, this%node_map(:this%nnode_onP))
     if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map)
 
     !! Write the face map as the cellids -- GMV uses these for display.
-    call allocate_collated_array (map, nface)
+    allocate(map(merge(nface, 0, is_IOP)))
     call collate (map, this%face_map)
     if (is_IOP) call gmvwrite_cellids_f (map)
     deallocate (map)
 
     !! Write the face block IDs as the cell material.
-    call allocate_collated_array (map, nface)
+    allocate(map(merge(nface, 0, is_IOP)))
     call collate (map, this%face_block)
     if (is_IOP) then
       call gmvwrite_material_header_f (size(this%face_block_id), CELLDATA)
@@ -175,7 +175,7 @@ contains
 
     if (nPE > 1) then
       !! Write the face partitioning info.
-      call allocate_collated_array (map, nface)
+      allocate(map(merge(nface, 0, is_IOP)))
       call collate (map, spread(this_PE, dim=1, ncopies=this%nface))
       if (is_IOP) then
         call gmvwrite_flag_header_f ()
