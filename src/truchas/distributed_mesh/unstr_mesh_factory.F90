@@ -348,9 +348,10 @@ contains
     call distribute (this%x(:,:this%nnode_onP), mesh%coord)
     call gather_boundary (this%node_ip, this%x)
 
-    ! Generate node->cell connectivity in staggered array (FOR LOCAL DOMAIN 1:_onP ONLY)
+    ! Generate node->cell connectivity in staggered array
     call init_node_to_cell_data(this)
     call init_cell_to_cell_through_node_data(this)
+    call init_node_to_face_data(this)        
 
     !! Initialize the mesh geometry data components.
     allocate(this%volume(this%ncell), this%normal(3,this%nface), this%area(this%nface))
@@ -1105,6 +1106,54 @@ contains
     end do
     
   end subroutine init_node_to_cell_data
+
+  !! This subroutine generates a staggered array that stores
+  !! the face id of all face using a particular node. This
+  !! will become invalid near the boundary, where the neighboring face
+  !! may not exist on that processor.
+  !! The faces are not ordered in any particular fashion.
+
+  subroutine init_node_to_face_data(this)
+
+    type(unstr_mesh), intent(inout) :: this    
+
+
+    integer :: f, n, i
+    integer, allocatable ::nconnect(:)   
+
+    allocate(nconnect(this%nnode))
+    nconnect = 0
+    do f = 1, this%nface
+      associate (face_nodes => this%fnode(this%xfnode(f):this%xfnode(f+1)-1))
+        do n = 1, size(face_nodes)
+          nconnect(face_nodes(n)) = nconnect(face_nodes(n)) + 1
+        end do
+      end associate
+    end do
+
+    allocate(this%xndface(this%nnode+1))
+
+    this%xndface(1) = 1
+    do n = 1, this%nnode
+      this%xndface(n+1) = this%xndface(n) + nconnect(n)
+    end do
+    deallocate(nconnect)
+    
+    allocate(this%ndface(this%xndface(this%nnode+1)-1))    
+    this%ndface = -1
+    do f = 1, this%nface
+      associate (face_nodes => this%fnode(this%xfnode(f):this%xfnode(f+1)-1))
+        do n = 1, size(face_nodes)
+          i = this%xndface(face_nodes(n))
+          do while(this%ndface(i) /= -1)
+            i = i + 1
+          end do
+          this%ndface(i) = f         
+        end do
+      end associate
+    end do
+    
+  end subroutine init_node_to_face_data  
 
   !! This subroutine generates a staggered array that stores
   !! the cell id of all cells that share a node with a cell. This

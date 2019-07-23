@@ -169,10 +169,11 @@ call hijack_truchas ()
     use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
-    use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, flow_vel_cc_view,&
-        flow_set_pre_solidification_density
+    use flow_driver, only: flow_enabled, flow_step, flow_step_unsplit, flow_accept, flow_vel_fn_view, flow_vel_cc_view,&
+        flow_vel_node_view, flow_set_pre_solidification_density
     use vtrack_driver, only: vtrack_update, vtrack_velocity_overwrite, vtrack_enabled, vtrack_vof_view, &
-         vtrack_flux_vol_view, vtrack_unsplit_flux_vol_view, get_vof_from_matl, vtrack_write_interface
+         vtrack_flux_vol_view, vtrack_unsplit_flux_vol_view, get_vof_from_matl, vtrack_write_interface, &
+         vtrack_using_unsplit, vtrack_recon_to_face_mapping
     use cell_tagged_mm_volumes_type, only : cell_tagged_mm_volumes
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
@@ -193,7 +194,7 @@ call hijack_truchas ()
     type(time_step_sync) :: ts_sync
     type(action_list), allocatable :: actions
     class(event_action), allocatable :: action
-    real(r8), pointer :: vel_fn(:), vel_cc(:,:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
+    real(r8), pointer :: vel_fn(:), vel_cc(:,:), vel_node(:,:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
     type(cell_tagged_mm_volumes), pointer :: unsplit_flux_vol(:)
     real(r8) :: tout, t_write
     !---------------------------------------------------------------------------
@@ -256,8 +257,9 @@ call hijack_truchas ()
         if (vtrack_enabled() .and. flow_enabled()) then
           vel_fn => flow_vel_fn_view()
           vel_cc => flow_vel_cc_view()
+          vel_node => flow_vel_node_view()
           
-          call vtrack_update(t, dt, vel_fn, vel_cc)
+          call vtrack_update(t, dt, vel_fn, vel_cc, vel_node)          
           vof => vtrack_vof_view()
           flux_vol => vtrack_flux_vol_view()
           call flow_set_pre_solidification_density(vof)
@@ -287,8 +289,13 @@ call hijack_truchas ()
           ! This updates the volume tracker's internal variable for the vof, so
           ! we can give the flow the current post-heat-transfer volume fractions.
           if (vtrack_enabled() .and. ds_enabled) call get_vof_from_matl(vof)
-! QUESTION: VOF DONE CHANGING HERE. Solidification addressed in ds_get_face_temp_view
-          call flow_step(t,dt,vof,flux_vol,temperature_fc)
+          ! QUESTION: VOF DONE CHANGING HERE. Solidification addressed in ds_get_face_temp_view
+          if(vtrack_using_unsplit()) then
+            unsplit_flux_vol => vtrack_unsplit_flux_vol_view()
+            call flow_step_unsplit(t,dt,vof,unsplit_flux_vol, vtrack_recon_to_face_mapping(), temperature_fc)
+          else
+            call flow_step(t,dt,vof,flux_vol,temperature_fc)
+          end if
           ! since this driver doesn't know any better, always accept
           call flow_accept()
         else

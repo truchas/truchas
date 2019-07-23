@@ -78,8 +78,8 @@ module flow_driver
   private
 
   public :: read_flow_namelists, flow_timestep
-  public :: flow_driver_init, flow_step, flow_final, flow_enabled, flow_accept
-  public :: flow_vel_fn_view, flow_vel_cc_view, flow_P_cc_view
+  public :: flow_driver_init, flow_step, flow_step_unsplit, flow_final, flow_enabled, flow_accept
+  public :: flow_vel_fn_view, flow_vel_cc_view, flow_vel_node_view, flow_P_cc_view
   public :: read_fluxing_velocity, get_legacy_flux_vel
   public :: flow_driver_set_initial_state
   public :: flow_driver_dump_state
@@ -116,6 +116,12 @@ contains
     p => this%flow%vel_cc_view()
   end function flow_vel_cc_view
 
+  function flow_vel_node_view() result(p)
+    real(r8), pointer :: p(:,:)
+    ASSERT(flow_enabled())
+    p => this%flow%vel_node_view()
+  end function flow_vel_node_view
+  
   function flow_P_cc_view() result(p)
     real(r8), pointer :: p(:)
     ASSERT(flow_enabled())
@@ -328,6 +334,7 @@ contains
               this%mesh%normal(:,j))/this%mesh%area(j)
         end do
       end block
+      call this%flow%compute_node_velocities(this%flow%vel_cc, this%flow%vel_fn, this%flow%vel_node)      
       ! This will be needed by timestep
       this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
       vof => vtrack_vof_view()
@@ -339,6 +346,7 @@ contains
 
     if(prescribed_flow .and. velocity_overwrite_requested) then
       call vtrack_velocity_overwrite(t,this%flow%vel_fn,this%flow%vel_cc)
+      call this%flow%compute_node_velocities(this%flow%vel_cc, this%flow%vel_fn, this%flow%vel_node)      
       ! This will be needed by timestep
       this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
       vof => vtrack_vof_view()
@@ -409,7 +417,7 @@ contains
         end block
       else
         call this%props%update_cc(vof, this%temperature_cc)       
-        call vtrack_velocity_overwrite(t,this%flow%vel_fn,this%flow%vel_cc) 
+        call vtrack_velocity_overwrite(t+dt,this%flow%vel_fn,this%flow%vel_cc) 
       end if
          
    else
@@ -423,7 +431,64 @@ contains
     call stop_timer('Flow')
 
   end subroutine flow_step
+  
+  subroutine flow_step_unsplit(t, dt, vof, unsplit_flux_volumes, boundary_recon_to_face_map, temperature_fc)
 
+    use cell_tagged_mm_volumes_type
+    
+    use zone_module, only: Zone
+    use physics_module, only: prescribed_flow
+    use advection_velocity_namelist, only: adv_vel
+    use vof_velocity_overwrite, only : velocity_overwrite_requested
+    use vtrack_driver, only : vtrack_velocity_overwrite
+
+    real(r8), intent(in) :: t, dt
+    real(r8), intent(in) :: vof(:,:)
+    type(cell_tagged_mm_volumes), intent(in) :: unsplit_flux_volumes(:)
+    integer, intent(in) :: boundary_recon_to_face_map(:)
+    real(r8), intent(in), pointer :: temperature_fc(:)
+
+    call start_timer('Flow')
+
+    this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
+    call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+
+    if (prescribed_flow) then
+      if(.not. velocity_overwrite_requested) then
+        call this%props%update_cc(vof, this%temperature_cc)
+        block
+          integer :: j
+          real(r8) :: args(0:3)
+          args(0) = t
+          do j = 1, this%mesh%ncell
+            args(1:3) = this%mesh%cell_centroid(:,j)
+            this%flow%vel_cc(:,j) = adv_vel%eval(args)
+          end do
+          do j = 1, this%mesh%nface
+            args(1:3) = this%mesh%face_centroid(:,j)
+            this%flow%vel_fn(j) = dot_product(adv_vel%eval(args), &
+                this%mesh%normal(:,j))/this%mesh%area(j)
+          end do
+        end block
+        call this%flow%compute_node_velocities(this%flow%vel_cc, this%flow%vel_fn, this%flow%vel_node)
+      else
+        call this%props%update_cc(vof, this%temperature_cc)       
+        call vtrack_velocity_overwrite(t+dt,this%flow%vel_fn,this%flow%vel_cc)
+        call this%flow%compute_node_velocities(this%flow%vel_cc, this%flow%vel_fn, this%flow%vel_node)        
+      end if
+         
+   else
+     if (associated(temperature_fc)) then
+       this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
+       call gather_boundary(this%mesh%face_ip, this%temperature_fc)
+     end if
+     call this%flow%step_unsplit(t, dt, vof, unsplit_flux_volumes, boundary_recon_to_face_map, this%temperature_cc)
+   end if
+
+    call stop_timer('Flow')
+
+  end subroutine flow_step_unsplit
+  
   subroutine flow_accept()
     call this%props%accept()
     call this%flow%accept()

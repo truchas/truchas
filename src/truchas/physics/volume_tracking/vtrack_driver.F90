@@ -72,8 +72,9 @@ module vtrack_driver
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
   public :: vtrack_velocity_overwrite
-  private :: vtrack_update_mat_band
   public :: vtrack_open_interface_file, vtrack_close_interface_file, vtrack_write_interface
+  public :: vtrack_using_unsplit, vtrack_recon_to_face_mapping
+  private :: vtrack_update_mat_band  
 
   integer, parameter, private :: band_map_width = 7 ! Size of band_map to create in +/- direction.
 
@@ -129,8 +130,17 @@ contains
   function vtrack_unsplit_flux_vol_view() result(p)
     type(cell_tagged_mm_volumes), pointer :: p(:)
     ASSERT(vtrack_enabled())
+    ASSERT(this%unsplit_advection)    
     p => this%unsplit_flux_vol
   end function vtrack_unsplit_flux_vol_view
+
+  function vtrack_recon_to_face_mapping() result(p)
+    integer, pointer :: p(:)
+    ASSERT(vtrack_enabled())
+    ASSERT(this%unsplit_advection)
+    p => this%unsplit_vt%boundary_recon_to_face
+    return
+  end function vtrack_recon_to_face_mapping  
   
   ! material ids corresponding to flux_vol columns
   function vtrack_liq_matid_view() result(p)
@@ -180,6 +190,15 @@ contains
     end if
 
   end subroutine vtrack_write_interface
+
+  function vtrack_using_unsplit() result(is_true)
+    logical :: is_true
+
+    ASSERT(vtrack_enabled())
+    is_true = this%unsplit_advection
+    return
+  end function vtrack_using_unsplit
+  
   
   subroutine vtrack_driver_init(params)
 
@@ -195,6 +214,7 @@ contains
     type(parameter_list), intent(inout) :: params
 
     integer :: i,j,k
+    real(r8) :: vof_sum
     logical :: track_interfaces
 
     allocate(this)
@@ -247,7 +267,7 @@ contains
     allocate(this%xinterface_band_map(0:band_map_width+1))    
 
     call params%get('track_interfaces', track_interfaces)
-    call params%get('unsplit_interface_advection', this%unsplit_advection, .true.)
+    call params%get('unsplit_interface_advection', this%unsplit_advection)
     if (track_interfaces) then
       if(this%unsplit_advection) then
         allocate(unsplit_geometric_volume_tracker :: this%unsplit_vt)
@@ -273,7 +293,10 @@ contains
             this%fvof_i(k,j) = 1.0_r8
           end if
         end do
-        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+        vof_sum = sum(this%fvof_i(:,j))
+        if(vof_sum  > tiny(1.0_r8)) then
+          this%fvof_i(:,j) = this%fvof_i(:,j) / vof_sum
+        end if
       end do
       this%fvof_o = this%fvof_i
       call vtrack_update_mat_band()      
@@ -327,15 +350,17 @@ contains
   subroutine put_vof_into_matl()
     use matl_utilities, only: matl_set_vof
     integer :: i
+
     do i = 1, size(this%liq_matid)
       this%vof(this%liq_matid(i),:) = this%fvof_o(i,:this%mesh%ncell_onP)
     end do
     call matl_set_vof(this%vof)
+    
   end subroutine put_vof_into_matl
 
   ! vel_fn is the outward oriented face-normal velocity
   ! vel_cc is the cell centered velocity
-  subroutine vtrack_update(t, dt, vel_fn, vel_cc, initial)
+  subroutine vtrack_update(t, dt, vel_fn, vel_cc, vel_node, initial)
 
     use parallel_communication, only : global_sum
     use parameter_module, only : string_len
@@ -344,12 +369,13 @@ contains
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vel_fn(:)
     real(r8), intent(in) :: vel_cc(:,:)
+    real(r8), intent(in) :: vel_node(:,:)    
     logical, intent(in), optional :: initial
 
     integer :: i, j, k, f0, f1
     real(r8) :: vol_sum(size(this%fvof_i,1))
 
-    real(r8) :: tmp
+    real(r8) :: vof_sum
     character(string_len) :: message, myformat
     
 
@@ -357,9 +383,7 @@ contains
     if (this%fluids == 0) return
 
     call start_timer('Volumetracking')
-
     call get_vof_from_matl(this%fvof_i)
-
     if(this%unsplit_advection) then
       ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
       ! Enforce VOF sums to 1
@@ -371,12 +395,15 @@ contains
             this%fvof_i(k,j) = 1.0_r8
           end if
         end do
-        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+        vof_sum = sum(this%fvof_i(:,j))
+        if(vof_sum  > tiny(1.0_r8)) then
+          this%fvof_i(:,j) = this%fvof_i(:,j) / vof_sum
+        end if
       end do 
       call vtrack_update_mat_band()      
       ! Unsplit advection written to use face velocities, operates on faces.
       ! Cell centered velocity also needed to form node velocities for projection.
-      call this%unsplit_vt%flux_volumes(vel_fn, vel_cc, this%fvof_i, this%fvof_o, this%unsplit_flux_vol, &
+      call this%unsplit_vt%flux_volumes(vel_fn, vel_cc, vel_node, this%fvof_i, this%fvof_o, this%unsplit_flux_vol, &
            this%fluids, this%void, dt, this%mat_band, this%interface_band)
     else
       ! Split advection works on a per-cell level.
@@ -410,10 +437,10 @@ contains
     call TLS_info(message)
     write(message, trim(myformat)) 'Domain Normalized volume change: ',  (vol_sum - this%fvol_init)/sum(this%fvol_init)
     call TLS_info(message)
-    write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/(this%fvol_init+tiny(1.0_r8))
+    write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/(this%fvol_init+epsilon(1.0_r8))
     call TLS_info(message)    
 
-    ! update the matl structure if this isn't the initial pass
+    ! update the matl structure if this isn't the initial pass  
     if (present(initial)) then
       if (.not.initial) &
           call put_vof_into_matl()
@@ -445,8 +472,12 @@ contains
       ASSERT(n <= size(this%liq_matid))
     end if
 
-    call this%vt%set_inflow_material(n, faces)
-
+    if(this%unsplit_advection) then
+      call this%unsplit_vt%set_inflow_material(n, faces)
+    else
+      call this%vt%set_inflow_material(n, faces)
+    end if
+    
   end subroutine vtrack_set_inflow_material
 
   !! Sets the inflow material boundary conditions specified by the given
@@ -692,48 +723,66 @@ contains
         if(.not. has_interface) then
            ! Need to also check condition where cell is full/empty and neighbor empty/full
            if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then ! Cell is empty
-              ! Check if any neighbors are full
-              associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
-                do n = 1, size(cneigh)
-                   if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) > 1.0_r8 -  this%unsplit_vt%cutoff) then
-                         has_interface = .true.
-                         exit
-                      end if                      
+             ! Check if any neighbors are full
+             associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+               do n = 1, size(cneigh)
+                 if(cneigh(n) /=0 ) then
+                   if(this%fvof_i(k,cneigh(n)) > 1.0_r8 -  this%unsplit_vt%cutoff) then
+                     has_interface = .true.
+                     exit
                    end if
-                end do
-
-              end associate              
+                 end if
+               end do               
+             end associate
            else
-              ! Check if any neighbors are empty
-              associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
-                do n = 1, size(cneigh)
-                   if(cneigh(n) /=0 ) then
-                      if(this%fvof_i(k,cneigh(n)) <  this%unsplit_vt%cutoff) then
-                         has_interface = .true.
-                         exit
-                      end if                      
+             ! Check if any neighbors are empty
+             associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+               do n = 1, size(cneigh)
+                 if(cneigh(n) /=0 ) then
+                   if(this%fvof_i(k,cneigh(n)) <  this%unsplit_vt%cutoff) then
+                     has_interface = .true.
+                     exit
                    end if
-                end do
-
-              end associate              
-           end if           
-        end if        
-        if(has_interface) then
+                 end if
+               end do               
+             end associate
+           end if
+           ! Also need to check for inflow boundary condition
+           associate(cneigh => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1), &
+                     fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+             do n = 1, size(cneigh)
+               if(cneigh(n) ==0 ) then
+                 ! Cell full, inflow not this material
+                 if(this%unsplit_vt%inflow_mat(&
+                      this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) /= k .and. &
+                      this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
+                   has_interface = .true.
+                   exit
+                 else if(this%unsplit_vt%inflow_mat(&
+                      this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) == k .and. &
+                      this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
+                   ! Cell empty, inflow is this material                   
+                   has_interface = .true.
+                   exit                   
+                 end if
+               end if
+             end do
+           end associate
+           
+         end if
+         if(has_interface) then
            this%mat_band(k,j) = 0
            this%mat_band_map(this%xmat_band_map(1,k),k) = j            
            this%xmat_band_map(1,k) = this%xmat_band_map(1,k) + 1
-        else
+         else
            ! Initialize band positive inside phase, negative outside.
            this%mat_band(k,j) = int(sign(real(band_map_width+1,r8), this%fvof_i(k,j)-0.5_r8))
-        end if
-      end do
-    end do
+         end if
+       end do
+     end do
+     
+     call gather_boundary(this%mesh%cell_ip, this%mat_band)
 
-    call gather_boundary(this%mesh%cell_ip, this%mat_band)
-
-! print*,'ADVECTING EVERYWHERE RIGHT NOW - BAND TURNED OFF'
-!this%mat_band(:,:) = 0
     ! Now loop through and fill out band to +/- band_map_width
     ! To fill in band b, loop though cells in b-1
     do b = 1, band_map_width

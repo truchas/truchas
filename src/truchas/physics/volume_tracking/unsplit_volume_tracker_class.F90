@@ -15,6 +15,9 @@ module unsplit_volume_tracker_class
 
   type, abstract, public :: unsplit_volume_tracker
     real(r8), public :: cutoff
+    integer, allocatable :: boundary_recon_to_face(:)
+    integer, allocatable :: face_to_boundary_recon(:)
+    integer, allocatable :: inflow_mat(:)    
   contains
     procedure(vt_init), deferred :: init
     procedure(vt_flux_volumes), deferred :: flux_volumes
@@ -31,10 +34,10 @@ module unsplit_volume_tracker_class
       type(parameter_list), intent(inout) :: params
     end subroutine vt_init
 
-    subroutine vt_flux_volumes(this, vel, vel_cc, vof_n, vof, flux_vol, fluids, void, dt, a_mat_band, a_interface_band)
+    subroutine vt_flux_volumes(this, vel, vel_cc, vel_node, vof_n, vof, flux_vol, fluids, void, dt, a_mat_band, a_interface_band)
       import :: unsplit_volume_tracker, r8, cell_tagged_mm_volumes
       class(unsplit_volume_tracker), intent(inout) :: this
-      real(r8), intent(in) :: vel(:), vel_cc(:,:), vof_n(:,:), dt
+      real(r8), intent(in) :: vel(:), vel_cc(:,:), vel_node(:,:), vof_n(:,:), dt
       type(cell_tagged_mm_volumes), intent(out) :: flux_vol(:)
       real(r8), intent(out) ::  vof(:,:)
       integer, intent(in) :: fluids, void

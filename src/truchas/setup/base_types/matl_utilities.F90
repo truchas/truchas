@@ -42,7 +42,6 @@ CONTAINS
     integer :: m, n, s
 
     VOF = 0.0_r8
-
     do n = 1,ncells
        do s = 1,mat_slot
           m = Matl(s)%Cell(n)%Id

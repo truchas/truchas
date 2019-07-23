@@ -50,14 +50,23 @@
 !!    xcnc, cnc - pair of rank-1 integer arrays storing cell-cell connectivity"
 !!        cnc(xcnc(j):xcnc(j+1)-1) is an unordered list of cell indices that
 !!        share a node with cell j. The shape of xcnc is [ncell+1] and
-!!        the shape of cnc is [xcnc(ncell+1)-1].
-!!        NOTE: Nodes on processor boundaries will be missing cell information
-!!        that would exist on neighboring processors.
+!!        the shape of cnc is [xcnc(ncell_onP+1)-1].
 !!
 !!    xndcell, ndcell - pair of rank-1 integer arrays storing the node-cell data:
 !!        ndcell(xndcell(j):xndcell(j+1)-1) is an unordered list of cell indices
 !!        that use node j.  The shape of xndcell is [nnode_onP+1] and
 !!        the shape of ndcell is [xndcell(nnode_onP+1)-1].
+!!        NOTE: Nodes on processor boundaries will be missing cell information
+!!        that would exist on neighboring processors. All node_onP have
+!!        full neighbor information.
+!!
+!!    xndface, ndface - pair of rank-1 integer arrays storing the node-face data:
+!!        ndface(xndface(j):xndface(j+1)-1) is an unordered list of face indices
+!!        that use node j.  The shape of xndcell is [nnode_onP+1] and
+!!        the shape of ndcell is [xndcell(nnode_onP+1)-1].
+!!        NOTE: Nodes on processor boundaries will be missing cell information
+!!        that would exist on neighboring processors. All node_onP have
+!!        full neighbor information.
 !!
 !!    cfpar - an integer bit mask array storing the relative cell face
 !!        orientations: btest(cfpar(j),k) is true when face k of cell j is
@@ -157,6 +166,7 @@ module unstr_mesh_type
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)    
     integer, allocatable :: fcell(:,:)  ! face cell neighbors
     integer, allocatable :: xndcell(:), ndcell(:) ! node to cells
+    integer, allocatable :: xndface(:), ndface(:) ! node to faces    
     integer, allocatable :: xcnc(:), cnc(:) ! cells to cells (that share a node)
     real(r8), allocatable :: normal(:,:)
     real(r8), allocatable :: cell_centroid(:,:)

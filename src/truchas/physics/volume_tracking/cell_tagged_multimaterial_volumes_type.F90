@@ -50,7 +50,7 @@ contains
   end function cell_tagged_mm_volumes_get_number_of_cells
 
   function cell_tagged_mm_volumes_get_cell_id(this, a_index) result(a_id)
-    class(cell_tagged_mm_volumes), intent(inout) :: this
+    class(cell_tagged_mm_volumes), intent(in) :: this
     integer, intent(in) :: a_index
     integer :: a_id
 

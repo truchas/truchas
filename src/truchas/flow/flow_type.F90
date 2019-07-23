@@ -30,8 +30,11 @@ module flow_type
     real(r8), allocatable :: vel_cc_n(:,:) ! cell-centered velocity (dims, ncell)
     real(r8), allocatable :: vel_fn(:) ! outward oriented face-normal velocity
     real(r8), allocatable :: vel_fn_n(:) ! outward oriented face-normal velocity
+    real(r8), allocatable :: vel_node(:,:) ! Node velocity
+    real(r8), allocatable :: vel_node_n(:,:) ! Node velocity
     real(r8), allocatable :: P_cc(:) ! cell-centered pressure
     real(r8), allocatable :: grad_p_rho_cc_n(:,:) ! dynamic pressure gradient over rho
+    real(r8), allocatable :: vel_node_interp_coeff(:) 
     real(r8) :: body_force(3)
     type(flow_projection) :: proj
     type(flow_prediction) :: pred
@@ -41,15 +44,20 @@ module flow_type
     real(r8) :: courant_number
   contains
     procedure :: init
+    procedure :: init_vel_node_interp_coeff    
     procedure, private :: set_initial_state_start, set_initial_state_restart
     generic   :: set_initial_state => set_initial_state_start, set_initial_state_restart
     procedure :: step
+    procedure :: step_unsplit    
     procedure :: accept
+    procedure :: compute_node_velocities
+    procedure :: set_bc_for_node_velocity
     procedure :: correct_non_regular_cells
     procedure :: timestep
     ! views into data
     procedure :: vel_cc_view
     procedure :: vel_fn_view
+    procedure :: vel_node_view
     procedure :: P_cc_view
     procedure :: dump_state
   end type flow
@@ -74,6 +82,12 @@ contains
     p => this%vel_fn
   end function vel_fn_view
 
+  function vel_node_view(this) result(p)
+    class(flow), target, intent(in) :: this
+    real(r8), pointer :: p(:,:)
+    p => this%vel_node
+  end function vel_node_view
+  
   subroutine timestep(this, dt, dt_tag)
 
     use parallel_communication
@@ -148,14 +162,20 @@ contains
     call plist%get('body force', array, default=[0.0_r8, 0.0_r8, 0.0_r8])
     this%body_force = array
 
-    associate (nc => mesh%ncell, nf => mesh%nface)
+    associate (nc => mesh%ncell, nf => mesh%nface, nn=>mesh%nnode)
       allocate(this%vel_cc(3, nc))
       allocate(this%vel_cc_n(3, nc))
       allocate(this%P_cc(nc))
       allocate(this%vel_fn(nf))
       allocate(this%vel_fn_n(nf))
+      allocate(this%vel_node(3,nn))
+      allocate(this%vel_node_n(3,nn))
+      allocate(this%vel_node_interp_coeff(this%mesh%xndcell(this%mesh%nnode_onP+1)-1))      
       allocate(this%grad_p_rho_cc_n(3,nc))
     end associate
+    
+    ! Compute and store interpolation coefficients for nodal velocities
+    call this%init_vel_node_interp_coeff()
 
     ! Disable BC initialization and the prediction and
     ! projection solvers if we have prescribed flow.
@@ -172,6 +192,29 @@ contains
     !call this%proj%grad_p_rho
 
   end subroutine init
+
+  subroutine init_vel_node_interp_coeff(this)
+
+    class(flow), intent(inout) :: this
+
+    integer :: j, n
+    real(r8) :: squared_distance
+
+    ! Node weightings
+    do n = 1, this%mesh%nnode_onP
+      associate(cn => this%mesh%ndcell(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1))
+        do j = 1, size(cn)
+          squared_distance = sum((this%mesh%x(:,n)-this%mesh%cell_centroid(:,cn(j)))**2)
+          this%vel_node_interp_coeff(this%mesh%xndcell(n)+j-1) = 1.0_r8 / sqrt(squared_distance)
+        end do
+      end associate
+      ! Normalize weighting
+      this%vel_node_interp_coeff(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1) = &
+           this%vel_node_interp_coeff(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1) / &
+           sum(this%vel_node_interp_coeff(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1))      
+    end do
+    
+  end subroutine init_vel_node_interp_coeff
 
   !! This assigns initial values to all the state variables in the case only
   !! external state variables are supplied. The remaining state variables are
@@ -220,6 +263,9 @@ contains
 
     this%vel_cc_n = this%vel_cc !TODO: put directly into vel_cc_n and by-pass vel_cc?
 
+    call this%compute_node_velocities(this%vel_cc, this%vel_fn, this%vel_node)
+    this%vel_node_n = this%vel_node
+
     call compute_initial_pressure(this, t, dt)
 
   end subroutine set_initial_state_start
@@ -252,6 +298,9 @@ contains
     !FIXME? Impose Dirichlet velocity conditions on vel_fn?
     this%vel_fn_n = this%vel_fn
 
+    call this%compute_node_velocities(this%vel_cc, this%vel_fn, this%vel_node)
+    this%vel_node_n = this%vel_node    
+
     call this%bc%compute_initial(t)
     call this%props%set_initial_state(vof, tcell)
     call this%proj%get_dyn_press_grad(this%props, this%p_cc, this%body_force, this%grad_p_rho_cc_n)
@@ -270,6 +319,8 @@ contains
 
   subroutine compute_initial_pressure(this, t, dt)
 
+    use cell_tagged_mm_volumes_type
+    
     class(flow), intent(inout) :: this
     real(r8), intent(in) :: t, dt
 
@@ -359,7 +410,162 @@ contains
 
   end subroutine step
 
+  subroutine step_unsplit(this, t, dt, vof, unsplit_flux_volumes, boundary_recon_to_face_map, tcell)
 
+    use cell_tagged_mm_volumes_type
+    
+    class(flow), intent(inout) :: this
+    real(r8), intent(in) :: t, dt, vof(:,:)
+    type(cell_tagged_mm_volumes), intent(in) :: unsplit_flux_volumes(:)
+    integer, intent(in) :: boundary_recon_to_face_map(:)
+    real(r8), intent(in) :: tcell(:)
+
+    real(r8) :: p_max, p_min
+    integer :: j
+
+    call this%props%update_cc(vof, tcell)
+
+    if (.not.this%props%any_real_fluid) then
+      this%vel_cc = 0
+      this%vel_fn = 0
+      return
+    end if
+
+    call this%bc%compute(t, dt)
+
+    call start_timer("prediction")
+    this%vel_cc = this%vel_cc_n
+    call this%pred%setup(dt, this%props, this%vel_cc)
+    call this%pred%solve_unsplit(dt, this%props, this%grad_p_rho_cc_n, unsplit_flux_volumes, boundary_recon_to_face_map, &
+         this%vel_fn_n, this%vel_cc)
+    call stop_timer("prediction")
+    call start_timer("projection")
+    call this%proj%setup(dt, this%props, this%grad_p_rho_cc_n, this%body_force, this%vel_cc, this%P_cc, this%vel_fn)
+    call this%proj%solve(dt, this%props, this%grad_p_rho_cc_n, this%vel_cc, this%P_cc, this%vel_fn)
+    call stop_timer("projection")
+
+    call this%compute_node_velocities(this%vel_cc, this%vel_fn, this%vel_node)
+    call this%correct_non_regular_cells()
+
+  end subroutine step_unsplit
+
+  subroutine compute_node_velocities(this, vel_cc, vel_fn, vel_node)
+
+    class(flow), intent(inout) :: this
+    real(r8), intent(in) :: vel_cc(:,:), vel_fn(:)
+    real(r8), intent(out) :: vel_node(:,:)
+
+    integer :: n, j
+    
+    vel_node = 0.0_r8
+    do n = 1, this%mesh%nnode_onP
+      associate( cn => this%mesh%ndcell(this%mesh%xndcell(n):this%mesh%xndcell(n+1)-1))        
+        ! Weights already computed and normalized
+        do j = 1, size(cn)
+          vel_node(:,n) = vel_node(:,n) + &
+               vel_cc(:,cn(j)) * this%vel_node_interp_coeff(this%mesh%xndcell(n)+j-1)
+        end do
+      end associate
+      
+    end do
+
+    if(.not. this%prescribed) then
+      call this%set_bc_for_node_velocity(vel_fn, vel_cc, vel_node)
+    end if
+    
+    call gather_boundary(this%mesh%node_ip, vel_node)        
+
+  end subroutine compute_node_velocities
+
+  !! First attempt at boundary conditions on node velocity.
+  !! For now, implement in a way that involves touching the least parts
+  !! of the code. Later, might be better implemented if
+  !! a node->boundary face list is generated.
+  subroutine set_bc_for_node_velocity(this, vel_fn, vel_cc, vel_node)
+
+    use f08_intrinsics, only: findloc
+    
+    class(flow), intent(inout) :: this
+    real(r8), intent(in) :: vel_cc(:,:), vel_fn(:)
+    real(r8), intent(inout) :: vel_node(:,:)    
+
+
+    integer :: n, bc_face_loc, f
+    real(r8) :: new_vel(4)
+    
+    ! Dirichlet condition
+    ! Surface area weighted average of all dirichlet face velocities
+    do n = 1, this%mesh%nnode_onP
+      associate(faces => this%bc%v_dirichlet%index)
+        associate(n2f => this%mesh%ndface(this%mesh%xndface(n):this%mesh%xndface(n+1)-1))
+          new_vel = 0.0_r8
+          do f = 1, size(n2f)
+            bc_face_loc = findloc(faces, n2f(f),1)
+            if(bc_face_loc /= 0) then
+              ! Dirichlet Face exists
+              new_vel(1) = new_vel(1) + this%mesh%area(n2f(f))
+              ! Normal already has multiplication by area
+              new_vel(2:4) = new_vel(2:4) + this%bc%v_dirichlet%value(:,bc_face_loc) * this%mesh%normal(:,n2f(f))
+            end if
+          end do
+        end associate
+      end associate
+      if(new_vel(1) > 0.0_r8) then
+        vel_node(:,n) = new_vel(2:4) / new_vel(1)
+      end if
+    end do
+
+
+    ! Neumann conditions
+    ! Volume weight velocities in the cells with Neumann faces
+    do n = 1, this%mesh%nnode_onP
+      associate(faces => this%bc%p_dirichlet%index)
+        associate(n2f => this%mesh%ndface(this%mesh%xndface(n):this%mesh%xndface(n+1)-1))
+          new_vel = 0.0_r8
+          do f = 1, size(n2f)
+            bc_face_loc = findloc(faces, n2f(f),1)
+            if(bc_face_loc /= 0) then
+              ! Neumann Face exists
+              new_vel(1) = new_vel(1) + this%mesh%volume(this%mesh%fcell(1,(n2f(f))))
+              ! Normal already has multiplication by area
+              new_vel(2:4) = new_vel(2:4) + this%mesh%volume(this%mesh%fcell(1,(n2f(f)))) * &
+                   vel_cc(:,this%mesh%fcell(1,(n2f(f))))
+            end if
+          end do
+        end associate
+      end associate
+      if(new_vel(1) > 0.0_r8) then
+        vel_node(:,n) = new_vel(2:4) / new_vel(1)
+      end if
+    end do    
+
+
+    ! Slip conditions
+    ! Compute Surface Area weighted average normal vector from all slip-faces
+    ! Remove this average normal component from the velocity
+    do n = 1, this%mesh%nnode_onP
+      associate(faces => this%bc%v_zero_normal%index)
+        associate(n2f => this%mesh%ndface(this%mesh%xndface(n):this%mesh%xndface(n+1)-1))
+          new_vel = 0.0_r8
+          do f = 1, size(n2f)
+            bc_face_loc = findloc(faces, n2f(f),1)
+            if(bc_face_loc /= 0) then
+              ! Slip Face exists
+              new_vel(1) = new_vel(1) + this%mesh%area(n2f(f))
+              ! Normal already has multiplication by area
+              new_vel(2:4) = new_vel(2:4) + this%mesh%normal(:,n2f(f))
+            end if
+          end do
+        end associate
+      end associate
+      if(new_vel(1) > 0.0_r8) then
+        new_vel(2:4) = new_vel(2:4) / sqrt(sum(new_vel(2:4)**2)) ! Normalized average normal
+        vel_node(:,n) = vel_node(:,n) - dot_product(vel_node(:,n), new_vel(2:4)) * new_vel(2:4)
+      end if
+    end do
+
+  end subroutine set_bc_for_node_velocity
+    
   subroutine accept(this)
 
     class(flow), intent(inout) :: this

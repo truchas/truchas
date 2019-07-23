@@ -76,9 +76,11 @@ module flow_prediction_type
     procedure :: setup
     procedure :: setup_solver
     procedure :: solve
+    procedure :: solve_unsplit    
     procedure :: accumulate_rhs_pressure
     procedure :: accumulate_rhs_viscous_stress
-    procedure :: accumulate_rhs_momentum
+    procedure :: accumulate_rhs_momentum_unsplit    
+    procedure :: accumulate_rhs_momentum_split
     procedure :: accumulate_rhs_solidified_rho
     procedure :: accept
   end type flow_prediction
@@ -374,13 +376,126 @@ contains
 
   end subroutine accumulate_rhs_viscous_stress
 
+  !! This handles momentum update using the unsplit VOF transport.
+  !! It will be attempted to be written in the most straight-forward sense,
+  !! perhaps at a slight penalty to performance. 
+  subroutine accumulate_rhs_momentum_unsplit(this, props, vel_cc, vel_fn, unsplit_flux_volumes, &
+       a_boundary_recon_to_face_map)
+
+    use f08_intrinsics, only: findloc
+    use cell_tagged_mm_volumes_type
+    use integer_real8_tuple_vector_type
+
+    class(flow_prediction), intent(inout) :: this
+    real(r8), intent(in) :: vel_cc(:,:), vel_fn(:)
+    type(flow_props), intent(in) :: props
+    type(cell_tagged_mm_volumes), intent(in) :: unsplit_flux_volumes(:) ! Staggered xcface array
+    integer, intent(in) :: a_boundary_recon_to_face_map(:)
+    
+    integer :: i, j, k, n, f, p, nfluid, ind
+    integer :: number_of_originating_cells, originating_cell
+    integer :: nphases, phase_id
+    integer :: boundary_face, boundary_index
+    real(r8) :: boundary_vel(3)    
+    type(integer_real8_tuple_vector), pointer :: cell_local_volumes
+    real(r8), allocatable :: momentum_flux(:,:)
+
+    ! This is the number of real (non-void) fluids in our system.
+    ! Void does not contribute to momentum transport.
+    nfluid = size(props%density)
+
+    allocate(momentum_flux(3, this%mesh%xcface(this%mesh%ncell+1)-1))
+    momentum_flux = 0.0_r8
+
+    ! Update based on unsplit fluxes
+    do j = 1, this%mesh%ncell_onP
+      associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        do f = 1, size(fn)
+          ind = this%mesh%xcface(j)+f-1
+          number_of_originating_cells = unsplit_flux_volumes(ind)%get_number_of_cells()
+          do n = 1, number_of_originating_cells
+            originating_cell = unsplit_flux_volumes(ind)%get_cell_id(n)
+            cell_local_volumes => unsplit_flux_volumes(ind)%get_cell_fluxes(n)
+            nphases = cell_local_volumes%size()
+            if(originating_cell <= this%mesh%ncell) then
+              ! Domain internal flux
+              do p = 1, nphases
+                momentum_flux(:,ind) = momentum_flux(:,ind) + &
+                     vel_cc(:,originating_cell)*cell_local_volumes%at_r8(p)*props%density(cell_local_volumes%at_int(p))
+              end do
+            else ! Pulled in from a BC
+              ! Determine corresponding face that the ghost recon is for
+              boundary_face = a_boundary_recon_to_face_map(originating_cell-this%mesh%ncell)
+              
+              ! Determine BC type
+              ! Look in dirichlet conditions
+              boundary_vel = 0.0_r8
+              associate(faces => this%bc%v_dirichlet%index)
+                boundary_index = findloc(faces, boundary_face, 1)
+              end associate
+              if(boundary_index /= 0) then ! Was a dirichlet condition
+                boundary_vel = this%bc%v_dirichlet%value(:,boundary_index)
+              else
+                ! Check pressure condition
+                associate(faces => this%bc%p_dirichlet%index)
+                  boundary_index = findloc(faces, boundary_face, 1)
+                end associate
+                if(boundary_index /= 0) then ! Was a dirichlet condition
+                  if(this%mesh%fcell(1,boundary_index) /= 0) then
+                    boundary_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
+                  else
+                    boundary_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
+                  end if
+                else
+                  ! Must be slip condition
+                  associate(faces => this%bc%v_zero_normal%index)
+                    boundary_index = findloc(faces, boundary_face, 1)
+                  end associate
+                  ASSERT(boundary_index /= 0)
+                  ! Neumann without face-normal component
+                  if(this%mesh%fcell(1,boundary_index) /= 0) then
+                    boundary_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
+                  else
+                    boundary_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
+                  end if
+                  boundary_vel = boundary_vel - dot_product(boundary_vel, &
+                       this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)) * &
+                       this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)
+                  end if
+              end if
+              
+              ! Apply correct velocity with known volume and phase
+              do p = 1, nphases              
+                momentum_flux(:,ind) = momentum_flux(:,ind) + &
+                     boundary_vel*cell_local_volumes%at_r8(p)*props%density(cell_local_volumes%at_int(p))
+              end do
+            end if
+          end do
+        end do
+      end associate
+    end do
+
+    do j = 1, this%mesh%ncell_onP    
+      associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        do f = 1, size(fn)
+          ind = this%mesh%xcface(j)+f-1
+          this%rhs(:,j) = this%rhs(:,j) - momentum_flux(:,ind)
+        end do
+      end associate
+    end do
+    deallocate(momentum_flux)
+
+
+  end subroutine accumulate_rhs_momentum_unsplit
+
+  
   ! accumulate [-dt*div(rho*u*u)]
   ! flux_volumes is in ragged format where each cell has a potentially unique flux_value
   ! for a given cell face
   ! The flux volume for a given material is dt*A*vel_fn.  A positive value indicates outward flux
   ! Momentum is transported via flux-volumes using a first order upwind scheme
 
-  subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fn, flux_volumes)
+  subroutine accumulate_rhs_momentum_split(this, props, vel_cc, vel_fn, flux_volumes)
 
     use f08_intrinsics, only: findloc
 
@@ -407,12 +522,13 @@ contains
         ! donor cell upwinding
         if (any(flux_volumes(:,j) > 0.0_r8)) then
           this%rhs(:,i) = this%rhs(:,i) - &
-              vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density(:))
+               vel_cc(:,i)*dot_product(flux_volumes(:nfluid,j),props%density(:))
         else
           cn = this%mesh%cnhbr(nhbr+(j-f0)) ! neighbor index
-          if (cn > 0) &
+          if (cn > 0) then
             this%rhs(:,i) = this%rhs(:,i) - &
-                vel_cc(:,cn)*dot_product(flux_volumes(:nfluid,j),props%density(:))
+                 vel_cc(:,cn)*dot_product(flux_volumes(:nfluid,j),props%density(:))
+          end if
           ! inflow boundaries handled in subsequent loops
         end if
       end do
@@ -463,8 +579,7 @@ contains
 
     ! On slip boundaries, the flux volumes are zero, so no momentum flux.
 
-  end subroutine accumulate_rhs_momentum
-
+  end subroutine accumulate_rhs_momentum_split
 
   subroutine accumulate_rhs_solidified_rho(this, solidified_rho, vel_cc)
 
@@ -482,7 +597,6 @@ contains
     end do
 
   end subroutine accumulate_rhs_solidified_rho
-
 
   subroutine solve(this, dt, props, grad_p_rho_cc, flux_volumes, vel_fn, vel_cc)
 
@@ -508,7 +622,7 @@ contains
       this%rhs(:,j) = this%rhs(:,j)*props%vof(j)
     end do
 
-    call this%accumulate_rhs_momentum(props, vel_cc, vel_fn, flux_volumes)
+    call this%accumulate_rhs_momentum_split(props, vel_cc, vel_fn, flux_volumes)
     call this%accumulate_rhs_solidified_rho(props%solidified_rho, vel_cc)
 
     ! handle surface tension
@@ -577,6 +691,108 @@ contains
     call stop_timer("solve")
 
   end subroutine solve
+
+  subroutine solve_unsplit(this, dt, props, grad_p_rho_cc, unsplit_flux_volumes, boundary_recon_to_face_map, vel_fn, vel_cc)
+
+    use cell_tagged_mm_volumes_type
+    
+    class(flow_prediction), intent(inout) :: this
+    real(r8), intent(in) :: dt, grad_p_rho_cc(:,:)
+    type(cell_tagged_mm_volumes), intent(in) :: unsplit_flux_volumes(:)
+    integer, intent(in) :: boundary_recon_to_face_map(:)
+    real(r8), intent(in) :: vel_fn(:)
+    real(r8), intent(inout) :: vel_cc(:,:)
+    type(flow_props), intent(in) :: props
+
+    integer :: i, j, ierr
+    real(r8) :: coeff, mass
+    character(18), parameter :: slabel(3) = 'predictor' // ['1', '2', '3'] // ' solve: '
+
+    call start_timer("solve")
+    ! The accumulate routines may add contributions to non-regular cells.  These
+    ! contributions are ignored by the solver
+
+    ! Pressure and viscous forces are unaware of solid/fluid boundaries.
+    ! These forces are computed first and scaled by vof as a crude approximation.
+    ! Once a better solid/fluid model is used, change this numerical hackjob.
+    call this%accumulate_rhs_pressure(dt, props, grad_p_rho_cc)
+    call this%accumulate_rhs_viscous_stress(dt, props, vel_cc)
+    do j = 1, this%mesh%ncell_onP
+      this%rhs(:,j) = this%rhs(:,j)*props%vof(j)
+    end do
+
+    call this%accumulate_rhs_momentum_unsplit(props, vel_cc, vel_fn, unsplit_flux_volumes, &
+         boundary_recon_to_face_map)
+    call this%accumulate_rhs_solidified_rho(props%solidified_rho, vel_cc)
+
+    ! handle surface tension
+
+    ! handle tangential surface tension BC
+    associate (faces => this%bc%surface_tension%index, value => this%bc%surface_tension%value)
+      do i = 1, size(faces)
+        j = this%mesh%fcell(1,faces(i))
+        if (j > this%mesh%ncell_onP) cycle
+        this%rhs(:,j) = this%rhs(:,j) + dt * value(:,i)
+      end do
+    end associate
+
+    ! handle porous drag
+
+    
+    
+    associate (rho => props%rho_cc_n, vof => props%vof_n, rhs => this%rhs)
+      do j = 1, this%mesh%ncell_onP
+        rhs(:,j) = rhs(:,j) + rho(j)*vof(j)*vel_cc(:,j) * this%mesh%volume(j)
+      end do
+    end associate
+
+    ! skip all the wild limiter hackery for now
+    associate (rhs1d => this%rhs1d, rhs => this%rhs, &
+        sol => this%sol, cell_t => props%cell_t)
+      do i = 1, 3
+        ! per-component solve for predictor velocity
+        do j = 1, this%mesh%ncell_onP
+          sol(j) = vel_cc(i,j)
+          ! we can't zero out based on regular_t... I'm not sure why
+          if (props%vof(j) > 0.0_r8) then
+            rhs1d(j) = rhs(i,j) / props%vof(j)
+          else
+            rhs1d(j) = 0.0_r8
+          end if
+        end do
+        if (associated(this%solver(i)%matrix())) then
+          call start_timer("hypre solve")
+          call this%solver(i)%solve(rhs1d, sol, ierr)
+          call stop_timer("hypre solve")
+          call tls_info(slabel(i) // this%solver(i)%metrics_string())
+          if (ierr /= 0) call tls_error("prediction solve unsuccessful")
+          call gather_boundary(this%mesh%cell_ip, sol)
+          do j = 1, this%mesh%ncell
+            vel_cc(i,j) = sol(j)
+          end do
+        else
+          call gather_boundary(this%mesh%cell_ip, rhs1d)
+          do j = 1, this%mesh%ncell
+            coeff = props%rho_cc(j)
+            if (props%vof(j) > 0.0_r8) &
+                coeff = coeff + &
+                this%solidify_implicitness * props%solidified_rho(j) / props%vof(j)
+            coeff = coeff * this%mesh%volume(j)
+            if (coeff /= 0.0_r8) then
+              vel_cc(i,j) = rhs1d(j) / coeff
+            else
+              vel_cc(i,j) = 0
+            end if
+          end do
+        end if
+
+      end do
+
+    end associate
+
+    call stop_timer("solve")
+
+  end subroutine solve_unsplit
 
   subroutine accept(this)
     class(flow_prediction), intent(inout) :: this
