@@ -420,6 +420,7 @@ contains
             if(originating_cell <= this%mesh%ncell) then
               ! Domain internal flux
               do p = 1, nphases
+                if(cell_local_volumes%at_int(p) > nfluid) cycle
                 momentum_flux(:,ind) = momentum_flux(:,ind) + &
                      vel_cc(:,originating_cell)*cell_local_volumes%at_r8(p)*props%density(cell_local_volumes%at_int(p))
               end do
@@ -463,11 +464,12 @@ contains
                          this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)) * &
                          this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)
                   end if
-                  end if
+                end if
               end if
               
               ! Apply correct velocity with known volume and phase
-              do p = 1, nphases              
+              do p = 1, nphases
+                if(cell_local_volumes%at_int(p) > nfluid) cycle                
                 momentum_flux(:,ind) = momentum_flux(:,ind) + &
                      boundary_vel*cell_local_volumes%at_r8(p)*props%density(cell_local_volumes%at_int(p))
               end do
