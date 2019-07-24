@@ -19,8 +19,10 @@ set(OUTPUT_FILES
           output/interface_output_module.F90
           output/output_control.F90
           output/output_utilities.F90
-          output/probes.F90
+          output/probes_type.F90
           output/probes_driver.F90
+          output/probe_namelist.F90
+          output/truchas_probe_field_factory_type.F90
           output/truchas_danu_output.F90
           output/truchas_danu_output_data.F90
           output/truchas_danu_output_tools.F90)

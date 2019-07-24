@@ -236,9 +236,9 @@ Velocity BC: No slip on y=0  and y=1 face
 /
 
 &PROBE
-  Name               = 'downstream'
-  Description        = 'downstream centerline'
-  Coord              = 15.0, 0.5, 0.5
-  Coord_Scale_Factor = 1.0
-  Data               = 'Pressure'
+  data_file          = 'downstream.dat'
+  description        = 'downstream centerline'
+  coord              = 15.0, 0.5, 0.5
+  coord_scale_factor = 1.0
+  data               = 'pressure'
 /

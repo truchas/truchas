@@ -23,27 +23,27 @@ test exercises the implementation in the normal 'HTSD' solver.
 /
 
 &PROBE
-  Name  = 'left_end'
-  Coord = -0.96875, 0.0, 0.0
-  Data  = 'Temperature'
+  coord = -0.96875, 0.0, 0.0
+  data  = 'temperature'
+  data_file = 'left_end.dat'
 /
 
 &PROBE
-  Name  = 'gap_left'
-  Coord = -0.03125, 0.0, 0.0
-  Data  = 'Temperature'
+  coord = -0.03125, 0.0, 0.0
+  data  = 'temperature'
+  data_file = 'gap_left.dat'
 /
 
 &PROBE
-  Name  = 'gap_right'
-  Coord = 0.03125, 0.0, 0.0
-  Data  = 'Temperature'
+  coord = 0.03125, 0.0, 0.0
+  data  = 'temperature'
+  data_file = 'gap_right.dat'
 /
 
 &PROBE
-  Name  = 'right_end'
-  Coord = 0.96875, 0.0, 0.0
-  Data  = 'Temperature'
+  coord = 0.96875, 0.0, 0.0
+  data  = 'temperature'
+  data_file = 'right_end.dat'
 /
 
 &PHYSICS

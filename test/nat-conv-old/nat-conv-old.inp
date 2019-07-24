@@ -38,17 +38,17 @@ cells at each long_edit interval.
 /
 
 &PROBE
-  Description = 'Maximum Horizontal Velocity'
-  Name        = 'VhMax',
-  Coord       = 0.5, 0.0, 0.813,
-  Data        = 'Velocity'
+  description = 'Maximum Horizontal Velocity'
+  data_file   = 'VhMax.dat'
+  coord       = 0.5, 0.0 , 0.813
+  data        = 'velocity'
 /
 
 &PROBE
-  Description = 'Maximum Vertical Velocity'
-  Name        = 'VvMax',
-  Coord       = 0.178, 0.0, 0.5,
-  Data        = 'Velocity'
+  description = 'Maximum Vertical Velocity'
+  data_file   = 'VvMax.dat'
+  coord       = 0.178, 0.0, 0.5
+  data        = 'velocity'
 /
 
 &MESH

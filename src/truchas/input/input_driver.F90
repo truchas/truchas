@@ -165,8 +165,7 @@ contains
     end if
 
     ! Read probe information.
-
-    call read_probe_namelists (lun)
+    call read_probe_namelists(lun)
 
     if (p_info%IOP) close(lun)
 

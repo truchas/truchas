@@ -51,12 +51,12 @@ CONTAINS
     !   Allocate the Cell, Matl, and Zone base types and Fluxing_Velocity
     !
     !=======================================================================
-    use bc_module,              only: BC
-    use matl_module,            only: SLOT_INCREASE, Matl
-    use legacy_mesh_api,        only: nfc, ncells
-    use parameter_module,       only: mat_slot, mat_slot_new, nmat
+    use bc_module,           only: BC
+    use matl_module,         only: SLOT_INCREASE, Matl
+    use legacy_mesh_api,     only: nfc, ncells
+    use parameter_module,    only: mat_slot, mat_slot_new, nmat
     use zone_module,            only: Zone
-    use fluid_data_module,      only: Fluxing_Velocity
+    use fluid_data_module,       only: Fluxing_Velocity
     use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
     use solid_mechanics_input,  only: solid_mechanics
     use turbulence_module,      only: TURBULENCE_ALLOCATE

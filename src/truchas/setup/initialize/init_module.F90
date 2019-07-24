@@ -80,12 +80,12 @@ CONTAINS
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
     use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view
     use material_interop,       only: generate_material_mappings
+    use probes_driver,          only: probes_init
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
-    use probes_driver
 
     real(r8), intent(in) :: t, dt
 
@@ -239,8 +239,7 @@ CONTAINS
     call restart_ustruc
 
     ! Initialize probes.
-
-    call probes_init ()
+    call probes_init
 
   END SUBROUTINE INITIAL
 

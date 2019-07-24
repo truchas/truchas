@@ -202,7 +202,7 @@ call hijack_truchas ()
 
     call TDO_write_timestep
     t_write = t
-    call probes_write (t)  ! Write initial probe info.
+    call probes_write(t)  ! Write initial probe info.
 
     t1 = t
     restart_ds = .false.
@@ -293,9 +293,7 @@ call hijack_truchas ()
         t = t2 ! set current time
         restart_ds = .false.
 
-        ! Output probe data.
-
-        call probes_write (t)
+        call probes_write(t)
 
         ! set beginning cycle time (= previous cycle's end time)
         t1 = t2
