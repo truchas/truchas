@@ -753,13 +753,13 @@ contains
              do n = 1, size(cneigh)
                if(cneigh(n) ==0 ) then
                  ! Cell full, inflow not this material
-                 if(this%unsplit_vt%inflow_mat(&
-                      this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) /= k .and. &
+                 if(this%unsplit_vt%inflow_mat(this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) /= k .and. &
+                      this%unsplit_vt%inflow_mat(this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) /= 0 .and. &    
                       this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
                    has_interface = .true.
                    exit
-                 else if(this%unsplit_vt%inflow_mat(&
-                      this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) == k .and. &
+                 else if(this%unsplit_vt%inflow_mat(this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) == k .and. &
+                      this%unsplit_vt%inflow_mat(this%unsplit_vt%face_to_boundary_recon(fn(n))-this%mesh%ncell) /= 0 .and. &    
                       this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
                    ! Cell empty, inflow is this material                   
                    has_interface = .true.
