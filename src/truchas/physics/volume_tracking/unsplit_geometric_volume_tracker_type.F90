@@ -31,9 +31,6 @@ module unsplit_geometric_volume_tracker_type
   type, extends(unsplit_volume_tracker), public :: unsplit_geometric_volume_tracker
     private
     type(unstr_mesh), pointer :: mesh ! unowned reference
-    integer :: location_iter_max ! maximum number of iterations to use in fitting interface
-    integer :: subcycles
-    logical :: nested_dissection
     character(string_len) :: interface_reconstruction_name
     real(r8), allocatable :: normal(:,:,:)
     type(cell_tagged_mm_volumes), allocatable :: face_flux(:)    
@@ -147,13 +144,10 @@ contains
     this%nfluid = nfluid
     this%nmat = nmat
 
-    call params%get('location_iter_max', this%location_iter_max, default=40)
     call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
-    call params%get('subcycles', this%subcycles, default=2)    
     call TLS_warn('Subcycling is currently disabled for unsplit transport')
     call params%get('interface_reconstruction', interface_recon, default='Youngs')
     this%interface_reconstruction_name = interface_recon
-    call params%get('nested_dissection', this%nested_dissection, default=.true.)
 
     ! convert user material ids to array index
     if (params%is_vector('material_priority')) then
