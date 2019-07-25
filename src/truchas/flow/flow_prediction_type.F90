@@ -396,16 +396,12 @@ contains
     integer :: number_of_originating_cells, originating_cell
     integer :: nphases, phase_id
     integer :: boundary_face, boundary_index
-    real(r8) :: boundary_vel(3)    
+    real(r8) :: originating_vel(3)    
     type(integer_real8_tuple_vector), pointer :: cell_local_volumes
-    real(r8), allocatable :: momentum_flux(:,:)
 
     ! This is the number of real (non-void) fluids in our system.
     ! Void does not contribute to momentum transport.
     nfluid = size(props%density)
-
-    allocate(momentum_flux(3, this%mesh%xcface(this%mesh%ncell+1)-1))
-    momentum_flux = 0.0_r8
 
     ! Update based on unsplit fluxes
     do j = 1, this%mesh%ncell_onP
@@ -419,23 +415,19 @@ contains
             nphases = cell_local_volumes%size()
             if(originating_cell <= this%mesh%ncell) then
               ! Domain internal flux
-              do p = 1, nphases
-                if(cell_local_volumes%at_int(p) > nfluid) cycle
-                momentum_flux(:,ind) = momentum_flux(:,ind) + &
-                     vel_cc(:,originating_cell)*cell_local_volumes%at_r8(p)*props%density(cell_local_volumes%at_int(p))
-              end do
+              originating_vel = vel_cc(:,originating_cell)
             else ! Pulled in from a BC
               ! Determine corresponding face that the ghost recon is for
               boundary_face = a_boundary_recon_to_face_map(originating_cell-this%mesh%ncell)
               
               ! Determine BC type
               ! Look in dirichlet conditions
-              boundary_vel = 0.0_r8
+              originating_vel = 0.0_r8
               associate(faces => this%bc%v_dirichlet%index)
                 boundary_index = findloc(faces, boundary_face, 1)
               end associate
               if(boundary_index /= 0) then ! Was a dirichlet condition
-                boundary_vel = this%bc%v_dirichlet%value(:,boundary_index)
+                originating_vel = this%bc%v_dirichlet%value(:,boundary_index)
               else
                 ! Check pressure condition
                 associate(faces => this%bc%p_dirichlet%index)
@@ -443,53 +435,39 @@ contains
                 end associate
                 if(boundary_index /= 0) then ! Was a dirichlet condition
                   if(this%mesh%fcell(1,boundary_index) /= 0) then
-                    boundary_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
+                    originating_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
                   else
-                    boundary_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
+                    originating_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
                   end if
                 else
                   ! Must be slip condition ? 
                   associate(faces => this%bc%v_zero_normal%index)
                     boundary_index = findloc(faces, boundary_face, 1)
                   end associate
-                  !ASSERT(boundary_index /= 0)
                   ! Neumann without face-normal component
                   if(boundary_index /= 0) then
                     if(this%mesh%fcell(1,boundary_index) /= 0) then
-                      boundary_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
+                      originating_vel = vel_cc(:,this%mesh%fcell(1,boundary_index))
                     else
-                      boundary_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
+                      originating_vel = vel_cc(:,this%mesh%fcell(2,boundary_index))
                     end if
-                    boundary_vel = boundary_vel - dot_product(boundary_vel, &
+                    originating_vel = originating_vel - dot_product(originating_vel, &
                          this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)) * &
                          this%mesh%normal(:,boundary_index)/this%mesh%area(boundary_index)
                   end if
                 end if
-              end if
-              
-              ! Apply correct velocity with known volume and phase
-              do p = 1, nphases
-                if(cell_local_volumes%at_int(p) > nfluid) cycle                
-                momentum_flux(:,ind) = momentum_flux(:,ind) + &
-                     boundary_vel*cell_local_volumes%at_r8(p)*props%density(cell_local_volumes%at_int(p))
-              end do
+              end if            
             end if
+            do p = 1, nphases
+              if(cell_local_volumes%at_int(p) > nfluid) cycle
+              this%rhs(:,j) = this%rhs(:,j) - &
+                   originating_vel*cell_local_volumes%at_r8(p)*props%density(cell_local_volumes%at_int(p))
+            end do
           end do
         end do
       end associate
     end do
-
-    do j = 1, this%mesh%ncell_onP    
-      associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
-        do f = 1, size(fn)
-          ind = this%mesh%xcface(j)+f-1
-          this%rhs(:,j) = this%rhs(:,j) - momentum_flux(:,ind)
-        end do
-      end associate
-    end do
-    deallocate(momentum_flux)
-
-
+    
   end subroutine accumulate_rhs_momentum_unsplit
 
   
