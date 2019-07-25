@@ -512,13 +512,11 @@ contains
       end associate
       if(new_vel(1) > 0.0_r8) then
         vel_node(:,n) = new_vel(2:4) / new_vel(1)
+        cycle
       end if
-    end do
 
-
-    ! Neumann conditions
-    ! Volume weight velocities in the cells with Neumann faces
-    do n = 1, this%mesh%nnode_onP
+      ! Neumann conditions
+      ! Volume weight velocities in the cells with Neumann faces
       associate(faces => this%bc%p_dirichlet%index)
         associate(n2f => this%mesh%ndface(this%mesh%xndface(n):this%mesh%xndface(n+1)-1))
           new_vel = 0.0_r8
@@ -536,14 +534,13 @@ contains
       end associate
       if(new_vel(1) > 0.0_r8) then
         vel_node(:,n) = new_vel(2:4) / new_vel(1)
+        cycle
       end if
-    end do    
-
-
-    ! Slip conditions
-    ! Compute Surface Area weighted average normal vector from all slip-faces
-    ! Remove this average normal component from the velocity
-    do n = 1, this%mesh%nnode_onP
+      
+      
+      ! Slip conditions
+      ! Compute Surface Area weighted average normal vector from all slip-faces
+      ! Remove this average normal component from the velocity
       associate(faces => this%bc%v_zero_normal%index)
         associate(n2f => this%mesh%ndface(this%mesh%xndface(n):this%mesh%xndface(n+1)-1))
           new_vel = 0.0_r8
@@ -561,9 +558,10 @@ contains
       if(new_vel(1) > 0.0_r8) then
         new_vel(2:4) = new_vel(2:4) / sqrt(sum(new_vel(2:4)**2)) ! Normalized average normal
         vel_node(:,n) = vel_node(:,n) - dot_product(vel_node(:,n), new_vel(2:4)) * new_vel(2:4)
+        cycle
       end if
     end do
-
+      
   end subroutine set_bc_for_node_velocity
     
   subroutine accept(this)
