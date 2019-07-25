@@ -163,6 +163,7 @@ contains
   subroutine vtrack_open_interface_file()
     use truchas_phase_interface_output, only : TPIO_open
     if(vtrack_enabled()) then
+      open(862, file = 'conservation.txt')          
       if(this%unsplit_advection) then
         call TPIO_open()
       end if
@@ -172,6 +173,7 @@ contains
   subroutine vtrack_close_interface_file()
     use truchas_phase_interface_output, only : TPIO_close    
     if(vtrack_enabled()) then
+      close(862) ! Close file tracking phase conservation
       if(this%unsplit_advection) then
         call TPIO_close()
       end if
@@ -209,13 +211,15 @@ contains
     use geometric_volume_tracker_type
     use unsplit_geometric_volume_tracker_type
     use simple_volume_tracker_type
-    use parallel_communication, only : global_sum
+    use parallel_communication, only : global_sum, is_IOP
+    use parameter_module, only : string_len    
 
     type(parameter_list), intent(inout) :: params
 
     integer :: i,j,k
     real(r8) :: vof_sum
     logical :: track_interfaces
+    character(string_len) :: message, myformat    
 
     allocate(this)
 
@@ -284,20 +288,6 @@ contains
     if(this%unsplit_advection) then
       call this%unsplit_vt%init(this%mesh, this%fluids, this%fluids+this%void, &
            this%fluids+this%void+this%solid, this%liq_matid, params)      
-      ! Enforce VOF sums to 1
-      do j = 1, this%mesh%ncell
-        do k = 1, nmat
-          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
-            this%fvof_i(k,j) = 0.0_r8
-          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
-            this%fvof_i(k,j) = 1.0_r8
-          end if
-        end do
-        vof_sum = sum(this%fvof_i(:,j))
-        if(vof_sum  > tiny(1.0_r8)) then
-          this%fvof_i(:,j) = this%fvof_i(:,j) / vof_sum
-        end if
-      end do
       this%fvof_o = this%fvof_i
       call vtrack_update_mat_band()      
     else
@@ -314,11 +304,15 @@ contains
     end do
     do j = 1, nmat
       this%fvol_init(j) = global_sum(this%fvol_init(j))
-    end do
+    end do    
 
     ! Open file for interface
     call vtrack_open_interface_file
-    
+
+    if(is_IOP) then
+      write(myformat, '(a,i1,a)') '(',2*size(this%fvol_init)+1,'es28.14)'      
+      write(862,myformat) 0.0_r8, this%fvol_init, this%fvol_init-this%fvol_init
+    end if    
     
   end subroutine vtrack_driver_init
 
@@ -362,7 +356,7 @@ contains
   ! vel_cc is the cell centered velocity
   subroutine vtrack_update(t, dt, vel_fn, vel_cc, vel_node, initial)
 
-    use parallel_communication, only : global_sum
+    use parallel_communication, only : global_sum, is_IOP
     use parameter_module, only : string_len
     
     use constants_module
@@ -386,20 +380,6 @@ contains
     call get_vof_from_matl(this%fvof_i)
     if(this%unsplit_advection) then
       ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
-      ! Enforce VOF sums to 1
-      do j = 1, this%mesh%ncell
-        do k = 1, size(this%fvof_i,1)
-          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
-            this%fvof_i(k,j) = 0.0_r8
-          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
-            this%fvof_i(k,j) = 1.0_r8
-          end if
-        end do
-        vof_sum = sum(this%fvof_i(:,j))
-        if(vof_sum  > tiny(1.0_r8)) then
-          this%fvof_i(:,j) = this%fvof_i(:,j) / vof_sum
-        end if
-      end do 
       call vtrack_update_mat_band()      
       ! Unsplit advection written to use face velocities, operates on faces.
       ! Cell centered velocity also needed to form node velocities for projection.
@@ -437,8 +417,13 @@ contains
     call TLS_info(message)
     write(message, trim(myformat)) 'Domain Normalized volume change: ',  (vol_sum - this%fvol_init)/sum(this%fvol_init)
     call TLS_info(message)
-    write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/(this%fvol_init+epsilon(1.0_r8))
-    call TLS_info(message)    
+    write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/(this%fvol_init+epsilon(1.0_r8))    
+    call TLS_info(message)
+
+    if(is_IOP) then
+      write(myformat, '(a,i1,a)') '(',2*size(vol_sum)+1,'es28.14)'      
+      write(862,myformat) t+dt,vol_sum,vol_sum-this%fvol_init
+    end if
 
     ! update the matl structure if this isn't the initial pass  
     if (present(initial)) then
@@ -489,6 +474,8 @@ contains
   subroutine vtrack_set_inflow_bc(params, stat, errmsg)
 
     use bndry_face_group_builder_type
+    use parallel_communication, only : global_sum
+    use parameter_module, only : string_len    
 
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -498,13 +485,16 @@ contains
     type(parameter_list), pointer :: plist
     type(bndry_face_group_builder) :: builder
     integer, allocatable :: setids(:), mlist(:), xgroup(:), index(:)
-    integer :: j, n, matid, ngroup
+    integer :: j, n, matid, ngroup, f
+    real(r8), allocatable :: flux_area(:)
+    character(string_len) :: message    
 
     call builder%init(this%mesh)
 
     piter = parameter_list_iterator(params, sublists_only=.true.)
     n = piter%count()
     allocate(mlist(n))
+    allocate(flux_area(n))
     n = 0
     do while (.not.piter%at_end())
       plist => piter%sublist()
@@ -523,10 +513,22 @@ contains
 
     call builder%get_face_groups(n, xgroup, index, omit_offp=.true.)
 
+    ! Record actual discrete flux area for inflow
+    flux_area = 0.0_r8
     do j = 1, n
+      associate(fn => index(xgroup(j):xgroup(j+1)-1))
+        do f = 1,size(fn)
+          if(fn(f) > this%mesh%nface_onP) cycle
+          flux_area(j) = flux_area(j) + this%mesh%area(fn(f))
+        end do
+      end associate
+      flux_area(j) = global_sum(flux_area(j))
+      write(message, '(a,i1,a,es28.14)') 'BC Flux area for material ', mlist(j),' : ', flux_area(j)      
+      call TLS_info(message)
+      
       call vtrack_set_inflow_material(mlist(j), index(xgroup(j):xgroup(j+1)-1))
     end do
-
+    
   end subroutine vtrack_set_inflow_bc
 
   subroutine vtrack_velocity_overwrite(a_time, a_face_velocity, a_cell_velocity)
