@@ -29,7 +29,7 @@ contains
     !
     !   driver for reading input file
     !=======================================================================
-    use probe_input_module,        only: probe_input
+    use probe_namelist,            only: read_probe_namelists
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use interfaces_input_module,   only: interfaces_input
@@ -164,8 +164,8 @@ contains
       if (heat_eqn) call read_microstructure_namelist (lun)
     end if
 
-    ! read probe information
-    call probe_input (lun)
+    ! Read probe information.
+    call read_probe_namelists(lun)
 
     if (p_info%IOP) close(lun)
 

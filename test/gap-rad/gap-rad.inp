@@ -19,23 +19,27 @@ associated gap-rad-flow test exercises the implementation in the 'FHT' solver.
 /
 
 &PROBE
-  probe_name = 'left end'
-  probe_coords = -0.96875, 0.0, 0.0
+  data_file  = 'left_end.dat'
+  coord = -0.96875, 0.0, 0.0
+  data  = 'temperature'
 /
 
 &PROBE
-  probe_name = 'gap left'
-  probe_coords = -0.03125, 0.0, 0.0
+  data_file  = 'gap_left.dat'
+  coord = -0.03125, 0.0, 0.0
+  data  = 'temperature'
 /
 
 &PROBE
-  probe_name = 'gap right'
-  probe_coords = 0.03125, 0.0, 0.0
+  data_file  = 'gap_right.dat'
+  coord = 0.03125, 0.0, 0.0
+  data  = 'temperature'
 /
 
 &PROBE
-  probe_name = 'right end'
-  probe_coords = 0.96875, 0.0, 0.0
+  data_file  = 'right_end.dat'
+  coord = 0.96875, 0.0, 0.0
+  data  = 'temperature'
 /
 
 &PHYSICS

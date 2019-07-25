@@ -80,10 +80,6 @@ MODULE PARAMETER_MODULE
                               mat_slot = 0, mat_slot_new = 0,             &
                               mat_slot_tmp = 0, mat_slot_tmp_new = 0
 
-  ! maximum number of probes allowed in input file
-  integer, parameter :: MAX_PROBES = 20
-  integer            :: nprobes
-
   ! Maximum time intervals for electromagnetics
 
   integer, parameter, public :: MAXSV = 32

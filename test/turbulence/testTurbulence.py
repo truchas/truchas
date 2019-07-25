@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import truchas
+import os
+import numpy
 
 def run_test(tenv):
     nfail = 0
@@ -16,30 +18,34 @@ def run_test(tenv):
 
     # umin velocity
     # final x-velocity: order is (cycle#,time,vx,vy,vz)
-    data = output.probe("umin", "VC")
-    time = data[-1, 1]
-    umin = data[-1, 2]
+    filename = os.path.join(output.directory,"umin.dat")
+    data = numpy.loadtxt(filename)
+    time = data[-1, 0]
+    umin = data[-1, 1]
     nfail += truchas.compare_max_rel(umin, umin_gold, 1.2e-6, "umin x-velocity", time)
 
     # umax velocity
     # final x-velocity: order is (cycle#,time,vx,vy,vz)
-    data = output.probe("umax", "VC")
-    time = data[-1, 1]
-    umax = data[-1, 2]
+    filename = os.path.join(output.directory,"umax.dat")
+    data = numpy.loadtxt(filename)
+    time = data[-1, 0]
+    umax = data[-1, 1]
     nfail += truchas.compare_max_rel(umax, umax_gold, 1.2e-6, "umax x-velocity", time)
 
     # umax pressure
     # final pressure: order is (cycle#,time,p)
-    data = output.probe("umax", "P")
-    time = data[-1, 1]
-    pmax = data[-1, 2]
+    filename = os.path.join(output.directory,"umaxp.dat")
+    data = numpy.loadtxt(filename)
+    time = data[-1, 0]
+    pmax = data[-1, 1]
     nfail += truchas.compare_max_rel(pmax, pmax_gold, 1e-9, "umax pressure", time)
 
     # pdown pressure
     # final pressure: order is (cycle#,time,p)
-    data = output.probe("pdown", "P")
-    time = data[-1, 1]
-    pmin = data[-1, 2]
+    filename = os.path.join(output.directory,"pdown.dat")
+    data = numpy.loadtxt(filename)
+    time = data[-1, 0]
+    pmin = data[-1, 1]
     nfail += truchas.compare_max_rel(pmin, pmin_gold, 1e-9, "pdown pressure", time)
 
     truchas.report_summary(nfail)
