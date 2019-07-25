@@ -144,7 +144,7 @@ contains
     this%nfluid = nfluid
     this%nmat = nmat
 
-    call params%get('cutoff', this%cutoff, default=1.0e-8_r8)
+    call params%get('cutoff', this%cutoff, default=1.0e-12_r8)
     call TLS_warn('Subcycling is currently disabled for unsplit transport')
     call params%get('interface_reconstruction', interface_recon, default='Youngs')
     this%interface_reconstruction_name = interface_recon
@@ -261,15 +261,28 @@ contains
     integer, intent(in) :: a_mat_band(:,:)    
     integer, intent(in) :: a_interface_band(:)
 
-    integer :: i,j,k
-
     ! DEBUGGING
-    integer :: f
+    integer :: f, j
     real(r8) :: tmp
-    type(integer_real8_tuple_vector) :: cell_local_volumes
-    type(integer_real8_tuple_vector), pointer :: cell_local_volumes_ptr    
 
     vof = vof_n
+
+    ! ! Check to see if cell is even close to divergence free
+    ! do j = 1, this%mesh%ncell_onP
+    !   associate(fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+    !     tmp = 0.0_r8
+    !     do f = 1, size(fn)
+    !       if(btest(this%mesh%cfpar(j),f)) then
+    !         tmp = tmp + vel(fn(f))*dt*this%mesh%area(fn(f))
+    !       else
+    !         tmp = tmp - vel(fn(f))*dt*this%mesh%area(fn(f))
+    !       end if
+    !     end do
+    !   end associate
+    !   if(abs(tmp)/this%mesh%volume(j) > 1.0e-8_r8) then
+    !     print*,'Divergent!', j, abs(tmp)/this%mesh%volume(j), abs(tmp), this%mesh%volume(j)
+    !   end if      
+    ! end do
 
     call start_timer('reconstruction')
     call this%set_irl_priority_order(vof)
@@ -354,7 +367,11 @@ contains
     ! index is used that should not be
     this%face_to_boundary_recon = -10000
     do j = 1, size(this%bc_index)
-       this%boundary_recon_to_cell(j) = this%mesh%fcell(1,this%bc_index(j))
+       if(this%mesh%fcell(1,this%bc_index(j)) /= 0) then
+         this%boundary_recon_to_cell(j) = this%mesh%fcell(1,this%bc_index(j))
+       else
+         this%boundary_recon_to_cell(j) = this%mesh%fcell(2,this%bc_index(j))
+       end if
        this%boundary_recon_to_face(j) = this%bc_index(j)       
        this%face_to_boundary_recon(this%bc_index(j)) = this%mesh%ncell + j
     end do
@@ -1517,6 +1534,7 @@ contains
     real(r8) :: bounding_box(3,2)
     real(r8) :: boundary_vof(this%nmat)
     type(integer_real8_tuple_vector) :: cell_local_volumes
+    type(integer_real8_tuple_vector), pointer :: fluxed_phases
     integer :: single_phase
     logical :: geometric_cutting_needed    
 
@@ -1546,78 +1564,53 @@ contains
         end if
         min_band = abs(a_interface_band(neighbor_cell(1)))
         min_vol = this%mesh%volume(neighbor_cell(1))
-      end if       
+      end if      
 
       correct_volume = a_dt*a_face_vel(f)*this%mesh%area(f)
-      
+
+      geometric_cutting_needed = .true.
       if(min_band > advect_band) then
-        ! Set single phase flux
-        call cell_local_volumes%resize(1)
-        if(.not. nswitch) then
-          if(a_face_vel(f) > 0.0_r8) then
-            cell_id = this%mesh%fcell(1,f)
-          else
-            if(neighbor_cell(2) /= 0) then 
-              cell_id = this%mesh%fcell(2,f)              
-            else
-              cell_id = this%face_to_boundary_recon(f)               
-            end if
-          end if
-        else
-          if(a_face_vel(f) > 0.0_r8) then
-            cell_id = this%mesh%fcell(2,f)
-          else
-            if(neighbor_cell(2) /= 0) then 
-              cell_id = this%mesh%fcell(1,f)              
-            else
-              cell_id = this%face_to_boundary_recon(f)               
-            end if
-          end if
-        end if
-
-        single_phase = maxloc(a_old_vof(:,neighbor_cell(1)),1)
-        ASSERT(single_phase > 0 .and. single_phase <= this%nmat)
-        call cell_local_volumes%set(1, single_phase , correct_volume)
-        call this%face_flux(f)%add_cell_fluxes(cell_id, cell_local_volumes)        
-        cycle
-      end if
-      
-      number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
-      
-      associate( node_index => this%flux_node( &
-           this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
-        ! Face nodes
-        cell_nodes(:,1:number_of_nodes) = this%mesh%x(:,node_index)
-        
-        ! Projected nodes
-        cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = this%projected_nodes(:, node_index)
-        
-        ! Initial guess for volume conservative cap vertex
-        cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2)/real(number_of_nodes,r8)
-        
-        call this%set_irl_volume_geometry(cell_nodes, this%flux_geometry_class(f), correct_volume, bounding_box)
-
         geometric_cutting_needed = .false.
-        if(a_interface_band(neighbor_cell(1)) == 0) then
-          geometric_cutting_needed = .true.
-        end if
-        if(.not. geometric_cutting_needed .and. neighbor_cell(2) /= 0) then
-          if(a_interface_band(neighbor_cell(2)) == 0) then
+      end if
+
+      if(geometric_cutting_needed) then
+        number_of_nodes = this%mesh%xfnode(f+1)-this%mesh%xfnode(f)
+        
+        associate( node_index => this%flux_node( &
+             this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
+          ! Face nodes
+          cell_nodes(:,1:number_of_nodes) = this%mesh%x(:,node_index)
+          
+          ! Projected nodes
+          cell_nodes(:,number_of_nodes+1:2*number_of_nodes) = this%projected_nodes(:, node_index)
+          
+          ! Initial guess for volume conservative cap vertex
+          cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2)/real(number_of_nodes,r8)
+          
+          call this%set_irl_volume_geometry(cell_nodes, this%flux_geometry_class(f), correct_volume, bounding_box)
+          
+          geometric_cutting_needed = .false.
+          if(a_interface_band(neighbor_cell(1)) == 0) then
             geometric_cutting_needed = .true.
           end if
-        end if
-        if(.not. geometric_cutting_needed) then
-          single_phase = maxloc(a_old_vof(:,neighbor_cell(1)),1)
-          geometric_cutting_needed = this%refined_advection_check(bounding_box, &
-               neighbor_cell, a_mat_band(single_phase, neighbor_cell(1)), a_mat_band(single_phase,:))
-        end if
-        
-      end associate
+          if(.not. geometric_cutting_needed .and. neighbor_cell(2) /= 0) then
+            if(a_interface_band(neighbor_cell(2)) == 0) then
+              geometric_cutting_needed = .true.
+            end if
+          end if
+          if(.not. geometric_cutting_needed) then
+            single_phase = maxloc(a_old_vof(:,neighbor_cell(1)),1)
+            geometric_cutting_needed = this%refined_advection_check(bounding_box, &
+                 neighbor_cell, a_mat_band(single_phase, neighbor_cell(1)), a_mat_band(single_phase,:))
+          end if
+          
+        end associate
+      end if
       
       if(geometric_cutting_needed) then
          call setMinimumVolToTrack(min_vol*5.0e-16_r8)         
          call this%moments_from_geometric_cutting(this%flux_geometry_class(f), &
-              neighbor_cell(1), a_old_vof, this%face_flux(f))
+              neighbor_cell(1), a_old_vof, min_vol*5.0e-16_r8, this%face_flux(f))
       else
         if(.not. nswitch) then
           if(a_face_vel(f) > 0.0_r8) then
@@ -1657,6 +1650,19 @@ contains
         end if
         call this%face_flux(f)%add_cell_fluxes(cell_id, cell_local_volumes)        
       end if
+
+        ! ! Make sure face flux volumes sum to correct volume
+        ! do c = 1, this%face_flux(f)%get_number_of_cells()
+        !   fluxed_phases =>  this%face_flux(f)%get_cell_fluxes(c)          
+        !   do k = 1, fluxed_phases%size()
+        !     correct_volume = correct_volume - fluxed_phases%at_r8(k)
+        !   end do
+        ! end do      
+        ! if(abs(correct_volume) > 1.0e-15_r8) then
+        !   print*,'Unmatching Face Flux!', f, correct_volume, a_dt*a_face_vel(f)*this%mesh%area(f), &
+        !        a_dt*a_face_vel(f)*this%mesh%area(f) + correct_volume
+        ! end if
+        
 
     end do
     
@@ -1795,7 +1801,7 @@ contains
     
   end function refined_advection_check
   
-  subroutine moments_from_geometric_cutting(this, a_geometric_case, a_starting_index, a_vof, a_face_flux)
+  subroutine moments_from_geometric_cutting(this, a_geometric_case, a_starting_index, a_vof, a_small_volume, a_face_flux)
 
     use integer_real8_tuple_vector_type   
 
@@ -1803,6 +1809,7 @@ contains
     integer, intent(in) :: a_geometric_case
     integer, intent(in) :: a_starting_index
     real(r8), intent(in) :: a_vof(:,:)
+    real(r8), intent(in) :: a_small_volume
     type(cell_tagged_mm_volumes), intent(inout) :: a_face_flux
 
     integer :: k, t, phase_size, phase, phase_id
@@ -1894,7 +1901,7 @@ contains
          ! Is a boundary condition, all volume in phase 0          
          boundary_vof = this%getBCMaterialFractions(current_tag, a_vof) * getVolumeAtIndex(irl_cell_local_volumes, 0)
          do k = 1, this%nmat
-           if(abs(boundary_vof(k)) > tiny(1.0_r8)) then
+           if(abs(boundary_vof(k)) > a_small_volume) then
               call cell_local_volumes%push_back(k, boundary_vof(k))           
            end if
          end do
@@ -1903,7 +1910,7 @@ contains
          phase_size = getSize(irl_cell_local_volumes)
          do phase = 0, phase_size - 1 
            phase_id = getTagForIndex(irl_cell_local_volumes, phase)
-           if(abs(getVolumeAtIndex(irl_cell_local_volumes, phase)) > tiny(1.0_r8)) then
+           if(abs(getVolumeAtIndex(irl_cell_local_volumes, phase)) > a_small_volume) then
               call cell_local_volumes%push_back(phase_id, getVolumeAtIndex(irl_cell_local_volumes, phase))
            end if
          end do
@@ -1978,21 +1985,25 @@ contains
             vof_flux(fluxed_phases%at_int(k)) = vof_flux(fluxed_phases%at_int(k)) + fluxed_phases%at_r8(k)
           end do
         end do
-        a_vof(:,j) = a_vof(:,j) - vof_flux
-        cell_volume_sum = cell_volume_sum - sum(vof_flux)
+        a_vof(1:this%nfluid,j) = a_vof(1:this%nfluid,j) - vof_flux(1:this%nfluid)
+        cell_volume_sum = cell_volume_sum - sum(vof_flux(1:this%nmat))
       end do
-      a_vof(:,j) = a_vof(:,j) / cell_volume_sum
+      a_vof(1:this%nfluid,j) = a_vof(1:this%nfluid,j) / cell_volume_sum
+      a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))            
 
-      ! ! NOTE: This will lead to slight inconsistency with face fluxes
-      ! do k = 1, this%nmat
-      !   if(a_vof(k,j) < this%cutoff) then
-      !     a_vof(k,j) = 0.0_r8
-      !   else if(a_vof(k,j) > 1.0_r8 - this%cutoff) then
-      !     a_vof(k,j) = 1.0_r8
-      !   end if
-      ! end do    
+      ! NOTE: This will lead to slight inconsistency with face fluxes
+      do k = 1, this%nmat
+        ! if(a_vof(k,j) < -1.0e-14_r8 .or. a_vof(k,j) > 1.0_r8+1.0e-14_r8) then
+        !   print*,k,j,a_vof(k,j)
+        ! end if
+        if(a_vof(k,j) < this%cutoff) then
+          a_vof(k,j) = 0.0_r8
+        else if(a_vof(k,j) > 1.0_r8 - this%cutoff) then
+          a_vof(k,j) = 1.0_r8
+        end if
+      end do
       a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))      
-    end do   
+    end do
 
     call gather_boundary(this%mesh%cell_ip, a_vof)
 
