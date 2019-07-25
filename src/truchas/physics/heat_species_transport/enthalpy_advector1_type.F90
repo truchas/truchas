@@ -118,7 +118,6 @@ contains
         do n = 1, number_of_originating_cells
           originating_cell = this%unsplit_flux_vol(f)%get_cell_id(n)
           cell_local_volumes => this%unsplit_flux_vol(f)%get_cell_fluxes(n)
-          nphases = cell_local_volumes%size()
           if(originating_cell <= this%mesh%ncell) then
             ! Domain internal flux
             state(1) = tcellx(originating_cell)
@@ -128,7 +127,6 @@ contains
             boundary_face = this%boundary_recon_to_face_map(originating_cell-this%mesh%ncell)            
             call get_inflow_temp(this, boundary_face, found, state(1))
             if (.not.found) then
-              state(1) = tcellx(j)
               if(this%mesh%fcell(1,boundary_face) /= 0) then
                 state(1) = tcellx(this%mesh%fcell(1,boundary_face))
               else
@@ -138,12 +136,13 @@ contains
           end if
 
           ! Now do the fluxes
+          nphases = cell_local_volumes%size()          
           do p = 1, nphases
             if(cell_local_volumes%at_int(p) > size(this%matid)) cycle
             dq(j) = dq(j) - &
                  cell_local_volumes%at_r8(p)*ds_enthalpy_density(this%matid(cell_local_volumes%at_int(p)),state)
           end do
-        end do        
+        end do
       end do
     end do
 
