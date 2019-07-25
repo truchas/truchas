@@ -2,9 +2,36 @@
 
 Important changes since the 3.0 release.
 
+## 2019-07-25 (88211a5f)
+
+Solution probe output was re-implemented. This should resolve several
+long-standing bugs and memory leaks that had been reported. This involves
+a number of user-visible changes:
+* Each probe writes directly to its own text file in the output directory,
+  and no longer writes into the Truchas HDF5 output file.
+* Rather than write data for every possible solution quantity, a probe now
+  outputs data for a specific quantity.
+* There are several changes to the PROBE namelist:
+  - The `probe_name` variable was removed.
+  - `probe_coords` was changed to `coord`.
+  - `probe_coords_scale` was changed to `coord_scale_factor`.
+  - `probe_description` was changed to `description`.
+  - The new variable `data` specifies the quantity to produce output for. The
+    current choices are: `"temperature"`, `"pressure"`, and `"velocity"`.
+    Additional choices will be added in the near future.
+  - The new variable `data_file` specifies the name of the text output file.
+* The `write-probes.py` utility will be retained for use with previous
+  Truchas .h5 output files that contained the probe data.
+
+
 ## 2019-06-05 (ddec9290)
 
-The configuration of boundary conditions for heat transfer and species diffusion has undergone a major revision. The DS_BOUNDARY_CONDITION and DS_INTERFACE_CONDITION namelists have been replaced by two new namelists: THERMAL_BC for heat transfer boundary and interface conditions, and SPECIES_BC for species boundary conditions. The content of the namelists is essentially unchanged but some variables and their values are different:
+The configuration of boundary conditions for heat transfer and species
+diffusion has undergone a major revision. The DS_BOUNDARY_CONDITION and
+DS_INTERFACE_CONDITION namelists have been replaced by two new namelists:
+THERMAL_BC for heat transfer boundary and interface conditions, and SPECIES_BC
+for species boundary conditions. The content of the namelists is essentially
+unchanged but some variables and their values are different:
 * The `variable` variable is no longer needed and was removed.
 * The `condition` variable was renamed to `type`. There is no change to the
   types of boundary and interface conditions available, but some keywords
