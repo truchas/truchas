@@ -318,8 +318,6 @@ contains
   !! the case for a uniform velocity field, for example.
 
   subroutine compute_initial_pressure(this, t, dt)
-
-    use cell_tagged_mm_volumes_type
     
     class(flow), intent(inout) :: this
     real(r8), intent(in) :: t, dt
@@ -345,6 +343,7 @@ contains
     !! Reject the updated velocities
     this%vel_cc = this%vel_cc_n
     this%vel_fn = this%vel_fn_n
+    this%vel_node = this%vel_node_n
 
     !! Accept the updated pressures
     !this%p_cc_n = this%p_cc  !FIXME: need to maintain pressure as rejectable state variable
@@ -428,6 +427,7 @@ contains
     if (.not.this%props%any_real_fluid) then
       this%vel_cc = 0
       this%vel_fn = 0
+      this%vel_node = 0.0_r8
       return
     end if
 
@@ -444,8 +444,9 @@ contains
     call this%proj%solve(dt, this%props, this%grad_p_rho_cc_n, this%vel_cc, this%P_cc, this%vel_fn)
     call stop_timer("projection")
 
-    call this%compute_node_velocities(this%vel_cc, this%vel_fn, this%vel_node)
     call this%correct_non_regular_cells()
+
+    call this%compute_node_velocities(this%vel_cc, this%vel_fn, this%vel_node)    
 
   end subroutine step_unsplit
 
@@ -465,8 +466,7 @@ contains
           vel_node(:,n) = vel_node(:,n) + &
                vel_cc(:,cn(j)) * this%vel_node_interp_coeff(this%mesh%xndcell(n)+j-1)
         end do
-      end associate
-      
+      end associate      
     end do
 
     if(.not. this%prescribed) then
@@ -505,7 +505,7 @@ contains
               ! Dirichlet Face exists
               new_vel(1) = new_vel(1) + this%mesh%area(n2f(f))
               ! Normal already has multiplication by area
-              new_vel(2:4) = new_vel(2:4) + this%bc%v_dirichlet%value(:,bc_face_loc) * this%mesh%normal(:,n2f(f))
+              new_vel(2:4) = new_vel(2:4) + this%bc%v_dirichlet%value(:,bc_face_loc) * this%mesh%area(n2f(f))
             end if
           end do
         end associate
