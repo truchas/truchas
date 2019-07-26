@@ -90,6 +90,7 @@ module probes_type
     integer :: lun    ! logical unit for output
     integer :: index  ! probe cell/node index
     class(probe_field), allocatable :: field
+    character(:), allocatable :: fmt  ! output format
   contains
     procedure :: init  => point_probe_init
     procedure :: write => point_probe_write
@@ -157,10 +158,11 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: ios
+    integer :: ios, n
     character(:), allocatable :: string, data_file, outfile
     real(r8), allocatable :: coord(:)
     real(r8) :: s
+    character(32) :: rfmt
 
     !! Allocate the probe field.
     call params%get('data', string, stat=stat, errmsg=errmsg)
@@ -228,13 +230,19 @@ contains
       write(this%lun,'(a,a)') '# time', this%field%label
     end if
 
+    !! Generate the format for writing the probe data.
+    call params%get('digits', n, default=6, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    write(rfmt,'("es",i0,".",i0)') n+7, n-1
+    this%fmt = '(' // trim(rfmt) // ',*(' // trim(rfmt) // '))'
+
   end subroutine point_probe_init
 
   subroutine point_probe_write(this, time)
     class(point_probe), intent(in) :: this
     real(r8), intent(in) :: time
     if (this%index > 0) then
-      write(this%lun,'(es13.6,*(es18.10))') time, this%field%value(this%index)
+      write(this%lun,this%fmt) time, this%field%value(this%index)
     end if
   end subroutine point_probe_write
 

@@ -28,7 +28,7 @@ contains
   subroutine read_probe_namelists(lun)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
-    use input_utilities, only: seek_to_namelist, NULL_C, NULL_R
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_R, NULL_I
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities, only: i_to_c
     use truchas_logging_services
@@ -45,7 +45,8 @@ contains
     character(31) :: data_file, data
     character(80) :: description
     real(r8) :: coord(3), coord_scale_factor
-    namelist /probe/ data_file, description, coord, coord_scale_factor, data
+    integer  :: digits
+    namelist /probe/ data_file, description, coord, coord_scale_factor, data, digits
 
     call TLS_info ('')
     call TLS_info ('Reading PROBE namelists ...')
@@ -69,6 +70,7 @@ contains
       coord = NULL_R
       coord_scale_factor = NULL_R
       data = NULL_C
+      digits = NULL_I
 
       if (is_IOP) read(lun,nml=probe,iostat=ios,iomsg=iom)
       call broadcast(ios)
@@ -79,6 +81,7 @@ contains
       call broadcast(coord)
       call broadcast(coord_scale_factor)
       call broadcast(data)
+      call broadcast(digits)
 
       !! Require a unique DATA_FILE name; also use for the sublist parameter name.
       if (data_file == NULL_C) then
@@ -117,6 +120,15 @@ contains
           call TLS_fatal(label // ': COORD_SCALE_FACTOR must be > 0.0')
         else
           call sublist%set('coord-scale-factor', coord_scale_factor)
+        end if
+      end if
+
+      !! Check optional DIGITS.
+      if (digits /= NULL_I) then
+        if (digits < 2) then
+          call TLS_fatal(label // ': DIGITS must be > 1')
+        else
+          call sublist%set('digits', digits)
         end if
       end if
 

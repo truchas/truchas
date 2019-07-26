@@ -23,6 +23,8 @@ a number of user-visible changes:
 * The `write-probes.py` utility will be retained for use with previous
   Truchas .h5 output files that contained the probe data.
 
+See the latest Truchas Reference Manual section on the PROBE namelist for
+further details.
 
 ## 2019-06-05 (ddec9290)
 
