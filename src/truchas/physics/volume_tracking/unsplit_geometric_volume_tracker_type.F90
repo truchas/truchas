@@ -265,7 +265,7 @@ contains
     integer :: f, j
     real(r8) :: tmp
 
-    vof = vof_n
+    vof = vof_n    
 
     ! ! Check to see if cell is even close to divergence free
     ! do j = 1, this%mesh%ncell_onP
@@ -279,9 +279,17 @@ contains
     !       end if
     !     end do
     !   end associate
-    !   if(abs(tmp)/this%mesh%volume(j) > 1.0e-8_r8) then
-    !     print*,'Divergent!', j, abs(tmp)/this%mesh%volume(j), abs(tmp), this%mesh%volume(j)
-    !   end if      
+    !    if(abs(tmp)/this%mesh%volume(j) > 1.0e-8_r8) then
+    !      print*,'Divergent!', this%mesh%xcell(j), abs(tmp)/this%mesh%volume(j), abs(tmp), this%mesh%volume(j)
+    !    end if
+    !   if(this%mesh%xcell(j) == 304) then
+    !     print*,'NODE VELOCITIES'
+    !     associate(cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+    !       do f = 1, size(cn)
+    !         print*,this%mesh%xnode(cn(f)),this%mesh%x(:,cn(f)), vel_node(:,cn(f))
+    !       end do
+    !     end associate
+    !   end if
     ! end do
 
     call start_timer('reconstruction')

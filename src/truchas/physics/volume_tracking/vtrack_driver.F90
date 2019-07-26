@@ -381,8 +381,8 @@ contains
     if(this%unsplit_advection) then
       ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
       call vtrack_update_mat_band()      
-      ! Unsplit advection written to use face velocities, operates on faces.
-      ! Cell centered velocity also needed to form node velocities for projection.
+      ! Unsplit advection written to use face velocities, operates on faces. Uses vel_node for projection
+      if(t > 1.0e-12_r8) &
       call this%unsplit_vt%flux_volumes(vel_fn, vel_cc, vel_node, this%fvof_i, this%fvof_o, this%unsplit_flux_vol, &
            this%fluids, this%void, dt, this%mat_band, this%interface_band)
     else
