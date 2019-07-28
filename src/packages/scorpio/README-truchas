@@ -1,0 +1,16 @@
+This is a slightly modified version of the original Scorpio library for use
+by Truchas. The changes relative to the upstream version are maintained on
+the truchas branch of the repository https://gitlab.com/truchas/scorpio
+
+A brief summary of the changes
+------------------------------
+* Makefiles replaced by a CMake build system that works within the Truchas
+  build system (but not standalone).
+
+* A new function scorpio_create_link was added to support HDF5 soft links.
+
+* A couple parallel bugs in scorpio_write.c were fixed.
+
+* The byte output type was changed to H5T_NATIVE_OPAQUE from H5T_NATIVE_INT8.
+
+* Updates for HDF5 1.10 compatibility.
