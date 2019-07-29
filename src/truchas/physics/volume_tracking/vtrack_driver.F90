@@ -419,10 +419,14 @@ contains
     write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/(this%fvol_init+epsilon(1.0_r8))    
     call TLS_info(message)
 
+    if(t < 1.0e-13_r8) then
+      this%fvol_init = vol_sum
+    end if
     if(is_IOP) then
       write(myformat, '(a,i1,a)') '(',2*size(vol_sum)+1,'es28.14)'      
       write(862,myformat) t+dt,vol_sum,vol_sum-this%fvol_init
     end if
+    this%fvol_init = vol_sum
 
     ! update the matl structure if this isn't the initial pass  
     if (present(initial)) then
