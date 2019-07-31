@@ -753,7 +753,7 @@ contains
     real(r8) :: distance_guess
     real(r8) :: angle_difference, rotation_axis(3), normal_center_line(3)
     real(r8) :: rotation_quaternion(4), inv_rotation_quaternion(4), rotated_normal(4)
-    real(r8) :: rotation_axis_mag, normal_mag
+    real(r8) :: rotation_axis_mag
     integer :: number_of_active_neighbors
 
     ASSERT(this%nmat == 2)
@@ -765,7 +765,7 @@ contains
     do while(.not. done)
       outer_iter = outer_iter + 1
 
-      ! Set current interfaces in IRL (with satisfying volume fractions) and polygons
+      ! Set current interfaces in IRL (with satisfting volume fractions) and polygons
       polygon_center = 0.0_r8      
       do j = 1, this%mesh%ncell_onP
         if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
@@ -774,18 +774,27 @@ contains
           call setPlane(this%planar_separator(j), 0, this%normal(:,1,j), distance_guess)
           
           associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-
+            
             call this%adjust_planes_match_VOF(this%mesh%x(:,cn), a_vof(:,j), &
                  this%planar_separator(j) )
 
             call this%construct_nonzero_polygon(this%mesh%x(:,cn), this%planar_separator(j), &
                  0, this%interface_polygons(j))
+
+           !print*,'mesh'
+           !do n = 1,8
+           !  print*,n,this%mesh%x(:,cn(n))
+           !end do            
           end associate
 
+          !call printToScreen(this%planar_separator(j))
+          !call printToScreen(this%interface_polygons(j))
           do n = 1, getNumberOfVertices(this%interface_polygons(j))
             polygon_center(:,j) = polygon_center(:,j) + getPt(this%interface_polygons(j), n-1)
           end do
-          polygon_center(:,j) = polygon_center(:,j) / real(getNumberOfVertices(this%interface_polygons(j)), r8)         
+          if(getNumberOfVertices(this%interface_polygons(j)) > 0) then
+            polygon_center(:,j) = polygon_center(:,j) / real(getNumberOfVertices(this%interface_polygons(j)), r8)
+          end if
         end if
       end do
 
@@ -798,41 +807,35 @@ contains
       do j = 1, this%mesh%ncell_onP
         if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
 
-          associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+          associate(cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
+          !associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))          
             number_of_active_neighbors = 0
             do n = 1, size(cn)
               if(cn(n) /= 0) then
-                if(a_vof(1,cn(n)) > this%cutoff .and. a_vof(1,cn(n)) < 1.0_r8 - this%cutoff) then
-                  angle_difference = acos(max(-1.0_r8,min(1.0_r8, &
+                if(getNumberOfVertices(this%interface_polygons(cn(n))) > 0) then
+                  angle_difference = acos(max(-1.0_r8, min(1.0_r8, &
                        dot_product(old_normal(:,j), old_normal(:,cn(n))))))
-                  if(abs(angle_difference) < pi/6.0_r8) then
+                  if(angle_difference < pi/6.0_r8) then
                     ! Use this neighbor
                     normal_center_line = polygon_center(:,cn(n))-polygon_center(:,j)
-                    normal_center_line = normal_center_line / sqrt(sum(normal_center_line**2))
-                    if(abs(dot_product(normal_center_line, old_normal(:,j))) < 1.0_r8 - 1.0e-4_r8) then 
+                    normal_center_line = normal_center_line / sqrt(sum(normal_center_line**2))       
+                    if(abs(dot_product(normal_center_line, old_normal(:,j))) < 1.0_r8 - 1.0e-4_r8) then
+                      ! Not colinear, can find valid orthogonal axis
                       rotation_axis = cross_product(normal_center_line, old_normal(:,j))
                       rotation_axis = rotation_axis / sqrt(sum(rotation_axis**2))
-                    else                      
-                      cycle
+                    else
+                      cycle                      
                     end if
-                    number_of_active_neighbors = number_of_active_neighbors + 1                    
                     rotation_quaternion(1) = cos(0.5_r8*0.5_r8*pi)
                     rotation_quaternion(2:4) = rotation_axis * sin(0.5_r8*0.5_r8*pi)
                     inv_rotation_quaternion(1) = rotation_quaternion(1)
                     inv_rotation_quaternion(2:4) = -rotation_quaternion(2:4)
-                    ! Product of rotation_quaternion and normal_center_line
-                    rotated_normal(1) = -dot_product(rotation_quaternion(2:4),normal_center_line)
-                    rotated_normal(2:4) = rotation_quaternion(1)*normal_center_line + &
-                         cross_product(rotation_quaternion(2:4),normal_center_line)
-                    ! Product of (rotated_quaternion*normal_center_line) and inv_rotation_quaternion
-                    rotation_quaternion = rotated_normal
-                    rotated_normal(1) = rotation_quaternion(1)*inv_rotation_quaternion(1) &
-                         -dot_product(rotation_quaternion(2:4),inv_rotation_quaternion(2:4))
-                    rotated_normal(2:4) = rotation_quaternion(1)*inv_rotation_quaternion(2:4) &
-                         + inv_rotation_quaternion(1)*rotation_quaternion(2:4) &
-                         + cross_product(rotation_quaternion(2:4),inv_rotation_quaternion(2:4))
+                    ! Perform rotation using quaternion
+                    rotated_normal = multiply_quat(rotation_quaternion, [0.0_r8, normal_center_line])
+                    rotated_normal = multiply_quat(rotated_normal, inv_rotation_quaternion)
                     rotated_normal(2:4) = rotated_normal(2:4) / sqrt(sum(rotated_normal(2:4)**2))
                     this%normal(:,1,j) = this%normal(:,1,j) + rotated_normal(2:4)
+                    number_of_active_neighbors = number_of_active_neighbors + 1             
                   end if                  
                 end if
               end if
@@ -841,9 +844,8 @@ contains
 
           end associate
 
-          normal_mag = sqrt(sum(this%normal(:,1,j)**2))
-          if(number_of_active_neighbors > 0 .and. normal_mag > epsilon(1.0_r8)) then
-            this%normal(:,1,j) = this%normal(:,1,j) / normal_mag
+          if(number_of_active_neighbors > 0) then
+            this%normal(:,1,j) = this%normal(:,1,j) / sqrt(sum(this%normal(:,1,j)**2))
           else
             this%normal(:,1,j) = old_normal(:,j)
           end if
@@ -865,6 +867,22 @@ contains
     
     deallocate(polygon_center)
     deallocate(old_normal)
+
+  contains
+
+    function multiply_quat(a, b) result(quat_r)
+
+      real(r8), intent(in) :: a(4), b(4)
+      real(r8) :: quat_r(4)
+
+
+      quat_r(1) = a(1)*b(1)-dot_product(a(2:4),b(2:4))
+      quat_r(2) = a(1)*b(2) + a(2)*b(1) + a(3)*b(4) - a(4)*b(3)
+      quat_r(3) = a(1)*b(3) - a(2)*b(4) + a(3)*b(1) + a(4)*b(2) 
+      quat_r(4) = a(1)*b(4) + a(2)*b(3) - a(3)*b(2) + a(4)*b(1)     
+      return
+
+    end function multiply_quat
     
   end subroutine normals_swartz
 
@@ -1170,7 +1188,7 @@ contains
     real(r8), intent(in) :: a_vof(:)
     type(PlanarSep_type), intent(inout) :: a_planar_separator
 
-    real(r8), parameter :: VOF_tolerance = 1.0e-15_r8
+    real(r8), parameter :: VOF_tolerance = 5.0e-16_r8
     
     ! PlanarSeparator should already be setup with a valid normal and
     ! guess for the distance (atleast somewhere inside cell so we can calculate
@@ -1617,7 +1635,7 @@ contains
 
       if(geometric_cutting_needed) then
          ! Perform cutting
-         call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)         
+         call setMinimumVolToTrack(this%mesh%volume(j)*5.0e-16_r8)         
          call this%moments_from_geometric_cutting(number_of_nodes, &
               j, a_old_vof, moment_flux)
          this%cell_flux(1:2,j) = moment_flux(1:2)
