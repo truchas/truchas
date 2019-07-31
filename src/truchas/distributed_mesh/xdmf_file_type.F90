@@ -101,22 +101,22 @@ contains
     class(xdmf_file), intent(inout) :: this
     type(unstr_2d_mesh), intent(in) :: mesh
 
-    integer :: j, n, nside, nside_tot, side_offset, iolength, my_pos
+    integer :: j, n, nvrtx, nvrtx_tot, vrtx_offset, iolength, my_pos
     integer, allocatable :: connect(:)
 
     INSIST(this%stage == 1)
 
     this%nnode = mesh%nnode_onP               ! number of nodes I own
     this%nnode_tot = global_sum(this%nnode)   ! total number of nodes
-    this%node_offset = my_offset(this%nnode) ! my offset for writing node-based data
+    this%node_offset = my_offset(this%nnode)  ! my offset for writing node-based data
 
     this%ncell = mesh%ncell_onP               ! number of cells I own
     this%ncell_tot = global_sum(this%ncell)   ! total number of cells
-    this%cell_offset = my_offset(this%ncell) ! my offset for writing cell-based data
+    this%cell_offset = my_offset(this%ncell)  ! my offset for writing cell-based data
 
-    nside = mesh%xcface(mesh%ncell_onP+1) - 1 ! number of sides I own
-    nside_tot = global_sum(nside)             ! total number of sides
-    side_offset = my_offset(nside)           ! my offset for writing side-based data
+    nvrtx = mesh%cstart(mesh%ncell_onP+1) - 1 ! number of vertices I own
+    nvrtx_tot = global_sum(nvrtx)             ! total number of vertices
+    vrtx_offset = my_offset(nvrtx)            ! my offset for writing vertex-based data
 
     !! Write the XDMF node coordinate element
     if (is_IOP) then
@@ -138,17 +138,17 @@ contains
     if (is_IOP) then
       write(this%xmf,'(t5,a,i0,a)') '<Topology TopologyType="Mixed" NumberOfElements="', this%ncell_tot, '">'
       write(this%xmf,'(t7,a,2(i0,a))') '<DataItem DataType="Int" Precision="4" Dimensions="', &
-          this%ncell_tot + nside_tot, '" Format="Binary" Seek="', this%pos-1, '">'
+          this%ncell_tot + nvrtx_tot, '" Format="Binary" Seek="', this%pos-1, '">'
       write(this%xmf,'(t9,a)') this%binfile
       write(this%xmf,'(t7,a)') '</DataItem>'
       write(this%xmf,'(t5,a)') '</Topology>'
     end if
 
     !! Generate the XDMF-format connectivity array
-    allocate(connect(this%ncell+nside))
+    allocate(connect(this%ncell+nvrtx))
     n = 1
     do j = 1, this%ncell
-      associate (list => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))
+      associate (list => mesh%cnode(mesh%cstart(j):mesh%cstart(j+1)-1))
         select case (size(list))
         case (3)
           connect(n) = 4  ! XDMF tri cell identifier
@@ -165,9 +165,9 @@ contains
 
     !! Everybody writes their slab of the connectivity array.
     iolength = storage_size(connect)/file_storage_size
-    my_pos = this%pos + (this%cell_offset + side_offset)*iolength
+    my_pos = this%pos + (this%cell_offset + vrtx_offset)*iolength
     write(this%bin,pos=my_pos) connect
-    this%pos = this%pos + (this%ncell_tot + nside_tot)*iolength
+    this%pos = this%pos + (this%ncell_tot + nvrtx_tot)*iolength
 
     this%stage = 2  ! mesh written
 
