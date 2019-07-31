@@ -127,7 +127,7 @@ module permutations
     module procedure reorder_i0, reorder_i1
     module procedure reorder_r0, reorder_r1
     module procedure reorder_d0, reorder_d1
-    module procedure reorder_ragged_int
+    module procedure reorder_ragged_int, reorder_ragged_int2
   end interface
 
 contains
@@ -275,6 +275,44 @@ contains
     xarray = xtmp
     array = tmp
   end subroutine pullback_ragged_int
+
+  subroutine reorder_ragged_int2 (xarray, array1, array2, perm, forward)
+    integer, intent(inout) :: xarray(:), array1(:), array2(:)
+    integer, intent(in) :: perm(:)
+    logical, intent(in), optional :: forward
+    logical :: pullback
+    integer, allocatable :: invp(:)
+    ASSERT(size(xarray) == size(perm)+1)
+    ASSERT(size(array1) == xarray(size(xarray))-1)
+    ASSERT(size(array2) == size(array1))
+    pullback = .true.
+    if (present(forward)) pullback = .not.forward
+    if (pullback) then
+      call pullback_ragged_int2(xarray, array1, array2, perm)
+    else
+      allocate(invp(size(perm)))
+      call invert_perm(perm, invp)
+      call pullback_ragged_int2(xarray, array1, array2, invp)
+    end if
+  end subroutine reorder_ragged_int2
+
+  pure subroutine pullback_ragged_int2 (xarray, array1, array2, perm)
+    integer, intent(inout) :: xarray(:), array1(:), array2(:)
+    integer, intent(in) :: perm(:)
+    integer :: j, xtmp(size(xarray)), tmp1(size(array1)), tmp2(size(array2))
+    xtmp(1) = 1
+    do j = 1, size(perm)
+      associate(col1 => array1(xarray(perm(j)):xarray(perm(j)+1)-1), &
+                col2 => array2(xarray(perm(j)):xarray(perm(j)+1)-1))
+        xtmp(j+1) = xtmp(j) + size(col1)
+        tmp1(xtmp(j):xtmp(j+1)-1) = col1
+        tmp2(xtmp(j):xtmp(j+1)-1) = col2
+      end associate
+    end do
+    xarray = xtmp
+    array1 = tmp1
+    array2 = tmp2
+  end subroutine pullback_ragged_int2
 
   !!
   !! Rank-1 logical array
