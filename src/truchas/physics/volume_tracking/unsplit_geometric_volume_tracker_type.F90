@@ -25,7 +25,7 @@ module unsplit_geometric_volume_tracker_type
   implicit none
   private
 
-  integer, parameter, private :: advect_band = 5 ! Size of band to do advection
+  integer, parameter, private :: advect_band = 3 ! Size of band to do advection
 
   type, extends(volume_tracker), public :: unsplit_geometric_volume_tracker
     private
@@ -36,7 +36,6 @@ module unsplit_geometric_volume_tracker_type
     character(string_len) :: interface_reconstruction_name
     real(r8), allocatable :: normal(:,:,:)
     real(r8), allocatable :: cell_flux(:,:)
-    real(r8), allocatable :: phase_centroids(:,:,:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:)
     real(r8), allocatable :: node_velocity(:,:)
@@ -98,6 +97,7 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: compute_effective_cfl
     procedure, private :: compute_correction_vertices
     procedure, private :: compute_fluxes
+    procedure, private :: redistribute_vof_errors
     procedure, private :: set_irl_volume_geometry
     procedure, private :: refined_advection_check
     procedure, private :: moments_from_geometric_cutting
@@ -106,7 +106,6 @@ module unsplit_geometric_volume_tracker_type
     procedure, private :: normals_youngs
     procedure, private :: normals_newgrad_youngs    
     procedure, private :: normals_swartz
-    procedure, private :: normals_mof    
     procedure, private :: normals_lvira
     procedure, private :: normals_lvira_hex_execute
     procedure, private :: normals_lvira_tet_execute    
@@ -172,12 +171,6 @@ contains
     ! Allocate face fluxes we'll store
     ASSERT(this%nmat == 2)
     allocate(this%cell_flux(this%nmat, this%mesh%ncell))
-    allocate(this%phase_centroids(3, this%nmat, this%mesh%ncell))
-    do j = 1, this%mesh%ncell
-      do i = 1, this%nmat
-        this%phase_centroids(:,i,j) = this%mesh%cell_centroid(:,j)
-      end do
-    end do
 
     allocate(this%normal(3,this%nmat,mesh%ncell))
     allocate(this%w_node(3,mesh%nnode))
@@ -282,6 +275,7 @@ contains
     call this%compute_correction_vertices(vel, dt, a_interface_band)
 
     call this%compute_fluxes(vel, dt, vof_n, vof, a_interface_band)
+    call this%redistribute_vof_errors(vof)
 
     call stop_timer('advection')
 
@@ -575,11 +569,6 @@ contains
       case('Swartz')
         call this%normals_youngs(vof)
         call this%normals_swartz(vof)
-
-     case('MOF')
-        ! Don't have valid centroids on first iteration
-        call TLS_Fatal('Need to think of what to do on first iteration when no centroids.')
-        call this%normals_mof(vof)
 
       case('LVIRA')
         call this%normals_youngs(vof)
@@ -885,64 +874,6 @@ contains
     end function multiply_quat
     
   end subroutine normals_swartz
-
-  subroutine normals_mof(this, a_vof)
-
-    use irl_interface_helper
-    
-    class(unsplit_geometric_volume_tracker), intent(inout) :: this
-
-    real(r8), intent(in) :: a_vof(:,:)
-
-    integer :: j
-    type(SepVM_type) :: sepvm
-    real(r8) :: tmp_plane(4)
-
-    call new(sepvm)
-
-    do j = 1, this%mesh%ncell_onP
-      if(a_vof(1,j) < this%cutoff .or. a_vof(1,j) > 1.0_r8 - this%cutoff) then
-        cycle
-      end if
-
-      call construct(sepvm, [this%cell_flux(1,j), this%phase_centroids(1:3,1,j), &
-                             this%cell_flux(2,j), this%phase_centroids(1:3,2,j)])
-      
-      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))          
-        select case(size(cn))
-        case (4) ! tet      
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
-          call reconstructMOF3D(this%IRL_tet, sepvm, this%planar_separator(j))
-
-        case (5) ! pyramid
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)
-          call TLS_FATAL('Not yet implemented') 
-          !call reconstructMOF3D(this%IRL_pyramid, sepvm, this%planar_separator(j))
-
-        case (6) ! Wedge
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)
-          call TLS_FATAL('Not yet implemented') 
-          !call reconstructMOF3D(this%IRL_wedge, sepvm, this%planar_separator(j))
-          
-        case (8) ! Hex
-          call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)
-          call reconstructMOF3D(this%IRL_hex, sepvm, this%planar_separator(j))
-          
-        case default
-          call TLS_fatal('Unknown Truchas cell type during MOF reconstruction.')
-        end select
-
-      end associate
-
-      tmp_plane = getPlane(this%planar_separator(j), 0)
-      this%normal(:,1,j) = tmp_plane(1:3)
-      
-    end do    
-
-    this%normal(:,2,:) = -this%normal(:,1,:)
-    call gather_boundary(this%mesh%cell_ip, this%normal)
-    
-  end subroutine normals_mof
     
   subroutine normals_lvira(this, a_vof)
 
@@ -1601,7 +1532,7 @@ contains
     integer ::  number_of_nodes, neighbor_cell_index
     real(r8) :: cell_nodes(3,14)
     real(r8) :: bounding_box(3,2)
-    real(r8) :: moment_flux(8)    
+    real(r8) :: moment_flux(2)    
     logical :: geometric_cutting_needed
     
     ASSERT(this%nmat == 2) ! Will alleviate later
@@ -1634,48 +1565,18 @@ contains
       end associate
 
       if(geometric_cutting_needed) then
-         ! Perform cutting
-         call setMinimumVolToTrack(this%mesh%volume(j)*5.0e-16_r8)         
-         call this%moments_from_geometric_cutting(number_of_nodes, &
-              j, a_old_vof, moment_flux)
-         this%cell_flux(1:2,j) = moment_flux(1:2)
-         this%phase_centroids(:,1,j) = moment_flux(3:5)
-         this%phase_centroids(:,2,j) = moment_flux(6:8)
-         ! Update VOF
-         ! Only time vof should change is when geometric cutting is needed.
-         a_new_vof(:,j) = this%cell_flux(:,j) / sum(this%cell_flux(:,j))         
-         if(a_new_vof(1,j) < this%cutoff) then
-            this%cell_flux(1,j) = 0.0_r8
-            this%cell_flux(2,j) = this%mesh%volume(j)
-            a_new_vof(1,j) = 0.0_r8
-            a_new_vof(2,j) = 1.0_r8
-            this%phase_centroids(:,1,j) = this%mesh%cell_centroid(:,j)
-            this%phase_centroids(:,2,j) = this%mesh%cell_centroid(:,j)            
-         else if(a_new_vof(1,j) > 1.0_r8 - this%cutoff) then
-            this%cell_flux(1,j) = this%mesh%volume(j)
-            this%cell_flux(2,j) = 0.0_r8            
-            a_new_vof(1,j) = 1.0_r8
-            a_new_vof(2,j) = 0.0_r8
-            this%phase_centroids(:,1,j) = this%mesh%cell_centroid(:,j)
-            this%phase_centroids(:,2,j) = this%mesh%cell_centroid(:,j)            
-         else
-            if(trim(this%interface_reconstruction_name) == 'MOF') then
-               cell_ind = j
-               this%phase_centroids(:,1,j) = this%phase_centroids(:,1,j) + &
-                    this%get_velocity_at_point(this%phase_centroids(:,1,j), cell_ind)*a_dt
-               this%phase_centroids(:,2,j) = this%phase_centroids(:,2,j) + &
-                    this%get_velocity_at_point(this%phase_centroids(:,2,j), cell_ind)*a_dt               
-            end if
-         end if
+        ! Perform cutting
+        call setMinimumVolToTrack(this%mesh%volume(j)*5.0e-16_r8)         
+        call this%moments_from_geometric_cutting(number_of_nodes, &
+             j, a_old_vof, this%cell_flux(:,j))
+        ! Update VOF
+        ! Only time vof should change is when geometric cutting is needed.
+        a_new_vof(:,j) = this%cell_flux(:,j) / sum(this%cell_flux(:,j))         
       end if
     end do
     
     ! Need to communicate fluxes
     call gather_boundary(this%mesh%cell_ip, a_new_vof)
-
-    ! Don't need to communicate for MoF, but might use for other things later
-    call gather_boundary(this%mesh%cell_ip, this%phase_centroids(:,1,:))
-    call gather_boundary(this%mesh%cell_ip, this%phase_centroids(:,2,:))    
     
   end subroutine compute_fluxes
 
@@ -1777,72 +1678,58 @@ contains
     real(r8), intent(inout) :: a_cell_flux(:)
 
     integer :: t
-    type(TagAccVM_SepVM_type) :: tagged_sepvm
-    type(SepVM_type) :: sepvm
+    type(TagAccVM_SepVol_type) :: tagged_sepvol
     integer :: current_tag
     real(r8) :: boundary_vof(this%nmat)
 
     ! Note, the correct object type for a_geom_class should already
     ! be correctly construction in this%
 
-    call new(tagged_sepvm)
+    call new(tagged_sepvol)
       
     select case(a_base_number_of_nodes)
     case(4) ! Projected Tet
 
        call getMoments(this%IRL_sym_tet, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvm)
+            tagged_sepvol)
        
     case(5) ! Projected Pyramid
 
        call getMoments(this%IRL_sym_pyramid, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvm)       
+            tagged_sepvol)       
        
     case(6) ! Projected Wedge
 
        call getMoments(this%IRL_sym_wedge, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvm)       
+            tagged_sepvol)       
        
     case(8) ! Projected Hex
        
        call getMoments(this%IRL_sym_hex, &
             this%localized_separator_link(a_starting_index), &
-            tagged_sepvm)
+            tagged_sepvol)
        
     case default
        call TLS_fatal('Unknown projected cell type in moments_from_geometric_cutting.')          
     end select
        
     a_cell_flux = 0.0_r8
-    do t = 0, getSize(tagged_sepvm)-1
-      current_tag = getTagForIndex(tagged_sepvm, t)
-      call getSepVMAtIndex(tagged_sepvm, t, sepvm)      
+    do t = 0, getSize(tagged_sepvol)-1
+      current_tag = getTagForIndex(tagged_sepvol, t)
       if(current_tag > this%mesh%ncell) then
          ! Is a boundary condition, all volume in phase 0
           boundary_vof =  this%getBCMaterialFractions(current_tag, a_vof)
           a_cell_flux(1:2) = &
-               a_cell_flux(1:2) + boundary_vof * getVolume(sepvm, 0)
-          a_cell_flux(3:5) = a_cell_flux(3:5) + boundary_vof(1) * getCentroid(sepvm,0)
-          a_cell_flux(6:8) = a_cell_flux(6:8) + boundary_vof(2) * getCentroid(sepvm,0)           
+               a_cell_flux(1:2) + boundary_vof * getVolumeAtIndex(tagged_sepvol, t, 0)
       else
          ! Is inside domain, trust actual volumes
-         a_cell_flux(1) = a_cell_flux(1) + getVolume(sepvm, 0)
-         a_cell_flux(2) = a_cell_flux(2) + getVolume(sepvm, 1)
-         a_cell_flux(3:5) = a_cell_flux(3:5) + getCentroid(sepvm, 0)
-         a_cell_flux(6:8) = a_cell_flux(6:8) + getCentroid(sepvm, 1)         
+         a_cell_flux(1) = a_cell_flux(1) + getVolumeAtIndex(tagged_sepvol, t, 0)
+         a_cell_flux(2) = a_cell_flux(2) + getVolumeAtIndex(tagged_sepvol, t, 1)         
       end if
     end do
-    ! Normalize to get centroid location
-    if(abs(a_cell_flux(1)) > tiny(1.0_r8)) then
-       a_cell_flux(3:5) = a_cell_flux(3:5) / a_cell_flux(1)
-    end if
-
-    if(abs(a_cell_flux(2)) > tiny(1.0_r8)) then
-       a_cell_flux(6:8) = a_cell_flux(6:8) / a_cell_flux(2)
-    end if
 
     return
   end subroutine moments_from_geometric_cutting
@@ -1866,78 +1753,127 @@ contains
     return
   end function getBCMaterialFractions
   
-  ! subroutine update_vof(this, a_interface_band, a_flux_vol, a_vof)
+  subroutine redistribute_vof_errors(this, a_vof)
+ 
+    use parallel_communication, only : global_sum
+    use parameter_module, only : string_len    
+    
+    class(unsplit_geometric_volume_tracker), intent(in) :: this
+    real(r8), intent(inout) :: a_vof(:,:)
+
+    real(r8) :: overshoot, undershoot, wisp_volume, acceptance_volume, volume_to_add_back
+    real(r8), parameter :: wisp_tolerance = 0.01_r8
+    real(r8) :: my_wisp_tolerance
+
+    integer :: j, n
+    character(string_len) :: message            
+    
+    ! Account for overshoots and undershoots
+    overshoot = 0.0_r8
+    undershoot = 0.0_r8
+    do j = 1, this%mesh%ncell_onP
+      ! Negative volume fraction
+      if(a_vof(1,j) < 0.0_r8) then        
+        undershoot = undershoot + (-a_vof(1,j)*this%mesh%volume(j))
+        ! Added volume
+        a_vof(1,j) = 0.0_r8        
+      end if
+      ! Greater than volume fraction
+      if(a_vof(1,j) > 1.0_r8) then        
+        overshoot = overshoot - (1.0_r8-a_vof(1,j))*this%mesh%volume(j)
+        ! Removed volume
+        a_vof(1,j) = 1.0_r8        
+      end if
+      ! Really small volume fraction
+      if(a_vof(1,j) < this%cutoff) then        
+        undershoot = undershoot - a_vof(1,j)*this%mesh%volume(j)
+        ! Removed volume
+        a_vof(1,j) = 0.0_r8        
+      end if
+      ! Really close to 1 volume fraction
+      if(a_vof(1,j) > (1.0_r8 - this%cutoff)) then        
+        overshoot = overshoot + (1.0_r8 - a_vof(1,j))*this%mesh%volume(j)
+        ! Added volume
+        a_vof(1,j) = 1.0_r8        
+      end if            
+    end do
+    call gather_boundary(this%mesh%cell_ip, a_vof(1,:))
+    overshoot = global_sum(overshoot)
+    undershoot = global_sum(undershoot)    
+
+    wisp_volume = 0.0_r8
+    ! Now look for wisps in phase 1 (small vof value)
+    cell_loop1: do j = 1, this%mesh%ncell_onP
+      if(a_vof(1,j) < wisp_tolerance) then
+        my_wisp_tolerance = wisp_tolerance*this%mesh%volume(j)
+        associate(cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
+          do n = 1, size(cn)
+            if(cn(n) /= 0) then
+              if(a_vof(1,cn(n))*this%mesh%volume(cn(n)) > my_wisp_tolerance) then
+                cycle cell_loop1
+              end if
+            end if
+          end do
+          wisp_volume = wisp_volume - a_vof(1,j)*this%mesh%volume(j)
+          ! Removed volume
+          a_vof(1,j) = 0.0_r8
+        end associate
+      end if
+    end do cell_loop1
+    
+    ! Now look for wisps in phase 2 (close to 1 vof value)
+    cell_loop2: do j = 1, this%mesh%ncell_onP
+      if(a_vof(1,j) > (1.0_r8 - wisp_tolerance)) then
+        my_wisp_tolerance = wisp_tolerance*this%mesh%volume(j)        
+        associate(cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
+          do n = 1, size(cn)
+            if(cn(n) /= 0) then
+              if(a_vof(1,cn(n))*this%mesh%volume(cn(n)) < (this%mesh%volume(j) - my_wisp_tolerance)) then
+                cycle cell_loop2
+              end if
+            end if
+          end do
+          ! Added volume
+          wisp_volume = wisp_volume + (1.0_r8 - a_vof(1,j))*this%mesh%volume(j)
+          a_vof(1,j) = 1.0_r8          
+        end associate
+      end if
+    end do cell_loop2
+    call gather_boundary(this%mesh%cell_ip, a_vof(1,:))
+    wisp_volume = global_sum(wisp_volume)
+
+    volume_to_add_back = -(undershoot+overshoot+wisp_volume)
+    
+    ! Now compute the number of cells that can receive volume
+    acceptance_volume = 0.0_r8
+    do j = 1, this%mesh%ncell_onP
+      if(a_vof(1,j) > wisp_tolerance .and. a_vof(1,j) < (1.0_r8-wisp_tolerance)) then
+        acceptance_volume = acceptance_volume + this%mesh%volume(j)
+      end if
+    end do
+    acceptance_volume = global_sum(acceptance_volume)
+
+    do j = 1, this%mesh%ncell_onP
+      if(a_vof(1,j) > wisp_tolerance .and. a_vof(1,j) < (1.0_r8-wisp_tolerance)) then
+        ! Note, removed factor of  *this%mesh%volume(j)/this%mesh%volume(j),
+        ! which is weighting numerator divided by cell volume to get VOF
+        a_vof(1,j) = a_vof(1,j) + volume_to_add_back/acceptance_volume
+      end if
+    end do
+    a_vof(2,1:this%mesh%ncell_onP) = 1.0_r8 - a_vof(1,1:this%mesh%ncell_onP)    
+    call gather_boundary(this%mesh%cell_ip, a_vof)
+
+    write(message, '(a,es18.10)') 'Undershoot Vol.', undershoot
+    call TLS_info(message)
+    write(message, '(a,es18.10)') 'Overshoot Vol.', overshoot
+    call TLS_info(message)    
+    write(message, '(a,es18.10)') 'Wisp Vol.', wisp_volume
+    call TLS_info(message)
+    write(message, '(a,es18.10)') 'Redis Vol.', volume_to_add_back
+    call TLS_info(message)    
+
+  end subroutine redistribute_vof_errors
   
-  !   class(unsplit_geometric_volume_tracker), intent(in) :: this
-  !   integer, intent(in) :: a_interface_band(:)
-  !   real(r8), intent(inout) :: a_flux_vol(:,:)
-  !   real(r8), intent(inout) :: a_vof(:,:)
-    
-  !   integer :: j, f, k
-  !   integer :: number_of_faces
-  !   real(r8) :: cell_volume_sum
-  !   logical :: vof_modified
-    
-  !   ! Fill the ragged a_flux_vol array
-  !   a_flux_vol = 0.0_r8
-  !   do j = 1, this%mesh%ncell_onP
-  !     if(abs(a_interface_band(j)) > advect_band) then
-  !       cycle
-  !     end if
-  !     associate( fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1) )      
-  !      do f = 1, size(fn)
-  !       if(btest(this%mesh%cfpar(j), f)) then
-  !         a_flux_vol(:,this%mesh%xcface(j)+f-1) = -this%face_flux(:,fn(f))
-  !       else
-  !         a_flux_vol(:,this%mesh%xcface(j)+f-1) =  this%face_flux(:,fn(f))
-  !       end if
-  !     end do
-            
-  !     end associate
-      
-  !   end do
-
-  !   ! Use a_flux_vol to update a_vof now
-  !   do j = 1, this%mesh%ncell_onP
-  !     if(abs(a_interface_band(j)) > advect_band) then
-  !       cycle
-  !     end if
-  !     a_vof(:,j) = a_vof(:,j) * this%mesh%volume(j)
-  !     cell_volume_sum = this%mesh%volume(j)      
-  !     number_of_faces = this%mesh%xcface(j+1) - this%mesh%xcface(j)
-  !     do f = 1, number_of_faces
-  !       a_vof(:,j) = a_vof(:,j) - a_flux_vol(:, this%mesh%xcface(j)+f-1)
-  !       cell_volume_sum = cell_volume_sum - sum(a_flux_vol(:, this%mesh%xcface(j)+f-1))
-  !     end do
-
-  !      ! DEBUG
-  !      if(abs(this%mesh%volume(j) - cell_volume_sum) .gt. 1.0e-14) then
-  !        print*,'Unconservative fluxing in volume!!', j, this%mesh%volume(j), cell_volume_sum
-  !        print*,a_vof(:,j)
-  !        print*,sum(abs(a_vof(:,j)))
-  !      end if
-  !     a_vof(:,j) = a_vof(:,j) / cell_volume_sum
-  !     vof_modified = .false.
-  !     ! This will lead to inconsistency with face fluxes
-  !     do k = 1, this%nmat
-  !       if(a_vof(k,j) < this%cutoff .and. abs(a_vof(k,j)) > EPSILON(1.0_r8)) then
-  !         vof_modified = .true.
-  !         a_vof(k,j) = 0.0_r8
-  !       else if(a_vof(k,j) > 1.0_r8 - this%cutoff .and. abs(1.0_r8 - a_vof(k,j)) >  EPSILON(1.0_r8)) then
-  !         vof_modified = .true.
-  !         a_vof(k,j) = 1.0_r8
-  !       end if
-  !     end do
-    
-  !     if(vof_modified) then
-  !       ! Rescale VOF to be valid (sum to 1)
-  !       a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))
-  !     end if
-  !   end do
-
-  !   call gather_boundary(this%mesh%cell_ip, a_vof)
-
-  ! end subroutine update_vof    
 
   ! Routine to generate consistently approximated flux volumes
   !
