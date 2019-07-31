@@ -17,52 +17,47 @@ module unstr_2d_mesh_tools
 
 contains
 
-  subroutine get_cell_neighbor_array_1(xcnode, cnode, xcnhbr, cnhbr, stat)
+  subroutine get_cell_neighbor_array_1(cstart, cnode, cnhbr, stat)
 
     use face_neighbor_table_type
 
-    integer, intent(in) :: xcnode(:), cnode(:)
-    integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:)
+    integer, intent(in) :: cstart(:), cnode(:)
+    integer, allocatable, intent(out) :: cnhbr(:)
     integer, intent(out) :: stat
 
     type(face_neighbor_table) :: nhbr_table
 
-    call nhbr_table%init(xcnode, cnode, dim=2)
-    call get_cnhbr_aux(nhbr_table, xcnode, cnode, xcnhbr, cnhbr, stat)
+    call nhbr_table%init(cstart, cnode, dim=2)
+    call get_cnhbr_aux(nhbr_table, cstart, cnode, cnhbr, stat)
 
   end subroutine get_cell_neighbor_array_1
 
-  subroutine get_cnhbr_aux(nhbr_table, xcnode, cnode, xcnhbr, cnhbr, stat)
+  subroutine get_cnhbr_aux(nhbr_table, cstart, cnode, cnhbr, stat)
 
     use face_neighbor_table_type
     use cell_topology_2d, only: get_face_nodes
 
     type(face_neighbor_table), intent(in) :: nhbr_table
-    integer, intent(in) :: xcnode(:), cnode(:)
-    integer, allocatable, intent(out) :: xcnhbr(:), cnhbr(:)
+    integer, intent(in) :: cstart(:), cnode(:)
+    integer, allocatable, intent(out) :: cnhbr(:)
     integer, intent(out) :: stat
 
     integer :: i, j, k, jj, kk, nmatch, bad_faces, ncell, offset
     integer, allocatable :: face(:)
     type(face_neighbor), allocatable :: nhbrs(:)
 
-    ncell = size(xcnode) - 1
+    ncell = size(cstart) - 1
 
-    !! Generate XCNHBR: CNHBR(XCNHBR(J):XCNHBR(J+1)-1) will store the face
-    !! neighbors of cell J. There is one face per node, so XCNHBR == XCNODE.
-    !! TODO: xcnode, xcface, xcnhbr can all be replaced by a single offset array
-    xcnhbr = xcnode
-
-    allocate(cnhbr(xcnhbr(ncell+1)-1))
+    allocate(cnhbr(cstart(ncell+1)-1))
 
     cnhbr = 0
     bad_faces = 0
     stat = 0
 
     do j = 1, ncell
-      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
-        offset = xcnhbr(j)-1  ! for getting local face index
-        do k = xcnhbr(j), xcnhbr(j+1)-1
+      associate (cell => cnode(cstart(j):cstart(j+1)-1))
+        offset = cstart(j)-1  ! for getting local face index
+        do k = cstart(j), cstart(j+1)-1
           if (cnhbr(k) /= 0) cycle  ! info already assigned
           !! Get a face and the list of its neighbor cells.
           call get_face_nodes(cell, k-offset, face)
@@ -99,37 +94,34 @@ contains
   end subroutine get_cnhbr_aux
 
 
-  subroutine label_mesh_faces(xcnode, cnode, nface, xcface, cface)
+  subroutine label_mesh_faces(cstart, cnode, nface, cface)
 
     use cell_topology_2d
     use facet_table_type
 
-    integer, intent(in)  :: xcnode(:), cnode(:)
+    integer, intent(in)  :: cstart(:), cnode(:)
     integer, intent(out) :: nface
-    integer, allocatable, intent(out) :: xcface(:), cface(:)
+    integer, allocatable, intent(out) :: cface(:)
 
     integer :: j, k, n, offset, ncell, nlink, max_face, node_max
     integer, allocatable :: face(:)
     type(facet_table) :: table
 
-    ncell = size(xcnode) - 1
+    ncell = size(cstart) - 1
 
-    !! Generate XCFACE: CFACE(XCFACE(J):XCFACE(J+1)-1) will store the face
-    !! numbers of cell J. There is one face per node, so XCNHBR == XCNODE.
-    !! TODO: xcnode, xcface, xcnhbr can all be replaced by a single offset array
-    xcface = xcnode
-    allocate(cface(xcface(ncell+1)-1))
+    allocate(cface(cstart(ncell+1)-1))
 
     ASSERT(minval(cnode) > 0)
+    ASSERT(size(cface) == size(cnode))
 
     max_face = size(cface)  ! worst case; realistically, closer to half this
     node_max = maxval(cnode)
     call table%init(max_face, node_max)
 
     do j = 1, ncell
-      associate (cell => cnode(xcnode(j):xcnode(j+1)-1))
-        offset = xcface(j)-1  ! for getting local face index
-        do k = xcface(j), xcface(j+1)-1
+      associate (cell => cnode(cstart(j):cstart(j+1)-1))
+        offset = cstart(j)-1  ! for getting local face index
+        do k = cstart(j), cstart(j+1)-1
           call get_face_nodes(cell, k-offset, face)
           call table%get_facet_label(face, cface(k), insert=.true.)
         end do

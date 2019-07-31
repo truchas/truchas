@@ -175,8 +175,8 @@ contains
 
     integer :: j, k, n, nnode, nface, ncell, stat, pfirst
     integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
-    integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), part(:)
-    integer, allocatable :: xcface(:), cface(:), cfpar(:)
+    integer, allocatable :: cstart(:), cnode(:), cnhbr(:), part(:)
+    integer, allocatable :: cface(:), cfpar(:)
     integer, allocatable :: cell_perm(:), node_perm(:), offP_size(:), offP_index(:)
     integer, allocatable :: perm(:)
     character(:), allocatable :: string
@@ -186,16 +186,15 @@ contains
     nnode = mesh%num_node
 
     !! Flatten the Exodus element block structure.
-    call mesh%get_concat_elem_conn(xcnode, cnode)
+    call mesh%get_concat_elem_conn(cstart, cnode)
 
     !! Generate the cell neighbor array.
     if (is_IOP) then
       call TLS_info('  finding cell neighbors', TLS_VERB_NORMAL)
-      call get_cell_neighbor_array(xcnode, cnode, xcnhbr, cnhbr, stat)
+      call get_cell_neighbor_array(cstart, cnode, cnhbr, stat)
       if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
     else
-      allocate(xcnhbr(1), cnhbr(0))
-      xcnhbr(1) = 1
+      allocate(cnhbr(0))
     end if
     call broadcast_status(stat, errmsg)
     if (stat /= 0) return
@@ -219,7 +218,7 @@ contains
         call read_partition(string, pfirst, nPE, part, stat, errmsg)
         if (stat /= 0) errmsg = 'error reading cell partition: ' // errmsg
       else
-        call partition_cells(params, xcnhbr, cnhbr, nPE, part, stat, errmsg)
+        call partition_cells(params, cstart, cnhbr, nPE, part, stat, errmsg)
         if (stat /= 0) errmsg = 'error computing cell partition: ' // errmsg
       end if
     end if
@@ -230,8 +229,7 @@ contains
       !! Compute the partition sizes and the permutation making this a block partition.
       call blocked_partition(part, cell_psize, cell_perm)
       !! Reorder cell-based arrays.
-      call reorder(xcnode, cnode, cell_perm)
-      call reorder(xcnhbr, cnhbr, cell_perm)
+      call reorder(cstart, cnode, cnhbr, cell_perm)
       !! Map the values of cell-valued arrays.
       allocate(perm(size(cell_perm)))
       call invert_perm(cell_perm, perm)
@@ -247,8 +245,8 @@ contains
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
-      call TLS_info ('  partitioning the mesh nodes', TLS_VERB_NORMAL)
-      call partition_facets(xcnode, cnode, cell_psize, node_psize, node_perm)
+      call TLS_info('  partitioning the mesh nodes', TLS_VERB_NORMAL)
+      call partition_facets(cstart, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
       call reorder(mesh%coord, node_perm)
       !! Map the values of node-valued arrays.
@@ -267,11 +265,11 @@ contains
     allocate(cfpar(ncell))
     if (is_IOP) then
       call TLS_info('  numbering the mesh faces', TLS_VERB_NORMAL)
-      call label_mesh_faces(xcnode, cnode, nface, xcface, cface)
+      call label_mesh_faces(cstart, cnode, nface, cface)
       !! Extract the relative face orientation info.
       cfpar = 0
       do j = 1, mesh%num_elem
-        associate (list => cface(xcface(j):xcface(j+1)-1))
+        associate (list => cface(cstart(j):cstart(j+1)-1))
           n = 0
           do k = 1, size(list)
             if (list(k) < 0) then
@@ -285,22 +283,20 @@ contains
       !! Partition and order the faces.
       call TLS_info('  partitioning the mesh faces', TLS_VERB_NORMAL)
       allocate(perm(nface))
-      call partition_facets(xcface, cface, cell_psize, face_psize, perm)
-      call invert_perm (perm)
+      call partition_facets(cstart, cface, cell_psize, face_psize, perm)
+      call invert_perm(perm)
       do j = 1, size(cface)
         cface(j) = perm(cface(j))
       end do
       deallocate(perm)
     else
-      allocate(xcface(1), cface(0))
-      xcface(1) = 1
+      allocate(cface(0))
     end if
 
     !! Identify off-process ghost cells to include with each partition.
     call TLS_info('  identifying off-process ghost cells', TLS_VERB_NORMAL)
-    call select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
-                             xcface, cface, face_psize, offP_size, offP_index)
-    deallocate(xcnhbr, cnhbr)
+    call select_ghost_cells(cstart, cnode, cell_psize, offP_size, offP_index)
+    deallocate(cnhbr)
 
     !! Begin initializing the unstr_2d_mesh result object.
     call TLS_info('  generating parallel mesh structure')
@@ -321,7 +317,7 @@ contains
 
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
-    call init_cell_node_data(this, node_psize, xcnode, cnode)
+    call init_cell_node_data(this, node_psize, cstart, cnode)
 
     !! Distribute the node permutation array; gives mapping to the external node number.
     allocate(this%xnode(this%nnode))
@@ -331,7 +327,7 @@ contains
 
     !! Create the face index partition and localize the global CFACE array,
     !! which identifies off-process faces to augment the partition with.
-    call init_cell_face_data(this, face_psize, xcface, cface, cfpar)
+    call init_cell_face_data(this, face_psize, cstart, cface, cfpar)
     deallocate(cfpar)
 
     !! Initialize the secondary face-node indexing array.
@@ -339,14 +335,14 @@ contains
     call init_face_cell_data(this)
 
     !! Generate the cell neighbor data for each subdomain.
-    call get_cell_neighbor_array(this%xcnode, this%cnode, this%xcnhbr, this%cnhbr, stat)
+    call get_cell_neighbor_array(this%cstart, this%cnode, this%cnhbr, stat)
     INSIST(stat == 0)
 
     !! Initialize the node, face, and cell set data.
-    call init_face_set_data (this, mesh, xcface, cface)
-    call init_node_set_data (this, mesh)
-    call init_cell_set_data (this, mesh)
-    deallocate(xcface, cface)
+    call init_face_set_data(this, mesh, cstart, cface)
+    call init_node_set_data(this, mesh)
+    call init_cell_set_data(this, mesh)
+    deallocate(cstart, cface)
 
     !! Scale the node coordinates and distribute.
     if (.not.is_IOP) then
@@ -384,14 +380,14 @@ contains
     end if
   end subroutine broadcast_status
 
-  subroutine partition_cells(params, xcnhbr, cnhbr, npart, part, stat, errmsg)
+  subroutine partition_cells(params, cstart, cnhbr, npart, part, stat, errmsg)
 
     use graph_type
     use graph_partitioner_factory
     use parameter_list_type
 
     type(parameter_list) :: params
-    integer, intent(in)  :: xcnhbr(:), cnhbr(:) ! cell neighbor array
+    integer, intent(in)  :: cstart(:), cnhbr(:) ! cell neighbor array
     integer, intent(in)  :: npart   ! number of partitions
     integer, intent(out) :: part(:) ! cell partition assignment
     integer, intent(out) :: stat
@@ -405,20 +401,20 @@ contains
     class(graph_partitioner), allocatable :: gpart
 
     ASSERT(npart > 0)
-    ASSERT(size(part) == size(xcnhbr)-1)
+    ASSERT(size(part) == size(cstart)-1)
 
     if (npart == 1) then
       part = 1
       return
     end if
 
-    ncell = size(xcnhbr)-1
+    ncell = size(cstart)-1
 
     !! Create the cell adjacency graph.
     allocate(g)
     call g%init(ncell)
     do j = 1, ncell
-      associate(list => cnhbr(xcnhbr(j):xcnhbr(j+1)-1))
+      associate(list => cnhbr(cstart(j):cstart(j+1)-1))
         do k = 1, size(list)
           if (list(k) > 0) call g%add_edge(j, list(k))
         end do
@@ -560,25 +556,19 @@ contains
   end subroutine partition_facets
 
   !! This auxiliary subroutine identifies the off-process ghost cells that
-  !! should be added to each subdomain.  The criterion is that if a cell
-  !! contains a face or node that belongs to a subdomain and the cell itself
-  !! does not belong to the subdomain, then it is added to the subdomain as
-  !! a ghost cell.  This ensures that every face and node belonging to the
-  !! subdomain will have complete cell support.  The motivation for this
-  !! stems from the finite element context in which the equation for a DoF
-  !! located at a facet depends on calculations over all the cells that
-  !! contain the facet. This is a serial procedure.
+  !! should be added to each subdomain. The general aim is to provide complete
+  !! cell support to form the full equation for a DoF located at a cell, face,
+  !! or node, and eliminate the need for parallel assembly of the equations.
+  !! Here we add every off-process cell that shares a node with on on-process
+  !! cell. This is actually a bit more than is needed for the current flow and
+  !! solid mechanics algorithms, and many more than needed for heat conduction.
 
-  subroutine select_ghost_cells (cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
-      xcface, cface, face_psize, offP_size, offP_index)
+  subroutine select_ghost_cells(cstart, cnode, cell_psize, offP_size, offP_index)
 
     use integer_set_type
     use parallel_communication, only: is_IOP, nPE
 
-    integer, intent(in) :: cell_psize(:), node_psize(:), face_psize(:)
-    integer, intent(in) :: xcnhbr(:), cnhbr(:)
-    integer, intent(in) :: xcnode(:), cnode(:)
-    integer, intent(in) :: xcface(:), cface(:)
+    integer, intent(in) :: cstart(:), cnode(:), cell_psize(:)
     integer, allocatable, intent(out) :: offP_size(:), offP_index(:)
 
     integer :: n, offset
@@ -586,7 +576,7 @@ contains
 
     if (is_IOP) then
       allocate(ghosts(nPE))
-      call all_cell_neighbors(xcnode, cnode, cell_psize, ghosts)
+      call all_cell_neighbors(cstart, cnode, cell_psize, ghosts)
       !! Copy the sets into packed array storage
       offP_size = ghosts%size()
       n = sum(offP_size)
@@ -606,18 +596,14 @@ contains
   !! This auxiliary subroutine identifies, for each partition, the entire
   !! layer of first neighbor cells from other partitions.  These are cells
   !! that belong to other partitions but which share a node with a cell in
-  !! the partition.  This is driven by the least squares operator used by
-  !! fluid flow, which uses a cell-based stencil that consists of a cell
-  !! and all cells it shares a node with.  The solid mechanics node-node
-  !! connectivity also requires this complete layer of ghost cells.  This
-  !! subsumes the more refined criteria effected by OVERLAPPING_CELLS.
+  !! the partition. NB: This is a superset of the ghost cells required to
+  !! provide full cell support for faces or nodes.
 
-  subroutine all_cell_neighbors(xcnode, cnode, cell_psize, xcells)
+  subroutine all_cell_neighbors(cstart, cnode, cell_psize, xcells)
 
     use integer_set_type
 
-    integer, intent(in) :: xcnode(:), cnode(:)
-    integer, intent(in) :: cell_psize(:)
+    integer, intent(in) :: cstart(:), cnode(:), cell_psize(:)
     type(integer_set), intent(inout) :: xcells(:)
 
     integer :: i, j, k, n, offset, jlower, jupper
@@ -626,13 +612,13 @@ contains
 
     ASSERT(all(cell_psize >= 0))
     ASSERT(size(xcells) == size(cell_psize))
-    ASSERT(sum(cell_psize) == size(xcnode)-1)
-    ASSERT(size(cnode) == xcnode(size(xcnode))-1)
+    ASSERT(sum(cell_psize) == size(cstart)-1)
+    ASSERT(size(cnode) == cstart(size(cstart))-1)
     ASSERT(minval(cnode) >= 0)
 
     !! For each node, generate the set of cells that contain it.
-    do j = 1, size(xcnode)-1
-      associate(jnode => cnode(xcnode(j):xcnode(j+1)-1))
+    do j = 1, size(cstart)-1
+      associate(jnode => cnode(cstart(j):cstart(j+1)-1))
         do k = 1, size(jnode)
           call nsupp(jnode(k))%add(j)
         end do
@@ -646,7 +632,7 @@ contains
       jlower = offset + 1
       jupper = offset + cell_psize(n)
       do j = jlower, jupper ! loop over cells in partition N
-        associate (jnode => cnode(xcnode(j):xcnode(j+1)-1))
+        associate (jnode => cnode(cstart(j):cstart(j+1)-1))
           do k = 1, size(jnode) ! for each node of cell J
             nhbr = nsupp(jnode(k))
             do i = 1, size(nhbr) ! loop over cells containing the node
@@ -661,38 +647,37 @@ contains
   end subroutine all_cell_neighbors
 
   !! This subroutine initializes the node partition and cell node data
-  !! components: NODE_IP, NNODE, NNODE_ONP, XCNODE, and CNODE.
+  !! components: NODE_IP, NNODE, NNODE_ONP, CSTART, and CNODE.
 
-  subroutine init_cell_node_data (this, psize, xcnode, cnode)
+  subroutine init_cell_node_data(this, psize, cstart, cnode)
 
     use parallel_communication, only: is_IOP
     use index_partitioning, only: localize_index_struct
 
     type(unstr_2d_mesh), intent(inout) :: this
-    integer, intent(in) :: psize(:)
-    integer, intent(in) :: xcnode(:), cnode(:)
+    integer, intent(in) :: psize(:), cstart(:), cnode(:)
 
     integer :: j
     integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
-    call this%node_ip%init (psize)
+    call this%node_ip%init(psize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
-      count_g = xcnode(2:) - xcnode(:size(xcnode)-1)
+      count_g = cstart(2:) - cstart(:size(cstart)-1)
     else
       allocate(count_g(0))
     end if
 
     call localize_index_struct(count_g, cnode, this%cell_ip, this%node_ip, count_l, this%cnode, offP_index)
-    call this%node_ip%add_offP_index (offP_index)
+    call this%node_ip%add_offP_index(offP_index)
     deallocate(count_g, offP_index)
 
     !! Translate the local row sizes into the local indexing array.
-    allocate(this%xcnode(1+size(count_l)))
-    this%xcnode(1) = 1
+    allocate(this%cstart(1+size(count_l)))
+    this%cstart(1) = 1
     do j = 1, size(count_l)
-      this%xcnode(j+1) = this%xcnode(j) + count_l(j)
+      this%cstart(j+1) = this%cstart(j) + count_l(j)
     end do
     deallocate(count_l)
 
@@ -702,26 +687,24 @@ contains
   end subroutine init_cell_node_data
 
   !! This subroutine initializes the face partition and cell face data
-  !! components: FACE_IP, NFACE, NFACE_ONP, XCFACE, CFACE, and CFPAR.
+  !! components: FACE_IP, NFACE, NFACE_ONP, CFACE, and CFPAR.
 
-  subroutine init_cell_face_data (this, psize, xcface, cface, cfpar)
+  subroutine init_cell_face_data(this, psize, cstart, cface, cfpar)
 
     use parallel_communication, only: is_IOP, distribute
     use index_partitioning, only: localize_index_struct, gather_boundary
 
     type(unstr_2d_mesh), intent(inout) :: this
-    integer, intent(in) :: psize(:)
-    integer, intent(in) :: xcface(:), cface(:)
-    integer, intent(in) :: cfpar(:)
+    integer, intent(in) :: psize(:), cstart(:), cface(:), cfpar(:)
 
     integer :: j
     integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
-    call this%face_ip%init (psize)
+    call this%face_ip%init(psize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
-      count_g = xcface(2:) - xcface(:size(xcface)-1)
+      count_g = cstart(2:) - cstart(:size(cstart)-1)
     else
       allocate(count_g(0))
     end if
@@ -730,13 +713,8 @@ contains
     call this%face_ip%add_offP_index(offP_index)
     deallocate(count_g, offP_index)
 
-    !! Translate the local row sizes into the local indexing array.
-    allocate(this%xcface(1+size(count_l)))
-    this%xcface(1) = 1
-    do j = 1, size(count_l)
-      this%xcface(j+1) = this%xcface(j) + count_l(j)
-    end do
-    deallocate(count_l)
+    INSIST(size(this%cstart) == size(count_l)+1)
+    INSIST(all(count_l == this%cstart(2:) - this%cstart(:this%ncell)))
 
     !! Distribute the CFPAR mask array.
     allocate(this%cfpar(this%ncell))
@@ -761,10 +739,9 @@ contains
     integer :: j, k, n
     integer, allocatable :: fnodes(:)
 
-    ASSERT(size(this%xcnode) == size(this%xcface))
-    ASSERT(size(this%cfpar) == size(this%xcface)-1)
-    ASSERT(size(this%cnode) == this%xcnode(size(this%xcnode))-1)
-    ASSERT(size(this%cface) == this%xcface(size(this%xcface))-1)
+    ASSERT(size(this%cfpar) == size(this%cstart)-1)
+    ASSERT(size(this%cnode) == this%cstart(size(this%cstart))-1)
+    ASSERT(size(this%cface) == size(this%cnode))
     ASSERT(minval(this%cnode) > 0)
     ASSERT(minval(this%cface) > 0)
 
@@ -772,8 +749,8 @@ contains
     allocate(this%fnode(2,this%nface))
     this%fnode = 0
     do j = 1, this%ncell
-      associate (cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1), &
-                 cell_faces => this%cface(this%xcface(j):this%xcface(j+1)-1))
+      associate (cell_nodes => this%cnode(this%cstart(j):this%cstart(j+1)-1), &
+                 cell_faces => this%cface(this%cstart(j):this%cstart(j+1)-1))
         do k = 1, size(cell_faces)
           n = cell_faces(k)
           if (this%fnode(1,n) == 0) then
@@ -800,7 +777,7 @@ contains
     allocate(this%fcell(2,this%nface))
     this%fcell = 0
     do j = 1, this%ncell
-      associate (cell_faces => this%cface(this%xcface(j):this%xcface(j+1)-1))
+      associate (cell_faces => this%cface(this%cstart(j):this%cstart(j+1)-1))
         do k = 1, size(cell_faces)
           n = cell_faces(k)
           if (btest(this%cfpar(j),pos=k)) then ! face oriented inward wrto cell
@@ -822,7 +799,7 @@ contains
   !! naturally identifies a unique mesh face, but any orientation information
   !! implicit with the side-of-a-cell description is lost.
 
-  subroutine init_face_set_data(this, mesh, xcface, cface)
+  subroutine init_face_set_data(this, mesh, cstart, cface)
 
     use bitfield_type
     use exodus_mesh_type
@@ -831,7 +808,7 @@ contains
 
     type(unstr_2d_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
-    integer, intent(in) :: xcface(:), cface(:)
+    integer, intent(in) :: cstart(:), cface(:)
 
     integer :: i, j, n, nface_tot
     type(bitfield), allocatable :: face_set_mask(:)
@@ -848,11 +825,11 @@ contains
       face_set_mask = ZERO_BITFIELD
       do n = 1, size(mesh%sset)
         ASSERT(minval(mesh%sset(n)%elem) >= 1)
-        ASSERT(maxval(mesh%sset(n)%elem) <= size(xcface)-1)
+        ASSERT(maxval(mesh%sset(n)%elem) <= size(cstart)-1)
         ASSERT(minval(mesh%sset(n)%face) >= 1)
         do i = 1, mesh%sset(n)%num_side
-          j = xcface(mesh%sset(n)%elem(i)) + mesh%sset(n)%face(i) - 1 ! index of side in CFACE
-          ASSERT(j < xcface(mesh%sset(n)%elem(i)+1))
+          j = cstart(mesh%sset(n)%elem(i)) + mesh%sset(n)%face(i) - 1 ! index of side in CFACE
+          ASSERT(j < cstart(mesh%sset(n)%elem(i)+1))
           face_set_mask(cface(j)) = ibset(face_set_mask(cface(j)), pos=n)
         end do
       end do
@@ -881,7 +858,7 @@ contains
 
     !! Initialize the list of cell set IDs (%FACE_SET_ID)
     if (is_IOP) n = size(mesh%sset)
-    call broadcast (n)
+    call broadcast(n)
     allocate(this%face_set_id(n))
     if (is_IOP) this%face_set_ID = mesh%sset%id
     call broadcast(this%face_set_id)

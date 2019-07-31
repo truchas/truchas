@@ -1,12 +1,12 @@
 !!
 !! UNSTR_2D_MESH_TYPE
 !!
-!! This module provides a derived type that encapsulates the data describing a
-!! distributed unstructured mixed-element mesh.  Supported element types are
-!! hexes, tets, pyramids, and wedges/prisms.
+!! This module provides a derived type that encapsulates the data describing
+!! a distributed unstructured 2D mixed-element mesh. It formally supports
+!! arbitrary polygons, but likely triangles and quadrilaterals in practice.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
-!! Revised May 2015
+!! July 2019
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -16,41 +16,46 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  The module defines the derived type unstr_2d_mesh that encapsulates the data
-!!  describing a distributed unstructured mixed-element mesh.  On each process
-!!  the object describes a complete mesh of some subdomain that references only
-!!  local entities (cells, faces, nodes), and can rightly be considered as a
-!!  serial mesh for that subdomain.  Globally, the mesh-conforming subdomains
+!!  The module defines the derived type UNSTR_2D_MESH that encapsulates the
+!!  data describing a distributed unstructured 2D mixed-element mesh. On each
+!!  process the object describes a complete mesh of some subdomain that only
+!!  references local entities (cells, faces, nodes), and can rightly be
+!!  considered as a serial mesh for that subdomain. Globally, the subdomains
 !!  will overlap, perhaps only along a boundary but more generally on some
 !!  collection of cells.  Additional mesh data describes this overlap and
 !!  provides for communication between overlapping entities.
 !!
 !!  Objects of this type are intended to be used by trusted code, and so its
 !!  data components are public.  However, the components must be treated as
-!!  read-only because an object may be shared amongst multiple clients.  The
+!!  read-only because an object may be shared amongst multiple clients. The
 !!  following data components are accessible:
 !!
-!!    nnode, nface, ncell - the number of nodes, faces, and cells in the mesh.
+!!    nnode, nface, ncell - the number of nodes, faces, and cells in the
+!!        subdomain mesh.
 !!
-!!    xcnode, cnode - pair of rank-1 integer arrays storing the cell-node data:
-!!        cnode(xcnode(j):xcnode(j+1)-1) is the ordered list of node indices
-!!        defining cell j.  The shape of xcnode is [ncell+1] and the shape of
-!!        cnode is [xcnode(ncell+1)-1].
+!!    cstart -- rank-1 integer array giving the array location where the cell
+!!        connectivity data for each cell starts.
 !!
-!!    xcface, cface - pair of rank-1 integer arrays storing the cell-face data:
-!!        cface(xcface(j):xcface(j+1)-1) is the ordered list of face indices
-!!        belonging to cell j.  The shape of xcface is [ncell+1] and the shape
-!!        of cface is [xcface(ncell+1)-1].
+!!    cnode -- rank-1 integer array storing the cell node connectivity data:
+!!        cnode(cstart(j):cstart(j+1)-1) is the list of node indices that
+!!        define cell j.
 !!
-!!    xfnode, fnode - pair of rank-1 integer arrays storing the face-node data:
-!!        fnode(xfnode(j):xfnode(j+1)-1) is the ordered list of node indices
-!!        defining the oriented face j.  The shape of xfnode is [nface+1] and
-!!        the shape of fnode is [xfnode(nface+1)-1].
+!!    cface -- rank-1 integer array storing the cell face connectivity data:
+!!        cface(cstart(j):cstart(j+1)-1) is the list of faces belonging to
+!!        cell j in canonical order.
+!!
+!!    cnhbr -- rank-1 integer array storing the cell neighbor connectivity
+!!        data: cnhbr(cstart(j):cstart(j+1)-1) is the list of face neighbors
+!!        of cell j, and corresponds to its list of faces.
 !!
 !!    cfpar - an integer bit mask array storing the relative cell face
 !!        orientations: btest(cfpar(j),k) is true when face k of cell j is
 !!        inward oriented with respect to cell j, and false when it is
-!!        outward oriented.  The shape of cfpar is [ncell].
+!!        outward oriented.
+!!
+!!    fnode - rank-2 integer array storing the two nodes defining each face:
+!!        fnode(:,j) is the ordered pair of node indices defining the oriented
+!!        face j.
 !!
 !!    xnode - a rank-1 integer array giving the mapping from local node indices
 !!        to their external (global) index (as defined in the mesh file, for
@@ -93,34 +98,16 @@
 !!  GEOMETRY DATA:
 !!
 !!    x - the rank-2 real array of node coordinates; x(:,j) is the position in
-!!        R^3 of node j.  Its shape is [3,nnode].
+!!        R^2 of node j.  Its shape is [2,nnode].
 !!
 !!    area - the rank-1 real array of face areas; area(j) is the area of face j.
 !!        Its shape is [nface].
 !!
-!!    volume - the rank-1 real array of signed cell volumes; volume(j) is the
-!!        signed volume of cell j.  Its shape is [ncell].
+!!    volume - the rank-1 real array of cell volumes; volume(j) is the volume
+!!        of cell j.  Its shape is [ncell].
 !!
 !!    normal - the rank-2 real array of oriented face areas; normal(:,j) is the
-!!        oriented area of face j.  Its shape is [3,nface].
-!!
-!!  INTERFACE LINKS:
-!!
-!!    nlink, nlink_onP - the number of interface links and uniquely owned
-!!        (on-process) interface links in the (subdomain) mesh.
-!!
-!!    lface - the rank-1 integer link-face array: lface(:,j) are the indices
-!!        of the two opposing mesh faces for link j.
-!!
-!!    link_set_id - a rank-1 integer array storing the unique link set IDs.
-!!        This data is replicated on each process.
-!!
-!!    link_set_mask - a rank-1 bitmask array: btest(link_set_mask(j),k)
-!!        returns true if link j belongs to the link set with ID link_set_id(k).
-!!
-!!    link_ip - derived type that describes the partitioning and overlap of
-!!        links, including information necessary to comminicate off-process
-!!        data between processes.
+!!        oriented area of face j.  Its shape is [2,nface].
 !!
 
 #include "f90_assert.fpp"
@@ -138,10 +125,11 @@ module unstr_2d_mesh_type
   private
 
   type, extends(base_mesh), public :: unstr_2d_mesh
-    integer, allocatable :: xcnode(:), cnode(:) ! cell nodes
-    integer, allocatable :: xcface(:), cface(:) ! cell faces
-    integer, allocatable :: fnode(:,:) ! face nodes
-    integer, allocatable :: xcnhbr(:), cnhbr(:) ! cell neighbors
+    integer, allocatable :: cnode(:) ! cell nodes connectivity
+    integer, allocatable :: cface(:) ! cell faces connectivity
+    integer, allocatable :: cnhbr(:) ! cell neighbors connectivity
+    integer, allocatable :: cstart(:) ! start array index for cell connectivity
+    integer, allocatable :: fnode(:,:) ! face nodes connectivity
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
     integer, allocatable :: fcell(:,:)  ! face cell neighbors
     real(r8), allocatable :: normal(:,:)
@@ -178,7 +166,7 @@ contains
     ASSERT(allocated(this%normal))
     ASSERT(allocated(this%area))
     do j = 1, this%ncell
-      associate (cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+      associate (cell_nodes => this%cnode(this%cstart(j):this%cstart(j+1)-1))
         this%volume(j) = cell_volume(this%x(:,cell_nodes))
       end associate
     end do
@@ -196,7 +184,7 @@ contains
     if (allocated(this%cell_centroid)) return
     allocate(this%cell_centroid(2,this%ncell))
     do j = 1, this%ncell
-      associate(cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+      associate(cell_nodes => this%cnode(this%cstart(j):this%cstart(j+1)-1))
         this%cell_centroid(:,j) = cell_centroid_2d(this%x(:,cell_nodes))
       end associate
     end do
@@ -213,22 +201,22 @@ contains
   end subroutine init_face_centroid
 
   !! Creates the global ragged CNODE array on the IO process, 0-sized on others.
-  subroutine get_global_cnode_array (this, xcnode, cnode)
+  subroutine get_global_cnode_array (this, cstart, cnode)
     class(unstr_2d_mesh), intent(in) :: this
-    integer, allocatable, intent(out) :: xcnode(:), cnode(:)
-    associate (xcnode_onP => this%xcnode(:this%ncell_onP+1), &
-                cnode_onP => this%cnode(:this%xcnode(this%ncell_onP+1)-1))
-      call get_global_ragged_array (xcnode_onP, this%node_ip%global_index(cnode_onP), xcnode, cnode)
+    integer, allocatable, intent(out) :: cstart(:), cnode(:)
+    associate (cstart_onP => this%cstart(:this%ncell_onP+1), &
+                cnode_onP => this%cnode(:this%cstart(this%ncell_onP+1)-1))
+      call get_global_ragged_array (cstart_onP, this%node_ip%global_index(cnode_onP), cstart, cnode)
     end associate
   end subroutine get_global_cnode_array
 
   !! Creates the global ragged CFACE array on the IO process, 0-sized on others.
-  subroutine get_global_cface_array (this, xcface, cface)
+  subroutine get_global_cface_array (this, cstart, cface)
     class(unstr_2d_mesh), intent(in) :: this
-    integer, allocatable, intent(out) :: xcface(:), cface(:)
-    associate (xcface_onP => this%xcface(:this%ncell_onP+1), &
-                cface_onP => this%cface(:this%xcface(this%ncell_onP+1)-1))
-      call get_global_ragged_array (xcface_onP, this%face_ip%global_index(cface_onP), xcface, cface)
+    integer, allocatable, intent(out) :: cstart(:), cface(:)
+    associate (cstart_onP => this%cstart(:this%ncell_onP+1), &
+                cface_onP => this%cface(:this%cstart(this%ncell_onP+1)-1))
+      call get_global_ragged_array (cstart_onP, this%face_ip%global_index(cface_onP), cstart, cface)
     end associate
   end subroutine get_global_cface_array
 
@@ -490,7 +478,7 @@ contains
     !! Compute the minimum distance and cell index for the local mesh subdomain
     min_dist = huge(min_dist)
     do j = 1, this%ncell_onP
-      associate(cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
+      associate(cell_nodes => this%cnode(this%cstart(j):this%cstart(j+1)-1))
         centroid = sum(this%x(:,cell_nodes),dim=2)/size(cell_nodes)
       end associate
       d = norm2(centroid-point)
