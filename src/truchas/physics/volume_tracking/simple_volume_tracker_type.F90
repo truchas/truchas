@@ -54,32 +54,28 @@ contains
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
-    integer :: i, j, k, f0, f1
+    integer :: i, j, k, n, f0, f1
 
     associate (m => this%mesh)
-      ! compute upwind flux volumes for transport
-      do i = 1, m%ncell
-        f0 = m%xcface(i)
-        f1 = m%xcface(i+1)-1
-        do j = f0, f1
-          k = m%cface(j)
-          if (vel(j) > 0 .or. m%fcell(2,k) == 0) then
-            ! if the donator cell is off-process and not a ghost cell, this flux is irrelevant.
-            if (m%fcell(1,k) > m%ncell .or. m%fcell(1,k) == 0) cycle
-            flux_vol(:,j) = vel(j)*m%area(k)*dt * vof_n(:fluids+void,m%fcell(1,k))
-          else
-            if (m%fcell(2,k) > m%ncell) cycle
-            flux_vol(:,j) = vel(j)*m%area(k)*dt * vof_n(:fluids+void,m%fcell(2,k))
-          end if
-        end do
-      end do
-
-      ! update volume fractions
       do i = 1, m%ncell_onP
         f0 = m%xcface(i)
         f1 = m%xcface(i+1)-1
+
+        do j = f0, f1
+          k = m%cface(j)
+          n = m%cnhbr(m%xcnhbr(i)+j-f0)
+          ! If the neighbor cell doesn't exist, I'm a boundary cell and provide
+          ! the "upwind" data: more of whatever I have is the inflow volume
+          ! fractions.
+          if (vel(j) > 0 .or. n == 0) then
+            flux_vol(:,j) = vel(j)*m%area(k)*dt * vof_n(:fluids+void,i)
+          else
+            flux_vol(:,j) = vel(j)*m%area(k)*dt * vof_n(:fluids+void,n)
+          end if
+        end do
+
         vof(:,i) = vof_n(:,i)
-        vof(:fluids+void,i) = vof(:fluids+void,i) + sum(flux_vol(:,f0:f1), dim=2)
+        vof(:fluids+void,i) = vof(:fluids+void,i) - sum(flux_vol(:,f0:f1), dim=2) / m%volume(i)
       end do
     end associate
 
