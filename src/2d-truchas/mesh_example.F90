@@ -16,15 +16,17 @@ program mesh_example
   use truchas_logging_services
   use unstr_2d_mesh_factory
   use xdmf_file_type
+  use read_inputfile
   implicit none
 
   character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
 
-  integer  :: nx(2)
-  real(r8) :: xmin(2), xmax(2)
+  character(len=100) :: inputfile
+  integer  :: nx(2), tsmax, nvtrack
+  real(r8) :: xmin(2), xmax(2), dt
   type(unstr_2d_mesh), pointer :: mesh
 
-  integer :: j
+  integer :: j, nmat, test_run
   real(r8), allocatable :: p(:), v(:,:)
   type(xdmf_file) :: outfile
 
@@ -35,10 +37,11 @@ program mesh_example
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NOISY)
 
-  !! Create a 8x6 mesh on [0,2]x[0,1] domain
-  xmin = [0.0_r8, 0.0_r8]
-  xmax = [2.0_r8, 1.0_r8]
-  nx   = [8, 6]
+  !! Read input file "setmesh.txt" for Cartesian mesh specs
+  inputfile = 'input_advection.txt'
+  call readfile(inputfile, xmin, xmax, nx, tsmax, dt, nmat, nvtrack, test_run)
+
+  !! Create the mesh specified by the above input file
   mesh => new_unstr_2d_mesh(xmin, xmax, nx)
 
   !! Cell volumes and face areas (okay, areas and lengths in 2D) are defined
