@@ -142,6 +142,7 @@ endif()
 if(IRL)
   add_library(irl INTERFACE)
   target_link_libraries(truchas ${IRL_LIBRARY})
+  target_link_libraries(truchas absl::inlined_vector absl::flat_hash_map)
   target_include_directories(irl INTERFACE ${IRL_INCLUDE_DIRS})
 endif()
 
