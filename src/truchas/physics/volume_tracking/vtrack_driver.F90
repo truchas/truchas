@@ -287,8 +287,21 @@ contains
     call get_vof_from_matl(this%fvof_i)
     if(this%unsplit_advection) then
       call this%unsplit_vt%init(this%mesh, this%fluids, this%fluids+this%void, &
+           this%fluids+this%void+this%solid, this%liq_matid, params)
+      call this%unsplit_vt%init(this%mesh, this%fluids, this%fluids+this%void, &
            this%fluids+this%void+this%solid, this%liq_matid, params)      
-      this%fvof_o = this%fvof_i
+      ! Enforce VOF sums to 1
+      do j = 1, this%mesh%ncell
+        do k = 1, nmat
+          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 0.0_r8
+          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 1.0_r8
+          end if
+        end do
+        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+      end do
+      this%fvof_o = this%fvof_i      
       call vtrack_update_mat_band()      
     else
       this%fvof_o = this%fvof_i      
@@ -302,17 +315,17 @@ contains
     do j = 1, this%mesh%ncell_onP
       this%fvol_init = this%fvol_init + this%fvof_o(:,j) * this%mesh%volume(j)
     end do
-    do j = 1, nmat
-      this%fvol_init(j) = global_sum(this%fvol_init(j))
-    end do    
+     do j = 1, nmat
+       this%fvol_init(j) = global_sum(this%fvol_init(j))
+     end do    
 
     ! Open file for interface
     call vtrack_open_interface_file
 
     if(is_IOP) then
-      write(myformat, '(a,i1,a)') '(',2*size(this%fvol_init)+1,'es28.14)'      
+      write(myformat, '(a,i2,a)') '(',2*size(this%fvol_init)+1,'es28.14)'
       write(862,myformat) 0.0_r8, this%fvol_init, this%fvol_init-this%fvol_init
-    end if    
+    end if
     
   end subroutine vtrack_driver_init
 
@@ -380,6 +393,16 @@ contains
     call get_vof_from_matl(this%fvof_i)
     if(this%unsplit_advection) then
       ! QUESTION : Where is correct place to put this? Do we ever stop changing VOF?
+      do j = 1, this%mesh%ncell
+        do k = 1, size(this%fvof_i,1)
+          if(this%fvof_i(k,j) < this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 0.0_r8
+          else if(this%fvof_i(k,j) > 1.0_r8 - this%unsplit_vt%cutoff) then
+            this%fvof_i(k,j) = 1.0_r8
+          end if
+        end do
+        this%fvof_i(:,j) = this%fvof_i(:,j) / sum(this%fvof_i(:,j))
+      end do       
       call vtrack_update_mat_band()      
       ! Unsplit advection written to use face velocities, operates on faces. Uses vel_node for projection
       call this%unsplit_vt%flux_volumes(vel_fn, vel_cc, vel_node, this%fvof_i, this%fvof_o, this%unsplit_flux_vol, &
@@ -411,6 +434,10 @@ contains
     do j = 1, size(vol_sum)
       vol_sum(j) = global_sum(vol_sum(j))
     end do
+    ! Don't set on first actual iteration because there is a divergent-velocity field.
+    if(t < 1.0e-13_r8) then
+      this%fvol_init = vol_sum
+    end if    
     write(myformat, '(a,i1,a)') '(a,',size(vol_sum),'es12.4)'
     write(message, trim(myformat)) 'Absolute volume change: ', vol_sum - this%fvol_init
     call TLS_info(message)
@@ -419,14 +446,10 @@ contains
     write(message, trim(myformat)) 'Phase Normalized volume change: ',  (vol_sum - this%fvol_init)/(this%fvol_init+epsilon(1.0_r8))    
     call TLS_info(message)
 
-    if(t < 1.0e-13_r8) then
-      this%fvol_init = vol_sum
-    end if
     if(is_IOP) then
-      write(myformat, '(a,i1,a)') '(',2*size(vol_sum)+1,'es28.14)'      
+      write(myformat, '(a,i2,a)') '(',2*size(vol_sum)+1,'es28.14)'      
       write(862,myformat) t+dt,vol_sum,vol_sum-this%fvol_init
     end if
-    this%fvol_init = vol_sum
 
     ! update the matl structure if this isn't the initial pass  
     if (present(initial)) then
