@@ -122,6 +122,9 @@ contains
     return
   end subroutine write_interface
 
+  !! Initialize the unsplit_geometric_volume_tracker, including
+  !! setting up the IRL objects, IRL representation of the mesh,
+  !! boundary conditions, and priority of the materials.
   subroutine init(this, mesh, nrealfluid, nfluid, nmat, liq_matid, params)
 
     use parameter_list_type
@@ -173,11 +176,11 @@ contains
     end if
     ASSERT(size(this%priority) == this%nmat)
     ASSERT(all(this%priority > 0) .and. all(this%priority <= this%nmat))
+    ! Check each material shows up exactly once    
     material_present = 0
     do i = 1, this%nmat
       material_present(this%priority(i)) = material_present(this%priority(i)) + 1
     end do
-    ! Check each material shows up exactly once
     ASSERT(maxval(material_present) == 1)
     ASSERT(minval(material_present) == 1)
     
@@ -252,6 +255,7 @@ contains
   subroutine flux_volumes(this, vel, vel_cc, vel_node, vof_n, vof, flux_vol, fluids, void, dt, a_mat_band, a_interface_band)
 
     use integer_real8_tuple_vector_type
+    use parallel_communication, only : global_sum, is_IOP
     
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vel_cc(:,:), vel_node(:,:), vof_n(:,:), dt
@@ -263,35 +267,42 @@ contains
 
     ! DEBUGGING
     integer :: f, j
-    real(r8) :: tmp
+    real(r8) :: tmp, tmp_l
 
-    vof = vof_n    
+!     ! Check to see if cell is even close to divergence free
+!     tmp = 0.0_r8    
+!     do j = 1, this%mesh%ncell_onP
+!       associate(fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+!         tmp_l = 0.0_r8
+!         do f = 1, size(fn)
+!           if(btest(this%mesh%cfpar(j),f)) then
+!             tmp_l = tmp_l + vel(fn(f))*dt*this%mesh%area(fn(f))
+!             tmp = tmp + vel(fn(f))*dt*this%mesh%area(fn(f))
+!           else
+!             tmp_l = tmp_l - vel(fn(f))*dt*this%mesh%area(fn(f))            
+!             tmp = tmp - vel(fn(f))*dt*this%mesh%area(fn(f))
+!           end if
+!         end do
+!       end associate
+!       if(abs(tmp_l)/this%mesh%volume(j) > 1.0e-8_r8) then
+!          print*,'Divergent!', this%mesh%xcell(j), abs(tmp_l)/this%mesh%volume(j), abs(tmp_l), this%mesh%volume(j)
+!        end if
+! !      if(this%mesh%xcell(j) == 304) then
+! !        print*,'NODE VELOCITIES'
+! !        associate(cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+! !          do f = 1, size(cn)
+! !            print*,this%mesh%xnode(cn(f)),this%mesh%x(:,cn(f)), vel_node(:,cn(f))
+! !          end do
+! !        end associate
+! !      end if
+!     end do
+!     tmp = global_sum(tmp)
+!     if(is_IOP) then
+!       print*,'Total divergence',tmp
+!     end if
 
-    ! ! Check to see if cell is even close to divergence free
-    ! do j = 1, this%mesh%ncell_onP
-    !   associate(fn => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
-    !     tmp = 0.0_r8
-    !     do f = 1, size(fn)
-    !       if(btest(this%mesh%cfpar(j),f)) then
-    !         tmp = tmp + vel(fn(f))*dt*this%mesh%area(fn(f))
-    !       else
-    !         tmp = tmp - vel(fn(f))*dt*this%mesh%area(fn(f))
-    !       end if
-    !     end do
-    !   end associate
-    !    if(abs(tmp)/this%mesh%volume(j) > 1.0e-8_r8) then
-    !      print*,'Divergent!', this%mesh%xcell(j), abs(tmp)/this%mesh%volume(j), abs(tmp), this%mesh%volume(j)
-    !    end if
-    !   if(this%mesh%xcell(j) == 304) then
-    !     print*,'NODE VELOCITIES'
-    !     associate(cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-    !       do f = 1, size(cn)
-    !         print*,this%mesh%xnode(cn(f)),this%mesh%x(:,cn(f)), vel_node(:,cn(f))
-    !       end do
-    !     end associate
-    !   end if
-    ! end do
-
+    vof = vof_n
+    
     call start_timer('reconstruction')
     call this%set_irl_priority_order(vof)
     call this%interface_reconstruction(vof)
@@ -339,7 +350,14 @@ contains
       end block
     end do
   end subroutine set_inflow_material
-    
+
+  !! Initialize the IRL representation of the mesh and interfaces
+  !! using LocalizedSeparatorPathGroup objects. This represents each
+  !! cell as an n-plane Localizer that is the set of planes who's
+  !! intersection will represent the cell volume (with each plane
+  !! in the set representing a face in the cell). Note, boundary conditions
+  !! are handled by providing "ghost" Localizers on the other side of
+  !! boundary faces.
   subroutine init_irl_mesh(this)
   
     use cell_topology, only : get_face_nodes
@@ -440,6 +458,7 @@ contains
           else
             ! Connect to correct "outside" marking localized_separator_link
             ! Making these last in reconstruction should keep all inside domain volume inside the domain
+            ! if the domain boundary itself is not very concave
             found_boundary = found_boundary + 1 ! IRL is 0-based index
             call setPlane(this%planar_localizer(j), total_internal + found_boundary-1, tmp_plane(1:3), tmp_plane(4))
             call setEdgeConnectivity(this%localized_separator_group_link(j), total_internal + found_boundary-1, &
@@ -464,7 +483,17 @@ contains
 
   end subroutine init_irl_mesh
 
- subroutine compute_lsq_weightings(this)
+  !! Compute weighting coefficients for expanded LSQ gradient.
+  !! This is then used to calculate the cell centered gradient
+  !! of cell centered quantities using all of the cells that
+  !! share a node with the cell of interest.
+  !! NOTE: This currently only supports 3D meshes. For 2D meshes,
+  !! the matrix A is no longer invertible. It then needs to be
+  !! detected when the stencil is effectively two dimensional
+  !! and instead construct a 2D A matrix (capable of calculating
+  !! a 2D gradient operator, or one where one component is
+  !! explicitly zeroed out).
+  subroutine compute_lsq_weightings(this)
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
 
@@ -475,8 +504,8 @@ contains
     real(r8), allocatable :: B(:,:)
 
     if(trim(this%interface_reconstruction_name) /= 'NewGrad Youngs') then
-      return
-    end if
+       return
+     end if
 
     max_stencil_size = -1
     do j = 1, this%mesh%ncell_onP
@@ -542,7 +571,16 @@ contains
     deallocate(B)
     
   end subroutine compute_lsq_weightings
-  
+
+  !! This sets the IRL material priority order.
+  !! Internally, this will reorder the linking of the
+  !! directed Path Graph of PlanarSeparatorPath objects
+  !! inside the PlanarSeparatorPathGroup that performs
+  !! the nested dissection.
+  !! NOTE: Only active materials are included in the
+  !! priority order. Here, active means those that
+  !! actually exist in the cell, i.e. they have
+  !! a non-zero volume fraction.
   subroutine set_irl_priority_order(this, a_vof)
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
@@ -566,8 +604,14 @@ contains
 
   end subroutine set_irl_priority_order
 
+  !! This is the main driver that performs interface reconstructions
+  !! using the previous time steps volume fraction field.
+  !! The reconstruction to be used can be chosen from the input file with the
+  !! key "interface_reconstruction".
+  !! NewGrag Youngs is a Youngs reconstruction using the
+  !! extended LSQ gradient operator, as opposed to the
+  !! other gradient operator which is used in "Youngs"
   subroutine interface_reconstruction(this, vof)
-
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in)  :: vof(:,:)
@@ -692,12 +736,6 @@ contains
         if (vof(p,i) < this%cutoff .or. vof(p,i) > 1.0_r8 - this%cutoff) then
            cycle
         end if
-        ! remove small values
-        do k = 1, 3
-          if (abs(this%normal(k,p,i)) < epsilon(1.0_r8)) then
-             this%normal(k,p,i) = 0.0_r8
-          end if
-        end do
         ! normalize if possible
         mag = norm2(this%normal(:,p,i))
         if (mag > epsilon(1.0_r8)) then
@@ -708,7 +746,7 @@ contains
         end if
       end do
     end do
-
+    
     ! Enforce reflection of plane in 2 phase cells
     do i = 1, this%mesh%ncell_onP
       hasvof = vof(:,i) > 0.0_r8
@@ -718,9 +756,12 @@ contains
       if (c == 2) then
         j = findloc(hasvof,.true.)
         k = findloc(hasvof,.true.,back=.true.)
-        this%normal(:,k,i) = -this%normal(:,j,i)
+        if(vof(j,i) < vof(k,i)) then
+          this%normal(:,k,i) = -this%normal(:,j,i)
+        else
+          this%normal(:,j,i) = -this%normal(:,k,i)
+        end if
       endif
-
     end do
     
     call gather_boundary(this%mesh%cell_ip, this%normal)
@@ -760,7 +801,9 @@ contains
     end subroutine filter_vof
     
   end subroutine normals_newgrad_youngs
-  
+
+
+  !! Swartz normals reconstruction. See Maric, Marschall, and Bothe. 2018 JCP.
   subroutine normals_swartz(this, a_vof)
 
     use irl_interface_helper
@@ -774,7 +817,7 @@ contains
     
     logical :: done
     integer :: j, n, outer_iter
-    real(r8), allocatable :: polygon_center(:,:), initial_normal(:,:), old_normal(:,:)
+    real(r8), allocatable :: polygon_center(:,:), old_normal(:,:)
     real(r8) :: distance_guess
     real(r8) :: angle_difference, rotation_axis(3), normal_center_line(3)
     real(r8) :: rotation_quaternion(4), inv_rotation_quaternion(4), rotated_normal(4)
@@ -784,9 +827,7 @@ contains
     ASSERT(this%nmat == 2)
     
     allocate(polygon_center(3,this%mesh%ncell))
-    allocate(initial_normal(3,this%mesh%ncell))
     allocate(old_normal(3,this%mesh%ncell))    
-    initial_normal = this%normal(:,1,:)
     done = .false.
     outer_iter = 0
     do while(.not. done)
@@ -812,7 +853,7 @@ contains
           do n = 1, getNumberOfVertices(this%interface_polygons(j))
             polygon_center(:,j) = polygon_center(:,j) + getPt(this%interface_polygons(j), n-1)
           end do
-          polygon_center(:,j) = polygon_center(:,j) / real(getNumberOfVertices(this%interface_polygons(j)), r8)         
+          polygon_center(:,j) = polygon_center(:,j) / real(getNumberOfVertices(this%interface_polygons(j)), r8)
         end if
       end do
 
@@ -825,41 +866,35 @@ contains
       do j = 1, this%mesh%ncell_onP
         if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
 
-          associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+          associate(cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
+          !associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))          
             number_of_active_neighbors = 0
             do n = 1, size(cn)
               if(cn(n) /= 0) then
                 if(a_vof(1,cn(n)) > this%cutoff .and. a_vof(1,cn(n)) < 1.0_r8 - this%cutoff) then
-                  angle_difference = acos(max(-1.0_r8,min(1.0_r8, &
+                  angle_difference = acos(max(-1.0_r8, min(1.0_r8, &
                        dot_product(old_normal(:,j), old_normal(:,cn(n))))))
-                  if(abs(angle_difference) < pi/6.0_r8) then
+                  if(angle_difference < pi/6.0_r8) then
                     ! Use this neighbor
                     normal_center_line = polygon_center(:,cn(n))-polygon_center(:,j)
-                    normal_center_line = normal_center_line / sqrt(sum(normal_center_line**2))
-                    if(abs(dot_product(normal_center_line, old_normal(:,j))) < 1.0_r8 - 1.0e-4_r8) then 
+                    normal_center_line = normal_center_line / sqrt(sum(normal_center_line**2))       
+                    if(abs(dot_product(normal_center_line, old_normal(:,j))) < 1.0_r8 - 1.0e-4_r8) then
+                      ! Not colinear, can find valid orthogonal axis
                       rotation_axis = cross_product(normal_center_line, old_normal(:,j))
                       rotation_axis = rotation_axis / sqrt(sum(rotation_axis**2))
-                    else                      
-                      cycle
+                    else
+                      cycle                      
                     end if
-                    number_of_active_neighbors = number_of_active_neighbors + 1                    
                     rotation_quaternion(1) = cos(0.5_r8*0.5_r8*pi)
                     rotation_quaternion(2:4) = rotation_axis * sin(0.5_r8*0.5_r8*pi)
                     inv_rotation_quaternion(1) = rotation_quaternion(1)
                     inv_rotation_quaternion(2:4) = -rotation_quaternion(2:4)
-                    ! Product of rotation_quaternion and normal_center_line
-                    rotated_normal(1) = -dot_product(rotation_quaternion(2:4),normal_center_line)
-                    rotated_normal(2:4) = rotation_quaternion(1)*normal_center_line + &
-                         cross_product(rotation_quaternion(2:4),normal_center_line)
-                    ! Product of (rotated_quaternion*normal_center_line) and inv_rotation_quaternion
-                    rotation_quaternion = rotated_normal
-                    rotated_normal(1) = rotation_quaternion(1)*inv_rotation_quaternion(1) &
-                         -dot_product(rotation_quaternion(2:4),inv_rotation_quaternion(2:4))
-                    rotated_normal(2:4) = rotation_quaternion(1)*inv_rotation_quaternion(2:4) &
-                         + inv_rotation_quaternion(1)*rotation_quaternion(2:4) &
-                         + cross_product(rotation_quaternion(2:4),inv_rotation_quaternion(2:4))
+                    ! Perform rotation using quaternion
+                    rotated_normal = multiply_quat(rotation_quaternion, [0.0_r8, normal_center_line])
+                    rotated_normal = multiply_quat(rotated_normal, inv_rotation_quaternion)
                     rotated_normal(2:4) = rotated_normal(2:4) / sqrt(sum(rotated_normal(2:4)**2))
                     this%normal(:,1,j) = this%normal(:,1,j) + rotated_normal(2:4)
+                    number_of_active_neighbors = number_of_active_neighbors + 1             
                   end if                  
                 end if
               end if
@@ -890,11 +925,35 @@ contains
     call gather_boundary(this%mesh%cell_ip, this%normal)
     
     deallocate(polygon_center)
-    deallocate(initial_normal)
     deallocate(old_normal)
+
+  contains
+
+    !! Helper function that carries out quaternion/quaternion multiplication.
+    function multiply_quat(a, b) result(quat_r)
+
+      real(r8), intent(in) :: a(4), b(4)
+      real(r8) :: quat_r(4)
+
+
+      quat_r(1) = a(1)*b(1)-dot_product(a(2:4),b(2:4))
+      quat_r(2) = a(1)*b(2) + a(2)*b(1) + a(3)*b(4) - a(4)*b(3)
+      quat_r(3) = a(1)*b(3) - a(2)*b(4) + a(3)*b(1) + a(4)*b(2) 
+      quat_r(4) = a(1)*b(4) + a(2)*b(3) - a(3)*b(2) + a(4)*b(1)     
+      return
+
+    end function multiply_quat
     
   end subroutine normals_swartz
 
+  !! LVIRA normals (driven through IRL).
+  !! See Pillion and Puckett. 2004 JCP
+  !! Currently, LVIRA is only supported on
+  !! pure tet or pure hex meshes.
+  !! Enabling the others would not be difficult,
+  !! and would just require the creation of a
+  !! unstructured_mesh_cell std::variant
+  !! type in IRL that could be one of the four.
   subroutine normals_lvira(this, a_vof)
 
     use traversal_tracker_type, only : traversal_tracker
@@ -1030,6 +1089,19 @@ contains
   end subroutine normals_lvira_hex_execute
     
 
+  !! This is a general way of creating a stencil on the unstructured mesh.
+  !! It also tracks which types of cells have been added to inform the
+  !! reconstruction of whether it is a heterogenous or homogeneous
+  !! stencil of cell types.
+  !!
+  !! This stencil creation is focused around the traversal_tracker_type.
+  !! This type maintains a list of cells that have been checked, as well
+  !! as a list of cells that still need to be checked. Starting from a known
+  !! valid cell, it then searches all neighbors and adds those that meet
+  !! a certain criterion. Once the stencil has grown large enough that all
+  !! stencil-boundary cells do not meet the criterion, the main while loop exits.
+  !! In this case, the criterion is the centroid of the cell is less than
+  !! a_stencil_length from the cell centroid of the center cell from which we start.
   subroutine identify_reconstruction_neighborhood(this, a_starting_index, a_stencil_length, &
        a_cell_types, a_stencil)
 
@@ -1089,7 +1161,12 @@ contains
     end do
 
   end subroutine identify_reconstruction_neighborhood
-  
+
+  !! This function uses the normals stored in Truchas
+  !! to set the PlanarSeparators in IRL. It then uses
+  !! an IRL function to enforce volume fraction conservation
+  !! for each phase in each cell in a nested-dissection
+  !! framework.
   subroutine set_irl_interfaces(this, a_vof)
     
     use cell_geom_type
@@ -1103,7 +1180,7 @@ contains
     
     do j = 1, this%mesh%ncell
       priority_size = getPriorityOrderSize(this%planar_separator_path_group(j))
-      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))        
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
         call this%set_plane_distances(this%mesh%x(:,cn), this%mesh%cell_centroid(:,j), &
              this%normal(:,:,j), a_vof(:,j), &
              priority_size, this%planar_separator(:,j), this%planar_separator_path_group(j))
@@ -1112,6 +1189,9 @@ contains
     
   end subroutine set_irl_interfaces
 
+  !! This is a subroutine that initializes the IRL PlanarSeparator objects
+  !! for a cell and then finds the distance to each plane
+  !! that conserves volume in a nested-dissection sense.
   subroutine set_plane_distances(this, a_cell, a_cell_centroid, a_normal, a_vof, a_priority_size, &
        a_planar_separator, a_path_group)
 
@@ -1169,7 +1249,10 @@ contains
     
   end subroutine set_plane_distances
    
-  
+  !! This routine finds the distance to a plane with a given normal
+  !! that matches the volume fraction a_vof. This is for the special
+  !! case of only a single plane. Mainly only used in some
+  !! interface reconstruction methods.
   subroutine adjust_planes_match_VOF(this, a_cell, a_vof, a_planar_separator)
   
     use irl_interface_helper
@@ -1207,7 +1290,15 @@ contains
       end select  
     
   end subroutine adjust_planes_match_VOF
-  
+
+
+  !! Reset the volume moments to agree with the current reconstruction.
+  !! This function resets the volume moments for each
+  !! cell to discretely match those given by the reconstruction.
+  !! NOTE: This not that important for volume fraction
+  !! (zeroeth order moment), since we explicitly matched it
+  !! up to a small tolerance. However, if higher order moments
+  !! are solved for, this becomes much more crucial.
   subroutine reset_volume_moments(this, a_vof)
   
     use irl_interface_helper
@@ -1222,43 +1313,49 @@ contains
     
     ! DEBUG/Diagnostics
     real(r8) :: volume_change(this%nmat)
-    real(r8) :: tmp_vof    
+    real(r8) :: tmp_vof, irl_volume
     character(string_len) :: message, myformat
     
     volume_change = 0.0_r8
     call new(new_volumes)
     do j = 1, this%mesh%ncell_onP
-      call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)
+      if(maxval(a_vof(:,j)) > 1.0_r8-this%cutoff) cycle ! Single phase cell
+      call setMinimumVolToTrack(this%mesh%volume(j)*5.0e-16_r8)
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))          
         select case(size(cn))
         case (4) ! tet      
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_tet)
           call getNormMoments(this%IRL_tet, this%planar_separator_path_group(j), new_volumes)
+          irl_volume = calculateVolume(this%IRL_tet)
 
         case (5) ! pyramid
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_pyramid)
           call getNormMoments(this%IRL_pyramid, this%planar_separator_path_group(j), new_volumes)
+          irl_volume = calculateVolume(this%IRL_pyramid)
           
         case (6) ! Wedge
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_wedge)
           call getNormMoments(this%IRL_wedge, this%planar_separator_path_group(j), new_volumes)
+          irl_volume = calculateVolume(this%IRL_wedge)
           
         case (8) ! Hex
           call truchas_poly_to_irl(this%mesh%x(:,cn), this%IRL_hex)
           call getNormMoments(this%IRL_hex, this%planar_separator_path_group(j), new_volumes)
+          irl_volume = calculateVolume(this%IRL_hex)          
           
         case default
           call TLS_fatal('Unknown Truchas cell type during plane-distance setting')
         end select
 
       end associate
-
+       
       do phase = 0, getSize(new_volumes)-1
         phase_id = getTagForIndex(new_volumes, phase)
         tmp_vof = a_vof(phase_id, j)
-        a_vof(phase_id, j) = getVolumeAtIndex(new_volumes, phase) / this%mesh%volume(j)
-        volume_change(phase_id) = volume_change(phase_id) + (a_vof(phase_id, j) - tmp_vof)*this%mesh%volume(j)
-      end do      
+        a_vof(phase_id, j) = getVolumeAtIndex(new_volumes, phase) / irl_volume
+        volume_change(phase_id) = volume_change(phase_id) + (a_vof(phase_id, j) - tmp_vof)*irl_volume
+      end do
+
     end do
 
     call gather_boundary(this%mesh%cell_ip, a_vof)
@@ -1273,6 +1370,11 @@ contains
     
   end subroutine reset_volume_moments
 
+  !! This function produces interface polygons for the highest priority
+  !! phase. This is nice for two-phase flows for visualization
+  !! and enables other possible methods for reconstruction
+  !! or curvature. I am not sure of the correct way to obtain
+  !! valid polygons for all planes in the nested-dissection.
   subroutine construct_interface_polygons(this, a_interface_band)
 
     use irl_interface_helper    
@@ -1297,9 +1399,12 @@ contains
       end associate
     end do
 
-
   end subroutine construct_interface_polygons
 
+  !! Construct a polygon for a cell with a plane (non-single phase cell)
+  !! NOTE: The implementation for pyramids/wedges (and all convex cells)
+  !! already exists in IRL. A C/Fortran interface for the functions just
+  !! needs to be written.
   subroutine construct_nonzero_polygon(this, a_cell, a_planar_separator, a_plane_index, a_polygon)
 
     use irl_interface_helper    
@@ -1331,7 +1436,13 @@ contains
     
   end subroutine construct_nonzero_polygon
       
-  
+  !! Compute the projected nodes from the node velocity calculated in
+  !! flow_type.f90.
+  !! Several methods exist to perform the backwards projection of the
+  !! nodes on the mesh. They are:
+  !! First order explicit Euler
+  !! Second order simplectic integration
+  !! Fourth order explicit Runge-Kutta
   subroutine compute_projected_nodes(this, a_nodal_velocity, a_dt)
   
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
@@ -1418,6 +1529,10 @@ contains
       
   end subroutine compute_projected_nodes
 
+  !! Function first localize a pt given a starting location, and then
+  !! interpolate the velocity to that point. If the point is outside
+  !! of the domain, a zero velocity is returned and a_identified_cell
+  !! will be > this%mesh%ncell.
   function get_velocity_at_point(this, a_pt, a_nodal_velocity, a_identified_cell) result(a_vel)
 
     class(unsplit_geometric_volume_tracker), intent(in) :: this
@@ -1429,7 +1544,7 @@ contains
     integer :: n, nodes_in_cell
     real(r8) :: characteristic_length, weights(8)
 
-    ! Note, when passed in, a_identified_cell should be guess for which cell the point is in.
+    ! Note, when passed in, a_identified_cell should be a guess for which cell the point is in.
     ! When function returns, it will be the actual cell the point is located in.
     a_identified_cell =  locatePt(a_pt, this%localized_separator_group_link(a_identified_cell))
     if(a_identified_cell > this%mesh%ncell) then ! Projected outside domain
@@ -1460,6 +1575,17 @@ contains
     return
   end function get_velocity_at_point
 
+  !! Compute several measures of an edge based CFL
+  !! for the unsplit advection. Also check for
+  !! the possible presence of "hour-glass" nodes
+  !! in the back projected edges, where the vertices
+  !! cross eachother.
+  !! NOTE: Hourglass modes would not be able to exist
+  !! in a truly incompressible flow. However, some
+  !! measure of divergence as well as the approximation
+  !! of the streamline from the node back projection
+  !! can result in hour-glass modes for poorly resolved
+  !! (in space and in time) flow fields.
   subroutine compute_effective_cfl(this, a_dt)
 
     use parallel_communication, only : global_sum, global_maxval
@@ -1520,7 +1646,35 @@ contains
     end if
       
   end subroutine compute_effective_cfl
-  
+
+
+  !! Compute face based fluxes for each face in the domain.
+  !! This subroutine calculates a face based flux for each face in the domain.
+  !! The face based flux stores both the original cell the material is from
+  !! as well as the phase id of the material.
+  !! The flux is not always formed from the unsplit geometric projection. If this
+  !! back projected face would not intersect a cell of a different phase
+  !! (meaning the volume formed by the face extrusion would be single-phase)
+  !! then the face flux is just assumed to come from the face-neighboring cell
+  !! in an upwinded sense.
+  !! Two methods are used to check whether the geometric advection should be used:
+  !! 1. A compile-time set band size is used to first weed out cells that would be too far
+  !! from an interface. This sets a limit on the maximum CFL that the advection
+  !! should be performed at. In general, this limit is less than that placed
+  !! upon the small support of the ghost cells (which limit to a CFL ~<1).
+  !! 2. If one of neighboring cells for a face are inside the band limit, the flux volume is formed
+  !! and an axis-aligned bounding box is calculated. A stencil of the mesh is then created
+  !! to fill this bounding box, and if any cell in this stencil has a different phase than
+  !! the two cells neighboring the face, the unsplit geometric advection is used. Otherwise,
+  !! simple upwinding is reverted.
+  !! NOTE: Currently this operates on all faces that have a neighboring cell on the process ( <this%mesh%ncell_onP)
+  !! This could be made more performant by instead only doing the faces this%mesh%nface_onP, and then
+  !! communicating the fluxes. While the communication of the flux array is annoying, it is doable, and
+  !! was implemented before in a serialized manner, where the structure was collapsed into one
+  !! real(r8) buffer per cell and communicated, and then deserialized (this is in an earlier commit).
+  !! The issue is the need to track cell_ids and transform them to the different cell local id indices.
+  !! The mapping of cell_id to global already exists, however the reverse (global to local cell_id)
+  !! will also need to be created in an efficient manner (such as in a hash_table).
   subroutine compute_fluxes(this, a_face_vel, a_dt, a_old_vof, a_new_vof, a_mat_band, a_interface_band)
   
     use irl_interface_helper
@@ -1544,7 +1698,9 @@ contains
     type(integer_real8_tuple_vector) :: cell_local_volumes
     type(integer_real8_tuple_vector), pointer :: fluxed_phases
     integer :: single_phase
-    logical :: geometric_cutting_needed    
+    logical :: geometric_cutting_needed
+
+    real(r8) :: tmp
 
     call getMoments_setMethod(1)
     
@@ -1594,7 +1750,7 @@ contains
           
           ! Initial guess for volume conservative cap vertex
           cell_nodes(:,2*number_of_nodes+1) = sum(cell_nodes(:,number_of_nodes+1:2*number_of_nodes),2)/real(number_of_nodes,r8)
-          
+
           call this%set_irl_volume_geometry(cell_nodes, this%flux_geometry_class(f), correct_volume, bounding_box)
           
           geometric_cutting_needed = .false.
@@ -1659,23 +1815,25 @@ contains
         call this%face_flux(f)%add_cell_fluxes(cell_id, cell_local_volumes)        
       end if
 
-        ! ! Make sure face flux volumes sum to correct volume
-        ! do c = 1, this%face_flux(f)%get_number_of_cells()
-        !   fluxed_phases =>  this%face_flux(f)%get_cell_fluxes(c)          
-        !   do k = 1, fluxed_phases%size()
-        !     correct_volume = correct_volume - fluxed_phases%at_r8(k)
-        !   end do
-        ! end do      
-        ! if(abs(correct_volume) > 1.0e-15_r8) then
-        !   print*,'Unmatching Face Flux!', f, correct_volume, a_dt*a_face_vel(f)*this%mesh%area(f), &
-        !        a_dt*a_face_vel(f)*this%mesh%area(f) + correct_volume
-        ! end if
+      ! ! Make sure face flux volumes sum to correct volume
+      ! tmp = 0.0_r8
+      ! do c = 1, this%face_flux(f)%get_number_of_cells()
+      !   fluxed_phases =>  this%face_flux(f)%get_cell_fluxes(c)          
+      !   do k = 1, fluxed_phases%size()
+      !     tmp = tmp + fluxed_phases%at_r8(k)
+      !   end do
+      ! end do
+      ! if(abs(tmp-correct_volume) > 1.0e-15_r8) then
+      !   print*,'Unmatching Face Flux!', f, this%face_flux(f)%get_number_of_cells(),tmp,correct_volume,  &
+      !        tmp-correct_volume
+      ! end if
         
 
     end do
     
   end subroutine compute_fluxes
 
+  !! Given the cell and what kind of IRL object it should be, initialize the IRL geometry.
   subroutine set_irl_volume_geometry(this, a_cell, a_geometric_case, a_correct_volume, a_bounding_box)
 
     use irl_interface_helper
@@ -1701,9 +1859,9 @@ contains
            call getBoundingPts(this%IRL_CapOcta_LLT, a_bounding_box(:,1), a_bounding_box(:,2))           
            
         case(3) ! Triangular Face -> Octahedron Volume
-           
+
            call construct(this%IRL_CapOcta_LTT, a_cell)
-           call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_correct_volume)
+           call adjustCapToMatchVolume(this%IRL_CapOcta_LTT, a_correct_volume)       
            call getBoundingPts(this%IRL_CapOcta_LTT, a_bounding_box(:,1), a_bounding_box(:,2))           
            
         case(4) ! Triangular Face -> Octahedron Volume
@@ -1754,6 +1912,9 @@ contains
 
   end subroutine set_irl_volume_geometry
 
+  !! Using a traversal_tracker_type, build a stencil to fill the supplied bounding box.
+  !! Check to see if any cell in the bounding box is a different phase than the starting cell.
+  !! NOTE: This allows early termination as soon as any cell is a different phase.
   function refined_advection_check(this, a_bounding_box, a_starting_cell, a_starting_band, a_interface_band) &
        result(a_geometric_cutting_needed)
 
@@ -1808,7 +1969,9 @@ contains
     return
     
   end function refined_advection_check
-  
+
+  !! Calculate unsplit geometric moments using the previous initialized
+  !! (in set_irl_volume_geometry) IRL object. 
   subroutine moments_from_geometric_cutting(this, a_geometric_case, a_starting_index, a_vof, a_small_volume, a_face_flux)
 
     use integer_real8_tuple_vector_type   
@@ -1930,7 +2093,11 @@ contains
     
     return
   end subroutine moments_from_geometric_cutting  
-  
+
+  !! Function to return volume fraction information when an unsplit
+  !! volume has entered a boundary region. This returns the percentage of
+  !! the volume that should be each type of material, and needs to be
+  !! multiplied by the total volume before use.
   pure function getBCMaterialFractions(this, a_tag, a_vof_n) result(a_fractions)
 
     class(unsplit_geometric_volume_tracker), intent(in) :: this
@@ -1949,10 +2116,15 @@ contains
 
     return
   end function getBCMaterialFractions
-  
+
+  !! Subroutine to update the volume fraction in each cell
+  !! given the fluxes computed in compute_fluxes. This rotuine
+  !! also fills the cface-like array a_flux_vol, which is
+  !! later used for the momentum equation.
   subroutine update_vof(this, a_interface_band, a_flux_vol, a_vof)
 
     use integer_real8_tuple_vector_type
+    use parallel_communication, only : global_sum, is_IOP
   
     class(unsplit_geometric_volume_tracker), intent(in) :: this
     integer, intent(in) :: a_interface_band(:)
@@ -1963,6 +2135,7 @@ contains
     integer :: number_of_faces
     real(r8) :: cell_volume_sum
     real(r8) :: vof_flux(this%nmat)
+    real(r8) :: clipped_amount(this%nmat)
     type(integer_real8_tuple_vector), pointer :: fluxed_phases
     
     ! Fill the ragged a_flux_vol array
@@ -1978,6 +2151,7 @@ contains
     end do
 
     ! Use a_flux_vol to update a_vof now
+    clipped_amount = 0.0_r8
     do j = 1, this%mesh%ncell_onP
       if(abs(a_interface_band(j)) > advect_band) then
         cycle
@@ -1996,24 +2170,32 @@ contains
         a_vof(1:this%nfluid,j) = a_vof(1:this%nfluid,j) - vof_flux(1:this%nfluid)
         cell_volume_sum = cell_volume_sum - sum(vof_flux(1:this%nmat))
       end do
-      a_vof(1:this%nfluid,j) = a_vof(1:this%nfluid,j) / cell_volume_sum
+      a_vof(1:this%nfluid,j) = a_vof(1:this%nfluid,j) / this%mesh%volume(j) !cell_volume_sum
       a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))            
 
       ! NOTE: This will lead to slight inconsistency with face fluxes
       do k = 1, this%nmat
         ! if(a_vof(k,j) < -1.0e-14_r8 .or. a_vof(k,j) > 1.0_r8+1.0e-14_r8) then
-        !   print*,k,j,a_vof(k,j)
+        !   print*,'UA',k,this%mesh%xcell(j),a_vof(k,j)
         ! end if
         if(a_vof(k,j) < this%cutoff) then
+          clipped_amount(k) = clipped_amount(k) - a_vof(k,j)
           a_vof(k,j) = 0.0_r8
         else if(a_vof(k,j) > 1.0_r8 - this%cutoff) then
+          clipped_amount(k) = clipped_amount(k) + 1.0_r8-a_vof(k,j)
           a_vof(k,j) = 1.0_r8
-        end if
+        end if        
       end do
-      a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))      
+      a_vof(:,j) = a_vof(:,j) / sum(a_vof(:,j))
     end do
 
-    call gather_boundary(this%mesh%cell_ip, a_vof)
+     ! do k = 1, this%nmat
+     !   clipped_amount(k) = global_sum(clipped_amount(k))
+     ! end do
+     ! if(is_IOP) &
+     !      print*,'CA',clipped_amount
+    
+    call gather_boundary(this%mesh%cell_ip, a_vof)     
 
   end subroutine update_vof    
 
@@ -2190,6 +2372,10 @@ contains
     
   end subroutine generate_flux_classes
 
+  !! Calculate an axis aligned bounding box for each
+  !! cell in the (sub)domain and store for later use
+  !! in the refined check for unsplit
+  !! geometric advection.
   subroutine generate_cell_bounding_boxes(this)
 
     class(unsplit_geometric_volume_tracker), intent(inout) :: this
