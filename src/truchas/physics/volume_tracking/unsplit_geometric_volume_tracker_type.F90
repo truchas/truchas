@@ -275,7 +275,7 @@ contains
     call this%compute_correction_vertices(vel, dt, a_interface_band)
 
     call this%compute_fluxes(vel, dt, vof_n, vof, a_interface_band)
-    call this%redistribute_vof_errors(vof)
+    !call this%redistribute_vof_errors(vof)
 
     call stop_timer('advection')
 
@@ -1119,7 +1119,7 @@ contains
     real(r8), intent(in) :: a_vof(:)
     type(PlanarSep_type), intent(inout) :: a_planar_separator
 
-    real(r8), parameter :: VOF_tolerance = 5.0e-16_r8
+    real(r8), parameter :: VOF_tolerance = 1.0e-15_r8
     
     ! PlanarSeparator should already be setup with a valid normal and
     ! guess for the distance (atleast somewhere inside cell so we can calculate
@@ -1566,12 +1566,21 @@ contains
 
       if(geometric_cutting_needed) then
         ! Perform cutting
-        call setMinimumVolToTrack(this%mesh%volume(j)*5.0e-16_r8)         
+        call setMinimumVolToTrack(this%mesh%volume(j)*1.0e-15_r8)         
         call this%moments_from_geometric_cutting(number_of_nodes, &
              j, a_old_vof, this%cell_flux(:,j))
         ! Update VOF
         ! Only time vof should change is when geometric cutting is needed.
-        a_new_vof(:,j) = this%cell_flux(:,j) / sum(this%cell_flux(:,j))         
+        a_new_vof(:,j) = this%cell_flux(:,j) / sum(this%cell_flux(:,j))
+        
+        if(a_new_vof(1,j) < this%cutoff) then
+           a_new_vof(1,j) = 0.0_r8
+           a_new_vof(2,j) = 1.0_r8           
+        else if (a_new_vof(1,j) > 1.0_r8 - this%cutoff) then
+           a_new_vof(1,j) = 1.0_r8
+           a_new_vof(2,j) = 0.0_r8
+        end if
+        
       end if
     end do
     
