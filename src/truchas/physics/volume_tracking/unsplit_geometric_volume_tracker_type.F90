@@ -796,8 +796,8 @@ contains
       do j = 1, this%mesh%ncell_onP
         if(a_vof(1,j) > this%cutoff .and. a_vof(1,j) < 1.0_r8 - this%cutoff) then
 
-          associate(cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
-          !associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))          
+          !associate(cn => this%mesh%cnc(this%mesh%xcnc(j):this%mesh%xcnc(j+1)-1))
+          associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))          
             number_of_active_neighbors = 0
             do n = 1, size(cn)
               if(cn(n) /= 0) then
