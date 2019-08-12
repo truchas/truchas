@@ -467,6 +467,7 @@ contains
     real(r8) :: edge(3,2)
     real(r8) :: node_location(3), full_face_velocity(3), vel(3)
     real(r8) :: projected_point_x, projected_point_y, rotation
+    real(r8) :: radius, center(3)
     real(r8) :: time_multiplier
 
     if (.not.allocated(this)) return
@@ -475,7 +476,7 @@ contains
 
     select case(trim(velocity_overwrite_case))
     case('Rotation2D')
-       do f = 1,this%mesh%nface
+       do f = 1,this%mesh%nface_onP
          node_location = this%mesh%face_centroid(:,f)
          full_face_velocity(1) = -2.0_r8*pi*node_location(2)
          
@@ -487,7 +488,7 @@ contains
          
        end do
        
-       do j = 1,this%mesh%ncell
+       do j = 1,this%mesh%ncell_onP
          node_location = this%mesh%cell_centroid(:,j)
          a_cell_velocity(1,j) = -2.0_r8*pi*node_location(2)
          
@@ -496,10 +497,12 @@ contains
          a_cell_velocity(3,j) = 0.0_r8
          
        end do
+       call gather_boundary(this%mesh%face_ip, a_face_velocity)
+       call gather_boundary(this%mesh%cell_ip, a_cell_velocity)              
               
     case('Rotation3D')
        rotation = -0.25_r8*pi
-       do f = 1,this%mesh%nface
+       do f = 1,this%mesh%nface_onP
          node_location = this%mesh%face_centroid(:,f)
          projected_point_x = dot_product(node_location, 1.0_r8/sqrt(2.0_r8)*[1.0_r8, 0.0_r8, 1.0_r8])
          projected_point_y = dot_product(node_location, [0.0_r8, 1.0_r8, 0.0_r8])         
@@ -514,7 +517,7 @@ contains
          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
        end do
 
-       do j = 1,this%mesh%ncell
+       do j = 1,this%mesh%ncell_onP
          node_location = this%mesh%cell_centroid(:,j)
          projected_point_x = dot_product(node_location, 1.0_r8/sqrt(2.0_r8)*[1.0_r8, 0.0_r8, 1.0_r8])
          projected_point_y = dot_product(node_location, [0.0_r8, 1.0_r8, 0.0_r8])
@@ -529,10 +532,12 @@ contains
          a_cell_velocity(3,j) = dot_product([-sin(rotation), 0.0_r8, cos(rotation)], vel)         
          
        end do
+       call gather_boundary(this%mesh%face_ip, a_face_velocity)
+       call gather_boundary(this%mesh%cell_ip, a_cell_velocity)              
        
     case('Deformation2D')
        ! Generally on -0.5,0.5 mesh, so add 0.5 to node position
-       do f = 1,this%mesh%nface
+       do f = 1,this%mesh%nface_onP
           node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,0.0_r8]
           full_face_velocity(1) = -2.0_r8*sin(pi*node_location(1))**2 &
                                  * sin(pi*node_location(2)) &
@@ -550,7 +555,7 @@ contains
 
        end do
        
-       do j = 1,this%mesh%ncell
+       do j = 1,this%mesh%ncell_onP
           node_location = this%mesh%cell_centroid(:,j)+[0.5_r8,0.5_r8,0.0_r8]
           a_cell_velocity(1,j) = -2.0_r8*sin(pi*node_location(1))**2 &
                                  * sin(pi*node_location(2)) &
@@ -564,12 +569,14 @@ contains
           
           a_cell_velocity(3,j) = 0.0_r8
           
-       end do
+        end do
+       call gather_boundary(this%mesh%face_ip, a_face_velocity)
+       call gather_boundary(this%mesh%cell_ip, a_cell_velocity)               
 
     case('Deformation3D')
        ! Generally on -0.5,0.5 mesh, but should be on [0.1], so add 0.5 to node position
        time_multiplier = cos(pi*a_time/3.0_r8)
-       do f = 1,this%mesh%nface
+       do f = 1,this%mesh%nface_onP
 
          a_face_velocity(f) = 0.0_r8
          associate(nodes => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))           
@@ -590,8 +597,8 @@ contains
          a_face_velocity(f) = a_face_velocity(f) / this%mesh%area(f) * time_multiplier
 
        end do
-       
-       do j = 1,this%mesh%ncell
+
+       do j = 1,this%mesh%ncell_onP
           node_location = this%mesh%cell_centroid(:,j)+[0.5_r8,0.5_r8,0.5_r8]
           a_cell_velocity(1,j) = 2.0_r8*sin(pi*node_location(1))**2 &
                                  * sin(2.0_r8*pi*node_location(2)) &
@@ -609,6 +616,53 @@ contains
                                  * cos(pi*a_time / 3.0_r8)        
           
        end do
+       call gather_boundary(this%mesh%face_ip, a_face_velocity)
+       call gather_boundary(this%mesh%cell_ip, a_cell_velocity)
+
+   ! Note, not formulated as vector potential so will not be
+   ! solenoidal on non-axis orthogonal mesh
+    case('Shear3D')
+      ! Generally on [-0.5,-0.5,-1.0] x [0.5,0.5,1.0] mesh, so add [0.5,0.5,1.0] to node position
+      center = [0.5_r8, 0.5_r8, 0.0_r8]                
+       do f = 1,this%mesh%nface_onP
+          node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,1.0_r8]
+          radius = sqrt((node_location(1)-center(1))**2 + (node_location(2)-center(2))**2)
+          
+          full_face_velocity(1) = -2.0_r8*sin(pi*node_location(1))**2 &
+                                 * sin(pi*node_location(2)) &
+                                 * cos(pi*node_location(2)) &
+                                 * cos(pi*a_time / 3.0_r8)
+          
+          full_face_velocity(2) = 2.0_r8*sin(pi*node_location(2))**2 &
+                                 * sin(pi*node_location(1)) &
+                                 * cos(pi*node_location(1)) &
+                                 * cos(pi*a_time / 3.0_r8)          
+          
+          full_face_velocity(3) = 1.0_r8 *(1.0_r8 - 2.0_r8*radius)**2 * cos(pi * a_time / 3.0_r8)
+
+
+          a_face_velocity(f) = dot_product(full_face_velocity, this%mesh%normal(:,f)/this%mesh%area(f))
+
+       end do
+       
+       do j = 1,this%mesh%ncell_onP
+          node_location = this%mesh%cell_centroid(:,j)+[0.5_r8,0.5_r8,1.0_r8]
+          radius = sqrt((node_location(1)-center(1))**2 + (node_location(2)-center(2))**2)         
+          a_cell_velocity(1,j) = -2.0_r8*sin(pi*node_location(1))**2 &
+                                 * sin(pi*node_location(2)) &
+                                 * cos(pi*node_location(2)) &
+                                 * cos(pi*a_time / 3.0_r8)
+          
+          a_cell_velocity(2,j) = 2.0_r8*sin(pi*node_location(2))**2 &
+                                 * sin(pi*node_location(1)) &
+                                 * cos(pi*node_location(1)) &
+                                 * cos(pi*a_time / 3.0_r8)
+          
+          a_cell_velocity(3,j) = 1.0_r8 *(1.0_r8 - 2.0_r8*radius)**2 * cos(pi * a_time / 3.0_r8)
+          
+        end do
+       call gather_boundary(this%mesh%face_ip, a_face_velocity)
+       call gather_boundary(this%mesh%cell_ip, a_cell_velocity)                  
 
 
     case default
