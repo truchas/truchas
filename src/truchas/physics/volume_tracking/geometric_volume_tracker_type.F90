@@ -275,13 +275,14 @@ contains
 
   end subroutine normals
 
-  subroutine donor_fluxes_os_cell(this, i, vel, vof, dt)
+  subroutine donor_fluxes_os_cell(this, i, vel, vof, dt, locator_error_message)
 
     use cell_geom_type
 
     class(geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
-    real(r8), intent(in)  :: dt, vof(:,:), vel(:)
+    real(r8), intent(in) :: dt, vof(:,:), vel(:)
+    character(:), allocatable, intent(inout) :: locator_error_message
 
     real(r8) :: face_normal(3,6)
     integer :: j,k,ierr
@@ -305,14 +306,14 @@ contains
       call cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
           vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff, &
           this%priority, this%nmat, this%location_iter_max, &
-          this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
+          this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1), locator_error_message)
     end associate
 
   end subroutine donor_fluxes_os_cell
 
   ! get the volume flux for every material in the given cell
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
-      flux_volume)
+      flux_volume, locator_error_message)
 
     use f08_intrinsics, only: findloc
     use locate_plane_os_function
@@ -323,6 +324,7 @@ contains
     integer, intent(in) :: priority(:), nmat, maxiter
     type(cell_geom), intent(in) :: cell
     real(r8), intent(out) :: flux_volume(:,:)
+    character(:), allocatable, intent(inout) :: locator_error_message
 
     real(r8) :: Vofint, dvol
     real(r8) :: flux_vol_sum(cell%nfc), flux_vol
@@ -347,7 +349,7 @@ contains
       ! locate each interface plane by computing the plane constant
       if (is_mixed_donor_cell) &
           P = locate_plane_os(int_norm(:,priority(ni)), vofint, cell%volume, cell%node, &
-          cutoff, maxiter)
+          cutoff, maxiter, locator_error_message)
 
       ! calculate delta advection volumes for this material at each donor face and accumulate the sum
       ASSERT(priority(ni) <= size(flux_volume, dim=1))
@@ -589,7 +591,7 @@ contains
 
   end subroutine flux_vol_nodes
 
-  subroutine donor_fluxes_nd_cell(this, i, vel, vof, dt)
+  subroutine donor_fluxes_nd_cell(this, i, vel, vof, dt, locator_error_message)
 
     use cell_topology
     use multimat_cell_type
@@ -597,6 +599,7 @@ contains
     class(geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
+    character(:), allocatable, intent(inout) :: locator_error_message
 
     real(r8) :: face_normal(3,6)
     integer :: j,k,ierr, face_vid(4,6)
@@ -647,7 +650,7 @@ contains
       if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
 
       call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
-          this%location_iter_max)
+          this%location_iter_max, locator_error_message)
 
       this%flux_vol_sub(:this%nfluid,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
           cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
@@ -659,10 +662,16 @@ contains
 
   subroutine donor_fluxes(this, vel, vof, dt)
 
+    use parallel_communication
+    use truchas_logging_services
+
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
 
-    integer :: i, nmat
+    integer :: i, nmat, l
+    character(:), allocatable :: locator_error_message, tmp, global_message(:)
+
+    locator_error_message = ""
 
     ! calculate the flux volumes for each face
     call start_timer('reconstruct/advect')
@@ -671,11 +680,29 @@ contains
       nmat = count(vof(:,i) > this%cutoff)
 
       if (nmat > 2 .and. this%nested_dissection) then
-        call this%donor_fluxes_nd_cell(i, vel, vof, dt)
+        call this%donor_fluxes_nd_cell(i, vel, vof, dt, locator_error_message)
       else
-        call this%donor_fluxes_os_cell(i, vel, vof, dt)
+        call this%donor_fluxes_os_cell(i, vel, vof, dt, locator_error_message)
       end if
     end do
+
+    ! concatenate error strings into IO_PE and print if necessary
+    l = global_maxval(len(locator_error_message))
+    if (l > 0) then
+      ! all strings passed to collate must be the same length
+      if (this_PE == IO_PE) &
+          allocate(character(l) :: global_message(nPE))
+      tmp = repeat(" ", l) ! allocate and "zero out" string
+      tmp(:len(locator_error_message)) = locator_error_message
+      call collate(global_message, tmp)
+      if (this_PE == IO_PE) then
+        locator_error_message = "Did not converge plane locators in required iterations."
+        do i = 1, nPE
+          locator_error_message = locator_error_message // trim(global_message(i))
+        end do
+        call TLS_warn(locator_error_message)
+      end if
+    end if
 
     call stop_timer('reconstruct/advect')
 

@@ -45,8 +45,8 @@ contains
   ! and return a plane type
   ! Alternatively, should we return the two polyhedra? If they are already
   ! calculated, it would save resplitting the input polyhedron.
-
-  type(plane) function locate_plane_nd (poly, norm, vol, cell_volume, cutvof, max_iterations)
+  type(plane) function locate_plane_nd(poly, norm, vol, cell_volume, cutvof, max_iterations, &
+      error_message)
 
     use polyhedron_type
     use plane_type
@@ -54,10 +54,12 @@ contains
     type(polyhedron), intent(inout) :: poly
     real(r8), intent(in) :: norm(:), vol, cell_volume, cutvof
     integer, intent(in) :: max_iterations
+    character(:), allocatable, intent(inout) :: error_message
 
     real(r8)             :: rho_min,rho_max
     integer              :: ierr
     type(vof_error_func) :: vof_error
+    character(192)       :: my_error_message
 
     ASSERT(size(norm)==3)
 
@@ -72,6 +74,12 @@ contains
     vof_error%feps = 0.5_r8*cutvof; vof_error%maxitr = max_iterations
     call vof_error%find_root (rho_min, rho_max, locate_plane_nd%rho, ierr)
     ! note ~30 iterations seem to be necessary to pass current unit tests
+
+    if (ierr /= 0) then
+      write (my_error_message, '(a,2es13.3)') &
+          "  Error, tolerance: ", vof_error%f(locate_plane_nd%rho), vof_error%feps
+      error_message = error_message // new_line(my_error_message) // trim(my_error_message)
+    end if
 
   end function locate_plane_nd
 

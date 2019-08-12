@@ -34,14 +34,16 @@ module locate_plane_os_function
 
 contains
 
-  type(plane) function locate_plane_os(norm, vof, volume, node, cutoff, maxiter)
+  type(plane) function locate_plane_os(norm, vof, volume, node, cutoff, maxiter, error_message)
 
     real(r8), intent(in) :: norm(:), vof, volume, node(:,:), cutoff
     integer, intent(in) :: maxiter
+    character(:), allocatable, intent(inout) :: error_message
 
     type(vof_error_func) :: vof_error
     real(r8) :: rho_min, rho_max
     integer :: ierr
+    character(192) :: my_error_message
 
     call vof_error%init(node, norm, vof, volume)
     call rho_bracket(rho_min, rho_max, norm, node, vof_error)
@@ -50,7 +52,11 @@ contains
     vof_error%feps = 0.5_r8 * cutoff; vof_error%maxitr = maxiter
     call vof_error%find_root(rho_min, rho_max, locate_plane_os%rho, ierr)
 
-    ASSERT(ierr == 0)
+    if (ierr /= 0) then
+      write (my_error_message, '(a,2es13.3)') &
+          "  Error, tolerance: ", vof_error%f(locate_plane_os%rho), vof_error%feps
+      error_message = error_message // new_line(my_error_message) // trim(my_error_message)
+    end if
 
   end function locate_plane_os
 
