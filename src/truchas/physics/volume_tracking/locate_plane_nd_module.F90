@@ -207,7 +207,7 @@ contains
     integer :: ierr
 
     P%rho = x; P%normal = this%norm
-    func_signed_eval = (this%poly%volume_behind_plane (P,ierr) - this%tvol) / this%tvol
+    func_signed_eval = (this%poly%volume_behind_plane (P,ierr) - this%tvol) / this%parvol
 
     if (ierr /= 0) call TLS_fatal ("func_signed_eval failed")
 
