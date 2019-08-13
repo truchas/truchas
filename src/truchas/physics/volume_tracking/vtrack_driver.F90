@@ -628,14 +628,12 @@ contains
           node_location = this%mesh%face_centroid(:,f)+[0.5_r8,0.5_r8,1.0_r8]
           radius = sqrt((node_location(1)-center(1))**2 + (node_location(2)-center(2))**2)
           
-          full_face_velocity(1) = -2.0_r8*sin(pi*node_location(1))**2 &
-                                 * sin(pi*node_location(2)) &
-                                 * cos(pi*node_location(2)) &
+          full_face_velocity(1) = 1.0_r8*sin(2.0_r8*pi*node_location(2)) &
+                                 * sin(pi*node_location(1))**2 &
                                  * cos(pi*a_time / 3.0_r8)
           
-          full_face_velocity(2) = 2.0_r8*sin(pi*node_location(2))**2 &
-                                 * sin(pi*node_location(1)) &
-                                 * cos(pi*node_location(1)) &
+          full_face_velocity(2) = -1.0_r8*sin(2.0_r8*pi*node_location(1)) &
+                                 * sin(pi*node_location(2))**2 &
                                  * cos(pi*a_time / 3.0_r8)          
           
           full_face_velocity(3) = 1.0_r8 *(1.0_r8 - 2.0_r8*radius)**2 * cos(pi * a_time / 3.0_r8)
@@ -648,16 +646,13 @@ contains
        do j = 1,this%mesh%ncell_onP
           node_location = this%mesh%cell_centroid(:,j)+[0.5_r8,0.5_r8,1.0_r8]
           radius = sqrt((node_location(1)-center(1))**2 + (node_location(2)-center(2))**2)         
-          a_cell_velocity(1,j) = -2.0_r8*sin(pi*node_location(1))**2 &
-                                 * sin(pi*node_location(2)) &
-                                 * cos(pi*node_location(2)) &
+          a_cell_velocity(1,j) = 1.0_r8*sin(2.0_r8*pi*node_location(2)) &
+                                 * sin(pi*node_location(1))**2 &
                                  * cos(pi*a_time / 3.0_r8)
           
-          a_cell_velocity(2,j) = 2.0_r8*sin(pi*node_location(2))**2 &
-                                 * sin(pi*node_location(1)) &
-                                 * cos(pi*node_location(1)) &
-                                 * cos(pi*a_time / 3.0_r8)
-          
+          a_cell_velocity(2,j) = -1.0_r8*sin(2.0_r8*pi*node_location(1)) &
+                                 * sin(pi*node_location(2))**2 &
+                                 * cos(pi*a_time / 3.0_r8)                
           a_cell_velocity(3,j) = 1.0_r8 *(1.0_r8 - 2.0_r8*radius)**2 * cos(pi * a_time / 3.0_r8)
           
         end do
