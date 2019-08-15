@@ -462,7 +462,7 @@ contains
       !! Matrix-vector product.
       do j = 1, this%nface
         !s = 0.0_r8
-        s = shift * global_q(j)
+        s = shift * q(j)
         do i = this%ia(j), this%ia(j+1)-1
           s = s + (1.0_r8-eps(j))*this%vf(i)*global_q(this%ja(i))
         end do
