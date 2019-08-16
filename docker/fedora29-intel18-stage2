@@ -1,0 +1,12 @@
+FROM 99cfdc4f1229
+
+# The redistributable runtime libraries
+COPY intel /opt/intel
+
+RUN dnf install -y sudo
+
+RUN useradd -s /sbin/nologin -c "Truchas user" truchas && \
+    echo "truchas ALL = NOPASSWD : ALL" > /etc/sudoers.d/truchas
+
+USER truchas
+WORKDIR /home/truchas    

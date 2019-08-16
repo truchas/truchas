@@ -1,0 +1,62 @@
+FROM fedora:29
+
+ENV http_proxy  http://proxyout.lanl.gov:8080/
+ENV https_proxy http://proxyout.lanl.gov:8080/
+
+RUN dnf update -y
+RUN dnf install -y gcc gcc-c++
+
+# docker build -v /opt/intel:/opt/intel:ro ...
+ENV INTELDIR /opt/intel/compilers_and_libraries_2018.5.274/linux
+ENV PATH $INTELDIR/bin/intel64:$PATH
+ENV LD_LIBRARY_PATH $INTELDIR/compiler/lib/intel64
+ENV FC ifort
+ENV CC icc
+ENV CXX icpc
+
+#COPY hello.f90 /hello.f90
+#RUN ifort --version && ifort hello.f90 && ./a.out
+
+# Install OpenMPI
+RUN dnf install -y wget bzip2 perl hostname
+ENV OPENMPI_DIR=/opt/openmpi
+RUN OPENMPI_VERSION=3.1.4 && \
+    OPENMPI_VERSION_SHORT=3.1 && \
+    OPENMPI_SHA1=957b5547bc61fd53d08af0713d0eaa5cd6ee3d58 && \
+    OPENMPI_URL=https://download.open-mpi.org/release/open-mpi/v${OPENMPI_VERSION_SHORT}/openmpi-${OPENMPI_VERSION}.tar.bz2 && \
+    OPENMPI_ARCHIVE=openmpi-${OPENMPI_VERSION}.tar.bz2 && \
+    SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
+    wget --quiet ${OPENMPI_URL} --output-document=${OPENMPI_ARCHIVE} && \
+    echo "${OPENMPI_SHA1} ${OPENMPI_ARCHIVE}" | sha1sum -c && \
+    mkdir -p openmpi && \
+    tar -xf ${OPENMPI_ARCHIVE} -C openmpi --strip-components=1 && \
+    mkdir -p build && cd build && \
+    ../openmpi/configure --prefix=${OPENMPI_DIR} && \
+    make -j12 install && \
+    rm -rf ${SCRATCH_DIR}
+ENV PATH=${OPENMPI_DIR}/bin:$PATH
+
+# Install Truchas TPLs
+RUN dnf install -y git cmake patch m4 zlib-devel
+ENV TRUCHAS_TPL_DIR=/opt/truchas-tpl
+RUN SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
+    git clone https://gitlab.com/truchas/truchas-tpl.git && \
+    cd truchas-tpl && \
+    mkdir build && cd build && \
+    cmake -C ../config/linux-intel.cmake -DCMAKE_INSTALL_PREFIX=${TRUCHAS_TPL_DIR} .. && \
+    make -j12 && \
+    rm -rf ${SCRATCH_DIR}
+
+# Install Truchas
+RUN dnf install -y lapack-devel python3-numpy python3-scipy python3-h5py
+ENV TRUCHAS_DIR=/opt/truchas
+RUN SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
+    git clone https://gitlab.com/truchas/truchas-release.git && \
+    cd truchas-release && \
+    #git checkout b2e3ff6 && \
+    mkdir build && cd build && \
+    cmake -C ../config/intel-opt.cmake -D TRUCHAS_TPL_DIR=${TRUCHAS_TPL_DIR} -D CMAKE_INSTALL_PREFIX=${TRUCHAS_DIR} .. && \
+    make -j12 && make install && \
+    ln -s ${TRUCHAS_DIR}/bin/t-linux.x86_64.intel.opt-3.1.0-alpha ${TRUCHAS_DIR}/bin/truchas && \
+    rm -rf ${SCRATCH_DIR}
+ENV PATH=${TRUCHAS_DIR}/bin:$PATH
