@@ -14,3 +14,6 @@ add_subdirectory(scorpio)
 
 message(STATUS "Configuring src/packages/ubiksolve")
 add_subdirectory(ubiksolve)
+
+message(STATUS "Configuring src/packages/irl")
+add_subdirectory(irl)

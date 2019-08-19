@@ -65,6 +65,7 @@ list(APPEND Truchas_DEPENDS pgslib_mpi)
 list(APPEND Truchas_DEPENDS ubiksolve)
 list(APPEND Truchas_DEPENDS chaco)
 list(APPEND Truchas_DEPENDS truchas::io)
+list(APPEND Truchas_DEPENDS irl_fortran)
 
 # Force the completion of the targets defined
 # in Truchas_DEPENDS before compiling source for
@@ -72,18 +73,22 @@ list(APPEND Truchas_DEPENDS truchas::io)
 add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
-set(Truchas_LINK_LIBS blas lapack exodus hypre petaca irl)
+set(Truchas_LINK_LIBS blas lapack exodus hypre petaca)
 
 list(APPEND Truchas_LINK_LIBS pgslib_fe)
 list(APPEND Truchas_LINK_LIBS pgslib_mpi)
 list(APPEND Truchas_LINK_LIBS ubiksolve)
 list(APPEND Truchas_LINK_LIBS chaco)
+list(APPEND Truchas_LINK_LIBS irl_fortran)
 list(APPEND Truchas_LINK_LIBS truchas::io)
+list(APPEND Truchas_LINK_LIBS "-lstdc++")
 
 # To pick up the dlopen and dlclose symbols
 list(APPEND Truchas_LINK_LIBS ${CMAKE_DL_LIBS})
 
 target_link_libraries(truchas ${Truchas_LINK_LIBS})
+get_property(irl_moduleDir TARGET irl_fortran PROPERTY FORTRAN_MODULE_DIRECTORY)
+target_include_directories(truchas PRIVATE "${irl_moduleDir}")
 
 # The linking of external packages is broken. Binaries
 # and libraries that link to truchas library should not
@@ -114,6 +119,8 @@ set_source_files_properties(${MAIN_SOURCE_FILES} PROPERTIES
 add_executable(truchas_exe ${MAIN_SOURCE_FILES})
 add_dependencies(truchas_exe ProcessTruchasMainFiles)
 target_link_libraries(truchas_exe truchas ${Truchas_LINK_LIBS})
+target_include_directories(truchas_exe PRIVATE "${irl_moduleDir}")
+
 
 # Keep binary name consistent with old naming convention
 set(truchas_exe_name t-${Truchas_BUILD_ID}-${Truchas_VERSION})
