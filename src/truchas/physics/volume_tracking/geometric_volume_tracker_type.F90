@@ -690,10 +690,9 @@ contains
     l = global_maxval(len(locator_error_message))
     if (l > 0) then
       ! all strings passed to collate must be the same length
-      if (this_PE == IO_PE) &
-          allocate(character(l) :: global_message(nPE))
-      tmp = repeat(" ", l) ! allocate and "zero out" string
-      tmp(:len(locator_error_message)) = locator_error_message
+      if (this_PE == IO_PE) allocate(character(l) :: global_message(nPE))
+      allocate(character(l) :: tmp)
+      tmp(:) = locator_error_message
       call collate(global_message, tmp)
       if (this_PE == IO_PE) then
         locator_error_message = "Did not converge plane locators in required iterations."
