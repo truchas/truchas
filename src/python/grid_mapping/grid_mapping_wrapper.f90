@@ -88,15 +88,15 @@ contains
   end function mesh_map
 
 
-  subroutine map_cell_field_c(mesh_map_c, form, n, defval, src, dest) bind(c)
+  subroutine map_cell_field_c(mesh_map_c, form, in_size, out_size, defval, src, dest) bind(c)
 
     use grid_mapping_module, only: map_cell_field, grid_int_vols
 
     type(c_ptr), intent(in), value :: mesh_map_c
-    integer(c_int), intent(in), value :: form, n
+    integer(c_int), intent(in), value :: form, in_size, out_size
     real(c_double), intent(in), value :: defval
-    real(c_double), intent(in) :: src(n)
-    real(c_double), intent(out) :: dest(n)
+    real(c_double), intent(in) :: src(in_size)
+    real(c_double), intent(out) :: dest(out_size)
 
     integer, parameter :: MAP_FORM_DEFAULT  = 0
     integer, parameter :: MAP_FORM_CONSTANT = 1

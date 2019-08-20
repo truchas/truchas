@@ -20,7 +20,6 @@ except ImportError:
 # 3. Install h5py via pip. Here, h5py is compiled against HDF5 libraries with
 #    hashed names, which sidesteps the issue.
 from .TruchasMappedData import *
-
 from .TruchasData import *
 from .TruchasEnvironment import *
 from .TruchasTest import *
