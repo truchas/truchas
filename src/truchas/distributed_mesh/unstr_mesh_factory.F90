@@ -42,7 +42,7 @@
 
 module unstr_mesh_factory
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use parameter_list_type
   implicit none
@@ -52,57 +52,95 @@ module unstr_mesh_factory
 
 contains
 
-  function new_unstr_mesh (params, stat, errmsg) result (this)
-
-    use ext_exodus_mesh_type
-    use exodus_mesh_tools
-    use exodus_mesh_io, only: read_exodus_mesh
-    use permutations
-    use simple_partitioning_methods, only: get_block_partition, read_partition
-    use index_partitioning
-    use unstr_mesh_tools
-    use parallel_communication
-    use truchas_logging_services
-    use string_utilities, only: i_to_c
+  function new_unstr_mesh(params, stat, errmsg) result(this)
 
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable :: errmsg
     type(unstr_mesh), pointer :: this
 
-    integer :: j, k, n, nnode, nface, ncell, new_id, exodus_block_modulus, pfirst
-    integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
-    integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), part(:)
-    integer, allocatable :: xcface(:), cface(:), cfpar(:), lnhbr(:,:), lface(:,:)
-    integer, allocatable :: cell_perm(:), node_perm(:), offP_size(:), offP_index(:)
-    integer, allocatable :: perm(:), ssid(:), ebid(:)
+    if (params%is_parameter('mesh-file')) then
+      this => new_unstr_mesh_file(params, stat, errmsg)
+    else if (params%is_parameter('x-axis')) then
+      this => new_unstr_mesh_internal(params, stat, errmsg)
+    else
+      stat = 1
+      errmsg = 'invalid mesh specification'
+      this => null()
+    end if
+
+  end function new_unstr_mesh
+
+!!!! INTERNALLY GENERATED MESH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function new_unstr_mesh_internal(params, stat, errmsg) result(this)
+
+    use ext_exodus_mesh_type
+    use exodus_mesh_factory, only: create_rect_exodus_mesh
+    use parallel_communication
+    use truchas_logging_services
+
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    type(unstr_mesh), pointer :: this
+
     type(ext_exodus_mesh) :: mesh
-    character(:), allocatable :: mesh_file, msg, string
-    real(r8) :: csf
-    logical :: have_parent_node ! TEMPORARY
 
     this => null()
 
+    call TLS_info('  generating an internal ExodusII mesh')
+    if (is_IOP) call create_rect_exodus_mesh(mesh, params, stat, errmsg)
+    call broadcast_status(stat, errmsg)
+    if (stat /= 0) return
+
+    if (is_IOP) call mesh%set_no_links
+
+    this => new_unstr_mesh_aux(mesh, params, stat, errmsg)
+
+  end function new_unstr_mesh_internal
+
+!!!! EXTERNAL MESH FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function new_unstr_mesh_file(params, stat, errmsg) result(this)
+
+    use ext_exodus_mesh_type
+    use exodus_mesh_io, only: read_exodus_mesh
+    use exodus_mesh_tools, only: convert_cells_to_links, create_internal_interfaces
+    use string_utilities, only: i_to_c
+    use parallel_communication
+    use truchas_logging_services
+
+    type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
+    type(unstr_mesh), pointer :: this
+
+    integer :: n, new_id, exodus_block_modulus
+    integer, allocatable :: ssid(:), ebid(:)
+    character(:), allocatable :: mesh_file, msg
+    type(ext_exodus_mesh) :: mesh
+
     !! Read the Exodus mesh file into MESH.
     if (is_IOP) then
-      call params%get ('mesh-file', mesh_file)
-      call TLS_info ('  reading ExodusII mesh file "' // mesh_file // '"')
-      call read_exodus_mesh (mesh_file, mesh, stat, errmsg)
+      call params%get('mesh-file', mesh_file)
+      call TLS_info('  reading ExodusII mesh file "' // mesh_file // '"')
+      call read_exodus_mesh(mesh_file, mesh, stat, errmsg)
       if (stat /= 0) errmsg = 'error reading mesh file: ' // errmsg
     end if
-    call broadcast_status (stat, errmsg)
+    call broadcast_status(stat, errmsg)
     if (stat /= 0) return
 
     !! Overwrite the Exodus block IDs with their congruent values.
     if (is_IOP) then
-      call params%get ('exodus-block-modulus', exodus_block_modulus, default=0)
+      call params%get('exodus-block-modulus', exodus_block_modulus, default=0)
       if (exodus_block_modulus > 0) then
         do n = 1, mesh%num_eblk
           associate (id => mesh%eblk(n)%id)
             new_id = modulo(id, exodus_block_modulus)
             if (new_id /= id) then
               msg = '  element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id)
-              call TLS_info (msg, TLS_VERB_NORMAL)
+              call TLS_info(msg, TLS_VERB_NORMAL)
               id = new_id
             end if
           end associate
@@ -116,56 +154,92 @@ contains
     !! Create internal interfaces from gap element blocks.
     if (is_IOP) then
       if (params%is_parameter('gap-element-block-ids')) then
-        call TLS_info ('  processing gap element blocks', TLS_VERB_NORMAL)
-        call params%get ('gap-element-block-ids', ebid)
-        call convert_cells_to_links (mesh, ebid, stat, errmsg)
+        call TLS_info('  processing gap element blocks', TLS_VERB_NORMAL)
+        call params%get('gap-element-block-ids', ebid)
+        call convert_cells_to_links(mesh, ebid, stat, errmsg)
         if (stat /= 0) errmsg = 'error processing gap element blocks: ' // errmsg
       else
         stat = 0
       end if
     end if
-    call broadcast_status (stat, errmsg)
+    call broadcast_status(stat, errmsg)
     if (stat /= 0) return
 
     !! Create internal interfaces from side sets.
     if (is_IOP) then
       if (params%is_parameter('interface-side-set-ids')) then
-        call TLS_info ('  processing interface side sets', TLS_VERB_NORMAL)
-        call params%get ('interface-side-set-ids', ssid)
-        call create_internal_interfaces (mesh, ssid, stat, errmsg)
+        call TLS_info('  processing interface side sets', TLS_VERB_NORMAL)
+        call params%get('interface-side-set-ids', ssid)
+        call create_internal_interfaces(mesh, ssid, stat, errmsg)
         if (stat /= 0) errmsg = 'error processing interface side sets: ' // errmsg
       else
         stat = 0
       end if
     end if
-    call broadcast_status (stat, errmsg)
+    call broadcast_status(stat, errmsg)
     if (stat /= 0) return
+
+    this => new_unstr_mesh_aux(mesh, params, stat, errmsg)
+
+  end function new_unstr_mesh_file
+
+  !! This auxiliary procedure instantiates a distributed UNSTR_MESH object
+  !! starting from a serial EXT_EXODUS_MESH object passed on the I/O process.
+  !! It expects a default (0-sized) mesh on other processes.
+
+  function new_unstr_mesh_aux(mesh, params, stat, errmsg) result(this)
+
+    use ext_exodus_mesh_type
+    use permutations
+    use simple_partitioning_methods, only: get_block_partition, read_partition
+    use index_partitioning
+    use unstr_mesh_tools
+    use parallel_communication
+    use truchas_logging_services
+
+    type(ext_exodus_mesh), intent(inout) :: mesh
+    type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
+    type(unstr_mesh), pointer :: this
+
+    integer :: j, k, n, nnode, nface, ncell, pfirst
+    integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
+    integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), part(:)
+    integer, allocatable :: xcface(:), cface(:), cfpar(:), lnhbr(:,:), lface(:,:)
+    integer, allocatable :: cell_perm(:), node_perm(:), offP_size(:), offP_index(:)
+    integer, allocatable :: perm(:)
+    character(:), allocatable :: string
+    real(r8) :: csf
+    logical :: have_parent_node ! TEMPORARY
+
+    this => null()
 
     ncell = mesh%num_elem
     nnode = mesh%num_node
 
     !! Flatten the Exodus element block structure.
-    call mesh%get_concat_elem_conn (xcnode, cnode)
+    call mesh%get_concat_elem_conn(xcnode, cnode)
 
     !! Generate the cell and link neighbor arrays.
     if (is_IOP) then
-      call TLS_info ('  finding cell neighbors', TLS_VERB_NORMAL)
-      call get_cell_neighbor_array (xcnode, cnode, mesh%xlnode, mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
+      call TLS_info('  finding cell neighbors', TLS_VERB_NORMAL)
+      call get_cell_neighbor_array(xcnode, cnode, mesh%xlnode, mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
       if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
     else
       allocate(xcnhbr(1), cnhbr(0), lnhbr(2,0))
       xcnhbr(1) = 1
     end if
-    call broadcast_status (stat, errmsg)
+    call broadcast_status(stat, errmsg)
     if (stat /= 0) return
 
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
     if (is_IOP) then
-      call TLS_info ('  partitioning the mesh cells', TLS_VERB_NORMAL)
+      call TLS_info('  partitioning the mesh cells', TLS_VERB_NORMAL)
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
-      call params%get ('partitioner', string, default='chaco')
+      call params%get('partitioner', string, default='chaco')
       if (nPE == 1) then
         part = 1
         stat = 0
@@ -173,27 +247,27 @@ contains
         call get_block_partition (nPE, part)
         stat = 0
       else if (string == 'file') then
-        call params%get ('partition-file', string)
-        call params%get ('first-partition', pfirst, default=0)
-        call read_partition (string, pfirst, nPE, part, stat, errmsg)
+        call params%get('partition-file', string)
+        call params%get('first-partition', pfirst, default=0)
+        call read_partition(string, pfirst, nPE, part, stat, errmsg)
         if (stat /= 0) errmsg = 'error reading cell partition: ' // errmsg
       else
-        call partition_cells (params, xcnhbr, cnhbr, lnhbr, nPE, part, stat, errmsg)
+        call partition_cells(params, xcnhbr, cnhbr, lnhbr, nPE, part, stat, errmsg)
         if (stat /= 0) errmsg = 'error computing cell partition: ' // errmsg
       end if
     end if
-    call broadcast_status (stat, errmsg)
+    call broadcast_status(stat, errmsg)
     if (stat /= 0) return
 
     if (is_IOP) then
       !! Compute the partition sizes and the permutation making this a block partition.
-      call blocked_partition (part, cell_psize, cell_perm)
+      call blocked_partition(part, cell_psize, cell_perm)
       !! Reorder cell-based arrays.
-      call reorder (xcnode, cnode, cell_perm)
-      call reorder (xcnhbr, cnhbr, cell_perm)
+      call reorder(xcnode, cnode, cell_perm)
+      call reorder(xcnhbr, cnhbr, cell_perm)
       !! Map the values of cell-valued arrays.
       allocate(perm(size(cell_perm)))
-      call invert_perm (cell_perm, perm)
+      call invert_perm(cell_perm, perm)
       do j = 1, size(cnhbr)
         if (cnhbr(j) > 0) cnhbr(j) = perm(cnhbr(j))
       end do
@@ -209,14 +283,14 @@ contains
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
-      call TLS_info ('  partitioning the mesh nodes', TLS_VERB_NORMAL)
-      call partition_facets (xcnode, cnode, cell_psize, node_psize, node_perm)
+      call TLS_info('  partitioning the mesh nodes', TLS_VERB_NORMAL)
+      call partition_facets(xcnode, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
       call reorder (mesh%coord, node_perm)
       if (allocated(mesh%parent_node)) call reorder(mesh%parent_node, node_perm) ! TEMPORARY
       !! Map the values of node-valued arrays.
       allocate(perm(size(node_perm)))
-      call invert_perm (node_perm, perm)
+      call invert_perm(node_perm, perm)
       do j = 1, size(cnode)
         cnode(j) = perm(cnode(j))
       end do
@@ -237,8 +311,8 @@ contains
     !! Enumerate and partition the mesh faces.
     allocate(cfpar(ncell))
     if (is_IOP) then
-      call TLS_info ('  numbering the mesh faces', TLS_VERB_NORMAL)
-      call label_mesh_faces (xcnode, cnode, mesh%xlnode, mesh%lnode, nface, xcface, cface, lface)
+      call TLS_info('  numbering the mesh faces', TLS_VERB_NORMAL)
+      call label_mesh_faces(xcnode, cnode, mesh%xlnode, mesh%lnode, nface, xcface, cface, lface)
       !! Extract the relative face orientation info.
       cfpar = 0
       do j = 1, mesh%num_elem
@@ -254,10 +328,10 @@ contains
         end associate
       end do
       !! Partition and order the faces.
-      call TLS_info ('  partitioning the mesh faces', TLS_VERB_NORMAL)
+      call TLS_info('  partitioning the mesh faces', TLS_VERB_NORMAL)
       allocate(perm(nface))
-      call partition_facets (xcface, cface, cell_psize, face_psize, perm)
-      call invert_perm (perm)
+      call partition_facets(xcface, cface, cell_psize, face_psize, perm)
+      call invert_perm(perm)
       do j = 1, size(cface)
         cface(j) = perm(cface(j))
       end do
@@ -271,17 +345,17 @@ contains
     end if
 
     !! Identify off-process ghost cells to include with each partition.
-    call TLS_info ('  identifying off-process ghost cells', TLS_VERB_NORMAL)
-    call select_ghost_cells (cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
-                             xcface, cface, face_psize, lnhbr, offP_size, offP_index)
+    call TLS_info('  identifying off-process ghost cells', TLS_VERB_NORMAL)
+    call select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
+                            xcface, cface, face_psize, lnhbr, offP_size, offP_index)
     deallocate(xcnhbr, cnhbr)
 
     !! Begin initializing the UNSTR_MESH result object.
-    call TLS_info ('  generating parallel mesh structure')
+    call TLS_info('  generating parallel mesh structure')
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
-    call this%cell_ip%init (cell_psize, offP_size, offP_index)
+    call this%cell_ip%init(cell_psize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
 
     this%ncell = this%cell_ip%local_size()
@@ -289,73 +363,73 @@ contains
 
     !! Distribute the cell permutation array; gives mapping to the external cell number.
     allocate(this%xcell(this%ncell))
-    call distribute (this%xcell(:this%ncell_onP), cell_perm)
-    call gather_boundary (this%cell_ip, this%xcell)
+    call distribute(this%xcell(:this%ncell_onP), cell_perm)
+    call gather_boundary(this%cell_ip, this%xcell)
     deallocate(cell_perm)
 
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
-    call init_cell_node_data (this, node_psize, xcnode, cnode)
+    call init_cell_node_data(this, node_psize, xcnode, cnode)
 
     !! Distribute the node permutation array; gives mapping to the external node number.
     allocate(this%xnode(this%nnode))
     call distribute (this%xnode(:this%nnode_onP), node_perm)
-    call gather_boundary (this%node_ip, this%xnode)
+    call gather_boundary(this%node_ip, this%xnode)
     deallocate(node_perm)
 
     !! Distribute the node parent array (TEMPORARY)
     have_parent_node = allocated(mesh%parent_node)
-    call broadcast (have_parent_node)
+    call broadcast(have_parent_node)
     if (have_parent_node) then
       allocate(this%parent_node(this%nnode))
       if (.not.is_IOP) allocate(mesh%parent_node(0))
-      call distribute (this%parent_node(:this%nnode_onP), mesh%parent_node)
-      call gather_boundary (this%node_ip, this%parent_node)
+      call distribute(this%parent_node(:this%nnode_onP), mesh%parent_node)
+      call gather_boundary(this%node_ip, this%parent_node)
     end if
 
     !! Create the face index partition and localize the global CFACE array,
     !! which identifies off-process faces to augment the partition with.
-    call init_cell_face_data (this, face_psize, xcface, cface, cfpar)
+    call init_cell_face_data(this, face_psize, xcface, cface, cfpar)
     deallocate(cfpar)
 
     !! Initialize the interface link data components.
-    call init_link_data (this, mesh, lnhbr, lface)
+    call init_link_data(this, mesh, lnhbr, lface)
     deallocate(lnhbr, lface)
 
     !! Initialize the secondary face-node indexing array.
-    call init_face_node_data (this)
-    call init_face_cell_data (this)
+    call init_face_node_data(this)
+    call init_face_cell_data(this)
 
     !! Generate the cell neighbor data for each subdomain.
-    call get_cell_neighbor_array (this%xcnode, this%cnode, this%xcnhbr, this%cnhbr, stat)
+    call get_cell_neighbor_array(this%xcnode, this%cnode, this%xcnhbr, this%cnhbr, stat)
     INSIST(stat == 0)
 
     !! Initialize the node, face, and cell set data.
-    call init_face_set_data (this, mesh, xcface, cface)
-    call init_node_set_data (this, mesh)
-    call init_cell_set_data (this, mesh)
+    call init_face_set_data(this, mesh, xcface, cface)
+    call init_node_set_data(this, mesh)
+    call init_cell_set_data(this, mesh)
     deallocate(xcface, cface)
 
     !! Scale the node coordinates and distribute.
     if (is_IOP) then
-      call params%get ('coord-scale-factor', csf, default=1.0_r8)
+      call params%get('coord-scale-factor', csf, default=1.0_r8)
       if (csf /= 1.0_r8) mesh%coord = csf * mesh%coord
     else
       allocate(mesh%coord(3,0))
     end if
     allocate(this%x(3,this%nnode))
-    call distribute (this%x(:,:this%nnode_onP), mesh%coord)
-    call gather_boundary (this%node_ip, this%x)
+    call distribute(this%x(:,:this%nnode_onP), mesh%coord)
+    call gather_boundary(this%node_ip, this%x)
 
     !! Initialize the mesh geometry data components.
     allocate(this%volume(this%ncell), this%normal(3,this%nface), this%area(this%nface))
     call this%compute_geometry
 
-  end function new_unstr_mesh
+  end function new_unstr_mesh_aux
 
 !!!! AUXILIARY PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine partition_cells (params, xcnhbr, cnhbr, lnhbr, npart, part, stat, errmsg)
+  subroutine partition_cells(params, xcnhbr, cnhbr, lnhbr, npart, part, stat, errmsg)
 
     use graph_type
     use graph_partitioner_factory
@@ -392,17 +466,17 @@ contains
     do j = 1, ncell
       associate(list => cnhbr(xcnhbr(j):xcnhbr(j+1)-1))
         do k = 1, size(list)
-          if (list(k) > 0) call g%add_edge (j, list(k))
+          if (list(k) > 0) call g%add_edge(j, list(k))
         end do
       end associate
     end do
 
     !! Add edges between linked cells.
     do j = 1, size(lnhbr,dim=2)
-      call g%add_edge (lnhbr(1,j), lnhbr(2,j))
+      call g%add_edge(lnhbr(1,j), lnhbr(2,j))
     end do
 
-    call g%get_adjacency (xadj, adjncy)
+    call g%get_adjacency(xadj, adjncy)
     deallocate(g)
 
     !! Define edge weights.  We weight the link edges heavily to discourage
@@ -428,8 +502,8 @@ contains
       ewgt(i) = LINK_WEIGHT
     end do
 
-    call alloc_graph_partitioner (gpart, params)
-    call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
+    call alloc_graph_partitioner(gpart, params)
+    call gpart%compute(ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
 
   end subroutine partition_cells
 
@@ -458,7 +532,7 @@ contains
   !! To order the facets in a partition we rely on the well-orderedness of the
   !! cells.  We merely number them as they are encountered in the FACET array.
 
-  subroutine partition_facets (xfacet, facet, cell_psize, psize, perm)
+  subroutine partition_facets(xfacet, facet, cell_psize, psize, perm)
 
     use permutations
 
@@ -485,7 +559,7 @@ contains
     end do
     ASSERT(is_perm(perm1))
 
-    call invert_perm (perm1)  ! PERM1 is now good-to-old numbering
+    call invert_perm(perm1)  ! PERM1 is now good-to-old numbering
 
     !! Assign facets to partitions: a simple greedy algorithm.
     part = 0
@@ -500,10 +574,10 @@ contains
     end do
 
     !! Partition assignment relative to the good ordering.
-    call reorder (part, perm1)
+    call reorder(part, perm1)
 
     !! Block partition permutation (new-to-good).
-    call blocked_partition (part, psize, perm)
+    call blocked_partition(part, psize, perm)
 
     !! Total facet permutation (new-to-old).
     do j = 1, size(perm)
@@ -532,7 +606,7 @@ contains
  !! N.B. This routine does not reorder the LNHBR array argument.
  !!
 
-  subroutine partition_links (lnhbr, cell_psize, xlnode, lnode, node_psize, psize, perm, offP_size, offP_index)
+  subroutine partition_links(lnhbr, cell_psize, xlnode, lnode, node_psize, psize, perm, offP_size, offP_index)
 
     use integer_set_type
 
@@ -545,7 +619,7 @@ contains
     integer, intent(out) :: offP_size(:)
     integer, allocatable, intent(out) :: offP_index(:)
 
-    integer :: j, k, n, offset, pass(size(perm))
+    integer :: j, n, offset, pass(size(perm))
     type(integer_set) :: xlink(size(psize))
 
     ASSERT(size(psize) == size(cell_psize))
@@ -565,7 +639,7 @@ contains
     end do
 
     !! Block partition permutation (new-to-old).
-    call blocked_partition (pass, psize, perm)
+    call blocked_partition(pass, psize, perm)
 
     !! Copy the off-process link sets into packed array storage.
     do n = 1, size(xlink)
@@ -576,13 +650,13 @@ contains
     allocate(offP_index(n))
     offset = 0
     do n = 1, size(xlink)
-      call xlink(n)%copy_to_array (offP_index(offset+1:))
+      call xlink(n)%copy_to_array(offP_index(offset+1:))
       offset = offset + offP_size(n)
     end do
 
   contains
 
-    integer function cell_part (n)
+    integer function cell_part(n)
       integer, intent(in) :: n
       integer :: m
       m = n
@@ -592,7 +666,7 @@ contains
       end do
     end function cell_part
 
-    integer function node_part (n)
+    integer function node_part(n)
       integer, intent(in) :: n
       integer :: m
       m = n
@@ -612,7 +686,7 @@ contains
   !! sorted (non-decreasing), and 2) j < k whenever PERM(j) < PERM(k) and
   !! PART(PERM(j)) = PART(PERM(k)).
 
-  subroutine blocked_partition (part, psize, perm)
+  subroutine blocked_partition(part, psize, perm)
 
     use permutations
 
@@ -662,7 +736,7 @@ contains
   !! faces is present in the subdomain so that an interface condition can be
   !! fully formed.  This is a serial procedure.
 
-  subroutine select_ghost_cells (cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
+  subroutine select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
       xcface, cface, face_psize, lnhbr, offP_size, offP_index)
 
     use integer_set_type
@@ -680,19 +754,19 @@ contains
 
     if (is_IOP) then
       allocate(ghosts(nPE))
-      call all_cell_neighbors (xcnode, cnode, cell_psize, ghosts)
+      call all_cell_neighbors(xcnode, cnode, cell_psize, ghosts)
       !NNC, Feb 2016.  The above call produces the same ghosts below, and more.
       !call overlapping_cells (xcnhbr, cnhbr, cell_psize, cell_psize, ghosts)
       !call overlapping_cells (xcnode, cnode, cell_psize, node_psize, ghosts)
       !call overlapping_cells (xcface, cface, cell_psize, face_psize, ghosts)
-      call overlapping_cells2 (lnhbr, cell_psize, ghosts)
+      call overlapping_cells2(lnhbr, cell_psize, ghosts)
       !! Copy the sets into packed array storage
       offP_size = ghosts%size()
       n = sum(offP_size)
       allocate(offP_index(n))
       offset = 0
       do n = 1, nPE
-        call ghosts(n)%copy_to_array (offP_index(offset+1:))
+        call ghosts(n)%copy_to_array(offP_index(offset+1:))
         offset = offset + offP_size(n)
       end do
       deallocate(ghosts)
@@ -711,7 +785,7 @@ contains
   !! connectivity also requires this complete layer of ghost cells.  This
   !! subsumes the more refined criteria effected by OVERLAPPING_CELLS.
 
-  subroutine all_cell_neighbors (xcnode, cnode, cell_psize, xcells)
+  subroutine all_cell_neighbors(xcnode, cnode, cell_psize, xcells)
 
     use integer_set_type
 
@@ -776,7 +850,7 @@ contains
   !! called for different FACET arrays, each call adding to XCELLS the cells
   !! for that type of facet.  This is a serial procedure.
 
-  subroutine overlapping_cells (xfacet, facet, cell_psize, psize, xcells)
+  subroutine overlapping_cells(xfacet, facet, cell_psize, psize, xcells)
 
     use integer_set_type
 
@@ -811,7 +885,7 @@ contains
 
   contains
 
-    integer function fpart (n)
+    integer function fpart(n)
       integer, intent(in) :: n
       integer :: m
       m = n
@@ -838,7 +912,7 @@ contains
   !! cell partition block sizes CELL_PSIZE.  The cells identified for partition
   !! n are added to the set XCELLS(n).  This is a serial procedure.
 
-  subroutine overlapping_cells2 (lnhbr, cell_psize, xcells)
+  subroutine overlapping_cells2(lnhbr, cell_psize, xcells)
 
     use integer_set_type
 
@@ -857,8 +931,8 @@ contains
       p1 = cell_part(lnhbr(1,j))
       p2 = cell_part(lnhbr(2,j))
       if (p1 /= p2) then
-        call xcells(p1)%add (lnhbr(2,j))
-        call xcells(p2)%add (lnhbr(1,j))
+        call xcells(p1)%add(lnhbr(2,j))
+        call xcells(p2)%add(lnhbr(1,j))
       end if
     end do
 
@@ -879,7 +953,7 @@ contains
   !! This subroutine initializes the node partition and cell node data
   !! components: NODE_IP, NNODE, NNODE_ONP, XCNODE, and CNODE.
 
-  subroutine init_cell_node_data (this, psize, xcnode, cnode)
+  subroutine init_cell_node_data(this, psize, xcnode, cnode)
 
     use parallel_communication, only: is_IOP
     use index_partitioning, only: localize_index_struct
@@ -900,8 +974,8 @@ contains
       allocate(count_g(0))
     end if
 
-    call localize_index_struct (count_g, cnode, this%cell_ip, this%node_ip, count_l, this%cnode, offP_index)
-    call this%node_ip%add_offP_index (offP_index)
+    call localize_index_struct(count_g, cnode, this%cell_ip, this%node_ip, count_l, this%cnode, offP_index)
+    call this%node_ip%add_offP_index(offP_index)
     deallocate(count_g, offP_index)
 
     !! Translate the local row sizes into the local indexing array.
@@ -920,7 +994,7 @@ contains
   !! This subroutine initializes the face partition and cell face data
   !! components: FACE_IP, NFACE, NFACE_ONP, XCFACE, CFACE, and CFPAR.
 
-  subroutine init_cell_face_data (this, psize, xcface, cface, cfpar)
+  subroutine init_cell_face_data(this, psize, xcface, cface, cfpar)
 
     use parallel_communication, only: is_IOP, distribute
     use index_partitioning, only: localize_index_struct, gather_boundary
@@ -933,7 +1007,7 @@ contains
     integer :: j
     integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
-    call this%face_ip%init (psize)
+    call this%face_ip%init(psize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
@@ -942,8 +1016,8 @@ contains
       allocate(count_g(0))
     end if
 
-    call localize_index_struct (count_g, cface, this%cell_ip, this%face_ip, count_l, this%cface, offP_index)
-    call this%face_ip%add_offP_index (offP_index)
+    call localize_index_struct(count_g, cface, this%cell_ip, this%face_ip, count_l, this%cface, offP_index)
+    call this%face_ip%add_offP_index(offP_index)
     deallocate(count_g, offP_index)
 
     !! Translate the local row sizes into the local indexing array.
@@ -956,8 +1030,8 @@ contains
 
     !! Distribute the CFPAR mask array.
     allocate(this%cfpar(this%ncell))
-    call distribute (this%cfpar(:this%ncell_onP), cfpar)
-    call gather_boundary (this%cell_ip, this%cfpar)
+    call distribute(this%cfpar(:this%ncell_onP), cfpar)
+    call gather_boundary(this%cell_ip, this%cfpar)
 
     this%nface = this%face_ip%local_size()
     this%nface_onP = this%face_ip%onP_size()
@@ -969,7 +1043,7 @@ contains
   !! normalized (the smallest node index begins the list) and oriented
   !! consistently with the CFPAR data.
 
-  subroutine init_face_node_data (this)
+  subroutine init_face_node_data(this)
 
     use cell_topology, only: cell_face_sizes, get_face_nodes
 
@@ -1015,8 +1089,8 @@ contains
           n = cell_faces(k)
           associate (face_nodes => this%fnode(this%xfnode(n):this%xfnode(n+1)-1))
             if (face_nodes(1) == 0) then
-              call get_face_nodes (cell_nodes, k, fnodes, normalize=.true., &
-                                   reverse=btest(this%cfpar(j),pos=k))
+              call get_face_nodes(cell_nodes, k, fnodes, normalize=.true., &
+                                  reverse=btest(this%cfpar(j),pos=k))
               face_nodes = fnodes
             end if
           end associate
@@ -1055,7 +1129,7 @@ contains
 
   !! This subroutine initializes the interface link data.
 
-  subroutine init_link_data (this, mesh, lnhbr, lface)
+  subroutine init_link_data(this, mesh, lnhbr, lface)
 
     use parallel_communication, only: is_IOP, nPE, collate, broadcast, distribute
     use permutations, only: reorder, invert_perm
@@ -1074,17 +1148,17 @@ contains
 
     !! Partition the links
     allocate(cell_psize(merge(nPE,0,is_IOP)), node_psize(merge(nPE,0,is_IOP)))
-    call collate (cell_psize, this%cell_ip%onP_size())
-    call collate (node_psize, this%node_ip%onP_size())
+    call collate(cell_psize, this%cell_ip%onP_size())
+    call collate(node_psize, this%node_ip%onP_size())
     if (is_IOP) then
       allocate(psize(nPE), perm(mesh%nlink), offP_size(nPE))
-      call partition_links (lnhbr, cell_psize, mesh%xlnode, mesh%lnode, node_psize, psize, perm, offP_size, offP_index)
-      call reorder (lface, perm)
-      call reorder (lnhbr, perm)
-      call reorder (mesh%xlnode, mesh%lnode, perm)
-      call reorder (mesh%link_block, perm)
-      call reorder (mesh%link_cell_id, perm)
-      call invert_perm (perm)
+      call partition_links(lnhbr, cell_psize, mesh%xlnode, mesh%lnode, node_psize, psize, perm, offP_size, offP_index)
+      call reorder(lface, perm)
+      call reorder(lnhbr, perm)
+      call reorder(mesh%xlnode, mesh%lnode, perm)
+      call reorder(mesh%link_block, perm)
+      call reorder(mesh%link_cell_id, perm)
+      call invert_perm(perm)
       offP_index = perm(offP_index)
       deallocate(perm)
     else
@@ -1092,19 +1166,19 @@ contains
     end if
 
     !! THIS%LINK_IP: create the link index partition; include off-process links from above.
-    call this%link_ip%init (psize, offP_size, offP_index)
+    call this%link_ip%init(psize, offP_size, offP_index)
     deallocate(psize, offP_size, offP_index)
 
     this%nlink = this%link_ip%local_size()
     this%nlink_onP = this%link_ip%onP_size()
 
     !! THIS%LNODE: distribute and localize the link node indexing array.
-    call localize_index_array (lface, this%link_ip, this%face_ip, this%lface, offP_index)
+    call localize_index_array(lface, this%link_ip, this%face_ip, this%lface, offP_index)
     INSIST(size(offP_index) == 0)
     deallocate(offP_index)
 
     !! THIS%LNHBR: distribute and localize the link cell neighbor array.
-    call localize_index_array (lnhbr, this%link_ip, this%cell_ip, this%lnhbr, offP_index)
+    call localize_index_array(lnhbr, this%link_ip, this%cell_ip, this%lnhbr, offP_index)
     INSIST(size(offP_index) == 0)
     deallocate(offP_index)
 
@@ -1114,8 +1188,8 @@ contains
     else
       allocate(count_g(0), mesh%lnode(0))
     end if
-    call localize_index_struct (count_g, mesh%lnode, this%link_ip, this%node_ip, &
-                                count_l, this%lnode, offP_index)
+    call localize_index_struct(count_g, mesh%lnode, this%link_ip, this%node_ip, &
+                               count_l, this%lnode, offP_index)
     INSIST(size(offP_index) == 0)
     deallocate(offP_index)
     allocate(this%xlnode(1+size(count_l)))
@@ -1127,10 +1201,10 @@ contains
 
     !! THIS%LINK_SET_ID
     n = mesh%nlblock
-    call broadcast (n)
+    call broadcast(n)
     allocate(this%link_set_id(n))
     if (is_IOP) this%link_set_id = mesh%link_block_id
-    call broadcast (this%link_set_id)
+    call broadcast(this%link_set_id)
 
     !! Convert the array of link block IDs to a bit mask.
     allocate(link_set_mask(merge(mesh%nlink,0,is_IOP)))
@@ -1148,14 +1222,14 @@ contains
 
     !! THIS%LINK_SET_MASK
     allocate(this%link_set_mask(this%nlink))
-    call distribute (this%link_set_mask(:this%nlink_onP), link_set_mask)
-    call gather_boundary (this%link_ip, this%link_set_mask)
+    call distribute(this%link_set_mask(:this%nlink_onP), link_set_mask)
+    call gather_boundary(this%link_ip, this%link_set_mask)
 
     !! THIS%LINK_CELL_ID
     allocate(this%link_cell_id(this%nlink))
     if (.not.is_IOP) allocate(mesh%link_cell_id(0))
-    call distribute (this%link_cell_id(:this%nlink_onP), mesh%link_cell_id)
-    call gather_boundary (this%link_ip, this%link_cell_id)
+    call distribute(this%link_cell_id(:this%nlink_onP), mesh%link_cell_id)
+    call gather_boundary(this%link_ip, this%link_cell_id)
 
   end subroutine init_link_data
 
@@ -1165,7 +1239,7 @@ contains
   !! NODE_SET_ID stores the user-assigned integer IDs for the side sets, and is
   !! replicated on each process.
 
-  subroutine init_node_set_data (this, mesh)
+  subroutine init_node_set_data(this, mesh)
 
     use exodus_mesh_type
     use bitfield_type
@@ -1202,8 +1276,8 @@ contains
 
     !! Initialize the distributed node set mask (%NODE_SET_MASK)
     allocate(this%node_set_mask(this%nnode))
-    call distribute (this%node_set_mask(:this%nnode_onP), node_set_mask)
-    call gather_boundary (this%node_ip, this%node_set_mask)
+    call distribute(this%node_set_mask(:this%nnode_onP), node_set_mask)
+    call gather_boundary(this%node_ip, this%node_set_mask)
     deallocate(node_set_mask)
 
     !! Initialize the list of node set IDs (%NODE_SET_ID)
@@ -1211,7 +1285,7 @@ contains
     call broadcast (n)
     allocate(this%node_set_id(n))
     if (is_IOP) this%node_set_id = mesh%nset%id
-    call broadcast (this%node_set_id)
+    call broadcast(this%node_set_id)
 
     !! Tag boundary nodes in the node set mask (bit 0).
     allocate(bnode(this%nnode))
@@ -1223,7 +1297,7 @@ contains
         end associate
       end if
     end do
-    call scatter_boundary_or (this%node_ip, bnode)
+    call scatter_boundary_or(this%node_ip, bnode)
     where (bnode) this%node_set_mask = ibset(this%node_set_mask, pos=0)
     deallocate(bnode)
 
@@ -1242,7 +1316,7 @@ contains
   !! no longer corresponds to the order of the element blocks in the Exodus mesh
   !! but this was never a guaranteed property, and should not have been assumed.
 
-  subroutine init_cell_set_data (this, mesh)
+  subroutine init_cell_set_data(this, mesh)
 
     use exodus_mesh_type
     use integer_set_type
@@ -1260,14 +1334,14 @@ contains
     !! Initialize the list of cell set IDs (%CELL_SET_ID), eliminating duplicates.
     if (is_IOP) then
       do n = 1, size(mesh%eblk)
-        call id_set%add (mesh%eblk(n)%id)
+        call id_set%add(mesh%eblk(n)%id)
       end do
       n = id_set%size()
     end if
-    call broadcast (n)
+    call broadcast(n)
     allocate(this%cell_set_id(n))
     if (is_IOP) this%cell_set_id = id_set
-    call broadcast (this%cell_set_id)
+    call broadcast(this%cell_set_id)
 
     ncell_tot = this%cell_ip%global_size()
 
@@ -1290,14 +1364,14 @@ contains
 
     !! Reorder the global cell_set_mask to the internal cell ordering.
     allocate(cell_perm(merge(ncell_tot,0,is_IOP)))
-    call collate (cell_perm, this%xcell(:this%ncell_onP))
-    if (is_IOP) call reorder (cell_set_mask, cell_perm)
+    call collate(cell_perm, this%xcell(:this%ncell_onP))
+    if (is_IOP) call reorder(cell_set_mask, cell_perm)
     deallocate(cell_perm)
 
     !! Initialize the distributed cell set mask (%CELL_SET_MASK)
     allocate(this%cell_set_mask(this%ncell))
-    call distribute (this%cell_set_mask(:this%ncell_onP), cell_set_mask)
-    call gather_boundary (this%cell_ip, this%cell_set_mask)
+    call distribute(this%cell_set_mask(:this%ncell_onP), cell_set_mask)
+    call gather_boundary(this%cell_ip, this%cell_set_mask)
     deallocate(cell_set_mask)
 
   end subroutine init_cell_set_data
@@ -1311,7 +1385,7 @@ contains
   !! naturally identifies a unique mesh face, but any orientation information
   !! implicit with the side-of-a-cell description is lost.
 
-  subroutine init_face_set_data (this, mesh, xcface, cface)
+  subroutine init_face_set_data(this, mesh, xcface, cface)
 
     use bitfield_type
     use exodus_mesh_type
@@ -1364,16 +1438,16 @@ contains
 
     !! Initialize the distributed face set mask (%FACE_SET_MASK)
     allocate(this%face_set_mask(this%nface))
-    call distribute (this%face_set_mask(:this%nface_onP), face_set_mask)
-    call gather_boundary (this%face_ip, this%face_set_mask)
+    call distribute(this%face_set_mask(:this%nface_onP), face_set_mask)
+    call gather_boundary(this%face_ip, this%face_set_mask)
     deallocate(face_set_mask)
 
     !! Initialize the list of cell set IDs (%FACE_SET_ID)
     if (is_IOP) n = size(mesh%sset)
-    call broadcast (n)
+    call broadcast(n)
     allocate(this%face_set_id(n))
     if (is_IOP) this%face_set_ID = mesh%sset%id
-    call broadcast (this%face_set_id)
+    call broadcast(this%face_set_id)
 
   end subroutine init_face_set_data
 
@@ -1383,17 +1457,17 @@ contains
   !! The IO process value of STAT is broadcast, and if not 0, the IO process
   !! value of ERRMSG, which must be allocated, is broadcast also.
 
-  subroutine broadcast_status (stat, errmsg)
+  subroutine broadcast_status(stat, errmsg)
     use parallel_communication, only: is_IOP, broadcast
     integer, intent(inout) :: stat
     character(:), allocatable, intent(inout) :: errmsg
     integer :: n
-    call broadcast (stat)
+    call broadcast(stat)
     if (stat /= 0) then
       if (is_IOP) n = len(errmsg)
-      call broadcast (n)
+      call broadcast(n)
       if (.not.is_IOP) allocate(character(len=n)::errmsg)
-      call broadcast (errmsg)
+      call broadcast(errmsg)
     end if
   end subroutine broadcast_status
 

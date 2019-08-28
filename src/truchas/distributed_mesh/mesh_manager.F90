@@ -198,23 +198,22 @@ contains
   end subroutine read_truchas_mesh_namelists
 
   !! This auxiliary procedure reads the MESH namelist and stuffs the results
-  !! into the passed parameter list PLIST.
+  !! into the passed parameter list PARAMS.
 
-  subroutine read_mesh_namelist (lun, plist)
+  subroutine read_mesh_namelist(lun, params)
 
-    use kinds, only: r8
-    use input_utilities, only: seek_to_namelist, NULL_C, NULL_I
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
     use string_utilities, only: i_to_c, lower_case
     use truchas_env, only: input_dir
     use parallel_communication, only: is_IOP, broadcast
-    use exodus_truchas_hack, only: read_exodus_mesh_size
 
     integer, intent(in) :: lun
-    type(parameter_list), intent(inout) :: plist
+    type(parameter_list), intent(inout) :: params
 
+    integer :: ios
     logical :: found
-    integer :: ios, stat, nnodes, ncells
-    integer, allocatable :: iarray(:)
+    character(80) :: iom
 
     !! Namelist variables
     character(16)  :: partitioner
@@ -225,93 +224,221 @@ contains
                     gap_element_blocks, interface_side_sets, &
                     partitioner, partition_file, first_partition
 
-    call TLS_info ('')
-    call TLS_info ('Reading MESH Namelist ...')
+    !! Namelist variables for the internal mesh
+    type :: coord_grid
+      real(r8) :: coarse_grid(0:100)
+      integer  :: intervals(100)
+      real(r8) :: ratio(100)
+    end type
+    type(coord_grid) :: x_axis, y_axis, z_axis
+    real(r8) :: noise_factor
+    namelist /mesh/ x_axis, y_axis, z_axis, noise_factor
+
+    call TLS_info('')
+    call TLS_info('Reading MESH namelist ...')
 
     !! Locate the MESH namelist (required)
     if (is_IOP) then
       rewind(lun)
-      call seek_to_namelist (lun, 'MESH', found, iostat=ios)
-    end if
-    call broadcast (ios)
-    if (ios /= 0)  call TLS_fatal ('error reading input file: iostat=' // i_to_c(ios))
-    call broadcast (found)
-    if (.not.found) call TLS_fatal ('MESH namelist not found')
-
-    !! Read the MESH namelist, assigning default values first.
-    if (is_IOP) then
-      mesh_file = NULL_C
-      coordinate_scale_factor = 1.0_r8
-      exodus_block_modulus = 10000
-      gap_element_blocks = NULL_I
-      interface_side_sets = NULL_I
-      partitioner = NULL_C
-      partition_file = NULL_C
-      first_partition = NULL_I
-      read(lun,nml=mesh,iostat=ios)
+      call seek_to_namelist(lun, 'mesh', found, iostat=ios)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal ('error reading MESH namelist')
+    if (ios /= 0)  call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
+    call broadcast(found)
+    if (.not.found) call TLS_fatal('MESH namelist not found')
 
-    !! Broadcast the namelist variables.
-    call broadcast (mesh_file)
-    call broadcast (coordinate_scale_factor)
-    call broadcast (exodus_block_modulus)
-    call broadcast (gap_element_blocks)
-    call broadcast (interface_side_sets)
-    call broadcast (partitioner)
-    call broadcast (partition_file)
-    call broadcast (first_partition)
+    !! Default values
+    mesh_file = NULL_C
+    coordinate_scale_factor = 1.0_r8
+    exodus_block_modulus = 10000
+    gap_element_blocks = NULL_I
+    interface_side_sets = NULL_I
+    partitioner = NULL_C
+    partition_file = NULL_C
+    first_partition = NULL_I
+    call coord_grid_default(x_axis)
+    call coord_grid_default(y_axis)
+    call coord_grid_default(z_axis)
+    noise_factor = NULL_R
 
-    !! Check and process the namelist variables, and stuff them into the return PLIST.
-    if (mesh_file == NULL_C) call TLS_fatal ('MESH_FILE not specified')
-    if (mesh_file(1:1) /= '/') then ! not an absolute path
-      mesh_file = trim(input_dir) // trim(mesh_file)
+    !! Read the MESH namelist
+    if (is_IOP) read(lun,nml=mesh,iostat=ios,iomsg=iom)
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal('error reading MESH namelist: ' // trim(iom))
+
+    !! Broadcast the namelist variables
+    call broadcast(mesh_file)
+    call broadcast(coordinate_scale_factor)
+    call broadcast(exodus_block_modulus)
+    call broadcast(gap_element_blocks)
+    call broadcast(interface_side_sets)
+    call broadcast(partitioner)
+    call broadcast(partition_file)
+    call broadcast(first_partition)
+    call coord_grid_broadcast(x_axis)
+    call coord_grid_broadcast(y_axis)
+    call coord_grid_broadcast(z_axis)
+    call broadcast(noise_factor)
+
+    !! Check and process the namelist variables, and stuff them into the return PARAMS.
+
+    if (mesh_file /= NULL_C) then
+      call external_mesh_input
+    else
+      call TLS_info('  MESH_FILE not specified; using inputs for an internally generated mesh')
+      call internal_mesh_input
     end if
-    if (is_IOP) inquire(file=mesh_file,exist=found)
-    call broadcast (found)
-    if (.not.found) call TLS_fatal ('MESH_FILE not found: ' // trim(mesh_file))
-    call plist%set ('mesh-file', trim(mesh_file))
 
-    if (coordinate_scale_factor <= 0.0_r8) call TLS_fatal ('COORDINATE_SCALE_FACTOR must be > 0')
-    call plist%set ('coord-scale-factor', coordinate_scale_factor)
-
-    if (exodus_block_modulus < 0) call TLS_fatal ('EXODUS_BLOCK_MODULUS must be >= 0')
-    call plist%set ('exodus-block-modulus', exodus_block_modulus)
-
-    iarray = pack(gap_element_blocks, mask=(gap_element_blocks /= NULL_I))
-    if (size(iarray) > 0) call plist%set ('gap-element-block-ids', iarray)
-
-    iarray = pack(interface_side_sets, mask=(interface_side_sets /= NULL_I))
-    if (size(iarray) > 0) call plist%set ('interface-side-set-ids', iarray)
+    if (coordinate_scale_factor <= 0.0_r8) call TLS_fatal('COORDINATE_SCALE_FACTOR must be > 0')
+    call params%set('coord-scale-factor', coordinate_scale_factor)
 
     if (partitioner == NULL_C) partitioner = 'chaco'
     select case (lower_case(partitioner))
     case ('chaco')
     case ('block')
     case ('file')
-      if (partition_file == NULL_C) call TLS_fatal ('PARTITION_FILE not specified')
+      if (partition_file == NULL_C) call TLS_fatal('PARTITION_FILE not specified')
       if (partition_file(1:1) /= '/') partition_file = trim(input_dir) // trim(partition_file)
       if (is_IOP) inquire(file=partition_file,exist=found)
-      call broadcast (found)
-      if (.not.found) call TLS_fatal ('PARTITION_FILE not found: ' // trim(partition_file))
-      call plist%set ('partition-file', trim(partition_file))
+      call broadcast(found)
+      if (.not.found) call TLS_fatal('PARTITION_FILE not found: ' // trim(partition_file))
+      call params%set('partition-file', trim(partition_file))
       if (first_partition == NULL_I) first_partition = 0
-      if (.not.any(first_partition == [0,1])) call TLS_fatal ('FIRST_PARTITION must be 0 or 1')
-      call plist%set ('first-partition', first_partition)
+      if (.not.any(first_partition == [0,1])) call TLS_fatal('FIRST_PARTITION must be 0 or 1')
+      call params%set('first-partition', first_partition)
     case default
-      call TLS_fatal ('unknown value for PARTITIONER: ' // trim(partitioner))
+      call TLS_fatal('unknown value for PARTITIONER: ' // trim(partitioner))
     end select
-    call plist%set ('partitioner', lower_case(partitioner))
+    call params%set('partitioner', lower_case(partitioner))
 
-    !! Read the number of cells and nodes from the file (HACK!)
-    if (is_IOP) call read_exodus_mesh_size (trim(mesh_file), nnodes, ncells, stat)
-    call broadcast (stat)
-    if (stat /= 0) call TLS_fatal ('error reading MESH_FILE "' // trim(mesh_file) // '"')
-    call broadcast (nnodes)
-    call broadcast (ncells)
-    call plist%set ('nnodes', nnodes)
-    call plist%set ('ncells', ncells)
+  contains
+
+    subroutine coord_grid_default(this)
+      class(coord_grid), intent(inout) :: this
+      this%coarse_grid = NULL_R
+      this%intervals = NULL_I
+      this%ratio = NULL_R
+    end subroutine coord_grid_default
+
+    subroutine coord_grid_broadcast(this)
+      class(coord_grid), intent(inout) :: this
+      call broadcast(this%coarse_grid)
+      call broadcast(this%intervals)
+      call broadcast(this%ratio)
+    end subroutine coord_grid_broadcast
+
+    subroutine external_mesh_input
+
+      integer, allocatable :: iarray(:)
+
+      if (mesh_file(1:1) /= '/') then ! not an absolute path
+        mesh_file = trim(input_dir) // trim(mesh_file)
+      end if
+      if (is_IOP) inquire(file=mesh_file,exist=found)
+      call broadcast(found)
+      if (.not.found) call TLS_fatal('MESH_FILE not found: ' // trim(mesh_file))
+      call params%set('mesh-file', trim(mesh_file))
+
+      if (exodus_block_modulus < 0) call TLS_fatal('EXODUS_BLOCK_MODULUS must be >= 0')
+      call params%set('exodus-block-modulus', exodus_block_modulus)
+
+      iarray = pack(gap_element_blocks, mask=(gap_element_blocks /= NULL_I))
+      if (size(iarray) > 0) call params%set('gap-element-block-ids', iarray)
+
+      iarray = pack(interface_side_sets, mask=(interface_side_sets /= NULL_I))
+      if (size(iarray) > 0) call params%set('interface-side-set-ids', iarray)
+
+      !Temporary: provides data for the temporary get_main_mesh_size procedure
+      block
+        use exodus_truchas_hack, only: read_exodus_mesh_size
+        integer :: ncells, nnodes, stat
+        if (is_IOP) call read_exodus_mesh_size(trim(mesh_file), nnodes, ncells, stat)
+        call broadcast(stat)
+        if (stat /= 0) call TLS_fatal('error reading MESH_FILE "' // trim(mesh_file) // '"')
+        call broadcast(nnodes)
+        call broadcast(ncells)
+        call params%set('nnodes', nnodes)
+        call params%set('ncells', ncells)
+      end block
+
+    end subroutine external_mesh_input
+
+    subroutine internal_mesh_input
+
+      type(parameter_list), pointer :: plist
+
+      plist => params%sublist('x-axis')
+      call set_axis_params(plist, x_axis, 'X_AXIS')
+
+      plist => params%sublist('y-axis')
+      call set_axis_params(plist, y_axis, 'Y_AXIS')
+
+      plist => params%sublist('z-axis')
+      call set_axis_params(plist, z_axis, 'Z_AXIS')
+
+      !Temporary: provides data for the temporary get_main_mesh_size procedure
+      block
+        integer :: array(3), ncells, nnodes
+        array(1) = sum(x_axis%intervals, mask=(x_axis%intervals /= NULL_I))
+        array(2) = sum(y_axis%intervals, mask=(y_axis%intervals /= NULL_I))
+        array(3) = sum(z_axis%intervals, mask=(z_axis%intervals /= NULL_I))
+        ncells = product(array)
+        nnodes = product(array+1)
+        call params%set('ncells', ncells)
+        call params%set('nnodes', nnodes)
+      end block
+
+    end subroutine internal_mesh_input
+
+    subroutine set_axis_params(params, axis, axis_name)
+
+      type(parameter_list), intent(inout) :: params
+      type(coord_grid), intent(in) :: axis
+      character(*), intent(in) :: axis_name
+
+      character(:), allocatable :: varname
+      real(r8), allocatable :: rarray(:)
+      integer,  allocatable :: iarray(:)
+      integer :: n
+
+      varname = axis_name // '%COARSE_GRID'
+      if (all(axis%coarse_grid == NULL_R)) call TLS_fatal(varname // ' not specified')
+      rarray = pack(axis%coarse_grid, mask=(axis%coarse_grid /= NULL_R))
+      n = size(rarray)
+      if (n < 2) then
+        call TLS_fatal(varname // ' requires at least 2 values')
+      else if (any(rarray(2:n) <= rarray(1:n-1))) then
+        call TLS_fatal(varname // ' values must be strictly increasing')
+      else
+        call params%set('coarse-grid', rarray)
+      end if
+
+      n = n - 1 ! expected size for the following arrays
+
+      varname = axis_name // '%INTERVALS'
+      if (all(axis%intervals == NULL_I)) call TLS_fatal(varname // ' not specified')
+      iarray = pack(axis%intervals, mask=(axis%intervals /= NULL_I))
+      if (size(iarray) /= n) then
+        call TLS_fatal(i_to_c(n) // ' values required for ' // varname)
+      else if (any(iarray < 1)) then
+        call TLS_fatal(varname // ' values must be > 0')
+      else
+        call params%set('intervals', iarray)
+      end if
+
+      varname = axis_name // '%RATIO'
+      if (any(axis%ratio /= NULL_R)) then
+        rarray = pack(axis%ratio, mask=(axis%ratio /= NULL_R))
+        if (size(rarray) /= n) then
+          call TLS_fatal(i_to_c(n) // ' values required for ' // varname)
+        else if (any(rarray < 0)) then
+          call TLS_fatal(varname // ' values must be > 0')
+        else
+          call params%set('ratio', rarray)
+        end if
+      end if
+
+    end subroutine set_axis_params
 
   end subroutine read_mesh_namelist
 
