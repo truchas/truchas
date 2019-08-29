@@ -2,6 +2,15 @@
 
 Important changes since the 3.0 release.
 
+## 2019-08-29 (3927011)
+
+It is now possible to define a rectilinear hex mesh of a brick domain in
+the MESH namelist as an alternative to reading an Exodus II mesh file.
+Though not especially useful for most real applications, it does make
+Truchas much more accessible for simple tests and demo problems by
+avoiding the "meshing tool" obstacle. See the MESH namelist section
+in the latest Truchas Reference Manual for details.
+
 ## 2019-07-25 (88211a5f)
 
 Solution probe output was re-implemented. This should resolve several
