@@ -21,7 +21,7 @@ program vizre
 
   integer :: n, nvar
   logical :: sym, has_vf, is_IOP
-  integer, allocatable :: row(:), col(:)
+  integer, allocatable :: col(:)
   character(len=512) :: enclosure_file, gmv_file
   type(encl) :: e
   type(dist_vf) :: dvf
@@ -33,7 +33,7 @@ program vizre
   is_IOP = (scl_rank()==1)
   nvar = 0
 
-  call parse_command_line(enclosure_file, gmv_file, row, col, sym)
+  call parse_command_line(enclosure_file, gmv_file, col, sym)
 
   call read_encl(e, trim(enclosure_file), has_vf)
 
@@ -108,30 +108,11 @@ program vizre
       deallocate(col)
     end if
 
-    !! We want to write certain vf matrix rows as face variables
-    if (allocated(row) .and. nvar <= MAX_GMV_VARS) then
-      do n = 1, size(row)
-        if (row(n) >= 1 .and. row(n) <= e%nface) then
-          nvar = nvar + 1
-          if (nvar > MAX_GMV_VARS) exit
-          patch_var = unpack_dvf_row(dvf, row(n))
-          if (is_IOP) then
-              call ep%patch_to_face_array(patch_var, face_var)
-              call gmv_write_face_var(e, face_var, 'row'//i_to_c(row(n)), sym)
-          end if
-          deallocate(patch_var)
-        else
-          write(*,fmt='(a)') 'No such view factor matrix row: ' // i_to_c(row(n))
-        end if
-      end do
-      deallocate(row)
-    end if
-
     if (is_IOP .and. nvar > MAX_GMV_VARS) then
       write(*,'(a)') 'Reached the limit of GMV variables (' // &
         i_to_c(MAX_GMV_VARS) // ').  Skipping all further variable output.'
     end if
-  else if (allocated(row) .or. allocated(col)) then  ! we can't write the vf matrix
+  else if (allocated(col)) then  ! we can't write the vf matrix
     write(*,'(a)') 'Enclosure contains no view factor data'
   end if
 

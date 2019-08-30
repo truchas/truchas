@@ -316,15 +316,17 @@ contains
     type(dist_vf), intent(out) :: evf
 
     integer :: j, n, handle, nfacets, nrotations, max_surfaces, nproc, my_rank
-    integer :: npatch_tot    ! Total number of real patches
-    integer :: npatch        ! Number of real patches owned by this rank
-    integer :: npatch_chap   ! Number of patches, including virtual surface patch, owned by this rank
+    integer :: npatch_tot       ! Total number of real patches
+    integer :: npatch           ! Number of real patches owned by this rank
+    integer :: npatch_tot_chap  ! Total number of patches, including virtual surface patch
+    integer :: npatch_chap      ! Number of patches, including virtual surface patch, owned by this rank
     integer :: xmirror, ymirror, zmirror, face_offset, patch_offset
     integer, allocatable :: global_ids_g(:)  ! Collated global patch IDs. Owned by rank 1.
     integer, allocatable :: f2p_map_g(:)     ! Collated face-to-patch map. Owned by rank 1.
     integer, allocatable :: global_ids(:), f2p_map(:)  ! Distributed versions of the collated arrays
     integer, allocatable :: c(:,:), nsizes(:)
     real(r8), allocatable :: x(:), y(:), z(:)
+    real(r8), allocatable :: area(:)  ! Patch areas calculated by Chaparral
 
     !! Hardwired Chaparral parameters
     integer, parameter :: GEOM_TYPE = 3     ! 3D geometry
@@ -467,6 +469,15 @@ contains
     do j = 1, npatch
       evf%ia(j+1) = evf%ia(j) + evf%ia(j+1)
     end do
+
+    !! Get patch areas
+    evf%has_area = .true.
+    npatch_tot_chap = npatch_tot + merge(1, 0, cpar%partial==1)
+    n = merge(npatch_tot, 0, my_rank==1)
+    allocate(area(npatch_tot_chap), evf%area(n))
+    call VF_GetMatrixAreas(area)
+    if (my_rank == 1) evf%area = area(1:npatch_tot)
+    deallocate(area)
 
     !call VF_ResetTopology (handle)
     call VF_CleanUp ()

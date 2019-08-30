@@ -64,13 +64,14 @@
 
 module re_dist_vf_type
 
-  use kinds, only: i8
+  use kinds, only: i8, r8
   use scl
   implicit none
   private
 
   public :: read_dist_vf, write_dist_vf
-  public :: unpack_dvf_row, dvf_row_sum, unpack_dvf_col, get_ambient_vf
+  public :: unpack_dvf_row, dvf_row_sum, get_ambient_vf
+  public :: unpack_dvf_col, unpack_dvf_col_explicit, unpack_dvf_col_from_row
   public :: vf_diff, vf_diff_one_norm, vf_diff_two_norm, vf_diff_max_norm, vf_diff_max
 
   type, public :: dist_vf
@@ -78,11 +79,13 @@ module re_dist_vf_type
     integer :: offset = 0     ! difference between the local row index and global index
     integer :: npatch_tot = 0 ! total number of patches (number of matrix columns)
     !! View factor matrix in CSR format.
-    real,    allocatable :: val(:)   ! values of the nonzero matrix elements stored by row
-    integer, allocatable :: ja(:)    ! column indices for the matrix elements in VAL
-    integer, allocatable :: ia(:)    ! start index in JA and VAL for the rows
-    real,    allocatable :: ambient(:)  ! ambient view factors
+    real,     allocatable :: val(:)   ! values of the nonzero matrix elements stored by row
+    integer,  allocatable :: ja(:)    ! column indices for the matrix elements in VAL
+    integer,  allocatable :: ia(:)    ! start index in JA and VAL for the rows
+    real(r8), allocatable :: area(:)  ! patch areas
+    real,     allocatable :: ambient(:)  ! ambient view factors
     logical :: has_ambient
+    logical :: has_area
   end type
 
 contains
@@ -110,6 +113,7 @@ contains
       call file%put_vf_rowcount(this%ia(2:)-this%ia(:size(this%ia)-1))
       call file%put_vf_rows(this%val, this%ja, start=1_i8)
       if (this%has_ambient) call file%put_ambient(this%ambient)
+      if (this%has_area) call file%put_area(this%area)
       call file%close
 
     else
@@ -130,6 +134,7 @@ contains
         call file%init_vf(sum(int(bsize,kind=i8)), this%has_ambient)
         call file%put_vf_rowcount(rowcount)
         if (this%has_ambient) call file%put_ambient(ambient)
+        if (this%has_area) call file%put_area(this%area)
       end if
       deallocate(rowcount, ambient)
 
@@ -179,9 +184,16 @@ contains
       call file%get_vf_dims(nface_tot, npatch_tot, nnonz)
 
       this%has_ambient = file%has_ambient()
+      this%has_area = file%has_area()
       this%npatch = npatch_tot
       this%offset = 0
       this%npatch_tot = npatch_tot
+
+      !! Read patch areas
+      if (this%has_area) then
+        allocate(this%area(npatch_tot))
+        call file%get_area(this%area)
+      end if
 
       !! Read VF matrix
       allocate(this%ia(npatch_tot+1), this%val(nnonz), this%ja(nnonz))
@@ -207,12 +219,21 @@ contains
         call file%open_ro(path)
         call file%get_vf_dims(nface_tot, npatch_tot, nnonz)
         this%has_ambient = file%has_ambient()
+        this%has_area = file%has_area()
       end if
 
       call scl_bcast(npatch_tot)
       call scl_bcast(this%has_ambient)
+      call scl_bcast(this%has_area)
 
       this%npatch_tot = npatch_tot
+
+      !! Read and distribute the patch areas
+      if (this%has_area) then
+        allocate(this%area(npatch_tot))
+        if (my_rank == 1) call file%get_area(this%area)
+        call scl_bcast(this%area)
+      end if
 
       !! Divvy up the rows.
       npatch = npatch_tot/nproc
@@ -335,7 +356,53 @@ contains
 
   end function dvf_row_sum
 
+  !! Returns the unpacked n-th column of the VF matrix on process rank 1.
   function unpack_dvf_col (dvf, n) result (u)
+
+    type(dist_vf), intent(in) :: dvf
+    integer, intent(in) :: n
+    real, allocatable :: u(:)
+
+    if (dvf%has_area) then
+      u = unpack_dvf_col_from_row(dvf, n)
+    else
+      u = unpack_dvf_col_explicit(dvf, n)
+    end if
+
+  end function unpack_dvf_col
+
+  !! Returns the unpacked n-th column of the VF matrix on process rank 1.
+  !! The columns is formed implicitly from the n-th row using reciprocity.
+  !! Thus, the only the process owning row n communicates with rank 1.
+  function unpack_dvf_col_from_row (dvf, n) result (u)
+
+    type(dist_vf), intent(in) :: dvf
+    integer, intent(in) :: n
+    real, allocatable :: u(:)
+
+    integer :: l, vsize
+    integer, allocatable :: sidx(:)
+    real, allocatable :: svec(:)
+
+    l = n - dvf%offset  ! local index
+
+    if (l >= 1 .and. l <= dvf%npatch) then ! this process has the column
+      sidx = dvf%ja(dvf%ia(l):dvf%ia(l+1)-1)
+      svec = dvf%val(dvf%ia(l):dvf%ia(l+1)-1)
+      svec = svec * dvf%area(n) / dvf%area(sidx)
+      vsize = dvf%npatch_tot
+    else
+      allocate(sidx(0), svec(0))
+      vsize = 0
+    end if
+    u = unpack_dist_sparse_vector (vsize, svec, sidx)
+
+  end function unpack_dvf_col_from_row
+
+  !! Returns the unpacked n-th column of the VF matrix on process rank 1.
+  !! The column is formed explicitly by having each rank send any non-zeros
+  !! in the n-th column of each local row.
+  function unpack_dvf_col_explicit (dvf, n) result (u)
 
     type(dist_vf), intent(in) :: dvf
     integer, intent(in) :: n
@@ -359,7 +426,7 @@ contains
 
     u = unpack_dist_sparse_vector (dvf%npatch, svec(:cnt), sidx(:cnt))
 
-  end function unpack_dvf_col
+  end function unpack_dvf_col_explicit
 
   function unpack_dist_sparse_vector (vsize, svec, sidx) result (u)
 

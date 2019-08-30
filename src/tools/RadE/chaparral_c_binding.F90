@@ -123,6 +123,11 @@ module chaparral_c_binding
       integer(c_int), value :: write_vf_diag, write_vf_virt
       type(c_ptr), value :: vf_diag, vf_virt ! possibly null (optional) array pointers
     end subroutine
+
+    subroutine VF_GetMatrixAreas(areas) bind(c,name='VF_GetMatrixAreas')
+      import c_double
+      real(c_double) :: areas(*)
+    end subroutine
   end interface
 
 contains

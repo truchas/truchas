@@ -53,9 +53,12 @@ module rad_encl_file_type
     procedure :: get_ambient
     procedure :: put_f2p_map
     procedure :: get_f2p_map
+    procedure :: put_area
+    procedure :: get_area
     procedure :: has_vf_data
     procedure :: has_ambient
     procedure :: has_patches
+    procedure :: has_area
   end type rad_encl_file
 
 contains
@@ -488,6 +491,8 @@ contains
     if (stat /= 0) call error_exit(proc//errmsg)
     call this%file%def_var('icount', NF_INT32, dimid, varid, stat, errmsg)
     if (stat /= 0) call error_exit(proc//errmsg)
+    call this%file%def_var('area', NF_REAL64, dimid, varid, stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
     if (write_ambient) then
       call this%file%def_var('ambient', NF_REAL32, dimid, varid, stat, errmsg)
       if (stat /= 0) call error_exit(proc//errmsg)
@@ -631,6 +636,30 @@ contains
     if (stat /= 0) call error_exit('rad_encl_file%get_f2p_map: '//errmsg)
   end subroutine get_f2p_map
 
+  subroutine put_area(this, area)
+    class(rad_encl_file), intent(in) :: this
+    real(real64), intent(in) :: area(:)
+    integer :: stat, varid
+    character(:), allocatable :: errmsg
+    !! Should check the length is correct
+    call this%file%inq_varid('area', varid, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%put_area: '//errmsg)
+    call this%file%put_var(varid, area, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%put_area: '//errmsg)
+  end subroutine put_area
+
+  subroutine get_area(this, area)
+    class(rad_encl_file), intent(in) :: this
+    real(real64), intent(out) :: area(:)
+    integer :: stat, varid
+    character(:), allocatable :: errmsg
+    !! Should check the length is correct
+    call this%file%inq_varid('area', varid, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%get_area: '//errmsg)
+    call this%file%get_var(varid, area, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%get_area: '//errmsg)
+  end subroutine get_area
+
   logical function has_vf_data(this)
     class(rad_encl_file), intent(in) :: this
     integer :: varid, stat
@@ -651,6 +680,13 @@ contains
     call this%file%inq_varid('f2p_map', varid, stat)
     has_patches = (stat == 0)
   end function has_patches
+
+  logical function has_area(this)
+    class(rad_encl_file), intent(in) :: this
+    integer :: varid, stat
+    call this%file%inq_varid('area', varid, stat)
+    has_area = (stat == 0)
+  end function has_area
 
   subroutine error_exit(errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit

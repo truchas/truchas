@@ -100,7 +100,10 @@ target_link_libraries(vizre rade truchas ${Truchas_LINK_LIBS})
 set(output_name vizre)
 set_target_properties(vizre PROPERTIES
                       OUTPUT_NAME ${output_name})
- 
+
+# --- ctest binaries
+add_subdirectory(Test)
+
 # --- Install rules 		    
 install(TARGETS rade cmpre genre vizre
         RUNTIME DESTINATION ${Truchas_BIN_INSTALL_DIR}

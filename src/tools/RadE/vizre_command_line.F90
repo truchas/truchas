@@ -17,10 +17,10 @@ module vizre_command_line
 
 contains
 
-  subroutine parse_command_line (infile, outfile, row, col, sym)
+  subroutine parse_command_line (infile, outfile, col, sym)
 
     character(len=*), intent(out) :: infile, outfile
-    integer, allocatable, intent(out) :: row(:), col(:)
+    integer, allocatable, intent(out) :: col(:)
     logical, intent(out) :: sym
 
     integer :: i, n, num_arg, ios
@@ -53,15 +53,6 @@ contains
       case ('-s')
 
         sym = .true.
-
-      case ('-r')
-
-        n = n + 1
-        if (n > num_arg) call usage_halt ('option requires an argument: ' // trim(arg))
-        call get_command_argument (n, arg)
-        if (allocated(row)) deallocate(row)
-        call parse_range_list (arg, row, ios)
-        if (ios /= 0) call usage_halt ('invalid argument for -r: ' // trim(arg))
 
       case ('-c')
 
@@ -119,12 +110,15 @@ contains
     write(unit=*,fmt='(a)') 'Usage: ' // trim(prog) // ' [options] enclosure_file gmv_file'
     write(unit=*,fmt='(a)') ' '
     write(unit=*,fmt='(a)') 'Writes a GMV-format visualization file for the specified enclosure.'
-    write(unit=*,fmt='(a)') 'If the enclosure includes view factor data, the ambient view factor'
-    write(unit=*,fmt='(a)') 'and view factor matrix row sums are written as face variables.'
+    write(unit=*,fmt='(a)') 'If the enclosure includes patch data, the patch IDs and a vertex'
+    write(unit=*,fmt='(a)') 'coloring of the patch adjacency graph are written as face variables.'
+    write(unit=*,fmt='(a)') 'If the enclosure includes view factor data, the view factor matrix'
+    write(unit=*,fmt='(a)') 'row sums and ambient view factors (if present) are written as face'
+    write(unit=*,fmt='(a)') 'variables.'
     write(unit=*,fmt='(a)') ' '
     write(unit=*,fmt='(a)') 'Options:'
-    write(unit=*,fmt='(a)') '  -r list      Write the specified rows or columns of the view factor matrix'
-    write(unit=*,fmt='(a)') '  -c list      as face variables.  List is a comma-separated list of ranges;'
+    write(unit=*,fmt='(a)') '  -c list      Write the specified columns of the view factor matrix as'
+    write(unit=*,fmt='(a)') '               face variables.  List is a comma-separated list of ranges;'
     write(unit=*,fmt='(a)') '               a range is index, first:last, or first:last:stride.'
     write(unit=*,fmt='(a)') '  -s           Write the fully-developed enclosure surface defined by the'
     write(unit=*,fmt='(a)') '               enclosure''s symmetries.  The default is to write just the'
