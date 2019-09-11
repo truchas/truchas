@@ -6,25 +6,18 @@
 #
 #===============================================================================
 
-import sys
-
 import scipy as sp
 
-# Try to import through PYTHONPATH, and if not found, look in the truchas
-# install directory, set by CMake at configure-time.
-try:
-    import truchas
-except ImportError:
-    sys.path.append("@TruchasPython_INSTALL_PREFIX@")
-    import truchas
+import truchas
 
 
 # map then modify Truchas data
-tdata = truchas.TruchasMappedData("preheat_output/preheat.h5", "mesh2.gen", 0.001)
+#tdata = truchas.TruchasMappedData("preheat_output/preheat.h5", "mesh2.gen", 0.001)
+tdata = truchas.TruchasMappedData("advection-2b_pgolden/advection-2b.h5", "mesh2a.gen")
 sid = tdata.num_series()
 
 # assign values in certain blocks
-#tdata.assign_value(sid, "VOF", 1, [0,1])
+tdata.assign_value_block(sid, "VOF", 1, [0,1])
 tdata.assign_value_block(sid, "Z_TEMP", 1, 0)
 
 # in block 1, overwrite rho with x

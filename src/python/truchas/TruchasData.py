@@ -79,7 +79,17 @@ class TruchasData:
     def assign_value_block(self, series_id, field_name, blockid, value):
         """Within an element block, assign a value to a field."""
         field = self.field(series_id, field_name)
-        field = sp.where(self.blockid() == blockid, value, field)
+        blockids = self.blockid()
+        if ((type(value) == list or type(value) == sp.array)
+            and len(value) > 1 and len(value) == field.shape[1]):
+            for i in range(len(field)):
+                if (blockid == blockids[i]):
+                    field[i] = value
+        else:
+            # In this case, the field is either a mesh-wide field
+            # or a scalar, and we can do a simple broadcast. It
+            # might also be an erroneous input.
+            field = sp.where(blockids == blockid, value, field)
         self.assign_field(series_id, field_name, field)
 
 
