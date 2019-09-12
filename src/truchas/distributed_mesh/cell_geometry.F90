@@ -47,6 +47,7 @@ module cell_geometry
   !! Cell face centers
   public :: tet_face_centers, pyramid_face_centers, wedge_face_centers, hex_face_centers
   public :: cell_face_centers
+  public :: polygon_center
 
   !! Algebraic primitives
   public :: cross_product, triple_product, vector_length, tri_area, normalized

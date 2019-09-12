@@ -73,7 +73,7 @@
 
 module re_patch_type
 
-  use kinds, only: i8
+  use kinds, only: i8, r8
   use scl
   use re_encl_type
   implicit none
@@ -82,17 +82,23 @@ module re_patch_type
   public :: read_patches_namelist
 
   !! Patch algorithms
-  character(32), parameter :: PATCH_ALGORITHMS(1) = ['NONE']
+  character(32), parameter :: PATCH_ALGORITHMS(2) = ['NONE','VSA ']
   integer, parameter :: PATCH_ALG_NONE = 1
+  integer, parameter :: PATCH_ALG_VSA = 2
 
   !! Parameter defaults
-  integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_NONE
+  integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_VSA
   integer, parameter :: VERBOSITY_LEVEL_DEFAULT = 1
+  real(r8), parameter :: MAX_ANGLE_DEFAULT = 20.0
 
   type, public :: patch_param
     private
-    integer  :: verbosity  ! Verbosity level
-    integer  :: patch_alg  ! Patching algorithm to run
+    integer  :: verbosity      ! Verbosity level
+    integer  :: patch_alg      ! Patching algorithm to run
+    real(r8) :: max_angle      ! Maximum allowable angle for adjacent faces
+    integer  :: vsa_max_iter   ! Maximum iterations for VSA algorithm
+    real(r8) :: vsa_min_delta  ! Minimum change in successive algorithm
+    real(r8) :: vsa_avg_fpp    ! Average faces per patch
   end type
 
   type, public :: re_patch
@@ -107,6 +113,7 @@ module re_patch_type
     procedure, public :: patch_coloring
     procedure, public :: patch_to_face_array
     procedure, private :: no_patches
+    procedure, private :: vsa_patches
   end type
 
 
@@ -116,8 +123,10 @@ contains
   subroutine read_patches_namelist (lun, ppar, found)
 
     use string_utilities, only: i_to_c, raise_case
-    use input_utilities, only: seek_to_namelist, NULL_C, NULL_I
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
     use re_utilities
+    use vsa_patching_type, only: VSA_MAX_ITER_DEFAULT, VSA_MIN_DELTA_DEFAULT, &
+      VSA_AVG_FACES_PER_PATCH_DEFAULT
 
     integer, intent(in) :: lun
     type(patch_param), intent(out) :: ppar
@@ -125,11 +134,18 @@ contains
 
     logical :: is_IOP
     integer :: ios, stat, patch_alg
+    character(9) :: string
+
 
     !! The PATCHES namelist variables; user visible.
     character(32) :: patch_algorithm
     integer  :: verbosity_level
-    namelist /patches/ patch_algorithm, verbosity_level
+    real(r8) :: max_angle
+    integer  :: vsa_max_iter
+    real(r8) :: vsa_min_delta
+    real(r8) :: vsa_avg_faces_per_patch
+    namelist /patches/ patch_algorithm, verbosity_level, max_angle, &
+      vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
 
@@ -154,6 +170,10 @@ contains
     if (is_IOP) then
       patch_algorithm = NULL_C
       verbosity_level = NULL_I
+      max_angle = NULL_R
+      vsa_max_iter = NULL_I
+      vsa_min_delta = NULL_R
+      vsa_avg_faces_per_patch = NULL_R
       read(lun,nml=patches,iostat=ios)
     end if
     call scl_bcast (ios)
@@ -162,6 +182,10 @@ contains
     !! Replicate the namelist variables on all processes.
     call scl_bcast (patch_algorithm)
     call scl_bcast (verbosity_level)
+    call scl_bcast (max_angle)
+    call scl_bcast (vsa_max_iter)
+    call scl_bcast (vsa_min_delta)
+    call scl_bcast (vsa_avg_faces_per_patch)
 
     !! Check the values
     stat = 0
@@ -175,16 +199,51 @@ contains
         call re_info ('  using default PATCH_ALGORITHM='//trim(patch_algorithm))
       case ('NONE')
         patch_alg = PATCH_ALG_NONE
+      case ('VSA')
+        patch_alg = PATCH_ALG_VSA
       case default
         call data_err ('Unrecognized PATCH_ALGORITHM: '//trim(patch_algorithm))
     end select
 
     !! General settings
-    if (verbosity_level == NULL_I) then
-      verbosity_level = VERBOSITY_LEVEL_DEFAULT
-      call re_info ('  using default VERBOSITY_LEVEL='//i_to_c(verbosity_level))
-    else if (verbosity_level < 0) then
-      call data_err ('VERBOSITY_LEVEL must be >= 0')
+    if (patch_alg /= PATCH_ALG_NONE) then
+      if (verbosity_level == NULL_I) then
+        verbosity_level = VERBOSITY_LEVEL_DEFAULT
+        call re_info ('  using default VERBOSITY_LEVEL='//i_to_c(verbosity_level))
+      else if (verbosity_level < 0) then
+        call data_err ('VERBOSITY_LEVEL must be >= 0')
+      end if
+      if (max_angle == NULL_R) then
+        max_angle = MAX_ANGLE_DEFAULT
+        write(string,fmt='(f6.2)') max_angle
+        call re_info ('  using default MAX_ANGLE='//trim(string))
+      else if (max_angle < 0 .or. max_angle > 180) then
+        call data_err ('MAX_ANGLE must be >= 0 and <= 180')
+      end if
+    end if
+
+    !! VSA settings
+    if (patch_alg == PATCH_ALG_VSA) then
+      if (vsa_max_iter == NULL_I) then
+        vsa_max_iter = VSA_MAX_ITER_DEFAULT
+        call re_info ('  using default VSA_MAX_ITER='//i_to_c(vsa_max_iter))
+      else if (vsa_max_iter < 1) then
+        call data_err ('VSA_MAX_ITER must be >= 1')
+      end if
+      if (vsa_min_delta == NULL_R) then
+        vsa_min_delta = VSA_MIN_DELTA_DEFAULT
+        write(string,fmt='(es9.2)') vsa_min_delta
+        call re_info ('  using default VSA_MIN_DELTA='//string)
+      else if (vsa_min_delta < 0.0_r8) then
+        call data_err ('VSA_MIN_DELTA must be >= 0')
+      end if
+      if (vsa_avg_faces_per_patch == NULL_R) then
+        vsa_avg_faces_per_patch = VSA_AVG_FACES_PER_PATCH_DEFAULT
+        write(string,fmt='(es9.2)') vsa_avg_faces_per_patch
+        call re_info ('  using default VSA_AVG_FACES_PER_PATCH='//string)
+      else if (vsa_avg_faces_per_patch < 1.0_r8) then
+        call data_err ('VSA_AVG_FACES_PER_PATCH must be >= 1')
+      end if
     end if
 
     if (stat /= 0) call re_halt ('errors found in PATCHES namelist variables')
@@ -192,6 +251,10 @@ contains
     !! Everything checks out; write values into return data structure
     ppar%patch_alg = patch_alg
     ppar%verbosity = verbosity_level
+    ppar%max_angle = max_angle
+    ppar%vsa_max_iter = vsa_max_iter
+    ppar%vsa_min_delta = vsa_min_delta
+    ppar%vsa_avg_fpp = vsa_avg_faces_per_patch
 
   contains
     subroutine data_err (errmsg)
@@ -213,6 +276,9 @@ contains
       case (PATCH_ALG_NONE)
         write (*,'(a)') 'No patches will be generated'
         call this%no_patches(e)
+      case (PATCH_ALG_VSA)
+        write (*,'(a)') 'Generating patches using the VSA algorithm'
+        call this%vsa_patches(e, ppar)
       case default
         !! Programming error, exit immediately.
         INSIST(.false.)
@@ -240,6 +306,28 @@ contains
     end do
 
   end subroutine no_patches
+
+
+  !! Generate patches using the VSA algorithm
+  subroutine vsa_patches (this, e, ppar)
+
+    use vsa_patching_type
+
+    class(re_patch), intent(out) :: this
+    type(encl), target, intent(in)  :: e
+    type(patch_param), intent(in)  :: ppar
+
+    type(vsa_patching) :: vsa
+
+    this%has_patches = .true.
+
+    call vsa%init(e, ppar%vsa_avg_fpp, ppar%max_angle, ppar%verbosity)
+
+    call vsa%run(ppar%vsa_min_delta, ppar%vsa_max_iter)
+
+    call vsa%output(this%f2p_map, this%global_ids, this%npatch)
+
+  end subroutine vsa_patches
 
 
   subroutine read_patch_data (this, path)
