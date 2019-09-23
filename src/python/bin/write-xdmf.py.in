@@ -153,7 +153,7 @@ def hdf5_to_xdmf(infile, outfile, verbose=False):
     series_names = h5in["/Simulations/MAIN/Series Data"].values()
     series_names = sorted(list(series_names),
                           key=lambda x: int(x.name.split()[-1]))
-    for series in h5in["/Simulations/MAIN/Series Data"].values():
+    for series in series_names:
         xdmf_grid_parent.append(series_xdmf(series, xdmf_grid_pointer))
 
     # write to file
