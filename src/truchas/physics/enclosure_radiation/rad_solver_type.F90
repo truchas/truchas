@@ -109,13 +109,13 @@ contains
     integer, intent(in) :: bsize(:)
 
     integer(i8) :: nnonz, start
-    integer :: j, n, nface, nface_tot
+    integer :: j, n, nface, nface_tot, npatch_tot
     integer :: vf_bsize(nPE), lengths(nPE), idum0(0)
     real :: rdum0(0)
     integer, pointer :: ibuf(:) => null()
     real,    pointer :: rbuf(:) => null()
 
-    if (is_IOP) call file%get_vf_dims(nface_tot, nnonz)
+    if (is_IOP) call file%get_vf_dims(nface_tot, npatch_tot, nnonz)
     call broadcast (nface_tot)
     nface = bsize(this_PE)
 
