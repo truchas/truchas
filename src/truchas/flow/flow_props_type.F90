@@ -100,6 +100,7 @@ module flow_props_type
     real(r8), allocatable :: rho_delta_cc(:) ! temperature dependent density deviation
     real(r8), allocatable :: solidified_rho(:) ! change in fluid density due to solidification
     real(r8), allocatable :: rho_pre_sol(:) ! volume fraction prior to solidification
+    real(r8), allocatable :: void_delta_cc(:) ! change in void volume fraction
     integer, allocatable :: cell_t(:), face_t(:) ! cell and face types (fluid, void or solid)
 
     integer :: nfluid ! number of mobile materials
@@ -165,6 +166,7 @@ contains
         this%vof(nc), this%vof_n(nc), &
         this%vof_novoid(nc), this%vof_novoid_n(nc), &
         this%rho_delta_cc(nc), &
+        this%void_delta_cc(nc), &
         this%solidified_rho(nc), &
         this%rho_pre_sol(nc), &
         this%cell_t(nc), this%face_t(fc), &
@@ -178,9 +180,12 @@ contains
   subroutine set_initial_state(this, vof, temperature_cc)
     class(flow_props), intent(inout) :: this
     real(r8), intent(in) :: vof(:,:), temperature_cc(:)
+    this%vof_n = 0.0_r8
+    this%vof_novoid_n = 0.0_r8
     call update_cc(this, vof, temperature_cc)
     call update_fc(this)
     call accept(this)
+    this%void_delta_cc = 0.0_r8
   end subroutine set_initial_state
 
   subroutine update_cc(this, vof, temperature_cc)
@@ -224,6 +229,8 @@ contains
         this%cell_t(i) = solid_t
       elseif (this%vof_novoid(i) == 0) then ! criteria for void
         this%cell_t(i) = void_t
+      elseif (this%vof(i) > this%vof_novoid(i)) then ! this a mixed fluid/void cell...
+        this%cell_t(i) = regular_void_t ! EXPERIMENT
       else ! regular
         this%cell_t(i) = regular_t
       end if
@@ -231,7 +238,41 @@ contains
       if (this%vof_novoid(i) > 0.0_r8) then
         minrho = min(minrho, this%rho_cc(i)*this%vof(i) / this%vof_novoid(i))
       end if
+
+      block
+        real(r8) :: void, void_n
+        void = this%vof(i) - this%vof_novoid(i)
+        void_n = this%vof_n(i) - this%vof_novoid_n(i)
+        this%void_delta_cc(i) = (void - void_n)!*this%mesh%volume(i)
+      end block
     end do
+
+    ! only mark a cell as regular_void if it does not have any neighbors where are void_t
+    do i = 1, this%mesh%ncell_onP
+
+      if (this%cell_t(i) /= regular_void_t) cycle
+
+      block
+        logical :: void
+
+        associate (cn => this%mesh%cnhbr(this%mesh%xcnhbr(i):this%mesh%xcnhbr(i+1)-1))
+
+          void = .false.
+          do j = 1, size(cn)
+            if (cn(j) > 0) then
+              void = (void .or. this%cell_t(cn(j)) == void_t)
+            end if
+          end do
+
+          if (void) then
+            this%cell_t(i) = regular_t
+          end if
+
+        end associate
+      end block
+    end do
+
+    call gather_boundary(this%mesh%cell_ip, this%cell_t)
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
@@ -270,13 +311,15 @@ contains
     do j = 1, this%mesh%nface_onP
       associate(cn => this%mesh%fcell(:,j))
         if (cn(2) > 0) then
-          if (any(this%cell_t(cn) == void_t) .and. any(this%cell_t(cn) == regular_t)) then
+          if (any(this%cell_t(cn) == void_t) .and. any(this%cell_t(cn) <= regular_t)) then
             this%face_t(j) = regular_void_t
           else
-            this%face_t(j) = maxval(this%cell_t(cn))
+            ! enusre that regular_void_t cells do get inappropriately labeled faces
+            this%face_t(j) = max(maxval(this%cell_t(cn)), regular_t)
           end if
         else
-          this%face_t(j) = this%cell_t(cn(1))
+          ! enusre that regular_void_t cells do get inappropriately labeled faces
+          this%face_t(j) = max(this%cell_t(cn(1)), regular_t)
         end if
       end associate
     end do
@@ -295,7 +338,7 @@ contains
       associate(cn => this%mesh%fcell(:,j))
         if (cn(2) == 0) then
           this%rho_fc(j) = this%rho_cc(cn(1))
-        else if (any(this%cell_t(cn) == regular_t)) then
+        else if (any(this%cell_t(cn) <= regular_t)) then
           w = this%mesh%volume(cn)*this%vof(cn)
           this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
         end if

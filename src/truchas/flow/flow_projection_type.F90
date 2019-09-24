@@ -67,6 +67,8 @@ module flow_projection_type
     type(flow_bc), pointer :: bc => null() ! unowned reference
     type(fischer_guess) :: fg
     type(hypre_hybrid) :: solver
+    logical :: void_collapse
+    real(r8) :: void_collapse_relaxation
     real(r8), allocatable :: rhs(:)
     real(r8), allocatable :: grad_fc(:,:) ! face centered gradient
     real(r8), allocatable :: grad_p_rho_cc(:,:)
@@ -107,6 +109,10 @@ contains
     type(ip_desc), pointer :: row_ip
     type(parameter_list), pointer :: plist
     real(r8) :: q
+
+    plist => params%sublist('options')
+    call plist%get('void-collapse', this%void_collapse, default=.false.)
+    call plist%get('void-collapse-relaxation', this%void_collapse_relaxation, default=0.1_r8)
 
     this%mesh => mesh
     this%bc => bc
@@ -214,7 +220,7 @@ contains
         associate (nhbr => m%cnhbr(m%xcnhbr(j):m%xcnhbr(j+1)-1), &
             face => m%cface(m%xcface(j):m%xcface(j+1)-1))
 
-          if (cell_t(j) /= regular_t) then
+          if (cell_t(j) > regular_t) then
             ! solve dummy equations in void/solid cells
             call A%add_to(j, j, 1.0_r8)
             cycle
@@ -244,7 +250,7 @@ contains
     associate (m => this%mesh, rhs => this%rhs)
 
       do j = 1, m%ncell_onP
-        if (props%cell_t(j) /= regular_t) then
+        if (props%cell_t(j) > regular_t) then
           ! pressure set to zero in void cells. dp cancels current pressure.
           this%rhs(j) = -p_cc(j)
           cycle
@@ -264,6 +270,22 @@ contains
               this%rhs(j) = this%rhs(j) - vel(fn(i))*m%area(fn(i))
             end if
           end do
+
+          if (this%void_collapse .and. props%cell_t(j) == regular_void_t)  then
+            block
+              real(r8) :: void
+              void = this%void_collapse_relaxation*(props%vof(j)-props%vof_novoid(j))
+
+              if (props%void_delta_cc(j) < 0.0_r8) then
+                this%rhs(j) = this%rhs(j)+m%volume(j)*max(props%void_delta_cc(j),-void)/dt
+              end if
+
+              if (props%void_delta_cc(j) > 0.0_r8) then
+                this%rhs(j) = this%rhs(j)-m%volume(j)*min(props%void_delta_cc(j),void)/dt
+              end if
+            end block
+          end if
+
           this%rhs(j) = this%rhs(j) / dt
 
           ! void acts as 0 dirichlet pressure. on dp, dirichlet -p condition
@@ -271,14 +293,14 @@ contains
             fi = fn(i)
             ni = nhbr(i)
 
-            if (props%face_t(fi) == regular_void_t .and. ni > 0) then
-              coeff = dot_product(ds(:,fi), m%normal(:,fi)) / props%rho_fc(fi)
-              this%rhs(j) = this%rhs(j) - coeff * p_cc(ni)
+            if (ni > 0) then
+              if (props%face_t(fi) == regular_void_t) then
+                coeff = dot_product(ds(:,fi), m%normal(:,fi)) / props%rho_fc(fi)
+                this%rhs(j) = this%rhs(j) - coeff * p_cc(ni)
+              end if
             end if
           end do
         end associate
-
-
       end do
 
       ! handle dirichlet bcs
@@ -387,7 +409,7 @@ contains
         associate (cn => m%fcell(:,j))
           if (props%face_t(j) == regular_void_t .and. all(cn > 0)) then
             do i = 1, 2
-              if (props%cell_t(cn(i)) == regular_t) then
+              if (props%cell_t(cn(i)) <= regular_t) then
                 vel_fn(j) = dot_product(m%normal(:,j),v(:,cn(i))) / m%area(j)
               end if
             end do
@@ -419,6 +441,7 @@ contains
         end do
       end associate
       call gather_boundary(m%face_ip, vel_fn)
+
     end associate
 
   end subroutine setup_face_velocity
@@ -542,7 +565,7 @@ contains
 
       ! zero pressure gradient on void cells
       do j = 1, this%mesh%ncell_onP
-        if (props%cell_t(j) /= regular_t) gp_cc(:,j) = 0
+        if (props%cell_t(j) > regular_t) gp_cc(:,j) = 0
       end do
     end associate
   end subroutine grad_p_rho
@@ -571,7 +594,7 @@ contains
     ! assumes dynamic pressure gradients have already been computed
     do i = 1, this%mesh%ncell_onP
       ! -dt * grad(dP)/rho
-      if (props%cell_t(i) == void_t .or. props%cell_t(i) == solid_t) then
+      if (props%cell_t(i) > regular_t) then
         vel_cc(:,i) = 0
       else
         vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
