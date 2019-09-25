@@ -58,6 +58,15 @@
 !!    will not be a field of the dataset.  This is a serial procedure and must
 !!    only be called by the I/O process.
 !!
+!!  PATCH_COLORING (THIS, E) computes a coloring of the patches where adjacent
+!!    patches have different colors.  THIS is the TYPE(RE_PATCH) object storing
+!!    the patch data corresponding to the TYPE(ENCL) radiation enclosure E.  If
+!!    THIS has patch data, the returned array PCOLOR will be a rank-1 integer
+!!    array of length THIS%NPATCH containing a valid patch coloring.  If THIS
+!!    has no patch data (i.e. each face is a patch) then PCOLOR will not be
+!!    allocated.  This is a serial procedure and must only be called by the
+!!    I/O process.
+!!
 
 
 #include "f90_assert.fpp"
@@ -95,6 +104,7 @@ module re_patch_type
     procedure, public :: generate_patches
     procedure, public :: read_patch_data
     procedure, public :: write_patch_data
+    procedure, public :: patch_coloring
     procedure, public :: patch_to_face_array
     procedure, private :: no_patches
   end type
@@ -269,6 +279,44 @@ contains
     call file%close
 
   end subroutine write_patch_data
+
+
+  !! Color patches so that adjacent patches have different colors.
+  !! The procedure does nothing if this%has_patches is false.
+  function patch_coloring (this, e) result(pcolor)
+
+    use patching_tools, only: get_face_neighbor_array
+    use graph_type
+
+    class(re_patch), intent(in) :: this
+    type(encl), intent(in) :: e
+    integer, allocatable :: pcolor(:)
+
+    type(graph) :: pgraph  ! Patch adjacency graph
+    integer, allocatable :: xfnhbr(:), fnhbr(:)
+    integer :: p1, p2
+    integer :: i, f, n, ncolor, stat
+
+    if (.not. this%has_patches) return
+
+    call pgraph%init(this%npatch)
+    call get_face_neighbor_array(e%xface, e%fnode, xfnhbr, fnhbr, stat)
+    ASSERT( stat == 0 )
+
+    !! Construct patch adjacency graph
+    do f = 1, e%nface
+      p1 = this%f2p_map(f)
+      do i = xfnhbr(f), xfnhbr(f+1)-1
+        n = fnhbr(i)  ! neighbor of f
+        if (n <= 0) cycle
+        p2 = this%f2p_map(n)
+        call pgraph%add_edge(p1, p2)
+      end do
+    end do
+
+    call pgraph%vertex_coloring(pcolor, ncolor)
+
+  end function patch_coloring
 
 
   !! Expands a patch-length array into a face-length array

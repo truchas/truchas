@@ -58,11 +58,9 @@ program vizre
 
     !! Write patch coloring
     nvar = nvar + 1
-    allocate (patch_var(ep%npatch))
-    call random_seed()
-    call random_number(patch_var)
+    patch_var = REAL(ep%patch_coloring(e))
     call ep%patch_to_face_array(patch_var, face_var)
-    call gmv_write_face_var (e, face_var, 'patch_rand', sym)
+    call gmv_write_face_var(e, face_var, 'pcolor', sym)
     deallocate(patch_var)
   end if
 
