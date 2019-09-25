@@ -2,6 +2,19 @@
 
 Important changes since the 3.0 release.
 
+## 2019-09-24 (fd75405)
+
+The current VOF flow algorithm effectively treats small fragments of void
+entrained in fluid as incompressible, resulting in unphysical void "bubbles"
+that persist in the flow. This is a particular problem for splashy filling
+simulations. A new void collapse model has been implemented that drives
+the collapse of these void fragments. While the model is still experimental
+and subject to change, it appears to work remarkably well enough at this
+point to recommend trying it. To activate the model set the new FLOW namelist
+variable `void_collapse` to true (the default is false). Please send any
+feedback about the model to truchas@lanl.gov, and see the latest Truchas
+Reference Manual for further details.
+
 ## 2019-08-29 (3927011)
 
 It is now possible to define a rectilinear hex mesh of a brick domain in
