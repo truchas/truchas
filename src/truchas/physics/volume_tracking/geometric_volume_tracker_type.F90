@@ -375,7 +375,7 @@ contains
       else
         ! The volume flux of the last material shouldn't be less than
         ! zero nor greater than the volume of this material in the donor cell.
-        dvol = min(max(abs(flux_vol - Flux_Vol_Sum(f)), 0.0_r8), Vof(nlast)*cell%volume)
+        dvol = min(max(flux_vol - flux_vol_sum(f), 0.0_r8), vof(nlast)*cell%volume)
 
         ! Store the last material's volume flux.
         if (dvol > cutoff*cell%volume) flux_volume(nlast,f) = dvol
