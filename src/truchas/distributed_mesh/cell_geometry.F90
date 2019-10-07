@@ -626,7 +626,7 @@ contains
   pure function quad_area(x) result(area)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: area
-    area = (x(1,3)-x(1,1))*(x(2,4)-x(2,2)) - (x(2,3)-x(2,1))*(x(1,4)-x(1,2))
+    area = 0.5_r8*( (x(1,3)-x(1,1))*(x(2,4)-x(2,2)) - (x(2,3)-x(2,1))*(x(1,4)-x(1,2)) )
   end function quad_area
 
   !! Computes the area of a triangle given the lengths of its three sides.
