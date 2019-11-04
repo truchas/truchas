@@ -114,12 +114,13 @@ module chaparral_c_binding
       integer(c_int) :: count(*)
     end subroutine
 
-    subroutine VF_GetMatrix_c(encl, vf_cnt, vf_index, vf_data, vf_diag, vf_virt) &
-        bind(c,name='VF_GetMatrix')
+    subroutine VF_GetMatrix_c(encl, vf_cnt, vf_index, vf_data, write_vf_diag, &
+        vf_diag, write_vf_virt, vf_virt) bind(c,name='VF_GetMatrix')
       import c_int, c_float, c_ptr
       integer(c_int), value :: encl
       integer(c_int) :: vf_cnt(*), vf_index(*)
       real(c_float) :: vf_data(*)
+      integer(c_int), value :: write_vf_diag, write_vf_virt
       type(c_ptr), value :: vf_diag, vf_virt ! possibly null (optional) array pointers
     end subroutine
   end interface
@@ -138,13 +139,23 @@ contains
   subroutine VF_GetMatrix(encl, vf_cnt, vf_index, vf_data, vf_diag, vf_virt)
     integer(c_int) :: encl, vf_cnt(:), vf_index(:)
     real(c_float) :: vf_data(:)
-    real(c_float), optional, target :: vf_diag(*), vf_virt(*)
+    real(c_float), optional, target :: vf_diag(:), vf_virt(:)
     type(c_ptr) :: ptr_vf_diag, ptr_vf_virt
+    integer(c_int) :: write_vf_diag, write_vf_virt
     ptr_vf_diag = c_null_ptr
-    if (present(vf_diag)) ptr_vf_diag = c_loc(vf_diag)
+    write_vf_diag = 0
+    if (present(vf_diag)) then
+      if (size(vf_diag) > 0) ptr_vf_diag = c_loc(vf_diag)
+      write_vf_diag = 1
+    end if
     ptr_vf_virt = c_null_ptr
-    if (present(vf_virt)) ptr_vf_virt = c_loc(vf_virt)
-    call VF_GetMatrix_c(encl, vf_cnt, vf_index, vf_data, ptr_vf_diag, ptr_vf_virt)
+    write_vf_virt = 0
+    if (present(vf_virt)) then
+      if (size(vf_virt) > 0) ptr_vf_virt = c_loc(vf_virt)
+      write_vf_virt = 1
+    end if
+    call VF_GetMatrix_c(encl, vf_cnt, vf_index, vf_data, write_vf_diag, &
+      ptr_vf_diag, write_vf_virt, ptr_vf_virt)
   end subroutine VF_GetMatrix
 
 end module chaparral_c_binding
