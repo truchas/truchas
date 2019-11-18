@@ -70,7 +70,8 @@ contains
   ! given a set of VoFs, normals, and an order,
   ! create child polyhedra for each material
 
-  subroutine partition (this, vof, norm, cutvof, priority, max_reconstruction_iterations)
+  subroutine partition (this, vof, norm, cutvof, priority, max_reconstruction_iterations, &
+      locator_error_message)
 
     use near_zero_function
     use plane_type
@@ -79,6 +80,7 @@ contains
     class(multimat_cell), intent(inout) :: this
     real(r8),             intent(in)    :: vof(:), norm(:,:), cutvof
     integer, intent(in) :: priority(:), max_reconstruction_iterations
+    character(:), allocatable, intent(inout) :: locator_error_message
 
     type(plane)      :: interface_plane
     type(polyhedron) :: tmp(2),remainder
@@ -114,7 +116,7 @@ contains
       else
         ! if this is not the final material in the cell, split the cell
         interface_plane = locate_plane_nd(remainder, norm(:,m), vof(m)*this%geom%volume(), &
-            this%geom%volume(), cutvof, max_reconstruction_iterations)
+            this%geom%volume(), cutvof, max_reconstruction_iterations, locator_error_message)
         call remainder%split (interface_plane,tmp,ierr)
 
         ! this check ensures the partitions give their vofs within the requested cutvof

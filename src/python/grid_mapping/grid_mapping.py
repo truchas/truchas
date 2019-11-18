@@ -35,7 +35,8 @@ libgridmap.mesh_map.argtypes = [ctypes.c_int, ctypes.c_int,
 libgridmap.mesh_map.restype = _MapData
 
 libgridmap.map_cell_field_c.argtypes = [ctypes.c_void_p, ctypes.c_int,
-                                        ctypes.c_int, ctypes.c_double,
+                                        ctypes.c_int, ctypes.c_int,
+                                        ctypes.c_double,
                                         ctypes.POINTER(ctypes.c_double),
                                         ctypes.POINTER(ctypes.c_double)]
 libgridmap.map_cell_field_c.restype = None
@@ -76,13 +77,13 @@ def mesh_map(nnode, ncell, cnode, blockid, coords, filename, scale_factor):
                    cdata.mesh_map)
 
 
-def map_cell_field(src, mesh_map):
+def map_cell_field(src, mesh_map, dest_ncell):
     # Copy to contiguous arrays and cast as needed,
     # then send pointer
     srcc = sp.ascontiguousarray(src)
     srcc = srcc.astype(sp.float64, casting="same_kind", copy=False)
-    dest = sp.empty_like(srcc)
-    libgridmap.map_cell_field_c(mesh_map, 1, len(srcc), 0.,
+    dest = sp.empty(dest_ncell)
+    libgridmap.map_cell_field_c(mesh_map, 1, len(srcc), dest_ncell, 0.,
                                 srcc.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
                                 dest.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
     return dest

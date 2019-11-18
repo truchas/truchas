@@ -219,7 +219,7 @@ contains
         associate (nhbr => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1), &
             face => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
 
-          if (cell_t(j) /= regular_t) then
+          if (cell_t(j) > regular_t) then
             ! solve dummy equations on solid/void
             do k = 1, size(A)
               call A(k)%A%add_to(j,j,1.0_r8)

@@ -1,0 +1,24 @@
+2.2:
+Capability for reading attributes in parallel.
+Better error handling when file open fails.
+
+2.1:
+Incorporated support for string datasets (C/C++).
+Added capability for handling attributes of various datatypes.
+Added examples to demonstrate above capabilities.
+
+2.0:
+Incorporated improved initialization, license information, 
+updated documentation and misc reorganization.
+
+1.2:
+Bug release - fixed namespace issue involving log levels. 
+
+1.1p:
+Release incorporating generic Makefiles for building and testing.
+
+1.1:
+Updated release for use with ASCEM Amanzi simulator. 
+
+1.0:
+Initial release of SCORPIO library.

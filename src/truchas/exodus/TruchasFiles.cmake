@@ -12,6 +12,7 @@ set(EXOMESH_FILES
            exodus/exodus_file_type.F90
            exodus/exodus_mesh_type.F90
            exodus/exodus_mesh_io.F90
+           exodus/exodus_mesh_factory.F90
            exodus/exodus_truchas_hack.F90)
 
 set(EXOMESH_FPP_FLAGS 

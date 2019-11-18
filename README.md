@@ -31,6 +31,8 @@ Resources
 * The [official repository][2] is located at GitLab.com.  Truchas on GitHub
   is a [mirror](https://github.com/truchas), and we do not actively monitor
   issues there.
+* The current Truchas Reference Manual is available from the wiki page
+  https://gitlab.com/truchas/truchas-release/wikis/home
 * Use the [issue tracker][3] to submit bug reports and feature suggestions.
 * Community discussion takes place on the truchas-users mailing list.
   Send email to <truchas-users+subscribe@googlegroups.com> to subscribe.
@@ -39,7 +41,7 @@ Resources
 [2]: https://gitlab.com/groups/truchas
 [3]: https://gitlab.com/groups/truchas/issues
 
-News (updated 2019-06-05)
+News (updated 2019-09-24)
 ------------------------------------------------------------------------------
 See [NEWS.md](NEWS.md) for important changes since the last release.
 

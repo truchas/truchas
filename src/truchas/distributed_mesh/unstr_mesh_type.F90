@@ -560,7 +560,7 @@ contains
     ASSERT(size(point) == size(this%x,dim=1))
 
     !! Compute the minimum distance and cell index for the local mesh subdomain
-    min_dist = huge(min_dist)
+    min_dist = huge(min_dist); min_cell = 0
     do j = 1, this%ncell_onP
       associate(cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1))
         centroid = sum(this%x(:,cell_nodes),dim=2)/size(cell_nodes)
@@ -598,7 +598,7 @@ contains
     ASSERT(size(point) == size(this%x,dim=1))
 
     !! Compute the minimum distance and node index for the local mesh subdomain.
-    min_dist = huge(min_dist)
+    min_dist = huge(min_dist); min_node = 0
     do j = 1, this%nnode_onP
       d = norm2(this%x(:,j)-point)
       if (d < min_dist) then

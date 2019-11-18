@@ -1,0 +1,29 @@
+Naming conventions
+--------------------
+
+The following conventions are used in this code to promote readability without imposing unreasonable standards. 
+These are guidelines and not *strictly* mandatory.
+
+
+Data Types
+--------------------
+
+Following rules apply for 'typedef's.
+Data type names start with a lowercase letter and may contain underscores.
+No uppercase letters. If 'IO' appears in a type, it is in lowercase. Eg. iogroup_t.
+
+Variables
+--------------------
+
+Variable names start with a lowercase letter, may contain alphanumeric characters but NO underscores.
+Simple words like localrank, localsize etc. are all lowercase.
+For longer words, starting from the second word: the first letter of each word is capitalized. The only exception is the word 'IO' which follows the next two rules.
+If 'IO' appears at the beginning of a variable name, it is in lowercase. Eg. iogroup.
+If 'IO' appears in the middle of a variable name, then it's capitalized. If another word follows it, the first letter of that word is not capitalized.
+
+Functions
+------------------
+
+All interface functions have a prefix 'parallelIO_'
+Function names may contain underscores.
+

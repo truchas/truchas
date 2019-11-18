@@ -31,8 +31,6 @@ module scorpio_c_binding
   public :: scorpio_write_simple_attr_double
   public :: scorpio_write_attr_double
   public :: scorpio_write_simple_attr_string
-  public :: scorpio_create_probe_double
-  public :: scorpio_write_probe_data_double
 
   !! SCORPIO library functions
   interface
@@ -135,26 +133,6 @@ module scorpio_c_binding
       character(kind=c_char), intent(in) :: attr_name(*), attr_data(*)
       integer(c_int), value :: fhandle
       character(kind=c_char), intent(in) :: obj_name(*)
-      type(c_ptr), value :: myIOgroup
-    end subroutine
-    function scorpio_create_probe_double(sid, name, ndims, dims, data, fhandle, myIOgroup) result(pid) bind(c)
-      import c_ptr, c_char, c_int, c_double, c_int64_t
-      character(kind=c_char), intent(in) :: name(*)
-      integer(c_int64_t), value :: sid
-      integer(c_int), value :: ndims
-      integer(c_int), intent(in) :: dims(*)
-      real(c_double), intent(in) :: data(*)
-      integer(c_int), value :: fhandle
-      type(c_ptr), value :: myIOgroup
-      integer(c_int64_t) :: pid
-    end function
-    subroutine scorpio_write_probe_data_double(pid, ndims, dims, data, fhandle, myIOgroup) bind(c)
-      import c_ptr, c_int, c_double, c_int64_t
-      integer(c_int64_t), value :: pid
-      integer(c_int), value :: ndims
-      integer(c_int) :: dims(*)
-      real(c_double), intent(in) :: data(*)
-      integer(c_int), value :: fhandle
       type(c_ptr), value :: myIOgroup
     end subroutine
   end interface

@@ -2,9 +2,60 @@
 
 Important changes since the 3.0 release.
 
+## 2019-09-24 (fd75405)
+
+The current VOF flow algorithm effectively treats small fragments of void
+entrained in fluid as incompressible, resulting in unphysical void "bubbles"
+that persist in the flow. This is a particular problem for splashy filling
+simulations. A new void collapse model has been implemented that drives
+the collapse of these void fragments. While the model is still experimental
+and subject to change, it appears to work remarkably well enough at this
+point to recommend trying it. To activate the model set the new FLOW namelist
+variable `void_collapse` to true (the default is false). Please send any
+feedback about the model to truchas@lanl.gov, and see the latest Truchas
+Reference Manual for further details.
+
+## 2019-08-29 (3927011)
+
+It is now possible to define a rectilinear hex mesh of a brick domain in
+the MESH namelist as an alternative to reading an Exodus II mesh file.
+Though not especially useful for most real applications, it does make
+Truchas much more accessible for simple tests and demo problems by
+avoiding the "meshing tool" obstacle. See the MESH namelist section
+in the latest Truchas Reference Manual for details.
+
+## 2019-07-25 (88211a5f)
+
+Solution probe output was re-implemented. This should resolve several
+long-standing bugs and memory leaks that had been reported. This involves
+a number of user-visible changes:
+* Each probe writes directly to its own text file in the output directory,
+  and no longer writes into the Truchas HDF5 output file.
+* Rather than write data for every possible solution quantity, a probe now
+  outputs data for a specific quantity.
+* There are several changes to the PROBE namelist:
+  - The `probe_name` variable was removed.
+  - `probe_coords` was changed to `coord`.
+  - `probe_coords_scale` was changed to `coord_scale_factor`.
+  - `probe_description` was changed to `description`.
+  - The new variable `data` specifies the quantity to produce output for. The
+    current choices are: `"temperature"`, `"pressure"`, and `"velocity"`.
+    Additional choices will be added in the near future.
+  - The new variable `data_file` specifies the name of the text output file.
+* The `write-probes.py` utility will be retained for use with previous
+  Truchas .h5 output files that contained the probe data.
+
+See the latest Truchas Reference Manual section on the PROBE namelist for
+further details.
+
 ## 2019-06-05 (ddec9290)
 
-The configuration of boundary conditions for heat transfer and species diffusion has undergone a major revision. The DS_BOUNDARY_CONDITION and DS_INTERFACE_CONDITION namelists have been replaced by two new namelists: THERMAL_BC for heat transfer boundary and interface conditions, and SPECIES_BC for species boundary conditions. The content of the namelists is essentially unchanged but some variables and their values are different:
+The configuration of boundary conditions for heat transfer and species
+diffusion has undergone a major revision. The DS_BOUNDARY_CONDITION and
+DS_INTERFACE_CONDITION namelists have been replaced by two new namelists:
+THERMAL_BC for heat transfer boundary and interface conditions, and SPECIES_BC
+for species boundary conditions. The content of the namelists is essentially
+unchanged but some variables and their values are different:
 * The `variable` variable is no longer needed and was removed.
 * The `condition` variable was renamed to `type`. There is no change to the
   types of boundary and interface conditions available, but some keywords

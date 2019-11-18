@@ -7,7 +7,12 @@ solution T = 1 + a*x + b*y + c*z, H = 2*T for a given direction abc, and not
 not so much with the transient approach to steady state.
 
 &MESH
-  mesh_file = 'cube-hex.g'
+  x_axis%coarse_grid = 0.0, 1.0
+  x_axis%intervals   = 5
+  y_axis%coarse_grid = 0.0, 1.0
+  y_axis%intervals   = 5
+  z_axis%coarse_grid = 0.0, 1.0
+  z_axis%intervals   = 5
 /
 
 &OUTPUTS

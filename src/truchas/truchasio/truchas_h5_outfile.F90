@@ -22,19 +22,17 @@
 !!          ...
 !!  /Simulations/<sim1_name>/Mesh (a link to one of the preceding mesh groups)
 !!                          /Non-series Data
-!!                          /Probes
 !!                          /Series Data/Series 1
 !!                                      /Series 2
 !!                                       ...
 !!              /<sim2_name>/Mesh
 !!                          /Non-series Data
-!!                          /Probes
 !!                          /Series Data
 !!               ...
 !!
 !! The data hierarchy is represented by objects of a number of derived types
 !! defined by this module: TH5_FILE, TH5_MESH_GROUP, TH5_SIM_GROUP,
-!! TH5_SEQ_GROUP, and TH5_PROBE.
+!! and TH5_SEQ_GROUP.
 !!
 !! An instance of the TH5_FILE type describes the HDF5 file, with methods to
 !! open and close the file, and methods to add a named mesh group and a named
@@ -45,16 +43,10 @@
 !!
 !! An instance of the TH5_SIM_GROUP type describes a simulation group. It has
 !! a method for creating the "Mesh" link and writing time-independent data to
-!! the "Non-series Data" group. It also has methods for creating probe datasets
-!! within the "Probes" group, and "Series <n>" groups within the "Series Data"
-!! group.
+!! the "Non-series Data" group.
 !!
 !! An instance of the TH5_SEQ_GROUP type describes a "Series <n>" group, with
 !! methods for writing time-dependent data to the group.
-!!
-!! An instance of the TH5_PROBE type describes a probe dataset within the
-!! "Probes" group, with methods for incrementally writing probe data to the
-!! dataset
 !!
 !! IMPLEMENTATION NOTES
 !!
@@ -68,13 +60,6 @@
 !! sizes on all but the Truchas IO process (rank 0), and the actual data on the
 !! IO process.  A Scorpio extension that only writes from rank 0 should be
 !! possible and preferable (FIXME).
-!!
-!! A similar situation holds for probe data output.  That data is currently
-!! replicated on all processes (FIXME).  Our own Scorpio extension also does
-!! a parallel write (zero-sized on ranks other than 0) but without doing any
-!! (needless) mpi gather calls.  Really should be providing the probe data
-!! on the single process where it exists and let Scorpio migrate it to the
-!! process doing io for the group and then write in serial (FIXME).
 !!
 
 #include "f90_assert.fpp"
@@ -120,7 +105,6 @@ module truchas_h5_outfile
     private
     procedure, public :: add_mesh_link
     procedure, public :: next_seq_group
-    procedure, public :: create_probe
     generic, public :: write_attr => sim_write_attr_int32, sim_write_attr_real64
     generic, public :: write_dist_array => sim_write_dist_array_int32_r1, &
         sim_write_dist_array_real64_r1, sim_write_dist_array_real64_r2
@@ -165,23 +149,6 @@ module truchas_h5_outfile
     procedure :: seq_write_dataset_attr_string
   end type th5_seq_group
 
-
-  type, public :: th5_probe
-    private
-    type(scorpio_file), pointer :: file => null() ! reference only -- do not own
-    character(:), allocatable :: path ! dataset path in the HDF5 file
-    integer(int64) :: datasetid  ! HDF5 dataset ID
-  contains
-    private
-    generic, public :: write_data => probe_write_data_real64_r2
-    generic, public :: write_attr => &
-        probe_write_attr_int32, probe_write_attr_real64, probe_write_attr_string
-    procedure :: probe_write_data_real64_r2
-    procedure :: probe_write_attr_int32
-    procedure :: probe_write_attr_real64
-    procedure :: probe_write_attr_string
-  end type
-
 contains
 
 !!!! TH5_FILE TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -213,8 +180,6 @@ contains
     gid = this%file%create_group(sim%path // '/Non-series Data')
     call this%file%close_group(gid)
     gid = this%file%create_group(sim%path // '/Series Data')
-    call this%file%close_group(gid)
-    gid = this%file%create_group(sim%path // '/Probes')
     call this%file%close_group(gid)
   end subroutine add_sim_group
 
@@ -365,16 +330,6 @@ contains
     call this%file%write_attr(seq%path, 'time', time)
   end subroutine next_seq_group
 
-  subroutine create_probe(this, probe_name, probe_data, probe)
-    class(th5_sim_group), intent(in) :: this
-    character(*), intent(in) :: probe_name
-    real(real64), intent(in) :: probe_data(:,:)
-    class(th5_probe), intent(out) :: probe
-    probe%file => this%file
-    probe%path = this%path // '/Probes/' // probe_name
-    probe%datasetid = this%file%create_probe(this%groupid, probe_name, probe_data)
-  end subroutine create_probe
-
   subroutine sim_write_attr_int32(this, name, value)
     class(th5_sim_group), intent(in) :: this
     character(*), intent(in) :: name
@@ -472,34 +427,5 @@ contains
     character(*), intent(in) :: attr_value
     call this%file%write_attr(this%path // '/' // dataset, attr_name, attr_value)
   end subroutine seq_write_dataset_attr_string
-
-!!!! TH5_PROBE TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  subroutine probe_write_data_real64_r2(this, probe_data)
-    class(th5_probe), intent(in) :: this
-    real(real64), intent(in), contiguous :: probe_data(:,:)
-    call this%file%write_probe(this%datasetid, probe_data)
-  end subroutine probe_write_data_real64_r2
-
-  subroutine probe_write_attr_int32(this, attr_name, attr_value)
-    class(th5_probe), intent(in) :: this
-    character(*), intent(in) :: attr_name
-    integer(int32), intent(in) :: attr_value
-    call this%file%write_attr(this%path, attr_name, attr_value)
-  end subroutine probe_write_attr_int32
-
-  subroutine probe_write_attr_real64(this, attr_name, attr_value)
-    class(th5_probe), intent(in) :: this
-    character(*), intent(in) :: attr_name
-    real(real64), intent(in) :: attr_value
-    call this%file%write_attr(this%path, attr_name, attr_value)
-  end subroutine probe_write_attr_real64
-
-  subroutine probe_write_attr_string(this, attr_name, attr_value)
-    class(th5_probe), intent(in) :: this
-    character(*), intent(in) :: attr_name
-    character(*), intent(in) :: attr_value
-    call this%file%write_attr(this%path, attr_name, attr_value)
-  end subroutine probe_write_attr_string
 
 end module truchas_h5_outfile

@@ -217,5 +217,11 @@ def parse_argv():
 
 if __name__ == "__main__":
     args = parse_argv()
-    truchas_data = truchas.TruchasData(args.h5file)
+    try:
+        truchas_data = truchas.TruchasData(args.h5file)
+    except OSError as e:
+        print('Unable to open "{:s}"'.format(args.h5file))
+        sys.exit(1)
+
     write_gmv(args, truchas_data)
+

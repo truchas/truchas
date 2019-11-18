@@ -121,6 +121,7 @@ contains
       fb = this%f(b)
     end do
 
+    root = b
     stat = 1
 
   end subroutine find_root

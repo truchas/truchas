@@ -47,7 +47,12 @@ data by Martin & Moyce for this regression test.
 
 
 &MESH
-  mesh_file = 'mesh.exo'
+  x_axis%coarse_grid = 0.0, 0.142875
+  x_axis%intervals   = 50
+  y_axis%coarse_grid = 0.0, 0.120015
+  y_axis%intervals   = 42
+  z_axis%coarse_grid = 0.0, 0.005715
+  z_axis%intervals   = 1
 /
 
 &OUTPUTS

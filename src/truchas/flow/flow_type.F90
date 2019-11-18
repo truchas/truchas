@@ -97,7 +97,7 @@ contains
 
       if (.not.this%inviscid .and. this%viscous_number > 0.0_r8) then
         do j = 1, m%ncell_onP
-          if (this%props%cell_t(j) == regular_t .and. mu(j) > 0.0_r8) then
+          if (this%props%cell_t(j) <= regular_t .and. mu(j) > 0.0_r8) then
             ! Original simple version
             !v = (m%volume(j)*vof(j))**(1.0_r8/3.0_r8)
             ! Something closer to what Truchas originally had

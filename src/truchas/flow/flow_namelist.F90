@@ -34,14 +34,16 @@ contains
 
     !! Namelist variables
     integer  :: vol_track_subcycles, material_priority(16), fischer_dim
-    logical  :: inviscid, track_interfaces, nested_dissection
+    logical  :: inviscid, track_interfaces, nested_dissection, void_collapse
     real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_frac_threshold, min_face_fraction, vol_frac_cutoff
+    real(r8) :: void_collapse_relaxation
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
         fluid_frac_threshold, min_face_fraction, &
         track_interfaces, nested_dissection, vol_track_subcycles, &
-        vol_frac_cutoff, material_priority, fischer_dim
+        vol_frac_cutoff, material_priority, fischer_dim, void_collapse, &
+        void_collapse_relaxation
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -72,6 +74,9 @@ contains
     min_face_fraction = NULL_R
     fischer_dim = NULL_I
 
+    void_collapse = .false.
+    void_collapse_relaxation = NULL_R
+
     !! Read the FLOW namelist
     if (is_IOP) read(lun,nml=flow,iostat=ios,iomsg=iom)
     call broadcast(ios)
@@ -92,6 +97,9 @@ contains
     call broadcast(fluid_frac_threshold)
     call broadcast(min_face_fraction)
     call broadcast(fischer_dim)
+
+    call broadcast(void_collapse)
+    call broadcast(void_collapse_relaxation)
 
     !! Check values and stuff into a parameter list for later use.
 
@@ -137,6 +145,13 @@ contains
     if (fischer_dim /= NULL_I) then
       if (fischer_dim < 0) call TLS_fatal('FISCHER_DIM must be >= 0')
       call plist%set('fischer-dim', fischer_dim)
+    end if
+
+    call plist%set('void-collapse', void_collapse)
+    if (void_collapse_relaxation /= NULL_R) then
+      if (void_collapse_relaxation < 0 .or. void_collapse_relaxation > 1) &
+          call TLS_fatal('VOID COLLAPSE RELAXATION must be in [0,1]')
+      call plist%set('void-collapse-relaxation', void_collapse_relaxation)
     end if
 
     plist => params%sublist('cutoffs')
