@@ -48,6 +48,7 @@ module vof_init
    private
    
    public :: vof_initialize
+   public :: body_id_from_vertex
 
    ! local development/testing control flags
    logical, parameter :: test_vertex_once     = .true.
