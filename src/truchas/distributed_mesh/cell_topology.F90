@@ -32,6 +32,9 @@ module cell_topology
   !! * <T>_FACES(<T>_XFACE(k):<T>_XFACE(k+1)-1) are the cell vertices that
   !!   define the kth face oriented out of the cell for cell type <T>.
   !!
+  !! * <T>_FEDGE(<T>_XFACE(k):<T>_XFACE(k+1)-1) are the cell edges that
+  !!   define the kth face oriented out of the cell for cell type <T>.
+  !!
   !! * <T>_FSIZE(k) is the number of vertices on the kth face of cell type <T>.
   !!
   !! * <T>_EDGES(:,k) are the 2 cell vertices defining edge k of cell type <T>.
@@ -44,16 +47,17 @@ module cell_topology
   !!   kth vertex for cell type <T>.  BTEST(<T>_VERT_SIG(k), i-1) is true if
   !!   face i contains in vertex k of cell type <T>.
 
-  integer, target, public :: TET4_XFACE(5), TET4_FACES(12), TET4_FSIZE(4), TET4_EDGES(2,6)
+  integer, target, public :: TET4_XFACE(5), TET4_FACES(12), TET4_FEDGE(12), TET4_FSIZE(4), TET4_EDGES(2,6)
   integer, target, public :: TET4_FACE_SIG(4), TET4_VERT_SIG(4)
   data TET4_XFACE/1,4,7,10,13/
   data TET4_FACES/1,2,4, 2,3,4, 1,4,3, 1,3,2/
+  !data TET4_FEDGE/1,5,3, 4,6,5, 3,6,2, 
   data TET4_FSIZE/3,3,3,3/
   data TET4_EDGES/1,2, 1,3, 1,4, 2,3, 2,4, 3,4/
   data TET4_FACE_SIG/b'1011', b'1110', b'1101', b'0111'/
   data TET4_VERT_SIG/b'1101', b'1011', b'1110', b'0111'/
 
-  integer, target, public :: PYR5_XFACE(6), PYR5_FACES(16), PYR5_FSIZE(5), PYR5_EDGES(2,8)
+  integer, target, public :: PYR5_XFACE(6), PYR5_FACES(16), PYR5_FEDGE(16), PYR5_FSIZE(5), PYR5_EDGES(2,8)
   integer, target, public :: PYR5_FACE_SIG(5), PYR5_VERT_SIG(5)
   data PYR5_XFACE/1,4,7,10,13,17/
   data PYR5_FACES/1,2,5,  2,3,5,  3,4,5,  1,5,4,  1,4,3,2/
@@ -62,7 +66,7 @@ module cell_topology
   data PYR5_FACE_SIG/b'10011', b'10110', b'11100', b'11001', b'01111'/
   data PYR5_VERT_SIG/b'11001', b'10011', b'10110', b'11100', b'01111'/
 
-  integer, target, public :: WED6_XFACE(6), WED6_FACES(18), WED6_FSIZE(5), WED6_EDGES(2,9)
+  integer, target, public :: WED6_XFACE(6), WED6_FACES(18), WED6_FEDGE(18), WED6_FSIZE(5), WED6_EDGES(2,9)
   integer, target, public :: WED6_FACE_SIG(5), WED6_VERT_SIG(6)
   data WED6_XFACE/1,5,9,13,16,19/
   data WED6_FACES/1,2,5,4,  2,3,6,5,  1,4,6,3,  1,3,2,  4,5,6/
@@ -71,7 +75,7 @@ module cell_topology
   data WED6_FACE_SIG/b'011011', b'110110', b'101101', b'000111', b'111000'/
   data WED6_VERT_SIG/b'01101', b'01011', b'01110', b'10101', b'10011', b'10110'/
 
-  integer, target, public :: HEX8_XFACE(7), HEX8_FACES(24), HEX8_FSIZE(6), HEX8_EDGES(2,12)
+  integer, target, public :: HEX8_XFACE(7), HEX8_FACES(24), HEX8_FEDGE(24), HEX8_FSIZE(6), HEX8_EDGES(2,12)
   integer, target, public :: HEX8_FACE_SIG(6), HEX8_VERT_SIG(8)
   data HEX8_XFACE/1,5,9,13,17,21,25/
   data HEX8_FACES/1,2,6,5, 2,3,7,6, 3,4,8,7, 1,5,8,4, 1,4,3,2, 5,6,7,8/

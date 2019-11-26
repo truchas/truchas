@@ -6,12 +6,12 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2019-04-16 15:55:40
+   build date/time:     2019-12-17 13:38:39
    build flags:         -u -C -C=dangling -gline -nan
-   build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 4.13.16-1
-   run host:            noether.lanl.gov1 SMP Mon Nov 27
-   run date/time:       17 Apr 19 15:33:30
+   build host:          petaca2.lanl.gov
+   run architecture:    Linux petaca2.lanl.gov 4.13.16-1
+   run host:            petaca2.lanl.gov1 SMP Mon Nov 27
+   run date/time:       06 Jan 20 14:11:32
    processors:          1
 
 ================================================================================
@@ -53,7 +53,7 @@ Reading PHYSICS namelist ...
 
  Reading OUTPUTS Namelist ...
 
-Reading MESH Namelist ...
+Reading MESH namelist ...
 
  Reading MATERIAL Namelist # 1 ...
 
@@ -97,6 +97,8 @@ Reading INTERFACES namelist ...
             2       2    background
          BODY Namelist number  2 will be used for background material ( 2)
 
+Reading BODY namelists ...
+
 Reading NUMERICS namelist ...
 
 Reading FLOW namelist ...
@@ -115,11 +117,9 @@ Reading DIFFUSION_SOLVER namelist ...
   using default NLK_VEC_TOL value: 1.00E-03
   using default PC_AMG_CYCLES value: 2
 
-Reading DS_BOUNDARY_CONDITION namelists ...
-  [left end] "dirichlet" condition for "temperature" variable
-  [adiabatic] "flux" condition for "temperature" variable
+Reading THERMAL_BC namelists ...
 
-Reading DS_INTERFACE_CONDITION namelists ...
+Reading SPECIES_BC namelists ...
 
 Reading DS_SOURCE namelists ...
   No DS_SOURCE namelists found.
@@ -128,10 +128,8 @@ Reading ENCLOSURE_RADIATION namelists ...
 
 Reading ENCLOSURE_SURFACE namelists ...
 
- Reading PROBE namelists ...
-         This is the last PROBE Namelist.
-
-         Identified 0 probe(s)
+Reading PROBE namelists ...
+  no PROBE namelists found
 
 Input file freezing-flow-2.inp closed.
 
@@ -163,12 +161,6 @@ Initializing mesh "MAIN" ...
 Allocating base derived types A ...done.
 
 Computing initial volume fractions ...
-ERROR: material 2 volume fraction > 1 in cells: 1 4 5 9 10 [33 more items omitted]
-       maximum volume fraction less 1:  3.10862E-15
-ERROR: material 3 volume fraction > 1 in cells: 120 123 124 126 130 [1 more items omitted]
-       maximum volume fraction less 1:  2.66454E-15
-  Computed volume fractions are invalid; attempting to normalize.
-  Normalization was successful.
   Initial volume fractions computed.
  Initializing Displacement Boundary Conditions
 
@@ -199,16 +191,21 @@ Generating velocity boundary condition for "marangoni" type
 
 Initializing diffusion solver ...
   Generating external source for "temperature" equation
-  Generating "HTC" interface condition for "temperature" variable
-  Generating "radiation" interface condition for "temperature" variable
-  Generating "flux" boundary condition for "temperature" variable
-    using DS_BOUNDARY_CONDITION[2]: adiabatic
-  Generating "HTC" boundary condition for "temperature" variable
-  Generating "radiation" boundary condition for "temperature" variable
-  Generating "dirichlet" boundary condition for "temperature" variable
-    using DS_BOUNDARY_CONDITION[1]: left end
+Generating "interface-htc" thermal interface condition
+  none specified
+Generating "gap-radiation" thermal interface condition
+  none specified
+Generating "flux" thermal boundary condition
+  using THERMAL_BC[adiabatic]
+Generating "htc" thermal boundary condition
+  none specified
+Generating "radiation" thermal boundary condition
+  none specified
+Generating "temperature" thermal boundary condition
+  using THERMAL_BC[left end]
   Diffusion solver initialized.
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
+Initializing solution probes ...
 
 ================================================================================
 
@@ -897,7 +894,7 @@ projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         63: t =   1.75013E-01, dt(growth) =   5.67971E-03
+         63: t =   1.75013E-01, dt(time) =   5.67971E-03
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -908,7 +905,7 @@ projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         64: t =   1.80693E-01, dt(growth) =   5.31595E-03
+         64: t =   1.80693E-01, dt(time) =   5.31595E-03
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -919,7 +916,7 @@ projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         65: t =   1.86009E-01, dt(growth) =   4.97550E-03
+         65: t =   1.86009E-01, dt(time) =   4.97550E-03
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -930,7 +927,7 @@ projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         66: t =   1.90985E-01, dt(growth) =   4.65685E-03
+         66: t =   1.90985E-01, dt(time) =   4.65685E-03
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -941,7 +938,7 @@ projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         67: t =   1.95641E-01, dt(growth) =   4.35860E-03
+         67: t =   1.95641E-01, dt(time) =   4.35860E-03
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -1941,7 +1938,7 @@ DS: dt=2.000E-02, NFUN:NPC:NPA=0000613:0000157:0000456
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-        158: t =   1.50607E+00, dt(maximum) =   1.95842E-02
+        158: t =   1.50607E+00, dt(time) =   1.95842E-02
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -1951,7 +1948,7 @@ DS: dt=1.958E-02, NFUN:NPC:NPA=0000618:0000158:0000460
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-        159: t =   1.52565E+00, dt(maximum) =   1.91771E-02
+        159: t =   1.52565E+00, dt(time) =   1.91771E-02
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -1961,7 +1958,7 @@ DS: dt=1.918E-02, NFUN:NPC:NPA=0000622:0000159:0000463
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-        160: t =   1.54483E+00, dt(growth) =   1.87784E-02
+        160: t =   1.54483E+00, dt(time) =   1.87784E-02
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -1971,7 +1968,7 @@ DS: dt=1.878E-02, NFUN:NPC:NPA=0000626:0000160:0000466
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-        161: t =   1.56361E+00, dt(growth) =   1.83880E-02
+        161: t =   1.56361E+00, dt(time) =   1.83880E-02
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -1981,7 +1978,7 @@ DS: dt=1.839E-02, NFUN:NPC:NPA=0000630:0000161:0000469
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
 
-        162: t =   1.58199E+00, dt(growth) =   1.80057E-02
+        162: t =   1.58199E+00, dt(time) =   1.80057E-02
 DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
@@ -2000,39 +1997,40 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  2.808E+00 --- Total
-    7.706E-03 --- Input
-    9.891E-02 --- Initialization
-      9.700E-05 --- Vof Initialization
-      2.120E-04 --- FHT function
-      2.239E-03 --- Flow
-        3.900E-05 --- update properties
-        9.300E-04 --- setup
-        9.260E-04 --- solve
-          3.540E-04 --- hypre solve
-    2.697E+00 --- Main Cycle
-      1.949E-03 --- Time Step
-      1.684E+00 --- Volumetracking
-        1.808E-01 --- normals
-        1.439E+00 --- reconstruct/advect
-      7.304E-01 --- Diffusion Solver
-        3.769E-01 --- FHT precon compute
-          2.967E-02 --- hypre-matrix-copy
-          9.715E-02 --- boomer-setup
-        1.193E-01 --- FHT function
-        8.459E-02 --- FHT precon apply
-          4.377E-02 --- boomer-solve
-      2.469E-01 --- Flow
-        5.970E-03 --- update properties
-        4.254E-02 --- prediction
-          2.732E-02 --- setup
-          1.450E-02 --- solve
-        1.851E-01 --- projection
-          8.928E-02 --- setup
-          9.514E-02 --- solve
-            2.714E-02 --- hypre solve
+  4.243E+00 --- Total
+    1.301E-02 --- Input
+    5.398E-01 --- Initialization
+      1.748E-01 --- VOF Initialize
+      1.290E-04 --- Vof Initialization
+      2.640E-04 --- FHT function
+      2.366E-03 --- Flow
+        5.200E-05 --- update properties
+        9.800E-04 --- setup
+        9.680E-04 --- solve
+          3.570E-04 --- hypre solve
+    3.618E+00 --- Main Cycle
+      1.759E-03 --- Time Step
+      1.556E+00 --- Volumetracking
+        1.747E-01 --- normals
+        1.313E+00 --- reconstruct/advect
+      6.992E-01 --- Diffusion Solver
+        3.620E-01 --- FHT precon compute
+          2.971E-02 --- hypre-matrix-copy
+          9.240E-02 --- boomer-setup
+        1.143E-01 --- FHT function
+        7.978E-02 --- FHT precon apply
+          4.309E-02 --- boomer-solve
+      2.365E-01 --- Flow
+        6.784E-03 --- update properties
+        3.874E-02 --- prediction
+          2.367E-02 --- setup
+          1.440E-02 --- solve
+        1.795E-01 --- projection
+          8.683E-02 --- setup
+          9.210E-02 --- solve
+            2.767E-02 --- hypre solve
 
-                  Process virtual memory used: 4.24E+02 mB
-                                   words/cell: 411996
+                  Process virtual memory used: 4.17E+02 mB
+                                   words/cell: 404976
 
-truchas terminated normally on 17 Apr 19 at 15:33:33
+truchas terminated normally on 06 Jan 20 at 14:11:40

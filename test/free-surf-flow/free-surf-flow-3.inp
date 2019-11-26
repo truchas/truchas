@@ -66,7 +66,7 @@ the fluid/void interfaces moving at speed 1 to the right.
 Fluid plug
 &BODY
   surface_name = 'box'
-  length = 1.0, 1.0, 1.0
+  length = 1.0, 1.0, 2.0
   translation_pt = -1.5, 0.0, 0.0
   material_number = 1
   velocity = 1.0, 0.0, 0.0

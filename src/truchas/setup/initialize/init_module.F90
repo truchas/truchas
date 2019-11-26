@@ -86,6 +86,9 @@ CONTAINS
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
+    use mesh_manager,           only: unstr_mesh_ptr
+    use body_namelist,          only: bodies_params
+    use vof_init_NEW
 
     real(r8), intent(in) :: t, dt
 
@@ -94,8 +97,7 @@ CONTAINS
     real(r8) :: density
     logical :: found
 
-    real(r8), dimension(nbody,ncells) :: Hits_Vol
-    real(r8), dimension(nbody,ncells) :: volume_fractions
+    real(r8), dimension(nbody,ncells) :: hits_vol
     real(r8), allocatable :: phi(:,:), vel_fn(:)
     real(r8), pointer :: temperature_fc(:) => null()
     character(200) :: errmsg
@@ -129,18 +131,10 @@ CONTAINS
     ! hits_vol is historically used to hold this information
     ! I think this is converted to volume fractions in matl_init.
     ! That's hopelessly confusing and will be corrected later.
-
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
-
-    ! New marching tets procedure has same limitations as the old 'divide' method.
-    ! Disable until feature set matches the old 'points' method.
-!!$    if (vtrack_enabled()) then
-!!$      call compute_initial_volumes(unstr_mesh_ptr('MAIN'), volume_fractions)
-!!$    else
-    volume_fractions = vof_initialize()
-!!$    end if
-    hits_vol = volume_fractions   ! temporary compatibility
+    !hits_vol = vof_initialize()
+    call vof_initialize_NEW (unstr_mesh_ptr('MAIN'), bodies_params, 3, hits_vol)
 
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then

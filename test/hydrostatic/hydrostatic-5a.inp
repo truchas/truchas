@@ -55,10 +55,8 @@ Lower half
 &BODY
   surface_name = 'plane'
   axis = 'y'
-  fill = 'outside'
   translation_pt = 0.0, 0.5, 0.0
-  mesh_material_number = 1
-  material_number = 1
+  material_number = 2
   velocity = 3*0.0
   temperature = 0.0
 /
@@ -70,7 +68,7 @@ Lower half
 upper half
 &BODY
   surface_name = 'background'
-  material_number = 2
+  material_number = 1
   velocity = 3*0.0
   temperature = 0.0
 /

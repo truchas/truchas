@@ -49,8 +49,8 @@ MODULE INTERFACES_MODULE
   real(r8), dimension(mbody,mphi), public, save :: Body_Phi
   real(r8), dimension(ndim,msurf), public, save :: Rotation_Pt, Translation_Pt, &
                                                                  Radius, Length
-  real(r8), dimension(nrot,msurf), public, save :: Rotation_Angle
-  real(r8), dimension(nrot,msurf,mbody), public, save :: Rotangl, Cosa, Sina
+  real(r8), dimension(nrot,msurf), public, save :: rotation_angle
+  real(r8), dimension(nrot,msurf,mbody), public, save :: rotangl, Cosa, Sina
   real(r8), dimension(ndim,msurf,mbody), public, save :: Offset, Rotpt, Ar
   real(r8), dimension(mcoef,msurf,mbody), public, save :: Sgeom
   type(scalar_func_box), public, save :: Body_Temp(mbody)

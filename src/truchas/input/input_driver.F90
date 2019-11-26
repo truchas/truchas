@@ -69,6 +69,7 @@ contains
     use physics_module,            only: heat_transport, flow, legacy_flow
     use legacy_flow_namelist,      only: read_legacy_flow_namelist
     use advection_velocity_namelist, only: read_advection_velocity_namelist
+    use body_namelist,             only: read_body_namelists
     use truchas_logging_services
     use truchas_timers
     use string_utilities, only: i_to_c
@@ -129,6 +130,7 @@ contains
 
     ! read volume fraction data
     call interfaces_input (lun)
+    call read_body_namelists (lun)
 
     ! read numerical options data
     call numerics_input (lun)

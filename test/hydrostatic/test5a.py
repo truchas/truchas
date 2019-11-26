@@ -11,6 +11,11 @@ def run_test(tenv):
 
     xc = output.centroids()
 
+    # initial vof
+    vof = output.field(1, "VOF")[:,0]
+    vofex = sp.array([0 if y > 1 else 1 if y < 0 else 0.5 for y in xc[:,1]])
+    nfail += truchas.compare_max(vof - vofex, 0, 1e-13, "vof", output.time(1))
+
     # pressure
     pex = sp.array([-2*y if y < 0 else -y-0.5 for y in xc[:,1]])
     pex -= sp.mean(pex)
