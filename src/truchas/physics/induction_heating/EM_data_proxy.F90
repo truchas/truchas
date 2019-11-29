@@ -196,7 +196,7 @@
 module EM_data_proxy
 
   use kinds, only : rk => r8
-  use EM_hex_tet_mapping
+  use kuprat_mapper_type
   use truchas_logging_services
   
   implicit none
@@ -247,7 +247,7 @@ module EM_data_proxy
   end type solenoid
   
   !! Hex-tet grid mapping data.
-  type(grid_int_vols), save :: gmd
+  type(kuprat_mapper) :: ht2em
   
   !! Distributed tet-mesh cell-based vectors: EM material parameters.
   real(kind=rk), allocatable, target, save :: eps(:), mu(:), sigma(:)
@@ -315,77 +315,32 @@ CONTAINS
   subroutine init_EM_data_proxy ()
   
     use parallel_communication
-    use legacy_mesh_api, only: hex_mesh_ncell => ncells
-    use simpl_mesh_type
-    use mesh_manager, only: simpl_mesh_ptr
+    use base_mesh_class
+    use mesh_manager, only: named_mesh_ptr
     use EM_input, only: coil_array
     
-    type(simpl_mesh), pointer :: alt_mesh
-    type :: external_mesh
-      integer :: nnode=0, ncell=0
-      integer, allocatable :: cnode(:,:), cell_block(:)
-      real(rk), allocatable :: x(:,:)
-    end type
-    type(external_mesh), allocatable :: main_mesh
-    type(gm_mesh), allocatable :: tet_mesh, hex_mesh
-    integer :: j, tmp
-    real(kind=rk), allocatable :: volume(:)
+    integer :: j
+    class(base_mesh), pointer :: ht_mesh, em_mesh
     
-    !! Collect the collated main mesh (hex).
-    allocate(main_mesh)
-    call collect_main_mesh (main_mesh)
-    ASSERT(allocated(main_mesh%cell_block))
-    
-    !! Setup the corresponding GM_MESH structure by linking into the imported mesh.
-    allocate(hex_mesh)
-    hex_mesh%nnod = main_mesh%nnode
-    hex_mesh%nelt = main_mesh%ncell
-    call move_alloc (main_mesh%cnode, hex_mesh%node_elt)
-    call move_alloc (main_mesh%cell_block, hex_mesh%block_elt)
-    call move_alloc (main_mesh%x, hex_mesh%pos_node)
-    deallocate(main_mesh)
-    
-    !! Access the distributed alternate mesh (tet).
-    alt_mesh => simpl_mesh_ptr('alt')
-    ASSERT(associated(alt_mesh))
-    
-    !! Create the corresponding (collated) GM_MESH structure.
-    allocate(tet_mesh)
-    call alt_mesh%get_global_cnode_array (tet_mesh%node_elt)
-    call alt_mesh%get_global_cblock_array (tet_mesh%block_elt)
-    call alt_mesh%get_global_x_array (tet_mesh%pos_node)
-    tet_mesh%nnod = size(tet_mesh%pos_node,dim=2)
-    tet_mesh%nelt = size(tet_mesh%node_elt,dim=2)
-    
-    !! Ensure each tet is positively oriented with respect to its volume.
-    call alt_mesh%get_global_volume_array (volume)
-    do j = 1, size(volume)
-      if (volume(j) < 0.0) then
-        tmp = tet_mesh%node_elt(3,j)
-        tet_mesh%node_elt(3,j) = tet_mesh%node_elt(4,j)
-        tet_mesh%node_elt(4,j) = tmp
-      end if
-    end do
-    
-    !! Calculate the hex-tet grid mapping data: a serial calculation.
-    call destroy_grid_int_vols (gmd)
-    if (is_IOP) call get_grid_mapping_data (hex_mesh, tet_mesh, gmd)
-    deallocate(hex_mesh, tet_mesh)
+    !! Generate the mapping between the HT and EM meshes
+    ht_mesh => named_mesh_ptr('main')
+    em_mesh => named_mesh_ptr('alt')
+    call ht2em%init(ht_mesh, em_mesh)
     
     !! Allocate the module's tet-mesh data store arrays.
     if (allocated(eps)) deallocate(eps)
     if (allocated(mu)) deallocate(mu)
     if (allocated(sigma)) deallocate(sigma)
-    allocate(eps(alt_mesh%ncell), mu(alt_mesh%ncell), sigma(alt_mesh%ncell))
+    allocate(eps(em_mesh%ncell), mu(em_mesh%ncell), sigma(em_mesh%ncell))
     
     if (allocated(eps_q)) deallocate(eps_q)
     if (allocated(mu_q)) deallocate(mu_q)
     if (allocated(sigma_q)) deallocate(sigma_q)
-    allocate(eps_q(alt_mesh%ncell), mu_q(alt_mesh%ncell), sigma_q(alt_mesh%ncell))
+    allocate(eps_q(em_mesh%ncell), mu_q(em_mesh%ncell), sigma_q(em_mesh%ncell))
 
     !! Allocate the module's hex-mesh data store array.
     if (allocated(joule)) deallocate(joule)
-    allocate(joule(hex_mesh_ncell))
+    allocate(joule(ht_mesh%ncell_onP))
     
     !! Copy the input coil physical properties to our own data structure.
     allocate(coil(size(coil_array)), coil_q(size(coil_array)))
@@ -400,55 +355,6 @@ CONTAINS
 
     !! The initial joule heat is set later in INITIALIZE_EM.
     
-  contains
-    
-    subroutine collect_main_mesh (mesh)
-
-      use legacy_mesh_api, only: ncells_tot, nnodes_tot
-      use legacy_mesh_api, only: MMesh => Mesh, Vertex, CELL_TET, mesh_has_cblockid_data
-
-      type(external_mesh), intent(out) :: mesh
-
-      integer :: k
-
-      if (is_IOP) then
-        mesh%ncell = ncells_tot
-        mesh%nnode = nnodes_tot
-      end if
-
-      if (global_all(MMesh(:)%Cell_Shape == CELL_TET)) then
-
-        !! Tet-cell node array. Note the funky way Truchas describes a tet as a degenerate hex.
-        allocate(mesh%cnode(4,mesh%ncell))
-        call collate (mesh%cnode(1,:), MMesh(:)%Ngbr_Vrtx_Orig(1))
-        call collate (mesh%cnode(2,:), MMesh(:)%Ngbr_Vrtx_Orig(3))
-        call collate (mesh%cnode(3,:), MMesh(:)%Ngbr_Vrtx_Orig(4))
-        call collate (mesh%cnode(4,:), MMesh(:)%Ngbr_Vrtx_Orig(5))
-
-      else
-
-        !! Hex-cell node array.
-        allocate(mesh%cnode(8,mesh%ncell))
-        do k = 1, 8
-          call collate (mesh%cnode(k,:), MMesh(:)%Ngbr_Vrtx_Orig(k))
-        end do
-
-      end if
-
-      !! Node positions.
-      allocate(mesh%x(3,mesh%nnode))
-      do k = 1, 3
-        call collate (mesh%x(k,:), vertex(:)%Coord(k))
-      end do
-
-      !! Cell block IDs.
-      if (mesh_has_cblockid_data) then
-        allocate(mesh%cell_block(mesh%ncell))
-        call collate (mesh%cell_block, MMesh(:)%CBlockID)
-      end if
-
-    end subroutine collect_main_mesh
-
   end subroutine init_EM_data_proxy
 
   function EM_mesh () result (ptr)
@@ -473,7 +379,7 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(eps) )
     mesh => EM_mesh()
-    call map_hex_field (gmd, values, eps(:mesh%ncell_onP), defval=1.0_rk)
+    call ht2em%map_field(values, eps(:mesh%ncell_onP), default=1.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, eps)
   end subroutine set_permittivity
 
@@ -484,7 +390,7 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(mu) )
     mesh => EM_mesh()
-    call map_hex_field (gmd, values, mu(:mesh%ncell_onP), defval=1.0_rk)
+    call ht2em%map_field(values, mu(:mesh%ncell_onP), default=1.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, mu)
   end subroutine set_permeability
 
@@ -495,7 +401,7 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(sigma) )
     mesh => EM_mesh()
-    call map_hex_field (gmd, values, sigma(:mesh%ncell_onP), defval=0.0_rk)
+    call ht2em%map_field(values, sigma(:mesh%ncell_onP), default=0.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, sigma)
   end subroutine set_conductivity
   
@@ -545,7 +451,7 @@ CONTAINS
     ASSERT( allocated(joule) )
     
     mesh => EM_mesh()
-    call map_tet_field (gmd, values(:mesh%ncell_onP), joule, defval=0.0_rk)
+    call ht2em%map_field(values(:mesh%ncell_onP), joule, default=0.0_rk, map_type=GLOBALLY_CONSERVATIVE, pullback=.true.)
     
     !! Record the data that gave rise to this Joule heat field.
     uhfs_q  = uhfs
