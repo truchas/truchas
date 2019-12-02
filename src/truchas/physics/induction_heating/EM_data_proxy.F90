@@ -196,7 +196,7 @@
 module EM_data_proxy
 
   use kinds, only : rk => r8
-  use kuprat_mapper_type
+  use data_mapper_class
   use truchas_logging_services
   
   implicit none
@@ -247,7 +247,7 @@ module EM_data_proxy
   end type solenoid
   
   !! Hex-tet grid mapping data.
-  type(kuprat_mapper) :: ht2em
+  class(data_mapper), allocatable :: ht2em
   
   !! Distributed tet-mesh cell-based vectors: EM material parameters.
   real(kind=rk), allocatable, target, save :: eps(:), mu(:), sigma(:)
@@ -318,6 +318,9 @@ CONTAINS
     use base_mesh_class
     use mesh_manager, only: named_mesh_ptr
     use EM_input, only: coil_array
+    use kuprat_mapper_type
+    use portage_mapper_type
+    use altmesh_namelist, only: data_mapper_kind
     
     integer :: j
     class(base_mesh), pointer :: ht_mesh, em_mesh
@@ -325,6 +328,12 @@ CONTAINS
     !! Generate the mapping between the HT and EM meshes
     ht_mesh => named_mesh_ptr('main')
     em_mesh => named_mesh_ptr('alt')
+    select case (data_mapper_kind)
+    case ('portage')
+      allocate(portage_mapper :: ht2em)
+    case default
+      allocate(kuprat_mapper :: ht2em)
+    end select
     call ht2em%init(ht_mesh, em_mesh)
     
     !! Allocate the module's tet-mesh data store arrays.
@@ -379,7 +388,7 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(eps) )
     mesh => EM_mesh()
-    call ht2em%map_field(values, eps(:mesh%ncell_onP), default=1.0_rk, map_type=LOCALLY_BOUNDED)
+    call ht2em%map_field(values, eps(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, eps)
   end subroutine set_permittivity
 
@@ -390,7 +399,7 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(mu) )
     mesh => EM_mesh()
-    call ht2em%map_field(values, mu(:mesh%ncell_onP), default=1.0_rk, map_type=LOCALLY_BOUNDED)
+    call ht2em%map_field(values, mu(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, mu)
   end subroutine set_permeability
 
@@ -401,7 +410,7 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(sigma) )
     mesh => EM_mesh()
-    call ht2em%map_field(values, sigma(:mesh%ncell_onP), default=0.0_rk, map_type=LOCALLY_BOUNDED)
+    call ht2em%map_field(values, sigma(:mesh%ncell_onP), defval=0.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, sigma)
   end subroutine set_conductivity
   
@@ -451,7 +460,8 @@ CONTAINS
     ASSERT( allocated(joule) )
     
     mesh => EM_mesh()
-    call ht2em%map_field(values(:mesh%ncell_onP), joule, default=0.0_rk, map_type=GLOBALLY_CONSERVATIVE, pullback=.true.)
+    call ht2em%map_field(values(:mesh%ncell_onP), joule, defval=0.0_rk, &
+                         map_type=GLOBALLY_CONSERVATIVE, pullback=.true.)
     
     !! Record the data that gave rise to this Joule heat field.
     uhfs_q  = uhfs

@@ -17,9 +17,10 @@ module altmesh_namelist
   character(511), public :: altmesh_file, grid_transfer_file, partition_file
   real(r8), public :: altmesh_coordinate_scale_factor
   integer, public :: first_partition
+  character(16), public :: data_mapper_kind
 
   namelist /altmesh/ altmesh_file, altmesh_coordinate_scale_factor, grid_transfer_file, &
-                     partitioner, partition_file, first_partition
+                     partitioner, partition_file, first_partition, data_mapper_kind
 
 contains
 
@@ -57,6 +58,7 @@ contains
       partitioner = NULL_C
       partition_file = NULL_C
       first_partition = NULL_I
+      data_mapper_kind = 'default'
       read(lun,nml=altmesh,iostat=ios)
     end if
     call broadcast(ios)
@@ -70,6 +72,7 @@ contains
     call broadcast(partitioner)
     call broadcast(partition_file)
     call broadcast(first_partition)
+    call broadcast(data_mapper_kind)
 
     !! Check the input variables for errors.
     if (altmesh_file == NULL_C) call TLS_fatal ('ALTMESH_FILE not specified')
@@ -102,6 +105,12 @@ contains
       if (.not.any(first_partition == [0,1])) call TLS_fatal ('FIRST_PARTITION must be 0 or 1')
     case default
       call TLS_fatal ('unknown value for PARTITIONER: ' // trim(partitioner))
+    end select
+
+    select case (data_mapper_kind)
+    case ('default', 'portage')
+    case default
+      call TLS_fatal('invalid value for DATA_MAPPER_KIND: ' // trim(data_mapper_kind))
     end select
 
   end subroutine read_altmesh_namelist

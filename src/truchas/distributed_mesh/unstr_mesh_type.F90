@@ -158,6 +158,7 @@ module unstr_mesh_type
   contains
     procedure :: get_global_cnode_array
     procedure :: get_global_cface_array
+    procedure :: get_global_fnode_array
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: check_bndry_face_set
@@ -298,6 +299,16 @@ contains
       call get_global_ragged_array (xcface_onP, this%face_ip%global_index(cface_onP), xcface, cface)
     end associate
   end subroutine get_global_cface_array
+
+  !! Creates the global ragged FNODE array on the IO process, 0-sized on others.
+  subroutine get_global_fnode_array (this, xfnode, fnode)
+    class(unstr_mesh), intent(in) :: this
+    integer, allocatable, intent(out) :: xfnode(:), fnode(:)
+    associate (xfnode_onP => this%xfnode(:this%nface_onP+1), &
+                fnode_onP => this%fnode(:this%xfnode(this%nface_onP+1)-1))
+      call get_global_ragged_array (xfnode_onP, this%node_ip%global_index(fnode_onP), xfnode, fnode)
+    end associate
+  end subroutine get_global_fnode_array
 
   !! Auxiliary subroutine creates a global ragged array on the IO process,
   !! 0-sized on others, given a distributed ragged array.

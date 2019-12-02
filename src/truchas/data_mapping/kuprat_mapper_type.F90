@@ -18,12 +18,13 @@
 module kuprat_mapper_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use data_mapper_class
   use grid_mapping_module
   use parallel_communication, only: is_IOP, collate, distribute, global_sum
   implicit none
   private
 
-  type, public :: kuprat_mapper
+  type, extends(data_mapper), public :: kuprat_mapper
     integer :: n1, n2
     type(grid_int_vols) :: gmd
   contains
@@ -31,10 +32,8 @@ module kuprat_mapper_type
     procedure :: map_field
   end type
 
-  !! Mapping type options
-  integer, parameter, public :: LOCALLY_CONSERVATIVE  = 1
-  integer, parameter, public :: LOCALLY_BOUNDED       = 2
-  integer, parameter, public :: GLOBALLY_CONSERVATIVE = 3
+  !! Re-export the mapping type options
+  public :: LOCALLY_CONSERVATIVE, LOCALLY_BOUNDED, GLOBALLY_CONSERVATIVE
 
 contains
 
@@ -58,12 +57,12 @@ contains
   end subroutine init
 
 
-  subroutine map_field(this, src, dest, default, map_type, pullback)
+  subroutine map_field(this, src, dest, defval, map_type, pullback)
 
-    class(kuprat_mapper)  :: this
+    class(kuprat_mapper), intent(in) :: this
     real(r8), intent(in)  :: src(:)
     real(r8), intent(out) :: dest(:)
-    real(r8), intent(in)  :: default
+    real(r8), intent(in)  :: defval
     integer,  intent(in)  :: map_type
     logical,  intent(in), optional :: pullback
 
@@ -100,7 +99,7 @@ contains
 
     call collate(col_src, src)
 
-    if (is_IOP) call map_cell_field(col_src, col_dest, this%gmd, defval=default, &
+    if (is_IOP) call map_cell_field(col_src, col_dest, this%gmd, defval=defval, &
                                     reverse_order=reverse_order, &
                                     preserve_constants=preserve_constants, &
                                     exactly_conservative=exactly_conservative)
