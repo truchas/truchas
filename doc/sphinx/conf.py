@@ -16,7 +16,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import guzzle_sphinx_theme
+import sphinx_bootstrap_theme
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
@@ -82,20 +82,54 @@ todo_include_todos = True
 
 # -- Options for HTML output ----------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
+# The theme to use for HTML and HTML Help pages. See the documentation for
 # a list of builtin themes.
 #
-#html_theme = 'alabaster'
-html_theme_path = guzzle_sphinx_theme.html_theme_path()
-html_theme = 'guzzle_sphinx_theme'
+html_theme = 'bootstrap'
+html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
+# further. For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
 html_theme_options = {
-    "project_nav_name": "Truchas"
+    # Render the current pages TOC in the navbar.
+    'navbar_pagenav': False,
+
+    # HTML navbar class to attach to <div> element.
+    # For black navbar, do "navbar navbar-inverse"
+    'navbar_class': "navbar",
+
+    # Global TOC depth for "site" navbar tab.
+    # Switching to -1 shows all levels.
+    'globaltoc_depth': 3,
+
+    # Choose Bootstrap version.
+    # Values: "3" (default) or "2" (in quotes)
+    'bootstrap_version': "3",
+
+    # Bootswatch (http://bootswatch.com/) theme.
+    'bootswatch_theme': "flatly",
+
+    # Visible levels of the global TOC; -1 means unlimited
+    "globaltoc_depth": 3,
+}
+
+# Add a sidebar
+html_sidebars = {
+   '**': ['sidebar_globaltoc.html', 'sidebar_localtoc.html'],
+}
+
+# Sidebar configuration variables
+html_context = {
+    # Visible levels of the global TOC in the sidebar; -1 means unlimited
+    'globaltoc_depth': 3,
+
+    # If False, expand all TOC entries
+    "globaltoc_collapse": True,
+
+    # If True, show hidden TOC entries
+    "globaltoc_includehidden": True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -103,6 +137,10 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+html_css_files = [
+    'css/sphinxdoc.css',
+    'css/theme.css',
+]
 
 # -- Options for HTMLHelp output ------------------------------------------
 

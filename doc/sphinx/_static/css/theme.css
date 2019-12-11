@@ -1,0 +1,25 @@
+/*
+ * This file contains CSS styling specific to the Sphinx bootstrap theme.
+ */
+
+/* Better links in admonitions */
+.admonition a {
+  color: #fff;
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+/* Do not wrap or draw over admonitions. */
+.admonition {
+  clear: both;
+}
+
+/* Sidebar */
+.sidebar-wrapper {
+  padding: 0 1em;
+}
+
+.sidebar-toc ul li.current > a,
+.sidebar-toc ul li.current > a:hover {
+  background-color: #e6e6e6;
+}
