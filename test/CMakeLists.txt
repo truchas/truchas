@@ -189,6 +189,11 @@ add_pytruchas_test(vfrad1-tet
 		   PROCESSORS 4
 		   LABELS RADIATION CONDUCTION TET)
 
+add_pytruchas_test(vfrad1-patch
+                   vfrad1-patch/testVFRad1Patch.py
+		   PROCESSORS 4
+           LABELS RADIATION CONDUCTION HEX)
+
 add_pytruchas_test(vfrad2
                    vfrad2/testVFRad2.py
 		   PROCESSORS 4

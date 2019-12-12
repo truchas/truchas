@@ -574,7 +574,7 @@ contains
     use rad_encl_func_type
 
     character(len=*), intent(in)  :: encl_name
-    type(rad_encl), pointer :: encl
+    type(rad_encl), target :: encl
     type(rad_encl_func), intent(out) :: eps
 
     integer :: stat

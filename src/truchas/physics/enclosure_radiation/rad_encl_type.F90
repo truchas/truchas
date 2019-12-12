@@ -37,7 +37,7 @@ module rad_encl_type
 
 contains
 
-  subroutine init (this, file, fcolor)
+  subroutine init (this, file, fcolor, csf)
 
     use rad_encl_file_type
     use permutations
@@ -46,6 +46,7 @@ contains
     class(rad_encl), intent(out) :: this
     type(rad_encl_file), intent(in) :: file
     integer, intent(in) :: fcolor(:)
+    real(r8), intent(in), optional :: csf  ! Coordinate scaling factor
 
     integer :: j, n, nnode, nface
     integer, allocatable :: fsize(:), fnode(:), group_ids(:), gnum(:)
@@ -147,6 +148,9 @@ contains
     call distribute (this%face_block(:this%nface_onP), gnum)
     !call gather_boundary (this%face_ip, this%face_block)
     deallocate(gnum)
+
+    !! Scale coordinates
+    if (present(csf) .and. csf /= 1.0_r8) this%coord = csf * this%coord
 
   end subroutine init
 
