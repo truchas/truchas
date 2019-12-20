@@ -86,7 +86,7 @@ CONTAINS
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
-    use common_impl,            only: new_mesh
+    use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
     use vof_init_NEW
 
@@ -133,7 +133,11 @@ CONTAINS
     ! That's hopelessly confusing and will be corrected later.
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
-    call vof_initialize_NEW (new_mesh, bodies_params, 5, hits_vol)
+    !hits_vol = vof_initialize()
+    ! print '(a,10es13.3)', 'hv: ', hits_vol(1,:)
+    call vof_initialize_NEW (unstr_mesh_ptr('MAIN'), bodies_params, 3, hits_vol)
+    !print '(a,10es13.3)', 'hv: ', hits_vol(1,:)
+    !INSIST(.false.)
 
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then

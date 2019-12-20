@@ -40,7 +40,7 @@ contains
     class(ellipsoid_body), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: cellid
-    eval = norm2((x - this%center) / this%axes) < 1
+    eval = norm2((x - this%center) / this%axes) <= 1
   end function eval
 
   real(r8) function signed_distance(this, x)

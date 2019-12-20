@@ -13,13 +13,14 @@ module body_class
   type, abstract, public :: body
   contains
     procedure(point_is_inside_body), deferred :: eval
-    !procedure(signed_distance_to_surface), deferred :: signed_distance
+    procedure(signed_distance_to_surface), deferred :: signed_distance
   end type body
 
   type, public :: body_box
     class(body), allocatable :: f
   contains
     procedure :: eval
+    procedure :: signed_distance
   end type body_box
 
   abstract interface
@@ -30,11 +31,10 @@ module body_class
       integer, intent(in) :: cellid
     end function point_is_inside_body
 
-    real(r8) function signed_distance_to_surface(this, x, cellid)
+    real(r8) function signed_distance_to_surface(this, x)
       import :: body, r8
       class(body), intent(in) :: this
       real(r8), intent(in) :: x(:)
-      integer, intent(in) :: cellid
     end function signed_distance_to_surface
   end interface
 
@@ -46,5 +46,11 @@ contains
     integer, intent(in) :: cellid
     eval = this%f%eval(x, cellid)
   end function eval
+
+  real(r8) function signed_distance(this, x)
+    class(body_box), intent(in) :: this
+    real(r8), intent(in) :: x(:)
+    signed_distance = this%f%signed_distance(x)
+  end function signed_distance
 
 end module body_class

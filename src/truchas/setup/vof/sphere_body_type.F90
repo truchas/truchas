@@ -38,7 +38,7 @@ contains
     class(sphere_body), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: cellid
-    eval = norm2(x-this%center) < this%radius
+    eval = norm2(x-this%center) <= this%radius
   end function eval
 
   real(r8) function signed_distance(this, x)

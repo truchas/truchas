@@ -71,10 +71,10 @@ BC #1. Velocity BC: Inlet
 
 &BODY
  
-       Material_number = 1,
-       Surface_Name    = 'background',
-       !Velocity        = 1.0, 0.0, 0.0, ! Truchas original overwrote this with zero
-       Velocity        = 0.0, 0.0, 0.0,
+       Material_number = 2,
+       Surface_Name    = 'box',
+       length = 0.3, 0.1, 0.1,
+       translation_pt  = 0.85, 0.05, 0.05,
        Temperature     = 273.0
 
 
@@ -82,10 +82,10 @@ BC #1. Velocity BC: Inlet
 
 &BODY
  
-       Material_number = 2,
-       Surface_Name    = 'box',
-       length = 0.3, 0.1, 0.1,
-       translation_pt  = 0.85, 0.05, 0.05,
+       Material_number = 1,
+       Surface_Name    = 'background',
+       !Velocity        = 1.0, 0.0, 0.0, ! Truchas original overwrote this with zero
+       Velocity        = 0.0, 0.0, 0.0,
        Temperature     = 273.0
 
 

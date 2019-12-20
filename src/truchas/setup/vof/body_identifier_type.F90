@@ -18,17 +18,14 @@ module body_identifier_type
   type, public :: body_identifier
     private
     integer, public :: nbody
-    class(body_box), allocatable :: body(:)
+    class(body_box), allocatable, public :: body(:)
     type(unstr_mesh), pointer :: mesh => null() ! do not own
 
-    logical :: legacy = .true. ! This should go away
+    logical :: legacy = .false. ! This should go away
   contains
     procedure :: init
     procedure :: body_at_point
   end type body_identifier
-
-  integer, parameter :: POINT = 1
-  integer, parameter :: CELL = 2
 
 contains
 

@@ -54,6 +54,14 @@ contains
   end subroutine alloc_sphere_body
 
 
+  subroutine alloc_cylinder_body(r, xc, axis, length, radius)
+    use cylinder_body_type
+    class(body), allocatable, intent(out) :: r
+    real(r8), intent(in) :: xc(:), axis(:), length, radius
+    allocate(r, source=cylinder_body(xc, axis, length, radius))
+  end subroutine alloc_cylinder_body
+
+
   subroutine alloc_ellipsoid_body(r, xc, axes)
     use ellipsoid_body_type
     class(body), allocatable, intent(out) :: r
@@ -117,12 +125,12 @@ contains
     use parameter_list_type
     use cell_geometry, only: normalized
 
-    type(unstr_mesh), intent(in) :: mesh
+    type(unstr_mesh), target, intent(in) :: mesh
     type(parameter_list), intent(inout) :: params
     class(body), allocatable, intent(out) :: r
 
     real(r8), allocatable :: x(:), coeffs(:)
-    real(r8) :: p
+    real(r8) :: p, l
     character(:), allocatable :: rtype, context, errmsg
     integer :: i, stat
 
@@ -183,18 +191,18 @@ contains
     !   ASSERT(size(normal)==3)
     !   normal = normalized(normal)
     !   call alloc_halfsphere_body(r, x, p, normal)
-    ! case ('cylinder')
-    !   call params%get('center', x, stat=stat, errmsg=errmsg)
-    !   if (stat /= 0) call TLS_fatal(context//errmsg)
-    !   call params%get('axis', coeffs, stat=stat, errmsg=errmsg)
-    !   if (stat /= 0) call TLS_fatal(context//errmsg)
-    !   call params%get('radius', p, stat=stat, errmsg=errmsg)
-    !   if (stat /= 0) call TLS_fatal(context//errmsg)
-    !   call params%get('halfheight', d, stat=stat, errmsg=errmsg)
-    !   if (stat /= 0) call TLS_fatal(context//errmsg)
-    !   ASSERT(size(x)==3)
-    !   ASSERT(size(coeffs)==3)
-    !   call alloc_cylinder_body(r, x, coeffs, p, d)
+    case ('cylinder')
+      call params%get('center', x, stat=stat, errmsg=errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+      call params%get('axis', coeffs, stat=stat, errmsg=errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+      call params%get('radius', p, stat=stat, errmsg=errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+      call params%get('length', l, stat=stat, errmsg=errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+      ASSERT(size(x)==3)
+      ASSERT(size(coeffs)==3)
+      call alloc_cylinder_body(r, x, coeffs, l, p)
     ! case ('ellipse')
     !   call params%get('center', x, stat=stat, errmsg=errmsg)
     !   if (stat /= 0) call TLS_fatal(context//errmsg)

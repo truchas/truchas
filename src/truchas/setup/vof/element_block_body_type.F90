@@ -20,7 +20,7 @@ module element_block_body_type
     integer :: cblockid
   contains
     procedure :: eval
-    !procedure :: signed_distance
+    procedure :: signed_distance
   end type element_block_body
 
   interface element_block_body
@@ -47,11 +47,10 @@ contains
     eval = this%cblockid == this%mesh%cell_set_id(trailz(this%mesh%cell_set_mask(cellid)))
   end function eval
 
-
-  ! real(r8) function signed_distance(this, x)
-  !   class(element_block_body), intent(in) :: this
-  !   real(r8),             intent(in) :: x(:)
-  !   signed_distance = norm2(x-this%center) - this%radius
-  ! end function signed_distance
+  real(r8) function signed_distance(this, x)
+    class(element_block_body), intent(in) :: this
+    real(r8),             intent(in) :: x(:)
+    signed_distance = 0
+  end function signed_distance
 
 end module element_block_body_type

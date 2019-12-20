@@ -32,13 +32,14 @@ contains
     type(plane_body) :: r
     r%normal = n
     r%plane_const = p
+    print '(a,4es13.3)', "planenr: ", n, p
   end function plane_body_value
 
   logical function eval(this, x, cellid)
     class(plane_body), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: cellid
-    eval = this%signed_distance(x) < 0
+    eval = this%signed_distance(x) <= 0
   end function eval
 
   real(r8) function signed_distance(this, x)

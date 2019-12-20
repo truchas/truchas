@@ -4,6 +4,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 module body_namelist
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -29,6 +31,8 @@ contains
     logical :: found
     character(80) :: iom, pstr
     type(parameter_list), pointer :: plist
+
+    real(r8) :: x(3)
 
     !! Namelist variables
     character(64) :: axis, surface_name
@@ -100,7 +104,9 @@ contains
 
       case ('plane')
         call plist%set('type', trim(surface_name))
-        call plist%set('normal', normal_vector(axis, rotation_angle, rotation_pt))
+        print '(a,3es13.3)', 'normal: ', -normal_vector(axis, rotation_angle, rotation_pt)
+        call plist%set('normal', -normal_vector(axis, rotation_angle, rotation_pt))
+        !call plist%set('point-on-plane', reverse_transform(translation_pt, rotation_angle, rotation_pt))
         call plist%set('point-on-plane', translation_pt)
 
       case ('box')
@@ -117,15 +123,22 @@ contains
         call plist%set('type', 'element-block')
         call plist%set('blockid', mesh_material_number)
 
+      case ('cylinder')
+        ! old input centers on cylinder base, new centers on center
+        x = normal_vector(axis, rotation_angle, rotation_pt)
+        translation_pt = translation_pt + x * height / 2
+        call plist%set('type', trim(surface_name))
+        call plist%set('center', translation_pt)
+        call plist%set('radius', radius)
+        call plist%set('length', height)
+        call plist%set('axis', x)
+
       ! case ('ellipsoid')
       !   call plist%set('type', trim(surface_name))
       !   call plist%set('center', translation_pt)
       !   call plist%set('axes', length) ! TODO
 
       ! case ('box')
-      !   call plist%set('type', trim(surface_name))
-
-      ! case ('cylinder')
       !   call plist%set('type', trim(surface_name))
 
       ! case ('cone')
@@ -150,33 +163,63 @@ contains
     character(*), intent(in) :: axis
     real(r8), intent(in) :: rotation_angle(:), rotation_point(:)
     real(r8) :: normal(3)
-
+    
     real(r8), parameter :: deg = pi / 180
+    integer, parameter :: ndim = 3
     integer, parameter :: nrot = 3
-    real(r8) :: c, s, tmp
+    real(r8) :: c, s, tmp, rot(nrot)
     integer :: n, n1, n2, coeff, na
 
+    INSIST(axis == 'x' .or. axis == 'y' .or. axis == 'z')
     normal = 0
     if (axis == 'x') normal(1) = 1
     if (axis == 'y') normal(2) = 1
     if (axis == 'z') normal(3) = 1
+    normal = reverse_transform(normal, rotation_angle, rotation_point)
+    normal = normal / norm2(normal)
 
-    do n = 1, nrot
-      !na = merge(3, n, ndim == 2)
-      na = n
+  end function normal_vector
+
+
+  
+  function reverse_transform(q, rotation_angle, rotation_point) result(x)
+
+    use constants_module, only: pi
+
+    real(r8), intent(in) :: q(:), rotation_angle(:), rotation_point(:)
+    real(r8) :: x(3)
+
+    real(r8), parameter :: deg = pi / 180
+    integer, parameter :: ndim = 3
+    integer, parameter :: nrot = 3
+    real(r8) :: c, s, tmp, rot(nrot)
+    integer :: n, n1, n2, coeff, na
+
+    x = q
+
+    !! The legacy code worked by rotating input points to a coordinate system
+    !! where a normal was axis-aligned. The new system works with normal vectors
+    !! in the existing coordinate space, so we need to rotate in the opposite
+    !! direction and order to get the correct surface. Here we also convert
+    !! from degrees to radians.
+    INSIST(size(rot) == size(rotation_angle))
+    rot = deg * rotation_angle
+
+    do n = nrot, 1, -1
+      na = merge(3, n, ndim == 2)
       coeff = merge(-1, 1, na == 2)
       n1 = modulo(na, 3) + 1
-      n2 = modulo(na-2, 3) + 1
-      
-      if (rotation_angle(n) /= 0) then
-        c = cos(-deg*rotation_angle(n))
-        s = sin(-deg*rotation_angle(n))
-        tmp =        c*(normal(n1)-rotation_point(n1)) - coeff*s*(normal(n2)-rotation_point(n2)) + rotation_point(n1)
-        normal(n2) = c*(normal(n2)-rotation_point(n2)) + coeff*s*(normal(n1)-rotation_point(n1)) + rotation_point(n2)
-        normal(n1) = tmp
+      n2 = modulo(na+1, 3) + 1
+
+      if (rot(n) /= 0) then
+        c = cos(rot(n))
+        s = sin(rot(n))
+        tmp =   c*(x(n1)-rotation_point(n1)) - coeff*s*(x(n2)-rotation_point(n2)) + rotation_point(n1)
+        x(n2) = c*(x(n2)-rotation_point(n2)) + coeff*s*(x(n1)-rotation_point(n1)) + rotation_point(n2)
+        x(n1) = tmp
       end if
     end do
 
-  end function normal_vector
+  end function reverse_transform
 
 end module body_namelist

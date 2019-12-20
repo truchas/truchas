@@ -14,6 +14,7 @@ module background_body_type
   type, extends(body), public :: background_body
   contains
     procedure :: eval
+    procedure :: signed_distance
   end type background_body
 
   interface background_body
@@ -33,5 +34,11 @@ contains
     integer, intent(in) :: cellid
     eval = .true.
   end function eval
+
+  real(r8) function signed_distance(this, x)
+    class(background_body), intent(in) :: this
+    real(r8), intent(in) :: x(:)
+    signed_distance = 0
+  end function signed_distance
 
 end module background_body_type

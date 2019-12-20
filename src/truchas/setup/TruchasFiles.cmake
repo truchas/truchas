@@ -75,6 +75,7 @@ set(SETUP_VOF_FILES
           setup/vof/plane_body_type.F90
           setup/vof/box_body_type.F90
           setup/vof/sphere_body_type.F90
+          setup/vof/cylinder_body_type.F90
           setup/vof/body_factories.F90
           setup/vof/body_namelist.F90
           )
