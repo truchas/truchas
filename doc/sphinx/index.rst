@@ -9,6 +9,9 @@ Welcome to Truchas documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   :titlesonly:
+
+   style_guide.rst
 
 
 Indices and tables
