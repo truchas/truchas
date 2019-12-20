@@ -33,7 +33,9 @@ import sphinx_bootstrap_theme
 # ones.
 extensions = ['sphinx.ext.todo',
     'sphinx.ext.mathjax', 'sphinx.ext.graphviz',
-    'sphinx.ext.autodoc', 'sphinx-jsonschema']
+    'sphinx.ext.autodoc', 'sphinx-jsonschema',
+    'sphinx.ext.autosectionlabel',
+    'sphinxcontrib.bibtex']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -200,5 +202,7 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+# -- Options for automatic section labels ---------------------------------
 
-
+autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = None
