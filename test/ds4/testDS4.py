@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "ds4.inp")
-    golden = tenv.output("ds4_pgolden/ds4.h5")
+    golden = tenv.output("ds4_golden/ds4.h5")
 
     # test final cycle number
     cycle = output.cycle(2)
@@ -22,7 +22,7 @@ def run_test(tenv):
     # test final temperature
     test = output.field(2, "VOF")[:,2]
     gold = golden.field(2, "VOF")[:,2]
-    nfail += truchas.compare_max(test, gold, 1e-6, "vof", output.time(2))
+    nfail += truchas.compare_max(test, gold, 2e-6, "vof", output.time(2))
 
     truchas.report_summary(nfail)
     return nfail

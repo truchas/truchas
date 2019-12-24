@@ -59,8 +59,6 @@ module scalar_func_map_type
   implicit none
   private
 
-  public :: dump
-
   type :: list_item
     character(:), allocatable :: key
     class(scalar_func), allocatable :: value
@@ -79,7 +77,23 @@ module scalar_func_map_type
     procedure :: mapped
     procedure :: clear
     final :: scalar_func_map_delete
+    procedure :: dump
   end type scalar_func_map
+
+  type, public :: scalar_func_map_iterator
+    private
+    class(list_item), pointer :: item => null()
+  contains
+    procedure :: next => iter_next
+    procedure :: at_end => iter_at_end
+    procedure :: name => iter_name
+    procedure :: get_func => iter_get_func
+  end type scalar_func_map_iterator
+
+  !! User-defined SCALAR_FUNC_MAP_ITERATOR structure constructor
+  interface scalar_func_map_iterator
+    procedure scalar_func_map_begin
+  end interface
 
 contains
 
@@ -208,8 +222,45 @@ contains
     mapped = associated(find_list_item(this, key))
   end function mapped
 
+  !!!! SCALAR_FUNC_MAP_ITERATOR TYPE-BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !! Defined SCALAR_FUNC_MAP_ITERATOR constructor that is positioned
+  !! to the beginning element of the specified SCALAR_FUNC_MAP object.
+  function scalar_func_map_begin(map) result(iter)
+    class(scalar_func_map), intent(in) :: map
+    type(scalar_func_map_iterator) :: iter
+    iter%item => map%first
+  end function scalar_func_map_begin
+
+  !! Advances the iterator to the next element in the map.
+  subroutine iter_next(this)
+    class(scalar_func_map_iterator), intent(inout) :: this
+    if (associated(this%item)) this%item => this%item%next
+  end subroutine iter_next
+
+  !! Returns true if the iterator has reached the end; that is, it has
+  !! gone past the last element of the map.
+  pure logical function iter_at_end(this)
+    class(scalar_func_map_iterator), intent(in) :: this
+    iter_at_end = .not.associated(this%item)
+  end function iter_at_end
+
+  !! Returns the name for the current element.
+  function iter_name(this)
+    class(scalar_func_map_iterator), intent(in) :: this
+    character(:), allocatable :: iter_name
+    iter_name = this%item%key
+  end function iter_name
+
+  !! Returns a copy of the scalar function for the current element.
+  subroutine iter_get_func(this, func)
+    class(scalar_func_map_iterator), intent(in) :: this
+    class(scalar_func), allocatable, intent(out) :: func
+    if (associated(this%item)) allocate(func, source=this%item%value)
+  end subroutine iter_get_func
+
   subroutine dump(this)
-    type(scalar_func_map), intent(in) :: this
+    class(scalar_func_map), intent(in) :: this
     type(list_item), pointer :: item, last, tail
     item => this%first
     if (associated(item)) then

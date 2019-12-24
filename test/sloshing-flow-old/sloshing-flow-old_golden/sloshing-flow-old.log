@@ -6,12 +6,12 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2019-04-13 10:20:37
+   build date/time:     2019-10-06 07:23:43
    build flags:         -u -C -C=dangling -gline -nan
    build host:          noether.lanl.gov
    run architecture:    Linux noether.lanl.gov 4.13.16-1
    run host:            noether.lanl.gov1 SMP Mon Nov 27
-   run date/time:       19 Apr 19 11:38:32
+   run date/time:       06 Oct 19 07:32:51
    processors:          1
 
 ================================================================================
@@ -55,9 +55,7 @@ Reading PHYSICS namelist ...
 
  Reading OUTPUTS Namelist ...
 
-Reading SIMULATION_CONTROL namelist ...
-
-Reading MESH Namelist ...
+Reading MESH namelist ...
 
  Reading MATERIAL Namelist # 1 ...
 
@@ -66,14 +64,6 @@ Reading MESH Namelist ...
  Reading MATERIAL Namelist # 3 ...
 This is the last MATERIAL Namelist.
 Identified 3 material(s)
-
-               Material Priorities
-
-         Material     Name     Priority
-         --------     ----     --------
-             1        water        1
-             2         void        2
-             3       copper        3
 
  Reading LINEAR_SOLVER Namelist(s) ...
 
@@ -114,6 +104,15 @@ Reading NUMERICS namelist ...
 Reading LEGACY_FLOW namelist ...
 Using linear solver "projection" for projection linear solution.
 Using linear solver "viscous" for viscous linear solution.
+MATERIAL_PRIORITY not specified; defaulting to material input order
+
+               Material Priorities
+
+         Material     Name     Priority
+         --------     ----     --------
+             1        water        1
+             2         void        2
+             3       copper        3
 
  Reading BC Namelists ...
 
@@ -125,11 +124,9 @@ Reading DIFFUSION_SOLVER namelist ...
   using default NLK_VEC_TOL value: 1.00E-03
   using default PC_AMG_CYCLES value: 2
 
-Reading DS_BOUNDARY_CONDITION namelists ...
-  [symmetry planes] "flux" condition for "temperature" variable
-  [cirumference] "flux" condition for "temperature" variable
+Reading THERMAL_BC namelists ...
 
-Reading DS_INTERFACE_CONDITION namelists ...
+Reading SPECIES_BC namelists ...
 
 Reading DS_SOURCE namelists ...
   [1] read source for "temperature" equation
@@ -138,10 +135,8 @@ Reading ENCLOSURE_RADIATION namelists ...
 
 Reading ENCLOSURE_SURFACE namelists ...
 
- Reading PROBE namelists ...
-         This is the last PROBE Namelist.
-
-         Identified 0 probe(s)
+Reading PROBE namelists ...
+  no PROBE namelists found
 
 Input file sloshing-flow-old.inp closed.
 
@@ -208,15 +203,21 @@ Warning:     64 interior #6 faces are affected by BC namelist  1!
 
 Initializing diffusion solver ...
   Generating external source for "temperature" equation
-  Generating "HTC" interface condition for "temperature" variable
-  Generating "radiation" interface condition for "temperature" variable
-  Generating "flux" boundary condition for "temperature" variable
-    using DS_BOUNDARY_CONDITION[1]: symmetry planes
-    using DS_BOUNDARY_CONDITION[2]: cirumference
-  Generating "HTC" boundary condition for "temperature" variable
-  Generating "radiation" boundary condition for "temperature" variable
-  Generating "dirichlet" boundary condition for "temperature" variable
+Generating "interface-htc" thermal interface condition
+  none specified
+Generating "gap-radiation" thermal interface condition
+  none specified
+Generating "flux" thermal boundary condition
+  using THERMAL_BC[symmetry planes]
+  using THERMAL_BC[cirumference]
+Generating "htc" thermal boundary condition
+  none specified
+Generating "radiation" thermal boundary condition
+  none specified
+Generating "temperature" thermal boundary condition
+  none specified
   Diffusion solver initialized.
+Initializing solution probes ...
 
 ================================================================================
 
@@ -277,8 +278,8 @@ Warning: excessive volume adjustment: cell=72, matid=1, adjustment fraction=  3.
 Warning: excessive volume adjustment: cell=73, matid=1, adjustment fraction= -1.525E-08
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 156/2/430
-DS: T(H) iterations:  1.60(avg), 4(max)
-DS: T(H) salvage rate = 0.300; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.20(avg), 3(max)
+DS: T(H) salvage rate = 0.700; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.000E-03, NFUN:NPC:NPA=0000004:0000001:0000003
  Linear solver name: projection
@@ -304,8 +305,8 @@ DS: dt=1.000E-03, NFUN:NPC:NPA=0000004:0000001:0000003
           2: t =   1.00000E-03, dt(growth) =   1.05000E-03
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 155/2/431
-DS: T(H) iterations:  1.77(avg), 4(max)
-DS: T(H) salvage rate = 0.231; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.62(avg), 4(max)
+DS: T(H) salvage rate = 0.615; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.050E-03, NFUN:NPC:NPA=0000008:0000002:0000006
  Linear solver name: projection
@@ -340,8 +341,8 @@ Warning: excessive volume adjustment: cell=95, matid=1, adjustment fraction=  9.
 Warning: excessive volume adjustment: cell=96, matid=1, adjustment fraction=  4.208E-09
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 156/0/432
-DS: T(H) iterations:  1.93(avg), 4(max)
-DS: T(H) salvage rate = 0.214; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.79(avg), 4(max)
+DS: T(H) salvage rate = 0.571; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.103E-03, NFUN:NPC:NPA=0000012:0000003:0000009
  Linear solver name: projection
@@ -365,8 +366,8 @@ DS: dt=1.103E-03, NFUN:NPC:NPA=0000012:0000003:0000009
           4: t =   3.15250E-03, dt(growth) =   1.15763E-03
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 156/0/432
-DS: T(H) iterations:  1.93(avg), 4(max)
-DS: T(H) salvage rate = 0.214; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.79(avg), 4(max)
+DS: T(H) salvage rate = 0.571; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.158E-03, NFUN:NPC:NPA=0000016:0000004:0000012
  Linear solver name: projection
@@ -390,8 +391,8 @@ DS: dt=1.158E-03, NFUN:NPC:NPA=0000016:0000004:0000012
           5: t =   4.31013E-03, dt(growth) =   1.21551E-03
 DS: culled material fragments from 6 cells.
 DS: totally/essentially/non-void cell counts = 156/0/432
-DS: T(H) iterations:  1.93(avg), 4(max)
-DS: T(H) salvage rate = 0.214; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.79(avg), 4(max)
+DS: T(H) salvage rate = 0.571; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.216E-03, NFUN:NPC:NPA=0000020:0000005:0000015
  Linear solver name: projection
@@ -415,8 +416,8 @@ DS: dt=1.216E-03, NFUN:NPC:NPA=0000020:0000005:0000015
           6: t =   5.52563E-03, dt(growth) =   1.27628E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 156/0/432
-DS: T(H) iterations:  1.93(avg), 4(max)
-DS: T(H) salvage rate = 0.214; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.79(avg), 4(max)
+DS: T(H) salvage rate = 0.571; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.276E-03, NFUN:NPC:NPA=0000024:0000006:0000018
  Linear solver name: projection
@@ -440,8 +441,8 @@ DS: dt=1.276E-03, NFUN:NPC:NPA=0000024:0000006:0000018
           7: t =   6.80191E-03, dt(growth) =   1.34010E-03
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 156/0/432
-DS: T(H) iterations:  1.93(avg), 4(max)
-DS: T(H) salvage rate = 0.214; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.79(avg), 4(max)
+DS: T(H) salvage rate = 0.571; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.340E-03, NFUN:NPC:NPA=0000028:0000007:0000021
  Linear solver name: projection
@@ -465,8 +466,8 @@ DS: dt=1.340E-03, NFUN:NPC:NPA=0000028:0000007:0000021
           8: t =   8.14201E-03, dt(growth) =   1.40710E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 156/0/432
-DS: T(H) iterations:  1.93(avg), 4(max)
-DS: T(H) salvage rate = 0.214; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.79(avg), 4(max)
+DS: T(H) salvage rate = 0.571; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.407E-03, NFUN:NPC:NPA=0000032:0000008:0000024
  Linear solver name: projection
@@ -491,8 +492,8 @@ DS: dt=1.407E-03, NFUN:NPC:NPA=0000032:0000008:0000024
 Warning: excessive volume adjustment: cell=90, adjustment fraction=  4.662E-08
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 156/0/432
-DS: T(H) iterations:  1.93(avg), 4(max)
-DS: T(H) salvage rate = 0.214; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.79(avg), 4(max)
+DS: T(H) salvage rate = 0.571; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.477E-03, NFUN:NPC:NPA=0000036:0000009:0000027
  Linear solver name: projection
@@ -516,8 +517,8 @@ DS: dt=1.477E-03, NFUN:NPC:NPA=0000036:0000009:0000027
          10: t =   1.10266E-02, dt(growth) =   1.55133E-03
 DS: culled material fragments from 6 cells.
 DS: totally/essentially/non-void cell counts = 155/0/433
-DS: T(H) iterations:  2.00(avg), 4(max)
-DS: T(H) salvage rate = 0.267; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.87(avg), 4(max)
+DS: T(H) salvage rate = 0.600; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.551E-03, NFUN:NPC:NPA=0000040:0000010:0000030
  Linear solver name: projection
@@ -541,8 +542,8 @@ DS: dt=1.551E-03, NFUN:NPC:NPA=0000040:0000010:0000030
          11: t =   1.25779E-02, dt(courant [198]) =   1.47589E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 154/1/433
-DS: T(H) iterations:  2.12(avg), 4(max)
-DS: T(H) salvage rate = 0.312; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  2.00(avg), 4(max)
+DS: T(H) salvage rate = 0.625; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.476E-03, NFUN:NPC:NPA=0000044:0000011:0000033
  Linear solver name: projection
@@ -567,8 +568,8 @@ DS: dt=1.476E-03, NFUN:NPC:NPA=0000044:0000011:0000033
          12: t =   1.40538E-02, dt(courant [198]) =   1.32952E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 154/1/433
-DS: T(H) iterations:  2.12(avg), 4(max)
-DS: T(H) salvage rate = 0.294; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  2.00(avg), 4(max)
+DS: T(H) salvage rate = 0.588; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.330E-03, NFUN:NPC:NPA=0000048:0000012:0000036
  Linear solver name: projection
@@ -593,8 +594,8 @@ DS: dt=1.330E-03, NFUN:NPC:NPA=0000048:0000012:0000036
          13: t =   1.53833E-02, dt(courant [198]) =   1.22278E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 155/1/432
-DS: T(H) iterations:  2.22(avg), 4(max)
-DS: T(H) salvage rate = 0.278; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  2.11(avg), 4(max)
+DS: T(H) salvage rate = 0.556; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.223E-03, NFUN:NPC:NPA=0000052:0000013:0000039
  Linear solver name: projection
@@ -619,8 +620,8 @@ DS: dt=1.223E-03, NFUN:NPC:NPA=0000052:0000013:0000039
          14: t =   1.66061E-02, dt(growth) =   1.28392E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 154/1/433
-DS: T(H) iterations:  2.00(avg), 4(max)
-DS: T(H) salvage rate = 0.250; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.90(avg), 4(max)
+DS: T(H) salvage rate = 0.500; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.284E-03, NFUN:NPC:NPA=0000056:0000014:0000042
  Linear solver name: projection
@@ -645,8 +646,8 @@ DS: dt=1.284E-03, NFUN:NPC:NPA=0000056:0000014:0000042
          15: t =   1.78900E-02, dt(courant [168]) =   1.20703E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 155/1/432
-DS: T(H) iterations:  1.95(avg), 4(max)
-DS: T(H) salvage rate = 0.238; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.86(avg), 4(max)
+DS: T(H) salvage rate = 0.476; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.207E-03, NFUN:NPC:NPA=0000060:0000015:0000045
  Linear solver name: projection
@@ -671,8 +672,8 @@ DS: dt=1.207E-03, NFUN:NPC:NPA=0000060:0000015:0000045
          16: t =   1.90970E-02, dt(courant [168]) =   1.16593E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 153/1/434
-DS: T(H) iterations:  1.79(avg), 4(max)
-DS: T(H) salvage rate = 0.208; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.71(avg), 4(max)
+DS: T(H) salvage rate = 0.417; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.166E-03, NFUN:NPC:NPA=0000064:0000016:0000048
  Linear solver name: projection
@@ -696,8 +697,8 @@ DS: dt=1.166E-03, NFUN:NPC:NPA=0000064:0000016:0000048
          17: t =   2.02630E-02, dt(courant [169]) =   1.11457E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 153/2/433
-DS: T(H) iterations:  1.73(avg), 4(max)
-DS: T(H) salvage rate = 0.192; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.65(avg), 4(max)
+DS: T(H) salvage rate = 0.385; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.115E-03, NFUN:NPC:NPA=0000068:0000017:0000051
  Linear solver name: projection
@@ -722,8 +723,8 @@ DS: dt=1.115E-03, NFUN:NPC:NPA=0000068:0000017:0000051
          18: t =   2.13775E-02, dt(courant [169]) =   1.11705E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 152/1/435
-DS: T(H) iterations:  1.72(avg), 4(max)
-DS: T(H) salvage rate = 0.207; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.66(avg), 4(max)
+DS: T(H) salvage rate = 0.379; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.117E-03, NFUN:NPC:NPA=0000072:0000018:0000054
  Linear solver name: projection
@@ -748,8 +749,8 @@ DS: dt=1.117E-03, NFUN:NPC:NPA=0000072:0000018:0000054
          19: t =   2.24946E-02, dt(courant [169]) =   1.09403E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 153/1/434
-DS: T(H) iterations:  1.77(avg), 4(max)
-DS: T(H) salvage rate = 0.200; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.70(avg), 4(max)
+DS: T(H) salvage rate = 0.367; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.094E-03, NFUN:NPC:NPA=0000076:0000019:0000057
  Linear solver name: projection
@@ -774,8 +775,8 @@ DS: dt=1.094E-03, NFUN:NPC:NPA=0000076:0000019:0000057
          20: t =   2.35886E-02, dt(courant [169]) =   1.08701E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 154/1/433
-DS: T(H) iterations:  1.77(avg), 4(max)
-DS: T(H) salvage rate = 0.194; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.71(avg), 4(max)
+DS: T(H) salvage rate = 0.355; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.087E-03, NFUN:NPC:NPA=0000080:0000020:0000060
  Linear solver name: projection
@@ -801,7 +802,7 @@ DS: dt=1.087E-03, NFUN:NPC:NPA=0000080:0000020:0000060
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 154/1/433
 DS: T(H) iterations:  1.76(avg), 4(max)
-DS: T(H) salvage rate = 0.182; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.333; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.005E-03, NFUN:NPC:NPA=0000084:0000021:0000063
  Linear solver name: projection
@@ -826,7 +827,7 @@ DS: dt=1.005E-03, NFUN:NPC:NPA=0000084:0000021:0000063
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 153/1/434
 DS: T(H) iterations:  1.71(avg), 4(max)
-DS: T(H) salvage rate = 0.171; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.314; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.446E-04, NFUN:NPC:NPA=0000088:0000022:0000066
  Linear solver name: projection
@@ -851,7 +852,7 @@ DS: dt=9.446E-04, NFUN:NPC:NPA=0000088:0000022:0000066
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 154/0/434
 DS: T(H) iterations:  1.72(avg), 4(max)
-DS: T(H) salvage rate = 0.167; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.306; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.552E-04, NFUN:NPC:NPA=0000092:0000023:0000069
  Linear solver name: projection
@@ -877,7 +878,7 @@ DS: dt=9.552E-04, NFUN:NPC:NPA=0000092:0000023:0000069
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
 DS: T(H) iterations:  1.66(avg), 4(max)
-DS: T(H) salvage rate = 0.184; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.316; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.595E-04, NFUN:NPC:NPA=0000096:0000024:0000072
  Linear solver name: projection
@@ -903,7 +904,7 @@ DS: dt=9.595E-04, NFUN:NPC:NPA=0000096:0000024:0000072
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 153/0/435
 DS: T(H) iterations:  1.66(avg), 4(max)
-DS: T(H) salvage rate = 0.184; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.316; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.507E-04, NFUN:NPC:NPA=0000100:0000025:0000075
  Linear solver name: projection
@@ -929,7 +930,7 @@ DS: dt=9.507E-04, NFUN:NPC:NPA=0000100:0000025:0000075
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 154/0/434
 DS: T(H) iterations:  1.66(avg), 4(max)
-DS: T(H) salvage rate = 0.184; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.316; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.397E-04, NFUN:NPC:NPA=0000104:0000026:0000078
  Linear solver name: projection
@@ -955,7 +956,7 @@ DS: dt=9.397E-04, NFUN:NPC:NPA=0000104:0000026:0000078
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 152/1/435
 DS: T(H) iterations:  1.58(avg), 4(max)
-DS: T(H) salvage rate = 0.175; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.300; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.182E-04, NFUN:NPC:NPA=0000108:0000027:0000081
  Linear solver name: projection
@@ -980,7 +981,7 @@ DS: dt=9.182E-04, NFUN:NPC:NPA=0000108:0000027:0000081
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 151/1/436
 DS: T(H) iterations:  1.60(avg), 4(max)
-DS: T(H) salvage rate = 0.186; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.302; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.418E-04, NFUN:NPC:NPA=0000112:0000028:0000084
  Linear solver name: projection
@@ -1006,7 +1007,7 @@ DS: dt=8.418E-04, NFUN:NPC:NPA=0000112:0000028:0000084
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 153/0/435
 DS: T(H) iterations:  1.60(avg), 4(max)
-DS: T(H) salvage rate = 0.186; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.302; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.553E-04, NFUN:NPC:NPA=0000116:0000029:0000087
  Linear solver name: projection
@@ -1031,7 +1032,7 @@ DS: dt=8.553E-04, NFUN:NPC:NPA=0000116:0000029:0000087
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 152/1/435
 DS: T(H) iterations:  1.56(avg), 4(max)
-DS: T(H) salvage rate = 0.178; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.289; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.610E-04, NFUN:NPC:NPA=0000120:0000030:0000090
  Linear solver name: projection
@@ -1057,7 +1058,7 @@ DS: dt=8.610E-04, NFUN:NPC:NPA=0000120:0000030:0000090
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
 DS: T(H) iterations:  1.59(avg), 4(max)
-DS: T(H) salvage rate = 0.174; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.283; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.660E-04, NFUN:NPC:NPA=0000124:0000031:0000093
  Linear solver name: projection
@@ -1082,7 +1083,7 @@ DS: dt=8.660E-04, NFUN:NPC:NPA=0000124:0000031:0000093
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
 DS: T(H) iterations:  1.52(avg), 4(max)
-DS: T(H) salvage rate = 0.167; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.271; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.532E-04, NFUN:NPC:NPA=0000128:0000032:0000096
  Linear solver name: projection
@@ -1107,7 +1108,7 @@ DS: dt=8.532E-04, NFUN:NPC:NPA=0000128:0000032:0000096
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
 DS: T(H) iterations:  1.52(avg), 4(max)
-DS: T(H) salvage rate = 0.167; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.271; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.775E-04, NFUN:NPC:NPA=0000132:0000033:0000099
  Linear solver name: projection
@@ -1133,7 +1134,7 @@ Warning: excessive volume adjustment: cell=259, adjustment fraction=  3.145E-08
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
 DS: T(H) iterations:  1.49(avg), 4(max)
-DS: T(H) salvage rate = 0.163; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.265; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.792E-04, NFUN:NPC:NPA=0000136:0000034:0000102
  Linear solver name: projection
@@ -1159,7 +1160,7 @@ Warning: excessive volume adjustment: cell=150, adjustment fraction=  4.921E-08
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
 DS: T(H) iterations:  1.49(avg), 4(max)
-DS: T(H) salvage rate = 0.163; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) salvage rate = 0.265; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.914E-04, NFUN:NPC:NPA=0000140:0000035:0000105
  Linear solver name: projection
@@ -1184,8 +1185,8 @@ DS: dt=6.914E-04, NFUN:NPC:NPA=0000140:0000035:0000105
 Warning: excessive volume adjustment: cell=150, adjustment fraction=  5.201E-08
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/2/436
-DS: T(H) iterations:  1.43(avg), 4(max)
-DS: T(H) salvage rate = 0.157; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.47(avg), 4(max)
+DS: T(H) salvage rate = 0.255; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.977E-04, NFUN:NPC:NPA=0000144:0000036:0000108
  Linear solver name: projection
@@ -1210,8 +1211,8 @@ DS: dt=6.977E-04, NFUN:NPC:NPA=0000144:0000036:0000108
 Warning: excessive volume adjustment: cell=150, adjustment fraction=  5.651E-08
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 149/0/439
-DS: T(H) iterations:  1.41(avg), 4(max)
-DS: T(H) salvage rate = 0.148; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 4(max)
+DS: T(H) salvage rate = 0.241; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.980E-04, NFUN:NPC:NPA=0000148:0000037:0000111
  Linear solver name: projection
@@ -1236,8 +1237,8 @@ DS: dt=6.980E-04, NFUN:NPC:NPA=0000148:0000037:0000111
 Warning: excessive volume adjustment: cell=150, adjustment fraction=  5.181E-08
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.41(avg), 4(max)
-DS: T(H) salvage rate = 0.148; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 4(max)
+DS: T(H) salvage rate = 0.241; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.644E-04, NFUN:NPC:NPA=0000152:0000038:0000114
  Linear solver name: projection
@@ -1261,8 +1262,8 @@ DS: dt=6.644E-04, NFUN:NPC:NPA=0000152:0000038:0000114
          39: t =   3.97338E-02, dt(courant [173]) =   6.77691E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.42(avg), 4(max)
-DS: T(H) salvage rate = 0.164; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.45(avg), 4(max)
+DS: T(H) salvage rate = 0.255; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.777E-04, NFUN:NPC:NPA=0000156:0000039:0000117
  Linear solver name: projection
@@ -1287,8 +1288,8 @@ DS: dt=6.777E-04, NFUN:NPC:NPA=0000156:0000039:0000117
          40: t =   4.04115E-02, dt(courant [173]) =   6.92197E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 151/1/436
-DS: T(H) iterations:  1.39(avg), 4(max)
-DS: T(H) salvage rate = 0.161; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.43(avg), 4(max)
+DS: T(H) salvage rate = 0.250; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=6.922E-04, NFUN:NPC:NPA=0000160:0000040:0000120
  Linear solver name: projection
@@ -1312,8 +1313,8 @@ DS: dt=6.922E-04, NFUN:NPC:NPA=0000160:0000040:0000120
          41: t =   4.11037E-02, dt(courant [173]) =   7.09730E-04
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.38(avg), 4(max)
-DS: T(H) salvage rate = 0.155; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.41(avg), 4(max)
+DS: T(H) salvage rate = 0.241; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=7.097E-04, NFUN:NPC:NPA=0000164:0000041:0000123
  Linear solver name: projection
@@ -1336,8 +1337,8 @@ DS: dt=7.097E-04, NFUN:NPC:NPA=0000164:0000041:0000123
 
          42: t =   4.18134E-02, dt(courant [173]) =   7.22228E-04
 DS: totally/essentially/non-void cell counts = 149/1/438
-DS: T(H) iterations:  1.36(avg), 4(max)
-DS: T(H) salvage rate = 0.153; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.39(avg), 4(max)
+DS: T(H) salvage rate = 0.237; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=7.222E-04, NFUN:NPC:NPA=0000168:0000042:0000126
  Linear solver name: projection
@@ -1361,8 +1362,8 @@ DS: dt=7.222E-04, NFUN:NPC:NPA=0000168:0000042:0000126
          43: t =   4.25357E-02, dt(courant [173]) =   7.38436E-04
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 148/1/439
-DS: T(H) iterations:  1.38(avg), 4(max)
-DS: T(H) salvage rate = 0.164; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.41(avg), 4(max)
+DS: T(H) salvage rate = 0.246; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=7.384E-04, NFUN:NPC:NPA=0000172:0000043:0000129
  Linear solver name: projection
@@ -1386,8 +1387,8 @@ DS: dt=7.384E-04, NFUN:NPC:NPA=0000172:0000043:0000129
          44: t =   4.32741E-02, dt(courant [173]) =   7.56364E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 149/2/437
-DS: T(H) iterations:  1.38(avg), 4(max)
-DS: T(H) salvage rate = 0.156; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.41(avg), 4(max)
+DS: T(H) salvage rate = 0.234; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=7.564E-04, NFUN:NPC:NPA=0000176:0000044:0000132
  Linear solver name: projection
@@ -1411,8 +1412,8 @@ DS: dt=7.564E-04, NFUN:NPC:NPA=0000176:0000044:0000132
          45: t =   4.40305E-02, dt(courant [173]) =   7.72845E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 149/1/438
-DS: T(H) iterations:  1.39(avg), 4(max)
-DS: T(H) salvage rate = 0.152; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 4(max)
+DS: T(H) salvage rate = 0.227; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=7.728E-04, NFUN:NPC:NPA=0000180:0000045:0000135
  Linear solver name: projection
@@ -1436,8 +1437,8 @@ DS: dt=7.728E-04, NFUN:NPC:NPA=0000180:0000045:0000135
          46: t =   4.48033E-02, dt(courant [173]) =   7.94858E-04
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.39(avg), 4(max)
-DS: T(H) salvage rate = 0.152; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 4(max)
+DS: T(H) salvage rate = 0.227; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=7.949E-04, NFUN:NPC:NPA=0000184:0000046:0000138
  Linear solver name: projection
@@ -1462,8 +1463,8 @@ DS: dt=7.949E-04, NFUN:NPC:NPA=0000184:0000046:0000138
 Warning: excessive volume adjustment: cell=94, adjustment fraction=  4.687E-08
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.37(avg), 4(max)
-DS: T(H) salvage rate = 0.149; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.43(avg), 4(max)
+DS: T(H) salvage rate = 0.224; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.186E-04, NFUN:NPC:NPA=0000188:0000047:0000141
  Linear solver name: projection
@@ -1487,8 +1488,8 @@ DS: dt=8.186E-04, NFUN:NPC:NPA=0000188:0000047:0000141
          48: t =   4.64168E-02, dt(courant [175]) =   8.24865E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 151/1/436
-DS: T(H) iterations:  1.43(avg), 5(max)
-DS: T(H) salvage rate = 0.162; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.49(avg), 5(max)
+DS: T(H) salvage rate = 0.235; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.249E-04, NFUN:NPC:NPA=0000192:0000048:0000144
  Linear solver name: projection
@@ -1512,8 +1513,8 @@ DS: dt=8.249E-04, NFUN:NPC:NPA=0000192:0000048:0000144
          49: t =   4.72416E-02, dt(courant [175]) =   8.50496E-04
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/1/437
-DS: T(H) iterations:  1.41(avg), 5(max)
-DS: T(H) salvage rate = 0.171; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.47(avg), 5(max)
+DS: T(H) salvage rate = 0.243; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.505E-04, NFUN:NPC:NPA=0000196:0000049:0000147
  Linear solver name: projection
@@ -1537,8 +1538,8 @@ DS: dt=8.505E-04, NFUN:NPC:NPA=0000196:0000049:0000147
          50: t =   4.80921E-02, dt(courant [175]) =   8.55969E-04
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 150/2/436
-DS: T(H) iterations:  1.42(avg), 5(max)
-DS: T(H) salvage rate = 0.181; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 5(max)
+DS: T(H) salvage rate = 0.250; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.560E-04, NFUN:NPC:NPA=0000200:0000050:0000150
  Linear solver name: projection
@@ -1562,8 +1563,8 @@ DS: dt=8.560E-04, NFUN:NPC:NPA=0000200:0000050:0000150
          51: t =   4.89481E-02, dt(courant [316]) =   8.40354E-04
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 149/1/438
-DS: T(H) iterations:  1.39(avg), 5(max)
-DS: T(H) salvage rate = 0.197; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 5(max)
+DS: T(H) salvage rate = 0.263; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.404E-04, NFUN:NPC:NPA=0000204:0000051:0000153
  Linear solver name: projection
@@ -1587,8 +1588,8 @@ DS: dt=8.404E-04, NFUN:NPC:NPA=0000204:0000051:0000153
          52: t =   4.97884E-02, dt(growth) =   8.82372E-04
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.40(avg), 5(max)
-DS: T(H) salvage rate = 0.192; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 5(max)
+DS: T(H) salvage rate = 0.256; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.824E-04, NFUN:NPC:NPA=0000208:0000052:0000156
  Linear solver name: projection
@@ -1612,8 +1613,8 @@ DS: dt=8.824E-04, NFUN:NPC:NPA=0000208:0000052:0000156
          53: t =   5.06708E-02, dt(courant [176]) =   8.29974E-04
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.40(avg), 5(max)
-DS: T(H) salvage rate = 0.192; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 5(max)
+DS: T(H) salvage rate = 0.256; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.300E-04, NFUN:NPC:NPA=0000212:0000053:0000159
  Linear solver name: projection
@@ -1637,8 +1638,8 @@ DS: dt=8.300E-04, NFUN:NPC:NPA=0000212:0000053:0000159
          54: t =   5.15008E-02, dt(courant [176]) =   8.63418E-04
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.40(avg), 5(max)
-DS: T(H) salvage rate = 0.192; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 5(max)
+DS: T(H) salvage rate = 0.256; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.634E-04, NFUN:NPC:NPA=0000216:0000054:0000162
  Linear solver name: projection
@@ -1662,8 +1663,8 @@ DS: dt=8.634E-04, NFUN:NPC:NPA=0000216:0000054:0000162
          55: t =   5.23642E-02, dt(courant [176]) =   8.91186E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.40(avg), 5(max)
-DS: T(H) salvage rate = 0.192; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.46(avg), 5(max)
+DS: T(H) salvage rate = 0.256; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.912E-04, NFUN:NPC:NPA=0000220:0000055:0000165
  Linear solver name: projection
@@ -1688,8 +1689,8 @@ DS: dt=8.912E-04, NFUN:NPC:NPA=0000220:0000055:0000165
          56: t =   5.32554E-02, dt(courant [176]) =   9.23163E-04
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.38(avg), 5(max)
-DS: T(H) salvage rate = 0.190; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.44(avg), 5(max)
+DS: T(H) salvage rate = 0.253; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.232E-04, NFUN:NPC:NPA=0000224:0000056:0000168
  Linear solver name: projection
@@ -1713,8 +1714,8 @@ DS: dt=9.232E-04, NFUN:NPC:NPA=0000224:0000056:0000168
          57: t =   5.41786E-02, dt(courant [176]) =   9.43986E-04
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.38(avg), 5(max)
-DS: T(H) salvage rate = 0.190; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.44(avg), 5(max)
+DS: T(H) salvage rate = 0.253; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.440E-04, NFUN:NPC:NPA=0000228:0000057:0000171
  Linear solver name: projection
@@ -1738,8 +1739,8 @@ DS: dt=9.440E-04, NFUN:NPC:NPA=0000228:0000057:0000171
          58: t =   5.51225E-02, dt(courant [176]) =   9.77811E-04
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.36(avg), 5(max)
-DS: T(H) salvage rate = 0.188; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.250; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.778E-04, NFUN:NPC:NPA=0000232:0000058:0000174
  Linear solver name: projection
@@ -1763,8 +1764,8 @@ DS: dt=9.778E-04, NFUN:NPC:NPA=0000232:0000058:0000174
          59: t =   5.61004E-02, dt(courant [177]) =   9.24923E-04
 DS: culled material fragments from 7 cells.
 DS: totally/essentially/non-void cell counts = 149/1/438
-DS: T(H) iterations:  1.35(avg), 5(max)
-DS: T(H) salvage rate = 0.185; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.41(avg), 5(max)
+DS: T(H) salvage rate = 0.247; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.249E-04, NFUN:NPC:NPA=0000236:0000059:0000177
  Linear solver name: projection
@@ -1788,8 +1789,8 @@ DS: dt=9.249E-04, NFUN:NPC:NPA=0000236:0000059:0000177
          60: t =   5.70253E-02, dt(courant [224]) =   9.27117E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 150/2/436
-DS: T(H) iterations:  1.36(avg), 5(max)
-DS: T(H) salvage rate = 0.190; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.40(avg), 5(max)
+DS: T(H) salvage rate = 0.250; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.271E-04, NFUN:NPC:NPA=0000240:0000060:0000180
  Linear solver name: projection
@@ -1813,8 +1814,8 @@ DS: dt=9.271E-04, NFUN:NPC:NPA=0000240:0000060:0000180
          61: t =   5.79524E-02, dt(courant [224]) =   9.72754E-04
 DS: culled material fragments from 4 cells.
 DS: totally/essentially/non-void cell counts = 151/1/436
-DS: T(H) iterations:  1.35(avg), 5(max)
-DS: T(H) salvage rate = 0.188; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.40(avg), 5(max)
+DS: T(H) salvage rate = 0.247; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.728E-04, NFUN:NPC:NPA=0000244:0000061:0000183
  Linear solver name: projection
@@ -1838,8 +1839,8 @@ DS: dt=9.728E-04, NFUN:NPC:NPA=0000244:0000061:0000183
          62: t =   5.89252E-02, dt(growth) =   1.02139E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 149/2/437
-DS: T(H) iterations:  1.31(avg), 5(max)
-DS: T(H) salvage rate = 0.180; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.39(avg), 5(max)
+DS: T(H) salvage rate = 0.236; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.021E-03, NFUN:NPC:NPA=0000248:0000062:0000186
  Linear solver name: projection
@@ -1864,8 +1865,8 @@ DS: dt=1.021E-03, NFUN:NPC:NPA=0000248:0000062:0000186
          63: t =   5.99465E-02, dt(courant [224]) =   1.06414E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.34(avg), 5(max)
-DS: T(H) salvage rate = 0.178; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.233; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.064E-03, NFUN:NPC:NPA=0000252:0000063:0000189
  Linear solver name: projection
@@ -1891,8 +1892,8 @@ DS: dt=1.064E-03, NFUN:NPC:NPA=0000252:0000063:0000189
 Warning: excessive volume adjustment: cell=222, adjustment fraction=  3.393E-08
 DS: culled material fragments from 6 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.34(avg), 5(max)
-DS: T(H) salvage rate = 0.187; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.44(avg), 5(max)
+DS: T(H) salvage rate = 0.242; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.113E-03, NFUN:NPC:NPA=0000256:0000064:0000192
  Linear solver name: projection
@@ -1918,8 +1919,8 @@ DS: dt=1.113E-03, NFUN:NPC:NPA=0000256:0000064:0000192
 Warning: excessive volume adjustment: cell=166, adjustment fraction=  6.323E-08
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
-DS: T(H) iterations:  1.34(avg), 5(max)
-DS: T(H) salvage rate = 0.187; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.44(avg), 5(max)
+DS: T(H) salvage rate = 0.242; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.127E-03, NFUN:NPC:NPA=0000260:0000065:0000195
  Linear solver name: projection
@@ -1955,8 +1956,8 @@ Warning: excessive volume adjustment: cell=104, matid=1, adjustment fraction=  1
 Warning: excessive volume adjustment: cell=105, matid=1, adjustment fraction=  3.827E-11
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 153/0/435
-DS: T(H) iterations:  1.34(avg), 5(max)
-DS: T(H) salvage rate = 0.187; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.44(avg), 5(max)
+DS: T(H) salvage rate = 0.242; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.184E-03, NFUN:NPC:NPA=0000264:0000066:0000198
  Linear solver name: projection
@@ -1983,8 +1984,8 @@ Warning: excessive volume adjustment: cell=166, adjustment fraction=  5.921E-08
 Warning: excessive volume adjustment: cell=288, adjustment fraction=  3.409E-08
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 152/1/435
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.185; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.239; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.243E-03, NFUN:NPC:NPA=0000268:0000067:0000201
  Linear solver name: projection
@@ -2008,8 +2009,8 @@ DS: dt=1.243E-03, NFUN:NPC:NPA=0000268:0000067:0000201
          68: t =   6.56777E-02, dt(courant [225]) =   1.12922E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.181; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.43(avg), 5(max)
+DS: T(H) salvage rate = 0.234; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.129E-03, NFUN:NPC:NPA=0000272:0000068:0000204
  Linear solver name: projection
@@ -2033,8 +2034,8 @@ DS: dt=1.129E-03, NFUN:NPC:NPA=0000272:0000068:0000204
          69: t =   6.68070E-02, dt(courant [263]) =   1.16606E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 151/1/436
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.189; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.242; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.166E-03, NFUN:NPC:NPA=0000276:0000069:0000207
  Linear solver name: projection
@@ -2059,8 +2060,8 @@ DS: dt=1.166E-03, NFUN:NPC:NPA=0000276:0000069:0000207
 Warning: excessive volume adjustment: cell=39, adjustment fraction=  3.224E-08
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
-DS: T(H) iterations:  1.34(avg), 5(max)
-DS: T(H) salvage rate = 0.198; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.41(avg), 5(max)
+DS: T(H) salvage rate = 0.240; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.224E-03, NFUN:NPC:NPA=0000280:0000070:0000210
  Linear solver name: projection
@@ -2084,8 +2085,8 @@ DS: dt=1.224E-03, NFUN:NPC:NPA=0000280:0000070:0000210
          71: t =   6.91974E-02, dt(growth) =   1.28558E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 151/1/436
-DS: T(H) iterations:  1.35(avg), 5(max)
-DS: T(H) salvage rate = 0.196; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.43(avg), 5(max)
+DS: T(H) salvage rate = 0.237; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.286E-03, NFUN:NPC:NPA=0000284:0000071:0000213
  Linear solver name: projection
@@ -2110,8 +2111,8 @@ DS: dt=1.286E-03, NFUN:NPC:NPA=0000284:0000071:0000213
          72: t =   7.04830E-02, dt(growth) =   1.34986E-03
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.35(avg), 5(max)
-DS: T(H) salvage rate = 0.194; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.43(avg), 5(max)
+DS: T(H) salvage rate = 0.235; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.350E-03, NFUN:NPC:NPA=0000288:0000072:0000216
  Linear solver name: projection
@@ -2136,8 +2137,8 @@ DS: dt=1.350E-03, NFUN:NPC:NPA=0000288:0000072:0000216
          73: t =   7.18328E-02, dt(growth) =   1.41735E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/1/437
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.192; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.41(avg), 5(max)
+DS: T(H) salvage rate = 0.232; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.417E-03, NFUN:NPC:NPA=0000292:0000073:0000219
  Linear solver name: projection
@@ -2162,8 +2163,8 @@ DS: dt=1.417E-03, NFUN:NPC:NPA=0000292:0000073:0000219
          74: t =   7.32502E-02, dt(growth) =   1.48822E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/2/436
-DS: T(H) iterations:  1.34(avg), 5(max)
-DS: T(H) salvage rate = 0.196; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.235; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.488E-03, NFUN:NPC:NPA=0000296:0000074:0000222
  Linear solver name: projection
@@ -2188,8 +2189,8 @@ DS: dt=1.488E-03, NFUN:NPC:NPA=0000296:0000074:0000222
          75: t =   7.47384E-02, dt(courant [264]) =   1.26954E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 149/2/437
-DS: T(H) iterations:  1.37(avg), 5(max)
-DS: T(H) salvage rate = 0.190; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.43(avg), 5(max)
+DS: T(H) salvage rate = 0.229; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.270E-03, NFUN:NPC:NPA=0000300:0000075:0000225
  Linear solver name: projection
@@ -2214,8 +2215,8 @@ DS: dt=1.270E-03, NFUN:NPC:NPA=0000300:0000075:0000225
          76: t =   7.60080E-02, dt(growth) =   1.33302E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.38(avg), 5(max)
-DS: T(H) salvage rate = 0.189; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.43(avg), 5(max)
+DS: T(H) salvage rate = 0.226; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.333E-03, NFUN:NPC:NPA=0000304:0000076:0000228
  Linear solver name: projection
@@ -2241,8 +2242,8 @@ DS: dt=1.333E-03, NFUN:NPC:NPA=0000304:0000076:0000228
 Warning: excessive volume adjustment: cell=151, adjustment fraction=  6.826E-08
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/1/437
-DS: T(H) iterations:  1.37(avg), 5(max)
-DS: T(H) salvage rate = 0.187; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.224; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.400E-03, NFUN:NPC:NPA=0000308:0000077:0000231
  Linear solver name: projection
@@ -2267,8 +2268,8 @@ DS: dt=1.400E-03, NFUN:NPC:NPA=0000308:0000077:0000231
          78: t =   7.87406E-02, dt(growth) =   1.46965E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.37(avg), 5(max)
-DS: T(H) salvage rate = 0.185; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.222; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.470E-03, NFUN:NPC:NPA=0000312:0000078:0000234
  Linear solver name: projection
@@ -2293,8 +2294,8 @@ DS: dt=1.470E-03, NFUN:NPC:NPA=0000312:0000078:0000234
          79: t =   8.02103E-02, dt(growth) =   1.54314E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.37(avg), 5(max)
-DS: T(H) salvage rate = 0.185; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.222; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.543E-03, NFUN:NPC:NPA=0000316:0000079:0000237
  Linear solver name: projection
@@ -2318,8 +2319,8 @@ DS: dt=1.543E-03, NFUN:NPC:NPA=0000316:0000079:0000237
          80: t =   8.17534E-02, dt(growth) =   1.62029E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.37(avg), 5(max)
-DS: T(H) salvage rate = 0.185; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.42(avg), 5(max)
+DS: T(H) salvage rate = 0.222; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.620E-03, NFUN:NPC:NPA=0000320:0000080:0000240
  Linear solver name: projection
@@ -2343,8 +2344,8 @@ DS: dt=1.620E-03, NFUN:NPC:NPA=0000320:0000080:0000240
          81: t =   8.33737E-02, dt(growth) =   1.70131E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 150/0/438
-DS: T(H) iterations:  1.36(avg), 5(max)
-DS: T(H) salvage rate = 0.183; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.40(avg), 5(max)
+DS: T(H) salvage rate = 0.220; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.701E-03, NFUN:NPC:NPA=0000324:0000081:0000243
  Linear solver name: projection
@@ -2369,8 +2370,8 @@ DS: dt=1.701E-03, NFUN:NPC:NPA=0000324:0000081:0000243
          82: t =   8.50750E-02, dt(growth) =   1.78637E-03
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 150/1/437
-DS: T(H) iterations:  1.35(avg), 5(max)
-DS: T(H) salvage rate = 0.182; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.39(avg), 5(max)
+DS: T(H) salvage rate = 0.218; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.786E-03, NFUN:NPC:NPA=0000328:0000082:0000246
  Linear solver name: projection
@@ -2395,8 +2396,8 @@ DS: dt=1.786E-03, NFUN:NPC:NPA=0000328:0000082:0000246
          83: t =   8.68614E-02, dt(growth) =   1.87569E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 149/2/437
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.186; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.36(avg), 5(max)
+DS: T(H) salvage rate = 0.221; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.876E-03, NFUN:NPC:NPA=0000332:0000083:0000249
  Linear solver name: projection
@@ -2420,8 +2421,8 @@ DS: dt=1.876E-03, NFUN:NPC:NPA=0000332:0000083:0000249
 
          84: t =   8.87371E-02, dt(courant [180]) =   1.86605E-03
 DS: totally/essentially/non-void cell counts = 150/1/437
-DS: T(H) iterations:  1.32(avg), 5(max)
-DS: T(H) salvage rate = 0.184; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.35(avg), 5(max)
+DS: T(H) salvage rate = 0.219; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.866E-03, NFUN:NPC:NPA=0000336:0000084:0000252
  Linear solver name: projection
@@ -2446,8 +2447,8 @@ DS: dt=1.866E-03, NFUN:NPC:NPA=0000336:0000084:0000252
          85: t =   9.06032E-02, dt(courant [180]) =   1.51912E-03
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.32(avg), 5(max)
-DS: T(H) salvage rate = 0.183; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.36(avg), 5(max)
+DS: T(H) salvage rate = 0.217; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.519E-03, NFUN:NPC:NPA=0000340:0000085:0000255
  Linear solver name: projection
@@ -2474,8 +2475,8 @@ Warning: excessive volume adjustment: cell=129, adjustment fraction=  1.024E-07
 Warning: excessive volume adjustment: cell=225, adjustment fraction=  4.951E-08
 DS: culled material fragments from 3 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.32(avg), 5(max)
-DS: T(H) salvage rate = 0.183; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.36(avg), 5(max)
+DS: T(H) salvage rate = 0.217; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.401E-03, NFUN:NPC:NPA=0000344:0000086:0000258
  Linear solver name: projection
@@ -2496,12 +2497,12 @@ DS: dt=1.401E-03, NFUN:NPC:NPA=0000344:0000086:0000258
             Min Velocity: (-3.0675E-02, -4.5328E-02, -1.9010E-04)
             Max Velocity: ( 8.4974E-02,  1.9176E-02,  1.0632E-04)
 
-         87: t =   9.35234E-02, dt(courant [179]) =   1.36461E-03
+         87: t =   9.35234E-02, dt(time) =   1.36461E-03
 Warning: excessive volume adjustment: cell=225, adjustment fraction=  4.633E-08
 DS: culled material fragments from 5 cells.
 DS: totally/essentially/non-void cell counts = 151/0/437
-DS: T(H) iterations:  1.32(avg), 5(max)
-DS: T(H) salvage rate = 0.183; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.36(avg), 5(max)
+DS: T(H) salvage rate = 0.217; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.365E-03, NFUN:NPC:NPA=0000348:0000087:0000261
  Linear solver name: projection
@@ -2522,10 +2523,10 @@ DS: dt=1.365E-03, NFUN:NPC:NPA=0000348:0000087:0000261
             Min Velocity: (-3.4410E-02, -4.8869E-02, -1.9747E-04)
             Max Velocity: ( 9.4050E-02,  1.7093E-02,  1.1307E-04)
 
-         88: t =   9.48880E-02, dt(courant [179]) =   1.30693E-03
+         88: t =   9.48880E-02, dt(time) =   1.30693E-03
 DS: totally/essentially/non-void cell counts = 152/0/436
-DS: T(H) iterations:  1.32(avg), 5(max)
-DS: T(H) salvage rate = 0.183; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.36(avg), 5(max)
+DS: T(H) salvage rate = 0.217; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.307E-03, NFUN:NPC:NPA=0000352:0000088:0000264
  Linear solver name: projection
@@ -2547,11 +2548,11 @@ DS: dt=1.307E-03, NFUN:NPC:NPA=0000352:0000088:0000264
             Min Velocity: (-3.7953E-02, -5.3942E-02, -2.0275E-04)
             Max Velocity: ( 1.0337E-01,  1.7887E-02,  8.9630E-05)
 
-         89: t =   9.61949E-02, dt(courant [179]) =   1.08993E-03
+         89: t =   9.61949E-02, dt(time) =   1.08993E-03
 DS: culled material fragments from 1 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.181; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.35(avg), 5(max)
+DS: T(H) salvage rate = 0.216; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=1.090E-03, NFUN:NPC:NPA=0000356:0000089:0000267
  Linear solver name: projection
@@ -2573,11 +2574,11 @@ DS: dt=1.090E-03, NFUN:NPC:NPA=0000356:0000089:0000267
             Min Velocity: (-4.2221E-02, -5.9526E-02, -2.0536E-04)
             Max Velocity: ( 1.1120E-01,  1.8586E-02,  9.4857E-05)
 
-         90: t =   9.72849E-02, dt(courant [179]) =   9.91719E-04
+         90: t =   9.72849E-02, dt(time) =   9.91719E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.181; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.35(avg), 5(max)
+DS: T(H) salvage rate = 0.216; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.917E-04, NFUN:NPC:NPA=0000360:0000090:0000270
  Linear solver name: projection
@@ -2598,11 +2599,11 @@ DS: dt=9.917E-04, NFUN:NPC:NPA=0000360:0000090:0000270
             Min Velocity: (-4.5732E-02, -6.4577E-02, -2.0601E-04)
             Max Velocity: ( 1.1803E-01,  1.9147E-02,  9.9958E-05)
 
-         91: t =   9.82766E-02, dt(growth) =   9.02355E-04
+         91: t =   9.82766E-02, dt(time) =   9.02355E-04
 Warning: excessive volume adjustment: cell=97, adjustment fraction=  1.732E-07
 DS: totally/essentially/non-void cell counts = 152/0/436
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.181; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.35(avg), 5(max)
+DS: T(H) salvage rate = 0.216; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=9.024E-04, NFUN:NPC:NPA=0000364:0000091:0000273
  Linear solver name: projection
@@ -2623,11 +2624,11 @@ DS: dt=9.024E-04, NFUN:NPC:NPA=0000364:0000091:0000273
             Min Velocity: (-4.8678E-02, -6.9292E-02, -2.0570E-04)
             Max Velocity: ( 1.2419E-01,  1.9605E-02,  1.0509E-04)
 
-         92: t =   9.91790E-02, dt(growth) =   8.21044E-04
+         92: t =   9.91790E-02, dt(time) =   8.21044E-04
 DS: culled material fragments from 2 cells.
 DS: totally/essentially/non-void cell counts = 152/0/436
-DS: T(H) iterations:  1.33(avg), 5(max)
-DS: T(H) salvage rate = 0.181; interval adjustments =  1.00(avg), 1(max)
+DS: T(H) iterations:  1.35(avg), 5(max)
+DS: T(H) salvage rate = 0.216; interval adjustments =  1.00(avg), 1(max)
 
 DS: dt=8.210E-04, NFUN:NPC:NPA=0000368:0000092:0000276
  Linear solver name: projection
@@ -2658,46 +2659,45 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  6.017E+00 --- Total
-    8.747E-03 --- Input
-    3.627E-01 --- Initialization
-      6.750E-04 --- FHT function
-    5.641E+00 --- Main Cycle
-      9.487E-01 --- Predictor
-        6.098E-01 --- Timer_Solver_TMP2
-        1.129E-02 --- Solver TMP1
-      1.713E+00 --- timer_projection
-        1.305E+00 --- timer_projection_mac
-          1.113E+00 --- timer_projection_solver
-            4.708E-01 --- ppe-matvec
-              2.108E-01 --- ppe-matvec-face-grad
-              2.276E-02 --- ppe-matvec-bc
-              1.514E-01 --- ppe-matvec-flux
-              8.270E-02 --- ppe-matvec-div
-            5.534E-01 --- Solver TMP1
-          4.462E-02 --- ppe-matvec
-            1.971E-02 --- ppe-matvec-face-grad
-            2.206E-03 --- ppe-matvec-bc
-            1.449E-02 --- ppe-matvec-flux
-            7.887E-03 --- ppe-matvec-div
-        1.061E-01 --- timer_projection_corrector
-          9.852E-02 --- timer_projection_corrector
-      4.004E-02 --- Output
-      4.576E-02 --- Time Step
-      1.404E+00 --- Mass Advection
-        1.236E+00 --- Volume Tracking
-          1.167E+00 --- Reconstruct/Advect
-            4.237E-01 --- Locate Plane
-        1.206E-01 --- Momentum Advection
-      1.444E+00 --- Diffusion Solver
-        7.547E-01 --- FHT precon compute
-          7.210E-02 --- hypre-matrix-copy
-          1.042E-01 --- boomer-setup
-        2.371E-01 --- FHT function
-        1.730E-01 --- FHT precon apply
-          8.212E-02 --- boomer-solve
+  5.884E+00 --- Total
+    6.828E-03 --- Input
+    3.755E-01 --- Initialization
+      9.530E-04 --- FHT function
+    5.498E+00 --- Main Cycle
+      9.451E-01 --- Predictor
+        6.120E-01 --- Timer_Solver_TMP2
+        8.052E-03 --- Solver TMP1
+      1.652E+00 --- timer_projection
+        1.249E+00 --- timer_projection_mac
+          1.046E+00 --- timer_projection_solver
+            4.700E-01 --- ppe-matvec
+              2.111E-01 --- ppe-matvec-face-grad
+              2.319E-02 --- ppe-matvec-bc
+              1.513E-01 --- ppe-matvec-flux
+              8.158E-02 --- ppe-matvec-div
+            4.891E-01 --- Solver TMP1
+          4.512E-02 --- ppe-matvec
+            1.997E-02 --- ppe-matvec-face-grad
+            2.283E-03 --- ppe-matvec-bc
+            1.467E-02 --- ppe-matvec-flux
+            7.880E-03 --- ppe-matvec-div
+        1.062E-01 --- timer_projection_corrector
+          9.863E-02 --- timer_projection_corrector
+      4.729E-02 --- Time Step
+      1.391E+00 --- Mass Advection
+        1.225E+00 --- Volume Tracking
+          1.156E+00 --- Reconstruct/Advect
+            4.182E-01 --- Locate Plane
+        1.208E-01 --- Momentum Advection
+      1.383E+00 --- Diffusion Solver
+        7.310E-01 --- FHT precon compute
+          6.879E-02 --- hypre-matrix-copy
+          1.037E-01 --- boomer-setup
+        2.451E-01 --- FHT function
+        1.611E-01 --- FHT precon apply
+          8.280E-02 --- boomer-solve
 
-                  Process virtual memory used: 4.34E+02 mB
-                                   words/cell: 96798
+                  Process virtual memory used: 4.25E+02 mB
+                                   words/cell: 94838
 
-truchas terminated normally on 19 Apr 19 at 11:38:38
+truchas terminated normally on 06 Oct 19 at 07:32:57

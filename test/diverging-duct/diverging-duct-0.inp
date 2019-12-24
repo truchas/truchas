@@ -26,6 +26,7 @@ and expected pressure is given by Bernoulli's principle
 
 Hack to hit the final time exactly
 &PHYSICS
+  materials = 'water'
   flow = .true.
 /
 
@@ -75,25 +76,14 @@ Pipe walls
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'water'
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
 /
 
 &MATERIAL
-  material_name    = 'water'
-  material_number  = 1
-  density          = 1.0  ! not void
-  material_feature = 'background'
-/
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
 /

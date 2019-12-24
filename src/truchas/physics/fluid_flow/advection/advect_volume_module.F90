@@ -183,7 +183,7 @@ CONTAINS
     !       Jim Sicilian (CCS-2)   October 2003
     !=======================================================================
     use fluid_data_module,      only: fluidVof
-    use property_data_module,   only: isImmobile
+    use flow_property_module,        only: isImmobile
     use legacy_mesh_api,        only: ncells, nfc, Cell
     use parameter_module,       only: nmat
     use vof_data_module,        only: adv_dt
@@ -227,7 +227,7 @@ CONTAINS
     !   Update the Vof array.
     !
     !=======================================================================
-    use property_data_module, only: isImmobile
+    use flow_property_module,      only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
     implicit none
@@ -286,7 +286,7 @@ CONTAINS
     !=======================================================================
     use bc_module,         only: BC_Mat, IN_FLOW
     use input_utilities,   only: NULL_I
-    use property_data_module, only: isImmobile
+    use flow_property_module,   only: isImmobile
     use legacy_mesh_api,   only: ncells, nfc, Cell
     use parameter_module,  only: nmat
     use pgslib_module,     only: PGSLIB_GLOBAL_ANY
@@ -363,7 +363,7 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,       only: cutvof
-    use property_data_module, only: isImmobile
+    use flow_property_module,      only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
     use vof_data_module,      only: adv_dt
@@ -426,7 +426,7 @@ CONTAINS
              ! calculate the 'Ratio' of fluid material volume still allowed to be
              ! fluxed to the flux volume, and note that we're not 'Done'
              Ratio = 0.0_r8  ! if none of this material was originally in the cell
-             ! Update the Ratio for fluid materials; if the material isImmobile, 
+             ! Update the Ratio for fluid materials; if the material isImmobile,
              ! leave Ratio = 0.0_r8
              if (.not. isImmobile(m)) then
                 Ratio = (Vof_n(m,n)*Cell(n)%Volume - (Cumul_Sum-Sum)) / Sum
@@ -512,7 +512,7 @@ CONTAINS
     !   Add the subcycle fluxes to the total, and update the Vof array.
     !
     !=======================================================================
-    use property_data_module, only: isImmobile
+    use flow_property_module,      only: isImmobile
     use legacy_mesh_api,      only: ncells, nfc, Cell
     use parameter_module,     only: nmat
 
@@ -548,7 +548,7 @@ CONTAINS
     use cutoffs_module,     only: cutvof
     use fluid_data_module,  only: Void_Material_Exists, Void_Material_Index, &
                                   Void_Material_Count
-    use property_data_module, only: isImmobile
+    use flow_property_module,    only: isImmobile
     use legacy_mesh_api,    only: ncells, nfc
     use parameter_module,   only: nmat
 
@@ -601,7 +601,7 @@ CONTAINS
                 end if
              end if
 
-          end if   ! end of the isImmobile test
+          end if
    
           Ftot = Ftot + Vof(m,n)
 

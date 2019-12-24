@@ -14,6 +14,7 @@ elsewhere.  Free-slip flow conditions on all boundaries.
 /
 
 &PHYSICS
+  materials = 'liquid'
   flow = .true.
   body_force_density = 0.0, -1.0, 0.0
   heat_transport = .true.
@@ -81,24 +82,18 @@ elsewhere.  Free-slip flow conditions on all boundaries.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'liquid'
   velocity = 3*0.0
   temperature = 1.5
 /
 
 &MATERIAL
-  material_number  = 1
-  material_name    = 'liquid'
-  material_feature = 'background'
-  density          = 1.0
-/
-
-&PHASE
   name = 'liquid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.01
-  property_name(4) = 'density deviation', property_function(4) = 'drho'
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 0.01
+  density_delta_func = 'drho'
 /
 
 &FUNCTION
@@ -107,9 +102,4 @@ elsewhere.  Free-slip flow conditions on all boundaries.
   poly_coefficients   = -0.01
   poly_exponents(:,1) = 1
   poly_refvars        = 1.5
-/
-
-&MATERIAL_SYSTEM
-  name = 'liquid'
-  phases = 'liquid'
 /

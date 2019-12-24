@@ -19,6 +19,7 @@ Variations use rotated meshes (and rotated g)
 /
 
 &PHYSICS
+  materials = 'water', 'solid'
   flow = .true.
   body_force_density = 0.0, -0.707106781186547, -0.707106781186547
 /
@@ -51,7 +52,7 @@ Lower half
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 2
+  material_name = 'solid'
   temperature = 0.0
 /
 
@@ -59,43 +60,20 @@ upper half
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 1
+  material_name = 'water'
   velocity = 3*0.0
   temperature = 0.0
 /
 
 &MATERIAL
-  material_name    = 'water'
-  material_number  = 1
-  density          = 1.0  ! not void
-  material_feature = 'background'
-/
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density',       property_constant(1) = 2.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
+  is_fluid = T
+  density = 2.0
+  specific_heat = 1.0
 /
 
 &MATERIAL
-  material_name    = 'solid'
-  material_number  = 2
-  density          = 1.0  ! not void
-  immobile         = .true.
-/
-
-&PHASE
   name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'solid'
-  phases = 'solid'
+  density = 1.0
+  specific_heat = 1.0
 /

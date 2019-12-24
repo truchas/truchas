@@ -12,6 +12,7 @@ MODULE BODY_INPUT_MODULE
   use kinds, only: r8
   use truchas_logging_services
   use interfaces_module
+  use material_model_driver, only: matl_model
   implicit none
   private
 
@@ -60,7 +61,6 @@ CONTAINS
     use parallel_info_module,   only: p_info
     use parameter_module,       only: mbody, mphi
     use legacy_mesh_api,        only: ndim
-    use property_module,        only: Get_Truchas_Material_ID
     use pgslib_module,          only: PGSLIB_BCAST
     use scalar_func_factories,  only: alloc_const_scalar_func
     use scalar_func_table,      only: lookup_func
@@ -77,21 +77,21 @@ CONTAINS
     character(128) :: message, fatal_error_string
 
     ! Namelist variables unneeded here (used by body_namelist.F90 to initialize body geometry)
-    character(64) :: surface_name, axis, fill
+    character(64) :: surface_name, axis, fill, material_name
     real(r8) :: height, length(3), radius, rotation_angle(3), rotation_pt(3), translation_pt(3)
     integer :: mesh_material_number(16)
 
     ! Define BODY Namelist
     namelist /body/ surface_name, axis, height, radius, length, fill, &
         rotation_angle, rotation_pt, translation_pt, &
-        material_number, phi, temperature, temperature_function, velocity, mesh_material_number
+        material_name, phi, temperature, temperature_function, velocity, mesh_material_number
 
     ! Initialize for error checking
     fatal = .false.
     fatal_error_string = 'BODY namelist input error!'
 
     ! Initialize the surface input
-    material_number      = NULL_I
+    material_name        = NULL_C
     temperature          = NULL_R
     temperature_function = NULL_C
     phi                  = 0
@@ -119,7 +119,7 @@ CONTAINS
        call PGSLIB_BCAST (temperature)
        call PGSLIB_BCAST (temperature_function)
        call PGSLIB_BCAST (Velocity)
-       call PGSLIB_BCAST (material_number)
+       call PGSLIB_BCAST (material_name)
     end if
 
     ! Continue only if we found the namelist and read it without error.
@@ -147,7 +147,12 @@ CONTAINS
 
        ! Save body data if we still don't have any error
        if (.not.fatal) then
-         Matnum(nbody) = Get_Truchas_Material_ID(material_number)
+         if (material_name == NULL_C) then
+            fatal_error_string = 'MATERIAL_NAME not specified'
+            fatal = .true.
+         else
+            Matnum(nbody) = matl_model%phase_index(material_name)
+         end if
          Body_Phi(nbody,:) = phi
          Body_Vel(:,nbody) = Velocity
          

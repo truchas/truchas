@@ -12,15 +12,23 @@ set(MAT_TARGET_NAME ProcessTruchasMaterialFiles)
 
 
 set(MAT_FILES
-       materials/material_interop.F90
+       materials/material_class.F90
+       materials/material_database_type.F90
+       materials/material_factory.F90
+       materials/material_namelist.F90
+       materials/single_phase_matl_type.F90
+       materials/multi_phase_matl_type.F90
+       materials/phase_change_class.F90
+       materials/smooth_phase_change_type.F90
+       materials/tabular_phase_change_type.F90
+       materials/phase_change_factory.F90
+       materials/material_model_type.F90
        materials/matl_mesh_func_type.F90
-       materials/material_property.F90
-       materials/material_system.F90
-       materials/material_system_namelist.F90
-       materials/material_table.F90
-       materials/material_utilities.F90
-       materials/phase_namelist.F90
-       materials/phase_property_table.F90)
+       materials/matl_prop_class.F90
+       materials/avg_matl_prop_type.F90
+       materials/avg_phase_prop_type.F90
+       materials/material_model_driver.F90
+)
 
 set(MAT_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities

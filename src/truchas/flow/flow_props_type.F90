@@ -84,7 +84,6 @@ module flow_props_type
   use truchas_timers
   use index_partitioning
   use parallel_communication
-  use phase_property_table
   use scalar_func_containers
   implicit none
   private
@@ -97,7 +96,7 @@ module flow_props_type
     real(r8), allocatable :: mu_fc(:), mu_fc_n(:) ! face centered fluid viscosity
     real(r8), allocatable :: vof(:), vof_n(:) ! fluid volume fraction (includes void)
     real(r8), allocatable :: vof_novoid(:), vof_novoid_n(:) ! non-void fluid volume fraction
-    real(r8), allocatable :: rho_delta_cc(:) ! temperature dependent density deviation
+    real(r8), allocatable :: rho_delta_cc(:) ! temperature dependent density delta
     real(r8), allocatable :: solidified_rho(:) ! change in fluid density due to solidification
     real(r8), allocatable :: rho_pre_sol(:) ! volume fraction prior to solidification
     real(r8), allocatable :: void_delta_cc(:) ! change in void volume fraction
@@ -211,7 +210,7 @@ contains
         this%mu_cc(i) = this%mu_cc(i) + &
             vof(m,i)*this%viscosity(m)%f%eval(state)
         this%rho_delta_cc(i) = this%rho_delta_cc(i) + &
-            vof(m,i)*this%density(m)*this%density_delta(m)%f%eval(state)
+            vof(m,i)*this%density_delta(m)%f%eval(state)
       end do
 
       this%vof(i) = sum(vof(:this%nfluid,i))

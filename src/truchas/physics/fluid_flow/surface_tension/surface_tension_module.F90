@@ -82,7 +82,7 @@ contains
     use matl_module,          only: GATHER_VOF
     use parameter_module,     only: nmat
     use legacy_mesh_api,      only: ncells, ndim
-    use property_module,      only: density_material
+    use flow_property_module,      only: density_material
     use zone_module,          only: Zone
     use legacy_mesh_api,      only: ncells, mesh_face_set
 
@@ -687,8 +687,7 @@ contains
     use parallel_communication, only: is_IOP, broadcast
     use scalar_func_factories, only: alloc_const_scalar_func
     use scalar_func_table, only: lookup_func
-    use property_module, only: get_truchas_material_id
-    use property_data_module, only: isImmobile
+    use flow_property_module, only: get_material_id, isImmobile
 
     integer, intent(in) :: lun
 
@@ -696,9 +695,8 @@ contains
     logical :: found
 
     integer :: bndry_face_set_ids(MAX_FACE_SET_IDS)
-    integer  :: interface_materials(2)
     real(r8) :: sigma_constant
-    character(32) :: smoothing_kernel, sigma_function
+    character(32) :: smoothing_kernel, sigma_function, interface_materials(2)
     character(len=8+MAX_NAME_LEN) :: label
     namelist /surface_tension/ csf_normal, csf_tangential, smoothing_kernel, &
         interface_materials, sigma_constant, sigma_function, dsig_dT, &
@@ -725,7 +723,7 @@ contains
       csf_tangential = .false.
       csf_boundary = .false.
       smoothing_kernel = NULL_C
-      interface_materials = NULL_I
+      interface_materials = NULL_C
       sigma_constant = NULL_R
       sigma_function = NULL_C
       dsig_dT = 0.0
@@ -783,18 +781,18 @@ if (csf_boundary .and. csf_tangential) call TLS_fatal ('csf_boundary and csf_tan
     else
 
       !! Verify that the interface material numbers refer to distinct defined fluids
-      if (any(interface_materials == NULL_I)) then
+      if (any(interface_materials == NULL_C)) then
         call TLS_fatal ('INTERFACE_MATERIALS must be assigned two values.')
       else
-        surfmat1 = get_truchas_material_id(interface_materials(1))
-        if (surfmat1 < 1) call TLS_fatal ('Unknown material number INTERFACE_MATERIALS(1): ' &
-                                          // i_to_c(interface_materials(1)))
-        surfmat2 = get_truchas_material_id(interface_materials(2))
-        if (surfmat2 < 1) call TLS_fatal ('Unknown material number INTERFACE_MATERIALS(2): ' &
-                                          // i_to_c(interface_materials(2)))
-        if (surfmat1 == surfmat2) call TLS_fatal ('INTERFACE_MATERIALS must be assigned distinct material numbers')
-        if (IsImmobile(surfmat1)) call TLS_fatal ('INTERFACE_MATERIALS(1) is not a fluid')
-        if (IsImmobile(surfmat2)) call TLS_fatal ('INTERFACE_MATERIALS(2) is not a fluid')
+        surfmat1 = get_material_id(interface_materials(1))
+        if (surfmat1 == 0) call TLS_fatal ('Unknown material INTERFACE_MATERIALS(1): ' &
+                                          // trim(interface_materials(1)))
+        surfmat2 = get_material_id(interface_materials(2))
+        if (surfmat2 == 0) call TLS_fatal ('Unknown material INTERFACE_MATERIALS(2): ' &
+                                          // trim(interface_materials(2)))
+        if (surfmat1 == surfmat2) call TLS_fatal ('INTERFACE_MATERIALS must be assigned distinct materials')
+        if (isImmobile(surfmat1)) call TLS_fatal ('INTERFACE_MATERIALS(1) is not a fluid')
+        if (isImmobile(surfmat2)) call TLS_fatal ('INTERFACE_MATERIALS(2) is not a fluid')
       end if
 
     end if

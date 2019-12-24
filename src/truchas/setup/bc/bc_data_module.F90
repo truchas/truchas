@@ -42,7 +42,7 @@ MODULE BC_DATA_MODULE
   real(r8),      dimension(4,16,0:mbc_surfaces)       :: BC_Table
   character(80), dimension(0:mbc_surfaces)            :: BC_Variable
 
-  integer,  dimension(0:mbc_surfaces)       :: Inflow_Material
+  character(32),  dimension(0:mbc_surfaces)       :: Inflow_Material
   real(r8), dimension(0:mbc_surfaces)       :: Inflow_Temperature
 
   real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_XX
@@ -58,7 +58,6 @@ MODULE BC_DATA_MODULE
   real(r8), dimension(mbcsrf,0:mbc_surfaces)      :: Conic_Tolerance
   character(string_len), dimension(mbcsrf,0:mbc_surfaces) :: Conic_Relation
   character(string_len), dimension(mbcsrf,0:mbc_surfaces) :: Surface_Name
-  integer, dimension(2,mbcsrf,0:mbc_surfaces)  :: Surface_Materials
   real(r8), dimension(2,ndim,0:mbc_surfaces)      :: Bounding_Box
 
 

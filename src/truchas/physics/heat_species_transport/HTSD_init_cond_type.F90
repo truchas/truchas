@@ -11,7 +11,6 @@ module HTSD_init_cond_type
   use kinds, only: r8
   use unstr_mesh_type
   use data_layout_type
-  use property_mesh_function
   use index_partitioning
   use HTSD_model_type
   use truchas_logging_services
@@ -180,7 +179,7 @@ contains
     !! relation given the heat density derivative
     if (associated(this%model%ht)) then
       allocate(Tdot(this%mesh%ncell), dHdT(this%mesh%ncell))
-      call pmf_eval_deriv (this%model%ht%H_of_T, state, 1, dHdT)
+      call this%model%ht%H_of_T%compute_deriv(state, 1, dHdT)
       if (associated(this%model%void_cell)) &
           where (this%model%void_cell) dHdT = 1.0_r8
       Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
@@ -304,7 +303,7 @@ contains
     !! relation given the heat density derivative
     if (associated(this%model%ht)) then
       allocate(Tdot(this%mesh%ncell), dHdT(this%mesh%ncell))
-      call pmf_eval_deriv (this%model%ht%H_of_T, state, 1, dHdT)
+      call this%model%ht%H_of_T%compute_deriv(state, 1, dHdT)
       if (associated(this%model%void_cell)) &
           where (this%model%void_cell) dHdT = 1.0_r8
       Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
@@ -588,7 +587,7 @@ contains
       end if
       
       !! Compute the diffusion coefficient.
-      call pmf_eval (this%ht%conductivity, state, D)
+      call this%ht%conductivity%compute_value(state, D)
       if (associated(this%void_cell)) then
         where (this%void_cell) D = 0.0_r8
       end if

@@ -10,6 +10,7 @@
 /
 
 &PHYSICS
+  materials = 'liquid'
   heat_transport = .true.
   flow = .true.
 /
@@ -95,30 +96,17 @@
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'liquid'
   temperature = 1
 /
 
 ##### MATERIALS ################################################################
 
 &MATERIAL
-  material_name = 'liquid'
-  material_number = 1
-  material_feature = 'background'
-  immobile= .false.
-  priority = 1
-  density = 1.0 ! not void
-/
-
-&PHASE 
  name = 'liquid' 
- property_name(1) = 'density',       property_constant(1) = 1.0
- property_name(2) = 'specific heat', property_constant(2) = 1.0
- property_name(3) = 'conductivity',  property_constant(3) = 1.0
- property_name(4) = 'viscosity',     property_constant(4) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'single'
-  phases = 'liquid'
+ is_fluid = T
+ density = 1.0
+ specific_heat = 1.0
+ conductivity = 1.0
+ viscosity = 1.0
 /

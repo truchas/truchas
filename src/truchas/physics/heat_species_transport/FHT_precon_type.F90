@@ -16,7 +16,6 @@ module FHT_precon_type
   use diff_precon_type
   use data_layout_type
   use rad_problem_type
-  use property_mesh_function
   use truchas_timers
   implicit none
   private
@@ -215,11 +214,12 @@ contains
 
     !! Finite difference approximant to dH/dT.
     fdinc = sqrt(epsilon(1.0d0)) !TODO! fix this naive choice of FD increment.
-    call pmf_eval (this%model%H_of_T, state+fdinc, A)
-    call pmf_eval (this%model%H_of_T, state, D)  ! D used as temp
+    !TODO: Hey there has been a compute_deriv -- why was it not used?
+    call this%model%H_of_T%compute_value(state+fdinc, A)
+    call this%model%H_of_T%compute_value(state, D)  ! D used as temp
     A = this%mesh%volume * ((A - D)/fdinc) / h
     
-    call pmf_eval (this%model%conductivity, state, D)
+    call this%model%conductivity%compute_value(state, D)
     
     !! Correct data on void cells.
     if (associated(this%model%void_cell)) then

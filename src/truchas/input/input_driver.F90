@@ -33,7 +33,6 @@ contains
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use body_input_module,         only: interfaces_input
-    use material_input_module,     only: material_input, material_sizes
     use nonlin_solver_input,       only: nonlinear_solver_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
@@ -54,8 +53,7 @@ contains
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
-    use phase_namelist,            only: read_phase_namelists
-    use material_system_namelist,  only: read_material_system_namelists
+    use material_namelist,         only: read_material_namelists
     use surface_tension_module,    only: surface_tension, read_surface_tension_namelist
     use fluid_data_module,         only: applyflow
     use viscous_data_module,       only: inviscid
@@ -73,6 +71,8 @@ contains
     use truchas_logging_services
     use truchas_timers
     use string_utilities, only: i_to_c
+
+    use material_model_driver,  only: init_material_model
 
     character(*), intent(in)  :: infile
     character(*), intent(out) :: title
@@ -101,11 +101,12 @@ contains
     call read_function_namelists (lun)
     call read_vfunction_namelists (lun)
     call read_toolpath_namelists (lun)
-    call read_phase_namelists (lun)
-    call read_material_system_namelists (lun)
 
     ! read current physics data
     call physics_input (lun)
+
+    call read_material_namelists(lun)
+    call init_material_model  ! later namelists will query the model
 
     ! read output specifications
     call outputs_input (lun)
@@ -120,10 +121,6 @@ contains
 
     ! Read the MESH and ALTMESH namelists: used to initialize MESH_MANAGER (new mesh)
     call read_truchas_mesh_namelists (lun)
-
-    ! read materials data and set dimensions
-    call material_input (lun)
-    call material_sizes ()
 
     call linear_solver_input (lun)
     call nonlinear_solver_input (lun)

@@ -29,6 +29,7 @@ module diffusion_solver_data
   
   logical, public :: heat_eqn = .false.
   integer, public :: nconc = 0
+  real(r8), public :: void_temperature
 
   character(4), parameter, public :: mesh_name = 'MAIN'
 
@@ -95,7 +96,7 @@ contains
                                 nlk_preconditioner, pc_amg_cycles, hypre_amg_print_level, &
                                 hypre_amg_debug, hypre_amg_logging_level, &
                                 cond_vfrac_threshold, residual_atol, residual_rtol, &
-                                use_new_mfd
+                                use_new_mfd, void_temperature
 
     !! Check that the manually-set module variables have good values before reading.
     INSIST(ds_enabled)
@@ -159,6 +160,7 @@ contains
       residual_atol = NULL_R
       residual_rtol = NULL_R
       use_new_mfd = .true.
+      void_temperature = 0.0_r8
       read(lun,nml=diffusion_solver,iostat=ios)
     end if
     call broadcast (ios)
@@ -189,6 +191,7 @@ contains
     call broadcast (residual_atol)
     call broadcast (residual_rtol)
     call broadcast (use_new_mfd)
+    call broadcast (void_temperature)
     
     if (stepping_method == NULL_C) then
       stepping_method = 'Adaptive BDF2'

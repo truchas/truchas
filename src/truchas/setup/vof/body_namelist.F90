@@ -43,13 +43,12 @@ contains
     integer :: mesh_material_number(16)
 
     ! These values are read & initialized by body_input_module, not here.
-    character(64) :: temperature_function
-    integer :: material_number
+    character(64) :: temperature_function, material_name
     real(r8) :: velocity(3), temperature, phi(5)
 
     namelist /body/ surface_name, axis, height, radius, length, fill, &
         rotation_angle, rotation_pt, translation_pt, &
-        material_number, phi, temperature, temperature_function, velocity, mesh_material_number
+        material_name, phi, temperature, temperature_function, velocity, mesh_material_number
 
     call TLS_info('')
     call TLS_info('Reading BODY namelists ...')
@@ -72,7 +71,7 @@ contains
       height = NULL_R
       length = NULL_R
       radius = NULL_R
-      material_number = NULL_I
+      material_name = NULL_C
       mesh_material_number = NULL_I
       rotation_angle = 0
       rotation_pt = 0
@@ -90,7 +89,7 @@ contains
       call broadcast(height)
       call broadcast(length)
       call broadcast(radius)
-      call broadcast(material_number)
+      call broadcast(material_name)
       call broadcast(mesh_material_number)
       call broadcast(rotation_angle)
       call broadcast(rotation_pt)

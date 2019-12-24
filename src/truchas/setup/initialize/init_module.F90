@@ -33,8 +33,9 @@ MODULE INIT_MODULE
 !            Larry J. Cox (ljcox@lanl.gov
 !
 !=======================================================================
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
+  use material_model_driver,  only: matl_model
   implicit none
   private
 
@@ -69,14 +70,13 @@ CONTAINS
     use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
-    use property_module,        only: DENSITY_MATERIAL
     use zone_module,            only: Zone
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use diffusion_solver_data,  only: ds_enabled, num_species, &
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
-    use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view
-    use material_interop,       only: generate_material_mappings
+    use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view, &
+                                      ds_get_temp
     use probes_driver,          only: probes_init
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
@@ -86,6 +86,7 @@ CONTAINS
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
     use compute_body_volumes_proc
+    use material_model_driver,  only: init_material_model
 
     real(r8), intent(in) :: t, dt
 
@@ -100,26 +101,18 @@ CONTAINS
     character(:), allocatable :: errmsg2
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    !! Initialize the MATERIAL_INTEROP module which provides tools for moving
-    !! between Truchas materials and the new material software model introduced
-    !! with the diffusion solver.
-    call generate_material_mappings (stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('INITIAL: ' // trim(errmsg))
+    !call init_material_model
 
-    ! Determine if a void material exists in this calculation and save its index if one does
-    ! NOTE:  There is an inherent assumption that there exists only one void material in any problem
-    Void_Material_Exists = .false.
+    call property_init
+
+    ! Used only by legacy flow.
     Void_Material_Index  = 0
     Void_Material_Count  = 0
-    MATERIALS: do m = 1,nmat
-      density = DENSITY_MATERIAL(m)
-      if (density == 0.0_r8) then
-        Void_Material_Exists = .true.
-        Void_Material_Count = Void_Material_Count + 1
-        Void_Material_Index(Void_Material_Count) = m
-      end if
-    end do MATERIALS
-
+    Void_Material_Exists = matl_model%have_void
+    if (Void_Material_Exists) then
+      Void_Material_Count = 1
+      Void_Material_Index(1) = matl_model%void_index
+    end if
 
     ! Set up Thermodynamic Reference Temperatures and Enthalpies
     !call THERMO_REFERENCES
@@ -151,8 +144,6 @@ CONTAINS
       call TLS_info ('  Initial volume fractions computed.')
 
     end if
-
-    call property_init
 
     ! Initialize Zone%Rho and Zone%Temp
     call ZONE_INIT (Hits_Vol)
@@ -209,8 +200,10 @@ CONTAINS
         deallocate(phi)
       case (DS_TEMP_SYS)
         call ds_set_initial_state (t, dt, temp=zone%temp)
+        call ds_get_temp (zone%temp)  ! possibly adjusted on void cells
       case (DS_TEMP_SPEC_SYS)
         call ds_set_initial_state (t, dt, temp=zone%temp, conc=phi)
+        call ds_get_temp (zone%temp)  ! possibly adjusted on void cells
         deallocate(phi)
       end select
     end if
@@ -236,35 +229,25 @@ CONTAINS
 
   subroutine property_init
 
-    use material_table
-    use material_utilities
     use physics_module
 
     integer :: stat
-    character(128) :: errmsg
-    character(:), allocatable :: errmsg1
+    character(:), allocatable :: errmsg
 
-    integer, allocatable :: matids(:)
-
-    allocate(matids(mt_num_material()))
-    call mt_get_material_ids (matids)
-
-    call required_property_check (matids, 'density', stat, errmsg)
+    call matl_model%required_property_check('density', stat, errmsg)
     if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
 
-    call constant_property_check (matids, 'density', stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
+    call matl_model%constant_property_check('density', stat, errmsg)
+    if (stat /= 0) call TLS_fatal('non-constant density specified for materials: ' // errmsg)
 
     if (heat_transport) then
-      call required_property_check (matids, 'specific heat', stat, errmsg)
-      if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
-
-      call define_enthalpy_density_property (matids, stat, errmsg1)
-      if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg1)
-    else ! unused but expected for initialization and output.
-      call request_property (matids, 'specific heat', default = 0.0_r8)
-      call define_enthalpy_density_property (matids, stat, errmsg1)
-      if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg1)
+      call matl_model%create_enthalpy(stat, errmsg)
+      if (stat /= 0) call TLS_fatal('PROPERTY_INIT: ' // errmsg)
+    else ! unused but expected for initialization and output
+      !FIXME: If the physics don't need this we should not reference it.
+      call matl_model%define_property_default('specific-enthalpy', default=0.0_r8)
+      call matl_model%create_enthalpy(stat, errmsg)
+      if (stat /= 0) call TLS_fatal('PROPERTY_INIT: ' // errmsg)
     end if
 
   end subroutine property_init
@@ -273,14 +256,17 @@ CONTAINS
 
     use fluid_data_module, only: boussinesq_approximation
     use viscous_data_module, only: inviscid
-    use property_module, only: request_fluid_property
+
+    integer :: stat
+    character(:), allocatable :: errmsg
 
     if (boussinesq_approximation) then
-      call request_fluid_property ('density deviation', default=0.0_r8)
+      call matl_model%define_fluid_property_default('density-delta', default=0.0_r8)
     end if
 
     if (.not.inviscid) then
-      call request_fluid_property ('viscosity')
+      call matl_model%required_fluid_property_check('viscosity', stat, errmsg)
+      if (stat /= 0) call TLS_fatal(errmsg)
     end if
 
   end subroutine flow_property_init
@@ -325,7 +311,6 @@ CONTAINS
                                       Bounding_Box, Inflow_Temperature,                  &
                                       Surface_Name,                                      &
                                       Conic_Relation, Surfaces_In_This_BC,               &
-                                      Surface_Materials, Srfmatl_Index,                  &
                                       Mesh_Surface
     use bc_module,              only: DIRICHLET, FREE_SLIP, DIRICHLET_VEL,               &
                                       SET_DIRICHLET, NEUMANN_VEL,                        &
@@ -343,7 +328,6 @@ CONTAINS
     use legacy_mesh_api,        only: Cell, Mesh, DEGENERATE_FACE, mesh_face_set
     use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
     use projection_data_module, only: dirichlet_pressure
-    use property_module,        only: Get_Truchas_Material_Id
     use solid_mechanics_input,  only: solid_mechanics
     use physics_module,         only: heat_transport
     use string_utilities,       only: i_to_c
@@ -519,23 +503,6 @@ CONTAINS
              ! only for solid mechanics.
              case('node set')
 
-             ! Find those faces which are boundaries between two specified materials.
-             case('material boundary')
-
-                mat1 = Surface_Materials(1,Srfmatl_Index(c,p),p)
-                mat2 = Surface_Materials(2,Srfmatl_Index(c,p),p)
-
-                call BoundaryBetweenMaterials (f, mat1, mat2, Mask2)
-                Mask1 = Mask1 .and. Mask2
-
-             ! Find those boundary faces having the specified material.
-             case('external material boundary')
-
-                mat1 = Surface_Materials(1,Srfmatl_Index(c,p),p)
-
-                call ExternalMaterialBoundary (f, mat1, Mask2)
-                Mask1 = Mask1 .and. Mask2
-
                 ! Find those faces which are on this conic function.
              case('conic')
 
@@ -651,7 +618,8 @@ CONTAINS
           if ((BC_Variable(p) == 'velocity' .or. BC_Variable(p) == 'pressure') .and. &
               (BC_Type(p) == 'dirichlet' .or. BC_Type(p) == 'neumann')) then
 
-             where (Mask1) BC_Mat(f,:)  = Get_Truchas_Material_Id(Inflow_Material(Inflow_Index(p)))
+             where (Mask1) BC_Mat(f,:) = matl_model%phase_index(Inflow_Material(Inflow_Index(p)))
+             where (Mask1 .and. BC_Mat(f,:) == 0) BC_Mat(f,:) = NULL_I
 
              if (heat_transport) then
                 where (Mask1) BC_Temp(f,:) = Inflow_Temperature(Inflow_Index(p))
@@ -820,213 +788,74 @@ CONTAINS
     !   the Zone structure
     !
     !=======================================================================
-    use cutoffs_module,       only: cutvof
-    use interfaces_module,    only: Body_Mass, Matnum, nbody, Body_Temp
-    use matl_module,          only: Matl, SLOT_INCREASE, SLOT_SET
-    use legacy_mesh_api,      only: ncells, Cell
-    use parameter_module,     only: mat_slot, mat_slot_new, maxmat, mbody, nmat
+    use interfaces_module,    only: matnum, nbody
+    use matl_module,          only: matl, slot_increase, slot_set
+    use legacy_mesh_api,      only: ncells, Cell, ncells_real
+    use parameter_module,     only: mat_slot, mat_slot_new, nmat
     use pgslib_module,        only: PGSLib_GLOBAL_MAXVAL
-    use property_data_module, only: background_material
     use restart_variables,    only: restart
-    use property_module,      only: density_material
 
-    ! Arguments
-    real(r8), intent(INOUT) :: Hits_Vol(:,:)
+    real(r8), intent(inout) :: Hits_Vol(:,:)
 
-    ! Local Variables
-    integer :: stat
-    logical :: fatal
-    integer :: ib, jb, m, s
-    integer,  dimension(maxmat) :: Nbodym
-    integer,  dimension(mbody,maxmat) :: Body_Num
-    logical,  dimension(ncells) :: Insert_mat
-    real(r8), dimension(ncells) :: Vofm, Total, Tmp1
-    integer,  dimension(ncells) :: Nmtl
+    integer :: b, m, s, j, stat
+    integer :: mcount(ncells)
+    logical :: bm_mask(nbody,nmat)
+    real(r8) :: vofm, total(ncells_real)
 
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    if (restart) return ! nothing to do
 
-    if ( restart ) then
-       ! Don't do any work
-       return
-    end if
-
-    ! Set up arrays that count the number of bodies
-    ! of a given material and the body number of each.
-    Nbodym   = 0
-    Body_Num = 0
-
-    Total = 0.0_r8
-    do ib = 1,nbody
-       m = matnum(ib)
-       Nbodym(m) = Nbodym(m) + 1
-       Body_Num(Nbodym(m),m) = ib
-
-       where (Hits_Vol(ib,:)/Cell%Volume < cutvof) Hits_Vol(ib,:) = 0.0_r8
-       Total = Total + Hits_Vol(ib,:)
+    !! Body material mask: BM_MASK(b,m) true if body b is material m.
+    bm_mask = .false.
+    do b = 1, nbody
+      bm_mask(b,matnum(b)) = .true.
     end do
 
-    ! Convert from total volume to volume fraction
-    ! and set to 0 or 1 if within cutvof away
-    Total = Total / Cell%Volume
-    where (ABS(Total) < cutvof) Total = 0.0_r8
-    where (ABS(Total - 1.0_r8) < cutvof) Total = 1.0_r8
-
-1   continue
-
-    ! Zero out Matl
-    do s = 1,mat_slot
-       call SLOT_SET (Matl, s)
+    !! Count the number of materials in each cell and size MATL accordingly
+    mcount = 0
+    do m = 1, nmat
+      do j = 1, ncells
+        if (any(hits_vol(:,j) > 0 .and. bm_mask(:,m))) mcount(j) = mcount(j) + 1
+      end do
     end do
-    Nmtl = 0
+    mat_slot_new = PGSLib_GLOBAL_MAXVAL(mcount)
+    if (mat_slot_new > mat_slot) call slot_increase(matl, mat_slot, mat_slot_new)
 
-    ! Count the required number of material slots
-    ! Background materials must reside where 0.0 <= Total < 1.0
-    where (Total >= 0.0_r8 .and. Total < 1.0_r8)
-       Nmtl = 1
-       Matl(1)%Cell%Id = background_material
-    end where
-
-    ! Set the Matl Id
-    SET_MATL_ID: do m = 1,nmat
-
-       Vofm = 0.0_r8
-       do jb = 1,Nbodym(m)
-          ib = Body_Num(jb,m)
-          Vofm = Vofm + Hits_Vol(ib,:) / Cell%Volume
-       end do
-
-       Insert_mat = .false.
-       where (Vofm > 0.0_r8) Insert_mat = .true.
-       do s = 1,mat_slot
-          Insert_mat = Insert_mat .and. .not.(Matl(s)%Cell%Id == m)
-       end do
-       where (Insert_mat) Nmtl = Nmtl + 1
-       do s = 1,mat_slot
-          where (Nmtl == s .and. Insert_mat)
-             Matl(s)%Cell%Id = m
-          end where
-       end do
-
-    end do SET_MATL_ID
-
-    mat_slot_new = PGSLib_GLOBAL_MAXVAL(Nmtl)
-
-    ! Print out the number of slots needed, the current
-    ! number allocated, and enlarge Matl if necessary
-#if DEBUG_MAT_SLOT
-    write (message, 2) mat_slot_new, mat_slot
-2   format(4x,i2,' material slots are needed: ',i2, ' material slots allocated')
-    call TLS_info (message)
-#endif
-
-    if (mat_slot_new > mat_slot) then
-       call SLOT_INCREASE (Matl, mat_slot, mat_slot_new)
-       go to 1     ! Go back up to see if mat_slot is sufficient
-    end if
-
-    ! Compute volume fractions and body volumes for each material.
-    SET_MATL_VOF: do m = 1,nmat
-
-       Vofm = 0.0_r8
-
-       do jb = 1,Nbodym(m)
-
-          ib = Body_Num(jb,m)
-
-          ! Accumulate the volume fractions
-          Vofm = Vofm + Hits_Vol(ib,:)/Cell%Volume
-
-          ! Accumulate the body mass
-          Body_mass(ib) = SUM (Hits_Vol(ib,:)*density_material(m))
-
-       end do
-
-       ! Put the material quantities into the appropriate slot
-       do s = 1,mat_slot
-
-          where (Matl(s)%Cell%Id == m)
-             Matl(s)%Cell%Vof = Vofm
-          end where
-
-       end do
-
-    end do SET_MATL_VOF
-
-    ! Total the volume fractions over all materials
-    Total = 0.0_r8
-    do s = 1,mat_slot
-       Total = Total + Matl(s)%Cell%Vof
+    !! Zero out MATL
+    do s = 1, mat_slot
+      call slot_set(matl, s)
     end do
 
-    ! Fill background with material "background_material", if not already filled
-    Tmp1 = MIN(MAX(1.0_r8 - Total, 0.0_r8), 1.0_r8)
-
-    ! Set up background_material material arrays
-    Vofm = 0.0_r8
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Id == background_material)
-          Vofm = Matl(s)%Cell%Vof
-       end where
-    end do
-    
-    where (Tmp1 > cutvof)
-       Vofm = Vofm + Tmp1
-       !Tmp1  = Tmp1*density_material(matnum(background_body))*Cell%Volume
-    end where
-
-    ! Put modified background_material materials back into the appropriate slots
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Id == background_material)
-          Matl(s)%Cell%Vof = Vofm
-       end where
-    end do
-
-    !! NNC, Feb 2013.  At this point (original commented-out code below) we
-    !! check that computed volume fractions (matl) are valid and then go-ahead
-    !! and normalize them anyway!  Why the vofs can't be expected to valid at
-    !! this point I don't understand and isn't proper.  Needs to be fixed!
-
-!    ! Total the volume fractions
-!    Total = 0.0_r8
-!    do s = 1,mat_slot
-!       Total = Total + Matl(s)%Cell%Vof
-!    end do
-!
-!    ! Check to see if the Sum(Vof) = 1.0
-!    call CHECK_VOF (fatal)
-!    call check_vof (stat)
-!    if (stat /= 0) call TLS_fatal ('computed volume fractions are invalid')
-!
-!    ! Renormalize Vofm array in case they are under or over-filled.
-!    ! Also initialize Rho_Old
-!    Total = 1.0_r8/Total
-!    do s = 1,mat_slot
-!       Matl(s)%Cell%Vof     = Total*Matl(s)%Cell%Vof
-!       where (Matl(s)%Cell%Vof == 0.0_r8) Matl(s)%Cell%Id = 0
-!    end do
-
-    !! Preserved from the above code -- is it really necessary?
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Vof == 0.0_r8) Matl(s)%Cell%Id = 0
+    !! Initialize MATL
+    mcount = 0
+    do m = 1, nmat
+      do j = 1, ncells
+        vofm = sum(hits_vol(:,j), mask=bm_mask(:,m)) / cell(j)%volume
+        if (vofm > 0) then
+          mcount(j) = mcount(j) + 1
+          s = mcount(j)
+          matl(s)%cell(j)%id = m
+          matl(s)%cell(j)%vof = vofm
+        end if
+      end do
     end do
 
     !! Check that the computed VoFs are valid.
-    call check_vof (stat)
+    call check_vof(stat)
     if (stat /= 0) then
-      call TLS_info ('  Computed volume fractions are invalid; attempting to normalize.')
-      Total = 0.0_r8
-      do s = 1,mat_slot
-        Total = Total + Matl(s)%Cell%Vof
+      call TLS_info('  Computed volume fractions are invalid; attempting to normalize.')
+      total = 0.0_r8
+      do s = 1, mat_slot
+        total = total + matl(s)%cell(:ncells_real)%vof
       end do
-      Total = 1.0_r8/Total
-      do s = 1,mat_slot
-        Matl(s)%Cell%Vof = Total*Matl(s)%Cell%Vof
+      total = 1.0_r8/total
+      do s = 1, mat_slot
+        matl(s)%cell(:ncells_real)%vof = total*matl(s)%cell(:ncells_real)%vof
       end do
-      call check_vof (stat)
+      call check_vof(stat)
       if (stat /= 0) then
-        call TLS_fatal ('normalized volume fractions are invalid')
+        call TLS_fatal('normalized volume fractions are invalid')
       else
-        call TLS_info ('  Normalization was successful.')
+        call TLS_info('  Normalization was successful.')
       end if
     end if
 
@@ -1049,10 +878,10 @@ CONTAINS
     use legacy_mesh_api,      only: ncells, Cell
 
     use parameter_module,     only: mat_slot, nmat
-    use property_module,      only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
     use zone_module,          only: Zone
     use restart_variables,    only: restart
     use physics_module, only: heat_transport
+    use scalar_func_class
 
     ! Arguments
     real(r8), dimension(nbody,ncells), intent(IN) :: Hits_Vol
@@ -1064,6 +893,7 @@ CONTAINS
     real(r8), pointer, dimension(:)   :: mass_sum, vof
     real(r8) :: enth_matl, rho, temp
     real(r8), allocatable :: Volume_Fraction(:,:)
+    class(scalar_func), allocatable :: func
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ALLOCATE (Volume_Fraction(0:nmat,ncells), STAT=s)
@@ -1132,7 +962,11 @@ CONTAINS
       Zone%Rho = 0.0_r8
       do s = 1,mat_slot
         do i = 1, ncells
-          Zone(i)%Rho = Zone(i)%Rho + Matl(s)%Cell(i)%Vof * DENSITY_MATERIAL(Matl(s)%Cell(i)%Id)
+          m = Matl(s)%Cell(i)%Id
+          if (m == 0) cycle
+          if (m == matl_model%void_index) cycle
+          rho = matl_model%const_phase_prop(m, 'density')
+          Zone(i)%Rho = Zone(i)%Rho + Matl(s)%Cell(i)%Vof * rho
         end do
       end do
       Zone%Rho_Old = Zone%Rho
@@ -1150,11 +984,19 @@ CONTAINS
       !FORALL (ib = 1:nbody, iz = 1:ncells, Hits_Vol(ib,iz) .gt. alittle)
       !  bzRho(ib,iz) = DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,iz)
       !END FORALL
-      do iz = 1, ncells
-        do ib = 1, nbody
-          if (Hits_Vol(ib,iz) > alittle) then
-            bzRho(ib,iz) = DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,iz)
-          end if
+!      do iz = 1, ncells
+!        do ib = 1, nbody
+!          if (Hits_Vol(ib,iz) > alittle) then
+!            bzRho(ib,iz) = DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,iz)
+!          end if
+!        end do
+!      end do
+      do ib = 1, nbody
+        m = MatNum(ib)
+        if (m == matl_model%void_index) cycle
+        rho = matl_model%const_phase_prop(m, 'density')
+        do iz = 1, ncells
+          if (Hits_Vol(ib,iz) > alittle) bzRho(ib,iz) = rho*Hits_Vol(ib,iz)
         end do
       end do
 
@@ -1163,16 +1005,19 @@ CONTAINS
         ! full enthalpy of each material divided by the mass of the cell
 
         m   = MatNum(ib)
+        if (m == matl_model%void_index) cycle
 
         ! Accumulate total mass by zone
+        rho = matl_model%const_phase_prop(m, 'density')
         where (Hits_Vol(ib,:) > alittle)
-          mass_sum(:) = mass_sum(:) + DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,:)
+          mass_sum(:) = mass_sum(:) + rho*Hits_Vol(ib,:)
         end where
 
+        call matl_model%alloc_phase_prop(m, 'enthalpy', func)
         do iz = 1, ncells
           if (Hits_Vol(ib,iz) .gt. alittle) then
             temp = Body_Temp(ib)%eval(Cell(iz)%Centroid)
-            enth_matl    = ENTHALPY_DENSITY_MATERIAL(m,temp)
+            enth_matl    = func%eval([temp])
             enth_sum(iz) = enth_sum(iz) + enth_matl * Hits_Vol(ib,iz)
             ! If the maximum mass contribution is from this body, assign the temp
             if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = temp
@@ -1219,31 +1064,25 @@ CONTAINS
   subroutine check_vof (stat)
 
     use parameter_module, only: nmat
-    use legacy_mesh_api, only: ncells, unpermute_mesh_vector
+    use legacy_mesh_api, only: ncells, unpermute_mesh_vector, ncells_real
     use matl_utilities, only: matl_get_vof
-    use property_module, only: get_user_material_id
 
     integer, intent(out) :: stat
 
-    integer  :: m, mmap(nmat)
+    integer :: n
     real(r8) :: vfrac(nmat,ncells)
 
     call matl_get_vof (vfrac) ! we don't want to deal directly with matl
 
-    do m = 1, nmat
-      mmap(m) = get_user_material_id(m)
-    end do
-
-    call check_vof_aux (vfrac, mmap, unpermute_mesh_vector, stat)
+    call check_vof_aux (vfrac(:,:ncells_real), unpermute_mesh_vector(:ncells_real), stat)
 
   end subroutine check_vof
 
-  subroutine check_vof_aux (vfrac, mmap, cmap, stat)
+  subroutine check_vof_aux (vfrac, cmap, stat)
 
     use parallel_communication, only: global_any, global_minval, global_maxval
 
     real(r8), intent(in)  :: vfrac(:,:)
-    integer,  intent(in)  :: mmap(:)    ! user material IDs
     integer,  intent(in)  :: cmap(:)    ! user cell IDs
     integer,  intent(out) :: stat
 
@@ -1258,7 +1097,6 @@ CONTAINS
     end type
     type(vector) :: list1, list2
 
-    ASSERT(size(vfrac,1) == size(mmap))
     ASSERT(size(vfrac,2) == size(cmap))
 
     stat = 0
@@ -1277,21 +1115,23 @@ CONTAINS
         end if
       end do
 
-      10 format(a,i0,a,/,a,es12.5)
+      10 format(3a,/,a,es12.5)
 
       !! Report cells where the volume fraction is negative.
       if (global_any(size_vector(list1) > 0)) then
         stat = -1
-        write(message,10) 'material ', mmap(m), ' volume fraction < 0 in cells: ', &
-                          'minimum volume fraction: ', global_minval(vfmin)
+        write(message,10) 'material "', matl_model%phase_name(m), &
+            '" volume fraction < 0 in cells: ', &
+            'minimum volume fraction: ', global_minval(vfmin)
         call report_errors (message, list1)
       end if
 
       !! Report cells where the volume fraction exceeds 1.
       if (global_any(size_vector(list2) > 0)) then
         stat = -1
-        write(message,10) 'material ', mmap(m), ' volume fraction > 1 in cells: ', &
-                          'maximum volume fraction less 1: ', global_maxval(vfmax) - 1.0_r8
+        write(message,10) 'material "', matl_model%phase_name(m), &
+            '" volume fraction > 1 in cells: ', &
+            'maximum volume fraction less 1: ', global_maxval(vfmax) - 1.0_r8
         call report_errors (message, list2)
       end if
 
@@ -1420,7 +1260,6 @@ CONTAINS
     use interfaces_module, only: Body_Vel, nbody, Body_Temp, Matnum
     use legacy_mesh_api,   only: ndim, ncells
     use zone_module,       only: Zone
-    use property_module,   only: density_material
 
     ! Arguments
     real(r8), dimension(nbody,ncells), intent(IN) :: Hits_Vol
@@ -1438,7 +1277,8 @@ CONTAINS
     Massc    = 0.0_r8
     Momentum = 0.0_r8
     do m = 1,nbody
-       rhomat = density_material(Matnum(m))
+       if (Matnum(m) == matl_model%void_index) cycle
+       rhomat = matl_model%const_phase_prop(Matnum(m), 'density')
        do n = 1,ndim
           Momentum(n,:) = Momentum(n,:) + Hits_Vol(m,:)*rhomat*Body_Vel(n,m)
        end do
@@ -1643,24 +1483,18 @@ CONTAINS
   subroutine compute_cell_enthalpy (T, vof, H)
 
     use parameter_module, only: nmat
-    use phase_property_table
-    use material_table
-    use material_system
-    use material_property
-    use material_interop, only: void_material_index, material_to_system, phase_to_material
+    use avg_matl_prop_type
+    use material_class
 
-    real(r8), intent(in)    :: T(:)     ! cell temperature
+    real(r8), intent(in), contiguous, target :: T(:)     ! cell temperature
     real(r8), intent(inout) :: vof(:,:) ! Truchas material phase volume fractions
     real(r8), intent(out)   :: H(:)     ! enthalpy density
 
-    integer :: ncell, m, i, j, k, stat
-    integer, allocatable :: matids(:)
-    real(r8), allocatable :: vfrac(:,:), pfrac(:)
-    real(r8) :: state(1), value
-    type(mat_system), pointer :: ms
-    type(mat_prop) :: mp
-    integer, pointer :: phase_id(:)
-    character(128) :: errmsg
+    integer :: ncell, nm, m, p1, p2, j
+    real(r8), allocatable :: vfrac(:,:)
+    real(r8), pointer :: state(:,:)
+    type(avg_matl_prop), allocatable :: avg_H
+    character(:), allocatable :: errmsg
 
     ncell = size(vof,dim=2)
 
@@ -1668,53 +1502,35 @@ CONTAINS
     ASSERT(size(T) == ncell)
     ASSERT(size(H) == ncell)
 
-    !! Map material volume fractions (VOF) to material system volume fractions (VFRAC).
-    allocate(matids(mt_num_material()), vfrac(ncell,mt_num_material()))
-    call mt_get_material_ids (matids)
-    vfrac = 0.0_r8
-    do m = 1, nmat  ! loop over Truchas material numbers
-      if (m == void_material_index) cycle
-      do i = size(matids), 1, -1 ! find the destination index
-        if (matids(i) == material_to_system(m)) exit
-      end do
-      INSIST(i > 0)
-      vfrac(:,i) = vfrac(:,i) + vof(m,:)
+    nm = matl_model%nmatl_real
+    allocate(vfrac(ncell,nm))
+
+    !! Generate the material volume fraction array VFRAC from VOF
+    do m = 1, nm
+      call matl_model%get_matl_phase_index_range(m, p1, p2)
+      vfrac(:,m) = sum(vof(p1:p2,:),dim=1)
     end do
 
-    ASSERT(ppt_has_property('enthalpy density'))
+    !! Compute the volume fraction weighted average material enthalpy density.
+    call matl_model%alloc_avg_matl_prop('enthalpy', avg_H, errmsg)
+    ASSERT(allocated(avg_H))
+    state(1:1,1:ncell) => T
+    call avg_H%compute_value(vfrac, state, H)
 
-    H = 0.0_r8
-
-    do i = 1, size(matids) ! loop over material systems
-      !! Create the enthalpy density property MP for this material system.
-      call mp_create (mp, matids(i), ppt_property_id('enthalpy density'), stat, errmsg)
-      if (stat /= 0) call TLS_fatal ('COMPUTE_CELL_ENTHALPY: ' // trim(errmsg))
-      !! Accumulate the enthalpy density due to this material system.
-      do j = 1, ncell
-        if (vfrac(j,i) == 0.0_r8) cycle ! no contribution
-        state(1) = T(j)
-        call mp_eval (mp, state, value)
-        H(j) = H(j) + vfrac(j,i)*value
-      end do
-      !! Compute the correct phase volume fractions and push back into VOF.
-      !! Only relevant for multi-phase material systems.
-      ms => mt_get_material(matids(i))
-      ASSERT(associated(ms))
-      call ms_get_phase_id (ms, phase_id)
-      if (size(phase_id) > 1) then  ! multi-phase material system
-        allocate(pfrac(size(phase_id)))
+    !! Compute the correct phase volume fractions for multi-phase materials
+    !! and push them back into VOF.
+    do m = 1, nm
+      call matl_model%get_matl_phase_index_range(m, p1, p2)
+      if (p1 == p2) cycle
+      block
+        real(r8) :: beta(p2-p1+1)
         do j = 1, ncell
-          if (vfrac(j,i) == 0.0_r8) cycle ! nothing to do
-          state(1) = T(j)
-          call ms_phase_mixture (ms, state, pfrac)
-          do k = 1, size(phase_id)
-            m = phase_to_material(phase_id(k))
-            vof(m,j) = pfrac(k) * vfrac(j,i)
-          end do
+          if (vfrac(j,m) > 0) then
+            call matl_model%get_matl_phase_frac(m, T(j), beta)
+            vof(p1:p2,j) = vfrac(j,m)*beta
+          end if
         end do
-        deallocate(pfrac)
-      end if
-      deallocate(phase_id)
+      end block
     end do
 
   end subroutine compute_cell_enthalpy

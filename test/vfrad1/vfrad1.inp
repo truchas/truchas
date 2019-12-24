@@ -20,6 +20,7 @@ an internal HTC condition.
 /
 
 &PHYSICS
+  materials = 'solid', 'gas'
   heat_transport = .true.
 /
 
@@ -129,27 +130,15 @@ an internal HTC condition.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'solid'
   temperature = 1.1
 /
 
 &MATERIAL
-  material_number  = 1
-  material_name    = 'solid'
-  material_feature = 'background'
-  Density          = 4.0
-/
-
-&PHASE
   name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 0.5
-/
-
-&MATERIAL_SYSTEM
-  name   = 'solid'
-  phases = 'solid'
+  density = 4.0
+  specific_heat = 0.25
+  conductivity = 0.5
 /
 
 !! THE INNER GAS-FILLED TORIODAL CAVITY.
@@ -157,25 +146,14 @@ an internal HTC condition.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 2
+  material_name = 'gas'
   temperature = 1.0
 /
 
 &MATERIAL
-  material_number = 2
-  material_name   = 'gas'
-  density         = 4.0
-/
-
-&PHASE
   name = 'gas'
-  property_name(1) = 'density',       property_constant(1) = 0.4
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 0.005
-/
-
-&MATERIAL_SYSTEM
-  name   = 'gas'
-  phases = 'gas'
+  density = 0.4
+  specific_heat = 0.25
+  conductivity = 0.005
 /
 

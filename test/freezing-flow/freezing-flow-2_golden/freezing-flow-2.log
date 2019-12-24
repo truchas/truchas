@@ -6,12 +6,12 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2019-12-17 13:38:39
+   build date/time:     2020-01-09 16:24:34
    build flags:         -u -C -C=dangling -gline -nan
-   build host:          petaca2.lanl.gov
-   run architecture:    Linux petaca2.lanl.gov 4.13.16-1
-   run host:            petaca2.lanl.gov1 SMP Mon Nov 27
-   run date/time:       06 Jan 20 14:11:32
+   build host:          noether.lanl.gov
+   run architecture:    Linux noether.lanl.gov 4.13.16-1
+   run host:            noether.lanl.gov1 SMP Mon Nov 27
+   run date/time:       09 Jan 20 22:00:58
    processors:          1
 
 ================================================================================
@@ -40,39 +40,17 @@ Reading VFUNCTION namelists ...
 
 Reading TOOLPATH namelists ...
 
-Reading PHASE namelists ...
-  Reading PHASE namelist #1
-  Reading PHASE namelist #2
-
-Reading MATERIAL_SYSTEM namelists ...
-  Reading MATERIAL_SYSTEM namelist #1
-    using default REFERENCE_TEMP =  0.000E+00
-    using default REFERENCE_ENTHALPY =  0.000E+00
-
 Reading PHYSICS namelist ...
+
+Reading MATERIAL namelists ...
+
+Reading PHASE namelists ...
+
+Reading PHASE_CHANGE namelists ...
 
  Reading OUTPUTS Namelist ...
 
 Reading MESH namelist ...
-
- Reading MATERIAL Namelist # 1 ...
-
- Reading MATERIAL Namelist # 2 ...
-
- Reading MATERIAL Namelist # 3 ...
-This is the last MATERIAL Namelist.
-Identified 3 material(s)
-Warning: Material  1 priority not initialized; set to  1
-Warning: Material  2 priority not initialized; set to  2
-Warning: Material  3 priority not initialized; set to  3
-
-               Material Priorities
-
-         Material     Name     Priority
-         --------     ----     --------
-             1        solid        1
-             2       liquid        2
-             3         void        3
 
  Reading LINEAR_SOLVER Namelist(s) ...
 Warning: LINEAR_SOLVER namelist not found! Using defaults.
@@ -80,22 +58,9 @@ Warning: LINEAR_SOLVER namelist not found! Using defaults.
 Reading NONLINEAR_SOLVER Namelists ...
   NONLINEAR_SOLVER namelist not found; using defaults.
 
-Reading INTERFACES namelist ...
-
  Reading BODY Namelist # 1 ...
 
-                                   Geometry Data
-
-          Body  Material  Surface  Translation  Rotation  Rotation  Surface
-                 Number     Type      Point       Point     Angle  Parameters
-          ----  --------  -------  -----------  --------  -------- ----------
-            1       3    plane      1.000E+00   0.000E+00    0.0    1.000E+00
-                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
-                                    0.000E+00   0.000E+00    0.0    0.000E+00
-
  Reading BODY Namelist # 2 ...
-            2       2    background
-         BODY Namelist number  2 will be used for background material ( 2)
 
 Reading BODY namelists ...
 
@@ -382,7 +347,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.558E-03, NFUN:NPC:NPA=0000048:0000016:0000032
+DS: dt=1.558E-03, NFUN:NPC:NPA=0000049:0000016:0000033
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -393,7 +358,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.605E-03, NFUN:NPC:NPA=0000052:0000017:0000035
+DS: dt=1.605E-03, NFUN:NPC:NPA=0000054:0000017:0000037
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -404,7 +369,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.653E-03, NFUN:NPC:NPA=0000056:0000018:0000038
+DS: dt=1.653E-03, NFUN:NPC:NPA=0000058:0000018:0000040
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -415,7 +380,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.702E-03, NFUN:NPC:NPA=0000060:0000019:0000041
+DS: dt=1.702E-03, NFUN:NPC:NPA=0000062:0000019:0000043
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -426,7 +391,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.754E-03, NFUN:NPC:NPA=0000064:0000020:0000044
+DS: dt=1.754E-03, NFUN:NPC:NPA=0000065:0000020:0000045
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -448,7 +413,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.860E-03, NFUN:NPC:NPA=0000072:0000022:0000050
+DS: dt=1.860E-03, NFUN:NPC:NPA=0000071:0000022:0000049
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -459,7 +424,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.916E-03, NFUN:NPC:NPA=0000076:0000023:0000053
+DS: dt=1.916E-03, NFUN:NPC:NPA=0000074:0000023:0000051
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -470,7 +435,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.974E-03, NFUN:NPC:NPA=0000079:0000024:0000055
+DS: dt=1.974E-03, NFUN:NPC:NPA=0000078:0000024:0000054
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -481,7 +446,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.033E-03, NFUN:NPC:NPA=0000083:0000025:0000058
+DS: dt=2.033E-03, NFUN:NPC:NPA=0000082:0000025:0000057
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -492,7 +457,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.094E-03, NFUN:NPC:NPA=0000087:0000026:0000061
+DS: dt=2.094E-03, NFUN:NPC:NPA=0000086:0000026:0000060
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -503,7 +468,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.157E-03, NFUN:NPC:NPA=0000091:0000027:0000064
+DS: dt=2.157E-03, NFUN:NPC:NPA=0000090:0000027:0000063
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -514,7 +479,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.221E-03, NFUN:NPC:NPA=0000095:0000028:0000067
+DS: dt=2.221E-03, NFUN:NPC:NPA=0000093:0000028:0000065
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -525,7 +490,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.288E-03, NFUN:NPC:NPA=0000099:0000029:0000070
+DS: dt=2.288E-03, NFUN:NPC:NPA=0000096:0000029:0000067
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -536,7 +501,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.357E-03, NFUN:NPC:NPA=0000103:0000030:0000073
+DS: dt=2.357E-03, NFUN:NPC:NPA=0000099:0000030:0000069
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -547,7 +512,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.427E-03, NFUN:NPC:NPA=0000106:0000031:0000075
+DS: dt=2.427E-03, NFUN:NPC:NPA=0000102:0000031:0000071
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -558,7 +523,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.500E-03, NFUN:NPC:NPA=0000109:0000032:0000077
+DS: dt=2.500E-03, NFUN:NPC:NPA=0000105:0000032:0000073
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -569,7 +534,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.575E-03, NFUN:NPC:NPA=0000112:0000033:0000079
+DS: dt=2.575E-03, NFUN:NPC:NPA=0000109:0000033:0000076
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -580,7 +545,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.652E-03, NFUN:NPC:NPA=0000116:0000034:0000082
+DS: dt=2.652E-03, NFUN:NPC:NPA=0000113:0000034:0000079
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -591,7 +556,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.732E-03, NFUN:NPC:NPA=0000120:0000035:0000085
+DS: dt=2.732E-03, NFUN:NPC:NPA=0000117:0000035:0000082
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -602,7 +567,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.814E-03, NFUN:NPC:NPA=0000124:0000036:0000088
+DS: dt=2.814E-03, NFUN:NPC:NPA=0000120:0000036:0000084
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -613,7 +578,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.898E-03, NFUN:NPC:NPA=0000128:0000037:0000091
+DS: dt=2.898E-03, NFUN:NPC:NPA=0000123:0000037:0000086
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -624,7 +589,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.985E-03, NFUN:NPC:NPA=0000131:0000038:0000093
+DS: dt=2.985E-03, NFUN:NPC:NPA=0000126:0000038:0000088
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -635,7 +600,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.075E-03, NFUN:NPC:NPA=0000134:0000039:0000095
+DS: dt=3.075E-03, NFUN:NPC:NPA=0000129:0000039:0000090
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -646,7 +611,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.167E-03, NFUN:NPC:NPA=0000138:0000040:0000098
+DS: dt=3.167E-03, NFUN:NPC:NPA=0000132:0000040:0000092
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -657,7 +622,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.262E-03, NFUN:NPC:NPA=0000142:0000041:0000101
+DS: dt=3.262E-03, NFUN:NPC:NPA=0000136:0000041:0000095
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -668,7 +633,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.360E-03, NFUN:NPC:NPA=0000146:0000042:0000104
+DS: dt=3.360E-03, NFUN:NPC:NPA=0000140:0000042:0000098
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -679,7 +644,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.461E-03, NFUN:NPC:NPA=0000151:0000043:0000108
+DS: dt=3.461E-03, NFUN:NPC:NPA=0000144:0000043:0000101
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -690,7 +655,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.565E-03, NFUN:NPC:NPA=0000156:0000044:0000112
+DS: dt=3.565E-03, NFUN:NPC:NPA=0000148:0000044:0000104
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -701,7 +666,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.671E-03, NFUN:NPC:NPA=0000161:0000045:0000116
+DS: dt=3.671E-03, NFUN:NPC:NPA=0000152:0000045:0000107
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -712,7 +677,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.782E-03, NFUN:NPC:NPA=0000165:0000046:0000119
+DS: dt=3.782E-03, NFUN:NPC:NPA=0000158:0000046:0000112
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -723,7 +688,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=3.895E-03, NFUN:NPC:NPA=0000169:0000047:0000122
+DS: dt=3.895E-03, NFUN:NPC:NPA=0000162:0000047:0000115
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -734,7 +699,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.012E-03, NFUN:NPC:NPA=0000172:0000048:0000124
+DS: dt=4.012E-03, NFUN:NPC:NPA=0000165:0000048:0000117
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -745,7 +710,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.132E-03, NFUN:NPC:NPA=0000175:0000049:0000126
+DS: dt=4.132E-03, NFUN:NPC:NPA=0000168:0000049:0000119
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -756,7 +721,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.256E-03, NFUN:NPC:NPA=0000178:0000050:0000128
+DS: dt=4.256E-03, NFUN:NPC:NPA=0000172:0000050:0000122
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -767,7 +732,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.384E-03, NFUN:NPC:NPA=0000182:0000051:0000131
+DS: dt=4.384E-03, NFUN:NPC:NPA=0000176:0000051:0000125
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -778,7 +743,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.515E-03, NFUN:NPC:NPA=0000186:0000052:0000134
+DS: dt=4.515E-03, NFUN:NPC:NPA=0000180:0000052:0000128
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -789,7 +754,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.651E-03, NFUN:NPC:NPA=0000190:0000053:0000137
+DS: dt=4.651E-03, NFUN:NPC:NPA=0000184:0000053:0000131
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -800,7 +765,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.790E-03, NFUN:NPC:NPA=0000194:0000054:0000140
+DS: dt=4.790E-03, NFUN:NPC:NPA=0000188:0000054:0000134
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -811,7 +776,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.934E-03, NFUN:NPC:NPA=0000198:0000055:0000143
+DS: dt=4.934E-03, NFUN:NPC:NPA=0000192:0000055:0000137
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -822,7 +787,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.082E-03, NFUN:NPC:NPA=0000203:0000056:0000147
+DS: dt=5.082E-03, NFUN:NPC:NPA=0000196:0000056:0000140
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -833,7 +798,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.235E-03, NFUN:NPC:NPA=0000208:0000057:0000151
+DS: dt=5.235E-03, NFUN:NPC:NPA=0000201:0000057:0000144
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -844,7 +809,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.392E-03, NFUN:NPC:NPA=0000212:0000058:0000154
+DS: dt=5.392E-03, NFUN:NPC:NPA=0000207:0000058:0000149
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -855,7 +820,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.553E-03, NFUN:NPC:NPA=0000216:0000059:0000157
+DS: dt=5.553E-03, NFUN:NPC:NPA=0000211:0000059:0000152
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -866,7 +831,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.720E-03, NFUN:NPC:NPA=0000220:0000060:0000160
+DS: dt=5.720E-03, NFUN:NPC:NPA=0000215:0000060:0000155
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -877,7 +842,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.892E-03, NFUN:NPC:NPA=0000224:0000061:0000163
+DS: dt=5.892E-03, NFUN:NPC:NPA=0000219:0000061:0000158
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -888,7 +853,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.068E-03, NFUN:NPC:NPA=0000228:0000062:0000166
+DS: dt=6.068E-03, NFUN:NPC:NPA=0000223:0000062:0000161
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -899,7 +864,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.680E-03, NFUN:NPC:NPA=0000232:0000063:0000169
+DS: dt=5.680E-03, NFUN:NPC:NPA=0000227:0000063:0000164
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -910,7 +875,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.316E-03, NFUN:NPC:NPA=0000236:0000064:0000172
+DS: dt=5.316E-03, NFUN:NPC:NPA=0000231:0000064:0000167
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -921,7 +886,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.975E-03, NFUN:NPC:NPA=0000240:0000065:0000175
+DS: dt=4.975E-03, NFUN:NPC:NPA=0000235:0000065:0000170
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -932,7 +897,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.657E-03, NFUN:NPC:NPA=0000244:0000066:0000178
+DS: dt=4.657E-03, NFUN:NPC:NPA=0000239:0000066:0000173
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -943,7 +908,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.359E-03, NFUN:NPC:NPA=0000248:0000067:0000181
+DS: dt=4.359E-03, NFUN:NPC:NPA=0000243:0000067:0000176
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -954,7 +919,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.489E-03, NFUN:NPC:NPA=0000252:0000068:0000184
+DS: dt=4.489E-03, NFUN:NPC:NPA=0000247:0000068:0000179
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -965,7 +930,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.624E-03, NFUN:NPC:NPA=0000256:0000069:0000187
+DS: dt=4.624E-03, NFUN:NPC:NPA=0000250:0000069:0000181
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -976,7 +941,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.763E-03, NFUN:NPC:NPA=0000261:0000070:0000191
+DS: dt=4.763E-03, NFUN:NPC:NPA=0000254:0000070:0000184
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -987,7 +952,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=4.906E-03, NFUN:NPC:NPA=0000266:0000071:0000195
+DS: dt=4.906E-03, NFUN:NPC:NPA=0000258:0000071:0000187
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -998,7 +963,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.053E-03, NFUN:NPC:NPA=0000270:0000072:0000198
+DS: dt=5.053E-03, NFUN:NPC:NPA=0000263:0000072:0000191
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1009,7 +974,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.204E-03, NFUN:NPC:NPA=0000274:0000073:0000201
+DS: dt=5.204E-03, NFUN:NPC:NPA=0000267:0000073:0000194
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1020,7 +985,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.361E-03, NFUN:NPC:NPA=0000278:0000074:0000204
+DS: dt=5.361E-03, NFUN:NPC:NPA=0000271:0000074:0000197
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1031,7 +996,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.521E-03, NFUN:NPC:NPA=0000282:0000075:0000207
+DS: dt=5.521E-03, NFUN:NPC:NPA=0000275:0000075:0000200
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1042,7 +1007,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.687E-03, NFUN:NPC:NPA=0000286:0000076:0000210
+DS: dt=5.687E-03, NFUN:NPC:NPA=0000279:0000076:0000203
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1053,7 +1018,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=5.858E-03, NFUN:NPC:NPA=0000290:0000077:0000213
+DS: dt=5.858E-03, NFUN:NPC:NPA=0000283:0000077:0000206
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1064,7 +1029,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.033E-03, NFUN:NPC:NPA=0000294:0000078:0000216
+DS: dt=6.033E-03, NFUN:NPC:NPA=0000287:0000078:0000209
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1075,7 +1040,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.214E-03, NFUN:NPC:NPA=0000298:0000079:0000219
+DS: dt=6.214E-03, NFUN:NPC:NPA=0000291:0000079:0000212
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1086,7 +1051,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.401E-03, NFUN:NPC:NPA=0000302:0000080:0000222
+DS: dt=6.401E-03, NFUN:NPC:NPA=0000295:0000080:0000215
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1097,7 +1062,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.593E-03, NFUN:NPC:NPA=0000306:0000081:0000225
+DS: dt=6.593E-03, NFUN:NPC:NPA=0000299:0000081:0000218
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1108,7 +1073,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.791E-03, NFUN:NPC:NPA=0000310:0000082:0000228
+DS: dt=6.791E-03, NFUN:NPC:NPA=0000303:0000082:0000221
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1119,7 +1084,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=6.994E-03, NFUN:NPC:NPA=0000314:0000083:0000231
+DS: dt=6.994E-03, NFUN:NPC:NPA=0000307:0000083:0000224
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1130,7 +1095,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=7.204E-03, NFUN:NPC:NPA=0000318:0000084:0000234
+DS: dt=7.204E-03, NFUN:NPC:NPA=0000311:0000084:0000227
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1141,7 +1106,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=7.420E-03, NFUN:NPC:NPA=0000322:0000085:0000237
+DS: dt=7.420E-03, NFUN:NPC:NPA=0000315:0000085:0000230
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1152,7 +1117,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=7.643E-03, NFUN:NPC:NPA=0000326:0000086:0000240
+DS: dt=7.643E-03, NFUN:NPC:NPA=0000319:0000086:0000233
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1163,7 +1128,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=7.872E-03, NFUN:NPC:NPA=0000330:0000087:0000243
+DS: dt=7.872E-03, NFUN:NPC:NPA=0000323:0000087:0000236
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1174,7 +1139,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=8.108E-03, NFUN:NPC:NPA=0000334:0000088:0000246
+DS: dt=8.108E-03, NFUN:NPC:NPA=0000327:0000088:0000239
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1185,7 +1150,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=8.352E-03, NFUN:NPC:NPA=0000338:0000089:0000249
+DS: dt=8.352E-03, NFUN:NPC:NPA=0000332:0000089:0000243
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1196,7 +1161,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=8.602E-03, NFUN:NPC:NPA=0000342:0000090:0000252
+DS: dt=8.602E-03, NFUN:NPC:NPA=0000336:0000090:0000246
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1207,7 +1172,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=8.860E-03, NFUN:NPC:NPA=0000346:0000091:0000255
+DS: dt=8.860E-03, NFUN:NPC:NPA=0000340:0000091:0000249
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1218,7 +1183,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=9.126E-03, NFUN:NPC:NPA=0000350:0000092:0000258
+DS: dt=9.126E-03, NFUN:NPC:NPA=0000344:0000092:0000252
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1229,7 +1194,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=9.400E-03, NFUN:NPC:NPA=0000354:0000093:0000261
+DS: dt=9.400E-03, NFUN:NPC:NPA=0000348:0000093:0000255
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1240,7 +1205,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=9.682E-03, NFUN:NPC:NPA=0000358:0000094:0000264
+DS: dt=9.682E-03, NFUN:NPC:NPA=0000352:0000094:0000258
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1251,7 +1216,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=9.972E-03, NFUN:NPC:NPA=0000362:0000095:0000267
+DS: dt=9.972E-03, NFUN:NPC:NPA=0000356:0000095:0000261
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1262,7 +1227,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.027E-02, NFUN:NPC:NPA=0000366:0000096:0000270
+DS: dt=1.027E-02, NFUN:NPC:NPA=0000360:0000096:0000264
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1273,7 +1238,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.058E-02, NFUN:NPC:NPA=0000370:0000097:0000273
+DS: dt=1.058E-02, NFUN:NPC:NPA=0000364:0000097:0000267
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1284,7 +1249,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.090E-02, NFUN:NPC:NPA=0000374:0000098:0000276
+DS: dt=1.090E-02, NFUN:NPC:NPA=0000368:0000098:0000270
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1295,7 +1260,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.122E-02, NFUN:NPC:NPA=0000378:0000099:0000279
+DS: dt=1.122E-02, NFUN:NPC:NPA=0000372:0000099:0000273
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1306,7 +1271,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.156E-02, NFUN:NPC:NPA=0000382:0000100:0000282
+DS: dt=1.156E-02, NFUN:NPC:NPA=0000376:0000100:0000276
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1317,7 +1282,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.191E-02, NFUN:NPC:NPA=0000386:0000101:0000285
+DS: dt=1.191E-02, NFUN:NPC:NPA=0000380:0000101:0000279
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1328,7 +1293,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.226E-02, NFUN:NPC:NPA=0000390:0000102:0000288
+DS: dt=1.226E-02, NFUN:NPC:NPA=0000384:0000102:0000282
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1339,7 +1304,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.263E-02, NFUN:NPC:NPA=0000394:0000103:0000291
+DS: dt=1.263E-02, NFUN:NPC:NPA=0000388:0000103:0000285
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1350,7 +1315,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.301E-02, NFUN:NPC:NPA=0000398:0000104:0000294
+DS: dt=1.301E-02, NFUN:NPC:NPA=0000392:0000104:0000288
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1361,7 +1326,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.340E-02, NFUN:NPC:NPA=0000402:0000105:0000297
+DS: dt=1.340E-02, NFUN:NPC:NPA=0000396:0000105:0000291
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1372,7 +1337,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.380E-02, NFUN:NPC:NPA=0000406:0000106:0000300
+DS: dt=1.380E-02, NFUN:NPC:NPA=0000400:0000106:0000294
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1383,7 +1348,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.422E-02, NFUN:NPC:NPA=0000410:0000107:0000303
+DS: dt=1.422E-02, NFUN:NPC:NPA=0000404:0000107:0000297
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1394,7 +1359,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.464E-02, NFUN:NPC:NPA=0000414:0000108:0000306
+DS: dt=1.464E-02, NFUN:NPC:NPA=0000408:0000108:0000300
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1405,7 +1370,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.508E-02, NFUN:NPC:NPA=0000418:0000109:0000309
+DS: dt=1.508E-02, NFUN:NPC:NPA=0000412:0000109:0000303
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1416,7 +1381,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.554E-02, NFUN:NPC:NPA=0000422:0000110:0000312
+DS: dt=1.554E-02, NFUN:NPC:NPA=0000416:0000110:0000306
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1427,7 +1392,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.600E-02, NFUN:NPC:NPA=0000426:0000111:0000315
+DS: dt=1.600E-02, NFUN:NPC:NPA=0000420:0000111:0000309
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1438,7 +1403,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.648E-02, NFUN:NPC:NPA=0000430:0000112:0000318
+DS: dt=1.648E-02, NFUN:NPC:NPA=0000424:0000112:0000312
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1449,7 +1414,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.698E-02, NFUN:NPC:NPA=0000434:0000113:0000321
+DS: dt=1.698E-02, NFUN:NPC:NPA=0000428:0000113:0000315
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1460,7 +1425,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.749E-02, NFUN:NPC:NPA=0000438:0000114:0000324
+DS: dt=1.749E-02, NFUN:NPC:NPA=0000432:0000114:0000318
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1471,7 +1436,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.801E-02, NFUN:NPC:NPA=0000442:0000115:0000327
+DS: dt=1.801E-02, NFUN:NPC:NPA=0000436:0000115:0000321
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1482,7 +1447,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.855E-02, NFUN:NPC:NPA=0000446:0000116:0000330
+DS: dt=1.855E-02, NFUN:NPC:NPA=0000440:0000116:0000324
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1493,7 +1458,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.911E-02, NFUN:NPC:NPA=0000450:0000117:0000333
+DS: dt=1.911E-02, NFUN:NPC:NPA=0000444:0000117:0000327
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1504,7 +1469,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.968E-02, NFUN:NPC:NPA=0000454:0000118:0000336
+DS: dt=1.968E-02, NFUN:NPC:NPA=0000448:0000118:0000330
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1515,7 +1480,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000458:0000119:0000339
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000452:0000119:0000333
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1526,7 +1491,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000462:0000120:0000342
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000456:0000120:0000336
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1537,7 +1502,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000466:0000121:0000345
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000460:0000121:0000339
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1548,7 +1513,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000470:0000122:0000348
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000464:0000122:0000342
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1559,7 +1524,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000474:0000123:0000351
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000468:0000123:0000345
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1570,7 +1535,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000478:0000124:0000354
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000472:0000124:0000348
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1581,7 +1546,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000482:0000125:0000357
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000476:0000125:0000351
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1592,7 +1557,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000486:0000126:0000360
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000480:0000126:0000354
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1603,7 +1568,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000490:0000127:0000363
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000484:0000127:0000357
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1614,7 +1579,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000494:0000128:0000366
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000488:0000128:0000360
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1625,7 +1590,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000498:0000129:0000369
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000492:0000129:0000363
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1636,7 +1601,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000502:0000130:0000372
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000496:0000130:0000366
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1647,7 +1612,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000506:0000131:0000375
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000500:0000131:0000369
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1658,7 +1623,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000510:0000132:0000378
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000504:0000132:0000372
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1669,7 +1634,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000514:0000133:0000381
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000508:0000133:0000375
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1680,7 +1645,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000518:0000134:0000384
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000512:0000134:0000378
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1691,7 +1656,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000522:0000135:0000387
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000516:0000135:0000381
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1702,7 +1667,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000526:0000136:0000390
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000520:0000136:0000384
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1713,7 +1678,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000530:0000137:0000393
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000524:0000137:0000387
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1724,7 +1689,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000534:0000138:0000396
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000528:0000138:0000390
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1735,7 +1700,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000538:0000139:0000399
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000532:0000139:0000393
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1746,7 +1711,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000542:0000140:0000402
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000536:0000140:0000396
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1757,7 +1722,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000546:0000141:0000405
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000540:0000141:0000399
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1768,7 +1733,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000550:0000142:0000408
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000544:0000142:0000402
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1779,7 +1744,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000554:0000143:0000411
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000548:0000143:0000405
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1790,7 +1755,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000558:0000144:0000414
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000552:0000144:0000408
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1801,7 +1766,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000562:0000145:0000417
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000556:0000145:0000411
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1812,7 +1777,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000566:0000146:0000420
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000560:0000146:0000414
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1823,7 +1788,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000570:0000147:0000423
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000564:0000147:0000417
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1834,7 +1799,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000574:0000148:0000426
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000568:0000148:0000420
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1845,7 +1810,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000578:0000149:0000429
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000572:0000149:0000423
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1856,7 +1821,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000582:0000150:0000432
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000576:0000150:0000426
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1867,7 +1832,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000586:0000151:0000435
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000580:0000151:0000429
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1878,7 +1843,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000590:0000152:0000438
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000584:0000152:0000432
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1889,7 +1854,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000594:0000153:0000441
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000588:0000153:0000435
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1900,7 +1865,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000598:0000154:0000444
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000592:0000154:0000438
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1911,7 +1876,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000602:0000155:0000447
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000596:0000155:0000441
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1922,7 +1887,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000607:0000156:0000451
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000601:0000156:0000445
 projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1933,7 +1898,8 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=2.000E-02, NFUN:NPC:NPA=0000613:0000157:0000456
+DS: dt=2.000E-02, NFUN:NPC:NPA=0000606:0000157:0000449
+projection solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1943,7 +1909,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.958E-02, NFUN:NPC:NPA=0000618:0000158:0000460
+DS: dt=1.958E-02, NFUN:NPC:NPA=0000611:0000158:0000453
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1953,7 +1919,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.918E-02, NFUN:NPC:NPA=0000622:0000159:0000463
+DS: dt=1.918E-02, NFUN:NPC:NPA=0000615:0000159:0000456
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1963,7 +1929,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.878E-02, NFUN:NPC:NPA=0000626:0000160:0000466
+DS: dt=1.878E-02, NFUN:NPC:NPA=0000619:0000160:0000459
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1973,7 +1939,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.839E-02, NFUN:NPC:NPA=0000630:0000161:0000469
+DS: dt=1.839E-02, NFUN:NPC:NPA=0000623:0000161:0000462
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1983,7 +1949,7 @@ DS: totally/essentially/non-void cell counts = 18/0/117
 DS: T(H) iterations:  0.00(avg), 0(max)
 DS: T(H) salvage rate = 0.000; interval adjustments =  0.00(avg), 0(max)
 
-DS: dt=1.801E-02, NFUN:NPC:NPA=0000634:0000162:0000472
+DS: dt=1.801E-02, NFUN:NPC:NPA=0000627:0000162:0000465
 
             Min Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 0.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -1997,40 +1963,40 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  4.243E+00 --- Total
-    1.301E-02 --- Input
-    5.398E-01 --- Initialization
-      1.748E-01 --- VOF Initialize
-      1.290E-04 --- Vof Initialization
-      2.640E-04 --- FHT function
-      2.366E-03 --- Flow
-        5.200E-05 --- update properties
-        9.800E-04 --- setup
-        9.680E-04 --- solve
-          3.570E-04 --- hypre solve
-    3.618E+00 --- Main Cycle
-      1.759E-03 --- Time Step
-      1.556E+00 --- Volumetracking
-        1.747E-01 --- normals
-        1.313E+00 --- reconstruct/advect
-      6.992E-01 --- Diffusion Solver
-        3.620E-01 --- FHT precon compute
-          2.971E-02 --- hypre-matrix-copy
-          9.240E-02 --- boomer-setup
-        1.143E-01 --- FHT function
-        7.978E-02 --- FHT precon apply
-          4.309E-02 --- boomer-solve
-      2.365E-01 --- Flow
-        6.784E-03 --- update properties
-        3.874E-02 --- prediction
-          2.367E-02 --- setup
-          1.440E-02 --- solve
-        1.795E-01 --- projection
-          8.683E-02 --- setup
-          9.210E-02 --- solve
-            2.767E-02 --- hypre solve
+  2.742E+00 --- Total
+    5.524E-03 --- Input
+    1.840E-01 --- Initialization
+      1.063E-01 --- VOF Initialize
+      9.400E-05 --- Vof Initialization
+      2.240E-04 --- FHT function
+      2.045E-03 --- Flow
+        4.800E-05 --- update properties
+        8.340E-04 --- setup
+        8.660E-04 --- solve
+          3.460E-04 --- hypre solve
+    2.549E+00 --- Main Cycle
+      2.452E-03 --- Time Step
+      1.580E+00 --- Volumetracking
+        1.713E-01 --- normals
+        1.340E+00 --- reconstruct/advect
+      7.011E-01 --- Diffusion Solver
+        3.702E-01 --- FHT precon compute
+          2.900E-02 --- hypre-matrix-copy
+          9.567E-02 --- boomer-setup
+        1.097E-01 --- FHT function
+        7.779E-02 --- FHT precon apply
+          4.369E-02 --- boomer-solve
+      2.321E-01 --- Flow
+        8.081E-03 --- update properties
+        3.751E-02 --- prediction
+          2.287E-02 --- setup
+          1.398E-02 --- solve
+        1.754E-01 --- projection
+          8.564E-02 --- setup
+          8.919E-02 --- solve
+            2.747E-02 --- hypre solve
 
-                  Process virtual memory used: 4.17E+02 mB
-                                   words/cell: 404976
+                  Process virtual memory used: 4.15E+02 mB
+                                   words/cell: 403243
 
-truchas terminated normally on 06 Jan 20 at 14:11:40
+truchas terminated normally on 09 Jan 20 at 22:01:00

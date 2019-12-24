@@ -15,7 +15,7 @@
 module legacy_mesh_api
 
   use common_impl, only: unpermute_mesh_vector, unpermute_vertex_vector
-  use common_impl, only: ncells, nnodes, nnodes_tot, ncells_tot
+  use common_impl, only: ncells, nnodes, nnodes_tot, ncells_tot, ncells_real
   use ee_gather_impl, only: ee_gather, gather_boundarydata
   use en_gather_impl, only: en_gather, gather_vertex_coord, en_min_gather, en_or_gather
   use en_gather_impl, only: en_sum_scatter, en_or_scatter, en_min_scatter, en_max_scatter

@@ -63,7 +63,7 @@ CONTAINS
     use projection_data_module, only: Face_Density, mac_projection_iterations, &
                                       prelim_projection_iterations
     use projection_module,      only: PROJECTION
-    use property_module,        only: FLUID_PROPERTIES
+    use flow_property_module,        only: FLUID_PROPERTIES
     use time_step_module,       only: cycle_number
     use viscous_data_module,    only: prelim_viscous_iterations, &
                                       viscous_iterations
@@ -155,7 +155,7 @@ CONTAINS
     use fluid_data_module,      only: fluxing_velocity
     use legacy_mesh_api,        only: ncells, nfc, cell
     use projection_data_module, only: Face_Density
-    use property_module,        only: FLUID_PROPERTIES
+    use flow_property_module,        only: FLUID_PROPERTIES
     use overwrite_module,       only: PRESCRIBE_VELOCITY
     use zone_module, only: zone
     use advection_velocity_namelist, only: adv_vel

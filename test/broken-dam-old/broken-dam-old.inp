@@ -91,13 +91,11 @@ data by Martin & Moyce for this regression test.
 /
 
 &PHYSICS
+  materials = 'water', 'air'
   body_force_density = 0.0, -9.81, 0.0
   legacy_flow = .true.
 /
 
-&INTERFACES
-  vof_method = 'divide'
-/
 
 &BC
   Surface_Name     = 'conic'
@@ -120,7 +118,7 @@ data by Martin & Moyce for this regression test.
 /
  
 &BODY
-  Material_number  = 1
+  Material_name    = 'water'
   Surface_Name     = 'box'
   Fill             = 'inside'
   Length           = 0.05715, 0.1143, 0.005715
@@ -130,43 +128,20 @@ data by Martin & Moyce for this regression test.
 /
 
 &BODY
-  Material_number  = 2
+  Material_name    = 'air'
   Surface_Name     = 'background'
   Velocity         = 0.0, 0.0, 0.0
   Temperature      = 273.0
 /
 
 &MATERIAL
-  Material_Name   = 'water'
-  Material_Number = 1
-  priority        = 1
-  Density         = 1000.0
-/
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density', property_constant(1) = 1000.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
+  is_fluid = T
+  density = 1000.0
 /
 
 &MATERIAL
-  Material_Name    = 'air'
-  Material_Number  = 2
-  Material_Feature = 'background'
-  priority         = 2
-  Density          = 1.2
-/
-
-&PHASE
   name = 'air'
-  property_name(1) = 'density', property_constant(1) = 1.2
-/
-
-&MATERIAL_SYSTEM
-  name = 'air'
-  phases = 'air'
+  is_fluid = T
+  density = 1.2
 /

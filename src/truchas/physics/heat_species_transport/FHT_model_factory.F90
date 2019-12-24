@@ -40,6 +40,8 @@ module FHT_model_factory
 contains
 
   function create_FHT_model (disc, mmf, tbc_fac, stat, errmsg) result (model)
+
+    use diffusion_solver_data, only: void_temperature
   
     type(mfd_disc), intent(in), target :: disc
     type(matl_mesh_func), intent(in), target :: mmf
@@ -72,7 +74,9 @@ contains
     
     !! Perform the final initialization of MODEL.
     call FHT_model_init (model, disc)
-   
+
+    model%void_temp = void_temperature
+
   end function create_FHT_model
   
 
@@ -130,12 +134,10 @@ contains
 
   subroutine define_system_parameters (mesh, mmf, model, stat, errmsg)
 
-    use phase_property_table
-    use material_utilities
     use matl_mesh_func_type
-    use property_mesh_function
     use ds_source_input, only: define_external_source
     use parallel_communication, only: global_any
+    use material_model_driver, only: matl_model
 
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
@@ -143,16 +145,20 @@ contains
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 
-    integer, allocatable :: matid(:)
+    !integer, allocatable :: matid(:)
+    character(:), allocatable :: errmsg2
 
     !! Retrieve a list of all the material IDs that may be encountered.
-    call mmf%get_all_matl(matid, drop_void=.true.)
+    !call mmf%get_all_matl(matid, drop_void=.true.)
 
     !! Enthalpy density.
     allocate(model%H_of_T)
-    call required_property_check (matid, 'enthalpy density', stat, errmsg)
-    if (stat /= 0) return
-    call pmf_create (model%H_of_T, mmf, ppt_property_id('enthalpy density'), stat, errmsg)
+    call matl_model%required_property_check('enthalpy', stat, errmsg2)
+    if (stat /= 0) then
+      errmsg = errmsg2
+      return
+    end if
+    call model%H_of_T%init(mmf, 'enthalpy', stat, errmsg)
     if (global_any(stat /= 0)) then
       stat = -1
       errmsg = 'unexpected error defining H_of_T: ' // trim(errmsg)
@@ -161,9 +167,12 @@ contains
 
     !! Thermal conductivity.
     allocate(model%conductivity)
-    call required_property_check (matid, 'conductivity', stat, errmsg)
-    if (stat /= 0) return
-    call pmf_create (model%conductivity, mmf, ppt_property_id('conductivity'), stat, errmsg)
+    call matl_model%required_property_check('conductivity', stat, errmsg2)
+    if (stat /= 0) then
+      errmsg = errmsg2
+      return
+    end if
+    call model%conductivity%init(mmf, 'conductivity', stat, errmsg)
     !call pmf_set_harmonic_average (model%conductivity)
     if (global_any(stat /= 0)) then
       stat = -1

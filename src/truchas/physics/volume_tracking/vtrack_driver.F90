@@ -61,6 +61,7 @@ module vtrack_driver
   use truchas_logging_services
   use truchas_timers
   use index_partitioning
+  use material_model_driver, only: matl_model
   implicit none
   private
 
@@ -119,9 +120,6 @@ contains
   subroutine vtrack_driver_init(params)
 
     use mesh_manager, only: unstr_mesh_ptr
-    use material_interop, only: void_material_index
-    use property_data_module, only: isImmobile
-    use parameter_module, only: nmat
     use geometric_volume_tracker_type
     use simple_volume_tracker_type
 
@@ -138,9 +136,15 @@ contains
     this%mesh => unstr_mesh_ptr('MAIN')
     INSIST(associated(this%mesh))
 
-    this%solid = merge(1, 0, any(isImmobile(:nmat)))
-    this%void = merge(1, 0, void_material_index > 0)
-    this%fluids = count(.not.isImmobile(:nmat)) - this%void
+    this%solid = 0; this%fluids = 0
+    do i = 1, matl_model%nphase_real
+      if (matl_model%is_fluid(i)) then
+        this%fluids = this%fluids + 1
+      else
+        this%solid = 1
+      end if
+    end do
+    this%void = merge(1, 0, matl_model%have_void)
 
     if (this%fluids == 0) then
       print *, 'no non-void fluids'
@@ -148,19 +152,17 @@ contains
     end if
 
     allocate(this%liq_matid(this%fluids+this%void))
-    allocate(this%sol_matid(nmat-(this%fluids+this%void)))
+    allocate(this%sol_matid(matl_model%nphase-(this%fluids+this%void)))
     allocate(this%fvof_i(this%fluids+this%void+this%solid, this%mesh%ncell))
     allocate(this%fvof_o(this%fluids+this%void+this%solid, this%mesh%ncell))
     allocate(this%flux_vol(this%fluids+this%void,size(this%mesh%cface)))
     allocate(this%flux_vel(size(this%mesh%cface)))
-    allocate(this%vof(nmat, this%mesh%ncell_onP))
+    allocate(this%vof(matl_model%nphase, this%mesh%ncell_onP))
 
     j = 1
     k = 1
-    do i = 1, nmat
-      if (i == void_material_index) then
-        this%liq_matid(this%fluids+1) = i
-      else if (.not.isImmobile(i)) then
+    do i = 1, matl_model%nphase_real
+      if (matl_model%is_fluid(i)) then
         this%liq_matid(j) = i
         j = j + 1
       else
@@ -168,6 +170,7 @@ contains
         k = k + 1
       end if
     end do
+    if (matl_model%have_void) this%liq_matid(this%fluids+1) = matl_model%nphase
 
     call params%get('track_interfaces', track_interfaces)
     if (track_interfaces) then
@@ -306,7 +309,8 @@ contains
     type(parameter_list), pointer :: plist
     type(bndry_face_group_builder) :: builder
     integer, allocatable :: setids(:), mlist(:), xgroup(:), index(:)
-    integer :: j, n, matid, ngroup
+    character(:), allocatable :: name
+    integer :: j, n, ngroup
 
     call builder%init(this%mesh)
 
@@ -317,14 +321,14 @@ contains
     do while (.not.piter%at_end())
       plist => piter%sublist()
       if (plist%is_parameter('inflow-material')) then
-        call plist%get('inflow-material', matid, stat=stat, errmsg=errmsg)
+        call plist%get('inflow-material', name, stat=stat, errmsg=errmsg)
         if (stat /= 0) return
         call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
         if (stat /= 0) return
         call builder%add_face_group(setids, stat, errmsg)
         if (stat /= 0) return
         n = n + 1
-        mlist(n) = matid
+        mlist(n) = matl_model%phase_index(name)
       end if
       call piter%next
     end do

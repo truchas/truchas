@@ -90,6 +90,7 @@ CONTAINS
     if (memstat /= 0) call TLS_panic ('BASE_TYPES_A_ALLOCATE: Fluxing_Velocity derived type memory allocation error')
 
     ! Allocate the Matl derived type.
+    mat_slot_new = merge(1, 2, nmat <= 1)
     call SLOT_INCREASE (Matl, mat_slot, mat_slot_new)
 
     ! Allocate the material property, displacement, strain, and stress arrays

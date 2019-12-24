@@ -29,6 +29,7 @@ will result in heat solutions that are not comparable.
 /
 
 &PHYSICS
+  materials = 'wall', 'foo', 'VOID'
   legacy_flow = .true.
   body_force_density = 1.0, 0.0, 0.0
   heat_transport = .true.
@@ -77,7 +78,7 @@ FLUID CHANNEL
 &BODY
   surface_name    = 'from mesh file'
   mesh_material_number = 1
-  material_number = 3
+  material_name = 'liquid-foo'
   !velocity        = 1.0, 0.0, 0.0 ! Truchas originally overwrote this with zero.
   velocity        = 0.0, 0.0, 0.0
   temperature     = 5.0
@@ -87,7 +88,7 @@ LOWER WALL
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 1
+  material_name = 'wall'
   temperature = 1.0
 /
 
@@ -98,7 +99,7 @@ INFLOW OF VOID AT LEFT END
   bc_variable = 'velocity'
   bc_type = 'Dirichlet'
   bc_value = 1.0, 0.0, 0.0
-  inflow_material = 4
+  inflow_material = 'VOID'
   inflow_temperature = 0.0
 /
 
@@ -128,68 +129,36 @@ HTC CONDITION ALONG CHANNEL/WALL INTERFACE.
 /
 
 &MATERIAL
-  Material_Name   = 'wall'
-  Material_Number = 1
-  priority        = 1
-  immobile        = .true.
-  Material_Feature = 'background'
-  Density         = 10.0
-/
-
-&PHASE
   name = 'wall'
-  property_name(1) = 'density',       property_constant(1) = 10.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'wall'
-  phases = 'wall'
+  density = 10.0
+  specific_heat = 1.0
+  conductivity = 1.0
 /
 
 &MATERIAL
-  Material_Name   = 'solid-foo'
-  Material_Number = 2
-  priority        = 2
-  immobile        = .true.
-  Density         = 1.0
-/
-
-&PHASE
-  name = 'solid-foo'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.02
-/
-
-&MATERIAL
-  Material_Name   = 'liquid-foo'
-  Material_Number = 3
-  priority        = 3
-  Density         = 1.0
+  name = 'foo'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 0.02
+  phases = 'solid-foo', 'liquid-foo'
+  ref_temp = 0.0
+  ref_enthalpy = 0.0
 /
 
 &PHASE
   name = 'liquid-foo'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.02
+  is_fluid = T
 /
 
-&MATERIAL_SYSTEM
-  name = 'foo'
-  phases = 'solid-foo', 'liquid-foo'
-  transition_temps_low  = 4.0
-  transition_temps_high = 4.2
+&PHASE_CHANGE
+  low_temp_phase = 'solid-foo'
+  high_temp_phase = 'liquid-foo'
+  solid_frac_table = 3.95 1.0
+                     4.05 0.75
+                     4.1  0.5
+                     4.15 0.25
+                     4.25 0.0
+  !solidus_temp = 3.95
+  !liquidus_temp = 4.25
   latent_heat = 5.0
-  reference_temp = 0.0
-  reference_enthalpy = 0.0
-/
-
-&MATERIAL
-  Material_Name = 'void'
-  Material_Number = 4
-  priority = 4
-  Density = 0.0
 /

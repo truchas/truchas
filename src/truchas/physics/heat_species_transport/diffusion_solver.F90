@@ -76,29 +76,29 @@ module diffusion_solver
     type(parameter_list) :: bc_params, species_bc_params
   end type ds_driver
   type(ds_driver), save, target :: this
-  
+
   integer, parameter :: SOLVER1 = 1 ! the standard solver
   integer, parameter :: SOLVER2 = 2 ! special solver that works with transient void
-  
+
 contains
 
   subroutine read_ds_namelists (lun)
-  
+
     use thermal_bc_namelist
     use species_bc_namelist
     use ds_source_input, only: read_ds_source
     use ER_input
-  
+
     integer, intent(in) :: lun
-    
+
     call read_ds_namelist (lun)
     call read_thermal_bc_namelists(lun, this%bc_params)
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
-    
+
     call ERI_read_enclosure_radiation (lun)
     call ERI_read_enclosure_surface (lun)
-    
+
   end subroutine read_ds_namelists
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -120,19 +120,19 @@ contains
     integer :: counters(6)
     character(len=80) :: message(2)
     real(r8), pointer :: state(:,:)
-    
+
     call start_timer ('Diffusion Solver')
 
     if (this%have_heat_transfer .and. this%have_phase_change) call set_reference_fluid_density
-    
+
     if (this%have_fluid_flow) then
       call update_mmf_from_matl (this%mmf)
       if (this%have_void) call cull_material_fragments (this%mmf, cutvof)
     end if
-    
+
     if (this%have_heat_transfer) call update_adv_heat
     if (this%have_species_diffusion) call update_adv_conc
-    
+
     select case (this%solver_type)
     case (SOLVER1)  ! HT/SD solver with static void
       t = h + HTSD_solver_last_time(this%sol1)
@@ -147,7 +147,7 @@ contains
       INSIST(.false.)
     end select
     if (errc /= 0) return
-    
+
     !! Update MATL in contexts that can modify the phase distribution.
     if (this%have_phase_change) then
       call create_state_array (state)
@@ -177,13 +177,13 @@ contains
     1 format(/,'DS: dt=',es9.3,', NFUN:NPC=',i7.7,':',i5.5,', NNR:NNF:NSR=',3(i4.4,:,':'))
     2 format(/,'DS: dt=',es9.3,', NFUN:NPC:NPA=',3(i7.7,:,':'))
     call TLS_info (message)
-    
+
     if (this%have_heat_transfer .and. this%have_phase_change) call set_solidified_density
-    
+
     call stop_timer ('Diffusion Solver')
 
   contains
-  
+
     subroutine create_state_array (state)
       real(r8), pointer :: state(:,:)
       integer :: n, i
@@ -205,7 +205,7 @@ contains
         INSIST(.false.)
       end select
     end subroutine create_state_array
-    
+
     subroutine update_adv_heat
 
       use legacy_mesh_api, only: ncells
@@ -213,7 +213,7 @@ contains
       use index_partitioning, only: gather_boundary
 
       real(r8), allocatable :: q_t(:), q_ds(:)
-      
+
       if (this%have_joule_heat .or. (this%have_fluid_flow .and. this%solver_type /= SOLVER2)) then
         allocate(q_ds(this%mesh%ncell))
         !! Joule heat source.
@@ -241,7 +241,7 @@ contains
       end if
 
     end subroutine update_adv_heat
-    
+
     subroutine update_adv_conc
 
       use legacy_mesh_api, only: ncells
@@ -250,7 +250,7 @@ contains
 
       integer :: i
       real(r8), allocatable :: q_t(:), q_ds(:), phi_t(:)
-      
+
       if (this%have_fluid_flow) then
         allocate(q_t(ncells), q_ds(this%mesh%ncell), phi_t(ncells))
         do i = 1, num_species
@@ -267,7 +267,7 @@ contains
     end subroutine update_adv_conc
 
   end subroutine ds_step
-  
+
   subroutine ds_get_temp (array)
     use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:)
@@ -328,7 +328,7 @@ contains
     end select
     array(:,this%mesh%ncell_onP+1:) = 0.0_r8  ! gap elements
   end subroutine ds_get_temp_grad
-  
+
   !! Get reference to the current cell temperatures on the new distributed mesh.
   subroutine ds_get_cell_temp (array)
     real(r8), intent(inout) :: array(:)
@@ -343,7 +343,7 @@ contains
       INSIST(.false.)
     end select
   end subroutine ds_get_cell_temp
-  
+
   !! Get reference to the current face temperatures on the new distributed mesh.
   subroutine ds_get_face_temp (array)
     real(r8), intent(inout) :: array(:)
@@ -399,21 +399,22 @@ contains
 
     call TLS_info ('')
     call TLS_info ('Initializing diffusion solver ...')
-    
+
     !! Common initialization.
     this%mesh => unstr_mesh_ptr(mesh_name)
     INSIST(associated(this%mesh))
-    
+
     allocate(this%disc)
     call this%disc%init (this%mesh, use_new_mfd)
-    
+
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg2)
     if (stat /= 0) call TLS_fatal ('DS_INIT: ' // errmsg2)
-    
-    call verify_material_compatibility (this%mmf, stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
-    
+
+    !TODO? reimplement this
+    !call verify_material_compatibility (this%mmf, stat, errmsg)
+    !if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
+
     !! Problem attributes
     this%have_heat_transfer = heat_eqn
     this%have_species_diffusion = (num_species > 0)
@@ -432,7 +433,7 @@ contains
       if (stat /= 0) call TLS_fatal('DS_INIT: error initializing enthalpy advection: ' // errmsg2)
       call move_alloc(hadv1, this%hadv)
     end if
-    
+
     !! Figure out which diffusion solver we should be running, and ensure
     !! that the user has selected a compatible integration method.
     if (this%have_void .and. this%have_fluid_flow) then
@@ -452,7 +453,7 @@ contains
         call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
     end if
-    
+
     select case (this%solver_type)
     case (SOLVER1)
       block
@@ -467,7 +468,7 @@ contains
       if (this%have_species_diffusion) this%sd_source => this%mod1%sd%source
       this%sol1 => create_HTSD_solver (this%mmf, this%mod1, stat, errmsg)
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
-      
+
     case (SOLVER2)
       block
         type(thermal_bc_factory1) :: bc_fac
@@ -478,33 +479,30 @@ contains
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
       this%sol2 => create_FHT_solver(this%mmf, this%mod2, stat, errmsg)
       call move_alloc(this%hadv, this%sol2%hadv)
-      
+
     case default
       INSIST(.false.)
     end select
-    
+
     call TLS_info ('  Diffusion solver initialized.')
 
   contains
-  
+
     logical function multiphase_problem (mmf)
-      use material_system
-      use material_table
+      use material_model_driver, only: matl_model
       type(matl_mesh_func), intent(in) :: mmf
       integer, allocatable :: list(:)
-      type(mat_system), pointer :: ms
-      integer :: i
+      integer :: i, p1, p2
       call mmf%get_all_matl(list, drop_void=.true.)
       do i = size(list), 1, -1
-        ms => mt_get_material(list(i))
-        ASSERT(associated(ms))
-        if (ms_num_phase(ms) > 1) exit
+        call matl_model%get_matl_phase_index_range(list(i), p1, p2)
+        if (p2 > p1) exit
       end do
       multiphase_problem = (i /= 0)
     end function multiphase_problem
 
   end subroutine ds_init
-  
+
   subroutine ds_delete ()
     if (associated(this%sol1)) then
       call HTSD_solver_delete (this%sol1)
@@ -528,14 +526,14 @@ contains
     if (associated(this%disc)) deallocate(this%disc)
     this%mesh => null()
   end subroutine ds_delete
-  
+
   subroutine ds_set_initial_state (t, dt, temp, conc)
-  
+
     use legacy_mesh_api, only: ncells
 
     real(r8), intent(in) :: t, dt
     real(r8), intent(in), optional, target :: temp(:), conc(:,:)
-    
+
     real(r8), pointer :: temp_ds(:) => null(), conc_ds(:,:) => null()
 
     !! Permute the cell temperature array to the DS ordering.
@@ -544,7 +542,7 @@ contains
       ASSERT(size(temp) == ncells)
       temp_ds => temp(:this%mesh%ncell_onP)
     end if
-    
+
     !! Permute the cell concentration array to the DS ordering.
     if (this%have_species_diffusion) then
       INSIST(present(conc))
@@ -552,7 +550,7 @@ contains
       ASSERT(size(conc,dim=2) == num_species)
       conc_ds => conc(:this%mesh%ncell_onP,:)
     end if
-    
+
     !! Set the initial state in the appropriate solver.
     select case (this%solver_type)
     case (SOLVER1)
@@ -562,7 +560,7 @@ contains
     case default
       INSIST(.false.)
     end select
-    
+
   end subroutine ds_set_initial_state
 
   !! The effect of calling this subroutine is to restart or reset the solver so
@@ -588,103 +586,106 @@ contains
 
   end subroutine ds_restart
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! VERIFY_MATERIAL_COMPATIBILITY
- !!
- !! This routine verifies that the attributes of the material systems
- !! referenced by the material mesh function MMF are compatible with the
- !! requirements of the type of diffusion system being solved.   If an
- !! incompatibility is detected STAT returns a nonzero value and an
- !! explanatory error message is returned in ERRMSG.
- !!
- !! The material system requirements are as follows.
- !!
- !! Species diffusion only:
- !!   * temperature-independent material systems
- !!   * number of species equal to the number of material components less 1
- !! Heat conduction only:
- !!   * temperature-dependent material systems
- !!   * single-component material systems
- !! Heat conduction/species diffusion:
- !!   * temperature-dependent material systems
- !!   * number of species equal to the number of material components less 1
- !!
-
-  subroutine verify_material_compatibility (mmf, stat, errmsg)
-
-    use material_system
-    use material_table
-
-    type(matl_mesh_func), intent(in) :: mmf
-    integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
-
-    integer :: i
-    integer, allocatable :: matid(:)
-    type(mat_system), pointer :: ms
-
-    !! Retrieve a list of all the material IDs that may be encountered.
-    call mmf%get_all_matl(matid, drop_void=.true.)
-
-    !! Verify that the material system attributes are compatible
-    !! with the constraints imposed by the type of diffusion system.
-    select case (ds_sys_type)
-    case (DS_SPEC_SYS)      ! Species diffusion
-      do i = 1, size(matid)
-        ms => mt_get_material(matid(i))
-        ASSERT(associated(ms))
-        if (ms_temp_dep(ms)) then
-          stat = -1
-          errmsg = 'diffusion system type requires temperature-independent material systems'
-          return
-        end if
-        if (ms_num_component(ms) /= num_species+1) then
-          stat = -1
-          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
-                   '-component material systems'
-          return
-        end if
-      end do
-    case (DS_TEMP_SYS)      ! Heat conduction
-      do i = 1, size(matid)
-        ms => mt_get_material(matid(i))
-        ASSERT(associated(ms))
-        if (.not.ms_temp_dep(ms)) then
-          stat = -1
-          errmsg = 'diffusion system type requires temperature-dependent material systems'
-          return
-        end if
-        if (ms_num_component(ms) /= 1) then
-          stat = -1
-          errmsg = 'diffusion system type requires single-component material systems'
-          return
-        end if
-      end do
-    case (DS_TEMP_SPEC_SYS) ! Heat conduction and species diffusion
-      do i = 1, size(matid)
-        ms => mt_get_material(matid(i))
-        ASSERT(associated(ms))
-        if (.not.ms_temp_dep(ms)) then
-          stat = -1
-          errmsg = 'diffusion system type requires temperature-dependent material systems'
-          return
-        end if
-        if (ms_num_component(ms) /= num_species+1) then
-          stat = -1
-          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
-                   '-component material systems'
-          return
-        end if
-      end do
-    case default
-      INSIST(.false.)
-    end select
-
-    stat = 0
-    errmsg = ''
-
-  end subroutine verify_material_compatibility
+!TODO: Replace this with something equivalent? The new material data type has no
+! notion of being temperature dependent nor of being multi-component
+!
+! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! !!
+! !! VERIFY_MATERIAL_COMPATIBILITY
+! !!
+! !! This routine verifies that the attributes of the material systems
+! !! referenced by the material mesh function MMF are compatible with the
+! !! requirements of the type of diffusion system being solved.   If an
+! !! incompatibility is detected STAT returns a nonzero value and an
+! !! explanatory error message is returned in ERRMSG.
+! !!
+! !! The material system requirements are as follows.
+! !!
+! !! Species diffusion only:
+! !!   * temperature-independent material systems
+! !!   * number of species equal to the number of material components less 1
+! !! Heat conduction only:
+! !!   * temperature-dependent material systems
+! !!   * single-component material systems
+! !! Heat conduction/species diffusion:
+! !!   * temperature-dependent material systems
+! !!   * number of species equal to the number of material components less 1
+! !!
+!
+!  subroutine verify_material_compatibility (mmf, stat, errmsg)
+!
+!    use material_system
+!    use material_table
+!
+!    type(matl_mesh_func), intent(in) :: mmf
+!    integer, intent(out) :: stat
+!    character(len=*), intent(out) :: errmsg
+!
+!    integer :: i
+!    integer, allocatable :: matid(:)
+!    type(mat_system), pointer :: ms
+!
+!    !! Retrieve a list of all the material IDs that may be encountered.
+!    call mmf%get_all_matl(matid, drop_void=.true.)
+!
+!    !! Verify that the material system attributes are compatible
+!    !! with the constraints imposed by the type of diffusion system.
+!    select case (ds_sys_type)
+!    case (DS_SPEC_SYS)      ! Species diffusion
+!      do i = 1, size(matid)
+!        ms => mt_get_material(matid(i))
+!        ASSERT(associated(ms))
+!        if (ms_temp_dep(ms)) then
+!          stat = -1
+!          errmsg = 'diffusion system type requires temperature-independent material systems'
+!          return
+!        end if
+!        if (ms_num_component(ms) /= num_species+1) then
+!          stat = -1
+!          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
+!                   '-component material systems'
+!          return
+!        end if
+!      end do
+!    case (DS_TEMP_SYS)      ! Heat conduction
+!      do i = 1, size(matid)
+!        ms => mt_get_material(matid(i))
+!        ASSERT(associated(ms))
+!        if (.not.ms_temp_dep(ms)) then
+!          stat = -1
+!          errmsg = 'diffusion system type requires temperature-dependent material systems'
+!          return
+!        end if
+!        if (ms_num_component(ms) /= 1) then
+!          stat = -1
+!          errmsg = 'diffusion system type requires single-component material systems'
+!          return
+!        end if
+!      end do
+!    case (DS_TEMP_SPEC_SYS) ! Heat conduction and species diffusion
+!      do i = 1, size(matid)
+!        ms => mt_get_material(matid(i))
+!        ASSERT(associated(ms))
+!        if (.not.ms_temp_dep(ms)) then
+!          stat = -1
+!          errmsg = 'diffusion system type requires temperature-dependent material systems'
+!          return
+!        end if
+!        if (ms_num_component(ms) /= num_species+1) then
+!          stat = -1
+!          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
+!                   '-component material systems'
+!          return
+!        end if
+!      end do
+!    case default
+!      INSIST(.false.)
+!    end select
+!
+!    stat = 0
+!    errmsg = ''
+!
+!  end subroutine verify_material_compatibility
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -699,16 +700,16 @@ contains
  !!
 
   subroutine cull_material_fragments (mmf, threshold, culled)
-  
+
     type(matl_mesh_func), intent(inout) :: mmf
     real(r8), intent(in) :: threshold
     logical, intent(out), optional :: culled
-    
+
     integer :: n, j
     integer, pointer :: matID(:)
     real(r8), pointer :: vfrac(:,:)
     integer :: cell_count
-    
+
     cell_count = 0
     do n = 1, mmf%num_reg()
       matID => mmf%reg_matl(n)
