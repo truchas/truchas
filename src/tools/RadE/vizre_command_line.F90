@@ -17,18 +17,16 @@ module vizre_command_line
 
 contains
 
-  subroutine parse_command_line (infile, outfile, row, col, sym)
+  subroutine parse_command_line (infile, outfile, col, sym)
 
     character(len=*), intent(out) :: infile, outfile
-    integer, pointer :: row(:), col(:)
+    integer, allocatable, intent(out) :: col(:)
     logical, intent(out) :: sym
 
     integer :: i, n, num_arg, ios
     character(len=128) :: arg
 
     !! Default values for the optional arguments.
-    row => null()
-    col => null()
     sym = .false.
 
     call get_command_argument (0, arg)
@@ -56,21 +54,12 @@ contains
 
         sym = .true.
 
-      case ('-r')
-
-        n = n + 1
-        if (n > num_arg) call usage_halt ('option requires an argument: ' // trim(arg))
-        call get_command_argument (n, arg)
-        if (associated(row)) deallocate(row)
-        call parse_range_list (arg, row, ios)
-        if (ios /= 0) call usage_halt ('invalid argument for -r: ' // trim(arg))
-
       case ('-c')
 
         n = n + 1
         if (n > num_arg) call usage_halt ('option requires an argument: ' // trim(arg))
         call get_command_argument (n, arg)
-        if (associated(col)) deallocate(col)
+        if (allocated(col)) deallocate(col)
         call parse_range_list (arg, col, ios)
         if (ios /= 0) call usage_halt ('invalid argument for -c: ' // trim(arg))
 
@@ -121,12 +110,15 @@ contains
     write(unit=*,fmt='(a)') 'Usage: ' // trim(prog) // ' [options] enclosure_file gmv_file'
     write(unit=*,fmt='(a)') ' '
     write(unit=*,fmt='(a)') 'Writes a GMV-format visualization file for the specified enclosure.'
-    write(unit=*,fmt='(a)') 'If the enclosure includes view factor data, the ambient view factor'
-    write(unit=*,fmt='(a)') 'and view factor matrix row sums are written as face variables.'
+    write(unit=*,fmt='(a)') 'If the enclosure includes patch data, the patch IDs and a vertex'
+    write(unit=*,fmt='(a)') 'coloring of the patch adjacency graph are written as face variables.'
+    write(unit=*,fmt='(a)') 'If the enclosure includes view factor data, the view factor matrix'
+    write(unit=*,fmt='(a)') 'row sums and ambient view factors (if present) are written as face'
+    write(unit=*,fmt='(a)') 'variables.'
     write(unit=*,fmt='(a)') ' '
     write(unit=*,fmt='(a)') 'Options:'
-    write(unit=*,fmt='(a)') '  -r list      Write the specified rows or columns of the view factor matrix'
-    write(unit=*,fmt='(a)') '  -c list      as face variables.  List is a comma-separated list of ranges;'
+    write(unit=*,fmt='(a)') '  -c list      Write the specified columns of the view factor matrix as'
+    write(unit=*,fmt='(a)') '               face variables.  List is a comma-separated list of ranges;'
     write(unit=*,fmt='(a)') '               a range is index, first:last, or first:last:stride.'
     write(unit=*,fmt='(a)') '  -s           Write the fully-developed enclosure surface defined by the'
     write(unit=*,fmt='(a)') '               enclosure''s symmetries.  The default is to write just the'
@@ -139,7 +131,7 @@ contains
   subroutine split_on_char (string, char, substrings)
     character(len=*), intent(in) :: string
     character(len=1), intent(in) :: char
-    character(len=*), pointer :: substrings(:)
+    character(len=*), allocatable :: substrings(:)
     integer :: l, n
     character(len=len(string)) :: tmp
     !! Count the number of substrings; one more than the number of char characters.
@@ -167,11 +159,11 @@ contains
   subroutine parse_range_list (string, list, stat)
 
     character(len=*), intent(in) :: string
-    integer, pointer :: list(:)
+    integer, allocatable, intent(out) :: list(:)
     integer, intent(out) :: stat
 
     integer :: j, k, n, ios
-    character(len=15), pointer :: substring1(:), substring2(:)
+    character(len=15), allocatable :: substring1(:), substring2(:)
     integer, allocatable :: range(:,:)
 
     !! Get the list of range tokens.
@@ -222,7 +214,6 @@ contains
       end do
     else
       deallocate(substring2)
-      list => null()
     end if
 
     deallocate(range)

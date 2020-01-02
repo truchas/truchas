@@ -35,15 +35,24 @@ build_whitespace_string(fpp_flags ${fpp_flags_list})
 
 # --- Library libre
 set(LIBRE_FORTRAN_FILES
-          scl.F90
-	  f90_assert.F90
-	  chaparral_c_binding.F90
-	  re_utilities.F90
-	  re_encl_type.F90
-	  re_dist_vf_type.F90 
-          re_exodus_encl.F90
-	  re_chaparral_vf.F90
-	  re_graphics_gmv.F90)
+    scl.F90
+    f90_assert.F90
+    chaparral_c_binding.F90
+    re_utilities.F90
+    re_encl_type.F90
+    re_dist_vf_type.F90
+    re_exodus_encl.F90
+    re_chaparral_vf.F90
+    re_graphics_gmv.F90
+    patching/re_patch_type.F90
+    patching/patching_tools.F90
+    patching/edge_hash_type.F90
+    patching/edge_neighbor_table_type.F90
+    patching/vsa_min_heap.F90
+    patching/vsa_patch_type.F90
+    patching/vsa_patching_type.F90
+    patching/vac_min_heap.F90
+    patching/vac_patching_type.F90)
 
 fortran_preprocess_files(LIBRARY_RADE_FILES
                          FILES ${LIBRE_FORTRAN_FILES}
@@ -96,7 +105,10 @@ target_link_libraries(vizre rade truchas ${Truchas_LINK_LIBS})
 set(output_name vizre)
 set_target_properties(vizre PROPERTIES
                       OUTPUT_NAME ${output_name})
- 
+
+# --- ctest binaries
+add_subdirectory(Test)
+
 # --- Install rules 		    
 install(TARGETS rade cmpre genre vizre
         RUNTIME DESTINATION ${Truchas_BIN_INSTALL_DIR}

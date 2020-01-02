@@ -50,6 +50,15 @@
 !!    ascending order.  The returned XADJ will have size N+1, and ADJNCY size
 !!    XADJ(N+1)-1.
 !!
+!!  VERTEX_COLORING (VCOLOR, NCOLOR) returns a vertex coloring of the graph.
+!!    A vertex coloring is a mapping from vertices to a finite set (the colors)
+!!    such that adjacent vertices are assigned different colors.  NCOLOR is an
+!!    intent(out) integer specifying the total number of colors used.  VCOLOR is
+!!    an intent(out) rank-1 array of integers in the range [1, NCOLOR], where
+!!    VCOLOR(j) is the color of vertex j.  This algorithm guarantees that NCOLOR
+!!    <= D+1, where D is the maximum degree of any vertex.  Vertex coloring is
+!!    undefined for SELF_EDGE graphs, and such graphs are silently ignored.
+!!
 
 #include "f90_assert.fpp"
 
@@ -75,6 +84,7 @@ module graph_type
     procedure, private :: graph_get_components
     procedure, private :: graph_get_components_mask
     generic :: get_components => graph_get_components, graph_get_components_mask
+    procedure :: vertex_coloring => graph_vertex_coloring
   end type graph
 
 contains
@@ -251,5 +261,52 @@ contains
       end do
     end subroutine
   end subroutine graph_get_components_mask
+
+  !! Returns a vertex coloring of the graph.
+  subroutine graph_vertex_coloring (this, vcolor, ncolor)
+#ifdef NAG_COMPILER
+    use f08_intrinsics, only: findloc
+#endif
+    use sort_utilities
+    class(graph), intent(in) :: this
+    integer, allocatable, intent(out) :: vcolor(:)
+    integer, intent(out) :: ncolor
+    integer :: degree(this%n), perm(this%n)
+    logical, allocatable :: avail(:)  ! whether a color is available to a vertex
+    type(integer_set_iterator) :: iter
+    integer :: i, v, n, c, max_ncolor
+    if (this%self_edge) return
+    allocate(vcolor(this%n))
+    vcolor = -1
+    !! Sort vertices by degree
+    degree = this%nbrs%size()
+    call heap_sort (degree, perm)
+    !! At most D + 1 colors needed
+    max_ncolor = degree(perm(this%n)) + 1
+    allocate(avail(max_ncolor))
+    !! Color vertices in descending order of degree
+    ncolor = 0
+    do i = this%n, 1, -1
+      v = perm(i)  ! current vertex
+      !! Get availabe colors
+      avail = .true.
+      iter = this%nbrs(v)%begin()
+      do while (.not. iter%at_end())
+        n = iter%value()  ! neighbor of v
+        if (vcolor(n) /= -1) avail(vcolor(n)) = .false.
+        call iter%next()
+      end do
+      !! Assign color
+      ! TODO: balance colors rather than use first available?
+#ifdef NAG_COMPILER
+      c = findloc(avail, .true.)
+#else
+      c = findloc(avail, .true., dim=1)
+#endif
+      ASSERT(c /= 0)
+      vcolor(v) = c
+      ncolor = max(c, ncolor)
+    end do
+  end subroutine graph_vertex_coloring
 
 end module graph_type

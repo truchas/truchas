@@ -31,6 +31,11 @@
 !!    of error handling.  Output occurs on process rank 1 using its enclosure
 !!    data; THIS is ignored on all other processes.
 !!
+!!  FACE_AREA (THIS) returns the areas of all faces in the enclosure as a
+!!    rank-1 real array.  This procedure must be called after the ecnlosure
+!!    THIS is initialized with READ_ENCL. This procedure performs no
+!!    communication.
+!!
 
 #include "f90_assert.fpp"
 

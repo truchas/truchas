@@ -7,6 +7,9 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! 4 Apr 2008
 !!
+!! David Neill-Asanza <dhna@lanl.gov>
+!! 6 Aug 2019
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -40,13 +43,14 @@
 !!      smoothing_tolerance
 !!      smoothing_max_iter
 !!
-!!  CALL CALCULATE_VF (E, CPAR, VF) calculates the view factors VF for the
-!!    enclosure E, using the Chaparral package.  The control parameters for
-!!    the Chaparral procedures are contained in the opaque object CPAR that
-!!    was initialized by a call to READ_CHAPARRAL_NAMELIST.  This is a
-!!    collective procedure.  The enclosure E and parameters CPAR must be
-!!    replicated across all processes, and the view factors are returned
-!!    in a distributed form in VF.
+!!  CALL CALCULATE_VF (E, CPAR, EP, VF) uses the Chaparral package to calculate
+!!    the view factors VF for the enclosure E whose faces are clustered as
+!!    described by the enclosure patches object EP.  The control parameters for
+!!    the Chaparral procedures are contained in the opaque object CPAR that was
+!!    initialized by a call to READ_CHAPARRAL_NAMELIST.  This is a collective
+!!    procedure.  The enclosure E and parameters CPAR must be replicated across
+!!    all processes, and the enclosure patches EP must only be initialized on
+!!    process rank 1. The view factors are returned in a distributed form in VF.
 !!
 
 #include "f90_assert.fpp"
@@ -92,7 +96,7 @@ contains
 
     logical :: is_IOP
     integer :: ios, stat
-    character(len=8) :: string
+    character(len=9) :: string
 
     !! The CHAPARRAL namelist variables; user visible.
     logical  :: blocking_enclosure, partial_enclosure
@@ -217,7 +221,7 @@ contains
 
     if (smoothing_weight == NULL_R) then
       smoothing_weight = 2.0_r8
-      write(string,fmt='(es8.2)') smoothing_weight
+      write(string,fmt='(es9.2)') smoothing_weight
       call re_info ('  using default SMOOTHING_WEIGHT='//string)
     else if (smoothing_weight <= 0.0) then
       call data_err ('SMOOTHING_WEIGHT must be > 0.0')
@@ -264,6 +268,7 @@ contains
 
   end subroutine read_chaparral_namelist
 
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! CALCULATE_VF
@@ -274,19 +279,20 @@ contains
  !!
  !! 1) In Chaparral a patch corresponds to a DoF in the radiosity system
  !!   (e.g., a temperature or flux value), and each patch can be composed
- !!   of multiple face.  Here we consider each face to be a patch.
+ !!   of multiple faces.  The RE_PATCH object EP stores a face-to-patch
+ !!   map that defines the patches of the radiosity system.
  !!
- !! 2) Rather that assume the patches are numbered consecutively from 1 (or 0),
+ !! 2) Rather than assume the patches are numbered consecutively from 1 (or 0),
  !!   Chaparral requires the user to specify the "global id" of each patch.
- !!   Here we just do a 1-based consecutive numbering of the patches/faces.
+ !!   The EP object also provides these global IDs, although currently they are
+ !!   just a 1-based consecutive numbering of the patches.
  !!
  !! 3) For a partial enclosure, Chaparral requires an additional "virtual
  !!   surface" patch that completes the enclosure.  Per requirements we
  !!   assign this patch the largest global id, and thus it is the last one.
- !!   Note that this patch will not be associated with a face.
+ !!   Note that this patch will not be associated with any faces.
  !!
- !! 4) The global id array serves as the required face-to-patch map, if in
- !!   the case of a partial enclosure the last element is ignored.
+ !! 4) The EP object provides the face-to-patch map required by Chaparral.
  !!
  !! 5) Internally Chaparral reorders and redistributes the patches among the
  !!   processes, so for the calculation of the VF it doesn't really matter
@@ -298,19 +304,29 @@ contains
  !!   which can be quite large.
  !!
 
-  subroutine calculate_vf (e, cpar, evf)
+  subroutine calculate_vf (e, cpar, ep, evf)
 
     use chaparral_c_binding
     use re_encl_type
+    use re_patch_type
 
     type(encl), intent(in), target :: e
     type(chap_param), intent(in) :: cpar
+    type(re_patch), intent(inout) :: ep
     type(dist_vf), intent(out) :: evf
 
-    integer :: j, n, handle, npatches, nfacets, nrotations, max_patches, nproc, my_rank
-    integer :: xmirror, ymirror, zmirror, offset
-    integer, allocatable :: global_ids(:), c(:,:), nsizes(:)
-    real(r8), pointer :: x(:), y(:), z(:)
+    integer :: j, n, handle, nfacets, nrotations, max_surfaces, nproc, my_rank
+    integer :: npatch_tot       ! Total number of real patches
+    integer :: npatch           ! Number of real patches owned by this rank
+    integer :: npatch_tot_chap  ! Total number of patches, including virtual surface patch
+    integer :: npatch_chap      ! Number of patches, including virtual surface patch, owned by this rank
+    integer :: xmirror, ymirror, zmirror, face_offset, patch_offset
+    integer, allocatable :: global_ids_g(:)  ! Collated global patch IDs. Owned by rank 1.
+    integer, allocatable :: f2p_map_g(:)     ! Collated face-to-patch map. Owned by rank 1.
+    integer, allocatable :: global_ids(:), f2p_map(:)  ! Distributed versions of the collated arrays
+    integer, allocatable :: c(:,:), nsizes(:)
+    real(r8), allocatable :: x(:), y(:), z(:)
+    real(r8), allocatable :: area(:)  ! Patch areas calculated by Chaparral
 
     !! Hardwired Chaparral parameters
     integer, parameter :: GEOM_TYPE = 3     ! 3D geometry
@@ -319,23 +335,43 @@ contains
     nproc = scl_size()
     my_rank = scl_rank()
 
-    !! Divvy up the faces.
-    nfacets = e%nface/nproc
-    if (my_rank <= modulo(e%nface,nproc)) nfacets = nfacets + 1
-    ASSERT( scl_global_sum(nfacets) == e%nface )
+    !! Get patch data
+    if (my_rank == 1) then
+      npatch_tot = ep%npatch
+      call move_alloc(ep%global_ids, global_ids_g)
+      call move_alloc(ep%f2p_map, f2p_map_g)
+    else
+      allocate(global_ids_g(0),f2p_map_g(0))
+    end if
+    call scl_bcast(npatch_tot)
 
-    npatches = nfacets
-    if ((cpar%partial==1) .and. my_rank==nproc) npatches = npatches + 1
+    !! Divvy up the faces and patches.
+    nfacets = e%nface/nproc
+    npatch  = npatch_tot/nproc
+    if (my_rank <= modulo(e%nface,nproc)) nfacets = nfacets + 1
+    if (my_rank <= modulo(npatch_tot,nproc)) npatch = npatch + 1
+    ASSERT( scl_global_sum(nfacets) == e%nface )
+    ASSERT( scl_global_sum(npatch) == npatch_tot )
+
+    !! Assign virtual surface patch to last rank
+    npatch_chap = npatch
+    if ((cpar%partial==1) .and. my_rank==nproc) npatch_chap = npatch_chap + 1
 
     allocate(nsizes(nproc))
     call scl_allgather (nfacets, nsizes)
-    offset = sum(nsizes(1:my_rank-1))
+    face_offset = sum(nsizes(1:my_rank-1))
+    call scl_allgather (npatch, nsizes)
+    patch_offset = sum(nsizes(1:my_rank-1))
     deallocate(nsizes)
 
-    allocate(global_ids(npatches))
-    do j = 1, npatches
-      global_ids(j) = offset + j
-    end do
+    !! Distribute global patch IDs and face-to-patch map.
+    !!  Chaparral gathers them again internally.
+    allocate(global_ids(npatch_chap), f2p_map(nfacets))
+    call scl_scatter(global_ids_g, global_ids)
+    call scl_scatter(f2p_map_g, f2p_map)
+
+    !! Assign largest global ID to the virtual surface patch
+    if ((cpar%partial==1) .and. my_rank==nproc) global_ids(npatch_chap) = npatch_tot + 1
 
     !! Unpack our packed quad/tet connection array into a structured
     !! quad connection array, with dummy values for tets.  Really
@@ -343,13 +379,13 @@ contains
     !! to what we started with!
     allocate(c(4,nfacets))
     do j = 1, nfacets
-      n = e%xface(offset+j+1) - e%xface(offset+j)
-      c(:n,j) = e%fnode(e%xface(offset+j):e%xface(offset+j+1)-1)
+      n = e%xface(face_offset+j+1) - e%xface(face_offset+j)
+      c(:n,j) = e%fnode(e%xface(face_offset+j):e%xface(face_offset+j+1)-1)
       if (n == 3) c(4,j) = -1
     end do
 
-    max_patches = e%nface
-    if (cpar%partial==1) max_patches = max_patches + 1
+    max_surfaces = e%nface
+    if (cpar%partial==1) max_surfaces = max_surfaces + 1
 
     !! Chaparral is only capable of rotation about the y-axis, so we cyclically
     !! permute other rotation axes to the y-axis; view factors are invariant.
@@ -359,33 +395,33 @@ contains
     zmirror = 0
     select case (e%rot_axis)
     case (1)  ! n-fold rotation about x-axis
-      x => e%x(3,:)
-      y => e%x(1,:)
-      z => e%x(2,:)
+      x = e%x(3,:)
+      y = e%x(1,:)
+      z = e%x(2,:)
       nrotations = e%num_rot
       if (e%mirror(1)) ymirror = 1
       if (e%mirror(2)) zmirror = 1
       if (e%mirror(3)) xmirror = 1
     case (2)  ! n-fold rotation about y-axis
-      x => e%x(1,:)
-      y => e%x(2,:)
-      z => e%x(3,:)
+      x = e%x(1,:)
+      y = e%x(2,:)
+      z = e%x(3,:)
       nrotations = e%num_rot
       if (e%mirror(1)) xmirror = 1
       if (e%mirror(2)) ymirror = 1
       if (e%mirror(3)) zmirror = 1
     case (3)  ! n-fold rotation about z-axis
-      x => e%x(2,:)
-      y => e%x(3,:)
-      z => e%x(1,:)
+      x = e%x(2,:)
+      y = e%x(3,:)
+      z = e%x(1,:)
       nrotations = e%num_rot
       if (e%mirror(1)) zmirror = 1
       if (e%mirror(2)) xmirror = 1
       if (e%mirror(3)) ymirror = 1
     case default ! No rotations
-      x => e%x(1,:)
-      y => e%x(2,:)
-      z => e%x(3,:)
+      x = e%x(1,:)
+      y = e%x(2,:)
+      z = e%x(3,:)
       nrotations = 1
       if (e%mirror(1)) xmirror = 1
       if (e%mirror(2)) ymirror = 1
@@ -395,36 +431,58 @@ contains
     !! Use Chaparral to compute the view factors.
     call VF_Setup ()
     call VF_SetNumEnclosures (1)
-    call VF_SetMaxSurfaces (max_patches)
+    call VF_SetMaxSurfaces (max_surfaces)
     !call VF_RandomizeSurfacesOff()
     !call VF_JitterOff()
     handle = VF_DefineEnclosure (trim(e%name), cpar%nonblocking, cpar%partial, cpar%asink, &
-                                 npatches, global_ids, cpar%verbosity)
+                                 npatch_chap, global_ids, cpar%verbosity)
     call VF_DefineTopology (handle, GEOM_TYPE, nfacets, e%nnode, x, y, z, &
-                            c, 1, global_ids, nrotations, xmirror, ymirror, zmirror, &
+                            c, 1, f2p_map, nrotations, xmirror, ymirror, zmirror, &
                             cpar%bsp_depth, cpar%bsp_length, cpar%spatial_tol, cpar%verbosity)
     call VF_CalcHemicube (handle, cpar%hc_sub_divide, cpar%hc_resolution, cpar%hc_min_sep)
     call VF_SmoothMatrix (handle, cpar%smooth_wt, cpar%smooth_tol, cpar%smooth_max_iter, SYM_METHOD, cpar%verbosity)
     call VF_OutputMatrixSummaryBanner()
 
+
+
     !! Extract the VF from Chaparral and create the distributed VF structure.
-    evf%nface = nfacets
-    evf%offset = offset
-    evf%nface_tot = e%nface
-    allocate(evf%ia(nfacets+1))
+    evf%npatch = npatch
+    evf%offset = patch_offset
+    evf%npatch_tot = npatch_tot
+    allocate(evf%ia(npatch+1))
     call VF_GetRowCounts (handle, mode=1, count=evf%ia)
-    n = sum(evf%ia(:nfacets))
-    allocate(evf%ja(n), evf%val(n), evf%ambient(nfacets))
-    call VF_GetMatrix (handle, evf%ia(2:), evf%ja, evf%val, vf_virt=evf%ambient)
+
+    !! Get VF matrix and ambient view factors
+    n = sum(evf%ia(:npatch))
+    allocate(evf%ja(n), evf%val(n))
+    if (cpar%partial == 1) then
+      evf%has_ambient = .true.
+      allocate(evf%ambient(npatch))
+      call VF_GetMatrix (handle, evf%ia(2:), evf%ja, evf%val, vf_virt=evf%ambient)
+    else
+      evf%has_ambient = .false.
+      call VF_GetMatrix (handle, evf%ia(2:), evf%ja, evf%val)
+    end if
+
+    !! Convert the row counts into the local IA indexing array.
     evf%ia(1) = 1
-    do j = 1, nfacets
+    do j = 1, npatch
       evf%ia(j+1) = evf%ia(j) + evf%ia(j+1)
     end do
+
+    !! Get patch areas
+    evf%has_area = .true.
+    npatch_tot_chap = npatch_tot + merge(1, 0, cpar%partial==1)
+    n = merge(npatch_tot, 0, my_rank==1)
+    allocate(area(npatch_tot_chap), evf%area(n))
+    call VF_GetMatrixAreas(area)
+    if (my_rank == 1) evf%area = area(1:npatch_tot)
+    deallocate(area)
 
     !call VF_ResetTopology (handle)
     call VF_CleanUp ()
 
-    deallocate(global_ids, c)
+    deallocate(global_ids, f2p_map, c)
 
   end subroutine calculate_vf
 

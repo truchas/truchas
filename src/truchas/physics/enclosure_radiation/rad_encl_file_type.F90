@@ -41,6 +41,8 @@ module rad_encl_file_type
     procedure :: get_group_info
     procedure :: put_source_info
     procedure :: get_source_info
+    procedure :: init_patch
+    procedure :: get_patch_dims
     procedure :: init_vf
     procedure :: get_vf_dims
     procedure :: put_vf_rowcount
@@ -51,9 +53,12 @@ module rad_encl_file_type
     procedure :: get_ambient
     procedure :: put_f2p_map
     procedure :: get_f2p_map
+    procedure :: put_area
+    procedure :: get_area
     procedure :: has_vf_data
     procedure :: has_ambient
     procedure :: has_patches
+    procedure :: has_area
   end type rad_encl_file
 
 contains
@@ -404,41 +409,23 @@ contains
 
   end subroutine get_source_info
 
-  subroutine init_vf(this, nnonz, npatch, has_ambient, has_patches)
+  subroutine init_patch(this, npatch, write_f2p_map)
 
     class(rad_encl_file), intent(in) :: this
-    integer(c_size_t), intent(in) :: nnonz, npatch
-    logical, optional, intent(in) :: has_ambient, has_patches
+    integer(c_size_t), intent(in) :: npatch
+    logical, intent(in) :: write_f2p_map
 
     integer :: stat, dimid, varid
     character(:), allocatable :: errmsg
-    character(*), parameter :: proc = 'rad_encl_file%init_vf: '
-    logical :: write_ambient = .false.
-    logical :: write_patches = .false.
-
-    if (present(has_ambient)) write_ambient = has_ambient
-    if (present(has_patches)) write_patches = has_patches
+    character(*), parameter :: proc = 'rad_encl_file%init_patch: '
 
     call this%file%redef(stat, errmsg)
     if (stat /= 0) call error_exit(proc//errmsg)
 
-    call this%file%def_dim('num_nonzero', nnonz, dimid, stat, errmsg)
-    if (stat /= 0) call error_exit(proc//errmsg)
-    call this%file%def_var('val', NF_REAL32, dimid, varid, stat, errmsg)
-    if (stat /= 0) call error_exit(proc//errmsg)
-    call this%file%def_var('ja', NF_INT32, dimid, varid, stat, errmsg)
-    if (stat /= 0) call error_exit(proc//errmsg)
-
     call this%file%def_dim('num_patches', npatch, dimid, stat, errmsg)
     if (stat /= 0) call error_exit(proc//errmsg)
-    call this%file%def_var('icount', NF_INT32, dimid, varid, stat, errmsg)
-    if (stat /= 0) call error_exit(proc//errmsg)
-    if (write_ambient) then
-      call this%file%def_var('ambient', NF_REAL32, dimid, varid, stat, errmsg)
-      if (stat /= 0) call error_exit(proc//errmsg)
-    end if
 
-    if (write_patches) then
+    if (write_f2p_map) then
       call this%file%inq_dimid('num_faces', dimid, stat, errmsg)
       if (stat /= 0) call error_exit(proc//errmsg)
       call this%file%def_var('f2p_map', NF_INT32, dimid, varid, stat, errmsg)
@@ -448,18 +435,17 @@ contains
     call this%file%enddef(stat, errmsg)
     if (stat /= 0) call error_exit(proc//errmsg)
 
-  end subroutine init_vf
+  end subroutine init_patch
 
-  subroutine get_vf_dims(this, nface, npatch, nnonz)
+  subroutine get_patch_dims(this, nface, npatch)
 
     class(rad_encl_file), intent(in) :: this
     integer, intent(out) :: nface, npatch
-    integer(c_size_t), intent(out) :: nnonz
 
     integer :: stat, dimid
     integer(c_size_t) :: n
     character(:), allocatable :: errmsg
-    character(*), parameter :: proc = 'rad_encl_file%get_vf_dims: '
+    character(*), parameter :: proc = 'rad_encl_file%get_patch_dims: '
 
     !! Get the number of faces.
     call this%file%inq_dimid('num_faces', dimid, stat, errmsg)
@@ -478,6 +464,57 @@ contains
     else
       npatch = nface
     end if
+
+  end subroutine get_patch_dims
+
+  subroutine init_vf(this, nnonz, write_ambient)
+
+    class(rad_encl_file), intent(in) :: this
+    integer(c_size_t), intent(in) :: nnonz
+    logical, intent(in) :: write_ambient
+
+    integer :: stat, dimid, varid
+    character(:), allocatable :: errmsg
+    character(*), parameter :: proc = 'rad_encl_file%init_vf: '
+
+    call this%file%redef(stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+
+    call this%file%def_dim('num_nonzero', nnonz, dimid, stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+    call this%file%def_var('val', NF_REAL32, dimid, varid, stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+    call this%file%def_var('ja', NF_INT32, dimid, varid, stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+
+    call this%file%inq_dimid('num_patches', dimid, stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+    call this%file%def_var('icount', NF_INT32, dimid, varid, stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+    call this%file%def_var('area', NF_REAL64, dimid, varid, stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+    if (write_ambient) then
+      call this%file%def_var('ambient', NF_REAL32, dimid, varid, stat, errmsg)
+      if (stat /= 0) call error_exit(proc//errmsg)
+    end if
+
+    call this%file%enddef(stat, errmsg)
+    if (stat /= 0) call error_exit(proc//errmsg)
+
+  end subroutine init_vf
+
+  subroutine get_vf_dims(this, nface, npatch, nnonz)
+
+    class(rad_encl_file), intent(in) :: this
+    integer, intent(out) :: nface, npatch
+    integer(c_size_t), intent(out) :: nnonz
+
+    integer :: stat, dimid
+    character(:), allocatable :: errmsg
+    character(*), parameter :: proc = 'rad_encl_file%get_vf_dims: '
+
+    !! Get the number of faces and patches.
+    call this%get_patch_dims(nface, npatch)
 
     !! Get the number of nonzeros in the VF matrix.
     call this%file%inq_dimid('num_nonzero', dimid, stat, errmsg)
@@ -599,6 +636,30 @@ contains
     if (stat /= 0) call error_exit('rad_encl_file%get_f2p_map: '//errmsg)
   end subroutine get_f2p_map
 
+  subroutine put_area(this, area)
+    class(rad_encl_file), intent(in) :: this
+    real(real64), intent(in) :: area(:)
+    integer :: stat, varid
+    character(:), allocatable :: errmsg
+    !! Should check the length is correct
+    call this%file%inq_varid('area', varid, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%put_area: '//errmsg)
+    call this%file%put_var(varid, area, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%put_area: '//errmsg)
+  end subroutine put_area
+
+  subroutine get_area(this, area)
+    class(rad_encl_file), intent(in) :: this
+    real(real64), intent(out) :: area(:)
+    integer :: stat, varid
+    character(:), allocatable :: errmsg
+    !! Should check the length is correct
+    call this%file%inq_varid('area', varid, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%get_area: '//errmsg)
+    call this%file%get_var(varid, area, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%get_area: '//errmsg)
+  end subroutine get_area
+
   logical function has_vf_data(this)
     class(rad_encl_file), intent(in) :: this
     integer :: varid, stat
@@ -619,6 +680,13 @@ contains
     call this%file%inq_varid('f2p_map', varid, stat)
     has_patches = (stat == 0)
   end function has_patches
+
+  logical function has_area(this)
+    class(rad_encl_file), intent(in) :: this
+    integer :: varid, stat
+    call this%file%inq_varid('area', varid, stat)
+    has_area = (stat == 0)
+  end function has_area
 
   subroutine error_exit(errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit

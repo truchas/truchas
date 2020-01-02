@@ -8,6 +8,9 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! 3 Apr 2008
 !!
+!! David Neill-Asanza <dhna@lanl.gov>
+!! 6 Aug 2019
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -15,8 +18,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! PROGRAMMING INTERFACE
-!!
-!!  CALL DESTROY (THIS) deallocates the allocated components of THIS.
 !!
 !!  CALL READ_DIST_VF (THIS, PATH) initializes THIS with the view factor
 !!    data read from the radiation enclosure dataset PATH.  The dataset
@@ -58,43 +59,36 @@
 !!    and column CLOC location.  This is a collective procedure.
 !!
 
+
 #include "f90_assert.fpp"
 
 module re_dist_vf_type
 
-  use,intrinsic :: iso_fortran_env, only: i8 => int64
+  use kinds, only: i8, r8
   use scl
   implicit none
   private
 
-  public :: destroy, read_dist_vf, write_dist_vf
-  public :: unpack_dvf_row, dvf_row_sum, unpack_dvf_col, get_ambient_vf
+  public :: read_dist_vf, write_dist_vf
+  public :: unpack_dvf_row, dvf_row_sum, get_ambient_vf
+  public :: unpack_dvf_col, unpack_dvf_col_explicit, unpack_dvf_col_from_row
   public :: vf_diff, vf_diff_one_norm, vf_diff_two_norm, vf_diff_max_norm, vf_diff_max
 
   type, public :: dist_vf
-    integer :: nface = 0     ! number of faces (number of matrix rows) on this process
-    integer :: offset = 0    ! difference between the local row index and global index
-    integer :: nface_tot = 0 ! total number of faces (number of matrix columns)
+    integer :: npatch = 0     ! number of patches (number of matrix rows) on this process
+    integer :: offset = 0     ! difference between the local row index and global index
+    integer :: npatch_tot = 0 ! total number of patches (number of matrix columns)
     !! View factor matrix in CSR format.
-    real,    pointer :: val(:) => null() ! values of the nonzero matrix elements stored by row
-    integer, pointer :: ja(:)  => null() ! column indices for the matrix elements in VAL
-    integer, pointer :: ia(:)  => null() ! start index in JA and VAL for the rows
-    real,    pointer :: ambient(:) => null() ! ambient view factors
+    real,     allocatable :: val(:)   ! values of the nonzero matrix elements stored by row
+    integer,  allocatable :: ja(:)    ! column indices for the matrix elements in VAL
+    integer,  allocatable :: ia(:)    ! start index in JA and VAL for the rows
+    real(r8), allocatable :: area(:)  ! patch areas
+    real,     allocatable :: ambient(:)  ! ambient view factors
+    logical :: has_ambient
+    logical :: has_area
   end type
 
-  interface destroy
-    module procedure destroy_dist_vf
-  end interface
-
 contains
-
-  subroutine destroy_dist_vf (this)
-    type(dist_vf), intent(inout) :: this
-    if (associated(this%val)) deallocate(this%val)
-    if (associated(this%ja))  deallocate(this%ja)
-    if (associated(this%ia))  deallocate(this%ia)
-    if (associated(this%ambient)) deallocate(this%ambient)
-  end subroutine destroy_dist_vf
 
   subroutine write_dist_vf (this, path)
 
@@ -115,25 +109,32 @@ contains
     if (nproc == 1) then
 
       call file%open_rw(path)
-      call file%init_vf(size(this%val,kind=i8), int(this%nface_tot,kind=i8), .true.)
+      call file%init_vf(size(this%val,kind=i8), this%has_ambient)
       call file%put_vf_rowcount(this%ia(2:)-this%ia(:size(this%ia)-1))
       call file%put_vf_rows(this%val, this%ja, start=1_i8)
-      call file%put_ambient(this%ambient)
+      if (this%has_ambient) call file%put_ambient(this%ambient)
+      if (this%has_area) call file%put_area(this%area)
       call file%close
 
     else
 
-      n = merge(this%nface_tot, 0, my_rank==1)
-      allocate(rowcount(n), ambient(n))
-      call scl_gather(this%ia(2:)-this%ia(:this%nface), rowcount)
-      call scl_gather(this%ambient, ambient)
+      !! Gather VF matrix data
+      n = merge(this%npatch_tot, 0, my_rank==1)
+      allocate(rowcount(n))
+      call scl_gather(this%ia(2:)-this%ia(:this%npatch), rowcount)
       call scl_allgather(size(this%val), bsize)
+
+      !! Gather ambient view factors
+      n = merge(this%npatch_tot, 0, my_rank==1 .and. this%has_ambient)
+      allocate(ambient(n))
+      if (this%has_ambient) call scl_gather(this%ambient, ambient)
 
       if (my_rank == 1) then
         call file%open_rw(path)
-        call file%init_vf(sum(int(bsize,kind=i8)), int(this%nface_tot,kind=i8), .true.)
+        call file%init_vf(sum(int(bsize,kind=i8)), this%has_ambient)
         call file%put_vf_rowcount(rowcount)
-        call file%put_ambient(ambient)
+        if (this%has_ambient) call file%put_ambient(ambient)
+        if (this%has_area) call file%put_area(this%area)
       end if
       deallocate(rowcount, ambient)
 
@@ -169,7 +170,7 @@ contains
     character(len=*), intent(in) :: path
 
     type(rad_encl_file) :: file
-    integer :: j, n, nproc, my_rank, npatch, nface, nface_tot, bsize(scl_size())
+    integer :: j, n, nproc, my_rank, npatch, npatch_tot, nface_tot, bsize(scl_size())
     integer, allocatable :: rowcount(:), ibuf(:)
     real, allocatable :: ambient(:), rbuf(:)
     integer(i8) :: nnonz, start
@@ -180,16 +181,31 @@ contains
     if (nproc == 1) then
 
       call file%open_ro(path)
-      call file%get_vf_dims(nface, npatch, nnonz)
+      call file%get_vf_dims(nface_tot, npatch_tot, nnonz)
 
-      this%nface  = nface
+      this%has_ambient = file%has_ambient()
+      this%has_area = file%has_area()
+      this%npatch = npatch_tot
       this%offset = 0
-      this%nface_tot = nface
-      allocate(this%ia(nface+1), this%ambient(nface), this%val(nnonz), this%ja(nnonz))
+      this%npatch_tot = npatch_tot
 
+      !! Read patch areas
+      if (this%has_area) then
+        allocate(this%area(npatch_tot))
+        call file%get_area(this%area)
+      end if
+
+      !! Read VF matrix
+      allocate(this%ia(npatch_tot+1), this%val(nnonz), this%ja(nnonz))
       call file%get_vf_rowcount(this%ia(2:))
-      call file%get_ambient(this%ambient)
       call file%get_vf_rows(this%val, this%ja, start=1_i8)
+
+      !! Read ambient view factors
+      if (this%has_ambient) then
+        allocate(this%ambient(npatch_tot))
+        call file%get_ambient(this%ambient)
+      end if
+
       call file%close
 
       this%ia(1) = 1
@@ -201,35 +217,49 @@ contains
 
       if (my_rank == 1) then
         call file%open_ro(path)
-        call file%get_vf_dims(nface_tot, npatch, nnonz)
+        call file%get_vf_dims(nface_tot, npatch_tot, nnonz)
+        this%has_ambient = file%has_ambient()
+        this%has_area = file%has_area()
       end if
 
-      call scl_bcast(nface_tot)
+      call scl_bcast(npatch_tot)
+      call scl_bcast(this%has_ambient)
+      call scl_bcast(this%has_area)
 
-      !! Get the VF matrix row counts and ambient view factors.
-      if (my_rank == 1) then
-        allocate(ambient(nface_tot), rowcount(nface_tot))
-        call file%get_vf_rowcount(rowcount)
-        call file%get_ambient(ambient)
-      else
-        allocate(ambient(0), rowcount(0))
+      this%npatch_tot = npatch_tot
+
+      !! Read and distribute the patch areas
+      if (this%has_area) then
+        allocate(this%area(npatch_tot))
+        if (my_rank == 1) call file%get_area(this%area)
+        call scl_bcast(this%area)
       end if
 
       !! Divvy up the rows.
-      nface = nface_tot/nproc
-      if (my_rank <= modulo(nface_tot,nproc)) nface = nface + 1
-      ASSERT(scl_global_sum(nface) == nface_tot)
+      npatch = npatch_tot/nproc
+      if (my_rank <= modulo(npatch_tot,nproc)) npatch = npatch + 1
+      ASSERT(scl_global_sum(npatch) == npatch_tot)
+      this%npatch = npatch
 
-      this%nface = nface
-      this%nface_tot = nface_tot
-
-      call scl_allgather(nface, bsize)
+      call scl_allgather(npatch, bsize)
       this%offset = sum(bsize(1:my_rank-1))
 
-      !! Distribute the ambient viewfactors and the row counts;
-      !! generate the local IA indexing array from the counts.
-      allocate(this%ia(nface+1), this%ambient(nface))
-      call scl_scatter(ambient, this%ambient)
+      n = merge(npatch_tot, 0, my_rank == 1)
+
+      !! Read and distribute the ambient viewfactors
+      if (this%has_ambient) then
+        allocate(ambient(n), this%ambient(npatch))
+        if (my_rank == 1) call file%get_ambient(ambient)
+        call scl_scatter(ambient, this%ambient)
+      end if
+
+      !! Read the VF matrix row counts
+      allocate(rowcount(n))
+      if (my_rank == 1) call file%get_vf_rowcount(rowcount)
+
+      !! Distribute the row counts; generate the
+      !! local IA indexing array from the counts.
+      allocate(this%ia(npatch+1))
       call scl_scatter(rowcount, this%ia(2:))
       this%ia(1) = 1
       do j = 2, ubound(this%ia,1)
@@ -237,7 +267,7 @@ contains
       end do
 
       !! Determine the sizes of the distributed VF matrix.
-      n = this%ia(this%nface+1) - this%ia(1)
+      n = this%ia(this%npatch+1) - this%ia(1)
       allocate(this%val(n), this%ja(n))
       call scl_allgather(n, bsize)
 
@@ -267,57 +297,58 @@ contains
 
   function get_ambient_vf (dvf) result (u)
     type(dist_vf), intent(in) :: dvf
-    real, pointer :: u(:)
+    real, allocatable :: u(:)
+    integer :: n
 
-    if (scl_rank() == 1) then
-      allocate(u(dvf%nface_tot))
+    if (dvf%has_ambient) then
+      n = merge(dvf%npatch, 0, scl_rank() == 1)
+      allocate(u(n))
+
+      call scl_gather (dvf%ambient, u)
     else
       allocate(u(0))
     end if
-    call scl_gather (dvf%ambient, u)
+
   end function get_ambient_vf
 
   function unpack_dvf_row (dvf, n) result (u)
 
     type(dist_vf), intent(in) :: dvf
     integer, intent(in) :: n
-    real, pointer :: u(:)
+    real, allocatable :: u(:)
 
     integer :: l, vsize
-    integer, pointer :: sidx(:)
-    real, pointer :: svec(:)
-    integer, target :: idummy(0)
-    real, target :: rdummy(0)
+    integer, allocatable :: sidx(:)
+    real, allocatable :: svec(:)
 
     l = n - dvf%offset  ! local index
 
-    if (l >= 1 .and. l <= dvf%nface) then ! this process has the row
-      sidx => dvf%ja(dvf%ia(l):dvf%ia(l+1)-1)
-      svec => dvf%val(dvf%ia(l):dvf%ia(l+1)-1)
-      vsize = dvf%nface_tot
+    if (l >= 1 .and. l <= dvf%npatch) then ! this process has the row
+      sidx = dvf%ja(dvf%ia(l):dvf%ia(l+1)-1)
+      svec = dvf%val(dvf%ia(l):dvf%ia(l+1)-1)
+      vsize = dvf%npatch_tot
     else
-      sidx => idummy
-      svec => rdummy
+      allocate(sidx(0), svec(0))
       vsize = 0
     end if
-    u => unpack_dist_sparse_vector (vsize, svec, sidx)
+    u = unpack_dist_sparse_vector (vsize, svec, sidx)
 
   end function
 
   function dvf_row_sum (dvf) result (u)
 
     type(dist_vf), intent(in) :: dvf
-    real, pointer :: u(:)
+    real, allocatable :: u(:)
 
     integer :: j
-    real :: u_l(dvf%nface)
+    real :: u_l(dvf%npatch)
 
-    do j = 1, dvf%nface
+    do j = 1, dvf%npatch
       u_l(j) = sum(dvf%val(dvf%ia(j):dvf%ia(j+1)-1))
     end do
 
     if (scl_rank() == 1) then
-      allocate(u(dvf%nface_tot))
+      allocate(u(dvf%npatch_tot))
     else
       allocate(u(0))
     end if
@@ -325,19 +356,65 @@ contains
 
   end function dvf_row_sum
 
+  !! Returns the unpacked n-th column of the VF matrix on process rank 1.
   function unpack_dvf_col (dvf, n) result (u)
 
     type(dist_vf), intent(in) :: dvf
     integer, intent(in) :: n
-    real, pointer :: u(:)
+    real, allocatable :: u(:)
+
+    if (dvf%has_area) then
+      u = unpack_dvf_col_from_row(dvf, n)
+    else
+      u = unpack_dvf_col_explicit(dvf, n)
+    end if
+
+  end function unpack_dvf_col
+
+  !! Returns the unpacked n-th column of the VF matrix on process rank 1.
+  !! The columns is formed implicitly from the n-th row using reciprocity.
+  !! Thus, the only the process owning row n communicates with rank 1.
+  function unpack_dvf_col_from_row (dvf, n) result (u)
+
+    type(dist_vf), intent(in) :: dvf
+    integer, intent(in) :: n
+    real, allocatable :: u(:)
+
+    integer :: l, vsize
+    integer, allocatable :: sidx(:)
+    real, allocatable :: svec(:)
+
+    l = n - dvf%offset  ! local index
+
+    if (l >= 1 .and. l <= dvf%npatch) then ! this process has the column
+      sidx = dvf%ja(dvf%ia(l):dvf%ia(l+1)-1)
+      svec = dvf%val(dvf%ia(l):dvf%ia(l+1)-1)
+      svec = svec * dvf%area(n) / dvf%area(sidx)
+      vsize = dvf%npatch_tot
+    else
+      allocate(sidx(0), svec(0))
+      vsize = 0
+    end if
+    u = unpack_dist_sparse_vector (vsize, svec, sidx)
+
+  end function unpack_dvf_col_from_row
+
+  !! Returns the unpacked n-th column of the VF matrix on process rank 1.
+  !! The column is formed explicitly by having each rank send any non-zeros
+  !! in the n-th column of each local row.
+  function unpack_dvf_col_explicit (dvf, n) result (u)
+
+    type(dist_vf), intent(in) :: dvf
+    integer, intent(in) :: n
+    real, allocatable :: u(:)
 
     integer :: i, j, cnt
-    real :: svec(dvf%nface)
-    integer :: sidx(dvf%nface)
+    real :: svec(dvf%npatch)
+    integer :: sidx(dvf%npatch)
 
     !! Gather up the nonzeros in column N
     cnt = 0
-    do j = 1, dvf%nface
+    do j = 1, dvf%npatch
       i = loc_in_row (n, dvf%ja(dvf%ia(j):dvf%ia(j+1)-1))
       if (i > 0) then
         i = i + dvf%ia(j) - 1
@@ -347,16 +424,16 @@ contains
       end if
     end do
 
-    u => unpack_dist_sparse_vector (dvf%nface, svec(:cnt), sidx(:cnt))
+    u = unpack_dist_sparse_vector (dvf%npatch, svec(:cnt), sidx(:cnt))
 
-  end function unpack_dvf_col
+  end function unpack_dvf_col_explicit
 
   function unpack_dist_sparse_vector (vsize, svec, sidx) result (u)
 
     integer, intent(in) :: vsize    ! local size of the full local vector
     real,    intent(in) :: svec(:)  ! sparse vector values ...
     integer, intent(in) :: sidx(:)  ! and the corresponding global indices
-    real, pointer :: u(:)
+    real, allocatable :: u(:)
 
     integer :: n
     integer, allocatable :: bsize(:), sidx_g(:)
@@ -411,17 +488,17 @@ contains
     type(dist_vf), intent(inout) :: b
 
     integer :: i, j, n
-    integer, pointer :: ia(:), ja(:)
-    real, pointer :: val(:)
-    real :: row(b%nface_tot)
-    logical :: tag(b%nface_tot)
+    integer, allocatable :: ia(:), ja(:)
+    real, allocatable :: val(:)
+    real :: row(b%npatch_tot)
+    logical :: tag(b%npatch_tot)
 
-    ASSERT( a%nface == b%nface )
+    ASSERT( a%npatch == b%npatch )
 
     !! First pass: generate the IA indexing array.
-    allocate(ia(b%nface+1))
+    allocate(ia(b%npatch+1))
     ia(1) = 1
-    do j = 1, b%nface
+    do j = 1, b%npatch
       !! Tag the nonzeros in the B row.
       tag = .false.
       do i = b%ia(j), b%ia(j+1)-1
@@ -434,12 +511,12 @@ contains
       ia(j+1) = ia(j) + count(tag)
     end do
 
-    n = ia(b%nface+1) - 1
+    n = ia(b%npatch+1) - 1
     allocate(val(n), ja(n))
 
     !! Second pass: generate the sparse matrix rows.
     n = 1
-    do j = 1, b%nface
+    do j = 1, b%npatch
       !! Unpack the compressed B row.
       row = 0.0
       tag = .false.
@@ -464,11 +541,14 @@ contains
     end do
 
     !! Redefine the internals of B.
-    deallocate(b%ia, b%ja, b%val)
-    b%ia => ia
-    b%ja => ja
-    b%val => val
-    b%ambient = b%ambient - a%ambient
+    call move_alloc(ia, b%ia)
+    call move_alloc(ja, b%ja)
+    call move_alloc(val, b%val)
+
+    ASSERT(a%has_ambient .eqv. b%has_ambient)
+    if (a%has_ambient .and. b%has_ambient) then
+      b%ambient = b%ambient - a%ambient
+    end if
 
   end subroutine vf_diff
 
@@ -491,9 +571,9 @@ contains
     real, intent(out) :: dnorm
 
     integer :: i, j
-    real(kind(1.0d0)) :: s, drowsum(d%nface)
+    real(kind(1.0d0)) :: s, drowsum(d%npatch)
 
-    do j = 1, d%nface
+    do j = 1, d%npatch
       s = 0.0 !abs(d%ambient(j))
       do i = d%ia(j), d%ia(j+1)-1
         s = s + abs(d%val(i))
@@ -529,10 +609,10 @@ contains
     real(kind(1.0d0)) :: s1
 
     s1 = 0.0d0
-    do n = 1, d%nface_tot
+    do n = 1, d%npatch_tot
       !! Everybody find their max absolute value in column N.
       s2 = 0.0
-      do j = 1, d%nface
+      do j = 1, d%npatch
         i = loc_in_row(n, d%ja(d%ia(j):d%ia(j+1)-1))
 	if (i > 0) then
 	  i = i + d%ia(j) - 1
@@ -566,17 +646,17 @@ contains
     real, intent(out) :: dnorm
 
     integer :: i, j, n, cnt, recvcnt, root, last(scl_size())
-    integer :: sidx(d%nface), sidx_g(d%nface_tot)
-    real    :: svec(d%nface), svec_g(d%nface_tot)
-    real(kind(1.0d0)) :: s(d%nface)
+    integer :: sidx(d%npatch), sidx_g(d%npatch_tot)
+    real    :: svec(d%npatch), svec_g(d%npatch_tot)
+    real(kind(1.0d0)) :: s(d%npatch)
 
     !! The last global row index owned by each process.
-    call scl_allgather (d%offset+d%nface, last)
+    call scl_allgather (d%offset+d%npatch, last)
 
-    ASSERT( last(scl_size()) == d%nface_tot )
+    ASSERT( last(scl_size()) == d%npatch_tot )
 
     root = 1
-    do n = 1, d%nface_tot
+    do n = 1, d%npatch_tot
 
       !! Update the root process rank: owner of row N.
       do while (n > last(root))
@@ -585,7 +665,7 @@ contains
 
       !! Everybody gather up their nonzeros in column N.
       cnt = 0
-      do j = 1, d%nface
+      do j = 1, d%npatch
       	i = loc_in_row (n, d%ja(d%ia(j):d%ia(j+1)-1))
 	if (i > 0) then
 	  i = i + d%ia(j) - 1

@@ -42,6 +42,7 @@ double VF_SurfArea(Poly *poly, int dim)
   int    i, j;
   double area, jacobian, d0, d1;
   Point  d;
+  Vector x1, x2, normal;
   static double wt[] = { 1.0, 1.0};
   static double gp[] = {-0.577350269189626, 0.577350269189626};
 
@@ -57,12 +58,10 @@ double VF_SurfArea(Poly *poly, int dim)
     break;
   case VF_3D:
     if (poly->np == 4) {
-      for (area=0.0, i=0; i<2; i++) {
-        for (j=0; j<2; j++) {
-          jacobian = VF_GetPolyJacobian(poly, gp[i],gp[j]);
-          area += wt[i]*wt[j]*jacobian;
-        }
-      }
+      V3_Sub(&(poly->p[2]), &(poly->p[0]), &x1);
+      V3_Sub(&(poly->p[3]), &(poly->p[1]), &x2);
+      V3_Cross(&x1, &x2, &normal);
+      area = 0.5*V3_Length(&normal);
     } else {
       area = VF_PolyArea(poly);
     }
