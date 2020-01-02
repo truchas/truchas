@@ -7,8 +7,12 @@ Welcome to Truchas documentation!
 =================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 4
+   :titlesonly:
+   :includehidden:
+
+   tools/RadE/index.rst
+   style_guide.rst
 
 
 Indices and tables
@@ -17,3 +21,8 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+TODOs
+=====
+
+.. todolist::
