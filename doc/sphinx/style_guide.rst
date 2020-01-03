@@ -104,13 +104,13 @@ following code produces the figures below it.
       :align: center
       :class: fig-table
 
-      * - .. figure:: https://via.placeholder.com/800x600
+      * - .. figure:: https://via.placeholder.com/400x300
              :width: 100%
              :align: center
 
              This is the caption.
 
-        - .. figure:: https://via.placeholder.com/800x600
+        - .. figure:: https://via.placeholder.com/400x300
              :figwidth: 100%
              :align: center
 
@@ -120,13 +120,13 @@ following code produces the figures below it.
    :align: center
    :class: fig-table
 
-   * - .. figure:: https://via.placeholder.com/800x600
+   * - .. figure:: https://via.placeholder.com/400x300
           :width: 100%
           :align: center
 
           This is the caption.
 
-     - .. figure:: https://via.placeholder.com/800x600
+     - .. figure:: https://via.placeholder.com/400x300
           :figwidth: 100%
           :align: center
 
@@ -194,6 +194,61 @@ The following code block shows how to implement a caption spanning multiple imag
 
 
 
+Namelists
+---------
+When describing a namelist and its parameters, use the following format. The exact heading level is
+not important, as long as the parameters are sub-headings of the namelist.
+
+.. code-block:: RST
+
+   EXAMPLE Namelist
+   ----------------
+
+   PARAMETER_1
+   +++++++++++
+   Short description of parameter 1.
+
+   .. namelist_parameter::
+      :type: INTEGER
+      :domain: parameter_1 >= 0
+      :default: parameter_1 = 1
+
+   A more in-depth description of parameter 1. This can include any content
+   (e.g. images, math, code blocks) and is left to the author's discretion.
+
+For examples of how namelists are described using this format, see the :doc:`PATCHES namelist
+documentation <tools/RadE/patches/patches_namelist>`.
+
+Namelist Parameter Directive
+++++++++++++++++++++++++++++
+When describing a namelist parameter, the 'namelist_parameter' directive should be used after the
+short description. This custom directive is provided by the Truchas Sphinx build.
+
+The directive inserts an element of the *nml-param* class, ensuring that all namelist
+parameters are styled consistently throughout the documentation.
+
+The directive takes three mandatory options:
+
+#. **:type:** the Fortran type of the namelist parameter
+#. **:domain:** the set of valid values for the parameter
+#. **:default:** the default value if the parameter is not specified
+
+The following code block produces the namelist parameter element below it.
+
+.. code-block:: RST
+
+   .. namelist_parameter::
+      :type: INTEGER
+      :domain: parameter_1 >= 0
+      :default: parameter_1 = 1
+
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: parameter_1 >= 0
+   :default: parameter_1 = 1
+
+
+
 Inline Fortran Code
 -------------------
 The Truchas Sphinx build provides a special 'fortran' role for writing inline Fortran code. For
@@ -220,5 +275,14 @@ line
    .. default-role:: math
 
 to the top of the document. Inline math can then be delimited by backticks (`) without explicitly
-specifying the *:math:* role.
-prefix.
+specifying the *:math:* role. For example, the line
+
+.. code-block:: RST
+
+   The sum of the first :math:`n` natural numbers is given by :math:`n(n+1)/2`.
+
+simplifies to
+
+.. code-block:: RST
+
+   The sum of the first `n` natural numbers is given by `n(n+1)/2`.

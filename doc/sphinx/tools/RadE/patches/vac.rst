@@ -414,11 +414,10 @@ VAC_MERGE_LEVEL
 +++++++++++++++
 Controls the aggressiveness of patch merging.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** vac_merge_level >= 0
-
-   **Default:** vac_merge_level = 3
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: vac_merge_level >= 0
+   :default: vac_merge_level = 3
 
 After the patch assignment stage, all faces are assigned to a patch. The algorithm then attempts to
 merge patches in order to reduce the patch count.
@@ -452,11 +451,10 @@ VAC_SPLIT_PATCH_SIZE
 ++++++++++++++++++++
 Defines the maximum size of patches to be split during patch merging.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** vac_split_patch_size > 1
-
-   **Default:** vac_split_patch_size = 3
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: vac_split_patch_size > 1
+   :default: vac_split_patch_size = 3
 
 Before merging patches, all :ref:`merge subroutines <tools/RadE/patches/vac:Patch Merging>` find
 patches with less than ``vac_split_patch_size`` faces and 'split' them into 1-face patches. The

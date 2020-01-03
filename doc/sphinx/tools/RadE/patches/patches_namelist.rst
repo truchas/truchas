@@ -32,11 +32,10 @@ PATCH_ALGORITHM
 +++++++++++++++
 Selects one of the three available algorithms, or disables patching.
 
-   **Type:** ``STRING``
-
-   **Domain:** Must be one of ``'NONE'``, ``'PAVE'``, ``'VAC'``, or ``'VSA'``
-
-   **Default:** `patch_algorithm =` ``'PAVE'``
+.. namelist_parameter::
+   :type: STRING
+   :domain: Must be one of ``'NONE'``, ``'PAVE'``, ``'VAC'``, or ``'VSA'``
+   :default: patch_algorithm = ``'PAVE'``
 
 Each option selects a different patch algorithm:
 
@@ -51,11 +50,10 @@ VERBOSITY_LEVEL
 +++++++++++++++
 Defines the verbosity level for all console output of the patch algorithm.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** `verbosity_level >= 0`
-
-   **Default:** `verbosity_level = 1`
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: verbosity_level >= 0
+   :default: verbosity_level = 1
 
 The verbosity levels are defined as follows:
 
@@ -77,11 +75,10 @@ MAX_ANGLE
 +++++++++
 Defines the maximum allowable angle (in degrees) between adjacent faces.
 
-   **Type:** ``REAL``
-
-   **Domain:** `0.0 <= max_angle <= 180.0`
-
-   **Default:** `max_angle = 20.0`
+.. namelist_parameter::
+   :type: REAL
+   :domain: 0.0 <= max_angle <= 180.0
+   :default: max_angle = 20.0
 
 All the patch algorithms construct the `adjacency matrix
 <http://mathworld.wolfram.com/AdjacencyMatrix.html>`_ of the enclosure faces to efficiently
@@ -120,11 +117,10 @@ PAVE_MERGE_LEVEL
 ++++++++++++++++
 Controls the aggressiveness of patch merging for the :doc:`PAVE algorithm <pave>`.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** `pave_merge_level >= 0`
-
-   **Default:** `pave_merge_level = 3`
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_merge_level >= 0
+   :default: pave_merge_level = 3
 
 After paving is complete, there will be a valid patching of the enclosure. The algorithm then
 attempts to merge patches in order to reduce the patch count.
@@ -156,11 +152,10 @@ PAVE_SPLIT_PATCH_SIZE
 +++++++++++++++++++++
 Defines the maximum size of patches to be split during patch merging for the :doc:`PAVE algorithm <pave>`.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** `pave_split_patch_size > 1`
-
-   **Default:** `pave_split_patch_size = 3`
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_split_patch_size > 1
+   :default: pave_split_patch_size = 3
 
 Before merging patches, all :ref:`merge methods
 <tools/RadE/patches/patches_namelist:PAVE_MERGE_LEVEL>` find patches with less than
@@ -188,11 +183,10 @@ VAC_MERGE_LEVEL
 +++++++++++++++
 Controls the aggressiveness of patch merging for the :doc:`VAC algorithm <vac>`.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** `vac_merge_level >= 0`
-
-   **Default:** `vac_merge_level = 3`
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: vac_merge_level >= 0
+   :default: vac_merge_level = 3
 
 After the main stage of the VAC algorithm, there will be a valid patching of the enclosure. The
 algorithm then attempts to merge patches in order to reduce the patch count.
@@ -224,11 +218,10 @@ VAC_SPLIT_PATCH_SIZE
 ++++++++++++++++++++
 Defines the maximum size of patches to be split during patch merging for the :doc:`VAC algorithm <vac>`.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** `vac_split_patch_size > 1`
-
-   **Default:** `vac_split_patch_size = 3`
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: vac_split_patch_size > 1
+   :default: vac_split_patch_size = 3
 
 Before merging patches, all :ref:`merge methods
 <tools/RadE/patches/patches_namelist:VAC_MERGE_LEVEL>` find patches with less than
@@ -256,11 +249,10 @@ VSA_MAX_ITER
 ++++++++++++
 Defines the maximum number of iterations for the :doc:`VSA algorithm <vsa>`.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** `vsa_max_iter >= 1`
-
-   **Default:** `vsa_max_iter = 1000`
+.. namelist_parameter::
+   :type: Integer
+   :domain: vsa_max_iter >= 1
+   :default: vsa_max_iter = 1000
 
 The algorithm stops when ``vsa_max_iter`` is reached, regardless of other
 terminating conditions.
@@ -271,11 +263,10 @@ VSA_MIN_DELTA
 Defines the minimum allowable change in patch proxies between successive
 iterations of the :doc:`VSA algorithm <vsa>`.
 
-   **Type:** ``REAL``
-
-   **Domain:** `vsa_min_delta >= 0.0`
-
-   **Default:** `vsa_min_delta = 1.0E-6`
+.. namelist_parameter::
+   :type: REAL
+   :domain: vsa_min_delta >= 0.0
+   :default: vsa_min_delta = 1.0E-6
 
 At the end of each iteration, the new patch proxies for the next iteration are computed and compared
 against the old proxies. The algorithm keeps track of the *minimum* change between the old and new
@@ -288,11 +279,10 @@ VSA_AVG_FACES_PER_PATCH
 +++++++++++++++++++++++
 Defines the average faces per patch, and by extension the total number of patches.
 
-   **Type:** ``REAL``
-
-   **Domain:** vsa_avg_faces_per_patch >= 1.0
-
-   **Default:** vsa_avg_faces_per_patch = 4.0
+.. namelist_parameter::
+   :type: REAL
+   :domain: vsa_avg_faces_per_patch >= 1.0
+   :default: vsa_avg_faces_per_patch = 4.0
 
 The average faces per patch is given by
 
