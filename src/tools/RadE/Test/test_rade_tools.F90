@@ -34,7 +34,7 @@ program test_rade_tools
   endif
   call scl_bcast(vf_file)
   call scl_bcast(ios)
-  if (ios /= 0) call re_halt('Unable to open input file: ' // trim(infile))
+  if (vf_file .and. ios /= 0) call re_halt('Unable to open input file: ' // trim(infile))
 
   !! Get test data
   if (vf_file) then
