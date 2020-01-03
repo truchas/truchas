@@ -335,11 +335,10 @@ VSA_MAX_ITER
 Defines the maximum number of iterations for the :ref:`error minimization
 <tools/RadE/patches/vsa:Outline>` step of the algorithm.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** vsa_max_iter >= 1
-
-   **Default:** vsa_max_iter = 1000
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: vsa_max_iter >= 1
+   :default: vsa_max_iter = 1000
 
 The algorithm stops when ``vsa_max_iter`` is reached, regardless of other
 terminating conditions.
@@ -349,11 +348,10 @@ VSA_MIN_DELTA
 +++++++++++++
 Defines the minimum allowable change in patch proxies between successive iterations.
 
-   **Type:** ``REAL``
-
-   **Domain:** vsa_min_delta >= 0.0
-
-   **Default:** vsa_min_delta = 1.0E-6
+.. namelist_parameter::
+   :type: REAL
+   :domain: vsa_min_delta >= 0.0
+   :default: vsa_min_delta = 1.0E-6
 
 At the end of each iteration, the new patch proxies for the next iteration are computed and compared
 against the old proxies. VSA keeps track of the *minimum* change between the old and new proxies.
@@ -369,11 +367,10 @@ VSA_AVG_FACES_PER_PATCH
 +++++++++++++++++++++++
 Defines the average faces per patch, and by extension the total number of patches.
 
-   **Type:** ``REAL``
-
-   **Domain:** vsa_avg_faces_per_patch >= 1.0
-
-   **Default:** vsa_avg_faces_per_patch = 4.0
+.. namelist_parameter::
+   :type: REAL
+   :domain: vsa_avg_faces_per_patch >= 1.0
+   :default: vsa_avg_faces_per_patch = 4.0
 
 The average faces per patch is given by
 

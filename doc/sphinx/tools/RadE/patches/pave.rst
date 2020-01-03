@@ -347,11 +347,10 @@ PAVE_MERGE_LEVEL
 ++++++++++++++++
 Controls the aggressiveness of patch merging.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** pave_merge_level >= 0
-
-   **Default:** pave_merge_level = 3
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_merge_level >= 0
+   :default: pave_merge_level = 3
 
 After the patch assignment stage, all faces are assigned to a patch. The algorithm then attempts to
 merge patches in order to reduce the patch count.
@@ -385,11 +384,10 @@ PAVE_SPLIT_PATCH_SIZE
 +++++++++++++++++++++
 Defines the maximum size of patches to be split during patch merging.
 
-   **Type:** ``INTEGER``
-
-   **Domain:** pave_split_patch_size > 1
-
-   **Default:** pave_split_patch_size = 3
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_split_patch_size > 1
+   :default: pave_split_patch_size = 3
 
 Before merging patches, all :ref:`merge subroutines <tools/RadE/patches/pave:Patch Merging>` find
 patches with less than ``pave_split_patch_size`` faces and 'split' them into 1-face patches. The

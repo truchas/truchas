@@ -23,3 +23,8 @@
 .sidebar-toc ul li.current > a:hover {
   background-color: #e6e6e6;
 }
+
+/* Namelist parameters */
+.nml-param {
+  background-color: #f5f9fa;
+}
