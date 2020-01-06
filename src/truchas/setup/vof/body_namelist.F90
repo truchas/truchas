@@ -68,6 +68,7 @@ contains
 
       !! Default values
       surface_name = NULL_C
+      fill = NULL_C
       axis = NULL_C
       height = NULL_R
       length = NULL_R
@@ -86,6 +87,7 @@ contains
       !! Broadcast the namelist variables
       call broadcast(surface_name)
       call broadcast(axis)
+      call broadcast(fill)
       call broadcast(height)
       call broadcast(length)
       call broadcast(radius)
@@ -104,10 +106,17 @@ contains
 
       case ('plane')
         call plist%set('type', trim(surface_name))
-        print '(a,3es13.3)', 'normal: ', -normal_vector(axis, rotation_angle, rotation_pt)
-        call plist%set('normal', -normal_vector(axis, rotation_angle, rotation_pt))
         !call plist%set('point-on-plane', reverse_transform(translation_pt, rotation_angle, rotation_pt))
         call plist%set('point-on-plane', translation_pt)
+
+        ! Set the appropriate plane normal direction based on fill value.
+        if (fill == NULL_C .or. trim(fill) == 'inside') then
+          call plist%set('normal', -normal_vector(axis, rotation_angle, rotation_pt))
+        else if (fill /= NULL_C .and. trim(fill) == 'outside') then
+          call plist%set('normal', normal_vector(axis, rotation_angle, rotation_pt))
+        else
+          call TLS_fatal("error reading BODY namelist: Unexpected fill value. Expected 'inside' or 'outside'.")
+        end if
 
       case ('box')
         call plist%set('type', trim(surface_name))
@@ -132,6 +141,16 @@ contains
         call plist%set('radius', radius)
         call plist%set('length', height)
         call plist%set('axis', x)
+        
+        ! If fill is unset or set to 'inside', we use the default value in our
+        ! constructors (fill_inside = .true.). If set to 'outside', set
+        ! fill_inside = .false. Otherwise, return an error.
+        if (fill /= NULL_C .and. trim(fill) == 'outside') then
+          call plist%set('fill_inside', .false.)
+        else if (fill /= NULL_C .and. trim(fill) /= 'inside') then
+          call TLS_fatal("error reading BODY namelist: Unexpected fill value. Expected 'inside' or 'outside'.")
+        end if
+        
 
       ! case ('ellipsoid')
       !   call plist%set('type', trim(surface_name))

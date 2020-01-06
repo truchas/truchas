@@ -32,7 +32,6 @@ contains
     type(plane_body) :: r
     r%normal = n
     r%plane_const = p
-    print '(a,4es13.3)', "planenr: ", n, p
   end function plane_body_value
 
   logical function eval(this, x, cellid)

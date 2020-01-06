@@ -15,7 +15,7 @@ module box_body_type
 
   type, extends(body), public :: box_body
     private
-    real(r8), allocatable :: upper(:), lower(:)
+    real(r8), allocatable :: upper(:), lower(:), xl(:), xc(:)
   contains
     procedure :: eval
     procedure :: signed_distance
@@ -33,7 +33,11 @@ contains
     type(box_body) :: r
     r%upper = upper
     r%lower = lower
+    r%xc = (upper + lower) / 2
+    r%xl = (upper - lower) / 2
+    ASSERT(all(r%xl > 0))
   end function box_body_value
+
 
   logical function eval(this, x, cellid)
     class(box_body), intent(in) :: this
@@ -42,28 +46,22 @@ contains
     eval = all(x <= this%upper .and. x >= this%lower)
   end function eval
 
-  ! Note this does not take into account corner distance
+
   real(r8) function signed_distance(this, x)
+
     class(box_body), intent(in) :: this
     real(r8), intent(in) :: x(:)
 
     integer :: i
+    real(r8) :: q(size(x))
 
-    signed_distance = 0 ! not implemented yet
-    ! signed_distance = huge(1.0_r8)
-    ! do i = 1, size(x)
-    !   signed_distance = minmag(signed_distance, x(i) - this%upper(i), this%lower(i) - x(i))
-    ! end do
+    q = abs(x - this%xc) - this%xl
+    signed_distance = min(maxval(q), 0.0_r8)
+    do i = 1, size(q)
+      q(i) = max(q(i), 0.0_r8)
+    end do
+    signed_distance = signed_distance + norm2(q)
 
   end function signed_distance
-
-  real(r8) pure function minmag(a, b, c)
-    real(r8), intent(in) :: a, b, c
-    real(r8) :: a2, b2, c2
-    a2 = abs(a)
-    b2 = abs(b)
-    c2 = abs(c)
-    minmag = merge(merge(a, c, a2 < c2), merge(b, c, b2 < c2), a2 < b2)
-  end function minmag
 
 end module box_body_type
