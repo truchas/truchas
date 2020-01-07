@@ -100,7 +100,6 @@ list(APPEND PHYSICS_FILES
 	  physics/volume_tracking/polygon_type.F90
 	  physics/volume_tracking/polyhedron_type.F90
 	  physics/volume_tracking/pure_polyhedron_type.F90
-	  physics/volume_tracking/volume_initialization.F90
 	  physics/volume_tracking/volume_tracker_class.F90
           physics/volume_tracking/geometric_volume_tracker_type.F90
           physics/volume_tracking/simple_volume_tracker_type.F90

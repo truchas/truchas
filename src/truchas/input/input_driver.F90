@@ -32,7 +32,7 @@ contains
     use probe_namelist,            only: read_probe_namelists
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
-    use interfaces_input_module,   only: interfaces_input
+    use body_input_module,         only: interfaces_input
     use material_input_module,     only: material_input, material_sizes
     use nonlin_solver_input,       only: nonlinear_solver_input
     use numerics_input_module,     only: numerics_input

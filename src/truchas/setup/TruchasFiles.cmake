@@ -63,11 +63,8 @@ list(APPEND SETUP_FILES ${SETUP_SCALARS_FILES})
 # - vof
 set(SETUP_VOF_FILES
           setup/vof/interfaces_module.F90
-          setup/vof/tally_module.F90
           setup/vof/body_identifier_type.F90
-          setup/vof/vof_init.F90
-          
-          setup/vof/vof_init_new.F90
+          setup/vof/body_volume_initialize_routine.F90
           setup/vof/body_class.F90
           setup/vof/background_body_type.F90
           setup/vof/element_block_body_type.F90
