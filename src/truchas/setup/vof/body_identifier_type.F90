@@ -93,7 +93,7 @@ contains
     end do
 
     ! TODO: this should return an error status to be handled at a higher level.
-    INSIST(.false.)
+    call TLS_panic("Input bodies do not cover the entire domain.")
 
   end function body_at_point
 

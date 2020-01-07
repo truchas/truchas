@@ -15,7 +15,7 @@
 
 #include "f90_assert.fpp"
 
-module vof_init_NEW
+module body_volume_initialize_routine
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use body_identifier_type
@@ -23,7 +23,7 @@ module vof_init_NEW
   implicit none
   private
 
-  public :: vof_initialize_NEW
+  public :: body_volume_initialize
 
   ! A divide and conquer cell type to hold the logic for recursively
   ! splitting cells into tets, checking if a cell is mixed, and
@@ -80,25 +80,31 @@ contains
   ! This subroutine initializes the body volumes in all cells from a
   ! user input function. It calls a divide and conquer algorithm to
   ! calculate the volume fractions given an interface.
-  subroutine vof_initialize_NEW(mesh, plist, recursion_limit, vof)
+  subroutine body_volume_initialize(mesh, plist, recursion_limit, vof)
 
     use unstr_mesh_type
     use parameter_list_type
     use timer_tree_type
+    use legacy_mesh_api, only: ncells ! this can go away once init_module doesn't expect it
 
     type(unstr_mesh), intent(in) :: mesh
     type(parameter_list), intent(in) :: plist
     integer, intent(in) :: recursion_limit
-    real(r8), intent(out) :: vof(:,:)
+    real(r8), intent(out), allocatable :: vof(:,:)
 
     integer :: i
     type(body_identifier), target :: body_id
     type(dnc_cell) :: cell
 
     INSIST(recursion_limit > 0)
-    ASSERT(size(vof,dim=2) >= mesh%ncell_onP)
 
     call start_timer("VOF Initialize")
+
+    ! TODO: change to modern mesh%ncell when init_module doesn't
+    !       expect an array with length ncells.
+    call body_id%init(plist, mesh)
+    allocate(vof(max(body_id%nbody,1), ncells))
+    ASSERT(size(vof,dim=2) >= mesh%ncell_onP)
 
     ! In some cases, ncell > mesh%ncell_onP. I don't know why that occurs, but
     ! those extra cells must be initialized to avoid invalid floating operations.
@@ -110,8 +116,6 @@ contains
     ! from recursively divided tets, and the accumulated volume of
     ! those tets aren't guaranteed to be machine-identical to the
     ! parent volume.
-    call body_id%init(plist, mesh) !body_ids)
-    ASSERT(size(vof,dim=1) == body_id%nbody)
     if (body_id%nbody > 1) then
       do i = 1, mesh%ncell_onP
         call cell%init(i, mesh, body_id, recursion_limit)
@@ -124,7 +128,7 @@ contains
     end if
     call stop_timer("VOF Initialize")
 
-  end subroutine vof_initialize_NEW
+  end subroutine body_volume_initialize
 
 
   subroutine dnc_cell_init(this, i, mesh, body_id, recursion_limit)
@@ -216,14 +220,6 @@ contains
   ! VOF for that material to 1. If not, divide the cell into tets and
   ! repeat recursively to a given threshold.
   !
-  ! TODO: Right now we close by counting how many nodes are inside
-  !       the volume, and this is likely what should be done whenever
-  !       there are >2 materials in the cell. For 2-material cells,
-  !       we could use a plane reconstruction from a signed distance
-  !       function to produce a more accurate estimate. This produces
-  !       much greater accuracy for very little cost, far less than
-  !       adding levels of refinement.
-  !
   ! TODO: Interface detection might be improved. By checking only
   !       vertices, we fail to subdivide if an interface intersects a
   !       cell without cutting off any vertices.
@@ -234,8 +230,8 @@ contains
     class(dnc_cell), intent(inout) :: this
     real(r8) :: volumes(this%body_id%nbody)
 
-    integer :: i, j, body(3), nbody
-    real(r8) :: xc(3), x(3)
+    integer :: i, body(3), nbody
+    real(r8) :: x(3)
     type(dnc_cell) :: subtet
 
     volumes = 0
@@ -471,4 +467,4 @@ contains
     volumes(this%body_id%body_at_point(xc, this%cellid)) = this%volume
   end function volumes_from_centroid
 
-end module vof_init_NEW
+end module body_volume_initialize_routine

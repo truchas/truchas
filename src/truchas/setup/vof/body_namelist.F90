@@ -35,22 +35,17 @@ contains
     real(r8) :: x(3)
 
     !! Namelist variables
-    character(64) :: axis, surface_name
+    character(64) :: axis, surface_name, fill
     real(r8) :: height, length(3), radius, rotation_angle(3), rotation_pt(3), translation_pt(3)
 
-    ! These initial values should go elsewhere
+    ! These values are read & initialized by body_input_module, not here.
     character(64) :: temperature_function
     integer :: material_number, mesh_material_number
     real(r8) :: velocity(3), temperature, phi(5)
 
-    ! These are unused here and should be removed completely
-    character(64) :: tabular_type, fill, file_name
-    real(r8) :: Rtheta_tabular_pt(50), RZ_tabular_pt(50)
-    
-    namelist /body/ surface_name, axis, height, radius, length, &
+    namelist /body/ surface_name, axis, height, radius, length, fill, &
         rotation_angle, rotation_pt, translation_pt, &
-        material_number, phi, temperature, temperature_function, velocity, mesh_material_number, &
-        rtheta_tabular_pt, rz_tabular_pt, tabular_type, file_name, fill
+        material_number, phi, temperature, temperature_function, velocity, mesh_material_number
 
     call TLS_info('')
     call TLS_info('Reading BODY namelists ...')

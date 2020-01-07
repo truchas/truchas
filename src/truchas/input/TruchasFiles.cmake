@@ -16,7 +16,6 @@ set(INPUT_FILES
          input/bc_input_module.F90
          input/body_input_module.F90
          input/input_driver.F90
-         input/interfaces_input_module.F90
          input/lin_solver_input.F90
          input/material_input_module.F90
          input/nonlin_solver_input.F90
