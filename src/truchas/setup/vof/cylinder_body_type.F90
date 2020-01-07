@@ -40,11 +40,6 @@ contains
     r%length = length
     r%radius = radius
     r%fill_outside = .not.fill_inside
-    ! print *, "cylinder: "
-    ! print *, r%length, r%radius, r%fill_outside
-    ! print *, r%axis
-    ! print *, r%center
-    ! print *
   end function cylinder_body_value
 
   logical function eval(this, x, cellid)

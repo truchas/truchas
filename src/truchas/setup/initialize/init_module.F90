@@ -134,10 +134,7 @@ CONTAINS
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
     !hits_vol = vof_initialize()
-    ! print '(a,10es13.3)', 'hv: ', hits_vol(1,:)
     call vof_initialize_NEW (unstr_mesh_ptr('MAIN'), bodies_params, 3, hits_vol)
-    !print '(a,10es13.3)', 'hv: ', hits_vol(1,:)
-    !INSIST(.false.)
 
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then

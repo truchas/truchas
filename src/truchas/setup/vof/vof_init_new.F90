@@ -240,16 +240,6 @@ contains
 
     volumes = 0
 
-    ! !if (.not.this%is_subtet .and. this%cellid == 15) then !any(this%body_at_node(:this%nnode) == 1)) then
-    ! !if ((.not.this%is_subtet .or. this%recursion_height == 0) .and. this%cellid == 15) then
-    ! !if (this%recursion_height > 0 .and. this%cellid == 15) then
-    ! if (this%cellid == 15) then
-    !   do i = 1, this%nnode
-    !     print '(i6,3es13.3)', this%body_id%body_at_point(this%x(:,i), this%cellid), this%x(:,i)
-    !   end do
-    !   !print '(8i6)', this%body_at_node(:this%nnode)
-    ! end if
-
     ! If the cell contains an interface (and therefore has at least
     ! two materials and we haven't yet hit our recursion limit, divide
     ! the cell and repeat.
@@ -292,32 +282,6 @@ contains
         ! an interface, calculate the vof in this cell based on the
         ! materials at its nodes.
         volumes = this%volumes_from_centroid()
-        ! xc = sum(this%x(:,:this%nnode), dim=2) / this%nnode
-        ! ! if (any(this%cellid == [323, 324, 325])) then
-        ! !   print '(a,3es13.3,i4)', 'vol: ', xc, this%body_id%body_at_point(xc, this%cellid)
-        ! !   ! print '(a,3es13.3,i4)', 'x: ', this%x(:,1)
-        ! !   ! print '(a,3es13.3,i4)', 'x: ', this%x(:,2)
-        ! !   ! print '(a,3es13.3,i4)', 'x: ', this%x(:,3)
-        ! !   ! print '(a,3es13.3,i4)', 'x: ', this%x(:,4)
-        ! !   ! print *
-        ! ! end if
-        ! do i = 1, this%nnode
-        !   x = (xc + 2*this%x(:,i)) / 3 ! point weighted to just inside the cell
-        !   j = this%body_id%body_at_point(x, this%cellid)
-        !   volumes(j) = volumes(j) + 1
-        ! end do
-        ! ! do i = 1, this%body_id%nbody
-        ! !   volumes(i) = count(this%body_at_node(:this%nnode) == i)
-        ! ! end do
-        ! ! if (.not.this%is_subtet .and. all(volumes > 0)) then
-        ! !   do i = 1, this%nnode
-        ! !     print '(3es13.3)', this%x(:,i)
-        ! !   end do
-        ! !   print '(2es13.3)', volumes
-        ! !   INSIST(.false.)
-        ! ! end if
-        ! volumes = volumes / this%nnode * this%volume
-        ! else
       end if
     end if
 
@@ -343,9 +307,7 @@ contains
     if (this%is_subtet) then
       do j = 1, 6
         this%x(:,4+j) = sum(this%x(:,tet4_edges(:,j)), dim=2) / 2
-        !this%body_at_node(4+j) = this%body_id%body_at_point(this%x(:,4+j), this%cellid)
       end do
-      !INSIST(.not.any(this%body_at_node==0))
     end if
 
     do j = this%nnode+1, size(this%x,dim=2)
@@ -378,28 +340,8 @@ contains
 
 
   logical function contains_interface(this)
-
     class(dnc_cell), intent(in) :: this
-
-    ! integer :: i, b
-    ! real(r8) :: x(3), xc(3)
-
     contains_interface = any(this%body_at_node(2:this%nnode) /= this%body_at_node(1))
-    ! if (any(this%cellid == [323, 324, 325])) then
-    !   print *, 'mixed: ', contains_interface
-    ! end if
-    ! contains_interface = .false.
-    ! xc = sum(this%x(:,:this%nnode), dim=2) / this%nnode
-    ! x = (xc + 4*this%x(:,1)) / 5 ! point weighted to just inside the cell
-    ! b = this%body_id%body_at_point(x, this%cellid)
-    ! do i = 2, this%nnode
-    !   x = (xc + 4*this%x(:,i)) / 5 ! point weighted to just inside the cell
-    !   if (b /= this%body_id%body_at_point(x, this%cellid)) then
-    !     contains_interface = .true.
-    !     return
-    !   end if
-    ! end do
-    
   end function contains_interface
 
 
