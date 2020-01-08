@@ -85,7 +85,7 @@ CONTAINS
     use ded_head_driver,        only: ded_head_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
-    use body_volume_initialize_routine
+    use compute_body_volumes_proc
 
     real(r8), intent(in) :: t, dt
 
@@ -97,6 +97,7 @@ CONTAINS
     real(r8), allocatable :: phi(:,:), vel_fn(:), hits_vol(:,:)
     real(r8), pointer :: temperature_fc(:) => null()
     character(200) :: errmsg
+    character(:), allocatable :: errmsg2
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     !! Initialize the MATERIAL_INTEROP module which provides tools for moving
@@ -129,7 +130,8 @@ CONTAINS
     ! That's hopelessly confusing and will be corrected later.
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
-    call body_volume_initialize (unstr_mesh_ptr('MAIN'), bodies_params, 3, hits_vol)
+    call compute_body_volumes (unstr_mesh_ptr('MAIN'), 3, bodies_params, hits_vol, stat, errmsg2)
+    if (stat /= 0) call TLS_fatal(errmsg2)
 
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then

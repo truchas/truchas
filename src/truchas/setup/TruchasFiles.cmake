@@ -64,11 +64,12 @@ list(APPEND SETUP_FILES ${SETUP_SCALARS_FILES})
 set(SETUP_VOF_FILES
           setup/vof/interfaces_module.F90
           setup/vof/body_identifier_type.F90
-          setup/vof/body_volume_initialize_routine.F90
+          setup/vof/compute_body_volumes_proc.F90
           setup/vof/body_class.F90
           setup/vof/background_body_type.F90
           setup/vof/element_block_body_type.F90
           setup/vof/ellipsoid_body_type.F90
+          setup/vof/ellipse_body_type.F90
           setup/vof/plane_body_type.F90
           setup/vof/box_body_type.F90
           setup/vof/sphere_body_type.F90

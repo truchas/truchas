@@ -15,7 +15,7 @@
 
 #include "f90_assert.fpp"
 
-module body_volume_initialize_routine
+module compute_body_volumes_proc
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use body_identifier_type
@@ -23,7 +23,7 @@ module body_volume_initialize_routine
   implicit none
   private
 
-  public :: body_volume_initialize
+  public :: compute_body_volumes
 
   ! A divide and conquer cell type to hold the logic for recursively
   ! splitting cells into tets, checking if a cell is mixed, and
@@ -80,7 +80,7 @@ contains
   ! This subroutine initializes the body volumes in all cells from a
   ! user input function. It calls a divide and conquer algorithm to
   ! calculate the volume fractions given an interface.
-  subroutine body_volume_initialize(mesh, plist, recursion_limit, vof)
+  subroutine compute_body_volumes(mesh, recursion_limit, plist, vof, stat, errmsg)
 
     use unstr_mesh_type
     use parameter_list_type
@@ -88,10 +88,12 @@ contains
     use legacy_mesh_api, only: ncells ! this can go away once init_module doesn't expect it
 
     type(unstr_mesh), intent(in) :: mesh
-    type(parameter_list), intent(in) :: plist
     integer, intent(in) :: recursion_limit
+    type(parameter_list), intent(inout) :: plist
     real(r8), intent(out), allocatable :: vof(:,:)
-
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    
     integer :: i
     type(body_identifier), target :: body_id
     type(dnc_cell) :: cell
@@ -102,14 +104,14 @@ contains
 
     ! TODO: change to modern mesh%ncell when init_module doesn't
     !       expect an array with length ncells.
-    call body_id%init(plist, mesh)
+    call body_id%init(mesh, plist, stat, errmsg)
+    if (stat /= 0) return
     allocate(vof(max(body_id%nbody,1), ncells))
     ASSERT(size(vof,dim=2) >= mesh%ncell_onP)
 
     ! In some cases, ncell > mesh%ncell_onP. I don't know why that occurs, but
     ! those extra cells must be initialized to avoid invalid floating operations.
-    if (size(vof,dim=2) > mesh%ncell_onP) &
-        vof(:,mesh%ncell_onP+1:) = 0
+    if (size(vof,dim=2) > mesh%ncell_onP) vof(:,mesh%ncell_onP+1:) = 0
 
     ! Here we divide by the cell%volume, rather than mesh%volume(i),
     ! to ensure consistency. This routine works by tallying up volumes
@@ -118,20 +120,65 @@ contains
     ! parent volume.
     if (body_id%nbody > 1) then
       do i = 1, mesh%ncell_onP
-        call cell%init(i, mesh, body_id, recursion_limit)
-        vof(:,i) = cell%volumes() !/ cell%volume
+        call cell%init(i, mesh, body_id, recursion_limit, stat, errmsg)
+        if (stat /= 0) exit
+        vof(:,i) = cell%volumes(stat, errmsg) !/ cell%volume
+        if (stat /= 0) exit
         vof(:,i) = vof(:,i) * mesh%volume(i) / sum(vof(:,i)) ! correct for errors in planar assumption
       end do
+
+      ! handle errors across ranks
+      call error_consolidate(stat, errmsg)
     else
       ! If there's only one body, do something faster.
       vof(1,:mesh%ncell_onP) = mesh%volume(:mesh%ncell_onP)
     end if
     call stop_timer("VOF Initialize")
 
-  end subroutine body_volume_initialize
+  end subroutine compute_body_volumes
 
 
-  subroutine dnc_cell_init(this, i, mesh, body_id, recursion_limit)
+  ! This routine checks if any rank has stat /= 0, and if so
+  ! assignes stat = 1 to all ranks and concatenates all ranks'
+  ! error messages to the IO_PE.
+  subroutine error_consolidate(stat, errmsg)
+
+    use parallel_communication
+    use string_utilities, only: i_to_c
+
+    integer, intent(inout) :: stat
+    character(:), allocatable, intent(inout) :: errmsg
+
+    logical :: fatal
+    integer :: i
+    integer, allocatable :: rstat(:)
+    character(:), allocatable :: tmp, rerrmsg(:)
+    
+    fatal = global_any(stat /= 0)
+    if (.not.fatal) return
+    stat = 1
+
+    allocate(rstat(merge(nPE, 0, is_IOP)))
+    call collate(rstat, stat)
+
+    i = global_maxval(len(errmsg))
+    if (this_PE == IO_PE) allocate(character(i) :: rerrmsg(nPE))
+    allocate(character(i) :: tmp)
+    tmp(:) = errmsg
+    call collate(rerrmsg, tmp)
+
+    errmsg = ''
+    if (this_PE == IO_PE) then
+      do i = 1, nPE
+        if (rstat(i) /= 0) &
+            errmsg = errmsg // 'Rank ' // i_to_c(i) // ' error: ' // trim(rerrmsg(i)) // new_line(errmsg)
+      end do
+    end if
+
+  end subroutine error_consolidate
+
+
+  subroutine dnc_cell_init(this, i, mesh, body_id, recursion_limit, stat, errmsg)
 
     use unstr_mesh_type
     use cell_topology
@@ -140,9 +187,12 @@ contains
     class(unstr_mesh), intent(in) :: mesh
     integer, intent(in) :: i, recursion_limit
     type(body_identifier), target, intent(in) :: body_id
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: j, nface
 
+    stat = 0
     this%body_id => body_id
     this%recursion_height = recursion_limit
     this%cellid = i
@@ -204,7 +254,8 @@ contains
 
     allocate(this%body_at_node(size(this%x,dim=2)))
     do j = 1, this%nnode
-      this%body_at_node(j) = body_id%body_at_point(this%x(:,j), this%cellid)
+      this%body_at_node(j) = body_id%body_at_point(this%x(:,j), this%cellid, stat, errmsg)
+      if (stat /= 0) return
     end do
     !this%body_at_node = [(body_id%body_at_point(this%x(:,j), this%cellid), j = 1, size(this%x,dim=2))]
     INSIST(.not.any(this%body_at_node(:this%nnode)==0))
@@ -223,17 +274,20 @@ contains
   ! TODO: Interface detection might be improved. By checking only
   !       vertices, we fail to subdivide if an interface intersects a
   !       cell without cutting off any vertices.
-  recursive function volumes(this)
+  recursive function volumes(this, stat, errmsg)
 
     use cell_geometry, only: tet_volume
 
     class(dnc_cell), intent(inout) :: this
     real(r8) :: volumes(this%body_id%nbody)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: i, body(3), nbody
     real(r8) :: x(3)
     type(dnc_cell) :: subtet
 
+    stat = 0
     volumes = 0
 
     ! If the cell contains an interface (and therefore has at least
@@ -241,10 +295,12 @@ contains
     ! the cell and repeat.
     if (this%recursion_height > 0 .and. this%contains_interface()) then
       ! tally the volumes from refined sub-cells
-      call this%prepare_subtet(subtet)
+      call this%prepare_subtet(subtet, stat, errmsg)
+      if (stat /= 0) return
       do i = 1, this%ntet
         call this%get_subtet(subtet, i)
-        volumes = volumes + subtet%volumes()
+        volumes = volumes + subtet%volumes(stat, errmsg)
+        if (stat /= 0) return
       end do
     else
       ! If this is a subtet containing two bodies, we can do a plane
@@ -272,12 +328,12 @@ contains
         ! For two-material cells, we can reconstruct an interface from
         ! 3 interface-points identified by linearly interpolating a
         ! signed distance function.
-        volumes = this%volumes_from_intersection()
+        volumes = this%volumes_from_intersection(stat, errmsg)
       else
         ! If we're past the recursion limit or the cell does not contain
         ! an interface, calculate the vof in this cell based on the
         ! materials at its nodes.
-        volumes = this%volumes_from_centroid()
+        volumes = this%volumes_from_centroid(stat, errmsg)
       end if
     end if
 
@@ -290,14 +346,18 @@ contains
   ! routine computes edge and face centers so they don't need to be
   ! recalculated for every subdivision, and it initializes the input
   ! subtet with the right array sizes for a tet.
-  subroutine prepare_subtet(this, subtet)
+  subroutine prepare_subtet(this, subtet, stat, errmsg)
 
     use cell_topology, only: tet4_edges
 
     class(dnc_cell), intent(inout) :: this
     class(dnc_cell), intent(out) :: subtet
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: j
+
+    stat = 0
 
     ! Compute this cell's new nodes and find bodies at those points.
     if (this%is_subtet) then
@@ -307,7 +367,8 @@ contains
     end if
 
     do j = this%nnode+1, size(this%x,dim=2)
-      this%body_at_node(j) = this%body_id%body_at_point(this%x(:,j), this%cellid)
+      this%body_at_node(j) = this%body_id%body_at_point(this%x(:,j), this%cellid, stat, errmsg)
+      if (stat /= 0) return
     end do
     INSIST(.not.any(this%body_at_node==0))
 
@@ -348,7 +409,7 @@ contains
   ! fraction by the signed distance described by Ivey & Moin ("Accurate
   ! interface normal and curvature estimates on three-dimensional unstructured
   ! non-convex polyhedral meshes", JCP 2015).
-  function volumes_from_intersection(this) result(volumes)
+  function volumes_from_intersection(this, stat, errmsg) result(volumes)
 
     use plane_type
     use pure_polyhedron_type
@@ -357,6 +418,8 @@ contains
 
     class(dnc_cell), intent(in) :: this
     real(r8) :: volumes(this%body_id%nbody)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer, parameter :: nedge = 6
     integer :: ierr, i, j, b1, b2
@@ -391,7 +454,7 @@ contains
     ! checking edges.
     j = 0
     do i = 1, this%nnode
-      signed_distance(i) = this%body_id%body(b1)%signed_distance(this%x(:,i))
+      signed_distance(i) = this%body_id%signed_distance(b1, this%x(:,i))
       if (abs(signed_distance(i)) < 1e-10) signed_distance(i) = 0
       if (signed_distance(i) == 0 .and. j < 3) then
         j = j + 1
@@ -402,7 +465,7 @@ contains
     ! If 3 nodes of a tet are intersected, or all signed distance values are
     ! nonnegative or nonpositive, the cell is not cut by the plane.
     if (j > 2 .or. .not.any(signed_distance > 0) .or. .not.any(signed_distance < 0)) then
-      volumes = this%volumes_from_centroid()
+      volumes = this%volumes_from_centroid(stat, errmsg)
       return
     end if
 
@@ -458,13 +521,18 @@ contains
   end function volumes_from_intersection
 
 
-  function volumes_from_centroid(this) result(volumes)
+  function volumes_from_centroid(this, stat, errmsg) result(volumes)
     class(dnc_cell), intent(in) :: this
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
     real(r8) :: volumes(this%body_id%nbody)
     real(r8) :: xc(3)
+    integer :: b
     volumes = 0
     xc = sum(this%x(:,:this%nnode), dim=2) / this%nnode
-    volumes(this%body_id%body_at_point(xc, this%cellid)) = this%volume
+    b = this%body_id%body_at_point(xc, this%cellid, stat, errmsg)
+    if (stat /= 0) return
+    volumes(b) = this%volume
   end function volumes_from_centroid
 
-end module body_volume_initialize_routine
+end module compute_body_volumes_proc

@@ -16,6 +16,7 @@ module box_body_type
   type, extends(body), public :: box_body
     private
     real(r8), allocatable :: upper(:), lower(:), xl(:), xc(:)
+    logical :: fill_outside
   contains
     procedure :: eval
     procedure :: signed_distance
@@ -28,13 +29,15 @@ module box_body_type
 contains
 
   !! constructor for BOX_BODY objects
-  function box_body_value(upper, lower) result(r)
+  function box_body_value(upper, lower, fill_inside) result(r)
     real(r8), intent(in) :: upper(:), lower(:)
+    logical, intent(in) :: fill_inside
     type(box_body) :: r
     r%upper = upper
     r%lower = lower
     r%xc = (upper + lower) / 2
     r%xl = (upper - lower) / 2
+    r%fill_outside = .not.fill_inside
     ASSERT(all(r%xl > 0))
   end function box_body_value
 
@@ -44,6 +47,7 @@ contains
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: cellid
     eval = all(x <= this%upper .and. x >= this%lower)
+    if (this%fill_outside) eval = .not.eval
   end function eval
 
 
@@ -61,6 +65,7 @@ contains
       q(i) = max(q(i), 0.0_r8)
     end do
     signed_distance = signed_distance + norm2(q)
+    if (this%fill_outside) signed_distance = -signed_distance
 
   end function signed_distance
 

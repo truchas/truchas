@@ -17,7 +17,8 @@ module element_block_body_type
   type, extends(body), public :: element_block_body
     private
     type(unstr_mesh), pointer :: mesh => null() ! do not own
-    integer :: cblockid
+    integer, allocatable :: cblockids(:)
+    logical :: fill_outside
   contains
     procedure :: eval
     procedure :: signed_distance
@@ -30,12 +31,14 @@ module element_block_body_type
 contains
 
   !! constructor for ELEMENT_BLOCK_BODY objects
-  function element_block_body_value(mesh, cblockid) result(r)
+  function element_block_body_value(mesh, cblockids, fill_inside) result(r)
     type(unstr_mesh), target, intent(in) :: mesh
-    integer, intent(in) :: cblockid
+    integer, intent(in) :: cblockids(:)
+    logical, intent(in) :: fill_inside
     type(element_block_body) :: r
     r%mesh => mesh
-    r%cblockid = cblockid
+    r%cblockids = cblockids
+    r%fill_outside = .not.fill_inside
   end function element_block_body_value
 
   logical function eval(this, x, cellid)
@@ -44,7 +47,8 @@ contains
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: cellid
     INSIST(popcnt(this%mesh%cell_set_mask(cellid)) == 1)
-    eval = this%cblockid == this%mesh%cell_set_id(trailz(this%mesh%cell_set_mask(cellid)))
+    eval = any(this%cblockids == this%mesh%cell_set_id(trailz(this%mesh%cell_set_mask(cellid))))
+    if (this%fill_outside) eval = .not.eval
   end function eval
 
   real(r8) function signed_distance(this, x)

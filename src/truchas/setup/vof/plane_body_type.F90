@@ -27,11 +27,17 @@ module plane_body_type
 contains
 
   !! constructor for PLANE_BODY objects
-  function plane_body_value(n, p) result(r)
+  function plane_body_value(n, p, fill_inside) result(r)
     real(r8), intent(in) :: n(:), p
+    logical, intent(in) :: fill_inside
     type(plane_body) :: r
-    r%normal = n
-    r%plane_const = p
+    if (fill_inside) then
+      r%normal = n
+      r%plane_const = p
+    else
+      r%normal = -n
+      r%plane_const = -p
+    end if
   end function plane_body_value
 
   logical function eval(this, x, cellid)

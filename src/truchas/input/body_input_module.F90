@@ -79,7 +79,7 @@ CONTAINS
     ! Namelist variables unneeded here (used by body_namelist.F90 to initialize body geometry)
     character(64) :: surface_name, axis, fill
     real(r8) :: height, length(3), radius, rotation_angle(3), rotation_pt(3), translation_pt(3)
-    integer :: mesh_material_number
+    integer :: mesh_material_number(16)
 
     ! Define BODY Namelist
     namelist /body/ surface_name, axis, height, radius, length, fill, &

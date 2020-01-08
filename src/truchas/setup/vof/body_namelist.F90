@@ -24,6 +24,7 @@ contains
     use input_utilities
     use string_utilities, only: i_to_c
     use truchas_logging_services
+    use f08_intrinsics, only: findloc
 
     integer, intent(in) :: lun
 
@@ -37,10 +38,11 @@ contains
     !! Namelist variables
     character(64) :: axis, surface_name, fill
     real(r8) :: height, length(3), radius, rotation_angle(3), rotation_pt(3), translation_pt(3)
+    integer :: mesh_material_number(16)
 
     ! These values are read & initialized by body_input_module, not here.
     character(64) :: temperature_function
-    integer :: material_number, mesh_material_number
+    integer :: material_number
     real(r8) :: velocity(3), temperature, phi(5)
 
     namelist /body/ surface_name, axis, height, radius, length, fill, &
@@ -92,6 +94,14 @@ contains
       call broadcast(rotation_pt)
       call broadcast(translation_pt)
 
+      ! If fill is unset or set to 'inside', we use the default value in our
+      ! constructors (fill-inside = .true.). If set to 'outside', set
+      ! fill-inside = .false. Otherwise, return an error.
+      if ((trim(surface_name) /= 'background' .and. trim(surface_name) /= 'fill') &
+          .and. fill /= NULL_C .and. trim(fill) /= 'inside' .and. trim(fill) /= 'outside') then
+        call TLS_fatal("error reading BODY namelist: Unexpected fill value. Expected 'inside' or 'outside'.")
+      end if
+
       !! Check values and stuff into a parameter list for later use.
       write(pstr, '(a,i0)') 'body', n
       plist => bodies_params%sublist(trim(pstr))
@@ -101,31 +111,26 @@ contains
 
       case ('plane')
         call plist%set('type', trim(surface_name))
-        !call plist%set('point-on-plane', reverse_transform(translation_pt, rotation_angle, rotation_pt))
+        call plist%set('normal', -normal_vector(axis, rotation_angle, rotation_pt))
         call plist%set('point-on-plane', translation_pt)
-
-        ! Set the appropriate plane normal direction based on fill value.
-        if (fill == NULL_C .or. trim(fill) == 'inside') then
-          call plist%set('normal', -normal_vector(axis, rotation_angle, rotation_pt))
-        else if (fill /= NULL_C .and. trim(fill) == 'outside') then
-          call plist%set('normal', normal_vector(axis, rotation_angle, rotation_pt))
-        else
-          call TLS_fatal("error reading BODY namelist: Unexpected fill value. Expected 'inside' or 'outside'.")
-        end if
+        if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
 
       case ('box')
         call plist%set('type', trim(surface_name))
-        call plist%set('upper', translation_pt + length / 2)
-        call plist%set('lower', translation_pt - length / 2)
+        call plist%set('upper-corner', translation_pt + length / 2)
+        call plist%set('lower-corner', translation_pt - length / 2)
+        if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
 
       case ('sphere')
         call plist%set('type', trim(surface_name))
         call plist%set('center', translation_pt)
         call plist%set('radius', radius)
+        if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
 
       case ('from mesh file', 'element-block')
         call plist%set('type', 'element-block')
-        call plist%set('blockid', mesh_material_number)
+        call plist%set('blockids', mesh_material_number(:findloc(mesh_material_number, NULL_I)-1))
+        if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
 
       case ('cylinder')
         ! old input centers on cylinder base, new centers on center
@@ -136,24 +141,21 @@ contains
         call plist%set('radius', radius)
         call plist%set('length', height)
         call plist%set('axis', x)
+        if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
         
-        ! If fill is unset or set to 'inside', we use the default value in our
-        ! constructors (fill_inside = .true.). If set to 'outside', set
-        ! fill_inside = .false. Otherwise, return an error.
-        if (fill /= NULL_C .and. trim(fill) == 'outside') then
-          call plist%set('fill_inside', .false.)
-        else if (fill /= NULL_C .and. trim(fill) /= 'inside') then
-          call TLS_fatal("error reading BODY namelist: Unexpected fill value. Expected 'inside' or 'outside'.")
-        end if
-        
+      case ('ellipsoid')
+        ! This type currently does not support rotation.
+        call plist%set('type', trim(surface_name))
+        call plist%set('center', translation_pt)
+        call plist%set('coeffs', length)
+        if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
 
-      ! case ('ellipsoid')
-      !   call plist%set('type', trim(surface_name))
-      !   call plist%set('center', translation_pt)
-      !   call plist%set('axes', length) ! TODO
-
-      ! case ('box')
-      !   call plist%set('type', trim(surface_name))
+      case ('ellipse')
+        ! This type currently does not support rotation.
+        call plist%set('type', trim(surface_name))
+        call plist%set('center', translation_pt)
+        call plist%set('coeffs', length(:2))
+        if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
 
       ! case ('cone')
       !   call plist%set('type', trim(surface_name))
@@ -161,8 +163,6 @@ contains
       case default
         call TLS_fatal('error reading BODY namelist: invalid surface_name')
       end select
-
-      !! TODO: make an initial materials list
     end do
 
   end subroutine read_body_namelists
