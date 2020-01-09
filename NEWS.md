@@ -2,6 +2,25 @@
 
 Important changes since the 3.0 release.
 
+## 2020-01-09 (056da49)
+
+Improvements were made to the internal algorithm that initializes the material
+volume fractions as specified by the input BODY namelists. Users may notice
+small differences in the initial volume fractions for geometrically-defined
+bodies. The new results are much more accurate. But otherwise there are just
+a few minor changes that are unlikely to impact most users:
+* Several rarely-used (if ever) geometric BODY types have been removed.
+* While the order of BODY namelists has always been significant, the new
+  behavior may be slightly different. BODY namelists are processed in the
+  order they appear, and identify the specified part of the computational
+  domain not claimed by any preceding BODY namelist. The "background" type
+  BODY, if any, must come last.
+* There is no longer a choice in volume fraction initialization method,
+  and as a consequence the INTERFACES namelist has been removed.
+
+See the BODY namelist section in the latest Truchas Reference Manual for
+further details.
+
 ## 2019-09-24 (fd75405)
 
 The current VOF flow algorithm effectively treats small fragments of void
