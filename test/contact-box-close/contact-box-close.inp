@@ -62,14 +62,7 @@
 
 &BODY
   surface_name = 'from mesh file'
-  mesh_material_number = 1
-  material_number = 1
-  temperature = 288.0
-/
-
-&BODY
-  surface_name = 'from mesh file'
-  mesh_material_number = 2
+  mesh_material_number = 1, 2
   material_number = 1
   temperature = 288.0
 /

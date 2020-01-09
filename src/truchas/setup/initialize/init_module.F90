@@ -63,7 +63,6 @@ CONTAINS
         Void_Material_Index,      &
         Void_Material_Count, fluid_flow
     use fluid_utilities_module, only: FLUID_INIT
-    use interfaces_module,      only: nbody
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
         OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: nmat
@@ -74,8 +73,6 @@ CONTAINS
     use zone_module,            only: Zone
     use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
-    use vof_init,               only: VOF_INITIALIZE
-    use volume_initialization, only: compute_initial_volumes
     use diffusion_solver_data,  only: ds_enabled, num_species, &
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
     use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view
@@ -86,6 +83,9 @@ CONTAINS
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use physics_module,         only: heat_transport, flow, legacy_flow
     use ded_head_driver,        only: ded_head_init
+    use mesh_manager,           only: unstr_mesh_ptr
+    use body_namelist,          only: bodies_params
+    use compute_body_volumes_proc
 
     real(r8), intent(in) :: t, dt
 
@@ -94,11 +94,10 @@ CONTAINS
     real(r8) :: density
     logical :: found
 
-    real(r8), dimension(nbody,ncells) :: Hits_Vol
-    real(r8), dimension(nbody,ncells) :: volume_fractions
-    real(r8), allocatable :: phi(:,:), vel_fn(:)
+    real(r8), allocatable :: phi(:,:), vel_fn(:), hits_vol(:,:)
     real(r8), pointer :: temperature_fc(:) => null()
     character(200) :: errmsg
+    character(:), allocatable :: errmsg2
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     !! Initialize the MATERIAL_INTEROP module which provides tools for moving
@@ -129,18 +128,10 @@ CONTAINS
     ! hits_vol is historically used to hold this information
     ! I think this is converted to volume fractions in matl_init.
     ! That's hopelessly confusing and will be corrected later.
-
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
-
-    ! New marching tets procedure has same limitations as the old 'divide' method.
-    ! Disable until feature set matches the old 'points' method.
-!!$    if (vtrack_enabled()) then
-!!$      call compute_initial_volumes(unstr_mesh_ptr('MAIN'), volume_fractions)
-!!$    else
-    volume_fractions = vof_initialize()
-!!$    end if
-    hits_vol = volume_fractions   ! temporary compatibility
+    call compute_body_volumes (unstr_mesh_ptr('MAIN'), 3, bodies_params, hits_vol, stat, errmsg2)
+    if (stat /= 0) call TLS_fatal(errmsg2)
 
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then
@@ -830,8 +821,7 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,       only: cutvof
-    use interfaces_module,    only: background_body, Body_Mass, Matnum, nbody,   &
-                                    Body_Temp
+    use interfaces_module,    only: Body_Mass, Matnum, nbody, Body_Temp
     use matl_module,          only: Matl, SLOT_INCREASE, SLOT_SET
     use legacy_mesh_api,      only: ncells, Cell
     use parameter_module,     only: mat_slot, mat_slot_new, maxmat, mbody, nmat
@@ -841,7 +831,7 @@ CONTAINS
     use property_module,      only: density_material
 
     ! Arguments
-    real(r8), dimension(nbody,ncells), intent(INOUT) :: Hits_Vol
+    real(r8), intent(INOUT) :: Hits_Vol(:,:)
 
     ! Local Variables
     integer :: stat
@@ -854,7 +844,6 @@ CONTAINS
     integer,  dimension(ncells) :: Nmtl
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
 
     if ( restart ) then
        ! Don't do any work
@@ -979,10 +968,10 @@ CONTAINS
           Vofm = Matl(s)%Cell%Vof
        end where
     end do
-
+    
     where (Tmp1 > cutvof)
        Vofm = Vofm + Tmp1
-       Tmp1  = Tmp1*density_material(matnum(background_body))*Cell%Volume
+       !Tmp1  = Tmp1*density_material(matnum(background_body))*Cell%Volume
     end where
 
     ! Put modified background_material materials back into the appropriate slots

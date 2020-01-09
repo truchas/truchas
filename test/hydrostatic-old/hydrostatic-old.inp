@@ -95,13 +95,6 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 /
  
 &BODY
-    Material_number  = 1
-    Surface_Name     = 'background'
-    Velocity         = 0.0, 0.0, 0.0
-    Temperature      = 273.0
-/
-
-&BODY
     Material_number  = 2
     Surface_Name     = 'box'
     Fill             = 'inside'
@@ -117,6 +110,13 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
     Fill             = 'inside'
     Length           = 0.200, 0.050, 1.00
     Translation_Pt   = 0.100, 0.025, 0.50
+    Velocity         = 0.0, 0.0, 0.0
+    Temperature      = 273.0
+/
+
+&BODY
+    Material_number  = 1
+    Surface_Name     = 'background'
     Velocity         = 0.0, 0.0, 0.0
     Temperature      = 273.0
 /

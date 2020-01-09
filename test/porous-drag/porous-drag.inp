@@ -151,6 +151,17 @@ Velocity BC: No slip on y=0  and y=1 face
        BC_Value        =    0.0, 
 
 /
+
+&BODY
+ 
+       Material_number = 2,
+       Surface_Name    = 'plane',
+       axis = 'z'
+       Translation_Pt  = 10.0, 0.0, 0.5
+       Velocity        = 0.0, 0.0, 0.0,
+       Temperature     = 273.0
+
+/
  
 &BODY
  
@@ -158,18 +169,6 @@ Velocity BC: No slip on y=0  and y=1 face
        Surface_Name    = 'background',
        Velocity        = 0.0, 0.0, 0.0,
        Temperature     = 273.0
-
-/
-
-&BODY
- 
-       Material_number = 2,
-       Surface_Name    = 'box',
-       Fill            = 'inside'
-       Length          = 20.0, 1.0, 1.0
-       Velocity        = 0.0, 0.0, 0.0,
-       Temperature     = 273.0
-       Translation_Pt  = 10.0, 0.5, 0.00
 
 /
 
