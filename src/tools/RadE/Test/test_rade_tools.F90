@@ -193,8 +193,8 @@ contains
 
     if (is_IOP .and. cnt /= 0) then
       print '("Mismatched entries: ", i7)', cnt
-      print '("  Percent of nonzeros: ", f6.3,"% (", i8," total)")', cnt/REAL(size(dvf%val))*100.0, size(dvf%val)
-      print '("  Percent of matrix:   ", f6.3,"% (", i8," total)")', cnt/REAL(dvf%npatch_tot*dvf%npatch_tot)*100.0, dvf%npatch_tot*dvf%npatch_tot
+      print '("  Percent of nonzeros: ", f7.3,"% (", i8," total)")', cnt/REAL(size(dvf%val))*100.0, size(dvf%val)
+      print '("  Percent of matrix:   ", f7.3,"% (", i8," total)")', cnt/REAL(dvf%npatch_tot*dvf%npatch_tot)*100.0, dvf%npatch_tot*dvf%npatch_tot
       print '("Max absolute error: ", es11.4)', max_abs_err
       print '("Min absolute error: ", es11.4)', min_abs_err
       print '("Max relative error: ", es11.4)', max_rel_err

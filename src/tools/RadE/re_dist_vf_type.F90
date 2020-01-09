@@ -388,8 +388,7 @@ contains
 
     if (l >= 1 .and. l <= dvf%npatch) then ! this process has the column
       sidx = dvf%ja(dvf%ia(l):dvf%ia(l+1)-1)
-      svec = dvf%val(dvf%ia(l):dvf%ia(l+1)-1)
-      svec = svec * dvf%area(n) / dvf%area(sidx)
+      svec = dvf%val(dvf%ia(l):dvf%ia(l+1)-1) * dvf%area(n) / dvf%area(sidx)
       vsize = dvf%npatch_tot
     else
       allocate(sidx(0), svec(0))
