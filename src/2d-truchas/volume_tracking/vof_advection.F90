@@ -31,9 +31,10 @@ program vof_advection
   integer, allocatable :: global_xcell(:)
   real(r8) :: t_start, t_end, coord(2)
   real(r8), allocatable :: v(:,:), vof(:,:), int_normal(:,:,:), vof_std(:), global_vof(:)
+  real(r8), allocatable :: myproc(:)
   real(r8), allocatable :: vel_fn(:) ! fluxing velocity stored at faces
   real(r8), allocatable :: gp_coord(:,:), gp_weight(:)
-  logical :: test_failure
+  logical :: test_failure, axisym
   type(xdmf_file) :: outfile
 
   procedure(constant_vel), pointer :: problem_vel => NULL()
@@ -68,9 +69,10 @@ program vof_advection
   !! Define a face-based normal-velocity field with arbitrary constant value.
   allocate(vel_fn(mesh%nface))
   problem_vel => constant_vel
+  axisym = .false.
 
   !! Define a cell-based VOF field.
-  allocate(vof(nmat,mesh%ncell))
+  allocate(vof(nmat,mesh%ncell), myproc(mesh%ncell))
   !! Initialize a "circular" VOF field
   ngp = 16
   allocate(gp_coord(2,ngp), gp_weight(ngp))
@@ -80,6 +82,8 @@ program vof_advection
 
       call quadrature_qua4(ngp, gp_coord, gp_weight)
       vof(:,j) = 0.0_r8
+
+      myproc(j) = this_pe
 
       do i = 1, ngp
         call transform_qua4(mesh%x(:,cn), gp_coord(:,i), coord)
@@ -108,13 +112,14 @@ program vof_advection
   call outfile%begin_variables(0.0_r8)
   call outfile%write_cell_var(vof(1,:), 'VOF1')
   call outfile%write_cell_var(vof(2,:), 'VOF2')
+  call outfile%write_cell_var(myproc(:), 'mype')
   call outfile%write_cell_var(int_normal(1,1,:), 'x-normal')
   call outfile%write_cell_var(int_normal(2,1,:), 'y-normal')
   call outfile%end_variables
 
   !! call time-step driver
   call timestep_driver(tsmax, dt, mesh, vel_fn, nmat, nvtrack, problem_vel, vof, outfile, &
-    int_normal)
+    int_normal, axisym, myproc)
 
   !! Close the files (and add closing tags to the .xmf XML file)
   call outfile%close
@@ -158,7 +163,7 @@ program vof_advection
       read(3,*) i, vof_std(j)
     end do
 
-    do j = 1, mesh%ncell
+    do j = 1, nelem
       if (dabs(vof_std(j)-global_vof(j)) > 1e-09_r8) then
         write(*,*) j, vof_std(j), global_vof(j)
         test_failure = .true.

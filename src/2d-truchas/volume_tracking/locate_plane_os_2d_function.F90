@@ -34,31 +34,39 @@ module locate_plane_os_2d_function
 
 contains
 
-  subroutine locate_plane_os(norm, vof, volume, node, cutoff, maxiter, int_plane)
+  subroutine locate_plane_os(norm, vof, volume, node, cutoff, maxiter, axisym, int_plane, &
+    guess)
 
     real(r8), intent(in) :: norm(:), vof, volume, node(:,:), cutoff
     integer, intent(in) :: maxiter
+    logical, intent(in) :: axisym
     type(plane), intent(inout) :: int_plane 
+    logical, intent(in), optional :: guess
 
     type(vof_error_func) :: vof_error
     real(r8) :: rho_min, rho_max
     integer :: ierr
+    logical :: guess_
 
-    call vof_error%init(node, norm, vof, volume)
+    guess_ = .false.
+    if (present(guess)) guess_ = guess
+
+    call vof_error%init(node, norm, vof, volume, axisym)
     call rho_bracket(norm, node, vof_error, rho_min, rho_max)
 
     int_plane%normal = norm
     vof_error%feps = 0.5_r8 * cutoff; vof_error%maxitr = maxiter
-    call vof_error%find_root(rho_min, rho_max, int_plane%rho, ierr)
+    call vof_error%find_root(rho_min, rho_max, int_plane%rho, ierr, guess_)
 
     ! TODO: Print a warning to screen to let the user know that Brent's method did not converge
 
   end subroutine locate_plane_os
 
-  subroutine init(this, nodex, normal, vof, cell_volume)
+  subroutine init(this, nodex, normal, vof, cell_volume, axisym)
     class(vof_error_func), intent(out) :: this
     real(r8), intent(in) :: nodex(:,:), normal(:), vof, cell_volume
-    call this%trunc_vol%init(nodex, normal)
+    logical, intent(in) :: axisym
+    call this%trunc_vol%init(nodex, normal, axisym)
     this%target_volume = vof * cell_volume
     this%cell_volume = cell_volume
   end subroutine init

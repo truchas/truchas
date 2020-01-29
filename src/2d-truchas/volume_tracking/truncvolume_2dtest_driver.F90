@@ -10,6 +10,8 @@ program truncvolume_2dtest_driver
 
   real*8 :: xn(2,4), vp
   real*8 :: t_start, t_end
+  real(r8) :: pi
+  logical :: is_axisym
   type(plane) :: intplane
   type(truncation_volume) :: trunc_vol
 
@@ -17,6 +19,10 @@ program truncvolume_2dtest_driver
   t_end = 0.0_r8
 
   call cpu_time(t_start)
+
+  pi = 4.0_r8*atan(1.0_r8)
+
+  is_axisym = .false.
 
   !! cell vertices
   xn(:,1) = [0.0_r8, 0.0_r8]
@@ -33,7 +39,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-1 constant: ", intplane%rho
 
   !! truncation volume-1
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-1: ", vp
@@ -49,7 +55,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-2 constant: ", intplane%rho
 
   !! truncation volume-2
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-2: ", vp
@@ -65,7 +71,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-3 constant: ", intplane%rho
 
   !! truncation volume-3
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-3: ", vp
@@ -81,7 +87,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-4 constant: ", intplane%rho
 
   !! truncation volume-4
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-4: ", vp
@@ -97,7 +103,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-5 constant: ", intplane%rho
 
   !! truncation volume-5
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-5: ", vp
@@ -113,7 +119,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-6 constant: ", intplane%rho
 
   !! truncation volume-6
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-6: ", vp
@@ -129,7 +135,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-7 constant: ", intplane%rho
 
   !! truncation volume-7
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-7: ", vp
@@ -145,7 +151,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-8 constant: ", intplane%rho
 
   !! truncation volume-8
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-8: ", vp
@@ -161,7 +167,7 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-9 constant: ", intplane%rho
 
   !! truncation volume-9
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-9: ", vp
@@ -177,16 +183,33 @@ program truncvolume_2dtest_driver
   write(*,*) "Plane-10 constant: ", intplane%rho
 
   !! truncation volume-10
-  call trunc_vol%init(xn, intplane%normal)
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
   vp = trunc_vol%volume(intplane%rho)
 
   write(*,*) "Truncation volume behind plane-10: ", vp
   write(*,*) " "
   INSIST(abs(vp-0.0_r8) < 1e-13_r8)
 
+  is_axisym = .true.
+
+  !! interface plane-11 definition
+  intplane%normal = [-1.0_r8, 0.0_r8]
+  intplane%normal = intplane%normal / norm2(intplane%normal)
+  intplane%rho = dot_product(intplane%normal, [1.0_r8/2.0_r8, 0.0_r8])
+
+  write(*,*) "Plane-11 normal:   ", intplane%normal(1), intplane%normal(2)
+  write(*,*) "Plane-11 constant: ", intplane%rho
+
+  !! truncation volume-11
+  call trunc_vol%init(xn, intplane%normal, is_axisym)
+  vp = trunc_vol%volume(intplane%rho)
+
+  write(*,*) "Axisymmetric truncation volume behind plane-11: ", vp
+  write(*,*) " "
+  INSIST(abs(vp-3.0_r8*pi/4.0_r8) < 1e-13_r8)
+
   call cpu_time(t_end)
 
   write(*,*) "Runtime: ", t_end-t_start
-
 
 end program truncvolume_2dtest_driver

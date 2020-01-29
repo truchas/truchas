@@ -41,15 +41,20 @@ module brent_root_class
 
 contains
 
-  subroutine find_root (this, xmin, xmax, root, stat)
+  subroutine find_root (this, xmin, xmax, root, stat, guess)
 
     class(brent_root), intent(inout) :: this
     real(r8), intent(in) :: xmin, xmax
-    real(r8), intent(out) :: root
+    real(r8), intent(inout) :: root
     integer, intent(out) :: stat
+    logical, intent(in), optional :: guess
 
     real(r8) :: a,b,c,d,e,fa,fb,fc,p,q,r,s,tol1,tol2,xm
     integer :: i
+    logical :: guess_
+
+    guess_ = .false.
+    if (present(guess)) guess_ = guess
 
     a = xmin
     b = xmax
@@ -57,6 +62,19 @@ contains
     fa = this%f(a)
     fb = this%f(b)
     fc = fb
+
+    ! If guess is specified as true by the calling code, the argument 'root' is expected
+    ! to carry the initial guess when this function is called. At the end of the function,
+    ! it gets modified to the final solution obtained by Brent's iteration
+
+    if (guess_) then
+      if (root < xmax .and. root > xmin) then
+        b = root
+        fb = this%f(b)
+        e = 0.5_r8 * (c-b)
+        d = e
+      end if
+    end if
 
     stat = 0
 

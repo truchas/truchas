@@ -24,6 +24,7 @@ module simple_volume_tracker_type
   type, extends(volume_tracker_2d), public :: simple_volume_tracker
     private
     type(unstr_2d_mesh), pointer :: mesh ! unowned reference
+    logical :: is_axisym
   contains
     procedure :: init
     procedure :: flux_volumes
@@ -32,13 +33,15 @@ module simple_volume_tracker_type
 
 contains
 
-  subroutine init(this, mesh, nrealfluid, nfluid, nmat)
+  subroutine init(this, mesh, nrealfluid, nfluid, nmat, axisym)
 
     class(simple_volume_tracker), intent(out) :: this
     type(unstr_2d_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
+    logical, intent(in) :: axisym
 
     this%mesh => mesh
+    this%is_axisym = axisym
 
   end subroutine init
 

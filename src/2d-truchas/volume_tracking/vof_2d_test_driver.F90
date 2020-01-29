@@ -1,3 +1,5 @@
+#include "f90_assert.fpp"
+
 module vof_2d_test_driver
 
 #ifdef NAGFOR
@@ -26,16 +28,18 @@ module vof_2d_test_driver
 contains
 
   subroutine timestep_driver(tsmax, dt, mesh, vel_fn, nmat, nvtrack, problem_vel, vof, &
-    outfile, int_normal)
+    outfile, int_normal, axisym, myproc)
 
     use simple_volume_tracker_type
     use geometric_volume_tracker_type
     integer, intent(in) :: tsmax, nmat, nvtrack
     type(unstr_2d_mesh), intent(in), target :: mesh
+    logical, intent(in) :: axisym
     procedure(), pointer :: problem_vel
     real(r8), intent(inout) :: vof(:,:)
     real(r8), intent(inout) :: dt, vel_fn(mesh%nface)
     real(r8), intent(out) :: int_normal(:,:,:)
+    real(r8), intent(in) :: myproc(:)
     type(xdmf_file), intent(inout) :: outfile
 
     integer :: i, j, k, f0, f1, its, void
@@ -62,7 +66,7 @@ contains
       call exit
     end if
 
-    call this%vt%init(this%mesh, nmat, nmat, nmat)
+    call this%vt%init(this%mesh, nmat, nmat, nmat, axisym)
 
     !! Time-stepping loop
     tot_t = 0.0_r8
@@ -105,6 +109,7 @@ contains
         call outfile%begin_variables(tot_t)
         call outfile%write_cell_var(vof(1,:), 'VOF1')
         call outfile%write_cell_var(vof(2,:), 'VOF2')
+        call outfile%write_cell_var(myproc(:), 'mype')
         call outfile%write_cell_var(int_normal(1,1,:), 'x-normal')
         call outfile%write_cell_var(int_normal(2,1,:), 'y-normal')
         call outfile%end_variables
@@ -147,5 +152,32 @@ contains
     end do
 
   end subroutine vortex_vel
+
+  !! Face-based normal-velocity field with axisymmetric velocity
+  subroutine axisymmetric_vel(mesh, t, vel_fn)
+
+    type(unstr_2d_mesh), intent(in), target :: mesh
+    real(r8), intent(in) :: t
+    real(r8), intent(inout) :: vel_fn(mesh%nface)
+
+    integer :: j
+    real(r8) :: pi, T_period, rf, zf, ur, uz
+
+    pi = 4.0_r8 * atan(1.0_r8)
+
+    T_period = 1.0_r8
+
+    do j = 1, mesh%nface
+      rf = 0.5_r8 * (mesh%x(1,mesh%fnode(1,j)) + mesh%x(1,mesh%fnode(2,j)))
+      ! this mesh velocity field can be used only for radii that are non-zero; since at a
+      ! radius of zero, it becomes infinite.
+      INSIST(abs(rf) > 1e-12_r8)
+      zf = 0.5_r8 * (mesh%x(2,mesh%fnode(1,j)) + mesh%x(2,mesh%fnode(2,j)))
+      ur = rf/2.0_r8 * cos(pi*t/T_period)
+      uz = -zf * cos(pi*t/T_period)
+      vel_fn(j) = dot_product([ur, uz], mesh%normal(:,j)/mesh%area(j))
+    end do
+
+  end subroutine axisymmetric_vel
 
 end module vof_2d_test_driver
