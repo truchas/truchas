@@ -1,11 +1,11 @@
 !!
-!! This code attempts to initialize a VOF field and advect it with a constant
-!! velocity using it's own time-step driver and VOF routines.
+!! This code attempts to initialize a VOF field and advect it in an axisymmetric
+!! velocity field using it's own time-step driver and VOF routines.
 !! It also instantiates a 2D unstructured mesh (which happens to be a regular
 !! Cartesian mesh) and generates a graphics file that Paraview can read.
 !!
 
-program vof_vortex
+program vof_axisymmetric
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH, pgslib_finalize, pgslib_barrier
@@ -18,6 +18,7 @@ program vof_vortex
   use read_inputfile
   use gaussian_quadrature_vofinit
   use vof_2d_test_driver
+  use geom_axisymmetric
   implicit none
 
   character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
@@ -27,8 +28,8 @@ program vof_vortex
   real(r8) :: xmin(2), xmax(2), dt, r
   type(unstr_2d_mesh), pointer :: mesh
 
-  integer :: i, j, ngp, test_run, nelem, gncell
-  integer, allocatable :: global_xcell(:)
+  integer :: i, j, n, ngp, test_run, nelem, gncell
+  integer, allocatable :: seed(:), global_xcell(:)
   real(r8) :: t_start, t_end, coord(2)
   real(r8), allocatable :: vof(:,:), int_normal(:,:,:), vof_std(:), global_vof(:), myproc(:)
   real(r8), allocatable :: vel_fn(:) ! fluxing velocity stored at faces
@@ -47,22 +48,29 @@ program vof_vortex
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NOISY)
 
-  !! Read input file "input_vortex.txt"
-  inputfile = 'input_vortex.txt'
+  !! Read input file "input_axisymmetric.txt"
+  inputfile = 'input_axisymmetric.txt'
   call readfile(inputfile, xmin, xmax, nx, tsmax, dt, nmat, nvtrack, test_run)
 
   !! Create the mesh specified by the above input file
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx)
+  call random_seed(size=n)
+  allocate(seed(n))
+  seed = 7
+  call random_seed(put=seed)
+  mesh => new_unstr_2d_mesh(xmin, xmax, nx, 0.2_r8)
 
   !! Cell volumes and face areas (okay, areas and lengths in 2D) are defined
   !! by default. But cell centroids and face centroids must be "requested".
   call mesh%init_cell_centroid
   call mesh%init_face_centroid
 
+  !! For axisymmetric problems, the cell volumes and face areas need to be modified
+  call mesh_axisymmetry_mod(mesh)
+
   !! Define a face-based normal-velocity field with arbitrary constant value.
   allocate(vel_fn(mesh%nface))
-  problem_vel => vortex_vel
-  axisym = .false.
+  problem_vel => axisymmetric_vel
+  axisym = .true.
 
   !! Define a cell-based VOF field.
   allocate(vof(nmat,mesh%ncell), myproc(mesh%ncell))
@@ -80,11 +88,9 @@ program vof_vortex
 
       do i = 1, ngp
         call transform_qua4(mesh%x(:,cn), gp_coord(:,i), coord)
-        r = norm2(coord(1:2)-[0.5_r8, 0.75_r8])
+        r = norm2(coord(1:2)-[1.25_r8, 0.5_r8])
         if (r<=0.15_r8) then
           vof(1,j) = vof(1,j) + gp_weight(i)*1.0_r8
-        !else if (r<=0.15) then
-        !  vof(2,j) = vof(2,j) + gp_weight(i)*1.0_r8
         end if
       end do !i
 
@@ -117,17 +123,6 @@ program vof_vortex
   !! Close the files (and add closing tags to the .xmf XML file)
   call outfile%close
 
-  if (test_run == 0) then
-    open(3, file='circlevort_vof.txt')
-
-    write(3,'(I8)') mesh%ncell
-    do j = 1, mesh%ncell
-      write(3,'(I8, E20.10)') j, vof(1,j)
-    end do
-
-    close(3)
-  end if
-
   !! Collect local VOF arrays into a global VOF array
   gncell = global_sum(mesh%ncell_onP)
 
@@ -139,11 +134,25 @@ program vof_vortex
 
   if (is_iop) global_vof(global_xcell) = global_vof
 
+  ! Writing data-file
+  if (test_run == 0 .and. is_iop) then
+    write(*,*) 'Writing output to circleaxisym_vof.txt'
+    open(3, file='circleaxisym_vof.txt')
+
+    write(3,'(I8)') gncell
+
+    do j = 1, gncell
+      write(3,'(I8, E20.10)') j, global_vof(j)
+    end do
+
+    close(3)
+  end if
+
   ! Testing
   if (test_run == 1 .and. is_iop) then
     test_failure = .false.
-    write(*,*) 'Comparing output to circlevort_vof.txt'
-    open(3, file='circlevort_vof.txt', action='read', status='old')
+    write(*,*) 'Comparing output to circleaxisym_vof.txt'
+    open(3, file='circleaxisym_vof.txt', action='read', status='old')
 
     read(3,*) nelem
     if (nelem /= gncell) then
@@ -158,7 +167,7 @@ program vof_vortex
     end do
 
     do j = 1, nelem
-      if (dabs(vof_std(j)-global_vof(j)) > 1e-08_r8) then
+      if (dabs(vof_std(j)-global_vof(j)) > 1e-07_r8) then
         write(*,*) j, vof_std(j), global_vof(j)
         test_failure = .true.
       end if
@@ -178,4 +187,4 @@ program vof_vortex
 
   write(*,*) "Runtime: ", t_end-t_start
 
-end program vof_vortex
+end program vof_axisymmetric
