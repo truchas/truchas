@@ -24,7 +24,9 @@ contains
     use input_utilities
     use string_utilities, only: i_to_c
     use truchas_logging_services
+#ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
+#endif
 
     integer, intent(in) :: lun
 
@@ -129,7 +131,7 @@ contains
 
       case ('from mesh file', 'element-block')
         call plist%set('type', 'element-block')
-        call plist%set('blockids', mesh_material_number(:findloc(mesh_material_number, NULL_I)-1))
+        call plist%set('blockids', mesh_material_number(:findloc(mesh_material_number, NULL_I, dim=1)-1))
         if (trim(fill) == 'outside') call plist%set('fill-inside', .false.)
 
       case ('cylinder')

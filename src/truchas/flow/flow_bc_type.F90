@@ -85,7 +85,9 @@ contains
   logical function is_p_neumann_fix_pe(this, any_real_fluid_onP)
 
     use parallel_communication
+#ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
+#endif
 
     class(flow_bc), intent(inout) :: this
     logical, intent(in) :: any_real_fluid_onP
@@ -99,7 +101,7 @@ contains
       ! find the lowest PE with a pressure neumann boundary
       is_valid_pe = size(this%p_neumann%index) > 0 .and. any_real_fluid_onP
       call collate(has_p_neumann, is_valid_pe)
-      if (is_IOP) fix_pe = findloc(has_p_neumann, .true.)
+      if (is_IOP) fix_pe = findloc(has_p_neumann, .true., dim=1)
       call broadcast(fix_pe)
       INSIST(fix_pe > 0 .and. fix_pe <= nPE)
       is_p_neumann_fix_PE = (fix_pe == this_PE)

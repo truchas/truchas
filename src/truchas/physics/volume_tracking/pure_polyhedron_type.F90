@@ -1300,7 +1300,9 @@ contains
     subroutine modified_parent_face (face_vid, ierr, par_face_vid, p2c_vid, edge_vid, side, &
         valid_side, nParVerts, nPolyVerts, v_assoc_pe, edge_cont_verts)
 
+#ifdef NO_2008_FINDLOC
       use f08_intrinsics, only: findloc
+#endif
 
       integer, intent(out) :: face_vid(:), ierr
       integer, intent(in) :: par_face_vid(:), p2c_vid(:), edge_vid(:,:), side(:), valid_side, &
@@ -1314,8 +1316,8 @@ contains
 
       !print *, 'modface0'
       ! start with the first valid vertex after the section intersected by the plane
-      v = findloc(side(par_face_vid), valid_side)
-      if (v==1) v = modulo(findloc(side(par_face_vid)/=valid_side, .true., back=.true.),nV)+1
+      v = findloc(side(par_face_vid), valid_side, dim=1)
+      if (v==1) v = modulo(findloc(side(par_face_vid)/=valid_side, .true., dim=1, back=.true.),nV)+1
       !print *
       !write(*,*) 'v', v, nV, modulo(v-2,nV)+1, modulo(v-1,nV)+1
 

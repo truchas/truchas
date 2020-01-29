@@ -171,6 +171,9 @@ list(APPEND Truchas_PREPROCESSOR
 # Specific compiler bug workarounds and defines. These are used by
 # the custom Fortran preprocessing step (that need to be eliminated).
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "18.0")
+    list(APPEND Truchas_PREPROCESSOR -DNO_2008_FINDLOC)
+  endif()
   list(APPEND Truchas_PREPROCESSOR -DNO_2008_LHS_POLY_REALLOC)
   list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200237439)
   list(APPEND Truchas_PREPROCESSOR -DINTEL_BUG20180222)
@@ -180,6 +183,12 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   endif()
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "19.0.0")
     list(APPEND Truchas_PREPROCESSOR -DINTEL_SRN04330341)
+  endif()
+endif()
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "7.0")
+    list(APPEND Truchas_PREPROCESSOR -DNO_2008_FINDLOC)
   endif()
 endif()
 

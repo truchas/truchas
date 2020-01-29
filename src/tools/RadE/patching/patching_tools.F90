@@ -212,7 +212,7 @@ contains
   contains
     !! Tag all the faces connected to ROOT with the current component number
     recursive subroutine tag_component (root)
-#ifdef NAG_COMPILER
+#ifdef NO_2008_FINDLOC
       use f08_intrinsics, only: findloc
 #endif
       integer, intent(in) :: root
@@ -223,11 +223,7 @@ contains
         n = fnhbr(k)
         !! Skip missing neighbors (i.e. f is on the mesh boundary)
         if ( n <= 0) cycle
-#ifdef NAG_COMPILER
-        nid = findloc(faces, n)
-#else
         nid = findloc(faces, n, dim=1)
-#endif
         !! Ignore neighbors not in face list
         if (nid == 0) cycle
         if (tag(nid) == 0) call tag_component (nid)

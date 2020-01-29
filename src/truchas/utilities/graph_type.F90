@@ -264,7 +264,7 @@ contains
 
   !! Returns a vertex coloring of the graph.
   subroutine graph_vertex_coloring (this, vcolor, ncolor)
-#ifdef NAG_COMPILER
+#ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
 #endif
     use sort_utilities
@@ -298,11 +298,7 @@ contains
       end do
       !! Assign color
       ! TODO: balance colors rather than use first available?
-#ifdef NAG_COMPILER
-      c = findloc(avail, .true.)
-#else
       c = findloc(avail, .true., dim=1)
-#endif
       ASSERT(c /= 0)
       vcolor(v) = c
       ncolor = max(c, ncolor)
