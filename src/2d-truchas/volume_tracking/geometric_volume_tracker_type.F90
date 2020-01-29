@@ -29,6 +29,7 @@ module geometric_volume_tracker_type
     real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:,:)
     integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
+    logical :: is_axisym
   contains
     procedure :: init
     procedure :: flux_volumes
@@ -46,7 +47,7 @@ module geometric_volume_tracker_type
 
 contains
 
-  subroutine init(this, mesh, nrealfluid, nfluid, nmat)
+  subroutine init(this, mesh, nrealfluid, nfluid, nmat, axisym)
 
     use parameter_list_type
     use f08_intrinsics, only: findloc
@@ -54,16 +55,18 @@ contains
     class(geometric_volume_tracker), intent(out) :: this
     type(unstr_2d_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
+    logical, intent(in) :: axisym
     integer :: i, j, k
 
     this%mesh => mesh
     this%nrealfluid = nrealfluid
     this%nfluid = nfluid
     this%nmat = nmat
+    this%is_axisym = axisym
 
     ! defaults are used for following parameters for now
     this%location_iter_max = 40
-    this%cutoff = 1.0e-8_r8
+    this%cutoff = 1.0e-6_r8
     this%subcycles = 4
     this%nested_dissection = .false.
 
@@ -190,7 +193,7 @@ contains
 
   subroutine normals(this, vof)
 
-    use gradient_2d_cc_function, only: gradient_2d_cc
+    use gradient_2d_cc_function, only: gradient_2d_cc, gradient_rz_cc
     use f08_intrinsics, only: findloc
     intrinsic :: norm2
 
@@ -202,10 +205,17 @@ contains
     logical :: hasvof(size(vof,dim=1))
 
     call start_timer('normals')
-    do i = 1, this%nmat
-      call gradient_2d_cc(this%mesh, vof(i,:), this%normal(1,i,:), this%normal(2,i,:), &
-        this%w_node(1,:), this%w_node(2,:), this%w_face(i,:))
-    end do
+    if (this%is_axisym) then
+      do i = 1, this%nmat
+        call gradient_rz_cc(this%mesh, vof(i,:), this%normal(1,i,:), this%normal(2,i,:), &
+          this%w_node(1,:), this%w_node(2,:), this%w_face(i,:))
+      end do
+    else
+      do i = 1, this%nmat
+        call gradient_2d_cc(this%mesh, vof(i,:), this%normal(1,i,:), this%normal(2,i,:), &
+          this%w_node(1,:), this%w_node(2,:), this%w_face(i,:))
+      end do
+    end if
 
     do i = 1, this%mesh%ncell_onP
       hasvof = vof(:,i) > 0.0_r8
@@ -289,7 +299,7 @@ contains
 
       call cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
           vel(this%mesh%cstart(i):this%mesh%cstart(i+1)-1), this%cutoff, &
-          this%priority, this%nmat, this%location_iter_max, &
+          this%priority, this%nmat, this%location_iter_max, this%is_axisym, &
           this%flux_vol_sub(:,this%mesh%cstart(i):this%mesh%cstart(i+1)-1))
     end associate
 
@@ -297,7 +307,7 @@ contains
 
   ! get the volume flux for every material in the given cell
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
-      flux_volume)
+      is_axisym, flux_volume)
 
     use f08_intrinsics, only: findloc
     use locate_plane_os_2d_function
@@ -306,6 +316,7 @@ contains
 
     real(r8), intent(in) :: dt, int_norm(:,:), vof(:), vel(:), cutoff
     integer, intent(in) :: priority(:), nmat, maxiter
+    logical, intent(in) :: is_axisym
     type(cell_geom), intent(in) :: cell
     real(r8), intent(out) :: flux_volume(:,:)
 
@@ -332,12 +343,12 @@ contains
       ! locate each interface plane by computing the plane constant
       if (is_mixed_donor_cell) &
           call locate_plane_os(int_norm(:,priority(ni)), vofint, cell%volume, cell%node, &
-          cutoff, maxiter, P)
+          cutoff, maxiter, is_axisym, P)
 
       ! calculate delta advection volumes for this material at each donor face and accumulate the sum
       ASSERT(priority(ni) <= size(flux_volume, dim=1))
       call compute_material_volume_flux(flux_volume(priority(ni),:), flux_vol_sum, P, cell, &
-          is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff)
+          is_mixed_donor_cell, is_axisym, vel, dt, vof(priority(ni)), cutoff)
     end do
 
     ! Compute the advection volume for the last material.
@@ -369,7 +380,7 @@ contains
 
   ! calculate the flux of one material in a cell
   subroutine compute_material_volume_flux(material_volume_flux, flux_vol_sum, P, cell, &
-      is_mixed_donor_cell, vel, dt, vof, cutoff)
+      is_mixed_donor_cell, is_axisym, vel, dt, vof, cutoff)
 
     use cell_geom_2d_vof_type
     use truncation_volume_2d_type
@@ -379,7 +390,7 @@ contains
     real(r8), intent(inout) :: flux_vol_sum(:)
     type(plane), intent(in) :: P
     type(cell_geom), intent(in) :: cell
-    logical, intent(in) :: is_mixed_donor_cell
+    logical, intent(in) :: is_mixed_donor_cell, is_axisym
     real(r8), intent(in) :: vel(:), dt, vof, cutoff
 
     integer :: f
@@ -394,13 +405,13 @@ contains
 
       if (is_mixed_donor_cell) then
         ! calculate the vertices describing the volume being truncated through the face
-        call flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff, flux_vol_node)
+        call flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff, flux_vol_node, is_axisym)
 
         ! compute the volume truncated by interface planes in each flux volumes
         ! Vp is the volume of current material and the materials that came before it.
         ! flux_vol_sum is the volume of materials before the current material.
         ! this is why material_volume_flux = Vp-flux_vel_sum
-        call trunc_vol%init(flux_vol_node, P%normal)
+        call trunc_vol%init(flux_vol_node, P%normal, is_axisym)
         Vp = trunc_vol%volume(P%rho)
       else
         ! For clean donor cells, the entire Flux volume goes to the single donor material.
@@ -433,28 +444,41 @@ contains
   ! face.  The value used is varied from "DIST" such that the vertices
   ! describe a hexagonal volume that matches the value of Flux_Vol.
 
-  subroutine flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof, flux_vol_node)
+  subroutine flux_vol_nodes(face, cell, dist, flux_vol, cutoff, flux_vol_node, is_axisym)
 
     use cell_geometry, only: hex_volume
     use cell_geom_2d_vof_type
     use plane_2d_type
+    use locate_plane_os_2d_function
 
     integer, intent(in) :: face
     type(cell_geom), intent(in) :: cell
-    real(r8), intent(in) :: dist, cutvof, flux_vol
+    real(r8), intent(in) :: dist, cutoff, flux_vol
     real(r8), intent(out) :: flux_vol_node(:,:)
+    logical, intent(in) :: is_axisym
+
+    integer, parameter :: flux_vol_iter_max = 10
 
     integer :: ifc, fc, icount, on_point(2)
     real(r8) :: xfc(2), rho_fp, node_set(2,2), fv_nodes(2,2)
     type(plane) :: fluxplane
+    logical :: is_guess
 
     ! find the line-constant for the fluxing plane (fluxing line in 2D)
     xfc = 0.5_r8*(cell%node(:,face)+cell%node(:,mod(face,cell%nfc)+1))
     rho_fp = dot_product(dist*cell%face_normal(:,face) - xfc, cell%face_normal(:,face))
 
     ! fluxing plane
-    fluxplane%rho = -rho_fp
-    fluxplane%normal = cell%face_normal(:,face)
+    ! this is the first guess for the plane-constant, which will be passed to Brent's
+    ! method to get the correct intersection plane to match flux_vol
+    is_guess = .true.
+    ! Negative of face normal is needed because 'locate_plane_os' looks for area 'behind'
+    ! the plane, but we need area 'in front of' fluxing plane
+    fluxplane%normal = -cell%face_normal(:,face)
+    fluxplane%rho = rho_fp
+
+    call locate_plane_os(fluxplane%normal, flux_vol/cell%volume, cell%volume, cell%node, &
+      cutoff, flux_vol_iter_max, is_axisym, fluxplane, is_guess)
 
     ! find intersections of fluxing plane with other faces to find the flux nodes
     icount = 0

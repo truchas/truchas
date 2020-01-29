@@ -1,3 +1,10 @@
+!!
+!! This module defines the truncation volume type required for Volume-Of-Fluid
+!! calculations in 2D Cartesian and axisymmetric co-ordinates.
+!!
+!! Aditya K. Pandare <apandare@lanl.gov>
+!! Jan 2020
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -10,6 +17,7 @@ module truncation_volume_2d_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
+  use geom_axisymmetric
   implicit none
 
   type, public :: truncation_volume
@@ -23,6 +31,7 @@ module truncation_volume_2d_type
     ! first index
     real(r8), allocatable :: node_set(:,:,:)
     real(r8) :: plane_normal(2)
+    logical :: is_axisymmetric
   contains
     procedure :: init => init_truncation_volume
     procedure :: volume
@@ -34,16 +43,19 @@ contains
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine init_truncation_volume(this, nodex, plane_normal)
+  subroutine init_truncation_volume(this, nodex, plane_normal, axisym)
 
     use cell_topology_2d
 
     class(truncation_volume), intent(out) :: this
     real(r8), intent(in) :: nodex(:,:), plane_normal(:)
+    logical, intent(in) :: axisym
 
     allocate(this%nodex(2, size(nodex, dim=2)))
     this%nodex = nodex
     this%plane_normal = plane_normal
+
+    this%is_axisymmetric = axisym
 
     ! get the number of faces for this cell type and split quadrilaterals into triangles
     select case (size(nodex, dim=2))
@@ -125,7 +137,11 @@ contains
     int_plane%rho = plane_rho
     int_plane%normal = this%plane_normal
 
-    vol_full_tri = tri_area(node_set)
+    if (this%is_axisymmetric) then
+      vol_full_tri = polygon_volume_axisym(node_set)
+    else
+      vol_full_tri = tri_area(node_set)
+    end if
 
     ! 1. check intersection of plane with each face of triangle.
     ! this loop also detects if the face was intersected at its end-points (nodes) or
@@ -207,7 +223,13 @@ contains
         end do !f
 
       end if
-      vol_sub_tri = tri_area(xt)
+
+      ! truncated sub-triangle area based on above vertices
+      if (this%is_axisymmetric) then
+        vol_sub_tri = polygon_volume_axisym(xt)
+      else
+        vol_sub_tri = tri_area(xt)
+      end if
 
     end if
 
