@@ -196,7 +196,7 @@ contains
     if (allocated(this%face_centroid)) return
     allocate(this%face_centroid(2,this%nface))
     do j = 1, this%nface
-      this%face_centroid(:,j) = 0.5_r8 * sum(this%x(:,this%fnode(:,j)))
+      this%face_centroid(:,j) = 0.5_r8 * sum(this%x(:,this%fnode(:,j)), dim=2)
     end do
   end subroutine init_face_centroid
 
