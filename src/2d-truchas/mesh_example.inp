@@ -1,0 +1,7 @@
+&mesh2d
+xmin = 0 0   ! min corner of the rectangular domain
+xmax = 2 1   ! the maximum corner
+nx = 8 6     ! number of zones in each of coordinate axes
+!eps = 0.3    ! perturb node positions by 30% of the local zone size
+!ptri = 0.25  ! decompose 25% of zones (randomly chosen) into 2 triangles
+/ 
