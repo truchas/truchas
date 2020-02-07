@@ -16,17 +16,17 @@ program mesh_example
   use truchas_logging_services
   use unstr_2d_mesh_factory
   use xdmf_file_type
-  use read_inputfile
   implicit none
 
   character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
 
-  character(len=100) :: inputfile
-  integer  :: nx(2), tsmax, nvtrack
-  real(r8) :: xmin(2), xmax(2), dt
+  integer  :: nx(2)
+  real(r8) :: xmin(2), xmax(2), eps, ptri
   type(unstr_2d_mesh), pointer :: mesh
 
-  integer :: j, nmat, test_run
+  namelist /mesh2d/ xmin, xmax, nx, eps, ptri
+
+  integer :: j
   real(r8), allocatable :: p(:), v(:,:)
   type(xdmf_file) :: outfile
 
@@ -37,12 +37,12 @@ program mesh_example
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NOISY)
 
-  !! Read input file "setmesh.txt" for Cartesian mesh specs
-  inputfile = 'input_advection.txt'
-  call readfile(inputfile, xmin, xmax, nx, tsmax, dt, nmat, nvtrack, test_run)
-
-  !! Create the mesh specified by the above input file
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx)
+  eps = 0.0_r8  ! do not perturb the node positions by default
+  ptri = 0.0_r8 ! quad mesh by default
+  read(*,nml=mesh2d)
+  mesh => new_unstr_2d_mesh(xmin, xmax, nx, eps, ptri)
+  !mesh => new_unstr_2d_quad_mesh(xmin, xmax, nx, eps)
+  !mesh => new_unstr_2d_tri_mesh(xmin, xmax, nx, eps)
 
   !! Cell volumes and face areas (okay, areas and lengths in 2D) are defined
   !! by default. But cell centroids and face centroids must be "requested".
@@ -52,7 +52,7 @@ program mesh_example
   !! Define a cell-based field on the mesh with arbitrary value.
   allocate(p(mesh%ncell))
   do j = 1, mesh%ncell
-    p(j) = dot_product([1.0_r8, 2.0_r8], mesh%cell_centroid(:,j))
+    p(j) = dot_product([1.0_r8, -2.0_r8], mesh%cell_centroid(:,j))
   end do
 
   !! Define a node-based vector field on the mesh with arbitrary value.

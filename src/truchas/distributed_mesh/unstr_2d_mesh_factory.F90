@@ -2,12 +2,14 @@
 
 module unstr_2d_mesh_factory
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
   use truchas_logging_services
   implicit none
   private
 
   public :: new_unstr_2d_mesh, unstr_2d_mesh
+  public :: new_unstr_2d_quad_mesh, new_unstr_2d_tri_mesh
 
   interface new_unstr_2d_mesh
     procedure new_unstr_2d_mesh_regular
@@ -15,23 +17,63 @@ module unstr_2d_mesh_factory
 
 contains
 
-  function new_unstr_2d_mesh_regular(xmin, xmax, nx, eps) result(this)
+  function new_unstr_2d_quad_mesh(xmin, xmax, nx, eps) result(this)
+    real(r8), intent(in) :: xmin(:), xmax(:)
+    integer,  intent(in) :: nx(:)
+    real(r8), intent(in), optional :: eps
+    type(unstr_2d_mesh), pointer :: this
+    this => new_unstr_2d_mesh(xmin, xmax, nx, eps, ptri=0.0_r8)
+  end function
 
-    use,intrinsic :: iso_fortran_env, only: r8 => real64
+  function new_unstr_2d_tri_mesh(xmin, xmax, nx, eps) result(this)
+    real(r8), intent(in) :: xmin(:), xmax(:)
+    integer,  intent(in) :: nx(:)
+    real(r8), intent(in), optional :: eps
+    type(unstr_2d_mesh), pointer :: this
+    this => new_unstr_2d_mesh(xmin, xmax, nx, eps, ptri=1.0_r8)
+  end function
+
+
+  function new_unstr_2d_mesh_regular(xmin, xmax, nx, eps, ptri) result(this)
+
     use ext_exodus_mesh_type
     use parallel_communication, only: is_IOP
     use parameter_list_type
 
     real(r8), intent(in) :: xmin(:), xmax(:)
     integer,  intent(in) :: nx(:)
-    real(r8), intent(in), optional :: eps
+    real(r8), intent(in), optional :: eps, ptri
     type(unstr_2d_mesh), pointer :: this
 
-    integer :: i, j, n
-    real(r8) :: x(2)
     type(ext_exodus_mesh) :: mesh ! temporary serial base mesh
     type(parameter_list) :: params
     character(:), allocatable :: errmsg
+    real(r8) :: ptri_
+
+    ptri_ = 0.0_r8
+    if (present(ptri)) ptri_ = ptri
+    if (is_IOP) call init_exo_mesh(mesh, xmin, xmax, nx, ptri_, eps)
+
+    this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
+    INSIST(associated(this))
+
+  end function new_unstr_2d_mesh_regular
+
+
+  subroutine init_exo_mesh(mesh, xmin, xmax, nx, ptri, eps)
+
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
+    use ext_exodus_mesh_type
+
+    type(ext_exodus_mesh), intent(out) :: mesh
+    real(r8), intent(in) :: xmin(:), xmax(:)
+    integer,  intent(in) :: nx(:)
+    real(r8), intent(in) :: ptri
+    real(r8), intent(in), optional :: eps
+
+    integer :: i, j, n, nquad, ntri, offset
+    real(r8) :: x(2), r
+    integer, allocatable :: ckind(:,:), quad_connect(:,:), tri_connect(:,:), seed(:)
 
     ASSERT(size(xmin) == 2)
     ASSERT(size(xmax) == 2)
@@ -39,96 +81,145 @@ contains
     ASSERT(all(xmin < xmax))
     ASSERT(all(nx > 0))
 
-    if (is_IOP) then
+    call random_seed(size=n)
+    allocate(seed(n))
+    call random_seed(get=seed)  ! save for node perturbation
 
-      mesh%num_dim = 2
-      mesh%num_elem = product(nx)
-      mesh%num_node = product(nx+1)
-
-      !! Generate the node coordinates.
-      allocate(mesh%coord(2,mesh%num_node))
-      do j = 1, nx(2)+1
-        x(2) = ((nx(2)-j-1)/real(nx(2),r8))*xmin(2) + ((j-1)/real(nx(2),r8))*xmax(2)
-        do i = 1, nx(1)+1
-          x(1) = ((nx(1)-i-1)/real(nx(1),r8))*xmin(1) + ((i-1)/real(nx(1),r8))*xmax(1)
-          mesh%coord(:,node_index(i,j)) = x
-        end do
+    !! Element decomposition for each grid zone: 1 quad (0) or 2 tri (1)
+    allocate(ckind(nx(1),nx(2)))
+    do j = 1, nx(2)
+      do i = 1, nx(1)
+        call random_number(r)
+        ckind(i,j) = merge(1, 0, r < ptri)
       end do
-      if (present(eps)) call randomize_coord(eps)
+    end do
 
-      !! All cells go into a single element block (ID=1)
-      mesh%num_eblk = 1
-      allocate(mesh%eblk(mesh%num_eblk))
-      mesh%eblk(1)%id = 1
-      mesh%eblk(1)%num_elem = mesh%num_elem
+    mesh%num_dim = 2
+    mesh%num_node = product(nx+1)
+
+    !! Generate the node coordinates.
+    allocate(mesh%coord(2,mesh%num_node))
+    do j = 1, nx(2)+1
+      x(2) = ((nx(2)-j-1)/real(nx(2),r8))*xmin(2) + ((j-1)/real(nx(2),r8))*xmax(2)
+      do i = 1, nx(1)+1
+        x(1) = ((nx(1)-i-1)/real(nx(1),r8))*xmin(1) + ((i-1)/real(nx(1),r8))*xmax(1)
+        mesh%coord(:,node_index(i,j)) = x
+      end do
+    end do
+    if (present(eps)) call randomize_coord(eps)
+
+    !! Allocate side set arras (left/right/bottom/top)
+    mesh%num_sset = 4
+    allocate(mesh%sset(mesh%num_sset))
+
+    !! Side set 1 (x = xmin)
+    mesh%sset(1)%id = 1
+    mesh%sset(1)%num_side = nx(2)
+    allocate(mesh%sset(1)%elem(nx(2)), mesh%sset(1)%face(nx(2)))
+
+    !! Side set 2 (x = xmax)
+    mesh%sset(2)%id = 2
+    mesh%sset(2)%num_side = nx(2)
+    allocate(mesh%sset(2)%elem(nx(2)), mesh%sset(2)%face(nx(2)))
+
+    !! Side set 3 (y = ymin)
+    mesh%sset(3)%id = 3
+    mesh%sset(3)%num_side = nx(1)
+    allocate(mesh%sset(3)%elem(nx(1)), mesh%sset(3)%face(nx(1)))
+
+    !! Side set 4 (y = ymax)
+    mesh%sset(4)%id = 4
+    mesh%sset(4)%num_side = nx(1)
+    allocate(mesh%sset(4)%elem(nx(1)), mesh%sset(4)%face(nx(1)))
+
+    !! Generate the element connectivity arrays and side set data
+    nquad = count(ckind == 0)
+    ntri  = 2*count(ckind == 1)
+    allocate(quad_connect(4,nquad), tri_connect(3,ntri))
+    offset = nquad; nquad = 0; ntri = 0
+    do j = 1, nx(2)
+      do i = 1, nx(1)
+        select case (ckind(i,j))
+        case (0)  ! one quadrilateral
+          nquad = nquad + 1
+          quad_connect(1,nquad) = node_index(i,j)
+          quad_connect(2,nquad) = node_index(i+1,j)
+          quad_connect(3,nquad) = node_index(i+1,j+1)
+          quad_connect(4,nquad) = node_index(i,j+1)
+          if (i == 1) then ! side set 1 (x = xmin)
+            mesh%sset(1)%elem(j) = nquad
+            mesh%sset(1)%face(j) = 4
+          end if
+          if (i == nx(1)) then  ! side set 2 (x = xmax)
+            mesh%sset(2)%elem(j) = nquad
+            mesh%sset(2)%face(j) = 2
+          end if
+          if (j == 1) then  ! side set 3 (y = ymin)
+            mesh%sset(3)%elem(i) = nquad
+            mesh%sset(3)%face(i) = 1
+          end if
+          if (j == nx(2)) then  ! side set 4 (y = ymax)
+            mesh%sset(4)%elem(i) = nquad
+            mesh%sset(4)%face(i) = 3
+          end if
+        case (1)  ! two triangles
+          ntri = ntri + 1
+          tri_connect(1,ntri) = node_index(i,j)
+          tri_connect(2,ntri) = node_index(i+1,j)
+          tri_connect(3,ntri) = node_index(i+1,j+1)
+          if (i == nx(1)) then  ! side set 2 (x = xmax)
+            mesh%sset(2)%elem(j) = ntri + offset
+            mesh%sset(2)%face(j) = 2
+          end if
+          if (j == 1) then  ! side set 3 (y = ymin)
+            mesh%sset(3)%elem(i) = ntri + offset
+            mesh%sset(3)%face(i) = 1
+          end if
+          ntri = ntri + 1
+          tri_connect(1,ntri) = node_index(i+1,j+1)
+          tri_connect(2,ntri) = node_index(i,j+1)
+          tri_connect(3,ntri) = node_index(i,j)
+          if (i == 1) then  ! side set 1 (x = xmin)
+            mesh%sset(1)%elem(j) = ntri + offset
+            mesh%sset(1)%face(j) = 2
+          end if
+          if (j == nx(2)) then  ! side set 4 (y = ymax)
+            mesh%sset(4)%elem(i) = ntri + offset
+            mesh%sset(4)%face(i) = 1
+          end if
+        end select
+      end do
+    end do
+
+    !! Single element block with ID 1. For a mixed element mesh, the triangle
+    !! elements go into a second element block with the same ID.
+
+    mesh%num_elem = nquad + ntri
+    mesh%num_eblk = count([nquad, ntri] > 0)
+    allocate(mesh%eblk(mesh%num_eblk))
+    mesh%eblk%id = 1
+
+    if (nquad > 0) then ! QUAD element block
+      mesh%eblk(1)%num_elem = nquad
       mesh%eblk(1)%num_nodes_per_elem = 4
       mesh%eblk(1)%elem_type = 'QUAD'
-      allocate(mesh%eblk(1)%connect(4,mesh%eblk(1)%num_elem))
-      !! Generate the regular hex connectivity
-      do concurrent (i = 1:nx(1), j = 1:nx(2))
-        n = cell_index(i,j)
-        mesh%eblk(1)%connect(1,n) = node_index(i,j)
-        mesh%eblk(1)%connect(2,n) = node_index(i+1,j)
-        mesh%eblk(1)%connect(3,n) = node_index(i+1,j+1)
-        mesh%eblk(1)%connect(4,n) = node_index(i,j+1)
-      end do
-
-      !! Generate side sets (left/right/bottom/top)
-      mesh%num_sset = 4
-      allocate(mesh%sset(mesh%num_sset))
-
-      !! Side set 1 (x = xmin)
-      mesh%sset(1)%id = 1
-      mesh%sset(1)%num_side = nx(2)
-      allocate(mesh%sset(1)%elem(nx(2)), mesh%sset(1)%face(nx(2)))
-      do concurrent (j = 1:nx(2))
-        mesh%sset(1)%elem(j) = cell_index(1,j)
-      end do
-      mesh%sset(1)%face = 4
-
-      !! Side set 2 (x = xmax)
-      mesh%sset(2)%id = 2
-      mesh%sset(2)%num_side = nx(2)
-      allocate(mesh%sset(2)%elem(nx(2)), mesh%sset(2)%face(nx(2)))
-      do concurrent (j = 1:nx(2))
-        mesh%sset(2)%elem(j) = cell_index(nx(1),j)
-      end do
-      mesh%sset(2)%face = 2
-
-      !! Side set 3 (y = ymin)
-      mesh%sset(3)%id = 3
-      mesh%sset(3)%num_side = nx(1)
-      allocate(mesh%sset(3)%elem(nx(1)), mesh%sset(3)%face(nx(1)))
-      do concurrent (i = 1:nx(1))
-        mesh%sset(3)%elem(i) = cell_index(i,1)
-      end do
-      mesh%sset(3)%face = 1
-
-      !! Side set 4 (y = ymax)
-      mesh%sset(4)%id = 4
-      mesh%sset(4)%num_side = nx(1)
-      allocate(mesh%sset(4)%elem(nx(1)), mesh%sset(4)%face(nx(1)))
-      do concurrent (i = 1:nx(1))
-        mesh%sset(4)%elem(i) = cell_index(i,nx(2))
-      end do
-      mesh%sset(4)%face = 3
-
-      !! No node sets, no internal interfaces
-      mesh%num_nset = 0
-      allocate(mesh%nset(0))
-      call mesh%set_no_links
-
+      call move_alloc(quad_connect, mesh%eblk(1)%connect)
     end if
 
-    this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
-    INSIST(associated(this))
+    if (ntri > 0) then  ! TRI element block
+      n = merge(2, 1, nquad > 0)
+      mesh%eblk(n)%num_elem = ntri
+      mesh%eblk(n)%num_nodes_per_elem = 3
+      mesh%eblk(n)%elem_type = 'TRI'
+      call move_alloc(tri_connect, mesh%eblk(n)%connect)
+    end if
+
+    !! No node sets, no internal interfaces
+    mesh%num_nset = 0
+    allocate(mesh%nset(0))
+    call mesh%set_no_links
 
   contains
-
-    pure integer function cell_index(i, j)
-      integer, intent(in) :: i, j
-      cell_index = i + (j-1)*nx(1)
-    end function
 
     pure integer function node_index(i, j)
       integer, intent(in) :: i, j
@@ -140,22 +231,24 @@ contains
       real(r8), intent(in) :: eps
       integer :: i, j, n
       logical :: mask(2)
-      real(r8) :: dx(2)
+      real(r8) :: dx(2), d
       ASSERT(eps >= 0)
       if (eps == 0) return
-      do j = 1, nx(2)
-        mask(2) = (j > 1 .and. j < nx(2))
-        do i = 1, nx(1)
-          mask(1) = (i > 1 .and. i < nx(1))
+      call random_seed(put=seed)
+      d = minval((xmax-xmin)/nx)
+      do j = 1, nx(2)+1
+        mask(2) = (j > 1 .and. j <= nx(2))
+        do i = 1, nx(1)+1
+          mask(1) = (i > 1 .and. i <= nx(1))
           call random_number(dx)  ! in [0,1)
-          dx = eps*(2*dx - 1)     ! in [-eps, eps)
+          dx = eps*d*(2*dx - 1)     ! in [-eps, eps)*d
           n = node_index(i,j)
           mesh%coord(:,n) = mesh%coord(:,n) + merge(dx, 0.0_r8, mask)
         end do
       end do
     end subroutine randomize_coord
 
-  end function new_unstr_2d_mesh_regular
+  end subroutine init_exo_mesh
 
   function new_unstr_2d_mesh_aux(mesh, params, errmsg) result(this)
 
@@ -697,7 +790,6 @@ contains
     type(unstr_2d_mesh), intent(inout) :: this
     integer, intent(in) :: psize(:), cstart(:), cface(:), cfpar(:)
 
-    integer :: j
     integer, allocatable :: count_g(:), count_l(:), offP_index(:)
 
     call this%face_ip%init(psize)
