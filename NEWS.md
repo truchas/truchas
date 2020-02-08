@@ -2,6 +2,59 @@
 
 Important changes since the 3.0 release.
 
+## 2020-02-08 (21c6bb7)
+
+The input format for materials and properties was completely overhauled. The
+new format is more sensible and far simpler, and adds new options for modeling
+phase change, but it will require significant changes to existing input files.
+Here is a brief summary of the input changes; see the Truchas Reference Manual
+for details.
+
+* The `MATERIAL_SYSTEM` namelist was renamed `MATERIAL` with the original
+  `MATERIAL` namelist eliminated and its few remaining variables moved to
+  other namelists.
+* Materials and phases are no longer assigned numeric labels. Input variables
+  that used material numbers now use the assigned material or phase name.
+* The `immobile` flag is replaced by the `is_fluid` flag whose default value
+  is false. Previously all materials were fluid by default.
+* The requirement to appoint one material as the background material was
+  eliminated. An optional background type `BODY` namelist serves the purpose.
+* The `priority`, `sound_speed`, and `permeability_constant` variables are
+  legacy flow algorithm parameters and have been moved to the `LEGACY_FLOW`
+  namelist.
+* A void material no longer needs to be defined (nor can be). Use the
+  reserved name `"VOID"` to refer to the void material.
+* Properties for single-phase materials are now defined directly in the
+  `MATERIAL` namelist; an additional `PHASE` namelist is no longer required.
+* Multi-phase material properties that apply to all phases can be defined
+  directly in the `MATERIAL` namelist as well. The `PHASE` namelist continues
+  to be used to define properties on a per-phase basis where needed.
+* The generic `property_name`, `property_constant`, and `property_function`
+  input arrays have been replaced by property-specific variables. For example,
+  `viscosity` or `viscosity_func` for the fluid viscosity; the former taking
+  a constant value, and the latter the name of a `FUNCTION` namelist similar
+  to before. These are used in both the `MATERIAL` and `PHASE` namelists.
+* The latent heat and low/high temperature phase change parameters were moved
+  from the `MATERIAL` namelist to a new `PHASE_CHANGE` namelist which specifies
+  the parameters associated with a single phase change that is identified by
+  the name of its low and high temperature phases.
+
+A significant change to the default phase change model was also made.
+Previously the solid fraction varied linearly between the solidus and
+liquidus temperatures with some optional smoothing at the corners. This
+non-physical model was replaced by an equally non-physical, but simpler,
+mathematical model that uses a smooth Hermite cubic polynomial to
+interpolate the solid fraction between solidus and liquidus.
+
+Complementing this mathematical phase change model is a new option to
+explicitly define the temperature-dependent solid fraction as a data table.
+This allows physics-based phase change models like lever and Scheil to be
+defined, and data from CALPHAD tools to be used directly. Related to this
+is the new capability to define a material's specific enthalpy (perhaps as
+a table) as an alternative to defining its specific heat and latent heats
+of its phase changes. See the `PHASE_CHANGE` namelist section in the latest
+Truchas Reference manual for details.
+
 ## 2020-01-09 (056da49)
 
 Improvements were made to the internal algorithm that initializes the material
