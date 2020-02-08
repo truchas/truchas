@@ -138,6 +138,7 @@ contains
     use ds_source_input, only: define_external_source
     use parallel_communication, only: global_any
     use material_model_driver, only: matl_model
+    use material_utilities
 
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
@@ -153,7 +154,7 @@ contains
 
     !! Enthalpy density.
     allocate(model%H_of_T)
-    call matl_model%required_property_check('enthalpy', stat, errmsg2)
+    call required_property_check(matl_model, 'enthalpy', stat, errmsg2)
     if (stat /= 0) then
       errmsg = errmsg2
       return
@@ -167,7 +168,7 @@ contains
 
     !! Thermal conductivity.
     allocate(model%conductivity)
-    call matl_model%required_property_check('conductivity', stat, errmsg2)
+    call required_property_check(matl_model, 'conductivity', stat, errmsg2)
     if (stat /= 0) then
       errmsg = errmsg2
       return

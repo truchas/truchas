@@ -32,7 +32,7 @@ module single_phase_matl_type
     procedure :: phase_name
     procedure :: phase_ref
     procedure :: get_phase_frac
-    procedure :: create_enthalpy
+    procedure :: add_enthalpy_prop
   end type single_phase_matl
 
   type, extends(matl_prop) :: simple_prop
@@ -72,13 +72,13 @@ contains
   end subroutine get_phase_frac
 
   !! If the material does not already have the specific enthalpy property,
-  !! this subroutine attempts to create it from the specific heat property
+  !! this subroutine attempts to build it from the specific heat property
   !! by integration, if possible. STAT returns a non-zero value if the
   !! specific enthalpy property is not ultimately defined, and ERRMSG
   !! returns an explanatory message.
   !! TODO: Is there some way to make this external to the class?
 
-  subroutine create_specific_enthalpy(this, stat, errmsg)
+  subroutine add_specific_enthalpy_prop(this, stat, errmsg)
 
     use scalar_func_tools
 
@@ -119,18 +119,18 @@ contains
     end if
     call this%add_prop('specific-enthalpy', h)
 
-  end subroutine create_specific_enthalpy
+  end subroutine add_specific_enthalpy_prop
 
   !! If the material does not already have the enthalpy property, this
-  !! subroutine attempts to create it from the specific enthalpy property
+  !! subroutine attempts to build it from the specific enthalpy property
   !! by forming its product with the density, if possible. If the specific
-  !! enthalpy property does not exist, it will try to create it too, if
+  !! enthalpy property does not exist, it will try to build it too, if
   !! possible, using the specific heat property. STAT returns a non-zero
   !! value if the enthalpy property is not ultimately defined, and ERRMSG
   !! returns an explanatory message.
   !! TODO: Is there some way to make this external to the class?
 
-  subroutine create_enthalpy(this, stat, errmsg)
+  subroutine add_enthalpy_prop(this, stat, errmsg)
 
     use scalar_func_tools
 
@@ -143,7 +143,7 @@ contains
     if (this%has_prop('enthalpy')) return
 
     if (.not.this%has_prop('specific-enthalpy')) then
-      call create_specific_enthalpy(this, stat, errmsg)
+      call add_specific_enthalpy_prop(this, stat, errmsg)
       if (stat /= 0) return
     end if
 
@@ -158,7 +158,7 @@ contains
     INSIST(stat == 0)
     call this%add_prop('enthalpy', hd)
 
-  end subroutine create_enthalpy
+  end subroutine add_enthalpy_prop
 
   subroutine alloc_matl_prop(this, name, prop, errmsg)
 

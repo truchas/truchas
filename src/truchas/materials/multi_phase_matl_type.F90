@@ -34,6 +34,7 @@ module multi_phase_matl_type
     type(phase_change_box), allocatable :: pc_seq(:)
   contains
     ! Overloaded procedures from PHASE
+    procedure :: has_attr
     procedure :: has_prop
     procedure :: has_const_prop
     ! Deferred procedures from MATERIAL
@@ -42,7 +43,7 @@ module multi_phase_matl_type
     procedure :: phase_name
     procedure :: phase_ref
     procedure :: get_phase_frac
-    procedure :: create_enthalpy
+    procedure :: add_enthalpy_prop
   end type
 
   type :: scalar_func_box
@@ -58,6 +59,14 @@ module multi_phase_matl_type
   end type
 
 contains
+
+  !! Overload the base class HAS_ATTR procedure. Returns true if every phase of
+  !! the material has attribue NAME.
+  logical function has_attr(this, name)
+    class(multi_phase_matl), intent(in) :: this
+    character(*), intent(in) :: name
+    has_attr = all(has_prop_mask(this, name))
+  end function
 
   !! Overload the base class HAS_PROP procedure. Returns true if every phase of
   !! the material has property NAME. If the optional argument ONLY is present
@@ -168,15 +177,15 @@ contains
   end subroutine get_phase_frac
 
   !! If the material does not already have the specific enthalpy property,
-  !! this subroutine attempts to create it. For each phase that is missing
-  !! it, the property is created from the phase's specific heat property by
+  !! this subroutine attempts to build it. For each phase that is missing
+  !! it, the property is built from the phase's specific heat property by
   !! integration, if possible. This requires the latent heat with respect
   !! to the adjacent lower temperature phase. STAT returns a non-zero value
   !! if the enthalpy property is not ultimately defined, and ERRMSG returns
   !! an explanatory message.
   !! TODO: Is there some way to make this external to the class?
 
-  subroutine create_specific_enthalpy(this, stat, errmsg)
+  subroutine add_specific_enthalpy_prop(this, stat, errmsg)
 
     use scalar_func_tools
 
@@ -248,22 +257,22 @@ contains
 
     end do
 
-  end subroutine create_specific_enthalpy
+  end subroutine add_specific_enthalpy_prop
 
-  !! This subroutine attempts to create the enthalpy property for the material
+  !! This subroutine attempts to build the enthalpy property for the material
   !! by forming the product of its specific enthalpy and density properties,
   !! if possible. Where the specific enthalpy property does not exist, it will
-  !! attempt to create it too, if possible, using specific heat properties and
-  !! and phase change latent heats (see CREATE_SPECIFIC_ENTHALPY). STAT returns
-  !! a non-zero value if the enthalpy property is not ultimately defined, and
-  !! ERRMSG returns an explanatory message.
+  !! attempt to build it too, if possible, using specific heat properties and
+  !! and phase change latent heats (see ADD_SPECIFIC_ENTHALPY_PROP). STAT
+  !! returns a non-zero value if the enthalpy property is not ultimately
+  !! defined, and ERRMSG returns an explanatory message.
   !!
   !! NB: If the enthalpy property is already defined, the subroutine simply
   !! returns with no action taken. It is an error, however, for some phases
   !! to have the enthalpy property but others not.
   !! TODO: Is there some way to make this external to the class?
 
-  subroutine create_enthalpy(this, stat, errmsg)
+  subroutine add_enthalpy_prop(this, stat, errmsg)
 
     use scalar_func_tools
 
@@ -278,7 +287,7 @@ contains
     if (this%has_prop('enthalpy')) return
 
     if (.not.this%has_prop('specific-enthalpy')) then
-      call create_specific_enthalpy(this, stat, errmsg)
+      call add_specific_enthalpy_prop(this, stat, errmsg)
       if (stat /= 0) return
     end if
 
@@ -314,7 +323,7 @@ contains
 
     ASSERT(this%has_prop('enthalpy'))
 
-  end subroutine create_enthalpy
+  end subroutine add_enthalpy_prop
 
   subroutine alloc_matl_prop(this, name, prop, errmsg)
 

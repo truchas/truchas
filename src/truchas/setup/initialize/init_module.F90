@@ -230,23 +230,24 @@ CONTAINS
   subroutine property_init
 
     use physics_module
+    use material_utilities
 
     integer :: stat
     character(:), allocatable :: errmsg
 
-    call matl_model%required_property_check('density', stat, errmsg)
+    call required_property_check(matl_model, 'density', stat, errmsg)
     if (stat /= 0) call TLS_fatal ('PROPERTY_INIT: ' // errmsg)
 
-    call matl_model%constant_property_check('density', stat, errmsg)
+    call constant_property_check(matl_model, 'density', stat, errmsg)
     if (stat /= 0) call TLS_fatal('non-constant density specified for materials: ' // errmsg)
 
     if (heat_transport) then
-      call matl_model%create_enthalpy(stat, errmsg)
+      call add_enthalpy_prop(matl_model, stat, errmsg)
       if (stat /= 0) call TLS_fatal('PROPERTY_INIT: ' // errmsg)
     else ! unused but expected for initialization and output
       !FIXME: If the physics don't need this we should not reference it.
-      call matl_model%define_property_default('specific-enthalpy', default=0.0_r8)
-      call matl_model%create_enthalpy(stat, errmsg)
+      call define_property_default(matl_model, 'specific-enthalpy', default=0.0_r8)
+      call add_enthalpy_prop(matl_model, stat, errmsg)
       if (stat /= 0) call TLS_fatal('PROPERTY_INIT: ' // errmsg)
     end if
 
@@ -254,6 +255,7 @@ CONTAINS
 
   subroutine flow_property_init
 
+    use material_utilities
     use fluid_data_module, only: boussinesq_approximation
     use viscous_data_module, only: inviscid
 
@@ -261,11 +263,11 @@ CONTAINS
     character(:), allocatable :: errmsg
 
     if (boussinesq_approximation) then
-      call matl_model%define_fluid_property_default('density-delta', default=0.0_r8)
+      call define_fluid_property_default(matl_model, 'density-delta', default=0.0_r8)
     end if
 
     if (.not.inviscid) then
-      call matl_model%required_fluid_property_check('viscosity', stat, errmsg)
+      call required_fluid_property_check(matl_model, 'viscosity', stat, errmsg)
       if (stat /= 0) call TLS_fatal(errmsg)
     end if
 

@@ -28,6 +28,7 @@ set(MAT_FILES
        materials/avg_matl_prop_type.F90
        materials/avg_phase_prop_type.F90
        materials/material_model_driver.F90
+       materials/material_utilities.F90
 )
 
 set(MAT_FPP_FLAGS 

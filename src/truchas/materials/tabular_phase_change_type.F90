@@ -12,6 +12,13 @@
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! Note 1: This expression converts the real floating point value 0 <= fs <= 1
+!! to a fixed point real value relative to 64-bit real 1. The idea here is that
+!! we would like phase fraction addition/subtraction to be exact, and this can
+!! be accomplished by working in fixed point arithmetic (or equivalently in an
+!! integer space).
+!!
 
 #include "f90_assert.fpp"
 
@@ -73,7 +80,7 @@ contains
     else
       fs = this%fs%eval([temp])
       ASSERT(fs >= 0 .and. fs <= 1)
-      fs = scale(real(int(scale(fs,D),i8),r8),-D)
+      fs = scale(real(int(scale(fs,D),i8),r8),-D) ! See Note 1
     end if
   end function solid_frac
 

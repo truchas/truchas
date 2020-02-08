@@ -29,8 +29,7 @@ module material_model_type
   end type
 
   type, public :: material_model
-    private
-    !TODO: *read-only* public components, or function getters?
+    private ! public components are READ ONLY
     integer, public :: nmatl       ! number of materials, including void
     integer, public :: nmatl_real  ! number of materials, excluding void
     integer, public :: nphase      ! total number of phases, including void
@@ -63,20 +62,11 @@ module material_model_type
     procedure, private :: alloc_avg_matl_prop_list
     procedure, private :: alloc_avg_matl_prop_all
     procedure :: alloc_avg_phase_prop => alloc_avg_phase_prop_list
-    !TODO: really would like these to be external to this class
-    procedure :: required_property_check
-    procedure :: required_fluid_property_check
-    procedure :: define_property_default
-    procedure :: define_fluid_property_default
-    procedure :: optional_property_check
-    procedure :: constant_property_check
-    procedure :: create_enthalpy
   end type
 
   character(4), parameter :: VOID = 'VOID'
 
 contains
-
 
   subroutine init(this, matl_names, matl_db, stat, errmsg)
 
@@ -293,7 +283,7 @@ contains
   subroutine get_phase_ref(this, n, phi)
     class(material_model), intent(in), target :: this
     integer, intent(in) :: n
-    class(phase), pointer :: phi
+    type(phase), pointer :: phi
     phi => this%plist(n)%phi
   end subroutine
 
@@ -409,171 +399,5 @@ contains
       end associate
     end do
   end subroutine alloc_avg_phase_prop_list
-
-  !! Check that property NAME is defined for all materials. If not, STAT
-  !! returns a nonzero value and and explanatory message is returned in ERRMSG.
-
-  subroutine required_property_check(this, name, stat, errmsg)
-    class(material_model), intent(in) :: this
-    character(*), intent(in) :: name
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-    call req_prop_check(this, name, stat, errmsg)
-  end subroutine required_property_check
-
-  !! Check that property NAME is defined for all fluid material phases. If not,
-  !! STAT returns a nonzero value and and explanatory message is returned in
-  !! ERRMSG.
-
-  subroutine required_fluid_property_check(this, name, stat, errmsg)
-    class(material_model), intent(in) :: this
-    character(*), intent(in) :: name
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-    call req_prop_check(this, name, stat, errmsg, only='is-fluid')
-    if (stat /= 0) errmsg = 'fluid ' // errmsg
-  end subroutine required_fluid_property_check
-
-  subroutine req_prop_check(this, name, stat, errmsg, only)
-    class(material_model), intent(in) :: this
-    character(*), intent(in) :: name
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-    character(*), intent(in), optional :: only
-    integer :: n
-    do n = 1, size(this%mlist)
-      associate (matl => this%mlist(n)%matl)
-        if (matl%has_prop(name, only)) cycle
-        stat = 1
-        errmsg = name // ' undefined for material ' // matl%name
-        return
-      end associate
-    end do
-    stat = 0
-  end subroutine req_prop_check
-
-  !! Ensure that property NAME is defined for all phases by assigning the
-  !! constant value DEFAULT to those phases without the property.
-
-  subroutine define_property_default(this, name, default)
-    class(material_model), intent(in) :: this
-    character(*), intent(in) :: name
-    real(r8), intent(in) :: default
-    call def_prop_default(this, name, default)
-  end subroutine define_property_default
-
-  !! Ensure that property NAME is defined for all fluid phases by assigning
-  !! the constant value DEFAULT to those fluid phases without the property.
-  subroutine define_fluid_property_default(this, name, default)
-    class(material_model), intent(in) :: this
-    character(*), intent(in) :: name
-    real(r8), intent(in) :: default
-    call def_prop_default(this, name, default, only='is-fluid')
-  end subroutine define_fluid_property_default
-
-  subroutine def_prop_default(this, name, default, only)
-    use scalar_func_factories
-    class(material_model), intent(in) :: this
-    character(*), intent(in) :: name
-    real(r8), intent(in) :: default
-    character(*), intent(in), optional :: only
-    integer :: n
-    class(scalar_func), allocatable :: f_default
-    do n = 1, size(this%plist)
-      associate (phi => this%plist(n)%phi)
-        if (phi%has_prop(name, only)) cycle
-        call alloc_const_scalar_func(f_default, default)
-        call phi%add_prop(name, f_default)
-      end associate
-    end do
-  end subroutine def_prop_default
-
-  !TODO: Rethink. This replicates the original procedure and seems clumsy.
-  !! Examine the material_model for property NAME. If all phases have the
-  !! property, STAT returns 0. If none of the phases have the property
-  !! STAT returns 1. Otherwise some phases have the property while others
-  !! do not, and STAT returns -1 and an explanatory error message is
-  !! returned in ERRMSG.
-
-  subroutine optional_property_check(this, name, stat, errmsg)
-
-    class(material_model), intent(inout) :: this
-    character(*), intent(in) :: name
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    integer :: n
-    logical :: some_have, some_lack
-
-    some_have = .false.; some_lack = .false.
-    do n = 1, size(this%plist)
-      associate (phi => this%plist(n)%phi)
-        if (phi%has_prop(name)) then
-          some_have = .true.
-        else
-          some_lack = .true.
-        end if
-        if (some_have .and. some_lack) then
-          stat = -1
-          errmsg = 'incomplete specification of property ' // name
-          return
-        end if
-      end associate
-    end do
-
-    if (some_have) then ! all phases have the property
-      stat = 0
-    else  ! none have the property
-      stat = 1
-    end if
-
-  end subroutine optional_property_check
-
-  !! Check that each real material has the constant property NAME. The value
-  !! of the constant may differ between materials. If the check fails, STAT
-  !! returns a nonzero value and an explanatory message is returned in ERRMSG.
-
-  subroutine constant_property_check(this, name, stat, errmsg)
-    class(material_model), intent(in) :: this
-    character(*), intent(in) :: name
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-    integer :: n
-    do n = 1, size(this%mlist)
-      associate (matl => this%mlist(n)%matl)
-        if (matl%has_const_prop(name)) cycle
-        if (allocated(errmsg)) then
-          errmsg = errmsg // ', ' // matl%name
-        else
-          errmsg = matl%name
-        end if
-      end associate
-    end do
-    stat = merge(1, 0, allocated(errmsg))
-  end subroutine constant_property_check
-
-  !! Create an enthalpy function for each material from density, specific heat,
-  !! and latent heats. If an error occurs, STAT returns a nonzero value and
-  !! and explanatory message is returned in ERRMSG.
-
-  subroutine create_enthalpy(this, stat, errmsg)
-
-    class(material_model), intent(inout) :: this
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    integer :: n
-
-    do n = 1, size(this%mlist)
-      associate (matl => this%mlist(n)%matl)
-        call matl%create_enthalpy(stat, errmsg)
-        if (stat /= 0) then
-          errmsg = 'cannot define enthalpy density for material ' // matl%name // ': ' // errmsg
-          return
-        end if
-      end associate
-    end do
-
-  end subroutine create_enthalpy
 
 end module material_model_type

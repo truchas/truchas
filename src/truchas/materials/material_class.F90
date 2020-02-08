@@ -35,7 +35,7 @@ module material_class
 
   type, public :: phase
     private
-    character(:), allocatable, public :: name !TODO: public or get/set methods?
+    character(:), allocatable, public :: name ! READ-ONLY
     type(scalar_func_map) :: prop_map
     type(string_set) :: attr_set
     class(material), pointer, public :: matl => null()  ! the parent material
@@ -62,7 +62,7 @@ module material_class
     procedure(phase_name), deferred :: phase_name
     procedure(phase_ref), deferred :: phase_ref
     procedure(get_phase_frac), deferred :: get_phase_frac
-    procedure(create_enthalpy), deferred :: create_enthalpy
+    procedure(add_enthalpy_prop), deferred :: add_enthalpy_prop
   end type
 
   abstract interface
@@ -106,9 +106,9 @@ module material_class
       real(r8), intent(out) :: beta(:)
     end subroutine
 
-    !! Create the 'enthalpy' property for the material
+    !! Build and add the 'enthalpy' property for the material
     !TODO: Is there any way to make this external to the class?
-    subroutine create_enthalpy(this, stat, errmsg)
+    subroutine add_enthalpy_prop(this, stat, errmsg)
       import material
       class(material), intent(inout) :: this
       integer, intent(out) :: stat

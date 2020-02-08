@@ -118,10 +118,11 @@ contains
   subroutine init_material_properties
 
     use material_model_driver, only: matl_model
+    use material_utilities
 
-    call matl_model%define_property_default('electrical-conductivity', 0.0_rk)
-    call matl_model%define_property_default('electric-susceptibility', 0.0_rk)
-    call matl_model%define_property_default('magnetic-susceptibility', 0.0_rk)
+    call define_property_default(matl_model, 'electrical-conductivity', 0.0_rk)
+    call define_property_default(matl_model, 'electric-susceptibility', 0.0_rk)
+    call define_property_default(matl_model, 'magnetic-susceptibility', 0.0_rk)
 
   end subroutine init_material_properties
 

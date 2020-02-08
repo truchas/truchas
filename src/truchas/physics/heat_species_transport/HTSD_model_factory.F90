@@ -112,6 +112,7 @@ contains
       use ds_source_input, only: define_external_source
       use parallel_communication, only: global_any
       use material_model_driver, only: matl_model
+      use material_utilities
 
       type(unstr_mesh), intent(in), target :: mesh
       type(matl_mesh_func), intent(in), target :: mmf
@@ -126,7 +127,7 @@ contains
       !call mmf%get_all_matl(matid, drop_void=.true.)
 
       !! Enthalpy density.
-      call matl_model%required_property_check('enthalpy', stat, errmsg2)
+      call required_property_check(matl_model, 'enthalpy', stat, errmsg2)
       if (stat /= 0) then
         errmsg = errmsg2
         return
@@ -139,7 +140,7 @@ contains
       end if
 
       !! Thermal conductivity.
-      call matl_model%required_property_check('conductivity', stat, errmsg2)
+      call required_property_check(matl_model, 'conductivity', stat, errmsg2)
       if (stat /= 0) then
         errmsg = errmsg2
         return
@@ -391,6 +392,7 @@ contains
     use index_partitioning
     use parallel_communication, only: global_any
     use material_model_driver, only: matl_model
+    use material_utilities
 
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
@@ -412,7 +414,7 @@ contains
     do n = 1, num_species
       write(variable,'(a,i0)') 'concentration', n
       write(property,'(a,i0)') 'diffusivity', n
-      call matl_model%required_property_check(property, stat, errmsg2)
+      call required_property_check(matl_model, property, stat, errmsg2)
       if (stat /= 0) then
         errmsg = errmsg2
         return
@@ -427,7 +429,7 @@ contains
       !! Define the optional Soret effect coefficients.
       if (heat_eqn) then
         write(property,'(a,i0)') 'soret-coef', n
-        call matl_model%optional_property_check(property, stat, errmsg2)
+        call optional_property_check(matl_model, property, stat, errmsg2)
         if (stat < 0) then
           errmsg = errmsg2
           return
