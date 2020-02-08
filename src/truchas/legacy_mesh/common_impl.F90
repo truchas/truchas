@@ -18,7 +18,7 @@ module common_impl
   public :: init_common_impl
 
   type(unstr_mesh), pointer, public :: new_mesh => null()
-  integer, public, protected :: ncells, nnodes, ncells_tot, nnodes_tot
+  integer, public, protected :: ncells, nnodes, ncells_tot, nnodes_tot, ncells_real
   integer, public, allocatable, protected :: unpermute_mesh_vector(:), unpermute_vertex_vector(:)
 
   !! Mappings from old cell sides to new. These imagine new cell side data
@@ -67,6 +67,7 @@ contains
     !! cells locally.
     gap_links = pack(array=[(j, j=1, new_mesh%nlink_onP)], &
                      mask=(new_mesh%link_cell_id(:new_mesh%nlink_onP)>0))
+    ncells_real = new_mesh%ncell_onP
     ncells = new_mesh%ncell_onP + size(gap_links)
     ncells_tot = global_sum(ncells)
     allocate(unpermute_mesh_vector(ncells))

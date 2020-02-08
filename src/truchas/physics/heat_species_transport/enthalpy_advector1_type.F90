@@ -5,6 +5,7 @@ module enthalpy_advector1_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use enthalpy_advector_class
   use unstr_mesh_type
+  use avg_phase_prop_type
   use parameter_list_type
   implicit none
   private
@@ -12,7 +13,7 @@ module enthalpy_advector1_type
   type, extends(enthalpy_advector), public :: enthalpy_advector1
     type(unstr_mesh), pointer :: mesh => null()
     real(r8), pointer :: flux_vol(:,:) => null()
-    integer,  pointer :: matid(:) => null()
+    type(avg_phase_prop), allocatable :: enthalpy
     integer,  allocatable :: inflow_face(:)
     real(r8), allocatable :: inflow_temp(:)
   contains
@@ -26,18 +27,25 @@ contains
   subroutine init(this, mesh, stat, errmsg)
     use vtrack_driver, only: vtrack_flux_vol_view, vtrack_liq_matid_view
     use flow_driver, only: inflow_plist
+    use material_model_driver, only: matl_model
     class(enthalpy_advector1), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    integer, pointer :: matid(:)
     type(parameter_list), pointer :: plist
     this%mesh => mesh
     this%flux_vol => vtrack_flux_vol_view()
-    this%matid => vtrack_liq_matid_view()
+    matid => vtrack_liq_matid_view()
+    call matl_model%alloc_avg_phase_prop('enthalpy', matid, this%enthalpy, errmsg)
+    if (.not.allocated(this%enthalpy)) then
+      stat = 1
+      return
+    end if
     plist => inflow_plist()
     call set_inflow_bc(this, plist, stat, errmsg)
     if (stat /= 0) return
-    ASSERT(size(this%flux_vol,dim=1) >= size(this%matid))
+    ASSERT(size(this%flux_vol,dim=1) >= size(matid))
     ASSERT(size(this%flux_vol,dim=2) == size(mesh%cface))
   end subroutine init
 
@@ -45,7 +53,6 @@ contains
   !! Input/output arrays are on-process cells only
   subroutine get_advected_enthalpy1(this, tcell, dq)
 
-    use material_interop, only: ds_enthalpy_density
     use index_partitioning, only: gather_boundary
 
     class(enthalpy_advector1), intent(in) :: this
@@ -53,7 +60,7 @@ contains
     real(r8), intent(out) :: dq(:)
 
     integer :: i, i1, i2, j, n, m
-    real(r8) :: sum, state(1)
+    real(r8) :: dq_tot, dq_i, state(1)
     real(r8), allocatable :: tcellx(:)
     logical :: found
 
@@ -67,7 +74,7 @@ contains
     do j = 1, this%mesh%ncell_onP
       i1 = this%mesh%xcface(j)
       i2 = this%mesh%xcface(j+1) - 1
-      sum = 0.0_r8  ! net outflux of heat
+      dq_tot = 0.0_r8  ! net outflux of heat
       do i = i1, i2 ! sides of cell j
         !! Temperature of the fluxed volume
         if (any(this%flux_vol(:,i) > 0.0)) then ! outflow through face
@@ -81,12 +88,10 @@ contains
             if (.not.found) state(1) = tcellx(j)
           end if
         end if
-        do m = 1, size(this%matid)
-          if (this%flux_vol(m,i) /= 0) &
-              sum = sum + this%flux_vol(m,i)*ds_enthalpy_density(this%matid(m),state)
-        end do
+        call this%enthalpy%compute_value(this%flux_vol(:,i), state, dq_i)
+        dq_tot = dq_tot + dq_i
       end do
-      dq(j) = -sum
+      dq(j) = -dq_tot
     end do
 
   end subroutine get_advected_enthalpy1
@@ -95,7 +100,6 @@ contains
   !! Input/output arrays are on-process cells only
   subroutine get_advected_enthalpy2(this, tcell, dq, tmin, tmax)
 
-    use material_interop, only: ds_enthalpy_density
     use index_partitioning, only: gather_boundary
 
     class(enthalpy_advector1), intent(in) :: this
@@ -103,7 +107,7 @@ contains
     real(r8), intent(out) :: dq(:), tmin(:), tmax(:)
 
     integer :: i, i1, i2, j, n, m
-    real(r8) :: sum, state(1)
+    real(r8) :: dq_tot, dq_i, state(1)
     real(r8), allocatable :: tcellx(:)
     logical :: found
 
@@ -121,7 +125,7 @@ contains
       tmax(j) = tcellx(j)
       i1 = this%mesh%xcface(j)
       i2 = this%mesh%xcface(j+1) - 1
-      sum = 0.0_r8  ! net outflux of heat
+      dq_tot = 0.0_r8  ! net outflux of heat
       do i = i1, i2 ! sides of cell j
         !! Temperature of the fluxed volume
         if (any(this%flux_vol(:,i) > 0.0)) then ! outflow through face
@@ -137,12 +141,10 @@ contains
           tmin(j) = min(tmin(j),state(1))
           tmax(j) = max(tmax(j),state(1))
         end if
-        do m = 1, size(this%matid)
-          if (this%flux_vol(m,i) /= 0) &
-              sum = sum + this%flux_vol(m,i)*ds_enthalpy_density(this%matid(m),state)
-        end do
+        call this%enthalpy%compute_value(this%flux_vol(:,i), state, dq_i)
+        dq_tot = dq_tot + dq_i
       end do
-      dq(j) = -sum
+      dq(j) = -dq_tot
     end do
 
   end subroutine get_advected_enthalpy2

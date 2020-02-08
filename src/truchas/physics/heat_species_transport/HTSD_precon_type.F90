@@ -15,7 +15,6 @@ module HTSD_precon_type
   use diff_precon_type
   use diffusion_matrix
   use index_partitioning
-  use property_mesh_function
   use truchas_timers
   implicit none
   private
@@ -212,8 +211,8 @@ contains
       this%dt = dt
 
       !! Hardwired assumption that T is the first component of state -- FIXME!
-      call pmf_eval_deriv (this%model%ht%H_of_T, state, 1, this%dHdT)
-      call pmf_eval (this%model%ht%conductivity, state, D)
+      call this%model%ht%H_of_T%compute_deriv(state, 1, this%dHdT)
+      call this%model%ht%conductivity%compute_value(state, D)
       A = this%mesh%volume * this%dHdT / dt
 
       !! Correct data on void cells.
@@ -321,7 +320,7 @@ contains
 
       matrix => diff_precon_matrix(this%sdprecon(index))
       !! Jacobian of the diffusion operator that ignores nonlinearities.
-      call pmf_eval (this%model%sd(index)%diffusivity, state, values)
+      call this%model%sd(index)%diffusivity%compute_value(state, values)
       if (associated(this%model%void_cell)) where (this%model%void_cell) values = 0.0_r8
       call matrix%compute (values)
       !! Time derivative contribution to the diffusion equation Jacobian.
@@ -499,8 +498,8 @@ contains
       if (associated(this%model%sd(index)%soret)) then
         !! Compute the update.
         allocate(value(this%mesh%ncell))
-        call pmf_eval (this%model%sd(index)%soret, state, value)
-        call pmf_eval (this%model%sd(index)%diffusivity, state, Fcell) ! Fcell used as temporary
+        call this%model%sd(index)%soret%compute_value(state, value)
+        call this%model%sd(index)%diffusivity%compute_value(state, Fcell) ! Fcell used as temporary
         value = value * Fcell
         call this%model%disc%apply_diff (value, FTcell, FTface, Fcell, Fface)
         if (allocated(this%model%sd(index)%bc_dir)) then

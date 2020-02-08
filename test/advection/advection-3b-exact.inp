@@ -1,1 +1,61 @@
-advection-3b.inp
+TWO-FLUID 2D ADVECTION WITH TET CELLS
+-------------------------------------
+Advection in a two-fluid 2D domain with planar interface orthogonal to
+velocity. Velocity is uniform and constant and directed along a coordinate
+axis. Domain is 15x15x1 with unit cells subdivided into 6 tets each.
+Volume fractions should be advected exactly.
+
+&OUTPUTS
+  output_t  = 0.0, 3.0
+  output_dt = 3.0
+/
+
+&MESH
+  mesh_file = 'mesh4.gen'
+/
+ 
+&PHYSICS
+  materials = 'water', 'oil'
+  prescribed_flow = .true.
+/
+
+&ADVECTION_VELOCITY
+  velocity_constant = 1.0, 0.0, 0.0
+/
+
+&FLOW
+  vol_track_subcycles = 4
+  courant_number = 0.125 ! TODO: this should be 0.25
+/
+
+&NUMERICS
+  dt_init = 1.0e-2
+  dt_grow = 1.1
+/
+
+&BODY
+  surface_name = 'plane'
+  axis = 'x'
+  translation_pt = -1.5, 0.0, 0.0
+  material_name = 'oil'
+  temperature = 0.0
+/
+
+
+&BODY
+  surface_name = 'background'
+  material_name = 'water'
+  temperature = 0.0
+/
+
+&MATERIAL
+  name = 'water'
+  is_fluid = T
+  density = 1.0
+/
+
+&MATERIAL
+  name = 'oil'
+  is_fluid = T
+  density = 2.0
+/

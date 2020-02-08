@@ -4,6 +4,12 @@ set(CMAKE_MODULE_PATH ${TruchasTest_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 include(AddPytruchasTest)
 
+add_pytruchas_test(enthalpy1 enthalpy/test1.py PROCESSORS 1 LABELS CONDUCTION)
+add_pytruchas_test(enthalpy2 enthalpy/test2.py PROCESSORS 1 LABELS CONDUCTION)
+add_pytruchas_test(enthalpy3 enthalpy/test3.py PROCESSORS 1 LABELS CONDUCTION)
+add_pytruchas_test(enthalpy4 enthalpy/test4.py PROCESSORS 1 LABELS CONDUCTION)
+add_pytruchas_test(enthalpy5 enthalpy/test5.py PROCESSORS 1 LABELS CONDUCTION)
+
 add_pytruchas_test(1d-ss-hc-xlinear-hex
                    1d-ss-hc-xlinear-hex/test.py
                    PROCESSORS 4
@@ -50,7 +56,8 @@ add_pytruchas_test(3d-ss-hc-linear-mixed
                    LABELS CONDUCTION MIXED)
 
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py
-                   PROCESSORS 4)
+                   PROCESSORS 4
+                   LABELS PHASE_CHANGE)
 
 add_pytruchas_test(remap restart/testRemap.py PROCESSORS 4)
 
@@ -85,7 +92,7 @@ add_pytruchas_test(ds3 ds3/testDS3.py
 
 add_pytruchas_test(ds4 ds4/testDS4.py
 		   PROCESSORS 4
-		   LABELS DIFFUSION)
+		   LABELS DIFFUSION PHASE_CHANGE)
 
 add_pytruchas_test(ds5 ds5/testDS5.py
 		   PROCESSORS 4
@@ -112,16 +119,16 @@ add_pytruchas_test(ds10 ds10/testDS10.py
 
 add_pytruchas_test(ds11 ds11/testDS11.py
                    PROCESSORS 4
-		   LABELS DIFFUSION)
+		   LABELS DIFFUSION PHASE_CHANGE)
 
 add_pytruchas_test(htvoid1-old htvoid1/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
 add_pytruchas_test(htvoid2-old htvoid2/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
-add_pytruchas_test(htvoid3-old htvoid3/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
+add_pytruchas_test(htvoid3-old htvoid3/test-old.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE OLD_FLOW)
 add_pytruchas_test(htvoid4-old htvoid4/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
 
 add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(htvoid2 htvoid2/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-#add_pytruchas_test(htvoid3 htvoid3/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+#add_pytruchas_test(htvoid3 htvoid3/test.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
 add_pytruchas_test(htvoid4 htvoid4/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 
 add_pytruchas_test(broken-dam-old broken-dam-old/test.py PROCESSORS 4 LABELS OLD_FLOW)
@@ -159,7 +166,7 @@ add_pytruchas_test(porous-drag
 
 add_pytruchas_test(sloshing-flow-old sloshing-flow-old/test.py PROCESSORS 4 LABELS OLD_FLOW)
 
-#add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW NOT_WORKING)
+add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW)
 
 add_pytruchas_test(void-collapse
                    void-collapse/testVoidCollapse.py
@@ -232,7 +239,7 @@ add_pytruchas_test(simple-gap
 add_pytruchas_test(tm-pc
                    tm-pc/testTMPC.py
 		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
+		   LABELS SOLID_MECHANICS PHASE_CHANGE)
 
 add_pytruchas_test(tangential-surface-tension-old
                    tangential-surface-tension/test_tst_old.py
@@ -252,12 +259,12 @@ add_pytruchas_test(tangential-surface-tension-couette
 add_pytruchas_test(ustruc1
                    ustruc1/test.py
 		   PROCESSORS 4
-		   LABELS MICROSTRUCTURE CONDUCTION MIXED)
+		   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
 
 add_pytruchas_test(ustruc2
                    ustruc2/test.py
 		   PROCESSORS 4
-		   LABELS MICROSTRUCTURE CONDUCTION MIXED RESTART)
+		   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
 
 add_pytruchas_test(diag-advect
                    diag-advect/test.py
@@ -265,9 +272,9 @@ add_pytruchas_test(diag-advect
 		   LABELS ADVECTION)
 
 # FREEZING FLOW TESTS -- NEW FLOW SOLVER
-add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-add_pytruchas_test(freezing-flow-3 freezing-flow/test3.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
+add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
+add_pytruchas_test(freezing-flow-3 freezing-flow/test3.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
 
 # FREE-SURFACE FLOW TESTS -- OLD FLOW SOLVER
 add_pytruchas_test(free-surf-flow-old-1 free-surf-flow-old/test1.py PROCESSORS 4 LABELS OLD_FLOW)

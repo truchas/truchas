@@ -49,7 +49,7 @@ contains
   subroutine init(this, mesh, nrealfluid, nfluid, nmat, liq_matid, params)
 
     use parameter_list_type
-    use property_module, only: get_truchas_material_id
+    use material_model_driver, only: matl_model
 #ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
 #endif
@@ -58,6 +58,7 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat, liq_matid(:)
     type(parameter_list), intent(inout) :: params
+    character(:), allocatable :: priority(:)
     integer :: i, j, k
 
     this%mesh => mesh
@@ -72,10 +73,11 @@ contains
 
     ! convert user material ids to array index
     if (params%is_vector('material_priority')) then
-      call params%get('material_priority', this%priority)
-      do i = 1,size(this%priority)
-        if (this%priority(i) < 1) cycle ! solid (-1) is handled later
-        this%priority(i) = findloc(liq_matid, get_truchas_material_id(this%priority(i)), dim=1)
+      call params%get('material_priority', priority)
+      allocate(this%priority(size(priority)))
+      do i = 1,size(priority)
+        if (priority(i) == 'SOLID') cycle ! solid is handled later
+         this%priority(i) = findloc(liq_matid, matl_model%phase_index(priority(i)), dim=1)
 
         ! make sure we found a liquid material
         ! TODO: need better error handling here
@@ -86,7 +88,7 @@ contains
       ! use a material number of -1 to indicate solid.
       ! Internally, if solid is present it is the last material
       if (this%nmat > this%nfluid) then
-        where (this%priority == -1) this%priority = this%nmat
+        where (priority == 'SOLID') this%priority = this%nmat
       end if
     else
       this%priority = [(i, i=1,this%nmat)]

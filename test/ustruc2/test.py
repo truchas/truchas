@@ -6,8 +6,8 @@ import truchas
 
 def run_test(tenv):
     nfail = 0
-    stdout, output = tenv.truchas(4, "ustruc2.inp", restart_file="ustruc1.restart.149")
-    golden = tenv.output("ustruc2_pgolden/ustruc2.h5")
+    stdout, output = tenv.truchas(4, "ustruc2.inp", restart_file="ustruc1.restart.177")
+    golden = tenv.output("ustruc2_golden/ustruc2.h5")
 
     time = output.time(2) # final time
 
@@ -17,32 +17,36 @@ def run_test(tenv):
     nfail += truchas.compare_max_rel(test, gold, 5e-5, "temp", time)
 
     # G
-    tol = 1e-4
+    atol = 200
+    rtol = 1e-4
     test = sp.ma.masked_values(output.field(2, "uStruc-G"), 0)
     gold = sp.ma.masked_values(golden.field(3, "uStruc-G"), 0)
-    error = abs((test-gold) / (200/tol + gold))
-    nfail += truchas.compare_max(error, 0, tol, "G", time)
+    error = abs((test-gold) / (atol + rtol*gold))
+    nfail += truchas.compare_max(error, 0, 1.0, "G", time)
 
     # V
-    tol = 1e-4
+    atol = 1e-4
+    rtol = 1e-4
     test = sp.ma.masked_values(output.field(2, "uStruc-V"), 0)
     gold = sp.ma.masked_values(golden.field(3, "uStruc-V"), 0)
-    error = abs((test-gold) / (1e-4/tol + gold))
-    nfail += truchas.compare_max(error, 0, tol, "V", time)
+    error = abs((test-gold) / (atol + rtol* gold))
+    nfail += truchas.compare_max(error, 0, 1.0, "V", time)
 
     # lambda1
-    tol = 1e-4
+    atol = 1e-5
+    rtol = 1e-4
     test = sp.ma.masked_values(output.field(2, "uStruc-gv1-lambda1"), 0)
     gold = sp.ma.masked_values(golden.field(3, "uStruc-gv1-lambda1"), 0)
-    error = abs((test-gold) / (4e-6/tol + gold))
-    nfail += truchas.compare_max(error, 0, tol, "lambda1", time)
+    error = abs((test-gold) / (atol + rtol*gold))
+    nfail += truchas.compare_max(error, 0, 1.0, "lambda1", time)
 
     # lambda2
-    tol = 1e-4
+    atol = 2e-6
+    rtol = 1e-4
     test = sp.ma.masked_values(output.field(2, "uStruc-gv1-lambda2"), 0)
     gold = sp.ma.masked_values(golden.field(3, "uStruc-gv1-lambda2"), 0)
-    error = abs((test-gold) / (2e-6/tol + gold))
-    nfail += truchas.compare_max(error, 0, tol, "lambda2", time)
+    error = abs((test-gold) / (atol + rtol*gold))
+    nfail += truchas.compare_max(error, 0, 1.0, "lambda2", time)
 
     # ustruc
     test = output.field(2, "uStruc-gv1-ustruc")

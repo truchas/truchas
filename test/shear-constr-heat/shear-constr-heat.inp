@@ -31,7 +31,7 @@ define the solid material geometry and the initial conditions
 &BODY
 
     surface_name     = 'background'
-    material_number  = 1
+    material_name    = 'aluminum'
     temperature      = 3.98e+02, 
 
 /
@@ -207,43 +207,23 @@ z = 4.0 boundary
 
 define the material properties (aluminum, SI units)
 Elastic constants (stresses) in MPa to make test checking easier 
+
 &MATERIAL
-
-    material_number               = 1, 
-    priority                      = 1, 
-    material_name                 = 'aluminum', 
-    material_feature              = 'background',
-    immobile                      = .true. 
-    density                       = 2.70e+03, 
-
-/
-    Lame1_Constants               = 5.20e+4, 
-    Lame2_Constants               = 2.60e+4, 
-
-&PHASE
-
     name = 'aluminum'
-    property_name(1) = 'density',              property_constant(1) = 2.70e+03
-    property_name(2) = 'specific heat',        property_constant(2) = 9.00e+02
-    property_name(3) = 'conductivity',         property_constant(3) = 2.40e+02
-    property_name(4) = 'TM reference density',     property_constant(4) = 2.70e+03
-    property_name(5) = 'TM reference temperature', property_constant(5) = 2.98e+02
-    property_name(6) = 'TM linear CTE',            property_constant(6) = 2.20e-05
-    property_name(7) = 'Lame1', property_constant(7) = 5.20e+4 
-    property_name(8) = 'Lame2', property_constant(8) = 2.60e+4 
-
-/
-
-&MATERIAL_SYSTEM
-
-    name = 'aluminum'
-    phases = 'aluminum'
-
+    density = 2.70e+03
+    specific_heat = 9.00e+02
+    conductivity = 2.40e+02
+    tm_ref_density = 2.70e+03
+    tm_ref_temp = 2.98e+02
+    tm_linear_cte = 2.20e-05
+    tm_lame1 = 5.20e+4 
+    tm_lame2 = 2.60e+4 
 /
 
 solid mechanics only
 
 &PHYSICS
+  materials = 'aluminum'
 
     heat_transport   = .false. 
     solid_mechanics  = .true.

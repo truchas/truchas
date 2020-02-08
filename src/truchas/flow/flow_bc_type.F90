@@ -194,7 +194,8 @@ contains
   !! of parameters with names beginning with 'inflow'. If any are found, a
   !! sublist in the output parameter list is created with the same name, and
   !! the 'face sets' and all 'inflow*' parameters copied to the sublist. Only
-  !! scalar integer and 8-byte real valued inflow parameters are handled.
+  !! scalar integer, 8-byte real, and character valued inflow parameters are
+  !! handled.
 
   subroutine make_inflow_plist(bc_params, inflow_params)
 
@@ -207,6 +208,9 @@ contains
     character(:), allocatable :: bc_type, pname
     logical :: found_inflow
     integer, allocatable :: setids(:)
+#ifdef INTEL_COMPILER_WORKAROUND
+    class(*), pointer :: pval
+#endif
 
     piter = parameter_list_iterator(bc_params, sublists_only=.true.)
     do while (.not.piter%at_end())
@@ -226,10 +230,17 @@ contains
               call obc%set('face-set-ids', setids)
             end if
             if (ibc_piter%is_scalar()) then
+#ifdef INTEL_COMPILER_WORKAROUND
+              pval => ibc_piter%scalar()
+              select type (pval)
+#else
               select type (pval => ibc_piter%scalar())
+#endif
               type is (integer)
                 call obc%set(pname, pval)
               type is (real(r8))
+                call obc%set(pname, pval)
+              type is (character(*))
                 call obc%set(pname, pval)
               class default
                 INSIST(.false.)

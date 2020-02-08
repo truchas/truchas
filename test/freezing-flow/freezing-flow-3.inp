@@ -35,6 +35,7 @@ the flow solver.
 /
 
 &PHYSICS
+  materials = 'water'
   heat_transport = .true.
   flow = .true.
 /
@@ -101,44 +102,28 @@ the flow solver.
 
 &BODY
   surface_name = 'background'
-  material_number = 2
+  material_name = 'liquid'
   temperature = 15.0
   velocity = 1.0, 0.0, 0.0
 /
 
 &MATERIAL
-  material_number = 1
-  material_name = 'solid'
-  immobile = .true.
-  density = 1.0 ! not void
-/
-
-&PHASE
-  name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.02
-/
-
-&MATERIAL
-  material_number = 2
-  material_name = 'liquid'
-  density = 1.0 ! not void
-  material_feature = 'background'
+  name = 'water'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 0.02
+  phases = 'solid', 'liquid'
 /
 
 &PHASE
   name = 'liquid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.02
+  is_fluid = T
 /
 
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'solid', 'liquid'
-  transition_temps_low = 9.95
-  transition_temps_high = 10.05
-  smoothing_radius = 0.049999
+&PHASE_CHANGE
+  low_temp_phase = 'solid'
+  high_temp_phase = 'liquid'
+  solidus_temp = 9.9
+  liquidus_temp = 10.1
   latent_heat = 10.0
 /

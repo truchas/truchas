@@ -30,7 +30,10 @@ list(APPEND PHYSICS_FILES
 
 # - fluid_flow
 list(APPEND PHYSICS_FILES
+           physics/fluid_flow/legacy_flow_namelist.F90
+           physics/fluid_flow/flow_property_module.F90
            physics/fluid_flow/flow_phase_change.F90
+           physics/fluid_flow/flow_time_step_module.F90
            physics/fluid_flow/fluid_data_module.F90
            physics/fluid_flow/fluid_flow_module.F90
            physics/fluid_flow/fluid_type_module.F90
@@ -142,7 +145,7 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/ds_source_input.F90
            physics/heat_species_transport/mesh_interop.F90
            physics/heat_species_transport/mfd_disc_type.F90
-           physics/heat_species_transport/property_mesh_function.F90
+           physics/heat_species_transport/prop_mesh_func_type.F90
            physics/heat_species_transport/source_mesh_function.F90
            physics/heat_species_transport/upper_packed_matrix.F90
            physics/heat_species_transport/enthalpy_advector_class.F90
@@ -160,6 +163,7 @@ list(APPEND PHYSICS_FILES
            physics/induction_heating/EM_data_proxy.F90
            physics/induction_heating/EM_graphics_output.F90
            physics/induction_heating/EM_hex_tet_mapping.F90
+           physics/induction_heating/EM_properties.F90
            physics/induction_heating/GeometricModeler.F90
            physics/induction_heating/MaxwellBoundaryData.F90
            physics/induction_heating/MaxwellEddy.F90
@@ -170,12 +174,6 @@ list(APPEND PHYSICS_FILES
            physics/induction_heating/mimetic_discretization.F90
            physics/induction_heating/solenoid_fields.F90
            physics/induction_heating/sparse_matrix.F90)
-
-# - properties
-list(APPEND PHYSICS_FILES
-           physics/properties/physical_constants.F90
-           physics/properties/property_data_module.F90
-           physics/properties/property_module.F90)
 
 # - solid_mechanics
 list(APPEND PHYSICS_FILES

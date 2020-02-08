@@ -26,6 +26,7 @@ here to reduce the error.
 /
 
 &PHYSICS
+  materials = 'water', 'VOID'
   flow = .true.
   body_force_density = 0.6666666666666667, 0.0, 0.0
 /
@@ -83,7 +84,7 @@ Fluid plug
   surface_name = 'box'
   length = 1.0, 1.0, 1.0
   translation_pt = 1.5, 0.0, 0.0
-  material_number = 1
+  material_name = 'water'
   velocity = 0.0, 0.0, 0.0
   temperature = 0.0
 /
@@ -92,35 +93,14 @@ Surrounding void
 &BODY
   surface_name = 'background'
   mesh_material_number = 2
-  material_number = 2
+  material_name = 'VOID'
   velocity = 0.0, 0.0, 0.0
   temperature = 0.0
 /
 
-&INTERFACES
- vof_method = 'divide'
- vof_tolerance = 1.0e-3
-/
- 
-&MATERIAL
-  material_name = 'water'
-  material_number = 1
-  density = 1.0 ! not void
-/
-
-&PHASE
-  name = 'water'
-  property_name(1) = 'density', property_constant(1) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
-/
 
 &MATERIAL
-  material_name = 'void'
-  material_number = 2
-  density = 0.0
-  material_feature = 'background'
+  name = 'water'
+  is_fluid = T
+  density = 1.0
 /

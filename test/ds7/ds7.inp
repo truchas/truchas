@@ -25,6 +25,7 @@ so ortho operators are used for HT/PC.
 /
 
 &PHYSICS
+  materials = 'A'
   heat_transport = .true.
 /
 
@@ -79,25 +80,13 @@ so ortho operators are used for HT/PC.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'A'
   temperature = 1.0
 /
 
 &MATERIAL
-  Material_Number        = 1,
-  Material_Name          = 'A'
-  material_feature       = 'background'
-  Density                = 4.0
-/
-
-&PHASE
   name = 'A'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 0.5
-/
-
-&MATERIAL_SYSTEM
-  name = 'A'
-  phases = 'A'
+  density = 4.0
+  specific_heat = 0.25
+  conductivity = 0.5
 /

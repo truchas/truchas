@@ -47,14 +47,14 @@
 module TofH_type
 
   use kinds, only: r8
-  use property_mesh_function
+  use prop_mesh_func_type
   use ridders_class
   implicit none
   private
 
   type, extends(ridders), public :: TofH
     private
-    type(prop_mf), pointer :: HofT => null()
+    type(prop_mesh_func), pointer :: HofT => null()
     real(r8) :: H
     integer  :: cell
     !! Parameters for the algorithm that wraps Ridders root finding
@@ -80,13 +80,13 @@ contains
     class(TofH), intent(in) :: this
     real(r8), intent(in) :: x
     real(r8) :: fx
-    call pmf_eval (this%HofT, this%cell, [x], fx)
+    call this%HofT%compute_value(this%cell, [x], fx)
     fx = this%H - fx
   end function
 
   subroutine init (this, HofT, eps, max_try, delta)
     class(TofH), intent(out) :: this
-    type(prop_mf), target :: HofT
+    type(prop_mesh_func), target :: HofT
     real(r8), intent(in) :: eps
     integer, intent(in), optional :: max_try
     real(r8), intent(in), optional :: delta

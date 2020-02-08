@@ -18,6 +18,7 @@ See diffusion solver tests 2, 3 and 4 for variations.
 /
 
 &PHYSICS
+  materials = 'A+C', 'B+C'
   species_transport = .true.
   number_of_species = 1
 /
@@ -65,14 +66,14 @@ See diffusion solver tests 2, 3 and 4 for variations.
   translation_pt = 0.0, 0.0, -.5
   radius = 0.18
   height = 1.0
-  material_number = 1
+  material_name = 'A+C'
   temperature = 0.0
   phi = 0.0
 /
 
 &BODY
   surface_name = 'background'
-  material_number = 2
+  material_name = 'B+C'
   temperature = 0.0
   phi = 0.0
 /
@@ -82,35 +83,15 @@ INTERFACES
 /
 
 &MATERIAL
-  Material_Number = 1,
-  Material_Name   = 'A+C'
-  Density         = 2.0
-/
-
-&PHASE
   name = 'A+C'
-  property_name(1) = 'density',      property_constant(1) = 2.0
-  property_name(4) = 'diffusivity1', property_constant(4) = 0.05
-/
-
-&MATERIAL_SYSTEM
-  name = 'A+C'
-  phases = 'A+C'
-  number_of_components = 2
-  temperature_dependent = .false.
+  density = 2.0
+  diffusivity(1) = 0.05
 /
 
 &MATERIAL
-  Material_Number  = 2,
-  Material_Name    = 'B+C'
-  Material_Feature = 'background'
-  Density          = 2.0
-/
-
-&PHASE
   name = 'B+C'
-  property_name(1) = 'density',      property_constant(1) = 2.0
-  property_name(4) = 'diffusivity1', property_function(4) = 'diff-C-in-B'
+  density = 2.0
+  diffusivity_func(1) = 'diff-C-in-B'
 /
 
 &FUNCTION
@@ -120,19 +101,3 @@ INTERFACES
   poly_exponents(1,:) = 0,   1
 /
 
-&MATERIAL_SYSTEM
-  name = 'B+C'
-  phases = 'B+C'
-  number_of_components = 2
-  temperature_dependent = .false.
-/
-
-!! Define a void material purely for testing purposes.
-!! No void exists in the problem but this alters the code flow
-!! slightly.  Results should be identical with/without this.
-
-!&MATERIAL
-!  Material_Number  = 3
-!  Material_Name    = 'void'
-!  Density          = 0.0
-!/

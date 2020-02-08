@@ -81,6 +81,7 @@ A = C(1-lambda)^2/lambda^3
        projection_linear_solution = 'projection'
        courant_number       = 0.4
        porous_implicitness  = 0.5
+       permeability_constant = 1000.0, 0.0, 0.0
 
 /
 
@@ -92,6 +93,7 @@ A = C(1-lambda)^2/lambda^3
 /
 
 &PHYSICS
+  materials = 'fluid', 'solid'
  
        legacy_flow = .true.
        body_force_density = 0.0, 0.0, 0.0,
@@ -154,7 +156,7 @@ Velocity BC: No slip on y=0  and y=1 face
 
 &BODY
  
-       Material_number = 2,
+       Material_name   = 'fluid'
        Surface_Name    = 'plane',
        axis = 'z'
        Translation_Pt  = 10.0, 0.0, 0.5
@@ -165,65 +167,27 @@ Velocity BC: No slip on y=0  and y=1 face
  
 &BODY
  
-       Material_number = 1,
+       Material_name   = 'solid'
        Surface_Name    = 'background',
        Velocity        = 0.0, 0.0, 0.0,
        Temperature     = 273.0
 
 /
 
-&INTERFACES
-
-        vof_particles = 10,
-        int_particles = 10,
-
-/
 
 &MATERIAL
- 
-       Material_Name      = 'fluid',
-       Material_Number    = 1,
-       Material_Feature   = 'background'
-       priority           = 1,
-       Density            = 1.0,
-
-/
-
-&PHASE
   name = 'fluid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'viscosity',     property_constant(3) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'fluid'
-  phases = 'fluid'
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
+  viscosity = 1.0
 /
 
 
 &MATERIAL
- 
-       Material_Name      = 'solid',
-       Material_Number    = 2,
-       priority           = 2,
-       Density            = 1.0,
- 
-       Permeability_Constant  = 1000.0,
-
-       Immobile               = .true.
-/
-       Permeability_Constant  = 3*1000.0,
-
-&PHASE
   name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'solid'
-  phases = 'solid'
+  density = 1.0
+  specific_heat = 1.0
 /
 
 

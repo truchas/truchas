@@ -34,7 +34,7 @@ define the plug geometry and initial conditions
 
 &BODY
 
-    material_number       = 1, 
+    material_name         = 'graphite'
     mesh_material_number  = 1, 
     surface_name          = 'from mesh file', 
     temperature           = 5.50e+02, 
@@ -45,22 +45,12 @@ define the ring geometry and initial conditions
 
 &BODY
 
-    material_number       = 2, 
+    material_name         = '5754 aluminum'
     mesh_material_number  = 2, 
     surface_name          = 'from mesh file', 
     temperature           = 5.50e+02, 
 
 /
-Gap block
-&BODY
-
-    material_number       = 3, 
-    mesh_material_number  = 3, 
-    surface_name          = 'from mesh file', 
-    temperature           = 5.50e+02, 
-
-/
-
 
 define the boundary conditions:
 
@@ -161,51 +151,21 @@ Interface between plug and ring
 /
 
 define the plug material properties
- 
+
 &MATERIAL
-
-    Immobile                      = .true.
-    material_number               = 1, 
-    priority                      = 1, 
-    material_name                 = 'graphite', 
-    density                       = 1.7e+03, 
-    Material_Feature              = 'background'
-
-/
-
-&PHASE
-
    name = 'graphite'
-   property_name(1) = 'density',              property_constant(1) = 1.7e3
-   property_name(2) = 'specific heat',        property_constant(2) = 1.925e3
-   property_name(3) = 'conductivity',         property_constant(3) = 1.95e2
-   property_name(4) = 'TM reference density',     property_constant(4) = 1.7e3
-   property_name(5) = 'TM reference temperature', property_constant(5) = 800.0 
-   property_name(6) = 'TM linear CTE',            property_constant(6) = 7.0e-6
-   property_name(7) = 'Lame1', property_constant(7) = 3.4e+9
-   property_name(8) = 'Lame2', property_constant(8) = 2.76e+9
-
-/
-
-&MATERIAL_SYSTEM
-
-   name = 'graphite'
-   phases = 'graphite'
-
+   density = 1.7e3
+   specific_heat = 1.925e3
+   conductivity = 1.95e2
+   tm_ref_density = 1.7e3
+   tm_ref_temp = 800.0 
+   tm_linear_cte = 7.0e-6
+   tm_lame1 = 3.4e+9
+   tm_lame2 = 2.76e+9
 /
 
 define the ring material properties
  
-&MATERIAL
-
-    Immobile                      = .true.
-    material_number               = 2
-    priority                      = 2
-    material_name                 = '5754 aluminum' 
-    density                       = 2.70e+03 
-
-/
-
 &VISCOPLASTIC_MODEL
     phase = '5754 aluminum'
     model = 'MTS'
@@ -222,41 +182,22 @@ define the ring material properties
     MTS_sig_i   = 107.2e6
 /
 
-&PHASE
-
-    name = '5754 aluminum'
-    property_name(1) = 'density',              property_constant(1) = 2.7e3
-    property_name(2) = 'specific heat',        property_constant(2) = 8.5e2
-    property_name(3) = 'conductivity',         property_constant(3) = 2.4e2
-    property_name(4) = 'TM reference density',     property_constant(4) = 1.7e3
-    property_name(5) = 'TM reference temperature', property_constant(5) = 800.0 
-    property_name(6) = 'TM linear CTE',            property_constant(6) = 2.2e-5
-    property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
-    property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
-
-/
-
-&MATERIAL_SYSTEM
-
-    name = '5754 aluminum'
-    phases = '5754 aluminum'
-
-/
-
-Gap material
- 
 &MATERIAL
-
-    Immobile                      = .true.
-    material_number               = 3, 
-    priority                      = 3, 
-    material_name                 = 'gap', 
-    density                       = 0.0,
+    name = '5754 aluminum'
+    density = 2.7e3
+    specific_heat = 8.5e2
+    conductivity = 2.4e2
+    tm_ref_density = 1.7e3
+    tm_ref_temp = 800.0 
+    tm_linear_cte = 2.2e-5
+    tm_lame1 = 5.20e+10
+    tm_lame2 = 2.60e+10
 /
 
 solid mechanics and heat transfer
 
 &PHYSICS
+  materials = 'graphite', '5754 aluminum'
 
     heat_transport  = .true., 
     solid_mechanics  = .true., 

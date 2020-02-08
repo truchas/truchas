@@ -184,7 +184,7 @@ contains
       use parameter_module, only: nmat
       use legacy_mesh_api, only: ndim, ncells, cell
       use zone_module, only: zone
-      use property_module, only: get_density, get_user_material_id
+      use flow_property_module, only: get_density
       use matl_module, only: gather_vof
 
       integer :: j, m, stat
@@ -212,7 +212,7 @@ contains
         allocate(vof(nmat,ncells), name(nmat))
         do m = 1, nmat
           call gather_vof (m, vof(m,:))
-          write(name(m),'(a,i4.4)') 'VOF', get_user_material_id(m)
+          write(name(m),'(a,i4.4)') 'VOF', m  !TODO: incorporate material name
         end do
         call write_seq_cell_field (seq, vof, 'VOF', for_viz=.true., viz_name=name)
         deallocate(vof, name)
@@ -233,7 +233,7 @@ contains
       use legacy_mesh_api, only: ndim, ncells
       use zone_module, only: zone
       use fluid_data_module, only: fluxing_velocity, courant, boussinesq_approximation
-      use property_module, only: get_density_delta
+      use flow_property_module, only: get_density_delta
       use diagnostics_module, only: divergence
 
       integer :: n

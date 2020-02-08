@@ -51,6 +51,7 @@ test exercises the implementation in the normal 'HTSD' solver.
 /
 
 &PHYSICS
+  materials = 'solid', 'fluid', 'VOID'
   heat_transport = .true.
   legacy_flow = .true.
 /
@@ -137,7 +138,7 @@ T = 1.5*(1 - (5/48) 10^-2 (1-r)^2), where here r = |x|
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'solid'
   temperature_function = 'left-temp'
 /
 
@@ -156,7 +157,7 @@ T = 0.5*(1 + (5/16) 10^-2 (1-r)^2), where here r = |x|
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 1
+  material_name = 'solid'
   temperature_function = 'right-temp'
 /
 
@@ -170,52 +171,22 @@ T = 0.5*(1 + (5/16) 10^-2 (1-r)^2), where here r = |x|
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 3
-  material_number = 2
+  material_name = 'fluid'
   temperature = 1.0
   velocity = 16.0, 0.0, 0.0
 /
 
 &MATERIAL
-  material_number = 1
-  material_name = 'solid'
-  material_feature = 'background'
+  name = 'solid'
   density = 1.0
-  immobile = .true.
-/
-
-&PHASE
-  name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 1.0e2
-/
-
-&MATERIAL_SYSTEM
-  name = 'solid'
-  phases = 'solid'
+  specific_heat = 1.0
+  conductivity = 1.0e2
 /
 
 &MATERIAL
-  material_number = 2
-  material_name = 'fluid'
+  name = 'fluid'
+  is_fluid = T
   density = 1.0
-/
-
-&PHASE
-  name = 'fluid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 1.0e2
-/
-
-&MATERIAL_SYSTEM
-  name = 'fluid'
-  phases = 'fluid'
-/
-
-THIS FORCES/ALLOWS USE OF THE SPECIAL FLOW-HT SOLVER
-&MATERIAL
-  material_number = 3
-  material_name = 'void'
-  density = 0.0
+  specific_heat = 1.0
+  conductivity = 1.0e2
 /

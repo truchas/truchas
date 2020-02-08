@@ -202,7 +202,7 @@ CONTAINS
     !=======================================================================
     use fluid_data_module,    only: Solid_Face
     use legacy_mesh_api,      only: ncells, nfc, Mesh, DEGENERATE_FACE, EE_GATHER
-    use property_module,      only: get_viscosity
+    use flow_property_module,      only: get_viscosity
     use truchas_logging_services
     use viscous_data_module,  only: Mu_Face
 

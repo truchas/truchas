@@ -37,6 +37,7 @@
        volume_track_subcycles     = 1,
        volume_track_iter_Tol      = 1.0e-9
        courant_number             = 0.4
+       sound_speed                = 1000.0
 /
 
 &NUMERICS
@@ -47,6 +48,7 @@
 /
 
 &PHYSICS
+  materials = 'fluid', 'VOID'
  
        body_force_density = 0.0, 0.0, 0.0,
        legacy_flow = .true.,
@@ -71,7 +73,7 @@ BC #1. Velocity BC: Inlet
 
 &BODY
  
-       Material_number = 2,
+       Material_name   = 'VOID'
        Surface_Name    = 'box',
        length = 0.3, 0.1, 0.1,
        translation_pt  = 0.85, 0.05, 0.05,
@@ -82,7 +84,7 @@ BC #1. Velocity BC: Inlet
 
 &BODY
  
-       Material_number = 1,
+       Material_name   = 'fluid'
        Surface_Name    = 'background',
        !Velocity        = 1.0, 0.0, 0.0, ! Truchas original overwrote this with zero
        Velocity        = 0.0, 0.0, 0.0,
@@ -92,34 +94,10 @@ BC #1. Velocity BC: Inlet
 /
 
 &MATERIAL
- 
-       Material_Name      = 'fluid',
-       Material_Number    = 1,
-       Material_Feature   = 'background'
-       priority           = 1,
-       Density            = 1.0,
- 
-/
-
-&PHASE
   name = 'fluid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'fluid'
-  phases = 'fluid'
-/
-
-&MATERIAL
- 
-       Material_Name      = 'void',
-       Material_Number    = 2,
-       priority           = 2,
-       Density            = 0.0,
-       Sound_Speed = 1000.0,
-
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
 /
 
 &PARALLEL_PARAMETERS

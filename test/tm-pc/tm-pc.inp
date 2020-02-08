@@ -32,9 +32,9 @@ define the solid material geometry and the initial conditions
 &BODY
 
     surface_name         = 'from mesh file'
-    material_number      = 1
+    material_name        = 'aluminum'
     mesh_material_number = 1
-    temperature          = 5.0e+02, 
+    temperature          = 5.0e+02,
 
 /
 
@@ -44,10 +44,10 @@ x = 0.0e+00 boundary
 
 &BC
 
-    surface_name     = 'from mesh file', 
-    mesh_surface          = 1, 
-    bc_variable      = 'displacement', 
-    bc_type          = 'x-displacement', 
+    surface_name     = 'from mesh file',
+    mesh_surface          = 1,
+    bc_variable      = 'displacement',
+    bc_type          = 'x-displacement',
     bc_value         = 0.0
 
 /
@@ -70,10 +70,10 @@ x = 2.0e-2 boundary
 
 &BC
 
-    surface_name     = 'from mesh file', 
-    mesh_surface          = 2, 
-    bc_variable      = 'displacement', 
-    bc_type          = 'x-displacement', 
+    surface_name     = 'from mesh file',
+    mesh_surface          = 2,
+    bc_variable      = 'displacement',
+    bc_type          = 'x-displacement',
     bc_value         = 0.0
 
 /
@@ -82,10 +82,10 @@ y = 0.0e+00 boundary
 
 &BC
 
-    surface_name     = 'from mesh file', 
-    mesh_surface          = 3, 
-    bc_variable      = 'displacement', 
-    bc_type          = 'y-displacement', 
+    surface_name     = 'from mesh file',
+    mesh_surface          = 3,
+    bc_variable      = 'displacement',
+    bc_type          = 'y-displacement',
     bc_value         = 0.0e+00
 
 /
@@ -108,10 +108,10 @@ y = 3.0e-2 boundary
 
 &BC
 
-    surface_name     = 'from mesh file', 
-    mesh_surface          = 4, 
-    bc_variable      = 'displacement', 
-    bc_type          = 'y-displacement', 
+    surface_name     = 'from mesh file',
+    mesh_surface          = 4,
+    bc_variable      = 'displacement',
+    bc_type          = 'y-displacement',
     bc_value         = 0.0e+00
 
 /
@@ -120,9 +120,9 @@ z = 0.0e+00 boundary
 
 &BC
 
-    surface_name     = 'from mesh file', 
-    mesh_surface          = 5, 
-    bc_variable      = 'displacement', 
+    surface_name     = 'from mesh file',
+    mesh_surface          = 5,
+    bc_variable      = 'displacement',
     bc_type          = 'z-displacement'
     bc_value         = 0.0e+00
 
@@ -145,105 +145,76 @@ z = 4.0 boundary
 /
 
 define the material properties (aluminum, SI units)
-Elastic constants (stresses) in MPa to make test checking easier 
-
-&MATERIAL_SYSTEM
-  name = 'Pseudo_Al'
-  phases = 'PC-aluminum_2', 'PC-aluminum', 'aluminum'
-  transition_temps_low  = 350.0, 399.0
-  transition_temps_high = 375.0, 401.0
-  latent_heat           =  10000.0, 10000.0 ! J/kg
-  reference_temp        = 0.0
-  reference_enthalpy    = 0.0
-  smoothing_radius	= 0.1
-/
+Elastic constants (stresses) in MPa to make test checking easier
 
 &MATERIAL
-
-    material_number               = 1, 
-    priority                      = 1, 
-    material_name                 = 'aluminum', 
-    material_feature              = 'background', 
-    density                       = 2.70e+03, 
-    immobile                      = .true.
+  name = 'Pseudo_Al'
+  density = 2700.0, ! kg/m^3
+  tm_lame1 = 5.20e+10
+  tm_lame2 = 2.60e+10
+  phases = 'PC-aluminum_2', 'PC-aluminum', 'aluminum'
+  ref_temp        = 0.0
+  ref_enthalpy    = 0.0
 /
-    Lame1_Constants               = 5.20e+10, 
-    Lame2_Constants               = 2.60e+10, 
 
 &PHASE
   name = 'aluminum'
-  property_name(1) = 'density',              property_constant(1) = 2700.0, ! kg/m^3
-  property_name(2) = 'specific heat',        property_constant(2) = 900.0,  ! J/kg-K
-  property_name(3) = 'conductivity',         property_constant(3) = 240.0,  ! W/m-K
-  property_name(4) = 'TM reference density',      property_constant(4) = 2700.0 ! kg/m^3
-  property_name(5) = 'TM reference temperature',  property_constant(5) = 500.0 
-  property_name(6) = 'TM linear CTE',             property_constant(6) = 2.2e-5
-  property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
-  property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
+  specific_heat = 900.0,  ! J/kg-K
+  conductivity = 240.0,  ! W/m-K
+  tm_ref_density = 2700.0 ! kg/m^3
+  tm_ref_temp = 500.0
+  tm_linear_cte = 2.2e-5
 /
-
-
-Bogus phase change material
-
-&MATERIAL
-
-    material_number               = 2, 
-    priority                      = 2, 
-    material_name                 = 'PC-aluminum', 
-    density                       = 2.673e+03, 
-    immobile                      = .true.
-/
-    Lame1_Constants               = 5.20e+10, 
-    Lame2_Constants               = 2.60e+10, 
 
 &PHASE
   name = 'PC-aluminum'
-  property_name(1) = 'density',              property_constant(1) = 2700.0, ! kg/m^3
-  property_name(2) = 'specific heat',        property_constant(2) = 1200.0,  ! J/kg-K
-  property_name(3) = 'conductivity',         property_constant(3) = 270.0,  ! W/m-K
-  property_name(4) = 'TM reference density',      property_constant(4) = 2690.7 ! kg/m^3
-  property_name(5) = 'TM reference temperature',  property_constant(5) = 400.0 
-  property_name(6) = 'TM linear CTE',             property_constant(6) = 2.1e-5
-  property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
-  property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
+  specific_heat = 1200.0,  ! J/kg-K
+  conductivity = 270.0,  ! W/m-K
+  tm_ref_density = 2690.7 ! kg/m^3
+  tm_ref_temp = 400.0
+  tm_linear_cte = 2.1e-5
 /
-
-&MATERIAL
-
-    material_number               = 3, 
-    priority                      = 3, 
-    material_name                 = 'PC-aluminum_2', 
-    density                       = 2.6865e+03, 
-    immobile                      = .true.
-
-/
-    Lame1_Constants               = 5.20e+10, 
-    Lame2_Constants               = 2.60e+10, 
 
 &PHASE
   name = 'PC-aluminum_2'
-  property_name(1) = 'density',              property_constant(1) = 2700.0, ! kg/m^3
-  property_name(2) = 'specific heat',        property_constant(2) = 1200.0,  ! J/kg-K
-  property_name(3) = 'conductivity',         property_constant(3) = 270.0,  ! W/m-K
-  property_name(4) = 'TM reference density',      property_constant(4) = 2712.82 ! kg/m^3
-  property_name(5) = 'TM reference temperature',  property_constant(5) = 350.0 
-  property_name(6) = 'TM linear CTE',             property_constant(6) = 2.0e-5
-  property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
-  property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
+  specific_heat = 1200.0,  ! J/kg-K
+  conductivity = 270.0,  ! W/m-K
+  tm_ref_density = 2712.82 ! kg/m^3
+  tm_ref_temp = 350.0
+  tm_linear_cte = 2.0e-5
+/
+
+&PHASE_CHANGE
+  low_temp_phase = 'PC-aluminum_2'
+  high_temp_phase = 'PC-aluminum'
+  solid_frac_table = 350.0 1.0
+                     355.0 0.8
+                     360.0 0.6
+                     365.0 0.4
+                     370.0 0.2
+                     375.0 0.0
+  latent_heat =  10000.0 ! J/kg
+/
+
+&PHASE_CHANGE
+  low_temp_phase = 'PC-aluminum'
+  high_temp_phase = 'aluminum'
+  solidus_temp  = 398.0
+  liquidus_temp = 402.0
+  latent_heat   =  10000.0 ! J/kg
 /
 
 &PHYSICS
-
-    heat_transport                = .true., 
-    solid_mechanics               = .true.
-
+  materials = 'Pseudo_Al'
+  heat_transport  = T
+  solid_mechanics = T
 /
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 1.0e-5
+  rel_temp_tol       = 1.0e-4
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 1.0e-5
+  rel_enthalpy_tol   = 1.0e-4
   nlk_tol            = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
 /
@@ -254,20 +225,20 @@ Bogus phase change material
 
 &LINEAR_SOLVER
 
-    name                    = 'displacement precon', 
-    method                  = 'none', 
-    preconditioning_steps   = 4, 
-    relaxation_parameter    = 1.0, 
-    preconditioning_method  = 'tm_ssor', 
+    name                    = 'displacement precon',
+    method                  = 'none',
+    preconditioning_steps   = 4,
+    relaxation_parameter    = 1.0,
+    preconditioning_method  = 'tm_ssor',
 
 /
 
-&NONLINEAR_SOLVER 
+&NONLINEAR_SOLVER
 
-    name                    = 'displacement solve', 
-    method                  = 'nlk', 
-    linear_solver_name      = 'displacement precon', 
-    convergence_criterion   = 1.0e-12, 
+    name                    = 'displacement solve',
+    method                  = 'nlk',
+    linear_solver_name      = 'displacement precon',
+    convergence_criterion   = 1.0e-12,
     nlk_max_vectors         = 20
     nlk_vector_tolerance    = 0.01
     maximum_iterations      = 100
@@ -287,7 +258,7 @@ Run for 100 sec
 
 &OUTPUTS
 
-    output_t                     = 0.0e+00, 6.0e+00, 
+    output_t                     = 0.0e+00, 6.0e+00,
     output_dt                    = 6.0
     output_dt_multiplier         = 1
 
@@ -295,6 +266,6 @@ Run for 100 sec
 
 &PARALLEL_PARAMETERS
 
-    Partitioner  = 'automatic', 
+    Partitioner  = 'automatic',
 
 /

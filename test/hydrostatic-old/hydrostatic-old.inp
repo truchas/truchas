@@ -49,14 +49,11 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 /
 
 &PHYSICS
+  materials = 'water', 'air', 'solid'
     body_force_density     = 0.0, 0.0, -9.81
     legacy_flow            = .true.
 /
 
-&INTERFACES
-    int_particles  = 5
-    vof_particles  = 10
-/
 
 &BC
     Surface_Name     = 'conic'
@@ -95,7 +92,7 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 /
  
 &BODY
-    Material_number  = 2
+    Material_name    = 'air'
     Surface_Name     = 'box'
     Fill             = 'inside'
     Length           = 1.0000, 0.05, 0.50
@@ -105,7 +102,7 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 /
 
 &BODY
-    Material_number  = 3
+    Material_name    = 'solid'
     Surface_Name     = 'box'
     Fill             = 'inside'
     Length           = 0.200, 0.050, 1.00
@@ -115,67 +112,30 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 /
 
 &BODY
-    Material_number  = 1
+    Material_name    = 'water'
     Surface_Name     = 'background'
     Velocity         = 0.0, 0.0, 0.0
     Temperature      = 273.0
 /
 
 &MATERIAL
-    Material_Name           = 'water'
-    Material_Number         = 1
-    priority                = 1
-    Density                 = 1000.0
-/
-
-&PHASE
     name = 'water'
-    property_name(1) = 'density',       property_constant(1) = 1000.0
-    property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-    name = 'water'
-    phases = 'water'
+    is_fluid = T
+    density = 1000.0
+    specific_heat = 1.0
 /
 
 &MATERIAL
-    Material_Name           = 'air'
-    Material_Number         = 2
-    Material_Feature        = 'background'
-    priority                = 2
-    Density                 = 1.2
-/
-
-&PHASE
     name = 'air'
-    property_name(1) = 'density',       property_constant(1) = 1.2
-    property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-    name = 'air'
-    phases = 'air'
+    is_fluid = T
+    density = 1.2
+    specific_heat = 1.0
 /
 
 &MATERIAL
-    Material_Name           = 'solid'
-    Material_Number         = 3
-    Material_Feature        = 'background'
-    priority                = 3
-    Density                 = 3000.0
-    Immobile                = .true.
-/
-
-&PHASE
     name = 'solid'
-    property_name(1) = 'density',       property_constant(1) = 3000.0
-    property_name(2) = 'specific heat', property_constant(2) = 1.0
-/
-
-&MATERIAL_SYSTEM
-    name = 'solid'
-    phases = 'solid'
+    density = 3000.0
+    specific_heat = 1.0
 /
 
 &PARALLEL_PARAMETERS

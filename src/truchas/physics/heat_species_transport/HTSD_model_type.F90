@@ -12,7 +12,7 @@ module HTSD_model_type
   use unstr_mesh_type
   use mfd_disc_type
   use data_layout_type
-  use property_mesh_function
+  use prop_mesh_func_type
   use source_mesh_function
   use bndry_func1_class
   use bndry_func2_class
@@ -25,8 +25,8 @@ module HTSD_model_type
   
   type, public :: HT_model
     !! Equation parameters
-    type(prop_mf) :: conductivity ! thermal conductivity
-    type(prop_mf) :: H_of_T       ! enthalpy as a function of temperature
+    type(prop_mesh_func) :: conductivity ! thermal conductivity
+    type(prop_mesh_func) :: H_of_T       ! enthalpy as a function of temperature
     type(source_mf) :: source     ! external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
@@ -42,9 +42,9 @@ module HTSD_model_type
   
   type, public :: SD_model
     !! Equation parameters
-    type(prop_mf) :: diffusivity
+    type(prop_mesh_func) :: diffusivity
     type(source_mf) :: source
-    type(prop_mf), pointer :: soret => null()
+    type(prop_mesh_func), pointer :: soret => null()
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! simple flux
@@ -151,19 +151,19 @@ contains
   subroutine HT_model_delete (this)
     type(HT_model), intent(inout) :: this
     integer :: n
-    call destroy (this%conductivity)
-    call destroy (this%H_of_T)
+    !call destroy (this%conductivity)
+    !call destroy (this%H_of_T)
     call smf_destroy (this%source)
     if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine HT_model_delete
   
   subroutine SD_model_delete (this)
     type(SD_model), intent(inout) :: this
-    call destroy (this%diffusivity)
-    if (associated(this%soret)) then
-      call destroy (this%soret)
-      deallocate(this%soret)
-    end if
+    !call destroy (this%diffusivity)
+    !if (associated(this%soret)) then
+     ! call destroy (this%soret)
+     ! deallocate(this%soret)
+    !end if
     call smf_destroy (this%source)
   end subroutine SD_model_delete
   
@@ -241,7 +241,7 @@ contains
 
       call HTSD_model_get_cell_heat_view (this, u, uptr)
       call HTSD_model_get_cell_heat_view (this, f, fptr)
-      call pmf_eval (this%ht%H_of_T, state, value)
+      call this%ht%H_of_T%compute_value(state, value)
       fptr = uptr - value(:this%mesh%ncell_onP)
 
       !! Overwrite function value on void cells with dummy equation H=0.
@@ -271,7 +271,7 @@ contains
       end if
 
       !! Compute the generic heat equation residual.
-      call pmf_eval (this%ht%conductivity, state, value)
+      call this%ht%conductivity%compute_value(state, value)
       if (associated(this%void_cell)) where (this%void_cell) value = 0.0_r8
       call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
       call smf_eval (this%ht%source, t, value)
@@ -423,7 +423,7 @@ contains
       end if
 
       !! Diffusion operator function value.
-      call pmf_eval (this%sd(index)%diffusivity, state, D)
+      call this%sd(index)%diffusivity%compute_value(state, D)
       if (associated(this%void_cell)) where (this%void_cell) D = 0.0_r8
       call this%disc%apply_diff (D, Ccell, Cface, Fcell, Fface)
 
@@ -469,7 +469,7 @@ contains
           call this%ht%bc_dir%compute(t)
           Tface(this%ht%bc_dir%index) = this%ht%bc_dir%value
         end if
-        call pmf_eval (this%sd(index)%soret, state, value)
+        call this%sd(index)%soret%compute_value(state, value)
         value = D*value
         call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
         if (allocated(this%sd(index)%bc_dir)) then

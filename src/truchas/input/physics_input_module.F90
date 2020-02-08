@@ -43,9 +43,10 @@ contains
     use body_data_module,       only: body_force
     use EM_data_proxy,          only: SET_EM_SIMULATION_ON_OR_OFF
     use fluid_data_module,      only: fluid_flow
-    use input_utilities,        only: seek_to_namelist
+    use input_utilities,        only: seek_to_namelist, NULL_C
     use solid_mechanics_input,  only: solid_mechanics
     use diffusion_solver_data,  only: ds_enabled, system_type, num_species
+    use material_model_driver,  only: materials, nmat
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities, only: i_to_c
 
@@ -57,7 +58,7 @@ contains
 
     namelist /physics/ heat_transport, species_transport, number_of_species, flow, &
                        legacy_flow, body_force_density, prescribed_flow, &
-                       electromagnetics, solid_mechanics
+                       electromagnetics, solid_mechanics, materials
 
     call TLS_info ('')
     call TLS_info ('Reading PHYSICS namelist ...')
@@ -83,6 +84,7 @@ contains
       body_force_density = 0.0_r8
       legacy_flow = .false.
       prescribed_flow = .false.
+      materials = NULL_C
       read(lun,nml=physics,iostat=ios,iomsg=iom)
     end if
     call broadcast(ios)
@@ -98,6 +100,7 @@ contains
     call broadcast(solid_mechanics)
     call broadcast(electromagnetics)
     call broadcast(prescribed_flow)
+    call broadcast(materials)
 
     ! flow and legacy_flow are mutually exclusive
     ! flow and prescribed_flow are mutually exclusive
@@ -133,6 +136,10 @@ contains
     else if (species_transport) then
       system_type = 'species'
     end if
+
+    nmat = count(materials /= NULL_C)
+    if (nmat == 0) call TLS_fatal('MATERIALS not specified')
+    materials(1:nmat) = pack(materials, mask=(materials /= NULL_C))
 
   end subroutine physics_input
 

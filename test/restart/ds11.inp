@@ -23,6 +23,7 @@ Should give the same results
 /
 
 &PHYSICS
+  materials = 'mold', 'metal'
   heat_transport = .true.
 /
 
@@ -82,73 +83,46 @@ HTC across interface between mold and metal
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 3
+  material_name = 'metal-liquid'
   temperature = 10.0
 /
 
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 1
+  material_name = 'mold'
   temperature = 10.0
 /
 
-&BODY
-  surface_name = 'from mesh file'
-  mesh_material_number = 10
-  material_number = 1
-  temperature = 0.0
+&MATERIAL
+  name = 'mold'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 0.1
 /
 
 &MATERIAL
-  material_number = 1
-  material_name = 'mold'
-  material_feature = 'background'
+  name = 'metal'
   density = 1.0
-/
-
-&PHASE
-  name = 'mold'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0 
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1
-/
-
-&MATERIAL_SYSTEM
-  name = 'mold'
-  phases = 'mold'
-/
-
-&MATERIAL
-  material_number = 2
-  material_name = 'metal-solid'
-  density = 1.0
+  phases = 'metal-solid', 'metal-liquid'
 /
 
 &PHASE
   name = 'metal-solid'
-  property_name(1) = 'density',       property_constant(1) = 1.0  
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1  
-/
-
-&MATERIAL
-  material_number = 3
-  material_name = 'metal-liquid'
-  density = 1.0
+  specific_heat = 1.0
+  conductivity = 0.1
 /
 
 &PHASE
   name = 'metal-liquid'
-  property_name(1) = 'density',       property_constant(1) = 1.0  
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1  
+  specific_heat = 1.0
+  conductivity = 0.1
 /
 
-&MATERIAL_SYSTEM
-  name = 'metal'
-  phases = 'metal-solid', 'metal-liquid'
-  transition_temps_low  = 7.9
-  transition_temps_high = 8.0
-  latent_heat           = 0.5
+&PHASE_CHANGE
+  low_temp_phase = 'metal-solid'
+  high_temp_phase = 'metal-liquid'
+  solidus_temp = 7.85
+  liquidus_temp = 8.05
+  latent_heat = 0.5
 /

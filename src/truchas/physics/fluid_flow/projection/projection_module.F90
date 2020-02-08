@@ -225,7 +225,7 @@ CONTAINS
     use bc_module,              only: bndry_vel !BC_Vel
     use fluid_data_module,      only: fluidRho, Solid_Face, &
                                       void_pressure, IsPureImmobile,  &
-                                      Rho_Face
+                                      Rho_Face, sound_speed
     use matl_module,            only: Matl
     use linear_solution,        only: Ubik_user
     use legacy_mesh_api,        only: ncells, ndim, nfc, ncells_tot, Cell
@@ -237,7 +237,7 @@ CONTAINS
                                       Face_Density,                 &
                                       dirichlet_pressure,           &
                                       Vol_over_RhoCsqDt
-    use property_data_module,   only: Sound_Speed, IsImmobile
+    use flow_property_module,        only: isImmobile, void_material_index
     use time_step_module,       only: t, dt
     use zone_module,            only: Zone
     use UbikSolve_module
@@ -275,14 +275,14 @@ CONTAINS
                     RHS = RHS +  Matl(s)%Cell%Vof**navg
            end do
         endif
-        ! calculate the contribution of material m to the reciprocal sound speed square
-        if(Sound_Speed(m) > 0) then
-            do s = 1, mat_slot
-               where (Matl(s)%Cell%Id == m) &
-                    Vol_over_RhoCsqDt = Vol_over_RhoCsqDt + Matl(s)%Cell%Vof**navg/sound_speed(m)**2
-            end do
-        endif
     enddo
+    ! calculate the contribution of material m to the reciprocal sound speed square
+    if (sound_speed > 0) then
+      do s = 1, mat_slot
+         where (Matl(s)%Cell%Id == void_material_index()) &
+              Vol_over_RhoCsqDt = Vol_over_RhoCsqDt + Matl(s)%Cell%Vof**navg/sound_speed**2
+      end do
+    end if
     ! Normalize by the total fluid fraction, Multiply by the Cell Volume and divide by dt
     ! (This puts the array in the most efficient form for Y_EQ_AX_PRS)
     where( RHS > 0 )  Vol_over_RhoCsqDt = Cell%Volume*Vol_over_RhoCsqDt / (dt*RHS)

@@ -19,6 +19,7 @@ subdivision of the hex cells.
 /
 
 &PHYSICS
+  materials = 'conductor1', 'conductor2', 'VOID'
   heat_transport = .true.
   electromagnetics = .true.
 /
@@ -31,6 +32,7 @@ subdivision of the hex cells.
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
   nlk_tol = 0.001
+  void_temperature = 300.0
 /
 
 &OUTPUTS
@@ -59,7 +61,7 @@ Core of the conducting cylinder
 &BODY
   Surface_Name = 'from mesh file'
   Mesh_Material_Number = 11
-  Material_Number = 1
+  Material_Name = 'conductor1'
   Temperature = 300.0
 /
 
@@ -67,13 +69,13 @@ Outer layer of the conducting cylinder
 &BODY
   Surface_Name = 'from mesh file'
   Mesh_Material_Number = 12
-  Material_Number = 2
+  Material_Name = 'conductor2'
   Temperature = 300.0
 /
 
 Free space region
 &BODY
-  Material_Number = 3
+  Material_Name = 'VOID'
   Surface_name = 'background'
   Temperature = 300.0
 /
@@ -86,47 +88,17 @@ Free space region
 /
 
 &MATERIAL
-  Material_Number = 1
-  Material_Name = 'conductor1'
-  Density = 200.0
-/
-
-&PHASE
   name = 'conductor1'
-  property_name(1) = 'density',       property_constant(1) = 200.0
-  property_name(2) = 'specific heat', property_constant(2) = 150.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1
-  property_name(4) = 'electrical conductivity', property_constant(4) = 5.0e4
-/
-
-&MATERIAL_SYSTEM
-  name = 'conductor1'
-  phases = 'conductor1'
+  density = 200.0
+  specific_heat = 150.0
+  conductivity = 0.1
+  electrical_conductivity = 5.0e4
 /
 
 &MATERIAL
-  Material_Number = 2
-  Material_Name = 'conductor2'
-  Density = 200.0
-/
-
-&PHASE
   name = 'conductor2'
-  property_name(1) = 'density',       property_constant(1) = 200.0
-  property_name(2) = 'specific heat', property_constant(2) = 150.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1
-  property_name(4) = 'electrical conductivity', property_constant(4) = 1.0e5
-/
-
-&MATERIAL_SYSTEM
-  name = 'conductor2'
-  phases = 'conductor2'
-/
-
-&MATERIAL
-  Material_Number = 3
-  Material_Name = 'void'
-  Material_Feature = 'background'
-  Density = 0.0
-  Void_Temperature = 300.0
+  density = 200.0
+  specific_heat = 150.0
+  conductivity = 0.1
+  electrical_conductivity = 1.0e5
 /

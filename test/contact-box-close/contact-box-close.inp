@@ -14,6 +14,7 @@
 /
 
 &PHYSICS
+  materials = 'aluminum'
   heat_transport = .true.
   solid_mechanics = .true.
 /
@@ -63,14 +64,7 @@
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1, 2
-  material_number = 1
-  temperature = 288.0
-/
-
-&BODY
-  surface_name = 'from mesh file'
-  mesh_material_number = 3
-  material_number = 2
+  material_name = 'aluminum'
   temperature = 288.0
 /
 
@@ -160,40 +154,15 @@
 
 define the material properties (aluminum, SI units)
 Elastic constants (stresses) in MPa to make test checking easier 
-&MATERIAL
-  material_number =  1
-  priority =  1
-  material_name = 'aluminum'
-  material_feature = 'background'
-  density =  2.70e+03
-  immobile = .true.
-/
-  Lame1_Constants =  5.20e+10
-  Lame2_Constants =  2.60e+10
-
-&PHASE
-  name = 'aluminum'
-  property_name(1) = 'density',       property_constant(1) = 2.7e3
-  property_name(2) = 'specific heat', property_constant(2) = 9.0e2
-  property_name(3) = 'conductivity',  property_constant(3) = 2.4e2
-  property_name(4) = 'TM reference density',     property_constant(4) = 2.7e3
-  property_name(5) = 'TM reference temperature', property_constant(5) = 298.0
-  property_name(6) = 'TM linear CTE',            property_constant(6) = 2.2e-5
-  property_name(7) = 'Lame1', property_constant(7) = 5.20e+10
-  property_name(8) = 'Lame2', property_constant(8) = 2.60e+10
-/
-
-&MATERIAL_SYSTEM
-  name = 'aluminum'
-  phases = 'aluminum'
-/
 
 &MATERIAL
-  material_number = 2
-  priority = 2
-  material_name = 'gap'
-  density =  0.0
-  immobile = .true.
+  name = 'aluminum'
+  density = 2.7e3
+  specific_heat = 9.0e2
+  conductivity = 2.4e2
+  tm_ref_density = 2.7e3
+  tm_ref_temp = 298.0
+  tm_linear_cte = 2.2e-5
+  tm_lame1 = 5.20e+10
+  tm_lame2 = 2.60e+10
 /
-  Lame1_Constants = 0.0
-  Lame2_Constants = 0.0
