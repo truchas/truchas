@@ -5,7 +5,7 @@
 !! enclosure using Sandia's CHAPARRAL package.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
-!! 4 Apr 2008
+!! 4 Apr 2008; updated Feb 2020
 !!
 !! David Neill-Asanza <dhna@lanl.gov>
 !! 6 Aug 2019
@@ -18,15 +18,15 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  CALL READ_CHAPARRAL_NAMELIST (LUN, CPAR, FOUND) reads the first occurrence
+!!  CALL READ_CHAPARRAL_NAMELIST(LUN, PARAMS, FOUND) reads the first occurrence
 !!    of a CHAPARRAL namelist from the file opened on unit LUN. If the namelist
 !!    is not found, the logical argument FOUND returns false.  Otherwise it
 !!    returns true and the values read (and defaults for any others) are
-!!    returned in the opaque data structure CPAR.  The subroutine takes care
+!!    returned in the parameter list PARAMS.  The subroutine takes care
 !!    of handling any IO errors and checks the namelist values for correctness,
 !!    gracefully terminating execution of the program if any errors are
 !!    encountered.  This is a collective procedure.  Input takes place on
-!!    process rank 1, but the returned CPAR is replicated on all processes.
+!!    process rank 1, but the returned PARAMS is replicated on all processes.
 !!
 !!    The CHAPARRAL namelist contains the following variables:
 !!      verbosity_level
@@ -43,12 +43,12 @@
 !!      smoothing_tolerance
 !!      smoothing_max_iter
 !!
-!!  CALL CALCULATE_VF (E, CPAR, EP, VF) uses the Chaparral package to calculate
+!!  CALL CALCULATE_VF(E, PARAMS, EP, VF) uses the Chaparral package to calculate
 !!    the view factors VF for the enclosure E whose faces are clustered as
 !!    described by the enclosure patches object EP.  The control parameters for
-!!    the Chaparral procedures are contained in the opaque object CPAR that was
-!!    initialized by a call to READ_CHAPARRAL_NAMELIST.  This is a collective
-!!    procedure.  The enclosure E and parameters CPAR must be replicated across
+!!    the Chaparral procedures are contained in the parameter list PARAMS that
+!!    was initialized by a call to READ_CHAPARRAL_NAMELIST. This is a collective
+!!    procedure. The enclosure E and parameters PARAMS must be replicated across
 !!    all processes, and the enclosure patches EP must only be initialized on
 !!    process rank 1. The view factors are returned in a distributed form in VF.
 !!
@@ -57,46 +57,31 @@
 
 module re_chaparral_vf
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use re_utilities
   use re_dist_vf_type
+  use parameter_list_type
   use scl
   implicit none
   private
 
   public :: read_chaparral_namelist, calculate_vf
 
-  type, public :: chap_param
-    private
-    integer  :: verbosity ! use a common value for all routines.
-    !! VF_DefineEnclosure parameters
-    integer  :: partial, nonblocking
-    real(r8) :: asink
-    !! VF_DefineTopology parameters
-    integer  :: bsp_depth, bsp_length
-    real(r8) :: spatial_tol
-    !! VF_CalcHemicube parameters
-    integer  :: hc_sub_divide, hc_resolution
-    real(r8) :: hc_min_sep
-    !! VF_SmoothMatrix parameters
-    integer  :: smooth_max_iter
-    real(r8) :: smooth_wt, smooth_tol
-  end type
-
 contains
 
-  subroutine read_chaparral_namelist (lun, cpar, found)
+  subroutine read_chaparral_namelist(lun, params, found)
 
     use string_utilities
     use input_utilities
 
     integer, intent(in) :: lun
-    type(chap_param), intent(out) :: cpar
+    type(parameter_list), intent(out) :: params
     logical, intent(out) :: found
 
     logical :: is_IOP
     integer :: ios, stat
-    character(len=9) :: string
+    character(9) :: string
+    character(255) :: iom
 
     !! The CHAPARRAL namelist variables; user visible.
     logical  :: blocking_enclosure, partial_enclosure
@@ -114,51 +99,48 @@ contains
     !! Seek to the first instance of the CHAPARRAL namelist.
     if (is_IOP) then
       rewind(lun)
-      call seek_to_namelist (lun, 'CHAPARRAL', found, iostat=ios)
+      call seek_to_namelist(lun, 'CHAPARRAL', found, iostat=ios)
     end if
-    call scl_bcast (ios)
-    if (ios /= 0) call re_halt ('error reading file connected to unit ' // &
-                                i_to_c(lun) // ': iostat=' // i_to_c(ios))
+    call scl_bcast(ios)
+    if (ios /= 0) call re_halt('error reading input file: iostat=' // i_to_c(ios))
 
     !! This is an optional namelist.
-    call scl_bcast (found)
+    call scl_bcast(found)
     if (.not.found) return
 
     !! Read the namelist, assigning default values first.
-    call re_info ('Reading CHAPARRAL namelist ...')
-    if (is_IOP) then
-      verbosity_level     = NULL_I
-      blocking_enclosure  = .true.
-      partial_enclosure   = .false.
-      partial_area        = NULL_R
-      BSP_max_tree_depth  = NULL_I
-      BSP_min_leaf_length = NULL_I
-      spatial_tolerance   = NULL_R
-      hemicube_resolution = NULL_I
-      max_subdivisions    = NULL_I
-      min_separation      = NULL_R
-      smoothing_weight    = NULL_R
-      smoothing_tolerance = NULL_R
-      smoothing_max_iter  = NULL_I
-      read(lun,nml=chaparral,iostat=ios)
-    end if
-    call scl_bcast (ios)
-    if (ios /= 0) call re_halt ('Error reading CHAPARRAL namelist: iostat=' // i_to_c(ios))
+    call re_info('Reading CHAPARRAL namelist ...')
+    verbosity_level     = NULL_I
+    blocking_enclosure  = .true.
+    partial_enclosure   = .false.
+    partial_area        = NULL_R
+    BSP_max_tree_depth  = NULL_I
+    BSP_min_leaf_length = NULL_I
+    spatial_tolerance   = NULL_R
+    hemicube_resolution = NULL_I
+    max_subdivisions    = NULL_I
+    min_separation      = NULL_R
+    smoothing_weight    = NULL_R
+    smoothing_tolerance = NULL_R
+    smoothing_max_iter  = NULL_I
+    if (is_IOP) read(lun,nml=chaparral,iostat=ios,iomsg=iom)
+    call scl_bcast(ios)
+    if (ios /= 0) call re_halt('error reading CHAPARRAL namelist: ' // trim(iom))
 
     !! Replicate the namelist variables on all processes.
-    call scl_bcast (verbosity_level)
-    call scl_bcast (blocking_enclosure)
-    call scl_bcast (partial_enclosure)
-    call scl_bcast (partial_area)
-    call scl_bcast (BSP_max_tree_depth)
-    call scl_bcast (BSP_min_leaf_length)
-    call scl_bcast (spatial_tolerance)
-    call scl_bcast (hemicube_resolution)
-    call scl_bcast (max_subdivisions)
-    call scl_bcast (min_separation)
-    call scl_bcast (smoothing_weight)
-    call scl_bcast (smoothing_tolerance)
-    call scl_bcast (smoothing_max_iter)
+    call scl_bcast(verbosity_level)
+    call scl_bcast(blocking_enclosure)
+    call scl_bcast(partial_enclosure)
+    call scl_bcast(partial_area)
+    call scl_bcast(BSP_max_tree_depth)
+    call scl_bcast(BSP_min_leaf_length)
+    call scl_bcast(spatial_tolerance)
+    call scl_bcast(hemicube_resolution)
+    call scl_bcast(max_subdivisions)
+    call scl_bcast(min_separation)
+    call scl_bcast(smoothing_weight)
+    call scl_bcast(smoothing_tolerance)
+    call scl_bcast(smoothing_max_iter)
 
     !! Check the values !!
 
@@ -166,104 +148,102 @@ contains
 
     if (verbosity_level == NULL_I) then
       verbosity_level = 2
-      call re_info ('  using default VERBOSITY_LEVEL='//i_to_c(verbosity_level))
+      call re_info('  using default VERBOSITY_LEVEL='//i_to_c(verbosity_level))
     else if (verbosity_level < 0) then
-      call data_err ('VERBOSITY_LEVEL must be >= 0')
+      call data_err('VERBOSITY_LEVEL must be >= 0')
     end if
 
     if (partial_enclosure) then
       if (partial_area == NULL_R) then
-        call data_err ('PARTIAL_AREA must be assigned a positive value')
+        call data_err('PARTIAL_AREA must be assigned a positive value')
       else if (partial_area <= 0.0_r8) then
-        call data_err ('PARTIAL_AREA must be > 0.0')
+        call data_err('PARTIAL_AREA must be > 0.0')
       end if
     else if (partial_area /= NULL_R) then
-      call re_info ('Ignoring PARTIAL_AREA; not a partial enclosure.')
+      call re_info('Ignoring PARTIAL_AREA; not a partial enclosure.')
     end if
 
     if (BSP_max_tree_depth == NULL_I) then
       BSP_max_tree_depth = 15
-      call re_info ('  using default BSP_MAX_TREE_DEPTH='//i_to_c(BSP_max_tree_depth))
+      call re_info('  using default BSP_MAX_TREE_DEPTH='//i_to_c(BSP_max_tree_depth))
     else if (BSP_max_tree_depth < 1) then
-      call data_err ('BSP_MAX_TREE_DEPTH must be >= 1')
+      call data_err('BSP_MAX_TREE_DEPTH must be >= 1')
     end if
 
     if (BSP_min_leaf_length == NULL_I) then
       BSP_min_leaf_length = 25
-      call re_info ('  using default BSP_MAX_LEAF_LENGTH='//i_to_c(BSP_min_leaf_length))
+      call re_info('  using default BSP_MAX_LEAF_LENGTH='//i_to_c(BSP_min_leaf_length))
     else if (BSP_min_leaf_length < 1) then
-      call data_err ('BSP_MIN_LEAF_LENGTH must be >= 1')
+      call data_err('BSP_MIN_LEAF_LENGTH must be >= 1')
     end if
 
     if (spatial_tolerance == NULL_R) then
-      call data_err ('SPATIAL_TOLERANCE must be assigned a value')
+      call data_err('SPATIAL_TOLERANCE must be assigned a value')
     else if (spatial_tolerance <= 0.0) then
-      call data_err ('SPATIAL_TOLERANCE must be > 0.0')
+      call data_err('SPATIAL_TOLERANCE must be > 0.0')
     end if
 
     if (hemicube_resolution == NULL_I) then
-      call data_err ('HEMICUBE_RESOLUTION must be assigned a value')
+      call data_err('HEMICUBE_RESOLUTION must be assigned a value')
     else if (hemicube_resolution < 4) then
-      call data_err ('HEMICUBE_RESOLUTION must be >= 4')
+      call data_err('HEMICUBE_RESOLUTION must be >= 4')
     end if
 
     if (max_subdivisions == NULL_I) then
-      call data_err ('MAX_SUBDIVISIONS must be assigned a value')
+      call data_err('MAX_SUBDIVISIONS must be assigned a value')
     else if (max_subdivisions < 0) then
-      call data_err ('MAXSUBDIVISIONS must be >= 0')
+      call data_err('MAXSUBDIVISIONS must be >= 0')
     end if
 
     if (min_separation == NULL_R) then
-      call data_err ('MIN_SEPARATION must be assigned a value')
+      call data_err('MIN_SEPARATION must be assigned a value')
     else if (min_separation < 0.0) then
-      call data_err ('MIN_SEPARATION must be >= 0.0')
+      call data_err('MIN_SEPARATION must be >= 0.0')
     end if
 
     if (smoothing_weight == NULL_R) then
       smoothing_weight = 2.0_r8
       write(string,fmt='(es9.2)') smoothing_weight
-      call re_info ('  using default SMOOTHING_WEIGHT='//string)
+      call re_info('  using default SMOOTHING_WEIGHT='//string)
     else if (smoothing_weight <= 0.0) then
-      call data_err ('SMOOTHING_WEIGHT must be > 0.0')
+      call data_err('SMOOTHING_WEIGHT must be > 0.0')
     end if
 
     if (smoothing_tolerance == NULL_R) then
-      call data_err ('SMOOTHING_TOLERANCE must be assigned a value')
+      call data_err('SMOOTHING_TOLERANCE must be assigned a value')
     else if (smoothing_tolerance <= 0.0) then
-      call data_err ('SMOOTHING_TOLERANCE must be > 0.0')
+      call data_err('SMOOTHING_TOLERANCE must be > 0.0')
     end if
 
     if (smoothing_max_iter == NULL_I) then
-      call data_err ('SMOOTHING_MAX_ITER must be assigned a value')
+      call data_err('SMOOTHING_MAX_ITER must be assigned a value')
     else if (smoothing_max_iter < 0) then
-      call data_err ('SMOOTHING_MAX_ITER must be >= 0')
+      call data_err('SMOOTHING_MAX_ITER must be >= 0')
     end if
 
-    if (stat /= 0) call re_halt ('errors found in CHAPARRAL namelist variables')
+    if (stat /= 0) call re_halt('errors found in CHAPARRAL namelist variables')
 
-    !! Everything checks out; stuff the values into the return data structure.
-    cpar%verbosity = verbosity_level
-    cpar%nonblocking = 1
-    if (blocking_enclosure) cpar%nonblocking = 0
-    cpar%partial = 0
-    if (partial_enclosure) cpar%partial = 1
-    cpar%asink = partial_area
-    cpar%bsp_depth = BSP_max_tree_depth
-    cpar%bsp_length = BSP_min_leaf_length
-    cpar%spatial_tol = spatial_tolerance
-    cpar%hc_resolution = hemicube_resolution
-    cpar%hc_sub_divide = max_subdivisions
-    cpar%hc_min_sep = min_separation
-    cpar%smooth_wt = smoothing_weight
-    cpar%smooth_tol = smoothing_tolerance
-    cpar%smooth_max_iter = smoothing_max_iter
+    !! Everything checks out; stuff the values into the return parameter list.
+    call params%set('verbosity', verbosity_level)
+    call params%set('nonblocking', merge(0, 1, blocking_enclosure))
+    call params%set('partial', merge(1, 0, partial_enclosure))
+    call params%set('asink', partial_area)
+    call params%set('bsp-depth', BSP_max_tree_depth)
+    call params%set('bsp-length', BSP_min_leaf_length)
+    call params%set('spatial-tol', spatial_tolerance)
+    call params%set('hc-resolution', hemicube_resolution)
+    call params%set('hc-sub-divide', max_subdivisions)
+    call params%set('hc-min-sep', min_separation)
+    call params%set('smooth-wt', smoothing_weight)
+    call params%set('smooth-tol', smoothing_tolerance)
+    call params%set('smooth-max-iter', smoothing_max_iter)
 
   contains
 
     subroutine data_err (errmsg)
-      character(len=*), intent(in) :: errmsg
+      character(*), intent(in) :: errmsg
       stat = 1
-      call re_info ('  ERROR: ' // errmsg)
+      call re_info('  ERROR: ' // errmsg)
     end subroutine data_err
 
   end subroutine read_chaparral_namelist
@@ -304,14 +284,14 @@ contains
  !!   which can be quite large.
  !!
 
-  subroutine calculate_vf (e, cpar, ep, evf)
+  subroutine calculate_vf(e, params, ep, evf)
 
     use chaparral_c_binding
     use re_encl_type
     use re_patch_type
 
     type(encl), intent(in), target :: e
-    type(chap_param), intent(in) :: cpar
+    type(parameter_list), intent(inout) :: params
     type(re_patch), intent(inout) :: ep
     type(dist_vf), intent(out) :: evf
 
@@ -327,6 +307,8 @@ contains
     integer, allocatable :: c(:,:), nsizes(:)
     real(r8), allocatable :: x(:), y(:), z(:)
     real(r8), allocatable :: area(:)  ! Patch areas calculated by Chaparral
+    integer :: partial, nonblocking, verbosity, bsp_depth, bsp_length, hc_sub_divide, hc_resolution, smooth_max_iter
+    real(r8) :: asink, spatial_tol, hc_min_sep, smooth_wt, smooth_tol
 
     !! Hardwired Chaparral parameters
     integer, parameter :: GEOM_TYPE = 3     ! 3D geometry
@@ -355,12 +337,13 @@ contains
 
     !! Assign virtual surface patch to last rank
     npatch_chap = npatch
-    if ((cpar%partial==1) .and. my_rank==nproc) npatch_chap = npatch_chap + 1
+    call params%get('partial', partial)
+    if (partial==1 .and. my_rank==nproc) npatch_chap = npatch_chap + 1
 
     allocate(nsizes(nproc))
-    call scl_allgather (nfacets, nsizes)
+    call scl_allgather(nfacets, nsizes)
     face_offset = sum(nsizes(1:my_rank-1))
-    call scl_allgather (npatch, nsizes)
+    call scl_allgather(npatch, nsizes)
     patch_offset = sum(nsizes(1:my_rank-1))
     deallocate(nsizes)
 
@@ -371,7 +354,7 @@ contains
     call scl_scatter(f2p_map_g, f2p_map)
 
     !! Assign largest global ID to the virtual surface patch
-    if ((cpar%partial==1) .and. my_rank==nproc) global_ids(npatch_chap) = npatch_tot + 1
+    if (partial==1 .and. my_rank==nproc) global_ids(npatch_chap) = npatch_tot + 1
 
     !! Unpack our packed quad/tet connection array into a structured
     !! quad connection array, with dummy values for tets.  Really
@@ -385,7 +368,7 @@ contains
     end do
 
     max_surfaces = e%nface
-    if (cpar%partial==1) max_surfaces = max_surfaces + 1
+    if (partial==1) max_surfaces = max_surfaces + 1
 
     !! Chaparral is only capable of rotation about the y-axis, so we cyclically
     !! permute other rotation axes to the y-axis; view factors are invariant.
@@ -429,39 +412,48 @@ contains
     end select
 
     !! Use Chaparral to compute the view factors.
-    call VF_Setup ()
-    call VF_SetNumEnclosures (1)
-    call VF_SetMaxSurfaces (max_surfaces)
+    call VF_Setup
+    call VF_SetNumEnclosures(1)
+    call VF_SetMaxSurfaces(max_surfaces)
     !call VF_RandomizeSurfacesOff()
     !call VF_JitterOff()
-    handle = VF_DefineEnclosure (trim(e%name), cpar%nonblocking, cpar%partial, cpar%asink, &
-                                 npatch_chap, global_ids, cpar%verbosity)
-    call VF_DefineTopology (handle, GEOM_TYPE, nfacets, e%nnode, x, y, z, &
-                            c, 1, f2p_map, nrotations, xmirror, ymirror, zmirror, &
-                            cpar%bsp_depth, cpar%bsp_length, cpar%spatial_tol, cpar%verbosity)
-    call VF_CalcHemicube (handle, cpar%hc_sub_divide, cpar%hc_resolution, cpar%hc_min_sep)
-    call VF_SmoothMatrix (handle, cpar%smooth_wt, cpar%smooth_tol, cpar%smooth_max_iter, SYM_METHOD, cpar%verbosity)
-    call VF_OutputMatrixSummaryBanner()
-
-
+    call params%get('nonblocking', nonblocking)
+    call params%get('asink', asink)
+    call params%get('verbosity', verbosity)
+    handle = VF_DefineEnclosure(e%name, nonblocking, partial, asink, npatch_chap, global_ids, verbosity)
+    call params%get('bsp-depth', bsp_depth)
+    call params%get('bsp-length', bsp_length)
+    call params%get('spatial-tol', spatial_tol)
+    call VF_DefineTopology(handle, GEOM_TYPE, nfacets, e%nnode, x, y, z, &
+                           c, 1, global_ids, nrotations, xmirror, ymirror, zmirror, &
+                           bsp_depth, bsp_length, spatial_tol, verbosity)
+    call params%get('hc-sub-divide', hc_sub_divide)
+    call params%get('hc-resolution', hc_resolution)
+    call params%get('hc-min-sep', hc_min_sep)
+    call VF_CalcHemicube(handle, hc_sub_divide, hc_resolution, hc_min_sep)
+    call params%get('smooth-wt', smooth_wt)
+    call params%get('smooth-tol', smooth_tol)
+    call params%get('smooth-max-iter', smooth_max_iter)
+    call VF_SmoothMatrix(handle, smooth_wt, smooth_tol, smooth_max_iter, SYM_METHOD, verbosity)
+    call VF_OutputMatrixSummaryBanner
 
     !! Extract the VF from Chaparral and create the distributed VF structure.
     evf%npatch = npatch
     evf%offset = patch_offset
     evf%npatch_tot = npatch_tot
     allocate(evf%ia(npatch+1))
-    call VF_GetRowCounts (handle, mode=1, count=evf%ia)
+    call VF_GetRowCounts(handle, mode=1, count=evf%ia)
 
     !! Get VF matrix and ambient view factors
     n = sum(evf%ia(:npatch))
     allocate(evf%ja(n), evf%val(n))
-    if (cpar%partial == 1) then
+    if (partial == 1) then
       evf%has_ambient = .true.
       allocate(evf%ambient(npatch))
-      call VF_GetMatrix (handle, evf%ia(2:), evf%ja, evf%val, vf_virt=evf%ambient)
+      call VF_GetMatrix(handle, evf%ia(2:), evf%ja, evf%val, vf_virt=evf%ambient)
     else
       evf%has_ambient = .false.
-      call VF_GetMatrix (handle, evf%ia(2:), evf%ja, evf%val)
+      call VF_GetMatrix(handle, evf%ia(2:), evf%ja, evf%val)
     end if
 
     !! Convert the row counts into the local IA indexing array.
@@ -472,15 +464,15 @@ contains
 
     !! Get patch areas
     evf%has_area = .true.
-    npatch_tot_chap = npatch_tot + merge(1, 0, cpar%partial==1)
+    npatch_tot_chap = npatch_tot + merge(1, 0, partial==1)
     n = merge(npatch_tot, 0, my_rank==1)
     allocate(area(npatch_tot_chap), evf%area(n))
     call VF_GetMatrixAreas(area)
     if (my_rank == 1) evf%area = area(1:npatch_tot)
     deallocate(area)
 
-    !call VF_ResetTopology (handle)
-    call VF_CleanUp ()
+    !call VF_ResetTopology(handle)
+    call VF_CleanUp
 
     deallocate(global_ids, f2p_map, c)
 

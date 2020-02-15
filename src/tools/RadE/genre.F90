@@ -13,64 +13,64 @@ program genre
   use re_chaparral_vf
   use re_patch_type
   use genre_command_line
+  use parameter_list_type
   use scl
   implicit none
 
-  integer :: ios
+  integer :: lun, ios, stat
   logical :: is_IOP, found
   type(encl) :: e
-  type(encl_spec) :: spec
-  type(patch_param) :: ppar
-  type(chap_param) :: cpar
   type(re_patch) :: ep
+  type(parameter_list) :: encl_params, chap_params, patch_params
   type(dist_vf) :: vf
-  character(len=512) :: infile, outfile
-  character(len=32) :: string
+  character(:), allocatable :: infile, outfile, msg, errmsg
+  character(255) :: iom
 
-  call scl_init ()
+  call scl_init
   is_IOP = (scl_rank()==1)
 
-  if (is_IOP) then
-    call parse_command_line (infile, outfile)
-    open(unit=10,file=trim(infile),status='old',action='read',iostat=ios)
-  end if
-  call scl_bcast (ios)
-  if (ios /= 0) call re_halt ('Unable to open input file: ' // trim(infile))
+  if (is_IOP) call parse_command_line(infile, outfile)
+  call scl_bcast_alloc(infile)
+  call scl_bcast_alloc(outfile)
+
+  if (is_IOP) open(newunit=lun,file=infile,status='old',action='read',iostat=ios,iomsg=iom)
+  call scl_bcast(ios)
+  if (ios /= 0) call re_halt('unable to open input file: ' // infile // ': ' // trim(iom))
 
   !! Construct enclosure
-  call read_enclosure_namelist (10, spec)
-  call generate_encl (spec, e)
-  call destroy (spec)
+  call read_enclosure_namelist(lun, encl_params)
+  call init_encl(e, encl_params, stat, errmsg)
+  if (stat /= 0) call re_halt('error creating the enclosure: ' // errmsg)
 
-  string = 'Enclosure'
-  call write_encl (e, trim(outfile))
+  msg = 'Enclosure'
+  call e%write(outfile)
 
   !! Generate patches
-  call read_patches_namelist (10, ppar, found)
+  call read_patches_namelist(lun, patch_params, found)
   if (found) then
-    string = trim(string) // ' and patch'
+    msg = msg // ' and patch'
   else
-    call re_info ('No PATCHES namelist found')
+    call re_info('No PATCHES namelist found')
   end if
 
   if (is_IOP) then
-    call ep%generate_patches (e, ppar)
-    call ep%write_patch_data (trim(outfile))
+    call ep%generate_patches(e, patch_params)
+    call ep%write_patch_data(outfile)
   end if
 
   !! Compute view factors
-  call read_chaparral_namelist (10, cpar, found)
+  call read_chaparral_namelist(lun, chap_params, found)
   if (found) then
-    call calculate_vf (e, cpar, ep, vf)
-    call write_dist_vf (vf, trim(outfile))
-    string = trim(string) // ' and VF data'
+    call calculate_vf(e, chap_params, ep, vf)
+    call write_dist_vf(vf, trim(outfile))
+    msg = msg // ' and VF data'
   else
-    call re_info ('No CHAPARRAL namelist found')
-    string = trim(string) // ' data only'
+    call re_info('No CHAPARRAL namelist found')
+    msg = msg // ' data only'
   end if
 
-  call re_info (trim(string) // ' written to ' // trim(outfile))
+  call re_info(msg // ' written to ' // outfile)
 
-  call scl_finalize()
+  call scl_finalize
 
 end program genre

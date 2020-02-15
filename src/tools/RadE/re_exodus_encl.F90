@@ -5,7 +5,7 @@
 !! from an Exodus mesh file.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
-!! 4 April 2008
+!! 4 April 2008; revised February 2020
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -15,20 +15,19 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  CALL READ_ENCLOSURE_NAMELIST (LUN, SPEC) reads the first occurrence of an
-!!    ENCLOSURE namelist from the file opened on unit LUN.  The values read
-!!    (and defaults for any others) are returned in the enclosure specification
-!!    structure SPEC.  It is an error if the namelist is not found; this and
-!!    any IO errors are handled by the subroutine.  The namelist values are
-!!    also checked for correctness.  Execution of the program is gracefully
-!!    terminated if any errors are encountered.  This is a collective
-!!    procedure, but only for the purposes of error handling; input occurs on
-!!    process rank 1 and the returned SPEC is only valid on process rank 1.
+!!  CALL READ_ENCLOSURE_NAMELIST(LUN, PARAMS) reads the first occurrence of
+!!    an ENCLOSURE namelist from the file opened on unit LUN. The values read
+!!    (and defaults for any others) are returned in the parameter list PARAMS.
+!!    It is an error if the namelist is not found; this and any IO errors are
+!!    handled by the subroutine.  The namelist values are also checked for
+!!    correctness.  Execution of the program is gracefully terminated if any
+!!    errors are encountered.  This is a collective procedure; input occurs on
+!!    rank 1 but the returned PARAMS is replicated on all ranks.
 !!
 !!    The ENCLOSURE namelist contains the following variables:
 !!      name ~ user-supplied name for the enclosure (req)
 !!      mesh_file ~ path of the source Exodus mesh file (req)
-!!      coord_scale_factor ~ scale factor to apply to the surface coordinates
+!!      coord_scale_factor ~ scale factor to apply to the surface coordinates (opt)
 !!      ignore_block_IDs ~ list of mesh element blocks to ignore (opt)
 !!      side_set_IDs ~ list of mesh side sets defining the surface (req)
 !!      symmetries ~ list of up to 3 symmetry operations (opt):
@@ -37,13 +36,21 @@
 !!      displace_side_set_IDs ~ list of surface side sets to displace;
 !!      displacement ~ the constant (x,y,z) displacement amount.
 !!
-!!  CALL GENERATE_ENCL (SPEC, E) generates the enclosure E using the enclosure
-!!    specification SPEC.  This is a collective procedure.  SPEC is only
-!!    relevant on process rank 1, and the generation of the enclosure takes
-!!    place there too and then replicated across all processes.
+!!  CALL INIT_ENCL(THIS, PARAMS, STAT, ERRMSG) initializes the ENCL object
+!!    THIS as specified by the parameter list PARAMS. The object is replicated
+!!    on all ranks, however PARAMS is only significant on rank 1. The integer
+!!    STAT returns a non-zero value if an error occurs, and the deferred length
+!!    allocatable character ERRMSG returns an explanatory message. The
+!!    following parameters, with the meanings above, are used:
 !!
-!!  CALL DESTROY (SPEC) deallocates any allocated storage associated with
-!!    the enclosure specification SPEC.
+!!      'name'
+!!      'mesh-file'
+!!      'coord-scale-factor'
+!!      'side-set-ids'
+!!      'ignore-block-ids'
+!!      'symmetries'
+!!      'displace-side_set-ids'
+!!      'displacement'
 !!
 !! IMPLEMENTATION NOTES
 !!
@@ -62,201 +69,213 @@
 
 module re_exodus_encl
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scl
   use re_utilities
+  use parameter_list_type
   implicit none
   private
 
-  public :: encl_spec, read_enclosure_namelist, generate_encl, destroy
+  public :: read_enclosure_namelist, init_encl
 
   integer, parameter :: MAX_NAME_LEN = 32, MAX_FILE_LEN = 256, MAX_IDS = 128
 
-  type :: encl_spec
-    character(len=MAX_NAME_LEN) :: name
-    character(len=MAX_FILE_LEN) :: mesh_file
-    real(r8) :: scale
-    integer, pointer :: ssid(:) => null()
-    integer, pointer :: ebid(:) => null()
-    logical :: mirror(3)
-    integer :: rot_axis, num_rot
-    integer, pointer :: disp_ssid(:) => null()
-    real(r8) :: disp(3)
-  end type encl_spec
-
-  interface destroy
-    module procedure destroy_encl_spec
-  end interface
-
 contains
 
-  subroutine read_enclosure_namelist (lun, spec)
+  subroutine read_enclosure_namelist(lun, params)
 
-    use string_utilities
+    use string_utilities, only: raise_case, i_to_c
     use input_utilities
 
     integer, intent(in) :: lun
-    type(encl_spec), intent(out) :: spec
+    type(parameter_list), intent(out) :: params
 
     !! The ENCLOSURE namelist variables; user visible.
-    character(len=MAX_NAME_LEN) :: name
-    character(len=MAX_FILE_LEN) :: mesh_file
-    character(len=7) :: symmetries(3)
+    character(MAX_NAME_LEN) :: name
+    character(MAX_FILE_LEN) :: mesh_file
+    character(7) :: symmetries(3)
     integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS), displace_side_set_ids(MAX_IDS)
     real(r8) :: coord_scale_factor, displacement(3)
     namelist /enclosure/ name, mesh_file, side_set_ids, ignore_block_ids, symmetries, &
         coord_scale_factor, displace_side_set_ids, displacement
 
     integer :: j, n, ios, stat, rot_axis, num_rot
-    logical :: is_IOP, found, file_exists, mirror(3)
+    logical :: is_IOP, found, mirror(3)
     character(len=len(symmetries)) :: sym
+    character(255) :: iom
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
 
-    !! Seek to the first instance of the ENCLOSURE namelist.
-    if (is_IOP) then
-      rewind (lun)
-      call seek_to_namelist (lun, 'ENCLOSURE', found, iostat=ios)
-    end if
-    call scl_bcast (ios)
-    if (ios /= 0) call re_halt ('error reading file connected to unit ' // &
-                                i_to_c(lun) // ': iostat=' // i_to_c(ios))
-
-    !! This is a required namelist.
-    call scl_bcast (found)
-    if (.not.found) call re_halt ('ENCLOSURE namelist not found')
-
-    !! Read the namelist, assigning default values first.
     call re_info ('Reading ENCLOSURE namelist ...')
+
+    !! Locate the ENCLOSURE namelist (required)
     if (is_IOP) then
-      name = NULL_C
-      mesh_file = NULL_C
-      side_set_ids = NULL_I
-      ignore_block_ids = NULL_I
-      symmetries = NULL_C
-      coord_scale_factor = 1.0_r8
-      displace_side_set_ids = NULL_I
-      displacement = 0.0_r8
-      read(lun,nml=enclosure,iostat=ios)
+      rewind(lun)
+      call seek_to_namelist(lun, 'ENCLOSURE', found, iostat=ios)
     end if
-    call scl_bcast (ios)
-    if (ios /= 0) call re_halt ('Error reading ENCLOSURE namelist: iostat=' // i_to_c(ios))
+    call scl_bcast(ios)
+    if (ios /= 0) call re_halt('error reading input file: iostat=' // i_to_c(ios))
+    call scl_bcast(found)
+    if (.not.found) call re_halt('ENCLOSURE namelist not found')
 
-    if (is_IOP) then
-      stat = 0
+    !! Default values
+    name = NULL_C
+    mesh_file = NULL_C
+    coord_scale_factor = 1.0_r8
+    side_set_ids = NULL_I
+    ignore_block_ids = NULL_I
+    symmetries = NULL_C
+    displace_side_set_ids = NULL_I
+    displacement = NULL_R
 
-      !! Check the user-supplied NAME for the namelist.
-      if (name == NULL_C) call data_err ('NAME must be assigned a value')
-      name = raise_case(name)
+    if (is_IOP) read(lun,nml=enclosure,iostat=ios,iomsg=iom)
+    call scl_bcast(ios)
+    if (ios /= 0) call re_halt('error reading ENCLOSURE namelist: ' // trim(iom))
 
-      !! Check the MESH_FILE path.
-      if (mesh_file == NULL_C) call data_err ('MESH_FILE must be assigned a value')
-      inquire(file=mesh_file,exist=file_exists)
-      if (.not.file_exists) call data_err ('no such MESH_FILE: ' // trim(mesh_file))
+    !! Broadcast the namelist variables
+    call scl_bcast(name)
+    call scl_bcast(mesh_file)
+    call scl_bcast(coord_scale_factor)
+    call scl_bcast(side_set_ids)
+    call scl_bcast(ignore_block_ids)
+    call scl_bcast(symmetries)
+    call scl_bcast(displace_side_set_ids)
+    call scl_bcast(displacement)
 
-      !! Check for a non-empty SIDE_SET_IDS.
-      if (count(side_set_ids /= NULL_I) == 0) &
-          call data_err ('SIDE_SET_IDS must contain at least one value')
+    !! Check the user-supplied NAME for the namelist.
+    if (name == NULL_C) call re_halt('NAME not specified')
+    call params%set('name', raise_case(trim(name)))
 
-      !! Unpack SYMMETRIES and check the values.
-      mirror = .false.
-      rot_axis = 0
-      num_rot  = 0
-      do j = 1, size(symmetries)
-        if (symmetries(j) == NULL_C) cycle
-        sym = raise_case(symmetries(j))
-        if (sym(1:6) == 'MIRROR' .and. len_trim(sym) == 7) then
-          n = scan('XYZ',set=sym(7:7))
-          if (n == 0) call data_err ('unknown symmetry value: '//trim(symmetries(j)))
-          mirror(n) = .true.
-        else if (sym(1:3) == 'ROT') then
-          n = scan('XYZ',set=sym(4:4))
-          if (n == 0) call data_err ('unknown symmetry value: '//trim(symmetries(j)))
-          rot_axis = n
-          read(unit=sym(5:),fmt=*,iostat=ios) num_rot
-          if (ios /= 0) then
-            call data_err ('unknown symmetry value: '//trim(symmetries(j)))
-          else if (num_rot < 2) then
-            call data_err ('number of rotations must be > 1: ' // trim(symmetries(j)))
-          end if
-        else
-          call data_err ('unknown symmetry value: ' // trim(symmetries(j)))
+    !! Check the MESH_FILE path.
+    if (mesh_file == NULL_C) call re_halt('MESH_FILE not specified')
+    inquire(file=mesh_file,exist=found)
+    if (.not.found) call re_halt('no such MESH_FILE: ' // trim(mesh_file))
+    call params%set('mesh-file', trim(mesh_file))
+
+    !! Check COORD_SCALE_FACTOR.
+    if (coord_scale_factor <= 0.0_r8) call re_halt('COORD_SCALE_FACTOR must be > 0.0')
+    call params%set('coord-scale-factor', coord_scale_factor)
+
+    !! Check for a non-empty SIDE_SET_IDS.
+    if (count(side_set_ids /= NULL_I) == 0) call re_halt('SIDE_SET_IDS not specified')
+    call params%set('side-set-ids', pack(side_set_ids, mask=(side_set_ids /= NULL_I)))
+
+    if (any(ignore_block_ids /= NULL_I)) &
+    call params%set('ignore-block-ids', pack(ignore_block_ids, mask=(ignore_block_ids /= NULL_I)))
+
+    !! Unpack SYMMETRIES and check the values.
+    mirror = .false.
+    rot_axis = 0
+    num_rot  = 0
+    do j = 1, size(symmetries)
+      if (symmetries(j) == NULL_C) cycle
+      sym = raise_case(symmetries(j))
+      if (sym(1:6) == 'MIRROR' .and. len_trim(sym) == 7) then
+        n = scan('XYZ',set=sym(7:7))
+        if (n == 0) call re_halt('unknown symmetry value: ' // trim(symmetries(j)))
+        mirror(n) = .true.
+      else if (sym(1:3) == 'ROT') then
+        n = scan('XYZ',set=sym(4:4))
+        if (n == 0) call re_halt('unknown symmetry value: ' // trim(symmetries(j)))
+        rot_axis = n
+        read(unit=sym(5:),fmt=*,iostat=ios) num_rot
+        if (ios /= 0) then
+          call re_halt('unknown symmetry value: ' // trim(symmetries(j)))
+        else if (num_rot < 2) then
+          call re_halt('number of rotations must be > 1: ' // trim(symmetries(j)))
         end if
-      end do
+      else
+        call re_halt('unknown symmetry value: ' // trim(symmetries(j)))
+      end if
+    end do
+    call params%set('mirror', mirror)
+    call params%set('rot-axis', rot_axis)
+    call params%set('num-rot', num_rot)
 
-      !! Check COORD_SCALE_FACTOR.
-      if (coord_scale_factor <= 0.0_r8) call data_err ('COORD_SCALE_FACTOR must be > 0.0')
+    if (count(displace_side_set_ids /= NULL_I) > 0) then
+      call params%set('displace-side-set-ids', pack(displace_side_set_ids, mask=(displace_side_set_ids /= NULL_I)))
+      if (all(displacement == NULL_R)) call re_halt('DISPLACEMENT not specified')
+      if (any(displacement == NULL_R)) call re_halt('DISPLACEMENT not fully specified')
+      call params%set('displacement', displacement)
     end if
-
-    call scl_bcast (stat)
-    if (stat /= 0) call re_halt ('errors found in ENCLOSURE namelist variables')
-
-    !! Everything checks out; stuff the values into the return data structure.
-    if (is_IOP) then
-      spec%name = name
-      spec%mesh_file = mesh_file
-      spec%scale = coord_scale_factor
-      spec%ssid => ptr_to_packed(side_set_ids, mask=(side_set_ids /= NULL_I))
-      spec%ebid => ptr_to_packed(ignore_block_ids, mask=(ignore_block_ids /= NULL_I))
-      spec%mirror = mirror
-      spec%rot_axis = rot_axis
-      spec%num_rot  = num_rot
-      spec%disp_ssid => ptr_to_packed(displace_side_set_ids, mask=(displace_side_set_ids /= NULL_I))
-      spec%disp = displacement
-    end if
-
-  contains
-
-    function ptr_to_packed (source, mask) result (ptr)
-      integer, intent(in) :: source(:)
-      logical, intent(in) :: mask(:)
-      integer, pointer :: ptr(:)
-      ASSERT( size(source) == size(mask) )
-      allocate(ptr(count(mask)))
-      ptr = pack(source, mask)
-    end function ptr_to_packed
-
-    subroutine data_err (errmsg)
-      character(len=*), intent(in) :: errmsg
-      stat = 1
-      call re_info ('  ERROR: ' // errmsg)
-    end subroutine data_err
 
   end subroutine read_enclosure_namelist
 
-  subroutine destroy_encl_spec (spec)
-    type(encl_spec), intent(inout) :: spec
-    if (associated(spec%ssid)) deallocate(spec%ssid)
-    if (associated(spec%ebid)) deallocate(spec%ebid)
-  end subroutine destroy_encl_spec
+  subroutine init_encl(this, params, stat, errmsg)
 
-  subroutine generate_encl (spec, e)
     use exodus_mesh_type
     use exodus_mesh_io, only: read_exodus_mesh
     use re_encl_type
-    type(encl_spec), intent(in)  :: spec
-    type(encl), intent(out) :: e
-    type(exodus_mesh), allocatable :: mesh
-    integer :: stat
-    character(len=128) :: errmsg
+
+    type(encl), intent(out) :: this
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(exodus_mesh) :: mesh
+    character(:), allocatable :: mesh_file
+
     if (scl_rank() == 1) then
-      allocate(mesh)
-      call read_exodus_mesh (spec%mesh_file, mesh)
-      call extract_surface_from_exodus (mesh, spec%ssid, spec%ebid, e, stat, errmsg)
-      deallocate(mesh)
-      if (stat == 0) then
-        e%name     = spec%name
-        e%mirror   = spec%mirror
-        e%rot_axis = spec%rot_axis
-        e%num_rot  = spec%num_rot
-        if (spec%scale /= 1.0_r8) e%x = spec%scale * e%x
-        call displace_surfaces (e, spec%disp, spec%disp_ssid, stat, errmsg)
-      end if
+      !! Read the volume mesh.
+      call params%get('mesh-file', mesh_file)
+      call read_exodus_mesh(mesh_file, mesh)
+      !! Initialize the ENCL type object.
+      call encl_init_aux(this, mesh, params, stat, errmsg)
     end if
-    call scl_bcast (stat)
-    if (stat /= 0) call re_halt ('GENERATE_ENCL: ' // trim(errmsg))
-    call bcast_encl (e)
-  end subroutine generate_encl
+    call scl_bcast(stat)
+    if (stat /= 0) then
+      call scl_bcast_alloc(errmsg)
+      return
+    end if
+
+    call this%bcast
+
+  end subroutine init_encl
+
+  !! This auxiliary subroutine initializes an ENCL object, extracting the
+  !! surface from the passed MESH object according to the passed parameter
+  !! list. [SERIAL PROCEDURE]
+
+  subroutine encl_init_aux(this, mesh, params, stat, errmsg)
+
+    use re_encl_type
+    use exodus_mesh_type
+
+    class(encl), intent(out) :: this
+    type(exodus_mesh), intent(in) :: mesh
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
+
+    integer, allocatable :: ssid(:), ebid(:), disp_ssid(:)
+    logical, allocatable :: mirror(:)
+    real(r8), allocatable :: disp(:)
+    real(r8) :: scale
+
+    !! Extract the surface from the mesh
+    call params%get('side-set-ids', ssid)
+    call params%get('ignore-block-ids', ebid, default=[integer::])
+    call extract_surface_from_exodus(mesh, ssid, ebid, this, stat, errmsg)
+    if (stat /= 0) return
+    call params%get('coord-scale-factor', scale, default=1.0_r8)
+    if (scale /= 1.0_r8) this%x = scale * this%x
+
+    !! Apply surface displacement if specified
+    if (params%is_parameter('displace-side-set-ids')) then
+      call params%get('displace-side-set-ids', disp_ssid)
+      call params%get('displacement', disp)
+      call displace_surfaces(this, disp, disp_ssid, stat, errmsg)
+      if (stat /= 0) return
+    end if
+
+    !! Other parameters destined for Chaparral.
+    call params%get('name', this%name)
+    call params%get('mirror', mirror)
+    this%mirror = mirror
+    call params%get('rot-axis', this%rot_axis)
+    call params%get('num-rot', this%num_rot)
+
+  end subroutine encl_init_aux
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -298,7 +317,7 @@ contains
     integer, intent(in) :: ebid(:)  ! IDs of element blocks to omit from the mesh
     type(encl), intent(out) :: surf  ! mesh of the extracted surface
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: i, j, k, n, n1, n2, b, l, bitmask, tsize
     integer, pointer :: list(:), side_sig(:)
@@ -692,7 +711,7 @@ contains
     real(r8), intent(in) :: disp(:)
     integer, intent(in) :: ssid(:)
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: j
     logical, allocatable :: gmask(:), mask(:)

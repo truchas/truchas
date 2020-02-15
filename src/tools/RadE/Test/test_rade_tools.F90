@@ -147,7 +147,7 @@ contains
 
     logical :: has_vf
 
-    call read_encl(e, trim(infile), has_vf)
+    call e%read(trim(infile), has_vf)
     if (.not. has_vf) call re_halt ('No view factor data in file: ' // trim(infile))
 
     if (is_IOP) call ep%read_patch_data(trim(infile))

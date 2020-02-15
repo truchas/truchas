@@ -25,9 +25,9 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  READ_PATCHES_NAMELIST (LUN, PPAR, FOUND) reads the first instance of the
-!!    PATCHES namelist from the file opened on logical unit LUN.  PPAR is the
-!!    TYPE(PATCH_PARAM) data structure in which to store the namelist data.
+!!  READ_PATCHES_NAMELIST (LUN, PARAMS, FOUND) reads the first instance of the
+!!    PATCHES namelist from the file opened on logical unit LUN. The values
+!!    read are returned in the parameter list PARAMS.
 !!    FOUND is a logical scalar set to .TRUE. if the namelist is found, and
 !!    .FALSE. otherwise. This is a collective procedure; the file is read on the
 !!    I/O process and the data replicated to all other processes.  If an error
@@ -37,13 +37,11 @@
 !!    patching algorithm.  If this namelist is not present, no patches will be
 !!    generated.
 !!
-!!  GENERATE_PATCHES (THIS, E, PPAR) generates patches for the given enclosure
+!!  GENERATE_PATCHES(THIS, E, PARAMS) generates patches for the given enclosure
 !!    with the given parameters.  THIS is a TYPE(RE_PATCH) object that will
 !!    store the patch data internally.  E is the TYPE(ENCL) radiation enclosure
-!!    that will be patched.  PPAR is the TYPE(PATCH_PARAM) patch parameters that
-!!    determine which patching algorithm to use, and what parameters to pass to
-!!    the patching algorithm.  This is a serial procedure and must only be
-!!    called by the I/O process.
+!!    that will be patched. This is a serial procedure and must only be called
+!!    by the I/O process.
 !!
 !!  READ_PATCH_DATA (THIS, PATH) initializes the TYPE(RE_PATCH) object THIS with
 !!    the enclosure patch data read from the radiation enclosure dataset PATH.
@@ -73,9 +71,10 @@
 
 module re_patch_type
 
-  use kinds, only: i8, r8
+  use,intrinsic :: iso_fortran_env, only: i8 => int64, r8 => real64
   use scl
   use re_encl_type
+  use parameter_list_type
   implicit none
   private
 
@@ -124,11 +123,9 @@ module re_patch_type
     procedure, private :: pave_patches
   end type
 
-
 contains
 
-
-  subroutine read_patches_namelist (lun, ppar, found)
+  subroutine read_patches_namelist(lun, params, found)
 
     use string_utilities, only: i_to_c, raise_case
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
@@ -138,13 +135,13 @@ contains
     use vac_patching_type, only: VAC_MERGE_LEVEL_DEFAULT, VAC_SPLIT_PATCH_SIZE_DEFAULT
 
     integer, intent(in) :: lun
-    type(patch_param), intent(out) :: ppar
+    type(parameter_list), intent(out) :: params
     logical, intent(out) :: found
 
     logical :: is_IOP
     integer :: ios, stat, patch_alg
     character(9) :: string
-
+    character(255) :: iom
 
     !! The PATCHES namelist variables; user visible.
     character(32) :: patch_algorithm
@@ -167,48 +164,46 @@ contains
     !! Seek to the first instance of the PATCH namelist.
     if (is_IOP) then
       rewind(lun)
-      call seek_to_namelist (lun, 'PATCHES', found, iostat=ios)
+      call seek_to_namelist(lun, 'PATCHES', found, iostat=ios)
     end if
-    call scl_bcast (ios)
-    if (ios /= 0) call re_halt ('error reading file connected to unit ' // &
-                                i_to_c(lun) // ': iostat=' // i_to_c(ios))
+    call scl_bcast(ios)
+    if (ios /= 0) call re_halt('error reading input file: iostat=' // i_to_c(ios))
 
     !! If no namelist found, make no patches
-    call scl_bcast (found)
+    call scl_bcast(found)
     if (.not. found) then
-      ppar%patch_alg = PATCH_ALG_NONE
+      call params%set('patch-alg', PATCH_ALG_NONE)
       return
     end if
 
     !! Read the namelist, assigning default values first.
-    call re_info ('Reading PATCHES namelist ...')
-    if (is_IOP) then
-      patch_algorithm = NULL_C
-      verbosity_level = NULL_I
-      max_angle = NULL_R
-      vsa_max_iter = NULL_I
-      vsa_min_delta = NULL_R
-      vsa_avg_faces_per_patch = NULL_R
-      vac_merge_level = NULL_I
-      vac_split_patch_size = NULL_I
-      pave_merge_level = NULL_I
-      pave_split_patch_size = NULL_I
-      read(lun,nml=patches,iostat=ios)
-    end if
-    call scl_bcast (ios)
-    if (ios /= 0) call re_halt ('Error reading PATCHES namelist: iostat=' // i_to_c(ios))
+    call re_info('Reading PATCHES namelist ...')
+    patch_algorithm = NULL_C
+    verbosity_level = NULL_I
+    max_angle = NULL_R
+    vsa_max_iter = NULL_I
+    vsa_min_delta = NULL_R
+    vsa_avg_faces_per_patch = NULL_R
+    vac_merge_level = NULL_I
+    vac_split_patch_size = NULL_I
+    pave_merge_level = NULL_I
+    pave_split_patch_size = NULL_I
+
+    if (is_IOP) read(lun,nml=patches,iostat=ios,iomsg=iom)
+    call scl_bcast(ios)
+    if (ios /= 0) call re_halt('error reading PATCHES namelist: ' // trim(iom))
 
     !! Replicate the namelist variables on all processes.
-    call scl_bcast (patch_algorithm)
-    call scl_bcast (verbosity_level)
-    call scl_bcast (max_angle)
-    call scl_bcast (vsa_max_iter)
-    call scl_bcast (vsa_min_delta)
-    call scl_bcast (vsa_avg_faces_per_patch)
-    call scl_bcast (vac_merge_level)
-    call scl_bcast (vac_split_patch_size)
-    call scl_bcast (pave_merge_level)
-    call scl_bcast (pave_split_patch_size)
+    call scl_bcast(patch_algorithm)
+    call scl_bcast(verbosity_level)
+    call scl_bcast(max_angle)
+    call scl_bcast(vsa_max_iter)
+    call scl_bcast(vsa_min_delta)
+    call scl_bcast(vsa_avg_faces_per_patch)
+    call scl_bcast(vac_merge_level)
+    call scl_bcast(vac_split_patch_size)
+    call scl_bcast(pave_merge_level)
+    call scl_bcast(pave_split_patch_size)
 
     !! Check the values
     stat = 0
@@ -219,7 +214,7 @@ contains
       case (NULL_C)
         patch_alg = PATCH_ALGORITHM_DEFAULT
         patch_algorithm = PATCH_ALGORITHMS(PATCH_ALGORITHM_DEFAULT)
-        call re_info ('  using default PATCH_ALGORITHM='//trim(patch_algorithm))
+        call re_info('  using default PATCH_ALGORITHM='//trim(patch_algorithm))
       case ('NONE')
         patch_alg = PATCH_ALG_NONE
       case ('VSA')
@@ -229,95 +224,93 @@ contains
       case ('PAVE')
         patch_alg = PATCH_ALG_PAVE
       case default
-        call data_err ('Unrecognized PATCH_ALGORITHM: '//trim(patch_algorithm))
+        call data_err('unrecognized PATCH_ALGORITHM: '//trim(patch_algorithm))
     end select
+    call params%set('patch-alg', patch_alg)
 
     !! General settings
     if (patch_alg /= PATCH_ALG_NONE) then
       if (verbosity_level == NULL_I) then
         verbosity_level = VERBOSITY_LEVEL_DEFAULT
-        call re_info ('  using default VERBOSITY_LEVEL='//i_to_c(verbosity_level))
+        call re_info('  using default VERBOSITY_LEVEL='//i_to_c(verbosity_level))
       else if (verbosity_level < 0) then
-        call data_err ('VERBOSITY_LEVEL must be >= 0')
+        call data_err('VERBOSITY_LEVEL must be >= 0')
       end if
+      call params%set('verbosity-level', verbosity_level)
       if (max_angle == NULL_R) then
         max_angle = MAX_ANGLE_DEFAULT
         write(string,fmt='(f6.2)') max_angle
-        call re_info ('  using default MAX_ANGLE='//trim(string))
+        call re_info('  using default MAX_ANGLE='//trim(string))
       else if (max_angle < 0 .or. max_angle > 180) then
-        call data_err ('MAX_ANGLE must be >= 0 and <= 180')
+        call data_err('MAX_ANGLE must be >= 0 and <= 180')
       end if
+      call params%set('max-angle', max_angle)
     end if
 
     !! VSA settings
     if (patch_alg == PATCH_ALG_VSA) then
       if (vsa_max_iter == NULL_I) then
         vsa_max_iter = VSA_MAX_ITER_DEFAULT
-        call re_info ('  using default VSA_MAX_ITER='//i_to_c(vsa_max_iter))
+        call re_info('  using default VSA_MAX_ITER='//i_to_c(vsa_max_iter))
       else if (vsa_max_iter < 1) then
-        call data_err ('VSA_MAX_ITER must be >= 1')
+        call data_err('VSA_MAX_ITER must be >= 1')
       end if
+      call params%set('vsa-max-iter', vsa_max_iter)
       if (vsa_min_delta == NULL_R) then
         vsa_min_delta = VSA_MIN_DELTA_DEFAULT
         write(string,fmt='(es9.2)') vsa_min_delta
-        call re_info ('  using default VSA_MIN_DELTA='//string)
+        call re_info('  using default VSA_MIN_DELTA='//string)
       else if (vsa_min_delta < 0.0_r8) then
-        call data_err ('VSA_MIN_DELTA must be >= 0')
+        call data_err('VSA_MIN_DELTA must be >= 0')
       end if
+      call params%set('vsa-min-delta', vsa_min_delta)
       if (vsa_avg_faces_per_patch == NULL_R) then
         vsa_avg_faces_per_patch = VSA_AVG_FACES_PER_PATCH_DEFAULT
         write(string,fmt='(es9.2)') vsa_avg_faces_per_patch
-        call re_info ('  using default VSA_AVG_FACES_PER_PATCH='//string)
+        call re_info('  using default VSA_AVG_FACES_PER_PATCH='//string)
       else if (vsa_avg_faces_per_patch < 1.0_r8) then
-        call data_err ('VSA_AVG_FACES_PER_PATCH must be >= 1')
+        call data_err('VSA_AVG_FACES_PER_PATCH must be >= 1')
       end if
+      call params%set('vsa-avg-faces-per-patch', vsa_avg_faces_per_patch)
     end if
 
     !! VAC settings
     if (patch_alg == PATCH_ALG_VAC) then
       if (vac_merge_level == NULL_I) then
         vac_merge_level = VAC_MERGE_LEVEL_DEFAULT
-        call re_info ('  using default VAC_MERGE_LEVEL='//i_to_c(vac_merge_level))
+        call re_info('  using default VAC_MERGE_LEVEL='//i_to_c(vac_merge_level))
       else if (vac_merge_level < 0) then
-        call data_err ('VAC_MERGE_LEVEL must be >= 0')
+        call data_err('VAC_MERGE_LEVEL must be >= 0')
       end if
+      call params%set('vac-merge-level', vac_merge_level)
       if (vac_split_patch_size == NULL_I) then
         vac_split_patch_size = VAC_SPLIT_PATCH_SIZE_DEFAULT
-        call re_info ('  using default VAC_SPLIT_PATCH_SIZE='//i_to_c(vac_split_patch_size))
+        call re_info('  using default VAC_SPLIT_PATCH_SIZE='//i_to_c(vac_split_patch_size))
       else if (vac_split_patch_size < 0) then
-        call data_err ('VAC_SPLIT_PATCH_SIZE must be >= 0')
+        call data_err('VAC_SPLIT_PATCH_SIZE must be >= 0')
       end if
+      call params%set('vac-split-patch-size', vac_split_patch_size)
     end if
 
     !! PAVE settings
     if (patch_alg == PATCH_ALG_PAVE) then
       if (pave_merge_level == NULL_I) then
         pave_merge_level = VAC_MERGE_LEVEL_DEFAULT
-        call re_info ('  using default PAVE_MERGE_LEVEL='//i_to_c(pave_merge_level))
+        call re_info('  using default PAVE_MERGE_LEVEL='//i_to_c(pave_merge_level))
       else if (pave_merge_level < 0) then
-        call data_err ('PAVE_MERGE_LEVEL must be >= 0')
+        call data_err('PAVE_MERGE_LEVEL must be >= 0')
       end if
+      call params%set('pave-merge-level', pave_merge_level)
       if (pave_split_patch_size == NULL_I) then
         pave_split_patch_size = VAC_SPLIT_PATCH_SIZE_DEFAULT
-        call re_info ('  using default PAVE_SPLIT_PATCH_SIZE='//i_to_c(pave_split_patch_size))
+        call re_info('  using default PAVE_SPLIT_PATCH_SIZE='//i_to_c(pave_split_patch_size))
       else if (pave_split_patch_size < 0) then
-        call data_err ('PAVE_SPLIT_PATCH_SIZE must be >= 0')
+        call data_err('PAVE_SPLIT_PATCH_SIZE must be >= 0')
       end if
+      call params%set('pave-split-patch-size', pave_split_patch_size)
     end if
 
-    if (stat /= 0) call re_halt ('errors found in PATCHES namelist variables')
-
-    !! Everything checks out; write values into return data structure
-    ppar%patch_alg = patch_alg
-    ppar%verbosity = verbosity_level
-    ppar%max_angle = max_angle
-    ppar%vsa_max_iter = vsa_max_iter
-    ppar%vsa_min_delta = vsa_min_delta
-    ppar%vsa_avg_fpp = vsa_avg_faces_per_patch
-    ppar%vac_merge_level = vac_merge_level
-    ppar%vac_split_patch_size = vac_split_patch_size
-    ppar%pave_merge_level = pave_merge_level
-    ppar%pave_split_patch_size = pave_split_patch_size
+    if (stat /= 0) call re_halt('errors found in PATCHES namelist variables')
 
   contains
     subroutine data_err (errmsg)
@@ -329,25 +322,28 @@ contains
 
 
   !! Select and run a patching algorithm
-  subroutine generate_patches (this, e, ppar)
+  subroutine generate_patches (this, e, params)
 
     class(re_patch), intent(out) :: this
     type(encl), intent(in)  :: e
-    type(patch_param), intent(in) :: ppar
+    type(parameter_list), intent(inout) :: params
 
-    select case (ppar%patch_alg)
+    integer :: patch_alg
+
+    call params%get('patch-alg', patch_alg)
+    select case (patch_alg)
       case (PATCH_ALG_NONE)
         write (*,'(a)') 'No patches will be generated'
         call this%no_patches(e)
       case (PATCH_ALG_VSA)
         write (*,'(a)') 'Generating patches using the VSA algorithm'
-        call this%vsa_patches(e, ppar)
+        call this%vsa_patches(e, params)
       case (PATCH_ALG_VAC)
         write (*,'(a)') 'Generating patches using the VAC algorithm'
-        call this%vac_patches(e, ppar)
+        call this%vac_patches(e, params)
       case (PATCH_ALG_PAVE)
         write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
-        call this%pave_patches(e, ppar)
+        call this%pave_patches(e, params)
       case default
         !! Programming error, exit immediately.
         INSIST(.false.)
@@ -378,21 +374,29 @@ contains
 
 
   !! Generate patches using the VSA algorithm
-  subroutine vsa_patches (this, e, ppar)
+  subroutine vsa_patches (this, e, params)
 
     use vsa_patching_type
 
     class(re_patch), intent(out) :: this
     type(encl), target, intent(in)  :: e
-    type(patch_param), intent(in)  :: ppar
+    type(parameter_list), intent(inout)  :: params
 
     type(vsa_patching) :: vsa
+    integer :: verbosity, max_iter
+    real(r8) :: max_angle, min_delta, avg_fpp
+
+    call params%get('verbosity-level', verbosity)
+    call params%get('vsa-avg-faces-per-patch', avg_fpp)
+    call params%get('max-angle', max_angle)
+    call params%get('vsa-min-delta', min_delta)
+    call params%get('vsa-max-iter', max_iter)
 
     this%has_patches = .true.
 
-    call vsa%init(e, ppar%vsa_avg_fpp, ppar%max_angle, ppar%verbosity)
+    call vsa%init(e, avg_fpp, max_angle, verbosity)
 
-    call vsa%run(ppar%vsa_min_delta, ppar%vsa_max_iter)
+    call vsa%run(min_delta, max_iter)
 
     call vsa%output(this%f2p_map, this%global_ids, this%npatch)
 
@@ -400,20 +404,26 @@ contains
 
 
   !! Generate patches using the VAC algorithm
-  subroutine vac_patches (this, e, ppar)
+  subroutine vac_patches (this, e, params)
 
     use vac_patching_type
 
     class(re_patch), intent(out) :: this
     type(encl), target, intent(in)  :: e
-    type(patch_param), intent(in)  :: ppar
+    type(parameter_list), intent(inout)  :: params
 
     type(vac_patching) :: vac
+    integer :: verbosity, merge_level, split_patch_size
+    real(r8) :: max_angle
+
+    call params%get('verbosity-level', verbosity)
+    call params%get('max-angle', max_angle)
+    call params%get('vac-merge-level', merge_level)
+    call params%get('vac-split-patch-size', split_patch_size)
 
     this%has_patches = .true.
 
-    call vac%init(e, ppar%max_angle, ppar%vac_merge_level, &
-      ppar%vac_split_patch_size, ppar%verbosity)
+    call vac%init(e, max_angle, merge_level, split_patch_size, verbosity)
 
     call vac%run()
 
@@ -423,20 +433,26 @@ contains
 
 
   !! Generate patches using the VAC PAVE algorithm
-  subroutine pave_patches (this, e, ppar)
+  subroutine pave_patches (this, e, params)
 
     use vac_patching_type
 
     class(re_patch), intent(out) :: this
     type(encl), target, intent(in)  :: e
-    type(patch_param), intent(in)  :: ppar
+    type(parameter_list), intent(inout)  :: params
 
     type(pave_patching) :: pave
+    integer :: verbosity, merge_level, split_patch_size
+    real(r8) :: max_angle
+
+    call params%get('verbosity-level', verbosity)
+    call params%get('max-angle', max_angle)
+    call params%get('pave-merge-level', merge_level)
+    call params%get('pave-split-patch-size', split_patch_size)
 
     this%has_patches = .true.
 
-    call pave%init(e, ppar%max_angle, ppar%pave_merge_level, &
-      ppar%pave_split_patch_size, ppar%verbosity)
+    call pave%init(e, max_angle, merge_level, split_patch_size, verbosity)
 
     call pave%run()
 
