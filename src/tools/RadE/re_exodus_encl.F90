@@ -28,12 +28,13 @@
 !!      name ~ user-supplied name for the enclosure (req)
 !!      mesh_file ~ path of the source Exodus mesh file (req)
 !!      coord_scale_factor ~ scale factor to apply to the surface coordinates (opt)
+!!      exodus_block_modulus - remap block IDs to their value modulo this modulus (opt)
 !!      ignore_block_IDs ~ list of mesh element blocks to ignore (opt)
 !!      side_set_IDs ~ list of mesh side sets defining the surface (req)
 !!      symmetries ~ list of up to 3 symmetry operations (opt):
 !!                   Mirror<a>, a = X, Y, Z; e.g. MirrorZ
 !!                   Rot<a><n>, a = X, Y, Z, n integer; e.g., RotZ3, RotX16
-!!      displace_side_set_IDs ~ list of surface side sets to displace;
+!!      displace_block_IDs ~ list of element blocks to displace;
 !!      displacement ~ the constant (x,y,z) displacement amount.
 !!
 !!  CALL INIT_ENCL(THIS, PARAMS, STAT, ERRMSG) initializes the ENCL object
@@ -46,10 +47,11 @@
 !!      'name'
 !!      'mesh-file'
 !!      'coord-scale-factor'
+!!      'exodus-block-modulus'
 !!      'side-set-ids'
 !!      'ignore-block-ids'
 !!      'symmetries'
-!!      'displace-side_set-ids'
+!!      'displace-block-ids'
 !!      'displacement'
 !!
 !! IMPLEMENTATION NOTES
@@ -94,10 +96,12 @@ contains
     character(MAX_NAME_LEN) :: name
     character(MAX_FILE_LEN) :: mesh_file
     character(7) :: symmetries(3)
-    integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS), displace_side_set_ids(MAX_IDS)
+    integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS)
+    integer :: displace_block_ids(MAX_IDS), exodus_block_modulus
     real(r8) :: coord_scale_factor, displacement(3)
-    namelist /enclosure/ name, mesh_file, side_set_ids, ignore_block_ids, symmetries, &
-        coord_scale_factor, displace_side_set_ids, displacement
+    namelist /enclosure/ name, mesh_file, coord_scale_factor, exodus_block_modulus, &
+        side_set_ids, ignore_block_ids, symmetries, &
+        displace_block_ids, displacement
 
     integer :: j, n, ios, stat, rot_axis, num_rot
     logical :: is_IOP, found, mirror(3)
@@ -122,10 +126,11 @@ contains
     name = NULL_C
     mesh_file = NULL_C
     coord_scale_factor = 1.0_r8
+    exodus_block_modulus = NULL_I
     side_set_ids = NULL_I
     ignore_block_ids = NULL_I
     symmetries = NULL_C
-    displace_side_set_ids = NULL_I
+    displace_block_ids = NULL_I
     displacement = NULL_R
 
     if (is_IOP) read(lun,nml=enclosure,iostat=ios,iomsg=iom)
@@ -136,10 +141,11 @@ contains
     call scl_bcast(name)
     call scl_bcast(mesh_file)
     call scl_bcast(coord_scale_factor)
+    call scl_bcast(exodus_block_modulus)
     call scl_bcast(side_set_ids)
     call scl_bcast(ignore_block_ids)
     call scl_bcast(symmetries)
-    call scl_bcast(displace_side_set_ids)
+    call scl_bcast(displace_block_ids)
     call scl_bcast(displacement)
 
     !! Check the user-supplied NAME for the namelist.
@@ -155,6 +161,12 @@ contains
     !! Check COORD_SCALE_FACTOR.
     if (coord_scale_factor <= 0.0_r8) call re_halt('COORD_SCALE_FACTOR must be > 0.0')
     call params%set('coord-scale-factor', coord_scale_factor)
+
+    !! Check EXODUS_BLOCK_MODULUS.
+    if (exodus_block_modulus /= NULL_I) then
+      if (exodus_block_modulus < 0) call re_halt('EXODUS_BLOCK_MODULUS must be >= 0')
+      call params%set('exodus-block-modulus', exodus_block_modulus)
+    end if
 
     !! Check for a non-empty SIDE_SET_IDS.
     if (count(side_set_ids /= NULL_I) == 0) call re_halt('SIDE_SET_IDS not specified')
@@ -192,8 +204,8 @@ contains
     call params%set('rot-axis', rot_axis)
     call params%set('num-rot', num_rot)
 
-    if (count(displace_side_set_ids /= NULL_I) > 0) then
-      call params%set('displace-side-set-ids', pack(displace_side_set_ids, mask=(displace_side_set_ids /= NULL_I)))
+    if (count(displace_block_ids /= NULL_I) > 0) then
+      call params%set('displace-block-ids', pack(displace_block_ids, mask=(displace_block_ids /= NULL_I)))
       if (all(displacement == NULL_R)) call re_halt('DISPLACEMENT not specified')
       if (any(displacement == NULL_R)) call re_halt('DISPLACEMENT not fully specified')
       call params%set('displacement', displacement)
@@ -219,6 +231,8 @@ contains
       !! Read the volume mesh.
       call params%get('mesh-file', mesh_file)
       call read_exodus_mesh(mesh_file, mesh)
+      call merge_block_ids(mesh, params)
+      call check_for_altered_surfaces(mesh, params)
       !! Initialize the ENCL type object.
       call encl_init_aux(this, mesh, params, stat, errmsg)
     end if
@@ -248,7 +262,7 @@ contains
     character(:), allocatable :: errmsg
 
     integer, allocatable :: ssid(:), ebid(:), disp_ssid(:)
-    logical, allocatable :: mirror(:)
+    logical, allocatable :: mirror(:), mask(:)
     real(r8), allocatable :: disp(:)
     real(r8) :: scale
 
@@ -260,12 +274,13 @@ contains
     call params%get('coord-scale-factor', scale, default=1.0_r8)
     if (scale /= 1.0_r8) this%x = scale * this%x
 
-    !! Apply surface displacement if specified
-    if (params%is_parameter('displace-side-set-ids')) then
-      call params%get('displace-side-set-ids', disp_ssid)
+    !! Generate a mask of all cells being displaced, if any.
+    call get_displaced_elem_mask(mesh, params, mask, stat, errmsg)
+    if (stat /= 0) return
+
+    if (allocated(mask)) then
       call params%get('displacement', disp)
-      call displace_surfaces(this, disp, disp_ssid, stat, errmsg)
-      if (stat /= 0) return
+      call displace_surfaces(this, disp, mask)
     end if
 
     !! Other parameters destined for Chaparral.
@@ -276,6 +291,169 @@ contains
     call params%get('num-rot', this%num_rot)
 
   end subroutine encl_init_aux
+
+  !! This auxiliary procedure handles the optional merging of exodus block IDs;
+  !! IDs of secondary blocks replaced with congruent values. [SERIAL PROCEDURE]
+
+  subroutine merge_block_ids(mesh, params)
+    use exodus_mesh_type
+    use string_utilities, only: i_to_c
+    type(exodus_mesh), intent(inout) :: mesh
+    type(parameter_list), intent(inout) :: params
+    integer :: n, exodus_block_modulus, new_id
+    character(:), allocatable :: msg
+    !! Overwrite block IDs with their congruent values (10000 Cubit default for 3D meshes)
+    call params%get('exodus-block-modulus', exodus_block_modulus, default=10000)
+    if (exodus_block_modulus > 0) then
+      do n = 1, mesh%num_eblk
+        associate (id => mesh%eblk(n)%id)
+          new_id = modulo(id, exodus_block_modulus)
+          if (new_id /= id) then
+            msg = 'Element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id)
+            call re_info(msg)
+            id = new_id
+          end if
+        end associate
+      end do
+    end if
+  end subroutine merge_block_ids
+
+  !! Ignoring an element block may alter the surface defined by a side set that
+  !! references it.  This auxiliary subroutine examines the side sets used to
+  !! define the enclosure surface for any reference to an ignored element block
+  !! and writes a warning message if any are found. [SERIAL PROCEDURE]
+
+  subroutine check_for_altered_surfaces(mesh, params)
+
+    use exodus_mesh_type
+    use string_utilities, only: i_to_c
+
+    type(exodus_mesh), intent(in) :: mesh
+    type(parameter_list) :: params
+
+    integer :: i, j, n, m
+    integer, allocatable :: list(:), ssid(:)
+    logical :: mask(mesh%num_eblk), warned
+    integer :: refcount(mesh%num_eblk)
+    character(:), allocatable :: string
+
+    if (.not.params%is_parameter('ignore-block-ids')) return ! nothing to check
+
+    !! Ignored element block mask.
+    call params%get('ignore-block-ids', list)
+    do j = 1, mesh%num_eblk
+      mask(j) = any(mesh%eblk(j)%id == list)
+    end do
+
+    !! Look for surface side sets that use an ignored element block.
+    warned = .false.
+    call params%get('side-set-ids', ssid)
+    do j = 1, mesh%num_sset
+      if (all(mesh%sset(j)%id /= ssid)) cycle ! unused side set
+      !! Count the references to ignored blocks by this side set.
+      refcount = 0  ! block reference count
+      do i = 1, mesh%sset(j)%num_side ! iterate over sides in the side set
+        !! Compute the block index N referenced by the side
+        n = 1
+        m = mesh%sset(j)%elem(i)
+        do while (m > mesh%eblk(n)%num_elem)
+          m = m - mesh%eblk(n)%num_elem
+          n = n + 1
+        end do
+        if (mask(n)) refcount(n) = refcount(n) + 1
+      end do
+      !! Warn if any ignored block has a non-zero reference count.
+      list = pack(mesh%eblk%id, mask=(refcount>0))
+      if (size(list) > 0) then
+        string = i_to_c(list(1))
+        do i = 2, size(list)
+          if (any(list(i) == list(:i-1))) cycle ! skip duplicates
+          string = string // ', ' // i_to_c(list(i))
+        end do
+        call re_info('WARNING: side set ' // i_to_c(mesh%sset(j)%id) // &
+                     ' surface may be altered by ignoring blocks ' // string // ';')
+        warned = .true.
+      end if
+    end do
+    if (warned) call re_info('         please visually verify the computed enclosure surface.')
+
+  end subroutine check_for_altered_surfaces
+
+  !! This auxiliary subroutine returns an element-based mask that identifies
+  !! the elements that are to be displaced.  An unallocated mask is returned
+  !! if no displacement was specified. This also verifies that the displaced
+  !! elements are not connected to the remaining elements. [SERIAL PROCEDURE]
+
+  subroutine get_displaced_elem_mask(mesh, params, mask, stat, errmsg)
+
+    use exodus_mesh_type
+    use string_utilities, only: i_to_c
+
+    type(exodus_mesh), intent(in) :: mesh
+    type(parameter_list), intent(inout) :: params
+    logical, allocatable, intent(out) :: mask(:)
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
+
+    integer :: j, n, offset
+    integer, allocatable :: dbid(:), ibid(:)
+    logical, allocatable :: node_mask(:)
+
+    stat = 0
+
+    call params%get('ignore-block-ids', ibid, default=[integer::])
+    do n = 1, size(ibid)  ! verify ignored blocks are valid blocks
+      if (.not.any(ibid(n) == mesh%eblk%id)) then
+        stat = -1
+        errmsg = 'invalid ignored block ID: ' // i_to_c(ibid(n))
+        return
+      end if
+    end do
+
+    call params%get('displace-block-ids', dbid, default=[integer::])
+    do n = 1, size(dbid) ! verify displaced blocks are valid blocks
+      if (.not.any(dbid(n) == mesh%eblk%id)) then
+        stat = -1
+        errmsg = 'invalid displaced block ID: ' // i_to_c(dbid(n))
+        return
+      end if
+      if (any(dbid(n) == ibid)) then
+        stat = -1
+        errmsg = 'invalid displaced block ID: ' // i_to_c(dbid(n))
+        return
+      end if
+    end do
+
+    if (size(dbid) == 0) return ! mask not allocated
+    allocate(mask(mesh%num_elem), source=.false.)
+
+    !! Tag the displaced elements and nodes.
+    allocate(node_mask(mesh%num_node), source=.false.)
+    offset = 0
+    do n = 1, mesh%num_eblk
+      if (any(mesh%eblk(n)%id == dbid)) then
+        mask(offset+1:offset+mesh%eblk(n)%num_elem) = .true.
+        do j = 1, mesh%eblk(n)%num_elem
+          node_mask(mesh%eblk(n)%connect(:,j)) = .true.
+        end do
+      end if
+      offset = offset + mesh%eblk(n)%num_elem
+    end do
+
+    !! Verify the displaced blocks are disconnected from the others.
+    do n = 1, mesh%num_eblk
+      if (any(mesh%eblk(n)%id == dbid)) cycle
+      if (any(mesh%eblk(n)%id == ibid)) cycle
+      do j = 1, mesh%eblk(n)%num_elem
+        if (any(node_mask(mesh%eblk(n)%connect(:,j)))) then
+          stat = -1
+          errmsg = 'displaced blocks connected to undisplaced blocks'
+          return
+        end if
+      end do
+    end do
+
+  end subroutine get_displaced_elem_mask
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -693,65 +871,33 @@ contains
 
   end subroutine extract_surface_from_exodus
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! DISPLACE_SURFACES
- !!
- !! Displaces the position of the of the given enclosure surfaces by a constant
- !! amount.  Those surfaces must be disconnected from the remaining enclosure
- !! surfaces.
- !!
+ !! Displaces the position of enclosure surfaces belonging to the masked cells
+ !! by a constant amount. Masked cells must not be connected to unmasked cells.
 
-  subroutine displace_surfaces (surf, disp, ssid, stat, errmsg)
+  subroutine displace_surfaces(this, disp, mask)
 
     use re_encl_type
-    use string_utilities, only: i_to_c
 
-    type(encl), intent(inout) :: surf
+    type(encl), intent(inout) :: this
     real(r8), intent(in) :: disp(:)
-    integer, intent(in) :: ssid(:)
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
+    logical, intent(in) :: mask(:)  ! displaced cell mask
 
     integer :: j
-    logical, allocatable :: gmask(:), mask(:)
+    logical, allocatable :: node_mask(:)
 
-    stat = 0
-
-    if (size(ssid) == 0) return ! nothing to do
-
-    !! Tag the surface face groups (== side sets) that are to be displaced.
-    allocate(gmask(size(surf%group_id_list)))
-    do j = 1, size(surf%group_id_list)
-      gmask(j) = any(surf%group_id_list(j) == ssid)
-    end do
-
-    if (.not.any(gmask)) then ! nothing to do
-      call re_info ('Warning: directed to displace side sets but none found!')
-      return
-    end if
-
-    !! Tag all nodes belonging to the displaced surface faces.
-    allocate(mask(surf%nnode))
-    mask = .false.
-    do j = 1, surf%nface
-      if (gmask(surf%gnum(j))) mask(surf%fnode(surf%xface(j):surf%xface(j+1)-1)) = .true.
-    end do
-
-    !! Check that no nodes belonging to undisplaced surface faces are tagged.
-    do j = 1, surf%nface
-      if (gmask(surf%gnum(j))) cycle
-      if (any(mask(surf%fnode(surf%xface(j):surf%xface(j+1)-1)))) then
-        stat = -1
-        errmsg = 'undisplaced side set ' // i_to_c(surf%gnum(j)) // &
-                 ' shares nodes with a displaced side set'
-        return
+    !! Tag surface nodes belonging to the displaced cells
+    allocate(node_mask(this%nnode), source=.false.)
+    do j = 1, this%nface
+      if (mask(this%src_elem(j))) then
+        associate (face => this%fnode(this%xface(j):this%xface(j+1)-1))
+          node_mask(face) = .true.
+        end associate
       end if
     end do
 
-    !! Displace the tagged nodes.
-    do j = 1, surf%nnode
-      if (mask(j)) surf%x(:,j) = surf%x(:,j) + disp
+    !! Displace the tagged nodes
+    do j = 1, this%nnode
+      if (node_mask(j)) this%x(:,j) = this%x(:,j) + disp
     end do
 
   end subroutine displace_surfaces
