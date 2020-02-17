@@ -35,7 +35,7 @@
 !!                   Mirror<a>, a = X, Y, Z; e.g. MirrorZ
 !!                   Rot<a><n>, a = X, Y, Z, n integer; e.g., RotZ3, RotX16
 !!      displace_block_IDs ~ list of element blocks to displace;
-!!      displacement ~ the constant (x,y,z) displacement amount.
+!!      displacements ~ a list of (x,y,z) displacements to apply (opt).
 !!
 !!  CALL INIT_ENCL(THIS, PARAMS, STAT, ERRMSG) initializes the ENCL object
 !!    THIS as specified by the parameter list PARAMS. The object is replicated
@@ -51,8 +51,17 @@
 !!      'side-set-ids'
 !!      'ignore-block-ids'
 !!      'symmetries'
+!!
+!!  CALL INIT_ENCL_LIST(THIS, PARAMS, STAT, ERRMSG) initializes the ENCL_LIST
+!!    object THIS as specified by the parameter list PARAMS.  The object is
+!!    replicated on all ranks, however PARAMS is only significant on rank 1.
+!!    The integer STAT returns a non-zero value if an error occurs, and the
+!!    deferred length allocatable character ERRMSG returns an explanatory
+!!    message. The following parameters are recognized in addtion to those
+!!    above:
+!!
 !!      'displace-block-ids'
-!!      'displacement'
+!!      'displacements'
 !!
 !! IMPLEMENTATION NOTES
 !!
@@ -78,9 +87,9 @@ module re_exodus_encl
   implicit none
   private
 
-  public :: read_enclosure_namelist, init_encl
+  public :: read_enclosure_namelist, init_encl, init_encl_list
 
-  integer, parameter :: MAX_NAME_LEN = 32, MAX_FILE_LEN = 256, MAX_IDS = 128
+  integer, parameter :: MAX_NAME_LEN = 32, MAX_FILE_LEN = 256, MAX_IDS = 128, MAX_DISPL = 1000
 
 contains
 
@@ -98,12 +107,12 @@ contains
     character(7) :: symmetries(3)
     integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS)
     integer :: displace_block_ids(MAX_IDS), exodus_block_modulus
-    real(r8) :: coord_scale_factor, displacement(3)
+    real(r8) :: coord_scale_factor, displacements(3,MAX_DISPL)
     namelist /enclosure/ name, mesh_file, coord_scale_factor, exodus_block_modulus, &
         side_set_ids, ignore_block_ids, symmetries, &
-        displace_block_ids, displacement
+        displace_block_ids, displacements
 
-    integer :: j, n, ios, stat, rot_axis, num_rot
+    integer :: j, n, ios, stat, rot_axis, num_rot, ndispl
     logical :: is_IOP, found, mirror(3)
     character(len=len(symmetries)) :: sym
     character(255) :: iom
@@ -131,7 +140,7 @@ contains
     ignore_block_ids = NULL_I
     symmetries = NULL_C
     displace_block_ids = NULL_I
-    displacement = NULL_R
+    displacements = NULL_R
 
     if (is_IOP) read(lun,nml=enclosure,iostat=ios,iomsg=iom)
     call scl_bcast(ios)
@@ -146,7 +155,7 @@ contains
     call scl_bcast(ignore_block_ids)
     call scl_bcast(symmetries)
     call scl_bcast(displace_block_ids)
-    call scl_bcast(displacement)
+    call scl_bcast(displacements)
 
     !! Check the user-supplied NAME for the namelist.
     if (name == NULL_C) call re_halt('NAME not specified')
@@ -205,13 +214,141 @@ contains
     call params%set('num-rot', num_rot)
 
     if (count(displace_block_ids /= NULL_I) > 0) then
-      call params%set('displace-block-ids', pack(displace_block_ids, mask=(displace_block_ids /= NULL_I)))
-      if (all(displacement == NULL_R)) call re_halt('DISPLACEMENT not specified')
-      if (any(displacement == NULL_R)) call re_halt('DISPLACEMENT not fully specified')
-      call params%set('displacement', displacement)
+      call params%set('displace-block-ids', &
+          pack(displace_block_ids, mask=(displace_block_ids /= NULL_I)))
+      !! Check DISPLACEMENTS
+      do ndispl = size(displacements,dim=2), 1, -1
+        if (any(displacements(:,ndispl) /= NULL_R)) exit
+      end do
+      if (ndispl == 0) call re_halt('DISPLACEMENTS not specified')
+      if (any(displacements(:,:ndispl) == NULL_R)) &
+          call re_halt('DISPLACEMENTS not fully specified')
+      call params%set('displacements', displacements(:,:ndispl))
     end if
 
   end subroutine read_enclosure_namelist
+
+
+  subroutine init_encl_list(this, params, stat, errmsg)
+
+    use exodus_mesh_type
+    use exodus_mesh_io, only: read_exodus_mesh
+    use re_encl_type
+    use toolpath_type
+    use toolpath_table
+
+    type(encl_list), intent(out) :: this
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    integer :: j, n
+    type(exodus_mesh) :: mesh
+    character(:), allocatable :: mesh_file, name
+    logical, allocatable :: mask(:)
+    type(toolpath), pointer :: tp => null()
+
+    !! Initialize the base enclosure held by the parent ENCL type.
+    if (scl_rank() == 1) then
+      !! Read the volume mesh.
+      call params%get('mesh-file', mesh_file)
+      call re_info('Reading mesh from ' // mesh_file)
+      call read_exodus_mesh(mesh_file, mesh)
+      call merge_block_ids(mesh, params)
+      call re_info('Generating enclosure surface')
+      call check_for_altered_surfaces(mesh, params)
+      !! Initialize the parent ENCL type object.
+      call encl_init_aux(this, mesh, params, stat, errmsg)
+    end if
+    call scl_bcast(stat)
+    if (stat /= 0) then
+      call scl_bcast_alloc(errmsg)
+      return
+    end if
+
+    !! Generate a mask of all cells being displaced, if any.
+    if (scl_rank() == 1) call get_displaced_elem_mask(mesh, params, mask, stat, errmsg)
+    call scl_bcast(stat)
+    if (stat /= 0) then
+      call scl_bcast_alloc(errmsg)
+      return
+    end if
+
+    !! Initialize the additional components of the ENCL_LIST type object.
+    if (scl_rank() == 1) then
+      if (allocated(mask)) then ! have displacements
+        !! Mask of enclosure surface nodes being moved.
+        allocate(this%mask(this%nnode), source=.false.)
+        do j = 1, this%nface
+          if (mask(this%src_elem(j))) then
+            associate (face => this%fnode(this%xface(j):this%xface(j+1)-1))
+              this%mask(face) = .true.
+            end associate
+          end if
+        end do
+        !! List of displacements and associated labels.
+!        if (params%is_parameter('displacements')) then
+          !! Get displacements directly from the input.
+          call params%get('displacements', this%dx)
+          this%n = size(this%dx,dim=2)
+          block
+            character(8) :: fmt
+            write(fmt,'(i0)') this%n
+            n = max(3, len_trim(fmt))
+            write(fmt,'("(i",i0,".",i0,")")') n, n
+            allocate(character(n)::this%label(this%n))
+            write(this%label,fmt) (j, j=1, this%n)
+          end block
+!        else
+!          !! Extract displacements and labels from a partitioned toolpath.
+!          call params%get('displacement-toolpath', name)
+!          tp => toolpath_ptr(name)
+!          if (tp%has_partition()) then
+!            call tp%get_partition(coord=this%dx, hash=this%label)
+!            !! Cull any duplicates (possible)
+!            n = 1 ! top of list of uniques
+!            do j = 2, size(this%dx,dim=2)
+!              if (any(this%label(j) == this%label(1:n))) cycle
+!              n = n + 1
+!              if (j == n) cycle
+!              this%dx(:,n) = this%dx(:,j)
+!              this%label(n) = this%label(j)
+!            end do
+!            if (n < size(this%dx,dim=2)) then
+!              this%dx = this%dx(:,:n)
+!              this%label = this%label(:n)
+!            end if
+!            this%n = size(this%dx,dim=2)
+!          else
+!            stat = -1
+!            errmsg = 'toolpath is not partitioned'
+!          end if
+!        end if
+      end if
+    end if
+    call scl_bcast(stat)
+    if (stat /= 0) then
+      call scl_bcast_alloc(errmsg)
+      return
+    end if
+
+    if (scl_rank() == 1) then
+      if (allocated(mask)) then ! have displacements
+        !! Define the initial enclosure in the sequence.
+        this%index = 1
+        if (this%n > 1) this%x0 = this%x
+        do j = 1, this%nnode
+          if (this%mask(j)) this%x(:,j) = this%x(:,j) + this%dx(:,1)
+        end do
+      else  ! no displacements -- just the single base enclosure.
+        this%n = 1
+        this%index = 1
+      end if
+    end if
+
+    call this%bcast
+
+  end subroutine init_encl_list
 
   subroutine init_encl(this, params, stat, errmsg)
 
@@ -226,14 +363,14 @@ contains
 
     type(exodus_mesh) :: mesh
     character(:), allocatable :: mesh_file
+    logical,  allocatable :: mask(:)
+    real(r8), allocatable :: disp(:)
 
     if (scl_rank() == 1) then
-      !! Read the volume mesh.
       call params%get('mesh-file', mesh_file)
       call read_exodus_mesh(mesh_file, mesh)
       call merge_block_ids(mesh, params)
       call check_for_altered_surfaces(mesh, params)
-      !! Initialize the ENCL type object.
       call encl_init_aux(this, mesh, params, stat, errmsg)
     end if
     call scl_bcast(stat)
@@ -262,8 +399,7 @@ contains
     character(:), allocatable :: errmsg
 
     integer, allocatable :: ssid(:), ebid(:), disp_ssid(:)
-    logical, allocatable :: mirror(:), mask(:)
-    real(r8), allocatable :: disp(:)
+    logical, allocatable :: mirror(:)
     real(r8) :: scale
 
     !! Extract the surface from the mesh
@@ -273,15 +409,6 @@ contains
     if (stat /= 0) return
     call params%get('coord-scale-factor', scale, default=1.0_r8)
     if (scale /= 1.0_r8) this%x = scale * this%x
-
-    !! Generate a mask of all cells being displaced, if any.
-    call get_displaced_elem_mask(mesh, params, mask, stat, errmsg)
-    if (stat /= 0) return
-
-    if (allocated(mask)) then
-      call params%get('displacement', disp)
-      call displace_surfaces(this, disp, mask)
-    end if
 
     !! Other parameters destined for Chaparral.
     call params%get('name', this%name)
@@ -870,36 +997,5 @@ contains
     end function
 
   end subroutine extract_surface_from_exodus
-
- !! Displaces the position of enclosure surfaces belonging to the masked cells
- !! by a constant amount. Masked cells must not be connected to unmasked cells.
-
-  subroutine displace_surfaces(this, disp, mask)
-
-    use re_encl_type
-
-    type(encl), intent(inout) :: this
-    real(r8), intent(in) :: disp(:)
-    logical, intent(in) :: mask(:)  ! displaced cell mask
-
-    integer :: j
-    logical, allocatable :: node_mask(:)
-
-    !! Tag surface nodes belonging to the displaced cells
-    allocate(node_mask(this%nnode), source=.false.)
-    do j = 1, this%nface
-      if (mask(this%src_elem(j))) then
-        associate (face => this%fnode(this%xface(j):this%xface(j+1)-1))
-          node_mask(face) = .true.
-        end associate
-      end if
-    end do
-
-    !! Displace the tagged nodes
-    do j = 1, this%nnode
-      if (node_mask(j)) this%x(:,j) = this%x(:,j) + disp
-    end do
-
-  end subroutine displace_surfaces
 
 end module re_exodus_encl

@@ -51,6 +51,11 @@ void VF_DefineTopology(int enclosure, int geom_type,
   VFenclosure *encl=VF_GetEnclosure(enclosure);
   VFtopology  *topology=VF_GetTopology();
 
+  /* NB: This modification alters the behavior of the function. It now
+   * assumes a new topology is being defined with each call, instead of
+   * adding to a topology defined by previous calls. */
+  FacetListSize = 0;
+
   clock0 = VF_Clock();
   VF_GetSPbuffer0_ptr(&buffer);
   gid_map        = (int*)buffer;

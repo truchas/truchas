@@ -290,9 +290,9 @@ contains
     use re_encl_type
     use re_patch_type
 
-    type(encl), intent(in), target :: e
+    class(encl), intent(in), target :: e
     type(parameter_list), intent(inout) :: params
-    type(re_patch), intent(inout) :: ep
+    type(re_patch), intent(in) :: ep
     type(dist_vf), intent(out) :: evf
 
     integer :: j, n, handle, nfacets, nrotations, max_surfaces, nproc, my_rank
@@ -320,8 +320,8 @@ contains
     !! Get patch data
     if (my_rank == 1) then
       npatch_tot = ep%npatch
-      call move_alloc(ep%global_ids, global_ids_g)
-      call move_alloc(ep%f2p_map, f2p_map_g)
+      allocate(global_ids_g, source=ep%global_ids)
+      allocate(f2p_map_g, source=ep%f2p_map)
     else
       allocate(global_ids_g(0),f2p_map_g(0))
     end if

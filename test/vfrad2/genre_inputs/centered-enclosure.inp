@@ -4,7 +4,7 @@
   side_set_ids = 2, 3
   symmetries = 'mirrorx', 'mirrory'
   displace_block_ids = 1
-  displacement = 0.0, 0.0, 0.1
+  displacements = 0.0, 0.0, 0.1
 /
 
 x&CHAPARRAL

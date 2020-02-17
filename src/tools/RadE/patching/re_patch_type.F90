@@ -6,7 +6,7 @@
 !! this type.
 !!
 !! This module also provides a procedure for parsing the PATCHES namelist. The
-!! data is copied to the parameter list PATCH_PARAM for later use.
+!! data is copied into a parameter list.
 !!
 !! IMPORTANT: RE_PATCH methods are serial, and must only be run on the I/O
 !!            process.  Adhering to convention, READ_PATCHES_NAMELIST is
@@ -91,20 +91,6 @@ module re_patch_type
   integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_PAVE
   integer, parameter :: VERBOSITY_LEVEL_DEFAULT = 1
   real(r8), parameter :: MAX_ANGLE_DEFAULT = 20.0
-
-  type, public :: patch_param
-    private
-    integer  :: verbosity      ! Verbosity level
-    integer  :: patch_alg      ! Patching algorithm to run
-    real(r8) :: max_angle      ! Maximum allowable angle for adjacent faces
-    integer  :: vsa_max_iter   ! Maximum iterations for VSA algorithm
-    real(r8) :: vsa_min_delta  ! Minimum change in successive algorithm
-    real(r8) :: vsa_avg_fpp    ! Average faces per patch
-    integer  :: vac_split_patch_size   ! Maximum patch size to split
-    integer  :: vac_merge_level        ! Aggressiveness of patch merging
-    integer  :: pave_split_patch_size  ! Maximum patch size to split
-    integer  :: pave_merge_level       ! Aggressiveness of patch merging
-  end type
 
   type, public :: re_patch
     integer :: npatch  ! Total number of enclosure patches
@@ -325,13 +311,14 @@ contains
   subroutine generate_patches (this, e, params)
 
     class(re_patch), intent(out) :: this
-    type(encl), intent(in)  :: e
+    class(encl), intent(in)  :: e
     type(parameter_list), intent(inout) :: params
 
     integer :: patch_alg
 
-    call params%get('patch-alg', patch_alg)
-    select case (patch_alg)
+    if (scl_rank() == 1) then
+      call params%get('patch-alg', patch_alg)
+      select case (patch_alg)
       case (PATCH_ALG_NONE)
         write (*,'(a)') 'No patches will be generated'
         call this%no_patches(e)
@@ -347,7 +334,8 @@ contains
       case default
         !! Programming error, exit immediately.
         INSIST(.false.)
-    end select
+      end select
+    end if
 
   end subroutine generate_patches
 
@@ -356,7 +344,7 @@ contains
   subroutine no_patches (this, e)
 
     class(re_patch), intent(out) :: this
-    type(encl), intent(in)  :: e
+    class(encl), intent(in)  :: e
 
     integer :: i
 
@@ -379,7 +367,7 @@ contains
     use vsa_patching_type
 
     class(re_patch), intent(out) :: this
-    type(encl), target, intent(in)  :: e
+    class(encl), target, intent(in)  :: e
     type(parameter_list), intent(inout)  :: params
 
     type(vsa_patching) :: vsa
@@ -409,7 +397,7 @@ contains
     use vac_patching_type
 
     class(re_patch), intent(out) :: this
-    type(encl), target, intent(in)  :: e
+    class(encl), target, intent(in)  :: e
     type(parameter_list), intent(inout)  :: params
 
     type(vac_patching) :: vac
@@ -438,7 +426,7 @@ contains
     use vac_patching_type
 
     class(re_patch), intent(out) :: this
-    type(encl), target, intent(in)  :: e
+    class(encl), target, intent(in)  :: e
     type(parameter_list), intent(inout)  :: params
 
     type(pave_patching) :: pave
@@ -492,10 +480,12 @@ contains
 
     type(rad_encl_file) :: file
 
-    call file%open_rw(path)
-    call file%init_patch(INT(this%npatch,kind=i8), this%has_patches)
-    if (this%has_patches) call file%put_f2p_map(this%f2p_map)
-    call file%close
+    if (scl_rank() == 1) then
+      call file%open_rw(path)
+      call file%init_patch(INT(this%npatch,kind=i8), this%has_patches)
+      if (this%has_patches) call file%put_f2p_map(this%f2p_map)
+      call file%close
+    end if
 
   end subroutine write_patch_data
 

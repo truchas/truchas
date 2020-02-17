@@ -32,6 +32,25 @@
 !!    but only for the purposes of error handling.  Output occurs on process
 !!    rank 1 using its data; the object is ignored on all other processes.
 !!
+!! The ENCL_LIST type extends the ENCL type with additional data that defines a
+!! list of related enclosure surfaces.  The surfaces have the same logical mesh
+!! topology and symmetries, differing only in a displacement of certain surface
+!! components.  Objects of this type are instantiated using the INIT_ENCL_LIST
+!! procedure from the RE_EXODUS_ENCL module.  The ENCL components of the object
+!! describe the current enclosure of the list, and the object is positioned at
+!! the first enclosure in the list immediately after initialization.  The type
+!! has the following type bound methods.
+!!
+!!  NUM_ENCL() returns the number of enclosures in the list.
+!!
+!!  NEXT_ENCL() advances the object to the next enclosure in the list.
+!!
+!!  THIS_LABEL() returns a unique character string label for the current
+!!    enclosure which can be used in forming a unique output file name. The
+!!    labels will all consist of the same number of nonblank characters. In
+!!    some cases this is just the numeric position in the list (left padded
+!!    with 0s).  In other cases, part of the hash of the displacement.
+!!
 
 #include "f90_assert.fpp"
 
@@ -60,9 +79,58 @@ module re_encl_type
     procedure :: bcast => encl_bcast
     procedure :: write => encl_write
     procedure :: read  => encl_read
-  end type
+  end type encl
+
+  type, extends(encl), public :: encl_list
+    integer :: n = 0, index = 0
+    real(r8), allocatable :: x0(:,:)
+    logical,  allocatable :: mask(:)
+    real(r8), allocatable :: dx(:,:)
+    character(:), allocatable :: label(:)
+  contains
+    procedure :: next_encl
+    procedure :: this_label
+    procedure :: num_encl
+    procedure :: bcast => encl_list_bcast
+  end type encl_list
 
 contains
+
+  !! Broadcast the rank 1 ENCL_LIST components to the other ranks.
+  subroutine encl_list_bcast(this)
+    class(encl_list), intent(inout) :: this
+    call this%encl%bcast
+    call scl_bcast(this%n)
+    call scl_bcast(this%index)
+    call scl_bcast_alloc(this%mask)
+    call scl_bcast_alloc(this%dx)
+    call scl_bcast_alloc(this%x0)
+    call scl_bcast_alloc(this%label)
+  end subroutine encl_list_bcast
+
+  !! Advance to the next enclosure.
+  subroutine next_encl(this)
+    class(encl_list), intent(inout) :: this
+    integer :: j
+    if (this%index >= this%n) return
+    this%index = this%index + 1
+    do j = 1, this%nnode
+      if (this%mask(j)) this%x(:,j) = this%x0(:,j) + this%dx(:,this%index)
+    end do
+  end subroutine next_encl
+
+  !! Return the unique string label for the current enclosure.
+  function this_label(this) result(label)
+    class(encl_list), intent(in) :: this
+    character(:), allocatable :: label
+    label = this%label(this%index)
+  end function this_label
+
+  !! Return the number of enclosures in the list.
+  integer function num_encl(this)
+    class(encl_list), intent(in) :: this
+    num_encl = this%n
+  end function num_encl
 
   !! Broadcast the rank 1 ENCL components to the other ranks.
   subroutine encl_bcast(this)
