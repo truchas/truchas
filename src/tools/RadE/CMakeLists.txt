@@ -42,6 +42,7 @@ set(LIBRE_FORTRAN_FILES
     re_encl_type.F90
     re_dist_vf_type.F90
     re_exodus_encl.F90
+    re_toolpath.F90
     re_chaparral_vf.F90
     re_graphics_gmv.F90
     patching/re_patch_type.F90

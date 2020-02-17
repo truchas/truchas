@@ -97,12 +97,13 @@ contains
 
     use string_utilities, only: raise_case, i_to_c
     use input_utilities
+    use toolpath_table, only: known_toolpath
 
     integer, intent(in) :: lun
     type(parameter_list), intent(out) :: params
 
     !! The ENCLOSURE namelist variables; user visible.
-    character(MAX_NAME_LEN) :: name
+    character(MAX_NAME_LEN) :: name, displacement_toolpath
     character(MAX_FILE_LEN) :: mesh_file
     character(7) :: symmetries(3)
     integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS)
@@ -110,7 +111,7 @@ contains
     real(r8) :: coord_scale_factor, displacements(3,MAX_DISPL)
     namelist /enclosure/ name, mesh_file, coord_scale_factor, exodus_block_modulus, &
         side_set_ids, ignore_block_ids, symmetries, &
-        displace_block_ids, displacements
+        displace_block_ids, displacements, displacement_toolpath
 
     integer :: j, n, ios, stat, rot_axis, num_rot, ndispl
     logical :: is_IOP, found, mirror(3)
@@ -141,6 +142,7 @@ contains
     symmetries = NULL_C
     displace_block_ids = NULL_I
     displacements = NULL_R
+    displacement_toolpath = NULL_C
 
     if (is_IOP) read(lun,nml=enclosure,iostat=ios,iomsg=iom)
     call scl_bcast(ios)
@@ -156,6 +158,7 @@ contains
     call scl_bcast(symmetries)
     call scl_bcast(displace_block_ids)
     call scl_bcast(displacements)
+    call scl_bcast(displacement_toolpath)
 
     !! Check the user-supplied NAME for the namelist.
     if (name == NULL_C) call re_halt('NAME not specified')
@@ -220,11 +223,20 @@ contains
       do ndispl = size(displacements,dim=2), 1, -1
         if (any(displacements(:,ndispl) /= NULL_R)) exit
       end do
-      if (ndispl == 0) call re_halt('DISPLACEMENTS not specified')
-      if (any(displacements(:,:ndispl) == NULL_R)) &
-          call re_halt('DISPLACEMENTS not fully specified')
-      call params%set('displacements', displacements(:,:ndispl))
-    end if
+      if (ndispl == 0 .and. displacement_toolpath == NULL_C) &
+          call re_halt('neither DISPLACEMENTS nor DISPLACEMENT_TOOLPATH specified')
+      if (ndispl > 0 .and. displacement_toolpath /= NULL_C) &
+          call re_halt('both DISPLACEMENTS and DISPLACEMENT_TOOLPATH specified')
+      if (ndispl > 0) then
+        if (any(displacements(:,:ndispl) == NULL_R)) &
+            call re_halt('DISPLACEMENTS not fully specified')
+        call params%set('displacements', displacements(:,:ndispl))
+      else
+        if (.not.known_toolpath(displacement_toolpath)) &
+            call re_halt('unknown toolpath: ' // trim(displacement_toolpath))
+        call params%set('displacement-toolpath', trim(displacement_toolpath))
+      end if
+   end if
 
   end subroutine read_enclosure_namelist
 
@@ -287,7 +299,7 @@ contains
           end if
         end do
         !! List of displacements and associated labels.
-!        if (params%is_parameter('displacements')) then
+        if (params%is_parameter('displacements')) then
           !! Get displacements directly from the input.
           call params%get('displacements', this%dx)
           this%n = size(this%dx,dim=2)
@@ -299,31 +311,31 @@ contains
             allocate(character(n)::this%label(this%n))
             write(this%label,fmt) (j, j=1, this%n)
           end block
-!        else
-!          !! Extract displacements and labels from a partitioned toolpath.
-!          call params%get('displacement-toolpath', name)
-!          tp => toolpath_ptr(name)
-!          if (tp%has_partition()) then
-!            call tp%get_partition(coord=this%dx, hash=this%label)
-!            !! Cull any duplicates (possible)
-!            n = 1 ! top of list of uniques
-!            do j = 2, size(this%dx,dim=2)
-!              if (any(this%label(j) == this%label(1:n))) cycle
-!              n = n + 1
-!              if (j == n) cycle
-!              this%dx(:,n) = this%dx(:,j)
-!              this%label(n) = this%label(j)
-!            end do
-!            if (n < size(this%dx,dim=2)) then
-!              this%dx = this%dx(:,:n)
-!              this%label = this%label(:n)
-!            end if
-!            this%n = size(this%dx,dim=2)
-!          else
-!            stat = -1
-!            errmsg = 'toolpath is not partitioned'
-!          end if
-!        end if
+        else
+          !! Extract displacements and labels from a partitioned toolpath.
+          call params%get('displacement-toolpath', name)
+          tp => toolpath_ptr(name)
+          if (tp%has_partition()) then
+            call tp%get_partition(coord=this%dx, hash=this%label)
+            !! Cull any duplicates (possible)
+            n = 1 ! top of list of uniques
+            do j = 2, size(this%dx,dim=2)
+              if (any(this%label(j) == this%label(1:n))) cycle
+              n = n + 1
+              if (j == n) cycle
+              this%dx(:,n) = this%dx(:,j)
+              this%label(n) = this%label(j)
+            end do
+            if (n < size(this%dx,dim=2)) then
+              this%dx = this%dx(:,:n)
+              this%label = this%label(:n)
+            end if
+            this%n = size(this%dx,dim=2)
+          else
+            stat = -1
+            errmsg = 'toolpath is not partitioned'
+          end if
+        end if
       end if
     end if
     call scl_bcast(stat)

@@ -12,6 +12,7 @@ program genre
   use re_exodus_encl
   use re_chaparral_vf
   use re_patch_type
+  use re_toolpath
   use genre_command_line
   use parameter_list_type
   use scl
@@ -45,6 +46,7 @@ program genre
   if (ios /= 0) call re_halt('unable to open input file: ' // infile // ': ' // trim(iom))
 
   !! Construct enclosure
+  call read_toolpath_namelists(lun)
   call read_enclosure_namelist(lun, encl_params)
   call init_encl_list(e, encl_params, stat, errmsg)
   if (stat /= 0) call re_halt('error creating the enclosure: ' // errmsg)
