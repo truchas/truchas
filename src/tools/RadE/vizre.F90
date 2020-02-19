@@ -36,10 +36,9 @@ program vizre
   call parse_command_line(enclosure_file, gmv_file, col, sym)
 
   call e%read(trim(enclosure_file), has_vf)
+  call ep%read(trim(enclosure_file))
 
   if (is_IOP) then
-    call ep%read_patch_data(trim(enclosure_file))
-
     call gmv_open(trim(gmv_file))
     call gmv_write_encl(e, sym)
 

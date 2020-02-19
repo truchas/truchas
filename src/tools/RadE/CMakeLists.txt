@@ -41,6 +41,7 @@ set(LIBRE_FORTRAN_FILES
     re_utilities.F90
     re_encl_type.F90
     re_dist_vf_type.F90
+    re_vf_diff_type.F90
     re_exodus_encl.F90
     re_toolpath.F90
     re_chaparral_vf.F90
