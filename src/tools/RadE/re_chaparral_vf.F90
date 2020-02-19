@@ -425,7 +425,7 @@ contains
     call params%get('bsp-length', bsp_length)
     call params%get('spatial-tol', spatial_tol)
     call VF_DefineTopology(handle, GEOM_TYPE, nfacets, e%nnode, x, y, z, &
-                           c, 1, global_ids, nrotations, xmirror, ymirror, zmirror, &
+                           c, 1, f2p_map, nrotations, xmirror, ymirror, zmirror, &
                            bsp_depth, bsp_length, spatial_tol, verbosity)
     call params%get('hc-sub-divide', hc_sub_divide)
     call params%get('hc-resolution', hc_resolution)
