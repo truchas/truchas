@@ -100,9 +100,9 @@ contains
     !! Generate the node coordinates.
     allocate(mesh%coord(2,mesh%num_node))
     do j = 1, nx(2)+1
-      x(2) = ((nx(2)-j-1)/real(nx(2),r8))*xmin(2) + ((j-1)/real(nx(2),r8))*xmax(2)
+      x(2) = ((nx(2)-j+1)/real(nx(2),r8))*xmin(2) + ((j-1)/real(nx(2),r8))*xmax(2)
       do i = 1, nx(1)+1
-        x(1) = ((nx(1)-i-1)/real(nx(1),r8))*xmin(1) + ((i-1)/real(nx(1),r8))*xmax(1)
+        x(1) = ((nx(1)-i+1)/real(nx(1),r8))*xmin(1) + ((i-1)/real(nx(1),r8))*xmax(1)
         mesh%coord(:,node_index(i,j)) = x
       end do
     end do
