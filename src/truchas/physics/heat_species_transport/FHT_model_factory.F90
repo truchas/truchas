@@ -33,6 +33,7 @@ module FHT_model_factory
   use matl_mesh_func_type
   use rad_problem_type
   use thermal_bc_factory_class
+  use source_factory_type
   implicit none
   private
 
@@ -40,7 +41,7 @@ module FHT_model_factory
 
 contains
 
-  function create_FHT_model (tinit, disc, mmf, tbc_fac, stat, errmsg) result (model)
+  function create_FHT_model (tinit, disc, mmf, tbc_fac, tsrc_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: void_temperature
 
@@ -48,6 +49,7 @@ contains
     type(mfd_disc), intent(in), target :: disc
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: tbc_fac
+    type(source_factory), intent(inout) :: tsrc_fac
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errmsg2
@@ -64,7 +66,7 @@ contains
     if (stat /= 0) return
 
     !! Defines the heat equation parameter components of MODEL.
-    call define_system_parameters (mesh, mmf, model, stat, errmsg)
+    call define_system_parameters (mesh, mmf, tsrc_fac, model, stat, errmsg)
     if (stat /= 0) return
 
     !! Defines the boundary condition components of MODEL.
@@ -139,7 +141,7 @@ contains
   end subroutine vf_rad_init
 
 
-  subroutine define_system_parameters (mesh, mmf, model, stat, errmsg)
+  subroutine define_system_parameters (mesh, mmf, src_fac, model, stat, errmsg)
 
     use matl_mesh_func_type
     use ds_source_input, only: define_external_source
@@ -149,6 +151,7 @@ contains
 
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
+    type(source_factory), intent(inout) :: src_fac
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -191,6 +194,13 @@ contains
     !! External heat source.
     allocate(model%q)
     call define_external_source (mesh, 'temperature', model%q)
+
+    !! Additional heat sources
+    call src_fac%alloc_source(model%src, stat, errmsg2)
+    if (stat /= 0) then
+      errmsg = errmsg2
+      return
+    end if
 
     stat = 0
     errmsg = ''

@@ -34,6 +34,7 @@ module HTSD_model_factory
   use matl_mesh_func_type
   use thermal_bc_factory_class
   use species_bc_factory_class
+  use source_factory_type
   implicit none
   private
 
@@ -41,7 +42,7 @@ module HTSD_model_factory
 
 contains
 
-  function create_HTSD_model (tinit, disc, mmf, tbc_fac, sbc_fac, stat, errmsg) result (model)
+  function create_HTSD_model (tinit, disc, mmf, tbc_fac, sbc_fac, tsrc_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: heat_eqn, num_species, void_temperature
 
@@ -50,6 +51,7 @@ contains
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: tbc_fac
     class(species_bc_factory), intent(inout) :: sbc_fac
+    type(source_factory), intent(inout) :: tsrc_fac
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     type(HTSD_model), pointer :: model
@@ -61,7 +63,7 @@ contains
     mesh => disc%mesh
 
     if (heat_eqn) then
-      htmodel => create_HT_model(tinit, mesh, mmf, tbc_fac, stat, errmsg)
+      htmodel => create_HT_model(tinit, mesh, mmf, tbc_fac, tsrc_fac, stat, errmsg)
       if (stat /= 0) return
     endif
 
@@ -77,7 +79,7 @@ contains
 
   end function create_HTSD_model
 
-  function create_HT_model (tinit, mesh, mmf, bc_fac, stat, errmsg) result (model)
+  function create_HT_model (tinit, mesh, mmf, bc_fac, src_fac, stat, errmsg) result (model)
 
     use rad_problem_type
 
@@ -85,6 +87,7 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: bc_fac
+    type(source_factory), intent(inout) :: src_fac
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errmsg2
@@ -158,6 +161,13 @@ contains
 
       !! External heat source.
       call define_external_source (mesh, 'temperature', model%source)
+
+      !! Additional heat sources
+      call src_fac%alloc_source(model%src, stat, errmsg2)
+      if (stat /= 0) then
+        errmsg = errmsg2
+        return
+      end if
 
       stat = 0
       errmsg = ''
