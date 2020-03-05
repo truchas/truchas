@@ -1,0 +1,27 @@
+&ENCLOSURE
+  name = 'exterior'
+  mesh_file = 'rod-ring.gen'
+  coord_scale_factor = 0.1
+  side_set_ids = 3, 4
+  symmetries = "MirrorX", "MirrorY"
+  displace_block_ids = 2
+  displacements =
+    0.0, 0.0, -0.1
+    0.0, 0.0,  0.0
+    0.0, 0.0,  0.1
+/
+
+&CHAPARRAL
+  blocking_enclosure  = .true.
+  partial_enclosure   = .true.
+  partial_area        = 0.20
+  bsp_max_tree_depth  = 10
+  bsp_min_leaf_length = 25
+  spatial_tolerance   = 1.0e-8
+  hemicube_resolution = 200
+  min_separation      = 10.0
+  max_subdivisions    = 60
+  smoothing_tolerance = 1.0e-8
+  smoothing_max_iter  = 100
+  verbosity_level     = 2
+/

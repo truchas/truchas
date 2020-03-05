@@ -15,7 +15,7 @@ module scl
 
   public :: scl_init, scl_finalize
   public :: scl_send, scl_recv
-  public :: scl_bcast, scl_gather, scl_allgather, scl_scatter
+  public :: scl_bcast, scl_bcast_alloc, scl_gather, scl_allgather, scl_scatter
   public :: scl_global_sum, scl_global_maxval
   public :: scl_size, scl_rank
 
@@ -242,6 +242,14 @@ module scl
     module procedure bcast_d0, bcast_d1, bcast_d2
     module procedure bcast_c0, bcast_c1
   end interface
+ 
+  interface scl_bcast_alloc
+    module procedure bcast_alloc_i1, bcast_alloc_i2
+    module procedure bcast_alloc_l1, bcast_alloc_l2
+    module procedure bcast_alloc_r1, bcast_alloc_r2
+    module procedure bcast_alloc_d1, bcast_alloc_d2
+    module procedure bcast_alloc_c0, bcast_alloc_c1
+  end interface
 
   interface scl_gather
     module procedure gather_i0, gather_i1
@@ -449,6 +457,200 @@ contains
         call MPI_Bcast_char_vector (x(j), len(x), 0)
       end do
     endif
+  end subroutine
+
+  subroutine bcast_alloc_i1(x, root)
+    integer, allocatable, intent(inout) :: x(:)
+    integer, intent(in), optional :: root
+    integer :: r, n
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = size(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (size(x) /= n) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. n >= 0) allocate(x(n))
+    end if
+    if (n > 0) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_i2(x, root)
+    integer, allocatable, intent(inout) :: x(:,:)
+    integer, intent(in), optional :: root
+    integer :: r, n(2)
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = shape(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (any(shape(x) /= n)) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. all(n >= 0)) allocate(x(n(1),n(2)))
+    end if
+    if (all(n > 0)) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_r1(x, root)
+    real, allocatable, intent(inout) :: x(:)
+    integer, intent(in), optional :: root
+    integer :: r, n
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = size(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (size(x) /= n) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. n >= 0) allocate(x(n))
+    end if
+    if (n > 0) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_r2(x, root)
+    real, allocatable, intent(inout) :: x(:,:)
+    integer, intent(in), optional :: root
+    integer :: r, n(2)
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = shape(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (any(shape(x) /= n)) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. all(n >= 0)) allocate(x(n(1),n(2)))
+    end if
+    if (all(n > 0)) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_d1(x, root)
+    double precision, allocatable, intent(inout) :: x(:)
+    integer, intent(in), optional :: root
+    integer :: r, n
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = size(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (size(x) /= n) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. n >= 0) allocate(x(n))
+    end if
+    if (n > 0) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_d2(x, root)
+    double precision, allocatable, intent(inout) :: x(:,:)
+    integer, intent(in), optional :: root
+    integer :: r, n(2)
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = shape(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (any(shape(x) /= n)) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. all(n >= 0)) allocate(x(n(1),n(2)))
+    end if
+    if (all(n > 0)) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_l1(x, root)
+    logical, allocatable, intent(inout) :: x(:)
+    integer, intent(in), optional :: root
+    integer :: r, n
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = size(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (size(x) /= n) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. n >= 0) allocate(x(n))
+    end if
+    if (n > 0) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_l2(x, root)
+    logical, allocatable, intent(inout) :: x(:,:)
+    integer, intent(in), optional :: root
+    integer :: r, n(2)
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      n = -1
+      if (allocated(x)) n = shape(x)
+    end if
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (any(shape(x) /= n)) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. all(n >= 0)) allocate(x(n(1),n(2)))
+    end if
+    if (all(n > 0)) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_c0(x, root)
+    character(:), allocatable, intent(inout) :: x
+    integer, intent(in), optional :: root
+    integer :: r, l
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      l = -1
+      if (allocated(x)) l = len(x)
+    end if
+    call scl_bcast(l, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (len(x) /= l) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. l >= 0) allocate(character(l)::x)
+    end if
+    if (l > 0) call scl_bcast(x, r)
+  end subroutine
+
+  subroutine bcast_alloc_c1(x, root)
+    character(:), allocatable, intent(inout) :: x(:)
+    integer, intent(in), optional :: root
+    integer :: r, l, n
+    r = merge(root,1,present(root))
+    if (comm_rank == r) then
+      l = -1; n = -1
+      if (allocated(x)) then
+        l = len(x)
+        n = size(x)
+      end if
+    end if
+    call scl_bcast(l, r)
+    call scl_bcast(n, r)
+    if (comm_rank /= r) then
+      if (allocated(x)) then
+        if (len(x) /= l .or. size(x) /= n) deallocate(x)
+      end if
+      if (.not.allocated(x) .and. l >= 0) allocate(character(l)::x(n))
+    end if
+    if (l > 0) call scl_bcast(x, r)
   end subroutine
 
   subroutine gather_i0 (src, dest, root)

@@ -148,6 +148,7 @@ module toolpath_type
     procedure :: write_plotfile
     procedure :: set_partition
     procedure :: get_partition
+    procedure :: has_partition
     procedure :: append_path_segment
     final :: toolpath_delete
   end type
@@ -435,6 +436,11 @@ contains
     if (present(coord)) coord = this%coord
     if (present(hash)) hash = this%hash
   end subroutine get_partition
+
+  logical function has_partition(this)
+    class(toolpath), intent(in) :: this
+    has_partition = allocated(this%time)
+  end function has_partition
 
   !! Final subroutine for PATH_SEGMENT objects.  This recursively follows the
   !! NEXT pointer.  When deallocating a linked list, only the root needs to be
