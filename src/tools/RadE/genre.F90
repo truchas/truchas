@@ -24,7 +24,7 @@ program genre
   type(re_patch) :: ep
   type(parameter_list) :: encl_params, chap_params, patch_params
   type(dist_vf) :: vf
-  character(:), allocatable :: infile, outfile, ext, basename, msg, errmsg
+  character(:), allocatable :: infile, outfile, ext, basename, errmsg
   character(255) :: iom
 
   call scl_init
@@ -62,7 +62,7 @@ program genre
   do n = 1, num_encl
     if (num_encl > 1) outfile = basename // e%this_label() // ext
     call e%write(outfile)
-    call ep%write_patch_data(outfile)
+    call ep%write(outfile)
     if (found) then
       call calculate_vf(e, chap_params, ep, vf)
       call write_dist_vf(vf, outfile)

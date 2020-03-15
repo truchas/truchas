@@ -4,9 +4,10 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program test_rade_tools
+program test_dist_vf_type
 
-  use kinds, only: i4, r8
+  use kinds, only: r8
+  use test_rade_tools_common
   use re_utilities
   use re_dist_vf_type
   use re_patch_type
@@ -20,25 +21,27 @@ program test_rade_tools
   type(encl) :: e
   type(dist_vf) :: dvf
   type(re_patch) :: ep
-  character(len=512) :: infile
+  character(:), allocatable :: infile
   real(r8) :: tolerance
   logical :: vf_file
 
-  call scl_init ()
+  call scl_init()
   is_IOP = (scl_rank()==1)
 
   !! Read command line
   if (is_IOP) then
     call process_command_line(infile, vf_file)
-    if (vf_file) open(unit=10,file=trim(infile),status='old',action='read',iostat=ios)
+    if (vf_file) open(unit=10,file=infile,status='old',action='read',iostat=ios)
+  else
+    allocate(infile, source='')
   endif
   call scl_bcast(vf_file)
   call scl_bcast(ios)
-  if (vf_file .and. ios /= 0) call re_halt('Unable to open input file: ' // trim(infile))
+  if (vf_file .and. ios /= 0) call re_halt('Unable to open input file: ' // infile)
 
   !! Get test data
   if (vf_file) then
-    call re_info('Running tests with input file: ' // trim(infile))
+    call re_info('Running tests with input file: ' // infile)
     call init_data_from_file(dvf, ep, infile)
     tolerance = 1E-6
   else
@@ -76,6 +79,7 @@ contains
 
     !! F2P map with four faces per patch
     allocate(ep%f2p_map(NFACE))
+    ep%nface = NFACE
     ep%npatch = NPATCH
     ep%has_patches = .true.
     do i = 1, NFACE
@@ -143,15 +147,15 @@ contains
 
     type(dist_vf), intent(out) :: dvf
     type(re_patch), intent(out) :: ep
-    character(len=512), intent(in) :: infile
+    character(:), allocatable, intent(in) :: infile
 
     logical :: has_vf
 
-    call e%read(trim(infile), has_vf)
-    if (.not. has_vf) call re_halt ('No view factor data in file: ' // trim(infile))
+    call e%read(infile, has_vf)
+    if (.not. has_vf) call re_halt ('No view factor data in file: ' // infile)
 
-    if (is_IOP) call ep%read_patch_data(trim(infile))
-    call read_dist_vf(dvf, trim(infile))
+    call ep%read(infile)
+    call read_dist_vf(dvf, infile)
 
   end subroutine init_data_from_file
 
@@ -213,51 +217,11 @@ contains
   end subroutine test_get_column
 
 
-  !! Randomly permutes an array using th Fisher-Yates algorithm
-  !! Source: https://www.rosettacode.org/wiki/Knuth_shuffle#Fortran
-  subroutine shuffle(a)
-
-    integer, intent(inout) :: a(:)
-
-    integer :: i, randpos, temp
-    real :: r
-
-    do i = size(a), 2, -1
-      call random_number(r)
-      randpos = int(r * i) + 1
-      temp = a(randpos)
-      a(randpos) = a(i)
-      a(i) = temp
-    end do
-
-  end subroutine shuffle
-
-
-  !! Returns a random exactly-representable real number.
-  !! Rationals of the form a/2^k, where k is less than the
-  !! number of the exponent bits, are exactly representatble.
-  elemental impure subroutine random_exact(rand)
-
-    real, intent(out) :: rand
-
-    !! We only want fractions of the form 1/2^k
-    integer(i4), parameter :: mask = Z'3F800000'
-    integer(i4) :: i
-    real :: r
-
-    call random_number(r)
-    i = transfer(r, i)
-    i = iand(i, mask)
-    rand = transfer(i, r)
-
-  end subroutine random_exact
-
-
-  !! Handle a optional single argument which is the radiation enclosure file to use
+  !! Handle an optional single argument which is the radiation enclosure file to use
   !! for testing. Also handle '-h' or '--help' as an option to write out the usage.
   subroutine process_command_line (infile, read_file)
 
-    character(len=512), intent(out) :: infile
+    character(:), allocatable, intent(out) :: infile
     logical, intent(out) :: read_file
 
     character(:), allocatable :: prog
@@ -296,4 +260,4 @@ contains
 
   end subroutine process_command_line
 
-end program test_rade_tools
+end program test_dist_vf_type

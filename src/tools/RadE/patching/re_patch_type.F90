@@ -8,12 +8,6 @@
 !! This module also provides a procedure for parsing the PATCHES namelist. The
 !! data is copied into a parameter list.
 !!
-!! IMPORTANT: RE_PATCH methods are serial, and must only be run on the I/O
-!!            process.  Adhering to convention, READ_PATCHES_NAMELIST is
-!!            collective.  Each rank gets a full copy of the PATCH_PARAM data
-!!            structure, even though it will only be used by the single process
-!!            running the RE_PATCH type methods.
-!!
 !! David Neill-Asanza <dhna@lanl.gov>
 !! 16 Aug 2019
 !!
@@ -25,7 +19,7 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  READ_PATCHES_NAMELIST (LUN, PARAMS, FOUND) reads the first instance of the
+!!  READ_PATCHES_NAMELIST(LUN, PARAMS, FOUND) reads the first instance of the
 !!    PATCHES namelist from the file opened on logical unit LUN. The values
 !!    read are returned in the parameter list PARAMS.
 !!    FOUND is a logical scalar set to .TRUE. if the namelist is found, and
@@ -37,33 +31,41 @@
 !!    patching algorithm.  If this namelist is not present, no patches will be
 !!    generated.
 !!
-!!  GENERATE_PATCHES(THIS, E, PARAMS) generates patches for the given enclosure
-!!    with the given parameters.  THIS is a TYPE(RE_PATCH) object that will
-!!    store the patch data internally.  E is the TYPE(ENCL) radiation enclosure
-!!    that will be patched. This is a serial procedure and must only be called
-!!    by the I/O process.
+!!  The RE_PATCH type describes a clustering of the enclosure faces. It has the
+!!  following type bound subroutines.
 !!
-!!  READ_PATCH_DATA (THIS, PATH) initializes the TYPE(RE_PATCH) object THIS with
-!!    the enclosure patch data read from the radiation enclosure dataset PATH.
-!!    If the dataset does not include patch data, then it is assumed that each
-!!    face is a patch, and THIS%F2P_MAP will not be populated.  This is a serial
-!!    procedure and must only be called by the I/O process.
+!!  BCAST() broadcasts the contents of the object on process rank 1 to all other
+!!    process ranks, replicating the patch data on all processes.
 !!
-!!  WRITE_PATCH_DATA (THIS, PATH) writes the patch data contained in the
-!!    TYPE(RE_PATCH) object THIS to the radiation enclosure dataset PATH.  The
-!!    dataset must already contain compatible enclosure data.  If THIS has no
-!!    patches (i.e. each face is a patch) then the face-to-patch map F2P_MAP
-!!    will not be a field of the dataset.  This is a serial procedure and must
-!!    only be called by the I/O process.
+!!  GENERATE_PATCHES(E, PARAMS) generates patches for the given enclosure with
+!!    the given parameters.  E is the TYPE(ENCL) radiation enclosure that will
+!!    be patched.  This is a collective procedure, but only for the purposes of
+!!    error handling.  The patch data is stored on process rank 1; the object is
+!!    ignored on all other processes.
 !!
-!!  PATCH_COLORING (THIS, E) computes a coloring of the patches where adjacent
+!!  READ_PATCH_DATA(PATH) initializes the object with the enclosure patch data
+!!    read from the radiation enclosure dataset PATH.  If the dataset does not
+!!    include patch data, then it is assumed that each face is a patch, and
+!!    THIS%F2P_MAP will not be populated.  This is a collective procedure, but
+!!    only for the purposes purposes of error handling.  The patch data is
+!!    stored on process rank 1; the object is ignored on all other processes.
+!!
+!!  WRITE_PATCH_DATA(PATH) writes the patch data contained in the object to the
+!!    radiation enclosure dataset PATH.  The dataset must already contain
+!!    compatible enclosure data.  If the object has no patches (i.e. each face
+!!    is a patch) then the face-to-patch map F2P_MAP will not be a field of the
+!!    dataset.  This is a collective procedure, but only for the purposes
+!!    purposes of error handling.  The patch data is read from process rank 1;
+!!    the object is ignored on all other processes.
+!!
+!!  PATCH_COLORING(THIS, E) computes a coloring of the patches where adjacent
 !!    patches have different colors.  THIS is the TYPE(RE_PATCH) object storing
 !!    the patch data corresponding to the TYPE(ENCL) radiation enclosure E.  If
 !!    THIS has patch data, the returned array PCOLOR will be a rank-1 integer
 !!    array of length THIS%NPATCH containing a valid patch coloring.  If THIS
 !!    has no patch data (i.e. each face is a patch) then PCOLOR will not be
-!!    allocated.  This is a serial procedure and must only be called by the
-!!    I/O process.
+!!    allocated.  This is a serial procedure (no communication) and must only be
+!!    called on a process with an initialized object.
 !!
 
 
@@ -94,13 +96,15 @@ module re_patch_type
 
   type, public :: re_patch
     integer :: npatch  ! Total number of enclosure patches
+    integer :: nface   ! Total number of faces
     integer, allocatable :: f2p_map(:)     ! Face-to-patch map
     integer, allocatable :: global_ids(:)  ! Global patch IDs
     logical :: has_patches  ! False if each face is a patch, true otherwise.
   contains
     procedure, public :: generate_patches
-    procedure, public :: read_patch_data
-    procedure, public :: write_patch_data
+    procedure, public :: read => re_patch_read
+    procedure, public :: write => re_patch_write
+    procedure, public :: bcast => re_patch_bcast
     procedure, public :: patch_coloring
     procedure, public :: patch_to_face_array
     procedure, private :: no_patches
@@ -350,6 +354,7 @@ contains
 
     this%has_patches = .false.
     this%npatch = e%nface
+    this%nface = e%nface
 
     allocate(this%f2p_map(e%nface), this%global_ids(e%nface))
 
@@ -381,6 +386,7 @@ contains
     call params%get('vsa-max-iter', max_iter)
 
     this%has_patches = .true.
+    this%nface = e%nface
 
     call vsa%init(e, avg_fpp, max_angle, verbosity)
 
@@ -410,6 +416,7 @@ contains
     call params%get('vac-split-patch-size', split_patch_size)
 
     this%has_patches = .true.
+    this%nface = e%nface
 
     call vac%init(e, max_angle, merge_level, split_patch_size, verbosity)
 
@@ -439,6 +446,7 @@ contains
     call params%get('pave-split-patch-size', split_patch_size)
 
     this%has_patches = .true.
+    this%nface = e%nface
 
     call pave%init(e, max_angle, merge_level, split_patch_size, verbosity)
 
@@ -449,7 +457,17 @@ contains
   end subroutine pave_patches
 
 
-  subroutine read_patch_data (this, path)
+  subroutine re_patch_bcast (this)
+    class(re_patch), intent(inout) :: this
+    call scl_bcast(this%npatch)
+    call scl_bcast(this%nface)
+    call scl_bcast_alloc(this%f2p_map)
+    call scl_bcast_alloc(this%global_ids)
+    call scl_bcast(this%has_patches)
+  end subroutine re_patch_bcast
+
+
+  subroutine re_patch_read (this, path)
 
     use rad_encl_file_type
 
@@ -459,19 +477,22 @@ contains
     type(rad_encl_file) :: file
     integer :: nface_tot, npatch_tot
 
-    call file%open_ro(path)
-    call file%get_patch_dims(nface_tot, npatch_tot)
-    this%npatch = npatch_tot
-    this%has_patches = file%has_patches()
-    if (.not. this%has_patches) return
+    if (scl_rank() == 1) then
+      call file%open_ro(path)
+      call file%get_patch_dims(nface_tot, npatch_tot)
+      this%npatch = npatch_tot
+      this%nface = nface_tot
+      this%has_patches = file%has_patches()
+      if (.not. this%has_patches) return
 
-    allocate(this%f2p_map(nface_tot))
-    call file%get_f2p_map(this%f2p_map)
+      allocate(this%f2p_map(nface_tot))
+      call file%get_f2p_map(this%f2p_map)
+    end if
 
-  end subroutine read_patch_data
+  end subroutine re_patch_read
 
 
-  subroutine write_patch_data (this, path)
+  subroutine re_patch_write (this, path)
 
     use rad_encl_file_type
 
@@ -487,7 +508,7 @@ contains
       call file%close
     end if
 
-  end subroutine write_patch_data
+  end subroutine re_patch_write
 
 
   !! Color patches so that adjacent patches have different colors.
