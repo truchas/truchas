@@ -54,7 +54,7 @@ PATCHES Namelist
    patches_namelist
 
 The `PATCHES` namelist defines the parameters used by the patching algorithms. The namelist supports
-ten parameters, but not all parameters are used by all algorithms. Parameters only used by a
+many parameters, but not all parameters are used by all algorithms. Parameters only used by a
 particular algorithm are prefixed with the algorithm's name.
 
 .. code-block:: console
@@ -75,11 +75,13 @@ The `PATCHES` namelist parameters include:
 #. :ref:`tools/RadE/patches/patches_namelist:MAX_ANGLE`: Maximum angle between adjacent faces
 #. :ref:`tools/RadE/patches/patches_namelist:PAVE_MERGE_LEVEL`: Controls the aggressiveness of patch merging
 #. :ref:`tools/RadE/patches/patches_namelist:PAVE_SPLIT_PATCH_SIZE`: Split patches with up to this number of faces
+#. :ref:`tools/RadE/patches/patches_namelist:PAVE_RANDOM_SEED`: Sets random number generator seed.
 #. :ref:`tools/RadE/patches/patches_namelist:VAC_MERGE_LEVEL`: Controls the aggressiveness of patch merging
 #. :ref:`tools/RadE/patches/patches_namelist:VAC_SPLIT_PATCH_SIZE`: Split patches with up to this number of faces
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_MAX_ITER`: Maximum iterations for the VSA algorithm
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_MIN_DELTA`: Minimum change in patch proxies for the VSA algorithm
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_AVG_FACES_PER_PATCH`: Average faces per patch for the VSA algorithm
+#. :ref:`tools/RadE/patches/patches_namelist:VSA_RANDOM_SEED`: Sets random number generator seed.
 
 .. seealso::
   For detailed information on these parameters, refer to the :doc:`PATCES namelist

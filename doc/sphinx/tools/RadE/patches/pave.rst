@@ -39,15 +39,18 @@ enclosure, that is, the graph defined by the mesh vertices and the edges between
 component, PAVE picks a vertex `V_j`, forms a 'seed patch' `P_i` from its faces, and adds the tuple
 `(P_i, V_j)` to a global priority queue. These seed patches act as the starting points for the
 paving process. Paving then proceeds by popping queue entries one by one until the queue is empty.
-If all the faces of a queue entry are assigned, a new patch is created from the entry. Additionally,
-we add new queue entries for each of the first and second degree neighbors of the popped entry's
-:term:`vertex anchor`. If, on the other hand, some of the faces of the queue entry are already
-assigned, PAVE makes a new entry for each connected subset of faces that are still unassigned.
+If all the faces of a queue entry are unassigned, a new patch is created from the entry.
+Additionally, we add new queue entries for each of the first and second degree neighbors of the
+popped entry's :term:`vertex anchor`. If, on the other hand, some of the faces of the queue entry
+are already assigned, PAVE makes a new entry for each connected subset of faces that are still
+unassigned.
 
 In this way, each component is 'paved ' with :term:`full patches <full patch>`, starting from the
 component seed patches. For better results, the component seeds are chosen to be a random patch
-along the edges or corners of component with such features. If a component has no boundary, any one
-of its vertices is chosen at random as the vertex anchor for the seed patch.
+along the edges or corners of components with such features. If a component has no boundary, any one
+of its vertices is chosen at random as the vertex anchor for the seed patch. The seed for the random
+number generator used to select the seed patches can be set with the :ref:`PAVE_RANDOM_SEED
+<tools/RadE/patches/pave:PAVE_RANDOM_SEED>` namelist parameter.
 
 Once the queue is empty, all faces are assigned and we have a valid patching of the enclosure.
 Finally, PAVE merges patches where possible, in accordance with the :ref:`PAVE_MERGE_LEVEL
@@ -62,11 +65,13 @@ The following is a high-level outline of the PAVE algorithm.
 
    #. Generate the *vface* array that maps a vertex to the faces of that vertex.
    #. Generate the face adjacency matrix. Faces at angles greater than
-      :ref:`MAX_ANGLE <tools/RadE/patches/patches_namelist:MAX_ANGLE>` are not adjacent.
+      :ref:`tools/RadE/patches/patches_namelist:MAX_ANGLE` are not adjacent.
    #. Generate the *boundary* boolean array that records whether a vertex is on the boundary of an
       enclosure component.
    #. Let `G` be the vertex adjacency graph of the enclosure, and let `C` be the subgraph of
       `G` induced by all the non-boundary vertices. Determine the connected components of `C`.
+   #. If provided, use :ref:`tools/RadE/patches/pave:PAVE_RANDOM_SEED` to initialize the random
+      number generator. Otherwise, take the seed from the system clock.
 
 #. **Choose seed patches**
 
@@ -240,11 +245,11 @@ vertex that neighbors the most boundary vertices as the vertex anchor for the pa
 component.
 
 PAVE implements this idea by first sorting the interior vertices of each component by the number of
-boundary vertices the neighbor, and a selecting a random vertex in the 'most neighbors bin'. This
-vertex becomes the vertex anchor for the seed patch of that component. The patch gets added to the
-global priority queue, and will be the first patch placed in that component. Note that since the
-vertex anchor is an interior vertex, the seed patch must be a full patch. The seed patch
-initializes the paving process on that component.
+boundary vertices they neighbor, and then selecting a random vertex in the 'most neighbors bin'.
+This vertex becomes the vertex anchor for the seed patch of that component. The patch gets added to
+the global priority queue, and will be the first patch placed in that component. Note that since the
+vertex anchor is an interior vertex, the seed patch must be a full patch. The seed patch initializes
+the paving process on that component.
 
 
 
@@ -343,6 +348,7 @@ The two parameters unique to PAVE are aptly named PAVE_MERGE_LEVEL and PAVE_SPLI
 have already been discussed, so we'll only touch on them briefly here and link to the previous
 discussion.
 
+
 PAVE_MERGE_LEVEL
 ++++++++++++++++
 Controls the aggressiveness of patch merging.
@@ -380,6 +386,7 @@ The merge levels are defined as follows:
 For more details on each merge level, refer to the section on :ref:`patch merging
 <tools/RadE/patches/vac:Patch Merging>` of the VAC documentation.
 
+
 PAVE_SPLIT_PATCH_SIZE
 +++++++++++++++++++++
 Defines the maximum size of patches to be split during patch merging.
@@ -405,3 +412,24 @@ For a more details on this parameter, refer to the section on :ref:`patch splitt
 .. note::
    For best results, set ``pave_split_patch_size`` to 3 for quadrilateral meshes and to 5 for
    triangular meshes. This avoids splitting too many patches.
+
+
+PAVE_RANDOM_SEED
+++++++++++++++++
+Defines the seed for the random number generator used to pick the initial seed patches.
+
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_random_seed > 0
+   :default: ``NONE``, the seed is taken from the system clock.
+
+The PAVE algorithm begins by creating a 'seed patch' in each connected component of the enclosure.
+Each component is then 'paved' or 'tiled' with patches, starting from the seed patch. The seed
+patches are chosen randomly from a set of patches determined to produce optimal results. Refer to
+the :ref:`seed patches section <tools/RadE/patches/pave:Choosing Seed Patches>` of the PAVE
+documentation for more information on how the seed patches are selected.
+
+This parameter sets the seed for the random number generator used to pick the seed patches.
+Therefore, runs with the same value for this parameter will produce identical results. If this
+parameter is not specified, then the seed is taken from the system clock and results will likely
+vary from run to run.
